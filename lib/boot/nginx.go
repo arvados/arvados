@@ -7,7 +7,6 @@ package boot
 import (
 	"context"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -17,10 +16,10 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 )
 
-func runNginx(ctx context.Context, boot *bootCommand, stdout, stderr io.Writer) error {
+func runNginx(ctx context.Context, boot *Booter) error {
 	vars := map[string]string{
-		"SSLCERT":   filepath.Join(boot.sourcePath, "services", "api", "tmp", "self-signed.pem"), // TODO: root ca
-		"SSLKEY":    filepath.Join(boot.sourcePath, "services", "api", "tmp", "self-signed.key"), // TODO: root ca
+		"SSLCERT":   filepath.Join(boot.SourcePath, "services", "api", "tmp", "self-signed.pem"), // TODO: root ca
+		"SSLKEY":    filepath.Join(boot.SourcePath, "services", "api", "tmp", "self-signed.key"), // TODO: root ca
 		"ACCESSLOG": filepath.Join(boot.tempdir, "nginx_access.log"),
 		"ERRORLOG":  filepath.Join(boot.tempdir, "nginx_error.log"),
 		"TMPDIR":    boot.tempdir,
@@ -46,7 +45,7 @@ func runNginx(ctx context.Context, boot *bootCommand, stdout, stderr io.Writer) 
 			return fmt.Errorf("%s external port: %s (%v)", cmpt.varname, err, cmpt.svc)
 		}
 	}
-	tmpl, err := ioutil.ReadFile(filepath.Join(boot.sourcePath, "sdk", "python", "tests", "nginx.conf"))
+	tmpl, err := ioutil.ReadFile(filepath.Join(boot.SourcePath, "sdk", "python", "tests", "nginx.conf"))
 	if err != nil {
 		return err
 	}

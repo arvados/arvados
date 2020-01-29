@@ -33,16 +33,81 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var Command cmd.Handler = &bootCommand{}
+var Command cmd.Handler = bootCommand{}
 
-type bootCommand struct {
-	sourcePath  string // e.g., /home/username/src/arvados
-	libPath     string // e.g., /var/lib/arvados
-	clusterType string // e.g., production
+type bootCommand struct{}
 
+func (bootCommand) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+	boot := &Booter{
+		Stderr: stderr,
+		logger: ctxlog.New(stderr, "json", "info"),
+	}
+
+	ctx := ctxlog.Context(context.Background(), boot.logger)
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	ch := make(chan os.Signal)
+	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		for sig := range ch {
+			boot.logger.WithField("signal", sig).Info("caught signal")
+			cancel()
+		}
+	}()
+
+	var err error
+	defer func() {
+		if err != nil {
+			boot.logger.WithError(err).Info("exiting")
+		}
+	}()
+
+	flags := flag.NewFlagSet(prog, flag.ContinueOnError)
+	flags.SetOutput(stderr)
+	loader := config.NewLoader(stdin, boot.logger)
+	loader.SetupFlags(flags)
+	versionFlag := flags.Bool("version", false, "Write version information to stdout and exit 0")
+	flags.StringVar(&boot.SourcePath, "source", ".", "arvados source tree `directory`")
+	flags.StringVar(&boot.LibPath, "lib", "/var/lib/arvados", "`directory` to install dependencies and library files")
+	flags.StringVar(&boot.ClusterType, "type", "production", "cluster `type`: development, test, or production")
+	err = flags.Parse(args)
+	if err == flag.ErrHelp {
+		err = nil
+		return 0
+	} else if err != nil {
+		return 2
+	} else if *versionFlag {
+		return cmd.Version.RunCommand(prog, args, stdin, stdout, stderr)
+	} else if boot.ClusterType != "development" && boot.ClusterType != "test" && boot.ClusterType != "production" {
+		err = fmt.Errorf("cluster type must be 'development', 'test', or 'production'")
+		return 2
+	}
+
+	boot.Start(ctx, loader)
+	defer boot.Stop()
+	if boot.WaitReady() {
+		fmt.Fprintln(stdout, boot.cluster.Services.Controller.ExternalURL)
+		<-ctx.Done() // wait for signal
+		return 0
+	} else {
+		return 1
+	}
+}
+
+type Booter struct {
+	SourcePath  string // e.g., /home/username/src/arvados
+	LibPath     string // e.g., /var/lib/arvados
+	ClusterType string // e.g., production
+	Stderr      io.Writer
+
+	logger  logrus.FieldLogger
 	cluster *arvados.Cluster
-	stdout  io.Writer
-	stderr  io.Writer
+
+	ctx           context.Context
+	cancel        context.CancelFunc
+	done          chan struct{}
+	healthChecker *health.Aggregator
 
 	tempdir    string
 	configfile string
@@ -53,129 +118,97 @@ type bootCommand struct {
 	goMutex       sync.Mutex
 }
 
-func (boot *bootCommand) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
-	boot.stdout = stdout
-	boot.stderr = stderr
-	log := ctxlog.New(stderr, "json", "info")
-
-	var err error
-	defer func() {
+func (boot *Booter) Start(ctx context.Context, loader *config.Loader) {
+	boot.ctx, boot.cancel = context.WithCancel(ctx)
+	boot.done = make(chan struct{})
+	go func() {
+		err := boot.run(loader)
 		if err != nil {
-			log.WithError(err).Info("exiting")
+			fmt.Fprintln(boot.Stderr, err)
 		}
+		close(boot.done)
 	}()
+}
 
-	flags := flag.NewFlagSet(prog, flag.ContinueOnError)
-	flags.SetOutput(stderr)
-	loader := config.NewLoader(stdin, log)
-	loader.SetupFlags(flags)
-	versionFlag := flags.Bool("version", false, "Write version information to stdout and exit 0")
-	flags.StringVar(&boot.sourcePath, "source", ".", "arvados source tree `directory`")
-	flags.StringVar(&boot.libPath, "lib", "/var/lib/arvados", "`directory` to install dependencies and library files")
-	flags.StringVar(&boot.clusterType, "type", "production", "cluster `type`: development, test, or production")
-	err = flags.Parse(args)
-	if err == flag.ErrHelp {
-		err = nil
-		return 0
-	} else if err != nil {
-		return 2
-	} else if *versionFlag {
-		return cmd.Version.RunCommand(prog, args, stdin, stdout, stderr)
-	} else if boot.clusterType != "development" && boot.clusterType != "test" && boot.clusterType != "production" {
-		err = fmt.Errorf("cluster type must be 'development', 'test', or 'production'")
-		return 2
-	}
-
+func (boot *Booter) run(loader *config.Loader) error {
 	cwd, err := os.Getwd()
 	if err != nil {
-		return 1
+		return err
 	}
-	if !strings.HasPrefix(boot.sourcePath, "/") {
-		boot.sourcePath = filepath.Join(cwd, boot.sourcePath)
+	if !strings.HasPrefix(boot.SourcePath, "/") {
+		boot.SourcePath = filepath.Join(cwd, boot.SourcePath)
 	}
-	boot.sourcePath, err = filepath.EvalSymlinks(boot.sourcePath)
+	boot.SourcePath, err = filepath.EvalSymlinks(boot.SourcePath)
 	if err != nil {
-		return 1
-	}
-
-	loader.SkipAPICalls = true
-	cfg, err := loader.Load()
-	if err != nil {
-		return 1
+		return err
 	}
 
 	boot.tempdir, err = ioutil.TempDir("", "arvados-server-boot-")
 	if err != nil {
-		return 1
+		return err
 	}
 	defer os.RemoveAll(boot.tempdir)
 
+	loader.SkipAPICalls = true
+	cfg, err := loader.Load()
+	if err != nil {
+		return err
+	}
+
 	// Fill in any missing config keys, and write the resulting
 	// config in the temp dir for child services to use.
-	err = boot.autofillConfig(cfg, log)
+	err = boot.autofillConfig(cfg, boot.logger)
 	if err != nil {
-		return 1
+		return err
 	}
 	conffile, err := os.OpenFile(filepath.Join(boot.tempdir, "config.yml"), os.O_CREATE|os.O_WRONLY, 0777)
 	if err != nil {
-		return 1
+		return err
 	}
 	defer conffile.Close()
 	err = json.NewEncoder(conffile).Encode(cfg)
 	if err != nil {
-		return 1
+		return err
 	}
 	err = conffile.Close()
 	if err != nil {
-		return 1
+		return err
 	}
 	boot.configfile = conffile.Name()
 
 	boot.environ = os.Environ()
 	boot.setEnv("ARVADOS_CONFIG", boot.configfile)
-	boot.setEnv("RAILS_ENV", boot.clusterType)
-	boot.prependEnv("PATH", filepath.Join(boot.libPath, "bin")+":")
+	boot.setEnv("RAILS_ENV", boot.ClusterType)
+	boot.prependEnv("PATH", filepath.Join(boot.LibPath, "bin")+":")
 
-	// Now that we have the config, replace the bootstrap logger
-	// with a new one according to the logging config.
 	boot.cluster, err = cfg.GetCluster("")
 	if err != nil {
-		return 1
+		return err
 	}
-	log = ctxlog.New(stderr, boot.cluster.SystemLogs.Format, boot.cluster.SystemLogs.LogLevel)
-	logger := log.WithFields(logrus.Fields{
+	// Now that we have the config, replace the bootstrap logger
+	// with a new one according to the logging config.
+	boot.logger = ctxlog.New(boot.Stderr, boot.cluster.SystemLogs.Format, boot.cluster.SystemLogs.LogLevel).WithFields(logrus.Fields{
 		"PID": os.Getpid(),
 	})
-	ctx := ctxlog.Context(context.Background(), logger)
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
+	boot.healthChecker = &health.Aggregator{Cluster: boot.cluster}
 
-	ch := make(chan os.Signal)
-	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
-	go func() {
-		for sig := range ch {
-			logger.WithField("signal", sig).Info("caught signal")
-			cancel()
-		}
-	}()
-
-	for _, dir := range []string{boot.libPath, filepath.Join(boot.libPath, "bin")} {
+	for _, dir := range []string{boot.LibPath, filepath.Join(boot.LibPath, "bin")} {
 		if _, err = os.Stat(filepath.Join(dir, ".")); os.IsNotExist(err) {
 			err = os.Mkdir(dir, 0755)
 			if err != nil {
-				return 1
+				return err
 			}
 		} else if err != nil {
-			return 1
+			return err
 		}
 	}
-	err = boot.installGoProgram(ctx, "cmd/arvados-server")
+	err = boot.installGoProgram(boot.ctx, "cmd/arvados-server")
 	if err != nil {
-		return 1
+		return err
 	}
 	err = boot.setupRubyEnv()
 	if err != nil {
-		return 1
+		return err
 	}
 
 	var wg sync.WaitGroup
@@ -196,30 +229,34 @@ func (boot *bootCommand) RunCommand(prog string, args []string, stdin io.Reader,
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			defer cancel()
-			logger.WithField("component", cmpt.name).Info("starting")
-			err := cmpt.Run(ctx, boot, stdout, stderr)
-			if err != nil {
-				logger.WithError(err).WithField("component", cmpt.name).Info("exited")
+			defer boot.cancel()
+			boot.logger.WithField("component", cmpt.name).Info("starting")
+			err := cmpt.Run(boot.ctx, boot)
+			if err != nil && err != context.Canceled {
+				boot.logger.WithError(err).WithField("component", cmpt.name).Error("exited")
 			}
 		}()
 	}
-	if boot.waitUntilReady(ctx) {
-		fmt.Fprintln(stdout, boot.cluster.Services.Controller.ExternalURL)
-	}
-	<-ctx.Done()
 	wg.Wait()
-	return 0
+	return nil
 }
 
-func (boot *bootCommand) waitUntilReady(ctx context.Context) bool {
-	agg := health.Aggregator{Cluster: boot.cluster}
+func (boot *Booter) Stop() {
+	boot.cancel()
+	<-boot.done
+}
+
+func (boot *Booter) WaitReady() bool {
 	for waiting := true; waiting; {
 		time.Sleep(time.Second)
-		if ctx.Err() != nil {
+		if boot.ctx.Err() != nil {
 			return false
 		}
-		resp := agg.ClusterHealth()
+		if boot.healthChecker == nil {
+			// not set up yet
+			continue
+		}
+		resp := boot.healthChecker.ClusterHealth()
 		// The overall health check (resp.Health=="OK") might
 		// never pass due to missing components (like
 		// arvados-dispatch-cloud in a test cluster), so
@@ -235,7 +272,7 @@ func (boot *bootCommand) waitUntilReady(ctx context.Context) bool {
 	return true
 }
 
-func (boot *bootCommand) prependEnv(key, prepend string) {
+func (boot *Booter) prependEnv(key, prepend string) {
 	for i, s := range boot.environ {
 		if strings.HasPrefix(s, key+"=") {
 			boot.environ[i] = key + "=" + prepend + s[len(key)+1:]
@@ -245,7 +282,7 @@ func (boot *bootCommand) prependEnv(key, prepend string) {
 	boot.environ = append(boot.environ, key+"="+prepend)
 }
 
-func (boot *bootCommand) setEnv(key, val string) {
+func (boot *Booter) setEnv(key, val string) {
 	for i, s := range boot.environ {
 		if strings.HasPrefix(s, key+"=") {
 			boot.environ[i] = key + "=" + val
@@ -255,13 +292,13 @@ func (boot *bootCommand) setEnv(key, val string) {
 	boot.environ = append(boot.environ, key+"="+val)
 }
 
-func (boot *bootCommand) installGoProgram(ctx context.Context, srcpath string) error {
+func (boot *Booter) installGoProgram(ctx context.Context, srcpath string) error {
 	boot.goMutex.Lock()
 	defer boot.goMutex.Unlock()
-	return boot.RunProgram(ctx, filepath.Join(boot.sourcePath, srcpath), nil, []string{"GOPATH=" + boot.libPath}, "go", "install")
+	return boot.RunProgram(ctx, filepath.Join(boot.SourcePath, srcpath), nil, []string{"GOPATH=" + boot.LibPath}, "go", "install")
 }
 
-func (boot *bootCommand) setupRubyEnv() error {
+func (boot *Booter) setupRubyEnv() error {
 	buf, err := exec.Command("gem", "env", "gempath").Output() // /var/lib/arvados/.gem/ruby/2.5.0/bin:...
 	if err != nil || len(buf) == 0 {
 		return fmt.Errorf("gem env gempath: %v", err)
@@ -273,7 +310,7 @@ func (boot *bootCommand) setupRubyEnv() error {
 	return nil
 }
 
-func (boot *bootCommand) lookPath(prog string) string {
+func (boot *Booter) lookPath(prog string) string {
 	for _, val := range boot.environ {
 		if strings.HasPrefix(val, "PATH=") {
 			for _, dir := range filepath.SplitList(val[5:]) {
@@ -295,40 +332,46 @@ func (boot *bootCommand) lookPath(prog string) string {
 //
 // Child's stdout will be written to output if non-nil, otherwise the
 // boot command's stderr.
-func (boot *bootCommand) RunProgram(ctx context.Context, dir string, output io.Writer, env []string, prog string, args ...string) error {
+func (boot *Booter) RunProgram(ctx context.Context, dir string, output io.Writer, env []string, prog string, args ...string) error {
 	cmdline := fmt.Sprintf("%s", append([]string{prog}, args...))
-	fmt.Fprintf(boot.stderr, "%s executing in %s\n", cmdline, dir)
+	fmt.Fprintf(boot.Stderr, "%s executing in %s\n", cmdline, dir)
 	cmd := exec.Command(boot.lookPath(prog), args...)
 	if output == nil {
-		cmd.Stdout = boot.stderr
+		cmd.Stdout = boot.Stderr
 	} else {
 		cmd.Stdout = output
 	}
-	cmd.Stderr = boot.stderr
+	cmd.Stderr = boot.Stderr
 	if strings.HasPrefix(dir, "/") {
 		cmd.Dir = dir
 	} else {
-		cmd.Dir = filepath.Join(boot.sourcePath, dir)
+		cmd.Dir = filepath.Join(boot.SourcePath, dir)
 	}
 	cmd.Env = append(env, boot.environ...)
+
+	exited := false
+	defer func() { exited = true }()
 	go func() {
 		<-ctx.Done()
 		log := ctxlog.FromContext(ctx).WithFields(logrus.Fields{"dir": dir, "cmdline": cmdline})
-		for cmd.ProcessState == nil {
-			// Child hasn't exited yet
+		for !exited {
 			if cmd.Process == nil {
-				log.Infof("waiting for child process to start")
-				time.Sleep(time.Second)
+				log.Debug("waiting for child process to start")
+				time.Sleep(time.Second / 2)
 			} else {
-				log.WithField("PID", cmd.Process.Pid).Info("sending SIGTERM")
+				log.WithField("PID", cmd.Process.Pid).Debug("sending SIGTERM")
 				cmd.Process.Signal(syscall.SIGTERM)
-				log.WithField("PID", cmd.Process.Pid).Info("waiting for child process to exit after SIGTERM")
 				time.Sleep(5 * time.Second)
+				if !exited {
+					log.WithField("PID", cmd.Process.Pid).Warn("still waiting for child process to exit 5s after SIGTERM")
+				}
 			}
 		}
 	}()
+
 	err := cmd.Run()
-	if err != nil {
+	if err != nil && ctx.Err() == nil {
+		// Only report errors that happen before the context ends.
 		return fmt.Errorf("%s: error: %v", cmdline, err)
 	}
 	return nil
@@ -338,24 +381,24 @@ type component struct {
 	name       string
 	svc        arvados.Service
 	cmdHandler cmd.Handler
-	runFunc    func(ctx context.Context, boot *bootCommand, stdout, stderr io.Writer) error
+	runFunc    func(ctx context.Context, boot *Booter) error
 	railsApp   string // source dir in arvados tree, e.g., "services/api"
 	goProg     string // source dir in arvados tree, e.g., "services/keepstore"
 	notIfTest  bool   // don't run this component on a test cluster
 }
 
-func (cmpt *component) Run(ctx context.Context, boot *bootCommand, stdout, stderr io.Writer) error {
-	if cmpt.notIfTest && boot.clusterType == "test" {
-		fmt.Fprintf(stderr, "skipping component %q in %s mode\n", cmpt.name, boot.clusterType)
+func (cmpt *component) Run(ctx context.Context, boot *Booter) error {
+	if cmpt.notIfTest && boot.ClusterType == "test" {
+		fmt.Fprintf(boot.Stderr, "skipping component %q in %s mode\n", cmpt.name, boot.ClusterType)
 		<-ctx.Done()
 		return nil
 	}
-	fmt.Fprintf(stderr, "starting component %q\n", cmpt.name)
+	fmt.Fprintf(boot.Stderr, "starting component %q\n", cmpt.name)
 	if cmpt.cmdHandler != nil {
 		errs := make(chan error, 1)
 		go func() {
 			defer close(errs)
-			exitcode := cmpt.cmdHandler.RunCommand(cmpt.name, []string{"-config", boot.configfile}, bytes.NewBuffer(nil), stdout, stderr)
+			exitcode := cmpt.cmdHandler.RunCommand(cmpt.name, []string{"-config", boot.configfile}, bytes.NewBuffer(nil), boot.Stderr, boot.Stderr)
 			if exitcode != 0 {
 				errs <- fmt.Errorf("exit code %d", exitcode)
 			}
@@ -395,7 +438,7 @@ func (cmpt *component) Run(ctx context.Context, boot *bootCommand, stdout, stder
 		return nil
 	}
 	if cmpt.runFunc != nil {
-		return cmpt.runFunc(ctx, boot, stdout, stderr)
+		return cmpt.runFunc(ctx, boot)
 	}
 	if cmpt.railsApp != "" {
 		port, err := internalPort(cmpt.svc)
@@ -436,11 +479,12 @@ func (cmpt *component) Run(ctx context.Context, boot *bootCommand, stdout, stder
 		if err != nil {
 			return err
 		}
+		return nil
 	}
 	return fmt.Errorf("bug: component %q has nothing to run", cmpt.name)
 }
 
-func (boot *bootCommand) autofillConfig(cfg *arvados.Config, log logrus.FieldLogger) error {
+func (boot *Booter) autofillConfig(cfg *arvados.Config, log logrus.FieldLogger) error {
 	cluster, err := cfg.GetCluster("")
 	if err != nil {
 		return err
@@ -458,7 +502,7 @@ func (boot *bootCommand) autofillConfig(cfg *arvados.Config, log logrus.FieldLog
 		&cluster.Services.WebDAVDownload,
 		&cluster.Services.Websocket,
 	} {
-		if svc == &cluster.Services.DispatchCloud && boot.clusterType == "test" {
+		if svc == &cluster.Services.DispatchCloud && boot.ClusterType == "test" {
 			continue
 		}
 		if len(svc.InternalURLs) == 0 {
@@ -489,17 +533,17 @@ func (boot *bootCommand) autofillConfig(cfg *arvados.Config, log logrus.FieldLog
 	if cluster.Collections.BlobSigningKey == "" {
 		cluster.Collections.BlobSigningKey = randomHexString(64)
 	}
-	if boot.clusterType != "production" && cluster.Containers.DispatchPrivateKey == "" {
-		buf, err := ioutil.ReadFile(filepath.Join(boot.sourcePath, "lib", "dispatchcloud", "test", "sshkey_dispatch"))
+	if boot.ClusterType != "production" && cluster.Containers.DispatchPrivateKey == "" {
+		buf, err := ioutil.ReadFile(filepath.Join(boot.SourcePath, "lib", "dispatchcloud", "test", "sshkey_dispatch"))
 		if err != nil {
 			return err
 		}
 		cluster.Containers.DispatchPrivateKey = string(buf)
 	}
-	if boot.clusterType != "production" {
+	if boot.ClusterType != "production" {
 		cluster.TLS.Insecure = true
 	}
-	if boot.clusterType == "test" {
+	if boot.ClusterType == "test" {
 		// Add a second keepstore process.
 		port++
 		cluster.Services.Keepstore.InternalURLs[arvados.URL{Scheme: "http", Host: fmt.Sprintf("localhost:%d", port)}] = arvados.ServiceInstance{}
