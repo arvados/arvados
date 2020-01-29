@@ -223,6 +223,7 @@ func (boot *Booter) run(loader *config.Loader) error {
 		{name: "keepstore", goProg: "services/keepstore", svc: boot.cluster.Services.Keepstore},
 		{name: "keep-web", goProg: "services/keep-web"},
 		{name: "railsAPI", svc: boot.cluster.Services.RailsAPI, railsApp: "services/api"},
+		{name: "workbench1", svc: boot.cluster.Services.Workbench1, railsApp: "apps/workbench"},
 		{name: "ws", goProg: "services/ws"},
 	} {
 		cmpt := cmpt
@@ -501,6 +502,7 @@ func (boot *Booter) autofillConfig(cfg *arvados.Config, log logrus.FieldLogger) 
 		&cluster.Services.WebDAV,
 		&cluster.Services.WebDAVDownload,
 		&cluster.Services.Websocket,
+		&cluster.Services.Workbench1,
 	} {
 		if svc == &cluster.Services.DispatchCloud && boot.ClusterType == "test" {
 			continue
@@ -516,7 +518,8 @@ func (boot *Booter) autofillConfig(cfg *arvados.Config, log logrus.FieldLogger) 
 			svc == &cluster.Services.Keepproxy ||
 			svc == &cluster.Services.WebDAV ||
 			svc == &cluster.Services.WebDAVDownload ||
-			svc == &cluster.Services.Websocket) {
+			svc == &cluster.Services.Websocket ||
+			svc == &cluster.Services.Workbench1) {
 			port++
 			svc.ExternalURL = arvados.URL{Scheme: "https", Host: fmt.Sprintf("localhost:%d", port)}
 		}
