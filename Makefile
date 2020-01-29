@@ -64,7 +64,7 @@ test: yarn-install
 	yarn test --no-watchAll --bail --ci
 
 build: test
-	yarn build
+	VERSION=$(VERSION) yarn build
 
 $(DEB_FILE): build
 	fpm \
