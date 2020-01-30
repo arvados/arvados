@@ -19,7 +19,7 @@ module RecordFilters
   # +model_class+    subclass of ActiveRecord being filtered
   #
   # Output:
-  # Hash with two keys:
+  # Hash with the following keys:
   # :cond_out  array of SQL fragments for each filter expression
   # :param_out array of values for parameter substitution in cond_out
   # :joins     array of joins: either [] or ["JOIN containers ON ..."]
@@ -140,6 +140,9 @@ module RecordFilters
               raise ArgumentError.new("Invalid operand '#{operand}' for '#{operator}' must be true or false")
             end
             param_out << proppath
+          when 'contains'
+            cond_out << "#{attr_table_name}.#{attr} @> ?::jsonb"
+            param_out << SafeJSON.dump({proppath => [operand]})
           else
             raise ArgumentError.new("Invalid operator for subproperty search '#{operator}'")
           end
