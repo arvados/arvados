@@ -8,6 +8,8 @@ import (
 	"flag"
 	"io"
 	"log"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
@@ -39,6 +41,7 @@ func (c *cmd) RunCommand(prog string, args []string, stdin io.Reader, stdout, st
 	ro := flags.Bool("ro", false, "read-only")
 	experimental := flags.Bool("experimental", false, "acknowledge this is an experimental command, and should not be used in production (required)")
 	blockCache := flags.Int("block-cache", 4, "read cache size (number of 64MiB blocks)")
+	pprof := flags.String("pprof", "", "serve Go profile data at `[addr]:port`")
 	err := flags.Parse(args)
 	if err != nil {
 		logger.Print(err)
@@ -47,6 +50,11 @@ func (c *cmd) RunCommand(prog string, args []string, stdin io.Reader, stdout, st
 	if !*experimental {
 		logger.Printf("error: experimental command %q used without --experimental flag", prog)
 		return 2
+	}
+	if *pprof != "" {
+		go func() {
+			log.Println(http.ListenAndServe(*pprof, nil))
+		}()
 	}
 
 	client := arvados.NewClientFromEnv()
