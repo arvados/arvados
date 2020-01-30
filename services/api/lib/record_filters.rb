@@ -141,7 +141,8 @@ module RecordFilters
             end
             param_out << proppath
           when 'contains'
-            cond_out << "#{attr_table_name}.#{attr} @> ?::jsonb"
+            cond_out << "#{attr_table_name}.#{attr} @> ?::jsonb OR #{attr_table_name}.#{attr} @> ?::jsonb"
+            param_out << SafeJSON.dump({proppath => operand})
             param_out << SafeJSON.dump({proppath => [operand]})
           else
             raise ArgumentError.new("Invalid operator for subproperty search '#{operator}'")
