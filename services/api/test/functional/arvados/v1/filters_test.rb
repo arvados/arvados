@@ -173,6 +173,7 @@ class Arvados::V1::FiltersTest < ActionController::TestCase
    ['prop2', '>=', 1, [:collection_with_prop2_1, :collection_with_prop2_5], []],
    ['<http://schema.org/example>', '=', "value1", [:collection_with_uri_prop], []],
    ['listprop', 'contains', 'elem1', [:collection_with_list_prop_odd, :collection_with_listprop_elem1], [:collection_with_list_prop_even]],
+   ['listprop', '=', 'elem1', [:collection_with_listprop_elem1], [:collection_with_list_prop_odd]],
    ['listprop', 'contains', 5, [:collection_with_list_prop_odd], [:collection_with_list_prop_even, :collection_with_listprop_elem1]],
    ['listprop', 'contains', 'elem2', [:collection_with_list_prop_even], [:collection_with_list_prop_odd, :collection_with_listprop_elem1]],
    ['listprop', 'contains', 4, [:collection_with_list_prop_even], [:collection_with_list_prop_odd, :collection_with_listprop_elem1]],
