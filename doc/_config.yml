@@ -165,20 +165,21 @@ navbar:
       - admin/metrics.html.textile.liquid
       - admin/health-checks.html.textile.liquid
       - admin/management-token.html.textile.liquid
-    - Cloud:
-      - admin/storage-classes.html.textile.liquid
-      - admin/spot-instances.html.textile.liquid
-      - admin/cloudtest.html.textile.liquid
     - Data Management:
+      - admin/favorites.html.textile.liquid
       - admin/collection-versioning.html.textile.liquid
       - admin/collection-managed-properties.html.textile.liquid
       - admin/keep-balance.html.textile.liquid
       - admin/controlling-container-reuse.html.textile.liquid
       - admin/logs-table-management.html.textile.liquid
+      - admin/workbench2-vocabulary.html.textile.liquid
+      - admin/storage-classes.html.textile.liquid
+    - Cloud:
+      - admin/spot-instances.html.textile.liquid
+      - admin/cloudtest.html.textile.liquid
     - Other:
       - install/migrate-docker19.html.textile.liquid
       - admin/upgrade-crunch2.html.textile.liquid
-      - admin/workbench2-vocabulary.html.textile.liquid
   installguide:
     - Overview:
       - install/index.html.textile.liquid

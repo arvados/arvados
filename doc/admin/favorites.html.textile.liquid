@@ -1,0 +1,57 @@
+---
+layout: default
+navsection: admin
+title: Setting favorites for users
+...
+
+A "favorite" is a shortcut to a project that is displayed in the user interface (Workbench).  Users can mark their own favorites, but it is also possible to have favorites that are displayed for all members of a group (including the "All Users" group).
+
+The schema for a "favorite" link is:
+
+table(table table-bordered table-condensed).
+|_. Field|_. Value|_. Description|
+|owner_uuid|user or group uuid|The user or group that "owns" the favorite|
+|head_uuid|project uuid|The project being favorited|
+|link_class|string of value "star"|Indicates this represents a link to a user favorite|
+
+h2. Cluster wide favorites
+
+The "All Users" group for a given cluster has the uuid @{prefix}-j7d0g-ffffffffffffff@.  Cluster-wide favorites that will show up for all users should belong to the "All Users" group.
+
+Favorites can be owned by other groups, in which case they will only be visibile to members of that group.
+
+h2. Creating a favorite
+
+@owner_uuid@ controls who will see the favorite, @head_uuid@ is the project being favorited, and @link_class@ indicates this record is a favorite.  Set "tail_uuid" to the same value as "owner_uuid".
+
+<pre>
+$ arv link create --link '{
+    "owner_uuid": "c97qk-j7d0g-fffffffffffffff",
+    "tail_uuid":  "c97qk-j7d0g-fffffffffffffff",
+    "head_uuid":  "c97qk-j7d0g-khm44br99mz40hk",
+    "link_class": "star"}'
+</pre>
+
+h2. Deleting a favorite
+
+<pre>
+$ arv link delete --uuid c97qk-o0j2j-haadun4x0vmpvnd
+</pre>
+
+h2. Listing favorites
+
+To list all 'star' links readable by the current user
+
+<pre>
+$ arv link list --filters '[["link_class", "=", "star"]]' --order owner_uuid
+</pre>
+
+This will include favorites belonging any group or project that is readable by the user.
+
+Alternately, the query can be restricted to only show favorites associated with the "All Users" group (or some other group) by filtering on owner_uuid:
+
+<pre>
+$ arv link list --filters '[
+  ["link_class", "=", "star"],
+  ["owner_uuid", "=", "c97qk-j7d0g-fffffffffffffff"]]'
+</pre>

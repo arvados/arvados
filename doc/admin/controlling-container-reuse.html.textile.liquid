@@ -1,7 +1,7 @@
 ---
 layout: default
 navsection: admin
-title: Controlling container reuse
+title: Preventing container reuse
 ...
 
 {% comment %}
@@ -10,12 +10,8 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-This page describes how an admin can control container reuse using the @arv@ command. This can be utilized to avoid reusing a completed container without disabling reuse for the corresponding steps in affected workflows. For example, if a container exited successfully but produced bad output, it may not be feasible to update the workflow immediately. Meanwhile, changing the state of the container from @Complete@ to @Cancelled@ will prevent it from being used in subsequent workflows.
+Sometimes a container exited successfully but produced bad output, and re-running the workflow will cause it to re-use the bad container instead of running a new container.  One way to deal with this is to re-run the entire workflow with reuse disable.  Another way is for the workflow author to tweak the input data or workflow so that on re-run it produces a distinct container request.  However, for large or complex workflows both these options may be impractical.
 
-If a container is in the @Complete@ state, the following @arv@ command will change its state to @Cancelled@, where @xxxxx-xxxxx-xxxxxxxxxxxxxxx@ is the @UUID@ of the container:
+To prevent an individual container from being reused in later workflows, an admin can manually change the state of the bad container record from @Complete@ to @Cancelled@.  The following @arv@ command demonstrates how change a container state to @Cancelled@, where @xxxxx-xxxxx-xxxxxxxxxxxxxxx@ is the @UUID@ of the container:
 
 <pre>arv container update -u xxxxx-xxxxx-xxxxxxxxxxxxxxx -c '{"state":"Cancelled"}'</pre>
-
-Use the following command to list all containers that exited with 0 and were then cancelled:
-
-<pre>arv container list --filters='[["state", "=", "Cancelled"], ["exit_code", "=", 0]]'</pre>See the "arv CLI tool overview":{{site.baseurl}}/sdk/cli/index.html for more details about using the @arv@ command.

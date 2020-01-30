@@ -21,47 +21,44 @@ This database table currently serves three purposes:
 
 As a result, this table grows indefinitely, even on sites where policy does not require an audit log; making backups, migrations, and upgrades unnecessarily slow and painful.
 
-h3. API Server configuration
+h3. Configuration
 
-To solve the problem mentioned above, the API server offers the possibility to limit the amount of log information stored on the table:
-
-<pre>
-# Attributes to suppress in events and audit logs.  Notably,
-# specifying ["manifest_text"] here typically makes the database
-# smaller and faster.
-#
-# Warning: Using any non-empty value here can have undesirable side
-# effects for any client or component that relies on event logs.
-# Use at your own risk.
-unlogged_attributes: []
-</pre>
-
-The above setting affects all events being logged, independently of how much time they will be kept on the database.
+To solve the problem mentioned above, the @AuditLogs@ section of @config.yml@ offers several options to limit the amount of log information stored on the table:
 
 <pre>
-# Time to keep audit logs (a row in the log table added each time an
-# Arvados object is created, modified, or deleted) in the PostgreSQL
-# database. Currently, websocket event notifications rely on audit
-# logs, so this should not be set lower than 300 (5 minutes).
-max_audit_log_age: 1209600
+    AuditLogs:
+      # Time to keep audit logs. (An audit log is a row added
+      # to the "logs" table in the PostgreSQL database each time an
+      # Arvados object is created, modified, or deleted.)
+      #
+      # Currently, websocket event notifications rely on audit logs, so
+      # this should not be set lower than 5 minutes.
+      MaxAge: 336h
+
+      # Maximum number of log rows to delete in a single SQL transaction,
+      # to prevent surprises and avoid bad database behavior
+      # (especially the first time the cleanup job runs on an existing
+      # cluster with a huge backlog) a maximum number of rows to
+      # delete in a single transaction.
+      #
+      # If MaxDeleteBatch is 0, log entries will never be
+      # deleted by Arvados. Cleanup can be done by an external process
+      # without affecting any Arvados system processes, as long as very
+      # recent (<5 minutes old) logs are not deleted.
+      #
+      # 100000 is a reasonable batch size for most sites.
+      MaxDeleteBatch: 0
+
+      # Attributes to suppress in events and audit logs.  Notably,
+      # specifying {"manifest_text": {}} here typically makes the database
+      # smaller and faster.
+      #
+      # Warning: Using any non-empty value here can have undesirable side
+      # effects for any client or component that relies on event logs.
+      # Use at your own risk.
+      UnloggedAttributes: {}
 </pre>
 
-...and to prevent surprises and avoid bad database behavior (especially the first time the cleanup job runs on an existing cluster with a huge backlog) a maximum number of rows to delete in a single transaction.
-
-<pre>
-# Maximum number of log rows to delete in a single SQL transaction.
-#
-# If max_audit_log_delete_batch is 0, log entries will never be
-# deleted by Arvados. Cleanup can be done by an external process
-# without affecting any Arvados system processes, as long as very
-# recent (<5 minutes old) logs are not deleted.
-#
-# 100000 is a reasonable batch size for most sites.
-max_audit_log_delete_batch: 0
-</pre>
-
-This feature works when both settings are non-zero, periodically dispatching a background task that deletes all log rows older than @max_audit_log_age@.
-The events being cleaned up by this process don't include job/container stderr logs (they're handled by the existing @delete job/container logs@ rake tasks)
 
 h3. Additional consideration
 
