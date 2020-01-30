@@ -172,6 +172,10 @@ class Arvados::V1::FiltersTest < ActionController::TestCase
    ['prop2', '<=', 5, [:collection_with_prop2_1, :collection_with_prop2_5], []],
    ['prop2', '>=', 1, [:collection_with_prop2_1, :collection_with_prop2_5], []],
    ['<http://schema.org/example>', '=', "value1", [:collection_with_uri_prop], []],
+   ['listprop', 'contains', 'elem1', [:collection_with_list_prop_odd], [:collection_with_list_prop_even]],
+   ['listprop', 'contains', 5, [:collection_with_list_prop_odd], [:collection_with_list_prop_even]],
+   ['listprop', 'contains', 'elem2', [:collection_with_list_prop_even], [:collection_with_list_prop_odd]],
+   ['listprop', 'contains', 4, [:collection_with_list_prop_even], [:collection_with_list_prop_odd]],
   ].each do |prop, op, opr, inc, ex|
     test "jsonb filter properties.#{prop} #{op} #{opr})" do
       @controller = Arvados::V1::CollectionsController.new
