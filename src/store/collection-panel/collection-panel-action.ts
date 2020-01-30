@@ -45,12 +45,22 @@ export const createCollectionTag = (data: TagProperty) =>
         const uuid = item ? item.uuid : '';
         try {
             if (item) {
+                const key = data.keyID || data.key;
+                const value = data.valueID || data.value;
+                if (item.properties[key]) {
+                    if (Array.isArray(item.properties[key])) {
+                        item.properties[key] = [...item.properties[key], value];
+                        // Remove potential duplicates
+                        item.properties[key] = Array.from(new Set(item.properties[key]));
+                    } else {
+                        item.properties[key] = [item.properties[key], value];
+                    }
+                } else {
+                    item.properties[key] = value;
+                }
                 const updatedCollection = await services.collectionService.update(
                     uuid, {
-                        properties: {
-                            ...JSON.parse(JSON.stringify(item.properties)),
-                            [data.keyID || data.key]: data.valueID || data.value
-                        }
+                        properties: {...JSON.parse(JSON.stringify(item.properties))}
                     }
                 );
                 item.properties = updatedCollection.properties;
