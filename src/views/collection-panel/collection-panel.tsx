@@ -128,10 +128,10 @@ export const CollectionPanel = withStyles(styles)(
                                     </Grid>
                                     <Grid item xs={12}>
                                         {Object.keys(item.properties).map(k =>
-                                            <PropertyChipComponent
-                                                key={k} className={classes.tag}
-                                                onDelete={this.handleDelete(k)}
-                                                propKey={k} propValue={item.properties[k]} />
+                                            Array.isArray(item.properties[k])
+                                            ? item.properties[k].map((v: string) =>
+                                                getPropertyChip(k, v, this.handleDelete, classes.tag))
+                                            : getPropertyChip(k, item.properties[k], this.handleDelete, classes.tag)
                                         )}
                                     </Grid>
                                 </Grid>
@@ -166,8 +166,8 @@ export const CollectionPanel = withStyles(styles)(
                     kind: SnackbarKind.SUCCESS
                 }))
 
-            handleDelete = (key: string) => () => {
-                this.props.dispatch<any>(deleteCollectionTag(key));
+            handleDelete = (key: string, value: string) => () => {
+                this.props.dispatch<any>(deleteCollectionTag(key, value));
             }
 
             openCollectionDetails = () => {
@@ -184,3 +184,10 @@ export const CollectionPanel = withStyles(styles)(
         }
     )
 );
+
+const getPropertyChip = (k:string, v:string, handleDelete:any, className:string) =>
+    <PropertyChipComponent
+        key={k} className={className}
+        onDelete={handleDelete(k, v)}
+        propKey={k} propValue={v} />;
+

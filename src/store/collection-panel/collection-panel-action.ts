@@ -75,13 +75,23 @@ export const navigateToProcess = (uuid: string) =>
         }
     };
 
-export const deleteCollectionTag = (key: string) =>
+export const deleteCollectionTag = (key: string, value: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const item = getState().collectionPanel.item;
         const uuid = item ? item.uuid : '';
         try {
             if (item) {
-                delete item.properties[key];
+                if (Array.isArray(item.properties[key])) {
+                    item.properties[key] = item.properties[key].filter((v: string) => v !== value);
+                    if (item.properties[key].length === 1) {
+                        item.properties[key] = item.properties[key][0];
+                    } else if (item.properties[key].length === 0) {
+                        delete item.properties[key];
+                    }
+                } else if (item.properties[key] === value) {
+                    delete item.properties[key];
+                }
+
                 const updatedCollection = await services.collectionService.update(
                     uuid, {
                         properties: {...item.properties}
