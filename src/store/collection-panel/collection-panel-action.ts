@@ -16,6 +16,7 @@ import { unionize, ofType, UnionOf } from '~/common/unionize';
 import { SnackbarKind } from '~/store/snackbar/snackbar-actions';
 import { navigateTo } from '~/store/navigation/navigation-action';
 import { loadDetailsPanel } from '~/store/details-panel/details-panel-action';
+import { deleteProperty, addProperty } from "~/lib/resource-properties";
 
 export const collectionPanelActions = unionize({
     SET_COLLECTION: ofType<CollectionResource>(),
@@ -47,20 +48,10 @@ export const createCollectionTag = (data: TagProperty) =>
             if (item) {
                 const key = data.keyID || data.key;
                 const value = data.valueID || data.value;
-                if (item.properties[key]) {
-                    if (Array.isArray(item.properties[key])) {
-                        item.properties[key] = [...item.properties[key], value];
-                        // Remove potential duplicates
-                        item.properties[key] = Array.from(new Set(item.properties[key]));
-                    } else {
-                        item.properties[key] = [item.properties[key], value];
-                    }
-                } else {
-                    item.properties[key] = value;
-                }
+                item.properties = addProperty(item.properties, key, value);
                 const updatedCollection = await services.collectionService.update(
                     uuid, {
-                        properties: {...JSON.parse(JSON.stringify(item.properties))}
+                        properties: {...item.properties}
                     }
                 );
                 item.properties = updatedCollection.properties;
@@ -91,16 +82,7 @@ export const deleteCollectionTag = (key: string, value: string) =>
         const uuid = item ? item.uuid : '';
         try {
             if (item) {
-                if (Array.isArray(item.properties[key])) {
-                    item.properties[key] = item.properties[key].filter((v: string) => v !== value);
-                    if (item.properties[key].length === 1) {
-                        item.properties[key] = item.properties[key][0];
-                    } else if (item.properties[key].length === 0) {
-                        delete item.properties[key];
-                    }
-                } else if (item.properties[key] === value) {
-                    delete item.properties[key];
-                }
+                item.properties = deleteProperty(item.properties, key, value);
 
                 const updatedCollection = await services.collectionService.update(
                     uuid, {

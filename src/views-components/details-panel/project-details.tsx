@@ -16,7 +16,7 @@ import { RichTextEditorLink } from '~/components/rich-text-editor-link/rich-text
 import { withStyles, StyleRulesCallback, WithStyles } from '@material-ui/core';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { Dispatch } from 'redux';
-import { PropertyChipComponent } from '../resource-properties-form/property-chip';
+import { getPropertyChip } from '../resource-properties-form/property-chip';
 
 export class ProjectDetails extends DetailsData<ProjectResource> {
     getIcon(className?: string) {
@@ -83,9 +83,10 @@ const ProjectDetailsComponent = connect(null, mapDispatchToProps)(
             </DetailsAttribute>
             {
                 Object.keys(project.properties).map(k =>
-                    <PropertyChipComponent key={k}
-                        propKey={k} propValue={project.properties[k]}
-                        className={classes.tag} />
+                    Array.isArray(project.properties[k])
+                    ? project.properties[k].map((v: string) =>
+                        getPropertyChip(k, v, undefined, classes.tag))
+                    : getPropertyChip(k, project.properties[k], undefined, classes.tag)
                 )
             }
         </div>

@@ -23,7 +23,7 @@ import { ContextMenuKind } from '~/views-components/context-menu/context-menu';
 import { formatFileSize } from "~/common/formatters";
 import { openDetailsPanel } from '~/store/details-panel/details-panel-action';
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
-import { PropertyChipComponent } from '~/views-components/resource-properties-form/property-chip';
+import { getPropertyChip } from '~/views-components/resource-properties-form/property-chip';
 import { IllegalNamingWarning } from '~/components/warning/warning';
 
 type CssRules = 'card' | 'iconHeader' | 'tag' | 'label' | 'value' | 'link';
@@ -130,8 +130,14 @@ export const CollectionPanel = withStyles(styles)(
                                         {Object.keys(item.properties).map(k =>
                                             Array.isArray(item.properties[k])
                                             ? item.properties[k].map((v: string) =>
-                                                getPropertyChip(k, v, this.handleDelete, classes.tag))
-                                            : getPropertyChip(k, item.properties[k], this.handleDelete, classes.tag)
+                                                getPropertyChip(
+                                                    k, v,
+                                                    this.handleDelete(k, v),
+                                                    classes.tag))
+                                            : getPropertyChip(
+                                                k, item.properties[k],
+                                                this.handleDelete(k, item.properties[k]),
+                                                classes.tag)
                                         )}
                                     </Grid>
                                 </Grid>
@@ -184,10 +190,3 @@ export const CollectionPanel = withStyles(styles)(
         }
     )
 );
-
-const getPropertyChip = (k:string, v:string, handleDelete:any, className:string) =>
-    <PropertyChipComponent
-        key={k} className={className}
-        onDelete={handleDelete(k, v)}
-        propKey={k} propValue={v} />;
-
