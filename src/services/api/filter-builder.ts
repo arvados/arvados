@@ -25,6 +25,10 @@ export class FilterBuilder {
         return this.addCondition(field, "ilike", value, "%", "%", resourcePrefix);
     }
 
+    public addContains(field: string, value?: string, resourcePrefix?: string) {
+        return this.addCondition(field, "contains", value, "", "", resourcePrefix);
+    }
+
     public addIsA(field: string, value?: string | string[], resourcePrefix?: string) {
         return this.addCondition(field, "is_a", value, "", "", resourcePrefix);
     }

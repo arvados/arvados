@@ -353,8 +353,8 @@ export const queryToFilters = (query: string) => {
     data.properties.forEach(p => {
         if (p.value) {
             filter
-                .addILike(`properties.${p.key}`, p.value, GroupContentsResourcePrefix.PROJECT)
-                .addILike(`properties.${p.key}`, p.value, GroupContentsResourcePrefix.COLLECTION);
+                .addContains(`properties.${p.key}`, p.value, GroupContentsResourcePrefix.PROJECT)
+                .addContains(`properties.${p.key}`, p.value, GroupContentsResourcePrefix.COLLECTION);
         }
         filter.addExists(p.key);
     });
