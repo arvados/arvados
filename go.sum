@@ -17,8 +17,6 @@ github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf/go.mod h1:ybxpYRF
 github.com/alecthomas/units v0.0.0-20190717042225-c3de453c63f4/go.mod h1:ybxpYRFXyAe+OPACYpWeL0wqObRcbAqCMya13uyzqw0=
 github.com/anmitsu/go-shlex v0.0.0-20161002113705-648efa622239 h1:kFOfPq6dUM1hTo4JG6LR5AXSUEsOjtdm0kw0FtQtMJA=
 github.com/anmitsu/go-shlex v0.0.0-20161002113705-648efa622239/go.mod h1:2FmKhYUyUczH0OGQWaF5ceTx0UBShxjsH6f8oGKYe2c=
-github.com/arvados/cgofuse v1.0.4 h1:FgxrUZMI4PQO7rZg/l8MXpKKr+1w4TEJaY3L9OGGbF8=
-github.com/arvados/cgofuse v1.0.4/go.mod h1:79WFV98hrkRHK9XPhh2IGGOwpFSjocsWubgxAs2KhRc=
 github.com/arvados/cgofuse v1.2.1-0.20200117191602-0a6595d3faa1 h1:rJ20nQahPEFL/f6v0a9dLVlkWs71qN7xGkmhzgGTCys=
 github.com/arvados/cgofuse v1.2.1-0.20200117191602-0a6595d3faa1/go.mod h1:79WFV98hrkRHK9XPhh2IGGOwpFSjocsWubgxAs2KhRc=
 github.com/arvados/goamz v0.0.0-20190905141525-1bba09f407ef h1:cl7DIRbiAYNqaVxg3CZY8qfZoBOKrj06H/x9SPGaxas=
@@ -36,8 +34,6 @@ github.com/coreos/go-oidc v2.1.0+incompatible h1:sdJrfw8akMnCuUlaZU3tE/uYXFgfqom
 github.com/coreos/go-oidc v2.1.0+incompatible/go.mod h1:CgnwVTmzoESiwO9qyAFEMiHoZ1nMCKZlZ9V6mm3/LKc=
 github.com/coreos/go-systemd v0.0.0-20180108085132-cc4f39464dc7 h1:e3u8KWFMR3irlDo1Z/tL8Hsz1MJmCLkSoX5AZRMKZkg=
 github.com/coreos/go-systemd v0.0.0-20180108085132-cc4f39464dc7/go.mod h1:F5haX7vjVVG0kc13fIWeqUViNPyEJxv/OmvnBo0Yme4=
-github.com/curoverse/goamz v0.0.0-20190905141525-1bba09f407ef h1:k3Q9m06dbTShrR4phl/QNi15ZSPkIwgyQmNvJRcXR3Y=
-github.com/curoverse/goamz v0.0.0-20190905141525-1bba09f407ef/go.mod h1:NUkr+hZ9k+l0cEXg9S7EW8+UIfPkP/hNy2Ga0QVPZ88=
 github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
