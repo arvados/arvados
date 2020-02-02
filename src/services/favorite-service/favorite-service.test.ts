@@ -39,7 +39,7 @@ describe("FavoriteService", () => {
     it("unmarks resource as favorite", async () => {
         const list = jest.fn().mockReturnValue(Promise.resolve({ items: [{ uuid: "linkUuid" }] }));
         const filters = new FilterBuilder()
-            .addEqual('tail_uuid', "userUuid")
+            .addEqual('owner_uuid', "userUuid")
             .addEqual('head_uuid', "resourceUuid")
             .addEqual('link_class', LinkClass.STAR);
         linkService.list = list;
@@ -56,7 +56,7 @@ describe("FavoriteService", () => {
     it("lists favorite resources", async () => {
         const list = jest.fn().mockReturnValue(Promise.resolve({ items: [{ headUuid: "headUuid" }] }));
         const listFilters = new FilterBuilder()
-            .addEqual('tail_uuid', "userUuid")
+            .addEqual('owner_uuid', "userUuid")
             .addEqual('link_class', LinkClass.STAR);
         const contents = jest.fn().mockReturnValue(Promise.resolve({ items: [{ uuid: "resourceUuid" }] }));
         const contentFilters = new FilterBuilder().addIn('uuid', ["headUuid"]);
@@ -76,7 +76,7 @@ describe("FavoriteService", () => {
         const list = jest.fn().mockReturnValue(Promise.resolve({ items: [{ headUuid: "foo" }] }));
         const listFilters = new FilterBuilder()
             .addIn("head_uuid", ["foo", "oof"])
-            .addEqual("tail_uuid", "userUuid")
+            .addEqual("owner_uuid", "userUuid")
             .addEqual("link_class", LinkClass.STAR);
         linkService.list = list;
         const favoriteService = new FavoriteService(linkService, groupService);
