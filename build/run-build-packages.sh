@@ -38,8 +38,8 @@ EOF
 # set to --no-cache-dir to disable pip caching
 CACHE_FLAG=
 
-MAINTAINER="Ward Vandewege <wvandewege@veritasgenetics.com>"
-VENDOR="Veritas Genetics, Inc."
+MAINTAINER="Arvados Package Maintainers <packaging@arvados.org>"
+VENDOR="The Arvados Project"
 
 # End of user configuration
 
