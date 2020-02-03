@@ -22,7 +22,7 @@ export enum SidePanelTreeCategory {
     SHARED_WITH_ME = 'Shared with me',
     PUBLIC_FAVORITES = 'Public Favorites',
     WORKFLOWS = 'Workflows',
-    FAVORITES = 'Favorites',
+    FAVORITES = 'My Favorites',
     TRASH = 'Trash',
     ALL_PROCESSES = 'All Processes'
 }
@@ -45,10 +45,10 @@ export const getSidePanelTreeBranch = (uuid: string) => (treePicker: TreePicker)
 };
 
 const SIDE_PANEL_CATEGORIES = [
-    SidePanelTreeCategory.ALL_PROCESSES,
     SidePanelTreeCategory.PUBLIC_FAVORITES,
-    SidePanelTreeCategory.WORKFLOWS,
     SidePanelTreeCategory.FAVORITES,
+    SidePanelTreeCategory.WORKFLOWS,
+    SidePanelTreeCategory.ALL_PROCESSES,
     SidePanelTreeCategory.TRASH,
 ];
 

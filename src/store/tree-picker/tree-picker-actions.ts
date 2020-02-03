@@ -281,7 +281,6 @@ export const loadPublicFavoritesProject = (params: LoadFavoritesProjectParams) =
                 fb => fb
                     .addEqual('link_class', LinkClass.STAR)
                     .addEqual('owner_uuid', uuid)
-                    .addLike('name', '')
                     .getFilters(),
             )(new FilterBuilder());
 
