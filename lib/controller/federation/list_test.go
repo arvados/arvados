@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"reflect"
 	"sort"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
@@ -61,6 +62,13 @@ func (cl *collectionLister) CollectionList(ctx context.Context, options arvados.
 			break
 		}
 		if cl.matchFilters(c, options.Filters) {
+			if reflect.DeepEqual(options.Select, []string{"uuid", "name"}) {
+				c = arvados.Collection{UUID: c.UUID, Name: c.Name}
+			} else if reflect.DeepEqual(options.Select, []string{"name"}) {
+				c = arvados.Collection{Name: c.Name}
+			} else if len(options.Select) > 0 {
+				panic(fmt.Sprintf("not implemented: options=%#v", options))
+			}
 			resp.Items = append(resp.Items, c)
 		}
 	}
@@ -111,6 +119,7 @@ type listTrial struct {
 	offset       int
 	order        []string
 	filters      []arvados.Filter
+	selectfields []string
 	expectUUIDs  []string
 	expectCalls  []int // number of API calls to backends
 	expectStatus int
@@ -145,6 +154,17 @@ func (s *CollectionListSuite) TestCollectionListOneRemote(c *check.C) {
 	})
 }
 
+func (s *CollectionListSuite) TestCollectionListOneLocalDeselectingUUID(c *check.C) {
+	s.test(c, listTrial{
+		count:        "none",
+		limit:        -1,
+		filters:      []arvados.Filter{{"uuid", "=", s.uuids[0][0]}},
+		selectfields: []string{"name"},
+		expectUUIDs:  []string{""}, // select=name is honored
+		expectCalls:  []int{1, 0, 0},
+	})
+}
+
 func (s *CollectionListSuite) TestCollectionListOneLocalUsingInOperator(c *check.C) {
 	s.test(c, listTrial{
 		count:       "none",
@@ -165,6 +185,17 @@ func (s *CollectionListSuite) TestCollectionListOneRemoteUsingInOperator(c *chec
 	})
 }
 
+func (s *CollectionListSuite) TestCollectionListOneRemoteDeselectingUUID(c *check.C) {
+	s.test(c, listTrial{
+		count:        "none",
+		limit:        -1,
+		filters:      []arvados.Filter{{"uuid", "=", s.uuids[1][0]}},
+		selectfields: []string{"name"},
+		expectUUIDs:  []string{s.uuids[1][0]}, // uuid is returned, despite not being selected
+		expectCalls:  []int{0, 1, 0},
+	})
+}
+
 func (s *CollectionListSuite) TestCollectionListOneLocalOneRemote(c *check.C) {
 	s.test(c, listTrial{
 		count:       "none",
@@ -172,6 +203,17 @@ func (s *CollectionListSuite) TestCollectionListOneLocalOneRemote(c *check.C) {
 		filters:     []arvados.Filter{{"uuid", "in", []string{s.uuids[0][0], s.uuids[1][0]}}},
 		expectUUIDs: []string{s.uuids[0][0], s.uuids[1][0]},
 		expectCalls: []int{1, 1, 0},
+	})
+}
+
+func (s *CollectionListSuite) TestCollectionListOneLocalOneRemoteDeselectingUUID(c *check.C) {
+	s.test(c, listTrial{
+		count:        "none",
+		limit:        -1,
+		filters:      []arvados.Filter{{"uuid", "in", []string{s.uuids[0][0], s.uuids[1][0]}}},
+		selectfields: []string{"name"},
+		expectUUIDs:  []string{s.uuids[0][0], s.uuids[1][0]}, // uuid is returned, despite not being selected
+		expectCalls:  []int{1, 1, 0},
 	})
 }
 
@@ -356,6 +398,7 @@ func (s *CollectionListSuite) test(c *check.C, trial listTrial) {
 		Offset:  trial.offset,
 		Order:   trial.order,
 		Filters: trial.filters,
+		Select:  trial.selectfields,
 	})
 	if trial.expectStatus != 0 {
 		c.Assert(err, check.NotNil)
