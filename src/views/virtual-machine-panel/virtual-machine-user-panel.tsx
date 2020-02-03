@@ -7,14 +7,11 @@ import { connect } from 'react-redux';
 import { Grid, Typography, Button, Card, CardContent, TableBody, TableCell, TableHead, TableRow, Table, Tooltip } from '@material-ui/core';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
 import { ArvadosTheme } from '~/common/custom-theme';
-import { DefaultCodeSnippet } from '~/components/default-code-snippet/default-code-snippet';
-import { Link } from 'react-router-dom';
 import { compose, Dispatch } from 'redux';
 import { saveRequestedDate, loadVirtualMachinesUserData } from '~/store/virtual-machines/virtual-machines-actions';
 import { RootState } from '~/store/store';
 import { ListResults } from '~/services/common-service/common-service';
 import { HelpIcon } from '~/components/icon/icon';
-import { Routes } from '~/routes/routes';
 
 type CssRules = 'button' | 'codeSnippet' | 'link' | 'linkIcon' | 'rightAlign' | 'cardWithoutMachines' | 'icon';
 
@@ -61,6 +58,8 @@ const mapStateToProps = (state: RootState) => {
     return {
         requestedDate: state.virtualMachines.date,
         userUuid: state.auth.user!.uuid,
+        helpText: state.auth.config.clusterConfig.Workbench.SSHHelpPageHTML,
+        webShell: state.auth.config.clusterConfig.Services.WebShell.ExternalURL,
         ...state.virtualMachines
     };
 };
@@ -75,6 +74,8 @@ interface VirtualMachinesPanelDataProps {
     virtualMachines: ListResults<any>;
     userUuid: string;
     links: ListResults<any>;
+    helpText: string;
+    webShell: string;
 }
 
 interface VirtualMachinesPanelActionProps {
@@ -161,7 +162,7 @@ const virtualMachinesTable = (props: VirtualMachineProps) =>
                 <TableCell>Host name</TableCell>
                 <TableCell>Login name</TableCell>
                 <TableCell>Command line</TableCell>
-                <TableCell>Web shell</TableCell>
+                {props.webShell !== "" && <TableCell>Web shell</TableCell>}
             </TableRow>
         </TableHead>
         <TableBody>
@@ -169,12 +170,12 @@ const virtualMachinesTable = (props: VirtualMachineProps) =>
                 <TableRow key={index}>
                     <TableCell>{it.hostname}</TableCell>
                     <TableCell>{getUsername(props.links, props.userUuid)}</TableCell>
-                    <TableCell>ssh {getUsername(props.links, props.userUuid)}@{it.hostname}.arvados</TableCell>
-                    <TableCell>
-                        <a href={`https://workbench.c97qk.arvadosapi.com${it.href}/webshell/${getUsername(props.links, props.userUuid)}`} target="_blank" className={props.classes.link}>
+                    <TableCell>ssh {getUsername(props.links, props.userUuid)}@{it.hostname}</TableCell>
+                    {props.webShell !== "" && <TableCell>
+                        <a href={`${props.webShell}${it.href}/webshell/${getUsername(props.links, props.userUuid)}`} target="_blank" className={props.classes.link}>
                             Log in as {getUsername(props.links, props.userUuid)}
                         </a>
-                    </TableCell>
+                    </TableCell>}
                 </TableRow>
             )}
         </TableBody>
@@ -188,17 +189,9 @@ const CardSSHSection = (props: VirtualMachineProps) =>
     <Grid item xs={12}>
         <Card>
             <CardContent>
-                <Typography variant='body1'>
-                    In order to access virtual machines using SSH, <Link to={Routes.SSH_KEYS_USER} className={props.classes.link}>add an SSH key to your account</Link> and add a section like this to your SSH configuration file ( ~/.ssh/config):
+                <Typography>
+                    <div dangerouslySetInnerHTML={{ __html: props.helpText }} style={{ margin: "1em" }} />
                 </Typography>
-                <DefaultCodeSnippet
-                    className={props.classes.codeSnippet}
-                    lines={[textSSH]} />
             </CardContent>
         </Card>
     </Grid>;
-
-const textSSH = `Host *.arvados
-    TCPKeepAlive yes
-    ServerAliveInterval 60
-    ProxyCommand ssh -p2222 turnout@switchyard.api.ardev.roche.com -x -a $SSH_PROXY_FLAGS %h`;

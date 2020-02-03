@@ -41,6 +41,9 @@ export interface ClusterConfigJSON {
         },
         WebDAVDownload: {
             ExternalURL: string
+        },
+        WebShell: {
+            ExternalURL: string
         }
     };
     Workbench: {
@@ -49,6 +52,7 @@ export interface ClusterConfigJSON {
         FileViewersConfigURL: string;
         WelcomePageHTML: string;
         InactivePageHTML: string;
+        SSHHelpPageHTML: string;
         SiteName: string;
     };
     Login: {
@@ -155,6 +159,7 @@ export const mockClusterConfigJSON = (config: Partial<ClusterConfigJSON>): Clust
         Websocket: { ExternalURL: "" },
         WebDAV: { ExternalURL: "" },
         WebDAVDownload: { ExternalURL: "" },
+        WebShell: { ExternalURL: "" },
     },
     Workbench: {
         ArvadosDocsite: "",
@@ -162,6 +167,7 @@ export const mockClusterConfigJSON = (config: Partial<ClusterConfigJSON>): Clust
         FileViewersConfigURL: "",
         WelcomePageHTML: "",
         InactivePageHTML: "",
+        SSHHelpPageHTML: "",
         SiteName: "",
     },
     Login: {
