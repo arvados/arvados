@@ -67,7 +67,7 @@ const mapDispatchToProps = (dispatch: Dispatch) => ({
     setProp: (propertyValue: PropertyValue, properties: PropertyValue[]) => {
         dispatch<any>(changeAdvancedFormProperty(
             'properties',
-            [...properties.filter(e => e.keyID! !== propertyValue.keyID!), propertyValue]
+            [...properties, propertyValue]
         ));
         dispatch<any>(resetAdvancedFormProperty('key'));
         dispatch<any>(resetAdvancedFormProperty('value'));

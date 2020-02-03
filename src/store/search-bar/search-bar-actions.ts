@@ -232,9 +232,16 @@ const buildQueryFromKeyMap = (data: any, keyMap: string[][], mode: 'rebuild' | '
         const v = data[key];
 
         if (data.hasOwnProperty(key)) {
-            const pattern = v === false
-                ? `${field.replace(':', '\\:\\s*')}\\s*`
-                : `${field.replace(':', '\\:\\s*')}\\:\\s*"[\\w|\\#|\\-|\\/]*"\\s*`;
+            let pattern: string;
+            if (v === false) {
+                pattern = `${field.replace(':', '\\:\\s*')}\\s*`;
+            } else if (key.startsWith('prop-')) {
+                // On properties, only remove key:value duplicates, allowing
+                // multiple properties with the same key.
+                pattern = `${field.replace(':', '\\:\\s*')}\\:\\s*${v}\\s*`;
+            } else {
+                pattern = `${field.replace(':', '\\:\\s*')}\\:\\s*[\\w|\\#|\\-|\\/]*\\s*`;
+            }
             value = value.replace(new RegExp(pattern), '');
         }
 
