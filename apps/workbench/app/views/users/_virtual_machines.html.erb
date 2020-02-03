@@ -85,7 +85,7 @@ SPDX-License-Identifier: AGPL-3.0 %>
             <td style="word-break:break-all;">
               <% if @my_vm_logins[vm[:uuid]] %>
                 <% @my_vm_logins[vm[:uuid]].each do |login| %>
-                  <code>ssh&nbsp;<%= login %>@<%= vm[:hostname] %>.<%= current_uuid_prefix || 'xyzzy' %></code>
+                  <code>ssh&nbsp;<%= login %>@<%= vm[:hostname] %></code>
                 <% end %>
               <% end %>
             </td>
@@ -105,9 +105,7 @@ SPDX-License-Identifier: AGPL-3.0 %>
   <% end %>
 </div>
 </div>
-  <p>In order to access virtual machines using SSH, <%= link_to ssh_keys_user_path(current_user) do%> add an SSH key to your account<%end%> and add a section like this to your SSH configuration file ( <i>~/.ssh/config</i>):</p>
-    <pre>Host *.<%= current_uuid_prefix || 'xyzzy' %>
-      TCPKeepAlive yes
-      ServerAliveInterval 60
-      ProxyCommand ssh -p2222 turnout@switchyard.<%= current_api_host || 'xyzzy.arvadosapi.com' %> -x -a $SSH_PROXY_FLAGS %h
-    </pre>
+
+<p>In order to access virtual machines using SSH, <%= link_to ssh_keys_user_path(current_user) do%>add an SSH key to your account<%end%>.</p>
+
+<%= raw(Rails.configuration.Workbench.SSHHelpPageHTML) %>
