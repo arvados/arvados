@@ -32,6 +32,10 @@ TODO: extract this information based on git commit messages and generate changel
 
 h3(#master). development master (as of 2020-01-16)
 
+h4. New property vocabulary format for Workbench2
+
+(feature "#14151":https://dev.arvados.org/issues/14151) Workbench2 supports a new vocabulary format and it isn't compatible with the previous one, please read the "workbench2 vocabulary format admin page":{{site.baseurl}}/admin/workbench2-vocabulary.html for more information.
+
 h4. "/" prohibited in collection and project names
 
 (issue "#15836":https://dev.arvados.org/issues/15836) By default, Arvados now rejects new names containing the @/@ character when creating or renaming collections and projects. Previously, these names were permitted, but the resulting objects were invisible in the WebDAV "home" tree. If you prefer, you can restore the previous behavior, and optionally configure a substitution string to make the affected objects accessible via WebDAV. See @ForwardSlashNameSubstitution@ in the "configuration reference":config.html.
