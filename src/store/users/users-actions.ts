@@ -27,6 +27,12 @@ export interface UserCreateFormDialogData {
     groupVirtualMachine: string;
 }
 
+export interface SetupShellAccountFormDialogData {
+    email: string;
+    virtualMachineName: string;
+    groupVirtualMachine: string;
+}
+
 export const openUserAttributes = (uuid: string) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const { resources } = getState();
@@ -89,6 +95,23 @@ export const createUser = (user: UserCreateFormDialogData) =>
             dispatch<any>(loadUsersPanel());
             dispatch(userBindedActions.REQUEST_ITEMS());
             return newUser;
+        } catch (e) {
+            return;
+        }
+    };
+
+
+export const setupUserVM = (setupData: SetupShellAccountFormDialogData) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        dispatch(startSubmit(USER_CREATE_FORM_NAME));
+        try {
+            // TODO: make correct API call
+            // const setupResult = await services.userService.setup({ ...setupData });
+            dispatch(dialogActions.CLOSE_DIALOG({ id: SETUP_SHELL_ACCOUNT_DIALOG }));
+            dispatch(reset(SETUP_SHELL_ACCOUNT_DIALOG));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "User has been added to VM.", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
+            dispatch<any>(loadUsersPanel());
+            dispatch(userBindedActions.REQUEST_ITEMS());
         } catch (e) {
             return;
         }
