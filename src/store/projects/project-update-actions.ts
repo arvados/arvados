@@ -8,32 +8,28 @@ import { RootState } from "~/store/store";
 import { dialogActions } from "~/store/dialog/dialog-actions";
 import { getCommonResourceServiceError, CommonResourceServiceError } from "~/services/common-service/common-resource-service";
 import { ServiceRepository } from "~/services/services";
-import { ProjectResource } from '~/models/project';
-import { ContextMenuResource } from "~/store/context-menu/context-menu-actions";
-import { getResource } from '~/store/resources/resources';
 import { projectPanelActions } from '~/store/project-panel/project-panel-action';
 
 export interface ProjectUpdateFormDialogData {
     uuid: string;
     name: string;
-    description: string;
+    description?: string;
 }
 
 export const PROJECT_UPDATE_FORM_NAME = 'projectUpdateFormName';
 
-export const openProjectUpdateDialog = (resource: ContextMenuResource) =>
+export const openProjectUpdateDialog = (resource: ProjectUpdateFormDialogData) =>
     (dispatch: Dispatch, getState: () => RootState) => {
-        const project = getResource(resource.uuid)(getState().resources);
-        dispatch(initialize(PROJECT_UPDATE_FORM_NAME, project));
+        dispatch(initialize(PROJECT_UPDATE_FORM_NAME, resource));
         dispatch(dialogActions.OPEN_DIALOG({ id: PROJECT_UPDATE_FORM_NAME, data: {} }));
     };
 
-export const updateProject = (project: Partial<ProjectResource>) =>
+export const updateProject = (project: ProjectUpdateFormDialogData) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const uuid = project.uuid || '';
         dispatch(startSubmit(PROJECT_UPDATE_FORM_NAME));
         try {
-            const updatedProject = await services.projectService.update(uuid, project);
+            const updatedProject = await services.projectService.update(uuid, { name: project.name, description: project.description });
             dispatch(projectPanelActions.REQUEST_ITEMS());
             dispatch(dialogActions.CLOSE_DIALOG({ id: PROJECT_UPDATE_FORM_NAME }));
             return updatedProject;

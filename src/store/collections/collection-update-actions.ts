@@ -10,30 +10,29 @@ import { dialogActions } from "~/store/dialog/dialog-actions";
 import { getCommonResourceServiceError, CommonResourceServiceError } from "~/services/common-service/common-resource-service";
 import { ServiceRepository } from "~/services/services";
 import { CollectionResource } from '~/models/collection';
-import { ContextMenuResource } from "~/store/context-menu/context-menu-actions";
 import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
 
 export interface CollectionUpdateFormDialogData {
     uuid: string;
     name: string;
-    description: string;
+    description?: string;
 }
 
 export const COLLECTION_UPDATE_FORM_NAME = 'collectionUpdateFormName';
 
-export const openCollectionUpdateDialog = (resource: ContextMenuResource) =>
+export const openCollectionUpdateDialog = (resource: CollectionUpdateFormDialogData) =>
     (dispatch: Dispatch) => {
         dispatch(initialize(COLLECTION_UPDATE_FORM_NAME, resource));
         dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_UPDATE_FORM_NAME, data: {} }));
     };
 
-export const updateCollection = (collection: Partial<CollectionResource>) =>
+export const updateCollection = (collection: CollectionUpdateFormDialogData) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const uuid = collection.uuid || '';
         dispatch(startSubmit(COLLECTION_UPDATE_FORM_NAME));
         dispatch(progressIndicatorActions.START_WORKING(COLLECTION_UPDATE_FORM_NAME));
         try {
-            const updatedCollection = await services.collectionService.update(uuid, collection);
+            const updatedCollection = await services.collectionService.update(uuid, { name: collection.name, description: collection.description });
             dispatch(collectionPanelActions.LOAD_COLLECTION_SUCCESS({ item: updatedCollection as CollectionResource }));
             dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_UPDATE_FORM_NAME }));
             dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_UPDATE_FORM_NAME));
