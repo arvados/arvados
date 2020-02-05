@@ -36,11 +36,13 @@ export class CommonService<T> {
     protected serverApi: AxiosInstance;
     protected resourceType: string;
     protected actions: ApiActions;
+    protected readOnlyFields: string[];
 
-    constructor(serverApi: AxiosInstance, resourceType: string, actions: ApiActions) {
+    constructor(serverApi: AxiosInstance, resourceType: string, actions: ApiActions, readOnlyFields: string[] = []) {
         this.serverApi = serverApi;
         this.resourceType = '/' + resourceType;
         this.actions = actions;
+        this.readOnlyFields = readOnlyFields;
     }
 
     static mapResponseKeys = (response: { data: any }) =>

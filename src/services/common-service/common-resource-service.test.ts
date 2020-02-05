@@ -48,6 +48,22 @@ describe("CommonResourceService", () => {
         expect(axiosInstance.post).toHaveBeenCalledWith("/resource", {owner_uuid: "ownerUuidValue"});
     });
 
+    it("#create ignores fields listed as readonly", async () => {
+        axiosInstance.post = jest.fn(() => Promise.resolve({data: {}}));
+        const commonResourceService = new CommonResourceService(axiosInstance, "resource", actions);
+        // UUID fields are read-only on all resources.
+        await commonResourceService.create({ uuid: "this should be ignored", ownerUuid: "ownerUuidValue" });
+        expect(axiosInstance.post).toHaveBeenCalledWith("/resource", {owner_uuid: "ownerUuidValue"});
+    });
+
+    it("#update ignores fields listed as readonly", async () => {
+        axiosInstance.put = jest.fn(() => Promise.resolve({data: {}}));
+        const commonResourceService = new CommonResourceService(axiosInstance, "resource", actions);
+        // UUID fields are read-only on all resources.
+        await commonResourceService.update('resource-uuid', { uuid: "this should be ignored", ownerUuid: "ownerUuidValue" });
+        expect(axiosInstance.put).toHaveBeenCalledWith("/resource/resource-uuid", {owner_uuid: "ownerUuidValue"});
+    });
+
     it("#delete", async () => {
         axiosMock
             .onDelete("/resource/uuid")
