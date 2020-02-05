@@ -10,8 +10,8 @@ import { ApiActions } from "~/services/api/api-actions";
 
 export class TrashableResourceService<T extends TrashableResource> extends CommonResourceService<T> {
 
-    constructor(serverApi: AxiosInstance, resourceType: string, actions: ApiActions) {
-        super(serverApi, resourceType, actions);
+    constructor(serverApi: AxiosInstance, resourceType: string, actions: ApiActions, readOnlyFields: string[] = []) {
+        super(serverApi, resourceType, actions, readOnlyFields);
     }
 
     trash(uuid: string): Promise<T> {

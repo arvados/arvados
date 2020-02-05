@@ -28,13 +28,9 @@ export const copyCollection = (resource: CopyFormDialogData) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(startSubmit(COLLECTION_COPY_FORM_NAME));
         try {
-            dispatch(progressIndicatorActions.START_WORKING(COLLECTION_COPY_FORM_NAME));
             const collection = await services.collectionService.get(resource.uuid);
-            const uuidKey = 'uuid';
-            delete collection[uuidKey];
             const newCollection = await services.collectionService.create({ ...collection, ownerUuid: resource.ownerUuid, name: resource.name });
             dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_COPY_FORM_NAME }));
-            dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_COPY_FORM_NAME));
             return newCollection;
         } catch (e) {
             const error = getCommonResourceServiceError(e);
@@ -47,7 +43,8 @@ export const copyCollection = (resource: CopyFormDialogData) =>
                 dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_COPY_FORM_NAME }));
                 throw new Error('Could not copy the collection.');
             }
-            dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_COPY_FORM_NAME));
             return;
+        } finally {
+            dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_COPY_FORM_NAME));
         }
     };

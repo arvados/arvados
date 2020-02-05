@@ -17,8 +17,26 @@ export enum CommonResourceServiceError {
 }
 
 export class CommonResourceService<T extends Resource> extends CommonService<T> {
-   constructor(serverApi: AxiosInstance, resourceType: string, actions: ApiActions) {
-        super(serverApi, resourceType, actions);
+    constructor(serverApi: AxiosInstance, resourceType: string, actions: ApiActions, readOnlyFields: string[] = []) {
+        super(serverApi, resourceType, actions, readOnlyFields.concat([
+            'uuid',
+            'etag',
+            'kind'
+        ]));
+    }
+
+    create(data?: Partial<T>) {
+        if (data !== undefined) {
+            this.readOnlyFields.forEach( field => delete data[field] );
+        }
+        return super.create(data);
+    }
+
+    update(uuid: string, data: Partial<T>) {
+        if (data !== undefined) {
+            this.readOnlyFields.forEach( field => delete data[field] );
+        }
+        return super.update(uuid, data);
     }
 }
 

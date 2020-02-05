@@ -15,7 +15,11 @@ export type UploadProgress = (fileId: number, loaded: number, total: number, cur
 
 export class CollectionService extends TrashableResourceService<CollectionResource> {
     constructor(serverApi: AxiosInstance, private webdavClient: WebDAV, private authService: AuthService, actions: ApiActions) {
-        super(serverApi, "collections", actions);
+        super(serverApi, "collections", actions, [
+            'unsignedManifestText',
+            'storageClassesConfirmed',
+            'storageClassesConfirmedAt'
+        ]);
     }
 
     async files(uuid: string) {
