@@ -214,6 +214,8 @@ func (conn *Conn) Login(ctx context.Context, options arvados.LoginOptions) (arva
 }
 
 func (conn *Conn) CollectionGet(ctx context.Context, options arvados.GetOptions) (arvados.Collection, error) {
+	downstream := options.ForwardedFor
+	options.ForwardedFor = conn.cluster.ClusterID + "-" + downstream
 	if len(options.UUID) == 27 {
 		// UUID is really a UUID
 		c, err := conn.chooseBackend(options.UUID).CollectionGet(ctx, options)
@@ -225,6 +227,9 @@ func (conn *Conn) CollectionGet(ctx context.Context, options arvados.GetOptions)
 		// UUID is a PDH
 		first := make(chan arvados.Collection, 1)
 		err := conn.tryLocalThenRemotes(ctx, func(ctx context.Context, remoteID string, be backend) error {
+			if remoteID != "" && strings.Contains(downstream, remoteID) {
+				return notFoundError{}
+			}
 			c, err := be.CollectionGet(ctx, options)
 			if err != nil {
 				return err
