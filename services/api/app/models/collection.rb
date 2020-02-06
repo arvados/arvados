@@ -624,10 +624,10 @@ class Collection < ArvadosModel
       return
     end
     (managed_props.keys - self.properties.keys).each do |key|
-      if managed_props[key].has_key?('Value')
-        self.properties[key] = managed_props[key]['Value']
-      elsif managed_props[key]['Function'].andand == 'original_owner'
+      if managed_props[key]['Function'] == 'original_owner'
         self.properties[key] = self.user_owner_uuid
+      elsif managed_props[key]['Value']
+        self.properties[key] = managed_props[key]['Value']
       else
         logger.warn "Unidentified default property definition '#{key}': #{managed_props[key].inspect}"
       end
