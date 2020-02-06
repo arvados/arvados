@@ -231,7 +231,13 @@ func (conn *Conn) CollectionGet(ctx context.Context, options arvados.GetOptions)
 		// UUID is a PDH
 		first := make(chan arvados.Collection, 1)
 		err := conn.tryLocalThenRemotes(ctx, func(ctx context.Context, remoteID string, be backend) error {
-			if remoteID != "" && strings.Contains(downstream, remoteID) {
+			if remoteID != "" && downstream != "" {
+				// If remoteID isn't in downstream, we
+				// might find the collection by taking
+				// another hop, but we don't bother:
+				// token salting and blob signature
+				// rewriting don't work over multiple
+				// hops.
 				return notFoundError{}
 			}
 			c, err := be.CollectionGet(ctx, options)
