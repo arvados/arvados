@@ -38,7 +38,11 @@ func New(cluster *arvados.Cluster) *Conn {
 		if !remote.Proxy {
 			continue
 		}
-		remotes[id] = rpc.NewConn(id, &url.URL{Scheme: remote.Scheme, Host: remote.Host}, remote.Insecure, saltedTokenProvider(local, id))
+		conn := rpc.NewConn(id, &url.URL{Scheme: remote.Scheme, Host: remote.Host}, remote.Insecure, saltedTokenProvider(local, id))
+		// Older versions of controller rely on the Via header
+		// to detect loops.
+		conn.SendHeader = http.Header{"Via": {"HTTP/1.1 arvados-controller"}}
+		remotes[id] = conn
 	}
 
 	return &Conn{
