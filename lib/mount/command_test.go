@@ -57,7 +57,7 @@ func (s *CmdSuite) TestMount(c *check.C) {
 		if c.Check(err, check.IsNil) {
 			var m map[string]interface{}
 			err = json.Unmarshal(buf, &m)
-			c.Check(err, check.NotNil)
+			c.Check(err, check.IsNil)
 			c.Check(m["manifest_text"], check.Matches, `\. acbd.* 0:3:foo\n`)
 		}
 
