@@ -48,7 +48,17 @@ Arvados 2.0 is a major upgrade, with many changes.  Please read these upgrade no
 
 h3. Migrating to centralized config.yml
 
-See "Migrating Configuration":config-migration.html for notes on migrating legacy per-component configuration files to the new centralized @/etc/arvados/config.yml@.  To ensure a smooth transition, the per-component config files continue to be read, and take precedence over the centralized configuration.
+See "Migrating Configuration":config-migration.html for notes on migrating legacy per-component configuration files to the new centralized @/etc/arvados/config.yml@.
+
+To ensure a smooth transition, the per-component config files continue to be read, and take precedence over the centralized configuration.  Your cluster should continue to function after upgrade but before doing the full configuration migration.  However, several services (keepstore, keep-web, keepproxy) require a minimal `/etc/arvados/config.yml` to start:
+
+<pre>
+Clusters:
+  zzzzz:
+    Services:
+      Controller:
+        ExternalURL: "https://zzzzz.example.com"
+</pre>
 
 h3. Keep-balance configuration migration
 
