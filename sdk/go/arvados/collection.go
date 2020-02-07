@@ -37,6 +37,13 @@ type Collection struct {
 	IsTrashed                 bool                   `json:"is_trashed"`
 	Properties                map[string]interface{} `json:"properties"`
 	WritableBy                []string               `json:"writable_by,omitempty"`
+	FileCount                 *int                   `json:"file_count"`
+	FileSizeTotal             *int                   `json:"file_size_total"`
+	Version                   *int                   `json:"version"`
+	PreserveVersion           bool                   `json:"preserve_version"`
+	CurrentVersionUUID        string                 `json:"current_version_uuid"`
+	Description               string                 `json:"description"`
+	Href                      string                 `json:"href"`
 }
 
 func (c Collection) resourceName() string {
