@@ -6,7 +6,9 @@ package controller
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -215,4 +217,48 @@ func (s *HandlerSuite) TestCreateAPIToken(c *check.C) {
 	c.Check(user.Authorization.Scopes, check.DeepEquals, []string{"all"})
 	c.Check(user.UUID, check.Equals, arvadostest.ActiveUserUUID)
 	c.Check(user.Authorization.TokenV2(), check.Equals, auth.TokenV2())
+}
+
+func (s *HandlerSuite) TestGetCollection(c *check.C) {
+	var proxied, direct map[string]interface{}
+	var err error
+
+	// Get collection from controller
+	fooURL := "/arvados/v1/collections/" + arvadostest.FooCollection
+	req := httptest.NewRequest("GET", fooURL, nil)
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	resp := httptest.NewRecorder()
+	s.handler.ServeHTTP(resp, req)
+	c.Check(resp.Code, check.Equals, http.StatusOK)
+	err = json.Unmarshal(resp.Body.Bytes(), &proxied)
+	c.Check(err, check.Equals, nil)
+
+	// Get collection directly from railsAPI
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+	resp2, err := client.Get(s.cluster.Services.RailsAPI.ExternalURL.String() + fooURL + "/?api_token=" + arvadostest.ActiveToken)
+	c.Check(err, check.Equals, nil)
+	defer resp2.Body.Close()
+	db, err := ioutil.ReadAll(resp2.Body)
+	c.Check(err, check.Equals, nil)
+	err = json.Unmarshal(db, &direct)
+	c.Check(err, check.Equals, nil)
+
+	// Check that all railsAPI provided keys exist on the controller response
+	// and their non-nil values are equal.
+	for k := range direct {
+		if val, ok := proxied[k]; ok {
+			if k == "manifest_text" {
+				// Tokens differ from request to request
+				c.Check(strings.Split(val.(string), "+A")[0], check.Equals, strings.Split(direct[k].(string), "+A")[0])
+			} else if direct[k] != nil {
+				c.Check(val, check.DeepEquals, direct[k])
+			}
+		} else {
+			c.Errorf("Key %q missing", k)
+		}
+	}
 }
