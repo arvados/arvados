@@ -388,6 +388,19 @@ class TestSubmit(unittest.TestCase):
                          stubs.expect_container_request_uuid + '\n')
         self.assertEqual(exited, 0)
 
+
+    @stubs
+    def test_submit_container_tool(self, stubs):
+        # test for issue #16139
+        exited = arvados_cwl.main(
+            ["--submit", "--no-wait", "--api=containers", "--debug",
+                "tests/tool/tool_with_sf.cwl", "tests/tool/tool_with_sf.yml"],
+            stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+
+        self.assertEqual(stubs.capture_stdout.getvalue(),
+                         stubs.expect_container_request_uuid + '\n')
+        self.assertEqual(exited, 0)
+
     @stubs
     def test_submit_container_no_reuse(self, stubs):
         exited = arvados_cwl.main(
