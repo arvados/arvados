@@ -22,8 +22,8 @@ type User struct {
 	OwnerUUID            string                 `json:"owner_uuid"`
 	CreatedAt            time.Time              `json:"created_at"`
 	ModifiedAt           time.Time              `json:"modified_at"`
-	ModifiedByUserUUID   string                 `json:"modified_by_user_uuid"`
-	ModifiedByClientUUID string                 `json:"modified_by_client_uuid"`
+	ModifiedByUserUUID   *string                `json:"modified_by_user_uuid"`
+	ModifiedByClientUUID *string                `json:"modified_by_client_uuid"`
 	Prefs                map[string]interface{} `json:"prefs"`
 	WritableBy           []string               `json:"writable_by,omitempty"`
 }
