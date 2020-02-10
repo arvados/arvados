@@ -50,7 +50,7 @@ RUN rpm -ivh epel-release-latest-7.noarch.rpm
 RUN git clone --depth 1 git://git.arvados.org/arvados.git /tmp/arvados && cd /tmp/arvados/services/api && /usr/local/rvm/bin/rvm-exec default bundle && cd /tmp/arvados/apps/workbench && /usr/local/rvm/bin/rvm-exec default bundle
 
 # The version of setuptools that comes with CentOS is way too old
-RUN pip install --upgrade setuptools
+RUN pip install --upgrade 'setuptools<45'
 
 ENV WORKSPACE /arvados
 CMD ["scl", "enable", "rh-python36", "/usr/local/rvm/bin/rvm-exec default bash /jenkins/run-build-packages.sh --target centos7"]
