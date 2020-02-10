@@ -228,11 +228,12 @@ func (s *HandlerSuite) CheckObjectType(c *check.C, url string, token string, ski
 	req.Header.Set("Authorization", "Bearer "+token)
 	resp := httptest.NewRecorder()
 	s.handler.ServeHTTP(resp, req)
-	c.Check(resp.Code, check.Equals, http.StatusOK)
+	c.Assert(resp.Code, check.Equals, http.StatusOK,
+		check.Commentf("Wasn't able to get data from the controller at %q", url))
 	err = json.Unmarshal(resp.Body.Bytes(), &proxied)
 	c.Check(err, check.Equals, nil)
 
-	// Get collection directly from railsAPI
+	// Get collection directly from RailsAPI
 	client := &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
