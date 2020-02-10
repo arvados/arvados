@@ -222,6 +222,9 @@ func (s *HandlerSuite) TestCreateAPIToken(c *check.C) {
 func (s *HandlerSuite) TestGetCollection(c *check.C) {
 	var proxied, direct map[string]interface{}
 	var err error
+	skippedFields := map[string]bool{
+		"href": true,
+	}
 
 	// Get collection from controller
 	fooURL := "/arvados/v1/collections/" + arvadostest.FooCollection
@@ -247,18 +250,20 @@ func (s *HandlerSuite) TestGetCollection(c *check.C) {
 	err = json.Unmarshal(db, &direct)
 	c.Check(err, check.Equals, nil)
 
-	// Check that all railsAPI provided keys exist on the controller response
-	// and their non-nil values are equal.
+	// Check that all RailsAPI provided keys exist on the controller response.
 	for k := range direct {
-		if val, ok := proxied[k]; ok {
+		if _, ok := skippedFields[k]; ok {
+			continue
+		} else if val, ok := proxied[k]; ok {
 			if k == "manifest_text" {
 				// Tokens differ from request to request
 				c.Check(strings.Split(val.(string), "+A")[0], check.Equals, strings.Split(direct[k].(string), "+A")[0])
-			} else if direct[k] != nil {
-				c.Check(val, check.DeepEquals, direct[k])
+			} else {
+				c.Check(val, check.DeepEquals, direct[k],
+					check.Commentf("RailsAPI key %q's value %q differs from controller's %q.", k, direct[k], val))
 			}
 		} else {
-			c.Errorf("Key %q missing", k)
+			c.Errorf("Key %q missing on controller's response.", k)
 		}
 	}
 }
