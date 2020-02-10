@@ -219,17 +219,13 @@ func (s *HandlerSuite) TestCreateAPIToken(c *check.C) {
 	c.Check(user.Authorization.TokenV2(), check.Equals, auth.TokenV2())
 }
 
-func (s *HandlerSuite) TestGetCollection(c *check.C) {
+func (s *HandlerSuite) CheckObjectType(c *check.C, url string, token string, skippedFields map[string]bool) {
 	var proxied, direct map[string]interface{}
 	var err error
-	skippedFields := map[string]bool{
-		"href": true,
-	}
 
 	// Get collection from controller
-	fooURL := "/arvados/v1/collections/" + arvadostest.FooCollection
-	req := httptest.NewRequest("GET", fooURL, nil)
-	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	req := httptest.NewRequest("GET", url, nil)
+	req.Header.Set("Authorization", "Bearer "+token)
 	resp := httptest.NewRecorder()
 	s.handler.ServeHTTP(resp, req)
 	c.Check(resp.Code, check.Equals, http.StatusOK)
@@ -242,7 +238,7 @@ func (s *HandlerSuite) TestGetCollection(c *check.C) {
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		},
 	}
-	resp2, err := client.Get(s.cluster.Services.RailsAPI.ExternalURL.String() + fooURL + "/?api_token=" + arvadostest.ActiveToken)
+	resp2, err := client.Get(s.cluster.Services.RailsAPI.ExternalURL.String() + url + "/?api_token=" + token)
 	c.Check(err, check.Equals, nil)
 	defer resp2.Body.Close()
 	db, err := ioutil.ReadAll(resp2.Body)
@@ -255,15 +251,38 @@ func (s *HandlerSuite) TestGetCollection(c *check.C) {
 		if _, ok := skippedFields[k]; ok {
 			continue
 		} else if val, ok := proxied[k]; ok {
-			if k == "manifest_text" {
+			if direct["kind"] == "arvados#collection" && k == "manifest_text" {
 				// Tokens differ from request to request
 				c.Check(strings.Split(val.(string), "+A")[0], check.Equals, strings.Split(direct[k].(string), "+A")[0])
 			} else {
 				c.Check(val, check.DeepEquals, direct[k],
-					check.Commentf("RailsAPI key %q's value %q differs from controller's %q.", k, direct[k], val))
+					check.Commentf("RailsAPI %s key %q's value %q differs from controller's %q.", direct["kind"], k, direct[k], val))
 			}
 		} else {
-			c.Errorf("Key %q missing on controller's response.", k)
+			c.Errorf("%s's key %q missing on controller's response.", direct["kind"], k)
 		}
+	}
+}
+
+func (s *HandlerSuite) TestGetObjects(c *check.C) {
+	testCases := map[string]map[string]bool{
+		"api_clients/" + arvadostest.TrustedWorkbenchAPIClientUUID:     map[string]bool{},
+		"api_client_authorizations/" + arvadostest.AdminTokenUUID:      map[string]bool{},
+		"authorized_keys/" + arvadostest.AdminAuthorizedKeysUUID:       map[string]bool{},
+		"collections/" + arvadostest.FooCollection:                     map[string]bool{"href": true},
+		"containers/" + arvadostest.RunningContainerUUID:               map[string]bool{},
+		"container_requests/" + arvadostest.QueuedContainerRequestUUID: map[string]bool{},
+		"groups/" + arvadostest.AProjectUUID:                           map[string]bool{},
+		"keep_services/" + arvadostest.KeepServiceZeroUUID:             map[string]bool{},
+		"links/" + arvadostest.ActiveUserCanReadAllUsersLinkUUID:       map[string]bool{},
+		"logs/" + arvadostest.CrunchstatForRunningJobLogUUID:           map[string]bool{},
+		"nodes/" + arvadostest.IdleNodeUUID:                            map[string]bool{},
+		"repositories/" + arvadostest.ArvadosRepoUUID:                  map[string]bool{},
+		"users/" + arvadostest.ActiveUserUUID:                          map[string]bool{"href": true},
+		"virtual_machines/" + arvadostest.TestVMUUID:                   map[string]bool{},
+		"workflows/" + arvadostest.WorkflowWithDefinitionYAMLUUID:      map[string]bool{},
+	}
+	for url, skippedFields := range testCases {
+		s.CheckObjectType(c, "/arvados/v1/"+url, arvadostest.AdminToken, skippedFields)
 	}
 }
