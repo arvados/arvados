@@ -11,7 +11,7 @@ ENV DEBIAN_FRONTEND noninteractive
 RUN /usr/bin/apt-get update && /usr/bin/apt-get install -q -y python2.7-dev python3 python-setuptools python3-pip libcurl4-gnutls-dev libgnutls28-dev curl git libattr1-dev libfuse-dev libpq-dev python-pip unzip tzdata python3-venv python3-dev
 
 # Install virtualenv
-RUN /usr/bin/pip install virtualenv
+RUN /usr/bin/pip install 'virtualenv<20'
 
 # Install RVM
 ADD generated/mpapis.asc /tmp/
