@@ -475,9 +475,9 @@ fpm_build_virtualenv () {
   rm -rf dist/*
 
   # Get the latest setuptools
-  if ! $pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U setuptools; then
+  if ! $pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U 'setuptools<45'; then
     echo "Error, unable to upgrade setuptools with"
-    echo "  $pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U setuptools"
+    echo "  $pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U 'setuptools<45'"
     exit 1
   fi
   # filter a useless warning (when building the cwltest package) from the stderr output
@@ -532,9 +532,9 @@ fpm_build_virtualenv () {
   fi
   echo "pip version:        `build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip --version`"
 
-  if ! build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U setuptools; then
+  if ! build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U 'setuptools<45'; then
     echo "Error, unable to upgrade setuptools with"
-    echo "  build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U setuptools"
+    echo "  build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U 'setuptools<45'"
     exit 1
   fi
   echo "setuptools version: `build/usr/share/$python/dist/$PYTHON_PKG/bin/$python -c 'import setuptools; print(setuptools.__version__)'`"
