@@ -60,8 +60,6 @@ const (
 
 	CollectionReplicationDesired2Confirmed2UUID = "zzzzz-4zz18-434zv1tnnf2rygp"
 
-	KeepServiceZeroUUID = "zzzzz-bi6l4-6zhilxar6r8ey90"
-
 	ActiveUserCanReadAllUsersLinkUUID = "zzzzz-o0j2j-ctbysaduejxfrs5"
 
 	TrustedWorkbenchAPIClientUUID = "zzzzz-ozdt8-teyxzyd8qllg11h"

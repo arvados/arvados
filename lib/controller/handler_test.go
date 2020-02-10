@@ -266,6 +266,17 @@ func (s *HandlerSuite) CheckObjectType(c *check.C, url string, token string, ski
 }
 
 func (s *HandlerSuite) TestGetObjects(c *check.C) {
+	// Get the 1st keep service's uuid from the running test server.
+	req := httptest.NewRequest("GET", "/arvados/v1/keep_services/", nil)
+	req.Header.Set("Authorization", "Bearer "+arvadostest.AdminToken)
+	resp := httptest.NewRecorder()
+	s.handler.ServeHTTP(resp, req)
+	c.Assert(resp.Code, check.Equals, http.StatusOK)
+	var ksList arvados.KeepServiceList
+	json.Unmarshal(resp.Body.Bytes(), &ksList)
+	c.Assert(len(ksList.Items), check.Not(check.Equals), 0)
+	ksUUID := ksList.Items[0].UUID
+
 	testCases := map[string]map[string]bool{
 		"api_clients/" + arvadostest.TrustedWorkbenchAPIClientUUID:     map[string]bool{},
 		"api_client_authorizations/" + arvadostest.AdminTokenUUID:      map[string]bool{},
@@ -274,7 +285,7 @@ func (s *HandlerSuite) TestGetObjects(c *check.C) {
 		"containers/" + arvadostest.RunningContainerUUID:               map[string]bool{},
 		"container_requests/" + arvadostest.QueuedContainerRequestUUID: map[string]bool{},
 		"groups/" + arvadostest.AProjectUUID:                           map[string]bool{},
-		"keep_services/" + arvadostest.KeepServiceZeroUUID:             map[string]bool{},
+		"keep_services/" + ksUUID:                                      map[string]bool{},
 		"links/" + arvadostest.ActiveUserCanReadAllUsersLinkUUID:       map[string]bool{},
 		"logs/" + arvadostest.CrunchstatForRunningJobLogUUID:           map[string]bool{},
 		"nodes/" + arvadostest.IdleNodeUUID:                            map[string]bool{},
