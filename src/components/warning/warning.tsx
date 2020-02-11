@@ -16,11 +16,12 @@ interface WarningComponentProps {
 }
 
 export const WarningComponent = ({ text, rules, message }: WarningComponentProps) =>
-    rules.find(aRule => text.match(aRule) !== null)
-        ? message
-            ? <Tooltip title={message}><ErrorIcon /></Tooltip>
-            : <ErrorIcon />
-        : null;
+    !text ? <Tooltip title={"No name"}><ErrorIcon /></Tooltip>
+        : (rules.find(aRule => text.match(aRule) !== null)
+            ? message
+                ? <Tooltip title={message}><ErrorIcon /></Tooltip>
+                : <ErrorIcon />
+            : null);
 
 interface IllegalNamingWarningProps {
     name: string;

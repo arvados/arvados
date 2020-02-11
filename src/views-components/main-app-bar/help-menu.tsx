@@ -38,10 +38,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 const links = [
     {
-        title: "Public Pipelines and Data sets",
-        link: "https://dev.arvados.org/projects/arvados/wiki/Public_Pipelines_and_Datasets",
-    },
-    {
         title: "Tutorials and User guide",
         link: "http://doc.arvados.org/user/",
     },
@@ -78,7 +74,7 @@ export const HelpMenu = compose(
                         <MenuItem key={link.title}>
                             <a href={link.link} target="_blank" className={classes.link}>
                                 <ImportContactsIcon className={classes.icon} />
-                                <Typography  className={classes.linkTitle}>{link.title}</Typography>
+                                <Typography className={classes.linkTitle}>{link.title}</Typography>
                             </a>
                         </MenuItem>
                     )

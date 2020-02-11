@@ -38,3 +38,5 @@ export const SSH_KEY_NAME_VALIDATION = [require, maxLength(255)];
 export const SITE_MANAGER_REMOTE_HOST_VALIDATION = [require, isRemoteHost, maxLength(255)];
 
 export const MY_ACCOUNT_VALIDATION = [require];
+
+export const CHOOSE_VM_VALIDATION = [require];
