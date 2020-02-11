@@ -6,7 +6,9 @@ package controller
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -215,4 +217,84 @@ func (s *HandlerSuite) TestCreateAPIToken(c *check.C) {
 	c.Check(user.Authorization.Scopes, check.DeepEquals, []string{"all"})
 	c.Check(user.UUID, check.Equals, arvadostest.ActiveUserUUID)
 	c.Check(user.Authorization.TokenV2(), check.Equals, auth.TokenV2())
+}
+
+func (s *HandlerSuite) CheckObjectType(c *check.C, url string, token string, skippedFields map[string]bool) {
+	var proxied, direct map[string]interface{}
+	var err error
+
+	// Get collection from controller
+	req := httptest.NewRequest("GET", url, nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	resp := httptest.NewRecorder()
+	s.handler.ServeHTTP(resp, req)
+	c.Assert(resp.Code, check.Equals, http.StatusOK,
+		check.Commentf("Wasn't able to get data from the controller at %q", url))
+	err = json.Unmarshal(resp.Body.Bytes(), &proxied)
+	c.Check(err, check.Equals, nil)
+
+	// Get collection directly from RailsAPI
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+	resp2, err := client.Get(s.cluster.Services.RailsAPI.ExternalURL.String() + url + "/?api_token=" + token)
+	c.Check(err, check.Equals, nil)
+	defer resp2.Body.Close()
+	db, err := ioutil.ReadAll(resp2.Body)
+	c.Check(err, check.Equals, nil)
+	err = json.Unmarshal(db, &direct)
+	c.Check(err, check.Equals, nil)
+
+	// Check that all RailsAPI provided keys exist on the controller response.
+	for k := range direct {
+		if _, ok := skippedFields[k]; ok {
+			continue
+		} else if val, ok := proxied[k]; ok {
+			if direct["kind"] == "arvados#collection" && k == "manifest_text" {
+				// Tokens differ from request to request
+				c.Check(strings.Split(val.(string), "+A")[0], check.Equals, strings.Split(direct[k].(string), "+A")[0])
+			} else {
+				c.Check(val, check.DeepEquals, direct[k],
+					check.Commentf("RailsAPI %s key %q's value %q differs from controller's %q.", direct["kind"], k, direct[k], val))
+			}
+		} else {
+			c.Errorf("%s's key %q missing on controller's response.", direct["kind"], k)
+		}
+	}
+}
+
+func (s *HandlerSuite) TestGetObjects(c *check.C) {
+	// Get the 1st keep service's uuid from the running test server.
+	req := httptest.NewRequest("GET", "/arvados/v1/keep_services/", nil)
+	req.Header.Set("Authorization", "Bearer "+arvadostest.AdminToken)
+	resp := httptest.NewRecorder()
+	s.handler.ServeHTTP(resp, req)
+	c.Assert(resp.Code, check.Equals, http.StatusOK)
+	var ksList arvados.KeepServiceList
+	json.Unmarshal(resp.Body.Bytes(), &ksList)
+	c.Assert(len(ksList.Items), check.Not(check.Equals), 0)
+	ksUUID := ksList.Items[0].UUID
+
+	testCases := map[string]map[string]bool{
+		"api_clients/" + arvadostest.TrustedWorkbenchAPIClientUUID:     nil,
+		"api_client_authorizations/" + arvadostest.AdminTokenUUID:      nil,
+		"authorized_keys/" + arvadostest.AdminAuthorizedKeysUUID:       nil,
+		"collections/" + arvadostest.CollectionWithUniqueWordsUUID:     map[string]bool{"href": true},
+		"containers/" + arvadostest.RunningContainerUUID:               nil,
+		"container_requests/" + arvadostest.QueuedContainerRequestUUID: nil,
+		"groups/" + arvadostest.AProjectUUID:                           nil,
+		"keep_services/" + ksUUID:                                      nil,
+		"links/" + arvadostest.ActiveUserCanReadAllUsersLinkUUID:       nil,
+		"logs/" + arvadostest.CrunchstatForRunningJobLogUUID:           nil,
+		"nodes/" + arvadostest.IdleNodeUUID:                            nil,
+		"repositories/" + arvadostest.ArvadosRepoUUID:                  nil,
+		"users/" + arvadostest.ActiveUserUUID:                          map[string]bool{"href": true},
+		"virtual_machines/" + arvadostest.TestVMUUID:                   nil,
+		"workflows/" + arvadostest.WorkflowWithDefinitionYAMLUUID:      nil,
+	}
+	for url, skippedFields := range testCases {
+		s.CheckObjectType(c, "/arvados/v1/"+url, arvadostest.AdminToken, skippedFields)
+	}
 }
