@@ -12,6 +12,7 @@ export R_LIBS=/var/lib/Rlibs
 export HOME=$(getent passwd arvbox | cut -d: -f6)
 
 defaultdev=$(/sbin/ip route|awk '/default/ { print $5 }')
+dockerip=$(/sbin/ip route | grep default | awk '{ print $3 }')
 containerip=$(ip addr show $defaultdev | grep 'inet ' | sed 's/ *inet \(.*\)\/.*/\1/')
 if test -s /var/run/localip_override ; then
     localip=$(cat /var/run/localip_override)

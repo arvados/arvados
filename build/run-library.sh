@@ -10,8 +10,6 @@
 # older packages.
 LICENSE_PACKAGE_TS=20151208015500
 
-librarydir=`dirname "$(readlink -f "$0")"`
-
 if [[ -z "$ARVADOS_BUILDING_VERSION" ]]; then
     RAILS_PACKAGE_ITERATION=1
 else
@@ -59,7 +57,7 @@ version_from_git() {
 
     local git_ts git_hash
     declare $(format_last_commit_here "git_ts=%ct git_hash=%h" "$subdir")
-    ARVADOS_BUILDING_VERSION="$($librarydir/version-at-commit.sh $git_hash)"
+    ARVADOS_BUILDING_VERSION="$($WORKSPACE/build/version-at-commit.sh $git_hash)"
     echo "$ARVADOS_BUILDING_VERSION"
 }
 
@@ -477,9 +475,9 @@ fpm_build_virtualenv () {
   rm -rf dist/*
 
   # Get the latest setuptools
-  if ! $pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U setuptools; then
+  if ! $pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U 'setuptools<45'; then
     echo "Error, unable to upgrade setuptools with"
-    echo "  $pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U setuptools"
+    echo "  $pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U 'setuptools<45'"
     exit 1
   fi
   # filter a useless warning (when building the cwltest package) from the stderr output
@@ -534,9 +532,9 @@ fpm_build_virtualenv () {
   fi
   echo "pip version:        `build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip --version`"
 
-  if ! build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U setuptools; then
+  if ! build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U 'setuptools<45'; then
     echo "Error, unable to upgrade setuptools with"
-    echo "  build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U setuptools"
+    echo "  build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U 'setuptools<45'"
     exit 1
   fi
   echo "setuptools version: `build/usr/share/$python/dist/$PYTHON_PKG/bin/$python -c 'import setuptools; print(setuptools.__version__)'`"

@@ -229,8 +229,9 @@ class CollectionFetcher(DefaultFetcher):
                 return f.read()
         if url.startswith("arvwf:"):
             record = self.api_client.workflows().get(uuid=url[6:]).execute(num_retries=self.num_retries)
-            definition = record["definition"] + ('\nlabel: "%s"\n' % record["name"].replace('"', '\\"'))
-            return definition
+            definition = yaml.round_trip_load(record["definition"])
+            definition["label"] = record["name"]
+            return yaml.round_trip_dump(definition)
         return super(CollectionFetcher, self).fetch_text(url)
 
     def check_exists(self, url):

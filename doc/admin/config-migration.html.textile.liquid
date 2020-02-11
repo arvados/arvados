@@ -1,7 +1,7 @@
 ---
 layout: default
 navsection: installguide
-title: Migrating Configuration from v1.4 to v1.5
+title: Migrating Configuration from v1.4 to v2.0
 ...
 
 {% comment %}
@@ -11,10 +11,10 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
 {% include 'notebox_begin_warning' %}
-_New installations of Arvados 1.5+ can skip this section_
+_New installations of Arvados 2.0+ can skip this section_
 {% include 'notebox_end' %}
 
-Arvados 1.5 migrates to a centralized configuration file for all components.  The centralized Arvados configuration is @/etc/arvados/config.yml@.  Components that support the new centralized configuration are listed below.  During the migration period, legacy configuration files are still loaded and take precedence over the centralized configuration file.
+Arvados 2.0 migrates to a centralized configuration file for all components.  The centralized Arvados configuration is @/etc/arvados/config.yml@.  Components that support the new centralized configuration are listed below.  During the migration period, legacy configuration files are still loaded and take precedence over the centralized configuration file.
 
 h2. API server
 

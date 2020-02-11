@@ -128,11 +128,11 @@ if [[ "$UPLOAD" != 0 ]]; then
 
   if [ ${#failures[@]} -eq 0 ]; then
     if [[ "$RC" != 0 ]]; then
-      echo "/usr/local/arvados-dev/jenkins/run_upload_packages_testing.py -H jenkinsapt@apt.arvados.org -o Port=2222 --workspace $WORKSPACE $TARGET"
-      /usr/local/arvados-dev/jenkins/run_upload_packages_testing.py -H jenkinsapt@apt.arvados.org -o Port=2222 --workspace $WORKSPACE $TARGET
+      echo "/usr/local/arvados-dev/jenkins/run_upload_packages.py --repo testing -H jenkinsapt@apt.arvados.org -o Port=2222 --workspace $WORKSPACE $TARGET"
+      /usr/local/arvados-dev/jenkins/run_upload_packages.py --repo testing -H jenkinsapt@apt.arvados.org -o Port=2222 --workspace $WORKSPACE $TARGET
     else
-      echo "/usr/local/arvados-dev/jenkins/run_upload_packages.py -H jenkinsapt@apt.arvados.org -o Port=2222 --workspace $WORKSPACE $TARGET"
-      /usr/local/arvados-dev/jenkins/run_upload_packages.py -H jenkinsapt@apt.arvados.org -o Port=2222 --workspace $WORKSPACE $TARGET
+      echo "/usr/local/arvados-dev/jenkins/run_upload_packages.py --repo dev -H jenkinsapt@apt.arvados.org -o Port=2222 --workspace $WORKSPACE $TARGET"
+      /usr/local/arvados-dev/jenkins/run_upload_packages.py --repo dev -H jenkinsapt@apt.arvados.org -o Port=2222 --workspace $WORKSPACE $TARGET
     fi
   else
     echo "Skipping package upload, there were errors building and/or testing the packages"

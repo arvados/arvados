@@ -60,7 +60,7 @@ setup(name='arvados-cwl-runner',
       ],
       test_suite='tests',
       tests_require=[
-          'mock>=1.0',
+          'mock>=1.0,<4',
           'subprocess32>=3.5.1',
       ],
       zip_safe=True

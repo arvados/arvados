@@ -57,10 +57,10 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
    <script>
      function dismissAnnotateNotify() {
-	 window.sessionStorage.setItem("dismiss-annotate-notify", "true");
+	 window.localStorage.setItem("dismiss-annotate-notify", "true");
          $('#annotate-notify').attr('style', "display: none;");
      }
-     if (window.sessionStorage.getItem("dismiss-annotate-notify") === "true") {
+     if (window.localStorage.getItem("dismiss-annotate-notify") === "true") {
 	 dismissAnnotateNotify();
      } else {
          $('#annotate-notify').attr('style', "display: inline-block;");

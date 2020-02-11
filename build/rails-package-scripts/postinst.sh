@@ -199,7 +199,7 @@ configure_version() {
   export RAILS_ENV=production
 
   if ! $COMMAND_PREFIX bundle --version >/dev/null; then
-      run_and_report "Installing bundle" $COMMAND_PREFIX gem install bundle
+      run_and_report "Installing bundler" $COMMAND_PREFIX gem install bundler --version 1.17.3
   fi
 
   run_and_report "Running bundle install" \

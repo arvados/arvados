@@ -1159,12 +1159,21 @@ Clusters:
         identification, and does not retrieve any other personal
         information.</i>
 
+      # Workbench screen displayed to inactive users.  This is HTML
+      # text that will be incorporated directly onto the page.
       InactivePageHTML: |
         <img src="/arvados-logo-big.png" style="width: 20%; float: right; padding: 1em;" />
         <h3>Hi! You're logged in, but...</h3>
         <p>Your account is inactive.</p>
         <p>An administrator must activate your account before you can get
         any further.</p>
+
+      # Connecting to Arvados shell VMs tends to be site-specific.
+      # Put any special instructions here. This is HTML text that will
+      # be incorporated directly onto the Workbench page.
+      SSHHelpPageHTML: |
+        <a href="https://doc.arvados.org/user/getting_started/ssh-access-unix.html">Accessing an Arvados VM with SSH</a> (generic instructions).
+        Site configurations vary.  Contact your local cluster administrator if you have difficulty accessing an Arvados shell node.
 
     # Bypass new (Arvados 1.5) API implementations, and hand off
     # requests directly to Rails instead. This can provide a temporary

@@ -5,13 +5,42 @@ commit="$1"
 versionglob="[0-9].[0-9]*.[0-9]*"
 devsuffix=".dev"
 
-if ! git describe --exact-match --match "$versionglob" "$commit" 2>/dev/null; then
-    if git merge-base --is-ancestor "$commit" origin/master; then
-        # x.(y+1).0.preTIMESTAMP, where x.y.z is the newest version that does not contain $commit
+# automatically assign version
+#
+# handles the following cases:
+#
+# 1. commit is directly tagged.  print that.
+#
+# 2. commit is on master or a development branch, the nearest tag is older
+#    than commit where this branch joins master.
+#    -> take greatest version tag in repo X.Y.Z and assign X.(Y+1).0
+#
+# 3. commit is on a release branch, the nearest tag is newer
+#    than the commit where this branch joins master.
+#    -> take nearest tag X.Y.Z and assign X.Y.(Z+1)
+
+tagged=$(git tag --points-at "$commit")
+
+if [[ -n "$tagged" ]] ; then
+    echo $tagged
+else
+    # 1. get the nearest tag with 'git describe'
+    # 2. get the merge base between this commit and master
+    # 3. if the tag is an ancestor of the merge base,
+    #    (tag is older than merge base) increment minor version
+    #    else, tag is newer than merge base, so increment point version
+
+    nearest_tag=$(git describe --tags --abbrev=0 --match "$versionglob" "$commit")
+    merge_base=$(git merge-base origin/master "$commit")
+
+    if git merge-base --is-ancestor "$nearest_tag" "$merge_base" ; then
+        # x.(y+1).0.devTIMESTAMP, where x.y.z is the newest version that does not contain $commit
+	# grep reads the list of tags (-f) that contain $commit and filters them out (-v)
+	# this prevents a newer tag from retroactively changing the versions of everything before it
         v=$(git tag | grep -vFf <(git tag --contains "$commit") | sort -Vr | head -n1 | perl -pe 's/\.(\d+)\.\d+/".".($1+1).".0"/e')
     else
-        # x.y.(z+1).preTIMESTAMP, where x.y.z is the latest released ancestor of $commit
-        v=$(git describe --abbrev=0 --match "$versionglob" "$commit" | perl -pe 's/(\d+)$/$1+1/e')
+        # x.y.(z+1).devTIMESTAMP, where x.y.z is the latest released ancestor of $commit
+        v=$(echo $nearest_tag | perl -pe 's/(\d+)$/$1+1/e')
     fi
     isodate=$(TZ=UTC git log -n1 --format=%cd --date=iso "$commit")
     ts=$(TZ=UTC date --date="$isodate" "+%Y%m%d%H%M%S")
