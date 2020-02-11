@@ -278,21 +278,21 @@ func (s *HandlerSuite) TestGetObjects(c *check.C) {
 	ksUUID := ksList.Items[0].UUID
 
 	testCases := map[string]map[string]bool{
-		"api_clients/" + arvadostest.TrustedWorkbenchAPIClientUUID:     map[string]bool{},
-		"api_client_authorizations/" + arvadostest.AdminTokenUUID:      map[string]bool{},
-		"authorized_keys/" + arvadostest.AdminAuthorizedKeysUUID:       map[string]bool{},
-		"collections/" + arvadostest.FooCollection:                     map[string]bool{"href": true},
-		"containers/" + arvadostest.RunningContainerUUID:               map[string]bool{},
-		"container_requests/" + arvadostest.QueuedContainerRequestUUID: map[string]bool{},
-		"groups/" + arvadostest.AProjectUUID:                           map[string]bool{},
-		"keep_services/" + ksUUID:                                      map[string]bool{},
-		"links/" + arvadostest.ActiveUserCanReadAllUsersLinkUUID:       map[string]bool{},
-		"logs/" + arvadostest.CrunchstatForRunningJobLogUUID:           map[string]bool{},
-		"nodes/" + arvadostest.IdleNodeUUID:                            map[string]bool{},
-		"repositories/" + arvadostest.ArvadosRepoUUID:                  map[string]bool{},
+		"api_clients/" + arvadostest.TrustedWorkbenchAPIClientUUID:     nil,
+		"api_client_authorizations/" + arvadostest.AdminTokenUUID:      nil,
+		"authorized_keys/" + arvadostest.AdminAuthorizedKeysUUID:       nil,
+		"collections/" + arvadostest.CollectionWithUniqueWordsUUID:     map[string]bool{"href": true},
+		"containers/" + arvadostest.RunningContainerUUID:               nil,
+		"container_requests/" + arvadostest.QueuedContainerRequestUUID: nil,
+		"groups/" + arvadostest.AProjectUUID:                           nil,
+		"keep_services/" + ksUUID:                                      nil,
+		"links/" + arvadostest.ActiveUserCanReadAllUsersLinkUUID:       nil,
+		"logs/" + arvadostest.CrunchstatForRunningJobLogUUID:           nil,
+		"nodes/" + arvadostest.IdleNodeUUID:                            nil,
+		"repositories/" + arvadostest.ArvadosRepoUUID:                  nil,
 		"users/" + arvadostest.ActiveUserUUID:                          map[string]bool{"href": true},
-		"virtual_machines/" + arvadostest.TestVMUUID:                   map[string]bool{},
-		"workflows/" + arvadostest.WorkflowWithDefinitionYAMLUUID:      map[string]bool{},
+		"virtual_machines/" + arvadostest.TestVMUUID:                   nil,
+		"workflows/" + arvadostest.WorkflowWithDefinitionYAMLUUID:      nil,
 	}
 	for url, skippedFields := range testCases {
 		s.CheckObjectType(c, "/arvados/v1/"+url, arvadostest.AdminToken, skippedFields)

@@ -71,6 +71,8 @@ const (
 	IdleNodeUUID = "zzzzz-7ekkf-2z3mc76g2q73aio"
 
 	TestVMUUID = "zzzzz-2x53u-382brsig8rp3064"
+
+	CollectionWithUniqueWordsUUID = "zzzzz-4zz18-mnt690klmb51aud"
 )
 
 // PathologicalManifest : A valid manifest designed to test
