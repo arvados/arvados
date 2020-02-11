@@ -159,26 +159,27 @@ class ContainerRequest < ArvadosModel
   # finished/cancelled.
   def finalize!
     container = Container.find_by_uuid(container_uuid)
-    update_collections(container: container)
+    if !container.nil?
+      update_collections(container: container)
 
-    if container.state == Container::Complete
-      log_col = Collection.where(portable_data_hash: container.log).first
-      if log_col
-        # Need to save collection
-        completed_coll = Collection.new(
-          owner_uuid: self.owner_uuid,
-          name: "Container log for container #{container_uuid}",
-          properties: {
-            'type' => 'log',
-            'container_request' => self.uuid,
-            'container_uuid' => container_uuid,
-          },
-          portable_data_hash: log_col.portable_data_hash,
-          manifest_text: log_col.manifest_text)
-        completed_coll.save_with_unique_name!
+      if container.state == Container::Complete
+        log_col = Collection.where(portable_data_hash: container.log).first
+        if log_col
+          # Need to save collection
+          completed_coll = Collection.new(
+            owner_uuid: self.owner_uuid,
+            name: "Container log for container #{container_uuid}",
+            properties: {
+              'type' => 'log',
+              'container_request' => self.uuid,
+              'container_uuid' => container_uuid,
+            },
+            portable_data_hash: log_col.portable_data_hash,
+            manifest_text: log_col.manifest_text)
+          completed_coll.save_with_unique_name!
+        end
       end
     end
-
     update_attributes!(state: Final)
   end
 
@@ -277,34 +278,36 @@ class ContainerRequest < ArvadosModel
       if self.container_count_changed?
         errors.add :container_count, "cannot be updated directly."
         return false
-      else
-        self.container_count += 1
-        if self.container_uuid_was
-          old_container = Container.find_by_uuid(self.container_uuid_was)
-          old_logs = Collection.where(portable_data_hash: old_container.log).first
-          if old_logs
-            log_coll = self.log_uuid.nil? ? nil : Collection.where(uuid: self.log_uuid).first
-            if self.log_uuid.nil?
-              log_coll = Collection.new(
-                owner_uuid: self.owner_uuid,
-                name: coll_name = "Container log for request #{uuid}",
-                manifest_text: "")
-            end
-
-            # copy logs from old container into CR's log collection
-            src = Arv::Collection.new(old_logs.manifest_text)
-            dst = Arv::Collection.new(log_coll.manifest_text)
-            dst.cp_r("./", "log for container #{old_container.uuid}", src)
-            manifest = dst.manifest_text
-
-            log_coll.assign_attributes(
-              portable_data_hash: Digest::MD5.hexdigest(manifest) + '+' + manifest.bytesize.to_s,
-              manifest_text: manifest)
-            log_coll.save_with_unique_name!
-            self.log_uuid = log_coll.uuid
-          end
-        end
       end
+
+      self.container_count += 1
+      return if self.container_uuid_was.nil?
+
+      old_container = Container.find_by_uuid(self.container_uuid_was)
+      return if old_container.nil?
+
+      old_logs = Collection.where(portable_data_hash: old_container.log).first
+      return if old_logs.nil?
+
+      log_coll = self.log_uuid.nil? ? nil : Collection.where(uuid: self.log_uuid).first
+      if self.log_uuid.nil?
+        log_coll = Collection.new(
+          owner_uuid: self.owner_uuid,
+          name: coll_name = "Container log for request #{uuid}",
+          manifest_text: "")
+      end
+
+      # copy logs from old container into CR's log collection
+      src = Arv::Collection.new(old_logs.manifest_text)
+      dst = Arv::Collection.new(log_coll.manifest_text)
+      dst.cp_r("./", "log for container #{old_container.uuid}", src)
+      manifest = dst.manifest_text
+
+      log_coll.assign_attributes(
+        portable_data_hash: Digest::MD5.hexdigest(manifest) + '+' + manifest.bytesize.to_s,
+        manifest_text: manifest)
+      log_coll.save_with_unique_name!
+      self.log_uuid = log_coll.uuid
     end
   end
 
