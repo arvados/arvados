@@ -72,6 +72,8 @@ active:
   owner_uuid: zzzzz-tpzed-000000000000000
   uuid: zzzzz-tpzed-xurymjxw79nv3jz
   email: active-user@arvados.local
+  modified_by_client_uuid: zzzzz-ozdt8-teyxzyd8qllg11h
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   first_name: Active
   last_name: User
   identity_url: https://active-user.openid.local
