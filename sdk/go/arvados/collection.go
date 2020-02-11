@@ -24,8 +24,8 @@ type Collection struct {
 	Name                      string                 `json:"name"`
 	CreatedAt                 time.Time              `json:"created_at"`
 	ModifiedAt                time.Time              `json:"modified_at"`
-	ModifiedByClientUUID      *string                `json:"modified_by_client_uuid"`
-	ModifiedByUserUUID        *string                `json:"modified_by_user_uuid"`
+	ModifiedByClientUUID      string                 `json:"modified_by_client_uuid"`
+	ModifiedByUserUUID        string                 `json:"modified_by_user_uuid"`
 	PortableDataHash          string                 `json:"portable_data_hash"`
 	ReplicationConfirmed      *int                   `json:"replication_confirmed"`
 	ReplicationConfirmedAt    *time.Time             `json:"replication_confirmed_at"`
@@ -39,10 +39,10 @@ type Collection struct {
 	WritableBy                []string               `json:"writable_by,omitempty"`
 	FileCount                 int                    `json:"file_count"`
 	FileSizeTotal             int64                  `json:"file_size_total"`
-	Version                   *int                   `json:"version"`
+	Version                   int                    `json:"version"`
 	PreserveVersion           bool                   `json:"preserve_version"`
 	CurrentVersionUUID        string                 `json:"current_version_uuid"`
-	Description               *string                `json:"description"`
+	Description               string                 `json:"description"`
 }
 
 func (c Collection) resourceName() string {
