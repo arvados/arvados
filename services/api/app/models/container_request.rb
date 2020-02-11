@@ -125,10 +125,10 @@ class ContainerRequest < ArvadosModel
       # (same order as Container#handle_completed). Locking always
       # reloads the Container and ContainerRequest records.
       c = Container.find_by_uuid(container_uuid)
-      c.lock!
+      c.lock! if !c.nil?
       self.lock!
 
-      if container_uuid != c.uuid
+      if !c.nil? && container_uuid != c.uuid
         # After locking, we've noticed a race, the container_uuid is
         # different than the container record we just loaded.  This
         # can happen if Container#handle_completed scheduled a new
@@ -138,13 +138,18 @@ class ContainerRequest < ArvadosModel
         redo
       end
 
-      if state == Committed && c.final?
-        # The current container is
-        act_as_system_user do
-          leave_modified_by_user_alone do
-            finalize!
+      if !c.nil?
+        if state == Committed && c.final?
+          # The current container is
+          act_as_system_user do
+            leave_modified_by_user_alone do
+              finalize!
+            end
           end
         end
+      elsif state == Committed
+        # Behave as if the container is cancelled
+        update_attributes!(state: Final)
       end
       return true
     end
@@ -181,6 +186,10 @@ class ContainerRequest < ArvadosModel
     collections.each do |out_type|
       pdh = container.send(out_type)
       next if pdh.nil?
+      c = Collection.where(portable_data_hash: pdh).first
+      next if c.nil?
+      manifest = c.manifest_text
+
       coll_name = "Container #{out_type} for request #{uuid}"
       trash_at = nil
       if out_type == 'output'
@@ -191,7 +200,6 @@ class ContainerRequest < ArvadosModel
           trash_at = db_current_time + self.output_ttl
         end
       end
-      manifest = Collection.where(portable_data_hash: pdh).first.manifest_text
 
       coll_uuid = self.send(out_type + '_uuid')
       coll = coll_uuid.nil? ? nil : Collection.where(uuid: coll_uuid).first
