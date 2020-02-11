@@ -33,20 +33,6 @@ _logger = logging.getLogger('arvados.arvados_fuse')
 # appear as underscores in the fuse mount.)
 _disallowed_filename_characters = re.compile('[\x00/]')
 
-# '.' and '..' are not reachable if API server is newer than #6277
-def sanitize_filename(dirty):
-    """Replace disallowed filename characters with harmless "_"."""
-    if dirty is None:
-        return None
-    elif dirty == '':
-        return '_'
-    elif dirty == '.':
-        return '_'
-    elif dirty == '..':
-        return '__'
-    else:
-        return _disallowed_filename_characters.sub('_', dirty)
-
 
 class Directory(FreshBase):
     """Generic directory object, backed by a dict.
@@ -55,7 +41,7 @@ class Directory(FreshBase):
     and the value referencing a File or Directory object.
     """
 
-    def __init__(self, parent_inode, inodes):
+    def __init__(self, parent_inode, inodes, apiconfig):
         """parent_inode is the integer inode number"""
 
         super(Directory, self).__init__()
@@ -65,11 +51,39 @@ class Directory(FreshBase):
             raise Exception("parent_inode should be an int")
         self.parent_inode = parent_inode
         self.inodes = inodes
+        self.apiconfig = apiconfig
         self._entries = {}
         self._mtime = time.time()
 
-    #  Overriden by subclasses to implement logic to update the entries dict
-    #  when the directory is stale
+    def unsanitize_filename(self, incoming):
+        """Replace ForwardSlashNameSubstitution value with /"""
+        fsns = self.apiconfig()["Collections"]["ForwardSlashNameSubstitution"]
+        if isinstance(fsns, str) and fsns != '' and fsns != '/':
+            return incoming.replace(fsns, '/')
+        else:
+            return incoming
+
+    def sanitize_filename(self, dirty):
+        """Replace disallowed filename characters according to
+        ForwardSlashNameSubstitution in self.api_config."""
+        # '.' and '..' are not reachable if API server is newer than #6277
+        if dirty is None:
+            return None
+        elif dirty == '':
+            return '_'
+        elif dirty == '.':
+            return '_'
+        elif dirty == '..':
+            return '__'
+        else:
+            fsns = self.apiconfig()["Collections"]["ForwardSlashNameSubstitution"]
+            if isinstance(fsns, str) and fsns != '':
+                dirty = dirty.replace('/', fsns)
+            return _disallowed_filename_characters.sub('_', dirty)
+
+
+    #  Overridden by subclasses to implement logic to update the
+    #  entries dict when the directory is stale
     @use_counter
     def update(self):
         pass
@@ -138,7 +152,7 @@ class Directory(FreshBase):
         self._entries = {}
         changed = False
         for i in items:
-            name = sanitize_filename(fn(i))
+            name = self.sanitize_filename(fn(i))
             if name:
                 if name in oldentries and same(oldentries[name], i):
                     # move existing directory entry over
@@ -246,12 +260,13 @@ class CollectionDirectoryBase(Directory):
 
     """
 
-    def __init__(self, parent_inode, inodes, collection):
-        super(CollectionDirectoryBase, self).__init__(parent_inode, inodes)
+    def __init__(self, parent_inode, inodes, apiconfig, collection):
+        super(CollectionDirectoryBase, self).__init__(parent_inode, inodes, apiconfig)
+        self.apiconfig = apiconfig
         self.collection = collection
 
     def new_entry(self, name, item, mtime):
-        name = sanitize_filename(name)
+        name = self.sanitize_filename(name)
         if hasattr(item, "fuse_entry") and item.fuse_entry is not None:
             if item.fuse_entry.dead is not True:
                 raise Exception("Can only reparent dead inode entry")
@@ -260,7 +275,7 @@ class CollectionDirectoryBase(Directory):
             item.fuse_entry.dead = False
             self._entries[name] = item.fuse_entry
         elif isinstance(item, arvados.collection.RichCollectionBase):
-            self._entries[name] = self.inodes.add_entry(CollectionDirectoryBase(self.inode, self.inodes, item))
+            self._entries[name] = self.inodes.add_entry(CollectionDirectoryBase(self.inode, self.inodes, self.apiconfig, item))
             self._entries[name].populate(mtime)
         else:
             self._entries[name] = self.inodes.add_entry(FuseArvadosFile(self.inode, item, mtime))
@@ -268,7 +283,7 @@ class CollectionDirectoryBase(Directory):
 
     def on_event(self, event, collection, name, item):
         if collection == self.collection:
-            name = sanitize_filename(name)
+            name = self.sanitize_filename(name)
             _logger.debug("collection notify %s %s %s %s", event, collection, name, item)
             with llfuse.lock:
                 if event == arvados.collection.ADD:
@@ -357,7 +372,7 @@ class CollectionDirectory(CollectionDirectoryBase):
     """Represents the root of a directory tree representing a collection."""
 
     def __init__(self, parent_inode, inodes, api, num_retries, collection_record=None, explicit_collection=None):
-        super(CollectionDirectory, self).__init__(parent_inode, inodes, None)
+        super(CollectionDirectory, self).__init__(parent_inode, inodes, api.config, None)
         self.api = api
         self.num_retries = num_retries
         self.collection_record_file = None
@@ -548,7 +563,7 @@ class TmpCollectionDirectory(CollectionDirectoryBase):
             keep_client=api_client.keep,
             num_retries=num_retries)
         super(TmpCollectionDirectory, self).__init__(
-            parent_inode, inodes, collection)
+            parent_inode, inodes, api_client.config, collection)
         self.collection_record_file = None
         self.populate(self.mtime())
 
@@ -625,7 +640,7 @@ and the directory will appear if it exists.
 """.lstrip()
 
     def __init__(self, parent_inode, inodes, api, num_retries, pdh_only=False):
-        super(MagicDirectory, self).__init__(parent_inode, inodes)
+        super(MagicDirectory, self).__init__(parent_inode, inodes, api.config)
         self.api = api
         self.num_retries = num_retries
         self.pdh_only = pdh_only
@@ -660,6 +675,7 @@ and the directory will appear if it exists.
                 e = self.inodes.add_entry(ProjectDirectory(
                     self.inode, self.inodes, self.api, self.num_retries, project[u'items'][0]))
             else:
+                import sys
                 e = self.inodes.add_entry(CollectionDirectory(
                         self.inode, self.inodes, self.api, self.num_retries, k))
 
@@ -696,7 +712,7 @@ class TagsDirectory(Directory):
     """A special directory that contains as subdirectories all tags visible to the user."""
 
     def __init__(self, parent_inode, inodes, api, num_retries, poll_time=60):
-        super(TagsDirectory, self).__init__(parent_inode, inodes)
+        super(TagsDirectory, self).__init__(parent_inode, inodes, api.config)
         self.api = api
         self.num_retries = num_retries
         self._poll = True
@@ -753,7 +769,7 @@ class TagDirectory(Directory):
 
     def __init__(self, parent_inode, inodes, api, num_retries, tag,
                  poll=False, poll_time=60):
-        super(TagDirectory, self).__init__(parent_inode, inodes)
+        super(TagDirectory, self).__init__(parent_inode, inodes, api.config)
         self.api = api
         self.num_retries = num_retries
         self.tag = tag
@@ -783,7 +799,7 @@ class ProjectDirectory(Directory):
 
     def __init__(self, parent_inode, inodes, api, num_retries, project_object,
                  poll=False, poll_time=60):
-        super(ProjectDirectory, self).__init__(parent_inode, inodes)
+        super(ProjectDirectory, self).__init__(parent_inode, inodes, api.config)
         self.api = api
         self.num_retries = num_retries
         self.project_object = project_object
@@ -897,16 +913,25 @@ class ProjectDirectory(Directory):
         elif self._full_listing or super(ProjectDirectory, self).__contains__(k):
             return super(ProjectDirectory, self).__getitem__(k)
         with llfuse.lock_released:
+            k2 = self.unsanitize_filename(k)
+            if k2 == k:
+                namefilter = ["name", "=", k]
+            else:
+                namefilter = ["name", "in", [k, k2]]
             contents = self.api.groups().list(filters=[["owner_uuid", "=", self.project_uuid],
                                                        ["group_class", "=", "project"],
-                                                       ["name", "=", k]],
-                                              limit=1).execute(num_retries=self.num_retries)["items"]
+                                                       namefilter],
+                                              limit=2).execute(num_retries=self.num_retries)["items"]
             if not contents:
                 contents = self.api.collections().list(filters=[["owner_uuid", "=", self.project_uuid],
-                                                                ["name", "=", k]],
-                                                       limit=1).execute(num_retries=self.num_retries)["items"]
+                                                                namefilter],
+                                                       limit=2).execute(num_retries=self.num_retries)["items"]
         if contents:
-            name = sanitize_filename(self.namefn(contents[0]))
+            if len(contents) > 1 and contents[1].name == k:
+                # If "foo/bar" and "foo[SUBST]bar" both exist, use
+                # "foo[SUBST]bar".
+                contents = [contents[1]]
+            name = self.sanitize_filename(self.namefn(contents[0]))
             if name != k:
                 raise KeyError(k)
             return self._add_entry(contents[0], name)
@@ -995,8 +1020,8 @@ class ProjectDirectory(Directory):
         new_attrs = properties.get("new_attributes") or {}
         old_attrs["uuid"] = ev["object_uuid"]
         new_attrs["uuid"] = ev["object_uuid"]
-        old_name = sanitize_filename(self.namefn(old_attrs))
-        new_name = sanitize_filename(self.namefn(new_attrs))
+        old_name = self.sanitize_filename(self.namefn(old_attrs))
+        new_name = self.sanitize_filename(self.namefn(new_attrs))
 
         # create events will have a new name, but not an old name
         # delete events will have an old name, but not a new name
@@ -1038,7 +1063,7 @@ class SharedDirectory(Directory):
 
     def __init__(self, parent_inode, inodes, api, num_retries, exclude,
                  poll=False, poll_time=60):
-        super(SharedDirectory, self).__init__(parent_inode, inodes)
+        super(SharedDirectory, self).__init__(parent_inode, inodes, api.config)
         self.api = api
         self.num_retries = num_retries
         self.current_user = api.users().current().execute(num_retries=num_retries)

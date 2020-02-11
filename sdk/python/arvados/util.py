@@ -419,3 +419,8 @@ def new_request_id():
             rid += chr(c+ord('a')-10)
         n = n // 36
     return rid
+
+def get_config_once(svc):
+    if not hasattr(svc, '_cached_config'):
+        svc._cached_config = svc.configs().get().execute()
+    return svc._cached_config
