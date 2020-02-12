@@ -36,7 +36,7 @@ type keepFS struct {
 	root   arvados.CustomFileSystem
 	open   map[uint64]*sharedFile
 	lastFH uint64
-	sync.Mutex
+	sync.RWMutex
 
 	// If non-nil, this channel will be closed by Init() to notify
 	// other goroutines that the mount is ready.
@@ -62,8 +62,8 @@ func (fs *keepFS) newFH(f arvados.File) uint64 {
 }
 
 func (fs *keepFS) lookupFH(fh uint64) *sharedFile {
-	fs.Lock()
-	defer fs.Unlock()
+	fs.RLock()
+	defer fs.RUnlock()
 	return fs.open[fh]
 }
 
