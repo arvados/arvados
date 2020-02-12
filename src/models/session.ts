@@ -19,4 +19,5 @@ export interface Session {
     loggedIn: boolean;
     status: SessionStatus;
     active: boolean;
+    apiRevision: number;
 }

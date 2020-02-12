@@ -78,6 +78,7 @@ export class Config {
     fileViewersConfigUrl: string;
     loginCluster: string;
     clusterConfig: ClusterConfigJSON;
+    apiRevision: number;
 }
 
 export const buildConfig = (clusterConfigJSON: ClusterConfigJSON): Config => {
@@ -91,8 +92,19 @@ export const buildConfig = (clusterConfigJSON: ClusterConfigJSON): Config => {
     config.keepWebServiceUrl = clusterConfigJSON.Services.WebDAVDownload.ExternalURL;
     config.loginCluster = clusterConfigJSON.Login.LoginCluster;
     config.clusterConfig = clusterConfigJSON;
+    config.apiRevision = 0;
     mapRemoteHosts(clusterConfigJSON, config);
     return config;
+};
+
+const getApiRevision = async (apiUrl: string) => {
+    try {
+        const dd = (await Axios.get<any>(`${apiUrl}/${DISCOVERY_DOC_PATH}`)).data;
+        return parseInt(dd.revision, 10) || 0;
+    } catch {
+        console.warn("Unable to get API Revision number, defaulting to zero. Some features may not work properly.");
+        return 0;
+    }
 };
 
 export const fetchConfig = () => {
@@ -107,9 +119,10 @@ export const fetchConfig = () => {
             if (workbenchConfig.API_HOST === undefined) {
                 throw new Error(`Unable to start Workbench. API_HOST is undefined in ${WORKBENCH_CONFIG_URL} or the environment.`);
             }
-            return Axios.get<ClusterConfigJSON>(getClusterConfigURL(workbenchConfig.API_HOST)).then(response => {
+            return Axios.get<ClusterConfigJSON>(getClusterConfigURL(workbenchConfig.API_HOST)).then(async response => {
                 const clusterConfigJSON = response.data;
-                const config = buildConfig(clusterConfigJSON);
+                const apiRevision = await getApiRevision(clusterConfigJSON.Services.Controller.ExternalURL);
+                const config = {...buildConfig(clusterConfigJSON), apiRevision};
                 const warnLocalConfig = (varName: string) => console.warn(
                     `A value for ${varName} was found in ${WORKBENCH_CONFIG_URL}. To use the Arvados centralized configuration instead, \
 remove the entire ${varName} entry from ${WORKBENCH_CONFIG_URL}`);
@@ -192,6 +205,7 @@ export const mockConfig = (config: Partial<Config>): Config => ({
     fileViewersConfigUrl: "",
     loginCluster: "",
     clusterConfig: mockClusterConfigJSON({}),
+    apiRevision: 0,
     ...config
 });
 

@@ -67,6 +67,7 @@ describe('auth-actions', () => {
             rootUrl: "https://zzzzz.arvadosapi.com",
             uuidPrefix: "zzzzz",
             remoteHosts: { xc59z: "xc59z.arvadosapi.com" },
+            apiRevision: 12345678,
         };
 
         store.dispatch(initAuth(config));
@@ -82,6 +83,7 @@ describe('auth-actions', () => {
                     expect(auth).toEqual({
                         apiToken: "token",
                         config: {
+                            apiRevision: 12345678,
                             remoteHosts: {
                                 "xc59z": "xc59z.arvadosapi.com",
                             },
@@ -94,6 +96,7 @@ describe('auth-actions', () => {
                         loginCluster: undefined,
                         remoteHostsConfig: {
                             "zzzzz": {
+                                "apiRevision": 12345678,
                                 "remoteHosts": {
                                     "xc59z": "xc59z.arvadosapi.com",
                                 },
@@ -114,8 +117,9 @@ describe('auth-actions', () => {
                             "remoteHost": "https://zzzzz.arvadosapi.com",
                             "status": 2,
                             "token": "token",
-                            "name": "John Doe"
-		    "uuid": "zzzzz-tpzed-abcefg",
+                            "name": "John Doe",
+                            "apiRevision": 12345678,
+                            "uuid": "zzzzz-tpzed-abcefg",
                         }, {
                             "active": false,
                             "baseUrl": "",
@@ -127,6 +131,7 @@ describe('auth-actions', () => {
                             "token": "",
                             "name": "",
                             "uuid": "",
+                            "apiRevision": 0,
                         }],
                         user: {
                             email: "test@test.com",
