@@ -252,11 +252,18 @@ func (fs *keepFS) Chmod(path string, mode uint32) (errc int) {
 	}
 	if fi, err := fs.root.Stat(path); err != nil {
 		return fs.errCode(err)
-	} else if mode & ^uint32(fuse.S_IFREG|fuse.S_IFDIR|0777) != 0 || (fi.Mode()&os.ModeDir != 0) != (mode&fuse.S_IFDIR != 0) {
+	} else if mode & ^uint32(fuse.S_IFREG|fuse.S_IFDIR|0777) != 0 {
+		// Refuse to set mode bits other than
+		// regfile/dir/perms
 		return -fuse.ENOSYS
-	} else {
-		return 0
+	} else if (fi.Mode()&os.ModeDir != 0) != (mode&fuse.S_IFDIR != 0) {
+		// Refuse to transform a regular file to a dir, or
+		// vice versa
+		return -fuse.ENOSYS
 	}
+	// As long as the change isn't nonsense, chmod is a no-op,
+	// because we don't save permission bits.
+	return 0
 }
 
 func (fs *keepFS) fillStat(stat *fuse.Stat_t, fi os.FileInfo) {
