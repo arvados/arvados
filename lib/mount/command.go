@@ -26,7 +26,7 @@ type cmd struct {
 	// not be called more than once, or when ready is already
 	// closed.
 	ready chan struct{}
-	// It is safe to call Unmount ounly after ready has been
+	// It is safe to call Unmount only after ready has been
 	// closed.
 	Unmount func() (ok bool)
 }
