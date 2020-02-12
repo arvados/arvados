@@ -1214,10 +1214,11 @@ class SlashSubstitutionTest(IntegrationTest):
     def test_slash_substitution_before_listing(self, get_config_once):
         get_config_once.return_value = {"Collections": {"ForwardSlashNameSubstitution": "[SLASH]"}}
         self.pool_test(os.path.join(self.mnt, 'zzz'), self.fusename)
+        self.checkContents()
     @staticmethod
     def _test_slash_substitution_before_listing(self, tmpdir, fusename):
         with open(os.path.join(tmpdir, 'foo-bar-baz', 'waz'), 'w') as f:
-            f.write('foo')
+            f.write('xxx')
         with open(os.path.join(tmpdir, fusename, 'waz'), 'w') as f:
             f.write('foo')
 
@@ -1226,10 +1227,15 @@ class SlashSubstitutionTest(IntegrationTest):
     def test_slash_substitution_after_listing(self, get_config_once):
         get_config_once.return_value = {"Collections": {"ForwardSlashNameSubstitution": "[SLASH]"}}
         self.pool_test(os.path.join(self.mnt, 'zzz'), self.fusename)
+        self.checkContents()
     @staticmethod
     def _test_slash_substitution_after_listing(self, tmpdir, fusename):
         with open(os.path.join(tmpdir, 'foo-bar-baz', 'waz'), 'w') as f:
-            f.write('foo')
+            f.write('xxx')
         os.listdir(tmpdir)
         with open(os.path.join(tmpdir, fusename, 'waz'), 'w') as f:
             f.write('foo')
+
+    def checkContents(self):
+        self.assertRegexpMatches(self.api.collections().get(uuid=self.testcoll['uuid']).execute()['manifest_text'], ' acbd18db') # md5(foo)
+        self.assertRegexpMatches(self.api.collections().get(uuid=self.testcolleasy['uuid']).execute()['manifest_text'], ' f561aaf6') # md5(xxx)
