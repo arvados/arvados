@@ -791,6 +791,8 @@ do_test_once() {
             if [[ -e "${3}activate" ]]; then
                 . "${3}activate"
             fi
+            pip freeze
+            pip list
             python setup.py ${short:+--short-tests-only} test ${testargs[$1]}
             result=$?
             if [[ ${tries} < 3 && ${result} == 137 ]]
