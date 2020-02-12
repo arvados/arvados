@@ -212,7 +212,7 @@ const searchGroups = (searchValue: string, limit: number) =>
             const { cluster: clusterId } = getAdvancedDataFromQuery(searchValue);
             const sessions = getSearchSessions(clusterId, getState().auth.sessions);
             const lists: ListResults<GroupContentsResource>[] = await Promise.all(sessions.map(session => {
-                const filters = queryToFilters(searchValue);
+                const filters = queryToFilters(searchValue, session.apiRevision);
                 return services.groupsService.contents('', {
                     filters,
                     limit,
@@ -336,7 +336,7 @@ export const getSearchSessions = (clusterId: string | undefined, sessions: Sessi
     return sessions.filter(s => s.loggedIn && (!clusterId || s.clusterId === clusterId));
 };
 
-export const queryToFilters = (query: string) => {
+export const queryToFilters = (query: string, apiRevision: number) => {
     const data = getAdvancedDataFromQuery(query);
     const filter = new FilterBuilder();
     const resourceKind = data.type;
@@ -359,9 +359,15 @@ export const queryToFilters = (query: string) => {
 
     data.properties.forEach(p => {
         if (p.value) {
-            filter
-                .addContains(`properties.${p.key}`, p.value, GroupContentsResourcePrefix.PROJECT)
-                .addContains(`properties.${p.key}`, p.value, GroupContentsResourcePrefix.COLLECTION);
+            if (apiRevision < 20200212) {
+                filter
+                    .addILike(`properties.${p.key}`, p.value, GroupContentsResourcePrefix.PROJECT)
+                    .addILike(`properties.${p.key}`, p.value, GroupContentsResourcePrefix.COLLECTION);
+            } else {
+                filter
+                    .addContains(`properties.${p.key}`, p.value, GroupContentsResourcePrefix.PROJECT)
+                    .addContains(`properties.${p.key}`, p.value, GroupContentsResourcePrefix.COLLECTION);
+            }
         }
         filter.addExists(p.key);
     });
