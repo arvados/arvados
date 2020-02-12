@@ -125,10 +125,10 @@ class ContainerRequest < ArvadosModel
       # (same order as Container#handle_completed). Locking always
       # reloads the Container and ContainerRequest records.
       c = Container.find_by_uuid(container_uuid)
-      c.lock!
+      c.lock! if !c.nil?
       self.lock!
 
-      if container_uuid != c.uuid
+      if !c.nil? && container_uuid != c.uuid
         # After locking, we've noticed a race, the container_uuid is
         # different than the container record we just loaded.  This
         # can happen if Container#handle_completed scheduled a new
@@ -138,13 +138,18 @@ class ContainerRequest < ArvadosModel
         redo
       end
 
-      if state == Committed && c.final?
-        # The current container is
-        act_as_system_user do
-          leave_modified_by_user_alone do
-            finalize!
+      if !c.nil?
+        if state == Committed && c.final?
+          # The current container is
+          act_as_system_user do
+            leave_modified_by_user_alone do
+              finalize!
+            end
           end
         end
+      elsif state == Committed
+        # Behave as if the container is cancelled
+        update_attributes!(state: Final)
       end
       return true
     end
@@ -154,26 +159,27 @@ class ContainerRequest < ArvadosModel
   # finished/cancelled.
   def finalize!
     container = Container.find_by_uuid(container_uuid)
-    update_collections(container: container)
+    if !container.nil?
+      update_collections(container: container)
 
-    if container.state == Container::Complete
-      log_col = Collection.where(portable_data_hash: container.log).first
-      if log_col
-        # Need to save collection
-        completed_coll = Collection.new(
-          owner_uuid: self.owner_uuid,
-          name: "Container log for container #{container_uuid}",
-          properties: {
-            'type' => 'log',
-            'container_request' => self.uuid,
-            'container_uuid' => container_uuid,
-          },
-          portable_data_hash: log_col.portable_data_hash,
-          manifest_text: log_col.manifest_text)
-        completed_coll.save_with_unique_name!
+      if container.state == Container::Complete
+        log_col = Collection.where(portable_data_hash: container.log).first
+        if log_col
+          # Need to save collection
+          completed_coll = Collection.new(
+            owner_uuid: self.owner_uuid,
+            name: "Container log for container #{container_uuid}",
+            properties: {
+              'type' => 'log',
+              'container_request' => self.uuid,
+              'container_uuid' => container_uuid,
+            },
+            portable_data_hash: log_col.portable_data_hash,
+            manifest_text: log_col.manifest_text)
+          completed_coll.save_with_unique_name!
+        end
       end
     end
-
     update_attributes!(state: Final)
   end
 
@@ -181,6 +187,10 @@ class ContainerRequest < ArvadosModel
     collections.each do |out_type|
       pdh = container.send(out_type)
       next if pdh.nil?
+      c = Collection.where(portable_data_hash: pdh).first
+      next if c.nil?
+      manifest = c.manifest_text
+
       coll_name = "Container #{out_type} for request #{uuid}"
       trash_at = nil
       if out_type == 'output'
@@ -191,7 +201,6 @@ class ContainerRequest < ArvadosModel
           trash_at = db_current_time + self.output_ttl
         end
       end
-      manifest = Collection.where(portable_data_hash: pdh).first.manifest_text
 
       coll_uuid = self.send(out_type + '_uuid')
       coll = coll_uuid.nil? ? nil : Collection.where(uuid: coll_uuid).first
@@ -269,34 +278,36 @@ class ContainerRequest < ArvadosModel
       if self.container_count_changed?
         errors.add :container_count, "cannot be updated directly."
         return false
-      else
-        self.container_count += 1
-        if self.container_uuid_was
-          old_container = Container.find_by_uuid(self.container_uuid_was)
-          old_logs = Collection.where(portable_data_hash: old_container.log).first
-          if old_logs
-            log_coll = self.log_uuid.nil? ? nil : Collection.where(uuid: self.log_uuid).first
-            if self.log_uuid.nil?
-              log_coll = Collection.new(
-                owner_uuid: self.owner_uuid,
-                name: coll_name = "Container log for request #{uuid}",
-                manifest_text: "")
-            end
-
-            # copy logs from old container into CR's log collection
-            src = Arv::Collection.new(old_logs.manifest_text)
-            dst = Arv::Collection.new(log_coll.manifest_text)
-            dst.cp_r("./", "log for container #{old_container.uuid}", src)
-            manifest = dst.manifest_text
-
-            log_coll.assign_attributes(
-              portable_data_hash: Digest::MD5.hexdigest(manifest) + '+' + manifest.bytesize.to_s,
-              manifest_text: manifest)
-            log_coll.save_with_unique_name!
-            self.log_uuid = log_coll.uuid
-          end
-        end
       end
+
+      self.container_count += 1
+      return if self.container_uuid_was.nil?
+
+      old_container = Container.find_by_uuid(self.container_uuid_was)
+      return if old_container.nil?
+
+      old_logs = Collection.where(portable_data_hash: old_container.log).first
+      return if old_logs.nil?
+
+      log_coll = self.log_uuid.nil? ? nil : Collection.where(uuid: self.log_uuid).first
+      if self.log_uuid.nil?
+        log_coll = Collection.new(
+          owner_uuid: self.owner_uuid,
+          name: coll_name = "Container log for request #{uuid}",
+          manifest_text: "")
+      end
+
+      # copy logs from old container into CR's log collection
+      src = Arv::Collection.new(old_logs.manifest_text)
+      dst = Arv::Collection.new(log_coll.manifest_text)
+      dst.cp_r("./", "log for container #{old_container.uuid}", src)
+      manifest = dst.manifest_text
+
+      log_coll.assign_attributes(
+        portable_data_hash: Digest::MD5.hexdigest(manifest) + '+' + manifest.bytesize.to_s,
+        manifest_text: manifest)
+      log_coll.save_with_unique_name!
+      self.log_uuid = log_coll.uuid
     end
   end
 
