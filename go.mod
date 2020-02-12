@@ -31,7 +31,7 @@ require (
 	github.com/jmcvetta/randutil v0.0.0-20150817122601-2bb1b664bcff
 	github.com/julienschmidt/httprouter v1.2.0
 	github.com/kevinburke/ssh_config v0.0.0-20171013211458-802051befeb5 // indirect
-	github.com/lib/pq v0.0.0-20171126050459-83612a56d3dd
+	github.com/lib/pq v1.3.0
 	github.com/marstr/guid v1.1.1-0.20170427235115-8bdf7d1a087c // indirect
 	github.com/mitchellh/go-homedir v0.0.0-20161203194507-b8bc1bf76747 // indirect
 	github.com/opencontainers/go-digest v1.0.0-rc1 // indirect

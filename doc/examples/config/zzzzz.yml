@@ -1,12 +1,5 @@
 Clusters:
   zzzzz:
-    PostgreSQL:
-      Connection:
-        client_encoding: utf8
-        host: localhost
-        dbname: arvados_test
-        user: arvados
-        password: insecure_arvados_test
     ManagementToken: e687950a23c3a9bceec28c6223a06c79
     SystemRootToken: systemusertesttoken1234567890aoeuidhtnsqjkxbmwvzpy
     API:

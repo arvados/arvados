@@ -18,6 +18,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -71,6 +72,7 @@ func (bootCommand) RunCommand(prog string, args []string, stdin io.Reader, stdou
 	flags.StringVar(&boot.SourcePath, "source", ".", "arvados source tree `directory`")
 	flags.StringVar(&boot.LibPath, "lib", "/var/lib/arvados", "`directory` to install dependencies and library files")
 	flags.StringVar(&boot.ClusterType, "type", "production", "cluster `type`: development, test, or production")
+	flags.BoolVar(&boot.OwnTemporaryDatabase, "own-temporary-database", false, "bring up a postgres server and create a temporary database")
 	err = flags.Parse(args)
 	if err == flag.ErrHelp {
 		err = nil
@@ -96,10 +98,11 @@ func (bootCommand) RunCommand(prog string, args []string, stdin io.Reader, stdou
 }
 
 type Booter struct {
-	SourcePath  string // e.g., /home/username/src/arvados
-	LibPath     string // e.g., /var/lib/arvados
-	ClusterType string // e.g., production
-	Stderr      io.Writer
+	SourcePath           string // e.g., /home/username/src/arvados
+	LibPath              string // e.g., /var/lib/arvados
+	ClusterType          string // e.g., production
+	OwnTemporaryDatabase bool
+	Stderr               io.Writer
 
 	logger  logrus.FieldLogger
 	cluster *arvados.Cluster
@@ -212,29 +215,43 @@ func (boot *Booter) run(loader *config.Loader) error {
 	}
 
 	var wg sync.WaitGroup
-	for _, cmpt := range []component{
-		{name: "nginx", runFunc: runNginx},
-		{name: "controller", cmdHandler: controller.Command},
-		{name: "dispatchcloud", cmdHandler: dispatchcloud.Command, notIfTest: true},
-		{name: "git-httpd", goProg: "services/arv-git-httpd"},
-		{name: "health", goProg: "services/health"},
-		{name: "keep-balance", goProg: "services/keep-balance", notIfTest: true},
-		{name: "keepproxy", goProg: "services/keepproxy"},
-		{name: "keepstore", goProg: "services/keepstore", svc: boot.cluster.Services.Keepstore},
-		{name: "keep-web", goProg: "services/keep-web"},
-		{name: "railsAPI", svc: boot.cluster.Services.RailsAPI, railsApp: "services/api"},
-		{name: "workbench1", svc: boot.cluster.Services.Workbench1, railsApp: "apps/workbench"},
-		{name: "ws", goProg: "services/ws"},
-	} {
-		cmpt := cmpt
+	components := map[string]*component{
+		"certificates":  &component{runFunc: createCertificates},
+		"database":      &component{runFunc: runPostgres, depends: []string{"certificates"}},
+		"nginx":         &component{runFunc: runNginx},
+		"controller":    &component{cmdHandler: controller.Command, depends: []string{"database"}},
+		"dispatchcloud": &component{cmdHandler: dispatchcloud.Command, notIfTest: true},
+		"git-httpd":     &component{goProg: "services/arv-git-httpd"},
+		"health":        &component{goProg: "services/health"},
+		"keep-balance":  &component{goProg: "services/keep-balance", notIfTest: true},
+		"keepproxy":     &component{goProg: "services/keepproxy"},
+		"keepstore":     &component{goProg: "services/keepstore", svc: boot.cluster.Services.Keepstore},
+		"keep-web":      &component{goProg: "services/keep-web"},
+		"railsAPI":      &component{svc: boot.cluster.Services.RailsAPI, railsApp: "services/api", depends: []string{"database"}},
+		"workbench1":    &component{svc: boot.cluster.Services.Workbench1, railsApp: "apps/workbench"},
+		"ws":            &component{goProg: "services/ws", depends: []string{"database"}},
+	}
+	for _, cmpt := range components {
+		cmpt.ready = make(chan bool)
+	}
+	for name, cmpt := range components {
+		name, cmpt := name, cmpt
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			defer boot.cancel()
-			boot.logger.WithField("component", cmpt.name).Info("starting")
-			err := cmpt.Run(boot.ctx, boot)
+			for _, dep := range cmpt.depends {
+				boot.logger.WithField("component", name).WithField("dependency", dep).Info("waiting")
+				select {
+				case <-components[dep].ready:
+				case <-boot.ctx.Done():
+					return
+				}
+			}
+			boot.logger.WithField("component", name).Info("starting")
+			err := cmpt.Run(boot.ctx, name, boot)
 			if err != nil && err != context.Canceled {
-				boot.logger.WithError(err).WithField("component", cmpt.name).Error("exited")
+				boot.logger.WithError(err).WithField("component", name).Error("exited")
 			}
 		}()
 	}
@@ -382,24 +399,27 @@ type component struct {
 	name       string
 	svc        arvados.Service
 	cmdHandler cmd.Handler
-	runFunc    func(ctx context.Context, boot *Booter) error
-	railsApp   string // source dir in arvados tree, e.g., "services/api"
-	goProg     string // source dir in arvados tree, e.g., "services/keepstore"
-	notIfTest  bool   // don't run this component on a test cluster
+	runFunc    func(ctx context.Context, boot *Booter, ready chan<- bool) error
+	railsApp   string   // source dir in arvados tree, e.g., "services/api"
+	goProg     string   // source dir in arvados tree, e.g., "services/keepstore"
+	notIfTest  bool     // don't run this component on a test cluster
+	depends    []string // don't start until all of these components are ready
+
+	ready chan bool
 }
 
-func (cmpt *component) Run(ctx context.Context, boot *Booter) error {
+func (cmpt *component) Run(ctx context.Context, name string, boot *Booter) error {
 	if cmpt.notIfTest && boot.ClusterType == "test" {
-		fmt.Fprintf(boot.Stderr, "skipping component %q in %s mode\n", cmpt.name, boot.ClusterType)
+		fmt.Fprintf(boot.Stderr, "skipping component %q in %s mode\n", name, boot.ClusterType)
 		<-ctx.Done()
 		return nil
 	}
-	fmt.Fprintf(boot.Stderr, "starting component %q\n", cmpt.name)
+	fmt.Fprintf(boot.Stderr, "starting component %q\n", name)
 	if cmpt.cmdHandler != nil {
 		errs := make(chan error, 1)
 		go func() {
 			defer close(errs)
-			exitcode := cmpt.cmdHandler.RunCommand(cmpt.name, []string{"-config", boot.configfile}, bytes.NewBuffer(nil), boot.Stderr, boot.Stderr)
+			exitcode := cmpt.cmdHandler.RunCommand(name, []string{"-config", boot.configfile}, bytes.NewBuffer(nil), boot.Stderr, boot.Stderr)
 			if exitcode != 0 {
 				errs <- fmt.Errorf("exit code %d", exitcode)
 			}
@@ -439,12 +459,12 @@ func (cmpt *component) Run(ctx context.Context, boot *Booter) error {
 		return nil
 	}
 	if cmpt.runFunc != nil {
-		return cmpt.runFunc(ctx, boot)
+		return cmpt.runFunc(ctx, boot, cmpt.ready)
 	}
 	if cmpt.railsApp != "" {
 		port, err := internalPort(cmpt.svc)
 		if err != nil {
-			return fmt.Errorf("bug: no InternalURLs for component %q: %v", cmpt.name, cmpt.svc.InternalURLs)
+			return fmt.Errorf("bug: no InternalURLs for component %q: %v", name, cmpt.svc.InternalURLs)
 		}
 		var buf bytes.Buffer
 		err = boot.RunProgram(ctx, cmpt.railsApp, &buf, nil, "gem", "list", "--details", "bundler")
@@ -482,7 +502,7 @@ func (cmpt *component) Run(ctx context.Context, boot *Booter) error {
 		}
 		return nil
 	}
-	return fmt.Errorf("bug: component %q has nothing to run", cmpt.name)
+	return fmt.Errorf("bug: component %q has nothing to run", name)
 }
 
 func (boot *Booter) autofillConfig(cfg *arvados.Config, log logrus.FieldLogger) error {
@@ -572,6 +592,21 @@ func (boot *Booter) autofillConfig(cfg *arvados.Config, log logrus.FieldLogger) 
 			}
 		}
 	}
+	if boot.OwnTemporaryDatabase {
+		p, err := availablePort()
+		if err != nil {
+			return err
+		}
+		cluster.PostgreSQL.Connection = arvados.PostgreSQLConnection{
+			"client_encoding": "utf8",
+			"host":            "localhost",
+			"port":            strconv.Itoa(p),
+			"dbname":          "arvados_test",
+			"user":            "arvados",
+			"password":        "insecure_arvados_test",
+		}
+	}
+
 	cfg.Clusters[cluster.ClusterID] = *cluster
 	return nil
 }
@@ -609,5 +644,34 @@ func externalPort(svc arvados.Service) (string, error) {
 		return "443", nil
 	} else {
 		return "80", nil
+	}
+}
+
+func availablePort() (int, error) {
+	ln, err := net.Listen("tcp", ":0")
+	if err != nil {
+		return 0, err
+	}
+	defer ln.Close()
+	_, p, err := net.SplitHostPort(ln.Addr().String())
+	if err != nil {
+		return 0, err
+	}
+	return strconv.Atoi(p)
+}
+
+// Try to connect to addr until it works, then close ch. Give up if
+// ctx cancels.
+func connectAndClose(ctx context.Context, addr string, ch chan<- bool) {
+	dialer := net.Dialer{Timeout: time.Second}
+	for ctx.Err() == nil {
+		conn, err := dialer.DialContext(ctx, "tcp", addr)
+		if err != nil {
+			time.Sleep(time.Second / 10)
+			continue
+		}
+		conn.Close()
+		close(ch)
+		return
 	}
 }
