@@ -1101,7 +1101,7 @@ install_deps() {
     do_install sdk/cli
     do_install sdk/perl
     do_install sdk/python pip
-    do_install sdk/python pip3
+    do_install sdk/python pip "$VENV3DIR/bin/"
     do_install sdk/ruby
     do_install services/api
     do_install services/arv-git-httpd go
