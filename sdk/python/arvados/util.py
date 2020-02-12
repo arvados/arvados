@@ -421,6 +421,9 @@ def new_request_id():
     return rid
 
 def get_config_once(svc):
+    if not svc._rootDesc.get('resources')['configs']:
+        # Old API server version, no config export endpoint
+        return {}
     if not hasattr(svc, '_cached_config'):
         svc._cached_config = svc.configs().get().execute()
     return svc._cached_config

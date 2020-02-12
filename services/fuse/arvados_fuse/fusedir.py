@@ -55,10 +55,24 @@ class Directory(FreshBase):
         self._entries = {}
         self._mtime = time.time()
 
+    def forward_slash_subst(self):
+        if not hasattr(self, '_fsns'):
+            self._fsns = None
+            config = self.apiconfig()
+            try:
+                self._fsns = config["Collections"]["ForwardSlashNameSubstitution"]
+            except KeyError:
+                # old API server with no FSNS config
+                self._fsns = '_'
+            else:
+                if self._fsns == '' or self._fsns == '/':
+                    self._fsns = None
+        return self._fsns
+
     def unsanitize_filename(self, incoming):
         """Replace ForwardSlashNameSubstitution value with /"""
-        fsns = self.apiconfig()["Collections"]["ForwardSlashNameSubstitution"]
-        if isinstance(fsns, str) and fsns != '' and fsns != '/':
+        fsns = self.forward_slash_subst()
+        if isinstance(fsns, str):
             return incoming.replace(fsns, '/')
         else:
             return incoming
@@ -76,8 +90,8 @@ class Directory(FreshBase):
         elif dirty == '..':
             return '__'
         else:
-            fsns = self.apiconfig()["Collections"]["ForwardSlashNameSubstitution"]
-            if isinstance(fsns, str) and fsns != '':
+            fsns = self.forward_slash_subst()
+            if isinstance(fsns, str):
                 dirty = dirty.replace('/', fsns)
             return _disallowed_filename_characters.sub('_', dirty)
 
