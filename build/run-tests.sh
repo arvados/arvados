@@ -1100,7 +1100,7 @@ install_deps() {
     do_install cmd/arvados-server go
     do_install sdk/cli
     do_install sdk/perl
-    do_install sdk/python pip
+    do_install sdk/python pip "$VENVDIR/bin/"
     do_install sdk/python pip "$VENV3DIR/bin/"
     do_install sdk/ruby
     do_install services/api
@@ -1124,7 +1124,7 @@ install_all() {
         dir=${p%:py3}
         if [[ ${dir} = ${p} ]]; then
             if [[ -z ${skip[python2]} ]]; then
-                do_install ${dir} pip
+                do_install ${dir} pip "$VENVDIR/bin/"
             fi
         elif [[ -n ${PYTHON3} ]]; then
             if [[ -z ${skip[python3]} ]]; then
@@ -1164,7 +1164,7 @@ test_all() {
         dir=${p%:py3}
         if [[ ${dir} = ${p} ]]; then
             if [[ -z ${skip[python2]} ]]; then
-                do_test ${dir} pip
+                do_test ${dir} pip "$VENVDIR/bin/"
             fi
         elif [[ -n ${PYTHON3} ]]; then
             if [[ -z ${skip[python3]} ]]; then
