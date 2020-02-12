@@ -1239,3 +1239,17 @@ class SlashSubstitutionTest(IntegrationTest):
     def checkContents(self):
         self.assertRegexpMatches(self.api.collections().get(uuid=self.testcoll['uuid']).execute()['manifest_text'], ' acbd18db') # md5(foo)
         self.assertRegexpMatches(self.api.collections().get(uuid=self.testcolleasy['uuid']).execute()['manifest_text'], ' f561aaf6') # md5(xxx)
+
+    @IntegrationTest.mount(argv=mnt_args)
+    @mock.patch('arvados.util.get_config_once')
+    def test_slash_substitution_conflict(self, get_config_once):
+        self.testcollconflict = self.api.collections().create(body={"name": self.fusename}).execute()
+        get_config_once.return_value = {"Collections": {"ForwardSlashNameSubstitution": "[SLASH]"}}
+        self.pool_test(os.path.join(self.mnt, 'zzz'), self.fusename)
+        self.assertRegexpMatches(self.api.collections().get(uuid=self.testcollconflict['uuid']).execute()['manifest_text'], ' acbd18db') # md5(foo)
+        # foo/bar/baz collection unchanged, because it is masked by foo[SLASH]bar[SLASH]baz
+        self.assertEqual(self.api.collections().get(uuid=self.testcoll['uuid']).execute()['manifest_text'], '')
+    @staticmethod
+    def _test_slash_substitution_conflict(self, tmpdir, fusename):
+        with open(os.path.join(tmpdir, fusename, 'waz'), 'w') as f:
+            f.write('foo')

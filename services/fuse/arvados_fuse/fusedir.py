@@ -941,7 +941,7 @@ class ProjectDirectory(Directory):
                                                                 namefilter],
                                                        limit=2).execute(num_retries=self.num_retries)["items"]
         if contents:
-            if len(contents) > 1 and contents[1].name == k:
+            if len(contents) > 1 and contents[1]['name'] == k:
                 # If "foo/bar" and "foo[SUBST]bar" both exist, use
                 # "foo[SUBST]bar".
                 contents = [contents[1]]
