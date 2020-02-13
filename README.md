@@ -62,6 +62,8 @@ channel at [gitter.im](https://gitter.im) is used to coordinate development.
 The [Arvados user mailing list](http://lists.arvados.org/mailman/listinfo/arvados)
 is used to announce new versions and other news.
 
+All participants are expected to abide by the [Arvados Code of Conduct](CODE_OF_CONDUCT.md).
+
 # Reporting bugs
 
 [Report a bug](https://dev.arvados.org/projects/arvados/issues/new) on [dev.arvados.org](https://dev.arvados.org).
