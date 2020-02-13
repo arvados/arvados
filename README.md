@@ -4,6 +4,8 @@
 
 [![Join the chat at https://gitter.im/arvados/community](https://badges.gitter.im/arvados/community.svg)](https://gitter.im/arvados/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) | [Installing Arvados](https://doc.arvados.org/install/index.html) | [Installing Client SDKs](https://doc.arvados.org/sdk/index.html) | [Report a bug](https://dev.arvados.org/projects/arvados/issues/new) | [Development and Contributing](CONTRIBUTING.md)
 
+<img align="right" src="doc/images/dax.png">
+
 [Arvados](https://arvados.org) is a free software distributed computing platform
 for bioinformatics, data science, and high throughput analysis of massive data
 sets.  Arvados supports a variety of cloud, cluster and HPC environments.
