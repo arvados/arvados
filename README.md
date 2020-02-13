@@ -20,7 +20,7 @@ Arvados consists of:
 * *Crunch*: A container-based cloud and HPC workflow engine providing
   strong versioning, reproducibilty, and provenance of large-scale
   computations.  Supports [Common Workflow
-  Language](https://commonwl.org) for describing workflows.
+  Language](https://www.commonwl.org) for describing workflows.
 
 * Related services and components including a web workbench for managing files
   and compute jobs, REST APIs, SDKs, and other tools.
