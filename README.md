@@ -12,12 +12,15 @@ sets.  Arvados supports a variety of cloud, cluster and HPC environments.
 
 Arvados consists of:
 
-* *Keep*: a petabyte-scale content-addressed distributed storage system for managing and
-  storing collections of files, accessible via a variety of methods including
-  Arvados APIs, WebDAV, and FUSE file system mount.
+* *Keep*: A petabyte-scale content-addressed distributed storage
+  system for storing, managing and versioning collections of files.
+  Like git for big data.  Interoperable data access by a variety of
+  methods including WebDAV, FUSE file system mount, and Arvados APIs.
 
-* *Crunch*: a Docker-based cloud and HPC workflow engine designed providing
-  strong versioning, reproducibilty, and provenance of large-scale computations.
+* *Crunch*: A container-based cloud and HPC workflow engine providing
+  strong versioning, reproducibilty, and provenance of large-scale
+  computations.  Supports [Common Workflow
+  Language](https://commonwl.org) for describing workflows.
 
 * Related services and components including a web workbench for managing files
   and compute jobs, REST APIs, SDKs, and other tools.
