@@ -36,7 +36,8 @@ setup(name='arvados-cwl-runner',
           'bin/arvados-cwl-runner',
       ],
       # Note that arvados/build/run-build-packages.sh looks at this
-      # file to determine what version of cwltool and schema-salad to build.
+      # file to determine what version of cwltool and schema-salad to
+      # build.
       install_requires=[
           'cwltool==1.0.20190831161204',
           'schema-salad==4.5.20190815125611',
@@ -63,5 +64,5 @@ setup(name='arvados-cwl-runner',
           'mock>=1.0,<4',
           'subprocess32>=3.5.1',
       ],
-      zip_safe=True
-      )
+      zip_safe=True,
+)

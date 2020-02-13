@@ -56,5 +56,5 @@ setup(name='arvados-node-manager',
           'apache-libcloud==2.5.0',
           'subprocess32>=3.5.1',
       ],
-      zip_safe=False
-      )
+      zip_safe=False,
+)
