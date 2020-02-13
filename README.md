@@ -2,6 +2,8 @@
 [comment]: # ()
 [comment]: # (SPDX-License-Identifier: CC-BY-SA-3.0)
 
+[![Join the chat at https://gitter.im/arvados/community](https://badges.gitter.im/arvados/community.svg)](https://gitter.im/arvados/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) | [Installing Arvados](https://doc.arvados.org/install/index.html) | [Installing Client SDKs](https://doc.arvados.org/sdk/index.html) | [Report a bug](https://dev.arvados.org/projects/arvados/issues/new) | [Development and Contributing](CONTRIBUTING.md)
+
 [Arvados](https://arvados.org) is a free software distributed computing platform
 for bioinformatics, data science, and high throughput analysis of massive data
 sets.  Arvados supports a variety of cloud, cluster and HPC environments.
@@ -9,10 +11,11 @@ sets.  Arvados supports a variety of cloud, cluster and HPC environments.
 Arvados consists of:
 
 * *Keep*: a petabyte-scale content-addressed distributed storage system for managing and
-  storing collections of files, accessible via HTTP and FUSE mount.
+  storing collections of files, accessible via a variety of methods including
+  Arvados APIs, WebDAV, and FUSE file system mount.
 
-* *Crunch*: a Docker-based cluster and HPC workflow engine designed providing
-  strong versioning, reproducibilty, and provenance of computations.
+* *Crunch*: a Docker-based cloud and HPC workflow engine designed providing
+  strong versioning, reproducibilty, and provenance of large-scale computations.
 
 * Related services and components including a web workbench for managing files
   and compute jobs, REST APIs, SDKs, and other tools.
@@ -34,8 +37,8 @@ http://doc.arvados.org/install/arvbox.html for details.
 
 ## Documentation
 
-Complete documentation, including a User Guide, Installation documentation and
-API documentation is available at http://doc.arvados.org/
+Complete documentation, including the [User Guide](https://doc.arvados.org/user/index.html), [Installation documentation](https://doc.arvados.org/install/index.html) and
+[API documentation](https://doc.arvados.org/api/index.html) is available at http://doc.arvados.org/
 
 If you wish to build the Arvados documentation from a local git clone, see
 doc/README.textile for instructions.
@@ -44,30 +47,23 @@ doc/README.textile for instructions.
 
 [![Join the chat at https://gitter.im/arvados/community](https://badges.gitter.im/arvados/community.svg)](https://gitter.im/arvados/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-The [arvados community channel](https://gitter.im/arvados/community)
+The [Arvados community channel](https://gitter.im/arvados/community)
 channel at [gitter.im](https://gitter.im) is available for live
 discussion and support.
 
-The
-[Arvados user mailing list](http://lists.arvados.org/mailman/listinfo/arvados)
-is a forum for general discussion, questions, and news about Arvados
-development.  The
-[Arvados developer mailing list](http://lists.arvados.org/mailman/listinfo/arvados-dev)
-is a forum for more technical discussion, intended for developers and
-contributors to Arvados.
+The [Arvados developement channel](https://gitter.im/arvados/development)
+channel at [gitter.im](https://gitter.im) is used to coordinate development.
 
-## Development
+The [Arvados user mailing list](http://lists.arvados.org/mailman/listinfo/arvados)
+is used to announce new versions and other news.
 
-[![Build Status](https://ci.arvados.org/buildStatus/icon?job=run-tests)](https://ci.arvados.org/job/run-tests/)
-[![Go Report Card](https://goreportcard.com/badge/github.com/arvados/arvados)](https://goreportcard.com/report/github.com/arvados/arvados)
+## Reporting bugs
 
-The Arvados public bug tracker is located at https://dev.arvados.org/projects/arvados/issues
+[Report a bug](https://dev.arvados.org/projects/arvados/issues/new) on the [dev.arvados.org Redmine site](https://dev.arvados.org).
 
-Continuous integration is hosted at https://ci.arvados.org/
+## Development and Contributing
 
-Instructions for setting up a development environment and working on specific
-components can be found on the
-["Hacking Arvados" page of the Arvados wiki](https://dev.arvados.org/projects/arvados/wiki/Hacking).
+See [CONTRIBUTING.md](CONTRIBUTING.md) for information about Arvados development and how to contribute to the Arvados project.
 
 ## Licensing
 

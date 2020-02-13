@@ -22,7 +22,7 @@ appearance, body size, age, race, or religion.
 including those related to food, health, parenting, drugs, and employment.
  - Deliberate misgendering or use of [dead](https://www.quora.com/What-is-deadnaming/answer/Nancy-C-Walker)
 or rejected names.
- - Gratuitous or off-topic sexual images or behaviour  in spaces where they’re not
+ - Gratuitous or off-topic sexual images or behaviour in spaces where they’re not
 appropriate.
  - Physical contact and simulated physical contact (eg, textual descriptions like
 “\*hug\*” or “\*backrub\*”) without consent or after a request to stop.
