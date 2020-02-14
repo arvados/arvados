@@ -647,8 +647,8 @@ install_env() {
     . "$VENVDIR/bin/activate"
 
     # Needed for run_test_server.py which is used by certain (non-Python) tests.
-    pip install --no-cache-dir PyYAML future \
-        || fatal "pip install PyYAML failed"
+    pip install --no-cache-dir PyYAML future httplib2 \
+        || fatal "`pip install PyYAML future httplib2` failed"
 
     # Preinstall libcloud if using a fork; otherwise nodemanager "pip
     # install" won't pick it up by default.
@@ -1099,6 +1099,7 @@ install_deps() {
     do_install sdk/cli
     do_install sdk/perl
     do_install sdk/python pip
+    do_install sdk/python pip3
     do_install sdk/ruby
     do_install services/api
     do_install services/arv-git-httpd go
