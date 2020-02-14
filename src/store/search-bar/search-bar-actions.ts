@@ -225,12 +225,12 @@ const searchGroups = (searchValue: string, limit: number) =>
         }
     };
 
-const buildQueryFromKeyMap = (data: any, keyMap: string[][], mode: 'rebuild' | 'reuse') => {
+const buildQueryFromKeyMap = (data: any, keyMap: string[][]) => {
     let value = data.searchValue;
 
     const addRem = (field: string, key: string) => {
         const v = data[key];
-
+        // Remove previous search expression.
         if (data.hasOwnProperty(key)) {
             let pattern: string;
             if (v === false) {
@@ -238,28 +238,23 @@ const buildQueryFromKeyMap = (data: any, keyMap: string[][], mode: 'rebuild' | '
             } else if (key.startsWith('prop-')) {
                 // On properties, only remove key:value duplicates, allowing
                 // multiple properties with the same key.
-                pattern = `${field.replace(':', '\\:\\s*')}\\:\\s*${v}\\s*`;
+                const oldValue = key.slice(5).split(':')[1];
+                pattern = `${field.replace(':', '\\:\\s*')}\\:\\s*${oldValue}\\s*`;
             } else {
                 pattern = `${field.replace(':', '\\:\\s*')}\\:\\s*[\\w|\\#|\\-|\\/]*\\s*`;
             }
             value = value.replace(new RegExp(pattern), '');
         }
-
+        // Re-add it with the current search value.
         if (v) {
             const nv = v === true
                 ? `${field}`
                 : `${field}:${v}`;
-
-            if (mode === 'rebuild') {
-                value = value + ' ' + nv;
-            } else {
-                value = nv + ' ' + value;
-            }
+            // Always append to the end to keep user-entered text at the start.
+            value = value + ' ' + nv;
         }
     };
-
     keyMap.forEach(km => addRem(km[0], km[1]));
-
     return value;
 };
 
@@ -276,7 +271,9 @@ export const getQueryFromAdvancedData = (data: SearchBarAdvancedFormData, prevDa
             dateFrom: data.dateFrom,
             dateTo: data.dateTo,
         };
-        (data.properties || []).forEach(p => fo[`prop-"${p.keyID || p.key}"`] = `"${p.valueID || p.value}"`);
+        (data.properties || []).forEach(p =>
+            fo[`prop-"${p.keyID || p.key}":"${p.valueID || p.value}"`] = `"${p.valueID || p.value}"`
+            );
         return fo;
     };
 
@@ -289,17 +286,13 @@ export const getQueryFromAdvancedData = (data: SearchBarAdvancedFormData, prevDa
         ['to', 'dateTo']
     ];
     _.union(data.properties, prevData ? prevData.properties : [])
-        .forEach(p => keyMap.push([`has:"${p.keyID || p.key}"`, `prop-"${p.keyID || p.key}"`]));
+        .forEach(p => keyMap.push(
+            [`has:"${p.keyID || p.key}"`, `prop-"${p.keyID || p.key}":"${p.valueID || p.value}"`]
+        ));
 
-    if (prevData) {
-        const obj = getModifiedKeysValues(flatData(data), flatData(prevData));
-        value = buildQueryFromKeyMap({
-            searchValue: data.searchValue,
-            ...obj
-        } as SearchBarAdvancedFormData, keyMap, "reuse");
-    } else {
-        value = buildQueryFromKeyMap(flatData(data), keyMap, "rebuild");
-    }
+    const modified = getModifiedKeysValues(flatData(data), prevData ? flatData(prevData):{});
+    value = buildQueryFromKeyMap(
+        {searchValue: data.searchValue, ...modified} as SearchBarAdvancedFormData, keyMap);
 
     value = value.trim();
     return value;
