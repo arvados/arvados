@@ -40,6 +40,7 @@ func (runNginx) Run(ctx context.Context, fail func(error), boot *Booter) error {
 		{"KEEPWEBDL", boot.cluster.Services.WebDAVDownload},
 		{"KEEPPROXY", boot.cluster.Services.Keepproxy},
 		{"GIT", boot.cluster.Services.GitHTTP},
+		{"WORKBENCH1", boot.cluster.Services.Workbench1},
 		{"WS", boot.cluster.Services.Websocket},
 	} {
 		vars[cmpt.varname+"PORT"], err = internalPort(cmpt.svc)
