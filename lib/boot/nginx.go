@@ -16,7 +16,13 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 )
 
-func runNginx(ctx context.Context, boot *Booter, ready chan<- bool) error {
+type runNginx struct{}
+
+func (runNginx) String() string {
+	return "nginx"
+}
+
+func (runNginx) Run(ctx context.Context, fail func(error), boot *Booter) error {
 	vars := map[string]string{
 		"SSLCERT":   filepath.Join(boot.SourcePath, "services", "api", "tmp", "self-signed.pem"), // TODO: root ca
 		"SSLKEY":    filepath.Join(boot.SourcePath, "services", "api", "tmp", "self-signed.key"), // TODO: root ca
@@ -69,9 +75,11 @@ func runNginx(ctx context.Context, boot *Booter, ready chan<- bool) error {
 			}
 		}
 	}
-	go connectAndClose(ctx, boot.cluster.Services.Controller.ExternalURL.Host, ready)
-	return boot.RunProgram(ctx, ".", nil, nil, nginx,
-		"-g", "error_log stderr info;",
-		"-g", "pid "+filepath.Join(boot.tempdir, "nginx.pid")+";",
-		"-c", conffile)
+	go func() {
+		fail(boot.RunProgram(ctx, ".", nil, nil, nginx,
+			"-g", "error_log stderr info;",
+			"-g", "pid "+filepath.Join(boot.tempdir, "nginx.pid")+";",
+			"-c", conffile))
+	}()
+	return waitForConnect(ctx, boot.cluster.Services.Controller.ExternalURL.Host)
 }

@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -18,9 +19,20 @@ import (
 	"github.com/lib/pq"
 )
 
-func runPostgres(ctx context.Context, boot *Booter, ready chan<- bool) error {
+type runPostgreSQL struct{}
+
+func (runPostgreSQL) String() string {
+	return "postgresql"
+}
+
+func (runPostgreSQL) Run(ctx context.Context, fail func(error), boot *Booter) error {
+	err := boot.wait(ctx, createCertificates{})
+	if err != nil {
+		return err
+	}
+
 	buf := bytes.NewBuffer(nil)
-	err := boot.RunProgram(ctx, boot.tempdir, buf, nil, "pg_config", "--bindir")
+	err = boot.RunProgram(ctx, boot.tempdir, buf, nil, "pg_config", "--bindir")
 	if err != nil {
 		return err
 	}
@@ -44,57 +56,45 @@ func runPostgres(ctx context.Context, boot *Booter, ready chan<- bool) error {
 
 	port := boot.cluster.PostgreSQL.Connection["port"]
 
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
 	go func() {
-		for {
-			if ctx.Err() != nil {
-				return
-			}
-			if exec.CommandContext(ctx, "pg_isready", "--timeout=10", "--host="+boot.cluster.PostgreSQL.Connection["host"], "--port="+port).Run() == nil {
-				break
-			}
-			time.Sleep(time.Second / 2)
-		}
-		db, err := sql.Open("postgres", arvados.PostgreSQLConnection{
-			"host":   datadir,
-			"port":   port,
-			"dbname": "postgres",
-		}.String())
-		if err != nil {
-			boot.logger.WithError(err).Error("db open failed")
-			cancel()
-			return
-		}
-		defer db.Close()
-		conn, err := db.Conn(ctx)
-		if err != nil {
-			boot.logger.WithError(err).Error("db conn failed")
-			cancel()
-			return
-		}
-		defer conn.Close()
-		_, err = conn.ExecContext(ctx, `CREATE USER `+pq.QuoteIdentifier(boot.cluster.PostgreSQL.Connection["user"])+` WITH SUPERUSER ENCRYPTED PASSWORD `+pq.QuoteLiteral(boot.cluster.PostgreSQL.Connection["password"]))
-		if err != nil {
-			boot.logger.WithError(err).Error("createuser failed")
-			cancel()
-			return
-		}
-		_, err = conn.ExecContext(ctx, `CREATE DATABASE `+pq.QuoteIdentifier(boot.cluster.PostgreSQL.Connection["dbname"]))
-		if err != nil {
-			boot.logger.WithError(err).Error("createdb failed")
-			cancel()
-			return
-		}
-		close(ready)
-		return
+		fail(boot.RunProgram(ctx, boot.tempdir, nil, nil, filepath.Join(bindir, "postgres"),
+			"-l",          // enable ssl
+			"-D", datadir, // data dir
+			"-k", datadir, // socket dir
+			"-p", boot.cluster.PostgreSQL.Connection["port"],
+		))
 	}()
 
-	return boot.RunProgram(ctx, boot.tempdir, nil, nil, filepath.Join(bindir, "postgres"),
-		"-l",          // enable ssl
-		"-D", datadir, // data dir
-		"-k", datadir, // socket dir
-		"-p", boot.cluster.PostgreSQL.Connection["port"],
-	)
+	for {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		if exec.CommandContext(ctx, "pg_isready", "--timeout=10", "--host="+boot.cluster.PostgreSQL.Connection["host"], "--port="+port).Run() == nil {
+			break
+		}
+		time.Sleep(time.Second / 2)
+	}
+	db, err := sql.Open("postgres", arvados.PostgreSQLConnection{
+		"host":   datadir,
+		"port":   port,
+		"dbname": "postgres",
+	}.String())
+	if err != nil {
+		return fmt.Errorf("db open failed: %s", err)
+	}
+	defer db.Close()
+	conn, err := db.Conn(ctx)
+	if err != nil {
+		return fmt.Errorf("db conn failed: %s", err)
+	}
+	defer conn.Close()
+	_, err = conn.ExecContext(ctx, `CREATE USER `+pq.QuoteIdentifier(boot.cluster.PostgreSQL.Connection["user"])+` WITH SUPERUSER ENCRYPTED PASSWORD `+pq.QuoteLiteral(boot.cluster.PostgreSQL.Connection["password"]))
+	if err != nil {
+		return fmt.Errorf("createuser failed: %s", err)
+	}
+	_, err = conn.ExecContext(ctx, `CREATE DATABASE `+pq.QuoteIdentifier(boot.cluster.PostgreSQL.Connection["dbname"]))
+	if err != nil {
+		return fmt.Errorf("createdb failed: %s", err)
+	}
+	return nil
 }

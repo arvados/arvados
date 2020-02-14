@@ -10,7 +10,13 @@ import (
 	"path/filepath"
 )
 
-func createCertificates(ctx context.Context, boot *Booter, ready chan<- bool) error {
+type createCertificates struct{}
+
+func (createCertificates) String() string {
+	return "certificates"
+}
+
+func (createCertificates) Run(ctx context.Context, fail func(error), boot *Booter) error {
 	// Generate root key
 	err := boot.RunProgram(ctx, boot.tempdir, nil, nil, "openssl", "genrsa", "-out", "rootCA.key", "4096")
 	if err != nil {
@@ -48,8 +54,5 @@ subjectAltName=DNS:localhost,DNS:localhost.localdomain
 	if err != nil {
 		return err
 	}
-
-	close(ready)
-	<-ctx.Done()
 	return nil
 }

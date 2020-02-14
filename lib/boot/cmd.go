@@ -36,6 +36,16 @@ import (
 
 var Command cmd.Handler = bootCommand{}
 
+type bootTask interface {
+	// Execute the task. Run should return nil when the task is
+	// done enough to satisfy a dependency relationship (e.g., the
+	// service is running and ready). If the task starts a
+	// goroutine that fails after Run returns (e.g., the service
+	// shuts down), it should call cancel.
+	Run(ctx context.Context, fail func(error), boot *Booter) error
+	String() string
+}
+
 type bootCommand struct{}
 
 func (bootCommand) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
@@ -111,6 +121,7 @@ type Booter struct {
 	cancel        context.CancelFunc
 	done          chan struct{}
 	healthChecker *health.Aggregator
+	tasksReady    map[string]chan bool
 
 	tempdir    string
 	configfile string
@@ -214,48 +225,68 @@ func (boot *Booter) run(loader *config.Loader) error {
 		return err
 	}
 
-	var wg sync.WaitGroup
-	components := map[string]*component{
-		"certificates":  &component{runFunc: createCertificates},
-		"database":      &component{runFunc: runPostgres, depends: []string{"certificates"}},
-		"nginx":         &component{runFunc: runNginx},
-		"controller":    &component{cmdHandler: controller.Command, depends: []string{"database"}},
-		"dispatchcloud": &component{cmdHandler: dispatchcloud.Command, notIfTest: true},
-		"git-httpd":     &component{goProg: "services/arv-git-httpd"},
-		"health":        &component{goProg: "services/health"},
-		"keep-balance":  &component{goProg: "services/keep-balance", notIfTest: true},
-		"keepproxy":     &component{goProg: "services/keepproxy"},
-		"keepstore":     &component{goProg: "services/keepstore", svc: boot.cluster.Services.Keepstore},
-		"keep-web":      &component{goProg: "services/keep-web"},
-		"railsAPI":      &component{svc: boot.cluster.Services.RailsAPI, railsApp: "services/api", depends: []string{"database"}},
-		"workbench1":    &component{svc: boot.cluster.Services.Workbench1, railsApp: "apps/workbench"},
-		"ws":            &component{goProg: "services/ws", depends: []string{"database"}},
+	tasks := []bootTask{
+		createCertificates{},
+		runPostgreSQL{},
+		runNginx{},
+		runServiceCommand{name: "controller", command: controller.Command, depends: []bootTask{runPostgreSQL{}}},
+		runGoProgram{src: "services/arv-git-httpd"},
+		runGoProgram{src: "services/health"},
+		runGoProgram{src: "services/keepproxy"},
+		runGoProgram{src: "services/keepstore", svc: boot.cluster.Services.Keepstore},
+		runGoProgram{src: "services/keep-web"},
+		runGoProgram{src: "services/ws", depends: []bootTask{runPostgreSQL{}}},
+		installPassenger{src: "services/api"},
+		runPassenger{src: "services/api", svc: boot.cluster.Services.RailsAPI, depends: []bootTask{createCertificates{}, runPostgreSQL{}, installPassenger{src: "services/api"}}},
+		installPassenger{src: "apps/workbench"},
+		runPassenger{src: "apps/workbench", svc: boot.cluster.Services.Workbench1, depends: []bootTask{installPassenger{src: "apps/workbench"}}},
+		seedDatabase{},
 	}
-	for _, cmpt := range components {
-		cmpt.ready = make(chan bool)
+	if boot.ClusterType != "test" {
+		tasks = append(tasks,
+			runServiceCommand{name: "dispatchcloud", command: dispatchcloud.Command},
+			runGoProgram{src: "services/keep-balance"},
+		)
 	}
-	for name, cmpt := range components {
-		name, cmpt := name, cmpt
-		wg.Add(1)
+	boot.tasksReady = map[string]chan bool{}
+	for _, task := range tasks {
+		boot.tasksReady[task.String()] = make(chan bool)
+	}
+	for _, task := range tasks {
+		task := task
+		fail := func(err error) {
+			if boot.ctx.Err() != nil {
+				return
+			}
+			boot.cancel()
+			boot.logger.WithField("task", task).WithError(err).Error("task failed")
+		}
 		go func() {
-			defer wg.Done()
-			defer boot.cancel()
-			for _, dep := range cmpt.depends {
-				boot.logger.WithField("component", name).WithField("dependency", dep).Info("waiting")
-				select {
-				case <-components[dep].ready:
-				case <-boot.ctx.Done():
-					return
-				}
+			boot.logger.WithField("task", task).Info("starting")
+			err := task.Run(boot.ctx, fail, boot)
+			if err != nil {
+				fail(err)
+				return
 			}
-			boot.logger.WithField("component", name).Info("starting")
-			err := cmpt.Run(boot.ctx, name, boot)
-			if err != nil && err != context.Canceled {
-				boot.logger.WithError(err).WithField("component", name).Error("exited")
-			}
+			close(boot.tasksReady[task.String()])
 		}()
 	}
-	wg.Wait()
+	return boot.wait(boot.ctx, tasks...)
+}
+
+func (boot *Booter) wait(ctx context.Context, tasks ...bootTask) error {
+	for _, task := range tasks {
+		ch, ok := boot.tasksReady[task.String()]
+		if !ok {
+			return fmt.Errorf("no such task: %s", task)
+		}
+		boot.logger.WithField("task", task).Info("waiting")
+		select {
+		case <-ch:
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
 	return nil
 }
 
@@ -393,116 +424,6 @@ func (boot *Booter) RunProgram(ctx context.Context, dir string, output io.Writer
 		return fmt.Errorf("%s: error: %v", cmdline, err)
 	}
 	return nil
-}
-
-type component struct {
-	name       string
-	svc        arvados.Service
-	cmdHandler cmd.Handler
-	runFunc    func(ctx context.Context, boot *Booter, ready chan<- bool) error
-	railsApp   string   // source dir in arvados tree, e.g., "services/api"
-	goProg     string   // source dir in arvados tree, e.g., "services/keepstore"
-	notIfTest  bool     // don't run this component on a test cluster
-	depends    []string // don't start until all of these components are ready
-
-	ready chan bool
-}
-
-func (cmpt *component) Run(ctx context.Context, name string, boot *Booter) error {
-	if cmpt.notIfTest && boot.ClusterType == "test" {
-		fmt.Fprintf(boot.Stderr, "skipping component %q in %s mode\n", name, boot.ClusterType)
-		<-ctx.Done()
-		return nil
-	}
-	fmt.Fprintf(boot.Stderr, "starting component %q\n", name)
-	if cmpt.cmdHandler != nil {
-		errs := make(chan error, 1)
-		go func() {
-			defer close(errs)
-			exitcode := cmpt.cmdHandler.RunCommand(name, []string{"-config", boot.configfile}, bytes.NewBuffer(nil), boot.Stderr, boot.Stderr)
-			if exitcode != 0 {
-				errs <- fmt.Errorf("exit code %d", exitcode)
-			}
-		}()
-		select {
-		case err := <-errs:
-			return err
-		case <-ctx.Done():
-			// cmpt.cmdHandler.RunCommand() doesn't have
-			// access to our context, so it won't shut
-			// down by itself. We just abandon it.
-			return nil
-		}
-	}
-	if cmpt.goProg != "" {
-		boot.RunProgram(ctx, cmpt.goProg, nil, nil, "go", "install")
-		if ctx.Err() != nil {
-			return nil
-		}
-		_, basename := filepath.Split(cmpt.goProg)
-		if len(cmpt.svc.InternalURLs) > 0 {
-			// Run one for each URL
-			var wg sync.WaitGroup
-			for u := range cmpt.svc.InternalURLs {
-				u := u
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
-					boot.RunProgram(ctx, boot.tempdir, nil, []string{"ARVADOS_SERVICE_INTERNAL_URL=" + u.String()}, basename)
-				}()
-			}
-			wg.Wait()
-		} else {
-			// Just run one
-			boot.RunProgram(ctx, boot.tempdir, nil, nil, basename)
-		}
-		return nil
-	}
-	if cmpt.runFunc != nil {
-		return cmpt.runFunc(ctx, boot, cmpt.ready)
-	}
-	if cmpt.railsApp != "" {
-		port, err := internalPort(cmpt.svc)
-		if err != nil {
-			return fmt.Errorf("bug: no InternalURLs for component %q: %v", name, cmpt.svc.InternalURLs)
-		}
-		var buf bytes.Buffer
-		err = boot.RunProgram(ctx, cmpt.railsApp, &buf, nil, "gem", "list", "--details", "bundler")
-		if err != nil {
-			return err
-		}
-		for _, version := range []string{"1.11.0", "1.17.3", "2.0.2"} {
-			if !strings.Contains(buf.String(), "("+version+")") {
-				err = boot.RunProgram(ctx, cmpt.railsApp, nil, nil, "gem", "install", "--user", "bundler:1.11", "bundler:1.17.3", "bundler:2.0.2")
-				if err != nil {
-					return err
-				}
-				break
-			}
-		}
-		err = boot.RunProgram(ctx, cmpt.railsApp, nil, nil, "bundle", "install", "--jobs", "4", "--path", filepath.Join(os.Getenv("HOME"), ".gem"))
-		if err != nil {
-			return err
-		}
-		err = boot.RunProgram(ctx, cmpt.railsApp, nil, nil, "bundle", "exec", "passenger-config", "build-native-support")
-		if err != nil {
-			return err
-		}
-		err = boot.RunProgram(ctx, cmpt.railsApp, nil, nil, "bundle", "exec", "passenger-config", "install-standalone-runtime")
-		if err != nil {
-			return err
-		}
-		err = boot.RunProgram(ctx, cmpt.railsApp, nil, nil, "bundle", "exec", "passenger-config", "validate-install")
-		if err != nil {
-			return err
-		}
-		err = boot.RunProgram(ctx, cmpt.railsApp, nil, nil, "bundle", "exec", "passenger", "start", "-p", port)
-		if err != nil {
-			return err
-		}
-		return nil
-	}
-	return fmt.Errorf("bug: component %q has nothing to run", name)
 }
 
 func (boot *Booter) autofillConfig(cfg *arvados.Config, log logrus.FieldLogger) error {
@@ -662,7 +583,7 @@ func availablePort() (int, error) {
 
 // Try to connect to addr until it works, then close ch. Give up if
 // ctx cancels.
-func connectAndClose(ctx context.Context, addr string, ch chan<- bool) {
+func waitForConnect(ctx context.Context, addr string) error {
 	dialer := net.Dialer{Timeout: time.Second}
 	for ctx.Err() == nil {
 		conn, err := dialer.DialContext(ctx, "tcp", addr)
@@ -671,7 +592,7 @@ func connectAndClose(ctx context.Context, addr string, ch chan<- bool) {
 			continue
 		}
 		conn.Close()
-		close(ch)
-		return
+		return nil
 	}
+	return ctx.Err()
 }
