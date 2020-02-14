@@ -20,6 +20,7 @@ import { Chips } from '~/components/chips/chips';
 import { formatPropertyValue } from "~/common/formatters";
 import { Vocabulary } from '~/models/vocabulary';
 import { connectVocabulary } from '../resource-properties-form/property-field-common';
+import * as _ from 'lodash';
 
 type CssRules = 'label' | 'button';
 
@@ -45,7 +46,7 @@ interface SearchBarAdvancedPropertiesViewDataProps {
 
 interface SearchBarAdvancedPropertiesViewActionProps {
     setProps: () => void;
-    setProp: (propertyValues: PropertyValue, properties: PropertyValue[]) => void;
+    addProp: (propertyValues: PropertyValue, properties: PropertyValue[]) => void;
     getAllFields: (propertyValues: PropertyValue[]) => PropertyValue[] | [];
 }
 
@@ -64,7 +65,16 @@ const mapDispatchToProps = (dispatch: Dispatch) => ({
     setProps: (propertyValues: PropertyValue[]) => {
         dispatch<any>(changeAdvancedFormProperty('properties', propertyValues));
     },
-    setProp: (propertyValue: PropertyValue, properties: PropertyValue[]) => {
+    addProp: (propertyValue: PropertyValue, properties: PropertyValue[]) => {
+        // Remove potential duplicates
+        properties = properties.filter(x => ! _.isEqual(
+            {
+                key: x.keyID || x.key,
+                value: x.valueID || x.value
+            }, {
+                key: propertyValue.keyID || propertyValue.key,
+                value: propertyValue.valueID || propertyValue.value
+            }));
         dispatch<any>(changeAdvancedFormProperty(
             'properties',
             [...properties, propertyValue]
@@ -83,7 +93,7 @@ export const SearchBarAdvancedPropertiesView = compose(
     connectVocabulary,
     connect(mapStateToProps, mapDispatchToProps))(
     withStyles(styles)(
-        ({ classes, fields, propertyValues, setProps, setProp, getAllFields, vocabulary }: SearchBarAdvancedPropertiesViewProps) =>
+        ({ classes, fields, propertyValues, setProps, addProp, getAllFields, vocabulary }: SearchBarAdvancedPropertiesViewProps) =>
             <Grid container item xs={12} spacing={16}>
                 <Grid item xs={2} className={classes.label}>Properties</Grid>
                 <Grid item xs={4}>
@@ -93,7 +103,7 @@ export const SearchBarAdvancedPropertiesView = compose(
                     <SearchBarValueField />
                 </Grid>
                 <Grid container item xs={2} justify='flex-end' alignItems="center">
-                    <Button className={classes.button} onClick={() => setProp(propertyValues, getAllFields(fields))}
+                    <Button className={classes.button} onClick={() => addProp(propertyValues, getAllFields(fields))}
                         color="primary"
                         size='small'
                         variant="contained"
