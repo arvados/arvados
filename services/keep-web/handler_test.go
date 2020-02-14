@@ -19,6 +19,7 @@ import (
 
 	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
@@ -931,6 +932,66 @@ func (s *IntegrationSuite) TestHealthCheckPing(c *check.C) {
 
 	c.Check(resp.Code, check.Equals, http.StatusOK)
 	c.Check(resp.Body.String(), check.Matches, `{"health":"OK"}\n`)
+}
+
+func (s *IntegrationSuite) TestFileContentType(c *check.C) {
+	s.testServer.Config.cluster.Services.WebDAVDownload.ExternalURL.Host = "download.example.com"
+
+	client := s.testServer.Config.Client
+	client.AuthToken = arvadostest.ActiveToken
+	arv, err := arvadosclient.New(&client)
+	c.Assert(err, check.Equals, nil)
+	kc, err := keepclient.MakeKeepClient(arv)
+	c.Assert(err, check.Equals, nil)
+
+	fs, err := (&arvados.Collection{}).FileSystem(&client, kc)
+	c.Assert(err, check.IsNil)
+
+	trials := []struct {
+		filename    string
+		content     string
+		contentType string
+	}{
+		{"picture.txt", "BMX bikes are small this year\n", "text/plain; charset=utf-8"},
+		{"picture.bmp", "BMX bikes are small this year\n", "image/x-ms-bmp"},
+		{"picture.jpg", "BMX bikes are small this year\n", "image/jpeg"},
+		{"picture1", "BMX bikes are small this year\n", "image/bmp"},            // content sniff; "BM" is the magic signature for .bmp
+		{"picture2", "Cars are small this year\n", "text/plain; charset=utf-8"}, // content sniff
+	}
+	for _, trial := range trials {
+		f, err := fs.OpenFile(trial.filename, os.O_CREATE|os.O_WRONLY, 0777)
+		c.Assert(err, check.IsNil)
+		_, err = f.Write([]byte(trial.content))
+		c.Assert(err, check.IsNil)
+		c.Assert(f.Close(), check.IsNil)
+	}
+	mtxt, err := fs.MarshalManifest(".")
+	c.Assert(err, check.IsNil)
+	var coll arvados.Collection
+	err = client.RequestAndDecode(&coll, "POST", "arvados/v1/collections", nil, map[string]interface{}{
+		"collection": map[string]string{
+			"manifest_text": mtxt,
+		},
+	})
+	c.Assert(err, check.IsNil)
+
+	for _, trial := range trials {
+		u, _ := url.Parse("http://download.example.com/by_id/" + coll.UUID + "/" + trial.filename)
+		req := &http.Request{
+			Method:     "GET",
+			Host:       u.Host,
+			URL:        u,
+			RequestURI: u.RequestURI(),
+			Header: http.Header{
+				"Authorization": {"Bearer " + client.AuthToken},
+			},
+		}
+		resp := httptest.NewRecorder()
+		s.testServer.Handler.ServeHTTP(resp, req)
+		c.Check(resp.Code, check.Equals, http.StatusOK)
+		c.Check(resp.Header().Get("Content-Type"), check.Equals, trial.contentType)
+		c.Check(resp.Body.String(), check.Equals, trial.content)
+	}
 }
 
 func copyHeader(h http.Header) http.Header {
