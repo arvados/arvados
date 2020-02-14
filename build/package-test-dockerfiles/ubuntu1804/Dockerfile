@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 FROM ubuntu:bionic
-MAINTAINER Ward Vandewege <wvandewege@veritasgenetics.com>
+MAINTAINER Arvados Package Maintainers <packaging@arvados.org>
 
 ENV DEBIAN_FRONTEND noninteractive
 
