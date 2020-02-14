@@ -18,7 +18,6 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -82,6 +81,7 @@ func (bootCommand) RunCommand(prog string, args []string, stdin io.Reader, stdou
 	flags.StringVar(&boot.SourcePath, "source", ".", "arvados source tree `directory`")
 	flags.StringVar(&boot.LibPath, "lib", "/var/lib/arvados", "`directory` to install dependencies and library files")
 	flags.StringVar(&boot.ClusterType, "type", "production", "cluster `type`: development, test, or production")
+	flags.StringVar(&boot.ControllerAddr, "controller-address", ":0", "desired controller address, `host:port` or `:port`")
 	flags.BoolVar(&boot.OwnTemporaryDatabase, "own-temporary-database", false, "bring up a postgres server and create a temporary database")
 	err = flags.Parse(args)
 	if err == flag.ErrHelp {
@@ -111,6 +111,7 @@ type Booter struct {
 	SourcePath           string // e.g., /home/username/src/arvados
 	LibPath              string // e.g., /var/lib/arvados
 	ClusterType          string // e.g., production
+	ControllerAddr       string // e.g., 127.0.0.1:8000
 	OwnTemporaryDatabase bool
 	Stderr               io.Writer
 
@@ -431,7 +432,37 @@ func (boot *Booter) autofillConfig(cfg *arvados.Config, log logrus.FieldLogger) 
 	if err != nil {
 		return err
 	}
-	port := 9000
+	usedPort := map[string]bool{}
+	nextPort := func() string {
+		for {
+			port, err := availablePort(":0")
+			if err != nil {
+				panic(err)
+			}
+			if usedPort[port] {
+				continue
+			}
+			usedPort[port] = true
+			return port
+		}
+	}
+	if cluster.Services.Controller.ExternalURL.Host == "" {
+		h, p, err := net.SplitHostPort(boot.ControllerAddr)
+		if err != nil {
+			return err
+		}
+		if h == "" {
+			h = "localhost"
+		}
+		if p == "0" {
+			p, err = availablePort(":0")
+			if err != nil {
+				return err
+			}
+			usedPort[p] = true
+		}
+		cluster.Services.Controller.ExternalURL = arvados.URL{Scheme: "https", Host: net.JoinHostPort(h, p)}
+	}
 	for _, svc := range []*arvados.Service{
 		&cluster.Services.Controller,
 		&cluster.Services.DispatchCloud,
@@ -448,12 +479,6 @@ func (boot *Booter) autofillConfig(cfg *arvados.Config, log logrus.FieldLogger) 
 		if svc == &cluster.Services.DispatchCloud && boot.ClusterType == "test" {
 			continue
 		}
-		if len(svc.InternalURLs) == 0 {
-			port++
-			svc.InternalURLs = map[arvados.URL]arvados.ServiceInstance{
-				arvados.URL{Scheme: "http", Host: fmt.Sprintf("localhost:%d", port)}: arvados.ServiceInstance{},
-			}
-		}
 		if svc.ExternalURL.Host == "" && (svc == &cluster.Services.Controller ||
 			svc == &cluster.Services.GitHTTP ||
 			svc == &cluster.Services.Keepproxy ||
@@ -461,8 +486,12 @@ func (boot *Booter) autofillConfig(cfg *arvados.Config, log logrus.FieldLogger) 
 			svc == &cluster.Services.WebDAVDownload ||
 			svc == &cluster.Services.Websocket ||
 			svc == &cluster.Services.Workbench1) {
-			port++
-			svc.ExternalURL = arvados.URL{Scheme: "https", Host: fmt.Sprintf("localhost:%d", port)}
+			svc.ExternalURL = arvados.URL{Scheme: "https", Host: fmt.Sprintf("localhost:%s", nextPort())}
+		}
+		if len(svc.InternalURLs) == 0 {
+			svc.InternalURLs = map[arvados.URL]arvados.ServiceInstance{
+				arvados.URL{Scheme: "http", Host: fmt.Sprintf("localhost:%s", nextPort())}: arvados.ServiceInstance{},
+			}
 		}
 	}
 	if cluster.SystemRootToken == "" {
@@ -489,8 +518,7 @@ func (boot *Booter) autofillConfig(cfg *arvados.Config, log logrus.FieldLogger) 
 	}
 	if boot.ClusterType == "test" {
 		// Add a second keepstore process.
-		port++
-		cluster.Services.Keepstore.InternalURLs[arvados.URL{Scheme: "http", Host: fmt.Sprintf("localhost:%d", port)}] = arvados.ServiceInstance{}
+		cluster.Services.Keepstore.InternalURLs[arvados.URL{Scheme: "http", Host: fmt.Sprintf("localhost:%s", nextPort())}] = arvados.ServiceInstance{}
 
 		// Create a directory-backed volume for each keepstore
 		// process.
@@ -514,14 +542,10 @@ func (boot *Booter) autofillConfig(cfg *arvados.Config, log logrus.FieldLogger) 
 		}
 	}
 	if boot.OwnTemporaryDatabase {
-		p, err := availablePort()
-		if err != nil {
-			return err
-		}
 		cluster.PostgreSQL.Connection = arvados.PostgreSQLConnection{
 			"client_encoding": "utf8",
 			"host":            "localhost",
-			"port":            strconv.Itoa(p),
+			"port":            nextPort(),
 			"dbname":          "arvados_test",
 			"user":            "arvados",
 			"password":        "insecure_arvados_test",
@@ -568,17 +592,17 @@ func externalPort(svc arvados.Service) (string, error) {
 	}
 }
 
-func availablePort() (int, error) {
-	ln, err := net.Listen("tcp", ":0")
+func availablePort(addr string) (string, error) {
+	ln, err := net.Listen("tcp", addr)
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 	defer ln.Close()
-	_, p, err := net.SplitHostPort(ln.Addr().String())
+	_, port, err := net.SplitHostPort(ln.Addr().String())
 	if err != nil {
-		return 0, err
+		return "", err
 	}
-	return strconv.Atoi(p)
+	return port, nil
 }
 
 // Try to connect to addr until it works, then close ch. Give up if
