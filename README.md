@@ -15,9 +15,7 @@ resources.
 
 The key components of Arvados are:
 
-## Keep
-
-Keep is the Arvados storage system for managing and storing large
+* *Keep*: Keep is the Arvados storage system for managing and storing large
 collections of files.  Keep combines content addressing and a
 distributed storage architecture resulting in both high reliability
 and high throughput.  Every file stored in Keep can be accurately
@@ -26,29 +24,21 @@ collections as a flexible way to define data sets without having to
 re-organize or needlessly copy data. Keep works on a wide range of
 underlying filesystems and object stores.
 
-## Crunch
-
-Crunch is the orchestration system for running [Common Workflow Language](https://www.commonwl.org) workflows. It is
+* *Crunch*: Crunch is the orchestration system for running [Common Workflow Language](https://www.commonwl.org) workflows. It is
 designed to maintain data provenance and workflow
 reproducibility. Crunch automatically tracks data inputs and outputs
 through Keep and executes workflow processes in Docker containers.  In
 a cloud environment, Crunch optimizes costs by scaling compute on demand.
 
-## Workbench
-
-The Workbench web application allows users to interactively access
+* *Workbench*: The Workbench web application allows users to interactively access
 Arvados functionality.  It is especially helpful for querying and
 browsing data, visualizing provenance, and tracking the progress of
 workflows.
 
-## Command Line
-
-The command line interface (CLI) provides convenient access to Arvados
+* *Command Line tools*: The command line interface (CLI) provides convenient access to Arvados
 functionality in the Arvados platform from the command line.
 
-## API and SDKs
-
-Arvados is designed to be integrated with existing infrastructure. All
+* *API and SDKs*: Arvados is designed to be integrated with existing infrastructure. All
 the services in Arvados are accessed through a RESTful API.  SDKs are
 available for Python, Go, R, Perl, Ruby, and Java.
 
