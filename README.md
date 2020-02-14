@@ -6,24 +6,51 @@
 
 <img align="right" src="doc/images/dax.png" height="240px">
 
-[Arvados](https://arvados.org) is a free software distributed computing platform
-for bioinformatics, data science, and high throughput analysis of massive data
-sets.  Arvados supports a variety of cloud, cluster and HPC environments.
+[Arvados](https://arvados.org) is an open source platform for
+managing, processing, and sharing genomic and other large scientific
+and biomedical data.  With Arvados, bioinformaticians run and scale
+compute-intensive workflows, developers create biomedical
+applications, and IT administrators manage large compute and storage
+resources.
 
-Arvados consists of:
+The key components of Arvados are:
 
-* *Keep*: A petabyte-scale content-addressed distributed storage
-  system for storing, managing and versioning collections of files.
-  Like git for big data.  Interoperable data access by a variety of
-  methods including WebDAV, FUSE file system mount, and Arvados APIs.
+## Keep
 
-* *Crunch*: A container-based cloud and HPC workflow engine providing
-  strong versioning, reproducibilty, and provenance of large-scale
-  computations.  Supports [Common Workflow
-  Language](https://www.commonwl.org) for describing workflows.
+Keep is the Arvados storage system for managing and storing large
+collections of files.  Keep combines content addressing and a
+distributed storage architecture resulting in both high reliability
+and high throughput.  Every file stored in Keep can be accurately
+verified every time it is retrieved.  Keep supports the creation of
+collections as a flexible way to define data sets without having to
+re-organize or needlessly copy data. Keep works on a wide range of
+underlying filesystems and object stores.
 
-* Related services and components including a web workbench for managing files
-  and compute jobs, REST APIs, SDKs, and other tools.
+## Crunch
+
+Crunch is the orchestration system for running [Common Workflow Language](https://www.commonwl.org) workflows. It is
+designed to maintain data provenance and workflow
+reproducibility. Crunch automatically tracks data inputs and outputs
+through Keep and executes workflow processes in Docker containers.  In
+a cloud environment, Crunch optimizes costs by scaling compute on demand.
+
+## Workbench
+
+The Workbench web application allows users to interactively access
+Arvados functionality.  It is especially helpful for querying and
+browsing data, visualizing provenance, and tracking the progress of
+workflows.
+
+## Command Line
+
+The command line interface (CLI) provides convenient access to Arvados
+functionality in the Arvados platform from the command line.
+
+## API and SDKs
+
+Arvados is designed to be integrated with existing infrastructure. All
+the services in Arvados are accessed through a RESTful API.  SDKs are
+available for Python, Go, R, Perl, Ruby, and Java.
 
 # Quick start
 
