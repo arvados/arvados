@@ -32,11 +32,17 @@ type Collection struct {
 	ReplicationDesired        *int                   `json:"replication_desired"`
 	StorageClassesDesired     []string               `json:"storage_classes_desired"`
 	StorageClassesConfirmed   []string               `json:"storage_classes_confirmed"`
-	StorageClassesConfirmedAt time.Time              `json:"storage_classes_confirmed_at"`
+	StorageClassesConfirmedAt *time.Time             `json:"storage_classes_confirmed_at"`
 	DeleteAt                  *time.Time             `json:"delete_at"`
 	IsTrashed                 bool                   `json:"is_trashed"`
 	Properties                map[string]interface{} `json:"properties"`
 	WritableBy                []string               `json:"writable_by,omitempty"`
+	FileCount                 int                    `json:"file_count"`
+	FileSizeTotal             int64                  `json:"file_size_total"`
+	Version                   int                    `json:"version"`
+	PreserveVersion           bool                   `json:"preserve_version"`
+	CurrentVersionUUID        string                 `json:"current_version_uuid"`
+	Description               string                 `json:"description"`
 }
 
 func (c Collection) resourceName() string {

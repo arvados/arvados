@@ -30,44 +30,37 @@ Note to developers: Add new items at the top. Include the date, issue number, co
 TODO: extract this information based on git commit messages and generate changelogs / release notes automatically.
 {% endcomment %}
 
-h3(#master). development master (as of 2020-01-16)
-
-h4. New property vocabulary format for Workbench2
-
-(feature "#14151":https://dev.arvados.org/issues/14151) Workbench2 supports a new vocabulary format and it isn't compatible with the previous one, please read the "workbench2 vocabulary format admin page":{{site.baseurl}}/admin/workbench2-vocabulary.html for more information.
-
-h4. "/" prohibited in collection and project names
-
-(issue "#15836":https://dev.arvados.org/issues/15836) By default, Arvados now rejects new names containing the @/@ character when creating or renaming collections and projects. Previously, these names were permitted, but the resulting objects were invisible in the WebDAV "home" tree. If you prefer, you can restore the previous behavior, and optionally configure a substitution string to make the affected objects accessible via WebDAV. See @ForwardSlashNameSubstitution@ in the "configuration reference":config.html.
-
-h4. Migrating to centralized config.yml
-
-See "Migrating Configuration":config-migration.html for notes on migrating legacy per-component configuration files to the new centralized @/etc/arvados/config.yml@.  To ensure a smooth transition, the per-component config files continue to be read, and take precedence over the centralized configuration.
-
-h4. Cloud installations only: node manager replaced by arvados-dispatch-cloud
-
-Node manager is deprecated and replaced by @arvados-dispatch-cloud@.  No automated config migration is available.  Follow the instructions to "install the cloud dispatcher":../install/install-dispatch-cloud.html
-
-*Only one dispatch process should be running at a time.* If you are migrating a system that currently runs Node manager and @crunch-dispatch-slurm@, it is safest to remove the @crunch-dispatch-slurm@ service entirely before installing @arvados-dispatch-cloud@.
-
 <notextile>
-<pre><code>~$ <span class="userinput">sudo systemctl --now disable crunch-dispatch-slurm</span>
-~$ <span class="userinput">sudo apt-get remove crunch-dispatch-slurm</span>
-</code></pre>
+<div class="releasenotes">
 </notextile>
 
-h4. Delete "keep_services" records
+h2(#master). development master (as of 2020-02-07)
 
-After all keepproxy and keepstore configurations have been migrated to the centralized configuration file (see below), all keep_services records you added manually during installation should be removed. System logs from keepstore and keepproxy at startup, as well as the output of @arvados-server config-check@, will remind you to do this.
+"Upgrading from 2.0.0":#v2_0_0
 
-<notextile><pre><code>$ export ARVADOS_API_HOST=...
-$ export ARVADOS_API_TOKEN=...
-$ arv --format=uuid keep_service list | xargs -n1 arv keep_service delete --uuid
-</code></pre></notextile>
+None in current development master.
 
-Once these old records are removed, @arv keep_service list@ will instead return the services listed under Services/Keepstore/InternalURLs and Services/Keepproxy/ExternalURL in your centralized configuration file.
+h2(#v2_0_0). v2.0.0 (2020-02-07)
 
-h4. Keep-balance configuration migration
+"Upgrading from 1.4":#v1_4_1
+
+Arvados 2.0 is a major upgrade, with many changes.  Please read these upgrade notes carefully before you begin.
+
+h3. Migrating to centralized config.yml
+
+See "Migrating Configuration":config-migration.html for notes on migrating legacy per-component configuration files to the new centralized @/etc/arvados/config.yml@.
+
+To ensure a smooth transition, the per-component config files continue to be read, and take precedence over the centralized configuration.  Your cluster should continue to function after upgrade but before doing the full configuration migration.  However, several services (keepstore, keep-web, keepproxy) require a minimal `/etc/arvados/config.yml` to start:
+
+<pre>
+Clusters:
+  zzzzz:
+    Services:
+      Controller:
+        ExternalURL: "https://zzzzz.example.com"
+</pre>
+
+h3. Keep-balance configuration migration
 
 (feature "#14714":https://dev.arvados.org/issues/14714 ) The keep-balance service can now be configured using the centralized configuration file at @/etc/arvados/config.yml@. The following command line and configuration options have changed.
 
@@ -77,11 +70,11 @@ You can no longer specify individual keep services to balance via the @config.Ke
 
 Please see the "config migration guide":{{site.baseurl}}/admin/config-migration.html and "keep-balance install guide":{{site.baseurl}}/install/install-keep-balance.html for more details.
 
-h4. Arv-git-httpd configuration migration
+h3. Arv-git-httpd configuration migration
 
 (feature "#14712":https://dev.arvados.org/issues/14712 ) The arv-git-httpd package can now be configured using the centralized configuration file at @/etc/arvados/config.yml@. Configuration via individual command line arguments is no longer available. Please see "arv-git-httpd's config migration guide":{{site.baseurl}}/admin/config-migration.html#arv-git-httpd for more details.
 
-h4. Keepstore and keep-web configuration migration
+h3. Keepstore and keep-web configuration migration
 
 keepstore and keep-web no longer support configuration via (previously deprecated) command line configuration flags and environment variables.
 
@@ -89,23 +82,22 @@ keep-web now supports the legacy @keep-web.yml@ config format (used by Arvados 1
 
 keepstore now supports the legacy @keepstore.yml@ config format (used by Arvados 1.4) and the new cluster config file format. Please check the "keepstore config migration notes":{{site.baseurl}}/admin/config-migration.html#keepstore and "keepstore install guide":{{site.baseurl}}/install/install-keepstore.html for more details.
 
-h4. Keepproxy configuration migration
+h3. Keepproxy configuration migration
 
 (feature "#14715":https://dev.arvados.org/issues/14715 ) Keepproxy can now be configured using the centralized config at @/etc/arvados/config.yml@. Configuration via individual command line arguments is no longer available and the @DisableGet@, @DisablePut@, and @PIDFile@ configuration options are no longer supported. If you are still using the legacy config and @DisableGet@ or @DisablePut@ are set to true or @PIDFile@ has a value, keepproxy will produce an error and fail to start. Please see "keepproxy's config migration guide":{{site.baseurl}}/admin/config-migration.html#keepproxy for more details.
 
-h4. Jobs API is read-only
+h3. Delete "keep_services" records
 
-(task "#15133":https://dev.arvados.org/issues/15133 ) The legacy 'jobs' API is now read-only.  It has been superceded since Arvados 1.1 by containers / container_requests (aka crunch v2).  Arvados installations since the end of 2017 (v1.1.0) have probably only used containers, and are unaffected by this change.
+After all keepproxy and keepstore configurations have been migrated to the centralized configuration file, all keep_services records you added manually during installation should be removed. System logs from keepstore and keepproxy at startup, as well as the output of @arvados-server config-check@, will remind you to do this.
 
-So that older Arvados sites don't lose access to legacy records, the API has been converted to read-only.  Creating and updating jobs (and related types job_task, pipeline_template and pipeline_instance) is disabled and much of the business logic related has been removed, along with various other code specific to the jobs API.  Specifically, the following programs associated with the jobs API have been removed: @crunch-dispatch.rb@, @crunch-job@, @crunchrunner@, @arv-run-pipeline-instance@, @arv-run@.
+<notextile><pre><code>$ export ARVADOS_API_HOST=...
+$ export ARVADOS_API_TOKEN=...
+$ arv --format=uuid keep_service list | xargs -n1 arv keep_service delete --uuid
+</code></pre></notextile>
 
-h4. No longer stripping ':' from strings in serialized database columns
+Once these old records are removed, @arv keep_service list@ will instead return the services listed under Services/Keepstore/InternalURLs and Services/Keepproxy/ExternalURL in your centralized configuration file.
 
-(bug "#15311":https://dev.arvados.org/issues/15311 ) Strings read from serialized columns in the database with a leading ':' would have the ':' stripped after loading the record.  This behavior existed due to legacy serialization behavior which stored Ruby symbols with a leading ':'.  Unfortunately this corrupted fields where the leading ":" was intentional.  This behavior has been removed.
-
-You can test if any records in your database are affected by going to the API server directory and running @bundle exec rake symbols:check@.  This will report which records contain fields with a leading ':' that would previously have been stripped.  If there are records to be updated, you can update the database using @bundle exec rake symbols:stringify@.
-
-h4. Enabling Postgres trigram indexes
+h3. Enabling Postgres trigram indexes
 
 Feature "#15106":https://dev.arvados.org/issues/15106 improves the speed and functionality of full text search by introducing trigram indexes on text searchable database columns via a migration. Prior to updating, you must first install the postgresql-contrib package on your system and subsequently run the <code class="userprint">CREATE EXTENSION pg_trgm</code> SQL command on the arvados_production database as a postgres superuser.
 
@@ -134,22 +126,67 @@ The "postgres-contrib package":https://www.postgresql.org/docs/10/contrib.html h
 
 Subsequently, the <code class="userinput">psql -d 'arvados_production' -c '\dx'</code> command will display the installed extensions for the arvados_production database. This list should now contain @pg_trgm@.
 
+h3. New Workbench 2
 
-h3(#v1_4_1). v1.4.1 (2019-09-20)
+Workbench 2 is now ready for regular use.  Follow the instructions to "install workbench 2":../install/install-workbench2-app.html
 
-h4. Centos7 Python 3 dependency upgraded to rh-python36
+h3. New property vocabulary format for Workbench2
+
+(feature "#14151":https://dev.arvados.org/issues/14151) Workbench2 supports a new vocabulary format and it isn't compatible with the previous one, please read the "workbench2 vocabulary format admin page":{{site.baseurl}}/admin/workbench2-vocabulary.html for more information.
+
+h3. Cloud installations only: node manager replaced by arvados-dispatch-cloud
+
+Node manager is deprecated and replaced by @arvados-dispatch-cloud@.  No automated config migration is available.  Follow the instructions to "install the cloud dispatcher":../install/install-dispatch-cloud.html
+
+*Only one dispatch process should be running at a time.* If you are migrating a system that currently runs Node manager and @crunch-dispatch-slurm@, it is safest to remove the @crunch-dispatch-slurm@ service entirely before installing @arvados-dispatch-cloud@.
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo systemctl --now disable crunch-dispatch-slurm</span>
+~$ <span class="userinput">sudo apt-get remove crunch-dispatch-slurm</span>
+</code></pre>
+</notextile>
+
+h3. Jobs API is read-only
+
+(task "#15133":https://dev.arvados.org/issues/15133 ) The legacy 'jobs' API is now read-only.  It has been superceded since Arvados 1.1 by containers / container_requests (aka crunch v2).  Arvados installations since the end of 2017 (v1.1.0) have probably only used containers, and are unaffected by this change.
+
+So that older Arvados sites don't lose access to legacy records, the API has been converted to read-only.  Creating and updating jobs (and related types job_task, pipeline_template and pipeline_instance) is disabled and much of the business logic related has been removed, along with various other code specific to the jobs API.  Specifically, the following programs associated with the jobs API have been removed: @crunch-dispatch.rb@, @crunch-job@, @crunchrunner@, @arv-run-pipeline-instance@, @arv-run@.
+
+h3. "/" prohibited in collection and project names
+
+(issue "#15836":https://dev.arvados.org/issues/15836) By default, Arvados now rejects new names containing the @/@ character when creating or renaming collections and projects. Previously, these names were permitted, but the resulting objects were invisible in the WebDAV "home" tree. If you prefer, you can restore the previous behavior, and optionally configure a substitution string to make the affected objects accessible via WebDAV. See @ForwardSlashNameSubstitution@ in the "configuration reference":config.html.
+
+h3. No longer stripping ':' from strings in serialized database columns
+
+(bug "#15311":https://dev.arvados.org/issues/15311 ) Strings read from serialized columns in the database with a leading ':' would have the ':' stripped after loading the record.  This behavior existed due to legacy serialization behavior which stored Ruby symbols with a leading ':'.  Unfortunately this corrupted fields where the leading ":" was intentional.  This behavior has been removed.
+
+You can test if any records in your database are affected by going to the API server directory and running @bundle exec rake symbols:check@.  This will report which records contain fields with a leading ':' that would previously have been stripped.  If there are records to be updated, you can update the database using @bundle exec rake symbols:stringify@.
+
+h3. Scoped tokens should use PATCH for updates
+
+The API server accepts both PUT and PATCH for updates, but they will be normalized to PATCH by arvados-controller.  Scoped tokens should be updated accordingly.
+
+
+
+h2(#v1_4_1). v1.4.1 (2019-09-20)
+
+"Upgrading from 1.4.0":#v1_4_0
+
+h3. Centos7 Python 3 dependency upgraded to rh-python36
 
 The Python 3 dependency for Centos7 Arvados packages was upgraded from rh-python35 to rh-python36.
 
-h3(#v1_4_0). v1.4.0 (2019-06-05)
+h2(#v1_4_0). v1.4.0 (2019-06-05)
 
-h4. Populating the new file_count and file_size_total columns on the collections table
+"Upgrading from 1.3.3":#v1_3_3
+
+h3. Populating the new file_count and file_size_total columns on the collections table
 
 As part of story "#14484":https://dev.arvados.org/issues/14484, two new columns were added to the collections table in a database migration. If your installation has a large collections table, this migration may take some time. We've seen it take ~5 minutes on an installation with 250k collections, but your mileage may vary.
 
 The new columns are initialized with a zero value. In order to populate them, it is necessary to run a script called <code class="userinput">populate-file-info-columns-in-collections.rb</code> from the scripts directory of the API server. This can be done out of band, ideally directly after the API server has been upgraded to v1.4.0.
 
-h4. Stricter collection manifest validation on the API server
+h3. Stricter collection manifest validation on the API server
 
 As a consequence of "#14482":https://dev.arvados.org/issues/14482, the Ruby SDK does a more rigorous collection manifest validation. Collections created after 2015-05 are unlikely to be invalid, however you may check for invalid manifests using the script below.
 
@@ -206,7 +243,7 @@ end
 
 The script will return a final report enumerating any invalid collection by UUID, with its creation date and error message so you can take the proper correction measures, if needed.
 
-h4. Python packaging change
+h3. Python packaging change
 
 As part of story "#9945":https://dev.arvados.org/issues/9945, the distribution packaging (deb/rpm) of our Python packages has changed. These packages now include a built-in virtualenv to reduce dependencies on system packages. We have also stopped packaging and publishing backports for all the Python dependencies of our packages, as they are no longer needed.
 
@@ -230,29 +267,33 @@ Or alternatively, by updating the shebang line at the start of the script to:
 </pre>
 </notextile>
 
-h4. python-arvados-cwl-runner deb/rpm package now conflicts with python-cwltool deb/rpm package
+h3. python-arvados-cwl-runner deb/rpm package now conflicts with python-cwltool deb/rpm package
 
 As part of story "#9945":https://dev.arvados.org/issues/9945, the distribution packaging (deb/rpm) of our Python packages has changed. The python-arvados-cwl-runner package now includes a version of cwltool. If present, the python-cwltool and cwltool distribution packages will need to be uninstalled before the python-arvados-cwl-runner deb or rpm package can be installed.
 
-h4. Centos7 Python 3 dependency upgraded to rh-python35
+h3. Centos7 Python 3 dependency upgraded to rh-python35
 
 As part of story "#9945":https://dev.arvados.org/issues/9945, the Python 3 dependency for Centos7 Arvados packages was upgraded from SCL python33 to rh-python35.
 
-h4. Centos7 package for libpam-arvados depends on the python-pam package, which is available from EPEL
+h3. Centos7 package for libpam-arvados depends on the python-pam package, which is available from EPEL
 
 As part of story "#9945":https://dev.arvados.org/issues/9945, it was discovered that the Centos7 package for libpam-arvados was missing a dependency on the python-pam package, which is available from the EPEL repository. The dependency has been added to the libpam-arvados package. This means that going forward, the EPEL repository will need to be enabled to install libpam-arvados on Centos7.
 
-h4. New configuration
+h3. New configuration
 
 Arvados is migrating to a centralized configuration file for all components.  During the migration, legacy configuration files will continue to be loaded.  See "Migrating Configuration":config-migration.html for details.
 
-h3(#v1_3_3). v1.3.3 (2019-05-14)
+h2(#v1_3_3). v1.3.3 (2019-05-14)
+
+"Upgrading from 1.3.0":#v1_3_0
 
 This release corrects a potential data loss issue, if you are running Arvados 1.3.0 or 1.3.1 we strongly recommended disabling @keep-balance@ until you can upgrade to 1.3.3 or 1.4.0. With keep-balance disabled, there is no chance of data loss.
 
 We've put together a "wiki page":https://dev.arvados.org/projects/arvados/wiki/Recovering_lost_data which outlines how to recover blocks which have been put in the trash, but not yet deleted, as well as how to identify any collections which have missing blocks so that they can be regenerated. The keep-balance component has been enhanced to provide a list of missing blocks and affected collections and we've provided a "utility script":https://github.com/arvados/arvados/blob/master/tools/keep-xref/keep-xref.py  which can be used to identify the workflows that generated those collections and who ran those workflows, so that they can be rerun.
 
-h3(#v1_3_0). v1.3.0 (2018-12-05)
+h2(#v1_3_0). v1.3.0 (2018-12-05)
+
+"Upgrading from 1.2":#v1_2_0
 
 This release includes several database migrations, which will be executed automatically as part of the API server upgrade. On large Arvados installations, these migrations will take a while. We've seen the upgrade take 30 minutes or more on installations with a lot of collections.
 
@@ -260,13 +301,15 @@ The @arvados-controller@ component now requires the /etc/arvados/config.yml file
 
 Support for the deprecated "jobs" API is broken in this release.  Users who rely on it should not upgrade.  This will be fixed in an upcoming 1.3.1 patch release, however users are "encouraged to migrate":upgrade-crunch2.html as support for the "jobs" API will be dropped in an upcoming release.  Users who are already using the "containers" API are not affected.
 
-h3(#v1_2_1). v1.2.1 (2018-11-26)
+h2(#v1_2_1). v1.2.1 (2018-11-26)
 
 There are no special upgrade notes for this release.
 
-h3(#v1_2_0). v1.2.0 (2018-09-05)
+h2(#v1_2_0). v1.2.0 (2018-09-05)
 
-h4. Regenerate Postgres table statistics
+"Upgrading from 1.1.2 or 1.1.3":#v1_1_2
+
+h3. Regenerate Postgres table statistics
 
 It is recommended to regenerate the table statistics for Postgres after upgrading to v1.2.0. If autovacuum is enabled on your installation, this script would do the trick:
 
@@ -286,7 +329,7 @@ done
 
 If you also need to do the vacuum, you could adapt the script to run 'vacuum analyze' instead of 'analyze'.
 
-h4. New component: arvados-controller
+h3. New component: arvados-controller
 
 Commit "db5107dca":https://dev.arvados.org/projects/arvados/repository/revisions/db5107dca adds a new system service, arvados-controller. More detail is available in story "#13496":https://dev.arvados.org/issues/13497.
 
@@ -294,9 +337,11 @@ To add the Arvados Controller to your system please refer to the "installation i
 
 Verify your setup by confirming that API calls appear in the controller's logs (_e.g._, @journalctl -fu arvados-controller@) while loading a workbench page.
 
-h3(#v1_1_4). v1.1.4 (2018-04-10)
+h2(#v1_1_4). v1.1.4 (2018-04-10)
 
-h4. arvados-cwl-runner regressions (2018-04-05)
+"Upgrading from 1.1.3":#v1_1_3
+
+h3. arvados-cwl-runner regressions (2018-04-05)
 
 <strong>Secondary files missing from toplevel workflow inputs</strong>
 
@@ -421,13 +466,15 @@ baseCommand: echo
 
 This bug has been fixed in Arvados release v1.2.0.
 
-h3(#v1_1_3). v1.1.3 (2018-02-08)
+h2(#v1_1_3). v1.1.3 (2018-02-08)
 
 There are no special upgrade notes for this release.
 
-h3(#v1_1_2). v1.1.2 (2017-12-22)
+h2(#v1_1_2). v1.1.2 (2017-12-22)
 
-h4. The minimum version for Postgres is now 9.4 (2017-12-08)
+"Upgrading from 1.1.0 or 1.1.1":#v1_1_0
+
+h3. The minimum version for Postgres is now 9.4 (2017-12-08)
 
 As part of story "#11908":https://dev.arvados.org/issues/11908, commit "8f987a9271":https://dev.arvados.org/projects/arvados/repository/revisions/8f987a9271 introduces a dependency on Postgres 9.4. Previously, Arvados required Postgres 9.3.
 
@@ -439,13 +486,13 @@ As part of story "#11908":https://dev.arvados.org/issues/11908, commit "8f987a92
 *# Install the @rh-postgresql94@ backport package from either Software Collections: http://doc.arvados.org/install/install-postgresql.html or the Postgres developers: https://www.postgresql.org/download/linux/redhat/
 *# Restore from the backup using @psql@
 
-h3(#v1_1_1). v1.1.1 (2017-11-30)
+h2(#v1_1_1). v1.1.1 (2017-11-30)
 
 There are no special upgrade notes for this release.
 
-h3(#v1_1_0). v1.1.0 (2017-10-24)
+h2(#v1_1_0). v1.1.0 (2017-10-24)
 
-h4. The minimum version for Postgres is now 9.3 (2017-09-25)
+h3. The minimum version for Postgres is now 9.3 (2017-09-25)
 
 As part of story "#12032":https://dev.arvados.org/issues/12032, commit "68bdf4cbb1":https://dev.arvados.org/projects/arvados/repository/revisions/68bdf4cbb1 introduces a dependency on Postgres 9.3. Previously, Arvados required Postgres 9.1.
 
@@ -457,9 +504,9 @@ As part of story "#12032":https://dev.arvados.org/issues/12032, commit "68bdf4cb
 *# Install the @rh-postgresql94@ backport package from either Software Collections: http://doc.arvados.org/install/install-postgresql.html or the Postgres developers: https://www.postgresql.org/download/linux/redhat/
 *# Restore from the backup using @psql@
 
-h3(#older). Older versions
+h2(#older). Older versions
 
-h4. Upgrade slower than usual (2017-06-30)
+h3. Upgrade slower than usual (2017-06-30)
 
 As part of story "#11807":https://dev.arvados.org/issues/11807, commit "55aafbb":https://dev.arvados.org/projects/arvados/repository/revisions/55aafbb converts old "jobs" database records from YAML to JSON, making the upgrade process slower than usual.
 
@@ -467,13 +514,13 @@ As part of story "#11807":https://dev.arvados.org/issues/11807, commit "55aafbb"
 * The conversion runs as a database migration, i.e., during the deb/rpm package upgrade process, while your API server is unavailable.
 * Expect it to take about 1 minute per 20K jobs that have ever been created/run.
 
-h4. Service discovery overhead change in keep-web (2017-06-05)
+h3. Service discovery overhead change in keep-web (2017-06-05)
 
 As part of story "#9005":https://dev.arvados.org/issues/9005, commit "cb230b0":https://dev.arvados.org/projects/arvados/repository/revisions/cb230b0 reduces service discovery overhead in keep-web requests.
 
 * When upgrading keep-web _or keepproxy_ to/past this version, make sure to update API server as well. Otherwise, a bad token in a request can cause keep-web to fail future requests until either keep-web restarts or API server gets upgraded.
 
-h4. Node manager now has an http endpoint for management (2017-04-12)
+h3. Node manager now has an http endpoint for management (2017-04-12)
 
 As part of story "#11349":https://dev.arvados.org/issues/11349, commit "2c094e2":https://dev.arvados.org/projects/arvados/repository/revisions/2c094e2 adds a "management" http server to nodemanager.
 
@@ -482,7 +529,7 @@ As part of story "#11349":https://dev.arvados.org/issues/11349, commit "2c094e2"
   port = 8989</pre> (see example configuration files in source:services/nodemanager/doc or https://doc.arvados.org/install/install-nodemanager.html for more info)
 * The server responds to @http://{address}:{port}/status.json@ with a summary of how many nodes are in each state (booting, busy, shutdown, etc.)
 
-h4. New websockets component (2017-03-23)
+h3. New websockets component (2017-03-23)
 
 As part of story "#10766":https://dev.arvados.org/issues/10766, commit "e8cc0d7":https://dev.arvados.org/projects/arvados/repository/revisions/e8cc0d7 replaces puma with arvados-ws as the recommended websocket server.
 * See http://doc.arvados.org/install/install-ws.html for install/upgrade instructions.
@@ -494,7 +541,7 @@ $ systemctl disable puma
 $ systemctl stop puma
 </pre>
 
-h4. Change of database encoding for hashes and arrays (2017-03-06)
+h3. Change of database encoding for hashes and arrays (2017-03-06)
 
 As part of story "#11168":https://dev.arvados.org/issues/11168, commit "660a614":https://dev.arvados.org/projects/arvados/repository/revisions/660a614 uses JSON instead of YAML to encode hashes and arrays in the database.
 
@@ -502,14 +549,14 @@ As part of story "#11168":https://dev.arvados.org/issues/11168, commit "660a614"
 * Downgrading past this version is not supported, and is likely to cause errors. If this happens, the solution is to upgrade past this version.
 * After upgrading, make sure to restart puma and crunch-dispatch-* processes.
 
-h4. Docker image format compatibility check (2017-02-03)
+h3. Docker image format compatibility check (2017-02-03)
 
 As part of story "#10969":https://dev.arvados.org/issues/10969, commit "74a9dec":https://dev.arvados.org/projects/arvados/repository/revisions/74a9dec introduces a Docker image format compatibility check: the @arv keep docker@ command prevents users from inadvertently saving docker images that compute nodes won't be able to run.
 * If your compute nodes run a version of *docker older than 1.10* you must override the default by adding to your API server configuration (@/etc/arvados/api/application.yml@): <pre><code class="yaml">docker_image_formats: ["v1"]</code></pre>
 * Refer to the comments above @docker_image_formats@ in @/var/www/arvados-api/current/config/application.default.yml@ or source:services/api/config/application.default.yml or issue "#10969":https://dev.arvados.org/issues/10969 for more detail.
 * *NOTE:* This does *not* include any support for migrating existing Docker images from v1 to v2 format. This will come later: for now, sites running Docker 1.9 or earlier should still *avoid upgrading Docker further than 1.9.*
 
-h4. Debian and RPM packages now have systemd unit files (2016-09-27)
+h3. Debian and RPM packages now have systemd unit files (2016-09-27)
 
 Several Debian and RPM packages -- keep-balance ("d9eec0b":https://dev.arvados.org/projects/arvados/repository/revisions/d9eec0b), keep-web ("3399e63":https://dev.arvados.org/projects/arvados/repository/revisions/3399e63), keepproxy ("6de67b6":https://dev.arvados.org/projects/arvados/repository/revisions/6de67b6), and arvados-git-httpd ("9e27ddf":https://dev.arvados.org/projects/arvados/repository/revisions/9e27ddf) -- now enable their respective components using systemd. These components prefer YAML configuration files over command line flags ("3bbe1cd":https://dev.arvados.org/projects/arvados/repository/revisions/3bbe1cd).
 
@@ -527,41 +574,41 @@ Several Debian and RPM packages -- keep-balance ("d9eec0b":https://dev.arvados.o
 ** keepproxy - /etc/arvados/keepproxy/keepproxy.yml
 ** arvados-git-httpd - /etc/arvados/arv-git-httpd/arv-git-httpd.yml
 
-h4. Installation paths for Python modules and script changed (2016-05-31)
+h3. Installation paths for Python modules and script changed (2016-05-31)
 
 Commits "ae72b172c8":https://dev.arvados.org/projects/arvados/repository/revisions/ae72b172c8 and "3aae316c25":https://dev.arvados.org/projects/arvados/repository/revisions/3aae316c25 change the filesystem location where Python modules and scripts are installed.
 
 * Previous packages installed these files to the distribution's preferred path under @/usr/local@ (or the equivalent location in a Software Collection).  Now they get installed to a path under @/usr@.  This improves compatibility with other Python packages provided by the distribution.  See "#9242":https://dev.arvados.org/issues/9242 for more background.
 * If you simply import Python modules from scripts, or call Python tools relying on $PATH, you don't need to make any changes.  If you have hardcoded full paths to some of these files (e.g., in symbolic links or configuration files), you will need to update those paths after this upgrade.
 
-h4. Crunchrunner package is required on compute and shell nodes (2016-04-25)
+h3. Crunchrunner package is required on compute and shell nodes (2016-04-25)
 
 Commit "eebcb5e":https://dev.arvados.org/projects/arvados/repository/revisions/eebcb5e requires the crunchrunner package to be installed on compute nodes and shell nodes in order to run CWL workflows.
 
 * On each Debian-based compute node and shell node, run: @sudo apt-get install crunchrunner@
 * On each Red Hat-based compute node and shell node, run: @sudo yum install crunchrunner@
 
-h4. Keep permission signature algorithm change (2016-04-21)
+h3. Keep permission signature algorithm change (2016-04-21)
 
 Commit "3c88abd":https://dev.arvados.org/projects/arvados/repository/revisions/3c88abd changes the Keep permission signature algorithm.
 
 * All software components that generate signatures must be upgraded together. These are: keepstore, API server, keep-block-check, and keep-rsync. For example, if keepstore < 0.1.20160421183420 but API server >= 0.1.20160421183420, clients will not be able to read or write data in Keep.
 * Jobs and client operations that are in progress during the upgrade (including arv-put's "resume cache") will fail.
 
-h4. Workbench's "Getting Started" popup disabled by default (2015-01-05)
+h3. Workbench's "Getting Started" popup disabled by default (2015-01-05)
 
 Commit "e1276d6e":https://dev.arvados.org/projects/arvados/repository/revisions/e1276d6e disables Workbench's "Getting Started" popup by default.
 
 * If you want new users to continue seeing this popup, set @enable_getting_started_popup: true@ in Workbench's @application.yml@ configuration.
 
-h4. Crunch jobs now have access to Keep-backed writable scratch storage (2015-12-03)
+h3. Crunch jobs now have access to Keep-backed writable scratch storage (2015-12-03)
 
 Commit "5590c9ac":https://dev.arvados.org/projects/arvados/repository/revisions/5590c9ac makes a Keep-backed writable scratch directory available in crunch jobs (see "#7751":https://dev.arvados.org/issues/7751)
 
 * All compute nodes must be upgraded to arvados-fuse >= 0.1.2015112518060 because crunch-job uses some new arv-mount flags (--mount-tmp, --mount-by-pdh) introduced in merge "346a558":https://dev.arvados.org/projects/arvados/repository/revisions/346a558
 * Jobs will fail if the API server (in particular crunch-job from the arvados-cli gem) is upgraded without upgrading arvados-fuse on compute nodes.
 
-h4. Recommended configuration change for keep-web (2015-11-11)
+h3. Recommended configuration change for keep-web (2015-11-11)
 
 Commit "1e2ace5":https://dev.arvados.org/projects/arvados/repository/revisions/1e2ace5 changes recommended config for keep-web (see "#5824":https://dev.arvados.org/issues/5824)
 
@@ -570,14 +617,18 @@ Commit "1e2ace5":https://dev.arvados.org/projects/arvados/repository/revisions/1
 * Workbench config adds @keep_web_download_url@
 * More info on the (still beta/non-TOC-linked) "keep-web doc page":http://doc.arvados.org/install/install-keep-web.html
 
-h4. Stopped containers are now automatically removed on compute nodes (2015-11-04)
+h3. Stopped containers are now automatically removed on compute nodes (2015-11-04)
 
 Commit "1d1c6de":https://dev.arvados.org/projects/arvados/repository/revisions/1d1c6de removes stopped containers (see "#7444":https://dev.arvados.org/issues/7444)
 
 * arvados-docker-cleaner removes _all_ docker containers as soon as they exit, effectively making @docker run@ default to @--rm@. If you run arvados-docker-cleaner on a host that does anything other than run crunch-jobs, and you still want to be able to use @docker start@, read the "new doc page":http://doc.arvados.org/install/install-compute-node.html to learn how to turn this off before upgrading.
 
-h4. New keep-web service (2015-11-04)
+h3. New keep-web service (2015-11-04)
 
 Commit "21006cf":https://dev.arvados.org/projects/arvados/repository/revisions/21006cf adds a new keep-web service (see "#5824":https://dev.arvados.org/issues/5824).
 
 * Nothing relies on keep-web yet, but early adopters can install it now by following http://doc.arvados.org/install/install-keep-web.html (it is not yet linked in the TOC).
+
+<notextile>
+</div>
+</notextile>

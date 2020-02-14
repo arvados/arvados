@@ -38,7 +38,11 @@ func New(cluster *arvados.Cluster) *Conn {
 		if !remote.Proxy {
 			continue
 		}
-		remotes[id] = rpc.NewConn(id, &url.URL{Scheme: remote.Scheme, Host: remote.Host}, remote.Insecure, saltedTokenProvider(local, id))
+		conn := rpc.NewConn(id, &url.URL{Scheme: remote.Scheme, Host: remote.Host}, remote.Insecure, saltedTokenProvider(local, id))
+		// Older versions of controller rely on the Via header
+		// to detect loops.
+		conn.SendHeader = http.Header{"Via": {"HTTP/1.1 arvados-controller"}}
+		remotes[id] = conn
 	}
 
 	return &Conn{
@@ -116,8 +120,13 @@ func (conn *Conn) chooseBackend(id string) backend {
 // or "" for the local backend.
 //
 // A non-nil error means all backends failed.
-func (conn *Conn) tryLocalThenRemotes(ctx context.Context, fn func(context.Context, string, backend) error) error {
-	if err := fn(ctx, "", conn.local); err == nil || errStatus(err) != http.StatusNotFound {
+func (conn *Conn) tryLocalThenRemotes(ctx context.Context, forwardedFor string, fn func(context.Context, string, backend) error) error {
+	if err := fn(ctx, "", conn.local); err == nil || errStatus(err) != http.StatusNotFound || forwardedFor != "" {
+		// Note: forwardedFor != "" means this request came
+		// from a remote cluster, so we don't take a second
+		// hop. This avoids cycles, redundant calls to a
+		// mutually reachable remote, and use of double-salted
+		// tokens.
 		return err
 	}
 
@@ -224,8 +233,10 @@ func (conn *Conn) CollectionGet(ctx context.Context, options arvados.GetOptions)
 	} else {
 		// UUID is a PDH
 		first := make(chan arvados.Collection, 1)
-		err := conn.tryLocalThenRemotes(ctx, func(ctx context.Context, remoteID string, be backend) error {
-			c, err := be.CollectionGet(ctx, options)
+		err := conn.tryLocalThenRemotes(ctx, options.ForwardedFor, func(ctx context.Context, remoteID string, be backend) error {
+			remoteOpts := options
+			remoteOpts.ForwardedFor = conn.cluster.ClusterID + "-" + options.ForwardedFor
+			c, err := be.CollectionGet(ctx, remoteOpts)
 			if err != nil {
 				return err
 			}
