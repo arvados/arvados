@@ -41,24 +41,6 @@ func (s *UnitSuite) SetUpTest(c *check.C) {
 	s.Config = cfg
 }
 
-func (s *UnitSuite) TestKeepClientBlockCache(c *check.C) {
-	cfg := newConfig(s.Config)
-	cfg.cluster.Collections.WebDAVCache.MaxBlockEntries = 42
-	h := handler{Config: cfg}
-	c.Check(keepclient.DefaultBlockCache.MaxBlocks, check.Not(check.Equals), cfg.cluster.Collections.WebDAVCache.MaxBlockEntries)
-	u := mustParseURL("http://keep-web.example/c=" + arvadostest.FooCollection + "/t=" + arvadostest.ActiveToken + "/foo")
-	req := &http.Request{
-		Method:     "GET",
-		Host:       u.Host,
-		URL:        u,
-		RequestURI: u.RequestURI(),
-	}
-	resp := httptest.NewRecorder()
-	h.ServeHTTP(resp, req)
-	c.Check(resp.Code, check.Equals, http.StatusOK)
-	c.Check(keepclient.DefaultBlockCache.MaxBlocks, check.Equals, cfg.cluster.Collections.WebDAVCache.MaxBlockEntries)
-}
-
 func (s *UnitSuite) TestCORSPreflight(c *check.C) {
 	h := handler{Config: newConfig(s.Config)}
 	u := mustParseURL("http://keep-web.example/c=" + arvadostest.FooCollection + "/foo")
@@ -992,6 +974,22 @@ func (s *IntegrationSuite) TestFileContentType(c *check.C) {
 		c.Check(resp.Header().Get("Content-Type"), check.Equals, trial.contentType)
 		c.Check(resp.Body.String(), check.Equals, trial.content)
 	}
+}
+
+func (s *IntegrationSuite) TestKeepClientBlockCache(c *check.C) {
+	s.testServer.Config.cluster.Collections.WebDAVCache.MaxBlockEntries = 42
+	c.Check(keepclient.DefaultBlockCache.MaxBlocks, check.Not(check.Equals), 42)
+	u := mustParseURL("http://keep-web.example/c=" + arvadostest.FooCollection + "/t=" + arvadostest.ActiveToken + "/foo")
+	req := &http.Request{
+		Method:     "GET",
+		Host:       u.Host,
+		URL:        u,
+		RequestURI: u.RequestURI(),
+	}
+	resp := httptest.NewRecorder()
+	s.testServer.Handler.ServeHTTP(resp, req)
+	c.Check(resp.Code, check.Equals, http.StatusOK)
+	c.Check(keepclient.DefaultBlockCache.MaxBlocks, check.Equals, 42)
 }
 
 func copyHeader(h http.Header) http.Header {
