@@ -20,7 +20,7 @@ ITERATION?=1
 TARGETS?="centos7 debian8 debian9 debian10 ubuntu1404 ubuntu1604 ubuntu1804"
 
 DESCRIPTION=Arvados Workbench2 - Arvados is a free and open source platform for big data science.
-MAINTAINER=Ward Vandewege <wvandewege@veritasgenetics.com>
+MAINTAINER="Arvados Package Maintainers <packaging@arvados.org>"
 
 # DEST_DIR will have the build package copied.
 DEST_DIR=/var/www/arvados-workbench2/workbench2/
