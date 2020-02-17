@@ -37,6 +37,10 @@ func (as *APIStub) Login(ctx context.Context, options arvados.LoginOptions) (arv
 	as.appendCall(as.Login, ctx, options)
 	return arvados.LoginResponse{}, as.Error
 }
+func (as *APIStub) Logout(ctx context.Context, options arvados.LogoutOptions) (arvados.LogoutResponse, error) {
+	as.appendCall(as.Logout, ctx, options)
+	return arvados.LogoutResponse{}, as.Error
+}
 func (as *APIStub) CollectionCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Collection, error) {
 	as.appendCall(as.CollectionCreate, ctx, options)
 	return arvados.Collection{}, as.Error

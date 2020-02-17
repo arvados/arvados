@@ -52,6 +52,10 @@ func (ctrl *googleLoginController) getProvider() (*oidc.Provider, error) {
 	return ctrl.provider, nil
 }
 
+func (ctrl *googleLoginController) Logout(ctx context.Context, cluster *arvados.Cluster, railsproxy *railsProxy, opts arvados.LogoutOptions) (arvados.LogoutResponse, error) {
+	return arvados.LogoutResponse{RedirectLocation: opts.ReturnTo}, nil
+}
+
 func (ctrl *googleLoginController) Login(ctx context.Context, cluster *arvados.Cluster, railsproxy *railsProxy, opts arvados.LoginOptions) (arvados.LoginResponse, error) {
 	provider, err := ctrl.getProvider()
 	if err != nil {

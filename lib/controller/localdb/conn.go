@@ -29,6 +29,15 @@ func NewConn(cluster *arvados.Cluster) *Conn {
 	}
 }
 
+func (conn *Conn) Logout(ctx context.Context, opts arvados.LogoutOptions) (arvados.LogoutResponse, error) {
+	if conn.cluster.Login.ProviderAppID != "" {
+		// Proxy to RailsAPI, which hands off to sso-provider.
+		return conn.railsProxy.Logout(ctx, opts)
+	} else {
+		return conn.googleLoginController.Logout(ctx, conn.cluster, conn.railsProxy, opts)
+	}
+}
+
 func (conn *Conn) Login(ctx context.Context, opts arvados.LoginOptions) (arvados.LoginResponse, error) {
 	wantGoogle := conn.cluster.Login.GoogleClientID != ""
 	wantSSO := conn.cluster.Login.ProviderAppID != ""

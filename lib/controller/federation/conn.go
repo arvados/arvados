@@ -222,6 +222,32 @@ func (conn *Conn) Login(ctx context.Context, options arvados.LoginOptions) (arva
 	}
 }
 
+func (conn *Conn) Logout(ctx context.Context, options arvados.LogoutOptions) (arvados.LogoutResponse, error) {
+	// If the logout request comes with an API token from a known
+	// remote cluster, redirect to that cluster's logout handler
+	// so it has an opportunity to clear sessions, expire tokens,
+	// etc. Otherwise use the local endpoint.
+	reqauth, ok := auth.FromContext(ctx)
+	if !ok || len(reqauth.Tokens) == 0 || len(reqauth.Tokens[0]) < 8 || !strings.HasPrefix(reqauth.Tokens[0], "v2/") {
+		return conn.local.Logout(ctx, options)
+	}
+	id := reqauth.Tokens[0][3:8]
+	if id == conn.cluster.ClusterID {
+		return conn.local.Logout(ctx, options)
+	}
+	remote, ok := conn.remotes[id]
+	if !ok {
+		return conn.local.Logout(ctx, options)
+	}
+	baseURL := remote.BaseURL()
+	target, err := baseURL.Parse(arvados.EndpointLogout.Path)
+	if err != nil {
+		return arvados.LogoutResponse{}, fmt.Errorf("internal error getting redirect target: %s", err)
+	}
+	target.RawQuery = url.Values{"return_to": {options.ReturnTo}}.Encode()
+	return arvados.LogoutResponse{RedirectLocation: target.String()}, nil
+}
+
 func (conn *Conn) CollectionGet(ctx context.Context, options arvados.GetOptions) (arvados.Collection, error) {
 	if len(options.UUID) == 27 {
 		// UUID is really a UUID
