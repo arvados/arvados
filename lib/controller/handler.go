@@ -86,6 +86,7 @@ func (h *Handler) setup() {
 		mux.Handle("/arvados/v1/users", rtr)
 		mux.Handle("/arvados/v1/users/", rtr)
 		mux.Handle("/login", rtr)
+		mux.Handle("/logout", rtr)
 	}
 
 	hs := http.NotFoundHandler()
