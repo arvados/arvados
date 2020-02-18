@@ -9,6 +9,7 @@ require (
 	github.com/Microsoft/go-winio v0.4.5 // indirect
 	github.com/alcortesm/tgz v0.0.0-20161220082320-9c5fe88206d7 // indirect
 	github.com/anmitsu/go-shlex v0.0.0-20161002113705-648efa622239 // indirect
+	github.com/arvados/cgofuse v1.2.0
 	github.com/aws/aws-sdk-go v1.25.30
 	github.com/coreos/go-oidc v2.1.0+incompatible
 	github.com/coreos/go-systemd v0.0.0-20180108085132-cc4f39464dc7
@@ -30,6 +31,7 @@ require (
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/jmcvetta/randutil v0.0.0-20150817122601-2bb1b664bcff
 	github.com/julienschmidt/httprouter v1.2.0
+	github.com/karalabe/xgo v0.0.0-20191115072854-c5ccff8648a7 // indirect
 	github.com/kevinburke/ssh_config v0.0.0-20171013211458-802051befeb5 // indirect
 	github.com/lib/pq v1.3.0
 	github.com/marstr/guid v1.1.1-0.20170427235115-8bdf7d1a087c // indirect

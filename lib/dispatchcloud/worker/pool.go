@@ -570,7 +570,7 @@ func (wp *Pool) registerMetrics(reg *prometheus.Registry) {
 		Subsystem: "dispatchcloud",
 		Name:      "instances_total",
 		Help:      "Number of cloud VMs.",
-	}, []string{"category"})
+	}, []string{"category", "instance_type"})
 	reg.MustRegister(wp.mInstances)
 	wp.mInstancesPrice = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "arvados",
@@ -618,7 +618,11 @@ func (wp *Pool) updateMetrics() {
 	wp.mtx.RLock()
 	defer wp.mtx.RUnlock()
 
-	instances := map[string]int64{}
+	type entKey struct {
+		cat      string
+		instType string
+	}
+	instances := map[entKey]int64{}
 	price := map[string]float64{}
 	cpu := map[string]int64{}
 	mem := map[string]int64{}
@@ -637,17 +641,25 @@ func (wp *Pool) updateMetrics() {
 		default:
 			cat = "idle"
 		}
-		instances[cat]++
+		instances[entKey{cat, wkr.instType.Name}]++
 		price[cat] += wkr.instType.Price
 		cpu[cat] += int64(wkr.instType.VCPUs)
 		mem[cat] += int64(wkr.instType.RAM)
 		running += int64(len(wkr.running) + len(wkr.starting))
 	}
 	for _, cat := range []string{"inuse", "hold", "booting", "unknown", "idle"} {
-		wp.mInstances.WithLabelValues(cat).Set(float64(instances[cat]))
 		wp.mInstancesPrice.WithLabelValues(cat).Set(price[cat])
 		wp.mVCPUs.WithLabelValues(cat).Set(float64(cpu[cat]))
 		wp.mMemory.WithLabelValues(cat).Set(float64(mem[cat]))
+		// make sure to reset gauges for non-existing category/nodetype combinations
+		for _, it := range wp.instanceTypes {
+			if _, ok := instances[entKey{cat, it.Name}]; !ok {
+				wp.mInstances.WithLabelValues(cat, it.Name).Set(float64(0))
+			}
+		}
+	}
+	for k, v := range instances {
+		wp.mInstances.WithLabelValues(k.cat, k.instType).Set(float64(v))
 	}
 	wp.mContainersRunning.Set(float64(running))
 }

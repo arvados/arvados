@@ -53,5 +53,5 @@ setup(name='arvados-pam',
       ],
       test_suite='tests',
       tests_require=['pbr<1.7.0', 'mock>=1.0', 'python-pam'],
-      zip_safe=False
-      )
+      zip_safe=False,
+)

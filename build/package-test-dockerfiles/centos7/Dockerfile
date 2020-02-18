@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 FROM centos:7
-MAINTAINER Ward Vandewege <wvandewege@veritasgenetics.com>
+MAINTAINER Arvados Package Maintainers <packaging@arvados.org>
 
 # Install dependencies.
 RUN yum -q -y install scl-utils centos-release-scl which tar wget
