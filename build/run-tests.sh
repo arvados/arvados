@@ -648,8 +648,13 @@ install_env() {
     . "$VENVDIR/bin/activate"
 
     # Needed for run_test_server.py which is used by certain (non-Python) tests.
-    pip install --no-cache-dir PyYAML future httplib2 \
-        || fatal "`pip install PyYAML future httplib2` failed"
+    (
+        set -e
+        "${VENVDIR}/bin/pip" install PyYAML
+        "${VENV3DIR}/bin/pip" install PyYAML
+        cd "$WORKSPACE/sdk/python"
+        python setup.py install
+    ) || fatal "installing PyYAML and sdk/python failed"
 
     # Preinstall libcloud if using a fork; otherwise nodemanager "pip
     # install" won't pick it up by default.
@@ -890,7 +895,7 @@ bundle_install_trylocal() {
             echo "(Running bundle install again, without --local.)"
             "$bundle" install --no-deployment
         fi
-        "$bundle" package --all
+        "$bundle" package
     )
 }
 
@@ -1100,7 +1105,7 @@ install_deps() {
     do_install sdk/cli
     do_install sdk/perl
     do_install sdk/python pip
-    do_install sdk/python pip3
+    do_install sdk/python pip "${VENV3DIR}/bin/"
     do_install sdk/ruby
     do_install services/api
     do_install services/arv-git-httpd go
