@@ -554,7 +554,7 @@ setup_ruby_environment() {
             export HOME=$GEMHOME
             ("$bundle" version | grep -q 2.0.2) \
                 || gem install --user bundler -v 2.0.2
-            "$bundle" version | grep 2.0.2
+            "$bundle" version | tee /dev/stderr | grep -q 'version 2'
         ) || fatal 'install bundler'
     fi
 }
