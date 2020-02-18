@@ -82,7 +82,11 @@ func (runner runPassenger) Run(ctx context.Context, fail func(error), boot *Boot
 		return fmt.Errorf("bug: no InternalURLs for component %q: %v", runner, runner.svc.InternalURLs)
 	}
 	go func() {
-		err = boot.RunProgram(ctx, runner.src, nil, nil, "bundle", "exec", "passenger", "start", "-p", port)
+		err = boot.RunProgram(ctx, runner.src, nil, nil, "bundle", "exec",
+			"passenger", "start",
+			"-p", port,
+			"--log-file", "/dev/null",
+			"--pid-file", filepath.Join(boot.tempdir, "passenger."+strings.Replace(runner.src, "/", "_", -1)+".pid"))
 		fail(err)
 	}()
 	return nil
