@@ -723,6 +723,9 @@ def setup_config():
                 "http://%s:%s"%(localhost, keep_web_dl_port): {},
             },
         },
+        "SSO": {
+            "ExternalURL": "http://localhost:3002",
+        },
     }
 
     config = {
@@ -732,6 +735,11 @@ def setup_config():
                 "SystemRootToken": auth_token('system_user'),
                 "API": {
                     "RequestTimeout": "30s",
+                    "RailsSessionSecretToken": "e24205c490ac07e028fd5f8a692dcb398bcd654eff1aef5f9fe6891994b18483",
+                },
+                "Login": {
+                    "ProviderAppID": "arvados-server",
+                    "ProviderAppSecret": "608dbf356a327e2d0d4932b60161e212c2d8d8f5e25690d7b622f850a990cd33",
                 },
                 "SystemLogs": {
                     "LogLevel": ('info' if os.environ.get('ARVADOS_DEBUG', '') in ['','0'] else 'debug'),
@@ -745,14 +753,22 @@ def setup_config():
                 "Services": services,
                 "Users": {
                     "AnonymousUserToken": auth_token('anonymous'),
+                    "UserProfileNotificationAddress": "arvados@example.com",
                 },
                 "Collections": {
                     "BlobSigningKey": "zfhgfenhffzltr9dixws36j1yhksjoll2grmku38mi7yxd66h5j4q9w4jzanezacp8s6q0ro3hxakfye02152hncy6zml2ed0uc",
                     "TrustAllContent": True,
                     "ForwardSlashNameSubstitution": "/",
+                    "TrashSweepInterval": "-1s",
                 },
                 "Git": {
-                    "Repositories": "%s/test" % os.path.join(SERVICES_SRC_DIR, 'api', 'tmp', 'git'),
+                    "Repositories": os.path.join(SERVICES_SRC_DIR, 'api', 'tmp', 'git', 'test'),
+                },
+                "Containers": {
+                    "JobsAPI": {
+                        "GitInternalDir": os.path.join(SERVICES_SRC_DIR, 'api', 'tmp', 'internal.git'),
+                    },
+                    "SupportedDockerImageFormats": {"v1": {}},
                 },
                 "Volumes": {
                     "zzzzz-nyw5e-%015d"%n: {

@@ -180,8 +180,13 @@ class ConfigLoader
     end
   end
 
-  def self.parse_duration durstr, cfgkey:
-    duration_re = /-?(\d+(\.\d+)?)(s|m|h)/
+  def self.parse_duration(durstr, cfgkey:)
+    sign = 1
+    if durstr[0] == '-'
+      durstr = durstr[1..-1]
+      sign = -1
+    end
+    duration_re = /(\d+(\.\d+)?)(s|m|h)/
     dursec = 0
     while durstr != ""
       mt = duration_re.match durstr
@@ -189,7 +194,7 @@ class ConfigLoader
         raise "#{cfgkey} not a valid duration: '#{durstr}', accepted suffixes are s, m, h"
       end
       multiplier = {s: 1, m: 60, h: 3600}
-      dursec += (Float(mt[1]) * multiplier[mt[3].to_sym])
+      dursec += (Float(mt[1]) * multiplier[mt[3].to_sym] * sign)
       durstr = durstr[mt[0].length..-1]
     end
     return dursec.seconds
