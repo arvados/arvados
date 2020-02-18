@@ -15,7 +15,7 @@ func (seedDatabase) String() string {
 }
 
 func (seedDatabase) Run(ctx context.Context, fail func(error), boot *Booter) error {
-	err := boot.wait(ctx, runPostgreSQL{})
+	err := boot.wait(ctx, runPostgreSQL{}, installPassenger{src: "services/api"})
 	if err != nil {
 		return err
 	}

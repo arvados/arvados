@@ -25,8 +25,6 @@ import (
 
 	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/lib/config"
-	"git.arvados.org/arvados.git/lib/controller"
-	"git.arvados.org/arvados.git/lib/dispatchcloud"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/health"
@@ -81,6 +79,7 @@ func (bootCommand) RunCommand(prog string, args []string, stdin io.Reader, stdou
 	flags.StringVar(&boot.SourcePath, "source", ".", "arvados source tree `directory`")
 	flags.StringVar(&boot.LibPath, "lib", "/var/lib/arvados", "`directory` to install dependencies and library files")
 	flags.StringVar(&boot.ClusterType, "type", "production", "cluster `type`: development, test, or production")
+	flags.StringVar(&boot.ListenHost, "listen-host", "localhost", "host name or interface address for service listeners")
 	flags.StringVar(&boot.ControllerAddr, "controller-address", ":0", "desired controller address, `host:port` or `:port`")
 	flags.BoolVar(&boot.OwnTemporaryDatabase, "own-temporary-database", false, "bring up a postgres server and create a temporary database")
 	err = flags.Parse(args)
@@ -111,6 +110,7 @@ type Booter struct {
 	SourcePath           string // e.g., /home/username/src/arvados
 	LibPath              string // e.g., /var/lib/arvados
 	ClusterType          string // e.g., production
+	ListenHost           string // e.g., localhost
 	ControllerAddr       string // e.g., 127.0.0.1:8000
 	OwnTemporaryDatabase bool
 	Stderr               io.Writer
@@ -202,7 +202,11 @@ func (boot *Booter) run(loader *config.Loader) error {
 	}
 	// Now that we have the config, replace the bootstrap logger
 	// with a new one according to the logging config.
-	boot.logger = ctxlog.New(boot.Stderr, boot.cluster.SystemLogs.Format, boot.cluster.SystemLogs.LogLevel).WithFields(logrus.Fields{
+	loglevel := boot.cluster.SystemLogs.LogLevel
+	if s := os.Getenv("ARVADOS_DEBUG"); s != "" && s != "0" {
+		loglevel = "debug"
+	}
+	boot.logger = ctxlog.New(boot.Stderr, boot.cluster.SystemLogs.Format, loglevel).WithFields(logrus.Fields{
 		"PID": os.Getpid(),
 	})
 	boot.healthChecker = &health.Aggregator{Cluster: boot.cluster}
@@ -230,22 +234,22 @@ func (boot *Booter) run(loader *config.Loader) error {
 		createCertificates{},
 		runPostgreSQL{},
 		runNginx{},
-		runServiceCommand{name: "controller", command: controller.Command, depends: []bootTask{runPostgreSQL{}}},
+		runServiceCommand{name: "controller", svc: boot.cluster.Services.Controller, depends: []bootTask{runPostgreSQL{}}},
 		runGoProgram{src: "services/arv-git-httpd"},
 		runGoProgram{src: "services/health"},
-		runGoProgram{src: "services/keepproxy"},
+		runGoProgram{src: "services/keepproxy", depends: []bootTask{runPassenger{src: "services/api"}}},
 		runGoProgram{src: "services/keepstore", svc: boot.cluster.Services.Keepstore},
 		runGoProgram{src: "services/keep-web"},
 		runGoProgram{src: "services/ws", depends: []bootTask{runPostgreSQL{}}},
 		installPassenger{src: "services/api"},
 		runPassenger{src: "services/api", svc: boot.cluster.Services.RailsAPI, depends: []bootTask{createCertificates{}, runPostgreSQL{}, installPassenger{src: "services/api"}}},
-		installPassenger{src: "apps/workbench"},
+		installPassenger{src: "apps/workbench", depends: []bootTask{installPassenger{src: "services/api"}}}, // dependency ensures workbench doesn't delay api startup
 		runPassenger{src: "apps/workbench", svc: boot.cluster.Services.Workbench1, depends: []bootTask{installPassenger{src: "apps/workbench"}}},
 		seedDatabase{},
 	}
 	if boot.ClusterType != "test" {
 		tasks = append(tasks,
-			runServiceCommand{name: "dispatchcloud", command: dispatchcloud.Command},
+			runServiceCommand{name: "dispatch-cloud", svc: boot.cluster.Services.Controller},
 			runGoProgram{src: "services/keep-balance"},
 		)
 	}
@@ -260,10 +264,10 @@ func (boot *Booter) run(loader *config.Loader) error {
 				return
 			}
 			boot.cancel()
-			boot.logger.WithField("task", task).WithError(err).Error("task failed")
+			boot.logger.WithField("task", task.String()).WithError(err).Error("task failed")
 		}
 		go func() {
-			boot.logger.WithField("task", task).Info("starting")
+			boot.logger.WithField("task", task.String()).Info("starting")
 			err := task.Run(boot.ctx, fail, boot)
 			if err != nil {
 				fail(err)
@@ -272,7 +276,12 @@ func (boot *Booter) run(loader *config.Loader) error {
 			close(boot.tasksReady[task.String()])
 		}()
 	}
-	return boot.wait(boot.ctx, tasks...)
+	err = boot.wait(boot.ctx, tasks...)
+	if err != nil {
+		return err
+	}
+	<-boot.ctx.Done()
+	return boot.ctx.Err()
 }
 
 func (boot *Booter) wait(ctx context.Context, tasks ...bootTask) error {
@@ -281,7 +290,7 @@ func (boot *Booter) wait(ctx context.Context, tasks ...bootTask) error {
 		if !ok {
 			return fmt.Errorf("no such task: %s", task)
 		}
-		boot.logger.WithField("task", task).Info("waiting")
+		boot.logger.WithField("task", task.String()).Info("waiting")
 		select {
 		case <-ch:
 		case <-ctx.Done():
@@ -313,9 +322,10 @@ func (boot *Booter) WaitReady() bool {
 		// instead we wait for all configured components to
 		// pass.
 		waiting = false
-		for _, check := range resp.Checks {
+		for target, check := range resp.Checks {
 			if check.Health != "OK" {
 				waiting = true
+				boot.logger.WithField("target", target).Debug("waiting")
 			}
 		}
 	}
@@ -385,13 +395,23 @@ func (boot *Booter) lookPath(prog string) string {
 func (boot *Booter) RunProgram(ctx context.Context, dir string, output io.Writer, env []string, prog string, args ...string) error {
 	cmdline := fmt.Sprintf("%s", append([]string{prog}, args...))
 	fmt.Fprintf(boot.Stderr, "%s executing in %s\n", cmdline, dir)
+
+	logprefix := prog
+	if prog == "bundle" && len(args) > 2 && args[0] == "exec" {
+		logprefix = args[1]
+	}
+	if !strings.HasPrefix(dir, "/") {
+		logprefix = dir + ": " + logprefix
+	}
+	stderr := &logPrefixer{Writer: boot.Stderr, Prefix: []byte("[" + logprefix + "] ")}
+
 	cmd := exec.Command(boot.lookPath(prog), args...)
 	if output == nil {
-		cmd.Stdout = boot.Stderr
+		cmd.Stdout = stderr
 	} else {
 		cmd.Stdout = output
 	}
-	cmd.Stderr = boot.Stderr
+	cmd.Stderr = stderr
 	if strings.HasPrefix(dir, "/") {
 		cmd.Dir = dir
 	} else {
@@ -452,7 +472,7 @@ func (boot *Booter) autofillConfig(cfg *arvados.Config, log logrus.FieldLogger) 
 			return err
 		}
 		if h == "" {
-			h = "localhost"
+			h = boot.ListenHost
 		}
 		if p == "0" {
 			p, err = availablePort(":0")
@@ -486,11 +506,11 @@ func (boot *Booter) autofillConfig(cfg *arvados.Config, log logrus.FieldLogger) 
 			svc == &cluster.Services.WebDAVDownload ||
 			svc == &cluster.Services.Websocket ||
 			svc == &cluster.Services.Workbench1) {
-			svc.ExternalURL = arvados.URL{Scheme: "https", Host: fmt.Sprintf("localhost:%s", nextPort())}
+			svc.ExternalURL = arvados.URL{Scheme: "https", Host: fmt.Sprintf("%s:%s", boot.ListenHost, nextPort())}
 		}
 		if len(svc.InternalURLs) == 0 {
 			svc.InternalURLs = map[arvados.URL]arvados.ServiceInstance{
-				arvados.URL{Scheme: "http", Host: fmt.Sprintf("localhost:%s", nextPort())}: arvados.ServiceInstance{},
+				arvados.URL{Scheme: "http", Host: fmt.Sprintf("%s:%s", boot.ListenHost, nextPort())}: arvados.ServiceInstance{},
 			}
 		}
 	}
@@ -518,7 +538,7 @@ func (boot *Booter) autofillConfig(cfg *arvados.Config, log logrus.FieldLogger) 
 	}
 	if boot.ClusterType == "test" {
 		// Add a second keepstore process.
-		cluster.Services.Keepstore.InternalURLs[arvados.URL{Scheme: "http", Host: fmt.Sprintf("localhost:%s", nextPort())}] = arvados.ServiceInstance{}
+		cluster.Services.Keepstore.InternalURLs[arvados.URL{Scheme: "http", Host: fmt.Sprintf("%s:%s", boot.ListenHost, nextPort())}] = arvados.ServiceInstance{}
 
 		// Create a directory-backed volume for each keepstore
 		// process.
@@ -532,7 +552,7 @@ func (boot *Booter) autofillConfig(cfg *arvados.Config, log logrus.FieldLogger) 
 			} else if err = os.Mkdir(datadir, 0777); err != nil {
 				return err
 			}
-			cluster.Volumes[fmt.Sprintf("zzzzz-nyw5e-%015d", volnum)] = arvados.Volume{
+			cluster.Volumes[fmt.Sprintf(cluster.ClusterID+"-nyw5e-%015d", volnum)] = arvados.Volume{
 				Driver:           "Directory",
 				DriverParameters: json.RawMessage(fmt.Sprintf(`{"Root":%q}`, datadir)),
 				AccessViaHosts: map[arvados.URL]arvados.VolumeAccess{

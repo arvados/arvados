@@ -606,6 +606,7 @@ def run_nginx():
         return
     stop_nginx()
     nginxconf = {}
+    nginxconf['LISTENHOST'] = 'localhost'
     nginxconf['CONTROLLERPORT'] = internal_port_from_config("Controller")
     nginxconf['CONTROLLERSSLPORT'] = external_port_from_config("Controller")
     nginxconf['KEEPWEBPORT'] = internal_port_from_config("WebDAV")

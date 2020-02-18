@@ -5,18 +5,15 @@
 package boot
 
 import (
-	"bytes"
 	"context"
-	"fmt"
 	"path/filepath"
 
-	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 )
 
 type runServiceCommand struct {
 	name    string
-	command cmd.Handler
+	svc     arvados.Service
 	depends []bootTask
 }
 
@@ -27,11 +24,10 @@ func (runner runServiceCommand) String() string {
 func (runner runServiceCommand) Run(ctx context.Context, fail func(error), boot *Booter) error {
 	boot.wait(ctx, runner.depends...)
 	go func() {
-		// runner.command.RunCommand() doesn't have access to
-		// ctx, so it can't shut down by itself when the
-		// caller cancels. We just abandon it.
-		exitcode := runner.command.RunCommand(runner.name, []string{"-config", boot.configfile}, bytes.NewBuffer(nil), boot.Stderr, boot.Stderr)
-		fail(fmt.Errorf("exit code %d", exitcode))
+		var u arvados.URL
+		for u = range runner.svc.InternalURLs {
+		}
+		fail(boot.RunProgram(ctx, boot.tempdir, nil, []string{"ARVADOS_SERVICE_INTERNAL_URL=" + u.String()}, "arvados-server", runner.name, "-config", boot.configfile))
 	}()
 	return nil
 }

@@ -24,11 +24,12 @@ func (runNginx) String() string {
 
 func (runNginx) Run(ctx context.Context, fail func(error), boot *Booter) error {
 	vars := map[string]string{
-		"SSLCERT":   filepath.Join(boot.SourcePath, "services", "api", "tmp", "self-signed.pem"), // TODO: root ca
-		"SSLKEY":    filepath.Join(boot.SourcePath, "services", "api", "tmp", "self-signed.key"), // TODO: root ca
-		"ACCESSLOG": filepath.Join(boot.tempdir, "nginx_access.log"),
-		"ERRORLOG":  filepath.Join(boot.tempdir, "nginx_error.log"),
-		"TMPDIR":    boot.tempdir,
+		"LISTENHOST": boot.ListenHost,
+		"SSLCERT":    filepath.Join(boot.SourcePath, "services", "api", "tmp", "self-signed.pem"), // TODO: root ca
+		"SSLKEY":     filepath.Join(boot.SourcePath, "services", "api", "tmp", "self-signed.key"), // TODO: root ca
+		"ACCESSLOG":  filepath.Join(boot.tempdir, "nginx_access.log"),
+		"ERRORLOG":   filepath.Join(boot.tempdir, "nginx_error.log"),
+		"TMPDIR":     boot.tempdir,
 	}
 	var err error
 	for _, cmpt := range []struct {

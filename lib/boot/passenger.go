@@ -21,7 +21,7 @@ type installPassenger struct {
 }
 
 func (runner installPassenger) String() string {
-	return "install " + runner.src
+	return "installPassenger:" + runner.src
 }
 
 func (runner installPassenger) Run(ctx context.Context, fail func(error), boot *Booter) error {
@@ -69,8 +69,7 @@ type runPassenger struct {
 }
 
 func (runner runPassenger) String() string {
-	_, basename := filepath.Split(runner.src)
-	return basename
+	return "runPassenger:" + runner.src
 }
 
 func (runner runPassenger) Run(ctx context.Context, fail func(error), boot *Booter) error {
@@ -82,9 +81,9 @@ func (runner runPassenger) Run(ctx context.Context, fail func(error), boot *Boot
 	if err != nil {
 		return fmt.Errorf("bug: no InternalURLs for component %q: %v", runner, runner.svc.InternalURLs)
 	}
-	err = boot.RunProgram(ctx, runner.src, nil, nil, "bundle", "exec", "passenger", "start", "-p", port)
-	if err != nil {
-		return err
-	}
+	go func() {
+		err = boot.RunProgram(ctx, runner.src, nil, nil, "bundle", "exec", "passenger", "start", "-p", port)
+		fail(err)
+	}()
 	return nil
 }
