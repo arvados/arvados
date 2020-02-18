@@ -41,7 +41,7 @@ ENV GEM_HOME /var/lib/gems
 ENV GEM_PATH /var/lib/gems
 ENV PATH $PATH:/var/lib/gems/bin
 
-ENV GOVERSION 1.12.7
+ENV GOVERSION 1.13.6
 
 # Install golang binary
 RUN curl -f http://storage.googleapis.com/golang/go${GOVERSION}.linux-amd64.tar.gz | \
