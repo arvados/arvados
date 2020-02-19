@@ -212,7 +212,6 @@ func (boot *Booter) run(cfg *arvados.Config) error {
 	boot.logger = ctxlog.New(boot.Stderr, boot.cluster.SystemLogs.Format, loglevel).WithFields(logrus.Fields{
 		"PID": os.Getpid(),
 	})
-	boot.healthChecker = &health.Aggregator{Cluster: boot.cluster}
 
 	for _, dir := range []string{boot.LibPath, filepath.Join(boot.LibPath, "bin")} {
 		if _, err = os.Stat(filepath.Join(dir, ".")); os.IsNotExist(err) {
@@ -283,7 +282,10 @@ func (boot *Booter) run(cfg *arvados.Config) error {
 	if err != nil {
 		return err
 	}
+	boot.logger.Info("all startup tasks are complete; starting health checks")
+	boot.healthChecker = &health.Aggregator{Cluster: boot.cluster}
 	<-boot.ctx.Done()
+	boot.logger.Info("shutting down")
 	return boot.ctx.Err()
 }
 
