@@ -354,12 +354,14 @@ export const queryToFilters = (query: string, apiRevision: number) => {
         if (p.value) {
             if (apiRevision < 20200212) {
                 filter
-                    .addLike(`properties.${p.key}`, p.value, GroupContentsResourcePrefix.PROJECT)
-                    .addLike(`properties.${p.key}`, p.value, GroupContentsResourcePrefix.COLLECTION);
+                    .addEqual(`properties.${p.key}`, p.value, GroupContentsResourcePrefix.PROJECT)
+                    .addEqual(`properties.${p.key}`, p.value, GroupContentsResourcePrefix.COLLECTION)
+                    .addEqual(`properties.${p.key}`, p.value, GroupContentsResourcePrefix.PROCESS);
             } else {
                 filter
                     .addContains(`properties.${p.key}`, p.value, GroupContentsResourcePrefix.PROJECT)
-                    .addContains(`properties.${p.key}`, p.value, GroupContentsResourcePrefix.COLLECTION);
+                    .addContains(`properties.${p.key}`, p.value, GroupContentsResourcePrefix.COLLECTION)
+                    .addContains(`properties.${p.key}`, p.value, GroupContentsResourcePrefix.PROCESS);
             }
         }
         filter.addExists(p.key);
