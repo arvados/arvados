@@ -11,9 +11,14 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 )
+
+// Don't trust "passenger-config" (or "bundle install") to handle
+// concurrent installs.
+var passengerInstallMutex sync.Mutex
 
 type installPassenger struct {
 	src     string
@@ -25,6 +30,9 @@ func (runner installPassenger) String() string {
 }
 
 func (runner installPassenger) Run(ctx context.Context, fail func(error), boot *Booter) error {
+	passengerInstallMutex.Lock()
+	defer passengerInstallMutex.Unlock()
+
 	err := boot.wait(ctx, runner.depends...)
 	if err != nil {
 		return err
