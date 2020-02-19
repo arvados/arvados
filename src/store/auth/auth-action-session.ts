@@ -21,30 +21,36 @@ import { snackbarActions, SnackbarKind } from "~/store/snackbar/snackbar-actions
 import * as jsSHA from "jssha";
 
 const getClusterConfig = async (origin: string): Promise<Config | null> => {
-    // Try the new public config endpoint
+    let configFromDD: Config | undefined;
     try {
-        const config = (await Axios.get<ClusterConfigJSON>(`${origin}/${CLUSTER_CONFIG_PATH}`)).data;
-        return buildConfig(config);
-    } catch { }
-
-    // Fall back to discovery document
-    try {
-        const config = (await Axios.get<any>(`${origin}/${DISCOVERY_DOC_PATH}`)).data;
-        return {
-            baseUrl: normalizeURLPath(config.baseUrl),
-            keepWebServiceUrl: config.keepWebServiceUrl,
-            remoteHosts: config.remoteHosts,
-            rootUrl: config.rootUrl,
-            uuidPrefix: config.uuidPrefix,
-            websocketUrl: config.websocketUrl,
-            workbenchUrl: config.workbenchUrl,
-            workbench2Url: config.workbench2Url,
+        const dd = (await Axios.get<any>(`${origin}/${DISCOVERY_DOC_PATH}`)).data;
+        configFromDD = {
+            baseUrl: normalizeURLPath(dd.baseUrl),
+            keepWebServiceUrl: dd.keepWebServiceUrl,
+            remoteHosts: dd.remoteHosts,
+            rootUrl: dd.rootUrl,
+            uuidPrefix: dd.uuidPrefix,
+            websocketUrl: dd.websocketUrl,
+            workbenchUrl: dd.workbenchUrl,
+            workbench2Url: dd.workbench2Url,
             loginCluster: "",
             vocabularyUrl: "",
             fileViewersConfigUrl: "",
-            clusterConfig: mockClusterConfigJSON({})
+            clusterConfig: mockClusterConfigJSON({}),
+            apiRevision: parseInt(dd.revision, 10),
         };
     } catch { }
+
+    // Try the new public config endpoint
+    try {
+        const config = (await Axios.get<ClusterConfigJSON>(`${origin}/${CLUSTER_CONFIG_PATH}`)).data;
+        return {...buildConfig(config), apiRevision: configFromDD ? configFromDD.apiRevision : 0};
+    } catch { }
+
+    // Fall back to discovery document
+    if (configFromDD !== undefined) {
+        return configFromDD;
+    }
 
     return null;
 };
@@ -120,13 +126,14 @@ export const validateSession = (session: Session, activeSession: Session) =>
         dispatch(authActions.UPDATE_SESSION({ ...session, status: SessionStatus.BEING_VALIDATED }));
         session.loggedIn = false;
 
-        const setupSession = (baseUrl: string, user: User, token: string) => {
+        const setupSession = (baseUrl: string, user: User, token: string, apiRevision: number) => {
             session.baseUrl = baseUrl;
             session.token = token;
             session.email = user.email;
             session.uuid = user.uuid;
             session.name = getUserFullname(user);
             session.loggedIn = true;
+            session.apiRevision = apiRevision;
         };
 
         let fail: Error | null = null;
@@ -135,12 +142,12 @@ export const validateSession = (session: Session, activeSession: Session) =>
             dispatch(authActions.REMOTE_CLUSTER_CONFIG({ config }));
             try {
                 const { user, token } = await validateCluster(config, session.token);
-                setupSession(config.baseUrl, user, token);
+                setupSession(config.baseUrl, user, token, config.apiRevision);
             } catch (e) {
                 fail = new Error(`Getting current user for ${session.remoteHost}: ${e.message}`);
                 try {
                     const { user, token } = await validateCluster(config, activeSession.token);
-                    setupSession(config.baseUrl, user, token);
+                    setupSession(config.baseUrl, user, token, config.apiRevision);
                     fail = null;
                 } catch (e2) {
                     if (e.message === invalidV2Token) {
@@ -227,7 +234,8 @@ export const addSession = (remoteHost: string, token?: string, sendToLogin?: boo
                     baseUrl: config.baseUrl,
                     clusterId: config.uuidPrefix,
                     remoteHost,
-                    token
+                    token,
+                    apiRevision: config.apiRevision,
                 };
 
                 if (sessions.find(s => s.clusterId === config.uuidPrefix)) {

@@ -135,7 +135,8 @@ export class AuthService {
             loggedIn: true,
             active: true,
             uuid: user ? user.uuid : '',
-            status: SessionStatus.VALIDATED
+            status: SessionStatus.VALIDATED,
+            apiRevision: cfg.apiRevision,
         } as Session;
         const localSessions = this.getSessions().map(s => ({
             ...s,
@@ -155,7 +156,8 @@ export class AuthService {
                 loggedIn: false,
                 active: false,
                 uuid: '',
-                status: SessionStatus.INVALIDATED
+                status: SessionStatus.INVALIDATED,
+                apiRevision: 0,
             } as Session;
         });
         const sessions = [currentSession]

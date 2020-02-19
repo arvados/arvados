@@ -42,8 +42,6 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
             return;
         }
 
-        const params = getParams(dataExplorer, searchValue);
-
         const initial = {
             itemsAvailable: 0,
             items: [] as GroupContentsResource[],
@@ -56,24 +54,26 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
             api.dispatch(setItems(initial));
         }
 
-        sessions.map(session =>
+        sessions.map(session => {
+            const params = getParams(dataExplorer, searchValue, session.apiRevision);
             this.services.groupsService.contents('', params, session)
                 .then((response) => {
                     api.dispatch(updateResources(response.items));
                     api.dispatch(appendItems(response));
                 }).catch(() => {
                     api.dispatch(couldNotFetchSearchResults(session.clusterId));
-                })
+                });
+            }
         );
     }
 }
 
 const typeFilters = (columns: DataColumns<string>) => serializeResourceTypeFilters(getDataExplorerColumnFilters(columns, ProjectPanelColumnNames.TYPE));
 
-export const getParams = (dataExplorer: DataExplorer, query: string) => ({
+const getParams = (dataExplorer: DataExplorer, query: string, apiRevision: number) => ({
     ...dataExplorerToListParams(dataExplorer),
     filters: joinFilters(
-        queryToFilters(query),
+        queryToFilters(query, apiRevision),
         typeFilters(dataExplorer.columns)
     ),
     order: getOrder(dataExplorer),

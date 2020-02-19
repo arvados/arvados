@@ -36,6 +36,12 @@ describe("FilterBuilder", () => {
         ).toEqual(`["etag","ilike","%etagValue%"]`);
     });
 
+    it("should add 'contains' rule", () => {
+        expect(
+            filters.addContains("properties.someProp", "someValue").getFilters()
+        ).toEqual(`["properties.someProp","contains","someValue"]`);
+    });
+
     it("should add 'is_a' rule", () => {
         expect(
             filters.addIsA("etag", "etagValue").getFilters()

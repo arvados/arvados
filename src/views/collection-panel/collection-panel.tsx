@@ -23,7 +23,7 @@ import { ContextMenuKind } from '~/views-components/context-menu/context-menu';
 import { formatFileSize } from "~/common/formatters";
 import { openDetailsPanel } from '~/store/details-panel/details-panel-action';
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
-import { PropertyChipComponent } from '~/views-components/resource-properties-form/property-chip';
+import { getPropertyChip } from '~/views-components/resource-properties-form/property-chip';
 import { IllegalNamingWarning } from '~/components/warning/warning';
 
 type CssRules = 'card' | 'iconHeader' | 'tag' | 'label' | 'value' | 'link';
@@ -128,10 +128,16 @@ export const CollectionPanel = withStyles(styles)(
                                     </Grid>
                                     <Grid item xs={12}>
                                         {Object.keys(item.properties).map(k =>
-                                            <PropertyChipComponent
-                                                key={k} className={classes.tag}
-                                                onDelete={this.handleDelete(k)}
-                                                propKey={k} propValue={item.properties[k]} />
+                                            Array.isArray(item.properties[k])
+                                            ? item.properties[k].map((v: string) =>
+                                                getPropertyChip(
+                                                    k, v,
+                                                    this.handleDelete(k, v),
+                                                    classes.tag))
+                                            : getPropertyChip(
+                                                k, item.properties[k],
+                                                this.handleDelete(k, item.properties[k]),
+                                                classes.tag)
                                         )}
                                     </Grid>
                                 </Grid>
@@ -166,8 +172,8 @@ export const CollectionPanel = withStyles(styles)(
                     kind: SnackbarKind.SUCCESS
                 }))
 
-            handleDelete = (key: string) => () => {
-                this.props.dispatch<any>(deleteCollectionTag(key));
+            handleDelete = (key: string, value: string) => () => {
+                this.props.dispatch<any>(deleteCollectionTag(key, value));
             }
 
             openCollectionDetails = () => {

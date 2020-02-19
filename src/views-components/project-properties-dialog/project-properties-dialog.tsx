@@ -13,7 +13,7 @@ import { Dialog, DialogTitle, DialogContent, DialogActions, Button, withStyles, 
 import { ArvadosTheme } from '~/common/custom-theme';
 import { ProjectPropertiesForm } from '~/views-components/project-properties-dialog/project-properties-form';
 import { getResource } from '~/store/resources/resources';
-import { PropertyChipComponent } from "../resource-properties-form/property-chip";
+import { getPropertyChip } from "../resource-properties-form/property-chip";
 
 type CssRules = 'tag';
 
@@ -29,7 +29,7 @@ interface ProjectPropertiesDialogDataProps {
 }
 
 interface ProjectPropertiesDialogActionProps {
-    handleDelete: (key: string) => void;
+    handleDelete: (key: string, value: string) => void;
 }
 
 const mapStateToProps = ({ detailsPanel, resources, properties }: RootState): ProjectPropertiesDialogDataProps => ({
@@ -37,7 +37,7 @@ const mapStateToProps = ({ detailsPanel, resources, properties }: RootState): Pr
 });
 
 const mapDispatchToProps = (dispatch: Dispatch): ProjectPropertiesDialogActionProps => ({
-    handleDelete: (key: string) => dispatch<any>(deleteProjectProperty(key)),
+    handleDelete: (key: string, value: string) => () => dispatch<any>(deleteProjectProperty(key, value)),
 });
 
 type ProjectPropertiesDialogProps =  ProjectPropertiesDialogDataProps & ProjectPropertiesDialogActionProps & WithDialogProps<{}> & WithStyles<CssRules>;
@@ -55,10 +55,17 @@ export const ProjectPropertiesDialog = connect(mapStateToProps, mapDispatchToPro
                     <ProjectPropertiesForm />
                     {project && project.properties &&
                         Object.keys(project.properties).map(k =>
-                            <PropertyChipComponent
-                                onDelete={() => handleDelete(k)}
-                                key={k} className={classes.tag}
-                                propKey={k} propValue={project.properties[k]} />)
+                            Array.isArray(project.properties[k])
+                            ? project.properties[k].map((v: string) =>
+                                getPropertyChip(
+                                    k, v,
+                                    handleDelete(k, v),
+                                    classes.tag))
+                            : getPropertyChip(
+                                k, project.properties[k],
+                                handleDelete(k, project.properties[k]),
+                                classes.tag)
+                        )
                     }
                 </DialogContent>
                 <DialogActions>

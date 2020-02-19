@@ -59,14 +59,100 @@ describe('search-bar-actions', () => {
                 inTrash: true,
                 dateFrom: '2017-08-01',
                 dateTo: '',
-                properties: [{
-                    key: 'file size',
-                    value: '101mb'
-                }],
+                properties: [
+                    { key: 'file size', value: '101mb' },
+                    { key: 'Species', value: 'Human' },
+                    { key: 'Species', value: 'Canine' },
+                ],
                 saveQuery: false,
                 queryName: ''
             });
-            expect(q).toBe('document pdf type:arvados#collection cluster:c97qx is:trashed from:2017-08-01 has:"file size":"101mb"');
+            expect(q).toBe('document pdf type:arvados#collection cluster:c97qx is:trashed from:2017-08-01 has:"file size":"101mb" has:"Species":"Human" has:"Species":"Canine"');
+        });
+
+        it('should add has:"key":"value" expression to query from same property key', () => {
+            const searchValue = 'document pdf has:"file size":"101mb" has:"Species":"Canine"';
+            const prevData = {
+                searchValue,
+                type: undefined,
+                cluster: undefined,
+                projectUuid: undefined,
+                inTrash: false,
+                dateFrom: '',
+                dateTo: '',
+                properties: [
+                    { key: 'file size', value: '101mb' },
+                    { key: 'Species', value: 'Canine' },
+                ],
+                saveQuery: false,
+                queryName: ''
+            };
+            const currData = {
+                ...prevData,
+                properties: [
+                    { key: 'file size', value: '101mb' },
+                    { key: 'Species', value: 'Canine' },
+                    { key: 'Species', value: 'Human' },
+                ],
+            };
+            const q = getQueryFromAdvancedData(currData, prevData);
+            expect(q).toBe('document pdf has:"file size":"101mb" has:"Species":"Canine" has:"Species":"Human"');
+        });
+
+        it('should add has:"keyID":"valueID" expression to query when necessary', () => {
+            const searchValue = 'document pdf has:"file size":"101mb"';
+            const prevData = {
+                searchValue,
+                type: undefined,
+                cluster: undefined,
+                projectUuid: undefined,
+                inTrash: false,
+                dateFrom: '',
+                dateTo: '',
+                properties: [
+                    { key: 'file size', value: '101mb' },
+                ],
+                saveQuery: false,
+                queryName: ''
+            };
+            const currData = {
+                ...prevData,
+                properties: [
+                    { key: 'file size', value: '101mb' },
+                    { key: 'Species', keyID: 'IDTAGSPECIES', value: 'Human', valueID: 'IDVALHUMAN'},
+                ],
+            };
+            const q = getQueryFromAdvancedData(currData, prevData);
+            expect(q).toBe('document pdf has:"file size":"101mb" has:"IDTAGSPECIES":"IDVALHUMAN"');
+        });
+
+        it('should remove has:"key":"value" expression from query', () => {
+            const searchValue = 'document pdf has:"file size":"101mb" has:"Species":"Human" has:"Species":"Canine"';
+            const prevData = {
+                searchValue,
+                type: undefined,
+                cluster: undefined,
+                projectUuid: undefined,
+                inTrash: false,
+                dateFrom: '',
+                dateTo: '',
+                properties: [
+                    { key: 'file size', value: '101mb' },
+                    { key: 'Species', value: 'Canine' },
+                    { key: 'Species', value: 'Human' },
+                ],
+                saveQuery: false,
+                queryName: ''
+            };
+            const currData = {
+                ...prevData,
+                properties: [
+                    { key: 'file size', value: '101mb' },
+                    { key: 'Species', value: 'Canine' },
+                ],
+            };
+            const q = getQueryFromAdvancedData(currData, prevData);
+            expect(q).toBe('document pdf has:"file size":"101mb" has:"Species":"Canine"');
         });
     });
 });
