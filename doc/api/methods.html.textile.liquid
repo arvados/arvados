@@ -130,6 +130,7 @@ table(table table-bordered table-condensed).
 |@like@, @ilike@|string|SQL pattern match, single character match is @_@ and wildcard is @%@, ilike is case-insensitive|@["properties.my_subproperty", "like", "d00220fb%"]@|
 |@in@, @not in@|array of strings|Set membership|@["properties.my_subproperty", "in", ["fizz", "buzz"]]@|
 |@exists@|boolean|Test if a subproperty is present or not (determined by operand).|@["properties.my_subproperty", "exists", true]@|
+|@contains@|string, number|Filter where subproperty has a value either by exact match or value is element of subproperty list.|@["foo", "contains", "bar"]@ will find both @{"foo": "bar"}@ and @{"foo": ["bar", "baz"]}@.|
 
 Note that exclusion filters @!=@ and @not in@ will return records for which the property is not defined at all.  To restrict filtering to records on which the subproperty is defined, combine with an @exists@ filter.
 
