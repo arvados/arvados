@@ -95,7 +95,13 @@ func (bootCommand) RunCommand(prog string, args []string, stdin io.Reader, stdou
 		return 2
 	}
 
-	boot.Start(ctx, loader)
+	loader.SkipAPICalls = true
+	cfg, err := loader.Load()
+	if err != nil {
+		return 1
+	}
+
+	boot.Start(ctx, cfg)
 	defer boot.Stop()
 	if boot.WaitReady() {
 		fmt.Fprintln(stdout, boot.cluster.Services.Controller.ExternalURL)
@@ -133,11 +139,11 @@ type Booter struct {
 	goMutex       sync.Mutex
 }
 
-func (boot *Booter) Start(ctx context.Context, loader *config.Loader) {
+func (boot *Booter) Start(ctx context.Context, cfg *arvados.Config) {
 	boot.ctx, boot.cancel = context.WithCancel(ctx)
 	boot.done = make(chan struct{})
 	go func() {
-		err := boot.run(loader)
+		err := boot.run(cfg)
 		if err != nil {
 			fmt.Fprintln(boot.Stderr, err)
 		}
@@ -145,7 +151,7 @@ func (boot *Booter) Start(ctx context.Context, loader *config.Loader) {
 	}()
 }
 
-func (boot *Booter) run(loader *config.Loader) error {
+func (boot *Booter) run(cfg *arvados.Config) error {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return err
@@ -163,12 +169,6 @@ func (boot *Booter) run(loader *config.Loader) error {
 		return err
 	}
 	defer os.RemoveAll(boot.tempdir)
-
-	loader.SkipAPICalls = true
-	cfg, err := loader.Load()
-	if err != nil {
-		return err
-	}
 
 	// Fill in any missing config keys, and write the resulting
 	// config in the temp dir for child services to use.
