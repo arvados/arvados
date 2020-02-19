@@ -103,8 +103,8 @@ func (bootCommand) RunCommand(prog string, args []string, stdin io.Reader, stdou
 
 	boot.Start(ctx, cfg)
 	defer boot.Stop()
-	if boot.WaitReady() {
-		fmt.Fprintln(stdout, boot.cluster.Services.Controller.ExternalURL)
+	if url, ok := boot.WaitReady(); ok {
+		fmt.Fprintln(stdout, url)
 		<-ctx.Done() // wait for signal
 		return 0
 	} else {
@@ -305,11 +305,11 @@ func (boot *Booter) Stop() {
 	<-boot.done
 }
 
-func (boot *Booter) WaitReady() bool {
+func (boot *Booter) WaitReady() (*arvados.URL, bool) {
 	for waiting := true; waiting; {
 		time.Sleep(time.Second)
 		if boot.ctx.Err() != nil {
-			return false
+			return nil, false
 		}
 		if boot.healthChecker == nil {
 			// not set up yet
@@ -329,7 +329,8 @@ func (boot *Booter) WaitReady() bool {
 			}
 		}
 	}
-	return true
+	u := boot.cluster.Services.Controller.ExternalURL
+	return &u, true
 }
 
 func (boot *Booter) prependEnv(key, prepend string) {
