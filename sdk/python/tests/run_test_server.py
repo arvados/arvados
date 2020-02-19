@@ -630,7 +630,7 @@ def run_nginx():
     conffile = os.path.join(TEST_TMPDIR, 'nginx.conf')
     with open(conffile, 'w') as f:
         f.write(re.sub(
-            r'{{([A-Z]+)}}',
+            r'{{([A-Z]+[A-Z0-9]+)}}',
             lambda match: str(nginxconf.get(match.group(1))),
             open(conftemplatefile).read()))
 
