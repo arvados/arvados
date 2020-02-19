@@ -393,7 +393,7 @@ checkpidfile() {
 
 checkhealth() {
     svc="$1"
-    base=$(python -c "import yaml; print list(yaml.safe_load(file('$ARVADOS_CONFIG'))['Clusters']['zzzzz']['Services']['$1']['InternalURLs'].keys())[0]")
+    base=$("${VENVDIR}/bin/python" -c "import yaml; print list(yaml.safe_load(file('$ARVADOS_CONFIG'))['Clusters']['zzzzz']['Services']['$1']['InternalURLs'].keys())[0]")
     url="$base/_health/ping"
     if ! curl -Ss -H "Authorization: Bearer e687950a23c3a9bceec28c6223a06c79" "${url}" | tee -a /dev/stderr | grep '"OK"'; then
         echo "${url} failed"
@@ -942,6 +942,7 @@ install_services/login-sync() {
 
 install_services/api() {
     stop_services
+    check_arvados_config "services/api"
     cd "$WORKSPACE/services/api" \
         && RAILS_ENV=test bundle_install_trylocal \
             || return 1
@@ -953,7 +954,7 @@ install_services/api() {
     # database, so that we can drop it. This assumes the current user
     # is a postgresql superuser.
     cd "$WORKSPACE/services/api" \
-        && test_database=$(python -c "import yaml; print yaml.safe_load(file('$ARVADOS_CONFIG'))['Clusters']['zzzzz']['PostgreSQL']['Connection']['dbname']") \
+        && test_database=$("${VENVDIR}/bin/python" -c "import yaml; print yaml.safe_load(file('$ARVADOS_CONFIG'))['Clusters']['zzzzz']['PostgreSQL']['Connection']['dbname']") \
         && psql "$test_database" -c "SELECT pg_terminate_backend (pg_stat_activity.pid::int) FROM pg_stat_activity WHERE pg_stat_activity.datname = '$test_database';" 2>/dev/null
 
     mkdir -p "$WORKSPACE/services/api/tmp/pids"
@@ -977,15 +978,16 @@ install_services/api() {
         && git --git-dir internal.git init \
             || return 1
 
-
-    (cd "$WORKSPACE/services/api"
-     export RAILS_ENV=test
-     if "$bundle" exec rails db:environment:set ; then
-        "$bundle" exec rake db:drop
-     fi
-     "$bundle" exec rake db:setup \
-	 && "$bundle" exec rake db:fixtures:load
-    )
+    (
+        set -e
+        cd "$WORKSPACE/services/api"
+        export RAILS_ENV=test
+        if "$bundle" exec rails db:environment:set ; then
+            "$bundle" exec rake db:drop
+        fi
+        "$bundle" exec rake db:setup
+        "$bundle" exec rake db:fixtures:load
+    ) || return 1
 }
 
 declare -a pythonstuff
