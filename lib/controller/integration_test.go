@@ -101,7 +101,6 @@ func (s *IntegrationSuite) SetUpSuite(c *check.C) {
 			config: *cfg,
 		}
 		s.testClusters[id].booter.Start(context.Background(), &s.testClusters[id].config)
-		c.Logf("%v", &s.testClusters[id].config)
 	}
 	for _, tc := range s.testClusters {
 		au, ok := tc.booter.WaitReady()
