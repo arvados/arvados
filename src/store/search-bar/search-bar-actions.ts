@@ -354,8 +354,8 @@ export const queryToFilters = (query: string, apiRevision: number) => {
         if (p.value) {
             if (apiRevision < 20200212) {
                 filter
-                    .addILike(`properties.${p.key}`, p.value, GroupContentsResourcePrefix.PROJECT)
-                    .addILike(`properties.${p.key}`, p.value, GroupContentsResourcePrefix.COLLECTION);
+                    .addLike(`properties.${p.key}`, p.value, GroupContentsResourcePrefix.PROJECT)
+                    .addLike(`properties.${p.key}`, p.value, GroupContentsResourcePrefix.COLLECTION);
             } else {
                 filter
                     .addContains(`properties.${p.key}`, p.value, GroupContentsResourcePrefix.PROJECT)
