@@ -30,13 +30,14 @@ func (runner installPassenger) String() string {
 }
 
 func (runner installPassenger) Run(ctx context.Context, fail func(error), boot *Booter) error {
-	passengerInstallMutex.Lock()
-	defer passengerInstallMutex.Unlock()
-
 	err := boot.wait(ctx, runner.depends...)
 	if err != nil {
 		return err
 	}
+
+	passengerInstallMutex.Lock()
+	defer passengerInstallMutex.Unlock()
+
 	var buf bytes.Buffer
 	err = boot.RunProgram(ctx, runner.src, &buf, nil, "gem", "list", "--details", "bundler")
 	if err != nil {
