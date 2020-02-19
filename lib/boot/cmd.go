@@ -17,6 +17,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"os/user"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -192,6 +193,7 @@ func (boot *Booter) run(cfg *arvados.Config) error {
 	boot.configfile = conffile.Name()
 
 	boot.environ = os.Environ()
+	boot.cleanEnv()
 	boot.setEnv("ARVADOS_CONFIG", boot.configfile)
 	boot.setEnv("RAILS_ENV", boot.ClusterType)
 	boot.prependEnv("PATH", filepath.Join(boot.LibPath, "bin")+":")
@@ -343,6 +345,29 @@ func (boot *Booter) prependEnv(key, prepend string) {
 	boot.environ = append(boot.environ, key+"="+prepend)
 }
 
+var cleanEnvPrefixes = []string{
+	"GEM_HOME=",
+	"GEM_PATH=",
+	"ARVADOS_",
+}
+
+func (boot *Booter) cleanEnv() {
+	var cleaned []string
+	for _, s := range boot.environ {
+		drop := false
+		for _, p := range cleanEnvPrefixes {
+			if strings.HasPrefix(s, p) {
+				drop = true
+				break
+			}
+		}
+		if !drop {
+			cleaned = append(cleaned, s)
+		}
+	}
+	boot.environ = cleaned
+}
+
 func (boot *Booter) setEnv(key, val string) {
 	for i, s := range boot.environ {
 		if strings.HasPrefix(s, key+"=") {
@@ -360,7 +385,9 @@ func (boot *Booter) installGoProgram(ctx context.Context, srcpath string) error 
 }
 
 func (boot *Booter) setupRubyEnv() error {
-	buf, err := exec.Command("gem", "env", "gempath").Output() // /var/lib/arvados/.gem/ruby/2.5.0/bin:...
+	cmd := exec.Command("gem", "env", "gempath")
+	cmd.Env = boot.environ
+	buf, err := cmd.Output() // /var/lib/arvados/.gem/ruby/2.5.0/bin:...
 	if err != nil || len(buf) == 0 {
 		return fmt.Errorf("gem env gempath: %v", err)
 	}
@@ -368,6 +395,12 @@ func (boot *Booter) setupRubyEnv() error {
 	boot.prependEnv("PATH", gempath+"/bin:")
 	boot.setEnv("GEM_HOME", gempath)
 	boot.setEnv("GEM_PATH", gempath)
+	// Passenger install doesn't work unless $HOME is ~user
+	u, err := user.Current()
+	if err != nil {
+		return err
+	}
+	boot.setEnv("HOME", u.HomeDir)
 	return nil
 }
 
