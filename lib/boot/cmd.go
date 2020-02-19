@@ -196,6 +196,7 @@ func (boot *Booter) run(cfg *arvados.Config) error {
 	boot.cleanEnv()
 	boot.setEnv("ARVADOS_CONFIG", boot.configfile)
 	boot.setEnv("RAILS_ENV", boot.ClusterType)
+	boot.setEnv("TMPDIR", boot.tempdir)
 	boot.prependEnv("PATH", filepath.Join(boot.LibPath, "bin")+":")
 
 	boot.cluster, err = cfg.GetCluster("")
