@@ -56,7 +56,9 @@ func (runPostgreSQL) Run(ctx context.Context, fail func(error), boot *Booter) er
 
 	port := boot.cluster.PostgreSQL.Connection["port"]
 
+	boot.waitShutdown.Add(1)
 	go func() {
+		defer boot.waitShutdown.Done()
 		fail(boot.RunProgram(ctx, boot.tempdir, nil, nil, filepath.Join(bindir, "postgres"),
 			"-l",          // enable ssl
 			"-D", datadir, // data dir

@@ -90,7 +90,9 @@ func (runner runPassenger) Run(ctx context.Context, fail func(error), boot *Boot
 	if err != nil {
 		return fmt.Errorf("bug: no InternalURLs for component %q: %v", runner, runner.svc.InternalURLs)
 	}
+	boot.waitShutdown.Add(1)
 	go func() {
+		defer boot.waitShutdown.Done()
 		err = boot.RunProgram(ctx, runner.src, nil, nil, "bundle", "exec",
 			"passenger", "start",
 			"-p", port,

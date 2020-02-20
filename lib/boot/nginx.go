@@ -77,7 +77,9 @@ func (runNginx) Run(ctx context.Context, fail func(error), boot *Booter) error {
 			}
 		}
 	}
+	boot.waitShutdown.Add(1)
 	go func() {
+		defer boot.waitShutdown.Done()
 		fail(boot.RunProgram(ctx, ".", nil, nil, nginx,
 			"-g", "error_log stderr info;",
 			"-g", "pid "+filepath.Join(boot.tempdir, "nginx.pid")+";",

@@ -45,7 +45,10 @@ func (runner runGoProgram) String() string {
 
 func (runner runGoProgram) Run(ctx context.Context, fail func(error), boot *Booter) error {
 	boot.wait(ctx, runner.depends...)
-	boot.RunProgram(ctx, runner.src, nil, nil, "go", "install")
+	err := boot.RunProgram(ctx, runner.src, nil, nil, "go", "install")
+	if err != nil {
+		return err
+	}
 	if ctx.Err() != nil {
 		return ctx.Err()
 	}
@@ -54,13 +57,17 @@ func (runner runGoProgram) Run(ctx context.Context, fail func(error), boot *Boot
 		// Run one for each URL
 		for u := range runner.svc.InternalURLs {
 			u := u
+			boot.waitShutdown.Add(1)
 			go func() {
+				defer boot.waitShutdown.Done()
 				fail(boot.RunProgram(ctx, boot.tempdir, nil, []string{"ARVADOS_SERVICE_INTERNAL_URL=" + u.String()}, basename))
 			}()
 		}
 	} else {
 		// Just run one
+		boot.waitShutdown.Add(1)
 		go func() {
+			defer boot.waitShutdown.Done()
 			fail(boot.RunProgram(ctx, boot.tempdir, nil, nil, basename))
 		}()
 	}

@@ -97,7 +97,8 @@ func (bootCommand) RunCommand(prog string, args []string, stdin io.Reader, stdou
 	defer boot.Stop()
 	if url, ok := boot.WaitReady(); ok {
 		fmt.Fprintln(stdout, url)
-		<-ctx.Done() // wait for signal
+		// Wait for signal/crash + orderly shutdown
+		<-boot.done
 		return 0
 	} else {
 		return 1
@@ -121,6 +122,7 @@ type Booter struct {
 	done          chan struct{}
 	healthChecker *health.Aggregator
 	tasksReady    map[string]chan bool
+	waitShutdown  sync.WaitGroup
 
 	tempdir    string
 	configfile string
@@ -288,6 +290,7 @@ func (boot *Booter) run(cfg *arvados.Config) error {
 	boot.healthChecker = &health.Aggregator{Cluster: boot.cluster}
 	<-boot.ctx.Done()
 	boot.logger.Info("shutting down")
+	boot.waitShutdown.Wait()
 	return boot.ctx.Err()
 }
 
@@ -315,9 +318,12 @@ func (boot *Booter) Stop() {
 }
 
 func (boot *Booter) WaitReady() (*arvados.URL, bool) {
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
 	for waiting := true; waiting; {
-		time.Sleep(time.Second)
-		if boot.ctx.Err() != nil {
+		select {
+		case <-ticker.C:
+		case <-boot.ctx.Done():
 			return nil, false
 		}
 		if boot.healthChecker == nil {
