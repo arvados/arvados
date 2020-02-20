@@ -56,15 +56,6 @@ func (bootCommand) RunCommand(prog string, args []string, stdin io.Reader, stdou
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	ch := make(chan os.Signal)
-	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
-	go func() {
-		for sig := range ch {
-			boot.logger.WithField("signal", sig).Info("caught signal")
-			cancel()
-		}
-	}()
-
 	var err error
 	defer func() {
 		if err != nil {
@@ -143,7 +134,18 @@ type Booter struct {
 func (boot *Booter) Start(ctx context.Context, cfg *arvados.Config) {
 	boot.ctx, boot.cancel = context.WithCancel(ctx)
 	boot.done = make(chan struct{})
+
 	go func() {
+		sigch := make(chan os.Signal)
+		signal.Notify(sigch, syscall.SIGINT, syscall.SIGTERM)
+		defer signal.Stop(sigch)
+		go func() {
+			for sig := range sigch {
+				boot.logger.WithField("signal", sig).Info("caught signal")
+				boot.cancel()
+			}
+		}()
+
 		err := boot.run(cfg)
 		if err != nil {
 			fmt.Fprintln(boot.Stderr, err)
@@ -298,7 +300,9 @@ func (boot *Booter) wait(ctx context.Context, tasks ...bootTask) error {
 		boot.logger.WithField("task", task.String()).Info("waiting")
 		select {
 		case <-ch:
+			boot.logger.WithField("task", task.String()).Info("ready")
 		case <-ctx.Done():
+			boot.logger.WithField("task", task.String()).Info("task was never ready")
 			return ctx.Err()
 		}
 	}
