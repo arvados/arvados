@@ -53,7 +53,15 @@ func (ctrl *googleLoginController) getProvider() (*oidc.Provider, error) {
 }
 
 func (ctrl *googleLoginController) Logout(ctx context.Context, cluster *arvados.Cluster, railsproxy *railsProxy, opts arvados.LogoutOptions) (arvados.LogoutResponse, error) {
-	return arvados.LogoutResponse{RedirectLocation: opts.ReturnTo}, nil
+	target := opts.ReturnTo
+	if target == "" {
+		if cluster.Services.Workbench2.ExternalURL.Host != "" {
+			target = cluster.Services.Workbench2.ExternalURL.String()
+		} else {
+			target = cluster.Services.Workbench1.ExternalURL.String()
+		}
+	}
+	return arvados.LogoutResponse{RedirectLocation: target}, nil
 }
 
 func (ctrl *googleLoginController) Login(ctx context.Context, cluster *arvados.Cluster, railsproxy *railsProxy, opts arvados.LoginOptions) (arvados.LoginResponse, error) {
