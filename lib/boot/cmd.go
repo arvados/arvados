@@ -444,15 +444,24 @@ func (boot *Booter) RunProgram(ctx context.Context, dir string, output io.Writer
 	if !strings.HasPrefix(dir, "/") {
 		logprefix = dir + ": " + logprefix
 	}
-	stderr := &logPrefixer{Writer: boot.Stderr, Prefix: []byte("[" + logprefix + "] ")}
 
 	cmd := exec.Command(boot.lookPath(prog), args...)
-	if output == nil {
-		cmd.Stdout = stderr
-	} else {
-		cmd.Stdout = output
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return err
 	}
-	cmd.Stderr = stderr
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		return err
+	}
+	logwriter := &logPrefixer{Writer: boot.Stderr, Prefix: []byte("[" + logprefix + "] ")}
+	go io.Copy(logwriter, stderr)
+	if output == nil {
+		go io.Copy(logwriter, stdout)
+	} else {
+		go io.Copy(output, stdout)
+	}
+
 	if strings.HasPrefix(dir, "/") {
 		cmd.Dir = dir
 	} else {
@@ -474,13 +483,19 @@ func (boot *Booter) RunProgram(ctx context.Context, dir string, output io.Writer
 				cmd.Process.Signal(syscall.SIGTERM)
 				time.Sleep(5 * time.Second)
 				if !exited {
+					stdout.Close()
+					stderr.Close()
 					log.WithField("PID", cmd.Process.Pid).Warn("still waiting for child process to exit 5s after SIGTERM")
 				}
 			}
 		}
 	}()
 
-	err := cmd.Run()
+	err = cmd.Start()
+	if err != nil {
+		return err
+	}
+	err = cmd.Wait()
 	if err != nil && ctx.Err() == nil {
 		// Only report errors that happen before the context ends.
 		return fmt.Errorf("%s: error: %v", cmdline, err)
