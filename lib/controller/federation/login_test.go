@@ -41,26 +41,30 @@ func (s *LoginSuite) TestDeferToLoginCluster(c *check.C) {
 }
 
 func (s *LoginSuite) TestLogout(c *check.C) {
+	s.cluster.Services.Workbench1.ExternalURL = arvados.URL{Scheme: "https", Host: "workbench1.example.com"}
+	s.cluster.Services.Workbench2.ExternalURL = arvados.URL{Scheme: "https", Host: "workbench2.example.com"}
 	s.cluster.Login.GoogleClientID = "zzzzzzzzzzzzzz"
 	s.addHTTPRemote(c, "zhome", &arvadostest.APIStub{})
 	s.cluster.Login.LoginCluster = "zhome"
 
 	returnTo := "https://app.example.com/foo?bar"
 	for _, trial := range []struct {
-		token  string
-		target string
+		token    string
+		returnTo string
+		target   string
 	}{
-		{token: "", target: returnTo},
-		{token: "zzzzzzzzzzzzzzzzzzzzz", target: returnTo},
-		{token: "v2/zzzzz-aaaaa-aaaaaaaaaaaaaaa/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", target: returnTo},
-		{token: "v2/zhome-aaaaa-aaaaaaaaaaaaaaa/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", target: "http://" + s.cluster.RemoteClusters["zhome"].Host + "/logout?" + url.Values{"return_to": {returnTo}}.Encode()},
+		{token: "", returnTo: "", target: s.cluster.Services.Workbench2.ExternalURL.String()},
+		{token: "", returnTo: returnTo, target: returnTo},
+		{token: "zzzzzzzzzzzzzzzzzzzzz", returnTo: returnTo, target: returnTo},
+		{token: "v2/zzzzz-aaaaa-aaaaaaaaaaaaaaa/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", returnTo: returnTo, target: returnTo},
+		{token: "v2/zhome-aaaaa-aaaaaaaaaaaaaaa/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", returnTo: returnTo, target: "http://" + s.cluster.RemoteClusters["zhome"].Host + "/logout?" + url.Values{"return_to": {returnTo}}.Encode()},
 	} {
 		c.Logf("trial %#v", trial)
 		ctx := context.Background()
 		if trial.token != "" {
 			ctx = auth.NewContext(ctx, &auth.Credentials{Tokens: []string{trial.token}})
 		}
-		resp, err := s.fed.Logout(ctx, arvados.LogoutOptions{ReturnTo: returnTo})
+		resp, err := s.fed.Logout(ctx, arvados.LogoutOptions{ReturnTo: trial.returnTo})
 		c.Assert(err, check.IsNil)
 		c.Logf("  RedirectLocation %q", resp.RedirectLocation)
 		target, err := url.Parse(resp.RedirectLocation)
