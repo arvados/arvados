@@ -19,6 +19,10 @@ require "rails/test_unit/railtie"
 
 Bundler.require(:default, Rails.env)
 
+if Rails.env == 'test'
+  Rails.logger = ActiveSupport::TaggedLogging.new(Logger.new(STDOUT))
+end
+
 module ArvadosWorkbench
   class Application < Rails::Application
 

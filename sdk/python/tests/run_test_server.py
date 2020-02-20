@@ -326,15 +326,16 @@ def run(leave_running_atexit=False):
     env.pop('ARVADOS_API_HOST', None)
     env.pop('ARVADOS_API_HOST_INSECURE', None)
     env.pop('ARVADOS_API_TOKEN', None)
+    logf = open(_logfilename('railsapi'), 'a')
     start_msg = subprocess.check_output(
         ['bundle', 'exec',
          'passenger', 'start', '-d', '-p{}'.format(port),
          '--pid-file', pid_file,
-         '--log-file', os.path.join(os.getcwd(), 'log/test.log'),
+         '--log-file', '/dev/stdout',
          '--ssl',
          '--ssl-certificate', 'tmp/self-signed.pem',
          '--ssl-certificate-key', 'tmp/self-signed.key'],
-        env=env)
+        env=env, stdin=open('/dev/null'), stdout=logf, stderr=logf)
 
     if not leave_running_atexit:
         atexit.register(kill_server_pid, pid_file, passenger_root=api_src_dir)
