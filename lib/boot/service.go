@@ -45,7 +45,8 @@ func (runner runGoProgram) String() string {
 
 func (runner runGoProgram) Run(ctx context.Context, fail func(error), boot *Booter) error {
 	boot.wait(ctx, runner.depends...)
-	err := boot.RunProgram(ctx, runner.src, nil, nil, "go", "install")
+	bindir := filepath.Join(boot.tempdir, "bin")
+	err := boot.RunProgram(ctx, runner.src, nil, []string{"GOBIN=" + bindir}, "go", "install")
 	if err != nil {
 		return err
 	}
@@ -53,6 +54,8 @@ func (runner runGoProgram) Run(ctx context.Context, fail func(error), boot *Boot
 		return ctx.Err()
 	}
 	_, basename := filepath.Split(runner.src)
+	binfile := filepath.Join(bindir, basename)
+
 	if len(runner.svc.InternalURLs) > 0 {
 		// Run one for each URL
 		for u := range runner.svc.InternalURLs {
@@ -60,7 +63,7 @@ func (runner runGoProgram) Run(ctx context.Context, fail func(error), boot *Boot
 			boot.waitShutdown.Add(1)
 			go func() {
 				defer boot.waitShutdown.Done()
-				fail(boot.RunProgram(ctx, boot.tempdir, nil, []string{"ARVADOS_SERVICE_INTERNAL_URL=" + u.String()}, basename))
+				fail(boot.RunProgram(ctx, boot.tempdir, nil, []string{"ARVADOS_SERVICE_INTERNAL_URL=" + u.String()}, binfile))
 			}()
 		}
 	} else {
@@ -68,7 +71,7 @@ func (runner runGoProgram) Run(ctx context.Context, fail func(error), boot *Boot
 		boot.waitShutdown.Add(1)
 		go func() {
 			defer boot.waitShutdown.Done()
-			fail(boot.RunProgram(ctx, boot.tempdir, nil, nil, basename))
+			fail(boot.RunProgram(ctx, boot.tempdir, nil, nil, binfile))
 		}()
 	}
 	return nil

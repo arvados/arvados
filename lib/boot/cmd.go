@@ -175,6 +175,9 @@ func (boot *Booter) run(cfg *arvados.Config) error {
 		return err
 	}
 	defer os.RemoveAll(boot.tempdir)
+	if err := os.Mkdir(filepath.Join(boot.tempdir, "bin"), 0777); err != nil {
+		return err
+	}
 
 	// Fill in any missing config keys, and write the resulting
 	// config in the temp dir for child services to use.
@@ -202,6 +205,7 @@ func (boot *Booter) run(cfg *arvados.Config) error {
 	boot.setEnv("ARVADOS_CONFIG", boot.configfile)
 	boot.setEnv("RAILS_ENV", boot.ClusterType)
 	boot.setEnv("TMPDIR", boot.tempdir)
+	boot.prependEnv("PATH", filepath.Join(boot.tempdir, "bin")+":")
 	boot.prependEnv("PATH", filepath.Join(boot.LibPath, "bin")+":")
 
 	boot.cluster, err = cfg.GetCluster("")
@@ -412,7 +416,7 @@ func dedupEnv(in []string) []string {
 func (boot *Booter) installGoProgram(ctx context.Context, srcpath string) error {
 	boot.goMutex.Lock()
 	defer boot.goMutex.Unlock()
-	return boot.RunProgram(ctx, filepath.Join(boot.SourcePath, srcpath), nil, []string{"GOPATH=" + boot.LibPath}, "go", "install")
+	return boot.RunProgram(ctx, filepath.Join(boot.SourcePath, srcpath), nil, []string{"GOBIN=" + boot.tempdir + "/bin"}, "go", "install")
 }
 
 func (boot *Booter) setupRubyEnv() error {
