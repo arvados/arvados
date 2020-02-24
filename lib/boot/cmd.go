@@ -465,7 +465,7 @@ func (boot *Booter) RunProgram(ctx context.Context, dir string, output io.Writer
 	cmdline := fmt.Sprintf("%s", append([]string{prog}, args...))
 	boot.logger.WithField("command", cmdline).WithField("dir", dir).Info("executing")
 
-	logprefix := prog
+	logprefix := strings.TrimPrefix(prog, boot.tempdir+"/bin/")
 	if prog == "bundle" && len(args) > 2 && args[0] == "exec" {
 		logprefix = args[1]
 	} else if prog == "arvados-server" && len(args) > 1 {
