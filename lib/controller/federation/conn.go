@@ -35,7 +35,7 @@ func New(cluster *arvados.Cluster) *Conn {
 	local := localdb.NewConn(cluster)
 	remotes := map[string]backend{}
 	for id, remote := range cluster.RemoteClusters {
-		if !remote.Proxy {
+		if !remote.Proxy || id == cluster.ClusterID {
 			continue
 		}
 		conn := rpc.NewConn(id, &url.URL{Scheme: remote.Scheme, Host: remote.Host}, remote.Insecure, saltedTokenProvider(local, id))
