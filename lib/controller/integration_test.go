@@ -48,15 +48,19 @@ func (s *IntegrationSuite) SetUpSuite(c *check.C) {
 		"z2222": nil,
 		"z3333": nil,
 	}
-	port := map[string]string{}
+	hostport := map[string]string{}
 	for id := range s.testClusters {
-		port[id] = func() string {
-			ln, err := net.Listen("tcp", "localhost:0")
+		hostport[id] = func() string {
+			// TODO: Instead of expecting random ports on
+			// 127.0.0.11, 22, 33 to be race-safe, try
+			// different 127.x.y.z until finding one that
+			// isn't in use.
+			ln, err := net.Listen("tcp", ":0")
 			c.Assert(err, check.IsNil)
 			ln.Close()
 			_, port, err := net.SplitHostPort(ln.Addr().String())
 			c.Assert(err, check.IsNil)
-			return port
+			return "127.0.0." + id[3:] + ":" + port
 		}()
 	}
 	for id := range s.testClusters {
@@ -64,7 +68,7 @@ func (s *IntegrationSuite) SetUpSuite(c *check.C) {
   ` + id + `:
     Services:
       Controller:
-        ExternalURL: https://localhost:` + port[id] + `
+        ExternalURL: https://` + hostport[id] + `
     TLS:
       Insecure: true
     Login:
@@ -73,17 +77,20 @@ func (s *IntegrationSuite) SetUpSuite(c *check.C) {
       Format: text
     RemoteClusters:
       z1111:
-        Host: localhost:` + port["z1111"] + `
+        Host: ` + hostport["z1111"] + `
         Scheme: https
         Insecure: true
+        Proxy: true
       z2222:
-        Host: localhost:` + port["z2222"] + `
+        Host: ` + hostport["z2222"] + `
         Scheme: https
         Insecure: true
+        Proxy: true
       z3333:
-        Host: localhost:` + port["z3333"] + `
+        Host: ` + hostport["z3333"] + `
         Scheme: https
         Insecure: true
+        Proxy: true
 `
 		loader := config.NewLoader(bytes.NewBufferString(yaml), ctxlog.TestLogger(c))
 		loader.Path = "-"
@@ -96,7 +103,7 @@ func (s *IntegrationSuite) SetUpSuite(c *check.C) {
 				SourcePath:           filepath.Join(cwd, "..", ".."),
 				LibPath:              filepath.Join(cwd, "..", "..", "tmp"),
 				ClusterType:          "test",
-				ListenHost:           "localhost",
+				ListenHost:           "127.0.0." + id[3:],
 				ControllerAddr:       ":0",
 				OwnTemporaryDatabase: true,
 				Stderr:               &service.LogPrefixer{Writer: ctxlog.LogWriter(c.Log), Prefix: []byte("[" + id + "] ")},
