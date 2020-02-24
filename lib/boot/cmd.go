@@ -528,8 +528,12 @@ func (boot *Booter) RunProgram(ctx context.Context, dir string, output io.Writer
 		return err
 	}
 	err = cmd.Wait()
-	if err != nil && ctx.Err() == nil {
-		// Only report errors that happen before the context ends.
+	if ctx.Err() != nil {
+		// Return "context canceled", instead of the "killed"
+		// error that was probably caused by the context being
+		// canceled.
+		return ctx.Err()
+	} else if err != nil {
 		return fmt.Errorf("%s: error: %v", cmdline, err)
 	}
 	return nil
