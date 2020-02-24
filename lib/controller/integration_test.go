@@ -72,7 +72,7 @@ func (s *IntegrationSuite) SetUpSuite(c *check.C) {
     TLS:
       Insecure: true
     Login:
-      LoginCluster: z1111
+      # LoginCluster: z1111
     SystemLogs:
       Format: text
     RemoteClusters:
@@ -126,43 +126,83 @@ func (s *IntegrationSuite) TearDownSuite(c *check.C) {
 	}
 }
 
-func (s *IntegrationSuite) conn(clusterID string) (*rpc.Conn, context.Context, *arvados.Client, *keepclient.KeepClient) {
+func (s *IntegrationSuite) conn(clusterID string) *rpc.Conn {
+	return rpc.NewConn(clusterID, s.testClusters[clusterID].controllerURL, true, rpc.PassthroughTokenProvider)
+}
+
+func (s *IntegrationSuite) clientsWithToken(clusterID string, token string) (context.Context, *arvados.Client, *keepclient.KeepClient) {
 	cl := s.testClusters[clusterID].config.Clusters[clusterID]
-	conn := rpc.NewConn(clusterID, s.testClusters[clusterID].controllerURL, true, rpc.PassthroughTokenProvider)
-	rootctx := auth.NewContext(context.Background(), auth.NewCredentials(cl.SystemRootToken))
+	rootctx := auth.NewContext(context.Background(), auth.NewCredentials(token))
 	ac, err := arvados.NewClientFromConfig(&cl)
 	if err != nil {
 		panic(err)
 	}
-	ac.AuthToken = cl.SystemRootToken
+	ac.AuthToken = token
 	arv, err := arvadosclient.New(ac)
 	if err != nil {
 		panic(err)
 	}
 	kc := keepclient.New(arv)
-	return conn, rootctx, ac, kc
+	return rootctx, ac, kc
+}
+
+func (s *IntegrationSuite) userClients(c *check.C, conn *rpc.Conn, rootctx context.Context, clusterID string, activate bool) (context.Context, *arvados.Client, *keepclient.KeepClient) {
+	login, err := conn.UserSessionCreate(rootctx, rpc.UserSessionCreateOptions{
+		ReturnTo: ",https://example.com",
+		AuthInfo: rpc.UserSessionAuthInfo{
+			Email:     "user@example.com",
+			FirstName: "Example",
+			LastName:  "User",
+			Username:  "example",
+		},
+	})
+	c.Assert(err, check.IsNil)
+	redirURL, err := url.Parse(login.RedirectLocation)
+	c.Assert(err, check.IsNil)
+	userToken := redirURL.Query().Get("api_token")
+	ctx, ac, kc := s.clientsWithToken(clusterID, userToken)
+	user, err := conn.UserGetCurrent(ctx, arvados.GetOptions{})
+	if err != nil {
+		panic(err)
+	}
+	_, err = conn.UserSetup(rootctx, arvados.UserSetupOptions{UUID: user.UUID})
+	if err != nil {
+		panic(err)
+	}
+	user, err = conn.UserGetCurrent(ctx, arvados.GetOptions{})
+	if err != nil {
+		panic(err)
+	}
+	return ctx, ac, kc
+}
+
+func (s *IntegrationSuite) rootClients(clusterID string) (context.Context, *arvados.Client, *keepclient.KeepClient) {
+	return s.clientsWithToken(clusterID, s.testClusters[clusterID].config.Clusters[clusterID].SystemRootToken)
 }
 
 func (s *IntegrationSuite) TestLoopDetection(c *check.C) {
-	conn1, rootctx1, _, _ := s.conn("z1111")
-	conn3, rootctx3, ac3, kc3 := s.conn("z3333")
+	conn1 := s.conn("z1111")
+	rootctx1, _, _ := s.rootClients("z1111")
+	conn3 := s.conn("z3333")
+	// rootctx3, _, _ := s.rootClients("z3333")
 
+	userctx1, ac1, kc1 := s.userClients(c, conn1, rootctx1, "z1111", true)
 	_, err := conn1.CollectionGet(rootctx1, arvados.GetOptions{UUID: "1f4b0bc7583c2a7f9102c395f4ffc5e3+45"})
 	c.Check(err, check.ErrorMatches, `.*404 Not Found.*`)
 
-	var coll3 arvados.Collection
-	fs3, err := coll3.FileSystem(ac3, kc3)
+	var coll1 arvados.Collection
+	fs1, err := coll1.FileSystem(ac1, kc1)
 	if err != nil {
 		c.Error(err)
 	}
-	f, err := fs3.OpenFile("foo", os.O_CREATE|os.O_RDWR, 0777)
+	f, err := fs1.OpenFile("foo", os.O_CREATE|os.O_RDWR, 0777)
 	f.Write([]byte("foo"))
 	f.Close()
-	mtxt, err := fs3.MarshalManifest(".")
-	coll3, err = conn3.CollectionCreate(rootctx3, arvados.CreateOptions{Attrs: map[string]interface{}{
+	mtxt, err := fs1.MarshalManifest(".")
+	coll1, err = conn1.CollectionCreate(userctx1, arvados.CreateOptions{Attrs: map[string]interface{}{
 		"manifest_text": mtxt,
 	}})
-	coll, err := conn1.CollectionGet(rootctx1, arvados.GetOptions{UUID: "1f4b0bc7583c2a7f9102c395f4ffc5e3+45"})
+	coll, err := conn3.CollectionGet(userctx1, arvados.GetOptions{UUID: "1f4b0bc7583c2a7f9102c395f4ffc5e3+45"})
 	c.Check(err, check.IsNil)
 	c.Check(coll.PortableDataHash, check.Equals, "1f4b0bc7583c2a7f9102c395f4ffc5e3+45")
 }
