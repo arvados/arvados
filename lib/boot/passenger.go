@@ -90,13 +90,27 @@ func (runner runPassenger) Run(ctx context.Context, fail func(error), boot *Boot
 	if err != nil {
 		return fmt.Errorf("bug: no InternalURLs for component %q: %v", runner, runner.svc.InternalURLs)
 	}
+	loglevel := "4"
+	if lvl, ok := map[string]string{
+		"debug":   "5",
+		"info":    "4",
+		"warn":    "2",
+		"warning": "2",
+		"error":   "1",
+		"fatal":   "0",
+		"panic":   "0",
+	}[boot.cluster.SystemLogs.LogLevel]; ok {
+		loglevel = lvl
+	}
 	boot.waitShutdown.Add(1)
 	go func() {
 		defer boot.waitShutdown.Done()
 		err = boot.RunProgram(ctx, runner.src, nil, nil, "bundle", "exec",
 			"passenger", "start",
 			"-p", port,
-			"--log-file", "/dev/null",
+			"--log-file", "/dev/stderr",
+			"--log-level", loglevel,
+			"--no-friendly-error-pages",
 			"--pid-file", filepath.Join(boot.tempdir, "passenger."+strings.Replace(runner.src, "/", "_", -1)+".pid"))
 		fail(err)
 	}()
