@@ -180,6 +180,32 @@ func (s *HandlerSuite) TestProxyRedirect(c *check.C) {
 	c.Check(resp.Header().Get("Location"), check.Matches, `(https://0.0.0.0:1)?/auth/joshid\?return_to=%2Cfoo&?`)
 }
 
+func (s *HandlerSuite) TestLogoutSSO(c *check.C) {
+	s.cluster.Login.ProviderAppID = "test"
+	req := httptest.NewRequest("GET", "https://0.0.0.0:1/logout?return_to=https://example.com/foo", nil)
+	resp := httptest.NewRecorder()
+	s.handler.ServeHTTP(resp, req)
+	if !c.Check(resp.Code, check.Equals, http.StatusFound) {
+		c.Log(resp.Body.String())
+	}
+	c.Check(resp.Header().Get("Location"), check.Equals, "http://localhost:3002/users/sign_out?"+url.Values{"redirect_uri": {"https://example.com/foo"}}.Encode())
+}
+
+func (s *HandlerSuite) TestLogoutGoogle(c *check.C) {
+	if s.cluster.ForceLegacyAPI14 {
+		// Google login N/A
+		return
+	}
+	s.cluster.Login.GoogleClientID = "test"
+	req := httptest.NewRequest("GET", "https://0.0.0.0:1/logout?return_to=https://example.com/foo", nil)
+	resp := httptest.NewRecorder()
+	s.handler.ServeHTTP(resp, req)
+	if !c.Check(resp.Code, check.Equals, http.StatusFound) {
+		c.Log(resp.Body.String())
+	}
+	c.Check(resp.Header().Get("Location"), check.Equals, "https://example.com/foo")
+}
+
 func (s *HandlerSuite) TestValidateV1APIToken(c *check.C) {
 	req := httptest.NewRequest("GET", "/arvados/v1/users/current", nil)
 	user, ok, err := s.handler.(*Handler).validateAPItoken(req, arvadostest.ActiveToken)

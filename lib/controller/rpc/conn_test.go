@@ -51,6 +51,16 @@ func (s *RPCSuite) TestLogin(c *check.C) {
 	c.Check(resp.RedirectLocation, check.Equals, "/auth/joshid?return_to="+url.QueryEscape(","+opts.ReturnTo))
 }
 
+func (s *RPCSuite) TestLogout(c *check.C) {
+	s.ctx = context.Background()
+	opts := arvados.LogoutOptions{
+		ReturnTo: "https://foo.example.com/bar",
+	}
+	resp, err := s.conn.Logout(s.ctx, opts)
+	c.Check(err, check.IsNil)
+	c.Check(resp.RedirectLocation, check.Equals, "http://localhost:3002/users/sign_out?redirect_uri="+url.QueryEscape(opts.ReturnTo))
+}
+
 func (s *RPCSuite) TestCollectionCreate(c *check.C) {
 	coll, err := s.conn.CollectionCreate(s.ctx, arvados.CreateOptions{Attrs: map[string]interface{}{
 		"owner_uuid":         arvadostest.ActiveUserUUID,
