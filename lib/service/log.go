@@ -2,20 +2,20 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package boot
+package service
 
 import (
 	"bytes"
 	"io"
 )
 
-type logPrefixer struct {
+type LogPrefixer struct {
 	io.Writer
 	Prefix []byte
 	did    bool
 }
 
-func (lp *logPrefixer) Write(p []byte) (int, error) {
+func (lp *LogPrefixer) Write(p []byte) (int, error) {
 	if len(p) == 0 {
 		return 0, nil
 	}

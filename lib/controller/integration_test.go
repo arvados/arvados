@@ -15,6 +15,7 @@ import (
 	"git.arvados.org/arvados.git/lib/boot"
 	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/lib/controller/rpc"
+	"git.arvados.org/arvados.git/lib/service"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/auth"
@@ -68,6 +69,8 @@ func (s *IntegrationSuite) SetUpSuite(c *check.C) {
       Insecure: true
     Login:
       LoginCluster: z1111
+    SystemLogs:
+      Format: text
     RemoteClusters:
       z1111:
         Host: localhost:` + port["z1111"] + `
@@ -96,7 +99,7 @@ func (s *IntegrationSuite) SetUpSuite(c *check.C) {
 				ListenHost:           "localhost",
 				ControllerAddr:       ":0",
 				OwnTemporaryDatabase: true,
-				Stderr:               ctxlog.LogWriter(c.Log),
+				Stderr:               &service.LogPrefixer{Writer: ctxlog.LogWriter(c.Log), Prefix: []byte("[" + id + "] ")},
 			},
 			config: *cfg,
 		}

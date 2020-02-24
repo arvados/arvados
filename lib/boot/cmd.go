@@ -26,6 +26,7 @@ import (
 
 	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/lib/config"
+	"git.arvados.org/arvados.git/lib/service"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/health"
@@ -391,6 +392,23 @@ func (boot *Booter) setEnv(key, val string) {
 	boot.environ = append(boot.environ, key+"="+val)
 }
 
+// Remove all but the first occurrence of each env var.
+func dedupEnv(in []string) []string {
+	saw := map[string]bool{}
+	var out []string
+	for _, kv := range in {
+		if split := strings.Index(kv, "="); split < 1 {
+			panic("invalid environment var: " + kv)
+		} else if saw[kv[:split]] {
+			continue
+		} else {
+			saw[kv[:split]] = true
+			out = append(out, kv)
+		}
+	}
+	return out
+}
+
 func (boot *Booter) installGoProgram(ctx context.Context, srcpath string) error {
 	boot.goMutex.Lock()
 	defer boot.goMutex.Unlock()
@@ -441,11 +459,13 @@ func (boot *Booter) lookPath(prog string) string {
 // boot command's stderr.
 func (boot *Booter) RunProgram(ctx context.Context, dir string, output io.Writer, env []string, prog string, args ...string) error {
 	cmdline := fmt.Sprintf("%s", append([]string{prog}, args...))
-	fmt.Fprintf(boot.Stderr, "%s executing in %s\n", cmdline, dir)
+	boot.logger.WithField("command", cmdline).WithField("dir", dir).Info("executing")
 
 	logprefix := prog
 	if prog == "bundle" && len(args) > 2 && args[0] == "exec" {
 		logprefix = args[1]
+	} else if prog == "arvados-server" && len(args) > 1 {
+		logprefix = args[0]
 	}
 	if !strings.HasPrefix(dir, "/") {
 		logprefix = dir + ": " + logprefix
@@ -460,7 +480,7 @@ func (boot *Booter) RunProgram(ctx context.Context, dir string, output io.Writer
 	if err != nil {
 		return err
 	}
-	logwriter := &logPrefixer{Writer: boot.Stderr, Prefix: []byte("[" + logprefix + "] ")}
+	logwriter := &service.LogPrefixer{Writer: boot.Stderr, Prefix: []byte("[" + logprefix + "] ")}
 	go io.Copy(logwriter, stderr)
 	if output == nil {
 		go io.Copy(logwriter, stdout)
@@ -473,7 +493,9 @@ func (boot *Booter) RunProgram(ctx context.Context, dir string, output io.Writer
 	} else {
 		cmd.Dir = filepath.Join(boot.SourcePath, dir)
 	}
-	cmd.Env = append(env, boot.environ...)
+	env = append([]string(nil), env...)
+	env = append(env, boot.environ...)
+	cmd.Env = dedupEnv(env)
 
 	exited := false
 	defer func() { exited = true }()
