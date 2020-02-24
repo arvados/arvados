@@ -36,14 +36,13 @@ func (runPostgreSQL) Run(ctx context.Context, fail func(error), boot *Booter) er
 	if err != nil {
 		return err
 	}
-	datadir := filepath.Join(boot.tempdir, "pgdata")
+	bindir := strings.TrimSpace(buf.String())
 
+	datadir := filepath.Join(boot.tempdir, "pgdata")
 	err = os.Mkdir(datadir, 0755)
 	if err != nil {
 		return err
 	}
-	bindir := strings.TrimSpace(buf.String())
-
 	err = boot.RunProgram(ctx, boot.tempdir, nil, nil, filepath.Join(bindir, "initdb"), "-D", datadir)
 	if err != nil {
 		return err
