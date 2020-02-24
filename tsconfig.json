@@ -30,6 +30,7 @@
     "acceptance-tests",
     "webpack",
     "jest",
+    "cypress",
     "src/setupTests.ts",
     "**/*.test.tsx"
   ]
