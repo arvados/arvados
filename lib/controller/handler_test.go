@@ -19,6 +19,7 @@ import (
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
+	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
 	"github.com/prometheus/client_golang/prometheus"
@@ -227,6 +228,26 @@ func (s *HandlerSuite) TestValidateV2APIToken(c *check.C) {
 	c.Check(user.Authorization.Scopes, check.DeepEquals, []string{"all"})
 	c.Check(user.UUID, check.Equals, arvadostest.ActiveUserUUID)
 	c.Check(user.Authorization.TokenV2(), check.Equals, arvadostest.ActiveTokenV2)
+}
+
+func (s *HandlerSuite) TestValidateRemoteToken(c *check.C) {
+	saltedToken, err := auth.SaltToken(arvadostest.ActiveTokenV2, "abcde")
+	c.Assert(err, check.IsNil)
+	for _, trial := range []struct {
+		code  int
+		token string
+	}{
+		{http.StatusOK, saltedToken},
+		{http.StatusUnauthorized, "bogus"},
+	} {
+		req := httptest.NewRequest("GET", "https://0.0.0.0:1/arvados/v1/users/current?remote=abcde", nil)
+		req.Header.Set("Authorization", "Bearer "+trial.token)
+		resp := httptest.NewRecorder()
+		s.handler.ServeHTTP(resp, req)
+		if !c.Check(resp.Code, check.Equals, trial.code) {
+			c.Logf("HTTP %d: %s", resp.Code, resp.Body.String())
+		}
+	}
 }
 
 func (s *HandlerSuite) TestCreateAPIToken(c *check.C) {
