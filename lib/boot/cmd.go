@@ -485,12 +485,21 @@ func (boot *Booter) RunProgram(ctx context.Context, dir string, output io.Writer
 		return err
 	}
 	logwriter := &service.LogPrefixer{Writer: boot.Stderr, Prefix: []byte("[" + logprefix + "] ")}
-	go io.Copy(logwriter, stderr)
-	if output == nil {
-		go io.Copy(logwriter, stdout)
-	} else {
-		go io.Copy(output, stdout)
-	}
+	var copiers sync.WaitGroup
+	copiers.Add(1)
+	go func() {
+		io.Copy(logwriter, stderr)
+		copiers.Done()
+	}()
+	copiers.Add(1)
+	go func() {
+		if output == nil {
+			io.Copy(logwriter, stdout)
+		} else {
+			io.Copy(output, stdout)
+		}
+		copiers.Done()
+	}()
 
 	if strings.HasPrefix(dir, "/") {
 		cmd.Dir = dir
@@ -527,6 +536,7 @@ func (boot *Booter) RunProgram(ctx context.Context, dir string, output io.Writer
 	if err != nil {
 		return err
 	}
+	copiers.Wait()
 	err = cmd.Wait()
 	if ctx.Err() != nil {
 		// Return "context canceled", instead of the "killed"
