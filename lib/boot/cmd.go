@@ -9,6 +9,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -108,6 +109,7 @@ func (bootCommand) RunCommand(prog string, args []string, stdin io.Reader, stdou
 
 type Booter struct {
 	SourcePath           string // e.g., /home/username/src/arvados
+	SourceVersion        string // e.g., acbd1324...
 	LibPath              string // e.g., /var/lib/arvados
 	ClusterType          string // e.g., production
 	ListenHost           string // e.g., localhost
@@ -222,6 +224,26 @@ func (boot *Booter) run(cfg *arvados.Config) error {
 		"PID": os.Getpid(),
 	})
 
+	if boot.SourceVersion == "" {
+		// Find current source tree version.
+		var buf bytes.Buffer
+		err = boot.RunProgram(boot.ctx, ".", &buf, nil, "git", "diff", "--shortstat")
+		if err != nil {
+			return err
+		}
+		dirty := buf.Len() > 0
+		buf.Reset()
+		err = boot.RunProgram(boot.ctx, ".", &buf, nil, "git", "log", "-n1", "--format=%H")
+		if err != nil {
+			return err
+		}
+		boot.SourceVersion = strings.TrimSpace(buf.String())
+		if dirty {
+			boot.SourceVersion += "+uncommitted"
+		}
+	} else {
+		return errors.New("specifying a version to run is not yet supported")
+	}
 	for _, dir := range []string{boot.LibPath, filepath.Join(boot.LibPath, "bin")} {
 		if _, err = os.Stat(filepath.Join(dir, ".")); os.IsNotExist(err) {
 			err = os.Mkdir(dir, 0755)
@@ -232,7 +254,7 @@ func (boot *Booter) run(cfg *arvados.Config) error {
 			return err
 		}
 	}
-	err = boot.installGoProgram(boot.ctx, "cmd/arvados-server")
+	_, err = boot.installGoProgram(boot.ctx, "cmd/arvados-server")
 	if err != nil {
 		return err
 	}
@@ -413,10 +435,12 @@ func dedupEnv(in []string) []string {
 	return out
 }
 
-func (boot *Booter) installGoProgram(ctx context.Context, srcpath string) error {
-	boot.goMutex.Lock()
-	defer boot.goMutex.Unlock()
-	return boot.RunProgram(ctx, filepath.Join(boot.SourcePath, srcpath), nil, []string{"GOBIN=" + boot.tempdir + "/bin"}, "go", "install")
+func (boot *Booter) installGoProgram(ctx context.Context, srcpath string) (string, error) {
+	_, basename := filepath.Split(srcpath)
+	bindir := filepath.Join(boot.tempdir, "bin")
+	binfile := filepath.Join(bindir, basename)
+	err := boot.RunProgram(ctx, filepath.Join(boot.SourcePath, srcpath), nil, []string{"GOBIN=" + bindir}, "go", "install", "-ldflags", "-X git.arvados.org/arvados.git/lib/cmd.version="+boot.SourceVersion+" -X main.version="+boot.SourceVersion)
+	return binfile, err
 }
 
 func (boot *Booter) setupRubyEnv() error {
@@ -557,7 +581,7 @@ func (boot *Booter) autofillConfig(cfg *arvados.Config, log logrus.FieldLogger) 
 	usedPort := map[string]bool{}
 	nextPort := func() string {
 		for {
-			port, err := availablePort(":0")
+			port, err := availablePort(boot.ListenHost + ":0")
 			if err != nil {
 				panic(err)
 			}

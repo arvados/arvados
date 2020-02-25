@@ -23,11 +23,16 @@ func (runner runServiceCommand) String() string {
 
 func (runner runServiceCommand) Run(ctx context.Context, fail func(error), boot *Booter) error {
 	boot.wait(ctx, runner.depends...)
+	binfile := filepath.Join(boot.tempdir, "bin", "arvados-server")
+	err := boot.RunProgram(ctx, boot.tempdir, nil, nil, binfile, "-version")
+	if err != nil {
+		return err
+	}
 	go func() {
 		var u arvados.URL
 		for u = range runner.svc.InternalURLs {
 		}
-		fail(boot.RunProgram(ctx, boot.tempdir, nil, []string{"ARVADOS_SERVICE_INTERNAL_URL=" + u.String()}, "arvados-server", runner.name, "-config", boot.configfile))
+		fail(boot.RunProgram(ctx, boot.tempdir, nil, []string{"ARVADOS_SERVICE_INTERNAL_URL=" + u.String()}, binfile, runner.name, "-config", boot.configfile))
 	}()
 	return nil
 }
@@ -45,17 +50,18 @@ func (runner runGoProgram) String() string {
 
 func (runner runGoProgram) Run(ctx context.Context, fail func(error), boot *Booter) error {
 	boot.wait(ctx, runner.depends...)
-	bindir := filepath.Join(boot.tempdir, "bin")
-	err := boot.RunProgram(ctx, runner.src, nil, []string{"GOBIN=" + bindir}, "go", "install")
+	binfile, err := boot.installGoProgram(ctx, runner.src)
 	if err != nil {
 		return err
 	}
 	if ctx.Err() != nil {
 		return ctx.Err()
 	}
-	_, basename := filepath.Split(runner.src)
-	binfile := filepath.Join(bindir, basename)
 
+	err = boot.RunProgram(ctx, boot.tempdir, nil, nil, binfile, "-version")
+	if err != nil {
+		return err
+	}
 	if len(runner.svc.InternalURLs) > 0 {
 		// Run one for each URL
 		for u := range runner.svc.InternalURLs {
