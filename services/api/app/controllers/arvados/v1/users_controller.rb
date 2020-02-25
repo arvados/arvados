@@ -45,8 +45,11 @@ class Arvados::V1::UsersController < ApplicationController
   end
 
   def activate
+    if params[:id] and params[:id].match(/\D/)
+      params[:uuid] = params.delete :id
+    end
     if current_user.andand.is_admin && params[:uuid]
-      @object = User.find params[:uuid]
+      @object = User.find_by_uuid params[:uuid]
     else
       @object = current_user
     end
