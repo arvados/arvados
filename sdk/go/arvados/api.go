@@ -63,6 +63,7 @@ type GetOptions struct {
 	Select       []string `json:"select"`
 	IncludeTrash bool     `json:"include_trash"`
 	ForwardedFor string   `json:"forwarded_for"`
+	Remote       string   `json:"remote"`
 }
 
 type UntrashOptions struct {
