@@ -81,16 +81,19 @@ func (s *IntegrationSuite) SetUpSuite(c *check.C) {
         Scheme: https
         Insecure: true
         Proxy: true
+        ActivateUsers: true
       z2222:
         Host: ` + hostport["z2222"] + `
         Scheme: https
         Insecure: true
         Proxy: true
+        ActivateUsers: true
       z3333:
         Host: ` + hostport["z3333"] + `
         Scheme: https
         Insecure: true
         Proxy: true
+        ActivateUsers: true
 `
 		loader := config.NewLoader(bytes.NewBufferString(yaml), ctxlog.TestLogger(c))
 		loader.Path = "-"
@@ -132,7 +135,7 @@ func (s *IntegrationSuite) conn(clusterID string) *rpc.Conn {
 
 func (s *IntegrationSuite) clientsWithToken(clusterID string, token string) (context.Context, *arvados.Client, *keepclient.KeepClient) {
 	cl := s.testClusters[clusterID].config.Clusters[clusterID]
-	rootctx := auth.NewContext(context.Background(), auth.NewCredentials(token))
+	ctx := auth.NewContext(context.Background(), auth.NewCredentials(token))
 	ac, err := arvados.NewClientFromConfig(&cl)
 	if err != nil {
 		panic(err)
@@ -143,7 +146,7 @@ func (s *IntegrationSuite) clientsWithToken(clusterID string, token string) (con
 		panic(err)
 	}
 	kc := keepclient.New(arv)
-	return rootctx, ac, kc
+	return ctx, ac, kc
 }
 
 func (s *IntegrationSuite) userClients(c *check.C, conn *rpc.Conn, rootctx context.Context, clusterID string, activate bool) (context.Context, *arvados.Client, *keepclient.KeepClient) {
@@ -160,6 +163,7 @@ func (s *IntegrationSuite) userClients(c *check.C, conn *rpc.Conn, rootctx conte
 	redirURL, err := url.Parse(login.RedirectLocation)
 	c.Assert(err, check.IsNil)
 	userToken := redirURL.Query().Get("api_token")
+	c.Logf("userToken: %q", userToken)
 	ctx, ac, kc := s.clientsWithToken(clusterID, userToken)
 	user, err := conn.UserGetCurrent(ctx, arvados.GetOptions{})
 	if err != nil {
@@ -169,9 +173,17 @@ func (s *IntegrationSuite) userClients(c *check.C, conn *rpc.Conn, rootctx conte
 	if err != nil {
 		panic(err)
 	}
+	_, err = conn.UserActivate(rootctx, arvados.UserActivateOptions{UUID: user.UUID})
+	if err != nil {
+		panic(err)
+	}
 	user, err = conn.UserGetCurrent(ctx, arvados.GetOptions{})
 	if err != nil {
 		panic(err)
+	}
+	c.Logf("user: %#v", user)
+	if !user.IsActive {
+		c.Fatal("failed to activate user")
 	}
 	return ctx, ac, kc
 }
@@ -187,8 +199,8 @@ func (s *IntegrationSuite) TestLoopDetection(c *check.C) {
 	// rootctx3, _, _ := s.rootClients("z3333")
 
 	userctx1, ac1, kc1 := s.userClients(c, conn1, rootctx1, "z1111", true)
-	_, err := conn1.CollectionGet(rootctx1, arvados.GetOptions{UUID: "1f4b0bc7583c2a7f9102c395f4ffc5e3+45"})
-	c.Check(err, check.ErrorMatches, `.*404 Not Found.*`)
+	_, err := conn1.CollectionGet(userctx1, arvados.GetOptions{UUID: "1f4b0bc7583c2a7f9102c395f4ffc5e3+45"})
+	c.Assert(err, check.ErrorMatches, `.*404 Not Found.*`)
 
 	var coll1 arvados.Collection
 	fs1, err := coll1.FileSystem(ac1, kc1)
@@ -202,6 +214,7 @@ func (s *IntegrationSuite) TestLoopDetection(c *check.C) {
 	coll1, err = conn1.CollectionCreate(userctx1, arvados.CreateOptions{Attrs: map[string]interface{}{
 		"manifest_text": mtxt,
 	}})
+	c.Assert(err, check.IsNil)
 	coll, err := conn3.CollectionGet(userctx1, arvados.GetOptions{UUID: "1f4b0bc7583c2a7f9102c395f4ffc5e3+45"})
 	c.Check(err, check.IsNil)
 	c.Check(coll.PortableDataHash, check.Equals, "1f4b0bc7583c2a7f9102c395f4ffc5e3+45")
