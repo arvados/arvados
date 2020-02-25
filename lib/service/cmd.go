@@ -59,7 +59,7 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 	var err error
 	defer func() {
 		if err != nil {
-			log.WithError(err).Info("exiting")
+			log.WithError(err).Error("exiting")
 		}
 	}()
 

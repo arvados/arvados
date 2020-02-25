@@ -27,7 +27,7 @@ import (
 var _ = check.Suite(&IntegrationSuite{})
 
 type testCluster struct {
-	booter        boot.Booter
+	super         boot.Supervisor
 	config        arvados.Config
 	controllerURL *url.URL
 }
@@ -102,7 +102,7 @@ func (s *IntegrationSuite) SetUpSuite(c *check.C) {
 		cfg, err := loader.Load()
 		c.Assert(err, check.IsNil)
 		s.testClusters[id] = &testCluster{
-			booter: boot.Booter{
+			super: boot.Supervisor{
 				SourcePath:           filepath.Join(cwd, "..", ".."),
 				LibPath:              filepath.Join(cwd, "..", "..", "tmp"),
 				ClusterType:          "test",
@@ -113,10 +113,10 @@ func (s *IntegrationSuite) SetUpSuite(c *check.C) {
 			},
 			config: *cfg,
 		}
-		s.testClusters[id].booter.Start(context.Background(), &s.testClusters[id].config)
+		s.testClusters[id].super.Start(context.Background(), &s.testClusters[id].config)
 	}
 	for _, tc := range s.testClusters {
-		au, ok := tc.booter.WaitReady()
+		au, ok := tc.super.WaitReady()
 		c.Assert(ok, check.Equals, true)
 		u := url.URL(*au)
 		tc.controllerURL = &u
@@ -125,7 +125,7 @@ func (s *IntegrationSuite) SetUpSuite(c *check.C) {
 
 func (s *IntegrationSuite) TearDownSuite(c *check.C) {
 	for _, c := range s.testClusters {
-		c.booter.Stop()
+		c.super.Stop()
 	}
 }
 

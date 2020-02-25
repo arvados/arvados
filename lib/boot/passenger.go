@@ -20,17 +20,19 @@ import (
 // concurrent installs.
 var passengerInstallMutex sync.Mutex
 
+// Install a Rails application's dependencies, including phusion
+// passenger.
 type installPassenger struct {
 	src     string
-	depends []bootTask
+	depends []supervisedTask
 }
 
 func (runner installPassenger) String() string {
 	return "installPassenger:" + runner.src
 }
 
-func (runner installPassenger) Run(ctx context.Context, fail func(error), boot *Booter) error {
-	err := boot.wait(ctx, runner.depends...)
+func (runner installPassenger) Run(ctx context.Context, fail func(error), super *Supervisor) error {
+	err := super.wait(ctx, runner.depends...)
 	if err != nil {
 		return err
 	}
@@ -39,32 +41,32 @@ func (runner installPassenger) Run(ctx context.Context, fail func(error), boot *
 	defer passengerInstallMutex.Unlock()
 
 	var buf bytes.Buffer
-	err = boot.RunProgram(ctx, runner.src, &buf, nil, "gem", "list", "--details", "bundler")
+	err = super.RunProgram(ctx, runner.src, &buf, nil, "gem", "list", "--details", "bundler")
 	if err != nil {
 		return err
 	}
 	for _, version := range []string{"1.11.0", "1.17.3", "2.0.2"} {
 		if !strings.Contains(buf.String(), "("+version+")") {
-			err = boot.RunProgram(ctx, runner.src, nil, nil, "gem", "install", "--user", "bundler:1.11", "bundler:1.17.3", "bundler:2.0.2")
+			err = super.RunProgram(ctx, runner.src, nil, nil, "gem", "install", "--user", "bundler:1.11", "bundler:1.17.3", "bundler:2.0.2")
 			if err != nil {
 				return err
 			}
 			break
 		}
 	}
-	err = boot.RunProgram(ctx, runner.src, nil, nil, "bundle", "install", "--jobs", "4", "--path", filepath.Join(os.Getenv("HOME"), ".gem"))
+	err = super.RunProgram(ctx, runner.src, nil, nil, "bundle", "install", "--jobs", "4", "--path", filepath.Join(os.Getenv("HOME"), ".gem"))
 	if err != nil {
 		return err
 	}
-	err = boot.RunProgram(ctx, runner.src, nil, nil, "bundle", "exec", "passenger-config", "build-native-support")
+	err = super.RunProgram(ctx, runner.src, nil, nil, "bundle", "exec", "passenger-config", "build-native-support")
 	if err != nil {
 		return err
 	}
-	err = boot.RunProgram(ctx, runner.src, nil, nil, "bundle", "exec", "passenger-config", "install-standalone-runtime")
+	err = super.RunProgram(ctx, runner.src, nil, nil, "bundle", "exec", "passenger-config", "install-standalone-runtime")
 	if err != nil {
 		return err
 	}
-	err = boot.RunProgram(ctx, runner.src, nil, nil, "bundle", "exec", "passenger-config", "validate-install")
+	err = super.RunProgram(ctx, runner.src, nil, nil, "bundle", "exec", "passenger-config", "validate-install")
 	if err != nil {
 		return err
 	}
@@ -74,15 +76,15 @@ func (runner installPassenger) Run(ctx context.Context, fail func(error), boot *
 type runPassenger struct {
 	src     string
 	svc     arvados.Service
-	depends []bootTask
+	depends []supervisedTask
 }
 
 func (runner runPassenger) String() string {
 	return "runPassenger:" + runner.src
 }
 
-func (runner runPassenger) Run(ctx context.Context, fail func(error), boot *Booter) error {
-	err := boot.wait(ctx, runner.depends...)
+func (runner runPassenger) Run(ctx context.Context, fail func(error), super *Supervisor) error {
+	err := super.wait(ctx, runner.depends...)
 	if err != nil {
 		return err
 	}
@@ -99,19 +101,19 @@ func (runner runPassenger) Run(ctx context.Context, fail func(error), boot *Boot
 		"error":   "1",
 		"fatal":   "0",
 		"panic":   "0",
-	}[boot.cluster.SystemLogs.LogLevel]; ok {
+	}[super.cluster.SystemLogs.LogLevel]; ok {
 		loglevel = lvl
 	}
-	boot.waitShutdown.Add(1)
+	super.waitShutdown.Add(1)
 	go func() {
-		defer boot.waitShutdown.Done()
-		err = boot.RunProgram(ctx, runner.src, nil, nil, "bundle", "exec",
+		defer super.waitShutdown.Done()
+		err = super.RunProgram(ctx, runner.src, nil, nil, "bundle", "exec",
 			"passenger", "start",
 			"-p", port,
 			"--log-file", "/dev/stderr",
 			"--log-level", loglevel,
 			"--no-friendly-error-pages",
-			"--pid-file", filepath.Join(boot.tempdir, "passenger."+strings.Replace(runner.src, "/", "_", -1)+".pid"))
+			"--pid-file", filepath.Join(super.tempdir, "passenger."+strings.Replace(runner.src, "/", "_", -1)+".pid"))
 		fail(err)
 	}()
 	return nil

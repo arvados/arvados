@@ -8,18 +8,19 @@ import (
 	"context"
 )
 
+// Populate a blank database with arvados tables and seed rows.
 type seedDatabase struct{}
 
 func (seedDatabase) String() string {
 	return "seedDatabase"
 }
 
-func (seedDatabase) Run(ctx context.Context, fail func(error), boot *Booter) error {
-	err := boot.wait(ctx, runPostgreSQL{}, installPassenger{src: "services/api"})
+func (seedDatabase) Run(ctx context.Context, fail func(error), super *Supervisor) error {
+	err := super.wait(ctx, runPostgreSQL{}, installPassenger{src: "services/api"})
 	if err != nil {
 		return err
 	}
-	err = boot.RunProgram(ctx, "services/api", nil, nil, "bundle", "exec", "rake", "db:setup")
+	err = super.RunProgram(ctx, "services/api", nil, nil, "bundle", "exec", "rake", "db:setup")
 	if err != nil {
 		return err
 	}

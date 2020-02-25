@@ -19,50 +19,53 @@ import (
 	"github.com/lib/pq"
 )
 
+// Run a postgresql server in a private data directory. Set up a db
+// user, database, and TCP listener that match the supervisor's
+// configured database connection info.
 type runPostgreSQL struct{}
 
 func (runPostgreSQL) String() string {
 	return "postgresql"
 }
 
-func (runPostgreSQL) Run(ctx context.Context, fail func(error), boot *Booter) error {
-	err := boot.wait(ctx, createCertificates{})
+func (runPostgreSQL) Run(ctx context.Context, fail func(error), super *Supervisor) error {
+	err := super.wait(ctx, createCertificates{})
 	if err != nil {
 		return err
 	}
 
 	buf := bytes.NewBuffer(nil)
-	err = boot.RunProgram(ctx, boot.tempdir, buf, nil, "pg_config", "--bindir")
+	err = super.RunProgram(ctx, super.tempdir, buf, nil, "pg_config", "--bindir")
 	if err != nil {
 		return err
 	}
 	bindir := strings.TrimSpace(buf.String())
 
-	datadir := filepath.Join(boot.tempdir, "pgdata")
+	datadir := filepath.Join(super.tempdir, "pgdata")
 	err = os.Mkdir(datadir, 0755)
 	if err != nil {
 		return err
 	}
-	err = boot.RunProgram(ctx, boot.tempdir, nil, nil, filepath.Join(bindir, "initdb"), "-D", datadir)
+	err = super.RunProgram(ctx, super.tempdir, nil, nil, filepath.Join(bindir, "initdb"), "-D", datadir)
 	if err != nil {
 		return err
 	}
 
-	err = boot.RunProgram(ctx, boot.tempdir, nil, nil, "cp", "server.crt", "server.key", datadir)
+	err = super.RunProgram(ctx, super.tempdir, nil, nil, "cp", "server.crt", "server.key", datadir)
 	if err != nil {
 		return err
 	}
 
-	port := boot.cluster.PostgreSQL.Connection["port"]
+	port := super.cluster.PostgreSQL.Connection["port"]
 
-	boot.waitShutdown.Add(1)
+	super.waitShutdown.Add(1)
 	go func() {
-		defer boot.waitShutdown.Done()
-		fail(boot.RunProgram(ctx, boot.tempdir, nil, nil, filepath.Join(bindir, "postgres"),
+		defer super.waitShutdown.Done()
+		fail(super.RunProgram(ctx, super.tempdir, nil, nil, filepath.Join(bindir, "postgres"),
 			"-l",          // enable ssl
 			"-D", datadir, // data dir
 			"-k", datadir, // socket dir
-			"-p", boot.cluster.PostgreSQL.Connection["port"],
+			"-p", super.cluster.PostgreSQL.Connection["port"],
 		))
 	}()
 
@@ -70,7 +73,7 @@ func (runPostgreSQL) Run(ctx context.Context, fail func(error), boot *Booter) er
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
-		if exec.CommandContext(ctx, "pg_isready", "--timeout=10", "--host="+boot.cluster.PostgreSQL.Connection["host"], "--port="+port).Run() == nil {
+		if exec.CommandContext(ctx, "pg_isready", "--timeout=10", "--host="+super.cluster.PostgreSQL.Connection["host"], "--port="+port).Run() == nil {
 			break
 		}
 		time.Sleep(time.Second / 2)
@@ -89,11 +92,11 @@ func (runPostgreSQL) Run(ctx context.Context, fail func(error), boot *Booter) er
 		return fmt.Errorf("db conn failed: %s", err)
 	}
 	defer conn.Close()
-	_, err = conn.ExecContext(ctx, `CREATE USER `+pq.QuoteIdentifier(boot.cluster.PostgreSQL.Connection["user"])+` WITH SUPERUSER ENCRYPTED PASSWORD `+pq.QuoteLiteral(boot.cluster.PostgreSQL.Connection["password"]))
+	_, err = conn.ExecContext(ctx, `CREATE USER `+pq.QuoteIdentifier(super.cluster.PostgreSQL.Connection["user"])+` WITH SUPERUSER ENCRYPTED PASSWORD `+pq.QuoteLiteral(super.cluster.PostgreSQL.Connection["password"]))
 	if err != nil {
 		return fmt.Errorf("createuser failed: %s", err)
 	}
-	_, err = conn.ExecContext(ctx, `CREATE DATABASE `+pq.QuoteIdentifier(boot.cluster.PostgreSQL.Connection["dbname"]))
+	_, err = conn.ExecContext(ctx, `CREATE DATABASE `+pq.QuoteIdentifier(super.cluster.PostgreSQL.Connection["dbname"]))
 	if err != nil {
 		return fmt.Errorf("createdb failed: %s", err)
 	}
