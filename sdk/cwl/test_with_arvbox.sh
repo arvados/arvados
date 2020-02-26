@@ -12,6 +12,7 @@ fi
 reset_container=1
 leave_running=0
 config=dev
+devcwl=0
 tag="latest"
 pythoncmd=python3
 suite=conformance
@@ -38,6 +39,10 @@ while test -n "$1" ; do
             ;;
         --build)
             build=1
+            shift
+            ;;
+        --devcwl)
+            devcwl=1
             shift
             ;;
         --pythoncmd)
@@ -146,12 +151,18 @@ exec arvados-cwl-runner --api=containers \\\$@
 EOF2
 chmod +x /tmp/cwltest/arv-cwl-containers
 
+EXTRA=--compute-checksum
+
+if [[ $devcwl == 1 ]] ; then
+   EXTRA="\$EXTRA --enable-dev"
+fi
+
 env
 if [[ "$suite" = "integration" ]] ; then
    cd /usr/src/arvados/sdk/cwl/tests
    exec ./arvados-tests.sh $@
 else
-   exec ./run_test.sh RUNNER=/tmp/cwltest/arv-cwl-${runapi} EXTRA=--compute-checksum $@
+   exec ./run_test.sh RUNNER=/tmp/cwltest/arv-cwl-${runapi} EXTRA="\$EXTRA" $@
 fi
 EOF
 
