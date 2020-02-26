@@ -624,6 +624,19 @@ func (super *Supervisor) autofillConfig(cfg *arvados.Config, log logrus.FieldLog
 	return nil
 }
 
+func addrIsLocal(addr string) (bool, error) {
+	return true, nil
+	listener, err := net.Listen("tcp", addr)
+	if err == nil {
+		listener.Close()
+		return true, nil
+	} else if strings.Contains(err.Error(), "cannot assign requested address") {
+		return false, nil
+	} else {
+		return false, err
+	}
+}
+
 func randomHexString(chars int) string {
 	b := make([]byte, chars/2)
 	_, err := rand.Read(b)
@@ -634,6 +647,9 @@ func randomHexString(chars int) string {
 }
 
 func internalPort(svc arvados.Service) (string, error) {
+	if len(svc.InternalURLs) > 1 {
+		return "", errors.New("internalPort() doesn't work with multiple InternalURLs")
+	}
 	for u := range svc.InternalURLs {
 		if _, p, err := net.SplitHostPort(u.Host); err != nil {
 			return "", err

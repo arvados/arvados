@@ -38,6 +38,11 @@ func (runner runServiceCommand) Run(ctx context.Context, fail func(error), super
 	super.wait(ctx, runner.depends...)
 	for u := range runner.svc.InternalURLs {
 		u := u
+		if islocal, err := addrIsLocal(u.Host); err != nil {
+			return err
+		} else if !islocal {
+			continue
+		}
 		super.waitShutdown.Add(1)
 		go func() {
 			defer super.waitShutdown.Done()
@@ -80,6 +85,11 @@ func (runner runGoProgram) Run(ctx context.Context, fail func(error), super *Sup
 	super.wait(ctx, runner.depends...)
 	for u := range runner.svc.InternalURLs {
 		u := u
+		if islocal, err := addrIsLocal(u.Host); err != nil {
+			return err
+		} else if !islocal {
+			continue
+		}
 		super.waitShutdown.Add(1)
 		go func() {
 			defer super.waitShutdown.Done()

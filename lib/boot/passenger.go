@@ -90,7 +90,7 @@ func (runner runPassenger) Run(ctx context.Context, fail func(error), super *Sup
 	}
 	port, err := internalPort(runner.svc)
 	if err != nil {
-		return fmt.Errorf("bug: no InternalURLs for component %q: %v", runner, runner.svc.InternalURLs)
+		return fmt.Errorf("bug: no internalPort for %q: %v (%#v)", runner, err, runner.svc)
 	}
 	loglevel := "4"
 	if lvl, ok := map[string]string{
