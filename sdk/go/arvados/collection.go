@@ -6,7 +6,9 @@ package arvados
 
 import (
 	"bufio"
+	"crypto/md5"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -89,4 +91,29 @@ type CollectionList struct {
 	ItemsAvailable int          `json:"items_available"`
 	Offset         int          `json:"offset"`
 	Limit          int          `json:"limit"`
+}
+
+var (
+	blkRe = regexp.MustCompile(`^ [0-9a-f]{32}\+\d+`)
+	tokRe = regexp.MustCompile(` ?[^ ]*`)
+)
+
+// PortableDataHash computes the portable data hash of the given
+// manifest.
+func PortableDataHash(mt string) string {
+	h := md5.New()
+	size := 0
+	_ = tokRe.ReplaceAllFunc([]byte(mt), func(tok []byte) []byte {
+		if m := blkRe.Find(tok); m != nil {
+			// write hash+size, ignore remaining block hints
+			tok = m
+		}
+		n, err := h.Write(tok)
+		if err != nil {
+			panic(err)
+		}
+		size += n
+		return nil
+	})
+	return fmt.Sprintf("%x+%d", h.Sum(nil), size)
 }
