@@ -39,14 +39,11 @@ setup(name='arvados-cwl-runner',
       # file to determine what version of cwltool and schema-salad to
       # build.
       install_requires=[
-          'cwltool==1.0.20190831161204',
-          'schema-salad==4.5.20190815125611',
-          'typing >= 3.6.4',
-          'ruamel.yaml >=0.15.54, <=0.15.77',
+          'cwltool==2.0.20200224214940',
+          'schema-salad==5.0.20200220195218',
           'arvados-python-client{}'.format(pysdk_dep),
           'setuptools',
-          'ciso8601 >= 2.0.0',
-          'networkx < 2.3'
+          'ciso8601 >= 2.0.0'
       ],
       extras_require={
           ':os.name=="posix" and python_version<"3"': ['subprocess32 >= 3.5.1'],
@@ -55,8 +52,8 @@ setup(name='arvados-cwl-runner',
       data_files=[
           ('share/doc/arvados-cwl-runner', ['LICENSE-2.0.txt', 'README.rst']),
       ],
+      python_requires=">=3.5, <4",
       classifiers=[
-          'Programming Language :: Python :: 2',
           'Programming Language :: Python :: 3',
       ],
       test_suite='tests',

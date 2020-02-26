@@ -13,7 +13,7 @@ reset_container=1
 leave_running=0
 config=dev
 tag="latest"
-pythoncmd=python
+pythoncmd=python3
 suite=conformance
 runapi=containers
 
@@ -53,7 +53,7 @@ while test -n "$1" ; do
             shift ; shift
             ;;
         -h|--help)
-            echo "$0 [--no-reset-container] [--leave-running] [--config dev|localdemo] [--tag docker_tag] [--build] [--pythoncmd python(2|3)] [--suite (integration|conformance-v1.0|conformance-v1.1)]"
+            echo "$0 [--no-reset-container] [--leave-running] [--config dev|localdemo] [--tag docker_tag] [--build] [--pythoncmd python(2|3)] [--suite (integration|conformance-v1.0|conformance-*)]"
             exit
             ;;
         *)
@@ -107,11 +107,12 @@ if [[ "$suite" = "conformance-v1.0" ]] ; then
      git clone https://github.com/common-workflow-language/common-workflow-language.git
    fi
    cd common-workflow-language
-elif [[ "$suite" = "conformance-v1.1" ]] ; then
-   if ! test -d cwl-v1.1 ; then
-     git clone https://github.com/common-workflow-language/cwl-v1.1.git
+elif [[ "$suite" =~ conformance-(.*) ]] ; then
+   version=\${BASH_REMATCH[1]}
+   if ! test -d cwl-\${version} ; then
+     git clone https://github.com/common-workflow-language/cwl-\${version}.git
    fi
-   cd cwl-v1.1
+   cd cwl-\${version}
 fi
 
 if [[ "$suite" != "integration" ]] ; then
