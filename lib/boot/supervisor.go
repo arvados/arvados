@@ -503,7 +503,7 @@ func (super *Supervisor) autofillConfig(cfg *arvados.Config, log logrus.FieldLog
 	usedPort := map[string]bool{}
 	nextPort := func() string {
 		for {
-			port, err := availablePort(super.ListenHost + ":0")
+			port, err := availablePort(super.ListenHost)
 			if err != nil {
 				panic(err)
 			}
@@ -523,7 +523,7 @@ func (super *Supervisor) autofillConfig(cfg *arvados.Config, log logrus.FieldLog
 			h = super.ListenHost
 		}
 		if p == "0" {
-			p, err = availablePort(":0")
+			p, err = availablePort(h)
 			if err != nil {
 				return err
 			}
@@ -660,8 +660,8 @@ func externalPort(svc arvados.Service) (string, error) {
 	}
 }
 
-func availablePort(addr string) (string, error) {
-	ln, err := net.Listen("tcp", addr)
+func availablePort(host string) (string, error) {
+	ln, err := net.Listen("tcp", net.JoinHostPort(host, "0"))
 	if err != nil {
 		return "", err
 	}
