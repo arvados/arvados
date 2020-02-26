@@ -7,6 +7,7 @@ package controller
 import (
 	"bytes"
 	"context"
+	"io"
 	"net"
 	"net/url"
 	"os"
@@ -163,27 +164,21 @@ func (s *IntegrationSuite) userClients(c *check.C, conn *rpc.Conn, rootctx conte
 	redirURL, err := url.Parse(login.RedirectLocation)
 	c.Assert(err, check.IsNil)
 	userToken := redirURL.Query().Get("api_token")
-	c.Logf("userToken: %q", userToken)
+	c.Logf("user token: %q", userToken)
 	ctx, ac, kc := s.clientsWithToken(clusterID, userToken)
 	user, err := conn.UserGetCurrent(ctx, arvados.GetOptions{})
-	if err != nil {
-		panic(err)
-	}
+	c.Assert(err, check.IsNil)
 	_, err = conn.UserSetup(rootctx, arvados.UserSetupOptions{UUID: user.UUID})
-	if err != nil {
-		panic(err)
-	}
-	_, err = conn.UserActivate(rootctx, arvados.UserActivateOptions{UUID: user.UUID})
-	if err != nil {
-		panic(err)
-	}
-	user, err = conn.UserGetCurrent(ctx, arvados.GetOptions{})
-	if err != nil {
-		panic(err)
-	}
-	c.Logf("user: %#v", user)
-	if !user.IsActive {
-		c.Fatal("failed to activate user")
+	c.Assert(err, check.IsNil)
+	if activate {
+		_, err = conn.UserActivate(rootctx, arvados.UserActivateOptions{UUID: user.UUID})
+		c.Assert(err, check.IsNil)
+		user, err = conn.UserGetCurrent(ctx, arvados.GetOptions{})
+		c.Assert(err, check.IsNil)
+		c.Logf("user UUID: %q", user.UUID)
+		if !user.IsActive {
+			c.Fatalf("failed to activate user -- %#v", user)
+		}
 	}
 	return ctx, ac, kc
 }
@@ -192,30 +187,40 @@ func (s *IntegrationSuite) rootClients(clusterID string) (context.Context, *arva
 	return s.clientsWithToken(clusterID, s.testClusters[clusterID].config.Clusters[clusterID].SystemRootToken)
 }
 
-func (s *IntegrationSuite) TestLoopDetection(c *check.C) {
+func (s *IntegrationSuite) TestGetCollectionByPDH(c *check.C) {
 	conn1 := s.conn("z1111")
 	rootctx1, _, _ := s.rootClients("z1111")
 	conn3 := s.conn("z3333")
-	// rootctx3, _, _ := s.rootClients("z3333")
-
 	userctx1, ac1, kc1 := s.userClients(c, conn1, rootctx1, "z1111", true)
-	_, err := conn1.CollectionGet(userctx1, arvados.GetOptions{UUID: "1f4b0bc7583c2a7f9102c395f4ffc5e3+45"})
-	c.Assert(err, check.ErrorMatches, `.*404 Not Found.*`)
 
+	// Create the collection to find its PDH (but don't save it
+	// anywhere yet)
 	var coll1 arvados.Collection
 	fs1, err := coll1.FileSystem(ac1, kc1)
-	if err != nil {
-		c.Error(err)
-	}
-	f, err := fs1.OpenFile("foo", os.O_CREATE|os.O_RDWR, 0777)
-	f.Write([]byte("foo"))
-	f.Close()
+	c.Assert(err, check.IsNil)
+	f, err := fs1.OpenFile("test.txt", os.O_CREATE|os.O_RDWR, 0777)
+	c.Assert(err, check.IsNil)
+	_, err = io.WriteString(f, "IntegrationSuite.TestGetCollectionByPDH")
+	c.Assert(err, check.IsNil)
+	err = f.Close()
+	c.Assert(err, check.IsNil)
 	mtxt, err := fs1.MarshalManifest(".")
+	c.Assert(err, check.IsNil)
+	pdh := arvados.PortableDataHash(mtxt)
+
+	// Looking up the PDH before saving returns 404 if cycle
+	// detection is working.
+	_, err = conn1.CollectionGet(userctx1, arvados.GetOptions{UUID: pdh})
+	c.Assert(err, check.ErrorMatches, `.*404 Not Found.*`)
+
+	// Save the collection on cluster z1111.
 	coll1, err = conn1.CollectionCreate(userctx1, arvados.CreateOptions{Attrs: map[string]interface{}{
 		"manifest_text": mtxt,
 	}})
 	c.Assert(err, check.IsNil)
-	coll, err := conn3.CollectionGet(userctx1, arvados.GetOptions{UUID: "1f4b0bc7583c2a7f9102c395f4ffc5e3+45"})
+
+	// Retrieve the collection from cluster z3333.
+	coll, err := conn3.CollectionGet(userctx1, arvados.GetOptions{UUID: pdh})
 	c.Check(err, check.IsNil)
-	c.Check(coll.PortableDataHash, check.Equals, "1f4b0bc7583c2a7f9102c395f4ffc5e3+45")
+	c.Check(coll.PortableDataHash, check.Equals, pdh)
 }
