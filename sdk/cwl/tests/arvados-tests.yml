@@ -310,3 +310,15 @@
   should_fail: true
   tool: 15295-bad-keep-ref.cwl
   doc: Test checking for invalid keepref
+
+- job: listing-job.yml
+  output: {
+    "out": {
+        "class": "File",
+        "location": "output.txt",
+        "size": 5,
+        "checksum": "sha1$724ba28f4a9a1b472057ff99511ed393a45552e1"
+    }
+  }
+  tool: 16169-no-listing-hint.cwl
+  doc: "Test cwltool:LoadListingRequirement propagation"
