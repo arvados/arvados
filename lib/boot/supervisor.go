@@ -412,9 +412,9 @@ func (super *Supervisor) RunProgram(ctx context.Context, dir string, output io.W
 	super.logger.WithField("command", cmdline).WithField("dir", dir).Info("executing")
 
 	logprefix := strings.TrimPrefix(prog, super.tempdir+"/bin/")
-	if prog == "bundle" && len(args) > 2 && args[0] == "exec" {
+	if logprefix == "bundle" && len(args) > 2 && args[0] == "exec" {
 		logprefix = args[1]
-	} else if prog == "arvados-server" && len(args) > 1 {
+	} else if logprefix == "arvados-server" && len(args) > 1 {
 		logprefix = args[0]
 	}
 	if !strings.HasPrefix(dir, "/") {
