@@ -18,6 +18,8 @@ cd /usr/src/arvados/sdk/cli
 run_bundler --binstubs=$PWD/binstubs
 ln -sf /usr/src/arvados/sdk/cli/binstubs/arv /usr/local/bin/arv
 
+export PYCMD=python3
+
 # Need to install the upstream version of pip because the python-pip package
 # shipped with Debian 9 is patched to change behavior in a way that breaks our
 # use case.
@@ -28,7 +30,9 @@ ln -sf /usr/src/arvados/sdk/cli/binstubs/arv /usr/local/bin/arv
 # multiple packages, because it will blindly install the latest version of each
 # dependency requested by each package, even if a compatible package version is
 # already installed.
-pip_install pip==9.0.3
+if ! pip3 install --no-index --find-links /var/lib/pip pip==9.0.3 ; then
+    pip3 install pip==9.0.3
+fi
 
 pip_install wheel
 
