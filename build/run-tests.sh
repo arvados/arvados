@@ -405,7 +405,7 @@ checkdiscoverydoc() {
     dd="https://${1}/discovery/v1/apis/arvados/v1/rest"
     if ! (set -o pipefail; curl -fsk "$dd" | grep -q ^{ ); then
         echo >&2 "ERROR: could not retrieve discovery doc from RailsAPI at $dd"
-        tail -v $WORKSPACE/services/api/log/test.log
+        tail -v $WORKSPACE/tmp/railsapi.log
         return 1
     fi
     echo "${dd} ok"

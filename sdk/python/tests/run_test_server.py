@@ -327,9 +327,9 @@ def run(leave_running_atexit=False):
     env.pop('ARVADOS_API_HOST_INSECURE', None)
     env.pop('ARVADOS_API_TOKEN', None)
     logf = open(_logfilename('railsapi'), 'a')
-    start_msg = subprocess.check_output(
+    railsapi = subprocess.Popen(
         ['bundle', 'exec',
-         'passenger', 'start', '-d', '-p{}'.format(port),
+         'passenger', 'start', '-p{}'.format(port),
          '--pid-file', pid_file,
          '--log-file', '/dev/stdout',
          '--ssl',
@@ -340,11 +340,7 @@ def run(leave_running_atexit=False):
     if not leave_running_atexit:
         atexit.register(kill_server_pid, pid_file, passenger_root=api_src_dir)
 
-    match = re.search(r'Accessible via: https://(.*?)/', start_msg)
-    if not match:
-        raise Exception(
-            "Passenger did not report endpoint: {}".format(start_msg))
-    my_api_host = match.group(1)
+    my_api_host = "127.0.0.1:"+str(port)
     os.environ['ARVADOS_API_HOST'] = my_api_host
 
     # Make sure the server has written its pid file and started
