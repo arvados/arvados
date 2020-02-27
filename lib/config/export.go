@@ -215,6 +215,7 @@ var whitelist = map[string]bool{
 	"Workbench.WelcomePageHTML":                    true,
 	"Workbench.InactivePageHTML":                   true,
 	"Workbench.SSHHelpPageHTML":                    true,
+	"Workbench.SSHHelpHostSuffix":                  true,
 }
 
 func redactUnsafe(m map[string]interface{}, mPrefix, lookupPrefix string) error {

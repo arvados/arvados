@@ -215,6 +215,7 @@ type Cluster struct {
 		WelcomePageHTML        string
 		InactivePageHTML       string
 		SSHHelpPageHTML        string
+		SSHHelpHostSuffix      string
 	}
 
 	ForceLegacyAPI14 bool
