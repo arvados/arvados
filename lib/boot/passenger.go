@@ -107,7 +107,7 @@ func (runner runPassenger) Run(ctx context.Context, fail func(error), super *Sup
 	super.waitShutdown.Add(1)
 	go func() {
 		defer super.waitShutdown.Done()
-		err = super.RunProgram(ctx, runner.src, nil, nil, "bundle", "exec",
+		err = super.RunProgram(ctx, runner.src, nil, []string{"ARVADOS_RAILS_LOG_TO_STDOUT=1"}, "bundle", "exec",
 			"passenger", "start",
 			"-p", port,
 			"--log-file", "/dev/stderr",

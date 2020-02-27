@@ -40,7 +40,7 @@ if defined?(Bundler)
   end
 end
 
-if Rails.env == 'test'
+if ENV["ARVADOS_RAILS_LOG_TO_STDOUT"]
   Rails.logger = ActiveSupport::TaggedLogging.new(Logger.new(STDOUT))
 end
 

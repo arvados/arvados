@@ -321,6 +321,7 @@ def run(leave_running_atexit=False):
     port = internal_port_from_config("RailsAPI")
     env = os.environ.copy()
     env['RAILS_ENV'] = 'test'
+    env['ARVADOS_RAILS_LOG_TO_STDOUT'] = '1'
     env.pop('ARVADOS_WEBSOCKETS', None)
     env.pop('ARVADOS_TEST_API_HOST', None)
     env.pop('ARVADOS_API_HOST', None)

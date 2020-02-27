@@ -20,7 +20,7 @@ func (seedDatabase) Run(ctx context.Context, fail func(error), super *Supervisor
 	if err != nil {
 		return err
 	}
-	err = super.RunProgram(ctx, "services/api", nil, nil, "bundle", "exec", "rake", "db:setup")
+	err = super.RunProgram(ctx, "services/api", nil, []string{"ARVADOS_RAILS_LOG_TO_STDOUT=1"}, "bundle", "exec", "rake", "db:setup")
 	if err != nil {
 		return err
 	}
