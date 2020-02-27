@@ -88,8 +88,8 @@ pip_install() {
     popd
 
     if [ "$PYCMD" = "python3" ]; then
-	if ! pip3 install --no-index --find-links /var/lib/pip $1 ; then
-            pip3 install $1
+	if ! pip3 install --prefix /usr/local --no-index --find-links /var/lib/pip $1 ; then
+            pip3 install --prefix /usr/local $1
 	fi
     else
 	if ! pip install --no-index --find-links /var/lib/pip $1 ; then

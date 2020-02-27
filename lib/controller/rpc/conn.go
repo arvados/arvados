@@ -145,6 +145,14 @@ func (conn *Conn) Login(ctx context.Context, options arvados.LoginOptions) (arva
 	return resp, err
 }
 
+func (conn *Conn) Logout(ctx context.Context, options arvados.LogoutOptions) (arvados.LogoutResponse, error) {
+	ep := arvados.EndpointLogout
+	var resp arvados.LogoutResponse
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	resp.RedirectLocation = conn.relativeToBaseURL(resp.RedirectLocation)
+	return resp, err
+}
+
 // If the given location is a valid URL and its origin is the same as
 // conn.baseURL, return it as a relative URL. Otherwise, return it
 // unmodified.

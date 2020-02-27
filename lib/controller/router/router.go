@@ -55,6 +55,13 @@ func (rtr *router) addRoutes() {
 			},
 		},
 		{
+			arvados.EndpointLogout,
+			func() interface{} { return &arvados.LogoutOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.fed.Logout(ctx, *opts.(*arvados.LogoutOptions))
+			},
+		},
+		{
 			arvados.EndpointCollectionCreate,
 			func() interface{} { return &arvados.CreateOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {

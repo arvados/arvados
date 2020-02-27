@@ -19,6 +19,7 @@ type APIEndpoint struct {
 var (
 	EndpointConfigGet                     = APIEndpoint{"GET", "arvados/v1/config", ""}
 	EndpointLogin                         = APIEndpoint{"GET", "login", ""}
+	EndpointLogout                        = APIEndpoint{"GET", "logout", ""}
 	EndpointCollectionCreate              = APIEndpoint{"POST", "arvados/v1/collections", "collection"}
 	EndpointCollectionUpdate              = APIEndpoint{"PATCH", "arvados/v1/collections/{uuid}", "collection"}
 	EndpointCollectionGet                 = APIEndpoint{"GET", "arvados/v1/collections/{uuid}", ""}
@@ -141,9 +142,14 @@ type LoginOptions struct {
 	State    string `json:"state,omitempty"`  // OAuth2 callback state
 }
 
+type LogoutOptions struct {
+	ReturnTo string `json:"return_to"` // Redirect to this URL after logging out
+}
+
 type API interface {
 	ConfigGet(ctx context.Context) (json.RawMessage, error)
 	Login(ctx context.Context, options LoginOptions) (LoginResponse, error)
+	Logout(ctx context.Context, options LogoutOptions) (LogoutResponse, error)
 	CollectionCreate(ctx context.Context, options CreateOptions) (Collection, error)
 	CollectionUpdate(ctx context.Context, options UpdateOptions) (Collection, error)
 	CollectionGet(ctx context.Context, options GetOptions) (Collection, error)

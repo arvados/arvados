@@ -163,6 +163,12 @@ func (s *LoginSuite) TearDownTest(c *check.C) {
 	s.railsSpy.Close()
 }
 
+func (s *LoginSuite) TestGoogleLogout(c *check.C) {
+	resp, err := s.localdb.Logout(context.Background(), arvados.LogoutOptions{ReturnTo: "https://foo.example.com/bar"})
+	c.Check(err, check.IsNil)
+	c.Check(resp.RedirectLocation, check.Equals, "https://foo.example.com/bar")
+}
+
 func (s *LoginSuite) TestGoogleLogin_Start_Bogus(c *check.C) {
 	resp, err := s.localdb.Login(context.Background(), arvados.LoginOptions{})
 	c.Check(err, check.IsNil)

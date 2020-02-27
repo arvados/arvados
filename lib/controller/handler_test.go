@@ -19,6 +19,7 @@ import (
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
+	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
 	"github.com/prometheus/client_golang/prometheus"
@@ -180,6 +181,32 @@ func (s *HandlerSuite) TestProxyRedirect(c *check.C) {
 	c.Check(resp.Header().Get("Location"), check.Matches, `(https://0.0.0.0:1)?/auth/joshid\?return_to=%2Cfoo&?`)
 }
 
+func (s *HandlerSuite) TestLogoutSSO(c *check.C) {
+	s.cluster.Login.ProviderAppID = "test"
+	req := httptest.NewRequest("GET", "https://0.0.0.0:1/logout?return_to=https://example.com/foo", nil)
+	resp := httptest.NewRecorder()
+	s.handler.ServeHTTP(resp, req)
+	if !c.Check(resp.Code, check.Equals, http.StatusFound) {
+		c.Log(resp.Body.String())
+	}
+	c.Check(resp.Header().Get("Location"), check.Equals, "http://localhost:3002/users/sign_out?"+url.Values{"redirect_uri": {"https://example.com/foo"}}.Encode())
+}
+
+func (s *HandlerSuite) TestLogoutGoogle(c *check.C) {
+	if s.cluster.ForceLegacyAPI14 {
+		// Google login N/A
+		return
+	}
+	s.cluster.Login.GoogleClientID = "test"
+	req := httptest.NewRequest("GET", "https://0.0.0.0:1/logout?return_to=https://example.com/foo", nil)
+	resp := httptest.NewRecorder()
+	s.handler.ServeHTTP(resp, req)
+	if !c.Check(resp.Code, check.Equals, http.StatusFound) {
+		c.Log(resp.Body.String())
+	}
+	c.Check(resp.Header().Get("Location"), check.Equals, "https://example.com/foo")
+}
+
 func (s *HandlerSuite) TestValidateV1APIToken(c *check.C) {
 	req := httptest.NewRequest("GET", "/arvados/v1/users/current", nil)
 	user, ok, err := s.handler.(*Handler).validateAPItoken(req, arvadostest.ActiveToken)
@@ -201,6 +228,26 @@ func (s *HandlerSuite) TestValidateV2APIToken(c *check.C) {
 	c.Check(user.Authorization.Scopes, check.DeepEquals, []string{"all"})
 	c.Check(user.UUID, check.Equals, arvadostest.ActiveUserUUID)
 	c.Check(user.Authorization.TokenV2(), check.Equals, arvadostest.ActiveTokenV2)
+}
+
+func (s *HandlerSuite) TestValidateRemoteToken(c *check.C) {
+	saltedToken, err := auth.SaltToken(arvadostest.ActiveTokenV2, "abcde")
+	c.Assert(err, check.IsNil)
+	for _, trial := range []struct {
+		code  int
+		token string
+	}{
+		{http.StatusOK, saltedToken},
+		{http.StatusUnauthorized, "bogus"},
+	} {
+		req := httptest.NewRequest("GET", "https://0.0.0.0:1/arvados/v1/users/current?remote=abcde", nil)
+		req.Header.Set("Authorization", "Bearer "+trial.token)
+		resp := httptest.NewRecorder()
+		s.handler.ServeHTTP(resp, req)
+		if !c.Check(resp.Code, check.Equals, trial.code) {
+			c.Logf("HTTP %d: %s", resp.Code, resp.Body.String())
+		}
+	}
 }
 
 func (s *HandlerSuite) TestCreateAPIToken(c *check.C) {
