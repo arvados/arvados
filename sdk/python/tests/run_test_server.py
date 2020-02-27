@@ -346,8 +346,8 @@ def run(leave_running_atexit=False):
 
     # Make sure the server has written its pid file and started
     # listening on its TCP port
-    find_server_pid(pid_file)
     _wait_until_port_listens(port)
+    find_server_pid(pid_file)
 
     reset()
     os.chdir(restore_cwd)
