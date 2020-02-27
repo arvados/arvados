@@ -67,7 +67,11 @@ func (runner installPassenger) Run(ctx context.Context, fail func(error), super 
 		return err
 	}
 	err = super.RunProgram(ctx, runner.src, nil, nil, "bundle", "exec", "passenger-config", "validate-install")
-	if err != nil {
+	if err != nil && !strings.Contains(err.Error(), "exit status 2") {
+		// Exit code 2 indicates there were warnings (like
+		// "other passenger installations have been detected",
+		// which we can't expect to avoid) but no errors.
+		// Other non-zero exit codes (1, 9) indicate errors.
 		return err
 	}
 	return nil
