@@ -146,6 +146,8 @@ func (s *LoginSuite) SetUpTest(c *check.C) {
 
 	cfg, err := config.NewLoader(nil, ctxlog.TestLogger(c)).Load()
 	s.cluster, err = cfg.GetCluster("")
+	s.cluster.Login.ProviderAppID = ""
+	s.cluster.Login.ProviderAppSecret = ""
 	s.cluster.Login.GoogleClientID = "test%client$id"
 	s.cluster.Login.GoogleClientSecret = "test#client/secret"
 	s.cluster.Users.PreferDomainForUsername = "PreferDomainForUsername.example.com"
