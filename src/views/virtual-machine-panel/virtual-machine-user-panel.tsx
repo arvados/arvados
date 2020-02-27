@@ -12,6 +12,7 @@ import { saveRequestedDate, loadVirtualMachinesUserData } from '~/store/virtual-
 import { RootState } from '~/store/store';
 import { ListResults } from '~/services/common-service/common-service';
 import { HelpIcon } from '~/components/icon/icon';
+// import * as CopyToClipboard from 'react-copy-to-clipboard';
 
 type CssRules = 'button' | 'codeSnippet' | 'link' | 'linkIcon' | 'rightAlign' | 'cardWithoutMachines' | 'icon';
 
@@ -59,6 +60,7 @@ const mapStateToProps = (state: RootState) => {
         requestedDate: state.virtualMachines.date,
         userUuid: state.auth.user!.uuid,
         helpText: state.auth.config.clusterConfig.Workbench.SSHHelpPageHTML,
+        hostSuffix: state.auth.config.clusterConfig.Workbench.SSHHelpHostSuffix,
         webShell: state.auth.config.clusterConfig.Services.WebShell.ExternalURL,
         ...state.virtualMachines
     };
@@ -75,6 +77,7 @@ interface VirtualMachinesPanelDataProps {
     userUuid: string;
     links: ListResults<any>;
     helpText: string;
+    hostSuffix: string;
     webShell: string;
 }
 
@@ -166,24 +169,29 @@ const virtualMachinesTable = (props: VirtualMachineProps) =>
             </TableRow>
         </TableHead>
         <TableBody>
-            {props.virtualMachines.items.map((it, index) =>
-                <TableRow key={index}>
-                    <TableCell>{it.hostname}</TableCell>
-                    <TableCell>{getUsername(props.links, props.userUuid)}</TableCell>
-                    <TableCell>ssh {getUsername(props.links, props.userUuid)}@{it.hostname}</TableCell>
-                    {props.webShell !== "" && <TableCell>
-                        <a href={`${props.webShell}${it.href}/webshell/${getUsername(props.links, props.userUuid)}`} target="_blank" className={props.classes.link}>
-                            Log in as {getUsername(props.links, props.userUuid)}
-                        </a>
-                    </TableCell>}
-                </TableRow>
-            )}
+            {props.virtualMachines.items.map(it =>
+                props.links.items.map(lk => {
+                    if (lk.tailUuid === props.userUuid) {
+                        const username = lk.properties.username;
+                        const command = `ssh ${username}@${it.hostname}${props.hostSuffix}`;
+                        return <TableRow key={lk.uuid}>
+                            <TableCell>{it.hostname}</TableCell>
+                            <TableCell>{username}</TableCell>
+                            <TableCell>
+                                {command}
+                            </TableCell>
+                            {props.webShell !== "" && <TableCell>
+                                <a href={`${props.webShell}${it.href}/webshell/${username}`} target="_blank" className={props.classes.link}>
+                                    Log in as {username}
+                                </a>
+                            </TableCell>}
+                        </TableRow>;
+                    }
+                    return;
+                }
+                ))}
         </TableBody>
     </Table>;
-
-const getUsername = (links: ListResults<any>, userUuid: string) => {
-    return links.items.map(it => it.tailUuid === userUuid ? it.properties.username : '');
-};
 
 const CardSSHSection = (props: VirtualMachineProps) =>
     <Grid item xs={12}>
