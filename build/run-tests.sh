@@ -1265,7 +1265,8 @@ else
                         ${verb}_${target}
                         ;;
                     *)
-                        testargs["$target"]="${opts}"
+			argstarget=${target%:py3}
+                        testargs["$argstarget"]="${opts}"
                         tt="${testfuncargs[${target}]}"
                         tt="${tt:-$target}"
                         do_$verb $tt
