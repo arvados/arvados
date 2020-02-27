@@ -105,7 +105,6 @@ func (s *IntegrationSuite) SetUpSuite(c *check.C) {
 		s.testClusters[id] = &testCluster{
 			super: boot.Supervisor{
 				SourcePath:           filepath.Join(cwd, "..", ".."),
-				LibPath:              filepath.Join(cwd, "..", "..", "tmp"),
 				ClusterType:          "test",
 				ListenHost:           "127.0.0." + id[3:],
 				ControllerAddr:       ":0",

@@ -34,7 +34,6 @@ import (
 type Supervisor struct {
 	SourcePath           string // e.g., /home/username/src/arvados
 	SourceVersion        string // e.g., acbd1324...
-	LibPath              string // e.g., /var/lib/arvados
 	ClusterType          string // e.g., production
 	ListenHost           string // e.g., localhost
 	ControllerAddr       string // e.g., 127.0.0.1:8000
@@ -128,7 +127,6 @@ func (super *Supervisor) run(cfg *arvados.Config) error {
 	super.setEnv("RAILS_ENV", super.ClusterType)
 	super.setEnv("TMPDIR", super.tempdir)
 	super.prependEnv("PATH", filepath.Join(super.tempdir, "bin")+":")
-	super.prependEnv("PATH", filepath.Join(super.LibPath, "bin")+":")
 
 	super.cluster, err = cfg.GetCluster("")
 	if err != nil {
@@ -164,16 +162,7 @@ func (super *Supervisor) run(cfg *arvados.Config) error {
 	} else {
 		return errors.New("specifying a version to run is not yet supported")
 	}
-	for _, dir := range []string{super.LibPath, filepath.Join(super.LibPath, "bin")} {
-		if _, err = os.Stat(filepath.Join(dir, ".")); os.IsNotExist(err) {
-			err = os.Mkdir(dir, 0755)
-			if err != nil {
-				return err
-			}
-		} else if err != nil {
-			return err
-		}
-	}
+
 	_, err = super.installGoProgram(super.ctx, "cmd/arvados-server")
 	if err != nil {
 		return err

@@ -52,7 +52,6 @@ func (bootCommand) RunCommand(prog string, args []string, stdin io.Reader, stdou
 	loader.SetupFlags(flags)
 	versionFlag := flags.Bool("version", false, "Write version information to stdout and exit 0")
 	flags.StringVar(&super.SourcePath, "source", ".", "arvados source tree `directory`")
-	flags.StringVar(&super.LibPath, "lib", "/var/lib/arvados", "`directory` to install dependencies and library files")
 	flags.StringVar(&super.ClusterType, "type", "production", "cluster `type`: development, test, or production")
 	flags.StringVar(&super.ListenHost, "listen-host", "localhost", "host name or interface address for service listeners")
 	flags.StringVar(&super.ControllerAddr, "controller-address", ":0", "desired controller address, `host:port` or `:port`")
