@@ -61,35 +61,38 @@ export const UserAttributesDialog = compose(
     );
 
 const attributes = (user: UserResource, classes: any) => {
-    const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid, firstName, lastName, href, username } = user;
+    const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid,
+        firstName, lastName, username, email, isActive, isAdmin } = user;
     return (
         <span>
             <Grid container direction="row">
                 <Grid item xs={5} className={classes.rightContainer}>
+                    {uuid && <Grid item>Uuid</Grid>}
                     {firstName && <Grid item>First name</Grid>}
                     {lastName && <Grid item>Last name</Grid>}
-                    {ownerUuid && <Grid item>Owner uuid</Grid>}
+                    {email && <Grid item>Email</Grid>}
+                    {username && <Grid item>Username</Grid>}
+                    {isActive && <Grid item>Is active</Grid>}
+                    {isAdmin && <Grid item>Is admin</Grid>}
                     {createdAt && <Grid item>Created at</Grid>}
                     {modifiedAt && <Grid item>Modified at</Grid>}
+                    {ownerUuid && <Grid item>Owner uuid</Grid>}
                     {modifiedByUserUuid && <Grid item>Modified by user uuid</Grid>}
                     {modifiedByClientUuid && <Grid item>Modified by client uuid</Grid>}
-                    {uuid && <Grid item>uuid</Grid>}
-                    {href && <Grid item>Href</Grid>}
-                    {username && <Grid item>Username</Grid>}
-                    {username && <Grid item>Username</Grid>}
                 </Grid>
                 <Grid item xs={7} className={classes.leftContainer}>
+                    <Grid item>{uuid}</Grid>
                     <Grid item>{firstName}</Grid>
                     <Grid item>{lastName}</Grid>
-                    <Grid item>{ownerUuid}</Grid>
+                    <Grid item>{email}</Grid>
+                    <Grid item>{username}</Grid>
+                    <Grid item>{isActive}</Grid>
+                    <Grid item>{isAdmin}</Grid>
                     <Grid item>{createdAt}</Grid>
                     <Grid item>{modifiedAt}</Grid>
+                    <Grid item>{ownerUuid}</Grid>
                     <Grid item>{modifiedByUserUuid}</Grid>
                     <Grid item>{modifiedByClientUuid}</Grid>
-                    <Grid item>{uuid}</Grid>
-                    <Grid item>{href}</Grid>
-                    <Grid item>{username}</Grid>
-                    <Grid item>{username}</Grid>
                 </Grid>
             </Grid>
         </span>
