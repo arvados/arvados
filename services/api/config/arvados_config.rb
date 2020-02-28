@@ -203,7 +203,7 @@ end
 
 db_config = {}
 path = "#{::Rails.root.to_s}/config/database.yml"
-if File.exist? path
+if !ENV['ARVADOS_CONFIG_NOLEGACY'] && File.exist?(path)
   db_config = ConfigLoader.load(path, erb: true)
 end
 

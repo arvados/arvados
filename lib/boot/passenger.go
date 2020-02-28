@@ -20,6 +20,11 @@ import (
 // concurrent installs.
 var passengerInstallMutex sync.Mutex
 
+var railsEnv = []string{
+	"ARVADOS_RAILS_LOG_TO_STDOUT=1",
+	"ARVADOS_CONFIG_NOLEGACY=1", // don't load database.yml from source tree
+}
+
 // Install a Rails application's dependencies, including phusion
 // passenger.
 type installPassenger struct {
@@ -111,7 +116,7 @@ func (runner runPassenger) Run(ctx context.Context, fail func(error), super *Sup
 	super.waitShutdown.Add(1)
 	go func() {
 		defer super.waitShutdown.Done()
-		err = super.RunProgram(ctx, runner.src, nil, []string{"ARVADOS_RAILS_LOG_TO_STDOUT=1"}, "bundle", "exec",
+		err = super.RunProgram(ctx, runner.src, nil, railsEnv, "bundle", "exec",
 			"passenger", "start",
 			"-p", port,
 			"--log-file", "/dev/stderr",
