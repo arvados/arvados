@@ -6,6 +6,8 @@ class: CommandLineTool
 cwlVersion: v1.0
 requirements:
   InlineJavascriptRequirement: {}
+  DockerRequirement:
+    dockerPull: debian:stretch-slim
 inputs:
   d: Directory
 outputs:
