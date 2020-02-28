@@ -532,7 +532,7 @@ class CollectionsControllerTest < ActionController::TestCase
     end
 
     test "Redirect to keep_web_url via #{id_type} when trust_all_content enabled" do
-      Rails.configuration.Workbench.TrustAllContent = true
+      Rails.configuration.Collections.TrustAllContent = true
       setup_for_keep_web('https://collections.example',
                          'https://download.example')
       tok = api_token('active')
@@ -583,7 +583,7 @@ class CollectionsControllerTest < ActionController::TestCase
 
   [false, true].each do |trust_all_content|
     test "Redirect preview to keep_web_download_url when preview is disabled and trust_all_content is #{trust_all_content}" do
-      Rails.configuration.Workbench.TrustAllContent = trust_all_content
+      Rails.configuration.Collections.TrustAllContent = trust_all_content
       setup_for_keep_web "", 'https://download.example/'
       tok = api_token('active')
       id = api_fixture('collections')['w_a_z_file']['uuid']

@@ -873,8 +873,8 @@ do_install_once() {
         cd "$WORKSPACE/$1" \
             && "${3}python" setup.py sdist rotate --keep=1 --match .tar.gz \
             && cd "$WORKSPACE" \
-            && "${3}pip" install --no-cache-dir --quiet "$WORKSPACE/$1/dist"/*.tar.gz \
-            && "${3}pip" install --no-cache-dir --quiet --no-deps --ignore-installed "$WORKSPACE/$1/dist"/*.tar.gz
+            && "${3}pip" install --no-cache-dir "$WORKSPACE/$1/dist"/*.tar.gz \
+            && "${3}pip" install --no-cache-dir --no-deps --ignore-installed "$WORKSPACE/$1/dist"/*.tar.gz
     elif [[ "$2" != "" ]]
     then
         "install_$2"
@@ -1085,7 +1085,7 @@ test_apps/workbench_functionals() {
 test_apps/workbench_integration() {
     local TASK="test:integration"
     cd "$WORKSPACE/apps/workbench" \
-        && eval env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} "$bundle" exec rake ${TASK} TESTOPTS=\'-v -d\' ${testargs[apps/workbench]} ${testargs[apps/workbench_integration]} 
+        && eval env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} "$bundle" exec rake ${TASK} TESTOPTS=\'-v -d\' ${testargs[apps/workbench]} ${testargs[apps/workbench_integration]}
 }
 
 test_apps/workbench_benchmark() {
