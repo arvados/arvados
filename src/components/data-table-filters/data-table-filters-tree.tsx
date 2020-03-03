@@ -37,10 +37,9 @@ export class DataTableFiltersTree extends React.Component<DataTableFilterProps> 
             render={renderItem}
             showSelection
             useRadioButtons={this.props.mutuallyExclusive}
-            toggleItemRadioButton={this.toggleRadioButtonFilter}
             disableRipple
             onContextMenu={noop}
-            toggleItemActive={noop}
+            toggleItemActive={this.props.mutuallyExclusive ? this.toggleRadioButtonFilter : noop}
             toggleItemOpen={this.toggleOpen}
             toggleItemSelection={this.toggleFilter}
         />;
@@ -50,7 +49,7 @@ export class DataTableFiltersTree extends React.Component<DataTableFilterProps> 
      * Handler for when a tree item is toggled via a radio button.
      * Ensures mutual exclusivity among filter tree items.
      */
-    toggleRadioButtonFilter = (item: TreeItem<DataTableFilterItem>) => {
+    toggleRadioButtonFilter = (_: any, item: TreeItem<DataTableFilterItem>) => {
         const { onChange = noop } = this.props;
 
         // If the filter is already selected, do nothing.

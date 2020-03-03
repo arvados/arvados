@@ -139,7 +139,15 @@ export const DataTableFiltersPopover = withStyles(styles)(
                             mutuallyExclusive={this.props.mutuallyExclusive}
                             onChange={filters => {
                                 this.setState({ filters });
+                                if (this.props.mutuallyExclusive) {
+                                    const { onChange } = this.props;
+                                    if (onChange) {
+                                        onChange(filters);
+                                    }
+                                    this.setState({ anchorEl: undefined });
+                                }
                             }} />
+                        {this.props.mutuallyExclusive ||
                         <CardActions>
                             <Button
                                 color="primary"
@@ -156,6 +164,7 @@ export const DataTableFiltersPopover = withStyles(styles)(
                                 Cancel
                             </Button>
                         </CardActions >
+                        }
                     </Card>
                 </Popover>
             </>;
