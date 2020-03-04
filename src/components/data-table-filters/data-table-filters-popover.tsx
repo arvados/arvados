@@ -108,7 +108,7 @@ export const DataTableFiltersPopover = withStyles(styles)(
                     : f.selected
                 );
             return <>
-                <Tooltip title='Filters'>
+                <Tooltip disableFocusListener title='Filters'>
                     <ButtonBase
                         className={classnames([classes.root, { [classes.active]: isActive }])}
                         component="span"
