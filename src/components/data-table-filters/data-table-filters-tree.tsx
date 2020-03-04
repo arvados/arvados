@@ -39,9 +39,12 @@ export class DataTableFiltersTree extends React.Component<DataTableFilterProps> 
             useRadioButtons={this.props.mutuallyExclusive}
             disableRipple
             onContextMenu={noop}
-            toggleItemActive={this.props.mutuallyExclusive ? this.toggleRadioButtonFilter : noop}
+            toggleItemActive={
+                this.props.mutuallyExclusive
+                    ? this.toggleRadioButtonFilter
+                    : this.toggleFilter
+            }
             toggleItemOpen={this.toggleOpen}
-            toggleItemSelection={this.toggleFilter}
         />;
     }
 
