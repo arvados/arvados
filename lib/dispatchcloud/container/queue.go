@@ -26,8 +26,9 @@ type APIClient interface {
 // A QueueEnt is an entry in the queue, consisting of a container
 // record and the instance type that should be used to run it.
 type QueueEnt struct {
-	// The container to run. Only the UUID, State, Priority, and
-	// RuntimeConstraints fields are populated.
+	// The container to run. Only the UUID, State, Priority,
+	// RuntimeConstraints, Mounts, and ContainerImage fields are
+	// populated.
 	Container    arvados.Container    `json:"container"`
 	InstanceType arvados.InstanceType `json:"instance_type"`
 }
@@ -381,7 +382,7 @@ func (cq *Queue) poll() (map[string]*arvados.Container, error) {
 			*next[upd.UUID] = upd
 		}
 	}
-	selectParam := []string{"uuid", "state", "priority", "runtime_constraints"}
+	selectParam := []string{"uuid", "state", "priority", "runtime_constraints", "container_image", "mounts"}
 	limitParam := 1000
 
 	mine, err := cq.fetchAll(arvados.ResourceListParams{
