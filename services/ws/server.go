@@ -25,6 +25,7 @@ type server struct {
 func (srv *server) Close() {
 	srv.WaitReady()
 	srv.eventSource.Close()
+	srv.httpServer.Close()
 	srv.listener.Close()
 }
 
