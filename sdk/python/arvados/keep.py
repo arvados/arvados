@@ -299,10 +299,10 @@ class KeepClient(object):
             self._result = {'error': None}
             self._usable = True
             self._session = None
-            self._socket = None
-            self.get_headers = {'Accept': 'application/octet-stream'}
+            self.get_headers = {'Accept': 'application/octet-stream', 'Connection': 'close'}
             self.get_headers.update(headers)
-            self.put_headers = headers
+            self.put_headers = {'Connection': 'close'}
+            self.put_headers.update(headers)
             self.upload_counter = upload_counter
             self.download_counter = download_counter
             self.insecure = insecure
@@ -331,29 +331,14 @@ class KeepClient(object):
             except:
                 ua.close()
 
-        def _socket_open(self, *args, **kwargs):
-            if len(args) + len(kwargs) == 2:
-                return self._socket_open_pycurl_7_21_5(*args, **kwargs)
-            else:
-                return self._socket_open_pycurl_7_19_3(*args, **kwargs)
-
-        def _socket_open_pycurl_7_19_3(self, family, socktype, protocol, address=None):
-            return self._socket_open_pycurl_7_21_5(
-                purpose=None,
-                address=collections.namedtuple(
-                    'Address', ['family', 'socktype', 'protocol', 'addr'],
-                )(family, socktype, protocol, address))
-
-        def _socket_open_pycurl_7_21_5(self, purpose, address):
-            """Because pycurl doesn't have CURLOPT_TCP_KEEPALIVE"""
-            s = socket.socket(address.family, address.socktype, address.protocol)
+        def _sockopt(self, curlfd, *args, **kwargs):
+            s = socket.fromfd(curlfd, socket.AF_INET, socket.SOCK_STREAM)
             s.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
             # Will throw invalid protocol error on mac. This test prevents that.
             if hasattr(socket, 'TCP_KEEPIDLE'):
                 s.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, 75)
             s.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 75)
-            self._socket = s
-            return s
+            return 0
 
         def get(self, locator, method="GET", timeout=None):
             # locator is a KeepLocator object.
@@ -366,8 +351,8 @@ class KeepClient(object):
                     self._headers = {}
                     response_body = BytesIO()
                     curl.setopt(pycurl.NOSIGNAL, 1)
-                    curl.setopt(pycurl.OPENSOCKETFUNCTION,
-                                lambda *args, **kwargs: self._socket_open(*args, **kwargs))
+                    curl.setopt(pycurl.FORBID_REUSE, 1)
+                    curl.setopt(pycurl.SOCKOPTFUNCTION, self._sockopt)
                     curl.setopt(pycurl.URL, url.encode('utf-8'))
                     curl.setopt(pycurl.HTTPHEADER, [
                         '{}: {}'.format(k,v) for k,v in self.get_headers.items()])
@@ -383,10 +368,6 @@ class KeepClient(object):
                         curl.perform()
                     except Exception as e:
                         raise arvados.errors.HttpError(0, str(e))
-                    finally:
-                        if self._socket:
-                            self._socket.close()
-                            self._socket = None
                     self._result = {
                         'status_code': curl.getinfo(pycurl.RESPONSE_CODE),
                         'body': response_body.getvalue(),
@@ -455,8 +436,8 @@ class KeepClient(object):
                     body_reader = BytesIO(body)
                     response_body = BytesIO()
                     curl.setopt(pycurl.NOSIGNAL, 1)
-                    curl.setopt(pycurl.OPENSOCKETFUNCTION,
-                                lambda *args, **kwargs: self._socket_open(*args, **kwargs))
+                    curl.setopt(pycurl.FORBID_REUSE, 1)
+                    curl.setopt(pycurl.SOCKOPTFUNCTION, self._sockopt)
                     curl.setopt(pycurl.URL, url.encode('utf-8'))
                     # Using UPLOAD tells cURL to wait for a "go ahead" from the
                     # Keep server (in the form of a HTTP/1.1 "100 Continue"
@@ -478,10 +459,6 @@ class KeepClient(object):
                         curl.perform()
                     except Exception as e:
                         raise arvados.errors.HttpError(0, str(e))
-                    finally:
-                        if self._socket:
-                            self._socket.close()
-                            self._socket = None
                     self._result = {
                         'status_code': curl.getinfo(pycurl.RESPONSE_CODE),
                         'body': response_body.getvalue().decode('utf-8'),
