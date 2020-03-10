@@ -22,7 +22,7 @@ type supervisedTask interface {
 	// done enough to satisfy a dependency relationship (e.g., the
 	// service is running and ready). If the task starts a
 	// goroutine that fails after Run returns (e.g., the service
-	// shuts down), it should call cancel.
+	// shuts down), it should call fail().
 	Run(ctx context.Context, fail func(error), super *Supervisor) error
 	String() string
 }
