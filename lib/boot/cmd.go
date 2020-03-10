@@ -77,12 +77,12 @@ func (bootCommand) RunCommand(prog string, args []string, stdin io.Reader, stdou
 
 	super.Start(ctx, cfg)
 	defer super.Stop()
-	if url, ok := super.WaitReady(); ok {
-		fmt.Fprintln(stdout, url)
-		// Wait for signal/crash + orderly shutdown
-		<-super.done
-		return 0
-	} else {
+	url, ok := super.WaitReady()
+	if !ok {
 		return 1
 	}
+	fmt.Fprintln(stdout, url)
+	// Wait for signal/crash + orderly shutdown
+	<-super.done
+	return 0
 }
