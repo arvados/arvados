@@ -81,6 +81,9 @@ func (bootCommand) RunCommand(prog string, args []string, stdin io.Reader, stdou
 	if !ok {
 		return 1
 	}
+	// Write controller URL to stdout. Nothing else goes to
+	// stdout, so this provides an easy way for a calling script
+	// to discover the controller URL when everything is ready.
 	fmt.Fprintln(stdout, url)
 	// Wait for signal/crash + orderly shutdown
 	<-super.done
