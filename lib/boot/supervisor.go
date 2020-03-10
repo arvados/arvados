@@ -72,7 +72,7 @@ func (super *Supervisor) Start(ctx context.Context, cfg *arvados.Config) {
 
 		err := super.run(cfg)
 		if err != nil {
-			fmt.Fprintln(super.Stderr, err)
+			super.logger.WithError(err).Warn("supervisor shut down")
 		}
 		close(super.done)
 	}()
