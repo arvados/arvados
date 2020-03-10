@@ -496,9 +496,9 @@ func (super *Supervisor) autofillConfig(cfg *arvados.Config) error {
 		return err
 	}
 	usedPort := map[string]bool{}
-	nextPort := func() string {
+	nextPort := func(host string) string {
 		for {
-			port, err := availablePort(super.ListenHost)
+			port, err := availablePort(host)
 			if err != nil {
 				panic(err)
 			}
@@ -518,11 +518,7 @@ func (super *Supervisor) autofillConfig(cfg *arvados.Config) error {
 			h = super.ListenHost
 		}
 		if p == "0" {
-			p, err = availablePort(h)
-			if err != nil {
-				return err
-			}
-			usedPort[p] = true
+			p = nextPort(h)
 		}
 		cluster.Services.Controller.ExternalURL = arvados.URL{Scheme: "https", Host: net.JoinHostPort(h, p)}
 	}
@@ -549,11 +545,11 @@ func (super *Supervisor) autofillConfig(cfg *arvados.Config) error {
 			svc == &cluster.Services.WebDAVDownload ||
 			svc == &cluster.Services.Websocket ||
 			svc == &cluster.Services.Workbench1) {
-			svc.ExternalURL = arvados.URL{Scheme: "https", Host: fmt.Sprintf("%s:%s", super.ListenHost, nextPort())}
+			svc.ExternalURL = arvados.URL{Scheme: "https", Host: fmt.Sprintf("%s:%s", super.ListenHost, nextPort(super.ListenHost))}
 		}
 		if len(svc.InternalURLs) == 0 {
 			svc.InternalURLs = map[arvados.URL]arvados.ServiceInstance{
-				arvados.URL{Scheme: "http", Host: fmt.Sprintf("%s:%s", super.ListenHost, nextPort())}: arvados.ServiceInstance{},
+				arvados.URL{Scheme: "http", Host: fmt.Sprintf("%s:%s", super.ListenHost, nextPort(super.ListenHost))}: arvados.ServiceInstance{},
 			}
 		}
 	}
@@ -581,7 +577,7 @@ func (super *Supervisor) autofillConfig(cfg *arvados.Config) error {
 	}
 	if super.ClusterType == "test" {
 		// Add a second keepstore process.
-		cluster.Services.Keepstore.InternalURLs[arvados.URL{Scheme: "http", Host: fmt.Sprintf("%s:%s", super.ListenHost, nextPort())}] = arvados.ServiceInstance{}
+		cluster.Services.Keepstore.InternalURLs[arvados.URL{Scheme: "http", Host: fmt.Sprintf("%s:%s", super.ListenHost, nextPort(super.ListenHost))}] = arvados.ServiceInstance{}
 
 		// Create a directory-backed volume for each keepstore
 		// process.
@@ -608,7 +604,7 @@ func (super *Supervisor) autofillConfig(cfg *arvados.Config) error {
 		cluster.PostgreSQL.Connection = arvados.PostgreSQLConnection{
 			"client_encoding": "utf8",
 			"host":            "localhost",
-			"port":            nextPort(),
+			"port":            nextPort(super.ListenHost),
 			"dbname":          "arvados_test",
 			"user":            "arvados",
 			"password":        "insecure_arvados_test",
