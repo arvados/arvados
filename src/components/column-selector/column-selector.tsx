@@ -55,8 +55,8 @@ export const ColumnSelector = withStyles(styles)(
 );
 
 export const ColumnSelectorTrigger = (props: IconButtonProps) =>
-    <Tooltip title="Filters">
+    <Tooltip disableFocusListener title="Select columns">
         <IconButton {...props}>
-            <MenuIcon aria-label="Filters" />
+            <MenuIcon aria-label="Select columns" />
         </IconButton>
     </Tooltip>;
