@@ -1,0 +1,37 @@
+---
+layout: default
+navsection: admin
+title: Securing API access with scoped tokens
+...
+
+By default, Arvados API tokens grant unlimited access to a user account.  A token associated with an admin account has unlimited access to the whole system.  However, there are circumstances where you want to grant limited access to an account.  You can limit which APIs a token has access to by setting "scopes" on the token.
+
+A scope consists of a HTTP method and API path.  A token can have multiple scopes.
+
+When a token has scopes, the API server checks the HTTP method and the API path of the request against the scopes of the token being used.
+
+h2. Example scopes
+
+These examples use @/arvados/v1/collections@, but can be applied to any endpoint.  Consult the "API documentation":{{site.baseurl}}/api for details.
+
+The scope @["GET", "/arvados/v1/collections"]@ will allow only GET or HEAD requests for the list of collections.  Any other HTTP method or path (including requests for a specific collection record, eg a request with path @/arvados/v1/collections/zzzzz-4zz18-0123456789abcde@) will return a permission error.
+
+A trailing slash in a scope is signficant.  The scope @["GET", "/arvados/v1/collections/"]@ will allow only GET or HEAD requests *underneath* @collections@, so the request for an individual record path @/arvados/v1/collections/zzzzz-4zz18-0123456789abcde@) is allowed but a request to list collections will be denied.
+
+The scope can include an object uuid.  The scope @["GET", "/arvados/v1/collections/zzzzz-4zz18-0123456789abcde"]@ permits requesting only the record @zzzzz-4zz18-0123456789abcde@.
+
+Since a token can have multiple scopes, use @[["GET", "/arvados/v1/collections"], ["GET", "/arvados/v1/collections/"]]@ to allow both listing collections and fetching individual collection records.
+
+Object create calls use the `POST` method.  A scope of @["POST", "/arvados/v1/collections"]@ will allow creating collections, but not reading, listing or updating them (or accessing anything else).
+
+Object update calls use the `PATCH` method.  A scope of @["POST", "/arvados/v1/collections/"]@ will allow updating collections, but not listing or creating them.  (While GET requests are denied an object can be read indirectly by using an empty PATCH which will return the unmodified object as the result).
+
+h2. Creating a scoped token
+
+A scoped token can be created at the command line:
+
+<pre>
+$ arv api_client_authorization create --api-client-authorization '{"scopes": [["GET", "/arvados/v1/collections"], ["GET", "/arvados/v1/collections/"]]}'
+</pre>
+
+The response will include `api_token` field which is the newly issued secret token.
