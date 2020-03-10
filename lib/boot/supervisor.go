@@ -96,7 +96,7 @@ func (super *Supervisor) run(cfg *arvados.Config) error {
 		return err
 	}
 	defer os.RemoveAll(super.tempdir)
-	if err := os.Mkdir(filepath.Join(super.tempdir, "bin"), 0777); err != nil {
+	if err := os.Mkdir(filepath.Join(super.tempdir, "bin"), 0755); err != nil {
 		return err
 	}
 
@@ -106,7 +106,7 @@ func (super *Supervisor) run(cfg *arvados.Config) error {
 	if err != nil {
 		return err
 	}
-	conffile, err := os.OpenFile(filepath.Join(super.tempdir, "config.yml"), os.O_CREATE|os.O_WRONLY, 0777)
+	conffile, err := os.OpenFile(filepath.Join(super.tempdir, "config.yml"), os.O_CREATE|os.O_WRONLY, 0755)
 	if err != nil {
 		return err
 	}
@@ -592,7 +592,7 @@ func (super *Supervisor) autofillConfig(cfg *arvados.Config, log logrus.FieldLog
 			if _, err = os.Stat(datadir + "/."); err == nil {
 			} else if !os.IsNotExist(err) {
 				return err
-			} else if err = os.Mkdir(datadir, 0777); err != nil {
+			} else if err = os.Mkdir(datadir, 0755); err != nil {
 				return err
 			}
 			cluster.Volumes[fmt.Sprintf(cluster.ClusterID+"-nyw5e-%015d", volnum)] = arvados.Volume{

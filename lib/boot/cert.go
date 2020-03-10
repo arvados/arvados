@@ -46,7 +46,7 @@ func (createCertificates) Run(ctx context.Context, fail func(error), super *Supe
 	err = ioutil.WriteFile(filepath.Join(super.tempdir, "server.cfg"), append(defaultconf, []byte(`
 [SAN]
 subjectAltName=DNS:localhost,DNS:localhost.localdomain
-`)...), 0777)
+`)...), 0644)
 	if err != nil {
 		return err
 	}
