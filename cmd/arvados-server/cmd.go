@@ -7,6 +7,7 @@ package main
 import (
 	"os"
 
+	"git.arvados.org/arvados.git/lib/boot"
 	"git.arvados.org/arvados.git/lib/cloud/cloudtest"
 	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/lib/config"
@@ -21,6 +22,7 @@ var (
 		"-version":  cmd.Version,
 		"--version": cmd.Version,
 
+		"boot":            boot.Command,
 		"cloudtest":       cloudtest.Command,
 		"config-check":    config.CheckCommand,
 		"config-dump":     config.DumpCommand,

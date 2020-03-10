@@ -623,7 +623,7 @@ Clusters:
       # (experimental) cloud dispatcher for executing containers on
       # worker VMs. Begins with "-----BEGIN RSA PRIVATE KEY-----\n"
       # and ends with "\n-----END RSA PRIVATE KEY-----\n".
-      DispatchPrivateKey: none
+      DispatchPrivateKey: ""
 
       # Maximum time to wait for workers to come up before abandoning
       # stale locks from a previous dispatch process.
