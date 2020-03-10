@@ -390,7 +390,7 @@ def main(arguments=None, stdout=sys.stdout, install_sig_handlers=True, api=None)
     try:
         image_hash = find_one_image_hash(args.image, args.tag)
     except DockerError as error:
-        logger.error(error.message)
+        logger.error(str(error))
         sys.exit(1)
 
     if not docker_image_compatible(api, image_hash):

@@ -16,6 +16,43 @@ import sys
 import re
 import pkg_resources  # part of setuptools
 
+### begin monkey patch ###
+# Monkey patch solution for bug #16169
+#
+# There is a bug in upstream cwltool where the version updater needs
+# to replace the document fragments in the loader index with the
+# updated ones, but actually it only does it for the root document.
+# Normally we just fix the bug in upstream but that's challenging
+# because current cwltool dropped support for Python 2.7 and we're
+# still supporting py2 in Arvados 2.0 (although py2 support will most
+# likely be dropped in Arvados 2.1).  Making a bugfix fork comes with
+# its own complications (it would need to be added to PyPi) so monkey
+# patching is the least disruptive fix (and is relatively safe because
+# our cwltool dependency is pinned to a specific version).  This
+# should be removed as soon as a bugfix goes into upstream cwltool and
+# we upgrade to it.
+#
+import cwltool.load_tool
+from cwltool.utils import visit_class
+from six.moves import urllib
+original_resolve_and_validate_document = cwltool.load_tool.resolve_and_validate_document
+def wrapped_resolve_and_validate_document(
+        loadingContext,            # type: LoadingContext
+        workflowobj,               # type: Union[CommentedMap, CommentedSeq]
+        uri,                       # type: Text
+        preprocess_only=False,     # type: bool
+        skip_schemas=None,         # type: Optional[bool]
+        ):
+    loadingContext, uri = original_resolve_and_validate_document(loadingContext, workflowobj, uri, preprocess_only, skip_schemas)
+    if loadingContext.do_update in (True, None):
+        fileuri = urllib.parse.urldefrag(uri)[0]
+        def update_index(pr):
+            loadingContext.loader.idx[pr["id"]] = pr
+        visit_class(loadingContext.loader.idx[fileuri], ("CommandLineTool", "Workflow", "ExpressionTool"), update_index)
+    return loadingContext, uri
+cwltool.load_tool.resolve_and_validate_document = wrapped_resolve_and_validate_document
+### end monkey patch ###
+
 from schema_salad.sourceline import SourceLine
 import schema_salad.validate as validate
 import cwltool.main

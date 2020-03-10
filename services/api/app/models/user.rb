@@ -410,10 +410,12 @@ class User < ArvadosModel
     user = self
     redirects = 0
     while (uuid = user.redirect_to_user_uuid)
-      user = User.unscoped.find_by_uuid(uuid)
-      if !user
-        raise Exception.new("user uuid #{user.uuid} redirects to nonexistent uuid #{uuid}")
+      break if uuid.empty?
+      nextuser = User.unscoped.find_by_uuid(uuid)
+      if !nextuser
+        raise Exception.new("user uuid #{user.uuid} redirects to nonexistent uuid '#{uuid}'")
       end
+      user = nextuser
       redirects += 1
       if redirects > 15
         raise "Starting from #{self.uuid} redirect_to_user_uuid exceeded maximum number of redirects"

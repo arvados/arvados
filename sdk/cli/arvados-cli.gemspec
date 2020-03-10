@@ -13,7 +13,11 @@ begin
   ENV["GIT_DIR"] = File.expand_path "#{__dir__}/../../.git"
   ENV["GIT_WORK_TREE"] = File.expand_path "#{__dir__}/../.."
   git_timestamp, git_hash = `git log -n1 --first-parent --format=%ct:%H #{__dir__}`.chomp.split(":")
-  version = `#{__dir__}/../../build/version-at-commit.sh #{git_hash}`.encode('utf-8').strip
+  if ENV["ARVADOS_BUILDING_VERSION"]
+    version = ENV["ARVADOS_BUILDING_VERSION"]
+  else
+    version = `#{__dir__}/../../build/version-at-commit.sh #{git_hash}`.encode('utf-8').strip
+  end
   git_timestamp = Time.at(git_timestamp.to_i).utc
 ensure
   ENV["GIT_DIR"] = git_dir
@@ -44,6 +48,7 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'andand', '~> 1.3', '>= 1.3.3'
   s.add_runtime_dependency 'oj', '~> 3.0'
   s.add_runtime_dependency 'curb', '~> 0.8'
+  s.add_runtime_dependency 'launchy', '< 2.5'
   # arvados-google-api-client 0.8.7.2 is incompatible with faraday 0.16.2
   s.add_dependency('faraday', '< 0.16')
   s.homepage    =
