@@ -102,7 +102,7 @@ func (super *Supervisor) run(cfg *arvados.Config) error {
 
 	// Fill in any missing config keys, and write the resulting
 	// config in the temp dir for child services to use.
-	err = super.autofillConfig(cfg, super.logger)
+	err = super.autofillConfig(cfg)
 	if err != nil {
 		return err
 	}
@@ -490,7 +490,7 @@ func (super *Supervisor) RunProgram(ctx context.Context, dir string, output io.W
 	return nil
 }
 
-func (super *Supervisor) autofillConfig(cfg *arvados.Config, log logrus.FieldLogger) error {
+func (super *Supervisor) autofillConfig(cfg *arvados.Config) error {
 	cluster, err := cfg.GetCluster("")
 	if err != nil {
 		return err
