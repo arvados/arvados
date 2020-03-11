@@ -108,7 +108,7 @@ export const DataTableFiltersPopover = withStyles(styles)(
                     : f.selected
                 );
             return <>
-                <Tooltip title='Filters'>
+                <Tooltip disableFocusListener title='Filters'>
                     <ButtonBase
                         className={classnames([classes.root, { [classes.active]: isActive }])}
                         component="span"
@@ -139,7 +139,15 @@ export const DataTableFiltersPopover = withStyles(styles)(
                             mutuallyExclusive={this.props.mutuallyExclusive}
                             onChange={filters => {
                                 this.setState({ filters });
+                                if (this.props.mutuallyExclusive) {
+                                    const { onChange } = this.props;
+                                    if (onChange) {
+                                        onChange(filters);
+                                    }
+                                    this.setState({ anchorEl: undefined });
+                                }
                             }} />
+                        {this.props.mutuallyExclusive ||
                         <CardActions>
                             <Button
                                 color="primary"
@@ -156,6 +164,7 @@ export const DataTableFiltersPopover = withStyles(styles)(
                                 Cancel
                             </Button>
                         </CardActions >
+                        }
                     </Card>
                 </Popover>
             </>;

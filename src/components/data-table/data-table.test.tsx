@@ -8,7 +8,6 @@ import { pipe } from 'lodash/fp';
 import { TableHead, TableCell, Typography, TableBody, Button, TableSortLabel } from "@material-ui/core";
 import * as Adapter from "enzyme-adapter-react-16";
 import { DataTable, DataColumns } from "./data-table";
-import { DataTableFilters } from "~/components/data-table-filters/data-table-filters";
 import { SortDirection, createDataColumn } from "./data-column";
 import { DataTableFiltersPopover } from '~/components/data-table-filters/data-table-filters-popover';
 import { createTree, setNode, initTreeNode } from '~/models/tree';
@@ -162,7 +161,7 @@ describe("<DataTable />", () => {
         expect(onSortToggle).toHaveBeenCalledWith(columns[0]);
     });
 
-    it("does not display <DataTableFilter /> if there is no filters provided", () => {
+    it("does not display <DataTableFiltersPopover /> if there is no filters provided", () => {
         const columns: DataColumns<string> = [{
             name: "Column 1",
             sortDirection: SortDirection.ASC,
@@ -180,7 +179,7 @@ describe("<DataTable />", () => {
             onRowDoubleClick={jest.fn()}
             onSortToggle={jest.fn()}
             onContextMenu={jest.fn()} />);
-        expect(dataTable.find(DataTableFilters)).toHaveLength(0);
+        expect(dataTable.find(DataTableFiltersPopover)).toHaveLength(0);
     });
 
     it("passes filter props to <DataTableFiltersPopover />", () => {
@@ -209,24 +208,4 @@ describe("<DataTable />", () => {
         dataTable.find(DataTableFiltersPopover).prop("onChange")([]);
         expect(onFiltersChange).toHaveBeenCalledWith([], columns[0]);
     });
-
-    // it("shows default view if there is no items", () => {
-    //     const columns: DataColumns<string> = [
-    //         createDataColumn({
-    //             name: "Column 1",
-    //             render: () => <span />,
-    //             selected: true,
-    //             configurable: true
-    //         }),
-    //     ];
-    //     const dataTable = mount(<DataTable
-    //         columns={columns}
-    //         items={[]}
-    //         onFiltersChange={jest.fn()}
-    //         onRowClick={jest.fn()}
-    //         onRowDoubleClick={jest.fn()}
-    //         onContextMenu={jest.fn()}
-    //         onSortToggle={jest.fn()} />);
-    //     expect(dataTable.find(DataTableDefaultView)).toHaveLength(1);
-    // });
 });
