@@ -11,9 +11,10 @@ import copy
 import logging
 
 from schema_salad.sourceline import SourceLine, cmap
+import schema_salad.ref_resolver
 
 from cwltool.pack import pack
-from cwltool.load_tool import fetch_document
+from cwltool.load_tool import fetch_document, resolve_and_validate_document
 from cwltool.process import shortname
 from cwltool.workflow import Workflow, WorkflowException, WorkflowStep
 from cwltool.pathmapper import adjustFileObjs, adjustDirObjs, visit_class
@@ -172,7 +173,6 @@ class ArvadosWorkflow(Workflow):
         with SourceLine(self.tool, None, WorkflowException, logger.isEnabledFor(logging.DEBUG)):
             if "id" not in self.tool:
                 raise WorkflowException("%s object must have 'id'" % (self.tool["class"]))
-        document_loader, workflowobj, uri = (self.doc_loader, self.doc_loader.fetch(self.tool["id"]), self.tool["id"])
 
         discover_secondary_files(self.arvrunner.fs_access, builder,
                                  self.tool["inputs"], joborder)
@@ -180,16 +180,44 @@ class ArvadosWorkflow(Workflow):
         with Perf(metrics, "subworkflow upload_deps"):
             upload_dependencies(self.arvrunner,
                                 os.path.basename(joborder.get("id", "#")),
-                                document_loader,
+                                self.doc_loader,
                                 joborder,
                                 joborder.get("id", "#"),
                                 False)
 
             if self.wf_pdh is None:
+                ### We have to reload the document to get the original version.
+                #
+                # The workflow document we have in memory right now was
+                # updated to the internal CWL version.  We need to reload the
+                # document to go back to its original version, because the
+                # version of cwltool installed in the user's container is
+                # likely to reject our internal version, and we don't want to
+                # break existing workflows.
+                #
+                # What's going on here is that the updater replaces the
+                # documents/fragments in the index with updated ones, the
+                # index is also used as a cache, so we need to go through the
+                # loading process with an empty index and updating turned off
+                # so we have the original un-updated documents.
+                #
+                loadingContext = self.loadingContext.copy()
+                loadingContext.do_update = False
+                document_loader = schema_salad.ref_resolver.SubLoader(loadingContext.loader)
+                loadingContext.loader = document_loader
+                loadingContext.loader.idx = {}
+                uri = self.tool["id"]
+                loadingContext, workflowobj, uri = fetch_document(uri, loadingContext)
+                loadingContext, uri = resolve_and_validate_document(
+                    loadingContext, workflowobj, uri
+                )
+                workflowobj, metadata = loadingContext.loader.resolve_ref(uri)
+                ###
+
                 workflowobj["requirements"] = dedup_reqs(self.requirements)
                 workflowobj["hints"] = dedup_reqs(self.hints)
 
-                packed = pack(document_loader, workflowobj, uri, self.metadata)
+                packed = pack(document_loader, workflowobj, uri, metadata)
 
                 def visit(item):
                     for t in ("hints", "requirements"):
