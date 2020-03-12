@@ -186,40 +186,16 @@ class ArvadosWorkflow(Workflow):
                                 False)
 
             if self.wf_pdh is None:
-                ### We have to reload the document to get the original version.
-                #
-                # The workflow document we have in memory right now was
-                # updated to the internal CWL version.  We need to reload the
-                # document to go back to its original version, because the
-                # version of cwltool installed in the user's container is
-                # likely to reject our internal version, and we don't want to
-                # break existing workflows.
-                #
-                # What's going on here is that the updater replaces the
-                # documents/fragments in the index with updated ones, the
-                # index is also used as a cache, so we need to go through the
-                # loading process with an empty index and updating turned off
-                # so we have the original un-updated documents.
-                #
-                loadingContext = self.loadingContext.copy()
-                loadingContext.do_update = False
-                document_loader = schema_salad.ref_resolver.SubLoader(loadingContext.loader)
-                loadingContext.loader = document_loader
-                loadingContext.loader.idx = {}
-                uri = self.tool["id"]
-                loadingContext, workflowobj, uri = fetch_document(uri, loadingContext)
-                loadingContext, uri = resolve_and_validate_document(
-                    loadingContext, workflowobj, uri
-                )
-                workflowobj, metadata = loadingContext.loader.resolve_ref(uri)
-                ###
+                packed = pack(self.doc_loader, self.tool, self.tool["id"], self.metadata)
 
-                workflowobj["requirements"] = dedup_reqs(self.requirements)
-                workflowobj["hints"] = dedup_reqs(self.hints)
-
-                packed = pack(document_loader, workflowobj, uri, metadata)
+                for p in packed["$graph"]:
+                    if p["id"] == "#main":
+                        p["requirements"] = dedup_reqs(self.requirements)
+                        p["hints"] = dedup_reqs(self.hints)
 
                 def visit(item):
+                    if "requirements" in item:
+                        item["requirements"] = [i for i in item["requirements"] if i["class"] != "DockerRequirement"]
                     for t in ("hints", "requirements"):
                         if t not in item:
                             continue
@@ -239,9 +215,6 @@ class ArvadosWorkflow(Workflow):
                                                     raise WorkflowException("Non-top-level ResourceRequirement in single container cannot have expressions")
                                 if not dyn:
                                     self.static_resource_req.append(req)
-                            if req["class"] == "DockerRequirement":
-                                if "http://arvados.org/cwl#dockerCollectionPDH" in req:
-                                    del req["http://arvados.org/cwl#dockerCollectionPDH"]
 
                 visit_class(packed["$graph"], ("Workflow", "CommandLineTool"), visit)
 
@@ -250,9 +223,9 @@ class ArvadosWorkflow(Workflow):
 
                 upload_dependencies(self.arvrunner,
                                     runtimeContext.name,
-                                    document_loader,
+                                    self.doc_loader,
                                     packed,
-                                    uri,
+                                    self.tool["id"],
                                     False)
 
                 # Discover files/directories referenced by the
@@ -329,6 +302,10 @@ class ArvadosWorkflow(Workflow):
             if job_res_reqs[0].get("ramMin", 1024) < 128:
                 job_res_reqs[0]["ramMin"] = 128
 
+        arguments = ["--no-container", "--move-outputs", "--preserve-entire-environment", "workflow.cwl", "cwl.input.yml"]
+        if runtimeContext.debug:
+            arguments.insert(0, '--debug')
+
         wf_runner = cmap({
             "class": "CommandLineTool",
             "baseCommand": "cwltool",
@@ -348,7 +325,7 @@ class ArvadosWorkflow(Workflow):
                     }]
             }],
             "hints": self.hints,
-            "arguments": ["--no-container", "--move-outputs", "--preserve-entire-environment", "workflow.cwl#main", "cwl.input.yml"],
+            "arguments": arguments,
             "id": "#"
         })
         return ArvadosCommandTool(self.arvrunner, wf_runner, self.loadingContext).job(joborder_resolved, output_callback, runtimeContext)
