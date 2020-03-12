@@ -547,6 +547,28 @@ Clusters:
       # work. If false, only the primary email address will be used.
       GoogleAlternateEmailAddresses: true
 
+      # Use PAM to authenticate logins, using the specified PAM
+      # service name.
+      #
+      # Cannot be used in combination with OAuth2 (ProviderAppID) or
+      # Google (GoogleClientID).
+      PAM: false
+      PAMService: arvados
+
+      # Domain name (e.g., "example.com") to use to construct the
+      # user's email address if PAM authentication returns a username
+      # with no "@". If empty, use the PAM username as the user's
+      # email address, whether or not it contains "@".
+      #
+      # Note that the email address is used as the primary key for
+      # user records when logging in. Therefore, if you change
+      # PAMDefaultEmailDomain after the initial installation, you
+      # should also update existing user records to reflect the new
+      # domain. Otherwise, next time those users log in, they will be
+      # given new accounts instead of accessing their existing
+      # accounts.
+      PAMDefaultEmailDomain: ""
+
       # The cluster ID to delegate the user database.  When set,
       # logins on this cluster will be redirected to the login cluster
       # (login cluster must appear in RemoteClusters with Proxy: true)

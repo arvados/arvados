@@ -36,6 +36,7 @@ require (
 	github.com/lib/pq v1.3.0
 	github.com/marstr/guid v1.1.1-0.20170427235115-8bdf7d1a087c // indirect
 	github.com/mitchellh/go-homedir v0.0.0-20161203194507-b8bc1bf76747 // indirect
+	github.com/msteinert/pam v0.0.0-20190215180659-f29b9f28d6f9
 	github.com/opencontainers/go-digest v1.0.0-rc1 // indirect
 	github.com/opencontainers/image-spec v1.0.1-0.20171125024018-577479e4dc27 // indirect
 	github.com/pelletier/go-buffruneio v0.2.0 // indirect
@@ -52,7 +53,7 @@ require (
 	golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550
 	golang.org/x/net v0.0.0-20190620200207-3b0461eec859
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
-	golang.org/x/sys v0.0.0-20191105231009-c1f44814a5cd // indirect
+	golang.org/x/sys v0.0.0-20191105231009-c1f44814a5cd
 	google.golang.org/api v0.13.0
 	gopkg.in/check.v1 v1.0.0-20161208181325-20d25e280405
 	gopkg.in/square/go-jose.v2 v2.3.1

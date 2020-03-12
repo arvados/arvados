@@ -6,7 +6,6 @@ package localdb
 
 import (
 	"context"
-	"errors"
 
 	"git.arvados.org/arvados.git/lib/controller/railsproxy"
 	"git.arvados.org/arvados.git/lib/controller/rpc"
@@ -18,35 +17,22 @@ type railsProxy = rpc.Conn
 type Conn struct {
 	cluster     *arvados.Cluster
 	*railsProxy // handles API methods that aren't defined on Conn itself
-
-	googleLoginController
+	loginController
 }
 
 func NewConn(cluster *arvados.Cluster) *Conn {
+	railsProxy := railsproxy.NewConn(cluster)
 	return &Conn{
-		cluster:    cluster,
-		railsProxy: railsproxy.NewConn(cluster),
+		cluster:         cluster,
+		railsProxy:      railsProxy,
+		loginController: chooseLoginController(cluster, railsProxy),
 	}
 }
 
 func (conn *Conn) Logout(ctx context.Context, opts arvados.LogoutOptions) (arvados.LogoutResponse, error) {
-	if conn.cluster.Login.ProviderAppID != "" {
-		// Proxy to RailsAPI, which hands off to sso-provider.
-		return conn.railsProxy.Logout(ctx, opts)
-	} else {
-		return conn.googleLoginController.Logout(ctx, conn.cluster, conn.railsProxy, opts)
-	}
+	return conn.loginController.Logout(ctx, opts)
 }
 
 func (conn *Conn) Login(ctx context.Context, opts arvados.LoginOptions) (arvados.LoginResponse, error) {
-	wantGoogle := conn.cluster.Login.GoogleClientID != ""
-	wantSSO := conn.cluster.Login.ProviderAppID != ""
-	if wantGoogle == wantSSO {
-		return arvados.LoginResponse{}, errors.New("configuration problem: exactly one of Login.GoogleClientID and Login.ProviderAppID must be configured")
-	} else if wantGoogle {
-		return conn.googleLoginController.Login(ctx, conn.cluster, conn.railsProxy, opts)
-	} else {
-		// Proxy to RailsAPI, which hands off to sso-provider.
-		return conn.railsProxy.Login(ctx, opts)
-	}
+	return conn.loginController.Login(ctx, opts)
 }

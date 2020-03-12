@@ -136,10 +136,12 @@ type DeleteOptions struct {
 }
 
 type LoginOptions struct {
-	ReturnTo string `json:"return_to"`        // On success, redirect to this target with api_token=xxx query param
-	Remote   string `json:"remote,omitempty"` // Salt token for remote Cluster ID
-	Code     string `json:"code,omitempty"`   // OAuth2 callback code
-	State    string `json:"state,omitempty"`  // OAuth2 callback state
+	ReturnTo string `json:"return_to"`          // On success, redirect to this target with api_token=xxx query param
+	Remote   string `json:"remote,omitempty"`   // Salt token for remote Cluster ID
+	Code     string `json:"code,omitempty"`     // OAuth2 callback code
+	State    string `json:"state,omitempty"`    // OAuth2 callback state
+	Username string `json:"username,omitempty"` // PAM username
+	Password string `json:"password,omitempty"` // PAM password
 }
 
 type LogoutOptions struct {
