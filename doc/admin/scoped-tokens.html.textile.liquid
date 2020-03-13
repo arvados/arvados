@@ -6,25 +6,29 @@ title: Securing API access with scoped tokens
 
 By default, Arvados API tokens grant unlimited access to a user account, and admin account tokens have unlimited access to the whole system.  If you want to grant restricted access to a user account, you can create a "scoped token" which is an Arvados API token which is limited to accessing specific APIs.
 
-One use of token scopes is to grant access to a collection to users who do not have an Arvados accounts on your cluster.  This is done by creating scoped token that only allows getting a specific collection.  See "Create a collection sharing link":{{site.baseurl}}/sdk/python/cookbook.html#sharing_link
+One use of token scopes is to grant access to data, such as a collection, to users who do not have an Arvados accounts on your cluster.  This is done by creating scoped token that only allows getting a specific record.  An example of this is "creating a collection sharing link.":{{site.baseurl}}/sdk/python/cookbook.html#sharing_link
+
+Another example is situations where admin access is required but there is risk of the token being compromised.  Setting a scope prevents the token from being used for any action other than the specific action the token is intended for.  For example, "synchronizing user accounts on a shell node.":{{site.baseurl}}/install/install-shell-server.html#scoped-token
 
 h2. Defining scopes
 
-A "scope" consists of a HTTP method and API path.  A token can have multiple scopes.  Token scopes act as a whitelist, and the API server checks the HTTP method and the API path of every request against the scopes of the request token.
+A "scope" consists of a HTTP method and API path.  A token can have multiple scopes.  Token scopes act as a whitelist, and the API server checks the HTTP method and the API path of every request against the scopes of the request token.  Scopes are also described on the "API Authorization":{{site.baseurl}}/api/tokens.html#scopes page of the "API documentation":{{site.baseurl}}/api .
 
-These examples use @/arvados/v1/collections@, but can be applied to any endpoint.  Consult the "API documentation":{{site.baseurl}}/api for details.
+These examples use @/arvados/v1/collections@, but can be applied to any endpoint.  Consult the "API documentation":{{site.baseurl}}/api to determine the endpoints for specific methods.
 
 The scope @["GET", "/arvados/v1/collections"]@ will allow only GET or HEAD requests for the list of collections.  Any other HTTP method or path (including requests for a specific collection record, eg a request with path @/arvados/v1/collections/zzzzz-4zz18-0123456789abcde@) will return a permission error.
 
-A trailing slash in a scope is signficant.  The scope @["GET", "/arvados/v1/collections/"]@ will allow only GET or HEAD requests *underneath* @collections@, so the request for an individual record path @/arvados/v1/collections/zzzzz-4zz18-0123456789abcde@) is allowed but a request to list collections will be denied.
+A trailing slash in a scope is signficant.  The scope @["GET", "/arvados/v1/collections/"]@ will allow only GET or HEAD requests *starting with* @/arvados/v1/collections/@.  A request for an individual record path @/arvados/v1/collections/zzzzz-4zz18-0123456789abcde@) is allowed but a request to list collections (@/arvados/v1/collections@) will be denied because it does not end with @/@ (API requests with a trailing @/@ will have the slash stripped before the scope is checked.)
 
-The scope can include an object uuid.  The scope @["GET", "/arvados/v1/collections/zzzzz-4zz18-0123456789abcde"]@ only permits requests for the record @zzzzz-4zz18-0123456789abcde@.
+The scope can include an object uuid.  The scope @["GET", "/arvados/v1/collections/zzzzz-4zz18-0123456789abcde"]@ only permits requests to read the record @zzzzz-4zz18-0123456789abcde@.
 
-Since a token can have multiple scopes, use @[["GET", "/arvados/v1/collections"], ["GET", "/arvados/v1/collections/"]]@ to allow both listing collections and fetching individual collection records.
+Since a token can have multiple scopes, use @[["GET", "/arvados/v1/collections"], ["GET", "/arvados/v1/collections/"]]@ to allow both listing collections and fetching individual collection records.  This will reject requests to create or change collections, or access any other API method.
 
-Object create calls use the `POST` method.  A scope of @["POST", "/arvados/v1/collections"]@ will allow creating collections, but not reading, listing or updating them (or accessing anything else).
+Object create calls use the @POST@ method.  A scope of @["POST", "/arvados/v1/collections"]@ will allow creating collections, but not reading, listing or updating them (or accessing anything else).
 
-Object update calls use the `PATCH` method.  A scope of @["POST", "/arvados/v1/collections/"]@ will allow updating collections, but not listing or creating them.  (Note: while GET requests are denied an object can be read indirectly by using an empty PATCH which will return the unmodified object as the result).
+Object update calls use the @PATCH@ method.  A scope of @["PATCH", "/arvados/v1/collections/"]@ will allow updating collections, but not listing or creating them.  (Note: while GET requests are denied an object can be read indirectly by using an empty PATCH which will return the unmodified object as the result).
+
+Similarly, you can use a scope of @["PATCH", "/arvados/v1/collections/zzzzz-4zz18-0123456789abcde"]@ to restrict updates to a single collection.
 
 h2. Creating a scoped token
 
