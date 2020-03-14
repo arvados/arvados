@@ -538,14 +538,17 @@ func (super *Supervisor) autofillConfig(cfg *arvados.Config) error {
 		if svc == &cluster.Services.DispatchCloud && super.ClusterType == "test" {
 			continue
 		}
-		if svc.ExternalURL.Host == "" && (svc == &cluster.Services.Controller ||
-			svc == &cluster.Services.GitHTTP ||
-			svc == &cluster.Services.Keepproxy ||
-			svc == &cluster.Services.WebDAV ||
-			svc == &cluster.Services.WebDAVDownload ||
-			svc == &cluster.Services.Websocket ||
-			svc == &cluster.Services.Workbench1) {
-			svc.ExternalURL = arvados.URL{Scheme: "https", Host: fmt.Sprintf("%s:%s", super.ListenHost, nextPort(super.ListenHost))}
+		if svc.ExternalURL.Host == "" {
+			if (svc == &cluster.Services.Controller ||
+				svc == &cluster.Services.GitHTTP ||
+				svc == &cluster.Services.Keepproxy ||
+				svc == &cluster.Services.WebDAV ||
+				svc == &cluster.Services.WebDAVDownload ||
+				svc == &cluster.Services.Workbench1) {
+				svc.ExternalURL = arvados.URL{Scheme: "https", Host: fmt.Sprintf("%s:%s", super.ListenHost, nextPort(super.ListenHost))}
+			} else if svc == &cluster.Services.Websocket {
+				svc.ExternalURL = arvados.URL{Scheme: "wss", Host: fmt.Sprintf("%s:%s", super.ListenHost, nextPort(super.ListenHost))}
+			}
 		}
 		if len(svc.InternalURLs) == 0 {
 			svc.InternalURLs = map[arvados.URL]arvados.ServiceInstance{
