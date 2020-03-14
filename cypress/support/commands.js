@@ -27,3 +27,24 @@
 //
 // -- This will overwrite an existing command --
 // Cypress.Commands.overwrite("visit", (originalFn, url, options) => { ... })
+
+const YAML = require('yamljs');
+const arvadosFixturesDir = Cypress.env('fixtures');
+const controllerURL = Cypress.env('controller_url');
+const systemToken = Cypress.env('system_token');
+
+Cypress.Commands.add(
+    "arvadosFixture", (name) => {
+        return cy.readFile(arvadosFixturesDir+'/'+name+'.yml').then(
+            function (str) {
+                return YAML.parse(str);
+            }
+        )
+    }
+)
+
+Cypress.Commands.add(
+    "resetDB", () => {
+        cy.request('POST', `${controllerURL}/database/reset?api_token=${systemToken}`);
+    }
+)
