@@ -406,7 +406,11 @@ func (super *Supervisor) RunProgram(ctx context.Context, dir string, output io.W
 	cmdline := fmt.Sprintf("%s", append([]string{prog}, args...))
 	super.logger.WithField("command", cmdline).WithField("dir", dir).Info("executing")
 
-	logprefix := strings.TrimPrefix(prog, super.tempdir+"/bin/")
+	logprefix := prog
+	if logprefix == "sudo" && len(args) >= 3 && args[0] == "-u" {
+		logprefix = args[2]
+	}
+	logprefix = strings.TrimPrefix(logprefix, super.tempdir+"/bin/")
 	if logprefix == "bundle" && len(args) > 2 && args[0] == "exec" {
 		logprefix = args[1]
 	} else if logprefix == "arvados-server" && len(args) > 1 {
