@@ -26,15 +26,18 @@ func (runNginx) String() string {
 }
 
 func (runNginx) Run(ctx context.Context, fail func(error), super *Supervisor) error {
+	err := super.wait(ctx, createCertificates{})
+	if err != nil {
+		return err
+	}
 	vars := map[string]string{
 		"LISTENHOST": super.ListenHost,
-		"SSLCERT":    filepath.Join(super.SourcePath, "services", "api", "tmp", "self-signed.pem"), // TODO: root ca
-		"SSLKEY":     filepath.Join(super.SourcePath, "services", "api", "tmp", "self-signed.key"), // TODO: root ca
+		"SSLCERT":    filepath.Join(super.tempdir, "server.crt"),
+		"SSLKEY":     filepath.Join(super.tempdir, "server.key"),
 		"ACCESSLOG":  filepath.Join(super.tempdir, "nginx_access.log"),
 		"ERRORLOG":   filepath.Join(super.tempdir, "nginx_error.log"),
 		"TMPDIR":     super.tempdir,
 	}
-	var err error
 	for _, cmpt := range []struct {
 		varname string
 		svc     arvados.Service
