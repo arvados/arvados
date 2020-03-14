@@ -14,6 +14,7 @@ import (
 	"git.arvados.org/arvados.git/lib/controller"
 	"git.arvados.org/arvados.git/lib/crunchrun"
 	"git.arvados.org/arvados.git/lib/dispatchcloud"
+	"git.arvados.org/arvados.git/lib/install"
 )
 
 var (
@@ -30,6 +31,7 @@ var (
 		"controller":      controller.Command,
 		"crunch-run":      crunchrun.Command,
 		"dispatch-cloud":  dispatchcloud.Command,
+		"install":         install.Command,
 	})
 )
 

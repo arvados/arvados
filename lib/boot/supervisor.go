@@ -126,7 +126,7 @@ func (super *Supervisor) run(cfg *arvados.Config) error {
 	super.setEnv("ARVADOS_CONFIG", super.configfile)
 	super.setEnv("RAILS_ENV", super.ClusterType)
 	super.setEnv("TMPDIR", super.tempdir)
-	super.prependEnv("PATH", filepath.Join(super.tempdir, "bin")+":")
+	super.prependEnv("PATH", super.tempdir+"/bin:/var/lib/arvados/bin:")
 
 	super.cluster, err = cfg.GetCluster("")
 	if err != nil {
@@ -360,7 +360,11 @@ func (super *Supervisor) setupRubyEnv() error {
 			"GEM_HOME=",
 			"GEM_PATH=",
 		})
-		cmd := exec.Command("gem", "env", "gempath")
+		gem := "gem"
+		if _, err := os.Stat("/var/lib/arvados/bin/gem"); err == nil {
+			gem = "/var/lib/arvados/bin/gem"
+		}
+		cmd := exec.Command(gem, "env", "gempath")
 		cmd.Env = super.environ
 		buf, err := cmd.Output() // /var/lib/arvados/.gem/ruby/2.5.0/bin:...
 		if err != nil || len(buf) == 0 {
