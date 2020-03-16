@@ -590,6 +590,11 @@ setup_virtualenv() {
 }
 
 initialize() {
+    # If dependencies like ruby, go, etc. are installed in
+    # /var/lib/arvados -- presumably by "arvados-server install" --
+    # then we want to use those versions, instead of whatever happens
+    # to be installed in /usr.
+    PATH="/var/lib/arvados/bin:${PATH}"
     sanity_checks
 
     echo "WORKSPACE=$WORKSPACE"
