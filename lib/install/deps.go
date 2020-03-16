@@ -162,17 +162,15 @@ func (installCommand) RunCommand(prog string, args []string, stdin io.Reader, st
 		logger.Print("ruby " + rubyversion + " already installed")
 	} else {
 		err = runBash(`
-mkdir -p /var/lib/arvados/src
-cd /var/lib/arvados/src
-wget -c https://cache.ruby-lang.org/pub/ruby/2.5/ruby-`+rubyversion+`.tar.gz
-tar xzf ruby-`+rubyversion+`.tar.gz
-cd ruby-`+rubyversion+`
+mkdir -p /var/lib/arvados/tmp
+wget --progress=dot:giga -O- https://cache.ruby-lang.org/pub/ruby/2.5/ruby-`+rubyversion+`.tar.gz | tar -C /var/lib/arvados/tmp -xzf -
+cd /var/lib/arvados/tmp/ruby-`+rubyversion+`
 ./configure --disable-install-doc --prefix /var/lib/arvados
 make -j4
 make install
 /var/lib/arvados/bin/gem install bundler
-cd ..
-rm -r ruby-`+rubyversion+` ruby-`+rubyversion+`.tar.gz
+cd /var/lib/arvados/tmp
+rm -r ruby-`+rubyversion+`
 `, stdout, stderr)
 		if err != nil {
 			return 1
@@ -186,7 +184,7 @@ rm -r ruby-`+rubyversion+` ruby-`+rubyversion+`.tar.gz
 		} else {
 			err = runBash(`
 cd /tmp
-wget -O- https://storage.googleapis.com/golang/go`+goversion+`.linux-amd64.tar.gz | tar -C /var/lib/arvados -xzf -
+wget --progress=dot:giga -O- https://storage.googleapis.com/golang/go`+goversion+`.linux-amd64.tar.gz | tar -C /var/lib/arvados -xzf -
 ln -sf /var/lib/arvados/go/bin/* /usr/local/bin/
 `, stdout, stderr)
 			if err != nil {
@@ -200,7 +198,7 @@ ln -sf /var/lib/arvados/go/bin/* /usr/local/bin/
 		} else {
 			err = runBash(`
 PJS=phantomjs-`+pjsversion+`-linux-x86_64
-wget -O- https://bitbucket.org/ariya/phantomjs/downloads/$PJS.tar.bz2 | tar -C /var/lib/arvados -xjf -
+wget --progress=dot:giga -O- https://bitbucket.org/ariya/phantomjs/downloads/$PJS.tar.bz2 | tar -C /var/lib/arvados -xjf -
 ln -sf /var/lib/arvados/$PJS/bin/phantomjs /usr/local/bin/
 `, stdout, stderr)
 			if err != nil {
@@ -214,7 +212,7 @@ ln -sf /var/lib/arvados/$PJS/bin/phantomjs /usr/local/bin/
 		} else {
 			err = runBash(`
 GD=v`+geckoversion+`
-wget -O- https://github.com/mozilla/geckodriver/releases/download/$GD/geckodriver-$GD-linux64.tar.gz | tar -C /var/lib/arvados/bin -xzf - geckodriver
+wget --progress=dot:giga -O- https://github.com/mozilla/geckodriver/releases/download/$GD/geckodriver-$GD-linux64.tar.gz | tar -C /var/lib/arvados/bin -xzf - geckodriver
 ln -sf /var/lib/arvados/bin/geckodriver /usr/local/bin/
 `, stdout, stderr)
 			if err != nil {
@@ -228,7 +226,7 @@ ln -sf /var/lib/arvados/bin/geckodriver /usr/local/bin/
 		} else {
 			err = runBash(`
 NJS=`+nodejsversion+`
-wget -O- https://nodejs.org/dist/${NJS}/node-${NJS}-linux-x64.tar.xz | sudo tar -C /var/lib/arvados -xJf -
+wget --progress=dot:giga -O- https://nodejs.org/dist/${NJS}/node-${NJS}-linux-x64.tar.xz | sudo tar -C /var/lib/arvados -xJf -
 ln -sf /var/lib/arvados/node-${NJS}-linux-x64/bin/{node,npm} /usr/local/bin/
 `, stdout, stderr)
 			if err != nil {
