@@ -14,7 +14,7 @@ describe('Login tests', function() {
         cy.clearLocalStorage()
     })
 
-    it('logs in successfully', function() {
+    it('logs in successfully with correct token', function() {
         const active_user = this.users['active']
         const active_token = this.client_auth['active']['api_token']
         cy.visit('/token/?api_token='+active_token)
@@ -26,6 +26,18 @@ describe('Login tests', function() {
     it('fails to log in with expired token', function() {
         const expired_token = this.client_auth['expired']['api_token']
         cy.visit('/token/?api_token='+expired_token)
+        cy.contains('Please log in')
+        cy.url().should('not.contain', '/projects/')
+    })
+
+    it('fails to log in with no token', function() {
+        cy.visit('/token/?api_token=')
+        cy.contains('Please log in')
+        cy.url().should('not.contain', '/projects/')
+    })
+
+    it('shows login page on first visit', function() {
+        cy.visit('/')
         cy.contains('Please log in')
         cy.url().should('not.contain', '/projects/')
     })
