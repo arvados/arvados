@@ -6,9 +6,11 @@ package boot
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
+	"time"
 
 	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/lib/config"
@@ -56,6 +58,8 @@ func (bootCommand) RunCommand(prog string, args []string, stdin io.Reader, stdou
 	flags.StringVar(&super.ListenHost, "listen-host", "localhost", "host name or interface address for service listeners")
 	flags.StringVar(&super.ControllerAddr, "controller-address", ":0", "desired controller address, `host:port` or `:port`")
 	flags.BoolVar(&super.OwnTemporaryDatabase, "own-temporary-database", false, "bring up a postgres server and create a temporary database")
+	timeout := flags.Duration("timeout", 0, "maximum time to wait for cluster to be ready")
+	shutdown := flags.Bool("shutdown", false, "shut down when the cluster becomes ready")
 	err = flags.Parse(args)
 	if err == flag.ErrHelp {
 		err = nil
@@ -77,14 +81,27 @@ func (bootCommand) RunCommand(prog string, args []string, stdin io.Reader, stdou
 
 	super.Start(ctx, cfg)
 	defer super.Stop()
+
+	var timer *time.Timer
+	if *timeout > 0 {
+		timer = time.AfterFunc(*timeout, super.Stop)
+	}
+
 	url, ok := super.WaitReady()
-	if !ok {
+	if timer != nil && !timer.Stop() {
+		err = errors.New("boot timed out")
+		return 1
+	} else if !ok {
+		err = errors.New("boot failed")
 		return 1
 	}
 	// Write controller URL to stdout. Nothing else goes to
 	// stdout, so this provides an easy way for a calling script
 	// to discover the controller URL when everything is ready.
 	fmt.Fprintln(stdout, url)
+	if *shutdown {
+		super.Stop()
+	}
 	// Wait for signal/crash + orderly shutdown
 	<-super.done
 	return 0
