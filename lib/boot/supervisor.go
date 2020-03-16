@@ -411,7 +411,7 @@ func (super *Supervisor) RunProgram(ctx context.Context, dir string, output io.W
 	super.logger.WithField("command", cmdline).WithField("dir", dir).Info("executing")
 
 	logprefix := prog
-	if logprefix == "sudo" && len(args) >= 3 && args[0] == "-u" {
+	if logprefix == "setuidgid" && len(args) >= 3 {
 		logprefix = args[2]
 	}
 	logprefix = strings.TrimPrefix(logprefix, super.tempdir+"/bin/")
