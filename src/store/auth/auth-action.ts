@@ -78,6 +78,8 @@ export const saveApiToken = (token: string) => (dispatch: Dispatch, getState: ()
     setAuthorizationHeader(svc, token);
     return svc.authService.getUserDetails().then((user: User) => {
         dispatch(authActions.INIT_USER({ user, token }));
+    }).catch(() => {
+        dispatch(authActions.LOGOUT({ deleteLinkData: false }));
     });
 };
 
