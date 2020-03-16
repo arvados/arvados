@@ -233,6 +233,16 @@ ln -sf /var/lib/arvados/node-${NJS}-linux-x64/bin/{node,npm} /usr/local/bin/
 				return 1
 			}
 		}
+
+		wantlocale := "en_US.UTF-8"
+		if havelocales, err := exec.Command("locale", "-a").CombinedOutput(); err == nil && bytes.Contains(havelocales, []byte(wantlocale+"\n")) {
+			logger.Print("locale " + wantlocale + " already installed")
+		} else {
+			err = runBash(`sed -i 's/^# *\(`+wantlocale+`\)/\1/' /etc/locale.gen && locale-gen`, stdout, stderr)
+			if err != nil {
+				return 1
+			}
+		}
 	}
 
 	return 0
