@@ -29,7 +29,6 @@ func (*Suite) TestInstallDeps(c *check.C) {
 	tmp := c.MkDir()
 	script := `
 set -x
-export GOPATH=${GOPATH:-${HOME}/go}
 tmp="` + tmp + `"
 sourcepath="$(realpath ../..)"
 (cd ${sourcepath} && go build -o ${tmp} ./cmd/arvados-server)
