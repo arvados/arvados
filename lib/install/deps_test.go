@@ -2,7 +2,10 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-// Skip this slow test unless invoked as "go test -tags docker":
+// Skip this slow test unless invoked as "go test -tags docker".
+// Depending on host/network speed, Go's default 10m test timeout
+// might be too short; recommend "go test -timeout 20m -tags docker".
+//
 // +build docker
 
 package install
