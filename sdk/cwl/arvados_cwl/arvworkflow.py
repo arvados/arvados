@@ -186,7 +186,7 @@ class ArvadosWorkflow(Workflow):
                                 False)
 
             if self.wf_pdh is None:
-                packed = pack(self.doc_loader, self.tool, self.tool["id"], self.metadata)
+                packed = pack(self.loadingContext, self.tool["id"], loader=self.doc_loader)
 
                 for p in packed["$graph"]:
                     if p["id"] == "#main":

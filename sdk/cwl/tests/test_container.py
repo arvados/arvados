@@ -849,7 +849,7 @@ class TestWorkflow(unittest.TestCase):
         cwltool.process._names = set()
 
     def helper(self, runner, enable_reuse=True):
-        document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.1")
+        document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.0")
 
         make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess,
                                          collection_cache=arvados_cwl.CollectionCache(runner.api, None, 0))
@@ -929,7 +929,7 @@ class TestWorkflow(unittest.TestCase):
                     "--no-container",
                     "--move-outputs",
                     "--preserve-entire-environment",
-                    "workflow.cwl#main",
+                    "workflow.cwl",
                     "cwl.input.yml"
                 ],
                 "container_image": "99999999999999999999999999999993+99",
@@ -1077,7 +1077,7 @@ class TestWorkflow(unittest.TestCase):
                     u'--no-container',
                     u'--move-outputs',
                     u'--preserve-entire-environment',
-                    u'workflow.cwl#main',
+                    u'workflow.cwl',
                     u'cwl.input.yml'
                 ],
                 'use_existing': True,
