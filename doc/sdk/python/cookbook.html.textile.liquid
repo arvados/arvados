@@ -162,7 +162,7 @@ for c in collection:
     print(collection.open(c).read())
 {% endcodeblock %}
 
-h2. Create a collection sharing link
+h2(#sharing_link). Create a collection sharing link
 
 {% codeblock as python %}
 import arvados
@@ -234,4 +234,25 @@ with c.open(filename, "rb") as reader:
             writer.write(content)
             content = reader.read(128*1024)
 print("Finished downloading %s" % filename)
+{% endcodeblock %}
+
+h2. Copy files from a collection a new collection
+
+{% codeblock as python %}
+import arvados.collection
+
+source_collection = "x1u39-4zz18-krzg64ufvehgitl"
+target_project = "x1u39-j7d0g-67q94einb8ptznm"
+target_name = "Files copied from source_collection"
+files_to_copy = ["folder1/sample1/sample1_R1.fastq",
+                 "folder1/sample2/sample2_R1.fastq"]
+
+source = arvados.collection.CollectionReader(source_collection)
+target = arvados.collection.Collection()
+
+for f in files_to_copy:
+    target.copy(f, "", source_collection=source)
+
+target.save_new(name=target_name, owner_uuid=target_project)
+print("Created collection %s" % target.manifest_locator())
 {% endcodeblock %}

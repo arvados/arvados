@@ -38,8 +38,8 @@ EOF
 # set to --no-cache-dir to disable pip caching
 CACHE_FLAG=
 
-MAINTAINER="Ward Vandewege <wvandewege@veritasgenetics.com>"
-VENDOR="Veritas Genetics, Inc."
+MAINTAINER="Arvados Package Maintainers <packaging@arvados.org>"
+VENDOR="The Arvados Project"
 
 # End of user configuration
 
@@ -294,7 +294,7 @@ package_go_binary services/crunch-dispatch-local crunch-dispatch-local \
     "Dispatch Crunch containers on the local system"
 package_go_binary services/crunch-dispatch-slurm crunch-dispatch-slurm \
     "Dispatch Crunch containers to a SLURM cluster"
-package_go_binary services/crunch-run crunch-run \
+package_go_binary cmd/arvados-server crunch-run \
     "Supervise a single Crunch container"
 package_go_binary services/crunchstat crunchstat \
     "Gather cpu/memory/network statistics of running Crunch jobs"
@@ -325,6 +325,9 @@ fpm_build_virtualenv "arvados-python-client" "sdk/python"
 # Arvados cwl runner
 fpm_build_virtualenv "arvados-cwl-runner" "sdk/cwl"
 
+# Arvados cwl runner - Python3 package
+fpm_build_virtualenv "arvados-cwl-runner" "sdk/cwl" "python3"
+
 # The PAM module
 fpm_build_virtualenv "libpam-arvados" "sdk/pam"
 
@@ -349,6 +352,8 @@ if [[ -e "$WORKSPACE/cwltest" ]]; then
 	rm -rf "$WORKSPACE/cwltest"
 fi
 git clone https://github.com/common-workflow-language/cwltest.git
+# last release to support python 2.7
+(cd cwltest && git checkout 1.0.20190906212748)
 # signal to our build script that we want a cwltest executable installed in /usr/bin/
 mkdir cwltest/bin && touch cwltest/bin/cwltest
 fpm_build_virtualenv "cwltest" "cwltest"

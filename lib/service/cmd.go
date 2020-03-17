@@ -12,14 +12,15 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 
-	"git.curoverse.com/arvados.git/lib/cmd"
-	"git.curoverse.com/arvados.git/lib/config"
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
-	"git.curoverse.com/arvados.git/sdk/go/httpserver"
+	"git.arvados.org/arvados.git/lib/cmd"
+	"git.arvados.org/arvados.git/lib/config"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/sdk/go/httpserver"
 	"github.com/coreos/go-systemd/daemon"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
@@ -58,7 +59,7 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 	var err error
 	defer func() {
 		if err != nil {
-			log.WithError(err).Info("exiting")
+			log.WithError(err).Error("exiting")
 		}
 	}()
 
@@ -164,6 +165,14 @@ func getListenAddr(svcs arvados.Services, prog arvados.ServiceName, log logrus.F
 	if !ok {
 		return arvados.URL{}, fmt.Errorf("unknown service name %q", prog)
 	}
+
+	if want := os.Getenv("ARVADOS_SERVICE_INTERNAL_URL"); want == "" {
+	} else if url, err := url.Parse(want); err != nil {
+		return arvados.URL{}, fmt.Errorf("$ARVADOS_SERVICE_INTERNAL_URL (%q): %s", want, err)
+	} else {
+		return arvados.URL(*url), nil
+	}
+
 	errors := []string{}
 	for url := range svc.InternalURLs {
 		listener, err := net.Listen("tcp", url.Host)

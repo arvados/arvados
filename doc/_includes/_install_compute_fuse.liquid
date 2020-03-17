@@ -4,20 +4,14 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-h2. Configure FUSE
+h2(#fuse). Update fuse.conf
 
 FUSE must be configured with the @user_allow_other@ option enabled for Crunch to set up Keep mounts that are readable by containers.  Install this file as @/etc/fuse.conf@:
 
 <notextile>
 <pre>
-# Set the maximum number of FUSE mounts allowed to non-root users.
-# The default is 1000.
-#
-#mount_max = 1000
-
 # Allow non-root users to specify the 'allow_other' or 'allow_root'
 # mount options.
-#
 user_allow_other
 </pre>
 </notextile>

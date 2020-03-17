@@ -7,14 +7,26 @@ if not File.exist?('/usr/bin/git') then
   exit
 end
 
-git_latest_tag = `git tag -l |sort -V -r |head -n1`
-git_latest_tag = git_latest_tag.encode('utf-8').strip
-git_timestamp, git_hash = `git log -n1 --first-parent --format=%ct:%H .`.chomp.split(":")
-git_timestamp = Time.at(git_timestamp.to_i).utc
+git_dir = ENV["GIT_DIR"]
+git_work = ENV["GIT_WORK_TREE"]
+begin
+  ENV["GIT_DIR"] = File.expand_path "#{__dir__}/../../.git"
+  ENV["GIT_WORK_TREE"] = File.expand_path "#{__dir__}/../.."
+  git_timestamp, git_hash = `git log -n1 --first-parent --format=%ct:%H #{__dir__}`.chomp.split(":")
+  if ENV["ARVADOS_BUILDING_VERSION"]
+    version = ENV["ARVADOS_BUILDING_VERSION"]
+  else
+    version = `#{__dir__}/../../build/version-at-commit.sh #{git_hash}`.encode('utf-8').strip
+  end
+  git_timestamp = Time.at(git_timestamp.to_i).utc
+ensure
+  ENV["GIT_DIR"] = git_dir
+  ENV["GIT_WORK_TREE"] = git_work
+end
 
 Gem::Specification.new do |s|
   s.name        = 'arvados'
-  s.version     = "#{git_latest_tag}.#{git_timestamp.strftime('%Y%m%d%H%M%S')}"
+  s.version     = version
   s.date        = git_timestamp.strftime("%Y-%m-%d")
   s.summary     = "Arvados client library"
   s.description = "Arvados client library, git commit #{git_hash}"

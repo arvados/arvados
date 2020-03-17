@@ -10,10 +10,10 @@ import (
 	"net/http"
 	"strings"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/auth"
-	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
-	"git.curoverse.com/arvados.git/sdk/go/httpserver"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/auth"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/sdk/go/httpserver"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 )
@@ -52,6 +52,13 @@ func (rtr *router) addRoutes() {
 			func() interface{} { return &arvados.LoginOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
 				return rtr.fed.Login(ctx, *opts.(*arvados.LoginOptions))
+			},
+		},
+		{
+			arvados.EndpointLogout,
+			func() interface{} { return &arvados.LogoutOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.fed.Logout(ctx, *opts.(*arvados.LogoutOptions))
 			},
 		},
 		{
@@ -298,12 +305,6 @@ func (rtr *router) addRoutes() {
 		},
 	} {
 		rtr.addRoute(route.endpoint, route.defaultOpts, route.exec)
-		if route.endpoint.Method == "PATCH" {
-			// Accept PUT as a synonym for PATCH.
-			endpointPUT := route.endpoint
-			endpointPUT.Method = "PUT"
-			rtr.addRoute(endpointPUT, route.defaultOpts, route.exec)
-		}
 	}
 	rtr.mux.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		httpserver.Errors(w, []string{"API endpoint not found"}, http.StatusNotFound)
@@ -313,8 +314,17 @@ func (rtr *router) addRoutes() {
 	})
 }
 
+var altMethod = map[string]string{
+	"PATCH": "PUT",  // Accept PUT as a synonym for PATCH
+	"GET":   "HEAD", // Accept HEAD at any GET route
+}
+
 func (rtr *router) addRoute(endpoint arvados.APIEndpoint, defaultOpts func() interface{}, exec routableFunc) {
-	rtr.mux.Methods(endpoint.Method).Path("/" + endpoint.Path).HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+	methods := []string{endpoint.Method}
+	if alt, ok := altMethod[endpoint.Method]; ok {
+		methods = append(methods, alt)
+	}
+	rtr.mux.Methods(methods...).Path("/" + endpoint.Path).HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		logger := ctxlog.FromContext(req.Context())
 		params, err := rtr.loadRequestParams(req, endpoint.AttrsKey)
 		if err != nil {
@@ -375,7 +385,7 @@ func (rtr *router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "login", "logout", "auth":
 	default:
 		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, HEAD, PUT, POST, DELETE")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, HEAD, PUT, POST, PATCH, DELETE")
 		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
 		w.Header().Set("Access-Control-Max-Age", "86486400")
 	}

@@ -12,7 +12,7 @@ ENV DEBIAN_FRONTEND noninteractive
 RUN /usr/bin/apt-get update && /usr/bin/apt-get install -q -y python2.7-dev python3 python-setuptools python3-setuptools python3-pip libcurl4-gnutls-dev curl git procps libattr1-dev libfuse-dev libgnutls28-dev libpq-dev python-pip unzip python3-venv python3-dev
 
 # Install virtualenv
-RUN /usr/bin/pip install virtualenv
+RUN /usr/bin/pip install 'virtualenv<20'
 
 # Install RVM
 ADD generated/mpapis.asc /tmp/
@@ -33,7 +33,7 @@ RUN ln -s /usr/local/go/bin/go /usr/local/bin/
 ADD generated/node-v6.11.2-linux-x64.tar.xz /usr/local/
 RUN ln -s /usr/local/node-v6.11.2-linux-x64/bin/* /usr/local/bin/
 
-RUN git clone --depth 1 git://git.curoverse.com/arvados.git /tmp/arvados && cd /tmp/arvados/services/api && /usr/local/rvm/bin/rvm-exec default bundle && cd /tmp/arvados/apps/workbench && /usr/local/rvm/bin/rvm-exec default bundle
+RUN git clone --depth 1 git://git.arvados.org/arvados.git /tmp/arvados && cd /tmp/arvados/services/api && /usr/local/rvm/bin/rvm-exec default bundle && cd /tmp/arvados/apps/workbench && /usr/local/rvm/bin/rvm-exec default bundle
 
 ENV WORKSPACE /arvados
 CMD ["/usr/local/rvm/bin/rvm-exec", "default", "bash", "/jenkins/run-build-packages.sh", "--target", "debian10"]

@@ -193,6 +193,7 @@ run() {
             defaultdev=$(/sbin/ip route|awk '/default/ { print $5 }')
             localip=$(ip addr show $defaultdev | grep 'inet ' | sed 's/ *inet \(.*\)\/.*/\1/')
         fi
+	echo "Public arvbox will use address $localip"
         iptemp=$(tempfile)
         echo $localip > $iptemp
         chmod og+r $iptemp
@@ -201,11 +202,9 @@ run() {
               --publish=3001:3001
               --publish=8000:8000
               --publish=8900:8900
-              --publish=9001:9001
+              --publish=9000:9000
               --publish=9002:9002
-              --publish=25100:25100
-              --publish=25107:25107
-              --publish=25108:25108
+              --publish=25101:25101
               --publish=8001:8001
               --publish=8002:8002"
     else
@@ -237,18 +236,18 @@ run() {
         mkdir -p "$PG_DATA" "$VAR_DATA" "$PASSENGER" "$GEMS" "$PIPCACHE" "$NPMCACHE" "$GOSTUFF" "$RLIBS"
 
         if ! test -d "$ARVADOS_ROOT" ; then
-            git clone https://github.com/curoverse/arvados.git "$ARVADOS_ROOT"
+            git clone https://github.com/arvados/arvados.git "$ARVADOS_ROOT"
         fi
         if ! test -d "$SSO_ROOT" ; then
-            git clone https://github.com/curoverse/sso-devise-omniauth-provider.git "$SSO_ROOT"
+            git clone https://github.com/arvados/sso-devise-omniauth-provider.git "$SSO_ROOT"
         fi
         if ! test -d "$COMPOSER_ROOT" ; then
-            git clone https://github.com/curoverse/composer.git "$COMPOSER_ROOT"
+            git clone https://github.com/arvados/composer.git "$COMPOSER_ROOT"
             git -C "$COMPOSER_ROOT" checkout arvados-fork
             git -C "$COMPOSER_ROOT" pull
         fi
         if ! test -d "$WORKBENCH2_ROOT" ; then
-            git clone https://github.com/curoverse/arvados-workbench2.git "$WORKBENCH2_ROOT"
+            git clone https://github.com/arvados/arvados-workbench2.git "$WORKBENCH2_ROOT"
         fi
 
         if [[ "$CONFIG" = test ]] ; then

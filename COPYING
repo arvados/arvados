@@ -17,3 +17,7 @@ The full license text for each license is available in this directory:
   AGPL-3.0:     agpl-3.0.txt
   Apache-2.0:   apache-2.0.txt
   CC-BY-SA-3.0: cc-by-sa-3.0.txt
+
+As a general rule, code in the sdk/ directory is licensed Apache-2.0,
+documentation in the doc/ directory is licensed CC-BY-SA-3.0, and
+everything else is licensed AGPL-3.0.

@@ -20,6 +20,6 @@ export ARVADOS_API_TOKEN=$(cat /var/lib/arvados/superuser_token)
 export ARVADOS_VIRTUAL_MACHINE_UUID=$(cat /var/lib/arvados/vm-uuid)
 
 while true ; do
-      bundle exec arvados-login-sync
+      arvados-login-sync
       sleep 120
 done

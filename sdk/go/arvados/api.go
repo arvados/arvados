@@ -19,6 +19,7 @@ type APIEndpoint struct {
 var (
 	EndpointConfigGet                     = APIEndpoint{"GET", "arvados/v1/config", ""}
 	EndpointLogin                         = APIEndpoint{"GET", "login", ""}
+	EndpointLogout                        = APIEndpoint{"GET", "logout", ""}
 	EndpointCollectionCreate              = APIEndpoint{"POST", "arvados/v1/collections", "collection"}
 	EndpointCollectionUpdate              = APIEndpoint{"PATCH", "arvados/v1/collections/{uuid}", "collection"}
 	EndpointCollectionGet                 = APIEndpoint{"GET", "arvados/v1/collections/{uuid}", ""}
@@ -49,7 +50,7 @@ var (
 	EndpointUserGetSystem                 = APIEndpoint{"GET", "arvados/v1/users/system", ""}
 	EndpointUserList                      = APIEndpoint{"GET", "arvados/v1/users", ""}
 	EndpointUserMerge                     = APIEndpoint{"POST", "arvados/v1/users/merge", ""}
-	EndpointUserSetup                     = APIEndpoint{"POST", "arvados/v1/users/setup", ""}
+	EndpointUserSetup                     = APIEndpoint{"POST", "arvados/v1/users/setup", "user"}
 	EndpointUserSystem                    = APIEndpoint{"GET", "arvados/v1/users/system", ""}
 	EndpointUserUnsetup                   = APIEndpoint{"POST", "arvados/v1/users/{uuid}/unsetup", ""}
 	EndpointUserUpdate                    = APIEndpoint{"PATCH", "arvados/v1/users/{uuid}", "user"}
@@ -62,6 +63,8 @@ type GetOptions struct {
 	UUID         string   `json:"uuid"`
 	Select       []string `json:"select"`
 	IncludeTrash bool     `json:"include_trash"`
+	ForwardedFor string   `json:"forwarded_for"`
+	Remote       string   `json:"remote"`
 }
 
 type UntrashOptions struct {
@@ -105,19 +108,21 @@ type UserActivateOptions struct {
 }
 
 type UserSetupOptions struct {
-	UUID                  string                 `json:"uuid"`
-	Email                 string                 `json:"email"`
-	OpenIDPrefix          string                 `json:"openid_prefix"`
-	RepoName              string                 `json:"repo_name"`
-	VMUUID                string                 `json:"vm_uuid"`
-	SendNotificationEmail bool                   `json:"send_notification_email"`
+	UUID                  string                 `json:"uuid,omitempty"`
+	Email                 string                 `json:"email,omitempty"`
+	OpenIDPrefix          string                 `json:"openid_prefix,omitempty"`
+	RepoName              string                 `json:"repo_name,omitempty"`
+	VMUUID                string                 `json:"vm_uuid,omitempty"`
+	SendNotificationEmail bool                   `json:"send_notification_email,omitempty"`
 	Attrs                 map[string]interface{} `json:"attrs"`
 }
 
 type UserMergeOptions struct {
-	NewUserUUID  string `json:"new_user_uuid,omitempty"`
-	OldUserUUID  string `json:"old_user_uuid,omitempty"`
-	NewUserToken string `json:"new_user_token,omitempty"`
+	NewUserUUID       string `json:"new_user_uuid,omitempty"`
+	OldUserUUID       string `json:"old_user_uuid,omitempty"`
+	NewOwnerUUID      string `json:"new_owner_uuid,omitempty"`
+	NewUserToken      string `json:"new_user_token,omitempty"`
+	RedirectToNewUser bool   `json:"redirect_to_new_user"`
 }
 
 type UserBatchUpdateOptions struct {
@@ -137,9 +142,14 @@ type LoginOptions struct {
 	State    string `json:"state,omitempty"`  // OAuth2 callback state
 }
 
+type LogoutOptions struct {
+	ReturnTo string `json:"return_to"` // Redirect to this URL after logging out
+}
+
 type API interface {
 	ConfigGet(ctx context.Context) (json.RawMessage, error)
 	Login(ctx context.Context, options LoginOptions) (LoginResponse, error)
+	Logout(ctx context.Context, options LogoutOptions) (LogoutResponse, error)
 	CollectionCreate(ctx context.Context, options CreateOptions) (Collection, error)
 	CollectionUpdate(ctx context.Context, options UpdateOptions) (Collection, error)
 	CollectionGet(ctx context.Context, options GetOptions) (Collection, error)

@@ -20,6 +20,7 @@ type remoteRunner struct {
 	uuid          string
 	executor      Executor
 	envJSON       json.RawMessage
+	runnerCmd     string
 	remoteUser    string
 	timeoutTERM   time.Duration
 	timeoutSignal time.Duration
@@ -59,6 +60,7 @@ func newRemoteRunner(uuid string, wkr *worker) *remoteRunner {
 		uuid:          uuid,
 		executor:      wkr.executor,
 		envJSON:       envJSON,
+		runnerCmd:     wkr.wp.runnerCmd,
 		remoteUser:    wkr.instance.RemoteUser(),
 		timeoutTERM:   wkr.wp.timeoutTERM,
 		timeoutSignal: wkr.wp.timeoutSignal,
@@ -76,7 +78,7 @@ func newRemoteRunner(uuid string, wkr *worker) *remoteRunner {
 // assume the remote process _might_ have started, at least until it
 // probes the worker and finds otherwise.
 func (rr *remoteRunner) Start() {
-	cmd := "crunch-run --detach --stdin-env '" + rr.uuid + "'"
+	cmd := rr.runnerCmd + " --detach --stdin-env '" + rr.uuid + "'"
 	if rr.remoteUser != "root" {
 		cmd = "sudo " + cmd
 	}
@@ -136,7 +138,7 @@ func (rr *remoteRunner) Kill(reason string) {
 func (rr *remoteRunner) kill(sig syscall.Signal) {
 	logger := rr.logger.WithField("Signal", int(sig))
 	logger.Info("sending signal")
-	cmd := fmt.Sprintf("crunch-run --kill %d %s", sig, rr.uuid)
+	cmd := fmt.Sprintf(rr.runnerCmd+" --kill %d %s", sig, rr.uuid)
 	if rr.remoteUser != "root" {
 		cmd = "sudo " + cmd
 	}

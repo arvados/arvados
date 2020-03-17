@@ -6,7 +6,9 @@ package controller
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -15,19 +17,20 @@ import (
 	"testing"
 	"time"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
-	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
-	"git.curoverse.com/arvados.git/sdk/go/httpserver"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvadostest"
+	"git.arvados.org/arvados.git/sdk/go/auth"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/sdk/go/httpserver"
 	"github.com/prometheus/client_golang/prometheus"
 	check "gopkg.in/check.v1"
 )
 
-var enableBetaController14287 bool
+var forceLegacyAPI14 bool
 
 // Gocheck boilerplate
 func Test(t *testing.T) {
-	for _, enableBetaController14287 = range []bool{false, true} {
+	for _, forceLegacyAPI14 = range []bool{false, true} {
 		check.TestingT(t)
 	}
 }
@@ -45,10 +48,9 @@ func (s *HandlerSuite) SetUpTest(c *check.C) {
 	s.ctx, s.cancel = context.WithCancel(context.Background())
 	s.ctx = ctxlog.Context(s.ctx, ctxlog.New(os.Stderr, "json", "debug"))
 	s.cluster = &arvados.Cluster{
-		ClusterID:  "zzzzz",
-		PostgreSQL: integrationTestCluster().PostgreSQL,
-
-		EnableBetaController14287: enableBetaController14287,
+		ClusterID:        "zzzzz",
+		PostgreSQL:       integrationTestCluster().PostgreSQL,
+		ForceLegacyAPI14: forceLegacyAPI14,
 	}
 	s.cluster.TLS.Insecure = true
 	arvadostest.SetServiceURL(&s.cluster.Services.RailsAPI, "https://"+os.Getenv("ARVADOS_TEST_API_HOST"))
@@ -179,10 +181,37 @@ func (s *HandlerSuite) TestProxyRedirect(c *check.C) {
 	c.Check(resp.Header().Get("Location"), check.Matches, `(https://0.0.0.0:1)?/auth/joshid\?return_to=%2Cfoo&?`)
 }
 
+func (s *HandlerSuite) TestLogoutSSO(c *check.C) {
+	s.cluster.Login.ProviderAppID = "test"
+	req := httptest.NewRequest("GET", "https://0.0.0.0:1/logout?return_to=https://example.com/foo", nil)
+	resp := httptest.NewRecorder()
+	s.handler.ServeHTTP(resp, req)
+	if !c.Check(resp.Code, check.Equals, http.StatusFound) {
+		c.Log(resp.Body.String())
+	}
+	c.Check(resp.Header().Get("Location"), check.Equals, "http://localhost:3002/users/sign_out?"+url.Values{"redirect_uri": {"https://example.com/foo"}}.Encode())
+}
+
+func (s *HandlerSuite) TestLogoutGoogle(c *check.C) {
+	if s.cluster.ForceLegacyAPI14 {
+		// Google login N/A
+		return
+	}
+	s.cluster.Login.GoogleClientID = "test"
+	req := httptest.NewRequest("GET", "https://0.0.0.0:1/logout?return_to=https://example.com/foo", nil)
+	resp := httptest.NewRecorder()
+	s.handler.ServeHTTP(resp, req)
+	if !c.Check(resp.Code, check.Equals, http.StatusFound) {
+		c.Log(resp.Body.String())
+	}
+	c.Check(resp.Header().Get("Location"), check.Equals, "https://example.com/foo")
+}
+
 func (s *HandlerSuite) TestValidateV1APIToken(c *check.C) {
 	req := httptest.NewRequest("GET", "/arvados/v1/users/current", nil)
-	user, err := s.handler.(*Handler).validateAPItoken(req, arvadostest.ActiveToken)
+	user, ok, err := s.handler.(*Handler).validateAPItoken(req, arvadostest.ActiveToken)
 	c.Assert(err, check.IsNil)
+	c.Check(ok, check.Equals, true)
 	c.Check(user.Authorization.UUID, check.Equals, arvadostest.ActiveTokenUUID)
 	c.Check(user.Authorization.APIToken, check.Equals, arvadostest.ActiveToken)
 	c.Check(user.Authorization.Scopes, check.DeepEquals, []string{"all"})
@@ -191,13 +220,34 @@ func (s *HandlerSuite) TestValidateV1APIToken(c *check.C) {
 
 func (s *HandlerSuite) TestValidateV2APIToken(c *check.C) {
 	req := httptest.NewRequest("GET", "/arvados/v1/users/current", nil)
-	user, err := s.handler.(*Handler).validateAPItoken(req, arvadostest.ActiveTokenV2)
+	user, ok, err := s.handler.(*Handler).validateAPItoken(req, arvadostest.ActiveTokenV2)
 	c.Assert(err, check.IsNil)
+	c.Check(ok, check.Equals, true)
 	c.Check(user.Authorization.UUID, check.Equals, arvadostest.ActiveTokenUUID)
 	c.Check(user.Authorization.APIToken, check.Equals, arvadostest.ActiveToken)
 	c.Check(user.Authorization.Scopes, check.DeepEquals, []string{"all"})
 	c.Check(user.UUID, check.Equals, arvadostest.ActiveUserUUID)
 	c.Check(user.Authorization.TokenV2(), check.Equals, arvadostest.ActiveTokenV2)
+}
+
+func (s *HandlerSuite) TestValidateRemoteToken(c *check.C) {
+	saltedToken, err := auth.SaltToken(arvadostest.ActiveTokenV2, "abcde")
+	c.Assert(err, check.IsNil)
+	for _, trial := range []struct {
+		code  int
+		token string
+	}{
+		{http.StatusOK, saltedToken},
+		{http.StatusUnauthorized, "bogus"},
+	} {
+		req := httptest.NewRequest("GET", "https://0.0.0.0:1/arvados/v1/users/current?remote=abcde", nil)
+		req.Header.Set("Authorization", "Bearer "+trial.token)
+		resp := httptest.NewRecorder()
+		s.handler.ServeHTTP(resp, req)
+		if !c.Check(resp.Code, check.Equals, trial.code) {
+			c.Logf("HTTP %d: %s", resp.Code, resp.Body.String())
+		}
+	}
 }
 
 func (s *HandlerSuite) TestCreateAPIToken(c *check.C) {
@@ -206,11 +256,92 @@ func (s *HandlerSuite) TestCreateAPIToken(c *check.C) {
 	c.Assert(err, check.IsNil)
 	c.Check(auth.Scopes, check.DeepEquals, []string{"all"})
 
-	user, err := s.handler.(*Handler).validateAPItoken(req, auth.TokenV2())
+	user, ok, err := s.handler.(*Handler).validateAPItoken(req, auth.TokenV2())
 	c.Assert(err, check.IsNil)
+	c.Check(ok, check.Equals, true)
 	c.Check(user.Authorization.UUID, check.Equals, auth.UUID)
 	c.Check(user.Authorization.APIToken, check.Equals, auth.APIToken)
 	c.Check(user.Authorization.Scopes, check.DeepEquals, []string{"all"})
 	c.Check(user.UUID, check.Equals, arvadostest.ActiveUserUUID)
 	c.Check(user.Authorization.TokenV2(), check.Equals, auth.TokenV2())
+}
+
+func (s *HandlerSuite) CheckObjectType(c *check.C, url string, token string, skippedFields map[string]bool) {
+	var proxied, direct map[string]interface{}
+	var err error
+
+	// Get collection from controller
+	req := httptest.NewRequest("GET", url, nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	resp := httptest.NewRecorder()
+	s.handler.ServeHTTP(resp, req)
+	c.Assert(resp.Code, check.Equals, http.StatusOK,
+		check.Commentf("Wasn't able to get data from the controller at %q", url))
+	err = json.Unmarshal(resp.Body.Bytes(), &proxied)
+	c.Check(err, check.Equals, nil)
+
+	// Get collection directly from RailsAPI
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+	resp2, err := client.Get(s.cluster.Services.RailsAPI.ExternalURL.String() + url + "/?api_token=" + token)
+	c.Check(err, check.Equals, nil)
+	defer resp2.Body.Close()
+	db, err := ioutil.ReadAll(resp2.Body)
+	c.Check(err, check.Equals, nil)
+	err = json.Unmarshal(db, &direct)
+	c.Check(err, check.Equals, nil)
+
+	// Check that all RailsAPI provided keys exist on the controller response.
+	for k := range direct {
+		if _, ok := skippedFields[k]; ok {
+			continue
+		} else if val, ok := proxied[k]; ok {
+			if direct["kind"] == "arvados#collection" && k == "manifest_text" {
+				// Tokens differ from request to request
+				c.Check(strings.Split(val.(string), "+A")[0], check.Equals, strings.Split(direct[k].(string), "+A")[0])
+			} else {
+				c.Check(val, check.DeepEquals, direct[k],
+					check.Commentf("RailsAPI %s key %q's value %q differs from controller's %q.", direct["kind"], k, direct[k], val))
+			}
+		} else {
+			c.Errorf("%s's key %q missing on controller's response.", direct["kind"], k)
+		}
+	}
+}
+
+func (s *HandlerSuite) TestGetObjects(c *check.C) {
+	// Get the 1st keep service's uuid from the running test server.
+	req := httptest.NewRequest("GET", "/arvados/v1/keep_services/", nil)
+	req.Header.Set("Authorization", "Bearer "+arvadostest.AdminToken)
+	resp := httptest.NewRecorder()
+	s.handler.ServeHTTP(resp, req)
+	c.Assert(resp.Code, check.Equals, http.StatusOK)
+	var ksList arvados.KeepServiceList
+	json.Unmarshal(resp.Body.Bytes(), &ksList)
+	c.Assert(len(ksList.Items), check.Not(check.Equals), 0)
+	ksUUID := ksList.Items[0].UUID
+
+	testCases := map[string]map[string]bool{
+		"api_clients/" + arvadostest.TrustedWorkbenchAPIClientUUID:     nil,
+		"api_client_authorizations/" + arvadostest.AdminTokenUUID:      nil,
+		"authorized_keys/" + arvadostest.AdminAuthorizedKeysUUID:       nil,
+		"collections/" + arvadostest.CollectionWithUniqueWordsUUID:     map[string]bool{"href": true},
+		"containers/" + arvadostest.RunningContainerUUID:               nil,
+		"container_requests/" + arvadostest.QueuedContainerRequestUUID: nil,
+		"groups/" + arvadostest.AProjectUUID:                           nil,
+		"keep_services/" + ksUUID:                                      nil,
+		"links/" + arvadostest.ActiveUserCanReadAllUsersLinkUUID:       nil,
+		"logs/" + arvadostest.CrunchstatForRunningJobLogUUID:           nil,
+		"nodes/" + arvadostest.IdleNodeUUID:                            nil,
+		"repositories/" + arvadostest.ArvadosRepoUUID:                  nil,
+		"users/" + arvadostest.ActiveUserUUID:                          map[string]bool{"href": true},
+		"virtual_machines/" + arvadostest.TestVMUUID:                   nil,
+		"workflows/" + arvadostest.WorkflowWithDefinitionYAMLUUID:      nil,
+	}
+	for url, skippedFields := range testCases {
+		s.CheckObjectType(c, "/arvados/v1/"+url, arvadostest.AdminToken, skippedFields)
+	}
 }

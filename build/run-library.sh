@@ -57,7 +57,7 @@ version_from_git() {
 
     local git_ts git_hash
     declare $(format_last_commit_here "git_ts=%ct git_hash=%h" "$subdir")
-    ARVADOS_BUILDING_VERSION="$(git tag -l |sort -V -r |head -n1).$(date -ud "@$git_ts" +%Y%m%d%H%M%S)"
+    ARVADOS_BUILDING_VERSION="$($WORKSPACE/build/version-at-commit.sh $git_hash)"
     echo "$ARVADOS_BUILDING_VERSION"
 }
 
@@ -119,7 +119,7 @@ calculate_go_package_version() {
       checkdirs+=("$1")
       shift
   done
-  if grep -qr git.curoverse.com/arvados .; then
+  if grep -qr git.arvados.org/arvados .; then
       checkdirs+=(sdk/go lib)
   fi
   local timestamp=0
@@ -162,7 +162,7 @@ package_go_binary() {
       return 1
     fi
 
-    go get -ldflags "-X git.curoverse.com/arvados.git/lib/cmd.version=${go_package_version} -X main.version=${go_package_version}" "git.curoverse.com/arvados.git/$src_path"
+    go get -ldflags "-X git.arvados.org/arvados.git/lib/cmd.version=${go_package_version} -X main.version=${go_package_version}" "git.arvados.org/arvados.git/$src_path"
 
     local -a switches=()
     systemd_unit="$WORKSPACE/${src_path}/${prog}.service"
@@ -475,9 +475,9 @@ fpm_build_virtualenv () {
   rm -rf dist/*
 
   # Get the latest setuptools
-  if ! $pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U setuptools; then
+  if ! $pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U 'setuptools<45'; then
     echo "Error, unable to upgrade setuptools with"
-    echo "  $pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U setuptools"
+    echo "  $pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U 'setuptools<45'"
     exit 1
   fi
   # filter a useless warning (when building the cwltest package) from the stderr output
@@ -532,9 +532,9 @@ fpm_build_virtualenv () {
   fi
   echo "pip version:        `build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip --version`"
 
-  if ! build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U setuptools; then
+  if ! build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U 'setuptools<45'; then
     echo "Error, unable to upgrade setuptools with"
-    echo "  build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U setuptools"
+    echo "  build/usr/share/$python/dist/$PYTHON_PKG/bin/$pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U 'setuptools<45'"
     exit 1
   fi
   echo "setuptools version: `build/usr/share/$python/dist/$PYTHON_PKG/bin/$python -c 'import setuptools; print(setuptools.__version__)'`"

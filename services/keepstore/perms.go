@@ -7,8 +7,8 @@ package main
 import (
 	"time"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/keepclient"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/keepclient"
 )
 
 // SignLocator takes a blobLocator, an apiToken and an expiry time, and

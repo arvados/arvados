@@ -74,7 +74,7 @@ arguments:
       mkdir -p $ARVBOX_DATA
       if ! test -d $ARVBOX_DATA/arvados ; then
         cd $ARVBOX_DATA
-        git clone https://github.com/curoverse/arvados.git
+        git clone https://github.com/arvados/arvados.git
       fi
       cd $ARVBOX_DATA/arvados
       gitver=`git rev-parse HEAD`

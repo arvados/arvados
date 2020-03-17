@@ -5,7 +5,7 @@
 //
 // How to manually run individual tests against the real cloud:
 //
-// $ go test -v git.curoverse.com/arvados.git/lib/cloud/azure -live-azure-cfg azconfig.yml -check.f=TestCreate
+// $ go test -v git.arvados.org/arvados.git/lib/cloud/azure -live-azure-cfg azconfig.yml -check.f=TestCreate
 //
 // Tests should be run individually and in the order they are listed in the file:
 //
@@ -43,10 +43,10 @@ import (
 	"testing"
 	"time"
 
-	"git.curoverse.com/arvados.git/lib/cloud"
-	"git.curoverse.com/arvados.git/lib/dispatchcloud/test"
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/config"
+	"git.arvados.org/arvados.git/lib/cloud"
+	"git.arvados.org/arvados.git/lib/dispatchcloud/test"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/config"
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-06-01/compute"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-06-01/network"
 	"github.com/Azure/azure-sdk-for-go/storage"

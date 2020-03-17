@@ -12,8 +12,8 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/httpserver"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/httpserver"
 )
 
 //go:generate go run generate.go
@@ -84,7 +84,7 @@ func (conn *Conn) generated_CollectionList(ctx context.Context, options arvados.
 //
 // * len(Order)==0
 //
-// * Each filter must be either "uuid = ..." or "uuid in [...]".
+// * Each filter is either "uuid = ..." or "uuid in [...]".
 //
 // * The maximum possible response size (total number of objects that
 //   could potentially be matched by all of the specified filters)
@@ -181,28 +181,27 @@ func (conn *Conn) splitListRequest(ctx context.Context, opts arvados.ListOptions
 		}
 	}
 
-	if len(todoByRemote) > 1 {
-		if cannotSplit {
-			return httpErrorf(http.StatusBadRequest, "cannot execute federated list query: each filter must be either 'uuid = ...' or 'uuid in [...]'")
-		}
-		if opts.Count != "none" {
-			return httpErrorf(http.StatusBadRequest, "cannot execute federated list query unless count==\"none\"")
-		}
-		if opts.Limit >= 0 || opts.Offset != 0 || len(opts.Order) > 0 {
-			return httpErrorf(http.StatusBadRequest, "cannot execute federated list query with limit, offset, or order parameter")
-		}
-		if max := conn.cluster.API.MaxItemsPerResponse; nUUIDs > max {
-			return httpErrorf(http.StatusBadRequest, "cannot execute federated list query because number of UUIDs (%d) exceeds page size limit %d", nUUIDs, max)
-		}
-		selectingUUID := false
-		for _, attr := range opts.Select {
-			if attr == "uuid" {
-				selectingUUID = true
-			}
-		}
-		if opts.Select != nil && !selectingUUID {
-			return httpErrorf(http.StatusBadRequest, "cannot execute federated list query with a select parameter that does not include uuid")
-		}
+	if len(todoByRemote) == 0 {
+		return nil
+	}
+	if len(todoByRemote) == 1 && todoByRemote[conn.cluster.ClusterID] != nil {
+		// All UUIDs are local, so proxy a single request. The
+		// generic case has some limitations (see below) which
+		// we don't want to impose on local requests.
+		_, err := fn(ctx, conn.cluster.ClusterID, conn.local, opts)
+		return err
+	}
+	if cannotSplit {
+		return httpErrorf(http.StatusBadRequest, "cannot execute federated list query: each filter must be either 'uuid = ...' or 'uuid in [...]'")
+	}
+	if opts.Count != "none" {
+		return httpErrorf(http.StatusBadRequest, "cannot execute federated list query unless count==\"none\"")
+	}
+	if opts.Limit >= 0 || opts.Offset != 0 || len(opts.Order) > 0 {
+		return httpErrorf(http.StatusBadRequest, "cannot execute federated list query with limit, offset, or order parameter")
+	}
+	if max := conn.cluster.API.MaxItemsPerResponse; nUUIDs > max {
+		return httpErrorf(http.StatusBadRequest, "cannot execute federated list query because number of UUIDs (%d) exceeds page size limit %d", nUUIDs, max)
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
@@ -225,6 +224,12 @@ func (conn *Conn) splitListRequest(ctx context.Context, opts arvados.ListOptions
 				return
 			}
 			remoteOpts := opts
+			if remoteOpts.Select != nil {
+				// We always need to select UUIDs to
+				// use the response, even if our
+				// caller doesn't.
+				remoteOpts.Select = append([]string{"uuid"}, remoteOpts.Select...)
+			}
 			for len(todo) > 0 {
 				if len(batch) > len(todo) {
 					// Reduce batch to just the todo's

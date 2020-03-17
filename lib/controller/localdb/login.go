@@ -18,10 +18,10 @@ import (
 	"text/template"
 	"time"
 
-	"git.curoverse.com/arvados.git/lib/controller/rpc"
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/auth"
-	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/lib/controller/rpc"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/auth"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"github.com/coreos/go-oidc"
 	"golang.org/x/oauth2"
 	"google.golang.org/api/option"
@@ -50,6 +50,18 @@ func (ctrl *googleLoginController) getProvider() (*oidc.Provider, error) {
 		ctrl.provider = provider
 	}
 	return ctrl.provider, nil
+}
+
+func (ctrl *googleLoginController) Logout(ctx context.Context, cluster *arvados.Cluster, railsproxy *railsProxy, opts arvados.LogoutOptions) (arvados.LogoutResponse, error) {
+	target := opts.ReturnTo
+	if target == "" {
+		if cluster.Services.Workbench2.ExternalURL.Host != "" {
+			target = cluster.Services.Workbench2.ExternalURL.String()
+		} else {
+			target = cluster.Services.Workbench1.ExternalURL.String()
+		}
+	}
+	return arvados.LogoutResponse{RedirectLocation: target}, nil
 }
 
 func (ctrl *googleLoginController) Login(ctx context.Context, cluster *arvados.Cluster, railsproxy *railsProxy, opts arvados.LoginOptions) (arvados.LoginResponse, error) {

@@ -11,7 +11,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
 )
 
 // KeepService represents a keepstore server that is being rebalanced.

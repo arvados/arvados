@@ -85,12 +85,12 @@ uploadArchives {
         packaging 'jar'
         groupId 'org.arvados'
         description 'Arvados Java SDK'
-        url 'https://github.com/curoverse/arvados'
+        url 'https://github.com/arvados/arvados'
                
        scm {
-         url 'scm:git@https://github.com/curoverse/arvados.git'
-         connection 'scm:git@https://github.com/curoverse/arvados.git'
-         developerConnection 'scm:git@https://github.com/curoverse/arvados.git'
+         url 'scm:git@https://github.com/arvados/arvados.git'
+         connection 'scm:git@https://github.com/arvados/arvados.git'
+         developerConnection 'scm:git@https://github.com/arvados/arvados.git'
        }
 
         licenses {

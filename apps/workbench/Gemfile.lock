@@ -1,9 +1,9 @@
 GIT
-  remote: https://github.com/curoverse/arvados.git
-  revision: dd9f2403f43bcb93da5908ddde57d8c0491bb4c2
+  remote: https://github.com/arvados/arvados.git
+  revision: c210114aa8c77ba0bb8e4d487fc1507b40f9560f
   glob: sdk/ruby/arvados.gemspec
   specs:
-    arvados (1.4.2.20191019025325)
+    arvados (1.5.0.pre20200114202620)
       activesupport (>= 3)
       andand (~> 1.3, >= 1.3.3)
       arvados-google-api-client (>= 0.7, < 0.8.9)
@@ -13,14 +13,14 @@ GIT
       jwt (>= 0.1.5, < 2)
 
 GIT
-  remote: https://github.com/curoverse/nulldb
+  remote: https://github.com/arvados/nulldb
   revision: d8e0073b665acdd2537c5eb15178a60f02f4b413
   specs:
     activerecord-nulldb-adapter (0.3.9)
       activerecord (>= 2.0.0)
 
 GIT
-  remote: https://github.com/curoverse/themes_for_rails
+  remote: https://github.com/arvados/themes_for_rails
   revision: ddf6e592b3b6493ea0c2de7b5d3faa120ed35be0
   specs:
     themes_for_rails (0.5.1)
@@ -150,7 +150,7 @@ GEM
       rails-dom-testing (>= 1, < 3)
       railties (>= 4.2.0)
       thor (>= 0.14, < 2.0)
-    json (2.2.0)
+    json (2.3.0)
     jwt (1.5.6)
     launchy (2.4.3)
       addressable (~> 2.3)
@@ -172,7 +172,7 @@ GEM
       nokogiri (>= 1.5.9)
     mail (2.7.1)
       mini_mime (>= 0.1.1)
-    memoist (0.16.0)
+    memoist (0.16.2)
     metaclass (0.0.4)
     method_source (0.9.2)
     mime-types (3.2.2)
@@ -213,7 +213,7 @@ GEM
       cliver (~> 0.3.1)
       multi_json (~> 1.0)
       websocket-driver (>= 0.2.0)
-    public_suffix (4.0.1)
+    public_suffix (4.0.3)
     rack (2.0.7)
     rack-mini-profiler (1.0.2)
       rack (>= 1.2.0)
@@ -308,7 +308,7 @@ GEM
     thor (0.20.3)
     thread_safe (0.3.6)
     tilt (2.0.9)
-    tzinfo (1.2.5)
+    tzinfo (1.2.6)
       thread_safe (~> 0.1)
     uglifier (2.7.2)
       execjs (>= 0.3.0)
@@ -375,4 +375,4 @@ DEPENDENCIES
   uglifier (~> 2.0)
 
 BUNDLED WITH
-   1.17.3
+   1.11

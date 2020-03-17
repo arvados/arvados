@@ -10,172 +10,48 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-Some Arvados services publish Prometheus/OpenMetrics-compatible metrics at @/metrics@, and some provide additional runtime status at @/status.json@.  Metrics can help you understand how components perform under load, find performance bottlenecks, and detect and diagnose problems.
+Some Arvados services publish Prometheus/OpenMetrics-compatible metrics at @/metrics@. Metrics can help you understand how components perform under load, find performance bottlenecks, and detect and diagnose problems.
 
 To access metrics endpoints, services must be configured with a "management token":management-token.html. When accessing a metrics endpoint, prefix the management token with @"Bearer "@ and supply it in the @Authorization@ request header.
 
-<pre>curl -sfH "Authorization: Bearer your_management_token_goes_here" "https://0.0.0.0:25107/status.json"
+<pre>curl -sfH "Authorization: Bearer your_management_token_goes_here" "https://0.0.0.0:25107/metrics"
 </pre>
 
-h2. Keep-web
+The plain text export format includes "help" messages with a description of each reported metric.
 
-Keep-web exports metrics at @/metrics@ -- e.g., @https://collections.zzzzz.arvadosapi.com/metrics@.
+When configuring Prometheus, use a @bearer_token@ or @bearer_token_file@ option to authenticate requests.
 
-table(table table-bordered table-condensed).
-|_. Name|_. Type|_. Description|
-|request_duration_seconds|summary|elapsed time between receiving a request and sending the last byte of the response body (segmented by HTTP request method and response status code)|
-|time_to_status_seconds|summary|elapsed time between receiving a request and sending the HTTP response status code (segmented by HTTP request method and response status code)|
-
-Metrics in the @arvados_keepweb_collectioncache@ namespace report keep-web's internal cache of Arvados collection metadata.
-
-table(table table-bordered table-condensed).
-|_. Name|_. Type|_. Description|
-|arvados_keepweb_collectioncache_requests|counter|cache lookups|
-|arvados_keepweb_collectioncache_api_calls|counter|outgoing API calls|
-|arvados_keepweb_collectioncache_permission_hits|counter|collection-to-permission cache hits|
-|arvados_keepweb_collectioncache_pdh_hits|counter|UUID-to-PDH cache hits|
-|arvados_keepweb_collectioncache_hits|counter|PDH-to-manifest cache hits|
-|arvados_keepweb_collectioncache_cached_manifests|gauge|number of collections in the cache|
-|arvados_keepweb_collectioncache_cached_manifest_bytes|gauge|memory consumed by cached collection manifests|
-
-h2. Keepstore
-
-Keepstore exports metrics at @/status.json@ -- e.g., @http://keep0.zzzzz.arvadosapi.com:25107/status.json@.
-
-h3. Root
-
-table(table table-bordered table-condensed).
-|_. Attribute|_. Type|_. Description|
-|Volumes|         array of "volumeStatusEnt":#volumeStatusEnt ||
-|BufferPool|      "PoolStatus":#PoolStatus ||
-|PullQueue|       "WorkQueueStatus":#WorkQueueStatus ||
-|TrashQueue|      "WorkQueueStatus":#WorkQueueStatus ||
-|RequestsCurrent| int ||
-|RequestsMax|     int ||
-|Version|         string ||
-
-h3(#volumeStatusEnt). volumeStatusEnt
-
-table(table table-bordered table-condensed).
-|_. Attribute|_. Type|_. Description|
-|Label|         string||
-|Status|        "VolumeStatus":#VolumeStatus ||
-|VolumeStats|   "ioStats":#ioStats ||
-
-h3(#VolumeStatus). VolumeStatus
-
-table(table table-bordered table-condensed).
-|_. Attribute|_. Type|_. Description|
-|MountPoint| string||
-|DeviceNum|  uint64||
-|BytesFree|  uint64||
-|BytesUsed|  uint64||
-
-h3(#ioStats). ioStats
-
-table(table table-bordered table-condensed).
-|_. Attribute|_. Type|_. Description|
-|Errors|     uint64||
-|Ops|        uint64||
-|CompareOps| uint64||
-|GetOps|     uint64||
-|PutOps|     uint64||
-|TouchOps|   uint64||
-|InBytes|    uint64||
-|OutBytes|   uint64||
-
-h3(#PoolStatus). PoolStatus
-
-table(table table-bordered table-condensed).
-|_. Attribute|_. Type|_. Description|
-|BytesAllocatedCumulative|	 uint64||
-|BuffersMax|	int||
-|BuffersInUse|	int||
-
-h3(#WorkQueueStatus). WorkQueueStatus
-
-table(table table-bordered table-condensed).
-|_. Attribute|_. Type|_. Description|
-|InProgress| int||
-|Queued|     int||
-
-h3. Example response
-
-<pre>
-{
-  "Volumes": [
-    {
-      "Label": "[UnixVolume /var/lib/arvados/keep0]",
-      "Status": {
-        "MountPoint": "/var/lib/arvados/keep0",
-        "DeviceNum": 65029,
-        "BytesFree": 222532972544,
-        "BytesUsed": 435456679936
-      },
-      "InternalStats": {
-        "Errors": 0,
-        "InBytes": 1111,
-        "OutBytes": 0,
-        "OpenOps": 1,
-        "StatOps": 4,
-        "FlockOps": 0,
-        "UtimesOps": 0,
-        "CreateOps": 0,
-        "RenameOps": 0,
-        "UnlinkOps": 0,
-        "ReaddirOps": 0
-      }
-    }
-  ],
-  "BufferPool": {
-    "BytesAllocatedCumulative": 67108864,
-    "BuffersMax": 20,
-    "BuffersInUse": 0
-  },
-  "PullQueue": {
-    "InProgress": 0,
-    "Queued": 0
-  },
-  "TrashQueue": {
-    "InProgress": 0,
-    "Queued": 0
-  },
-  "RequestsCurrent": 1,
-  "RequestsMax": 40,
-  "Version": "dev"
-}
+<pre>scrape_configs:
+  - job_name: keepstore
+    bearer_token: your_management_token_goes_here
+    static_configs:
+    - targets:
+      - "keep0.ClusterID.example.com:25107"
 </pre>
 
-h2. Keep-balance
-
-Keep-balance exports metrics at @/metrics@ -- e.g., @http://keep.zzzzz.arvadosapi.com:9005/metrics@.
-
-table(table table-bordered table-condensed).
-|_. Name|_. Type|_. Description|
-|arvados_keep_total_{replicas,blocks,bytes}|gauge|stored data (stored in backend volumes, whether referenced or not)|
-|arvados_keep_garbage_{replicas,blocks,bytes}|gauge|garbage data (unreferenced, and old enough to trash)|
-|arvados_keep_transient_{replicas,blocks,bytes}|gauge|transient data (unreferenced, but too new to trash)|
-|arvados_keep_overreplicated_{replicas,blocks,bytes}|gauge|overreplicated data (more replicas exist than are needed)|
-|arvados_keep_underreplicated_{replicas,blocks,bytes}|gauge|underreplicated data (fewer replicas exist than are needed)|
-|arvados_keep_lost_{replicas,blocks,bytes}|gauge|lost data (referenced by collections, but not found on any backend volume)|
-|arvados_keep_dedup_block_ratio|gauge|deduplication ratio (block references in collections &divide; distinct blocks referenced)|
-|arvados_keep_dedup_byte_ratio|gauge|deduplication ratio (block references in collections &divide; distinct blocks referenced, weighted by block size)|
-|arvados_keepbalance_get_state_seconds|summary|time to get all collections and keepstore volume indexes for one iteration|
-|arvados_keepbalance_changeset_compute_seconds|summary|time to compute changesets for one iteration|
-|arvados_keepbalance_send_pull_list_seconds|summary|time to send pull lists to all keepstore servers for one iteration|
-|arvados_keepbalance_send_trash_list_seconds|summary|time to send trash lists to all keepstore servers for one iteration|
-|arvados_keepbalance_sweep_seconds|summary|time to complete one iteration|
-
-Each @arvados_keep_@ storage state statistic above is presented as a set of three metrics:
-
-table(table table-bordered table-condensed).
-|*_blocks|distinct block hashes|
-|*_bytes|bytes stored on backend volumes|
-|*_replicas|objects/files stored on backend volumes|
+table(table table-bordered table-condensed table-hover).
+|_. Component|_. Metrics endpoint|
+|arvados-api-server||
+|arvados-controller|✓|
+|arvados-dispatch-cloud|✓|
+|arvados-git-httpd||
+|arvados-node-manager||
+|arvados-ws||
+|composer||
+|keepproxy||
+|keepstore|✓|
+|keep-balance|✓|
+|keep-web|✓|
+|sso-provider||
+|workbench1||
+|workbench2||
 
 h2. Node manager
 
-The node manager status end point provides a snapshot of internal status at the time of the most recent wishlist update.
+The node manager does not export prometheus-style metrics, but its @/status.json@ endpoint provides a snapshot of internal status at the time of the most recent wishlist update.
+
+<pre>curl -sfH "Authorization: Bearer your_management_token_goes_here" "http://0.0.0.0:8989/status.json"
+</pre>
 
 table(table table-bordered table-condensed).
 |_. Attribute|_. Type|_. Description|

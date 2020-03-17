@@ -301,7 +301,7 @@ class Mount(object):
             return
 
         e = self.operations.inodes.add_entry(Directory(
-            llfuse.ROOT_INODE, self.operations.inodes))
+            llfuse.ROOT_INODE, self.operations.inodes, self.api.config))
         dir_args[0] = e.inode
 
         for name in self.args.mount_by_id:

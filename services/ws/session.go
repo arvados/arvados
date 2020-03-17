@@ -7,7 +7,7 @@ package main
 import (
 	"database/sql"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
 )
 
 type session interface {

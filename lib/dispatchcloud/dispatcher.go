@@ -14,15 +14,15 @@ import (
 	"sync"
 	"time"
 
-	"git.curoverse.com/arvados.git/lib/cloud"
-	"git.curoverse.com/arvados.git/lib/dispatchcloud/container"
-	"git.curoverse.com/arvados.git/lib/dispatchcloud/scheduler"
-	"git.curoverse.com/arvados.git/lib/dispatchcloud/ssh_executor"
-	"git.curoverse.com/arvados.git/lib/dispatchcloud/worker"
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/auth"
-	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
-	"git.curoverse.com/arvados.git/sdk/go/httpserver"
+	"git.arvados.org/arvados.git/lib/cloud"
+	"git.arvados.org/arvados.git/lib/dispatchcloud/container"
+	"git.arvados.org/arvados.git/lib/dispatchcloud/scheduler"
+	"git.arvados.org/arvados.git/lib/dispatchcloud/ssh_executor"
+	"git.arvados.org/arvados.git/lib/dispatchcloud/worker"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/auth"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/sdk/go/httpserver"
 	"github.com/julienschmidt/httprouter"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -37,6 +37,7 @@ const (
 
 type pool interface {
 	scheduler.WorkerPool
+	CheckHealth() error
 	Instances() []worker.InstanceView
 	SetIdleBehavior(cloud.InstanceID, worker.IdleBehavior) error
 	KillInstance(id cloud.InstanceID, reason string) error
@@ -78,7 +79,7 @@ func (disp *dispatcher) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // CheckHealth implements service.Handler.
 func (disp *dispatcher) CheckHealth() error {
 	disp.Start()
-	return nil
+	return disp.pool.CheckHealth()
 }
 
 // Stop dispatching containers and release resources. Typically used
@@ -147,7 +148,7 @@ func (disp *dispatcher) initialize() {
 	} else {
 		mux := httprouter.New()
 		mux.HandlerFunc("GET", "/arvados/v1/dispatch/containers", disp.apiContainers)
-		mux.HandlerFunc("POST", "/arvados/v1/dispatch/containers/kill", disp.apiInstanceKill)
+		mux.HandlerFunc("POST", "/arvados/v1/dispatch/containers/kill", disp.apiContainerKill)
 		mux.HandlerFunc("GET", "/arvados/v1/dispatch/instances", disp.apiInstances)
 		mux.HandlerFunc("POST", "/arvados/v1/dispatch/instances/hold", disp.apiInstanceHold)
 		mux.HandlerFunc("POST", "/arvados/v1/dispatch/instances/drain", disp.apiInstanceDrain)

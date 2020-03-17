@@ -11,7 +11,7 @@ import (
 	"io"
 	"strings"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
 )
 
 // ExportJSON writes a JSON object with the safe (non-secret) portions
@@ -92,6 +92,7 @@ var whitelist = map[string]bool{
 	"Collections.CollectionVersioning":             false,
 	"Collections.DefaultReplication":               true,
 	"Collections.DefaultTrashLifetime":             true,
+	"Collections.ForwardSlashNameSubstitution":     true,
 	"Collections.ManagedProperties":                true,
 	"Collections.ManagedProperties.*":              true,
 	"Collections.ManagedProperties.*.*":            true,
@@ -124,7 +125,7 @@ var whitelist = map[string]bool{
 	"Containers.SupportedDockerImageFormats":       true,
 	"Containers.SupportedDockerImageFormats.*":     true,
 	"Containers.UsePreemptibleInstances":           true,
-	"EnableBetaController14287":                    false,
+	"ForceLegacyAPI14":                             false,
 	"Git":                                          false,
 	"InstanceTypes":                                true,
 	"InstanceTypes.*":                              true,
@@ -137,7 +138,14 @@ var whitelist = map[string]bool{
 	"Login.ProviderAppSecret":                      false,
 	"Login.LoginCluster":                           true,
 	"Login.RemoteTokenRefresh":                     true,
-	"Mail":                                         false,
+	"Mail":                                         true,
+	"Mail.MailchimpAPIKey":                         false,
+	"Mail.MailchimpListID":                         false,
+	"Mail.SendUserSetupNotificationEmail":          false,
+	"Mail.IssueReporterEmailFrom":                  false,
+	"Mail.IssueReporterEmailTo":                    false,
+	"Mail.SupportEmailAddress":                     true,
+	"Mail.EmailFrom":                               false,
 	"ManagementToken":                              false,
 	"PostgreSQL":                                   false,
 	"RemoteClusters":                               true,
@@ -213,6 +221,8 @@ var whitelist = map[string]bool{
 	"Workbench.VocabularyURL":                      true,
 	"Workbench.WelcomePageHTML":                    true,
 	"Workbench.InactivePageHTML":                   true,
+	"Workbench.SSHHelpPageHTML":                    true,
+	"Workbench.SSHHelpHostSuffix":                  true,
 }
 
 func redactUnsafe(m map[string]interface{}, mPrefix, lookupPrefix string) error {

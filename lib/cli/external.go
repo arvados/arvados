@@ -12,7 +12,7 @@ import (
 	"strings"
 	"syscall"
 
-	"git.curoverse.com/arvados.git/lib/cmd"
+	"git.arvados.org/arvados.git/lib/cmd"
 )
 
 var (

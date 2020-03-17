@@ -12,36 +12,31 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 The Ruby SDK provides a generic set of wrappers so you can make API calls easily.
 
-h3. Installation
+h2. Installation
 
 If you are logged in to an Arvados VM, the Ruby SDK should be installed.
 
 To use it elsewhere, you can either install the @arvados@ gem via RubyGems or build and install the package using the arvados source tree.
 
-h4. Prerequisites: Ruby &gt;= 2.0.0
+h3. Prerequisites
 
-You can use "RVM":http://rvm.io/rvm/install to install and manage Ruby versions.
+# "Install Ruby":../../install/ruby.html
 
-h4. Option 1: install with RubyGems
+The SDK uses @curl@ which depends on the @libcurl@ C library.  To build the module you may have to install additional packages.  On Debian 9 this is:
+
+<pre>
+$ apt-get install build-essential libcurl4-openssl-dev
+</pre>
+
+h3. Install with RubyGems
 
 <notextile>
 <pre>
-$ <code class="userinput">sudo -i gem install arvados</code>
+# <code class="userinput">gem install arvados</code>
 </pre>
 </notextile>
 
-h4. Option 2: build and install from source
-
-<notextile>
-<pre>
-$ <code class="userinput">git clone https://github.com/curoverse/arvados.git</code>
-$ <code class="userinput">cd arvados/sdk/ruby</code>
-$ <code class="userinput">gem build arvados.gemspec</code>
-$ <code class="userinput">sudo -i gem install arvados-*.gem</code>
-</pre>
-</notextile>
-
-h4. Test installation
+h3. Test installation
 
 If the SDK is installed, @ruby -r arvados -e 'puts "OK!"'@ should produce no errors.
 

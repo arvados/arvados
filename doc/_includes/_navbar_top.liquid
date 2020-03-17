@@ -36,7 +36,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
         <li><a href="https://arvados.org" style="padding-left: 2em">arvados.org&nbsp;&raquo;</a></li>
       </ul>
 
-      <div class="pull-right" style="padding-top: 6px">
+      <div class="pull-right" style="padding-top: 6px; padding-right: 25px">
         <form method="get" action="https://www.google.com/search">
           <div class="input-group" style="width: 220px">
             <input type="text" class="form-control" name="q" placeholder="search">
@@ -48,5 +48,24 @@ SPDX-License-Identifier: CC-BY-SA-3.0
         </form>
       </div>
     </div>
+
+   <div class="alert alert-block alert-info" style="display: none;" id="annotate-notify">
+     <div style="margin-top: -26px; font-size: 12pt">Hey!  You can use the annotation sidebar from <a href="https://hypothes.is">hypothes.is</a> to make public comments and private notes
+       <span style="font-size: 32pt">&rarr;</span></div>
+      <button type="button" class="close" onclick="dismissAnnotateNotify()">Got it</button>
+   </div>
+
+   <script>
+     function dismissAnnotateNotify() {
+	 window.localStorage.setItem("dismiss-annotate-notify", "true");
+         $('#annotate-notify').attr('style', "display: none;");
+     }
+     if (window.localStorage.getItem("dismiss-annotate-notify") === "true") {
+	 dismissAnnotateNotify();
+     } else {
+         $('#annotate-notify').attr('style', "display: inline-block;");
+     }
+   </script>
+
   </div>
 </div>

@@ -261,6 +261,67 @@ class ContainerRequestTest < ActiveSupport::TestCase
     assert_equal log.owner_uuid, project.uuid, "Container log should be copied to #{project.uuid}"
   end
 
+  # This tests bug report #16144
+  test "Request is finalized when its container is completed even when log & output don't exist" do
+    set_user_from_auth :active
+    project = groups(:private)
+    cr = create_minimal_req!(owner_uuid: project.uuid,
+                             priority: 1,
+                             state: "Committed")
+    assert_equal users(:active).uuid, cr.modified_by_user_uuid
+
+    output_pdh = '1f4b0bc7583c2a7f9102c395f4ffc5e3+45'
+    log_pdh = 'fa7aeb5140e2848d39b416daeef4ffc5+45'
+
+    c = act_as_system_user do
+      c = Container.find_by_uuid(cr.container_uuid)
+      c.update_attributes!(state: Container::Locked)
+      c.update_attributes!(state: Container::Running,
+                           output: output_pdh,
+                           log: log_pdh)
+      c
+    end
+
+    cr.reload
+    assert_equal "Committed", cr.state
+
+    act_as_system_user do
+      Collection.where(portable_data_hash: output_pdh).delete_all
+      Collection.where(portable_data_hash: log_pdh).delete_all
+      c.update_attributes!(state: Container::Complete)
+    end
+
+    cr.reload
+    assert_equal "Final", cr.state
+  end
+
+  # This tests bug report #16144
+  test "Can destroy CR even if its container doesn't exist" do
+    set_user_from_auth :active
+    project = groups(:private)
+    cr = create_minimal_req!(owner_uuid: project.uuid,
+                             priority: 1,
+                             state: "Committed")
+    assert_equal users(:active).uuid, cr.modified_by_user_uuid
+
+    c = act_as_system_user do
+      c = Container.find_by_uuid(cr.container_uuid)
+      c.update_attributes!(state: Container::Locked)
+      c.update_attributes!(state: Container::Running)
+      c
+    end
+
+    cr.reload
+    assert_equal "Committed", cr.state
+
+    cr_uuid = cr.uuid
+    act_as_system_user do
+      Container.find_by_uuid(cr.container_uuid).destroy
+      cr.destroy
+    end
+    assert_nil ContainerRequest.find_by_uuid(cr_uuid)
+  end
+
   test "Container makes container request, then is cancelled" do
     set_user_from_auth :active
     cr = create_minimal_req!(priority: 5, state: "Committed", container_count_max: 1)

@@ -24,3 +24,12 @@ func (resp LoginResponse) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		w.Write(resp.HTML.Bytes())
 	}
 }
+
+type LogoutResponse struct {
+	RedirectLocation string
+}
+
+func (resp LogoutResponse) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	w.Header().Set("Location", resp.RedirectLocation)
+	w.WriteHeader(http.StatusFound)
+}

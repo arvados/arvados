@@ -6,11 +6,13 @@ package arvados
 
 import (
 	"bufio"
+	"crypto/md5"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
-	"git.curoverse.com/arvados.git/sdk/go/blockdigest"
+	"git.arvados.org/arvados.git/sdk/go/blockdigest"
 )
 
 // Collection is an arvados#collection resource.
@@ -32,10 +34,17 @@ type Collection struct {
 	ReplicationDesired        *int                   `json:"replication_desired"`
 	StorageClassesDesired     []string               `json:"storage_classes_desired"`
 	StorageClassesConfirmed   []string               `json:"storage_classes_confirmed"`
-	StorageClassesConfirmedAt time.Time              `json:"storage_classes_confirmed_at"`
+	StorageClassesConfirmedAt *time.Time             `json:"storage_classes_confirmed_at"`
 	DeleteAt                  *time.Time             `json:"delete_at"`
 	IsTrashed                 bool                   `json:"is_trashed"`
 	Properties                map[string]interface{} `json:"properties"`
+	WritableBy                []string               `json:"writable_by,omitempty"`
+	FileCount                 int                    `json:"file_count"`
+	FileSizeTotal             int64                  `json:"file_size_total"`
+	Version                   int                    `json:"version"`
+	PreserveVersion           bool                   `json:"preserve_version"`
+	CurrentVersionUUID        string                 `json:"current_version_uuid"`
+	Description               string                 `json:"description"`
 }
 
 func (c Collection) resourceName() string {
@@ -82,4 +91,29 @@ type CollectionList struct {
 	ItemsAvailable int          `json:"items_available"`
 	Offset         int          `json:"offset"`
 	Limit          int          `json:"limit"`
+}
+
+var (
+	blkRe = regexp.MustCompile(`^ [0-9a-f]{32}\+\d+`)
+	tokRe = regexp.MustCompile(` ?[^ ]*`)
+)
+
+// PortableDataHash computes the portable data hash of the given
+// manifest.
+func PortableDataHash(mt string) string {
+	h := md5.New()
+	size := 0
+	_ = tokRe.ReplaceAllFunc([]byte(mt), func(tok []byte) []byte {
+		if m := blkRe.Find(tok); m != nil {
+			// write hash+size, ignore remaining block hints
+			tok = m
+		}
+		n, err := h.Write(tok)
+		if err != nil {
+			panic(err)
+		}
+		size += n
+		return nil
+	})
+	return fmt.Sprintf("%x+%d", h.Sum(nil), size)
 }

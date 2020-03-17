@@ -5,14 +5,18 @@
 package worker
 
 import (
+	"bytes"
+	"crypto/md5"
 	"errors"
+	"fmt"
 	"io"
+	"strings"
 	"time"
 
-	"git.curoverse.com/arvados.git/lib/cloud"
-	"git.curoverse.com/arvados.git/lib/dispatchcloud/test"
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/lib/cloud"
+	"git.arvados.org/arvados.git/lib/dispatchcloud/test"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	check "gopkg.in/check.v1"
 )
 
@@ -38,7 +42,11 @@ func (suite *WorkerSuite) TestProbeAndUpdate(c *check.C) {
 		running         int
 		starting        int
 		respBoot        stubResp // zero value is success
+		respDeploy      stubResp // zero value is success
 		respRun         stubResp // zero value is success + nothing running
+		respRunDeployed stubResp
+		deployRunner    []byte
+		expectStdin     []byte
 		expectState     State
 		expectRunning   int
 	}
@@ -46,7 +54,7 @@ func (suite *WorkerSuite) TestProbeAndUpdate(c *check.C) {
 	errFail := errors.New("failed")
 	respFail := stubResp{"", "command failed\n", errFail}
 	respContainerRunning := stubResp{"zzzzz-dz642-abcdefghijklmno\n", "", nil}
-	for _, trial := range []trialT{
+	for idx, trial := range []trialT{
 		{
 			testCaseComment: "Unknown, probes fail",
 			state:           StateUnknown,
@@ -185,12 +193,40 @@ func (suite *WorkerSuite) TestProbeAndUpdate(c *check.C) {
 			starting:        1,
 			expectState:     StateRunning,
 		},
+		{
+			testCaseComment: "Booting, boot probe succeeds, deployRunner succeeds, run probe succeeds",
+			state:           StateBooting,
+			deployRunner:    []byte("ELF"),
+			expectStdin:     []byte("ELF"),
+			respRun:         respFail,
+			respRunDeployed: respContainerRunning,
+			expectRunning:   1,
+			expectState:     StateRunning,
+		},
+		{
+			testCaseComment: "Booting, boot probe succeeds, deployRunner fails",
+			state:           StateBooting,
+			deployRunner:    []byte("ELF"),
+			respDeploy:      respFail,
+			expectStdin:     []byte("ELF"),
+			expectState:     StateBooting,
+		},
+		{
+			testCaseComment: "Booting, boot probe succeeds, deployRunner skipped, run probe succeeds",
+			state:           StateBooting,
+			deployRunner:    nil,
+			respDeploy:      respFail,
+			expectState:     StateIdle,
+		},
 	} {
-		c.Logf("------- %#v", trial)
+		c.Logf("------- trial %d: %#v", idx, trial)
 		ctime := time.Now().Add(-trial.age)
-		exr := stubExecutor{
-			"bootprobe":         trial.respBoot,
-			"crunch-run --list": trial.respRun,
+		exr := &stubExecutor{
+			response: map[string]stubResp{
+				"bootprobe":         trial.respBoot,
+				"crunch-run --list": trial.respRun,
+				"{deploy}":          trial.respDeploy,
+			},
 		}
 		wp := &Pool{
 			arvClient:        ac,
@@ -199,6 +235,14 @@ func (suite *WorkerSuite) TestProbeAndUpdate(c *check.C) {
 			timeoutBooting:   bootTimeout,
 			timeoutProbe:     probeTimeout,
 			exited:           map[string]time.Time{},
+			runnerCmd:        "crunch-run",
+			runnerData:       trial.deployRunner,
+			runnerMD5:        md5.Sum(trial.deployRunner),
+		}
+		if trial.deployRunner != nil {
+			svHash := md5.Sum(trial.deployRunner)
+			wp.runnerCmd = fmt.Sprintf("/var/run/arvados/crunch-run~%x", svHash)
+			exr.response[wp.runnerCmd+" --list"] = trial.respRunDeployed
 		}
 		wkr := &worker{
 			logger:   logger,
@@ -226,6 +270,7 @@ func (suite *WorkerSuite) TestProbeAndUpdate(c *check.C) {
 		wkr.probeAndUpdate()
 		c.Check(wkr.state, check.Equals, trial.expectState)
 		c.Check(len(wkr.running), check.Equals, trial.expectRunning)
+		c.Check(exr.stdin.String(), check.Equals, string(trial.expectStdin))
 	}
 }
 
@@ -234,14 +279,27 @@ type stubResp struct {
 	stderr string
 	err    error
 }
-type stubExecutor map[string]stubResp
 
-func (se stubExecutor) SetTarget(cloud.ExecutorTarget) {}
-func (se stubExecutor) Close()                         {}
-func (se stubExecutor) Execute(env map[string]string, cmd string, stdin io.Reader) (stdout, stderr []byte, err error) {
-	resp, ok := se[cmd]
+type stubExecutor struct {
+	response map[string]stubResp
+	stdin    bytes.Buffer
+}
+
+func (se *stubExecutor) SetTarget(cloud.ExecutorTarget) {}
+func (se *stubExecutor) Close()                         {}
+func (se *stubExecutor) Execute(env map[string]string, cmd string, stdin io.Reader) (stdout, stderr []byte, err error) {
+	if stdin != nil {
+		_, err = io.Copy(&se.stdin, stdin)
+		if err != nil {
+			return nil, []byte(err.Error()), err
+		}
+	}
+	resp, ok := se.response[cmd]
+	if !ok && strings.Contains(cmd, `; cat >"$dstfile"`) {
+		resp, ok = se.response["{deploy}"]
+	}
 	if !ok {
-		return nil, []byte("command not found\n"), errors.New("command not found")
+		return nil, []byte(fmt.Sprintf("%s: command not found\n", cmd)), errors.New("command not found")
 	}
 	return []byte(resp.stdout), []byte(resp.stderr), resp.err
 }

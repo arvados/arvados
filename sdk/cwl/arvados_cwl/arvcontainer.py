@@ -33,6 +33,7 @@ from .runner import Runner, arvados_jobs_image, packed_workflow, trim_anonymous_
 from .fsaccess import CollectionFetcher
 from .pathmapper import NoFollowPathMapper, trim_listing
 from .perf import Perf
+from ._version import __version__
 
 logger = logging.getLogger('arvados.cwl-runner')
 metrics = logging.getLogger('arvados.cwl-runner.metrics')
@@ -218,7 +219,7 @@ class ArvadosContainer(JobBase):
 
         (docker_req, docker_is_req) = self.get_requirement("DockerRequirement")
         if not docker_req:
-            docker_req = {"dockerImageId": "arvados/jobs"}
+            docker_req = {"dockerImageId": "arvados/jobs:"+__version__}
 
         container_request["container_image"] = arv_docker_get_image(self.arvrunner.api,
                                                                     docker_req,

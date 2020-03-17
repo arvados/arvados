@@ -7,7 +7,7 @@ package main
 import (
 	"net/http"
 
-	"git.curoverse.com/arvados.git/sdk/go/keepclient"
+	"git.arvados.org/arvados.git/sdk/go/keepclient"
 )
 
 var viaAlias = "keepproxy"

@@ -39,9 +39,50 @@ h3. permission
 
 See "permission links":{{site.baseurl}}/api/permission-model.html#links section of the permission model.
 
+h3. star
+
+A **star** link is a shortcut to a project that is displayed in the user interface (Workbench) as "favorites".  Users can mark their own favorites (implemented by creating or deleting **star** links).
+
+An admin can also create **star** links owned by the "All Users" group, these will be displayed to all users that have permission to read the project that has been favorited.
+
+The schema for a star link is:
+
+table(table table-bordered table-condensed).
+|_. Field|_. Value|_. Description|
+|owner_uuid|user or group uuid|Either the user that owns the favorite, or the "All Users" group for public favorites.|
+|head_uuid|project uuid|The project being favorited|
+|link_class|string of value "star"|Indicates this represents a link to a user favorite|
+
+h4. Creating a favorite
+
+@owner_uuid@ is either an individual user, or the "All Users" group.  The @head_uuid@ is the project being favorited.
+
+<pre>
+$ arv link create --link '{
+    "owner_uuid": "zzzzz-j7d0g-fffffffffffffff",
+    "head_uuid":  "zzzzz-j7d0g-theprojectuuid",
+    "link_class": "star"}'
+</pre>
+
+h4. Deleting a favorite
+
+<pre>
+$ arv link delete --uuid zzzzz-o0j2j-thestarlinkuuid
+</pre>
+
+h4. Listing favorites
+
+To list all 'star' links that will be displayed for a user:
+
+<pre>
+$ arv link list --filters '[
+  ["link_class", "=", "star"],
+  ["owner_uuid", "in", ["zzzzz-j7d0g-fffffffffffffff", "zzzzz-tpzed-currentuseruuid"]]]'
+</pre>
+
 h3. tag
 
-A **tag** link describes an object using an unparsed plain text string. Tags can be used to annotate objects that are not editable, like collections and objects shared as read-only.
+A **tag** link describes an object using an unparsed plain text string.  Tags can be used to annotate objects that are not directly editable by the user, like collections and objects shared as read-only.
 
 table(table table-bordered table-condensed).
 |_. tail_type&rarr;head_type|_. name&rarr;head_uuid {properties}|

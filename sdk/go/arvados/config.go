@@ -11,7 +11,7 @@ import (
 	"net/url"
 	"os"
 
-	"git.curoverse.com/arvados.git/sdk/go/config"
+	"git.arvados.org/arvados.git/sdk/go/config"
 )
 
 var DefaultConfigFile = func() string {
@@ -115,9 +115,10 @@ type Cluster struct {
 			Function  string
 			Protected bool
 		}
-		PreserveVersionIfIdle Duration
-		TrashSweepInterval    Duration
-		TrustAllContent       bool
+		PreserveVersionIfIdle        Duration
+		TrashSweepInterval           Duration
+		TrustAllContent              bool
+		ForwardSlashNameSubstitution string
 
 		BlobMissingReport        string
 		BalancePeriod            Duration
@@ -213,9 +214,11 @@ type Cluster struct {
 		VocabularyURL          string
 		WelcomePageHTML        string
 		InactivePageHTML       string
+		SSHHelpPageHTML        string
+		SSHHelpHostSuffix      string
 	}
 
-	EnableBetaController14287 bool
+	ForceLegacyAPI14 bool
 }
 
 type Volume struct {
@@ -361,7 +364,7 @@ type ContainersConfig struct {
 	Logging struct {
 		MaxAge                       Duration
 		LogBytesPerEvent             int
-		LogSecondsBetweenEvents      int
+		LogSecondsBetweenEvents      Duration
 		LogThrottlePeriod            Duration
 		LogThrottleBytes             int
 		LogThrottleLines             int
@@ -390,6 +393,7 @@ type CloudVMsConfig struct {
 	Enable bool
 
 	BootProbeCommand     string
+	DeployRunnerBinary   string
 	ImageID              string
 	MaxCloudOpsPerSecond int
 	MaxProbesPerSecond   int

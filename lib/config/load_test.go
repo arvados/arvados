@@ -15,8 +15,8 @@ import (
 	"strings"
 	"testing"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"github.com/ghodss/yaml"
 	"github.com/sirupsen/logrus"
 	check "gopkg.in/check.v1"

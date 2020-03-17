@@ -12,8 +12,8 @@ import (
 	"net/http"
 	"strings"
 
-	"git.curoverse.com/arvados.git/sdk/go/auth"
-	"git.curoverse.com/arvados.git/sdk/go/httpserver"
+	"git.arvados.org/arvados.git/sdk/go/auth"
+	"git.arvados.org/arvados.git/sdk/go/httpserver"
 )
 
 func remoteContainerRequestCreate(
@@ -33,9 +33,12 @@ func remoteContainerRequestCreate(
 	creds := auth.NewCredentials()
 	creds.LoadTokensFromHTTPRequest(req)
 
-	currentUser, err := h.handler.validateAPItoken(req, creds.Tokens[0])
+	currentUser, ok, err := h.handler.validateAPItoken(req, creds.Tokens[0])
 	if err != nil {
-		httpserver.Error(w, err.Error(), http.StatusForbidden)
+		httpserver.Error(w, err.Error(), http.StatusInternalServerError)
+		return true
+	} else if !ok {
+		httpserver.Error(w, "invalid API token", http.StatusForbidden)
 		return true
 	}
 

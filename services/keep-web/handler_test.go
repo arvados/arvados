@@ -17,12 +17,13 @@ import (
 	"regexp"
 	"strings"
 
-	"git.curoverse.com/arvados.git/lib/config"
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
-	"git.curoverse.com/arvados.git/sdk/go/auth"
-	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
-	"git.curoverse.com/arvados.git/sdk/go/keepclient"
+	"git.arvados.org/arvados.git/lib/config"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
+	"git.arvados.org/arvados.git/sdk/go/arvadostest"
+	"git.arvados.org/arvados.git/sdk/go/auth"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	check "gopkg.in/check.v1"
 )
 
@@ -38,24 +39,6 @@ func (s *UnitSuite) SetUpTest(c *check.C) {
 	cfg, err := ldr.Load()
 	c.Assert(err, check.IsNil)
 	s.Config = cfg
-}
-
-func (s *UnitSuite) TestKeepClientBlockCache(c *check.C) {
-	cfg := newConfig(s.Config)
-	cfg.cluster.Collections.WebDAVCache.MaxBlockEntries = 42
-	h := handler{Config: cfg}
-	c.Check(keepclient.DefaultBlockCache.MaxBlocks, check.Not(check.Equals), cfg.cluster.Collections.WebDAVCache.MaxBlockEntries)
-	u := mustParseURL("http://keep-web.example/c=" + arvadostest.FooCollection + "/t=" + arvadostest.ActiveToken + "/foo")
-	req := &http.Request{
-		Method:     "GET",
-		Host:       u.Host,
-		URL:        u,
-		RequestURI: u.RequestURI(),
-	}
-	resp := httptest.NewRecorder()
-	h.ServeHTTP(resp, req)
-	c.Check(resp.Code, check.Equals, http.StatusOK)
-	c.Check(keepclient.DefaultBlockCache.MaxBlocks, check.Equals, cfg.cluster.Collections.WebDAVCache.MaxBlockEntries)
 }
 
 func (s *UnitSuite) TestCORSPreflight(c *check.C) {
@@ -520,6 +503,56 @@ func (s *IntegrationSuite) TestSpecialCharsInPath(c *check.C) {
 	c.Check(resp.Body.String(), check.Matches, `(?ms).*href="./https:%5c%22odd%27%20path%20chars"\S+https:\\&#34;odd&#39; path chars.*`)
 }
 
+func (s *IntegrationSuite) TestForwardSlashSubstitution(c *check.C) {
+	arv := arvados.NewClientFromEnv()
+	s.testServer.Config.cluster.Services.WebDAVDownload.ExternalURL.Host = "download.example.com"
+	s.testServer.Config.cluster.Collections.ForwardSlashNameSubstitution = "{SOLIDUS}"
+	name := "foo/bar/baz"
+	nameShown := strings.Replace(name, "/", "{SOLIDUS}", -1)
+	nameShownEscaped := strings.Replace(name, "/", "%7bSOLIDUS%7d", -1)
+
+	client := s.testServer.Config.Client
+	client.AuthToken = arvadostest.ActiveToken
+	fs, err := (&arvados.Collection{}).FileSystem(&client, nil)
+	c.Assert(err, check.IsNil)
+	f, err := fs.OpenFile("filename", os.O_CREATE, 0777)
+	c.Assert(err, check.IsNil)
+	f.Close()
+	mtxt, err := fs.MarshalManifest(".")
+	c.Assert(err, check.IsNil)
+	var coll arvados.Collection
+	err = client.RequestAndDecode(&coll, "POST", "arvados/v1/collections", nil, map[string]interface{}{
+		"collection": map[string]string{
+			"manifest_text": mtxt,
+			"name":          name,
+			"owner_uuid":    arvadostest.AProjectUUID,
+		},
+	})
+	c.Assert(err, check.IsNil)
+	defer arv.RequestAndDecode(&coll, "DELETE", "arvados/v1/collections/"+coll.UUID, nil, nil)
+
+	base := "http://download.example.com/by_id/" + coll.OwnerUUID + "/"
+	for tryURL, expectRegexp := range map[string]string{
+		base:                          `(?ms).*href="./` + nameShownEscaped + `/"\S+` + nameShown + `.*`,
+		base + nameShownEscaped + "/": `(?ms).*href="./filename"\S+filename.*`,
+	} {
+		u, _ := url.Parse(tryURL)
+		req := &http.Request{
+			Method:     "GET",
+			Host:       u.Host,
+			URL:        u,
+			RequestURI: u.RequestURI(),
+			Header: http.Header{
+				"Authorization": {"Bearer " + client.AuthToken},
+			},
+		}
+		resp := httptest.NewRecorder()
+		s.testServer.Handler.ServeHTTP(resp, req)
+		c.Check(resp.Code, check.Equals, http.StatusOK)
+		c.Check(resp.Body.String(), check.Matches, expectRegexp)
+	}
+}
+
 // XHRs can't follow redirect-with-cookie so they rely on method=POST
 // and disposition=attachment (telling us it's acceptable to respond
 // with content instead of a redirect) and an Origin header that gets
@@ -881,6 +914,82 @@ func (s *IntegrationSuite) TestHealthCheckPing(c *check.C) {
 
 	c.Check(resp.Code, check.Equals, http.StatusOK)
 	c.Check(resp.Body.String(), check.Matches, `{"health":"OK"}\n`)
+}
+
+func (s *IntegrationSuite) TestFileContentType(c *check.C) {
+	s.testServer.Config.cluster.Services.WebDAVDownload.ExternalURL.Host = "download.example.com"
+
+	client := s.testServer.Config.Client
+	client.AuthToken = arvadostest.ActiveToken
+	arv, err := arvadosclient.New(&client)
+	c.Assert(err, check.Equals, nil)
+	kc, err := keepclient.MakeKeepClient(arv)
+	c.Assert(err, check.Equals, nil)
+
+	fs, err := (&arvados.Collection{}).FileSystem(&client, kc)
+	c.Assert(err, check.IsNil)
+
+	trials := []struct {
+		filename    string
+		content     string
+		contentType string
+	}{
+		{"picture.txt", "BMX bikes are small this year\n", "text/plain; charset=utf-8"},
+		{"picture.bmp", "BMX bikes are small this year\n", "image/x-ms-bmp"},
+		{"picture.jpg", "BMX bikes are small this year\n", "image/jpeg"},
+		{"picture1", "BMX bikes are small this year\n", "image/bmp"},            // content sniff; "BM" is the magic signature for .bmp
+		{"picture2", "Cars are small this year\n", "text/plain; charset=utf-8"}, // content sniff
+	}
+	for _, trial := range trials {
+		f, err := fs.OpenFile(trial.filename, os.O_CREATE|os.O_WRONLY, 0777)
+		c.Assert(err, check.IsNil)
+		_, err = f.Write([]byte(trial.content))
+		c.Assert(err, check.IsNil)
+		c.Assert(f.Close(), check.IsNil)
+	}
+	mtxt, err := fs.MarshalManifest(".")
+	c.Assert(err, check.IsNil)
+	var coll arvados.Collection
+	err = client.RequestAndDecode(&coll, "POST", "arvados/v1/collections", nil, map[string]interface{}{
+		"collection": map[string]string{
+			"manifest_text": mtxt,
+		},
+	})
+	c.Assert(err, check.IsNil)
+
+	for _, trial := range trials {
+		u, _ := url.Parse("http://download.example.com/by_id/" + coll.UUID + "/" + trial.filename)
+		req := &http.Request{
+			Method:     "GET",
+			Host:       u.Host,
+			URL:        u,
+			RequestURI: u.RequestURI(),
+			Header: http.Header{
+				"Authorization": {"Bearer " + client.AuthToken},
+			},
+		}
+		resp := httptest.NewRecorder()
+		s.testServer.Handler.ServeHTTP(resp, req)
+		c.Check(resp.Code, check.Equals, http.StatusOK)
+		c.Check(resp.Header().Get("Content-Type"), check.Equals, trial.contentType)
+		c.Check(resp.Body.String(), check.Equals, trial.content)
+	}
+}
+
+func (s *IntegrationSuite) TestKeepClientBlockCache(c *check.C) {
+	s.testServer.Config.cluster.Collections.WebDAVCache.MaxBlockEntries = 42
+	c.Check(keepclient.DefaultBlockCache.MaxBlocks, check.Not(check.Equals), 42)
+	u := mustParseURL("http://keep-web.example/c=" + arvadostest.FooCollection + "/t=" + arvadostest.ActiveToken + "/foo")
+	req := &http.Request{
+		Method:     "GET",
+		Host:       u.Host,
+		URL:        u,
+		RequestURI: u.RequestURI(),
+	}
+	resp := httptest.NewRecorder()
+	s.testServer.Handler.ServeHTTP(resp, req)
+	c.Check(resp.Code, check.Equals, http.StatusOK)
+	c.Check(keepclient.DefaultBlockCache.MaxBlocks, check.Equals, 42)
 }
 
 func copyHeader(h http.Header) http.Header {

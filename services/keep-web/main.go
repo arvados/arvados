@@ -7,10 +7,11 @@ package main
 import (
 	"flag"
 	"fmt"
+	"mime"
 	"os"
 
-	"git.curoverse.com/arvados.git/lib/config"
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/lib/config"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"github.com/coreos/go-systemd/daemon"
 	"github.com/ghodss/yaml"
 	log "github.com/sirupsen/logrus"
@@ -103,6 +104,10 @@ func main() {
 	}
 
 	log.Printf("keep-web %s started", version)
+
+	if ext := ".txt"; mime.TypeByExtension(ext) == "" {
+		log.Warnf("cannot look up MIME type for %q -- this probably means /etc/mime.types is missing -- clients will see incorrect content types", ext)
+	}
 
 	os.Setenv("ARVADOS_API_HOST", cfg.cluster.Services.Controller.ExternalURL.Host)
 	srv := &server{Config: cfg}

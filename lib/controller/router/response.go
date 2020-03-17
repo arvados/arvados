@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/httpserver"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/httpserver"
 )
 
 const rfc3339NanoFixed = "2006-01-02T15:04:05.000000000Z07:00"
@@ -45,9 +45,11 @@ func applySelectParam(selectParam []string, orig map[string]interface{}) map[str
 			selected[attr] = v
 		}
 	}
-	// Preserve "kind" even if not requested
-	if v, ok := orig["kind"]; ok {
-		selected["kind"] = v
+	// Some keys are always preserved, even if not requested
+	for _, k := range []string{"etag", "kind", "writable_by"} {
+		if v, ok := orig[k]; ok {
+			selected[k] = v
+		}
 	}
 	return selected
 }

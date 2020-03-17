@@ -9,7 +9,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 ##### About
 Arvados Java Client allows to access Arvados servers and uses two APIs:
 * lower level [Keep Server API](https://doc.arvados.org/api/index.html)
-* higher level [Keep-Web API](https://godoc.org/github.com/curoverse/arvados/services/keep-web) (when needed)
+* higher level [Keep-Web API](https://godoc.org/github.com/arvados/arvados/services/keep-web) (when needed)
 
 ##### Required Java version
 This SDK requires Java 8+

@@ -10,9 +10,9 @@ import (
 	"os"
 	"testing"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
-	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvadostest"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"github.com/sirupsen/logrus"
 	check "gopkg.in/check.v1"
 )
@@ -49,6 +49,16 @@ func (s *RPCSuite) TestLogin(c *check.C) {
 	resp, err := s.conn.Login(s.ctx, opts)
 	c.Check(err, check.IsNil)
 	c.Check(resp.RedirectLocation, check.Equals, "/auth/joshid?return_to="+url.QueryEscape(","+opts.ReturnTo))
+}
+
+func (s *RPCSuite) TestLogout(c *check.C) {
+	s.ctx = context.Background()
+	opts := arvados.LogoutOptions{
+		ReturnTo: "https://foo.example.com/bar",
+	}
+	resp, err := s.conn.Logout(s.ctx, opts)
+	c.Check(err, check.IsNil)
+	c.Check(resp.RedirectLocation, check.Equals, "http://localhost:3002/users/sign_out?redirect_uri="+url.QueryEscape(opts.ReturnTo))
 }
 
 func (s *RPCSuite) TestCollectionCreate(c *check.C) {

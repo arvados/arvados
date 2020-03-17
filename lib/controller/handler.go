@@ -15,12 +15,12 @@ import (
 	"sync"
 	"time"
 
-	"git.curoverse.com/arvados.git/lib/controller/federation"
-	"git.curoverse.com/arvados.git/lib/controller/railsproxy"
-	"git.curoverse.com/arvados.git/lib/controller/router"
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/health"
-	"git.curoverse.com/arvados.git/sdk/go/httpserver"
+	"git.arvados.org/arvados.git/lib/controller/federation"
+	"git.arvados.org/arvados.git/lib/controller/railsproxy"
+	"git.arvados.org/arvados.git/lib/controller/router"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/health"
+	"git.arvados.org/arvados.git/sdk/go/httpserver"
 	_ "github.com/lib/pq"
 )
 
@@ -80,12 +80,13 @@ func (h *Handler) setup() {
 	rtr := router.New(federation.New(h.Cluster))
 	mux.Handle("/arvados/v1/config", rtr)
 
-	if h.Cluster.EnableBetaController14287 {
+	if !h.Cluster.ForceLegacyAPI14 {
 		mux.Handle("/arvados/v1/collections", rtr)
 		mux.Handle("/arvados/v1/collections/", rtr)
 		mux.Handle("/arvados/v1/users", rtr)
 		mux.Handle("/arvados/v1/users/", rtr)
 		mux.Handle("/login", rtr)
+		mux.Handle("/logout", rtr)
 	}
 
 	hs := http.NotFoundHandler()

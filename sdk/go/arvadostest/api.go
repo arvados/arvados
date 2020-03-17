@@ -13,7 +13,7 @@ import (
 	"runtime"
 	"sync"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
 )
 
 var ErrStubUnimplemented = errors.New("stub unimplemented")
@@ -36,6 +36,10 @@ func (as *APIStub) ConfigGet(ctx context.Context) (json.RawMessage, error) {
 func (as *APIStub) Login(ctx context.Context, options arvados.LoginOptions) (arvados.LoginResponse, error) {
 	as.appendCall(as.Login, ctx, options)
 	return arvados.LoginResponse{}, as.Error
+}
+func (as *APIStub) Logout(ctx context.Context, options arvados.LogoutOptions) (arvados.LogoutResponse, error) {
+	as.appendCall(as.Logout, ctx, options)
+	return arvados.LogoutResponse{}, as.Error
 }
 func (as *APIStub) CollectionCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Collection, error) {
 	as.appendCall(as.CollectionCreate, ctx, options)

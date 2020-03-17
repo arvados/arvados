@@ -15,19 +15,15 @@ Storage classes (alternately known as "storage tiers") allow you to control whic
 The storage classes for each volume are set in the per-volume "keepstore configuration":{{site.baseurl}}/install/install-keepstore.html
 
 <pre>
-Volumes:
- - ... Volume configuration ...
-   #
-   # If no storage classes are specified, will use [default]
-   #
-   StorageClasses: null
-
- - ... Volume configuration ...
-   #
-   # Specify this volume is in the "archival" storage class.
-   #
-   StorageClasses: [archival]
-
+    Volumes:
+      ClusterID-nyw5e-000000000000000:
+        # This volume is in the "default" storage class.
+        StorageClasses:
+          default: true
+      ClusterID-nyw5e-000000000000001:
+        # Specify this volume is in the "archival" storage class.
+        StorageClasses:
+          archival: true
 </pre>
 
 Names of storage classes are internal to the cluster and decided by the administrator.  Aside from "default", Arvados currently does not define any standard storage class names.

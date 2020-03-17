@@ -113,6 +113,9 @@ public class Filter {
         NOT_IN,
 
         @JsonProperty("is_a")
-        IS_A
+        IS_A,
+
+        @JsonProperty("exists")
+        EXISTS
     }
 }

@@ -81,6 +81,7 @@ lib/controller/railsproxy
 lib/controller/router
 lib/controller/rpc
 lib/crunchstat
+lib/crunch-run
 lib/cloud
 lib/cloud/azure
 lib/cloud/cloudtest
@@ -89,6 +90,7 @@ lib/dispatchcloud/container
 lib/dispatchcloud/scheduler
 lib/dispatchcloud/ssh_executor
 lib/dispatchcloud/worker
+lib/mount
 lib/service
 services/api
 services/arv-git-httpd
@@ -104,7 +106,6 @@ services/keep-balance
 services/login-sync
 services/nodemanager
 services/nodemanager_integration
-services/crunch-run
 services/crunch-dispatch-local
 services/crunch-dispatch-slurm
 services/ws
@@ -392,7 +393,7 @@ checkpidfile() {
 
 checkhealth() {
     svc="$1"
-    base=$(python -c "import yaml; print list(yaml.safe_load(file('$ARVADOS_CONFIG'))['Clusters']['zzzzz']['Services']['$1']['InternalURLs'].keys())[0]")
+    base=$("${VENVDIR}/bin/python" -c "import yaml; print list(yaml.safe_load(file('$ARVADOS_CONFIG'))['Clusters']['zzzzz']['Services']['$1']['InternalURLs'].keys())[0]")
     url="$base/_health/ping"
     if ! curl -Ss -H "Authorization: Bearer e687950a23c3a9bceec28c6223a06c79" "${url}" | tee -a /dev/stderr | grep '"OK"'; then
         echo "${url} failed"
@@ -404,7 +405,7 @@ checkdiscoverydoc() {
     dd="https://${1}/discovery/v1/apis/arvados/v1/rest"
     if ! (set -o pipefail; curl -fsk "$dd" | grep -q ^{ ); then
         echo >&2 "ERROR: could not retrieve discovery doc from RailsAPI at $dd"
-        tail -v $WORKSPACE/services/api/log/test.log
+        tail -v $WORKSPACE/tmp/railsapi.log
         return 1
     fi
     echo "${dd} ok"
@@ -554,7 +555,7 @@ setup_ruby_environment() {
             export HOME=$GEMHOME
             ("$bundle" version | grep -q 2.0.2) \
                 || gem install --user bundler -v 2.0.2
-            "$bundle" version | grep 2.0.2
+            "$bundle" version | tee /dev/stderr | grep -q 'version 2'
         ) || fatal 'install bundler'
     fi
 }
@@ -647,8 +648,13 @@ install_env() {
     . "$VENVDIR/bin/activate"
 
     # Needed for run_test_server.py which is used by certain (non-Python) tests.
-    pip install --no-cache-dir PyYAML future \
-        || fatal "pip install PyYAML failed"
+    (
+        set -e
+        "${VENVDIR}/bin/pip" install PyYAML
+        "${VENV3DIR}/bin/pip" install PyYAML
+        cd "$WORKSPACE/sdk/python"
+        python setup.py install
+    ) || fatal "installing PyYAML and sdk/python failed"
 
     # Preinstall libcloud if using a fork; otherwise nodemanager "pip
     # install" won't pick it up by default.
@@ -739,7 +745,7 @@ do_test() {
 
 go_ldflags() {
     version=${ARVADOS_VERSION:-$(git log -n1 --format=%H)-dev}
-    echo "-X git.curoverse.com/arvados.git/lib/cmd.version=${version} -X main.version=${version}"
+    echo "-X git.arvados.org/arvados.git/lib/cmd.version=${version} -X main.version=${version}"
 }
 
 do_test_once() {
@@ -771,7 +777,7 @@ do_test_once() {
         else
             # The above form gets verbose even when testargs is
             # empty, so use this form in such cases:
-            go test ${short:+-short} ${coverflags[@]} "git.curoverse.com/arvados.git/$1"
+            go test ${short:+-short} ${coverflags[@]} "git.arvados.org/arvados.git/$1"
         fi
         result=${result:-$?}
         if [[ -f "$WORKSPACE/tmp/.$covername.tmp" ]]
@@ -867,8 +873,8 @@ do_install_once() {
         cd "$WORKSPACE/$1" \
             && "${3}python" setup.py sdist rotate --keep=1 --match .tar.gz \
             && cd "$WORKSPACE" \
-            && "${3}pip" install --no-cache-dir --quiet "$WORKSPACE/$1/dist"/*.tar.gz \
-            && "${3}pip" install --no-cache-dir --quiet --no-deps --ignore-installed "$WORKSPACE/$1/dist"/*.tar.gz
+            && "${3}pip" install --no-cache-dir "$WORKSPACE/$1/dist"/*.tar.gz \
+            && "${3}pip" install --no-cache-dir --no-deps --ignore-installed "$WORKSPACE/$1/dist"/*.tar.gz
     elif [[ "$2" != "" ]]
     then
         "install_$2"
@@ -889,7 +895,7 @@ bundle_install_trylocal() {
             echo "(Running bundle install again, without --local.)"
             "$bundle" install --no-deployment
         fi
-        "$bundle" package --all
+        "$bundle" package
     )
 }
 
@@ -936,6 +942,7 @@ install_services/login-sync() {
 
 install_services/api() {
     stop_services
+    check_arvados_config "services/api"
     cd "$WORKSPACE/services/api" \
         && RAILS_ENV=test bundle_install_trylocal \
             || return 1
@@ -947,7 +954,7 @@ install_services/api() {
     # database, so that we can drop it. This assumes the current user
     # is a postgresql superuser.
     cd "$WORKSPACE/services/api" \
-        && test_database=$(python -c "import yaml; print yaml.safe_load(file('$ARVADOS_CONFIG'))['Clusters']['zzzzz']['PostgreSQL']['Connection']['dbname']") \
+        && test_database=$("${VENVDIR}/bin/python" -c "import yaml; print yaml.safe_load(file('$ARVADOS_CONFIG'))['Clusters']['zzzzz']['PostgreSQL']['Connection']['dbname']") \
         && psql "$test_database" -c "SELECT pg_terminate_backend (pg_stat_activity.pid::int) FROM pg_stat_activity WHERE pg_stat_activity.datname = '$test_database';" 2>/dev/null
 
     mkdir -p "$WORKSPACE/services/api/tmp/pids"
@@ -971,15 +978,16 @@ install_services/api() {
         && git --git-dir internal.git init \
             || return 1
 
-
-    (cd "$WORKSPACE/services/api"
-     export RAILS_ENV=test
-     if "$bundle" exec rails db:environment:set ; then
-        "$bundle" exec rake db:drop
-     fi
-     "$bundle" exec rake db:setup \
-	 && "$bundle" exec rake db:fixtures:load
-    )
+    (
+        set -e
+        cd "$WORKSPACE/services/api"
+        export RAILS_ENV=test
+        if "$bundle" exec rails db:environment:set ; then
+            "$bundle" exec rake db:drop
+        fi
+        "$bundle" exec rake db:setup
+        "$bundle" exec rake db:fixtures:load
+    ) || return 1
 }
 
 declare -a pythonstuff
@@ -1077,7 +1085,7 @@ test_apps/workbench_functionals() {
 test_apps/workbench_integration() {
     local TASK="test:integration"
     cd "$WORKSPACE/apps/workbench" \
-        && eval env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} "$bundle" exec rake ${TASK} TESTOPTS=\'-v -d\' ${testargs[apps/workbench]} ${testargs[apps/workbench_integration]} 
+        && eval env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} "$bundle" exec rake ${TASK} TESTOPTS=\'-v -d\' ${testargs[apps/workbench]} ${testargs[apps/workbench_integration]}
 }
 
 test_apps/workbench_benchmark() {
@@ -1099,6 +1107,7 @@ install_deps() {
     do_install sdk/cli
     do_install sdk/perl
     do_install sdk/python pip
+    do_install sdk/python pip "${VENV3DIR}/bin/"
     do_install sdk/ruby
     do_install services/api
     do_install services/arv-git-httpd go

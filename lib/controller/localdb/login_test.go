@@ -19,12 +19,12 @@ import (
 	"testing"
 	"time"
 
-	"git.curoverse.com/arvados.git/lib/config"
-	"git.curoverse.com/arvados.git/lib/controller/rpc"
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
-	"git.curoverse.com/arvados.git/sdk/go/auth"
-	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/lib/config"
+	"git.arvados.org/arvados.git/lib/controller/rpc"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvadostest"
+	"git.arvados.org/arvados.git/sdk/go/auth"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	check "gopkg.in/check.v1"
 	jose "gopkg.in/square/go-jose.v2"
 )
@@ -146,6 +146,8 @@ func (s *LoginSuite) SetUpTest(c *check.C) {
 
 	cfg, err := config.NewLoader(nil, ctxlog.TestLogger(c)).Load()
 	s.cluster, err = cfg.GetCluster("")
+	s.cluster.Login.ProviderAppID = ""
+	s.cluster.Login.ProviderAppSecret = ""
 	s.cluster.Login.GoogleClientID = "test%client$id"
 	s.cluster.Login.GoogleClientSecret = "test#client/secret"
 	s.cluster.Users.PreferDomainForUsername = "PreferDomainForUsername.example.com"
@@ -161,6 +163,12 @@ func (s *LoginSuite) SetUpTest(c *check.C) {
 
 func (s *LoginSuite) TearDownTest(c *check.C) {
 	s.railsSpy.Close()
+}
+
+func (s *LoginSuite) TestGoogleLogout(c *check.C) {
+	resp, err := s.localdb.Logout(context.Background(), arvados.LogoutOptions{ReturnTo: "https://foo.example.com/bar"})
+	c.Check(err, check.IsNil)
+	c.Check(resp.RedirectLocation, check.Equals, "https://foo.example.com/bar")
 }
 
 func (s *LoginSuite) TestGoogleLogin_Start_Bogus(c *check.C) {

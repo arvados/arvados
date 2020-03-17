@@ -28,7 +28,7 @@ setup(name='arvados-python-client',
       author='Arvados',
       author_email='info@arvados.org',
       url="https://arvados.org",
-      download_url="https://github.com/curoverse/arvados.git",
+      download_url="https://github.com/arvados/arvados.git",
       license='Apache 2.0',
       packages=find_packages(),
       scripts=[
@@ -64,6 +64,6 @@ setup(name='arvados-python-client',
           'Programming Language :: Python :: 3',
       ],
       test_suite='tests',
-      tests_require=['pbr<1.7.0', 'mock>=1.0', 'PyYAML'],
+      tests_require=['pbr<1.7.0', 'mock>=1.0,<4', 'PyYAML'],
       zip_safe=False
       )

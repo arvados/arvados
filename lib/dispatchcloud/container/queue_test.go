@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"github.com/sirupsen/logrus"
 	check "gopkg.in/check.v1"
 )
@@ -70,7 +70,7 @@ func (suite *IntegrationSuite) TestGetLockUnlockCancel(c *check.C) {
 		c.Check(ctr.UUID, check.Equals, uuid)
 
 		wg.Add(1)
-		go func() {
+		go func(uuid string) {
 			defer wg.Done()
 			err := cq.Unlock(uuid)
 			c.Check(err, check.NotNil)
@@ -99,25 +99,49 @@ func (suite *IntegrationSuite) TestGetLockUnlockCancel(c *check.C) {
 			c.Check(ctr.State, check.Equals, arvados.ContainerStateCancelled)
 			err = cq.Lock(uuid)
 			c.Check(err, check.NotNil)
-		}()
+		}(uuid)
 	}
 	wg.Wait()
 }
 
 func (suite *IntegrationSuite) TestCancelIfNoInstanceType(c *check.C) {
 	errorTypeChooser := func(ctr *arvados.Container) (arvados.InstanceType, error) {
+		// Make sure the relevant container fields are
+		// actually populated.
+		c.Check(ctr.ContainerImage, check.Equals, "test")
+		c.Check(ctr.RuntimeConstraints.VCPUs, check.Equals, 4)
+		c.Check(ctr.RuntimeConstraints.RAM, check.Equals, int64(12000000000))
+		c.Check(ctr.Mounts["/tmp"].Capacity, check.Equals, int64(24000000000))
+		c.Check(ctr.Mounts["/var/spool/cwl"].Capacity, check.Equals, int64(24000000000))
 		return arvados.InstanceType{}, errors.New("no suitable instance type")
 	}
 
 	client := arvados.NewClientFromEnv()
 	cq := NewQueue(logger(), nil, errorTypeChooser, client)
 
+	ch := cq.Subscribe()
+	go func() {
+		defer cq.Unsubscribe(ch)
+		for range ch {
+			// Container should never be added to
+			// queue. Note that polling the queue this way
+			// doesn't guarantee a bug (container being
+			// incorrectly added to the queue) will cause
+			// a test failure.
+			_, ok := cq.Get(arvadostest.QueuedContainerUUID)
+			if !c.Check(ok, check.Equals, false) {
+				// Don't spam the log with more failures
+				break
+			}
+		}
+	}()
+
 	var ctr arvados.Container
 	err := client.RequestAndDecode(&ctr, "GET", "arvados/v1/containers/"+arvadostest.QueuedContainerUUID, nil, nil)
 	c.Check(err, check.IsNil)
 	c.Check(ctr.State, check.Equals, arvados.ContainerStateQueued)
 
-	cq.Update()
+	go cq.Update()
 
 	// Wait for the cancel operation to take effect. Container
 	// will have state=Cancelled or just disappear from the queue.

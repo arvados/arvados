@@ -5,9 +5,9 @@
 source 'https://rubygems.org'
 
 gem 'rails', '~> 5.0.0'
-gem 'arvados', git: 'https://github.com/curoverse/arvados.git', glob: 'sdk/ruby/arvados.gemspec'
+gem 'arvados', git: 'https://github.com/arvados/arvados.git', glob: 'sdk/ruby/arvados.gemspec'
 
-gem 'activerecord-nulldb-adapter', git: 'https://github.com/curoverse/nulldb'
+gem 'activerecord-nulldb-adapter', git: 'https://github.com/arvados/nulldb'
 gem 'multi_json'
 gem 'oj'
 gem 'sass'
@@ -74,7 +74,7 @@ gem 'less-rails'
 # Wiselinks hasn't been updated for many years and it's using deprecated methods
 # Use our own Wiselinks fork until this PR is accepted:
 # https://github.com/igor-alexandrov/wiselinks/pull/116
-# gem 'wiselinks', git: 'https://github.com/curoverse/wiselinks.git', branch: 'rails-5.1-compatibility'
+# gem 'wiselinks', git: 'https://github.com/arvados/wiselinks.git', branch: 'rails-5.1-compatibility'
 
 gem 'sshkey'
 
@@ -98,7 +98,7 @@ gem 'piwik_analytics'
 gem 'httpclient', '~> 2.5'
 
 # This fork has Rails 4 compatible routes
-gem 'themes_for_rails', git: 'https://github.com/curoverse/themes_for_rails'
+gem 'themes_for_rails', git: 'https://github.com/arvados/themes_for_rails'
 
 gem "deep_merge", :require => 'deep_merge/rails_compat'
 

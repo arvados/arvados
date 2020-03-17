@@ -15,7 +15,7 @@ import (
 	"os"
 	"strings"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"github.com/ghodss/yaml"
 	"github.com/imdario/mergo"
 	"github.com/sirupsen/logrus"
