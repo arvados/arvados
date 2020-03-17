@@ -66,7 +66,10 @@ func (ctrl *pamLoginController) Login(ctx context.Context, opts arvados.LoginOpt
 	ctxlog.FromContext(ctx).WithFields(logrus.Fields{"user": user, "email": email}).Debug("pam authentication succeeded")
 	ctxRoot := auth.NewContext(ctx, &auth.Credentials{Tokens: []string{ctrl.Cluster.SystemRootToken}})
 	resp, err := ctrl.RailsProxy.UserSessionCreate(ctxRoot, rpc.UserSessionCreateOptions{
-		ReturnTo: opts.Remote + "," + opts.ReturnTo,
+		// Send a fake ReturnTo value instead of the caller's
+		// opts.ReturnTo. We won't follow the resulting
+		// redirect target anyway.
+		ReturnTo: opts.Remote + ",https://none.invalid",
 		AuthInfo: rpc.UserSessionAuthInfo{
 			Username: user,
 			Email:    email,
