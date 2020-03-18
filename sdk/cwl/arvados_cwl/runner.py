@@ -424,8 +424,9 @@ def packed_workflow(arvrunner, tool, merged_map):
     A "packed" workflow is one where all the components have been combined into a single document."""
 
     rewrites = {}
-    packed = pack(tool.doc_loader, tool.doc_loader.fetch(tool.tool["id"]),
-                  tool.tool["id"], tool.metadata, rewrite_out=rewrites)
+    packed = pack(arvrunner.loadingContext, tool.tool["id"],
+                  rewrite_out=rewrites,
+                  loader=tool.doc_loader)
 
     rewrite_to_orig = {v: k for k,v in viewitems(rewrites)}
 
