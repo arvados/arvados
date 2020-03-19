@@ -303,10 +303,13 @@ ln -sf /var/lib/arvados/node-${NJS}-linux-x64/bin/{node,npm} /usr/local/bin/
 		}
 
 		withstuff := "WITH LOGIN SUPERUSER ENCRYPTED PASSWORD " + pq.QuoteLiteral(devtestDatabasePassword)
-		if err := exec.Command("sudo", "-u", "postgres", "psql", "-c", "ALTER ROLE arvados "+withstuff).Run(); err == nil {
+		cmd := exec.Command("sudo", "-u", "postgres", "psql", "-c", "ALTER ROLE arvados "+withstuff)
+		cmd.Dir = "/"
+		if err := cmd.Run(); err == nil {
 			logger.Print("arvados role exists; superuser privileges added, password updated")
 		} else {
 			cmd := exec.Command("sudo", "-u", "postgres", "psql", "-c", "CREATE ROLE arvados "+withstuff)
+			cmd.Dir = "/"
 			cmd.Stdout = stdout
 			cmd.Stderr = stderr
 			err = cmd.Run()
