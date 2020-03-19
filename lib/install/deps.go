@@ -15,12 +15,17 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"syscall"
+	"time"
 
 	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"github.com/lib/pq"
 )
 
 var Command cmd.Handler = installCommand{}
+
+const devtestDatabasePassword = "insecure_arvados_test"
 
 type installCommand struct{}
 
@@ -239,6 +244,72 @@ ln -sf /var/lib/arvados/node-${NJS}-linux-x64/bin/{node,npm} /usr/local/bin/
 			logger.Print("locale " + wantlocale + " already installed")
 		} else {
 			err = runBash(`sed -i 's/^# *\(`+wantlocale+`\)/\1/' /etc/locale.gen && locale-gen`, stdout, stderr)
+			if err != nil {
+				return 1
+			}
+		}
+
+		var pgc struct {
+			Version       string
+			Cluster       string
+			Port          int
+			Status        string
+			Owner         string
+			DataDirectory string
+			LogFile       string
+		}
+		if pg_lsclusters, err2 := exec.Command("pg_lsclusters", "--no-header").CombinedOutput(); err2 != nil {
+			err = fmt.Errorf("pg_lsclusters: %s", err2)
+			return 1
+		} else if pgclusters := strings.Split(strings.TrimSpace(string(pg_lsclusters)), "\n"); len(pgclusters) != 1 {
+			logger.Warnf("pg_lsclusters returned %d postgresql clusters -- skipping postgresql initdb/startup, hope that's ok", len(pgclusters))
+		} else if _, err = fmt.Sscanf(pgclusters[0], "%s %s %d %s %s %s %s", &pgc.Version, &pgc.Cluster, &pgc.Port, &pgc.Status, &pgc.Owner, &pgc.DataDirectory, &pgc.LogFile); err != nil {
+			err = fmt.Errorf("error parsing pg_lsclusters output: %s", err)
+			return 1
+		} else if pgc.Status == "online" {
+			logger.Infof("postgresql cluster %s-%s is online", pgc.Version, pgc.Cluster)
+		} else {
+			logger.Infof("postgresql cluster %s-%s is %s; trying to start", pgc.Version, pgc.Cluster, pgc.Status)
+			cmd := exec.Command("pg_ctlcluster", "--foreground", pgc.Version, pgc.Cluster, "start")
+			cmd.Stdout = stdout
+			cmd.Stderr = stderr
+			err = cmd.Start()
+			if err != nil {
+				return 1
+			}
+			defer func() {
+				cmd.Process.Signal(syscall.SIGTERM)
+				logger.Infof("sent SIGTERM; waiting for postgres to shut down")
+				cmd.Wait()
+			}()
+			for deadline := time.Now().Add(10 * time.Second); ; {
+				output, err2 := exec.Command("pg_isready").CombinedOutput()
+				if err2 == nil {
+					break
+				} else if time.Now().After(deadline) {
+					err = fmt.Errorf("timed out waiting for pg_isready (%q)", output)
+					return 1
+				} else {
+					time.Sleep(time.Second)
+				}
+			}
+		}
+
+		if os.Getpid() == 1 {
+			// We are the init process (presumably in a
+			// docker container) so although postgresql is
+			// installed, it's not running, and initdb
+			// might never have been run.
+		}
+
+		withstuff := "WITH SUPERUSER ENCRYPTED PASSWORD " + pq.QuoteLiteral(devtestDatabasePassword)
+		if err := exec.Command("sudo", "-u", "postgres", "psql", "-c", "ALTER ROLE arvados "+withstuff).Run(); err == nil {
+			logger.Print("arvados role exists; superuser privileges added, password updated")
+		} else {
+			cmd := exec.Command("sudo", "-u", "postgres", "psql", "-c", "CREATE ROLE arvados "+withstuff)
+			cmd.Stdout = stdout
+			cmd.Stderr = stderr
+			err = cmd.Run()
 			if err != nil {
 				return 1
 			}
