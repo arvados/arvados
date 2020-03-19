@@ -551,8 +551,13 @@ setup_ruby_environment() {
         bundle="$(gem env gempath | cut -f1 -d:)/bin/bundle"
         (
             export HOME=$GEMHOME
-            ("$bundle" version | grep -q 2.0.2) \
-                || gem install --user bundler -v 2.0.2
+            bundlers="$(gem list --details bundler)"
+            for v in 1.11 1.17.3 2.0.2; do
+                if ! echo "$bundlers" | fgrep -q "($v)"; then
+                    gem install --user bundler:1.11 bundler:1.17.3 bundler:2.0.2
+                    break
+                fi
+            done
             "$bundle" version | tee /dev/stderr | grep -q 'version 2'
         ) || fatal 'install bundler'
     fi
