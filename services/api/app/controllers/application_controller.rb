@@ -45,6 +45,7 @@ class ApplicationController < ActionController::Base
   before_action :load_required_parameters
   before_action(:find_object_by_uuid,
                 except: [:index, :create] + ERROR_ACTIONS)
+  before_action(:set_nullable_attrs_to_null, only: [:update, :create])
   before_action :load_limit_offset_order_params, only: [:index, :contents]
   before_action :load_where_param, only: [:index, :contents]
   before_action :load_filters_param, only: [:index, :contents]
@@ -476,6 +477,21 @@ class ApplicationController < ActionController::Base
     @objects = nil
     find_objects_for_index
     @object = @objects.first
+  end
+
+  def nullable_attributes
+    []
+  end
+
+  # Go code may send empty values (ie: empty string instead of NULL) that
+  # should be translated to NULL on the database.
+  def set_nullable_attrs_to_null
+    (resource_attrs.keys & nullable_attributes).each do |attr|
+      val = resource_attrs[attr]
+      if (val.class == Integer && val == 0) || (val.class == String && val == "")
+        resource_attrs[attr] = nil
+      end
+    end
   end
 
   def reload_object_before_update
