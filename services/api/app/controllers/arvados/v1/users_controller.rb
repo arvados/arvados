@@ -268,4 +268,8 @@ class Arvados::V1::UsersController < ApplicationController
     end
     super
   end
+
+  def nullable_attributes
+    super + [:email, :first_name, :last_name, :username]
+  end
 end
