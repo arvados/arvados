@@ -661,11 +661,21 @@ def setup_config():
     keep_web_dl_port = find_available_port()
     keep_web_dl_external_port = find_available_port()
 
-    dbconf = os.path.join(os.environ["CONFIGSRC"], "config.yml")
-
-    print("Getting config from %s" % dbconf, file=sys.stderr)
-
-    pgconnection = yaml.safe_load(open(dbconf))["Clusters"]["zzzzz"]["PostgreSQL"]["Connection"]
+    configsrc = os.environ.get("CONFIGSRC", None)
+    if configsrc:
+        clusterconf = os.path.join(configsrc, "config.yml")
+        print("Getting config from %s" % clusterconf, file=sys.stderr)
+        pgconnection = yaml.safe_load(open(clusterconf))["Clusters"]["zzzzz"]["PostgreSQL"]["Connection"]
+    else:
+        # assume "arvados-server install -type test" has set up the
+        # conventional db credentials
+        pgconnection = {
+	    "client_encoding": "utf8",
+	    "host": "localhost",
+	    "dbname": "arvados_test",
+	    "user": "arvados",
+	    "password": "insecure_arvados_test",
+        }
 
     localhost = "127.0.0.1"
     services = {

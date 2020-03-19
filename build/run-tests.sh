@@ -35,7 +35,7 @@ Options:
 --short        Skip (or scale down) some slow tests.
 --interactive  Set up, then prompt for test/install steps to perform.
 WORKSPACE=path Arvados source tree to test.
-CONFIGSRC=path Dir with config.yml file containing PostgreSQL section for use by tests. (required)
+CONFIGSRC=path Dir with config.yml file containing PostgreSQL section for use by tests.
 services/api_test="TEST=test/functional/arvados/v1/collections_controller_test.rb"
                Restrict apiserver tests to the given file
 sdk/python_test="--test-suite tests.test_keep_locator"
@@ -197,10 +197,8 @@ sanity_checks() {
     [[ -n "${skip[sanity]}" ]] && return 0
     ( [[ -n "$WORKSPACE" ]] && [[ -d "$WORKSPACE/services" ]] ) \
         || fatal "WORKSPACE environment variable not set to a source directory (see: $0 --help)"
-    [[ -n "$CONFIGSRC" ]] \
-	|| fatal "CONFIGSRC environment not set (see: $0 --help)"
-    [[ -s "$CONFIGSRC/config.yml" ]] \
-	|| fatal "'$CONFIGSRC/config.yml' is empty or not found (see: $0 --help)"
+    [[ -z "$CONFIGSRC" ]] || [[ -s "$CONFIGSRC/config.yml" ]] \
+	|| fatal "CONFIGSRC is $CONFIGSRC but '$CONFIGSRC/config.yml' is empty or not found (see: $0 --help)"
     echo Checking dependencies:
     echo "locale: ${LANG}"
     [[ "$(locale charmap)" = "UTF-8" ]] \
