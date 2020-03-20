@@ -168,14 +168,15 @@ func (installCommand) RunCommand(prog string, args []string, stdin io.Reader, st
 	} else {
 		err = runBash(`
 mkdir -p /var/lib/arvados/tmp
+tmp=/var/lib/arvados/tmp/ruby-`+rubyversion+`
+trap "rm -r ${tmp}" ERR
 wget --progress=dot:giga -O- https://cache.ruby-lang.org/pub/ruby/2.5/ruby-`+rubyversion+`.tar.gz | tar -C /var/lib/arvados/tmp -xzf -
-cd /var/lib/arvados/tmp/ruby-`+rubyversion+`
+cd ${tmp}
 ./configure --disable-install-doc --prefix /var/lib/arvados
 make -j4
 make install
 /var/lib/arvados/bin/gem install bundler
-cd /var/lib/arvados/tmp
-rm -r ruby-`+rubyversion+`
+rm -r ${tmp}
 `, stdout, stderr)
 		if err != nil {
 			return 1
@@ -233,6 +234,25 @@ ln -sf /var/lib/arvados/bin/geckodriver /usr/local/bin/
 NJS=`+nodejsversion+`
 wget --progress=dot:giga -O- https://nodejs.org/dist/${NJS}/node-${NJS}-linux-x64.tar.xz | sudo tar -C /var/lib/arvados -xJf -
 ln -sf /var/lib/arvados/node-${NJS}-linux-x64/bin/{node,npm} /usr/local/bin/
+`, stdout, stderr)
+			if err != nil {
+				return 1
+			}
+		}
+
+		gradleversion := "5.3.1"
+		if havegradleversion, err := exec.Command("/usr/local/bin/gradle", "--version").CombinedOutput(); err == nil && strings.Contains(string(havegradleversion), "Gradle "+gradleversion+"\n") {
+			logger.Print("gradle " + gradleversion + " already installed")
+		} else {
+			err = runBash(`
+G=`+gradleversion+`
+mkdir -p /var/lib/arvados/tmp
+zip=/var/lib/arvados/tmp/gradle-${G}-bin.zip
+trap "rm ${zip}" ERR
+wget --progress=dot:giga -O${zip} https://services.gradle.org/distributions/gradle-${G}-bin.zip
+unzip -o -d /var/lib/arvados ${zip}
+ln -sf /var/lib/arvados/gradle-${G}/bin/gradle /usr/local/bin/
+rm ${zip}
 `, stdout, stderr)
 			if err != nil {
 				return 1
