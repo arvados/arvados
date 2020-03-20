@@ -144,15 +144,6 @@ def main():
         result = copy_collection(args.object_uuid,
                                  src_arv, dst_arv,
                                  args)
-    elif t == 'PipelineInstance':
-        set_src_owner_uuid(src_arv.pipeline_instances(), args.object_uuid, args)
-        result = copy_pipeline_instance(args.object_uuid,
-                                        src_arv, dst_arv,
-                                        args)
-    elif t == 'PipelineTemplate':
-        set_src_owner_uuid(src_arv.pipeline_templates(), args.object_uuid, args)
-        result = copy_pipeline_template(args.object_uuid,
-                                        src_arv, dst_arv, args)
     elif t == 'Workflow':
         set_src_owner_uuid(src_arv.workflows(), args.object_uuid, args)
         result = copy_workflow(args.object_uuid, src_arv, dst_arv, args)
@@ -225,67 +216,6 @@ def check_git_availability():
     except Exception:
         abort('git command is not available. Please ensure git is installed.')
 
-# copy_pipeline_instance(pi_uuid, src, dst, args)
-#
-#    Copies a pipeline instance identified by pi_uuid from src to dst.
-#
-#    If the args.recursive option is set:
-#      1. Copies all input collections
-#           * For each component in the pipeline, include all collections
-#             listed as job dependencies for that component)
-#      2. Copy docker images
-#      3. Copy git repositories
-#      4. Copy the pipeline template
-#
-#    The only changes made to the copied pipeline instance are:
-#      1. The original pipeline instance UUID is preserved in
-#         the 'properties' hash as 'copied_from_pipeline_instance_uuid'.
-#      2. The pipeline_template_uuid is changed to the new template uuid.
-#      3. The owner_uuid of the instance is changed to the user who
-#         copied it.
-#
-def copy_pipeline_instance(pi_uuid, src, dst, args):
-    # Fetch the pipeline instance record.
-    pi = src.pipeline_instances().get(uuid=pi_uuid).execute(num_retries=args.retries)
-
-    if args.recursive:
-        check_git_availability()
-
-        if not args.dst_git_repo:
-            abort('--dst-git-repo is required when copying a pipeline recursively.')
-        # Copy the pipeline template and save the copied template.
-        if pi.get('pipeline_template_uuid', None):
-            pt = copy_pipeline_template(pi['pipeline_template_uuid'],
-                                        src, dst, args)
-
-        # Copy input collections, docker images and git repos.
-        pi = copy_collections(pi, src, dst, args)
-        copy_git_repos(pi, src, dst, args.dst_git_repo, args)
-        copy_docker_images(pi, src, dst, args)
-
-        # Update the fields of the pipeline instance with the copied
-        # pipeline template.
-        if pi.get('pipeline_template_uuid', None):
-            pi['pipeline_template_uuid'] = pt['uuid']
-
-    else:
-        # not recursive
-        logger.info("Copying only pipeline instance %s.", pi_uuid)
-        logger.info("You are responsible for making sure all pipeline dependencies have been updated.")
-
-    # Update the pipeline instance properties, and create the new
-    # instance at dst.
-    pi['properties']['copied_from_pipeline_instance_uuid'] = pi_uuid
-    pi['description'] = "Pipeline copied from {}\n\n{}".format(
-        pi_uuid,
-        pi['description'] if pi.get('description', None) else '')
-
-    pi['owner_uuid'] = args.project_uuid
-
-    del pi['uuid']
-
-    new_pi = dst.pipeline_instances().create(body=pi, ensure_unique_name=True).execute(num_retries=args.retries)
-    return new_pi
 
 def filter_iter(arg):
     """Iterate a filter string-or-list.
@@ -375,47 +305,6 @@ def migrate_components_filters(template_components, dst_git_repo):
                     migrate_script_version_filter(cfilter)
     return errors
 
-# copy_pipeline_template(pt_uuid, src, dst, args)
-#
-#    Copies a pipeline template identified by pt_uuid from src to dst.
-#
-#    If args.recursive is True, also copy any collections, docker
-#    images and git repositories that this template references.
-#
-#    The owner_uuid of the new template is changed to that of the user
-#    who copied the template.
-#
-#    Returns the copied pipeline template object.
-#
-def copy_pipeline_template(pt_uuid, src, dst, args):
-    # fetch the pipeline template from the source instance
-    pt = src.pipeline_templates().get(uuid=pt_uuid).execute(num_retries=args.retries)
-
-    if not args.force_filters:
-        filter_errors = migrate_components_filters(pt['components'], args.dst_git_repo)
-        if filter_errors:
-            abort("Template filters cannot be copied safely. Use --force-filters to copy anyway.\n" +
-                  "\n".join(filter_errors))
-
-    if args.recursive:
-        check_git_availability()
-
-        if not args.dst_git_repo:
-            abort('--dst-git-repo is required when copying a pipeline recursively.')
-        # Copy input collections, docker images and git repos.
-        pt = copy_collections(pt, src, dst, args)
-        copy_git_repos(pt, src, dst, args.dst_git_repo, args)
-        copy_docker_images(pt, src, dst, args)
-
-    pt['description'] = "Pipeline template copied from {}\n\n{}".format(
-        pt_uuid,
-        pt['description'] if pt.get('description', None) else '')
-    pt['name'] = "{} copied from {}".format(pt.get('name', ''), pt_uuid)
-    del pt['uuid']
-
-    pt['owner_uuid'] = args.project_uuid
-
-    return dst.pipeline_templates().create(body=pt, ensure_unique_name=True).execute(num_retries=args.retries)
 
 # copy_workflow(wf_uuid, src, dst, args)
 #
@@ -590,17 +479,16 @@ def create_collection_from(c, src, dst, args):
     available."""
 
     collection_uuid = c['uuid']
-    del c['uuid']
+    body = {}
+    for d in ('description', 'manifest_text', 'name', 'portable_data_hash', 'properties'):
+        body[d] = c[d]
 
-    if not c["name"]:
-        c['name'] = "copied from " + collection_uuid
+    if not body["name"]:
+        body['name'] = "copied from " + collection_uuid
 
-    if 'properties' in c:
-        del c['properties']
+    body['owner_uuid'] = args.project_uuid
 
-    c['owner_uuid'] = args.project_uuid
-
-    dst_collection = dst.collections().create(body=c, ensure_unique_name=True).execute(num_retries=args.retries)
+    dst_collection = dst.collections().create(body=body, ensure_unique_name=True).execute(num_retries=args.retries)
 
     # Create docker_image_repo+tag and docker_image_hash links
     # at the destination.
