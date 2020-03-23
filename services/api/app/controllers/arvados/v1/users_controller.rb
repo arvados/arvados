@@ -22,7 +22,7 @@ class Arvados::V1::UsersController < ApplicationController
       rescue ActiveRecord::RecordNotUnique
         retry
       end
-      u.update_attributes!(attrs)
+      u.update_attributes!(nullify_attrs(attrs))
       @objects << u
     end
     @offset = 0

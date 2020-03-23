@@ -486,12 +486,20 @@ class ApplicationController < ActionController::Base
   # Go code may send empty values (ie: empty string instead of NULL) that
   # should be translated to NULL on the database.
   def set_nullable_attrs_to_null
-    (resource_attrs.keys & nullable_attributes).each do |attr|
-      val = resource_attrs[attr]
+    nullify_attrs(resource_attrs.to_hash).each do |k, v|
+      resource_attrs[k] = v
+    end
+  end
+
+  def nullify_attrs(a = {})
+    new_attrs = a.to_hash.symbolize_keys
+    (new_attrs.keys & nullable_attributes).each do |attr|
+      val = new_attrs[attr]
       if (val.class == Integer && val == 0) || (val.class == String && val == "")
-        resource_attrs[attr] = nil
+        new_attrs[attr] = nil
       end
     end
+    return new_attrs
   end
 
   def reload_object_before_update
