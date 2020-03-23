@@ -1057,6 +1057,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
               newuuid => {
                 'first_name' => 'noot',
                 'email' => 'root@remot.example.com',
+                'username' => '',
               },
             }})
     assert_response(:success)
