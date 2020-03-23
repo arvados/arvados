@@ -8,8 +8,8 @@
 #
 # By default, arv-copy recursively copies any dependent objects
 # necessary to make the object functional in the new instance
-# (e.g. for a pipeline instance, arv-copy copies the pipeline
-# template, input collection, docker images, git repositories). If
+# (e.g. for a workflow, arv-copy copies the workflow,
+# input collections, and docker images). If
 # --no-recursive is given, arv-copy copies only the single record
 # identified by object-uuid.
 #
@@ -86,9 +86,6 @@ def main():
     copy_opts.add_argument(
         '-f', '--force', dest='force', action='store_true',
         help='Perform copy even if the object appears to exist at the remote destination.')
-    copy_opts.add_argument(
-        '--force-filters', action='store_true', default=False,
-        help="Copy pipeline template filters verbatim, even if they act differently on the destination cluster.")
     copy_opts.add_argument(
         '--src', dest='source_arvados', required=True,
         help='The name of the source Arvados instance (required) - points at an Arvados config file. May be either a pathname to a config file, or (for example) "foo" as shorthand for $HOME/.config/arvados/foo.conf.')
@@ -270,41 +267,6 @@ def exception_handler(handler, *exc_types):
     except exc_types as error:
         handler(error)
 
-def migrate_components_filters(template_components, dst_git_repo):
-    """Update template component filters in-place for the destination.
-
-    template_components is a dictionary of components in a pipeline template.
-    This method walks over each component's filters, and updates them to have
-    identical semantics on the destination cluster.  It returns a list of
-    error strings that describe what filters could not be updated safely.
-
-    dst_git_repo is the name of the destination Git repository, which can
-    be None if that is not known.
-    """
-    errors = []
-    for cname, cspec in template_components.items():
-        def add_error(errmsg):
-            errors.append("{}: {}".format(cname, errmsg))
-        if not isinstance(cspec, dict):
-            add_error("value is not a component definition")
-            continue
-        src_repository = cspec.get('repository')
-        filters = cspec.get('filters', [])
-        if not isinstance(filters, list):
-            add_error("filters are not a list")
-            continue
-        for cfilter in filters:
-            if not (isinstance(cfilter, list) and (len(cfilter) == 3)):
-                add_error("malformed filter {!r}".format(cfilter))
-                continue
-            if attr_filtered(cfilter, 'repository'):
-                with exception_handler(add_error, ValueError):
-                    migrate_repository_filter(cfilter, src_repository, dst_git_repo)
-            if attr_filtered(cfilter, 'script_version'):
-                with exception_handler(add_error, ValueError):
-                    migrate_script_version_filter(cfilter)
-    return errors
-
 
 # copy_workflow(wf_uuid, src, dst, args)
 #
@@ -407,53 +369,6 @@ def copy_collections(obj, src, dst, args):
         return type(obj)(copy_collections(v, src, dst, args) for v in obj)
     return obj
 
-def migrate_jobspec(jobspec, src, dst, dst_repo, args):
-    """Copy a job's script to the destination repository, and update its record.
-
-    Given a jobspec dictionary, this function finds the referenced script from
-    src and copies it to dst and dst_repo.  It also updates jobspec in place to
-    refer to names on the destination.
-    """
-    repo = jobspec.get('repository')
-    if repo is None:
-        return
-    # script_version is the "script_version" parameter from the source
-    # component or job.  If no script_version was supplied in the
-    # component or job, it is a mistake in the pipeline, but for the
-    # purposes of copying the repository, default to "master".
-    script_version = jobspec.get('script_version') or 'master'
-    script_key = (repo, script_version)
-    if script_key not in scripts_copied:
-        copy_git_repo(repo, src, dst, dst_repo, script_version, args)
-        scripts_copied.add(script_key)
-    jobspec['repository'] = dst_repo
-    repo_dir = local_repo_dir[repo]
-    for version_key in ['script_version', 'supplied_script_version']:
-        if version_key in jobspec:
-            jobspec[version_key] = git_rev_parse(jobspec[version_key], repo_dir)
-
-# copy_git_repos(p, src, dst, dst_repo, args)
-#
-#    Copies all git repositories referenced by pipeline instance or
-#    template 'p' from src to dst.
-#
-#    For each component c in the pipeline:
-#      * Copy git repositories named in c['repository'] and c['job']['repository'] if present
-#      * Rename script versions:
-#          * c['script_version']
-#          * c['job']['script_version']
-#          * c['job']['supplied_script_version']
-#        to the commit hashes they resolve to, since any symbolic
-#        names (tags, branches) are not preserved in the destination repo.
-#
-#    The pipeline object is updated in place with the new repository
-#    names.  The return value is undefined.
-#
-def copy_git_repos(p, src, dst, dst_repo, args):
-    for component in p['components'].values():
-        migrate_jobspec(component, src, dst, dst_repo, args)
-        if 'job' in component:
-            migrate_jobspec(component['job'], src, dst, dst_repo, args)
 
 def total_collection_size(manifest_text):
     """Return the total number of bytes in this collection (excluding
@@ -750,19 +665,6 @@ def copy_git_repo(src_git_repo, src, dst, dst_git_repo, script_version, args):
                              env={"HOME": os.environ["HOME"],
                                   "ARVADOS_API_TOKEN": dst.api_token,
                                   "GIT_ASKPASS": "/bin/false"})
-
-def copy_docker_images(pipeline, src, dst, args):
-    """Copy any docker images named in the pipeline components'
-    runtime_constraints field from src to dst."""
-
-    logger.debug('copy_docker_images: {}'.format(pipeline['uuid']))
-    for c_name, c_info in pipeline['components'].items():
-        if ('runtime_constraints' in c_info and
-            'docker_image' in c_info['runtime_constraints']):
-            copy_docker_image(
-                c_info['runtime_constraints']['docker_image'],
-                c_info['runtime_constraints'].get('docker_image_tag', 'latest'),
-                src, dst, args)
 
 
 def copy_docker_image(docker_image, docker_image_tag, src, dst, args):
