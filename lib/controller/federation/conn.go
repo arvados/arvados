@@ -351,18 +351,18 @@ var userAttrsCachedFromLoginCluster = map[string]bool{
 	"is_admin":                true,
 	"last_name":               true,
 	"modified_at":             true,
-	"modified_by_client_uuid": true,
-	"modified_by_user_uuid":   true,
 	"prefs":                   true,
 	"username":                true,
 
-	"etag":         false,
-	"full_name":    false,
-	"identity_url": false,
-	"is_invited":   false,
-	"owner_uuid":   false,
-	"uuid":         false,
-	"writable_by":  false,
+	"etag":                    false,
+	"full_name":               false,
+	"identity_url":            false,
+	"is_invited":              false,
+	"modified_by_client_uuid": false,
+	"modified_by_user_uuid":   false,
+	"owner_uuid":              false,
+	"uuid":                    false,
+	"writable_by":             false,
 }
 
 func (conn *Conn) UserList(ctx context.Context, options arvados.ListOptions) (arvados.UserList, error) {
