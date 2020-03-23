@@ -344,15 +344,15 @@ func (conn *Conn) SpecimenDelete(ctx context.Context, options arvados.DeleteOpti
 }
 
 var userAttrsCachedFromLoginCluster = map[string]bool{
-	"created_at":              true,
-	"email":                   true,
-	"first_name":              true,
-	"is_active":               true,
-	"is_admin":                true,
-	"last_name":               true,
-	"modified_at":             true,
-	"prefs":                   true,
-	"username":                true,
+	"created_at":  true,
+	"email":       true,
+	"first_name":  true,
+	"is_active":   true,
+	"is_admin":    true,
+	"last_name":   true,
+	"modified_at": true,
+	"prefs":       true,
+	"username":    true,
 
 	"etag":                    false,
 	"full_name":               false,
