@@ -261,8 +261,11 @@ rm ${zip}
 			}
 		}
 
+		// The entry in /etc/locale.gen is "en_US.UTF-8"; once
+		// it's installed, locale -a reports it as
+		// "en_US.utf8".
 		wantlocale := "en_US.UTF-8"
-		if havelocales, err := exec.Command("locale", "-a").CombinedOutput(); err == nil && bytes.Contains(havelocales, []byte(wantlocale+"\n")) {
+		if havelocales, err := exec.Command("locale", "-a").CombinedOutput(); err == nil && bytes.Contains(havelocales, []byte(strings.Replace(wantlocale+"\n", "UTF-", "utf", 1))) {
 			logger.Print("locale " + wantlocale + " already installed")
 		} else {
 			err = runBash(`sed -i 's/^# *\(`+wantlocale+`\)/\1/' /etc/locale.gen && locale-gen`, stdout, stderr)
