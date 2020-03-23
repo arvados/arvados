@@ -99,6 +99,8 @@ func (installCommand) RunCommand(prog string, args []string, stdin io.Reader, st
 			"curl",
 			"cython",
 			"daemontools", // lib/boot uses setuidgid to drop privileges when running as root
+			"default-jdk-headless",
+			"default-jre-headless",
 			"fuse",
 			"gettext",
 			"git",
