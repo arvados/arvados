@@ -552,9 +552,10 @@ setup_ruby_environment() {
         (
             export HOME=$GEMHOME
             bundlers="$(gem list --details bundler)"
-            for v in 1.11 1.17.3 2.0.2; do
+            versions=(1.11.0 1.17.3 2.0.2)
+            for v in ${versions[@]}; do
                 if ! echo "$bundlers" | fgrep -q "($v)"; then
-                    gem install --user bundler:1.11 bundler:1.17.3 bundler:2.0.2
+                    gem install --user $(for v in ${versions[@]}; do echo bundler:${v}; done)
                     break
                 fi
             done
