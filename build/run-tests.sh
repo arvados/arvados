@@ -1065,7 +1065,7 @@ test_sdk/cli() {
 }
 
 test_sdk/java-v2() {
-    cd "$WORKSPACE/sdk/java-v2" && gradle test
+    cd "$WORKSPACE/sdk/java-v2" && gradle test ${testargs[sdk/java-v2]}
 }
 
 test_services/login-sync() {
