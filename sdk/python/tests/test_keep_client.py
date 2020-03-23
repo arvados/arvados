@@ -832,7 +832,9 @@ class KeepClientTimeout(keepstub.StubKeepServers, unittest.TestCase):
         kc = self.keepClient()
         loc = kc.put(self.DATA, copies=1, num_retries=0)
         self.server.setbandwidth(self.BANDWIDTH_LOW_LIM)
-        self.server.setdelays(response=self.TIMEOUT_TIME)
+        # Note the actual delay must be 1s longer than the low speed
+        # limit interval in order for curl to detect it reliably.
+        self.server.setdelays(response=self.TIMEOUT_TIME+1)
         with self.assertTakesGreater(self.TIMEOUT_TIME):
             with self.assertRaises(arvados.errors.KeepReadError):
                 kc.get(loc, num_retries=0)
@@ -846,7 +848,9 @@ class KeepClientTimeout(keepstub.StubKeepServers, unittest.TestCase):
         kc = self.keepClient()
         loc = kc.put(self.DATA, copies=1, num_retries=0)
         self.server.setbandwidth(self.BANDWIDTH_LOW_LIM)
-        self.server.setdelays(mid_write=self.TIMEOUT_TIME, mid_read=self.TIMEOUT_TIME)
+        # Note the actual delay must be 1s longer than the low speed
+        # limit interval in order for curl to detect it reliably.
+        self.server.setdelays(mid_write=self.TIMEOUT_TIME+1, mid_read=self.TIMEOUT_TIME+1)
         with self.assertTakesGreater(self.TIMEOUT_TIME):
             with self.assertRaises(arvados.errors.KeepReadError) as e:
                 kc.get(loc, num_retries=0)
