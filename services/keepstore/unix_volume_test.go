@@ -13,7 +13,6 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -168,11 +167,10 @@ func (s *UnixVolumeSuite) TestPutBadVolume(c *check.C) {
 	v := s.newTestableUnixVolume(c, s.cluster, arvados.Volume{Replication: 1}, s.metrics, false)
 	defer v.Teardown()
 
-	os.Chmod(v.Root, 000)
-	err := v.Put(context.Background(), TestHash, TestBlock)
-	if err == nil {
-		c.Error("Write should have failed")
-	}
+	err := os.RemoveAll(v.Root)
+	c.Assert(err, check.IsNil)
+	err = v.Put(context.Background(), TestHash, TestBlock)
+	c.Check(err, check.IsNil)
 }
 
 func (s *UnixVolumeSuite) TestUnixVolumeReadonly(c *check.C) {
@@ -330,11 +328,14 @@ func (s *UnixVolumeSuite) TestUnixVolumeCompare(c *check.C) {
 		c.Errorf("Got err %q, expected %q", err, DiskHashError)
 	}
 
-	p := fmt.Sprintf("%s/%s/%s", v.Root, TestHash[:3], TestHash)
-	os.Chmod(p, 000)
-	err = v.Compare(context.Background(), TestHash, TestBlock)
-	if err == nil || strings.Index(err.Error(), "permission denied") < 0 {
-		c.Errorf("Got err %q, expected %q", err, "permission denied")
+	if os.Getuid() == 0 {
+		c.Log("skipping 'permission denied' check when running as root")
+	} else {
+		p := fmt.Sprintf("%s/%s/%s", v.Root, TestHash[:3], TestHash)
+		err = os.Chmod(p, 000)
+		c.Assert(err, check.IsNil)
+		err = v.Compare(context.Background(), TestHash, TestBlock)
+		c.Check(err, check.ErrorMatches, ".*permission denied.*")
 	}
 }
 
