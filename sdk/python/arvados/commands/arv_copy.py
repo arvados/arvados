@@ -99,17 +99,8 @@ def main():
         '--no-recursive', dest='recursive', action='store_false',
         help='Do not copy any dependencies. NOTE: if this option is given, the copied object will need to be updated manually in order to be functional.')
     copy_opts.add_argument(
-        '--dst-git-repo', dest='dst_git_repo',
-        help='The name of the destination git repository. Required when copying a pipeline recursively.')
-    copy_opts.add_argument(
         '--project-uuid', dest='project_uuid',
-        help='The UUID of the project at the destination to which the pipeline should be copied.')
-    copy_opts.add_argument(
-        '--allow-git-http-src', action="store_true",
-        help='Allow cloning git repositories over insecure http')
-    copy_opts.add_argument(
-        '--allow-git-http-dst', action="store_true",
-        help='Allow pushing git repositories over insecure http')
+        help='The UUID of the project at the destination to which the collection or workflow should be copied.')
 
     copy_opts.add_argument(
         'object_uuid',
@@ -118,7 +109,7 @@ def main():
     copy_opts.set_defaults(recursive=True)
 
     parser = argparse.ArgumentParser(
-        description='Copy a pipeline instance, template, workflow, or collection from one Arvados instance to another.',
+        description='Copy a workflow or collection from one Arvados instance to another.',
         parents=[copy_opts, arv_cmd.retry_opt])
     args = parser.parse_args()
 
@@ -468,7 +459,7 @@ def copy_collection(obj_uuid, src, dst, args):
             c = items[0]
         if not c:
             # See if there is a collection that's in the same project
-            # as the root item (usually a pipeline) being copied.
+            # as the root item (usually a workflow) being copied.
             for i in items:
                 if i.get("owner_uuid") == src_owner_uuid and i.get("name"):
                     c = i
@@ -618,55 +609,6 @@ def select_git_url(api, repo_name, retries, allow_insecure_http, allow_insecure_
     return (git_url, git_config)
 
 
-# copy_git_repo(src_git_repo, src, dst, dst_git_repo, script_version, args)
-#
-#    Copies commits from git repository 'src_git_repo' on Arvados
-#    instance 'src' to 'dst_git_repo' on 'dst'.  Both src_git_repo
-#    and dst_git_repo are repository names, not UUIDs (i.e. "arvados"
-#    or "jsmith")
-#
-#    All commits will be copied to a destination branch named for the
-#    source repository URL.
-#
-#    The destination repository must already exist.
-#
-#    The user running this command must be authenticated
-#    to both repositories.
-#
-def copy_git_repo(src_git_repo, src, dst, dst_git_repo, script_version, args):
-    # Identify the fetch and push URLs for the git repositories.
-
-    (src_git_url, src_git_config) = select_git_url(src, src_git_repo, args.retries, args.allow_git_http_src, "--allow-git-http-src")
-    (dst_git_url, dst_git_config) = select_git_url(dst, dst_git_repo, args.retries, args.allow_git_http_dst, "--allow-git-http-dst")
-
-    logger.debug('src_git_url: {}'.format(src_git_url))
-    logger.debug('dst_git_url: {}'.format(dst_git_url))
-
-    dst_branch = re.sub(r'\W+', '_', "{}_{}".format(src_git_url, script_version))
-
-    # Copy git commits from src repo to dst repo.
-    if src_git_repo not in local_repo_dir:
-        local_repo_dir[src_git_repo] = tempfile.mkdtemp()
-        arvados.util.run_command(
-            ["git"] + src_git_config + ["clone", "--bare", src_git_url,
-             local_repo_dir[src_git_repo]],
-            cwd=os.path.dirname(local_repo_dir[src_git_repo]),
-            env={"HOME": os.environ["HOME"],
-                 "ARVADOS_API_TOKEN": src.api_token,
-                 "GIT_ASKPASS": "/bin/false"})
-        arvados.util.run_command(
-            ["git", "remote", "add", "dst", dst_git_url],
-            cwd=local_repo_dir[src_git_repo])
-    arvados.util.run_command(
-        ["git", "branch", dst_branch, script_version],
-        cwd=local_repo_dir[src_git_repo])
-    arvados.util.run_command(["git"] + dst_git_config + ["push", "dst", dst_branch],
-                             cwd=local_repo_dir[src_git_repo],
-                             env={"HOME": os.environ["HOME"],
-                                  "ARVADOS_API_TOKEN": dst.api_token,
-                                  "GIT_ASKPASS": "/bin/false"})
-
-
 def copy_docker_image(docker_image, docker_image_tag, src, dst, args):
     """Copy the docker image identified by docker_image and
     docker_image_tag from src to dst. Create appropriate
@@ -707,7 +649,7 @@ def git_rev_parse(rev, repo):
 #    the second field of the uuid.  This function consults the api's
 #    schema to identify the object class.
 #
-#    It returns a string such as 'Collection', 'PipelineInstance', etc.
+#    It returns a string such as 'Collection', 'Workflow', etc.
 #
 #    Special case: if handed a Keep locator hash, return 'Collection'.
 #
