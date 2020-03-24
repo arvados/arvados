@@ -95,6 +95,7 @@ func (installCommand) RunCommand(prog string, args []string, stdin io.Reader, st
 			"bison",
 			"bsdmainutils",
 			"build-essential",
+			"ca-certificates",
 			"cadaver",
 			"curl",
 			"cython",
