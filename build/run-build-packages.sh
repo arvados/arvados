@@ -322,10 +322,10 @@ package_go_binary tools/keep-exercise keep-exercise \
 # The Python SDK - Should be built first because it's needed by others
 fpm_build_virtualenv "arvados-python-client" "sdk/python"
 
-# Arvados cwl runner
-fpm_build_virtualenv "arvados-cwl-runner" "sdk/cwl"
+# The Python SDK - Python3 package
+fpm_build_virtualenv "arvados-python-client" "sdk/python" "python3"
 
-# Arvados cwl runner - Python3 package
+# Arvados cwl runner - Only supports Python3 now
 fpm_build_virtualenv "arvados-cwl-runner" "sdk/cwl" "python3"
 
 # The PAM module
@@ -339,9 +339,6 @@ fpm_build_virtualenv "arvados-node-manager" "services/nodemanager"
 
 # The Arvados crunchstat-summary tool
 fpm_build_virtualenv "crunchstat-summary" "tools/crunchstat-summary"
-
-# The Python SDK - Python3 package
-fpm_build_virtualenv "arvados-python-client" "sdk/python" "python3"
 
 # The Docker image cleaner
 fpm_build_virtualenv "arvados-docker-cleaner" "services/dockercleaner" "python3"
