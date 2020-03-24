@@ -55,7 +55,7 @@ func (f *Filter) UnmarshalJSON(data []byte) error {
 	}
 	operand := elements[2]
 	switch operand.(type) {
-	case string, float64, []interface{}, nil:
+	case string, float64, []interface{}, nil, bool:
 	default:
 		return fmt.Errorf("invalid filter operand %q", elements[2])
 	}
