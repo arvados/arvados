@@ -58,7 +58,7 @@ func (cl *collectionLister) CollectionList(ctx context.Context, options arvados.
 		if cl.MaxPageSize > 0 && len(resp.Items) >= cl.MaxPageSize {
 			break
 		}
-		if options.Limit >= 0 && len(resp.Items) >= options.Limit {
+		if options.Limit >= 0 && int64(len(resp.Items)) >= options.Limit {
 			break
 		}
 		if cl.matchFilters(c, options.Filters) {
@@ -115,8 +115,8 @@ func (s *CollectionListSuite) SetUpTest(c *check.C) {
 
 type listTrial struct {
 	count        string
-	limit        int
-	offset       int
+	limit        int64
+	offset       int64
 	order        []string
 	filters      []arvados.Filter
 	selectfields []string
@@ -314,7 +314,7 @@ func (s *CollectionListSuite) TestCollectionListMultiSiteWithCount(c *check.C) {
 }
 
 func (s *CollectionListSuite) TestCollectionListMultiSiteWithLimit(c *check.C) {
-	for _, limit := range []int{0, 1, 2} {
+	for _, limit := range []int64{0, 1, 2} {
 		s.test(c, listTrial{
 			count: "none",
 			limit: limit,

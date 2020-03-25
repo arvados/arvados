@@ -7,6 +7,7 @@ package federation
 import (
 	"encoding/json"
 	"errors"
+	"math"
 	"net/url"
 	"os"
 	"strings"
@@ -32,6 +33,7 @@ func (s *UserSuite) TestLoginClusterUserList(c *check.C) {
 	for _, updateFail := range []bool{false, true} {
 		for _, opts := range []arvados.ListOptions{
 			{Offset: 0, Limit: -1, Select: nil},
+			{Offset: 0, Limit: math.MaxInt64, Select: nil},
 			{Offset: 1, Limit: 1, Select: nil},
 			{Offset: 0, Limit: 2, Select: []string{"uuid"}},
 			{Offset: 0, Limit: 2, Select: []string{"uuid", "email"}},
@@ -45,6 +47,9 @@ func (s *UserSuite) TestLoginClusterUserList(c *check.C) {
 				s.fed.local = rpc.NewConn(s.cluster.ClusterID, spy.URL, true, rpc.PassthroughTokenProvider)
 			}
 			userlist, err := s.fed.UserList(s.ctx, opts)
+			if err != nil {
+				c.Logf("... UserList failed %q", err)
+			}
 			if updateFail && err == nil {
 				// All local updates fail, so the only
 				// cases expected to succeed are the
