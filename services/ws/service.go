@@ -7,7 +7,6 @@ package ws
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/lib/service"
@@ -31,12 +30,11 @@ func newHandler(ctx context.Context, cluster *arvados.Cluster, token string, reg
 		QueueSize:    cluster.API.WebsocketServerEventQueue,
 		Logger:       ctxlog.FromContext(ctx),
 	}
+	done := make(chan struct{})
 	go func() {
 		eventSource.Run()
 		ctxlog.FromContext(ctx).Error("event source stopped")
-		if !testMode {
-			os.Exit(1)
-		}
+		close(done)
 	}()
 	eventSource.WaitReady()
 	if err := eventSource.DBHealth(); err != nil {
@@ -47,6 +45,7 @@ func newHandler(ctx context.Context, cluster *arvados.Cluster, token string, reg
 		client:         client,
 		eventSource:    eventSource,
 		newPermChecker: func() permChecker { return newPermChecker(*client) },
+		done:           done,
 	}
 	return rtr
 }

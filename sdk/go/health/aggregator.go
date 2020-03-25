@@ -46,6 +46,10 @@ func (agg *Aggregator) CheckHealth() error {
 	return nil
 }
 
+func (agg *Aggregator) Done() <-chan struct{} {
+	return nil
+}
+
 func (agg *Aggregator) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	agg.setupOnce.Do(agg.setup)
 	sendErr := func(statusCode int, err error) {

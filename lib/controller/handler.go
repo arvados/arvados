@@ -67,6 +67,10 @@ func (h *Handler) CheckHealth() error {
 	return err
 }
 
+func (h *Handler) Done() <-chan struct{} {
+	return nil
+}
+
 func neverRedirect(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
 
 func (h *Handler) setup() {

@@ -37,6 +37,7 @@ type router struct {
 	handler   *handler
 	mux       *http.ServeMux
 	setupOnce sync.Once
+	done      chan struct{}
 
 	lastReqID  int64
 	lastReqMtx sync.Mutex
@@ -164,4 +165,8 @@ func (rtr *router) jsonHandler(fn func() interface{}) http.Handler {
 func (rtr *router) CheckHealth() error {
 	rtr.setupOnce.Do(rtr.setup)
 	return rtr.eventSource.DBHealth()
+}
+
+func (rtr *router) Done() <-chan struct{} {
+	return rtr.done
 }

@@ -53,6 +53,11 @@ func (srv *Server) CheckHealth() error {
 	return nil
 }
 
+// Done implements service.Handler.
+func (srv *Server) Done() <-chan struct{} {
+	return nil
+}
+
 func (srv *Server) run() {
 	var err error
 	if srv.RunOptions.Once {
