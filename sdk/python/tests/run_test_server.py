@@ -675,6 +675,7 @@ def setup_config():
 	    "dbname": "arvados_test",
 	    "user": "arvados",
 	    "password": "insecure_arvados_test",
+            "template": "template0", # used by RailsAPI when [re]creating the database
         }
 
     localhost = "127.0.0.1"

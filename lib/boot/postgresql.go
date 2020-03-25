@@ -154,7 +154,7 @@ func (runPostgreSQL) Run(ctx context.Context, fail func(error), super *Superviso
 	if err != nil {
 		return fmt.Errorf("createuser failed: %s", err)
 	}
-	_, err = conn.ExecContext(ctx, `CREATE DATABASE `+pq.QuoteIdentifier(super.cluster.PostgreSQL.Connection["dbname"]))
+	_, err = conn.ExecContext(ctx, `CREATE DATABASE `+pq.QuoteIdentifier(super.cluster.PostgreSQL.Connection["dbname"])+` WITH TEMPLATE template0 ENCODING 'utf8'`)
 	if err != nil {
 		return fmt.Errorf("createdb failed: %s", err)
 	}
