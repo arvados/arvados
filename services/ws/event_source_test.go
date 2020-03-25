@@ -16,8 +16,6 @@ import (
 	check "gopkg.in/check.v1"
 )
 
-var _ debugStatuser = (*pgEventSource)(nil)
-
 var _ = check.Suite(&eventSourceSuite{})
 
 type eventSourceSuite struct{}

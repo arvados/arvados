@@ -7,12 +7,12 @@ package ws
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"flag"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -21,6 +21,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/sdk/go/httpserver"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 	check "gopkg.in/check.v1"
@@ -30,6 +31,7 @@ var _ = check.Suite(&serviceSuite{})
 
 type serviceSuite struct {
 	handler service.Handler
+	reg     *prometheus.Registry
 	srv     *httptest.Server
 	cluster *arvados.Cluster
 	wg      sync.WaitGroup
@@ -41,9 +43,11 @@ func (s *serviceSuite) SetUpTest(c *check.C) {
 	c.Assert(err, check.IsNil)
 }
 
-func (s *serviceSuite) start() {
-	s.handler = newHandler(context.Background(), s.cluster, "", prometheus.NewRegistry())
-	s.srv = httptest.NewServer(s.handler)
+func (s *serviceSuite) start(c *check.C) {
+	s.reg = prometheus.NewRegistry()
+	s.handler = newHandler(context.Background(), s.cluster, "", s.reg)
+	instrumented := httpserver.Instrument(s.reg, ctxlog.TestLogger(c), s.handler)
+	s.srv = httptest.NewServer(instrumented.ServeAPI(s.cluster.ManagementToken, instrumented))
 }
 
 func (s *serviceSuite) TearDownTest(c *check.C) {
@@ -67,6 +71,7 @@ func (*serviceSuite) testConfig(c *check.C) (*arvados.Cluster, error) {
 	cluster.SystemRootToken = client.AuthToken
 	cluster.TLS.Insecure = client.Insecure
 	cluster.PostgreSQL.Connection = testDBConfig()
+	cluster.PostgreSQL.ConnectionPool = 12
 	cluster.Services.Websocket.InternalURLs = map[arvados.URL]arvados.ServiceInstance{arvados.URL{Host: ":"}: arvados.ServiceInstance{}}
 	cluster.ManagementToken = arvadostest.ManagementToken
 	return cluster, nil
@@ -77,7 +82,7 @@ func (*serviceSuite) testConfig(c *check.C) (*arvados.Cluster, error) {
 // startup.
 func (s *serviceSuite) TestBadDB(c *check.C) {
 	s.cluster.PostgreSQL.Connection["password"] = "1234"
-	s.start()
+	s.start(c)
 	resp, err := http.Get(s.srv.URL)
 	c.Check(err, check.IsNil)
 	c.Check(resp.StatusCode, check.Equals, http.StatusInternalServerError)
@@ -87,7 +92,7 @@ func (s *serviceSuite) TestBadDB(c *check.C) {
 }
 
 func (s *serviceSuite) TestHealth(c *check.C) {
-	s.start()
+	s.start(c)
 	for _, token := range []string{"", "foo", s.cluster.ManagementToken} {
 		req, err := http.NewRequest("GET", s.srv.URL+"/_health/ping", nil)
 		c.Assert(err, check.IsNil)
@@ -107,22 +112,36 @@ func (s *serviceSuite) TestHealth(c *check.C) {
 	}
 }
 
-func (s *serviceSuite) TestStatus(c *check.C) {
-	s.start()
-	req, err := http.NewRequest("GET", s.srv.URL+"/status.json", nil)
-	c.Assert(err, check.IsNil)
-	resp, err := http.DefaultClient.Do(req)
-	c.Check(err, check.IsNil)
-	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
-	var status map[string]interface{}
-	err = json.NewDecoder(resp.Body).Decode(&status)
-	c.Check(err, check.IsNil)
-	c.Check(status["Version"], check.Not(check.Equals), "")
+func (s *serviceSuite) TestMetrics(c *check.C) {
+	s.start(c)
+	s.handler.CheckHealth()
+	for deadline := time.Now().Add(time.Second); ; {
+		req, err := http.NewRequest("GET", s.srv.URL+"/metrics", nil)
+		c.Assert(err, check.IsNil)
+		req.Header.Set("Authorization", "Bearer "+s.cluster.ManagementToken)
+		resp, err := http.DefaultClient.Do(req)
+		c.Check(err, check.IsNil)
+		c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+		text, err := ioutil.ReadAll(resp.Body)
+		c.Check(err, check.IsNil)
+		if strings.Contains(string(text), "_db_max_connections 0\n") {
+			// wait for the first db stats update
+			if time.Now().After(deadline) {
+				c.Fatal("timed out")
+			}
+			time.Sleep(time.Second / 50)
+			continue
+		}
+		c.Check(string(text), check.Matches, `(?ms).*\narvados_ws_db_max_connections 12\n.*`)
+		c.Check(string(text), check.Matches, `(?ms).*\narvados_ws_db_open_connections\{inuse="0"\} \d+\n.*`)
+		c.Check(string(text), check.Matches, `(?ms).*\narvados_ws_db_open_connections\{inuse="1"\} \d+\n.*`)
+		break
+	}
 }
 
 func (s *serviceSuite) TestHealthDisabled(c *check.C) {
 	s.cluster.ManagementToken = ""
-	s.start()
+	s.start(c)
 	for _, token := range []string{"", "foo", arvadostest.ManagementToken} {
 		req, err := http.NewRequest("GET", s.srv.URL+"/_health/ping", nil)
 		c.Assert(err, check.IsNil)

@@ -132,16 +132,21 @@ func (ps *pgEventSource) setup() {
 		Help:      "Open connections to the database",
 	}, []string{"inuse"})
 	ps.Reg.MustRegister(openConnections)
+
+	updateDBStats := func() {
+		stats := ps.db.Stats()
+		maxConnections.Set(float64(stats.MaxOpenConnections))
+		openConnections.WithLabelValues("0").Set(float64(stats.Idle))
+		openConnections.WithLabelValues("1").Set(float64(stats.InUse))
+	}
 	go func() {
 		<-ps.ready
 		if ps.db == nil {
 			return
 		}
+		updateDBStats()
 		for range time.Tick(time.Second) {
-			stats := ps.db.Stats()
-			maxConnections.Set(float64(stats.MaxOpenConnections))
-			openConnections.WithLabelValues("0").Set(float64(stats.Idle))
-			openConnections.WithLabelValues("1").Set(float64(stats.InUse))
+			updateDBStats()
 		}
 	}()
 }
@@ -192,7 +197,7 @@ func (ps *pgEventSource) Run() {
 		return
 	}
 	if ps.MaxOpenConns <= 0 {
-		ps.Logger.Warn("no database connection limit configured -- consider setting PostgresPool>0 in arvados-ws configuration file")
+		ps.Logger.Warn("no database connection limit configured -- consider setting PostgreSQL.ConnectionPool>0 in arvados-ws configuration file")
 	}
 	db.SetMaxOpenConns(ps.MaxOpenConns)
 	if err = db.Ping(); err != nil {

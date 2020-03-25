@@ -40,7 +40,7 @@ type v0Suite struct {
 
 func (s *v0Suite) SetUpTest(c *check.C) {
 	s.serviceSuite.SetUpTest(c)
-	s.serviceSuite.start()
+	s.serviceSuite.start(c)
 
 	s.token = arvadostest.ActiveToken
 	s.ignoreLogID = s.lastLogID(c)
