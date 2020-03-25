@@ -2,17 +2,16 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package main
+package ws
 
 import (
 	"database/sql"
 	"fmt"
-	"os"
-	"path/filepath"
 	"sync"
 	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	check "gopkg.in/check.v1"
 )
 
@@ -21,7 +20,7 @@ var _ = check.Suite(&eventSourceSuite{})
 type eventSourceSuite struct{}
 
 func testDBConfig() arvados.PostgreSQLConnection {
-	cfg, err := arvados.GetConfig(filepath.Join(os.Getenv("WORKSPACE"), "tmp", "arvados.yml"))
+	cfg, err := arvados.GetConfig(arvados.DefaultConfigFile)
 	if err != nil {
 		panic(err)
 	}
@@ -46,6 +45,7 @@ func (*eventSourceSuite) TestEventSource(c *check.C) {
 	pges := &pgEventSource{
 		DataSource: cfg.String(),
 		QueueSize:  4,
+		Logger:     ctxlog.TestLogger(c),
 	}
 	go pges.Run()
 	sinks := make([]eventSink, 18)

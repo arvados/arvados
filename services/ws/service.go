@@ -1,0 +1,52 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: AGPL-3.0
+
+package ws
+
+import (
+	"context"
+	"fmt"
+	"os"
+
+	"git.arvados.org/arvados.git/lib/cmd"
+	"git.arvados.org/arvados.git/lib/service"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"github.com/prometheus/client_golang/prometheus"
+)
+
+var testMode = false
+
+var Command cmd.Handler = service.Command(arvados.ServiceNameWebsocket, newHandler)
+
+func newHandler(ctx context.Context, cluster *arvados.Cluster, token string, reg *prometheus.Registry) service.Handler {
+	client, err := arvados.NewClientFromConfig(cluster)
+	if err != nil {
+		return service.ErrorHandler(ctx, cluster, fmt.Errorf("error initializing client from cluster config: %s", err))
+	}
+	eventSource := &pgEventSource{
+		DataSource:   cluster.PostgreSQL.Connection.String(),
+		MaxOpenConns: cluster.PostgreSQL.ConnectionPool,
+		QueueSize:    cluster.API.WebsocketServerEventQueue,
+		Logger:       ctxlog.FromContext(ctx),
+	}
+	go func() {
+		eventSource.Run()
+		ctxlog.FromContext(ctx).Error("event source stopped")
+		if !testMode {
+			os.Exit(1)
+		}
+	}()
+	eventSource.WaitReady()
+	if err := eventSource.DBHealth(); err != nil {
+		return service.ErrorHandler(ctx, cluster, err)
+	}
+	rtr := &router{
+		cluster:        cluster,
+		client:         client,
+		eventSource:    eventSource,
+		newPermChecker: func() permChecker { return newPermChecker(*client) },
+	}
+	return rtr
+}

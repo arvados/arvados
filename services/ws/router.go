@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package main
+package ws
 
 import (
 	"encoding/json"
@@ -13,6 +13,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/health"
@@ -28,7 +29,7 @@ type wsConn interface {
 }
 
 type router struct {
-	client         arvados.Client
+	client         *arvados.Client
 	cluster        *arvados.Cluster
 	eventSource    eventSource
 	newPermChecker func() permChecker
@@ -71,7 +72,7 @@ func (rtr *router) setup() {
 		},
 		Log: func(r *http.Request, err error) {
 			if err != nil {
-				logger(r.Context()).WithError(err).Error("error")
+				ctxlog.FromContext(r.Context()).WithError(err).Error("error")
 			}
 		},
 	})
@@ -84,15 +85,15 @@ func (rtr *router) makeServer(newSession sessionFactory) *websocket.Server {
 		},
 		Handler: websocket.Handler(func(ws *websocket.Conn) {
 			t0 := time.Now()
-			log := logger(ws.Request().Context())
-			log.Info("connected")
+			logger := ctxlog.FromContext(ws.Request().Context())
+			logger.Info("connected")
 
-			stats := rtr.handler.Handle(ws, rtr.eventSource,
+			stats := rtr.handler.Handle(ws, logger, rtr.eventSource,
 				func(ws wsConn, sendq chan<- interface{}) (session, error) {
-					return newSession(ws, sendq, rtr.eventSource.DB(), rtr.newPermChecker(), &rtr.client)
+					return newSession(ws, sendq, rtr.eventSource.DB(), rtr.newPermChecker(), rtr.client)
 				})
 
-			log.WithFields(logrus.Fields{
+			logger.WithFields(logrus.Fields{
 				"elapsed": time.Now().Sub(t0).Seconds(),
 				"stats":   stats,
 			}).Info("disconnect")
@@ -125,7 +126,7 @@ func (rtr *router) DebugStatus() interface{} {
 func (rtr *router) Status() interface{} {
 	return map[string]interface{}{
 		"Clients": atomic.LoadInt64(&rtr.status.ReqsActive),
-		"Version": version,
+		"Version": cmd.Version.String(),
 	}
 }
 
@@ -135,7 +136,7 @@ func (rtr *router) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	atomic.AddInt64(&rtr.status.ReqsActive, 1)
 	defer atomic.AddInt64(&rtr.status.ReqsActive, -1)
 
-	logger := logger(req.Context()).
+	logger := ctxlog.FromContext(req.Context()).
 		WithField("RequestID", rtr.newReqID())
 	ctx := ctxlog.Context(req.Context(), logger)
 	req = req.WithContext(ctx)
@@ -148,7 +149,7 @@ func (rtr *router) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 
 func (rtr *router) jsonHandler(fn func() interface{}) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		logger := logger(r.Context())
+		logger := ctxlog.FromContext(r.Context())
 		w.Header().Set("Content-Type", "application/json")
 		enc := json.NewEncoder(w)
 		err := enc.Encode(fn())
@@ -158,4 +159,9 @@ func (rtr *router) jsonHandler(fn func() interface{}) http.Handler {
 			http.Error(w, msg, http.StatusInternalServerError)
 		}
 	})
+}
+
+func (rtr *router) CheckHealth() error {
+	rtr.setupOnce.Do(rtr.setup)
+	return rtr.eventSource.DBHealth()
 }

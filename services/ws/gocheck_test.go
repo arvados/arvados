@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package main
+package ws
 
 import (
 	"testing"
@@ -12,4 +12,8 @@ import (
 
 func TestGocheck(t *testing.T) {
 	check.TestingT(t)
+}
+
+func init() {
+	testMode = true
 }

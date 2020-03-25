@@ -2,39 +2,57 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package main
+package ws
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
+	"flag"
 	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"sync"
 	"time"
 
 	"git.arvados.org/arvados.git/lib/config"
+	"git.arvados.org/arvados.git/lib/service"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/sirupsen/logrus"
 	check "gopkg.in/check.v1"
 )
 
-var _ = check.Suite(&serverSuite{})
+var _ = check.Suite(&serviceSuite{})
 
-type serverSuite struct {
+type serviceSuite struct {
+	handler service.Handler
+	srv     *httptest.Server
 	cluster *arvados.Cluster
-	srv     *server
 	wg      sync.WaitGroup
 }
 
-func (s *serverSuite) SetUpTest(c *check.C) {
+func (s *serviceSuite) SetUpTest(c *check.C) {
 	var err error
 	s.cluster, err = s.testConfig(c)
 	c.Assert(err, check.IsNil)
-	s.srv = &server{cluster: s.cluster}
 }
 
-func (*serverSuite) testConfig(c *check.C) (*arvados.Cluster, error) {
+func (s *serviceSuite) start() {
+	s.handler = newHandler(context.Background(), s.cluster, "", prometheus.NewRegistry())
+	s.srv = httptest.NewServer(s.handler)
+}
+
+func (s *serviceSuite) TearDownTest(c *check.C) {
+	if s.srv != nil {
+		s.srv.Close()
+	}
+}
+
+func (*serviceSuite) testConfig(c *check.C) (*arvados.Cluster, error) {
 	ldr := config.NewLoader(nil, ctxlog.TestLogger(c))
 	cfg, err := ldr.Load()
 	if err != nil {
@@ -54,42 +72,24 @@ func (*serverSuite) testConfig(c *check.C) (*arvados.Cluster, error) {
 	return cluster, nil
 }
 
-// TestBadDB ensures Run() returns an error (instead of panicking or
-// deadlocking) if it can't connect to the database server at startup.
-func (s *serverSuite) TestBadDB(c *check.C) {
+// TestBadDB ensures the server returns an error (instead of panicking
+// or deadlocking) if it can't connect to the database server at
+// startup.
+func (s *serviceSuite) TestBadDB(c *check.C) {
 	s.cluster.PostgreSQL.Connection["password"] = "1234"
-
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		err := s.srv.Run()
-		c.Check(err, check.NotNil)
-		wg.Done()
-	}()
-	wg.Add(1)
-	go func() {
-		s.srv.WaitReady()
-		wg.Done()
-	}()
-
-	done := make(chan bool)
-	go func() {
-		wg.Wait()
-		close(done)
-	}()
-	select {
-	case <-done:
-	case <-time.After(10 * time.Second):
-		c.Fatal("timeout")
-	}
+	s.start()
+	resp, err := http.Get(s.srv.URL)
+	c.Check(err, check.IsNil)
+	c.Check(resp.StatusCode, check.Equals, http.StatusInternalServerError)
+	c.Check(s.handler.CheckHealth(), check.ErrorMatches, "database not connected")
+	c.Check(err, check.IsNil)
+	c.Check(resp.StatusCode, check.Equals, http.StatusInternalServerError)
 }
 
-func (s *serverSuite) TestHealth(c *check.C) {
-	go s.srv.Run()
-	defer s.srv.Close()
-	s.srv.WaitReady()
+func (s *serviceSuite) TestHealth(c *check.C) {
+	s.start()
 	for _, token := range []string{"", "foo", s.cluster.ManagementToken} {
-		req, err := http.NewRequest("GET", "http://"+s.srv.listener.Addr().String()+"/_health/ping", nil)
+		req, err := http.NewRequest("GET", s.srv.URL+"/_health/ping", nil)
 		c.Assert(err, check.IsNil)
 		if token != "" {
 			req.Header.Add("Authorization", "Bearer "+token)
@@ -107,11 +107,9 @@ func (s *serverSuite) TestHealth(c *check.C) {
 	}
 }
 
-func (s *serverSuite) TestStatus(c *check.C) {
-	go s.srv.Run()
-	defer s.srv.Close()
-	s.srv.WaitReady()
-	req, err := http.NewRequest("GET", "http://"+s.srv.listener.Addr().String()+"/status.json", nil)
+func (s *serviceSuite) TestStatus(c *check.C) {
+	s.start()
+	req, err := http.NewRequest("GET", s.srv.URL+"/status.json", nil)
 	c.Assert(err, check.IsNil)
 	resp, err := http.DefaultClient.Do(req)
 	c.Check(err, check.IsNil)
@@ -122,15 +120,11 @@ func (s *serverSuite) TestStatus(c *check.C) {
 	c.Check(status["Version"], check.Not(check.Equals), "")
 }
 
-func (s *serverSuite) TestHealthDisabled(c *check.C) {
+func (s *serviceSuite) TestHealthDisabled(c *check.C) {
 	s.cluster.ManagementToken = ""
-
-	go s.srv.Run()
-	defer s.srv.Close()
-	s.srv.WaitReady()
-
+	s.start()
 	for _, token := range []string{"", "foo", arvadostest.ManagementToken} {
-		req, err := http.NewRequest("GET", "http://"+s.srv.listener.Addr().String()+"/_health/ping", nil)
+		req, err := http.NewRequest("GET", s.srv.URL+"/_health/ping", nil)
 		c.Assert(err, check.IsNil)
 		req.Header.Add("Authorization", "Bearer "+token)
 		resp, err := http.DefaultClient.Do(req)
@@ -139,7 +133,7 @@ func (s *serverSuite) TestHealthDisabled(c *check.C) {
 	}
 }
 
-func (s *serverSuite) TestLoadLegacyConfig(c *check.C) {
+func (s *serviceSuite) TestLoadLegacyConfig(c *check.C) {
 	content := []byte(`
 Client:
   APIHost: example.com
@@ -175,7 +169,14 @@ ManagementToken: qqqqq
 		c.Error(err)
 
 	}
-	cluster := configure(logger(nil), []string{"arvados-ws", "-config", tmpfile.Name()})
+	ldr := config.NewLoader(&bytes.Buffer{}, logrus.New())
+	flagset := flag.NewFlagSet("", flag.ContinueOnError)
+	ldr.SetupFlags(flagset)
+	flagset.Parse(ldr.MungeLegacyConfigArgs(ctxlog.TestLogger(c), []string{"-config", tmpfile.Name()}, "-legacy-ws-config"))
+	cfg, err := ldr.Load()
+	c.Check(err, check.IsNil)
+	cluster, err := cfg.GetCluster("")
+	c.Check(err, check.IsNil)
 	c.Check(cluster, check.NotNil)
 
 	c.Check(cluster.Services.Controller.ExternalURL, check.Equals, arvados.URL{Scheme: "https", Host: "example.com"})

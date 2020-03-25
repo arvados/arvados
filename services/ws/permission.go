@@ -2,14 +2,16 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package main
+package ws
 
 import (
+	"context"
 	"net/http"
 	"net/url"
 	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 )
 
 const (
@@ -19,7 +21,7 @@ const (
 
 type permChecker interface {
 	SetToken(token string)
-	Check(uuid string) (bool, error)
+	Check(ctx context.Context, uuid string) (bool, error)
 }
 
 func newPermChecker(ac arvados.Client) permChecker {
@@ -54,9 +56,9 @@ func (pc *cachingPermChecker) SetToken(token string) {
 	pc.cache = make(map[string]cacheEnt)
 }
 
-func (pc *cachingPermChecker) Check(uuid string) (bool, error) {
+func (pc *cachingPermChecker) Check(ctx context.Context, uuid string) (bool, error) {
 	pc.nChecks++
-	logger := logger(nil).
+	logger := ctxlog.FromContext(ctx).
 		WithField("token", pc.Client.AuthToken).
 		WithField("uuid", uuid)
 	pc.tidy()
