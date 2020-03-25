@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"math"
 	"net"
 	"net/url"
 	"os"
@@ -250,5 +251,25 @@ func (s *IntegrationSuite) TestListUsers(c *check.C) {
 	c.Assert(nullUsername, check.Equals, true)
 	// Ask for the user list on z3333 using z1111's system root token
 	_, err = conn3.UserList(rootctx1, arvados.ListOptions{Limit: -1})
+	c.Assert(err, check.IsNil, check.Commentf("getting user list: %q", err))
+}
+
+// Test for bug #16263
+func (s *IntegrationSuite) TestListUsersWithMaxLimit(c *check.C) {
+	rootctx1, _, _ := s.rootClients("z1111")
+	conn3 := s.conn("z3333")
+	maxLimit := int64(math.MaxInt64)
+
+	// Make sure LoginCluster is properly configured
+	for cls := range s.testClusters {
+		c.Check(
+			s.testClusters[cls].config.Clusters[cls].Login.LoginCluster,
+			check.Equals, "z1111",
+			check.Commentf("incorrect LoginCluster config on cluster %q", cls))
+	}
+
+	// Ask for the user list on z3333 using z1111's system root token and
+	// limit: max int64 value.
+	_, err := conn3.UserList(rootctx1, arvados.ListOptions{Limit: maxLimit})
 	c.Assert(err, check.IsNil, check.Commentf("getting user list: %q", err))
 }
