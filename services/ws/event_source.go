@@ -11,11 +11,11 @@ import (
 	"fmt"
 	"strconv"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/stats"
 	"github.com/lib/pq"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 )
 
@@ -24,6 +24,7 @@ type pgEventSource struct {
 	MaxOpenConns int
 	QueueSize    int
 	Logger       logrus.FieldLogger
+	Reg          *prometheus.Registry
 
 	db         *sql.DB
 	pqListener *pq.Listener
@@ -32,16 +33,14 @@ type pgEventSource struct {
 	mtx        sync.Mutex
 
 	lastQDelay time.Duration
-	eventsIn   uint64
-	eventsOut  uint64
+	eventsIn   prometheus.Counter
+	eventsOut  prometheus.Counter
 
 	cancel func()
 
 	setupOnce sync.Once
 	ready     chan bool
 }
-
-var _ debugStatuser = (*pgEventSource)(nil)
 
 func (ps *pgEventSource) listenerProblem(et pq.ListenerEventType, err error) {
 	if et == pq.ListenerEventConnected {
@@ -61,6 +60,90 @@ func (ps *pgEventSource) listenerProblem(et pq.ListenerEventType, err error) {
 
 func (ps *pgEventSource) setup() {
 	ps.ready = make(chan bool)
+	ps.Reg.MustRegister(prometheus.NewGaugeFunc(
+		prometheus.GaugeOpts{
+			Namespace: "arvados",
+			Subsystem: "ws",
+			Name:      "queue_len",
+			Help:      "Current number of events in queue",
+		}, func() float64 { return float64(len(ps.queue)) }))
+	ps.Reg.MustRegister(prometheus.NewGaugeFunc(
+		prometheus.GaugeOpts{
+			Namespace: "arvados",
+			Subsystem: "ws",
+			Name:      "queue_cap",
+			Help:      "Event queue capacity",
+		}, func() float64 { return float64(cap(ps.queue)) }))
+	ps.Reg.MustRegister(prometheus.NewGaugeFunc(
+		prometheus.GaugeOpts{
+			Namespace: "arvados",
+			Subsystem: "ws",
+			Name:      "queue_delay",
+			Help:      "Queue delay of the last emitted event",
+		}, func() float64 { return ps.lastQDelay.Seconds() }))
+	ps.Reg.MustRegister(prometheus.NewGaugeFunc(
+		prometheus.GaugeOpts{
+			Namespace: "arvados",
+			Subsystem: "ws",
+			Name:      "sinks",
+			Help:      "Number of active sinks (connections)",
+		}, func() float64 { return float64(len(ps.sinks)) }))
+	ps.Reg.MustRegister(prometheus.NewGaugeFunc(
+		prometheus.GaugeOpts{
+			Namespace: "arvados",
+			Subsystem: "ws",
+			Name:      "sinks_blocked",
+			Help:      "Number of sinks (connections) that are busy and blocking the main event stream",
+		}, func() float64 {
+			ps.mtx.Lock()
+			defer ps.mtx.Unlock()
+			blocked := 0
+			for sink := range ps.sinks {
+				blocked += len(sink.channel)
+			}
+			return float64(blocked)
+		}))
+	ps.eventsIn = prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: "arvados",
+		Subsystem: "ws",
+		Name:      "events_in",
+		Help:      "Number of events received from postgresql notify channel",
+	})
+	ps.Reg.MustRegister(ps.eventsIn)
+	ps.eventsOut = prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: "arvados",
+		Subsystem: "ws",
+		Name:      "events_out",
+		Help:      "Number of events sent to client sessions (before filtering)",
+	})
+	ps.Reg.MustRegister(ps.eventsOut)
+
+	maxConnections := prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "arvados",
+		Subsystem: "ws",
+		Name:      "db_max_connections",
+		Help:      "Maximum number of open connections to the database",
+	})
+	ps.Reg.MustRegister(maxConnections)
+	openConnections := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "arvados",
+		Subsystem: "ws",
+		Name:      "db_open_connections",
+		Help:      "Open connections to the database",
+	}, []string{"inuse"})
+	ps.Reg.MustRegister(openConnections)
+	go func() {
+		<-ps.ready
+		if ps.db == nil {
+			return
+		}
+		for range time.Tick(time.Second) {
+			stats := ps.db.Stats()
+			maxConnections.Set(float64(stats.MaxOpenConnections))
+			openConnections.WithLabelValues("0").Set(float64(stats.Idle))
+			openConnections.WithLabelValues("1").Set(float64(stats.InUse))
+		}
+	}()
 }
 
 // Close stops listening for new events and disconnects all clients.
@@ -151,9 +234,9 @@ func (ps *pgEventSource) Run() {
 			ps.lastQDelay = e.Ready.Sub(e.Received)
 
 			ps.mtx.Lock()
-			atomic.AddUint64(&ps.eventsOut, uint64(len(ps.sinks)))
 			for sink := range ps.sinks {
 				sink.channel <- e
+				ps.eventsOut.Inc()
 			}
 			ps.mtx.Unlock()
 		}
@@ -207,7 +290,7 @@ func (ps *pgEventSource) Run() {
 				logger:   ps.Logger,
 			}
 			ps.Logger.WithField("event", e).Debug("incoming")
-			atomic.AddUint64(&ps.eventsIn, 1)
+			ps.eventsIn.Inc()
 			ps.queue <- e
 			go e.Detail()
 		}
@@ -258,8 +341,6 @@ func (ps *pgEventSource) DebugStatus() interface{} {
 		blocked += len(sink.channel)
 	}
 	return map[string]interface{}{
-		"EventsIn":     atomic.LoadUint64(&ps.eventsIn),
-		"EventsOut":    atomic.LoadUint64(&ps.eventsOut),
 		"Queue":        len(ps.queue),
 		"QueueLimit":   cap(ps.queue),
 		"QueueDelay":   stats.Duration(ps.lastQDelay),

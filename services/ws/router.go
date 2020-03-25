@@ -17,6 +17,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/health"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/websocket"
 )
@@ -38,6 +39,7 @@ type router struct {
 	mux       *http.ServeMux
 	setupOnce sync.Once
 	done      chan struct{}
+	reg       *prometheus.Registry
 
 	lastReqID  int64
 	lastReqMtx sync.Mutex
@@ -55,16 +57,24 @@ type debugStatuser interface {
 }
 
 func (rtr *router) setup() {
+	mSockets := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "arvados",
+		Subsystem: "ws",
+		Name:      "sockets",
+		Help:      "Number of connected sockets",
+	}, []string{"version"})
+	rtr.reg.MustRegister(mSockets)
+
 	rtr.handler = &handler{
 		PingTimeout: time.Duration(rtr.cluster.API.SendTimeout),
 		QueueSize:   rtr.cluster.API.WebsocketClientEventQueue,
 	}
 	rtr.mux = http.NewServeMux()
-	rtr.mux.Handle("/websocket", rtr.makeServer(newSessionV0))
-	rtr.mux.Handle("/arvados/v1/events.ws", rtr.makeServer(newSessionV1))
 	rtr.mux.Handle("/debug.json", rtr.jsonHandler(rtr.DebugStatus))
 	rtr.mux.Handle("/status.json", rtr.jsonHandler(rtr.Status))
 
+	rtr.mux.Handle("/websocket", rtr.makeServer(newSessionV0, mSockets.WithLabelValues("0")))
+	rtr.mux.Handle("/arvados/v1/events.ws", rtr.makeServer(newSessionV1, mSockets.WithLabelValues("1")))
 	rtr.mux.Handle("/_health/", &health.Handler{
 		Token:  rtr.cluster.ManagementToken,
 		Prefix: "/_health/",
@@ -79,7 +89,8 @@ func (rtr *router) setup() {
 	})
 }
 
-func (rtr *router) makeServer(newSession sessionFactory) *websocket.Server {
+func (rtr *router) makeServer(newSession sessionFactory, gauge prometheus.Gauge) *websocket.Server {
+	var connected int64
 	return &websocket.Server{
 		Handshake: func(c *websocket.Config, r *http.Request) error {
 			return nil
@@ -88,6 +99,8 @@ func (rtr *router) makeServer(newSession sessionFactory) *websocket.Server {
 			t0 := time.Now()
 			logger := ctxlog.FromContext(ws.Request().Context())
 			logger.Info("connected")
+			atomic.AddInt64(&connected, 1)
+			gauge.Set(float64(atomic.LoadInt64(&connected)))
 
 			stats := rtr.handler.Handle(ws, logger, rtr.eventSource,
 				func(ws wsConn, sendq chan<- interface{}) (session, error) {
@@ -99,6 +112,8 @@ func (rtr *router) makeServer(newSession sessionFactory) *websocket.Server {
 				"stats":   stats,
 			}).Info("disconnect")
 			ws.Close()
+			atomic.AddInt64(&connected, -1)
+			gauge.Set(float64(atomic.LoadInt64(&connected)))
 		}),
 	}
 }

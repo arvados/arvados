@@ -29,6 +29,7 @@ func newHandler(ctx context.Context, cluster *arvados.Cluster, token string, reg
 		MaxOpenConns: cluster.PostgreSQL.ConnectionPool,
 		QueueSize:    cluster.API.WebsocketServerEventQueue,
 		Logger:       ctxlog.FromContext(ctx),
+		Reg:          reg,
 	}
 	done := make(chan struct{})
 	go func() {
@@ -46,6 +47,7 @@ func newHandler(ctx context.Context, cluster *arvados.Cluster, token string, reg
 		eventSource:    eventSource,
 		newPermChecker: func() permChecker { return newPermChecker(*client) },
 		done:           done,
+		reg:            reg,
 	}
 	return rtr
 }

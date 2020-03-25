@@ -12,8 +12,11 @@ import (
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"github.com/prometheus/client_golang/prometheus"
 	check "gopkg.in/check.v1"
 )
+
+var _ debugStatuser = (*pgEventSource)(nil)
 
 var _ = check.Suite(&eventSourceSuite{})
 
@@ -46,6 +49,7 @@ func (*eventSourceSuite) TestEventSource(c *check.C) {
 		DataSource: cfg.String(),
 		QueueSize:  4,
 		Logger:     ctxlog.TestLogger(c),
+		Reg:        prometheus.NewRegistry(),
 	}
 	go pges.Run()
 	sinks := make([]eventSink, 18)
