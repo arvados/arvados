@@ -160,6 +160,7 @@ navbar:
       - admin/merge-remote-account.html.textile.liquid
       - admin/migrating-providers.html.textile.liquid
       - user/topics/arvados-sync-groups.html.textile.liquid
+      - admin/scoped-tokens.html.textile.liquid
     - Monitoring:
       - admin/logging.html.textile.liquid
       - admin/metrics.html.textile.liquid

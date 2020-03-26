@@ -5,8 +5,11 @@
 {
   "$graph": [
     {
+      "$namespaces": {
+        "arv": "http://arvados.org/cwl#"
+      },
       "class": "Workflow",
-      "cwlVersion": "v1.1",
+      "cwlVersion": "v1.0",
       "hints": [],
       "id": "#main",
       "inputs": [
@@ -59,10 +62,10 @@
           "run": {
             "baseCommand": "sleep",
             "class": "CommandLineTool",
-            "id": "#main/sleep1/run/subtool",
+            "id": "#main/sleep1/subtool",
             "inputs": [
               {
-                "id": "#main/sleep1/run/subtool/sleeptime",
+                "id": "#main/sleep1/subtool/sleeptime",
                 "inputBinding": {
                   "position": 1
                 },
@@ -71,7 +74,7 @@
             ],
             "outputs": [
               {
-                "id": "#main/sleep1/run/subtool/out",
+                "id": "#main/sleep1/subtool/out",
                 "outputBinding": {
                   "outputEval": "out"
                 },
@@ -83,5 +86,5 @@
       ]
     }
   ],
-  "cwlVersion": "v1.1"
+  "cwlVersion": "v1.0"
 }

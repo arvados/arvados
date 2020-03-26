@@ -7,7 +7,6 @@ package federation
 import (
 	"bytes"
 	"context"
-	"crypto/md5"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -35,7 +34,7 @@ func New(cluster *arvados.Cluster) *Conn {
 	local := localdb.NewConn(cluster)
 	remotes := map[string]backend{}
 	for id, remote := range cluster.RemoteClusters {
-		if !remote.Proxy {
+		if !remote.Proxy || id == cluster.ClusterID {
 			continue
 		}
 		conn := rpc.NewConn(id, &url.URL{Scheme: remote.Scheme, Host: remote.Host}, remote.Insecure, saltedTokenProvider(local, id))
@@ -169,26 +168,6 @@ func rewriteManifest(mt, remoteID string) string {
 	})
 }
 
-// this could be in sdk/go/arvados
-func portableDataHash(mt string) string {
-	h := md5.New()
-	blkRe := regexp.MustCompile(`^ [0-9a-f]{32}\+\d+`)
-	size := 0
-	_ = regexp.MustCompile(` ?[^ ]*`).ReplaceAllFunc([]byte(mt), func(tok []byte) []byte {
-		if m := blkRe.Find(tok); m != nil {
-			// write hash+size, ignore remaining block hints
-			tok = m
-		}
-		n, err := h.Write(tok)
-		if err != nil {
-			panic(err)
-		}
-		size += n
-		return nil
-	})
-	return fmt.Sprintf("%x+%d", h.Sum(nil), size)
-}
-
 func (conn *Conn) ConfigGet(ctx context.Context) (json.RawMessage, error) {
 	var buf bytes.Buffer
 	err := config.ExportJSON(&buf, conn.cluster)
@@ -269,7 +248,7 @@ func (conn *Conn) CollectionGet(ctx context.Context, options arvados.GetOptions)
 			// options.UUID is either hash+size or
 			// hash+size+hints; only hash+size need to
 			// match the computed PDH.
-			if pdh := portableDataHash(c.ManifestText); pdh != options.UUID && !strings.HasPrefix(options.UUID, pdh+"+") {
+			if pdh := arvados.PortableDataHash(c.ManifestText); pdh != options.UUID && !strings.HasPrefix(options.UUID, pdh+"+") {
 				err = httpErrorf(http.StatusBadGateway, "bad portable data hash %q received from remote %q (expected %q)", pdh, remoteID, options.UUID)
 				ctxlog.FromContext(ctx).Warn(err)
 				return err

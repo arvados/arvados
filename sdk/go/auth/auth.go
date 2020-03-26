@@ -16,8 +16,8 @@ type Credentials struct {
 	Tokens []string
 }
 
-func NewCredentials() *Credentials {
-	return &Credentials{Tokens: []string{}}
+func NewCredentials(tokens ...string) *Credentials {
+	return &Credentials{Tokens: tokens}
 }
 
 func NewContext(ctx context.Context, c *Credentials) context.Context {

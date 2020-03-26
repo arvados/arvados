@@ -127,7 +127,7 @@ sdk/go/blockdigest
 sdk/go/asyncbuf
 sdk/go/stats
 sdk/go/crunchrunner
-sdk/cwl
+sdk/cwl:py3
 sdk/R
 sdk/java-v2
 tools/sync-groups
@@ -393,7 +393,7 @@ checkpidfile() {
 
 checkhealth() {
     svc="$1"
-    base=$(python -c "import yaml; print list(yaml.safe_load(file('$ARVADOS_CONFIG'))['Clusters']['zzzzz']['Services']['$1']['InternalURLs'].keys())[0]")
+    base=$("${VENVDIR}/bin/python" -c "import yaml; print list(yaml.safe_load(file('$ARVADOS_CONFIG'))['Clusters']['zzzzz']['Services']['$1']['InternalURLs'].keys())[0]")
     url="$base/_health/ping"
     if ! curl -Ss -H "Authorization: Bearer e687950a23c3a9bceec28c6223a06c79" "${url}" | tee -a /dev/stderr | grep '"OK"'; then
         echo "${url} failed"
@@ -405,7 +405,7 @@ checkdiscoverydoc() {
     dd="https://${1}/discovery/v1/apis/arvados/v1/rest"
     if ! (set -o pipefail; curl -fsk "$dd" | grep -q ^{ ); then
         echo >&2 "ERROR: could not retrieve discovery doc from RailsAPI at $dd"
-        tail -v $WORKSPACE/services/api/log/test.log
+        tail -v $WORKSPACE/tmp/railsapi.log
         return 1
     fi
     echo "${dd} ok"
@@ -555,7 +555,7 @@ setup_ruby_environment() {
             export HOME=$GEMHOME
             ("$bundle" version | grep -q 2.0.2) \
                 || gem install --user bundler -v 2.0.2
-            "$bundle" version | grep 2.0.2
+            "$bundle" version | tee /dev/stderr | grep -q 'version 2'
         ) || fatal 'install bundler'
     fi
 }
@@ -648,8 +648,13 @@ install_env() {
     . "$VENVDIR/bin/activate"
 
     # Needed for run_test_server.py which is used by certain (non-Python) tests.
-    pip install --no-cache-dir PyYAML future httplib2 \
-        || fatal "`pip install PyYAML future httplib2` failed"
+    (
+        set -e
+        "${VENVDIR}/bin/pip" install PyYAML
+        "${VENV3DIR}/bin/pip" install PyYAML
+        cd "$WORKSPACE/sdk/python"
+        python setup.py install
+    ) || fatal "installing PyYAML and sdk/python failed"
 
     # Preinstall libcloud if using a fork; otherwise nodemanager "pip
     # install" won't pick it up by default.
@@ -890,7 +895,7 @@ bundle_install_trylocal() {
             echo "(Running bundle install again, without --local.)"
             "$bundle" install --no-deployment
         fi
-        "$bundle" package --all
+        "$bundle" package
     )
 }
 
@@ -937,6 +942,7 @@ install_services/login-sync() {
 
 install_services/api() {
     stop_services
+    check_arvados_config "services/api"
     cd "$WORKSPACE/services/api" \
         && RAILS_ENV=test bundle_install_trylocal \
             || return 1
@@ -948,7 +954,7 @@ install_services/api() {
     # database, so that we can drop it. This assumes the current user
     # is a postgresql superuser.
     cd "$WORKSPACE/services/api" \
-        && test_database=$(python -c "import yaml; print yaml.safe_load(file('$ARVADOS_CONFIG'))['Clusters']['zzzzz']['PostgreSQL']['Connection']['dbname']") \
+        && test_database=$("${VENVDIR}/bin/python" -c "import yaml; print yaml.safe_load(file('$ARVADOS_CONFIG'))['Clusters']['zzzzz']['PostgreSQL']['Connection']['dbname']") \
         && psql "$test_database" -c "SELECT pg_terminate_backend (pg_stat_activity.pid::int) FROM pg_stat_activity WHERE pg_stat_activity.datname = '$test_database';" 2>/dev/null
 
     mkdir -p "$WORKSPACE/services/api/tmp/pids"
@@ -972,15 +978,16 @@ install_services/api() {
         && git --git-dir internal.git init \
             || return 1
 
-
-    (cd "$WORKSPACE/services/api"
-     export RAILS_ENV=test
-     if "$bundle" exec rails db:environment:set ; then
-        "$bundle" exec rake db:drop
-     fi
-     "$bundle" exec rake db:setup \
-	 && "$bundle" exec rake db:fixtures:load
-    )
+    (
+        set -e
+        cd "$WORKSPACE/services/api"
+        export RAILS_ENV=test
+        if "$bundle" exec rails db:environment:set ; then
+            "$bundle" exec rake db:drop
+        fi
+        "$bundle" exec rake db:setup
+        "$bundle" exec rake db:fixtures:load
+    ) || return 1
 }
 
 declare -a pythonstuff
@@ -988,7 +995,6 @@ pythonstuff=(
     sdk/pam
     sdk/python
     sdk/python:py3
-    sdk/cwl
     sdk/cwl:py3
     services/dockercleaner:py3
     services/fuse
@@ -1100,7 +1106,7 @@ install_deps() {
     do_install sdk/cli
     do_install sdk/perl
     do_install sdk/python pip
-    do_install sdk/python pip3
+    do_install sdk/python pip "${VENV3DIR}/bin/"
     do_install sdk/ruby
     do_install services/api
     do_install services/arv-git-httpd go
@@ -1266,7 +1272,8 @@ else
                         ${verb}_${target}
                         ;;
                     *)
-                        testargs["$target"]="${opts}"
+			argstarget=${target%:py3}
+                        testargs["$argstarget"]="${opts}"
                         tt="${testfuncargs[${target}]}"
                         tt="${tt:-$target}"
                         do_$verb $tt

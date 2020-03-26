@@ -321,35 +321,33 @@ def run(leave_running_atexit=False):
     port = internal_port_from_config("RailsAPI")
     env = os.environ.copy()
     env['RAILS_ENV'] = 'test'
+    env['ARVADOS_RAILS_LOG_TO_STDOUT'] = '1'
     env.pop('ARVADOS_WEBSOCKETS', None)
     env.pop('ARVADOS_TEST_API_HOST', None)
     env.pop('ARVADOS_API_HOST', None)
     env.pop('ARVADOS_API_HOST_INSECURE', None)
     env.pop('ARVADOS_API_TOKEN', None)
-    start_msg = subprocess.check_output(
+    logf = open(_logfilename('railsapi'), 'a')
+    railsapi = subprocess.Popen(
         ['bundle', 'exec',
-         'passenger', 'start', '-d', '-p{}'.format(port),
+         'passenger', 'start', '-p{}'.format(port),
          '--pid-file', pid_file,
-         '--log-file', os.path.join(os.getcwd(), 'log/test.log'),
+         '--log-file', '/dev/stdout',
          '--ssl',
          '--ssl-certificate', 'tmp/self-signed.pem',
          '--ssl-certificate-key', 'tmp/self-signed.key'],
-        env=env)
+        env=env, stdin=open('/dev/null'), stdout=logf, stderr=logf)
 
     if not leave_running_atexit:
         atexit.register(kill_server_pid, pid_file, passenger_root=api_src_dir)
 
-    match = re.search(r'Accessible via: https://(.*?)/', start_msg)
-    if not match:
-        raise Exception(
-            "Passenger did not report endpoint: {}".format(start_msg))
-    my_api_host = match.group(1)
+    my_api_host = "127.0.0.1:"+str(port)
     os.environ['ARVADOS_API_HOST'] = my_api_host
 
     # Make sure the server has written its pid file and started
     # listening on its TCP port
-    find_server_pid(pid_file)
     _wait_until_port_listens(port)
+    find_server_pid(pid_file)
 
     reset()
     os.chdir(restore_cwd)
@@ -606,6 +604,7 @@ def run_nginx():
         return
     stop_nginx()
     nginxconf = {}
+    nginxconf['LISTENHOST'] = 'localhost'
     nginxconf['CONTROLLERPORT'] = internal_port_from_config("Controller")
     nginxconf['CONTROLLERSSLPORT'] = external_port_from_config("Controller")
     nginxconf['KEEPWEBPORT'] = internal_port_from_config("WebDAV")
@@ -616,7 +615,9 @@ def run_nginx():
     nginxconf['GITPORT'] = internal_port_from_config("GitHTTP")
     nginxconf['GITSSLPORT'] = external_port_from_config("GitHTTP")
     nginxconf['WSPORT'] = internal_port_from_config("Websocket")
-    nginxconf['WSSPORT'] = external_port_from_config("Websocket")
+    nginxconf['WSSSLPORT'] = external_port_from_config("Websocket")
+    nginxconf['WORKBENCH1PORT'] = internal_port_from_config("Workbench1")
+    nginxconf['WORKBENCH1SSLPORT'] = external_port_from_config("Workbench1")
     nginxconf['SSLCERT'] = os.path.join(SERVICES_SRC_DIR, 'api', 'tmp', 'self-signed.pem')
     nginxconf['SSLKEY'] = os.path.join(SERVICES_SRC_DIR, 'api', 'tmp', 'self-signed.key')
     nginxconf['ACCESSLOG'] = _logfilename('nginx_access')
@@ -627,7 +628,7 @@ def run_nginx():
     conffile = os.path.join(TEST_TMPDIR, 'nginx.conf')
     with open(conffile, 'w') as f:
         f.write(re.sub(
-            r'{{([A-Z]+)}}',
+            r'{{([A-Z]+[A-Z0-9]+)}}',
             lambda match: str(nginxconf.get(match.group(1))),
             open(conftemplatefile).read()))
 
@@ -648,6 +649,8 @@ def setup_config():
     controller_external_port = find_available_port()
     websocket_port = find_available_port()
     websocket_external_port = find_available_port()
+    workbench1_port = find_available_port()
+    workbench1_external_port = find_available_port()
     git_httpd_port = find_available_port()
     git_httpd_external_port = find_available_port()
     keepproxy_port = find_available_port()
@@ -683,6 +686,12 @@ def setup_config():
                 "http://%s:%s"%(localhost, websocket_port): {},
             },
         },
+        "Workbench1": {
+            "ExternalURL": "https://%s:%s/" % (localhost, workbench1_external_port),
+            "InternalURLs": {
+                "http://%s:%s"%(localhost, workbench1_port): {},
+            },
+        },
         "GitHTTP": {
             "ExternalURL": "https://%s:%s" % (localhost, git_httpd_external_port),
             "InternalURLs": {
@@ -712,6 +721,9 @@ def setup_config():
                 "http://%s:%s"%(localhost, keep_web_dl_port): {},
             },
         },
+        "SSO": {
+            "ExternalURL": "http://localhost:3002",
+        },
     }
 
     config = {
@@ -721,6 +733,11 @@ def setup_config():
                 "SystemRootToken": auth_token('system_user'),
                 "API": {
                     "RequestTimeout": "30s",
+                    "RailsSessionSecretToken": "e24205c490ac07e028fd5f8a692dcb398bcd654eff1aef5f9fe6891994b18483",
+                },
+                "Login": {
+                    "ProviderAppID": "arvados-server",
+                    "ProviderAppSecret": "608dbf356a327e2d0d4932b60161e212c2d8d8f5e25690d7b622f850a990cd33",
                 },
                 "SystemLogs": {
                     "LogLevel": ('info' if os.environ.get('ARVADOS_DEBUG', '') in ['','0'] else 'debug'),
@@ -734,14 +751,22 @@ def setup_config():
                 "Services": services,
                 "Users": {
                     "AnonymousUserToken": auth_token('anonymous'),
+                    "UserProfileNotificationAddress": "arvados@example.com",
                 },
                 "Collections": {
                     "BlobSigningKey": "zfhgfenhffzltr9dixws36j1yhksjoll2grmku38mi7yxd66h5j4q9w4jzanezacp8s6q0ro3hxakfye02152hncy6zml2ed0uc",
                     "TrustAllContent": False,
                     "ForwardSlashNameSubstitution": "/",
+                    "TrashSweepInterval": "-1s",
                 },
                 "Git": {
-                    "Repositories": "%s/test" % os.path.join(SERVICES_SRC_DIR, 'api', 'tmp', 'git'),
+                    "Repositories": os.path.join(SERVICES_SRC_DIR, 'api', 'tmp', 'git', 'test'),
+                },
+                "Containers": {
+                    "JobsAPI": {
+                        "GitInternalDir": os.path.join(SERVICES_SRC_DIR, 'api', 'tmp', 'internal.git'),
+                    },
+                    "SupportedDockerImageFormats": {"v1": {}},
                 },
                 "Volumes": {
                     "zzzzz-nyw5e-%015d"%n: {

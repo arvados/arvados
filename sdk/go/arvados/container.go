@@ -121,7 +121,7 @@ const (
 type ContainerRequestState string
 
 const (
-	ContainerRequestStateUncomitted = ContainerState("Uncommitted")
-	ContainerRequestStateCommitted  = ContainerState("Committed")
-	ContainerRequestStateFinal      = ContainerState("Final")
+	ContainerRequestStateUncomitted = ContainerRequestState("Uncommitted")
+	ContainerRequestStateCommitted  = ContainerRequestState("Committed")
+	ContainerRequestStateFinal      = ContainerRequestState("Final")
 )

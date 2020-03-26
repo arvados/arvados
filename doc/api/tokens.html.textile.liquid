@@ -49,9 +49,11 @@ h2(#scopes). Scopes
 
 Scopes can restrict a token so it may only access certain resources.  This is in addition to normal permission checks for the user associated with the token.
 
-Each entry in scopes consists of a @request_method@ and @request_path@, where the @request_method@ is a HTTP method (one of @GET@, @POST@, @PUT@ or @DELETE@) and @request_path@ is the request URI.  A given request is permitted if it matches a scopes exactly, or the scope ends with @/@ and the request string is a prefix of the scope.
+Each entry in scopes consists of a @request_method@ and @request_path@.  The @request_method@ is a HTTP method (one of @GET@, @POST@, @PATCH@ or @DELETE@) and @request_path@ is the request URI.  A given request is permitted if it matches a scopes exactly, or the scope ends with @/@ and the request string is a prefix of the scope.
 
-As a special case, a scope of ["all"] allows all resources.
+As a special case, a scope of @["all"]@ allows all resources.  This is the default if no scope is given.
+
+Using scopes is also described on the "Securing API access with scoped tokens":{{site.baseurl}}/admin/scoped-tokens.html page of the admin documentation.
 
 h3. Scope examples
 
