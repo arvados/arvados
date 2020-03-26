@@ -5,6 +5,7 @@
 package rpc
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"encoding/json"
@@ -14,6 +15,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -100,19 +102,23 @@ func (conn *Conn) requestAndDecode(ctx context.Context, dst interface{}, ep arva
 		return fmt.Errorf("%T: requestAndDecode: Marshal opts: %s", conn, err)
 	}
 	var params map[string]interface{}
-	err = json.Unmarshal(j, &params)
+	dec := json.NewDecoder(bytes.NewBuffer(j))
+	dec.UseNumber()
+	err = dec.Decode(&params)
 	if err != nil {
-		return fmt.Errorf("%T: requestAndDecode: Unmarshal opts: %s", conn, err)
+		return fmt.Errorf("%T: requestAndDecode: Decode opts: %s", conn, err)
 	}
 	if attrs, ok := params["attrs"]; ok && ep.AttrsKey != "" {
 		params[ep.AttrsKey] = attrs
 		delete(params, "attrs")
 	}
-	if limit, ok := params["limit"].(float64); ok && limit < 0 {
-		// Negative limit means "not specified" here, but some
-		// servers/versions do not accept that, so we need to
-		// remove it entirely.
-		delete(params, "limit")
+	if limitStr, ok := params["limit"]; ok {
+		if limit, err := strconv.ParseInt(string(limitStr.(json.Number)), 10, 64); err == nil && limit < 0 {
+			// Negative limit means "not specified" here, but some
+			// servers/versions do not accept that, so we need to
+			// remove it entirely.
+			delete(params, "limit")
+		}
 	}
 	if len(tokens) > 1 {
 		params["reader_tokens"] = tokens[1:]
