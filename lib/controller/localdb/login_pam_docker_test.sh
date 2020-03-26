@@ -131,12 +131,15 @@ docker run --rm --entrypoint= \
        osixia/openldap:1.3.0 \
        bash -c "for f in \$(seq 1 5); do if ldapadd -H '${ldapurl}' -D 'cn=${adminuser},dc=example,dc=org' -w '${adminpassword}' -f /add_example_user.ldif; then exit 0; else sleep 2; fi; done; echo 'failed to add user entry'; exit 1"
 
+echo >&2 "Building arvados controller binary to run in container"
+go build -o "${tmpdir}" ../../../cmd/arvados-server
+
 ctrlctr=ctrl-${RANDOM}
 echo >&2 "Starting arvados controller in docker container ${ctrlctr}"
 docker run --detach --rm --name=${ctrlctr} \
        -p 9999 \
        -v "${tmpdir}/pam_ldap.conf":/etc/pam_ldap.conf:ro \
-       -v "${GOPATH:-${HOME}/go}/bin/arvados-server":/bin/arvados-server:ro \
+       -v "${tmpdir}/arvados-server":/bin/arvados-server:ro \
        -v "${tmpdir}/zzzzz.yml":/etc/arvados/config.yml:ro \
        -v $(realpath "${PWD}/../../.."):/arvados:ro \
        debian:10 \
