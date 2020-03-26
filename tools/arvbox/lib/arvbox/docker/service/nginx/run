@@ -14,6 +14,11 @@ if [[ $containerip != $localip ]] ; then
     fi
 fi
 
+geo_dockerip=
+if  [[ -f /var/run/localip_override ]] ; then
+    geo_dockerip="$dockerip/32 0;"
+fi
+
 openssl verify -CAfile $root_cert $server_cert
 
 cat <<EOF >/var/lib/arvados/nginx.conf
@@ -38,7 +43,7 @@ http {
       default     1;
       127.0.0.0/8 0;
       $containerip/32 0;
-      $dockerip/32 0;
+      $geo_dockerip
   }
 
   server {

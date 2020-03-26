@@ -7,6 +7,8 @@ package main
 import (
 	"context"
 	"database/sql"
+	"errors"
+	"fmt"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -166,11 +168,15 @@ func (ps *pgEventSource) Run() {
 
 		case <-ticker.C:
 			logger(nil).Debug("listener ping")
-			ps.pqListener.Ping()
+			err := ps.pqListener.Ping()
+			if err != nil {
+				ps.listenerProblem(-1, fmt.Errorf("pqListener ping failed: %s", err))
+				continue
+			}
 
 		case pqEvent, ok := <-ps.pqListener.Notify:
 			if !ok {
-				logger(nil).Debug("pqListener Notify chan closed")
+				logger(nil).Error("pqListener Notify chan closed")
 				return
 			}
 			if pqEvent == nil {
@@ -178,7 +184,7 @@ func (ps *pgEventSource) Run() {
 				// itself in addition to sending us a
 				// nil event, so this might be
 				// superfluous:
-				ps.listenerProblem(-1, nil)
+				ps.listenerProblem(-1, errors.New("pqListener Notify chan received nil event"))
 				continue
 			}
 			if pqEvent.Channel != "logs" {

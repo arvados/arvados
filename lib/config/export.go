@@ -138,7 +138,14 @@ var whitelist = map[string]bool{
 	"Login.ProviderAppSecret":                      false,
 	"Login.LoginCluster":                           true,
 	"Login.RemoteTokenRefresh":                     true,
-	"Mail":                                         false,
+	"Mail":                                         true,
+	"Mail.MailchimpAPIKey":                         false,
+	"Mail.MailchimpListID":                         false,
+	"Mail.SendUserSetupNotificationEmail":          false,
+	"Mail.IssueReporterEmailFrom":                  false,
+	"Mail.IssueReporterEmailTo":                    false,
+	"Mail.SupportEmailAddress":                     true,
+	"Mail.EmailFrom":                               false,
 	"ManagementToken":                              false,
 	"PostgreSQL":                                   false,
 	"RemoteClusters":                               true,
@@ -215,6 +222,7 @@ var whitelist = map[string]bool{
 	"Workbench.WelcomePageHTML":                    true,
 	"Workbench.InactivePageHTML":                   true,
 	"Workbench.SSHHelpPageHTML":                    true,
+	"Workbench.SSHHelpHostSuffix":                  true,
 }
 
 func redactUnsafe(m map[string]interface{}, mPrefix, lookupPrefix string) error {

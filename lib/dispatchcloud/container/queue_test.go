@@ -106,6 +106,13 @@ func (suite *IntegrationSuite) TestGetLockUnlockCancel(c *check.C) {
 
 func (suite *IntegrationSuite) TestCancelIfNoInstanceType(c *check.C) {
 	errorTypeChooser := func(ctr *arvados.Container) (arvados.InstanceType, error) {
+		// Make sure the relevant container fields are
+		// actually populated.
+		c.Check(ctr.ContainerImage, check.Equals, "test")
+		c.Check(ctr.RuntimeConstraints.VCPUs, check.Equals, 4)
+		c.Check(ctr.RuntimeConstraints.RAM, check.Equals, int64(12000000000))
+		c.Check(ctr.Mounts["/tmp"].Capacity, check.Equals, int64(24000000000))
+		c.Check(ctr.Mounts["/var/spool/cwl"].Capacity, check.Equals, int64(24000000000))
 		return arvados.InstanceType{}, errors.New("no suitable instance type")
 	}
 

@@ -62,6 +62,7 @@ class ApplicationController < ActionController::Base
       # the browser can't.
       f.json { render opts.merge(json: {success: false, errors: @errors}) }
       f.html { render({action: 'error'}.merge(opts)) }
+      f.all { render({action: 'error', formats: 'text'}.merge(opts)) }
     end
   end
 

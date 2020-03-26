@@ -326,7 +326,7 @@ class UsersTest < ActionDispatch::IntegrationTest
 
   end
 
-  test "cannot set is_activate to false directly" do
+  test "cannot set is_active to false directly" do
     post('/arvados/v1/users',
       params: {
         user: {
@@ -338,6 +338,14 @@ class UsersTest < ActionDispatch::IntegrationTest
     assert_response(:success)
     user = json_response
     assert_equal false, user['is_active']
+
+    token = act_as_system_user do
+      ApiClientAuthorization.create!(user: User.find_by_uuid(user['uuid']), api_client: ApiClient.all.first).api_token
+    end
+    post("/arvados/v1/user_agreements/sign",
+        params: {uuid: 'zzzzz-4zz18-t68oksiu9m80s4y'},
+        headers: {"HTTP_AUTHORIZATION" => "Bearer #{token}"})
+    assert_response :success
 
     post("/arvados/v1/users/#{user['uuid']}/activate",
       params: {},

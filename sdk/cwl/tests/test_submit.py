@@ -18,6 +18,7 @@ import mock
 import sys
 import unittest
 import cwltool.process
+import re
 
 from io import BytesIO
 
@@ -1312,7 +1313,7 @@ class TestSubmit(unittest.TestCase):
 
                 self.assertEqual(exited, 1)
                 self.assertRegexpMatches(
-                    capture_stderr.getvalue(),
+                    re.sub(r'[ \n]+', ' ', capture_stderr.getvalue()),
                     r"Expected collection uuid zzzzz-4zz18-zzzzzzzzzzzzzzz to be 99999999999999999999999999999998\+99 but API server reported 99999999999999999999999999999997\+99")
             finally:
                 cwltool_logger.removeHandler(stderr_logger)

@@ -33,7 +33,8 @@ class UserSessionsController < ApplicationController
     begin
       user = User.register(authinfo)
     rescue => e
-      Rails.logger.warn e
+      Rails.logger.warn "User.register error #{e}"
+      Rails.logger.warn "authinfo was #{authinfo.inspect}"
       return redirect_to login_failure_url
     end
 
