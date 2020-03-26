@@ -40,6 +40,10 @@ if defined?(Bundler)
   end
 end
 
+if ENV["ARVADOS_RAILS_LOG_TO_STDOUT"]
+  Rails.logger = ActiveSupport::TaggedLogging.new(Logger.new(STDOUT))
+end
+
 module Server
   class Application < Rails::Application
     # The following is to avoid SafeYAML's warning message
