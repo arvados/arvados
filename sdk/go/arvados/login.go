@@ -24,6 +24,9 @@ func (resp LoginResponse) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusFound)
 	} else if resp.Token != "" || resp.Message != "" {
 		w.Header().Set("Content-Type", "application/json")
+		if resp.Token == "" {
+			w.WriteHeader(http.StatusUnauthorized)
+		}
 		json.NewEncoder(w).Encode(resp)
 	} else {
 		w.Header().Set("Content-Type", "text/html")

@@ -7,6 +7,7 @@ package localdb
 import (
 	"context"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"strings"
 
@@ -46,10 +47,14 @@ func (s *PamSuite) TestLoginFailure(c *check.C) {
 		Password: "boguspassword",
 		ReturnTo: "https://example.com/foo",
 	})
-	c.Check(err, check.IsNil)
+	c.Check(err, check.ErrorMatches, "Authentication failure")
+	hs, ok := err.(interface{ HTTPStatus() int })
+	if c.Check(ok, check.Equals, true) {
+		c.Check(hs.HTTPStatus(), check.Equals, http.StatusUnauthorized)
+	}
 	c.Check(resp.RedirectLocation, check.Equals, "")
 	c.Check(resp.Token, check.Equals, "")
-	c.Check(resp.Message, check.Equals, "Authentication failure")
+	c.Check(resp.Message, check.Equals, "")
 	c.Check(resp.HTML.String(), check.Equals, "")
 }
 

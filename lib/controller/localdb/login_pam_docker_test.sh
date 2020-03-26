@@ -159,9 +159,24 @@ done
 echo >&2
 echo >&2 "Arvados controller is up at http://${ctrlhostport}"
 
+check_contains() {
+    resp="${1}"
+    str="${2}"
+    if ! echo "${resp}" | fgrep -q "${str}"; then
+        echo >&2 "${resp}"
+        echo >&2 "FAIL: expected in response, but not found: ${str@Q}"
+        return 1
+    fi
+}
+
 echo >&2 "Testing authentication failure"
-curl -s -H "X-Http-Method-Override: GET" -d username=foo -d password=nosecret "http://${ctrlhostport}/login" | tee $debug | grep "Authentication failure"
+resp="$(curl -s --include -H "X-Http-Method-Override: GET" -d username=foo -d password=nosecret "http://${ctrlhostport}/login" | tee $debug)"
+check_contains "${resp}" "HTTP/1.1 401"
+check_contains "${resp}" '{"errors":["Authentication failure"]}'
+
 echo >&2 "Testing authentication success"
-curl -s -H "X-Http-Method-Override: GET" -d username=foo -d password=secret "http://${ctrlhostport}/login" | tee $debug | fgrep '{"token":"v2/zzzzz-gj3su-'
+resp="$(curl -s --include -H "X-Http-Method-Override: GET" -d username=foo -d password=secret "http://${ctrlhostport}/login" | tee $debug)"
+check_contains "${resp}" "HTTP/1.1 200"
+check_contains "${resp}" '{"token":"v2/zzzzz-gj3su-'
 
 cleanup

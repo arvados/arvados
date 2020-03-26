@@ -6,7 +6,9 @@ package localdb
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 	"strings"
 
@@ -14,6 +16,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/sdk/go/httpserver"
 	"github.com/msteinert/pam"
 	"github.com/sirupsen/logrus"
 )
@@ -46,18 +49,18 @@ func (ctrl *pamLoginController) Login(ctx context.Context, opts arvados.LoginOpt
 		}
 	})
 	if err != nil {
-		return arvados.LoginResponse{Message: err.Error()}, nil
+		return arvados.LoginResponse{}, err
 	}
 	err = tx.Authenticate(pam.DisallowNullAuthtok)
 	if err != nil {
-		return arvados.LoginResponse{Message: err.Error()}, nil
+		return arvados.LoginResponse{}, httpserver.ErrorWithStatus(err, http.StatusUnauthorized)
 	}
 	if errorMessage != "" {
-		return arvados.LoginResponse{Message: errorMessage}, nil
+		return arvados.LoginResponse{}, httpserver.ErrorWithStatus(errors.New(errorMessage), http.StatusUnauthorized)
 	}
 	user, err := tx.GetItem(pam.User)
 	if err != nil {
-		return arvados.LoginResponse{Message: err.Error()}, nil
+		return arvados.LoginResponse{}, err
 	}
 	email := user
 	if domain := ctrl.Cluster.Login.PAMDefaultEmailDomain; domain != "" && !strings.Contains(email, "@") {
@@ -76,11 +79,11 @@ func (ctrl *pamLoginController) Login(ctx context.Context, opts arvados.LoginOpt
 		},
 	})
 	if err != nil {
-		return arvados.LoginResponse{Message: err.Error()}, nil
+		return arvados.LoginResponse{}, err
 	}
 	target, err := url.Parse(resp.RedirectLocation)
 	if err != nil {
-		return arvados.LoginResponse{Message: err.Error()}, nil
+		return arvados.LoginResponse{}, err
 	}
 	resp.Token = target.Query().Get("api_token")
 	resp.RedirectLocation = ""
