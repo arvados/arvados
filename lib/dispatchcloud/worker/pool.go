@@ -435,7 +435,7 @@ func (wp *Pool) Shutdown(it arvados.InstanceType) bool {
 		// time (Idle) or the earliest create time (Booting)
 		for _, wkr := range wp.workers {
 			if wkr.idleBehavior != IdleBehaviorHold && wkr.state == tryState && wkr.instType == it {
-				logger.WithField("Instance", wkr.instance).Info("shutting down")
+				logger.WithField("Instance", wkr.instance.ID()).Info("shutting down")
 				wkr.shutdown()
 				return true
 			}
@@ -847,13 +847,13 @@ func (wp *Pool) sync(threshold time.Time, instances []cloud.Instance) {
 		itTag := inst.Tags()[wp.tagKeyPrefix+tagKeyInstanceType]
 		it, ok := wp.instanceTypes[itTag]
 		if !ok {
-			wp.logger.WithField("Instance", inst).Errorf("unknown InstanceType tag %q --- ignoring", itTag)
+			wp.logger.WithField("Instance", inst.ID()).Errorf("unknown InstanceType tag %q --- ignoring", itTag)
 			continue
 		}
 		if wkr, isNew := wp.updateWorker(inst, it); isNew {
 			notify = true
 		} else if wkr.state == StateShutdown && time.Since(wkr.destroyed) > wp.timeoutShutdown {
-			wp.logger.WithField("Instance", inst).Info("worker still listed after shutdown; retrying")
+			wp.logger.WithField("Instance", inst.ID()).Info("worker still listed after shutdown; retrying")
 			wkr.shutdown()
 		}
 	}

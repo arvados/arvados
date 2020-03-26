@@ -60,6 +60,12 @@ func TestLogger(c interface{ Log(...interface{}) }) *logrus.Logger {
 	return logger
 }
 
+// LogWriter returns an io.Writer that writes to the given log func,
+// which is typically (*check.C).Log().
+func LogWriter(log func(...interface{})) io.Writer {
+	return &logWriter{log}
+}
+
 // SetLevel sets the current logging level. See logrus for level
 // names.
 func SetLevel(level string) {

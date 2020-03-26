@@ -623,7 +623,7 @@ Clusters:
       # (experimental) cloud dispatcher for executing containers on
       # worker VMs. Begins with "-----BEGIN RSA PRIVATE KEY-----\n"
       # and ends with "\n-----END RSA PRIVATE KEY-----\n".
-      DispatchPrivateKey: none
+      DispatchPrivateKey: ""
 
       # Maximum time to wait for workers to come up before abandoning
       # stale locks from a previous dispatch process.
@@ -1168,6 +1168,27 @@ Clusters:
       SSHHelpPageHTML: |
         <a href="https://doc.arvados.org/user/getting_started/ssh-access-unix.html">Accessing an Arvados VM with SSH</a> (generic instructions).
         Site configurations vary.  Contact your local cluster administrator if you have difficulty accessing an Arvados shell node.
+
+      # Sample text if you are using a "switchyard" ssh proxy.
+      # Replace "zzzzz" with your Cluster ID.
+      #SSHHelpPageHTML: |
+      # <p>Add a section like this to your SSH configuration file ( <i>~/.ssh/config</i>):</p>
+      # <pre>Host *.zzzzz
+      #  TCPKeepAlive yes
+      #  ServerAliveInterval 60
+      #  ProxyCommand ssh -p2222 turnout@switchyard.zzzzz.arvadosapi.com -x -a $SSH_PROXY_FLAGS %h
+      # </pre>
+
+      # If you are using a switchyard ssh proxy, shell node hostnames
+      # may require a special hostname suffix.  In the sample ssh
+      # configuration above, this would be ".zzzzz"
+      # This is added to the hostname in the "command line" column
+      # the Workbench "shell VMs" page.
+      #
+      # If your shell nodes are directly accessible by users without a
+      # proxy and have fully qualified host names, you should leave
+      # this blank.
+      SSHHelpHostSuffix: ""
 
     # Bypass new (Arvados 1.5) API implementations, and hand off
     # requests directly to Rails instead. This can provide a temporary
