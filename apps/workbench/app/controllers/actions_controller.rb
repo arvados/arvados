@@ -210,7 +210,7 @@ You can try recreating the collection to get a copy with full provenance data."
 
   # star / unstar the current project
   def star
-    links = Link.where(tail_uuid: current_user.uuid,
+    links = Link.where(owner_uuid: current_user.uuid,
                        head_uuid: @object.uuid,
                        link_class: 'star')
 

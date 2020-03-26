@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"time"
 
-	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
-	"git.curoverse.com/arvados.git/sdk/go/stats"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/sdk/go/stats"
 	"github.com/sirupsen/logrus"
 )
 
@@ -68,10 +68,16 @@ func logRequest(w *responseTimer, req *http.Request, lgr *logrus.Entry) {
 func logResponse(w *responseTimer, req *http.Request, lgr *logrus.Entry) {
 	if tStart, ok := req.Context().Value(&requestTimeContextKey).(time.Time); ok {
 		tDone := time.Now()
+		writeTime := w.writeTime
+		if !w.wrote {
+			// Empty response body. Header was sent when
+			// handler exited.
+			writeTime = tDone
+		}
 		lgr = lgr.WithFields(logrus.Fields{
 			"timeTotal":     stats.Duration(tDone.Sub(tStart)),
-			"timeToStatus":  stats.Duration(w.writeTime.Sub(tStart)),
-			"timeWriteBody": stats.Duration(tDone.Sub(w.writeTime)),
+			"timeToStatus":  stats.Duration(writeTime.Sub(tStart)),
+			"timeWriteBody": stats.Duration(tDone.Sub(writeTime)),
 		})
 	}
 	respCode := w.WroteStatus()

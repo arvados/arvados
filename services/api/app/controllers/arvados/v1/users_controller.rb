@@ -4,12 +4,31 @@
 
 class Arvados::V1::UsersController < ApplicationController
   accept_attribute_as_json :prefs, Hash
+  accept_param_as_json :updates
 
   skip_before_action :find_object_by_uuid, only:
-    [:activate, :current, :system, :setup, :merge]
+    [:activate, :current, :system, :setup, :merge, :batch_update]
   skip_before_action :render_404_if_no_object, only:
-    [:activate, :current, :system, :setup, :merge]
-  before_action :admin_required, only: [:setup, :unsetup, :update_uuid]
+    [:activate, :current, :system, :setup, :merge, :batch_update]
+  before_action :admin_required, only: [:setup, :unsetup, :update_uuid, :batch_update]
+
+  # Internal API used by controller to update local cache of user
+  # records from LoginCluster.
+  def batch_update
+    @objects = []
+    params[:updates].andand.each do |uuid, attrs|
+      begin
+        u = User.find_or_create_by(uuid: uuid)
+      rescue ActiveRecord::RecordNotUnique
+        retry
+      end
+      u.update_attributes!(attrs)
+      @objects << u
+    end
+    @offset = 0
+    @limit = -1
+    render_list
+  end
 
   def current
     if current_user
@@ -26,8 +45,11 @@ class Arvados::V1::UsersController < ApplicationController
   end
 
   def activate
+    if params[:id] and params[:id].match(/\D/)
+      params[:uuid] = params.delete :id
+    end
     if current_user.andand.is_admin && params[:uuid]
-      @object = User.find params[:uuid]
+      @object = User.find_by_uuid params[:uuid]
     else
       @object = current_user
     end
@@ -77,8 +99,6 @@ class Arvados::V1::UsersController < ApplicationController
       raise ArgumentError.new "Required uuid or user"
     elsif !params[:user]['email']
       raise ArgumentError.new "Require user email"
-    elsif !params[:openid_prefix]
-      raise ArgumentError.new "Required openid_prefix parameter is missing."
     else
       @object = model_class.create! resource_attrs
     end
@@ -100,12 +120,15 @@ class Arvados::V1::UsersController < ApplicationController
     end
 
     @response = @object.setup(repo_name: full_repo_name,
-                              vm_uuid: params[:vm_uuid],
-                              openid_prefix: params[:openid_prefix])
+                              vm_uuid: params[:vm_uuid])
 
     # setup succeeded. send email to user
     if params[:send_notification_email]
-      UserNotifier.account_is_setup(@object).deliver_now
+      begin
+        UserNotifier.account_is_setup(@object).deliver_now
+      rescue => e
+        logger.warn "Failed to send email to #{@object.email}: #{e}"
+      end
     end
 
     send_json kind: "arvados#HashList", items: @response.as_api_response(nil)
@@ -208,11 +231,11 @@ class Arvados::V1::UsersController < ApplicationController
 
   def self._setup_requires_parameters
     {
+      uuid: {
+        type: 'string', required: false
+      },
       user: {
         type: 'object', required: false
-      },
-      openid_prefix: {
-        type: 'string', required: false
       },
       repo_name: {
         type: 'string', required: false

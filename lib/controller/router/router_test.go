@@ -16,10 +16,10 @@ import (
 	"testing"
 	"time"
 
-	"git.curoverse.com/arvados.git/lib/controller/rpc"
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
-	"github.com/julienschmidt/httprouter"
+	"git.arvados.org/arvados.git/lib/controller/rpc"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvadostest"
+	"github.com/gorilla/mux"
 	check "gopkg.in/check.v1"
 )
 
@@ -38,7 +38,7 @@ type RouterSuite struct {
 func (s *RouterSuite) SetUpTest(c *check.C) {
 	s.stub = arvadostest.APIStub{}
 	s.rtr = &router{
-		mux: httprouter.New(),
+		mux: mux.NewRouter(),
 		fed: &s.stub,
 	}
 	s.rtr.addRoutes()
@@ -101,6 +101,14 @@ func (s *RouterSuite) TestOptions(c *check.C) {
 			method:      "POST",
 			path:        "/arvados/v1/collections?limit=123&_method=GET",
 			body:        `{"offset":456,"include_trash":true,"include_old_versions":true}`,
+			shouldCall:  "CollectionList",
+			withOptions: arvados.ListOptions{Limit: 123, Offset: 456, IncludeTrash: true, IncludeOldVersions: true},
+		},
+		{
+			method:      "POST",
+			path:        "/arvados/v1/collections?limit=123",
+			body:        `{"offset":456,"include_trash":true,"include_old_versions":true}`,
+			header:      http.Header{"X-Http-Method-Override": {"GET"}, "Content-Type": {"application/json"}},
 			shouldCall:  "CollectionList",
 			withOptions: arvados.ListOptions{Limit: 123, Offset: 456, IncludeTrash: true, IncludeOldVersions: true},
 		},
@@ -225,6 +233,13 @@ func (s *RouterIntegrationSuite) TestContainerList(c *check.C) {
 	c.Check(rr.Code, check.Equals, http.StatusOK)
 	c.Check(jresp["items_available"], check.FitsTypeOf, float64(0))
 	c.Check(jresp["items_available"].(float64) > 2, check.Equals, true)
+	c.Check(jresp["items"], check.NotNil)
+	c.Check(jresp["items"], check.HasLen, 0)
+
+	_, rr, jresp = doRequest(c, s.rtr, token, "GET", `/arvados/v1/containers?filters=[["uuid","in",[]]]`, nil, nil)
+	c.Check(rr.Code, check.Equals, http.StatusOK)
+	c.Check(jresp["items_available"], check.Equals, float64(0))
+	c.Check(jresp["items"], check.NotNil)
 	c.Check(jresp["items"], check.HasLen, 0)
 
 	_, rr, jresp = doRequest(c, s.rtr, token, "GET", `/arvados/v1/containers?limit=2&select=["uuid","command"]`, nil, nil)
@@ -271,6 +286,12 @@ func (s *RouterIntegrationSuite) TestContainerLock(c *check.C) {
 	c.Check(jresp["uuid"], check.IsNil)
 }
 
+func (s *RouterIntegrationSuite) TestWritableBy(c *check.C) {
+	_, rr, jresp := doRequest(c, s.rtr, arvadostest.ActiveTokenV2, "GET", `/arvados/v1/users/`+arvadostest.ActiveUserUUID, nil, nil)
+	c.Check(rr.Code, check.Equals, http.StatusOK)
+	c.Check(jresp["writable_by"], check.DeepEquals, []interface{}{"zzzzz-tpzed-000000000000000", "zzzzz-tpzed-xurymjxw79nv3jz", "zzzzz-j7d0g-48foin4vonvc2at"})
+}
+
 func (s *RouterIntegrationSuite) TestFullTimestampsInResponse(c *check.C) {
 	uuid := arvadostest.CollectionReplicationDesired2Confirmed2UUID
 	token := arvadostest.ActiveTokenV2
@@ -306,12 +327,19 @@ func (s *RouterIntegrationSuite) TestSelectParam(c *check.C) {
 		c.Check(rr.Code, check.Equals, http.StatusOK)
 
 		c.Check(resp["kind"], check.Equals, "arvados#container")
+		c.Check(resp["etag"], check.FitsTypeOf, "")
+		c.Check(resp["etag"], check.Not(check.Equals), "")
 		c.Check(resp["uuid"], check.HasLen, 27)
 		c.Check(resp["command"], check.HasLen, 2)
 		c.Check(resp["mounts"], check.IsNil)
 		_, hasMounts := resp["mounts"]
 		c.Check(hasMounts, check.Equals, false)
 	}
+}
+
+func (s *RouterIntegrationSuite) TestHEAD(c *check.C) {
+	_, rr, _ := doRequest(c, s.rtr, arvadostest.ActiveTokenV2, "HEAD", "/arvados/v1/containers/"+arvadostest.QueuedContainerUUID, nil, nil)
+	c.Check(rr.Code, check.Equals, http.StatusOK)
 }
 
 func (s *RouterIntegrationSuite) TestRouteNotFound(c *check.C) {
@@ -349,7 +377,7 @@ func (s *RouterIntegrationSuite) TestCORS(c *check.C) {
 	for _, hdr := range []string{"Authorization", "Content-Type"} {
 		c.Check(rr.Result().Header.Get("Access-Control-Allow-Headers"), check.Matches, ".*"+hdr+".*")
 	}
-	for _, method := range []string{"GET", "HEAD", "PUT", "POST", "DELETE"} {
+	for _, method := range []string{"GET", "HEAD", "PUT", "POST", "PATCH", "DELETE"} {
 		c.Check(rr.Result().Header.Get("Access-Control-Allow-Methods"), check.Matches, ".*"+method+".*")
 	}
 

@@ -7,9 +7,9 @@ package controller
 import (
 	"context"
 
-	"git.curoverse.com/arvados.git/lib/cmd"
-	"git.curoverse.com/arvados.git/lib/service"
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/lib/cmd"
+	"git.arvados.org/arvados.git/lib/service"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"github.com/prometheus/client_golang/prometheus"
 )
 

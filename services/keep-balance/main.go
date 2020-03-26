@@ -9,12 +9,13 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 
-	"git.curoverse.com/arvados.git/lib/config"
-	"git.curoverse.com/arvados.git/lib/service"
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/lib/config"
+	"git.arvados.org/arvados.git/lib/service"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 )
@@ -50,10 +51,17 @@ func runCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.W
 		options.Dumper = dumper
 	}
 
-	// Only pass along the version flag, which gets handled in RunCommand
+	// Drop our custom args that would be rejected by the generic
+	// service.Command
 	args = nil
+	dropFlag := map[string]bool{
+		"once":         true,
+		"commit-pulls": true,
+		"commit-trash": true,
+		"dump":         true,
+	}
 	flags.Visit(func(f *flag.Flag) {
-		if f.Name == "version" {
+		if !dropFlag[f.Name] {
 			args = append(args, "-"+f.Name, f.Value.String())
 		}
 	})
@@ -75,6 +83,7 @@ func runCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.W
 			}
 
 			srv := &Server{
+				Handler:    http.NotFoundHandler(),
 				Cluster:    cluster,
 				ArvClient:  ac,
 				RunOptions: options,

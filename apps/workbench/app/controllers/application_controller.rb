@@ -62,6 +62,7 @@ class ApplicationController < ActionController::Base
       # the browser can't.
       f.json { render opts.merge(json: {success: false, errors: @errors}) }
       f.html { render({action: 'error'}.merge(opts)) }
+      f.all { render({action: 'error', formats: 'text'}.merge(opts)) }
     end
   end
 
@@ -927,7 +928,7 @@ class ApplicationController < ActionController::Base
   helper_method :my_starred_projects
   def my_starred_projects user
     return if defined?(@starred_projects) && @starred_projects
-    links = Link.filter([['tail_uuid', '=', user.uuid],
+    links = Link.filter([['owner_uuid', 'in', ["#{Rails.configuration.ClusterID}-j7d0g-fffffffffffffff", user.uuid]],
                          ['link_class', '=', 'star'],
                          ['head_uuid', 'is_a', 'arvados#group']]).with_count("none").select(%w(head_uuid))
     uuids = links.collect { |x| x.head_uuid }

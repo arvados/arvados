@@ -18,12 +18,12 @@ import (
 	"testing"
 	"time"
 
-	"git.curoverse.com/arvados.git/lib/config"
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
-	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
-	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
-	"git.curoverse.com/arvados.git/sdk/go/keepclient"
+	"git.arvados.org/arvados.git/lib/config"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
+	"git.arvados.org/arvados.git/sdk/go/arvadostest"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	log "github.com/sirupsen/logrus"
 
 	. "gopkg.in/check.v1"
@@ -142,6 +142,7 @@ func (s *ServerRequiredSuite) TestResponseViaHeader(c *C) {
 	resp, err := (&http.Client{}).Do(req)
 	c.Assert(err, Equals, nil)
 	c.Check(resp.Header.Get("Via"), Equals, "HTTP/1.1 keepproxy")
+	c.Assert(resp.StatusCode, Equals, http.StatusOK)
 	locator, err := ioutil.ReadAll(resp.Body)
 	c.Assert(err, Equals, nil)
 	resp.Body.Close()
@@ -485,7 +486,7 @@ func (s *ServerRequiredSuite) TestGetIndex(c *C) {
 	_, _, err = kc.PutB([]byte("some-more-index-data"))
 	c.Check(err, IsNil)
 
-	kc.Arvados.ApiToken = arvadostest.DataManagerToken
+	kc.Arvados.ApiToken = arvadostest.SystemRootToken
 
 	// Invoke GetIndex
 	for _, spec := range []struct {

@@ -11,57 +11,55 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 Arvados Composer is a web-based javascript application for building Common Workflow Languge (CWL) Workflows.
 
-h2. Prerequisites
+# "Install dependencies":#dependencies
+# "Update config.yml":#update-config
+# "Update Nginx configuration":#update-nginx
+# "Install arvados-composer":#install-packages
+# "Restart the API server and controller":#restart-api
+# "Confirm working installation":#confirm-working
+
+h2(#dependencies). Install dependencies
 
 In addition to Arvados core services, Composer requires "Arvados hosted git repositories":install-arv-git-httpd.html which are used for storing workflow files.
 
-h2. Install
-
-Composer may be installed on the same host as Workbench, or on a different host.  Composer communicates directly with the Arvados API server.  It does not require its own backend and should be served as a static file.
-
-On a Debian-based system, install the following package:
-
-<notextile>
-<pre><code>~$ <span class="userinput">sudo apt-get install arvados-composer</span>
-</code></pre>
-</notextile>
-
-On a Red Hat-based system, install the following package:
-
-<notextile>
-<pre><code>~$ <span class="userinput">sudo yum install arvados-composer</span>
-</code></pre>
-</notextile>
-
-h2. Configure
-
-h3. Nginx
-
-Add Composer to your Nginx configuration.  This example will host Composer at @/composer@.
-
-<pre>
-location /composer {
-  root   /var/www/arvados-composer
-  index  index.html
-}
-</pre>
-
-h3. composer.yml
-
-Create @/var/www/arvados-composer/composer.yml@ and set @API_HOST@ to your API server:
-
-<pre>
-API_HOST: zzzzz.arvadosapi.com
-</pre>
-
-h3. Workbench link to composer
+h2(#configure). Update config.yml
 
 Edit @config.yml@ and set @Services.Composer.ExternalURL@ to the location from which it is served:
 
 <notextile>
-<pre><code>Clusters:
-  zzzzz:
-    Services:
+<pre><code>    Services:
       Composer:
-        ExternalURL: <span class="userinput">https://workbench.zzzzz.arvadosapi.com/composer</span></code></pre>
+        ExternalURL: <span class="userinput">https://workbench.CusterID.example.com/composer</span></code></pre>
 </notextile>
+
+h2(#update-nginx). Update nginx configuration
+
+Composer may be served from the same host as Workbench.  Composer communicates directly with the Arvados API server.  It does not require its own backend and should be served as a static file.
+
+Add the following @location@ sections to @/etc/nginx/conf.d/arvados-workbench.conf@ .
+
+<notextile>
+<pre><code>server {
+  [...]
+
+  location /composer {
+    root   /var/www/arvados-composer;
+    index  index.html;
+  }
+
+  location /composer/composer.yml {
+    return 200 '{ "API_HOST": "<span class="userinput">ClusterID.example.com</span>" }';
+  }
+}
+</code></pre>
+</notextile>
+
+{% assign arvados_component = 'arvados-composer' %}
+
+{% include 'install_packages' %}
+
+{% include 'restart_api' %}
+
+h2(#confirm-working). Confirm working installation
+
+Visit @https://workbench.ClusterID.example.com/composer@ in a browser.  You should be able to log in using the login method you configured previously.

@@ -197,14 +197,17 @@ def choose_new_user(args, by_email, email, userhome, username, old_user_uuid, cl
             return None
         print("(%s) No user listed with same email to migrate %s to %s, will create new user with username '%s'" % (email, old_user_uuid, userhome, username))
         if not args.dry_run:
+            oldhomecluster = old_user_uuid[0:5]
+            oldhomearv = clusters[oldhomecluster]
             newhomecluster = userhome[0:5]
             homearv = clusters[userhome]
             user = None
             try:
+                olduser = oldhomearv.users().get(uuid=old_user_uuid).execute()
                 conflicts = homearv.users().list(filters=[["username", "=", username]]).execute()
                 if conflicts["items"]:
                     homearv.users().update(uuid=conflicts["items"][0]["uuid"], body={"user": {"username": username+"migrate"}}).execute()
-                user = homearv.users().create(body={"user": {"email": email, "username": username}}).execute()
+                user = homearv.users().create(body={"user": {"email": email, "username": username, "is_active": olduser["is_active"]}}).execute()
             except arvados.errors.ApiError as e:
                 print("(%s) Could not create user: %s" % (email, str(e)))
                 return None

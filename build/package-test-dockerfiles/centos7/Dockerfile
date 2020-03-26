@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 FROM centos:7
-MAINTAINER Ward Vandewege <wvandewege@veritasgenetics.com>
+MAINTAINER Arvados Package Maintainers <packaging@arvados.org>
 
 # Install dependencies.
 RUN yum -q -y install scl-utils centos-release-scl which tar wget
@@ -16,7 +16,8 @@ RUN touch /var/lib/rpm/* && \
     gpg --import --no-tty /tmp/pkuczynski.asc && \
     curl -L https://get.rvm.io | bash -s stable && \
     /usr/local/rvm/bin/rvm install 2.3 && \
-    /usr/local/rvm/bin/rvm alias create default ruby-2.3
+    /usr/local/rvm/bin/rvm alias create default ruby-2.3 && \
+    /usr/local/rvm/bin/rvm-exec default gem install bundler --version 2.0.2
 
 # Install Bash 4.4.12  // see https://dev.arvados.org/issues/15612
 RUN cd /usr/local/src \

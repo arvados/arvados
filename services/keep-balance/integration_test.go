@@ -11,12 +11,12 @@ import (
 	"testing"
 	"time"
 
-	"git.curoverse.com/arvados.git/lib/config"
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
-	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
-	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
-	"git.curoverse.com/arvados.git/sdk/go/keepclient"
+	"git.arvados.org/arvados.git/lib/config"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
+	"git.arvados.org/arvados.git/sdk/go/arvadostest"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 	check "gopkg.in/check.v1"
@@ -39,7 +39,7 @@ func (s *integrationSuite) SetUpSuite(c *check.C) {
 	arvadostest.StartKeep(4, true)
 
 	arv, err := arvadosclient.MakeArvadosClient()
-	arv.ApiToken = arvadostest.DataManagerToken
+	arv.ApiToken = arvadostest.SystemRootToken
 	c.Assert(err, check.IsNil)
 
 	s.keepClient, err = keepclient.MakeKeepClient(arv)
@@ -71,7 +71,7 @@ func (s *integrationSuite) SetUpTest(c *check.C) {
 
 	s.client = &arvados.Client{
 		APIHost:   os.Getenv("ARVADOS_API_HOST"),
-		AuthToken: arvadostest.DataManagerToken,
+		AuthToken: arvadostest.SystemRootToken,
 		Insecure:  true,
 	}
 }

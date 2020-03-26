@@ -8,9 +8,9 @@ import (
 	"context"
 	"errors"
 
-	"git.curoverse.com/arvados.git/lib/controller/railsproxy"
-	"git.curoverse.com/arvados.git/lib/controller/rpc"
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/lib/controller/railsproxy"
+	"git.arvados.org/arvados.git/lib/controller/rpc"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
 )
 
 type railsProxy = rpc.Conn
@@ -26,6 +26,15 @@ func NewConn(cluster *arvados.Cluster) *Conn {
 	return &Conn{
 		cluster:    cluster,
 		railsProxy: railsproxy.NewConn(cluster),
+	}
+}
+
+func (conn *Conn) Logout(ctx context.Context, opts arvados.LogoutOptions) (arvados.LogoutResponse, error) {
+	if conn.cluster.Login.ProviderAppID != "" {
+		// Proxy to RailsAPI, which hands off to sso-provider.
+		return conn.railsProxy.Logout(ctx, opts)
+	} else {
+		return conn.googleLoginController.Logout(ctx, conn.cluster, conn.railsProxy, opts)
 	}
 }
 

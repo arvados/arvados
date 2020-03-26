@@ -18,12 +18,12 @@ import (
 	"strings"
 	"testing"
 
-	"git.curoverse.com/arvados.git/lib/config"
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
-	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
-	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
-	"git.curoverse.com/arvados.git/sdk/go/keepclient"
+	"git.arvados.org/arvados.git/lib/config"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
+	"git.arvados.org/arvados.git/sdk/go/arvadostest"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	check "gopkg.in/check.v1"
 )
 
@@ -342,12 +342,8 @@ func (s *IntegrationSuite) TestMetrics(c *check.C) {
 	c.Assert(err, check.IsNil)
 	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
 	type summary struct {
-		SampleCount string  `json:"sample_count"`
-		SampleSum   float64 `json:"sample_sum"`
-		Quantile    []struct {
-			Quantile float64
-			Value    float64
-		}
+		SampleCount string
+		SampleSum   float64
 	}
 	type counter struct {
 		Value int64

@@ -11,6 +11,9 @@ inputs:
   container_name: string
   arvbox_data: Directory
   arvbox_bin: File
+  branch:
+    type: string
+    default: master
 outputs:
   cluster_id:
     type: string
@@ -68,6 +71,24 @@ arguments:
   - shellQuote: false
     valueFrom: |
       set -ex
-      $(inputs.arvbox_bin.path) start dev
+      mkdir -p $ARVBOX_DATA
+      if ! test -d $ARVBOX_DATA/arvados ; then
+        cd $ARVBOX_DATA
+        git clone https://github.com/arvados/arvados.git
+      fi
+      cd $ARVBOX_DATA/arvados
+      gitver=`git rev-parse HEAD`
+      git fetch
+      git checkout -f $(inputs.branch)
+      git pull
+      pulled=`git rev-parse HEAD`
+      git --no-pager log -n1 $pulled
+
+      cd $(runtime.outdir)
+      if test "$gitver" = "$pulled" ; then
+        $(inputs.arvbox_bin.path) start dev
+      else
+        $(inputs.arvbox_bin.path) restart dev
+      fi
       $(inputs.arvbox_bin.path) status > status.txt
       $(inputs.arvbox_bin.path) cat /var/lib/arvados/superuser_token > superuser_token.txt

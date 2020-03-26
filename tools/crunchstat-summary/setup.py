@@ -27,7 +27,7 @@ setup(name='crunchstat_summary',
       author='Arvados',
       author_email='info@arvados.org',
       url="https://arvados.org",
-      download_url="https://github.com/curoverse/arvados.git",
+      download_url="https://github.com/arvados/arvados.git",
       license='GNU Affero General Public License, version 3.0',
       packages=['crunchstat_summary'],
       include_package_data=True,
@@ -42,5 +42,5 @@ setup(name='crunchstat_summary',
       ],
       test_suite='tests',
       tests_require=['pbr<1.7.0', 'mock>=1.0'],
-      zip_safe=False
-      )
+      zip_safe=False,
+)

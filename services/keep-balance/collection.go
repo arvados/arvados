@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
 )
 
 func countCollections(c *arvados.Client, params arvados.ResourceListParams) (int, error) {
@@ -80,7 +80,7 @@ func EachCollection(c *arvados.Client, pageSize int, f func(arvados.Collection) 
 			return err
 		}
 		for _, coll := range page.Items {
-			if last.ModifiedAt != nil && *last.ModifiedAt == *coll.ModifiedAt && last.UUID >= coll.UUID {
+			if last.ModifiedAt == coll.ModifiedAt && last.UUID >= coll.UUID {
 				continue
 			}
 			callCount++
@@ -92,9 +92,9 @@ func EachCollection(c *arvados.Client, pageSize int, f func(arvados.Collection) 
 		}
 		if len(page.Items) == 0 && !gettingExactTimestamp {
 			break
-		} else if last.ModifiedAt == nil {
+		} else if last.ModifiedAt.IsZero() {
 			return fmt.Errorf("BUG: Last collection on the page (%s) has no modified_at timestamp; cannot make progress", last.UUID)
-		} else if len(page.Items) > 0 && *last.ModifiedAt == filterTime {
+		} else if len(page.Items) > 0 && last.ModifiedAt == filterTime {
 			// If we requested time>=X and never got a
 			// time>X then we might not have received all
 			// items with time==X yet. Switch to
@@ -135,7 +135,7 @@ func EachCollection(c *arvados.Client, pageSize int, f func(arvados.Collection) 
 			// avoiding that would add overhead in the
 			// overwhelmingly common cases, so we don't
 			// bother.
-			filterTime = *last.ModifiedAt
+			filterTime = last.ModifiedAt
 			params.Filters = []arvados.Filter{{
 				Attr:     "modified_at",
 				Operator: ">=",

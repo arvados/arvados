@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 )
@@ -26,8 +26,9 @@ type APIClient interface {
 // A QueueEnt is an entry in the queue, consisting of a container
 // record and the instance type that should be used to run it.
 type QueueEnt struct {
-	// The container to run. Only the UUID, State, Priority, and
-	// RuntimeConstraints fields are populated.
+	// The container to run. Only the UUID, State, Priority,
+	// RuntimeConstraints, Mounts, and ContainerImage fields are
+	// populated.
 	Container    arvados.Container    `json:"container"`
 	InstanceType arvados.InstanceType `json:"instance_type"`
 }
@@ -133,7 +134,7 @@ func (cq *Queue) Forget(uuid string) {
 	cq.mtx.Lock()
 	defer cq.mtx.Unlock()
 	ctr := cq.current[uuid].Container
-	if ctr.State == arvados.ContainerStateComplete || ctr.State == arvados.ContainerStateCancelled {
+	if ctr.State == arvados.ContainerStateComplete || ctr.State == arvados.ContainerStateCancelled || (ctr.State == arvados.ContainerStateQueued && ctr.Priority == 0) {
 		cq.delEnt(uuid, ctr.State)
 	}
 }
@@ -240,19 +241,15 @@ func (cq *Queue) addEnt(uuid string, ctr arvados.Container) {
 		go func() {
 			if ctr.State == arvados.ContainerStateQueued {
 				// Can't set runtime error without
-				// locking first. If Lock() is
-				// successful, it will call addEnt()
-				// again itself, and we'll fall
-				// through to the
-				// setRuntimeError/Cancel code below.
+				// locking first.
 				err := cq.Lock(ctr.UUID)
 				if err != nil {
 					logger.WithError(err).Warn("lock failed")
+					return
 					// ...and try again on the
 					// next Update, if the problem
 					// still exists.
 				}
-				return
 			}
 			var err error
 			defer func() {
@@ -343,12 +340,19 @@ func (cq *Queue) updateWithResp(uuid string, resp arvados.Container) {
 	if cq.dontupdate != nil {
 		cq.dontupdate[uuid] = struct{}{}
 	}
-	if ent, ok := cq.current[uuid]; !ok {
-		cq.addEnt(uuid, resp)
-	} else {
-		ent.Container.State, ent.Container.Priority, ent.Container.LockedByUUID = resp.State, resp.Priority, resp.LockedByUUID
-		cq.current[uuid] = ent
+	ent, ok := cq.current[uuid]
+	if !ok {
+		// Container is not in queue (e.g., it was not added
+		// because there is no suitable instance type, and
+		// we're just locking/updating it in order to set an
+		// error message). No need to add it, and we don't
+		// necessarily have enough information to add it here
+		// anyway because lock/unlock responses don't include
+		// runtime_constraints.
+		return
 	}
+	ent.Container.State, ent.Container.Priority, ent.Container.LockedByUUID = resp.State, resp.Priority, resp.LockedByUUID
+	cq.current[uuid] = ent
 	cq.notify()
 }
 
@@ -378,7 +382,7 @@ func (cq *Queue) poll() (map[string]*arvados.Container, error) {
 			*next[upd.UUID] = upd
 		}
 	}
-	selectParam := []string{"uuid", "state", "priority", "runtime_constraints"}
+	selectParam := []string{"uuid", "state", "priority", "runtime_constraints", "container_image", "mounts"}
 	limitParam := 1000
 
 	mine, err := cq.fetchAll(arvados.ResourceListParams{

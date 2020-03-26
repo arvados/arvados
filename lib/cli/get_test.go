@@ -9,7 +9,7 @@ import (
 	"regexp"
 	"testing"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
+	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	check "gopkg.in/check.v1"
 )
 

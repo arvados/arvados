@@ -1,7 +1,7 @@
 ---
 layout: default
 navsection: installguide
-title: Install Workbench2 (beta)
+title: Install Workbench 2
 ...
 {% comment %}
 Copyright (C) The Arvados Authors. All rights reserved.
@@ -9,43 +9,46 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
+# "Update config.yml":#update-config
+# "Update Nginx configuration":#update-nginx
+# "Install arvados-workbench2":#install-packages
+# "Restart the API server and controller":#restart-api
+# "Confirm working installation":#confirm-working
+# "Trusted client setting":#trusted_client
+
 Workbench2 is the web-based user interface for Arvados.
 
 {% include 'notebox_begin' %}
-Workbench2 is the replacement for Arvados Workbench. Workbench2 is currently in <i>beta</i>, it is not yet feature complete.
+Workbench2 is the replacement for Arvados Workbench. Workbench2 is suitable for day-to-day use, but does not yet implement every feature of the traditional Workbench.
 {% include 'notebox_end' %}
 
-h2(#install_workbench). Install Workbench2 and dependencies
+h2(#configure). Update config.yml
 
-Workbench2 does not require its own database. It is a set of html, javascript and css files that are served as static files from a web server like Nginx or Apache2.
-
-On a Debian-based system, install the following package:
+Edit @config.yml@ to set the keys below.  The full set of configuration options are in the "Workbench section of config.yml":{{site.baseurl}}/admin/config.html
 
 <notextile>
-<pre><code>~$ <span class="userinput">sudo apt-get install arvados-workbench2</span>
+<pre><code>    Services:
+      Workbench2:
+        ExternalURL: <span class="userinput">"https://workbench2.ClusterID.example.com"</span>
 </code></pre>
 </notextile>
 
-On a Red Hat-based system, install the following package:
+h2(#update-nginx). Update Nginx configuration
+
+Workbench2 does not require its own database. It is a set of html, javascript and css files that are served as static files from Nginx.
+
+Use a text editor to create a new file @/etc/nginx/conf.d/arvados-workbench2.conf@ with the following configuration.  Options that need attention are marked in <span class="userinput">red</span>.
 
 <notextile>
-<pre><code>~$ <span class="userinput">sudo yum install arvados-workbench2</span>
-</code></pre>
-</notextile>
-
-h2. Set up Web server
-
-For best performance, we recommend you use Nginx as your Web server to serve Workbench2. Workbench2 consists entirely of static files. To do that:
-
-<notextile>
-<ol>
-<li>Install Nginx</li>
-
-<li><p>Edit the http section of your Nginx configuration to serve Workbench2's files. You might add a block like the following, adding SSL and logging parameters to taste:</p>
-
 <pre><code>server {
-  listen       <span class="userinput">[your public IP address]</span>:443 ssl;
-  server_name  workbench2.<span class="userinput">uuid-prefix.your.domain</span>;
+    listen       80;
+    server_name  workbench2.<span class="userinput">ClusterID.example.com</span>;
+    return 301   https://workbench2.<span class="userinput">ClusterID.example.com</span>$request_uri;
+}
+
+server {
+  listen       *:443 ssl;
+  server_name  workbench2.<span class="userinput">ClusterID.example.com</span>;
 
   ssl on;
   ssl_certificate     <span class="userinput">/YOUR/PATH/TO/cert.pem</span>;
@@ -53,9 +56,10 @@ For best performance, we recommend you use Nginx as your Web server to serve Wor
 
   index  index.html;
 
-  # Workbench2 uses a call to /config.json to bootstrap itself and talk to the desired API server
+  # <span class="userinput">Workbench2 uses a call to /config.json to bootstrap itself</span>
+  # <span class="userinput">and find out where to contact the API server.</span>
   location /config.json {
-    return 200 '{ "API_HOST": "<span class="userinput">uuid-prefix.your.domain</span>" }';
+    return 200 '{ "API_HOST": "<span class="userinput">ClusterID.example.com</span>" }';
   }
 
   location / {
@@ -68,23 +72,32 @@ For best performance, we recommend you use Nginx as your Web server to serve Wor
   }
 }
 </code></pre>
-</li>
-
-<li>Restart Nginx.</li>
-
-</ol>
 </notextile>
 
-h2. Trusted client setting
+h2. Vocabulary configuration (optional)
 
-Log in to Workbench2 once to ensure that the Arvados API server has a record of the Workbench2 client.
+Workbench2 can load a vocabulary file which lists available metadata properties for groups and collections.  To configure the property vocabulary definition, please visit the "Workbench2 Vocabulary Format":{{site.baseurl}}/admin/workbench2-vocabulary.html page in the Admin section.
+
+{% assign arvados_component = 'arvados-workbench2' %}
+
+{% include 'install_packages' %}
+
+{% include 'restart_api' %}
+
+h2(#confirm-working). Confirm working installation
+
+Visit @https://workbench2.ClusterID.example.com@ in a browser.  You should be able to log in using the login method you configured in the previous step.  If @Users.AutoAdminFirstUser@ is true, you will be an admin user.
+
+h2(#trusted_client). Trusted client flag
+
+Log in to Workbench once to ensure that the Arvados API server has a record of the Workbench client. (It's OK if Workbench says your account hasn't been activated yet. We'll deal with that next.)
 
 In the <strong>API server</strong> project root, start the Rails console.  {% include 'install_rails_command' %}
 
-At the console, enter the following commands to locate the ApiClient record for your Workbench2 installation (typically, while you're setting this up, the @last@ one in the database is the one you want), then set the @is_trusted@ flag for the appropriate client record:
+At the console, enter the following commands to locate the ApiClient record for your Workbench installation (typically, while you're setting this up, the @last@ one in the database is the one you want), then set the @is_trusted@ flag for the appropriate client record:
 
 <notextile><pre><code>irb(main):001:0&gt; <span class="userinput">wb = ApiClient.all.last; [wb.url_prefix, wb.created_at]</span>
-=&gt; ["https://workbench2.<span class="userinput">uuid_prefix.your.domain</span>/", Sat, 20 Apr 2019 01:23:45 UTC +00:00]
+=&gt; ["https://workbench.example.com/", Sat, 19 Apr 2014 03:35:12 UTC +00:00]
 irb(main):002:0&gt; <span class="userinput">include CurrentApiClient</span>
 =&gt; true
 irb(main):003:0&gt; <span class="userinput">act_as_system_user do wb.update_attributes!(is_trusted: true) end</span>

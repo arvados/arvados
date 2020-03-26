@@ -424,8 +424,9 @@ def packed_workflow(arvrunner, tool, merged_map):
     A "packed" workflow is one where all the components have been combined into a single document."""
 
     rewrites = {}
-    packed = pack(tool.doc_loader, tool.doc_loader.fetch(tool.tool["id"]),
-                  tool.tool["id"], tool.metadata, rewrite_out=rewrites)
+    packed = pack(arvrunner.loadingContext, tool.tool["id"],
+                  rewrite_out=rewrites,
+                  loader=tool.doc_loader)
 
     rewrite_to_orig = {v: k for k,v in viewitems(rewrites)}
 
@@ -578,7 +579,8 @@ class Runner(Process):
     """Base class for runner processes, which submit an instance of
     arvados-cwl-runner and wait for the final result."""
 
-    def __init__(self, runner, tool, loadingContext, enable_reuse,
+    def __init__(self, runner, updated_tool,
+                 tool, loadingContext, enable_reuse,
                  output_name, output_tags, submit_runner_ram=0,
                  name=None, on_error=None, submit_runner_image=None,
                  intermediate_output_ttl=0, merged_map=None,
@@ -587,10 +589,9 @@ class Runner(Process):
                  collection_cache_is_default=True):
 
         loadingContext = loadingContext.copy()
-        loadingContext.metadata = loadingContext.metadata.copy()
-        loadingContext.metadata["cwlVersion"] = INTERNAL_VERSION
+        loadingContext.metadata = updated_tool.metadata.copy()
 
-        super(Runner, self).__init__(tool.tool, loadingContext)
+        super(Runner, self).__init__(updated_tool.tool, loadingContext)
 
         self.arvrunner = runner
         self.embedded_tool = tool

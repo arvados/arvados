@@ -27,7 +27,7 @@ setup(name='arvados-cwl-runner',
       author='Arvados',
       author_email='info@arvados.org',
       url="https://arvados.org",
-      download_url="https://github.com/curoverse/arvados.git",
+      download_url="https://github.com/arvados/arvados.git",
       license='Apache 2.0',
       packages=find_packages(),
       package_data={'arvados_cwl': ['arv-cwl-schema-v1.0.yml', 'arv-cwl-schema-v1.1.yml']},
@@ -36,16 +36,14 @@ setup(name='arvados-cwl-runner',
           'bin/arvados-cwl-runner',
       ],
       # Note that arvados/build/run-build-packages.sh looks at this
-      # file to determine what version of cwltool and schema-salad to build.
+      # file to determine what version of cwltool and schema-salad to
+      # build.
       install_requires=[
-          'cwltool==1.0.20190831161204',
-          'schema-salad==4.5.20190815125611',
-          'typing >= 3.6.4',
-          'ruamel.yaml >=0.15.54, <=0.15.77',
+          'cwltool==3.0.20200317203547',
+          'schema-salad==5.0.20200302192450',
           'arvados-python-client{}'.format(pysdk_dep),
           'setuptools',
-          'ciso8601 >= 2.0.0',
-          'networkx < 2.3'
+          'ciso8601 >= 2.0.0'
       ],
       extras_require={
           ':os.name=="posix" and python_version<"3"': ['subprocess32 >= 3.5.1'],
@@ -54,14 +52,14 @@ setup(name='arvados-cwl-runner',
       data_files=[
           ('share/doc/arvados-cwl-runner', ['LICENSE-2.0.txt', 'README.rst']),
       ],
+      python_requires=">=3.5, <4",
       classifiers=[
-          'Programming Language :: Python :: 2',
           'Programming Language :: Python :: 3',
       ],
       test_suite='tests',
       tests_require=[
-          'mock>=1.0',
+          'mock>=1.0,<4',
           'subprocess32>=3.5.1',
       ],
-      zip_safe=True
-      )
+      zip_safe=True,
+)

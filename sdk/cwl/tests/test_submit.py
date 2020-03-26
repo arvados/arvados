@@ -18,6 +18,7 @@ import mock
 import sys
 import unittest
 import cwltool.process
+import re
 
 from io import BytesIO
 
@@ -384,6 +385,19 @@ class TestSubmit(unittest.TestCase):
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))
+        self.assertEqual(stubs.capture_stdout.getvalue(),
+                         stubs.expect_container_request_uuid + '\n')
+        self.assertEqual(exited, 0)
+
+
+    @stubs
+    def test_submit_container_tool(self, stubs):
+        # test for issue #16139
+        exited = arvados_cwl.main(
+            ["--submit", "--no-wait", "--api=containers", "--debug",
+                "tests/tool/tool_with_sf.cwl", "tests/tool/tool_with_sf.yml"],
+            stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+
         self.assertEqual(stubs.capture_stdout.getvalue(),
                          stubs.expect_container_request_uuid + '\n')
         self.assertEqual(exited, 0)
@@ -1299,7 +1313,7 @@ class TestSubmit(unittest.TestCase):
 
                 self.assertEqual(exited, 1)
                 self.assertRegexpMatches(
-                    capture_stderr.getvalue(),
+                    re.sub(r'[ \n]+', ' ', capture_stderr.getvalue()),
                     r"Expected collection uuid zzzzz-4zz18-zzzzzzzzzzzzzzz to be 99999999999999999999999999999998\+99 but API server reported 99999999999999999999999999999997\+99")
             finally:
                 cwltool_logger.removeHandler(stderr_logger)

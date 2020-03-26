@@ -343,7 +343,7 @@ class CollectionsController < ApplicationController
       # Prefer the attachment-only-host when we want an attachment
       # (and when there is no preview link configured)
       tmpl = Rails.configuration.Services.WebDAVDownload.ExternalURL.to_s
-    elsif not Rails.configuration.Workbench.TrustAllContent
+    elsif not Rails.configuration.Collections.TrustAllContent
       check_uri = URI.parse(tmpl.sub("*", munged_id))
       if opts[:query_token] and
         (check_uri.host.nil? or (

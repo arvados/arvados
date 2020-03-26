@@ -81,6 +81,7 @@ lib/controller/railsproxy
 lib/controller/router
 lib/controller/rpc
 lib/crunchstat
+lib/crunch-run
 lib/cloud
 lib/cloud/azure
 lib/cloud/cloudtest
@@ -89,6 +90,7 @@ lib/dispatchcloud/container
 lib/dispatchcloud/scheduler
 lib/dispatchcloud/ssh_executor
 lib/dispatchcloud/worker
+lib/mount
 lib/service
 services/api
 services/arv-git-httpd
@@ -104,7 +106,6 @@ services/keep-balance
 services/login-sync
 services/nodemanager
 services/nodemanager_integration
-services/crunch-run
 services/crunch-dispatch-local
 services/crunch-dispatch-slurm
 services/ws
@@ -126,7 +127,7 @@ sdk/go/blockdigest
 sdk/go/asyncbuf
 sdk/go/stats
 sdk/go/crunchrunner
-sdk/cwl
+sdk/cwl:py3
 sdk/R
 sdk/java-v2
 tools/sync-groups
@@ -392,7 +393,7 @@ checkpidfile() {
 
 checkhealth() {
     svc="$1"
-    base=$(python -c "import yaml; print list(yaml.safe_load(file('$ARVADOS_CONFIG'))['Clusters']['zzzzz']['Services']['$1']['InternalURLs'].keys())[0]")
+    base=$("${VENVDIR}/bin/python" -c "import yaml; print list(yaml.safe_load(file('$ARVADOS_CONFIG'))['Clusters']['zzzzz']['Services']['$1']['InternalURLs'].keys())[0]")
     url="$base/_health/ping"
     if ! curl -Ss -H "Authorization: Bearer e687950a23c3a9bceec28c6223a06c79" "${url}" | tee -a /dev/stderr | grep '"OK"'; then
         echo "${url} failed"
@@ -404,7 +405,7 @@ checkdiscoverydoc() {
     dd="https://${1}/discovery/v1/apis/arvados/v1/rest"
     if ! (set -o pipefail; curl -fsk "$dd" | grep -q ^{ ); then
         echo >&2 "ERROR: could not retrieve discovery doc from RailsAPI at $dd"
-        tail -v $WORKSPACE/services/api/log/test.log
+        tail -v $WORKSPACE/tmp/railsapi.log
         return 1
     fi
     echo "${dd} ok"
@@ -520,6 +521,10 @@ setup_ruby_environment() {
             || fatal 'rvm gemset setup'
 
         rvm env
+        (bundle version | grep -q 2.0.2) || gem install bundler -v 2.0.2
+        bundle="$(which bundle)"
+        echo "$bundle"
+        "$bundle" version | grep 2.0.2 || fatal 'install bundler'
     else
         # When our "bundle install"s need to install new gems to
         # satisfy dependencies, we want them to go where "gem install
@@ -545,9 +550,14 @@ setup_ruby_environment() {
         echo "Will install dependencies to $(gem env gemdir)"
         echo "Will install arvados gems to $tmpdir_gem_home"
         echo "Gem search path is GEM_PATH=$GEM_PATH"
+        bundle="$(gem env gempath | cut -f1 -d:)/bin/bundle"
+        (
+            export HOME=$GEMHOME
+            ("$bundle" version | grep -q 2.0.2) \
+                || gem install --user bundler -v 2.0.2
+            "$bundle" version | tee /dev/stderr | grep -q 'version 2'
+        ) || fatal 'install bundler'
     fi
-    bundle config || gem install bundler \
-        || fatal 'install bundler'
 }
 
 with_test_gemset() {
@@ -631,33 +641,20 @@ initialize() {
 }
 
 install_env() {
-    (
-        set -e
-        mkdir -p "$GOPATH/src/git.curoverse.com"
-        if [[ ! -h "$GOPATH/src/git.curoverse.com/arvados.git" ]]; then
-            for d in \
-                "$GOPATH/src/git.curoverse.com/arvados.git/tmp/GOPATH" \
-                    "$GOPATH/src/git.curoverse.com/arvados.git/tmp" \
-                    "$GOPATH/src/git.curoverse.com/arvados.git/arvados" \
-                    "$GOPATH/src/git.curoverse.com/arvados.git"; do
-                [[ -h "$d" ]] && rm "$d"
-                [[ -d "$d" ]] && rmdir "$d"
-            done
-        fi
-        ln -vsfT "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git"
-        go get -v github.com/kardianos/govendor
-        cd "$GOPATH/src/git.curoverse.com/arvados.git"
-        go get -v -d ...
-        "$GOPATH/bin/govendor" sync
-        which goimports >/dev/null || go get golang.org/x/tools/cmd/goimports
-    ) || fatal "Go setup failed"
+    go mod download || fatal "Go deps failed"
+    which goimports >/dev/null || go get golang.org/x/tools/cmd/goimports || fatal "Go setup failed"
 
     setup_virtualenv "$VENVDIR" --python python2.7
     . "$VENVDIR/bin/activate"
 
     # Needed for run_test_server.py which is used by certain (non-Python) tests.
-    pip install --no-cache-dir PyYAML future \
-        || fatal "pip install PyYAML failed"
+    (
+        set -e
+        "${VENVDIR}/bin/pip" install PyYAML
+        "${VENV3DIR}/bin/pip" install PyYAML
+        cd "$WORKSPACE/sdk/python"
+        python setup.py install
+    ) || fatal "installing PyYAML and sdk/python failed"
 
     # Preinstall libcloud if using a fork; otherwise nodemanager "pip
     # install" won't pick it up by default.
@@ -682,11 +679,6 @@ install_env() {
 Warning: python3 could not be found. Python 3 tests will be skipped.
 
 EOF
-    fi
-
-    if ! which bundler >/dev/null
-    then
-        gem install --user-install bundler || fatal 'Could not install bundler'
     fi
 }
 
@@ -735,7 +727,7 @@ do_test() {
             stop_services
             check_arvados_config "$1"
             ;;
-        gofmt | govendor | doc | lib/cli | lib/cloud/azure | lib/cloud/ec2 | lib/cloud/cloudtest | lib/cmd | lib/dispatchcloud/ssh_executor | lib/dispatchcloud/worker)
+        gofmt | doc | lib/cli | lib/cloud/azure | lib/cloud/ec2 | lib/cloud/cloudtest | lib/cmd | lib/dispatchcloud/ssh_executor | lib/dispatchcloud/worker)
             check_arvados_config "$1"
             # don't care whether services are running
             ;;
@@ -753,7 +745,7 @@ do_test() {
 
 go_ldflags() {
     version=${ARVADOS_VERSION:-$(git log -n1 --format=%H)-dev}
-    echo "-X git.curoverse.com/arvados.git/lib/cmd.version=${version} -X main.version=${version}"
+    echo "-X git.arvados.org/arvados.git/lib/cmd.version=${version} -X main.version=${version}"
 }
 
 do_test_once() {
@@ -771,12 +763,12 @@ do_test_once() {
     then
         covername="coverage-$(echo "$1" | sed -e 's/\//_/g')"
         coverflags=("-covermode=count" "-coverprofile=$WORKSPACE/tmp/.$covername.tmp")
-        # We do "go get -t" here to catch compilation errors
+        # We do "go install" here to catch compilation errors
         # before trying "go test". Otherwise, coverage-reporting
         # mode makes Go show the wrong line numbers when reporting
         # compilation errors.
-        go get -ldflags "$(go_ldflags)" -t "git.curoverse.com/arvados.git/$1" && \
-            cd "$GOPATH/src/git.curoverse.com/arvados.git/$1" && \
+        go install -ldflags "$(go_ldflags)" "$WORKSPACE/$1" && \
+            cd "$WORKSPACE/$1" && \
             if [[ -n "${testargs[$1]}" ]]
         then
             # "go test -check.vv giturl" doesn't work, but this
@@ -785,7 +777,7 @@ do_test_once() {
         else
             # The above form gets verbose even when testargs is
             # empty, so use this form in such cases:
-            go test ${short:+-short} ${coverflags[@]} "git.curoverse.com/arvados.git/$1"
+            go test ${short:+-short} ${coverflags[@]} "git.arvados.org/arvados.git/$1"
         fi
         result=${result:-$?}
         if [[ -f "$WORKSPACE/tmp/.$covername.tmp" ]]
@@ -863,7 +855,7 @@ do_install_once() {
         result=1
     elif [[ "$2" == "go" ]]
     then
-        go get -ldflags "$(go_ldflags)" -t "git.curoverse.com/arvados.git/$1"
+        go install -ldflags "$(go_ldflags)" "$WORKSPACE/$1"
     elif [[ "$2" == "pip" ]]
     then
         # $3 can name a path directory for us to use, including trailing
@@ -881,8 +873,8 @@ do_install_once() {
         cd "$WORKSPACE/$1" \
             && "${3}python" setup.py sdist rotate --keep=1 --match .tar.gz \
             && cd "$WORKSPACE" \
-            && "${3}pip" install --no-cache-dir --quiet "$WORKSPACE/$1/dist"/*.tar.gz \
-            && "${3}pip" install --no-cache-dir --quiet --no-deps --ignore-installed "$WORKSPACE/$1/dist"/*.tar.gz
+            && "${3}pip" install --no-cache-dir "$WORKSPACE/$1/dist"/*.tar.gz \
+            && "${3}pip" install --no-cache-dir --no-deps --ignore-installed "$WORKSPACE/$1/dist"/*.tar.gz
     elif [[ "$2" != "" ]]
     then
         "install_$2"
@@ -899,11 +891,11 @@ bundle_install_trylocal() {
     (
         set -e
         echo "(Running bundle install --local. 'could not find package' messages are OK.)"
-        if ! bundle install --local --no-deployment; then
+        if ! "$bundle" install --local --no-deployment; then
             echo "(Running bundle install again, without --local.)"
-            bundle install --no-deployment
+            "$bundle" install --no-deployment
         fi
-        bundle package --all
+        "$bundle" package
     )
 }
 
@@ -950,8 +942,10 @@ install_services/login-sync() {
 
 install_services/api() {
     stop_services
+    check_arvados_config "services/api"
     cd "$WORKSPACE/services/api" \
-        && RAILS_ENV=test bundle_install_trylocal
+        && RAILS_ENV=test bundle_install_trylocal \
+            || return 1
 
     rm -f config/environments/test.rb
     cp config/environments/test.rb.example config/environments/test.rb
@@ -960,7 +954,7 @@ install_services/api() {
     # database, so that we can drop it. This assumes the current user
     # is a postgresql superuser.
     cd "$WORKSPACE/services/api" \
-        && test_database=$(python -c "import yaml; print yaml.safe_load(file('$ARVADOS_CONFIG'))['Clusters']['zzzzz']['PostgreSQL']['Connection']['dbname']") \
+        && test_database=$("${VENVDIR}/bin/python" -c "import yaml; print yaml.safe_load(file('$ARVADOS_CONFIG'))['Clusters']['zzzzz']['PostgreSQL']['Connection']['dbname']") \
         && psql "$test_database" -c "SELECT pg_terminate_backend (pg_stat_activity.pid::int) FROM pg_stat_activity WHERE pg_stat_activity.datname = '$test_database';" 2>/dev/null
 
     mkdir -p "$WORKSPACE/services/api/tmp/pids"
@@ -984,15 +978,16 @@ install_services/api() {
         && git --git-dir internal.git init \
             || return 1
 
-
-    (cd "$WORKSPACE/services/api"
-     export RAILS_ENV=test
-     if bundle exec rails db:environment:set ; then
-        bundle exec rake db:drop
-     fi
-     bundle exec rake db:setup \
-	 && bundle exec rake db:fixtures:load
-    )
+    (
+        set -e
+        cd "$WORKSPACE/services/api"
+        export RAILS_ENV=test
+        if "$bundle" exec rails db:environment:set ; then
+            "$bundle" exec rake db:drop
+        fi
+        "$bundle" exec rake db:setup
+        "$bundle" exec rake db:fixtures:load
+    ) || return 1
 }
 
 declare -a pythonstuff
@@ -1000,7 +995,6 @@ pythonstuff=(
     sdk/pam
     sdk/python
     sdk/python:py3
-    sdk/cwl
     sdk/cwl:py3
     services/dockercleaner:py3
     services/fuse
@@ -1017,7 +1011,7 @@ install_apps/workbench() {
     cd "$WORKSPACE/apps/workbench" \
         && mkdir -p tmp/cache \
         && RAILS_ENV=test bundle_install_trylocal \
-        && RAILS_ENV=test RAILS_GROUPS=assets bundle exec rake npm:install
+        && RAILS_ENV=test RAILS_GROUPS=assets "$bundle" exec rake npm:install
 }
 
 test_doc() {
@@ -1027,7 +1021,7 @@ test_doc() {
         ARVADOS_API_HOST=qr1hi.arvadosapi.com
         # Make sure python-epydoc is installed or the next line won't
         # do much good!
-        PYTHONPATH=$WORKSPACE/sdk/python/ bundle exec rake linkchecker baseurl=file://$WORKSPACE/doc/.site/ arvados_workbench_host=https://workbench.$ARVADOS_API_HOST arvados_api_host=$ARVADOS_API_HOST
+        PYTHONPATH=$WORKSPACE/sdk/python/ "$bundle" exec rake linkchecker baseurl=file://$WORKSPACE/doc/.site/ arvados_workbench_host=https://workbench.$ARVADOS_API_HOST arvados_api_host=$ARVADOS_API_HOST
     )
 }
 
@@ -1037,36 +1031,15 @@ test_gofmt() {
     [[ -z "$(gofmt -e -d $dirs | tee -a /dev/stderr)" ]]
 }
 
-test_govendor() {
-    (
-        set -e
-        cd "$GOPATH/src/git.curoverse.com/arvados.git"
-        # Remove cached source dirs in workdir. Otherwise, they will
-        # not qualify as +missing or +external below, and we won't be
-        # able to detect that they're missing from vendor/vendor.json.
-        rm -rf vendor/*/
-        go get -v -d ...
-        "$GOPATH/bin/govendor" sync
-        if [[ -n $("$GOPATH/bin/govendor" list +unused +missing +external | tee /dev/stderr) ]]; then
-            echo >&2 "vendor/vendor.json has unused or missing dependencies -- try:
-
-(export GOPATH=\"${GOPATH}\"; cd \$GOPATH/src/git.curoverse.com/arvados.git && \$GOPATH/bin/govendor add +missing +external && \$GOPATH/bin/govendor remove +unused)
-
-"
-            return 1
-        fi
-    )
-}
-
 test_services/api() {
     rm -f "$WORKSPACE/services/api/git-commit.version"
     cd "$WORKSPACE/services/api" \
-        && eval env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test TESTOPTS=\'-v -d\' ${testargs[services/api]}
+        && eval env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} "$bundle" exec rake test TESTOPTS=\'-v -d\' ${testargs[services/api]}
 }
 
 test_sdk/ruby() {
     cd "$WORKSPACE/sdk/ruby" \
-        && bundle exec rake test TESTOPTS=-v ${testargs[sdk/ruby]}
+        && "$bundle" exec rake test TESTOPTS=-v ${testargs[sdk/ruby]}
 }
 
 test_sdk/R() {
@@ -1079,7 +1052,7 @@ test_sdk/R() {
 test_sdk/cli() {
     cd "$WORKSPACE/sdk/cli" \
         && mkdir -p /tmp/keep \
-        && KEEP_LOCAL_STORE=/tmp/keep bundle exec rake test TESTOPTS=-v ${testargs[sdk/cli]}
+        && KEEP_LOCAL_STORE=/tmp/keep "$bundle" exec rake test TESTOPTS=-v ${testargs[sdk/cli]}
 }
 
 test_sdk/java-v2() {
@@ -1088,7 +1061,7 @@ test_sdk/java-v2() {
 
 test_services/login-sync() {
     cd "$WORKSPACE/services/login-sync" \
-        && bundle exec rake test TESTOPTS=-v ${testargs[services/login-sync]}
+        && "$bundle" exec rake test TESTOPTS=-v ${testargs[services/login-sync]}
 }
 
 test_services/nodemanager_integration() {
@@ -1099,31 +1072,31 @@ test_services/nodemanager_integration() {
 test_apps/workbench_units() {
     local TASK="test:units"
     cd "$WORKSPACE/apps/workbench" \
-        && eval env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake ${TASK} TESTOPTS=\'-v -d\' ${testargs[apps/workbench]} ${testargs[apps/workbench_units]}
+        && eval env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} "$bundle" exec rake ${TASK} TESTOPTS=\'-v -d\' ${testargs[apps/workbench]} ${testargs[apps/workbench_units]}
 }
 
 test_apps/workbench_functionals() {
     local TASK="test:functionals"
     cd "$WORKSPACE/apps/workbench" \
-        && eval env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake ${TASK} TESTOPTS=\'-v -d\' ${testargs[apps/workbench]} ${testargs[apps/workbench_functionals]}
+        && eval env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} "$bundle" exec rake ${TASK} TESTOPTS=\'-v -d\' ${testargs[apps/workbench]} ${testargs[apps/workbench_functionals]}
 }
 
 test_apps/workbench_integration() {
     local TASK="test:integration"
     cd "$WORKSPACE/apps/workbench" \
-        && eval env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake ${TASK} TESTOPTS=\'-v -d\' ${testargs[apps/workbench]} ${testargs[apps/workbench_integration]} 
+        && eval env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} "$bundle" exec rake ${TASK} TESTOPTS=\'-v -d\' ${testargs[apps/workbench]} ${testargs[apps/workbench_integration]}
 }
 
 test_apps/workbench_benchmark() {
     local TASK="test:benchmark"
     cd "$WORKSPACE/apps/workbench" \
-        && eval env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake ${TASK} ${testargs[apps/workbench_benchmark]}
+        && eval env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} "$bundle" exec rake ${TASK} ${testargs[apps/workbench_benchmark]}
 }
 
 test_apps/workbench_profile() {
     local TASK="test:profile"
     cd "$WORKSPACE/apps/workbench" \
-        && eval env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake ${TASK} ${testargs[apps/workbench_profile]}
+        && eval env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} "$bundle" exec rake ${TASK} ${testargs[apps/workbench_profile]}
 }
 
 install_deps() {
@@ -1133,6 +1106,7 @@ install_deps() {
     do_install sdk/cli
     do_install sdk/perl
     do_install sdk/python pip
+    do_install sdk/python pip "${VENV3DIR}/bin/"
     do_install sdk/ruby
     do_install services/api
     do_install services/arv-git-httpd go
@@ -1183,7 +1157,6 @@ test_all() {
     fi
 
     do_test gofmt
-    do_test govendor
     do_test doc
     do_test sdk/ruby
     do_test sdk/R
@@ -1299,7 +1272,8 @@ else
                         ${verb}_${target}
                         ;;
                     *)
-                        testargs["$target"]="${opts}"
+			argstarget=${target%:py3}
+                        testargs["$argstarget"]="${opts}"
                         tt="${testfuncargs[${target}]}"
                         tt="${tt:-$target}"
                         do_$verb $tt

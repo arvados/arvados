@@ -4,6 +4,32 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
+{% assign highlighturl = "" %}
+{% for section in site.navbar[page.navsection] %}
+  {% for entry in section %}
+    {% comment %}
+    Want to highlight the current page on the left nav.
+    But some pages have been renamed with a symlink from the old page to the new one.
+    Then the URL won't match.
+    So if the URL doesn't match, as a fallback look for a page with a matching title.
+    {% endcomment %}
+
+    {% for item in entry[1] %}
+      {% if site.pages[item].url == page.url %}
+        {% assign highlighturl = site.pages[item].url %}
+      {% endif %}
+    {% endfor %}
+
+    {% if highlighturl == "" %}
+      {% for item in entry[1] %}
+        {% if site.pages[item].title == page.title %}
+          {% assign highlighturl = site.pages[item].url %}
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+  {% endfor %}
+{% endfor %}
+
 <div class="col-sm-3">
   <div class="well">
     <ol class="nav nav-list">
@@ -11,10 +37,10 @@ SPDX-License-Identifier: CC-BY-SA-3.0
       {% for entry in section %}
       <li><span class="nav-header">{{ entry[0] }}</span>
 	<ol class="nav nav-list">
-          {% for item in entry[1] %}        
-          {% assign p = site.pages[item] %}
-          <li {% if p.url == page.url %} class="active activesubnav" {% elsif p.title == page.subnavsection %} class="activesubnav" {% endif %}>
-            <a href="{{ site.baseurl }}{{ p.url }}">{{ p.title }}</a></li>
+          {% for item in entry[1] %}
+            {% assign p = site.pages[item] %}
+            <li {% if p.url == highlighturl %} class="active activesubnav" {% elsif p.title == page.subnavsection %} class="activesubnav" {% endif %}>
+              <a href="{{ site.baseurl }}{{ p.url }}">{{ p.title }}</a></li>
           {% endfor %}
         </ol>
         {% endfor %}

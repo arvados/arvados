@@ -457,6 +457,9 @@ class ArvadosModel < ApplicationRecord
     if not ft[:cond_out].any?
       return query
     end
+    ft[:joins].each do |t|
+      query = query.joins(t)
+    end
     query.where('(' + ft[:cond_out].join(') AND (') + ')',
                           *ft[:param_out])
   end
@@ -732,6 +735,14 @@ class ArvadosModel < ApplicationRecord
           end
         end
       end
+    end
+  end
+
+  def ensure_filesystem_compatible_name
+    if name == "." || name == ".."
+      errors.add(:name, "cannot be '.' or '..'")
+    elsif Rails.configuration.Collections.ForwardSlashNameSubstitution == "" && !name.nil? && name.index('/')
+      errors.add(:name, "cannot contain a '/' character")
     end
   end
 

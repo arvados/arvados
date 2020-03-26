@@ -14,7 +14,6 @@ class UsersTest < ActionDispatch::IntegrationTest
     post "/arvados/v1/users/setup",
       params: {
         repo_name: repo_name,
-        openid_prefix: 'https://www.google.com/accounts/o8/id',
         user: {
           uuid: 'zzzzz-tpzed-abcdefghijklmno',
           first_name: "in_create_test_first_name",
@@ -36,9 +35,7 @@ class UsersTest < ActionDispatch::IntegrationTest
     assert_not_nil created['email'], 'expected non-nil email'
     assert_nil created['identity_url'], 'expected no identity_url'
 
-    # arvados#user, repo link and link add user to 'All users' group
-    verify_link response_items, 'arvados#user', true, 'permission', 'can_login',
-        created['uuid'], created['email'], 'arvados#user', false, 'arvados#user'
+    # repo link and link add user to 'All users' group
 
     verify_link response_items, 'arvados#repository', true, 'permission', 'can_manage',
         'foo/usertestrepo', created['uuid'], 'arvados#repository', true, 'Repository'
@@ -56,7 +53,6 @@ class UsersTest < ActionDispatch::IntegrationTest
       params: {
         repo_name: repo_name,
         vm_uuid: virtual_machines(:testvm).uuid,
-        openid_prefix: 'https://www.google.com/accounts/o8/id',
         user: {
           uuid: 'zzzzz-tpzed-abcdefghijklmno',
           first_name: "in_create_test_first_name",
@@ -72,7 +68,6 @@ class UsersTest < ActionDispatch::IntegrationTest
       params: {
         repo_name: repo_name,
         vm_uuid: virtual_machines(:testvm).uuid,
-        openid_prefix: 'https://www.google.com/accounts/o8/id',
         uuid: 'zzzzz-tpzed-abcdefghijklmno',
       },
       headers: auth(:admin)
@@ -102,7 +97,6 @@ class UsersTest < ActionDispatch::IntegrationTest
   test "setup user in multiple steps and verify response" do
     post "/arvados/v1/users/setup",
       params: {
-        openid_prefix: 'http://www.example.com/account',
         user: {
           email: "foo@example.com"
         }
@@ -117,9 +111,7 @@ class UsersTest < ActionDispatch::IntegrationTest
     assert_not_nil created['email'], 'expected non-nil email'
     assert_equal created['email'], 'foo@example.com', 'expected input email'
 
-    # three new links: system_group, arvados#user, and 'All users' group.
-    verify_link response_items, 'arvados#user', true, 'permission', 'can_login',
-        created['uuid'], created['email'], 'arvados#user', false, 'arvados#user'
+    # two new links: system_group, and 'All users' group.
 
     verify_link response_items, 'arvados#group', true, 'permission', 'can_read',
         'All users', created['uuid'], 'arvados#group', true, 'Group'
@@ -130,7 +122,6 @@ class UsersTest < ActionDispatch::IntegrationTest
    # invoke setup with a repository
     post "/arvados/v1/users/setup",
       params: {
-        openid_prefix: 'http://www.example.com/account',
         repo_name: 'newusertestrepo',
         uuid: created['uuid']
       },
@@ -157,7 +148,6 @@ class UsersTest < ActionDispatch::IntegrationTest
     post "/arvados/v1/users/setup",
       params: {
         vm_uuid: virtual_machines(:testvm).uuid,
-        openid_prefix: 'http://www.example.com/account',
         user: {
           email: 'junk_email'
         },
@@ -186,7 +176,6 @@ class UsersTest < ActionDispatch::IntegrationTest
         repo_name: 'newusertestrepo',
         vm_uuid: virtual_machines(:testvm).uuid,
         user: {email: 'foo@example.com'},
-        openid_prefix: 'https://www.google.com/accounts/o8/id'
       },
       headers: auth(:admin)
 
@@ -196,9 +185,7 @@ class UsersTest < ActionDispatch::IntegrationTest
     assert_not_nil created['uuid'], 'expected uuid for the new user'
     assert_equal created['email'], 'foo@example.com', 'expected given email'
 
-    # five extra links: system_group, login, group, repo and vm
-    verify_link response_items, 'arvados#user', true, 'permission', 'can_login',
-        created['uuid'], created['email'], 'arvados#user', false, 'arvados#user'
+    # four extra links: system_group, login, group, repo and vm
 
     verify_link response_items, 'arvados#group', true, 'permission', 'can_read',
         'All users', created['uuid'], 'arvados#group', true, 'Group'
@@ -338,5 +325,128 @@ class UsersTest < ActionDispatch::IntegrationTest
     assert_equal("#{users(:project_viewer).username}/migratedfoo", json_response['name'])
 
   end
+
+  test "cannot set is_active to false directly" do
+    post('/arvados/v1/users',
+      params: {
+        user: {
+          email: "bob@example.com",
+          username: "bobby"
+        },
+      },
+      headers: auth(:admin))
+    assert_response(:success)
+    user = json_response
+    assert_equal false, user['is_active']
+
+    token = act_as_system_user do
+      ApiClientAuthorization.create!(user: User.find_by_uuid(user['uuid']), api_client: ApiClient.all.first).api_token
+    end
+    post("/arvados/v1/user_agreements/sign",
+        params: {uuid: 'zzzzz-4zz18-t68oksiu9m80s4y'},
+        headers: {"HTTP_AUTHORIZATION" => "Bearer #{token}"})
+    assert_response :success
+
+    post("/arvados/v1/users/#{user['uuid']}/activate",
+      params: {},
+      headers: auth(:admin))
+    assert_response(:success)
+    user = json_response
+    assert_equal true, user['is_active']
+
+    put("/arvados/v1/users/#{user['uuid']}",
+         params: {
+           user: {is_active: false}
+         },
+         headers: auth(:admin))
+    assert_response 422
+  end
+
+  test "cannot self activate when AutoSetupNewUsers is false" do
+    Rails.configuration.Users.NewUsersAreActive = false
+    Rails.configuration.Users.AutoSetupNewUsers = false
+
+    user = nil
+    token = nil
+    act_as_system_user do
+      user = User.create!(email: "bob@example.com", username: "bobby")
+      ap = ApiClientAuthorization.create!(user: user, api_client: ApiClient.all.first)
+      token = ap.api_token
+    end
+
+    get("/arvados/v1/users/#{user['uuid']}",
+        params: {},
+        headers: {"HTTP_AUTHORIZATION" => "Bearer #{token}"})
+    assert_response(:success)
+    user = json_response
+    assert_equal false, user['is_active']
+
+    post("/arvados/v1/users/#{user['uuid']}/activate",
+        params: {},
+        headers: {"HTTP_AUTHORIZATION" => "Bearer #{token}"})
+    assert_response 422
+    assert_match(/Cannot activate without being invited/, json_response['errors'][0])
+  end
+
+
+  test "cannot self activate after unsetup" do
+    Rails.configuration.Users.NewUsersAreActive = false
+    Rails.configuration.Users.AutoSetupNewUsers = false
+
+    user = nil
+    token = nil
+    act_as_system_user do
+      user = User.create!(email: "bob@example.com", username: "bobby")
+      ap = ApiClientAuthorization.create!(user: user, api_client_id: 0)
+      token = ap.api_token
+    end
+
+    post("/arvados/v1/users/setup",
+        params: {uuid: user['uuid']},
+        headers: auth(:admin))
+    assert_response :success
+
+    post("/arvados/v1/users/#{user['uuid']}/activate",
+        params: {},
+        headers: {"HTTP_AUTHORIZATION" => "Bearer #{token}"})
+    assert_response 403
+    assert_match(/Cannot activate without user agreements/, json_response['errors'][0])
+
+    post("/arvados/v1/user_agreements/sign",
+        params: {uuid: 'zzzzz-4zz18-t68oksiu9m80s4y'},
+        headers: {"HTTP_AUTHORIZATION" => "Bearer #{token}"})
+    assert_response :success
+
+    post("/arvados/v1/users/#{user['uuid']}/activate",
+        params: {},
+        headers: {"HTTP_AUTHORIZATION" => "Bearer #{token}"})
+    assert_response :success
+
+    get("/arvados/v1/users/#{user['uuid']}",
+        params: {},
+        headers: {"HTTP_AUTHORIZATION" => "Bearer #{token}"})
+    assert_response(:success)
+    user = json_response
+    assert_equal true, user['is_active']
+
+    post("/arvados/v1/users/#{user['uuid']}/unsetup",
+        params: {},
+        headers: auth(:admin))
+    assert_response :success
+
+    get("/arvados/v1/users/#{user['uuid']}",
+        params: {},
+        headers: {"HTTP_AUTHORIZATION" => "Bearer #{token}"})
+    assert_response(:success)
+    user = json_response
+    assert_equal false, user['is_active']
+
+    post("/arvados/v1/users/#{user['uuid']}/activate",
+        params: {},
+        headers: {"HTTP_AUTHORIZATION" => "Bearer #{token}"})
+    assert_response 422
+    assert_match(/Cannot activate without being invited/, json_response['errors'][0])
+  end
+
 
 end

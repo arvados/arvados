@@ -362,6 +362,7 @@ module Minitest
           n += 1
           raise if n > 2 || e.is_a?(Skip)
           STDERR.puts "Test failed, retrying (##{n})"
+          ActiveSupport::TestCase.reset_api_fixtures_now
           retry
         end
       rescue *PASSTHROUGH_EXCEPTIONS

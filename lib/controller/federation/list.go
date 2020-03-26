@@ -10,9 +10,10 @@ import (
 	"net/http"
 	"sort"
 	"sync"
+	"sync/atomic"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/httpserver"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/httpserver"
 )
 
 //go:generate go run generate.go
@@ -20,9 +21,11 @@ import (
 // CollectionList is used as a template to auto-generate List()
 // methods for other types; see generate.go.
 
-func (conn *Conn) CollectionList(ctx context.Context, options arvados.ListOptions) (arvados.CollectionList, error) {
+func (conn *Conn) generated_CollectionList(ctx context.Context, options arvados.ListOptions) (arvados.CollectionList, error) {
 	var mtx sync.Mutex
 	var merged arvados.CollectionList
+	var needSort atomic.Value
+	needSort.Store(false)
 	err := conn.splitListRequest(ctx, options, func(ctx context.Context, _ string, backend arvados.API, options arvados.ListOptions) ([]string, error) {
 		cl, err := backend.CollectionList(ctx, options)
 		if err != nil {
@@ -32,8 +35,9 @@ func (conn *Conn) CollectionList(ctx context.Context, options arvados.ListOption
 		defer mtx.Unlock()
 		if len(merged.Items) == 0 {
 			merged = cl
-		} else {
+		} else if len(cl.Items) > 0 {
 			merged.Items = append(merged.Items, cl.Items...)
+			needSort.Store(true)
 		}
 		uuids := make([]string, 0, len(cl.Items))
 		for _, item := range cl.Items {
@@ -41,7 +45,19 @@ func (conn *Conn) CollectionList(ctx context.Context, options arvados.ListOption
 		}
 		return uuids, nil
 	})
-	sort.Slice(merged.Items, func(i, j int) bool { return merged.Items[i].UUID < merged.Items[j].UUID })
+	if needSort.Load().(bool) {
+		// Apply the default/implied order, "modified_at desc"
+		sort.Slice(merged.Items, func(i, j int) bool {
+			mi, mj := merged.Items[i].ModifiedAt, merged.Items[j].ModifiedAt
+			return mj.Before(mi)
+		})
+	}
+	if merged.Items == nil {
+		// Return empty results as [], not null
+		// (https://github.com/golang/go/issues/27589 might be
+		// a better solution in the future)
+		merged.Items = []arvados.Collection{}
+	}
 	return merged, err
 }
 
@@ -68,7 +84,7 @@ func (conn *Conn) CollectionList(ctx context.Context, options arvados.ListOption
 //
 // * len(Order)==0
 //
-// * Each filter must be either "uuid = ..." or "uuid in [...]".
+// * Each filter is either "uuid = ..." or "uuid in [...]".
 //
 // * The maximum possible response size (total number of objects that
 //   could potentially be matched by all of the specified filters)
@@ -165,28 +181,27 @@ func (conn *Conn) splitListRequest(ctx context.Context, opts arvados.ListOptions
 		}
 	}
 
-	if len(todoByRemote) > 1 {
-		if cannotSplit {
-			return httpErrorf(http.StatusBadRequest, "cannot execute federated list query: each filter must be either 'uuid = ...' or 'uuid in [...]'")
-		}
-		if opts.Count != "none" {
-			return httpErrorf(http.StatusBadRequest, "cannot execute federated list query unless count==\"none\"")
-		}
-		if opts.Limit >= 0 || opts.Offset != 0 || len(opts.Order) > 0 {
-			return httpErrorf(http.StatusBadRequest, "cannot execute federated list query with limit, offset, or order parameter")
-		}
-		if max := conn.cluster.API.MaxItemsPerResponse; nUUIDs > max {
-			return httpErrorf(http.StatusBadRequest, "cannot execute federated list query because number of UUIDs (%d) exceeds page size limit %d", nUUIDs, max)
-		}
-		selectingUUID := false
-		for _, attr := range opts.Select {
-			if attr == "uuid" {
-				selectingUUID = true
-			}
-		}
-		if opts.Select != nil && !selectingUUID {
-			return httpErrorf(http.StatusBadRequest, "cannot execute federated list query with a select parameter that does not include uuid")
-		}
+	if len(todoByRemote) == 0 {
+		return nil
+	}
+	if len(todoByRemote) == 1 && todoByRemote[conn.cluster.ClusterID] != nil {
+		// All UUIDs are local, so proxy a single request. The
+		// generic case has some limitations (see below) which
+		// we don't want to impose on local requests.
+		_, err := fn(ctx, conn.cluster.ClusterID, conn.local, opts)
+		return err
+	}
+	if cannotSplit {
+		return httpErrorf(http.StatusBadRequest, "cannot execute federated list query: each filter must be either 'uuid = ...' or 'uuid in [...]'")
+	}
+	if opts.Count != "none" {
+		return httpErrorf(http.StatusBadRequest, "cannot execute federated list query unless count==\"none\"")
+	}
+	if opts.Limit >= 0 || opts.Offset != 0 || len(opts.Order) > 0 {
+		return httpErrorf(http.StatusBadRequest, "cannot execute federated list query with limit, offset, or order parameter")
+	}
+	if max := conn.cluster.API.MaxItemsPerResponse; nUUIDs > max {
+		return httpErrorf(http.StatusBadRequest, "cannot execute federated list query because number of UUIDs (%d) exceeds page size limit %d", nUUIDs, max)
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
@@ -209,6 +224,12 @@ func (conn *Conn) splitListRequest(ctx context.Context, opts arvados.ListOptions
 				return
 			}
 			remoteOpts := opts
+			if remoteOpts.Select != nil {
+				// We always need to select UUIDs to
+				// use the response, even if our
+				// caller doesn't.
+				remoteOpts.Select = append([]string{"uuid"}, remoteOpts.Select...)
+			}
 			for len(todo) > 0 {
 				if len(batch) > len(todo) {
 					// Reduce batch to just the todo's
@@ -221,7 +242,7 @@ func (conn *Conn) splitListRequest(ctx context.Context, opts arvados.ListOptions
 
 				done, err := fn(ctx, clusterID, backend, remoteOpts)
 				if err != nil {
-					errs <- err
+					errs <- httpErrorf(http.StatusBadGateway, err.Error())
 					return
 				}
 				progress := false
@@ -231,8 +252,13 @@ func (conn *Conn) splitListRequest(ctx context.Context, opts arvados.ListOptions
 						delete(todo, uuid)
 					}
 				}
-				if !progress {
-					errs <- httpErrorf(http.StatusBadGateway, "cannot make progress in federated list query: cluster %q returned none of the requested UUIDs", clusterID)
+				if len(done) == 0 {
+					// Zero items == no more
+					// results exist, no need to
+					// get another page.
+					break
+				} else if !progress {
+					errs <- httpErrorf(http.StatusBadGateway, "cannot make progress in federated list query: cluster %q returned %d items but none had the requested UUIDs", clusterID, len(done))
 					return
 				}
 			}

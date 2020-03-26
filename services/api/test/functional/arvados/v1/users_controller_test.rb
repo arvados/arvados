@@ -94,7 +94,6 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
     post :setup, params: {
       repo_name: repo_name,
-      openid_prefix: 'https://www.google.com/accounts/o8/id',
       user: {
         uuid: 'zzzzz-tpzed-abcdefghijklmno',
         first_name: "in_create_test_first_name",
@@ -113,11 +112,8 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_not_nil created['email'], 'expected non-nil email'
     assert_nil created['identity_url'], 'expected no identity_url'
 
-    # arvados#user, repo link and link add user to 'All users' group
-    verify_links_added 4
-
-    verify_link response_items, 'arvados#user', true, 'permission', 'can_login',
-        created['uuid'], created['email'], 'arvados#user', false, 'User'
+    # repo link and link add user to 'All users' group
+    verify_links_added 3
 
     verify_link response_items, 'arvados#repository', true, 'permission', 'can_manage',
         "foo/#{repo_name}", created['uuid'], 'arvados#repository', true, 'Repository'
@@ -152,7 +148,6 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
       user: {uuid: 'bogus_uuid'},
       repo_name: 'usertestrepo',
       vm_uuid: @vm_uuid,
-      openid_prefix: 'https://www.google.com/accounts/o8/id'
     }
     response_body = JSON.parse(@response.body)
     response_errors = response_body['errors']
@@ -167,7 +162,6 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     post :setup, params: {
       repo_name: 'usertestrepo',
       vm_uuid: @vm_uuid,
-      openid_prefix: 'https://www.google.com/accounts/o8/id'
     }
     response_body = JSON.parse(@response.body)
     response_errors = response_body['errors']
@@ -183,7 +177,6 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
       user: {},
       repo_name: 'usertestrepo',
       vm_uuid: @vm_uuid,
-      openid_prefix: 'https://www.google.com/accounts/o8/id'
     }
     response_body = JSON.parse(@response.body)
     response_errors = response_body['errors']
@@ -246,7 +239,6 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     post :setup, params: {
       repo_name: 'usertestrepo',
       user: {email: 'foo@example.com'},
-      openid_prefix: 'https://www.google.com/accounts/o8/id'
     }
 
     assert_response :success
@@ -255,8 +247,8 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_not_nil response_object['uuid'], 'expected uuid for the new user'
     assert_equal response_object['email'], 'foo@example.com', 'expected given email'
 
-    # four extra links; system_group, login, group and repo perms
-    verify_links_added 4
+    # three extra links; system_group, group and repo perms
+    verify_links_added 3
   end
 
   test "setup user with fake vm and expect error" do
@@ -266,7 +258,6 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
       repo_name: 'usertestrepo',
       vm_uuid: 'no_such_vm',
       user: {email: 'foo@example.com'},
-      openid_prefix: 'https://www.google.com/accounts/o8/id'
     }
 
     response_body = JSON.parse(@response.body)
@@ -281,7 +272,6 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
     post :setup, params: {
       repo_name: 'usertestrepo',
-      openid_prefix: 'https://www.google.com/accounts/o8/id',
       vm_uuid: @vm_uuid,
       user: {email: 'foo@example.com'}
     }
@@ -292,8 +282,8 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_not_nil response_object['uuid'], 'expected uuid for the new user'
     assert_equal response_object['email'], 'foo@example.com', 'expected given email'
 
-    # five extra links; system_group, login, group, vm, repo
-    verify_links_added 5
+    # four extra links; system_group, group, vm, repo
+    verify_links_added 4
   end
 
   test "setup user with valid email, no vm and no repo as input" do
@@ -301,7 +291,6 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
     post :setup, params: {
       user: {email: 'foo@example.com'},
-      openid_prefix: 'https://www.google.com/accounts/o8/id'
     }
 
     assert_response :success
@@ -310,11 +299,8 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_not_nil response_object['uuid'], 'expected uuid for new user'
     assert_equal response_object['email'], 'foo@example.com', 'expected given email'
 
-    # three extra links; system_group, login, and group
-    verify_links_added 3
-
-    verify_link response_items, 'arvados#user', true, 'permission', 'can_login',
-        response_object['uuid'], response_object['email'], 'arvados#user', false, 'User'
+    # two extra links; system_group, and group
+    verify_links_added 2
 
     verify_link response_items, 'arvados#group', true, 'permission', 'can_read',
         'All users', response_object['uuid'], 'arvados#group', true, 'Group'
@@ -330,7 +316,6 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     authorize_with :admin
 
     post :setup, params: {
-      openid_prefix: 'https://www.google.com/accounts/o8/id',
       repo_name: 'usertestrepo',
       vm_uuid: @vm_uuid,
       user: {
@@ -347,8 +332,8 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_equal 'test_first_name', response_object['first_name'],
         'expecting first name'
 
-    # five extra links; system_group, login, group, repo and vm
-    verify_links_added 5
+    # four extra links; system_group, group, repo and vm
+    verify_links_added 4
   end
 
   test "setup user with an existing user email and check different object is created" do
@@ -356,7 +341,6 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     inactive_user = users(:inactive)
 
     post :setup, params: {
-      openid_prefix: 'https://www.google.com/accounts/o8/id',
       repo_name: 'usertestrepo',
       user: {
         email: inactive_user['email']
@@ -370,8 +354,8 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_not_equal response_object['uuid'], inactive_user['uuid'],
         'expected different uuid after create operation'
     assert_equal inactive_user['email'], response_object['email'], 'expected given email'
-    # system_group, openid, group, and repo. No vm link.
-    verify_links_added 4
+    # system_group, group, and repo. No vm link.
+    verify_links_added 3
   end
 
   test "setup user with openid prefix" do
@@ -379,7 +363,6 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
     post :setup, params: {
       repo_name: 'usertestrepo',
-      openid_prefix: 'http://www.example.com/account',
       user: {
         first_name: "in_create_test_first_name",
         last_name: "test_last_name",
@@ -398,11 +381,8 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_nil created['identity_url'], 'expected no identity_url'
 
     # verify links
-    # four new links: system_group, arvados#user, repo, and 'All users' group.
-    verify_links_added 4
-
-    verify_link response_items, 'arvados#user', true, 'permission', 'can_login',
-        created['uuid'], created['email'], 'arvados#user', false, 'User'
+    # three new links: system_group, repo, and 'All users' group.
+    verify_links_added 3
 
     verify_link response_items, 'arvados#repository', true, 'permission', 'can_manage',
         'foo/usertestrepo', created['uuid'], 'arvados#repository', true, 'Repository'
@@ -412,25 +392,6 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
     verify_link response_items, 'arvados#virtualMachine', false, 'permission', 'can_login',
         nil, created['uuid'], 'arvados#virtualMachine', false, 'VirtualMachine'
-  end
-
-  test "invoke setup with no openid prefix, expect error" do
-    authorize_with :admin
-
-    post :setup, params: {
-      repo_name: 'usertestrepo',
-      user: {
-        first_name: "in_create_test_first_name",
-        last_name: "test_last_name",
-        email: "foo@example.com"
-      }
-    }
-
-    response_body = JSON.parse(@response.body)
-    response_errors = response_body['errors']
-    assert_not_nil response_errors, 'Expected error in response'
-    assert (response_errors.first.include? 'openid_prefix parameter is missing'),
-        'Expected ArgumentError'
   end
 
   test "setup user with user, vm and repo and verify links" do
@@ -444,7 +405,6 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
       },
       vm_uuid: @vm_uuid,
       repo_name: 'usertestrepo',
-      openid_prefix: 'https://www.google.com/accounts/o8/id'
     }
 
     assert_response :success
@@ -457,12 +417,10 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_not_nil created['email'], 'expected non-nil email'
     assert_nil created['identity_url'], 'expected no identity_url'
 
-    # five new links: system_group, arvados#user, repo, vm and 'All
-    # users' group link
-    verify_links_added 5
+    # four new links: system_group, repo, vm and 'All users' group link
+    verify_links_added 4
 
-    verify_link response_items, 'arvados#user', true, 'permission', 'can_login',
-        created['uuid'], created['email'], 'arvados#user', false, 'User'
+    # system_group isn't part of the response.  See User#add_system_group_permission_link
 
     verify_link response_items, 'arvados#repository', true, 'permission', 'can_manage',
         'foo/usertestrepo', created['uuid'], 'arvados#repository', true, 'Repository'
@@ -492,7 +450,6 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     authorize_with :active
 
     post :setup, params: {
-      openid_prefix: 'https://www.google.com/accounts/o8/id',
       user: {email: 'foo@example.com'}
     }
 
@@ -601,7 +558,6 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     authorize_with :admin
 
     post :setup, params: {
-      openid_prefix: 'http://www.example.com/account',
       send_notification_email: 'false',
       user: {
         email: "foo@example.com"
@@ -622,7 +578,6 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     authorize_with :admin
 
     post :setup, params: {
-      openid_prefix: 'http://www.example.com/account',
       send_notification_email: 'true',
       user: {
         email: "foo@example.com"
@@ -640,7 +595,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
     assert_equal Rails.configuration.Users.UserNotifierEmailFrom, setup_email.from[0]
     assert_equal 'foo@example.com', setup_email.to[0]
-    assert_equal 'Welcome to Arvados - shell account enabled', setup_email.subject
+    assert_equal 'Welcome to Arvados - account enabled', setup_email.subject
     assert (setup_email.body.to_s.include? 'Your Arvados shell account has been set up'),
         'Expected Your Arvados shell account has been set up in email body'
     assert (setup_email.body.to_s.include? "#{Rails.configuration.Services.Workbench1.ExternalURL}users/#{created['uuid']}/virtual_machines"), 'Expected virtual machines url in email body'
@@ -1041,6 +996,47 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
          })
     assert_response(422)
     assert_nil(users(:project_viewer).redirect_to_user_uuid)
+  end
+
+  test "batch update fails for non-admin" do
+    authorize_with(:active)
+    patch(:batch_update, params: {updates: {}})
+    assert_response(403)
+  end
+
+  test "batch update" do
+    existinguuid = 'remot-tpzed-foobarbazwazqux'
+    newuuid = 'remot-tpzed-newnarnazwazqux'
+    act_as_system_user do
+      User.create!(uuid: existinguuid, email: 'root@existing.example.com')
+    end
+
+    authorize_with(:admin)
+    patch(:batch_update,
+          params: {
+            updates: {
+              existinguuid => {
+                'first_name' => 'root',
+                'email' => 'root@remot.example.com',
+                'is_active' => true,
+                'is_admin' => true,
+                'prefs' => {'foo' => 'bar'},
+              },
+              newuuid => {
+                'first_name' => 'noot',
+                'email' => 'root@remot.example.com',
+              },
+            }})
+    assert_response(:success)
+
+    assert_equal('root', User.find_by_uuid(existinguuid).first_name)
+    assert_equal('root@remot.example.com', User.find_by_uuid(existinguuid).email)
+    assert_equal(true, User.find_by_uuid(existinguuid).is_active)
+    assert_equal(true, User.find_by_uuid(existinguuid).is_admin)
+    assert_equal({'foo' => 'bar'}, User.find_by_uuid(existinguuid).prefs)
+
+    assert_equal('noot', User.find_by_uuid(newuuid).first_name)
+    assert_equal('root@remot.example.com', User.find_by_uuid(newuuid).email)
   end
 
   NON_ADMIN_USER_DATA = ["uuid", "kind", "is_active", "email", "first_name",

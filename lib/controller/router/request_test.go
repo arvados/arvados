@@ -12,7 +12,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
+	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	check "gopkg.in/check.v1"
 )
 
@@ -49,10 +49,26 @@ func (tr *testReq) Request() *http.Request {
 	} else if tr.json {
 		if tr.jsonAttrsTop {
 			for k, v := range tr.attrs {
-				param[k] = v
+				if tr.jsonStringParam {
+					j, err := json.Marshal(v)
+					if err != nil {
+						panic(err)
+					}
+					param[k] = string(j)
+				} else {
+					param[k] = v
+				}
 			}
 		} else if tr.attrs != nil {
-			param[tr.attrsKey] = tr.attrs
+			if tr.jsonStringParam {
+				j, err := json.Marshal(tr.attrs)
+				if err != nil {
+					panic(err)
+				}
+				param[tr.attrsKey] = string(j)
+			} else {
+				param[tr.attrsKey] = tr.attrs
+			}
 		}
 		tr.body = bytes.NewBuffer(nil)
 		err := json.NewEncoder(tr.body).Encode(param)
@@ -118,6 +134,8 @@ func (s *RouterSuite) TestAttrsInBody(c *check.C) {
 	for _, tr := range []testReq{
 		{attrsKey: "model_name", json: true, attrs: attrs},
 		{attrsKey: "model_name", json: true, attrs: attrs, jsonAttrsTop: true},
+		{attrsKey: "model_name", json: true, attrs: attrs, jsonAttrsTop: true, jsonStringParam: true},
+		{attrsKey: "model_name", json: true, attrs: attrs, jsonAttrsTop: false, jsonStringParam: true},
 	} {
 		c.Logf("tr: %#v", tr)
 		req := tr.Request()

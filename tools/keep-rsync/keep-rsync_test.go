@@ -13,9 +13,9 @@ import (
 	"testing"
 	"time"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
-	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
-	"git.curoverse.com/arvados.git/sdk/go/keepclient"
+	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
+	"git.arvados.org/arvados.git/sdk/go/arvadostest"
+	"git.arvados.org/arvados.git/sdk/go/keepclient"
 
 	. "gopkg.in/check.v1"
 )
@@ -89,13 +89,13 @@ func setupRsync(c *C, enforcePermissions bool, replications int) {
 	// srcConfig
 	var srcConfig apiConfig
 	srcConfig.APIHost = os.Getenv("ARVADOS_API_HOST")
-	srcConfig.APIToken = arvadostest.DataManagerToken
+	srcConfig.APIToken = arvadostest.SystemRootToken
 	srcConfig.APIHostInsecure = arvadosclient.StringBool(os.Getenv("ARVADOS_API_HOST_INSECURE"))
 
 	// dstConfig
 	var dstConfig apiConfig
 	dstConfig.APIHost = os.Getenv("ARVADOS_API_HOST")
-	dstConfig.APIToken = arvadostest.DataManagerToken
+	dstConfig.APIToken = arvadostest.SystemRootToken
 	dstConfig.APIHostInsecure = arvadosclient.StringBool(os.Getenv("ARVADOS_API_HOST_INSECURE"))
 
 	if enforcePermissions {
@@ -370,7 +370,7 @@ func (s *ServerNotRequiredSuite) TestLoadConfig(c *C) {
 	c.Check(err, IsNil)
 
 	c.Assert(srcConfig.APIHost, Equals, os.Getenv("ARVADOS_API_HOST"))
-	c.Assert(srcConfig.APIToken, Equals, arvadostest.DataManagerToken)
+	c.Assert(srcConfig.APIToken, Equals, arvadostest.SystemRootToken)
 	c.Assert(srcConfig.APIHostInsecure, Equals, arvadosclient.StringBool(os.Getenv("ARVADOS_API_HOST_INSECURE")))
 	c.Assert(srcConfig.ExternalClient, Equals, false)
 
@@ -378,7 +378,7 @@ func (s *ServerNotRequiredSuite) TestLoadConfig(c *C) {
 	c.Check(err, IsNil)
 
 	c.Assert(dstConfig.APIHost, Equals, os.Getenv("ARVADOS_API_HOST"))
-	c.Assert(dstConfig.APIToken, Equals, arvadostest.DataManagerToken)
+	c.Assert(dstConfig.APIToken, Equals, arvadostest.SystemRootToken)
 	c.Assert(dstConfig.APIHostInsecure, Equals, arvadosclient.StringBool(os.Getenv("ARVADOS_API_HOST_INSECURE")))
 	c.Assert(dstConfig.ExternalClient, Equals, false)
 
@@ -401,7 +401,7 @@ func (s *ServerNotRequiredSuite) TestLoadConfig_ErrorLoadingSrcConfig(c *C) {
 func (s *ServerNotRequiredSuite) TestSetupKeepClient_NoBlobSignatureTTL(c *C) {
 	var srcConfig apiConfig
 	srcConfig.APIHost = os.Getenv("ARVADOS_API_HOST")
-	srcConfig.APIToken = arvadostest.DataManagerToken
+	srcConfig.APIToken = arvadostest.SystemRootToken
 	srcConfig.APIHostInsecure = arvadosclient.StringBool(os.Getenv("ARVADOS_API_HOST_INSECURE"))
 
 	_, ttl, err := setupKeepClient(srcConfig, srcKeepServicesJSON, false, 0, 0)
@@ -415,7 +415,7 @@ func setupConfigFile(c *C, name string) *os.File {
 	c.Check(err, IsNil)
 
 	fileContent := "ARVADOS_API_HOST=" + os.Getenv("ARVADOS_API_HOST") + "\n"
-	fileContent += "ARVADOS_API_TOKEN=" + arvadostest.DataManagerToken + "\n"
+	fileContent += "ARVADOS_API_TOKEN=" + arvadostest.SystemRootToken + "\n"
 	fileContent += "ARVADOS_API_HOST_INSECURE=" + os.Getenv("ARVADOS_API_HOST_INSECURE") + "\n"
 	fileContent += "ARVADOS_EXTERNAL_CLIENT=false\n"
 	fileContent += "ARVADOS_BLOB_SIGNING_KEY=abcdefg"

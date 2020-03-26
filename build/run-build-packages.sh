@@ -19,9 +19,12 @@ Options:
 --debug
     Output debug information (default: false)
 --target <target>
-    Distribution to build packages for (default: debian9)
+    Distribution to build packages for (default: debian10)
 --only-build <package>
     Build only a specific package (or $ONLY_BUILD from environment)
+--force-build
+    Build even if the package exists upstream or if it has already been
+    built locally
 --command
     Build command to execute (defaults to the run command defined in the
     Docker image)
@@ -35,18 +38,19 @@ EOF
 # set to --no-cache-dir to disable pip caching
 CACHE_FLAG=
 
-MAINTAINER="Ward Vandewege <wvandewege@veritasgenetics.com>"
-VENDOR="Veritas Genetics, Inc."
+MAINTAINER="Arvados Package Maintainers <packaging@arvados.org>"
+VENDOR="The Arvados Project"
 
 # End of user configuration
 
 DEBUG=${ARVADOS_DEBUG:-0}
+FORCE_BUILD=${FORCE_BUILD:-0}
 EXITCODE=0
-TARGET=debian9
+TARGET=debian10
 COMMAND=
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
-    help,build-bundle-packages,debug,target:,only-build: \
+    help,build-bundle-packages,debug,target:,only-build:,force-build \
     -- "" "$@")
 if [ $? -ne 0 ]; then
     exit 1
@@ -65,6 +69,9 @@ while [ $# -gt 0 ]; do
             ;;
         --only-build)
             ONLY_BUILD="$2"; shift
+            ;;
+        --force-build)
+            FORCE_BUILD=1
             ;;
         --debug)
             DEBUG=1
@@ -155,14 +162,6 @@ if [[ "$?" != 0 ]]; then
   echo >&2 "Error: fpm not found"
   echo >&2
   exit 1
-fi
-
-PYTHON2_FPM_INSTALLER=(--python-easyinstall "$(find_python_program easy_install-$PYTHON2_VERSION easy_install)")
-install3=$(find_python_program easy_install-$PYTHON3_VERSION easy_install3 pip-$PYTHON3_VERSION pip3)
-if [[ $install3 =~ easy_ ]]; then
-    PYTHON3_FPM_INSTALLER=(--python-easyinstall "$install3")
-else
-    PYTHON3_FPM_INSTALLER=(--python-pip "$install3")
 fi
 
 RUN_BUILD_PACKAGES_PATH="`dirname \"$0\"`"
@@ -281,7 +280,6 @@ debug_echo -e "\nPython packages\n"
 # Go binaries
 cd $WORKSPACE/packages/$TARGET
 export GOPATH=$(mktemp -d)
-go get github.com/kardianos/govendor
 package_go_binary cmd/arvados-client arvados-client \
     "Arvados command line tool (beta)"
 package_go_binary cmd/arvados-server arvados-server \
@@ -296,7 +294,7 @@ package_go_binary services/crunch-dispatch-local crunch-dispatch-local \
     "Dispatch Crunch containers on the local system"
 package_go_binary services/crunch-dispatch-slurm crunch-dispatch-slurm \
     "Dispatch Crunch containers to a SLURM cluster"
-package_go_binary services/crunch-run crunch-run \
+package_go_binary cmd/arvados-server crunch-run \
     "Supervise a single Crunch container"
 package_go_binary services/crunchstat crunchstat \
     "Gather cpu/memory/network statistics of running Crunch jobs"
@@ -324,8 +322,11 @@ package_go_binary tools/keep-exercise keep-exercise \
 # The Python SDK - Should be built first because it's needed by others
 fpm_build_virtualenv "arvados-python-client" "sdk/python"
 
-# Arvados cwl runner
-fpm_build_virtualenv "arvados-cwl-runner" "sdk/cwl"
+# The Python SDK - Python3 package
+fpm_build_virtualenv "arvados-python-client" "sdk/python" "python3"
+
+# Arvados cwl runner - Only supports Python3 now
+fpm_build_virtualenv "arvados-cwl-runner" "sdk/cwl" "python3"
 
 # The PAM module
 fpm_build_virtualenv "libpam-arvados" "sdk/pam"
@@ -339,9 +340,6 @@ fpm_build_virtualenv "arvados-node-manager" "services/nodemanager"
 # The Arvados crunchstat-summary tool
 fpm_build_virtualenv "crunchstat-summary" "tools/crunchstat-summary"
 
-# The Python SDK - Python3 package
-fpm_build_virtualenv "arvados-python-client" "sdk/python" "python3"
-
 # The Docker image cleaner
 fpm_build_virtualenv "arvados-docker-cleaner" "services/dockercleaner" "python3"
 
@@ -351,6 +349,8 @@ if [[ -e "$WORKSPACE/cwltest" ]]; then
 	rm -rf "$WORKSPACE/cwltest"
 fi
 git clone https://github.com/common-workflow-language/cwltest.git
+# last release to support python 2.7
+(cd cwltest && git checkout 1.0.20190906212748)
 # signal to our build script that we want a cwltest executable installed in /usr/bin/
 mkdir cwltest/bin && touch cwltest/bin/cwltest
 fpm_build_virtualenv "cwltest" "cwltest"

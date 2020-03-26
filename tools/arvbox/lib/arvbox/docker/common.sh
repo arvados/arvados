@@ -12,6 +12,7 @@ export R_LIBS=/var/lib/Rlibs
 export HOME=$(getent passwd arvbox | cut -d: -f6)
 
 defaultdev=$(/sbin/ip route|awk '/default/ { print $5 }')
+dockerip=$(/sbin/ip route | grep default | awk '{ print $3 }')
 containerip=$(ip addr show $defaultdev | grep 'inet ' | sed 's/ *inet \(.*\)\/.*/\1/')
 if test -s /var/run/localip_override ; then
     localip=$(cat /var/run/localip_override)
@@ -62,16 +63,17 @@ run_bundler() {
     else
         frozen=""
     fi
-    if ! test -x /var/lib/gems/bin/bundler ; then
-        bundlergem=$(ls -r $GEM_HOME/cache/bundler-*.gem 2>/dev/null | head -n1 || true)
-        if test -n "$bundlergem" ; then
-            flock /var/lib/gems/gems.lock gem install --local --no-document $bundlergem
-        else
-            flock /var/lib/gems/gems.lock gem install --no-document bundler
-        fi
-    fi
-    if ! flock /var/lib/gems/gems.lock bundler install --path $GEM_HOME --local --no-deployment $frozen "$@" ; then
-        flock /var/lib/gems/gems.lock bundler install --path $GEM_HOME --no-deployment $frozen "$@"
+    # if ! test -x /var/lib/gems/bin/bundler ; then
+    # 	bundleversion=2.0.2
+    #     bundlergem=$(ls -r $GEM_HOME/cache/bundler-${bundleversion}.gem 2>/dev/null | head -n1 || true)
+    #     if test -n "$bundlergem" ; then
+    #         flock /var/lib/gems/gems.lock gem install --verbose --local --no-document $bundlergem
+    #     else
+    #         flock /var/lib/gems/gems.lock gem install --verbose --no-document bundler --version ${bundleversion}
+    #     fi
+    # fi
+    if ! flock /var/lib/gems/gems.lock bundler install --verbose --path $GEM_HOME --local --no-deployment $frozen "$@" ; then
+        flock /var/lib/gems/gems.lock bundler install --verbose --path $GEM_HOME --no-deployment $frozen "$@"
     fi
 }
 
@@ -86,8 +88,8 @@ pip_install() {
     popd
 
     if [ "$PYCMD" = "python3" ]; then
-	if ! pip3 install --no-index --find-links /var/lib/pip $1 ; then
-            pip3 install $1
+	if ! pip3 install --prefix /usr/local --no-index --find-links /var/lib/pip $1 ; then
+            pip3 install --prefix /usr/local $1
 	fi
     else
 	if ! pip install --no-index --find-links /var/lib/pip $1 ; then

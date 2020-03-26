@@ -40,6 +40,10 @@ if defined?(Bundler)
   end
 end
 
+if ENV["ARVADOS_RAILS_LOG_TO_STDOUT"]
+  Rails.logger = ActiveSupport::TaggedLogging.new(Logger.new(STDOUT))
+end
+
 module Server
   class Application < Rails::Application
     # The following is to avoid SafeYAML's warning message
@@ -75,6 +79,11 @@ module Server
     config.active_support.test_order = :sorted
 
     config.action_dispatch.perform_deep_munge = false
+
+    # force_ssl's redirect-to-https feature doesn't work when the
+    # client supplies a port number, and prevents arvados-controller
+    # from connecting to Rails internally via plain http.
+    config.ssl_options = {redirect: false}
 
     I18n.enforce_available_locales = false
 

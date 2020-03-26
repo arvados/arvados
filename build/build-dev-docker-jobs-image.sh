@@ -16,7 +16,7 @@ Syntax:
 WORKSPACE=path         Path to the Arvados source tree to build packages from
 CWLTOOL=path           (optional) Path to cwltool git repository.
 SALAD=path             (optional) Path to schema_salad git repository.
-PYCMD=pythonexec       (optional) Specify the python executable to use in the docker image. Defaults to "python".
+PYCMD=pythonexec       (optional) Specify the python executable to use in the docker image. Defaults to "python3".
 
 EOF
 
@@ -36,13 +36,13 @@ fi
 
 cd "$WORKSPACE"
 
-py=python
+py=python3
 pipcmd=pip
 if [[ -n "$PYCMD" ]] ; then
     py="$PYCMD"
-    if [[ $py = python3 ]] ; then
-	pipcmd=pip3
-    fi
+fi
+if [[ $py = python3 ]] ; then
+    pipcmd=pip3
 fi
 
 (cd sdk/python && python setup.py sdist)
@@ -79,6 +79,7 @@ if [[ $python_sdk_ts -gt $cwl_runner_ts ]]; then
     cwl_runner_version=$(cd sdk/python && nohash_version_from_git 1.0)
 fi
 
-docker build --build-arg sdk=$sdk --build-arg runner=$runner --build-arg salad=$salad --build-arg cwltool=$cwltool --build-arg pythoncmd=$py --build-arg pipcmd=$pipcmd -f "$WORKSPACE/sdk/dev-jobs.dockerfile" -t arvados/jobs:$cwl_runner_version "$WORKSPACE/sdk"
+set -x
+docker build --no-cache --build-arg sdk=$sdk --build-arg runner=$runner --build-arg salad=$salad --build-arg cwltool=$cwltool --build-arg pythoncmd=$py --build-arg pipcmd=$pipcmd -f "$WORKSPACE/sdk/dev-jobs.dockerfile" -t arvados/jobs:$cwl_runner_version "$WORKSPACE/sdk"
 echo arv-keepdocker arvados/jobs $cwl_runner_version
 arv-keepdocker arvados/jobs $cwl_runner_version

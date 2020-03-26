@@ -9,10 +9,10 @@ import (
 	"strings"
 	"time"
 
-	"git.curoverse.com/arvados.git/lib/cloud"
-	"git.curoverse.com/arvados.git/lib/dispatchcloud/test"
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/lib/cloud"
+	"git.arvados.org/arvados.git/lib/dispatchcloud/test"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"github.com/prometheus/client_golang/prometheus"
 	check "gopkg.in/check.v1"
 )
@@ -70,9 +70,11 @@ func (suite *PoolSuite) TestResumeAfterRestart(c *check.C) {
 	c.Assert(err, check.IsNil)
 
 	newExecutor := func(cloud.Instance) Executor {
-		return stubExecutor{
-			"crunch-run --list": stubResp{},
-			"true":              stubResp{},
+		return &stubExecutor{
+			response: map[string]stubResp{
+				"crunch-run --list": stubResp{},
+				"true":              stubResp{},
+			},
 		}
 	}
 
@@ -155,7 +157,7 @@ func (suite *PoolSuite) TestCreateUnallocShutdown(c *check.C) {
 	type3 := arvados.InstanceType{Name: "a2l", ProviderType: "a2.large", VCPUs: 4, RAM: 4 * GiB, Price: .04}
 	pool := &Pool{
 		logger:      logger,
-		newExecutor: func(cloud.Instance) Executor { return stubExecutor{} },
+		newExecutor: func(cloud.Instance) Executor { return &stubExecutor{} },
 		instanceSet: &throttledInstanceSet{InstanceSet: instanceSet},
 		instanceTypes: arvados.InstanceTypeMap{
 			type1.Name: type1,

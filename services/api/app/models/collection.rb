@@ -28,6 +28,7 @@ class Collection < ArvadosModel
   before_validation :check_signatures
   before_validation :strip_signatures_and_update_replication_confirmed
   before_validation :name_null_if_empty
+  validate :ensure_filesystem_compatible_name
   validate :ensure_pdh_matches_manifest_text
   validate :ensure_storage_classes_desired_is_not_empty
   validate :ensure_storage_classes_contain_non_empty_strings
@@ -623,10 +624,10 @@ class Collection < ArvadosModel
       return
     end
     (managed_props.keys - self.properties.keys).each do |key|
-      if managed_props[key].has_key?('Value')
-        self.properties[key] = managed_props[key]['Value']
-      elsif managed_props[key]['Function'].andand == 'original_owner'
+      if managed_props[key]['Function'] == 'original_owner'
         self.properties[key] = self.user_owner_uuid
+      elsif managed_props[key]['Value']
+        self.properties[key] = managed_props[key]['Value']
       else
         logger.warn "Unidentified default property definition '#{key}': #{managed_props[key].inspect}"
       end

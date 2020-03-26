@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 FROM ubuntu:bionic
-MAINTAINER Ward Vandewege <wvandewege@veritasgenetics.com>
+MAINTAINER Arvados Package Maintainers <packaging@arvados.org>
 
 ENV DEBIAN_FRONTEND noninteractive
 
@@ -18,7 +18,8 @@ RUN gpg --import --no-tty /tmp/mpapis.asc && \
     gpg --import --no-tty /tmp/pkuczynski.asc && \
     curl -L https://get.rvm.io | bash -s stable && \
     /usr/local/rvm/bin/rvm install 2.5 && \
-    /usr/local/rvm/bin/rvm alias create default ruby-2.5
+    /usr/local/rvm/bin/rvm alias create default ruby-2.5 && \
+    /usr/local/rvm/bin/rvm-exec default gem install bundler --version 2.0.2
 
 # udev daemon can't start in a container, so don't try.
 RUN mkdir -p /etc/udev/disabled

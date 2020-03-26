@@ -13,3 +13,8 @@ img.screenshot {
     margin-left: 2em;
     margin-bottom: 2em;
 }
+
+img.side {
+    float: left;
+    width: 50%;
+}

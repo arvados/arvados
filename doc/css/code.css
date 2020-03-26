@@ -38,3 +38,5 @@ table.CodeRay {
 td.line-numbers {
     width: 2em;
 }
+
+.releasenotes h2 { margin-top: 1.5em; text-decoration: underline; }

@@ -1090,4 +1090,25 @@ class CollectionTest < ActiveSupport::TestCase
       end
     end
   end
+
+  test "collection names must be displayable in a filesystem" do
+    set_user_from_auth :active
+    ["", "{SOLIDUS}"].each do |subst|
+      Rails.configuration.Collections.ForwardSlashNameSubstitution = subst
+      c = Collection.create
+      [[nil, true],
+       ["", true],
+       [".", false],
+       ["..", false],
+       ["...", true],
+       ["..z..", true],
+       ["foo/bar", subst != ""],
+       ["../..", subst != ""],
+       ["/", subst != ""],
+      ].each do |name, valid|
+        c.name = name
+        assert_equal valid, c.valid?, "#{name.inspect} should be #{valid ? "valid" : "invalid"}"
+      end
+    end
+  end
 end

@@ -124,7 +124,7 @@ class UsersController < ApplicationController
 
   def show_pane_list
     if current_user.andand.is_admin
-      super | %w(Admin)
+      %w(Admin) | super
     else
       super
     end

@@ -19,14 +19,16 @@ module RecordFilters
   # +model_class+    subclass of ActiveRecord being filtered
   #
   # Output:
-  # Hash with two keys:
+  # Hash with the following keys:
   # :cond_out  array of SQL fragments for each filter expression
-  # :param_out  array of values for parameter substitution in cond_out
+  # :param_out array of values for parameter substitution in cond_out
+  # :joins     array of joins: either [] or ["JOIN containers ON ..."]
   def record_filters filters, model_class
     conds_out = []
     param_out = []
+    joins = []
 
-    ar_table_name = model_class.table_name
+    model_table_name = model_class.table_name
     filters.each do |filter|
       attrs_in, operator, operand = filter
       if attrs_in == 'any' && operator != '@@'
@@ -71,78 +73,95 @@ module RecordFilters
       attrs.each do |attr|
         subproperty = attr.split(".", 2)
 
-        col = model_class.columns.select { |c| c.name == subproperty[0] }.first
+        if subproperty.length == 2 && subproperty[0] == 'container' && model_table_name == "container_requests"
+          # attr is "tablename.colname" -- e.g., ["container.state", "=", "Complete"]
+          joins = ["JOIN containers ON container_requests.container_uuid = containers.uuid"]
+          attr_model_class = Container
+          attr_table_name = "containers"
+          subproperty = subproperty[1].split(".", 2)
+        else
+          attr_model_class = model_class
+          attr_table_name = model_table_name
+        end
 
-        if subproperty.length == 2
+        attr = subproperty[0]
+        proppath = subproperty[1]
+        col = attr_model_class.columns.select { |c| c.name == attr }.first
+
+        if proppath
           if col.nil? or col.type != :jsonb
-            raise ArgumentError.new("Invalid attribute '#{subproperty[0]}' for subproperty filter")
+            raise ArgumentError.new("Invalid attribute '#{attr}' for subproperty filter")
           end
 
-          if subproperty[1][0] == "<" and subproperty[1][-1] == ">"
-            subproperty[1] = subproperty[1][1..-2]
+          if proppath[0] == "<" and proppath[-1] == ">"
+            proppath = proppath[1..-2]
           end
 
           # jsonb search
           case operator.downcase
           when '=', '!='
             not_in = if operator.downcase == "!=" then "NOT " else "" end
-            cond_out << "#{not_in}(#{ar_table_name}.#{subproperty[0]} @> ?::jsonb)"
-            param_out << SafeJSON.dump({subproperty[1] => operand})
+            cond_out << "#{not_in}(#{attr_table_name}.#{attr} @> ?::jsonb)"
+            param_out << SafeJSON.dump({proppath => operand})
           when 'in'
             if operand.is_a? Array
               operand.each do |opr|
-                cond_out << "#{ar_table_name}.#{subproperty[0]} @> ?::jsonb"
-                param_out << SafeJSON.dump({subproperty[1] => opr})
+                cond_out << "#{attr_table_name}.#{attr} @> ?::jsonb"
+                param_out << SafeJSON.dump({proppath => opr})
               end
             else
               raise ArgumentError.new("Invalid operand type '#{operand.class}' "\
                                       "for '#{operator}' operator in filters")
             end
           when '<', '<=', '>', '>='
-            cond_out << "#{ar_table_name}.#{subproperty[0]}->? #{operator} ?::jsonb"
-            param_out << subproperty[1]
+            cond_out << "#{attr_table_name}.#{attr}->? #{operator} ?::jsonb"
+            param_out << proppath
             param_out << SafeJSON.dump(operand)
           when 'like', 'ilike'
-            cond_out << "#{ar_table_name}.#{subproperty[0]}->>? #{operator} ?"
-            param_out << subproperty[1]
+            cond_out << "#{attr_table_name}.#{attr}->>? #{operator} ?"
+            param_out << proppath
             param_out << operand
           when 'not in'
             if operand.is_a? Array
-              cond_out << "#{ar_table_name}.#{subproperty[0]}->>? NOT IN (?) OR #{ar_table_name}.#{subproperty[0]}->>? IS NULL"
-              param_out << subproperty[1]
+              cond_out << "#{attr_table_name}.#{attr}->>? NOT IN (?) OR #{attr_table_name}.#{attr}->>? IS NULL"
+              param_out << proppath
               param_out << operand
-              param_out << subproperty[1]
+              param_out << proppath
             else
               raise ArgumentError.new("Invalid operand type '#{operand.class}' "\
                                       "for '#{operator}' operator in filters")
             end
           when 'exists'
             if operand == true
-              cond_out << "jsonb_exists(#{ar_table_name}.#{subproperty[0]}, ?)"
+              cond_out << "jsonb_exists(#{attr_table_name}.#{attr}, ?)"
             elsif operand == false
-              cond_out << "(NOT jsonb_exists(#{ar_table_name}.#{subproperty[0]}, ?)) OR #{ar_table_name}.#{subproperty[0]} is NULL"
+              cond_out << "(NOT jsonb_exists(#{attr_table_name}.#{attr}, ?)) OR #{attr_table_name}.#{attr} is NULL"
             else
               raise ArgumentError.new("Invalid operand '#{operand}' for '#{operator}' must be true or false")
             end
-            param_out << subproperty[1]
+            param_out << proppath
+          when 'contains'
+            cond_out << "#{attr_table_name}.#{attr} @> ?::jsonb OR #{attr_table_name}.#{attr} @> ?::jsonb"
+            param_out << SafeJSON.dump({proppath => operand})
+            param_out << SafeJSON.dump({proppath => [operand]})
           else
             raise ArgumentError.new("Invalid operator for subproperty search '#{operator}'")
           end
         elsif operator.downcase == "exists"
           if col.type != :jsonb
-            raise ArgumentError.new("Invalid attribute '#{subproperty[0]}' for operator '#{operator}' in filter")
+            raise ArgumentError.new("Invalid attribute '#{attr}' for operator '#{operator}' in filter")
           end
 
-          cond_out << "jsonb_exists(#{ar_table_name}.#{subproperty[0]}, ?)"
+          cond_out << "jsonb_exists(#{attr_table_name}.#{attr}, ?)"
           param_out << operand
         else
-          if !model_class.searchable_columns(operator).index subproperty[0]
-            raise ArgumentError.new("Invalid attribute '#{subproperty[0]}' in filter")
+          if !attr_model_class.searchable_columns(operator).index attr
+            raise ArgumentError.new("Invalid attribute '#{attr}' in filter")
           end
 
           case operator.downcase
           when '=', '<', '<=', '>', '>=', '!=', 'like', 'ilike'
-            attr_type = model_class.attribute_column(attr).type
+            attr_type = attr_model_class.attribute_column(attr).type
             operator = '<>' if operator == '!='
             if operand.is_a? String
               if attr_type == :boolean
@@ -162,9 +181,9 @@ module RecordFilters
               end
               if operator == '<>'
                 # explicitly allow NULL
-                cond_out << "#{ar_table_name}.#{attr} #{operator} ? OR #{ar_table_name}.#{attr} IS NULL"
+                cond_out << "#{attr_table_name}.#{attr} #{operator} ? OR #{attr_table_name}.#{attr} IS NULL"
               else
-                cond_out << "#{ar_table_name}.#{attr} #{operator} ?"
+                cond_out << "#{attr_table_name}.#{attr} #{operator} ?"
               end
               if (# any operator that operates on value rather than
                 # representation:
@@ -173,15 +192,15 @@ module RecordFilters
               end
               param_out << operand
             elsif operand.nil? and operator == '='
-              cond_out << "#{ar_table_name}.#{attr} is null"
+              cond_out << "#{attr_table_name}.#{attr} is null"
             elsif operand.nil? and operator == '<>'
-              cond_out << "#{ar_table_name}.#{attr} is not null"
+              cond_out << "#{attr_table_name}.#{attr} is not null"
             elsif (attr_type == :boolean) and ['=', '<>'].include?(operator) and
                  [true, false].include?(operand)
-              cond_out << "#{ar_table_name}.#{attr} #{operator} ?"
+              cond_out << "#{attr_table_name}.#{attr} #{operator} ?"
               param_out << operand
             elsif (attr_type == :integer)
-              cond_out << "#{ar_table_name}.#{attr} #{operator} ?"
+              cond_out << "#{attr_table_name}.#{attr} #{operator} ?"
               param_out << operand
             else
               raise ArgumentError.new("Invalid operand type '#{operand.class}' "\
@@ -189,11 +208,11 @@ module RecordFilters
             end
           when 'in', 'not in'
             if operand.is_a? Array
-              cond_out << "#{ar_table_name}.#{attr} #{operator} (?)"
+              cond_out << "#{attr_table_name}.#{attr} #{operator} (?)"
               param_out << operand
               if operator == 'not in' and not operand.include?(nil)
                 # explicitly allow NULL
-                cond_out[-1] = "(#{cond_out[-1]} OR #{ar_table_name}.#{attr} IS NULL)"
+                cond_out[-1] = "(#{cond_out[-1]} OR #{attr_table_name}.#{attr} IS NULL)"
               end
             else
               raise ArgumentError.new("Invalid operand type '#{operand.class}' "\
@@ -206,14 +225,14 @@ module RecordFilters
               cl = ArvadosModel::kind_class op
               if cl
                 if attr == 'uuid'
-                  if model_class.uuid_prefix == cl.uuid_prefix
+                  if attr_model_class.uuid_prefix == cl.uuid_prefix
                     cond << "1=1"
                   else
                     cond << "1=0"
                   end
                 else
                   # Use a substring query to support remote uuids
-                  cond << "substring(#{ar_table_name}.#{attr}, 7, 5) = ?"
+                  cond << "substring(#{attr_table_name}.#{attr}, 7, 5) = ?"
                   param_out << cl.uuid_prefix
                 end
               else
@@ -229,7 +248,7 @@ module RecordFilters
       conds_out << cond_out.join(' OR ') if cond_out.any?
     end
 
-    {:cond_out => conds_out, :param_out => param_out}
+    {:cond_out => conds_out, :param_out => param_out, :joins => joins}
   end
 
 end

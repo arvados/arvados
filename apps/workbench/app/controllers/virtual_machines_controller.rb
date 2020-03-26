@@ -25,8 +25,8 @@ class VirtualMachinesController < ApplicationController
   end
 
   def webshell
-    return render_not_found if Rails.configuration.Workbench.ShellInABoxURL == URI("")
-    webshell_url = URI(Rails.configuration.Workbench.ShellInABoxURL)
+    return render_not_found if Rails.configuration.Services.WebShell.ExternalURL == URI("")
+    webshell_url = URI(Rails.configuration.Services.WebShell.ExternalURL)
     if webshell_url.host.index("*") != nil
       webshell_url.host = webshell_url.host.sub("*", @object.hostname)
     else

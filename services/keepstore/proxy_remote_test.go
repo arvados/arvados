@@ -17,10 +17,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
-	"git.curoverse.com/arvados.git/sdk/go/auth"
-	"git.curoverse.com/arvados.git/sdk/go/keepclient"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvadostest"
+	"git.arvados.org/arvados.git/sdk/go/auth"
+	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	"github.com/prometheus/client_golang/prometheus"
 	check "gopkg.in/check.v1"
 )
@@ -89,7 +89,7 @@ func (s *ProxyRemoteSuite) SetUpTest(c *check.C) {
 	s.remoteAPI.StartTLS()
 	s.cluster = testCluster(c)
 	s.cluster.Collections.BlobSigningKey = knownKey
-	s.cluster.SystemRootToken = arvadostest.DataManagerToken
+	s.cluster.SystemRootToken = arvadostest.SystemRootToken
 	s.cluster.RemoteClusters = map[string]arvados.RemoteCluster{
 		s.remoteClusterID: arvados.RemoteCluster{
 			Host:     strings.Split(s.remoteAPI.URL, "//")[1],

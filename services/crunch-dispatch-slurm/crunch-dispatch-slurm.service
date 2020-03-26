@@ -16,6 +16,8 @@ StartLimitIntervalSec=0
 [Service]
 Type=notify
 ExecStart=/usr/bin/crunch-dispatch-slurm
+# Set a reasonable default for the open file limit
+LimitNOFILE=65536
 Restart=always
 RestartSec=1
 LimitNOFILE=1000000

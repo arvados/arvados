@@ -11,7 +11,7 @@ package manifest
 import (
 	"errors"
 	"fmt"
-	"git.curoverse.com/arvados.git/sdk/go/blockdigest"
+	"git.arvados.org/arvados.git/sdk/go/blockdigest"
 	"path"
 	"regexp"
 	"sort"

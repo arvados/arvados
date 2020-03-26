@@ -10,7 +10,7 @@ Syntax:
         WORKSPACE=/path/to/arvados $(basename $0) [options]
 
 --target <target>
-    Distribution to build packages for (default: debian9)
+    Distribution to build packages for (default: debian10)
 --upload
     If the build and test steps are successful, upload the packages
     to a remote apt repository (default: false)
@@ -50,7 +50,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-TARGET=debian9
+TARGET=debian10
 UPLOAD=0
 RC=0
 DEBUG=
@@ -128,11 +128,11 @@ if [[ "$UPLOAD" != 0 ]]; then
 
   if [ ${#failures[@]} -eq 0 ]; then
     if [[ "$RC" != 0 ]]; then
-      echo "/usr/local/arvados-dev/jenkins/run_upload_packages_testing.py -H jenkinsapt@apt.arvados.org -o Port=2222 --workspace $WORKSPACE $TARGET"
-      /usr/local/arvados-dev/jenkins/run_upload_packages_testing.py -H jenkinsapt@apt.arvados.org -o Port=2222 --workspace $WORKSPACE $TARGET
+      echo "/usr/local/arvados-dev/jenkins/run_upload_packages.py --repo testing -H jenkinsapt@apt.arvados.org -o Port=2222 --workspace $WORKSPACE $TARGET"
+      /usr/local/arvados-dev/jenkins/run_upload_packages.py --repo testing -H jenkinsapt@apt.arvados.org -o Port=2222 --workspace $WORKSPACE $TARGET
     else
-      echo "/usr/local/arvados-dev/jenkins/run_upload_packages.py -H jenkinsapt@apt.arvados.org -o Port=2222 --workspace $WORKSPACE $TARGET"
-      /usr/local/arvados-dev/jenkins/run_upload_packages.py -H jenkinsapt@apt.arvados.org -o Port=2222 --workspace $WORKSPACE $TARGET
+      echo "/usr/local/arvados-dev/jenkins/run_upload_packages.py --repo dev -H jenkinsapt@apt.arvados.org -o Port=2222 --workspace $WORKSPACE $TARGET"
+      /usr/local/arvados-dev/jenkins/run_upload_packages.py --repo dev -H jenkinsapt@apt.arvados.org -o Port=2222 --workspace $WORKSPACE $TARGET
     fi
   else
     echo "Skipping package upload, there were errors building and/or testing the packages"

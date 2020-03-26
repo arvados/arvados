@@ -8,8 +8,8 @@
 #
 # By default, arv-copy recursively copies any dependent objects
 # necessary to make the object functional in the new instance
-# (e.g. for a pipeline instance, arv-copy copies the pipeline
-# template, input collection, docker images, git repositories). If
+# (e.g. for a workflow, arv-copy copies the workflow,
+# input collections, and docker images). If
 # --no-recursive is given, arv-copy copies only the single record
 # identified by object-uuid.
 #
@@ -87,9 +87,6 @@ def main():
         '-f', '--force', dest='force', action='store_true',
         help='Perform copy even if the object appears to exist at the remote destination.')
     copy_opts.add_argument(
-        '--force-filters', action='store_true', default=False,
-        help="Copy pipeline template filters verbatim, even if they act differently on the destination cluster.")
-    copy_opts.add_argument(
         '--src', dest='source_arvados', required=True,
         help='The name of the source Arvados instance (required) - points at an Arvados config file. May be either a pathname to a config file, or (for example) "foo" as shorthand for $HOME/.config/arvados/foo.conf.')
     copy_opts.add_argument(
@@ -102,17 +99,8 @@ def main():
         '--no-recursive', dest='recursive', action='store_false',
         help='Do not copy any dependencies. NOTE: if this option is given, the copied object will need to be updated manually in order to be functional.')
     copy_opts.add_argument(
-        '--dst-git-repo', dest='dst_git_repo',
-        help='The name of the destination git repository. Required when copying a pipeline recursively.')
-    copy_opts.add_argument(
         '--project-uuid', dest='project_uuid',
-        help='The UUID of the project at the destination to which the pipeline should be copied.')
-    copy_opts.add_argument(
-        '--allow-git-http-src', action="store_true",
-        help='Allow cloning git repositories over insecure http')
-    copy_opts.add_argument(
-        '--allow-git-http-dst', action="store_true",
-        help='Allow pushing git repositories over insecure http')
+        help='The UUID of the project at the destination to which the collection or workflow should be copied.')
 
     copy_opts.add_argument(
         'object_uuid',
@@ -121,7 +109,7 @@ def main():
     copy_opts.set_defaults(recursive=True)
 
     parser = argparse.ArgumentParser(
-        description='Copy a pipeline instance, template, workflow, or collection from one Arvados instance to another.',
+        description='Copy a workflow or collection from one Arvados instance to another.',
         parents=[copy_opts, arv_cmd.retry_opt])
     args = parser.parse_args()
 
@@ -144,15 +132,6 @@ def main():
         result = copy_collection(args.object_uuid,
                                  src_arv, dst_arv,
                                  args)
-    elif t == 'PipelineInstance':
-        set_src_owner_uuid(src_arv.pipeline_instances(), args.object_uuid, args)
-        result = copy_pipeline_instance(args.object_uuid,
-                                        src_arv, dst_arv,
-                                        args)
-    elif t == 'PipelineTemplate':
-        set_src_owner_uuid(src_arv.pipeline_templates(), args.object_uuid, args)
-        result = copy_pipeline_template(args.object_uuid,
-                                        src_arv, dst_arv, args)
     elif t == 'Workflow':
         set_src_owner_uuid(src_arv.workflows(), args.object_uuid, args)
         result = copy_workflow(args.object_uuid, src_arv, dst_arv, args)
@@ -225,67 +204,6 @@ def check_git_availability():
     except Exception:
         abort('git command is not available. Please ensure git is installed.')
 
-# copy_pipeline_instance(pi_uuid, src, dst, args)
-#
-#    Copies a pipeline instance identified by pi_uuid from src to dst.
-#
-#    If the args.recursive option is set:
-#      1. Copies all input collections
-#           * For each component in the pipeline, include all collections
-#             listed as job dependencies for that component)
-#      2. Copy docker images
-#      3. Copy git repositories
-#      4. Copy the pipeline template
-#
-#    The only changes made to the copied pipeline instance are:
-#      1. The original pipeline instance UUID is preserved in
-#         the 'properties' hash as 'copied_from_pipeline_instance_uuid'.
-#      2. The pipeline_template_uuid is changed to the new template uuid.
-#      3. The owner_uuid of the instance is changed to the user who
-#         copied it.
-#
-def copy_pipeline_instance(pi_uuid, src, dst, args):
-    # Fetch the pipeline instance record.
-    pi = src.pipeline_instances().get(uuid=pi_uuid).execute(num_retries=args.retries)
-
-    if args.recursive:
-        check_git_availability()
-
-        if not args.dst_git_repo:
-            abort('--dst-git-repo is required when copying a pipeline recursively.')
-        # Copy the pipeline template and save the copied template.
-        if pi.get('pipeline_template_uuid', None):
-            pt = copy_pipeline_template(pi['pipeline_template_uuid'],
-                                        src, dst, args)
-
-        # Copy input collections, docker images and git repos.
-        pi = copy_collections(pi, src, dst, args)
-        copy_git_repos(pi, src, dst, args.dst_git_repo, args)
-        copy_docker_images(pi, src, dst, args)
-
-        # Update the fields of the pipeline instance with the copied
-        # pipeline template.
-        if pi.get('pipeline_template_uuid', None):
-            pi['pipeline_template_uuid'] = pt['uuid']
-
-    else:
-        # not recursive
-        logger.info("Copying only pipeline instance %s.", pi_uuid)
-        logger.info("You are responsible for making sure all pipeline dependencies have been updated.")
-
-    # Update the pipeline instance properties, and create the new
-    # instance at dst.
-    pi['properties']['copied_from_pipeline_instance_uuid'] = pi_uuid
-    pi['description'] = "Pipeline copied from {}\n\n{}".format(
-        pi_uuid,
-        pi['description'] if pi.get('description', None) else '')
-
-    pi['owner_uuid'] = args.project_uuid
-
-    del pi['uuid']
-
-    new_pi = dst.pipeline_instances().create(body=pi, ensure_unique_name=True).execute(num_retries=args.retries)
-    return new_pi
 
 def filter_iter(arg):
     """Iterate a filter string-or-list.
@@ -340,82 +258,6 @@ def exception_handler(handler, *exc_types):
     except exc_types as error:
         handler(error)
 
-def migrate_components_filters(template_components, dst_git_repo):
-    """Update template component filters in-place for the destination.
-
-    template_components is a dictionary of components in a pipeline template.
-    This method walks over each component's filters, and updates them to have
-    identical semantics on the destination cluster.  It returns a list of
-    error strings that describe what filters could not be updated safely.
-
-    dst_git_repo is the name of the destination Git repository, which can
-    be None if that is not known.
-    """
-    errors = []
-    for cname, cspec in template_components.items():
-        def add_error(errmsg):
-            errors.append("{}: {}".format(cname, errmsg))
-        if not isinstance(cspec, dict):
-            add_error("value is not a component definition")
-            continue
-        src_repository = cspec.get('repository')
-        filters = cspec.get('filters', [])
-        if not isinstance(filters, list):
-            add_error("filters are not a list")
-            continue
-        for cfilter in filters:
-            if not (isinstance(cfilter, list) and (len(cfilter) == 3)):
-                add_error("malformed filter {!r}".format(cfilter))
-                continue
-            if attr_filtered(cfilter, 'repository'):
-                with exception_handler(add_error, ValueError):
-                    migrate_repository_filter(cfilter, src_repository, dst_git_repo)
-            if attr_filtered(cfilter, 'script_version'):
-                with exception_handler(add_error, ValueError):
-                    migrate_script_version_filter(cfilter)
-    return errors
-
-# copy_pipeline_template(pt_uuid, src, dst, args)
-#
-#    Copies a pipeline template identified by pt_uuid from src to dst.
-#
-#    If args.recursive is True, also copy any collections, docker
-#    images and git repositories that this template references.
-#
-#    The owner_uuid of the new template is changed to that of the user
-#    who copied the template.
-#
-#    Returns the copied pipeline template object.
-#
-def copy_pipeline_template(pt_uuid, src, dst, args):
-    # fetch the pipeline template from the source instance
-    pt = src.pipeline_templates().get(uuid=pt_uuid).execute(num_retries=args.retries)
-
-    if not args.force_filters:
-        filter_errors = migrate_components_filters(pt['components'], args.dst_git_repo)
-        if filter_errors:
-            abort("Template filters cannot be copied safely. Use --force-filters to copy anyway.\n" +
-                  "\n".join(filter_errors))
-
-    if args.recursive:
-        check_git_availability()
-
-        if not args.dst_git_repo:
-            abort('--dst-git-repo is required when copying a pipeline recursively.')
-        # Copy input collections, docker images and git repos.
-        pt = copy_collections(pt, src, dst, args)
-        copy_git_repos(pt, src, dst, args.dst_git_repo, args)
-        copy_docker_images(pt, src, dst, args)
-
-    pt['description'] = "Pipeline template copied from {}\n\n{}".format(
-        pt_uuid,
-        pt['description'] if pt.get('description', None) else '')
-    pt['name'] = "{} copied from {}".format(pt.get('name', ''), pt_uuid)
-    del pt['uuid']
-
-    pt['owner_uuid'] = args.project_uuid
-
-    return dst.pipeline_templates().create(body=pt, ensure_unique_name=True).execute(num_retries=args.retries)
 
 # copy_workflow(wf_uuid, src, dst, args)
 #
@@ -518,53 +360,6 @@ def copy_collections(obj, src, dst, args):
         return type(obj)(copy_collections(v, src, dst, args) for v in obj)
     return obj
 
-def migrate_jobspec(jobspec, src, dst, dst_repo, args):
-    """Copy a job's script to the destination repository, and update its record.
-
-    Given a jobspec dictionary, this function finds the referenced script from
-    src and copies it to dst and dst_repo.  It also updates jobspec in place to
-    refer to names on the destination.
-    """
-    repo = jobspec.get('repository')
-    if repo is None:
-        return
-    # script_version is the "script_version" parameter from the source
-    # component or job.  If no script_version was supplied in the
-    # component or job, it is a mistake in the pipeline, but for the
-    # purposes of copying the repository, default to "master".
-    script_version = jobspec.get('script_version') or 'master'
-    script_key = (repo, script_version)
-    if script_key not in scripts_copied:
-        copy_git_repo(repo, src, dst, dst_repo, script_version, args)
-        scripts_copied.add(script_key)
-    jobspec['repository'] = dst_repo
-    repo_dir = local_repo_dir[repo]
-    for version_key in ['script_version', 'supplied_script_version']:
-        if version_key in jobspec:
-            jobspec[version_key] = git_rev_parse(jobspec[version_key], repo_dir)
-
-# copy_git_repos(p, src, dst, dst_repo, args)
-#
-#    Copies all git repositories referenced by pipeline instance or
-#    template 'p' from src to dst.
-#
-#    For each component c in the pipeline:
-#      * Copy git repositories named in c['repository'] and c['job']['repository'] if present
-#      * Rename script versions:
-#          * c['script_version']
-#          * c['job']['script_version']
-#          * c['job']['supplied_script_version']
-#        to the commit hashes they resolve to, since any symbolic
-#        names (tags, branches) are not preserved in the destination repo.
-#
-#    The pipeline object is updated in place with the new repository
-#    names.  The return value is undefined.
-#
-def copy_git_repos(p, src, dst, dst_repo, args):
-    for component in p['components'].values():
-        migrate_jobspec(component, src, dst, dst_repo, args)
-        if 'job' in component:
-            migrate_jobspec(component['job'], src, dst, dst_repo, args)
 
 def total_collection_size(manifest_text):
     """Return the total number of bytes in this collection (excluding
@@ -590,17 +385,16 @@ def create_collection_from(c, src, dst, args):
     available."""
 
     collection_uuid = c['uuid']
-    del c['uuid']
+    body = {}
+    for d in ('description', 'manifest_text', 'name', 'portable_data_hash', 'properties'):
+        body[d] = c[d]
 
-    if not c["name"]:
-        c['name'] = "copied from " + collection_uuid
+    if not body["name"]:
+        body['name'] = "copied from " + collection_uuid
 
-    if 'properties' in c:
-        del c['properties']
+    body['owner_uuid'] = args.project_uuid
 
-    c['owner_uuid'] = args.project_uuid
-
-    dst_collection = dst.collections().create(body=c, ensure_unique_name=True).execute(num_retries=args.retries)
+    dst_collection = dst.collections().create(body=body, ensure_unique_name=True).execute(num_retries=args.retries)
 
     # Create docker_image_repo+tag and docker_image_hash links
     # at the destination.
@@ -665,7 +459,7 @@ def copy_collection(obj_uuid, src, dst, args):
             c = items[0]
         if not c:
             # See if there is a collection that's in the same project
-            # as the root item (usually a pipeline) being copied.
+            # as the root item (usually a workflow) being copied.
             for i in items:
                 if i.get("owner_uuid") == src_owner_uuid and i.get("name"):
                     c = i
@@ -815,68 +609,6 @@ def select_git_url(api, repo_name, retries, allow_insecure_http, allow_insecure_
     return (git_url, git_config)
 
 
-# copy_git_repo(src_git_repo, src, dst, dst_git_repo, script_version, args)
-#
-#    Copies commits from git repository 'src_git_repo' on Arvados
-#    instance 'src' to 'dst_git_repo' on 'dst'.  Both src_git_repo
-#    and dst_git_repo are repository names, not UUIDs (i.e. "arvados"
-#    or "jsmith")
-#
-#    All commits will be copied to a destination branch named for the
-#    source repository URL.
-#
-#    The destination repository must already exist.
-#
-#    The user running this command must be authenticated
-#    to both repositories.
-#
-def copy_git_repo(src_git_repo, src, dst, dst_git_repo, script_version, args):
-    # Identify the fetch and push URLs for the git repositories.
-
-    (src_git_url, src_git_config) = select_git_url(src, src_git_repo, args.retries, args.allow_git_http_src, "--allow-git-http-src")
-    (dst_git_url, dst_git_config) = select_git_url(dst, dst_git_repo, args.retries, args.allow_git_http_dst, "--allow-git-http-dst")
-
-    logger.debug('src_git_url: {}'.format(src_git_url))
-    logger.debug('dst_git_url: {}'.format(dst_git_url))
-
-    dst_branch = re.sub(r'\W+', '_', "{}_{}".format(src_git_url, script_version))
-
-    # Copy git commits from src repo to dst repo.
-    if src_git_repo not in local_repo_dir:
-        local_repo_dir[src_git_repo] = tempfile.mkdtemp()
-        arvados.util.run_command(
-            ["git"] + src_git_config + ["clone", "--bare", src_git_url,
-             local_repo_dir[src_git_repo]],
-            cwd=os.path.dirname(local_repo_dir[src_git_repo]),
-            env={"HOME": os.environ["HOME"],
-                 "ARVADOS_API_TOKEN": src.api_token,
-                 "GIT_ASKPASS": "/bin/false"})
-        arvados.util.run_command(
-            ["git", "remote", "add", "dst", dst_git_url],
-            cwd=local_repo_dir[src_git_repo])
-    arvados.util.run_command(
-        ["git", "branch", dst_branch, script_version],
-        cwd=local_repo_dir[src_git_repo])
-    arvados.util.run_command(["git"] + dst_git_config + ["push", "dst", dst_branch],
-                             cwd=local_repo_dir[src_git_repo],
-                             env={"HOME": os.environ["HOME"],
-                                  "ARVADOS_API_TOKEN": dst.api_token,
-                                  "GIT_ASKPASS": "/bin/false"})
-
-def copy_docker_images(pipeline, src, dst, args):
-    """Copy any docker images named in the pipeline components'
-    runtime_constraints field from src to dst."""
-
-    logger.debug('copy_docker_images: {}'.format(pipeline['uuid']))
-    for c_name, c_info in pipeline['components'].items():
-        if ('runtime_constraints' in c_info and
-            'docker_image' in c_info['runtime_constraints']):
-            copy_docker_image(
-                c_info['runtime_constraints']['docker_image'],
-                c_info['runtime_constraints'].get('docker_image_tag', 'latest'),
-                src, dst, args)
-
-
 def copy_docker_image(docker_image, docker_image_tag, src, dst, args):
     """Copy the docker image identified by docker_image and
     docker_image_tag from src to dst. Create appropriate
@@ -917,7 +649,7 @@ def git_rev_parse(rev, repo):
 #    the second field of the uuid.  This function consults the api's
 #    schema to identify the object class.
 #
-#    It returns a string such as 'Collection', 'PipelineInstance', etc.
+#    It returns a string such as 'Collection', 'Workflow', etc.
 #
 #    Special case: if handed a Keep locator hash, return 'Collection'.
 #

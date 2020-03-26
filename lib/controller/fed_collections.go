@@ -17,9 +17,9 @@ import (
 	"strings"
 	"sync"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/httpserver"
-	"git.curoverse.com/arvados.git/sdk/go/keepclient"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/httpserver"
+	"git.arvados.org/arvados.git/sdk/go/keepclient"
 )
 
 func rewriteSignatures(clusterID string, expectHash string,

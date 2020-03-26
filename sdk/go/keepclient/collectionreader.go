@@ -8,8 +8,8 @@ import (
 	"errors"
 	"os"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/manifest"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/manifest"
 )
 
 // ErrNoManifest indicates the given collection has no manifest

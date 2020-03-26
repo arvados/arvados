@@ -14,6 +14,9 @@ inputs:
   cluster_hosts: string[]
   arvbox_data: Directory
   arvbox_bin: File
+  logincluster:
+    type: boolean
+    default: false
 outputs:
   arvbox_data_out:
     type: Directory
@@ -39,6 +42,9 @@ requirements:
           }
           var r = {"Clusters": {}};
           r["Clusters"][inputs.this_cluster_id] = {"RemoteClusters": remoteClusters};
+          if (r["Clusters"][inputs.this_cluster_id]) {
+            r["Clusters"][inputs.this_cluster_id]["Login"] = {"LoginCluster": inputs.cluster_ids[0]};
+          }
           return JSON.stringify(r);
           }
       - entryname: application.yml.override

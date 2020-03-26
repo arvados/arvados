@@ -88,9 +88,6 @@ navbar:
     - R:
       - sdk/R/index.html.md
       - sdk/R/arvados/index.html.textile.liquid
-    - Perl:
-      - sdk/perl/index.html.textile.liquid
-      - sdk/perl/example.html.textile.liquid
     - Ruby:
       - sdk/ruby/index.html.textile.liquid
       - sdk/ruby/example.html.textile.liquid
@@ -101,6 +98,9 @@ navbar:
     - Java v1:
       - sdk/java/index.html.textile.liquid
       - sdk/java/example.html.textile.liquid
+    - Perl:
+      - sdk/perl/index.html.textile.liquid
+      - sdk/perl/example.html.textile.liquid
   api:
     - Concepts:
       - api/index.html.textile.liquid
@@ -114,6 +114,7 @@ navbar:
       - api/methods/authorized_keys.html.textile.liquid
       - api/methods/groups.html.textile.liquid
       - api/methods/users.html.textile.liquid
+      - api/methods/user_agreements.html.textile.liquid
     - System resources:
       - api/methods/keep_services.html.textile.liquid
       - api/methods/links.html.textile.liquid
@@ -128,6 +129,8 @@ navbar:
       - api/methods/container_requests.html.textile.liquid
       - api/methods/containers.html.textile.liquid
       - api/methods/workflows.html.textile.liquid
+    - Management (admin/system):
+      - api/dispatch.html.textile.liquid
     - Jobs engine (legacy):
       - api/crunch-scripts.html.textile.liquid
       - api/methods/jobs.html.textile.liquid
@@ -148,34 +151,33 @@ navbar:
   admin:
     - Topics:
       - admin/index.html.textile.liquid
-    - Configuration:
-      - admin/config.html.textile.liquid
-      - admin/federation.html.textile.liquid
-    - Upgrading and migrations:
-      - admin/upgrading.html.textile.liquid
-      - admin/config-migration.html.textile.liquid
     - Users and Groups:
-      - install/cheat_sheet.html.textile.liquid
-      - admin/activation.html.textile.liquid
+      - admin/user-management.html.textile.liquid
+      - admin/reassign-ownership.html.textile.liquid
+      - admin/user-management-cli.html.textile.liquid
+      - admin/group-management.html.textile.liquid
+      - admin/federation.html.textile.liquid
       - admin/merge-remote-account.html.textile.liquid
       - admin/migrating-providers.html.textile.liquid
       - user/topics/arvados-sync-groups.html.textile.liquid
+      - admin/scoped-tokens.html.textile.liquid
     - Monitoring:
-      - admin/health-checks.html.textile.liquid
+      - admin/logging.html.textile.liquid
       - admin/metrics.html.textile.liquid
+      - admin/health-checks.html.textile.liquid
       - admin/management-token.html.textile.liquid
-    - Cloud:
-      - admin/storage-classes.html.textile.liquid
-      - admin/spot-instances.html.textile.liquid
-      - admin/cloudtest.html.textile.liquid
     - Data Management:
       - admin/collection-versioning.html.textile.liquid
       - admin/collection-managed-properties.html.textile.liquid
       - admin/keep-balance.html.textile.liquid
       - admin/controlling-container-reuse.html.textile.liquid
       - admin/logs-table-management.html.textile.liquid
+      - admin/workbench2-vocabulary.html.textile.liquid
+      - admin/storage-classes.html.textile.liquid
+    - Cloud:
+      - admin/spot-instances.html.textile.liquid
+      - admin/cloudtest.html.textile.liquid
     - Other:
-      - admin/troubleshooting.html.textile.liquid
       - install/migrate-docker19.html.textile.liquid
       - admin/upgrade-crunch2.html.textile.liquid
   installguide:
@@ -187,11 +189,14 @@ navbar:
       - install/arvados-on-kubernetes.html.textile.liquid
     - Manual installation:
       - install/install-manual-prerequisites.html.textile.liquid
-      - install/install-components.html.textile.liquid
+      - install/packages.html.textile.liquid
+      - admin/upgrading.html.textile.liquid
+    - Configuration:
+      - install/config.html.textile.liquid
+      - admin/config-migration.html.textile.liquid
+      - admin/config.html.textile.liquid
     - Core:
-      - install/install-postgresql.html.textile.liquid
       - install/install-api-server.html.textile.liquid
-      - install/install-controller.html.textile.liquid
     - Keep:
       - install/install-keepstore.html.textile.liquid
       - install/configure-fs-storage.html.textile.liquid
@@ -201,21 +206,24 @@ navbar:
       - install/install-keep-web.html.textile.liquid
       - install/install-keep-balance.html.textile.liquid
     - User interface:
+      - install/setup-login.html.textile.liquid
       - install/install-sso.html.textile.liquid
       - install/install-workbench-app.html.textile.liquid
       - install/install-workbench2-app.html.textile.liquid
       - install/install-composer.html.textile.liquid
     - Additional services:
       - install/install-ws.html.textile.liquid
-      - install/install-shell-server.html.textile.liquid
       - install/install-arv-git-httpd.html.textile.liquid
-    - Containers API support on SLURM:
-      - install/crunch2-slurm/install-prerequisites.html.textile.liquid
-      - install/crunch2-slurm/install-slurm.html.textile.liquid
+      - install/install-shell-server.html.textile.liquid
+    - Containers API:
       - install/crunch2-slurm/install-compute-node.html.textile.liquid
+      - install/install-jobs-image.html.textile.liquid
+      - install/install-dispatch-cloud.html.textile.liquid
       - install/crunch2-slurm/install-dispatch.html.textile.liquid
       - install/crunch2-slurm/install-test.html.textile.liquid
-      - install/install-nodemanager.html.textile.liquid
-      - install/install-compute-ping.html.textile.liquid
-    - Containers API support on cloud (beta):
-      - install/install-dispatch-cloud.html.textile.liquid
+    - External dependencies:
+      - install/install-postgresql.html.textile.liquid
+      - install/ruby.html.textile.liquid
+      - install/nginx.html.textile.liquid
+      - install/google-auth.html.textile.liquid
+      - install/install-docker.html.textile.liquid

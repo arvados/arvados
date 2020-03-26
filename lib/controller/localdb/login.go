@@ -18,17 +18,21 @@ import (
 	"text/template"
 	"time"
 
-	"git.curoverse.com/arvados.git/lib/controller/rpc"
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/auth"
+	"git.arvados.org/arvados.git/lib/controller/rpc"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/auth"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"github.com/coreos/go-oidc"
 	"golang.org/x/oauth2"
+	"google.golang.org/api/option"
+	"google.golang.org/api/people/v1"
 )
 
 type googleLoginController struct {
-	issuer   string // override OIDC issuer URL (normally https://accounts.google.com) for testing
-	provider *oidc.Provider
-	mu       sync.Mutex
+	issuer            string // override OIDC issuer URL (normally https://accounts.google.com) for testing
+	peopleAPIBasePath string // override Google People API base URL (normally set by google pkg to https://people.googleapis.com/)
+	provider          *oidc.Provider
+	mu                sync.Mutex
 }
 
 func (ctrl *googleLoginController) getProvider() (*oidc.Provider, error) {
@@ -46,6 +50,18 @@ func (ctrl *googleLoginController) getProvider() (*oidc.Provider, error) {
 		ctrl.provider = provider
 	}
 	return ctrl.provider, nil
+}
+
+func (ctrl *googleLoginController) Logout(ctx context.Context, cluster *arvados.Cluster, railsproxy *railsProxy, opts arvados.LogoutOptions) (arvados.LogoutResponse, error) {
+	target := opts.ReturnTo
+	if target == "" {
+		if cluster.Services.Workbench2.ExternalURL.Host != "" {
+			target = cluster.Services.Workbench2.ExternalURL.String()
+		} else {
+			target = cluster.Services.Workbench1.ExternalURL.String()
+		}
+	}
+	return arvados.LogoutResponse{RedirectLocation: target}, nil
 }
 
 func (ctrl *googleLoginController) Login(ctx context.Context, cluster *arvados.Cluster, railsproxy *railsProxy, opts arvados.LoginOptions) (arvados.LoginResponse, error) {
@@ -106,34 +122,109 @@ func (ctrl *googleLoginController) Login(ctx context.Context, cluster *arvados.C
 		if err != nil {
 			return ctrl.loginError(fmt.Errorf("error verifying ID token: %s", err))
 		}
-		var claims struct {
-			Name     string `json:"name"`
-			Email    string `json:"email"`
-			Verified bool   `json:"email_verified"`
+		authinfo, err := ctrl.getAuthInfo(ctx, cluster, conf, oauth2Token, idToken)
+		if err != nil {
+			return ctrl.loginError(err)
 		}
-		if err := idToken.Claims(&claims); err != nil {
-			return ctrl.loginError(fmt.Errorf("error extracting claims from ID token: %s", err))
-		}
-		if !claims.Verified {
-			return ctrl.loginError(errors.New("cannot authenticate using an unverified email address"))
-		}
-
-		firstname, lastname := strings.TrimSpace(claims.Name), ""
-		if names := strings.Fields(firstname); len(names) > 1 {
-			firstname = strings.Join(names[0:len(names)-1], " ")
-			lastname = names[len(names)-1]
-		}
-
 		ctxRoot := auth.NewContext(ctx, &auth.Credentials{Tokens: []string{cluster.SystemRootToken}})
 		return railsproxy.UserSessionCreate(ctxRoot, rpc.UserSessionCreateOptions{
 			ReturnTo: state.Remote + "," + state.ReturnTo,
-			AuthInfo: map[string]interface{}{
-				"email":      claims.Email,
-				"first_name": firstname,
-				"last_name":  lastname,
-			},
+			AuthInfo: *authinfo,
 		})
 	}
+}
+
+// Use a person's token to get all of their email addresses, with the
+// primary address at index 0. The provided defaultAddr is always
+// included in the returned slice, and is used as the primary if the
+// Google API does not indicate one.
+func (ctrl *googleLoginController) getAuthInfo(ctx context.Context, cluster *arvados.Cluster, conf *oauth2.Config, token *oauth2.Token, idToken *oidc.IDToken) (*rpc.UserSessionAuthInfo, error) {
+	var ret rpc.UserSessionAuthInfo
+	defer ctxlog.FromContext(ctx).WithField("ret", &ret).Debug("getAuthInfo returned")
+
+	var claims struct {
+		Name     string `json:"name"`
+		Email    string `json:"email"`
+		Verified bool   `json:"email_verified"`
+	}
+	if err := idToken.Claims(&claims); err != nil {
+		return nil, fmt.Errorf("error extracting claims from ID token: %s", err)
+	} else if claims.Verified {
+		// Fall back to this info if the People API call
+		// (below) doesn't return a primary && verified email.
+		if names := strings.Fields(strings.TrimSpace(claims.Name)); len(names) > 1 {
+			ret.FirstName = strings.Join(names[0:len(names)-1], " ")
+			ret.LastName = names[len(names)-1]
+		} else {
+			ret.FirstName = names[0]
+		}
+		ret.Email = claims.Email
+	}
+
+	if !cluster.Login.GoogleAlternateEmailAddresses {
+		if ret.Email == "" {
+			return nil, fmt.Errorf("cannot log in with unverified email address %q", claims.Email)
+		}
+		return &ret, nil
+	}
+
+	svc, err := people.NewService(ctx, option.WithTokenSource(conf.TokenSource(ctx, token)), option.WithScopes(people.UserEmailsReadScope))
+	if err != nil {
+		return nil, fmt.Errorf("error setting up People API: %s", err)
+	}
+	if p := ctrl.peopleAPIBasePath; p != "" {
+		// Override normal API endpoint (for testing)
+		svc.BasePath = p
+	}
+	person, err := people.NewPeopleService(svc).Get("people/me").PersonFields("emailAddresses,names").Do()
+	if err != nil {
+		if strings.Contains(err.Error(), "Error 403") && strings.Contains(err.Error(), "accessNotConfigured") {
+			// Log the original API error, but display
+			// only the "fix config" advice to the user.
+			ctxlog.FromContext(ctx).WithError(err).WithField("email", ret.Email).Error("People API is not enabled")
+			return nil, errors.New("configuration error: Login.GoogleAlternateEmailAddresses is true, but Google People API is not enabled")
+		} else {
+			return nil, fmt.Errorf("error getting profile info from People API: %s", err)
+		}
+	}
+
+	// The given/family names returned by the People API and
+	// flagged as "primary" (if any) take precedence over the
+	// split-by-whitespace result from above.
+	for _, name := range person.Names {
+		if name.Metadata != nil && name.Metadata.Primary {
+			ret.FirstName = name.GivenName
+			ret.LastName = name.FamilyName
+			break
+		}
+	}
+
+	altEmails := map[string]bool{}
+	if ret.Email != "" {
+		altEmails[ret.Email] = true
+	}
+	for _, ea := range person.EmailAddresses {
+		if ea.Metadata == nil || !ea.Metadata.Verified {
+			ctxlog.FromContext(ctx).WithField("address", ea.Value).Info("skipping unverified email address")
+			continue
+		}
+		altEmails[ea.Value] = true
+		if ea.Metadata.Primary || ret.Email == "" {
+			ret.Email = ea.Value
+		}
+	}
+	if len(altEmails) == 0 {
+		return nil, errors.New("cannot log in without a verified email address")
+	}
+	for ae := range altEmails {
+		if ae != ret.Email {
+			ret.AlternateEmails = append(ret.AlternateEmails, ae)
+			if i := strings.Index(ae, "@"); i > 0 && strings.ToLower(ae[i+1:]) == strings.ToLower(cluster.Users.PreferDomainForUsername) {
+				ret.Username = strings.SplitN(ae[:i], "+", 2)[0]
+			}
+		}
+	}
+	return &ret, nil
 }
 
 func (ctrl *googleLoginController) loginError(sendError error) (resp arvados.LoginResponse, err error) {

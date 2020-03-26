@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
 	check "gopkg.in/check.v1"
 )
 
@@ -30,7 +30,7 @@ func (s *integrationSuite) TestIdenticalTimestamps(c *check.C) {
 			var lastMod time.Time
 			sawUUID := make(map[string]bool)
 			err := EachCollection(s.client, pageSize, func(c arvados.Collection) error {
-				if c.ModifiedAt == nil {
+				if c.ModifiedAt.IsZero() {
 					return nil
 				}
 				if sawUUID[c.UUID] {
@@ -39,14 +39,14 @@ func (s *integrationSuite) TestIdenticalTimestamps(c *check.C) {
 				}
 				got[trial] = append(got[trial], c.UUID)
 				sawUUID[c.UUID] = true
-				if lastMod == *c.ModifiedAt {
+				if lastMod == c.ModifiedAt {
 					streak++
 					if streak > longestStreak {
 						longestStreak = streak
 					}
 				} else {
 					streak = 0
-					lastMod = *c.ModifiedAt
+					lastMod = c.ModifiedAt
 				}
 				return nil
 			}, nil)

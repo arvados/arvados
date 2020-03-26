@@ -1,0 +1,27 @@
+---
+layout: default
+navsection: installguide
+title: Setting up Google auth
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+In order to use Google for authentication, you must use the <a href="https://console.developers.google.com" target="_blank">Google Developers Console</a> to create a set of client credentials.
+
+# Go to the <a href="https://console.developers.google.com" target="_blank">Google Developers Console</a> and select or create a project; this will take you to the project page.
+# Click on *+ Enable APIs and Services*
+## Search for *People API* and click on *Enable API*.
+# Navigate back to the main "APIs & Services" page
+# On the sidebar, click on *OAuth consent screen*
+## On consent screen settings, enter your identifying details
+## Under *Authorized domains* add @example.com@
+## Click on *Save*.
+# On the sidebar, click on *Credentials*; then click on *Create credentials*&rarr;*OAuth Client ID*
+# Under *Application type* select *Web application*.
+# You must set the authorization origins.  Edit @auth.example.com@ to the appropriate hostname that you will use to access the SSO service:
+## JavaScript origin should be @https://ClusterID.example.com/@ (using Arvados-controller based login) or @https://auth.example.com/@ (for the SSO server)
+## Redirect URI should be @https://ClusterID.example.com/login@ (using Arvados-controller based login) or @https://auth.example.com/users/auth/google_oauth2/callback@ (for the SSO server)
+# Copy the values of *Client ID* and *Client secret* from the Google Developers Console and add them to the appropriate configuration.

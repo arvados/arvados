@@ -108,9 +108,25 @@ class ApiClientAuthorization < ArvadosModel
     clnt
   end
 
+  def self.check_system_root_token token
+    if token == Rails.configuration.SystemRootToken
+      return ApiClientAuthorization.new(user: User.find_by_uuid(system_user_uuid),
+                                        uuid: Rails.configuration.ClusterID+"-gj3su-000000000000000",
+                                        api_token: token,
+                                        api_client: ApiClient.new(is_trusted: true, url_prefix: ""))
+    else
+      return nil
+    end
+  end
+
   def self.validate(token:, remote: nil)
-    return nil if !token
+    return nil if token.nil? or token.empty?
     remote ||= Rails.configuration.ClusterID
+
+    auth = self.check_system_root_token(token)
+    if !auth.nil?
+      return auth
+    end
 
     case token[0..2]
     when 'v2/'
@@ -221,20 +237,16 @@ class ApiClientAuthorization < ArvadosModel
 
       # Sync user record.
       if remote_user_prefix == Rails.configuration.Login.LoginCluster
-        # Remote cluster controls our user database, copy both
-        # 'is_active' and 'is_admin'
-        user.is_active = remote_user['is_active']
+        # Remote cluster controls our user database, set is_active if
+        # remote is active.  If remote is not active, user will be
+        # unsetup (see below).
+        user.is_active = true if remote_user['is_active']
         user.is_admin = remote_user['is_admin']
       else
         if Rails.configuration.Users.NewUsersAreActive ||
            Rails.configuration.RemoteClusters[remote_user_prefix].andand["ActivateUsers"]
-          # Default policy is to activate users, so match activate
-          # with the remote record.
-          user.is_active = remote_user['is_active']
-        elsif !remote_user['is_active']
-          # Deactivate user if the remote is inactive, otherwise don't
-          # change 'is_active'.
-          user.is_active = false
+          # Default policy is to activate users
+          user.is_active = true if remote_user['is_active']
         end
       end
 
@@ -243,6 +255,10 @@ class ApiClientAuthorization < ArvadosModel
       end
 
       act_as_system_user do
+        if user.is_active && !remote_user['is_active']
+          user.unsetup
+        end
+
         user.save!
 
         # We will accept this token (and avoid reloading the user

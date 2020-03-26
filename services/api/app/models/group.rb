@@ -16,6 +16,7 @@ class Group < ArvadosModel
   # already know how to properly treat them.
   attribute :properties, :jsonbHash, default: {}
 
+  validate :ensure_filesystem_compatible_name
   after_create :invalidate_permissions_cache
   after_update :maybe_invalidate_permissions_cache
   before_create :assign_name
@@ -29,6 +30,12 @@ class Group < ArvadosModel
     t.add :trash_at
     t.add :is_trashed
     t.add :properties
+  end
+
+  def ensure_filesystem_compatible_name
+    # project groups need filesystem-compatible names, but others
+    # don't.
+    super if group_class == 'project'
   end
 
   def maybe_invalidate_permissions_cache

@@ -25,10 +25,10 @@ h2. Running arvados-cwl-runner
 
 h3. Get the example files
 
-The tutorial files are located in the "documentation section of the Arvados source repository:":https://github.com/curoverse/arvados/tree/master/doc/user/cwl/bwa-mem
+The tutorial files are located in the "documentation section of the Arvados source repository:":https://github.com/arvados/arvados/tree/master/doc/user/cwl/bwa-mem
 
 <notextile>
-<pre><code>~$ <span class="userinput">git clone https://github.com/curoverse/arvados</span>
+<pre><code>~$ <span class="userinput">git clone https://github.com/arvados/arvados</span>
 ~$ <span class="userinput">cd arvados/doc/user/cwl/bwa-mem</span>
 </code></pre>
 </notextile>
@@ -84,7 +84,7 @@ When running a workflow on an Arvados cluster, the input files must be stored in
 
 A URI reference to Keep uses the @keep:@ scheme followed by either the portable data hash or UUID of the collection and then the location of the file inside the collection.  For example, @keep:2463fa9efeb75e099685528b3b9071e0+438/19.fasta.bwt@ or @keep:zzzzz-4zz18-zzzzzzzzzzzzzzz/19.fasta.bwt@.
 
-If you reference a file in "arv-mount":{{site.baseurl}}/user/tutorials/tutorial-keep-mount.html, such as @/home/example/keep/by_id/2463fa9efeb75e099685528b3b9071e0+438/19.fasta.bwt@, then @arvados-cwl-runner@ will automatically determine the appropriate Keep URI reference.
+If you reference a file in "arv-mount":{{site.baseurl}}/user/tutorials/tutorial-keep-mount-gnu-linux.html, such as @/home/example/keep/by_id/2463fa9efeb75e099685528b3b9071e0+438/19.fasta.bwt@, then @arvados-cwl-runner@ will automatically determine the appropriate Keep URI reference.
 
 If you reference a local file which is not in @arv-mount@, then @arvados-cwl-runner@ will upload the file to Keep and use the Keep URI reference from the upload.
 
