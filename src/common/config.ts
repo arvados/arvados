@@ -58,6 +58,7 @@ export interface ClusterConfigJSON {
     };
     Login: {
         LoginCluster: string;
+        PAM: boolean;
     };
     Collections: {
         ForwardSlashNameSubstitution: string;
@@ -187,6 +188,7 @@ export const mockClusterConfigJSON = (config: Partial<ClusterConfigJSON>): Clust
     },
     Login: {
         LoginCluster: "",
+        PAM: false,
     },
     Collections: {
         ForwardSlashNameSubstitution: "",
