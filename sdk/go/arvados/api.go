@@ -84,6 +84,7 @@ type ListOptions struct {
 	Count              string                 `json:"count"`
 	IncludeTrash       bool                   `json:"include_trash"`
 	IncludeOldVersions bool                   `json:"include_old_versions"`
+	LocalUserList      bool                   `json:"local_user_list"`
 }
 
 type CreateOptions struct {
