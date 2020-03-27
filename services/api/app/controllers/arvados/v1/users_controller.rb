@@ -254,6 +254,12 @@ class Arvados::V1::UsersController < ApplicationController
     }
   end
 
+  def self._index_requires_parameters
+    super.merge(
+      { local_user_list: {required: false, type: 'boolean',
+                          description: 'only list users from local database, no effect if LoginCluster is not set'} })
+  end
+
   def apply_filters(model_class=nil)
     return super if @read_users.any?(&:is_admin)
     if params[:uuid] != current_user.andand.uuid

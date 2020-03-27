@@ -98,7 +98,7 @@ def fetch_users(clusters, loginCluster):
     users = []
     for c, arv in clusters.items():
         print("Getting user list from %s" % c)
-        ul = arvados.util.list_all(arv.users().list)
+        ul = arvados.util.list_all(arv.users().list, local_user_list=True)
         for l in ul:
             if l["uuid"].startswith(c):
                 users.append(l)
@@ -171,7 +171,7 @@ def update_username(args, email, user_uuid, username, migratecluster, migratearv
     print("(%s) Updating username of %s to '%s' on %s" % (email, user_uuid, username, migratecluster))
     if not args.dry_run:
         try:
-            conflicts = migratearv.users().list(filters=[["username", "=", username]]).execute()
+            conflicts = migratearv.users().list(filters=[["username", "=", username]], local_user_list=True).execute()
             if conflicts["items"]:
                 migratearv.users().update(uuid=conflicts["items"][0]["uuid"], body={"user": {"username": username+"migrate"}}).execute()
             migratearv.users().update(uuid=user_uuid, body={"user": {"username": username}}).execute()
@@ -204,7 +204,7 @@ def choose_new_user(args, by_email, email, userhome, username, old_user_uuid, cl
             user = None
             try:
                 olduser = oldhomearv.users().get(uuid=old_user_uuid).execute()
-                conflicts = homearv.users().list(filters=[["username", "=", username]]).execute()
+                conflicts = homearv.users().list(filters=[["username", "=", username]], local_user_list=True).execute()
                 if conflicts["items"]:
                     homearv.users().update(uuid=conflicts["items"][0]["uuid"], body={"user": {"username": username+"migrate"}}).execute()
                 user = homearv.users().create(body={"user": {"email": email, "username": username, "is_active": olduser["is_active"]}}).execute()

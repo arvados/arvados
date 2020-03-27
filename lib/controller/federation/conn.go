@@ -388,7 +388,7 @@ var userAttrsCachedFromLoginCluster = map[string]bool{
 
 func (conn *Conn) UserList(ctx context.Context, options arvados.ListOptions) (arvados.UserList, error) {
 	logger := ctxlog.FromContext(ctx)
-	if id := conn.cluster.Login.LoginCluster; id != "" && id != conn.cluster.ClusterID {
+	if id := conn.cluster.Login.LoginCluster; id != "" && id != conn.cluster.ClusterID && !options.LocalUserList {
 		resp, err := conn.chooseBackend(id).UserList(ctx, options)
 		if err != nil {
 			return resp, err
