@@ -9,6 +9,8 @@ import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/st
 import { login, authActions } from '~/store/auth/auth-action';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { RootState } from '~/store/store';
+import { LoginForm } from '~/views-components/login-form/login-form';
+import Axios from 'axios';
 
 type CssRules = 'root' | 'container' | 'title' | 'content' | 'content__bolder' | 'button';
 
@@ -47,12 +49,22 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     }
 });
 
+const doPAMLogin = (url: string) => (username: string, password: string) => {
+    const formData = new FormData();
+    formData.append("username", username);
+    formData.append("password", password);
+    return Axios.post(`${url}/login`, formData, {
+        headers: { 'X-Http-Method-Override': 'GET' },
+    });
+};
+
 type LoginPanelProps = DispatchProp<any> & WithStyles<CssRules> & {
     remoteHosts: { [key: string]: string },
     homeCluster: string,
     uuidPrefix: string,
     loginCluster: string,
-    welcomePage: string
+    welcomePage: string,
+    pamLogin: boolean,
 };
 
 export const LoginPanel = withStyles(styles)(
@@ -61,8 +73,9 @@ export const LoginPanel = withStyles(styles)(
         homeCluster: state.auth.homeCluster,
         uuidPrefix: state.auth.localCluster,
         loginCluster: state.auth.loginCluster,
-        welcomePage: state.auth.config.clusterConfig.Workbench.WelcomePageHTML
-    }))(({ classes, dispatch, remoteHosts, homeCluster, uuidPrefix, loginCluster, welcomePage }: LoginPanelProps) =>
+        welcomePage: state.auth.config.clusterConfig.Workbench.WelcomePageHTML,
+        pamLogin: state.auth.config.clusterConfig.Login.PAM,
+    }))(({ classes, dispatch, remoteHosts, homeCluster, uuidPrefix, loginCluster, welcomePage, pamLogin }: LoginPanelProps) =>
         <Grid container justify="center" alignItems="center"
             className={classes.root}
             style={{ marginTop: 56, overflowY: "auto", height: "100%" }}>
@@ -80,14 +93,19 @@ export const LoginPanel = withStyles(styles)(
                         </Select>
                     </Typography>}
 
-                <Typography component="div" align="right">
-                    <Button variant="contained" color="primary" style={{ margin: "1em" }} className={classes.button}
+                {pamLogin
+                ? <Typography component="div">
+                    <LoginForm handleSubmit={
+                        doPAMLogin(`https://${remoteHosts[homeCluster]}`)}/>
+                </Typography>
+                : <Typography component="div" align="right">
+                    <Button variant="contained" color="primary" style={{ margin: "1em" }}
+                        className={classes.button}
                         onClick={() => dispatch(login(uuidPrefix, homeCluster, loginCluster, remoteHosts))}>
-                        Log in
-			{uuidPrefix !== homeCluster && loginCluster !== homeCluster &&
+                        Log in {uuidPrefix !== homeCluster && loginCluster !== homeCluster &&
                             <span>&nbsp;to {uuidPrefix} with user from {homeCluster}</span>}
                     </Button>
-                </Typography>
+                </Typography>}
             </Grid>
         </Grid >
     ));
