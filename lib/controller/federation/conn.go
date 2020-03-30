@@ -443,7 +443,7 @@ func (conn *Conn) UserUpdateUUID(ctx context.Context, options arvados.UpdateUUID
 }
 
 func (conn *Conn) UserMerge(ctx context.Context, options arvados.UserMergeOptions) (arvados.User, error) {
-	return conn.chooseBackend(options.OldUserUUID).UserMerge(ctx, options)
+	return conn.local.UserMerge(ctx, options)
 }
 
 func (conn *Conn) UserActivate(ctx context.Context, options arvados.UserActivateOptions) (arvados.User, error) {
