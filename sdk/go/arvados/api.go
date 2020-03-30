@@ -55,7 +55,7 @@ var (
 	EndpointUserUnsetup                   = APIEndpoint{"POST", "arvados/v1/users/{uuid}/unsetup", ""}
 	EndpointUserUpdate                    = APIEndpoint{"PATCH", "arvados/v1/users/{uuid}", "user"}
 	EndpointUserUpdateUUID                = APIEndpoint{"POST", "arvados/v1/users/{uuid}/update_uuid", ""}
-	EndpointUserBatchUpdate               = APIEndpoint{"PATCH", "arvados/v1/users/batch", ""}
+	EndpointUserBatchUpdate               = APIEndpoint{"PATCH", "arvados/v1/users/batch_update", ""}
 	EndpointUserAuthenticate              = APIEndpoint{"POST", "arvados/v1/users/authenticate", ""}
 	EndpointAPIClientAuthorizationCurrent = APIEndpoint{"GET", "arvados/v1/api_client_authorizations/current", ""}
 )
