@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { withStyles, WithStyles, StyleRulesCallback } from '@material-ui/core/styles';
 import CircularProgress from '@material-ui/core/CircularProgress';
 import { Button, Card, CardContent, TextField, CardActions } from '@material-ui/core';
@@ -47,6 +47,7 @@ interface LoginFormProps {
 
 export const LoginForm = withStyles(styles)(
     ({ handleSubmit, classes }: LoginFormProps & WithStyles<CssRules>) => {
+        const userInput = useRef<HTMLInputElement>(null);
         const [username, setUsername] = useState('');
         const [password, setPassword] = useState('');
         const [isButtonDisabled, setIsButtonDisabled] = useState(true);
@@ -63,6 +64,11 @@ export const LoginForm = withStyles(styles)(
                 setIsButtonDisabled(true);
             }
         }, [username, password]);
+
+        // This only run once after render.
+        useEffect(() => {
+            userInput.current!.focus();
+        }, []);
 
         const handleLogin = () => {
             setSubmitting(true);
@@ -96,6 +102,7 @@ export const LoginForm = withStyles(styles)(
                         <CardContent>
                             <div>
                                 <TextField
+                                    inputRef={userInput}
                                     disabled={isSubmitting}
                                     error={error} fullWidth id="username" type="email"
                                     label="Username" margin="normal"
