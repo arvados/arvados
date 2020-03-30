@@ -399,15 +399,17 @@ func (rtr *router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "OPTIONS" {
 		return
 	}
-	r.ParseForm()
-	if m := r.FormValue("_method"); m != "" {
-		r2 := *r
-		r = &r2
-		r.Method = m
-	} else if m = r.Header.Get("X-Http-Method-Override"); m != "" {
-		r2 := *r
-		r = &r2
-		r.Method = m
+	if r.Method == "POST" {
+		r.ParseForm()
+		if m := r.FormValue("_method"); m != "" {
+			r2 := *r
+			r = &r2
+			r.Method = m
+		} else if m = r.Header.Get("X-Http-Method-Override"); m != "" {
+			r2 := *r
+			r = &r2
+			r.Method = m
+		}
 	}
 	rtr.mux.ServeHTTP(w, r)
 }
