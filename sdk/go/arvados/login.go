@@ -6,14 +6,11 @@ package arvados
 
 import (
 	"bytes"
-	"encoding/json"
 	"net/http"
 )
 
 type LoginResponse struct {
 	RedirectLocation string       `json:"redirect_location,omitempty"`
-	Token            string       `json:"token,omitempty"`
-	Message          string       `json:"message,omitempty"`
 	HTML             bytes.Buffer `json:"-"`
 }
 
@@ -22,12 +19,6 @@ func (resp LoginResponse) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if resp.RedirectLocation != "" {
 		w.Header().Set("Location", resp.RedirectLocation)
 		w.WriteHeader(http.StatusFound)
-	} else if resp.Token != "" || resp.Message != "" {
-		w.Header().Set("Content-Type", "application/json")
-		if resp.Token == "" {
-			w.WriteHeader(http.StatusUnauthorized)
-		}
-		json.NewEncoder(w).Encode(resp)
 	} else {
 		w.Header().Set("Content-Type", "text/html")
 		w.Write(resp.HTML.Bytes())

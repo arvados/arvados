@@ -42,20 +42,16 @@ func (s *PamSuite) SetUpSuite(c *check.C) {
 }
 
 func (s *PamSuite) TestLoginFailure(c *check.C) {
-	resp, err := s.ctrl.Login(context.Background(), arvados.LoginOptions{
+	resp, err := s.ctrl.UserAuthenticate(context.Background(), arvados.UserAuthenticateOptions{
 		Username: "bogususername",
 		Password: "boguspassword",
-		ReturnTo: "https://example.com/foo",
 	})
 	c.Check(err, check.ErrorMatches, "Authentication failure")
 	hs, ok := err.(interface{ HTTPStatus() int })
 	if c.Check(ok, check.Equals, true) {
 		c.Check(hs.HTTPStatus(), check.Equals, http.StatusUnauthorized)
 	}
-	c.Check(resp.RedirectLocation, check.Equals, "")
-	c.Check(resp.Token, check.Equals, "")
-	c.Check(resp.Message, check.Equals, "")
-	c.Check(resp.HTML.String(), check.Equals, "")
+	c.Check(resp.APIToken, check.Equals, "")
 }
 
 // This test only runs if the ARVADOS_TEST_PAM_CREDENTIALS_FILE env
@@ -73,15 +69,12 @@ func (s *PamSuite) TestLoginSuccess(c *check.C) {
 	c.Assert(len(lines), check.Equals, 2, check.Commentf("credentials file %s should contain \"username\\npassword\"", testCredsFile))
 	u, p := lines[0], lines[1]
 
-	resp, err := s.ctrl.Login(context.Background(), arvados.LoginOptions{
+	resp, err := s.ctrl.UserAuthenticate(context.Background(), arvados.UserAuthenticateOptions{
 		Username: u,
 		Password: p,
-		ReturnTo: "https://example.com/foo",
 	})
 	c.Check(err, check.IsNil)
-	c.Check(resp.RedirectLocation, check.Equals, "")
-	c.Check(resp.Token, check.Matches, `v2/zzzzz-gj3su-.*/.*`)
-	c.Check(resp.HTML.String(), check.Equals, "")
+	c.Check(resp.APIToken, check.Matches, `v2/zzzzz-gj3su-.*/.*`)
 
 	authinfo := getCallbackAuthInfo(c, s.railsSpy)
 	c.Check(authinfo.Email, check.Equals, u+"@"+s.cluster.Login.PAMDefaultEmailDomain)

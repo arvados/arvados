@@ -36,3 +36,7 @@ func (conn *Conn) Logout(ctx context.Context, opts arvados.LogoutOptions) (arvad
 func (conn *Conn) Login(ctx context.Context, opts arvados.LoginOptions) (arvados.LoginResponse, error) {
 	return conn.loginController.Login(ctx, opts)
 }
+
+func (conn *Conn) UserAuthenticate(ctx context.Context, opts arvados.UserAuthenticateOptions) (arvados.APIClientAuthorization, error) {
+	return conn.loginController.UserAuthenticate(ctx, opts)
+}

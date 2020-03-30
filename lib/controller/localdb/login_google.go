@@ -12,6 +12,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 	"strings"
 	"sync"
@@ -22,6 +23,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/sdk/go/httpserver"
 	"github.com/coreos/go-oidc"
 	"golang.org/x/oauth2"
 	"google.golang.org/api/option"
@@ -127,6 +129,10 @@ func (ctrl *googleLoginController) Login(ctx context.Context, opts arvados.Login
 			AuthInfo: *authinfo,
 		})
 	}
+}
+
+func (ctrl *googleLoginController) UserAuthenticate(ctx context.Context, opts arvados.UserAuthenticateOptions) (arvados.APIClientAuthorization, error) {
+	return arvados.APIClientAuthorization{}, httpserver.ErrorWithStatus(errors.New("username/password authentication is not available"), http.StatusBadRequest)
 }
 
 // Use a person's token to get all of their email addresses, with the

@@ -56,6 +56,7 @@ var (
 	EndpointUserUpdate                    = APIEndpoint{"PATCH", "arvados/v1/users/{uuid}", "user"}
 	EndpointUserUpdateUUID                = APIEndpoint{"POST", "arvados/v1/users/{uuid}/update_uuid", ""}
 	EndpointUserBatchUpdate               = APIEndpoint{"PATCH", "arvados/v1/users/batch", ""}
+	EndpointUserAuthenticate              = APIEndpoint{"POST", "arvados/v1/users/authenticate", ""}
 	EndpointAPIClientAuthorizationCurrent = APIEndpoint{"GET", "arvados/v1/api_client_authorizations/current", ""}
 )
 
@@ -136,10 +137,13 @@ type DeleteOptions struct {
 }
 
 type LoginOptions struct {
-	ReturnTo string `json:"return_to"`          // On success, redirect to this target with api_token=xxx query param
-	Remote   string `json:"remote,omitempty"`   // Salt token for remote Cluster ID
-	Code     string `json:"code,omitempty"`     // OAuth2 callback code
-	State    string `json:"state,omitempty"`    // OAuth2 callback state
+	ReturnTo string `json:"return_to"`        // On success, redirect to this target with api_token=xxx query param
+	Remote   string `json:"remote,omitempty"` // Salt token for remote Cluster ID
+	Code     string `json:"code,omitempty"`   // OAuth2 callback code
+	State    string `json:"state,omitempty"`  // OAuth2 callback state
+}
+
+type UserAuthenticateOptions struct {
 	Username string `json:"username,omitempty"` // PAM username
 	Password string `json:"password,omitempty"` // PAM password
 }
@@ -186,5 +190,6 @@ type API interface {
 	UserList(ctx context.Context, options ListOptions) (UserList, error)
 	UserDelete(ctx context.Context, options DeleteOptions) (User, error)
 	UserBatchUpdate(context.Context, UserBatchUpdateOptions) (UserList, error)
+	UserAuthenticate(ctx context.Context, options UserAuthenticateOptions) (APIClientAuthorization, error)
 	APIClientAuthorizationCurrent(ctx context.Context, options GetOptions) (APIClientAuthorization, error)
 }

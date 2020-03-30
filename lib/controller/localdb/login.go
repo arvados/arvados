@@ -14,6 +14,7 @@ import (
 type loginController interface {
 	Login(ctx context.Context, opts arvados.LoginOptions) (arvados.LoginResponse, error)
 	Logout(ctx context.Context, opts arvados.LogoutOptions) (arvados.LogoutResponse, error)
+	UserAuthenticate(ctx context.Context, options arvados.UserAuthenticateOptions) (arvados.APIClientAuthorization, error)
 }
 
 func chooseLoginController(cluster *arvados.Cluster, railsProxy *railsProxy) loginController {
@@ -41,6 +42,9 @@ func (ctrl errorLoginController) Login(context.Context, arvados.LoginOptions) (a
 }
 func (ctrl errorLoginController) Logout(context.Context, arvados.LogoutOptions) (arvados.LogoutResponse, error) {
 	return arvados.LogoutResponse{}, ctrl.error
+}
+func (ctrl errorLoginController) UserAuthenticate(context.Context, arvados.UserAuthenticateOptions) (arvados.APIClientAuthorization, error) {
+	return arvados.APIClientAuthorization{}, ctrl.error
 }
 
 func noopLogout(cluster *arvados.Cluster, opts arvados.LogoutOptions) (arvados.LogoutResponse, error) {

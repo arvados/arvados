@@ -31,6 +31,10 @@ func (ctrl *pamLoginController) Logout(ctx context.Context, opts arvados.LogoutO
 }
 
 func (ctrl *pamLoginController) Login(ctx context.Context, opts arvados.LoginOptions) (arvados.LoginResponse, error) {
+	return arvados.LoginResponse{}, errors.New("interactive login is not available")
+}
+
+func (ctrl *pamLoginController) UserAuthenticate(ctx context.Context, opts arvados.UserAuthenticateOptions) (arvados.APIClientAuthorization, error) {
 	errorMessage := ""
 	tx, err := pam.StartFunc(ctrl.Cluster.Login.PAMService, opts.Username, func(style pam.Style, message string) (string, error) {
 		ctxlog.FromContext(ctx).Debugf("pam conversation: style=%v message=%q", style, message)
@@ -49,18 +53,18 @@ func (ctrl *pamLoginController) Login(ctx context.Context, opts arvados.LoginOpt
 		}
 	})
 	if err != nil {
-		return arvados.LoginResponse{}, err
+		return arvados.APIClientAuthorization{}, err
 	}
 	err = tx.Authenticate(pam.DisallowNullAuthtok)
 	if err != nil {
-		return arvados.LoginResponse{}, httpserver.ErrorWithStatus(err, http.StatusUnauthorized)
+		return arvados.APIClientAuthorization{}, httpserver.ErrorWithStatus(err, http.StatusUnauthorized)
 	}
 	if errorMessage != "" {
-		return arvados.LoginResponse{}, httpserver.ErrorWithStatus(errors.New(errorMessage), http.StatusUnauthorized)
+		return arvados.APIClientAuthorization{}, httpserver.ErrorWithStatus(errors.New(errorMessage), http.StatusUnauthorized)
 	}
 	user, err := tx.GetItem(pam.User)
 	if err != nil {
-		return arvados.LoginResponse{}, err
+		return arvados.APIClientAuthorization{}, err
 	}
 	email := user
 	if domain := ctrl.Cluster.Login.PAMDefaultEmailDomain; domain != "" && !strings.Contains(email, "@") {
@@ -72,20 +76,18 @@ func (ctrl *pamLoginController) Login(ctx context.Context, opts arvados.LoginOpt
 		// Send a fake ReturnTo value instead of the caller's
 		// opts.ReturnTo. We won't follow the resulting
 		// redirect target anyway.
-		ReturnTo: opts.Remote + ",https://none.invalid",
+		ReturnTo: ",https://none.invalid",
 		AuthInfo: rpc.UserSessionAuthInfo{
 			Username: user,
 			Email:    email,
 		},
 	})
 	if err != nil {
-		return arvados.LoginResponse{}, err
+		return arvados.APIClientAuthorization{}, err
 	}
 	target, err := url.Parse(resp.RedirectLocation)
 	if err != nil {
-		return arvados.LoginResponse{}, err
+		return arvados.APIClientAuthorization{}, err
 	}
-	resp.Token = target.Query().Get("api_token")
-	resp.RedirectLocation = ""
-	return resp, err
+	return arvados.APIClientAuthorization{APIToken: target.Query().Get("api_token")}, err
 }

@@ -303,6 +303,13 @@ func (rtr *router) addRoutes() {
 				return rtr.fed.UserDelete(ctx, *opts.(*arvados.DeleteOptions))
 			},
 		},
+		{
+			arvados.EndpointUserAuthenticate,
+			func() interface{} { return &arvados.UserAuthenticateOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.fed.UserAuthenticate(ctx, *opts.(*arvados.UserAuthenticateOptions))
+			},
+		},
 	} {
 		rtr.addRoute(route.endpoint, route.defaultOpts, route.exec)
 	}
