@@ -95,7 +95,7 @@ export const LoginPanel = withStyles(styles)(
 
                 {pamLogin
                 ? <Typography component="div">
-                    <LoginForm handleSubmit={
+                    <LoginForm dispatch={dispatch} handleSubmit={
                         doPAMLogin(`https://${remoteHosts[homeCluster]}`)}/>
                 </Typography>
                 : <Typography component="div" align="right">
