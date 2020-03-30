@@ -60,11 +60,11 @@ var (
 )
 
 type GetOptions struct {
-	UUID         string   `json:"uuid"`
+	UUID         string   `json:"uuid",omitempty`
 	Select       []string `json:"select"`
 	IncludeTrash bool     `json:"include_trash"`
-	ForwardedFor string   `json:"forwarded_for"`
-	Remote       string   `json:"remote"`
+	ForwardedFor string   `json:"forwarded_for",omitempty`
+	Remote       string   `json:"remote",omitempty`
 }
 
 type UntrashOptions struct {
