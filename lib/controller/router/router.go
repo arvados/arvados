@@ -386,7 +386,7 @@ func (rtr *router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	default:
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, HEAD, PUT, POST, PATCH, DELETE")
-		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
+		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Http-Method-Override")
 		w.Header().Set("Access-Control-Max-Age", "86486400")
 	}
 	if r.Method == "OPTIONS" {
