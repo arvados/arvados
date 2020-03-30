@@ -352,6 +352,8 @@ def main():
                 continue
 
             # cluster where the migration is happening
+            remote_users = {}
+            got_error = False
             for migratecluster in clusters:
                 migratearv = clusters[migratecluster]
 
@@ -361,14 +363,20 @@ def main():
 
                 newuser = activate_remote_user(args, email, homearv, migratearv, old_user_uuid, new_user_uuid)
                 if newuser is None:
-                    continue
+                    got_error = True
+                remote_users[migratecluster] = newuser
 
-                print("(%s) Migrating %s to %s on %s" % (email, old_user_uuid, new_user_uuid, migratecluster))
+            if not got_error:
+                for migratecluster in clusters:
+                    migratearv = clusters[migratecluster]
+                    newuser = remote_users[migratecluster]
 
-                migrate_user(args, migratearv, email, new_user_uuid, old_user_uuid)
+                    print("(%s) Migrating %s to %s on %s" % (email, old_user_uuid, new_user_uuid, migratecluster))
 
-                if newuser['username'] != username:
-                    update_username(args, email, new_user_uuid, username, migratecluster, migratearv)
+                    migrate_user(args, migratearv, email, new_user_uuid, old_user_uuid)
+
+                    if newuser['username'] != username:
+                        update_username(args, email, new_user_uuid, username, migratecluster, migratearv)
 
 if __name__ == "__main__":
     main()
