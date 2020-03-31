@@ -448,5 +448,22 @@ class UsersTest < ActionDispatch::IntegrationTest
     assert_match(/Cannot activate without being invited/, json_response['errors'][0])
   end
 
+  test "bypass_federation only accepted for admins" do
+    get "/arvados/v1/users",
+      params: {
+        bypass_federation: true
+      },
+      headers: auth(:admin)
+
+    assert_response :success
+
+    get "/arvados/v1/users",
+      params: {
+        bypass_federation: true
+      },
+      headers: auth(:active)
+
+    assert_response 403
+  end
 
 end
