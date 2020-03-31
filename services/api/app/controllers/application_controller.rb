@@ -656,6 +656,11 @@ class ApplicationController < ActionController::Base
         location: "query",
         required: false,
       },
+      no_federation: {
+        type: 'boolean',
+        required: false,
+        description: 'bypass federation behavior, list items from local instance database only'
+      }
     }
   end
 
