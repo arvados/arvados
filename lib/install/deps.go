@@ -8,6 +8,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -65,8 +66,13 @@ func (installCommand) RunCommand(prog string, args []string, stdin io.Reader, st
 	case "production":
 		prod = true
 	default:
-		err = fmt.Errorf("cluster type must be 'development', 'test', or 'production'")
+		err = fmt.Errorf("invalid cluster type %q (must be 'development', 'test', or 'production')", *clusterType)
 		return 2
+	}
+
+	if prod {
+		err = errors.New("production install is not yet implemented")
+		return 1
 	}
 
 	osv, err := identifyOS()
