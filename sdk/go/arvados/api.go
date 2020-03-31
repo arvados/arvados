@@ -95,8 +95,9 @@ type CreateOptions struct {
 }
 
 type UpdateOptions struct {
-	UUID  string                 `json:"uuid"`
-	Attrs map[string]interface{} `json:"attrs"`
+	UUID         string                 `json:"uuid"`
+	Attrs        map[string]interface{} `json:"attrs"`
+	NoFederation bool                   `json:"no_federation"`
 }
 
 type UpdateUUIDOptions struct {
