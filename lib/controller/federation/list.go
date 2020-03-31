@@ -107,7 +107,7 @@ func (conn *Conn) generated_CollectionList(ctx context.Context, options arvados.
 // backend.
 func (conn *Conn) splitListRequest(ctx context.Context, opts arvados.ListOptions, fn func(context.Context, string, arvados.API, arvados.ListOptions) ([]string, error)) error {
 
-	if opts.NoFederation {
+	if opts.BypassFederation {
 		// Client requested no federation.  Pass through.
 		_, err := fn(ctx, conn.cluster.ClusterID, conn.local, opts)
 		return err
