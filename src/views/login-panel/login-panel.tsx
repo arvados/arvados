@@ -74,8 +74,8 @@ export const LoginPanel = withStyles(styles)(
         localCluster: state.auth.localCluster,
         loginCluster: state.auth.loginCluster,
         welcomePage: state.auth.config.clusterConfig.Workbench.WelcomePageHTML,
-        pamLogin: state.auth.remoteHostsConfig[state.auth.homeCluster] &&
-            state.auth.remoteHostsConfig[state.auth.homeCluster].clusterConfig.Login.PAM || false,
+        pamLogin: state.auth.remoteHostsConfig[state.auth.loginCluster || state.auth.homeCluster] &&
+            state.auth.remoteHostsConfig[state.auth.loginCluster || state.auth.homeCluster].clusterConfig.Login.PAM || false,
     }))(({ classes, dispatch, remoteHosts, homeCluster, localCluster, loginCluster, welcomePage, pamLogin }: LoginPanelProps) => {
         const loginBtnLabel = `Log in${(localCluster !== homeCluster && loginCluster !== homeCluster) ? " to "+localCluster+" with user from "+homeCluster : ''}`;
 
@@ -100,7 +100,7 @@ export const LoginPanel = withStyles(styles)(
                 ? <Typography component="div">
                     <LoginForm dispatch={dispatch}
                         loginLabel={loginBtnLabel}
-                        handleSubmit={doPAMLogin(`https://${remoteHosts[homeCluster]}`)}/>
+                        handleSubmit={doPAMLogin(`https://${remoteHosts[loginCluster || homeCluster]}`)}/>
                 </Typography>
                 : <Typography component="div" align="right">
                     <Button variant="contained" color="primary" style={{ margin: "1em" }}
