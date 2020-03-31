@@ -448,7 +448,7 @@ func (conn *Conn) batchUpdateUsers(ctx context.Context,
 }
 
 func (conn *Conn) UserList(ctx context.Context, options arvados.ListOptions) (arvados.UserList, error) {
-	if id := conn.cluster.Login.LoginCluster; id != "" && id != conn.cluster.ClusterID && !options.NoFederation {
+	if id := conn.cluster.Login.LoginCluster; id != "" && id != conn.cluster.ClusterID && !options.BypassFederation {
 		resp, err := conn.chooseBackend(id).UserList(ctx, options)
 		if err != nil {
 			return resp, err
@@ -468,7 +468,7 @@ func (conn *Conn) UserCreate(ctx context.Context, options arvados.CreateOptions)
 }
 
 func (conn *Conn) UserUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.User, error) {
-	if options.NoFederation {
+	if options.BypassFederation {
 		return conn.local.UserUpdate(ctx, options)
 	}
 	return conn.chooseBackend(options.UUID).UserUpdate(ctx, options)

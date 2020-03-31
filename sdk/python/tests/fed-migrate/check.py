@@ -12,7 +12,7 @@ apiC = arvados.api(host=j["arvados_api_hosts"][2], token=j["superuser_tokens"][2
 ### Check users on API server "A" (the LoginCluster) ###
 ###
 
-users = apiA.users().list().execute()
+users = apiA.users().list(bypass_federation=True).execute()
 
 assert len(users["items"]) == 11
 
@@ -46,7 +46,7 @@ assert found
 ###
 ### Check users on API server "B" (federation member) ###
 ###
-users = apiB.users().list().execute()
+users = apiB.users().list(bypass_federation=True).execute()
 assert len(users["items"]) == 11
 
 for i in range(2, 9):
@@ -68,7 +68,7 @@ assert found
 ###
 ### Check users on API server "C" (federation member) ###
 ###
-users = apiC.users().list().execute()
+users = apiC.users().list(bypass_federation=True).execute()
 assert len(users["items"]) == 8
 
 for i in (2, 4, 6, 7, 8):

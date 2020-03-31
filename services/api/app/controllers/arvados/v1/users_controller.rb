@@ -248,7 +248,7 @@ class Arvados::V1::UsersController < ApplicationController
 
   def self._update_requires_parameters
     super.merge({
-      no_federation: {
+      bypass_federation: {
         type: 'boolean', required: false,
       },
     })

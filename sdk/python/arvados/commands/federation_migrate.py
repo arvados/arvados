@@ -66,8 +66,8 @@ def connect_clusters(args):
             errors.append("Inconsistent login cluster configuration, expected '%s' on %s but was '%s'" % (loginCluster, config["ClusterID"], config["Login"]["LoginCluster"]))
             continue
 
-        if arv._rootDesc["revision"] < "20190926":
-            errors.append("Arvados API server revision on cluster '%s' is too old, must be updated to at least Arvados 1.5 before running migration." % config["ClusterID"])
+        if arv._rootDesc["revision"] < "20200331":
+            errors.append("Arvados API server revision on cluster '%s' is too old, must be updated to at least Arvados 2.0.2 before running migration." % config["ClusterID"])
             continue
 
         try:
@@ -98,7 +98,7 @@ def fetch_users(clusters, loginCluster):
     users = []
     for c, arv in clusters.items():
         print("Getting user list from %s" % c)
-        ul = arvados.util.list_all(arv.users().list, no_federation=True)
+        ul = arvados.util.list_all(arv.users().list, bypass_federation=True)
         for l in ul:
             if l["uuid"].startswith(c):
                 users.append(l)
@@ -171,14 +171,14 @@ def update_username(args, email, user_uuid, username, migratecluster, migratearv
     print("(%s) Updating username of %s to '%s' on %s" % (email, user_uuid, username, migratecluster))
     if not args.dry_run:
         try:
-            conflicts = migratearv.users().list(filters=[["username", "=", username]], no_federation=True).execute()
+            conflicts = migratearv.users().list(filters=[["username", "=", username]], bypass_federation=True).execute()
             if conflicts["items"]:
                 # There's already a user with the username, move the old user out of the way
                 migratearv.users().update(uuid=conflicts["items"][0]["uuid"],
-                                          no_federation=True,
+                                          bypass_federation=True,
                                           body={"user": {"username": username+"migrate"}}).execute()
             migratearv.users().update(uuid=user_uuid,
-                                      no_federation=True,
+                                      bypass_federation=True,
                                       body={"user": {"username": username}}).execute()
         except arvados.errors.ApiError as e:
             print("(%s) Error updating username of %s to '%s' on %s: %s" % (email, user_uuid, username, migratecluster, e))
@@ -210,10 +210,10 @@ def choose_new_user(args, by_email, email, userhome, username, old_user_uuid, cl
             try:
                 olduser = oldhomearv.users().get(uuid=old_user_uuid).execute()
                 conflicts = homearv.users().list(filters=[["username", "=", username]],
-                                                 no_federation=True).execute()
+                                                 bypass_federation=True).execute()
                 if conflicts["items"]:
                     homearv.users().update(uuid=conflicts["items"][0]["uuid"],
-                                           no_federation=True,
+                                           bypass_federation=True,
                                            body={"user": {"username": username+"migrate"}}).execute()
                 user = homearv.users().create(body={"user": {"email": email, "username": username,
                                                              "is_active": olduser["is_active"]}}).execute()
@@ -250,7 +250,7 @@ def activate_remote_user(args, email, homearv, migratearv, old_user_uuid, new_us
         return None
 
     try:
-        findolduser = migratearv.users().list(filters=[["uuid", "=", old_user_uuid]], no_federation=True).execute()
+        findolduser = migratearv.users().list(filters=[["uuid", "=", old_user_uuid]], bypass_federation=True).execute()
         if len(findolduser["items"]) == 0:
             return False
         if len(findolduser["items"]) == 1:
@@ -280,7 +280,7 @@ def activate_remote_user(args, email, homearv, migratearv, old_user_uuid, new_us
         print("(%s) Activating user %s on %s" % (email, new_user_uuid, migratecluster))
         try:
             if not args.dry_run:
-                migratearv.users().update(uuid=new_user_uuid, no_federation=True,
+                migratearv.users().update(uuid=new_user_uuid, bypass_federation=True,
                                           body={"is_active": True}).execute()
         except arvados.errors.ApiError as e:
             print("(%s) Could not activate user %s on %s: %s" % (email, new_user_uuid, migratecluster, e))
