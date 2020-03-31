@@ -37,6 +37,11 @@ cleanup() {
 }
 trap cleanup ERR
 
+if [[ -z "$(docker image ls -q osixia/openldap:1.3.0)" ]]; then
+    echo >&2 "Pulling docker image for ldap server"
+    docker pull osixia/openldap:1.3.0
+fi
+
 ldapctr=ldap-${RANDOM}
 echo >&2 "Starting ldap server in docker container ${ldapctr}"
 docker run --rm --detach \
