@@ -83,6 +83,10 @@ Clusters:
           "http://0.0.0.0:9999/": {}
     Login:
       PAM: true
+      # Without this magic PAMDefaultEmailDomain, inserted users would
+      # prevent subsequent database/reset from working (see
+      # database_controller.rb).
+      PAMDefaultEmailDomain: example.com
     SystemLogs:
       LogLevel: debug
 EOF
