@@ -181,7 +181,7 @@ check_contains() {
 echo >&2 "Testing authentication failure"
 resp="$(curl -s --include -d username=foo -d password=nosecret "http://${ctrlhostport}/arvados/v1/users/authenticate" | tee $debug)"
 check_contains "${resp}" "HTTP/1.1 401"
-check_contains "${resp}" '{"errors":["Authentication failure"]}'
+check_contains "${resp}" '{"errors":["PAM: Authentication failure (with username \"foo\" and password)"]}'
 
 echo >&2 "Testing authentication success"
 resp="$(curl -s --include -d username=foo -d password=secret "http://${ctrlhostport}/arvados/v1/users/authenticate" | tee $debug)"

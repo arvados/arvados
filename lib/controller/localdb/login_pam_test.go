@@ -46,7 +46,7 @@ func (s *PamSuite) TestLoginFailure(c *check.C) {
 		Username: "bogususername",
 		Password: "boguspassword",
 	})
-	c.Check(err, check.ErrorMatches, "Authentication failure")
+	c.Check(err, check.ErrorMatches, `PAM: Authentication failure \(with username "bogususername" and password\)`)
 	hs, ok := err.(interface{ HTTPStatus() int })
 	if c.Check(ok, check.Equals, true) {
 		c.Check(hs.HTTPStatus(), check.Equals, http.StatusUnauthorized)

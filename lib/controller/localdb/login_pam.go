@@ -36,6 +36,7 @@ func (ctrl *pamLoginController) Login(ctx context.Context, opts arvados.LoginOpt
 
 func (ctrl *pamLoginController) UserAuthenticate(ctx context.Context, opts arvados.UserAuthenticateOptions) (arvados.APIClientAuthorization, error) {
 	errorMessage := ""
+	sentPassword := false
 	tx, err := pam.StartFunc(ctrl.Cluster.Login.PAMService, opts.Username, func(style pam.Style, message string) (string, error) {
 		ctxlog.FromContext(ctx).Debugf("pam conversation: style=%v message=%q", style, message)
 		switch style {
@@ -47,6 +48,7 @@ func (ctrl *pamLoginController) UserAuthenticate(ctx context.Context, opts arvad
 			ctxlog.FromContext(ctx).WithField("Message", message).Info("pam.TextInfo")
 			return "", nil
 		case pam.PromptEchoOn, pam.PromptEchoOff:
+			sentPassword = true
 			return opts.Password, nil
 		default:
 			return "", fmt.Errorf("unrecognized message style %d", style)
@@ -57,6 +59,19 @@ func (ctrl *pamLoginController) UserAuthenticate(ctx context.Context, opts arvad
 	}
 	err = tx.Authenticate(pam.DisallowNullAuthtok)
 	if err != nil {
+		err = fmt.Errorf("PAM: %s", err)
+		if errorMessage != "" {
+			// Perhaps the error message in the
+			// conversation is helpful.
+			err = fmt.Errorf("%s; %q", err, errorMessage)
+		}
+		if sentPassword {
+			err = fmt.Errorf("%s (with username %q and password)", err, opts.Username)
+		} else {
+			// This might hint that the username was
+			// invalid.
+			err = fmt.Errorf("%s (with username %q; password was never requested by PAM service)", err, opts.Username)
+		}
 		return arvados.APIClientAuthorization{}, httpserver.ErrorWithStatus(err, http.StatusUnauthorized)
 	}
 	if errorMessage != "" {
