@@ -141,7 +141,7 @@ class ApplicationController < ActionController::Base
   end
 
   def only_admin_can_bypass_federation
-    if params[:bypass_federation] && current_user.nil? or !current_user.is_admin
+    unless !params[:bypass_federation] || current_user.andand.is_admin
       send_error("The bypass_federation parameter is only permitted when current user is admin", status: 403)
     end
   end
