@@ -98,7 +98,7 @@ def fetch_users(clusters, loginCluster):
     users = []
     for c, arv in clusters.items():
         print("Getting user list from %s" % c)
-        ul = arvados.util.list_all(arv.users().list, local_user_list=True)
+        ul = arvados.util.list_all(arv.users().list, no_federation=True)
         for l in ul:
             if l["uuid"].startswith(c):
                 users.append(l)
@@ -171,7 +171,7 @@ def update_username(args, email, user_uuid, username, migratecluster, migratearv
     print("(%s) Updating username of %s to '%s' on %s" % (email, user_uuid, username, migratecluster))
     if not args.dry_run:
         try:
-            conflicts = migratearv.users().list(filters=[["username", "=", username]], local_user_list=True).execute()
+            conflicts = migratearv.users().list(filters=[["username", "=", username]], no_federation=True).execute()
             if conflicts["items"]:
                 migratearv.users().update(uuid=conflicts["items"][0]["uuid"], body={"user": {"username": username+"migrate"}}).execute()
             migratearv.users().update(uuid=user_uuid, body={"user": {"username": username}}).execute()
@@ -204,7 +204,7 @@ def choose_new_user(args, by_email, email, userhome, username, old_user_uuid, cl
             user = None
             try:
                 olduser = oldhomearv.users().get(uuid=old_user_uuid).execute()
-                conflicts = homearv.users().list(filters=[["username", "=", username]], local_user_list=True).execute()
+                conflicts = homearv.users().list(filters=[["username", "=", username]], no_federation=True).execute()
                 if conflicts["items"]:
                     homearv.users().update(uuid=conflicts["items"][0]["uuid"], body={"user": {"username": username+"migrate"}}).execute()
                 user = homearv.users().create(body={"user": {"email": email, "username": username, "is_active": olduser["is_active"]}}).execute()
@@ -241,10 +241,16 @@ def activate_remote_user(args, email, homearv, migratearv, old_user_uuid, new_us
         return None
 
     try:
-        olduser = migratearv.users().get(uuid=old_user_uuid).execute()
+        findolduser = migratearv.users().list(filters=[["uuid", "=", old_user_uuid]], no_federation=True).execute()
+        if len(findolduser["items"]) == 0:
+            return False
+        if len(findolduser["items"]) == 1:
+            olduser = findolduser["items"][0]
+        else:
+            print("(%s) Unexpected result" % (email))
+            return None
     except arvados.errors.ApiError as e:
-        if e.resp.status != 404:
-            print("(%s) Could not retrieve user %s from %s, user may have already been migrated: %s" % (email, old_user_uuid, migratecluster, e))
+        print("(%s) Could not retrieve user %s from %s, user may have already been migrated: %s" % (email, old_user_uuid, migratecluster, e))
         return None
 
     salted = 'v2/' + newtok["uuid"] + '/' + hmac.new(newtok["api_token"].encode(),
@@ -351,10 +357,10 @@ def main():
             if new_user_uuid is None:
                 continue
 
-            # cluster where the migration is happening
             remote_users = {}
             got_error = False
             for migratecluster in clusters:
+                # cluster where the migration is happening
                 migratearv = clusters[migratecluster]
 
                 # the user's new home cluster
@@ -370,6 +376,8 @@ def main():
                 for migratecluster in clusters:
                     migratearv = clusters[migratecluster]
                     newuser = remote_users[migratecluster]
+                    if newuser is False:
+                        continue
 
                     print("(%s) Migrating %s to %s on %s" % (email, old_user_uuid, new_user_uuid, migratecluster))
 

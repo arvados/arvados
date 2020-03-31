@@ -386,64 +386,76 @@ var userAttrsCachedFromLoginCluster = map[string]bool{
 	"writable_by":             false,
 }
 
-func (conn *Conn) UserList(ctx context.Context, options arvados.ListOptions) (arvados.UserList, error) {
+func (conn *Conn) batchUpdateUsers(ctx context.Context,
+	options arvados.ListOptions,
+	items []arvados.User) (err error) {
+
+	id := conn.cluster.Login.LoginCluster
 	logger := ctxlog.FromContext(ctx)
-	if id := conn.cluster.Login.LoginCluster; id != "" && id != conn.cluster.ClusterID && !options.LocalUserList {
+	batchOpts := arvados.UserBatchUpdateOptions{Updates: map[string]map[string]interface{}{}}
+	for _, user := range items {
+		if !strings.HasPrefix(user.UUID, id) {
+			continue
+		}
+		logger.Debugf("cache user info for uuid %q", user.UUID)
+
+		// If the remote cluster has null timestamps
+		// (e.g., test server with incomplete
+		// fixtures) use dummy timestamps (instead of
+		// the zero time, which causes a Rails API
+		// error "year too big to marshal: 1 UTC").
+		if user.ModifiedAt.IsZero() {
+			user.ModifiedAt = time.Now()
+		}
+		if user.CreatedAt.IsZero() {
+			user.CreatedAt = time.Now()
+		}
+
+		var allFields map[string]interface{}
+		buf, err := json.Marshal(user)
+		if err != nil {
+			return fmt.Errorf("error encoding user record from remote response: %s", err)
+		}
+		err = json.Unmarshal(buf, &allFields)
+		if err != nil {
+			return fmt.Errorf("error transcoding user record from remote response: %s", err)
+		}
+		updates := allFields
+		if len(options.Select) > 0 {
+			updates = map[string]interface{}{}
+			for _, k := range options.Select {
+				if v, ok := allFields[k]; ok && userAttrsCachedFromLoginCluster[k] {
+					updates[k] = v
+				}
+			}
+		} else {
+			for k := range updates {
+				if !userAttrsCachedFromLoginCluster[k] {
+					delete(updates, k)
+				}
+			}
+		}
+		batchOpts.Updates[user.UUID] = updates
+	}
+	if len(batchOpts.Updates) > 0 {
+		ctxRoot := auth.NewContext(ctx, &auth.Credentials{Tokens: []string{conn.cluster.SystemRootToken}})
+		_, err = conn.local.UserBatchUpdate(ctxRoot, batchOpts)
+		if err != nil {
+			return fmt.Errorf("error updating local user records: %s", err)
+		}
+	}
+	return nil
+}
+
+func (conn *Conn) UserList(ctx context.Context, options arvados.ListOptions) (arvados.UserList, error) {
+	if id := conn.cluster.Login.LoginCluster; id != "" && id != conn.cluster.ClusterID && !options.NoFederation {
 		resp, err := conn.chooseBackend(id).UserList(ctx, options)
 		if err != nil {
 			return resp, err
 		}
-		batchOpts := arvados.UserBatchUpdateOptions{Updates: map[string]map[string]interface{}{}}
-		for _, user := range resp.Items {
-			if !strings.HasPrefix(user.UUID, id) {
-				continue
-			}
-			logger.Debugf("cache user info for uuid %q", user.UUID)
-
-			// If the remote cluster has null timestamps
-			// (e.g., test server with incomplete
-			// fixtures) use dummy timestamps (instead of
-			// the zero time, which causes a Rails API
-			// error "year too big to marshal: 1 UTC").
-			if user.ModifiedAt.IsZero() {
-				user.ModifiedAt = time.Now()
-			}
-			if user.CreatedAt.IsZero() {
-				user.CreatedAt = time.Now()
-			}
-
-			var allFields map[string]interface{}
-			buf, err := json.Marshal(user)
-			if err != nil {
-				return arvados.UserList{}, fmt.Errorf("error encoding user record from remote response: %s", err)
-			}
-			err = json.Unmarshal(buf, &allFields)
-			if err != nil {
-				return arvados.UserList{}, fmt.Errorf("error transcoding user record from remote response: %s", err)
-			}
-			updates := allFields
-			if len(options.Select) > 0 {
-				updates = map[string]interface{}{}
-				for _, k := range options.Select {
-					if v, ok := allFields[k]; ok && userAttrsCachedFromLoginCluster[k] {
-						updates[k] = v
-					}
-				}
-			} else {
-				for k := range updates {
-					if !userAttrsCachedFromLoginCluster[k] {
-						delete(updates, k)
-					}
-				}
-			}
-			batchOpts.Updates[user.UUID] = updates
-		}
-		if len(batchOpts.Updates) > 0 {
-			ctxRoot := auth.NewContext(ctx, &auth.Credentials{Tokens: []string{conn.cluster.SystemRootToken}})
-			_, err = conn.local.UserBatchUpdate(ctxRoot, batchOpts)
-			if err != nil {
-				return arvados.UserList{}, fmt.Errorf("error updating local user records: %s", err)
-			}
+		err = conn.batchUpdateUsers(ctx, options, resp.Items)
+		if err != nil {
+			return arvados.UserList{}, err
 		}
 		return resp, nil
 	} else {
@@ -460,7 +472,7 @@ func (conn *Conn) UserUpdate(ctx context.Context, options arvados.UpdateOptions)
 }
 
 func (conn *Conn) UserUpdateUUID(ctx context.Context, options arvados.UpdateUUIDOptions) (arvados.User, error) {
-	return conn.chooseBackend(options.UUID).UserUpdateUUID(ctx, options)
+	return conn.local.UserUpdateUUID(ctx, options)
 }
 
 func (conn *Conn) UserMerge(ctx context.Context, options arvados.UserMergeOptions) (arvados.User, error) {
