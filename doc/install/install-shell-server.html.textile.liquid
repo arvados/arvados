@@ -65,7 +65,7 @@ zzzzz-2x53u-zzzzzzzzzzzzzzz</code>
 
 h2(#scoped-token). Create scoped token
 
-As an admin arvados user (such as the system root user), create a token that is restricted to only reading login information for this VM.
+As an Arvados admin user (such as the system root user), create a "scoped token":{{site.baseurl}}/admin/scoped-tokens.html that is permits only reading login information for this VM.  Setting a scope on the token means that even though a user with root access on the shell node can access the token, the token is not usable for admin actions on Arvados.
 
 <notextile>
 <pre>

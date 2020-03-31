@@ -127,7 +127,7 @@ sdk/go/blockdigest
 sdk/go/asyncbuf
 sdk/go/stats
 sdk/go/crunchrunner
-sdk/cwl
+sdk/cwl:py3
 sdk/R
 sdk/java-v2
 tools/sync-groups
@@ -998,7 +998,6 @@ pythonstuff=(
     sdk/pam
     sdk/python
     sdk/python:py3
-    sdk/cwl
     sdk/cwl:py3
     services/dockercleaner:py3
     services/fuse
@@ -1276,7 +1275,8 @@ else
                         ${verb}_${target}
                         ;;
                     *)
-                        testargs["$target"]="${opts}"
+			argstarget=${target%:py3}
+                        testargs["$argstarget"]="${opts}"
                         tt="${testfuncargs[${target}]}"
                         tt="${tt:-$target}"
                         do_$verb $tt
