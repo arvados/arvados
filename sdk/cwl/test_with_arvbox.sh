@@ -12,8 +12,9 @@ fi
 reset_container=1
 leave_running=0
 config=dev
+devcwl=0
 tag="latest"
-pythoncmd=python
+pythoncmd=python3
 suite=conformance
 runapi=containers
 
@@ -40,6 +41,10 @@ while test -n "$1" ; do
             build=1
             shift
             ;;
+        --devcwl)
+            devcwl=1
+            shift
+            ;;
         --pythoncmd)
             pythoncmd=$2
             shift ; shift
@@ -53,7 +58,7 @@ while test -n "$1" ; do
             shift ; shift
             ;;
         -h|--help)
-            echo "$0 [--no-reset-container] [--leave-running] [--config dev|localdemo] [--tag docker_tag] [--build] [--pythoncmd python(2|3)] [--suite (integration|conformance-v1.0|conformance-v1.1)]"
+            echo "$0 [--no-reset-container] [--leave-running] [--config dev|localdemo] [--tag docker_tag] [--build] [--pythoncmd python(2|3)] [--suite (integration|conformance-v1.0|conformance-*)]"
             exit
             ;;
         *)
@@ -107,11 +112,12 @@ if [[ "$suite" = "conformance-v1.0" ]] ; then
      git clone https://github.com/common-workflow-language/common-workflow-language.git
    fi
    cd common-workflow-language
-elif [[ "$suite" = "conformance-v1.1" ]] ; then
-   if ! test -d cwl-v1.1 ; then
-     git clone https://github.com/common-workflow-language/cwl-v1.1.git
+elif [[ "$suite" =~ conformance-(.*) ]] ; then
+   version=\${BASH_REMATCH[1]}
+   if ! test -d cwl-\${version} ; then
+     git clone https://github.com/common-workflow-language/cwl-\${version}.git
    fi
-   cd cwl-v1.1
+   cd cwl-\${version}
 fi
 
 if [[ "$suite" != "integration" ]] ; then
@@ -145,12 +151,18 @@ exec arvados-cwl-runner --api=containers \\\$@
 EOF2
 chmod +x /tmp/cwltest/arv-cwl-containers
 
+EXTRA=--compute-checksum
+
+if [[ $devcwl == 1 ]] ; then
+   EXTRA="\$EXTRA --enable-dev"
+fi
+
 env
 if [[ "$suite" = "integration" ]] ; then
    cd /usr/src/arvados/sdk/cwl/tests
    exec ./arvados-tests.sh $@
 else
-   exec ./run_test.sh RUNNER=/tmp/cwltest/arv-cwl-${runapi} EXTRA=--compute-checksum $@
+   exec ./run_test.sh RUNNER=/tmp/cwltest/arv-cwl-${runapi} EXTRA="\$EXTRA" $@
 fi
 EOF
 
