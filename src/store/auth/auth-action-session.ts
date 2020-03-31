@@ -200,6 +200,19 @@ export const validateSessions = () =>
         }
     };
 
+export const addRemoteConfig = (remoteHost: string) =>
+    async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+        const config = await getRemoteHostConfig(remoteHost);
+        if (!config) {
+            dispatch(snackbarActions.OPEN_SNACKBAR({
+                message: `Could not get config for ${remoteHost}`,
+                kind: SnackbarKind.ERROR
+            }));
+            return;
+        }
+        dispatch(authActions.REMOTE_CLUSTER_CONFIG({ config }));
+    };
+
 export const addSession = (remoteHost: string, token?: string, sendToLogin?: boolean) =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         const sessions = getState().auth.sessions;

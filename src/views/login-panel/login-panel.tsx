@@ -61,7 +61,7 @@ const doPAMLogin = (url: string) => (username: string, password: string) => {
 type LoginPanelProps = DispatchProp<any> & WithStyles<CssRules> & {
     remoteHosts: { [key: string]: string },
     homeCluster: string,
-    uuidPrefix: string,
+    localCluster: string,
     loginCluster: string,
     welcomePage: string,
     pamLogin: boolean,
@@ -71,12 +71,15 @@ export const LoginPanel = withStyles(styles)(
     connect((state: RootState) => ({
         remoteHosts: state.auth.remoteHosts,
         homeCluster: state.auth.homeCluster,
-        uuidPrefix: state.auth.localCluster,
+        localCluster: state.auth.localCluster,
         loginCluster: state.auth.loginCluster,
         welcomePage: state.auth.config.clusterConfig.Workbench.WelcomePageHTML,
-        pamLogin: state.auth.config.clusterConfig.Login.PAM,
-    }))(({ classes, dispatch, remoteHosts, homeCluster, uuidPrefix, loginCluster, welcomePage, pamLogin }: LoginPanelProps) =>
-        <Grid container justify="center" alignItems="center"
+        pamLogin: state.auth.remoteHostsConfig[state.auth.homeCluster] &&
+            state.auth.remoteHostsConfig[state.auth.homeCluster].clusterConfig.Login.PAM || false,
+    }))(({ classes, dispatch, remoteHosts, homeCluster, localCluster, loginCluster, welcomePage, pamLogin }: LoginPanelProps) => {
+        const loginBtnLabel = `Log in${(localCluster !== homeCluster && loginCluster !== homeCluster) ? " to "+localCluster+" with user from "+homeCluster : ''}`;
+
+        return (<Grid container justify="center" alignItems="center"
             className={classes.root}
             style={{ marginTop: 56, overflowY: "auto", height: "100%" }}>
             <Grid item className={classes.container}>
@@ -95,17 +98,17 @@ export const LoginPanel = withStyles(styles)(
 
                 {pamLogin
                 ? <Typography component="div">
-                    <LoginForm dispatch={dispatch} handleSubmit={
-                        doPAMLogin(`https://${remoteHosts[homeCluster]}`)}/>
+                    <LoginForm dispatch={dispatch}
+                        loginLabel={loginBtnLabel}
+                        handleSubmit={doPAMLogin(`https://${remoteHosts[homeCluster]}`)}/>
                 </Typography>
                 : <Typography component="div" align="right">
                     <Button variant="contained" color="primary" style={{ margin: "1em" }}
                         className={classes.button}
-                        onClick={() => dispatch(login(uuidPrefix, homeCluster, loginCluster, remoteHosts))}>
-                        Log in {uuidPrefix !== homeCluster && loginCluster !== homeCluster &&
-                            <span>&nbsp;to {uuidPrefix} with user from {homeCluster}</span>}
+                        onClick={() => dispatch(login(localCluster, homeCluster, loginCluster, remoteHosts))}>
+                        {loginBtnLabel}
                     </Button>
                 </Typography>}
             </Grid>
-        </Grid >
+        </Grid >);}
     ));

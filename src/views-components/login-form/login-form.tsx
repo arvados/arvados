@@ -46,10 +46,11 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
 
 type LoginFormProps = DispatchProp<any> & WithStyles<CssRules> & {
     handleSubmit: (username: string, password: string) => AxiosPromise;
+    loginLabel?: string,
 };
 
 export const LoginForm = withStyles(styles)(
-    ({ handleSubmit, dispatch, classes }: LoginFormProps) => {
+    ({ handleSubmit, loginLabel, dispatch, classes }: LoginFormProps) => {
         const userInput = useRef<HTMLInputElement>(null);
         const [username, setUsername] = useState('');
         const [password, setPassword] = useState('');
@@ -137,7 +138,7 @@ export const LoginForm = withStyles(styles)(
                         <Button variant="contained" size="large" color="primary"
                             className={classes.loginBtn} onClick={() => handleLogin()}
                             disabled={isSubmitting || isButtonDisabled}>
-                            Log in
+                            {loginLabel || 'Log in'}
                         </Button>
                     </CardActions>
                     { isSubmitting && <CircularProgress color='secondary' className={classes.progress} />}

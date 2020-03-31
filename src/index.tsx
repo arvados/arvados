@@ -166,5 +166,3 @@ const initListener = (history: History, store: RootStore, services: ServiceRepos
         }
     };
 };
-
-// force build comment #1

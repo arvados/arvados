@@ -15,6 +15,7 @@ import { createServices, setAuthorizationHeader } from "~/services/services";
 import { cancelLinking } from '~/store/link-account-panel/link-account-panel-actions';
 import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
 import { WORKBENCH_LOADING_SCREEN } from '~/store/workbench/workbench-actions';
+import { addRemoteConfig } from './auth-action-session';
 
 export const authActions = unionize({
     LOGIN: {},
@@ -38,23 +39,30 @@ export const initAuth = (config: Config) => (dispatch: Dispatch, getState: () =>
     // Cancel any link account ops in progress unless the user has
     // just logged in or there has been a successful link operation
     const data = services.linkAccountService.getLinkOpStatus();
-    if (!matchTokenRoute(location.pathname) && (!matchFedTokenRoute(location.pathname)) && data === undefined) {
+    if (!matchTokenRoute(location.pathname) &&
+        (!matchFedTokenRoute(location.pathname)) && data === undefined) {
         dispatch<any>(cancelLinking()).then(() => {
             dispatch<any>(init(config));
         });
-    }
-    else {
+    } else {
         dispatch<any>(init(config));
     }
 };
 
 const init = (config: Config) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    const remoteHosts = () => getState().auth.remoteHosts;
     const token = services.authService.getApiToken();
     let homeCluster = services.authService.getHomeCluster();
     if (homeCluster && !config.remoteHosts[homeCluster]) {
         homeCluster = undefined;
     }
     dispatch(authActions.SET_CONFIG({ config }));
+    Object.keys(remoteHosts()).forEach((remoteUuid: string) => {
+        const remoteHost = remoteHosts()[remoteUuid];
+        if (remoteUuid !== config.uuidPrefix) {
+            dispatch<any>(addRemoteConfig(remoteHost));
+        }
+    });
     dispatch(authActions.SET_HOME_CLUSTER(config.loginCluster || homeCluster || config.uuidPrefix));
 
     if (token && token !== "undefined") {
