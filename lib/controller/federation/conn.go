@@ -447,6 +447,9 @@ func (conn *Conn) UserCreate(ctx context.Context, options arvados.CreateOptions)
 }
 
 func (conn *Conn) UserUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.User, error) {
+	if options.NoFederation {
+		return conn.local.UserUpdate(ctx, options)
+	}
 	return conn.chooseBackend(options.UUID).UserUpdate(ctx, options)
 }
 

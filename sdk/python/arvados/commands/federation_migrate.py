@@ -173,8 +173,13 @@ def update_username(args, email, user_uuid, username, migratecluster, migratearv
         try:
             conflicts = migratearv.users().list(filters=[["username", "=", username]], no_federation=True).execute()
             if conflicts["items"]:
-                migratearv.users().update(uuid=conflicts["items"][0]["uuid"], body={"user": {"username": username+"migrate"}}).execute()
-            migratearv.users().update(uuid=user_uuid, body={"user": {"username": username}}).execute()
+                # There's already a user with the username, move the old user out of the way
+                migratearv.users().update(uuid=conflicts["items"][0]["uuid"],
+                                          no_federation=True,
+                                          body={"user": {"username": username+"migrate"}}).execute()
+            migratearv.users().update(uuid=user_uuid,
+                                      no_federation=True,
+                                      body={"user": {"username": username}}).execute()
         except arvados.errors.ApiError as e:
             print("(%s) Error updating username of %s to '%s' on %s: %s" % (email, user_uuid, username, migratecluster, e))
 
@@ -204,10 +209,14 @@ def choose_new_user(args, by_email, email, userhome, username, old_user_uuid, cl
             user = None
             try:
                 olduser = oldhomearv.users().get(uuid=old_user_uuid).execute()
-                conflicts = homearv.users().list(filters=[["username", "=", username]], no_federation=True).execute()
+                conflicts = homearv.users().list(filters=[["username", "=", username]],
+                                                 no_federation=True).execute()
                 if conflicts["items"]:
-                    homearv.users().update(uuid=conflicts["items"][0]["uuid"], body={"user": {"username": username+"migrate"}}).execute()
-                user = homearv.users().create(body={"user": {"email": email, "username": username, "is_active": olduser["is_active"]}}).execute()
+                    homearv.users().update(uuid=conflicts["items"][0]["uuid"],
+                                           no_federation=True,
+                                           body={"user": {"username": username+"migrate"}}).execute()
+                user = homearv.users().create(body={"user": {"email": email, "username": username,
+                                                             "is_active": olduser["is_active"]}}).execute()
             except arvados.errors.ApiError as e:
                 print("(%s) Could not create user: %s" % (email, str(e)))
                 return None
@@ -259,7 +268,8 @@ def activate_remote_user(args, email, homearv, migratearv, old_user_uuid, new_us
     try:
         ru = urllib.parse.urlparse(migratearv._rootDesc["rootUrl"])
         if not args.dry_run:
-            newuser = arvados.api(host=ru.netloc, token=salted, insecure=os.environ.get("ARVADOS_API_HOST_INSECURE")).users().current().execute()
+            newuser = arvados.api(host=ru.netloc, token=salted,
+                                  insecure=os.environ.get("ARVADOS_API_HOST_INSECURE")).users().current().execute()
         else:
             newuser = {"is_active": True, "username": username}
     except arvados.errors.ApiError as e:
@@ -270,7 +280,8 @@ def activate_remote_user(args, email, homearv, migratearv, old_user_uuid, new_us
         print("(%s) Activating user %s on %s" % (email, new_user_uuid, migratecluster))
         try:
             if not args.dry_run:
-                migratearv.users().update(uuid=new_user_uuid, body={"is_active": True}).execute()
+                migratearv.users().update(uuid=new_user_uuid, no_federation=True,
+                                          body={"is_active": True}).execute()
         except arvados.errors.ApiError as e:
             print("(%s) Could not activate user %s on %s: %s" % (email, new_user_uuid, migratecluster, e))
             return None

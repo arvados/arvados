@@ -249,6 +249,14 @@ class Arvados::V1::UsersController < ApplicationController
     }
   end
 
+  def self._update_requires_parameters
+    super.merge({
+      no_federation: {
+        type: 'boolean', required: false,
+      },
+    })
+  end
+
   def self._update_uuid_requires_parameters
     {
       new_uuid: {
