@@ -26,7 +26,7 @@ func (resp LoginResponse) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 }
 
 type LogoutResponse struct {
-	RedirectLocation string
+	RedirectLocation string `json:"redirect_location,omitempty"`
 }
 
 func (resp LogoutResponse) ServeHTTP(w http.ResponseWriter, req *http.Request) {
