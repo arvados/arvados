@@ -169,7 +169,7 @@ var boolParams = map[string]bool{
 	"include_old_versions":    true,
 	"redirect_to_new_user":    true,
 	"send_notification_email": true,
-	"local_user_list":         true,
+	"no_federation":           true,
 }
 
 func stringToBool(s string) bool {
