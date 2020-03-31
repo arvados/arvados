@@ -84,7 +84,7 @@ type ListOptions struct {
 	Count              string                 `json:"count"`
 	IncludeTrash       bool                   `json:"include_trash"`
 	IncludeOldVersions bool                   `json:"include_old_versions"`
-	NoFederation       bool                   `json:"no_federation"`
+	BypassFederation   bool                   `json:"bypass_federation"`
 }
 
 type CreateOptions struct {
@@ -95,9 +95,9 @@ type CreateOptions struct {
 }
 
 type UpdateOptions struct {
-	UUID         string                 `json:"uuid"`
-	Attrs        map[string]interface{} `json:"attrs"`
-	NoFederation bool                   `json:"no_federation"`
+	UUID             string                 `json:"uuid"`
+	Attrs            map[string]interface{} `json:"attrs"`
+	BypassFederation bool                   `json:"bypass_federation"`
 }
 
 type UpdateUUIDOptions struct {

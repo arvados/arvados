@@ -53,6 +53,7 @@ class ApplicationController < ActionController::Base
   before_action :reload_object_before_update, :only => :update
   before_action(:render_404_if_no_object,
                 except: [:index, :create] + ERROR_ACTIONS)
+  before_action :only_admin_can_bypass_federation
 
   attr_writer :resource_attrs
 
@@ -137,6 +138,12 @@ class ApplicationController < ActionController::Base
 
   def render_404_if_no_object
     render_not_found "Object not found" if !@object
+  end
+
+  def only_admin_can_bypass_federation
+    if params[:bypass_federation] && current_user.nil? or !current_user.is_admin
+      send_error("The bypass_federation parameter is only permitted when current user is admin", status: 403)
+    end
   end
 
   def render_error(e)
@@ -656,7 +663,7 @@ class ApplicationController < ActionController::Base
         location: "query",
         required: false,
       },
-      no_federation: {
+      bypass_federation: {
         type: 'boolean',
         required: false,
         description: 'bypass federation behavior, list items from local instance database only'

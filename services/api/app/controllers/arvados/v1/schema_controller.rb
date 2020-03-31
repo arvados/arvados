@@ -33,10 +33,10 @@ class Arvados::V1::SchemaController < ApplicationController
         id: "arvados:v1",
         name: "arvados",
         version: "v1",
-        # format is YYYYMMDD, must be fixed with (needs to be linearly
+        # format is YYYYMMDD, must be fixed width (needs to be lexically
         # sortable), updated manually, may be used by clients to
         # determine availability of API server features.
-        revision: "20200212",
+        revision: "20200331",
         source_version: AppVersion.hash,
         sourceVersion: AppVersion.hash, # source_version should be deprecated in the future
         packageVersion: AppVersion.package_version,
