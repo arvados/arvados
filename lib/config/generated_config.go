@@ -547,11 +547,12 @@ Clusters:
       # work. If false, only the primary email address will be used.
       GoogleAlternateEmailAddresses: true
 
-      # Use PAM to authenticate logins, using the specified PAM
-      # service name.
+      # (Experimental) Use PAM to authenticate logins, using the
+      # specified PAM service name.
       #
       # Cannot be used in combination with OAuth2 (ProviderAppID) or
-      # Google (GoogleClientID).
+      # Google (GoogleClientID). Cannot be used on a cluster acting as
+      # a LoginCluster.
       PAM: false
       PAMService: arvados
 
