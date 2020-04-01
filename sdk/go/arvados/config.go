@@ -421,6 +421,24 @@ var errDuplicateInstanceTypeName = errors.New("duplicate instance type name")
 // UnmarshalJSON handles old config files that provide an array of
 // instance types instead of a hash.
 func (it *InstanceTypeMap) UnmarshalJSON(data []byte) error {
+	fixup := func(t InstanceType) (InstanceType, error) {
+		if t.ProviderType == "" {
+			t.ProviderType = t.Name
+		}
+		if t.Scratch == 0 {
+			t.Scratch = t.IncludedScratch + t.AddedScratch
+		} else if t.AddedScratch == 0 {
+			t.AddedScratch = t.Scratch - t.IncludedScratch
+		} else if t.IncludedScratch == 0 {
+			t.IncludedScratch = t.Scratch - t.AddedScratch
+		}
+
+		if t.Scratch != (t.IncludedScratch + t.AddedScratch) {
+			return t, fmt.Errorf("InstanceType %q: Scratch != (IncludedScratch + AddedScratch)", t.Name)
+		}
+		return t, nil
+	}
+
 	if len(data) > 0 && data[0] == '[' {
 		var arr []InstanceType
 		err := json.Unmarshal(data, &arr)
@@ -436,19 +454,9 @@ func (it *InstanceTypeMap) UnmarshalJSON(data []byte) error {
 			if _, ok := (*it)[t.Name]; ok {
 				return errDuplicateInstanceTypeName
 			}
-			if t.ProviderType == "" {
-				t.ProviderType = t.Name
-			}
-			if t.Scratch == 0 {
-				t.Scratch = t.IncludedScratch + t.AddedScratch
-			} else if t.AddedScratch == 0 {
-				t.AddedScratch = t.Scratch - t.IncludedScratch
-			} else if t.IncludedScratch == 0 {
-				t.IncludedScratch = t.Scratch - t.AddedScratch
-			}
-
-			if t.Scratch != (t.IncludedScratch + t.AddedScratch) {
-				return fmt.Errorf("%v: Scratch != (IncludedScratch + AddedScratch)", t.Name)
+			t, err := fixup(t)
+			if err != nil {
+				return err
 			}
 			(*it)[t.Name] = t
 		}
@@ -464,8 +472,9 @@ func (it *InstanceTypeMap) UnmarshalJSON(data []byte) error {
 	*it = InstanceTypeMap(hash)
 	for name, t := range *it {
 		t.Name = name
-		if t.ProviderType == "" {
-			t.ProviderType = name
+		t, err := fixup(t)
+		if err != nil {
+			return err
 		}
 		(*it)[name] = t
 	}
