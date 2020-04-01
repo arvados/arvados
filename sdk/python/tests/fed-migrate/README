@@ -6,7 +6,7 @@ arv-federation-migrate should be in the path or the full path supplied
 in the 'fed_migrate' input parameter.
 
 # Create arvbox containers fedbox(1,2,3) for the federation
-$ cwltool --enable-ext arvbox-make-federation.cwl --arvbox_base ~/.arvbox > fed.json
+$ cwltool arvbox-make-federation.cwl --arvbox_base ~/.arvbox > fed.json
 
 # Configure containers and run tests
 $ cwltool fed-migrate.cwl fed.json

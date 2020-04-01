@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-cwlVersion: v1.0
+cwlVersion: v1.1
 class: CommandLineTool
 $namespaces:
   arv: "http://arvados.org/cwl#"
@@ -37,10 +37,10 @@ requirements:
       - entry: $(inputs.arvbox_base)
         entryname: base
         writable: true
-  cwltool:LoadListingRequirement:
+  LoadListingRequirement:
     loadListing: no_listing
   InlineJavascriptRequirement: {}
-  cwltool:InplaceUpdateRequirement:
+  InplaceUpdateRequirement:
     inplaceUpdate: true
 arguments:
   - mkdir

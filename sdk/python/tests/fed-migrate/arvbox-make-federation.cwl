@@ -1,4 +1,4 @@
-cwlVersion: v1.0
+cwlVersion: v1.1
 class: Workflow
 $namespaces:
   arv: "http://arvados.org/cwl#"
@@ -32,7 +32,7 @@ requirements:
   SubworkflowFeatureRequirement: {}
   ScatterFeatureRequirement: {}
   StepInputExpressionRequirement: {}
-  cwltool:LoadListingRequirement:
+  LoadListingRequirement:
     loadListing: no_listing
 steps:
   start:
