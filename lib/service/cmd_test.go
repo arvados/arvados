@@ -135,6 +135,7 @@ type testHandler struct {
 	healthCheck chan bool
 }
 
+func (th *testHandler) Done() <-chan struct{}                            { return nil }
 func (th *testHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) { th.handler.ServeHTTP(w, r) }
 func (th *testHandler) CheckHealth() error {
 	ctxlog.FromContext(th.ctx).Info("CheckHealth called")
