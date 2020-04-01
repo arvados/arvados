@@ -7,8 +7,10 @@ package localdb
 import (
 	"context"
 	"errors"
+	"net/http"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/httpserver"
 )
 
 type loginController interface {
@@ -25,7 +27,7 @@ func chooseLoginController(cluster *arvados.Cluster, railsProxy *railsProxy) log
 	case wantGoogle && !wantSSO && !wantPAM:
 		return &googleLoginController{Cluster: cluster, RailsProxy: railsProxy}
 	case !wantGoogle && wantSSO && !wantPAM:
-		return railsProxy
+		return &ssoLoginController{railsProxy}
 	case !wantGoogle && !wantSSO && wantPAM:
 		return &pamLoginController{Cluster: cluster, RailsProxy: railsProxy}
 	default:
@@ -33,6 +35,14 @@ func chooseLoginController(cluster *arvados.Cluster, railsProxy *railsProxy) log
 			error: errors.New("configuration problem: exactly one of Login.GoogleClientID, Login.ProviderAppID, or Login.PAM must be configured"),
 		}
 	}
+}
+
+// Login and Logout are passed through to the wrapped railsProxy;
+// UserAuthenticate is rejected.
+type ssoLoginController struct{ *railsProxy }
+
+func (ctrl *ssoLoginController) UserAuthenticate(ctx context.Context, opts arvados.UserAuthenticateOptions) (arvados.APIClientAuthorization, error) {
+	return arvados.APIClientAuthorization{}, httpserver.ErrorWithStatus(errors.New("username/password authentication is not available"), http.StatusBadRequest)
 }
 
 type errorLoginController struct{ error }
