@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-cwlVersion: v1.0
+cwlVersion: v1.1
 class: CommandLineTool
 $namespaces:
   arv: "http://arvados.org/cwl#"
@@ -13,13 +13,15 @@ requirements:
       ARVADOS_API_HOST: $(inputs.container_host)
       ARVADOS_API_TOKEN: $(inputs.superuser_token)
       ARVADOS_API_HOST_INSECURE: "true"
-  cwltool:LoadListingRequirement:
+  LoadListingRequirement:
     loadListing: no_listing
   InlineJavascriptRequirement: {}
-  cwltool:InplaceUpdateRequirement:
+  InplaceUpdateRequirement:
     inplaceUpdate: true
   DockerRequirement:
     dockerPull: arvados/jobs
+  NetworkAccess:
+    networkAccess: true
 inputs:
   container_host: string
   superuser_token: string
