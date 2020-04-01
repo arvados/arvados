@@ -53,8 +53,20 @@ func LogRequests(h http.Handler) http.Handler {
 
 		logRequest(w, req, lgr)
 		defer logResponse(w, req, lgr)
-		h.ServeHTTP(w, req)
+		h.ServeHTTP(rewrapResponseWriter(w, wrapped), req)
 	})
+}
+
+// Rewrap w to restore additional interfaces provided by wrapped.
+func rewrapResponseWriter(w http.ResponseWriter, wrapped http.ResponseWriter) http.ResponseWriter {
+	if hijacker, ok := wrapped.(http.Hijacker); ok {
+		return struct {
+			http.ResponseWriter
+			http.Hijacker
+		}{w, hijacker}
+	} else {
+		return w
+	}
 }
 
 func Logger(req *http.Request) logrus.FieldLogger {
