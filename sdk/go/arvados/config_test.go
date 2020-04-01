@@ -45,3 +45,29 @@ func (s *ConfigSuite) TestInstanceTypeSize(c *check.C) {
 	c.Check(int64(it.Scratch), check.Equals, int64(4000000000))
 	c.Check(int64(it.RAM), check.Equals, int64(4294967296))
 }
+
+func (s *ConfigSuite) TestInstanceTypeFixup(c *check.C) {
+	for _, confdata := range []string{
+		// Current format: map of entries
+		`{foo4: {IncludedScratch: 4GB}, foo8: {ProviderType: foo_8, Scratch: 8GB}}`,
+		// Legacy format: array of entries with key in "Name" field
+		`[{Name: foo4, IncludedScratch: 4GB}, {Name: foo8, ProviderType: foo_8, Scratch: 8GB}]`,
+	} {
+		c.Log(confdata)
+		var itm InstanceTypeMap
+		err := yaml.Unmarshal([]byte(confdata), &itm)
+		c.Check(err, check.IsNil)
+
+		c.Check(itm["foo4"].Name, check.Equals, "foo4")
+		c.Check(itm["foo4"].ProviderType, check.Equals, "foo4")
+		c.Check(itm["foo4"].Scratch, check.Equals, ByteSize(4000000000))
+		c.Check(itm["foo4"].AddedScratch, check.Equals, ByteSize(0))
+		c.Check(itm["foo4"].IncludedScratch, check.Equals, ByteSize(4000000000))
+
+		c.Check(itm["foo8"].Name, check.Equals, "foo8")
+		c.Check(itm["foo8"].ProviderType, check.Equals, "foo_8")
+		c.Check(itm["foo8"].Scratch, check.Equals, ByteSize(8000000000))
+		c.Check(itm["foo8"].AddedScratch, check.Equals, ByteSize(8000000000))
+		c.Check(itm["foo8"].IncludedScratch, check.Equals, ByteSize(0))
+	}
+}
