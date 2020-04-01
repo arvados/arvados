@@ -7,34 +7,14 @@ exec 2>&1
 set -ex -o pipefail
 
 . /usr/local/lib/arvbox/common.sh
-
-if test -s /var/lib/arvados/api_rails_env ; then
-  RAILS_ENV=$(cat /var/lib/arvados/api_rails_env)
-else
-  RAILS_ENV=development
-fi
-
 . /usr/local/lib/arvbox/go-setup.sh
 
-flock /var/lib/gopath/gopath.lock go install "git.arvados.org/arvados.git/services/ws"
-install $GOPATH/bin/ws /usr/local/bin/arvados-ws
+(cd /usr/local/bin && ln -sf arvados-server arvados-ws)
 
 if test "$1" = "--only-deps" ; then
     exit
 fi
 
-database_pw=$(cat /var/lib/arvados/api_database_pw)
+/usr/local/lib/arvbox/runsu.sh flock /var/lib/arvados/cluster_config.yml.lock /usr/local/lib/arvbox/cluster-config.sh
 
-cat >/var/lib/arvados/arvados-ws.yml <<EOF
-Client:
-  APIHost: $localip:${services[controller-ssl]}
-  Insecure: false
-Postgres:
-  dbname: arvados_$RAILS_ENV
-  user: arvados
-  password: $database_pw
-  host: localhost
-Listen: localhost:${services[websockets]}
-EOF
-
-exec /usr/local/bin/arvados-ws -config /var/lib/arvados/arvados-ws.yml
+exec /usr/local/lib/arvbox/runsu.sh /usr/local/bin/arvados-ws
