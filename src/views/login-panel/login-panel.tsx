@@ -50,11 +50,13 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 });
 
 const doPAMLogin = (url: string) => (username: string, password: string) => {
-    const formData = new FormData();
-    formData.append("username", username);
-    formData.append("password", password);
-    return Axios.post(`${url}/login`, formData, {
-        headers: { 'X-Http-Method-Override': 'GET' },
+    const formData = [];
+    formData.push('username='+encodeURIComponent(username));
+    formData.push('password='+encodeURIComponent(password));
+    return Axios.post(`${url}/arvados/v1/users/authenticate`, formData.join('&'), {
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
     });
 };
 
