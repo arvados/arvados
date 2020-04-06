@@ -98,15 +98,9 @@ export interface TreeProps<T> {
     /**
      * When set to true use radio buttons instead of checkboxes for item selection.
      * This does not guarantee radio group behavior (i.e item mutual exclusivity).
-     * Any item selection logic must be done in the toggleItemRadioButton callback prop.
+     * Any item selection logic must be done in the toggleItemActive callback prop.
      */
     useRadioButtons?: boolean;
-
-    /**
-     * Called when selection of an item in the tree is toggled via a radio button.
-     * Use this callback prop to implement any selection logic (i.e item mutual exclusivity).
-     */
-    toggleItemRadioButton?: (item: TreeItem<T>) => void;
 }
 
 export const Tree = withStyles(styles)(
@@ -151,8 +145,7 @@ export const Tree = withStyles(styles)(
                                 <Radio
                                     checked={it.selected}
                                     className={classes.checkbox}
-                                    color="primary"
-                                    onChange={this.handleRadioButtonChange(it)} />}
+                                    color="primary" />}
                             <div className={renderContainer}>
                                 {render(it, level)}
                             </div>
@@ -203,16 +196,6 @@ export const Tree = withStyles(styles)(
                 ? (event: React.MouseEvent<HTMLElement>) => {
                     event.stopPropagation();
                     toggleItemSelection(event, item);
-                }
-                : undefined;
-        }
-
-        handleRadioButtonChange = (item: TreeItem<T>) => {
-            const { toggleItemRadioButton } = this.props;
-            return toggleItemRadioButton
-                ? (event: React.ChangeEvent<HTMLInputElement>, checked: boolean) => {
-                    event.stopPropagation();
-                    toggleItemRadioButton(item);
                 }
                 : undefined;
         }

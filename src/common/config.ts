@@ -53,6 +53,7 @@ export interface ClusterConfigJSON {
         WelcomePageHTML: string;
         InactivePageHTML: string;
         SSHHelpPageHTML: string;
+        SSHHelpHostSuffix: string;
         SiteName: string;
     };
     Login: {
@@ -122,7 +123,7 @@ export const fetchConfig = () => {
             return Axios.get<ClusterConfigJSON>(getClusterConfigURL(workbenchConfig.API_HOST)).then(async response => {
                 const clusterConfigJSON = response.data;
                 const apiRevision = await getApiRevision(clusterConfigJSON.Services.Controller.ExternalURL);
-                const config = {...buildConfig(clusterConfigJSON), apiRevision};
+                const config = { ...buildConfig(clusterConfigJSON), apiRevision };
                 const warnLocalConfig = (varName: string) => console.warn(
                     `A value for ${varName} was found in ${WORKBENCH_CONFIG_URL}. To use the Arvados centralized configuration instead, \
 remove the entire ${varName} entry from ${WORKBENCH_CONFIG_URL}`);
@@ -181,6 +182,7 @@ export const mockClusterConfigJSON = (config: Partial<ClusterConfigJSON>): Clust
         WelcomePageHTML: "",
         InactivePageHTML: "",
         SSHHelpPageHTML: "",
+        SSHHelpHostSuffix: "",
         SiteName: "",
     },
     Login: {
