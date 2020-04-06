@@ -82,6 +82,11 @@ func (disp *dispatcher) CheckHealth() error {
 	return disp.pool.CheckHealth()
 }
 
+// Done implements service.Handler.
+func (disp *dispatcher) Done() <-chan struct{} {
+	return disp.stopped
+}
+
 // Stop dispatching containers and release resources. Typically used
 // in tests.
 func (disp *dispatcher) Close() {

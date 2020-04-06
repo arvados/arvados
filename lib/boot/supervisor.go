@@ -182,7 +182,7 @@ func (super *Supervisor) run(cfg *arvados.Config) error {
 		runGoProgram{src: "services/keepproxy", svc: super.cluster.Services.Keepproxy, depends: []supervisedTask{runPassenger{src: "services/api"}}},
 		runGoProgram{src: "services/keepstore", svc: super.cluster.Services.Keepstore},
 		runGoProgram{src: "services/keep-web", svc: super.cluster.Services.WebDAV},
-		runGoProgram{src: "services/ws", svc: super.cluster.Services.Websocket, depends: []supervisedTask{runPostgreSQL{}}},
+		runServiceCommand{name: "ws", svc: super.cluster.Services.Websocket, depends: []supervisedTask{runPostgreSQL{}}},
 		installPassenger{src: "services/api"},
 		runPassenger{src: "services/api", svc: super.cluster.Services.RailsAPI, depends: []supervisedTask{createCertificates{}, runPostgreSQL{}, installPassenger{src: "services/api"}}},
 		installPassenger{src: "apps/workbench", depends: []supervisedTask{installPassenger{src: "services/api"}}}, // dependency ensures workbench doesn't delay api startup

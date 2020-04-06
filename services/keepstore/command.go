@@ -132,6 +132,10 @@ func (h *handler) CheckHealth() error {
 	return h.err
 }
 
+func (h *handler) Done() <-chan struct{} {
+	return nil
+}
+
 func newHandlerOrErrorHandler(ctx context.Context, cluster *arvados.Cluster, token string, reg *prometheus.Registry) service.Handler {
 	var h handler
 	serviceURL, ok := service.URLFromContext(ctx)

@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package main
+package ws
 
 import (
 	"database/sql"
@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"github.com/sirupsen/logrus"
 )
 
@@ -59,7 +60,7 @@ func newSessionV0(ws wsConn, sendq chan<- interface{}, db *sql.DB, pc permChecke
 		db:          db,
 		ac:          ac,
 		permChecker: pc,
-		log:         logger(ws.Request().Context()),
+		log:         ctxlog.FromContext(ws.Request().Context()),
 	}
 
 	err := ws.Request().ParseForm()
@@ -128,7 +129,7 @@ func (sess *v0session) EventMessage(e *event) ([]byte, error) {
 	} else {
 		permTarget = detail.ObjectUUID
 	}
-	ok, err := sess.permChecker.Check(permTarget)
+	ok, err := sess.permChecker.Check(sess.ws.Request().Context(), permTarget)
 	if err != nil || !ok {
 		return nil, err
 	}

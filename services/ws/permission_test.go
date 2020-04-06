@@ -2,9 +2,11 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package main
+package ws
 
 import (
+	"context"
+
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	check "gopkg.in/check.v1"
@@ -22,19 +24,19 @@ func (s *permSuite) TestCheck(c *check.C) {
 	}
 	wantError := func(uuid string) {
 		c.Log(uuid)
-		ok, err := pc.Check(uuid)
+		ok, err := pc.Check(context.Background(), uuid)
 		c.Check(ok, check.Equals, false)
 		c.Check(err, check.NotNil)
 	}
 	wantYes := func(uuid string) {
 		c.Log(uuid)
-		ok, err := pc.Check(uuid)
+		ok, err := pc.Check(context.Background(), uuid)
 		c.Check(ok, check.Equals, true)
 		c.Check(err, check.IsNil)
 	}
 	wantNo := func(uuid string) {
 		c.Log(uuid)
-		ok, err := pc.Check(uuid)
+		ok, err := pc.Check(context.Background(), uuid)
 		c.Check(ok, check.Equals, false)
 		c.Check(err, check.IsNil)
 	}
@@ -67,7 +69,7 @@ func (s *permSuite) TestCheck(c *check.C) {
 	pc.SetToken(arvadostest.ActiveToken)
 
 	c.Log("...network error")
-	pc.Client.APIHost = "127.0.0.1:discard"
+	pc.Client.APIHost = "127.0.0.1:9"
 	wantError(arvadostest.UserAgreementCollection)
 	wantError(arvadostest.FooBarDirCollection)
 

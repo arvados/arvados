@@ -2,13 +2,11 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package main
+package ws
 
 import (
-	"encoding/json"
 	"io"
 	"net/http"
-	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -16,6 +14,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/health"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/websocket"
 )
@@ -28,7 +27,7 @@ type wsConn interface {
 }
 
 type router struct {
-	client         arvados.Client
+	client         *arvados.Client
 	cluster        *arvados.Cluster
 	eventSource    eventSource
 	newPermChecker func() permChecker
@@ -36,33 +35,26 @@ type router struct {
 	handler   *handler
 	mux       *http.ServeMux
 	setupOnce sync.Once
-
-	lastReqID  int64
-	lastReqMtx sync.Mutex
-
-	status routerDebugStatus
-}
-
-type routerDebugStatus struct {
-	ReqsReceived int64
-	ReqsActive   int64
-}
-
-type debugStatuser interface {
-	DebugStatus() interface{}
+	done      chan struct{}
+	reg       *prometheus.Registry
 }
 
 func (rtr *router) setup() {
+	mSockets := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "arvados",
+		Subsystem: "ws",
+		Name:      "sockets",
+		Help:      "Number of connected sockets",
+	}, []string{"version"})
+	rtr.reg.MustRegister(mSockets)
+
 	rtr.handler = &handler{
 		PingTimeout: time.Duration(rtr.cluster.API.SendTimeout),
 		QueueSize:   rtr.cluster.API.WebsocketClientEventQueue,
 	}
 	rtr.mux = http.NewServeMux()
-	rtr.mux.Handle("/websocket", rtr.makeServer(newSessionV0))
-	rtr.mux.Handle("/arvados/v1/events.ws", rtr.makeServer(newSessionV1))
-	rtr.mux.Handle("/debug.json", rtr.jsonHandler(rtr.DebugStatus))
-	rtr.mux.Handle("/status.json", rtr.jsonHandler(rtr.Status))
-
+	rtr.mux.Handle("/websocket", rtr.makeServer(newSessionV0, mSockets.WithLabelValues("0")))
+	rtr.mux.Handle("/arvados/v1/events.ws", rtr.makeServer(newSessionV1, mSockets.WithLabelValues("1")))
 	rtr.mux.Handle("/_health/", &health.Handler{
 		Token:  rtr.cluster.ManagementToken,
 		Prefix: "/_health/",
@@ -71,91 +63,50 @@ func (rtr *router) setup() {
 		},
 		Log: func(r *http.Request, err error) {
 			if err != nil {
-				logger(r.Context()).WithError(err).Error("error")
+				ctxlog.FromContext(r.Context()).WithError(err).Error("error")
 			}
 		},
 	})
 }
 
-func (rtr *router) makeServer(newSession sessionFactory) *websocket.Server {
+func (rtr *router) makeServer(newSession sessionFactory, gauge prometheus.Gauge) *websocket.Server {
+	var connected int64
 	return &websocket.Server{
 		Handshake: func(c *websocket.Config, r *http.Request) error {
 			return nil
 		},
 		Handler: websocket.Handler(func(ws *websocket.Conn) {
 			t0 := time.Now()
-			log := logger(ws.Request().Context())
-			log.Info("connected")
+			logger := ctxlog.FromContext(ws.Request().Context())
+			atomic.AddInt64(&connected, 1)
+			gauge.Set(float64(atomic.LoadInt64(&connected)))
 
-			stats := rtr.handler.Handle(ws, rtr.eventSource,
+			stats := rtr.handler.Handle(ws, logger, rtr.eventSource,
 				func(ws wsConn, sendq chan<- interface{}) (session, error) {
-					return newSession(ws, sendq, rtr.eventSource.DB(), rtr.newPermChecker(), &rtr.client)
+					return newSession(ws, sendq, rtr.eventSource.DB(), rtr.newPermChecker(), rtr.client)
 				})
 
-			log.WithFields(logrus.Fields{
+			logger.WithFields(logrus.Fields{
 				"elapsed": time.Now().Sub(t0).Seconds(),
 				"stats":   stats,
-			}).Info("disconnect")
+			}).Info("client disconnected")
 			ws.Close()
+			atomic.AddInt64(&connected, -1)
+			gauge.Set(float64(atomic.LoadInt64(&connected)))
 		}),
-	}
-}
-
-func (rtr *router) newReqID() string {
-	rtr.lastReqMtx.Lock()
-	defer rtr.lastReqMtx.Unlock()
-	id := time.Now().UnixNano()
-	if id <= rtr.lastReqID {
-		id = rtr.lastReqID + 1
-	}
-	return strconv.FormatInt(id, 36)
-}
-
-func (rtr *router) DebugStatus() interface{} {
-	s := map[string]interface{}{
-		"HTTP":     rtr.status,
-		"Outgoing": rtr.handler.DebugStatus(),
-	}
-	if es, ok := rtr.eventSource.(debugStatuser); ok {
-		s["EventSource"] = es.DebugStatus()
-	}
-	return s
-}
-
-func (rtr *router) Status() interface{} {
-	return map[string]interface{}{
-		"Clients": atomic.LoadInt64(&rtr.status.ReqsActive),
-		"Version": version,
 	}
 }
 
 func (rtr *router) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	rtr.setupOnce.Do(rtr.setup)
-	atomic.AddInt64(&rtr.status.ReqsReceived, 1)
-	atomic.AddInt64(&rtr.status.ReqsActive, 1)
-	defer atomic.AddInt64(&rtr.status.ReqsActive, -1)
-
-	logger := logger(req.Context()).
-		WithField("RequestID", rtr.newReqID())
-	ctx := ctxlog.Context(req.Context(), logger)
-	req = req.WithContext(ctx)
-	logger.WithFields(logrus.Fields{
-		"remoteAddr":      req.RemoteAddr,
-		"reqForwardedFor": req.Header.Get("X-Forwarded-For"),
-	}).Info("accept request")
 	rtr.mux.ServeHTTP(resp, req)
 }
 
-func (rtr *router) jsonHandler(fn func() interface{}) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		logger := logger(r.Context())
-		w.Header().Set("Content-Type", "application/json")
-		enc := json.NewEncoder(w)
-		err := enc.Encode(fn())
-		if err != nil {
-			msg := "encode failed"
-			logger.WithError(err).Error(msg)
-			http.Error(w, msg, http.StatusInternalServerError)
-		}
-	})
+func (rtr *router) CheckHealth() error {
+	rtr.setupOnce.Do(rtr.setup)
+	return rtr.eventSource.DBHealth()
+}
+
+func (rtr *router) Done() <-chan struct{} {
+	return rtr.done
 }

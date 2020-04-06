@@ -430,7 +430,8 @@ def run_ws():
     stop_ws()
     port = internal_port_from_config("Websocket")
     logf = open(_logfilename('ws'), 'a')
-    ws = subprocess.Popen(["ws"],
+    ws = subprocess.Popen(
+        ["arvados-server", "ws"],
         stdin=open('/dev/null'), stdout=logf, stderr=logf, close_fds=True)
     with open(_pidfile('ws'), 'w') as f:
         f.write(str(ws.pid))

@@ -29,6 +29,7 @@ import (
 type Handler interface {
 	http.Handler
 	CheckHealth() error
+	Done() <-chan struct{}
 }
 
 type NewHandlerFunc func(_ context.Context, _ *arvados.Cluster, token string, registry *prometheus.Registry) Handler
@@ -148,7 +149,13 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 		logger.WithError(err).Errorf("error notifying init daemon")
 	}
 	go func() {
+		// Shut down server if caller cancels context
 		<-ctx.Done()
+		srv.Close()
+	}()
+	go func() {
+		// Shut down server if handler dies
+		<-handler.Done()
 		srv.Close()
 	}()
 	err = srv.Wait()

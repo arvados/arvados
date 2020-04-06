@@ -36,3 +36,15 @@ func (eh errorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (eh errorHandler) CheckHealth() error {
 	return eh.err
 }
+
+// Done returns a closed channel to indicate the service has
+// stopped/failed.
+func (eh errorHandler) Done() <-chan struct{} {
+	return doneChannel
+}
+
+var doneChannel = func() <-chan struct{} {
+	done := make(chan struct{})
+	close(done)
+	return done
+}()

@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package main
+package ws
 
 import (
 	"bytes"
@@ -11,6 +11,7 @@ import (
 	"io"
 	"net/url"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -30,17 +31,16 @@ func init() {
 var _ = check.Suite(&v0Suite{})
 
 type v0Suite struct {
-	serverSuite serverSuite
-	token       string
-	toDelete    []string
-	wg          sync.WaitGroup
-	ignoreLogID uint64
+	serviceSuite serviceSuite
+	token        string
+	toDelete     []string
+	wg           sync.WaitGroup
+	ignoreLogID  uint64
 }
 
 func (s *v0Suite) SetUpTest(c *check.C) {
-	s.serverSuite.SetUpTest(c)
-	go s.serverSuite.srv.Run()
-	s.serverSuite.srv.WaitReady()
+	s.serviceSuite.SetUpTest(c)
+	s.serviceSuite.start(c)
 
 	s.token = arvadostest.ActiveToken
 	s.ignoreLogID = s.lastLogID(c)
@@ -48,7 +48,7 @@ func (s *v0Suite) SetUpTest(c *check.C) {
 
 func (s *v0Suite) TearDownTest(c *check.C) {
 	s.wg.Wait()
-	s.serverSuite.srv.Close()
+	s.serviceSuite.TearDownTest(c)
 }
 
 func (s *v0Suite) TearDownSuite(c *check.C) {
@@ -353,8 +353,8 @@ func (s *v0Suite) expectLog(c *check.C, r *json.Decoder) *arvados.Log {
 }
 
 func (s *v0Suite) testClient() (*websocket.Conn, *json.Decoder, *json.Encoder) {
-	srv := s.serverSuite.srv
-	conn, err := websocket.Dial("ws://"+srv.listener.Addr().String()+"/websocket?api_token="+s.token, "", "http://"+srv.listener.Addr().String())
+	srv := s.serviceSuite.srv
+	conn, err := websocket.Dial(strings.Replace(srv.URL, "http", "ws", 1)+"/websocket?api_token="+s.token, "", srv.URL)
 	if err != nil {
 		panic(err)
 	}

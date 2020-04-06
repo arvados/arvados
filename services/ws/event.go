@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package main
+package ws
 
 import (
 	"database/sql"
@@ -11,6 +11,7 @@ import (
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"github.com/ghodss/yaml"
+	"github.com/sirupsen/logrus"
 )
 
 type eventSink interface {
@@ -31,6 +32,7 @@ type event struct {
 	Serial   uint64
 
 	db     *sql.DB
+	logger logrus.FieldLogger
 	logRow *arvados.Log
 	err    error
 	mtx    sync.Mutex
@@ -57,12 +59,12 @@ func (e *event) Detail() *arvados.Log {
 		&logRow.CreatedAt,
 		&propYAML)
 	if e.err != nil {
-		logger(nil).WithField("LogID", e.LogID).WithError(e.err).Error("QueryRow failed")
+		e.logger.WithField("LogID", e.LogID).WithError(e.err).Error("QueryRow failed")
 		return nil
 	}
 	e.err = yaml.Unmarshal(propYAML, &logRow.Properties)
 	if e.err != nil {
-		logger(nil).WithField("LogID", e.LogID).WithError(e.err).Error("yaml decode failed")
+		e.logger.WithField("LogID", e.LogID).WithError(e.err).Error("yaml decode failed")
 		return nil
 	}
 	e.logRow = &logRow

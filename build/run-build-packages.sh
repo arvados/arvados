@@ -308,7 +308,7 @@ package_go_binary services/keepstore keepstore \
     "Keep storage daemon, accessible to clients on the LAN"
 package_go_binary services/keep-web keep-web \
     "Static web hosting service for user data stored in Arvados Keep"
-package_go_binary services/ws arvados-ws \
+package_go_binary cmd/arvados-server arvados-ws \
     "Arvados Websocket server"
 package_go_binary tools/sync-groups arvados-sync-groups \
     "Synchronize remote groups into Arvados from an external source"
