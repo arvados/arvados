@@ -85,8 +85,8 @@ export const LoginForm = withStyles(styles)(
             handleSubmit(username, password)
             .then((response) => {
                 setSubmitting(false);
-                const apiToken = response.data.api_token;
-                if (apiToken) {
+                if (response.data.uuid && response.data.api_token) {
+                    const apiToken = `v2/${response.data.uuid}/${response.data.api_token}`;
                     dispatch<any>(saveApiToken(apiToken)).finally(
                         () => dispatch(navigateToRootProject));
                 } else {
