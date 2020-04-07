@@ -11,7 +11,9 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"os/user"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -34,6 +36,13 @@ func (runPostgreSQL) Run(ctx context.Context, fail func(error), super *Superviso
 		return err
 	}
 
+	iamroot := false
+	if u, err := user.Current(); err != nil {
+		return fmt.Errorf("user.Current(): %s", err)
+	} else if u.Uid == "0" {
+		iamroot = true
+	}
+
 	buf := bytes.NewBuffer(nil)
 	err = super.RunProgram(ctx, super.tempdir, buf, nil, "pg_config", "--bindir")
 	if err != nil {
@@ -42,11 +51,45 @@ func (runPostgreSQL) Run(ctx context.Context, fail func(error), super *Superviso
 	bindir := strings.TrimSpace(buf.String())
 
 	datadir := filepath.Join(super.tempdir, "pgdata")
-	err = os.Mkdir(datadir, 0755)
+	err = os.Mkdir(datadir, 0700)
 	if err != nil {
 		return err
 	}
-	err = super.RunProgram(ctx, super.tempdir, nil, nil, filepath.Join(bindir, "initdb"), "-D", datadir)
+	prog, args := filepath.Join(bindir, "initdb"), []string{"-D", datadir, "-E", "utf8"}
+	if iamroot {
+		postgresUser, err := user.Lookup("postgres")
+		if err != nil {
+			return fmt.Errorf("user.Lookup(\"postgres\"): %s", err)
+		}
+		postgresUid, err := strconv.Atoi(postgresUser.Uid)
+		if err != nil {
+			return fmt.Errorf("user.Lookup(\"postgres\"): non-numeric uid?: %q", postgresUser.Uid)
+		}
+		postgresGid, err := strconv.Atoi(postgresUser.Gid)
+		if err != nil {
+			return fmt.Errorf("user.Lookup(\"postgres\"): non-numeric gid?: %q", postgresUser.Gid)
+		}
+		err = os.Chown(super.tempdir, 0, postgresGid)
+		if err != nil {
+			return err
+		}
+		err = os.Chmod(super.tempdir, 0710)
+		if err != nil {
+			return err
+		}
+		err = os.Chown(datadir, postgresUid, 0)
+		if err != nil {
+			return err
+		}
+		// We can't use "sudo -u" here because it creates an
+		// intermediate process that interferes with our
+		// ability to reliably kill postgres. The setuidgid
+		// program just calls exec without forking, so it
+		// doesn't have this problem.
+		args = append([]string{"postgres", prog}, args...)
+		prog = "setuidgid"
+	}
+	err = super.RunProgram(ctx, super.tempdir, nil, nil, prog, args...)
 	if err != nil {
 		return err
 	}
@@ -55,18 +98,29 @@ func (runPostgreSQL) Run(ctx context.Context, fail func(error), super *Superviso
 	if err != nil {
 		return err
 	}
+	if iamroot {
+		err = super.RunProgram(ctx, super.tempdir, nil, nil, "chown", "postgres", datadir+"/server.crt", datadir+"/server.key")
+		if err != nil {
+			return err
+		}
+	}
 
 	port := super.cluster.PostgreSQL.Connection["port"]
 
 	super.waitShutdown.Add(1)
 	go func() {
 		defer super.waitShutdown.Done()
-		fail(super.RunProgram(ctx, super.tempdir, nil, nil, filepath.Join(bindir, "postgres"),
+		prog, args := filepath.Join(bindir, "postgres"), []string{
 			"-l",          // enable ssl
 			"-D", datadir, // data dir
 			"-k", datadir, // socket dir
 			"-p", super.cluster.PostgreSQL.Connection["port"],
-		))
+		}
+		if iamroot {
+			args = append([]string{"postgres", prog}, args...)
+			prog = "setuidgid"
+		}
+		fail(super.RunProgram(ctx, super.tempdir, nil, nil, prog, args...))
 	}()
 
 	for {
@@ -78,11 +132,15 @@ func (runPostgreSQL) Run(ctx context.Context, fail func(error), super *Superviso
 		}
 		time.Sleep(time.Second / 2)
 	}
-	db, err := sql.Open("postgres", arvados.PostgreSQLConnection{
+	pgconn := arvados.PostgreSQLConnection{
 		"host":   datadir,
 		"port":   port,
 		"dbname": "postgres",
-	}.String())
+	}
+	if iamroot {
+		pgconn["user"] = "postgres"
+	}
+	db, err := sql.Open("postgres", pgconn.String())
 	if err != nil {
 		return fmt.Errorf("db open failed: %s", err)
 	}
@@ -96,7 +154,7 @@ func (runPostgreSQL) Run(ctx context.Context, fail func(error), super *Superviso
 	if err != nil {
 		return fmt.Errorf("createuser failed: %s", err)
 	}
-	_, err = conn.ExecContext(ctx, `CREATE DATABASE `+pq.QuoteIdentifier(super.cluster.PostgreSQL.Connection["dbname"]))
+	_, err = conn.ExecContext(ctx, `CREATE DATABASE `+pq.QuoteIdentifier(super.cluster.PostgreSQL.Connection["dbname"])+` WITH TEMPLATE template0 ENCODING 'utf8'`)
 	if err != nil {
 		return fmt.Errorf("createdb failed: %s", err)
 	}

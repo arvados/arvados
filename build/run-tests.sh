@@ -35,7 +35,7 @@ Options:
 --short        Skip (or scale down) some slow tests.
 --interactive  Set up, then prompt for test/install steps to perform.
 WORKSPACE=path Arvados source tree to test.
-CONFIGSRC=path Dir with config.yml file containing PostgreSQL section for use by tests. (required)
+CONFIGSRC=path Dir with config.yml file containing PostgreSQL section for use by tests.
 services/api_test="TEST=test/functional/arvados/v1/collections_controller_test.rb"
                Restrict apiserver tests to the given file
 sdk/python_test="--test-suite tests.test_keep_locator"
@@ -197,10 +197,8 @@ sanity_checks() {
     [[ -n "${skip[sanity]}" ]] && return 0
     ( [[ -n "$WORKSPACE" ]] && [[ -d "$WORKSPACE/services" ]] ) \
         || fatal "WORKSPACE environment variable not set to a source directory (see: $0 --help)"
-    [[ -n "$CONFIGSRC" ]] \
-	|| fatal "CONFIGSRC environment not set (see: $0 --help)"
-    [[ -s "$CONFIGSRC/config.yml" ]] \
-	|| fatal "'$CONFIGSRC/config.yml' is empty or not found (see: $0 --help)"
+    [[ -z "$CONFIGSRC" ]] || [[ -s "$CONFIGSRC/config.yml" ]] \
+	|| fatal "CONFIGSRC is $CONFIGSRC but '$CONFIGSRC/config.yml' is empty or not found (see: $0 --help)"
     echo Checking dependencies:
     echo "locale: ${LANG}"
     [[ "$(locale charmap)" = "UTF-8" ]] \
@@ -553,8 +551,14 @@ setup_ruby_environment() {
         bundle="$(gem env gempath | cut -f1 -d:)/bin/bundle"
         (
             export HOME=$GEMHOME
-            ("$bundle" version | grep -q 2.0.2) \
-                || gem install --user bundler -v 2.0.2
+            bundlers="$(gem list --details bundler)"
+            versions=(1.11.0 1.17.3 2.0.2)
+            for v in ${versions[@]}; do
+                if ! echo "$bundlers" | fgrep -q "($v)"; then
+                    gem install --user $(for v in ${versions[@]}; do echo bundler:${v}; done)
+                    break
+                fi
+            done
             "$bundle" version | tee /dev/stderr | grep -q 'version 2'
         ) || fatal 'install bundler'
     fi
@@ -590,6 +594,11 @@ setup_virtualenv() {
 }
 
 initialize() {
+    # If dependencies like ruby, go, etc. are installed in
+    # /var/lib/arvados -- presumably by "arvados-server install" --
+    # then we want to use those versions, instead of whatever happens
+    # to be installed in /usr.
+    PATH="/var/lib/arvados/bin:${PATH}"
     sanity_checks
 
     echo "WORKSPACE=$WORKSPACE"
@@ -1056,7 +1065,7 @@ test_sdk/cli() {
 }
 
 test_sdk/java-v2() {
-    cd "$WORKSPACE/sdk/java-v2" && gradle test
+    cd "$WORKSPACE/sdk/java-v2" && gradle test ${testargs[sdk/java-v2]}
 }
 
 test_services/login-sync() {

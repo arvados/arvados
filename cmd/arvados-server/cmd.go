@@ -14,6 +14,7 @@ import (
 	"git.arvados.org/arvados.git/lib/controller"
 	"git.arvados.org/arvados.git/lib/crunchrun"
 	"git.arvados.org/arvados.git/lib/dispatchcloud"
+	"git.arvados.org/arvados.git/lib/install"
 	"git.arvados.org/arvados.git/services/ws"
 )
 
@@ -26,11 +27,12 @@ var (
 		"boot":            boot.Command,
 		"cloudtest":       cloudtest.Command,
 		"config-check":    config.CheckCommand,
-		"config-dump":     config.DumpCommand,
 		"config-defaults": config.DumpDefaultsCommand,
+		"config-dump":     config.DumpCommand,
 		"controller":      controller.Command,
 		"crunch-run":      crunchrun.Command,
 		"dispatch-cloud":  dispatchcloud.Command,
+		"install":         install.Command,
 		"ws":              ws.Command,
 	})
 )
