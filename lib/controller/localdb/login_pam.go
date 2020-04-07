@@ -104,5 +104,6 @@ func (ctrl *pamLoginController) UserAuthenticate(ctx context.Context, opts arvad
 	if err != nil {
 		return arvados.APIClientAuthorization{}, err
 	}
-	return arvados.APIClientAuthorization{APIToken: target.Query().Get("api_token")}, err
+	token := target.Query().Get("api_token")
+	return ctrl.RailsProxy.APIClientAuthorizationCurrent(auth.NewContext(ctx, auth.NewCredentials(token)), arvados.GetOptions{})
 }

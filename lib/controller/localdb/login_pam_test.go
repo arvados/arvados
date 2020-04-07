@@ -74,7 +74,9 @@ func (s *PamSuite) TestLoginSuccess(c *check.C) {
 		Password: p,
 	})
 	c.Check(err, check.IsNil)
-	c.Check(resp.APIToken, check.Matches, `v2/zzzzz-gj3su-.*/.*`)
+	c.Check(resp.APIToken, check.Not(check.Equals), "")
+	c.Check(resp.UUID, check.Matches, `zzzzz-gj3su-.*`)
+	c.Check(resp.Scopes, check.DeepEquals, []string{"all"})
 
 	authinfo := getCallbackAuthInfo(c, s.railsSpy)
 	c.Check(authinfo.Email, check.Equals, u+"@"+s.cluster.Login.PAMDefaultEmailDomain)

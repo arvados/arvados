@@ -186,6 +186,8 @@ check_contains "${resp}" '{"errors":["PAM: Authentication failure (with username
 echo >&2 "Testing authentication success"
 resp="$(curl -s --include -d username=foo -d password=secret "http://${ctrlhostport}/arvados/v1/users/authenticate" | tee $debug)"
 check_contains "${resp}" "HTTP/1.1 200"
-check_contains "${resp}" '{"api_token":"v2/zzzzz-gj3su-'
+check_contains "${resp}" '"api_token":"'
+check_contains "${resp}" '"scopes":["all"]'
+check_contains "${resp}" '"uuid":"zzzzz-gj3su-'
 
 cleanup
