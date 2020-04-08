@@ -260,6 +260,9 @@ sanity_checks() {
     echo -n 'libpq libpq-fe.h: '
     find /usr/include -path '*/postgresql/libpq-fe.h' | egrep --max-count=1 . \
         || fatal "No libpq libpq-fe.h. Try: apt-get install libpq-dev"
+    echo -n 'libpam pam_appl.h: '
+    find /usr/include -path '*/security/pam_appl.h' | egrep --max-count=1 . \
+        || fatal "No libpam pam_appl.h. Try: apt-get install libpam-dev"
     echo -n 'postgresql: '
     psql --version || fatal "No postgresql. Try: apt-get install postgresql postgresql-client-common"
     echo -n 'phantomjs: '

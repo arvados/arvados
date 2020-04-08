@@ -136,6 +136,9 @@ type Cluster struct {
 		GoogleClientID                string
 		GoogleClientSecret            string
 		GoogleAlternateEmailAddresses bool
+		PAM                           bool
+		PAMService                    string
+		PAMDefaultEmailDomain         string
 		ProviderAppID                 string
 		ProviderAppSecret             string
 		LoginCluster                  string

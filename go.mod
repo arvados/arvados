@@ -36,6 +36,7 @@ require (
 	github.com/lib/pq v1.3.0
 	github.com/marstr/guid v1.1.1-0.20170427235115-8bdf7d1a087c // indirect
 	github.com/mitchellh/go-homedir v0.0.0-20161203194507-b8bc1bf76747 // indirect
+	github.com/msteinert/pam v0.0.0-20190215180659-f29b9f28d6f9
 	github.com/opencontainers/go-digest v1.0.0-rc1 // indirect
 	github.com/opencontainers/image-spec v1.0.1-0.20171125024018-577479e4dc27 // indirect
 	github.com/pelletier/go-buffruneio v0.2.0 // indirect

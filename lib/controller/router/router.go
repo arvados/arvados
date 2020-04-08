@@ -303,6 +303,13 @@ func (rtr *router) addRoutes() {
 				return rtr.fed.UserDelete(ctx, *opts.(*arvados.DeleteOptions))
 			},
 		},
+		{
+			arvados.EndpointUserAuthenticate,
+			func() interface{} { return &arvados.UserAuthenticateOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.fed.UserAuthenticate(ctx, *opts.(*arvados.UserAuthenticateOptions))
+			},
+		},
 	} {
 		rtr.addRoute(route.endpoint, route.defaultOpts, route.exec)
 	}
@@ -386,21 +393,23 @@ func (rtr *router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	default:
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, HEAD, PUT, POST, PATCH, DELETE")
-		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
+		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Http-Method-Override")
 		w.Header().Set("Access-Control-Max-Age", "86486400")
 	}
 	if r.Method == "OPTIONS" {
 		return
 	}
-	r.ParseForm()
-	if m := r.FormValue("_method"); m != "" {
-		r2 := *r
-		r = &r2
-		r.Method = m
-	} else if m = r.Header.Get("X-Http-Method-Override"); m != "" {
-		r2 := *r
-		r = &r2
-		r.Method = m
+	if r.Method == "POST" {
+		r.ParseForm()
+		if m := r.FormValue("_method"); m != "" {
+			r2 := *r
+			r = &r2
+			r.Method = m
+		} else if m = r.Header.Get("X-Http-Method-Override"); m != "" {
+			r2 := *r
+			r = &r2
+			r.Method = m
+		}
 	}
 	rtr.mux.ServeHTTP(w, r)
 }

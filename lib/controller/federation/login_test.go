@@ -46,6 +46,9 @@ func (s *LoginSuite) TestLogout(c *check.C) {
 	s.cluster.Login.GoogleClientID = "zzzzzzzzzzzzzz"
 	s.addHTTPRemote(c, "zhome", &arvadostest.APIStub{})
 	s.cluster.Login.LoginCluster = "zhome"
+	// s.fed is already set by SetUpTest, but we need to
+	// reinitialize with the above config changes.
+	s.fed = New(s.cluster)
 
 	returnTo := "https://app.example.com/foo?bar"
 	for _, trial := range []struct {

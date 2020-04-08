@@ -55,7 +55,8 @@ var (
 	EndpointUserUnsetup                   = APIEndpoint{"POST", "arvados/v1/users/{uuid}/unsetup", ""}
 	EndpointUserUpdate                    = APIEndpoint{"PATCH", "arvados/v1/users/{uuid}", "user"}
 	EndpointUserUpdateUUID                = APIEndpoint{"POST", "arvados/v1/users/{uuid}/update_uuid", ""}
-	EndpointUserBatchUpdate               = APIEndpoint{"PATCH", "arvados/v1/users/batch", ""}
+	EndpointUserBatchUpdate               = APIEndpoint{"PATCH", "arvados/v1/users/batch_update", ""}
+	EndpointUserAuthenticate              = APIEndpoint{"POST", "arvados/v1/users/authenticate", ""}
 	EndpointAPIClientAuthorizationCurrent = APIEndpoint{"GET", "arvados/v1/api_client_authorizations/current", ""}
 )
 
@@ -142,6 +143,11 @@ type LoginOptions struct {
 	State    string `json:"state,omitempty"`  // OAuth2 callback state
 }
 
+type UserAuthenticateOptions struct {
+	Username string `json:"username,omitempty"` // PAM username
+	Password string `json:"password,omitempty"` // PAM password
+}
+
 type LogoutOptions struct {
 	ReturnTo string `json:"return_to"` // Redirect to this URL after logging out
 }
@@ -184,5 +190,6 @@ type API interface {
 	UserList(ctx context.Context, options ListOptions) (UserList, error)
 	UserDelete(ctx context.Context, options DeleteOptions) (User, error)
 	UserBatchUpdate(context.Context, UserBatchUpdateOptions) (UserList, error)
+	UserAuthenticate(ctx context.Context, options UserAuthenticateOptions) (APIClientAuthorization, error)
 	APIClientAuthorizationCurrent(ctx context.Context, options GetOptions) (APIClientAuthorization, error)
 }

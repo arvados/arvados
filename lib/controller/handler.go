@@ -83,6 +83,7 @@ func (h *Handler) setup() {
 
 	rtr := router.New(federation.New(h.Cluster))
 	mux.Handle("/arvados/v1/config", rtr)
+	mux.Handle("/"+arvados.EndpointUserAuthenticate.Path, rtr)
 
 	if !h.Cluster.ForceLegacyAPI14 {
 		mux.Handle("/arvados/v1/collections", rtr)

@@ -177,6 +177,10 @@ func (as *APIStub) UserBatchUpdate(ctx context.Context, options arvados.UserBatc
 	as.appendCall(as.UserBatchUpdate, ctx, options)
 	return arvados.UserList{}, as.Error
 }
+func (as *APIStub) UserAuthenticate(ctx context.Context, options arvados.UserAuthenticateOptions) (arvados.APIClientAuthorization, error) {
+	as.appendCall(as.UserAuthenticate, ctx, options)
+	return arvados.APIClientAuthorization{}, as.Error
+}
 func (as *APIStub) APIClientAuthorizationCurrent(ctx context.Context, options arvados.GetOptions) (arvados.APIClientAuthorization, error) {
 	as.appendCall(as.APIClientAuthorizationCurrent, ctx, options)
 	return arvados.APIClientAuthorization{}, as.Error

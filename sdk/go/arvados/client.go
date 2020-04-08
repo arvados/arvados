@@ -186,7 +186,7 @@ func (c *Client) DoAndDecode(dst interface{}, req *http.Request) error {
 		return nil
 	case isRedirectStatus(resp.StatusCode):
 		// Copy the redirect target URL to dst.RedirectLocation.
-		buf, err := json.Marshal(map[string]string{"RedirectLocation": resp.Header.Get("Location")})
+		buf, err := json.Marshal(map[string]string{"redirect_location": resp.Header.Get("Location")})
 		if err != nil {
 			return err
 		}

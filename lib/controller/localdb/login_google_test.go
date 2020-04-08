@@ -154,11 +154,11 @@ func (s *LoginSuite) SetUpTest(c *check.C) {
 	c.Assert(err, check.IsNil)
 
 	s.localdb = NewConn(s.cluster)
-	s.localdb.googleLoginController.issuer = s.fakeIssuer.URL
-	s.localdb.googleLoginController.peopleAPIBasePath = s.fakePeopleAPI.URL
+	s.localdb.loginController.(*googleLoginController).issuer = s.fakeIssuer.URL
+	s.localdb.loginController.(*googleLoginController).peopleAPIBasePath = s.fakePeopleAPI.URL
 
 	s.railsSpy = arvadostest.NewProxy(c, s.cluster.Services.RailsAPI)
-	s.localdb.railsProxy = rpc.NewConn(s.cluster.ClusterID, s.railsSpy.URL, true, rpc.PassthroughTokenProvider)
+	*s.localdb.railsProxy = *rpc.NewConn(s.cluster.ClusterID, s.railsSpy.URL, true, rpc.PassthroughTokenProvider)
 }
 
 func (s *LoginSuite) TearDownTest(c *check.C) {
@@ -188,7 +188,7 @@ func (s *LoginSuite) TestGoogleLogin_Start(c *check.C) {
 		c.Check(target.Host, check.Equals, issuerURL.Host)
 		q := target.Query()
 		c.Check(q.Get("client_id"), check.Equals, "test%client$id")
-		state := s.localdb.googleLoginController.parseOAuth2State(q.Get("state"))
+		state := s.localdb.loginController.(*googleLoginController).parseOAuth2State(q.Get("state"))
 		c.Check(state.verify([]byte(s.cluster.SystemRootToken)), check.Equals, true)
 		c.Check(state.Time, check.Not(check.Equals), 0)
 		c.Check(state.Remote, check.Equals, remote)
@@ -223,7 +223,7 @@ func (s *LoginSuite) setupPeopleAPIError(c *check.C) {
 		w.WriteHeader(http.StatusForbidden)
 		fmt.Fprintln(w, `Error 403: accessNotConfigured`)
 	}))
-	s.localdb.googleLoginController.peopleAPIBasePath = s.fakePeopleAPI.URL
+	s.localdb.loginController.(*googleLoginController).peopleAPIBasePath = s.fakePeopleAPI.URL
 }
 
 func (s *LoginSuite) TestGoogleLogin_PeopleAPIDisabled(c *check.C) {
@@ -236,7 +236,7 @@ func (s *LoginSuite) TestGoogleLogin_PeopleAPIDisabled(c *check.C) {
 		State: state,
 	})
 	c.Check(err, check.IsNil)
-	authinfo := s.getCallbackAuthInfo(c)
+	authinfo := getCallbackAuthInfo(c, s.railsSpy)
 	c.Check(authinfo.Email, check.Equals, "joe.smith@primary.example.com")
 }
 
@@ -266,7 +266,7 @@ func (s *LoginSuite) TestGoogleLogin_Success(c *check.C) {
 	token := target.Query().Get("api_token")
 	c.Check(token, check.Matches, `v2/zzzzz-gj3su-.{15}/.{32,50}`)
 
-	authinfo := s.getCallbackAuthInfo(c)
+	authinfo := getCallbackAuthInfo(c, s.railsSpy)
 	c.Check(authinfo.FirstName, check.Equals, "Fake User")
 	c.Check(authinfo.LastName, check.Equals, "Name")
 	c.Check(authinfo.Email, check.Equals, "active-user@arvados.local")
@@ -312,7 +312,7 @@ func (s *LoginSuite) TestGoogleLogin_RealName(c *check.C) {
 		State: state,
 	})
 
-	authinfo := s.getCallbackAuthInfo(c)
+	authinfo := getCallbackAuthInfo(c, s.railsSpy)
 	c.Check(authinfo.FirstName, check.Equals, "Joseph")
 	c.Check(authinfo.LastName, check.Equals, "Psmith")
 }
@@ -326,7 +326,7 @@ func (s *LoginSuite) TestGoogleLogin_OIDCRealName(c *check.C) {
 		State: state,
 	})
 
-	authinfo := s.getCallbackAuthInfo(c)
+	authinfo := getCallbackAuthInfo(c, s.railsSpy)
 	c.Check(authinfo.FirstName, check.Equals, "Joe P.")
 	c.Check(authinfo.LastName, check.Equals, "Smith")
 }
@@ -355,7 +355,7 @@ func (s *LoginSuite) TestGoogleLogin_AlternateEmailAddresses(c *check.C) {
 		State: state,
 	})
 
-	authinfo := s.getCallbackAuthInfo(c)
+	authinfo := getCallbackAuthInfo(c, s.railsSpy)
 	c.Check(authinfo.Email, check.Equals, "joe.smith@primary.example.com")
 	c.Check(authinfo.AlternateEmails, check.DeepEquals, []string{"joe.smith@home.example.com", "joe.smith@work.example.com"})
 }
@@ -384,7 +384,7 @@ func (s *LoginSuite) TestGoogleLogin_AlternateEmailAddresses_Primary(c *check.C)
 		Code:  s.validCode,
 		State: state,
 	})
-	authinfo := s.getCallbackAuthInfo(c)
+	authinfo := getCallbackAuthInfo(c, s.railsSpy)
 	c.Check(authinfo.Email, check.Equals, "joe.smith@primary.example.com")
 	c.Check(authinfo.AlternateEmails, check.DeepEquals, []string{"joe.smith@alternate.example.com", "jsmith+123@preferdomainforusername.example.com"})
 	c.Check(authinfo.Username, check.Equals, "jsmith")
@@ -411,28 +411,10 @@ func (s *LoginSuite) TestGoogleLogin_NoPrimaryEmailAddress(c *check.C) {
 		State: state,
 	})
 
-	authinfo := s.getCallbackAuthInfo(c)
+	authinfo := getCallbackAuthInfo(c, s.railsSpy)
 	c.Check(authinfo.Email, check.Equals, "joe.smith@work.example.com") // first verified email in People response
 	c.Check(authinfo.AlternateEmails, check.DeepEquals, []string{"joe.smith@home.example.com"})
 	c.Check(authinfo.Username, check.Equals, "")
-}
-
-func (s *LoginSuite) getCallbackAuthInfo(c *check.C) (authinfo rpc.UserSessionAuthInfo) {
-	for _, dump := range s.railsSpy.RequestDumps {
-		c.Logf("spied request: %q", dump)
-		split := bytes.Split(dump, []byte("\r\n\r\n"))
-		c.Assert(split, check.HasLen, 2)
-		hdr, body := string(split[0]), string(split[1])
-		if strings.Contains(hdr, "POST /auth/controller/callback") {
-			vs, err := url.ParseQuery(body)
-			c.Check(json.Unmarshal([]byte(vs.Get("auth_info")), &authinfo), check.IsNil)
-			c.Check(err, check.IsNil)
-			sort.Strings(authinfo.AlternateEmails)
-			return
-		}
-	}
-	c.Error("callback not found")
-	return
 }
 
 func (s *LoginSuite) startLogin(c *check.C) (state string) {
@@ -462,4 +444,22 @@ func (s *LoginSuite) fakeToken(c *check.C, payload []byte) string {
 	}
 	c.Logf("fakeToken(%q) == %q", payload, t)
 	return t
+}
+
+func getCallbackAuthInfo(c *check.C, railsSpy *arvadostest.Proxy) (authinfo rpc.UserSessionAuthInfo) {
+	for _, dump := range railsSpy.RequestDumps {
+		c.Logf("spied request: %q", dump)
+		split := bytes.Split(dump, []byte("\r\n\r\n"))
+		c.Assert(split, check.HasLen, 2)
+		hdr, body := string(split[0]), string(split[1])
+		if strings.Contains(hdr, "POST /auth/controller/callback") {
+			vs, err := url.ParseQuery(body)
+			c.Check(json.Unmarshal([]byte(vs.Get("auth_info")), &authinfo), check.IsNil)
+			c.Check(err, check.IsNil)
+			sort.Strings(authinfo.AlternateEmails)
+			return
+		}
+	}
+	c.Error("callback not found")
+	return
 }

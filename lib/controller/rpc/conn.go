@@ -417,8 +417,15 @@ func (conn *Conn) UserSessionCreate(ctx context.Context, options UserSessionCrea
 }
 
 func (conn *Conn) UserBatchUpdate(ctx context.Context, options arvados.UserBatchUpdateOptions) (arvados.UserList, error) {
-	ep := arvados.APIEndpoint{Method: "PATCH", Path: "arvados/v1/users/batch_update"}
+	ep := arvados.EndpointUserBatchUpdate
 	var resp arvados.UserList
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) UserAuthenticate(ctx context.Context, options arvados.UserAuthenticateOptions) (arvados.APIClientAuthorization, error) {
+	ep := arvados.EndpointUserAuthenticate
+	var resp arvados.APIClientAuthorization
 	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
 	return resp, err
 }

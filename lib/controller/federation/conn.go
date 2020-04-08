@@ -478,6 +478,10 @@ func (conn *Conn) UserBatchUpdate(ctx context.Context, options arvados.UserBatch
 	return conn.local.UserBatchUpdate(ctx, options)
 }
 
+func (conn *Conn) UserAuthenticate(ctx context.Context, options arvados.UserAuthenticateOptions) (arvados.APIClientAuthorization, error) {
+	return conn.local.UserAuthenticate(ctx, options)
+}
+
 func (conn *Conn) APIClientAuthorizationCurrent(ctx context.Context, options arvados.GetOptions) (arvados.APIClientAuthorization, error) {
 	return conn.chooseBackend(options.UUID).APIClientAuthorizationCurrent(ctx, options)
 }

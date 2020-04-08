@@ -10,8 +10,8 @@ import (
 )
 
 type LoginResponse struct {
-	RedirectLocation string
-	HTML             bytes.Buffer
+	RedirectLocation string       `json:"redirect_location,omitempty"`
+	HTML             bytes.Buffer `json:"-"`
 }
 
 func (resp LoginResponse) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -26,7 +26,7 @@ func (resp LoginResponse) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 }
 
 type LogoutResponse struct {
-	RedirectLocation string
+	RedirectLocation string `json:"redirect_location,omitempty"`
 }
 
 func (resp LogoutResponse) ServeHTTP(w http.ResponseWriter, req *http.Request) {
