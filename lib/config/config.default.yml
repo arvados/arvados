@@ -184,12 +184,21 @@ Clusters:
       MaxItemsPerResponse: 1000
 
       # Maximum number of concurrent requests to accept in a single
-      # service process, or 0 for no limit. Currently supported only
-      # by keepstore.
+      # service process, or 0 for no limit.
       MaxConcurrentRequests: 0
 
-      # Maximum number of 64MiB memory buffers per keepstore server
-      # process, or 0 for no limit.
+      # Maximum number of 64MiB memory buffers per Keepstore server process, or
+      # 0 for no limit. When this limit is reached, up to
+      # (MaxConcurrentRequests - MaxKeepBlobBuffers) HTTP requests requiring
+      # buffers (like GET and PUT) will wait for buffer space to be released.
+      # Any HTTP requests beyond MaxConcurrentRequests will receive an
+      # immediate 503 response.
+      #
+      # MaxKeepBlobBuffers should be set such that (MaxKeepBlobBuffers * 64MiB
+      # * 1.1) fits comfortably in memory. On a host dedicated to running
+      # Keepstore, divide total memory by 88MiB to suggest a suitable value.
+      # For example, if grep MemTotal /proc/meminfo reports MemTotal: 7125440
+      # kB, compute 7125440 / (88 * 1024)=79 and configure MaxBuffers: 79
       MaxKeepBlobBuffers: 128
 
       # API methods to disable. Disabled methods are not listed in the

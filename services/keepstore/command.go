@@ -153,10 +153,6 @@ func (h *handler) setup(ctx context.Context, cluster *arvados.Cluster, token str
 	}
 	bufs = newBufferPool(h.Logger, h.Cluster.API.MaxKeepBlobBuffers, BlockSize)
 
-	if h.Cluster.API.MaxConcurrentRequests < 1 {
-		h.Cluster.API.MaxConcurrentRequests = h.Cluster.API.MaxKeepBlobBuffers * 2
-		h.Logger.Warnf("API.MaxConcurrentRequests <1 or not specified; defaulting to MaxKeepBlobBuffers * 2 == %d", h.Cluster.API.MaxConcurrentRequests)
-	}
 	if h.Cluster.API.MaxConcurrentRequests > 0 && h.Cluster.API.MaxConcurrentRequests < h.Cluster.API.MaxKeepBlobBuffers {
 		h.Logger.Warnf("Possible configuration mistake: not useful to set API.MaxKeepBlobBuffers (%d) higher than API.MaxConcurrentRequests (%d)", h.Cluster.API.MaxKeepBlobBuffers, h.Cluster.API.MaxConcurrentRequests)
 	}
