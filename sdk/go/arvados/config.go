@@ -23,7 +23,8 @@ var DefaultConfigFile = func() string {
 }()
 
 type Config struct {
-	Clusters map[string]Cluster
+	Clusters         map[string]Cluster
+	AutoReloadConfig bool
 }
 
 // GetConfig returns the current system config, loading it from
@@ -66,6 +67,7 @@ type WebDAVCacheConfig struct {
 	MaxPermissionEntries int
 	MaxUUIDEntries       int
 }
+
 type Cluster struct {
 	ClusterID       string `json:"-"`
 	ManagementToken string

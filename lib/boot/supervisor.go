@@ -19,15 +19,18 @@ import (
 	"os/signal"
 	"os/user"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"sync"
 	"syscall"
 	"time"
 
+	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/lib/service"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/health"
+	"github.com/fsnotify/fsnotify"
 	"github.com/sirupsen/logrus"
 )
 
@@ -45,7 +48,8 @@ type Supervisor struct {
 
 	ctx           context.Context
 	cancel        context.CancelFunc
-	done          chan struct{}
+	done          chan struct{} // closed when child procs/services have shut down
+	err           error         // error that caused shutdown (valid when done is closed)
 	healthChecker *health.Aggregator
 	tasksReady    map[string]chan bool
 	waitShutdown  sync.WaitGroup
@@ -55,30 +59,66 @@ type Supervisor struct {
 	environ    []string // for child processes
 }
 
-func (super *Supervisor) Start(ctx context.Context, cfg *arvados.Config) {
+func (super *Supervisor) Start(ctx context.Context, cfg *arvados.Config, cfgPath string) {
 	super.ctx, super.cancel = context.WithCancel(ctx)
 	super.done = make(chan struct{})
 
 	go func() {
+		defer close(super.done)
+
 		sigch := make(chan os.Signal)
 		signal.Notify(sigch, syscall.SIGINT, syscall.SIGTERM)
 		defer signal.Stop(sigch)
 		go func() {
 			for sig := range sigch {
 				super.logger.WithField("signal", sig).Info("caught signal")
+				if super.err == nil {
+					super.err = fmt.Errorf("caught signal %s", sig)
+				}
 				super.cancel()
 			}
 		}()
 
+		hupch := make(chan os.Signal)
+		signal.Notify(hupch, syscall.SIGHUP)
+		defer signal.Stop(hupch)
+		go func() {
+			for sig := range hupch {
+				super.logger.WithField("signal", sig).Info("caught signal")
+				if super.err == nil {
+					super.err = errNeedConfigReload
+				}
+				super.cancel()
+			}
+		}()
+
+		if cfgPath != "" && cfgPath != "-" && cfg.AutoReloadConfig {
+			go watchConfig(super.ctx, super.logger, cfgPath, copyConfig(cfg), func() {
+				if super.err == nil {
+					super.err = errNeedConfigReload
+				}
+				super.cancel()
+			})
+		}
+
 		err := super.run(cfg)
 		if err != nil {
 			super.logger.WithError(err).Warn("supervisor shut down")
+			if super.err == nil {
+				super.err = err
+			}
 		}
-		close(super.done)
 	}()
 }
 
+func (super *Supervisor) Wait() error {
+	<-super.done
+	return super.err
+}
+
 func (super *Supervisor) run(cfg *arvados.Config) error {
+	defer super.cancel()
+
 	cwd, err := os.Getwd()
 	if err != nil {
 		return err
@@ -705,4 +745,68 @@ func waitForConnect(ctx context.Context, addr string) error {
 		return nil
 	}
 	return ctx.Err()
+}
+
+func copyConfig(cfg *arvados.Config) *arvados.Config {
+	pr, pw := io.Pipe()
+	go func() {
+		err := json.NewEncoder(pw).Encode(cfg)
+		if err != nil {
+			panic(err)
+		}
+		pw.Close()
+	}()
+	cfg2 := new(arvados.Config)
+	err := json.NewDecoder(pr).Decode(cfg2)
+	if err != nil {
+		panic(err)
+	}
+	return cfg2
+}
+
+func watchConfig(ctx context.Context, logger logrus.FieldLogger, cfgPath string, prevcfg *arvados.Config, fn func()) {
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		logger.WithError(err).Error("fsnotify setup failed")
+		return
+	}
+	defer watcher.Close()
+
+	err = watcher.Add(cfgPath)
+	if err != nil {
+		logger.WithError(err).Error("fsnotify watcher failed")
+		return
+	}
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case err, ok := <-watcher.Errors:
+			if !ok {
+				return
+			}
+			logger.WithError(err).Warn("fsnotify watcher reported error")
+		case _, ok := <-watcher.Events:
+			if !ok {
+				return
+			}
+			for len(watcher.Events) > 0 {
+				<-watcher.Events
+			}
+			loader := config.NewLoader(&bytes.Buffer{}, &logrus.Logger{Out: ioutil.Discard})
+			loader.Path = cfgPath
+			loader.SkipAPICalls = true
+			cfg, err := loader.Load()
+			if err != nil {
+				logger.WithError(err).Warn("error reloading config file after change detected; ignoring new config for now")
+			} else if reflect.DeepEqual(cfg, prevcfg) {
+				logger.Debug("config file changed but is still DeepEqual to the existing config")
+			} else {
+				logger.Debug("config changed, notifying supervisor")
+				fn()
+				prevcfg = cfg
+			}
+		}
+	}
 }

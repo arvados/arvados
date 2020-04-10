@@ -113,7 +113,7 @@ func (s *IntegrationSuite) SetUpSuite(c *check.C) {
 			},
 			config: *cfg,
 		}
-		s.testClusters[id].super.Start(context.Background(), &s.testClusters[id].config)
+		s.testClusters[id].super.Start(context.Background(), &s.testClusters[id].config, "-")
 	}
 	for _, tc := range s.testClusters {
 		au, ok := tc.super.WaitReady()
