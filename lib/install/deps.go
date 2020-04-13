@@ -403,7 +403,7 @@ func identifyOS() (osversion, error) {
 	}
 	osv.Major, err = strconv.Atoi(vstr)
 	if err != nil {
-		return osv, fmt.Errorf("incomprehensible VERSION_ID in /etc/os/release: %q", kv["VERSION_ID"])
+		return osv, fmt.Errorf("incomprehensible VERSION_ID in /etc/os-release: %q", kv["VERSION_ID"])
 	}
 	return osv, nil
 }
