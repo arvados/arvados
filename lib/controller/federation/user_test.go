@@ -5,6 +5,7 @@
 package federation
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"math"
@@ -15,6 +16,8 @@ import (
 	"git.arvados.org/arvados.git/lib/controller/rpc"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
+	"git.arvados.org/arvados.git/sdk/go/auth"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	check "gopkg.in/check.v1"
 )
 
@@ -112,6 +115,36 @@ func (s *UserSuite) TestLoginClusterUserList(c *check.C) {
 			}
 		}
 	}
+}
+
+func (s *UserSuite) TestLoginClusterUserListBypassFederation(c *check.C) {
+	s.cluster.ClusterID = "local"
+	s.cluster.Login.LoginCluster = "zzzzz"
+	s.fed = New(s.cluster)
+	s.addDirectRemote(c, "zzzzz", rpc.NewConn("zzzzz", &url.URL{Scheme: "https", Host: os.Getenv("ARVADOS_API_HOST")},
+		true, rpc.PassthroughTokenProvider))
+
+	spy := arvadostest.NewProxy(c, s.cluster.Services.RailsAPI)
+	s.fed.local = rpc.NewConn(s.cluster.ClusterID, spy.URL, true, rpc.PassthroughTokenProvider)
+
+	_, err := s.fed.UserList(s.ctx, arvados.ListOptions{Offset: 0, Limit: math.MaxInt64, Select: nil, BypassFederation: true})
+	// this will fail because it is not using a root token
+	c.Check(err.(*arvados.TransactionError).StatusCode, check.Equals, 403)
+
+	// Now use SystemRootToken
+	ctx := context.Background()
+	ctx = ctxlog.Context(ctx, ctxlog.TestLogger(c))
+	ctx = auth.NewContext(ctx, &auth.Credentials{Tokens: []string{arvadostest.SystemRootToken}})
+
+	// Assert that it did not try to batch update users.
+	_, err = s.fed.UserList(ctx, arvados.ListOptions{Offset: 0, Limit: math.MaxInt64, Select: nil, BypassFederation: true})
+	for _, d := range spy.RequestDumps {
+		d := string(d)
+		if strings.Contains(d, "PATCH /arvados/v1/users/batch") {
+			c.Fail()
+		}
+	}
+	c.Check(err, check.IsNil)
 }
 
 // userAttrsCachedFromLoginCluster must have an entry for every field
