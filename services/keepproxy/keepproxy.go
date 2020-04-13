@@ -116,6 +116,12 @@ func run(logger log.FieldLogger, cluster *arvados.Cluster) error {
 		return fmt.Errorf("Error setting up arvados client %v", err)
 	}
 
+	// If a config file is available, use the keepstores defined there
+	// instead of the legacy autodiscover mechanism via the API server
+	for k := range cluster.Services.Keepstore.InternalURLs {
+		arv.KeepServiceURIs = append(arv.KeepServiceURIs, k.String())
+	}
+
 	if cluster.SystemLogs.LogLevel == "debug" {
 		keepclient.DebugPrintf = log.Printf
 	}
