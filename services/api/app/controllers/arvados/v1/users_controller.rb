@@ -22,7 +22,7 @@ class Arvados::V1::UsersController < ApplicationController
       rescue ActiveRecord::RecordNotUnique
         retry
       end
-      u.update_attributes!(attrs)
+      u.update_attributes!(nullify_attrs(attrs))
       @objects << u
     end
     @offset = 0
@@ -249,6 +249,14 @@ class Arvados::V1::UsersController < ApplicationController
     }
   end
 
+  def self._update_requires_parameters
+    super.merge({
+      bypass_federation: {
+        type: 'boolean', required: false,
+      },
+    })
+  end
+
   def self._update_uuid_requires_parameters
     {
       new_uuid: {
@@ -270,5 +278,9 @@ class Arvados::V1::UsersController < ApplicationController
       @filters += [['is_active', '=', true]]
     end
     super
+  end
+
+  def nullable_attributes
+    super + [:email, :first_name, :last_name, :username]
   end
 end

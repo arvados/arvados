@@ -45,6 +45,7 @@ class ApplicationController < ActionController::Base
   before_action :load_required_parameters
   before_action(:find_object_by_uuid,
                 except: [:index, :create] + ERROR_ACTIONS)
+  before_action(:set_nullable_attrs_to_null, only: [:update, :create])
   before_action :load_limit_offset_order_params, only: [:index, :contents]
   before_action :load_where_param, only: [:index, :contents]
   before_action :load_filters_param, only: [:index, :contents]
@@ -52,6 +53,7 @@ class ApplicationController < ActionController::Base
   before_action :reload_object_before_update, :only => :update
   before_action(:render_404_if_no_object,
                 except: [:index, :create] + ERROR_ACTIONS)
+  before_action :only_admin_can_bypass_federation
 
   attr_writer :resource_attrs
 
@@ -136,6 +138,12 @@ class ApplicationController < ActionController::Base
 
   def render_404_if_no_object
     render_not_found "Object not found" if !@object
+  end
+
+  def only_admin_can_bypass_federation
+    unless !params[:bypass_federation] || current_user.andand.is_admin
+      send_error("The bypass_federation parameter is only permitted when current user is admin", status: 403)
+    end
   end
 
   def render_error(e)
@@ -478,6 +486,29 @@ class ApplicationController < ActionController::Base
     @object = @objects.first
   end
 
+  def nullable_attributes
+    []
+  end
+
+  # Go code may send empty values (ie: empty string instead of NULL) that
+  # should be translated to NULL on the database.
+  def set_nullable_attrs_to_null
+    nullify_attrs(resource_attrs.to_hash).each do |k, v|
+      resource_attrs[k] = v
+    end
+  end
+
+  def nullify_attrs(a = {})
+    new_attrs = a.to_hash.symbolize_keys
+    (new_attrs.keys & nullable_attributes).each do |attr|
+      val = new_attrs[attr]
+      if (val.class == Integer && val == 0) || (val.class == String && val == "")
+        new_attrs[attr] = nil
+      end
+    end
+    return new_attrs
+  end
+
   def reload_object_before_update
     # This is necessary to prevent an ActiveRecord::ReadOnlyRecord
     # error when updating an object which was retrieved using a join.
@@ -632,6 +663,11 @@ class ApplicationController < ActionController::Base
         location: "query",
         required: false,
       },
+      bypass_federation: {
+        type: 'boolean',
+        required: false,
+        description: 'bypass federation behavior, list items from local instance database only'
+      }
     }
   end
 

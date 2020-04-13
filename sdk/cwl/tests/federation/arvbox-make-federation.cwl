@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-cwlVersion: v1.0
+cwlVersion: v1.1
 class: Workflow
 $namespaces:
   arv: "http://arvados.org/cwl#"
@@ -10,7 +10,7 @@ $namespaces:
 requirements:
   ScatterFeatureRequirement: {}
   StepInputExpressionRequirement: {}
-  cwltool:LoadListingRequirement:
+  LoadListingRequirement:
     loadListing: no_listing
   InlineJavascriptRequirement: {}
 inputs:
@@ -64,7 +64,7 @@ steps:
       containers: containers
       arvbox_base: arvbox_base
     out: [arvbox_data]
-    run: arvbox/mkdir.cwl
+    run: arvboxcwl/mkdir.cwl
   start:
     in:
       container_name: containers
@@ -74,7 +74,7 @@ steps:
     out: [cluster_id, container_host, arvbox_data_out, superuser_token]
     scatter: [container_name, arvbox_data]
     scatterMethod: dotproduct
-    run: arvbox/start.cwl
+    run: arvboxcwl/start.cwl
   fed-config:
     in:
       container_name: containers
@@ -87,10 +87,10 @@ steps:
     out: []
     scatter: [container_name, this_cluster_id, arvbox_data]
     scatterMethod: dotproduct
-    run: arvbox/fed-config.cwl
+    run: arvboxcwl/fed-config.cwl
   setup-user:
     in:
       container_host: {source: start/container_host, valueFrom: "$(self[0])"}
       superuser_token: {source: start/superuser_token, valueFrom: "$(self[0])"}
     out: [test_user_uuid, test_user_token]
-    run: arvbox/setup-user.cwl
+    run: arvboxcwl/setup-user.cwl

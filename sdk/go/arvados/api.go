@@ -61,11 +61,11 @@ var (
 )
 
 type GetOptions struct {
-	UUID         string   `json:"uuid"`
+	UUID         string   `json:"uuid,omitempty"`
 	Select       []string `json:"select"`
 	IncludeTrash bool     `json:"include_trash"`
-	ForwardedFor string   `json:"forwarded_for"`
-	Remote       string   `json:"remote"`
+	ForwardedFor string   `json:"forwarded_for,omitempty"`
+	Remote       string   `json:"remote,omitempty"`
 }
 
 type UntrashOptions struct {
@@ -78,13 +78,14 @@ type ListOptions struct {
 	Select             []string               `json:"select"`
 	Filters            []Filter               `json:"filters"`
 	Where              map[string]interface{} `json:"where"`
-	Limit              int                    `json:"limit"`
-	Offset             int                    `json:"offset"`
+	Limit              int64                  `json:"limit"`
+	Offset             int64                  `json:"offset"`
 	Order              []string               `json:"order"`
 	Distinct           bool                   `json:"distinct"`
 	Count              string                 `json:"count"`
 	IncludeTrash       bool                   `json:"include_trash"`
 	IncludeOldVersions bool                   `json:"include_old_versions"`
+	BypassFederation   bool                   `json:"bypass_federation"`
 }
 
 type CreateOptions struct {
@@ -95,8 +96,9 @@ type CreateOptions struct {
 }
 
 type UpdateOptions struct {
-	UUID  string                 `json:"uuid"`
-	Attrs map[string]interface{} `json:"attrs"`
+	UUID             string                 `json:"uuid"`
+	Attrs            map[string]interface{} `json:"attrs"`
+	BypassFederation bool                   `json:"bypass_federation"`
 }
 
 type UpdateUUIDOptions struct {

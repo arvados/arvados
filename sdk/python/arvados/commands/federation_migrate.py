@@ -66,8 +66,8 @@ def connect_clusters(args):
             errors.append("Inconsistent login cluster configuration, expected '%s' on %s but was '%s'" % (loginCluster, config["ClusterID"], config["Login"]["LoginCluster"]))
             continue
 
-        if arv._rootDesc["revision"] < "20190926":
-            errors.append("Arvados API server revision on cluster '%s' is too old, must be updated to at least Arvados 1.5 before running migration." % config["ClusterID"])
+        if arv._rootDesc["revision"] < "20200331":
+            errors.append("Arvados API server revision on cluster '%s' is too old, must be updated to at least Arvados 2.0.2 before running migration." % config["ClusterID"])
             continue
 
         try:
@@ -98,7 +98,7 @@ def fetch_users(clusters, loginCluster):
     users = []
     for c, arv in clusters.items():
         print("Getting user list from %s" % c)
-        ul = arvados.util.list_all(arv.users().list)
+        ul = arvados.util.list_all(arv.users().list, bypass_federation=True)
         for l in ul:
             if l["uuid"].startswith(c):
                 users.append(l)
@@ -171,10 +171,15 @@ def update_username(args, email, user_uuid, username, migratecluster, migratearv
     print("(%s) Updating username of %s to '%s' on %s" % (email, user_uuid, username, migratecluster))
     if not args.dry_run:
         try:
-            conflicts = migratearv.users().list(filters=[["username", "=", username]]).execute()
+            conflicts = migratearv.users().list(filters=[["username", "=", username]], bypass_federation=True).execute()
             if conflicts["items"]:
-                migratearv.users().update(uuid=conflicts["items"][0]["uuid"], body={"user": {"username": username+"migrate"}}).execute()
-            migratearv.users().update(uuid=user_uuid, body={"user": {"username": username}}).execute()
+                # There's already a user with the username, move the old user out of the way
+                migratearv.users().update(uuid=conflicts["items"][0]["uuid"],
+                                          bypass_federation=True,
+                                          body={"user": {"username": username+"migrate"}}).execute()
+            migratearv.users().update(uuid=user_uuid,
+                                      bypass_federation=True,
+                                      body={"user": {"username": username}}).execute()
         except arvados.errors.ApiError as e:
             print("(%s) Error updating username of %s to '%s' on %s: %s" % (email, user_uuid, username, migratecluster, e))
 
@@ -204,10 +209,14 @@ def choose_new_user(args, by_email, email, userhome, username, old_user_uuid, cl
             user = None
             try:
                 olduser = oldhomearv.users().get(uuid=old_user_uuid).execute()
-                conflicts = homearv.users().list(filters=[["username", "=", username]]).execute()
+                conflicts = homearv.users().list(filters=[["username", "=", username]],
+                                                 bypass_federation=True).execute()
                 if conflicts["items"]:
-                    homearv.users().update(uuid=conflicts["items"][0]["uuid"], body={"user": {"username": username+"migrate"}}).execute()
-                user = homearv.users().create(body={"user": {"email": email, "username": username, "is_active": olduser["is_active"]}}).execute()
+                    homearv.users().update(uuid=conflicts["items"][0]["uuid"],
+                                           bypass_federation=True,
+                                           body={"user": {"username": username+"migrate"}}).execute()
+                user = homearv.users().create(body={"user": {"email": email, "username": username,
+                                                             "is_active": olduser["is_active"]}}).execute()
             except arvados.errors.ApiError as e:
                 print("(%s) Could not create user: %s" % (email, str(e)))
                 return None
@@ -241,10 +250,16 @@ def activate_remote_user(args, email, homearv, migratearv, old_user_uuid, new_us
         return None
 
     try:
-        olduser = migratearv.users().get(uuid=old_user_uuid).execute()
+        findolduser = migratearv.users().list(filters=[["uuid", "=", old_user_uuid]], bypass_federation=True).execute()
+        if len(findolduser["items"]) == 0:
+            return False
+        if len(findolduser["items"]) == 1:
+            olduser = findolduser["items"][0]
+        else:
+            print("(%s) Unexpected result" % (email))
+            return None
     except arvados.errors.ApiError as e:
-        if e.resp.status != 404:
-            print("(%s) Could not retrieve user %s from %s, user may have already been migrated: %s" % (email, old_user_uuid, migratecluster, e))
+        print("(%s) Could not retrieve user %s from %s, user may have already been migrated: %s" % (email, old_user_uuid, migratecluster, e))
         return None
 
     salted = 'v2/' + newtok["uuid"] + '/' + hmac.new(newtok["api_token"].encode(),
@@ -253,7 +268,8 @@ def activate_remote_user(args, email, homearv, migratearv, old_user_uuid, new_us
     try:
         ru = urllib.parse.urlparse(migratearv._rootDesc["rootUrl"])
         if not args.dry_run:
-            newuser = arvados.api(host=ru.netloc, token=salted, insecure=os.environ.get("ARVADOS_API_HOST_INSECURE")).users().current().execute()
+            newuser = arvados.api(host=ru.netloc, token=salted,
+                                  insecure=os.environ.get("ARVADOS_API_HOST_INSECURE")).users().current().execute()
         else:
             newuser = {"is_active": True, "username": username}
     except arvados.errors.ApiError as e:
@@ -264,7 +280,8 @@ def activate_remote_user(args, email, homearv, migratearv, old_user_uuid, new_us
         print("(%s) Activating user %s on %s" % (email, new_user_uuid, migratecluster))
         try:
             if not args.dry_run:
-                migratearv.users().update(uuid=new_user_uuid, body={"is_active": True}).execute()
+                migratearv.users().update(uuid=new_user_uuid, bypass_federation=True,
+                                          body={"is_active": True}).execute()
         except arvados.errors.ApiError as e:
             print("(%s) Could not activate user %s on %s: %s" % (email, new_user_uuid, migratecluster, e))
             return None
@@ -351,8 +368,10 @@ def main():
             if new_user_uuid is None:
                 continue
 
-            # cluster where the migration is happening
+            remote_users = {}
+            got_error = False
             for migratecluster in clusters:
+                # cluster where the migration is happening
                 migratearv = clusters[migratecluster]
 
                 # the user's new home cluster
@@ -361,14 +380,22 @@ def main():
 
                 newuser = activate_remote_user(args, email, homearv, migratearv, old_user_uuid, new_user_uuid)
                 if newuser is None:
-                    continue
+                    got_error = True
+                remote_users[migratecluster] = newuser
 
-                print("(%s) Migrating %s to %s on %s" % (email, old_user_uuid, new_user_uuid, migratecluster))
+            if not got_error:
+                for migratecluster in clusters:
+                    migratearv = clusters[migratecluster]
+                    newuser = remote_users[migratecluster]
+                    if newuser is False:
+                        continue
 
-                migrate_user(args, migratearv, email, new_user_uuid, old_user_uuid)
+                    print("(%s) Migrating %s to %s on %s" % (email, old_user_uuid, new_user_uuid, migratecluster))
 
-                if newuser['username'] != username:
-                    update_username(args, email, new_user_uuid, username, migratecluster, migratearv)
+                    migrate_user(args, migratearv, email, new_user_uuid, old_user_uuid)
+
+                    if newuser['username'] != username:
+                        update_username(args, email, new_user_uuid, username, migratecluster, migratearv)
 
 if __name__ == "__main__":
     main()

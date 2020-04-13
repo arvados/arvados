@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"math"
 	"net"
 	"net/url"
 	"os"
@@ -73,7 +74,7 @@ func (s *IntegrationSuite) SetUpSuite(c *check.C) {
     TLS:
       Insecure: true
     Login:
-      # LoginCluster: z1111
+      LoginCluster: z1111
     SystemLogs:
       Format: text
     RemoteClusters:
@@ -149,7 +150,7 @@ func (s *IntegrationSuite) clientsWithToken(clusterID string, token string) (con
 	return ctx, ac, kc
 }
 
-func (s *IntegrationSuite) userClients(c *check.C, conn *rpc.Conn, rootctx context.Context, clusterID string, activate bool) (context.Context, *arvados.Client, *keepclient.KeepClient) {
+func (s *IntegrationSuite) userClients(rootctx context.Context, c *check.C, conn *rpc.Conn, clusterID string, activate bool) (context.Context, *arvados.Client, *keepclient.KeepClient) {
 	login, err := conn.UserSessionCreate(rootctx, rpc.UserSessionCreateOptions{
 		ReturnTo: ",https://example.com",
 		AuthInfo: rpc.UserSessionAuthInfo{
@@ -190,7 +191,7 @@ func (s *IntegrationSuite) TestGetCollectionByPDH(c *check.C) {
 	conn1 := s.conn("z1111")
 	rootctx1, _, _ := s.rootClients("z1111")
 	conn3 := s.conn("z3333")
-	userctx1, ac1, kc1 := s.userClients(c, conn1, rootctx1, "z1111", true)
+	userctx1, ac1, kc1 := s.userClients(rootctx1, c, conn1, "z1111", true)
 
 	// Create the collection to find its PDH (but don't save it
 	// anywhere yet)
@@ -222,4 +223,53 @@ func (s *IntegrationSuite) TestGetCollectionByPDH(c *check.C) {
 	coll, err := conn3.CollectionGet(userctx1, arvados.GetOptions{UUID: pdh})
 	c.Check(err, check.IsNil)
 	c.Check(coll.PortableDataHash, check.Equals, pdh)
+}
+
+// Test for bug #16263
+func (s *IntegrationSuite) TestListUsers(c *check.C) {
+	rootctx1, _, _ := s.rootClients("z1111")
+	conn1 := s.conn("z1111")
+	conn3 := s.conn("z3333")
+
+	// Make sure LoginCluster is properly configured
+	for cls := range s.testClusters {
+		c.Check(
+			s.testClusters[cls].config.Clusters[cls].Login.LoginCluster,
+			check.Equals, "z1111",
+			check.Commentf("incorrect LoginCluster config on cluster %q", cls))
+	}
+	// Make sure z1111 has users with NULL usernames
+	lst, err := conn1.UserList(rootctx1, arvados.ListOptions{Limit: -1})
+	nullUsername := false
+	c.Assert(err, check.IsNil)
+	c.Assert(len(lst.Items), check.Not(check.Equals), 0)
+	for _, user := range lst.Items {
+		if user.Username == "" {
+			nullUsername = true
+		}
+	}
+	c.Assert(nullUsername, check.Equals, true)
+	// Ask for the user list on z3333 using z1111's system root token
+	_, err = conn3.UserList(rootctx1, arvados.ListOptions{Limit: -1})
+	c.Assert(err, check.IsNil, check.Commentf("getting user list: %q", err))
+}
+
+// Test for bug #16263
+func (s *IntegrationSuite) TestListUsersWithMaxLimit(c *check.C) {
+	rootctx1, _, _ := s.rootClients("z1111")
+	conn3 := s.conn("z3333")
+	maxLimit := int64(math.MaxInt64)
+
+	// Make sure LoginCluster is properly configured
+	for cls := range s.testClusters {
+		c.Check(
+			s.testClusters[cls].config.Clusters[cls].Login.LoginCluster,
+			check.Equals, "z1111",
+			check.Commentf("incorrect LoginCluster config on cluster %q", cls))
+	}
+
+	// Ask for the user list on z3333 using z1111's system root token and
+	// limit: max int64 value.
+	_, err := conn3.UserList(rootctx1, arvados.ListOptions{Limit: maxLimit})
+	c.Assert(err, check.IsNil, check.Commentf("getting user list: %q", err))
 }

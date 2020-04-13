@@ -88,6 +88,38 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_nil created['identity_url'], 'expected no identity_url'
   end
 
+  test "create new user with empty username" do
+    authorize_with :admin
+    post :create, params: {
+      user: {
+        first_name: "test_first_name",
+        last_name: "test_last_name",
+        username: ""
+      }
+    }
+    assert_response :success
+    created = JSON.parse(@response.body)
+    assert_equal 'test_first_name', created['first_name']
+    assert_not_nil created['uuid'], 'expected uuid for the newly created user'
+    assert_nil created['email'], 'expected no email'
+    assert_nil created['username'], 'expected no username'
+  end
+
+  test "update user with empty username" do
+    authorize_with :admin
+    user = users('spectator')
+    assert_not_nil user['username']
+    put :update, params: {
+      id: users('spectator')['uuid'],
+      user: {
+        username: ""
+      }
+    }
+    assert_response :success
+    updated = JSON.parse(@response.body)
+    assert_nil updated['username'], 'expected no username'
+  end
+
   test "create user with user, vm and repo as input" do
     authorize_with :admin
     repo_name = 'usertestrepo'
@@ -1025,6 +1057,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
               newuuid => {
                 'first_name' => 'noot',
                 'email' => 'root@remot.example.com',
+                'username' => '',
               },
             }})
     assert_response(:success)

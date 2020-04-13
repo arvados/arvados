@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-cwlVersion: v1.0
+cwlVersion: v1.1
 class: CommandLineTool
 $namespaces:
   arv: "http://arvados.org/cwl#"
@@ -56,11 +56,11 @@ requirements:
           }
           return JSON.stringify({"development": {"remote_hosts": remoteClusters}});
           }
-  cwltool:LoadListingRequirement:
+  LoadListingRequirement:
     loadListing: no_listing
   ShellCommandRequirement: {}
   InlineJavascriptRequirement: {}
-  cwltool:InplaceUpdateRequirement:
+  InplaceUpdateRequirement:
     inplaceUpdate: true
 arguments:
   - shellQuote: false
