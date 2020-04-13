@@ -1074,9 +1074,10 @@ func (runner *ContainerRunner) CreateContainer() error {
 	runner.ContainerConfig.Volumes = runner.Volumes
 
 	maxRAM := int64(runner.Container.RuntimeConstraints.RAM)
-	if maxRAM < 4*1024*1024 {
-		// Docker daemon won't let you set a limit less than 4 MiB
-		maxRAM = 4 * 1024 * 1024
+	minDockerRAM := int64(16)
+	if maxRAM < minDockerRAM*1024*1024 {
+		// Docker daemon won't let you set a limit less than ~10 MiB
+		maxRAM = minDockerRAM * 1024 * 1024
 	}
 	runner.HostConfig = dockercontainer.HostConfig{
 		Binds: runner.Binds,
