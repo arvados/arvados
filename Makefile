@@ -60,8 +60,14 @@ clean: clean-rpm clean-deb clean-node-modules
 yarn-install:
 	yarn install
 
-test: yarn-install
+unit-tests: yarn-install
 	yarn test --no-watchAll --bail --ci
+
+integration-tests: yarn-install
+	yarn run cypress install
+	$(WORKSPACE)/tools/run-integration-tests.sh
+
+test: unit-tests integration-tests
 
 build: test
 	VERSION=$(VERSION) yarn build

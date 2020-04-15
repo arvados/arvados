@@ -28,7 +28,7 @@ cd ${WORKDIR}
 go mod download || exit 1
 
 echo "Installing dev dependencies..."
-sudo go run ./cmd/arvados-server install -type test || exit 1
+go run ./cmd/arvados-server install -type test || exit 1
 
 echo "Running arvados in test mode..."
 ARVADOS_PORT=`random_free_port`
