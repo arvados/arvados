@@ -912,7 +912,9 @@ timer_reset() {
 }
 
 timer() {
-    echo -n "$(($SECONDS - $t0))s"
+    if [[ -n "$t0" ]]; then
+        echo -n "$(($SECONDS - $t0))s"
+    fi
 }
 
 report_outcomes() {

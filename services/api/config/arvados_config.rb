@@ -253,6 +253,11 @@ end
 if ::Rails.env.to_s == "test" && db_config["test"].nil?
   $arvados_config["PostgreSQL"]["Connection"]["dbname"] = "arvados_test"
 end
+if ::Rails.env.to_s == "test"
+  # Use template0 when creating a new database. Avoids
+  # character-encoding/collation problems.
+  $arvados_config["PostgreSQL"]["Connection"]["template"] = "template0"
+end
 
 if $arvados_config["PostgreSQL"]["Connection"]["password"].empty?
   raise "Database password is empty, PostgreSQL section is: #{$arvados_config["PostgreSQL"]}"
