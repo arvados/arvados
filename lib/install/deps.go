@@ -173,12 +173,14 @@ func (installCommand) RunCommand(prog string, args []string, stdin io.Reader, st
 		cmd.Env = append(os.Environ(), "DEBIAN_FRONTEND=noninteractive")
 		cmd.Stdout = stdout
 		cmd.Stderr = stderr
+		logger.Print("Running %v", cmd.Args)
 		err = cmd.Run()
 		if err != nil {
 			return 1
 		}
 	}
 
+	os.Mkdir("/var/lib/arvados", 0755)
 	os.Mkdir("/var/lib/arvados/bin", 0755)
 	if *rubyInst == "source" {
 		rubyversion := "2.5.7"
