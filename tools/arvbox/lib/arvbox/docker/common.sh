@@ -4,8 +4,8 @@
 
 
 export PATH=${PATH}:/usr/local/go/bin:/var/lib/gems/bin
-export GEM_HOME=/var/lib/gems
-export GEM_PATH=/var/lib/gems
+#export GEM_HOME=/var/lib/gems
+#export GEM_PATH=/var/lib/gems
 export npm_config_cache=/var/lib/npm
 export npm_config_cache_min=Infinity
 export R_LIBS=/var/lib/Rlibs
@@ -72,8 +72,11 @@ run_bundler() {
     #         flock /var/lib/gems/gems.lock gem install --verbose --no-document bundler --version ${bundleversion}
     #     fi
     # fi
-    if ! flock /var/lib/gems/gems.lock bundler install --verbose --path $GEM_HOME --local --no-deployment $frozen "$@" ; then
-        flock /var/lib/gems/gems.lock bundler install --verbose --path $GEM_HOME --no-deployment $frozen "$@"
+#    if ! flock /var/lib/gems/gems.lock bundler install --verbose --path $GEM_HOME --local --no-deployment $frozen "$@" ; then
+#        flock /var/lib/gems/gems.lock bundler install --verbose --path $GEM_HOME --no-deployment $frozen "$@"
+    #    fi
+    if ! flock /var/lib/gems/gems.lock bundler update --bundler --verbose --local --no-deployment $frozen "$@" ; then
+        flock /var/lib/gems/gems.lock bundler update --bundler --verbose  --no-deployment $frozen "$@"
     fi
 }
 

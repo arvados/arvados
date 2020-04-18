@@ -6,7 +6,7 @@
 exec 2>&1
 set -eux -o pipefail
 
-PGVERSION=9.6
+PGVERSION=11
 
 if ! test -d /var/lib/postgresql/$PGVERSION/main ; then
     /usr/lib/postgresql/$PGVERSION/bin/initdb --locale=en_US.UTF-8 -D /var/lib/postgresql/$PGVERSION/main
