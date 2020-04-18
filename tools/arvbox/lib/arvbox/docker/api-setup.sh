@@ -11,26 +11,26 @@ set -ex -o pipefail
 
 cd /usr/src/arvados/services/api
 
-if test -s /var/lib/arvados/api_rails_env ; then
-  export RAILS_ENV=$(cat /var/lib/arvados/api_rails_env)
+if test -s /var/lib/arvbox/api_rails_env ; then
+  export RAILS_ENV=$(cat /var/lib/arvbox/api_rails_env)
 else
   export RAILS_ENV=development
 fi
 
 set -u
 
-flock /var/lib/arvados/cluster_config.yml.lock /usr/local/lib/arvbox/cluster-config.sh
+flock /var/lib/arvbox/cluster_config.yml.lock /usr/local/lib/arvbox/cluster-config.sh
 
 if test -a /usr/src/arvados/services/api/config/arvados_config.rb ; then
     rm -f config/application.yml config/database.yml
 else
-    uuid_prefix=$(cat /var/lib/arvados/api_uuid_prefix)
-    secret_token=$(cat /var/lib/arvados/api_secret_token)
-    blob_signing_key=$(cat /var/lib/arvados/blob_signing_key)
-    management_token=$(cat /var/lib/arvados/management_token)
-    sso_app_secret=$(cat /var/lib/arvados/sso_app_secret)
-    database_pw=$(cat /var/lib/arvados/api_database_pw)
-    vm_uuid=$(cat /var/lib/arvados/vm-uuid)
+    uuid_prefix=$(cat /var/lib/arvbox/api_uuid_prefix)
+    secret_token=$(cat /var/lib/arvbox/api_secret_token)
+    blob_signing_key=$(cat /var/lib/arvbox/blob_signing_key)
+    management_token=$(cat /var/lib/arvbox/management_token)
+    sso_app_secret=$(cat /var/lib/arvbox/sso_app_secret)
+    database_pw=$(cat /var/lib/arvbox/api_database_pw)
+    vm_uuid=$(cat /var/lib/arvbox/vm-uuid)
 
 cat >config/application.yml <<EOF
 $RAILS_ENV:
@@ -60,14 +60,14 @@ EOF
 sed "s/password:.*/password: $database_pw/" <config/database.yml.example >config/database.yml
 fi
 
-if ! test -f /var/lib/arvados/api_database_setup ; then
+if ! test -f /var/lib/arvbox/api_database_setup ; then
    bundle exec rake db:setup
-   touch /var/lib/arvados/api_database_setup
+   touch /var/lib/arvbox/api_database_setup
 fi
 
-if ! test -s /var/lib/arvados/superuser_token ; then
+if ! test -s /var/lib/arvbox/superuser_token ; then
     superuser_tok=$(bundle exec ./script/create_superuser_token.rb)
-    echo "$superuser_tok" > /var/lib/arvados/superuser_token
+    echo "$superuser_tok" > /var/lib/arvbox/superuser_token
 fi
 
 rm -rf tmp

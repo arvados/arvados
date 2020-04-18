@@ -6,7 +6,7 @@
 exec 2>&1
 set -ex -o pipefail
 
-if [[ -s /etc/arvados/config.yml ]] && [[ /var/lib/arvados/cluster_config.yml.override -ot /etc/arvados/config.yml ]] ; then
+if [[ -s /etc/arvados/config.yml ]] && [[ /var/lib/arvbox/cluster_config.yml.override -ot /etc/arvados/config.yml ]] ; then
    exit
 fi
 
@@ -14,63 +14,63 @@ fi
 
 set -u
 
-if ! test -s /var/lib/arvados/api_uuid_prefix ; then
-  ruby -e 'puts "x#{rand(2**64).to_s(36)[0,4]}"' > /var/lib/arvados/api_uuid_prefix
+if ! test -s /var/lib/arvbox/api_uuid_prefix ; then
+  ruby -e 'puts "x#{rand(2**64).to_s(36)[0,4]}"' > /var/lib/arvbox/api_uuid_prefix
 fi
-uuid_prefix=$(cat /var/lib/arvados/api_uuid_prefix)
+uuid_prefix=$(cat /var/lib/arvbox/api_uuid_prefix)
 
-if ! test -s /var/lib/arvados/api_secret_token ; then
-    ruby -e 'puts rand(2**400).to_s(36)' > /var/lib/arvados/api_secret_token
+if ! test -s /var/lib/arvbox/api_secret_token ; then
+    ruby -e 'puts rand(2**400).to_s(36)' > /var/lib/arvbox/api_secret_token
 fi
-secret_token=$(cat /var/lib/arvados/api_secret_token)
+secret_token=$(cat /var/lib/arvbox/api_secret_token)
 
-if ! test -s /var/lib/arvados/blob_signing_key ; then
-    ruby -e 'puts rand(2**400).to_s(36)' > /var/lib/arvados/blob_signing_key
+if ! test -s /var/lib/arvbox/blob_signing_key ; then
+    ruby -e 'puts rand(2**400).to_s(36)' > /var/lib/arvbox/blob_signing_key
 fi
-blob_signing_key=$(cat /var/lib/arvados/blob_signing_key)
+blob_signing_key=$(cat /var/lib/arvbox/blob_signing_key)
 
-if ! test -s /var/lib/arvados/management_token ; then
-    ruby -e 'puts rand(2**400).to_s(36)' > /var/lib/arvados/management_token
+if ! test -s /var/lib/arvbox/management_token ; then
+    ruby -e 'puts rand(2**400).to_s(36)' > /var/lib/arvbox/management_token
 fi
-management_token=$(cat /var/lib/arvados/management_token)
+management_token=$(cat /var/lib/arvbox/management_token)
 
-if ! test -s /var/lib/arvados/system_root_token ; then
-    ruby -e 'puts rand(2**400).to_s(36)' > /var/lib/arvados/system_root_token
+if ! test -s /var/lib/arvbox/system_root_token ; then
+    ruby -e 'puts rand(2**400).to_s(36)' > /var/lib/arvbox/system_root_token
 fi
-system_root_token=$(cat /var/lib/arvados/system_root_token)
+system_root_token=$(cat /var/lib/arvbox/system_root_token)
 
-if ! test -s /var/lib/arvados/sso_app_secret ; then
-    ruby -e 'puts rand(2**400).to_s(36)' > /var/lib/arvados/sso_app_secret
+if ! test -s /var/lib/arvbox/sso_app_secret ; then
+    ruby -e 'puts rand(2**400).to_s(36)' > /var/lib/arvbox/sso_app_secret
 fi
-sso_app_secret=$(cat /var/lib/arvados/sso_app_secret)
+sso_app_secret=$(cat /var/lib/arvbox/sso_app_secret)
 
-if ! test -s /var/lib/arvados/vm-uuid ; then
-    echo $uuid_prefix-2x53u-$(ruby -e 'puts rand(2**400).to_s(36)[0,15]') > /var/lib/arvados/vm-uuid
+if ! test -s /var/lib/arvbox/vm-uuid ; then
+    echo $uuid_prefix-2x53u-$(ruby -e 'puts rand(2**400).to_s(36)[0,15]') > /var/lib/arvbox/vm-uuid
 fi
-vm_uuid=$(cat /var/lib/arvados/vm-uuid)
+vm_uuid=$(cat /var/lib/arvbox/vm-uuid)
 
-if ! test -f /var/lib/arvados/api_database_pw ; then
-    ruby -e 'puts rand(2**128).to_s(36)' > /var/lib/arvados/api_database_pw
+if ! test -f /var/lib/arvbox/api_database_pw ; then
+    ruby -e 'puts rand(2**128).to_s(36)' > /var/lib/arvbox/api_database_pw
 fi
-database_pw=$(cat /var/lib/arvados/api_database_pw)
+database_pw=$(cat /var/lib/arvbox/api_database_pw)
 
 if ! (psql postgres -c "\du" | grep "^ arvados ") >/dev/null ; then
     psql postgres -c "create user arvados with password '$database_pw'"
 fi
 psql postgres -c "ALTER USER arvados WITH SUPERUSER;"
 
-if ! test -s /var/lib/arvados/workbench_secret_token ; then
-  ruby -e 'puts rand(2**400).to_s(36)' > /var/lib/arvados/workbench_secret_token
+if ! test -s /var/lib/arvbox/workbench_secret_token ; then
+  ruby -e 'puts rand(2**400).to_s(36)' > /var/lib/arvbox/workbench_secret_token
 fi
-workbench_secret_key_base=$(cat /var/lib/arvados/workbench_secret_token)
+workbench_secret_key_base=$(cat /var/lib/arvbox/workbench_secret_token)
 
-if test -s /var/lib/arvados/api_rails_env ; then
-  database_env=$(cat /var/lib/arvados/api_rails_env)
+if test -s /var/lib/arvbox/api_rails_env ; then
+  database_env=$(cat /var/lib/arvbox/api_rails_env)
 else
   database_env=development
 fi
 
-cat >/var/lib/arvados/cluster_config.yml <<EOF
+cat >/var/lib/arvbox/cluster_config.yml <<EOF
 Clusters:
   ${uuid_prefix}:
     SystemRootToken: $system_root_token
@@ -152,29 +152,29 @@ Clusters:
       ArvadosDocsite: http://$localip:${services[doc]}/
     Git:
       GitCommand: /usr/share/gitolite3/gitolite-shell
-      GitoliteHome: /var/lib/arvados/git
-      Repositories: /var/lib/arvados/git/repositories
+      GitoliteHome: /var/lib/arvbox/git
+      Repositories: /var/lib/arvbox/git/repositories
     Volumes:
       ${uuid_prefix}-nyw5e-000000000000000:
         Driver: Directory
         DriverParameters:
-          Root: /var/lib/arvados/keep0
+          Root: /var/lib/arvbox/keep0
         AccessViaHosts:
           "http://localhost:${services[keepstore0]}": {}
       ${uuid_prefix}-nyw5e-111111111111111:
         Driver: Directory
         DriverParameters:
-          Root: /var/lib/arvados/keep1
+          Root: /var/lib/arvbox/keep1
         AccessViaHosts:
           "http://localhost:${services[keepstore1]}": {}
 EOF
 
-/usr/local/lib/arvbox/yml_override.py /var/lib/arvados/cluster_config.yml
+/usr/local/lib/arvbox/yml_override.py /var/lib/arvbox/cluster_config.yml
 
-cp /var/lib/arvados/cluster_config.yml /etc/arvados/config.yml
+cp /var/lib/arvbox/cluster_config.yml /etc/arvados/config.yml
 
-mkdir -p /var/lib/arvados/run_tests
-cat >/var/lib/arvados/run_tests/config.yml <<EOF
+mkdir -p /var/lib/arvbox/run_tests
+cat >/var/lib/arvbox/run_tests/config.yml <<EOF
 Clusters:
   zzzzz:
     PostgreSQL:

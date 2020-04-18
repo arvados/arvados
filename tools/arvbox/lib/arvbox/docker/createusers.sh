@@ -9,12 +9,12 @@ if ! grep "^arvbox:" /etc/passwd >/dev/null 2>/dev/null ; then
     HOSTUID=$(ls -nd /usr/src/arvados | sed 's/ */ /' | cut -d' ' -f4)
     HOSTGID=$(ls -nd /usr/src/arvados | sed 's/ */ /' | cut -d' ' -f5)
 
-    mkdir -p /var/lib/arvados/git /var/lib/gems \
+    mkdir -p /var/lib/arvbox/git /var/lib/gems \
           /var/lib/passenger /var/lib/gopath \
           /var/lib/pip /var/lib/npm
 
     if test -z "$ARVBOX_HOME" ; then
-	ARVBOX_HOME=/var/lib/arvados
+	ARVBOX_HOME=/var/lib/arvbox
     fi
 
     groupadd --gid $HOSTGID --non-unique arvbox
@@ -25,11 +25,11 @@ if ! grep "^arvbox:" /etc/passwd >/dev/null 2>/dev/null ; then
             --groups docker \
             --shell /bin/bash \
             arvbox
-    useradd --home-dir /var/lib/arvados/git --uid $HOSTUID --gid $HOSTGID --non-unique git
+    useradd --home-dir /var/lib/arvbox/git --uid $HOSTUID --gid $HOSTGID --non-unique git
     useradd --groups docker crunch
 
     if [[ "$1" != --no-chown ]] ; then
-	chown arvbox:arvbox -R /usr/local /var/lib/arvados /var/lib/gems \
+	chown arvbox:arvbox -R /usr/local /var/lib/arvbox /var/lib/gems \
               /var/lib/passenger /var/lib/postgresql \
               /var/lib/nginx /var/log/nginx /etc/ssl/private \
               /var/lib/gopath /var/lib/pip /var/lib/npm

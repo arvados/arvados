@@ -9,8 +9,8 @@ set -ex -o pipefail
 . /usr/local/lib/arvbox/common.sh
 
 cd /usr/src/sso
-if test -s /var/lib/arvados/sso_rails_env ; then
-  export RAILS_ENV=$(cat /var/lib/arvados/sso_rails_env)
+if test -s /var/lib/arvbox/sso_rails_env ; then
+  export RAILS_ENV=$(cat /var/lib/arvbox/sso_rails_env)
 else
   export RAILS_ENV=development
 fi
@@ -25,12 +25,12 @@ fi
 
 set -u
 
-uuid_prefix=$(cat /var/lib/arvados/api_uuid_prefix)
+uuid_prefix=$(cat /var/lib/arvbox/api_uuid_prefix)
 
-if ! test -s /var/lib/arvados/sso_secret_token ; then
-  ruby -e 'puts rand(2**400).to_s(36)' > /var/lib/arvados/sso_secret_token
+if ! test -s /var/lib/arvbox/sso_secret_token ; then
+  ruby -e 'puts rand(2**400).to_s(36)' > /var/lib/arvbox/sso_secret_token
 fi
-secret_token=$(cat /var/lib/arvados/sso_secret_token)
+secret_token=$(cat /var/lib/arvbox/sso_secret_token)
 
 openssl verify -CAfile $root_cert $server_cert
 
@@ -44,10 +44,10 @@ EOF
 
 (cd config && /usr/local/lib/arvbox/yml_override.py application.yml)
 
-if ! test -f /var/lib/arvados/sso_database_pw ; then
-    ruby -e 'puts rand(2**128).to_s(36)' > /var/lib/arvados/sso_database_pw
+if ! test -f /var/lib/arvbox/sso_database_pw ; then
+    ruby -e 'puts rand(2**128).to_s(36)' > /var/lib/arvbox/sso_database_pw
 fi
-database_pw=$(cat /var/lib/arvados/sso_database_pw)
+database_pw=$(cat /var/lib/arvbox/sso_database_pw)
 
 if ! (psql postgres -c "\du" | grep "^ arvados_sso ") >/dev/null ; then
     psql postgres -c "create user arvados_sso with password '$database_pw'"
@@ -56,10 +56,10 @@ fi
 
 sed "s/password:.*/password: $database_pw/" <config/database.yml.example >config/database.yml
 
-if ! test -f /var/lib/arvados/sso_database_setup ; then
+if ! test -f /var/lib/arvbox/sso_database_setup ; then
    bundle exec rake db:setup
 
-   app_secret=$(cat /var/lib/arvados/sso_app_secret)
+   app_secret=$(cat /var/lib/arvbox/sso_app_secret)
 
    bundle exec rails console <<EOF
 c = Client.new
@@ -69,7 +69,7 @@ c.app_secret = "$app_secret"
 c.save!
 EOF
 
-   touch /var/lib/arvados/sso_database_setup
+   touch /var/lib/arvbox/sso_database_setup
 fi
 
 rm -rf tmp
@@ -84,5 +84,5 @@ if test "$1" = "--only-setup" ; then
 fi
 
 exec bundle exec passenger start --port=${services[sso]} \
-     --ssl --ssl-certificate=/var/lib/arvados/server-cert-${localip}.pem \
-     --ssl-certificate-key=/var/lib/arvados/server-cert-${localip}.key
+     --ssl --ssl-certificate=/var/lib/arvbox/server-cert-${localip}.pem \
+     --ssl-certificate-key=/var/lib/arvbox/server-cert-${localip}.key

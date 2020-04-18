@@ -6,9 +6,9 @@
 HOSTUID=$(ls -nd /usr/src/arvados | sed 's/ */ /' | cut -d' ' -f4)
 HOSTGID=$(ls -nd /usr/src/arvados | sed 's/ */ /' | cut -d' ' -f5)
 
-flock /var/lib/arvados/createusers.lock /usr/local/lib/arvbox/createusers.sh
+flock /var/lib/arvbox/createusers.lock /usr/local/lib/arvbox/createusers.sh
 
-export HOME=/var/lib/arvados
+export HOME=/var/lib/arvbox
 
 chown arvbox /dev/stderr
 

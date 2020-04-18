@@ -20,10 +20,10 @@ else
     localip=$containerip
 fi
 
-root_cert=/var/lib/arvados/root-cert.pem
-root_cert_key=/var/lib/arvados/root-cert.key
-server_cert=/var/lib/arvados/server-cert-${localip}.pem
-server_cert_key=/var/lib/arvados/server-cert-${localip}.key
+root_cert=/var/lib/arvbox/root-cert.pem
+root_cert_key=/var/lib/arvbox/root-cert.key
+server_cert=/var/lib/arvbox/server-cert-${localip}.pem
+server_cert_key=/var/lib/arvbox/server-cert-${localip}.key
 
 declare -A services
 services=(

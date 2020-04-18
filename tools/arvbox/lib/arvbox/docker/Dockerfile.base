@@ -9,7 +9,7 @@ ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update && \
     apt-get -yq --no-install-recommends -o Acquire::Retries=6 install \
     libsecret-1-0 libsecret-1-dev build-essential netcat-traditional \
-    golang libpam0g-dev locales git ca-certificates gnupg less && \
+    golang libpam0g-dev locales git ca-certificates gnupg less python-yaml && \
     apt-get clean
 
 # Set UTF-8 locale
