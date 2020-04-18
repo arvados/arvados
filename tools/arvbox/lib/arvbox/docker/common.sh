@@ -75,8 +75,8 @@ run_bundler() {
 #    if ! flock /var/lib/gems/gems.lock bundler install --verbose --path $GEM_HOME --local --no-deployment $frozen "$@" ; then
 #        flock /var/lib/gems/gems.lock bundler install --verbose --path $GEM_HOME --no-deployment $frozen "$@"
     #    fi
-    if ! flock /var/lib/gems/gems.lock bundler update --bundler --verbose --local --no-deployment $frozen "$@" ; then
-        flock /var/lib/gems/gems.lock bundler update --bundler --verbose  --no-deployment $frozen "$@"
+    if ! flock /var/lib/gems/gems.lock bundler install --verbose --local --no-deployment $frozen "$@" ; then
+        flock /var/lib/gems/gems.lock bundler install --verbose  --no-deployment $frozen "$@"
     fi
 }
 
