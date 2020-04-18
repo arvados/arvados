@@ -163,7 +163,12 @@ func (installCommand) RunCommand(prog string, args []string, stdin io.Reader, st
 		if *rubyInst == "package" {
 			debs = append(debs, "ruby", "ruby-dev", "bundler")
 		}
-		cmd := exec.CommandContext(ctx, "apt-get", "install", "--yes", "--no-install-recommends")
+		cmd := exec.CommandContext(ctx, "apt-get",
+			"--yes",
+			"--quiet",
+			"--no-install-recommends",
+			"-o", "Acquire::Retries=6",
+			"install")
 		cmd.Args = append(cmd.Args, debs...)
 		cmd.Env = append(os.Environ(), "DEBIAN_FRONTEND=noninteractive")
 		cmd.Stdout = stdout
@@ -174,7 +179,7 @@ func (installCommand) RunCommand(prog string, args []string, stdin io.Reader, st
 		}
 	}
 
-	os.Mkdir("/var/lib/arvados", 0755)
+	os.Mkdir("/var/lib/arvados/bin", 0755)
 	if *rubyInst == "source" {
 		rubyversion := "2.5.7"
 		if haverubyversion, err := exec.Command("/var/lib/arvados/bin/ruby", "-v").CombinedOutput(); err == nil && bytes.HasPrefix(haverubyversion, []byte("ruby "+rubyversion)) {
