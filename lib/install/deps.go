@@ -47,6 +47,7 @@ func (installCommand) RunCommand(prog string, args []string, stdin io.Reader, st
 	flags.SetOutput(stderr)
 	versionFlag := flags.Bool("version", false, "Write version information to stdout and exit 0")
 	clusterType := flags.String("type", "production", "cluster `type`: development, test, or production")
+	rubyInst := flags.String("ruby", "source", "how to install `ruby`: package or source")
 	err = flags.Parse(args)
 	if err == flag.ErrHelp {
 		err = nil
@@ -159,6 +160,9 @@ func (installCommand) RunCommand(prog string, args []string, stdin io.Reader, st
 		default:
 			debs = append(debs, "libcurl3")
 		}
+		if *rubyInst == "package" {
+			debs = append(debs, "ruby", "ruby-dev", "bundler")
+		}
 		cmd := exec.CommandContext(ctx, "apt-get", "install", "--yes", "--no-install-recommends")
 		cmd.Args = append(cmd.Args, debs...)
 		cmd.Env = append(os.Environ(), "DEBIAN_FRONTEND=noninteractive")
@@ -171,11 +175,12 @@ func (installCommand) RunCommand(prog string, args []string, stdin io.Reader, st
 	}
 
 	os.Mkdir("/var/lib/arvados", 0755)
-	rubyversion := "2.5.7"
-	if haverubyversion, err := exec.Command("/var/lib/arvados/bin/ruby", "-v").CombinedOutput(); err == nil && bytes.HasPrefix(haverubyversion, []byte("ruby "+rubyversion)) {
-		logger.Print("ruby " + rubyversion + " already installed")
-	} else {
-		err = runBash(`
+	if *rubyInst == "source" {
+		rubyversion := "2.5.7"
+		if haverubyversion, err := exec.Command("/var/lib/arvados/bin/ruby", "-v").CombinedOutput(); err == nil && bytes.HasPrefix(haverubyversion, []byte("ruby "+rubyversion)) {
+			logger.Print("ruby " + rubyversion + " already installed")
+		} else {
+			err = runBash(`
 mkdir -p /var/lib/arvados/tmp
 tmp=/var/lib/arvados/tmp/ruby-`+rubyversion+`
 trap "rm -r ${tmp}" ERR
@@ -187,8 +192,9 @@ make install
 /var/lib/arvados/bin/gem install bundler
 rm -r ${tmp}
 `, stdout, stderr)
-		if err != nil {
-			return 1
+			if err != nil {
+				return 1
+			}
 		}
 	}
 
