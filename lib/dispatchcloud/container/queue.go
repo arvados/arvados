@@ -382,7 +382,7 @@ func (cq *Queue) poll() (map[string]*arvados.Container, error) {
 			*next[upd.UUID] = upd
 		}
 	}
-	selectParam := []string{"uuid", "state", "priority", "runtime_constraints", "container_image", "mounts"}
+	selectParam := []string{"uuid", "state", "priority", "runtime_constraints", "container_image", "mounts", "scheduling_parameters"}
 	limitParam := 1000
 
 	mine, err := cq.fetchAll(arvados.ResourceListParams{
