@@ -9,7 +9,9 @@ cleanup() {
     set -x
     kill ${arvboot_PID} ${consume_stdout_PID} ${wb2_PID} ${consume_wb2_stdout_PID}
     wait ${arvboot_PID} ${consume_stdout_PID} ${wb2_PID} ${consume_wb2_stdout_PID} || true
-    rm -rf ${ARVADOS_DIR}
+    if [ "${CLEANUP_ARVADOS_DIR}" -eq "1" ]; then
+        rm -rf ${ARVADOS_DIR}
+    fi
     echo >&2 "done"
 }
 
@@ -21,20 +23,64 @@ random_free_port() {
     echo $port
 }
 
+usage() {
+    echo "Usage: ${0} [options]"
+    echo "Options:"
+    echo "  -i            Run Cypress in interactive mode."
+    echo "  -a PATH       Arvados dir. If PATH doesn't exist, a repo clone is downloaded there."
+    echo "  -w PATH       Workbench2 dir. Default: Current working directory"
+    exit 0
+}
+
 # Allow self-signed certs on 'wait-on'
 export NODE_TLS_REJECT_UNAUTHORIZED=0
 
+CLEANUP_ARVADOS_DIR=0
+CYPRESS_MODE="run"
 ARVADOS_DIR=`mktemp -d`
-ARVADOS_LOG=${ARVADOS_DIR}/arvados.log
 WB2_DIR=`pwd`
+
+while getopts "ia:w:" o; do
+    case "${o}" in
+        i)
+            # Interactive mode
+            CYPRESS_MODE="open"
+            ;;
+        a)
+            ARVADOS_DIR=${OPTARG}
+            ;;
+        w)
+            WB2_DIR=${OPTARG}
+            ;;
+        *)
+            echo "Invalid Option: -$OPTARG" 1>&2
+            usage
+            ;;
+    esac
+done
+shift $((OPTIND-1))
+
+ARVADOS_LOG=${ARVADOS_DIR}/arvados.log
 ARVADOS_CONF=${WB2_DIR}/tools/arvados_config.yml
+
+if [ ! -f "${WB2_DIR}/src/index.tsx" ]; then
+    echo "ERROR: '${WB2_DIR}' isn't workbench2's directory"
+    usage
+fi
+
+if [ ! -f ${ARVADOS_CONF} ]; then
+    echo "ERROR: Arvados config file ${ARVADOS_CONF} not found"
+    exit 1
+fi
 
 if [ -f "${WB2_DIR}/public/config.json" ]; then
     echo "ERROR: Cannot run with Workbench2's public/config.json file"
     exit 1
 fi
 
-if [ ! -d "${ARVADOS_DIR}/lib" ]; then
+if [ ! -d "${ARVADOS_DIR}/.git" ]; then
+    mkdir -p ${ARVADOS_DIR} || exit 1
+    CLEANUP_ARVADOS_DIR=1
     echo "Downloading arvados..."
     git clone https://git.arvados.org/arvados.git ${ARVADOS_DIR} || exit 1
 fi
@@ -82,4 +128,4 @@ echo "Running tests..."
 CYPRESS_system_token=systemusertesttoken1234567890aoeuidhtnsqjkxbmwvzpy \
     CYPRESS_controller_url=${controllerURL} \
     CYPRESS_BASE_URL=https://localhost:${WB2_PORT} \
-    yarn run cypress run
+    yarn run cypress ${CYPRESS_MODE}
