@@ -1,3 +1,4 @@
+AutoReloadConfig: true
 Clusters:
   zzzzz:
     ManagementToken: e687950a23c3a9bceec28c6223a06c79

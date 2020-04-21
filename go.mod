@@ -11,6 +11,7 @@ require (
 	github.com/anmitsu/go-shlex v0.0.0-20161002113705-648efa622239 // indirect
 	github.com/arvados/cgofuse v1.2.0-arvados1
 	github.com/aws/aws-sdk-go v1.25.30
+	github.com/bgentry/speakeasy v0.1.0 // indirect
 	github.com/coreos/go-oidc v2.1.0+incompatible
 	github.com/coreos/go-systemd v0.0.0-20180108085132-cc4f39464dc7
 	github.com/dgrijalva/jwt-go v3.1.0+incompatible // indirect
@@ -21,6 +22,7 @@ require (
 	github.com/docker/go-connections v0.3.0 // indirect
 	github.com/docker/go-units v0.3.3-0.20171221200356-d59758554a3d // indirect
 	github.com/flynn/go-shlex v0.0.0-20150515145356-3f9db97f8568 // indirect
+	github.com/fsnotify/fsnotify v1.4.9
 	github.com/ghodss/yaml v1.0.0
 	github.com/gliderlabs/ssh v0.2.2 // indirect
 	github.com/gogo/protobuf v1.1.1
