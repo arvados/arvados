@@ -176,7 +176,7 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
 
     parser.add_argument("--enable-dev", action="store_true",
                         help="Enable loading and running development versions "
-                             "of CWL spec.", default=False)
+                             "of the CWL standards.", default=False)
     parser.add_argument('--storage-classes', default="default",
                         help="Specify comma separated list of storage classes to be used when saving workflow output to Keep.")
 
