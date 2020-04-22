@@ -42,13 +42,11 @@ func remoteContainerRequestCreate(
 		return true
 	}
 
-	if *clusterId == "" {
-		*clusterId = h.handler.Cluster.ClusterID
-	}
-
-	if strings.HasPrefix(currentUser.Authorization.UUID, h.handler.Cluster.ClusterID) &&
-		*clusterId == h.handler.Cluster.ClusterID {
-		// local user submitting container request to local cluster
+	if *clusterId == "" || *clusterId == h.handler.Cluster.ClusterID {
+		// Submitting container request to local cluster. No
+		// need to set a runtime_token (rails api will create
+		// one when the container runs) or do a remote cluster
+		// request.
 		return false
 	}
 
