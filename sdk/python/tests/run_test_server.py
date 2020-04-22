@@ -656,6 +656,8 @@ def setup_config():
     workbench1_external_port = find_available_port()
     git_httpd_port = find_available_port()
     git_httpd_external_port = find_available_port()
+    health_httpd_port = find_available_port()
+    health_httpd_external_port = find_available_port()
     keepproxy_port = find_available_port()
     keepproxy_external_port = find_available_port()
     keepstore_ports = sorted([str(find_available_port()) for _ in xrange(0,4)])
@@ -709,6 +711,12 @@ def setup_config():
             "ExternalURL": "https://%s:%s" % (localhost, git_httpd_external_port),
             "InternalURLs": {
                 "http://%s:%s"%(localhost, git_httpd_port): {}
+            },
+        },
+        "Health": {
+            "ExternalURL": "https://%s:%s" % (localhost, health_httpd_external_port),
+            "InternalURLs": {
+                "http://%s:%s"%(localhost, health_httpd_port): {}
             },
         },
         "Keepstore": {
