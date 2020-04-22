@@ -41,6 +41,12 @@ var _ = Suite(&ServerRequiredSuite{})
 type ServerRequiredSuite struct{}
 
 // Gocheck boilerplate
+var _ = Suite(&ServerRequiredConfigYmlSuite{})
+
+// Tests that require the Keep servers running as defined in config.yml
+type ServerRequiredConfigYmlSuite struct{}
+
+// Gocheck boilerplate
 var _ = Suite(&NoKeepServerSuite{})
 
 // Test with no keepserver to simulate errors
@@ -83,6 +89,21 @@ func (s *ServerRequiredSuite) TearDownSuite(c *C) {
 	arvadostest.StopAPI()
 }
 
+func (s *ServerRequiredConfigYmlSuite) SetUpSuite(c *C) {
+	arvadostest.StartAPI()
+	// config.yml defines 4 keepstores
+	arvadostest.StartKeep(4, false)
+}
+
+func (s *ServerRequiredConfigYmlSuite) SetUpTest(c *C) {
+	arvadostest.ResetEnv()
+}
+
+func (s *ServerRequiredConfigYmlSuite) TearDownSuite(c *C) {
+	arvadostest.StopKeep(4)
+	arvadostest.StopAPI()
+}
+
 func (s *NoKeepServerSuite) SetUpSuite(c *C) {
 	arvadostest.StartAPI()
 	// We need API to have some keep services listed, but the
@@ -99,11 +120,16 @@ func (s *NoKeepServerSuite) TearDownSuite(c *C) {
 	arvadostest.StopAPI()
 }
 
-func runProxy(c *C, bogusClientToken bool) *keepclient.KeepClient {
+func runProxy(c *C, bogusClientToken bool, loadKeepstoresFromConfig bool) *keepclient.KeepClient {
 	cfg, err := config.NewLoader(nil, ctxlog.TestLogger(c)).Load()
 	c.Assert(err, Equals, nil)
 	cluster, err := cfg.GetCluster("")
 	c.Assert(err, Equals, nil)
+
+	if !loadKeepstoresFromConfig {
+		// Do not load Keepstore InternalURLs from the config file
+		cluster.Services.Keepstore.InternalURLs = make(map[arvados.URL]arvados.ServiceInstance)
+	}
 
 	cluster.Services.Keepproxy.InternalURLs = map[arvados.URL]arvados.ServiceInstance{arvados.URL{Host: ":0"}: arvados.ServiceInstance{}}
 
@@ -131,7 +157,7 @@ func runProxy(c *C, bogusClientToken bool) *keepclient.KeepClient {
 }
 
 func (s *ServerRequiredSuite) TestResponseViaHeader(c *C) {
-	runProxy(c, false)
+	runProxy(c, false, false)
 	defer closeListener()
 
 	req, err := http.NewRequest("POST",
@@ -158,7 +184,7 @@ func (s *ServerRequiredSuite) TestResponseViaHeader(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestLoopDetection(c *C) {
-	kc := runProxy(c, false)
+	kc := runProxy(c, false, false)
 	defer closeListener()
 
 	sr := map[string]string{
@@ -176,7 +202,7 @@ func (s *ServerRequiredSuite) TestLoopDetection(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestStorageClassesHeader(c *C) {
-	kc := runProxy(c, false)
+	kc := runProxy(c, false, false)
 	defer closeListener()
 
 	// Set up fake keepstore to record request headers
@@ -203,7 +229,7 @@ func (s *ServerRequiredSuite) TestStorageClassesHeader(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestDesiredReplicas(c *C) {
-	kc := runProxy(c, false)
+	kc := runProxy(c, false, false)
 	defer closeListener()
 
 	content := []byte("TestDesiredReplicas")
@@ -220,7 +246,7 @@ func (s *ServerRequiredSuite) TestDesiredReplicas(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestPutWrongContentLength(c *C) {
-	kc := runProxy(c, false)
+	kc := runProxy(c, false, false)
 	defer closeListener()
 
 	content := []byte("TestPutWrongContentLength")
@@ -259,7 +285,7 @@ func (s *ServerRequiredSuite) TestPutWrongContentLength(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestManyFailedPuts(c *C) {
-	kc := runProxy(c, false)
+	kc := runProxy(c, false, false)
 	defer closeListener()
 	router.(*proxyHandler).timeout = time.Nanosecond
 
@@ -286,7 +312,7 @@ func (s *ServerRequiredSuite) TestManyFailedPuts(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
-	kc := runProxy(c, false)
+	kc := runProxy(c, false, false)
 	defer closeListener()
 
 	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
@@ -363,7 +389,7 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestPutAskGetForbidden(c *C) {
-	kc := runProxy(c, true)
+	kc := runProxy(c, true, false)
 	defer closeListener()
 
 	hash := fmt.Sprintf("%x+3", md5.Sum([]byte("bar")))
@@ -389,7 +415,7 @@ func (s *ServerRequiredSuite) TestPutAskGetForbidden(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestCorsHeaders(c *C) {
-	runProxy(c, false)
+	runProxy(c, false, false)
 	defer closeListener()
 
 	{
@@ -420,7 +446,7 @@ func (s *ServerRequiredSuite) TestCorsHeaders(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestPostWithoutHash(c *C) {
-	runProxy(c, false)
+	runProxy(c, false, false)
 	defer closeListener()
 
 	{
@@ -463,7 +489,22 @@ func (s *ServerRequiredSuite) TestStripHint(c *C) {
 //   With a valid but non-existing prefix (expect "\n")
 //   With an invalid prefix (expect error)
 func (s *ServerRequiredSuite) TestGetIndex(c *C) {
-	kc := runProxy(c, false)
+	getIndexWorker(c, false)
+}
+
+// Test GetIndex
+//   Uses config.yml
+//   Put one block, with 2 replicas
+//   With no prefix (expect the block locator, twice)
+//   With an existing prefix (expect the block locator, twice)
+//   With a valid but non-existing prefix (expect "\n")
+//   With an invalid prefix (expect error)
+func (s *ServerRequiredConfigYmlSuite) TestGetIndex(c *C) {
+	getIndexWorker(c, true)
+}
+
+func getIndexWorker(c *C, useConfig bool) {
+	kc := runProxy(c, false, useConfig)
 	defer closeListener()
 
 	// Put "index-data" blocks
@@ -526,7 +567,7 @@ func (s *ServerRequiredSuite) TestGetIndex(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestCollectionSharingToken(c *C) {
-	kc := runProxy(c, false)
+	kc := runProxy(c, false, false)
 	defer closeListener()
 	hash, _, err := kc.PutB([]byte("shareddata"))
 	c.Check(err, IsNil)
@@ -539,7 +580,7 @@ func (s *ServerRequiredSuite) TestCollectionSharingToken(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestPutAskGetInvalidToken(c *C) {
-	kc := runProxy(c, false)
+	kc := runProxy(c, false, false)
 	defer closeListener()
 
 	// Put a test block
@@ -576,7 +617,7 @@ func (s *ServerRequiredSuite) TestPutAskGetInvalidToken(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestAskGetKeepProxyConnectionError(c *C) {
-	kc := runProxy(c, false)
+	kc := runProxy(c, false, false)
 	defer closeListener()
 
 	// Point keepproxy at a non-existent keepstore
@@ -602,7 +643,7 @@ func (s *ServerRequiredSuite) TestAskGetKeepProxyConnectionError(c *C) {
 }
 
 func (s *NoKeepServerSuite) TestAskGetNoKeepServerError(c *C) {
-	kc := runProxy(c, false)
+	kc := runProxy(c, false, false)
 	defer closeListener()
 
 	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
@@ -625,7 +666,7 @@ func (s *NoKeepServerSuite) TestAskGetNoKeepServerError(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestPing(c *C) {
-	kc := runProxy(c, false)
+	kc := runProxy(c, false, false)
 	defer closeListener()
 
 	rtr := MakeRESTRouter(kc, 10*time.Second, arvadostest.ManagementToken)

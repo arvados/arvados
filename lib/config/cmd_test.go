@@ -162,7 +162,7 @@ Clusters:
 	code := DumpCommand.RunCommand("arvados config-dump", []string{"-config", "-"}, bytes.NewBufferString(in), &stdout, &stderr)
 	c.Check(code, check.Equals, 0)
 	c.Check(stderr.String(), check.Matches, `(?ms).*deprecated or unknown config entry: Clusters.z1234.UnknownKey.*`)
-	c.Check(stdout.String(), check.Matches, `(?ms)Clusters:\n  z1234:\n.*`)
+	c.Check(stdout.String(), check.Matches, `(?ms)(.*\n)?Clusters:\n  z1234:\n.*`)
 	c.Check(stdout.String(), check.Matches, `(?ms).*\n *ManagementToken: secret\n.*`)
 	c.Check(stdout.String(), check.Not(check.Matches), `(?ms).*UnknownKey.*`)
 }
