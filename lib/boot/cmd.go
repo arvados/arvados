@@ -29,24 +29,33 @@ type supervisedTask interface {
 	String() string
 }
 
+var errNeedConfigReload = errors.New("config changed, restart needed")
+
 type bootCommand struct{}
 
-func (bootCommand) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
-	super := &Supervisor{
-		Stderr: stderr,
-		logger: ctxlog.New(stderr, "json", "info"),
+func (bcmd bootCommand) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+	logger := ctxlog.New(stderr, "json", "info")
+	ctx := ctxlog.Context(context.Background(), logger)
+	for {
+		err := bcmd.run(ctx, prog, args, stdin, stdout, stderr)
+		if err == errNeedConfigReload {
+			continue
+		} else if err != nil {
+			logger.WithError(err).Info("exiting")
+			return 1
+		} else {
+			return 0
+		}
 	}
+}
 
-	ctx := ctxlog.Context(context.Background(), super.logger)
+func (bcmd bootCommand) run(ctx context.Context, prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-
-	var err error
-	defer func() {
-		if err != nil {
-			super.logger.WithError(err).Info("exiting")
-		}
-	}()
+	super := &Supervisor{
+		Stderr: stderr,
+		logger: ctxlog.FromContext(ctx),
+	}
 
 	flags := flag.NewFlagSet(prog, flag.ContinueOnError)
 	flags.SetOutput(stderr)
@@ -60,26 +69,25 @@ func (bootCommand) RunCommand(prog string, args []string, stdin io.Reader, stdou
 	flags.BoolVar(&super.OwnTemporaryDatabase, "own-temporary-database", false, "bring up a postgres server and create a temporary database")
 	timeout := flags.Duration("timeout", 0, "maximum time to wait for cluster to be ready")
 	shutdown := flags.Bool("shutdown", false, "shut down when the cluster becomes ready")
-	err = flags.Parse(args)
+	err := flags.Parse(args)
 	if err == flag.ErrHelp {
-		err = nil
-		return 0
+		return nil
 	} else if err != nil {
-		return 2
+		return err
 	} else if *versionFlag {
-		return cmd.Version.RunCommand(prog, args, stdin, stdout, stderr)
+		cmd.Version.RunCommand(prog, args, stdin, stdout, stderr)
+		return nil
 	} else if super.ClusterType != "development" && super.ClusterType != "test" && super.ClusterType != "production" {
-		err = fmt.Errorf("cluster type must be 'development', 'test', or 'production'")
-		return 2
+		return fmt.Errorf("cluster type must be 'development', 'test', or 'production'")
 	}
 
 	loader.SkipAPICalls = true
 	cfg, err := loader.Load()
 	if err != nil {
-		return 1
+		return err
 	}
 
-	super.Start(ctx, cfg)
+	super.Start(ctx, cfg, loader.Path)
 	defer super.Stop()
 
 	var timer *time.Timer
@@ -89,20 +97,19 @@ func (bootCommand) RunCommand(prog string, args []string, stdin io.Reader, stdou
 
 	url, ok := super.WaitReady()
 	if timer != nil && !timer.Stop() {
-		err = errors.New("boot timed out")
-		return 1
+		return errors.New("boot timed out")
 	} else if !ok {
-		err = errors.New("boot failed")
-		return 1
-	}
-	// Write controller URL to stdout. Nothing else goes to
-	// stdout, so this provides an easy way for a calling script
-	// to discover the controller URL when everything is ready.
-	fmt.Fprintln(stdout, url)
-	if *shutdown {
-		super.Stop()
+		super.logger.Error("boot failed")
+	} else {
+		// Write controller URL to stdout. Nothing else goes
+		// to stdout, so this provides an easy way for a
+		// calling script to discover the controller URL when
+		// everything is ready.
+		fmt.Fprintln(stdout, url)
+		if *shutdown {
+			super.Stop()
+		}
 	}
 	// Wait for signal/crash + orderly shutdown
-	<-super.done
-	return 0
+	return super.Wait()
 }

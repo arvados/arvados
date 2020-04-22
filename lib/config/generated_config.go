@@ -1234,4 +1234,9 @@ Clusters:
     # implementation. Note that it also disables some new federation
     # features and will be removed in a future release.
     ForceLegacyAPI14: false
+
+# (Experimental) Restart services automatically when config file
+# changes are detected. Only supported by ` + "`" + `arvados-server boot` + "`" + ` in
+# dev/test mode.
+AutoReloadConfig: false
 `)
