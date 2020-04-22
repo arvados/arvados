@@ -615,6 +615,8 @@ def run_nginx():
     nginxconf['KEEPPROXYSSLPORT'] = external_port_from_config("Keepproxy")
     nginxconf['GITPORT'] = internal_port_from_config("GitHTTP")
     nginxconf['GITSSLPORT'] = external_port_from_config("GitHTTP")
+    nginxconf['HEALTHPORT'] = internal_port_from_config("Health")
+    nginxconf['HEALTHSSLPORT'] = external_port_from_config("Health")
     nginxconf['WSPORT'] = internal_port_from_config("Websocket")
     nginxconf['WSSSLPORT'] = external_port_from_config("Websocket")
     nginxconf['WORKBENCH1PORT'] = internal_port_from_config("Workbench1")
