@@ -7,9 +7,11 @@ package controller
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"io"
 	"math"
 	"net"
+	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -84,19 +86,26 @@ func (s *IntegrationSuite) SetUpSuite(c *check.C) {
         Insecure: true
         Proxy: true
         ActivateUsers: true
-      z2222:
+`
+		if id != "z2222" {
+			yaml += `      z2222:
         Host: ` + hostport["z2222"] + `
         Scheme: https
         Insecure: true
         Proxy: true
         ActivateUsers: true
-      z3333:
+`
+		}
+		if id != "z3333" {
+			yaml += `      z3333:
         Host: ` + hostport["z3333"] + `
         Scheme: https
         Insecure: true
         Proxy: true
         ActivateUsers: true
 `
+		}
+
 		loader := config.NewLoader(bytes.NewBufferString(yaml), ctxlog.TestLogger(c))
 		loader.Path = "-"
 		loader.SkipLegacy = true
@@ -223,6 +232,76 @@ func (s *IntegrationSuite) TestGetCollectionByPDH(c *check.C) {
 	coll, err := conn3.CollectionGet(userctx1, arvados.GetOptions{UUID: pdh})
 	c.Check(err, check.IsNil)
 	c.Check(coll.PortableDataHash, check.Equals, pdh)
+}
+
+// Get a token from the login cluster (z1111), use it to submit a
+// container request on z2222.
+func (s *IntegrationSuite) TestCreateContainerRequestWithFedToken(c *check.C) {
+	conn1 := s.conn("z1111")
+	rootctx1, _, _ := s.rootClients("z1111")
+	_, ac1, _ := s.userClients(rootctx1, c, conn1, "z1111", true)
+
+	// Use ac2 to get the discovery doc with a blank token, so the
+	// SDK doesn't magically pass the z1111 token to z2222 before
+	// we're ready to start our test.
+	_, ac2, _ := s.clientsWithToken("z2222", "")
+	var dd map[string]interface{}
+	err := ac2.RequestAndDecode(&dd, "GET", "discovery/v1/apis/arvados/v1/rest", nil, nil)
+	c.Assert(err, check.IsNil)
+
+	var (
+		body bytes.Buffer
+		req  *http.Request
+		resp *http.Response
+		u    arvados.User
+		cr   arvados.ContainerRequest
+	)
+	json.NewEncoder(&body).Encode(map[string]interface{}{
+		"container_request": map[string]interface{}{
+			"command":         []string{"echo"},
+			"container_image": "d41d8cd98f00b204e9800998ecf8427e+0",
+			"cwd":             "/",
+			"output_path":     "/",
+		},
+	})
+	ac2.AuthToken = ac1.AuthToken
+
+	c.Log("...post CR with good (but not yet cached) token")
+	cr = arvados.ContainerRequest{}
+	req, err = http.NewRequest("POST", "https://"+ac2.APIHost+"/arvados/v1/container_requests", bytes.NewReader(body.Bytes()))
+	c.Assert(err, check.IsNil)
+	req.Header.Set("Content-Type", "application/json")
+	err = ac2.DoAndDecode(&cr, req)
+	c.Logf("err == %#v", err)
+
+	c.Log("...get user with good token")
+	u = arvados.User{}
+	req, err = http.NewRequest("GET", "https://"+ac2.APIHost+"/arvados/v1/users/current", nil)
+	c.Assert(err, check.IsNil)
+	err = ac2.DoAndDecode(&u, req)
+	c.Check(err, check.IsNil)
+	c.Check(u.UUID, check.Matches, "z1111-tpzed-.*")
+
+	c.Log("...post CR with good cached token")
+	cr = arvados.ContainerRequest{}
+	req, err = http.NewRequest("POST", "https://"+ac2.APIHost+"/arvados/v1/container_requests", bytes.NewReader(body.Bytes()))
+	c.Assert(err, check.IsNil)
+	req.Header.Set("Content-Type", "application/json")
+	err = ac2.DoAndDecode(&cr, req)
+	c.Check(err, check.IsNil)
+	c.Check(cr.UUID, check.Matches, "z2222-.*")
+
+	c.Log("...post with good cached token ('OAuth2 ...')")
+	cr = arvados.ContainerRequest{}
+	req, err = http.NewRequest("POST", "https://"+ac2.APIHost+"/arvados/v1/container_requests", bytes.NewReader(body.Bytes()))
+	c.Assert(err, check.IsNil)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "OAuth2 "+ac2.AuthToken)
+	resp, err = arvados.InsecureHTTPClient.Do(req)
+	if c.Check(err, check.IsNil) {
+		err = json.NewDecoder(resp.Body).Decode(&cr)
+		c.Check(cr.UUID, check.Matches, "z2222-.*")
+	}
 }
 
 // Test for bug #16263
