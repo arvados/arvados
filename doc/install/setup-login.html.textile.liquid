@@ -9,21 +9,41 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-# "Option 1: Google login through Arvados controller":#controller
-# "Option 2: Separate single-sign-on (SSO) server (Google, LDAP, local database)":#sso
+Select one of the following login mechanisms for your cluster.
 
-h2(#controller). Option 1: Google login through Arvados controller
+# If all users will authenticate with Google, "configure Google login":#google.
+# If all users will authenticate using PAM as configured on your controller node, "configure PAM":#pam.
+# If you need to enable multiple authentication methods, or your backend can't be configured as a PAM service on your controller node, "configure a separate single sign-on (SSO) server":#sso.
+
+h2(#google). Google login
+
+With this configuration, users will sign in with their Google accounts.
 
 First, visit "Setting up Google auth.":google-auth.html
 
-Next, copy the values of *Client ID* and *Client secret* from the Google Developers Console into @Login.GoogleClientID@ and @Login.GoogleClientSecret@ of @config.yml@ :
+Next, copy the values of *Client ID* and *Client secret* from the Google Developers Console into @Login.GoogleClientID@ and @Login.GoogleClientSecret@ of @config.yml@:
 
 <pre>
     Login:
-      GoogleClientID: ""
-      GoogleClientSecret: ""
+      GoogleClientID: "0000000000000-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz.apps.googleusercontent.com"
+      GoogleClientSecret: "zzzzzzzzzzzzzzzzzzzzzzzz"
 </pre>
 
-h2(#sso). Option 2: Separate single-sign-on (SSO) server (supports Google, LDAP, local database)
+h2(#pam). PAM (experimental)
+
+With this configuration, authentication is done according to the Linux PAM configuration on your controller host.
+
+Enable PAM authentication in @config.yml@:
+
+<pre>
+    Login:
+      PAM: true
+</pre>
+
+Check the "default config file":{{site.baseurl}}/admin/config.html for more PAM configuration options.
+
+h2(#sso). Separate single-sign-on (SSO) server
+
+With this configuration, Arvados passes off authentication to a separate SSO server that supports Google, LDAP, and a local password database.
 
 See "Install the Single Sign On (SSO) server":install-sso.html
