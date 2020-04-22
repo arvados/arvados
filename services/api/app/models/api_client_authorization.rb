@@ -164,6 +164,9 @@ class ApiClientAuthorization < ArvadosModel
          (secret == auth.api_token ||
           secret == OpenSSL::HMAC.hexdigest('sha1', auth.api_token, remote))
         # found it
+        if token_uuid[0..4] != Rails.configuration.ClusterID
+          Rails.logger.debug "found cached remote token #{token_uuid} with secret #{secret} in local db"
+        end
         return auth
       end
 
@@ -274,6 +277,7 @@ class ApiClientAuthorization < ArvadosModel
                                 api_token: secret,
                                 api_client_id: 0,
                                 expires_at: Time.now + Rails.configuration.Login.RemoteTokenRefresh)
+        Rails.logger.debug "cached remote token #{token_uuid} with secret #{secret} in local db"
       end
       return auth
     else
