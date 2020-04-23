@@ -1,0 +1,81 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: AGPL-3.0
+
+describe('Login tests', function() {
+    let activeUser;
+    let inactiveUser;
+    let adminUser;
+
+    before(function() {
+        // Only set up common users once. These aren't set up as aliases because
+        // aliases are cleaned up after every test. Also it doesn't make sense
+        // to set the same users on beforeEach() over and over again, so we
+        // separate a little from Cypress' 'Best Practices' here.
+        cy.getUser('admin', 'Admin', 'User', true, true)
+            .as('adminUser').then(function() {
+                adminUser = this.adminUser;
+            }
+        );
+        cy.getUser('active', 'Active', 'User', false, true)
+            .as('activeUser').then(function() {
+                activeUser = this.activeUser;
+            }
+        );
+        cy.getUser('inactive', 'Inactive', 'User', false, false)
+            .as('inactiveUser').then(function() {
+                inactiveUser = this.inactiveUser;
+            }
+        );
+    })
+
+    beforeEach(function() {
+        cy.clearCookies()
+        cy.clearLocalStorage()
+    })
+
+    it('shows login page on first visit', function() {
+        cy.visit('/')
+        cy.get('div#root').should('contain', 'Please log in')
+        cy.url().should('not.contain', '/projects/')
+    })
+
+    it('shows login page with no token', function() {
+        cy.visit('/token/?api_token=')
+        cy.get('div#root').should('contain', 'Please log in')
+        cy.url().should('not.contain', '/projects/')
+    })
+
+    it('shows inactive page to inactive user', function() {
+        cy.visit(`/token/?api_token=${inactiveUser.token}`)
+        cy.get('div#root').should('contain', 'Your account is inactive');
+    })
+
+    it('shows login page with invalid token', function() {
+        cy.visit('/token/?api_token=nope')
+        cy.get('div#root').should('contain', 'Please log in')
+        cy.url().should('not.contain', '/projects/')
+    })
+
+    it('logs in successfully with valid user token', function() {
+        cy.visit(`/token/?api_token=${activeUser.token}`);
+        cy.url().should('contain', '/projects/');
+        cy.get('div#root').should('not.contain', 'Your account is inactive');
+        cy.get('button[title="Account Management"]').click();
+        cy.get('ul[role=menu] > li[role=menuitem]').contains(
+            `${activeUser.user.first_name} ${activeUser.user.last_name}`);
+    })
+
+    it('logs in successfully with valid admin token', function() {
+        cy.visit(`/token/?api_token=${adminUser.token}`);
+        cy.url().should('contain', '/projects/');
+        cy.get('div#root').should('not.contain', 'Your account is inactive');
+        cy.get('button[title="Admin Panel"]').click();
+        cy.get('ul[role=menu] > li[role=menuitem]')
+            .contains('Repositories')
+            .type('{esc}');
+        cy.get('button[title="Account Management"]').click();
+        cy.get('ul[role=menu] > li[role=menuitem]').contains(
+            `${adminUser.user.first_name} ${adminUser.user.last_name}`);
+    })
+})

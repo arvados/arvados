@@ -33,7 +33,7 @@ RPM_FILE=$(APP_NAME)-$(VERSION)-$(ITERATION).x86_64.rpm
 
 export WORKSPACE?=$(shell pwd)
 
-.PHONY: help clean* yarn-install test build packages packages-with-version
+.PHONY: help clean* yarn-install test build packages packages-with-version integration-tests-in-docker
 
 help:
 	@echo >&2
@@ -60,8 +60,17 @@ clean: clean-rpm clean-deb clean-node-modules
 yarn-install:
 	yarn install
 
-test: yarn-install
+unit-tests: yarn-install
 	yarn test --no-watchAll --bail --ci
+
+integration-tests: yarn-install
+	yarn run cypress install
+	$(WORKSPACE)/tools/run-integration-tests.sh
+
+integration-tests-in-docker: workbench2-build-image
+	docker run -ti -v$(PWD):$(PWD) -w$(PWD) workbench2-build make integration-tests
+
+test: unit-tests integration-tests
 
 build: test
 	VERSION=$(VERSION) yarn build
@@ -112,4 +121,4 @@ copy: $(DEB_FILE) $(RPM_FILE)
 packages: copy
 
 workbench2-build-image:
-	docker build -t workbench2-build .
+	(cd docker && docker build -t workbench2-build .)

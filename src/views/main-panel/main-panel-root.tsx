@@ -46,10 +46,16 @@ export const MainPanelRoot = withStyles(styles)(
                     buildInfo={buildInfo}
                     uuidPrefix={uuidPrefix}
                     siteBanner={siteBanner}>
-                    {working ? <LinearProgress color="secondary" /> : null}
+                    {working
+                        ? <LinearProgress color="secondary" />
+                        : null}
                 </MainAppBar>}
                 <Grid container direction="column" className={classes.root}>
-                    {user ? (user.isActive || (!user.isActive && isLinkingPath) ? <WorkbenchPanel isNotLinking={isNotLinking} isUserActive={user.isActive} /> : <InactivePanel />) : <LoginPanel />}
+                    {user
+                        ? (user.isActive || (!user.isActive && isLinkingPath)
+                            ? <WorkbenchPanel isNotLinking={isNotLinking} isUserActive={user.isActive} />
+                            : <InactivePanel />)
+                        : <LoginPanel />}
                 </Grid>
             </>
 );
