@@ -14,10 +14,21 @@ Install [redux-devtools-extension](https://chrome.google.com/webstore/detail/red
 ### Start project
 <code>yarn start</code>
 
-### Run tests
+### Run unit tests
 <pre>
-yarn install
-yarn test
+make unit-tests
+</pre>
+
+### Run end-to-end tests
+
+<pre>
+make integration-tests
+</pre>
+
+### Run end-to-end tests in a Docker container
+
+<pre>
+make integration-tests-in-docker
 </pre>
 
 ### Production build
@@ -28,7 +39,7 @@ yarn build
 
 ### Package build
 <pre>
-docker build -t arvados/fpm .
+make workbench2-build-image
 docker run -v$PWD:$PWD -w $PWD arvados/fpm make packages
 </pre>
 

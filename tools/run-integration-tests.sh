@@ -74,7 +74,7 @@ if [ ! -f ${ARVADOS_CONF} ]; then
 fi
 
 if [ -f "${WB2_DIR}/public/config.json" ]; then
-    echo "ERROR: Cannot run with Workbench2's public/config.json file"
+    echo "ERROR: Please move public/config.json file out of the way"
     exit 1
 fi
 
