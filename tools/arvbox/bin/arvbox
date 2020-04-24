@@ -614,6 +614,7 @@ sv stop keepstore0
 sv stop keepstore1
 sv stop keepproxy
 cd /usr/src/arvados/services/api
+export DISABLE_DATABASE_ENVIRONMENT_CHECK=1
 export RAILS_ENV=development
 bundle exec rake db:drop
 rm /var/lib/arvados/api_database_setup

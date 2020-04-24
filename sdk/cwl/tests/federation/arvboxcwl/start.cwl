@@ -74,19 +74,23 @@ arguments:
   - shellQuote: false
     valueFrom: |
       set -ex
-      mkdir -p $ARVBOX_DATA
-      if ! test -d $ARVBOX_DATA/arvados ; then
-        cd $ARVBOX_DATA
-        git clone https://git.arvados.org/arvados.git
+      if test $(inputs.arvbox_mode) = dev ; then
+        mkdir -p $ARVBOX_DATA
+        if ! test -d $ARVBOX_DATA/arvados ; then
+          cd $ARVBOX_DATA
+          git clone https://git.arvados.org/arvados.git
+        fi
+        cd $ARVBOX_DATA/arvados
+        gitver=`git rev-parse HEAD`
+        git fetch
+        git checkout -f $(inputs.branch)
+        git pull
+        pulled=`git rev-parse HEAD`
+        git --no-pager log -n1 $pulled
+      else
+        export ARVBOX_BASE=$(runtime.tmpdir)
+        unset ARVBOX_DATA
       fi
-      cd $ARVBOX_DATA/arvados
-      gitver=`git rev-parse HEAD`
-      git fetch
-      git checkout -f $(inputs.branch)
-      git pull
-      pulled=`git rev-parse HEAD`
-      git --no-pager log -n1 $pulled
-
       cd $(runtime.outdir)
       if test "$gitver" = "$pulled" ; then
         $(inputs.arvbox_bin.path) start $(inputs.arvbox_mode)
