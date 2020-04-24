@@ -236,7 +236,7 @@ run() {
         mkdir -p "$PG_DATA" "$VAR_DATA" "$PASSENGER" "$GEMS" "$PIPCACHE" "$NPMCACHE" "$GOSTUFF" "$RLIBS"
 
         if ! test -d "$ARVADOS_ROOT" ; then
-            git clone https://github.com/arvados/arvados.git "$ARVADOS_ROOT"
+            git clone https://git.arvados.org/arvados.git "$ARVADOS_ROOT"
         fi
         if ! test -d "$SSO_ROOT" ; then
             git clone https://github.com/arvados/sso-devise-omniauth-provider.git "$SSO_ROOT"

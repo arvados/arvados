@@ -33,6 +33,9 @@ inputs:
   logincluster:
     type: boolean
     default: false
+  arvbox_mode:
+    type: string
+    default: "dev"
 outputs:
   arvados_api_token:
     type: string
@@ -71,6 +74,7 @@ steps:
       arvbox_data: mkdir/arvbox_data
       arvbox_bin: arvbox
       branch: branch
+      arvbox_mode: arvbox_mode
     out: [cluster_id, container_host, arvbox_data_out, superuser_token]
     scatter: [container_name, arvbox_data]
     scatterMethod: dotproduct

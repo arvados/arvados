@@ -14,6 +14,9 @@ inputs:
   branch:
     type: string
     default: master
+  arvbox_mode:
+    type: string
+    default: "dev"
 outputs:
   cluster_id:
     type: string
@@ -86,9 +89,9 @@ arguments:
 
       cd $(runtime.outdir)
       if test "$gitver" = "$pulled" ; then
-        $(inputs.arvbox_bin.path) start dev
+        $(inputs.arvbox_bin.path) start $(inputs.arvbox_mode)
       else
-        $(inputs.arvbox_bin.path) restart dev
+        $(inputs.arvbox_bin.path) restart $(inputs.arvbox_mode)
       fi
       $(inputs.arvbox_bin.path) status > status.txt
       $(inputs.arvbox_bin.path) cat /var/lib/arvados/superuser_token > superuser_token.txt
