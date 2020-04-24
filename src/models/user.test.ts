@@ -5,10 +5,6 @@
 import { User, getUserDisplayName } from './user';
 
 describe('User', () => {
-
-    beforeEach(() => {
-    });
-
     it('gets the user display name', () => {
         type UserCase = {
             caseName: string;
