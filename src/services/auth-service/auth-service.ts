@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { getUserFullname, User, UserPrefs } from '~/models/user';
+import { User, UserPrefs, getUserDisplayName } from '~/models/user';
 import { AxiosInstance } from "axios";
 import { ApiActions } from "~/services/api/api-actions";
 import * as uuid from "uuid/v4";
@@ -129,7 +129,7 @@ export class AuthService {
             clusterId: cfg.uuidPrefix,
             remoteHost: cfg.rootUrl,
             baseUrl: cfg.baseUrl,
-            name: getUserFullname(user),
+            name: user ? getUserDisplayName(user): '',
             email: user ? user.email : '',
             token: this.getApiToken(),
             loggedIn: true,

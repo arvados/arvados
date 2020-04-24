@@ -16,7 +16,7 @@ import { RootState } from '~/store/store';
 import { ServiceRepository } from '~/services/services';
 import { PermissionResource } from '~/models/permission';
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
-import { UserResource, getUserFullname } from '~/models/user';
+import { UserResource, getUserDisplayName } from '~/models/user';
 
 export const GROUP_DETAILS_PANEL_ID = 'groupDetailsPanel';
 export const ADD_GROUP_MEMBERS_DIALOG = 'addGrupMembers';
@@ -113,7 +113,7 @@ export const removeGroupMember = (uuid: string) =>
             await deleteGroupMember({
                 user: {
                     uuid,
-                    name: user ? getUserFullname(user) : uuid,
+                    name: user ? getUserDisplayName(user) : uuid,
                 },
                 group: {
                     uuid: groupUuid,

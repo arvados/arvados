@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as Vocabulary from './vocabulary';
-import { pipe } from 'lodash/fp';
 
 describe('Vocabulary', () => {
     let vocabulary: Vocabulary.Vocabulary;

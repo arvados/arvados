@@ -26,8 +26,14 @@ export interface User {
     isActive: boolean;
 }
 
-export const getUserFullname = (user?: User) => {
-    return user ? `${user.firstName} ${user.lastName}` : "";
+export const getUserFullname = (user: User) => {
+    return user.firstName && user.lastName
+        ? `${user.firstName} ${user.lastName}`
+        : "";
+};
+
+export const getUserDisplayName = (user: User) => {
+    return getUserFullname(user) || user.email || user.username || user.uuid;
 };
 
 export interface UserResource extends Resource, User {
