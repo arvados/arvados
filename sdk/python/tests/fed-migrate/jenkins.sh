@@ -22,6 +22,8 @@ pip install -e .
 cd $WORKSPACE/sdk/cwl
 pip install -e .
 
+export PATH=$PATH:$WORKSPACE/tools/arvbox/bin
+
 mkdir -p $WORKSPACE/tmp/arvbox
 cd $WORKSPACE/sdk/python/tests/fed-migrate
 cwltool arvbox-make-federation.cwl \
