@@ -15,7 +15,7 @@ inputs:
     type: string
     default: master
   arvbox_mode:
-    type: string
+    type: string?
     default: "dev"
 outputs:
   cluster_id:

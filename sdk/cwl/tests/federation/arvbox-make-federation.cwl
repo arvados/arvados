@@ -34,7 +34,7 @@ inputs:
     type: boolean
     default: false
   arvbox_mode:
-    type: string
+    type: string?
     default: "dev"
 outputs:
   arvados_api_token:
