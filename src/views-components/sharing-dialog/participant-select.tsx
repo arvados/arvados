@@ -10,38 +10,50 @@ import { FilterBuilder } from '../../services/api/filter-builder';
 import { debounce } from 'debounce';
 import { ListItemText, Typography } from '@material-ui/core';
 import { noop } from 'lodash/fp';
-import { GroupClass } from '~/models/group';
+import { GroupClass, GroupResource } from '~/models/group';
+import { getUserDisplayName, UserResource } from '~/models/user';
+import { ResourceKind } from '~/models/resource';
+import { ListResults } from '~/services/common-service/common-service';
 
-export interface Person {
+export interface Participant {
     name: string;
-    email: string;
     uuid: string;
 }
 
-export interface PeopleSelectProps {
+type ParticipantResource = GroupResource & UserResource;
 
-    items: Person[];
+interface ParticipantSelectProps {
+    items: Participant[];
     label?: string;
     autofocus?: boolean;
     onlyPeople?: boolean;
 
     onBlur?: (event: React.FocusEvent<HTMLInputElement>) => void;
     onFocus?: (event: React.FocusEvent<HTMLInputElement>) => void;
-    onCreate?: (person: Person) => void;
+    onCreate?: (person: Participant) => void;
     onDelete?: (index: number) => void;
-    onSelect?: (person: Person) => void;
-
+    onSelect?: (person: Participant) => void;
 }
 
-export interface PeopleSelectState {
+interface ParticipantSelectState {
     value: string;
-    suggestions: any[];
+    suggestions: ParticipantResource[];
 }
 
-export const PeopleSelect = connect()(
-    class PeopleSelect extends React.Component<PeopleSelectProps & DispatchProp, PeopleSelectState> {
+const getDisplayName = (item: GroupResource & UserResource) => {
+    switch(item.kind) {
+        case ResourceKind.USER:
+            return getUserDisplayName(item, true);
+        case ResourceKind.GROUP:
+            return item.name;
+        default:
+            return item.uuid;
+    }
+};
 
-        state: PeopleSelectState = {
+export const ParticipantSelect = connect()(
+    class ParticipantSelect extends React.Component<ParticipantSelectProps & DispatchProp, ParticipantSelectState> {
+        state: ParticipantSelectState = {
             value: '',
             suggestions: []
         };
@@ -67,21 +79,20 @@ export const PeopleSelect = connect()(
             );
         }
 
-        renderChipValue({ name, uuid }: Person) {
-            return name ? name : uuid;
+        renderChipValue(chipValue: Participant) {
+            const { name, uuid } = chipValue;
+            return name || uuid;
         }
 
-        renderSuggestion({ firstName, lastName, email, name }: any) {
+        renderSuggestion(item: ParticipantResource) {
             return (
                 <ListItemText>
-                    {name ?
-                        <Typography noWrap>{name}</Typography> :
-                        <Typography noWrap>{`${firstName} ${lastName} <<${email}>>`}</Typography>}
+                    <Typography noWrap>{getDisplayName(item)}</Typography>
                 </ListItemText>
             );
         }
 
-        handleDelete = (_: Person, index: number) => {
+        handleDelete = (_: Participant, index: number) => {
             const { onDelete = noop } = this.props;
             onDelete(index);
         }
@@ -91,19 +102,18 @@ export const PeopleSelect = connect()(
             if (onCreate) {
                 this.setState({ value: '', suggestions: [] });
                 onCreate({
-                    email: '',
                     name: '',
                     uuid: this.state.value,
                 });
             }
         }
 
-        handleSelect = ({ email, firstName, lastName, uuid, name }: any) => {
+        handleSelect = (selection: ParticipantResource) => {
+            const { uuid } = selection;
             const { onSelect = noop } = this.props;
             this.setState({ value: '', suggestions: [] });
             onSelect({
-                email,
-                name: `${name ? name : `${firstName} ${lastName}`}`,
+                name: getDisplayName(selection),
                 uuid,
             });
         }
@@ -116,16 +126,23 @@ export const PeopleSelect = connect()(
 
         requestSuggestions = async (_: void, __: void, { userService, groupsService }: ServiceRepository) => {
             const { value } = this.state;
+            const limit = 5; // FIXME: Does this provide a good UX?
+
+            const filterUsers = new FilterBuilder()
+                .addILike('any', value)
+                .getFilters();
+            const userItems: ListResults<any> = await userService.list({ filters: filterUsers, limit });
+
             const filterGroups = new FilterBuilder()
                 .addNotIn('group_class', [GroupClass.PROJECT])
                 .addILike('name', value)
                 .getFilters();
-            const groupItems = await groupsService.list({ filters: filterGroups, limit: 5 });
-            const filterUsers = new FilterBuilder()
-                .addILike('email', value)
-                .getFilters();
-            const userItems: any = await userService.list({ filters: filterUsers, limit: 5 });
-            const items = groupItems.items.concat(userItems.items);
-            this.setState({ suggestions: this.props.onlyPeople ? userItems.items : items });
+
+            const groupItems: ListResults<any> = await groupsService.list({ filters: filterGroups, limit });
+            this.setState({
+                suggestions: this.props.onlyPeople
+                    ? userItems.items
+                    : userItems.items.concat(groupItems.items)
+            });
         }
     });

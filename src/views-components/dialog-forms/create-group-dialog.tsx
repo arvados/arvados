@@ -11,7 +11,7 @@ import { CREATE_GROUP_DIALOG, CREATE_GROUP_FORM, createGroup, CreateGroupFormDat
 import { TextField } from '~/components/text-field/text-field';
 import { maxLength } from '~/validators/max-length';
 import { require } from '~/validators/require';
-import { PeopleSelect, Person } from '~/views-components/sharing-dialog/people-select';
+import { ParticipantSelect, Participant } from '~/views-components/sharing-dialog/participant-select';
 
 export const CreateGroupDialog = compose(
     withDialog(CREATE_GROUP_DIALOG),
@@ -54,8 +54,8 @@ const UsersField = () =>
         name={CREATE_GROUP_USERS_FIELD_NAME}
         component={UsersSelect} />;
 
-const UsersSelect = ({ fields }: WrappedFieldArrayProps<Person>) =>
-    <PeopleSelect
+const UsersSelect = ({ fields }: WrappedFieldArrayProps<Participant>) =>
+    <ParticipantSelect
         onlyPeople
         label='Enter email adresses '
         items={fields.getAll() || []}

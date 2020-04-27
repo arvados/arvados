@@ -32,8 +32,12 @@ export const getUserFullname = (user: User) => {
         : "";
 };
 
-export const getUserDisplayName = (user: User) => {
-    return getUserFullname(user) || user.email || user.username || user.uuid;
+export const getUserDisplayName = (user: User, withEmail = false) => {
+    const displayName = getUserFullname(user) || user.email || user.username || user.uuid;
+    if (withEmail && user.email && displayName !== user.email) {
+        return `${displayName} <<${user.email}>>`;
+    }
+    return displayName;
 };
 
 export interface UserResource extends Resource, User {

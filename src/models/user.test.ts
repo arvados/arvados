@@ -8,6 +8,7 @@ describe('User', () => {
     it('gets the user display name', () => {
         type UserCase = {
             caseName: string;
+            withEmail?: boolean;
             user: User;
             expect: string;
         };
@@ -22,6 +23,18 @@ describe('User', () => {
                     prefs: {}, isAdmin: false, isActive: true
                 },
                 expect: 'Some User'
+            },
+            {
+                caseName: 'Full data available (with email)',
+                withEmail: true,
+                user: {
+                    email: 'someuser@example.com', username: 'someuser',
+                    firstName: 'Some', lastName: 'User',
+                    uuid: 'zzzzz-tpzed-someusersuuid',
+                    ownerUuid: 'zzzzz-tpzed-someusersowneruuid',
+                    prefs: {}, isAdmin: false, isActive: true
+                },
+                expect: 'Some User <<someuser@example.com>>'
             },
             {
                 caseName: 'Missing first name',
@@ -57,7 +70,31 @@ describe('User', () => {
                 expect: 'someuser@example.com'
             },
             {
+                caseName: 'Missing first & last names (with email)',
+                withEmail: true,
+                user: {
+                    email: 'someuser@example.com', username: 'someuser',
+                    firstName: '', lastName: '',
+                    uuid: 'zzzzz-tpzed-someusersuuid',
+                    ownerUuid: 'zzzzz-tpzed-someusersowneruuid',
+                    prefs: {}, isAdmin: false, isActive: true
+                },
+                expect: 'someuser@example.com'
+            },
+            {
                 caseName: 'Missing first & last names, and email address',
+                user: {
+                    email: '', username: 'someuser',
+                    firstName: '', lastName: '',
+                    uuid: 'zzzzz-tpzed-someusersuuid',
+                    ownerUuid: 'zzzzz-tpzed-someusersowneruuid',
+                    prefs: {}, isAdmin: false, isActive: true
+                },
+                expect: 'someuser'
+            },
+            {
+                caseName: 'Missing first & last names, and email address (with email)',
+                withEmail: true,
                 user: {
                     email: '', username: 'someuser',
                     firstName: '', lastName: '',
@@ -80,7 +117,7 @@ describe('User', () => {
             },
         ];
         testCases.forEach(c => {
-            const dispName = getUserDisplayName(c.user);
+            const dispName = getUserDisplayName(c.user, c.withEmail);
             expect(dispName).toEqual(c.expect);
         })
     });

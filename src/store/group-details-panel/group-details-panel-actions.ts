@@ -6,7 +6,7 @@ import { bindDataExplorerActions } from '~/store/data-explorer/data-explorer-act
 import { Dispatch } from 'redux';
 import { propertiesActions } from '~/store/properties/properties-actions';
 import { getProperty } from '~/store/properties/properties';
-import { Person } from '~/views-components/sharing-dialog/people-select';
+import { Participant } from '~/views-components/sharing-dialog/participant-select';
 import { dialogActions } from '~/store/dialog/dialog-actions';
 import { reset, startSubmit } from 'redux-form';
 import { addGroupMember, deleteGroupMember } from '~/store/groups-panel/groups-panel-actions';
@@ -36,7 +36,7 @@ export const loadGroupDetailsPanel = (groupUuid: string) =>
 export const getCurrentGroupDetailsPanelUuid = getProperty<string>(GROUP_DETAILS_PANEL_ID);
 
 export interface AddGroupMembersFormData {
-    [ADD_GROUP_MEMBERS_USERS_FIELD_NAME]: Person[];
+    [ADD_GROUP_MEMBERS_USERS_FIELD_NAME]: Participant[];
 }
 
 export const openAddGroupMembersDialog = () =>

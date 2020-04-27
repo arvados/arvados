@@ -6,7 +6,7 @@ import { Dispatch } from 'redux';
 import { reset, startSubmit, stopSubmit, FormErrors } from 'redux-form';
 import { bindDataExplorerActions } from "~/store/data-explorer/data-explorer-action";
 import { dialogActions } from '~/store/dialog/dialog-actions';
-import { Person } from '~/views-components/sharing-dialog/people-select';
+import { Participant } from '~/views-components/sharing-dialog/participant-select';
 import { RootState } from '~/store/store';
 import { ServiceRepository } from '~/services/services';
 import { getResource } from '~/store/resources/resources';
@@ -65,7 +65,7 @@ export const openRemoveGroupDialog = (uuid: string) =>
 
 export interface CreateGroupFormData {
     [CREATE_GROUP_NAME_FIELD_NAME]: string;
-    [CREATE_GROUP_USERS_FIELD_NAME]?: Person[];
+    [CREATE_GROUP_USERS_FIELD_NAME]?: Participant[];
 }
 
 export const createGroup = ({ name, users = [] }: CreateGroupFormData) =>
