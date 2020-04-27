@@ -386,8 +386,8 @@ class ApplicationController < ActionController::Base
       @read_auths += ApiClientAuthorization
         .includes(:user)
         .where('api_token IN (?) AND
-                (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)',
-               secrets)
+                (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP AT TIME ZONE ?)',
+               secrets, 'UTC')
         .to_a
     end
     @read_auths.select! { |auth| auth.scopes_allow_request? request }

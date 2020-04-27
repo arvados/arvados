@@ -158,7 +158,7 @@ class ApiClientAuthorization < ArvadosModel
       # fast path: look up the token in the local database
       auth = ApiClientAuthorization.
              includes(:user, :api_client).
-             where('uuid=? and (expires_at is null or expires_at > CURRENT_TIMESTAMP)', token_uuid).
+             where('uuid=? and (expires_at is null or expires_at > CURRENT_TIMESTAMP AT TIME ZONE ?)', token_uuid, 'UTC').
              first
       if auth && auth.user &&
          (secret == auth.api_token ||
@@ -280,7 +280,7 @@ class ApiClientAuthorization < ArvadosModel
       # token is not a 'v2' token
       auth = ApiClientAuthorization.
                includes(:user, :api_client).
-               where('api_token=? and (expires_at is null or expires_at > CURRENT_TIMESTAMP)', token).
+               where('api_token=? and (expires_at is null or expires_at > CURRENT_TIMESTAMP AT TIME ZONE ?)', token, 'UTC').
                first
       if auth && auth.user
         return auth

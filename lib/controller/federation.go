@@ -164,7 +164,7 @@ func (h *Handler) validateAPItoken(req *http.Request, token string) (*CurrentUse
 	}
 	user.Authorization.APIToken = token
 	var scopes string
-	err = db.QueryRowContext(req.Context(), `SELECT api_client_authorizations.uuid, api_client_authorizations.scopes, users.uuid FROM api_client_authorizations JOIN users on api_client_authorizations.user_id=users.id WHERE api_token=$1 AND (expires_at IS NULL OR expires_at > current_timestamp) LIMIT 1`, token).Scan(&user.Authorization.UUID, &scopes, &user.UUID)
+	err = db.QueryRowContext(req.Context(), `SELECT api_client_authorizations.uuid, api_client_authorizations.scopes, users.uuid FROM api_client_authorizations JOIN users on api_client_authorizations.user_id=users.id WHERE api_token=$1 AND (expires_at IS NULL OR expires_at > current_timestamp AT TIME ZONE 'UTC') LIMIT 1`, token).Scan(&user.Authorization.UUID, &scopes, &user.UUID)
 	if err == sql.ErrNoRows {
 		return nil, false, nil
 	} else if err != nil {
@@ -207,9 +207,9 @@ func (h *Handler) createAPItoken(req *http.Request, userUUID string, scopes []st
 (uuid, api_token, expires_at, scopes,
 user_id,
 api_client_id, created_at, updated_at)
-VALUES ($1, $2, CURRENT_TIMESTAMP + INTERVAL '2 weeks', $3,
+VALUES ($1, $2, CURRENT_TIMESTAMP AT TIME ZONE 'UTC' + INTERVAL '2 weeks', $3,
 (SELECT id FROM users WHERE users.uuid=$4 LIMIT 1),
-0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+0, CURRENT_TIMESTAMP AT TIME ZONE 'UTC', CURRENT_TIMESTAMP AT TIME ZONE 'UTC')`,
 		uuid, token, string(scopesjson), userUUID)
 
 	if err != nil {
