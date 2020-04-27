@@ -605,6 +605,10 @@ class ContainerTest < ActiveSupport::TestCase
   end
 
   test "Lock and unlock" do
+    # The "token is expired" check (at the end of this test case)
+    # requires a west-of-UTC time zone in order to be effective.
+    ActiveRecord::Base.connection.select_value("SET TIME ZONE '-4'")
+
     set_user_from_auth :active
     c, cr = minimal_new priority: 0
 
@@ -663,6 +667,8 @@ class ContainerTest < ActiveSupport::TestCase
 
     auth_exp = ApiClientAuthorization.find_by_uuid(auth_uuid_was).expires_at
     assert_operator auth_exp, :<, db_current_time
+
+    assert_nil ApiClientAuthorization.validate(token: ApiClientAuthorization.find_by_uuid(auth_uuid_was).token)
   end
 
   test "Exceed maximum lock-unlock cycles" do

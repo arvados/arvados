@@ -8,4 +8,8 @@ module DbCurrentTime
   def db_current_time
     Time.parse(ActiveRecord::Base.connection.select_value(CURRENT_TIME_SQL)).to_time
   end
+
+  def db_transaction_time
+    Time.parse(ActiveRecord::Base.connection.select_value('SELECT current_timestamp')).to_time
+  end
 end
