@@ -40,7 +40,7 @@ module CreateSuperUserToken
           where(user_id: system_user.id).
           where(api_client_id: apiClient.id).
           where_serialized(:scopes, ['all']).
-          where('(expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)').
+          where('(expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP AT TIME ZONE ?)', 'UTC').
           first
 
         # none exist; create one with the supplied token
