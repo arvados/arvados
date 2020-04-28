@@ -53,40 +53,42 @@ Cypress.Commands.add(
     }
 )
 
-Cypress.Commands.add("getUser", (username, first_name='', last_name='', is_admin=false, is_active=true) => {
-    // Create user if not already created
-    return cy.do_request('POST', '/auth/controller/callback', {
-        auth_info: JSON.stringify({
-            email: `${username}@example.local`,
-            username: username,
-            first_name: first_name,
-            last_name: last_name,
-            alternate_emails: []
-        }),
-        return_to: ',https://example.local'
-    }, null, systemToken, true, false) // Don't follow redirects so we can catch the token
-    .its('headers.location').as('location')
-    // Get its token and set the account up as admin and/or active
-    .then(function() {
-        this.userToken = this.location.split("=")[1]
-        assert.isString(this.userToken)
-        return cy.do_request('GET', '/arvados/v1/users', null, {
-            filters: `[["username", "=", "${username}"]]`
-        })
-        .its('body.items.0')
-        .as('aUser')
+Cypress.Commands.add(
+    "getUser", (username, first_name='', last_name='', is_admin=false, is_active=true) => {
+        // Create user if not already created
+        return cy.do_request('POST', '/auth/controller/callback', {
+            auth_info: JSON.stringify({
+                email: `${username}@example.local`,
+                username: username,
+                first_name: first_name,
+                last_name: last_name,
+                alternate_emails: []
+            }),
+            return_to: ',https://example.local'
+        }, null, systemToken, true, false) // Don't follow redirects so we can catch the token
+        .its('headers.location').as('location')
+        // Get its token and set the account up as admin and/or active
         .then(function() {
-            cy.do_request('PUT', `/arvados/v1/users/${this.aUser.uuid}`, {
-                user: {
-                    is_admin: is_admin,
-                    is_active: is_active
-                }
+            this.userToken = this.location.split("=")[1]
+            assert.isString(this.userToken)
+            return cy.do_request('GET', '/arvados/v1/users', null, {
+                filters: `[["username", "=", "${username}"]]`
             })
-            .its('body')
-            .as('theUser')
+            .its('body.items.0')
+            .as('aUser')
             .then(function() {
-                return {user: this.theUser, token: this.userToken};
+                cy.do_request('PUT', `/arvados/v1/users/${this.aUser.uuid}`, {
+                    user: {
+                        is_admin: is_admin,
+                        is_active: is_active
+                    }
+                })
+                .its('body')
+                .as('theUser')
+                .then(function() {
+                    return {user: this.theUser, token: this.userToken};
+                })
             })
         })
-    })
-})
+    }
+)

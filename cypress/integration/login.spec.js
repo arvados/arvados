@@ -6,6 +6,7 @@ describe('Login tests', function() {
     let activeUser;
     let inactiveUser;
     let adminUser;
+    let randomUser = {};
 
     before(function() {
         // Only set up common users once. These aren't set up as aliases because
@@ -27,6 +28,16 @@ describe('Login tests', function() {
                 inactiveUser = this.inactiveUser;
             }
         );
+        randomUser.username = `randomuser${Math.floor(Math.random() * Math.floor(999999))}`;
+        randomUser.password = {
+            crypt: 'zpAReoZzPnwmQ',
+            clear: 'topsecret',
+        };
+        cy.exec(`useradd ${randomUser.username} -p ${randomUser.password.crypt}`);
+    })
+
+    after(function() {
+        cy.exec(`userdel ${randomUser.username}`);
     })
 
     beforeEach(function() {
@@ -60,6 +71,7 @@ describe('Login tests', function() {
     it('logs in successfully with valid user token', function() {
         cy.visit(`/token/?api_token=${activeUser.token}`);
         cy.url().should('contain', '/projects/');
+        cy.get('div#root').should('contain', 'Arvados Workbench (zzzzz)');
         cy.get('div#root').should('not.contain', 'Your account is inactive');
         cy.get('button[title="Account Management"]').click();
         cy.get('ul[role=menu] > li[role=menuitem]').contains(
@@ -69,6 +81,7 @@ describe('Login tests', function() {
     it('logs in successfully with valid admin token', function() {
         cy.visit(`/token/?api_token=${adminUser.token}`);
         cy.url().should('contain', '/projects/');
+        cy.get('div#root').should('contain', 'Arvados Workbench (zzzzz)');
         cy.get('div#root').should('not.contain', 'Your account is inactive');
         cy.get('button[title="Admin Panel"]').click();
         cy.get('ul[role=menu] > li[role=menuitem]')
@@ -77,5 +90,26 @@ describe('Login tests', function() {
         cy.get('button[title="Account Management"]').click();
         cy.get('ul[role=menu] > li[role=menuitem]').contains(
             `${adminUser.user.first_name} ${adminUser.user.last_name}`);
+    })
+
+    it('fails to authenticate using the login form with wrong password', function() {
+        cy.visit('/');
+        cy.get('#username').type(randomUser.username);
+        cy.get('#password').type('wrong password');
+        cy.get("button span:contains('Log in')").click();
+        cy.get('p#password-helper-text').should('contain', 'PAM: Authentication failure');
+        cy.url().should('not.contain', '/projects/');
+    })
+
+    it('successfully authenticates using the login form', function() {
+        cy.visit('/');
+        cy.get('#username').type(randomUser.username);
+        cy.get('#password').type(randomUser.password.clear);
+        cy.get("button span:contains('Log in')").click();
+        cy.url().should('contain', '/projects/');
+        cy.get('div#root').should('contain', 'Arvados Workbench (zzzzz)');
+        cy.get('div#root').should('contain', 'Your account is inactive');
+        cy.get('button[title="Account Management"]').click();
+        cy.get('ul[role=menu] > li[role=menuitem]').contains(randomUser.username);
     })
 })
