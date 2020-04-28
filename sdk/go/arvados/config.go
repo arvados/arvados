@@ -135,15 +135,16 @@ type Cluster struct {
 		Repositories string
 	}
 	Login struct {
+		Endpoint                      string
 		GoogleClientID                string
 		GoogleClientSecret            string
 		GoogleAlternateEmailAddresses bool
+		LoginCluster                  string
 		PAM                           bool
 		PAMService                    string
 		PAMDefaultEmailDomain         string
 		ProviderAppID                 string
 		ProviderAppSecret             string
-		LoginCluster                  string
 		RemoteTokenRefresh            Duration
 	}
 	Mail struct {
