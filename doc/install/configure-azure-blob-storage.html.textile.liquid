@@ -67,8 +67,8 @@ Volumes are configured in the @Volumes@ section of the cluster configuration fil
           # If the AccessViaHosts section is empty or omitted, all
           # keepstore servers will have read/write access to the
           # volume.
-          "http://<span class="userinput">keep0.ClusterID.example.com</span>:25107/": {}
-          "http://<span class="userinput">keep1.ClusterID.example.com</span>:25107/": {ReadOnly: true}
+          "http://<span class="userinput">keep0.ClusterID.example.com</span>:25107": {}
+          "http://<span class="userinput">keep1.ClusterID.example.com</span>:25107": {ReadOnly: true}
 
         Driver: <span class="userinput">Azure</span>
         DriverParameters:
