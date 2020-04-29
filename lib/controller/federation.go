@@ -19,6 +19,7 @@ import (
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/auth"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"github.com/jmcvetta/randutil"
 )
 
@@ -153,6 +154,7 @@ func (h *Handler) validateAPItoken(req *http.Request, token string) (*CurrentUse
 	user := CurrentUser{Authorization: arvados.APIClientAuthorization{APIToken: token}}
 	db, err := h.db(req)
 	if err != nil {
+		ctxlog.FromContext(req.Context()).WithError(err).Debugf("validateAPItoken(%s): database error", token)
 		return nil, false, err
 	}
 
@@ -166,18 +168,23 @@ func (h *Handler) validateAPItoken(req *http.Request, token string) (*CurrentUse
 	var scopes string
 	err = db.QueryRowContext(req.Context(), `SELECT api_client_authorizations.uuid, api_client_authorizations.scopes, users.uuid FROM api_client_authorizations JOIN users on api_client_authorizations.user_id=users.id WHERE api_token=$1 AND (expires_at IS NULL OR expires_at > current_timestamp) LIMIT 1`, token).Scan(&user.Authorization.UUID, &scopes, &user.UUID)
 	if err == sql.ErrNoRows {
+		ctxlog.FromContext(req.Context()).Debugf("validateAPItoken(%s): not found in database", token)
 		return nil, false, nil
 	} else if err != nil {
+		ctxlog.FromContext(req.Context()).WithError(err).Debugf("validateAPItoken(%s): database error", token)
 		return nil, false, err
 	}
 	if uuid != "" && user.Authorization.UUID != uuid {
 		// secret part matches, but UUID doesn't -- somewhat surprising
+		ctxlog.FromContext(req.Context()).Debugf("validateAPItoken(%s): secret part found, but with different UUID: %s", token, user.Authorization.UUID)
 		return nil, false, nil
 	}
 	err = json.Unmarshal([]byte(scopes), &user.Authorization.Scopes)
 	if err != nil {
+		ctxlog.FromContext(req.Context()).WithError(err).Debugf("validateAPItoken(%s): error parsing scopes from db", token)
 		return nil, false, err
 	}
+	ctxlog.FromContext(req.Context()).Debugf("validateAPItoken(%s): ok", token)
 	return &user, true, nil
 }
 
