@@ -605,10 +605,6 @@ class ContainerTest < ActiveSupport::TestCase
   end
 
   test "Lock and unlock" do
-    # The "token is expired" check (at the end of this test case)
-    # requires a west-of-UTC time zone in order to be effective.
-    ActiveRecord::Base.connection.select_value("SET TIME ZONE '-4'")
-
     set_user_from_auth :active
     c, cr = minimal_new priority: 0
 
