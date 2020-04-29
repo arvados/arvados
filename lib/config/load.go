@@ -265,16 +265,29 @@ func (ldr *Loader) Load() (*arvados.Config, error) {
 		}
 	}
 
-	// Check for known mistakes
 	for id, cc := range cfg.Clusters {
+		ldr.Logger.Infof(">>>>> Cluster %s", id)
+		if id == "xxxxx" {
+			continue
+		}
+		// Check for known mistakes
 		for _, err = range []error{
 			checkKeyConflict(fmt.Sprintf("Clusters.%s.PostgreSQL.Connection", id), cc.PostgreSQL.Connection),
+			checkMutuallyExclusiveConfigs(
+				fmt.Sprintf("Clusters.%s configuration problem: exactly one of Login.GoogleClientID, Login.ProviderAppID, or Login.PAM must be configured", id),
+				[]bool{cc.Login.PAM, cc.Login.GoogleClientID != "", cc.Login.ProviderAppID != ""}),
 			ldr.checkEmptyKeepstores(cc),
 			ldr.checkUnlistedKeepstores(cc),
 		} {
 			if err != nil {
 				return nil, err
 			}
+		}
+		// Compute derived configs
+		if cc.Login.PAM {
+			cc.Login.Endpoint = "authenticate"
+		} else {
+			cc.Login.Endpoint = "login"
 		}
 	}
 	return &cfg, nil
@@ -288,6 +301,19 @@ func checkKeyConflict(label string, m map[string]string) error {
 			return fmt.Errorf("%s: multiple entries for %q (fix by using same capitalization as default/example file)", label, k)
 		}
 		saw[k] = true
+	}
+	return nil
+}
+
+func checkMutuallyExclusiveConfigs(msg string, cfgs []bool) error {
+	activeCfgs := 0
+	for _, isActive := range cfgs {
+		if isActive {
+			activeCfgs++
+		}
+	}
+	if activeCfgs != 1 {
+		return fmt.Errorf("%s: %d", msg, activeCfgs)
 	}
 	return nil
 }

@@ -579,16 +579,6 @@ Clusters:
       # accounts.
       PAMDefaultEmailDomain: ""
 
-      # Login endpoint to use by clients such as Workbench for obtaining
-      # a user token.
-      #
-      # Valid values are: 'login' or 'authenticate'.
-      #
-      # The former 'login' endpoint should be used when using SSO server,
-      # or Google authentication, and the 'authenticate' option is needed when
-      # using username/password authentication services such as PAM.
-      Endpoint: login
-
       # The cluster ID to delegate the user database.  When set,
       # logins on this cluster will be redirected to the login cluster
       # (login cluster must appear in RemoteClusters with Proxy: true)
