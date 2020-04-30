@@ -6,7 +6,7 @@ import * as React from 'react';
 import { Field, WrappedFieldProps, FieldArray, WrappedFieldArrayProps } from 'redux-form';
 import { Grid, FormControl, InputLabel } from '@material-ui/core';
 import { PermissionSelect, parsePermissionLevel, formatPermissionLevel } from './permission-select';
-import { PeopleSelect, Person } from './people-select';
+import { ParticipantSelect, Participant } from './participant-select';
 
 export default () =>
     <Grid container spacing={8}>
@@ -24,8 +24,8 @@ const InvitedPeopleField = () =>
         component={InvitedPeopleFieldComponent} />;
 
 
-const InvitedPeopleFieldComponent = ({ fields }: WrappedFieldArrayProps<Person>) =>
-    <PeopleSelect
+const InvitedPeopleFieldComponent = ({ fields }: WrappedFieldArrayProps<Participant>) =>
+    <ParticipantSelect
         items={fields.getAll() || []}
         onSelect={fields.push}
         onDelete={fields.remove} />;

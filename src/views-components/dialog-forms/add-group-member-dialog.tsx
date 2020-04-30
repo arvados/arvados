@@ -7,7 +7,7 @@ import { compose } from "redux";
 import { reduxForm, InjectedFormProps, WrappedFieldArrayProps, FieldArray } from 'redux-form';
 import { withDialog, WithDialogProps } from "~/store/dialog/with-dialog";
 import { FormDialog } from '~/components/form-dialog/form-dialog';
-import { PeopleSelect, Person } from '~/views-components/sharing-dialog/people-select';
+import { ParticipantSelect, Participant } from '~/views-components/sharing-dialog/participant-select';
 import { ADD_GROUP_MEMBERS_DIALOG, ADD_GROUP_MEMBERS_FORM, AddGroupMembersFormData, ADD_GROUP_MEMBERS_USERS_FIELD_NAME, addGroupMembers } from '~/store/group-details-panel/group-details-panel-actions';
 import { minLength } from '~/validators/min-length';
 
@@ -39,8 +39,8 @@ const UsersField = () =>
 
 const UsersFieldValidation = [minLength(1, () => 'Select at least one user')];
 
-const UsersSelect = ({ fields }: WrappedFieldArrayProps<Person>) =>
-    <PeopleSelect
+const UsersSelect = ({ fields }: WrappedFieldArrayProps<Participant>) =>
+    <ParticipantSelect
         onlyPeople
         autofocus
         label='Enter email adresses '

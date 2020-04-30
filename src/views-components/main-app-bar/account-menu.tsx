@@ -5,7 +5,7 @@
 import * as React from "react";
 import { MenuItem, Divider } from "@material-ui/core";
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
-import { User, getUserFullname } from "~/models/user";
+import { User, getUserDisplayName } from "~/models/user";
 import { DropdownMenu } from "~/components/dropdown-menu/dropdown-menu";
 import { UserPanelIcon } from "~/components/icon/icon";
 import { DispatchProp, connect } from 'react-redux';
@@ -66,7 +66,7 @@ export const AccountMenu = withStyles(styles)(
                     title="Account Management"
                     key={currentRoute}>
                     <MenuItem disabled>
-                        {getUserFullname(user)} {user.uuid.substr(0, 5) !== localCluster && `(${user.uuid.substr(0, 5)})`}
+                        {getUserDisplayName(user)} {user.uuid.substr(0, 5) !== localCluster && `(${user.uuid.substr(0, 5)})`}
                     </MenuItem>
                     {user.isActive ? <>
                         <MenuItem onClick={() => dispatch(openUserVirtualMachines())}>Virtual Machines</MenuItem>

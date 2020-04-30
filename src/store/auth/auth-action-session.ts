@@ -7,7 +7,7 @@ import { setBreadcrumbs } from "~/store/breadcrumbs/breadcrumbs-actions";
 import { RootState } from "~/store/store";
 import { ServiceRepository, createServices, setAuthorizationHeader } from "~/services/services";
 import Axios from "axios";
-import { getUserFullname, User } from "~/models/user";
+import { User, getUserDisplayName } from "~/models/user";
 import { authActions } from "~/store/auth/auth-action";
 import {
     Config, ClusterConfigJSON, CLUSTER_CONFIG_PATH, DISCOVERY_DOC_PATH,
@@ -131,7 +131,7 @@ export const validateSession = (session: Session, activeSession: Session) =>
             session.token = token;
             session.email = user.email;
             session.uuid = user.uuid;
-            session.name = getUserFullname(user);
+            session.name = getUserDisplayName(user);
             session.loggedIn = true;
             session.apiRevision = apiRevision;
         };
@@ -200,6 +200,19 @@ export const validateSessions = () =>
         }
     };
 
+export const addRemoteConfig = (remoteHost: string) =>
+    async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+        const config = await getRemoteHostConfig(remoteHost);
+        if (!config) {
+            dispatch(snackbarActions.OPEN_SNACKBAR({
+                message: `Could not get config for ${remoteHost}`,
+                kind: SnackbarKind.ERROR
+            }));
+            return;
+        }
+        dispatch(authActions.REMOTE_CLUSTER_CONFIG({ config }));
+    };
+
 export const addSession = (remoteHost: string, token?: string, sendToLogin?: boolean) =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         const sessions = getState().auth.sessions;
@@ -229,7 +242,7 @@ export const addSession = (remoteHost: string, token?: string, sendToLogin?: boo
                     status: SessionStatus.VALIDATED,
                     active: false,
                     email: user.email,
-                    name: getUserFullname(user),
+                    name: getUserDisplayName(user),
                     uuid: user.uuid,
                     baseUrl: config.baseUrl,
                     clusterId: config.uuidPrefix,

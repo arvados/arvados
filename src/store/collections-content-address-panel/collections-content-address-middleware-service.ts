@@ -24,6 +24,7 @@ import { updatePublicFavorites } from '~/store/public-favorites/public-favorites
 import { setBreadcrumbs } from '../breadcrumbs/breadcrumbs-actions';
 import { ResourceKind, extractUuidKind } from '~/models/resource';
 import { ownerNameActions } from '~/store/owner-name/owner-name-actions';
+import { getUserDisplayName } from '~/models/user';
 
 export class CollectionsWithSameContentAddressMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -90,7 +91,11 @@ export class CollectionsWithSameContentAddressMiddlewareService extends DataExpl
                         .getFilters()
                 });
                 responseUsers.items.map(it => {
-                    api.dispatch<any>(ownerNameActions.SET_OWNER_NAME({ name: it.uuid === userUuid ? 'User: Me' : `User: ${it.firstName} ${it.lastName}`, uuid: it.uuid }));
+                    api.dispatch<any>(ownerNameActions.SET_OWNER_NAME({
+                        name: it.uuid === userUuid
+                            ? 'User: Me'
+                            : `User: ${getUserDisplayName(it)}`,
+                        uuid: it.uuid }));
                 });
                 responseGroups.items.map(it => {
                     api.dispatch<any>(ownerNameActions.SET_OWNER_NAME({ name: `Project: ${it.name}`, uuid: it.uuid }));

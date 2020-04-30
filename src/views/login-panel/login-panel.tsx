@@ -9,6 +9,8 @@ import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/st
 import { login, authActions } from '~/store/auth/auth-action';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { RootState } from '~/store/store';
+import { LoginForm } from '~/views-components/login-form/login-form';
+import Axios from 'axios';
 
 type CssRules = 'root' | 'container' | 'title' | 'content' | 'content__bolder' | 'button';
 
@@ -47,23 +49,39 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     }
 });
 
+const doPAMLogin = (url: string) => (username: string, password: string) => {
+    const formData = [];
+    formData.push('username='+encodeURIComponent(username));
+    formData.push('password='+encodeURIComponent(password));
+    return Axios.post(`${url}/arvados/v1/users/authenticate`, formData.join('&'), {
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+    });
+};
+
 type LoginPanelProps = DispatchProp<any> & WithStyles<CssRules> & {
     remoteHosts: { [key: string]: string },
     homeCluster: string,
-    uuidPrefix: string,
+    localCluster: string,
     loginCluster: string,
-    welcomePage: string
+    welcomePage: string,
+    pamLogin: boolean,
 };
 
 export const LoginPanel = withStyles(styles)(
     connect((state: RootState) => ({
         remoteHosts: state.auth.remoteHosts,
         homeCluster: state.auth.homeCluster,
-        uuidPrefix: state.auth.localCluster,
+        localCluster: state.auth.localCluster,
         loginCluster: state.auth.loginCluster,
-        welcomePage: state.auth.config.clusterConfig.Workbench.WelcomePageHTML
-    }))(({ classes, dispatch, remoteHosts, homeCluster, uuidPrefix, loginCluster, welcomePage }: LoginPanelProps) =>
-        <Grid container justify="center" alignItems="center"
+        welcomePage: state.auth.config.clusterConfig.Workbench.WelcomePageHTML,
+        pamLogin: state.auth.remoteHostsConfig[state.auth.loginCluster || state.auth.homeCluster] &&
+            state.auth.remoteHostsConfig[state.auth.loginCluster || state.auth.homeCluster].clusterConfig.Login.PAM || false,
+    }))(({ classes, dispatch, remoteHosts, homeCluster, localCluster, loginCluster, welcomePage, pamLogin }: LoginPanelProps) => {
+        const loginBtnLabel = `Log in${(localCluster !== homeCluster && loginCluster !== homeCluster) ? " to "+localCluster+" with user from "+homeCluster : ''}`;
+
+        return (<Grid container justify="center" alignItems="center"
             className={classes.root}
             style={{ marginTop: 56, overflowY: "auto", height: "100%" }}>
             <Grid item className={classes.container}>
@@ -80,14 +98,19 @@ export const LoginPanel = withStyles(styles)(
                         </Select>
                     </Typography>}
 
-                <Typography component="div" align="right">
-                    <Button variant="contained" color="primary" style={{ margin: "1em" }} className={classes.button}
-                        onClick={() => dispatch(login(uuidPrefix, homeCluster, loginCluster, remoteHosts))}>
-                        Log in
-			{uuidPrefix !== homeCluster && loginCluster !== homeCluster &&
-                            <span>&nbsp;to {uuidPrefix} with user from {homeCluster}</span>}
-                    </Button>
+                {pamLogin
+                ? <Typography component="div">
+                    <LoginForm dispatch={dispatch}
+                        loginLabel={loginBtnLabel}
+                        handleSubmit={doPAMLogin(`https://${remoteHosts[loginCluster || homeCluster]}`)}/>
                 </Typography>
+                : <Typography component="div" align="right">
+                    <Button variant="contained" color="primary" style={{ margin: "1em" }}
+                        className={classes.button}
+                        onClick={() => dispatch(login(localCluster, homeCluster, loginCluster, remoteHosts))}>
+                        {loginBtnLabel}
+                    </Button>
+                </Typography>}
             </Grid>
-        </Grid >
+        </Grid >);}
     ));
