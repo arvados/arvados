@@ -157,7 +157,7 @@ func run(logger log.FieldLogger, cluster *arvados.Cluster) error {
 	signal.Notify(term, syscall.SIGINT)
 
 	// Start serving requests.
-	router = MakeRESTRouter(kc, time.Duration(cluster.API.KeepServiceRequestTimeout), cluster.SystemRootToken)
+	router = MakeRESTRouter(kc, time.Duration(keepclient.DefaultProxyRequestTimeout), cluster.ManagementToken)
 	return http.Serve(listener, httpserver.AddRequestIDs(httpserver.LogRequests(router)))
 }
 
