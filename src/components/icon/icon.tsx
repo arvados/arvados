@@ -53,6 +53,7 @@ import SettingsEthernet from '@material-ui/icons/SettingsEthernet';
 import Star from '@material-ui/icons/Star';
 import StarBorder from '@material-ui/icons/StarBorder';
 import Warning from '@material-ui/icons/Warning';
+import Visibility from '@material-ui/icons/Lock';
 import VpnKey from '@material-ui/icons/VpnKey';
 
 export type IconType = React.SFC<{ className?: string, style?: object }>;
@@ -96,6 +97,7 @@ export const ProcessIcon: IconType = (props) => <BubbleChart {...props} />;
 export const ProjectIcon: IconType = (props) => <Folder {...props} />;
 export const ProjectsIcon: IconType = (props) => <Inbox {...props} />;
 export const ProvenanceGraphIcon: IconType = (props) => <DeviceHub {...props} />;
+export const ReadOnlyIcon: IconType = (props) => <Visibility {...props} />;
 export const RemoveIcon: IconType = (props) => <Delete {...props} />;
 export const RemoveFavoriteIcon: IconType = (props) => <Star {...props} />;
 export const PublicFavoriteIcon: IconType = (props) => <Public {...props} />;

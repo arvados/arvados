@@ -12,9 +12,10 @@ import { DownloadIcon } from '~/components/icon/icon';
 
 export interface CollectionPanelFilesProps {
     items: Array<TreeItem<FileTreeData>>;
+    isWritable: boolean;
     onUploadDataClick: () => void;
-    onItemMenuOpen: (event: React.MouseEvent<HTMLElement>, item: TreeItem<FileTreeData>) => void;
-    onOptionsMenuOpen: (event: React.MouseEvent<HTMLElement>) => void;
+    onItemMenuOpen: (event: React.MouseEvent<HTMLElement>, item: TreeItem<FileTreeData>, isWritable: boolean) => void;
+    onOptionsMenuOpen: (event: React.MouseEvent<HTMLElement>, isWritable: boolean) => void;
     onSelectionToggle: (event: React.MouseEvent<HTMLElement>, item: TreeItem<FileTreeData>) => void;
     onCollapseToggle: (id: string, status: TreeItemStatus) => void;
     onFileClick: (id: string) => void;
@@ -48,25 +49,25 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
 
 export const CollectionPanelFiles =
     withStyles(styles)(
-        ({ onItemMenuOpen, onOptionsMenuOpen, onUploadDataClick, classes, ...treeProps }: CollectionPanelFilesProps & WithStyles<CssRules>) =>
+        ({ onItemMenuOpen, onOptionsMenuOpen, onUploadDataClick, classes, isWritable, ...treeProps }: CollectionPanelFilesProps & WithStyles<CssRules>) =>
             <Card className={classes.root}>
                 <CardHeader
                     title="Files"
                     classes={{ action: classes.button }}
                     action={
-                        <Button onClick={onUploadDataClick}
+                        isWritable && <Button onClick={onUploadDataClick}
                             variant='contained'
                             color='primary'
                             size='small'>
                             <DownloadIcon className={classes.uploadIcon} />
                             Upload data
-                    </Button>
+                        </Button>
                     } />
                 <CardHeader
                     className={classes.cardSubheader}
                     action={
                         <Tooltip title="More options" disableFocusListener>
-                            <IconButton onClick={onOptionsMenuOpen}>
+                            <IconButton onClick={(ev) => onOptionsMenuOpen(ev, isWritable)}>
                                 <CustomizeTableIcon />
                             </IconButton>
                         </Tooltip>
@@ -79,5 +80,5 @@ export const CollectionPanelFiles =
                         File size
                     </Typography>
                 </Grid>
-                <FileTree onMenuOpen={onItemMenuOpen} {...treeProps} />
+                <FileTree onMenuOpen={(ev, item) => onItemMenuOpen(ev, item, isWritable)} {...treeProps} />
             </Card>);
