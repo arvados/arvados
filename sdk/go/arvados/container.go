@@ -28,6 +28,8 @@ type Container struct {
 	SchedulingParameters SchedulingParameters   `json:"scheduling_parameters"`
 	ExitCode             int                    `json:"exit_code"`
 	RuntimeStatus        map[string]interface{} `json:"runtime_status"`
+	StartedAt            *time.Time             `json:"started_at"`  // nil if not yet started
+	FinishedAt           *time.Time             `json:"finished_at"` // nil if not yet finished
 }
 
 // Container is an arvados#container resource.
