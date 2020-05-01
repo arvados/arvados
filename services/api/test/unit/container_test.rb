@@ -663,6 +663,8 @@ class ContainerTest < ActiveSupport::TestCase
 
     auth_exp = ApiClientAuthorization.find_by_uuid(auth_uuid_was).expires_at
     assert_operator auth_exp, :<, db_current_time
+
+    assert_nil ApiClientAuthorization.validate(token: ApiClientAuthorization.find_by_uuid(auth_uuid_was).token)
   end
 
   test "Exceed maximum lock-unlock cycles" do

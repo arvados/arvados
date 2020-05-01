@@ -570,8 +570,13 @@ class Container < ArvadosModel
          return errors.add :auth_uuid, 'is readonly'
     end
     if not [Locked, Running].include? self.state
-      # don't need one
-      self.auth.andand.update_attributes(expires_at: db_current_time)
+      # Don't need one. If auth already exists, expire it.
+      #
+      # We use db_transaction_time here (not db_current_time) to
+      # ensure the token doesn't validate later in the same
+      # transaction (e.g., in a test case) by satisfying expires_at >
+      # transaction timestamp.
+      self.auth.andand.update_attributes(expires_at: db_transaction_time)
       self.auth = nil
       return
     elsif self.auth
