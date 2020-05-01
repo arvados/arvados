@@ -1,7 +1,7 @@
 ---
 layout: default
 navsection: installguide
-title: Arvados on Kubernetes - Minikube
+title: Arvados on Minikube
 ...
 {% comment %}
 Copyright (C) The Arvados Authors. All rights reserved.
@@ -9,7 +9,13 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-This page documents the setup of the prerequisites to run the "Arvados on Kubernetes":/install/arvados-on-kubernetes.html @Helm@ chart on @Minikube@.
+This page documents setting up and running the "Arvados on Kubernetes":/install/arvados-on-kubernetes.html @Helm@ chart on @Minikube@.
+
+{% include 'notebox_begin_warning' %}
+This Helm chart does not retain any state after it is deleted. An Arvados cluster created with this Helm chart is entirely ephemeral, and all data stored on the cluster will be deleted when it is shut down. This will be fixed in a future version.
+{% include 'notebox_end' %}
+
+h2. Prerequisites
 
 h3. Install tooling
 
@@ -31,4 +37,100 @@ Test the connection:
 $ kubectl get nodes
 </pre>
 
-Now proceed to the "Initialize helm on the Kubernetes cluster":/install/arvados-on-kubernetes.html#helm section.
+Test @helm@ by running
+
+<pre>
+$ helm ls
+</pre>
+
+There should be no errors. The command will return nothing.
+
+h2(#git). Clone the repository
+
+Clone the repository and nagivate to the @arvados-kubernetes/charts/arvados@ directory:
+
+<pre>
+$ git clone https://github.com/arvados/arvados-kubernetes.git
+$ cd arvados-kubernetes/charts/arvados
+</pre>
+
+h2(#Start). Start the Arvados cluster
+
+All Arvados services will be accessible on Minikube's IP address. This will be a local IP address, you can see what it is by running
+
+<pre>
+$ minikube ip
+192.168.39.15
+</pre>
+
+Generate self-signed SSL certificates for the Arvados services:
+
+<pre>
+$ ./cert-gen.sh `minikube ip`
+</pre>
+
+The @values.yaml@ file contains a number of variables that can be modified. At a minimum, review and/or modify the values for
+
+<pre>
+  adminUserEmail
+  adminUserPassword
+  superUserSecret
+  anonymousUserSecret
+</pre>
+
+Now start the Arvados cluster:
+
+<pre>
+$ helm install arvados . --set externalIP=`minikube ip`
+</pre>
+
+And update the Kubernetes services to have the Minikube IP as their 'external' IP:
+
+<pre>
+$ ./minikube-external-ip.sh
+</pre>
+
+At this point, you can use kubectl to see the Arvados cluster boot:
+
+<pre>
+$ kubectl get pods
+$ kubectl get svc
+</pre>
+
+After a few minutes, you can access Arvados Workbench at the Minikube IP address:
+
+* https://&lt;MINIKUBE IP&gt;
+
+with the username and password specified in the @values.yaml@ file.
+
+Alternatively, use the Arvados cli tools or SDKs. First set the environment variables:
+
+<pre>
+$ export ARVADOS_API_TOKEN=<superUserSecret from values.yaml>
+$ export ARVADOS_API_HOST=<MINIKUBE IP>:444
+$ export ARVADOS_API_HOST_INSECURE=true
+</pre>
+
+Test access with:
+
+<pre>
+$ arv user current
+</pre>
+
+h2(#reload). Reload
+
+If you make changes to the Helm chart (e.g. to @values.yaml@), you can reload Arvados with
+
+<pre>
+$ helm upgrade arvados .
+</pre>
+
+h2. Shut down
+
+{% include 'notebox_begin_warning' %}
+This Helm chart does not retain any state after it is deleted. An Arvados cluster created with this Helm chart is entirely ephemeral, and <strong>all data stored on the Arvados cluster will be deleted</strong> when it is shut down. This will be fixed in a future version.
+{% include 'notebox_end' %}
+
+<pre>
+$ helm del arvados
+</pre>

@@ -17,4 +17,4 @@ fi
 
 /usr/local/lib/arvbox/runsu.sh flock /var/lib/arvados/cluster_config.yml.lock /usr/local/lib/arvbox/cluster-config.sh
 
-exec /usr/local/lib/arvbox/runsu.sh /usr/local/bin/arvados-controller
+exec /usr/local/bin/arvados-controller

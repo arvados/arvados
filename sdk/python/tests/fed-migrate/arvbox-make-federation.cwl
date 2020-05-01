@@ -9,6 +9,8 @@ inputs:
   branch:
     type: string
     default: master
+  arvbox_mode:
+    type: string?
 outputs:
   arvados_api_hosts:
     type: string[]
@@ -39,6 +41,7 @@ steps:
     in:
       arvbox_base: arvbox_base
       branch: branch
+      arvbox_mode: arvbox_mode
       logincluster:
         default: true
     out: [arvados_api_hosts, arvados_cluster_ids, arvado_api_host_insecure, superuser_tokens, arvbox_containers, arvbox_bin]

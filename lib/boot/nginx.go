@@ -47,6 +47,7 @@ func (runNginx) Run(ctx context.Context, fail func(error), super *Supervisor) er
 		{"KEEPWEBDL", super.cluster.Services.WebDAVDownload},
 		{"KEEPPROXY", super.cluster.Services.Keepproxy},
 		{"GIT", super.cluster.Services.GitHTTP},
+		{"HEALTH", super.cluster.Services.Health},
 		{"WORKBENCH1", super.cluster.Services.Workbench1},
 		{"WS", super.cluster.Services.Websocket},
 	} {

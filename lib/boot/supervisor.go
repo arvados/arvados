@@ -589,6 +589,7 @@ func (super *Supervisor) autofillConfig(cfg *arvados.Config) error {
 		if svc.ExternalURL.Host == "" {
 			if svc == &cluster.Services.Controller ||
 				svc == &cluster.Services.GitHTTP ||
+				svc == &cluster.Services.Health ||
 				svc == &cluster.Services.Keepproxy ||
 				svc == &cluster.Services.WebDAV ||
 				svc == &cluster.Services.WebDAVDownload ||
