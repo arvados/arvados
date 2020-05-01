@@ -31,7 +31,7 @@ Next, copy the values of *Client ID* and *Client secret* from the Google Develop
 
 h2(#pam). PAM (experimental)
 
-With this configuration, authentication is done according to the Linux PAM configuration on your controller host.
+With this configuration, authentication is done according to the Linux PAM ("Pluggable Authentication Modules") configuration on your controller host.
 
 Enable PAM authentication in @config.yml@:
 
@@ -41,6 +41,12 @@ Enable PAM authentication in @config.yml@:
 </pre>
 
 Check the "default config file":{{site.baseurl}}/admin/config.html for more PAM configuration options.
+
+The default PAM configuration on most Linux systems uses the local password database in @/etc/shadow@ for all logins. In this case, in order to log in to Arvados, users must have a shell account and password on the controller host itself. This can be convenient for a single-user or test cluster.
+
+PAM can also be configured to use different backends like LDAP. In a production environment, PAM configuration should use the service name ("arvados" by default) to set a separate policy for Arvados logins: generally, Arvados users should not have shell accounts on the controller node.
+
+For information about configuring PAM, refer to the "PAM System Administrator's Guide":http://www.linux-pam.org/Linux-PAM-html/Linux-PAM_SAG.html.
 
 h2(#sso). Separate single-sign-on (SSO) server
 
