@@ -2,12 +2,13 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-PERMISSION_VIEW = "materialized_permission_view"
+PERMISSION_VIEW = "materialized_permissions"
 
 def do_refresh_permission_view
   ActiveRecord::Base.transaction do
     ActiveRecord::Base.connection.execute("LOCK TABLE permission_refresh_lock")
-    ActiveRecord::Base.connection.execute("REFRESH MATERIALIZED VIEW #{PERMISSION_VIEW}")
+    ActiveRecord::Base.connection.execute("DELETE FROM #{PERMISSION_VIEW}")
+    ActiveRecord::Base.connection.execute("INSERT INTO #{PERMISSION_VIEW} select * from compute_permission_table()")
   end
 end
 
