@@ -70,8 +70,12 @@ class OwnerTest < ActiveSupport::TestCase
              "new #{o_class} should really be in DB")
       old_uuid = o.uuid
       new_uuid = o.uuid.sub(/..........$/, rand(2**256).to_s(36)[0..9])
-      assert(o.update_attributes(uuid: new_uuid),
-             "should change #{o_class} uuid from #{old_uuid} to #{new_uuid}")
+      if o.respond_to? :update_uuid
+        o.update_uuid(new_uuid: new_uuid)
+      else
+        assert(o.update_attributes(uuid: new_uuid),
+               "should change #{o_class} uuid from #{old_uuid} to #{new_uuid}")
+      end
       assert_equal(false, o_class.where(uuid: old_uuid).any?,
                    "#{old_uuid} should disappear when renamed to #{new_uuid}")
     end
@@ -116,8 +120,8 @@ class OwnerTest < ActiveSupport::TestCase
                  "setting owner to self should work")
     old_uuid = o.uuid
     new_uuid = o.uuid.sub(/..........$/, rand(2**256).to_s(36)[0..9])
-    assert(o.update_attributes(uuid: new_uuid),
-           "should change uuid of User that owns self")
+    o.update_uuid(new_uuid: new_uuid)
+    o = User.find_by_uuid(new_uuid)
     assert_equal(false, User.where(uuid: old_uuid).any?,
                  "#{old_uuid} should not be in DB after deleting")
     assert_equal(true, User.where(uuid: new_uuid).any?,

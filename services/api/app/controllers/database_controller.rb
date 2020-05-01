@@ -78,6 +78,7 @@ class DatabaseController < ApplicationController
     require 'refresh_permission_view'
 
     refresh_permission_view
+    refresh_trashed
 
     # Done.
     send_json success: true

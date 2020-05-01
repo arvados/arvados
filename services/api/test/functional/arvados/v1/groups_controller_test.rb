@@ -505,9 +505,19 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
 
   ### trashed project tests ###
 
-  [:active, :admin].each do |auth|
+  #
+  # The structure is
+  #
+  # trashed_project         (zzzzz-j7d0g-trashedproject1)
+  #   trashed_subproject    (zzzzz-j7d0g-trashedproject2)
+  #   trashed_subproject3   (zzzzz-j7d0g-trashedproject3)
+  #   zzzzz-xvhdp-cr5trashedcontr
+
+  [:active,
+   :admin].each do |auth|
     # project: to query,    to untrash,    is visible, parent contents listing success
-    [[:trashed_project,     [],                 false, true],
+    [
+     [:trashed_project,     [],                 false, true],
      [:trashed_project,     [:trashed_project], true,  true],
      [:trashed_subproject,  [],                 false, false],
      [:trashed_subproject,  [:trashed_project], true,  true],
