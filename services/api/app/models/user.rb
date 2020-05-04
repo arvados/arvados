@@ -239,8 +239,9 @@ class User < ArvadosModel
 
   def must_unsetup_to_deactivate
     if self.is_active_changed? &&
-       self.is_active_was == true &&
-       !self.is_active
+       self.is_active_was &&
+       !self.is_active &&
+       self.uuid[0..4] == Rails.configuration.ClusterID
 
       group = Group.where(name: 'All users').select do |g|
         g[:uuid].match(/-f+$/)
