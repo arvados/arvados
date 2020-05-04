@@ -51,7 +51,10 @@ class Arvados::V1::UsersController < ApplicationController
       @object = current_user
     end
     if not @object.is_active
-      if not (current_user.is_admin or @object.is_invited)
+      if @object.uuid[0..4] != Rails.configuration.ClusterID
+        logger.warn "Remote user #{@object.uuid} called users.activate"
+        raise ArgumentError.new "cannot activate remote account"
+      elsif not (current_user.is_admin or @object.is_invited)
         logger.warn "User #{@object.uuid} called users.activate " +
           "but is not invited"
         raise ArgumentError.new "Cannot activate without being invited."
