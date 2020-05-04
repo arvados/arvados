@@ -309,6 +309,7 @@ func (s *IntegrationSuite) TestListUsers(c *check.C) {
 	rootctx1, _, _ := s.rootClients("z1111")
 	conn1 := s.conn("z1111")
 	conn3 := s.conn("z3333")
+	userctx1, _, _ := s.userClients(rootctx1, c, conn1, "z1111", true)
 
 	// Make sure LoginCluster is properly configured
 	for cls := range s.testClusters {
@@ -318,7 +319,9 @@ func (s *IntegrationSuite) TestListUsers(c *check.C) {
 			check.Commentf("incorrect LoginCluster config on cluster %q", cls))
 	}
 	// Make sure z1111 has users with NULL usernames
-	lst, err := conn1.UserList(rootctx1, arvados.ListOptions{Limit: -1})
+	lst, err := conn1.UserList(rootctx1, arvados.ListOptions{
+		Limit: math.MaxInt64, // check that large limit works (see #16263)
+	})
 	nullUsername := false
 	c.Assert(err, check.IsNil)
 	c.Assert(len(lst.Items), check.Not(check.Equals), 0)
@@ -328,27 +331,45 @@ func (s *IntegrationSuite) TestListUsers(c *check.C) {
 		}
 	}
 	c.Assert(nullUsername, check.Equals, true)
+
+	user1, err := conn1.UserGetCurrent(userctx1, arvados.GetOptions{})
+	c.Assert(err, check.IsNil)
+	c.Check(user1.IsActive, check.Equals, true)
+
 	// Ask for the user list on z3333 using z1111's system root token
-	_, err = conn3.UserList(rootctx1, arvados.ListOptions{Limit: -1})
-	c.Assert(err, check.IsNil, check.Commentf("getting user list: %q", err))
-}
-
-// Test for bug #16263
-func (s *IntegrationSuite) TestListUsersWithMaxLimit(c *check.C) {
-	rootctx1, _, _ := s.rootClients("z1111")
-	conn3 := s.conn("z3333")
-	maxLimit := int64(math.MaxInt64)
-
-	// Make sure LoginCluster is properly configured
-	for cls := range s.testClusters {
-		c.Check(
-			s.testClusters[cls].config.Clusters[cls].Login.LoginCluster,
-			check.Equals, "z1111",
-			check.Commentf("incorrect LoginCluster config on cluster %q", cls))
+	lst, err = conn3.UserList(rootctx1, arvados.ListOptions{Limit: -1})
+	c.Assert(err, check.IsNil)
+	found := false
+	for _, user := range lst.Items {
+		if user.UUID == user1.UUID {
+			c.Check(user.IsActive, check.Equals, true)
+			found = true
+			break
+		}
 	}
+	c.Check(found, check.Equals, true)
 
-	// Ask for the user list on z3333 using z1111's system root token and
-	// limit: max int64 value.
-	_, err := conn3.UserList(rootctx1, arvados.ListOptions{Limit: maxLimit})
-	c.Assert(err, check.IsNil, check.Commentf("getting user list: %q", err))
+	// Deactivate user acct on z1111
+	_, err = conn1.UserUnsetup(rootctx1, arvados.GetOptions{UUID: user1.UUID})
+	c.Assert(err, check.IsNil)
+
+	// Get user list from z3333, check the returned z1111 user is
+	// deactivated
+	lst, err = conn3.UserList(rootctx1, arvados.ListOptions{Limit: -1})
+	c.Assert(err, check.IsNil)
+	found = false
+	for _, user := range lst.Items {
+		if user.UUID == user1.UUID {
+			c.Check(user.IsActive, check.Equals, false)
+			found = true
+			break
+		}
+	}
+	c.Check(found, check.Equals, true)
+
+	// Deactivated user can see is_active==false via "get current
+	// user" API
+	user1, err = conn3.UserGetCurrent(userctx1, arvados.GetOptions{})
+	c.Assert(err, check.IsNil)
+	c.Check(user1.IsActive, check.Equals, false)
 }
