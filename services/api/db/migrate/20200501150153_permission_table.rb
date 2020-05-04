@@ -75,10 +75,60 @@ as $$
 $$;
 }
 
+    ActiveRecord::Base.connection.execute %{
+create or replace function project_subtree (starting_uuid varchar(27))
+returns table (target_uuid varchar(27))
+STABLE
+language SQL
+as $$
+WITH RECURSIVE
+	project_subtree(uuid) as (
+	values (starting_uuid)
+	union
+	select groups.uuid from groups join project_subtree on (groups.owner_uuid = project_subtree.uuid)
+	)
+	select uuid from project_subtree;
+$$;
+}
+
+    ActiveRecord::Base.connection.execute %{
+create or replace function project_subtree_notrash (starting_uuid varchar(27))
+returns table (target_uuid varchar(27))
+STABLE
+language SQL
+as $$
+WITH RECURSIVE
+	project_subtree(uuid) as (
+	values (starting_uuid)
+	union
+	select groups.uuid from groups join project_subtree on (groups.owner_uuid = project_subtree.uuid)
+        where groups.is_trashed=false
+	)
+	select uuid from project_subtree;
+$$;
+}
+
+    create_table :trashed_groups, :id => false do |t|
+      t.string :uuid
+    end
+
+        ActiveRecord::Base.connection.execute %{
+create or replace function compute_trashed ()
+returns table (uuid varchar(27))
+STABLE
+language SQL
+as $$
+select ps.target_uuid from groups,
+  lateral project_subtree(groups.uuid) ps
+  where groups.is_trashed = true
+$$;
+}
+
     ActiveRecord::Base.connection.execute "DROP MATERIALIZED VIEW IF EXISTS materialized_permission_view;"
 
   end
   def down
     drop_table :materialized_permissions
+    drop_table :trashed_groups
   end
 end

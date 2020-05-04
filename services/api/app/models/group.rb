@@ -39,6 +39,21 @@ class Group < ArvadosModel
   end
 
   def maybe_invalidate_permissions_cache
+    if is_trashed_changed?
+      if is_trashed == true
+        ActiveRecord::Base.connection.exec_query %{
+insert into trashed_groups (uuid) select * from project_subtree($1);
+},
+                                                 'Group.trash_subtree',
+                                                 [[nil, self.uuid]]
+      elsif is_trashed == false && TrashedGroup.find_by_uuid(self.owner_uuid).nil?
+        ActiveRecord::Base.connection.exec_query %{
+delete from trashed_groups where uuid in (select * from project_subtree_notrash($1));
+},
+                              'Group.untrash_subtree',
+                              [[nil, self.uuid]]
+      end
+    end
     if uuid_changed? or owner_uuid_changed? or is_trashed_changed?
       # This can change users' permissions on other groups as well as
       # this one.
