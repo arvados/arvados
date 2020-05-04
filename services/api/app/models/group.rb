@@ -42,10 +42,12 @@ class Group < ArvadosModel
     if is_trashed_changed? or owner_uuid_changed?
       if is_trashed == true
         ActiveRecord::Base.connection.exec_query %{
-insert into trashed_groups (group_uuid) select * from project_subtree($1);
+insert into trashed_groups (group_uuid, trash_at)
+  select target_uuid as group_uuid, $2 as trash_at from project_subtree($1);
 },
                                                  'Group.trash_subtree',
-                                                 [[nil, self.uuid]]
+                                                 [[nil, self.uuid],
+                                                  [nil, self.trash_at]]
       elsif is_trashed == false && TrashedGroup.find_by_group_uuid(self.owner_uuid).nil?
         ActiveRecord::Base.connection.exec_query %{
 delete from trashed_groups where group_uuid in (select * from project_subtree_notrash($1));
