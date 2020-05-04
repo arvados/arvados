@@ -60,6 +60,11 @@ class ActiveSupport::TestCase
   include ArvadosTestSupport
   include CurrentApiClient
 
+  setup do
+    ActiveRecord::Base.connection.execute("DELETE FROM #{TRASHED_GROUPS}")
+    ActiveRecord::Base.connection.execute("INSERT INTO #{TRASHED_GROUPS} select * from compute_trashed()")
+  end
+
   teardown do
     Thread.current[:api_client_ip_address] = nil
     Thread.current[:api_client_authorization] = nil

@@ -39,7 +39,7 @@ class Group < ArvadosModel
   end
 
   def maybe_invalidate_permissions_cache
-    if is_trashed_changed?
+    if is_trashed_changed? or owner_uuid_changed?
       if is_trashed == true
         ActiveRecord::Base.connection.exec_query %{
 insert into trashed_groups (group_uuid) select * from project_subtree($1);

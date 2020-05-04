@@ -10,8 +10,6 @@ def do_refresh_permission_view
     ActiveRecord::Base.connection.execute("LOCK TABLE permission_refresh_lock")
     ActiveRecord::Base.connection.execute("DELETE FROM #{PERMISSION_VIEW}")
     ActiveRecord::Base.connection.execute("INSERT INTO #{PERMISSION_VIEW} select * from compute_permission_table()")
-    ActiveRecord::Base.connection.execute("DELETE FROM #{TRASHED_GROUPS}")
-    ActiveRecord::Base.connection.execute("INSERT INTO #{TRASHED_GROUPS} select * from compute_trashed()")
   end
 end
 
