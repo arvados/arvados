@@ -97,16 +97,18 @@ $$;
 }
 
     create_table :trashed_groups, :id => false do |t|
-      t.string :uuid
+      t.string :group_uuid
+      t.datetime :trash_at
     end
+    add_index :trashed_groups, :group_uuid
 
         ActiveRecord::Base.connection.execute %{
 create or replace function compute_trashed ()
-returns table (uuid varchar(27))
+returns table (uuid varchar(27), trash_at timestamp)
 STABLE
 language SQL
 as $$
-select ps.target_uuid from groups,
+select ps.target_uuid as group_uuid, groups.trash_at from groups,
   lateral project_subtree(groups.uuid) ps
   where groups.is_trashed = true
 $$;
@@ -118,5 +120,10 @@ $$;
   def down
     drop_table :materialized_permissions
     drop_table :trashed_groups
+
+    ActiveRecord::Base.connection.execute "DROP function compute_permission_table ();"
+    ActiveRecord::Base.connection.execute "DROP function project_subtree (varchar(27));"
+    ActiveRecord::Base.connection.execute "DROP function project_subtree_notrash (varchar(27));"
+    ActiveRecord::Base.connection.execute "DROP function compute_trashed ();"
   end
 end
