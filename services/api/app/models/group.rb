@@ -39,24 +39,38 @@ class Group < ArvadosModel
   end
 
   def maybe_invalidate_permissions_cache
-    if is_trashed_changed? or owner_uuid_changed?
-      if is_trashed == true
-        ActiveRecord::Base.connection.exec_query %{
+    if trash_at_changed? or owner_uuid_changed?
+      # The group was added or removed from the trash.
+      #
+      # Strategy:
+      #   Determine the time this goes in the trash
+      #     (or null, if it does not belong in the trash)
+      #   Compute subtree to determine the time each subproject goes
+      #     in the trash
+      #   Remove groups that don't belong from trash
+      #   Add/update groups that do belong in the trash
+
+      temptable = "group_subtree_#{rand(2**64).to_s(10)}"
+      ActiveRecord::Base.connection.exec_query %{
+create temporary table #{temptable} on commit drop
+as select * from project_subtree_with_trash_at($1, LEAST($2, $3)::timestamp)
+},
+                                               'Group.get_subtree',
+                                               [[nil, self.uuid],
+                                                [nil, TrashedGroup.find_by_group_uuid(self.owner_uuid).andand.trash_at],
+                                                [nil, self.trash_at]]
+
+      ActiveRecord::Base.connection.exec_query %{
+delete from trashed_groups where group_uuid in (select target_uuid from #{temptable} where trash_at is NULL);
+}
+
+      ActiveRecord::Base.connection.exec_query %{
 insert into trashed_groups (group_uuid, trash_at)
-  select target_uuid as group_uuid, $2 as trash_at from project_subtree($1);
-},
-                                                 'Group.trash_subtree',
-                                                 [[nil, self.uuid],
-                                                  [nil, self.trash_at]]
-      elsif is_trashed == false && TrashedGroup.find_by_group_uuid(self.owner_uuid).nil?
-        ActiveRecord::Base.connection.exec_query %{
-delete from trashed_groups where group_uuid in (select * from project_subtree_notrash($1));
-},
-                              'Group.untrash_subtree',
-                              [[nil, self.uuid]]
-      end
+  select target_uuid as group_uuid, trash_at from #{temptable} where trash_at is not NULL
+on conflict (group_uuid) do update set trash_at=EXCLUDED.trash_at;
+}
     end
-    if uuid_changed? or owner_uuid_changed? or is_trashed_changed?
+    if uuid_changed? or owner_uuid_changed?
       # This can change users' permissions on other groups as well as
       # this one.
       invalidate_permissions_cache

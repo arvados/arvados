@@ -80,19 +80,19 @@ $$;
 }
 
     ActiveRecord::Base.connection.execute %{
-create or replace function project_subtree_notrash (starting_uuid varchar(27))
-returns table (target_uuid varchar(27))
+create or replace function project_subtree_with_trash_at (starting_uuid varchar(27), starting_trash_at timestamp)
+returns table (target_uuid varchar(27), trash_at timestamp)
 STABLE
 language SQL
 as $$
 WITH RECURSIVE
-	project_subtree(uuid) as (
-	values (starting_uuid)
+	project_subtree(uuid, trash_at) as (
+	values (starting_uuid, starting_trash_at)
 	union
-	select groups.uuid from groups join project_subtree on (groups.owner_uuid = project_subtree.uuid)
-        where groups.is_trashed=false
+	select groups.uuid, LEAST(project_subtree.trash_at, groups.trash_at)
+          from groups join project_subtree on (groups.owner_uuid = project_subtree.uuid)
 	)
-	select uuid from project_subtree;
+	select uuid, trash_at from project_subtree;
 $$;
 }
 
@@ -100,7 +100,7 @@ $$;
       t.string :group_uuid
       t.datetime :trash_at
     end
-    add_index :trashed_groups, :group_uuid
+    add_index :trashed_groups, :group_uuid, :unique => true
 
         ActiveRecord::Base.connection.execute %{
 create or replace function compute_trashed ()
@@ -108,9 +108,9 @@ returns table (uuid varchar(27), trash_at timestamp)
 STABLE
 language SQL
 as $$
-select ps.target_uuid as group_uuid, groups.trash_at from groups,
-  lateral project_subtree(groups.uuid) ps
-  where groups.is_trashed = true
+select ps.target_uuid as group_uuid, ps.trash_at from groups,
+  lateral project_subtree_with_trash_at(groups.uuid, groups.trash_at) ps
+  where groups.owner_uuid like '_____-tpzed-_______________'
 $$;
 }
 
@@ -123,7 +123,7 @@ $$;
 
     ActiveRecord::Base.connection.execute "DROP function compute_permission_table ();"
     ActiveRecord::Base.connection.execute "DROP function project_subtree (varchar(27));"
-    ActiveRecord::Base.connection.execute "DROP function project_subtree_notrash (varchar(27));"
+    ActiveRecord::Base.connection.execute "DROP function project_subtree_with_trash_at (varchar(27), timestamp);"
     ActiveRecord::Base.connection.execute "DROP function compute_trashed ();"
   end
 end
