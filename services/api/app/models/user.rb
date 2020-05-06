@@ -238,10 +238,15 @@ class User < ArvadosModel
   end
 
   def must_unsetup_to_deactivate
-    if self.is_active_changed? &&
+    if !self.new_record? &&
+       self.uuid[0..4] == Rails.configuration.Login.LoginCluster &&
+       self.uuid[0..4] != Rails.configuration.ClusterID
+      # OK to update our local record to whatever the LoginCluster
+      # reports, because self-activate is not allowed.
+      return
+    elsif self.is_active_changed? &&
        self.is_active_was &&
-       !self.is_active &&
-       self.uuid[0..4] == Rails.configuration.ClusterID
+       !self.is_active
 
       group = Group.where(name: 'All users').select do |g|
         g[:uuid].match(/-f+$/)
