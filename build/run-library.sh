@@ -638,7 +638,8 @@ fpm_build_virtualenv () {
   COMMAND_ARR+=('-n' "$PYTHON_PKG")
   COMMAND_ARR+=('-C' "build")
 
-  if [[ -e "$WORKSPACE/$PKG_DIR/$PKG.service" ]]; then
+  systemd_unit="$WORKSPACE/$PKG_DIR/$PKG.service"
+  if [[ -e "${systemd_unit}" ]]; then
     COMMAND_ARR+=('--after-install' "${WORKSPACE}/build/go-python-package-scripts/postinst")
     COMMAND_ARR+=('--before-remove' "${WORKSPACE}/build/go-python-package-scripts/prerm")
   fi
@@ -670,6 +671,12 @@ fpm_build_virtualenv () {
   for i in "${fpm_depends[@]}"; do
     COMMAND_ARR+=('--depends' "$i")
   done
+
+  # make sure the systemd service file ends up in the right place
+  # currently only used by arvados-docker-cleaner
+  if [[ -e "${systemd_unit}" ]]; then
+    COMMAND_ARR+=("usr/share/python3/dist/$PKG/share/doc/$PKG/$PKG.service=/lib/systemd/system/$PKG.service")
+  fi
 
   COMMAND_ARR+=("${fpm_args[@]}")
 
