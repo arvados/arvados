@@ -324,7 +324,7 @@ class ArvadosModel < ApplicationRecord
       owner_check = ""
       if sql_table != "api_client_authorizations" and sql_table != "groups" then
         owner_check = "OR #{sql_table}.owner_uuid IN (SELECT target_uuid FROM #{PERMISSION_VIEW} "+
-          "WHERE user_uuid IN (:user_uuids) AND perm_level >= 1 #{trashed_check} AND target_owner_uuid IS NOT NULL) "
+          "WHERE user_uuid IN (:user_uuids) AND perm_level >= 1 #{trashed_check} AND traverse_owned) "
       end
 
       links_cond = ""

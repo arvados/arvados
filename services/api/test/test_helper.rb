@@ -61,6 +61,7 @@ class ActiveSupport::TestCase
   include CurrentApiClient
 
   setup do
+    do_refresh_permission_view
     ActiveRecord::Base.connection.execute("DELETE FROM #{TRASHED_GROUPS}")
     ActiveRecord::Base.connection.execute("INSERT INTO #{TRASHED_GROUPS} select * from compute_trashed()")
   end
