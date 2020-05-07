@@ -1000,6 +1000,19 @@ class CollectionTest < ActiveSupport::TestCase
   test "delete referring links in SweepTrashedObjects" do
     uuid = collections(:trashed_on_next_sweep).uuid
     act_as_system_user do
+      assert_raises ActiveRecord::RecordInvalid do
+        # Cannot create because :trashed_on_next_sweep is already trashed
+        Link.create!(head_uuid: uuid,
+                     tail_uuid: system_user_uuid,
+                     link_class: 'whatever',
+                     name: 'something')
+      end
+
+      # Bump trash_at to now + 1 minute
+      Collection.where(uuid: uuid).
+        update(trash_at: db_current_time + (1).minute)
+
+      # Not considered trashed now
       Link.create!(head_uuid: uuid,
                    tail_uuid: system_user_uuid,
                    link_class: 'whatever',

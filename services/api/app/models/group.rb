@@ -43,10 +43,7 @@ class Group < ArvadosModel
       # The group was added or removed from the trash.
       #
       # Strategy:
-      #   Determine the time this goes in the trash
-      #     (or null, if it does not belong in the trash)
-      #   Compute subtree to determine the time each subproject goes
-      #     in the trash
+      #   Compute project subtree, propagating trash_at to subprojects
       #   Remove groups that don't belong from trash
       #   Add/update groups that do belong in the trash
 

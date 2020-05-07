@@ -8,24 +8,12 @@ TRASHED_GROUPS = "trashed_groups"
 def do_refresh_permission_view
   ActiveRecord::Base.transaction do
     ActiveRecord::Base.connection.execute("LOCK TABLE permission_refresh_lock")
-    # ActiveRecord::Base.connection.execute("DELETE FROM #{PERMISSION_VIEW}")
-    # ActiveRecord::Base.connection.execute("INSERT INTO #{PERMISSION_VIEW} select * from compute_permission_table()")
-
-    # puts "do_refresh_permission_view1"
-    # ActiveRecord::Base.connection.exec_query("select * from materialized_permissions order by user_uuid, target_uuid, perm_level").each do |r|
-    #   puts "d: #{r}"
-    # end
-
     ActiveRecord::Base.connection.execute("DELETE FROM #{PERMISSION_VIEW}")
     ActiveRecord::Base.connection.execute %{
 INSERT INTO #{PERMISSION_VIEW}
 select users.uuid, g.target_uuid, g.val, g.traverse_owned
 from users, lateral search_permission_graph(users.uuid, 3) as g
 }
-    # puts "do_refresh_permission_view2"
-    # ActiveRecord::Base.connection.exec_query("select * from materialized_permissions order by user_uuid, target_uuid, perm_level").each do |r|
-    #   puts "d: #{r}"
-    # end
   end
 end
 
