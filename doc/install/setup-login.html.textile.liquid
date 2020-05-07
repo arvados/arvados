@@ -12,8 +12,9 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 Select one of the following login mechanisms for your cluster.
 
 # If all users will authenticate with Google, "configure Google login":#google.
+# If all users will authenticate with an existing LDAP service, "configure LDAP":#ldap.
 # If all users will authenticate using PAM as configured on your controller node, "configure PAM":#pam.
-# If you need to enable multiple authentication methods, or your backend can't be configured as a PAM service on your controller node, "configure a separate single sign-on (SSO) server":#sso.
+# If you need to enable multiple authentication methods, "configure a separate single sign-on (SSO) server":#sso.
 
 h2(#google). Google login
 
@@ -28,6 +29,32 @@ Next, copy the values of *Client ID* and *Client secret* from the Google Develop
       GoogleClientID: "0000000000000-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz.apps.googleusercontent.com"
       GoogleClientSecret: "zzzzzzzzzzzzzzzzzzzzzzzz"
 </pre>
+
+h2(#ldap). LDAP
+
+With this configuration, authentication uses an external LDAP service like OpenLDAP or Active Directory.
+
+Enable LDAP authentication in @config.yml@:
+
+<pre>
+    Login:
+      LDAP:
+        Enable: true
+        URL: ldap://ldap.example.com:389
+        SearchBindUser: cn=lookupuser,dc=example,dc=com
+        SearchBindPassword: xxxxxxxx
+        SearchBase: ou=Users,dc=example,dc=com
+</pre>
+
+The email address reported by LDAP will be used as primary key for Arvados accounts. This means *users must not be able to edit their own email addresses* in the directory.
+
+Additional configuration settings are available:
+* @StartTLS@ is enabled by default.
+* @StripDomain@ and @AppendDomain@ modify the username entered by the user before searching for it in the directory.
+* @SearchAttribute@ (default @uid@) is the LDAP attribute used when searching for usernames.
+* @SearchFilters@ accepts LDAP filter expressions to control which users can log in.
+
+Check the LDAP section in the "default config file":{{site.baseurl}}/admin/config.html for more details and configuration options.
 
 h2(#pam). PAM (experimental)
 

@@ -583,7 +583,8 @@ Clusters:
         # Use an LDAP service to authenticate users.
         Enable: false
 
-        # Server URL, like "ldap://ldapserver.example.com:389".
+        # Server URL, like "ldap://ldapserver.example.com:389" or
+        # "ldaps://ldapserver.example.com:636".
         URL: "ldap://ldap:389"
 
         # Use StartTLS upon connecting to the server.
