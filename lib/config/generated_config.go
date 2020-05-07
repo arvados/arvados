@@ -579,6 +579,63 @@ Clusters:
       # accounts.
       PAMDefaultEmailDomain: ""
 
+      LDAP:
+        # Use an LDAP service to authenticate users.
+        Enable: false
+
+        # Server URL, like "ldap://ldapserver.example.com:389".
+        URL: "ldap://ldap:389"
+
+        # Use StartTLS upon connecting to the server.
+        StartTLS: true
+
+        # Skip TLS certificate name verification.
+        InsecureTLS: false
+
+        # Strip the @domain part if a user supplies an email-style
+        # username with this domain. If "*", strip any user-provided
+        # domain. If "", never strip the domain part. Example:
+        # "example.com"
+        StripDomain: ""
+
+        # If, after applying StripDomain, the username contains no "@"
+        # character, append this domain to form an email-style
+        # username. Example: "example.com"
+        AppendDomain: ""
+
+        # The LDAP attribute to filter on when looking up a username
+        # (after applying StripDomain and AppendDomain).
+        SearchAttribute: uid
+
+        # Bind with this username (DN or UPN) and password when
+        # looking up the user record.
+        #
+        # Example user: "cn=admin,dc=example,dc=com"
+        SearchBindUser: ""
+        SearchBindPassword: ""
+
+        # Directory base for username lookup. Example:
+        # "ou=Users,dc=example,dc=com"
+        SearchBase: ""
+
+        # Additional filters for username lookup. Special characters
+        # in assertion values must be escaped (see RFC4515). Example:
+        # "(objectClass=person)"
+        SearchFilters: ""
+
+        # LDAP attribute to use as the user's email address.
+        #
+        # Important: This must not be an attribute whose value can be
+        # edited in the directory by the users themselves. Otherwise,
+        # users can take over other users' Arvados accounts trivially
+        # (email address is the primary key for Arvados accounts.)
+        EmailAttribute: mail
+
+        # LDAP attribute to use as the preferred Arvados username. If
+        # no value is found (or this config is empty) the username
+        # originally supplied by the user will be used.
+        UsernameAttribute: uid
+
       # The cluster ID to delegate the user database.  When set,
       # logins on this cluster will be redirected to the login cluster
       # (login cluster must appear in RemoteClusters with Proxy: true)

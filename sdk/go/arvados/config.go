@@ -135,6 +135,21 @@ type Cluster struct {
 		Repositories string
 	}
 	Login struct {
+		LDAP struct {
+			Enable             bool
+			URL                URL
+			StartTLS           bool
+			InsecureTLS        bool
+			StripDomain        string
+			AppendDomain       string
+			SearchAttribute    string
+			SearchBindUser     string
+			SearchBindPassword string
+			SearchBase         string
+			SearchFilters      string
+			EmailAttribute     string
+			UsernameAttribute  string
+		}
 		GoogleClientID                string
 		GoogleClientSecret            string
 		GoogleAlternateEmailAddresses bool

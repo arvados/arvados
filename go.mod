@@ -25,6 +25,7 @@ require (
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/ghodss/yaml v1.0.0
 	github.com/gliderlabs/ssh v0.2.2 // indirect
+	github.com/go-ldap/ldap v3.0.3+incompatible
 	github.com/gogo/protobuf v1.1.1
 	github.com/gorilla/context v1.1.1 // indirect
 	github.com/gorilla/mux v1.6.1-0.20180107155708-5bbbb5b2b572
@@ -57,6 +58,7 @@ require (
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	golang.org/x/sys v0.0.0-20191105231009-c1f44814a5cd
 	google.golang.org/api v0.13.0
+	gopkg.in/asn1-ber.v1 v1.0.0-20181015200546-f715ec2f112d // indirect
 	gopkg.in/check.v1 v1.0.0-20161208181325-20d25e280405
 	gopkg.in/square/go-jose.v2 v2.3.1
 	gopkg.in/src-d/go-billy.v4 v4.0.1

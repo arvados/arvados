@@ -8,8 +8,11 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"net/url"
 
+	"git.arvados.org/arvados.git/lib/controller/rpc"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
 )
 
@@ -23,16 +26,19 @@ func chooseLoginController(cluster *arvados.Cluster, railsProxy *railsProxy) log
 	wantGoogle := cluster.Login.GoogleClientID != ""
 	wantSSO := cluster.Login.ProviderAppID != ""
 	wantPAM := cluster.Login.PAM
+	wantLDAP := cluster.Login.LDAP.Enable
 	switch {
-	case wantGoogle && !wantSSO && !wantPAM:
+	case wantGoogle && !wantSSO && !wantPAM && !wantLDAP:
 		return &googleLoginController{Cluster: cluster, RailsProxy: railsProxy}
-	case !wantGoogle && wantSSO && !wantPAM:
+	case !wantGoogle && wantSSO && !wantPAM && !wantLDAP:
 		return &ssoLoginController{railsProxy}
-	case !wantGoogle && !wantSSO && wantPAM:
+	case !wantGoogle && !wantSSO && wantPAM && !wantLDAP:
 		return &pamLoginController{Cluster: cluster, RailsProxy: railsProxy}
+	case !wantGoogle && !wantSSO && !wantPAM && wantLDAP:
+		return &ldapLoginController{Cluster: cluster, RailsProxy: railsProxy}
 	default:
 		return errorLoginController{
-			error: errors.New("configuration problem: exactly one of Login.GoogleClientID, Login.ProviderAppID, or Login.PAM must be configured"),
+			error: errors.New("configuration problem: exactly one of Login.GoogleClientID, Login.ProviderAppID, Login.PAM, or Login.LDAP.Enable must be configured"),
 		}
 	}
 }
@@ -67,4 +73,24 @@ func noopLogout(cluster *arvados.Cluster, opts arvados.LogoutOptions) (arvados.L
 		}
 	}
 	return arvados.LogoutResponse{RedirectLocation: target}, nil
+}
+
+func createAPIClientAuthorization(ctx context.Context, conn *rpc.Conn, rootToken string, authinfo rpc.UserSessionAuthInfo) (arvados.APIClientAuthorization, error) {
+	ctxRoot := auth.NewContext(ctx, &auth.Credentials{Tokens: []string{rootToken}})
+	resp, err := conn.UserSessionCreate(ctxRoot, rpc.UserSessionCreateOptions{
+		// Send a fake ReturnTo value instead of the caller's
+		// opts.ReturnTo. We won't follow the resulting
+		// redirect target anyway.
+		ReturnTo: ",https://none.invalid",
+		AuthInfo: authinfo,
+	})
+	if err != nil {
+		return arvados.APIClientAuthorization{}, err
+	}
+	target, err := url.Parse(resp.RedirectLocation)
+	if err != nil {
+		return arvados.APIClientAuthorization{}, err
+	}
+	token := target.Query().Get("api_token")
+	return conn.APIClientAuthorizationCurrent(auth.NewContext(ctx, auth.NewCredentials(token)), arvados.GetOptions{})
 }

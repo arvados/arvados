@@ -30,6 +30,8 @@ class UserSessionsController < ApplicationController
       authinfo = request.env['omniauth.auth']['info'].with_indifferent_access
     end
 
+    Rails.logger.warn "authinfo was #{authinfo.inspect}"
+
     begin
       user = User.register(authinfo)
     rescue => e
