@@ -22,11 +22,12 @@ With this configuration, users will sign in with their Google accounts.
 
 First, visit "Setting up Google auth.":google-auth.html
 
-Next, copy the values of *Client ID* and *Client secret* from the Google Developers Console into @Login.Google.ClientID@ and @Login.Google.ClientSecret@ in @config.yml@:
+Next, enable Google login and copy the values of *Client ID* and *Client secret* from the Google Developers Console into the @Login.Google@ section of @config.yml@:
 
 <pre>
     Login:
       Google:
+        Enable: true
         ClientID: "0000000000000-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz.apps.googleusercontent.com"
         ClientSecret: "zzzzzzzzzzzzzzzzzzzzzzzz"
 </pre>
@@ -35,7 +36,7 @@ h2(#ldap). LDAP
 
 With this configuration, authentication uses an external LDAP service like OpenLDAP or Active Directory.
 
-Enable LDAP authentication in @config.yml@:
+Enable LDAP authentication and provide your LDAP server's host, port, and credentials (if needed to search the directory) in @config.yml@:
 
 <pre>
     Login:
