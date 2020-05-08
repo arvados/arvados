@@ -11,21 +11,8 @@ import (
 	"os"
 	"os/exec"
 
-	"git.arvados.org/arvados.git/sdk/go/arvados"
-	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	check "gopkg.in/check.v1"
 )
-
-var _ = check.Suite(&LDAPSuite{})
-
-type LDAPSuite struct{}
-
-func (s *LDAPSuite) TearDownSuite(c *check.C) {
-	// Undo any changes/additions to the user database so they
-	// don't affect subsequent tests.
-	arvadostest.ResetEnv()
-	c.Check(arvados.NewClientFromEnv().RequestAndDecode(nil, "POST", "database/reset", nil, nil), check.IsNil)
-}
 
 func (s *LDAPSuite) TestLoginLDAPViaPAM(c *check.C) {
 	cmd := exec.Command("bash", "login_ldap_docker_test.sh")

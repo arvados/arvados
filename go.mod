@@ -12,6 +12,7 @@ require (
 	github.com/arvados/cgofuse v1.2.0-arvados1
 	github.com/aws/aws-sdk-go v1.25.30
 	github.com/bgentry/speakeasy v0.1.0 // indirect
+	github.com/bradleypeabody/godap v0.0.0-20170216002349-c249933bc092
 	github.com/coreos/go-oidc v2.1.0+incompatible
 	github.com/coreos/go-systemd v0.0.0-20180108085132-cc4f39464dc7
 	github.com/dgrijalva/jwt-go v3.1.0+incompatible // indirect
@@ -25,6 +26,7 @@ require (
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/ghodss/yaml v1.0.0
 	github.com/gliderlabs/ssh v0.2.2 // indirect
+	github.com/go-asn1-ber/asn1-ber v1.4.1 // indirect
 	github.com/go-ldap/ldap v3.0.3+incompatible
 	github.com/gogo/protobuf v1.1.1
 	github.com/gorilla/context v1.1.1 // indirect

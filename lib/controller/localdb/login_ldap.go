@@ -93,7 +93,10 @@ func (ctrl *ldapLoginController) UserAuthenticate(ctx context.Context, opts arva
 		return arvados.APIClientAuthorization{}, errors.New("config error: must provide SearchAttribute")
 	}
 
-	search := fmt.Sprintf("(&%s(%s=%s))", conf.SearchFilters, ldap.EscapeFilter(conf.SearchAttribute), ldap.EscapeFilter(username))
+	search := fmt.Sprintf("(%s=%s)", ldap.EscapeFilter(conf.SearchAttribute), ldap.EscapeFilter(username))
+	if conf.SearchFilters != "" {
+		search = fmt.Sprintf("(&%s%s)", conf.SearchFilters, search)
+	}
 	log = log.WithField("search", search)
 	req := ldap.NewSearchRequest(
 		conf.SearchBase,
@@ -105,7 +108,7 @@ func (ctrl *ldapLoginController) UserAuthenticate(ctx context.Context, opts arva
 	if ldap.IsErrorWithCode(err, ldap.LDAPResultNoResultsReturned) ||
 		ldap.IsErrorWithCode(err, ldap.LDAPResultNoSuchObject) ||
 		(err == nil && len(resp.Entries) == 0) {
-		log.WithError(err).Debug("ldap lookup returned no results")
+		log.WithError(err).Info("ldap lookup returned no results")
 		return arvados.APIClientAuthorization{}, errFailed
 	} else if err != nil {
 		log.WithError(err).Error("ldap lookup failed")
@@ -130,7 +133,7 @@ func (ctrl *ldapLoginController) UserAuthenticate(ctx context.Context, opts arva
 	// Now that we have the DN, try authenticating.
 	err = l.Bind(userdn, opts.Password)
 	if err != nil {
-		log.WithError(err).Warn("ldap user authentication failed")
+		log.WithError(err).Info("ldap user authentication failed")
 		return arvados.APIClientAuthorization{}, errFailed
 	}
 	log.Debug("ldap authentication succeeded")
