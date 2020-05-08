@@ -23,6 +23,13 @@ type deprRequestLimits struct {
 type deprCluster struct {
 	RequestLimits deprRequestLimits
 	NodeProfiles  map[string]nodeProfile
+	Login         struct {
+		GoogleClientID                *string
+		GoogleClientSecret            *string
+		GoogleAlternateEmailAddresses *bool
+		ProviderAppID                 *string
+		ProviderAppSecret             *string
+	}
 }
 
 type deprecatedConfig struct {
@@ -80,6 +87,34 @@ func (ldr *Loader) applyDeprecatedConfig(cfg *arvados.Config) error {
 		if dst, n := &cluster.API.MaxRequestAmplification, dcluster.RequestLimits.MultiClusterRequestConcurrency; n != nil && *n != *dst {
 			*dst = *n
 		}
+
+		// Google* moved to Google.*
+		if dst, n := &cluster.Login.Google.ClientID, dcluster.Login.GoogleClientID; n != nil && *n != *dst {
+			*dst = *n
+			if *n != "" {
+				// In old config, non-empty ClientID meant enable
+				cluster.Login.Google.Enable = true
+			}
+		}
+		if dst, n := &cluster.Login.Google.ClientSecret, dcluster.Login.GoogleClientSecret; n != nil && *n != *dst {
+			*dst = *n
+		}
+		if dst, n := &cluster.Login.Google.AlternateEmailAddresses, dcluster.Login.GoogleAlternateEmailAddresses; n != nil && *n != *dst {
+			*dst = *n
+		}
+
+		// Provider* moved to SSO.Provider*
+		if dst, n := &cluster.Login.SSO.ProviderAppID, dcluster.Login.ProviderAppID; n != nil && *n != *dst {
+			*dst = *n
+			if *n != "" {
+				// In old config, non-empty ID meant enable
+				cluster.Login.SSO.Enable = true
+			}
+		}
+		if dst, n := &cluster.Login.SSO.ProviderAppSecret, dcluster.Login.ProviderAppSecret; n != nil && *n != *dst {
+			*dst = *n
+		}
+
 		cfg.Clusters[id] = cluster
 	}
 	return nil

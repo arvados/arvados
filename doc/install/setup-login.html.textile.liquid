@@ -22,12 +22,13 @@ With this configuration, users will sign in with their Google accounts.
 
 First, visit "Setting up Google auth.":google-auth.html
 
-Next, copy the values of *Client ID* and *Client secret* from the Google Developers Console into @Login.GoogleClientID@ and @Login.GoogleClientSecret@ of @config.yml@:
+Next, copy the values of *Client ID* and *Client secret* from the Google Developers Console into @Login.Google.ClientID@ and @Login.Google.ClientSecret@ in @config.yml@:
 
 <pre>
     Login:
-      GoogleClientID: "0000000000000-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz.apps.googleusercontent.com"
-      GoogleClientSecret: "zzzzzzzzzzzzzzzzzzzzzzzz"
+      Google:
+        ClientID: "0000000000000-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz.apps.googleusercontent.com"
+        ClientSecret: "zzzzzzzzzzzzzzzzzzzzzzzz"
 </pre>
 
 h2(#ldap). LDAP
@@ -64,7 +65,8 @@ Enable PAM authentication in @config.yml@:
 
 <pre>
     Login:
-      PAM: true
+      PAM:
+        Enable: true
 </pre>
 
 Check the "default config file":{{site.baseurl}}/admin/config.html for more PAM configuration options.

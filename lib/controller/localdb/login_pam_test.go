@@ -32,8 +32,8 @@ func (s *PamSuite) SetUpSuite(c *check.C) {
 	c.Assert(err, check.IsNil)
 	s.cluster, err = cfg.GetCluster("")
 	c.Assert(err, check.IsNil)
-	s.cluster.Login.PAM = true
-	s.cluster.Login.PAMDefaultEmailDomain = "example.com"
+	s.cluster.Login.PAM.Enable = true
+	s.cluster.Login.PAM.DefaultEmailDomain = "example.com"
 	s.railsSpy = arvadostest.NewProxy(c, s.cluster.Services.RailsAPI)
 	s.ctrl = &pamLoginController{
 		Cluster:    s.cluster,
@@ -79,6 +79,6 @@ func (s *PamSuite) TestLoginSuccess(c *check.C) {
 	c.Check(resp.Scopes, check.DeepEquals, []string{"all"})
 
 	authinfo := getCallbackAuthInfo(c, s.railsSpy)
-	c.Check(authinfo.Email, check.Equals, u+"@"+s.cluster.Login.PAMDefaultEmailDomain)
+	c.Check(authinfo.Email, check.Equals, u+"@"+s.cluster.Login.PAM.DefaultEmailDomain)
 	c.Check(authinfo.AlternateEmails, check.DeepEquals, []string(nil))
 }

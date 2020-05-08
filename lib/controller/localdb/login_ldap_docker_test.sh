@@ -103,11 +103,12 @@ case "${config_method}" in
         setup_pam_ldap="apt update && DEBIAN_FRONTEND=noninteractive apt install -y ldap-utils libpam-ldap && pam-auth-update --package /usr/share/pam-configs/ldap"
         cat >>"${tmpdir}/zzzzz.yml" <<EOF
     Login:
-      PAM: true
-      # Without this magic PAMDefaultEmailDomain, inserted users would
-      # prevent subsequent database/reset from working (see
-      # database_controller.rb).
-      PAMDefaultEmailDomain: example.com
+      PAM:
+        Enable: true
+        # Without this specific DefaultEmailDomain, inserted users
+        # would prevent subsequent database/reset from working (see
+        # database_controller.rb).
+        DefaultEmailDomain: example.com
 EOF
         ;;
     ldap)

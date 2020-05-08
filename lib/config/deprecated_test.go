@@ -89,6 +89,41 @@ Clusters:
 `)
 }
 
+func (s *LoadSuite) TestDeprecatedLoginBackend(c *check.C) {
+	checkEquivalent(c, `
+Clusters:
+ z1111:
+  Login:
+   GoogleClientID: aaaa
+   GoogleClientSecret: bbbb
+   GoogleAlternateEmailAddresses: true
+`, `
+Clusters:
+ z1111:
+  Login:
+   Google:
+    Enable: true
+    ClientID: aaaa
+    ClientSecret: bbbb
+    AlternateEmailAddresses: true
+`)
+	checkEquivalent(c, `
+Clusters:
+ z1111:
+  Login:
+   ProviderAppID: aaaa
+   ProviderAppSecret: bbbb
+`, `
+Clusters:
+ z1111:
+  Login:
+   SSO:
+    Enable: true
+    ProviderAppID: aaaa
+    ProviderAppSecret: bbbb
+`)
+}
+
 func (s *LoadSuite) TestLegacyKeepWebConfig(c *check.C) {
 	content := []byte(`
 {

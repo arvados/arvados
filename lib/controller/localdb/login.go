@@ -23,9 +23,9 @@ type loginController interface {
 }
 
 func chooseLoginController(cluster *arvados.Cluster, railsProxy *railsProxy) loginController {
-	wantGoogle := cluster.Login.GoogleClientID != ""
-	wantSSO := cluster.Login.ProviderAppID != ""
-	wantPAM := cluster.Login.PAM
+	wantGoogle := cluster.Login.Google.Enable
+	wantSSO := cluster.Login.SSO.Enable
+	wantPAM := cluster.Login.PAM.Enable
 	wantLDAP := cluster.Login.LDAP.Enable
 	switch {
 	case wantGoogle && !wantSSO && !wantPAM && !wantLDAP:
@@ -38,7 +38,7 @@ func chooseLoginController(cluster *arvados.Cluster, railsProxy *railsProxy) log
 		return &ldapLoginController{Cluster: cluster, RailsProxy: railsProxy}
 	default:
 		return errorLoginController{
-			error: errors.New("configuration problem: exactly one of Login.GoogleClientID, Login.ProviderAppID, Login.PAM, or Login.LDAP.Enable must be configured"),
+			error: errors.New("configuration problem: exactly one of Login.Google, Login.SSO, Login.PAM, and Login.LDAP must be enabled"),
 		}
 	}
 }

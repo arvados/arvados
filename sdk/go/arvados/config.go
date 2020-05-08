@@ -150,16 +150,24 @@ type Cluster struct {
 			EmailAttribute     string
 			UsernameAttribute  string
 		}
-		GoogleClientID                string
-		GoogleClientSecret            string
-		GoogleAlternateEmailAddresses bool
-		PAM                           bool
-		PAMService                    string
-		PAMDefaultEmailDomain         string
-		ProviderAppID                 string
-		ProviderAppSecret             string
-		LoginCluster                  string
-		RemoteTokenRefresh            Duration
+		Google struct {
+			Enable                  bool
+			ClientID                string
+			ClientSecret            string
+			AlternateEmailAddresses bool
+		}
+		PAM struct {
+			Enable             bool
+			Service            string
+			DefaultEmailDomain string
+		}
+		SSO struct {
+			Enable            bool
+			ProviderAppID     string
+			ProviderAppSecret string
+		}
+		LoginCluster       string
+		RemoteTokenRefresh Duration
 	}
 	Mail struct {
 		MailchimpAPIKey                string

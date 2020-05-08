@@ -71,8 +71,8 @@ func (ctrl *googleLoginController) Login(ctx context.Context, opts arvados.Login
 		return loginError(fmt.Errorf("error making redirect URL: %s", err))
 	}
 	conf := &oauth2.Config{
-		ClientID:     ctrl.Cluster.Login.GoogleClientID,
-		ClientSecret: ctrl.Cluster.Login.GoogleClientSecret,
+		ClientID:     ctrl.Cluster.Login.Google.ClientID,
+		ClientSecret: ctrl.Cluster.Login.Google.ClientSecret,
 		Endpoint:     provider.Endpoint(),
 		Scopes:       []string{oidc.ScopeOpenID, "profile", "email"},
 		RedirectURL:  redirURL.String(),
@@ -162,7 +162,7 @@ func (ctrl *googleLoginController) getAuthInfo(ctx context.Context, cluster *arv
 		ret.Email = claims.Email
 	}
 
-	if !ctrl.Cluster.Login.GoogleAlternateEmailAddresses {
+	if !ctrl.Cluster.Login.Google.AlternateEmailAddresses {
 		if ret.Email == "" {
 			return nil, fmt.Errorf("cannot log in with unverified email address %q", claims.Email)
 		}
