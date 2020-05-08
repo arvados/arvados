@@ -757,8 +757,10 @@ def setup_config():
                     "RailsSessionSecretToken": "e24205c490ac07e028fd5f8a692dcb398bcd654eff1aef5f9fe6891994b18483",
                 },
                 "Login": {
-                    "ProviderAppID": "arvados-server",
-                    "ProviderAppSecret": "608dbf356a327e2d0d4932b60161e212c2d8d8f5e25690d7b622f850a990cd33",
+                    "SSO": {
+                        "ProviderAppID": "arvados-server",
+                        "ProviderAppSecret": "608dbf356a327e2d0d4932b60161e212c2d8d8f5e25690d7b622f850a990cd33",
+                    },
                 },
                 "SystemLogs": {
                     "LogLevel": ('info' if os.environ.get('ARVADOS_DEBUG', '') in ['','0'] else 'debug'),
