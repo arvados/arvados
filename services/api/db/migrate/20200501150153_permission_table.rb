@@ -133,7 +133,10 @@ perm_from_start(perm_origin_uuid, target_uuid, val, traverse_owned) as (
         links.tail_uuid not in (select target_uuid from perm_from_start) and
         links.head_uuid in (select target_uuid from perm_from_start))
 
-select materialized_permissions.user_uuid, u.target_uuid, max(least(u.val, materialized_permissions.perm_level)), bool_or(u.traverse_owned)
+select materialized_permissions.user_uuid,
+       u.target_uuid,
+       max(least(u.val, materialized_permissions.perm_level)),
+       bool_or(u.traverse_owned)
   from ((select * from perm_from_start) union (select * from additional_perms)) as u
   join materialized_permissions on (u.perm_origin_uuid = materialized_permissions.target_uuid)
   where materialized_permissions.traverse_owned
