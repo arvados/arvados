@@ -11,12 +11,12 @@ class Link < ArvadosModel
   # already know how to properly treat them.
   attribute :properties, :jsonbHash, default: {}
 
+  validate :name_links_are_obsolete
   before_create :permission_to_attach_to_objects
   before_update :permission_to_attach_to_objects
-  after_update :maybe_invalidate_permissions_cache
-  after_create :maybe_invalidate_permissions_cache
-  after_destroy :maybe_invalidate_permissions_cache
-  validate :name_links_are_obsolete
+  after_update :update_permissions
+  after_create :update_permissions
+  after_destroy :clear_permissions
 
   api_accessible :user, extend: :common do |t|
     t.add :tail_uuid
@@ -64,15 +64,22 @@ class Link < ArvadosModel
     false
   end
 
-  def maybe_invalidate_permissions_cache
+  PERM_LEVEL = {
+    'can_read' => 1,
+    'can_login' => 1,
+    'can_write' => 2,
+    'can_manage' => 3,
+  }
+
+  def update_permissions
     if self.link_class == 'permission'
-      # Clearing the entire permissions cache can generate many
-      # unnecessary queries if many active users are not affected by
-      # this change. In such cases it would be better to search cached
-      # permissions for head_uuid and tail_uuid, and invalidate the
-      # cache for only those users. (This would require a browseable
-      # cache.)
-      User.invalidate_permissions_cache
+      User.update_permissions tail_uuid, head_uuid, PERM_LEVEL[name]
+    end
+  end
+
+  def clear_permissions
+    if self.link_class == 'permission'
+      User.update_permissions tail_uuid, head_uuid, 0
     end
   end
 

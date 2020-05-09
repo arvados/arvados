@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
+require 'refresh_permission_view'
+
 ENV["RAILS_ENV"] = "test"
 unless ENV["NO_COVERAGE_TEST"]
   begin
@@ -59,12 +61,6 @@ class ActiveSupport::TestCase
 
   include ArvadosTestSupport
   include CurrentApiClient
-
-  setup do
-    do_refresh_permission_view
-    ActiveRecord::Base.connection.execute("DELETE FROM #{TRASHED_GROUPS}")
-    ActiveRecord::Base.connection.execute("INSERT INTO #{TRASHED_GROUPS} select * from compute_trashed()")
-  end
 
   teardown do
     Thread.current[:api_client_ip_address] = nil
@@ -213,4 +209,6 @@ class ActionDispatch::IntegrationTest
 end
 
 # Ensure permissions are computed from the test fixtures.
-User.invalidate_permissions_cache
+do_refresh_permission_view
+ActiveRecord::Base.connection.execute("DELETE FROM #{TRASHED_GROUPS}")
+ActiveRecord::Base.connection.execute("INSERT INTO #{TRASHED_GROUPS} select * from compute_trashed()")

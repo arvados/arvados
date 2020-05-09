@@ -17,9 +17,15 @@ class Group < ArvadosModel
   attribute :properties, :jsonbHash, default: {}
 
   validate :ensure_filesystem_compatible_name
-  after_create :invalidate_permissions_cache
-  after_update :maybe_invalidate_permissions_cache
   before_create :assign_name
+  after_create :update_permissions
+  after_create :update_trash
+
+  after_update :update_permissions
+  after_update :update_trash
+
+  after_destroy :clear_permissions_and_trash
+
 
   api_accessible :user, extend: :common do |t|
     t.add :name
@@ -38,8 +44,8 @@ class Group < ArvadosModel
     super if group_class == 'project'
   end
 
-  def maybe_invalidate_permissions_cache
-    if trash_at_changed? or owner_uuid_changed?
+  def update_trash
+    if trash_at_changed? or owner_uuid_changed? or (new_record? and !trash_at.nil?)
       # The group was added or removed from the trash.
       #
       # Strategy:
@@ -67,56 +73,20 @@ insert into trashed_groups (group_uuid, trash_at)
 on conflict (group_uuid) do update set trash_at=EXCLUDED.trash_at;
 }
     end
+  end
 
-    if uuid_changed? or owner_uuid_changed?
-      # This can change users' permissions on other groups as well as
-      # this one.
-      invalidate_permissions_cache
+  def update_permissions
+    if new_record? or owner_uuid_changed?
+      User.update_permissions self.owner_uuid, self.uuid, 3
     end
   end
 
-  def invalidate_permissions_cache
-    # Ensure a new group can be accessed by the appropriate users
-    # immediately after being created.
-    User.invalidate_permissions_cache self.async_permissions_update
+  def clear_permissions_and_trash
+    User.update_permissions self.owner_uuid, self.uuid, 0
+    ActiveRecord::Base.connection.exec_query %{
+delete from trashed_groups where group_uuid=$1
+}, "Group.clear_trash", [[nil, self.uuid]]
 
-    if new_record? or owner_uuid_changed?
-      # 1. Compute set (group, permission) implied by traversing
-      #    graph starting at this group
-      # 2. Find links from outside the graph that point inside
-      # 3. We now have the full set of permissions for a subset of groups.
-      # 3. Upsert each permission in our subset (user, group, val)
-      # 4. Delete permissions from table not in our computed subset.
-
-      temptable_perm_from_start = "perm_from_start_#{rand(2**64).to_s(10)}"
-      ActiveRecord::Base.connection.exec_query %{
-create temporary table #{temptable_perm_from_start} on commit drop
-as select $1::varchar as starting_uuid, target_uuid, val
-from search_permission_graph($1::varchar, 3::smallint)
-},
-                                               'Group.search_permissions',
-                                               [[nil, self.uuid]]
-
-      temptable_additional_perms = "additional_perms_#{rand(2**64).to_s(10)}"
-      ActiveRecord::Base.connection.exec_query %{
-create temporary table #{temptable_additional_perms} on commit drop
-as select links.tail_uuid as starting_uuid, ps.target_uuid, ps.val
-  from links, lateral search_permission_graph(links.head_uuid::varchar, CASE
-WHEN links.name = 'can_read' THEN 1::smallint
-WHEN links.name = 'can_login' THEN 1::smallint
-WHEN links.name = 'can_write' THEN 2::smallint
-WHEN links.name = 'can_manage' THEN 3::smallint
-END) as ps
-where links.link_class='permission' and
-  links.tail_uuid not in (select target_uuid from #{temptable_perm_from_start}) and
-  links.head_uuid in (select target_uuid from #{temptable_perm_from_start})
-}
-
-      q1 = ActiveRecord::Base.connection.exec_query "select * from #{temptable_perm_from_start}"
-      q1.each do |r|
-        #puts r
-      end
-    end
   end
 
   def assign_name

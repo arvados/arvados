@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 require 'can_be_an_owner'
-require 'refresh_permission_view'
 
 class User < ArvadosModel
   include HasUuid
@@ -32,21 +31,23 @@ class User < ArvadosModel
   before_create :set_initial_username, :if => Proc.new { |user|
     user.username.nil? and user.email
   }
+  after_create :update_permissions
   after_create :setup_on_activate
   after_create :add_system_group_permission_link
-  after_create :invalidate_permissions_cache
   after_create :auto_setup_new_user, :if => Proc.new { |user|
     Rails.configuration.Users.AutoSetupNewUsers and
     (user.uuid != system_user_uuid) and
     (user.uuid != anonymous_user_uuid)
   }
   after_create :send_admin_notifications
+  after_update :update_permissions
   after_update :send_profile_created_notification
   after_update :sync_repository_names, :if => Proc.new { |user|
     (user.uuid != system_user_uuid) and
     user.username_changed? and
     (not user.username_was.nil?)
   }
+
 
   has_many :authorized_keys, :foreign_key => :authorized_user_uuid, :primary_key => :uuid
   has_many :repositories, foreign_key: :owner_uuid, primary_key: :uuid
@@ -143,12 +144,125 @@ class User < ArvadosModel
     true
   end
 
-  def self.invalidate_permissions_cache(async=false)
-    refresh_permission_view(async)
+  def update_permissions
+    if owner_uuid_changed?
+      puts "Update permissions for #{uuid} #{new_record?}"
+    User.printdump %{
+select * from materialized_permissions where user_uuid='#{uuid}'
+}
+    puts "---"
+    User.update_permissions self.owner_uuid, self.uuid, 3
+    User.printdump %{
+select * from materialized_permissions where user_uuid='#{uuid}'
+}
+
+    end
   end
 
-  def invalidate_permissions_cache
-    User.invalidate_permissions_cache
+  def self.printdump qr
+    q1 = ActiveRecord::Base.connection.exec_query qr
+    q1.each do |r|
+      puts r
+    end
+  end
+
+  def self.update_permissions perm_origin_uuid, starting_uuid, perm_level
+    # Update a subset of the permission graph
+    # perm_level is the inherited permission
+    # perm_level is a number from 0-3
+    #   can_read=1
+    #   can_write=2
+    #   can_manage=3
+    #   call with perm_level=0 to revoke permissions
+    #
+    # 1. Compute set (group, permission) implied by traversing
+    #    graph starting at this group
+    # 2. Find links from outside the graph that point inside
+    # 3. For each starting uuid, get the set of permissions from the
+    #    materialized permission table
+    # 3. Delete permissions from table not in our computed subset.
+    # 4. Upsert each permission in our subset (user, group, val)
+
+    ## testinging
+    puts "What's in there now for #{starting_uuid}"
+    printdump %{
+select * from materialized_permissions where user_uuid='#{starting_uuid}'
+}
+
+    puts "search_permission_graph #{perm_origin_uuid} #{starting_uuid}, #{perm_level}"
+    printdump %{
+select '#{perm_origin_uuid}'::varchar as perm_origin_uuid, target_uuid, val, traverse_owned from search_permission_graph('#{starting_uuid}', #{perm_level})
+}
+
+    puts "Perms out"
+    printdump %{
+with
+perm_from_start(perm_origin_uuid, target_uuid, val, traverse_owned) as (
+  select  '#{perm_origin_uuid}'::varchar, target_uuid, val, traverse_owned
+    from search_permission_graph('#{starting_uuid}', #{perm_level}))
+
+(select materialized_permissions.user_uuid, u.target_uuid, max(least(materialized_permissions.perm_level, u.val)), bool_or(u.traverse_owned)
+  from perm_from_start as u
+  join materialized_permissions on (u.perm_origin_uuid = materialized_permissions.target_uuid)
+  where materialized_permissions.traverse_owned
+  group by materialized_permissions.user_uuid, u.target_uuid)
+union
+  select target_uuid as user_uuid, target_uuid, 3, true
+    from perm_from_start where target_uuid like '_____-tpzed-_______________'
+}
+    ## end
+
+    temptable_perms = "temp_perms_#{rand(2**64).to_s(10)}"
+    ActiveRecord::Base.connection.exec_query %{
+create temporary table #{temptable_perms} on commit drop
+as select * from compute_permission_subgraph($1, $2, $3)
+},
+                                             'Group.search_permissions',
+                                             [[nil, perm_origin_uuid],
+                                              [nil, starting_uuid],
+                                              [nil, perm_level]]
+
+    q1 = ActiveRecord::Base.connection.exec_query %{
+select * from #{temptable_perms}
+}
+    puts "recomputed perms was #{perm_origin_uuid} #{starting_uuid}, #{perm_level}"
+    q1.each do |r|
+      puts r
+    end
+
+    ActiveRecord::Base.connection.exec_query %{
+delete from materialized_permissions where
+  target_uuid in (select target_uuid from #{temptable_perms}) and
+  (user_uuid not in (select user_uuid from #{temptable_perms} where target_uuid=materialized_permissions.target_uuid)
+   or user_uuid in (select user_uuid from #{temptable_perms} where target_uuid=materialized_permissions.target_uuid and perm_level=0))
+}
+
+    ActiveRecord::Base.connection.exec_query %{
+insert into materialized_permissions (user_uuid, target_uuid, perm_level, traverse_owned)
+  select user_uuid, target_uuid, val as perm_level, traverse_owned from #{temptable_perms}
+on conflict (user_uuid, target_uuid) do update set perm_level=EXCLUDED.perm_level, traverse_owned=EXCLUDED.traverse_owned;
+}
+
+    # for testing only - make a copy of the table and compare it to the one generated
+    # using a full permission recompute
+#     temptable_compare = "compare_perms_#{rand(2**64).to_s(10)}"
+#     ActiveRecord::Base.connection.exec_query %{
+# create temporary table #{temptable_compare} on commit drop as select * from materialized_permissions
+# }
+
+    # Ensure a new group can be accessed by the appropriate users
+    # immediately after being created.
+    #User.invalidate_permissions_cache
+
+#     q1 = ActiveRecord::Base.connection.exec_query %{
+# select count(*) from materialized_permissions
+# }
+#     puts "correct version #{q1.first}"
+
+#     q2 = ActiveRecord::Base.connection.exec_query %{
+# select count(*) from #{temptable_compare}
+# }
+#     puts "incremental update #{q2.first}"
   end
 
   # Return a hash of {user_uuid: group_perms}
@@ -328,6 +442,8 @@ class User < ArvadosModel
       raise "user does not exist" if !new_user
       raise "cannot merge to an already merged user" if new_user.redirect_to_user_uuid
 
+      User.update_permissions self.owner_uuid, self.uuid, 0
+
       # If 'self' is a remote user, don't transfer authorizations
       # (i.e. ability to access the account) to the new user, because
       # that gives the remote site the ability to access the 'new'
@@ -402,7 +518,8 @@ class User < ArvadosModel
       if redirect_to_new_user
         update_attributes!(redirect_to_user_uuid: new_user.uuid, username: nil)
       end
-      invalidate_permissions_cache
+      User.update_permissions self.owner_uuid, self.uuid, 3
+      User.update_permissions new_user.owner_uuid, new_user.uuid, 3
     end
   end
 
@@ -660,6 +777,7 @@ class User < ArvadosModel
 
   # add the user to the 'All users' group
   def create_user_group_link
+    puts "In create_user_group_link"
     return (Link.where(tail_uuid: self.uuid,
                        head_uuid: all_users_group[:uuid],
                        link_class: 'permission',

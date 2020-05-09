@@ -6,6 +6,7 @@ class PermissionTable < ActiveRecord::Migration[5.0]
       t.integer :perm_level
       t.boolean :traverse_owned
     end
+    add_index :materialized_permissions, [:user_uuid, :target_uuid], unique: true, name: 'permission_user_target'
 
     ActiveRecord::Base.connection.execute %{
 create or replace function project_subtree (starting_uuid varchar(27))
@@ -71,8 +72,9 @@ $$;
         # This accomplishes a breadth-first search of the permission graph.
         #
         ActiveRecord::Base.connection.execute %{
-create or replace function search_permission_graph (starting_uuid varchar(27), starting_perm integer)
-returns table (target_uuid varchar(27), val integer, traverse_owned bool)
+create or replace function search_permission_graph (starting_uuid varchar(27),
+                                                    starting_perm integer)
+  returns table (target_uuid varchar(27), val integer, traverse_owned bool)
 STABLE
 language SQL
 as $$
@@ -105,6 +107,43 @@ WITH RECURSIVE edges(tail_uuid, head_uuid, val) as (
 $$;
 }
 
+        ActiveRecord::Base.connection.execute %{
+create or replace function compute_permission_subgraph (perm_origin_uuid varchar(27),
+                                                        starting_uuid varchar(27),
+                                                        starting_perm integer)
+returns table (user_uuid varchar(27), target_uuid varchar(27), val integer, traverse_owned bool)
+STABLE
+language SQL
+as $$
+with
+perm_from_start(perm_origin_uuid, target_uuid, val, traverse_owned) as (
+  select perm_origin_uuid, target_uuid, val, traverse_owned
+    from search_permission_graph(starting_uuid, starting_perm)),
+
+  additional_perms(perm_origin_uuid, target_uuid, val, traverse_owned) as (
+    select links.tail_uuid as perm_origin_uuid, ps.target_uuid, ps.val, true
+      from links, lateral search_permission_graph(links.head_uuid,
+                        CASE
+                          WHEN links.name = 'can_read'   THEN 1
+                          WHEN links.name = 'can_login'  THEN 1
+                          WHEN links.name = 'can_write'  THEN 2
+                          WHEN links.name = 'can_manage' THEN 3
+                        END) as ps
+      where links.link_class='permission' and
+        links.tail_uuid not in (select target_uuid from perm_from_start) and
+        links.head_uuid in (select target_uuid from perm_from_start))
+
+select materialized_permissions.user_uuid, u.target_uuid, max(least(u.val, materialized_permissions.perm_level)), bool_or(u.traverse_owned)
+  from ((select * from perm_from_start) union (select * from additional_perms)) as u
+  join materialized_permissions on (u.perm_origin_uuid = materialized_permissions.target_uuid)
+  where materialized_permissions.traverse_owned
+  group by materialized_permissions.user_uuid, u.target_uuid
+union
+  select target_uuid as user_uuid, target_uuid, 3, true
+    from perm_from_start where target_uuid like '_____-tpzed-_______________'
+$$;
+     }
+
     ActiveRecord::Base.connection.execute "DROP MATERIALIZED VIEW IF EXISTS materialized_permission_view;"
 
   end
@@ -116,5 +155,6 @@ $$;
     ActiveRecord::Base.connection.execute "DROP function project_subtree_with_trash_at (varchar, timestamp);"
     ActiveRecord::Base.connection.execute "DROP function compute_trashed ();"
     ActiveRecord::Base.connection.execute "DROP function search_permission_graph(varchar, integer);"
+    ActiveRecord::Base.connection.execute "DROP function compute_permission_subgraph (varchar, varchar, integer);"
   end
 end

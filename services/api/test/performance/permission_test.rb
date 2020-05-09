@@ -40,7 +40,8 @@ class PermissionPerfTest < ActionDispatch::IntegrationTest
                    end
                  end
                end
-               User.invalidate_permissions_cache
+               #User.invalidate_permissions_cache
+               do_refresh_permission_view
              end
            end)
     end
