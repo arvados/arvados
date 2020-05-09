@@ -93,7 +93,9 @@ WITH RECURSIVE edges(tail_uuid, head_uuid, val) as (
           where links.link_class='permission'
         ),
         traverse_graph(target_uuid, val, traverse_owned) as (
-            values (starting_uuid, starting_perm, true)
+            values (starting_uuid, starting_perm,
+                     (starting_uuid like '_____-j7d0g-_______________' or
+                      (starting_uuid like '_____-tpzed-_______________' and starting_perm >= 3)))
           union
             (select edges.head_uuid,
                     least(edges.val, traverse_graph.val),
@@ -131,19 +133,28 @@ perm_from_start(perm_origin_uuid, target_uuid, val, traverse_owned) as (
                         END) as ps
       where links.link_class='permission' and
         links.tail_uuid not in (select target_uuid from perm_from_start) and
-        links.head_uuid in (select target_uuid from perm_from_start))
+        links.head_uuid in (select target_uuid from perm_from_start)),
 
-select materialized_permissions.user_uuid,
-       u.target_uuid,
-       max(least(u.val, materialized_permissions.perm_level)),
-       bool_or(u.traverse_owned)
-  from ((select * from perm_from_start) union (select * from additional_perms)) as u
-  join materialized_permissions on (u.perm_origin_uuid = materialized_permissions.target_uuid)
-  where materialized_permissions.traverse_owned
-  group by materialized_permissions.user_uuid, u.target_uuid
-union
-  select target_uuid as user_uuid, target_uuid, 3, true
-    from perm_from_start where target_uuid like '_____-tpzed-_______________'
+  identity_perms(perm_origin_uuid, target_uuid, val, traverse_owned) as (
+    select target_uuid as perm_origin_uuid, target_uuid, 3, true
+      from perm_from_start where target_uuid like '_____-tpzed-_______________'),
+
+  all_perms(perm_origin_uuid, target_uuid, val, traverse_owned) as (
+      select * from perm_from_start
+    union
+      select * from additional_perms
+    union
+      select * from identity_perms
+  )
+
+  select materialized_permissions.user_uuid,
+         u.target_uuid,
+         max(least(u.val, materialized_permissions.perm_level)),
+         bool_or(u.traverse_owned)
+    from all_perms as u
+    join materialized_permissions on (u.perm_origin_uuid = materialized_permissions.target_uuid)
+    where materialized_permissions.traverse_owned
+    group by user_uuid, u.target_uuid
 $$;
      }
 

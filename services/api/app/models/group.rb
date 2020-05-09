@@ -21,7 +21,7 @@ class Group < ArvadosModel
   after_create :update_permissions
   after_create :update_trash
 
-  after_update :update_permissions
+  after_update :update_permissions, :if => :owner_uuid_changed?
   after_update :update_trash
 
   after_destroy :clear_permissions_and_trash
@@ -45,7 +45,7 @@ class Group < ArvadosModel
   end
 
   def update_trash
-    if trash_at_changed? or owner_uuid_changed? or (new_record? and !trash_at.nil?)
+    if trash_at_changed? or owner_uuid_changed?
       # The group was added or removed from the trash.
       #
       # Strategy:
@@ -76,9 +76,7 @@ on conflict (group_uuid) do update set trash_at=EXCLUDED.trash_at;
   end
 
   def update_permissions
-    if new_record? or owner_uuid_changed?
-      User.update_permissions self.owner_uuid, self.uuid, 3
-    end
+    User.update_permissions self.owner_uuid, self.uuid, 3
   end
 
   def clear_permissions_and_trash
