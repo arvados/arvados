@@ -146,18 +146,18 @@ class User < ArvadosModel
 
   def update_permissions
 
-      puts "Update permissions for #{uuid}"
-    User.printdump %{
-select * from materialized_permissions where user_uuid='#{uuid}'
-}
-    puts "---"
+#       puts "Update permissions for #{uuid}"
+#     User.printdump %{
+# select * from materialized_permissions where user_uuid='#{uuid}'
+# }
+#     puts "---"
     User.update_permissions self.owner_uuid, self.uuid, 3
 
-  puts "post-update"
-   User.printdump %{
-select * from materialized_permissions where user_uuid='#{uuid}'
-}
-   puts "<<<"
+#   puts "post-update"
+#    User.printdump %{
+# select * from materialized_permissions where user_uuid='#{uuid}'
+# }
+#    puts "<<<"
   end
 
   def self.printdump qr
@@ -194,16 +194,52 @@ from search_permission_graph('#{uuid}', 3) as g
     # 4. Upsert each permission in our subset (user, group, val)
 
     ## testinging
-    puts "__ update_permissions __"
-    puts "What's in there now for #{starting_uuid}"
-    printdump %{
-select * from materialized_permissions where user_uuid='#{starting_uuid}'
-}
+#     puts "__ update_permissions __"
+#     puts "What's in there now for #{starting_uuid}"
+#     printdump %{
+# select * from materialized_permissions where user_uuid='#{starting_uuid}'
+# }
 
-    puts "search_permission_graph #{perm_origin_uuid} #{starting_uuid}, #{perm_level}"
-    printdump %{
-select '#{perm_origin_uuid}'::varchar as perm_origin_uuid, target_uuid, val, traverse_owned from search_permission_graph('#{starting_uuid}', #{perm_level})
-}
+#     puts "search_permission_graph #{perm_origin_uuid} #{starting_uuid}, #{perm_level}"
+#     printdump %{
+# select '#{perm_origin_uuid}'::varchar as perm_origin_uuid, target_uuid, val, traverse_owned from search_permission_graph('#{starting_uuid}', #{perm_level})
+# }
+
+#     puts "other_links #{perm_origin_uuid} #{starting_uuid}, #{perm_level}"
+#     printdump %{
+# with
+# perm_from_start(perm_origin_uuid, target_uuid, val, traverse_owned) as (
+#   select '#{perm_origin_uuid}'::varchar, target_uuid, val, traverse_owned
+#     from search_permission_graph('#{starting_uuid}'::varchar, #{perm_level}))
+
+#     select links.tail_uuid as perm_origin_uuid, links.head_uuid, links.name
+#       from links
+#       where links.link_class='permission' and
+#         links.tail_uuid not in (select target_uuid from perm_from_start where traverse_owned) and
+#         links.tail_uuid != '#{perm_origin_uuid}' and
+#         links.head_uuid in (select target_uuid from perm_from_start)
+# }
+
+#     puts "additional_perms #{perm_origin_uuid} #{starting_uuid}, #{perm_level}"
+#     printdump %{
+# with
+# perm_from_start(perm_origin_uuid, target_uuid, val, traverse_owned) as (
+#   select '#{perm_origin_uuid}'::varchar, target_uuid, val, traverse_owned
+#     from search_permission_graph('#{starting_uuid}'::varchar, #{perm_level}))
+
+#     select links.tail_uuid as perm_origin_uuid, ps.target_uuid, ps.val, true
+#       from links, lateral search_permission_graph(links.head_uuid,
+#                         CASE
+#                           WHEN links.name = 'can_read'   THEN 1
+#                           WHEN links.name = 'can_login'  THEN 1
+#                           WHEN links.name = 'can_write'  THEN 2
+#                           WHEN links.name = 'can_manage' THEN 3
+#                         END) as ps
+#       where links.link_class='permission' and
+#         links.tail_uuid not in (select target_uuid from perm_from_start where traverse_owned) and
+#         links.tail_uuid != '#{perm_origin_uuid}' and
+#         links.head_uuid in (select target_uuid from perm_from_start)
+# }
 
 #     puts "Perms out"
 #     printdump %{
@@ -233,14 +269,14 @@ as select * from compute_permission_subgraph($1, $2, $3)
                                               [nil, starting_uuid],
                                               [nil, perm_level]]
 
-    q1 = ActiveRecord::Base.connection.exec_query %{
-select * from #{temptable_perms}
-}
-    puts "recomputed perms was #{perm_origin_uuid} #{starting_uuid}, #{perm_level}"
-    q1.each do |r|
-      puts r
-    end
-    puts "<<<<"
+#     q1 = ActiveRecord::Base.connection.exec_query %{
+# select * from #{temptable_perms} order by user_uuid, target_uuid
+# }
+#     puts "recomputed perms was #{perm_origin_uuid} #{starting_uuid}, #{perm_level}"
+#     q1.each do |r|
+#       puts r
+#     end
+#     puts "<<<<"
 
     ActiveRecord::Base.connection.exec_query %{
 delete from materialized_permissions where

@@ -122,7 +122,7 @@ perm_from_start(perm_origin_uuid, target_uuid, val, traverse_owned) as (
   select perm_origin_uuid, target_uuid, val, traverse_owned
     from search_permission_graph(starting_uuid, starting_perm)),
 
-  additional_perms(perm_origin_uuid, target_uuid, val, traverse_owned) as (
+  link_perms(perm_origin_uuid, target_uuid, val, traverse_owned) as (
     select links.tail_uuid as perm_origin_uuid, ps.target_uuid, ps.val, true
       from links, lateral search_permission_graph(links.head_uuid,
                         CASE
@@ -132,29 +132,38 @@ perm_from_start(perm_origin_uuid, target_uuid, val, traverse_owned) as (
                           WHEN links.name = 'can_manage' THEN 3
                         END) as ps
       where links.link_class='permission' and
-        links.tail_uuid not in (select target_uuid from perm_from_start) and
+        (not (links.tail_uuid = perm_origin_uuid and links.head_uuid = starting_uuid)) and
+        links.tail_uuid not in (select target_uuid from perm_from_start where traverse_owned) and
         links.head_uuid in (select target_uuid from perm_from_start)),
 
-  identity_perms(perm_origin_uuid, target_uuid, val, traverse_owned) as (
-    select target_uuid as perm_origin_uuid, target_uuid, 3, true
-      from perm_from_start where target_uuid like '_____-tpzed-_______________'),
+  user_perms(perm_origin_uuid, target_uuid, val, traverse_owned) as (
+    select x.target_uuid as perm_origin_uuid, y.target_uuid, y.val, y.traverse_owned
+      from (select * from perm_from_start union select * from link_perms) as x,
+      lateral search_permission_graph(x.target_uuid, 3) as y
+      where x.target_uuid like '_____-tpzed-_______________'
+  ),
 
   all_perms(perm_origin_uuid, target_uuid, val, traverse_owned) as (
       select * from perm_from_start
     union
-      select * from additional_perms
+      select * from link_perms
     union
-      select * from identity_perms
+      select * from user_perms
   )
 
-  select materialized_permissions.user_uuid,
+  select v.user_uuid, v.target_uuid, max(v.perm_level), bool_or(v.traverse_owned) from
+    (select materialized_permissions.user_uuid,
          u.target_uuid,
-         max(least(u.val, materialized_permissions.perm_level)),
-         bool_or(u.traverse_owned)
-    from all_perms as u
-    join materialized_permissions on (u.perm_origin_uuid = materialized_permissions.target_uuid)
-    where materialized_permissions.traverse_owned
-    group by user_uuid, u.target_uuid
+         least(u.val, materialized_permissions.perm_level) as perm_level,
+         u.traverse_owned
+      from all_perms as u
+      join materialized_permissions on (u.perm_origin_uuid = materialized_permissions.target_uuid)
+      where materialized_permissions.traverse_owned
+    union
+      select perm_origin_uuid as user_uuid, target_uuid, val as perm_level, traverse_owned
+        from all_perms
+        where perm_origin_uuid like '_____-tpzed-_______________') as v
+    group by v.user_uuid, v.target_uuid
 $$;
      }
 
