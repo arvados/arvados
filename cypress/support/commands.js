@@ -92,3 +92,25 @@ Cypress.Commands.add(
         })
     }
 )
+
+Cypress.Commands.add(
+    "createCollection", (token, collection) => {
+        return cy.do_request('POST', '/arvados/v1/collections', {
+            collection: JSON.stringify(collection),
+            ensure_unique_name: true
+        }, null, token, true)
+        .its('body').as('collection')
+        .then(function() {
+            return this.collection;
+        })
+    }
+)
+
+Cypress.Commands.add(
+    "loginAs", (user) => {
+        cy.visit(`/token/?api_token=${user.token}`);
+        cy.url().should('contain', '/projects/');
+        cy.get('div#root').should('contain', 'Arvados Workbench (zzzzz)');
+        cy.get('div#root').should('not.contain', 'Your account is inactive');
+    }
+)
