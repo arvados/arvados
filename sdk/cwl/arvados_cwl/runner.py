@@ -42,6 +42,7 @@ import schema_salad.validate as validate
 import arvados.collection
 from .util import collectionUUID
 import ruamel.yaml as yaml
+from ruamel.yaml.comments import CommentedMap, CommentedSeq
 
 import arvados_cwl.arvdocker
 from .pathmapper import ArvPathMapper, trim_listing, collection_pdh_pattern, collection_uuid_pattern
@@ -392,7 +393,7 @@ def upload_dependencies(arvrunner, name, document_loader,
             discovered_secondaryfiles[mapper.mapper(d).resolved] = discovered[d]
 
     if "$schemas" in workflowobj:
-        sch = []
+        sch = CommentedSeq()
         for s in workflowobj["$schemas"]:
             sch.append(mapper.mapper(s).resolved)
         workflowobj["$schemas"] = sch
