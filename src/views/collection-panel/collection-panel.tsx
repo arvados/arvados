@@ -5,7 +5,7 @@
 import * as React from 'react';
 import {
     StyleRulesCallback, WithStyles, withStyles, Card,
-    CardHeader, IconButton, CardContent, Grid, Tooltip
+    CardHeader, IconButton, CardContent, Grid, Tooltip, Chip
 } from '@material-ui/core';
 import { connect, DispatchProp } from "react-redux";
 import { RouteComponentProps } from 'react-router';
@@ -91,18 +91,14 @@ export const CollectionPanel = withStyles(styles)(
                 const { classes, item, dispatch, isWritable } = this.props;
                 return item
                     ? <>
-                        <Card className={classes.card}>
+                        <Card data-cy='collection-info-panel' className={classes.card}>
                             <CardHeader
                                 avatar={
                                     <IconButton onClick={this.openCollectionDetails}>
                                         <CollectionIcon className={classes.iconHeader} />
                                     </IconButton>
                                 }
-                                action={<div>
-                                    {isWritable === false &&
-                                    <Tooltip title="This collection is read-only">
-                                        <ReadOnlyIcon />
-                                    </Tooltip>}
+                                action={
                                     <Tooltip title="More options" disableFocusListener>
                                         <IconButton
                                             aria-label="More options"
@@ -110,8 +106,14 @@ export const CollectionPanel = withStyles(styles)(
                                             <MoreOptionsIcon />
                                         </IconButton>
                                     </Tooltip>
-                                </div>}
-                                title={<span><IllegalNamingWarning name={item.name}/>{item.name}</span>}
+                                }
+                                title={
+                                    <span>
+                                        <IllegalNamingWarning name={item.name}/>
+                                        {item.name}
+                                        {isWritable || <Chip variant="outlined" icon={<ReadOnlyIcon />} label="Read-only"/>}
+                                    </span>
+                                }
                                 titleTypographyProps={this.titleProps}
                                 subheader={item.description}
                                 subheaderTypographyProps={this.titleProps} />
@@ -171,7 +173,7 @@ export const CollectionPanel = withStyles(styles)(
                                 </Grid>
                             </CardContent>
                         </Card>
-                        <div className={classes.card}>
+                        <div className={classes.card} data-cy="collection-files-panel">
                             <CollectionPanelFiles isWritable={isWritable} />
                         </div>
                     </>
