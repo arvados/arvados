@@ -6,6 +6,8 @@ package arvadosclient
 
 import (
 	"sync"
+
+	"git.arvados.org/arvados.git/sdk/go/arvados"
 )
 
 // A ClientPool is a pool of ArvadosClients. This is useful for
@@ -14,7 +16,7 @@ import (
 // credentials. See arvados-git-httpd for an example, and sync.Pool
 // for more information about garbage collection.
 type ClientPool struct {
-	// Initialize new clients by coping this one.
+	// Initialize new clients by copying this one.
 	Prototype *ArvadosClient
 
 	pool      *sync.Pool
@@ -25,7 +27,20 @@ type ClientPool struct {
 // MakeClientPool returns a new empty ClientPool, using environment
 // variables to initialize the prototype.
 func MakeClientPool() *ClientPool {
-	proto, err := MakeArvadosClient()
+	return MakeClientPoolWith(nil)
+}
+
+// MakeClientPoolWith returns a new empty ClientPool with a previously
+// initialized arvados.Client.
+func MakeClientPoolWith(client *arvados.Client) *ClientPool {
+	var err error
+	var proto *ArvadosClient
+
+	if client == nil {
+		proto, err = MakeArvadosClient()
+	} else {
+		proto, err = New(client)
+	}
 	return &ClientPool{
 		Prototype: proto,
 		lastErr:   err,

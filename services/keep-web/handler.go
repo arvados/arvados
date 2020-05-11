@@ -76,7 +76,9 @@ func parseCollectionIDFromURL(s string) string {
 }
 
 func (h *handler) setup() {
-	h.clientPool = arvadosclient.MakeClientPool()
+	// Errors will be handled at the client pool.
+	arv, _ := arvados.NewClientFromConfig(h.Config.cluster)
+	h.clientPool = arvadosclient.MakeClientPoolWith(arv)
 
 	keepclient.RefreshServiceDiscoveryOnSIGHUP()
 	keepclient.DefaultBlockCache.MaxBlocks = h.Config.cluster.Collections.WebDAVCache.MaxBlockEntries
