@@ -100,7 +100,7 @@ func applyDeprecatedNodeProfile(hostname string, ssi systemServiceInstance, svc 
 	if strings.HasPrefix(host, ":") {
 		host = hostname + host
 	}
-	svc.InternalURLs[arvados.URL{Scheme: scheme, Host: host}] = arvados.ServiceInstance{}
+	svc.InternalURLs[arvados.URL{Scheme: scheme, Host: host, Path: "/"}] = arvados.ServiceInstance{}
 }
 
 func (ldr *Loader) loadOldConfigHelper(component, path string, target interface{}) error {
@@ -153,6 +153,7 @@ func loadOldClientConfig(cluster *arvados.Cluster, client *arvados.Client) {
 	}
 	if client.APIHost != "" {
 		cluster.Services.Controller.ExternalURL.Host = client.APIHost
+		cluster.Services.Controller.ExternalURL.Path = "/"
 	}
 	if client.Scheme != "" {
 		cluster.Services.Controller.ExternalURL.Scheme = client.Scheme
@@ -268,7 +269,7 @@ func (ldr *Loader) loadOldWebsocketConfig(cfg *arvados.Config) error {
 		cluster.PostgreSQL.ConnectionPool = *oc.PostgresPool
 	}
 	if oc.Listen != nil {
-		cluster.Services.Websocket.InternalURLs[arvados.URL{Host: *oc.Listen}] = arvados.ServiceInstance{}
+		cluster.Services.Websocket.InternalURLs[arvados.URL{Host: *oc.Listen, Path: "/"}] = arvados.ServiceInstance{}
 	}
 	if oc.LogLevel != nil {
 		cluster.SystemLogs.LogLevel = *oc.LogLevel
@@ -327,7 +328,7 @@ func (ldr *Loader) loadOldKeepproxyConfig(cfg *arvados.Config) error {
 	loadOldClientConfig(cluster, oc.Client)
 
 	if oc.Listen != nil {
-		cluster.Services.Keepproxy.InternalURLs[arvados.URL{Host: *oc.Listen}] = arvados.ServiceInstance{}
+		cluster.Services.Keepproxy.InternalURLs[arvados.URL{Host: *oc.Listen, Path: "/"}] = arvados.ServiceInstance{}
 	}
 	if oc.DefaultReplicas != nil {
 		cluster.Collections.DefaultReplication = *oc.DefaultReplicas
@@ -413,11 +414,11 @@ func (ldr *Loader) loadOldKeepWebConfig(cfg *arvados.Config) error {
 	loadOldClientConfig(cluster, oc.Client)
 
 	if oc.Listen != nil {
-		cluster.Services.WebDAV.InternalURLs[arvados.URL{Host: *oc.Listen}] = arvados.ServiceInstance{}
-		cluster.Services.WebDAVDownload.InternalURLs[arvados.URL{Host: *oc.Listen}] = arvados.ServiceInstance{}
+		cluster.Services.WebDAV.InternalURLs[arvados.URL{Host: *oc.Listen, Path: "/"}] = arvados.ServiceInstance{}
+		cluster.Services.WebDAVDownload.InternalURLs[arvados.URL{Host: *oc.Listen, Path: "/"}] = arvados.ServiceInstance{}
 	}
 	if oc.AttachmentOnlyHost != nil {
-		cluster.Services.WebDAVDownload.ExternalURL = arvados.URL{Host: *oc.AttachmentOnlyHost}
+		cluster.Services.WebDAVDownload.ExternalURL = arvados.URL{Host: *oc.AttachmentOnlyHost, Path: "/"}
 	}
 	if oc.ManagementToken != nil {
 		cluster.ManagementToken = *oc.ManagementToken

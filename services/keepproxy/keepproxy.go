@@ -119,7 +119,7 @@ func run(logger log.FieldLogger, cluster *arvados.Cluster) error {
 	// If a config file is available, use the keepstores defined there
 	// instead of the legacy autodiscover mechanism via the API server
 	for k := range cluster.Services.Keepstore.InternalURLs {
-		arv.KeepServiceURIs = append(arv.KeepServiceURIs, k.String())
+		arv.KeepServiceURIs = append(arv.KeepServiceURIs, strings.TrimRight(k.String(), "/"))
 	}
 
 	if cluster.SystemLogs.LogLevel == "debug" {

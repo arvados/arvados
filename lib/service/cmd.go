@@ -177,6 +177,9 @@ func getListenAddr(svcs arvados.Services, prog arvados.ServiceName, log logrus.F
 	} else if url, err := url.Parse(want); err != nil {
 		return arvados.URL{}, fmt.Errorf("$ARVADOS_SERVICE_INTERNAL_URL (%q): %s", want, err)
 	} else {
+		if url.Path == "" {
+			url.Path = "/"
+		}
 		return arvados.URL(*url), nil
 	}
 

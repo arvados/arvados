@@ -89,7 +89,7 @@ class UserSessionsController < ApplicationController
 
     flash[:notice] = 'You have logged off'
     return_to = params[:return_to] || root_url
-    redirect_to "#{Rails.configuration.Services.SSO.ExternalURL}/users/sign_out?redirect_uri=#{CGI.escape return_to}"
+    redirect_to "#{Rails.configuration.Services.SSO.ExternalURL}users/sign_out?redirect_uri=#{CGI.escape return_to}"
   end
 
   # login - Just bounce to /auth/joshid. The only purpose of this function is

@@ -303,6 +303,10 @@ func (su *URL) UnmarshalText(text []byte) error {
 	u, err := url.Parse(string(text))
 	if err == nil {
 		*su = URL(*u)
+		if su.Path == "" && su.Host != "" {
+			// http://example really means http://example/
+			su.Path = "/"
+		}
 	}
 	return err
 }

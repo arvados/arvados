@@ -109,7 +109,7 @@ Clusters:
     TLS: {Insecure: true}
     Services:
       Controller:
-        ExternalURL: "https://`+os.Getenv("ARVADOS_API_HOST")+`"
+        ExternalURL: "https://`+os.Getenv("ARVADOS_API_HOST")+`/"
 `, `
 Clusters:
   z1111:
@@ -120,7 +120,7 @@ Clusters:
         InternalURLs:
           "http://`+hostname+`:25107": {Rendezvous: `+s.ksByPort[25107].UUID[12:]+`}
       Controller:
-        ExternalURL: "https://`+os.Getenv("ARVADOS_API_HOST")+`"
+        ExternalURL: "https://`+os.Getenv("ARVADOS_API_HOST")+`/"
     SystemLogs:
       Format: text
       LogLevel: debug
@@ -254,7 +254,7 @@ Volumes:
   ReadOnly: true
   StorageAccountName: storageacctname
   StorageAccountKeyFile: `+secretkeyfile.Name()+`
-  StorageBaseURL: https://example.example
+  StorageBaseURL: https://example.example/
   ContainerName: testctr
   LocationConstraint: true
   AzureReplication: 4
@@ -268,7 +268,7 @@ Volumes:
 	}, &arvados.AzureVolumeDriverParameters{
 		StorageAccountName:   "storageacctname",
 		StorageAccountKey:    "secretkeydata",
-		StorageBaseURL:       "https://example.example",
+		StorageBaseURL:       "https://example.example/",
 		ContainerName:        "testctr",
 		RequestTimeout:       arvados.Duration(time.Minute * 3),
 		ListBlobsRetryDelay:  arvados.Duration(time.Minute * 4),
@@ -333,7 +333,7 @@ func (s *KeepstoreMigrationSuite) testDeprecatedVolume(c *check.C, oldconfigdata
 		c.Check(v.Driver, check.Equals, expectvol.Driver)
 		c.Check(v.Replication, check.Equals, expectvol.Replication)
 
-		avh, ok := v.AccessViaHosts[arvados.URL{Scheme: "http", Host: hostname + ":12345"}]
+		avh, ok := v.AccessViaHosts[arvados.URL{Scheme: "http", Host: hostname + ":12345", Path: "/"}]
 		c.Check(ok, check.Equals, true)
 		c.Check(avh.ReadOnly, check.Equals, expectvol.ReadOnly)
 
@@ -516,6 +516,7 @@ Volumes:
 	url := arvados.URL{
 		Scheme: "http",
 		Host:   fmt.Sprintf("%s:%d", hostname, port),
+		Path:   "/",
 	}
 	_, ok := before["zzzzz-nyw5e-readonlyonother"].AccessViaHosts[url]
 	c.Check(ok, check.Equals, false)
@@ -543,6 +544,7 @@ Volumes:
 	url := arvados.URL{
 		Scheme: "http",
 		Host:   fmt.Sprintf("%s:%d", hostname, port),
+		Path:   "/",
 	}
 	_, ok := before["zzzzz-nyw5e-writableonother"].AccessViaHosts[url]
 	c.Check(ok, check.Equals, false)
@@ -572,7 +574,7 @@ Volumes:
 
 	hostname, err := os.Hostname()
 	c.Assert(err, check.IsNil)
-	_, ok := newvol.AccessViaHosts[arvados.URL{Scheme: "http", Host: fmt.Sprintf("%s:%d", hostname, port)}]
+	_, ok := newvol.AccessViaHosts[arvados.URL{Scheme: "http", Host: fmt.Sprintf("%s:%d", hostname, port), Path: "/"}]
 	c.Check(ok, check.Equals, true)
 }
 
@@ -601,7 +603,7 @@ Volumes:
 	c.Check(logs, check.Matches, `(?ms).*you should remove the legacy keepstore config file.*`)
 	c.Check(logs, check.Matches, `(?ms).*you should migrate the legacy keepstore configuration file on host keep1.zzzzz.example.com.*`)
 	c.Check(logs, check.Not(check.Matches), `(?ms).*should migrate.*keep0.zzzzz.example.com.*`)
-	c.Check(logs, check.Matches, `(?ms).*keepstore configured at http://keep2.zzzzz.example.com:25107 does not have access to any volumes.*`)
+	c.Check(logs, check.Matches, `(?ms).*keepstore configured at http://keep2.zzzzz.example.com:25107/ does not have access to any volumes.*`)
 	c.Check(logs, check.Matches, `(?ms).*Volumes.zzzzz-nyw5e-possconfigerror.AccessViaHosts refers to nonexistent keepstore server http://keep00.zzzzz.example.com:25107.*`)
 }
 

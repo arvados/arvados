@@ -5,6 +5,8 @@
 package arvados
 
 import (
+	"encoding/json"
+
 	"github.com/ghodss/yaml"
 	check "gopkg.in/check.v1"
 )
@@ -70,4 +72,11 @@ func (s *ConfigSuite) TestInstanceTypeFixup(c *check.C) {
 		c.Check(itm["foo8"].AddedScratch, check.Equals, ByteSize(8000000000))
 		c.Check(itm["foo8"].IncludedScratch, check.Equals, ByteSize(0))
 	}
+}
+
+func (s *ConfigSuite) TestURLTrailingSlash(c *check.C) {
+	var a, b map[URL]bool
+	json.Unmarshal([]byte(`{"https://foo.example": true}`), &a)
+	json.Unmarshal([]byte(`{"https://foo.example/": true}`), &b)
+	c.Check(a, check.DeepEquals, b)
 }
