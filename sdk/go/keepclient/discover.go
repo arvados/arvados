@@ -19,7 +19,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 )
 
-// ClearCache clears the Keep service discovery cache.
+// RefreshServiceDiscovery clears the Keep service discovery cache.
 func RefreshServiceDiscovery() {
 	var wg sync.WaitGroup
 	defer wg.Wait()
@@ -35,8 +35,8 @@ func RefreshServiceDiscovery() {
 	}
 }
 
-// ClearCacheOnSIGHUP installs a signal handler that calls
-// ClearCache when SIGHUP is received.
+// RefreshServiceDiscoveryOnSIGHUP installs a signal handler that calls
+// RefreshServiceDiscovery when SIGHUP is received.
 func RefreshServiceDiscoveryOnSIGHUP() {
 	svcListCacheMtx.Lock()
 	defer svcListCacheMtx.Unlock()
