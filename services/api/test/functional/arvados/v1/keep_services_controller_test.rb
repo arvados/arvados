@@ -54,7 +54,7 @@ class Arvados::V1::KeepServicesControllerTest < ActionController::TestCase
       headers: auth(:active)
     assert_response :success
     json_response['items'].each do |svc|
-      url = "#{svc['service_ssl_flag'] ? 'https' : 'http'}://#{svc['service_host']}:#{svc['service_port']}"
+      url = "#{svc['service_ssl_flag'] ? 'https' : 'http'}://#{svc['service_host']}:#{svc['service_port']}/"
       assert_equal true, expect_rvz.has_key?(url), "#{url} does not match any configured service: expecting #{expect_rvz}"
       rvz = expect_rvz[url]
       if rvz.is_a? String
