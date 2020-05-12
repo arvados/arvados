@@ -591,10 +591,9 @@ func (super *Supervisor) autofillConfig(cfg *arvados.Config) error {
 				svc == &cluster.Services.GitHTTP ||
 				svc == &cluster.Services.Health ||
 				svc == &cluster.Services.Keepproxy ||
+				svc == &cluster.Services.WebDAV ||
+				svc == &cluster.Services.WebDAVDownload ||
 				svc == &cluster.Services.Workbench1 {
-				svc.ExternalURL = arvados.URL{Scheme: "https", Host: fmt.Sprintf("%s:%s", super.ListenHost, nextPort(super.ListenHost))}
-			} else if svc == &cluster.Services.WebDAV ||
-				svc == &cluster.Services.WebDAVDownload {
 				svc.ExternalURL = arvados.URL{Scheme: "https", Host: fmt.Sprintf("%s:%s", super.ListenHost, nextPort(super.ListenHost)), Path: "/"}
 			} else if svc == &cluster.Services.Websocket {
 				svc.ExternalURL = arvados.URL{Scheme: "wss", Host: fmt.Sprintf("%s:%s", super.ListenHost, nextPort(super.ListenHost)), Path: "/websocket"}
