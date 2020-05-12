@@ -12,7 +12,7 @@ def do_refresh_permission_view
     ActiveRecord::Base.connection.execute %{
 INSERT INTO #{PERMISSION_VIEW}
 select users.uuid, g.target_uuid, g.val, g.traverse_owned
-from users, lateral search_permission_graph(users.uuid, 3) as g
+from users, lateral search_permission_graph(users.uuid, 3) as g where g.val > 0
 }
   end
 end

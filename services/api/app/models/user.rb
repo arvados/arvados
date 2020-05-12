@@ -78,6 +78,12 @@ class User < ArvadosModel
      {read: true, write: true},
      {read: true, write: true, manage: true}]
 
+  VAL_FOR_PERM =
+    {:read => 1,
+     :write => 2,
+     :manage => 3}
+
+
   def full_name
     "#{first_name} #{last_name}".strip
   end
@@ -89,7 +95,7 @@ class User < ArvadosModel
   end
 
   def groups_i_can(verb)
-    my_groups = self.group_permissions.select { |uuid, mask| mask[verb] }.keys
+    my_groups = self.group_permissions(VAL_FOR_PERM[verb]).keys
     if verb == :read
       my_groups << anonymous_group_uuid
     end
@@ -108,38 +114,25 @@ class User < ArvadosModel
         end
       end
       next if target_uuid == self.uuid
-      next if (group_permissions[target_uuid] and
-               group_permissions[target_uuid][action])
-      if target.respond_to? :owner_uuid
-        next if target.owner_uuid == self.uuid
-        next if (group_permissions[target.owner_uuid] and
-                 group_permissions[target.owner_uuid][action])
+
+      target_owner_uuid = target.owner_uuid if target.respond_to? :owner_uuid
+
+      unless ActiveRecord::Base.connection.
+        exec_query(%{
+SELECT 1 FROM #{PERMISSION_VIEW}
+  WHERE user_uuid = $1 and
+        ((target_uuid = $2 and perm_level >= $3)
+         or (target_uuid = $4 and perm_level >= $3 and traverse_owned))
+},
+                  # "name" arg is a query label that appears in logs:
+                   "user_can_query",
+                   [[nil, self.uuid],
+                    [nil, target_uuid],
+                    [nil, VAL_FOR_PERM[action]],
+                    [nil, target_owner_uuid]]
+                  ).any?
+        return false
       end
-      sufficient_perms = case action
-                         when :manage
-                           ['can_manage']
-                         when :write
-                           ['can_manage', 'can_write']
-                         when :read
-                           ['can_manage', 'can_write', 'can_read']
-                         else
-                           # (Skip this kind of permission opportunity
-                           # if action is an unknown permission type)
-                         end
-      if sufficient_perms
-        # Check permission links with head_uuid pointing directly at
-        # the target object. If target is a Group, this is redundant
-        # and will fail except [a] if permission caching is broken or
-        # [b] during a race condition, where a permission link has
-        # *just* been added.
-        if Link.where(link_class: 'permission',
-                      name: sufficient_perms,
-                      tail_uuid: groups_i_can(action) + [self.uuid],
-                      head_uuid: target_uuid).any?
-          next
-        end
-      end
-      return false
     end
     true
   end
@@ -194,16 +187,16 @@ from search_permission_graph('#{uuid}', 3) as g
     # 4. Upsert each permission in our subset (user, group, val)
 
     ## testinging
-#     puts "__ update_permissions __"
+    puts "\n__ update_permissions __"
 #     puts "What's in there now for #{starting_uuid}"
 #     printdump %{
 # select * from materialized_permissions where user_uuid='#{starting_uuid}'
 # }
 
-#     puts "search_permission_graph #{perm_origin_uuid} #{starting_uuid}, #{perm_level}"
-#     printdump %{
-# select '#{perm_origin_uuid}'::varchar as perm_origin_uuid, target_uuid, val, traverse_owned from search_permission_graph('#{starting_uuid}', #{perm_level})
-# }
+    puts "search_permission_graph #{perm_origin_uuid} #{starting_uuid}, #{perm_level}"
+    printdump %{
+select '#{perm_origin_uuid}'::varchar as perm_origin_uuid, target_uuid, val, traverse_owned from search_permission_graph('#{starting_uuid}', #{perm_level})
+}
 
 #     puts "other_links #{perm_origin_uuid} #{starting_uuid}, #{perm_level}"
 #     printdump %{
@@ -220,43 +213,53 @@ from search_permission_graph('#{uuid}', 3) as g
 #         links.head_uuid in (select target_uuid from perm_from_start)
 # }
 
-#     puts "additional_perms #{perm_origin_uuid} #{starting_uuid}, #{perm_level}"
-#     printdump %{
-# with
-# perm_from_start(perm_origin_uuid, target_uuid, val, traverse_owned) as (
-#   select '#{perm_origin_uuid}'::varchar, target_uuid, val, traverse_owned
-#     from search_permission_graph('#{starting_uuid}'::varchar, #{perm_level}))
+    puts "additional_perms #{perm_origin_uuid} #{starting_uuid}, #{perm_level}"
+    printdump %{
+with
+perm_from_start(perm_origin_uuid, target_uuid, val, traverse_owned) as (
+  select '#{perm_origin_uuid}'::varchar, target_uuid, val, traverse_owned
+    from search_permission_graph('#{starting_uuid}'::varchar, #{perm_level})),
 
-#     select links.tail_uuid as perm_origin_uuid, ps.target_uuid, ps.val, true
-#       from links, lateral search_permission_graph(links.head_uuid,
-#                         CASE
-#                           WHEN links.name = 'can_read'   THEN 1
-#                           WHEN links.name = 'can_login'  THEN 1
-#                           WHEN links.name = 'can_write'  THEN 2
-#                           WHEN links.name = 'can_manage' THEN 3
-#                         END) as ps
-#       where links.link_class='permission' and
-#         links.tail_uuid not in (select target_uuid from perm_from_start where traverse_owned) and
-#         links.tail_uuid != '#{perm_origin_uuid}' and
-#         links.head_uuid in (select target_uuid from perm_from_start)
-# }
+  edges(tail_uuid, head_uuid, val) as (
+        select * from permission_graph_edges()),
 
-#     puts "Perms out"
-#     printdump %{
-# with
-# perm_from_start(perm_origin_uuid, target_uuid, val, traverse_owned) as (
-#   select  '#{perm_origin_uuid}'::varchar, target_uuid, val, traverse_owned
-#     from search_permission_graph('#{starting_uuid}', #{perm_level}))
+  additional_perms(perm_origin_uuid, target_uuid, val, traverse_owned) as (
+    select edges.tail_uuid as perm_origin_uuid, ps.target_uuid, ps.val,
+           should_traverse_owned(ps.target_uuid, ps.val)
+      from edges, lateral search_permission_graph(edges.head_uuid, edges.val) as ps
+      where (not (edges.tail_uuid = '#{perm_origin_uuid}' and
+                  edges.head_uuid = '#{starting_uuid}' and
+                  edges.val = #{perm_level})) and
+            edges.tail_uuid not in (select target_uuid from perm_from_start) and
+            edges.head_uuid in (select target_uuid from perm_from_start)),
 
-# (select materialized_permissions.user_uuid, u.target_uuid, max(least(materialized_permissions.perm_level, u.val)), bool_or(u.traverse_owned)
-#   from perm_from_start as u
-#   join materialized_permissions on (u.perm_origin_uuid = materialized_permissions.target_uuid)
-#   where materialized_permissions.traverse_owned
-#   group by materialized_permissions.user_uuid, u.target_uuid)
-# union
-#   select target_uuid as user_uuid, target_uuid, 3, true
-#     from perm_from_start where target_uuid like '_____-tpzed-_______________'
-# }
+  partial_perms(perm_origin_uuid, target_uuid, val, traverse_owned) as (
+      select * from perm_from_start
+    union
+      select * from additional_perms
+  ),
+
+  user_identity_perms(perm_origin_uuid, target_uuid, val, traverse_owned) as (
+    select users.uuid as perm_origin_uuid, ps.target_uuid, ps.val, ps.traverse_owned
+      from users, lateral search_permission_graph(users.uuid, 3) as ps
+      where users.owner_uuid not in (select target_uuid from partial_perms where traverse_owned) and
+      users.uuid in (select target_uuid from partial_perms)
+  ),
+
+  all_perms(perm_origin_uuid, target_uuid, val, traverse_owned) as (
+      select * from additional_perms
+    union
+      select * from user_identity_perms
+  )
+
+  select * from all_perms order by perm_origin_uuid, target_uuid
+}
+
+    puts "Perms out"
+    printdump %{
+select * from compute_permission_subgraph('#{perm_origin_uuid}', '#{starting_uuid}', '#{perm_level}')
+order by user_uuid, target_uuid
+}
     ## end
 
     temptable_perms = "temp_perms_#{rand(2**64).to_s(10)}"
@@ -293,24 +296,50 @@ on conflict (user_uuid, target_uuid) do update set perm_level=EXCLUDED.perm_leve
 
     # for testing only - make a copy of the table and compare it to the one generated
     # using a full permission recompute
-#     temptable_compare = "compare_perms_#{rand(2**64).to_s(10)}"
-#     ActiveRecord::Base.connection.exec_query %{
-# create temporary table #{temptable_compare} on commit drop as select * from materialized_permissions
-# }
 
-    # Ensure a new group can be accessed by the appropriate users
-    # immediately after being created.
-    #User.invalidate_permissions_cache
+#      puts "dump--"
+#      User.printdump %{
+#  select * from users
+#      }
+#      User.printdump %{
+#  select * from groups
+#      }
+#      User.printdump %{
+# select * from search_permission_graph('zzzzz-tpzed-000000000000000', 3)
+#      }
+#      puts "--"
 
-#     q1 = ActiveRecord::Base.connection.exec_query %{
-# select count(*) from materialized_permissions
-# }
-#     puts "correct version #{q1.first}"
 
-#     q2 = ActiveRecord::Base.connection.exec_query %{
-# select count(*) from #{temptable_compare}
-# }
-#     puts "incremental update #{q2.first}"
+    q1 = ActiveRecord::Base.connection.exec_query %{
+select user_uuid, target_uuid, perm_level, traverse_owned from materialized_permissions
+order by user_uuid, target_uuid
+}
+
+    q2 = ActiveRecord::Base.connection.exec_query %{
+select users.uuid as user_uuid, g.target_uuid, g.val as perm_level, g.traverse_owned
+from users, lateral search_permission_graph(users.uuid, 3) as g where g.val > 0
+order by users.uuid, target_uuid
+}
+
+    if q1.count != q2.count
+      puts "Didn't match incremental+: #{q1.count} != full refresh-: #{q2.count}"
+    end
+
+    if q1.count > q2.count
+      q1.each_with_index do |r, i|
+        if r != q2[i]
+          puts "+#{r}\n-#{q2[i]}"
+          raise "Didn't match"
+        end
+      end
+    else
+      q2.each_with_index do |r, i|
+        if r != q1[i]
+          puts "+#{q1[i]}\n-#{r}"
+          raise "Didn't match"
+        end
+      end
+    end
   end
 
   # Return a hash of {user_uuid: group_perms}
@@ -321,8 +350,8 @@ on conflict (user_uuid, target_uuid) do update set perm_level=EXCLUDED.perm_leve
                   FROM #{PERMISSION_VIEW}
                   WHERE traverse_owned",
                   # "name" arg is a query label that appears in logs:
-                  "all_group_permissions",
-                  ).rows.each do |user_uuid, group_uuid, max_p_val|
+                 "all_group_permissions").
+      rows.each do |user_uuid, group_uuid, max_p_val|
       all_perms[user_uuid] ||= {}
       all_perms[user_uuid][group_uuid] = PERMS_FOR_VAL[max_p_val.to_i]
     end
@@ -332,18 +361,20 @@ on conflict (user_uuid, target_uuid) do update set perm_level=EXCLUDED.perm_leve
   # Return a hash of {group_uuid: perm_hash} where perm_hash[:read]
   # and perm_hash[:write] are true if this user can read and write
   # objects owned by group_uuid.
-  def group_permissions
-    group_perms = {self.uuid => {:read => true, :write => true, :manage => true}}
+  def group_permissions(level=1)
+    group_perms = {}
     ActiveRecord::Base.connection.
-      exec_query("SELECT target_uuid, perm_level
-                  FROM #{PERMISSION_VIEW}
-                  WHERE user_uuid = $1
-                  AND traverse_owned",
+      exec_query(%{
+SELECT target_uuid, perm_level
+  FROM #{PERMISSION_VIEW}
+  WHERE user_uuid = $1 and perm_level >= $2
+},
                   # "name" arg is a query label that appears in logs:
                   "group_permissions_for_user",
                   # "binds" arg is an array of [col_id, value] for '$1' vars:
-                  [[nil, uuid]],
-                ).rows.each do |group_uuid, max_p_val|
+                  [[nil, uuid],
+                   [nil, level]]).
+      rows.each do |group_uuid, max_p_val|
       group_perms[group_uuid] = PERMS_FOR_VAL[max_p_val.to_i]
     end
     group_perms

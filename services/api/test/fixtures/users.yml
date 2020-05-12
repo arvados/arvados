@@ -418,3 +418,17 @@ double_redirects_to_active:
       organization: example.com
       role: Computational biologist
     getting_started_shown: 2015-03-26 12:34:56.789000000 Z
+
+has_can_login_permission:
+  owner_uuid: zzzzz-tpzed-000000000000000
+  uuid: zzzzz-tpzed-xabcdjxw79nv3jz
+  email: can-login-user@arvados.local
+  modified_by_client_uuid: zzzzz-ozdt8-teyxzyd8qllg11h
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  first_name: Can_login
+  last_name: User
+  identity_url: https://can-login-user.openid.local
+  is_active: true
+  is_admin: false
+  modified_at: 2015-03-26 12:34:56.789000000 Z
+  username: can-login-user
