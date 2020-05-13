@@ -38,7 +38,11 @@ h2(#master). development master (as of 2020-02-07)
 
 "Upgrading from 2.0.0":#v2_0_0
 
-None in current development master.
+h3. Removing sso-provider
+
+The SSO (single sign-on) component is deprecated and will not be supported in future releases. Existing configurations will continue to work in this release, but you should switch to one of the built-in authentication mechanisms as soon as possible. See "setting up web based login":{{site.baseurl}}/install/setup-login.html for details.
+
+After migrating your configuration, uninstall the @arvados-sso-provider@ package.
 
 h2(#v2_0_0). v2.0.0 (2020-02-07)
 
