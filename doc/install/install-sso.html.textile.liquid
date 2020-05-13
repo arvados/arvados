@@ -56,8 +56,10 @@ h2(#update-config). Update config.yml
       SSO:
         ExternalURL: auth.ClusterID.example.com
     Login:
-      ProviderAppID: "arvados-server"
-      ProviderAppSecret: $app_secret
+      SSO:
+        Enable: true
+        ProviderAppID: "arvados-server"
+        ProviderAppSecret: $app_secret
 </pre>
 
 Generate @ProviderAppSecret@:

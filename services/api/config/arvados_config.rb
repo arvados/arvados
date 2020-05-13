@@ -37,8 +37,8 @@ EOS
   # Real values will be copied from globals by omniauth_init.rb. For
   # now, assign some strings so the generic *.yml config loader
   # doesn't overwrite them or complain that they're missing.
-  Rails.configuration.Login["ProviderAppID"] = 'xxx'
-  Rails.configuration.Login["ProviderAppSecret"] = 'xxx'
+  Rails.configuration.Login["SSO"]["ProviderAppID"] = 'xxx'
+  Rails.configuration.Login["SSO"]["ProviderAppSecret"] = 'xxx'
   Rails.configuration.Services["SSO"]["ExternalURL"] = '//xxx'
   WARNED_OMNIAUTH_CONFIG = true
 end
