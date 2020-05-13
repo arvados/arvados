@@ -2,19 +2,20 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-// Skip this slow test unless invoked as "go test -tags docker".
-// +build docker
-
 package localdb
 
 import (
 	"os"
 	"os/exec"
+	"testing"
 
 	check "gopkg.in/check.v1"
 )
 
 func (s *LDAPSuite) TestLoginLDAPViaPAM(c *check.C) {
+	if testing.Short() {
+		c.Skip("skipping docker test in short mode")
+	}
 	cmd := exec.Command("bash", "login_ldap_docker_test.sh")
 	cmd.Stdout = os.Stderr
 	cmd.Stderr = os.Stderr
@@ -24,6 +25,9 @@ func (s *LDAPSuite) TestLoginLDAPViaPAM(c *check.C) {
 }
 
 func (s *LDAPSuite) TestLoginLDAPBuiltin(c *check.C) {
+	if testing.Short() {
+		c.Skip("skipping docker test in short mode")
+	}
 	cmd := exec.Command("bash", "login_ldap_docker_test.sh")
 	cmd.Stdout = os.Stderr
 	cmd.Stderr = os.Stderr
