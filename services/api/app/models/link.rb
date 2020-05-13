@@ -16,6 +16,7 @@ class Link < ArvadosModel
   before_update :permission_to_attach_to_objects
   after_update :update_permissions
   after_create :update_permissions
+  before_destroy :clear_permissions
   after_destroy :clear_permissions
 
   api_accessible :user, extend: :common do |t|
@@ -79,7 +80,13 @@ class Link < ArvadosModel
 
   def clear_permissions
     if self.link_class == 'permission'
-      User.update_permissions tail_uuid, head_uuid, 0
+      User.update_permissions tail_uuid, head_uuid, 0, false
+    end
+  end
+
+  def check_permissions
+    if self.link_class == 'permission'
+      User.update_permissions tail_uuid, head_uuid, 0, true
     end
   end
 

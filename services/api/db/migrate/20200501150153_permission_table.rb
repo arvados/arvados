@@ -172,8 +172,7 @@ perm_from_start(perm_origin_uuid, target_uuid, val, traverse_owned) as (
            should_traverse_owned(ps.target_uuid, ps.val)
       from edges, lateral search_permission_graph(edges.head_uuid, edges.val) as ps
       where (not (edges.tail_uuid = perm_origin_uuid and
-                 edges.head_uuid = starting_uuid and
-                 edges.val = starting_perm)) and
+                 edges.head_uuid = starting_uuid)) and
             edges.tail_uuid not in (select target_uuid from perm_from_start) and
             edges.head_uuid in (select target_uuid from perm_from_start)),
 
@@ -186,7 +185,8 @@ perm_from_start(perm_origin_uuid, target_uuid, val, traverse_owned) as (
   user_identity_perms(perm_origin_uuid, target_uuid, val, traverse_owned) as (
     select users.uuid as perm_origin_uuid, ps.target_uuid, ps.val, ps.traverse_owned
       from users, lateral search_permission_graph(users.uuid, 3) as ps
-      where users.owner_uuid not in (select target_uuid from partial_perms where traverse_owned) and
+      where (users.owner_uuid not in (select target_uuid from partial_perms) or
+             users.owner_uuid = users.uuid) and
       users.uuid in (select target_uuid from partial_perms)
   ),
 

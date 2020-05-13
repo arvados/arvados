@@ -18,14 +18,14 @@ class Group < ArvadosModel
 
   validate :ensure_filesystem_compatible_name
   before_create :assign_name
-  after_create :update_permissions
+  after_create :after_ownership_change
   after_create :update_trash
 
-  after_update :update_permissions, :if => :owner_uuid_changed?
+  before_update :before_ownership_change
+  after_update :after_ownership_change
+
   after_update :update_trash
-
-  after_destroy :clear_permissions_and_trash
-
+  before_destroy :clear_permissions_and_trash
 
   api_accessible :user, extend: :common do |t|
     t.add :name
@@ -75,12 +75,21 @@ on conflict (group_uuid) do update set trash_at=EXCLUDED.trash_at;
     end
   end
 
-  def update_permissions
-    User.update_permissions self.owner_uuid, self.uuid, 3
+  def before_ownership_change
+    if owner_uuid_changed? and !self.owner_uuid_was.nil?
+      MaterializedPermission.where(user_uuid: owner_uuid_was, target_uuid: uuid).delete_all
+      User.update_permissions self.owner_uuid, self.uuid, 0
+    end
+  end
+
+  def after_ownership_change
+    if owner_uuid_changed?
+      User.update_permissions self.owner_uuid, self.uuid, 3
+    end
   end
 
   def clear_permissions_and_trash
-    User.update_permissions self.owner_uuid, self.uuid, 0
+    MaterializedPermission.where(target_uuid: uuid).delete_all
     ActiveRecord::Base.connection.exec_query %{
 delete from trashed_groups where group_uuid=$1
 }, "Group.clear_trash", [[nil, self.uuid]]
