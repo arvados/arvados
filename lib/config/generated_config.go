@@ -639,12 +639,12 @@ Clusters:
         UsernameAttribute: uid
 
       SSO:
-        # Authenticate with a separate SSO server.
+        # Authenticate with a separate SSO server. (Deprecated)
         Enable: false
 
         # ProviderAppID and ProviderAppSecret are generated during SSO
         # setup; see
-        # https://doc.arvados.org/install/install-sso.html#update-config
+        # https://doc.arvados.org/v2.0/install/install-sso.html#update-config
         ProviderAppID: ""
         ProviderAppSecret: ""
 
