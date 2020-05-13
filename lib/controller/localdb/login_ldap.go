@@ -38,6 +38,9 @@ func (ctrl *ldapLoginController) UserAuthenticate(ctx context.Context, opts arva
 	conf := ctrl.Cluster.Login.LDAP
 	errFailed := httpserver.ErrorWithStatus(fmt.Errorf("LDAP: Authentication failure (with username %q and password)", opts.Username), http.StatusUnauthorized)
 
+	if conf.SearchAttribute == "" {
+		return arvados.APIClientAuthorization{}, errors.New("config error: SearchAttribute is blank")
+	}
 	if opts.Password == "" {
 		log.WithField("username", opts.Username).Error("refusing to authenticate with empty password")
 		return arvados.APIClientAuthorization{}, errFailed
@@ -87,10 +90,6 @@ func (ctrl *ldapLoginController) UserAuthenticate(ctx context.Context, opts arva
 			log.WithError(err).WithField("user", conf.SearchBindUser).Error("ldap authentication failed")
 			return arvados.APIClientAuthorization{}, err
 		}
-	}
-
-	if conf.SearchAttribute == "" {
-		return arvados.APIClientAuthorization{}, errors.New("config error: must provide SearchAttribute")
 	}
 
 	search := fmt.Sprintf("(%s=%s)", ldap.EscapeFilter(conf.SearchAttribute), ldap.EscapeFilter(username))
