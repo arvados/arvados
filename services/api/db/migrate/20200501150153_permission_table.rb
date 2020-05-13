@@ -9,22 +9,6 @@ class PermissionTable < ActiveRecord::Migration[5.0]
     add_index :materialized_permissions, [:user_uuid, :target_uuid], unique: true, name: 'permission_user_target'
 
     ActiveRecord::Base.connection.execute %{
-create or replace function project_subtree (starting_uuid varchar(27))
-returns table (target_uuid varchar(27))
-STABLE
-language SQL
-as $$
-WITH RECURSIVE
-        project_subtree(uuid) as (
-        values (starting_uuid)
-        union
-        select groups.uuid from groups join project_subtree on (groups.owner_uuid = project_subtree.uuid)
-        )
-        select uuid from project_subtree;
-$$;
-}
-
-    ActiveRecord::Base.connection.execute %{
 create or replace function project_subtree_with_trash_at (starting_uuid varchar(27), starting_trash_at timestamp)
 returns table (target_uuid varchar(27), trash_at timestamp)
 STABLE
@@ -219,7 +203,6 @@ $$;
     drop_table :materialized_permissions
     drop_table :trashed_groups
 
-    ActiveRecord::Base.connection.execute "DROP function project_subtree (varchar);"
     ActiveRecord::Base.connection.execute "DROP function project_subtree_with_trash_at (varchar, timestamp);"
     ActiveRecord::Base.connection.execute "DROP function compute_trashed ();"
     ActiveRecord::Base.connection.execute "DROP function search_permission_graph(varchar, integer);"

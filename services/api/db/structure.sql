@@ -38,6 +38,161 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public;
 -- COMMENT ON EXTENSION pg_trgm IS 'text similarity measurement and index searching based on trigrams';
 
 
+--
+-- Name: compute_permission_subgraph(character varying, character varying, integer); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.compute_permission_subgraph(perm_origin_uuid character varying, starting_uuid character varying, starting_perm integer) RETURNS TABLE(user_uuid character varying, target_uuid character varying, val integer, traverse_owned boolean)
+    LANGUAGE sql STABLE
+    AS $$
+with
+perm_from_start(perm_origin_uuid, target_uuid, val, traverse_owned) as (
+  select perm_origin_uuid, target_uuid, val, traverse_owned
+    from search_permission_graph(starting_uuid, starting_perm)),
+
+  edges(tail_uuid, head_uuid, val) as (
+        select * from permission_graph_edges()),
+
+  additional_perms(perm_origin_uuid, target_uuid, val, traverse_owned) as (
+    select edges.tail_uuid as perm_origin_uuid, ps.target_uuid, ps.val,
+           should_traverse_owned(ps.target_uuid, ps.val)
+      from edges, lateral search_permission_graph(edges.head_uuid, edges.val) as ps
+      where (not (edges.tail_uuid = perm_origin_uuid and
+                 edges.head_uuid = starting_uuid)) and
+            edges.tail_uuid not in (select target_uuid from perm_from_start) and
+            edges.head_uuid in (select target_uuid from perm_from_start)),
+
+  partial_perms(perm_origin_uuid, target_uuid, val, traverse_owned) as (
+      select * from perm_from_start
+    union
+      select * from additional_perms
+  ),
+
+  user_identity_perms(perm_origin_uuid, target_uuid, val, traverse_owned) as (
+    select users.uuid as perm_origin_uuid, ps.target_uuid, ps.val, ps.traverse_owned
+      from users, lateral search_permission_graph(users.uuid, 3) as ps
+      where (users.owner_uuid not in (select target_uuid from partial_perms) or
+             users.owner_uuid = users.uuid) and
+      users.uuid in (select target_uuid from partial_perms)
+  ),
+
+  all_perms(perm_origin_uuid, target_uuid, val, traverse_owned) as (
+      select * from partial_perms
+    union
+      select * from user_identity_perms
+  )
+
+  select v.user_uuid, v.target_uuid, max(v.perm_level), bool_or(v.traverse_owned) from
+    (select materialized_permissions.user_uuid,
+         u.target_uuid,
+         least(u.val, materialized_permissions.perm_level) as perm_level,
+         u.traverse_owned
+      from all_perms as u
+      join materialized_permissions on (u.perm_origin_uuid = materialized_permissions.target_uuid)
+      where materialized_permissions.traverse_owned
+    union
+      select perm_origin_uuid as user_uuid, target_uuid, val as perm_level, traverse_owned
+        from all_perms
+        where perm_origin_uuid like '_____-tpzed-_______________') as v
+    group by v.user_uuid, v.target_uuid
+$$;
+
+
+--
+-- Name: compute_trashed(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.compute_trashed() RETURNS TABLE(uuid character varying, trash_at timestamp without time zone)
+    LANGUAGE sql STABLE
+    AS $$
+select ps.target_uuid as group_uuid, ps.trash_at from groups,
+  lateral project_subtree_with_trash_at(groups.uuid, groups.trash_at) ps
+  where groups.owner_uuid like '_____-tpzed-_______________'
+$$;
+
+
+--
+-- Name: permission_graph_edges(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.permission_graph_edges() RETURNS TABLE(tail_uuid character varying, head_uuid character varying, val integer)
+    LANGUAGE sql STABLE
+    AS $$
+           select groups.owner_uuid, groups.uuid, (3) from groups
+          union
+            select users.owner_uuid, users.uuid, (3) from users
+          union
+            select links.tail_uuid,
+                   links.head_uuid,
+                   CASE
+                     WHEN links.name = 'can_read'   THEN 1
+                     WHEN links.name = 'can_login'  THEN 1
+                     WHEN links.name = 'can_write'  THEN 2
+                     WHEN links.name = 'can_manage' THEN 3
+                   END as val
+          from links
+          where links.link_class='permission'
+$$;
+
+
+--
+-- Name: project_subtree_with_trash_at(character varying, timestamp without time zone); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.project_subtree_with_trash_at(starting_uuid character varying, starting_trash_at timestamp without time zone) RETURNS TABLE(target_uuid character varying, trash_at timestamp without time zone)
+    LANGUAGE sql STABLE
+    AS $$
+WITH RECURSIVE
+        project_subtree(uuid, trash_at) as (
+        values (starting_uuid, starting_trash_at)
+        union
+        select groups.uuid, LEAST(project_subtree.trash_at, groups.trash_at)
+          from groups join project_subtree on (groups.owner_uuid = project_subtree.uuid)
+        )
+        select uuid, trash_at from project_subtree;
+$$;
+
+
+--
+-- Name: search_permission_graph(character varying, integer); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.search_permission_graph(starting_uuid character varying, starting_perm integer) RETURNS TABLE(target_uuid character varying, val integer, traverse_owned boolean)
+    LANGUAGE sql STABLE
+    AS $$
+WITH RECURSIVE edges(tail_uuid, head_uuid, val) as (
+          select * from permission_graph_edges()
+        ),
+        traverse_graph(target_uuid, val, traverse_owned) as (
+            values (starting_uuid, starting_perm,
+                    should_traverse_owned(starting_uuid, starting_perm))
+          union
+            (select edges.head_uuid,
+                    least(edges.val, traverse_graph.val,
+                          case traverse_graph.traverse_owned
+                            when true then null
+                            else 0
+                          end),
+                    should_traverse_owned(edges.head_uuid, edges.val)
+             from edges
+             join traverse_graph on (traverse_graph.target_uuid = edges.tail_uuid)))
+        select target_uuid, max(val), bool_or(traverse_owned) from traverse_graph
+        group by (target_uuid) ;
+$$;
+
+
+--
+-- Name: should_traverse_owned(character varying, integer); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.should_traverse_owned(starting_uuid character varying, starting_perm integer) RETURNS boolean
+    LANGUAGE sql STABLE
+    AS $$
+select starting_uuid like '_____-j7d0g-_______________' or
+       (starting_uuid like '_____-tpzed-_______________' and starting_perm >= 3);
+$$;
+
+
 SET default_tablespace = '';
 
 SET default_with_oids = false;
@@ -719,91 +874,15 @@ ALTER SEQUENCE public.logs_id_seq OWNED BY public.logs.id;
 
 
 --
--- Name: users; Type: TABLE; Schema: public; Owner: -
+-- Name: materialized_permissions; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE public.users (
-    id integer NOT NULL,
-    uuid character varying(255),
-    owner_uuid character varying(255) NOT NULL,
-    created_at timestamp without time zone NOT NULL,
-    modified_by_client_uuid character varying(255),
-    modified_by_user_uuid character varying(255),
-    modified_at timestamp without time zone,
-    email character varying(255),
-    first_name character varying(255),
-    last_name character varying(255),
-    identity_url character varying(255),
-    is_admin boolean,
-    prefs text,
-    updated_at timestamp without time zone NOT NULL,
-    default_owner_uuid character varying(255),
-    is_active boolean DEFAULT false,
-    username character varying(255),
-    redirect_to_user_uuid character varying
+CREATE TABLE public.materialized_permissions (
+    user_uuid character varying,
+    target_uuid character varying,
+    perm_level integer,
+    traverse_owned boolean
 );
-
-
---
--- Name: materialized_permission_view; Type: MATERIALIZED VIEW; Schema: public; Owner: -
---
-
-CREATE MATERIALIZED VIEW public.materialized_permission_view AS
- WITH RECURSIVE perm_value(name, val) AS (
-         VALUES ('can_read'::text,(1)::smallint), ('can_login'::text,1), ('can_write'::text,2), ('can_manage'::text,3)
-        ), perm_edges(tail_uuid, head_uuid, val, follow, trashed) AS (
-         SELECT links.tail_uuid,
-            links.head_uuid,
-            pv.val,
-            ((pv.val = 3) OR (groups.uuid IS NOT NULL)) AS follow,
-            (0)::smallint AS trashed,
-            (0)::smallint AS followtrash
-           FROM ((public.links
-             LEFT JOIN perm_value pv ON ((pv.name = (links.name)::text)))
-             LEFT JOIN public.groups ON (((pv.val < 3) AND ((groups.uuid)::text = (links.head_uuid)::text))))
-          WHERE ((links.link_class)::text = 'permission'::text)
-        UNION ALL
-         SELECT groups.owner_uuid,
-            groups.uuid,
-            3,
-            true AS bool,
-                CASE
-                    WHEN ((groups.trash_at IS NOT NULL) AND (groups.trash_at < clock_timestamp())) THEN 1
-                    ELSE 0
-                END AS "case",
-            1
-           FROM public.groups
-        ), perm(val, follow, user_uuid, target_uuid, trashed) AS (
-         SELECT (3)::smallint AS val,
-            true AS follow,
-            (users.uuid)::character varying(32) AS user_uuid,
-            (users.uuid)::character varying(32) AS target_uuid,
-            (0)::smallint AS trashed
-           FROM public.users
-        UNION
-         SELECT (LEAST((perm_1.val)::integer, edges.val))::smallint AS val,
-            edges.follow,
-            perm_1.user_uuid,
-            (edges.head_uuid)::character varying(32) AS target_uuid,
-            ((GREATEST((perm_1.trashed)::integer, edges.trashed) * edges.followtrash))::smallint AS trashed
-           FROM (perm perm_1
-             JOIN perm_edges edges ON ((perm_1.follow AND ((edges.tail_uuid)::text = (perm_1.target_uuid)::text))))
-        )
- SELECT perm.user_uuid,
-    perm.target_uuid,
-    max(perm.val) AS perm_level,
-        CASE perm.follow
-            WHEN true THEN perm.target_uuid
-            ELSE NULL::character varying
-        END AS target_owner_uuid,
-    max(perm.trashed) AS trashed
-   FROM perm
-  GROUP BY perm.user_uuid, perm.target_uuid,
-        CASE perm.follow
-            WHEN true THEN perm.target_uuid
-            ELSE NULL::character varying
-        END
-  WITH NO DATA;
 
 
 --
@@ -1077,6 +1156,42 @@ CREATE SEQUENCE public.traits_id_seq
 --
 
 ALTER SEQUENCE public.traits_id_seq OWNED BY public.traits.id;
+
+
+--
+-- Name: trashed_groups; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.trashed_groups (
+    group_uuid character varying,
+    trash_at timestamp without time zone
+);
+
+
+--
+-- Name: users; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.users (
+    id integer NOT NULL,
+    uuid character varying(255),
+    owner_uuid character varying(255) NOT NULL,
+    created_at timestamp without time zone NOT NULL,
+    modified_by_client_uuid character varying(255),
+    modified_by_user_uuid character varying(255),
+    modified_at timestamp without time zone,
+    email character varying(255),
+    first_name character varying(255),
+    last_name character varying(255),
+    identity_url character varying(255),
+    is_admin boolean,
+    prefs text,
+    updated_at timestamp without time zone NOT NULL,
+    default_owner_uuid character varying(255),
+    is_active boolean DEFAULT false,
+    username character varying(255),
+    redirect_to_user_uuid character varying
+);
 
 
 --
@@ -2514,6 +2629,13 @@ CREATE UNIQUE INDEX index_traits_on_uuid ON public.traits USING btree (uuid);
 
 
 --
+-- Name: index_trashed_groups_on_group_uuid; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_trashed_groups_on_group_uuid ON public.trashed_groups USING btree (group_uuid);
+
+
+--
 -- Name: index_users_on_created_at; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2703,17 +2825,10 @@ CREATE INDEX nodes_search_index ON public.nodes USING btree (uuid, owner_uuid, m
 
 
 --
--- Name: permission_target_trashed; Type: INDEX; Schema: public; Owner: -
+-- Name: permission_user_target; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX permission_target_trashed ON public.materialized_permission_view USING btree (trashed, target_uuid);
-
-
---
--- Name: permission_target_user_trashed_level; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX permission_target_user_trashed_level ON public.materialized_permission_view USING btree (user_uuid, trashed, perm_level);
+CREATE UNIQUE INDEX permission_user_target ON public.materialized_permissions USING btree (user_uuid, target_uuid);
 
 
 --
@@ -3024,6 +3139,7 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20190523180148'),
 ('20190808145904'),
 ('20190809135453'),
-('20190905151603');
+('20190905151603'),
+('20200501150153');
 
 
