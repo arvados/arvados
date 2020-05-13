@@ -157,19 +157,6 @@ SELECT 1 FROM #{PERMISSION_VIEW}
     MaterializedPermission.where("user_uuid = ? or target_uuid = ?", uuid, uuid).delete_all
   end
 
-  def recompute_permissions
-    ActiveRecord::Base.connection.exec_delete("DELETE FROM #{PERMISSION_VIEW} where user_uuid=$1",
-                                          "User.recompute_permissions.delete_user_uuid",
-                                          [[nil, uuid]])
-    ActiveRecord::Base.connection.exec_insert %{
-INSERT INTO #{PERMISSION_VIEW}
-select $1::varchar, g.target_uuid, g.val, g.traverse_owned
-from search_permission_graph($1::varchar, 3) as g
-},
-                                          "User.recompute_permissions.insert",
-                                          [[nil, uuid]]
-  end
-
   # Return a hash of {user_uuid: group_perms}
   def self.all_group_permissions
     all_perms = {}
@@ -361,6 +348,8 @@ update #{PERMISSION_VIEW} set target_uuid=$1 where target_uuid = $2
       raise "user does not exist" if !new_user
       raise "cannot merge to an already merged user" if new_user.redirect_to_user_uuid
 
+      update_permissions self.owner_uuid, self.uuid, 0
+
       # If 'self' is a remote user, don't transfer authorizations
       # (i.e. ability to access the account) to the new user, because
       # that gives the remote site the ability to access the 'new'
@@ -435,8 +424,8 @@ update #{PERMISSION_VIEW} set target_uuid=$1 where target_uuid = $2
       if redirect_to_new_user
         update_attributes!(redirect_to_user_uuid: new_user.uuid, username: nil)
       end
-      self.recompute_permissions
-      new_user.recompute_permissions
+      update_permissions self.owner_uuid, self.uuid, 3
+      update_permissions new_user.owner_uuid, new_user.uuid, 3
     end
   end
 
