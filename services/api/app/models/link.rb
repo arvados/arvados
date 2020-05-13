@@ -14,8 +14,8 @@ class Link < ArvadosModel
   validate :name_links_are_obsolete
   before_create :permission_to_attach_to_objects
   before_update :permission_to_attach_to_objects
-  after_update :update_permissions
-  after_create :update_permissions
+  after_update :call_update_permissions
+  after_create :call_update_permissions
   before_destroy :clear_permissions
   after_destroy :clear_permissions
 
@@ -72,21 +72,21 @@ class Link < ArvadosModel
     'can_manage' => 3,
   }
 
-  def update_permissions
+  def call_update_permissions
     if self.link_class == 'permission'
-      User.update_permissions tail_uuid, head_uuid, PERM_LEVEL[name]
+      update_permissions tail_uuid, head_uuid, PERM_LEVEL[name]
     end
   end
 
   def clear_permissions
     if self.link_class == 'permission'
-      User.update_permissions tail_uuid, head_uuid, 0, false
+      update_permissions tail_uuid, head_uuid, 0, false
     end
   end
 
   def check_permissions
     if self.link_class == 'permission'
-      User.update_permissions tail_uuid, head_uuid, 0, true
+      update_permissions tail_uuid, head_uuid, 0, true
     end
   end
 

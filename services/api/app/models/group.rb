@@ -58,41 +58,43 @@ class Group < ArvadosModel
 create temporary table #{temptable} on commit drop
 as select * from project_subtree_with_trash_at($1, LEAST($2, $3)::timestamp)
 },
-                                               'Group.get_subtree',
+                                               'Group.update_trash.select',
                                                [[nil, self.uuid],
                                                 [nil, TrashedGroup.find_by_group_uuid(self.owner_uuid).andand.trash_at],
                                                 [nil, self.trash_at]]
 
-      ActiveRecord::Base.connection.exec_query %{
+      ActiveRecord::Base.connection.exec_delete %{
 delete from trashed_groups where group_uuid in (select target_uuid from #{temptable} where trash_at is NULL);
-}
+},
+                                            "Group.update_trash.delete"
 
       ActiveRecord::Base.connection.exec_query %{
 insert into trashed_groups (group_uuid, trash_at)
   select target_uuid as group_uuid, trash_at from #{temptable} where trash_at is not NULL
 on conflict (group_uuid) do update set trash_at=EXCLUDED.trash_at;
-}
+},
+                                            "Group.update_trash.insert"
     end
   end
 
   def before_ownership_change
     if owner_uuid_changed? and !self.owner_uuid_was.nil?
       MaterializedPermission.where(user_uuid: owner_uuid_was, target_uuid: uuid).delete_all
-      User.update_permissions self.owner_uuid, self.uuid, 0
+      update_permissions self.owner_uuid, self.uuid, 0
     end
   end
 
   def after_ownership_change
     if owner_uuid_changed?
-      User.update_permissions self.owner_uuid, self.uuid, 3
+      update_permissions self.owner_uuid, self.uuid, 3
     end
   end
 
   def clear_permissions_and_trash
     MaterializedPermission.where(target_uuid: uuid).delete_all
-    ActiveRecord::Base.connection.exec_query %{
+    ActiveRecord::Base.connection.exec_delete %{
 delete from trashed_groups where group_uuid=$1
-}, "Group.clear_trash", [[nil, self.uuid]]
+}, "Group.clear_permissions_and_trash", [[nil, self.uuid]]
 
   end
 

@@ -70,7 +70,6 @@ class OwnerTest < ActiveSupport::TestCase
              "new #{o_class} should really be in DB")
       old_uuid = o.uuid
       new_uuid = o.uuid.sub(/..........$/, rand(2**256).to_s(36)[0..9])
-      puts "//Changing//"
       if o.respond_to? :update_uuid
         o.update_uuid(new_uuid: new_uuid)
       else

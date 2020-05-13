@@ -143,242 +143,31 @@ SELECT 1 FROM #{PERMISSION_VIEW}
   def before_ownership_change
     if owner_uuid_changed? and !self.owner_uuid_was.nil?
       MaterializedPermission.where(user_uuid: owner_uuid_was, target_uuid: uuid).delete_all
-      User.update_permissions self.owner_uuid_was, self.uuid, 0, false
+      update_permissions self.owner_uuid_was, self.uuid, 0, false
     end
   end
 
   def after_ownership_change
-
-#       puts "Update permissions for #{uuid}"
-#     User.printdump %{
-# select * from materialized_permissions where user_uuid='#{uuid}'
-# }
-    puts "-1- #{uuid_changed?} and #{uuid} and #{uuid_was}"
-    puts "-2- #{owner_uuid_changed?} and #{owner_uuid} and #{owner_uuid_was}"
-
-    unless owner_uuid_changed?
-      return
+    if owner_uuid_changed?
+      update_permissions self.owner_uuid, self.uuid, 3
     end
-
-#     if !uuid_was.nil? and uuid_changed?
-#       puts "Cleaning house #{uuid_was}"
-#     ActiveRecord::Base.connection.exec_query %{
-# update #{PERMISSION_VIEW} set user_uuid=$1 where user_uuid = $2
-# },
-#                                              'Change user uuid',
-#                                              [[nil, uuid],
-#                                               [nil, uuid_was]]
-#     ActiveRecord::Base.connection.exec_query %{
-# update #{PERMISSION_VIEW} set target_uuid=$1 where target_uuid = $2
-# },
-#                                              'Change user uuid',
-#                                              [[nil, uuid],
-#                                               [nil, uuid_was]]
-#     end
-
-    User.update_permissions self.owner_uuid, self.uuid, 3
-
-#   puts "post-update"
-#    User.printdump %{
-# select * from materialized_permissions where user_uuid='#{uuid}'
-# }
-#    puts "<<<"
   end
 
   def clear_permissions
     MaterializedPermission.where("user_uuid = ? or target_uuid = ?", uuid, uuid).delete_all
   end
 
-  def self.printdump qr
-    q1 = ActiveRecord::Base.connection.exec_query qr
-    q1.each do |r|
-      puts r
-    end
-  end
-
   def recompute_permissions
-    ActiveRecord::Base.connection.execute("DELETE FROM #{PERMISSION_VIEW} where user_uuid='#{uuid}'")
-    ActiveRecord::Base.connection.execute %{
+    ActiveRecord::Base.connection.exec_delete("DELETE FROM #{PERMISSION_VIEW} where user_uuid=$1",
+                                          "User.recompute_permissions.delete_user_uuid",
+                                          [[nil, uuid]])
+    ActiveRecord::Base.connection.exec_insert %{
 INSERT INTO #{PERMISSION_VIEW}
-select '#{uuid}', g.target_uuid, g.val, g.traverse_owned
-from search_permission_graph('#{uuid}', 3) as g
-}
-  end
-
-  def self.update_permissions perm_origin_uuid, starting_uuid, perm_level, check=true
-    # Update a subset of the permission graph
-    # perm_level is the inherited permission
-    # perm_level is a number from 0-3
-    #   can_read=1
-    #   can_write=2
-    #   can_manage=3
-    #   call with perm_level=0 to revoke permissions
-    #
-    # 1. Compute set (group, permission) implied by traversing
-    #    graph starting at this group
-    # 2. Find links from outside the graph that point inside
-    # 3. For each starting uuid, get the set of permissions from the
-    #    materialized permission table
-    # 3. Delete permissions from table not in our computed subset.
-    # 4. Upsert each permission in our subset (user, group, val)
-
-    ## testinging
-    puts "\n__ update_permissions __"
-#     puts "What's in there now for #{starting_uuid}"
-#     printdump %{
-# select * from materialized_permissions where user_uuid='#{starting_uuid}'
-# }
-
-    puts "search_permission_graph #{perm_origin_uuid} #{starting_uuid}, #{perm_level}"
-    printdump %{
-select '#{perm_origin_uuid}'::varchar as perm_origin_uuid, target_uuid, val, traverse_owned from search_permission_graph('#{starting_uuid}', #{perm_level})
-}
-
-#     puts "other_links #{perm_origin_uuid} #{starting_uuid}, #{perm_level}"
-#     printdump %{
-# with
-# perm_from_start(perm_origin_uuid, target_uuid, val, traverse_owned) as (
-#   select '#{perm_origin_uuid}'::varchar, target_uuid, val, traverse_owned
-#     from search_permission_graph('#{starting_uuid}'::varchar, #{perm_level}))
-
-#     select links.tail_uuid as perm_origin_uuid, links.head_uuid, links.name
-#       from links
-#       where links.link_class='permission' and
-#         links.tail_uuid not in (select target_uuid from perm_from_start where traverse_owned) and
-#         links.tail_uuid != '#{perm_origin_uuid}' and
-#         links.head_uuid in (select target_uuid from perm_from_start)
-# }
-
-    puts "additional_perms #{perm_origin_uuid} #{starting_uuid}, #{perm_level}"
-    printdump %{
-with
-perm_from_start(perm_origin_uuid, target_uuid, val, traverse_owned) as (
-  select '#{perm_origin_uuid}'::varchar, target_uuid, val, traverse_owned
-    from search_permission_graph('#{starting_uuid}'::varchar, #{perm_level})),
-
-  edges(tail_uuid, head_uuid, val) as (
-        select * from permission_graph_edges()),
-
-  additional_perms(perm_origin_uuid, target_uuid, val, traverse_owned) as (
-    select edges.tail_uuid as perm_origin_uuid, ps.target_uuid, ps.val,
-           should_traverse_owned(ps.target_uuid, ps.val)
-      from edges, lateral search_permission_graph(edges.head_uuid, edges.val) as ps
-      where (not (edges.tail_uuid = '#{perm_origin_uuid}' and
-                  edges.head_uuid = '#{starting_uuid}')) and
-            edges.tail_uuid not in (select target_uuid from perm_from_start) and
-            edges.head_uuid in (select target_uuid from perm_from_start)),
-
-  partial_perms(perm_origin_uuid, target_uuid, val, traverse_owned) as (
-      select * from perm_from_start
-    union
-      select * from additional_perms
-  ),
-
-  user_identity_perms(perm_origin_uuid, target_uuid, val, traverse_owned) as (
-    select users.uuid as perm_origin_uuid, ps.target_uuid, ps.val, ps.traverse_owned
-      from users, lateral search_permission_graph(users.uuid, 3) as ps
-      where (users.owner_uuid not in (select target_uuid from partial_perms) or
-             users.owner_uuid = users.uuid) and
-      users.uuid in (select target_uuid from partial_perms)
-  ),
-
-  all_perms(perm_origin_uuid, target_uuid, val, traverse_owned) as (
-      select * from additional_perms
-    union
-      select * from user_identity_perms
-  )
-
-  select * from all_perms order by perm_origin_uuid, target_uuid
-}
-
-    puts "Perms out"
-    printdump %{
-select * from compute_permission_subgraph('#{perm_origin_uuid}', '#{starting_uuid}', '#{perm_level}')
-order by user_uuid, target_uuid
-}
-    ## end
-
-    temptable_perms = "temp_perms_#{rand(2**64).to_s(10)}"
-    ActiveRecord::Base.connection.exec_query %{
-create temporary table #{temptable_perms} on commit drop
-as select * from compute_permission_subgraph($1, $2, $3)
+select $1::varchar, g.target_uuid, g.val, g.traverse_owned
+from search_permission_graph($1::varchar, 3) as g
 },
-                                             'Group.search_permissions',
-                                             [[nil, perm_origin_uuid],
-                                              [nil, starting_uuid],
-                                              [nil, perm_level]]
-
-#     q1 = ActiveRecord::Base.connection.exec_query %{
-# select * from #{temptable_perms} order by user_uuid, target_uuid
-# }
-#     puts "recomputed perms was #{perm_origin_uuid} #{starting_uuid}, #{perm_level}"
-#     q1.each do |r|
-#       puts r
-#     end
-#     puts "<<<<"
-
-    ActiveRecord::Base.connection.exec_query %{
-delete from materialized_permissions where
-  target_uuid in (select target_uuid from #{temptable_perms}) and
-  not exists (select 1 from #{temptable_perms}
-              where target_uuid=materialized_permissions.target_uuid and
-                    user_uuid=materialized_permissions.user_uuid and
-                    val>0)
-}
-
-    ActiveRecord::Base.connection.exec_query %{
-insert into materialized_permissions (user_uuid, target_uuid, perm_level, traverse_owned)
-  select user_uuid, target_uuid, val as perm_level, traverse_owned from #{temptable_perms} where val>0
-on conflict (user_uuid, target_uuid) do update set perm_level=EXCLUDED.perm_level, traverse_owned=EXCLUDED.traverse_owned;
-}
-
-    # for testing only - make a copy of the table and compare it to the one generated
-    # using a full permission recompute
-
-#     puts "dump--"
-#     User.printdump %{
-# select owner_uuid, uuid from users order by uuid
-#     }
-#     User.printdump %{
-# select * from groups
-#     }
-#     User.printdump %{
-#select * from search_permission_graph('zzzzz-tpzed-000000000000000', 3)
-#     }
-#     puts "--"
-
-    if check
-      q1 = ActiveRecord::Base.connection.exec_query %{
-select user_uuid, target_uuid, perm_level, traverse_owned from materialized_permissions
-order by user_uuid, target_uuid
-}
-
-      q2 = ActiveRecord::Base.connection.exec_query %{
-select users.uuid as user_uuid, g.target_uuid, g.val as perm_level, g.traverse_owned
-from users, lateral search_permission_graph(users.uuid, 3) as g where g.val > 0
-order by users.uuid, target_uuid
-}
-
-      if q1.count != q2.count
-        puts "Didn't match incremental+: #{q1.count} != full refresh-: #{q2.count}"
-      end
-
-      if q1.count > q2.count
-        q1.each_with_index do |r, i|
-          if r != q2[i]
-            puts "+#{r}\n-#{q2[i]}"
-            raise "Didn't match"
-          end
-        end
-      else
-        q2.each_with_index do |r, i|
-          if r != q1[i]
-            puts "+#{q1[i]}\n-#{r}"
-            raise "Didn't match"
-          end
-        end
-      end
-    end
+                                          "User.recompute_permissions.insert",
+                                          [[nil, uuid]]
   end
 
   # Return a hash of {user_uuid: group_perms}
@@ -535,16 +324,16 @@ SELECT target_uuid, perm_level
       self.uuid = new_uuid
       save!(validate: false)
       change_all_uuid_refs(old_uuid: old_uuid, new_uuid: new_uuid)
-    ActiveRecord::Base.connection.exec_query %{
+    ActiveRecord::Base.connection.exec_update %{
 update #{PERMISSION_VIEW} set user_uuid=$1 where user_uuid = $2
 },
-                                             'Change user uuid',
+                                             'User.update_uuid.update_permissions_user_uuid',
                                              [[nil, new_uuid],
                                               [nil, old_uuid]]
-      ActiveRecord::Base.connection.exec_query %{
+      ActiveRecord::Base.connection.exec_update %{
 update #{PERMISSION_VIEW} set target_uuid=$1 where target_uuid = $2
 },
-                                             'Change target uuid',
+                                            'User.update_uuid.update_permissions_target_uuid',
                                              [[nil, new_uuid],
                                               [nil, old_uuid]]
     end
@@ -905,7 +694,6 @@ update #{PERMISSION_VIEW} set target_uuid=$1 where target_uuid = $2
 
   # add the user to the 'All users' group
   def create_user_group_link
-    #puts "In create_user_group_link"
     return (Link.where(tail_uuid: self.uuid,
                        head_uuid: all_users_group[:uuid],
                        link_class: 'permission',

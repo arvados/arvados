@@ -930,34 +930,6 @@ ALTER SEQUENCE public.nodes_id_seq OWNED BY public.nodes.id;
 
 
 --
--- Name: permission_refresh_lock; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.permission_refresh_lock (
-    id integer NOT NULL
-);
-
-
---
--- Name: permission_refresh_lock_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE public.permission_refresh_lock_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: permission_refresh_lock_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE public.permission_refresh_lock_id_seq OWNED BY public.permission_refresh_lock.id;
-
-
---
 -- Name: pipeline_instances; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1393,13 +1365,6 @@ ALTER TABLE ONLY public.nodes ALTER COLUMN id SET DEFAULT nextval('public.nodes_
 
 
 --
--- Name: permission_refresh_lock id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.permission_refresh_lock ALTER COLUMN id SET DEFAULT nextval('public.permission_refresh_lock_id_seq'::regclass);
-
-
---
 -- Name: pipeline_instances id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1581,14 +1546,6 @@ ALTER TABLE ONLY public.logs
 
 ALTER TABLE ONLY public.nodes
     ADD CONSTRAINT nodes_pkey PRIMARY KEY (id);
-
-
---
--- Name: permission_refresh_lock permission_refresh_lock_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.permission_refresh_lock
-    ADD CONSTRAINT permission_refresh_lock_pkey PRIMARY KEY (id);
 
 
 --
