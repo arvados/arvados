@@ -198,7 +198,7 @@ ManagementToken: qqqqq
 	c.Check(err, check.IsNil)
 	c.Check(cluster, check.NotNil)
 
-	c.Check(cluster.Services.Controller.ExternalURL, check.Equals, arvados.URL{Scheme: "https", Host: "example.com"})
+	c.Check(cluster.Services.Controller.ExternalURL, check.Equals, arvados.URL{Scheme: "https", Host: "example.com", Path: "/"})
 	c.Check(cluster.SystemRootToken, check.Equals, "abcdefg")
 
 	c.Check(cluster.PostgreSQL.Connection, check.DeepEquals, arvados.PostgreSQLConnection{

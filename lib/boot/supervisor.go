@@ -568,7 +568,7 @@ func (super *Supervisor) autofillConfig(cfg *arvados.Config) error {
 		if p == "0" {
 			p = nextPort(h)
 		}
-		cluster.Services.Controller.ExternalURL = arvados.URL{Scheme: "https", Host: net.JoinHostPort(h, p)}
+		cluster.Services.Controller.ExternalURL = arvados.URL{Scheme: "https", Host: net.JoinHostPort(h, p), Path: "/"}
 	}
 	for _, svc := range []*arvados.Service{
 		&cluster.Services.Controller,
@@ -601,7 +601,7 @@ func (super *Supervisor) autofillConfig(cfg *arvados.Config) error {
 		}
 		if len(svc.InternalURLs) == 0 {
 			svc.InternalURLs = map[arvados.URL]arvados.ServiceInstance{
-				arvados.URL{Scheme: "http", Host: fmt.Sprintf("%s:%s", super.ListenHost, nextPort(super.ListenHost))}: arvados.ServiceInstance{},
+				arvados.URL{Scheme: "http", Host: fmt.Sprintf("%s:%s", super.ListenHost, nextPort(super.ListenHost)), Path: "/"}: arvados.ServiceInstance{},
 			}
 		}
 	}
@@ -629,7 +629,7 @@ func (super *Supervisor) autofillConfig(cfg *arvados.Config) error {
 	}
 	if super.ClusterType == "test" {
 		// Add a second keepstore process.
-		cluster.Services.Keepstore.InternalURLs[arvados.URL{Scheme: "http", Host: fmt.Sprintf("%s:%s", super.ListenHost, nextPort(super.ListenHost))}] = arvados.ServiceInstance{}
+		cluster.Services.Keepstore.InternalURLs[arvados.URL{Scheme: "http", Host: fmt.Sprintf("%s:%s", super.ListenHost, nextPort(super.ListenHost)), Path: "/"}] = arvados.ServiceInstance{}
 
 		// Create a directory-backed volume for each keepstore
 		// process.

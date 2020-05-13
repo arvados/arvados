@@ -117,7 +117,7 @@ func (s *LoadSuite) TestLegacyKeepWebConfig(c *check.C) {
 	cluster, err := testLoadLegacyConfig(content, "-legacy-keepweb-config", c)
 	c.Check(err, check.IsNil)
 
-	c.Check(cluster.Services.Controller.ExternalURL, check.Equals, arvados.URL{Scheme: "https", Host: "example.com"})
+	c.Check(cluster.Services.Controller.ExternalURL, check.Equals, arvados.URL{Scheme: "https", Host: "example.com", Path: "/"})
 	c.Check(cluster.SystemRootToken, check.Equals, "abcdefg")
 
 	c.Check(cluster.Collections.WebDAVCache.TTL, check.Equals, arvados.Duration(60*time.Second))
@@ -127,7 +127,7 @@ func (s *LoadSuite) TestLegacyKeepWebConfig(c *check.C) {
 	c.Check(cluster.Collections.WebDAVCache.MaxPermissionEntries, check.Equals, 100)
 	c.Check(cluster.Collections.WebDAVCache.MaxUUIDEntries, check.Equals, 100)
 
-	c.Check(cluster.Services.WebDAVDownload.ExternalURL, check.Equals, arvados.URL{Host: "download.example.com"})
+	c.Check(cluster.Services.WebDAVDownload.ExternalURL, check.Equals, arvados.URL{Host: "download.example.com", Path: "/"})
 	c.Check(cluster.Services.WebDAVDownload.InternalURLs[arvados.URL{Host: ":80"}], check.NotNil)
 	c.Check(cluster.Services.WebDAV.InternalURLs[arvados.URL{Host: ":80"}], check.NotNil)
 
@@ -160,7 +160,7 @@ func (s *LoadSuite) TestLegacyKeepproxyConfig(c *check.C) {
 
 	c.Check(err, check.IsNil)
 	c.Check(cluster, check.NotNil)
-	c.Check(cluster.Services.Controller.ExternalURL, check.Equals, arvados.URL{Scheme: "https", Host: "example.com"})
+	c.Check(cluster.Services.Controller.ExternalURL, check.Equals, arvados.URL{Scheme: "https", Host: "example.com", Path: "/"})
 	c.Check(cluster.SystemRootToken, check.Equals, "abcdefg")
 	c.Check(cluster.ManagementToken, check.Equals, "xyzzy")
 	c.Check(cluster.Services.Keepproxy.InternalURLs[arvados.URL{Host: ":80"}], check.Equals, arvados.ServiceInstance{})
@@ -228,7 +228,7 @@ func (s *LoadSuite) TestLegacyArvGitHttpdConfig(c *check.C) {
 
 	c.Check(err, check.IsNil)
 	c.Check(cluster, check.NotNil)
-	c.Check(cluster.Services.Controller.ExternalURL, check.Equals, arvados.URL{Scheme: "https", Host: "example.com"})
+	c.Check(cluster.Services.Controller.ExternalURL, check.Equals, arvados.URL{Scheme: "https", Host: "example.com", Path: "/"})
 	c.Check(cluster.SystemRootToken, check.Equals, "abcdefg")
 	c.Check(cluster.ManagementToken, check.Equals, "xyzzy")
 	c.Check(cluster.Git.GitCommand, check.Equals, "/test/git")

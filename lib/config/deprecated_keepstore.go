@@ -118,7 +118,7 @@ func (ldr *Loader) loadOldKeepstoreConfig(cfg *arvados.Config) error {
 		return err
 	}
 
-	myURL := arvados.URL{Scheme: "http"}
+	myURL := arvados.URL{Scheme: "http", Path: "/"}
 	if oc.TLSCertificateFile != nil && oc.TLSKeyFile != nil {
 		myURL.Scheme = "https"
 	}
@@ -137,7 +137,7 @@ func (ldr *Loader) loadOldKeepstoreConfig(cfg *arvados.Config) error {
 		cluster.TLS.Key = "file://" + *v
 	}
 	if v := oc.Listen; v != nil {
-		if _, ok := cluster.Services.Keepstore.InternalURLs[arvados.URL{Scheme: myURL.Scheme, Host: *v}]; ok {
+		if _, ok := cluster.Services.Keepstore.InternalURLs[arvados.URL{Scheme: myURL.Scheme, Host: *v, Path: "/"}]; ok {
 			// already listed
 			myURL.Host = *v
 		} else if len(*v) > 1 && (*v)[0] == ':' {
@@ -537,6 +537,7 @@ func keepServiceURL(ks arvados.KeepService) arvados.URL {
 	url := arvados.URL{
 		Scheme: "http",
 		Host:   net.JoinHostPort(ks.ServiceHost, strconv.Itoa(ks.ServicePort)),
+		Path:   "/",
 	}
 	if ks.ServiceSSLFlag {
 		url.Scheme = "https"

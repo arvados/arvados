@@ -11,7 +11,7 @@ if defined? CUSTOM_PROVIDER_URL
   Rails.logger.warn "Copying omniauth from globals in legacy config file."
   Rails.configuration.Login["ProviderAppID"] = APP_ID
   Rails.configuration.Login["ProviderAppSecret"] = APP_SECRET
-  Rails.configuration.Services["SSO"]["ExternalURL"] = CUSTOM_PROVIDER_URL
+  Rails.configuration.Services["SSO"]["ExternalURL"] = CUSTOM_PROVIDER_URL.sub(/\/$/, "") + "/"
 else
   Rails.application.config.middleware.use OmniAuth::Builder do
     provider(:josh_id,
