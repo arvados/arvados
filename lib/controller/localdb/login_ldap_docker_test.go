@@ -12,9 +12,17 @@ import (
 	check "gopkg.in/check.v1"
 )
 
+func haveDocker() bool {
+	_, err := exec.Command("docker", "info").CombinedOutput()
+	return err == nil
+}
+
 func (s *LDAPSuite) TestLoginLDAPViaPAM(c *check.C) {
 	if testing.Short() {
 		c.Skip("skipping docker test in short mode")
+	}
+	if !haveDocker() {
+		c.Skip("skipping docker test because docker is not available")
 	}
 	cmd := exec.Command("bash", "login_ldap_docker_test.sh")
 	cmd.Stdout = os.Stderr
@@ -27,6 +35,9 @@ func (s *LDAPSuite) TestLoginLDAPViaPAM(c *check.C) {
 func (s *LDAPSuite) TestLoginLDAPBuiltin(c *check.C) {
 	if testing.Short() {
 		c.Skip("skipping docker test in short mode")
+	}
+	if !haveDocker() {
+		c.Skip("skipping docker test because docker is not available")
 	}
 	cmd := exec.Command("bash", "login_ldap_docker_test.sh")
 	cmd.Stdout = os.Stderr
