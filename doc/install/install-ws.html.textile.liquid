@@ -71,21 +71,12 @@ server {
 
 {% include 'restart_api' %}
 
-h2(#restart-api). Restart the API server and controller
-
-After adding the SSO server to the Services section, make sure the cluster config file is up to date on the API server host, and restart the API server and controller processes to ensure the changes are applied.
-
-<notextile>
-<pre><code># <span class="userinput">systemctl restart nginx arvados-controller</span>
-</code></pre>
-</notextile>
-
 h2(#confirm). Confirm working installation
 
 Confirm the service is listening on its assigned port and responding to requests.
 
 <notextile>
-<pre><code>~$ <span class="userinput">curl https://<span class="userinput">ws.ClusterID.example.com</span>/status.json</span>
-{"Clients":1}
+<pre><code>~$ <span class="userinput">curl https://<span class="userinput">ws.ClusterID.example.com</span>/websocket</span>
+not websocket protocol
 </code></pre>
 </notextile>
