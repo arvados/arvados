@@ -58,7 +58,18 @@ export interface ClusterConfigJSON {
     };
     Login: {
         LoginCluster: string;
-        PAM: boolean;
+        Google: {
+            Enable: boolean;
+        }
+        LDAP: {
+            Enable: boolean;
+        }
+        PAM: {
+            Enable: boolean;
+        }
+        SSO: {
+            Enable: boolean;
+        }
     };
     Collections: {
         ForwardSlashNameSubstitution: string;
@@ -109,6 +120,17 @@ const getApiRevision = async (apiUrl: string) => {
     }
 };
 
+const removeTrailingSlashes = (config: ClusterConfigJSON): ClusterConfigJSON => {
+    const svcs: any = {};
+    Object.keys(config.Services).map((s) => {
+        svcs[s] = config.Services[s];
+        if (svcs[s].hasOwnProperty('ExternalURL')) {
+            svcs[s].ExternalURL = svcs[s].ExternalURL.replace(/\/+$/, '');
+        }
+    });
+    return {...config, Services: svcs};
+};
+
 export const fetchConfig = () => {
     return Axios
         .get<WorkbenchConfig>(WORKBENCH_CONFIG_URL + "?nocache=" + (new Date()).getTime())
@@ -122,7 +144,7 @@ export const fetchConfig = () => {
                 throw new Error(`Unable to start Workbench. API_HOST is undefined in ${WORKBENCH_CONFIG_URL} or the environment.`);
             }
             return Axios.get<ClusterConfigJSON>(getClusterConfigURL(workbenchConfig.API_HOST)).then(async response => {
-                const clusterConfigJSON = response.data;
+                const clusterConfigJSON = removeTrailingSlashes(response.data);
                 const apiRevision = await getApiRevision(clusterConfigJSON.Services.Controller.ExternalURL);
                 const config = { ...buildConfig(clusterConfigJSON), apiRevision };
                 const warnLocalConfig = (varName: string) => console.warn(
@@ -188,7 +210,18 @@ export const mockClusterConfigJSON = (config: Partial<ClusterConfigJSON>): Clust
     },
     Login: {
         LoginCluster: "",
-        PAM: false,
+        Google: {
+            Enable: false,
+        },
+        LDAP: {
+            Enable: false,
+        },
+        PAM: {
+            Enable: false,
+        },
+        SSO: {
+            Enable: false,
+        },
     },
     Collections: {
         ForwardSlashNameSubstitution: "",
