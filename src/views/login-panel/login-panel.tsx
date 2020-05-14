@@ -11,6 +11,7 @@ import { ArvadosTheme } from '~/common/custom-theme';
 import { RootState } from '~/store/store';
 import { LoginForm } from '~/views-components/login-form/login-form';
 import Axios from 'axios';
+import { Config } from '~/common/config';
 
 type CssRules = 'root' | 'container' | 'title' | 'content' | 'content__bolder' | 'button';
 
@@ -69,6 +70,13 @@ type LoginPanelProps = DispatchProp<any> & WithStyles<CssRules> & {
     passwordLogin: boolean,
 };
 
+const requirePasswordLogin = (config: Config): boolean => {
+    if (config && config.clusterConfig) {
+        return config.clusterConfig.Login.LDAP.Enable || config.clusterConfig.Login.PAM.Enable || false;
+    }
+    return false;
+};
+
 export const LoginPanel = withStyles(styles)(
     connect((state: RootState) => ({
         remoteHosts: state.auth.remoteHosts,
@@ -76,10 +84,8 @@ export const LoginPanel = withStyles(styles)(
         localCluster: state.auth.localCluster,
         loginCluster: state.auth.loginCluster,
         welcomePage: state.auth.config.clusterConfig.Workbench.WelcomePageHTML,
-        passwordLogin: state.auth.remoteHostsConfig[state.auth.loginCluster || state.auth.homeCluster] &&
-            state.auth.remoteHostsConfig[state.auth.loginCluster || state.auth.homeCluster].clusterConfig.Login.LDAP.Enable ||
-            state.auth.remoteHostsConfig[state.auth.loginCluster || state.auth.homeCluster].clusterConfig.Login.PAM.Enable || false,
-    }))(({ classes, dispatch, remoteHosts, homeCluster, localCluster, loginCluster, welcomePage, passwordLogin }: LoginPanelProps) => {
+        passwordLogin: requirePasswordLogin(state.auth.remoteHostsConfig[state.auth.loginCluster || state.auth.homeCluster]),
+        }))(({ classes, dispatch, remoteHosts, homeCluster, localCluster, loginCluster, welcomePage, passwordLogin }: LoginPanelProps) => {
         const loginBtnLabel = `Log in${(localCluster !== homeCluster && loginCluster !== homeCluster) ? " to "+localCluster+" with user from "+homeCluster : ''}`;
 
         return (<Grid container justify="center" alignItems="center"
