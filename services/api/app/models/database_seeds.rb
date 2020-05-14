@@ -14,6 +14,7 @@ class DatabaseSeeds
     anonymous_group_read_permission
     anonymous_user
     empty_collection
-    do_refresh_permission_view
+    refresh_permission_view
+    refresh_trashed
   end
 end

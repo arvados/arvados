@@ -296,14 +296,14 @@ class ArvadosModel < ApplicationRecord
       if !include_trash
         if sql_table != "api_client_authorizations"
           # Only include records where the owner is not trashed
-          sql_conds = "#{sql_table}.owner_uuid NOT IN (SELECT group_uuid FROM trashed_groups "+
+          sql_conds = "#{sql_table}.owner_uuid NOT IN (SELECT group_uuid FROM #{TRASHED_GROUPS} "+
                       "where trash_at <= statement_timestamp()) #{exclude_trashed_records}"
         end
       end
     else
       trashed_check = ""
       if !include_trash then
-        trashed_check = "AND target_uuid NOT IN (SELECT group_uuid FROM trashed_groups where trash_at <= statement_timestamp())"
+        trashed_check = "AND target_uuid NOT IN (SELECT group_uuid FROM #{TRASHED_GROUPS} where trash_at <= statement_timestamp())"
       end
 
       # Note: it is possible to combine the direct_check and

@@ -5,7 +5,7 @@
 PERMISSION_VIEW = "materialized_permissions"
 TRASHED_GROUPS = "trashed_groups"
 
-def do_refresh_permission_view
+def refresh_permission_view
   ActiveRecord::Base.transaction do
     ActiveRecord::Base.connection.execute("LOCK TABLE #{PERMISSION_VIEW}")
     ActiveRecord::Base.connection.execute("DELETE FROM #{PERMISSION_VIEW}")
@@ -18,34 +18,10 @@ from users, lateral search_permission_graph(users.uuid, 3) as g where g.val > 0
   end
 end
 
-def refresh_permission_view(async=false)
-  if async and Rails.configuration.API.AsyncPermissionsUpdateInterval > 0
-    exp = Rails.configuration.API.AsyncPermissionsUpdateInterval.seconds
-    need = false
-    Rails.cache.fetch('AsyncRefreshPermissionView', expires_in: exp) do
-      need = true
-    end
-    if need
-      # Schedule a new permission update and return immediately
-      Thread.new do
-        Thread.current.abort_on_exception = false
-        begin
-          sleep(exp)
-          Rails.cache.delete('AsyncRefreshPermissionView')
-          do_refresh_permission_view
-        rescue => e
-          Rails.logger.error "Updating permission view: #{e}\n#{e.backtrace.join("\n\t")}"
-        ensure
-          ActiveRecord::Base.connection.close
-        end
-      end
-      true
-    end
-  else
-    do_refresh_permission_view
-  end
+def refresh_trashed
+  ActiveRecord::Base.connection.execute("DELETE FROM #{TRASHED_GROUPS}")
+  ActiveRecord::Base.connection.execute("INSERT INTO #{TRASHED_GROUPS} select * from compute_trashed()")
 end
-
 
 def update_permissions perm_origin_uuid, starting_uuid, perm_level, check=true
   # Update a subset of the permission graph
