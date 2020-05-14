@@ -54,7 +54,11 @@ class Arvados::V1::UsersController < ApplicationController
       @object = current_user
     end
     if not @object.is_active
-      if not (current_user.is_admin or @object.is_invited)
+      if @object.uuid[0..4] == Rails.configuration.Login.LoginCluster &&
+         @object.uuid[0..4] != Rails.configuration.ClusterID
+        logger.warn "Local user #{@object.uuid} called users#activate but only LoginCluster can do that"
+        raise ArgumentError.new "cannot activate user #{@object.uuid} here, only the #{@object.uuid[0..4]} cluster can do that"
+      elsif not (current_user.is_admin or @object.is_invited)
         logger.warn "User #{@object.uuid} called users.activate " +
           "but is not invited"
         raise ArgumentError.new "Cannot activate without being invited."
