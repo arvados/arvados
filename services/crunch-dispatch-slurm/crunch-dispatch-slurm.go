@@ -280,7 +280,8 @@ func (disp *Dispatcher) runContainer(_ *dispatch.Dispatcher, ctr arvados.Contain
 		cmd = append(cmd, disp.cluster.Containers.CrunchRunArgumentsList...)
 		if err := disp.submit(ctr, cmd); err != nil {
 			var text string
-			if err, ok := err.(dispatchcloud.ConstraintsNotSatisfiableError); ok {
+			switch err := err.(type) {
+			case dispatchcloud.ConstraintsNotSatisfiableError:
 				var logBuf bytes.Buffer
 				fmt.Fprintf(&logBuf, "cannot run container %s: %s\n", ctr.UUID, err)
 				if len(err.AvailableTypes) == 0 {
@@ -296,7 +297,7 @@ func (disp *Dispatcher) runContainer(_ *dispatch.Dispatcher, ctr arvados.Contain
 				}
 				text = logBuf.String()
 				disp.UpdateState(ctr.UUID, dispatch.Cancelled)
-			} else {
+			default:
 				text = fmt.Sprintf("Error submitting container %s to slurm: %s", ctr.UUID, err)
 			}
 			log.Print(text)
