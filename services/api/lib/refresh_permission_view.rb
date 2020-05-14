@@ -47,7 +47,7 @@ def refresh_permission_view(async=false)
 end
 
 
-def update_permissions perm_origin_uuid, starting_uuid, perm_level, check=false
+def update_permissions perm_origin_uuid, starting_uuid, perm_level, check=true
   # Update a subset of the permission graph
   # perm_level is the inherited permission
   # perm_level is a number from 0-3
@@ -93,41 +93,46 @@ on conflict (user_uuid, target_uuid) do update set perm_level=EXCLUDED.perm_leve
 },
                                            "update_permissions.insert"
 
-  if check
-    #
-    # For validation/debugging, this checks contents of the
-    # incrementally-updated 'materialized_permission' against a
-    # from-scratch permission refresh.
-    #
+  if check and perm_level>0
+    check_permissions_against_full_refresh
+  end
+end
 
-    q1 = ActiveRecord::Base.connection.exec_query %{
+
+def check_permissions_against_full_refresh
+  #
+  # For debugging, this checks contents of the
+  # incrementally-updated 'materialized_permission' against a
+  # from-scratch permission refresh.
+  #
+
+  q1 = ActiveRecord::Base.connection.exec_query %{
 select user_uuid, target_uuid, perm_level, traverse_owned from #{PERMISSION_VIEW}
 order by user_uuid, target_uuid
 }
 
-    q2 = ActiveRecord::Base.connection.exec_query %{
+  q2 = ActiveRecord::Base.connection.exec_query %{
 select users.uuid as user_uuid, g.target_uuid, g.val as perm_level, g.traverse_owned
 from users, lateral search_permission_graph(users.uuid, 3) as g where g.val > 0
 order by users.uuid, target_uuid
 }
 
-    if q1.count != q2.count
-      puts "Didn't match incremental+: #{q1.count} != full refresh-: #{q2.count}"
-    end
+  if q1.count != q2.count
+    puts "Didn't match incremental+: #{q1.count} != full refresh-: #{q2.count}"
+  end
 
-    if q1.count > q2.count
-      q1.each_with_index do |r, i|
-        if r != q2[i]
-          puts "+#{r}\n-#{q2[i]}"
-          raise "Didn't match"
-        end
+  if q1.count > q2.count
+    q1.each_with_index do |r, i|
+      if r != q2[i]
+        puts "+#{r}\n-#{q2[i]}"
+        raise "Didn't match"
       end
-    else
-      q2.each_with_index do |r, i|
-        if r != q1[i]
-          puts "+#{q1[i]}\n-#{r}"
-          raise "Didn't match"
-        end
+    end
+  else
+    q2.each_with_index do |r, i|
+      if r != q1[i]
+        puts "+#{q1[i]}\n-#{r}"
+        raise "Didn't match"
       end
     end
   end

@@ -50,7 +50,8 @@ class User < ArvadosModel
     user.username_changed? and
     (not user.username_was.nil?)
   }
-  after_destroy :clear_permissions
+  before_destroy :clear_permissions
+  after_destroy :check_permissions
 
   has_many :authorized_keys, :foreign_key => :authorized_user_uuid, :primary_key => :uuid
   has_many :repositories, foreign_key: :owner_uuid, primary_key: :uuid
@@ -143,7 +144,7 @@ SELECT 1 FROM #{PERMISSION_VIEW}
   def before_ownership_change
     if owner_uuid_changed? and !self.owner_uuid_was.nil?
       MaterializedPermission.where(user_uuid: owner_uuid_was, target_uuid: uuid).delete_all
-      update_permissions self.owner_uuid_was, self.uuid, 0, false
+      update_permissions self.owner_uuid_was, self.uuid, 0
     end
   end
 
@@ -154,7 +155,12 @@ SELECT 1 FROM #{PERMISSION_VIEW}
   end
 
   def clear_permissions
+    update_permissions self.owner_uuid, self.uuid, 0
     MaterializedPermission.where("user_uuid = ? or target_uuid = ?", uuid, uuid).delete_all
+  end
+
+  def check_permissions
+    check_permissions_against_full_refresh
   end
 
   # Return a hash of {user_uuid: group_perms}
@@ -348,7 +354,7 @@ update #{PERMISSION_VIEW} set target_uuid=$1 where target_uuid = $2
       raise "user does not exist" if !new_user
       raise "cannot merge to an already merged user" if new_user.redirect_to_user_uuid
 
-      update_permissions self.owner_uuid, self.uuid, 0
+      self.clear_permissions
 
       # If 'self' is a remote user, don't transfer authorizations
       # (i.e. ability to access the account) to the new user, because
@@ -424,7 +430,7 @@ update #{PERMISSION_VIEW} set target_uuid=$1 where target_uuid = $2
       if redirect_to_new_user
         update_attributes!(redirect_to_user_uuid: new_user.uuid, username: nil)
       end
-      update_permissions self.owner_uuid, self.uuid, 3
+      update_permissions self.owner_uuid, self.uuid, 3, false
       update_permissions new_user.owner_uuid, new_user.uuid, 3
     end
   end

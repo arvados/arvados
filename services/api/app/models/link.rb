@@ -17,7 +17,7 @@ class Link < ArvadosModel
   after_update :call_update_permissions
   after_create :call_update_permissions
   before_destroy :clear_permissions
-  after_destroy :clear_permissions
+  after_destroy :check_permissions
 
   api_accessible :user, extend: :common do |t|
     t.add :tail_uuid
@@ -80,13 +80,13 @@ class Link < ArvadosModel
 
   def clear_permissions
     if self.link_class == 'permission'
-      update_permissions tail_uuid, head_uuid, 0, false
+      update_permissions tail_uuid, head_uuid, 0
     end
   end
 
   def check_permissions
     if self.link_class == 'permission'
-      update_permissions tail_uuid, head_uuid, 0, true
+      #check_permissions_against_full_refresh
     end
   end
 
