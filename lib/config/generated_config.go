@@ -1146,7 +1146,7 @@ Clusters:
       RunningJobLogRecordsToFetch: 2000
 
       # In systems with many shared projects, loading of dashboard and topnav
-      # cab be slow due to collections indexing; use the following parameters
+      # can be slow due to collections indexing; use the following parameters
       # to suppress these properties
       ShowRecentCollectionsOnDashboard: true
       ShowUserNotifications: true
