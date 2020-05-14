@@ -2,9 +2,9 @@
 
 # This script demonstrates using LDAP for Arvados user authentication.
 #
-# It configures pam_ldap(5) and arvados controller in a docker
-# container, with pam_ldap configured to authenticate against an
-# OpenLDAP server in a second docker container.
+# It configures arvados controller in a docker container, optionally
+# with pam_ldap(5) configured to authenticate against an OpenLDAP
+# server in a second docker container.
 #
 # After adding a "foo" user entry, it uses curl to check that the
 # Arvados controller's login endpoint accepts the "foo" account
@@ -23,6 +23,15 @@ if [[ -n ${ARVADOS_DEBUG} ]]; then
     debug=/dev/stderr
     set -x
 fi
+
+case "${config_method}" in
+    pam | ldap)
+        ;;
+    *)
+        echo >&2 "\$config_method env var must be 'pam' or 'ldap'"
+        exit 1
+        ;;
+esac
 
 hostname="$(hostname)"
 tmpdir="$(mktemp -d)"
@@ -86,15 +95,38 @@ Clusters:
         ExternalURL: http://0.0.0.0:9999/
         InternalURLs:
           "http://0.0.0.0:9999/": {}
-    Login:
-      PAM: true
-      # Without this magic PAMDefaultEmailDomain, inserted users would
-      # prevent subsequent database/reset from working (see
-      # database_controller.rb).
-      PAMDefaultEmailDomain: example.com
     SystemLogs:
       LogLevel: debug
 EOF
+case "${config_method}" in
+    pam)
+        setup_pam_ldap="apt update && DEBIAN_FRONTEND=noninteractive apt install -y ldap-utils libpam-ldap && pam-auth-update --package /usr/share/pam-configs/ldap"
+        cat >>"${tmpdir}/zzzzz.yml" <<EOF
+    Login:
+      PAM:
+        Enable: true
+        # Without this specific DefaultEmailDomain, inserted users
+        # would prevent subsequent database/reset from working (see
+        # database_controller.rb).
+        DefaultEmailDomain: example.com
+EOF
+        ;;
+    ldap)
+        setup_pam_ldap=""
+        cat >>"${tmpdir}/zzzzz.yml" <<EOF
+    Login:
+      LDAP:
+        Enable: true
+        URL: ${ldapurl}
+        StartTLS: false
+        SearchBase: dc=example,dc=org
+        SearchBindUser: cn=admin,dc=example,dc=org
+        SearchBindPassword: admin
+EOF
+            ;;
+esac
+
+cat >&2 "${tmpdir}/zzzzz.yml"
 
 cat >"${tmpdir}/pam_ldap.conf" <<EOF
 base dc=example,dc=org
@@ -113,12 +145,12 @@ cn: bar
 gidNumber: 11111
 description: "Example group 'bar'"
 
-dn: uid=foo,dc=example,dc=org
-uid: foo
-cn: foo
+dn: uid=foo-bar,dc=example,dc=org
+uid: foo-bar
+cn: "Foo Bar"
 givenName: Foo
 sn: Bar
-mail: foobar@example.org
+mail: foo-bar-baz@example.com
 objectClass: inetOrgPerson
 objectClass: posixAccount
 objectClass: top
@@ -130,11 +162,11 @@ shadowLastChange: 10701
 loginShell: /bin/bash
 uidNumber: 11111
 gidNumber: 11111
-homeDirectory: /home/foo
+homeDirectory: /home/foo-bar
 userPassword: ${passwordhash}
 EOF
 
-echo >&2 "Adding example user entry user=foo pass=secret (retrying until server comes up)"
+echo >&2 "Adding example user entry user=foo-bar pass=secret (retrying until server comes up)"
 docker run --rm --entrypoint= \
        -v "${tmpdir}/add_example_user.ldif":/add_example_user.ldif:ro \
        osixia/openldap:1.3.0 \
@@ -152,7 +184,7 @@ docker run --detach --rm --name=${ctrlctr} \
        -v "${tmpdir}/zzzzz.yml":/etc/arvados/config.yml:ro \
        -v $(realpath "${PWD}/../../.."):/arvados:ro \
        debian:10 \
-       bash -c "apt update && DEBIAN_FRONTEND=noninteractive apt install -y ldap-utils libpam-ldap && pam-auth-update --package /usr/share/pam-configs/ldap && arvados-server controller"
+       bash -c "${setup_pam_ldap:-true} && arvados-server controller"
 docker logs --follow ${ctrlctr} 2>$debug >$debug &
 ctrlhostport=$(docker port ${ctrlctr} 9999/tcp)
 
@@ -178,16 +210,42 @@ check_contains() {
     fi
 }
 
+set +x
+
 echo >&2 "Testing authentication failure"
-resp="$(curl -s --include -d username=foo -d password=nosecret "http://${ctrlhostport}/arvados/v1/users/authenticate" | tee $debug)"
+resp="$(set -x; curl -s --include -d username=foo-bar -d password=nosecret "http://${ctrlhostport}/arvados/v1/users/authenticate" | tee $debug)"
 check_contains "${resp}" "HTTP/1.1 401"
-check_contains "${resp}" '{"errors":["PAM: Authentication failure (with username \"foo\" and password)"]}'
+if [[ "${config_method}" = ldap ]]; then
+    check_contains "${resp}" '{"errors":["LDAP: Authentication failure (with username \"foo-bar\" and password)"]}'
+else
+    check_contains "${resp}" '{"errors":["PAM: Authentication failure (with username \"foo-bar\" and password)"]}'
+fi
 
 echo >&2 "Testing authentication success"
-resp="$(curl -s --include -d username=foo -d password=secret "http://${ctrlhostport}/arvados/v1/users/authenticate" | tee $debug)"
+resp="$(set -x; curl -s --include -d username=foo-bar -d password=secret "http://${ctrlhostport}/arvados/v1/users/authenticate" | tee $debug)"
 check_contains "${resp}" "HTTP/1.1 200"
 check_contains "${resp}" '"api_token":"'
 check_contains "${resp}" '"scopes":["all"]'
 check_contains "${resp}" '"uuid":"zzzzz-gj3su-'
+
+secret="${resp##*api_token\":\"}"
+secret="${secret%%\"*}"
+uuid="${resp##*uuid\":\"}"
+uuid="${uuid%%\"*}"
+token="v2/$uuid/$secret"
+echo >&2 "New token is ${token}"
+
+resp="$(set -x; curl -s --include -H "Authorization: Bearer ${token}" "http://${ctrlhostport}/arvados/v1/users/current" | tee $debug)"
+check_contains "${resp}" "HTTP/1.1 200"
+if [[ "${config_method}" = ldap ]]; then
+    # user fields come from LDAP attributes
+    check_contains "${resp}" '"first_name":"Foo"'
+    check_contains "${resp}" '"last_name":"Bar"'
+    check_contains "${resp}" '"username":"foobar"' # "-" removed by rails api
+    check_contains "${resp}" '"email":"foo-bar-baz@example.com"'
+else
+    # PAMDefaultEmailDomain
+    check_contains "${resp}" '"email":"foo-bar@example.com"'
+fi
 
 cleanup

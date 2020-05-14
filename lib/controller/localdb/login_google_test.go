@@ -146,10 +146,10 @@ func (s *LoginSuite) SetUpTest(c *check.C) {
 
 	cfg, err := config.NewLoader(nil, ctxlog.TestLogger(c)).Load()
 	s.cluster, err = cfg.GetCluster("")
-	s.cluster.Login.ProviderAppID = ""
-	s.cluster.Login.ProviderAppSecret = ""
-	s.cluster.Login.GoogleClientID = "test%client$id"
-	s.cluster.Login.GoogleClientSecret = "test#client/secret"
+	s.cluster.Login.SSO.Enable = false
+	s.cluster.Login.Google.Enable = true
+	s.cluster.Login.Google.ClientID = "test%client$id"
+	s.cluster.Login.Google.ClientSecret = "test#client/secret"
 	s.cluster.Users.PreferDomainForUsername = "PreferDomainForUsername.example.com"
 	c.Assert(err, check.IsNil)
 
@@ -227,7 +227,7 @@ func (s *LoginSuite) setupPeopleAPIError(c *check.C) {
 }
 
 func (s *LoginSuite) TestGoogleLogin_PeopleAPIDisabled(c *check.C) {
-	s.cluster.Login.GoogleAlternateEmailAddresses = false
+	s.cluster.Login.Google.AlternateEmailAddresses = false
 	s.authEmail = "joe.smith@primary.example.com"
 	s.setupPeopleAPIError(c)
 	state := s.startLogin(c)

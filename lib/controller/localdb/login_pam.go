@@ -9,12 +9,10 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/url"
 	"strings"
 
 	"git.arvados.org/arvados.git/lib/controller/rpc"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
-	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
 	"github.com/msteinert/pam"
@@ -37,7 +35,7 @@ func (ctrl *pamLoginController) Login(ctx context.Context, opts arvados.LoginOpt
 func (ctrl *pamLoginController) UserAuthenticate(ctx context.Context, opts arvados.UserAuthenticateOptions) (arvados.APIClientAuthorization, error) {
 	errorMessage := ""
 	sentPassword := false
-	tx, err := pam.StartFunc(ctrl.Cluster.Login.PAMService, opts.Username, func(style pam.Style, message string) (string, error) {
+	tx, err := pam.StartFunc(ctrl.Cluster.Login.PAM.Service, opts.Username, func(style pam.Style, message string) (string, error) {
 		ctxlog.FromContext(ctx).Debugf("pam conversation: style=%v message=%q", style, message)
 		switch style {
 		case pam.ErrorMsg:
@@ -82,28 +80,15 @@ func (ctrl *pamLoginController) UserAuthenticate(ctx context.Context, opts arvad
 		return arvados.APIClientAuthorization{}, err
 	}
 	email := user
-	if domain := ctrl.Cluster.Login.PAMDefaultEmailDomain; domain != "" && !strings.Contains(email, "@") {
+	if domain := ctrl.Cluster.Login.PAM.DefaultEmailDomain; domain != "" && !strings.Contains(email, "@") {
 		email = email + "@" + domain
 	}
-	ctxlog.FromContext(ctx).WithFields(logrus.Fields{"user": user, "email": email}).Debug("pam authentication succeeded")
-	ctxRoot := auth.NewContext(ctx, &auth.Credentials{Tokens: []string{ctrl.Cluster.SystemRootToken}})
-	resp, err := ctrl.RailsProxy.UserSessionCreate(ctxRoot, rpc.UserSessionCreateOptions{
-		// Send a fake ReturnTo value instead of the caller's
-		// opts.ReturnTo. We won't follow the resulting
-		// redirect target anyway.
-		ReturnTo: ",https://none.invalid",
-		AuthInfo: rpc.UserSessionAuthInfo{
-			Username: user,
-			Email:    email,
-		},
+	ctxlog.FromContext(ctx).WithFields(logrus.Fields{
+		"user":  user,
+		"email": email,
+	}).Debug("pam authentication succeeded")
+	return createAPIClientAuthorization(ctx, ctrl.RailsProxy, ctrl.Cluster.SystemRootToken, rpc.UserSessionAuthInfo{
+		Username: user,
+		Email:    email,
 	})
-	if err != nil {
-		return arvados.APIClientAuthorization{}, err
-	}
-	target, err := url.Parse(resp.RedirectLocation)
-	if err != nil {
-		return arvados.APIClientAuthorization{}, err
-	}
-	token := target.Query().Get("api_token")
-	return ctrl.RailsProxy.APIClientAuthorizationCurrent(auth.NewContext(ctx, auth.NewCredentials(token)), arvados.GetOptions{})
 }

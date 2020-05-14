@@ -135,16 +135,39 @@ type Cluster struct {
 		Repositories string
 	}
 	Login struct {
-		GoogleClientID                string
-		GoogleClientSecret            string
-		GoogleAlternateEmailAddresses bool
-		PAM                           bool
-		PAMService                    string
-		PAMDefaultEmailDomain         string
-		ProviderAppID                 string
-		ProviderAppSecret             string
-		LoginCluster                  string
-		RemoteTokenRefresh            Duration
+		LDAP struct {
+			Enable             bool
+			URL                URL
+			StartTLS           bool
+			InsecureTLS        bool
+			StripDomain        string
+			AppendDomain       string
+			SearchAttribute    string
+			SearchBindUser     string
+			SearchBindPassword string
+			SearchBase         string
+			SearchFilters      string
+			EmailAttribute     string
+			UsernameAttribute  string
+		}
+		Google struct {
+			Enable                  bool
+			ClientID                string
+			ClientSecret            string
+			AlternateEmailAddresses bool
+		}
+		PAM struct {
+			Enable             bool
+			Service            string
+			DefaultEmailDomain string
+		}
+		SSO struct {
+			Enable            bool
+			ProviderAppID     string
+			ProviderAppSecret string
+		}
+		LoginCluster       string
+		RemoteTokenRefresh Duration
 	}
 	Mail struct {
 		MailchimpAPIKey                string

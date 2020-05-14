@@ -9,37 +9,8 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-This page describes how to enable users to use more than one upstream identity provider to log into the same Arvados account.  This can be used to migrate account providers, for example, from LDAP to Google.  In order to do this, users must be able to log into both the "old" and "new" providers.
+When a user logs in to Arvados, their email address (as returned by the authentication provider) is used as the primary key for their Arvados account.
 
-h2. Configure multiple or alternate provider in SSO
+If you reconfigure Arvados to use a different authentication provider after some users have created accounts, you should either ensure the new provider returns the same email addresses as the old one, or update your Arvados users' @email@ attributes to match the email addresses returned by the new provider.
 
-In @application.yml@ for the SSO server, you can enable both @google_oauth2@ and @ldap@ providers:
-
-<pre>
-production:
-  google_oauth2_client_id: abcd
-  google_oauth2_client_secret: abcd
-
-  use_ldap:
-    title: Example LDAP
-    host: ldap.example.com
-    port: 636
-    method: ssl
-    base: "ou=Users, dc=example, dc=com"
-    uid: uid
-    username: uid
-</pre>
-
-Restart the SSO server after changing the configuration.
-
-h2. Matching on email address
-
-If the new account provider supplies an email address (primary or alternate) that matches an existing user account, the user will be logged into that account.  No further migration is necessary, and the old provider can be removed from the SSO configuration.
-
-h2. Link accounts
-
-If the new provider cannot provide matching email addresses, users will have to migrate manually by "linking accounts":{{site.baseurl}}/user/topics/link-accounts.html
-
-After linking accounts, users can use the new provider to access their existing Arvados account.
-
-Once all users have migrated, the old account provider can be removed from the SSO configuration.
+Otherwise, next time users log in, they will be given new accounts instead of logging in to their existing accounts.

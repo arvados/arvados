@@ -139,8 +139,9 @@ Clusters:
       DefaultReplication: 1
       TrustAllContent: true
     Login:
-      ProviderAppSecret: $sso_app_secret
-      ProviderAppID: arvados-server
+      SSO:
+        ProviderAppSecret: $sso_app_secret
+        ProviderAppID: arvados-server
     Users:
       NewUsersAreActive: true
       AutoAdminFirstUser: true

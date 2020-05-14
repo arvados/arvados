@@ -37,8 +37,8 @@ EOS
   # Real values will be copied from globals by omniauth_init.rb. For
   # now, assign some strings so the generic *.yml config loader
   # doesn't overwrite them or complain that they're missing.
-  Rails.configuration.Login["ProviderAppID"] = 'xxx'
-  Rails.configuration.Login["ProviderAppSecret"] = 'xxx'
+  Rails.configuration.Login["SSO"]["ProviderAppID"] = 'xxx'
+  Rails.configuration.Login["SSO"]["ProviderAppSecret"] = 'xxx'
   Rails.configuration.Services["SSO"]["ExternalURL"] = '//xxx'
   WARNED_OMNIAUTH_CONFIG = true
 end
@@ -106,8 +106,8 @@ arvcfg.declare_config "Users.EmailSubjectPrefix", String, :email_subject_prefix
 arvcfg.declare_config "Users.UserNotifierEmailFrom", String, :user_notifier_email_from
 arvcfg.declare_config "Users.NewUserNotificationRecipients", Hash, :new_user_notification_recipients, ->(cfg, k, v) { arrayToHash cfg, "Users.NewUserNotificationRecipients", v }
 arvcfg.declare_config "Users.NewInactiveUserNotificationRecipients", Hash, :new_inactive_user_notification_recipients, method(:arrayToHash)
-arvcfg.declare_config "Login.ProviderAppSecret", String, :sso_app_secret
-arvcfg.declare_config "Login.ProviderAppID", String, :sso_app_id
+arvcfg.declare_config "Login.SSO.ProviderAppSecret", String, :sso_app_secret
+arvcfg.declare_config "Login.SSO.ProviderAppID", String, :sso_app_id
 arvcfg.declare_config "Login.LoginCluster", String
 arvcfg.declare_config "Login.RemoteTokenRefresh", ActiveSupport::Duration
 arvcfg.declare_config "TLS.Insecure", Boolean, :sso_insecure

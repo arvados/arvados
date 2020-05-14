@@ -8,6 +8,6 @@
 PACKAGE_NAME=arvados-sso-server
 INSTALL_PATH=/var/www/arvados-sso
 CONFIG_PATH=/etc/arvados/sso
-DOC_URL="http://doc.arvados.org/install/install-sso.html#configure"
+DOC_URL="https://doc.arvados.org/v2.0/install/install-sso.html#configure"
 RAILSPKG_DATABASE_LOAD_TASK=db:schema:load
 RAILSPKG_SUPPORTS_CONFIG_CHECK=0

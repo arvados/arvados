@@ -530,54 +530,123 @@ Clusters:
         MaxUUIDEntries:       1000
 
     Login:
-      # These settings are provided by your OAuth2 provider (eg
-      # Google) used to perform upstream authentication.
-      ProviderAppID: ""
-      ProviderAppSecret: ""
+      # One of the following mechanisms (SSO, Google, PAM, LDAP, or
+      # LoginCluster) should be enabled; see
+      # https://doc.arvados.org/install/setup-login.html
 
-      # (Experimental) Authenticate with Google, bypassing the
-      # SSO-provider gateway service. Use the Google Cloud console to
-      # enable the People API (APIs and Services > Enable APIs and
-      # services > Google People API > Enable), generate a Client ID
-      # and secret (APIs and Services > Credentials > Create
-      # credentials > OAuth client ID > Web application) and add your
-      # controller's /login URL (e.g.,
-      # "https://zzzzz.example.com/login") as an authorized redirect
-      # URL.
-      #
-      # Incompatible with ForceLegacyAPI14. ProviderAppID must be
-      # blank.
-      GoogleClientID: ""
-      GoogleClientSecret: ""
+      Google:
+        # Authenticate with Google.
+        Enable: false
 
-      # Allow users to log in to existing accounts using any verified
-      # email address listed by their Google account. If true, the
-      # Google People API must be enabled in order for Google login to
-      # work. If false, only the primary email address will be used.
-      GoogleAlternateEmailAddresses: true
+        # Use the Google Cloud console to enable the People API (APIs
+        # and Services > Enable APIs and services > Google People API
+        # > Enable), generate a Client ID and secret (APIs and
+        # Services > Credentials > Create credentials > OAuth client
+        # ID > Web application) and add your controller's /login URL
+        # (e.g., "https://zzzzz.example.com/login") as an authorized
+        # redirect URL.
+        #
+        # Incompatible with ForceLegacyAPI14. ProviderAppID must be
+        # blank.
+        ClientID: ""
+        ClientSecret: ""
 
-      # (Experimental) Use PAM to authenticate logins, using the
-      # specified PAM service name.
-      #
-      # Cannot be used in combination with OAuth2 (ProviderAppID) or
-      # Google (GoogleClientID). Cannot be used on a cluster acting as
-      # a LoginCluster.
-      PAM: false
-      PAMService: arvados
+        # Allow users to log in to existing accounts using any verified
+        # email address listed by their Google account. If true, the
+        # Google People API must be enabled in order for Google login to
+        # work. If false, only the primary email address will be used.
+        AlternateEmailAddresses: true
 
-      # Domain name (e.g., "example.com") to use to construct the
-      # user's email address if PAM authentication returns a username
-      # with no "@". If empty, use the PAM username as the user's
-      # email address, whether or not it contains "@".
-      #
-      # Note that the email address is used as the primary key for
-      # user records when logging in. Therefore, if you change
-      # PAMDefaultEmailDomain after the initial installation, you
-      # should also update existing user records to reflect the new
-      # domain. Otherwise, next time those users log in, they will be
-      # given new accounts instead of accessing their existing
-      # accounts.
-      PAMDefaultEmailDomain: ""
+      PAM:
+        # (Experimental) Use PAM to authenticate users.
+        Enable: false
+
+        # PAM service name. PAM will apply the policy in the
+        # corresponding config file (e.g., /etc/pam.d/arvados) or, if
+        # there is none, the default "other" config.
+        Service: arvados
+
+        # Domain name (e.g., "example.com") to use to construct the
+        # user's email address if PAM authentication returns a
+        # username with no "@". If empty, use the PAM username as the
+        # user's email address, whether or not it contains "@".
+        #
+        # Note that the email address is used as the primary key for
+        # user records when logging in. Therefore, if you change
+        # PAMDefaultEmailDomain after the initial installation, you
+        # should also update existing user records to reflect the new
+        # domain. Otherwise, next time those users log in, they will
+        # be given new accounts instead of accessing their existing
+        # accounts.
+        DefaultEmailDomain: ""
+
+      LDAP:
+        # Use an LDAP service to authenticate users.
+        Enable: false
+
+        # Server URL, like "ldap://ldapserver.example.com:389" or
+        # "ldaps://ldapserver.example.com:636".
+        URL: "ldap://ldap:389"
+
+        # Use StartTLS upon connecting to the server.
+        StartTLS: true
+
+        # Skip TLS certificate name verification.
+        InsecureTLS: false
+
+        # Strip the @domain part if a user supplies an email-style
+        # username with this domain. If "*", strip any user-provided
+        # domain. If "", never strip the domain part. Example:
+        # "example.com"
+        StripDomain: ""
+
+        # If, after applying StripDomain, the username contains no "@"
+        # character, append this domain to form an email-style
+        # username. Example: "example.com"
+        AppendDomain: ""
+
+        # The LDAP attribute to filter on when looking up a username
+        # (after applying StripDomain and AppendDomain).
+        SearchAttribute: uid
+
+        # Bind with this username (DN or UPN) and password when
+        # looking up the user record.
+        #
+        # Example user: "cn=admin,dc=example,dc=com"
+        SearchBindUser: ""
+        SearchBindPassword: ""
+
+        # Directory base for username lookup. Example:
+        # "ou=Users,dc=example,dc=com"
+        SearchBase: ""
+
+        # Additional filters for username lookup. Special characters
+        # in assertion values must be escaped (see RFC4515). Example:
+        # "(objectClass=person)"
+        SearchFilters: ""
+
+        # LDAP attribute to use as the user's email address.
+        #
+        # Important: This must not be an attribute whose value can be
+        # edited in the directory by the users themselves. Otherwise,
+        # users can take over other users' Arvados accounts trivially
+        # (email address is the primary key for Arvados accounts.)
+        EmailAttribute: mail
+
+        # LDAP attribute to use as the preferred Arvados username. If
+        # no value is found (or this config is empty) the username
+        # originally supplied by the user will be used.
+        UsernameAttribute: uid
+
+      SSO:
+        # Authenticate with a separate SSO server. (Deprecated)
+        Enable: false
+
+        # ProviderAppID and ProviderAppSecret are generated during SSO
+        # setup; see
+        # https://doc.arvados.org/v2.0/install/install-sso.html#update-config
+        ProviderAppID: ""
+        ProviderAppSecret: ""
 
       # The cluster ID to delegate the user database.  When set,
       # logins on this cluster will be redirected to the login cluster

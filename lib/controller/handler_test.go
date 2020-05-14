@@ -167,8 +167,9 @@ func (s *HandlerSuite) TestProxyNotFound(c *check.C) {
 }
 
 func (s *HandlerSuite) TestProxyRedirect(c *check.C) {
-	s.cluster.Login.ProviderAppID = "test"
-	s.cluster.Login.ProviderAppSecret = "test"
+	s.cluster.Login.SSO.Enable = true
+	s.cluster.Login.SSO.ProviderAppID = "test"
+	s.cluster.Login.SSO.ProviderAppSecret = "test"
 	req := httptest.NewRequest("GET", "https://0.0.0.0:1/login?return_to=foo", nil)
 	resp := httptest.NewRecorder()
 	s.handler.ServeHTTP(resp, req)
@@ -182,7 +183,8 @@ func (s *HandlerSuite) TestProxyRedirect(c *check.C) {
 }
 
 func (s *HandlerSuite) TestLogoutSSO(c *check.C) {
-	s.cluster.Login.ProviderAppID = "test"
+	s.cluster.Login.SSO.Enable = true
+	s.cluster.Login.SSO.ProviderAppID = "test"
 	req := httptest.NewRequest("GET", "https://0.0.0.0:1/logout?return_to=https://example.com/foo", nil)
 	resp := httptest.NewRecorder()
 	s.handler.ServeHTTP(resp, req)
@@ -197,7 +199,8 @@ func (s *HandlerSuite) TestLogoutGoogle(c *check.C) {
 		// Google login N/A
 		return
 	}
-	s.cluster.Login.GoogleClientID = "test"
+	s.cluster.Login.Google.Enable = true
+	s.cluster.Login.Google.ClientID = "test"
 	req := httptest.NewRequest("GET", "https://0.0.0.0:1/logout?return_to=https://example.com/foo", nil)
 	resp := httptest.NewRecorder()
 	s.handler.ServeHTTP(resp, req)

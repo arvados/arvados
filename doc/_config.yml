@@ -209,7 +209,6 @@ navbar:
       - install/install-keep-balance.html.textile.liquid
     - User interface:
       - install/setup-login.html.textile.liquid
-      - install/install-sso.html.textile.liquid
       - install/install-workbench-app.html.textile.liquid
       - install/install-workbench2-app.html.textile.liquid
       - install/install-composer.html.textile.liquid
@@ -227,5 +226,4 @@ navbar:
       - install/install-postgresql.html.textile.liquid
       - install/ruby.html.textile.liquid
       - install/nginx.html.textile.liquid
-      - install/google-auth.html.textile.liquid
       - install/install-docker.html.textile.liquid

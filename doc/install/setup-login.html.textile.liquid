@@ -12,22 +12,61 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 Select one of the following login mechanisms for your cluster.
 
 # If all users will authenticate with Google, "configure Google login":#google.
+# If all users will authenticate with an existing LDAP service, "configure LDAP":#ldap.
 # If all users will authenticate using PAM as configured on your controller node, "configure PAM":#pam.
-# If you need to enable multiple authentication methods, or your backend can't be configured as a PAM service on your controller node, "configure a separate single sign-on (SSO) server":#sso.
 
 h2(#google). Google login
 
 With this configuration, users will sign in with their Google accounts.
 
-First, visit "Setting up Google auth.":google-auth.html
-
-Next, copy the values of *Client ID* and *Client secret* from the Google Developers Console into @Login.GoogleClientID@ and @Login.GoogleClientSecret@ of @config.yml@:
+Use the <a href="https://console.developers.google.com" target="_blank">Google Developers Console</a> to create a set of client credentials.
+# Select or create a project.
+# Click *+ Enable APIs and Services*.
+#* Search for *People API* and click *Enable API*.
+#* Navigate back to the main "APIs & Services" page.
+# On the sidebar, click *OAuth consent screen*.
+#* On consent screen settings, enter your identifying details.
+#* Under *Authorized domains* add your domain (@example.com@).
+#* Click *Save*.
+# On the sidebar, click *Credentials*, then click *Create credentials*&rarr;*OAuth client ID*
+# Under *Application type* select *Web application*.
+# Add the JavaScript origin: @https://ClusterID.example.com/@
+# Add the Redirect URI: @https://ClusterID.example.com/login@
+# Copy the values of *Client ID* and *Client secret* to the @Login.Google@ section of @config.yml@.
 
 <pre>
     Login:
-      GoogleClientID: "0000000000000-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz.apps.googleusercontent.com"
-      GoogleClientSecret: "zzzzzzzzzzzzzzzzzzzzzzzz"
+      Google:
+        Enable: true
+        ClientID: "0000000000000-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz.apps.googleusercontent.com"
+        ClientSecret: "zzzzzzzzzzzzzzzzzzzzzzzz"
 </pre>
+
+h2(#ldap). LDAP
+
+With this configuration, authentication uses an external LDAP service like OpenLDAP or Active Directory.
+
+Enable LDAP authentication and provide your LDAP server's host, port, and credentials (if needed to search the directory) in @config.yml@:
+
+<pre>
+    Login:
+      LDAP:
+        Enable: true
+        URL: ldap://ldap.example.com:389
+        SearchBindUser: cn=lookupuser,dc=example,dc=com
+        SearchBindPassword: xxxxxxxx
+        SearchBase: ou=Users,dc=example,dc=com
+</pre>
+
+The email address reported by LDAP will be used as primary key for Arvados accounts. This means *users must not be able to edit their own email addresses* in the directory.
+
+Additional configuration settings are available:
+* @StartTLS@ is enabled by default.
+* @StripDomain@ and @AppendDomain@ modify the username entered by the user before searching for it in the directory.
+* @SearchAttribute@ (default @uid@) is the LDAP attribute used when searching for usernames.
+* @SearchFilters@ accepts LDAP filter expressions to control which users can log in.
+
+Check the LDAP section in the "default config file":{{site.baseurl}}/admin/config.html for more details and configuration options.
 
 h2(#pam). PAM (experimental)
 
@@ -37,7 +76,8 @@ Enable PAM authentication in @config.yml@:
 
 <pre>
     Login:
-      PAM: true
+      PAM:
+        Enable: true
 </pre>
 
 Check the "default config file":{{site.baseurl}}/admin/config.html for more PAM configuration options.
@@ -47,9 +87,3 @@ The default PAM configuration on most Linux systems uses the local password data
 PAM can also be configured to use different backends like LDAP. In a production environment, PAM configuration should use the service name ("arvados" by default) to set a separate policy for Arvados logins: generally, Arvados users should not have shell accounts on the controller node.
 
 For information about configuring PAM, refer to the "PAM System Administrator's Guide":http://www.linux-pam.org/Linux-PAM-html/Linux-PAM_SAG.html.
-
-h2(#sso). Separate single-sign-on (SSO) server
-
-With this configuration, Arvados passes off authentication to a separate SSO server that supports Google, LDAP, and a local password database.
-
-See "Install the Single Sign On (SSO) server":install-sso.html
