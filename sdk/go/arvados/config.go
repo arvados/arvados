@@ -236,12 +236,14 @@ type Volume struct {
 }
 
 type S3VolumeDriverParameters struct {
+	IAMRole            string
 	AccessKey          string
 	SecretKey          string
 	Endpoint           string
 	Region             string
 	Bucket             string
 	LocationConstraint bool
+	V2Signature        bool
 	IndexPageSize      int
 	ConnectTimeout     Duration
 	ReadTimeout        Duration

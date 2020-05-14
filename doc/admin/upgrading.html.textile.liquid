@@ -40,6 +40,10 @@ h2(#master). development master (as of 2020-02-07)
 
 None in current development master.
 
+h3. S3 signatures
+
+Keepstore now uses "V4 signatures":https://docs.aws.amazon.com/AmazonS3/latest/API/sig-v4-authenticating-requests.html by default for S3 requests. If you are using Amazon S3, no action is needed; all regions support V4 signatures. If you are using a different S3-compatible service that does not support V4 signatures, add @V2Signature: true@ to your volume driver parameters to preserve the old behavior. See "configuring S3 object storage":{{site.baseurl}}/install/configure-s3-object-storage.html.
+
 h2(#v2_0_0). v2.0.0 (2020-02-07)
 
 "Upgrading from 1.4":#v1_4_1
