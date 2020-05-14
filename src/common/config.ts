@@ -58,7 +58,18 @@ export interface ClusterConfigJSON {
     };
     Login: {
         LoginCluster: string;
-        PAM: boolean;
+        Google: {
+            Enable: boolean;
+        }
+        LDAP: {
+            Enable: boolean;
+        }
+        PAM: {
+            Enable: boolean;
+        }
+        SSO: {
+            Enable: boolean;
+        }
     };
     Collections: {
         ForwardSlashNameSubstitution: string;
@@ -188,7 +199,18 @@ export const mockClusterConfigJSON = (config: Partial<ClusterConfigJSON>): Clust
     },
     Login: {
         LoginCluster: "",
-        PAM: false,
+        Google: {
+            Enable: false,
+        },
+        LDAP: {
+            Enable: false,
+        },
+        PAM: {
+            Enable: false,
+        },
+        SSO: {
+            Enable: false,
+        },
     },
     Collections: {
         ForwardSlashNameSubstitution: "",
