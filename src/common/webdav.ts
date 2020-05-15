@@ -61,7 +61,7 @@ export class WebDAV {
     private request = (config: RequestConfig) => {
         return new Promise<XMLHttpRequest>((resolve, reject) => {
             const r = this.createRequest();
-            r.open(config.method, this.defaults.baseURL + config.url);
+            r.open(config.method, `${this.defaults.baseURL}/${config.url}`);
             const headers = { ...this.defaults.headers, ...config.headers };
             Object
                 .keys(headers)
