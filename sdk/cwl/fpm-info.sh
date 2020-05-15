@@ -7,7 +7,7 @@ case "$TARGET" in
         fpm_depends+=(libgnutls-deb0-28 libcurl3-gnutls)
         ;;
     debian* | ubuntu*)
-        fpm_depends+=(libcurl3-gnutls libpython2.7)
+        fpm_depends+=(libcurl3-gnutls)
         ;;
 esac
 
