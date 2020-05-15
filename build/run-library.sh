@@ -673,9 +673,9 @@ fpm_build_virtualenv () {
   done
 
   # make sure the systemd service file ends up in the right place
-  # currently only used by arvados-docker-cleaner
+  # used by arvados-docker-cleaner and arvados-node-manager
   if [[ -e "${systemd_unit}" ]]; then
-    COMMAND_ARR+=("usr/share/python3/dist/$PKG/share/doc/$PKG/$PKG.service=/lib/systemd/system/$PKG.service")
+    COMMAND_ARR+=("usr/share/$python/dist/$PKG/share/doc/$PKG/$PKG.service=/lib/systemd/system/$PKG.service")
   fi
 
   COMMAND_ARR+=("${fpm_args[@]}")
