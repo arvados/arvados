@@ -465,7 +465,7 @@ fpm_build_virtualenv () {
   fi
 
   # arvados-python-client sdist should always be built, to be available
-  # for other dependant packages.
+  # for other dependent packages.
   if [[ -n "$ONLY_BUILD" ]] && [[ "arvados-python-client" != "$PKG" ]] && [[ "$PYTHON_PKG" != "$ONLY_BUILD" ]] && [[ "$PKG" != "$ONLY_BUILD" ]]; then
     return 0
   fi
@@ -613,7 +613,7 @@ fpm_build_virtualenv () {
   # 12271 - As FPM-generated packages don't include scripts by default, the
   # packages cleanup on upgrade depends on files being listed on the %files
   # section in the generated SPEC files. To remove DIRECTORIES, they need to
-  # be listed in that sectiontoo, so we need to add this parameter to properly
+  # be listed in that section too, so we need to add this parameter to properly
   # remove lingering dirs. But this only works for python2: if used on
   # python33, it includes dirs like /opt/rh/python33 that belong to
   # other packages.
@@ -673,9 +673,9 @@ fpm_build_virtualenv () {
   done
 
   # make sure the systemd service file ends up in the right place
-  # currently only used by arvados-docker-cleaner
+  # used by arvados-docker-cleaner and arvados-node-manager
   if [[ -e "${systemd_unit}" ]]; then
-    COMMAND_ARR+=("usr/share/python3/dist/$PKG/share/doc/$PKG/$PKG.service=/lib/systemd/system/$PKG.service")
+    COMMAND_ARR+=("usr/share/$python/dist/$PKG/share/doc/$PKG/$PKG.service=/lib/systemd/system/$PKG.service")
   fi
 
   COMMAND_ARR+=("${fpm_args[@]}")
