@@ -9,6 +9,9 @@ case "$TARGET" in
     debian* | ubuntu*)
         fpm_depends+=(libcurl3-gnutls libpython2.7)
         ;;
+    debian* | ubuntu*)
+        fpm_depends+=(libcurl3-gnutls python3-distutils)
+        ;;
 esac
 
 fpm_args+=(--conflicts=python-cwltool --conflicts=cwltool)
