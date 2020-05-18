@@ -190,6 +190,7 @@ dbcfg.declare_config "PostgreSQL.Connection.password", String, :password
 dbcfg.declare_config "PostgreSQL.Connection.dbname", String, :database
 dbcfg.declare_config "PostgreSQL.Connection.template", String, :template
 dbcfg.declare_config "PostgreSQL.Connection.encoding", String, :encoding
+dbcfg.declare_config "PostgreSQL.Connection.collation", String, :collation
 
 application_config = {}
 %w(application.default application).each do |cfgfile|
@@ -257,6 +258,8 @@ if ::Rails.env.to_s == "test"
   # Use template0 when creating a new database. Avoids
   # character-encoding/collation problems.
   $arvados_config["PostgreSQL"]["Connection"]["template"] = "template0"
+  # Some test cases depend on en_US.UTF-8 collation.
+  $arvados_config["PostgreSQL"]["Connection"]["collation"] = "en_US.UTF-8"
 end
 
 if $arvados_config["PostgreSQL"]["Connection"]["password"].empty?
@@ -279,6 +282,7 @@ ENV["DATABASE_URL"] = "postgresql://#{$arvados_config["PostgreSQL"]["Connection"
                       "#{dbhost}/#{$arvados_config["PostgreSQL"]["Connection"]["dbname"]}?"+
                       "template=#{$arvados_config["PostgreSQL"]["Connection"]["template"]}&"+
                       "encoding=#{$arvados_config["PostgreSQL"]["Connection"]["client_encoding"]}&"+
+                      "collation=#{$arvados_config["PostgreSQL"]["Connection"]["collation"]}&"+
                       "pool=#{$arvados_config["PostgreSQL"]["ConnectionPool"]}"
 
 Server::Application.configure do
