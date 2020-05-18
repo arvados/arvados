@@ -104,18 +104,14 @@ fetchConfig()
             },
             errorFn: (id, error) => {
                 console.error("Backend error:", error);
-                if (error.errors) {
+                if (false) { // WIP: Should we mix backend with UI code?
                     store.dispatch(snackbarActions.OPEN_SNACKBAR({
-                        message: `${error.errors[0]}`,
+                        message: `${error.errors
+                            ? error.errors[0]
+                            : error.message}`,
                         kind: SnackbarKind.ERROR,
-                        hideDuration: 8000
-                    }));
-                } else {
-                    store.dispatch(snackbarActions.OPEN_SNACKBAR({
-                        message: `${error.message}`,
-                        kind: SnackbarKind.ERROR,
-                        hideDuration: 8000
-                    }));
+                        hideDuration: 8000})
+                    );
                 }
             }
         });

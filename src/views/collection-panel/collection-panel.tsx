@@ -29,7 +29,7 @@ import { GroupResource } from '~/models/group';
 import { UserResource } from '~/models/user';
 import { getUserUuid } from '~/common/getuser';
 
-type CssRules = 'card' | 'iconHeader' | 'tag' | 'label' | 'value' | 'link' | 'centeredLabel';
+type CssRules = 'card' | 'iconHeader' | 'tag' | 'label' | 'value' | 'link' | 'centeredLabel' | 'readOnlyChip';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     card: {
@@ -60,6 +60,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         '&:hover': {
             cursor: 'pointer'
         }
+    },
+    readOnlyChip: {
+        marginLeft: theme.spacing.unit
     }
 });
 
@@ -101,6 +104,7 @@ export const CollectionPanel = withStyles(styles)(
                                 action={
                                     <Tooltip title="More options" disableFocusListener>
                                         <IconButton
+                                            data-cy='collection-panel-options-btn'
                                             aria-label="More options"
                                             onClick={this.handleContextMenu}>
                                             <MoreOptionsIcon />
@@ -111,7 +115,7 @@ export const CollectionPanel = withStyles(styles)(
                                     <span>
                                         <IllegalNamingWarning name={item.name}/>
                                         {item.name}
-                                        {isWritable || <Chip variant="outlined" icon={<ReadOnlyIcon />} label="Read-only"/>}
+                                        {isWritable || <Chip variant="outlined" icon={<ReadOnlyIcon />} label="Read-only" className={classes.readOnlyChip} />}
                                     </span>
                                 }
                                 titleTypographyProps={this.titleProps}
@@ -142,7 +146,7 @@ export const CollectionPanel = withStyles(styles)(
                             </CardContent>
                         </Card>
 
-                        <Card className={classes.card}>
+                        <Card data-cy='collection-properties-panel' className={classes.card}>
                             <CardHeader title="Properties" />
                             <CardContent>
                                 <Grid container direction="column">
@@ -173,7 +177,7 @@ export const CollectionPanel = withStyles(styles)(
                                 </Grid>
                             </CardContent>
                         </Card>
-                        <div className={classes.card} data-cy="collection-files-panel">
+                        <div className={classes.card}>
                             <CollectionPanelFiles isWritable={isWritable} />
                         </div>
                     </>

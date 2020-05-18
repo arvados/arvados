@@ -53,6 +53,7 @@ export const FileTreeItem = withStyles(fileTreeItemStyle)(
                         variant="caption">{formatFileSize(item.data.size)}</Typography>
                     <Tooltip title="More options" disableFocusListener>
                         <IconButton
+                            data-cy='file-item-options-btn'
                             className={classes.button}
                             onClick={this.handleClick}>
                             <MoreOptionsIcon className={classes.moreOptions} />

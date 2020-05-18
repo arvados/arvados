@@ -32,7 +32,7 @@ export class ContextMenu extends React.PureComponent<ContextMenuProps> {
             transformOrigin={DefaultTransformOrigin}
             anchorOrigin={DefaultTransformOrigin}
             onContextMenu={this.handleContextMenu}>
-            <List dense>
+            <List data-cy='context-menu' dense>
                 {items.map((group, groupIndex) =>
                     <React.Fragment key={groupIndex}>
                         {group.map((item, actionIndex) =>

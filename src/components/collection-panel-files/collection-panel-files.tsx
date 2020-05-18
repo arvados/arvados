@@ -50,12 +50,15 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
 export const CollectionPanelFiles =
     withStyles(styles)(
         ({ onItemMenuOpen, onOptionsMenuOpen, onUploadDataClick, classes, isWritable, ...treeProps }: CollectionPanelFilesProps & WithStyles<CssRules>) =>
-            <Card className={classes.root}>
+            <Card data-cy='collection-files-panel' className={classes.root}>
                 <CardHeader
                     title="Files"
                     classes={{ action: classes.button }}
                     action={
-                        isWritable && <Button onClick={onUploadDataClick}
+                        isWritable &&
+                        <Button
+                            data-cy='upload-button'
+                            onClick={onUploadDataClick}
                             variant='contained'
                             color='primary'
                             size='small'>
@@ -67,7 +70,9 @@ export const CollectionPanelFiles =
                     className={classes.cardSubheader}
                     action={
                         <Tooltip title="More options" disableFocusListener>
-                            <IconButton onClick={(ev) => onOptionsMenuOpen(ev, isWritable)}>
+                            <IconButton
+                                data-cy='collection-files-panel-options-btn'
+                                onClick={(ev) => onOptionsMenuOpen(ev, isWritable)}>
                                 <CustomizeTableIcon />
                             </IconButton>
                         </Tooltip>

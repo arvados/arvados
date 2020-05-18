@@ -16,11 +16,13 @@ export const PROPERTY_KEY_FIELD_ID = 'keyID';
 
 export const PropertyKeyField = connectVocabulary(
     ({ vocabulary, skipValidation }: VocabularyProp & ValidationProp) =>
+        <span data-cy='property-field-key'>
         <Field
             name={PROPERTY_KEY_FIELD_NAME}
             component={PropertyKeyInput}
             vocabulary={vocabulary}
             validate={skipValidation ? undefined : getValidation(vocabulary)} />
+        </span>
 );
 
 const PropertyKeyInput = ({ vocabulary, ...props }: WrappedFieldProps & VocabularyProp) =>
