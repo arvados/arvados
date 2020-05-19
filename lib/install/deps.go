@@ -314,16 +314,9 @@ rm ${zip}
 				logger.Info("sent SIGTERM; waiting for postgres to shut down")
 				cmd.Wait()
 			}()
-			for deadline := time.Now().Add(10 * time.Second); ; {
-				output, err2 := exec.Command("pg_isready").CombinedOutput()
-				if err2 == nil {
-					break
-				} else if time.Now().After(deadline) {
-					err = fmt.Errorf("timed out waiting for pg_isready (%q)", output)
-					return 1
-				} else {
-					time.Sleep(time.Second)
-				}
+			err = waitPostgreSQLReady()
+			if err != nil {
+				return 1
 			}
 		}
 
@@ -348,6 +341,20 @@ rm ${zip}
 			if strings.Contains(string(out), "1") {
 				logger.Infof("postgresql supports collation %s", collname)
 			} else {
+				// In order for CREATE COLLATION to
+				// work, the locale must have existed
+				// when PostgreSQL started up. In most
+				// cases, either this is already true
+				// because we just started postgresql
+				// ourselves above, or systemd is here
+				// and we can force a restart.
+				if os.Getpid() != 1 {
+					if err = runBash(`sudo systemctl restart postgresql`, stdout, stderr); err != nil {
+						logger.Warn("`systemctl restart postgresql` failed; hoping postgresql does not need to be restarted")
+					} else if err = waitPostgreSQLReady(); err != nil {
+						return 1
+					}
+				}
 				cmd = exec.Command("sudo", "-u", "postgres", "psql", "-c", "CREATE COLLATION \""+collname+"\" (LOCALE = \"en_US.UTF-8\")")
 				cmd.Stdout = stdout
 				cmd.Stderr = stderr
@@ -358,6 +365,7 @@ rm ${zip}
 					return 1
 				}
 			}
+
 		}
 
 		withstuff := "WITH LOGIN SUPERUSER ENCRYPTED PASSWORD " + pq.QuoteLiteral(devtestDatabasePassword)
@@ -432,6 +440,19 @@ func identifyOS() (osversion, error) {
 		return osv, fmt.Errorf("incomprehensible VERSION_ID in /etc/os-release: %q", kv["VERSION_ID"])
 	}
 	return osv, nil
+}
+
+func waitPostgreSQLReady() error {
+	for deadline := time.Now().Add(10 * time.Second); ; {
+		output, err := exec.Command("pg_isready").CombinedOutput()
+		if err == nil {
+			return nil
+		} else if time.Now().After(deadline) {
+			return fmt.Errorf("timed out waiting for pg_isready (%q)", output)
+		} else {
+			time.Sleep(time.Second)
+		}
+	}
 }
 
 func runBash(script string, stdout, stderr io.Writer) error {
