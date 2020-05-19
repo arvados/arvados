@@ -311,7 +311,7 @@ rm ${zip}
 			}
 			defer func() {
 				cmd.Process.Signal(syscall.SIGTERM)
-				logger.Infof("sent SIGTERM; waiting for postgres to shut down")
+				logger.Info("sent SIGTERM; waiting for postgres to shut down")
 				cmd.Wait()
 			}()
 			for deadline := time.Now().Add(10 * time.Second); ; {
@@ -332,6 +332,32 @@ rm ${zip}
 			// docker container) so although postgresql is
 			// installed, it's not running, and initdb
 			// might never have been run.
+		}
+
+		// If the en_US.UTF-8 locale wasn't installed when
+		// postgresql initdb ran, it needs to be added
+		// explicitly before we can use it in our test suite.
+		for _, collname := range []string{"en_US", "en_US.UTF-8"} {
+			cmd := exec.Command("sudo", "-u", "postgres", "psql", "-t", "-c", "SELECT 1 FROM pg_catalog.pg_collation WHERE collname='"+collname+"' AND collcollate IN ('en_US.UTF-8', 'en_US.utf8')")
+			cmd.Dir = "/"
+			out, err2 := cmd.CombinedOutput()
+			if err != nil {
+				err = fmt.Errorf("error while checking postgresql collations: %s", err2)
+				return 1
+			}
+			if strings.Contains(string(out), "1") {
+				logger.Infof("postgresql supports collation %s", collname)
+			} else {
+				cmd = exec.Command("sudo", "-u", "postgres", "psql", "-c", "CREATE COLLATION \""+collname+"\" (LOCALE = \"en_US.UTF-8\")")
+				cmd.Stdout = stdout
+				cmd.Stderr = stderr
+				cmd.Dir = "/"
+				err = cmd.Run()
+				if err != nil {
+					err = fmt.Errorf("error adding postgresql collation %s: %s", collname, err)
+					return 1
+				}
+			}
 		}
 
 		withstuff := "WITH LOGIN SUPERUSER ENCRYPTED PASSWORD " + pq.QuoteLiteral(devtestDatabasePassword)
