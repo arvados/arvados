@@ -1266,15 +1266,11 @@ else
     while read -p 'What next? ' -e -i "$nextcmd" nextcmd; do
         history -s "$nextcmd"
         history -w
-        read verb target opt1 opts <<<"${nextcmd}"
         count=1
-        if [[ "$verb" =~ ^[0-9]+$ ]]; then
-          count=$verb
-          verb=${target}
-          target=$opt1
-        else
-          opts="$opt1 $opts"
+        if [[ "${nextcmd}" =~ ^[0-9] ]]; then
+          read count nextcmd <<<"${nextcmd}"
         fi
+        read verb target opts <<<"${nextcmd}"
         target="${target%/}"
         target="${target/\/:/:}"
         case "${verb}" in
