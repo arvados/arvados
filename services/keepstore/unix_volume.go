@@ -172,10 +172,10 @@ func (v *UnixVolume) Touch(loc string) error {
 		return e
 	}
 	defer v.unlockfile(f)
-	ts := syscall.NsecToTimespec(time.Now().UnixNano())
+	ts := time.Now()
 	v.os.stats.TickOps("utimes")
 	v.os.stats.Tick(&v.os.stats.UtimesOps)
-	err = syscall.UtimesNano(p, []syscall.Timespec{ts, ts})
+	err = os.Chtimes(p, ts, ts)
 	v.os.stats.TickErr(err)
 	return err
 }
@@ -303,8 +303,8 @@ func (v *UnixVolume) WriteBlock(ctx context.Context, loc string, rdr io.Reader) 
 	// which produces confusing results in logs and tests.  We
 	// avoid this by setting the output file's timestamps
 	// explicitly, using a higher resolution clock.
-	ts := syscall.NsecToTimespec(time.Now().UnixNano())
-	if err = syscall.UtimesNano(tmpfile.Name(), []syscall.Timespec{ts, ts}); err != nil {
+	ts := time.Now()
+	if err = os.Chtimes(tmpfile.Name(), ts, ts); err != nil {
 		err = fmt.Errorf("error setting timestamps on %s: %s", tmpfile.Name(), err)
 		v.os.Remove(tmpfile.Name())
 		return err
