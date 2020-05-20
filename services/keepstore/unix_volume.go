@@ -304,6 +304,8 @@ func (v *UnixVolume) WriteBlock(ctx context.Context, loc string, rdr io.Reader) 
 	// avoid this by setting the output file's timestamps
 	// explicitly, using a higher resolution clock.
 	ts := time.Now()
+	v.os.stats.TickOps("utimes")
+	v.os.stats.Tick(&v.os.stats.UtimesOps)
 	if err = os.Chtimes(tmpfile.Name(), ts, ts); err != nil {
 		err = fmt.Errorf("error setting timestamps on %s: %s", tmpfile.Name(), err)
 		v.os.Remove(tmpfile.Name())
