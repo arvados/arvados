@@ -327,6 +327,7 @@ rm ${zip}
 			// might never have been run.
 		}
 
+		var needcoll []string
 		// If the en_US.UTF-8 locale wasn't installed when
 		// postgresql initdb ran, it needs to be added
 		// explicitly before we can use it in our test suite.
@@ -341,31 +342,34 @@ rm ${zip}
 			if strings.Contains(string(out), "1") {
 				logger.Infof("postgresql supports collation %s", collname)
 			} else {
-				// In order for CREATE COLLATION to
-				// work, the locale must have existed
-				// when PostgreSQL started up. In most
-				// cases, either this is already true
-				// because we just started postgresql
-				// ourselves above, or systemd is here
-				// and we can force a restart.
-				if os.Getpid() != 1 {
-					if err = runBash(`sudo systemctl restart postgresql`, stdout, stderr); err != nil {
-						logger.Warn("`systemctl restart postgresql` failed; hoping postgresql does not need to be restarted")
-					} else if err = waitPostgreSQLReady(); err != nil {
-						return 1
-					}
-				}
-				cmd = exec.Command("sudo", "-u", "postgres", "psql", "-c", "CREATE COLLATION \""+collname+"\" (LOCALE = \"en_US.UTF-8\")")
-				cmd.Stdout = stdout
-				cmd.Stderr = stderr
-				cmd.Dir = "/"
-				err = cmd.Run()
-				if err != nil {
-					err = fmt.Errorf("error adding postgresql collation %s: %s", collname, err)
-					return 1
-				}
+				needcoll = append(needcoll, collname)
 			}
-
+		}
+		if len(needcoll) > 0 && os.Getpid() != 1 {
+			// In order for the CREATE COLLATION statement
+			// below to work, the locale must have existed
+			// when PostgreSQL started up. If we're
+			// running as init, we must have started
+			// PostgreSQL ourselves after installing the
+			// locales. Otherwise, it might need a
+			// restart, so we attempt to restart it with
+			// systemd.
+			if err = runBash(`sudo systemctl restart postgresql`, stdout, stderr); err != nil {
+				logger.Warn("`systemctl restart postgresql` failed; hoping postgresql does not need to be restarted")
+			} else if err = waitPostgreSQLReady(); err != nil {
+				return 1
+			}
+		}
+		for _, collname := range needcoll {
+			cmd := exec.Command("sudo", "-u", "postgres", "psql", "-c", "CREATE COLLATION \""+collname+"\" (LOCALE = \"en_US.UTF-8\")")
+			cmd.Stdout = stdout
+			cmd.Stderr = stderr
+			cmd.Dir = "/"
+			err = cmd.Run()
+			if err != nil {
+				err = fmt.Errorf("error adding postgresql collation %s: %s", collname, err)
+				return 1
+			}
 		}
 
 		withstuff := "WITH LOGIN SUPERUSER ENCRYPTED PASSWORD " + pq.QuoteLiteral(devtestDatabasePassword)
