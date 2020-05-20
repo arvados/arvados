@@ -263,6 +263,22 @@ func (s *TestSuite) TestIgnoreSpaces(c *C) {
 	}
 }
 
+// Error out when records have <2 or >3 records
+func (s *TestSuite) TestWrongNumberOfFields(c *C) {
+	for _, testCase := range [][][]string{
+		{{"field1"}},
+		{{"field1", "field2", "field3", "field4"}},
+		{{"field1", "field2", "field3", "field4", "field5"}},
+	} {
+		tmpfile, err := MakeTempCSVFile(testCase)
+		c.Assert(err, IsNil)
+		defer os.Remove(tmpfile.Name())
+		s.cfg.Path = tmpfile.Name()
+		err = doMain(s.cfg)
+		c.Assert(err, Not(IsNil))
+	}
+}
+
 // The absence of a user membership on the CSV file implies its removal
 func (s *TestSuite) TestMembershipRemoval(c *C) {
 	localUserEmail := s.users[arvadostest.ActiveUserUUID].Email

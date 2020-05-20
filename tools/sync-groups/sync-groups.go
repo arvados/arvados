@@ -134,9 +134,10 @@ func ParseFlags(config *ConfigParams) error {
 
 	// Set up usage message
 	flags.Usage = func() {
-		usageStr := `Synchronize remote groups into Arvados from a CSV format file with 2 columns:
-  * 1st column: Group name
-  * 2nd column: User identifier`
+		usageStr := `Synchronize remote groups into Arvados from a CSV format file with 3 columns:
+  * 1st: Group name
+  * 2nd: User identifier
+  * 3rd (Optional): User permission on the group: read, write or manage. (Default: write)`
 		fmt.Fprintf(os.Stderr, "%s\n\n", usageStr)
 		fmt.Fprintf(os.Stderr, "Usage:\n%s [OPTIONS] <input-file.csv>\n\n", os.Args[0])
 		fmt.Fprintf(os.Stderr, "Options:\n")
@@ -362,7 +363,8 @@ func ProcessFile(
 ) (groupsCreated, membersAdded, membersSkipped int, err error) {
 	lineNo := 0
 	csvReader := csv.NewReader(f)
-	csvReader.FieldsPerRecord = 2
+	// Allow variable number of fields.
+	csvReader.FieldsPerRecord = -1
 	for {
 		record, e := csvReader.Read()
 		if e == io.EOF {
@@ -371,6 +373,11 @@ func ProcessFile(
 		lineNo++
 		if e != nil {
 			err = fmt.Errorf("error parsing %q, line %d", cfg.Path, lineNo)
+			return
+		}
+		// Only allow 2 or 3 fields per record for backwards compatibility.
+		if len(record) < 2 || len(record) > 3 {
+			err = fmt.Errorf("error parsing %q, line %d: found %d fields but only 2 or 3 are allowed", cfg.Path, lineNo, len(record))
 			return
 		}
 		groupName := strings.TrimSpace(record[0])
