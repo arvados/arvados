@@ -129,20 +129,9 @@ func s3regions() (okList []string) {
 
 // S3Volume implements Volume using an S3 bucket.
 type S3Volume struct {
-	AccessKey          string
-	SecretKey          string
-	AuthToken          string    // populated automatically when IAMRole is used
-	AuthExpiration     time.Time // populated automatically when IAMRole is used
-	IAMRole            string
-	Endpoint           string
-	Region             string
-	Bucket             string
-	LocationConstraint bool
-	IndexPageSize      int
-	ConnectTimeout     arvados.Duration
-	ReadTimeout        arvados.Duration
-	RaceWindow         arvados.Duration
-	UnsafeDelete       bool
+	arvados.S3VolumeDriverParameters
+	AuthToken      string    // populated automatically when IAMRole is used
+	AuthExpiration time.Time // populated automatically when IAMRole is used
 
 	cluster   *arvados.Cluster
 	volume    arvados.Volume
@@ -188,8 +177,7 @@ func (v *S3Volume) bootstrapIAMCredentials() error {
 func (v *S3Volume) newS3Client() *s3.S3 {
 	auth := aws.NewAuth(v.AccessKey, v.SecretKey, v.AuthToken, v.AuthExpiration)
 	client := s3.New(*auth, v.region)
-	if v.region.EC2Endpoint.Signer == aws.V4Signature {
-		// Currently affects only eu-central-1
+	if !v.V2Signature {
 		client.Signature = aws.V4Signature
 	}
 	client.ConnectTimeout = time.Duration(v.ConnectTimeout)

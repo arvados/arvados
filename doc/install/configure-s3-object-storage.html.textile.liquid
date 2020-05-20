@@ -59,6 +59,11 @@ Volumes are configured in the @Volumes@ section of the cluster configuration fil
           # declaration.
           LocationConstraint: false
 
+          # Use V2 signatures instead of the default V4. Amazon S3
+          # supports V4 signatures in all regions, but this option
+          # might be needed for other S3-compatible services.
+          V2Signature: false
+
           # Requested page size for "list bucket contents" requests.
           IndexPageSize: 1000
 
