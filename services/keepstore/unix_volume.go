@@ -298,6 +298,17 @@ func (v *UnixVolume) WriteBlock(ctx context.Context, loc string, rdr io.Reader) 
 		v.os.Remove(tmpfile.Name())
 		return err
 	}
+	// ext4 uses a low-precision clock and effectively backdates
+	// files by up to 10 ms, sometimes across a 1-second boundary,
+	// which produces confusing results in logs and tests.  We
+	// avoid this by setting the output file's timestamps
+	// explicitly, using a higher resolution clock.
+	ts := syscall.NsecToTimespec(time.Now().UnixNano())
+	if err = syscall.UtimesNano(tmpfile.Name(), []syscall.Timespec{ts, ts}); err != nil {
+		err = fmt.Errorf("error setting timestamps on %s: %s", tmpfile.Name(), err)
+		v.os.Remove(tmpfile.Name())
+		return err
+	}
 	if err := v.os.Rename(tmpfile.Name(), bpath); err != nil {
 		err = fmt.Errorf("error renaming %s to %s: %s", tmpfile.Name(), bpath, err)
 		v.os.Remove(tmpfile.Name())
