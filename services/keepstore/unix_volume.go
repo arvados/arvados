@@ -172,10 +172,10 @@ func (v *UnixVolume) Touch(loc string) error {
 		return e
 	}
 	defer v.unlockfile(f)
-	ts := syscall.NsecToTimespec(time.Now().UnixNano())
+	ts := time.Now()
 	v.os.stats.TickOps("utimes")
 	v.os.stats.Tick(&v.os.stats.UtimesOps)
-	err = syscall.UtimesNano(p, []syscall.Timespec{ts, ts})
+	err = os.Chtimes(p, ts, ts)
 	v.os.stats.TickErr(err)
 	return err
 }
@@ -295,6 +295,19 @@ func (v *UnixVolume) WriteBlock(ctx context.Context, loc string, rdr io.Reader) 
 	}
 	if err := tmpfile.Close(); err != nil {
 		err = fmt.Errorf("error closing %s: %s", tmpfile.Name(), err)
+		v.os.Remove(tmpfile.Name())
+		return err
+	}
+	// ext4 uses a low-precision clock and effectively backdates
+	// files by up to 10 ms, sometimes across a 1-second boundary,
+	// which produces confusing results in logs and tests.  We
+	// avoid this by setting the output file's timestamps
+	// explicitly, using a higher resolution clock.
+	ts := time.Now()
+	v.os.stats.TickOps("utimes")
+	v.os.stats.Tick(&v.os.stats.UtimesOps)
+	if err = os.Chtimes(tmpfile.Name(), ts, ts); err != nil {
+		err = fmt.Errorf("error setting timestamps on %s: %s", tmpfile.Name(), err)
 		v.os.Remove(tmpfile.Name())
 		return err
 	}
