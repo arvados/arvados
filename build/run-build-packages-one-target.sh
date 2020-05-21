@@ -143,6 +143,22 @@ if [[ -n "$test_packages" ]]; then
   fi
 
   if [[ -n "$(find $WORKSPACE/packages/$TARGET -name '*.deb')" ]] ; then
+    set +e
+    /usr/bin/which dpkg-scanpackages >/dev/null
+    if [[ "$?" != "0" ]]; then
+      echo >&2
+      echo >&2 "Error: please install dpkg-dev. E.g. sudo apt-get install dpkg-dev"
+      echo >&2
+      exit 1
+    fi
+    /usr/bin/which apt-ftparchive >/dev/null
+    if [[ "$?" != "0" ]]; then
+      echo >&2
+      echo >&2 "Error: please install apt-utils. E.g. sudo apt-get install apt-utils"
+      echo >&2
+      exit 1
+    fi
+    set -e
     (cd $WORKSPACE/packages/$TARGET
       dpkg-scanpackages .  2> >(grep -v 'warning' 1>&2) | tee Packages | gzip -c > Packages.gz
       apt-ftparchive -o APT::FTPArchive::Release::Origin=Arvados release . > Release
