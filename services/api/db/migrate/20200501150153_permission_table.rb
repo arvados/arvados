@@ -61,28 +61,22 @@ select starting_uuid like '_____-j7d0g-_______________' or
 $$;
 }
 
-
     ActiveRecord::Base.connection.execute %{
-create or replace function permission_graph_edges ()
-  returns table (tail_uuid varchar(27), head_uuid varchar(27), val integer)
-STABLE
-language SQL
-as $$
-           select groups.owner_uuid, groups.uuid, (3) from groups
-          union
-            select users.owner_uuid, users.uuid, (3) from users
-          union
-            select links.tail_uuid,
-                   links.head_uuid,
-                   CASE
-                     WHEN links.name = 'can_read'   THEN 1
-                     WHEN links.name = 'can_login'  THEN 1
-                     WHEN links.name = 'can_write'  THEN 2
-                     WHEN links.name = 'can_manage' THEN 3
-                   END as val
-          from links
-          where links.link_class='permission'
-$$;
+create view permission_graph_edges as
+  select groups.owner_uuid as tail_uuid, groups.uuid as head_uuid, (3) as val from groups
+union all
+  select users.owner_uuid as tail_uuid, users.uuid as head_uuid, (3) as val from users
+union all
+  select links.tail_uuid,
+         links.head_uuid,
+         CASE
+           WHEN links.name = 'can_read'   THEN 1
+           WHEN links.name = 'can_login'  THEN 1
+           WHEN links.name = 'can_write'  THEN 2
+           WHEN links.name = 'can_manage' THEN 3
+          END as val
+      from links
+      where links.link_class='permission'
 }
 
         # Get a set of permission by searching the graph and following
@@ -102,9 +96,7 @@ create or replace function search_permission_graph (starting_uuid varchar(27),
 STABLE
 language SQL
 as $$
-WITH RECURSIVE edges(tail_uuid, head_uuid, val) as (
-          select * from permission_graph_edges()
-        ),
+WITH RECURSIVE
         traverse_graph(target_uuid, val, traverse_owned) as (
             values (starting_uuid, starting_perm,
                     should_traverse_owned(starting_uuid, starting_perm))
@@ -116,10 +108,10 @@ WITH RECURSIVE edges(tail_uuid, head_uuid, val) as (
                             else 0
                           end),
                     should_traverse_owned(edges.head_uuid, edges.val)
-             from edges
-             join traverse_graph on (traverse_graph.target_uuid = edges.tail_uuid)))
+             from permission_graph_edges as edges, traverse_graph
+             where traverse_graph.target_uuid = edges.tail_uuid))
         select target_uuid, max(val), bool_or(traverse_owned) from traverse_graph
-        group by (target_uuid) ;
+        group by (target_uuid);
 $$;
 }
 
@@ -136,13 +128,10 @@ perm_from_start(perm_origin_uuid, target_uuid, val, traverse_owned) as (
   select perm_origin_uuid, target_uuid, val, traverse_owned
     from search_permission_graph(starting_uuid, starting_perm)),
 
-  edges(tail_uuid, head_uuid, val) as (
-        select * from permission_graph_edges()),
-
   additional_perms(perm_origin_uuid, target_uuid, val, traverse_owned) as (
     select edges.tail_uuid as perm_origin_uuid, ps.target_uuid, ps.val,
            should_traverse_owned(ps.target_uuid, ps.val)
-      from edges, lateral search_permission_graph(edges.head_uuid, edges.val) as ps
+      from permission_graph_edges as edges, lateral search_permission_graph(edges.head_uuid, edges.val) as ps
       where (not (edges.tail_uuid = perm_origin_uuid and
                  edges.head_uuid = starting_uuid)) and
             edges.tail_uuid not in (select target_uuid from perm_from_start) and
@@ -150,7 +139,7 @@ perm_from_start(perm_origin_uuid, target_uuid, val, traverse_owned) as (
 
   partial_perms(perm_origin_uuid, target_uuid, val, traverse_owned) as (
       select * from perm_from_start
-    union
+    union all
       select * from additional_perms
   ),
 
@@ -169,17 +158,16 @@ perm_from_start(perm_origin_uuid, target_uuid, val, traverse_owned) as (
   )
 
   select v.user_uuid, v.target_uuid, max(v.perm_level), bool_or(v.traverse_owned) from
-    (select materialized_permissions.user_uuid,
+    (select m.user_uuid,
          u.target_uuid,
-         least(u.val, materialized_permissions.perm_level) as perm_level,
+         least(u.val, m.perm_level) as perm_level,
          u.traverse_owned
-      from all_perms as u
-      join materialized_permissions on (u.perm_origin_uuid = materialized_permissions.target_uuid)
-      where materialized_permissions.traverse_owned
-    union
+      from all_perms as u, materialized_permissions as m
+           where u.perm_origin_uuid = m.target_uuid AND m.traverse_owned
+    union all
       select perm_origin_uuid as user_uuid, target_uuid, val as perm_level, traverse_owned
         from all_perms
-        where perm_origin_uuid like '_____-tpzed-_______________') as v
+        where all_perms.perm_origin_uuid like '_____-tpzed-_______________') as v
     group by v.user_uuid, v.target_uuid
 $$;
      }
@@ -200,7 +188,7 @@ from users, lateral search_permission_graph(users.uuid, 3) as g where g.val > 0
     ActiveRecord::Base.connection.execute "DROP function search_permission_graph(varchar, integer);"
     ActiveRecord::Base.connection.execute "DROP function compute_permission_subgraph (varchar, varchar, integer);"
     ActiveRecord::Base.connection.execute "DROP function should_traverse_owned(varchar, integer);"
-    ActiveRecord::Base.connection.execute "DROP function permission_graph_edges();"
+    ActiveRecord::Base.connection.execute "DROP view permission_graph_edges;"
 
     ActiveRecord::Base.connection.execute(%{
 CREATE MATERIALIZED VIEW materialized_permission_view AS

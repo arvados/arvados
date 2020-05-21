@@ -42,6 +42,8 @@ def update_permissions perm_origin_uuid, starting_uuid, perm_level, check=false
 
   ActiveRecord::Base.connection.execute "LOCK TABLE #{PERMISSION_VIEW} in SHARE MODE"
 
+  ActiveRecord::Base.connection.exec_query "SET LOCAL enable_mergejoin to false;"
+
   temptable_perms = "temp_perms_#{rand(2**64).to_s(10)}"
   ActiveRecord::Base.connection.exec_query %{
 create temporary table #{temptable_perms} on commit drop
@@ -51,6 +53,8 @@ as select * from compute_permission_subgraph($1, $2, $3)
                                            [[nil, perm_origin_uuid],
                                             [nil, starting_uuid],
                                             [nil, perm_level]]
+
+  ActiveRecord::Base.connection.exec_query "SET LOCAL enable_mergejoin to true;"
 
   ActiveRecord::Base.connection.exec_delete %{
 delete from #{PERMISSION_VIEW} where

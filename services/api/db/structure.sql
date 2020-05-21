@@ -50,13 +50,10 @@ perm_from_start(perm_origin_uuid, target_uuid, val, traverse_owned) as (
   select perm_origin_uuid, target_uuid, val, traverse_owned
     from search_permission_graph(starting_uuid, starting_perm)),
 
-  edges(tail_uuid, head_uuid, val) as (
-        select * from permission_graph_edges()),
-
   additional_perms(perm_origin_uuid, target_uuid, val, traverse_owned) as (
     select edges.tail_uuid as perm_origin_uuid, ps.target_uuid, ps.val,
            should_traverse_owned(ps.target_uuid, ps.val)
-      from edges, lateral search_permission_graph(edges.head_uuid, edges.val) as ps
+      from permission_graph_edges as edges, lateral search_permission_graph(edges.head_uuid, edges.val) as ps
       where (not (edges.tail_uuid = perm_origin_uuid and
                  edges.head_uuid = starting_uuid)) and
             edges.tail_uuid not in (select target_uuid from perm_from_start) and
@@ -64,7 +61,7 @@ perm_from_start(perm_origin_uuid, target_uuid, val, traverse_owned) as (
 
   partial_perms(perm_origin_uuid, target_uuid, val, traverse_owned) as (
       select * from perm_from_start
-    union
+    union all
       select * from additional_perms
   ),
 
@@ -83,17 +80,16 @@ perm_from_start(perm_origin_uuid, target_uuid, val, traverse_owned) as (
   )
 
   select v.user_uuid, v.target_uuid, max(v.perm_level), bool_or(v.traverse_owned) from
-    (select materialized_permissions.user_uuid,
+    (select m.user_uuid,
          u.target_uuid,
-         least(u.val, materialized_permissions.perm_level) as perm_level,
+         least(u.val, m.perm_level) as perm_level,
          u.traverse_owned
-      from all_perms as u
-      join materialized_permissions on (u.perm_origin_uuid = materialized_permissions.target_uuid)
-      where materialized_permissions.traverse_owned
-    union
+      from all_perms as u, materialized_permissions as m
+           where u.perm_origin_uuid = m.target_uuid AND m.traverse_owned
+    union all
       select perm_origin_uuid as user_uuid, target_uuid, val as perm_level, traverse_owned
         from all_perms
-        where perm_origin_uuid like '_____-tpzed-_______________') as v
+        where all_perms.perm_origin_uuid like '_____-tpzed-_______________') as v
     group by v.user_uuid, v.target_uuid
 $$;
 
@@ -108,30 +104,6 @@ CREATE FUNCTION public.compute_trashed() RETURNS TABLE(uuid character varying, t
 select ps.target_uuid as group_uuid, ps.trash_at from groups,
   lateral project_subtree_with_trash_at(groups.uuid, groups.trash_at) ps
   where groups.owner_uuid like '_____-tpzed-_______________'
-$$;
-
-
---
--- Name: permission_graph_edges(); Type: FUNCTION; Schema: public; Owner: -
---
-
-CREATE FUNCTION public.permission_graph_edges() RETURNS TABLE(tail_uuid character varying, head_uuid character varying, val integer)
-    LANGUAGE sql STABLE
-    AS $$
-           select groups.owner_uuid, groups.uuid, (3) from groups
-          union
-            select users.owner_uuid, users.uuid, (3) from users
-          union
-            select links.tail_uuid,
-                   links.head_uuid,
-                   CASE
-                     WHEN links.name = 'can_read'   THEN 1
-                     WHEN links.name = 'can_login'  THEN 1
-                     WHEN links.name = 'can_write'  THEN 2
-                     WHEN links.name = 'can_manage' THEN 3
-                   END as val
-          from links
-          where links.link_class='permission'
 $$;
 
 
@@ -160,9 +132,7 @@ $$;
 CREATE FUNCTION public.search_permission_graph(starting_uuid character varying, starting_perm integer) RETURNS TABLE(target_uuid character varying, val integer, traverse_owned boolean)
     LANGUAGE sql STABLE
     AS $$
-WITH RECURSIVE edges(tail_uuid, head_uuid, val) as (
-          select * from permission_graph_edges()
-        ),
+WITH RECURSIVE
         traverse_graph(target_uuid, val, traverse_owned) as (
             values (starting_uuid, starting_perm,
                     should_traverse_owned(starting_uuid, starting_perm))
@@ -174,10 +144,10 @@ WITH RECURSIVE edges(tail_uuid, head_uuid, val) as (
                             else 0
                           end),
                     should_traverse_owned(edges.head_uuid, edges.val)
-             from edges
-             join traverse_graph on (traverse_graph.target_uuid = edges.tail_uuid)))
+             from permission_graph_edges as edges, traverse_graph
+             where traverse_graph.target_uuid = edges.tail_uuid))
         select target_uuid, max(val), bool_or(traverse_owned) from traverse_graph
-        group by (target_uuid) ;
+        group by (target_uuid);
 $$;
 
 
@@ -930,6 +900,60 @@ ALTER SEQUENCE public.nodes_id_seq OWNED BY public.nodes.id;
 
 
 --
+-- Name: users; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.users (
+    id integer NOT NULL,
+    uuid character varying(255),
+    owner_uuid character varying(255) NOT NULL,
+    created_at timestamp without time zone NOT NULL,
+    modified_by_client_uuid character varying(255),
+    modified_by_user_uuid character varying(255),
+    modified_at timestamp without time zone,
+    email character varying(255),
+    first_name character varying(255),
+    last_name character varying(255),
+    identity_url character varying(255),
+    is_admin boolean,
+    prefs text,
+    updated_at timestamp without time zone NOT NULL,
+    default_owner_uuid character varying(255),
+    is_active boolean DEFAULT false,
+    username character varying(255),
+    redirect_to_user_uuid character varying
+);
+
+
+--
+-- Name: permission_graph_edges; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW public.permission_graph_edges AS
+ SELECT groups.owner_uuid AS tail_uuid,
+    groups.uuid AS head_uuid,
+    3 AS val
+   FROM public.groups
+UNION ALL
+ SELECT users.owner_uuid AS tail_uuid,
+    users.uuid AS head_uuid,
+    3 AS val
+   FROM public.users
+UNION ALL
+ SELECT links.tail_uuid,
+    links.head_uuid,
+        CASE
+            WHEN ((links.name)::text = 'can_read'::text) THEN 1
+            WHEN ((links.name)::text = 'can_login'::text) THEN 1
+            WHEN ((links.name)::text = 'can_write'::text) THEN 2
+            WHEN ((links.name)::text = 'can_manage'::text) THEN 3
+            ELSE NULL::integer
+        END AS val
+   FROM public.links
+  WHERE ((links.link_class)::text = 'permission'::text);
+
+
+--
 -- Name: pipeline_instances; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1137,32 +1161,6 @@ ALTER SEQUENCE public.traits_id_seq OWNED BY public.traits.id;
 CREATE TABLE public.trashed_groups (
     group_uuid character varying,
     trash_at timestamp without time zone
-);
-
-
---
--- Name: users; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.users (
-    id integer NOT NULL,
-    uuid character varying(255),
-    owner_uuid character varying(255) NOT NULL,
-    created_at timestamp without time zone NOT NULL,
-    modified_by_client_uuid character varying(255),
-    modified_by_user_uuid character varying(255),
-    modified_at timestamp without time zone,
-    email character varying(255),
-    first_name character varying(255),
-    last_name character varying(255),
-    identity_url character varying(255),
-    is_admin boolean,
-    prefs text,
-    updated_at timestamp without time zone NOT NULL,
-    default_owner_uuid character varying(255),
-    is_active boolean DEFAULT false,
-    username character varying(255),
-    redirect_to_user_uuid character varying
 );
 
 
