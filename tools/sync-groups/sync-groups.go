@@ -450,8 +450,13 @@ func ProcessFile(
 			if cfg.Verbose {
 				log.Printf("Adding %q to group %q", groupMember, groupName)
 			}
-			// User wasn't a member, but should be.
-			if e := AddMemberToGroup(cfg, allUsers[userIDToUUID[groupMember]], gi.Group, groupPermission); e != nil {
+			// User permissionwasn't there, but should be. Avoid duplicating the
+			// group->user link when necessary.
+			createG2ULink := true
+			if _, ok := gi.PreviousMembers[groupMember]; ok {
+				createG2ULink = false // User is already member of the group
+			}
+			if e := AddMemberToGroup(cfg, allUsers[userIDToUUID[groupMember]], gi.Group, groupPermission, createG2ULink); e != nil {
 				err = e
 				return
 			}
@@ -498,7 +503,7 @@ func subtract(setA map[string]GroupPermissions, setB map[string]GroupPermissions
 		} else {
 			for perm := range setA[element] {
 				if _, ok := setB[element][perm]; !ok {
-					result[element][perm] = true
+					result[element] = GroupPermissions{perm: true}
 				}
 			}
 		}
@@ -716,18 +721,21 @@ func RemoveMemberLinksFromGroup(cfg *ConfigParams, user arvados.User, linkNames 
 }
 
 // AddMemberToGroup create membership links
-func AddMemberToGroup(cfg *ConfigParams, user arvados.User, group arvados.Group, perm string) error {
+func AddMemberToGroup(cfg *ConfigParams, user arvados.User, group arvados.Group, perm string, createG2ULink bool) error {
 	var newLink arvados.Link
-	linkData := map[string]string{
-		"owner_uuid": cfg.SysUserUUID,
-		"link_class": "permission",
-		"name":       "can_read",
-		"tail_uuid":  group.UUID,
-		"head_uuid":  user.UUID,
-	}
-	if err := CreateLink(cfg, &newLink, linkData); err != nil {
-		userID, _ := GetUserID(user, cfg.UserID)
-		return fmt.Errorf("error adding group %q -> user %q read permission: %s", group.Name, userID, err)
+	var linkData map[string]string
+	if createG2ULink {
+		linkData = map[string]string{
+			"owner_uuid": cfg.SysUserUUID,
+			"link_class": "permission",
+			"name":       "can_read",
+			"tail_uuid":  group.UUID,
+			"head_uuid":  user.UUID,
+		}
+		if err := CreateLink(cfg, &newLink, linkData); err != nil {
+			userID, _ := GetUserID(user, cfg.UserID)
+			return fmt.Errorf("error adding group %q -> user %q read permission: %s", group.Name, userID, err)
+		}
 	}
 	linkData = map[string]string{
 		"owner_uuid": cfg.SysUserUUID,
