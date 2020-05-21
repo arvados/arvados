@@ -376,7 +376,7 @@ class KeepClient(object):
                     if self.insecure:
                         curl.setopt(pycurl.SSL_VERIFYPEER, 0)
                     else:
-                        curl.setopt(pycurl.CAPATH,os.path.dirname(arvados.util.ca_certs_path()))
+                        curl.setopt(pycurl.CAINFO, arvados.util.ca_certs_path())
                     if method == "HEAD":
                         curl.setopt(pycurl.NOBODY, True)
                     self._setcurltimeouts(curl, timeout, method=="HEAD")
@@ -476,7 +476,7 @@ class KeepClient(object):
                     if self.insecure:
                         curl.setopt(pycurl.SSL_VERIFYPEER, 0)
                     else:
-                        curl.setopt(pycurl.CAPATH,os.path.dirname(arvados.util.ca_certs_path()))
+                        curl.setopt(pycurl.CAINFO, arvados.util.ca_certs_path())
                     self._setcurltimeouts(curl, timeout)
                     try:
                         curl.perform()
