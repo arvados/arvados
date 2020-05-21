@@ -6,7 +6,9 @@ package arvados
 
 import (
 	"bufio"
+	"context"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
@@ -100,6 +102,24 @@ func (s *KeepService) Mounts(c *Client) ([]KeepMount, error) {
 		return nil, fmt.Errorf("GET %v: %v", url, err)
 	}
 	return mounts, nil
+}
+
+// Untrash moves/copies the given block out of trash.
+func (s *KeepService) Untrash(ctx context.Context, c *Client, blk string) error {
+	req, err := http.NewRequest("PUT", s.url("untrash/"+blk), nil)
+	if err != nil {
+		return err
+	}
+	resp, err := c.Do(req.WithContext(ctx))
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		body, _ := ioutil.ReadAll(resp.Body)
+		return fmt.Errorf("%s %s: %s", resp.Proto, resp.Status, body)
+	}
+	return nil
 }
 
 // Index returns an unsorted list of blocks at the given mount point.
