@@ -23,7 +23,7 @@ def refresh_trashed
   ActiveRecord::Base.connection.execute("INSERT INTO #{TRASHED_GROUPS} select * from compute_trashed()")
 end
 
-def update_permissions perm_origin_uuid, starting_uuid, perm_level, check=true
+def update_permissions perm_origin_uuid, starting_uuid, perm_level, check=false
   # Update a subset of the permission graph
   # perm_level is the inherited permission
   # perm_level is a number from 0-3
@@ -85,13 +85,13 @@ def check_permissions_against_full_refresh
   q1 = ActiveRecord::Base.connection.exec_query %{
 select user_uuid, target_uuid, perm_level, traverse_owned from #{PERMISSION_VIEW}
 order by user_uuid, target_uuid
-}
+}, "check_permissions_against_full_refresh.permission_table"
 
   q2 = ActiveRecord::Base.connection.exec_query %{
 select users.uuid as user_uuid, g.target_uuid, g.val as perm_level, g.traverse_owned
 from users, lateral search_permission_graph(users.uuid, 3) as g where g.val > 0
 order by users.uuid, target_uuid
-}
+}, "check_permissions_against_full_refresh.full_recompute"
 
   if q1.count != q2.count
     puts "Didn't match incremental+: #{q1.count} != full refresh-: #{q2.count}"

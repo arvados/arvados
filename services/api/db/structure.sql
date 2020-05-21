@@ -2782,6 +2782,13 @@ CREATE INDEX nodes_search_index ON public.nodes USING btree (uuid, owner_uuid, m
 
 
 --
+-- Name: permission_target; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX permission_target ON public.materialized_permissions USING btree (target_uuid);
+
+
+--
 -- Name: permission_user_target; Type: INDEX; Schema: public; Owner: -
 --
 

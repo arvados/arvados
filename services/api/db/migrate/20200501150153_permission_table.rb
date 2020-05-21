@@ -10,6 +10,7 @@ class PermissionTable < ActiveRecord::Migration[5.0]
       t.boolean :traverse_owned
     end
     add_index :materialized_permissions, [:user_uuid, :target_uuid], unique: true, name: 'permission_user_target'
+    add_index :materialized_permissions, [:target_uuid], unique: false, name: 'permission_target'
 
     ActiveRecord::Base.connection.execute %{
 create or replace function project_subtree_with_trash_at (starting_uuid varchar(27), starting_trash_at timestamp)
@@ -191,6 +192,16 @@ from users, lateral search_permission_graph(users.uuid, 3) as g where g.val > 0
   end
 
   def down
+    drop_table :materialized_permissions
+    drop_table :trashed_groups
+
+    ActiveRecord::Base.connection.execute "DROP function project_subtree_with_trash_at (varchar, timestamp);"
+    ActiveRecord::Base.connection.execute "DROP function compute_trashed ();"
+    ActiveRecord::Base.connection.execute "DROP function search_permission_graph(varchar, integer);"
+    ActiveRecord::Base.connection.execute "DROP function compute_permission_subgraph (varchar, varchar, integer);"
+    ActiveRecord::Base.connection.execute "DROP function should_traverse_owned(varchar, integer);"
+    ActiveRecord::Base.connection.execute "DROP function permission_graph_edges();"
+
     ActiveRecord::Base.connection.execute(%{
 CREATE MATERIALIZED VIEW materialized_permission_view AS
  WITH RECURSIVE perm_value(name, val) AS (
@@ -253,16 +264,8 @@ CREATE MATERIALIZED VIEW materialized_permission_view AS
 
     add_index :materialized_permission_view, [:trashed, :target_uuid], name: 'permission_target_trashed'
     add_index :materialized_permission_view, [:user_uuid, :trashed, :perm_level], name: 'permission_target_user_trashed_level'
-
-    drop_table :materialized_permissions
-    drop_table :trashed_groups
     create_table :permission_refresh_lock
 
-    ActiveRecord::Base.connection.execute "DROP function project_subtree_with_trash_at (varchar, timestamp);"
-    ActiveRecord::Base.connection.execute "DROP function compute_trashed ();"
-    ActiveRecord::Base.connection.execute "DROP function search_permission_graph(varchar, integer);"
-    ActiveRecord::Base.connection.execute "DROP function compute_permission_subgraph (varchar, varchar, integer);"
-    ActiveRecord::Base.connection.execute "DROP function should_traverse_owned(varchar, integer);"
-    ActiveRecord::Base.connection.execute "DROP function permission_graph_edges();"
+    ActiveRecord::Base.connection.execute 'REFRESH MATERIALIZED VIEW materialized_permission_view;'
   end
 end
