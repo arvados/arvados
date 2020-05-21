@@ -620,9 +620,15 @@ Clusters:
         # "ou=Users,dc=example,dc=com"
         SearchBase: ""
 
-        # Additional filters for username lookup. Special characters
-        # in assertion values must be escaped (see RFC4515). Example:
-        # "(objectClass=person)"
+        # Additional filters to apply when looking up users' LDAP
+        # entries. This can be used to restrict access to a subset of
+        # LDAP users, or to disambiguate users from other directory
+        # entries that have the SearchAttribute present.
+        #
+        # Special characters in assertion values must be escaped (see
+        # RFC4515).
+        #
+        # Example: "(objectClass=person)"
         SearchFilters: ""
 
         # LDAP attribute to use as the user's email address.
