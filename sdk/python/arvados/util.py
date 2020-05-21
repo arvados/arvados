@@ -396,6 +396,9 @@ def ca_certs_path(fallback=httplib2.CA_CERTS):
     it returns the value of `fallback` (httplib2's CA certs by default).
     """
     for ca_certs_path in [
+        # SSL_CERT_FILE and SSL_CERT_DIR are openssl overrides - note
+        # that httplib2 itself also supports HTTPLIB2_CA_CERTS.
+        os.environ.get('SSL_CERT_FILE'),
         # Arvados specific:
         '/etc/arvados/ca-certificates.crt',
         # Debian:
@@ -403,7 +406,7 @@ def ca_certs_path(fallback=httplib2.CA_CERTS):
         # Red Hat:
         '/etc/pki/tls/certs/ca-bundle.crt',
         ]:
-        if os.path.exists(ca_certs_path):
+        if ca_certs_path and os.path.exists(ca_certs_path):
             return ca_certs_path
     return fallback
 

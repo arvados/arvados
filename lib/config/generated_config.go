@@ -1026,6 +1026,7 @@ Clusters:
           Region: us-east-1a
           Bucket: aaaaa
           LocationConstraint: false
+          V2Signature: false
           IndexPageSize: 1000
           ConnectTimeout: 1m
           ReadTimeout: 10m

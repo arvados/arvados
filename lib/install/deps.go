@@ -311,19 +311,12 @@ rm ${zip}
 			}
 			defer func() {
 				cmd.Process.Signal(syscall.SIGTERM)
-				logger.Infof("sent SIGTERM; waiting for postgres to shut down")
+				logger.Info("sent SIGTERM; waiting for postgres to shut down")
 				cmd.Wait()
 			}()
-			for deadline := time.Now().Add(10 * time.Second); ; {
-				output, err2 := exec.Command("pg_isready").CombinedOutput()
-				if err2 == nil {
-					break
-				} else if time.Now().After(deadline) {
-					err = fmt.Errorf("timed out waiting for pg_isready (%q)", output)
-					return 1
-				} else {
-					time.Sleep(time.Second)
-				}
+			err = waitPostgreSQLReady()
+			if err != nil {
+				return 1
 			}
 		}
 
@@ -332,6 +325,51 @@ rm ${zip}
 			// docker container) so although postgresql is
 			// installed, it's not running, and initdb
 			// might never have been run.
+		}
+
+		var needcoll []string
+		// If the en_US.UTF-8 locale wasn't installed when
+		// postgresql initdb ran, it needs to be added
+		// explicitly before we can use it in our test suite.
+		for _, collname := range []string{"en_US", "en_US.UTF-8"} {
+			cmd := exec.Command("sudo", "-u", "postgres", "psql", "-t", "-c", "SELECT 1 FROM pg_catalog.pg_collation WHERE collname='"+collname+"' AND collcollate IN ('en_US.UTF-8', 'en_US.utf8')")
+			cmd.Dir = "/"
+			out, err2 := cmd.CombinedOutput()
+			if err != nil {
+				err = fmt.Errorf("error while checking postgresql collations: %s", err2)
+				return 1
+			}
+			if strings.Contains(string(out), "1") {
+				logger.Infof("postgresql supports collation %s", collname)
+			} else {
+				needcoll = append(needcoll, collname)
+			}
+		}
+		if len(needcoll) > 0 && os.Getpid() != 1 {
+			// In order for the CREATE COLLATION statement
+			// below to work, the locale must have existed
+			// when PostgreSQL started up. If we're
+			// running as init, we must have started
+			// PostgreSQL ourselves after installing the
+			// locales. Otherwise, it might need a
+			// restart, so we attempt to restart it with
+			// systemd.
+			if err = runBash(`sudo systemctl restart postgresql`, stdout, stderr); err != nil {
+				logger.Warn("`systemctl restart postgresql` failed; hoping postgresql does not need to be restarted")
+			} else if err = waitPostgreSQLReady(); err != nil {
+				return 1
+			}
+		}
+		for _, collname := range needcoll {
+			cmd := exec.Command("sudo", "-u", "postgres", "psql", "-c", "CREATE COLLATION \""+collname+"\" (LOCALE = \"en_US.UTF-8\")")
+			cmd.Stdout = stdout
+			cmd.Stderr = stderr
+			cmd.Dir = "/"
+			err = cmd.Run()
+			if err != nil {
+				err = fmt.Errorf("error adding postgresql collation %s: %s", collname, err)
+				return 1
+			}
 		}
 
 		withstuff := "WITH LOGIN SUPERUSER ENCRYPTED PASSWORD " + pq.QuoteLiteral(devtestDatabasePassword)
@@ -406,6 +444,19 @@ func identifyOS() (osversion, error) {
 		return osv, fmt.Errorf("incomprehensible VERSION_ID in /etc/os-release: %q", kv["VERSION_ID"])
 	}
 	return osv, nil
+}
+
+func waitPostgreSQLReady() error {
+	for deadline := time.Now().Add(10 * time.Second); ; {
+		output, err := exec.Command("pg_isready").CombinedOutput()
+		if err == nil {
+			return nil
+		} else if time.Now().After(deadline) {
+			return fmt.Errorf("timed out waiting for pg_isready (%q)", output)
+		} else {
+			time.Sleep(time.Second)
+		}
+	}
 }
 
 func runBash(script string, stdout, stderr io.Writer) error {

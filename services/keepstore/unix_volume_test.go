@@ -405,13 +405,13 @@ func (s *UnixVolumeSuite) TestStats(c *check.C) {
 	c.Check(stats(), check.Matches, `.*"OutBytes":3,.*`)
 	c.Check(stats(), check.Matches, `.*"CreateOps":1,.*`)
 	c.Check(stats(), check.Matches, `.*"OpenOps":0,.*`)
-	c.Check(stats(), check.Matches, `.*"UtimesOps":0,.*`)
+	c.Check(stats(), check.Matches, `.*"UtimesOps":1,.*`)
 
 	err = vol.Touch(loc)
 	c.Check(err, check.IsNil)
 	c.Check(stats(), check.Matches, `.*"FlockOps":1,.*`)
 	c.Check(stats(), check.Matches, `.*"OpenOps":1,.*`)
-	c.Check(stats(), check.Matches, `.*"UtimesOps":1,.*`)
+	c.Check(stats(), check.Matches, `.*"UtimesOps":2,.*`)
 
 	_, err = vol.Get(context.Background(), loc, make([]byte, 3))
 	c.Check(err, check.IsNil)

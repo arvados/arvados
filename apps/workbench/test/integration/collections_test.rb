@@ -53,6 +53,8 @@ class CollectionsTest < ActionDispatch::IntegrationTest
   end
 
   test "can download an entire collection with a reader token" do
+    need_selenium "phantomjs does not follow redirects reliably, maybe https://github.com/ariya/phantomjs/issues/10389"
+
     token = api_token('active')
     data = "foo\nfile\n"
     datablock = `echo -n #{data.shellescape} | ARVADOS_API_TOKEN=#{token.shellescape} arv-put --no-progress --raw -`.strip
@@ -68,24 +70,16 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     token = api_fixture('api_client_authorizations')['active_all_collections']['api_token']
     url_head = "/collections/download/#{uuid}/#{token}/"
     visit url_head
+    assert_text "You can download individual files listed below"
     # It seems that Capybara can't inspect tags outside the body, so this is
     # a very blunt approach.
     assert_no_match(/<\s*meta[^>]+\bnofollow\b/i, page.html,
                     "wget prohibited from recursing the collection page")
     # Look at all the links that wget would recurse through using our
     # recommended options, and check that it's exactly the file list.
-    hrefs = page.all('a').map do |anchor|
-      link = anchor[:href] || ''
-      if link.start_with? url_head
-        link[url_head.size .. -1]
-      elsif link.start_with? '/'
-        nil
-      else
-        link
-      end
-    end
-    assert_equal(['./foo'], hrefs.compact.sort,
-                 "download page did provide strictly file links")
+    hrefs = []
+    page.html.scan(/href="(.*?)"/) { |m| hrefs << m[0] }
+    assert_equal(['./foo'], hrefs, "download page did provide strictly file links")
     click_link "foo"
     assert_text "foo\nfile\n"
   end
