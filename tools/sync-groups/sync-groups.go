@@ -26,11 +26,14 @@ type resourceList interface {
 	GetItems() []interface{}
 }
 
-// GroupInfo tracks previous and current members of a particular Group
+// GroupPermissions maps permission levels on groups (can_read, can_write, can_manage)
+type GroupPermissions map[string]bool
+
+// GroupInfo tracks previous and current member's permissions on a particular Group
 type GroupInfo struct {
 	Group           arvados.Group
-	PreviousMembers map[string]bool
-	CurrentMembers  map[string]bool
+	PreviousMembers map[string]GroupPermissions
+	CurrentMembers  map[string]GroupPermissions
 }
 
 // GetUserID returns the correct user id value depending on the selector
@@ -137,7 +140,7 @@ func ParseFlags(config *ConfigParams) error {
 		usageStr := `Synchronize remote groups into Arvados from a CSV format file with 3 columns:
   * 1st: Group name
   * 2nd: User identifier
-  * 3rd (Optional): User permission on the group: read, write or manage. (Default: write)`
+  * 3rd (Optional): User permission on the group: can_read, can_write or can_manage. (Default: can_write)`
 		fmt.Fprintf(os.Stderr, "%s\n\n", usageStr)
 		fmt.Fprintf(os.Stderr, "Usage:\n%s [OPTIONS] <input-file.csv>\n\n", os.Args[0])
 		fmt.Fprintf(os.Stderr, "Options:\n")
@@ -335,16 +338,30 @@ func doMain(cfg *ConfigParams) error {
 	// Remove previous members not listed on this run
 	for groupUUID := range remoteGroups {
 		gi := remoteGroups[groupUUID]
-		evictedMembers := subtract(gi.PreviousMembers, gi.CurrentMembers)
+		evictedMemberPerms := subtract(gi.PreviousMembers, gi.CurrentMembers)
 		groupName := gi.Group.Name
-		if len(evictedMembers) > 0 {
-			log.Printf("Removing %d users from group %q", len(evictedMembers), groupName)
+		if len(evictedMemberPerms) > 0 {
+			log.Printf("Removing permissions from %d users on group %q", len(evictedMemberPerms), groupName)
 		}
-		for evictedUser := range evictedMembers {
-			if err := RemoveMemberFromGroup(cfg, allUsers[userIDToUUID[evictedUser]], gi.Group); err != nil {
+		for member := range evictedMemberPerms {
+			var perms []string
+			completeMembershipRemoval := false
+			if _, ok := gi.CurrentMembers[member]; !ok {
+				completeMembershipRemoval = true
+				membershipsRemoved++
+			} else {
+				// Collect which user->group permission links should be removed
+				for p := range evictedMemberPerms[member] {
+					if evictedMemberPerms[member][p] {
+						perms = append(perms, p)
+					}
+				}
+				membershipsRemoved += len(perms)
+			}
+			if err := RemoveMemberLinksFromGroup(cfg, allUsers[userIDToUUID[member]],
+				perms, completeMembershipRemoval, gi.Group); err != nil {
 				return err
 			}
-			membershipsRemoved++
 		}
 	}
 	log.Printf("Groups created: %d. Memberships added: %d, removed: %d, skipped: %d", groupsCreated, membershipsAdded, membershipsRemoved, membershipsSkipped)
@@ -382,8 +399,17 @@ func ProcessFile(
 		}
 		groupName := strings.TrimSpace(record[0])
 		groupMember := strings.TrimSpace(record[1]) // User ID (username or email)
-		if groupName == "" || groupMember == "" {
-			log.Printf("Warning: CSV record has at least one empty field (%s, %s). Skipping", groupName, groupMember)
+		groupPermission := "can_write"
+		if len(record) == 3 {
+			groupPermission = strings.ToLower(record[2])
+		}
+		if groupName == "" || groupMember == "" || groupPermission == "" {
+			log.Printf("Warning: CSV record has at least one empty field (%s, %s, %s). Skipping", groupName, groupMember, groupPermission)
+			membersSkipped++
+			continue
+		}
+		if !(groupPermission == "can_read" || groupPermission == "can_write" || groupPermission == "can_manage") {
+			log.Printf("Warning: 3rd field should be 'can_read', 'can_write' or 'can_manage'. Found: %q at line %d, skipping.", groupPermission, lineNo)
 			membersSkipped++
 			continue
 		}
@@ -412,26 +438,31 @@ func ProcessFile(
 			groupNameToUUID[groupName] = newGroup.UUID
 			remoteGroups[newGroup.UUID] = &GroupInfo{
 				Group:           newGroup,
-				PreviousMembers: make(map[string]bool), // Empty set
-				CurrentMembers:  make(map[string]bool), // Empty set
+				PreviousMembers: make(map[string]GroupPermissions),
+				CurrentMembers:  make(map[string]GroupPermissions),
 			}
 			groupsCreated++
 		}
 		// Both group & user exist, check if user is a member
 		groupUUID := groupNameToUUID[groupName]
 		gi := remoteGroups[groupUUID]
-		if !gi.PreviousMembers[groupMember] && !gi.CurrentMembers[groupMember] {
+		if !gi.PreviousMembers[groupMember][groupPermission] && !gi.CurrentMembers[groupMember][groupPermission] {
 			if cfg.Verbose {
 				log.Printf("Adding %q to group %q", groupMember, groupName)
 			}
 			// User wasn't a member, but should be.
-			if e := AddMemberToGroup(cfg, allUsers[userIDToUUID[groupMember]], gi.Group); e != nil {
+			if e := AddMemberToGroup(cfg, allUsers[userIDToUUID[groupMember]], gi.Group, groupPermission); e != nil {
 				err = e
 				return
 			}
 			membersAdded++
 		}
-		gi.CurrentMembers[groupMember] = true
+		if _, ok := gi.CurrentMembers[groupMember]; ok {
+			gi.CurrentMembers[groupMember][groupPermission] = true
+		} else {
+			gi.CurrentMembers[groupMember] = GroupPermissions{groupPermission: true}
+		}
+
 	}
 	return
 }
@@ -459,11 +490,17 @@ func GetAll(c *arvados.Client, res string, params arvados.ResourceListParams, pa
 	return allItems, nil
 }
 
-func subtract(setA map[string]bool, setB map[string]bool) map[string]bool {
-	result := make(map[string]bool)
+func subtract(setA map[string]GroupPermissions, setB map[string]GroupPermissions) map[string]GroupPermissions {
+	result := make(map[string]GroupPermissions)
 	for element := range setA {
-		if !setB[element] {
-			result[element] = true
+		if _, ok := setB[element]; !ok {
+			result[element] = setA[element]
+		} else {
+			for perm := range setA[element] {
+				if _, ok := setB[element][perm]; !ok {
+					result[element][perm] = true
+				}
+			}
 		}
 	}
 	return result
@@ -533,8 +570,8 @@ func GetRemoteGroups(cfg *ConfigParams, allUsers map[string]arvados.User) (remot
 				Operand:  "permission",
 			}, {
 				Attr:     "name",
-				Operator: "=",
-				Operand:  "can_write",
+				Operator: "in",
+				Operand:  []string{"can_read", "can_write", "can_manage"},
 			}, {
 				Attr:     "head_uuid",
 				Operator: "=",
@@ -547,18 +584,23 @@ func GetRemoteGroups(cfg *ConfigParams, allUsers map[string]arvados.User) (remot
 		}
 		g2uLinks, err := GetAll(cfg.Client, "links", g2uFilter, &LinkList{})
 		if err != nil {
-			return remoteGroups, groupNameToUUID, fmt.Errorf("error getting member (can_read) links for group %q: %s", group.Name, err)
+			return remoteGroups, groupNameToUUID, fmt.Errorf("error getting group->user 'can_read' links for group %q: %s", group.Name, err)
 		}
 		u2gLinks, err := GetAll(cfg.Client, "links", u2gFilter, &LinkList{})
 		if err != nil {
-			return remoteGroups, groupNameToUUID, fmt.Errorf("error getting member (can_write) links for group %q: %s", group.Name, err)
+			return remoteGroups, groupNameToUUID, fmt.Errorf("error getting user->group links for group %q: %s", group.Name, err)
 		}
-		// Build a list of user ids (email or username) belonging to this group
-		membersSet := make(map[string]bool)
-		u2gLinkSet := make(map[string]bool)
+		// Build a list of user ids (email or username) belonging to this group.
+		membersSet := make(map[string]GroupPermissions)
+		u2gLinkSet := make(map[string]GroupPermissions)
 		for _, l := range u2gLinks {
-			linkedMemberUUID := l.(arvados.Link).TailUUID
-			u2gLinkSet[linkedMemberUUID] = true
+			link := l.(arvados.Link)
+			// Also save the member's group access level.
+			if _, ok := u2gLinkSet[link.TailUUID]; ok {
+				u2gLinkSet[link.TailUUID][link.Name] = true
+			} else {
+				u2gLinkSet[link.TailUUID] = GroupPermissions{link.Name: true}
+			}
 		}
 		for _, item := range g2uLinks {
 			link := item.(arvados.Link)
@@ -576,55 +618,81 @@ func GetRemoteGroups(cfg *ConfigParams, allUsers map[string]arvados.User) (remot
 			if err != nil {
 				return remoteGroups, groupNameToUUID, err
 			}
-			membersSet[memberID] = true
+			membersSet[memberID] = u2gLinkSet[link.HeadUUID]
 		}
 		remoteGroups[group.UUID] = &GroupInfo{
 			Group:           group,
 			PreviousMembers: membersSet,
-			CurrentMembers:  make(map[string]bool), // Empty set
+			CurrentMembers:  make(map[string]GroupPermissions),
 		}
 		groupNameToUUID[group.Name] = group.UUID
 	}
 	return remoteGroups, groupNameToUUID, nil
 }
 
-// RemoveMemberFromGroup remove all links related to the membership
-func RemoveMemberFromGroup(cfg *ConfigParams, user arvados.User, group arvados.Group) error {
+// RemoveMemberLinksFromGroup remove all links related to the membership
+func RemoveMemberLinksFromGroup(cfg *ConfigParams, user arvados.User, linkNames []string, completeRemoval bool, group arvados.Group) error {
 	if cfg.Verbose {
 		log.Printf("Getting group membership links for user %q (%s) on group %q (%s)", user.Username, user.UUID, group.Name, group.UUID)
 	}
 	var links []interface{}
-	// Search for all group<->user links (both ways)
-	for _, filterset := range [][]arvados.Filter{
-		// Group -> User
-		{{
-			Attr:     "link_class",
-			Operator: "=",
-			Operand:  "permission",
-		}, {
-			Attr:     "tail_uuid",
-			Operator: "=",
-			Operand:  group.UUID,
-		}, {
-			Attr:     "head_uuid",
-			Operator: "=",
-			Operand:  user.UUID,
-		}},
-		// Group <- User
-		{{
-			Attr:     "link_class",
-			Operator: "=",
-			Operand:  "permission",
-		}, {
-			Attr:     "tail_uuid",
-			Operator: "=",
-			Operand:  user.UUID,
-		}, {
-			Attr:     "head_uuid",
-			Operator: "=",
-			Operand:  group.UUID,
-		}},
-	} {
+	var filters [][]arvados.Filter
+	if completeRemoval {
+		// Search for all group<->user links (both ways)
+		filters = [][]arvados.Filter{
+			// Group -> User
+			{{
+				Attr:     "link_class",
+				Operator: "=",
+				Operand:  "permission",
+			}, {
+				Attr:     "tail_uuid",
+				Operator: "=",
+				Operand:  group.UUID,
+			}, {
+				Attr:     "head_uuid",
+				Operator: "=",
+				Operand:  user.UUID,
+			}},
+			// Group <- User
+			{{
+				Attr:     "link_class",
+				Operator: "=",
+				Operand:  "permission",
+			}, {
+				Attr:     "tail_uuid",
+				Operator: "=",
+				Operand:  user.UUID,
+			}, {
+				Attr:     "head_uuid",
+				Operator: "=",
+				Operand:  group.UUID,
+			}},
+		}
+	} else {
+		// Search only for the requested Group <- User permission links
+		filters = [][]arvados.Filter{
+			{{
+				Attr:     "link_class",
+				Operator: "=",
+				Operand:  "permission",
+			}, {
+				Attr:     "tail_uuid",
+				Operator: "=",
+				Operand:  user.UUID,
+			}, {
+				Attr:     "head_uuid",
+				Operator: "=",
+				Operand:  group.UUID,
+			}, {
+				Attr:     "name",
+				Operator: "in",
+				Operand:  linkNames,
+			}},
+		}
+	}
+
+	for _, filterset := range filters {
 		l, err := GetAll(cfg.Client, "links", arvados.ResourceListParams{Filters: filterset}, &LinkList{})
 		if err != nil {
 			userID, _ := GetUserID(user, cfg.UserID)
@@ -648,7 +716,7 @@ func RemoveMemberFromGroup(cfg *ConfigParams, user arvados.User, group arvados.G
 }
 
 // AddMemberToGroup create membership links
-func AddMemberToGroup(cfg *ConfigParams, user arvados.User, group arvados.Group) error {
+func AddMemberToGroup(cfg *ConfigParams, user arvados.User, group arvados.Group, perm string) error {
 	var newLink arvados.Link
 	linkData := map[string]string{
 		"owner_uuid": cfg.SysUserUUID,
@@ -664,13 +732,13 @@ func AddMemberToGroup(cfg *ConfigParams, user arvados.User, group arvados.Group)
 	linkData = map[string]string{
 		"owner_uuid": cfg.SysUserUUID,
 		"link_class": "permission",
-		"name":       "can_write",
+		"name":       perm,
 		"tail_uuid":  user.UUID,
 		"head_uuid":  group.UUID,
 	}
 	if err := CreateLink(cfg, &newLink, linkData); err != nil {
 		userID, _ := GetUserID(user, cfg.UserID)
-		return fmt.Errorf("error adding user %q -> group %q write permission: %s", userID, group.Name, err)
+		return fmt.Errorf("error adding user %q -> group %q %s permission: %s", userID, group.Name, perm, err)
 	}
 	return nil
 }
