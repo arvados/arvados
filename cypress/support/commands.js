@@ -32,7 +32,7 @@ const controllerURL = Cypress.env('controller_url');
 const systemToken = Cypress.env('system_token');
 
 Cypress.Commands.add(
-    "do_request", (method='GET', path='', data=null, qs=null,
+    "doRequest", (method='GET', path='', data=null, qs=null,
                    token=systemToken, auth=false, followRedirect=true) => {
         return cy.request({
             method: method,
@@ -56,7 +56,7 @@ Cypress.Commands.add(
 Cypress.Commands.add(
     "getUser", (username, first_name='', last_name='', is_admin=false, is_active=true) => {
         // Create user if not already created
-        return cy.do_request('POST', '/auth/controller/callback', {
+        return cy.doRequest('POST', '/auth/controller/callback', {
             auth_info: JSON.stringify({
                 email: `${username}@example.local`,
                 username: username,
@@ -71,13 +71,13 @@ Cypress.Commands.add(
         .then(function() {
             this.userToken = this.location.split("=")[1]
             assert.isString(this.userToken)
-            return cy.do_request('GET', '/arvados/v1/users', null, {
+            return cy.doRequest('GET', '/arvados/v1/users', null, {
                 filters: `[["username", "=", "${username}"]]`
             })
             .its('body.items.0')
             .as('aUser')
             .then(function() {
-                cy.do_request('PUT', `/arvados/v1/users/${this.aUser.uuid}`, {
+                cy.doRequest('PUT', `/arvados/v1/users/${this.aUser.uuid}`, {
                     user: {
                         is_admin: is_admin,
                         is_active: is_active
@@ -94,14 +94,37 @@ Cypress.Commands.add(
 )
 
 Cypress.Commands.add(
-    "createCollection", (token, collection) => {
-        return cy.do_request('POST', '/arvados/v1/collections', {
-            collection: JSON.stringify(collection),
+    "createLink", (token, data) => {
+        return cy.createResource(token, 'links', {
+            link: JSON.stringify(data)
+        })
+    }
+)
+
+Cypress.Commands.add(
+    "createGroup", (token, data) => {
+        return cy.createResource(token, 'groups', {
+            group: JSON.stringify(data),
             ensure_unique_name: true
-        }, null, token, true)
-        .its('body').as('collection')
+        })
+    }
+)
+
+Cypress.Commands.add(
+    "createCollection", (token, data) => {
+        return cy.createResource(token, 'collections', {
+            collection: JSON.stringify(data),
+            ensure_unique_name: true
+        })
+    }
+)
+
+Cypress.Commands.add(
+    "createResource", (token, suffix, data) => {
+        return cy.doRequest('POST', '/arvados/v1/'+suffix, data, null, token, true)
+        .its('body').as('resource')
         .then(function() {
-            return this.collection;
+            return this.resource;
         })
     }
 )
