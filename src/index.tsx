@@ -104,15 +104,13 @@ fetchConfig()
             },
             errorFn: (id, error) => {
                 console.error("Backend error:", error);
-                if (false) { // WIP: Should we mix backend with UI code?
-                    store.dispatch(snackbarActions.OPEN_SNACKBAR({
-                        message: `${error.errors
-                            ? error.errors[0]
-                            : error.message}`,
-                        kind: SnackbarKind.ERROR,
-                        hideDuration: 8000})
-                    );
-                }
+                store.dispatch(snackbarActions.OPEN_SNACKBAR({
+                    message: `${error.errors
+                        ? error.errors[0]
+                        : error.message}`,
+                    kind: SnackbarKind.ERROR,
+                    hideDuration: 8000})
+                );
             }
         });
         const store = configureStore(history, services);
