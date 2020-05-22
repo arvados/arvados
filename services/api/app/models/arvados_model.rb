@@ -285,6 +285,9 @@ class ArvadosModel < ApplicationRecord
     sql_conds = nil
     user_uuids = users_list.map { |u| u.uuid }
 
+    # For details on how the trashed_groups table is constructed, see
+    # see db/migrate/20200501150153_permission_table.rb
+
     exclude_trashed_records = ""
     if !include_trash and (sql_table == "groups" or sql_table == "collections") then
       # Only include records that are not trashed
@@ -306,6 +309,13 @@ class ArvadosModel < ApplicationRecord
         trashed_check = "AND target_uuid NOT IN (SELECT group_uuid FROM #{TRASHED_GROUPS} where trash_at <= statement_timestamp())"
       end
 
+      # The core of the permission check is a join against the
+      # materialized_permissions table to determine if the user has at
+      # least read permission to either the object itself or its
+      # direct owner.  See
+      # db/migrate/20200501150153_permission_table.rb for details on
+      # how the permissions are computed.
+
       # Note: it is possible to combine the direct_check and
       # owner_check into a single EXISTS() clause, however it turns
       # out query optimizer doesn't like it and forces a sequential
@@ -318,7 +328,22 @@ class ArvadosModel < ApplicationRecord
       direct_check = "#{sql_table}.uuid IN (SELECT target_uuid FROM #{PERMISSION_VIEW} "+
                      "WHERE user_uuid IN (:user_uuids) AND perm_level >= 1 #{trashed_check})"
 
-      # Match a read permission link from the user to the record's owner_uuid
+      # Match a read permission for the user to the record's
+      # owner_uuid.  This is so we can have a permissions table that
+      # mostly consists of users and groups (projects are a type of
+      # group) and not have to compute and list user permission to
+      # every single object in the system.
+      #
+      # Don't do this for API keys (special behavior) or groups
+      # (already covered by direct_check).
+      #
+      # The traverse_owned flag indicates whether the permission to
+      # read an object also implies transitive permission to read
+      # things the object owns.  The situation where this is important
+      # are determining if we can read an object owned by another
+      # user.  This makes it possible to have permission to read the
+      # user record without granting permission to read things the
+      # other user owns.
       owner_check = ""
       if sql_table != "api_client_authorizations" and sql_table != "groups" then
         owner_check = "OR #{sql_table}.owner_uuid IN (SELECT target_uuid FROM #{PERMISSION_VIEW} "+

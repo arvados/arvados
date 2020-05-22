@@ -4,18 +4,42 @@
 
 class PermissionTable < ActiveRecord::Migration[5.0]
   def up
+    # This is a major migration.  We are replacing the
+    # materialized_permission_view, which is fully recomputed any time
+    # a permission changes (and becomes very expensive as the number
+    # of users/groups becomes large), with a new strategy that only
+    # recomputes permissions for the subset of objects that are
+    # potentially affected by the addition or removal of a permission
+    # relationship (i.e. ownership or a permission link).
+    #
+    # This also disentangles the concept of "trashed groups" from the
+    # permissions system.  Updating trashed items follows a similar
+    # (but less complicated) strategy to updating permissions, so it
+    # may be helpful to look at that first.
+    #
+
     ActiveRecord::Base.connection.execute "DROP MATERIALIZED VIEW IF EXISTS materialized_permission_view;"
     drop_table :permission_refresh_lock
 
-    create_table :materialized_permissions, :id => false do |t|
-      t.string :user_uuid
-      t.string :target_uuid
-      t.integer :perm_level
-      t.boolean :traverse_owned
+    # This table stores the set of trashed groups and their trash_at
+    # time.  Used to exclude trashed projects and their contents when
+    # getting object listings.
+    create_table :trashed_groups, :id => false do |t|
+      t.string :group_uuid
+      t.datetime :trash_at
     end
-    add_index :materialized_permissions, [:user_uuid, :target_uuid], unique: true, name: 'permission_user_target'
-    add_index :materialized_permissions, [:target_uuid], unique: false, name: 'permission_target'
+    add_index :trashed_groups, :group_uuid, :unique => true
 
+    #
+    # Starting from a project, recursively traverse all the projects
+    # underneath it and return a set of project uuids and trash_at
+    # times (may be null).  The initial trash_at can be a timestamp or
+    # null.  The trash_at time propagates downward to groups it owns,
+    # i.e. when a group is trashed, everything underneath it in the
+    # ownership hierarchy is also considered trashed.  However, this
+    # is fact is recorded in the trashed_groups table, not by updating
+    # trash_at field in the groups table.
+    #
     ActiveRecord::Base.connection.execute %{
 create or replace function project_subtree_with_trash_at (starting_uuid varchar(27), starting_trash_at timestamp)
 returns table (target_uuid varchar(27), trash_at timestamp)
@@ -33,12 +57,9 @@ WITH RECURSIVE
 $$;
 }
 
-    create_table :trashed_groups, :id => false do |t|
-      t.string :group_uuid
-      t.datetime :trash_at
-    end
-    add_index :trashed_groups, :group_uuid, :unique => true
-
+    # Helper function to populate trashed_groups table. This starts
+    # with each group owned by a user and computes the subtree under
+    # that group to find any groups that are trashed.
     ActiveRecord::Base.connection.execute %{
 create or replace function compute_trashed ()
 returns table (uuid varchar(27), trash_at timestamp)
@@ -51,13 +72,39 @@ select ps.target_uuid as group_uuid, ps.trash_at from groups,
 $$;
 }
 
+    # Now populate the table.  For a non-test databse this is the only
+    # time this ever happens, after this the trash table is updated
+    # incrementally.  See app/models/group.rb#update_trash
     ActiveRecord::Base.connection.execute("INSERT INTO trashed_groups select * from compute_trashed()")
 
+
+    # The table to store the flattened permissions.  This is almost
+    # exactly the same as the old materalized_permission_view except
+    # that the target_owner_uuid colunm in the view is now just a
+    # boolean traverse_owned (the column was only ever tested for null
+    # or non-null).
+    #
+    # For details on how this table is used to apply permissions to
+    # queries, see app/models/arvados_model.rb#readable_by
+    #
+    create_table :materialized_permissions, :id => false do |t|
+      t.string :user_uuid
+      t.string :target_uuid
+      t.integer :perm_level
+      t.boolean :traverse_owned
+    end
+    add_index :materialized_permissions, [:user_uuid, :target_uuid], unique: true, name: 'permission_user_target'
+    add_index :materialized_permissions, [:target_uuid], unique: false, name: 'permission_target'
+
+    # Helper function.  Determines if permission on an object implies
+    # transitive permission to things the object owns.  This is always
+    # true for groups, but only true for users when the permission
+    # level is can_manage.
     ActiveRecord::Base.connection.execute %{
 create or replace function should_traverse_owned (starting_uuid varchar(27),
                                                   starting_perm integer)
   returns bool
-STABLE
+IMMUTABLE
 language SQL
 as $$
 select starting_uuid like '_____-j7d0g-_______________' or
@@ -65,6 +112,14 @@ select starting_uuid like '_____-j7d0g-_______________' or
 $$;
 }
 
+    # Merge all permission relationships into a single view.  This
+    # consists of: groups (projects) owning things, users owning
+    # things, and explicit permission links.
+    #
+    # Fun fact, a SQL view gets inlined into the query where it is
+    # used, this enables the query planner to inject constraints, so
+    # when using the view we only look up edges we plan to traverse
+    # and avoid a brute force computation of all edges.
     ActiveRecord::Base.connection.execute %{
 create view permission_graph_edges as
   select groups.owner_uuid as tail_uuid, groups.uuid as head_uuid, (3) as val from groups
@@ -83,16 +138,22 @@ union all
       where links.link_class='permission'
 }
 
-        # Get a set of permission by searching the graph and following
-        # ownership and permission links.
-        #
-        # edges() - a subselect with the union of ownership and permission links
-        #
-        # traverse_graph() - recursive query, from the starting node,
-        # self-join with edges to find outgoing permissions.
-        # Re-runs the query on new rows until there are no more results.
-        # This accomplishes a breadth-first search of the permission graph.
-        #
+    # From starting_uuid, perform a recursive self-join on the edges
+    # to follow chains of permissions.  This is a breadth-first search
+    # of the permission graph.  Permission is propagated across edges,
+    # which may narrow the permission for subsequent links (eg I start
+    # at can_manage but when traversing a can_read link everything
+    # touched through that link will only be can_read).
+    #
+    # Yields the set of objects that are potentially affected, and
+    # their permission levels granted by having starting_perm on
+    # starting_uuid.
+    #
+    # If starting_uuid is a user, this computes the entire set of
+    # permissions for that user (because it returns everything that is
+    # reachable by that user).
+    #
+    # Used by compute_permission_subgraph below.
     ActiveRecord::Base.connection.execute %{
 create or replace function search_permission_graph (starting_uuid varchar(27),
                                                     starting_perm integer)
@@ -119,6 +180,55 @@ WITH RECURSIVE
 $$;
 }
 
+    # This is the key function.
+    #
+    # perm_origin_uuid: The object that 'gets' or 'has' the permission.
+    #
+    # starting_uuid: The starting object the permission applies to.
+    #
+    # starting_perm: The permission that perm_origin_uuid 'has' on starting_uuid
+    # One of 1, 2, 3 for can_read, can_write, can_manage
+    # respectively, or 0 to revoke permissions.
+    #
+    # This function is broken up into a number of phases.
+    #
+    # 1. perm_from_start: Gets the initial set of objects potentially
+    # affected by the permission change, using
+    # search_permission_graph.
+    #
+    # 2. additional_perms: Finds other inbound edges that grant
+    # permissions on the objects in perm_from_start, and computes
+    # permissions that originate from those.  This is required to
+    # handle the case where there is more than one path through which
+    # a user gets permission to an object.  For example, a user owns a
+    # project and also shares it can_read with a group the user
+    # belongs to, adding the can_read link must not overwrite the
+    # existing can_manage permission granted by ownership.
+    #
+    # 3. partial_perms: Combine the permissions computed in the first two phases.
+    #
+    # 4. user_identity_perms: If there are any users in the set of
+    # potentially affected objects and the user's owner was not
+    # traversed, recompute permissions for that user.  This is
+    # required because users always have permission to themselves
+    # (identity property) which would be missing from the permission
+    # set if the user was traversed while computing permissions for
+    # another object.
+    #
+    # 5. all_perms: Combines perm_from_start, additional_perms, and user_identity_perms.
+    #
+    # 6. The actual query that produces rows to be added or removed
+    # from the materialized_permissions table.  This is the clever
+    # bit.
+    #
+    # Key insight: because permissions are transitive (unless
+    # traverse_owned is false), by knowing the permissions granted
+    # from all the "origins" (perm_origin_uuid, tail_uuid of links
+    # where head_uuid is in our potentially affected set, etc) we can
+    # join with the materialized_permissions table to get user
+    # permissions on those origins, and apply that to the whole graph
+    # of objects reached through that origin.
+    #
     ActiveRecord::Base.connection.execute %{
 create or replace function compute_permission_subgraph (perm_origin_uuid varchar(27),
                                                         starting_uuid varchar(27),
@@ -128,9 +238,9 @@ STABLE
 language SQL
 as $$
 with
-perm_from_start(perm_origin_uuid, target_uuid, val, traverse_owned) as (
-  select perm_origin_uuid, target_uuid, val, traverse_owned
-    from search_permission_graph(starting_uuid, starting_perm)),
+  perm_from_start(perm_origin_uuid, target_uuid, val, traverse_owned) as (
+    select perm_origin_uuid, target_uuid, val, traverse_owned
+      from search_permission_graph(starting_uuid, starting_perm)),
 
   additional_perms(perm_origin_uuid, target_uuid, val, traverse_owned) as (
     select edges.tail_uuid as perm_origin_uuid, ps.target_uuid, ps.val,

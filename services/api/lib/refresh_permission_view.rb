@@ -19,29 +19,92 @@ from users, lateral search_permission_graph(users.uuid, 3) as g where g.val > 0
 end
 
 def refresh_trashed
+    ActiveRecord::Base.connection.execute("LOCK TABLE #{TRASHED_GROUPS}")
   ActiveRecord::Base.connection.execute("DELETE FROM #{TRASHED_GROUPS}")
   ActiveRecord::Base.connection.execute("INSERT INTO #{TRASHED_GROUPS} select * from compute_trashed()")
 end
 
 def update_permissions perm_origin_uuid, starting_uuid, perm_level, check=false
-  # Update a subset of the permission graph
-  # perm_level is the inherited permission
+  #
+  # Update a subset of the permission table affected by adding or
+  # removing a particular permission relationship (ownership or a
+  # permission link).
+  #
+  # perm_origin_uuid: This is the object that 'gets' the permission.
+  # It is the owner_uuid or tail_uuid.
+  #
+  # starting_uuid: The object we are computing permission for (or head_uuid)
+  #
+  # perm_level: The level of permission that perm_origin_uuid gets for starting_uuid.
+  #
   # perm_level is a number from 0-3
   #   can_read=1
   #   can_write=2
   #   can_manage=3
-  #   call with perm_level=0 to revoke permissions
+  #   or call with perm_level=0 to revoke permissions
   #
-  # 1. Compute set (group, permission) implied by traversing
-  #    graph starting at this group
-  # 2. Find links from outside the graph that point inside
-  # 3. For each starting uuid, get the set of permissions from the
-  #    materialized permission table
-  # 3. Delete permissions from table not in our computed subset.
-  # 4. Upsert each permission in our subset (user, group, val)
+  # check: for testing/debugging only, compare the result of the
+  # incremental update against a full table recompute.  Throws an
+  # error if the contents are not identical (ie they produce different
+  # permission results)
 
+  # Theory of operation
+  #
+  # Give a change in a specific permission relationship, we recompute
+  # the set of permissions (for all users) that could possibly be
+  # affected by that relationship.  For example, if a project is
+  # shared with another user, we recompute all permissions for all
+  # projects in the hierarchy.  This returns a set of updated
+  # permissions, which we stash in a temporary table.
+  #
+  # Then, for each user_uuid/target_uuid in the updated permissions
+  # result set we insert/update a permission row in
+  # materialized_permissions, and delete any rows that exist in
+  # materialized_permissions that are not in the result set or have
+  # perm_level=0.
+  #
+  # see db/migrate/20200501150153_permission_table.rb for details on
+  # how the permissions are computed.
+
+  # "Conflicts with the ROW EXCLUSIVE, SHARE UPDATE EXCLUSIVE, SHARE
+  # ROW EXCLUSIVE, EXCLUSIVE, and ACCESS EXCLUSIVE lock modes. This
+  # mode protects a table against concurrent data changes."
   ActiveRecord::Base.connection.execute "LOCK TABLE #{PERMISSION_VIEW} in SHARE MODE"
 
+  # Workaround for
+  # BUG #15160: planner overestimates number of rows in join when there are more than 200 rows coming from CTE
+  # https://www.postgresql.org/message-id/152395805004.19366.3107109716821067806@wrigleys.postgresql.org
+  #
+  # For a crucial join in the compute_permission_subgraph() query, the
+  # planner mis-estimates the number of rows in a Common Table
+  # Expression (CTE, this is a subquery in a WITH clause) and as a
+  # result it chooses the wrong join order.  The join starts with the
+  # permissions table because it mistakenly thinks
+  # count(materalized_permissions) < count(new computed permissions)
+  # when actually it is the other way around.
+  #
+  # Because of the incorrect join order, it choose the wrong join
+  # strategy (merge join, which works best when two tables are roughly
+  # the same size).  As a workaround, we can tell it not to use that
+  # join strategy, this causes it to pick hash join instead, which
+  # turns out to be a bit better.  However, because the join order is
+  # still wrong, we don't get the full benefit of the index.
+  #
+  # This is very unfortunate because it makes the query performance
+  # dependent on the size of the materalized_permissions table, when
+  # the goal of this design was to make permission updates scale-free
+  # and only depend on the number of permissions affected and not the
+  # total table size.  In several hours of researching I wasn't able
+  # to find a way to force the correct join order, so I'm calling it
+  # here and I have to move on.
+  #
+  # This is apparently addressed in Postgres 12, but I developed &
+  # tested this on Postgres 9.6, so in the future we should reevaluate
+  # the performance & query plan on Postgres 12.
+  #
+  # https://git.furworks.de/opensourcemirror/postgresql/commit/a314c34079cf06d05265623dd7c056f8fa9d577f
+  #
+  # Disable merge join for just this query (also local for this transaction), then reenable it.
   ActiveRecord::Base.connection.exec_query "SET LOCAL enable_mergejoin to false;"
 
   temptable_perms = "temp_perms_#{rand(2**64).to_s(10)}"
