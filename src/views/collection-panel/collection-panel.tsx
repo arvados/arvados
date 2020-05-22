@@ -115,7 +115,7 @@ export const CollectionPanel = withStyles(styles)(
                                     <span>
                                         <IllegalNamingWarning name={item.name}/>
                                         {item.name}
-                                        {isWritable || <Chip variant="outlined" icon={<ReadOnlyIcon />} label="Read-only" className={classes.readOnlyChip} />}
+                                        {isWritable || <Chip variant="outlined" icon={<ReadOnlyIcon className={classes.readOnlyChip}/>} label="Read-only" className={classes.readOnlyChip} />}
                                     </span>
                                 }
                                 titleTypographyProps={this.titleProps}
