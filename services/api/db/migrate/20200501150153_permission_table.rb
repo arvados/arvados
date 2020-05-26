@@ -221,13 +221,58 @@ $$;
     # from the materialized_permissions table.  This is the clever
     # bit.
     #
-    # Key insight: because permissions are transitive (unless
-    # traverse_owned is false), by knowing the permissions granted
-    # from all the "origins" (perm_origin_uuid, tail_uuid of links
-    # where head_uuid is in our potentially affected set, etc) we can
-    # join with the materialized_permissions table to get user
-    # permissions on those origins, and apply that to the whole graph
-    # of objects reached through that origin.
+    # Key insights:
+    #
+    # * Permissions are transitive (with some special cases involving
+    # users, this is controlled by the traverse_owned flag).
+    #
+    # * A user object can only gain permissions via an inbound edge,
+    # or appearing in the graph.
+    #
+    # * The materialized_permissions table includes the permission
+    # each user has on the tail end of each inbound edge.
+    #
+    # * The all_perms subquery has permissions for each object in the
+    # subgraph reachable from certain origin (tail end of an edge).
+    #
+    # * Therefore, for each user, we can compute user permissions on
+    # each object in subgraph by determining the permission the user
+    # has on each origin (tail end of an edge), joining that with the
+    # perm_origin_uuid column of all_perms, and taking the least() of
+    # the origin edge or all_perms val (because of the "least
+    # permission on the path" rule).  If an object was reachable by
+    # more than one path (appears with more than one origin), we take
+    # the max() of the computed permissions.
+    #
+    # Finally, because users always have permission on themselves, the
+    # query also makes sure those permission rows are always
+    # returned.
+    #
+    # Notes on query optimization:
+    #
+    # Each clause in a "with" statement is called a "common table
+    # expression" or CTE.
+    #
+    # In Postgres, they are evaluated in sequence and results of each
+    # CTE is stored in a temporary table.  This means Postgres does
+    # not propagate constraints from later queries to earlier CTEs.
+    #
+    # This is a problem if, for example, a later CTE only needs to
+    # choose 10 items out of a set of 1000000 from an earlier CTE,
+    # because it will always compute all 1000000 rows even if the
+    # query on the 1000000 rows could have been constrained.  This is
+    # why permission_graph_edges is a view and not a CTE -- views are
+    # inlined so and can be optimized using external constraints.
+    #
+    # The query optimizer does sort the temporary tables for later use
+    # in joins.
+    #
+    # Final note, this query would have been almost impossible to
+    # write (and certainly impossible to read) without using SQL
+    # "with" and CTEs but unfortunately it also stumbles into a
+    # frustrating Postgres optimizer bug, see
+    # lib/refresh_permission_view.rb#update_permissions for details
+    # and a partial workaround.
     #
     ActiveRecord::Base.connection.execute %{
 create or replace function compute_permission_subgraph (perm_origin_uuid varchar(27),
@@ -286,6 +331,10 @@ with
 $$;
      }
 
+    #
+    # Populate the materialized_permissions by traversing permissions
+    # starting at each user.
+    #
     ActiveRecord::Base.connection.execute %{
 INSERT INTO materialized_permissions
 select users.uuid, g.target_uuid, g.val, g.traverse_owned
