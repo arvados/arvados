@@ -27,7 +27,7 @@ export class AncestorService {
         const service = this.getService(extractUuidObjectType(startUuid));
         if (service) {
             try {
-                const resource = await service.get(startUuid);
+                const resource = await service.get(startUuid, false);
                 if (startUuid === endUuid) {
                     return [resource];
                 } else {
@@ -39,9 +39,8 @@ export class AncestorService {
             } catch (e) {
                 return [];
             }
-        } else {
-            return [];
         }
+        return [];
     }
 
     private getService = (objectType?: string) => {

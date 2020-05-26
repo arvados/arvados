@@ -66,7 +66,7 @@ export class CommonService<T> {
             }
         }
 
-    static defaultResponse<R>(promise: AxiosPromise<R>, actions: ApiActions, mapKeys = true): Promise<R> {
+    static defaultResponse<R>(promise: AxiosPromise<R>, actions: ApiActions, mapKeys = true, showErrors = true): Promise<R> {
         const reqId = uuid();
         actions.progressFn(reqId, true);
         return promise
@@ -80,7 +80,7 @@ export class CommonService<T> {
             .catch(({ response }) => {
                 actions.progressFn(reqId, false);
                 const errors = CommonService.mapResponseKeys(response) as Errors;
-                actions.errorFn(reqId, errors);
+                actions.errorFn(reqId, errors, showErrors);
                 throw errors;
             });
     }
@@ -101,11 +101,13 @@ export class CommonService<T> {
         );
     }
 
-    get(uuid: string) {
+    get(uuid: string, showErrors?: boolean) {
         return CommonService.defaultResponse(
             this.serverApi
                 .get<T>(this.resourceType + '/' + uuid),
-            this.actions
+            this.actions,
+            true, // mapKeys
+            showErrors
         );
     }
 
