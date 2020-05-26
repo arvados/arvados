@@ -19,9 +19,11 @@ from users, lateral search_permission_graph(users.uuid, 3) as g where g.val > 0
 end
 
 def refresh_trashed
+  ActiveRecord::Base.transaction do
     ActiveRecord::Base.connection.execute("LOCK TABLE #{TRASHED_GROUPS}")
-  ActiveRecord::Base.connection.execute("DELETE FROM #{TRASHED_GROUPS}")
-  ActiveRecord::Base.connection.execute("INSERT INTO #{TRASHED_GROUPS} select * from compute_trashed()")
+    ActiveRecord::Base.connection.execute("DELETE FROM #{TRASHED_GROUPS}")
+    ActiveRecord::Base.connection.execute("INSERT INTO #{TRASHED_GROUPS} select * from compute_trashed()")
+  end
 end
 
 def update_permissions perm_origin_uuid, starting_uuid, perm_level, check=false
