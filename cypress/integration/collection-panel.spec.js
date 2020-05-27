@@ -54,8 +54,9 @@ describe('Collection panel tests', function() {
                     // Check that name & uuid are correct.
                     cy.get('[data-cy=collection-info-panel]')
                         .should('contain', this.testCollection.name)
-                        .and(`${isWritable ? 'not.': ''}contain`, 'Read-only')
                         .and('contain', this.testCollection.uuid);
+                    // Check for the read-only icon
+                    cy.get('[data-cy=read-only-icon]').should(`${isWritable ? 'not.' : ''}exist`);
                     // Check that both read and write operations are available on
                     // the 'More options' menu.
                     cy.get('[data-cy=collection-panel-options-btn]')

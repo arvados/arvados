@@ -5,7 +5,7 @@
 import * as React from 'react';
 import {
     StyleRulesCallback, WithStyles, withStyles, Card,
-    CardHeader, IconButton, CardContent, Grid, Tooltip, Chip
+    CardHeader, IconButton, CardContent, Grid, Tooltip
 } from '@material-ui/core';
 import { connect, DispatchProp } from "react-redux";
 import { RouteComponentProps } from 'react-router';
@@ -29,7 +29,7 @@ import { GroupResource } from '~/models/group';
 import { UserResource } from '~/models/user';
 import { getUserUuid } from '~/common/getuser';
 
-type CssRules = 'card' | 'iconHeader' | 'tag' | 'label' | 'value' | 'link' | 'centeredLabel' | 'readOnlyChip';
+type CssRules = 'card' | 'iconHeader' | 'tag' | 'label' | 'value' | 'link' | 'centeredLabel' | 'readOnlyIcon';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     card: {
@@ -61,8 +61,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
             cursor: 'pointer'
         }
     },
-    readOnlyChip: {
-        marginLeft: theme.spacing.unit
+    readOnlyIcon: {
+        marginLeft: theme.spacing.unit,
+        fontSize: 'small',
     }
 });
 
@@ -115,7 +116,11 @@ export const CollectionPanel = withStyles(styles)(
                                     <span>
                                         <IllegalNamingWarning name={item.name}/>
                                         {item.name}
-                                        {isWritable || <Chip variant="outlined" icon={<ReadOnlyIcon className={classes.readOnlyChip}/>} label="Read-only" className={classes.readOnlyChip} />}
+                                        {isWritable ||
+                                        <Tooltip title="Read-only">
+                                            <ReadOnlyIcon data-cy="read-only-icon" className={classes.readOnlyIcon} />
+                                        </Tooltip>
+                                        }
                                     </span>
                                 }
                                 titleTypographyProps={this.titleProps}
