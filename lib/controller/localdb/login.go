@@ -29,7 +29,7 @@ func chooseLoginController(cluster *arvados.Cluster, railsProxy *railsProxy) log
 	wantLDAP := cluster.Login.LDAP.Enable
 	switch {
 	case wantGoogle && !wantSSO && !wantPAM && !wantLDAP:
-		return &googleLoginController{Cluster: cluster, RailsProxy: railsProxy}
+		return &oidcLoginController{Cluster: cluster, RailsProxy: railsProxy, Issuer: "https://accounts.google.com", GoogleAPI: true}
 	case !wantGoogle && wantSSO && !wantPAM && !wantLDAP:
 		return &ssoLoginController{railsProxy}
 	case !wantGoogle && !wantSSO && wantPAM && !wantLDAP:

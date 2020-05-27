@@ -154,8 +154,10 @@ func (s *LoginSuite) SetUpTest(c *check.C) {
 	c.Assert(err, check.IsNil)
 
 	s.localdb = NewConn(s.cluster)
-	s.localdb.loginController.(*googleLoginController).issuer = s.fakeIssuer.URL
-	s.localdb.loginController.(*googleLoginController).peopleAPIBasePath = s.fakePeopleAPI.URL
+	c.Assert(s.localdb.loginController, check.FitsTypeOf, (*oidcLoginController)(nil))
+	c.Check(s.localdb.loginController.(*oidcLoginController).Issuer, check.Equals, "https://accounts.google.com")
+	s.localdb.loginController.(*oidcLoginController).Issuer = s.fakeIssuer.URL
+	s.localdb.loginController.(*oidcLoginController).peopleAPIBasePath = s.fakePeopleAPI.URL
 
 	s.railsSpy = arvadostest.NewProxy(c, s.cluster.Services.RailsAPI)
 	*s.localdb.railsProxy = *rpc.NewConn(s.cluster.ClusterID, s.railsSpy.URL, true, rpc.PassthroughTokenProvider)
@@ -188,7 +190,7 @@ func (s *LoginSuite) TestGoogleLogin_Start(c *check.C) {
 		c.Check(target.Host, check.Equals, issuerURL.Host)
 		q := target.Query()
 		c.Check(q.Get("client_id"), check.Equals, "test%client$id")
-		state := s.localdb.loginController.(*googleLoginController).parseOAuth2State(q.Get("state"))
+		state := s.localdb.loginController.(*oidcLoginController).parseOAuth2State(q.Get("state"))
 		c.Check(state.verify([]byte(s.cluster.SystemRootToken)), check.Equals, true)
 		c.Check(state.Time, check.Not(check.Equals), 0)
 		c.Check(state.Remote, check.Equals, remote)
@@ -223,7 +225,7 @@ func (s *LoginSuite) setupPeopleAPIError(c *check.C) {
 		w.WriteHeader(http.StatusForbidden)
 		fmt.Fprintln(w, `Error 403: accessNotConfigured`)
 	}))
-	s.localdb.loginController.(*googleLoginController).peopleAPIBasePath = s.fakePeopleAPI.URL
+	s.localdb.loginController.(*oidcLoginController).peopleAPIBasePath = s.fakePeopleAPI.URL
 }
 
 func (s *LoginSuite) TestGoogleLogin_PeopleAPIDisabled(c *check.C) {
