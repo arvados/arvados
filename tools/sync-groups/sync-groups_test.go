@@ -106,7 +106,7 @@ func MakeTempCSVFile(data [][]string) (f *os.File, err error) {
 }
 
 // GroupMembershipExists checks that both needed links exist between user and group
-func GroupMembershipExists(ac *arvados.Client, userUUID string, groupUUID string) bool {
+func GroupMembershipExists(ac *arvados.Client, userUUID string, groupUUID string, perm string) bool {
 	ll := LinkList{}
 	// Check Group -> User can_read permission
 	params := arvados.ResourceListParams{
@@ -145,7 +145,7 @@ func GroupMembershipExists(ac *arvados.Client, userUUID string, groupUUID string
 		}, {
 			Attr:     "name",
 			Operator: "=",
-			Operand:  "can_write",
+			Operand:  perm,
 		}, {
 			Attr:     "tail_uuid",
 			Operator: "=",
@@ -259,8 +259,101 @@ func (s *TestSuite) TestIgnoreSpaces(c *C) {
 		groupUUID, err := RemoteGroupExists(s.cfg, groupName)
 		c.Assert(err, IsNil)
 		c.Assert(groupUUID, Not(Equals), "")
-		c.Assert(GroupMembershipExists(s.cfg.Client, activeUserUUID, groupUUID), Equals, true)
+		c.Assert(GroupMembershipExists(s.cfg.Client, activeUserUUID, groupUUID, "can_write"), Equals, true)
 	}
+}
+
+// Error out when records have <2 or >3 records
+func (s *TestSuite) TestWrongNumberOfFields(c *C) {
+	for _, testCase := range [][][]string{
+		{{"field1"}},
+		{{"field1", "field2", "field3", "field4"}},
+		{{"field1", "field2", "field3", "field4", "field5"}},
+	} {
+		tmpfile, err := MakeTempCSVFile(testCase)
+		c.Assert(err, IsNil)
+		defer os.Remove(tmpfile.Name())
+		s.cfg.Path = tmpfile.Name()
+		err = doMain(s.cfg)
+		c.Assert(err, Not(IsNil))
+	}
+}
+
+// Check different membership permissions
+func (s *TestSuite) TestMembershipLevels(c *C) {
+	userEmail := s.users[arvadostest.ActiveUserUUID].Email
+	userUUID := s.users[arvadostest.ActiveUserUUID].UUID
+	data := [][]string{
+		{"TestGroup1", userEmail, "can_read"},
+		{"TestGroup2", userEmail, "can_write"},
+		{"TestGroup3", userEmail, "can_manage"},
+		{"TestGroup4", userEmail, "invalid_permission"},
+	}
+	tmpfile, err := MakeTempCSVFile(data)
+	c.Assert(err, IsNil)
+	defer os.Remove(tmpfile.Name()) // clean up
+	s.cfg.Path = tmpfile.Name()
+	err = doMain(s.cfg)
+	c.Assert(err, IsNil)
+	for _, record := range data {
+		groupName := record[0]
+		permLevel := record[2]
+		if permLevel != "invalid_permission" {
+			groupUUID, err := RemoteGroupExists(s.cfg, groupName)
+			c.Assert(err, IsNil)
+			c.Assert(groupUUID, Not(Equals), "")
+			c.Assert(GroupMembershipExists(s.cfg.Client, userUUID, groupUUID, permLevel), Equals, true)
+		} else {
+			groupUUID, err := RemoteGroupExists(s.cfg, groupName)
+			c.Assert(err, IsNil)
+			c.Assert(groupUUID, Equals, "")
+		}
+	}
+}
+
+// Check membership level change
+func (s *TestSuite) TestMembershipLevelUpdate(c *C) {
+	userEmail := s.users[arvadostest.ActiveUserUUID].Email
+	userUUID := s.users[arvadostest.ActiveUserUUID].UUID
+	groupName := "TestGroup1"
+	// Give read permissions
+	tmpfile, err := MakeTempCSVFile([][]string{{groupName, userEmail, "can_read"}})
+	c.Assert(err, IsNil)
+	defer os.Remove(tmpfile.Name()) // clean up
+	s.cfg.Path = tmpfile.Name()
+	err = doMain(s.cfg)
+	c.Assert(err, IsNil)
+	// Check permissions
+	groupUUID, err := RemoteGroupExists(s.cfg, groupName)
+	c.Assert(err, IsNil)
+	c.Assert(groupUUID, Not(Equals), "")
+	c.Assert(GroupMembershipExists(s.cfg.Client, userUUID, groupUUID, "can_read"), Equals, true)
+	c.Assert(GroupMembershipExists(s.cfg.Client, userUUID, groupUUID, "can_write"), Equals, false)
+	c.Assert(GroupMembershipExists(s.cfg.Client, userUUID, groupUUID, "can_manage"), Equals, false)
+
+	// Give write permissions
+	tmpfile, err = MakeTempCSVFile([][]string{{groupName, userEmail, "can_write"}})
+	c.Assert(err, IsNil)
+	defer os.Remove(tmpfile.Name()) // clean up
+	s.cfg.Path = tmpfile.Name()
+	err = doMain(s.cfg)
+	c.Assert(err, IsNil)
+	// Check permissions
+	c.Assert(GroupMembershipExists(s.cfg.Client, userUUID, groupUUID, "can_read"), Equals, false)
+	c.Assert(GroupMembershipExists(s.cfg.Client, userUUID, groupUUID, "can_write"), Equals, true)
+	c.Assert(GroupMembershipExists(s.cfg.Client, userUUID, groupUUID, "can_manage"), Equals, false)
+
+	// Give manage permissions
+	tmpfile, err = MakeTempCSVFile([][]string{{groupName, userEmail, "can_manage"}})
+	c.Assert(err, IsNil)
+	defer os.Remove(tmpfile.Name()) // clean up
+	s.cfg.Path = tmpfile.Name()
+	err = doMain(s.cfg)
+	c.Assert(err, IsNil)
+	// Check permissions
+	c.Assert(GroupMembershipExists(s.cfg.Client, userUUID, groupUUID, "can_read"), Equals, false)
+	c.Assert(GroupMembershipExists(s.cfg.Client, userUUID, groupUUID, "can_write"), Equals, false)
+	c.Assert(GroupMembershipExists(s.cfg.Client, userUUID, groupUUID, "can_manage"), Equals, true)
 }
 
 // The absence of a user membership on the CSV file implies its removal
@@ -286,8 +379,8 @@ func (s *TestSuite) TestMembershipRemoval(c *C) {
 		groupUUID, err := RemoteGroupExists(s.cfg, groupName)
 		c.Assert(err, IsNil)
 		c.Assert(groupUUID, Not(Equals), "")
-		c.Assert(GroupMembershipExists(s.cfg.Client, localUserUUID, groupUUID), Equals, true)
-		c.Assert(GroupMembershipExists(s.cfg.Client, remoteUserUUID, groupUUID), Equals, true)
+		c.Assert(GroupMembershipExists(s.cfg.Client, localUserUUID, groupUUID, "can_write"), Equals, true)
+		c.Assert(GroupMembershipExists(s.cfg.Client, remoteUserUUID, groupUUID, "can_write"), Equals, true)
 	}
 	// New CSV with some previous membership missing
 	data = [][]string{
@@ -304,14 +397,14 @@ func (s *TestSuite) TestMembershipRemoval(c *C) {
 	groupUUID, err := RemoteGroupExists(s.cfg, "TestGroup1")
 	c.Assert(err, IsNil)
 	c.Assert(groupUUID, Not(Equals), "")
-	c.Assert(GroupMembershipExists(s.cfg.Client, localUserUUID, groupUUID), Equals, true)
-	c.Assert(GroupMembershipExists(s.cfg.Client, remoteUserUUID, groupUUID), Equals, false)
+	c.Assert(GroupMembershipExists(s.cfg.Client, localUserUUID, groupUUID, "can_write"), Equals, true)
+	c.Assert(GroupMembershipExists(s.cfg.Client, remoteUserUUID, groupUUID, "can_write"), Equals, false)
 	// Confirm TestGroup1 memberships
 	groupUUID, err = RemoteGroupExists(s.cfg, "TestGroup2")
 	c.Assert(err, IsNil)
 	c.Assert(groupUUID, Not(Equals), "")
-	c.Assert(GroupMembershipExists(s.cfg.Client, localUserUUID, groupUUID), Equals, false)
-	c.Assert(GroupMembershipExists(s.cfg.Client, remoteUserUUID, groupUUID), Equals, true)
+	c.Assert(GroupMembershipExists(s.cfg.Client, localUserUUID, groupUUID, "can_write"), Equals, false)
+	c.Assert(GroupMembershipExists(s.cfg.Client, remoteUserUUID, groupUUID, "can_write"), Equals, true)
 }
 
 // If a group doesn't exist on the system, create it before adding users
@@ -336,7 +429,7 @@ func (s *TestSuite) TestAutoCreateGroupWhenNotExisting(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(groupUUID, Not(Equals), "")
 	// active user should be a member
-	c.Assert(GroupMembershipExists(s.cfg.Client, arvadostest.ActiveUserUUID, groupUUID), Equals, true)
+	c.Assert(GroupMembershipExists(s.cfg.Client, arvadostest.ActiveUserUUID, groupUUID, "can_write"), Equals, true)
 }
 
 // Users listed on the file that don't exist on the system are ignored
@@ -362,7 +455,7 @@ func (s *TestSuite) TestIgnoreNonexistantUsers(c *C) {
 	groupUUID, err = RemoteGroupExists(s.cfg, "TestGroup4")
 	c.Assert(err, IsNil)
 	c.Assert(groupUUID, Not(Equals), "")
-	c.Assert(GroupMembershipExists(s.cfg.Client, activeUserUUID, groupUUID), Equals, true)
+	c.Assert(GroupMembershipExists(s.cfg.Client, activeUserUUID, groupUUID, "can_write"), Equals, true)
 }
 
 // Users listed on the file that don't exist on the system are ignored
@@ -370,13 +463,16 @@ func (s *TestSuite) TestIgnoreEmptyFields(c *C) {
 	activeUserEmail := s.users[arvadostest.ActiveUserUUID].Email
 	activeUserUUID := s.users[arvadostest.ActiveUserUUID].UUID
 	// Confirm that group doesn't exist
-	groupUUID, err := RemoteGroupExists(s.cfg, "TestGroup4")
-	c.Assert(err, IsNil)
-	c.Assert(groupUUID, Equals, "")
+	for _, groupName := range []string{"TestGroup4", "TestGroup5"} {
+		groupUUID, err := RemoteGroupExists(s.cfg, groupName)
+		c.Assert(err, IsNil)
+		c.Assert(groupUUID, Equals, "")
+	}
 	// Create file & run command
 	data := [][]string{
-		{"", activeUserEmail}, // Empty field
-		{"TestGroup5", ""},    // Empty field
+		{"", activeUserEmail},               // Empty field
+		{"TestGroup5", ""},                  // Empty field
+		{"TestGroup5", activeUserEmail, ""}, // Empty 3rd field: is optional but cannot be empty
 		{"TestGroup4", activeUserEmail},
 	}
 	tmpfile, err := MakeTempCSVFile(data)
@@ -385,11 +481,15 @@ func (s *TestSuite) TestIgnoreEmptyFields(c *C) {
 	s.cfg.Path = tmpfile.Name()
 	err = doMain(s.cfg)
 	c.Assert(err, IsNil)
-	// Confirm that memberships exist
+	// Confirm that records about TestGroup5 were skipped
+	groupUUID, err := RemoteGroupExists(s.cfg, "TestGroup5")
+	c.Assert(err, IsNil)
+	c.Assert(groupUUID, Equals, "")
+	// Confirm that membership exists
 	groupUUID, err = RemoteGroupExists(s.cfg, "TestGroup4")
 	c.Assert(err, IsNil)
 	c.Assert(groupUUID, Not(Equals), "")
-	c.Assert(GroupMembershipExists(s.cfg.Client, activeUserUUID, groupUUID), Equals, true)
+	c.Assert(GroupMembershipExists(s.cfg.Client, activeUserUUID, groupUUID, "can_write"), Equals, true)
 }
 
 // Instead of emails, use username as identifier
@@ -416,5 +516,5 @@ func (s *TestSuite) TestUseUsernames(c *C) {
 	groupUUID, err = RemoteGroupExists(s.cfg, "TestGroup1")
 	c.Assert(err, IsNil)
 	c.Assert(groupUUID, Not(Equals), "")
-	c.Assert(GroupMembershipExists(s.cfg.Client, activeUserUUID, groupUUID), Equals, true)
+	c.Assert(GroupMembershipExists(s.cfg.Client, activeUserUUID, groupUUID, "can_write"), Equals, true)
 }
