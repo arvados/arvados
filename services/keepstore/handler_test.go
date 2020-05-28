@@ -318,6 +318,57 @@ func (s *HandlerSuite) TestPutAndDeleteSkipReadonlyVolumes(c *check.C) {
 	}
 }
 
+// Test TOUCH requests.
+func (s *HandlerSuite) TestTouchHandler(c *check.C) {
+	c.Assert(s.handler.setup(context.Background(), s.cluster, "", prometheus.NewRegistry(), testServiceURL), check.IsNil)
+	vols := s.handler.volmgr.AllWritable()
+	vols[0].Put(context.Background(), TestHash, TestBlock)
+	vols[0].Volume.(*MockVolume).TouchWithDate(TestHash, time.Now().Add(-time.Hour))
+	afterPut := time.Now()
+	t, err := vols[0].Mtime(TestHash)
+	c.Assert(err, check.IsNil)
+	c.Assert(t.Before(afterPut), check.Equals, true)
+
+	ExpectStatusCode(c,
+		"touch with no credentials",
+		http.StatusUnauthorized,
+		IssueRequest(s.handler, &RequestTester{
+			method: "TOUCH",
+			uri:    "/" + TestHash,
+		}))
+
+	ExpectStatusCode(c,
+		"touch with non-root credentials",
+		http.StatusUnauthorized,
+		IssueRequest(s.handler, &RequestTester{
+			method:   "TOUCH",
+			uri:      "/" + TestHash,
+			apiToken: arvadostest.ActiveTokenV2,
+		}))
+
+	ExpectStatusCode(c,
+		"touch non-existent block",
+		http.StatusNotFound,
+		IssueRequest(s.handler, &RequestTester{
+			method:   "TOUCH",
+			uri:      "/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+			apiToken: s.cluster.SystemRootToken,
+		}))
+
+	beforeTouch := time.Now()
+	ExpectStatusCode(c,
+		"touch block",
+		http.StatusOK,
+		IssueRequest(s.handler, &RequestTester{
+			method:   "TOUCH",
+			uri:      "/" + TestHash,
+			apiToken: s.cluster.SystemRootToken,
+		}))
+	t, err = vols[0].Mtime(TestHash)
+	c.Assert(err, check.IsNil)
+	c.Assert(t.After(beforeTouch), check.Equals, true)
+}
+
 // Test /index requests:
 //   - unauthenticated /index request
 //   - unauthenticated /index/prefix request
