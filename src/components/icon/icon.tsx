@@ -55,6 +55,23 @@ import StarBorder from '@material-ui/icons/StarBorder';
 import Warning from '@material-ui/icons/Warning';
 import VpnKey from '@material-ui/icons/VpnKey';
 
+// Import FontAwesome icons
+import { library } from '@fortawesome/fontawesome-svg-core';
+import { faPencilAlt, faSlash } from '@fortawesome/free-solid-svg-icons';
+library.add(
+    faPencilAlt,
+    faSlash,
+);
+
+export const ReadOnlyIcon = (props:any) =>
+    <span {...props}>
+        <div className="fa-layers fa-1x fa-fw">
+            <span className="fas fa-slash"
+                data-fa-mask="fas fa-pencil-alt" data-fa-transform="down-1.5" />
+            <span className="fas fa-slash" />
+        </div>
+    </span>;
+
 export type IconType = React.SFC<{ className?: string, style?: object }>;
 
 export const AddIcon: IconType = (props) => <Add {...props} />;

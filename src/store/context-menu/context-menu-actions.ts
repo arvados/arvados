@@ -55,7 +55,7 @@ export const openContextMenu = (event: React.MouseEvent<HTMLElement>, resource: 
         );
     };
 
-export const openCollectionFilesContextMenu = (event: React.MouseEvent<HTMLElement>) =>
+export const openCollectionFilesContextMenu = (event: React.MouseEvent<HTMLElement>, isWritable: boolean) =>
     (dispatch: Dispatch, getState: () => RootState) => {
         const isCollectionFileSelected = JSON.stringify(getState().collectionPanelFiles).includes('"selected":true');
         dispatch<any>(openContextMenu(event, {
@@ -63,7 +63,11 @@ export const openCollectionFilesContextMenu = (event: React.MouseEvent<HTMLEleme
             uuid: '',
             ownerUuid: '',
             kind: ResourceKind.COLLECTION,
-            menuKind: isCollectionFileSelected ? ContextMenuKind.COLLECTION_FILES : ContextMenuKind.COLLECTION_FILES_NOT_SELECTED
+            menuKind: isCollectionFileSelected
+                ? isWritable
+                    ? ContextMenuKind.COLLECTION_FILES
+                    : ContextMenuKind.READONLY_COLLECTION_FILES
+                : ContextMenuKind.COLLECTION_FILES_NOT_SELECTED
         }));
     };
 

@@ -16,21 +16,7 @@ import { openSharingDialog } from '~/store/sharing-dialog/sharing-dialog-actions
 import { openAdvancedTabDialog } from "~/store/advanced-tab/advanced-tab";
 import { toggleDetailsPanel } from '~/store/details-panel/details-panel-action';
 
-export const collectionActionSet: ContextMenuActionSet = [[
-    {
-        icon: RenameIcon,
-        name: "Edit collection",
-        execute: (dispatch, resource) => {
-            dispatch<any>(openCollectionUpdateDialog(resource));
-        }
-    },
-    {
-        icon: ShareIcon,
-        name: "Share",
-        execute: (dispatch, { uuid }) => {
-            dispatch<any>(openSharingDialog(uuid));
-        }
-    },
+export const readOnlyCollectionActionSet: ContextMenuActionSet = [[
     {
         component: ToggleFavoriteAction,
         execute: (dispatch, resource) => {
@@ -38,11 +24,6 @@ export const collectionActionSet: ContextMenuActionSet = [[
                 dispatch<any>(favoritePanelActions.REQUEST_ITEMS());
             });
         }
-    },
-    {
-        icon: MoveToIcon,
-        name: "Move to",
-        execute: (dispatch, resource) => dispatch<any>(openMoveCollectionDialog(resource))
     },
     {
         icon: CopyIcon,
@@ -59,13 +40,6 @@ export const collectionActionSet: ContextMenuActionSet = [[
             dispatch<any>(toggleDetailsPanel());
         }
     },
-    // {
-    //     icon: ProvenanceGraphIcon,
-    //     name: "Provenance graph",
-    //     execute: (dispatch, resource) => {
-    //         // add code
-    //     }
-    // },
     {
         icon: AdvancedIcon,
         name: "Advanced",
@@ -73,17 +47,32 @@ export const collectionActionSet: ContextMenuActionSet = [[
             dispatch<any>(openAdvancedTabDialog(resource.uuid));
         }
     },
+]];
+
+export const collectionActionSet: ContextMenuActionSet = readOnlyCollectionActionSet.concat([[
+    {
+        icon: RenameIcon,
+        name: "Edit collection",
+        execute: (dispatch, resource) => {
+            dispatch<any>(openCollectionUpdateDialog(resource));
+        }
+    },
+    {
+        icon: ShareIcon,
+        name: "Share",
+        execute: (dispatch, { uuid }) => {
+            dispatch<any>(openSharingDialog(uuid));
+        }
+    },
+    {
+        icon: MoveToIcon,
+        name: "Move to",
+        execute: (dispatch, resource) => dispatch<any>(openMoveCollectionDialog(resource))
+    },
     {
         component: ToggleTrashAction,
         execute: (dispatch, resource) => {
             dispatch<any>(toggleCollectionTrashed(resource.uuid, resource.isTrashed!!));
         }
     },
-    // {
-    //     icon: RemoveIcon,
-    //     name: "Remove",
-    //     execute: (dispatch, resource) => {
-    //         // add code
-    //     }
-    // }
-]];
+]]);
