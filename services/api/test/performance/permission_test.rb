@@ -40,7 +40,7 @@ class PermissionPerfTest < ActionDispatch::IntegrationTest
                    end
                  end
                end
-               refresh_permission_view
+               refresh_permissions
              end
            end)
     end

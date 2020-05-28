@@ -87,9 +87,11 @@ class OwnerTest < ActiveSupport::TestCase
       assert_equal(true, Specimen.where(owner_uuid: o.uuid).any?,
                    "need something to be owned by #{o.uuid} for this test")
 
-      assert_raises(ActiveRecord::DeleteRestrictionError,
-                    "should not delete #{ofixt} that owns objects") do
-        o.destroy
+      skip_check_permissions_against_full_refresh do
+        assert_raises(ActiveRecord::DeleteRestrictionError,
+                      "should not delete #{ofixt} that owns objects") do
+          o.destroy
+        end
       end
     end
 
@@ -108,9 +110,14 @@ class OwnerTest < ActiveSupport::TestCase
     assert User.where(uuid: o.uuid).any?, "new User should really be in DB"
     assert_equal(true, o.update_attributes(owner_uuid: o.uuid),
                  "setting owner to self should work")
-    assert(o.destroy, "should delete User that owns self")
+
+    skip_check_permissions_against_full_refresh do
+      assert(o.destroy, "should delete User that owns self")
+    end
+
     assert_equal(false, User.where(uuid: o.uuid).any?,
                  "#{o.uuid} should not be in DB after deleting")
+    check_permissions_against_full_refresh
   end
 
   test "change uuid of User that owns self" do

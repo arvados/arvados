@@ -168,9 +168,6 @@ class UserTest < ActiveSupport::TestCase
         act_as_system_user do
           users(:admin).update_attributes!(is_admin: false)
         end
-        # need to manually call clear_permissions because we used 'delete' instead of 'destory'
-        # we use delete here because 'destroy' will throw an error
-        #users(:admin).clear_permissions
         @all_users = User.where("uuid not like '%-000000000000000'").where(:is_admin => true)
         assert_equal 0, @all_users.count, "No admin users should exist (except for the system user)"
       end

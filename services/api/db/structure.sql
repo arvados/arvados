@@ -46,9 +46,9 @@ CREATE FUNCTION public.compute_permission_subgraph(perm_origin_uuid character va
     LANGUAGE sql STABLE
     AS $$
 with
-perm_from_start(perm_origin_uuid, target_uuid, val, traverse_owned) as (
-  select perm_origin_uuid, target_uuid, val, traverse_owned
-    from search_permission_graph(starting_uuid, starting_perm)),
+  perm_from_start(perm_origin_uuid, target_uuid, val, traverse_owned) as (
+    select perm_origin_uuid, target_uuid, val, traverse_owned
+      from search_permission_graph(starting_uuid, starting_perm)),
 
   additional_perms(perm_origin_uuid, target_uuid, val, traverse_owned) as (
     select edges.tail_uuid as perm_origin_uuid, ps.target_uuid, ps.val,
@@ -156,7 +156,7 @@ $$;
 --
 
 CREATE FUNCTION public.should_traverse_owned(starting_uuid character varying, starting_perm integer) RETURNS boolean
-    LANGUAGE sql STABLE
+    LANGUAGE sql IMMUTABLE
     AS $$
 select starting_uuid like '_____-j7d0g-_______________' or
        (starting_uuid like '_____-tpzed-_______________' and starting_perm >= 3);

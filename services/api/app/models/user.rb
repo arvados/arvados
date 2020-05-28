@@ -436,7 +436,9 @@ update #{PERMISSION_VIEW} set target_uuid=$1 where target_uuid = $2
       if redirect_to_new_user
         update_attributes!(redirect_to_user_uuid: new_user.uuid, username: nil)
       end
-      update_permissions self.owner_uuid, self.uuid, 3, false
+      skip_check_permissions_against_full_refresh do
+        update_permissions self.owner_uuid, self.uuid, 3
+      end
       update_permissions new_user.owner_uuid, new_user.uuid, 3
     end
   end

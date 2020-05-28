@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-require 'refresh_permission_view'
+require 'update_permissions'
 
 class DatabaseSeeds
   extend CurrentApiClient
@@ -14,7 +14,7 @@ class DatabaseSeeds
     anonymous_group_read_permission
     anonymous_user
     empty_collection
-    refresh_permission_view
+    refresh_permissions
     refresh_trashed
   end
 end

@@ -86,7 +86,7 @@ class Link < ArvadosModel
 
   def check_permissions
     if self.link_class == 'permission'
-      #check_permissions_against_full_refresh
+      check_permissions_against_full_refresh
     end
   end
 
