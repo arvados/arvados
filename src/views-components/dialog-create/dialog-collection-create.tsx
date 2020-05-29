@@ -9,7 +9,7 @@ import { CollectionCreateFormDialogData } from '~/store/collections/collection-c
 import { FormDialog } from '~/components/form-dialog/form-dialog';
 import { CollectionNameField, CollectionDescriptionField } from '~/views-components/form-fields/collection-form-fields';
 import { FileUploaderField } from '../file-uploader/file-uploader';
-
+import { ResourceLocationField } from '../form-fields/resource-form-fields';
 
 type DialogCollectionProps = WithDialogProps<{}> & InjectedFormProps<CollectionCreateFormDialogData>;
 
@@ -22,6 +22,7 @@ export const DialogCollectionCreate = (props: DialogCollectionProps) =>
     />;
 
 const CollectionAddFields = () => <span>
+    <ResourceLocationField />
     <CollectionNameField />
     <CollectionDescriptionField />
     <Field
