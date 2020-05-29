@@ -27,7 +27,7 @@ export const ResourceLocationField = connect(
         <Field
             name='ownerUuid'
             disabled={true}
-            label='Location'
+            label='Parent project'
             format={
                 (value, name) => {
                     if (value === props.userUuid) {
@@ -35,7 +35,7 @@ export const ResourceLocationField = connect(
                     }
                     const rsc = getResource<GroupResource>(value)(props.resources);
                     if (rsc !== undefined) {
-                        return `Project '${rsc.name}' (${rsc.uuid})`;
+                        return `${rsc.name} (${rsc.uuid})`;
                     }
                     return value;
                 }
