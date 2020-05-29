@@ -257,6 +257,13 @@ CREATE FUNCTION public.search_permission_graph(starting_uuid character varying, 
   at can_manage but when traversing a can_read link everything
   touched through that link will only be can_read).
 
+  When revoking a permission, we follow the chain of permissions but
+  with a permissions level of 0.  The update on the permissions table
+  has to happen _before_ the permission is actually removed, because
+  we need to be able to traverse the edge before it goes away.  When
+  we do that, we also need to traverse it at the _new_ permission
+  level - this is what override_edge_tail/head/perm are for.
+
   Yields the set of objects that are potentially affected, and
   their permission levels granted by having starting_perm on
   starting_uuid.
