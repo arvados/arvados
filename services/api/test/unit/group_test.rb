@@ -31,8 +31,8 @@ class GroupTest < ActiveSupport::TestCase
   test "cannot create a new ownership cycle" do
     set_user_from_auth :active_trustedclient
 
-    g_foo = Group.create!(name: "foo")
-    g_bar = Group.create!(name: "bar")
+    g_foo = Group.create!(name: "foo", group_class: "project")
+    g_bar = Group.create!(name: "bar", group_class: "project")
 
     g_foo.owner_uuid = g_bar.uuid
     assert g_foo.save, lambda { g_foo.errors.messages }
@@ -45,7 +45,7 @@ class GroupTest < ActiveSupport::TestCase
   test "cannot create a single-object ownership cycle" do
     set_user_from_auth :active_trustedclient
 
-    g_foo = Group.create!(name: "foo")
+    g_foo = Group.create!(name: "foo", group_class: "project")
     assert g_foo.save
 
     # Ensure I have permission to manage this group even when its owner changes
@@ -63,7 +63,7 @@ class GroupTest < ActiveSupport::TestCase
   test "trash group hides contents" do
     set_user_from_auth :active_trustedclient
 
-    g_foo = Group.create!(name: "foo")
+    g_foo = Group.create!(name: "foo", group_class: "project")
     col = Collection.create!(owner_uuid: g_foo.uuid)
 
     assert Collection.readable_by(users(:active)).where(uuid: col.uuid).any?
@@ -77,9 +77,9 @@ class GroupTest < ActiveSupport::TestCase
   test "trash group" do
     set_user_from_auth :active_trustedclient
 
-    g_foo = Group.create!(name: "foo")
-    g_bar = Group.create!(name: "bar", owner_uuid: g_foo.uuid)
-    g_baz = Group.create!(name: "baz", owner_uuid: g_bar.uuid)
+    g_foo = Group.create!(name: "foo", group_class: "project")
+    g_bar = Group.create!(name: "bar", owner_uuid: g_foo.uuid, group_class: "project")
+    g_baz = Group.create!(name: "baz", owner_uuid: g_bar.uuid, group_class: "project")
 
     assert Group.readable_by(users(:active)).where(uuid: g_foo.uuid).any?
     assert Group.readable_by(users(:active)).where(uuid: g_bar.uuid).any?
@@ -98,9 +98,9 @@ class GroupTest < ActiveSupport::TestCase
   test "trash subgroup" do
     set_user_from_auth :active_trustedclient
 
-    g_foo = Group.create!(name: "foo")
-    g_bar = Group.create!(name: "bar", owner_uuid: g_foo.uuid)
-    g_baz = Group.create!(name: "baz", owner_uuid: g_bar.uuid)
+    g_foo = Group.create!(name: "foo", group_class: "project")
+    g_bar = Group.create!(name: "bar", owner_uuid: g_foo.uuid, group_class: "project")
+    g_baz = Group.create!(name: "baz", owner_uuid: g_bar.uuid, group_class: "project")
 
     assert Group.readable_by(users(:active)).where(uuid: g_foo.uuid).any?
     assert Group.readable_by(users(:active)).where(uuid: g_bar.uuid).any?
@@ -118,9 +118,9 @@ class GroupTest < ActiveSupport::TestCase
   test "trash subsubgroup" do
     set_user_from_auth :active_trustedclient
 
-    g_foo = Group.create!(name: "foo")
-    g_bar = Group.create!(name: "bar", owner_uuid: g_foo.uuid)
-    g_baz = Group.create!(name: "baz", owner_uuid: g_bar.uuid)
+    g_foo = Group.create!(name: "foo", group_class: "project")
+    g_bar = Group.create!(name: "bar", owner_uuid: g_foo.uuid, group_class: "project")
+    g_baz = Group.create!(name: "baz", owner_uuid: g_bar.uuid, group_class: "project")
 
     assert Group.readable_by(users(:active)).where(uuid: g_foo.uuid).any?
     assert Group.readable_by(users(:active)).where(uuid: g_bar.uuid).any?
@@ -168,7 +168,7 @@ class GroupTest < ActiveSupport::TestCase
   test "trashed does not propagate across permission links" do
     set_user_from_auth :admin
 
-    g_foo = Group.create!(name: "foo")
+    g_foo = Group.create!(name: "foo", group_class: "project")
     u_bar = User.create!(first_name: "bar")
 
     assert Group.readable_by(users(:admin)).where(uuid: g_foo.uuid).any?
@@ -237,7 +237,7 @@ class GroupTest < ActiveSupport::TestCase
     set_user_from_auth :active
     ["", "{SOLIDUS}"].each do |subst|
       Rails.configuration.Collections.ForwardSlashNameSubstitution = subst
-      g = Group.create
+      g = Group.create group_class: "project"
       [[nil, true],
        ["", true],
        [".", false],

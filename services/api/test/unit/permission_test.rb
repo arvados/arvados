@@ -153,6 +153,7 @@ class PermissionTest < ActiveSupport::TestCase
     set_user_from_auth :admin
 
     owner_grp = Group.create!(owner_uuid: users(:active).uuid, group_class: "role")
+
     sp_grp = Group.create!(group_class: "project")
 
     Link.create!(link_class: 'permission',
@@ -227,7 +228,7 @@ class PermissionTest < ActiveSupport::TestCase
     # anyone any additional permissions.)
     g = nil
     act_as_user manager do
-      g = create :group, name: "NoBigSecret Lab"
+      g = create :group, name: "NoBigSecret Lab", group_class: "role"
       assert_empty(User.readable_by(manager).where(uuid: minion.uuid),
                    "saw a user I shouldn't see")
       assert_raises(ArvadosModel::PermissionDeniedError,
@@ -323,7 +324,7 @@ class PermissionTest < ActiveSupport::TestCase
                      "#{a.first_name} should not be able to see 'b' in the user list")
 
     act_as_system_user do
-      g = create :group
+      g = create :group, group_class: "role"
       [a,b].each do |u|
         create(:permission_link,
                name: 'can_read', tail_uuid: u.uuid, head_uuid: g.uuid)

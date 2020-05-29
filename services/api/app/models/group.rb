@@ -17,6 +17,7 @@ class Group < ArvadosModel
   attribute :properties, :jsonbHash, default: {}
 
   validate :ensure_filesystem_compatible_name
+  validate :check_group_class
   before_create :assign_name
   after_create :after_ownership_change
   after_create :update_trash
@@ -42,6 +43,12 @@ class Group < ArvadosModel
     # project groups need filesystem-compatible names, but others
     # don't.
     super if group_class == 'project'
+  end
+
+  def check_group_class
+    if group_class != 'project' && group_class != 'role'
+      errors.add :group_class, "value must be one of 'project' or 'role', was '#{group_class}'"
+    end
   end
 
   def update_trash

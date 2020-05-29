@@ -107,6 +107,7 @@ bad_group_has_ownership_cycle_a:
   modified_at: 2014-05-03 18:50:08 -0400
   updated_at: 2014-05-03 18:50:08 -0400
   name: Owned by bad group b
+  group_class: project
 
 bad_group_has_ownership_cycle_b:
   uuid: zzzzz-j7d0g-0077nzts8c178lw
@@ -117,6 +118,7 @@ bad_group_has_ownership_cycle_b:
   modified_at: 2014-05-03 18:50:08 -0400
   updated_at: 2014-05-03 18:50:08 -0400
   name: Owned by bad group a
+  group_class: project
 
 anonymous_group:
   uuid: zzzzz-j7d0g-anonymouspublic

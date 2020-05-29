@@ -21,7 +21,11 @@ class OwnerTest < ActiveSupport::TestCase
   Group.all
   [User, Group].each do |o_class|
     test "create object with legit #{o_class} owner" do
-      o = o_class.create!
+      if o_class == Group
+        o = o_class.create! group_class: "project"
+      else
+        o = o_class.create!
+      end
       i = Specimen.create(owner_uuid: o.uuid)
       assert i.valid?, "new item should pass validation"
       assert i.uuid, "new item should have an ID"
@@ -44,9 +48,19 @@ class OwnerTest < ActiveSupport::TestCase
 
     [User, Group].each do |new_o_class|
       test "change owner from legit #{o_class} to legit #{new_o_class} owner" do
-        o = o_class.create!
+        o = if o_class == Group
+              o_class.create! group_class: "project"
+            else
+              o_class.create!
+            end
         i = Specimen.create!(owner_uuid: o.uuid)
-        new_o = new_o_class.create!
+
+        new_o = if new_o_class == Group
+              new_o_class.create! group_class: "project"
+            else
+              new_o_class.create!
+            end
+
         assert(Specimen.where(uuid: i.uuid).any?,
                "new item should really be in DB")
         assert(i.update_attributes(owner_uuid: new_o.uuid),
@@ -55,7 +69,11 @@ class OwnerTest < ActiveSupport::TestCase
     end
 
     test "delete #{o_class} that owns nothing" do
-      o = o_class.create!
+      if o_class == Group
+        o = o_class.create! group_class: "project"
+      else
+        o = o_class.create!
+      end
       assert(o_class.where(uuid: o.uuid).any?,
              "new #{o_class} should really be in DB")
       assert(o.destroy, "should delete #{o_class} that owns nothing")
@@ -65,7 +83,11 @@ class OwnerTest < ActiveSupport::TestCase
 
     test "change uuid of #{o_class} that owns nothing" do
       # (we're relying on our admin credentials here)
-      o = o_class.create!
+      if o_class == Group
+        o = o_class.create! group_class: "project"
+      else
+        o = o_class.create!
+      end
       assert(o_class.where(uuid: o.uuid).any?,
              "new #{o_class} should really be in DB")
       old_uuid = o.uuid
