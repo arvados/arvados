@@ -49,6 +49,9 @@ class Group < ArvadosModel
     if group_class != 'project' && group_class != 'role'
       errors.add :group_class, "value must be one of 'project' or 'role', was '#{group_class}'"
     end
+    if group_class_changed? && !group_class_was.nil?
+      errors.add :group_class, "cannot be modified after record is created"
+    end
   end
 
   def update_trash

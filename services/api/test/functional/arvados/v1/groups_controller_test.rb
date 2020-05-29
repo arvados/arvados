@@ -29,8 +29,9 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     end
     assert_includes group_uuids, groups(:aproject).uuid
     assert_includes group_uuids, groups(:asubproject).uuid
+    assert_includes group_uuids, groups(:private).uuid
     assert_not_includes group_uuids, groups(:system_group).uuid
-    assert_not_includes group_uuids, groups(:private).uuid
+    assert_not_includes group_uuids, groups(:private_and_can_read_foofile).uuid
   end
 
   test "get list of groups that are not projects" do
@@ -44,8 +45,6 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     end
     assert_not_includes group_uuids, groups(:aproject).uuid
     assert_not_includes group_uuids, groups(:asubproject).uuid
-    assert_includes group_uuids, groups(:private).uuid
-    assert_includes group_uuids, groups(:group_with_no_class).uuid
   end
 
   test "get list of groups with bogus group_class" do
@@ -746,20 +745,23 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     assert_equal 0, json_response['included'].length
   end
 
-  test 'get shared, owned by non-project' do
+  test 'get shared, add permission link' do
     authorize_with :user_bar_in_sharing_group
 
     act_as_system_user do
-      Group.find_by_uuid(groups(:project_owned_by_foo).uuid).update!(owner_uuid: groups(:group_for_sharing_tests).uuid)
+      Link.create!(tail_uuid: groups(:group_for_sharing_tests).uuid,
+                   head_uuid: groups(:project_owned_by_foo).uuid,
+                   link_class: 'permission',
+                   name: 'can_manage')
     end
 
     get :shared, params: {:filters => [["group_class", "=", "project"]], :include => "owner_uuid"}
 
     assert_equal 1, json_response['items'].length
-    assert_equal json_response['items'][0]["uuid"], groups(:project_owned_by_foo).uuid
+    assert_equal groups(:project_owned_by_foo).uuid, json_response['items'][0]["uuid"]
 
     assert_equal 1, json_response['included'].length
-    assert_equal json_response['included'][0]["uuid"], groups(:group_for_sharing_tests).uuid
+    assert_equal users(:user_foo_in_sharing_group).uuid, json_response['included'][0]["uuid"]
   end
 
   ### contents with exclude_home_project
@@ -810,20 +812,23 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     assert_equal 0, json_response['included'].length
   end
 
-  test 'contents, exclude home, owned by non-project' do
+  test 'contents, exclude home, add permission link' do
     authorize_with :user_bar_in_sharing_group
 
     act_as_system_user do
-      Group.find_by_uuid(groups(:project_owned_by_foo).uuid).update!(owner_uuid: groups(:group_for_sharing_tests).uuid)
+      Link.create!(tail_uuid: groups(:group_for_sharing_tests).uuid,
+                   head_uuid: groups(:project_owned_by_foo).uuid,
+                   link_class: 'permission',
+                   name: 'can_manage')
     end
 
     get :contents, params: {:include => "owner_uuid", :exclude_home_project => true}
 
     assert_equal 1, json_response['items'].length
-    assert_equal json_response['items'][0]["uuid"], groups(:project_owned_by_foo).uuid
+    assert_equal groups(:project_owned_by_foo).uuid, json_response['items'][0]["uuid"]
 
     assert_equal 1, json_response['included'].length
-    assert_equal json_response['included'][0]["uuid"], groups(:group_for_sharing_tests).uuid
+    assert_equal users(:user_foo_in_sharing_group).uuid, json_response['included'][0]["uuid"]
   end
 
   test 'contents, exclude home, with parent specified' do

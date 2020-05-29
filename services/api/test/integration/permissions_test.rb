@@ -6,7 +6,6 @@ require 'test_helper'
 
 class PermissionsTest < ActionDispatch::IntegrationTest
   include DbCurrentTime
-  include CurrentApiClient  # for empty_collection
   fixtures :users, :groups, :api_client_authorizations, :collections
 
   test "adding and removing direct can_read links" do
@@ -441,7 +440,7 @@ class PermissionsTest < ActionDispatch::IntegrationTest
   test "active user can read the empty collection" do
     # The active user should be able to read the empty collection.
 
-    get("/arvados/v1/collections/#{empty_collection_uuid}",
+    get("/arvados/v1/collections/#{empty_collection_pdh}",
       params: {:format => :json},
       headers: auth(:active))
     assert_response :success

@@ -8,7 +8,6 @@ $all_users_group = nil
 $anonymous_user = nil
 $anonymous_group = nil
 $anonymous_group_read_permission = nil
-$empty_collection = nil
 
 module CurrentApiClient
   def current_user
@@ -90,7 +89,8 @@ module CurrentApiClient
         ActiveRecord::Base.transaction do
           Group.where(uuid: system_group_uuid).
             first_or_create!(name: "System group",
-                             description: "System group") do |g|
+                             description: "System group",
+                             group_class: "role") do |g|
             g.save!
             User.all.collect(&:uuid).each do |user_uuid|
               Link.create!(link_class: 'permission',
@@ -188,20 +188,8 @@ module CurrentApiClient
     end
   end
 
-  def empty_collection_uuid
+  def empty_collection_pdh
     'd41d8cd98f00b204e9800998ecf8427e+0'
-  end
-
-  def empty_collection
-    $empty_collection = check_cache $empty_collection do
-      act_as_system_user do
-        ActiveRecord::Base.transaction do
-          Collection.
-            where(portable_data_hash: empty_collection_uuid).
-            first_or_create!(manifest_text: '', owner_uuid: anonymous_group.uuid)
-        end
-      end
-    end
   end
 
   private

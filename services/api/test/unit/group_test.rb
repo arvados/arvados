@@ -60,6 +60,43 @@ class GroupTest < ActiveSupport::TestCase
     assert g_foo.errors.messages[:owner_uuid].join(" ").match(/ownership cycle/)
   end
 
+  test "cannot create a group that is not a 'role' or 'project'" do
+    set_user_from_auth :active_trustedclient
+
+    assert_raises(ActiveRecord::RecordInvalid) do
+      Group.create!(name: "foo")
+    end
+
+    assert_raises(ActiveRecord::RecordInvalid) do
+      Group.create!(name: "foo", group_class: "")
+    end
+
+    assert_raises(ActiveRecord::RecordInvalid) do
+      Group.create!(name: "foo", group_class: "bogus")
+    end
+  end
+
+  test "cannot change group_class on an already created group" do
+    set_user_from_auth :active_trustedclient
+    g = Group.create!(name: "foo", group_class: "role")
+    assert_raises(ActiveRecord::RecordInvalid) do
+      g.update_attributes!(group_class: "project")
+    end
+  end
+
+  test "role cannot own things" do
+    set_user_from_auth :active_trustedclient
+    role = Group.create!(name: "foo", group_class: "role")
+    assert_raises(ArvadosModel::PermissionDeniedError) do
+      Collection.create!(name: "bzzz123", owner_uuid: role.uuid)
+    end
+
+    c = Collection.create!(name: "bzzz124")
+    assert_raises(ArvadosModel::PermissionDeniedError) do
+      c.update_attributes!(owner_uuid: role.uuid)
+    end
+  end
+
   test "trash group hides contents" do
     set_user_from_auth :active_trustedclient
 
@@ -237,7 +274,8 @@ class GroupTest < ActiveSupport::TestCase
     set_user_from_auth :active
     ["", "{SOLIDUS}"].each do |subst|
       Rails.configuration.Collections.ForwardSlashNameSubstitution = subst
-      g = Group.create group_class: "project"
+      proj = Group.create group_class: "project"
+      role = Group.create group_class: "role"
       [[nil, true],
        ["", true],
        [".", false],
@@ -248,11 +286,10 @@ class GroupTest < ActiveSupport::TestCase
        ["../..", subst != ""],
        ["/", subst != ""],
       ].each do |name, valid|
-        g.name = name
-        g.group_class = "role"
-        assert_equal true, g.valid?
-        g.group_class = "project"
-        assert_equal valid, g.valid?, "#{name.inspect} should be #{valid ? "valid" : "invalid"}"
+        role.name = name
+        assert_equal true, role.valid?
+        proj.name = name
+        assert_equal valid, proj.valid?, "#{name.inspect} should be #{valid ? "valid" : "invalid"}"
       end
     end
   end
