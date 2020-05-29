@@ -45,40 +45,144 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public;
 CREATE FUNCTION public.compute_permission_subgraph(perm_origin_uuid character varying, starting_uuid character varying, starting_perm integer) RETURNS TABLE(user_uuid character varying, target_uuid character varying, val integer, traverse_owned boolean)
     LANGUAGE sql STABLE
     AS $$
+/* perm_origin_uuid: The object that 'gets' or 'has' the permission.
+
+   starting_uuid: The starting object the permission applies to.
+
+   starting_perm: The permission that perm_origin_uuid 'has' on
+                  starting_uuid One of 1, 2, 3 for can_read,
+                  can_write, can_manage respectively, or 0 to revoke
+                  permissions.
+
+   This function is broken up into a number of clauses, described
+   below.
+
+   Note on query optimization:
+
+   Each clause in a "with" statement is called a "common table
+   expression" or CTE.
+
+   In Postgres, they are evaluated in sequence and results of each CTE
+   is stored in a temporary table.  This means Postgres does not
+   propagate constraints from later subqueries to earlier subqueries
+   when they are CTEs.
+
+   This is a problem if, for example, a later subquery chooses 10
+   items out of a set of 1000000 defined by an earlier subquery,
+   because it will always compute all 1000000 rows even if the query
+   on the 1000000 rows could have been constrained.  This is why
+   permission_graph_edges is a view -- views are inlined so and can be
+   optimized using external constraints.
+
+   The query optimizer does sort the temporary tables for later use in
+   joins.
+
+   Final note, this query would have been almost impossible to write
+   (and certainly impossible to read) without splitting it up using
+   SQL "with" but unfortunately it also stumbles into a frustrating
+   Postgres optimizer bug, see
+   lib/refresh_permission_view.rb#update_permissions
+   for details and a partial workaround.
+*/
 with
+  /* Gets the initial set of objects potentially affected by the
+     permission change, using search_permission_graph.
+  */
   perm_from_start(perm_origin_uuid, target_uuid, val, traverse_owned) as (
     select perm_origin_uuid, target_uuid, val, traverse_owned
-      from search_permission_graph(starting_uuid, starting_perm)),
+      from search_permission_graph(starting_uuid,
+                                   starting_perm,
+                                   perm_origin_uuid,
+                                   starting_uuid,
+                                   starting_perm)),
 
+  /* Finds other inbound edges that grant permissions on the objects
+     in perm_from_start, and computes permissions that originate from
+     those.  This is required to handle the case where there is more
+     than one path through which a user gets permission to an object.
+     For example, a user owns a project and also shares it can_read
+     with a group the user belongs to, adding the can_read link must
+     not overwrite the existing can_manage permission granted by
+     ownership.
+  */
   additional_perms(perm_origin_uuid, target_uuid, val, traverse_owned) as (
     select edges.tail_uuid as perm_origin_uuid, ps.target_uuid, ps.val,
            should_traverse_owned(ps.target_uuid, ps.val)
-      from permission_graph_edges as edges, lateral search_permission_graph(edges.head_uuid, edges.val) as ps
+      from permission_graph_edges as edges,
+           lateral search_permission_graph(edges.head_uuid,
+                                           edges.val,
+                                           perm_origin_uuid,
+                                           starting_uuid,
+                                           starting_perm) as ps
       where (not (edges.tail_uuid = perm_origin_uuid and
                  edges.head_uuid = starting_uuid)) and
             edges.tail_uuid not in (select target_uuid from perm_from_start) and
             edges.head_uuid in (select target_uuid from perm_from_start)),
 
+  /* Combines the permissions computed in the first two phases. */
   partial_perms(perm_origin_uuid, target_uuid, val, traverse_owned) as (
       select * from perm_from_start
     union all
       select * from additional_perms
   ),
 
+  /* If there are any users in the set of potentially affected objects
+     and the user's owner was not traversed, recompute permissions for
+     that user.  This is required because users always have permission
+     to themselves (identity property) which would be missing from the
+     permission set if the user was traversed while computing
+     permissions for another object.
+  */
   user_identity_perms(perm_origin_uuid, target_uuid, val, traverse_owned) as (
     select users.uuid as perm_origin_uuid, ps.target_uuid, ps.val, ps.traverse_owned
-      from users, lateral search_permission_graph(users.uuid, 3) as ps
+      from users, lateral search_permission_graph(users.uuid,
+                                                  3,
+                                                  perm_origin_uuid,
+                                                  starting_uuid,
+                                                  starting_perm) as ps
       where (users.owner_uuid not in (select target_uuid from partial_perms) or
              users.owner_uuid = users.uuid) and
       users.uuid in (select target_uuid from partial_perms)
   ),
 
+  /* Combines all the computed permissions into one table. */
   all_perms(perm_origin_uuid, target_uuid, val, traverse_owned) as (
       select * from partial_perms
     union
       select * from user_identity_perms
   )
 
+  /* The actual query that produces rows to be added or removed
+     from the materialized_permissions table.  This is the clever
+     bit.
+
+     Key insights:
+
+     * Permissions are transitive (with some special cases involving
+       users, this is controlled by the traverse_owned flag).
+
+     * A user object can only gain permissions via an inbound edge,
+       or appearing in the graph.
+
+     * The materialized_permissions table includes the permission
+       each user has on the tail end of each inbound edge.
+
+     * The all_perms subquery has permissions for each object in the
+       subgraph reachable from certain origin (tail end of an edge).
+
+     * Therefore, for each user, we can compute user permissions on
+       each object in subgraph by determining the permission the user
+       has on each origin (tail end of an edge), joining that with the
+       perm_origin_uuid column of all_perms, and taking the least() of
+       the origin edge or all_perms val (because of the "least
+       permission on the path" rule).  If an object was reachable by
+       more than one path (appears with more than one origin), we take
+       the max() of the computed permissions.
+
+     * Finally, because users always have permission on themselves, the
+       query also makes sure those permission rows are always
+       returned.
+  */
   select v.user_uuid, v.target_uuid, max(v.perm_level), bool_or(v.traverse_owned) from
     (select m.user_uuid,
          u.target_uuid,
@@ -101,6 +205,10 @@ $$;
 CREATE FUNCTION public.compute_trashed() RETURNS TABLE(uuid character varying, trash_at timestamp without time zone)
     LANGUAGE sql STABLE
     AS $$
+/* Helper function to populate trashed_groups table. This starts with
+   each group owned by a user and computes the subtree under that
+   group to find any groups that are trashed.
+*/
 select ps.target_uuid as group_uuid, ps.trash_at from groups,
   lateral project_subtree_with_trash_at(groups.uuid, groups.trash_at) ps
   where groups.owner_uuid like '_____-tpzed-_______________'
@@ -114,6 +222,15 @@ $$;
 CREATE FUNCTION public.project_subtree_with_trash_at(starting_uuid character varying, starting_trash_at timestamp without time zone) RETURNS TABLE(target_uuid character varying, trash_at timestamp without time zone)
     LANGUAGE sql STABLE
     AS $$
+/* Starting from a project, recursively traverse all the projects
+  underneath it and return a set of project uuids and trash_at times
+  (may be null).  The initial trash_at can be a timestamp or null.
+  The trash_at time propagates downward to groups it owns, i.e. when a
+  group is trashed, everything underneath it in the ownership
+  hierarchy is also considered trashed.  However, this is fact is
+  recorded in the trashed_groups table, not by updating trash_at field
+  in the groups table.
+*/
 WITH RECURSIVE
         project_subtree(uuid, trash_at) as (
         values (starting_uuid, starting_trash_at)
@@ -126,23 +243,47 @@ $$;
 
 
 --
--- Name: search_permission_graph(character varying, integer); Type: FUNCTION; Schema: public; Owner: -
+-- Name: search_permission_graph(character varying, integer, character varying, character varying, integer); Type: FUNCTION; Schema: public; Owner: -
 --
 
-CREATE FUNCTION public.search_permission_graph(starting_uuid character varying, starting_perm integer) RETURNS TABLE(target_uuid character varying, val integer, traverse_owned boolean)
+CREATE FUNCTION public.search_permission_graph(starting_uuid character varying, starting_perm integer, override_edge_tail character varying DEFAULT NULL::character varying, override_edge_head character varying DEFAULT NULL::character varying, override_edge_perm integer DEFAULT NULL::integer) RETURNS TABLE(target_uuid character varying, val integer, traverse_owned boolean)
     LANGUAGE sql STABLE
     AS $$
+/*
+  From starting_uuid, perform a recursive self-join on the edges
+  to follow chains of permissions.  This is a breadth-first search
+  of the permission graph.  Permission is propagated across edges,
+  which may narrow the permission for subsequent links (eg I start
+  at can_manage but when traversing a can_read link everything
+  touched through that link will only be can_read).
+
+  Yields the set of objects that are potentially affected, and
+  their permission levels granted by having starting_perm on
+  starting_uuid.
+
+  If starting_uuid is a user, this computes the entire set of
+  permissions for that user (because it returns everything that is
+  reachable by that user).
+
+  Used by the compute_permission_subgraph function.
+*/
 WITH RECURSIVE
         traverse_graph(target_uuid, val, traverse_owned) as (
             values (starting_uuid, starting_perm,
                     should_traverse_owned(starting_uuid, starting_perm))
           union
             (select edges.head_uuid,
-                    least(edges.val, traverse_graph.val,
-                          case traverse_graph.traverse_owned
-                            when true then null
-                            else 0
-                          end),
+                      least(edges.val,
+                            traverse_graph.val,
+                            case traverse_graph.traverse_owned
+                              when true then null
+                              else 0
+                            end,
+                            case (edges.tail_uuid = override_edge_tail AND
+                                  edges.head_uuid = override_edge_head)
+                               when true then override_edge_perm
+                               else null
+                            end),
                     should_traverse_owned(edges.head_uuid, edges.val)
              from permission_graph_edges as edges, traverse_graph
              where traverse_graph.target_uuid = edges.tail_uuid))
@@ -158,6 +299,11 @@ $$;
 CREATE FUNCTION public.should_traverse_owned(starting_uuid character varying, starting_perm integer) RETURNS boolean
     LANGUAGE sql IMMUTABLE
     AS $$
+/* Helper function.  Determines if permission on an object implies
+   transitive permission to things the object owns.  This is always
+   true for groups, but only true for users when the permission level
+   is can_manage.
+*/
 select starting_uuid like '_____-j7d0g-_______________' or
        (starting_uuid like '_____-tpzed-_______________' and starting_perm >= 3);
 $$;

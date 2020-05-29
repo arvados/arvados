@@ -390,4 +390,40 @@ class PermissionTest < ActiveSupport::TestCase
 
     assert_not_empty container_logs(:running_older, :anonymous)
   end
+
+  test "add user to group, then remove them" do
+    set_user_from_auth :admin
+    grp = Group.create!(owner_uuid: system_user_uuid, group_class: "role")
+    col = Collection.create!(owner_uuid: grp.uuid)
+    assert_empty Collection.readable_by(users(:active)).where(uuid: col.uuid)
+    assert_empty User.readable_by(users(:active)).where(uuid: users(:project_viewer).uuid)
+
+    l1 = Link.create!(tail_uuid: users(:active).uuid,
+                 head_uuid: grp.uuid,
+                 link_class: 'permission',
+                 name: 'can_read')
+    l2 = Link.create!(tail_uuid: grp.uuid,
+                 head_uuid: users(:active).uuid,
+                 link_class: 'permission',
+                 name: 'can_read')
+
+    l3 = Link.create!(tail_uuid: users(:project_viewer).uuid,
+                 head_uuid: grp.uuid,
+                 link_class: 'permission',
+                 name: 'can_read')
+    l4 = Link.create!(tail_uuid: grp.uuid,
+                 head_uuid: users(:project_viewer).uuid,
+                 link_class: 'permission',
+                 name: 'can_read')
+
+    assert Collection.readable_by(users(:active)).where(uuid: col.uuid).first
+    assert User.readable_by(users(:active)).where(uuid: users(:project_viewer).uuid).first
+
+    l1.destroy
+    l2.destroy
+
+    assert_empty Collection.readable_by(users(:active)).where(uuid: col.uuid)
+    assert_empty User.readable_by(users(:active)).where(uuid: users(:project_viewer).uuid)
+
+  end
 end
