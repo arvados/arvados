@@ -104,6 +104,24 @@ func (s *KeepService) Mounts(c *Client) ([]KeepMount, error) {
 	return mounts, nil
 }
 
+// Touch updates the timestamp on the given block.
+func (s *KeepService) Touch(ctx context.Context, c *Client, blk string) error {
+	req, err := http.NewRequest("TOUCH", s.url(blk), nil)
+	if err != nil {
+		return err
+	}
+	resp, err := c.Do(req.WithContext(ctx))
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		body, _ := ioutil.ReadAll(resp.Body)
+		return fmt.Errorf("%s %s: %s", resp.Proto, resp.Status, body)
+	}
+	return nil
+}
+
 // Untrash moves/copies the given block out of trash.
 func (s *KeepService) Untrash(ctx context.Context, c *Client, blk string) error {
 	req, err := http.NewRequest("PUT", s.url("untrash/"+blk), nil)

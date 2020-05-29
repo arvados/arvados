@@ -12,6 +12,7 @@ import (
 	"io/ioutil"
 	"strings"
 	"sync"
+	"time"
 
 	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
@@ -92,13 +93,14 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 				exitcode = 1
 				continue
 			}
-			err = und.RecoverManifest(string(mtxt))
+			uuid, err := und.RecoverManifest(string(mtxt))
 			if err != nil {
 				logger.WithError(err).Error("recovery failed")
 				exitcode = 1
 				continue
 			}
-			logger.WithError(err).Info("recovery succeeded")
+			logger.WithField("UUID", uuid).Info("recovery succeeded")
+			fmt.Fprintln(stdout, uuid)
 		}
 	}
 	return exitcode
@@ -110,14 +112,73 @@ type undeleter struct {
 	logger  logrus.FieldLogger
 }
 
-func (und undeleter) RecoverManifest(mtxt string) error {
+// Return the timestamp of the newest copy of blk on svc. Second
+// return value is false if blk is not on svc at all, or an error
+// occurs.
+func (und undeleter) newestMtime(logger logrus.FieldLogger, blk string, svc arvados.KeepService) (time.Time, bool) {
+	found, err := svc.Index(und.client, blk)
+	if err != nil {
+		logger.WithError(err).Warn("error getting index")
+		return time.Time{}, false
+	}
+	if len(found) == 0 {
+		logger.Debug("not found")
+		return time.Time{}, false
+	}
+	var latest time.Time
+	for _, ent := range found {
+		t := time.Unix(0, ent.Mtime)
+		if t.After(latest) {
+			latest = t
+		}
+	}
+	logger.WithField("latest", latest).Debug("found")
+	return latest, true
+}
+
+// Ensure the given block exists on the given server and won't be
+// eligible for trashing until after our chosen deadline (blobsigexp).
+// Returns false if the block doesn't exist on the given server, has
+// an old timestamp and can't be updated, or any error occurred.
+// Reports errors via logger.
+//
+// After we decide a block is "safe" (whether or not we had to untrash
+// it), keep-balance might notice that it's currently unreferenced and
+// decide to trash it, all before our recovered collection gets
+// saved. But if the block's timestamp is more recent than blobsigttl,
+// keepstore will refuse to trash it even if told to by keep-balance.
+func (und undeleter) ensureSafe(ctx context.Context, logger logrus.FieldLogger, blk string, svc arvados.KeepService, blobsigttl time.Duration, blobsigexp time.Time) bool {
+	if latest, ok := und.newestMtime(logger, blk, svc); !ok {
+		return false
+	} else if latest.Add(blobsigttl).After(blobsigexp) {
+		return true
+	}
+	if err := svc.Touch(ctx, und.client, blk); err != nil {
+		logger.WithError(err).Warn("error updating timestamp")
+		return false
+	}
+	logger.Debug("updated timestamp")
+	if latest, ok := und.newestMtime(logger, blk, svc); !ok {
+		return false
+	} else if latest.Add(blobsigttl).After(blobsigexp) {
+		return true
+	} else {
+		logger.WithField("latest", latest).Error("BUG? touch return success, but newest reported timestamp is still too old")
+		return false
+	}
+}
+
+// Untrash and update GC timestamps (as needed) on blocks referenced
+// by the given manifest, save a new collection and return the new
+// collection's UUID.
+func (und undeleter) RecoverManifest(mtxt string) (string, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	coll := arvados.Collection{ManifestText: mtxt}
 	blks, err := coll.SizedDigests()
 	if err != nil {
-		return err
+		return "", err
 	}
 	todo := make(chan int, len(blks))
 	for idx := range blks {
@@ -135,9 +196,14 @@ func (und undeleter) RecoverManifest(mtxt string) error {
 		return nil
 	})
 	if err != nil {
-		return fmt.Errorf("error getting list of keep services: %s", err)
+		return "", fmt.Errorf("error getting list of keep services: %s", err)
 	}
 	und.logger.WithField("services", services).Debug("got list of services")
+
+	// Choose a deadline for saving a rescued collection.
+	blobsigttl := und.cluster.Collections.BlobSigningTTL.Duration()
+	blobsigexp := time.Now().Add(blobsigttl / 2)
+	und.logger.WithField("blobsigexp", blobsigexp).Debug("chose save deadline")
 
 	blkFound := make([]bool, len(blks))
 	var wg sync.WaitGroup
@@ -149,26 +215,20 @@ func (und undeleter) RecoverManifest(mtxt string) error {
 			for idx := range todo {
 				blk := strings.SplitN(string(blks[idx]), "+", 2)[0]
 				logger := und.logger.WithField("block", blk)
-				for _, svc := range services {
-					logger := logger.WithField("service", fmt.Sprintf("%s:%d", svc.ServiceHost, svc.ServicePort))
-					if found, err := svc.Index(und.client, blk); err != nil {
-						logger.WithError(err).Warn("error getting index")
-					} else if len(found) > 0 {
-						blkFound[idx] = true
-						logger.Debug("found")
-						continue nextblk
-					} else {
-						logger.Debug("not found")
-					}
-				}
-				for _, svc := range services {
-					logger := logger.WithField("service", fmt.Sprintf("%s:%d", svc.ServiceHost, svc.ServicePort))
-					if err := svc.Untrash(ctx, und.client, blk); err != nil {
-						logger.WithError(err).Debug("untrash failed")
-					} else {
-						blkFound[idx] = true
-						logger.Info("untrashed")
-						continue nextblk
+				for _, untrashing := range []bool{false, true} {
+					for _, svc := range services {
+						logger := logger.WithField("service", fmt.Sprintf("%s:%d", svc.ServiceHost, svc.ServicePort))
+						if untrashing {
+							if err := svc.Untrash(ctx, und.client, blk); err != nil {
+								logger.WithError(err).Debug("untrash failed")
+								continue
+							}
+							logger.Info("untrashed")
+						}
+						if und.ensureSafe(ctx, logger, blk, svc, blobsigttl, blobsigexp) {
+							blkFound[idx] = true
+							continue nextblk
+						}
 					}
 				}
 				logger.Debug("unrecoverable")
@@ -189,23 +249,22 @@ func (und undeleter) RecoverManifest(mtxt string) error {
 		if have > 0 {
 			und.logger.Warn("partial recovery is not implemented")
 		}
-		return fmt.Errorf("unable to recover %d of %d blocks", havenot, have+havenot)
+		return "", fmt.Errorf("unable to recover %d of %d blocks", havenot, have+havenot)
 	}
 
 	if und.cluster.Collections.BlobSigning {
-		ttl := und.cluster.Collections.BlobSigningTTL.Duration()
 		key := []byte(und.cluster.Collections.BlobSigningKey)
-		coll.ManifestText = arvados.SignManifest(coll.ManifestText, und.client.AuthToken, ttl, key)
+		coll.ManifestText = arvados.SignManifest(coll.ManifestText, und.client.AuthToken, blobsigexp, blobsigttl, key)
 	}
-	und.logger.Info(coll.ManifestText)
+	und.logger.WithField("manifest", coll.ManifestText).Debug("updated blob signatures in manifest")
 	err = und.client.RequestAndDecodeContext(ctx, &coll, "POST", "arvados/v1/collections", nil, map[string]interface{}{
 		"collection": map[string]interface{}{
 			"manifest_text": coll.ManifestText,
 		},
 	})
 	if err != nil {
-		return fmt.Errorf("error saving new collection: %s", err)
+		return "", fmt.Errorf("error saving new collection: %s", err)
 	}
-	und.logger.WithField("UUID", coll.UUID).Info("created new collection")
-	return nil
+	und.logger.WithField("UUID", coll.UUID).Debug("created new collection")
+	return coll.UUID, nil
 }
