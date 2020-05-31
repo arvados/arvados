@@ -24,21 +24,37 @@ type loginController interface {
 
 func chooseLoginController(cluster *arvados.Cluster, railsProxy *railsProxy) loginController {
 	wantGoogle := cluster.Login.Google.Enable
+	wantOpenIDConnect := cluster.Login.OpenIDConnect.Enable
 	wantSSO := cluster.Login.SSO.Enable
 	wantPAM := cluster.Login.PAM.Enable
 	wantLDAP := cluster.Login.LDAP.Enable
 	switch {
-	case wantGoogle && !wantSSO && !wantPAM && !wantLDAP:
-		return &oidcLoginController{Cluster: cluster, RailsProxy: railsProxy, Issuer: "https://accounts.google.com", GoogleAPI: true}
-	case !wantGoogle && wantSSO && !wantPAM && !wantLDAP:
+	case wantGoogle && !wantOpenIDConnect && !wantSSO && !wantPAM && !wantLDAP:
+		return &oidcLoginController{
+			Cluster:            cluster,
+			RailsProxy:         railsProxy,
+			Issuer:             "https://accounts.google.com",
+			ClientID:           cluster.Login.Google.ClientID,
+			ClientSecret:       cluster.Login.Google.ClientSecret,
+			UseGooglePeopleAPI: cluster.Login.Google.AlternateEmailAddresses,
+		}
+	case !wantGoogle && wantOpenIDConnect && !wantSSO && !wantPAM && !wantLDAP:
+		return &oidcLoginController{
+			Cluster:      cluster,
+			RailsProxy:   railsProxy,
+			Issuer:       cluster.Login.OpenIDConnect.Issuer.String(),
+			ClientID:     cluster.Login.OpenIDConnect.ClientID,
+			ClientSecret: cluster.Login.OpenIDConnect.ClientSecret,
+		}
+	case !wantGoogle && !wantOpenIDConnect && wantSSO && !wantPAM && !wantLDAP:
 		return &ssoLoginController{railsProxy}
-	case !wantGoogle && !wantSSO && wantPAM && !wantLDAP:
+	case !wantGoogle && !wantOpenIDConnect && !wantSSO && wantPAM && !wantLDAP:
 		return &pamLoginController{Cluster: cluster, RailsProxy: railsProxy}
-	case !wantGoogle && !wantSSO && !wantPAM && wantLDAP:
+	case !wantGoogle && !wantOpenIDConnect && !wantSSO && !wantPAM && wantLDAP:
 		return &ldapLoginController{Cluster: cluster, RailsProxy: railsProxy}
 	default:
 		return errorLoginController{
-			error: errors.New("configuration problem: exactly one of Login.Google, Login.SSO, Login.PAM, and Login.LDAP must be enabled"),
+			error: errors.New("configuration problem: exactly one of Login.Google, Login.OpenIDConnect, Login.SSO, Login.PAM, and Login.LDAP must be enabled"),
 		}
 	}
 }

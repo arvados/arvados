@@ -34,9 +34,9 @@ func Test(t *testing.T) {
 	check.TestingT(t)
 }
 
-var _ = check.Suite(&LoginSuite{})
+var _ = check.Suite(&OIDCLoginSuite{})
 
-type LoginSuite struct {
+type OIDCLoginSuite struct {
 	cluster               *arvados.Cluster
 	ctx                   context.Context
 	localdb               *Conn
@@ -54,14 +54,14 @@ type LoginSuite struct {
 	authName          string
 }
 
-func (s *LoginSuite) TearDownSuite(c *check.C) {
+func (s *OIDCLoginSuite) TearDownSuite(c *check.C) {
 	// Undo any changes/additions to the user database so they
 	// don't affect subsequent tests.
 	arvadostest.ResetEnv()
 	c.Check(arvados.NewClientFromEnv().RequestAndDecode(nil, "POST", "database/reset", nil, nil), check.IsNil)
 }
 
-func (s *LoginSuite) SetUpTest(c *check.C) {
+func (s *OIDCLoginSuite) SetUpTest(c *check.C) {
 	var err error
 	s.issuerKey, err = rsa.GenerateKey(rand.Reader, 2048)
 	c.Assert(err, check.IsNil)
@@ -91,8 +91,8 @@ func (s *LoginSuite) SetUpTest(c *check.C) {
 				"iss":            s.fakeIssuer.URL,
 				"aud":            []string{"test%client$id"},
 				"sub":            "fake-user-id",
-				"exp":            time.Now().UTC().Add(time.Minute).UnixNano(),
-				"iat":            time.Now().UTC().UnixNano(),
+				"exp":            time.Now().UTC().Add(time.Minute).Unix(),
+				"iat":            time.Now().UTC().Unix(),
 				"nonce":          "fake-nonce",
 				"email":          s.authEmail,
 				"email_verified": s.authEmailVerified,
@@ -156,6 +156,8 @@ func (s *LoginSuite) SetUpTest(c *check.C) {
 	s.localdb = NewConn(s.cluster)
 	c.Assert(s.localdb.loginController, check.FitsTypeOf, (*oidcLoginController)(nil))
 	c.Check(s.localdb.loginController.(*oidcLoginController).Issuer, check.Equals, "https://accounts.google.com")
+	c.Check(s.localdb.loginController.(*oidcLoginController).ClientID, check.Equals, "test%client$id")
+	c.Check(s.localdb.loginController.(*oidcLoginController).ClientSecret, check.Equals, "test#client/secret")
 	s.localdb.loginController.(*oidcLoginController).Issuer = s.fakeIssuer.URL
 	s.localdb.loginController.(*oidcLoginController).peopleAPIBasePath = s.fakePeopleAPI.URL
 
@@ -163,24 +165,24 @@ func (s *LoginSuite) SetUpTest(c *check.C) {
 	*s.localdb.railsProxy = *rpc.NewConn(s.cluster.ClusterID, s.railsSpy.URL, true, rpc.PassthroughTokenProvider)
 }
 
-func (s *LoginSuite) TearDownTest(c *check.C) {
+func (s *OIDCLoginSuite) TearDownTest(c *check.C) {
 	s.railsSpy.Close()
 }
 
-func (s *LoginSuite) TestGoogleLogout(c *check.C) {
+func (s *OIDCLoginSuite) TestGoogleLogout(c *check.C) {
 	resp, err := s.localdb.Logout(context.Background(), arvados.LogoutOptions{ReturnTo: "https://foo.example.com/bar"})
 	c.Check(err, check.IsNil)
 	c.Check(resp.RedirectLocation, check.Equals, "https://foo.example.com/bar")
 }
 
-func (s *LoginSuite) TestGoogleLogin_Start_Bogus(c *check.C) {
+func (s *OIDCLoginSuite) TestGoogleLogin_Start_Bogus(c *check.C) {
 	resp, err := s.localdb.Login(context.Background(), arvados.LoginOptions{})
 	c.Check(err, check.IsNil)
 	c.Check(resp.RedirectLocation, check.Equals, "")
 	c.Check(resp.HTML.String(), check.Matches, `.*missing return_to parameter.*`)
 }
 
-func (s *LoginSuite) TestGoogleLogin_Start(c *check.C) {
+func (s *OIDCLoginSuite) TestGoogleLogin_Start(c *check.C) {
 	for _, remote := range []string{"", "zzzzz"} {
 		resp, err := s.localdb.Login(context.Background(), arvados.LoginOptions{Remote: remote, ReturnTo: "https://app.example.com/foo?bar"})
 		c.Check(err, check.IsNil)
@@ -198,7 +200,7 @@ func (s *LoginSuite) TestGoogleLogin_Start(c *check.C) {
 	}
 }
 
-func (s *LoginSuite) TestGoogleLogin_InvalidCode(c *check.C) {
+func (s *OIDCLoginSuite) TestGoogleLogin_InvalidCode(c *check.C) {
 	state := s.startLogin(c)
 	resp, err := s.localdb.Login(context.Background(), arvados.LoginOptions{
 		Code:  "first-try-a-bogus-code",
@@ -209,7 +211,7 @@ func (s *LoginSuite) TestGoogleLogin_InvalidCode(c *check.C) {
 	c.Check(resp.HTML.String(), check.Matches, `(?ms).*error in OAuth2 exchange.*cannot fetch token.*`)
 }
 
-func (s *LoginSuite) TestGoogleLogin_InvalidState(c *check.C) {
+func (s *OIDCLoginSuite) TestGoogleLogin_InvalidState(c *check.C) {
 	s.startLogin(c)
 	resp, err := s.localdb.Login(context.Background(), arvados.LoginOptions{
 		Code:  s.validCode,
@@ -220,7 +222,7 @@ func (s *LoginSuite) TestGoogleLogin_InvalidState(c *check.C) {
 	c.Check(resp.HTML.String(), check.Matches, `(?ms).*invalid OAuth2 state.*`)
 }
 
-func (s *LoginSuite) setupPeopleAPIError(c *check.C) {
+func (s *OIDCLoginSuite) setupPeopleAPIError(c *check.C) {
 	s.fakePeopleAPI = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
 		fmt.Fprintln(w, `Error 403: accessNotConfigured`)
@@ -228,8 +230,8 @@ func (s *LoginSuite) setupPeopleAPIError(c *check.C) {
 	s.localdb.loginController.(*oidcLoginController).peopleAPIBasePath = s.fakePeopleAPI.URL
 }
 
-func (s *LoginSuite) TestGoogleLogin_PeopleAPIDisabled(c *check.C) {
-	s.cluster.Login.Google.AlternateEmailAddresses = false
+func (s *OIDCLoginSuite) TestGoogleLogin_PeopleAPIDisabled(c *check.C) {
+	s.localdb.loginController.(*oidcLoginController).UseGooglePeopleAPI = false
 	s.authEmail = "joe.smith@primary.example.com"
 	s.setupPeopleAPIError(c)
 	state := s.startLogin(c)
@@ -242,7 +244,29 @@ func (s *LoginSuite) TestGoogleLogin_PeopleAPIDisabled(c *check.C) {
 	c.Check(authinfo.Email, check.Equals, "joe.smith@primary.example.com")
 }
 
-func (s *LoginSuite) TestGoogleLogin_PeopleAPIError(c *check.C) {
+func (s *OIDCLoginSuite) TestConfig(c *check.C) {
+	// Ensure the UseGooglePeopleAPI flag follows the
+	// AlternateEmailAddresses config.
+	for _, v := range []bool{false, true} {
+		s.cluster.Login.Google.AlternateEmailAddresses = v
+		localdb := NewConn(s.cluster)
+		c.Check(localdb.loginController.(*oidcLoginController).UseGooglePeopleAPI, check.Equals, v)
+	}
+
+	s.cluster.Login.Google.Enable = false
+	s.cluster.Login.OpenIDConnect.Enable = true
+	s.cluster.Login.OpenIDConnect.Issuer = arvados.URL{Scheme: "https", Host: "accounts.example.com", Path: "/"}
+	s.cluster.Login.OpenIDConnect.ClientID = "oidc-client-id"
+	s.cluster.Login.OpenIDConnect.ClientSecret = "oidc-client-secret"
+	localdb := NewConn(s.cluster)
+	c.Assert(localdb.loginController, check.FitsTypeOf, (*oidcLoginController)(nil))
+	c.Check(localdb.loginController.(*oidcLoginController).Issuer, check.Equals, "https://accounts.example.com/")
+	c.Check(localdb.loginController.(*oidcLoginController).ClientID, check.Equals, "oidc-client-id")
+	c.Check(localdb.loginController.(*oidcLoginController).ClientSecret, check.Equals, "oidc-client-secret")
+	c.Check(localdb.loginController.(*oidcLoginController).UseGooglePeopleAPI, check.Equals, false)
+}
+
+func (s *OIDCLoginSuite) TestGoogleLogin_PeopleAPIError(c *check.C) {
 	s.setupPeopleAPIError(c)
 	state := s.startLogin(c)
 	resp, err := s.localdb.Login(context.Background(), arvados.LoginOptions{
@@ -253,7 +277,7 @@ func (s *LoginSuite) TestGoogleLogin_PeopleAPIError(c *check.C) {
 	c.Check(resp.RedirectLocation, check.Equals, "")
 }
 
-func (s *LoginSuite) TestGoogleLogin_Success(c *check.C) {
+func (s *OIDCLoginSuite) TestGoogleLogin_Success(c *check.C) {
 	state := s.startLogin(c)
 	resp, err := s.localdb.Login(context.Background(), arvados.LoginOptions{
 		Code:  s.validCode,
@@ -292,7 +316,7 @@ func (s *LoginSuite) TestGoogleLogin_Success(c *check.C) {
 	c.Check(err, check.ErrorMatches, `.*401 Unauthorized: Not logged in.*`)
 }
 
-func (s *LoginSuite) TestGoogleLogin_RealName(c *check.C) {
+func (s *OIDCLoginSuite) TestGoogleLogin_RealName(c *check.C) {
 	s.authEmail = "joe.smith@primary.example.com"
 	s.fakePeopleAPIResponse = map[string]interface{}{
 		"names": []map[string]interface{}{
@@ -319,7 +343,7 @@ func (s *LoginSuite) TestGoogleLogin_RealName(c *check.C) {
 	c.Check(authinfo.LastName, check.Equals, "Psmith")
 }
 
-func (s *LoginSuite) TestGoogleLogin_OIDCRealName(c *check.C) {
+func (s *OIDCLoginSuite) TestGoogleLogin_OIDCRealName(c *check.C) {
 	s.authName = "Joe P. Smith"
 	s.authEmail = "joe.smith@primary.example.com"
 	state := s.startLogin(c)
@@ -334,7 +358,7 @@ func (s *LoginSuite) TestGoogleLogin_OIDCRealName(c *check.C) {
 }
 
 // People API returns some additional email addresses.
-func (s *LoginSuite) TestGoogleLogin_AlternateEmailAddresses(c *check.C) {
+func (s *OIDCLoginSuite) TestGoogleLogin_AlternateEmailAddresses(c *check.C) {
 	s.authEmail = "joe.smith@primary.example.com"
 	s.fakePeopleAPIResponse = map[string]interface{}{
 		"emailAddresses": []map[string]interface{}{
@@ -363,7 +387,7 @@ func (s *LoginSuite) TestGoogleLogin_AlternateEmailAddresses(c *check.C) {
 }
 
 // Primary address is not the one initially returned by oidc.
-func (s *LoginSuite) TestGoogleLogin_AlternateEmailAddresses_Primary(c *check.C) {
+func (s *OIDCLoginSuite) TestGoogleLogin_AlternateEmailAddresses_Primary(c *check.C) {
 	s.authEmail = "joe.smith@alternate.example.com"
 	s.fakePeopleAPIResponse = map[string]interface{}{
 		"emailAddresses": []map[string]interface{}{
@@ -392,7 +416,7 @@ func (s *LoginSuite) TestGoogleLogin_AlternateEmailAddresses_Primary(c *check.C)
 	c.Check(authinfo.Username, check.Equals, "jsmith")
 }
 
-func (s *LoginSuite) TestGoogleLogin_NoPrimaryEmailAddress(c *check.C) {
+func (s *OIDCLoginSuite) TestGoogleLogin_NoPrimaryEmailAddress(c *check.C) {
 	s.authEmail = "joe.smith@unverified.example.com"
 	s.authEmailVerified = false
 	s.fakePeopleAPIResponse = map[string]interface{}{
@@ -419,7 +443,7 @@ func (s *LoginSuite) TestGoogleLogin_NoPrimaryEmailAddress(c *check.C) {
 	c.Check(authinfo.Username, check.Equals, "")
 }
 
-func (s *LoginSuite) startLogin(c *check.C) (state string) {
+func (s *OIDCLoginSuite) startLogin(c *check.C) (state string) {
 	// Initiate login, but instead of following the redirect to
 	// the provider, just grab state from the redirect URL.
 	resp, err := s.localdb.Login(context.Background(), arvados.LoginOptions{ReturnTo: "https://app.example.com/foo?bar"})
@@ -431,7 +455,7 @@ func (s *LoginSuite) startLogin(c *check.C) (state string) {
 	return
 }
 
-func (s *LoginSuite) fakeToken(c *check.C, payload []byte) string {
+func (s *OIDCLoginSuite) fakeToken(c *check.C, payload []byte) string {
 	signer, err := jose.NewSigner(jose.SigningKey{Algorithm: jose.RS256, Key: s.issuerKey}, nil)
 	if err != nil {
 		c.Error(err)

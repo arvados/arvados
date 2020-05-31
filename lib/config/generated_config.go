@@ -557,6 +557,17 @@ Clusters:
         # work. If false, only the primary email address will be used.
         AlternateEmailAddresses: true
 
+      OpenIDConnect:
+        # Authenticate with an OpenID Connect provider.
+        Enable: false
+
+        # Issuer URL, e.g., "https://accounts.google.com"
+        Issuer: ""
+
+        # Your client ID and client secret (supplied by the provider).
+        ClientID: ""
+        ClientSecret: ""
+
       PAM:
         # (Experimental) Use PAM to authenticate users.
         Enable: false

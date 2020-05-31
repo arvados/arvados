@@ -31,12 +31,14 @@ import (
 )
 
 type oidcLoginController struct {
-	Cluster    *arvados.Cluster
-	RailsProxy *railsProxy
-	Issuer     string // OIDC issuer URL, e.g., "https://accounts.google.com"
-	GoogleAPI  bool   // Issuer is Google; use additional Google APIs/extensions as needed
+	Cluster            *arvados.Cluster
+	RailsProxy         *railsProxy
+	Issuer             string // OIDC issuer URL, e.g., "https://accounts.google.com"
+	ClientID           string
+	ClientSecret       string
+	UseGooglePeopleAPI bool // Use Google People API to look up alternate email addresses
 
-	peopleAPIBasePath string // override Google People API base URL (normally set by google pkg to https://people.googleapis.com/)
+	peopleAPIBasePath string // override Google People API base URL (normally empty, set by google pkg to https://people.googleapis.com/)
 	provider          *oidc.Provider
 	mu                sync.Mutex
 }
@@ -159,7 +161,7 @@ func (ctrl *oidcLoginController) getAuthInfo(ctx context.Context, cluster *arvad
 		ret.Email = claims.Email
 	}
 
-	if !ctrl.Cluster.Login.Google.AlternateEmailAddresses || !ctrl.GoogleAPI {
+	if !ctrl.UseGooglePeopleAPI {
 		if ret.Email == "" {
 			return nil, fmt.Errorf("cannot log in with unverified email address %q", claims.Email)
 		}

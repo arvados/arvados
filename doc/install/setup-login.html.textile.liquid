@@ -12,6 +12,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 Select one of the following login mechanisms for your cluster.
 
 # If all users will authenticate with Google, "configure Google login":#google.
+# If all users will authenticate with an OpenID Connect provider (other than Google), "configure OpenID Connect":#oidc.
 # If all users will authenticate with an existing LDAP service, "configure LDAP":#ldap.
 # If all users will authenticate using PAM as configured on your controller node, "configure PAM":#pam.
 
@@ -39,6 +40,19 @@ Use the <a href="https://console.developers.google.com" target="_blank">Google D
       Google:
         Enable: true
         ClientID: "0000000000000-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz.apps.googleusercontent.com"
+        ClientSecret: "zzzzzzzzzzzzzzzzzzzzzzzz"
+</pre>
+
+h2(#oidc). OpenID Connect
+
+With this configuration, users will sign in with a third-party OpenID Connect provider. The provider will supply appropriate values for the issuer URL, client ID, and client secret config entries.
+
+<pre>
+    Login:
+      OpenIDConnect:
+        Enable: true
+        Issuer: https://accounts.example.com/
+        ClientID: "0123456789abcdef"
         ClientSecret: "zzzzzzzzzzzzzzzzzzzzzzzz"
 </pre>
 
