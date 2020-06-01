@@ -10,7 +10,7 @@ import { FormDialog } from '~/components/form-dialog/form-dialog';
 import { ProjectNameField, ProjectDescriptionField } from '~/views-components/form-fields/project-form-fields';
 import { CreateProjectPropertiesForm } from '~/views-components/project-properties/create-project-properties-form';
 import { CreateProjectPropertiesList } from '~/views-components/project-properties/create-project-properties-list';
-import { ResourceLocationField } from '../form-fields/resource-form-fields';
+import { ResourceParentField } from '../form-fields/resource-form-fields';
 
 type DialogProjectProps = WithDialogProps<{}> & InjectedFormProps<ProjectCreateFormDialogData>;
 
@@ -23,7 +23,7 @@ export const DialogProjectCreate = (props: DialogProjectProps) =>
     />;
 
 const ProjectAddFields = () => <span>
-    <ResourceLocationField />
+    <ResourceParentField />
     <ProjectNameField />
     <ProjectDescriptionField />
     <CreateProjectPropertiesForm />

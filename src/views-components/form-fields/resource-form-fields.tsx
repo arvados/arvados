@@ -11,19 +11,19 @@ import { GroupResource } from "~/models/group";
 import { TextField } from "~/components/text-field/text-field";
 import { getUserUuid } from "~/common/getuser";
 
-interface ResourceLocationFieldProps {
+interface ResourceParentFieldProps {
     resources: ResourcesState;
     userUuid: string|undefined;
 }
 
-export const ResourceLocationField = connect(
+export const ResourceParentField = connect(
     (state: RootState) => {
         return {
             resources: state.resources,
             userUuid: getUserUuid(state),
         };
     })
-    ((props: ResourceLocationFieldProps) =>
+    ((props: ResourceParentFieldProps) =>
         <Field
             name='ownerUuid'
             disabled={true}
