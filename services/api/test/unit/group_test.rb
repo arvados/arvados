@@ -205,7 +205,7 @@ class GroupTest < ActiveSupport::TestCase
   test "trashed does not propagate across permission links" do
     set_user_from_auth :admin
 
-    g_foo = Group.create!(name: "foo", group_class: "project")
+    g_foo = Group.create!(name: "foo", group_class: "role")
     u_bar = User.create!(first_name: "bar")
 
     assert Group.readable_by(users(:admin)).where(uuid: g_foo.uuid).any?

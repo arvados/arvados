@@ -423,8 +423,14 @@ class PermissionTest < ActiveSupport::TestCase
 
   test "add user to group, then remove them" do
     set_user_from_auth :admin
-    grp = Group.create!(owner_uuid: system_user_uuid, group_class: "project")
-    col = Collection.create!(owner_uuid: grp.uuid)
+    grp = Group.create!(owner_uuid: system_user_uuid, group_class: "role")
+    col = Collection.create!(owner_uuid: system_user_uuid)
+
+    l0 = Link.create!(tail_uuid: grp.uuid,
+                 head_uuid: col.uuid,
+                 link_class: 'permission',
+                 name: 'can_read')
+
     assert_empty Collection.readable_by(users(:active)).where(uuid: col.uuid)
     assert_empty User.readable_by(users(:active)).where(uuid: users(:project_viewer).uuid)
 

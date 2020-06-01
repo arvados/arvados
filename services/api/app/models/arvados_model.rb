@@ -585,7 +585,7 @@ class ArvadosModel < ApplicationRecord
       # itself.
       if !current_user.can?(write: self.uuid)
         logger.warn "User #{current_user.uuid} tried to modify #{self.class.to_s} #{self.uuid} without write permission"
-        errors.add :uuid, "is not writable"
+        errors.add :uuid, " #{uuid} is not writable by #{current_user.uuid}"
         raise PermissionDeniedError
       end
     end

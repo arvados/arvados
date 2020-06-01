@@ -16,6 +16,13 @@ private:
   description: Private Project
   group_class: project
 
+private_role:
+  uuid: zzzzz-j7d0g-pew6elm53kancon
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  name: Private Role
+  description: Private Role
+  group_class: role
+
 private_and_can_read_foofile:
   uuid: zzzzz-j7d0g-22xp1wpjul508rk
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
