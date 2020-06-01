@@ -555,7 +555,7 @@ Clusters:
         # Authenticate with an OpenID Connect provider.
         Enable: false
 
-        # Issuer URL, e.g., "https://accounts.google.com"
+        # Issuer URL, e.g., "https://login.example.com".
         Issuer: ""
 
         # Your client ID and client secret (supplied by the provider).
