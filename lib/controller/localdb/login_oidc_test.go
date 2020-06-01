@@ -155,9 +155,6 @@ func (s *OIDCLoginSuite) SetUpTest(c *check.C) {
 
 	s.localdb = NewConn(s.cluster)
 	c.Assert(s.localdb.loginController, check.FitsTypeOf, (*oidcLoginController)(nil))
-	c.Check(s.localdb.loginController.(*oidcLoginController).Issuer, check.Equals, "https://accounts.google.com")
-	c.Check(s.localdb.loginController.(*oidcLoginController).ClientID, check.Equals, "test%client$id")
-	c.Check(s.localdb.loginController.(*oidcLoginController).ClientSecret, check.Equals, "test#client/secret")
 	s.localdb.loginController.(*oidcLoginController).Issuer = s.fakeIssuer.URL
 	s.localdb.loginController.(*oidcLoginController).peopleAPIBasePath = s.fakePeopleAPI.URL
 
@@ -245,25 +242,31 @@ func (s *OIDCLoginSuite) TestGoogleLogin_PeopleAPIDisabled(c *check.C) {
 }
 
 func (s *OIDCLoginSuite) TestConfig(c *check.C) {
-	// Ensure the UseGooglePeopleAPI flag follows the
-	// AlternateEmailAddresses config.
-	for _, v := range []bool{false, true} {
-		s.cluster.Login.Google.AlternateEmailAddresses = v
-		localdb := NewConn(s.cluster)
-		c.Check(localdb.loginController.(*oidcLoginController).UseGooglePeopleAPI, check.Equals, v)
-	}
-
 	s.cluster.Login.Google.Enable = false
 	s.cluster.Login.OpenIDConnect.Enable = true
 	s.cluster.Login.OpenIDConnect.Issuer = arvados.URL{Scheme: "https", Host: "accounts.example.com", Path: "/"}
 	s.cluster.Login.OpenIDConnect.ClientID = "oidc-client-id"
 	s.cluster.Login.OpenIDConnect.ClientSecret = "oidc-client-secret"
 	localdb := NewConn(s.cluster)
-	c.Assert(localdb.loginController, check.FitsTypeOf, (*oidcLoginController)(nil))
-	c.Check(localdb.loginController.(*oidcLoginController).Issuer, check.Equals, "https://accounts.example.com/")
-	c.Check(localdb.loginController.(*oidcLoginController).ClientID, check.Equals, "oidc-client-id")
-	c.Check(localdb.loginController.(*oidcLoginController).ClientSecret, check.Equals, "oidc-client-secret")
-	c.Check(localdb.loginController.(*oidcLoginController).UseGooglePeopleAPI, check.Equals, false)
+	ctrl := localdb.loginController.(*oidcLoginController)
+	c.Check(ctrl.Issuer, check.Equals, "https://accounts.example.com/")
+	c.Check(ctrl.ClientID, check.Equals, "oidc-client-id")
+	c.Check(ctrl.ClientSecret, check.Equals, "oidc-client-secret")
+	c.Check(ctrl.UseGooglePeopleAPI, check.Equals, false)
+
+	for _, enableAltEmails := range []bool{false, true} {
+		s.cluster.Login.OpenIDConnect.Enable = false
+		s.cluster.Login.Google.Enable = true
+		s.cluster.Login.Google.ClientID = "google-client-id"
+		s.cluster.Login.Google.ClientSecret = "google-client-secret"
+		s.cluster.Login.Google.AlternateEmailAddresses = enableAltEmails
+		localdb = NewConn(s.cluster)
+		ctrl = localdb.loginController.(*oidcLoginController)
+		c.Check(ctrl.Issuer, check.Equals, "https://accounts.google.com")
+		c.Check(ctrl.ClientID, check.Equals, "google-client-id")
+		c.Check(ctrl.ClientSecret, check.Equals, "google-client-secret")
+		c.Check(ctrl.UseGooglePeopleAPI, check.Equals, enableAltEmails)
+	}
 }
 
 func (s *OIDCLoginSuite) TestGoogleLogin_PeopleAPIError(c *check.C) {
