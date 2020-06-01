@@ -71,7 +71,10 @@ func (s *HandlerSuite) TestConfigExport(c *check.C) {
 		req := httptest.NewRequest(method, "/arvados/v1/config", nil)
 		resp := httptest.NewRecorder()
 		s.handler.ServeHTTP(resp, req)
-		c.Check(resp.Code, check.Equals, http.StatusOK)
+		c.Log(resp.Body.String())
+		if !c.Check(resp.Code, check.Equals, http.StatusOK) {
+			continue
+		}
 		c.Check(resp.Header().Get("Access-Control-Allow-Origin"), check.Equals, `*`)
 		c.Check(resp.Header().Get("Access-Control-Allow-Methods"), check.Matches, `.*\bGET\b.*`)
 		c.Check(resp.Header().Get("Access-Control-Allow-Headers"), check.Matches, `.+`)
@@ -80,12 +83,11 @@ func (s *HandlerSuite) TestConfigExport(c *check.C) {
 			continue
 		}
 		var cluster arvados.Cluster
-		c.Log(resp.Body.String())
 		err := json.Unmarshal(resp.Body.Bytes(), &cluster)
 		c.Check(err, check.IsNil)
 		c.Check(cluster.ManagementToken, check.Equals, "")
 		c.Check(cluster.SystemRootToken, check.Equals, "")
-		c.Check(cluster.Collections.BlobSigning, check.DeepEquals, true)
+		c.Check(cluster.Collections.BlobSigning, check.Equals, true)
 		c.Check(cluster.Collections.BlobSigningTTL, check.Equals, arvados.Duration(23*time.Second))
 	}
 }
