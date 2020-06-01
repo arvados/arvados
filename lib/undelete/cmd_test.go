@@ -74,7 +74,16 @@ func (*Suite) TestUntrashAndTouchBlock(c *check.C) {
 	}
 	c.Logf("keepstore datadirs are %q", datadirs)
 
+	// Currently StartKeep(2, true) uses dirs called "keep0" and
+	// "keep1" so we could just put our fake trashed file in keep0
+	// ... but we don't want to rely on arvadostest's
+	// implementation details, so we put a trashed file in every
+	// dir that keepstore might be using.
 	for _, datadir := range datadirs {
+		if fi, err := os.Stat(datadir); err != nil || !fi.IsDir() {
+			c.Logf("skipping datadir %q, evidently neither keepstore is using it", datadir)
+			continue
+		}
 		trashfile := datadir + "/dcd/dcd0348cb2532ee90c99f1b846efaee7.trash.999999999"
 		os.Mkdir(datadir+"/dcd", 0777)
 		err = ioutil.WriteFile(trashfile, []byte("undelete test"), 0777)
