@@ -25,6 +25,8 @@ class Group < ArvadosModel
   before_update :before_ownership_change
   after_update :after_ownership_change
 
+  after_create :add_role_manage_link
+
   after_update :update_trash
   before_destroy :clear_permissions_and_trash
 
@@ -113,5 +115,34 @@ delete from trashed_groups where group_uuid=$1
       self.name = self.uuid
     end
     true
+  end
+
+  def ensure_owner_uuid_is_permitted
+    if group_class == "role"
+      @role_creator = nil
+      if new_record?
+        @role_creator = owner_uuid
+        self.owner_uuid = system_user_uuid
+        return true
+      end
+      if self.owner_uuid != system_user_uuid
+        raise "Owner uuid for role must be system user"
+      end
+      raise PermissionDeniedError unless current_user.can?(manage: uuid)
+      true
+    else
+      super
+    end
+  end
+
+  def add_role_manage_link
+    if group_class == "role" && @role_creator
+      act_as_system_user do
+       Link.create!(tail_uuid: @role_creator,
+                    head_uuid: self.uuid,
+                    link_class: "permission",
+                    name: "can_manage")
+      end
+    end
   end
 end
