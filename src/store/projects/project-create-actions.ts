@@ -12,6 +12,7 @@ import { ProjectResource } from '~/models/project';
 import { ServiceRepository } from '~/services/services';
 import { matchProjectRoute, matchRunProcessRoute } from '~/routes/routes';
 import { ResourcePropertiesFormData } from '~/views-components/resource-properties-form/resource-properties-form';
+import { RouterState } from "react-router-redux";
 
 export interface ProjectCreateFormDialogData {
     ownerUuid: string;
@@ -28,26 +29,17 @@ export const PROJECT_CREATE_FORM_NAME = 'projectCreateFormName';
 export const PROJECT_CREATE_PROPERTIES_FORM_NAME = 'projectCreatePropertiesFormName';
 export const PROJECT_CREATE_FORM_SELECTOR = formValueSelector(PROJECT_CREATE_FORM_NAME);
 
-export const isProjectOrRunProcessRoute = ({ router }: RootState) => {
+export const isProjectOrRunProcessRoute = (router: RouterState) => {
     const pathname = router.location ? router.location.pathname : '';
     const matchProject = matchProjectRoute(pathname);
     const matchRunProcess = matchRunProcessRoute(pathname);
     return Boolean(matchProject || matchRunProcess);
 };
 
-export const isItemNotInProject = (properties: any) => {
-    if (properties.breadcrumbs) {
-        return Boolean(properties.breadcrumbs[0].label !== 'Projects');
-    } else {
-        return;
-    }
-};
-
 export const openProjectCreateDialog = (ownerUuid: string) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const router = getState();
-        const properties = getState().properties;
-        if (isItemNotInProject(properties) || !isProjectOrRunProcessRoute(router)) {
+        const { router } = getState();
+        if (!isProjectOrRunProcessRoute(router)) {
             const userUuid = getUserUuid(getState());
             if (!userUuid) { return; }
             dispatch(initialize(PROJECT_CREATE_FORM_NAME, { ownerUuid: userUuid }));

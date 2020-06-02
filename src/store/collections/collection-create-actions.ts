@@ -12,7 +12,7 @@ import { getCommonResourceServiceError, CommonResourceServiceError } from "~/ser
 import { uploadCollectionFiles } from './collection-upload-actions';
 import { fileUploaderActions } from '~/store/file-uploader/file-uploader-actions';
 import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
-import { isItemNotInProject, isProjectOrRunProcessRoute } from '~/store/projects/project-create-actions';
+import { isProjectOrRunProcessRoute } from '~/store/projects/project-create-actions';
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
 import { CollectionResource } from "~/models/collection";
 
@@ -26,9 +26,8 @@ export const COLLECTION_CREATE_FORM_NAME = "collectionCreateFormName";
 
 export const openCollectionCreateDialog = (ownerUuid: string) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const router = getState();
-        const properties = getState().properties;
-        if (isItemNotInProject(properties) || !isProjectOrRunProcessRoute(router)) {
+        const { router } = getState();
+        if (!isProjectOrRunProcessRoute(router)) {
             const userUuid = getUserUuid(getState());
             if (!userUuid) { return; }
             dispatch(initialize(COLLECTION_CREATE_FORM_NAME, { ownerUuid: userUuid }));
