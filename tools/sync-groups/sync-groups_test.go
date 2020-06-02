@@ -170,7 +170,7 @@ func RemoteGroupExists(cfg *ConfigParams, groupName string) (uuid string, err er
 		}, {
 			Attr:     "owner_uuid",
 			Operator: "=",
-			Operand:  cfg.ParentGroupUUID,
+			Operand:  cfg.SysUserUUID,
 		}, {
 			Attr:     "group_class",
 			Operator: "=",
