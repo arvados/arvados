@@ -13,7 +13,7 @@ class Link < ArvadosModel
 
   validate :name_links_are_obsolete
   validate :permission_to_attach_to_objects
-  before_update :cannot_alter_permissions
+  before_update :restrict_alter_permissions
   after_update :call_update_permissions
   after_create :call_update_permissions
   before_destroy :clear_permissions
@@ -50,6 +50,11 @@ class Link < ArvadosModel
     # All users can write links that don't affect permissions
     return true if self.link_class != 'permission'
 
+    if PERM_LEVEL[self.name].nil?
+      errors.add(:name, "is invalid permission, must be one of 'can_read', 'can_write', 'can_manage', 'can_login'")
+      return false
+    end
+
     rsc_class = ArvadosModel::resource_class_for_uuid tail_uuid
     if rsc_class == Group
       tail_obj = Group.find_by_uuid(tail_uuid)
@@ -84,13 +89,13 @@ class Link < ArvadosModel
     false
   end
 
-  def cannot_alter_permissions
+  def restrict_alter_permissions
     return true if self.link_class != 'permission' && self.link_class_was != 'permission'
 
     return true if current_user.andand.uuid == system_user.uuid
 
-    if link_class_changed? || name_changed? || tail_uuid_changed? || head_uuid_changed?
-      raise "Cannot alter a permission link"
+    if link_class_changed? || tail_uuid_changed? || head_uuid_changed?
+      raise "Can only alter permission link level"
     end
   end
 

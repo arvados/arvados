@@ -46,7 +46,7 @@ class PermissionTest < ActiveSupport::TestCase
   end
 
   test "readable_by" do
-    set_user_from_auth :active_trustedclient
+    set_user_from_auth :admin
 
     ob = Collection.create!
     Link.create!(tail_uuid: users(:active).uuid,
@@ -57,7 +57,7 @@ class PermissionTest < ActiveSupport::TestCase
   end
 
   test "writable_by" do
-    set_user_from_auth :active_trustedclient
+    set_user_from_auth :admin
 
     ob = Collection.create!
     Link.create!(tail_uuid: users(:active).uuid,
