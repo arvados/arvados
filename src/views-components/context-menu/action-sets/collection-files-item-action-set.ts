@@ -9,22 +9,30 @@ import { openFileRemoveDialog, openRenameFileDialog } from '~/store/collection-p
 import { CollectionFileViewerAction } from '~/views-components/context-menu/actions/collection-file-viewer-action';
 
 
-export const collectionFilesItemActionSet: ContextMenuActionSet = [[{
-    name: "Rename",
-    icon: RenameIcon,
-    execute: (dispatch, resource) => {
-        dispatch<any>(openRenameFileDialog({ name: resource.name, id: resource.uuid }));
+export const readOnlyCollectionFilesItemActionSet: ContextMenuActionSet = [[
+    {
+        component: DownloadCollectionFileAction,
+        execute: () => { return; }
+    },
+    {
+        component: CollectionFileViewerAction,
+        execute: () => { return; },
     }
-}, {
-    component: DownloadCollectionFileAction,
-    execute: () => { return; }
-}, {
-    name: "Remove",
-    icon: RemoveIcon,
-    execute: (dispatch, resource) => {
-        dispatch<any>(openFileRemoveDialog(resource.uuid));
+]];
+
+export const collectionFilesItemActionSet: ContextMenuActionSet = readOnlyCollectionFilesItemActionSet.concat([[
+    {
+        name: "Rename",
+        icon: RenameIcon,
+        execute: (dispatch, resource) => {
+            dispatch<any>(openRenameFileDialog({ name: resource.name, id: resource.uuid }));
+        }
+    },
+    {
+        name: "Remove",
+        icon: RemoveIcon,
+        execute: (dispatch, resource) => {
+            dispatch<any>(openFileRemoveDialog(resource.uuid));
+        }
     }
-}], [{
-    component: CollectionFileViewerAction,
-    execute: () => { return; },
-}]];
+]]);

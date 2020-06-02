@@ -11,7 +11,7 @@ import { connect, DispatchProp } from "react-redux";
 import { RouteComponentProps } from 'react-router';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { RootState } from '~/store/store';
-import { MoreOptionsIcon, CollectionIcon } from '~/components/icon/icon';
+import { MoreOptionsIcon, CollectionIcon, ReadOnlyIcon } from '~/components/icon/icon';
 import { DetailsAttribute } from '~/components/details-attribute/details-attribute';
 import { CollectionResource } from '~/models/collection';
 import { CollectionPanelFiles } from '~/views-components/collection-panel-files/collection-panel-files';
@@ -25,8 +25,11 @@ import { openDetailsPanel } from '~/store/details-panel/details-panel-action';
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
 import { getPropertyChip } from '~/views-components/resource-properties-form/property-chip';
 import { IllegalNamingWarning } from '~/components/warning/warning';
+import { GroupResource } from '~/models/group';
+import { UserResource } from '~/models/user';
+import { getUserUuid } from '~/common/getuser';
 
-type CssRules = 'card' | 'iconHeader' | 'tag' | 'label' | 'value' | 'link';
+type CssRules = 'card' | 'iconHeader' | 'tag' | 'label' | 'value' | 'link' | 'centeredLabel' | 'readOnlyIcon';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     card: {
@@ -43,6 +46,10 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     label: {
         fontSize: '0.875rem'
     },
+    centeredLabel: {
+        fontSize: '0.875rem',
+        textAlign: 'center'
+    },
     value: {
         textTransform: 'none',
         fontSize: '0.875rem'
@@ -53,11 +60,16 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         '&:hover': {
             cursor: 'pointer'
         }
+    },
+    readOnlyIcon: {
+        marginLeft: theme.spacing.unit,
+        fontSize: 'small',
     }
 });
 
 interface CollectionPanelDataProps {
     item: CollectionResource;
+    isWritable: boolean;
 }
 
 type CollectionPanelProps = CollectionPanelDataProps & DispatchProp
@@ -65,16 +77,25 @@ type CollectionPanelProps = CollectionPanelDataProps & DispatchProp
 
 export const CollectionPanel = withStyles(styles)(
     connect((state: RootState, props: RouteComponentProps<{ id: string }>) => {
-        const item = getResource(props.match.params.id)(state.resources);
-        return { item };
+        const currentUserUUID = getUserUuid(state);
+        const item = getResource<CollectionResource>(props.match.params.id)(state.resources);
+        let isWritable = false;
+        if (item && item.ownerUuid === currentUserUUID) {
+            isWritable = true;
+        } else if (item) {
+            const itemOwner = getResource<GroupResource|UserResource>(item.ownerUuid)(state.resources);
+            if (itemOwner) {
+                isWritable = itemOwner.writableBy.indexOf(currentUserUUID || '') >= 0;
+            }
+        }
+        return { item, isWritable };
     })(
         class extends React.Component<CollectionPanelProps> {
-
             render() {
-                const { classes, item, dispatch } = this.props;
+                const { classes, item, dispatch, isWritable } = this.props;
                 return item
                     ? <>
-                        <Card className={classes.card}>
+                        <Card data-cy='collection-info-panel' className={classes.card}>
                             <CardHeader
                                 avatar={
                                     <IconButton onClick={this.openCollectionDetails}>
@@ -84,31 +105,42 @@ export const CollectionPanel = withStyles(styles)(
                                 action={
                                     <Tooltip title="More options" disableFocusListener>
                                         <IconButton
+                                            data-cy='collection-panel-options-btn'
                                             aria-label="More options"
                                             onClick={this.handleContextMenu}>
                                             <MoreOptionsIcon />
                                         </IconButton>
                                     </Tooltip>
                                 }
-                                title={item && <span><IllegalNamingWarning name={item.name}/>{item.name}</span>}
+                                title={
+                                    <span>
+                                        <IllegalNamingWarning name={item.name}/>
+                                        {item.name}
+                                        {isWritable ||
+                                        <Tooltip title="Read-only">
+                                            <ReadOnlyIcon data-cy="read-only-icon" className={classes.readOnlyIcon} />
+                                        </Tooltip>
+                                        }
+                                    </span>
+                                }
                                 titleTypographyProps={this.titleProps}
-                                subheader={item && item.description}
+                                subheader={item.description}
                                 subheaderTypographyProps={this.titleProps} />
                             <CardContent>
                                 <Grid container direction="column">
                                     <Grid item xs={10}>
                                         <DetailsAttribute classLabel={classes.label} classValue={classes.value}
                                             label='Collection UUID'
-                                            linkToUuid={item && item.uuid} />
+                                            linkToUuid={item.uuid} />
                                         <DetailsAttribute classLabel={classes.label} classValue={classes.value}
                                             label='Portable data hash'
-                                            linkToUuid={item && item.portableDataHash} />
+                                            linkToUuid={item.portableDataHash} />
                                         <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                                            label='Number of files' value={item && item.fileCount} />
+                                            label='Number of files' value={item.fileCount} />
                                         <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                                            label='Content size' value={item && formatFileSize(item.fileSizeTotal)} />
+                                            label='Content size' value={formatFileSize(item.fileSizeTotal)} />
                                         <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                                            label='Owner' linkToUuid={item && item.ownerUuid} />
+                                            label='Owner' linkToUuid={item.ownerUuid} />
                                         {(item.properties.container_request || item.properties.containerRequest) &&
                                             <span onClick={() => dispatch<any>(navigateToProcess(item.properties.container_request || item.properties.containerRequest))}>
                                                 <DetailsAttribute classLabel={classes.link} label='Link to process' />
@@ -119,32 +151,39 @@ export const CollectionPanel = withStyles(styles)(
                             </CardContent>
                         </Card>
 
-                        <Card className={classes.card}>
+                        <Card data-cy='collection-properties-panel' className={classes.card}>
                             <CardHeader title="Properties" />
                             <CardContent>
                                 <Grid container direction="column">
-                                    <Grid item xs={12}>
+                                    {isWritable && <Grid item xs={12}>
                                         <CollectionTagForm />
-                                    </Grid>
+                                    </Grid>}
                                     <Grid item xs={12}>
-                                        {Object.keys(item.properties).map(k =>
+                                    { Object.keys(item.properties).length > 0
+                                        ? Object.keys(item.properties).map(k =>
                                             Array.isArray(item.properties[k])
                                             ? item.properties[k].map((v: string) =>
                                                 getPropertyChip(
                                                     k, v,
-                                                    this.handleDelete(k, v),
+                                                    isWritable
+                                                        ? this.handleDelete(k, item.properties[k])
+                                                        : undefined,
                                                     classes.tag))
                                             : getPropertyChip(
                                                 k, item.properties[k],
-                                                this.handleDelete(k, item.properties[k]),
+                                                isWritable
+                                                    ? this.handleDelete(k, item.properties[k])
+                                                    : undefined,
                                                 classes.tag)
-                                        )}
+                                        )
+                                        : <div className={classes.centeredLabel}>No properties set on this collection.</div>
+                                    }
                                     </Grid>
                                 </Grid>
                             </CardContent>
                         </Card>
                         <div className={classes.card}>
-                            <CollectionPanelFiles />
+                            <CollectionPanelFiles isWritable={isWritable} />
                         </div>
                     </>
                     : null;
@@ -152,15 +191,18 @@ export const CollectionPanel = withStyles(styles)(
 
             handleContextMenu = (event: React.MouseEvent<any>) => {
                 const { uuid, ownerUuid, name, description, kind, isTrashed } = this.props.item;
+                const { isWritable } = this.props;
                 const resource = {
                     uuid,
                     ownerUuid,
                     name,
                     description,
                     kind,
-                    menuKind: isTrashed
-                        ? ContextMenuKind.TRASHED_COLLECTION
-                        : ContextMenuKind.COLLECTION
+                    menuKind: isWritable
+                        ? isTrashed
+                            ? ContextMenuKind.TRASHED_COLLECTION
+                            : ContextMenuKind.COLLECTION
+                        : ContextMenuKind.READONLY_COLLECTION
                 };
                 this.props.dispatch<any>(openContextMenu(event, resource));
             }

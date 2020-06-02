@@ -7,32 +7,42 @@ import { collectionPanelFilesAction, openMultipleFilesRemoveDialog } from "~/sto
 import { openCollectionPartialCopyDialog, openCollectionPartialCopyToSelectedCollectionDialog } from '~/store/collections/collection-partial-copy-actions';
 import { DownloadCollectionFileAction } from "~/views-components/context-menu/actions/download-collection-file-action";
 
-export const collectionFilesActionSet: ContextMenuActionSet = [[{
-    name: "Select all",
-    execute: dispatch => {
-        dispatch(collectionPanelFilesAction.SELECT_ALL_COLLECTION_FILES());
+export const readOnlyCollectionFilesActionSet: ContextMenuActionSet = [[
+    {
+        name: "Select all",
+        execute: dispatch => {
+            dispatch(collectionPanelFilesAction.SELECT_ALL_COLLECTION_FILES());
+        }
+    },
+    {
+        name: "Unselect all",
+        execute: dispatch => {
+            dispatch(collectionPanelFilesAction.UNSELECT_ALL_COLLECTION_FILES());
+        }
+    },
+    {
+        component: DownloadCollectionFileAction,
+        execute: () => { return; }
+    },
+    {
+        name: "Create a new collection with selected",
+        execute: dispatch => {
+            dispatch<any>(openCollectionPartialCopyDialog());
+        }
+    },
+    {
+        name: "Copy selected into the collection",
+        execute: dispatch => {
+            dispatch<any>(openCollectionPartialCopyToSelectedCollectionDialog());
+        }
     }
-}, {
-    name: "Unselect all",
-    execute: dispatch => {
-        dispatch(collectionPanelFilesAction.UNSELECT_ALL_COLLECTION_FILES());
-    }
-}, {
-    name: "Remove selected",
-    execute: dispatch => {
-        dispatch(openMultipleFilesRemoveDialog());
-    }
-}, {
-    component: DownloadCollectionFileAction,
-    execute: () => { return; }
-}, {
-    name: "Create a new collection with selected",
-    execute: dispatch => {
-        dispatch<any>(openCollectionPartialCopyDialog());
-    }
-}, {
-    name: "Copy selected into the collection",
-    execute: dispatch => {
-        dispatch<any>(openCollectionPartialCopyToSelectedCollectionDialog());
-    }
-}]];
+]];
+
+export const collectionFilesActionSet: ContextMenuActionSet = readOnlyCollectionFilesActionSet.concat([[
+    {
+        name: "Remove selected",
+        execute: dispatch => {
+            dispatch(openMultipleFilesRemoveDialog());
+        }
+    },
+]]);

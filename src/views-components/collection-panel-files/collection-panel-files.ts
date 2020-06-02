@@ -52,11 +52,22 @@ const mapDispatchToProps = (dispatch: Dispatch): Pick<CollectionPanelFilesProps,
     onSelectionToggle: (event, item) => {
         dispatch(collectionPanelFilesAction.TOGGLE_COLLECTION_FILE_SELECTION({ id: item.id }));
     },
-    onItemMenuOpen: (event, item) => {
-        dispatch<any>(openContextMenu(event, { menuKind: ContextMenuKind.COLLECTION_FILES_ITEM, kind: ResourceKind.COLLECTION, name: item.data.name, uuid: item.id, ownerUuid: '' }));
+    onItemMenuOpen: (event, item, isWritable) => {
+        dispatch<any>(openContextMenu(
+            event,
+            {
+                menuKind: isWritable
+                    ? ContextMenuKind.COLLECTION_FILES_ITEM
+                    : ContextMenuKind.READONLY_COLLECTION_FILES_ITEM,
+                kind: ResourceKind.COLLECTION,
+                name: item.data.name,
+                uuid: item.id,
+                ownerUuid: ''
+            }
+        ));
     },
-    onOptionsMenuOpen: (event) => {
-        dispatch<any>(openCollectionFilesContextMenu(event));
+    onOptionsMenuOpen: (event, isWritable) => {
+        dispatch<any>(openCollectionFilesContextMenu(event, isWritable));
     },
     onFileClick: (id) => {
         dispatch(openDetailsPanel(id));

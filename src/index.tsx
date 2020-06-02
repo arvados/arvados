@@ -24,10 +24,10 @@ import { rootProjectActionSet } from "~/views-components/context-menu/action-set
 import { projectActionSet } from "~/views-components/context-menu/action-sets/project-action-set";
 import { resourceActionSet } from '~/views-components/context-menu/action-sets/resource-action-set';
 import { favoriteActionSet } from "~/views-components/context-menu/action-sets/favorite-action-set";
-import { collectionFilesActionSet } from '~/views-components/context-menu/action-sets/collection-files-action-set';
-import { collectionFilesItemActionSet } from '~/views-components/context-menu/action-sets/collection-files-item-action-set';
+import { collectionFilesActionSet, readOnlyCollectionFilesActionSet } from '~/views-components/context-menu/action-sets/collection-files-action-set';
+import { collectionFilesItemActionSet, readOnlyCollectionFilesItemActionSet } from '~/views-components/context-menu/action-sets/collection-files-item-action-set';
 import { collectionFilesNotSelectedActionSet } from '~/views-components/context-menu/action-sets/collection-files-not-selected-action-set';
-import { collectionActionSet } from '~/views-components/context-menu/action-sets/collection-action-set';
+import { collectionActionSet, readOnlyCollectionActionSet } from '~/views-components/context-menu/action-sets/collection-action-set';
 import { collectionResourceActionSet } from '~/views-components/context-menu/action-sets/collection-resource-action-set';
 import { processActionSet } from '~/views-components/context-menu/action-sets/process-action-set';
 import { loadWorkbench } from '~/store/workbench/workbench-actions';
@@ -70,10 +70,13 @@ addMenuActionSet(ContextMenuKind.PROJECT, projectActionSet);
 addMenuActionSet(ContextMenuKind.RESOURCE, resourceActionSet);
 addMenuActionSet(ContextMenuKind.FAVORITE, favoriteActionSet);
 addMenuActionSet(ContextMenuKind.COLLECTION_FILES, collectionFilesActionSet);
+addMenuActionSet(ContextMenuKind.READONLY_COLLECTION_FILES, readOnlyCollectionFilesActionSet);
 addMenuActionSet(ContextMenuKind.COLLECTION_FILES_NOT_SELECTED, collectionFilesNotSelectedActionSet);
 addMenuActionSet(ContextMenuKind.COLLECTION_FILES_ITEM, collectionFilesItemActionSet);
+addMenuActionSet(ContextMenuKind.READONLY_COLLECTION_FILES_ITEM, readOnlyCollectionFilesItemActionSet);
 addMenuActionSet(ContextMenuKind.COLLECTION, collectionActionSet);
 addMenuActionSet(ContextMenuKind.COLLECTION_RESOURCE, collectionResourceActionSet);
+addMenuActionSet(ContextMenuKind.READONLY_COLLECTION, readOnlyCollectionActionSet);
 addMenuActionSet(ContextMenuKind.TRASHED_COLLECTION, trashedCollectionActionSet);
 addMenuActionSet(ContextMenuKind.PROCESS, processActionSet);
 addMenuActionSet(ContextMenuKind.PROCESS_RESOURCE, processResourceActionSet);
@@ -101,19 +104,13 @@ fetchConfig()
             },
             errorFn: (id, error) => {
                 console.error("Backend error:", error);
-                if (error.errors) {
-                    store.dispatch(snackbarActions.OPEN_SNACKBAR({
-                        message: `${error.errors[0]}`,
-                        kind: SnackbarKind.ERROR,
-                        hideDuration: 8000
-                    }));
-                } else {
-                    store.dispatch(snackbarActions.OPEN_SNACKBAR({
-                        message: `${error.message}`,
-                        kind: SnackbarKind.ERROR,
-                        hideDuration: 8000
-                    }));
-                }
+                store.dispatch(snackbarActions.OPEN_SNACKBAR({
+                    message: `${error.errors
+                        ? error.errors[0]
+                        : error.message}`,
+                    kind: SnackbarKind.ERROR,
+                    hideDuration: 8000})
+                );
             }
         });
         const store = configureStore(history, services);

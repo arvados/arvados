@@ -283,7 +283,7 @@ export const loadCollection = (uuid: string) =>
                     OWNED: async collection => {
                         dispatch(collectionPanelActions.SET_COLLECTION(collection as CollectionResource));
                         dispatch(updateResources([collection]));
-                        await dispatch(activateSidePanelTreeItem(collection.ownerUuid));
+                        dispatch(activateSidePanelTreeItem(collection.ownerUuid));
                         dispatch(setSidePanelBreadcrumbs(collection.ownerUuid));
                         dispatch(loadCollectionPanel(collection.uuid));
                     },

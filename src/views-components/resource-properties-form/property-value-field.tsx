@@ -28,11 +28,13 @@ const connectVocabularyAndPropertyKey = compose(
 
 export const PropertyValueField = connectVocabularyAndPropertyKey(
     ({ skipValidation, ...props }: PropertyValueFieldProps) =>
+        <span data-cy='property-field-value'>
         <Field
             name={PROPERTY_VALUE_FIELD_NAME}
             component={PropertyValueInput}
             validate={skipValidation ? undefined : getValidation(props)}
             {...props} />
+        </span>
 );
 
 const PropertyValueInput = ({ vocabulary, propertyKey, ...props }: WrappedFieldProps & PropertyValueFieldProps) =>

@@ -26,7 +26,7 @@ export class FileTree extends React.Component<FileTreeProps> {
             onContextMenu={this.handleContextMenu}
             toggleItemActive={this.handleToggleActive}
             toggleItemOpen={this.handleToggle}
-            toggleItemSelection={this.handleSelectionChange} 
+            toggleItemSelection={this.handleSelectionChange}
             currentItemUuid={this.props.currentItemUuid} />;
     }
 
