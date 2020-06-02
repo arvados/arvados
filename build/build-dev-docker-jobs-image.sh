@@ -69,15 +69,7 @@ fi
 
 . build/run-library.sh
 
-python_sdk_ts=$(cd sdk/python && timestamp_from_git)
-cwl_runner_ts=$(cd sdk/cwl && timestamp_from_git)
-
-python_sdk_version=$(cd sdk/python && nohash_version_from_git 0.1)
-cwl_runner_version=$(cd sdk/cwl && nohash_version_from_git 1.0)
-
-if [[ $python_sdk_ts -gt $cwl_runner_ts ]]; then
-    cwl_runner_version=$(cd sdk/python && nohash_version_from_git 1.0)
-fi
+calculate_python_sdk_cwl_package_versions
 
 set -x
 docker build --no-cache --build-arg sdk=$sdk --build-arg runner=$runner --build-arg salad=$salad --build-arg cwltool=$cwltool --build-arg pythoncmd=$py --build-arg pipcmd=$pipcmd -f "$WORKSPACE/sdk/dev-jobs.dockerfile" -t arvados/jobs:$cwl_runner_version "$WORKSPACE/sdk"
