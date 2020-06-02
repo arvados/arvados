@@ -98,7 +98,7 @@ fi
 
 set -x
 
-if [ \$PYCMD = "python3" ]; then
+if [ "\$PYCMD" = "python3" ]; then
     pip3 install cwltest
 else
     pip install cwltest
@@ -118,6 +118,9 @@ elif [[ "$suite" =~ conformance-(.*) ]] ; then
      git clone https://github.com/common-workflow-language/cwl-\${version}.git
    fi
    cd cwl-\${version}
+elif [[ "$suite" != "integration" ]] ; then
+   echo "ERROR: unknown suite '$suite'"
+   exit 1
 fi
 
 if [[ "$suite" != "integration" ]] ; then
@@ -133,9 +136,17 @@ if test -n "$build" ; then
 elif test "$tag" = "latest" ; then
   arv-keepdocker --pull arvados/jobs $tag
 else
-  jobsimg=\$(curl https://versions.arvados.org/v1/commit/$tag | python -c "import json; import sys; sys.stdout.write(json.load(sys.stdin)['Versions']['Docker']['arvados/jobs'])")
-  arv-keepdocker --pull arvados/jobs \$jobsimg
-  docker tag arvados/jobs:\$jobsimg arvados/jobs:latest
+  set +u
+  export WORKSPACE=/usr/src/arvados
+  . /usr/src/arvados/build/run-library.sh
+  TMPHERE=\$(pwd)
+  cd /usr/src/arvados
+  calculate_python_sdk_cwl_package_versions
+  cd \$TMPHERE
+  set -u
+
+  arv-keepdocker --pull arvados/jobs \$cwl_runner_version
+  docker tag arvados/jobs:\$cwl_runner_version arvados/jobs:latest
   arv-keepdocker arvados/jobs latest
 fi
 
@@ -153,7 +164,7 @@ chmod +x /tmp/cwltest/arv-cwl-containers
 
 EXTRA=--compute-checksum
 
-if [[ $devcwl == 1 ]] ; then
+if [[ $devcwl -eq 1 ]] ; then
    EXTRA="\$EXTRA --enable-dev"
 fi
 
