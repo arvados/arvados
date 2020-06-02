@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 require 'test_helper'
+require 'fix_roles_projects'
 
 class GroupTest < ActiveSupport::TestCase
 
@@ -292,5 +293,54 @@ class GroupTest < ActiveSupport::TestCase
         assert_equal valid, proj.valid?, "#{name.inspect} should be #{valid ? "valid" : "invalid"}"
       end
     end
+  end
+
+  def insert_group uuid, owner_uuid, name, group_class
+    q = ActiveRecord::Base.connection.exec_query %{
+insert into groups (uuid, owner_uuid, name, group_class, created_at, updated_at)
+       values ('#{uuid}', '#{owner_uuid}',
+               '#{name}', #{if group_class then "'"+group_class+"'" else 'NULL' end},
+               statement_timestamp(), statement_timestamp())
+}
+    uuid
+  end
+
+  test "migration to fix roles and projects" do
+    g1 = insert_group Group.generate_uuid, system_user_uuid, 'group with no class', nil
+    g2 = insert_group Group.generate_uuid, users(:active).uuid, 'role owned by a user', 'role'
+
+    g3 = insert_group Group.generate_uuid, system_user_uuid, 'role that owns a project', 'role'
+    g4 = insert_group Group.generate_uuid, g3, 'the project', 'project'
+
+    g5 = insert_group Group.generate_uuid, users(:active).uuid, 'a project with an outgoing permission link', 'project'
+
+    g6 = insert_group Group.generate_uuid, system_user_uuid, 'name collision', 'role'
+    g7 = insert_group Group.generate_uuid, users(:active).uuid, 'name collision', 'role'
+
+    refresh_permissions
+
+    act_as_system_user do
+      l1 = Link.create!(link_class: 'permission', name: 'can_manage', tail_uuid: g3, head_uuid: g4)
+      q = ActiveRecord::Base.connection.exec_query %{
+update links set tail_uuid='#{g5}' where uuid='#{l1.uuid}'
+}
+    refresh_permissions
+    end
+
+    assert_equal nil, Group.find_by_uuid(g1).group_class
+    assert_equal users(:active).uuid, Group.find_by_uuid(g2).owner_uuid
+    assert_equal g3, Group.find_by_uuid(g4).owner_uuid
+    assert !Link.where(tail_uuid: users(:active).uuid, head_uuid: g2, link_class: "permission", name: "can_manage").any?
+    assert !Link.where(tail_uuid: g3, head_uuid: g4, link_class: "permission", name: "can_manage").any?
+    assert Link.where(link_class: 'permission', name: 'can_manage', tail_uuid: g5, head_uuid: g4).any?
+
+    fix_roles_projects
+
+    assert_equal 'role', Group.find_by_uuid(g1).group_class
+    assert_equal system_user_uuid, Group.find_by_uuid(g2).owner_uuid
+    assert_equal system_user_uuid, Group.find_by_uuid(g4).owner_uuid
+    assert Link.where(tail_uuid: users(:active).uuid, head_uuid: g2, link_class: "permission", name: "can_manage").any?
+    assert Link.where(tail_uuid: g3, head_uuid: g4, link_class: "permission", name: "can_manage").any?
+    assert !Link.where(link_class: 'permission', name: 'can_manage', tail_uuid: g5, head_uuid: g4).any?
   end
 end
