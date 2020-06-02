@@ -9,6 +9,13 @@ public:
   description: Public Project
   group_class: project
 
+public_role:
+  uuid: zzzzz-j7d0g-jt30l961gq3t0oi
+  owner_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  name: Public Role
+  description: Public Role
+  group_class: role
+
 private:
   uuid: zzzzz-j7d0g-rew6elm53kancon
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
