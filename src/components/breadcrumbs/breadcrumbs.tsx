@@ -34,7 +34,7 @@ export interface BreadcrumbsProps {
 
 export const Breadcrumbs = withStyles(styles)(
     ({ classes, onClick, onContextMenu, items }: BreadcrumbsProps & WithStyles<CssRules>) =>
-    <Grid container alignItems="center" wrap="nowrap">
+    <Grid container data-cy='breadcrumbs' alignItems="center" wrap="nowrap">
     {
         items.map((item, index) => {
             const isLastItem = index === items.length - 1;
@@ -44,6 +44,12 @@ export const Breadcrumbs = withStyles(styles)(
                     {isFirstItem ? null : <IllegalNamingWarning name={item.label} />}
                     <Tooltip title={item.label}>
                         <Button
+                            data-cy={
+                                isFirstItem
+                                ? 'breadcrumb-first'
+                                : isLastItem
+                                    ? 'breadcrumb-last'
+                                    : false}
                             color="inherit"
                             className={isLastItem ? classes.currentItem : classes.item}
                             onClick={() => onClick(item)}
