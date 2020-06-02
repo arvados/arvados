@@ -17,6 +17,7 @@ import { getUserUuid } from '~/common/getuser';
 import { matchProjectRoute } from '~/routes/routes';
 import { GroupResource } from '~/models/group';
 import { ResourcesState, getResource } from '~/store/resources/resources';
+import { extractUuidKind, ResourceKind } from '~/models/resource';
 
 type CssRules = 'button' | 'menuItem' | 'icon';
 
@@ -53,6 +54,13 @@ const transformOrigin: PopoverOrigin = {
     horizontal: 0
 };
 
+const isProjectTrashed = (proj: GroupResource, resources: ResourcesState): boolean => {
+    if (proj.isTrashed) { return true; }
+    if (extractUuidKind(proj.ownerUuid) === ResourceKind.USER) { return false; }
+    const parentProj = getResource<GroupResource>(proj.ownerUuid)(resources);
+    return isProjectTrashed(parentProj!, resources);
+};
+
 export const SidePanelButton = withStyles(styles)(
     connect((state: RootState) => ({
         currentItemId: state.router.location
@@ -78,7 +86,7 @@ export const SidePanelButton = withStyles(styles)(
                     const currentProject = getResource<GroupResource>(currentItemId)(resources);
                     if (currentProject &&
                         currentProject.writableBy.indexOf(currentUserUUID || '') >= 0 &&
-                        !currentProject.isTrashed) {
+                        !isProjectTrashed(currentProject, resources)) {
                         enabled = true;
                     }
                 }
