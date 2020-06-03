@@ -27,12 +27,12 @@ export const CollectionNameField = connect(
                 COLLECTION_NAME_VALIDATION : COLLECTION_NAME_VALIDATION_ALLOW_SLASH)
         };
     })((props: CollectionNameFieldProps) =>
-        <Field
+        <span data-cy='name-field'><Field
             name='name'
             component={TextField}
             validate={props.validate}
             label="Collection Name"
-            autoFocus={true} />
+            autoFocus={true} /></span>
     );
 
 export const CollectionDescriptionField = () =>

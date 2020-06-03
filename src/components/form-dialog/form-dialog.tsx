@@ -54,7 +54,7 @@ export const FormDialog = withStyles(styles)((props: DialogProjectProps) =>
         disableEscapeKeyDown={props.submitting}
         fullWidth
         maxWidth='md'>
-        <form>
+        <form data-cy='form-dialog'>
             <DialogTitle className={props.classes.dialogTitle}>
                 {props.dialogTitle}
             </DialogTitle>
@@ -70,6 +70,7 @@ export const FormDialog = withStyles(styles)((props: DialogProjectProps) =>
                     {props.cancelLabel || 'Cancel'}
                 </Button>
                 <Button
+                    data-cy='form-submit-btn'
                     type="submit"
                     onClick={props.handleSubmit}
                     className={props.classes.lastButton}
