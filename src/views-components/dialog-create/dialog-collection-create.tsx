@@ -8,9 +8,8 @@ import { WithDialogProps } from '~/store/dialog/with-dialog';
 import { CollectionCreateFormDialogData } from '~/store/collections/collection-create-actions';
 import { FormDialog } from '~/components/form-dialog/form-dialog';
 import { CollectionNameField, CollectionDescriptionField } from '~/views-components/form-fields/collection-form-fields';
-import { require } from '~/validators/require';
 import { FileUploaderField } from '../file-uploader/file-uploader';
-
+import { ResourceParentField } from '../form-fields/resource-form-fields';
 
 type DialogCollectionProps = WithDialogProps<{}> & InjectedFormProps<CollectionCreateFormDialogData>;
 
@@ -23,11 +22,11 @@ export const DialogCollectionCreate = (props: DialogCollectionProps) =>
     />;
 
 const CollectionAddFields = () => <span>
+    <ResourceParentField />
     <CollectionNameField />
     <CollectionDescriptionField />
     <Field
         name='files'
-        validate={[require]}
         label='Files'
         component={FileUploaderField} />
 </span>;

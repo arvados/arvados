@@ -237,7 +237,7 @@ export const createProject = (data: projectCreateActions.ProjectCreateFormDialog
                 kind: SnackbarKind.SUCCESS
             }));
             await dispatch<any>(loadSidePanelTreeProjects(newProject.ownerUuid));
-            dispatch<any>(reloadProjectMatchingUuid([newProject.ownerUuid]));
+            dispatch<any>(navigateTo(newProject.uuid));
         }
     };
 
@@ -315,7 +315,7 @@ export const createCollection = (data: collectionCreateActions.CollectionCreateF
                 kind: SnackbarKind.SUCCESS
             }));
             dispatch<any>(updateResources([collection]));
-            dispatch<any>(reloadProjectMatchingUuid([collection.ownerUuid]));
+            dispatch<any>(navigateTo(collection.uuid));
         }
     };
 

@@ -16,22 +16,24 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
     },
     lastButton: {
         marginLeft: theme.spacing.unit,
-        marginRight: "20px",
+        marginRight: "0",
     },
     formContainer: {
         display: "flex",
         flexDirection: "column",
-        marginTop: "20px",
+        paddingBottom: "0",
     },
     dialogTitle: {
-        paddingBottom: "0"
+        paddingTop: theme.spacing.unit,
+        paddingBottom: theme.spacing.unit,
     },
     progressIndicator: {
         position: "absolute",
         minWidth: "20px",
     },
     dialogActions: {
-        marginBottom: theme.spacing.unit * 3
+        marginBottom: theme.spacing.unit,
+        marginRight: theme.spacing.unit * 3,
     }
 });
 
