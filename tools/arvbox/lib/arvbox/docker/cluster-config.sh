@@ -140,6 +140,7 @@ Clusters:
       TrustAllContent: true
     Login:
       SSO:
+        Enable: true
         ProviderAppSecret: $sso_app_secret
         ProviderAppID: arvados-server
     Users:
