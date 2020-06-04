@@ -203,7 +203,18 @@ func (und undeleter) RecoverManifest(mtxt string) (string, error) {
 	}
 	und.logger.WithField("services", services).Debug("got list of services")
 
-	// Choose a deadline for saving a rescued collection.
+	// blobsigexp is our deadline for saving the rescued
+	// collection. This must be less than BlobSigningTTL
+	// (otherwise our rescued blocks could be garbage collected
+	// again before we protect them by saving the collection) but
+	// the exact value is somewhat arbitrary. If it's too soon, it
+	// will arrive before we're ready to save, and save will
+	// fail. If it's too late, we'll needlessly update timestamps
+	// on some blocks that were recently written/touched (e.g., by
+	// a previous attempt to rescue this same collection) and
+	// would have lived long enough anyway if left alone.
+	// BlobSigningTTL/2 (typically around 1 week) is much longer
+	// than than we need to recover even a very large collection.
 	blobsigttl := und.cluster.Collections.BlobSigningTTL.Duration()
 	blobsigexp := time.Now().Add(blobsigttl / 2)
 	und.logger.WithField("blobsigexp", blobsigexp).Debug("chose save deadline")
