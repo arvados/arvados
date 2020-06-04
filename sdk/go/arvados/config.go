@@ -158,7 +158,7 @@ type Cluster struct {
 		}
 		OpenIDConnect struct {
 			Enable       bool
-			Issuer       URL
+			Issuer       string
 			ClientID     string
 			ClientSecret string
 		}

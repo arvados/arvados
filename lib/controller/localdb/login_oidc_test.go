@@ -263,12 +263,12 @@ func (s *OIDCLoginSuite) TestGoogleLogin_PeopleAPIDisabled(c *check.C) {
 func (s *OIDCLoginSuite) TestConfig(c *check.C) {
 	s.cluster.Login.Google.Enable = false
 	s.cluster.Login.OpenIDConnect.Enable = true
-	s.cluster.Login.OpenIDConnect.Issuer = arvados.URL{Scheme: "https", Host: "accounts.example.com", Path: "/"}
+	s.cluster.Login.OpenIDConnect.Issuer = "https://accounts.example.com/"
 	s.cluster.Login.OpenIDConnect.ClientID = "oidc-client-id"
 	s.cluster.Login.OpenIDConnect.ClientSecret = "oidc-client-secret"
 	localdb := NewConn(s.cluster)
 	ctrl := localdb.loginController.(*oidcLoginController)
-	c.Check(ctrl.Issuer, check.Equals, "https://accounts.example.com")
+	c.Check(ctrl.Issuer, check.Equals, "https://accounts.example.com/")
 	c.Check(ctrl.ClientID, check.Equals, "oidc-client-id")
 	c.Check(ctrl.ClientSecret, check.Equals, "oidc-client-secret")
 	c.Check(ctrl.UseGooglePeopleAPI, check.Equals, false)
