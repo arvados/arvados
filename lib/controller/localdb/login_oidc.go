@@ -38,22 +38,45 @@ type oidcLoginController struct {
 	ClientSecret       string
 	UseGooglePeopleAPI bool // Use Google People API to look up alternate email addresses
 
-	peopleAPIBasePath string // override Google People API base URL (normally empty, set by google pkg to https://people.googleapis.com/)
-	provider          *oidc.Provider
-	mu                sync.Mutex
+	// override Google People API base URL for testing purposes
+	// (normally empty, set by google pkg to
+	// https://people.googleapis.com/)
+	peopleAPIBasePath string
+
+	provider   *oidc.Provider        // initialized by setup()
+	oauth2conf *oauth2.Config        // initialized by setup()
+	verifier   *oidc.IDTokenVerifier // initialized by setup()
+	mu         sync.Mutex            // protects setup()
 }
 
-func (ctrl *oidcLoginController) getProvider() (*oidc.Provider, error) {
+// Initialize ctrl.provider and ctrl.oauth2conf.
+func (ctrl *oidcLoginController) setup() error {
 	ctrl.mu.Lock()
 	defer ctrl.mu.Unlock()
-	if ctrl.provider == nil {
-		provider, err := oidc.NewProvider(context.Background(), ctrl.Issuer)
-		if err != nil {
-			return nil, err
-		}
-		ctrl.provider = provider
+	if ctrl.provider != nil {
+		// already set up
+		return nil
 	}
-	return ctrl.provider, nil
+	redirURL, err := (*url.URL)(&ctrl.Cluster.Services.Controller.ExternalURL).Parse("/" + arvados.EndpointLogin.Path)
+	if err != nil {
+		return fmt.Errorf("error making redirect URL: %s", err)
+	}
+	provider, err := oidc.NewProvider(context.Background(), ctrl.Issuer)
+	if err != nil {
+		return err
+	}
+	ctrl.oauth2conf = &oauth2.Config{
+		ClientID:     ctrl.ClientID,
+		ClientSecret: ctrl.ClientSecret,
+		Endpoint:     provider.Endpoint(),
+		Scopes:       []string{oidc.ScopeOpenID, "profile", "email"},
+		RedirectURL:  redirURL.String(),
+	}
+	ctrl.verifier = provider.Verifier(&oidc.Config{
+		ClientID: ctrl.ClientID,
+	})
+	ctrl.provider = provider
+	return nil
 }
 
 func (ctrl *oidcLoginController) Logout(ctx context.Context, opts arvados.LogoutOptions) (arvados.LogoutResponse, error) {
@@ -61,38 +84,18 @@ func (ctrl *oidcLoginController) Logout(ctx context.Context, opts arvados.Logout
 }
 
 func (ctrl *oidcLoginController) Login(ctx context.Context, opts arvados.LoginOptions) (arvados.LoginResponse, error) {
-	provider, err := ctrl.getProvider()
+	err := ctrl.setup()
 	if err != nil {
 		return loginError(fmt.Errorf("error setting up OpenID Connect provider: %s", err))
 	}
-	redirURL, err := (*url.URL)(&ctrl.Cluster.Services.Controller.ExternalURL).Parse("/login")
-	if err != nil {
-		return loginError(fmt.Errorf("error making redirect URL: %s", err))
-	}
-	conf := &oauth2.Config{
-		ClientID:     ctrl.Cluster.Login.Google.ClientID,
-		ClientSecret: ctrl.Cluster.Login.Google.ClientSecret,
-		Endpoint:     provider.Endpoint(),
-		Scopes:       []string{oidc.ScopeOpenID, "profile", "email"},
-		RedirectURL:  redirURL.String(),
-	}
-	verifier := provider.Verifier(&oidc.Config{
-		ClientID: conf.ClientID,
-	})
 	if opts.State == "" {
 		// Initiate OIDC sign-in.
 		if opts.ReturnTo == "" {
 			return loginError(errors.New("missing return_to parameter"))
 		}
-		me := url.URL(ctrl.Cluster.Services.Controller.ExternalURL)
-		callback, err := me.Parse("/" + arvados.EndpointLogin.Path)
-		if err != nil {
-			return loginError(err)
-		}
-		conf.RedirectURL = callback.String()
 		state := ctrl.newOAuth2State([]byte(ctrl.Cluster.SystemRootToken), opts.Remote, opts.ReturnTo)
 		return arvados.LoginResponse{
-			RedirectLocation: conf.AuthCodeURL(state.String(),
+			RedirectLocation: ctrl.oauth2conf.AuthCodeURL(state.String(),
 				// prompt=select_account tells Google
 				// to show the "choose which Google
 				// account" page, even if the client
@@ -106,7 +109,7 @@ func (ctrl *oidcLoginController) Login(ctx context.Context, opts arvados.LoginOp
 		if !state.verify([]byte(ctrl.Cluster.SystemRootToken)) {
 			return loginError(errors.New("invalid OAuth2 state"))
 		}
-		oauth2Token, err := conf.Exchange(ctx, opts.Code)
+		oauth2Token, err := ctrl.oauth2conf.Exchange(ctx, opts.Code)
 		if err != nil {
 			return loginError(fmt.Errorf("error in OAuth2 exchange: %s", err))
 		}
@@ -114,11 +117,11 @@ func (ctrl *oidcLoginController) Login(ctx context.Context, opts arvados.LoginOp
 		if !ok {
 			return loginError(errors.New("error in OAuth2 exchange: no ID token in OAuth2 token"))
 		}
-		idToken, err := verifier.Verify(ctx, rawIDToken)
+		idToken, err := ctrl.verifier.Verify(ctx, rawIDToken)
 		if err != nil {
 			return loginError(fmt.Errorf("error verifying ID token: %s", err))
 		}
-		authinfo, err := ctrl.getAuthInfo(ctx, ctrl.Cluster, conf, oauth2Token, idToken)
+		authinfo, err := ctrl.getAuthInfo(ctx, oauth2Token, idToken)
 		if err != nil {
 			return loginError(err)
 		}
@@ -138,7 +141,7 @@ func (ctrl *oidcLoginController) UserAuthenticate(ctx context.Context, opts arva
 // primary address at index 0. The provided defaultAddr is always
 // included in the returned slice, and is used as the primary if the
 // Google API does not indicate one.
-func (ctrl *oidcLoginController) getAuthInfo(ctx context.Context, cluster *arvados.Cluster, conf *oauth2.Config, token *oauth2.Token, idToken *oidc.IDToken) (*rpc.UserSessionAuthInfo, error) {
+func (ctrl *oidcLoginController) getAuthInfo(ctx context.Context, token *oauth2.Token, idToken *oidc.IDToken) (*rpc.UserSessionAuthInfo, error) {
 	var ret rpc.UserSessionAuthInfo
 	defer ctxlog.FromContext(ctx).WithField("ret", &ret).Debug("getAuthInfo returned")
 
@@ -168,7 +171,7 @@ func (ctrl *oidcLoginController) getAuthInfo(ctx context.Context, cluster *arvad
 		return &ret, nil
 	}
 
-	svc, err := people.NewService(ctx, option.WithTokenSource(conf.TokenSource(ctx, token)), option.WithScopes(people.UserEmailsReadScope))
+	svc, err := people.NewService(ctx, option.WithTokenSource(ctrl.oauth2conf.TokenSource(ctx, token)), option.WithScopes(people.UserEmailsReadScope))
 	if err != nil {
 		return nil, fmt.Errorf("error setting up People API: %s", err)
 	}
