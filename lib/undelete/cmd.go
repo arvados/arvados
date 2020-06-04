@@ -36,9 +36,32 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	}()
 
 	loader := config.NewLoader(stdin, logger)
+	loader.SkipLegacy = true
 
 	flags := flag.NewFlagSet("", flag.ContinueOnError)
 	flags.SetOutput(stderr)
+	flags.Usage = func() {
+		fmt.Fprintf(flags.Output(), `Usage:
+	%s [options ...] /path/to/manifest.txt [...]
+
+	This program recovers deleted collections. Recovery is
+	possible when the collection's manifest is still available and
+	all of its data blocks are still available or recoverable
+	(e.g., garbage collection is not enabled, the blocks are too
+	new for garbage collection, the blocks are referenced by other
+	collections, or the blocks have been trashed but not yet
+	deleted).
+
+	For each provided collection manifest, once all data blocks
+	are recovered/protected from garbage collection, a new
+	collection is saved and its UUID is printed on stdout.
+
+	Exit status will be zero if recovery is successful, i.e., a
+	collection is saved for each provided manifest.
+Options:
+`, prog)
+		flags.PrintDefaults()
+	}
 	loader.SetupFlags(flags)
 	loglevel := flags.String("log-level", "info", "logging level (debug, info, ...)")
 	err = flags.Parse(args)
@@ -50,8 +73,7 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	}
 
 	if len(flags.Args()) == 0 {
-		fmt.Fprintf(stderr, "Usage: %s [options] uuid_or_file ...\n", prog)
-		flags.PrintDefaults()
+		flags.Usage()
 		return 2
 	}
 
