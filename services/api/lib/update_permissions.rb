@@ -9,12 +9,15 @@ def refresh_permissions
   ActiveRecord::Base.transaction do
     ActiveRecord::Base.connection.execute("LOCK TABLE #{PERMISSION_VIEW}")
     ActiveRecord::Base.connection.execute("DELETE FROM #{PERMISSION_VIEW}")
+
     ActiveRecord::Base.connection.execute %{
-INSERT INTO #{PERMISSION_VIEW}
-select users.uuid, g.target_uuid, g.val, g.traverse_owned
-from users, lateral search_permission_graph(users.uuid, 3) as g where g.val > 0
+INSERT INTO materialized_permissions
+    #{PERM_QUERY_TEMPLATE % {:base_case => %{
+        select uuid, uuid, 3, true, true from users
 },
-                                          "refresh_permission_view.do"
+:override => ''
+} }
+}, "refresh_permission_view.do"
   end
 end
 
@@ -161,9 +164,12 @@ order by user_uuid, target_uuid
 }, "check_permissions_against_full_refresh.permission_table"
 
   q2 = ActiveRecord::Base.connection.exec_query %{
-select users.uuid as user_uuid, g.target_uuid, g.val as perm_level, g.traverse_owned
-from users, lateral search_permission_graph(users.uuid, 3) as g where g.val > 0
-order by users.uuid, target_uuid
+    select pq.origin_uuid as user_uuid, target_uuid, pq.val as perm_level, pq.traverse_owned from (
+    #{PERM_QUERY_TEMPLATE % {:base_case => %{
+        select uuid, uuid, 3, true, true from users
+},
+:override => ''
+} }) as pq order by origin_uuid, target_uuid
 }, "check_permissions_against_full_refresh.full_recompute"
 
   if q1.count != q2.count
@@ -196,3 +202,23 @@ def skip_check_permissions_against_full_refresh
     Thread.current[:no_check_permissions_against_full_refresh] = check_perm_was
   end
 end
+
+PERM_QUERY_TEMPLATE = %{
+WITH RECURSIVE
+        traverse_graph(origin_uuid, target_uuid, val, traverse_owned, starting_set) as (
+            %{base_case}
+          union
+            (select traverse_graph.origin_uuid,
+                    edges.head_uuid,
+                      least(edges.val,
+                            traverse_graph.val
+                            %{override}),
+                    should_traverse_owned(edges.head_uuid, edges.val),
+                    false
+             from permission_graph_edges as edges, traverse_graph
+             where traverse_graph.target_uuid = edges.tail_uuid
+             and (edges.tail_uuid like '_____-j7d0g-_______________' or
+                  traverse_graph.starting_set)))
+        select traverse_graph.origin_uuid, target_uuid, max(val) as val, bool_or(traverse_owned) as traverse_owned from traverse_graph
+        group by (traverse_graph.origin_uuid, target_uuid)
+}

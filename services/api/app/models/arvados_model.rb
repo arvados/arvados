@@ -324,9 +324,14 @@ class ArvadosModel < ApplicationRecord
       #
       # see issue 13208 for details.
 
+      user_uuids_subquery = %{
+select target_uuid from materialized_permissions where user_uuid in (:user_uuids)
+and target_uuid like '_____-tpzed-_______________' and traverse_owned=true and perm_level >= 1
+}
+
       # Match a direct read permission link from the user to the record uuid
       direct_check = "#{sql_table}.uuid IN (SELECT target_uuid FROM #{PERMISSION_VIEW} "+
-                     "WHERE user_uuid IN (:user_uuids) AND perm_level >= 1 #{trashed_check})"
+                     "WHERE user_uuid IN (#{user_uuids_subquery}) AND perm_level >= 1 #{trashed_check})"
 
       # Match a read permission for the user to the record's
       # owner_uuid.  This is so we can have a permissions table that
@@ -347,7 +352,7 @@ class ArvadosModel < ApplicationRecord
       owner_check = ""
       if sql_table != "api_client_authorizations" and sql_table != "groups" then
         owner_check = "OR #{sql_table}.owner_uuid IN (SELECT target_uuid FROM #{PERMISSION_VIEW} "+
-          "WHERE user_uuid IN (:user_uuids) AND perm_level >= 1 #{trashed_check} AND traverse_owned) "
+          "WHERE user_uuid IN (#{user_uuids_subquery}) AND perm_level >= 1 #{trashed_check} AND traverse_owned) "
       end
 
       links_cond = ""
@@ -356,7 +361,7 @@ class ArvadosModel < ApplicationRecord
         # users some permission _or_ gives anyone else permission to
         # view one of the authorized users.
         links_cond = "OR (#{sql_table}.link_class IN (:permission_link_classes) AND "+
-                       "(#{sql_table}.head_uuid IN (:user_uuids) OR #{sql_table}.tail_uuid IN (:user_uuids)))"
+                       "(#{sql_table}.head_uuid IN (#{user_uuids_subquery}) OR #{sql_table}.tail_uuid IN (#{user_uuids_subquery})))"
       end
 
       sql_conds = "(#{direct_check} #{owner_check} #{links_cond}) #{exclude_trashed_records}"

@@ -121,10 +121,15 @@ class User < ArvadosModel
 
       target_owner_uuid = target.owner_uuid if target.respond_to? :owner_uuid
 
+      user_uuids_subquery = %{
+select target_uuid from materialized_permissions where user_uuid = $1
+and target_uuid like '_____-tpzed-_______________' and traverse_owned=true and perm_level >= #{VAL_FOR_PERM[action]}
+}
+
       unless ActiveRecord::Base.connection.
         exec_query(%{
 SELECT 1 FROM #{PERMISSION_VIEW}
-  WHERE user_uuid = $1 and
+  WHERE user_uuid in (#{user_uuids_subquery}) and
         ((target_uuid = $2 and perm_level >= $3)
          or (target_uuid = $4 and perm_level >= $3 and traverse_owned))
 },
@@ -438,8 +443,10 @@ update #{PERMISSION_VIEW} set target_uuid=$1 where target_uuid = $2
       end
       skip_check_permissions_against_full_refresh do
         update_permissions self.owner_uuid, self.uuid, 3
+        update_permissions self.uuid, self.uuid, 3
+        update_permissions new_user.owner_uuid, new_user.uuid, 3
       end
-      update_permissions new_user.owner_uuid, new_user.uuid, 3
+      update_permissions new_user.uuid, new_user.uuid, 3
     end
   end
 

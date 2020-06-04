@@ -89,12 +89,35 @@ with
      permission change, using search_permission_graph.
   */
   perm_from_start(perm_origin_uuid, target_uuid, val, traverse_owned) as (
-    select perm_origin_uuid, target_uuid, val, traverse_owned
-      from search_permission_graph(starting_uuid,
-                                   starting_perm,
-                                   perm_origin_uuid,
-                                   starting_uuid,
-                                   starting_perm)),
+    
+WITH RECURSIVE
+        traverse_graph(origin_uuid, target_uuid, val, traverse_owned, starting_set) as (
+            
+             values (perm_origin_uuid, starting_uuid, starting_perm,
+                    should_traverse_owned(starting_uuid, starting_perm),
+                    (perm_origin_uuid = starting_uuid or starting_uuid not like '_____-tpzed-_______________'))
+
+          union
+            (select traverse_graph.origin_uuid,
+                    edges.head_uuid,
+                      least(edges.val,
+                            traverse_graph.val
+                            ,
+                            case (edges.tail_uuid = perm_origin_uuid AND
+                                  edges.head_uuid = starting_uuid)
+                               when true then starting_perm
+                               else null
+                            end
+),
+                    should_traverse_owned(edges.head_uuid, edges.val),
+                    false
+             from permission_graph_edges as edges, traverse_graph
+             where traverse_graph.target_uuid = edges.tail_uuid
+             and (edges.tail_uuid like '_____-j7d0g-_______________' or
+                  traverse_graph.starting_set)))
+        select traverse_graph.origin_uuid, target_uuid, max(val) as val, bool_or(traverse_owned) as traverse_owned from traverse_graph
+        group by (traverse_graph.origin_uuid, target_uuid)
+),
 
   /* Finds other inbound edges that grant permissions on the objects
      in perm_from_start, and computes permissions that originate from
@@ -106,50 +129,46 @@ with
      ownership.
   */
   additional_perms(perm_origin_uuid, target_uuid, val, traverse_owned) as (
-    select edges.tail_uuid as perm_origin_uuid, ps.target_uuid, ps.val,
-           should_traverse_owned(ps.target_uuid, ps.val)
-      from permission_graph_edges as edges,
-           lateral search_permission_graph(edges.head_uuid,
-                                           edges.val,
-                                           perm_origin_uuid,
-                                           starting_uuid,
-                                           starting_perm) as ps
+    
+WITH RECURSIVE
+        traverse_graph(origin_uuid, target_uuid, val, traverse_owned, starting_set) as (
+            
+    select edges.tail_uuid as origin_uuid, edges.head_uuid as target_uuid, edges.val,
+           should_traverse_owned(edges.head_uuid, edges.val),
+           edges.head_uuid like '_____-j7d0g-_______________'
+      from permission_graph_edges as edges
       where (not (edges.tail_uuid = perm_origin_uuid and
-                 edges.head_uuid = starting_uuid)) and
-            edges.tail_uuid not in (select target_uuid from perm_from_start) and
-            edges.head_uuid in (select target_uuid from perm_from_start)),
+                  edges.head_uuid = starting_uuid)) and
+            edges.tail_uuid not in (select target_uuid from perm_from_start where target_uuid like '_____-j7d0g-_______________') and
+            edges.head_uuid in (select target_uuid from perm_from_start)
+
+          union
+            (select traverse_graph.origin_uuid,
+                    edges.head_uuid,
+                      least(edges.val,
+                            traverse_graph.val
+                            ,
+                            case (edges.tail_uuid = perm_origin_uuid AND
+                                  edges.head_uuid = starting_uuid)
+                               when true then starting_perm
+                               else null
+                            end
+),
+                    should_traverse_owned(edges.head_uuid, edges.val),
+                    false
+             from permission_graph_edges as edges, traverse_graph
+             where traverse_graph.target_uuid = edges.tail_uuid
+             and (edges.tail_uuid like '_____-j7d0g-_______________' or
+                  traverse_graph.starting_set)))
+        select traverse_graph.origin_uuid, target_uuid, max(val) as val, bool_or(traverse_owned) as traverse_owned from traverse_graph
+        group by (traverse_graph.origin_uuid, target_uuid)
+),
 
   /* Combines the permissions computed in the first two phases. */
-  partial_perms(perm_origin_uuid, target_uuid, val, traverse_owned) as (
+  all_perms(perm_origin_uuid, target_uuid, val, traverse_owned) as (
       select * from perm_from_start
     union all
       select * from additional_perms
-  ),
-
-  /* If there are any users in the set of potentially affected objects
-     and the user's owner was not traversed, recompute permissions for
-     that user.  This is required because users always have permission
-     to themselves (identity property) which would be missing from the
-     permission set if the user was traversed while computing
-     permissions for another object.
-  */
-  user_identity_perms(perm_origin_uuid, target_uuid, val, traverse_owned) as (
-    select users.uuid as perm_origin_uuid, ps.target_uuid, ps.val, ps.traverse_owned
-      from users, lateral search_permission_graph(users.uuid,
-                                                  3,
-                                                  perm_origin_uuid,
-                                                  starting_uuid,
-                                                  starting_perm) as ps
-      where (users.owner_uuid not in (select target_uuid from partial_perms) or
-             users.owner_uuid = users.uuid) and
-      users.uuid in (select target_uuid from partial_perms)
-  ),
-
-  /* Combines all the computed permissions into one table. */
-  all_perms(perm_origin_uuid, target_uuid, val, traverse_owned) as (
-      select * from partial_perms
-    union
-      select * from user_identity_perms
   )
 
   /* The actual query that produces rows to be added or removed
@@ -190,10 +209,11 @@ with
          u.traverse_owned
       from all_perms as u, materialized_permissions as m
            where u.perm_origin_uuid = m.target_uuid AND m.traverse_owned
+           AND (m.user_uuid = m.target_uuid or m.target_uuid not like '_____-tpzed-_______________')
     union all
-      select perm_origin_uuid as user_uuid, target_uuid, val as perm_level, traverse_owned
+      select target_uuid as user_uuid, target_uuid, 3, true
         from all_perms
-        where all_perms.perm_origin_uuid like '_____-tpzed-_______________') as v
+        where all_perms.target_uuid like '_____-tpzed-_______________') as v
     group by v.user_uuid, v.target_uuid
 $$;
 
@@ -239,63 +259,6 @@ WITH RECURSIVE
           from groups join project_subtree on (groups.owner_uuid = project_subtree.uuid)
         )
         select uuid, trash_at from project_subtree;
-$$;
-
-
---
--- Name: search_permission_graph(character varying, integer, character varying, character varying, integer); Type: FUNCTION; Schema: public; Owner: -
---
-
-CREATE FUNCTION public.search_permission_graph(starting_uuid character varying, starting_perm integer, override_edge_tail character varying DEFAULT NULL::character varying, override_edge_head character varying DEFAULT NULL::character varying, override_edge_perm integer DEFAULT NULL::integer) RETURNS TABLE(target_uuid character varying, val integer, traverse_owned boolean)
-    LANGUAGE sql STABLE
-    AS $$
-/*
-  From starting_uuid, perform a recursive self-join on the edges
-  to follow chains of permissions.  This is a breadth-first search
-  of the permission graph.  Permission is propagated across edges,
-  which may narrow the permission for subsequent links (eg I start
-  at can_manage but when traversing a can_read link everything
-  touched through that link will only be can_read).
-
-  When revoking a permission, we follow the chain of permissions but
-  with a permissions level of 0.  The update on the permissions table
-  has to happen _before_ the permission is actually removed, because
-  we need to be able to traverse the edge before it goes away.  When
-  we do that, we also need to traverse it at the _new_ permission
-  level - this is what override_edge_tail/head/perm are for.
-
-  Yields the set of objects that are potentially affected, and
-  their permission levels granted by having starting_perm on
-  starting_uuid.
-
-  If starting_uuid is a user, this computes the entire set of
-  permissions for that user (because it returns everything that is
-  reachable by that user).
-
-  Used by the compute_permission_subgraph function.
-*/
-WITH RECURSIVE
-        traverse_graph(target_uuid, val, traverse_owned) as (
-            values (starting_uuid, starting_perm,
-                    should_traverse_owned(starting_uuid, starting_perm))
-          union
-            (select edges.head_uuid,
-                      least(edges.val,
-                            traverse_graph.val,
-                            case traverse_graph.traverse_owned
-                              when true then null
-                              else 0
-                            end,
-                            case (edges.tail_uuid = override_edge_tail AND
-                                  edges.head_uuid = override_edge_head)
-                               when true then override_edge_perm
-                               else null
-                            end),
-                    should_traverse_owned(edges.head_uuid, edges.val)
-             from permission_graph_edges as edges, traverse_graph
-             where traverse_graph.target_uuid = edges.tail_uuid))
-        select target_uuid, max(val), bool_or(traverse_owned) from traverse_graph
-        group by (target_uuid);
 $$;
 
 
@@ -1093,6 +1056,11 @@ UNION ALL
     3 AS val
    FROM public.users
 UNION ALL
+ SELECT users.uuid AS tail_uuid,
+    users.uuid AS head_uuid,
+    3 AS val
+   FROM public.users
+UNION ALL
  SELECT links.tail_uuid,
     links.head_uuid,
         CASE
@@ -1100,7 +1068,7 @@ UNION ALL
             WHEN ((links.name)::text = 'can_login'::text) THEN 1
             WHEN ((links.name)::text = 'can_write'::text) THEN 2
             WHEN ((links.name)::text = 'can_manage'::text) THEN 3
-            ELSE NULL::integer
+            ELSE 0
         END AS val
    FROM public.links
   WHERE ((links.link_class)::text = 'permission'::text);

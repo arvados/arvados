@@ -478,15 +478,6 @@ class UserTest < ActiveSupport::TestCase
 
     vm = VirtualMachine.create
 
-    # Set up the bogus Link
-    bad_uuid = 'zzzzz-tpzed-xyzxyzxyzxyzxyz'
-
-    resp_link = Link.create ({tail_uuid: email, link_class: 'permission',
-        name: 'can_login', head_uuid: bad_uuid})
-    resp_link.save(validate: false)
-
-    verify_link resp_link, 'permission', 'can_login', email, bad_uuid
-
     response = user.setup(repo_name: 'foo/testrepo',
                           vm_uuid: vm.uuid)
 
