@@ -562,6 +562,18 @@ Clusters:
         Enable: false
 
         # Issuer URL, e.g., "https://login.example.com".
+        #
+        # This must be exactly equal to the URL returned by the issuer
+        # itself in its config response ("isser" key). If the
+        # configured value is "https://example" and the provider
+        # returns "https://example:443" then login will fail, even
+        # though those URLs are equivalent (RFC3986).
+        #
+        # If the configured URL's path component is just "/" then it
+        # is stripped. Therefore, an issuer advertising itself as
+        # "https://example/" cannot be used -- but "https://example",
+        # "https://example/foo", and "https://example/foo/" are
+        # supported.
         Issuer: ""
 
         # Your client ID and client secret (supplied by the provider).
