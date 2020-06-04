@@ -39,10 +39,30 @@ func chooseLoginController(cluster *arvados.Cluster, railsProxy *railsProxy) log
 			UseGooglePeopleAPI: cluster.Login.Google.AlternateEmailAddresses,
 		}
 	case !wantGoogle && wantOpenIDConnect && !wantSSO && !wantPAM && !wantLDAP:
+		issuer := cluster.Login.OpenIDConnect.Issuer
+		if issuer.Path == "/" {
+			// The OIDC library returns an error if the
+			// config says "https://example/" and the
+			// issuer identifies itself as
+			// "https://example", even though those URLs
+			// are equivalent
+			// (https://tools.ietf.org/html/rfc3986#section-6.2.3).
+			//
+			// Our config loader adds "/" to URLs with
+			// empty path, so we strip it off here and
+			// count on the issuer to do the same when
+			// identifying itself, as Google does.
+			//
+			// (Non-empty paths as in
+			// "https://example/foo/" are preserved by the
+			// config loader so the config just has to
+			// match the issuer's response.)
+			issuer.Path = ""
+		}
 		return &oidcLoginController{
 			Cluster:      cluster,
 			RailsProxy:   railsProxy,
-			Issuer:       cluster.Login.OpenIDConnect.Issuer.String(),
+			Issuer:       issuer.String(),
 			ClientID:     cluster.Login.OpenIDConnect.ClientID,
 			ClientSecret: cluster.Login.OpenIDConnect.ClientSecret,
 		}

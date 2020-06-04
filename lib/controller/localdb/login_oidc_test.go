@@ -9,6 +9,7 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -47,7 +48,9 @@ type OIDCLoginSuite struct {
 	issuerKey             *rsa.PrivateKey
 
 	// expected token request
-	validCode string
+	validCode         string
+	validClientID     string
+	validClientSecret string
 	// desired response from token endpoint
 	authEmail         string
 	authEmailVerified bool
@@ -83,13 +86,26 @@ func (s *OIDCLoginSuite) SetUpTest(c *check.C) {
 				"userinfo_endpoint":      s.fakeIssuer.URL + "/userinfo",
 			})
 		case "/token":
+			var clientID, clientSecret string
+			auth, _ := base64.StdEncoding.DecodeString(strings.TrimPrefix(req.Header.Get("Authorization"), "Basic "))
+			authsplit := strings.Split(string(auth), ":")
+			if len(authsplit) == 2 {
+				clientID, _ = url.QueryUnescape(authsplit[0])
+				clientSecret, _ = url.QueryUnescape(authsplit[1])
+			}
+			if clientID != s.validClientID || clientSecret != s.validClientSecret {
+				c.Logf("fakeIssuer: expected (%q, %q) got (%q, %q)", s.validClientID, s.validClientSecret, clientID, clientSecret)
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+
 			if req.Form.Get("code") != s.validCode || s.validCode == "" {
 				w.WriteHeader(http.StatusUnauthorized)
 				return
 			}
 			idToken, _ := json.Marshal(map[string]interface{}{
 				"iss":            s.fakeIssuer.URL,
-				"aud":            []string{"test%client$id"},
+				"aud":            []string{clientID},
 				"sub":            "fake-user-id",
 				"exp":            time.Now().UTC().Add(time.Minute).Unix(),
 				"iat":            time.Now().UTC().Unix(),
@@ -145,13 +161,16 @@ func (s *OIDCLoginSuite) SetUpTest(c *check.C) {
 	s.fakePeopleAPIResponse = map[string]interface{}{}
 
 	cfg, err := config.NewLoader(nil, ctxlog.TestLogger(c)).Load()
+	c.Assert(err, check.IsNil)
 	s.cluster, err = cfg.GetCluster("")
+	c.Assert(err, check.IsNil)
 	s.cluster.Login.SSO.Enable = false
 	s.cluster.Login.Google.Enable = true
 	s.cluster.Login.Google.ClientID = "test%client$id"
 	s.cluster.Login.Google.ClientSecret = "test#client/secret"
 	s.cluster.Users.PreferDomainForUsername = "PreferDomainForUsername.example.com"
-	c.Assert(err, check.IsNil)
+	s.validClientID = "test%client$id"
+	s.validClientSecret = "test#client/secret"
 
 	s.localdb = NewConn(s.cluster)
 	c.Assert(s.localdb.loginController, check.FitsTypeOf, (*oidcLoginController)(nil))
@@ -249,7 +268,7 @@ func (s *OIDCLoginSuite) TestConfig(c *check.C) {
 	s.cluster.Login.OpenIDConnect.ClientSecret = "oidc-client-secret"
 	localdb := NewConn(s.cluster)
 	ctrl := localdb.loginController.(*oidcLoginController)
-	c.Check(ctrl.Issuer, check.Equals, "https://accounts.example.com/")
+	c.Check(ctrl.Issuer, check.Equals, "https://accounts.example.com")
 	c.Check(ctrl.ClientID, check.Equals, "oidc-client-id")
 	c.Check(ctrl.ClientSecret, check.Equals, "oidc-client-secret")
 	c.Check(ctrl.UseGooglePeopleAPI, check.Equals, false)
@@ -278,6 +297,28 @@ func (s *OIDCLoginSuite) TestGoogleLogin_PeopleAPIError(c *check.C) {
 	})
 	c.Check(err, check.IsNil)
 	c.Check(resp.RedirectLocation, check.Equals, "")
+}
+
+func (s *OIDCLoginSuite) TestOIDCLogin_Success(c *check.C) {
+	s.cluster.Login.Google.Enable = false
+	s.cluster.Login.OpenIDConnect.Enable = true
+	json.Unmarshal([]byte(fmt.Sprintf("%q", s.fakeIssuer.URL)), &s.cluster.Login.OpenIDConnect.Issuer)
+	s.cluster.Login.OpenIDConnect.ClientID = "oidc#client#id"
+	s.cluster.Login.OpenIDConnect.ClientSecret = "oidc#client#secret"
+	s.validClientID = "oidc#client#id"
+	s.validClientSecret = "oidc#client#secret"
+	s.localdb = NewConn(s.cluster)
+	state := s.startLogin(c)
+	resp, err := s.localdb.Login(context.Background(), arvados.LoginOptions{
+		Code:  s.validCode,
+		State: state,
+	})
+	c.Assert(err, check.IsNil)
+	c.Check(resp.HTML.String(), check.Equals, "")
+	target, err := url.Parse(resp.RedirectLocation)
+	c.Assert(err, check.IsNil)
+	token := target.Query().Get("api_token")
+	c.Check(token, check.Matches, `v2/zzzzz-gj3su-.{15}/.{32,50}`)
 }
 
 func (s *OIDCLoginSuite) TestGoogleLogin_Success(c *check.C) {
