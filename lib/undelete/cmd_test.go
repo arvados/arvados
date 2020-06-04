@@ -81,9 +81,9 @@ func (*Suite) TestUntrashAndTouchBlock(c *check.C) {
 	// dir that keepstore might be using.
 	for _, datadir := range datadirs {
 		if fi, err := os.Stat(datadir); err != nil || !fi.IsDir() {
-			c.Logf("skipping datadir %q, evidently neither keepstore is using it", datadir)
 			continue
 		}
+		c.Logf("placing backdated trashed block in datadir %q", datadir)
 		trashfile := datadir + "/dcd/dcd0348cb2532ee90c99f1b846efaee7.trash.999999999"
 		os.Mkdir(datadir+"/dcd", 0777)
 		err = ioutil.WriteFile(trashfile, []byte("undelete test"), 0777)
