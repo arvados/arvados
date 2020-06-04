@@ -64,6 +64,9 @@ export interface ClusterConfigJSON {
         LDAP: {
             Enable: boolean;
         }
+        OpenIDConnect: {
+            Enable: boolean;
+        }
         PAM: {
             Enable: boolean;
         }
@@ -214,6 +217,9 @@ export const mockClusterConfigJSON = (config: Partial<ClusterConfigJSON>): Clust
             Enable: false,
         },
         LDAP: {
+            Enable: false,
+        },
+        OpenIDConnect: {
             Enable: false,
         },
         PAM: {
