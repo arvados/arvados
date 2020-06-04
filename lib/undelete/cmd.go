@@ -219,9 +219,16 @@ func (und undeleter) RecoverManifest(mtxt string) (string, error) {
 	blobsigexp := time.Now().Add(blobsigttl / 2)
 	und.logger.WithField("blobsigexp", blobsigexp).Debug("chose save deadline")
 
+	// We'll start a number of threads, each working on
+	// checking/recovering one block at a time. The threads
+	// themselves don't need much CPU/memory, but to avoid hitting
+	// limits on keepstore connections, backend storage bandwidth,
+	// etc., we limit concurrency to 2 per keepstore node.
+	workerThreads := 2 * len(services)
+
 	blkFound := make([]bool, len(blks))
 	var wg sync.WaitGroup
-	for i := 0; i < 2*len(services); i++ {
+	for i := 0; i < workerThreads; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
