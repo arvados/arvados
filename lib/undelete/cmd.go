@@ -42,7 +42,7 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	flags.SetOutput(stderr)
 	flags.Usage = func() {
 		fmt.Fprintf(flags.Output(), `Usage:
-	%s [options ...] /path/to/manifest.txt [...]
+	%s [options ...] { /path/to/manifest.txt | log-entry-uuid } [...]
 
 	This program recovers deleted collections. Recovery is
 	possible when the collection's manifest is still available and
@@ -52,9 +52,16 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	collections, or the blocks have been trashed but not yet
 	deleted).
 
+	Collections can be specified either by filename (a local file
+	containing a manifest with the desired data) or by log UUID
+	(an Arvados log entry, typically a "delete" or "update" event,
+	whose "old attributes" have a manifest with the desired data).
+
 	For each provided collection manifest, once all data blocks
 	are recovered/protected from garbage collection, a new
 	collection is saved and its UUID is printed on stdout.
+
+	Restored collections will belong to the system (root) user.
 
 	Exit status will be zero if recovery is successful, i.e., a
 	collection is saved for each provided manifest.
@@ -105,26 +112,47 @@ Options:
 	exitcode := 0
 	for _, src := range flags.Args() {
 		logger := logger.WithField("src", src)
+		var mtxt string
 		if len(src) == 27 && src[5:12] == "-57u5n-" {
-			logger.Error("log entry lookup not implemented")
+			var logent struct {
+				EventType  string    `json:"event_type"`
+				EventAt    time.Time `json:"event_at"`
+				ObjectUUID string    `json:"object_uuid"`
+				Properties struct {
+					OldAttributes struct {
+						ManifestText string `json:"manifest_text"`
+					} `json:"old_attributes"`
+				} `json:"properties"`
+			}
+			err = client.RequestAndDecode(&logent, "GET", "arvados/v1/logs/"+src, nil, nil)
+			if err != nil {
+				logger.WithError(err).Error("failed to load log entry")
+				exitcode = 1
+				continue
+			}
+			logger.WithFields(logrus.Fields{
+				"old_collection_uuid": logent.ObjectUUID,
+				"logged_event_type":   logent.EventType,
+				"logged_event_time":   logent.EventAt,
+			}).Info("loaded log entry")
+			mtxt = logent.Properties.OldAttributes.ManifestText
+		} else {
+			buf, err := ioutil.ReadFile(src)
+			if err != nil {
+				logger.WithError(err).Error("failed to load manifest data from file")
+				exitcode = 1
+				continue
+			}
+			mtxt = string(buf)
+		}
+		uuid, err := und.RecoverManifest(string(mtxt))
+		if err != nil {
+			logger.WithError(err).Error("recovery failed")
 			exitcode = 1
 			continue
-		} else {
-			mtxt, err := ioutil.ReadFile(src)
-			if err != nil {
-				logger.WithError(err).Error("error loading manifest data")
-				exitcode = 1
-				continue
-			}
-			uuid, err := und.RecoverManifest(string(mtxt))
-			if err != nil {
-				logger.WithError(err).Error("recovery failed")
-				exitcode = 1
-				continue
-			}
-			logger.WithField("UUID", uuid).Info("recovery succeeded")
-			fmt.Fprintln(stdout, uuid)
 		}
+		logger.WithField("UUID", uuid).Info("recovery succeeded")
+		fmt.Fprintln(stdout, uuid)
 	}
 	return exitcode
 }
