@@ -101,6 +101,53 @@ func (s *StubbedS3Suite) TestIndex(c *check.C) {
 	}
 }
 
+func (s *StubbedS3Suite) TestSignatureVersion(c *check.C) {
+	var header http.Header
+	stub := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		header = r.Header
+	}))
+	defer stub.Close()
+
+	// Default V4 signature
+	vol := S3Volume{
+		S3VolumeDriverParameters: arvados.S3VolumeDriverParameters{
+			AccessKey: "xxx",
+			SecretKey: "xxx",
+			Endpoint:  stub.URL,
+			Region:    "test-region-1",
+			Bucket:    "test-bucket-name",
+		},
+		cluster: s.cluster,
+		logger:  ctxlog.TestLogger(c),
+		metrics: newVolumeMetricsVecs(prometheus.NewRegistry()),
+	}
+	err := vol.check()
+	c.Check(err, check.IsNil)
+	err = vol.Put(context.Background(), "acbd18db4cc2f85cedef654fccc4a4d8", []byte("foo"))
+	c.Check(err, check.IsNil)
+	c.Check(header.Get("Authorization"), check.Matches, `AWS4-HMAC-SHA256 .*`)
+
+	// Force V2 signature
+	vol = S3Volume{
+		S3VolumeDriverParameters: arvados.S3VolumeDriverParameters{
+			AccessKey:   "xxx",
+			SecretKey:   "xxx",
+			Endpoint:    stub.URL,
+			Region:      "test-region-1",
+			Bucket:      "test-bucket-name",
+			V2Signature: true,
+		},
+		cluster: s.cluster,
+		logger:  ctxlog.TestLogger(c),
+		metrics: newVolumeMetricsVecs(prometheus.NewRegistry()),
+	}
+	err = vol.check()
+	c.Check(err, check.IsNil)
+	err = vol.Put(context.Background(), "acbd18db4cc2f85cedef654fccc4a4d8", []byte("foo"))
+	c.Check(err, check.IsNil)
+	c.Check(header.Get("Authorization"), check.Matches, `AWS xxx:.*`)
+}
+
 func (s *StubbedS3Suite) TestIAMRoleCredentials(c *check.C) {
 	s.metadata = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		upd := time.Now().UTC().Add(-time.Hour).Format(time.RFC3339)
@@ -122,13 +169,15 @@ func (s *StubbedS3Suite) TestIAMRoleCredentials(c *check.C) {
 		w.WriteHeader(http.StatusNotFound)
 	}))
 	deadv := &S3Volume{
-		IAMRole:  s.metadata.URL + "/fake-metadata/test-role",
-		Endpoint: "http://localhost:12345",
-		Region:   "test-region-1",
-		Bucket:   "test-bucket-name",
-		cluster:  s.cluster,
-		logger:   ctxlog.TestLogger(c),
-		metrics:  newVolumeMetricsVecs(prometheus.NewRegistry()),
+		S3VolumeDriverParameters: arvados.S3VolumeDriverParameters{
+			IAMRole:  s.metadata.URL + "/fake-metadata/test-role",
+			Endpoint: "http://localhost:12345",
+			Region:   "test-region-1",
+			Bucket:   "test-bucket-name",
+		},
+		cluster: s.cluster,
+		logger:  ctxlog.TestLogger(c),
+		metrics: newVolumeMetricsVecs(prometheus.NewRegistry()),
 	}
 	err := deadv.check()
 	c.Check(err, check.ErrorMatches, `.*/fake-metadata/test-role.*`)
@@ -468,19 +517,21 @@ func (s *StubbedS3Suite) newTestableVolume(c *check.C, cluster *arvados.Cluster,
 
 	v := &TestableS3Volume{
 		S3Volume: &S3Volume{
-			AccessKey:          accessKey,
-			SecretKey:          secretKey,
-			IAMRole:            iamRole,
-			Bucket:             TestBucketName,
-			Endpoint:           endpoint,
-			Region:             "test-region-1",
-			LocationConstraint: true,
-			UnsafeDelete:       true,
-			IndexPageSize:      1000,
-			cluster:            cluster,
-			volume:             volume,
-			logger:             ctxlog.TestLogger(c),
-			metrics:            metrics,
+			S3VolumeDriverParameters: arvados.S3VolumeDriverParameters{
+				IAMRole:            iamRole,
+				AccessKey:          accessKey,
+				SecretKey:          secretKey,
+				Bucket:             TestBucketName,
+				Endpoint:           endpoint,
+				Region:             "test-region-1",
+				LocationConstraint: true,
+				UnsafeDelete:       true,
+				IndexPageSize:      1000,
+			},
+			cluster: cluster,
+			volume:  volume,
+			logger:  ctxlog.TestLogger(c),
+			metrics: metrics,
 		},
 		c:           c,
 		server:      srv,

@@ -1205,6 +1205,7 @@ help_interactive() {
     echo "== Interactive commands:"
     echo "TARGET                 (short for 'test DIR')"
     echo "test TARGET"
+    echo "10 test TARGET         (run test 10 times)"
     echo "test TARGET:py3        (test with python3)"
     echo "test TARGET -check.vv  (pass arguments to test)"
     echo "install TARGET"
@@ -1265,6 +1266,10 @@ else
     while read -p 'What next? ' -e -i "$nextcmd" nextcmd; do
         history -s "$nextcmd"
         history -w
+        count=1
+        if [[ "${nextcmd}" =~ ^[0-9] ]]; then
+          read count nextcmd <<<"${nextcmd}"
+        fi
         read verb target opts <<<"${nextcmd}"
         target="${target%/}"
         target="${target/\/:/:}"
@@ -1284,11 +1289,14 @@ else
                         ${verb}_${target}
                         ;;
                     *)
-			argstarget=${target%:py3}
+                        argstarget=${target%:py3}
                         testargs["$argstarget"]="${opts}"
                         tt="${testfuncargs[${target}]}"
                         tt="${tt:-$target}"
-                        do_$verb $tt
+                        while [ $count -gt 0 ]; do
+                          do_$verb $tt
+                          let "count=count-1"
+                        done
                         ;;
                 esac
                 ;;

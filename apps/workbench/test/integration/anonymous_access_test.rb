@@ -117,6 +117,7 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
   end
 
   test 'view file' do
+    need_selenium "phantomjs does not follow redirects reliably, maybe https://github.com/ariya/phantomjs/issues/10389"
     magic = rand(2**512).to_s 36
     owner = api_fixture('groups')['anonymously_accessible_project']['uuid']
     col = upload_data_and_get_collection(magic, 'admin', "Hello\\040world.txt", owner)

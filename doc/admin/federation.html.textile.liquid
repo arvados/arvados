@@ -42,7 +42,7 @@ h2(#LoginCluster). Federation user management
 
 A federation of clusters can be configured to use a separate user database per cluster, or delegate a central cluster to manage the database.
 
-If clusters belong to separate organizations, each cluster will have its own user database for the members of that organization.  Through federation, a user from one organization can be granted access to the cluster of another organization.  The admin of the seond cluster controls access on a individual basis by choosing to activate or deactivate accounts from other organizations (with the default policy the value of  @ActivateUsers@).
+If clusters belong to separate organizations, each cluster will have its own user database for the members of that organization.  Through federation, a user from one organization can be granted access to the cluster of another organization.  The admin of the second cluster controls access on a individual basis by choosing to activate or deactivate accounts from other organizations (with the default policy the value of  @ActivateUsers@).
 
 On the other hand, if all clusters belong to the same organization, and users in that organization should have access to all the clusters, user management can be simplified by setting the @LoginCluster@ which manages the user database used by all other clusters in the federation.  To do this, choose one cluster in the federation which will be the 'login cluster'.  Set the the @Login.LoginCluster@ configuration value on all clusters in the federation to the cluster id of the login cluster.  After setting @LoginCluster@, restart arvados-api-server and arvados-controller.
 
