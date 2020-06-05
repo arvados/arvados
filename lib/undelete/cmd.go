@@ -137,9 +137,8 @@ type undeleter struct {
 
 var errNotFound = errors.New("not found")
 
-// Return the timestamp of the newest copy of blk on svc. Second
-// return value is false if blk is not on svc at all, or an error
-// occurs.
+// Finds the timestamp of the newest copy of blk on svc. Returns
+// errNotFound if blk is not on svc at all.
 func (und undeleter) newestMtime(logger logrus.FieldLogger, blk string, svc arvados.KeepService) (time.Time, error) {
 	found, err := svc.Index(und.client, blk)
 	if err != nil {
@@ -161,11 +160,10 @@ func (und undeleter) newestMtime(logger logrus.FieldLogger, blk string, svc arva
 
 var errTouchIneffective = errors.New("(BUG?) touch succeeded but had no effect -- reported timestamp is still too old")
 
-// Ensure the given block exists on the given server and won't be
+// Ensures the given block exists on the given server and won't be
 // eligible for trashing until after our chosen deadline (blobsigexp).
 // Returns an error if the block doesn't exist on the given server, or
-// has an old timestamp and can't be updated.  Reports errors via
-// logger.
+// has an old timestamp and can't be updated.
 //
 // After we decide a block is "safe" (whether or not we had to untrash
 // it), keep-balance might notice that it's currently unreferenced and
