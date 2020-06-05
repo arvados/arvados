@@ -2,10 +2,43 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { Resource } from "~/models/resource";
+import { Resource, EditableResource } from "~/models/resource";
 import { ResourceKind } from '~/models/resource';
+import { ProjectResource } from "~/models/project";
+import { GroupResource } from "~/models/group";
 
 export type ResourcesState = { [key: string]: Resource };
+
+const getResourceWritableBy = (state: ResourcesState, id: string, userUuid: string): string[] => {
+    if (!id) {
+        return [];
+    }
+
+    if (id === userUuid) {
+        return [userUuid];
+    }
+
+    const resource = (state[id] as ProjectResource);
+
+    if (!resource) {
+        return [];
+    }
+
+    const { writableBy } = resource;
+
+    return writableBy || getResourceWritableBy(state, resource.ownerUuid, userUuid);
+};
+
+export const getResourceWithEditableStatus = <T extends EditableResource & GroupResource>(id: string, userUuid?: string) =>
+    (state: ResourcesState): T | undefined => {
+        const resource = JSON.parse(JSON.stringify(state[id] as T));
+
+        if (resource) {
+            resource.isEditable = userUuid ? getResourceWritableBy(state, id, userUuid).indexOf(userUuid) > -1 : false;
+        }
+
+        return resource;
+    };
 
 export const getResource = <T extends Resource = Resource>(id: string) =>
     (state: ResourcesState): T | undefined =>

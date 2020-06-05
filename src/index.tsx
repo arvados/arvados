@@ -21,7 +21,7 @@ import { CustomTheme } from '~/common/custom-theme';
 import { fetchConfig } from '~/common/config';
 import { addMenuActionSet, ContextMenuKind } from '~/views-components/context-menu/context-menu';
 import { rootProjectActionSet } from "~/views-components/context-menu/action-sets/root-project-action-set";
-import { projectActionSet } from "~/views-components/context-menu/action-sets/project-action-set";
+import { projectActionSet, readOnlyProjectActionSet } from "~/views-components/context-menu/action-sets/project-action-set";
 import { resourceActionSet } from '~/views-components/context-menu/action-sets/resource-action-set';
 import { favoriteActionSet } from "~/views-components/context-menu/action-sets/favorite-action-set";
 import { collectionFilesActionSet, readOnlyCollectionFilesActionSet } from '~/views-components/context-menu/action-sets/collection-files-action-set';
@@ -67,6 +67,7 @@ console.log(`Starting arvados [${getBuildInfo()}]`);
 
 addMenuActionSet(ContextMenuKind.ROOT_PROJECT, rootProjectActionSet);
 addMenuActionSet(ContextMenuKind.PROJECT, projectActionSet);
+addMenuActionSet(ContextMenuKind.READONLY_PROJECT, readOnlyProjectActionSet);
 addMenuActionSet(ContextMenuKind.RESOURCE, resourceActionSet);
 addMenuActionSet(ContextMenuKind.FAVORITE, favoriteActionSet);
 addMenuActionSet(ContextMenuKind.COLLECTION_FILES, collectionFilesActionSet);

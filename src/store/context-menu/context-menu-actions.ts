@@ -7,11 +7,11 @@ import { ContextMenuPosition } from "./context-menu-reducer";
 import { ContextMenuKind } from '~/views-components/context-menu/context-menu';
 import { Dispatch } from 'redux';
 import { RootState } from '~/store/store';
-import { getResource } from '../resources/resources';
+import { getResource, getResourceWithEditableStatus } from '../resources/resources';
 import { ProjectResource } from '~/models/project';
 import { UserResource } from '~/models/user';
 import { isSidePanelTreeCategory } from '~/store/side-panel-tree/side-panel-tree-actions';
-import { extractUuidKind, ResourceKind } from '~/models/resource';
+import { extractUuidKind, ResourceKind, EditableResource } from '~/models/resource';
 import { Process } from '~/store/processes/process';
 import { RepositoryResource } from '~/models/repositories';
 import { SshKeyResource } from '~/models/ssh-key';
@@ -34,6 +34,7 @@ export type ContextMenuResource = {
     kind: ResourceKind,
     menuKind: ContextMenuKind;
     isTrashed?: boolean;
+    isEditable?: boolean;
     outputUuid?: string;
     workflowUuid?: string;
 };
@@ -153,16 +154,17 @@ export const openRootProjectContextMenu = (event: React.MouseEvent<HTMLElement>,
         }
     };
 
-export const openProjectContextMenu = (event: React.MouseEvent<HTMLElement>, projectUuid: string) =>
+export const openProjectContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) =>
     (dispatch: Dispatch, getState: () => RootState) => {
-        const res = getResource<ProjectResource>(projectUuid)(getState().resources);
-        const isAdmin = getState().auth.user!.isAdmin;
-        if (res) {
+        const { isAdmin, uuid: userUuid } = getState().auth.user!;
+        const res = getResourceWithEditableStatus<ProjectResource & EditableResource>(resourceUuid, userUuid)(getState().resources);
+        const menuKind = resourceKindToContextMenuKind(resourceUuid, isAdmin, (res || {} as EditableResource).isEditable);
+        if (res && menuKind) {
             dispatch<any>(openContextMenu(event, {
                 name: res.name,
                 uuid: res.uuid,
                 kind: res.kind,
-                menuKind: !isAdmin ? ContextMenuKind.PROJECT : ContextMenuKind.PROJECT_ADMIN,
+                menuKind,
                 ownerUuid: res.ownerUuid,
                 isTrashed: res.isTrashed
             }));
@@ -198,13 +200,17 @@ export const openProcessContextMenu = (event: React.MouseEvent<HTMLElement>, pro
         }
     };
 
-export const resourceKindToContextMenuKind = (uuid: string, isAdmin?: boolean) => {
+export const resourceKindToContextMenuKind = (uuid: string, isAdmin?: boolean, isEditable?: boolean) => {
     const kind = extractUuidKind(uuid);
     switch (kind) {
         case ResourceKind.PROJECT:
-            return !isAdmin ? ContextMenuKind.PROJECT : ContextMenuKind.PROJECT_ADMIN;
+            return !isAdmin ?
+                isEditable ? ContextMenuKind.PROJECT : ContextMenuKind.READONLY_PROJECT :
+                ContextMenuKind.PROJECT_ADMIN;
         case ResourceKind.COLLECTION:
-            return !isAdmin ? ContextMenuKind.COLLECTION_RESOURCE : ContextMenuKind.COLLECTION_ADMIN;
+            return !isAdmin ?
+                isEditable ? ContextMenuKind.COLLECTION_RESOURCE : ContextMenuKind.READONLY_COLLECTION :
+                ContextMenuKind.COLLECTION_ADMIN;
         case ResourceKind.PROCESS:
             return !isAdmin ? ContextMenuKind.PROCESS_RESOURCE : ContextMenuKind.PROCESS_ADMIN;
         case ResourceKind.USER:

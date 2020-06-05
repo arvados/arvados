@@ -49,30 +49,33 @@ export const readOnlyCollectionActionSet: ContextMenuActionSet = [[
     },
 ]];
 
-export const collectionActionSet: ContextMenuActionSet = readOnlyCollectionActionSet.concat([[
-    {
-        icon: RenameIcon,
-        name: "Edit collection",
-        execute: (dispatch, resource) => {
-            dispatch<any>(openCollectionUpdateDialog(resource));
-        }
-    },
-    {
-        icon: ShareIcon,
-        name: "Share",
-        execute: (dispatch, { uuid }) => {
-            dispatch<any>(openSharingDialog(uuid));
-        }
-    },
-    {
-        icon: MoveToIcon,
-        name: "Move to",
-        execute: (dispatch, resource) => dispatch<any>(openMoveCollectionDialog(resource))
-    },
-    {
-        component: ToggleTrashAction,
-        execute: (dispatch, resource) => {
-            dispatch<any>(toggleCollectionTrashed(resource.uuid, resource.isTrashed!!));
-        }
-    },
-]]);
+export const collectionActionSet: ContextMenuActionSet = [
+    [
+        ...readOnlyCollectionActionSet.reduce((prev, next) => prev.concat(next), []),
+        {
+            icon: RenameIcon,
+            name: "Edit collection",
+            execute: (dispatch, resource) => {
+                dispatch<any>(openCollectionUpdateDialog(resource));
+            }
+        },
+        {
+            icon: ShareIcon,
+            name: "Share",
+            execute: (dispatch, { uuid }) => {
+                dispatch<any>(openSharingDialog(uuid));
+            }
+        },
+        {
+            icon: MoveToIcon,
+            name: "Move to",
+            execute: (dispatch, resource) => dispatch<any>(openMoveCollectionDialog(resource))
+        },
+        {
+            component: ToggleTrashAction,
+            execute: (dispatch, resource) => {
+                dispatch<any>(toggleCollectionTrashed(resource.uuid, resource.isTrashed!!));
+            }
+        },
+    ]
+];

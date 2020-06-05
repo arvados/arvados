@@ -14,6 +14,10 @@ export interface Resource {
     etag: string;
 }
 
+export interface EditableResource extends Resource {
+    isEditable: boolean;
+}
+
 export interface TrashableResource extends Resource {
     trashAt: string;
     deleteAt: string;

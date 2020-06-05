@@ -10,7 +10,7 @@ import { DataColumns } from '~/components/data-table/data-table';
 import { RouteComponentProps } from 'react-router';
 import { DataTableFilterItem } from '~/components/data-table-filters/data-table-filters';
 import { SortDirection } from '~/components/data-table/data-column';
-import { ResourceKind } from '~/models/resource';
+import { ResourceKind, EditableResource } from '~/models/resource';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { FAVORITE_PANEL_ID } from "~/store/favorite-panel/favorite-panel-action";
 import {
@@ -31,6 +31,8 @@ import { RootState } from '~/store/store';
 import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
 import { createTree } from '~/models/tree';
 import { getSimpleObjectTypeFilters } from '~/store/resource-type-filters/resource-type-filters';
+import { getResourceWithEditableStatus, ResourcesState } from '~/store/resources/resources';
+import { ProjectResource } from '~/models/project';
 
 type CssRules = "toolbar" | "button";
 
@@ -106,7 +108,9 @@ export const favoritePanelColumns: DataColumns<string> = [
 
 interface FavoritePanelDataProps {
     favorites: FavoritesState;
+    resources: ResourcesState;
     isAdmin: boolean;
+    userUuid: string;
 }
 
 interface FavoritePanelActionProps {
@@ -116,7 +120,9 @@ interface FavoritePanelActionProps {
 }
 const mapStateToProps = (state : RootState): FavoritePanelDataProps => ({
     favorites: state.favorites,
-    isAdmin: state.auth.user!.isAdmin
+    resources: state.resources,
+    isAdmin: state.auth.user!.isAdmin,
+    userUuid: state.auth.user!.uuid,
 });
 
 type FavoritePanelProps = FavoritePanelDataProps & FavoritePanelActionProps & DispatchProp
@@ -127,7 +133,9 @@ export const FavoritePanel = withStyles(styles)(
         class extends React.Component<FavoritePanelProps> {
 
             handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
-                const menuKind = resourceKindToContextMenuKind(resourceUuid, this.props.isAdmin);
+                const { isAdmin, userUuid, resources } = this.props;
+                const resource = getResourceWithEditableStatus<ProjectResource & EditableResource>(resourceUuid, userUuid)(resources);
+                const menuKind = resourceKindToContextMenuKind(resourceUuid, isAdmin, (resource || {} as EditableResource).isEditable);
                 if (menuKind) {
                     this.props.dispatch<any>(openContextMenu(event, {
                         name: '',

@@ -14,11 +14,11 @@ import { RootState } from '~/store/store';
 import { DataTableFilterItem } from '~/components/data-table-filters/data-table-filters';
 import { ContainerRequestState } from '~/models/container-request';
 import { SortDirection } from '~/components/data-table/data-column';
-import { ResourceKind, Resource } from '~/models/resource';
+import { ResourceKind, Resource, EditableResource } from '~/models/resource';
 import { ResourceFileSize, ResourceLastModifiedDate, ProcessStatus, ResourceType, ResourceOwner } from '~/views-components/data-explorer/renderers';
 import { ProjectIcon } from '~/components/icon/icon';
 import { ResourceName } from '~/views-components/data-explorer/renderers';
-import { ResourcesState, getResource } from '~/store/resources/resources';
+import { ResourcesState, getResourceWithEditableStatus } from '~/store/resources/resources';
 import { loadDetailsPanel } from '~/store/details-panel/details-panel-action';
 import { resourceKindToContextMenuKind, openContextMenu } from '~/store/context-menu/context-menu-actions';
 import { ProjectResource } from '~/models/project';
@@ -115,6 +115,7 @@ interface ProjectPanelDataProps {
     currentItemId: string;
     resources: ResourcesState;
     isAdmin: boolean;
+    userUuid: string;
 }
 
 type ProjectPanelProps = ProjectPanelDataProps & DispatchProp
@@ -124,7 +125,8 @@ export const ProjectPanel = withStyles(styles)(
     connect((state: RootState) => ({
         currentItemId: getProperty(PROJECT_PANEL_CURRENT_UUID)(state.properties),
         resources: state.resources,
-        isAdmin: state.auth.user!.isAdmin
+        isAdmin: state.auth.user!.isAdmin,
+        userUuid: state.auth.user!.uuid,
     }))(
         class extends React.Component<ProjectPanelProps> {
             render() {
@@ -149,8 +151,9 @@ export const ProjectPanel = withStyles(styles)(
             }
 
             handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
-                const menuKind = resourceKindToContextMenuKind(resourceUuid, this.props.isAdmin);
-                const resource = getResource<ProjectResource>(resourceUuid)(this.props.resources);
+                const { isAdmin, userUuid, resources } = this.props;
+                const resource = getResourceWithEditableStatus<ProjectResource & EditableResource>(resourceUuid, userUuid)(resources);
+                const menuKind = resourceKindToContextMenuKind(resourceUuid, isAdmin, (resource || {} as EditableResource).isEditable);
                 if (menuKind && resource) {
                     this.props.dispatch<any>(openContextMenu(event, {
                         name: resource.name,
