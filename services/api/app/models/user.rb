@@ -121,7 +121,7 @@ class User < ArvadosModel
 
       target_owner_uuid = target.owner_uuid if target.respond_to? :owner_uuid
 
-      user_uuids_subquery = USER_UUIDS_SUBQUERY_TEMPLATE % {user: "$1", perm_level: VAL_FOR_PERM[action]}
+      user_uuids_subquery = USER_UUIDS_SUBQUERY_TEMPLATE % {user: "$1", perm_level: "$3"}
 
       unless ActiveRecord::Base.connection.
         exec_query(%{
@@ -172,9 +172,11 @@ SELECT 1 FROM #{PERMISSION_VIEW}
   def self.all_group_permissions
     all_perms = {}
     ActiveRecord::Base.connection.
-      exec_query("SELECT user_uuid, target_uuid, perm_level
+      exec_query(%{
+SELECT user_uuid, target_uuid, perm_level
                   FROM #{PERMISSION_VIEW}
-                  WHERE traverse_owned",
+                  WHERE traverse_owned
+},
                   # "name" arg is a query label that appears in logs:
                  "all_group_permissions").
       rows.each do |user_uuid, group_uuid, max_p_val|
@@ -190,13 +192,13 @@ SELECT 1 FROM #{PERMISSION_VIEW}
   def group_permissions(level=1)
     group_perms = {}
 
-    user_uuids_subquery = USER_UUIDS_SUBQUERY_TEMPLATE % {user: "$1", perm_level: VAL_FOR_PERM[action]}
+    user_uuids_subquery = USER_UUIDS_SUBQUERY_TEMPLATE % {user: "$1", perm_level: "$2"}
 
     ActiveRecord::Base.connection.
       exec_query(%{
 SELECT target_uuid, perm_level
   FROM #{PERMISSION_VIEW}
-  WHERE user_uuid = user_uuid in (#{user_uuids_subquery}) and perm_level >= $2
+  WHERE user_uuid in (#{user_uuids_subquery}) and perm_level >= $2
 },
                   # "name" arg is a query label that appears in logs:
                   "User.group_permissions",
