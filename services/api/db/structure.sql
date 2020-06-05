@@ -45,7 +45,13 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public;
 CREATE FUNCTION public.compute_permission_subgraph(perm_origin_uuid character varying, starting_uuid character varying, starting_perm integer) RETURNS TABLE(user_uuid character varying, target_uuid character varying, val integer, traverse_owned boolean)
     LANGUAGE sql STABLE
     AS $$
-/* perm_origin_uuid: The object that 'gets' or 'has' the permission.
+
+/* The purpose of this function is to compute the permissions for a
+   subgraph of the database, starting from a given edge.  The newly
+   computed permissions are used to add and remove rows from the main
+   permissions table.
+
+   perm_origin_uuid: The object that 'gets' the permission.
 
    starting_uuid: The starting object the permission applies to.
 
@@ -53,40 +59,13 @@ CREATE FUNCTION public.compute_permission_subgraph(perm_origin_uuid character va
                   starting_uuid One of 1, 2, 3 for can_read,
                   can_write, can_manage respectively, or 0 to revoke
                   permissions.
-
-   This function is broken up into a number of clauses, described
-   below.
-
-   Note on query optimization:
-
-   Each clause in a "with" statement is called a "common table
-   expression" or CTE.
-
-   In Postgres, they are evaluated in sequence and results of each CTE
-   is stored in a temporary table.  This means Postgres does not
-   propagate constraints from later subqueries to earlier subqueries
-   when they are CTEs.
-
-   This is a problem if, for example, a later subquery chooses 10
-   items out of a set of 1000000 defined by an earlier subquery,
-   because it will always compute all 1000000 rows even if the query
-   on the 1000000 rows could have been constrained.  This is why
-   permission_graph_edges is a view -- views are inlined so and can be
-   optimized using external constraints.
-
-   The query optimizer does sort the temporary tables for later use in
-   joins.
-
-   Final note, this query would have been almost impossible to write
-   (and certainly impossible to read) without splitting it up using
-   SQL "with" but unfortunately it also stumbles into a frustrating
-   Postgres optimizer bug, see
-   lib/refresh_permission_view.rb#update_permissions
-   for details and a partial workaround.
 */
 with
-  /* Gets the initial set of objects potentially affected by the
-     permission change, using search_permission_graph.
+  /* Starting from starting_uuid, determine the set of objects that
+     could be affected by this permission change.
+
+     Note: We don't traverse users unless it is an "identity"
+     permission (permission origin is self).
   */
   perm_from_start(perm_origin_uuid, target_uuid, val, traverse_owned) as (
     
@@ -119,14 +98,21 @@ WITH RECURSIVE
         group by (traverse_graph.origin_uuid, target_uuid)
 ),
 
-  /* Finds other inbound edges that grant permissions on the objects
-     in perm_from_start, and computes permissions that originate from
-     those.  This is required to handle the case where there is more
-     than one path through which a user gets permission to an object.
-     For example, a user owns a project and also shares it can_read
-     with a group the user belongs to, adding the can_read link must
-     not overwrite the existing can_manage permission granted by
-     ownership.
+  /* Find other inbound edges that grant permissions to 'targets' in
+     perm_from_start, and compute permissions that originate from
+     those.
+
+     This is necessary for two reasons:
+
+       1) Other users may have access to a subset of the objects
+       through other permission links than the one we started from.
+       If we don't recompute them, their permission will get dropped.
+
+       2) There may be more than one path through which a user gets
+       permission to an object.  For example, a user owns a project
+       and also shares it can_read with a group the user belongs
+       to. adding the can_read link must not overwrite the existing
+       can_manage permission granted by ownership.
   */
   additional_perms(perm_origin_uuid, target_uuid, val, traverse_owned) as (
     
@@ -164,7 +150,7 @@ WITH RECURSIVE
         group by (traverse_graph.origin_uuid, target_uuid)
 ),
 
-  /* Combines the permissions computed in the first two phases. */
+  /* Combine the permissions computed in the first two phases. */
   all_perms(perm_origin_uuid, target_uuid, val, traverse_owned) as (
       select * from perm_from_start
     union all
@@ -177,30 +163,27 @@ WITH RECURSIVE
 
      Key insights:
 
-     * Permissions are transitive (with some special cases involving
-       users, this is controlled by the traverse_owned flag).
+     * For every group, the materialized_permissions lists all users
+       that can access to that group.
 
-     * A user object can only gain permissions via an inbound edge,
-       or appearing in the graph.
+     * The all_perms subquery has computed permissions on on a set of
+       objects for all inbound "origins", which are users or groups.
 
-     * The materialized_permissions table includes the permission
-       each user has on the tail end of each inbound edge.
+     * Permissions through groups are transitive.
 
-     * The all_perms subquery has permissions for each object in the
-       subgraph reachable from certain origin (tail end of an edge).
+     We can infer:
 
-     * Therefore, for each user, we can compute user permissions on
-       each object in subgraph by determining the permission the user
-       has on each origin (tail end of an edge), joining that with the
-       perm_origin_uuid column of all_perms, and taking the least() of
-       the origin edge or all_perms val (because of the "least
-       permission on the path" rule).  If an object was reachable by
-       more than one path (appears with more than one origin), we take
-       the max() of the computed permissions.
+     1) The materialized_permissions table declares that user X has permission N on group Y
+     2) The all_perms result has determined group Y has permission M on object Z
+     3) Therefore, user X has permission min(N, M) on object Z
 
-     * Finally, because users always have permission on themselves, the
-       query also makes sure those permission rows are always
-       returned.
+     This allows us to efficiently determine the set of users that
+     have permissions on the subset of objects, without having to
+     follow the chain of permission back up to find those users.
+
+     In addition, because users always have permission on themselves, this
+     query also makes sure those permission rows are always
+     returned.
   */
   select v.user_uuid, v.target_uuid, max(v.perm_level), bool_or(v.traverse_owned) from
     (select m.user_uuid,
@@ -215,23 +198,6 @@ WITH RECURSIVE
         from all_perms
         where all_perms.target_uuid like '_____-tpzed-_______________') as v
     group by v.user_uuid, v.target_uuid
-$$;
-
-
---
--- Name: compute_trashed(); Type: FUNCTION; Schema: public; Owner: -
---
-
-CREATE FUNCTION public.compute_trashed() RETURNS TABLE(uuid character varying, trash_at timestamp without time zone)
-    LANGUAGE sql STABLE
-    AS $$
-/* Helper function to populate trashed_groups table. This starts with
-   each group owned by a user and computes the subtree under that
-   group to find any groups that are trashed.
-*/
-select ps.target_uuid as group_uuid, ps.trash_at from groups,
-  lateral project_subtree_with_trash_at(groups.uuid, groups.trash_at) ps
-  where groups.owner_uuid like '_____-tpzed-_______________'
 $$;
 
 

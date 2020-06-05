@@ -121,10 +121,7 @@ class User < ArvadosModel
 
       target_owner_uuid = target.owner_uuid if target.respond_to? :owner_uuid
 
-      user_uuids_subquery = %{
-select target_uuid from materialized_permissions where user_uuid = $1
-and target_uuid like '_____-tpzed-_______________' and traverse_owned=true and perm_level >= #{VAL_FOR_PERM[action]}
-}
+      user_uuids_subquery = USER_UUIDS_SUBQUERY_TEMPLATE % {user: "$1", perm_level: VAL_FOR_PERM[action]}
 
       unless ActiveRecord::Base.connection.
         exec_query(%{
@@ -169,6 +166,9 @@ SELECT 1 FROM #{PERMISSION_VIEW}
   end
 
   # Return a hash of {user_uuid: group_perms}
+  #
+  # note: this does not account for permissions that a user gains by
+  # having can_manage on another user.
   def self.all_group_permissions
     all_perms = {}
     ActiveRecord::Base.connection.
@@ -189,14 +189,17 @@ SELECT 1 FROM #{PERMISSION_VIEW}
   # objects owned by group_uuid.
   def group_permissions(level=1)
     group_perms = {}
+
+    user_uuids_subquery = USER_UUIDS_SUBQUERY_TEMPLATE % {user: "$1", perm_level: VAL_FOR_PERM[action]}
+
     ActiveRecord::Base.connection.
       exec_query(%{
 SELECT target_uuid, perm_level
   FROM #{PERMISSION_VIEW}
-  WHERE user_uuid = $1 and perm_level >= $2
+  WHERE user_uuid = user_uuid in (#{user_uuids_subquery}) and perm_level >= $2
 },
                   # "name" arg is a query label that appears in logs:
-                  "group_permissions_for_user",
+                  "User.group_permissions",
                   # "binds" arg is an array of [col_id, value] for '$1' vars:
                   [[nil, uuid],
                    [nil, level]]).

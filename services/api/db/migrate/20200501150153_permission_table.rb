@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-require 'update_permissions'
+require '20200501150153_permission_table_constants'
 
 class PermissionTable < ActiveRecord::Migration[5.0]
   def up
@@ -58,26 +58,10 @@ WITH RECURSIVE
 $$;
 }
 
-    ActiveRecord::Base.connection.execute %{
-create or replace function compute_trashed ()
-returns table (uuid varchar(27), trash_at timestamp)
-STABLE
-language SQL
-as $$
-/* Helper function to populate trashed_groups table. This starts with
-   each group owned by a user and computes the subtree under that
-   group to find any groups that are trashed.
-*/
-select ps.target_uuid as group_uuid, ps.trash_at from groups,
-  lateral project_subtree_with_trash_at(groups.uuid, groups.trash_at) ps
-  where groups.owner_uuid like '_____-tpzed-_______________'
-$$;
-}
-
     # Now populate the table.  For a non-test databse this is the only
     # time this ever happens, after this the trash table is updated
     # incrementally.  See app/models/group.rb#update_trash
-    ActiveRecord::Base.connection.execute("INSERT INTO trashed_groups select * from compute_trashed()")
+    refresh_trashed
 
     # The table to store the flattened permissions.  This is almost
     # exactly the same as the old materalized_permission_view except
@@ -116,12 +100,12 @@ $$;
 
     # Merge all permission relationships into a single view.  This
     # consists of: groups (projects) owning things, users owning
-    # things, and explicit permission links.
+    # things, users owning themselves, and explicit permission links.
     #
-    # Fun fact, a SQL view gets inlined into the query where it is
-    # used, this enables the query planner to inject constraints, so
-    # when using the view we only look up edges we plan to traverse
-    # and avoid a brute force computation of all edges.
+    # A SQL view gets inlined into the query where it is used as a
+    # subquery.  This enables the query planner to inject constraints,
+    # so we only look up edges we plan to traverse and avoid a brute
+    # force query of all edges.
     ActiveRecord::Base.connection.execute %{
 create view permission_graph_edges as
   select groups.owner_uuid as tail_uuid, groups.uuid as head_uuid, (3) as val from groups
@@ -143,6 +127,9 @@ union all
       where links.link_class='permission'
 }
 
+    # Code fragment that is used below.  This is used to ensure that
+    # the permission edge passed into compute_permission_subgraph
+    # takes precedence over an existing edge in the "edges" view.
     override = %{,
                             case (edges.tail_uuid = perm_origin_uuid AND
                                   edges.head_uuid = starting_uuid)
@@ -150,6 +137,14 @@ union all
                                else null
                             end
 }
+
+    #
+    # The primary function to compute permissions for a subgraph.
+    # This originally was organized somewhat more cleanly, but this
+    # ran into performance issues due to the query optimizer not
+    # working across function and "with" expression boundaries.  So I
+    # had to fall back on using string templates for the repeated
+    # code.  I'm sorry.
 
     ActiveRecord::Base.connection.execute %{
 create or replace function compute_permission_subgraph (perm_origin_uuid varchar(27),
@@ -159,7 +154,13 @@ returns table (user_uuid varchar(27), target_uuid varchar(27), val integer, trav
 STABLE
 language SQL
 as $$
-/* perm_origin_uuid: The object that 'gets' or 'has' the permission.
+
+/* The purpose of this function is to compute the permissions for a
+   subgraph of the database, starting from a given edge.  The newly
+   computed permissions are used to add and remove rows from the main
+   permissions table.
+
+   perm_origin_uuid: The object that 'gets' the permission.
 
    starting_uuid: The starting object the permission applies to.
 
@@ -167,40 +168,13 @@ as $$
                   starting_uuid One of 1, 2, 3 for can_read,
                   can_write, can_manage respectively, or 0 to revoke
                   permissions.
-
-   This function is broken up into a number of clauses, described
-   below.
-
-   Note on query optimization:
-
-   Each clause in a "with" statement is called a "common table
-   expression" or CTE.
-
-   In Postgres, they are evaluated in sequence and results of each CTE
-   is stored in a temporary table.  This means Postgres does not
-   propagate constraints from later subqueries to earlier subqueries
-   when they are CTEs.
-
-   This is a problem if, for example, a later subquery chooses 10
-   items out of a set of 1000000 defined by an earlier subquery,
-   because it will always compute all 1000000 rows even if the query
-   on the 1000000 rows could have been constrained.  This is why
-   permission_graph_edges is a view -- views are inlined so and can be
-   optimized using external constraints.
-
-   The query optimizer does sort the temporary tables for later use in
-   joins.
-
-   Final note, this query would have been almost impossible to write
-   (and certainly impossible to read) without splitting it up using
-   SQL "with" but unfortunately it also stumbles into a frustrating
-   Postgres optimizer bug, see
-   lib/refresh_permission_view.rb#update_permissions
-   for details and a partial workaround.
 */
 with
-  /* Gets the initial set of objects potentially affected by the
-     permission change, using search_permission_graph.
+  /* Starting from starting_uuid, determine the set of objects that
+     could be affected by this permission change.
+
+     Note: We don't traverse users unless it is an "identity"
+     permission (permission origin is self).
   */
   perm_from_start(perm_origin_uuid, target_uuid, val, traverse_owned) as (
     #{PERM_QUERY_TEMPLATE % {:base_case => %{
@@ -211,14 +185,21 @@ with
 :override => override
 } }),
 
-  /* Finds other inbound edges that grant permissions on the objects
-     in perm_from_start, and computes permissions that originate from
-     those.  This is required to handle the case where there is more
-     than one path through which a user gets permission to an object.
-     For example, a user owns a project and also shares it can_read
-     with a group the user belongs to, adding the can_read link must
-     not overwrite the existing can_manage permission granted by
-     ownership.
+  /* Find other inbound edges that grant permissions to 'targets' in
+     perm_from_start, and compute permissions that originate from
+     those.
+
+     This is necessary for two reasons:
+
+       1) Other users may have access to a subset of the objects
+       through other permission links than the one we started from.
+       If we don't recompute them, their permission will get dropped.
+
+       2) There may be more than one path through which a user gets
+       permission to an object.  For example, a user owns a project
+       and also shares it can_read with a group the user belongs
+       to. adding the can_read link must not overwrite the existing
+       can_manage permission granted by ownership.
   */
   additional_perms(perm_origin_uuid, target_uuid, val, traverse_owned) as (
     #{PERM_QUERY_TEMPLATE % {:base_case => %{
@@ -234,7 +215,7 @@ with
 :override => override
 } }),
 
-  /* Combines the permissions computed in the first two phases. */
+  /* Combine the permissions computed in the first two phases. */
   all_perms(perm_origin_uuid, target_uuid, val, traverse_owned) as (
       select * from perm_from_start
     union all
@@ -247,30 +228,27 @@ with
 
      Key insights:
 
-     * Permissions are transitive (with some special cases involving
-       users, this is controlled by the traverse_owned flag).
+     * For every group, the materialized_permissions lists all users
+       that can access to that group.
 
-     * A user object can only gain permissions via an inbound edge,
-       or appearing in the graph.
+     * The all_perms subquery has computed permissions on on a set of
+       objects for all inbound "origins", which are users or groups.
 
-     * The materialized_permissions table includes the permission
-       each user has on the tail end of each inbound edge.
+     * Permissions through groups are transitive.
 
-     * The all_perms subquery has permissions for each object in the
-       subgraph reachable from certain origin (tail end of an edge).
+     We can infer:
 
-     * Therefore, for each user, we can compute user permissions on
-       each object in subgraph by determining the permission the user
-       has on each origin (tail end of an edge), joining that with the
-       perm_origin_uuid column of all_perms, and taking the least() of
-       the origin edge or all_perms val (because of the "least
-       permission on the path" rule).  If an object was reachable by
-       more than one path (appears with more than one origin), we take
-       the max() of the computed permissions.
+     1) The materialized_permissions table declares that user X has permission N on group Y
+     2) The all_perms result has determined group Y has permission M on object Z
+     3) Therefore, user X has permission min(N, M) on object Z
 
-     * Finally, because users always have permission on themselves, the
-       query also makes sure those permission rows are always
-       returned.
+     This allows us to efficiently determine the set of users that
+     have permissions on the subset of objects, without having to
+     follow the chain of permission back up to find those users.
+
+     In addition, because users always have permission on themselves, this
+     query also makes sure those permission rows are always
+     returned.
   */
   select v.user_uuid, v.target_uuid, max(v.perm_level), bool_or(v.traverse_owned) from
     (select m.user_uuid,
@@ -289,17 +267,10 @@ $$;
      }
 
     #
-    # Populate the materialized_permissions by traversing permissions
+    # Populate materialized_permissions by traversing permissions
     # starting at each user.
     #
-    ActiveRecord::Base.connection.execute %{
-INSERT INTO materialized_permissions
-    #{PERM_QUERY_TEMPLATE % {:base_case => %{
-        select uuid, uuid, 3, true, true from users
-},
-:override => ''
-} }
-}
+    refresh_permissions
   end
 
   def down
@@ -307,7 +278,6 @@ INSERT INTO materialized_permissions
     drop_table :trashed_groups
 
     ActiveRecord::Base.connection.execute "DROP function project_subtree_with_trash_at (varchar, timestamp);"
-    ActiveRecord::Base.connection.execute "DROP function compute_trashed ();"
     ActiveRecord::Base.connection.execute "DROP function compute_permission_subgraph (varchar, varchar, integer);"
     ActiveRecord::Base.connection.execute "DROP function should_traverse_owned(varchar, integer);"
     ActiveRecord::Base.connection.execute "DROP view permission_graph_edges;"

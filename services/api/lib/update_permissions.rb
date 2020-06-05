@@ -2,32 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-PERMISSION_VIEW = "materialized_permissions"
-TRASHED_GROUPS = "trashed_groups"
-
-def refresh_permissions
-  ActiveRecord::Base.transaction do
-    ActiveRecord::Base.connection.execute("LOCK TABLE #{PERMISSION_VIEW}")
-    ActiveRecord::Base.connection.execute("DELETE FROM #{PERMISSION_VIEW}")
-
-    ActiveRecord::Base.connection.execute %{
-INSERT INTO materialized_permissions
-    #{PERM_QUERY_TEMPLATE % {:base_case => %{
-        select uuid, uuid, 3, true, true from users
-},
-:override => ''
-} }
-}, "refresh_permission_view.do"
-  end
-end
-
-def refresh_trashed
-  ActiveRecord::Base.transaction do
-    ActiveRecord::Base.connection.execute("LOCK TABLE #{TRASHED_GROUPS}")
-    ActiveRecord::Base.connection.execute("DELETE FROM #{TRASHED_GROUPS}")
-    ActiveRecord::Base.connection.execute("INSERT INTO #{TRASHED_GROUPS} select * from compute_trashed()")
-  end
-end
+require '20200501150153_permission_table_constants'
 
 def update_permissions perm_origin_uuid, starting_uuid, perm_level
   #
@@ -203,22 +178,15 @@ def skip_check_permissions_against_full_refresh
   end
 end
 
-PERM_QUERY_TEMPLATE = %{
-WITH RECURSIVE
-        traverse_graph(origin_uuid, target_uuid, val, traverse_owned, starting_set) as (
-            %{base_case}
-          union
-            (select traverse_graph.origin_uuid,
-                    edges.head_uuid,
-                      least(edges.val,
-                            traverse_graph.val
-                            %{override}),
-                    should_traverse_owned(edges.head_uuid, edges.val),
-                    false
-             from permission_graph_edges as edges, traverse_graph
-             where traverse_graph.target_uuid = edges.tail_uuid
-             and (edges.tail_uuid like '_____-j7d0g-_______________' or
-                  traverse_graph.starting_set)))
-        select traverse_graph.origin_uuid, target_uuid, max(val) as val, bool_or(traverse_owned) as traverse_owned from traverse_graph
-        group by (traverse_graph.origin_uuid, target_uuid)
+# Used to account for permissions that a user gains by having
+# can_manage on another user.
+#
+# note: in theory a user could have can_manage access to a user
+# through multiple levels, that isn't handled here (would require a
+# recursive query).  I think that's okay because users getting
+# transitive access through "can_manage" on a user is is rarely/never
+# used feature and something we probably want to deprecate and remove.
+USER_UUIDS_SUBQUERY_TEMPLATE = %{
+select target_uuid from materialized_permissions where user_uuid in (%{user})
+and target_uuid like '_____-tpzed-_______________' and traverse_owned=true and perm_level >= %{perm_level}
 }

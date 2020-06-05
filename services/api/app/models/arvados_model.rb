@@ -312,9 +312,14 @@ class ArvadosModel < ApplicationRecord
       # The core of the permission check is a join against the
       # materialized_permissions table to determine if the user has at
       # least read permission to either the object itself or its
-      # direct owner.  See
+      # direct owner (if traverse_owned is true).  See
       # db/migrate/20200501150153_permission_table.rb for details on
       # how the permissions are computed.
+
+      # A user can have can_manage access to another user, this grants
+      # full access to all that user's stuff.  To implement that we
+      # need to include those other users in the permission query.
+      user_uuids_subquery = USER_UUIDS_SUBQUERY_TEMPLATE % {user: ":user_uuids", perm_level: 1}
 
       # Note: it is possible to combine the direct_check and
       # owner_check into a single EXISTS() clause, however it turns
@@ -323,11 +328,6 @@ class ArvadosModel < ApplicationRecord
       # clauses enables it to use the index.
       #
       # see issue 13208 for details.
-
-      user_uuids_subquery = %{
-select target_uuid from materialized_permissions where user_uuid in (:user_uuids)
-and target_uuid like '_____-tpzed-_______________' and traverse_owned=true and perm_level >= 1
-}
 
       # Match a direct read permission link from the user to the record uuid
       direct_check = "#{sql_table}.uuid IN (SELECT target_uuid FROM #{PERMISSION_VIEW} "+
