@@ -5,9 +5,13 @@
 require 'fix_roles_projects'
 
 class FixRolesProjects < ActiveRecord::Migration[5.0]
-  def change
+  def up
+    # defined in a function for easy testing.
+    fix_roles_projects
+  end
+
+  def down
     # This migration is not reversible.  However, the results are
     # backwards compatible.
-    fix_roles_projects
   end
 end
