@@ -39,6 +39,7 @@ type oidcLoginController struct {
 	UseGooglePeopleAPI bool   // Use Google People API to look up alternate email addresses
 	EmailClaim         string // OpenID claim to use as email address; typically "email"
 	EmailVerifiedClaim string // If non-empty, ensure claim value is true before accepting EmailClaim; typically "email_verified"
+	UsernameClaim      string // If non-empty, use as preferred username
 
 	// override Google People API base URL for testing purposes
 	// (normally empty, set by google pkg to
@@ -163,6 +164,10 @@ func (ctrl *oidcLoginController) getAuthInfo(ctx context.Context, token *oauth2.
 		ret.Email, _ = claims[ctrl.EmailClaim].(string)
 	}
 
+	if ctrl.UsernameClaim != "" {
+		ret.Username, _ = claims[ctrl.UsernameClaim].(string)
+	}
+
 	if !ctrl.UseGooglePeopleAPI {
 		if ret.Email == "" {
 			return nil, fmt.Errorf("cannot log in with unverified email address %q", claims[ctrl.EmailClaim])
@@ -219,9 +224,13 @@ func (ctrl *oidcLoginController) getAuthInfo(ctx context.Context, token *oauth2.
 		return nil, errors.New("cannot log in without a verified email address")
 	}
 	for ae := range altEmails {
-		if ae != ret.Email {
-			ret.AlternateEmails = append(ret.AlternateEmails, ae)
-			if i := strings.Index(ae, "@"); i > 0 && strings.ToLower(ae[i+1:]) == strings.ToLower(ctrl.Cluster.Users.PreferDomainForUsername) {
+		if ae == ret.Email {
+			continue
+		}
+		ret.AlternateEmails = append(ret.AlternateEmails, ae)
+		if ret.Username == "" {
+			i := strings.Index(ae, "@")
+			if i > 0 && strings.ToLower(ae[i+1:]) == strings.ToLower(ctrl.Cluster.Users.PreferDomainForUsername) {
 				ret.Username = strings.SplitN(ae[:i], "+", 2)[0]
 			}
 		}

@@ -163,6 +163,7 @@ type Cluster struct {
 			ClientSecret       string
 			EmailClaim         string
 			EmailVerifiedClaim string
+			UsernameClaim      string
 		}
 		PAM struct {
 			Enable             bool

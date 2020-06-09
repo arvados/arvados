@@ -49,6 +49,7 @@ func chooseLoginController(cluster *arvados.Cluster, railsProxy *railsProxy) log
 			ClientSecret:       cluster.Login.OpenIDConnect.ClientSecret,
 			EmailClaim:         cluster.Login.OpenIDConnect.EmailClaim,
 			EmailVerifiedClaim: cluster.Login.OpenIDConnect.EmailVerifiedClaim,
+			UsernameClaim:      cluster.Login.OpenIDConnect.UsernameClaim,
 		}
 	case !wantGoogle && !wantOpenIDConnect && wantSSO && !wantPAM && !wantLDAP:
 		return &ssoLoginController{railsProxy}

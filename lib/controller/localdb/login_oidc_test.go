@@ -115,6 +115,7 @@ func (s *OIDCLoginSuite) SetUpTest(c *check.C) {
 				"name":           s.authName,
 				"alt_verified":   true,                    // for custom claim tests
 				"alt_email":      "alt_email@example.com", // for custom claim tests
+				"alt_username":   "desired-username",      // for custom claim tests
 			})
 			json.NewEncoder(w).Encode(struct {
 				AccessToken  string `json:"access_token"`
@@ -319,7 +320,9 @@ func (s *OIDCLoginSuite) TestGenericOIDCLogin(c *check.C) {
 				c.Log("=== succeed because email_verified is false but not required")
 				s.authEmail = "user@oidc.example.com"
 				s.authEmailVerified = false
+				s.cluster.Login.OpenIDConnect.EmailClaim = "email"
 				s.cluster.Login.OpenIDConnect.EmailVerifiedClaim = ""
+				s.cluster.Login.OpenIDConnect.UsernameClaim = ""
 			},
 		},
 		{
@@ -328,7 +331,9 @@ func (s *OIDCLoginSuite) TestGenericOIDCLogin(c *check.C) {
 				c.Log("=== fail because email_verified is false and required")
 				s.authEmail = "user@oidc.example.com"
 				s.authEmailVerified = false
+				s.cluster.Login.OpenIDConnect.EmailClaim = "email"
 				s.cluster.Login.OpenIDConnect.EmailVerifiedClaim = "email_verified"
+				s.cluster.Login.OpenIDConnect.UsernameClaim = ""
 			},
 		},
 		{
@@ -337,7 +342,9 @@ func (s *OIDCLoginSuite) TestGenericOIDCLogin(c *check.C) {
 				c.Log("=== succeed because email_verified is false but config uses custom 'verified' claim")
 				s.authEmail = "user@oidc.example.com"
 				s.authEmailVerified = false
+				s.cluster.Login.OpenIDConnect.EmailClaim = "email"
 				s.cluster.Login.OpenIDConnect.EmailVerifiedClaim = "alt_verified"
+				s.cluster.Login.OpenIDConnect.UsernameClaim = ""
 			},
 		},
 		{
@@ -348,6 +355,7 @@ func (s *OIDCLoginSuite) TestGenericOIDCLogin(c *check.C) {
 				s.authEmailVerified = false
 				s.cluster.Login.OpenIDConnect.EmailClaim = "alt_email"
 				s.cluster.Login.OpenIDConnect.EmailVerifiedClaim = "alt_verified"
+				s.cluster.Login.OpenIDConnect.UsernameClaim = "alt_username"
 			},
 		},
 	} {
@@ -377,6 +385,15 @@ func (s *OIDCLoginSuite) TestGenericOIDCLogin(c *check.C) {
 		c.Check(token, check.Matches, `v2/zzzzz-gj3su-.{15}/.{32,50}`)
 		authinfo := getCallbackAuthInfo(c, s.railsSpy)
 		c.Check(authinfo.Email, check.Equals, trial.expectEmail)
+
+		switch s.cluster.Login.OpenIDConnect.UsernameClaim {
+		case "alt_username":
+			c.Check(authinfo.Username, check.Equals, "desired-username")
+		case "":
+			c.Check(authinfo.Username, check.Equals, "")
+		default:
+			c.Fail() // bad test case
+		}
 	}
 }
 

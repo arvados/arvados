@@ -586,6 +586,11 @@ Clusters:
         # use the empty string "".
         EmailVerifiedClaim: "email_verified"
 
+        # OpenID claim field contianing the user's preferred
+        # username. If empty, use the mailbox part of the user's email
+        # address.
+        UsernameClaim: ""
+
       PAM:
         # (Experimental) Use PAM to authenticate users.
         Enable: false
