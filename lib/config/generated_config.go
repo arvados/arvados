@@ -575,6 +575,17 @@ Clusters:
         ClientID: ""
         ClientSecret: ""
 
+        # OpenID claim field containing the user's email
+        # address. Normally "email"; see
+        # https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims
+        EmailClaim: "email"
+
+        # OpenID claim field containing the email verification
+        # flag. Normally "email_verified".  To accept every returned
+        # email address without checking a "verified" field at all,
+        # use the empty string "".
+        EmailVerifiedClaim: "email_verified"
+
       PAM:
         # (Experimental) Use PAM to authenticate users.
         Enable: false
