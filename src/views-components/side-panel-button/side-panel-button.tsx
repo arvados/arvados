@@ -93,7 +93,7 @@ export const SidePanelButton = withStyles(styles)(
                 return <Toolbar>
                     <Grid container>
                         <Grid container item xs alignItems="center" justify="flex-start">
-                            <Button variant="contained" disabled={!enabled}
+                            <Button data-cy="side-panel-button" variant="contained" disabled={!enabled}
                                 color="primary" size="small" className={classes.button}
                                 aria-owns={anchorEl ? 'aside-menu-list' : undefined}
                                 aria-haspopup="true"
@@ -108,13 +108,13 @@ export const SidePanelButton = withStyles(styles)(
                                 onClose={this.handleClose}
                                 onClick={this.handleClose}
                                 transformOrigin={transformOrigin}>
-                                <MenuItem className={classes.menuItem} onClick={this.handleNewCollectionClick}>
+                                <MenuItem data-cy='side-panel-new-collection' className={classes.menuItem} onClick={this.handleNewCollectionClick}>
                                     <CollectionIcon className={classes.icon} /> New collection
                                 </MenuItem>
-                                <MenuItem className={classes.menuItem} onClick={this.handleRunProcessClick}>
+                                <MenuItem data-cy='side-panel-run-process' className={classes.menuItem} onClick={this.handleRunProcessClick}>
                                     <ProcessIcon className={classes.icon} /> Run a process
                                 </MenuItem>
-                                <MenuItem className={classes.menuItem} onClick={this.handleNewProjectClick}>
+                                <MenuItem data-cy='side-panel-new-project' className={classes.menuItem} onClick={this.handleNewProjectClick}>
                                     <ProjectIcon className={classes.icon} /> New project
                                 </MenuItem>
                             </Menu>

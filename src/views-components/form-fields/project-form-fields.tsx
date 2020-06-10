@@ -28,12 +28,12 @@ export const ProjectNameField = connect(
                 PROJECT_NAME_VALIDATION : PROJECT_NAME_VALIDATION_ALLOW_SLASH)
         };
     })((props: ProjectNameFieldProps) =>
-        <Field
+        <span data-cy='name-field'><Field
             name='name'
             component={TextField}
             validate={props.validate}
             label="Project Name"
-            autoFocus={true} />
+            autoFocus={true} /></span>
     );
 
 export const ProjectDescriptionField = () =>

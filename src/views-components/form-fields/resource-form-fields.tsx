@@ -24,7 +24,7 @@ export const ResourceParentField = connect(
         };
     })
     ((props: ResourceParentFieldProps) =>
-        <Field
+        <span data-cy='parent-field'><Field
             name='ownerUuid'
             disabled={true}
             label='Parent project'
@@ -40,5 +40,5 @@ export const ResourceParentField = connect(
                     return value;
                 }
             }
-            component={TextField} />
+            component={TextField} /></span>
     );
