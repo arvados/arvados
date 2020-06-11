@@ -4,6 +4,9 @@
 
 require '20200501150153_permission_table_constants'
 
+REVOKE_PERM = 0
+CAN_MANAGE_PERM = 3
+
 def update_permissions perm_origin_uuid, starting_uuid, perm_level
   #
   # Update a subset of the permission table affected by adding or

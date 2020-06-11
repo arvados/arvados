@@ -146,18 +146,18 @@ SELECT 1 FROM #{PERMISSION_VIEW}
   def before_ownership_change
     if owner_uuid_changed? and !self.owner_uuid_was.nil?
       MaterializedPermission.where(user_uuid: owner_uuid_was, target_uuid: uuid).delete_all
-      update_permissions self.owner_uuid_was, self.uuid, 0
+      update_permissions self.owner_uuid_was, self.uuid, REVOKE_PERM
     end
   end
 
   def after_ownership_change
     if owner_uuid_changed?
-      update_permissions self.owner_uuid, self.uuid, 3
+      update_permissions self.owner_uuid, self.uuid, CAN_MANAGE_PERM
     end
   end
 
   def clear_permissions
-    update_permissions self.owner_uuid, self.uuid, 0
+    update_permissions self.owner_uuid, self.uuid, REVOKE_PERM
     MaterializedPermission.where("user_uuid = ? or target_uuid = ?", uuid, uuid).delete_all
   end
 
@@ -447,11 +447,11 @@ update #{PERMISSION_VIEW} set target_uuid=$1 where target_uuid = $2
         update_attributes!(redirect_to_user_uuid: new_user.uuid, username: nil)
       end
       skip_check_permissions_against_full_refresh do
-        update_permissions self.owner_uuid, self.uuid, 3
-        update_permissions self.uuid, self.uuid, 3
-        update_permissions new_user.owner_uuid, new_user.uuid, 3
+        update_permissions self.owner_uuid, self.uuid, CAN_MANAGE_PERM
+        update_permissions self.uuid, self.uuid, CAN_MANAGE_PERM
+        update_permissions new_user.owner_uuid, new_user.uuid, CAN_MANAGE_PERM
       end
-      update_permissions new_user.uuid, new_user.uuid, 3
+      update_permissions new_user.uuid, new_user.uuid, CAN_MANAGE_PERM
     end
   end
 

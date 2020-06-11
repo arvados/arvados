@@ -80,13 +80,13 @@ on conflict (group_uuid) do update set trash_at=EXCLUDED.trash_at;
   def before_ownership_change
     if owner_uuid_changed? and !self.owner_uuid_was.nil?
       MaterializedPermission.where(user_uuid: owner_uuid_was, target_uuid: uuid).delete_all
-      update_permissions self.owner_uuid_was, self.uuid, 0
+      update_permissions self.owner_uuid_was, self.uuid, REVOKE_PERM
     end
   end
 
   def after_ownership_change
     if owner_uuid_changed?
-      update_permissions self.owner_uuid, self.uuid, 3
+      update_permissions self.owner_uuid, self.uuid, CAN_MANAGE_PERM
     end
   end
 
