@@ -42,7 +42,7 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	flags.SetOutput(stderr)
 	flags.Usage = func() {
 		fmt.Fprintf(flags.Output(), `Usage:
-	%s [options ...] { /path/to/manifest.txt | log-entry-uuid } [...]
+	%s [options ...] { /path/to/manifest.txt | log-or-collection-uuid } [...]
 
 	This program recovers deleted collections. Recovery is
 	possible when the collection's manifest is still available and
@@ -52,10 +52,18 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	collections, or the blocks have been trashed but not yet
 	deleted).
 
-	Collections can be specified either by filename (a local file
-	containing a manifest with the desired data) or by log UUID
-	(an Arvados log entry, typically a "delete" or "update" event,
-	whose "old attributes" have a manifest with the desired data).
+	There are multiple ways to specify a collection to recover:
+
+        * Path to a local file containing a manifest with the desired
+	  data
+
+	* UUID of an Arvados log entry, typically a "delete" or
+	  "update" event, whose "old attributes" have a manifest with
+	  the desired data
+
+	* UUID of an Arvados collection whose most recent log entry,
+          typically a "delete" or "update" event, has the desired
+          data in its "old attributes"
 
 	For each provided collection manifest, once all data blocks
 	are recovered/protected from garbage collection, a new
@@ -113,29 +121,58 @@ Options:
 	for _, src := range flags.Args() {
 		logger := logger.WithField("src", src)
 		var mtxt string
-		if len(src) == 27 && src[5:12] == "-57u5n-" {
-			var logent struct {
-				EventType  string    `json:"event_type"`
-				EventAt    time.Time `json:"event_at"`
-				ObjectUUID string    `json:"object_uuid"`
-				Properties struct {
-					OldAttributes struct {
-						ManifestText string `json:"manifest_text"`
-					} `json:"old_attributes"`
-				} `json:"properties"`
-			}
-			err = client.RequestAndDecode(&logent, "GET", "arvados/v1/logs/"+src, nil, nil)
-			if err != nil {
-				logger.WithError(err).Error("failed to load log entry")
+		if !strings.Contains(src, "/") && len(src) == 27 && src[5] == '-' && src[11] == '-' {
+			var filters []arvados.Filter
+			if src[5:12] == "-57u5n-" {
+				filters = []arvados.Filter{{"uuid", "=", src}}
+			} else if src[5:12] == "-4zz18-" {
+				filters = []arvados.Filter{{"object_uuid", "=", src}}
+			} else {
+				logger.Error("looks like a UUID but not a log or collection UUID (if it's really a file, prepend './')")
 				exitcode = 1
 				continue
 			}
+			var resp struct {
+				Items []struct {
+					UUID       string    `json:"uuid"`
+					EventType  string    `json:"event_type"`
+					EventAt    time.Time `json:"event_at"`
+					ObjectUUID string    `json:"object_uuid"`
+					Properties struct {
+						OldAttributes struct {
+							ManifestText string `json:"manifest_text"`
+						} `json:"old_attributes"`
+					} `json:"properties"`
+				}
+			}
+			err = client.RequestAndDecode(&resp, "GET", "arvados/v1/logs", nil, arvados.ListOptions{
+				Limit:   1,
+				Order:   []string{"event_at desc"},
+				Filters: filters,
+			})
+			if err != nil {
+				logger.WithError(err).Error("error looking up log entry")
+				exitcode = 1
+				continue
+			} else if len(resp.Items) == 0 {
+				logger.Error("log entry not found")
+				exitcode = 1
+				continue
+			}
+			logent := resp.Items[0]
 			logger.WithFields(logrus.Fields{
+				"uuid":                logent.UUID,
 				"old_collection_uuid": logent.ObjectUUID,
 				"logged_event_type":   logent.EventType,
 				"logged_event_time":   logent.EventAt,
+				"logged_object_uuid":  logent.ObjectUUID,
 			}).Info("loaded log entry")
 			mtxt = logent.Properties.OldAttributes.ManifestText
+			if mtxt == "" {
+				logger.Error("log entry properties.old_attributes.manifest_text missing or empty")
+				exitcode = 1
+				continue
+			}
 		} else {
 			buf, err := ioutil.ReadFile(src)
 			if err != nil {
