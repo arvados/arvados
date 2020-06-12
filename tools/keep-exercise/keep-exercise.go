@@ -48,6 +48,7 @@ var (
 	ServiceURL    = flag.String("url", "", "specify scheme://host of a single keep service to exercise (instead of using all advertised services like normal clients)")
 	ServiceUUID   = flag.String("uuid", "", "specify UUID of a single advertised keep service to exercise")
 	getVersion    = flag.Bool("version", false, "Print version information and exit.")
+	RunTime       = flag.Duration("run-time", 0, "time to run (e.g. 60s), or 0 to run indefinitely (default)")
 )
 
 func main() {
@@ -104,22 +105,54 @@ var errorsChan = make(chan struct{})
 func countBeans(nextLocator chan string) {
 	t0 := time.Now()
 	var tickChan <-chan time.Time
+	var endChan <-chan time.Time
 	if *StatsInterval > 0 {
 		tickChan = time.NewTicker(*StatsInterval).C
+	}
+	if *RunTime > 0 {
+		endChan = time.NewTicker(*RunTime).C
 	}
 	var bytesIn uint64
 	var bytesOut uint64
 	var errors uint64
+	var maxRateIn, maxRateOut float64
 	for {
 		select {
 		case <-tickChan:
 			elapsed := time.Since(t0)
+			if float64(bytesIn)/elapsed.Seconds()/1048576 > maxRateIn {
+				maxRateIn = float64(bytesIn) / elapsed.Seconds() / 1048576
+			}
+			if float64(bytesOut)/elapsed.Seconds()/1048576 > maxRateOut {
+				maxRateOut = float64(bytesOut) / elapsed.Seconds() / 1048576
+			}
 			log.Printf("%v elapsed: read %v bytes (%.1f MiB/s), wrote %v bytes (%.1f MiB/s), errors %d",
 				elapsed,
 				bytesIn, (float64(bytesIn) / elapsed.Seconds() / 1048576),
 				bytesOut, (float64(bytesOut) / elapsed.Seconds() / 1048576),
 				errors,
 			)
+		case <-endChan:
+			elapsed := time.Since(t0)
+			log.Println("\nSummary:")
+			log.Println("Elapsed,Read (bytes),Avg Read Speed (MiB/s),Peak Read Speed (MiB/s),Written (bytes),Avg Write Speed (MiB/s),Peak Write Speed (MiB/s),Errors,ReadThreads,WriteThreads,VaryRequest,VaryThread,BlockSize,Replicas,StatsInterval,ServiceURL,ServiceUUID,RunTime\n")
+			log.Printf("%v,%v,%.1f,%.1f,%v,%.1f,%.1f,%d,%d,%d,%t,%t,%d,%d,%s,%s,%s,%s",
+				elapsed,
+				bytesIn, (float64(bytesIn) / elapsed.Seconds() / 1048576), maxRateIn,
+				bytesOut, (float64(bytesOut) / elapsed.Seconds() / 1048576), maxRateOut,
+				errors,
+				*ReadThreads,
+				*WriteThreads,
+				*VaryRequest,
+				*VaryThread,
+				*BlockSize,
+				*Replicas,
+				*StatsInterval,
+				*ServiceURL,
+				*ServiceUUID,
+				*RunTime,
+			)
+			os.Exit(0)
 		case i := <-bytesInChan:
 			bytesIn += i
 		case o := <-bytesOutChan:
