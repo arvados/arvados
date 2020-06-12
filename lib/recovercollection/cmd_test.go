@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package undelete
+package recovercollection
 
 import (
 	"bytes"
@@ -36,7 +36,7 @@ func (*Suite) TestUnrecoverableBlock(c *check.C) {
 	mfile := tmp + "/manifest"
 	ioutil.WriteFile(mfile, []byte(". aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+410 0:410:Gone\n"), 0777)
 	var stdout, stderr bytes.Buffer
-	exitcode := Command.RunCommand("undelete.test", []string{"-log-level=debug", mfile}, &bytes.Buffer{}, &stdout, &stderr)
+	exitcode := Command.RunCommand("recovercollection.test", []string{"-log-level=debug", mfile}, &bytes.Buffer{}, &stdout, &stderr)
 	c.Check(exitcode, check.Equals, 1)
 	c.Check(stdout.String(), check.Equals, "")
 	c.Log(stderr.String())
@@ -93,7 +93,7 @@ func (*Suite) TestUntrashAndTouchBlock(c *check.C) {
 	}
 
 	var stdout, stderr bytes.Buffer
-	exitcode := Command.RunCommand("undelete.test", []string{"-log-level=debug", mfile}, &bytes.Buffer{}, &stdout, &stderr)
+	exitcode := Command.RunCommand("recovercollection.test", []string{"-log-level=debug", mfile}, &bytes.Buffer{}, &stdout, &stderr)
 	c.Check(exitcode, check.Equals, 0)
 	c.Check(stdout.String(), check.Matches, `zzzzz-4zz18-.{15}\n`)
 	c.Log(stderr.String())
@@ -114,4 +114,23 @@ func (*Suite) TestUntrashAndTouchBlock(c *check.C) {
 		}
 	}
 	c.Check(found, check.Equals, true)
+}
+
+func (*Suite) TestUnusableManifestSourceArg(c *check.C) {
+	for _, trial := range []struct {
+		srcArg    string
+		errRegexp string
+	}{
+		{"zzzzz-4zz18-aaaaaaaaaaaaaaa", `(?ms).*msg="log entry not found".*`},
+		{"zzzzz-57u5n-aaaaaaaaaaaaaaa", `(?ms).*msg="log entry not found.*`},
+		{"zzzzz-57u5n-containerlog006", `(?ms).*msg="log entry properties\.old_attributes\.manifest_text missing or empty".*`},
+		{"zzzzz-j7d0g-aaaaaaaaaaaaaaa", `(?ms).*msg="looks like a UUID but not a log or collection UUID.*`},
+	} {
+		var stdout, stderr bytes.Buffer
+		exitcode := Command.RunCommand("recovercollection.test", []string{"-log-level=debug", trial.srcArg}, &bytes.Buffer{}, &stdout, &stderr)
+		c.Check(exitcode, check.Equals, 1)
+		c.Check(stdout.String(), check.Equals, "")
+		c.Log(stderr.String())
+		c.Check(stderr.String(), check.Matches, trial.errRegexp)
+	}
 }

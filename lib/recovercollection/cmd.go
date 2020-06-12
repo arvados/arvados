@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package undelete
+package recovercollection
 
 import (
 	"context"
@@ -42,7 +42,7 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	flags.SetOutput(stderr)
 	flags.Usage = func() {
 		fmt.Fprintf(flags.Output(), `Usage:
-	%s [options ...] /path/to/manifest.txt [...]
+	%s [options ...] { /path/to/manifest.txt | log-or-collection-uuid } [...]
 
 	This program recovers deleted collections. Recovery is
 	possible when the collection's manifest is still available and
@@ -52,9 +52,24 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	collections, or the blocks have been trashed but not yet
 	deleted).
 
+	There are multiple ways to specify a collection to recover:
+
+        * Path to a local file containing a manifest with the desired
+	  data
+
+	* UUID of an Arvados log entry, typically a "delete" or
+	  "update" event, whose "old attributes" have a manifest with
+	  the desired data
+
+	* UUID of an Arvados collection whose most recent log entry,
+          typically a "delete" or "update" event, has the desired
+          data in its "old attributes"
+
 	For each provided collection manifest, once all data blocks
 	are recovered/protected from garbage collection, a new
 	collection is saved and its UUID is printed on stdout.
+
+	Restored collections will belong to the system (root) user.
 
 	Exit status will be zero if recovery is successful, i.e., a
 	collection is saved for each provided manifest.
@@ -96,7 +111,7 @@ Options:
 		return 1
 	}
 	client.AuthToken = cluster.SystemRootToken
-	und := undeleter{
+	rcvr := recoverer{
 		client:  client,
 		cluster: cluster,
 		logger:  logger,
@@ -105,31 +120,81 @@ Options:
 	exitcode := 0
 	for _, src := range flags.Args() {
 		logger := logger.WithField("src", src)
-		if len(src) == 27 && src[5:12] == "-57u5n-" {
-			logger.Error("log entry lookup not implemented")
+		var mtxt string
+		if !strings.Contains(src, "/") && len(src) == 27 && src[5] == '-' && src[11] == '-' {
+			var filters []arvados.Filter
+			if src[5:12] == "-57u5n-" {
+				filters = []arvados.Filter{{"uuid", "=", src}}
+			} else if src[5:12] == "-4zz18-" {
+				filters = []arvados.Filter{{"object_uuid", "=", src}}
+			} else {
+				logger.Error("looks like a UUID but not a log or collection UUID (if it's really a file, prepend './')")
+				exitcode = 1
+				continue
+			}
+			var resp struct {
+				Items []struct {
+					UUID       string    `json:"uuid"`
+					EventType  string    `json:"event_type"`
+					EventAt    time.Time `json:"event_at"`
+					ObjectUUID string    `json:"object_uuid"`
+					Properties struct {
+						OldAttributes struct {
+							ManifestText string `json:"manifest_text"`
+						} `json:"old_attributes"`
+					} `json:"properties"`
+				}
+			}
+			err = client.RequestAndDecode(&resp, "GET", "arvados/v1/logs", nil, arvados.ListOptions{
+				Limit:   1,
+				Order:   []string{"event_at desc"},
+				Filters: filters,
+			})
+			if err != nil {
+				logger.WithError(err).Error("error looking up log entry")
+				exitcode = 1
+				continue
+			} else if len(resp.Items) == 0 {
+				logger.Error("log entry not found")
+				exitcode = 1
+				continue
+			}
+			logent := resp.Items[0]
+			logger.WithFields(logrus.Fields{
+				"uuid":                logent.UUID,
+				"old_collection_uuid": logent.ObjectUUID,
+				"logged_event_type":   logent.EventType,
+				"logged_event_time":   logent.EventAt,
+				"logged_object_uuid":  logent.ObjectUUID,
+			}).Info("loaded log entry")
+			mtxt = logent.Properties.OldAttributes.ManifestText
+			if mtxt == "" {
+				logger.Error("log entry properties.old_attributes.manifest_text missing or empty")
+				exitcode = 1
+				continue
+			}
+		} else {
+			buf, err := ioutil.ReadFile(src)
+			if err != nil {
+				logger.WithError(err).Error("failed to load manifest data from file")
+				exitcode = 1
+				continue
+			}
+			mtxt = string(buf)
+		}
+		uuid, err := rcvr.RecoverManifest(string(mtxt))
+		if err != nil {
+			logger.WithError(err).Error("recovery failed")
 			exitcode = 1
 			continue
-		} else {
-			mtxt, err := ioutil.ReadFile(src)
-			if err != nil {
-				logger.WithError(err).Error("error loading manifest data")
-				exitcode = 1
-				continue
-			}
-			uuid, err := und.RecoverManifest(string(mtxt))
-			if err != nil {
-				logger.WithError(err).Error("recovery failed")
-				exitcode = 1
-				continue
-			}
-			logger.WithField("UUID", uuid).Info("recovery succeeded")
-			fmt.Fprintln(stdout, uuid)
 		}
+		logger.WithField("UUID", uuid).Info("recovery succeeded")
+		fmt.Fprintln(stdout, uuid)
 	}
 	return exitcode
 }
 
-type undeleter struct {
+type recoverer struct {
 	client  *arvados.Client
 	cluster *arvados.Cluster
 	logger  logrus.FieldLogger
@@ -139,8 +204,8 @@ var errNotFound = errors.New("not found")
 
 // Finds the timestamp of the newest copy of blk on svc. Returns
 // errNotFound if blk is not on svc at all.
-func (und undeleter) newestMtime(logger logrus.FieldLogger, blk string, svc arvados.KeepService) (time.Time, error) {
-	found, err := svc.Index(und.client, blk)
+func (rcvr recoverer) newestMtime(logger logrus.FieldLogger, blk string, svc arvados.KeepService) (time.Time, error) {
+	found, err := svc.Index(rcvr.client, blk)
 	if err != nil {
 		logger.WithError(err).Warn("error getting index")
 		return time.Time{}, err
@@ -170,17 +235,17 @@ var errTouchIneffective = errors.New("(BUG?) touch succeeded but had no effect -
 // decide to trash it, all before our recovered collection gets
 // saved. But if the block's timestamp is more recent than blobsigttl,
 // keepstore will refuse to trash it even if told to by keep-balance.
-func (und undeleter) ensureSafe(ctx context.Context, logger logrus.FieldLogger, blk string, svc arvados.KeepService, blobsigttl time.Duration, blobsigexp time.Time) error {
-	if latest, err := und.newestMtime(logger, blk, svc); err != nil {
+func (rcvr recoverer) ensureSafe(ctx context.Context, logger logrus.FieldLogger, blk string, svc arvados.KeepService, blobsigttl time.Duration, blobsigexp time.Time) error {
+	if latest, err := rcvr.newestMtime(logger, blk, svc); err != nil {
 		return err
 	} else if latest.Add(blobsigttl).After(blobsigexp) {
 		return nil
 	}
-	if err := svc.Touch(ctx, und.client, blk); err != nil {
+	if err := svc.Touch(ctx, rcvr.client, blk); err != nil {
 		return fmt.Errorf("error updating timestamp: %s", err)
 	}
 	logger.Debug("updated timestamp")
-	if latest, err := und.newestMtime(logger, blk, svc); err == errNotFound {
+	if latest, err := rcvr.newestMtime(logger, blk, svc); err == errNotFound {
 		return fmt.Errorf("(BUG?) touch succeeded, but then block did not appear in index")
 	} else if err != nil {
 		return err
@@ -194,7 +259,7 @@ func (und undeleter) ensureSafe(ctx context.Context, logger logrus.FieldLogger, 
 // Untrash and update GC timestamps (as needed) on blocks referenced
 // by the given manifest, save a new collection and return the new
 // collection's UUID.
-func (und undeleter) RecoverManifest(mtxt string) (string, error) {
+func (rcvr recoverer) RecoverManifest(mtxt string) (string, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -210,9 +275,9 @@ func (und undeleter) RecoverManifest(mtxt string) (string, error) {
 	go close(todo)
 
 	var services []arvados.KeepService
-	err = und.client.EachKeepService(func(svc arvados.KeepService) error {
+	err = rcvr.client.EachKeepService(func(svc arvados.KeepService) error {
 		if svc.ServiceType == "proxy" {
-			und.logger.WithField("service", svc).Debug("ignore proxy service")
+			rcvr.logger.WithField("service", svc).Debug("ignore proxy service")
 		} else {
 			services = append(services, svc)
 		}
@@ -221,7 +286,7 @@ func (und undeleter) RecoverManifest(mtxt string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("error getting list of keep services: %s", err)
 	}
-	und.logger.WithField("services", services).Debug("got list of services")
+	rcvr.logger.WithField("services", services).Debug("got list of services")
 
 	// blobsigexp is our deadline for saving the rescued
 	// collection. This must be less than BlobSigningTTL
@@ -235,9 +300,9 @@ func (und undeleter) RecoverManifest(mtxt string) (string, error) {
 	// would have lived long enough anyway if left alone.
 	// BlobSigningTTL/2 (typically around 1 week) is much longer
 	// than than we need to recover even a very large collection.
-	blobsigttl := und.cluster.Collections.BlobSigningTTL.Duration()
+	blobsigttl := rcvr.cluster.Collections.BlobSigningTTL.Duration()
 	blobsigexp := time.Now().Add(blobsigttl / 2)
-	und.logger.WithField("blobsigexp", blobsigexp).Debug("chose save deadline")
+	rcvr.logger.WithField("blobsigexp", blobsigexp).Debug("chose save deadline")
 
 	// We'll start a number of threads, each working on
 	// checking/recovering one block at a time. The threads
@@ -255,18 +320,18 @@ func (und undeleter) RecoverManifest(mtxt string) (string, error) {
 		nextblk:
 			for idx := range todo {
 				blk := strings.SplitN(string(blks[idx]), "+", 2)[0]
-				logger := und.logger.WithField("block", blk)
+				logger := rcvr.logger.WithField("block", blk)
 				for _, untrashing := range []bool{false, true} {
 					for _, svc := range services {
 						logger := logger.WithField("service", fmt.Sprintf("%s:%d", svc.ServiceHost, svc.ServicePort))
 						if untrashing {
-							if err := svc.Untrash(ctx, und.client, blk); err != nil {
+							if err := svc.Untrash(ctx, rcvr.client, blk); err != nil {
 								logger.WithError(err).Debug("untrash failed")
 								continue
 							}
 							logger.Info("untrashed")
 						}
-						err := und.ensureSafe(ctx, logger, blk, svc, blobsigttl, blobsigexp)
+						err := rcvr.ensureSafe(ctx, logger, blk, svc, blobsigttl, blobsigexp)
 						if err == errNotFound {
 							logger.Debug(err)
 						} else if err != nil {
@@ -293,17 +358,17 @@ func (und undeleter) RecoverManifest(mtxt string) (string, error) {
 	}
 	if havenot > 0 {
 		if have > 0 {
-			und.logger.Warn("partial recovery is not implemented")
+			rcvr.logger.Warn("partial recovery is not implemented")
 		}
 		return "", fmt.Errorf("unable to recover %d of %d blocks", havenot, have+havenot)
 	}
 
-	if und.cluster.Collections.BlobSigning {
-		key := []byte(und.cluster.Collections.BlobSigningKey)
-		coll.ManifestText = arvados.SignManifest(coll.ManifestText, und.client.AuthToken, blobsigexp, blobsigttl, key)
+	if rcvr.cluster.Collections.BlobSigning {
+		key := []byte(rcvr.cluster.Collections.BlobSigningKey)
+		coll.ManifestText = arvados.SignManifest(coll.ManifestText, rcvr.client.AuthToken, blobsigexp, blobsigttl, key)
 	}
-	und.logger.WithField("manifest", coll.ManifestText).Debug("updated blob signatures in manifest")
-	err = und.client.RequestAndDecodeContext(ctx, &coll, "POST", "arvados/v1/collections", nil, map[string]interface{}{
+	rcvr.logger.WithField("manifest", coll.ManifestText).Debug("updated blob signatures in manifest")
+	err = rcvr.client.RequestAndDecodeContext(ctx, &coll, "POST", "arvados/v1/collections", nil, map[string]interface{}{
 		"collection": map[string]interface{}{
 			"manifest_text": coll.ManifestText,
 		},
@@ -311,6 +376,6 @@ func (und undeleter) RecoverManifest(mtxt string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("error saving new collection: %s", err)
 	}
-	und.logger.WithField("UUID", coll.UUID).Debug("created new collection")
+	rcvr.logger.WithField("UUID", coll.UUID).Debug("created new collection")
 	return coll.UUID, nil
 }
