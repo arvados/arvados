@@ -43,12 +43,13 @@ export const appendSubtree = <T>(id: string, subtree: Tree<T>) => (tree: Tree<T>
     )(subtree) as Tree<T>;
 
 export const setNode = <T>(node: TreeNode<T>) => (tree: Tree<T>): Tree<T> => {
-    return pipe(
-        (tree: Tree<T>) => getNode(node.id)(tree) === node
-            ? tree
-            : { ...tree, [node.id]: node },
-        addChild(node.parent, node.id)
-    )(tree);
+    if (tree[node.id] && tree[node.id] === node) { return tree; }
+
+    tree[node.id] = node;
+    if (tree[node.parent]) {
+        tree[node.parent].children = Array.from(new Set([...tree[node.parent].children, node.id]));
+    }
+    return tree;
 };
 
 export const getNodeValue = (id: string) => <T>(tree: Tree<T>) => {
@@ -156,7 +157,6 @@ export const toggleNodeSelection = (id: string) => <T>(tree: Tree<T>) => {
             toggleAncestorsSelection(id),
             toggleDescendantsSelection(id))(tree)
         : tree;
-
 };
 
 export const selectNode = (id: string) => <T>(tree: Tree<T>) => {
@@ -235,23 +235,3 @@ const getRootNodeChildrenIds = <T>(tree: Tree<T>) =>
     Object
         .keys(tree)
         .filter(id => getNode(id)(tree)!.parent === TREE_ROOT_ID);
-
-
-const addChild = (parentId: string, childId: string) => <T>(tree: Tree<T>): Tree<T> => {
-    if (childId === "") {
-        return tree;
-    }
-    const node = getNode(parentId)(tree);
-    if (node) {
-        const children = node.children.some(id => id === childId)
-            ? node.children
-            : [...node.children, childId];
-
-        const newNode = children === node.children
-            ? node
-            : { ...node, children };
-
-        return setNode(newNode)(tree);
-    }
-    return tree;
-};

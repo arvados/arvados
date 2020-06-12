@@ -33,7 +33,7 @@ export interface ProjectsTreePickerDataProps {
     showSelection?: boolean;
     relatedTreePickers?: string[];
     disableActivation?: string[];
-    loadRootItem: (item: TreeItem<ProjectsTreePickerRootItem>, pickerId: string, includeCollections?: boolean, inlcudeFiles?: boolean) => void;
+    loadRootItem: (item: TreeItem<ProjectsTreePickerRootItem>, pickerId: string, includeCollections?: boolean, includeFiles?: boolean) => void;
 }
 
 export type ProjectsTreePickerProps = ProjectsTreePickerDataProps & Partial<PickedTreePickerProps>;
