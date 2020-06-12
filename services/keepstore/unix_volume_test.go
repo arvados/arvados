@@ -424,3 +424,26 @@ func (s *UnixVolumeSuite) TestStats(c *check.C) {
 	c.Check(err, check.IsNil)
 	c.Check(stats(), check.Matches, `.*"FlockOps":2,.*`)
 }
+
+func (s *UnixVolumeSuite) TestSkipUnusedDirs(c *check.C) {
+	vol := s.newTestableUnixVolume(c, s.cluster, arvados.Volume{Replication: 1}, s.metrics, false)
+
+	err := os.Mkdir(vol.UnixVolume.Root+"/aaa", 0777)
+	c.Assert(err, check.IsNil)
+	err = os.Mkdir(vol.UnixVolume.Root+"/.aaa", 0777) // EmptyTrash should not look here
+	c.Assert(err, check.IsNil)
+	deleteme := vol.UnixVolume.Root + "/aaa/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.trash.1"
+	err = ioutil.WriteFile(deleteme, []byte{1, 2, 3}, 0777)
+	c.Assert(err, check.IsNil)
+	skipme := vol.UnixVolume.Root + "/.aaa/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.trash.1"
+	err = ioutil.WriteFile(skipme, []byte{1, 2, 3}, 0777)
+	c.Assert(err, check.IsNil)
+	vol.EmptyTrash()
+
+	_, err = os.Stat(skipme)
+	c.Check(err, check.IsNil)
+
+	_, err = os.Stat(deleteme)
+	c.Check(err, check.NotNil)
+	c.Check(os.IsNotExist(err), check.Equals, true)
+}
