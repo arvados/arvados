@@ -108,6 +108,14 @@ type ContainerList struct {
 	Limit          int         `json:"limit"`
 }
 
+// ContainerRequestList is an arvados#containerRequestList resource.
+type ContainerRequestList struct {
+	Items          []ContainerRequest `json:"items"`
+	ItemsAvailable int                `json:"items_available"`
+	Offset         int                `json:"offset"`
+	Limit          int                `json:"limit"`
+}
+
 // ContainerState is a string corresponding to a valid Container state.
 type ContainerState string
 
