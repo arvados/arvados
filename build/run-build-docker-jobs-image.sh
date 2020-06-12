@@ -139,15 +139,7 @@ if [[ -z "$ARVADOS_BUILDING_VERSION" ]] && ! [[ -z "$version_tag" ]]; then
 	ARVADOS_BUILDING_ITERATION="1"
 fi
 
-python_sdk_ts=$(cd sdk/python && timestamp_from_git)
-cwl_runner_ts=$(cd sdk/cwl && timestamp_from_git)
-
-python_sdk_version=$(cd sdk/python && nohash_version_from_git 0.1)
-cwl_runner_version=$(cd sdk/cwl && nohash_version_from_git 1.0)
-
-if [[ $python_sdk_ts -gt $cwl_runner_ts ]]; then
-    cwl_runner_version=$(cd sdk/python && nohash_version_from_git 1.0)
-fi
+calculate_python_sdk_cwl_package_versions
 
 echo cwl_runner_version $cwl_runner_version python_sdk_version $python_sdk_version
 

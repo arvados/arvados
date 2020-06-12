@@ -15,6 +15,7 @@ import (
 	"git.arvados.org/arvados.git/lib/crunchrun"
 	"git.arvados.org/arvados.git/lib/dispatchcloud"
 	"git.arvados.org/arvados.git/lib/install"
+	"git.arvados.org/arvados.git/lib/undelete"
 	"git.arvados.org/arvados.git/services/ws"
 )
 
@@ -33,6 +34,7 @@ var (
 		"crunch-run":      crunchrun.Command,
 		"dispatch-cloud":  dispatchcloud.Command,
 		"install":         install.Command,
+		"undelete":        undelete.Command,
 		"ws":              ws.Command,
 	})
 )
