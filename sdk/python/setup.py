@@ -54,6 +54,7 @@ setup(name='arvados-python-client',
           'ruamel.yaml >=0.15.54, <=0.15.77',
           'setuptools',
           'ws4py >=0.4.2',
+          'rsa < 4.1'
       ],
       extras_require={
           ':os.name=="posix" and python_version<"3"': ['subprocess32 >= 3.5.1'],
