@@ -13,6 +13,7 @@ import { DownloadIcon } from '~/components/icon/icon';
 export interface CollectionPanelFilesProps {
     items: Array<TreeItem<FileTreeData>>;
     isWritable: boolean;
+    isLoading: boolean;
     onUploadDataClick: () => void;
     onItemMenuOpen: (event: React.MouseEvent<HTMLElement>, item: TreeItem<FileTreeData>, isWritable: boolean) => void;
     onOptionsMenuOpen: (event: React.MouseEvent<HTMLElement>, isWritable: boolean) => void;
@@ -22,7 +23,7 @@ export interface CollectionPanelFilesProps {
     currentItemUuid?: string;
 }
 
-type CssRules = 'root' | 'cardSubheader' | 'nameHeader' | 'fileSizeHeader' | 'uploadIcon' | 'button';
+type CssRules = 'root' | 'cardSubheader' | 'nameHeader' | 'fileSizeHeader' | 'uploadIcon' | 'button' | 'centeredLabel';
 
 const styles: StyleRulesCallback<CssRules> = theme => ({
     root: {
@@ -44,12 +45,17 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
     button: {
         marginRight: -theme.spacing.unit,
         marginTop: '0px'
-    }
+    },
+    centeredLabel: {
+        fontSize: '0.875rem',
+        textAlign: 'center'
+    },
 });
 
 export const CollectionPanelFiles =
     withStyles(styles)(
-        ({ onItemMenuOpen, onOptionsMenuOpen, onUploadDataClick, classes, isWritable, ...treeProps }: CollectionPanelFilesProps & WithStyles<CssRules>) =>
+        ({ onItemMenuOpen, onOptionsMenuOpen, onUploadDataClick, classes,
+            isWritable, isLoading, ...treeProps }: CollectionPanelFilesProps & WithStyles<CssRules>) =>
             <Card data-cy='collection-files-panel' className={classes.root}>
                 <CardHeader
                     title="Files"
@@ -85,5 +91,7 @@ export const CollectionPanelFiles =
                         File size
                     </Typography>
                 </Grid>
-                <FileTree onMenuOpen={(ev, item) => onItemMenuOpen(ev, item, isWritable)} {...treeProps} />
+                { isLoading
+                ? <div className={classes.centeredLabel}>(loading files...)</div>
+                : <FileTree onMenuOpen={(ev, item) => onItemMenuOpen(ev, item, isWritable)} {...treeProps} /> }
             </Card>);

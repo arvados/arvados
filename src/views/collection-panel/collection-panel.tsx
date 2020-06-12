@@ -28,6 +28,8 @@ import { IllegalNamingWarning } from '~/components/warning/warning';
 import { GroupResource } from '~/models/group';
 import { UserResource } from '~/models/user';
 import { getUserUuid } from '~/common/getuser';
+import { getProgressIndicator } from '~/store/progress-indicator/progress-indicator-reducer';
+import { COLLECTION_PANEL_LOAD_FILES } from '~/store/collection-panel/collection-panel-files/collection-panel-files-actions';
 
 type CssRules = 'card' | 'iconHeader' | 'tag' | 'label' | 'value' | 'link' | 'centeredLabel' | 'readOnlyIcon';
 
@@ -70,6 +72,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 interface CollectionPanelDataProps {
     item: CollectionResource;
     isWritable: boolean;
+    isLoadingFiles: boolean;
 }
 
 type CollectionPanelProps = CollectionPanelDataProps & DispatchProp
@@ -88,11 +91,13 @@ export const CollectionPanel = withStyles(styles)(
                 isWritable = itemOwner.writableBy.indexOf(currentUserUUID || '') >= 0;
             }
         }
-        return { item, isWritable };
+        const loadingFilesIndicator = getProgressIndicator(COLLECTION_PANEL_LOAD_FILES)(state.progressIndicator);
+        const isLoadingFiles = loadingFilesIndicator && loadingFilesIndicator!.working || false;
+        return { item, isWritable, isLoadingFiles };
     })(
         class extends React.Component<CollectionPanelProps> {
             render() {
-                const { classes, item, dispatch, isWritable } = this.props;
+                const { classes, item, dispatch, isWritable, isLoadingFiles } = this.props;
                 return item
                     ? <>
                         <Card data-cy='collection-info-panel' className={classes.card}>
@@ -183,7 +188,7 @@ export const CollectionPanel = withStyles(styles)(
                             </CardContent>
                         </Card>
                         <div className={classes.card}>
-                            <CollectionPanelFiles isWritable={isWritable} />
+                            <CollectionPanelFiles isWritable={isWritable} isLoading={isLoadingFiles} />
                         </div>
                     </>
                     : null;

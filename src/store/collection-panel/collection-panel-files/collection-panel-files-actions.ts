@@ -14,6 +14,7 @@ import { filterCollectionFilesBySelection } from './collection-panel-files-state
 import { startSubmit, stopSubmit, initialize, FormErrors } from 'redux-form';
 import { getDialog } from "~/store/dialog/dialog-reducer";
 import { getFileFullPath, sortFilesTree } from "~/services/collection-service/collection-service-files-response";
+import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
 
 export const collectionPanelFilesAction = unionize({
     SET_COLLECTION_FILES: ofType<CollectionFilesTree>(),
@@ -25,8 +26,11 @@ export const collectionPanelFilesAction = unionize({
 
 export type CollectionPanelFilesAction = UnionOf<typeof collectionPanelFilesAction>;
 
+export const COLLECTION_PANEL_LOAD_FILES = 'collectionPanelLoadFiles';
+
 export const loadCollectionFiles = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        dispatch(progressIndicatorActions.START_WORKING(COLLECTION_PANEL_LOAD_FILES));
         const files = await services.collectionService.files(uuid);
 
         // Given the array of directories and files, create the appropriate tree nodes,
@@ -35,6 +39,7 @@ export const loadCollectionFiles = (uuid: string) =>
         const sorted = sortFilesTree(tree);
         const mapped = mapTreeValues(services.collectionService.extendFileURL)(sorted);
         dispatch(collectionPanelFilesAction.SET_COLLECTION_FILES(mapped));
+        dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PANEL_LOAD_FILES));
     };
 
 export const removeCollectionFiles = (filePaths: string[]) =>
