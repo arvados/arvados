@@ -68,7 +68,7 @@ export class CollectionService extends TrashableResourceService<CollectionResour
         const splittedApiToken = apiToken ? apiToken.split('/') : [];
         const userApiToken = `/t=${splittedApiToken[2]}/`;
         const splittedPrevFileUrl = file.url.split('/');
-        const url = `${baseUrl}/${splittedPrevFileUrl[1]}${userApiToken}${splittedPrevFileUrl[2]}`;
+        const url = `${baseUrl}/${splittedPrevFileUrl[1]}${userApiToken}${splittedPrevFileUrl.slice(2).join('/')}`;
         return {
             ...file,
             url
