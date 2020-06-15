@@ -455,4 +455,123 @@ class PermissionTest < ActiveSupport::TestCase
     assert_empty User.readable_by(users(:active)).where(uuid: users(:project_viewer).uuid)
 
   end
+
+
+  test "add user to group, then change permission level" do
+    set_user_from_auth :admin
+    grp = Group.create!(owner_uuid: system_user_uuid, group_class: "role")
+    col = Collection.create!(owner_uuid: grp.uuid)
+    assert_empty Collection.readable_by(users(:active)).where(uuid: col.uuid)
+    assert_empty User.readable_by(users(:active)).where(uuid: users(:project_viewer).uuid)
+
+    l1 = Link.create!(tail_uuid: users(:active).uuid,
+                 head_uuid: grp.uuid,
+                 link_class: 'permission',
+                 name: 'can_manage')
+    l2 = Link.create!(tail_uuid: grp.uuid,
+                 head_uuid: users(:active).uuid,
+                 link_class: 'permission',
+                 name: 'can_read')
+
+    assert Collection.readable_by(users(:active)).where(uuid: col.uuid).first
+    assert users(:active).can?(read: col.uuid)
+    assert users(:active).can?(write: col.uuid)
+    assert users(:active).can?(manage: col.uuid)
+
+    l1.name = 'can_read'
+    l1.save!
+
+    assert Collection.readable_by(users(:active)).where(uuid: col.uuid).first
+    assert users(:active).can?(read: col.uuid)
+    assert !users(:active).can?(write: col.uuid)
+    assert !users(:active).can?(manage: col.uuid)
+
+    l1.name = 'can_write'
+    l1.save!
+
+    assert Collection.readable_by(users(:active)).where(uuid: col.uuid).first
+    assert users(:active).can?(read: col.uuid)
+    assert users(:active).can?(write: col.uuid)
+    assert !users(:active).can?(manage: col.uuid)
+  end
+
+
+  test "add user to group, then add overlapping permission link to group" do
+    set_user_from_auth :admin
+    grp = Group.create!(owner_uuid: system_user_uuid, group_class: "role")
+    col = Collection.create!(owner_uuid: grp.uuid)
+    assert_empty Collection.readable_by(users(:active)).where(uuid: col.uuid)
+    assert_empty User.readable_by(users(:active)).where(uuid: users(:project_viewer).uuid)
+
+    l1 = Link.create!(tail_uuid: users(:active).uuid,
+                 head_uuid: grp.uuid,
+                 link_class: 'permission',
+                 name: 'can_manage')
+    l2 = Link.create!(tail_uuid: grp.uuid,
+                 head_uuid: users(:active).uuid,
+                 link_class: 'permission',
+                 name: 'can_read')
+
+    assert Collection.readable_by(users(:active)).where(uuid: col.uuid).first
+    assert users(:active).can?(read: col.uuid)
+    assert users(:active).can?(write: col.uuid)
+    assert users(:active).can?(manage: col.uuid)
+
+    l3 = Link.create!(tail_uuid: users(:active).uuid,
+                 head_uuid: grp.uuid,
+                 link_class: 'permission',
+                 name: 'can_read')
+
+    assert Collection.readable_by(users(:active)).where(uuid: col.uuid).first
+    assert users(:active).can?(read: col.uuid)
+    assert users(:active).can?(write: col.uuid)
+    assert users(:active).can?(manage: col.uuid)
+
+    l3.destroy!
+
+    assert Collection.readable_by(users(:active)).where(uuid: col.uuid).first
+    assert users(:active).can?(read: col.uuid)
+    assert users(:active).can?(write: col.uuid)
+    assert !users(:active).can?(manage: col.uuid)
+  end
+
+
+  test "add user to group, then add overlapping permission link to subproject" do
+    set_user_from_auth :admin
+    grp = Group.create!(owner_uuid: system_user_uuid, group_class: "project")
+    prj = Group.create!(owner_uuid: grp.uuid, group_class: "project")
+    assert_empty Group.readable_by(users(:active)).where(uuid: prj.uuid)
+    assert_empty User.readable_by(users(:active)).where(uuid: users(:project_viewer).uuid)
+
+    l1 = Link.create!(tail_uuid: users(:active).uuid,
+                 head_uuid: grp.uuid,
+                 link_class: 'permission',
+                 name: 'can_manage')
+    l2 = Link.create!(tail_uuid: grp.uuid,
+                 head_uuid: users(:active).uuid,
+                 link_class: 'permission',
+                 name: 'can_read')
+
+    assert Group.readable_by(users(:active)).where(uuid: prj.uuid).first
+    assert users(:active).can?(read: prj.uuid)
+    assert users(:active).can?(write: prj.uuid)
+    assert users(:active).can?(manage: prj.uuid)
+
+    l3 = Link.create!(tail_uuid: grp.uuid,
+                 head_uuid: prj.uuid,
+                 link_class: 'permission',
+                 name: 'can_read')
+
+    assert Group.readable_by(users(:active)).where(uuid: prj.uuid).first
+    assert users(:active).can?(read: prj.uuid)
+    assert users(:active).can?(write: prj.uuid)
+    assert users(:active).can?(manage: prj.uuid)
+
+    l3.destroy!
+
+    assert Group.readable_by(users(:active)).where(uuid: prj.uuid).first
+    assert users(:active).can?(read: prj.uuid)
+    assert users(:active).can?(write: prj.uuid)
+    assert !users(:active).can?(manage: prj.uuid)
+  end
 end
