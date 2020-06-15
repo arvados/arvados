@@ -39,10 +39,10 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public;
 
 
 --
--- Name: compute_permission_subgraph(character varying, character varying, integer); Type: FUNCTION; Schema: public; Owner: -
+-- Name: compute_permission_subgraph(character varying, character varying, integer, character varying); Type: FUNCTION; Schema: public; Owner: -
 --
 
-CREATE FUNCTION public.compute_permission_subgraph(perm_origin_uuid character varying, starting_uuid character varying, starting_perm integer) RETURNS TABLE(user_uuid character varying, target_uuid character varying, val integer, traverse_owned boolean)
+CREATE FUNCTION public.compute_permission_subgraph(perm_origin_uuid character varying, starting_uuid character varying, starting_perm integer, perm_edge_id character varying) RETURNS TABLE(user_uuid character varying, target_uuid character varying, val integer, traverse_owned boolean)
     LANGUAGE sql STABLE
     AS $$
 
@@ -79,15 +79,13 @@ WITH RECURSIVE
           union
             (select traverse_graph.origin_uuid,
                     edges.head_uuid,
-                      least(edges.val,
-                            traverse_graph.val
-                            ,
-                            case (edges.tail_uuid = perm_origin_uuid AND
-                                  edges.head_uuid = starting_uuid)
+                      least(
+case (edges.edge_id = perm_edge_id)
                                when true then starting_perm
-                               else null
+                               else edges.val
                             end
-),
+,
+                            traverse_graph.val),
                     should_traverse_owned(edges.head_uuid, edges.val),
                     false
              from permission_graph_edges as edges, traverse_graph
@@ -123,23 +121,20 @@ WITH RECURSIVE
            should_traverse_owned(edges.head_uuid, edges.val),
            edges.head_uuid like '_____-j7d0g-_______________'
       from permission_graph_edges as edges
-      where (not (edges.tail_uuid = perm_origin_uuid and
-                  edges.head_uuid = starting_uuid)) and
+      where edges.edge_id != perm_edge_id and
             edges.tail_uuid not in (select target_uuid from perm_from_start where target_uuid like '_____-j7d0g-_______________') and
             edges.head_uuid in (select target_uuid from perm_from_start)
 
           union
             (select traverse_graph.origin_uuid,
                     edges.head_uuid,
-                      least(edges.val,
-                            traverse_graph.val
-                            ,
-                            case (edges.tail_uuid = perm_origin_uuid AND
-                                  edges.head_uuid = starting_uuid)
+                      least(
+case (edges.edge_id = perm_edge_id)
                                when true then starting_perm
-                               else null
+                               else edges.val
                             end
-),
+,
+                            traverse_graph.val),
                     should_traverse_owned(edges.head_uuid, edges.val),
                     false
              from permission_graph_edges as edges, traverse_graph
@@ -1014,17 +1009,20 @@ CREATE TABLE public.users (
 CREATE VIEW public.permission_graph_edges AS
  SELECT groups.owner_uuid AS tail_uuid,
     groups.uuid AS head_uuid,
-    3 AS val
+    3 AS val,
+    groups.uuid AS edge_id
    FROM public.groups
 UNION ALL
  SELECT users.owner_uuid AS tail_uuid,
     users.uuid AS head_uuid,
-    3 AS val
+    3 AS val,
+    users.uuid AS edge_id
    FROM public.users
 UNION ALL
  SELECT users.uuid AS tail_uuid,
     users.uuid AS head_uuid,
-    3 AS val
+    3 AS val,
+    ''::character varying AS edge_id
    FROM public.users
 UNION ALL
  SELECT links.tail_uuid,
@@ -1035,7 +1033,8 @@ UNION ALL
             WHEN ((links.name)::text = 'can_write'::text) THEN 2
             WHEN ((links.name)::text = 'can_manage'::text) THEN 3
             ELSE 0
-        END AS val
+        END AS val,
+    links.uuid AS edge_id
    FROM public.links
   WHERE ((links.link_class)::text = 'permission'::text);
 

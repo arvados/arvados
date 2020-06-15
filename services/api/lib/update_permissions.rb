@@ -7,7 +7,7 @@ require '20200501150153_permission_table_constants'
 REVOKE_PERM = 0
 CAN_MANAGE_PERM = 3
 
-def update_permissions perm_origin_uuid, starting_uuid, perm_level
+def update_permissions perm_origin_uuid, starting_uuid, perm_level, edge_id=nil
   #
   # Update a subset of the permission table affected by adding or
   # removing a particular permission relationship (ownership or a
@@ -48,6 +48,10 @@ def update_permissions perm_origin_uuid, starting_uuid, perm_level
   #
   # see db/migrate/20200501150153_permission_table.rb for details on
   # how the permissions are computed.
+
+  if edge_id.nil?
+    edge_id = starting_uuid
+  end
 
   ActiveRecord::Base.transaction do
 
@@ -95,12 +99,13 @@ def update_permissions perm_origin_uuid, starting_uuid, perm_level
     temptable_perms = "temp_perms_#{rand(2**64).to_s(10)}"
     ActiveRecord::Base.connection.exec_query %{
 create temporary table #{temptable_perms} on commit drop
-as select * from compute_permission_subgraph($1, $2, $3)
+as select * from compute_permission_subgraph($1, $2, $3, $4)
 },
                                              'update_permissions.select',
                                              [[nil, perm_origin_uuid],
                                               [nil, starting_uuid],
-                                              [nil, perm_level]]
+                                              [nil, perm_level],
+                                              [nil, edge_id]]
 
     ActiveRecord::Base.connection.exec_query "SET LOCAL enable_mergejoin to true;"
 
@@ -146,7 +151,7 @@ order by user_uuid, target_uuid
     #{PERM_QUERY_TEMPLATE % {:base_case => %{
         select uuid, uuid, 3, true, true from users
 },
-:override => ''
+:edge_perm => 'edges.val'
 } }) as pq order by origin_uuid, target_uuid
 }, "check_permissions_against_full_refresh.full_recompute"
 

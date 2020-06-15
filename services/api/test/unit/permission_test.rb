@@ -532,7 +532,7 @@ class PermissionTest < ActiveSupport::TestCase
     assert Collection.readable_by(users(:active)).where(uuid: col.uuid).first
     assert users(:active).can?(read: col.uuid)
     assert users(:active).can?(write: col.uuid)
-    assert !users(:active).can?(manage: col.uuid)
+    assert users(:active).can?(manage: col.uuid)
   end
 
 
@@ -572,6 +572,6 @@ class PermissionTest < ActiveSupport::TestCase
     assert Group.readable_by(users(:active)).where(uuid: prj.uuid).first
     assert users(:active).can?(read: prj.uuid)
     assert users(:active).can?(write: prj.uuid)
-    assert !users(:active).can?(manage: prj.uuid)
+    assert users(:active).can?(manage: prj.uuid)
   end
 end

@@ -28,7 +28,7 @@ TRASHED_GROUPS = "trashed_groups"
 # going with the brute force approach of inlining the whole thing.
 #
 # The two substitutions are "base_case" which determines the initial
-# set of permission origins and "override" which is used to ensure
+# set of permission origins and "edge_perm" which is used to ensure
 # that the new permission takes precedence over the one in the edges
 # table (but some queries don't need that.)
 #
@@ -39,9 +39,8 @@ WITH RECURSIVE
           union
             (select traverse_graph.origin_uuid,
                     edges.head_uuid,
-                      least(edges.val,
-                            traverse_graph.val
-                            %{override}),
+                      least(%{edge_perm},
+                            traverse_graph.val),
                     should_traverse_owned(edges.head_uuid, edges.val),
                     false
              from permission_graph_edges as edges, traverse_graph
@@ -79,7 +78,7 @@ INSERT INTO materialized_permissions
     #{PERM_QUERY_TEMPLATE % {:base_case => %{
         select uuid, uuid, 3, true, true from users
 },
-:override => ''
+:edge_perm => 'edges.val'
 } }
 }, "refresh_permission_view.do"
   end

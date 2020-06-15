@@ -74,13 +74,13 @@ class Link < ArvadosModel
 
   def call_update_permissions
     if self.link_class == 'permission'
-      update_permissions tail_uuid, head_uuid, PERM_LEVEL[name]
+      update_permissions tail_uuid, head_uuid, PERM_LEVEL[name], self.uuid
     end
   end
 
   def clear_permissions
     if self.link_class == 'permission'
-      update_permissions tail_uuid, head_uuid, REVOKE_PERM
+      update_permissions tail_uuid, head_uuid, REVOKE_PERM, self.uuid
     end
   end
 

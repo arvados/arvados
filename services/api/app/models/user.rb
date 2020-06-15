@@ -51,7 +51,7 @@ class User < ArvadosModel
     (not user.username_was.nil?)
   }
   before_destroy :clear_permissions
-  after_destroy :check_permissions
+  after_destroy :remove_self_from_permissions
 
   has_many :authorized_keys, :foreign_key => :authorized_user_uuid, :primary_key => :uuid
   has_many :repositories, foreign_key: :owner_uuid, primary_key: :uuid
@@ -157,11 +157,11 @@ SELECT 1 FROM #{PERMISSION_VIEW}
   end
 
   def clear_permissions
-    update_permissions self.owner_uuid, self.uuid, REVOKE_PERM
-    MaterializedPermission.where("user_uuid = ? or target_uuid = ?", uuid, uuid).delete_all
+    MaterializedPermission.where("user_uuid = ? and target_uuid != ?", uuid, uuid).delete_all
   end
 
-  def check_permissions
+  def remove_self_from_permissions
+    MaterializedPermission.where("target_uuid = ?", uuid).delete_all
     check_permissions_against_full_refresh
   end
 
@@ -371,6 +371,7 @@ update #{PERMISSION_VIEW} set target_uuid=$1 where target_uuid = $2
       raise "cannot merge to an already merged user" if new_user.redirect_to_user_uuid
 
       self.clear_permissions
+      new_user.clear_permissions
 
       # If 'self' is a remote user, don't transfer authorizations
       # (i.e. ability to access the account) to the new user, because
@@ -447,11 +448,11 @@ update #{PERMISSION_VIEW} set target_uuid=$1 where target_uuid = $2
         update_attributes!(redirect_to_user_uuid: new_user.uuid, username: nil)
       end
       skip_check_permissions_against_full_refresh do
-        update_permissions self.owner_uuid, self.uuid, CAN_MANAGE_PERM
         update_permissions self.uuid, self.uuid, CAN_MANAGE_PERM
+        update_permissions new_user.uuid, new_user.uuid, CAN_MANAGE_PERM
         update_permissions new_user.owner_uuid, new_user.uuid, CAN_MANAGE_PERM
       end
-      update_permissions new_user.uuid, new_user.uuid, CAN_MANAGE_PERM
+      update_permissions self.owner_uuid, self.uuid, CAN_MANAGE_PERM
     end
   end
 

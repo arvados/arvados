@@ -108,11 +108,14 @@ $$;
     # force query of all edges.
     ActiveRecord::Base.connection.execute %{
 create view permission_graph_edges as
-  select groups.owner_uuid as tail_uuid, groups.uuid as head_uuid, (3) as val from groups
+  select groups.owner_uuid as tail_uuid, groups.uuid as head_uuid,
+         (3) as val, groups.uuid as edge_id from groups
 union all
-  select users.owner_uuid as tail_uuid, users.uuid as head_uuid, (3) as val from users
+  select users.owner_uuid as tail_uuid, users.uuid as head_uuid,
+         (3) as val, users.uuid as edge_id from users
 union all
-  select users.uuid as tail_uuid, users.uuid as head_uuid, (3) as val from users
+  select users.uuid as tail_uuid, users.uuid as head_uuid,
+         (3) as val, '' as edge_id from users
 union all
   select links.tail_uuid,
          links.head_uuid,
@@ -122,7 +125,8 @@ union all
            WHEN links.name = 'can_write'  THEN 2
            WHEN links.name = 'can_manage' THEN 3
            ELSE 0
-          END as val
+         END as val,
+         links.uuid as edge_id
       from links
       where links.link_class='permission'
 }
@@ -130,11 +134,10 @@ union all
     # Code fragment that is used below.  This is used to ensure that
     # the permission edge passed into compute_permission_subgraph
     # takes precedence over an existing edge in the "edges" view.
-    override = %{,
-                            case (edges.tail_uuid = perm_origin_uuid AND
-                                  edges.head_uuid = starting_uuid)
+    edge_perm = %{
+case (edges.edge_id = perm_edge_id)
                                when true then starting_perm
-                               else null
+                               else edges.val
                             end
 }
 
@@ -149,7 +152,8 @@ union all
     ActiveRecord::Base.connection.execute %{
 create or replace function compute_permission_subgraph (perm_origin_uuid varchar(27),
                                                         starting_uuid varchar(27),
-                                                        starting_perm integer)
+                                                        starting_perm integer,
+                                                        perm_edge_id varchar(27))
 returns table (user_uuid varchar(27), target_uuid varchar(27), val integer, traverse_owned bool)
 STABLE
 language SQL
@@ -182,7 +186,7 @@ with
                     should_traverse_owned(starting_uuid, starting_perm),
                     (perm_origin_uuid = starting_uuid or starting_uuid not like '_____-tpzed-_______________'))
 },
-:override => override
+:edge_perm => edge_perm
 } }),
 
   /* Find other inbound edges that grant permissions to 'targets' in
@@ -207,12 +211,11 @@ with
            should_traverse_owned(edges.head_uuid, edges.val),
            edges.head_uuid like '_____-j7d0g-_______________'
       from permission_graph_edges as edges
-      where (not (edges.tail_uuid = perm_origin_uuid and
-                  edges.head_uuid = starting_uuid)) and
+      where edges.edge_id != perm_edge_id and
             edges.tail_uuid not in (select target_uuid from perm_from_start where target_uuid like '_____-j7d0g-_______________') and
             edges.head_uuid in (select target_uuid from perm_from_start)
 },
-:override => override
+:edge_perm => edge_perm
 } }),
 
   /* Combine the permissions computed in the first two phases. */
@@ -278,7 +281,7 @@ $$;
     drop_table :trashed_groups
 
     ActiveRecord::Base.connection.execute "DROP function project_subtree_with_trash_at (varchar, timestamp);"
-    ActiveRecord::Base.connection.execute "DROP function compute_permission_subgraph (varchar, varchar, integer);"
+    ActiveRecord::Base.connection.execute "DROP function compute_permission_subgraph (varchar, varchar, integer, varchar);"
     ActiveRecord::Base.connection.execute "DROP function should_traverse_owned(varchar, integer);"
     ActiveRecord::Base.connection.execute "DROP view permission_graph_edges;"
 
