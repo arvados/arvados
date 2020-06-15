@@ -14,12 +14,14 @@ export interface CollectionPanelFilesProps {
     items: Array<TreeItem<FileTreeData>>;
     isWritable: boolean;
     isLoading: boolean;
+    tooManyFiles: boolean;
     onUploadDataClick: () => void;
     onItemMenuOpen: (event: React.MouseEvent<HTMLElement>, item: TreeItem<FileTreeData>, isWritable: boolean) => void;
     onOptionsMenuOpen: (event: React.MouseEvent<HTMLElement>, isWritable: boolean) => void;
     onSelectionToggle: (event: React.MouseEvent<HTMLElement>, item: TreeItem<FileTreeData>) => void;
     onCollapseToggle: (id: string, status: TreeItemStatus) => void;
     onFileClick: (id: string) => void;
+    loadFilesFunc: () => void;
     currentItemUuid?: string;
 }
 
@@ -55,7 +57,7 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
 export const CollectionPanelFiles =
     withStyles(styles)(
         ({ onItemMenuOpen, onOptionsMenuOpen, onUploadDataClick, classes,
-            isWritable, isLoading, ...treeProps }: CollectionPanelFilesProps & WithStyles<CssRules>) =>
+            isWritable, isLoading, tooManyFiles, loadFilesFunc, ...treeProps }: CollectionPanelFilesProps & WithStyles<CssRules>) =>
             <Card data-cy='collection-files-panel' className={classes.root}>
                 <CardHeader
                     title="Files"
@@ -72,26 +74,33 @@ export const CollectionPanelFiles =
                             Upload data
                         </Button>
                     } />
-                <CardHeader
-                    className={classes.cardSubheader}
-                    action={
-                        <Tooltip title="More options" disableFocusListener>
-                            <IconButton
-                                data-cy='collection-files-panel-options-btn'
-                                onClick={(ev) => onOptionsMenuOpen(ev, isWritable)}>
-                                <CustomizeTableIcon />
-                            </IconButton>
-                        </Tooltip>
-                    } />
-                <Grid container justify="space-between">
-                    <Typography variant="caption" className={classes.nameHeader}>
-                        Name
-                    </Typography>
-                    <Typography variant="caption" className={classes.fileSizeHeader}>
-                        File size
-                    </Typography>
-                </Grid>
-                { isLoading
-                ? <div className={classes.centeredLabel}>(loading files...)</div>
-                : <FileTree onMenuOpen={(ev, item) => onItemMenuOpen(ev, item, isWritable)} {...treeProps} /> }
+                { tooManyFiles
+                ? <div className={classes.centeredLabel}>
+                        File listing may take some time, please click to browse: <Button onClick={loadFilesFunc}><DownloadIcon/>Show files</Button>
+                </div>
+                : <>
+                    <CardHeader
+                        className={classes.cardSubheader}
+                        action={
+                            <Tooltip title="More options" disableFocusListener>
+                                <IconButton
+                                    data-cy='collection-files-panel-options-btn'
+                                    onClick={(ev) => onOptionsMenuOpen(ev, isWritable)}>
+                                    <CustomizeTableIcon />
+                                </IconButton>
+                            </Tooltip>
+                        } />
+                    <Grid container justify="space-between">
+                        <Typography variant="caption" className={classes.nameHeader}>
+                            Name
+                        </Typography>
+                        <Typography variant="caption" className={classes.fileSizeHeader}>
+                            File size
+                        </Typography>
+                    </Grid>
+                    { isLoading
+                    ? <div className={classes.centeredLabel}>(loading files...)</div>
+                    : <FileTree onMenuOpen={(ev, item) => onItemMenuOpen(ev, item, isWritable)} {...treeProps} /> }
+                </>
+                }
             </Card>);

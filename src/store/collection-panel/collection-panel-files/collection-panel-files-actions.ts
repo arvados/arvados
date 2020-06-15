@@ -27,6 +27,7 @@ export const collectionPanelFilesAction = unionize({
 export type CollectionPanelFilesAction = UnionOf<typeof collectionPanelFilesAction>;
 
 export const COLLECTION_PANEL_LOAD_FILES = 'collectionPanelLoadFiles';
+export const COLLECTION_PANEL_LOAD_FILES_THRESHOLD = 40000;
 
 export const loadCollectionFiles = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {

@@ -16,7 +16,7 @@ import { DetailsAttribute } from '~/components/details-attribute/details-attribu
 import { CollectionResource } from '~/models/collection';
 import { CollectionPanelFiles } from '~/views-components/collection-panel-files/collection-panel-files';
 import { CollectionTagForm } from './collection-tag-form';
-import { deleteCollectionTag, navigateToProcess } from '~/store/collection-panel/collection-panel-action';
+import { deleteCollectionTag, navigateToProcess, collectionPanelActions } from '~/store/collection-panel/collection-panel-action';
 import { getResource } from '~/store/resources/resources';
 import { openContextMenu } from '~/store/context-menu/context-menu-actions';
 import { ContextMenuKind } from '~/views-components/context-menu/context-menu';
@@ -29,7 +29,7 @@ import { GroupResource } from '~/models/group';
 import { UserResource } from '~/models/user';
 import { getUserUuid } from '~/common/getuser';
 import { getProgressIndicator } from '~/store/progress-indicator/progress-indicator-reducer';
-import { COLLECTION_PANEL_LOAD_FILES } from '~/store/collection-panel/collection-panel-files/collection-panel-files-actions';
+import { COLLECTION_PANEL_LOAD_FILES, loadCollectionFiles, COLLECTION_PANEL_LOAD_FILES_THRESHOLD } from '~/store/collection-panel/collection-panel-files/collection-panel-files-actions';
 
 type CssRules = 'card' | 'iconHeader' | 'tag' | 'label' | 'value' | 'link' | 'centeredLabel' | 'readOnlyIcon';
 
@@ -73,6 +73,7 @@ interface CollectionPanelDataProps {
     item: CollectionResource;
     isWritable: boolean;
     isLoadingFiles: boolean;
+    tooManyFiles: boolean;
 }
 
 type CollectionPanelProps = CollectionPanelDataProps & DispatchProp
@@ -93,11 +94,12 @@ export const CollectionPanel = withStyles(styles)(
         }
         const loadingFilesIndicator = getProgressIndicator(COLLECTION_PANEL_LOAD_FILES)(state.progressIndicator);
         const isLoadingFiles = loadingFilesIndicator && loadingFilesIndicator!.working || false;
-        return { item, isWritable, isLoadingFiles };
+        const tooManyFiles = !state.collectionPanel.loadBigCollections && item && item.fileCount > COLLECTION_PANEL_LOAD_FILES_THRESHOLD || false;
+        return { item, isWritable, isLoadingFiles, tooManyFiles };
     })(
         class extends React.Component<CollectionPanelProps> {
             render() {
-                const { classes, item, dispatch, isWritable, isLoadingFiles } = this.props;
+                const { classes, item, dispatch, isWritable, isLoadingFiles, tooManyFiles } = this.props;
                 return item
                     ? <>
                         <Card data-cy='collection-info-panel' className={classes.card}>
@@ -188,7 +190,15 @@ export const CollectionPanel = withStyles(styles)(
                             </CardContent>
                         </Card>
                         <div className={classes.card}>
-                            <CollectionPanelFiles isWritable={isWritable} isLoading={isLoadingFiles} />
+                            <CollectionPanelFiles
+                                isWritable={isWritable}
+                                isLoading={isLoadingFiles}
+                                tooManyFiles={tooManyFiles}
+                                loadFilesFunc={() => {
+                                    dispatch(collectionPanelActions.LOAD_BIG_COLLECTIONS(true));
+                                    dispatch<any>(loadCollectionFiles(this.props.item.uuid));
+                                }
+                            } />
                         </div>
                     </>
                     : null;
