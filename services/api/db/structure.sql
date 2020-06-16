@@ -59,6 +59,14 @@ CREATE FUNCTION public.compute_permission_subgraph(perm_origin_uuid character va
                   starting_uuid One of 1, 2, 3 for can_read,
                   can_write, can_manage respectively, or 0 to revoke
                   permissions.
+
+   perm_edge_id: Identifies the permission edge that is being updated.
+                 Changes of ownership, this is starting_uuid.
+                 For links, this is the uuid of the link object.
+                 This is used to override the edge value in the database
+                 with starting_perm.  This is necessary when revoking
+                 permissions because the update happens before edge is
+                 actually removed.
 */
 with
   /* Starting from starting_uuid, determine the set of objects that

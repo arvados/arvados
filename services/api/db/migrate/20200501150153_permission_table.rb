@@ -18,7 +18,6 @@ class PermissionTable < ActiveRecord::Migration[5.0]
     # permissions system.  Updating trashed items follows a similar
     # (but less complicated) strategy to updating permissions, so it
     # may be helpful to look at that first.
-    #
 
     ActiveRecord::Base.connection.execute "DROP MATERIALIZED VIEW IF EXISTS materialized_permission_view;"
     drop_table :permission_refresh_lock
@@ -99,12 +98,13 @@ $$;
 }
 
     # Merge all permission relationships into a single view.  This
-    # consists of: groups (projects) owning things, users owning
-    # things, users owning themselves, and explicit permission links.
+    # consists of: groups owned by users and projects, users owned
+    # by other users, users have permission on themselves,
+    # and explicit permission links.
     #
     # A SQL view gets inlined into the query where it is used as a
     # subquery.  This enables the query planner to inject constraints,
-    # so we only look up edges we plan to traverse and avoid a brute
+    # so it only has to look up edges it plans to traverse and avoid a brute
     # force query of all edges.
     ActiveRecord::Base.connection.execute %{
 create view permission_graph_edges as
@@ -131,9 +131,9 @@ union all
       where links.link_class='permission'
 }
 
-    # Code fragment that is used below.  This is used to ensure that
-    # the permission edge passed into compute_permission_subgraph
-    # takes precedence over an existing edge in the "edges" view.
+    # This is used to ensure that the permission edge passed into
+    # compute_permission_subgraph takes replaces the existing edge in
+    # the "edges" view that is about to be removed.
     edge_perm = %{
 case (edges.edge_id = perm_edge_id)
                                when true then starting_perm
@@ -141,13 +141,13 @@ case (edges.edge_id = perm_edge_id)
                             end
 }
 
-    #
     # The primary function to compute permissions for a subgraph.
-    # This originally was organized somewhat more cleanly, but this
-    # ran into performance issues due to the query optimizer not
-    # working across function and "with" expression boundaries.  So I
-    # had to fall back on using string templates for the repeated
-    # code.  I'm sorry.
+    # Comments on how it works are inline.
+    #
+    # Due to performance issues due to the query optimizer not
+    # working across function and "with" expression boundaries, I
+    # had to fall back on using string templates for repeated code
+    # in order to inline it.
 
     ActiveRecord::Base.connection.execute %{
 create or replace function compute_permission_subgraph (perm_origin_uuid varchar(27),
@@ -172,6 +172,14 @@ as $$
                   starting_uuid One of 1, 2, 3 for can_read,
                   can_write, can_manage respectively, or 0 to revoke
                   permissions.
+
+   perm_edge_id: Identifies the permission edge that is being updated.
+                 Changes of ownership, this is starting_uuid.
+                 For links, this is the uuid of the link object.
+                 This is used to override the edge value in the database
+                 with starting_perm.  This is necessary when revoking
+                 permissions because the update happens before edge is
+                 actually removed.
 */
 with
   /* Starting from starting_uuid, determine the set of objects that

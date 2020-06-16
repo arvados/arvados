@@ -50,6 +50,11 @@ def update_permissions perm_origin_uuid, starting_uuid, perm_level, edge_id=nil
   # how the permissions are computed.
 
   if edge_id.nil?
+    # For changes of ownership, edge_id is starting_uuid.  In turns
+    # out most invocations of update_permissions are for changes of
+    # ownership, so make this parameter optional to reduce
+    # clutter.
+    # For permission links, the uuid of the link object will be passed in for edge_id.
     edge_id = starting_uuid
   end
 
