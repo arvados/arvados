@@ -194,7 +194,7 @@ run() {
             localip=$(ip addr show $defaultdev | grep 'inet ' | sed 's/ *inet \(.*\)\/.*/\1/')
         fi
 	echo "Public arvbox will use address $localip"
-        iptemp=$(tempfile)
+        iptemp=$(mktemp)
         echo $localip > $iptemp
         chmod og+r $iptemp
         PUBLIC="--volume=$iptemp:/var/run/localip_override
