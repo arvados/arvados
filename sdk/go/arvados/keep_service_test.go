@@ -5,6 +5,7 @@
 package arvados
 
 import (
+	"context"
 	"net/http"
 
 	check "gopkg.in/check.v1"
@@ -22,6 +23,6 @@ func (*KeepServiceSuite) TestIndexTimeout(c *check.C) {
 		APIHost:   "zzzzz.arvadosapi.com",
 		AuthToken: "xyzzy",
 	}
-	_, err := (&KeepService{}).IndexMount(client, "fake", "")
+	_, err := (&KeepService{}).IndexMount(context.Background(), client, "fake", "")
 	c.Check(err, check.ErrorMatches, `.*timeout.*`)
 }
