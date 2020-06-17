@@ -586,7 +586,7 @@ Clusters:
         # use the empty string "".
         EmailVerifiedClaim: "email_verified"
 
-        # OpenID claim field contianing the user's preferred
+        # OpenID claim field containing the user's preferred
         # username. If empty, use the mailbox part of the user's email
         # address.
         UsernameClaim: ""
