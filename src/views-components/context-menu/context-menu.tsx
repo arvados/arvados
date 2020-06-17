@@ -65,6 +65,7 @@ export enum ContextMenuKind {
     API_CLIENT_AUTHORIZATION = "ApiClientAuthorization",
     ROOT_PROJECT = "RootProject",
     PROJECT = "Project",
+    READONLY_PROJECT = 'ReadOnlyProject',
     PROJECT_ADMIN = "ProjectAdmin",
     RESOURCE = "Resource",
     FAVORITE = "Favorite",
