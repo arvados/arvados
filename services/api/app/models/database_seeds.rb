@@ -13,6 +13,7 @@ class DatabaseSeeds
     anonymous_group
     anonymous_group_read_permission
     anonymous_user
+    empty_collection
     refresh_permissions
     refresh_trashed
   end

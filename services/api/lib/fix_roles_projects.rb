@@ -11,23 +11,20 @@ def fix_roles_projects
     # shouldn't be anything to do at all.
     act_as_system_user do
       ActiveRecord::Base.transaction do
-        q = ActiveRecord::Base.connection.exec_query %{
-select uuid from groups limit 1
-}
-
-        # 1) any group not group_class != project becomes a 'role' (both empty and invalid groups)
-        ActiveRecord::Base.connection.exec_query %{
-UPDATE groups set group_class='role' where group_class != 'project' or group_class is null
-    }
-
-        Group.where("group_class='role' and owner_uuid != '#{system_user_uuid}'").each do |g|
-          # 2) Ownership of a role becomes a can_manage link
-          Link.create!(link_class: 'permission',
-                       name: 'can_manage',
-                       tail_uuid: g.owner_uuid,
-                       head_uuid: g.uuid)
+        Group.where("group_class != 'project' or group_class is null").each do |g|
+          # 1) any group not group_class != project becomes a 'role' (both empty and invalid groups)
+          old_owner = g.owner_uuid
           g.owner_uuid = system_user_uuid
+          g.group_class = 'role'
           g.save_with_unique_name!
+
+          if old_owner != system_user_uuid
+            # 2) Ownership of a role becomes a can_manage link
+            Link.create!(link_class: 'permission',
+                         name: 'can_manage',
+                         tail_uuid: old_owner,
+                         head_uuid: g.uuid)
+          end
         end
 
         ActiveRecord::Base.descendants.reject(&:abstract_class?).each do |klass|
@@ -66,8 +63,8 @@ select links.uuid from links, groups where groups.uuid = links.tail_uuid and
 }
         q.each do |lu|
           ln = Link.find_by_uuid(lu['uuid'])
-          puts "WARNING: Projects cannot have outgoing permission links, '#{ln.name}' link from #{ln.tail_uuid} to #{ln.head_uuid} will be removed"
-          Rails.logger.warn "Projects cannot have outgoing permission links, '#{ln.name}' link from #{ln.tail_uuid} to #{ln.head_uuid} will be removed"
+          puts "WARNING: Projects cannot have outgoing permission links, removing '#{ln.name}' link #{ln.uuid} from #{ln.tail_uuid} to #{ln.head_uuid}"
+          Rails.logger.warn "Projects cannot have outgoing permission links, removing '#{ln.name}' link #{ln.uuid} from #{ln.tail_uuid} to #{ln.head_uuid}"
           ln.destroy!
         end
       end

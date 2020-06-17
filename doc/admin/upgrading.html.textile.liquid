@@ -34,7 +34,7 @@ TODO: extract this information based on git commit messages and generate changel
 <div class="releasenotes">
 </notextile>
 
-h2(#master). development master (as of 2020-02-07)
+h2(#master). development master (as of 2020-06-17)
 
 "Upgrading from 2.0.0":#v2_0_0
 
@@ -47,6 +47,39 @@ After migrating your configuration, uninstall the @arvados-sso-provider@ package
 h3. S3 signatures
 
 Keepstore now uses "V4 signatures":https://docs.aws.amazon.com/AmazonS3/latest/API/sig-v4-authenticating-requests.html by default for S3 requests. If you are using Amazon S3, no action is needed; all regions support V4 signatures. If you are using a different S3-compatible service that does not support V4 signatures, add @V2Signature: true@ to your volume driver parameters to preserve the old behavior. See "configuring S3 object storage":{{site.baseurl}}/install/configure-s3-object-storage.html.
+
+h3. New permission system constraints
+
+Some constraints on the permission system have been added, in particular @role@ and @project@ group types now have distinct behavior. These constraints were already de-facto imposed by the Workbench UI, so on most installations the only effect of this migration will be to reassign @role@ groups to the system user and create a @can_manage@ permission link for the previous owner.
+
+# The @group_class@ field must be either @role@ or @project@. Invalid group_class are migrated to @role@.
+# A @role@ cannot own things. Anything owned by a role is migrated to a @can_manage@ link and reassigned to the system user.
+# Only @role@ and @user@ can have outgoing permission links. Permission links originating from projects are deleted by the migration.
+# A @role@ is always owned by the system_user. When a group is created, it creates a @can_manage@ link for the object that would have been assigned to @owner_uuid@.  Migration adds @can_manage@ links and reassigns roles to the system user.  This also has the effect of requiring that all @role@ groups have unique names on the system.
+# A permission link can have the permission level (@name@) updated but not @head_uuid@, @tail_uuid@ or @link_class@.
+
+The @arvados-sync-groups@ tool has been updated to reflect these constraints.
+
+To determine which groups have invalid @group_class@ with this command (these will be migrated to @role@ groups):
+
+<pre>
+arv group list --filters '[["group_class", "not in", ["project", "role"]]]'
+</pre>
+
+To list all @role@ groups, which will be reassigned to the system user (unless @owner_uuid@ is already the system user):
+
+<pre>
+arv group list --filters '[["group_class", "=", "role"]]'
+</pre>
+
+To list which @project@ groups have outgoing permission links.  Such links are now invalid and will be deleted by the migration:
+
+<pre>
+for uuid in $(arv link list --filters '[["link_class", "=", "permission"], ["tail_uuid", "like", "%-j7d0g-%"]]' |
+              jq -r .items[].tail_uuid | sort | uniq) ; do
+   arv group list --filters '[["group_class", "=", "project"], ["uuid", "=", "'$uuid'"]]' | jq .items
+done
+</pre>
 
 h2(#v2_0_0). v2.0.0 (2020-02-07)
 

@@ -63,7 +63,7 @@ class Link < ArvadosModel
         return false
       end
       if tail_obj.group_class != "role"
-        errors.add(:tail_uuid, "must be a role, was #{tail_obj.group_class}")
+        errors.add(:tail_uuid, "must be a user or role, was group with group_class #{tail_obj.group_class}")
         return false
       end
     elsif rsc_class != User

@@ -119,9 +119,9 @@ delete from trashed_groups where group_uuid=$1
 
   def ensure_owner_uuid_is_permitted
     if group_class == "role"
-      @role_creator = nil
+      @requested_manager_uuid = nil
       if new_record?
-        @role_creator = owner_uuid
+        @requested_manager_uuid = owner_uuid
         self.owner_uuid = system_user_uuid
         return true
       end
@@ -136,9 +136,9 @@ delete from trashed_groups where group_uuid=$1
   end
 
   def add_role_manage_link
-    if group_class == "role" && @role_creator
+    if group_class == "role" && @requested_manager_uuid
       act_as_system_user do
-       Link.create!(tail_uuid: @role_creator,
+       Link.create!(tail_uuid: @requested_manager_uuid,
                     head_uuid: self.uuid,
                     link_class: "permission",
                     name: "can_manage")
