@@ -574,7 +574,7 @@ fpm_build_virtualenv () {
   cd build/usr/share/$python/dist/$PYTHON_PKG/
 
   # Replace the shebang lines in all python scripts, and handle the activate
-  # scripts too This is a functional replacement of the 237 line
+  # scripts too. This is a functional replacement of the 237 line
   # virtualenv_tools.py script that doesn't work in python3 without serious
   # patching, minus the parts we don't need (modifying pyc files, etc).
   for binfile in `ls bin/`; do
@@ -632,7 +632,7 @@ fpm_build_virtualenv () {
     COMMAND_ARR+=('--rpm-auto-add-directories')
   fi
 
-  if [[ "$PKG" == "arvados-python-client" ]]; then
+  if [[ "$PKG" == "arvados-python-client" ]] || [[ "$PKG" == "arvados-fuse" ]]; then
     if [[ "$python" == "python2.7" ]]; then
       COMMAND_ARR+=('--conflicts' "$PYTHON3_PKG_PREFIX-$PKG")
     else

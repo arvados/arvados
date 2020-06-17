@@ -334,6 +334,9 @@ fpm_build_virtualenv "libpam-arvados" "sdk/pam"
 # The FUSE driver
 fpm_build_virtualenv "arvados-fuse" "services/fuse"
 
+# The FUSE driver - Python3 package
+fpm_build_virtualenv "arvados-fuse" "services/fuse" "python3"
+
 # The node manager
 fpm_build_virtualenv "arvados-node-manager" "services/nodemanager"
 
