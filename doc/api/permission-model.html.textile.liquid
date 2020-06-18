@@ -100,7 +100,9 @@ A privileged user account exists for the use by internal Arvados components.  Th
 
 h2. Anoymous user and group
 
-An Arvados site may be configured to allow users to browse resources without requiring a login.  In this case, permissions for non-logged-in users are associated with the "anonymous" user.  To make objects visible to the public, they can be shared with the "anonymous" role.  The anonymous user uuid is @{siteprefix}-tpzed-anonymouspublic@.  The anonymous group uuid is @{siteprefix}-j7d0g-anonymouspublic@.
+An Arvados site may be configured to allow users to browse resources without requiring a login.  In this case, permissions for non-logged-in users are associated with the "anonymous" user.  To make objects visible to anyone (both logged-in and non-logged-in users), they can be shared with the "anonymous" role.  Note that objects shared with the "anonymous" user will only be visible to non-logged-in users!
+
+The anonymous user uuid is @{siteprefix}-tpzed-anonymouspublic@.  The anonymous group uuid is @{siteprefix}-j7d0g-anonymouspublic@.
 
 h2. Example
 

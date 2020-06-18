@@ -55,7 +55,7 @@ Some constraints on the permission system have been added, in particular @role@ 
 # The @group_class@ field must be either @role@ or @project@. Invalid group_class are migrated to @role@.
 # A @role@ cannot own things. Anything owned by a role is migrated to a @can_manage@ link and reassigned to the system user.
 # Only @role@ and @user@ can have outgoing permission links. Permission links originating from projects are deleted by the migration.
-# A @role@ is always owned by the system_user. When a group is created, it creates a @can_manage@ link for the object that would have been assigned to @owner_uuid@.  Migration adds @can_manage@ links and reassigns roles to the system user.  This also has the effect of requiring that all @role@ groups have unique names on the system.
+# A @role@ is always owned by the system_user. When a group is created, it creates a @can_manage@ link for the object that would have been assigned to @owner_uuid@.  Migration adds @can_manage@ links and reassigns roles to the system user.  This also has the effect of requiring that all @role@ groups have unique names on the system.  If there is a name collision during migration, roles will renamed to ensure they are unique.
 # A permission link can have the permission level (@name@) updated but not @head_uuid@, @tail_uuid@ or @link_class@.
 
 The @arvados-sync-groups@ tool has been updated to reflect these constraints, so it is important to use the version of @arvados-sync-groups@ that matches the API server version.
