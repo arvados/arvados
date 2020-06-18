@@ -23,7 +23,7 @@ import cwltool.workflow
 import cwltool.process
 import cwltool.argparser
 from cwltool.process import shortname, UnsupportedRequirement, use_custom_schema
-from cwltool.pathmapper import adjustFileObjs, adjustDirObjs, get_listing
+from cwltool.utils import adjustFileObjs, adjustDirObjs, get_listing
 
 import arvados
 import arvados.config
@@ -220,8 +220,8 @@ def add_arv_hints():
     cwltool.command_line_tool.ACCEPTLIST_RE = cwltool.command_line_tool.ACCEPTLIST_EN_RELAXED_RE
     res10 = pkg_resources.resource_stream(__name__, 'arv-cwl-schema-v1.0.yml')
     res11 = pkg_resources.resource_stream(__name__, 'arv-cwl-schema-v1.1.yml')
-    customschema10 = res10.read()
-    customschema11 = res11.read()
+    customschema10 = res10.read().decode('utf-8')
+    customschema11 = res11.read().decode('utf-8')
     use_custom_schema("v1.0", "http://arvados.org/cwl", customschema10)
     use_custom_schema("v1.1.0-dev1", "http://arvados.org/cwl", customschema11)
     use_custom_schema("v1.1", "http://arvados.org/cwl", customschema11)
