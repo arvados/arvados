@@ -58,9 +58,11 @@ Some constraints on the permission system have been added, in particular @role@ 
 # A @role@ is always owned by the system_user. When a group is created, it creates a @can_manage@ link for the object that would have been assigned to @owner_uuid@.  Migration adds @can_manage@ links and reassigns roles to the system user.  This also has the effect of requiring that all @role@ groups have unique names on the system.
 # A permission link can have the permission level (@name@) updated but not @head_uuid@, @tail_uuid@ or @link_class@.
 
-The @arvados-sync-groups@ tool has been updated to reflect these constraints.
+The @arvados-sync-groups@ tool has been updated to reflect these constraints, so it is important to use the version of @arvados-sync-groups@ that matches the API server version.
 
-To determine which groups have invalid @group_class@ with this command (these will be migrated to @role@ groups):
+Before upgrading, use the following commands to find out which groups and permissions in your database will be automatically modified or deleted during the upgrade.
+
+To determine which groups have invalid @group_class@ (these will be migrated to @role@ groups):
 
 <pre>
 arv group list --filters '[["group_class", "not in", ["project", "role"]]]'
@@ -72,7 +74,7 @@ To list all @role@ groups, which will be reassigned to the system user (unless @
 arv group list --filters '[["group_class", "=", "role"]]'
 </pre>
 
-To list which @project@ groups have outgoing permission links.  Such links are now invalid and will be deleted by the migration:
+To list which @project@ groups have outgoing permission links (such links are now invalid and will be deleted by the migration):
 
 <pre>
 for uuid in $(arv link list --filters '[["link_class", "=", "permission"], ["tail_uuid", "like", "%-j7d0g-%"]]' |
