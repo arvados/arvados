@@ -17,9 +17,15 @@ class Group < ArvadosModel
   attribute :properties, :jsonbHash, default: {}
 
   validate :ensure_filesystem_compatible_name
-  after_create :invalidate_permissions_cache
-  after_update :maybe_invalidate_permissions_cache
   before_create :assign_name
+  after_create :after_ownership_change
+  after_create :update_trash
+
+  before_update :before_ownership_change
+  after_update :after_ownership_change
+
+  after_update :update_trash
+  before_destroy :clear_permissions_and_trash
 
   api_accessible :user, extend: :common do |t|
     t.add :name
@@ -38,18 +44,58 @@ class Group < ArvadosModel
     super if group_class == 'project'
   end
 
-  def maybe_invalidate_permissions_cache
-    if uuid_changed? or owner_uuid_changed? or is_trashed_changed?
-      # This can change users' permissions on other groups as well as
-      # this one.
-      invalidate_permissions_cache
+  def update_trash
+    if trash_at_changed? or owner_uuid_changed?
+      # The group was added or removed from the trash.
+      #
+      # Strategy:
+      #   Compute project subtree, propagating trash_at to subprojects
+      #   Remove groups that don't belong from trash
+      #   Add/update groups that do belong in the trash
+
+      temptable = "group_subtree_#{rand(2**64).to_s(10)}"
+      ActiveRecord::Base.connection.exec_query %{
+create temporary table #{temptable} on commit drop
+as select * from project_subtree_with_trash_at($1, LEAST($2, $3)::timestamp)
+},
+                                               'Group.update_trash.select',
+                                               [[nil, self.uuid],
+                                                [nil, TrashedGroup.find_by_group_uuid(self.owner_uuid).andand.trash_at],
+                                                [nil, self.trash_at]]
+
+      ActiveRecord::Base.connection.exec_delete %{
+delete from trashed_groups where group_uuid in (select target_uuid from #{temptable} where trash_at is NULL);
+},
+                                            "Group.update_trash.delete"
+
+      ActiveRecord::Base.connection.exec_query %{
+insert into trashed_groups (group_uuid, trash_at)
+  select target_uuid as group_uuid, trash_at from #{temptable} where trash_at is not NULL
+on conflict (group_uuid) do update set trash_at=EXCLUDED.trash_at;
+},
+                                            "Group.update_trash.insert"
     end
   end
 
-  def invalidate_permissions_cache
-    # Ensure a new group can be accessed by the appropriate users
-    # immediately after being created.
-    User.invalidate_permissions_cache self.async_permissions_update
+  def before_ownership_change
+    if owner_uuid_changed? and !self.owner_uuid_was.nil?
+      MaterializedPermission.where(user_uuid: owner_uuid_was, target_uuid: uuid).delete_all
+      update_permissions self.owner_uuid_was, self.uuid, REVOKE_PERM
+    end
+  end
+
+  def after_ownership_change
+    if owner_uuid_changed?
+      update_permissions self.owner_uuid, self.uuid, CAN_MANAGE_PERM
+    end
+  end
+
+  def clear_permissions_and_trash
+    MaterializedPermission.where(target_uuid: uuid).delete_all
+    ActiveRecord::Base.connection.exec_delete %{
+delete from trashed_groups where group_uuid=$1
+}, "Group.clear_permissions_and_trash", [[nil, self.uuid]]
+
   end
 
   def assign_name

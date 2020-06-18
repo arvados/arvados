@@ -557,6 +557,40 @@ Clusters:
         # work. If false, only the primary email address will be used.
         AlternateEmailAddresses: true
 
+      OpenIDConnect:
+        # Authenticate with an OpenID Connect provider.
+        Enable: false
+
+        # Issuer URL, e.g., "https://login.example.com".
+        #
+        # This must be exactly equal to the URL returned by the issuer
+        # itself in its config response ("isser" key). If the
+        # configured value is "https://example" and the provider
+        # returns "https://example:443" or "https://example/" then
+        # login will fail, even though those URLs are equivalent
+        # (RFC3986).
+        Issuer: ""
+
+        # Your client ID and client secret (supplied by the provider).
+        ClientID: ""
+        ClientSecret: ""
+
+        # OpenID claim field containing the user's email
+        # address. Normally "email"; see
+        # https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims
+        EmailClaim: "email"
+
+        # OpenID claim field containing the email verification
+        # flag. Normally "email_verified".  To accept every returned
+        # email address without checking a "verified" field at all,
+        # use the empty string "".
+        EmailVerifiedClaim: "email_verified"
+
+        # OpenID claim field containing the user's preferred
+        # username. If empty, use the mailbox part of the user's email
+        # address.
+        UsernameClaim: ""
+
       PAM:
         # (Experimental) Use PAM to authenticate users.
         Enable: false

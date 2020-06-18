@@ -66,6 +66,8 @@ func MakeRESTRouter(ctx context.Context, cluster *arvados.Cluster, reg *promethe
 	// List blocks stored here whose hash has the given prefix.
 	// Privileged client only.
 	rtr.HandleFunc(`/index/{prefix:[0-9a-f]{0,32}}`, rtr.handleIndex).Methods("GET", "HEAD")
+	// Update timestamp on existing block. Privileged client only.
+	rtr.HandleFunc(`/{hash:[0-9a-f]{32}}`, rtr.handleTOUCH).Methods("TOUCH")
 
 	// Internals/debugging info (runtime.MemStats)
 	rtr.HandleFunc(`/debug.json`, rtr.DebugHandler).Methods("GET", "HEAD")
@@ -188,6 +190,34 @@ func getBufferWithContext(ctx context.Context, bufs *bufferPool, bufSize int) ([
 			bufs.Put(<-bufReady)
 		}()
 		return nil, ErrClientDisconnect
+	}
+}
+
+func (rtr *router) handleTOUCH(resp http.ResponseWriter, req *http.Request) {
+	if !rtr.isSystemAuth(GetAPIToken(req)) {
+		http.Error(resp, UnauthorizedError.Error(), UnauthorizedError.HTTPCode)
+		return
+	}
+	hash := mux.Vars(req)["hash"]
+	vols := rtr.volmgr.AllWritable()
+	if len(vols) == 0 {
+		http.Error(resp, "no volumes", http.StatusNotFound)
+		return
+	}
+	var err error
+	for _, mnt := range vols {
+		err = mnt.Touch(hash)
+		if err == nil {
+			break
+		}
+	}
+	switch {
+	case err == nil:
+		return
+	case os.IsNotExist(err):
+		http.Error(resp, err.Error(), http.StatusNotFound)
+	default:
+		http.Error(resp, err.Error(), http.StatusInternalServerError)
 	}
 }
 
