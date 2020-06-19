@@ -102,6 +102,7 @@ var whitelist = map[string]bool{
 	"Collections.WebDAVCache":                      false,
 	"Collections.BalanceCollectionBatch":           false,
 	"Collections.BalancePeriod":                    false,
+	"Collections.BalanceTimeout":                   false,
 	"Collections.BlobMissingReport":                false,
 	"Collections.BalanceCollectionBuffers":         false,
 	"Containers":                                   true,

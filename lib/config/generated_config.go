@@ -446,6 +446,13 @@ Clusters:
       # or omitted, pages are processed serially.
       BalanceCollectionBuffers: 1000
 
+      # Maximum time for a rebalancing run. This ensures keep-balance
+      # eventually gives up and retries if, for example, a network
+      # error causes a hung connection that is never closed by the
+      # OS. It should be long enough that it doesn't interrupt a
+      # long-running balancing operation.
+      BalanceTimeout: 6h
+
       # Default lifetime for ephemeral collections: 2 weeks. This must not
       # be less than BlobSigningTTL.
       DefaultTrashLifetime: 336h

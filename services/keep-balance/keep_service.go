@@ -5,6 +5,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -35,19 +36,19 @@ func (srv *KeepService) URLBase() string {
 
 // CommitPulls sends the current list of pull requests to the storage
 // server (even if the list is empty).
-func (srv *KeepService) CommitPulls(c *arvados.Client) error {
-	return srv.put(c, "pull", srv.ChangeSet.Pulls)
+func (srv *KeepService) CommitPulls(ctx context.Context, c *arvados.Client) error {
+	return srv.put(ctx, c, "pull", srv.ChangeSet.Pulls)
 }
 
 // CommitTrash sends the current list of trash requests to the storage
 // server (even if the list is empty).
-func (srv *KeepService) CommitTrash(c *arvados.Client) error {
-	return srv.put(c, "trash", srv.ChangeSet.Trashes)
+func (srv *KeepService) CommitTrash(ctx context.Context, c *arvados.Client) error {
+	return srv.put(ctx, c, "trash", srv.ChangeSet.Trashes)
 }
 
 // Perform a PUT request at path, with data (as JSON) in the request
 // body.
-func (srv *KeepService) put(c *arvados.Client, path string, data interface{}) error {
+func (srv *KeepService) put(ctx context.Context, c *arvados.Client, path string, data interface{}) error {
 	// We'll start a goroutine to do the JSON encoding, so we can
 	// stream it to the http client through a Pipe, rather than
 	// keeping the entire encoded version in memory.
@@ -64,7 +65,7 @@ func (srv *KeepService) put(c *arvados.Client, path string, data interface{}) er
 	}()
 
 	url := srv.URLBase() + "/" + path
-	req, err := http.NewRequest("PUT", url, ioutil.NopCloser(jsonR))
+	req, err := http.NewRequestWithContext(ctx, "PUT", url, ioutil.NopCloser(jsonR))
 	if err != nil {
 		return fmt.Errorf("building request for %s: %v", url, err)
 	}
