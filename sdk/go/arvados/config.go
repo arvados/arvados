@@ -157,10 +157,13 @@ type Cluster struct {
 			AlternateEmailAddresses bool
 		}
 		OpenIDConnect struct {
-			Enable       bool
-			Issuer       string
-			ClientID     string
-			ClientSecret string
+			Enable             bool
+			Issuer             string
+			ClientID           string
+			ClientSecret       string
+			EmailClaim         string
+			EmailVerifiedClaim string
+			UsernameClaim      string
 		}
 		PAM struct {
 			Enable             bool

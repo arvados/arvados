@@ -113,6 +113,9 @@ func (s *OIDCLoginSuite) SetUpTest(c *check.C) {
 				"email":          s.authEmail,
 				"email_verified": s.authEmailVerified,
 				"name":           s.authName,
+				"alt_verified":   true,                    // for custom claim tests
+				"alt_email":      "alt_email@example.com", // for custom claim tests
+				"alt_username":   "desired-username",      // for custom claim tests
 			})
 			json.NewEncoder(w).Encode(struct {
 				AccessToken  string `json:"access_token"`
@@ -299,7 +302,7 @@ func (s *OIDCLoginSuite) TestGoogleLogin_PeopleAPIError(c *check.C) {
 	c.Check(resp.RedirectLocation, check.Equals, "")
 }
 
-func (s *OIDCLoginSuite) TestOIDCLogin_Success(c *check.C) {
+func (s *OIDCLoginSuite) TestGenericOIDCLogin(c *check.C) {
 	s.cluster.Login.Google.Enable = false
 	s.cluster.Login.OpenIDConnect.Enable = true
 	json.Unmarshal([]byte(fmt.Sprintf("%q", s.fakeIssuer.URL)), &s.cluster.Login.OpenIDConnect.Issuer)
@@ -307,18 +310,91 @@ func (s *OIDCLoginSuite) TestOIDCLogin_Success(c *check.C) {
 	s.cluster.Login.OpenIDConnect.ClientSecret = "oidc#client#secret"
 	s.validClientID = "oidc#client#id"
 	s.validClientSecret = "oidc#client#secret"
-	s.localdb = NewConn(s.cluster)
-	state := s.startLogin(c)
-	resp, err := s.localdb.Login(context.Background(), arvados.LoginOptions{
-		Code:  s.validCode,
-		State: state,
-	})
-	c.Assert(err, check.IsNil)
-	c.Check(resp.HTML.String(), check.Equals, "")
-	target, err := url.Parse(resp.RedirectLocation)
-	c.Assert(err, check.IsNil)
-	token := target.Query().Get("api_token")
-	c.Check(token, check.Matches, `v2/zzzzz-gj3su-.{15}/.{32,50}`)
+	for _, trial := range []struct {
+		expectEmail string // "" if failure expected
+		setup       func()
+	}{
+		{
+			expectEmail: "user@oidc.example.com",
+			setup: func() {
+				c.Log("=== succeed because email_verified is false but not required")
+				s.authEmail = "user@oidc.example.com"
+				s.authEmailVerified = false
+				s.cluster.Login.OpenIDConnect.EmailClaim = "email"
+				s.cluster.Login.OpenIDConnect.EmailVerifiedClaim = ""
+				s.cluster.Login.OpenIDConnect.UsernameClaim = ""
+			},
+		},
+		{
+			expectEmail: "",
+			setup: func() {
+				c.Log("=== fail because email_verified is false and required")
+				s.authEmail = "user@oidc.example.com"
+				s.authEmailVerified = false
+				s.cluster.Login.OpenIDConnect.EmailClaim = "email"
+				s.cluster.Login.OpenIDConnect.EmailVerifiedClaim = "email_verified"
+				s.cluster.Login.OpenIDConnect.UsernameClaim = ""
+			},
+		},
+		{
+			expectEmail: "user@oidc.example.com",
+			setup: func() {
+				c.Log("=== succeed because email_verified is false but config uses custom 'verified' claim")
+				s.authEmail = "user@oidc.example.com"
+				s.authEmailVerified = false
+				s.cluster.Login.OpenIDConnect.EmailClaim = "email"
+				s.cluster.Login.OpenIDConnect.EmailVerifiedClaim = "alt_verified"
+				s.cluster.Login.OpenIDConnect.UsernameClaim = ""
+			},
+		},
+		{
+			expectEmail: "alt_email@example.com",
+			setup: func() {
+				c.Log("=== succeed with custom 'email' and 'email_verified' claims")
+				s.authEmail = "bad@wrong.example.com"
+				s.authEmailVerified = false
+				s.cluster.Login.OpenIDConnect.EmailClaim = "alt_email"
+				s.cluster.Login.OpenIDConnect.EmailVerifiedClaim = "alt_verified"
+				s.cluster.Login.OpenIDConnect.UsernameClaim = "alt_username"
+			},
+		},
+	} {
+		trial.setup()
+		if s.railsSpy != nil {
+			s.railsSpy.Close()
+		}
+		s.railsSpy = arvadostest.NewProxy(c, s.cluster.Services.RailsAPI)
+		s.localdb = NewConn(s.cluster)
+		*s.localdb.railsProxy = *rpc.NewConn(s.cluster.ClusterID, s.railsSpy.URL, true, rpc.PassthroughTokenProvider)
+
+		state := s.startLogin(c)
+		resp, err := s.localdb.Login(context.Background(), arvados.LoginOptions{
+			Code:  s.validCode,
+			State: state,
+		})
+		c.Assert(err, check.IsNil)
+		if trial.expectEmail == "" {
+			c.Check(resp.HTML.String(), check.Matches, `(?ms).*Login error.*`)
+			c.Check(resp.RedirectLocation, check.Equals, "")
+			continue
+		}
+		c.Check(resp.HTML.String(), check.Equals, "")
+		target, err := url.Parse(resp.RedirectLocation)
+		c.Assert(err, check.IsNil)
+		token := target.Query().Get("api_token")
+		c.Check(token, check.Matches, `v2/zzzzz-gj3su-.{15}/.{32,50}`)
+		authinfo := getCallbackAuthInfo(c, s.railsSpy)
+		c.Check(authinfo.Email, check.Equals, trial.expectEmail)
+
+		switch s.cluster.Login.OpenIDConnect.UsernameClaim {
+		case "alt_username":
+			c.Check(authinfo.Username, check.Equals, "desired-username")
+		case "":
+			c.Check(authinfo.Username, check.Equals, "")
+		default:
+			c.Fail() // bad test case
+		}
+	}
 }
 
 func (s *OIDCLoginSuite) TestGoogleLogin_Success(c *check.C) {

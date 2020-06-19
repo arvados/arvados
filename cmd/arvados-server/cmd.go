@@ -15,7 +15,7 @@ import (
 	"git.arvados.org/arvados.git/lib/crunchrun"
 	"git.arvados.org/arvados.git/lib/dispatchcloud"
 	"git.arvados.org/arvados.git/lib/install"
-	"git.arvados.org/arvados.git/lib/undelete"
+	"git.arvados.org/arvados.git/lib/recovercollection"
 	"git.arvados.org/arvados.git/services/ws"
 )
 
@@ -25,17 +25,17 @@ var (
 		"-version":  cmd.Version,
 		"--version": cmd.Version,
 
-		"boot":            boot.Command,
-		"cloudtest":       cloudtest.Command,
-		"config-check":    config.CheckCommand,
-		"config-defaults": config.DumpDefaultsCommand,
-		"config-dump":     config.DumpCommand,
-		"controller":      controller.Command,
-		"crunch-run":      crunchrun.Command,
-		"dispatch-cloud":  dispatchcloud.Command,
-		"install":         install.Command,
-		"undelete":        undelete.Command,
-		"ws":              ws.Command,
+		"boot":               boot.Command,
+		"cloudtest":          cloudtest.Command,
+		"config-check":       config.CheckCommand,
+		"config-defaults":    config.DumpDefaultsCommand,
+		"config-dump":        config.DumpCommand,
+		"controller":         controller.Command,
+		"crunch-run":         crunchrun.Command,
+		"dispatch-cloud":     dispatchcloud.Command,
+		"install":            install.Command,
+		"recover-collection": recovercollection.Command,
+		"ws":                 ws.Command,
 	})
 )
 

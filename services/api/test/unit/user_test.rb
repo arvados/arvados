@@ -165,7 +165,9 @@ class UserTest < ActiveSupport::TestCase
 
       if auto_admin_first_user_config
         # This test requires no admin users exist (except for the system user)
-        users(:admin).delete
+        act_as_system_user do
+          users(:admin).update_attributes!(is_admin: false)
+        end
         @all_users = User.where("uuid not like '%-000000000000000'").where(:is_admin => true)
         assert_equal 0, @all_users.count, "No admin users should exist (except for the system user)"
       end
@@ -475,15 +477,6 @@ class UserTest < ActiveSupport::TestCase
     user = User.create ({uuid: 'zzzzz-tpzed-abcdefghijklmno', email: email})
 
     vm = VirtualMachine.create
-
-    # Set up the bogus Link
-    bad_uuid = 'zzzzz-tpzed-xyzxyzxyzxyzxyz'
-
-    resp_link = Link.create ({tail_uuid: email, link_class: 'permission',
-        name: 'can_login', head_uuid: bad_uuid})
-    resp_link.save(validate: false)
-
-    verify_link resp_link, 'permission', 'can_login', email, bad_uuid
 
     response = user.setup(repo_name: 'foo/testrepo',
                           vm_uuid: vm.uuid)

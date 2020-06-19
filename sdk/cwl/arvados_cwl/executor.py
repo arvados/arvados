@@ -42,7 +42,7 @@ from .context import ArvLoadingContext, ArvRuntimeContext
 from ._version import __version__
 
 from cwltool.process import shortname, UnsupportedRequirement, use_custom_schema
-from cwltool.pathmapper import adjustFileObjs, adjustDirObjs, get_listing, visit_class
+from cwltool.utils import adjustFileObjs, adjustDirObjs, get_listing, visit_class
 from cwltool.command_line_tool import compute_checksums
 from cwltool.load_tool import load_tool
 

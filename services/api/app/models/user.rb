@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 require 'can_be_an_owner'
-require 'refresh_permission_view'
 
 class User < ArvadosModel
   include HasUuid
@@ -28,25 +27,31 @@ class User < ArvadosModel
     user.username.nil? and user.username_changed?
   }
   before_update :setup_on_activate
+
   before_create :check_auto_admin
   before_create :set_initial_username, :if => Proc.new { |user|
     user.username.nil? and user.email
   }
+  after_create :after_ownership_change
   after_create :setup_on_activate
   after_create :add_system_group_permission_link
-  after_create :invalidate_permissions_cache
   after_create :auto_setup_new_user, :if => Proc.new { |user|
     Rails.configuration.Users.AutoSetupNewUsers and
     (user.uuid != system_user_uuid) and
     (user.uuid != anonymous_user_uuid)
   }
   after_create :send_admin_notifications
+
+  before_update :before_ownership_change
+  after_update :after_ownership_change
   after_update :send_profile_created_notification
   after_update :sync_repository_names, :if => Proc.new { |user|
     (user.uuid != system_user_uuid) and
     user.username_changed? and
     (not user.username_was.nil?)
   }
+  before_destroy :clear_permissions
+  after_destroy :remove_self_from_permissions
 
   has_many :authorized_keys, :foreign_key => :authorized_user_uuid, :primary_key => :uuid
   has_many :repositories, foreign_key: :owner_uuid, primary_key: :uuid
@@ -77,6 +82,12 @@ class User < ArvadosModel
      {read: true, write: true},
      {read: true, write: true, manage: true}]
 
+  VAL_FOR_PERM =
+    {:read => 1,
+     :write => 2,
+     :manage => 3}
+
+
   def full_name
     "#{first_name} #{last_name}".strip
   end
@@ -88,7 +99,7 @@ class User < ArvadosModel
   end
 
   def groups_i_can(verb)
-    my_groups = self.group_permissions.select { |uuid, mask| mask[verb] }.keys
+    my_groups = self.group_permissions(VAL_FOR_PERM[verb]).keys
     if verb == :read
       my_groups << anonymous_group_uuid
     end
@@ -107,60 +118,68 @@ class User < ArvadosModel
         end
       end
       next if target_uuid == self.uuid
-      next if (group_permissions[target_uuid] and
-               group_permissions[target_uuid][action])
-      if target.respond_to? :owner_uuid
-        next if target.owner_uuid == self.uuid
-        next if (group_permissions[target.owner_uuid] and
-                 group_permissions[target.owner_uuid][action])
+
+      target_owner_uuid = target.owner_uuid if target.respond_to? :owner_uuid
+
+      user_uuids_subquery = USER_UUIDS_SUBQUERY_TEMPLATE % {user: "$1", perm_level: "$3"}
+
+      unless ActiveRecord::Base.connection.
+        exec_query(%{
+SELECT 1 FROM #{PERMISSION_VIEW}
+  WHERE user_uuid in (#{user_uuids_subquery}) and
+        ((target_uuid = $2 and perm_level >= $3)
+         or (target_uuid = $4 and perm_level >= $3 and traverse_owned))
+},
+                  # "name" arg is a query label that appears in logs:
+                   "user_can_query",
+                   [[nil, self.uuid],
+                    [nil, target_uuid],
+                    [nil, VAL_FOR_PERM[action]],
+                    [nil, target_owner_uuid]]
+                  ).any?
+        return false
       end
-      sufficient_perms = case action
-                         when :manage
-                           ['can_manage']
-                         when :write
-                           ['can_manage', 'can_write']
-                         when :read
-                           ['can_manage', 'can_write', 'can_read']
-                         else
-                           # (Skip this kind of permission opportunity
-                           # if action is an unknown permission type)
-                         end
-      if sufficient_perms
-        # Check permission links with head_uuid pointing directly at
-        # the target object. If target is a Group, this is redundant
-        # and will fail except [a] if permission caching is broken or
-        # [b] during a race condition, where a permission link has
-        # *just* been added.
-        if Link.where(link_class: 'permission',
-                      name: sufficient_perms,
-                      tail_uuid: groups_i_can(action) + [self.uuid],
-                      head_uuid: target_uuid).any?
-          next
-        end
-      end
-      return false
     end
     true
   end
 
-  def self.invalidate_permissions_cache(async=false)
-    refresh_permission_view(async)
+  def before_ownership_change
+    if owner_uuid_changed? and !self.owner_uuid_was.nil?
+      MaterializedPermission.where(user_uuid: owner_uuid_was, target_uuid: uuid).delete_all
+      update_permissions self.owner_uuid_was, self.uuid, REVOKE_PERM
+    end
   end
 
-  def invalidate_permissions_cache
-    User.invalidate_permissions_cache
+  def after_ownership_change
+    if owner_uuid_changed?
+      update_permissions self.owner_uuid, self.uuid, CAN_MANAGE_PERM
+    end
+  end
+
+  def clear_permissions
+    MaterializedPermission.where("user_uuid = ? and target_uuid != ?", uuid, uuid).delete_all
+  end
+
+  def remove_self_from_permissions
+    MaterializedPermission.where("target_uuid = ?", uuid).delete_all
+    check_permissions_against_full_refresh
   end
 
   # Return a hash of {user_uuid: group_perms}
+  #
+  # note: this does not account for permissions that a user gains by
+  # having can_manage on another user.
   def self.all_group_permissions
     all_perms = {}
     ActiveRecord::Base.connection.
-      exec_query("SELECT user_uuid, target_owner_uuid, perm_level, trashed
+      exec_query(%{
+SELECT user_uuid, target_uuid, perm_level
                   FROM #{PERMISSION_VIEW}
-                  WHERE target_owner_uuid IS NOT NULL",
+                  WHERE traverse_owned
+},
                   # "name" arg is a query label that appears in logs:
-                  "all_group_permissions",
-                  ).rows.each do |user_uuid, group_uuid, max_p_val, trashed|
+                 "all_group_permissions").
+      rows.each do |user_uuid, group_uuid, max_p_val|
       all_perms[user_uuid] ||= {}
       all_perms[user_uuid][group_uuid] = PERMS_FOR_VAL[max_p_val.to_i]
     end
@@ -170,18 +189,23 @@ class User < ArvadosModel
   # Return a hash of {group_uuid: perm_hash} where perm_hash[:read]
   # and perm_hash[:write] are true if this user can read and write
   # objects owned by group_uuid.
-  def group_permissions
-    group_perms = {self.uuid => {:read => true, :write => true, :manage => true}}
+  def group_permissions(level=1)
+    group_perms = {}
+
+    user_uuids_subquery = USER_UUIDS_SUBQUERY_TEMPLATE % {user: "$1", perm_level: "$2"}
+
     ActiveRecord::Base.connection.
-      exec_query("SELECT target_owner_uuid, perm_level, trashed
-                  FROM #{PERMISSION_VIEW}
-                  WHERE user_uuid = $1
-                  AND target_owner_uuid IS NOT NULL",
+      exec_query(%{
+SELECT target_uuid, perm_level
+  FROM #{PERMISSION_VIEW}
+  WHERE user_uuid in (#{user_uuids_subquery}) and perm_level >= $2
+},
                   # "name" arg is a query label that appears in logs:
-                  "group_permissions for #{uuid}",
+                  "User.group_permissions",
                   # "binds" arg is an array of [col_id, value] for '$1' vars:
-                  [[nil, uuid]],
-                ).rows.each do |group_uuid, max_p_val, trashed|
+                  [[nil, uuid],
+                   [nil, level]]).
+      rows.each do |group_uuid, max_p_val|
       group_perms[group_uuid] = PERMS_FOR_VAL[max_p_val.to_i]
     end
     group_perms
@@ -309,6 +333,18 @@ class User < ArvadosModel
       self.uuid = new_uuid
       save!(validate: false)
       change_all_uuid_refs(old_uuid: old_uuid, new_uuid: new_uuid)
+    ActiveRecord::Base.connection.exec_update %{
+update #{PERMISSION_VIEW} set user_uuid=$1 where user_uuid = $2
+},
+                                             'User.update_uuid.update_permissions_user_uuid',
+                                             [[nil, new_uuid],
+                                              [nil, old_uuid]]
+      ActiveRecord::Base.connection.exec_update %{
+update #{PERMISSION_VIEW} set target_uuid=$1 where target_uuid = $2
+},
+                                            'User.update_uuid.update_permissions_target_uuid',
+                                             [[nil, new_uuid],
+                                              [nil, old_uuid]]
     end
   end
 
@@ -333,6 +369,9 @@ class User < ArvadosModel
       new_user = User.where(uuid: new_user_uuid).first
       raise "user does not exist" if !new_user
       raise "cannot merge to an already merged user" if new_user.redirect_to_user_uuid
+
+      self.clear_permissions
+      new_user.clear_permissions
 
       # If 'self' is a remote user, don't transfer authorizations
       # (i.e. ability to access the account) to the new user, because
@@ -408,7 +447,12 @@ class User < ArvadosModel
       if redirect_to_new_user
         update_attributes!(redirect_to_user_uuid: new_user.uuid, username: nil)
       end
-      invalidate_permissions_cache
+      skip_check_permissions_against_full_refresh do
+        update_permissions self.uuid, self.uuid, CAN_MANAGE_PERM
+        update_permissions new_user.uuid, new_user.uuid, CAN_MANAGE_PERM
+        update_permissions new_user.owner_uuid, new_user.uuid, CAN_MANAGE_PERM
+      end
+      update_permissions self.owner_uuid, self.uuid, CAN_MANAGE_PERM
     end
   end
 
