@@ -90,7 +90,8 @@ module CurrentApiClient
         ActiveRecord::Base.transaction do
           Group.where(uuid: system_group_uuid).
             first_or_create!(name: "System group",
-                             description: "System group") do |g|
+                             description: "System group",
+                             group_class: "role") do |g|
             g.save!
             User.all.collect(&:uuid).each do |user_uuid|
               Link.create!(link_class: 'permission',
@@ -188,7 +189,7 @@ module CurrentApiClient
     end
   end
 
-  def empty_collection_uuid
+  def empty_collection_pdh
     'd41d8cd98f00b204e9800998ecf8427e+0'
   end
 
@@ -197,8 +198,16 @@ module CurrentApiClient
       act_as_system_user do
         ActiveRecord::Base.transaction do
           Collection.
-            where(portable_data_hash: empty_collection_uuid).
-            first_or_create!(manifest_text: '', owner_uuid: anonymous_group.uuid)
+            where(portable_data_hash: empty_collection_pdh).
+            first_or_create(manifest_text: '', owner_uuid: system_user.uuid, name: "empty collection") do |c|
+            c.save!
+            Link.where(tail_uuid: anonymous_group.uuid,
+                       head_uuid: c.uuid,
+                       link_class: 'permission',
+                       name: 'can_read').
+                  first_or_create!
+            c
+          end
         end
       end
     end

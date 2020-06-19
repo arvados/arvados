@@ -12,8 +12,8 @@ class Link < ArvadosModel
   attribute :properties, :jsonbHash, default: {}
 
   validate :name_links_are_obsolete
-  before_create :permission_to_attach_to_objects
-  before_update :permission_to_attach_to_objects
+  validate :permission_to_attach_to_objects
+  before_update :restrict_alter_permissions
   after_update :call_update_permissions
   after_create :call_update_permissions
   before_destroy :clear_permissions
@@ -50,19 +50,53 @@ class Link < ArvadosModel
     # All users can write links that don't affect permissions
     return true if self.link_class != 'permission'
 
+    if PERM_LEVEL[self.name].nil?
+      errors.add(:name, "is invalid permission, must be one of 'can_read', 'can_write', 'can_manage', 'can_login'")
+      return false
+    end
+
+    rsc_class = ArvadosModel::resource_class_for_uuid tail_uuid
+    if rsc_class == Group
+      tail_obj = Group.find_by_uuid(tail_uuid)
+      if tail_obj.nil?
+        errors.add(:tail_uuid, "does not exist")
+        return false
+      end
+      if tail_obj.group_class != "role"
+        errors.add(:tail_uuid, "must be a user or role, was group with group_class #{tail_obj.group_class}")
+        return false
+      end
+    elsif rsc_class != User
+      errors.add(:tail_uuid, "must be a user or role")
+      return false
+    end
+
     # Administrators can grant permissions
     return true if current_user.is_admin
 
     head_obj = ArvadosModel.find_by_uuid(head_uuid)
 
     # No permission links can be pointed to past collection versions
-    return false if head_obj.is_a?(Collection) && head_obj.current_version_uuid != head_uuid
+    if head_obj.is_a?(Collection) && head_obj.current_version_uuid != head_uuid
+      errors.add(:head_uuid, "cannot point to a past version of a collection")
+      return false
+    end
 
     # All users can grant permissions on objects they own or can manage
     return true if current_user.can?(manage: head_obj)
 
     # Default = deny.
     false
+  end
+
+  def restrict_alter_permissions
+    return true if self.link_class != 'permission' && self.link_class_was != 'permission'
+
+    return true if current_user.andand.uuid == system_user.uuid
+
+    if link_class_changed? || tail_uuid_changed? || head_uuid_changed?
+      raise "Can only alter permission link level"
+    end
   end
 
   PERM_LEVEL = {

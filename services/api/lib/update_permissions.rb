@@ -8,6 +8,8 @@ REVOKE_PERM = 0
 CAN_MANAGE_PERM = 3
 
 def update_permissions perm_origin_uuid, starting_uuid, perm_level, edge_id=nil
+  return if Thread.current[:suppress_update_permissions]
+
   #
   # Update a subset of the permission table affected by adding or
   # removing a particular permission relationship (ownership or a
@@ -140,7 +142,7 @@ end
 
 def check_permissions_against_full_refresh
   # No-op except when running tests
-  return unless Rails.env == 'test' and !Thread.current[:no_check_permissions_against_full_refresh]
+  return unless Rails.env == 'test' and !Thread.current[:no_check_permissions_against_full_refresh] and !Thread.current[:suppress_update_permissions]
 
   # For checking correctness of the incremental permission updates.
   # Check contents of the current 'materialized_permission' table
@@ -188,6 +190,17 @@ def skip_check_permissions_against_full_refresh
     yield
   ensure
     Thread.current[:no_check_permissions_against_full_refresh] = check_perm_was
+  end
+end
+
+def batch_update_permissions
+  check_perm_was = Thread.current[:suppress_update_permissions]
+  Thread.current[:suppress_update_permissions] = true
+  begin
+    yield
+  ensure
+    Thread.current[:suppress_update_permissions] = check_perm_was
+    refresh_permissions
   end
 end
 

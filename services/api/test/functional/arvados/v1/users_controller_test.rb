@@ -660,7 +660,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
   test "non-admin user gets only safe attributes from users#show" do
     g = act_as_system_user do
-      create :group
+      create :group, group_class: "role"
     end
     users = create_list :active_user, 2, join_groups: [g]
     token = create :token, user: users[0]
@@ -672,7 +672,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
   [2, 4].each do |limit|
     test "non-admin user can limit index to #{limit}" do
       g = act_as_system_user do
-        create :group
+        create :group, group_class: "role"
       end
       users = create_list :active_user, 4, join_groups: [g]
       token = create :token, user: users[0]

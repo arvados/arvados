@@ -6,16 +6,16 @@ require 'test_helper'
 
 class Arvados::V1::FiltersTest < ActionController::TestCase
   test '"not in" filter passes null values' do
-    @controller = Arvados::V1::GroupsController.new
+    @controller = Arvados::V1::ContainerRequestsController.new
     authorize_with :admin
     get :index, params: {
-      filters: [ ['group_class', 'not in', ['project']] ],
-      controller: 'groups',
+      filters: [ ['container_uuid', 'not in', ['zzzzz-dz642-queuedcontainer', 'zzzzz-dz642-runningcontainr']] ],
+      controller: 'container_requests',
     }
     assert_response :success
     found = assigns(:objects)
-    assert_includes(found.collect(&:group_class), nil,
-                    "'group_class not in ['project']' filter should pass null")
+    assert_includes(found.collect(&:container_uuid), nil,
+                    "'container_uuid not in [zzzzz-dz642-queuedcontainer, zzzzz-dz642-runningcontainr]' filter should pass null")
   end
 
   test 'error message for non-array element in filters array' do

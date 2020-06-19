@@ -46,7 +46,7 @@ class PermissionTest < ActiveSupport::TestCase
   end
 
   test "readable_by" do
-    set_user_from_auth :active_trustedclient
+    set_user_from_auth :admin
 
     ob = Collection.create!
     Link.create!(tail_uuid: users(:active).uuid,
@@ -57,7 +57,7 @@ class PermissionTest < ActiveSupport::TestCase
   end
 
   test "writable_by" do
-    set_user_from_auth :active_trustedclient
+    set_user_from_auth :admin
 
     ob = Collection.create!
     Link.create!(tail_uuid: users(:active).uuid,
@@ -153,6 +153,7 @@ class PermissionTest < ActiveSupport::TestCase
     set_user_from_auth :admin
 
     owner_grp = Group.create!(owner_uuid: users(:active).uuid, group_class: "role")
+
     sp_grp = Group.create!(group_class: "project")
 
     Link.create!(link_class: 'permission',
@@ -227,7 +228,7 @@ class PermissionTest < ActiveSupport::TestCase
     # anyone any additional permissions.)
     g = nil
     act_as_user manager do
-      g = create :group, name: "NoBigSecret Lab"
+      g = create :group, name: "NoBigSecret Lab", group_class: "role"
       assert_empty(User.readable_by(manager).where(uuid: minion.uuid),
                    "saw a user I shouldn't see")
       assert_raises(ArvadosModel::PermissionDeniedError,
@@ -323,7 +324,7 @@ class PermissionTest < ActiveSupport::TestCase
                      "#{a.first_name} should not be able to see 'b' in the user list")
 
     act_as_system_user do
-      g = create :group
+      g = create :group, group_class: "role"
       [a,b].each do |u|
         create(:permission_link,
                name: 'can_read', tail_uuid: u.uuid, head_uuid: g.uuid)
@@ -423,7 +424,13 @@ class PermissionTest < ActiveSupport::TestCase
   test "add user to group, then remove them" do
     set_user_from_auth :admin
     grp = Group.create!(owner_uuid: system_user_uuid, group_class: "role")
-    col = Collection.create!(owner_uuid: grp.uuid)
+    col = Collection.create!(owner_uuid: system_user_uuid)
+
+    l0 = Link.create!(tail_uuid: grp.uuid,
+                 head_uuid: col.uuid,
+                 link_class: 'permission',
+                 name: 'can_read')
+
     assert_empty Collection.readable_by(users(:active)).where(uuid: col.uuid)
     assert_empty User.readable_by(users(:active)).where(uuid: users(:project_viewer).uuid)
 
@@ -459,7 +466,7 @@ class PermissionTest < ActiveSupport::TestCase
 
   test "add user to group, then change permission level" do
     set_user_from_auth :admin
-    grp = Group.create!(owner_uuid: system_user_uuid, group_class: "role")
+    grp = Group.create!(owner_uuid: system_user_uuid, group_class: "project")
     col = Collection.create!(owner_uuid: grp.uuid)
     assert_empty Collection.readable_by(users(:active)).where(uuid: col.uuid)
     assert_empty User.readable_by(users(:active)).where(uuid: users(:project_viewer).uuid)
@@ -468,10 +475,6 @@ class PermissionTest < ActiveSupport::TestCase
                  head_uuid: grp.uuid,
                  link_class: 'permission',
                  name: 'can_manage')
-    l2 = Link.create!(tail_uuid: grp.uuid,
-                 head_uuid: users(:active).uuid,
-                 link_class: 'permission',
-                 name: 'can_read')
 
     assert Collection.readable_by(users(:active)).where(uuid: col.uuid).first
     assert users(:active).can?(read: col.uuid)
@@ -498,7 +501,7 @@ class PermissionTest < ActiveSupport::TestCase
 
   test "add user to group, then add overlapping permission link to group" do
     set_user_from_auth :admin
-    grp = Group.create!(owner_uuid: system_user_uuid, group_class: "role")
+    grp = Group.create!(owner_uuid: system_user_uuid, group_class: "project")
     col = Collection.create!(owner_uuid: grp.uuid)
     assert_empty Collection.readable_by(users(:active)).where(uuid: col.uuid)
     assert_empty User.readable_by(users(:active)).where(uuid: users(:project_viewer).uuid)
@@ -507,10 +510,6 @@ class PermissionTest < ActiveSupport::TestCase
                  head_uuid: grp.uuid,
                  link_class: 'permission',
                  name: 'can_manage')
-    l2 = Link.create!(tail_uuid: grp.uuid,
-                 head_uuid: users(:active).uuid,
-                 link_class: 'permission',
-                 name: 'can_read')
 
     assert Collection.readable_by(users(:active)).where(uuid: col.uuid).first
     assert users(:active).can?(read: col.uuid)
@@ -538,8 +537,14 @@ class PermissionTest < ActiveSupport::TestCase
 
   test "add user to group, then add overlapping permission link to subproject" do
     set_user_from_auth :admin
-    grp = Group.create!(owner_uuid: system_user_uuid, group_class: "project")
-    prj = Group.create!(owner_uuid: grp.uuid, group_class: "project")
+    grp = Group.create!(owner_uuid: system_user_uuid, group_class: "role")
+    prj = Group.create!(owner_uuid: system_user_uuid, group_class: "project")
+
+    l0 = Link.create!(tail_uuid: grp.uuid,
+                 head_uuid: prj.uuid,
+                 link_class: 'permission',
+                 name: 'can_manage')
+
     assert_empty Group.readable_by(users(:active)).where(uuid: prj.uuid)
     assert_empty User.readable_by(users(:active)).where(uuid: users(:project_viewer).uuid)
 
