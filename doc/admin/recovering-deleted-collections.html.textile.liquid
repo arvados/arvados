@@ -1,0 +1,37 @@
+---
+layout: default
+navsection: admin
+title: Recovering deleted collections
+...
+
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+In some cases, it is possible to recover files that have been lost by modifying or deleting a collection.
+
+Possibility of recovery depends on many factors, including:
+* Whether the collection manifest is still available, e.g., in an audit log entry
+* Whether the data blocks are also referenced by other collections
+* Whether the data blocks have been unreferenced long enough to be marked for deletion/trash by keep-balance
+* Blob signature TTL, trash lifetime, trash check interval, and other config settings
+
+To attempt recovery of a previous version of a deleted/modified collection, use the @arvados-server recover-collection@ command. It should be run on one of your server nodes where the @arvados-server@ package is installed and the @/etc/arvados/config.yml@ file is up to date.
+
+Specify the collection you want to recover by passing either the UUID of an audit log entry, or a file containing the manifest.
+
+If recovery is successful, the @recover-collection@ program saves the recovered data a new collection belonging to the system user, and prints the new collection's UUID on stdout.
+
+<pre>
+# arvados-server recover-collection 9tee4-57u5n-nb5awmk1pahac2t
+INFO[2020-06-05T19:52:29.557761245Z] loaded log entry                              logged_event_time="2020-06-05 16:48:01.438791 +0000 UTC" logged_event_type=update old_collection_uuid=9tee4-4zz18-1ex26g95epmgw5w src=9tee4-57u5n-nb5awmk1pahac2t
+INFO[2020-06-05T19:52:29.642145127Z] recovery succeeded                            UUID=9tee4-4zz18-5trfp4k4xxg97f1 src=9tee4-57u5n-nb5awmk1pahac2t
+9tee4-4zz18-5trfp4k4xxg97f1
+INFO[2020-06-05T19:52:29.644699436Z] exiting
+</pre>
+
+In this example, the original data has been restored and saved in a new collection with UUID @9tee4-4zz18-5trfp4k4xxg97f1@.
+
+For more options, run @arvados-server recover-collection -help@.

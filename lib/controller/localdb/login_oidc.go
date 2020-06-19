@@ -36,7 +36,10 @@ type oidcLoginController struct {
 	Issuer             string // OIDC issuer URL, e.g., "https://accounts.google.com"
 	ClientID           string
 	ClientSecret       string
-	UseGooglePeopleAPI bool // Use Google People API to look up alternate email addresses
+	UseGooglePeopleAPI bool   // Use Google People API to look up alternate email addresses
+	EmailClaim         string // OpenID claim to use as email address; typically "email"
+	EmailVerifiedClaim string // If non-empty, ensure claim value is true before accepting EmailClaim; typically "email_verified"
+	UsernameClaim      string // If non-empty, use as preferred username
 
 	// override Google People API base URL for testing purposes
 	// (normally empty, set by google pkg to
@@ -145,28 +148,29 @@ func (ctrl *oidcLoginController) getAuthInfo(ctx context.Context, token *oauth2.
 	var ret rpc.UserSessionAuthInfo
 	defer ctxlog.FromContext(ctx).WithField("ret", &ret).Debug("getAuthInfo returned")
 
-	var claims struct {
-		Name     string `json:"name"`
-		Email    string `json:"email"`
-		Verified bool   `json:"email_verified"`
-	}
+	var claims map[string]interface{}
 	if err := idToken.Claims(&claims); err != nil {
 		return nil, fmt.Errorf("error extracting claims from ID token: %s", err)
-	} else if claims.Verified {
+	} else if verified, _ := claims[ctrl.EmailVerifiedClaim].(bool); verified || ctrl.EmailVerifiedClaim == "" {
 		// Fall back to this info if the People API call
 		// (below) doesn't return a primary && verified email.
-		if names := strings.Fields(strings.TrimSpace(claims.Name)); len(names) > 1 {
+		name, _ := claims["name"].(string)
+		if names := strings.Fields(strings.TrimSpace(name)); len(names) > 1 {
 			ret.FirstName = strings.Join(names[0:len(names)-1], " ")
 			ret.LastName = names[len(names)-1]
 		} else {
 			ret.FirstName = names[0]
 		}
-		ret.Email = claims.Email
+		ret.Email, _ = claims[ctrl.EmailClaim].(string)
+	}
+
+	if ctrl.UsernameClaim != "" {
+		ret.Username, _ = claims[ctrl.UsernameClaim].(string)
 	}
 
 	if !ctrl.UseGooglePeopleAPI {
 		if ret.Email == "" {
-			return nil, fmt.Errorf("cannot log in with unverified email address %q", claims.Email)
+			return nil, fmt.Errorf("cannot log in with unverified email address %q", claims[ctrl.EmailClaim])
 		}
 		return &ret, nil
 	}
@@ -220,9 +224,13 @@ func (ctrl *oidcLoginController) getAuthInfo(ctx context.Context, token *oauth2.
 		return nil, errors.New("cannot log in without a verified email address")
 	}
 	for ae := range altEmails {
-		if ae != ret.Email {
-			ret.AlternateEmails = append(ret.AlternateEmails, ae)
-			if i := strings.Index(ae, "@"); i > 0 && strings.ToLower(ae[i+1:]) == strings.ToLower(ctrl.Cluster.Users.PreferDomainForUsername) {
+		if ae == ret.Email {
+			continue
+		}
+		ret.AlternateEmails = append(ret.AlternateEmails, ae)
+		if ret.Username == "" {
+			i := strings.Index(ae, "@")
+			if i > 0 && strings.ToLower(ae[i+1:]) == strings.ToLower(ctrl.Cluster.Users.PreferDomainForUsername) {
 				ret.Username = strings.SplitN(ae[:i], "+", 2)[0]
 			}
 		}
