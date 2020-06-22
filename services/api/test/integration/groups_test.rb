@@ -193,23 +193,28 @@ class NonTransactionalGroupsTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
-  test "create request with async=true defers permissions update" do
+  test "create request with async=true does not defer permissions update" do
     Rails.configuration.API.AsyncPermissionsUpdateInterval = 1 # second
     name = "Random group #{rand(1000)}"
     assert_equal nil, Group.find_by_name(name)
+
+    # Following the implementation of incremental permission updates
+    # (#16007) the async flag is now a no-op.  Permission changes are
+    # visible immediately.
 
     # Trigger the asynchronous permission update by using async=true parameter.
     post "/arvados/v1/groups",
       params: {
         group: {
-          name: name
+          name: name,
+          group_class: "project"
         },
         async: true
       },
       headers: auth(:active)
     assert_response 202
 
-    # The group exists on the database, but it's not accessible yet.
+    # The group exists in the database
     assert_not_nil Group.find_by_name(name)
     get "/arvados/v1/groups",
       params: {
@@ -218,7 +223,7 @@ class NonTransactionalGroupsTest < ActionDispatch::IntegrationTest
       },
       headers: auth(:active)
     assert_response 200
-    assert_equal 0, json_response['items_available']
+    assert_equal 1, json_response['items_available']
 
     # Wait a bit and try again.
     sleep(1)

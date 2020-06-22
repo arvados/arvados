@@ -100,7 +100,7 @@ class ApplicationControllerTest < ActionController::TestCase
         @controller = Arvados::V1::GroupsController.new
         authorize_with :active
         post :create, params: {
-          group: {},
+          group: {group_class: "project"},
           ensure_unique_name: boolparam
         }
         assert_response :success
@@ -113,7 +113,8 @@ class ApplicationControllerTest < ActionController::TestCase
         post :create, params: {
           group: {
             name: groups(:aproject).name,
-            owner_uuid: groups(:aproject).owner_uuid
+            owner_uuid: groups(:aproject).owner_uuid,
+            group_class: "project"
           },
           ensure_unique_name: boolparam
         }

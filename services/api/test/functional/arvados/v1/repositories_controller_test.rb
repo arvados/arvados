@@ -150,7 +150,7 @@ class Arvados::V1::RepositoriesControllerTest < ActionController::TestCase
   test "get_all_permissions obeys group permissions" do
     act_as_user system_user do
       r = Repository.create!(name: 'admin/groupcanwrite', owner_uuid: users(:admin).uuid)
-      g = Group.create!(group_class: 'group', name: 'repo-writers')
+      g = Group.create!(group_class: 'role', name: 'repo-writers')
       u1 = users(:active)
       u2 = users(:spectator)
       Link.create!(tail_uuid: g.uuid, head_uuid: r.uuid, link_class: 'permission', name: 'can_manage')
@@ -158,7 +158,7 @@ class Arvados::V1::RepositoriesControllerTest < ActionController::TestCase
       Link.create!(tail_uuid: u2.uuid, head_uuid: g.uuid, link_class: 'permission', name: 'can_read')
 
       r = Repository.create!(name: 'admin/groupreadonly', owner_uuid: users(:admin).uuid)
-      g = Group.create!(group_class: 'group', name: 'repo-readers')
+      g = Group.create!(group_class: 'role', name: 'repo-readers')
       u1 = users(:active)
       u2 = users(:spectator)
       Link.create!(tail_uuid: g.uuid, head_uuid: r.uuid, link_class: 'permission', name: 'can_read')

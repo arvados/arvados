@@ -10,7 +10,7 @@ class PermissionTest < ActiveSupport::TestCase
   test "Grant permissions on an object I own" do
     set_user_from_auth :active_trustedclient
 
-    ob = Specimen.create
+    ob = Collection.create
     assert ob.save
 
     # Ensure I have permission to manage this group even when its owner changes
@@ -24,7 +24,7 @@ class PermissionTest < ActiveSupport::TestCase
   test "Delete permission links when deleting an object" do
     set_user_from_auth :active_trustedclient
 
-    ob = Specimen.create!
+    ob = Collection.create!
     Link.create!(tail_uuid: users(:active).uuid,
                  head_uuid: ob.uuid,
                  link_class: 'permission',
@@ -37,7 +37,7 @@ class PermissionTest < ActiveSupport::TestCase
 
   test "permission links owned by root" do
     set_user_from_auth :active_trustedclient
-    ob = Specimen.create!
+    ob = Collection.create!
     perm_link = Link.create!(tail_uuid: users(:active).uuid,
                              head_uuid: ob.uuid,
                              link_class: 'permission',
@@ -46,25 +46,53 @@ class PermissionTest < ActiveSupport::TestCase
   end
 
   test "readable_by" do
-    set_user_from_auth :active_trustedclient
+    set_user_from_auth :admin
 
-    ob = Specimen.create!
+    ob = Collection.create!
     Link.create!(tail_uuid: users(:active).uuid,
                  head_uuid: ob.uuid,
                  link_class: 'permission',
                  name: 'can_read')
-    assert Specimen.readable_by(users(:active)).where(uuid: ob.uuid).any?, "user does not have read permission"
+    assert Collection.readable_by(users(:active)).where(uuid: ob.uuid).any?, "user does not have read permission"
   end
 
   test "writable_by" do
-    set_user_from_auth :active_trustedclient
+    set_user_from_auth :admin
 
-    ob = Specimen.create!
+    ob = Collection.create!
     Link.create!(tail_uuid: users(:active).uuid,
                  head_uuid: ob.uuid,
                  link_class: 'permission',
                  name: 'can_write')
     assert ob.writable_by.include?(users(:active).uuid), "user does not have write permission"
+  end
+
+  test "update permission link" do
+    set_user_from_auth :admin
+
+    grp = Group.create! name: "blah project", group_class: "project"
+    ob = Collection.create! owner_uuid: grp.uuid
+
+    assert !users(:active).can?(write: ob)
+    assert !users(:active).can?(read: ob)
+
+    l1 = Link.create!(tail_uuid: users(:active).uuid,
+                 head_uuid: grp.uuid,
+                 link_class: 'permission',
+                 name: 'can_write')
+
+    assert users(:active).can?(write: ob)
+    assert users(:active).can?(read: ob)
+
+    l1.update_attributes!(name: 'can_read')
+
+    assert !users(:active).can?(write: ob)
+    assert users(:active).can?(read: ob)
+
+    l1.destroy
+
+    assert !users(:active).can?(write: ob)
+    assert !users(:active).can?(read: ob)
   end
 
   test "writable_by reports requesting user's own uuid for a writable project" do
@@ -124,15 +152,16 @@ class PermissionTest < ActiveSupport::TestCase
   test "user owns group, group can_manage object's group, user can add permissions" do
     set_user_from_auth :admin
 
-    owner_grp = Group.create!(owner_uuid: users(:active).uuid)
+    owner_grp = Group.create!(owner_uuid: users(:active).uuid, group_class: "role")
 
-    sp_grp = Group.create!
-    sp = Specimen.create!(owner_uuid: sp_grp.uuid)
+    sp_grp = Group.create!(group_class: "project")
 
     Link.create!(link_class: 'permission',
                  name: 'can_manage',
                  tail_uuid: owner_grp.uuid,
                  head_uuid: sp_grp.uuid)
+
+    sp = Collection.create!(owner_uuid: sp_grp.uuid)
 
     # active user owns owner_grp, which has can_manage permission on sp_grp
     # user should be able to add permissions on sp.
@@ -149,7 +178,7 @@ class PermissionTest < ActiveSupport::TestCase
   skip "can_manage permission on a non-group object" do
     set_user_from_auth :admin
 
-    ob = Specimen.create!
+    ob = Collection.create!
     # grant can_manage permission to active
     perm_link = Link.create!(tail_uuid: users(:active).uuid,
                              head_uuid: ob.uuid,
@@ -170,7 +199,7 @@ class PermissionTest < ActiveSupport::TestCase
   test "user without can_manage permission may not modify permission link" do
     set_user_from_auth :admin
 
-    ob = Specimen.create!
+    ob = Collection.create!
     # grant can_manage permission to active
     perm_link = Link.create!(tail_uuid: users(:active).uuid,
                              head_uuid: ob.uuid,
@@ -192,13 +221,14 @@ class PermissionTest < ActiveSupport::TestCase
     manager = create :active_user, first_name: "Manage", last_name: "Er"
     minion = create :active_user, first_name: "Min", last_name: "Ion"
     minions_specimen = act_as_user minion do
-      Specimen.create!
+      g = Group.create! name: "minon project", group_class: "project"
+      Collection.create! owner_uuid: g.uuid
     end
     # Manager creates a group. (Make sure it doesn't magically give
     # anyone any additional permissions.)
     g = nil
     act_as_user manager do
-      g = create :group, name: "NoBigSecret Lab"
+      g = create :group, name: "NoBigSecret Lab", group_class: "role"
       assert_empty(User.readable_by(manager).where(uuid: minion.uuid),
                    "saw a user I shouldn't see")
       assert_raises(ArvadosModel::PermissionDeniedError,
@@ -255,7 +285,7 @@ class PermissionTest < ActiveSupport::TestCase
         create(:permission_link,
                name: 'can_manage', tail_uuid: manager.uuid, head_uuid: minion.uuid)
       end
-      assert_empty(Specimen
+      assert_empty(Collection
                      .readable_by(manager)
                      .where(uuid: minions_specimen.uuid),
                    "manager saw the minion's private stuff")
@@ -273,7 +303,7 @@ class PermissionTest < ActiveSupport::TestCase
 
     act_as_user manager do
       # Now, manager can read and write Minion's stuff.
-      assert_not_empty(Specimen
+      assert_not_empty(Collection
                          .readable_by(manager)
                          .where(uuid: minions_specimen.uuid),
                        "manager could not find minion's specimen by uuid")
@@ -294,7 +324,7 @@ class PermissionTest < ActiveSupport::TestCase
                      "#{a.first_name} should not be able to see 'b' in the user list")
 
     act_as_system_user do
-      g = create :group
+      g = create :group, group_class: "role"
       [a,b].each do |u|
         create(:permission_link,
                name: 'can_read', tail_uuid: u.uuid, head_uuid: g.uuid)
@@ -309,12 +339,12 @@ class PermissionTest < ActiveSupport::TestCase
                      "#{a.first_name} should be able to see 'b' in the user list")
 
     a_specimen = act_as_user a do
-      Specimen.create!
+      Collection.create!
     end
-    assert_not_empty(Specimen.readable_by(a).where(uuid: a_specimen.uuid),
-                     "A cannot read own Specimen, following test probably useless.")
-    assert_empty(Specimen.readable_by(b).where(uuid: a_specimen.uuid),
-                 "B can read A's Specimen")
+    assert_not_empty(Collection.readable_by(a).where(uuid: a_specimen.uuid),
+                     "A cannot read own Collection, following test probably useless.")
+    assert_empty(Collection.readable_by(b).where(uuid: a_specimen.uuid),
+                 "B can read A's Collection")
     [a,b].each do |u|
       assert_empty(User.readable_by(u).where(uuid: other.uuid),
                    "#{u.first_name} can see OTHER in the user list")
@@ -341,13 +371,13 @@ class PermissionTest < ActiveSupport::TestCase
   test "cannot create with owner = unwritable user" do
     set_user_from_auth :rominiadmin
     assert_raises ArvadosModel::PermissionDeniedError, "created with owner = unwritable user" do
-      Specimen.create!(owner_uuid: users(:active).uuid)
+      Collection.create!(owner_uuid: users(:active).uuid)
     end
   end
 
   test "cannot change owner to unwritable user" do
     set_user_from_auth :rominiadmin
-    ob = Specimen.create!
+    ob = Collection.create!
     assert_raises ArvadosModel::PermissionDeniedError, "changed owner to unwritable user" do
       ob.update_attributes!(owner_uuid: users(:active).uuid)
     end
@@ -356,13 +386,13 @@ class PermissionTest < ActiveSupport::TestCase
   test "cannot create with owner = unwritable group" do
     set_user_from_auth :rominiadmin
     assert_raises ArvadosModel::PermissionDeniedError, "created with owner = unwritable group" do
-      Specimen.create!(owner_uuid: groups(:aproject).uuid)
+      Collection.create!(owner_uuid: groups(:aproject).uuid)
     end
   end
 
   test "cannot change owner to unwritable group" do
     set_user_from_auth :rominiadmin
-    ob = Specimen.create!
+    ob = Collection.create!
     assert_raises ArvadosModel::PermissionDeniedError, "changed owner to unwritable group" do
       ob.update_attributes!(owner_uuid: groups(:aproject).uuid)
     end
@@ -389,5 +419,164 @@ class PermissionTest < ActiveSupport::TestCase
                 event_type: "test")
 
     assert_not_empty container_logs(:running_older, :anonymous)
+  end
+
+  test "add user to group, then remove them" do
+    set_user_from_auth :admin
+    grp = Group.create!(owner_uuid: system_user_uuid, group_class: "role")
+    col = Collection.create!(owner_uuid: system_user_uuid)
+
+    l0 = Link.create!(tail_uuid: grp.uuid,
+                 head_uuid: col.uuid,
+                 link_class: 'permission',
+                 name: 'can_read')
+
+    assert_empty Collection.readable_by(users(:active)).where(uuid: col.uuid)
+    assert_empty User.readable_by(users(:active)).where(uuid: users(:project_viewer).uuid)
+
+    l1 = Link.create!(tail_uuid: users(:active).uuid,
+                 head_uuid: grp.uuid,
+                 link_class: 'permission',
+                 name: 'can_read')
+    l2 = Link.create!(tail_uuid: grp.uuid,
+                 head_uuid: users(:active).uuid,
+                 link_class: 'permission',
+                 name: 'can_read')
+
+    l3 = Link.create!(tail_uuid: users(:project_viewer).uuid,
+                 head_uuid: grp.uuid,
+                 link_class: 'permission',
+                 name: 'can_read')
+    l4 = Link.create!(tail_uuid: grp.uuid,
+                 head_uuid: users(:project_viewer).uuid,
+                 link_class: 'permission',
+                 name: 'can_read')
+
+    assert Collection.readable_by(users(:active)).where(uuid: col.uuid).first
+    assert User.readable_by(users(:active)).where(uuid: users(:project_viewer).uuid).first
+
+    l1.destroy
+    l2.destroy
+
+    assert_empty Collection.readable_by(users(:active)).where(uuid: col.uuid)
+    assert_empty User.readable_by(users(:active)).where(uuid: users(:project_viewer).uuid)
+
+  end
+
+
+  test "add user to group, then change permission level" do
+    set_user_from_auth :admin
+    grp = Group.create!(owner_uuid: system_user_uuid, group_class: "project")
+    col = Collection.create!(owner_uuid: grp.uuid)
+    assert_empty Collection.readable_by(users(:active)).where(uuid: col.uuid)
+    assert_empty User.readable_by(users(:active)).where(uuid: users(:project_viewer).uuid)
+
+    l1 = Link.create!(tail_uuid: users(:active).uuid,
+                 head_uuid: grp.uuid,
+                 link_class: 'permission',
+                 name: 'can_manage')
+
+    assert Collection.readable_by(users(:active)).where(uuid: col.uuid).first
+    assert users(:active).can?(read: col.uuid)
+    assert users(:active).can?(write: col.uuid)
+    assert users(:active).can?(manage: col.uuid)
+
+    l1.name = 'can_read'
+    l1.save!
+
+    assert Collection.readable_by(users(:active)).where(uuid: col.uuid).first
+    assert users(:active).can?(read: col.uuid)
+    assert !users(:active).can?(write: col.uuid)
+    assert !users(:active).can?(manage: col.uuid)
+
+    l1.name = 'can_write'
+    l1.save!
+
+    assert Collection.readable_by(users(:active)).where(uuid: col.uuid).first
+    assert users(:active).can?(read: col.uuid)
+    assert users(:active).can?(write: col.uuid)
+    assert !users(:active).can?(manage: col.uuid)
+  end
+
+
+  test "add user to group, then add overlapping permission link to group" do
+    set_user_from_auth :admin
+    grp = Group.create!(owner_uuid: system_user_uuid, group_class: "project")
+    col = Collection.create!(owner_uuid: grp.uuid)
+    assert_empty Collection.readable_by(users(:active)).where(uuid: col.uuid)
+    assert_empty User.readable_by(users(:active)).where(uuid: users(:project_viewer).uuid)
+
+    l1 = Link.create!(tail_uuid: users(:active).uuid,
+                 head_uuid: grp.uuid,
+                 link_class: 'permission',
+                 name: 'can_manage')
+
+    assert Collection.readable_by(users(:active)).where(uuid: col.uuid).first
+    assert users(:active).can?(read: col.uuid)
+    assert users(:active).can?(write: col.uuid)
+    assert users(:active).can?(manage: col.uuid)
+
+    l3 = Link.create!(tail_uuid: users(:active).uuid,
+                 head_uuid: grp.uuid,
+                 link_class: 'permission',
+                 name: 'can_read')
+
+    assert Collection.readable_by(users(:active)).where(uuid: col.uuid).first
+    assert users(:active).can?(read: col.uuid)
+    assert users(:active).can?(write: col.uuid)
+    assert users(:active).can?(manage: col.uuid)
+
+    l3.destroy!
+
+    assert Collection.readable_by(users(:active)).where(uuid: col.uuid).first
+    assert users(:active).can?(read: col.uuid)
+    assert users(:active).can?(write: col.uuid)
+    assert users(:active).can?(manage: col.uuid)
+  end
+
+
+  test "add user to group, then add overlapping permission link to subproject" do
+    set_user_from_auth :admin
+    grp = Group.create!(owner_uuid: system_user_uuid, group_class: "role")
+    prj = Group.create!(owner_uuid: system_user_uuid, group_class: "project")
+
+    l0 = Link.create!(tail_uuid: grp.uuid,
+                 head_uuid: prj.uuid,
+                 link_class: 'permission',
+                 name: 'can_manage')
+
+    assert_empty Group.readable_by(users(:active)).where(uuid: prj.uuid)
+    assert_empty User.readable_by(users(:active)).where(uuid: users(:project_viewer).uuid)
+
+    l1 = Link.create!(tail_uuid: users(:active).uuid,
+                 head_uuid: grp.uuid,
+                 link_class: 'permission',
+                 name: 'can_manage')
+    l2 = Link.create!(tail_uuid: grp.uuid,
+                 head_uuid: users(:active).uuid,
+                 link_class: 'permission',
+                 name: 'can_read')
+
+    assert Group.readable_by(users(:active)).where(uuid: prj.uuid).first
+    assert users(:active).can?(read: prj.uuid)
+    assert users(:active).can?(write: prj.uuid)
+    assert users(:active).can?(manage: prj.uuid)
+
+    l3 = Link.create!(tail_uuid: grp.uuid,
+                 head_uuid: prj.uuid,
+                 link_class: 'permission',
+                 name: 'can_read')
+
+    assert Group.readable_by(users(:active)).where(uuid: prj.uuid).first
+    assert users(:active).can?(read: prj.uuid)
+    assert users(:active).can?(write: prj.uuid)
+    assert users(:active).can?(manage: prj.uuid)
+
+    l3.destroy!
+
+    assert Group.readable_by(users(:active)).where(uuid: prj.uuid).first
+    assert users(:active).can?(read: prj.uuid)
+    assert users(:active).can?(write: prj.uuid)
+    assert users(:active).can?(manage: prj.uuid)
   end
 end

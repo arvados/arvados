@@ -226,8 +226,9 @@ func SetParentGroup(cfg *ConfigParams) error {
 				log.Println("Default parent group not found, creating...")
 			}
 			groupData := map[string]string{
-				"name":       cfg.ParentGroupName,
-				"owner_uuid": cfg.SysUserUUID,
+				"name":        cfg.ParentGroupName,
+				"owner_uuid":  cfg.SysUserUUID,
+				"group_class": "role",
 			}
 			if err := CreateGroup(cfg, &parentGroup, groupData); err != nil {
 				return fmt.Errorf("error creating system user owned group named %q: %s", groupData["name"], err)
@@ -528,17 +529,21 @@ func GetRemoteGroups(cfg *ConfigParams, allUsers map[string]arvados.User) (remot
 
 	params := arvados.ResourceListParams{
 		Filters: []arvados.Filter{{
-			Attr:     "owner_uuid",
+			Attr:     "tail_uuid",
 			Operator: "=",
 			Operand:  cfg.ParentGroupUUID,
 		}},
 	}
-	results, err := GetAll(cfg.Client, "groups", params, &GroupList{})
+	results, err := GetAll(cfg.Client, "links", params, &LinkList{})
 	if err != nil {
 		return remoteGroups, groupNameToUUID, fmt.Errorf("error getting remote groups: %s", err)
 	}
 	for _, item := range results {
-		group := item.(arvados.Group)
+		var group arvados.Group
+		err = GetGroup(cfg, &group, item.(arvados.Link).HeadUUID)
+		if err != nil {
+			return remoteGroups, groupNameToUUID, fmt.Errorf("error getting remote group: %s", err)
+		}
 		// Group -> User filter
 		g2uFilter := arvados.ResourceListParams{
 			Filters: []arvados.Filter{{
