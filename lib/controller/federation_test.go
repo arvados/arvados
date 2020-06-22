@@ -64,6 +64,7 @@ func (s *FederationSuite) SetUpTest(c *check.C) {
 	cluster.TLS.Insecure = true
 	cluster.API.MaxItemsPerResponse = 1000
 	cluster.API.MaxRequestAmplification = 4
+	cluster.API.RequestTimeout = arvados.Duration(5 * time.Minute)
 	arvadostest.SetServiceURL(&cluster.Services.RailsAPI, "http://localhost:1/")
 	arvadostest.SetServiceURL(&cluster.Services.Controller, "http://localhost:/")
 	s.testHandler = &Handler{Cluster: cluster}

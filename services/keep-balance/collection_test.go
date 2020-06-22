@@ -5,6 +5,7 @@
 package main
 
 import (
+	"context"
 	"sync"
 	"time"
 
@@ -29,7 +30,7 @@ func (s *integrationSuite) TestIdenticalTimestamps(c *check.C) {
 			longestStreak := 0
 			var lastMod time.Time
 			sawUUID := make(map[string]bool)
-			err := EachCollection(s.client, pageSize, func(c arvados.Collection) error {
+			err := EachCollection(context.Background(), s.client, pageSize, func(c arvados.Collection) error {
 				if c.ModifiedAt.IsZero() {
 					return nil
 				}

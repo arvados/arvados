@@ -52,6 +52,7 @@ func (s *HandlerSuite) SetUpTest(c *check.C) {
 		PostgreSQL:       integrationTestCluster().PostgreSQL,
 		ForceLegacyAPI14: forceLegacyAPI14,
 	}
+	s.cluster.API.RequestTimeout = arvados.Duration(5 * time.Minute)
 	s.cluster.TLS.Insecure = true
 	arvadostest.SetServiceURL(&s.cluster.Services.RailsAPI, "https://"+os.Getenv("ARVADOS_TEST_API_HOST"))
 	arvadostest.SetServiceURL(&s.cluster.Services.Controller, "http://localhost:/")

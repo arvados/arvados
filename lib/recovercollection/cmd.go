@@ -204,8 +204,8 @@ var errNotFound = errors.New("not found")
 
 // Finds the timestamp of the newest copy of blk on svc. Returns
 // errNotFound if blk is not on svc at all.
-func (rcvr recoverer) newestMtime(logger logrus.FieldLogger, blk string, svc arvados.KeepService) (time.Time, error) {
-	found, err := svc.Index(rcvr.client, blk)
+func (rcvr recoverer) newestMtime(ctx context.Context, logger logrus.FieldLogger, blk string, svc arvados.KeepService) (time.Time, error) {
+	found, err := svc.Index(ctx, rcvr.client, blk)
 	if err != nil {
 		logger.WithError(err).Warn("error getting index")
 		return time.Time{}, err
@@ -236,7 +236,7 @@ var errTouchIneffective = errors.New("(BUG?) touch succeeded but had no effect -
 // saved. But if the block's timestamp is more recent than blobsigttl,
 // keepstore will refuse to trash it even if told to by keep-balance.
 func (rcvr recoverer) ensureSafe(ctx context.Context, logger logrus.FieldLogger, blk string, svc arvados.KeepService, blobsigttl time.Duration, blobsigexp time.Time) error {
-	if latest, err := rcvr.newestMtime(logger, blk, svc); err != nil {
+	if latest, err := rcvr.newestMtime(ctx, logger, blk, svc); err != nil {
 		return err
 	} else if latest.Add(blobsigttl).After(blobsigexp) {
 		return nil
@@ -245,7 +245,7 @@ func (rcvr recoverer) ensureSafe(ctx context.Context, logger logrus.FieldLogger,
 		return fmt.Errorf("error updating timestamp: %s", err)
 	}
 	logger.Debug("updated timestamp")
-	if latest, err := rcvr.newestMtime(logger, blk, svc); err == errNotFound {
+	if latest, err := rcvr.newestMtime(ctx, logger, blk, svc); err == errNotFound {
 		return fmt.Errorf("(BUG?) touch succeeded, but then block did not appear in index")
 	} else if err != nil {
 		return err

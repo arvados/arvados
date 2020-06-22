@@ -77,9 +77,7 @@ func (p *proxy) Do(
 		Header: hdrOut,
 		Body:   reqIn.Body,
 	}).WithContext(reqIn.Context())
-
-	resp, err := client.Do(reqOut)
-	return resp, err
+	return client.Do(reqOut)
 }
 
 // Copy a response (or error) to the downstream client
