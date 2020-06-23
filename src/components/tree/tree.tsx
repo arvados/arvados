@@ -79,6 +79,7 @@ export interface TreeItem<T> {
     selected?: boolean;
     status: TreeItemStatus;
     items?: Array<TreeItem<T>>;
+    level?: number;
 }
 
 export interface TreeProps<T> {
