@@ -208,6 +208,8 @@ if test -z "$packages" ; then
         keepstore
         keep-web
         libarvados-perl
+        libpam-arvados
+        libpam-arvados-experimental
         python-arvados-fuse
         python-arvados-python-client
         python-arvados-cwl-runner"

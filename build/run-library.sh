@@ -146,7 +146,7 @@ calculate_go_package_version() {
   __returnvar="$version"
 }
 
-# Usage: package_go_binary services/foo arvados-foo "Compute foo to arbitrary precision"
+# Usage: package_go_binary services/foo arvados-foo "Compute foo to arbitrary precision" [apache-2.0.txt]
 package_go_binary() {
     local src_path="$1"; shift
     local prog="$1"; shift
@@ -186,6 +186,30 @@ package_go_binary() {
     switches+=("$WORKSPACE/${license_file}=/usr/share/doc/$prog/${license_file}")
 
     fpm_build "$GOPATH/bin/${basename}=/usr/bin/${prog}" "${prog}" dir "${go_package_version}" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=${description}" "${switches[@]}"
+}
+
+# Usage: package_go_so lib/foo arvados_foo.so arvados-foo "Arvados foo library"
+package_go_so() {
+    local src_path="$1"; shift
+    local sofile="$1"; shift
+    local pkg="$1"; shift
+    local description="$1"; shift
+
+    debug_echo "package_go_so $src_path as $pkg"
+
+    calculate_go_package_version go_package_version $src_path
+    cd $WORKSPACE/packages/$TARGET
+    test_package_presence $pkg $go_package_version go || return 1
+    cd $WORKSPACE/$src_path
+    go build -buildmode=c-shared -o ${GOPATH}/bin/${sofile}
+    cd $WORKSPACE/packages/$TARGET
+    local -a fpmargs=(
+        "--url=https://arvados.org"
+        "--license=Apache License, Version 2.0"
+        "--description=${description}"
+        "$WORKSPACE/apache-2.0.txt=/usr/share/doc/$pkg/apache-2.0.txt"
+    )
+    fpm_build "$GOPATH/bin/${sofile}=/usr/lib/${sofile}" "${pkg}" dir "${go_package_version}" "${fpmargs[@]}"
 }
 
 default_iteration() {
