@@ -55,6 +55,11 @@ func init() {
 	}
 }
 
+//export pam_sm_setcred
+func pam_sm_setcred(pamh *C.pam_handle_t, flags, cArgc C.int, cArgv **C.char) C.int {
+	return C.PAM_IGNORE
+}
+
 //export pam_sm_authenticate
 func pam_sm_authenticate(pamh *C.pam_handle_t, flags, cArgc C.int, cArgv **C.char) C.int {
 	runtime.GOMAXPROCS(1)
