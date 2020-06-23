@@ -95,8 +95,12 @@ Auth-Initial:
 }
 
 func (s *DockerSuite) TearDownSuite(c *check.C) {
-	s.proxysrv.Close()
-	s.proxyln.Close()
+	if s.proxysrv != nil {
+		s.proxysrv.Close()
+	}
+	if s.proxyln != nil {
+		s.proxyln.Close()
+	}
 }
 
 func (s *DockerSuite) runTestClient(c *check.C, args ...string) (stdout, stderr *bytes.Buffer, err error) {
