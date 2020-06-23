@@ -116,6 +116,8 @@ There are two configuration options for local accounts:
 
 For more information about configuring backend support for sending email (required to send email confirmations) see "Configuring Action Mailer":http://guides.rubyonrails.org/configuring.html#configuring-action-mailer
 
+{% assign railshost = "" %}
+{% assign railsdir = "/var/www/arvados-sso/current" %}
 If @allow_account_registration@ is false, you may manually create local accounts on the SSO server from the Rails console.  {% include 'install_rails_command' %}
 
 Enter the following commands at the console.
