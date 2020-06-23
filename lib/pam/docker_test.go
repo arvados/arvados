@@ -119,6 +119,7 @@ func (s *DockerSuite) runTestClient(c *check.C, args ...string) (stdout, stderr 
 func (s *DockerSuite) TestSuccess(c *check.C) {
 	stdout, stderr, err := s.runTestClient(c, "try", "active", arvadostest.ActiveTokenV2)
 	c.Check(err, check.IsNil)
+	c.Logf("%s", stderr.String())
 	c.Check(stdout.String(), check.Equals, "")
 	c.Check(stderr.String(), check.Matches, `(?ms).*authentication succeeded.*`)
 }
@@ -136,6 +137,7 @@ func (s *DockerSuite) TestFailure(c *check.C) {
 	} {
 		c.Logf("trial: %s", trial.label)
 		stdout, stderr, err := s.runTestClient(c, "try", trial.username, trial.token)
+		c.Logf("%s", stderr.String())
 		c.Check(err, check.NotNil)
 		c.Check(stdout.String(), check.Equals, "")
 		c.Check(stderr.String(), check.Matches, `(?ms).*authentication failed.*`)

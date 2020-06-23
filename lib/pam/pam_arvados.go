@@ -2,6 +2,23 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+// To enable, add an entry in /etc/pam.d/common-auth where pam_unix.so
+// would normally be. Examples:
+//
+// auth [success=1 default=ignore] /usr/lib/pam_arvados.so zzzzz.arvadosapi.com vmhostname.example
+// auth [success=1 default=ignore] /usr/lib/pam_arvados.so zzzzz.arvadosapi.com vmhostname.example insecure debug
+//
+// Replace zzzzz.arvadosapi.com with your controller host or
+// host:port.
+//
+// Replace vmhostname.example with the VM's name as it appears in the
+// Arvados virtual_machine object.
+//
+// Use "insecure" if your API server certificate does not pass name
+// verification.
+//
+// Use "debug" to enable debug log messages.
+
 package main
 
 import (
@@ -65,7 +82,7 @@ func pam_sm_authenticate(pamh *C.pam_handle_t, flags, cArgc C.int, cArgv **C.cha
 	return C.PAM_SUCCESS
 }
 
-func authenticate(logger logrus.FieldLogger, username, token string, argv []string) error {
+func authenticate(logger *logrus.Logger, username, token string, argv []string) error {
 	hostname := ""
 	apiHost := ""
 	insecure := false
@@ -76,6 +93,8 @@ func authenticate(logger logrus.FieldLogger, username, token string, argv []stri
 			hostname = arg
 		} else if arg == "insecure" {
 			insecure = true
+		} else if arg == "debug" {
+			logger.SetLevel(logrus.DebugLevel)
 		} else {
 			logger.Warnf("unkown option: %s\n", arg)
 		}
@@ -117,7 +136,7 @@ func authenticate(logger logrus.FieldLogger, username, token string, argv []stri
 	}
 	var links arvados.LinkList
 	err = arv.RequestAndDecodeContext(ctx, &links, "GET", "arvados/v1/links", nil, arvados.ListOptions{
-		Limit: 10000,
+		Limit: 1,
 		Filters: []arvados.Filter{
 			{"link_class", "=", "permission"},
 			{"name", "=", "can_login"},
