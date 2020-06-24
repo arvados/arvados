@@ -50,7 +50,6 @@ export const extractFilesData = (document: Document) => {
             return getTagValue(element, 'D:resourcetype', '')
                 ? createCollectionDirectory(data)
                 : createCollectionFile({ ...data, size });
-
         });
 };
 

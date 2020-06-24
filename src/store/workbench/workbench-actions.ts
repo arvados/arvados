@@ -101,6 +101,8 @@ import { subprocessPanelActions } from '~/store/subprocess-panel/subprocess-pane
 import { subprocessPanelColumns } from '~/views/subprocess-panel/subprocess-panel-root';
 import { loadAllProcessesPanel, allProcessesPanelActions } from '../all-processes-panel/all-processes-panel-action';
 import { allProcessesPanelColumns } from '~/views/all-processes-panel/all-processes-panel';
+import { collectionPanelFilesAction } from '../collection-panel/collection-panel-files/collection-panel-files-actions';
+import { createTree } from '~/models/tree';
 
 export const WORKBENCH_LOADING_SCREEN = 'workbenchLoadingScreen';
 
@@ -278,6 +280,8 @@ export const loadCollection = (uuid: string) =>
         async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
             const userUuid = getUserUuid(getState());
             if (userUuid) {
+                // Clear collection files panel
+                dispatch(collectionPanelFilesAction.SET_COLLECTION_FILES({ files: createTree() }));
                 const match = await loadGroupContentsResource({ uuid, userUuid, services });
                 match({
                     OWNED: async collection => {

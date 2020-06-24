@@ -3,10 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from "redux";
-import { loadCollectionFiles } from "./collection-panel-files/collection-panel-files-actions";
+import { loadCollectionFiles, COLLECTION_PANEL_LOAD_FILES_THRESHOLD } from "./collection-panel-files/collection-panel-files-actions";
 import { CollectionResource } from '~/models/collection';
-import { collectionPanelFilesAction } from "./collection-panel-files/collection-panel-files-actions";
-import { createTree } from "~/models/tree";
 import { RootState } from "~/store/store";
 import { ServiceRepository } from "~/services/services";
 import { TagProperty } from "~/models/tag";
@@ -21,7 +19,8 @@ import { addProperty, deleteProperty } from "~/lib/resource-properties";
 export const collectionPanelActions = unionize({
     SET_COLLECTION: ofType<CollectionResource>(),
     LOAD_COLLECTION: ofType<{ uuid: string }>(),
-    LOAD_COLLECTION_SUCCESS: ofType<{ item: CollectionResource }>()
+    LOAD_COLLECTION_SUCCESS: ofType<{ item: CollectionResource }>(),
+    LOAD_BIG_COLLECTIONS: ofType<boolean>(),
 });
 
 export type CollectionPanelAction = UnionOf<typeof collectionPanelActions>;
@@ -31,12 +30,14 @@ export const COLLECTION_TAG_FORM_NAME = 'collectionTagForm';
 export const loadCollectionPanel = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(collectionPanelActions.LOAD_COLLECTION({ uuid }));
-        dispatch(collectionPanelFilesAction.SET_COLLECTION_FILES({ files: createTree() }));
         const collection = await services.collectionService.get(uuid);
         dispatch(loadDetailsPanel(collection.uuid));
         dispatch(collectionPanelActions.LOAD_COLLECTION_SUCCESS({ item: collection }));
         dispatch(resourcesActions.SET_RESOURCES([collection]));
-        dispatch<any>(loadCollectionFiles(collection.uuid));
+        if (collection.fileCount <= COLLECTION_PANEL_LOAD_FILES_THRESHOLD &&
+            !getState().collectionPanel.loadBigCollections) {
+            dispatch<any>(loadCollectionFiles(collection.uuid));
+        }
         return collection;
     };
 

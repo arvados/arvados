@@ -4,19 +4,20 @@
 
 import * as React from 'react';
 import {
-    StyleRulesCallback, WithStyles, withStyles, Card,
-    CardHeader, IconButton, CardContent, Grid, Tooltip
+    StyleRulesCallback, WithStyles, withStyles,
+    IconButton, Grid, Tooltip, Typography, ExpansionPanel,
+    ExpansionPanelSummary, ExpansionPanelDetails
 } from '@material-ui/core';
 import { connect, DispatchProp } from "react-redux";
 import { RouteComponentProps } from 'react-router';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { RootState } from '~/store/store';
-import { MoreOptionsIcon, CollectionIcon, ReadOnlyIcon } from '~/components/icon/icon';
+import { MoreOptionsIcon, CollectionIcon, ReadOnlyIcon, ExpandIcon } from '~/components/icon/icon';
 import { DetailsAttribute } from '~/components/details-attribute/details-attribute';
 import { CollectionResource } from '~/models/collection';
 import { CollectionPanelFiles } from '~/views-components/collection-panel-files/collection-panel-files';
 import { CollectionTagForm } from './collection-tag-form';
-import { deleteCollectionTag, navigateToProcess } from '~/store/collection-panel/collection-panel-action';
+import { deleteCollectionTag, navigateToProcess, collectionPanelActions } from '~/store/collection-panel/collection-panel-action';
 import { getResource } from '~/store/resources/resources';
 import { openContextMenu } from '~/store/context-menu/context-menu-actions';
 import { ContextMenuKind } from '~/views-components/context-menu/context-menu';
@@ -28,12 +29,28 @@ import { IllegalNamingWarning } from '~/components/warning/warning';
 import { GroupResource } from '~/models/group';
 import { UserResource } from '~/models/user';
 import { getUserUuid } from '~/common/getuser';
+import { getProgressIndicator } from '~/store/progress-indicator/progress-indicator-reducer';
+import { COLLECTION_PANEL_LOAD_FILES, loadCollectionFiles, COLLECTION_PANEL_LOAD_FILES_THRESHOLD } from '~/store/collection-panel/collection-panel-files/collection-panel-files-actions';
 
-type CssRules = 'card' | 'iconHeader' | 'tag' | 'label' | 'value' | 'link' | 'centeredLabel' | 'readOnlyIcon';
+type CssRules = 'root'
+    | 'filesCard'
+    | 'iconHeader'
+    | 'tag'
+    | 'label'
+    | 'value'
+    | 'link'
+    | 'centeredLabel'
+    | 'readOnlyIcon';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
-    card: {
-        marginBottom: theme.spacing.unit * 2
+    root: {
+        display: 'flex',
+        flexFlow: 'column',
+        height: 'calc(100vh - 130px)', // (100% viewport height) - (top bar + breadcrumbs)
+    },
+    filesCard: {
+        marginBottom: theme.spacing.unit * 2,
+        flex: 1,
     },
     iconHeader: {
         fontSize: '1.875rem',
@@ -70,6 +87,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 interface CollectionPanelDataProps {
     item: CollectionResource;
     isWritable: boolean;
+    isLoadingFiles: boolean;
+    tooManyFiles: boolean;
 }
 
 type CollectionPanelProps = CollectionPanelDataProps & DispatchProp
@@ -88,47 +107,37 @@ export const CollectionPanel = withStyles(styles)(
                 isWritable = itemOwner.writableBy.indexOf(currentUserUUID || '') >= 0;
             }
         }
-        return { item, isWritable };
+        const loadingFilesIndicator = getProgressIndicator(COLLECTION_PANEL_LOAD_FILES)(state.progressIndicator);
+        const isLoadingFiles = loadingFilesIndicator && loadingFilesIndicator!.working || false;
+        const tooManyFiles = !state.collectionPanel.loadBigCollections && item && item.fileCount > COLLECTION_PANEL_LOAD_FILES_THRESHOLD || false;
+        return { item, isWritable, isLoadingFiles, tooManyFiles };
     })(
         class extends React.Component<CollectionPanelProps> {
             render() {
-                const { classes, item, dispatch, isWritable } = this.props;
+                const { classes, item, dispatch, isWritable, isLoadingFiles, tooManyFiles } = this.props;
                 return item
-                    ? <>
-                        <Card data-cy='collection-info-panel' className={classes.card}>
-                            <CardHeader
-                                avatar={
+                    ? <div className={classes.root}>
+                        <ExpansionPanel data-cy='collection-info-panel' defaultExpanded>
+                            <ExpansionPanelSummary expandIcon={<ExpandIcon />}>
+                                <span>
                                     <IconButton onClick={this.openCollectionDetails}>
                                         <CollectionIcon className={classes.iconHeader} />
                                     </IconButton>
-                                }
-                                action={
-                                    <Tooltip title="More options" disableFocusListener>
-                                        <IconButton
-                                            data-cy='collection-panel-options-btn'
-                                            aria-label="More options"
-                                            onClick={this.handleContextMenu}>
-                                            <MoreOptionsIcon />
-                                        </IconButton>
+                                    <IllegalNamingWarning name={item.name}/>
+                                    {item.name}
+                                    {isWritable ||
+                                    <Tooltip title="Read-only">
+                                        <ReadOnlyIcon data-cy="read-only-icon" className={classes.readOnlyIcon} />
                                     </Tooltip>
-                                }
-                                title={
-                                    <span>
-                                        <IllegalNamingWarning name={item.name}/>
-                                        {item.name}
-                                        {isWritable ||
-                                        <Tooltip title="Read-only">
-                                            <ReadOnlyIcon data-cy="read-only-icon" className={classes.readOnlyIcon} />
-                                        </Tooltip>
-                                        }
-                                    </span>
-                                }
-                                titleTypographyProps={this.titleProps}
-                                subheader={item.description}
-                                subheaderTypographyProps={this.titleProps} />
-                            <CardContent>
-                                <Grid container direction="column">
-                                    <Grid item xs={10}>
+                                    }
+                                </span>
+                            </ExpansionPanelSummary>
+                            <ExpansionPanelDetails>
+                                <Grid container justify="space-between">
+                                    <Grid item xs={11}>
+                                        <Typography variant="caption">
+                                            {item.description}
+                                        </Typography>
                                         <DetailsAttribute classLabel={classes.label} classValue={classes.value}
                                             label='Collection UUID'
                                             linkToUuid={item.uuid} />
@@ -147,14 +156,26 @@ export const CollectionPanel = withStyles(styles)(
                                             </span>
                                         }
                                     </Grid>
+                                    <Grid item xs={1} style={{textAlign: "right"}}>
+                                        <Tooltip title="More options" disableFocusListener>
+                                            <IconButton
+                                                data-cy='collection-panel-options-btn'
+                                                aria-label="More options"
+                                                onClick={this.handleContextMenu}>
+                                                <MoreOptionsIcon />
+                                            </IconButton>
+                                        </Tooltip>
+                                    </Grid>
                                 </Grid>
-                            </CardContent>
-                        </Card>
+                            </ExpansionPanelDetails>
+                        </ExpansionPanel>
 
-                        <Card data-cy='collection-properties-panel' className={classes.card}>
-                            <CardHeader title="Properties" />
-                            <CardContent>
-                                <Grid container direction="column">
+                        <ExpansionPanel data-cy='collection-properties-panel' defaultExpanded>
+                            <ExpansionPanelSummary expandIcon={<ExpandIcon />}>
+                                {"Properties"}
+                            </ExpansionPanelSummary>
+                            <ExpansionPanelDetails>
+                                <Grid container>
                                     {isWritable && <Grid item xs={12}>
                                         <CollectionTagForm />
                                     </Grid>}
@@ -180,12 +201,20 @@ export const CollectionPanel = withStyles(styles)(
                                     }
                                     </Grid>
                                 </Grid>
-                            </CardContent>
-                        </Card>
-                        <div className={classes.card}>
-                            <CollectionPanelFiles isWritable={isWritable} />
+                            </ExpansionPanelDetails>
+                        </ExpansionPanel>
+                        <div className={classes.filesCard}>
+                            <CollectionPanelFiles
+                                isWritable={isWritable}
+                                isLoading={isLoadingFiles}
+                                tooManyFiles={tooManyFiles}
+                                loadFilesFunc={() => {
+                                    dispatch(collectionPanelActions.LOAD_BIG_COLLECTIONS(true));
+                                    dispatch<any>(loadCollectionFiles(this.props.item.uuid));
+                                }
+                            } />
                         </div>
-                    </>
+                    </div>
                     : null;
             }
 

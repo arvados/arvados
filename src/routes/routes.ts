@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { matchPath } from 'react-router';
-import { ResourceKind, RESOURCE_UUID_PATTERN, extractUuidKind, COLLECTION_PDH_REGEX } from '~/models/resource';
+import { ResourceKind, RESOURCE_UUID_PATTERN, extractUuidKind, COLLECTION_PDH_REGEX, PORTABLE_DATA_HASH_PATTERN } from '~/models/resource';
 import { getProjectUrl } from '~/models/project';
 import { getCollectionUrl } from '~/models/collection';
 import { Config } from '~/common/config';
@@ -46,8 +46,9 @@ export const Routes = {
     GROUP_DETAILS: `/group/:id(${RESOURCE_UUID_PATTERN})`,
     LINKS: '/links',
     PUBLIC_FAVORITES: '/public-favorites',
-    COLLECTIONS_CONTENT_ADDRESS: '/collections/:id',
+    COLLECTIONS_CONTENT_ADDRESS: `/collections/:id(${PORTABLE_DATA_HASH_PATTERN})`,
     ALL_PROCESSES: '/all_processes',
+    NO_MATCH: '*',
 };
 
 export const getResourceUrl = (uuid: string) => {

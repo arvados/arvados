@@ -48,6 +48,7 @@ import { SshKeyPanel } from '~/views/ssh-key-panel/ssh-key-panel';
 import { SiteManagerPanel } from "~/views/site-manager-panel/site-manager-panel";
 import { MyAccountPanel } from '~/views/my-account-panel/my-account-panel';
 import { SharingDialog } from '~/views-components/sharing-dialog/sharing-dialog';
+import { NotFoundDialog } from '~/views-components/not-found-dialog/not-found-dialog';
 import { AdvancedTabDialog } from '~/views-components/advanced-tab-dialog/advanced-tab-dialog';
 import { ProcessInputDialog } from '~/views-components/process-input-dialog/process-input-dialog';
 import { VirtualMachineUserPanel } from '~/views/virtual-machine-panel/virtual-machine-user-panel';
@@ -96,6 +97,7 @@ import { LinkAccountPanel } from '~/views/link-account-panel/link-account-panel'
 import { FedLogin } from './fed-login';
 import { CollectionsContentAddressPanel } from '~/views/collection-content-address-panel/collection-content-address-panel';
 import { AllProcessesPanel } from '../all-processes-panel/all-processes-panel';
+import { NotFoundPanel } from '../not-found-panel/not-found-panel';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -188,6 +190,7 @@ export const WorkbenchPanel =
                                 <Route path={Routes.PUBLIC_FAVORITES} component={PublicFavoritePanel} />
                                 <Route path={Routes.LINK_ACCOUNT} component={LinkAccountPanel} />
                                 <Route path={Routes.COLLECTIONS_CONTENT_ADDRESS} component={CollectionsContentAddressPanel} />
+                                <Route path={Routes.NO_MATCH} component={NotFoundPanel} />
                             </Switch>
                         </Grid>
                     </Grid>
@@ -245,6 +248,7 @@ export const WorkbenchPanel =
             <RichTextEditorDialog />
             <SetupShellAccountDialog />
             <SharingDialog />
+            <NotFoundDialog />
             <Snackbar />
             <UpdateCollectionDialog />
             <UpdateProcessDialog />
