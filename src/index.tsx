@@ -103,15 +103,17 @@ fetchConfig()
             progressFn: (id, working) => {
                 store.dispatch(progressIndicatorActions.TOGGLE_WORKING({ id, working }));
             },
-            errorFn: (id, error) => {
-                console.error("Backend error:", error);
-                store.dispatch(snackbarActions.OPEN_SNACKBAR({
-                    message: `${error.errors
-                        ? error.errors[0]
-                        : error.message}`,
-                    kind: SnackbarKind.ERROR,
-                    hideDuration: 8000})
-                );
+            errorFn: (id, error, showSnackBar) => {
+                if (showSnackBar) {
+                    console.error("Backend error:", error);
+                    store.dispatch(snackbarActions.OPEN_SNACKBAR({
+                        message: `${error.errors
+                            ? error.errors[0]
+                            : error.message}`,
+                        kind: SnackbarKind.ERROR,
+                        hideDuration: 8000})
+                    );
+                }
             }
         });
         const store = configureStore(history, services);
