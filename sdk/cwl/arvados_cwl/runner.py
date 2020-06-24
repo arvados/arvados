@@ -437,6 +437,9 @@ def packed_workflow(arvrunner, tool, merged_map):
                 if "id" not in v:
                     raise SourceLine(v, None, Exception).makeError("Embedded process object is missing required 'id' field")
                 cur_id = rewrite_to_orig.get(v["id"], v["id"])
+            if "path" in v and "location" not in v:
+                v["location"] = v["path"]
+                del v["path"]
             if "location" in v and not v["location"].startswith("keep:"):
                 v["location"] = merged_map[cur_id].resolved[v["location"]]
             if "location" in v and v["location"] in merged_map[cur_id].secondaryFiles:
