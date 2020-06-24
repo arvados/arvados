@@ -34,10 +34,7 @@ const memoizedMapStateToProps = () => {
             prevState = state.collectionPanelFiles;
             prevTree = [].concat.apply(
                 [], getNodeChildrenIds('')(state.collectionPanelFiles)
-                    .map(collectionItemToList(0)(state.collectionPanelFiles)))
-                .map(nodeToTreeItem);
-            // prevTree = getNodeChildrenIds('')(state.collectionPanelFiles)
-            //     .map(collectionItemToTreeItem(state.collectionPanelFiles));
+                    .map(collectionItemToList(0)(state.collectionPanelFiles)));
         }
         return {
             items: prevTree,
@@ -92,10 +89,29 @@ export const collectionItemToList = (level: number) => (tree: Tree<CollectionPan
                 collapsed: true
             }
         });
-        const childs = [].concat.apply([], node.children.map(collectionItemToList(level+1)(tree)));
+
+        const treeItem = {
+            active: false,
+            data: {
+                name: node.value.name,
+                size: node.value.type === CollectionFileType.FILE ? node.value.size : undefined,
+                type: node.value.type,
+                url: node.value.url,
+            },
+            id: node.id,
+            items: [], // Not used in this case as we're converting a tree to a list.
+            itemCount: node.children.length,
+            open: node.value.type === CollectionFileType.DIRECTORY ? !node.value.collapsed : false,
+            selected: node.value.selected,
+            status: TreeItemStatus.LOADED,
+            level,
+        };
+
+        const treeItemChilds = [].concat.apply([], node.children.map(collectionItemToList(level+1)(tree)));
+
         return [
-            {...node, level},
-            ...childs,
+            treeItem,
+            ...treeItemChilds,
         ];
     };
 
@@ -126,21 +142,3 @@ const collectionItemToTreeItem = (tree: Tree<CollectionPanelDirectory | Collecti
             status: TreeItemStatus.LOADED
         };
     };
-
-const nodeToTreeItem = (node: TreeNode<CollectionPanelDirectory | CollectionPanelFile>): TreeItem<FileTreeData> => {
-    return ({
-        active: false,
-        data: {
-            name: node.value.name,
-            size: node.value.type === CollectionFileType.FILE ? node.value.size : undefined,
-            type: node.value.type,
-            url: node.value.url,
-        },
-        id: node.id,
-        items: [],
-        open: node.value.type === CollectionFileType.DIRECTORY ? !node.value.collapsed : false,
-        selected: node.value.selected,
-        status: TreeItemStatus.LOADED,
-        level: node.level,
-    });
-};
