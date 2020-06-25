@@ -148,6 +148,11 @@ class CollectionFsAccess(cwltool.stdfsaccess.StdFsAccess):
                 return False
             else:
                 raise
+        except IOError as err:
+            if err.errno == errno.ENOENT:
+                return False
+            else:
+                raise
         if collection is not None:
             if rest:
                 return collection.exists(rest)
