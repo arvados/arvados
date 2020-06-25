@@ -1,0 +1,184 @@
+---
+layout: default
+navsection: installguide
+title: Configure webshell
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+# "Introduction":#introduction
+# "Prerequisites":#prerequisites
+# "Update config.yml":#configure
+# "Update nginx configuration":#update-nginx
+# "Install packages":#install-packages
+# "Configure shellinabox":#config-shellinabox
+# "Configure pam":#config-pam
+# "Confirm working installation":#confirm-working
+
+h2(#introduction). Introduction
+
+Arvados supports @webshell@, which allows ssh access to shell nodes via the browser. This functionality is integrated in @Workbench@.
+
+@Webshell@ is provided by the @shellinabox@ package which runs on each shell node for which webshell is enabled. For authentication, a supported @pam library@ that allows authentication against Arvados is also required. One Nginx (or similar web server) virtualhost is also needed to expose all the @shellinabox@ instances via https.
+
+h2(#prerequisites). Prerequisites
+
+# "Install workbench":{{site.baseurl}}/install/install-workbench-app.html
+# "Set up a shell node":{{site.baseurl}}/install/install-shell-server.html
+
+h2(#configure). Update config.yml
+
+Edit the cluster config at @config.yml@ and set @Services.WebShell.ExternalURL@.  Replace @zzzzz@ with your cluster id. Workbench will use this information to activate its support for webshell.
+
+<notextile>
+<pre><code>    Services:
+      WebShell:
+        InternalURLs: {}
+        ExternalURL: <span class="userinput">https://webshell.ClusterID.example.com/</span>
+</span></code></pre>
+</notextile>
+
+h2(#update-nginx). Update Nginx configuration
+
+The arvados-webshell service will be accessible from anywhere on the internet, so we recommend using SSL for transport encryption. This Nginx virtualhost could live on your Workbench server, or any other server that is reachable by your Workbench users and can access the @shell-in-a-box@ service on the shell node(s) on port 4200.
+
+Use a text editor to create a new file @/etc/nginx/conf.d/arvados-webshell.conf@ with the following configuration.  Options that need attention are marked in <span class="userinput">red</span>.
+
+<notextile><pre>
+upstream arvados-webshell {
+  server                <span class="userinput">shell.ClusterID.example.com</span>:<span class="userinput">4200</span>;
+}
+
+server {
+  listen                443 ssl;
+  server_name           webshell.<span class="userinput">ClusterID.example.com</span>;
+
+  proxy_connect_timeout 90s;
+  proxy_read_timeout    300s;
+
+  ssl                   on;
+  ssl_certificate       <span class="userinput">/YOUR/PATH/TO/cert.pem</span>;
+  ssl_certificate_key   <span class="userinput">/YOUR/PATH/TO/cert.key</span>;
+
+  location /<span class="userinput">shell.ClusterID</span> {
+    if ($request_method = 'OPTIONS') {
+       add_header 'Access-Control-Allow-Origin' '*'; 
+       add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
+       add_header 'Access-Control-Allow-Headers' 'DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type';
+       add_header 'Access-Control-Max-Age' 1728000;
+       add_header 'Content-Type' 'text/plain charset=UTF-8';
+       add_header 'Content-Length' 0;
+       return 204;
+    }
+    if ($request_method = 'POST') {
+       add_header 'Access-Control-Allow-Origin' '*';
+       add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
+       add_header 'Access-Control-Allow-Headers' 'DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type';
+    }
+    if ($request_method = 'GET') {
+       add_header 'Access-Control-Allow-Origin' '*';
+       add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
+       add_header 'Access-Control-Allow-Headers' 'DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type';
+    }
+
+    proxy_ssl_session_reuse off;
+    proxy_read_timeout  90;
+    proxy_set_header    X-Forwarded-Proto https;
+    proxy_set_header    Host $http_host;
+    proxy_set_header    X-Real-IP $remote_addr;
+    proxy_set_header    X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_pass          http://arvados-webshell;
+  }
+}
+</pre></notextile>
+
+Note that the location line in the nginx config matches your shell node hostname *without domain*, because that is how the shell node was defined in the "Set up a shell node":{{site.baseurl}}/install/install-shell-server.html#vm-record instructions. It makes for a more user friendly experience in Workbench.
+
+For additional shell nodes with @shell-in-a-box@, add @location@ and @upstream@ sections as needed.
+
+{% assign arvados_component = 'shellinabox libpam-arvados' %}
+
+{% include 'install_packages' %}
+
+h2(#config-shellinabox). Configure shellinabox
+
+h3. Red Hat and Centos
+
+Edit @/etc/sysconfig/shellinaboxd@:
+
+<notextile><pre>
+# TCP port that shellinboxd's webserver listens on
+PORT=4200
+
+# SSL is disabled because it is terminated in Nginx. Adjust as needed.
+OPTS="--disable-ssl --no-beep --service=/<span class="userinput">shell.ClusterID.example.com</span>:AUTH:HOME:SHELL"
+</pre></notextile>
+
+<notextile>
+<pre>
+<code># <span class="userinput">systemctl enable shellinabox</span></code>
+<code># <span class="userinput">systemctl start shellinabox</span></code>
+</pre>
+</notextile>
+
+h3. Debian and Ubuntu
+
+Edit @/etc/default/shellinabox@:
+
+<notextile><pre>
+# TCP port that shellinboxd's webserver listens on
+SHELLINABOX_PORT=4200
+
+# SSL is disabled because it is terminated in Nginx. Adjust as needed.
+SHELLINABOX_ARGS="--disable-ssl --no-beep --service=/<span class="userinput">shell.ClusterID.example.com</span>:AUTH:HOME:SHELL"
+</pre></notextile>
+
+<notextile>
+<pre>
+<code># <span class="userinput">systemctl enable shellinabox</span></code>
+<code># <span class="userinput">systemctl start shellinabox</span></code>
+</pre>
+</notextile>
+
+
+h2(#config-pam). Configure pam
+
+Use a text editor to create a new file @/etc/pam.d/shellinabox@ with the following configuration. Options that need attention are marked in <span class="userinput">red</span>.
+
+<notextile><pre>
+# This example is a stock debian "login" file with libpam_arvados
+# replacing pam_unix, and the "noprompt" option in use. It can be
+# installed as /etc/pam.d/shellinabox .
+
+auth       optional   pam_faildelay.so  delay=3000000
+auth [success=ok new_authtok_reqd=ok ignore=ignore user_unknown=bad default=die] pam_securetty.so
+auth       requisite  pam_nologin.so
+session [success=ok ignore=ignore module_unknown=ignore default=bad] pam_selinux.so close
+session       required   pam_env.so readenv=1
+session       required   pam_env.so readenv=1 envfile=/etc/default/locale
+
+auth [success=1 default=ignore] pam_python.so /usr/lib/security/libpam_arvados.py <span class="userinput">ClusterID.example.com</span> <span class="userinput">shell.ClusterID.example.com</span> noprompt
+auth    requisite            pam_deny.so
+auth    required            pam_permit.so
+
+auth       optional   pam_group.so
+session    required   pam_limits.so
+session    optional   pam_lastlog.so
+session    optional   pam_motd.so  motd=/run/motd.dynamic
+session    optional   pam_motd.so
+session    optional   pam_mail.so standard
+
+@include common-account
+@include common-session
+@include common-password
+
+session [success=ok ignore=ignore module_unknown=ignore default=bad] pam_selinux.so open
+</pre></notextile>
+
+h2(#confirm-working). Confirm working installation
+
+A user should be able to log in to the shell server, using webshell via workbench. Please refer to "Accessing an Arvados VM with Webshell":{{site.baseurl}}/user/getting_started/vm-login-with-webshell.html
+
