@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
+require 'update_permissions'
+
 include CurrentApiClient
 
 def fix_roles_projects
