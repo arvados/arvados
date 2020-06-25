@@ -48,7 +48,6 @@ version_from_git() {
     # Output the version being built, or if we're building a
     # dev/prerelease, output a version number based on the git log for
     # the given $subdir.
-    local minorversion="$1"; shift # unused
     local subdir="$1"; shift
     if [[ -n "$ARVADOS_BUILDING_VERSION" ]]; then
         echo "$ARVADOS_BUILDING_VERSION"
@@ -66,12 +65,24 @@ nohash_version_from_git() {
         echo "$ARVADOS_BUILDING_VERSION"
         return
     fi
-    version_from_git $1 | cut -d. -f1-4
+    version_from_git | cut -d. -f1-4
 }
 
 timestamp_from_git() {
     local subdir="$1"; shift
     format_last_commit_here "%ct" "$subdir"
+}
+
+calculate_python_sdk_cwl_package_versions() {
+  python_sdk_ts=$(cd sdk/python && timestamp_from_git)
+  cwl_runner_ts=$(cd sdk/cwl && timestamp_from_git)
+
+  python_sdk_version=$(cd sdk/python && nohash_version_from_git)
+  cwl_runner_version=$(cd sdk/cwl && nohash_version_from_git)
+
+  if [[ $python_sdk_ts -gt $cwl_runner_ts ]]; then
+    cwl_runner_version=$python_sdk_version
+  fi
 }
 
 handle_python_package () {
@@ -127,7 +138,7 @@ calculate_go_package_version() {
       cd "$WORKSPACE"
       ts="$(timestamp_from_git "$dir")"
       if [[ "$ts" -gt "$timestamp" ]]; then
-          version=$(version_from_git "" "$dir")
+          version=$(version_from_git "$dir")
           timestamp="$ts"
       fi
   done

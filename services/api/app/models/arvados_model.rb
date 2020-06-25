@@ -285,10 +285,13 @@ class ArvadosModel < ApplicationRecord
     sql_conds = nil
     user_uuids = users_list.map { |u| u.uuid }
 
+    # For details on how the trashed_groups table is constructed, see
+    # see db/migrate/20200501150153_permission_table.rb
+
     exclude_trashed_records = ""
     if !include_trash and (sql_table == "groups" or sql_table == "collections") then
-      # Only include records that are not explicitly trashed
-      exclude_trashed_records = "AND #{sql_table}.is_trashed = false"
+      # Only include records that are not trashed
+      exclude_trashed_records = "AND (#{sql_table}.trash_at is NULL or #{sql_table}.trash_at > statement_timestamp())"
     end
 
     if users_list.select { |u| u.is_admin }.any?
@@ -296,15 +299,27 @@ class ArvadosModel < ApplicationRecord
       if !include_trash
         if sql_table != "api_client_authorizations"
           # Only include records where the owner is not trashed
-          sql_conds = "#{sql_table}.owner_uuid NOT IN (SELECT target_uuid FROM #{PERMISSION_VIEW} "+
-                      "WHERE trashed = 1) #{exclude_trashed_records}"
+          sql_conds = "#{sql_table}.owner_uuid NOT IN (SELECT group_uuid FROM #{TRASHED_GROUPS} "+
+                      "where trash_at <= statement_timestamp()) #{exclude_trashed_records}"
         end
       end
     else
       trashed_check = ""
       if !include_trash then
-        trashed_check = "AND trashed = 0"
+        trashed_check = "AND target_uuid NOT IN (SELECT group_uuid FROM #{TRASHED_GROUPS} where trash_at <= statement_timestamp())"
       end
+
+      # The core of the permission check is a join against the
+      # materialized_permissions table to determine if the user has at
+      # least read permission to either the object itself or its
+      # direct owner (if traverse_owned is true).  See
+      # db/migrate/20200501150153_permission_table.rb for details on
+      # how the permissions are computed.
+
+      # A user can have can_manage access to another user, this grants
+      # full access to all that user's stuff.  To implement that we
+      # need to include those other users in the permission query.
+      user_uuids_subquery = USER_UUIDS_SUBQUERY_TEMPLATE % {user: ":user_uuids", perm_level: 1}
 
       # Note: it is possible to combine the direct_check and
       # owner_check into a single EXISTS() clause, however it turns
@@ -316,13 +331,28 @@ class ArvadosModel < ApplicationRecord
 
       # Match a direct read permission link from the user to the record uuid
       direct_check = "#{sql_table}.uuid IN (SELECT target_uuid FROM #{PERMISSION_VIEW} "+
-                     "WHERE user_uuid IN (:user_uuids) AND perm_level >= 1 #{trashed_check})"
+                     "WHERE user_uuid IN (#{user_uuids_subquery}) AND perm_level >= 1 #{trashed_check})"
 
-      # Match a read permission link from the user to the record's owner_uuid
+      # Match a read permission for the user to the record's
+      # owner_uuid.  This is so we can have a permissions table that
+      # mostly consists of users and groups (projects are a type of
+      # group) and not have to compute and list user permission to
+      # every single object in the system.
+      #
+      # Don't do this for API keys (special behavior) or groups
+      # (already covered by direct_check).
+      #
+      # The traverse_owned flag indicates whether the permission to
+      # read an object also implies transitive permission to read
+      # things the object owns.  The situation where this is important
+      # are determining if we can read an object owned by another
+      # user.  This makes it possible to have permission to read the
+      # user record without granting permission to read things the
+      # other user owns.
       owner_check = ""
       if sql_table != "api_client_authorizations" and sql_table != "groups" then
         owner_check = "OR #{sql_table}.owner_uuid IN (SELECT target_uuid FROM #{PERMISSION_VIEW} "+
-          "WHERE user_uuid IN (:user_uuids) AND perm_level >= 1 #{trashed_check} AND target_owner_uuid IS NOT NULL) "
+          "WHERE user_uuid IN (#{user_uuids_subquery}) AND perm_level >= 1 #{trashed_check} AND traverse_owned) "
       end
 
       links_cond = ""
@@ -331,7 +361,7 @@ class ArvadosModel < ApplicationRecord
         # users some permission _or_ gives anyone else permission to
         # view one of the authorized users.
         links_cond = "OR (#{sql_table}.link_class IN (:permission_link_classes) AND "+
-                       "(#{sql_table}.head_uuid IN (:user_uuids) OR #{sql_table}.tail_uuid IN (:user_uuids)))"
+                       "(#{sql_table}.head_uuid IN (#{user_uuids_subquery}) OR #{sql_table}.tail_uuid IN (#{user_uuids_subquery})))"
       end
 
       sql_conds = "(#{direct_check} #{owner_check} #{links_cond}) #{exclude_trashed_records}"
@@ -544,6 +574,9 @@ class ArvadosModel < ApplicationRecord
           logger.warn "User #{current_user.uuid} tried to set ownership of #{self.class.to_s} #{self.uuid} but does not have permission to write #{which} owner_uuid #{check_uuid}"
           errors.add :owner_uuid, "cannot be set or changed without write permission on #{which} owner"
           raise PermissionDeniedError
+        elsif rsc_class == Group && Group.find_by_uuid(owner_uuid).group_class != "project"
+          errors.add :owner_uuid, "must be a project"
+          raise PermissionDeniedError
         end
       end
     else
@@ -552,7 +585,7 @@ class ArvadosModel < ApplicationRecord
       # itself.
       if !current_user.can?(write: self.uuid)
         logger.warn "User #{current_user.uuid} tried to modify #{self.class.to_s} #{self.uuid} without write permission"
-        errors.add :uuid, "is not writable"
+        errors.add :uuid, " #{uuid} is not writable by #{current_user.uuid}"
         raise PermissionDeniedError
       end
     end

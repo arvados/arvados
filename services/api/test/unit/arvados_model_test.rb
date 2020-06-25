@@ -97,7 +97,7 @@ class ArvadosModelTest < ActiveSupport::TestCase
     while longstring.length < 2**16
       longstring = longstring + longstring
     end
-    g = Group.create! name: 'Has a long description', description: longstring
+    g = Group.create! name: 'Has a long description', description: longstring, group_class: "project"
     g = Group.find_by_uuid g.uuid
     assert_equal g.description, longstring
   end
@@ -248,7 +248,7 @@ class ArvadosModelTest < ActiveSupport::TestCase
 
   test 'create and retrieve using created_at time' do
     set_user_from_auth :active
-    group = Group.create! name: 'test create and retrieve group'
+    group = Group.create! name: 'test create and retrieve group', group_class: "project"
     assert group.valid?, "group is not valid"
 
     results = Group.where(created_at: group.created_at)
@@ -258,7 +258,7 @@ class ArvadosModelTest < ActiveSupport::TestCase
 
   test 'create and update twice and expect different update times' do
     set_user_from_auth :active
-    group = Group.create! name: 'test create and retrieve group'
+    group = Group.create! name: 'test create and retrieve group', group_class: "project"
     assert group.valid?, "group is not valid"
 
     # update 1

@@ -126,6 +126,7 @@ type Cluster struct {
 		BalancePeriod            Duration
 		BalanceCollectionBatch   int
 		BalanceCollectionBuffers int
+		BalanceTimeout           Duration
 
 		WebDAVCache WebDAVCacheConfig
 	}
@@ -155,6 +156,15 @@ type Cluster struct {
 			ClientID                string
 			ClientSecret            string
 			AlternateEmailAddresses bool
+		}
+		OpenIDConnect struct {
+			Enable             bool
+			Issuer             string
+			ClientID           string
+			ClientSecret       string
+			EmailClaim         string
+			EmailVerifiedClaim string
+			UsernameClaim      string
 		}
 		PAM struct {
 			Enable             bool

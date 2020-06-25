@@ -128,7 +128,7 @@ class FuseMagicTest(MountTestBase):
         super(FuseMagicTest, self).setUp(api=api)
 
         self.test_project = run_test_server.fixture('groups')['aproject']['uuid']
-        self.non_project_group = run_test_server.fixture('groups')['public']['uuid']
+        self.non_project_group = run_test_server.fixture('groups')['public_role']['uuid']
         self.collection_in_test_project = run_test_server.fixture('collections')['foo_collection_in_aproject']['name']
 
         cw = arvados.CollectionWriter()

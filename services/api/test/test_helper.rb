@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
+require 'update_permissions'
+
 ENV["RAILS_ENV"] = "test"
 unless ENV["NO_COVERAGE_TEST"]
   begin
@@ -207,4 +209,5 @@ class ActionDispatch::IntegrationTest
 end
 
 # Ensure permissions are computed from the test fixtures.
-User.invalidate_permissions_cache
+refresh_permissions
+refresh_trashed

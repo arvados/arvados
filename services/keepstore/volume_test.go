@@ -178,13 +178,20 @@ func (v *MockVolume) Put(ctx context.Context, loc string, block []byte) error {
 }
 
 func (v *MockVolume) Touch(loc string) error {
+	return v.TouchWithDate(loc, time.Now())
+}
+
+func (v *MockVolume) TouchWithDate(loc string, t time.Time) error {
 	v.gotCall("Touch")
 	<-v.Gate
 	if v.volume.ReadOnly {
 		return MethodDisabledError
 	}
+	if _, exists := v.Store[loc]; !exists {
+		return os.ErrNotExist
+	}
 	if v.Touchable {
-		v.Timestamps[loc] = time.Now()
+		v.Timestamps[loc] = t
 		return nil
 	}
 	return errors.New("Touch failed")

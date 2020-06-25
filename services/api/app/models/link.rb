@@ -11,12 +11,13 @@ class Link < ArvadosModel
   # already know how to properly treat them.
   attribute :properties, :jsonbHash, default: {}
 
-  before_create :permission_to_attach_to_objects
-  before_update :permission_to_attach_to_objects
-  after_update :maybe_invalidate_permissions_cache
-  after_create :maybe_invalidate_permissions_cache
-  after_destroy :maybe_invalidate_permissions_cache
   validate :name_links_are_obsolete
+  validate :permission_to_attach_to_objects
+  before_update :restrict_alter_permissions
+  after_update :call_update_permissions
+  after_create :call_update_permissions
+  before_destroy :clear_permissions
+  after_destroy :check_permissions
 
   api_accessible :user, extend: :common do |t|
     t.add :tail_uuid
@@ -49,13 +50,37 @@ class Link < ArvadosModel
     # All users can write links that don't affect permissions
     return true if self.link_class != 'permission'
 
+    if PERM_LEVEL[self.name].nil?
+      errors.add(:name, "is invalid permission, must be one of 'can_read', 'can_write', 'can_manage', 'can_login'")
+      return false
+    end
+
+    rsc_class = ArvadosModel::resource_class_for_uuid tail_uuid
+    if rsc_class == Group
+      tail_obj = Group.find_by_uuid(tail_uuid)
+      if tail_obj.nil?
+        errors.add(:tail_uuid, "does not exist")
+        return false
+      end
+      if tail_obj.group_class != "role"
+        errors.add(:tail_uuid, "must be a user or role, was group with group_class #{tail_obj.group_class}")
+        return false
+      end
+    elsif rsc_class != User
+      errors.add(:tail_uuid, "must be a user or role")
+      return false
+    end
+
     # Administrators can grant permissions
     return true if current_user.is_admin
 
     head_obj = ArvadosModel.find_by_uuid(head_uuid)
 
     # No permission links can be pointed to past collection versions
-    return false if head_obj.is_a?(Collection) && head_obj.current_version_uuid != head_uuid
+    if head_obj.is_a?(Collection) && head_obj.current_version_uuid != head_uuid
+      errors.add(:head_uuid, "cannot point to a past version of a collection")
+      return false
+    end
 
     # All users can grant permissions on objects they own or can manage
     return true if current_user.can?(manage: head_obj)
@@ -64,15 +89,38 @@ class Link < ArvadosModel
     false
   end
 
-  def maybe_invalidate_permissions_cache
+  def restrict_alter_permissions
+    return true if self.link_class != 'permission' && self.link_class_was != 'permission'
+
+    return true if current_user.andand.uuid == system_user.uuid
+
+    if link_class_changed? || tail_uuid_changed? || head_uuid_changed?
+      raise "Can only alter permission link level"
+    end
+  end
+
+  PERM_LEVEL = {
+    'can_read' => 1,
+    'can_login' => 1,
+    'can_write' => 2,
+    'can_manage' => 3,
+  }
+
+  def call_update_permissions
     if self.link_class == 'permission'
-      # Clearing the entire permissions cache can generate many
-      # unnecessary queries if many active users are not affected by
-      # this change. In such cases it would be better to search cached
-      # permissions for head_uuid and tail_uuid, and invalidate the
-      # cache for only those users. (This would require a browseable
-      # cache.)
-      User.invalidate_permissions_cache
+      update_permissions tail_uuid, head_uuid, PERM_LEVEL[name], self.uuid
+    end
+  end
+
+  def clear_permissions
+    if self.link_class == 'permission'
+      update_permissions tail_uuid, head_uuid, REVOKE_PERM, self.uuid
+    end
+  end
+
+  def check_permissions
+    if self.link_class == 'permission'
+      check_permissions_against_full_refresh
     end
   end
 

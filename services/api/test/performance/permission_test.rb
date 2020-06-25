@@ -24,7 +24,7 @@ class PermissionPerfTest < ActionDispatch::IntegrationTest
     act_as_system_user do
       puts("Time spent creating records:", Benchmark.measure do
              ActiveRecord::Base.transaction do
-               root = Group.create!(owner_uuid: users(:permission_perftest).uuid)
+               root = Group.create!(owner_uuid: users(:permission_perftest).uuid, group_class: "project")
                n += 1
                a = create_eight root.uuid
                n += 8
@@ -40,7 +40,7 @@ class PermissionPerfTest < ActionDispatch::IntegrationTest
                    end
                  end
                end
-               User.invalidate_permissions_cache
+               refresh_permissions
              end
            end)
     end

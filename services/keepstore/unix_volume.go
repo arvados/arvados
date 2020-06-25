@@ -699,10 +699,20 @@ func (v *UnixVolume) EmptyTrash() {
 	err := filepath.Walk(v.Root, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			v.logger.WithError(err).Errorf("EmptyTrash: filepath.Walk(%q) failed", path)
+			// Don't give up -- keep walking other
+			// files/dirs
 			return nil
+		} else if !info.Mode().IsDir() {
+			todo <- dirent{path, info}
+			return nil
+		} else if path == v.Root || blockDirRe.MatchString(info.Name()) {
+			// Descend into a directory that we might have
+			// put trash in.
+			return nil
+		} else {
+			// Don't descend into other dirs.
+			return filepath.SkipDir
 		}
-		todo <- dirent{path, info}
-		return nil
 	})
 	close(todo)
 	wg.Wait()

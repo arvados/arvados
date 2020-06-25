@@ -132,7 +132,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     show_object_using('active', 'groups', 'aproject', 'A Project')
     click_on "Sharing"
     click_on "Share with groups"
-    good_uuid = api_fixture("groups")["private"]["uuid"]
+    good_uuid = api_fixture("groups")["future_project_viewing_group"]["uuid"]
     assert(page.has_selector?(".selectable[data-object-uuid=\"#{good_uuid}\"]"),
            "'share with groups' listing missing owned user group")
     bad_uuid = api_fixture("groups")["asubproject"]["uuid"]

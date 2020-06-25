@@ -5,6 +5,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -30,7 +31,7 @@ func countCollections(c *arvados.Client, params arvados.ResourceListParams) (int
 //
 // If pageSize > 0 it is used as the maximum page size in each API
 // call; otherwise the maximum allowed page size is requested.
-func EachCollection(c *arvados.Client, pageSize int, f func(arvados.Collection) error, progress func(done, total int)) error {
+func EachCollection(ctx context.Context, c *arvados.Client, pageSize int, f func(arvados.Collection) error, progress func(done, total int)) error {
 	if progress == nil {
 		progress = func(_, _ int) {}
 	}
@@ -75,7 +76,7 @@ func EachCollection(c *arvados.Client, pageSize int, f func(arvados.Collection) 
 	for {
 		progress(callCount, expectCount)
 		var page arvados.CollectionList
-		err := c.RequestAndDecode(&page, "GET", "arvados/v1/collections", nil, params)
+		err := c.RequestAndDecodeContext(ctx, &page, "GET", "arvados/v1/collections", nil, params)
 		if err != nil {
 			return err
 		}
