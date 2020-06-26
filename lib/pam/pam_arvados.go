@@ -128,7 +128,11 @@ func authenticate(logger *logrus.Logger, username, token string, argv []string) 
 		return err
 	}
 	if len(vms.Items) == 0 {
-		return fmt.Errorf("no results for hostname %q", hostname)
+		// It's possible there is no VM entry for the
+		// configured hostname, but typically this just means
+		// the user does not have permission to see (let alone
+		// log in to) this VM.
+		return errors.New("permission denied")
 	} else if len(vms.Items) > 1 {
 		return fmt.Errorf("multiple results for hostname %q", hostname)
 	} else if vms.Items[0].Hostname != hostname {
