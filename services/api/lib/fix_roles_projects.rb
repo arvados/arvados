@@ -22,10 +22,11 @@ def fix_roles_projects
 
           if old_owner != system_user_uuid
             # 2) Ownership of a role becomes a can_manage link
-            Link.create!(link_class: 'permission',
+            Link.new(link_class: 'permission',
                          name: 'can_manage',
                          tail_uuid: old_owner,
-                         head_uuid: g.uuid)
+                         head_uuid: g.uuid).
+              save!(validate: false)
           end
         end
 
@@ -39,20 +40,22 @@ def fix_roles_projects
           # 3) If a role owns anything, give it to system user and it
           # becomes a can_manage link
           klass.joins("join groups on groups.uuid=#{klass.table_name}.owner_uuid and groups.group_class='role'").each do |owned|
-            Link.create!(link_class: 'permission',
-                         name: 'can_manage',
-                         tail_uuid: owned.owner_uuid,
-                         head_uuid: owned.uuid)
+            Link.new(link_class: 'permission',
+                     name: 'can_manage',
+                     tail_uuid: owned.owner_uuid,
+                     head_uuid: owned.uuid).
+              save!(validate: false)
             owned.owner_uuid = system_user_uuid
             owned.save_with_unique_name!
           end
         end
 
         Group.joins("join groups as g2 on g2.uuid=groups.owner_uuid and g2.group_class='role'").each do |owned|
-          Link.create!(link_class: 'permission',
+          Link.new(link_class: 'permission',
                        name: 'can_manage',
                        tail_uuid: owned.owner_uuid,
-                       head_uuid: owned.uuid)
+                       head_uuid: owned.uuid).
+            save!(validate: false)
           owned.owner_uuid = system_user_uuid
           owned.save_with_unique_name!
         end
