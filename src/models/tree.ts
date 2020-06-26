@@ -16,7 +16,6 @@ export interface TreeNode<T = any> {
     selected: boolean;
     expanded: boolean;
     status: TreeNodeStatus;
-    level?: number;
 }
 
 export enum TreeNodeStatus {
@@ -194,7 +193,6 @@ export const initTreeNode = <T>(data: Pick<TreeNode<T>, 'id' | 'value'> & { pare
     expanded: false,
     status: TreeNodeStatus.INITIAL,
     parent: '',
-    level: 0,
     ...data,
 });
 

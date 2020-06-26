@@ -13,6 +13,7 @@ import { ArvadosTheme } from '~/common/custom-theme';
 import { TreeItem, TreeProps, TreeItemStatus } from './tree';
 import { ListItem, Radio, Checkbox, CircularProgress, ListItemIcon } from '@material-ui/core';
 import { SidePanelRightArrowIcon } from '../icon/icon';
+import { min } from 'lodash';
 
 type CssRules = 'list'
     | 'listItem'
@@ -71,35 +72,35 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     }
 });
 
-// export const RowA = <T, _>(items: TreeItem<T>[], render:any) => (index: number) => {
-//     return <div>
-//         {render(items[index])}
-//     </div>;
-// };
+export interface VirtualTreeItem<T> extends TreeItem<T> {
+    itemCount?: number;
+    level?: number;
+}
 
 // For some reason, on TSX files it isn't accepted just one generic param, so
 // I'm using <T, _> as a workaround.
-export const Row =  <T, _>(itemList: TreeItem<T>[], render: any) => withStyles(styles)(
-    (props: React.PropsWithChildren<ListChildComponentProps> & TreeProps<T> & WithStyles<CssRules>) => {
-        const { index, style } = props;
+export const Row =  <T, _>(itemList: VirtualTreeItem<T>[], render: any, treeProps: TreeProps<T>) => withStyles(styles)(
+    (props: React.PropsWithChildren<ListChildComponentProps> & WithStyles<CssRules>) => {
+        const { index, style, classes } = props;
         const it = itemList[index];
         const level = it.level || 0;
-        const { classes, toggleItemActive, disableRipple, currentItemUuid, useRadioButtons } = props;
+        const { toggleItemActive, disableRipple, currentItemUuid, useRadioButtons } = treeProps;
         const { listItem, loader, toggableIconContainer, renderContainer } = classes;
-        const { levelIndentation = 20, itemRightPadding = 20 } = props;
+        const { levelIndentation = 20, itemRightPadding = 20 } = treeProps;
 
-        const showSelection = typeof props.showSelection === 'function'
-            ? props.showSelection
-            : () => props.showSelection ? true : false;
+        const showSelection = typeof treeProps.showSelection === 'function'
+            ? treeProps.showSelection
+            : () => treeProps.showSelection ? true : false;
 
-        const handleRowContextMenu = (item: TreeItem<T>) =>
-            (event: React.MouseEvent<HTMLElement>) =>
-                props.onContextMenu(event, item);
+        const handleRowContextMenu = (item: VirtualTreeItem<T>) =>
+            (event: React.MouseEvent<HTMLElement>) => {
+                treeProps.onContextMenu(event, item);
+            };
 
-        const handleToggleItemOpen = (item: TreeItem<T>) =>
+        const handleToggleItemOpen = (item: VirtualTreeItem<T>) =>
             (event: React.MouseEvent<HTMLElement>) => {
                 event.stopPropagation();
-                props.toggleItemOpen(event, item);
+                treeProps.toggleItemOpen(event, item);
             };
 
         const getToggableIconClassNames = (isOpen?: boolean, isActive?: boolean) => {
@@ -120,8 +121,8 @@ export const Row =  <T, _>(itemList: TreeItem<T>[], render: any) => withStyles(s
             return isSidePanelIconNotNeeded(status, itemCount) ? <span /> : <SidePanelRightArrowIcon style={{ fontSize: '14px' }} />;
         };
 
-        const handleCheckboxChange = (item: TreeItem<T>) => {
-            const { toggleItemSelection } = props;
+        const handleCheckboxChange = (item: VirtualTreeItem<T>) => {
+            const { toggleItemSelection } = treeProps;
             return toggleItemSelection
                 ? (event: React.MouseEvent<HTMLElement>) => {
                     event.stopPropagation();
@@ -166,24 +167,30 @@ export const Row =  <T, _>(itemList: TreeItem<T>[], render: any) => withStyles(s
         </div>;
     });
 
-export const VirtualList = <T, _>(height: number, width: number, items: TreeItem<T>[], render: any) =>
+const itemSize = 30;
+
+export const VirtualList = <T, _>(height: number, width: number, items: VirtualTreeItem<T>[], render: any, treeProps: TreeProps<T>) =>
     <FixedSizeList
         height={height}
         itemCount={items.length}
-        itemSize={30}
+        itemSize={itemSize}
         width={width}
     >
-        {Row(items, render)}
+        {Row(items, render, treeProps)}
     </FixedSizeList>;
 
-export const VirtualTree = withStyles(styles)(
+export const VirtualTree = (maxElements: number) => withStyles(styles)(
     class Component<T> extends React.Component<TreeProps<T> & WithStyles<CssRules>, {}> {
         render(): ReactElement<any> {
             const { items, render } = this.props;
 
-            return <div className={this.props.classes.virtualizedList}><AutoSizer>
+            // Virtual list viewport's maximum height
+            const itemsQty = items && items.length || 0;
+            const viewportHeight = min([itemsQty, maxElements])! * itemSize;
+
+            return <div style={{height: viewportHeight}}><AutoSizer>
                 {({ height, width }) => {
-                    return VirtualList(height, width, items || [], render);
+                    return VirtualList(height, width, items || [], render, this.props);
                 }}
             </AutoSizer></div>;
         }

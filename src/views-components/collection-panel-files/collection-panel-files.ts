@@ -8,7 +8,8 @@ import {
     CollectionPanelFilesProps
 } from "~/components/collection-panel-files/collection-panel-files";
 import { RootState } from "~/store/store";
-import { TreeItem, TreeItemStatus } from "~/components/tree/tree";
+import { TreeItemStatus } from "~/components/tree/tree";
+import { VirtualTreeItem as TreeItem } from "~/components/tree/virtual-tree";
 import {
     CollectionPanelDirectory,
     CollectionPanelFile,
@@ -75,10 +76,9 @@ const mapDispatchToProps = (dispatch: Dispatch): Pick<CollectionPanelFilesProps,
     },
 });
 
-
 export const CollectionPanelFiles = connect(memoizedMapStateToProps(), mapDispatchToProps)(Component);
 
-export const collectionItemToList = (level: number) => (tree: Tree<CollectionPanelDirectory | CollectionPanelFile>) =>
+const collectionItemToList = (level: number) => (tree: Tree<CollectionPanelDirectory | CollectionPanelFile>) =>
     (id: string): TreeItem<FileTreeData>[] => {
         const node: TreeNode<CollectionPanelDirectory | CollectionPanelFile> = getNode(id)(tree) || initTreeNode({
             id: '',
@@ -107,38 +107,12 @@ export const collectionItemToList = (level: number) => (tree: Tree<CollectionPan
             level,
         };
 
-        const treeItemChilds = [].concat.apply([], node.children.map(collectionItemToList(level+1)(tree)));
+        const treeItemChilds = treeItem.open
+            ? [].concat.apply([], node.children.map(collectionItemToList(level+1)(tree)))
+            : [];
 
         return [
             treeItem,
             ...treeItemChilds,
         ];
-    };
-
-const collectionItemToTreeItem = (tree: Tree<CollectionPanelDirectory | CollectionPanelFile>) =>
-    (id: string): TreeItem<FileTreeData> => {
-        const node: TreeNode<CollectionPanelDirectory | CollectionPanelFile> = getNode(id)(tree) || initTreeNode({
-            id: '',
-            parent: '',
-            value: {
-                ...createCollectionDirectory({ name: 'Invalid file' }),
-                selected: false,
-                collapsed: true
-            }
-        });
-        return {
-            active: false,
-            data: {
-                name: node.value.name,
-                size: node.value.type === CollectionFileType.FILE ? node.value.size : undefined,
-                type: node.value.type,
-                url: node.value.url,
-            },
-            id: node.id,
-            items: getNodeChildrenIds(node.id)(tree)
-                .map(collectionItemToTreeItem(tree)),
-            open: node.value.type === CollectionFileType.DIRECTORY ? !node.value.collapsed : false,
-            selected: node.value.selected,
-            status: TreeItemStatus.LOADED
-        };
     };

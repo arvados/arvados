@@ -31,25 +31,15 @@ export const COLLECTION_PANEL_LOAD_FILES_THRESHOLD = 40000;
 
 export const loadCollectionFiles = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        let step = Date.now();
         dispatch(progressIndicatorActions.START_WORKING(COLLECTION_PANEL_LOAD_FILES));
         const files = await services.collectionService.files(uuid);
-        console.log('Get files: ', (Date.now()-step)/1000);
 
         // Given the array of directories and files, create the appropriate tree nodes,
         // sort them, and add the complete url to each.
-        step = Date.now();
         const tree = createCollectionFilesTree(files);
-        console.log('Create tree: ', (Date.now()-step)/1000);
-        step = Date.now();
         const sorted = sortFilesTree(tree);
-        console.log('Sort tree: ', (Date.now()-step)/1000);
-        step = Date.now();
         const mapped = mapTreeValues(services.collectionService.extendFileURL)(sorted);
-        console.log('Add URL: ', (Date.now()-step)/1000);
-        step = Date.now();
         dispatch(collectionPanelFilesAction.SET_COLLECTION_FILES(mapped));
-        console.log('Dispatch: ', (Date.now()-step)/1000);
         dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PANEL_LOAD_FILES));
     };
 
