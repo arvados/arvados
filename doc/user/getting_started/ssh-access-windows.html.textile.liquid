@@ -9,13 +9,13 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-This document is for accessing an Arvados VM using SSH keys in Windows environments. If you would like to use to access VM through your browser, please visit the "Accessing an Arvados VM with Webshell":vm-login-with-webshell.html page. If you are using a Unix environment (Linux, OS X, Cygwin), please visit the "Accessing an Arvados VM with SSH - Unix Environments":ssh-access-unix.html page.
+This document is for accessing an Arvados VM using SSH keys in Windows environments using PuTTY.  If you would like to use to access VM through your browser, please visit the "Accessing an Arvados VM with Webshell":vm-login-with-webshell.html page.  If you are using a Unix environment (Linux, OS X, Cygwin, or Windows Subsystem for Linux), please visit the "Accessing an Arvados VM with SSH - Unix Environments":ssh-access-unix.html page.
 
 {% include 'ssh_intro' %}
 
 h1(#gettingkey). Getting your SSH key
 
-(Note: if you are using the SSH client that comes with "Cygwin":http://cygwin.com, please use instructions found in the "Accessing an Arvados VM with SSH - Unix Environments":ssh-access-unix.html page.)
+(Note: If you are using the SSH client that comes with "Cygwin":http://cygwin.com or Windows Subsystem for Linux (WSL) please use instructions found in the "Accessing an Arvados VM with SSH - Unix Environments":ssh-access-unix.html page.)
 
 We will be using PuTTY to connect to Arvados. "PuTTY":http://www.chiark.greenend.org.uk/~sgtatham/putty/ is a free (MIT-licensed) Win32 Telnet and SSH client. PuTTY includes all the tools a Windows user needs to create private keys and make SSH connections to your virtual machines in the Arvados Cloud.
 
@@ -56,6 +56,16 @@ Pageant is a PuTTY utility that manages your private keys so is not necessary to
 {% include 'ssh_addkey' %}
 
 h3. Initial configuration
+
+h4. Connecting directly
+
+# Open PuTTY from the Start Menu.
+# On the Session screen set the Host Name (or IP address) to “shell.ClusterID.example.com”, which is the hostname listed in the _Virtual Machines_ page.
+# On the Session screen set the Port to “22”.
+# On the Connection %(rarr)&rarr;% Data screen set the Auto-login username to the username listed in the *Login name* column on the Arvados Workbench Virtual machines_ page.
+# Return to the Session screen. In the Saved Sessions box, enter a name for this configuration and click Save.
+
+h4. Connecting through switchyard
 
 # Open PuTTY from the Start Menu.
 # On the Session screen set the Host Name (or IP address) to “shell”, which is the hostname listed in the _Virtual Machines_ page.

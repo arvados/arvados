@@ -49,7 +49,7 @@ ssh-rsa AAAAB3NzaC1ycEDoNotUseExampleKeyDoNotUseExampleKeyDoNotUseExampleKeyDoNo
 
 Now you can set up @ssh-agent@ (next) or proceed with "adding your key to the Arvados Workbench.":#workbench
 
-h3. Set up ssh-agent (recommended)
+h3. Set up ssh-agent (optional)
 
 If you find you are entering your passphrase frequently, you can use @ssh-agent@ to manage your credentials.  Use @ssh-add -l@ to test if you already have ssh-agent running:
 
@@ -80,11 +80,21 @@ When everything is set up, @ssh-add -l@ should yield output that looks something
 
 {% include 'ssh_addkey' %}
 
-h3. Connecting to the virtual machine
+h3. Connecting directly
 
-Use the following command to connect to the _shell_ VM instance as _you_.  Replace *<code>you@shell</code>* at the end of the following command with your *login* and *hostname* from Workbench:
+If the VM is available on the public Internet (or you are on the same private network as the VM) you can connect directly with @ssh@.  You can probably copy-and-paste the text from *Command line* column directly into a terminal.
 
-notextile. <pre><code>$ <span class="userinput">ssh -o "ProxyCommand ssh -p2222 turnout@switchyard.{{ site.arvados_api_host }} -x -a <b>shell</b>" -x <b>you@shell</b></span></code></pre>
+Use the following example command to connect as _you_ to the _shell.ClusterID.example.com_ VM instance.  Replace *<code>you@shell.ClusterID.example.com</code>* at the end of the following command with your *login* and *hostname* from Workbench.
+
+notextile. <pre><code>$ <span class="userinput">ssh <b>you@shell.ClusterID.example.com</b></span></code></pre>
+
+h3. Connecting through switchyard
+
+Some Arvados installations use "switchyard" to isolate shell VMs from the public Internet.
+
+Use the following example command to connect to the _shell_ VM instance as _you_.  Replace *<code>you@shell</code>* at the end of the following command with your *login* and *hostname* from Workbench:
+
+notextile. <pre><code>$ <span class="userinput">ssh -o "ProxyCommand ssh -p2222 turnout@switchyard.ClusterID.example.com -x -a <b>shell</b>" -x <b>you@shell</b></span></code></pre>
 
 This command does several things at once. You usually cannot log in directly to virtual machines over the public Internet.  Instead, you log into a "switchyard" server and then tell the switchyard which virtual machine you want to connect to.
 
@@ -99,7 +109,7 @@ This command does several things at once. You usually cannot log in directly to 
 
 You should now be able to log into the Arvados VM and "check your environment.":check-environment.html
 
-h3. Configuration (recommended)
+h4. Configuration (recommended)
 
 The command line above is cumbersome, but you can configure SSH to remember many of these settings.  Add this text to the file @.ssh/config@ in your home directory (create a new file if @.ssh/config@ doesn't exist):
 
