@@ -28,6 +28,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
@@ -48,6 +50,7 @@ var (
 	ServiceURL    = flag.String("url", "", "specify scheme://host of a single keep service to exercise (instead of using all advertised services like normal clients)")
 	ServiceUUID   = flag.String("uuid", "", "specify UUID of a single advertised keep service to exercise")
 	getVersion    = flag.Bool("version", false, "Print version information and exit.")
+	RunTime       = flag.Duration("run-time", 0, "time to run (e.g. 60s), or 0 to run indefinitely (default)")
 )
 
 func main() {
@@ -59,15 +62,15 @@ func main() {
 		os.Exit(0)
 	}
 
-	log.Printf("keep-exercise %s started", version)
+	stderr := log.New(os.Stderr, "", log.LstdFlags)
 
 	arv, err := arvadosclient.MakeArvadosClient()
 	if err != nil {
-		log.Fatal(err)
+		stderr.Fatal(err)
 	}
 	kc, err := keepclient.MakeKeepClient(arv)
 	if err != nil {
-		log.Fatal(err)
+		stderr.Fatal(err)
 	}
 	kc.Want_replicas = *Replicas
 
@@ -78,18 +81,18 @@ func main() {
 		Transport: &transport,
 	}
 
-	overrideServices(kc)
+	overrideServices(kc, stderr)
 
 	nextLocator := make(chan string, *ReadThreads+*WriteThreads)
 
-	go countBeans(nextLocator)
+	go countBeans(nextLocator, stderr)
 	for i := 0; i < *WriteThreads; i++ {
 		nextBuf := make(chan []byte, 1)
-		go makeBufs(nextBuf, i)
-		go doWrites(kc, nextBuf, nextLocator)
+		go makeBufs(nextBuf, i, stderr)
+		go doWrites(kc, nextBuf, nextLocator, stderr)
 	}
 	for i := 0; i < *ReadThreads; i++ {
-		go doReads(kc, nextLocator)
+		go doReads(kc, nextLocator, stderr)
 	}
 	<-make(chan struct{})
 }
@@ -101,25 +104,37 @@ var bytesOutChan = make(chan uint64)
 // Send struct{}{} to errorsChan when an error happens.
 var errorsChan = make(chan struct{})
 
-func countBeans(nextLocator chan string) {
+func countBeans(nextLocator chan string, stderr *log.Logger) {
 	t0 := time.Now()
 	var tickChan <-chan time.Time
+	var endChan <-chan time.Time
+	c := make(chan os.Signal)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	if *StatsInterval > 0 {
 		tickChan = time.NewTicker(*StatsInterval).C
+	}
+	if *RunTime > 0 {
+		endChan = time.NewTicker(*RunTime).C
 	}
 	var bytesIn uint64
 	var bytesOut uint64
 	var errors uint64
+	var rateIn, rateOut float64
+	var maxRateIn, maxRateOut float64
+	var abort, printCsv bool
+	csv := log.New(os.Stdout, "", 0)
+	csv.Println("Timestamp,Elapsed,Read (bytes),Avg Read Speed (MiB/s),Peak Read Speed (MiB/s),Written (bytes),Avg Write Speed (MiB/s),Peak Write Speed (MiB/s),Errors,ReadThreads,WriteThreads,VaryRequest,VaryThread,BlockSize,Replicas,StatsInterval,ServiceURL,ServiceUUID,RunTime")
 	for {
 		select {
 		case <-tickChan:
-			elapsed := time.Since(t0)
-			log.Printf("%v elapsed: read %v bytes (%.1f MiB/s), wrote %v bytes (%.1f MiB/s), errors %d",
-				elapsed,
-				bytesIn, (float64(bytesIn) / elapsed.Seconds() / 1048576),
-				bytesOut, (float64(bytesOut) / elapsed.Seconds() / 1048576),
-				errors,
-			)
+			printCsv = true
+		case <-endChan:
+			printCsv = true
+			abort = true
+		case <-c:
+			printCsv = true
+			abort = true
+			fmt.Print("\r") // Suppress the ^C print
 		case i := <-bytesInChan:
 			bytesIn += i
 		case o := <-bytesOutChan:
@@ -127,10 +142,42 @@ func countBeans(nextLocator chan string) {
 		case <-errorsChan:
 			errors++
 		}
+		if printCsv {
+			elapsed := time.Since(t0)
+			rateIn = float64(bytesIn) / elapsed.Seconds() / 1048576
+			if rateIn > maxRateIn {
+				maxRateIn = rateIn
+			}
+			rateOut = float64(bytesOut) / elapsed.Seconds() / 1048576
+			if rateOut > maxRateOut {
+				maxRateOut = rateOut
+			}
+			csv.Printf("%v,%v,%v,%.1f,%.1f,%v,%.1f,%.1f,%d,%d,%d,%t,%t,%d,%d,%s,%s,%s,%s",
+				time.Now().Format("2006-01-02 15:04:05"),
+				elapsed,
+				bytesIn, rateIn, maxRateIn,
+				bytesOut, rateOut, maxRateOut,
+				errors,
+				*ReadThreads,
+				*WriteThreads,
+				*VaryRequest,
+				*VaryThread,
+				*BlockSize,
+				*Replicas,
+				*StatsInterval,
+				*ServiceURL,
+				*ServiceUUID,
+				*RunTime,
+			)
+			printCsv = false
+		}
+		if abort {
+			os.Exit(0)
+		}
 	}
 }
 
-func makeBufs(nextBuf chan<- []byte, threadID int) {
+func makeBufs(nextBuf chan<- []byte, threadID int, stderr *log.Logger) {
 	buf := make([]byte, *BlockSize)
 	if *VaryThread {
 		binary.PutVarint(buf, int64(threadID))
@@ -143,7 +190,7 @@ func makeBufs(nextBuf chan<- []byte, threadID int) {
 		if *VaryRequest {
 			rnd := make([]byte, randSize)
 			if _, err := io.ReadFull(rand.Reader, rnd); err != nil {
-				log.Fatal(err)
+				stderr.Fatal(err)
 			}
 			buf = append(rnd, buf[randSize:]...)
 		}
@@ -151,11 +198,11 @@ func makeBufs(nextBuf chan<- []byte, threadID int) {
 	}
 }
 
-func doWrites(kc *keepclient.KeepClient, nextBuf <-chan []byte, nextLocator chan<- string) {
+func doWrites(kc *keepclient.KeepClient, nextBuf <-chan []byte, nextLocator chan<- string, stderr *log.Logger) {
 	for buf := range nextBuf {
 		locator, _, err := kc.PutB(buf)
 		if err != nil {
-			log.Print(err)
+			stderr.Print(err)
 			errorsChan <- struct{}{}
 			continue
 		}
@@ -168,18 +215,18 @@ func doWrites(kc *keepclient.KeepClient, nextBuf <-chan []byte, nextLocator chan
 	}
 }
 
-func doReads(kc *keepclient.KeepClient, nextLocator <-chan string) {
+func doReads(kc *keepclient.KeepClient, nextLocator <-chan string, stderr *log.Logger) {
 	for locator := range nextLocator {
 		rdr, size, url, err := kc.Get(locator)
 		if err != nil {
-			log.Print(err)
+			stderr.Print(err)
 			errorsChan <- struct{}{}
 			continue
 		}
 		n, err := io.Copy(ioutil.Discard, rdr)
 		rdr.Close()
 		if n != size || err != nil {
-			log.Printf("Got %d bytes (expected %d) from %s: %v", n, size, url, err)
+			stderr.Printf("Got %d bytes (expected %d) from %s: %v", n, size, url, err)
 			errorsChan <- struct{}{}
 			continue
 			// Note we don't count the bytes received in
@@ -190,7 +237,7 @@ func doReads(kc *keepclient.KeepClient, nextLocator <-chan string) {
 	}
 }
 
-func overrideServices(kc *keepclient.KeepClient) {
+func overrideServices(kc *keepclient.KeepClient, stderr *log.Logger) {
 	roots := make(map[string]string)
 	if *ServiceURL != "" {
 		roots["zzzzz-bi6l4-000000000000000"] = *ServiceURL
@@ -202,7 +249,7 @@ func overrideServices(kc *keepclient.KeepClient) {
 			}
 		}
 		if len(roots) == 0 {
-			log.Fatalf("Service %q was not in list advertised by API %+q", *ServiceUUID, kc.GatewayRoots())
+			stderr.Fatalf("Service %q was not in list advertised by API %+q", *ServiceUUID, kc.GatewayRoots())
 		}
 	} else {
 		return

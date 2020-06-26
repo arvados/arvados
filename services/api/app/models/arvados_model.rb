@@ -574,6 +574,9 @@ class ArvadosModel < ApplicationRecord
           logger.warn "User #{current_user.uuid} tried to set ownership of #{self.class.to_s} #{self.uuid} but does not have permission to write #{which} owner_uuid #{check_uuid}"
           errors.add :owner_uuid, "cannot be set or changed without write permission on #{which} owner"
           raise PermissionDeniedError
+        elsif rsc_class == Group && Group.find_by_uuid(owner_uuid).group_class != "project"
+          errors.add :owner_uuid, "must be a project"
+          raise PermissionDeniedError
         end
       end
     else
@@ -582,7 +585,7 @@ class ArvadosModel < ApplicationRecord
       # itself.
       if !current_user.can?(write: self.uuid)
         logger.warn "User #{current_user.uuid} tried to modify #{self.class.to_s} #{self.uuid} without write permission"
-        errors.add :uuid, "is not writable"
+        errors.add :uuid, " #{uuid} is not writable by #{current_user.uuid}"
         raise PermissionDeniedError
       end
     end

@@ -206,7 +206,8 @@ class NonTransactionalGroupsTest < ActionDispatch::IntegrationTest
     post "/arvados/v1/groups",
       params: {
         group: {
-          name: name
+          name: name,
+          group_class: "project"
         },
         async: true
       },

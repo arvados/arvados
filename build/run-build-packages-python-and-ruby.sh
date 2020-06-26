@@ -21,6 +21,10 @@ Options:
 --upload
     If the build and test steps are successful, upload the python
     packages to pypi and the gems to rubygems (default: false)
+--ruby <true|false>
+    Build ruby gems (default: true)
+--python <true|false>
+    Build python packages (default: true)
 
 WORKSPACE=path         Path to the Arvados source tree to build packages from
 
@@ -65,10 +69,12 @@ python_wrapper() {
 
 TARGET=
 UPLOAD=0
+RUBY=1
+PYTHON=1
 DEBUG=${ARVADOS_DEBUG:-0}
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
-    help,debug,upload,target: \
+    help,debug,ruby:,python:,upload,target: \
     -- "" "$@")
 if [ $? -ne 0 ]; then
     exit 1
@@ -84,6 +90,22 @@ while [ $# -gt 0 ]; do
             ;;
         --target)
             TARGET="$2"; shift
+            ;;
+        --ruby)
+            RUBY="$2"; shift
+            if [ "$RUBY" != "true" ] && [ "$RUBY" != "1" ]; then
+              RUBY=0
+            else
+              RUBY=1
+            fi
+            ;;
+        --python)
+            PYTHON="$2"; shift
+            if [ "$PYTHON" != "true" ] && [ "$PYTHON" != "1" ]; then
+              PYTHON=0
+            else
+              PYTHON=1
+            fi
             ;;
         --upload)
             UPLOAD=1
@@ -129,6 +151,11 @@ fi
 debug_echo "$0 is running from $RUN_BUILD_PACKAGES_PATH"
 debug_echo "Workspace is $WORKSPACE"
 
+if [ $RUBY -eq 0 ] && [ $PYTHON -eq 0 ]; then
+  echo "Nothing to do!"
+  exit 0
+fi
+
 if [[ -f /etc/profile.d/rvm.sh ]]; then
     source /etc/profile.d/rvm.sh
     GEM="rvm-exec default gem"
@@ -150,60 +177,69 @@ umask 0022
 
 debug_echo "umask is" `umask`
 
-gem_wrapper arvados "$WORKSPACE/sdk/ruby"
-gem_wrapper arvados-cli "$WORKSPACE/sdk/cli"
-gem_wrapper arvados-login-sync "$WORKSPACE/services/login-sync"
-
 GEM_BUILD_FAILURES=0
-if [ ${#failures[@]} -ne 0 ]; then
-  GEM_BUILD_FAILURES=${#failures[@]}
+if [ $RUBY -eq 1 ]; then
+  debug_echo "Building Ruby gems"
+  gem_wrapper arvados "$WORKSPACE/sdk/ruby"
+  gem_wrapper arvados-cli "$WORKSPACE/sdk/cli"
+  gem_wrapper arvados-login-sync "$WORKSPACE/services/login-sync"
+  if [ ${#failures[@]} -ne 0 ]; then
+    GEM_BUILD_FAILURES=${#failures[@]}
+  fi
 fi
-
-python_wrapper arvados-python-client "$WORKSPACE/sdk/python"
-python_wrapper arvados-pam "$WORKSPACE/sdk/pam"
-python_wrapper arvados-cwl-runner "$WORKSPACE/sdk/cwl"
-python_wrapper arvados_fuse "$WORKSPACE/services/fuse"
-python_wrapper arvados-node-manager "$WORKSPACE/services/nodemanager"
 
 PYTHON_BUILD_FAILURES=0
-if [ $((${#failures[@]} - $GEM_BUILD_FAILURES)) -ne 0 ]; then
-  PYTHON_BUILD_FAILURES=${#failures[@]} - $GEM_BUILD_FAILURES
+if [ $PYTHON -eq 1 ]; then
+  debug_echo "Building Python packages"
+  python_wrapper arvados-python-client "$WORKSPACE/sdk/python"
+  python_wrapper arvados-pam "$WORKSPACE/sdk/pam"
+  python_wrapper arvados-cwl-runner "$WORKSPACE/sdk/cwl"
+  python_wrapper arvados_fuse "$WORKSPACE/services/fuse"
+  python_wrapper arvados-node-manager "$WORKSPACE/services/nodemanager"
+
+  if [ $((${#failures[@]} - $GEM_BUILD_FAILURES)) -ne 0 ]; then
+    PYTHON_BUILD_FAILURES=$((${#failures[@]} - $GEM_BUILD_FAILURES))
+  fi
 fi
 
-if [[ "$UPLOAD" != 0 ]]; then
+if [ $UPLOAD -ne 0 ]; then
+  echo "Uploading"
 
-  if [[ $DEBUG > 0 ]]; then
+  if [ $DEBUG > 0 ]; then
     EXTRA_UPLOAD_FLAGS=" --verbose"
   else
     EXTRA_UPLOAD_FLAGS=""
   fi
 
-  if [[ ! -e "$WORKSPACE/packages" ]]; then
+  if [ ! -e "$WORKSPACE/packages" ]; then
     mkdir -p "$WORKSPACE/packages"
   fi
 
-  title "Start upload python packages"
-  timer_reset
+  if [ $PYTHON -eq 1 ]; then
+    title "Start upload python packages"
+    timer_reset
 
-  if [ "$PYTHON_BUILD_FAILURES" -eq 0 ]; then
-    /usr/local/arvados-dev/jenkins/run_upload_packages.py $EXTRA_UPLOAD_FLAGS --workspace $WORKSPACE python
-  else
-    echo "Skipping python packages upload, there were errors building the packages"
+    if [ $PYTHON_BUILD_FAILURES -eq 0 ]; then
+      /usr/local/arvados-dev/jenkins/run_upload_packages.py $EXTRA_UPLOAD_FLAGS --workspace $WORKSPACE python
+    else
+      echo "Skipping python packages upload, there were errors building the packages"
+    fi
+    checkexit $? "upload python packages"
+    title "End of upload python packages (`timer`)"
   fi
-  checkexit $? "upload python packages"
-  title "End of upload python packages (`timer`)"
 
-  title "Start upload ruby gems"
-  timer_reset
+  if [ $RUBY -eq 1 ]; then
+    title "Start upload ruby gems"
+    timer_reset
 
-  if [ "$GEM_BUILD_FAILURES" -eq 0 ]; then
-    /usr/local/arvados-dev/jenkins/run_upload_packages.py $EXTRA_UPLOAD_FLAGS --workspace $WORKSPACE gems
-  else
-    echo "Skipping ruby gem upload, there were errors building the packages"
+    if [ $GEM_BUILD_FAILURES -eq 0 ]; then
+      /usr/local/arvados-dev/jenkins/run_upload_packages.py $EXTRA_UPLOAD_FLAGS --workspace $WORKSPACE gems
+    else
+      echo "Skipping ruby gem upload, there were errors building the packages"
+    fi
+    checkexit $? "upload ruby gems"
+    title "End of upload ruby gems (`timer`)"
   fi
-  checkexit $? "upload ruby gems"
-  title "End of upload ruby gems (`timer`)"
-
 fi
 
 exit_cleanly

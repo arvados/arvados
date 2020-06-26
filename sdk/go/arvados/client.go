@@ -57,9 +57,16 @@ type Client struct {
 	// HTTP headers to add/override in outgoing requests.
 	SendHeader http.Header
 
+	// Timeout for requests. NewClientFromConfig and
+	// NewClientFromEnv return a Client with a default 5 minute
+	// timeout.  To disable this timeout and rely on each
+	// http.Request's context deadline instead, set Timeout to
+	// zero.
+	Timeout time.Duration
+
 	dd *DiscoveryDocument
 
-	ctx context.Context
+	defaultRequestID string
 }
 
 // The default http.Client used by a Client with Insecure==true and
@@ -67,12 +74,10 @@ type Client struct {
 var InsecureHTTPClient = &http.Client{
 	Transport: &http.Transport{
 		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: true}},
-	Timeout: 5 * time.Minute}
+			InsecureSkipVerify: true}}}
 
 // The default http.Client used by a Client otherwise.
-var DefaultSecureClient = &http.Client{
-	Timeout: 5 * time.Minute}
+var DefaultSecureClient = &http.Client{}
 
 // NewClientFromConfig creates a new Client that uses the endpoints in
 // the given cluster.
@@ -87,6 +92,7 @@ func NewClientFromConfig(cluster *Cluster) (*Client, error) {
 		Scheme:   ctrlURL.Scheme,
 		APIHost:  ctrlURL.Host,
 		Insecure: cluster.TLS.Insecure,
+		Timeout:  5 * time.Minute,
 	}, nil
 }
 
@@ -116,6 +122,7 @@ func NewClientFromEnv() *Client {
 		AuthToken:       os.Getenv("ARVADOS_API_TOKEN"),
 		Insecure:        insecure,
 		KeepServiceURIs: svcs,
+		Timeout:         5 * time.Minute,
 	}
 }
 
@@ -131,11 +138,12 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 	}
 
 	if req.Header.Get("X-Request-Id") == "" {
-		reqid, _ := req.Context().Value(contextKeyRequestID{}).(string)
-		if reqid == "" {
-			reqid, _ = c.context().Value(contextKeyRequestID{}).(string)
-		}
-		if reqid == "" {
+		var reqid string
+		if ctxreqid, _ := req.Context().Value(contextKeyRequestID{}).(string); ctxreqid != "" {
+			reqid = ctxreqid
+		} else if c.defaultRequestID != "" {
+			reqid = c.defaultRequestID
+		} else {
 			reqid = reqIDGen.Next()
 		}
 		if req.Header == nil {
@@ -144,7 +152,36 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 			req.Header.Set("X-Request-Id", reqid)
 		}
 	}
-	return c.httpClient().Do(req)
+	var cancel context.CancelFunc
+	if c.Timeout > 0 {
+		ctx := req.Context()
+		ctx, cancel = context.WithDeadline(ctx, time.Now().Add(c.Timeout))
+		req = req.WithContext(ctx)
+	}
+	resp, err := c.httpClient().Do(req)
+	if err == nil && cancel != nil {
+		// We need to call cancel() eventually, but we can't
+		// use "defer cancel()" because the context has to
+		// stay alive until the caller has finished reading
+		// the response body.
+		resp.Body = cancelOnClose{ReadCloser: resp.Body, cancel: cancel}
+	} else if cancel != nil {
+		cancel()
+	}
+	return resp, err
+}
+
+// cancelOnClose calls a provided CancelFunc when its wrapped
+// ReadCloser's Close() method is called.
+type cancelOnClose struct {
+	io.ReadCloser
+	cancel context.CancelFunc
+}
+
+func (coc cancelOnClose) Close() error {
+	err := coc.ReadCloser.Close()
+	coc.cancel()
+	return err
 }
 
 func isRedirectStatus(code int) bool {
@@ -266,7 +303,7 @@ func anythingToValues(params interface{}) (url.Values, error) {
 //
 // path must not contain a query string.
 func (c *Client) RequestAndDecode(dst interface{}, method, path string, body io.Reader, params interface{}) error {
-	return c.RequestAndDecodeContext(c.context(), dst, method, path, body, params)
+	return c.RequestAndDecodeContext(context.Background(), dst, method, path, body, params)
 }
 
 func (c *Client) RequestAndDecodeContext(ctx context.Context, dst interface{}, method, path string, body io.Reader, params interface{}) error {
@@ -332,15 +369,8 @@ func (c *Client) UpdateBody(rsc resource) io.Reader {
 // header.
 func (c *Client) WithRequestID(reqid string) *Client {
 	cc := *c
-	cc.ctx = ContextWithRequestID(cc.context(), reqid)
+	cc.defaultRequestID = reqid
 	return &cc
-}
-
-func (c *Client) context() context.Context {
-	if c.ctx == nil {
-		return context.Background()
-	}
-	return c.ctx
 }
 
 func (c *Client) httpClient() *http.Client {
