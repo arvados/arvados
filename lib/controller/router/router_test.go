@@ -38,8 +38,8 @@ type RouterSuite struct {
 func (s *RouterSuite) SetUpTest(c *check.C) {
 	s.stub = arvadostest.APIStub{}
 	s.rtr = &router{
-		mux: mux.NewRouter(),
-		fed: &s.stub,
+		mux:     mux.NewRouter(),
+		backend: &s.stub,
 	}
 	s.rtr.addRoutes()
 }
@@ -169,7 +169,7 @@ func (s *RouterIntegrationSuite) SetUpTest(c *check.C) {
 	cluster.TLS.Insecure = true
 	arvadostest.SetServiceURL(&cluster.Services.RailsAPI, "https://"+os.Getenv("ARVADOS_TEST_API_HOST"))
 	url, _ := url.Parse("https://" + os.Getenv("ARVADOS_TEST_API_HOST"))
-	s.rtr = New(rpc.NewConn("zzzzz", url, true, rpc.PassthroughTokenProvider))
+	s.rtr = New(rpc.NewConn("zzzzz", url, true, rpc.PassthroughTokenProvider), nil)
 }
 
 func (s *RouterIntegrationSuite) TearDownSuite(c *check.C) {

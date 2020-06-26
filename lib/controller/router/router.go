@@ -19,144 +19,154 @@ import (
 )
 
 type router struct {
-	mux *mux.Router
-	fed arvados.API
+	mux       *mux.Router
+	backend   arvados.API
+	wrapCalls func(RoutableFunc) RoutableFunc
 }
 
-func New(fed arvados.API) *router {
+// New returns a new router (which implements the http.Handler
+// interface) that serves requests by calling Arvados API methods on
+// the given backend.
+//
+// If wrapCalls is not nil, it is called once for each API method, and
+// the returned method is used in its place. This can be used to
+// install hooks before and after each API call and alter responses;
+// see localdb.WrapCallsInTransaction for an example.
+func New(backend arvados.API, wrapCalls func(RoutableFunc) RoutableFunc) *router {
 	rtr := &router{
-		mux: mux.NewRouter(),
-		fed: fed,
+		mux:       mux.NewRouter(),
+		backend:   backend,
+		wrapCalls: wrapCalls,
 	}
 	rtr.addRoutes()
 	return rtr
 }
 
-type routableFunc func(ctx context.Context, opts interface{}) (interface{}, error)
+type RoutableFunc func(ctx context.Context, opts interface{}) (interface{}, error)
 
 func (rtr *router) addRoutes() {
 	for _, route := range []struct {
 		endpoint    arvados.APIEndpoint
 		defaultOpts func() interface{}
-		exec        routableFunc
+		exec        RoutableFunc
 	}{
 		{
 			arvados.EndpointConfigGet,
 			func() interface{} { return &struct{}{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.fed.ConfigGet(ctx)
+				return rtr.backend.ConfigGet(ctx)
 			},
 		},
 		{
 			arvados.EndpointLogin,
 			func() interface{} { return &arvados.LoginOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.fed.Login(ctx, *opts.(*arvados.LoginOptions))
+				return rtr.backend.Login(ctx, *opts.(*arvados.LoginOptions))
 			},
 		},
 		{
 			arvados.EndpointLogout,
 			func() interface{} { return &arvados.LogoutOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.fed.Logout(ctx, *opts.(*arvados.LogoutOptions))
+				return rtr.backend.Logout(ctx, *opts.(*arvados.LogoutOptions))
 			},
 		},
 		{
 			arvados.EndpointCollectionCreate,
 			func() interface{} { return &arvados.CreateOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.fed.CollectionCreate(ctx, *opts.(*arvados.CreateOptions))
+				return rtr.backend.CollectionCreate(ctx, *opts.(*arvados.CreateOptions))
 			},
 		},
 		{
 			arvados.EndpointCollectionUpdate,
 			func() interface{} { return &arvados.UpdateOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.fed.CollectionUpdate(ctx, *opts.(*arvados.UpdateOptions))
+				return rtr.backend.CollectionUpdate(ctx, *opts.(*arvados.UpdateOptions))
 			},
 		},
 		{
 			arvados.EndpointCollectionGet,
 			func() interface{} { return &arvados.GetOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.fed.CollectionGet(ctx, *opts.(*arvados.GetOptions))
+				return rtr.backend.CollectionGet(ctx, *opts.(*arvados.GetOptions))
 			},
 		},
 		{
 			arvados.EndpointCollectionList,
 			func() interface{} { return &arvados.ListOptions{Limit: -1} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.fed.CollectionList(ctx, *opts.(*arvados.ListOptions))
+				return rtr.backend.CollectionList(ctx, *opts.(*arvados.ListOptions))
 			},
 		},
 		{
 			arvados.EndpointCollectionProvenance,
 			func() interface{} { return &arvados.GetOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.fed.CollectionProvenance(ctx, *opts.(*arvados.GetOptions))
+				return rtr.backend.CollectionProvenance(ctx, *opts.(*arvados.GetOptions))
 			},
 		},
 		{
 			arvados.EndpointCollectionUsedBy,
 			func() interface{} { return &arvados.GetOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.fed.CollectionUsedBy(ctx, *opts.(*arvados.GetOptions))
+				return rtr.backend.CollectionUsedBy(ctx, *opts.(*arvados.GetOptions))
 			},
 		},
 		{
 			arvados.EndpointCollectionDelete,
 			func() interface{} { return &arvados.DeleteOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.fed.CollectionDelete(ctx, *opts.(*arvados.DeleteOptions))
+				return rtr.backend.CollectionDelete(ctx, *opts.(*arvados.DeleteOptions))
 			},
 		},
 		{
 			arvados.EndpointCollectionTrash,
 			func() interface{} { return &arvados.DeleteOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.fed.CollectionTrash(ctx, *opts.(*arvados.DeleteOptions))
+				return rtr.backend.CollectionTrash(ctx, *opts.(*arvados.DeleteOptions))
 			},
 		},
 		{
 			arvados.EndpointCollectionUntrash,
 			func() interface{} { return &arvados.UntrashOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.fed.CollectionUntrash(ctx, *opts.(*arvados.UntrashOptions))
+				return rtr.backend.CollectionUntrash(ctx, *opts.(*arvados.UntrashOptions))
 			},
 		},
 		{
 			arvados.EndpointContainerCreate,
 			func() interface{} { return &arvados.CreateOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.fed.ContainerCreate(ctx, *opts.(*arvados.CreateOptions))
+				return rtr.backend.ContainerCreate(ctx, *opts.(*arvados.CreateOptions))
 			},
 		},
 		{
 			arvados.EndpointContainerUpdate,
 			func() interface{} { return &arvados.UpdateOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.fed.ContainerUpdate(ctx, *opts.(*arvados.UpdateOptions))
+				return rtr.backend.ContainerUpdate(ctx, *opts.(*arvados.UpdateOptions))
 			},
 		},
 		{
 			arvados.EndpointContainerGet,
 			func() interface{} { return &arvados.GetOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.fed.ContainerGet(ctx, *opts.(*arvados.GetOptions))
+				return rtr.backend.ContainerGet(ctx, *opts.(*arvados.GetOptions))
 			},
 		},
 		{
 			arvados.EndpointContainerList,
 			func() interface{} { return &arvados.ListOptions{Limit: -1} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.fed.ContainerList(ctx, *opts.(*arvados.ListOptions))
+				return rtr.backend.ContainerList(ctx, *opts.(*arvados.ListOptions))
 			},
 		},
 		{
 			arvados.EndpointContainerDelete,
 			func() interface{} { return &arvados.DeleteOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.fed.ContainerDelete(ctx, *opts.(*arvados.DeleteOptions))
+				return rtr.backend.ContainerDelete(ctx, *opts.(*arvados.DeleteOptions))
 			},
 		},
 		{
@@ -165,7 +175,7 @@ func (rtr *router) addRoutes() {
 				return &arvados.GetOptions{Select: []string{"uuid", "state", "priority", "auth_uuid", "locked_by_uuid"}}
 			},
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.fed.ContainerLock(ctx, *opts.(*arvados.GetOptions))
+				return rtr.backend.ContainerLock(ctx, *opts.(*arvados.GetOptions))
 			},
 		},
 		{
@@ -174,144 +184,148 @@ func (rtr *router) addRoutes() {
 				return &arvados.GetOptions{Select: []string{"uuid", "state", "priority", "auth_uuid", "locked_by_uuid"}}
 			},
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.fed.ContainerUnlock(ctx, *opts.(*arvados.GetOptions))
+				return rtr.backend.ContainerUnlock(ctx, *opts.(*arvados.GetOptions))
 			},
 		},
 		{
 			arvados.EndpointSpecimenCreate,
 			func() interface{} { return &arvados.CreateOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.fed.SpecimenCreate(ctx, *opts.(*arvados.CreateOptions))
+				return rtr.backend.SpecimenCreate(ctx, *opts.(*arvados.CreateOptions))
 			},
 		},
 		{
 			arvados.EndpointSpecimenUpdate,
 			func() interface{} { return &arvados.UpdateOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.fed.SpecimenUpdate(ctx, *opts.(*arvados.UpdateOptions))
+				return rtr.backend.SpecimenUpdate(ctx, *opts.(*arvados.UpdateOptions))
 			},
 		},
 		{
 			arvados.EndpointSpecimenGet,
 			func() interface{} { return &arvados.GetOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.fed.SpecimenGet(ctx, *opts.(*arvados.GetOptions))
+				return rtr.backend.SpecimenGet(ctx, *opts.(*arvados.GetOptions))
 			},
 		},
 		{
 			arvados.EndpointSpecimenList,
 			func() interface{} { return &arvados.ListOptions{Limit: -1} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.fed.SpecimenList(ctx, *opts.(*arvados.ListOptions))
+				return rtr.backend.SpecimenList(ctx, *opts.(*arvados.ListOptions))
 			},
 		},
 		{
 			arvados.EndpointSpecimenDelete,
 			func() interface{} { return &arvados.DeleteOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.fed.SpecimenDelete(ctx, *opts.(*arvados.DeleteOptions))
+				return rtr.backend.SpecimenDelete(ctx, *opts.(*arvados.DeleteOptions))
 			},
 		},
 		{
 			arvados.EndpointUserCreate,
 			func() interface{} { return &arvados.CreateOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.fed.UserCreate(ctx, *opts.(*arvados.CreateOptions))
+				return rtr.backend.UserCreate(ctx, *opts.(*arvados.CreateOptions))
 			},
 		},
 		{
 			arvados.EndpointUserMerge,
 			func() interface{} { return &arvados.UserMergeOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.fed.UserMerge(ctx, *opts.(*arvados.UserMergeOptions))
+				return rtr.backend.UserMerge(ctx, *opts.(*arvados.UserMergeOptions))
 			},
 		},
 		{
 			arvados.EndpointUserActivate,
 			func() interface{} { return &arvados.UserActivateOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.fed.UserActivate(ctx, *opts.(*arvados.UserActivateOptions))
+				return rtr.backend.UserActivate(ctx, *opts.(*arvados.UserActivateOptions))
 			},
 		},
 		{
 			arvados.EndpointUserSetup,
 			func() interface{} { return &arvados.UserSetupOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.fed.UserSetup(ctx, *opts.(*arvados.UserSetupOptions))
+				return rtr.backend.UserSetup(ctx, *opts.(*arvados.UserSetupOptions))
 			},
 		},
 		{
 			arvados.EndpointUserUnsetup,
 			func() interface{} { return &arvados.GetOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.fed.UserUnsetup(ctx, *opts.(*arvados.GetOptions))
+				return rtr.backend.UserUnsetup(ctx, *opts.(*arvados.GetOptions))
 			},
 		},
 		{
 			arvados.EndpointUserGetCurrent,
 			func() interface{} { return &arvados.GetOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.fed.UserGetCurrent(ctx, *opts.(*arvados.GetOptions))
+				return rtr.backend.UserGetCurrent(ctx, *opts.(*arvados.GetOptions))
 			},
 		},
 		{
 			arvados.EndpointUserGetSystem,
 			func() interface{} { return &arvados.GetOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.fed.UserGetSystem(ctx, *opts.(*arvados.GetOptions))
+				return rtr.backend.UserGetSystem(ctx, *opts.(*arvados.GetOptions))
 			},
 		},
 		{
 			arvados.EndpointUserGet,
 			func() interface{} { return &arvados.GetOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.fed.UserGet(ctx, *opts.(*arvados.GetOptions))
+				return rtr.backend.UserGet(ctx, *opts.(*arvados.GetOptions))
 			},
 		},
 		{
 			arvados.EndpointUserUpdateUUID,
 			func() interface{} { return &arvados.UpdateUUIDOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.fed.UserUpdateUUID(ctx, *opts.(*arvados.UpdateUUIDOptions))
+				return rtr.backend.UserUpdateUUID(ctx, *opts.(*arvados.UpdateUUIDOptions))
 			},
 		},
 		{
 			arvados.EndpointUserUpdate,
 			func() interface{} { return &arvados.UpdateOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.fed.UserUpdate(ctx, *opts.(*arvados.UpdateOptions))
+				return rtr.backend.UserUpdate(ctx, *opts.(*arvados.UpdateOptions))
 			},
 		},
 		{
 			arvados.EndpointUserList,
 			func() interface{} { return &arvados.ListOptions{Limit: -1} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.fed.UserList(ctx, *opts.(*arvados.ListOptions))
+				return rtr.backend.UserList(ctx, *opts.(*arvados.ListOptions))
 			},
 		},
 		{
 			arvados.EndpointUserBatchUpdate,
 			func() interface{} { return &arvados.UserBatchUpdateOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.fed.UserBatchUpdate(ctx, *opts.(*arvados.UserBatchUpdateOptions))
+				return rtr.backend.UserBatchUpdate(ctx, *opts.(*arvados.UserBatchUpdateOptions))
 			},
 		},
 		{
 			arvados.EndpointUserDelete,
 			func() interface{} { return &arvados.DeleteOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.fed.UserDelete(ctx, *opts.(*arvados.DeleteOptions))
+				return rtr.backend.UserDelete(ctx, *opts.(*arvados.DeleteOptions))
 			},
 		},
 		{
 			arvados.EndpointUserAuthenticate,
 			func() interface{} { return &arvados.UserAuthenticateOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.fed.UserAuthenticate(ctx, *opts.(*arvados.UserAuthenticateOptions))
+				return rtr.backend.UserAuthenticate(ctx, *opts.(*arvados.UserAuthenticateOptions))
 			},
 		},
 	} {
-		rtr.addRoute(route.endpoint, route.defaultOpts, route.exec)
+		exec := route.exec
+		if rtr.wrapCalls != nil {
+			exec = rtr.wrapCalls(exec)
+		}
+		rtr.addRoute(route.endpoint, route.defaultOpts, exec)
 	}
 	rtr.mux.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		httpserver.Errors(w, []string{"API endpoint not found"}, http.StatusNotFound)
@@ -326,7 +340,7 @@ var altMethod = map[string]string{
 	"GET":   "HEAD", // Accept HEAD at any GET route
 }
 
-func (rtr *router) addRoute(endpoint arvados.APIEndpoint, defaultOpts func() interface{}, exec routableFunc) {
+func (rtr *router) addRoute(endpoint arvados.APIEndpoint, defaultOpts func() interface{}, exec RoutableFunc) {
 	methods := []string{endpoint.Method}
 	if alt, ok := altMethod[endpoint.Method]; ok {
 		methods = append(methods, alt)

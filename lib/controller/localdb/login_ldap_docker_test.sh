@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 # This script demonstrates using LDAP for Arvados user authentication.
 #
 # It configures arvados controller in a docker container, optionally
@@ -74,6 +78,7 @@ Clusters:
       Connection:
         client_encoding: utf8
         host: ${hostname}
+        port: "${pgport}"
         dbname: arvados_test
         user: arvados
         password: insecure_arvados_test
