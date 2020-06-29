@@ -149,6 +149,23 @@ class PermissionTest < ActiveSupport::TestCase
                     ":spectator missing from writers list")
   end
 
+  # user->all_users_role is read-only, so write permission from
+  # all_users_role->object doesn't give the user write permission.
+  test "writable_by omits requester's uuid if requester has read-only perm via user->all_users_role->object" do
+    set_user_from_auth :admin
+    newcoll = Collection.create!()
+    Link.create!(tail_uuid: groups(:all_users).uuid,
+                 head_uuid: newcoll.uuid,
+                 link_class: 'permission',
+                 name: 'can_write')
+    set_user_from_auth :active
+    coll = Collection.find_by_uuid(newcoll.uuid)
+    assert_raises ArvadosModel::PermissionDeniedError do
+      coll.update_attributes(name: 'update should fail')
+    end
+    refute_includes(coll.writable_by, users(:active).uuid)
+  end
+
   test "user owns group, group can_manage object's group, user can add permissions" do
     set_user_from_auth :admin
 
