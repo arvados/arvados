@@ -219,7 +219,7 @@
     out: null
   tool: wf-defaults/wf4.cwl
   doc: default in embedded subworkflow missing 'id' field
-  should_fail: true
+  should_fail: false
 
 - job: null
   output:
