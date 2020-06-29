@@ -1,0 +1,48 @@
+---
+layout: default
+navsection: admin
+title: "Link user accounts"
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+If a user needs to log in to Arvados with a upstream account or provider, they may end up with two Arvados user accounts.  If the user still has the ability to log in with the old account, they can use the "self-serve account linking":{{site.baseurl}}/user/topics/link-account.html feature of workbench.  However, if the user does not have the ability to log in with both upstream accounts, the admin can also link the accounts using the command line.
+
+h3. Step 1: Determine user uuids
+
+User uuids can be determined by browsing workbench or using @arv user list@ at the command line.
+
+Account linking works by recording in the database that a log in to the "old" account should redirected and treated as a login to the "new" account.
+
+The "old" account is the Arvados account that will be redirected.
+
+The "new" account is the user that the "old" account is redirected to.  As part of account linking any Arvados records owned by the "old" account is also transferred to the "new" account.
+
+Counter-intuitively, if you do not want the account uuid of the user to change, the "new" account should be the pre-existing account, and the "old" account should be the redundant second account that was more recently created.  This means "old" and "new" are opposite from their expected chronological meaning.  In this case, the use of "old" and "new" reflect the direction of transfer of ownership -- the login was associated with the "old" user account, but will be associated with the "new" user account.
+
+In the example below, @zzzzz-tpzed-3kz0nwtjehhl0u4@ is the "old" account (the pre-existing account we want to keep) and @zzzzz-tpzed-fr97h9t4m5jffxs@ is the "new" account (the redundant account we want to merge into the existing account).
+
+h3. Step 2: Create a project
+
+Create a project owned by the "new" account that will hold any data owned by the "old" account.
+
+<pre>
+$ arv --format=uuid group create --group '{"group_class": "project", "name": "Data from old user", "owner_uuid": "zzzzz-tpzed-fr97h9t4m5jffxs"}'
+zzzzz-j7d0g-mczqiguhil13083
+</pre>
+
+h3. Step 3: Merge "old" user to "new" user
+
+The @user merge@ method redirects login and reassigns data from the "old" account to the "new" account.
+
+<pre>
+$ arv user merge  --redirect-to-new-user \
+  --old-user-uuid=zzzzz-tpzed-3kz0nwtjehhl0u4 \
+  --new-user-uuid=zzzzz-tpzed-fr97h9t4m5jffxs \
+  --new-owner-uuid=zzzzz-j7d0g-mczqiguhil13083 \
+</pre>
+
+Note that authorization credentials (API tokens, ssh keys) are also transferred to the "new" account, so credentials used to access the "old" account work with the "new" account.
