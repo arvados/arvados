@@ -22,6 +22,7 @@ require (
 	github.com/docker/docker v1.4.2-0.20180109013817-94b8a116fbf1
 	github.com/docker/go-connections v0.3.0 // indirect
 	github.com/docker/go-units v0.3.3-0.20171221200356-d59758554a3d // indirect
+	github.com/dustin/go-humanize v1.0.0
 	github.com/flynn/go-shlex v0.0.0-20150515145356-3f9db97f8568 // indirect
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/ghodss/yaml v1.0.0
