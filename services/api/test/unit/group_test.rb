@@ -6,6 +6,7 @@ require 'test_helper'
 require 'fix_roles_projects'
 
 class GroupTest < ActiveSupport::TestCase
+  include DbCurrentTime
 
   test "cannot set owner_uuid to object with existing ownership cycle" do
     set_user_from_auth :active_trustedclient
@@ -317,6 +318,14 @@ insert into groups (uuid, owner_uuid, name, group_class, created_at, updated_at)
     g6 = insert_group Group.generate_uuid, system_user_uuid, 'name collision', 'role'
     g7 = insert_group Group.generate_uuid, users(:active).uuid, 'name collision', 'role'
 
+    g8 = insert_group Group.generate_uuid, users(:active).uuid, 'trashed with no class', nil
+    g8obj = Group.find_by_uuid(g8)
+    g8obj.trash_at = db_current_time
+    g8obj.delete_at = db_current_time
+    act_as_system_user do
+      g8obj.save!(validate: false)
+    end
+
     refresh_permissions
 
     act_as_system_user do
@@ -328,6 +337,7 @@ update links set tail_uuid='#{g5}' where uuid='#{l1.uuid}'
     end
 
     assert_equal nil, Group.find_by_uuid(g1).group_class
+    assert_equal nil, Group.find_by_uuid(g8).group_class
     assert_equal users(:active).uuid, Group.find_by_uuid(g2).owner_uuid
     assert_equal g3, Group.find_by_uuid(g4).owner_uuid
     assert !Link.where(tail_uuid: users(:active).uuid, head_uuid: g2, link_class: "permission", name: "can_manage").any?
@@ -337,6 +347,7 @@ update links set tail_uuid='#{g5}' where uuid='#{l1.uuid}'
     fix_roles_projects
 
     assert_equal 'role', Group.find_by_uuid(g1).group_class
+    assert_equal 'role', Group.find_by_uuid(g8).group_class
     assert_equal system_user_uuid, Group.find_by_uuid(g2).owner_uuid
     assert_equal system_user_uuid, Group.find_by_uuid(g4).owner_uuid
     assert Link.where(tail_uuid: users(:active).uuid, head_uuid: g2, link_class: "permission", name: "can_manage").any?
