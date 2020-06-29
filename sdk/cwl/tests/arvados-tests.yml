@@ -218,7 +218,14 @@
   output:
     out: null
   tool: wf-defaults/wf4.cwl
-  doc: default in embedded subworkflow missing 'id' field
+  doc: default in embedded subworkflow missing 'id' field, v1.0
+  should_fail: true
+
+- job: null
+  output:
+    out: null
+  tool: wf-defaults/wf8.cwl
+  doc: default in embedded subworkflow missing 'id' field, v1.1
   should_fail: false
 
 - job: null

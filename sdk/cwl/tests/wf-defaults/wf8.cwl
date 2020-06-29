@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-cwlVersion: v1.0
+cwlVersion: v1.1
 class: Workflow
 inputs: []
 outputs: []
@@ -14,4 +14,4 @@ steps:
   step1:
     in: []
     out: []
-    run: default-dir4.cwl
+    run: default-dir8.cwl

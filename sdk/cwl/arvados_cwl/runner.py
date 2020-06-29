@@ -460,6 +460,8 @@ def packed_workflow(arvrunner, tool, merged_map):
     def visit(v, cur_id):
         if isinstance(v, dict):
             if v.get("class") in ("CommandLineTool", "Workflow"):
+                if tool.metadata["cwlVersion"] == "v1.0" and "id" not in v:
+                    raise SourceLine(v, None, Exception).makeError("Embedded process object is missing required 'id' field, add an 'id' or use to cwlVersion: v1.1")
                 if "id" in v:
                     cur_id = rewrite_to_orig.get(v["id"], v["id"])
             if "path" in v and "location" not in v:
