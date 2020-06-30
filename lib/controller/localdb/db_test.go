@@ -26,7 +26,7 @@ func testdb(c *check.C, cluster *arvados.Cluster) *sql.DB {
 func testctx(c *check.C, db *sql.DB) (ctx context.Context, rollback func()) {
 	tx, err := db.Begin()
 	c.Assert(err, check.IsNil)
-	return Transaction(context.Background(), tx), func() {
+	return ContextWithTransaction(context.Background(), tx), func() {
 		c.Check(tx.Rollback(), check.IsNil)
 	}
 }

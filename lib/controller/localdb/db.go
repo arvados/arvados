@@ -30,10 +30,10 @@ func WrapCallsInTransactions(getdb func(context.Context) (*sql.DB, error)) func(
 	}
 }
 
-// WithTransaction returns a child context in which the given
+// ContextWithTransaction returns a child context in which the given
 // transaction will be used by any localdb API call that needs one.
 // The caller is responsible for calling Commit or Rollback on tx.
-func Transaction(ctx context.Context, tx *sql.Tx) context.Context {
+func ContextWithTransaction(ctx context.Context, tx *sql.Tx) context.Context {
 	txn := &transaction{tx: tx}
 	txn.setup.Do(func() {})
 	return context.WithValue(ctx, contextKeyTransaction, txn)
