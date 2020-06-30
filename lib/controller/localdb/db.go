@@ -78,9 +78,15 @@ type transactionFinishFunc func(*error)
 func starttx(ctx context.Context, getdb func(context.Context) (*sql.DB, error)) (context.Context, transactionFinishFunc) {
 	txn := &transaction{getdb: getdb}
 	return context.WithValue(ctx, contextKeyTransaction, txn), func(err *error) {
-		// Ensure another goroutine can't open a transaction
-		// during/after finishtx().
-		txn.setup.Do(func() {})
+		txn.setup.Do(func() {
+			// Using (*sync.Once)Do() prevents a future
+			// call to currenttx() from opening a
+			// transaction which would never get committed
+			// or rolled back. If currenttx() hasn't been
+			// called before now, future calls will return
+			// this error.
+			txn.err = errors.New("refusing to start a transaction after wrapped function already returned")
+		})
 		if txn.tx == nil {
 			// we never [successfully] started a transaction
 			return
