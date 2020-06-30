@@ -6,7 +6,7 @@ import * as React from 'react';
 import { TreeItem, TreeItemStatus } from '~/components/tree/tree';
 import { FileTreeData } from '~/components/file-tree/file-tree-data';
 import { FileTree } from '~/components/file-tree/file-tree';
-import { IconButton, Grid, Typography, StyleRulesCallback, withStyles, WithStyles, CardHeader, Card, Button, Tooltip } from '@material-ui/core';
+import { IconButton, Grid, Typography, StyleRulesCallback, withStyles, WithStyles, CardHeader, Card, Button, Tooltip, CircularProgress } from '@material-ui/core';
 import { CustomizeTableIcon } from '~/components/icon/icon';
 import { DownloadIcon } from '~/components/icon/icon';
 
@@ -99,7 +99,7 @@ export const CollectionPanelFiles =
                         </Typography>
                     </Grid>
                     { isLoading
-                    ? <div className={classes.centeredLabel}>(loading files...)</div>
+                    ? <div className={classes.centeredLabel}><CircularProgress /></div>
                     : <div style={{height: 'calc(100% - 60px)'}}><FileTree onMenuOpen={(ev, item) => onItemMenuOpen(ev, item, isWritable)} {...treeProps} /></div> }
                 </>
                 }
