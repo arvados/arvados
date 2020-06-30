@@ -13,7 +13,6 @@ import { ArvadosTheme } from '~/common/custom-theme';
 import { TreeItem, TreeProps, TreeItemStatus } from './tree';
 import { ListItem, Radio, Checkbox, CircularProgress, ListItemIcon } from '@material-ui/core';
 import { SidePanelRightArrowIcon } from '../icon/icon';
-import { min } from 'lodash';
 
 type CssRules = 'list'
     | 'listItem'
@@ -179,20 +178,16 @@ export const VirtualList = <T, _>(height: number, width: number, items: VirtualT
         {Row(items, render, treeProps)}
     </FixedSizeList>;
 
-export const VirtualTree = (maxElements: number) => withStyles(styles)(
+export const VirtualTree = withStyles(styles)(
     class Component<T> extends React.Component<TreeProps<T> & WithStyles<CssRules>, {}> {
         render(): ReactElement<any> {
             const { items, render } = this.props;
 
-            // Virtual list viewport's maximum height
-            const itemsQty = items && items.length || 0;
-            const viewportHeight = min([itemsQty, maxElements])! * itemSize;
-
-            return <div style={{height: viewportHeight}}><AutoSizer>
+            return <AutoSizer>
                 {({ height, width }) => {
                     return VirtualList(height, width, items || [], render, this.props);
                 }}
-            </AutoSizer></div>;
+            </AutoSizer>;
         }
     }
 );

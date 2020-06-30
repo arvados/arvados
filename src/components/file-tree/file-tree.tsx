@@ -4,7 +4,7 @@
 
 import * as React from "react";
 import { TreeItem, TreeItemStatus } from "../tree/tree";
-import { VirtualTree } from "../tree/virtual-tree";
+import { VirtualTree as Tree } from "../tree/virtual-tree";
 import { FileTreeData } from "./file-tree-data";
 import { FileTreeItem } from "./file-tree-item";
 
@@ -17,7 +17,6 @@ export interface FileTreeProps {
     currentItemUuid?: string;
 }
 
-const Tree = VirtualTree(20);
 export class FileTree extends React.Component<FileTreeProps> {
     render() {
         return <Tree

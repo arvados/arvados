@@ -31,11 +31,42 @@ import { getUserUuid } from '~/common/getuser';
 import { getProgressIndicator } from '~/store/progress-indicator/progress-indicator-reducer';
 import { COLLECTION_PANEL_LOAD_FILES, loadCollectionFiles, COLLECTION_PANEL_LOAD_FILES_THRESHOLD } from '~/store/collection-panel/collection-panel-files/collection-panel-files-actions';
 
-type CssRules = 'card' | 'iconHeader' | 'tag' | 'label' | 'value' | 'link' | 'centeredLabel' | 'readOnlyIcon';
+type CssRules = 'root'
+    | 'card'
+    | 'cardHeader'
+    | 'filesCard'
+    | 'cardContent'
+    | 'iconHeader'
+    | 'tag'
+    | 'label'
+    | 'value'
+    | 'link'
+    | 'centeredLabel'
+    | 'readOnlyIcon';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+    root: {
+        display: 'flex',
+        flexFlow: 'column',
+        height: 'calc(100vh - 130px)', // (100% viewport height) - (top bar + breadcrumbs)
+    },
     card: {
-        marginBottom: theme.spacing.unit * 2
+        marginBottom: theme.spacing.unit * 2,
+    },
+    cardHeader: {
+        paddingTop: theme.spacing.unit,
+        paddingBottom: 0,
+    },
+    filesCard: {
+        marginBottom: theme.spacing.unit * 2,
+        flex: 1,
+    },
+    cardContent: {
+        paddingTop: 0,
+        paddingBottom: theme.spacing.unit,
+        '&:last-child': {
+            paddingBottom: theme.spacing.unit,
+        }
     },
     iconHeader: {
         fontSize: '1.875rem',
@@ -101,9 +132,10 @@ export const CollectionPanel = withStyles(styles)(
             render() {
                 const { classes, item, dispatch, isWritable, isLoadingFiles, tooManyFiles } = this.props;
                 return item
-                    ? <>
+                    ? <div className={classes.root}>
                         <Card data-cy='collection-info-panel' className={classes.card}>
                             <CardHeader
+                                className={classes.cardHeader}
                                 avatar={
                                     <IconButton onClick={this.openCollectionDetails}>
                                         <CollectionIcon className={classes.iconHeader} />
@@ -133,7 +165,7 @@ export const CollectionPanel = withStyles(styles)(
                                 titleTypographyProps={this.titleProps}
                                 subheader={item.description}
                                 subheaderTypographyProps={this.titleProps} />
-                            <CardContent>
+                            <CardContent className={classes.cardContent}>
                                 <Grid container direction="column">
                                     <Grid item xs={10}>
                                         <DetailsAttribute classLabel={classes.label} classValue={classes.value}
@@ -160,7 +192,7 @@ export const CollectionPanel = withStyles(styles)(
 
                         <Card data-cy='collection-properties-panel' className={classes.card}>
                             <CardHeader title="Properties" />
-                            <CardContent>
+                            <CardContent className={classes.cardContent}>
                                 <Grid container direction="column">
                                     {isWritable && <Grid item xs={12}>
                                         <CollectionTagForm />
@@ -189,7 +221,7 @@ export const CollectionPanel = withStyles(styles)(
                                 </Grid>
                             </CardContent>
                         </Card>
-                        <div className={classes.card}>
+                        <div className={classes.filesCard}>
                             <CollectionPanelFiles
                                 isWritable={isWritable}
                                 isLoading={isLoadingFiles}
@@ -200,7 +232,7 @@ export const CollectionPanel = withStyles(styles)(
                                 }
                             } />
                         </div>
-                    </>
+                    </div>
                     : null;
             }
 

@@ -29,7 +29,8 @@ type CssRules = 'root' | 'cardSubheader' | 'nameHeader' | 'fileSizeHeader' | 'up
 
 const styles: StyleRulesCallback<CssRules> = theme => ({
     root: {
-        paddingBottom: theme.spacing.unit
+        paddingBottom: theme.spacing.unit,
+        height: '100%'
     },
     cardSubheader: {
         paddingTop: 0,
@@ -61,9 +62,10 @@ export const CollectionPanelFiles =
             <Card data-cy='collection-files-panel' className={classes.root}>
                 <CardHeader
                     title="Files"
+                    className={classes.cardSubheader}
                     classes={{ action: classes.button }}
-                    action={
-                        isWritable &&
+                    action={<>
+                        {isWritable &&
                         <Button
                             data-cy='upload-button'
                             onClick={onUploadDataClick}
@@ -72,24 +74,22 @@ export const CollectionPanelFiles =
                             size='small'>
                             <DownloadIcon className={classes.uploadIcon} />
                             Upload data
-                        </Button>
-                    } />
+                        </Button>}
+                        {!tooManyFiles &&
+                        <Tooltip title="More options" disableFocusListener>
+                            <IconButton
+                                data-cy='collection-files-panel-options-btn'
+                                onClick={(ev) => onOptionsMenuOpen(ev, isWritable)}>
+                                <CustomizeTableIcon />
+                            </IconButton>
+                        </Tooltip>}
+                    </>
+                } />
                 { tooManyFiles
                 ? <div className={classes.centeredLabel}>
                         File listing may take some time, please click to browse: <Button onClick={loadFilesFunc}><DownloadIcon/>Show files</Button>
                 </div>
                 : <>
-                    <CardHeader
-                        className={classes.cardSubheader}
-                        action={
-                            <Tooltip title="More options" disableFocusListener>
-                                <IconButton
-                                    data-cy='collection-files-panel-options-btn'
-                                    onClick={(ev) => onOptionsMenuOpen(ev, isWritable)}>
-                                    <CustomizeTableIcon />
-                                </IconButton>
-                            </Tooltip>
-                        } />
                     <Grid container justify="space-between">
                         <Typography variant="caption" className={classes.nameHeader}>
                             Name
@@ -100,7 +100,7 @@ export const CollectionPanelFiles =
                     </Grid>
                     { isLoading
                     ? <div className={classes.centeredLabel}>(loading files...)</div>
-                    : <FileTree onMenuOpen={(ev, item) => onItemMenuOpen(ev, item, isWritable)} {...treeProps} /> }
+                    : <div style={{height: 'calc(100% - 60px)'}}><FileTree onMenuOpen={(ev, item) => onItemMenuOpen(ev, item, isWritable)} {...treeProps} /></div> }
                 </>
                 }
             </Card>);
