@@ -19,7 +19,7 @@ Gem::Specification.new do |s|
   s.files += Dir.glob("vendor/**/*.rb")
   s.files += Dir.glob("tasks/**/*")
   s.files += Dir.glob("website/**/*")
-  s.homepage = "https://github.com/curoverse/google-api-ruby-client/"
+  s.homepage = "https://github.com/arvados/google-api-ruby-client/"
   s.rdoc_options = ["--main", "README.md"]
   s.summary = "The Google API Ruby Client makes it trivial to discover and access Google's REST APIs."
 
