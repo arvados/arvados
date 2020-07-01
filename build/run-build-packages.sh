@@ -318,8 +318,8 @@ package_go_binary tools/keep-rsync keep-rsync \
     "Copy all data from one set of Keep servers to another"
 package_go_binary tools/keep-exercise keep-exercise \
     "Performance testing tool for Arvados Keep"
-package_go_so lib/pam pam_arvados.so libpam-arvados-experimental \
-    "Arvados PAM authentication module (experimental)"
+package_go_so lib/pam pam_arvados.so libpam-arvados-go \
+    "Arvados PAM authentication module"
 
 # The Python SDK - Should be built first because it's needed by others
 fpm_build_virtualenv "arvados-python-client" "sdk/python"

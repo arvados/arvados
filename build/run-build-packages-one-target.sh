@@ -209,7 +209,7 @@ if test -z "$packages" ; then
         keep-web
         libarvados-perl
         libpam-arvados
-        libpam-arvados-experimental
+        libpam-arvados-go
         python-arvados-fuse
         python-arvados-python-client
         python-arvados-cwl-runner"
