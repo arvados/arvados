@@ -4,10 +4,14 @@
 
 FROM node:8-buster
 MAINTAINER Ward Vandewege <ward@curoverse.com>
+
+RUN echo deb http://deb.debian.org/debian buster-backports main >> /etc/apt/sources.list.d/backports.list
 RUN apt-get update && \
     apt-get -yq --no-install-recommends -o Acquire::Retries=6 install \
     libsecret-1-0 libsecret-1-dev rpm ruby ruby-dev rubygems build-essential \
-    golang libpam0g-dev && \
+    libpam0g-dev && \
+    apt-get clean
+RUN apt-get -yq --no-install-recommends -t buster-backports install golang-go && \
     apt-get clean
 RUN gem install --no-ri --no-rdoc fpm
 RUN git clone https://git.arvados.org/arvados.git && cd arvados && \
