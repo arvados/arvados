@@ -169,21 +169,47 @@ def set_secondary(fsaccess, builder, inputschema, secondaryspec, primary, discov
         #
         # Found a file, check for secondaryFiles
         #
-        primary["secondaryFiles"] = []
+        specs = []
+        primary["secondaryFiles"] = secondaryspec
         for i, sf in enumerate(aslist(secondaryspec)):
             pattern = builder.do_eval(sf["pattern"], context=primary)
             if pattern is None:
                 continue
+            if isinstance(pattern, list):
+                specs.extend(pattern)
+            elif isinstance(pattern, dict):
+                specs.append(pattern)
+            elif isinstance(pattern, str):
+                specs.append({"pattern": pattern})
+            else:
+                raise SourceLine(primary["secondaryFiles"], i, validate.ValidationException).makeError(
+                    "Expression must return list, object, string or null")
+
+        found = []
+        for i, sf in enumerate(specs):
+            if isinstance(sf, dict):
+                if sf.get("class") == "File":
+                    pattern = sf["basename"]
+                else:
+                    pattern = sf["pattern"]
+                    required = sf.get("required")
+            elif isinstance(sf, str):
+                pattern = sf
+                required = True
+            else:
+                raise SourceLine(primary["secondaryFiles"], i, validate.ValidationException).makeError(
+                    "Expression must return list, object, string or null")
+
             sfpath = substitute(primary["location"], pattern)
-            required = builder.do_eval(sf.get("required"), context=primary)
+            required = builder.do_eval(required, context=primary)
 
             if fsaccess.exists(sfpath):
-                primary["secondaryFiles"].append({"location": sfpath, "class": "File"})
+                found.append({"location": sfpath, "class": "File"})
             elif required:
                 raise SourceLine(primary["secondaryFiles"], i, validate.ValidationException).makeError(
                     "Required secondary file '%s' does not exist" % sfpath)
 
-        primary["secondaryFiles"] = cmap(primary["secondaryFiles"])
+        primary["secondaryFiles"] = cmap(found)
         if discovered is not None:
             discovered[primary["location"]] = primary["secondaryFiles"]
     elif inputschema["type"] not in primitive_types_set:
@@ -434,9 +460,13 @@ def packed_workflow(arvrunner, tool, merged_map):
     def visit(v, cur_id):
         if isinstance(v, dict):
             if v.get("class") in ("CommandLineTool", "Workflow"):
-                if "id" not in v:
-                    raise SourceLine(v, None, Exception).makeError("Embedded process object is missing required 'id' field")
-                cur_id = rewrite_to_orig.get(v["id"], v["id"])
+                if tool.metadata["cwlVersion"] == "v1.0" and "id" not in v:
+                    raise SourceLine(v, None, Exception).makeError("Embedded process object is missing required 'id' field, add an 'id' or use to cwlVersion: v1.1")
+                if "id" in v:
+                    cur_id = rewrite_to_orig.get(v["id"], v["id"])
+            if "path" in v and "location" not in v:
+                v["location"] = v["path"]
+                del v["path"]
             if "location" in v and not v["location"].startswith("keep:"):
                 v["location"] = merged_map[cur_id].resolved[v["location"]]
             if "location" in v and v["location"] in merged_map[cur_id].secondaryFiles:

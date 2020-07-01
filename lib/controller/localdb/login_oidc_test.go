@@ -39,7 +39,6 @@ var _ = check.Suite(&OIDCLoginSuite{})
 
 type OIDCLoginSuite struct {
 	cluster               *arvados.Cluster
-	ctx                   context.Context
 	localdb               *Conn
 	railsSpy              *arvadostest.Proxy
 	fakeIssuer            *httptest.Server

@@ -3,8 +3,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Based on Debian Stretch
-FROM debian:stretch-slim
-MAINTAINER Peter Amstutz <peter.amstutz@curii.com>
+FROM debian:buster-slim
+MAINTAINER Arvados Package Maintainers <packaging@arvados.org>
 
 ENV DEBIAN_FRONTEND noninteractive
 
