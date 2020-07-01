@@ -99,7 +99,7 @@ Note that the location line in the nginx config matches your shell node hostname
 
 For additional shell nodes with @shell-in-a-box@, add @location@ and @upstream@ sections as needed.
 
-{% assign arvados_component = 'shellinabox libpam-arvados' %}
+{% assign arvados_component = 'shellinabox libpam-arvados-go' %}
 
 {% include 'install_packages' %}
 
@@ -149,9 +149,8 @@ h2(#config-pam). Configure pam
 Use a text editor to create a new file @/etc/pam.d/shellinabox@ with the following configuration. Options that need attention are marked in <span class="userinput">red</span>.
 
 <notextile><pre>
-# This example is a stock debian "login" file with libpam_arvados
-# replacing pam_unix, and the "noprompt" option in use. It can be
-# installed as /etc/pam.d/shellinabox .
+# This example is a stock debian "login" file with pam_arvados
+# replacing pam_unix. It can be installed as /etc/pam.d/shellinabox .
 
 auth       optional   pam_faildelay.so  delay=3000000
 auth [success=ok new_authtok_reqd=ok ignore=ignore user_unknown=bad default=die] pam_securetty.so
@@ -160,7 +159,7 @@ session [success=ok ignore=ignore module_unknown=ignore default=bad] pam_selinux
 session       required   pam_env.so readenv=1
 session       required   pam_env.so readenv=1 envfile=/etc/default/locale
 
-auth [success=1 default=ignore] pam_python.so /usr/lib/security/libpam_arvados.py <span class="userinput">ClusterID.example.com</span> <span class="userinput">shell.ClusterID.example.com</span> noprompt
+auth [success=1 default=ignore] /usr/lib/pam_arvados.so <span class="userinput">ClusterID.example.com</span> <span class="userinput">shell.ClusterID.example.com</span>
 auth    requisite            pam_deny.so
 auth    required            pam_permit.so
 
