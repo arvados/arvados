@@ -14,6 +14,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"syscall"
@@ -24,13 +25,17 @@ import (
 	"github.com/lib/pq"
 )
 
-var Command cmd.Handler = installCommand{}
+var Command cmd.Handler = &installCommand{}
 
 const devtestDatabasePassword = "insecure_arvados_test"
 
-type installCommand struct{}
+type installCommand struct {
+	ClusterType    string
+	SourcePath     string
+	PackageVersion string
+}
 
-func (installCommand) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	logger := ctxlog.New(stderr, "text", "info")
 	ctx := ctxlog.Context(context.Background(), logger)
 	ctx, cancel := context.WithCancel(ctx)
@@ -46,7 +51,9 @@ func (installCommand) RunCommand(prog string, args []string, stdin io.Reader, st
 	flags := flag.NewFlagSet(prog, flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	versionFlag := flags.Bool("version", false, "Write version information to stdout and exit 0")
-	clusterType := flags.String("type", "production", "cluster `type`: development, test, or production")
+	flags.StringVar(&inst.ClusterType, "type", "production", "cluster `type`: development, test, production, or package")
+	flags.StringVar(&inst.SourcePath, "source", "/arvados", "source tree location (required for -type=package)")
+	flags.StringVar(&inst.PackageVersion, "package-version", "0.0.0", "version string to embed in executable files")
 	err = flags.Parse(args)
 	if err == flag.ErrHelp {
 		err = nil
@@ -55,18 +62,23 @@ func (installCommand) RunCommand(prog string, args []string, stdin io.Reader, st
 		return 2
 	} else if *versionFlag {
 		return cmd.Version.RunCommand(prog, args, stdin, stdout, stderr)
+	} else if len(flags.Args()) > 0 {
+		err = fmt.Errorf("unrecognized command line arguments: %v", flags.Args())
+		return 2
 	}
 
-	var dev, test, prod bool
-	switch *clusterType {
+	var dev, test, prod, pkg bool
+	switch inst.ClusterType {
 	case "development":
 		dev = true
 	case "test":
 		test = true
 	case "production":
 		prod = true
+	case "package":
+		pkg = true
 	default:
-		err = fmt.Errorf("invalid cluster type %q (must be 'development', 'test', or 'production')", *clusterType)
+		err = fmt.Errorf("invalid cluster type %q (must be 'development', 'test', 'production', or 'package')", inst.ClusterType)
 		return 2
 	}
 
@@ -96,53 +108,47 @@ func (installCommand) RunCommand(prog string, args []string, stdin io.Reader, st
 		}
 	}
 
-	if dev || test {
-		debs := []string{
-			"bison",
+	pkgs := prodpkgs(osv)
+
+	if pkg {
+		pkgs = append(pkgs,
+			"dpkg-dev",
+			"rsync",
+		)
+	}
+
+	if dev || test || pkg {
+		pkgs = append(pkgs,
 			"bsdmainutils",
 			"build-essential",
-			"ca-certificates",
 			"cadaver",
-			"curl",
 			"cython",
 			"daemontools", // lib/boot uses setuidgid to drop privileges when running as root
 			"default-jdk-headless",
 			"default-jre-headless",
-			"fuse",
 			"gettext",
-			"git",
-			"gitolite3",
-			"graphviz",
-			"haveged",
 			"iceweasel",
 			"libattr1-dev",
 			"libcrypt-ssleay-perl",
-			"libcrypt-ssleay-perl",
-			"libcurl3-gnutls",
-			"libcurl4-openssl-dev",
 			"libfuse-dev",
 			"libgnutls28-dev",
 			"libjson-perl",
-			"libjson-perl",
 			"libpam-dev",
 			"libpcre3-dev",
-			"libpq-dev",
 			"libpython2.7-dev",
 			"libreadline-dev",
 			"libssl-dev",
 			"libwww-perl",
 			"libxml2-dev",
-			"libxslt1.1",
+			"libxslt1-dev",
 			"linkchecker",
 			"lsof",
 			"net-tools",
-			"nginx",
 			"pandoc",
 			"perl-modules",
 			"pkg-config",
 			"postgresql",
 			"postgresql-contrib",
-			"python",
 			"python3-dev",
 			"python-epydoc",
 			"r-base",
@@ -151,16 +157,15 @@ func (installCommand) RunCommand(prog string, args []string, stdin io.Reader, st
 			"virtualenv",
 			"wget",
 			"xvfb",
-			"zlib1g-dev",
-		}
+		)
 		switch {
 		case osv.Debian && osv.Major >= 10:
-			debs = append(debs, "libcurl4")
+			pkgs = append(pkgs, "libcurl4")
 		default:
-			debs = append(debs, "libcurl3")
+			pkgs = append(pkgs, "libcurl3")
 		}
 		cmd := exec.CommandContext(ctx, "apt-get", "install", "--yes", "--no-install-recommends")
-		cmd.Args = append(cmd.Args, debs...)
+		cmd.Args = append(cmd.Args, pkgs...)
 		cmd.Env = append(os.Environ(), "DEBIAN_FRONTEND=noninteractive")
 		cmd.Stdout = stdout
 		cmd.Stderr = stderr
@@ -182,7 +187,7 @@ trap "rm -r ${tmp}" ERR
 wget --progress=dot:giga -O- https://cache.ruby-lang.org/pub/ruby/2.5/ruby-`+rubyversion+`.tar.gz | tar -C /var/lib/arvados/tmp -xzf -
 cd ${tmp}
 ./configure --disable-install-doc --prefix /var/lib/arvados
-make -j4
+make -j8
 make install
 /var/lib/arvados/bin/gem install bundler
 rm -r ${tmp}
@@ -206,7 +211,9 @@ ln -sf /var/lib/arvados/go/bin/* /usr/local/bin/
 				return 1
 			}
 		}
+	}
 
+	if !prod && !pkg {
 		pjsversion := "1.9.8"
 		if havepjsversion, err := exec.Command("/usr/local/bin/phantomjs", "--version").CombinedOutput(); err == nil && string(havepjsversion) == "1.9.8\n" {
 			logger.Print("phantomjs " + pjsversion + " already installed")
@@ -389,12 +396,89 @@ rm ${zip}
 		}
 	}
 
+	if pkg {
+		// Install Rails apps to /var/lib/arvados/{railsapi,workbench1}/
+		for dstdir, srcdir := range map[string]string{
+			"railsapi":   "services/api",
+			"workbench1": "apps/workbench",
+		} {
+			fmt.Fprintf(stderr, "building %s...\n", srcdir)
+			cmd := exec.Command("rsync", "-a", "--no-owner", "--delete-after", "--exclude", "/tmp", "--exclude", "/log", "--exclude", "/vendor", "./", "/var/lib/arvados/"+dstdir+"/")
+			cmd.Dir = filepath.Join(inst.SourcePath, srcdir)
+			cmd.Stdout = stdout
+			cmd.Stderr = stderr
+			err = cmd.Run()
+			if err != nil {
+				return 1
+			}
+			for _, cmdline := range [][]string{
+				{"mkdir", "-p", "log", "tmp", ".bundle", "/var/www/.gem", "/var/www/.passenger"},
+				{"touch", "log/production.log"},
+				// {"chown", "-R", "root:root", "."},
+				{"chown", "-R", "www-data:www-data", "/var/www/.gem", "/var/www/.passenger", "log", "tmp", ".bundle", "Gemfile.lock", "config.ru", "config/environment.rb"},
+				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/gem", "install", "--user", "--no-rdoc", "--no-ri", "--conservative", "bundler:1.11", "bundler:1.17.3", "bundler:2.0.2"},
+				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "install", "--deployment", "--jobs", "8", "--path", "/var/www/.gem"},
+				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "exec", "passenger-config", "build-native-support"},
+				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "exec", "passenger-config", "install-standalone-runtime"},
+			} {
+				cmd = exec.Command(cmdline[0], cmdline[1:]...)
+				cmd.Env = append([]string{}, os.Environ()...)
+				cmd.Dir = "/var/lib/arvados/" + dstdir
+				cmd.Stdout = stdout
+				cmd.Stderr = stderr
+				err = cmd.Run()
+				if err != nil {
+					return 1
+				}
+			}
+			cmd = exec.Command("sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "exec", "passenger-config", "validate-install")
+			cmd.Dir = "/var/lib/arvados/" + dstdir
+			cmd.Stdout = stdout
+			cmd.Stderr = stderr
+			err = cmd.Run()
+			if err != nil && !strings.Contains(err.Error(), "exit status 2") {
+				// Exit code 2 indicates there were warnings (like
+				// "other passenger installations have been detected",
+				// which we can't expect to avoid) but no errors.
+				// Other non-zero exit codes (1, 9) indicate errors.
+				return 1
+			}
+		}
+
+		// Install Go programs to /var/lib/arvados/bin/
+		for _, srcdir := range []string{
+			"cmd/arvados-client",
+			"cmd/arvados-server",
+			"services/arv-git-httpd",
+			"services/crunch-dispatch-local",
+			"services/crunch-dispatch-slurm",
+			"services/health",
+			"services/keep-balance",
+			"services/keep-web",
+			"services/keepproxy",
+			"services/keepstore",
+			"services/ws",
+		} {
+			fmt.Fprintf(stderr, "building %s...\n", srcdir)
+			cmd := exec.Command("go", "install", "-ldflags", "-X git.arvados.org/arvados.git/lib/cmd.version="+inst.PackageVersion+" -X main.version="+inst.PackageVersion)
+			cmd.Env = append([]string{"GOBIN=/var/lib/arvados/bin"}, os.Environ()...)
+			cmd.Dir = filepath.Join(inst.SourcePath, srcdir)
+			cmd.Stdout = stdout
+			cmd.Stderr = stderr
+			err = cmd.Run()
+			if err != nil {
+				return 1
+			}
+		}
+	}
+
 	return 0
 }
 
 type osversion struct {
 	Debian bool
 	Ubuntu bool
+	Centos bool
 	Major  int
 }
 
@@ -432,6 +516,8 @@ func identifyOS() (osversion, error) {
 		osv.Ubuntu = true
 	case "debian":
 		osv.Debian = true
+	case "centos":
+		osv.Centos = true
 	default:
 		return osv, fmt.Errorf("unsupported ID in /etc/os-release: %q", kv["ID"])
 	}
@@ -465,4 +551,57 @@ func runBash(script string, stdout, stderr io.Writer) error {
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
 	return cmd.Run()
+}
+
+func prodpkgs(osv osversion) []string {
+	pkgs := []string{
+		"automake",
+		"bison",
+		"ca-certificates",
+		"curl",
+		"fuse",
+		"git",
+		"gitolite3",
+		"graphviz",
+		"haveged",
+		"libcurl3-gnutls",
+		"libxslt1.1",
+		"make",
+		"nginx",
+		"python",
+	}
+	if osv.Debian || osv.Ubuntu {
+		if osv.Debian && osv.Major == 8 {
+			pkgs = append(pkgs, "libgnutls-deb0-28") // sdk/cwl
+		} else if osv.Debian && osv.Major >= 10 || osv.Ubuntu && osv.Major >= 16 {
+			pkgs = append(pkgs, "python3-distutils") // sdk/cwl
+		}
+		return append(pkgs,
+			"g++",
+			"libcurl4-openssl-dev", // services/api
+			"libpq-dev",
+			"libpython2.7", // services/fuse
+			"mime-support", // keep-web
+			"zlib1g-dev",   // services/api
+		)
+	} else if osv.Centos {
+		return append(pkgs,
+			"fuse-libs", // services/fuse
+			"gcc",
+			"gcc-c++",
+			"libcurl-devel",    // services/api
+			"mailcap",          // keep-web
+			"postgresql-devel", // services/api
+		)
+	} else {
+		panic("os version not supported")
+	}
+}
+
+func ProductionDependencies() ([]string, error) {
+	osv, err := identifyOS()
+	if err != nil {
+		return nil, err
+	}
+	return prodpkgs(osv), nil
 }
