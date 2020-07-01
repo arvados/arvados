@@ -209,6 +209,9 @@ package_go_so() {
         "--description=${description}"
         "$WORKSPACE/apache-2.0.txt=/usr/share/doc/$pkg/apache-2.0.txt"
     )
+    if [[ -e "$WORKSPACE/$src_path/pam-configs-arvados" ]]; then
+        fpmargs+=("$WORKSPACE/$src_path/pam-configs-arvados=/usr/share/pam-configs/arvados-go")
+    fi
     fpm_build "$GOPATH/bin/${sofile}=/usr/lib/${sofile}" "${pkg}" dir "${go_package_version}" "${fpmargs[@]}"
 }
 
