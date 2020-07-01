@@ -212,6 +212,9 @@ package_go_so() {
     if [[ -e "$WORKSPACE/$src_path/pam-configs-arvados" ]]; then
         fpmargs+=("$WORKSPACE/$src_path/pam-configs-arvados=/usr/share/pam-configs/arvados-go")
     fi
+    if [[ -e "$WORKSPACE/$src_path/README" ]]; then
+        fpmargs+=("$WORKSPACE/$src_path/README=/usr/share/doc/$pkg/README")
+    fi
     fpm_build "$GOPATH/bin/${sofile}=/usr/lib/${sofile}" "${pkg}" dir "${go_package_version}" "${fpmargs[@]}"
 }
 
