@@ -31,7 +31,7 @@ Gem::Specification.new do |s|
   s.summary     = "Arvados CLI tools"
   s.description = "Arvados command line tools, git commit #{git_hash}"
   s.authors     = ["Arvados Authors"]
-  s.email       = 'gem-dev@curoverse.com'
+  s.email       = 'gem-dev@arvados.org'
   #s.bindir      = '.'
   s.licenses    = ['Apache-2.0']
   s.files       = ["bin/arv", "bin/arv-tag", "LICENSE-2.0.txt"]
@@ -42,7 +42,7 @@ Gem::Specification.new do |s|
   # Our google-api-client dependency used to be < 0.9, but that could be
   # satisfied by the buggy 0.9.pre*.  https://dev.arvados.org/issues/9213
   s.add_runtime_dependency 'arvados-google-api-client', '~> 0.6', '>= 0.6.3', '<0.8.9'
-  s.add_runtime_dependency 'activesupport', '>= 3.2.13', '< 5.1'
+  s.add_runtime_dependency 'activesupport', '>= 3.2.13', '< 5.3'
   s.add_runtime_dependency 'json', '>= 1.7.7', '<3'
   s.add_runtime_dependency 'optimist', '~> 3.0'
   s.add_runtime_dependency 'andand', '~> 1.3', '>= 1.3.3'
