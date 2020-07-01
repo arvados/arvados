@@ -77,9 +77,9 @@ Default: yes
 Priority: 256
 Auth-Type: Primary
 Auth:
-	[success=end default=ignore]	/usr/lib/security/pam_arvados.so %s testvm2.shell insecure
+	[success=end default=ignore]	/usr/lib/pam_arvados.so %s testvm2.shell insecure
 Auth-Initial:
-	[success=end default=ignore]	/usr/lib/security/pam_arvados.so %s testvm2.shell insecure
+	[success=end default=ignore]	/usr/lib/pam_arvados.so %s testvm2.shell insecure
 `, proxyhost, proxyhost)
 	err = ioutil.WriteFile(s.tmpdir+"/conffile", []byte(confdata), 0755)
 	c.Assert(err, check.IsNil)
@@ -107,7 +107,7 @@ func (s *DockerSuite) runTestClient(c *check.C, args ...string) (stdout, stderr 
 	cmd := exec.Command("docker", append([]string{
 		"run", "--rm",
 		"--add-host", "zzzzz.arvadosapi.com:" + s.hostip,
-		"-v", s.tmpdir + "/pam_arvados.so:/usr/lib/security/pam_arvados.so:ro",
+		"-v", s.tmpdir + "/pam_arvados.so:/usr/lib/pam_arvados.so:ro",
 		"-v", s.tmpdir + "/conffile:/usr/share/pam-configs/arvados:ro",
 		"-v", s.tmpdir + "/testclient:/testclient:ro",
 		"debian:buster",
