@@ -185,7 +185,7 @@ package_go_binary() {
     fi
     switches+=("$WORKSPACE/${license_file}=/usr/share/doc/$prog/${license_file}")
 
-    fpm_build "$GOPATH/bin/${basename}=/usr/bin/${prog}" "${prog}" dir "${go_package_version}" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=${description}" "${switches[@]}"
+    fpm_build "${WORKSPACE}/${src_path}" "$GOPATH/bin/${basename}=/usr/bin/${prog}" "${prog}" dir "${go_package_version}" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=${description}" "${switches[@]}"
 }
 
 # Usage: package_go_so lib/foo arvados_foo.so arvados-foo "Arvados foo library"
@@ -215,7 +215,7 @@ package_go_so() {
     if [[ -e "$WORKSPACE/$src_path/README" ]]; then
         fpmargs+=("$WORKSPACE/$src_path/README=/usr/share/doc/$pkg/README")
     fi
-    fpm_build "$GOPATH/bin/${sofile}=/usr/lib/${sofile}" "${pkg}" dir "${go_package_version}" "${fpmargs[@]}"
+    fpm_build "${WORKSPACE}/${src_path}" "$GOPATH/bin/${sofile}=/usr/lib/${sofile}" "${pkg}" dir "${go_package_version}" "${fpmargs[@]}"
 }
 
 default_iteration() {
@@ -447,7 +447,7 @@ handle_rails_package() {
     for exclude in ${exclude_list[@]}; do
         switches+=(-x "$exclude_root/$exclude")
     done
-    fpm_build "${pos_args[@]}" "${switches[@]}" \
+    fpm_build "${srcdir}" "${pos_args[@]}" "${switches[@]}" \
               -x "$exclude_root/vendor/cache-*" \
               -x "$exclude_root/vendor/bundle" "$@" "$license_arg"
     rm -rf "$scripts_dir"
@@ -766,6 +766,9 @@ fpm_build_virtualenv () {
 
 # Build packages for everything
 fpm_build () {
+  # Source dir where fpm-info.sh (if any) will be found.
+  SRC_DIR=$1
+  shift
   # The package source.  Depending on the source type, this can be a
   # path, or the name of the package in an upstream repository (e.g.,
   # pip).
@@ -842,17 +845,15 @@ fpm_build () {
   declare -a build_depends=()
   declare -a fpm_depends=()
   declare -a fpm_exclude=()
-  declare -a fpm_dirs=(
-      # source dir part of 'dir' package ("/source=/dest" => "/source"):
-      "${PACKAGE%%=/*}")
-  for pkgdir in "${fpm_dirs[@]}"; do
-      fpminfo="$pkgdir/fpm-info.sh"
-      if [[ -e "$fpminfo" ]]; then
-          debug_echo "Loading fpm overrides from $fpminfo"
-          source "$fpminfo"
-          break
-      fi
-  done
+  if [[ ! -d "$SRC_DIR" ]]; then
+      echo >&2 "BUG: looking in wrong dir for fpm-info.sh: $pkgdir"
+      exit 1
+  fi
+  fpminfo="${SRC_DIR}/fpm-info.sh"
+  if [[ -e "$fpminfo" ]]; then
+      debug_echo "Loading fpm overrides from $fpminfo"
+      source "$fpminfo"
+  fi
   for pkg in "${build_depends[@]}"; do
       if [[ $TARGET =~ debian|ubuntu ]]; then
           pkg_deb=$(ls "$WORKSPACE/packages/$TARGET/$pkg_"*.deb | sort -rg | awk 'NR==1')
