@@ -60,7 +60,6 @@ func (s *DockerSuite) SetUpSuite(c *check.C) {
 	}
 	s.proxysrv = &http.Server{Handler: proxy}
 	go s.proxysrv.ServeTLS(ln, "../../services/api/tmp/self-signed.pem", "../../services/api/tmp/self-signed.key")
-	proxyhost := ln.Addr().String()
 
 	// Build a pam module to install & configure in the docker
 	// container.
@@ -68,20 +67,6 @@ func (s *DockerSuite) SetUpSuite(c *check.C) {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()
-	c.Assert(err, check.IsNil)
-
-	// Write a PAM config file that uses our proxy as
-	// ARVADOS_API_HOST.
-	confdata := fmt.Sprintf(`Name: Arvados authentication
-Default: yes
-Priority: 256
-Auth-Type: Primary
-Auth:
-	[success=end default=ignore]	/usr/lib/pam_arvados.so %s testvm2.shell insecure
-Auth-Initial:
-	[success=end default=ignore]	/usr/lib/pam_arvados.so %s testvm2.shell insecure
-`, proxyhost, proxyhost)
-	err = ioutil.WriteFile(s.tmpdir+"/conffile", []byte(confdata), 0755)
 	c.Assert(err, check.IsNil)
 
 	// Build the testclient program that will (from inside the
@@ -103,9 +88,28 @@ func (s *DockerSuite) TearDownSuite(c *check.C) {
 	}
 }
 
+func (s *DockerSuite) SetUpTest(c *check.C) {
+	// Write a PAM config file that uses our proxy as
+	// ARVADOS_API_HOST.
+	proxyhost := s.proxyln.Addr().String()
+	confdata := fmt.Sprintf(`Name: Arvados authentication
+Default: yes
+Priority: 256
+Auth-Type: Primary
+Auth:
+	[success=end default=ignore]	/usr/lib/pam_arvados.so %s testvm2.shell insecure
+Auth-Initial:
+	[success=end default=ignore]	/usr/lib/pam_arvados.so %s testvm2.shell insecure
+`, proxyhost, proxyhost)
+	err := ioutil.WriteFile(s.tmpdir+"/conffile", []byte(confdata), 0755)
+	c.Assert(err, check.IsNil)
+}
+
 func (s *DockerSuite) runTestClient(c *check.C, args ...string) (stdout, stderr *bytes.Buffer, err error) {
+
 	cmd := exec.Command("docker", append([]string{
 		"run", "--rm",
+		"--hostname", "testvm2.shell",
 		"--add-host", "zzzzz.arvadosapi.com:" + s.hostip,
 		"-v", s.tmpdir + "/pam_arvados.so:/usr/lib/pam_arvados.so:ro",
 		"-v", s.tmpdir + "/conffile:/usr/share/pam-configs/arvados:ro",
@@ -146,4 +150,24 @@ func (s *DockerSuite) TestFailure(c *check.C) {
 		c.Check(stdout.String(), check.Equals, "")
 		c.Check(stderr.String(), check.Matches, `(?ms).*authentication failed.*`)
 	}
+}
+
+func (s *DockerSuite) TestDefaultHostname(c *check.C) {
+	confdata := fmt.Sprintf(`Name: Arvados authentication
+Default: yes
+Priority: 256
+Auth-Type: Primary
+Auth:
+	[success=end default=ignore]	/usr/lib/pam_arvados.so %s - insecure debug
+Auth-Initial:
+	[success=end default=ignore]	/usr/lib/pam_arvados.so %s - insecure debug
+`, s.proxyln.Addr().String(), s.proxyln.Addr().String())
+	err := ioutil.WriteFile(s.tmpdir+"/conffile", []byte(confdata), 0755)
+	c.Assert(err, check.IsNil)
+
+	stdout, stderr, err := s.runTestClient(c, "try", "active", arvadostest.ActiveTokenV2)
+	c.Check(err, check.IsNil)
+	c.Logf("%s", stderr.String())
+	c.Check(stdout.String(), check.Equals, "")
+	c.Check(stderr.String(), check.Matches, `(?ms).*authentication succeeded.*`)
 }

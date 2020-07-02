@@ -24,6 +24,7 @@ package main
 import (
 	"io/ioutil"
 	"log/syslog"
+	"os"
 
 	"context"
 	"errors"
@@ -104,8 +105,16 @@ func authenticate(logger *logrus.Logger, username, token string, argv []string) 
 			logger.Warnf("unkown option: %s\n", arg)
 		}
 	}
+	if hostname == "" || hostname == "-" {
+		h, err := os.Hostname()
+		if err != nil {
+			logger.WithError(err).Warnf("cannot get hostname -- try using an explicit hostname in pam config")
+			return fmt.Errorf("cannot get hostname: %w", err)
+		}
+		hostname = h
+	}
 	logger.Debugf("username=%q arvados_api_host=%q hostname=%q insecure=%t", username, apiHost, hostname, insecure)
-	if apiHost == "" || hostname == "" {
+	if apiHost == "" {
 		logger.Warnf("cannot authenticate: config error: arvados_api_host and hostname must be non-empty")
 		return errors.New("config error")
 	}
