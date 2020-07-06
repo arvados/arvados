@@ -146,7 +146,7 @@ calculate_go_package_version() {
   __returnvar="$version"
 }
 
-# Usage: package_go_binary services/foo arvados-foo "Compute foo to arbitrary precision"
+# Usage: package_go_binary services/foo arvados-foo "Compute foo to arbitrary precision" [apache-2.0.txt]
 package_go_binary() {
     local src_path="$1"; shift
     local prog="$1"; shift
@@ -185,7 +185,37 @@ package_go_binary() {
     fi
     switches+=("$WORKSPACE/${license_file}=/usr/share/doc/$prog/${license_file}")
 
-    fpm_build "$GOPATH/bin/${basename}=/usr/bin/${prog}" "${prog}" dir "${go_package_version}" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=${description}" "${switches[@]}"
+    fpm_build "${WORKSPACE}/${src_path}" "$GOPATH/bin/${basename}=/usr/bin/${prog}" "${prog}" dir "${go_package_version}" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=${description}" "${switches[@]}"
+}
+
+# Usage: package_go_so lib/foo arvados_foo.so arvados-foo "Arvados foo library"
+package_go_so() {
+    local src_path="$1"; shift
+    local sofile="$1"; shift
+    local pkg="$1"; shift
+    local description="$1"; shift
+
+    debug_echo "package_go_so $src_path as $pkg"
+
+    calculate_go_package_version go_package_version $src_path
+    cd $WORKSPACE/packages/$TARGET
+    test_package_presence $pkg $go_package_version go || return 1
+    cd $WORKSPACE/$src_path
+    go build -buildmode=c-shared -o ${GOPATH}/bin/${sofile}
+    cd $WORKSPACE/packages/$TARGET
+    local -a fpmargs=(
+        "--url=https://arvados.org"
+        "--license=Apache License, Version 2.0"
+        "--description=${description}"
+        "$WORKSPACE/apache-2.0.txt=/usr/share/doc/$pkg/apache-2.0.txt"
+    )
+    if [[ -e "$WORKSPACE/$src_path/pam-configs-arvados" ]]; then
+        fpmargs+=("$WORKSPACE/$src_path/pam-configs-arvados=/usr/share/pam-configs/arvados-go")
+    fi
+    if [[ -e "$WORKSPACE/$src_path/README" ]]; then
+        fpmargs+=("$WORKSPACE/$src_path/README=/usr/share/doc/$pkg/README")
+    fi
+    fpm_build "${WORKSPACE}/${src_path}" "$GOPATH/bin/${sofile}=/usr/lib/${sofile}" "${pkg}" dir "${go_package_version}" "${fpmargs[@]}"
 }
 
 default_iteration() {
@@ -417,7 +447,7 @@ handle_rails_package() {
     for exclude in ${exclude_list[@]}; do
         switches+=(-x "$exclude_root/$exclude")
     done
-    fpm_build "${pos_args[@]}" "${switches[@]}" \
+    fpm_build "${srcdir}" "${pos_args[@]}" "${switches[@]}" \
               -x "$exclude_root/vendor/cache-*" \
               -x "$exclude_root/vendor/bundle" "$@" "$license_arg"
     rm -rf "$scripts_dir"
@@ -736,6 +766,9 @@ fpm_build_virtualenv () {
 
 # Build packages for everything
 fpm_build () {
+  # Source dir where fpm-info.sh (if any) will be found.
+  SRC_DIR=$1
+  shift
   # The package source.  Depending on the source type, this can be a
   # path, or the name of the package in an upstream repository (e.g.,
   # pip).
@@ -812,17 +845,15 @@ fpm_build () {
   declare -a build_depends=()
   declare -a fpm_depends=()
   declare -a fpm_exclude=()
-  declare -a fpm_dirs=(
-      # source dir part of 'dir' package ("/source=/dest" => "/source"):
-      "${PACKAGE%%=/*}")
-  for pkgdir in "${fpm_dirs[@]}"; do
-      fpminfo="$pkgdir/fpm-info.sh"
-      if [[ -e "$fpminfo" ]]; then
-          debug_echo "Loading fpm overrides from $fpminfo"
-          source "$fpminfo"
-          break
-      fi
-  done
+  if [[ ! -d "$SRC_DIR" ]]; then
+      echo >&2 "BUG: looking in wrong dir for fpm-info.sh: $pkgdir"
+      exit 1
+  fi
+  fpminfo="${SRC_DIR}/fpm-info.sh"
+  if [[ -e "$fpminfo" ]]; then
+      debug_echo "Loading fpm overrides from $fpminfo"
+      source "$fpminfo"
+  fi
   for pkg in "${build_depends[@]}"; do
       if [[ $TARGET =~ debian|ubuntu ]]; then
           pkg_deb=$(ls "$WORKSPACE/packages/$TARGET/$pkg_"*.deb | sort -rg | awk 'NR==1')

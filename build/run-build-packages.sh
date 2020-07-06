@@ -3,8 +3,8 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-. `dirname "$(readlink -f "$0")"`/run-library.sh
-. `dirname "$(readlink -f "$0")"`/libcloud-pin.sh
+. `dirname "$(readlink -f "$0")"`/run-library.sh || exit 1
+. `dirname "$(readlink -f "$0")"`/libcloud-pin.sh || exit 1
 
 read -rd "\000" helpmessage <<EOF
 $(basename $0): Build Arvados packages
@@ -223,7 +223,7 @@ if [[ -z "$ONLY_BUILD" ]] || [[ "libarvados-perl" = "$ONLY_BUILD" ]] ; then
 
     perl Makefile.PL INSTALL_BASE=install >"$STDOUT_IF_DEBUG" && \
         make install INSTALLDIRS=perl >"$STDOUT_IF_DEBUG" && \
-        fpm_build install/lib/=/usr/share libarvados-perl \
+        fpm_build "$WORKSPACE/sdk/perl" install/lib/=/usr/share libarvados-perl \
         dir "$(version_from_git)" install/man/=/usr/share/man \
         "$WORKSPACE/apache-2.0.txt=/usr/share/doc/libarvados-perl/apache-2.0.txt" && \
         mv --no-clobber libarvados-perl*.$FORMAT "$WORKSPACE/packages/$TARGET/"
@@ -271,7 +271,7 @@ debug_echo -e "\nPython packages\n"
       cd "$SRC_BUILD_DIR"
       PKG_VERSION=$(version_from_git)
       cd $WORKSPACE/packages/$TARGET
-      fpm_build $SRC_BUILD_DIR/=/usr/local/arvados/src arvados-src 'dir' "$PKG_VERSION" "--exclude=usr/local/arvados/src/.git" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=The Arvados source code" "--architecture=all"
+      fpm_build "$WORKSPACE" $SRC_BUILD_DIR/=/usr/local/arvados/src arvados-src 'dir' "$PKG_VERSION" "--exclude=usr/local/arvados/src/.git" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=The Arvados source code" "--architecture=all"
 
       rm -rf "$SRC_BUILD_DIR"
     fi
@@ -318,6 +318,8 @@ package_go_binary tools/keep-rsync keep-rsync \
     "Copy all data from one set of Keep servers to another"
 package_go_binary tools/keep-exercise keep-exercise \
     "Performance testing tool for Arvados Keep"
+package_go_so lib/pam pam_arvados.so libpam-arvados-go \
+    "Arvados PAM authentication module"
 
 # The Python SDK - Should be built first because it's needed by others
 fpm_build_virtualenv "arvados-python-client" "sdk/python"
