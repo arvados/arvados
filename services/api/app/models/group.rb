@@ -57,7 +57,7 @@ class Group < ArvadosModel
   end
 
   def update_trash
-    if trash_at_changed? or owner_uuid_changed?
+    if saved_change_to_trash_at? or saved_change_to_owner_uuid?
       # The group was added or removed from the trash.
       #
       # Strategy:
@@ -97,7 +97,7 @@ on conflict (group_uuid) do update set trash_at=EXCLUDED.trash_at;
   end
 
   def after_ownership_change
-    if owner_uuid_changed?
+    if saved_change_to_owner_uuid?
       update_permissions self.owner_uuid, self.uuid, CAN_MANAGE_PERM
     end
   end

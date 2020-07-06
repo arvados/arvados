@@ -168,7 +168,7 @@ class Node < ArvadosModel
   end
 
   def dns_server_update
-    if ip_address_changed? && ip_address
+    if saved_change_to_ip_address? && ip_address
       Node.where('id != ? and ip_address = ?',
                  id, ip_address).each do |stale_node|
         # One or more(!) stale node records have the same IP address
@@ -178,10 +178,10 @@ class Node < ArvadosModel
         stale_node.update_attributes!(ip_address: nil)
       end
     end
-    if hostname_was && hostname_changed?
-      self.class.dns_server_update(hostname_was, UNUSED_NODE_IP)
+    if hostname_before_last_save && saved_change_to_hostname?
+      self.class.dns_server_update(hostname_before_last_save, UNUSED_NODE_IP)
     end
-    if hostname && (hostname_changed? || ip_address_changed?)
+    if hostname && (saved_change_to_hostname? || saved_change_to_ip_address?)
       self.class.dns_server_update(hostname, ip_address || UNUSED_NODE_IP)
     end
   end

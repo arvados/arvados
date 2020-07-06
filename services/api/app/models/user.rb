@@ -23,32 +23,32 @@ class User < ArvadosModel
   validate :must_unsetup_to_deactivate
   before_update :prevent_privilege_escalation
   before_update :prevent_inactive_admin
-  before_update :verify_repositories_empty, :if => Proc.new { |user|
-    user.username.nil? and user.username_changed?
+  before_update :verify_repositories_empty, :if => Proc.new {
+    username.nil? and username_changed?
   }
   before_update :setup_on_activate
 
   before_create :check_auto_admin
-  before_create :set_initial_username, :if => Proc.new { |user|
-    user.username.nil? and user.email
+  before_create :set_initial_username, :if => Proc.new {
+    username.nil? and email
   }
   after_create :after_ownership_change
   after_create :setup_on_activate
   after_create :add_system_group_permission_link
-  after_create :auto_setup_new_user, :if => Proc.new { |user|
+  after_create :auto_setup_new_user, :if => Proc.new {
     Rails.configuration.Users.AutoSetupNewUsers and
-    (user.uuid != system_user_uuid) and
-    (user.uuid != anonymous_user_uuid)
+    (uuid != system_user_uuid) and
+    (uuid != anonymous_user_uuid)
   }
   after_create :send_admin_notifications
 
   before_update :before_ownership_change
   after_update :after_ownership_change
   after_update :send_profile_created_notification
-  after_update :sync_repository_names, :if => Proc.new { |user|
-    (user.uuid != system_user_uuid) and
-    user.username_changed? and
-    (not user.username_was.nil?)
+  after_update :sync_repository_names, :if => Proc.new {
+    (uuid != system_user_uuid) and
+    saved_change_to_username? and
+    (not username_before_last_save.nil?)
   }
   before_destroy :clear_permissions
   after_destroy :remove_self_from_permissions
@@ -151,7 +151,7 @@ SELECT 1 FROM #{PERMISSION_VIEW}
   end
 
   def after_ownership_change
-    if owner_uuid_changed?
+    if saved_change_to_owner_uuid?
       update_permissions self.owner_uuid, self.uuid, CAN_MANAGE_PERM
     end
   end
@@ -743,7 +743,7 @@ update #{PERMISSION_VIEW} set target_uuid=$1 where target_uuid = $2
   # Automatically setup if is_active flag turns on
   def setup_on_activate
     return if [system_user_uuid, anonymous_user_uuid].include?(self.uuid)
-    if is_active && (new_record? || is_active_changed?)
+    if is_active && (new_record? || saved_change_to_is_active?)
       setup
     end
   end
@@ -766,8 +766,8 @@ update #{PERMISSION_VIEW} set target_uuid=$1 where target_uuid = $2
 
   # Send notification if the user saved profile for the first time
   def send_profile_created_notification
-    if self.prefs_changed?
-      if self.prefs_was.andand.empty? || !self.prefs_was.andand['profile']
+    if saved_change_to_prefs?
+      if prefs_before_last_save.andand.empty? || !prefs_before_last_save.andand['profile']
         profile_notification_address = Rails.configuration.Users.UserProfileNotificationAddress
         ProfileNotifier.profile_created(self, profile_notification_address).deliver_now if profile_notification_address and !profile_notification_address.empty?
       end
@@ -782,7 +782,7 @@ update #{PERMISSION_VIEW} set target_uuid=$1 where target_uuid = $2
   end
 
   def sync_repository_names
-    old_name_re = /^#{Regexp.escape(username_was)}\//
+    old_name_re = /^#{Regexp.escape(username_before_last_save)}\//
     name_sub = "#{username}/"
     repositories.find_each do |repo|
       repo.name = repo.name.sub(old_name_re, name_sub)
