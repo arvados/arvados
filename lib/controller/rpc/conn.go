@@ -287,6 +287,17 @@ func (conn *Conn) ContainerUnlock(ctx context.Context, options arvados.GetOption
 	return resp, err
 }
 
+func (conn *Conn) ExampleCount(ctx context.Context, options arvados.ExampleCountOptions) (resp arvados.ExampleCountResponse, err error) {
+	ep := arvados.EndpointExampleCount
+	err = conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return
+}
+func (conn *Conn) ExampleGet(ctx context.Context, options arvados.GetOptions) (resp arvados.Example, err error) {
+	ep := arvados.EndpointExampleGet
+	err = conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return
+}
+
 func (conn *Conn) SpecimenCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Specimen, error) {
 	ep := arvados.EndpointSpecimenCreate
 	var resp arvados.Specimen

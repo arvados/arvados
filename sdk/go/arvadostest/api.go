@@ -105,6 +105,14 @@ func (as *APIStub) ContainerUnlock(ctx context.Context, options arvados.GetOptio
 	as.appendCall(as.ContainerUnlock, ctx, options)
 	return arvados.Container{}, as.Error
 }
+func (as *APIStub) ExampleCount(ctx context.Context, options arvados.ExampleCountOptions) (arvados.ExampleCountResponse, error) {
+	as.appendCall(as.ExampleCount, ctx, options)
+	return arvados.ExampleCountResponse{}, as.Error
+}
+func (as *APIStub) ExampleGet(ctx context.Context, options arvados.GetOptions) (arvados.Example, error) {
+	as.appendCall(as.ExampleGet, ctx, options)
+	return arvados.Example{}, as.Error
+}
 func (as *APIStub) SpecimenCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Specimen, error) {
 	as.appendCall(as.SpecimenCreate, ctx, options)
 	return arvados.Specimen{}, as.Error

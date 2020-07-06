@@ -7,6 +7,7 @@ package localdb
 import (
 	"context"
 
+	"git.arvados.org/arvados.git/lib/controller/example"
 	"git.arvados.org/arvados.git/lib/controller/railsproxy"
 	"git.arvados.org/arvados.git/lib/controller/rpc"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
@@ -18,6 +19,7 @@ type Conn struct {
 	cluster     *arvados.Cluster
 	*railsProxy // handles API methods that aren't defined on Conn itself
 	loginController
+	example *example.Controller
 }
 
 func NewConn(cluster *arvados.Cluster) *Conn {
@@ -27,8 +29,17 @@ func NewConn(cluster *arvados.Cluster) *Conn {
 		cluster:         cluster,
 		railsProxy:      railsProxy,
 		loginController: chooseLoginController(cluster, railsProxy),
+		example:         example.New(cluster, currenttx),
 	}
 	return &conn
+}
+
+func (conn *Conn) ExampleCount(ctx context.Context, opts arvados.ExampleCountOptions) (arvados.ExampleCountResponse, error) {
+	return conn.example.ExampleCount(ctx, opts)
+}
+
+func (conn *Conn) ExampleGet(ctx context.Context, opts arvados.GetOptions) (arvados.Example, error) {
+	return conn.example.ExampleGet(ctx, opts)
 }
 
 func (conn *Conn) Logout(ctx context.Context, opts arvados.LogoutOptions) (arvados.LogoutResponse, error) {

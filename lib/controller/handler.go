@@ -94,6 +94,8 @@ func (h *Handler) setup() {
 	if !h.Cluster.ForceLegacyAPI14 {
 		mux.Handle("/arvados/v1/collections", rtr)
 		mux.Handle("/arvados/v1/collections/", rtr)
+		mux.Handle("/arvados/v1/examples", rtr)
+		mux.Handle("/arvados/v1/examples/", rtr)
 		mux.Handle("/arvados/v1/users", rtr)
 		mux.Handle("/arvados/v1/users/", rtr)
 		mux.Handle("/login", rtr)

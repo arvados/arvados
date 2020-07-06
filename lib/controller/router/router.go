@@ -187,6 +187,20 @@ func (rtr *router) addRoutes() {
 			},
 		},
 		{
+			arvados.EndpointExampleCount,
+			func() interface{} { return &arvados.ExampleCountOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.ExampleCount(ctx, *opts.(*arvados.ExampleCountOptions))
+			},
+		},
+		{
+			arvados.EndpointExampleGet,
+			func() interface{} { return &arvados.GetOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.ExampleGet(ctx, *opts.(*arvados.GetOptions))
+			},
+		},
+		{
 			arvados.EndpointSpecimenCreate,
 			func() interface{} { return &arvados.CreateOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {

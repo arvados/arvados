@@ -323,6 +323,14 @@ func (conn *Conn) ContainerUnlock(ctx context.Context, options arvados.GetOption
 	return conn.chooseBackend(options.UUID).ContainerUnlock(ctx, options)
 }
 
+func (conn *Conn) ExampleCount(ctx context.Context, options arvados.ExampleCountOptions) (arvados.ExampleCountResponse, error) {
+	return conn.chooseBackend(options.ClusterID).ExampleCount(ctx, options)
+}
+
+func (conn *Conn) ExampleGet(ctx context.Context, options arvados.GetOptions) (arvados.Example, error) {
+	return conn.chooseBackend(options.UUID).ExampleGet(ctx, options)
+}
+
 func (conn *Conn) SpecimenList(ctx context.Context, options arvados.ListOptions) (arvados.SpecimenList, error) {
 	return conn.generated_SpecimenList(ctx, options)
 }
