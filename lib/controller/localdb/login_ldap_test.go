@@ -6,7 +6,6 @@ package localdb
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"net"
 	"net/http"
@@ -18,6 +17,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"github.com/bradleypeabody/godap"
+	"github.com/jmoiron/sqlx"
 	check "gopkg.in/check.v1"
 )
 
@@ -27,7 +27,7 @@ type LDAPSuite struct {
 	cluster *arvados.Cluster
 	ctrl    *ldapLoginController
 	ldap    *godap.LDAPServer // fake ldap server that accepts auth goodusername/goodpassword
-	db      *sql.DB
+	db      *sqlx.DB
 
 	// transaction context
 	ctx      context.Context

@@ -6,7 +6,6 @@ package controller
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"net/http"
@@ -23,6 +22,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/health"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
+	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 )
 
@@ -34,7 +34,7 @@ type Handler struct {
 	proxy          *proxy
 	secureClient   *http.Client
 	insecureClient *http.Client
-	pgdb           *sql.DB
+	pgdb           *sqlx.DB
 	pgdbMtx        sync.Mutex
 }
 
@@ -121,14 +121,14 @@ func (h *Handler) setup() {
 
 var errDBConnection = errors.New("database connection error")
 
-func (h *Handler) db(ctx context.Context) (*sql.DB, error) {
+func (h *Handler) db(ctx context.Context) (*sqlx.DB, error) {
 	h.pgdbMtx.Lock()
 	defer h.pgdbMtx.Unlock()
 	if h.pgdb != nil {
 		return h.pgdb, nil
 	}
 
-	db, err := sql.Open("postgres", h.Cluster.PostgreSQL.Connection.String())
+	db, err := sqlx.Open("postgres", h.Cluster.PostgreSQL.Connection.String())
 	if err != nil {
 		ctxlog.FromContext(ctx).WithError(err).Error("postgresql connect failed")
 		return nil, errDBConnection

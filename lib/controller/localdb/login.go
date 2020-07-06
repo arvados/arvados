@@ -130,7 +130,7 @@ func createAPIClientAuthorization(ctx context.Context, conn *rpc.Conn, rootToken
 	}
 	var exp sql.NullString
 	var scopes []byte
-	err = tx.QueryRowContext(ctx, "select uuid, api_token, expires_at, scopes from api_client_authorizations where api_token=$1", tokensecret).Scan(&resp.UUID, &resp.APIToken, &exp, &scopes)
+	err = tx.QueryRowxContext(ctx, "select uuid, api_token, expires_at, scopes from api_client_authorizations where api_token=$1", tokensecret).Scan(&resp.UUID, &resp.APIToken, &exp, &scopes)
 	if err != nil {
 		return
 	}
