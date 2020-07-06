@@ -154,6 +154,8 @@ type LogoutOptions struct {
 	ReturnTo string `json:"return_to"` // Redirect to this URL after logging out
 }
 
+type RoutableFunc func(ctx context.Context, opts interface{}) (interface{}, error)
+
 type API interface {
 	ConfigGet(ctx context.Context) (json.RawMessage, error)
 	Login(ctx context.Context, options LoginOptions) (LoginResponse, error)

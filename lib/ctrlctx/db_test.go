@@ -2,37 +2,24 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package localdb
+package ctrlctx
 
 import (
 	"context"
 	"sync"
 	"sync/atomic"
+	"testing"
 
 	"git.arvados.org/arvados.git/lib/config"
-	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	check "gopkg.in/check.v1"
 )
 
-// testdb returns a DB connection for the given cluster config.
-func testdb(c *check.C, cluster *arvados.Cluster) *sqlx.DB {
-	db, err := sqlx.Open("postgres", cluster.PostgreSQL.Connection.String())
-	c.Assert(err, check.IsNil)
-	return db
-}
-
-// testctx returns a context suitable for running a test case in a new
-// transaction, and a rollback func which the caller should call after
-// the test.
-func testctx(c *check.C, db *sqlx.DB) (ctx context.Context, rollback func()) {
-	tx, err := db.Beginx()
-	c.Assert(err, check.IsNil)
-	return ContextWithTransaction(context.Background(), tx), func() {
-		c.Check(tx.Rollback(), check.IsNil)
-	}
+// Gocheck boilerplate
+func Test(t *testing.T) {
+	check.TestingT(t)
 }
 
 var _ = check.Suite(&DatabaseSuite{})
@@ -48,7 +35,9 @@ func (*DatabaseSuite) TestTransactionContext(c *check.C) {
 	var getterCalled int64
 	getter := func(context.Context) (*sqlx.DB, error) {
 		atomic.AddInt64(&getterCalled, 1)
-		return testdb(c, cluster), nil
+		db, err := sqlx.Open("postgres", cluster.PostgreSQL.Connection.String())
+		c.Assert(err, check.IsNil)
+		return db, nil
 	}
 	wrapper := WrapCallsInTransactions(getter)
 	wrappedFunc := wrapper(func(ctx context.Context, opts interface{}) (interface{}, error) {
@@ -58,14 +47,14 @@ func (*DatabaseSuite) TestTransactionContext(c *check.C) {
 			i := i
 			wg.Add(1)
 			go func() {
-				// Concurrent calls to currenttx(),
+				// Concurrent calls to CurrentTx(),
 				// with different children of the same
 				// parent context, will all return the
 				// same transaction.
 				defer wg.Done()
 				ctx, cancel := context.WithCancel(ctx)
 				defer cancel()
-				tx, err := currenttx(ctx)
+				tx, err := CurrentTx(ctx)
 				c.Check(err, check.IsNil)
 				txes[i] = tx
 			}()
@@ -82,8 +71,8 @@ func (*DatabaseSuite) TestTransactionContext(c *check.C) {
 	c.Check(err, check.IsNil)
 	c.Check(getterCalled, check.Equals, int64(1))
 
-	// When a wrapped func returns without calling currenttx(),
-	// calling currenttx() later shouldn't start a new
+	// When a wrapped func returns without calling CurrentTx(),
+	// calling CurrentTx() later shouldn't start a new
 	// transaction.
 	var savedctx context.Context
 	ok, err = wrapper(func(ctx context.Context, opts interface{}) (interface{}, error) {
@@ -92,7 +81,7 @@ func (*DatabaseSuite) TestTransactionContext(c *check.C) {
 	})(context.Background(), "blah")
 	c.Check(ok, check.Equals, true)
 	c.Check(err, check.IsNil)
-	tx, err := currenttx(savedctx)
+	tx, err := CurrentTx(savedctx)
 	c.Check(tx, check.IsNil)
 	c.Check(err, check.NotNil)
 }

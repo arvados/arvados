@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	"git.arvados.org/arvados.git/lib/controller/rpc"
+	"git.arvados.org/arvados.git/lib/ctrlctx"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
@@ -117,7 +118,7 @@ func createAPIClientAuthorization(ctx context.Context, conn *rpc.Conn, rootToken
 		return
 	}
 	token := target.Query().Get("api_token")
-	tx, err := currenttx(ctx)
+	tx, err := ctrlctx.CurrentTx(ctx)
 	if err != nil {
 		return
 	}

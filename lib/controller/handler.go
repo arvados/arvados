@@ -15,9 +15,9 @@ import (
 	"time"
 
 	"git.arvados.org/arvados.git/lib/controller/federation"
-	"git.arvados.org/arvados.git/lib/controller/localdb"
 	"git.arvados.org/arvados.git/lib/controller/railsproxy"
 	"git.arvados.org/arvados.git/lib/controller/router"
+	"git.arvados.org/arvados.git/lib/ctrlctx"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/health"
@@ -87,7 +87,7 @@ func (h *Handler) setup() {
 		Routes: health.Routes{"ping": func() error { _, err := h.db(context.TODO()); return err }},
 	})
 
-	rtr := router.New(federation.New(h.Cluster), localdb.WrapCallsInTransactions(h.db))
+	rtr := router.New(federation.New(h.Cluster), ctrlctx.WrapCallsInTransactions(h.db))
 	mux.Handle("/arvados/v1/config", rtr)
 	mux.Handle("/"+arvados.EndpointUserAuthenticate.Path, rtr)
 
