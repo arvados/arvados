@@ -7,11 +7,14 @@ import {
     StyleRulesCallback, WithStyles, withStyles, Card,
     CardHeader, IconButton, CardContent, Grid, Tooltip
 } from '@material-ui/core';
+import MuiExpansionPanel from '@material-ui/core/ExpansionPanel';
+import MuiExpansionPanelSummary from '@material-ui/core/ExpansionPanelSummary';
+import MuiExpansionPanelDetails from '@material-ui/core/ExpansionPanelDetails';
 import { connect, DispatchProp } from "react-redux";
 import { RouteComponentProps } from 'react-router';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { RootState } from '~/store/store';
-import { MoreOptionsIcon, CollectionIcon, ReadOnlyIcon } from '~/components/icon/icon';
+import { MoreOptionsIcon, CollectionIcon, ReadOnlyIcon, ExpandIcon } from '~/components/icon/icon';
 import { DetailsAttribute } from '~/components/details-attribute/details-attribute';
 import { CollectionResource } from '~/models/collection';
 import { CollectionPanelFiles } from '~/views-components/collection-panel-files/collection-panel-files';
@@ -44,6 +47,36 @@ type CssRules = 'root'
     | 'centeredLabel'
     | 'readOnlyIcon';
 
+const ExpansionPanel = withStyles({
+    root: {
+        margin: 0,
+        padding: 0,
+    }
+})(MuiExpansionPanel);
+
+const ExpansionPanelSummary = withStyles({
+    root: {
+        margin: 0,
+        padding: 0,
+    },
+    content: {
+        '&$expanded': {
+            margin: 0,
+            padding: 0,
+        },
+        margin: 0,
+        padding: 0,
+    },
+    expanded: {},
+})(MuiExpansionPanelSummary);
+
+const ExpansionPanelDetails = withStyles({
+    root: {
+        margin: 0,
+        padding: 0,
+    }
+})(MuiExpansionPanelDetails);
+
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         display: 'flex',
@@ -62,6 +95,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         flex: 1,
     },
     cardContent: {
+        width: '100%',
         paddingTop: 0,
         paddingBottom: theme.spacing.unit,
         '&:last-child': {
@@ -134,22 +168,14 @@ export const CollectionPanel = withStyles(styles)(
                 return item
                     ? <div className={classes.root}>
                         <Card data-cy='collection-info-panel' className={classes.card}>
+                        <ExpansionPanel defaultExpanded>
+                        <ExpansionPanelSummary expandIcon={<ExpandIcon />}>
                             <CardHeader
                                 className={classes.cardHeader}
                                 avatar={
                                     <IconButton onClick={this.openCollectionDetails}>
                                         <CollectionIcon className={classes.iconHeader} />
                                     </IconButton>
-                                }
-                                action={
-                                    <Tooltip title="More options" disableFocusListener>
-                                        <IconButton
-                                            data-cy='collection-panel-options-btn'
-                                            aria-label="More options"
-                                            onClick={this.handleContextMenu}>
-                                            <MoreOptionsIcon />
-                                        </IconButton>
-                                    </Tooltip>
                                 }
                                 title={
                                     <span>
@@ -165,9 +191,11 @@ export const CollectionPanel = withStyles(styles)(
                                 titleTypographyProps={this.titleProps}
                                 subheader={item.description}
                                 subheaderTypographyProps={this.titleProps} />
+                            </ExpansionPanelSummary>
+                            <ExpansionPanelDetails>
                             <CardContent className={classes.cardContent}>
-                                <Grid container direction="column">
-                                    <Grid item xs={10}>
+                                <Grid container justify="space-between">
+                                    <Grid item xs={11}>
                                         <DetailsAttribute classLabel={classes.label} classValue={classes.value}
                                             label='Collection UUID'
                                             linkToUuid={item.uuid} />
@@ -186,13 +214,28 @@ export const CollectionPanel = withStyles(styles)(
                                             </span>
                                         }
                                     </Grid>
+                                    <Grid item xs={1} style={{textAlign: "right"}}>
+                                        <Tooltip title="More options" disableFocusListener>
+                                            <IconButton
+                                                data-cy='collection-panel-options-btn'
+                                                aria-label="More options"
+                                                onClick={this.handleContextMenu}>
+                                                <MoreOptionsIcon />
+                                            </IconButton>
+                                        </Tooltip>
+                                    </Grid>
                                 </Grid>
                             </CardContent>
+                            </ExpansionPanelDetails>
+                        </ExpansionPanel>
                         </Card>
 
                         <Card data-cy='collection-properties-panel' className={classes.card}>
-                            <CardHeader title="Properties" />
-                            <CardContent className={classes.cardContent}>
+                        <ExpansionPanel defaultExpanded>
+                            <ExpansionPanelSummary expandIcon={<ExpandIcon />}>
+                                <CardHeader title="Properties" />
+                            </ExpansionPanelSummary>
+                            <ExpansionPanelDetails><CardContent className={classes.cardContent}>
                                 <Grid container direction="column">
                                     {isWritable && <Grid item xs={12}>
                                         <CollectionTagForm />
@@ -219,7 +262,8 @@ export const CollectionPanel = withStyles(styles)(
                                     }
                                     </Grid>
                                 </Grid>
-                            </CardContent>
+                            </CardContent></ExpansionPanelDetails>
+                        </ExpansionPanel>
                         </Card>
                         <div className={classes.filesCard}>
                             <CollectionPanelFiles
