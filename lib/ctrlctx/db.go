@@ -66,7 +66,7 @@ type finishFunc func(*error)
 // commit or rollback the transaction, if any.
 //
 //	func example(ctx context.Context) (err error) {
-//		ctx, finishtx := NewContext(ctx, dber)
+//		ctx, finishtx := New(ctx, dber)
 //		defer finishtx(&err)
 //		// ...
 //		tx, err := CurrentTx(ctx)
