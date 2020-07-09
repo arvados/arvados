@@ -18,6 +18,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// DumpCommand implements cmd.Handler interface. This prints out the config
+// to stderr, this is useful for Operations.
 var DumpCommand dumpCommand
 
 type dumpCommand struct{}
@@ -67,6 +69,8 @@ func (dumpCommand) RunCommand(prog string, args []string, stdin io.Reader, stdou
 	return 0
 }
 
+// CheckCommand implements cmd.Handler interface. This checks if is a valid
+// configuration and also deprecation flags
 var CheckCommand checkCommand
 
 type checkCommand struct{}
@@ -161,9 +165,8 @@ func (checkCommand) RunCommand(prog string, args []string, stdin io.Reader, stdo
 
 	if problems {
 		return 1
-	} else {
-		return 0
 	}
+	return 0
 }
 
 func warnAboutProblems(logger logrus.FieldLogger, cfg *arvados.Config) bool {
@@ -181,6 +184,8 @@ func warnAboutProblems(logger logrus.FieldLogger, cfg *arvados.Config) bool {
 	return warned
 }
 
+// DumpDefaultsCommand implements cmd.Handler interface. This dumps the default configuration.
+// This is useful when starting an arvados cluster from scratch
 var DumpDefaultsCommand defaultsCommand
 
 type defaultsCommand struct{}

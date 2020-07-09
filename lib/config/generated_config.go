@@ -4,6 +4,7 @@
 
 package config
 
+// DefaultYAML contains the default configuration as a []byte.7
 var DefaultYAML = []byte(`# Copyright (C) The Arvados Authors. All rights reserved.
 #
 # SPDX-License-Identifier: AGPL-3.0

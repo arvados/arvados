@@ -21,8 +21,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// ErrNoClustersDefined is an error type when the config does not define any clusters
 var ErrNoClustersDefined = errors.New("config does not define any clusters")
 
+// Loader type is the main type load a configuration
 type Loader struct {
 	Stdin          io.Reader
 	Logger         logrus.FieldLogger
@@ -172,6 +174,8 @@ func (ldr *Loader) loadBytes(path string) ([]byte, error) {
 	return ioutil.ReadAll(f)
 }
 
+// Load returns an *arvados.Config. This is the main method to be called
+// once the Loader was initilized.
 func (ldr *Loader) Load() (*arvados.Config, error) {
 	if ldr.configdata == nil {
 		buf, err := ldr.loadBytes(ldr.Path)

@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-// package cmd helps define reusable functions that can be exposed as
+// Package cmd helps define reusable functions that can be exposed as
 // [subcommands of] command line programs.
 package cmd
 
@@ -18,12 +18,15 @@ import (
 	"strings"
 )
 
+// Handler interface exposes RunCommand() that executes the (sub)command and returns exit value
 type Handler interface {
 	RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int
 }
 
+// HandlerFunc is the function version of Handler interface
 type HandlerFunc func(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int
 
+// RunCommand executes the (sub)command and return exit value from HanderFunc f
 func (f HandlerFunc) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	return f(prog, args, stdin, stdout, stderr)
 }
@@ -63,6 +66,7 @@ func (versionCommand) RunCommand(prog string, args []string, stdin io.Reader, st
 // ...prints "baz" and exits 2.
 type Multi map[string]Handler
 
+// RunCommand satisfies Handler interface
 func (m Multi) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	_, basename := filepath.Split(prog)
 	if i := strings.Index(basename, "~"); i >= 0 {
@@ -94,6 +98,7 @@ func (m Multi) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	}
 }
 
+// Usage lists all the available commands to stderr
 func (m Multi) Usage(stderr io.Writer) {
 	fmt.Fprintf(stderr, "\nAvailable commands:\n")
 	m.listSubcommands(stderr, "")
@@ -121,6 +126,7 @@ func (m Multi) listSubcommands(out io.Writer, prefix string) {
 	}
 }
 
+// FlagSet interface for the flags and arguments to subcommand
 type FlagSet interface {
 	Init(string, flag.ErrorHandling)
 	Args() []string
