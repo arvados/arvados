@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strings"
 
+	"git.arvados.org/arvados.git/lib/controller/api"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
@@ -21,7 +22,7 @@ import (
 type router struct {
 	mux       *mux.Router
 	backend   arvados.API
-	wrapCalls func(arvados.RoutableFunc) arvados.RoutableFunc
+	wrapCalls func(api.RoutableFunc) api.RoutableFunc
 }
 
 // New returns a new router (which implements the http.Handler
@@ -32,7 +33,7 @@ type router struct {
 // the returned method is used in its place. This can be used to
 // install hooks before and after each API call and alter responses;
 // see localdb.WrapCallsInTransaction for an example.
-func New(backend arvados.API, wrapCalls func(arvados.RoutableFunc) arvados.RoutableFunc) *router {
+func New(backend arvados.API, wrapCalls func(api.RoutableFunc) api.RoutableFunc) *router {
 	rtr := &router{
 		mux:       mux.NewRouter(),
 		backend:   backend,
@@ -46,7 +47,7 @@ func (rtr *router) addRoutes() {
 	for _, route := range []struct {
 		endpoint    arvados.APIEndpoint
 		defaultOpts func() interface{}
-		exec        arvados.RoutableFunc
+		exec        api.RoutableFunc
 	}{
 		{
 			arvados.EndpointConfigGet,
@@ -338,7 +339,7 @@ var altMethod = map[string]string{
 	"GET":   "HEAD", // Accept HEAD at any GET route
 }
 
-func (rtr *router) addRoute(endpoint arvados.APIEndpoint, defaultOpts func() interface{}, exec arvados.RoutableFunc) {
+func (rtr *router) addRoute(endpoint arvados.APIEndpoint, defaultOpts func() interface{}, exec api.RoutableFunc) {
 	methods := []string{endpoint.Method}
 	if alt, ok := altMethod[endpoint.Method]; ok {
 		methods = append(methods, alt)

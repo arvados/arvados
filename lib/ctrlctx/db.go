@@ -9,7 +9,7 @@ import (
 	"errors"
 	"sync"
 
-	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/lib/controller/api"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
@@ -26,8 +26,8 @@ var (
 //
 // The wrapper calls getdb() to get a database handle before each API
 // call.
-func WrapCallsInTransactions(getdb func(context.Context) (*sqlx.DB, error)) func(arvados.RoutableFunc) arvados.RoutableFunc {
-	return func(origFunc arvados.RoutableFunc) arvados.RoutableFunc {
+func WrapCallsInTransactions(getdb func(context.Context) (*sqlx.DB, error)) func(api.RoutableFunc) api.RoutableFunc {
+	return func(origFunc api.RoutableFunc) api.RoutableFunc {
 		return func(ctx context.Context, opts interface{}) (_ interface{}, err error) {
 			ctx, finishtx := New(ctx, getdb)
 			defer finishtx(&err)

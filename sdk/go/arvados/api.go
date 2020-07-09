@@ -154,14 +154,6 @@ type LogoutOptions struct {
 	ReturnTo string `json:"return_to"` // Redirect to this URL after logging out
 }
 
-// A RoutableFunc calls an API method (sometimes via a wrapped
-// RoutableFunc) that has real argument types.
-//
-// (It is used by ctrlctx to manage database transactions, so moving
-// it to the router package would cause a circular dependency
-// router->arvadostest->ctrlctx->router.)
-type RoutableFunc func(ctx context.Context, opts interface{}) (interface{}, error)
-
 type API interface {
 	ConfigGet(ctx context.Context) (json.RawMessage, error)
 	Login(ctx context.Context, options LoginOptions) (LoginResponse, error)
