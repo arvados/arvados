@@ -25,6 +25,7 @@ var _ = check.Suite(&ExampleSuite{})
 type ExampleSuite struct {
 	ctrl     *Controller
 	ctx      context.Context
+	stub     *arvadostest.APIStub
 	rollback func()
 }
 
@@ -34,7 +35,8 @@ func (s *ExampleSuite) SetUpTest(c *check.C) {
 	cluster, err := cfg.GetCluster("")
 	c.Assert(err, check.IsNil)
 	s.ctx, s.rollback = arvadostest.TransactionContext(c, arvadostest.DB(c, cluster))
-	s.ctrl = New(cluster)
+	s.stub = &arvadostest.APIStub{}
+	s.ctrl = New(cluster, s.stub)
 }
 
 func (s *ExampleSuite) TearDownTest(c *check.C) {
@@ -48,6 +50,7 @@ func (s *ExampleSuite) TestCount(c *check.C) {
 	resp, err := s.ctrl.ExampleCount(s.ctx, arvados.ExampleCountOptions{})
 	c.Check(err, check.IsNil)
 	c.Check(resp.Count, check.Equals, 29)
+	c.Check(s.stub.Calls(s.stub.UserList), check.HasLen, 1)
 }
 
 func (s *ExampleSuite) TestGet(c *check.C) {
@@ -55,4 +58,5 @@ func (s *ExampleSuite) TestGet(c *check.C) {
 	c.Check(err, check.IsNil)
 	c.Check(resp.UUID, check.Equals, "alice")
 	c.Check(resp.HairStyle, check.Equals, "bob")
+	c.Check(s.stub.Calls(s.stub.UserList), check.HasLen, 0)
 }

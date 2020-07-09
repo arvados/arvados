@@ -29,7 +29,7 @@ func NewConn(cluster *arvados.Cluster) *Conn {
 		cluster:         cluster,
 		railsProxy:      railsProxy,
 		loginController: chooseLoginController(cluster, railsProxy),
-		example:         example.New(cluster, currenttx),
+		example:         example.New(cluster, &conn),
 	}
 	return &conn
 }
