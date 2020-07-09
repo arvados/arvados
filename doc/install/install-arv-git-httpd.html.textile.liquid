@@ -224,12 +224,11 @@ Use a text editor to create a new file @/etc/nginx/conf.d/arvados-git.conf@ with
   server                  127.0.0.1:<span class="userinput">9001</span>;
 }
 server {
-  listen                  *:443 ssl;
+  listen                  443 ssl;
   server_name             git.<span class="userinput">ClusterID.example.com</span>;
   proxy_connect_timeout   90s;
   proxy_read_timeout      300s;
 
-  ssl on;
   ssl_certificate         <span class="userinput">/YOUR/PATH/TO/cert.pem</span>;
   ssl_certificate_key     <span class="userinput">/YOUR/PATH/TO/cert.key</span>;
 

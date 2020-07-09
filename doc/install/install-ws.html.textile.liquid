@@ -43,7 +43,7 @@ upstream arvados-ws {
 }
 
 server {
-  listen                *:443 ssl;
+  listen                443 ssl;
   server_name           ws.<span class="userinput">ClusterID.example.com</span>;
 
   proxy_connect_timeout 90s;
