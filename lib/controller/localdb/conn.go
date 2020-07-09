@@ -22,11 +22,13 @@ type Conn struct {
 
 func NewConn(cluster *arvados.Cluster) *Conn {
 	railsProxy := railsproxy.NewConn(cluster)
-	return &Conn{
+	var conn Conn
+	conn = Conn{
 		cluster:         cluster,
 		railsProxy:      railsProxy,
 		loginController: chooseLoginController(cluster, railsProxy),
 	}
+	return &conn
 }
 
 func (conn *Conn) Logout(ctx context.Context, opts arvados.LogoutOptions) (arvados.LogoutResponse, error) {
