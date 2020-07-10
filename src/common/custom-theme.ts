@@ -103,6 +103,28 @@ export const themeOptions: ArvadosThemeOptions = {
                 fontSize: '1.25rem'
             }
         },
+        MuiExpansionPanel: {
+            expanded: {
+                marginTop: '8px',
+            }
+        },
+        MuiExpansionPanelDetails: {
+            root: {
+                marginBottom: 0,
+                paddingBottom: '4px',
+            }
+        },
+        MuiExpansionPanelSummary: {
+            content: {
+                '&$expanded': {
+                    margin: 0,
+                },
+                color: grey700,
+                fontSize: '1.25rem',
+                margin: 0,
+            },
+            expanded: {},
+        },
         MuiMenuItem: {
             root: {
                 padding: '8px 16px'

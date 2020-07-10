@@ -66,7 +66,6 @@ export const createCollectionFilesTree = (data: Array<CollectionDirectory | Coll
             selected: false,
             expanded: false,
             status: TreeNodeStatus.INITIAL
-
         })(tree), createTree<CollectionDirectory | CollectionFile>());
 };
 

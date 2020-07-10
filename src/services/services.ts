@@ -12,7 +12,6 @@ import { LinkService } from "./link-service/link-service";
 import { FavoriteService } from "./favorite-service/favorite-service";
 import { CollectionService } from "./collection-service/collection-service";
 import { TagService } from "./tag-service/tag-service";
-import { CollectionFilesService } from "./collection-files-service/collection-files-service";
 import { KeepService } from "./keep-service/keep-service";
 import { WebDAV } from "~/common/webdav";
 import { Config } from "~/common/config";
@@ -81,7 +80,6 @@ export const createServices = (config: Config, actions: ApiActions, useApiClient
     const ancestorsService = new AncestorService(groupsService, userService);
     const authService = new AuthService(apiClient, config.rootUrl, actions);
     const collectionService = new CollectionService(apiClient, webdavClient, authService, actions);
-    const collectionFilesService = new CollectionFilesService(collectionService);
     const favoriteService = new FavoriteService(linkService, groupsService);
     const tagService = new TagService(linkService);
     const searchService = new SearchService();
@@ -94,7 +92,6 @@ export const createServices = (config: Config, actions: ApiActions, useApiClient
         apiClientAuthorizationService,
         authService,
         authorizedKeysService,
-        collectionFilesService,
         collectionService,
         containerRequestService,
         containerService,
