@@ -72,7 +72,7 @@ for i in range(2, 9):
 found = False
 for u in users["items"]:
     if (u["username"] == "case9" and u["email"] == "case9@test" and
-        u["first_name"] == ("Case%d" % i) and u["last_name"] == "Testuser" and
+        u["first_name"] == "Case9" and u["last_name"] == "Testuser" and
         u["uuid"] == by_username[u["username"]] and u["is_active"] is False):
         found = True
 assert found
