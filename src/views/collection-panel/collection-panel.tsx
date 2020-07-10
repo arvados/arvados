@@ -4,12 +4,10 @@
 
 import * as React from 'react';
 import {
-    StyleRulesCallback, WithStyles, withStyles, Card,
-    CardHeader, IconButton, CardContent, Grid, Tooltip
+    StyleRulesCallback, WithStyles, withStyles,
+    IconButton, Grid, Tooltip, Typography, ExpansionPanel,
+    ExpansionPanelSummary, ExpansionPanelDetails
 } from '@material-ui/core';
-import MuiExpansionPanel from '@material-ui/core/ExpansionPanel';
-import MuiExpansionPanelSummary from '@material-ui/core/ExpansionPanelSummary';
-import MuiExpansionPanelDetails from '@material-ui/core/ExpansionPanelDetails';
 import { connect, DispatchProp } from "react-redux";
 import { RouteComponentProps } from 'react-router';
 import { ArvadosTheme } from '~/common/custom-theme';
@@ -35,10 +33,7 @@ import { getProgressIndicator } from '~/store/progress-indicator/progress-indica
 import { COLLECTION_PANEL_LOAD_FILES, loadCollectionFiles, COLLECTION_PANEL_LOAD_FILES_THRESHOLD } from '~/store/collection-panel/collection-panel-files/collection-panel-files-actions';
 
 type CssRules = 'root'
-    | 'card'
-    | 'cardHeader'
     | 'filesCard'
-    | 'cardContent'
     | 'iconHeader'
     | 'tag'
     | 'label'
@@ -47,60 +42,15 @@ type CssRules = 'root'
     | 'centeredLabel'
     | 'readOnlyIcon';
 
-const ExpansionPanel = withStyles({
-    root: {
-        margin: 0,
-        padding: 0,
-    }
-})(MuiExpansionPanel);
-
-const ExpansionPanelSummary = withStyles({
-    root: {
-        margin: 0,
-        padding: 0,
-    },
-    content: {
-        '&$expanded': {
-            margin: 0,
-            padding: 0,
-        },
-        margin: 0,
-        padding: 0,
-    },
-    expanded: {},
-})(MuiExpansionPanelSummary);
-
-const ExpansionPanelDetails = withStyles({
-    root: {
-        margin: 0,
-        padding: 0,
-    }
-})(MuiExpansionPanelDetails);
-
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         display: 'flex',
         flexFlow: 'column',
         height: 'calc(100vh - 130px)', // (100% viewport height) - (top bar + breadcrumbs)
     },
-    card: {
-        marginBottom: theme.spacing.unit * 2,
-    },
-    cardHeader: {
-        paddingTop: theme.spacing.unit,
-        paddingBottom: 0,
-    },
     filesCard: {
         marginBottom: theme.spacing.unit * 2,
         flex: 1,
-    },
-    cardContent: {
-        width: '100%',
-        paddingTop: 0,
-        paddingBottom: theme.spacing.unit,
-        '&:last-child': {
-            paddingBottom: theme.spacing.unit,
-        }
     },
     iconHeader: {
         fontSize: '1.875rem',
@@ -167,35 +117,27 @@ export const CollectionPanel = withStyles(styles)(
                 const { classes, item, dispatch, isWritable, isLoadingFiles, tooManyFiles } = this.props;
                 return item
                     ? <div className={classes.root}>
-                        <Card data-cy='collection-info-panel' className={classes.card}>
-                        <ExpansionPanel defaultExpanded>
-                        <ExpansionPanelSummary expandIcon={<ExpandIcon />}>
-                            <CardHeader
-                                className={classes.cardHeader}
-                                avatar={
+                        <ExpansionPanel data-cy='collection-info-panel' defaultExpanded>
+                            <ExpansionPanelSummary expandIcon={<ExpandIcon />}>
+                                <span>
                                     <IconButton onClick={this.openCollectionDetails}>
                                         <CollectionIcon className={classes.iconHeader} />
                                     </IconButton>
-                                }
-                                title={
-                                    <span>
-                                        <IllegalNamingWarning name={item.name}/>
-                                        {item.name}
-                                        {isWritable ||
-                                        <Tooltip title="Read-only">
-                                            <ReadOnlyIcon data-cy="read-only-icon" className={classes.readOnlyIcon} />
-                                        </Tooltip>
-                                        }
-                                    </span>
-                                }
-                                titleTypographyProps={this.titleProps}
-                                subheader={item.description}
-                                subheaderTypographyProps={this.titleProps} />
+                                    <IllegalNamingWarning name={item.name}/>
+                                    {item.name}
+                                    {isWritable ||
+                                    <Tooltip title="Read-only">
+                                        <ReadOnlyIcon data-cy="read-only-icon" className={classes.readOnlyIcon} />
+                                    </Tooltip>
+                                    }
+                                </span>
                             </ExpansionPanelSummary>
                             <ExpansionPanelDetails>
-                            <CardContent className={classes.cardContent}>
                                 <Grid container justify="space-between">
                                     <Grid item xs={11}>
+                                        <Typography variant="caption">
+                                            {item.description}
+                                        </Typography>
                                         <DetailsAttribute classLabel={classes.label} classValue={classes.value}
                                             label='Collection UUID'
                                             linkToUuid={item.uuid} />
@@ -225,18 +167,15 @@ export const CollectionPanel = withStyles(styles)(
                                         </Tooltip>
                                     </Grid>
                                 </Grid>
-                            </CardContent>
                             </ExpansionPanelDetails>
                         </ExpansionPanel>
-                        </Card>
 
-                        <Card data-cy='collection-properties-panel' className={classes.card}>
-                        <ExpansionPanel defaultExpanded>
+                        <ExpansionPanel data-cy='collection-properties-panel' defaultExpanded>
                             <ExpansionPanelSummary expandIcon={<ExpandIcon />}>
-                                <CardHeader title="Properties" />
+                                {"Properties"}
                             </ExpansionPanelSummary>
-                            <ExpansionPanelDetails><CardContent className={classes.cardContent}>
-                                <Grid container direction="column">
+                            <ExpansionPanelDetails>
+                                <Grid container>
                                     {isWritable && <Grid item xs={12}>
                                         <CollectionTagForm />
                                     </Grid>}
@@ -262,9 +201,8 @@ export const CollectionPanel = withStyles(styles)(
                                     }
                                     </Grid>
                                 </Grid>
-                            </CardContent></ExpansionPanelDetails>
+                            </ExpansionPanelDetails>
                         </ExpansionPanel>
-                        </Card>
                         <div className={classes.filesCard}>
                             <CollectionPanelFiles
                                 isWritable={isWritable}
