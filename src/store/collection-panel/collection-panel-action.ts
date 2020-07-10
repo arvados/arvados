@@ -5,8 +5,6 @@
 import { Dispatch } from "redux";
 import { loadCollectionFiles, COLLECTION_PANEL_LOAD_FILES_THRESHOLD } from "./collection-panel-files/collection-panel-files-actions";
 import { CollectionResource } from '~/models/collection';
-import { collectionPanelFilesAction } from "./collection-panel-files/collection-panel-files-actions";
-import { createTree } from "~/models/tree";
 import { RootState } from "~/store/store";
 import { ServiceRepository } from "~/services/services";
 import { TagProperty } from "~/models/tag";
@@ -32,7 +30,6 @@ export const COLLECTION_TAG_FORM_NAME = 'collectionTagForm';
 export const loadCollectionPanel = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(collectionPanelActions.LOAD_COLLECTION({ uuid }));
-        dispatch(collectionPanelFilesAction.SET_COLLECTION_FILES({ files: createTree() }));
         const collection = await services.collectionService.get(uuid);
         dispatch(loadDetailsPanel(collection.uuid));
         dispatch(collectionPanelActions.LOAD_COLLECTION_SUCCESS({ item: collection }));
