@@ -142,10 +142,9 @@ server {
   # This configures the public https port that clients will actually connect to,
   # the request is reverse proxied to the upstream 'controller'
 
-  listen       *:443 ssl;
-  server_name  <span class="userinput">xxxxx.example.com</span>;
+  listen       443 ssl;
+  server_name  <span class="userinput">ClusterID.example.com</span>;
 
-  ssl on;
   ssl_certificate     <span class="userinput">/YOUR/PATH/TO/cert.pem</span>;
   ssl_certificate_key <span class="userinput">/YOUR/PATH/TO/cert.key</span>;
 

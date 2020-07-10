@@ -47,10 +47,9 @@ Use a text editor to create a new file @/etc/nginx/conf.d/arvados-workbench2.con
 }
 
 server {
-  listen       *:443 ssl;
+  listen       443 ssl;
   server_name  workbench2.<span class="userinput">ClusterID.example.com</span>;
 
-  ssl on;
   ssl_certificate     <span class="userinput">/YOUR/PATH/TO/cert.pem</span>;
   ssl_certificate_key <span class="userinput">/YOUR/PATH/TO/cert.key</span>;
 

@@ -64,7 +64,7 @@ func (s *FederationSuite) addDirectRemote(c *check.C, id string, backend backend
 
 func (s *FederationSuite) addHTTPRemote(c *check.C, id string, backend backend) {
 	srv := httpserver.Server{Addr: ":"}
-	srv.Handler = router.New(backend)
+	srv.Handler = router.New(backend, nil)
 	c.Check(srv.Start(), check.IsNil)
 	s.cluster.RemoteClusters[id] = arvados.RemoteCluster{
 		Scheme: "http",

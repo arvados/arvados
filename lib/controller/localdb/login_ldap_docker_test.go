@@ -24,10 +24,13 @@ func (s *LDAPSuite) TestLoginLDAPViaPAM(c *check.C) {
 	if !haveDocker() {
 		c.Skip("skipping docker test because docker is not available")
 	}
+	pgproxy := newPgProxy(c, s.cluster)
+	defer pgproxy.Close()
+
 	cmd := exec.Command("bash", "login_ldap_docker_test.sh")
 	cmd.Stdout = os.Stderr
 	cmd.Stderr = os.Stderr
-	cmd.Env = append(os.Environ(), "config_method=pam")
+	cmd.Env = append(os.Environ(), "config_method=pam", "pgport="+pgproxy.Port())
 	err := cmd.Run()
 	c.Check(err, check.IsNil)
 }
@@ -39,10 +42,13 @@ func (s *LDAPSuite) TestLoginLDAPBuiltin(c *check.C) {
 	if !haveDocker() {
 		c.Skip("skipping docker test because docker is not available")
 	}
+	pgproxy := newPgProxy(c, s.cluster)
+	defer pgproxy.Close()
+
 	cmd := exec.Command("bash", "login_ldap_docker_test.sh")
 	cmd.Stdout = os.Stderr
 	cmd.Stderr = os.Stderr
-	cmd.Env = append(os.Environ(), "config_method=ldap")
+	cmd.Env = append(os.Environ(), "config_method=ldap", "pgport="+pgproxy.Port())
 	err := cmd.Run()
 	c.Check(err, check.IsNil)
 }
