@@ -220,6 +220,8 @@ def choose_new_user(args, by_email, email, userhome, username, old_user_uuid, cl
                 user = homearv.users().create(
                     body={"user": {
                         "email": email,
+                        "first_name": olduser["first_name"],
+                        "last_name": olduser["last_name"],
                         "username": username,
                         "is_active": olduser["is_active"]}}).execute()
             except arvados.errors.ApiError as e:
