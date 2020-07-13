@@ -22,6 +22,7 @@ import hmac
 import urllib.parse
 import os
 import hashlib
+import re
 from arvados._version import __version__
 
 EMAIL=0
@@ -316,7 +317,12 @@ def migrate_user(args, migratearv, email, new_user_uuid, old_user_uuid):
                                     new_owner_uuid=new_owner_uuid,
                                     redirect_to_new_user=True).execute()
     except arvados.errors.ApiError as e:
-        print("(%s) Skipping user migration because of error: %s" % (email, e))
+        name_collision = re.search(r'Key \(owner_uuid, name\)=\((.*?), (.*?)\) already exists\.\n.*UPDATE "(.*?)"', e)
+        if name_collision:
+            target_owner, rsc_name, rsc_type = name_collision.groups()
+            print("(%s) Target owner %s already has a %s named '%s', skipping. Please rename it or use --data-into-subproject to migrate all users' data into a special subproject." % (email, target_owner, rsc_type[:-1], rsc_name))
+        else:
+            print("(%s) Skipping user migration because of error: %s" % (email, e))
 
 
 def main():
