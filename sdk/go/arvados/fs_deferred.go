@@ -37,9 +37,7 @@ func deferredCollectionFS(fs FileSystem, parent inode, coll Collection) inode {
 			log.Printf("BUG: unhandled error: %s", err)
 			return placeholder
 		}
-		root := cfs.rootnode()
-		root.SetParent(parent, coll.Name)
-		return root
+		return cfs.(*collectionFileSystem).asChildNode(parent, coll.Name)
 	}}
 }
 
@@ -85,6 +83,18 @@ func (dn *deferrednode) Write(p []byte, pos filenodePtr) (int, filenodePtr, erro
 
 func (dn *deferrednode) Child(name string, replace func(inode) (inode, error)) (inode, error) {
 	return dn.realinode().Child(name, replace)
+}
+
+// Sync is currently unimplemented, except when it's a no-op because
+// the real inode hasn't been created.
+func (dn *deferrednode) Sync() error {
+	dn.mtx.Lock()
+	defer dn.mtx.Unlock()
+	if dn.created {
+		return ErrInvalidArgument
+	} else {
+		return nil
+	}
 }
 
 func (dn *deferrednode) Truncate(size int64) error       { return dn.realinode().Truncate(size) }

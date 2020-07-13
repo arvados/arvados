@@ -5,6 +5,7 @@
 package arvados
 
 import (
+	"fmt"
 	"os"
 	"strings"
 	"sync"
@@ -116,8 +117,41 @@ func (c *Client) SiteFileSystem(kc keepClient) CustomFileSystem {
 
 func (fs *customFileSystem) Sync() error {
 	fs.staleLock.Lock()
-	defer fs.staleLock.Unlock()
 	fs.staleThreshold = time.Now()
+	fs.staleLock.Unlock()
+	return fs.syncTree("/", fs.root.inode)
+}
+
+// syncTree calls node.Sync() if it has its own Sync method, otherwise
+// it calls syncTree() on all of node's children.
+//
+// Returns ErrInvalidArgument if node does not implement Sync() and
+// isn't a directory (or if Readdir() fails for any other reason).
+func (fs *customFileSystem) syncTree(path string, node inode) error {
+	if vn, ok := node.(*vdirnode); ok {
+		node = vn.inode
+	}
+	if syncer, ok := node.(interface{ Sync() error }); ok {
+		err := syncer.Sync()
+		if err != nil {
+			return fmt.Errorf("%s: %T: %w", path, syncer, err)
+		}
+		return nil
+	}
+	fis, err := node.Readdir()
+	if err != nil {
+		return fmt.Errorf("%s: %T: %w", path, node, ErrInvalidArgument)
+	}
+	for _, fi := range fis {
+		child, err := node.Child(fi.Name(), nil)
+		if err != nil {
+			continue
+		}
+		err = fs.syncTree(path+"/"+fi.Name(), child)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -153,9 +187,7 @@ func (fs *customFileSystem) mountCollection(parent inode, id string) inode {
 	if err != nil {
 		return nil
 	}
-	root := cfs.rootnode()
-	root.SetParent(parent, id)
-	return root
+	return cfs.(*collectionFileSystem).asChildNode(parent, id)
 }
 
 func (fs *customFileSystem) newProjectNode(root inode, name, uuid string) inode {

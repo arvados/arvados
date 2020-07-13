@@ -193,6 +193,25 @@ func (fs *collectionFileSystem) Size() int64 {
 	return fs.fileSystem.root.(*dirnode).TreeSize()
 }
 
+// asChildNode() repackages fs as an inode that can be used as a child
+// node in a different fs. Not goroutine-safe.
+//
+// After calling asChildNode(), the caller should not use fs directly.
+func (fs *collectionFileSystem) asChildNode(parent inode, name string) *collectionfsnode {
+	root := fs.rootnode().(*dirnode)
+	root.SetParent(parent, name)
+	return &collectionfsnode{dirnode: root, fs: fs}
+}
+
+type collectionfsnode struct {
+	*dirnode
+	fs *collectionFileSystem
+}
+
+func (cn *collectionfsnode) Sync() error {
+	return cn.fs.Sync()
+}
+
 // filenodePtr is an offset into a file that is (usually) efficient to
 // seek to. Specifically, if filenode.repacked==filenodePtr.repacked
 // then

@@ -6,6 +6,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"html"
 	"html/template"
 	"io"
@@ -225,6 +226,20 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		// http://www.w3.org/TR/cors/#user-credentials).
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Expose-Headers", "Content-Range")
+	}
+
+	if auth := r.Header.Get("Authorization"); strings.HasPrefix(auth, "AWS ") {
+		split := strings.SplitN(auth[4:], ":", 2)
+		if len(split) < 2 {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		h.serveS3(w, r, split[0])
+		return
+	} else if strings.HasPrefix(auth, "AWS4-HMAC-SHA256 ") {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Println(w, "V4 signature is not supported")
+		return
 	}
 
 	pathParts := strings.Split(r.URL.Path[1:], "/")
@@ -509,6 +524,103 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (h *handler) getClients(reqID, token string) (arv *arvadosclient.ArvadosClient, kc *keepclient.KeepClient, client *arvados.Client, release func(), err error) {
+	arv = h.clientPool.Get()
+	if arv == nil {
+		return nil, nil, nil, nil, err
+	}
+	release = func() { h.clientPool.Put(arv) }
+	arv.ApiToken = token
+	kc, err = keepclient.MakeKeepClient(arv)
+	if err != nil {
+		release()
+		return
+	}
+	kc.RequestID = reqID
+	client = (&arvados.Client{
+		APIHost:   arv.ApiServer,
+		AuthToken: arv.ApiToken,
+		Insecure:  arv.ApiInsecure,
+	}).WithRequestID(reqID)
+	return
+}
+
+func (h *handler) serveS3(w http.ResponseWriter, r *http.Request, token string) {
+	_, kc, client, release, err := h.getClients(r.Header.Get("X-Request-Id"), token)
+	if err != nil {
+		http.Error(w, "Pool failed: "+h.clientPool.Err().Error(), http.StatusInternalServerError)
+		return
+	}
+	defer release()
+
+	r.URL.Path = "/by_id" + r.URL.Path
+
+	fs := client.SiteFileSystem(kc)
+	fs.ForwardSlashNameSubstitution(h.Config.cluster.Collections.ForwardSlashNameSubstitution)
+
+	switch r.Method {
+	case "GET":
+		fi, err := fs.Stat(r.URL.Path)
+		if os.IsNotExist(err) {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		} else if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		} else if fi.IsDir() {
+			http.Error(w, "not found", http.StatusNotFound)
+		}
+		http.FileServer(fs).ServeHTTP(w, r)
+		return
+	case "PUT":
+		f, err := fs.OpenFile(r.URL.Path, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
+		if os.IsNotExist(err) {
+			// create missing intermediate directories, then try again
+			for i, c := range r.URL.Path {
+				if i > 0 && c == '/' {
+					dir := r.URL.Path[:i]
+					err := fs.Mkdir(dir, 0755)
+					if err != nil && err != os.ErrExist {
+						err = fmt.Errorf("mkdir %q failed: %w", dir, err)
+						http.Error(w, err.Error(), http.StatusInternalServerError)
+						return
+					}
+				}
+			}
+			f, err = fs.OpenFile(r.URL.Path, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
+		}
+		if err != nil {
+			err = fmt.Errorf("open %q failed: %w", r.URL.Path, err)
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		defer f.Close()
+		_, err = io.Copy(f, r.Body)
+		if err != nil {
+			err = fmt.Errorf("write to %q failed: %w", r.URL.Path, err)
+			http.Error(w, err.Error(), http.StatusBadGateway)
+			return
+		}
+		err = f.Close()
+		if err != nil {
+			err = fmt.Errorf("write to %q failed: %w", r.URL.Path, err)
+			http.Error(w, err.Error(), http.StatusBadGateway)
+			return
+		}
+		err = fs.Sync()
+		if err != nil {
+			err = fmt.Errorf("sync failed: %w", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		return
+	default:
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+}
+
 func (h *handler) serveSiteFS(w http.ResponseWriter, r *http.Request, tokens []string, credentialsOK, attachment bool) {
 	if len(tokens) == 0 {
 		w.Header().Add("WWW-Authenticate", "Basic realm=\"collections\"")
@@ -519,25 +631,13 @@ func (h *handler) serveSiteFS(w http.ResponseWriter, r *http.Request, tokens []s
 		http.Error(w, errReadOnly.Error(), http.StatusMethodNotAllowed)
 		return
 	}
-	arv := h.clientPool.Get()
-	if arv == nil {
+	_, kc, client, release, err := h.getClients(r.Header.Get("X-Request-Id"), tokens[0])
+	if err != nil {
 		http.Error(w, "Pool failed: "+h.clientPool.Err().Error(), http.StatusInternalServerError)
 		return
 	}
-	defer h.clientPool.Put(arv)
-	arv.ApiToken = tokens[0]
+	defer release()
 
-	kc, err := keepclient.MakeKeepClient(arv)
-	if err != nil {
-		http.Error(w, "error setting up keep client: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-	kc.RequestID = r.Header.Get("X-Request-Id")
-	client := (&arvados.Client{
-		APIHost:   arv.ApiServer,
-		AuthToken: arv.ApiToken,
-		Insecure:  arv.ApiInsecure,
-	}).WithRequestID(r.Header.Get("X-Request-Id"))
 	fs := client.SiteFileSystem(kc)
 	fs.ForwardSlashNameSubstitution(h.Config.cluster.Collections.ForwardSlashNameSubstitution)
 	f, err := fs.Open(r.URL.Path)
