@@ -294,7 +294,7 @@ def activate_remote_user(args, email, homearv, migratearv, old_user_uuid, new_us
             return None
 
     if olduser["is_admin"] and not newuser["is_admin"]:
-        print("(%s) Not migrating %s because user is admin but target user %s is not admin on %s" % (email, old_user_uuid, new_user_uuid, migratecluster))
+        print("(%s) Not migrating %s because user is admin but target user %s is not admin on %s. Please ensure the user admin status is the same on both clusters" % (email, old_user_uuid, new_user_uuid, migratecluster))
         return None
 
     return newuser
