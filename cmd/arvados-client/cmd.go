@@ -9,6 +9,7 @@ import (
 
 	"git.arvados.org/arvados.git/lib/cli"
 	"git.arvados.org/arvados.git/lib/cmd"
+	"git.arvados.org/arvados.git/lib/deduplicationreport"
 	"git.arvados.org/arvados.git/lib/mount"
 )
 
@@ -52,7 +53,8 @@ var (
 		"virtual_machine":          cli.APICall,
 		"workflow":                 cli.APICall,
 
-		"mount": mount.Command,
+		"mount":                mount.Command,
+		"deduplication-report": deduplicationreport.Command,
 	})
 )
 
