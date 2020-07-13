@@ -106,7 +106,7 @@ def make_builder(joborder, hints, requirements, runtimeContext, metadata):
                  outdir="",              # type: Text
                  tmpdir="",              # type: Text
                  stagedir="",            # type: Text
-                 cwlVersion=metadata.get("http://commonwl.org/cwltool#original_cwlVersion")
+                 cwlVersion=metadata.get("http://commonwl.org/cwltool#original_cwlVersion") or metadata.get("cwlVersion")
                 )
 
 def search_schemadef(name, reqs):
@@ -173,7 +173,10 @@ def set_secondary(fsaccess, builder, inputschema, secondaryspec, primary, discov
         specs = []
         primary["secondaryFiles"] = secondaryspec
         for i, sf in enumerate(aslist(secondaryspec)):
-            pattern = builder.do_eval(sf["pattern"], context=primary)
+            if builder.cwlVersion == "v1.0":
+                pattern = builder.do_eval(sf, context=primary)
+            else:
+                pattern = builder.do_eval(sf["pattern"], context=primary)
             if pattern is None:
                 continue
             if isinstance(pattern, list):
@@ -263,6 +266,8 @@ def upload_dependencies(arvrunner, name, document_loader,
         # Need raw file content (before preprocessing) to ensure
         # that external references in $include and $mixin are captured.
         scanobj = loadref("", workflowobj["id"])
+
+    metadata = scanobj
 
     sc_result = scandeps(uri, scanobj,
                   loadref_fields,
@@ -356,7 +361,7 @@ def upload_dependencies(arvrunner, name, document_loader,
                                obj.get("hints", []),
                                obj.get("requirements", []),
                                ArvRuntimeContext(),
-                               {})
+                               metadata)
         discover_secondary_files(arvrunner.fs_access,
                                  builder,
                                  obj["inputs"],
