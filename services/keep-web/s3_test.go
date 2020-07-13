@@ -20,11 +20,30 @@ import (
 	check "gopkg.in/check.v1"
 )
 
-func (s *IntegrationSuite) s3setup(c *check.C) (*arvados.Client, arvados.Collection, *s3.Bucket) {
+type s3stage struct {
+	arv        *arvados.Client
+	proj       arvados.Group
+	projbucket *s3.Bucket
+	coll       arvados.Collection
+	collbucket *s3.Bucket
+}
+
+func (s *IntegrationSuite) s3setup(c *check.C) s3stage {
+	var proj arvados.Group
 	var coll arvados.Collection
 	arv := arvados.NewClientFromEnv()
 	arv.AuthToken = arvadostest.ActiveToken
-	err := arv.RequestAndDecode(&coll, "POST", "arvados/v1/collections", nil, map[string]interface{}{"collection": map[string]interface{}{
+	err := arv.RequestAndDecode(&proj, "POST", "arvados/v1/groups", nil, map[string]interface{}{
+		"group": map[string]interface{}{
+			"group_class": "project",
+			"name":        "keep-web s3 test",
+		},
+		"ensure_unique_name": true,
+	})
+	c.Assert(err, check.IsNil)
+	err = arv.RequestAndDecode(&coll, "POST", "arvados/v1/collections", nil, map[string]interface{}{"collection": map[string]interface{}{
+		"owner_uuid":    proj.UUID,
+		"name":          "keep-web s3 test collection",
 		"manifest_text": ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:emptyfile\n./emptydir d41d8cd98f00b204e9800998ecf8427e+0 0:0:.\n",
 	}})
 	c.Assert(err, check.IsNil)
@@ -49,23 +68,40 @@ func (s *IntegrationSuite) s3setup(c *check.C) (*arvados.Client, arvados.Collect
 		S3Endpoint: "http://" + s.testServer.Addr,
 	}
 	client := s3.New(*auth, region)
-	bucket := &s3.Bucket{
-		S3:   client,
-		Name: coll.UUID,
+	return s3stage{
+		arv:  arv,
+		proj: proj,
+		projbucket: &s3.Bucket{
+			S3:   client,
+			Name: proj.UUID,
+		},
+		coll: coll,
+		collbucket: &s3.Bucket{
+			S3:   client,
+			Name: coll.UUID,
+		},
 	}
-	return arv, coll, bucket
 }
 
-func (s *IntegrationSuite) s3teardown(c *check.C, arv *arvados.Client, coll arvados.Collection) {
-	err := arv.RequestAndDecode(&coll, "DELETE", "arvados/v1/collections/"+coll.UUID, nil, nil)
-	c.Check(err, check.IsNil)
+func (stage s3stage) teardown(c *check.C) {
+	if stage.coll.UUID != "" {
+		err := stage.arv.RequestAndDecode(&stage.coll, "DELETE", "arvados/v1/collections/"+stage.coll.UUID, nil, nil)
+		c.Check(err, check.IsNil)
+	}
 }
 
-func (s *IntegrationSuite) TestS3GetObject(c *check.C) {
-	arv, coll, bucket := s.s3setup(c)
-	defer s.s3teardown(c, arv, coll)
-
-	rdr, err := bucket.GetReader("emptyfile")
+func (s *IntegrationSuite) TestS3CollectionGetObject(c *check.C) {
+	stage := s.s3setup(c)
+	defer stage.teardown(c)
+	s.testS3GetObject(c, stage.collbucket, "")
+}
+func (s *IntegrationSuite) TestS3ProjectGetObject(c *check.C) {
+	stage := s.s3setup(c)
+	defer stage.teardown(c)
+	s.testS3GetObject(c, stage.projbucket, stage.coll.Name+"/")
+}
+func (s *IntegrationSuite) testS3GetObject(c *check.C, bucket *s3.Bucket, prefix string) {
+	rdr, err := bucket.GetReader(prefix + "emptyfile")
 	c.Assert(err, check.IsNil)
 	buf, err := ioutil.ReadAll(rdr)
 	c.Check(err, check.IsNil)
@@ -73,11 +109,11 @@ func (s *IntegrationSuite) TestS3GetObject(c *check.C) {
 	err = rdr.Close()
 	c.Check(err, check.IsNil)
 
-	rdr, err = bucket.GetReader("missingfile")
+	rdr, err = bucket.GetReader(prefix + "missingfile")
 	c.Check(err, check.NotNil)
 
-	rdr, err = bucket.GetReader("sailboat.txt")
-	c.Check(err, check.IsNil)
+	rdr, err = bucket.GetReader(prefix + "sailboat.txt")
+	c.Assert(err, check.IsNil)
 	buf, err = ioutil.ReadAll(rdr)
 	c.Check(err, check.IsNil)
 	c.Check(buf, check.DeepEquals, []byte("⛵\n"))
@@ -85,37 +121,46 @@ func (s *IntegrationSuite) TestS3GetObject(c *check.C) {
 	c.Check(err, check.IsNil)
 }
 
-func (s *IntegrationSuite) TestS3PutObjectSuccess(c *check.C) {
-	arv, coll, bucket := s.s3setup(c)
-	defer s.s3teardown(c, arv, coll)
-
+func (s *IntegrationSuite) TestS3CollectionPutObjectSuccess(c *check.C) {
+	stage := s.s3setup(c)
+	defer stage.teardown(c)
+	s.testS3PutObjectSuccess(c, stage.collbucket, "")
+}
+func (s *IntegrationSuite) TestS3ProjectPutObjectSuccess(c *check.C) {
+	stage := s.s3setup(c)
+	defer stage.teardown(c)
+	s.testS3PutObjectSuccess(c, stage.projbucket, stage.coll.Name+"/")
+}
+func (s *IntegrationSuite) testS3PutObjectSuccess(c *check.C, bucket *s3.Bucket, prefix string) {
 	for _, trial := range []struct {
-		objname string
-		size    int
+		path string
+		size int
 	}{
 		{
-			objname: "newfile",
-			size:    128000000,
+			path: "newfile",
+			size: 128000000,
 		}, {
-			objname: "newdir/newfile",
-			size:    1 << 26,
+			path: "newdir/newfile",
+			size: 1 << 26,
 		}, {
-			objname: "newdir1/newdir2/newfile",
-			size:    0,
+			path: "newdir1/newdir2/newfile",
+			size: 0,
 		},
 	} {
 		c.Logf("=== %v", trial)
 
-		_, err := bucket.GetReader(trial.objname)
+		objname := prefix + trial.path
+
+		_, err := bucket.GetReader(objname)
 		c.Assert(err, check.NotNil)
 
 		buf := make([]byte, trial.size)
 		rand.Read(buf)
 
-		err = bucket.PutReader(trial.objname, bytes.NewReader(buf), int64(len(buf)), "application/octet-stream", s3.Private, s3.Options{})
+		err = bucket.PutReader(objname, bytes.NewReader(buf), int64(len(buf)), "application/octet-stream", s3.Private, s3.Options{})
 		c.Check(err, check.IsNil)
 
-		rdr, err := bucket.GetReader(trial.objname)
+		rdr, err := bucket.GetReader(objname)
 		if !c.Check(err, check.IsNil) {
 			continue
 		}
@@ -126,48 +171,57 @@ func (s *IntegrationSuite) TestS3PutObjectSuccess(c *check.C) {
 	}
 }
 
-func (s *IntegrationSuite) TestS3PutObjectFailure(c *check.C) {
-	arv, coll, bucket := s.s3setup(c)
-	defer s.s3teardown(c, arv, coll)
-
+func (s *IntegrationSuite) TestS3CollectionPutObjectFailure(c *check.C) {
+	stage := s.s3setup(c)
+	defer stage.teardown(c)
+	s.testS3PutObjectFailure(c, stage.collbucket, "")
+}
+func (s *IntegrationSuite) TestS3ProjectPutObjectFailure(c *check.C) {
+	stage := s.s3setup(c)
+	defer stage.teardown(c)
+	s.testS3PutObjectFailure(c, stage.projbucket, stage.coll.Name+"/")
+}
+func (s *IntegrationSuite) testS3PutObjectFailure(c *check.C, bucket *s3.Bucket, prefix string) {
 	for _, trial := range []struct {
-		objname string
+		path string
 	}{
 		{
-			objname: "emptyfile/newname", // emptyfile exists, see s3setup()
+			path: "emptyfile/newname", // emptyfile exists, see s3setup()
 		}, {
-			objname: "emptyfile/", // emptyfile exists, see s3setup()
+			path: "emptyfile/", // emptyfile exists, see s3setup()
 		}, {
-			objname: "emptydir", // dir already exists, see s3setup()
+			path: "emptydir", // dir already exists, see s3setup()
 		}, {
-			objname: "emptydir/",
+			path: "emptydir/",
 		}, {
-			objname: "emptydir//",
+			path: "emptydir//",
 		}, {
-			objname: "newdir/",
+			path: "newdir/",
 		}, {
-			objname: "newdir//",
+			path: "newdir//",
 		}, {
-			objname: "/",
+			path: "/",
 		}, {
-			objname: "//",
+			path: "//",
 		}, {
-			objname: "foo//bar",
+			path: "foo//bar",
 		}, {
-			objname: "",
+			path: "",
 		},
 	} {
 		c.Logf("=== %v", trial)
 
+		objname := prefix + trial.path
+
 		buf := make([]byte, 1234)
 		rand.Read(buf)
 
-		err := bucket.PutReader(trial.objname, bytes.NewReader(buf), int64(len(buf)), "application/octet-stream", s3.Private, s3.Options{})
-		if !c.Check(err, check.NotNil, check.Commentf("name %q should be rejected", trial.objname)) {
+		err := bucket.PutReader(objname, bytes.NewReader(buf), int64(len(buf)), "application/octet-stream", s3.Private, s3.Options{})
+		if !c.Check(err, check.NotNil, check.Commentf("name %q should be rejected", objname)) {
 			continue
 		}
 
-		_, err = bucket.GetReader(trial.objname)
+		_, err = bucket.GetReader(objname)
 		c.Check(err, check.NotNil)
 	}
 }
