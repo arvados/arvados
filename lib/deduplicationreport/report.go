@@ -22,7 +22,7 @@ import (
 func deDuplicate(inputs []string) (trimmed []string) {
 	seen := make(map[string]bool)
 	for _, uuid := range inputs {
-		if _, ok := seen[uuid]; !ok {
+		if !seen[uuid] {
 			seen[uuid] = true
 			trimmed = append(trimmed, uuid)
 		}
@@ -42,9 +42,9 @@ Usage:
      <collection-pdh>,<collection_uuid> ...
 
   This program analyzes the overlap in blocks used by 2 or more collections. It
-  prints a deduplication report that shows the nominal space used by the list
-  of collection, as well as the actual size and the amount of space that is
-  saved by Keep's deduplication.
+  prints a deduplication report that shows the nominal space used by the
+  collections, as well as the actual size and the amount of space that is saved
+  by Keep's deduplication.
 
   The list of collections may be provided in two ways. A list of collection
   uuids is sufficient. Alternatively, the PDH for each collection may also be
@@ -58,9 +58,9 @@ Example:
   Use the 'arv' and 'jq' commands to get the list of the 100
   largest collections and generate the deduplication report:
 
-  arv collection list --order 'file_size_total desc' | \
+  arv collection list --order 'file_size_total desc' --limit 100 | \
     jq -r '.items[] | [.portable_data_hash,.uuid] |@csv' | \
-    tail -n100 |sed -e 's/"//g'|tr '\n' ' ' | \
+    tail -n+2 |sed -e 's/"//g'|tr '\n' ' ' | \
     xargs %s
 
 Options:
@@ -80,8 +80,8 @@ Options:
 
 	inputs = deDuplicate(inputs)
 
-	if len(inputs) < 2 {
-		logger.Error("Error: at least 2 different collections UUIDs required")
+	if len(inputs) < 1 {
+		logger.Errorf("Error: no collections provided\n")
 		flags.Usage()
 		return 2, inputs
 	}
@@ -115,7 +115,7 @@ func report(prog string, args []string, loader *config.Loader, logger *logrus.Lo
 	// Arvados Client setup
 	arv, err := arvadosclient.MakeArvadosClient()
 	if err != nil {
-		logger.Errorf("error creating Arvados object: %s", err)
+		logger.Errorf("Error creating Arvados object: %s\n", err)
 		exitcode = 1
 		return
 	}
@@ -129,7 +129,6 @@ func report(prog string, args []string, loader *config.Loader, logger *logrus.Lo
 	pdhs := make(map[string]Col)
 	var nominalSize int64
 
-	fmt.Println()
 	for _, input := range inputs {
 		var uuid string
 		var pdh string
@@ -143,7 +142,7 @@ func report(prog string, args []string, loader *config.Loader, logger *logrus.Lo
 			uuid = input
 		}
 		if !strings.Contains(uuid, "-4zz18-") {
-			logger.Error("uuid must refer to collection object")
+			logger.Errorf("Error: uuid must refer to collection object\n")
 			exitcode = 1
 			return
 		}
@@ -201,7 +200,7 @@ func report(prog string, args []string, loader *config.Loader, logger *logrus.Lo
 	seen := make(map[string]bool)
 	for _, v := range blocks {
 		for pdh, size := range v {
-			if _, ok := seen[pdh]; !ok {
+			if !seen[pdh] {
 				seen[pdh] = true
 				totalSize += int64(size)
 			}

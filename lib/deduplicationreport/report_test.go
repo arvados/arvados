@@ -39,10 +39,13 @@ func (*Suite) TestTwoIdenticalUUIDs(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	// Run dedupreport with 2 identical uuids
 	exitcode := Command.RunCommand("deduplicationreport.test", []string{arvadostest.FooCollection, arvadostest.FooCollection}, &bytes.Buffer{}, &stdout, &stderr)
-	c.Check(exitcode, check.Equals, 2)
-	c.Check(stdout.String(), check.Equals, "")
+	c.Check(exitcode, check.Equals, 0)
+	//c.Check(stdout.String(), check.Equals, "")
+	c.Check(stdout.String(), check.Matches, "(?ms).*Collections:[[:space:]]+1.*")
+	c.Check(stdout.String(), check.Matches, "(?ms).*Nominal size of stored data:[[:space:]]+3 bytes \\(3 B\\).*")
+	c.Check(stdout.String(), check.Matches, "(?ms).*Actual size of stored data:[[:space:]]+3 bytes \\(3 B\\).*")
+	c.Check(stdout.String(), check.Matches, "(?ms).*Saved by Keep deduplication:[[:space:]]+0 bytes \\(0 B\\).*")
 	c.Log(stderr.String())
-	c.Check(stderr.String(), check.Matches, `(?ms).*Error: at least 2 different collections UUIDs required.*`)
 }
 
 func (*Suite) TestTwoUUIDsInvalidPDH(c *check.C) {
@@ -70,6 +73,7 @@ func (*Suite) TestManyUUIDsNoOverlap(c *check.C) {
 	// Run dedupreport with 5 UUIDs
 	exitcode := Command.RunCommand("deduplicationreport.test", []string{arvadostest.FooCollection, arvadostest.HelloWorldCollection, arvadostest.FooBarDirCollection, arvadostest.WazVersion1Collection, arvadostest.UserAgreementCollection}, &bytes.Buffer{}, &stdout, &stderr)
 	c.Check(exitcode, check.Equals, 0)
+	c.Check(stdout.String(), check.Matches, "(?ms).*Collections:[[:space:]]+5.*")
 	c.Check(stdout.String(), check.Matches, "(?ms).*Nominal size of stored data:[[:space:]]+249049 bytes \\(243 KiB\\).*")
 	c.Check(stdout.String(), check.Matches, "(?ms).*Actual size of stored data:[[:space:]]+249049 bytes \\(243 KiB\\).*")
 	c.Check(stdout.String(), check.Matches, "(?ms).*Saved by Keep deduplication:[[:space:]]+0 bytes \\(0 B\\).*")
@@ -83,42 +87,34 @@ func (*Suite) TestTwoOverlappingCollections(c *check.C) {
 	arv := arvados.NewClientFromEnv()
 
 	var c1 arvados.Collection
-	err := arv.RequestAndDecode(&c1, "POST", "arvados/v1/collections", nil, map[string]interface{}{"collection": map[string]interface{}{"manifest_text": ". d3b07384d113edec49eaa6238ad5ff00+4+A2705511e0c47c92cc73e9ddc95b9822ef774c406@5f0de808 0:4:foo\n"}})
+	err := arv.RequestAndDecode(&c1, "POST", "arvados/v1/collections", nil, map[string]interface{}{"collection": map[string]interface{}{"manifest_text": ". d3b07384d113edec49eaa6238ad5ff00+4 0:4:foo\n"}})
 	c.Assert(err, check.Equals, nil)
 
 	var c2 arvados.Collection
-	err = arv.RequestAndDecode(&c2, "POST", "arvados/v1/collections", nil, map[string]interface{}{"collection": map[string]interface{}{"manifest_text": ". c157a79031e1c40f85931829bc5fc552+4+A1544eb0cee937934dc565d2b11836c804384c139@5f0e0bf9 d3b07384d113edec49eaa6238ad5ff00+4+A60746cad7ecc16fe26a0c17c55af90db675369c2@5f0e0bf9 0:4:bar 4:4:foo\n"}})
+	err = arv.RequestAndDecode(&c2, "POST", "arvados/v1/collections", nil, map[string]interface{}{"collection": map[string]interface{}{"manifest_text": ". c157a79031e1c40f85931829bc5fc552+4 d3b07384d113edec49eaa6238ad5ff00+4 0:4:bar 4:4:foo\n"}})
 	c.Assert(err, check.Equals, nil)
 
-	// Run dedupreport with 2 arguments: uuid uuid
-	exitcode := Command.RunCommand("deduplicationreport.test", []string{c1.UUID, c2.UUID}, &bytes.Buffer{}, &stdout, &stderr)
-	c.Check(exitcode, check.Equals, 0)
-	c.Check(stdout.String(), check.Matches, "(?ms).*Nominal size of stored data:[[:space:]]+12 bytes \\(12 B\\).*")
-	c.Check(stdout.String(), check.Matches, "(?ms).*Actual size of stored data:[[:space:]]+8 bytes \\(8 B\\).*")
-	c.Check(stdout.String(), check.Matches, "(?ms).*Saved by Keep deduplication:[[:space:]]+4 bytes \\(4 B\\).*")
-	c.Log(stderr.String())
-	c.Check(stderr.String(), check.Equals, "")
-}
-
-func (*Suite) TestTwoOverlappingCollectionsWithPDH(c *check.C) {
-	var stdout, stderr bytes.Buffer
-	// Create two collections
-	arv := arvados.NewClientFromEnv()
-
-	var c1 arvados.Collection
-	err := arv.RequestAndDecode(&c1, "POST", "arvados/v1/collections", nil, map[string]interface{}{"collection": map[string]interface{}{"manifest_text": ". d3b07384d113edec49eaa6238ad5ff00+4+A2705511e0c47c92cc73e9ddc95b9822ef774c406@5f0de808 0:4:foo\n"}})
-	c.Assert(err, check.Equals, nil)
-
-	var c2 arvados.Collection
-	err = arv.RequestAndDecode(&c2, "POST", "arvados/v1/collections", nil, map[string]interface{}{"collection": map[string]interface{}{"manifest_text": ". c157a79031e1c40f85931829bc5fc552+4+A1544eb0cee937934dc565d2b11836c804384c139@5f0e0bf9 d3b07384d113edec49eaa6238ad5ff00+4+A60746cad7ecc16fe26a0c17c55af90db675369c2@5f0e0bf9 0:4:bar 4:4:foo\n"}})
-	c.Assert(err, check.Equals, nil)
-
-	// Run dedupreport with 2 arguments: pdh,uuid uuid
-	exitcode := Command.RunCommand("deduplicationreport.test", []string{c1.PortableDataHash + "," + c1.UUID, c2.UUID}, &bytes.Buffer{}, &stdout, &stderr)
-	c.Check(exitcode, check.Equals, 0)
-	c.Check(stdout.String(), check.Matches, "(?ms).*Nominal size of stored data:[[:space:]]+12 bytes \\(12 B\\).*")
-	c.Check(stdout.String(), check.Matches, "(?ms).*Actual size of stored data:[[:space:]]+8 bytes \\(8 B\\).*")
-	c.Check(stdout.String(), check.Matches, "(?ms).*Saved by Keep deduplication:[[:space:]]+4 bytes \\(4 B\\).*")
-	c.Log(stderr.String())
-	c.Check(stderr.String(), check.Equals, "")
+	for _, trial := range []struct {
+		field1 string
+		field2 string
+	}{
+		{
+			// Run dedupreport with 2 arguments: uuid uuid
+			field1: c1.UUID,
+			field2: c2.UUID,
+		},
+		{
+			// Run dedupreport with 2 arguments: pdh,uuid uuid
+			field1: c1.PortableDataHash + "," + c1.UUID,
+			field2: c2.UUID,
+		},
+	} {
+		exitcode := Command.RunCommand("deduplicationreport.test", []string{trial.field1, trial.field2}, &bytes.Buffer{}, &stdout, &stderr)
+		c.Check(exitcode, check.Equals, 0)
+		c.Check(stdout.String(), check.Matches, "(?ms).*Nominal size of stored data:[[:space:]]+12 bytes \\(12 B\\).*")
+		c.Check(stdout.String(), check.Matches, "(?ms).*Actual size of stored data:[[:space:]]+8 bytes \\(8 B\\).*")
+		c.Check(stdout.String(), check.Matches, "(?ms).*Saved by Keep deduplication:[[:space:]]+4 bytes \\(4 B\\).*")
+		c.Log(stderr.String())
+		c.Check(stderr.String(), check.Equals, "")
+	}
 }
