@@ -40,7 +40,6 @@ func (*Suite) TestTwoIdenticalUUIDs(c *check.C) {
 	// Run dedupreport with 2 identical uuids
 	exitcode := Command.RunCommand("deduplicationreport.test", []string{arvadostest.FooCollection, arvadostest.FooCollection}, &bytes.Buffer{}, &stdout, &stderr)
 	c.Check(exitcode, check.Equals, 0)
-	//c.Check(stdout.String(), check.Equals, "")
 	c.Check(stdout.String(), check.Matches, "(?ms).*Collections:[[:space:]]+1.*")
 	c.Check(stdout.String(), check.Matches, "(?ms).*Nominal size of stored data:[[:space:]]+3 bytes \\(3 B\\).*")
 	c.Check(stdout.String(), check.Matches, "(?ms).*Actual size of stored data:[[:space:]]+3 bytes \\(3 B\\).*")

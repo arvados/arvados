@@ -81,7 +81,7 @@ Options:
 	inputs = deDuplicate(inputs)
 
 	if len(inputs) < 1 {
-		logger.Errorf("Error: no collections provided\n")
+		logger.Errorf("Error: no collections provided")
 		flags.Usage()
 		return 2, inputs
 	}
@@ -115,7 +115,7 @@ func report(prog string, args []string, loader *config.Loader, logger *logrus.Lo
 	// Arvados Client setup
 	arv, err := arvadosclient.MakeArvadosClient()
 	if err != nil {
-		logger.Errorf("Error creating Arvados object: %s\n", err)
+		logger.Errorf("Error creating Arvados object: %s", err)
 		exitcode = 1
 		return
 	}
@@ -142,7 +142,7 @@ func report(prog string, args []string, loader *config.Loader, logger *logrus.Lo
 			uuid = input
 		}
 		if !strings.Contains(uuid, "-4zz18-") {
-			logger.Errorf("Error: uuid must refer to collection object\n")
+			logger.Errorf("Error: uuid must refer to collection object")
 			exitcode = 1
 			return
 		}
@@ -157,14 +157,14 @@ func report(prog string, args []string, loader *config.Loader, logger *logrus.Lo
 			var collection arvados.Collection
 			err = arv.Get("collections", uuid, nil, &collection)
 			if err != nil {
-				logger.Errorf("Error: unable to retrieve collection: %s\n", err)
+				logger.Errorf("Error: unable to retrieve collection: %s", err)
 				exitcode = 1
 				return
 			}
 			blocks[uuid] = make(map[string]int)
 			blocks[uuid] = blockList(collection)
 			if pdh != "" && collection.PortableDataHash != pdh {
-				logger.Errorf("Error: the collection with UUID %s has PDH %s, but a different PDH was provided in the arguments: %s\n", uuid, collection.PortableDataHash, pdh)
+				logger.Errorf("Error: the collection with UUID %s has PDH %s, but a different PDH was provided in the arguments: %s", uuid, collection.PortableDataHash, pdh)
 				exitcode = 1
 				return
 			}
