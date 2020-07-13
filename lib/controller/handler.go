@@ -6,7 +6,6 @@ package controller
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"net/http"
@@ -16,13 +15,14 @@ import (
 	"time"
 
 	"git.arvados.org/arvados.git/lib/controller/federation"
-	"git.arvados.org/arvados.git/lib/controller/localdb"
 	"git.arvados.org/arvados.git/lib/controller/railsproxy"
 	"git.arvados.org/arvados.git/lib/controller/router"
+	"git.arvados.org/arvados.git/lib/ctrlctx"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/health"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
+	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 )
 
@@ -34,7 +34,7 @@ type Handler struct {
 	proxy          *proxy
 	secureClient   *http.Client
 	insecureClient *http.Client
-	pgdb           *sql.DB
+	pgdb           *sqlx.DB
 	pgdbMtx        sync.Mutex
 }
 
@@ -87,7 +87,7 @@ func (h *Handler) setup() {
 		Routes: health.Routes{"ping": func() error { _, err := h.db(context.TODO()); return err }},
 	})
 
-	rtr := router.New(federation.New(h.Cluster), localdb.WrapCallsInTransactions(h.db))
+	rtr := router.New(federation.New(h.Cluster), ctrlctx.WrapCallsInTransactions(h.db))
 	mux.Handle("/arvados/v1/config", rtr)
 	mux.Handle("/"+arvados.EndpointUserAuthenticate.Path, rtr)
 
@@ -121,14 +121,14 @@ func (h *Handler) setup() {
 
 var errDBConnection = errors.New("database connection error")
 
-func (h *Handler) db(ctx context.Context) (*sql.DB, error) {
+func (h *Handler) db(ctx context.Context) (*sqlx.DB, error) {
 	h.pgdbMtx.Lock()
 	defer h.pgdbMtx.Unlock()
 	if h.pgdb != nil {
 		return h.pgdb, nil
 	}
 
-	db, err := sql.Open("postgres", h.Cluster.PostgreSQL.Connection.String())
+	db, err := sqlx.Open("postgres", h.Cluster.PostgreSQL.Connection.String())
 	if err != nil {
 		ctxlog.FromContext(ctx).WithError(err).Error("postgresql connect failed")
 		return nil, errDBConnection
