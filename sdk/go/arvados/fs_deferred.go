@@ -32,12 +32,14 @@ func deferredCollectionFS(fs FileSystem, parent inode, coll Collection) inode {
 			log.Printf("BUG: unhandled error: %s", err)
 			return placeholder
 		}
-		cfs, err := coll.FileSystem(fs, fs)
+		newfs, err := coll.FileSystem(fs, fs)
 		if err != nil {
 			log.Printf("BUG: unhandled error: %s", err)
 			return placeholder
 		}
-		return cfs.(*collectionFileSystem).asChildNode(parent, coll.Name)
+		cfs := newfs.(*collectionFileSystem)
+		cfs.SetParent(parent, coll.Name)
+		return cfs
 	}}
 }
 

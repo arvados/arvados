@@ -121,6 +121,62 @@ func (fs *collectionFileSystem) newNode(name string, perm os.FileMode, modTime t
 	}
 }
 
+func (fs *collectionFileSystem) Child(name string, replace func(inode) (inode, error)) (inode, error) {
+	return fs.rootnode().Child(name, replace)
+}
+
+func (fs *collectionFileSystem) FS() FileSystem {
+	return fs
+}
+
+func (fs *collectionFileSystem) FileInfo() os.FileInfo {
+	return fs.rootnode().FileInfo()
+}
+
+func (fs *collectionFileSystem) IsDir() bool {
+	return true
+}
+
+func (fs *collectionFileSystem) Lock() {
+	fs.rootnode().Lock()
+}
+
+func (fs *collectionFileSystem) Unlock() {
+	fs.rootnode().Unlock()
+}
+
+func (fs *collectionFileSystem) RLock() {
+	fs.rootnode().RLock()
+}
+
+func (fs *collectionFileSystem) RUnlock() {
+	fs.rootnode().RUnlock()
+}
+
+func (fs *collectionFileSystem) Parent() inode {
+	return fs.rootnode().Parent()
+}
+
+func (fs *collectionFileSystem) Read(_ []byte, ptr filenodePtr) (int, filenodePtr, error) {
+	return 0, ptr, ErrInvalidOperation
+}
+
+func (fs *collectionFileSystem) Write(_ []byte, ptr filenodePtr) (int, filenodePtr, error) {
+	return 0, ptr, ErrInvalidOperation
+}
+
+func (fs *collectionFileSystem) Readdir() ([]os.FileInfo, error) {
+	return fs.rootnode().Readdir()
+}
+
+func (fs *collectionFileSystem) SetParent(parent inode, name string) {
+	fs.rootnode().SetParent(parent, name)
+}
+
+func (fs *collectionFileSystem) Truncate(int64) error {
+	return ErrInvalidOperation
+}
+
 func (fs *collectionFileSystem) Sync() error {
 	if fs.uuid == "" {
 		return nil
@@ -191,25 +247,6 @@ func (fs *collectionFileSystem) MarshalManifest(prefix string) (string, error) {
 
 func (fs *collectionFileSystem) Size() int64 {
 	return fs.fileSystem.root.(*dirnode).TreeSize()
-}
-
-// asChildNode() repackages fs as an inode that can be used as a child
-// node in a different fs. Not goroutine-safe.
-//
-// After calling asChildNode(), the caller should not use fs directly.
-func (fs *collectionFileSystem) asChildNode(parent inode, name string) *collectionfsnode {
-	root := fs.rootnode().(*dirnode)
-	root.SetParent(parent, name)
-	return &collectionfsnode{dirnode: root, fs: fs}
-}
-
-type collectionfsnode struct {
-	*dirnode
-	fs *collectionFileSystem
-}
-
-func (cn *collectionfsnode) Sync() error {
-	return cn.fs.Sync()
 }
 
 // filenodePtr is an offset into a file that is (usually) efficient to

@@ -183,11 +183,13 @@ func (fs *customFileSystem) mountCollection(parent inode, id string) inode {
 	if err != nil {
 		return nil
 	}
-	cfs, err := coll.FileSystem(fs, fs)
+	newfs, err := coll.FileSystem(fs, fs)
 	if err != nil {
 		return nil
 	}
-	return cfs.(*collectionFileSystem).asChildNode(parent, id)
+	cfs := newfs.(*collectionFileSystem)
+	cfs.SetParent(parent, id)
+	return cfs
 }
 
 func (fs *customFileSystem) newProjectNode(root inode, name, uuid string) inode {
