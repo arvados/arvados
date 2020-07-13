@@ -202,6 +202,14 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     parser.add_argument("--http-timeout", type=int,
                         default=5*60, dest="http_timeout", help="API request timeout in seconds. Default is 300 seconds (5 minutes).")
 
+    parser.add_argument(
+        "--skip-schemas",
+        action="store_true",
+        help="Skip loading of schemas",
+        default=False,
+        dest="skip_schemas",
+    )
+
     exgroup = parser.add_mutually_exclusive_group()
     exgroup.add_argument("--trash-intermediate", action="store_true",
                         default=False, dest="trash_intermediate",
