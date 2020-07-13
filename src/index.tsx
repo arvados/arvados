@@ -62,6 +62,7 @@ import { collectionAdminActionSet } from '~/views-components/context-menu/action
 import { processResourceAdminActionSet } from '~/views-components/context-menu/action-sets/process-resource-admin-action-set';
 import { projectAdminActionSet } from '~/views-components/context-menu/action-sets/project-admin-action-set';
 import { snackbarActions, SnackbarKind } from "~/store/snackbar/snackbar-actions";
+import { openNotFoundDialog } from './store/not-found-panel/not-found-panel-action';
 
 console.log(`Starting arvados [${getBuildInfo()}]`);
 
@@ -106,13 +107,18 @@ fetchConfig()
             errorFn: (id, error, showSnackBar) => {
                 if (showSnackBar) {
                     console.error("Backend error:", error);
-                    store.dispatch(snackbarActions.OPEN_SNACKBAR({
-                        message: `${error.errors
-                            ? error.errors[0]
-                            : error.message}`,
-                        kind: SnackbarKind.ERROR,
-                        hideDuration: 8000})
-                    );
+
+                    if (error.errors[0].indexOf("not found") > -1) {
+                        store.dispatch(openNotFoundDialog());
+                    } else {
+                        store.dispatch(snackbarActions.OPEN_SNACKBAR({
+                            message: `${error.errors
+                                ? error.errors[0]
+                                : error.message}`,
+                            kind: SnackbarKind.ERROR,
+                            hideDuration: 8000})
+                        );
+                    }
                 }
             }
         });

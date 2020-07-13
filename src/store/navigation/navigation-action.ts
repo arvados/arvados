@@ -14,7 +14,6 @@ import { GROUPS_PANEL_LABEL } from '~/store/breadcrumbs/breadcrumbs-actions';
 export const navigateTo = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState) => {
         const kind = extractUuidKind(uuid);
-
         switch (kind) {
             case ResourceKind.PROJECT:
             case ResourceKind.USER:
@@ -51,6 +50,8 @@ export const navigateTo = (uuid: string) =>
                 return;
         }
     };
+
+export const navigateToNotFound = push(Routes.NO_MATCH);
 
 export const navigateToRoot = push(Routes.ROOT);
 

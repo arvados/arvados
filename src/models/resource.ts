@@ -62,8 +62,9 @@ export enum ResourceObjectType {
 }
 
 export const RESOURCE_UUID_PATTERN = '[a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15}';
+export const PORTABLE_DATA_HASH_PATTERN = '[a-f0-9]{32}\\+\\d+';
 export const RESOURCE_UUID_REGEX = new RegExp("^" + RESOURCE_UUID_PATTERN + "$");
-export const COLLECTION_PDH_REGEX = /^[a-f0-9]{32}\+\d+$/;
+export const COLLECTION_PDH_REGEX = new RegExp("^" + PORTABLE_DATA_HASH_PATTERN + "$");
 
 export const isResourceUuid = (uuid: string) =>
     RESOURCE_UUID_REGEX.test(uuid);

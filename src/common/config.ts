@@ -23,6 +23,9 @@ export interface ClusterConfigJSON {
             Scheme: string
         }
     };
+    Mail?: {
+        SupportEmailAddress: string;
+    };
     Services: {
         Controller: {
             ExternalURL: string
