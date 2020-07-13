@@ -304,7 +304,7 @@ def migrate_user(args, migratearv, email, new_user_uuid, old_user_uuid):
         return
     try:
         new_owner_uuid = new_user_uuid
-        if not args.avoid_subproject_creation:
+        if args.data_into_subproject:
             grp = migratearv.groups().create(body={
                 "owner_uuid": new_user_uuid,
                 "name": "Migrated from %s (%s)" % (email, old_user_uuid),
@@ -325,7 +325,7 @@ def main():
         '--version', action='version', version="%s %s" % (sys.argv[0], __version__),
         help='Print version and exit.')
     parser.add_argument('--tokens', type=str, metavar='FILE', required=False, help="Read tokens from FILE. Not needed when using LoginCluster.")
-    parser.add_argument('--avoid-subproject-creation', action="store_true", help="Don't migrate user's data into a separate subproject. This may cause collection or project name collisions from within an account.")
+    parser.add_argument('--data-into-subproject', action="store_true", help="Migrate user's data into a separate subproject. This can be used to avoid name collisions from within an account.")
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('--report', type=str, metavar='FILE', help="Generate report .csv file listing users by email address and their associated Arvados accounts.")
     group.add_argument('--migrate', type=str, metavar='FILE', help="Consume report .csv and migrate users to designated Arvados accounts.")
