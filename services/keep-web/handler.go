@@ -6,7 +6,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"html"
 	"html/template"
 	"io"
@@ -228,17 +227,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Expose-Headers", "Content-Range")
 	}
 
-	if auth := r.Header.Get("Authorization"); strings.HasPrefix(auth, "AWS ") {
-		split := strings.SplitN(auth[4:], ":", 2)
-		if len(split) < 2 {
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
-		h.serveS3(w, r, split[0])
-		return
-	} else if strings.HasPrefix(auth, "AWS4-HMAC-SHA256 ") {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Println(w, "V4 signature is not supported")
+	if h.serveS3(w, r) {
 		return
 	}
 
@@ -543,82 +532,6 @@ func (h *handler) getClients(reqID, token string) (arv *arvadosclient.ArvadosCli
 		Insecure:  arv.ApiInsecure,
 	}).WithRequestID(reqID)
 	return
-}
-
-func (h *handler) serveS3(w http.ResponseWriter, r *http.Request, token string) {
-	_, kc, client, release, err := h.getClients(r.Header.Get("X-Request-Id"), token)
-	if err != nil {
-		http.Error(w, "Pool failed: "+h.clientPool.Err().Error(), http.StatusInternalServerError)
-		return
-	}
-	defer release()
-
-	r.URL.Path = "/by_id" + r.URL.Path
-
-	fs := client.SiteFileSystem(kc)
-	fs.ForwardSlashNameSubstitution(h.Config.cluster.Collections.ForwardSlashNameSubstitution)
-
-	switch r.Method {
-	case "GET":
-		fi, err := fs.Stat(r.URL.Path)
-		if os.IsNotExist(err) {
-			http.Error(w, err.Error(), http.StatusNotFound)
-			return
-		} else if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		} else if fi.IsDir() {
-			http.Error(w, "not found", http.StatusNotFound)
-		}
-		http.FileServer(fs).ServeHTTP(w, r)
-		return
-	case "PUT":
-		f, err := fs.OpenFile(r.URL.Path, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
-		if os.IsNotExist(err) {
-			// create missing intermediate directories, then try again
-			for i, c := range r.URL.Path {
-				if i > 0 && c == '/' {
-					dir := r.URL.Path[:i]
-					err := fs.Mkdir(dir, 0755)
-					if err != nil && err != os.ErrExist {
-						err = fmt.Errorf("mkdir %q failed: %w", dir, err)
-						http.Error(w, err.Error(), http.StatusInternalServerError)
-						return
-					}
-				}
-			}
-			f, err = fs.OpenFile(r.URL.Path, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
-		}
-		if err != nil {
-			err = fmt.Errorf("open %q failed: %w", r.URL.Path, err)
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		defer f.Close()
-		_, err = io.Copy(f, r.Body)
-		if err != nil {
-			err = fmt.Errorf("write to %q failed: %w", r.URL.Path, err)
-			http.Error(w, err.Error(), http.StatusBadGateway)
-			return
-		}
-		err = f.Close()
-		if err != nil {
-			err = fmt.Errorf("write to %q failed: %w", r.URL.Path, err)
-			http.Error(w, err.Error(), http.StatusBadGateway)
-			return
-		}
-		err = fs.Sync()
-		if err != nil {
-			err = fmt.Errorf("sync failed: %w", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		w.WriteHeader(http.StatusOK)
-		return
-	default:
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
 }
 
 func (h *handler) serveSiteFS(w http.ResponseWriter, r *http.Request, tokens []string, credentialsOK, attachment bool) {
