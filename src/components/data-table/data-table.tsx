@@ -40,7 +40,8 @@ type CssRules = "tableBody" | "root" | "content" | "noItemsInfo" | 'tableCell' |
 const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     root: {
         overflowX: 'auto',
-        overflowY: 'hidden'
+        overflowY: 'auto',
+        height: 'calc(100vh - 280px)',
     },
     content: {
         display: 'inline-block',
