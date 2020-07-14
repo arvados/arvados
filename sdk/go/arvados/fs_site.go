@@ -5,7 +5,6 @@
 package arvados
 
 import (
-	"fmt"
 	"os"
 	"strings"
 	"sync"
@@ -41,7 +40,7 @@ func (c *Client) CustomFileSystem(kc keepClient) CustomFileSystem {
 			thr:       newThrottle(concurrentWriters),
 		},
 	}
-	root.inode = &treenode{
+	root.treenode = treenode{
 		fs:     fs,
 		parent: root,
 		fileinfo: fileinfo{
@@ -55,9 +54,9 @@ func (c *Client) CustomFileSystem(kc keepClient) CustomFileSystem {
 }
 
 func (fs *customFileSystem) MountByID(mount string) {
-	fs.root.inode.Child(mount, func(inode) (inode, error) {
+	fs.root.treenode.Child(mount, func(inode) (inode, error) {
 		return &vdirnode{
-			inode: &treenode{
+			treenode: treenode{
 				fs:     fs,
 				parent: fs.root,
 				inodes: make(map[string]inode),
@@ -73,18 +72,18 @@ func (fs *customFileSystem) MountByID(mount string) {
 }
 
 func (fs *customFileSystem) MountProject(mount, uuid string) {
-	fs.root.inode.Child(mount, func(inode) (inode, error) {
+	fs.root.treenode.Child(mount, func(inode) (inode, error) {
 		return fs.newProjectNode(fs.root, mount, uuid), nil
 	})
 }
 
 func (fs *customFileSystem) MountUsers(mount string) {
-	fs.root.inode.Child(mount, func(inode) (inode, error) {
+	fs.root.treenode.Child(mount, func(inode) (inode, error) {
 		return &lookupnode{
 			stale:   fs.Stale,
 			loadOne: fs.usersLoadOne,
 			loadAll: fs.usersLoadAll,
-			inode: &treenode{
+			treenode: treenode{
 				fs:     fs,
 				parent: fs.root,
 				inodes: make(map[string]inode),
@@ -116,43 +115,7 @@ func (c *Client) SiteFileSystem(kc keepClient) CustomFileSystem {
 }
 
 func (fs *customFileSystem) Sync() error {
-	fs.staleLock.Lock()
-	fs.staleThreshold = time.Now()
-	fs.staleLock.Unlock()
-	return fs.syncTree("/", fs.root.inode)
-}
-
-// syncTree calls node.Sync() if it has its own Sync method, otherwise
-// it calls syncTree() on all of node's children.
-//
-// Returns ErrInvalidArgument if node does not implement Sync() and
-// isn't a directory (or if Readdir() fails for any other reason).
-func (fs *customFileSystem) syncTree(path string, node inode) error {
-	if vn, ok := node.(*vdirnode); ok {
-		node = vn.inode
-	}
-	if syncer, ok := node.(interface{ Sync() error }); ok {
-		err := syncer.Sync()
-		if err != nil {
-			return fmt.Errorf("%s: %T: %w", path, syncer, err)
-		}
-		return nil
-	}
-	fis, err := node.Readdir()
-	if err != nil {
-		return fmt.Errorf("%s: %T: %w", path, node, ErrInvalidArgument)
-	}
-	for _, fi := range fis {
-		child, err := node.Child(fi.Name(), nil)
-		if err != nil {
-			continue
-		}
-		err = fs.syncTree(path+"/"+fi.Name(), child)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+	return fs.root.Sync()
 }
 
 // Stale returns true if information obtained at time t should be
@@ -197,7 +160,7 @@ func (fs *customFileSystem) newProjectNode(root inode, name, uuid string) inode 
 		stale:   fs.Stale,
 		loadOne: func(parent inode, name string) (inode, error) { return fs.projectsLoadOne(parent, uuid, name) },
 		loadAll: func(parent inode) ([]inode, error) { return fs.projectsLoadAll(parent, uuid) },
-		inode: &treenode{
+		treenode: treenode{
 			fs:     fs,
 			parent: root,
 			inodes: make(map[string]inode),
@@ -217,17 +180,17 @@ func (fs *customFileSystem) newProjectNode(root inode, name, uuid string) inode 
 // create() can return either a new node, which will be added to the
 // treenode, or nil for ENOENT.
 type vdirnode struct {
-	inode
+	treenode
 	create func(parent inode, name string) inode
 }
 
 func (vn *vdirnode) Child(name string, replace func(inode) (inode, error)) (inode, error) {
-	return vn.inode.Child(name, func(existing inode) (inode, error) {
+	return vn.treenode.Child(name, func(existing inode) (inode, error) {
 		if existing == nil && vn.create != nil {
 			existing = vn.create(vn, name)
 			if existing != nil {
 				existing.SetParent(vn, name)
-				vn.inode.(*treenode).fileinfo.modTime = time.Now()
+				vn.treenode.fileinfo.modTime = time.Now()
 			}
 		}
 		if replace == nil {

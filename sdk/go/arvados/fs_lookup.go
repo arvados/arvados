@@ -15,7 +15,7 @@ import (
 //
 // See (*customFileSystem)MountUsers for example usage.
 type lookupnode struct {
-	inode
+	treenode
 	loadOne func(parent inode, name string) (inode, error)
 	loadAll func(parent inode) ([]inode, error)
 	stale   func(time.Time) bool
@@ -36,7 +36,7 @@ func (ln *lookupnode) Readdir() ([]os.FileInfo, error) {
 			return nil, err
 		}
 		for _, child := range all {
-			_, err = ln.inode.Child(child.FileInfo().Name(), func(inode) (inode, error) {
+			_, err = ln.treenode.Child(child.FileInfo().Name(), func(inode) (inode, error) {
 				return child, nil
 			})
 			if err != nil {
@@ -49,7 +49,7 @@ func (ln *lookupnode) Readdir() ([]os.FileInfo, error) {
 		// newer than ln.staleAll. Reclaim memory.
 		ln.staleOne = nil
 	}
-	return ln.inode.Readdir()
+	return ln.treenode.Readdir()
 }
 
 func (ln *lookupnode) Child(name string, replace func(inode) (inode, error)) (inode, error) {
@@ -57,7 +57,7 @@ func (ln *lookupnode) Child(name string, replace func(inode) (inode, error)) (in
 	defer ln.staleLock.Unlock()
 	checkTime := time.Now()
 	if ln.stale(ln.staleAll) && ln.stale(ln.staleOne[name]) {
-		_, err := ln.inode.Child(name, func(inode) (inode, error) {
+		_, err := ln.treenode.Child(name, func(inode) (inode, error) {
 			return ln.loadOne(ln, name)
 		})
 		if err != nil {
@@ -69,5 +69,5 @@ func (ln *lookupnode) Child(name string, replace func(inode) (inode, error)) (in
 			ln.staleOne[name] = checkTime
 		}
 	}
-	return ln.inode.Child(name, replace)
+	return ln.treenode.Child(name, replace)
 }

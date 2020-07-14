@@ -87,15 +87,16 @@ func (dn *deferrednode) Child(name string, replace func(inode) (inode, error)) (
 	return dn.realinode().Child(name, replace)
 }
 
-// Sync is currently unimplemented, except when it's a no-op because
-// the real inode hasn't been created.
+// Sync is a no-op if the real inode hasn't even been created yet.
 func (dn *deferrednode) Sync() error {
 	dn.mtx.Lock()
 	defer dn.mtx.Unlock()
-	if dn.created {
-		return ErrInvalidArgument
-	} else {
+	if !dn.created {
 		return nil
+	} else if syncer, ok := dn.wrapped.(syncer); ok {
+		return syncer.Sync()
+	} else {
+		return ErrInvalidOperation
 	}
 }
 
