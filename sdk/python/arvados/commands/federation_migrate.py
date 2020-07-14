@@ -295,7 +295,7 @@ def activate_remote_user(args, email, homearv, migratearv, old_user_uuid, new_us
             return None
 
     if olduser["is_admin"] and not newuser["is_admin"]:
-        print("(%s) Not migrating %s because user is admin but target user %s is not admin on %s. Please ensure the user admin status is the same on both clusters" % (email, old_user_uuid, new_user_uuid, migratecluster))
+        print("(%s) Not migrating %s because user is admin but target user %s is not admin on %s. Please ensure the user admin status is the same on both clusters. Note that a federated admin account has admin privileges on the entire federation." % (email, old_user_uuid, new_user_uuid, migratecluster))
         return None
 
     return newuser
@@ -317,7 +317,7 @@ def migrate_user(args, migratearv, email, new_user_uuid, old_user_uuid):
                                     new_owner_uuid=new_owner_uuid,
                                     redirect_to_new_user=True).execute()
     except arvados.errors.ApiError as e:
-        name_collision = re.search(r'Key \(owner_uuid, name\)=\((.*?), (.*?)\) already exists\.\n.*UPDATE "(.*?)"', e)
+        name_collision = re.search(r'Key \(owner_uuid, name\)=\((.*?), (.*?)\) already exists\.\n.*UPDATE "(.*?)"', e._get_reason())
         if name_collision:
             target_owner, rsc_name, rsc_type = name_collision.groups()
             print("(%s) Target owner %s already has a %s named '%s', skipping. Please rename it or use --data-into-subproject to migrate all users' data into a special subproject." % (email, target_owner, rsc_type[:-1], rsc_name))
