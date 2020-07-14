@@ -5,6 +5,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -43,27 +44,38 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 	fs := client.SiteFileSystem(kc)
 	fs.ForwardSlashNameSubstitution(h.Config.cluster.Collections.ForwardSlashNameSubstitution)
 
+	fi, err := fs.Stat(r.URL.Path)
 	switch r.Method {
 	case "GET":
-		fi, err := fs.Stat(r.URL.Path)
-		if os.IsNotExist(err) {
-			http.Error(w, err.Error(), http.StatusNotFound)
-			return true
-		} else if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return true
-		} else if fi.IsDir() {
+		if os.IsNotExist(err) ||
+			(err != nil && err.Error() == "not a directory") ||
+			(fi != nil && fi.IsDir()) {
 			http.Error(w, "not found", http.StatusNotFound)
+			return true
 		}
 		http.FileServer(fs).ServeHTTP(w, r)
 		return true
 	case "PUT":
+		if strings.HasSuffix(r.URL.Path, "/") {
+			http.Error(w, "invalid object name (trailing '/' char)", http.StatusBadRequest)
+			return true
+		}
+		if err != nil && err.Error() == "not a directory" {
+			// requested foo/bar, but foo is a file
+			http.Error(w, "object name conflicts with existing object", http.StatusBadRequest)
+			return true
+		}
 		f, err := fs.OpenFile(r.URL.Path, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
 		if os.IsNotExist(err) {
 			// create missing intermediate directories, then try again
 			for i, c := range r.URL.Path {
 				if i > 0 && c == '/' {
 					dir := r.URL.Path[:i]
+					if strings.HasSuffix(dir, "/") {
+						err = errors.New("invalid object name (consecutive '/' chars)")
+						http.Error(w, err.Error(), http.StatusBadRequest)
+						return true
+					}
 					err := fs.Mkdir(dir, 0755)
 					if err != nil && err != os.ErrExist {
 						err = fmt.Errorf("mkdir %q failed: %w", dir, err)

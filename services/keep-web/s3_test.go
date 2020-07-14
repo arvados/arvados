@@ -9,6 +9,7 @@ import (
 	"crypto/rand"
 	"io/ioutil"
 	"os"
+	"sync"
 	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
@@ -110,7 +111,7 @@ func (s *IntegrationSuite) testS3GetObject(c *check.C, bucket *s3.Bucket, prefix
 	c.Check(err, check.IsNil)
 
 	rdr, err = bucket.GetReader(prefix + "missingfile")
-	c.Check(err, check.NotNil)
+	c.Check(err, check.ErrorMatches, `404 Not Found`)
 
 	rdr, err = bucket.GetReader(prefix + "sailboat.txt")
 	c.Assert(err, check.IsNil)
@@ -152,7 +153,7 @@ func (s *IntegrationSuite) testS3PutObjectSuccess(c *check.C, bucket *s3.Bucket,
 		objname := prefix + trial.path
 
 		_, err := bucket.GetReader(objname)
-		c.Assert(err, check.NotNil)
+		c.Assert(err, check.ErrorMatches, `404 Not Found`)
 
 		buf := make([]byte, trial.size)
 		rand.Read(buf)
@@ -167,7 +168,7 @@ func (s *IntegrationSuite) testS3PutObjectSuccess(c *check.C, bucket *s3.Bucket,
 		buf2, err := ioutil.ReadAll(rdr)
 		c.Check(err, check.IsNil)
 		c.Check(buf2, check.HasLen, len(buf))
-		c.Check(buf2, check.DeepEquals, buf)
+		c.Check(bytes.Equal(buf, buf2), check.Equals, true)
 	}
 }
 
@@ -182,6 +183,7 @@ func (s *IntegrationSuite) TestS3ProjectPutObjectFailure(c *check.C) {
 	s.testS3PutObjectFailure(c, stage.projbucket, stage.coll.Name+"/")
 }
 func (s *IntegrationSuite) testS3PutObjectFailure(c *check.C, bucket *s3.Bucket, prefix string) {
+	var wg sync.WaitGroup
 	for _, trial := range []struct {
 		path string
 	}{
@@ -209,19 +211,25 @@ func (s *IntegrationSuite) testS3PutObjectFailure(c *check.C, bucket *s3.Bucket,
 			path: "",
 		},
 	} {
-		c.Logf("=== %v", trial)
+		trial := trial
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			c.Logf("=== %v", trial)
 
-		objname := prefix + trial.path
+			objname := prefix + trial.path
 
-		buf := make([]byte, 1234)
-		rand.Read(buf)
+			buf := make([]byte, 1234)
+			rand.Read(buf)
 
-		err := bucket.PutReader(objname, bytes.NewReader(buf), int64(len(buf)), "application/octet-stream", s3.Private, s3.Options{})
-		if !c.Check(err, check.NotNil, check.Commentf("name %q should be rejected", objname)) {
-			continue
-		}
+			err := bucket.PutReader(objname, bytes.NewReader(buf), int64(len(buf)), "application/octet-stream", s3.Private, s3.Options{})
+			if !c.Check(err, check.ErrorMatches, `400 Bad.*`, check.Commentf("PUT %q should fail", objname)) {
+				return
+			}
 
-		_, err = bucket.GetReader(objname)
-		c.Check(err, check.NotNil)
+			_, err = bucket.GetReader(objname)
+			c.Check(err, check.ErrorMatches, `404 Not Found`, check.Commentf("GET %q should return 404", objname))
+		}()
 	}
+	wg.Wait()
 }
