@@ -199,6 +199,22 @@ func (s *SiteFSSuite) TestProjectUpdatedByOther(c *check.C) {
 	err = wf.Close()
 	c.Check(err, check.IsNil)
 
+	err = project.Sync()
+	c.Check(err, check.IsNil)
+	_, err = s.fs.Open("/home/A Project/oob/test.txt")
+	c.Check(err, check.IsNil)
+
+	// Sync again to mark the project dir as stale, so the
+	// collection gets reloaded from the controller on next
+	// lookup.
+	err = project.Sync()
+	c.Check(err, check.IsNil)
+
+	// Ensure collection was flushed by Sync
+	var latest Collection
+	err = s.client.RequestAndDecode(&latest, "GET", "arvados/v1/collections/"+oob.UUID, nil, nil)
+	c.Check(latest.ManifestText, check.Matches, `.*:test.txt.*\n`)
+
 	// Delete test.txt behind s.fs's back by updating the
 	// collection record with an empty ManifestText.
 	err = s.client.RequestAndDecode(nil, "PATCH", "arvados/v1/collections/"+oob.UUID, nil, map[string]interface{}{
@@ -209,8 +225,6 @@ func (s *SiteFSSuite) TestProjectUpdatedByOther(c *check.C) {
 	})
 	c.Assert(err, check.IsNil)
 
-	err = project.Sync()
-	c.Check(err, check.IsNil)
 	_, err = s.fs.Open("/home/A Project/oob/test.txt")
 	c.Check(err, check.NotNil)
 	_, err = s.fs.Open("/home/A Project/oob")
@@ -220,7 +234,7 @@ func (s *SiteFSSuite) TestProjectUpdatedByOther(c *check.C) {
 	c.Assert(err, check.IsNil)
 
 	err = project.Sync()
-	c.Check(err, check.IsNil)
+	c.Check(err, check.NotNil) // can't update the deleted collection
 	_, err = s.fs.Open("/home/A Project/oob")
-	c.Check(err, check.NotNil)
+	c.Check(err, check.IsNil) // parent dir still has old collection -- didn't reload, because Sync failed
 }

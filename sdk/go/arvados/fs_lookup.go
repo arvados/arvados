@@ -26,6 +26,20 @@ type lookupnode struct {
 	staleOne  map[string]time.Time
 }
 
+// Sync flushes pending writes for loaded children and, if successful,
+// triggers a reload on next lookup.
+func (ln *lookupnode) Sync() error {
+	err := ln.treenode.Sync()
+	if err != nil {
+		return err
+	}
+	ln.staleLock.Lock()
+	ln.staleAll = time.Time{}
+	ln.staleOne = nil
+	ln.staleLock.Unlock()
+	return nil
+}
+
 func (ln *lookupnode) Readdir() ([]os.FileInfo, error) {
 	ln.staleLock.Lock()
 	defer ln.staleLock.Unlock()
