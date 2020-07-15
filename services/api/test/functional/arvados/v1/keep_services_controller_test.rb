@@ -50,8 +50,7 @@ class Arvados::V1::KeepServicesControllerTest < ActionController::TestCase
     refute_empty expect_rvz
     authorize_with :active
     get :index,
-      params: {:format => :json},
-      headers: auth(:active)
+      params: {:format => :json}
     assert_response :success
     json_response['items'].each do |svc|
       url = "#{svc['service_ssl_flag'] ? 'https' : 'http'}://#{svc['service_host']}:#{svc['service_port']}/"
