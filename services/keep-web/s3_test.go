@@ -7,6 +7,7 @@ package main
 import (
 	"bytes"
 	"crypto/rand"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"sync"
@@ -23,6 +24,8 @@ import (
 
 type s3stage struct {
 	arv        *arvados.Client
+	ac         *arvadosclient.ArvadosClient
+	kc         *keepclient.KeepClient
 	proj       arvados.Group
 	projbucket *s3.Bucket
 	coll       arvados.Collection
@@ -62,6 +65,8 @@ func (s *IntegrationSuite) s3setup(c *check.C) s3stage {
 	c.Assert(err, check.IsNil)
 	err = fs.Sync()
 	c.Assert(err, check.IsNil)
+	err = arv.RequestAndDecode(&coll, "GET", "arvados/v1/collections/"+coll.UUID, nil, nil)
+	c.Assert(err, check.IsNil)
 
 	auth := aws.NewAuth(arvadostest.ActiveTokenV2, arvadostest.ActiveTokenV2, "", time.Now().Add(time.Hour))
 	region := aws.Region{
@@ -71,6 +76,8 @@ func (s *IntegrationSuite) s3setup(c *check.C) s3stage {
 	client := s3.New(*auth, region)
 	return s3stage{
 		arv:  arv,
+		ac:   ac,
+		kc:   kc,
 		proj: proj,
 		projbucket: &s3.Bucket{
 			S3:   client,
@@ -227,9 +234,60 @@ func (s *IntegrationSuite) testS3PutObjectFailure(c *check.C, bucket *s3.Bucket,
 				return
 			}
 
-			_, err = bucket.GetReader(objname)
-			c.Check(err, check.ErrorMatches, `404 Not Found`, check.Commentf("GET %q should return 404", objname))
+			if objname != "" && objname != "/" {
+				_, err = bucket.GetReader(objname)
+				c.Check(err, check.ErrorMatches, `404 Not Found`, check.Commentf("GET %q should return 404", objname))
+			}
 		}()
 	}
 	wg.Wait()
+}
+
+func (s *IntegrationSuite) TestS3CollectionList(c *check.C) {
+	stage := s.s3setup(c)
+	defer stage.teardown(c)
+
+	filesPerDir := 1001
+
+	fs, err := stage.coll.FileSystem(stage.arv, stage.kc)
+	c.Assert(err, check.IsNil)
+	for _, dir := range []string{"dir1", "dir2"} {
+		c.Assert(fs.Mkdir(dir, 0755), check.IsNil)
+		for i := 0; i < filesPerDir; i++ {
+			f, err := fs.OpenFile(fmt.Sprintf("%s/file%d.txt", dir, i), os.O_CREATE|os.O_WRONLY, 0644)
+			c.Assert(err, check.IsNil)
+			c.Assert(f.Close(), check.IsNil)
+		}
+	}
+	c.Assert(fs.Sync(), check.IsNil)
+	s.testS3List(c, stage.collbucket, "", 4000, 2+filesPerDir*2)
+	s.testS3List(c, stage.collbucket, "", 131, 2+filesPerDir*2)
+	s.testS3List(c, stage.collbucket, "dir1/", 71, filesPerDir)
+}
+func (s *IntegrationSuite) testS3List(c *check.C, bucket *s3.Bucket, prefix string, pageSize, expectFiles int) {
+	gotKeys := map[string]s3.Key{}
+	nextMarker := ""
+	pages := 0
+	for {
+		resp, err := bucket.List(prefix, "", nextMarker, pageSize)
+		if !c.Check(err, check.IsNil) {
+			break
+		}
+		c.Check(len(resp.Contents) <= pageSize, check.Equals, true)
+		if pages++; !c.Check(pages <= (expectFiles/pageSize)+1, check.Equals, true) {
+			break
+		}
+		for _, key := range resp.Contents {
+			gotKeys[key.Key] = key
+		}
+		if !resp.IsTruncated {
+			c.Check(resp.NextMarker, check.Equals, "")
+			break
+		}
+		if !c.Check(resp.NextMarker, check.Not(check.Equals), "") {
+			break
+		}
+		nextMarker = resp.NextMarker
+	}
+	c.Check(len(gotKeys), check.Equals, expectFiles)
 }
