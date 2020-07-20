@@ -152,10 +152,10 @@ class ArvadosContainer(JobBase):
                         if not p.target:
                             continue
 
-                        if not p.target.startswith("/"):
-                            raise Exception("Expected mount target to start with '/'")
-
-                        dst = p.target[len(self.outdir)+1:] if p.target.startswith(self.outdir+"/") else p.target[1:]
+                        if p.target.startswith("/"):
+                            dst = p.target[len(self.outdir)+1:] if p.target.startswith(self.outdir+"/") else p.target[1:]
+                        else:
+                            dst = p.target
 
                         if p.type in ("File", "Directory", "WritableFile", "WritableDirectory"):
                             if p.resolved.startswith("_:"):
@@ -165,7 +165,8 @@ class ArvadosContainer(JobBase):
                                 vwd.copy(path or ".", dst, source_collection=source)
                         elif p.type == "CreateFile":
                             if self.arvrunner.secret_store.has_secret(p.resolved):
-                                secret_mounts[p.target] = {
+                                mountpoint = p.target if p.target.startswith("/") else os.path.join(self.outdir, p.target)
+                                secret_mounts[mountpoint] = {
                                     "kind": "text",
                                     "content": self.arvrunner.secret_store.retrieve(p.resolved)
                                 }
@@ -197,12 +198,16 @@ class ArvadosContainer(JobBase):
                     if (not p.target or self.arvrunner.secret_store.has_secret(p.resolved) or
                         (prev is not None and p.target.startswith(prev))):
                         continue
-                    dst = p.target[len(self.outdir)+1:] if p.target.startswith(self.outdir+"/") else p.target[1:]
-                    mounts[p.target] = {"kind": "collection",
+                    if p.target.startswith("/"):
+                        dst = p.target[len(self.outdir)+1:] if p.target.startswith(self.outdir+"/") else p.target[1:]
+                    else:
+                        dst = p.target
+                    mountpoint = p.target if p.target.startswith("/") else os.path.join(self.outdir, p.target)
+                    mounts[mountpoint] = {"kind": "collection",
                                           "portable_data_hash": vwd.portable_data_hash(),
                                           "path": dst}
                     if p.type.startswith("Writable"):
-                        mounts[p.target]["writable"] = True
+                        mounts[mountpoint]["writable"] = True
                     prev = p.target + "/"
 
         container_request["environment"] = {"TMPDIR": self.tmpdir, "HOME": self.outdir}
