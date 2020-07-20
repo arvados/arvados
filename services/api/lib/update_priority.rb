@@ -33,7 +33,7 @@ module UpdatePriority
       # priority==0 but should be >0:
       act_as_system_user do
         Container.
-          joins("JOIN container_requests ON container_requests.container_uuid=containers.uuid AND container_requests.state=#{Container.sanitize(ContainerRequest::Committed)} AND container_requests.priority>0").
+          joins("JOIN container_requests ON container_requests.container_uuid=containers.uuid AND container_requests.state=#{ActiveRecord::Base.connection.quote(ContainerRequest::Committed)} AND container_requests.priority>0").
           where('containers.state IN (?) AND containers.priority=0 AND container_requests.uuid IS NOT NULL',
                 [Container::Queued, Container::Locked, Container::Running]).
           map(&:update_priority!)
