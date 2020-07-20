@@ -137,6 +137,7 @@ class ArvadosModel < ApplicationRecord
   def reload(*args)
     super
     log_start_state
+    self
   end
 
   def self.create raw_params={}, *args

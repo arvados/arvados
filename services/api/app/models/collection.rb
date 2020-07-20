@@ -262,8 +262,7 @@ class Collection < ArvadosModel
     # Put aside the changes because with_lock requires an explicit record reload
     changes = self.changes
     snapshot = nil
-    reload
-    with_lock do
+    reload.with_lock do
       # Copy the original state to save it as old version
       if should_preserve_version
         snapshot = self.dup
