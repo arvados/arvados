@@ -150,21 +150,27 @@ class ArvadosContainer(JobBase):
                 with Perf(metrics, "createfiles %s" % self.name):
                     for f, p in sorteditems:
                         if not p.target:
-                            pass
-                        elif p.type in ("File", "Directory", "WritableFile", "WritableDirectory"):
+                            continue
+
+                        if not p.target.startswith("/"):
+                            raise Exception("Expected mount target to start with '/'")
+
+                        dst = p.target[len(self.outdir)+1:] if p.target.startswith(self.outdir+"/") else p.target[1:]
+
+                        if p.type in ("File", "Directory", "WritableFile", "WritableDirectory"):
                             if p.resolved.startswith("_:"):
-                                vwd.mkdirs(p.target)
+                                vwd.mkdirs(dst)
                             else:
                                 source, path = self.arvrunner.fs_access.get_collection(p.resolved)
-                                vwd.copy(path or ".", p.target, source_collection=source)
+                                vwd.copy(path or ".", dst, source_collection=source)
                         elif p.type == "CreateFile":
                             if self.arvrunner.secret_store.has_secret(p.resolved):
-                                secret_mounts["%s/%s" % (self.outdir, p.target)] = {
+                                secret_mounts[p.target] = {
                                     "kind": "text",
                                     "content": self.arvrunner.secret_store.retrieve(p.resolved)
                                 }
                             else:
-                                with vwd.open(p.target, "w") as n:
+                                with vwd.open(dst, "w") as n:
                                     n.write(p.resolved)
 
                 def keepemptydirs(p):
@@ -191,12 +197,12 @@ class ArvadosContainer(JobBase):
                     if (not p.target or self.arvrunner.secret_store.has_secret(p.resolved) or
                         (prev is not None and p.target.startswith(prev))):
                         continue
-                    mountpoint = "%s/%s" % (self.outdir, p.target)
-                    mounts[mountpoint] = {"kind": "collection",
+                    dst = p.target[len(self.outdir)+1:] if p.target.startswith(self.outdir+"/") else p.target[1:]
+                    mounts[p.target] = {"kind": "collection",
                                           "portable_data_hash": vwd.portable_data_hash(),
-                                          "path": p.target}
+                                          "path": dst}
                     if p.type.startswith("Writable"):
-                        mounts[mountpoint]["writable"] = True
+                        mounts[p.target]["writable"] = True
                     prev = p.target + "/"
 
         container_request["environment"] = {"TMPDIR": self.tmpdir, "HOME": self.outdir}
@@ -316,6 +322,7 @@ class ArvadosContainer(JobBase):
                 logger.info("%s %s state is %s", self.arvrunner.label(self), response["uuid"], response["state"])
         except Exception:
             logger.exception("%s got an error", self.arvrunner.label(self))
+            logger.debug("Container request was %s", container_request)
             self.output_callback({}, "permanentFail")
 
     def done(self, record):

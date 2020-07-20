@@ -285,6 +285,7 @@ class StagingPathMapper(PathMapper):
     def visit(self, obj, stagedir, basedir, copy=False, staged=False):
         # type: (Dict[unicode, Any], unicode, unicode, bool) -> None
         loc = obj["location"]
+        stagedir = obj.get("dirname") or stagedir
         tgt = os.path.join(stagedir, obj["basename"])
         basetgt, baseext = os.path.splitext(tgt)
 
