@@ -515,7 +515,7 @@ class CollectionTest < ActiveSupport::TestCase
       c2.description = 'foo collection'
       c1.save!
       assert_equal 1, c2.version
-      # with_lock forces a reload, so this shouldn't produce an unique violation error
+      # with_lock requires a reload, so this shouldn't produce an unique violation error
       c2.save!
       assert_equal 3, c2.version
       assert_equal 'foo collection', c2.description
