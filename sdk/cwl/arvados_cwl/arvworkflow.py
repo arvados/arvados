@@ -141,7 +141,8 @@ class ArvadosWorkflowStep(WorkflowStep):
         runtimeContext = runtimeContext.copy()
         runtimeContext.toplevel = True  # Preserve behavior for #13365
 
-        builder = make_builder({shortname(k): v for k,v in viewitems(joborder)}, self.hints, self.requirements, runtimeContext)
+        builder = make_builder({shortname(k): v for k,v in viewitems(joborder)}, self.hints, self.requirements,
+                               runtimeContext, self.metadata)
         runtimeContext = set_cluster_target(self.tool, self.arvrunner, builder, runtimeContext)
         return super(ArvadosWorkflowStep, self).job(joborder, output_callback, runtimeContext)
 
@@ -161,7 +162,7 @@ class ArvadosWorkflow(Workflow):
 
     def job(self, joborder, output_callback, runtimeContext):
 
-        builder = make_builder(joborder, self.hints, self.requirements, runtimeContext)
+        builder = make_builder(joborder, self.hints, self.requirements, runtimeContext, self.metadata)
         runtimeContext = set_cluster_target(self.tool, self.arvrunner, builder, runtimeContext)
 
         req, _ = self.get_requirement("http://arvados.org/cwl#RunInSingleContainer")
