@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -243,15 +244,11 @@ func (s *IntegrationSuite) testS3PutObjectFailure(c *check.C, bucket *s3.Bucket,
 	wg.Wait()
 }
 
-func (s *IntegrationSuite) TestS3CollectionList(c *check.C) {
-	stage := s.s3setup(c)
-	defer stage.teardown(c)
-
-	filesPerDir := 1001
-
+func (stage *s3stage) writeBigDirs(c *check.C, dirs int, filesPerDir int) {
 	fs, err := stage.coll.FileSystem(stage.arv, stage.kc)
 	c.Assert(err, check.IsNil)
-	for _, dir := range []string{"dir1", "dir2"} {
+	for d := 0; d < dirs; d++ {
+		dir := fmt.Sprintf("dir%d", d)
 		c.Assert(fs.Mkdir(dir, 0755), check.IsNil)
 		for i := 0; i < filesPerDir; i++ {
 			f, err := fs.OpenFile(fmt.Sprintf("%s/file%d.txt", dir, i), os.O_CREATE|os.O_WRONLY, 0644)
@@ -260,9 +257,17 @@ func (s *IntegrationSuite) TestS3CollectionList(c *check.C) {
 		}
 	}
 	c.Assert(fs.Sync(), check.IsNil)
+}
+
+func (s *IntegrationSuite) TestS3CollectionList(c *check.C) {
+	stage := s.s3setup(c)
+	defer stage.teardown(c)
+
+	filesPerDir := 1001
+	stage.writeBigDirs(c, 2, filesPerDir)
 	s.testS3List(c, stage.collbucket, "", 4000, 2+filesPerDir*2)
 	s.testS3List(c, stage.collbucket, "", 131, 2+filesPerDir*2)
-	s.testS3List(c, stage.collbucket, "dir1/", 71, filesPerDir)
+	s.testS3List(c, stage.collbucket, "dir0/", 71, filesPerDir)
 }
 func (s *IntegrationSuite) testS3List(c *check.C, bucket *s3.Bucket, prefix string, pageSize, expectFiles int) {
 	gotKeys := map[string]s3.Key{}
@@ -290,4 +295,100 @@ func (s *IntegrationSuite) testS3List(c *check.C, bucket *s3.Bucket, prefix stri
 		nextMarker = resp.NextMarker
 	}
 	c.Check(len(gotKeys), check.Equals, expectFiles)
+}
+
+func (s *IntegrationSuite) TestS3CollectionListRollup(c *check.C) {
+	stage := s.s3setup(c)
+	defer stage.teardown(c)
+
+	dirs := 2
+	filesPerDir := 500
+	stage.writeBigDirs(c, dirs, filesPerDir)
+	err := stage.collbucket.PutReader("dingbats", &bytes.Buffer{}, 0, "application/octet-stream", s3.Private, s3.Options{})
+	c.Assert(err, check.IsNil)
+	resp, err := stage.collbucket.List("", "", "", 20000)
+	c.Check(err, check.IsNil)
+	var allfiles []string
+	for _, key := range resp.Contents {
+		allfiles = append(allfiles, key.Key)
+	}
+	c.Check(allfiles, check.HasLen, dirs*filesPerDir+3)
+
+	for _, trial := range []struct {
+		prefix    string
+		delimiter string
+		marker    string
+	}{
+		{"di", "/", ""},
+		{"di", "r", ""},
+		{"di", "n", ""},
+		{"dir0", "/", ""},
+		{"dir0", "/", "dir0/file14.txt"},       // no commonprefixes
+		{"", "", "dir0/file14.txt"},            // middle page, skip walking dir1
+		{"", "", "dir1/file14.txt"},            // middle page, skip walking dir0
+		{"", "", "dir1/file498.txt"},           // last page of results
+		{"dir1/file", "", "dir1/file498.txt"},  // last page of results, with prefix
+		{"dir1/file", "/", "dir1/file498.txt"}, // last page of results, with prefix + delimiter
+		{"dir1", "Z", "dir1/file498.txt"},      // delimiter "Z" never appears
+		{"dir2", "/", ""},                      // prefix "dir2" does not exist
+		{"", "/", ""},
+	} {
+		c.Logf("\n\n=== trial %+v", trial)
+
+		maxKeys := 20
+		resp, err := stage.collbucket.List(trial.prefix, trial.delimiter, trial.marker, maxKeys)
+		c.Check(err, check.IsNil)
+		if resp.IsTruncated && trial.delimiter == "" {
+			// goamz List method fills in the missing
+			// NextMarker field if resp.IsTruncated, so
+			// now we can't really tell whether it was
+			// sent by the server or by goamz. In cases
+			// where it should be empty but isn't, assume
+			// it's goamz's fault.
+			resp.NextMarker = ""
+		}
+
+		var expectKeys []string
+		var expectPrefixes []string
+		var expectNextMarker string
+		var expectTruncated bool
+		for _, key := range allfiles {
+			full := len(expectKeys)+len(expectPrefixes) >= maxKeys
+			if !strings.HasPrefix(key, trial.prefix) || key < trial.marker {
+				continue
+			} else if idx := strings.Index(key[len(trial.prefix):], trial.delimiter); trial.delimiter != "" && idx >= 0 {
+				prefix := key[:len(trial.prefix)+idx+1]
+				if len(expectPrefixes) > 0 && expectPrefixes[len(expectPrefixes)-1] == prefix {
+					// same prefix as previous key
+				} else if full {
+					expectNextMarker = key
+					expectTruncated = true
+				} else {
+					expectPrefixes = append(expectPrefixes, prefix)
+				}
+			} else if full {
+				if trial.delimiter != "" {
+					expectNextMarker = key
+				}
+				expectTruncated = true
+				break
+			} else {
+				expectKeys = append(expectKeys, key)
+			}
+		}
+
+		var gotKeys []string
+		for _, key := range resp.Contents {
+			gotKeys = append(gotKeys, key.Key)
+		}
+		var gotPrefixes []string
+		for _, prefix := range resp.CommonPrefixes {
+			gotPrefixes = append(gotPrefixes, prefix)
+		}
+		c.Check(gotKeys, check.DeepEquals, expectKeys)
+		c.Check(gotPrefixes, check.DeepEquals, expectPrefixes)
+		c.Check(resp.NextMarker, check.Equals, expectNextMarker)
+		c.Check(resp.IsTruncated, check.Equals, expectTruncated)
+		c.Logf("=== trial %+v keys %q prefixes %q nextMarker %q", trial, gotKeys, gotPrefixes, resp.NextMarker)
+	}
 }

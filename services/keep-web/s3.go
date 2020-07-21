@@ -134,9 +134,11 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 	}
 }
 
-func walkFS(fs arvados.CustomFileSystem, path string, fn func(path string, fi os.FileInfo) error) error {
+func walkFS(fs arvados.CustomFileSystem, path string, ignoreNotFound bool, fn func(path string, fi os.FileInfo) error) error {
 	f, err := fs.Open(path)
-	if err != nil {
+	if os.IsNotExist(err) && ignoreNotFound {
+		return nil
+	} else if err != nil {
 		return fmt.Errorf("open %q: %w", path, err)
 	}
 	defer f.Close()
@@ -156,7 +158,7 @@ func walkFS(fs arvados.CustomFileSystem, path string, fn func(path string, fi os
 			return err
 		}
 		if fi.IsDir() {
-			err = walkFS(fs, path+"/"+fi.Name(), fn)
+			err = walkFS(fs, path+"/"+fi.Name(), false, fn)
 			if err != nil {
 				return err
 			}
@@ -194,45 +196,80 @@ func (h *handler) s3list(w http.ResponseWriter, r *http.Request, fs arvados.Cust
 	// prefix "foo"      => walkpath ""
 	// prefix ""         => walkpath ""
 	walkpath := params.prefix
-	if !strings.HasSuffix(walkpath, "/") {
-		walkpath, _ = filepath.Split(walkpath)
+	if cut := strings.LastIndex(walkpath, "/"); cut >= 0 {
+		walkpath = walkpath[:cut]
+	} else {
+		walkpath = ""
 	}
-	walkpath = strings.TrimSuffix(walkpath, "/")
 
-	type commonPrefix struct {
-		Prefix string
-	}
-	type serverListResponse struct {
-		s3.ListResp
-		CommonPrefixes []commonPrefix
-	}
-	resp := serverListResponse{ListResp: s3.ListResp{
+	resp := s3.ListResp{
 		Name:      strings.SplitN(r.URL.Path[1:], "/", 2)[0],
 		Prefix:    params.prefix,
 		Delimiter: params.delimiter,
 		Marker:    params.marker,
 		MaxKeys:   params.maxKeys,
-	}}
-	err := walkFS(fs, strings.TrimSuffix(bucketdir+"/"+walkpath, "/"), func(path string, fi os.FileInfo) error {
+	}
+	commonPrefixes := map[string]bool{}
+	err := walkFS(fs, strings.TrimSuffix(bucketdir+"/"+walkpath, "/"), true, func(path string, fi os.FileInfo) error {
 		path = path[len(bucketdir)+1:]
-		if !strings.HasPrefix(path, params.prefix) {
-			return filepath.SkipDir
+		if len(path) <= len(params.prefix) {
+			if path > params.prefix[:len(path)] {
+				// with prefix "foobar", walking "fooz" means we're done
+				return errDone
+			}
+			if path < params.prefix[:len(path)] {
+				// with prefix "foobar", walking "foobag" is pointless
+				return filepath.SkipDir
+			}
+			if fi.IsDir() && !strings.HasPrefix(params.prefix+"/", path+"/") {
+				// with prefix "foo/bar", walking "fo"
+				// is pointless (but walking "foo" or
+				// "foo/bar" is necessary)
+				return filepath.SkipDir
+			}
+			if len(path) < len(params.prefix) {
+				// can't skip anything, and this entry
+				// isn't in the results, so just
+				// continue descent
+				return nil
+			}
+		} else {
+			if path[:len(params.prefix)] > params.prefix {
+				// with prefix "foobar", nothing we
+				// see after "foozzz" is relevant
+				return errDone
+			}
+		}
+		if path < params.marker || path < params.prefix {
+			return nil
 		}
 		if fi.IsDir() {
 			return nil
 		}
-		if path < params.marker {
-			return nil
+		if params.delimiter != "" {
+			idx := strings.Index(path[len(params.prefix):], params.delimiter)
+			if idx >= 0 {
+				// with prefix "foobar" and delimiter
+				// "z", when we hit "foobar/baz", we
+				// add "/baz" to commonPrefixes and
+				// stop descending (note that even if
+				// delimiter is "/" we don't add
+				// anything to commonPrefixes when
+				// seeing a dir: we wait until we see
+				// a file, so we don't incorrectly
+				// return results for empty dirs)
+				commonPrefixes[path[:len(params.prefix)+idx+1]] = true
+				return filepath.SkipDir
+			}
 		}
-		// TODO: check delimiter, roll up common prefixes
-		if len(resp.Contents)+len(resp.CommonPrefixes) >= params.maxKeys {
+		if len(resp.Contents)+len(commonPrefixes) >= params.maxKeys {
 			resp.IsTruncated = true
-			if params.delimiter == "" {
+			if params.delimiter != "" {
 				resp.NextMarker = path
 			}
 			return errDone
 		}
-		resp.ListResp.Contents = append(resp.ListResp.Contents, s3.Key{
+		resp.Contents = append(resp.Contents, s3.Key{
 			Key: path,
 		})
 		return nil
@@ -240,6 +277,12 @@ func (h *handler) s3list(w http.ResponseWriter, r *http.Request, fs arvados.Cust
 	if err != nil && err != errDone {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+	if params.delimiter != "" {
+		for prefix := range commonPrefixes {
+			resp.CommonPrefixes = append(resp.CommonPrefixes, prefix)
+			sort.Strings(resp.CommonPrefixes)
+		}
 	}
 	if err := xml.NewEncoder(w).Encode(resp); err != nil {
 		ctxlog.FromContext(r.Context()).WithError(err).Error("error writing xml response")
