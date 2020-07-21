@@ -120,7 +120,12 @@
 
 - job: null
   output:
-    out: null
+    "out": {
+        "location": "hello.out",
+        "class": "File",
+        "checksum": "sha1$ec5d3976351abab45a483a49ce714a8430cb203a",
+        "size": 24
+    }
   tool: 13976-keepref-wf.cwl
   doc: "Test issue 13976"
 
@@ -329,3 +334,14 @@
   }
   tool: 16169-no-listing-hint.cwl
   doc: "Test cwltool:LoadListingRequirement propagation"
+
+- job: hello.yml
+  output:
+    "out": {
+        "location": "hello.out",
+        "class": "File",
+        "checksum": "sha1$ec5d3976351abab45a483a49ce714a8430cb203a",
+        "size": 24
+    }
+  tool: 16377-missing-default.cwl
+  doc: "Test issue 16377 - missing default fails even when it should be overridden by valid input"
