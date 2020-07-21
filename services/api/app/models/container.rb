@@ -339,7 +339,7 @@ class Container < ArvadosModel
   end
 
   def lock
-    self.with_lock do
+    self.reload.with_lock do
       if self.state != Queued
         raise LockFailedError.new("cannot lock when #{self.state}")
       end
@@ -357,7 +357,7 @@ class Container < ArvadosModel
   end
 
   def unlock
-    self.with_lock do
+    self.reload.with_lock do
       if self.state != Locked
         raise InvalidStateTransitionError.new("cannot unlock when #{self.state}")
       end
@@ -654,7 +654,7 @@ class Container < ArvadosModel
     # This container is finished so finalize any associated container requests
     # that are associated with this container.
     if saved_change_to_state? and self.final?
-      # These get wiped out by with_lock (which reloads the record),
+      # These get wiped out (with_lock requires to explicitly reload the record),
       # so record them now in case we need to schedule a retry.
       prev_secret_mounts = secret_mounts_before_last_save
       prev_runtime_token = runtime_token_before_last_save
@@ -665,7 +665,7 @@ class Container < ArvadosModel
       # transaction finishes.  This ensure that concurrent container
       # requests that try to reuse this container are finalized (on
       # Complete) or don't reuse it (on Cancelled).
-      self.with_lock do
+      self.reload.with_lock do
         act_as_system_user do
           if self.state == Cancelled
             retryable_requests = ContainerRequest.where("container_uuid = ? and priority > 0 and state = 'Committed' and container_count < container_count_max", uuid)
@@ -690,7 +690,7 @@ class Container < ArvadosModel
             }
             c = Container.create! c_attrs
             retryable_requests.each do |cr|
-              cr.with_lock do
+              cr.reload.with_lock do
                 leave_modified_by_user_alone do
                   # Use row locking because this increments container_count
                   cr.container_uuid = c.uuid
