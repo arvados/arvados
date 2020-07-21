@@ -378,15 +378,17 @@ build() {
         FORCE=-f
     fi
     GITHEAD=$(cd $ARVBOX_DOCKER && git log --format=%H -n1 HEAD)
+    set -x
     docker build --build-arg=arvados_version=$GITHEAD $NO_CACHE -t arvados/arvbox-base:$GITHEAD -f "$ARVBOX_DOCKER/Dockerfile.base" "$ARVBOX_DOCKER"
     docker tag $FORCE arvados/arvbox-base:$GITHEAD arvados/arvbox-base:latest
     if test "$1" = localdemo -o "$1" = publicdemo ; then
-        docker build $NO_CACHE -t arvados/arvbox-demo:$GITHEAD -f "$ARVBOX_DOCKER/Dockerfile.demo" "$ARVBOX_DOCKER"
+        docker build --build-arg=arvados_version=$GITHEAD $NO_CACHE -t arvados/arvbox-demo:$GITHEAD -f "$ARVBOX_DOCKER/Dockerfile.demo" "$ARVBOX_DOCKER"
         docker tag $FORCE arvados/arvbox-demo:$GITHEAD arvados/arvbox-demo:latest
     else
-        docker build $NO_CACHE -t arvados/arvbox-dev:$GITHEAD -f "$ARVBOX_DOCKER/Dockerfile.dev" "$ARVBOX_DOCKER"
+        docker build --build-arg=arvados_version=$GITHEAD $NO_CACHE -t arvados/arvbox-dev:$GITHEAD -f "$ARVBOX_DOCKER/Dockerfile.dev" "$ARVBOX_DOCKER"
         docker tag $FORCE arvados/arvbox-dev:$GITHEAD arvados/arvbox-dev:latest
     fi
+    set +x
 }
 
 check() {
