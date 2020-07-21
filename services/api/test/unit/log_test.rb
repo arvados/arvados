@@ -378,19 +378,6 @@ class LogTest < ActiveSupport::TestCase
         sleep 0.1
       end
       assert_operator remaining_audit_logs.count, :<, initial_log_count
-    ensure
-      # The test framework rolls back our transactions, but that
-      # doesn't undo the deletes we did from separate threads.
-      ActiveRecord::Base.connection.exec_query 'ROLLBACK'
-      Thread.new do
-        begin
-          dc = DatabaseController.new
-          dc.define_singleton_method :render do |*args| end
-          dc.reset
-        ensure
-          ActiveRecord::Base.connection.close
-        end
-      end.join
     end
   end
 end
