@@ -92,7 +92,6 @@ GEM
       net-ssh-gateway (>= 1.1.0)
     concurrent-ruby (1.1.6)
     crass (1.0.6)
-    database_cleaner (1.7.0)
     erubi (1.9.0)
     execjs (2.7.0)
     extlib (0.9.16)
@@ -283,7 +282,6 @@ DEPENDENCIES
   andand
   arvados!
   byebug
-  database_cleaner
   factory_bot_rails
   httpclient
   jquery-rails
@@ -317,4 +315,4 @@ DEPENDENCIES
   uglifier (~> 2.0)
 
 BUNDLED WITH
-   1.16.6
+   1.17.3
