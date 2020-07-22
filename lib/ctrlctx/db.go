@@ -2,16 +2,22 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package localdb
+package ctrlctx
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"sync"
 
-	"git.arvados.org/arvados.git/lib/controller/router"
+	"git.arvados.org/arvados.git/lib/controller/api"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
+)
+
+var (
+	ErrNoTransaction   = errors.New("bug: there is no transaction in this context")
+	ErrContextFinished = errors.New("refusing to start a transaction after wrapped function already returned")
 )
 
 // WrapCallsInTransactions returns a call wrapper (suitable for
@@ -20,20 +26,20 @@ import (
 //
 // The wrapper calls getdb() to get a database handle before each API
 // call.
-func WrapCallsInTransactions(getdb func(context.Context) (*sql.DB, error)) func(router.RoutableFunc) router.RoutableFunc {
-	return func(origFunc router.RoutableFunc) router.RoutableFunc {
+func WrapCallsInTransactions(getdb func(context.Context) (*sqlx.DB, error)) func(api.RoutableFunc) api.RoutableFunc {
+	return func(origFunc api.RoutableFunc) api.RoutableFunc {
 		return func(ctx context.Context, opts interface{}) (_ interface{}, err error) {
-			ctx, finishtx := starttx(ctx, getdb)
+			ctx, finishtx := New(ctx, getdb)
 			defer finishtx(&err)
 			return origFunc(ctx, opts)
 		}
 	}
 }
 
-// ContextWithTransaction returns a child context in which the given
+// NewWithTransaction returns a child context in which the given
 // transaction will be used by any localdb API call that needs one.
 // The caller is responsible for calling Commit or Rollback on tx.
-func ContextWithTransaction(ctx context.Context, tx *sql.Tx) context.Context {
+func NewWithTransaction(ctx context.Context, tx *sqlx.Tx) context.Context {
 	txn := &transaction{tx: tx}
 	txn.setup.Do(func() {})
 	return context.WithValue(ctx, contextKeyTransaction, txn)
@@ -44,26 +50,26 @@ type contextKeyT string
 var contextKeyTransaction = contextKeyT("transaction")
 
 type transaction struct {
-	tx    *sql.Tx
+	tx    *sqlx.Tx
 	err   error
-	getdb func(context.Context) (*sql.DB, error)
+	getdb func(context.Context) (*sqlx.DB, error)
 	setup sync.Once
 }
 
-type transactionFinishFunc func(*error)
+type finishFunc func(*error)
 
-// starttx returns a new child context that can be used with
-// currenttx(). It does not open a database transaction until the
-// first call to currenttx().
+// New returns a new child context that can be used with
+// CurrentTx(). It does not open a database transaction until the
+// first call to CurrentTx().
 //
 // The caller must eventually call the returned finishtx() func to
 // commit or rollback the transaction, if any.
 //
 //	func example(ctx context.Context) (err error) {
-//		ctx, finishtx := starttx(ctx, dber)
+//		ctx, finishtx := New(ctx, dber)
 //		defer finishtx(&err)
 //		// ...
-//		tx, err := currenttx(ctx)
+//		tx, err := CurrentTx(ctx)
 //		if err != nil {
 //			return fmt.Errorf("example: %s", err)
 //		}
@@ -75,17 +81,17 @@ type transactionFinishFunc func(*error)
 //
 // If *err is non-nil, finishtx() rolls back the transaction, and
 // does not modify *err.
-func starttx(ctx context.Context, getdb func(context.Context) (*sql.DB, error)) (context.Context, transactionFinishFunc) {
+func New(ctx context.Context, getdb func(context.Context) (*sqlx.DB, error)) (context.Context, finishFunc) {
 	txn := &transaction{getdb: getdb}
 	return context.WithValue(ctx, contextKeyTransaction, txn), func(err *error) {
 		txn.setup.Do(func() {
 			// Using (*sync.Once)Do() prevents a future
-			// call to currenttx() from opening a
+			// call to CurrentTx() from opening a
 			// transaction which would never get committed
-			// or rolled back. If currenttx() hasn't been
+			// or rolled back. If CurrentTx() hasn't been
 			// called before now, future calls will return
 			// this error.
-			txn.err = errors.New("refusing to start a transaction after wrapped function already returned")
+			txn.err = ErrContextFinished
 		})
 		if txn.tx == nil {
 			// we never [successfully] started a transaction
@@ -100,16 +106,16 @@ func starttx(ctx context.Context, getdb func(context.Context) (*sql.DB, error)) 
 	}
 }
 
-func currenttx(ctx context.Context) (*sql.Tx, error) {
+func CurrentTx(ctx context.Context) (*sqlx.Tx, error) {
 	txn, ok := ctx.Value(contextKeyTransaction).(*transaction)
 	if !ok {
-		return nil, errors.New("bug: there is no transaction in this context")
+		return nil, ErrNoTransaction
 	}
 	txn.setup.Do(func() {
 		if db, err := txn.getdb(ctx); err != nil {
 			txn.err = err
 		} else {
-			txn.tx, txn.err = db.Begin()
+			txn.tx, txn.err = db.Beginx()
 		}
 	})
 	return txn.tx, txn.err

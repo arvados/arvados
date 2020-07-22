@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
 import arvados
 import json
 import sys
@@ -21,7 +25,7 @@ def check_A(users):
     for i in range(1, 10):
         found = False
         for u in users["items"]:
-            if u["username"] == ("case%d" % i) and u["email"] == ("case%d@test" % i):
+            if u["username"] == ("case%d" % i) and u["email"] == ("case%d@test" % i) and u["first_name"] == ("Case%d" % i) and u["last_name"] == "Testuser":
                 found = True
                 by_username[u["username"]] = u["uuid"]
         assert found
@@ -60,6 +64,7 @@ for i in range(2, 9):
     found = False
     for u in users["items"]:
         if (u["username"] == ("case%d" % i) and u["email"] == ("case%d@test" % i) and
+            u["first_name"] == ("Case%d" % i) and u["last_name"] == "Testuser" and
             u["uuid"] == by_username[u["username"]] and u["is_active"] is True):
             found = True
     assert found, "Not found case%i" % i
@@ -67,6 +72,7 @@ for i in range(2, 9):
 found = False
 for u in users["items"]:
     if (u["username"] == "case9" and u["email"] == "case9@test" and
+        u["first_name"] == "Case9" and u["last_name"] == "Testuser" and
         u["uuid"] == by_username[u["username"]] and u["is_active"] is False):
         found = True
 assert found
@@ -87,6 +93,7 @@ for i in (2, 4, 6, 7, 8):
     found = False
     for u in users["items"]:
         if (u["username"] == ("case%d" % i) and u["email"] == ("case%d@test" % i) and
+            u["first_name"] == ("Case%d" % i) and u["last_name"] == "Testuser" and
             u["uuid"] == by_username[u["username"]] and u["is_active"] is True):
             found = True
     assert found
@@ -97,6 +104,7 @@ for i in (3, 5, 9):
     found = False
     for u in users["items"]:
         if (u["username"] == ("case%d" % i) and u["email"] == ("case%d@test" % i) and
+            u["first_name"] == ("Case%d" % i) and u["last_name"] == "Testuser" and
             u["uuid"] == by_username[u["username"]] and u["is_active"] is True):
             found = True
     assert not found

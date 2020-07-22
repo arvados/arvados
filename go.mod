@@ -22,6 +22,7 @@ require (
 	github.com/docker/docker v1.4.2-0.20180109013817-94b8a116fbf1
 	github.com/docker/go-connections v0.3.0 // indirect
 	github.com/docker/go-units v0.3.3-0.20171221200356-d59758554a3d // indirect
+	github.com/dustin/go-humanize v1.0.0
 	github.com/flynn/go-shlex v0.0.0-20150515145356-3f9db97f8568 // indirect
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/ghodss/yaml v1.0.0
@@ -35,6 +36,7 @@ require (
 	github.com/imdario/mergo v0.3.8-0.20190415133143-5ef87b449ca7
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/jmcvetta/randutil v0.0.0-20150817122601-2bb1b664bcff
+	github.com/jmoiron/sqlx v1.2.0
 	github.com/julienschmidt/httprouter v1.2.0
 	github.com/karalabe/xgo v0.0.0-20191115072854-c5ccff8648a7 // indirect
 	github.com/kevinburke/ssh_config v0.0.0-20171013211458-802051befeb5 // indirect

@@ -16,6 +16,7 @@ import arvados.collection
 import urllib.parse
 import logging
 import calendar
+import urllib.parse
 
 logger = logging.getLogger('arvados.cwl-runner')
 
@@ -148,7 +149,9 @@ def http_to_keep(api, project_uuid, url, utcnow=datetime.datetime.utcnow):
                     logger.info("%d downloaded, %3.2f MiB/s", count, (bps / (1024*1024)))
                 checkpoint = loopnow
 
-    c.save_new(name="Downloaded from %s" % url, owner_uuid=project_uuid, ensure_unique_name=True)
+
+    collectionname = "Downloaded from %s" % urllib.parse.quote(url, safe='')
+    c.save_new(name=collectionname, owner_uuid=project_uuid, ensure_unique_name=True)
 
     api.collections().update(uuid=c.manifest_locator(), body={"collection":{"properties": properties}}).execute()
 

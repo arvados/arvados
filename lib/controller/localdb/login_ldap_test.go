@@ -6,18 +6,19 @@ package localdb
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"net"
 	"net/http"
 
 	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/lib/controller/railsproxy"
+	"git.arvados.org/arvados.git/lib/ctrlctx"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"github.com/bradleypeabody/godap"
+	"github.com/jmoiron/sqlx"
 	check "gopkg.in/check.v1"
 )
 
@@ -27,11 +28,11 @@ type LDAPSuite struct {
 	cluster *arvados.Cluster
 	ctrl    *ldapLoginController
 	ldap    *godap.LDAPServer // fake ldap server that accepts auth goodusername/goodpassword
-	db      *sql.DB
+	db      *sqlx.DB
 
 	// transaction context
 	ctx      context.Context
-	rollback func()
+	rollback func() error
 }
 
 func (s *LDAPSuite) TearDownSuite(c *check.C) {
@@ -91,15 +92,20 @@ func (s *LDAPSuite) SetUpSuite(c *check.C) {
 		Cluster:    s.cluster,
 		RailsProxy: railsproxy.NewConn(s.cluster),
 	}
-	s.db = testdb(c, s.cluster)
+	s.db = arvadostest.DB(c, s.cluster)
 }
 
 func (s *LDAPSuite) SetUpTest(c *check.C) {
-	s.ctx, s.rollback = testctx(c, s.db)
+	tx, err := s.db.Beginx()
+	c.Assert(err, check.IsNil)
+	s.ctx = ctrlctx.NewWithTransaction(context.Background(), tx)
+	s.rollback = tx.Rollback
 }
 
 func (s *LDAPSuite) TearDownTest(c *check.C) {
-	s.rollback()
+	if s.rollback != nil {
+		s.rollback()
+	}
 }
 
 func (s *LDAPSuite) TestLoginSuccess(c *check.C) {
