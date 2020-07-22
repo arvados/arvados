@@ -1014,13 +1014,29 @@ Clusters:
 
           # (azure) Instance configuration.
           CloudEnvironment: AzurePublicCloud
-          ResourceGroup: ""
           Location: centralus
+
+          # (azure) The resource group where the VM and virtual NIC will be
+          # created.
+          ResourceGroup: ""
+
+          # (azure) The resource group of the Network to use for the virtual
+          # NIC (if different from ResourceGroup)
+          NetworkResourceGroup: ""
           Network: ""
           Subnet: ""
+
+          # (azure) Where to store the VM VHD blobs
           StorageAccount: ""
           BlobContainer: ""
+
+          # (azure) How long to wait before deleting VHD and NIC
+          # objects that are no longer being used.
           DeleteDanglingResourcesAfter: 20s
+
+          # Account (that already exists in the VM image) that will be
+          # set up with an ssh authorized key to allow the compute
+          # dispatcher to connect.
           AdminUsername: arvados
 
     InstanceTypes:
