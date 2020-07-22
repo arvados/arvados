@@ -43,6 +43,7 @@ type azureInstanceSetConfig struct {
 	ResourceGroup                string
 	Location                     string
 	Network                      string
+	NetworkResourceGroup         string
 	Subnet                       string
 	StorageAccount               string
 	BlobContainer                string
@@ -356,6 +357,11 @@ func (az *azureInstanceSet) Create(
 	}
 	tags["created-at"] = to.StringPtr(time.Now().Format(time.RFC3339Nano))
 
+	networkResourceGroup := az.azconfig.NetworkResourceGroup
+	if networkResourceGroup == "" {
+		networkResourceGroup = az.azconfig.ResourceGroup
+	}
+
 	nicParameters := network.Interface{
 		Location: &az.azconfig.Location,
 		Tags:     tags,
@@ -368,7 +374,7 @@ func (az *azureInstanceSet) Create(
 							ID: to.StringPtr(fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers"+
 								"/Microsoft.Network/virtualnetworks/%s/subnets/%s",
 								az.azconfig.SubscriptionID,
-								az.azconfig.ResourceGroup,
+								networkResourceGroup,
 								az.azconfig.Network,
 								az.azconfig.Subnet)),
 						},
