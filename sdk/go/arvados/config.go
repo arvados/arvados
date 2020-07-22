@@ -277,6 +277,7 @@ type S3VolumeDriverParameters struct {
 	Bucket             string
 	LocationConstraint bool
 	V2Signature        bool
+	AlternateDriver    bool
 	IndexPageSize      int
 	ConnectTimeout     Duration
 	ReadTimeout        Duration

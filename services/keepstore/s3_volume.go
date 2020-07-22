@@ -32,7 +32,7 @@ import (
 )
 
 func init() {
-	driver["S3"] = newS3Volume
+	driver["S3"] = chooseS3VolumeDriver
 }
 
 func newS3Volume(cluster *arvados.Cluster, volume arvados.Volume, logger logrus.FieldLogger, metrics *volumeMetricsVecs) (Volume, error) {
