@@ -141,19 +141,26 @@ h4. Minimal configuration example for Azure
         ImageID: "https://zzzzzzzz.blob.core.windows.net/system/Microsoft.Compute/Images/images/zzzzz-compute-osDisk.55555555-5555-5555-5555-555555555555.vhd"
         Driver: azure
         DriverParameters:
+          # Credentials.
           SubscriptionID: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
           ClientID: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
           ClientSecret: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
           TenantID: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
-          CloudEnvironment: AzurePublicCloud
-          ResourceGroup: zzzzz
+
+          # Data center where VMs will be allocated
           Location: centralus
-          Network: zzzzz
-          Subnet: zzzzz-subnet-private
+
+          # The resource group where the VM and virtual NIC will be
+          # created.
+          ResourceGroup: zzzzz
+          NetworkResourceGroup: yyyyy   # only if different from ResourceGroup
+          Network: xxxxx
+          Subnet: xxxxx-subnet-private
+
+          # Where to store the VM VHD blobs
           StorageAccount: example
           BlobContainer: vhds
-          DeleteDanglingResourcesAfter: 20s
-          AdminUsername: arvados
+
 </code></pre>
 </notextile>
 
