@@ -18,7 +18,7 @@ import (
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
-	"git.arvados.org/arvados.git/tmp/GOPATH/src/github.com/AdRoll/goamz/s3"
+	"github.com/AdRoll/goamz/s3"
 )
 
 // serveS3 handles r and returns true if r is a request from an S3
