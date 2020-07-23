@@ -20,6 +20,9 @@ func (seedDatabase) Run(ctx context.Context, fail func(error), super *Supervisor
 	if err != nil {
 		return err
 	}
+	if super.ClusterType == "production" {
+		return nil
+	}
 	err = super.RunProgram(ctx, "services/api", nil, railsEnv, "bundle", "exec", "rake", "db:setup")
 	if err != nil {
 		return err

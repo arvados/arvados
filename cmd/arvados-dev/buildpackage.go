@@ -85,12 +85,14 @@ func (bldr *builder) run(ctx context.Context, prog string, args []string, stdin 
 		cmd.Args = append(cmd.Args, "--depends", pkg)
 	}
 	cmd.Args = append(cmd.Args,
+		"--deb-use-file-permissions",
+		"--rpm-use-file-permissions",
 		"--exclude", "/var/lib/arvados/go",
 		"/var/lib/arvados",
 		"/var/www/.gem",
 		"/var/www/.passenger",
 	)
-	fmt.Fprintf(stderr, "%s...\n", cmd.Args)
+	fmt.Fprintf(stderr, "... %s\n", cmd.Args)
 	cmd.Dir = bldr.OutputDir
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr

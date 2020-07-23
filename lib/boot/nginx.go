@@ -53,7 +53,7 @@ func (runNginx) Run(ctx context.Context, fail func(error), super *Supervisor) er
 	} {
 		port, err := internalPort(cmpt.svc)
 		if err != nil {
-			return fmt.Errorf("%s internal port: %s (%v)", cmpt.varname, err, cmpt.svc)
+			return fmt.Errorf("%s internal port: %w (%v)", cmpt.varname, err, cmpt.svc)
 		}
 		if ok, err := addrIsLocal(net.JoinHostPort(super.ListenHost, port)); !ok || err != nil {
 			return fmt.Errorf("urlIsLocal() failed for host %q port %q: %v", super.ListenHost, port, err)
@@ -62,7 +62,7 @@ func (runNginx) Run(ctx context.Context, fail func(error), super *Supervisor) er
 
 		port, err = externalPort(cmpt.svc)
 		if err != nil {
-			return fmt.Errorf("%s external port: %s (%v)", cmpt.varname, err, cmpt.svc)
+			return fmt.Errorf("%s external port: %w (%v)", cmpt.varname, err, cmpt.svc)
 		}
 		if ok, err := addrIsLocal(net.JoinHostPort(super.ListenHost, port)); !ok || err != nil {
 			return fmt.Errorf("urlIsLocal() failed for host %q port %q: %v", super.ListenHost, port, err)

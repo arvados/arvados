@@ -14,6 +14,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"os/user"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -176,12 +177,26 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 	}
 
 	os.Mkdir("/var/lib/arvados", 0755)
+	os.Mkdir("/var/lib/arvados/tmp", 0700)
+	if prod {
+		os.Mkdir("/var/lib/arvados/wwwtmp", 0700)
+		u, er := user.Lookup("www-data")
+		if er != nil {
+			err = fmt.Errorf("user.Lookup(%q): %w", "www-data", er)
+			return 1
+		}
+		uid, _ := strconv.Atoi(u.Uid)
+		gid, _ := strconv.Atoi(u.Gid)
+		err = os.Chown("/var/lib/arvados/wwwtmp", uid, gid)
+		if err != nil {
+			return 1
+		}
+	}
 	rubyversion := "2.5.7"
 	if haverubyversion, err := exec.Command("/var/lib/arvados/bin/ruby", "-v").CombinedOutput(); err == nil && bytes.HasPrefix(haverubyversion, []byte("ruby "+rubyversion)) {
 		logger.Print("ruby " + rubyversion + " already installed")
 	} else {
 		err = runBash(`
-mkdir -p /var/lib/arvados/tmp
 tmp=/var/lib/arvados/tmp/ruby-`+rubyversion+`
 trap "rm -r ${tmp}" ERR
 wget --progress=dot:giga -O- https://cache.ruby-lang.org/pub/ruby/2.5/ruby-`+rubyversion+`.tar.gz | tar -C /var/lib/arvados/tmp -xzf -
@@ -189,7 +204,9 @@ cd ${tmp}
 ./configure --disable-install-doc --prefix /var/lib/arvados
 make -j8
 make install
-/var/lib/arvados/bin/gem install bundler
+/var/lib/arvados/bin/gem install bundler --no-ri --no-rdoc
+# "gem update --system" can be removed when we use ruby ≥2.6.3: https://bundler.io/blog/2019/05/14/solutions-for-cant-find-gem-bundler-with-executable-bundle.html
+/var/lib/arvados/bin/gem update --system --no-ri --no-rdoc
 rm -r ${tmp}
 `, stdout, stderr)
 		if err != nil {
@@ -262,7 +279,6 @@ ln -sf /var/lib/arvados/node-${NJS}-linux-x64/bin/{node,npm} /usr/local/bin/
 		} else {
 			err = runBash(`
 G=`+gradleversion+`
-mkdir -p /var/lib/arvados/tmp
 zip=/var/lib/arvados/tmp/gradle-${G}-bin.zip
 trap "rm ${zip}" ERR
 wget --progress=dot:giga -O${zip} https://services.gradle.org/distributions/gradle-${G}-bin.zip
@@ -414,8 +430,7 @@ rm ${zip}
 			for _, cmdline := range [][]string{
 				{"mkdir", "-p", "log", "tmp", ".bundle", "/var/www/.gem", "/var/www/.passenger"},
 				{"touch", "log/production.log"},
-				// {"chown", "-R", "root:root", "."},
-				{"chown", "-R", "www-data:www-data", "/var/www/.gem", "/var/www/.passenger", "log", "tmp", ".bundle", "Gemfile.lock", "config.ru", "config/environment.rb"},
+				{"chown", "-R", "--from=root", "www-data:www-data", "/var/www/.gem", "/var/www/.passenger", "log", "tmp", ".bundle", "Gemfile.lock", "config.ru", "config/environment.rb"},
 				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/gem", "install", "--user", "--no-rdoc", "--no-ri", "--conservative", "bundler:1.16.6", "bundler:1.17.3", "bundler:2.0.2"},
 				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "install", "--deployment", "--jobs", "8", "--path", "/var/www/.gem"},
 				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "exec", "passenger-config", "build-native-support"},
@@ -426,6 +441,7 @@ rm ${zip}
 				cmd.Dir = "/var/lib/arvados/" + dstdir
 				cmd.Stdout = stdout
 				cmd.Stderr = stderr
+				fmt.Fprintf(stderr, "... %s\n", cmd.Args)
 				err = cmd.Run()
 				if err != nil {
 					return 1
@@ -569,6 +585,7 @@ func prodpkgs(osv osversion) []string {
 		"make",
 		"nginx",
 		"python",
+		"sudo",
 	}
 	if osv.Debian || osv.Ubuntu {
 		if osv.Debian && osv.Major == 8 {

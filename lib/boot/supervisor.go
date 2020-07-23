@@ -14,6 +14,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net"
+	"net/url"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -54,7 +55,9 @@ type Supervisor struct {
 	tasksReady    map[string]chan bool
 	waitShutdown  sync.WaitGroup
 
+	bindir     string
 	tempdir    string
+	wwwtempdir string
 	configfile string
 	environ    []string // for child processes
 }
@@ -131,13 +134,26 @@ func (super *Supervisor) run(cfg *arvados.Config) error {
 		return err
 	}
 
-	super.tempdir, err = ioutil.TempDir("", "arvados-server-boot-")
-	if err != nil {
-		return err
-	}
-	defer os.RemoveAll(super.tempdir)
-	if err := os.Mkdir(filepath.Join(super.tempdir, "bin"), 0755); err != nil {
-		return err
+	// Choose bin and temp dirs: /var/lib/arvados/... in
+	// production, transient tempdir otherwise.
+	if super.ClusterType == "production" {
+		// These dirs have already been created by
+		// "arvados-server install" (or by extracting a
+		// package).
+		super.tempdir = "/var/lib/arvados/tmp"
+		super.wwwtempdir = "/var/lib/arvados/wwwtmp"
+		super.bindir = "/var/lib/arvados/bin"
+	} else {
+		super.tempdir, err = ioutil.TempDir("", "arvados-server-boot-")
+		if err != nil {
+			return err
+		}
+		defer os.RemoveAll(super.tempdir)
+		super.wwwtempdir = super.tempdir
+		super.bindir = filepath.Join(super.tempdir, "bin")
+		if err := os.Mkdir(super.bindir, 0755); err != nil {
+			return err
+		}
 	}
 
 	// Fill in any missing config keys, and write the resulting
@@ -166,7 +182,10 @@ func (super *Supervisor) run(cfg *arvados.Config) error {
 	super.setEnv("ARVADOS_CONFIG", super.configfile)
 	super.setEnv("RAILS_ENV", super.ClusterType)
 	super.setEnv("TMPDIR", super.tempdir)
-	super.prependEnv("PATH", super.tempdir+"/bin:/var/lib/arvados/bin:")
+	super.prependEnv("PATH", "/var/lib/arvados/bin:")
+	if super.ClusterType != "production" {
+		super.prependEnv("PATH", super.tempdir+"/bin:")
+	}
 
 	super.cluster, err = cfg.GetCluster("")
 	if err != nil {
@@ -182,7 +201,9 @@ func (super *Supervisor) run(cfg *arvados.Config) error {
 		"PID": os.Getpid(),
 	})
 
-	if super.SourceVersion == "" {
+	if super.SourceVersion == "" && super.ClusterType == "production" {
+		// don't need SourceVersion
+	} else if super.SourceVersion == "" {
 		// Find current source tree version.
 		var buf bytes.Buffer
 		err = super.RunProgram(super.ctx, ".", &buf, nil, "git", "diff", "--shortstat")
@@ -224,15 +245,15 @@ func (super *Supervisor) run(cfg *arvados.Config) error {
 		runGoProgram{src: "services/keep-web", svc: super.cluster.Services.WebDAV},
 		runServiceCommand{name: "ws", svc: super.cluster.Services.Websocket, depends: []supervisedTask{runPostgreSQL{}}},
 		installPassenger{src: "services/api"},
-		runPassenger{src: "services/api", svc: super.cluster.Services.RailsAPI, depends: []supervisedTask{createCertificates{}, runPostgreSQL{}, installPassenger{src: "services/api"}}},
+		runPassenger{src: "services/api", varlibdir: "railsapi", svc: super.cluster.Services.RailsAPI, depends: []supervisedTask{createCertificates{}, runPostgreSQL{}, installPassenger{src: "services/api"}}},
 		installPassenger{src: "apps/workbench", depends: []supervisedTask{installPassenger{src: "services/api"}}}, // dependency ensures workbench doesn't delay api startup
-		runPassenger{src: "apps/workbench", svc: super.cluster.Services.Workbench1, depends: []supervisedTask{installPassenger{src: "apps/workbench"}}},
+		runPassenger{src: "apps/workbench", varlibdir: "workbench1", svc: super.cluster.Services.Workbench1, depends: []supervisedTask{installPassenger{src: "apps/workbench"}}},
 		seedDatabase{},
 	}
 	if super.ClusterType != "test" {
 		tasks = append(tasks,
 			runServiceCommand{name: "dispatch-cloud", svc: super.cluster.Services.Controller},
-			runGoProgram{src: "services/keep-balance"},
+			runGoProgram{src: "services/keep-balance", svc: super.cluster.Services.Keepbalance},
 		)
 	}
 	super.tasksReady = map[string]chan bool{}
@@ -382,9 +403,11 @@ func dedupEnv(in []string) []string {
 
 func (super *Supervisor) installGoProgram(ctx context.Context, srcpath string) (string, error) {
 	_, basename := filepath.Split(srcpath)
-	bindir := filepath.Join(super.tempdir, "bin")
-	binfile := filepath.Join(bindir, basename)
-	err := super.RunProgram(ctx, filepath.Join(super.SourcePath, srcpath), nil, []string{"GOBIN=" + bindir}, "go", "install", "-ldflags", "-X git.arvados.org/arvados.git/lib/cmd.version="+super.SourceVersion+" -X main.version="+super.SourceVersion)
+	binfile := filepath.Join(super.bindir, basename)
+	if super.ClusterType == "production" {
+		return binfile, nil
+	}
+	err := super.RunProgram(ctx, filepath.Join(super.SourcePath, srcpath), nil, []string{"GOBIN=" + super.bindir}, "go", "install", "-ldflags", "-X git.arvados.org/arvados.git/lib/cmd.version="+super.SourceVersion+" -X main.version="+super.SourceVersion)
 	return binfile, err
 }
 
@@ -401,10 +424,19 @@ func (super *Supervisor) setupRubyEnv() error {
 			"GEM_PATH=",
 		})
 		gem := "gem"
-		if _, err := os.Stat("/var/lib/arvados/bin/gem"); err == nil {
+		if _, err := os.Stat("/var/lib/arvados/bin/gem"); err == nil || super.ClusterType == "production" {
 			gem = "/var/lib/arvados/bin/gem"
 		}
 		cmd := exec.Command(gem, "env", "gempath")
+		if super.ClusterType == "production" {
+			cmd.Args = append([]string{"sudo", "-u", "www-data", "-E", "HOME=/var/www"}, cmd.Args...)
+			path, err := exec.LookPath("sudo")
+			if err != nil {
+				return fmt.Errorf("LookPath(\"sudo\"): %w", err)
+			}
+			cmd.Path = path
+		}
+		cmd.Stderr = super.Stderr
 		cmd.Env = super.environ
 		buf, err := cmd.Output() // /var/lib/arvados/.gem/ruby/2.5.0/bin:...
 		if err != nil || len(buf) == 0 {
@@ -694,11 +726,10 @@ func internalPort(svc arvados.Service) (string, error) {
 		return "", errors.New("internalPort() doesn't work with multiple InternalURLs")
 	}
 	for u := range svc.InternalURLs {
-		if _, p, err := net.SplitHostPort(u.Host); err != nil {
-			return "", err
-		} else if p != "" {
+		u := url.URL(u)
+		if p := u.Port(); p != "" {
 			return p, nil
-		} else if u.Scheme == "https" {
+		} else if u.Scheme == "https" || u.Scheme == "ws" {
 			return "443", nil
 		} else {
 			return "80", nil
@@ -708,11 +739,10 @@ func internalPort(svc arvados.Service) (string, error) {
 }
 
 func externalPort(svc arvados.Service) (string, error) {
-	if _, p, err := net.SplitHostPort(svc.ExternalURL.Host); err != nil {
-		return "", err
-	} else if p != "" {
+	u := url.URL(svc.ExternalURL)
+	if p := u.Port(); p != "" {
 		return p, nil
-	} else if svc.ExternalURL.Scheme == "https" {
+	} else if u.Scheme == "https" || u.Scheme == "wss" {
 		return "443", nil
 	} else {
 		return "80", nil

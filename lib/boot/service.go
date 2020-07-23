@@ -30,8 +30,8 @@ func (runner runServiceCommand) String() string {
 }
 
 func (runner runServiceCommand) Run(ctx context.Context, fail func(error), super *Supervisor) error {
-	binfile := filepath.Join(super.tempdir, "bin", "arvados-server")
-	err := super.RunProgram(ctx, super.tempdir, nil, nil, binfile, "-version")
+	binfile := filepath.Join(super.bindir, "arvados-server")
+	err := super.RunProgram(ctx, super.bindir, nil, nil, binfile, "-version")
 	if err != nil {
 		return err
 	}

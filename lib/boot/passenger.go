@@ -37,6 +37,10 @@ func (runner installPassenger) String() string {
 }
 
 func (runner installPassenger) Run(ctx context.Context, fail func(error), super *Supervisor) error {
+	if super.ClusterType == "production" {
+		// passenger has already been installed via package
+		return nil
+	}
 	err := super.wait(ctx, runner.depends...)
 	if err != nil {
 		return err
@@ -52,7 +56,7 @@ func (runner installPassenger) Run(ctx context.Context, fail func(error), super 
 	}
 	for _, version := range []string{"1.16.6", "1.17.3", "2.0.2"} {
 		if !strings.Contains(buf.String(), "("+version+")") {
-			err = super.RunProgram(ctx, runner.src, nil, nil, "gem", "install", "--user", "bundler:1.16.6", "bundler:1.17.3", "bundler:2.0.2")
+			err = super.RunProgram(ctx, runner.src, nil, nil, "gem", "install", "--user", "--conservative", "--no-rdoc", "--no-ri", "bundler:1.16.6", "bundler:1.17.3", "bundler:2.0.2")
 			if err != nil {
 				return err
 			}
@@ -83,9 +87,10 @@ func (runner installPassenger) Run(ctx context.Context, fail func(error), super 
 }
 
 type runPassenger struct {
-	src     string
-	svc     arvados.Service
-	depends []supervisedTask
+	src       string // path to app in source tree
+	varlibdir string // path to app (relative to /var/lib/arvados) in OS package
+	svc       arvados.Service
+	depends   []supervisedTask
 }
 
 func (runner runPassenger) String() string {
@@ -100,6 +105,12 @@ func (runner runPassenger) Run(ctx context.Context, fail func(error), super *Sup
 	port, err := internalPort(runner.svc)
 	if err != nil {
 		return fmt.Errorf("bug: no internalPort for %q: %v (%#v)", runner, err, runner.svc)
+	}
+	var appdir string
+	if super.ClusterType == "production" {
+		appdir = "/var/lib/arvados/" + runner.varlibdir
+	} else {
+		appdir = runner.src
 	}
 	loglevel := "4"
 	if lvl, ok := map[string]string{
@@ -116,13 +127,30 @@ func (runner runPassenger) Run(ctx context.Context, fail func(error), super *Sup
 	super.waitShutdown.Add(1)
 	go func() {
 		defer super.waitShutdown.Done()
-		err = super.RunProgram(ctx, runner.src, nil, railsEnv, "bundle", "exec",
+		cmdline := []string{
+			"bundle", "exec",
 			"passenger", "start",
 			"-p", port,
-			"--log-file", "/dev/stderr",
 			"--log-level", loglevel,
 			"--no-friendly-error-pages",
-			"--pid-file", filepath.Join(super.tempdir, "passenger."+strings.Replace(runner.src, "/", "_", -1)+".pid"))
+			"--disable-anonymous-telemetry",
+			"--disable-security-update-check",
+			"--no-compile-runtime",
+			"--no-install-runtime",
+			"--pid-file", filepath.Join(super.wwwtempdir, "passenger."+strings.Replace(appdir, "/", "_", -1)+".pid"),
+		}
+		if super.ClusterType == "production" {
+			cmdline = append([]string{"sudo", "-u", "www-data", "-E", "HOME=/var/www", "PATH=/var/lib/arvados/bin:" + os.Getenv("PATH"), "/var/lib/arvados/bin/bundle"}, cmdline[1:]...)
+		} else {
+			// This would be desirable in the production
+			// case too, but it fails with sudo because
+			// /dev/stderr is a symlink to a pty owned by
+			// root: "nginx: [emerg] open() "/dev/stderr"
+			// failed (13: Permission denied)"
+			cmdline = append(cmdline, "--log-file", "/dev/stderr")
+		}
+		env := append([]string{"TMPDIR=" + super.wwwtempdir}, railsEnv...)
+		err = super.RunProgram(ctx, appdir, nil, env, cmdline[0], cmdline[1:]...)
 		fail(err)
 	}()
 	return nil

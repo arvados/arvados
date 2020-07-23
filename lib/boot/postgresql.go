@@ -36,6 +36,10 @@ func (runPostgreSQL) Run(ctx context.Context, fail func(error), super *Superviso
 		return err
 	}
 
+	if super.ClusterType == "production" {
+		return nil
+	}
+
 	iamroot := false
 	if u, err := user.Current(); err != nil {
 		return fmt.Errorf("user.Current(): %s", err)
