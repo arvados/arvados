@@ -255,12 +255,45 @@ Submit a simple container request:
 
 This command should return a record with a @container_uuid@ field.  Once @arvados-dispatch-cloud@ polls the API server for new containers to run, you should see it dispatch that same container.
 
-The @arvados-dispatch-cloud@ API a list of queued and running jobs.  For example:
+The @arvados-dispatch-cloud@ API provides a list of queued and running jobs and cloud instances. Use your @ManagementToken@ to test the dispatcher's endpoint. For example, when one container is running:
 
 <notextile>
-<pre><code>~$ <span class="userinput">curl ...</span>
+<pre><code>~$ <span class="userinput">curl -sH "Authorization: Bearer $token" http://localhost:9006/arvados/v1/dispatch/containers</span>
+{
+  "items": [
+    {
+      "container": {
+        "uuid": "zzzzz-dz642-hdp2vpu9nq14tx0",
+        ...
+        "state": "Running",
+        "scheduling_parameters": {
+          "partitions": null,
+          "preemptible": false,
+          "max_run_time": 0
+        },
+        "exit_code": 0,
+        "runtime_status": null,
+        "started_at": null,
+        "finished_at": null
+      },
+      "instance_type": {
+        "Name": "Standard_D2s_v3",
+        "ProviderType": "Standard_D2s_v3",
+        "VCPUs": 2,
+        "RAM": 8589934592,
+        "Scratch": 16000000000,
+        "IncludedScratch": 16000000000,
+        "AddedScratch": 0,
+        "Price": 0.11,
+        "Preemptible": false
+      }
+    }
+  ]
+}
 </code></pre>
 </notextile>
+
+A similar request can be made to the @http://localhost:9006/arvados/v1/dispatch/instances@ endpoint.
 
 When the container finishes, the dispatcher will log it.
 
