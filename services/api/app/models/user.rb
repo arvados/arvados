@@ -241,11 +241,8 @@ SELECT target_uuid, perm_level
                      name: 'can_login').destroy_all
 
     # delete "All users" group read permissions for this user
-    group = Group.where(name: 'All users').select do |g|
-      g[:uuid].match(/-f+$/)
-    end.first
     Link.where(tail_uuid: self.uuid,
-                     head_uuid: group[:uuid],
+                     head_uuid: all_users_group_uuid,
                      link_class: 'permission',
                      name: 'can_read').destroy_all
 
@@ -272,10 +269,6 @@ SELECT target_uuid, perm_level
        self.is_active_was &&
        !self.is_active
 
-      group = Group.where(name: 'All users').select do |g|
-        g[:uuid].match(/-f+$/)
-      end.first
-
       # When a user is set up, they are added to the "All users"
       # group.  A user that is part of the "All users" group is
       # allowed to self-activate.
@@ -290,7 +283,7 @@ SELECT target_uuid, perm_level
       # explaining the correct way to deactivate a user.
       #
       if Link.where(tail_uuid: self.uuid,
-                    head_uuid: group[:uuid],
+                    head_uuid: all_users_group_uuid,
                     link_class: 'permission',
                     name: 'can_read').any?
         errors.add :is_active, "cannot be set to false directly, use the 'Deactivate' button on Workbench, or the 'unsetup' API call"
@@ -711,11 +704,11 @@ update #{PERMISSION_VIEW} set target_uuid=$1 where target_uuid = $2
   # add the user to the 'All users' group
   def create_user_group_link
     return (Link.where(tail_uuid: self.uuid,
-                       head_uuid: all_users_group[:uuid],
+                       head_uuid: all_users_group_uuid,
                        link_class: 'permission',
                        name: 'can_read').first or
             Link.create(tail_uuid: self.uuid,
-                        head_uuid: all_users_group[:uuid],
+                        head_uuid: all_users_group_uuid,
                         link_class: 'permission',
                         name: 'can_read'))
   end
@@ -743,7 +736,8 @@ update #{PERMISSION_VIEW} set target_uuid=$1 where target_uuid = $2
   # Automatically setup if is_active flag turns on
   def setup_on_activate
     return if [system_user_uuid, anonymous_user_uuid].include?(self.uuid)
-    if is_active && (new_record? || saved_change_to_is_active?)
+    if is_active &&
+      (new_record? || saved_change_to_is_active? || will_save_change_to_is_active?)
       setup
     end
   end
