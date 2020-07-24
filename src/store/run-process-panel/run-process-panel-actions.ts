@@ -123,9 +123,10 @@ export const runProcess = async (dispatch: Dispatch<any>, getState: () => RootSt
     if (!userUuid) { return; }
     const pathname = getState().runProcessPanel.processPathname;
     const { processOwnerUuid, selectedWorkflow } = state.runProcessPanel;
+    const ownerUUid = !matchProjectRoute(pathname) ? userUuid : processOwnerUuid;
     if (selectedWorkflow) {
         const newProcessData = {
-            ownerUuid: !matchProjectRoute(pathname) ? userUuid : processOwnerUuid,
+            ownerUuid: ownerUUid,
             name: basicForm.name,
             description: basicForm.description,
             state: ContainerRequestState.COMMITTED,
@@ -145,6 +146,7 @@ export const runProcess = async (dispatch: Dispatch<any>, getState: () => RootSt
                 'arvados-cwl-runner',
                 '--api=containers',
                 '--local',
+                `--project-uuid=${ownerUUid}`,
                 '/var/lib/cwl/workflow.json#main',
                 '/var/lib/cwl/cwl.input.json'
             ],
