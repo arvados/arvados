@@ -107,11 +107,11 @@ The @aws-sdk-go-v2@ driver has faster _single thread_ read and write performance
 table(table table-bordered table-condensed).
 ||_. goamz |_. aws-sdk-go-v2 |_. command line|
 |single thread read performance (average)|32.53 MiB/s|79.48 MiB/s|keep-exercise -repeat 4 -run-time 60s -vary-request -use-index -rthreads 1 -wthreads 1|
-|single thread write performance (average)|39.75 MiB/s|49.58 MiB/s|keep-exercise -repeat 4 -run-time 60s -vary-request -use-index -rthreads 1 -wthreads 1|
+|single thread write performance (average)|39.75 MiB/s|41.05 MiB/s|keep-exercise -repeat 4 -run-time 60s -vary-request -use-index -rthreads 1 -wthreads 1|
 
 Because both S3 and Keep are optimized for _aggregate_ througput, the single thread performance is not as important as it may seem at first glance. When using 20 concurrent read or write threads, the numbers from both drivers are more closely aligned:
 
 table(table table-bordered table-condensed).
 ||_. goamz |_. aws-sdk-go-v2 |_. command line|
 |20 thread read performance (average)|585.60 MiB/s|898.93 MiB/s|keep-exercise -repeat 4 -run-time 60s -vary-request -use-index -rthreads 20 -wthreads 0|
-|20 thread write performance (average)|610.40 MiB/s|542.40 MiB/s|keep-exercise -repeat 4 -run-time 60s -vary-request -use-index -rthreads 0 -wthreads 20|
+|20 thread write performance (average)|610.40 MiB/s|688.25 MiB/s|keep-exercise -repeat 4 -run-time 60s -vary-request -use-index -rthreads 0 -wthreads 20|

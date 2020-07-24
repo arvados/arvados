@@ -534,7 +534,9 @@ func (b *s3AWSbucket) PutReader(path string, r io.Reader, length int64, contType
 		Bucket: aws.String(b.bucket),
 		Key:    aws.String(path),
 		Body:   r,
-	})
+	}, s3manager.WithUploaderRequestOptions(func(r *aws.Request) {
+		r.HTTPRequest.Header.Set("X-Amz-Content-Sha256", "UNSIGNED-PAYLOAD")
+	}))
 
 	b.stats.TickOps("put")
 	b.stats.Tick(&b.stats.Ops, &b.stats.PutOps)
@@ -570,10 +572,6 @@ func (v *S3AWSVolume) WriteBlock(ctx context.Context, loc string, rdr io.Reader)
 	// See if this is the empty block
 	if contentMD5 != "d41d8cd98f00b204e9800998ecf8427e" {
 		uploadInput.ContentMD5 = &contentMD5
-		// Unlike the goamz S3 driver, we don't need to precompute ContentSHA256:
-		// the aws-sdk-go v2 SDK uses a ReadSeeker to avoid having to copy the
-		// block, so there is no extra memory use to be concerned about. See
-		// makeSha256Reader in aws/signer/v4/v4.go.
 	}
 
 	// Some experimentation indicated that using concurrency 5 yields the best
@@ -585,7 +583,15 @@ func (v *S3AWSVolume) WriteBlock(ctx context.Context, loc string, rdr io.Reader)
 		u.Concurrency = 5
 	})
 
-	_, err = uploader.UploadWithContext(ctx, &uploadInput, s3manager.WithUploaderRequestOptions())
+	// Unlike the goamz S3 driver, we don't need to precompute ContentSHA256:
+	// the aws-sdk-go v2 SDK uses a ReadSeeker to avoid having to copy the
+	// block, so there is no extra memory use to be concerned about. See
+	// makeSha256Reader in aws/signer/v4/v4.go. In fact, we explicitly disable
+	// calculating the Sha-256 because we don't need it; we already use md5sum
+	// hashes that match the name of the block.
+	_, err = uploader.UploadWithContext(ctx, &uploadInput, s3manager.WithUploaderRequestOptions(func(r *aws.Request) {
+		r.HTTPRequest.Header.Set("X-Amz-Content-Sha256", "UNSIGNED-PAYLOAD")
+	}))
 
 	v.bucket.stats.TickOps("put")
 	v.bucket.stats.Tick(&v.bucket.stats.Ops, &v.bucket.stats.PutOps)
@@ -599,7 +605,9 @@ func (v *S3AWSVolume) WriteBlock(ctx context.Context, loc string, rdr io.Reader)
 		Bucket: aws.String(v.bucket.bucket),
 		Key:    aws.String("recent/" + loc),
 		Body:   empty,
-	})
+	}, s3manager.WithUploaderRequestOptions(func(r *aws.Request) {
+		r.HTTPRequest.Header.Set("X-Amz-Content-Sha256", "UNSIGNED-PAYLOAD")
+	}))
 	v.bucket.stats.TickOps("put")
 	v.bucket.stats.Tick(&v.bucket.stats.Ops, &v.bucket.stats.PutOps)
 	v.bucket.stats.TickErr(err)
