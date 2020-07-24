@@ -494,7 +494,7 @@ func (wp *Pool) StartContainer(it arvados.InstanceType, ctr arvados.Container) b
 	defer wp.mtx.Unlock()
 	var wkr *worker
 	for _, w := range wp.workers {
-		if w.instType == it && w.state == StateIdle {
+		if w.instType == it && w.state == StateIdle && w.idleBehavior == IdleBehaviorRun {
 			if wkr == nil || w.busy.After(wkr.busy) {
 				wkr = w
 			}
