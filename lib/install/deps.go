@@ -416,7 +416,7 @@ rm ${zip}
 				{"touch", "log/production.log"},
 				// {"chown", "-R", "root:root", "."},
 				{"chown", "-R", "www-data:www-data", "/var/www/.gem", "/var/www/.passenger", "log", "tmp", ".bundle", "Gemfile.lock", "config.ru", "config/environment.rb"},
-				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/gem", "install", "--user", "--no-rdoc", "--no-ri", "--conservative", "bundler:1.11", "bundler:1.17.3", "bundler:2.0.2"},
+				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/gem", "install", "--user", "--no-rdoc", "--no-ri", "--conservative", "bundler:1.16.6", "bundler:1.17.3", "bundler:2.0.2"},
 				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "install", "--deployment", "--jobs", "8", "--path", "/var/www/.gem"},
 				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "exec", "passenger-config", "build-native-support"},
 				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "exec", "passenger-config", "install-standalone-runtime"},
