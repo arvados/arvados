@@ -270,6 +270,11 @@ dbhost = $arvados_config["PostgreSQL"]["Connection"]["host"]
 if $arvados_config["PostgreSQL"]["Connection"]["port"] != 0
   dbhost += ":#{$arvados_config["PostgreSQL"]["Connection"]["port"]}"
 end
+ 
+if $arvados_config["PostgreSQL"]["Connection"]["user"].include? "@"
+  user_string = $arvados_config["PostgreSQL"]["Connection"]["user"]
+  $arvados_config["PostgreSQL"]["Connection"]["user"] = $user_string.gsub("@", "%40")
+end
 
 #
 # If DATABASE_URL is set, then ActiveRecord won't error out if database.yml doesn't exist.
