@@ -21,6 +21,8 @@ import (
 	"github.com/AdRoll/goamz/s3"
 )
 
+const s3MaxKeys = 1000
+
 // serveS3 handles r and returns true if r is a request from an S3
 // client, otherwise it returns false.
 func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
@@ -193,10 +195,10 @@ func (h *handler) s3list(w http.ResponseWriter, r *http.Request, fs arvados.Cust
 	params.bucket = strings.SplitN(r.URL.Path[1:], "/", 2)[0]
 	params.delimiter = r.FormValue("delimiter")
 	params.marker = r.FormValue("marker")
-	if mk, _ := strconv.ParseInt(r.FormValue("max-keys"), 10, 64); mk > 0 {
+	if mk, _ := strconv.ParseInt(r.FormValue("max-keys"), 10, 64); mk > 0 && mk < s3MaxKeys {
 		params.maxKeys = int(mk)
 	} else {
-		params.maxKeys = 100
+		params.maxKeys = s3MaxKeys
 	}
 	params.prefix = r.FormValue("prefix")
 

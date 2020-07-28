@@ -270,6 +270,10 @@ func (s *IntegrationSuite) TestS3CollectionList(c *check.C) {
 	s.testS3List(c, stage.collbucket, "dir0/", 71, filesPerDir)
 }
 func (s *IntegrationSuite) testS3List(c *check.C, bucket *s3.Bucket, prefix string, pageSize, expectFiles int) {
+	expectPageSize := pageSize
+	if expectPageSize > 1000 {
+		expectPageSize = 1000
+	}
 	gotKeys := map[string]s3.Key{}
 	nextMarker := ""
 	pages := 0
@@ -278,8 +282,8 @@ func (s *IntegrationSuite) testS3List(c *check.C, bucket *s3.Bucket, prefix stri
 		if !c.Check(err, check.IsNil) {
 			break
 		}
-		c.Check(len(resp.Contents) <= pageSize, check.Equals, true)
-		if pages++; !c.Check(pages <= (expectFiles/pageSize)+1, check.Equals, true) {
+		c.Check(len(resp.Contents) <= expectPageSize, check.Equals, true)
+		if pages++; !c.Check(pages <= (expectFiles/expectPageSize)+1, check.Equals, true) {
 			break
 		}
 		for _, key := range resp.Contents {
@@ -306,11 +310,19 @@ func (s *IntegrationSuite) TestS3CollectionListRollup(c *check.C) {
 	stage.writeBigDirs(c, dirs, filesPerDir)
 	err := stage.collbucket.PutReader("dingbats", &bytes.Buffer{}, 0, "application/octet-stream", s3.Private, s3.Options{})
 	c.Assert(err, check.IsNil)
-	resp, err := stage.collbucket.List("", "", "", 20000)
-	c.Check(err, check.IsNil)
 	var allfiles []string
-	for _, key := range resp.Contents {
-		allfiles = append(allfiles, key.Key)
+	for marker := ""; ; {
+		resp, err := stage.collbucket.List("", "", marker, 20000)
+		c.Check(err, check.IsNil)
+		for _, key := range resp.Contents {
+			if len(allfiles) == 0 || allfiles[len(allfiles)-1] != key.Key {
+				allfiles = append(allfiles, key.Key)
+			}
+		}
+		marker = resp.NextMarker
+		if marker == "" {
+			break
+		}
 	}
 	c.Check(allfiles, check.HasLen, dirs*filesPerDir+3)
 
