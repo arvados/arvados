@@ -295,4 +295,29 @@ class ArvadosModelTest < ActiveSupport::TestCase
     c.reload
     assert_equal({'foo' => 'bar'}, c.properties)
   end
+
+  test 'serialized attributes dirty tracking with audit log settings' do
+    Rails.configuration.AuditLogs.MaxDeleteBatch = 1000
+    set_user_from_auth :admin
+    [false, true].each do |auditlogs_enabled|
+      if auditlogs_enabled
+        Rails.configuration.AuditLogs.MaxAge = 3600
+      else
+        Rails.configuration.AuditLogs.MaxAge = 0
+      end
+      [
+        User.find_by_uuid(users(:active).uuid),
+        ContainerRequest.find_by_uuid(container_requests(:queued).uuid),
+        Container.find_by_uuid(containers(:queued).uuid),
+        PipelineInstance.find_by_uuid(pipeline_instances(:has_component_with_completed_jobs).uuid),
+        PipelineTemplate.find_by_uuid(pipeline_templates(:two_part).uuid),
+        Job.find_by_uuid(jobs(:running).uuid)
+      ].each do |obj|
+        assert_not(obj.class.serialized_attributes.empty?,
+          "#{obj.class} model doesn't have serialized attributes")
+        # obj shouldn't have changed since it's just retrieved from the database
+        assert_not(obj.changed?, "#{obj.class} model's attribute(s) appear as changed: '#{obj.changes.keys.join(',')}' with audit logs #{auditlogs_enabled ? '': 'not '}enabled.")
+      end
+    end
+  end
 end
