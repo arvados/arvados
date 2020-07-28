@@ -131,7 +131,7 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 		}
 		err = f.Close()
 		if err != nil {
-			err = fmt.Errorf("write to %q failed: %w", r.URL.Path, err)
+			err = fmt.Errorf("write to %q failed: close: %w", r.URL.Path, err)
 			http.Error(w, err.Error(), http.StatusBadGateway)
 			return true
 		}
