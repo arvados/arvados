@@ -33,9 +33,22 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 		}
 		token = split[0]
 	} else if strings.HasPrefix(auth, "AWS4-HMAC-SHA256 ") {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Println(w, "V4 signature is not supported")
-		return true
+		for _, cmpt := range strings.Split(auth[17:], ",") {
+			cmpt = strings.TrimSpace(cmpt)
+			split := strings.SplitN(cmpt, "=", 2)
+			if len(split) == 2 && split[0] == "Credential" {
+				keyandscope := strings.Split(split[1], "/")
+				if len(keyandscope[0]) > 0 {
+					token = keyandscope[0]
+					break
+				}
+			}
+		}
+		if token == "" {
+			w.WriteHeader(http.StatusBadRequest)
+			fmt.Println(w, "invalid V4 signature")
+			return true
+		}
 	} else {
 		return false
 	}
