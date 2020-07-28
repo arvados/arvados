@@ -1,0 +1,80 @@
+{
+  "variables": {
+    "aws_access_key": "",
+    "aws_secret_key": "",
+    "aws_profile": "",
+    "build_environment": "aws",
+    "arvados_cluster": "",
+    "aws_source_ami": "ami-04d70e069399af2e9",
+    "fqdn": "",
+    "ssh_user": "admin",
+    "vpc_id": "",
+    "subnet_id": "",
+    "public_key_file": "",
+    "associate_public_ip_address": "true"
+  },
+  "builders": [{
+    "type": "amazon-ebs",
+    "profile": "{{ user `aws_profile`}}",
+    "access_key": "{{user `aws_access_key`}}",
+    "secret_key": "{{user `aws_secret_key`}}",
+    "region": "{{user `aws_default_region`}}",
+    "ena_support": "true",
+    "source_ami": "{{user `aws_source_ami`}}",
+    "instance_type": "m4.large",
+    "vpc_id": "{{user `vpc_id`}}",
+    "subnet_id": "{{user `subnet_id`}}",
+    "associate_public_ip_address": "{{user `associate_public_ip_address`}}",
+    "ssh_username": "{{user `ssh_user`}}",
+    "ami_name": "arvados-{{user `arvados_cluster`}}-compute-{{isotime \"20060102150405\"}}",
+    "ami_block_device_mappings": [
+      {
+        "device_name": "/dev/xvdb",
+        "encrypted": true,
+        "virtual_name": "ephemeral0"
+      },
+      {
+        "device_name": "/dev/xvdc",
+        "encrypted": true,
+        "virtual_name": "ephemeral1"
+      }
+    ],
+    "tags": {
+      "Name": "arvados-{{user `arvados_cluster`}}-compute",
+      "creation_date": "{{isotime \"20060102150405\"}}",
+      "packer": "true"
+    },
+    "run_tags": {
+      "Name": "packer-arvados-{{user `arvados_cluster`}}-compute-builder",
+      "creation_date": "{{isotime \"20060102150405\"}}",
+      "environment": "development"
+    },
+    "run_volume_tags": {
+      "Name": "packer-arvados-{{user `arvados_cluster`}}-compute-builder",
+      "creation_date": "{{isotime \"20060102150405\"}}",
+      "environment": "development"
+    }
+  }],
+  "provisioners": [{
+    "type": "file",
+    "source": "1078ECD7.asc",
+    "destination": "/tmp/1078ECD7.asc"
+  },{
+    "type": "file",
+    "source": "scripts/etc-cloud-cloud.cfg.d-07_compute_puppetless_arvados_dispatch_cloud.cfg",
+    "destination": "/tmp/etc-cloud-cloud.cfg.d-07_compute_puppetless_arvados_dispatch_cloud.cfg"
+  },{
+    "type": "file",
+    "source": "scripts/usr-local-bin-ensure-encrypted-partitions.sh",
+    "destination": "/tmp/usr-local-bin-ensure-encrypted-partitions.sh"
+  },{
+    "type": "file",
+    "source": "{{user `public_key_file`}}",
+    "destination": "/tmp/crunch-authorized_keys"
+  },{
+    "type": "shell",
+    "execute_command": "sudo -S env {{ .Vars }} /bin/bash '{{ .Path }}'",
+    "script": "scripts/base.sh",
+    "environment_vars": ["ROLE=compute","RESOLVER={{user `resolver`}}","REPOSUFFIX={{user `reposuffix`}}"]
+  }]
+}

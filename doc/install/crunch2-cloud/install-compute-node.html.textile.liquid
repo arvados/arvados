@@ -1,0 +1,186 @@
+---
+layout: default
+navsection: installguide
+title: Build a cloud compute node image
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+{% include 'notebox_begin_warning' %}
+arvados-dispatch-cloud is only relevant for cloud installations. Skip this section if you are installing a on premises cluster that will spool jobs to Slurm.
+{% include 'notebox_end' %}
+
+# "Introduction":#introduction
+# "Create an SSH keypair":#sshkeypair
+# "The build script":#building
+# "Build an Azure image":#azure
+# "Build an AWS image":#aws
+
+h2(#introduction). Introduction
+
+This page describes how to build a compute node image that it can be used to run containers dispatched by Arvados in the cloud.
+
+Packer templates for AWS and Azure are provided with Arvados. To use them, the following are needed:
+
+* "Packer":https://www.packer.io/
+* credentials for your cloud account
+* configuration details for your cloud account
+
+
+h2(#sshkeypair). Create an SSH keypair
+
+@arvados-dispatch-cloud@ communicates with the compute nodes via SSH. To do this securely, an SSH keypair is needed.
+
+Generate an SSH keypair with no passphrase. The private key needs to be stored in the cluster configuration file (see @Containers/DispatchPrivateKey@) for use by @arvados-dispatch-cloud@, as described in the "next section":install-dispatch-cloud.html#update-config. The public key will be baked into the compute node images, see the cloud-specific documentation below.
+
+<notextile>
+<pre><code>~$ <span class="userinput">ssh-keygen -N '' -f ~/.ssh/id_dispatcher</span>
+Generating public/private rsa key pair.
+Your identification has been saved in /home/user/.ssh/id_dispatcher.
+Your public key has been saved in /home/user/.ssh/id_dispatcher.pub.
+The key fingerprint is:
+[...]
+~$ <span class="userinput">cat ~/.ssh/id_dispatcher</span>
+-----BEGIN RSA PRIVATE KEY-----
+MIIEpQIBAAKCAQEAqXoCzcOBkFQ7w4dvXf9B++1ctgZRqEbgRYL3SstuMV4oawks
+ttUuxJycDdsPmeYcHsKo8vsEZpN6iYsX6ZZzhkO5nEayUTU8sBjmg1ZCTo4QqKXr
+...
+oFyAjVoexx0RBcH6BveTfQtJKbktP1qBO4mXo2dP0cacuZEtlAqW9Eb06Pvaw/D9
+foktmqOY8MyctzFgXBpGTxPliGjqo8OkrOyQP2g+FL7v+Km31Xs61P8=
+-----END RSA PRIVATE KEY-----
+</code></pre>
+</notextile>
+
+h2(#building). The build script
+
+The necessary files are located in the @arvados/tools/compute-images@ directory in the source tree. A build script is provided to generate the image. The @--help@ argument lists all available options:
+
+<notextile><pre><code>~$ <span class="userinput">./build.sh --help</span>
+build.sh: Build cloud images for arvados-dispatch-cloud
+
+Syntax:
+        build.sh [options]
+
+Options:
+
+  --json-file (required)
+      Path to the packer json file
+  --arvados-cluster-id (required)
+      The ID of the Arvados cluster, e.g. zzzzz
+  --aws-profile (default: false)
+      AWS profile to use (valid profile from ~/.aws/config
+  --aws-secrets-file (default: false, required if building for AWS)
+      AWS secrets file which will be sourced from this script
+  --aws-source-ami (default: false, required if building for AWS)
+      The AMI to use as base for building the images
+  --aws-region (default: us-east-1)
+      The AWS region to use for building the images
+  --aws-vpc-id (optional)
+      VPC id for AWS, otherwise packer will pick the default one
+  --aws-subnet-id
+      Subnet id for AWS otherwise packer will pick the default one for the VPC
+  --gcp-project-id (default: false, required if building for GCP)
+      GCP project id
+  --gcp-account-file (default: false, required if building for GCP)
+      GCP account file
+  --gcp-zone (default: us-central1-f)
+      GCP zone
+  --azure-secrets-file (default: false, required if building for Azure)
+      Azure secrets file which will be sourced from this script
+  --azure-resource-group (default: false, required if building for Azure)
+      Azure resource group
+  --azure-storage-account (default: false, required if building for Azure)
+      Azure storage account
+  --azure-location (default: false, required if building for Azure)
+      Azure location, e.g. centralus, eastus, westeurope
+  --azure-sku (default: unset, required if building for Azure, e.g. 16.04-LTS)
+      Azure SKU image to use
+  --ssh_user  (default: packer)
+      The user packer will use lo log into the image
+  --domain  (default: arvadosapi.com)
+      The domain part of the FQDN for the cluster
+  --resolver (default: 8.8.8.8)
+      The dns resolver for the machine
+  --reposuffix (default: unset)
+      Set this to "-dev" to track the unstable/dev Arvados repositories
+  --public-key-file (required)
+      Path to the public key file that a-d-c will use to log into the compute node
+  --debug
+      Output debug information (default: false)
+</code></pre></notextile>
+
+h2(#azure). Build an Azure image
+
+<notextile><pre><code>~$ <span class="userinput">./build.sh --json-file arvados-images-azure.json \
+           --arvados-cluster-id ClusterID \
+           --azure-resource-group ResourceGroup \
+           --azure-storage-account StorageAccount \
+           --azure-location AzureRegion \
+           --azure-sku AzureSKU \
+           --azure-secrets-file AzureSecretsFilePath \
+           --resolver ResolverIP \
+           --public-key-file ArvadosDispatchCloudPublicKeyPath
+</span>
+</code></pre></notextile>
+
+For @ClusterID@, fill in your cluster ID. The @ResourceGroup@, @StorageAccount@ and @AzureRegion@ (e.g. 'eastus2') should be configured for where you want the compute image to be generated and stored. The @AzureSKU@ is the SKU of the base image to be used, e.g. '18.04-LTS' for Ubuntu 18.04.
+
+@AzureSecretsFilePath@ should be replaced with the path to a shell script that loads the Azure secrets with sufficient permissions to create the image. The file would look like this:
+
+<notextile><pre><code>export ARM_CLIENT_ID=...
+export ARM_CLIENT_SECRET=...
+export ARM_SUBSCRIPTION_ID=...
+export ARM_TENANT_ID=...
+</code></pre></notextile>
+
+These secrets can be generated from the Azure portal, or with the cli using a command like this:
+
+<notextile><pre><code>~$ <span class="userinput">az ad sp create-for-rbac --name Packer --password ...</span>
+</code></pre></notextile>
+
+@ArvadosDispatchCloudPublicKeyPath@ should be replaced with the path to the ssh *public* key file generated in "Create an SSH keypair":#sshkeypair, above.
+
+Compute nodes must be able to resolve the hostnames of the API server and any keepstore servers to your internal IP addresses. You can do this by running an internal DNS resolver. The IP address of the resolver should replace the string @ResolverIP@ in the command above.
+
+Alternatively, the services could be hardcoded into an @/etc/hosts@ file. For example:
+
+<notextile><pre><code>10.20.30.40     <span class="userinput">ClusterID.example.com</span>
+10.20.30.41     <span class="userinput">keep1.ClusterID.example.com</span>
+10.20.30.42     <span class="userinput">keep2.ClusterID.example.com</span>
+</code></pre></notextile>
+
+Adding these lines to the @/etc/hosts@ file in the compute node image could be done with a small change to the Packer template and the @scripts/base.sh@ script, which will be left as an exercise for the reader.
+
+h2(#aws). Build an AWS image
+
+<notextile><pre><code>~$ <span class="userinput">./build.sh --json-file arvados-images-aws.json \
+           --arvados-cluster-id ClusterID \
+           --aws-profile AWSProfile \
+           --aws-source-ami AMI \
+           --aws-vpc-id VPC \
+           --aws-subnet-id Subnet \
+           --ssh_user admin \
+           --resolver ResolverIP \
+           --public-key-file ArvadosDispatchCloudPublicKeyPath
+</span>
+</code></pre></notextile>
+
+For @ClusterID@, fill in your cluster ID. The @VPC@ and @Subnet@ should be configured for where you want the compute image to be generated and stored. The @AMI@ is the identifier for the base image to be used. Current AMIs are maintained by "Debian":https://wiki.debian.org/Cloud/AmazonEC2Image/Buster and "Ubuntu":https://cloud-images.ubuntu.com/locator/ec2/.
+
+@AWSProfile@ should be replaced name of an AWS profile with sufficient permissions to create the image.
+
+@ArvadosDispatchCloudPublicKeyPath@ should be replaced with the path to the ssh *public* key file generated in "Create an SSH keypair":#sshkeypair, above.
+
+Compute nodes must be able to resolve the hostnames of the API server and any keepstore servers to your internal IP addresses. You can do this by running an internal DNS resolver. The IP address of the resolver should replace the string @ResolverIP@ in the command above.
+
+Alternatively, the services could be hardcoded into an @/etc/hosts@ file. For example:
+
+<notextile><pre><code>10.20.30.40     <span class="userinput">ClusterID.example.com</span>
+10.20.30.41     <span class="userinput">keep1.ClusterID.example.com</span>
+10.20.30.42     <span class="userinput">keep2.ClusterID.example.com</span>
+</code></pre></notextile>
+
+Adding these lines to the @/etc/hosts@ file in the compute node image could be done with a small change to the Packer template and the @scripts/base.sh@ script, which will be left as an exercise for the reader.

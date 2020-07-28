@@ -1,0 +1,75 @@
+{
+  "variables": {
+    "storage_account": null,
+    "resource_group": null,
+    "client_id": "{{env `ARM_CLIENT_ID`}}",
+    "client_secret": "{{env `ARM_CLIENT_SECRET`}}",
+    "subscription_id": "{{env `ARM_SUBSCRIPTION_ID`}}",
+    "tenant_id": "{{env `ARM_TENANT_ID`}}",
+    "build_environment": "azure-arm",
+    "cloud_environment_name": "Public",
+    "location": "centralus",
+    "ssh_user": "packer",
+    "ssh_private_key_file": "{{env `PACKERPRIVKEY`}}",
+    "image_sku": "",
+    "arvados_cluster": "",
+    "project_id": "",
+    "account_file": "",
+    "fqdn": "",
+    "resolver": "",
+    "reposuffix": "",
+    "public_key_file": ""
+  },
+  "builders": [
+    {
+      "type": "azure-arm",
+      "cloud_environment_name": "{{user `cloud_environment_name`}}",
+
+      "client_id": "{{user `client_id`}}",
+      "client_secret": "{{user `client_secret`}}",
+      "subscription_id": "{{user `subscription_id`}}",
+      "tenant_id": "{{user `tenant_id`}}",
+
+      "resource_group_name": "{{user `resource_group`}}",
+      "storage_account": "{{user `storage_account`}}",
+
+      "capture_container_name": "images",
+      "capture_name_prefix": "{{user `arvados_cluster`}}-compute",
+
+      "ssh_username": "{{user `ssh_user`}}",
+      "ssh_private_key_file": "{{user `ssh_private_key_file`}}",
+
+      "image_publisher": "Canonical",
+      "image_offer": "UbuntuServer",
+      "image_sku": "{{user `image_sku`}}",
+
+      "os_type": "Linux",
+
+      "location": "{{user `location`}}",
+      "vm_size": "Standard_D1_v2"
+    }
+  ],
+
+  "provisioners": [{
+    "type": "file",
+    "source": "1078ECD7.asc",
+    "destination": "/tmp/1078ECD7.asc"
+  },{
+    "type": "file",
+    "source": "scripts/etc-cloud-cloud.cfg.d-07_compute_puppetless_arvados_dispatch_cloud.cfg",
+    "destination": "/tmp/etc-cloud-cloud.cfg.d-07_compute_puppetless_arvados_dispatch_cloud.cfg"
+  },{
+    "type": "file",
+    "source": "scripts/usr-local-bin-ensure-encrypted-partitions.sh",
+    "destination": "/tmp/usr-local-bin-ensure-encrypted-partitions.sh"
+  },{
+    "type": "file",
+    "source": "{{user `public_key_file`}}",
+    "destination": "/tmp/crunch-authorized_keys"
+  },{
+    "type": "shell",
+    "execute_command": "sudo -S env {{ .Vars }} /bin/bash '{{ .Path }}'",
+    "script": "scripts/base.sh",
+    "environment_vars": ["ROLE=compute","RESOLVER={{user `resolver`}}","REPOSUFFIX={{user `reposuffix`}}"]
+  }]
+}

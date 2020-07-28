@@ -10,7 +10,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
 {% include 'notebox_begin_warning' %}
-arvados-dispatch-cloud is only relevant for cloud installations. Skip this section if you are installing a on premise cluster that will spool jobs to Slurm.
+arvados-dispatch-cloud is only relevant for cloud installations. Skip this section if you are installing a on premises cluster that will spool jobs to Slurm.
 {% include 'notebox_end' %}
 
 # "Introduction":#introduction
@@ -27,53 +27,11 @@ The cloud dispatch service is for running containers on cloud VMs. It works with
 
 The cloud dispatch service can run on any node that can connect to the Arvados API service, the cloud provider's API, and the SSH service on cloud VMs.  It is not resource-intensive, so you can run it on the API server node.
 
-h2(#create-image). Create compute node VM image and configure resolver
-
-Set up a VM following the steps "to set up a compute node":crunch2-slurm/install-compute-node.html
-
-Compute nodes must be able to resolve the hostnames of the API server and any keepstore servers to your internal IP addresses.  You can do this by running an internal DNS resolver and configuring the compute VMs to use that resolver, or by hardcoding the services in the @/etc/hosts@ file.  For example:
-
-<notextile><pre><code>10.20.30.40     <span class="userinput">ClusterID.example.com</span>
-10.20.30.41     <span class="userinput">keep1.ClusterID.example.com</span>
-10.20.30.42     <span class="userinput">keep2.ClusterID.example.com</span>
-</code></pre></notextile>
-
-Once the VM is fully configured, create a reusable VM image from it and make note of the image id.
-
 h2(#update-config). Update config.yml
-
-h3. Create a private key
-
-Generate an SSH private key with no passphrase. Save it in the cluster configuration file (see @PrivateKey@ in the example below).
-
-<notextile>
-<pre><code>~$ <span class="userinput">ssh-keygen -N '' -f ~/.ssh/id_dispatcher</span>
-Generating public/private rsa key pair.
-Your identification has been saved in /home/user/.ssh/id_dispatcher.
-Your public key has been saved in /home/user/.ssh/id_dispatcher.pub.
-The key fingerprint is:
-[...]
-~$ <span class="userinput">cat ~/.ssh/id_dispatcher</span>
------BEGIN RSA PRIVATE KEY-----
-MIIEpQIBAAKCAQEAqXoCzcOBkFQ7w4dvXf9B++1ctgZRqEbgRYL3SstuMV4oawks
-ttUuxJycDdsPmeYcHsKo8vsEZpN6iYsX6ZZzhkO5nEayUTU8sBjmg1ZCTo4QqKXr
-...
-oFyAjVoexx0RBcH6BveTfQtJKbktP1qBO4mXo2dP0cacuZEtlAqW9Eb06Pvaw/D9
-foktmqOY8MyctzFgXBpGTxPliGjqo8OkrOyQP2g+FL7v+Km31Xs61P8=
------END RSA PRIVATE KEY-----
-</code></pre>
-</notextile>
-
-You can delete the key files after you have copied the private key to your configuration file.
-
-<notextile>
-<pre><code>~$ <span class="userinput">rm ~/.ssh/id_dispatcher ~/.ssh/id_dispatcher.pub</span>
-</code></pre>
-</notextile>
 
 h3. Configure CloudVMs
 
-Add or update the following portions of your cluster configuration file, @config.yml@. Refer to "config.defaults.yml":{{site.baseurl}}/admin/config.html for information about additional configuration options.
+Add or update the following portions of your cluster configuration file, @config.yml@. Refer to "config.defaults.yml":{{site.baseurl}}/admin/config.html for information about additional configuration options. The @DispatchPrivateKey@ should be the *private* key generated in "the previous section":install-compute-node.html#sshkeypair.
 
 <notextile>
 <pre><code>    Services:
