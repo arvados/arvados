@@ -97,6 +97,10 @@ func (stage s3stage) teardown(c *check.C) {
 		err := stage.arv.RequestAndDecode(&stage.coll, "DELETE", "arvados/v1/collections/"+stage.coll.UUID, nil, nil)
 		c.Check(err, check.IsNil)
 	}
+	if stage.proj.UUID != "" {
+		err := stage.arv.RequestAndDecode(&stage.proj, "DELETE", "arvados/v1/groups/"+stage.proj.UUID, nil, nil)
+		c.Check(err, check.IsNil)
+	}
 }
 
 func (s *IntegrationSuite) TestS3CollectionGetObject(c *check.C) {
