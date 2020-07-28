@@ -63,7 +63,6 @@ class ApplicationController < ActionController::Base
                 :with => :render_error)
     rescue_from(ActiveRecord::RecordNotFound,
                 ActionController::RoutingError,
-                ActionController::UnknownController,
                 AbstractController::ActionNotFound,
                 :with => :render_not_found)
   end
