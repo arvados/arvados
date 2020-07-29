@@ -1,7 +1,7 @@
 ---
 layout: default
 navsection: installguide
-title: Test SLURM dispatch
+title: Test Slurm dispatch
 ...
 {% comment %}
 Copyright (C) The Arvados Authors. All rights reserved.
@@ -10,19 +10,19 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
 {% include 'notebox_begin_warning' %}
-crunch-dispatch-slurm is only relevant for on premise clusters that will spool jobs to Slurm. Skip this section if you are installing a cloud cluster.
+crunch-dispatch-slurm is only relevant for on premises clusters that will spool jobs to Slurm. Skip this section if you are installing a cloud cluster.
 {% include 'notebox_end' %}
 
 h2. Test compute node setup
 
-You should now be able to submit SLURM jobs that run in Docker containers.  On the node where you're running the dispatcher, you can test this by running:
+You should now be able to submit Slurm jobs that run in Docker containers.  On the node where you're running the dispatcher, you can test this by running:
 
 <notextile>
 <pre><code>~$ <span class="userinput">sudo -u <b>crunch</b> srun -N1 docker run busybox echo OK
 </code></pre>
 </notextile>
 
-If it works, this command should print @OK@ (it may also show some status messages from SLURM and/or Docker).  If it does not print @OK@, double-check your compute node setup, and that the @crunch@ user can submit SLURM jobs.
+If it works, this command should print @OK@ (it may also show some status messages from Slurm and/or Docker).  If it does not print @OK@, double-check your compute node setup, and that the @crunch@ user can submit Slurm jobs.
 
 h2. Test the dispatcher
 
@@ -66,7 +66,7 @@ This command should return a record with a @container_uuid@ field.  Once @crunch
 </code></pre>
 </notextile>
 
-Before the container finishes, SLURM's @squeue@ command will show the new job in the list of queued and running jobs.  For example, you might see:
+Before the container finishes, Slurm's @squeue@ command will show the new job in the list of queued and running jobs.  For example, you might see:
 
 <notextile>
 <pre><code>~$ <span class="userinput">squeue --long</span>

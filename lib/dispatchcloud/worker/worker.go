@@ -224,6 +224,7 @@ func (wkr *worker) probeAndUpdate() {
 	defer wkr.mtx.Unlock()
 	if reportedBroken && wkr.idleBehavior == IdleBehaviorRun {
 		logger.Info("probe reported broken instance")
+    // FIXME add prometheus tick
 		wkr.setIdleBehavior(IdleBehaviorDrain)
 	}
 	if !ok || (!booted && len(ctrUUIDs) == 0 && len(wkr.running) == 0) {
