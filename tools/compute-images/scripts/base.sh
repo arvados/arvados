@@ -106,5 +106,5 @@ $SUDO sed -i "s/#prepend domain-name-servers 127.0.0.1;/prepend domain-name-serv
 $SUDO mv /tmp/usr-local-bin-ensure-encrypted-partitions.sh /usr/local/bin/ensure-encrypted-partitions.sh
 $SUDO chmod 755 /usr/local/bin/ensure-encrypted-partitions.sh
 $SUDO chown root:root /usr/local/bin/ensure-encrypted-partitions.sh
-$SUDO mv /tmp/etc-cloud-cloud.cfg.d-07_compute_puppetless_arvados_dispatch_cloud.cfg /etc/cloud/cloud.cfg.d/07_compute_puppetless_arvados_dispatch_cloud.cfg
-$SUDO chown root:root /etc/cloud/cloud.cfg.d/07_compute_puppetless_arvados_dispatch_cloud.cfg
+$SUDO mv /tmp/etc-cloud-cloud.cfg.d-07_compute_arvados_dispatch_cloud.cfg /etc/cloud/cloud.cfg.d/07_compute_arvados_dispatch_cloud.cfg
+$SUDO chown root:root /etc/cloud/cloud.cfg.d/07_compute_arvados_dispatch_cloud.cfg

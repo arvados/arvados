@@ -61,8 +61,8 @@
     "destination": "/tmp/1078ECD7.asc"
   },{
     "type": "file",
-    "source": "scripts/etc-cloud-cloud.cfg.d-07_compute_puppetless_arvados_dispatch_cloud.cfg",
-    "destination": "/tmp/etc-cloud-cloud.cfg.d-07_compute_puppetless_arvados_dispatch_cloud.cfg"
+    "source": "scripts/etc-cloud-cloud.cfg.d-07_compute_arvados_dispatch_cloud.cfg",
+    "destination": "/tmp/etc-cloud-cloud.cfg.d-07_compute_arvados_dispatch_cloud.cfg"
   },{
     "type": "file",
     "source": "scripts/usr-local-bin-ensure-encrypted-partitions.sh",

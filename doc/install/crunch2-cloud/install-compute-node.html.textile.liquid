@@ -10,7 +10,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
 {% include 'notebox_begin_warning' %}
-arvados-dispatch-cloud is only relevant for cloud installations. Skip this section if you are installing a on premises cluster that will spool jobs to Slurm.
+arvados-dispatch-cloud is only relevant for cloud installations. Skip this section if you are installing an on premises cluster that will spool jobs to Slurm.
 {% include 'notebox_end' %}
 
 # "Introduction":#introduction
@@ -21,7 +21,7 @@ arvados-dispatch-cloud is only relevant for cloud installations. Skip this secti
 
 h2(#introduction). Introduction
 
-This page describes how to build a compute node image that it can be used to run containers dispatched by Arvados in the cloud.
+This page describes how to build a compute node image that can be used to run containers dispatched by Arvados in the cloud.
 
 Packer templates for AWS and Azure are provided with Arvados. To use them, the following are needed:
 
@@ -30,11 +30,11 @@ Packer templates for AWS and Azure are provided with Arvados. To use them, the f
 * configuration details for your cloud account
 
 
-h2(#sshkeypair). Create an SSH keypair
+h2(#sshkeypair). Create a SSH keypair
 
-@arvados-dispatch-cloud@ communicates with the compute nodes via SSH. To do this securely, an SSH keypair is needed.
+@arvados-dispatch-cloud@ communicates with the compute nodes via SSH. To do this securely, a SSH keypair is needed.
 
-Generate an SSH keypair with no passphrase. The private key needs to be stored in the cluster configuration file (see @Containers/DispatchPrivateKey@) for use by @arvados-dispatch-cloud@, as described in the "next section":install-dispatch-cloud.html#update-config. The public key will be baked into the compute node images, see the cloud-specific documentation below.
+Generate a SSH keypair with no passphrase. The private key needs to be stored in the cluster configuration file (see @Containers/DispatchPrivateKey@) for use by @arvados-dispatch-cloud@, as described in the "next section":install-dispatch-cloud.html#update-config. The public key will be baked into the compute node images, see the cloud-specific documentation below.
 
 <notextile>
 <pre><code>~$ <span class="userinput">ssh-keygen -N '' -f ~/.ssh/id_dispatcher</span>
@@ -170,7 +170,7 @@ h2(#aws). Build an AWS image
 
 For @ClusterID@, fill in your cluster ID. The @VPC@ and @Subnet@ should be configured for where you want the compute image to be generated and stored. The @AMI@ is the identifier for the base image to be used. Current AMIs are maintained by "Debian":https://wiki.debian.org/Cloud/AmazonEC2Image/Buster and "Ubuntu":https://cloud-images.ubuntu.com/locator/ec2/.
 
-@AWSProfile@ should be replaced name of an AWS profile with sufficient permissions to create the image.
+@AWSProfile@ should be replaced with the name of an AWS profile with sufficient permissions to create the image.
 
 @ArvadosDispatchCloudPublicKeyPath@ should be replaced with the path to the ssh *public* key file generated in "Create an SSH keypair":#sshkeypair, above.
 
