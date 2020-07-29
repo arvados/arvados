@@ -59,21 +59,27 @@ type s3AWSbucket struct {
 }
 
 // chooseS3VolumeDriver distinguishes between the old goamz driver and
-// aws-sdk-go based on the AlternateDriver feature flag
+// aws-sdk-go based on the UseAWSS3v2Driver feature flag
 func chooseS3VolumeDriver(cluster *arvados.Cluster, volume arvados.Volume, logger logrus.FieldLogger, metrics *volumeMetricsVecs) (Volume, error) {
 	v := &S3Volume{cluster: cluster, volume: volume, metrics: metrics}
-	err := json.Unmarshal(volume.DriverParameters, &v)
+	err := json.Unmarshal(volume.DriverParameters, v)
 	if err != nil {
 		return nil, err
 	}
-	if v.AlternateDriver {
-		logger.Debugln("Using alternate S3 driver (aws-go)")
+	if v.UseAWSS3v2Driver {
+		logger.Debugln("Using AWS S3 v2 driver")
 		return newS3AWSVolume(cluster, volume, logger, metrics)
 	} else {
-		logger.Debugln("Using standard S3 driver (goamz)")
+		logger.Debugln("Using goamz S3 driver")
 		return newS3Volume(cluster, volume, logger, metrics)
 	}
 }
+
+const (
+	PartSize         = 5 * 1024 * 1024
+	ReadConcurrency  = 13
+	WriteConcurrency = 5
+)
 
 var s3AWSKeepBlockRegexp = regexp.MustCompile(`^[0-9a-f]{32}$`)
 var s3AWSZeroTime time.Time
@@ -83,14 +89,12 @@ func (v *S3AWSVolume) isKeepBlock(s string) bool {
 }
 
 func newS3AWSVolume(cluster *arvados.Cluster, volume arvados.Volume, logger logrus.FieldLogger, metrics *volumeMetricsVecs) (Volume, error) {
-	logger.Debugln("in newS3AWSVolume")
 	v := &S3AWSVolume{cluster: cluster, volume: volume, metrics: metrics}
-	err := json.Unmarshal(volume.DriverParameters, &v)
+	err := json.Unmarshal(volume.DriverParameters, v)
 	if err != nil {
 		return nil, err
 	}
 	v.logger = logger.WithField("Volume", v.String())
-	v.logger.Debugln("in newS3AWSVolume after volume set")
 	return v, v.check("")
 }
 
@@ -146,6 +150,10 @@ func (v *S3AWSVolume) check(ec2metadataHostname string) error {
 	}
 	if v.RaceWindow < 0 {
 		return errors.New("DriverParameters: RaceWindow must not be negative")
+	}
+
+	if v.V2Signature {
+		return errors.New("DriverParameters: V2Signature is not supported")
 	}
 
 	defaultResolver := endpoints.NewDefaultResolver()
@@ -276,7 +284,6 @@ func (v *S3AWSVolume) EmptyTrash() {
 	startT := time.Now()
 
 	emptyOneKey := func(trash *s3.Object) {
-		v.logger.Warnf("EmptyTrash: looking for trash marker %s with last modified date %s", *trash.Key, *trash.LastModified)
 		loc := strings.TrimPrefix(*trash.Key, "trash/")
 		if !v.isKeepBlock(loc) {
 			return
@@ -285,7 +292,6 @@ func (v *S3AWSVolume) EmptyTrash() {
 		atomic.AddInt64(&blocksInTrash, 1)
 
 		trashT := *(trash.LastModified)
-		v.logger.Infof("HEEEEEEE trashT key: %s, type: %T val: %s, startT is %s", *trash.Key, trashT, trashT, startT)
 		recent, err := v.Head("recent/" + loc)
 		if err != nil && os.IsNotExist(v.translateError(err)) {
 			v.logger.Warnf("EmptyTrash: found trash marker %q but no %q (%s); calling Untrash", trash.Key, "recent/"+loc, err)
@@ -298,9 +304,7 @@ func (v *S3AWSVolume) EmptyTrash() {
 			v.logger.WithError(err).Warnf("EmptyTrash: HEAD %q failed", "recent/"+loc)
 			return
 		}
-		v.logger.Infof("recent.LastModified type: %T val: %s", recent.LastModified, recent.LastModified)
 		if trashT.Sub(*recent.LastModified) < v.cluster.Collections.BlobSigningTTL.Duration() {
-			v.logger.Infof("HERE! recent.lastmodified is smaller than blobsigningttl")
 			if age := startT.Sub(*recent.LastModified); age >= v.cluster.Collections.BlobSigningTTL.Duration()-time.Duration(v.RaceWindow) {
 				// recent/loc is too old to protect
 				// loc from being Trashed again during
@@ -326,7 +330,6 @@ func (v *S3AWSVolume) EmptyTrash() {
 			}
 		}
 		if startT.Sub(trashT) < v.cluster.Collections.BlobTrashLifetime.Duration() {
-			v.logger.Infof("HERE! trashT for %s is smaller than blobtrashlifetime: %s < %s", *trash.Key, startT.Sub(trashT), v.cluster.Collections.BlobTrashLifetime.Duration())
 			return
 		}
 		err = v.bucket.Del(*trash.Key)
@@ -337,7 +340,6 @@ func (v *S3AWSVolume) EmptyTrash() {
 		atomic.AddInt64(&bytesDeleted, *trash.Size)
 		atomic.AddInt64(&blocksDeleted, 1)
 
-		v.logger.Infof("HERE! trash.Key %s should have been deleted", *trash.Key)
 		_, err = v.Head(loc)
 		if err == nil {
 			v.logger.Warnf("EmptyTrash: HEAD %q succeeded immediately after deleting %q", loc, loc)
@@ -351,7 +353,6 @@ func (v *S3AWSVolume) EmptyTrash() {
 		if err != nil {
 			v.logger.WithError(err).Warnf("EmptyTrash: error deleting %q", "recent/"+loc)
 		}
-		v.logger.Infof("HERE! recent/%s should have been deleted", loc)
 	}
 
 	var wg sync.WaitGroup
@@ -382,7 +383,7 @@ func (v *S3AWSVolume) EmptyTrash() {
 	if err := trashL.Error(); err != nil {
 		v.logger.WithError(err).Error("EmptyTrash: lister failed")
 	}
-	v.logger.Infof("EmptyTrash stats for %v: Deleted %v bytes in %v blocks. Remaining in trash: %v bytes in %v blocks.", v.String(), bytesDeleted, blocksDeleted, bytesInTrash-bytesDeleted, blocksInTrash-blocksDeleted)
+	v.logger.Infof("EmptyTrash: stats for %v: Deleted %v bytes in %v blocks. Remaining in trash: %v bytes in %v blocks.", v.String(), bytesDeleted, blocksDeleted, bytesInTrash-bytesDeleted, blocksInTrash-blocksDeleted)
 }
 
 // fixRace(X) is called when "recent/X" exists but "X" doesn't
@@ -454,8 +455,8 @@ func (v *S3AWSVolume) readWorker(ctx context.Context, loc string) (rdr io.ReadCl
 	awsBuf := aws.NewWriteAtBuffer(buf)
 
 	downloader := s3manager.NewDownloaderWithClient(v.bucket.svc, func(u *s3manager.Downloader) {
-		u.PartSize = 5 * 1024 * 1024
-		u.Concurrency = 13
+		u.PartSize = PartSize
+		u.Concurrency = ReadConcurrency
 	})
 
 	v.logger.Debugf("Partsize: %d; Concurrency: %d\n", downloader.PartSize, downloader.Concurrency)
@@ -517,30 +518,52 @@ func (v *S3AWSVolume) ReadBlock(ctx context.Context, loc string, w io.Writer) er
 	return err
 }
 
-func (b *s3AWSbucket) PutReader(path string, r io.Reader, length int64, contType string, contentMD5 string, contentSHA256 string) error {
-	if length == 0 {
-		// aws-sdk-go will only send Content-Length: 0 when reader
-		// is nil due to net.http.Request.ContentLength
-		// behavior.  Otherwise, Content-Length header is
-		// omitted which will cause some S3 services
-		// (including AWS and Ceph RadosGW) to fail to create
-		// empty objects.
-		r = bytes.NewReader([]byte{})
-	} else {
-		r = NewCountingReader(r, b.stats.TickOutBytes)
+func (v *S3AWSVolume) writeObject(ctx context.Context, name string, r io.Reader) error {
+	if r == nil {
+		// r == nil leads to a memory violation in func readFillBuf in
+		// aws-sdk-go-v2@v0.23.0/service/s3/s3manager/upload.go
+		r = bytes.NewReader(nil)
 	}
-	uploader := s3manager.NewUploaderWithClient(b.svc)
-	_, err := uploader.Upload(&s3manager.UploadInput{
-		Bucket: aws.String(b.bucket),
-		Key:    aws.String(path),
+
+	uploadInput := s3manager.UploadInput{
+		Bucket: aws.String(v.bucket.bucket),
+		Key:    aws.String(name),
 		Body:   r,
-	}, s3manager.WithUploaderRequestOptions(func(r *aws.Request) {
+	}
+
+	if len(name) == 32 {
+		var contentMD5 string
+		md5, err := hex.DecodeString(name)
+		if err != nil {
+			return err
+		}
+		contentMD5 = base64.StdEncoding.EncodeToString(md5)
+		uploadInput.ContentMD5 = &contentMD5
+	}
+
+	// Experimentation indicated that using concurrency 5 yields the best
+	// throughput, better than higher concurrency (10 or 13) by ~5%.
+	// Defining u.BufferProvider = s3manager.NewBufferedReadSeekerWriteToPool(64 * 1024 * 1024)
+	// is detrimental to througput (minus ~15%).
+	uploader := s3manager.NewUploaderWithClient(v.bucket.svc, func(u *s3manager.Uploader) {
+		u.PartSize = PartSize
+		u.Concurrency = WriteConcurrency
+	})
+
+	// Unlike the goamz S3 driver, we don't need to precompute ContentSHA256:
+	// the aws-sdk-go v2 SDK uses a ReadSeeker to avoid having to copy the
+	// block, so there is no extra memory use to be concerned about. See
+	// makeSha256Reader in aws/signer/v4/v4.go. In fact, we explicitly disable
+	// calculating the Sha-256 because we don't need it; we already use md5sum
+	// hashes that match the name of the block.
+	_, err := uploader.UploadWithContext(ctx, &uploadInput, s3manager.WithUploaderRequestOptions(func(r *aws.Request) {
 		r.HTTPRequest.Header.Set("X-Amz-Content-Sha256", "UNSIGNED-PAYLOAD")
 	}))
 
-	b.stats.TickOps("put")
-	b.stats.Tick(&b.stats.Ops, &b.stats.PutOps)
-	b.stats.TickErr(err)
+	v.bucket.stats.TickOps("put")
+	v.bucket.stats.Tick(&v.bucket.stats.Ops, &v.bucket.stats.PutOps)
+	v.bucket.stats.TickErr(err)
+
 	return err
 }
 
@@ -556,68 +579,16 @@ func (v *S3AWSVolume) WriteBlock(ctx context.Context, loc string, rdr io.Reader)
 	}
 
 	r := NewCountingReader(rdr, v.bucket.stats.TickOutBytes)
-	uploadInput := s3manager.UploadInput{
-		Bucket: aws.String(v.bucket.bucket),
-		Key:    aws.String(loc),
-		Body:   r,
-	}
-
-	//var contentMD5, contentSHA256 string
-	var contentMD5 string
-	md5, err := hex.DecodeString(loc)
+	err := v.writeObject(ctx, loc, r)
 	if err != nil {
 		return err
 	}
-	contentMD5 = base64.StdEncoding.EncodeToString(md5)
-	// See if this is the empty block
-	if contentMD5 != "d41d8cd98f00b204e9800998ecf8427e" {
-		uploadInput.ContentMD5 = &contentMD5
-	}
-
-	// Some experimentation indicated that using concurrency 5 yields the best
-	// throughput, better than higher concurrency (10 or 13) by ~5%.
-	// Defining u.BufferProvider = s3manager.NewBufferedReadSeekerWriteToPool(64 * 1024 * 1024)
-	// is detrimental to througput (minus ~15%).
-	uploader := s3manager.NewUploaderWithClient(v.bucket.svc, func(u *s3manager.Uploader) {
-		u.PartSize = 5 * 1024 * 1024
-		u.Concurrency = 5
-	})
-
-	// Unlike the goamz S3 driver, we don't need to precompute ContentSHA256:
-	// the aws-sdk-go v2 SDK uses a ReadSeeker to avoid having to copy the
-	// block, so there is no extra memory use to be concerned about. See
-	// makeSha256Reader in aws/signer/v4/v4.go. In fact, we explicitly disable
-	// calculating the Sha-256 because we don't need it; we already use md5sum
-	// hashes that match the name of the block.
-	_, err = uploader.UploadWithContext(ctx, &uploadInput, s3manager.WithUploaderRequestOptions(func(r *aws.Request) {
-		r.HTTPRequest.Header.Set("X-Amz-Content-Sha256", "UNSIGNED-PAYLOAD")
-	}))
-
-	v.bucket.stats.TickOps("put")
-	v.bucket.stats.Tick(&v.bucket.stats.Ops, &v.bucket.stats.PutOps)
-	v.bucket.stats.TickErr(err)
-	if err != nil {
-		return err
-	}
-
-	empty := bytes.NewReader([]byte{})
-	_, err = uploader.UploadWithContext(ctx, &s3manager.UploadInput{
-		Bucket: aws.String(v.bucket.bucket),
-		Key:    aws.String("recent/" + loc),
-		Body:   empty,
-	}, s3manager.WithUploaderRequestOptions(func(r *aws.Request) {
-		r.HTTPRequest.Header.Set("X-Amz-Content-Sha256", "UNSIGNED-PAYLOAD")
-	}))
-	v.bucket.stats.TickOps("put")
-	v.bucket.stats.Tick(&v.bucket.stats.Ops, &v.bucket.stats.PutOps)
-	v.bucket.stats.TickErr(err)
-
-	return err
+	return v.writeObject(ctx, "recent/"+loc, nil)
 }
 
 type s3awsLister struct {
 	Logger            logrus.FieldLogger
-	Bucket            *s3AWSbucket //*s3.Bucket
+	Bucket            *s3AWSbucket
 	Prefix            string
 	PageSize          int
 	Stats             *s3awsbucketStats
@@ -772,12 +743,12 @@ func (v *S3AWSVolume) Mtime(loc string) (time.Time, error) {
 	err = v.translateError(err)
 	if os.IsNotExist(err) {
 		// The data object X exists, but recent/X is missing.
-		err = v.bucket.PutReader("recent/"+loc, nil, 0, "application/octet-stream", "", "")
+		err = v.writeObject(context.Background(), "recent/"+loc, nil)
 		if err != nil {
 			v.logger.WithError(err).Errorf("error creating %q", "recent/"+loc)
 			return s3AWSZeroTime, v.translateError(err)
 		}
-		v.logger.Infof("created %q to migrate existing block to new storage scheme", "recent/"+loc)
+		v.logger.Infof("Mtime: created %q to migrate existing block to new storage scheme", "recent/"+loc)
 		resp, err = v.Head("recent/" + loc)
 		if err != nil {
 			v.logger.WithError(err).Errorf("HEAD failed after creating %q", "recent/"+loc)
@@ -819,7 +790,7 @@ func (v *S3AWSVolume) Touch(loc string) error {
 	} else if err != nil {
 		return err
 	}
-	err = v.bucket.PutReader("recent/"+loc, nil, 0, "application/octet-stream", "", "")
+	err = v.writeObject(context.Background(), "recent/"+loc, nil)
 	return v.translateError(err)
 }
 
@@ -898,7 +869,7 @@ func (v *S3AWSVolume) Untrash(loc string) error {
 	if err != nil {
 		return err
 	}
-	err = v.bucket.PutReader("recent/"+loc, nil, 0, "application/octet-stream", "", "")
+	err = v.writeObject(context.Background(), "recent/"+loc, nil)
 	return v.translateError(err)
 }
 

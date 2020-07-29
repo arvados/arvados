@@ -167,7 +167,6 @@ func (s *StubbedS3AWSSuite) TestIAMRoleCredentials(c *check.C) {
 	}
 	err := v.check(s.metadata.URL + "/latest")
 	creds, err := v.bucket.svc.Client.Config.Credentials.Retrieve(context.Background())
-	fmt.Printf("%+v, %s\n", creds, err)
 	c.Check(creds.AccessKeyID, check.Equals, "ASIAIOSFODNN7EXAMPLE")
 	c.Check(creds.SecretAccessKey, check.Equals, "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY")
 
@@ -321,9 +320,8 @@ func (s *StubbedS3AWSSuite) TestBackendStates(c *check.C) {
 			return
 		}
 		v.serverClock.now = &t
-		fmt.Printf("USING TIMESTAMP %s to write key %s", t, key)
 		uploader := s3manager.NewUploaderWithClient(v.bucket.svc)
-		resp, err := uploader.UploadWithContext(context.Background(), &s3manager.UploadInput{
+		_, err := uploader.UploadWithContext(context.Background(), &s3manager.UploadInput{
 			Bucket: aws.String(v.bucket.bucket),
 			Key:    aws.String(key),
 			Body:   bytes.NewReader(data),
@@ -331,10 +329,11 @@ func (s *StubbedS3AWSSuite) TestBackendStates(c *check.C) {
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println(resp)
 		v.serverClock.now = nil
-		resp2, err := v.Head(key)
-		fmt.Printf("KEY: %s\n%s", key, resp2)
+		_, err = v.Head(key)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	t0 := time.Now()
@@ -544,10 +543,11 @@ func (s *StubbedS3AWSSuite) newTestableVolume(c *check.C, cluster *arvados.Clust
 	// fake s3
 	backend := s3mem.New(s3mem.WithTimeSource(clock))
 
-	logger := new(LogrusLog)
+	// To enable GoFakeS3 debug logging, pass logger to gofakes3.WithLogger()
+	/* logger := new(LogrusLog)
 	ctxLogger := ctxlog.FromContext(context.Background())
-	logger.log = &ctxLogger
-	faker := gofakes3.New(backend, gofakes3.WithTimeSource(clock), gofakes3.WithLogger(logger), gofakes3.WithTimeSkewLimit(0))
+	logger.log = &ctxLogger */
+	faker := gofakes3.New(backend, gofakes3.WithTimeSource(clock), gofakes3.WithLogger(nil), gofakes3.WithTimeSkewLimit(0))
 	srv := httptest.NewServer(faker.Server())
 
 	endpoint := srv.URL

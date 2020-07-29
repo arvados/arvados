@@ -277,7 +277,7 @@ type S3VolumeDriverParameters struct {
 	Bucket             string
 	LocationConstraint bool
 	V2Signature        bool
-	AlternateDriver    bool
+	UseAWSS3v2Driver   bool
 	IndexPageSize      int
 	ConnectTimeout     Duration
 	ReadTimeout        Duration
@@ -553,7 +553,7 @@ func (ss *StringSet) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	*ss = make(map[string]struct{}, len(hash))
-	for t, _ := range hash {
+	for t := range hash {
 		(*ss)[t] = struct{}{}
 	}
 

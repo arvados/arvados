@@ -64,8 +64,8 @@ Volumes are configured in the @Volumes@ section of the cluster configuration fil
           # might be needed for other S3-compatible services.
           V2Signature: false
 
-          # Use the AWS S3 Go driver instead of the goamz driver.
-          AlternateDriver: false
+          # Use the AWS S3 v2 Go driver instead of the goamz driver.
+          UseAWSS3v2Driver: false
 
           # Requested page size for "list bucket contents" requests.
           IndexPageSize: 1000
@@ -98,20 +98,8 @@ Volumes are configured in the @Volumes@ section of the cluster configuration fil
         StorageClasses: null
 </code></pre></notextile>
 
-Two S3 drivers are available. Historically, Arvados has used the @goamz@ driver to talk to S3-compatible services. More recently, support for the @aws-sdk-go-v2@ driver was added. This driver can be activated by setting the @AlternateDriver@ flag to @true@.
+Two S3 drivers are available. Historically, Arvados has used the @goamz@ driver to talk to S3-compatible services. More recently, support for the @aws-sdk-go-v2@ driver was added. This driver can be activated by setting the @UseAWSS3v2Driver@ flag to @true@.
 
 The @aws-sdk-go-v2@ does not support the old S3 v2 signing algorithm. This will not affect interacting with AWS S3, but it might be an issue when Keep is backed by a very old version of a third party S3-compatible service.
 
-The @aws-sdk-go-v2@ driver has faster _single thread_ read and write performance than the @goamz@ driver. Here are some benchmark numbers against AWS S3, as measured in July 2020. They were generated with the @keep-exercise@ tool in an Arvados installation with one dedicated Keepstore node (c5n.2xlarge) and one dedicated node for running @keep-exercise@ (c5n.2xlarge). The Keepstore node was backed by one S3 bucket, in a VPC with an S3 endpoint installed. Versioning, Server Access logging, Static website hosting, Object-level logging and Default encryption were disabled. Object lock, Transfer acceleration and Requester pays were also disabled. There were no Active notifications. Each test consisted of 4 one minute runs, which were averaged into one number. The tests were repeated 3 times, and of those 3 runs, the highest average speed was selected and included in the table below.
-
-table(table table-bordered table-condensed).
-||_. goamz |_. aws-sdk-go-v2 |_. command line|
-|single thread read performance (average)|32.53 MiB/s|79.48 MiB/s|keep-exercise -repeat 4 -run-time 60s -vary-request -use-index -rthreads 1 -wthreads 1|
-|single thread write performance (average)|39.75 MiB/s|41.05 MiB/s|keep-exercise -repeat 4 -run-time 60s -vary-request -use-index -rthreads 1 -wthreads 1|
-
-Because both S3 and Keep are optimized for _aggregate_ througput, the single thread performance is not as important as it may seem at first glance. When using 20 concurrent read or write threads, the numbers from both drivers are more closely aligned:
-
-table(table table-bordered table-condensed).
-||_. goamz |_. aws-sdk-go-v2 |_. command line|
-|20 thread read performance (average)|585.60 MiB/s|898.93 MiB/s|keep-exercise -repeat 4 -run-time 60s -vary-request -use-index -rthreads 20 -wthreads 0|
-|20 thread write performance (average)|610.40 MiB/s|688.25 MiB/s|keep-exercise -repeat 4 -run-time 60s -vary-request -use-index -rthreads 0 -wthreads 20|
+The @aws-sdk-go-v2@ driver can improve read performance by 50-100% over the @goamz@ driver, but it has not had as much production use. See the "wiki":https://dev.arvados.org/projects/arvados/wiki/Keep_real_world_performance_numbers for details.
