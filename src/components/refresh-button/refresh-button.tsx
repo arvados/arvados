@@ -28,7 +28,7 @@ export const RefreshButton = ({ history, classes }: RouteComponentProps & WithSt
         size="small"
         variant="contained"
         onClick={() => {
-            history.push(window.location.pathname);
+            history.replace(window.location.pathname);
         }}
         className={classNames(classes.buttonRight, classes.button)}>
         <ReRunProcessIcon />

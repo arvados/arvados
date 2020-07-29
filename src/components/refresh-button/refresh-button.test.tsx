@@ -16,7 +16,7 @@ describe('<RefreshButton />', () => {
     beforeEach(() => {
         props = {
             history: {
-                push: jest.fn(),
+                replace: jest.fn(),
             },
             classes: {},
         };
@@ -38,6 +38,6 @@ describe('<RefreshButton />', () => {
         wrapper.find(Button).simulate('click');
 
         // then
-        expect(props.history.push).toHaveBeenCalledWith('/');
+        expect(props.history.replace).toHaveBeenCalledWith('/');
     });
 });
