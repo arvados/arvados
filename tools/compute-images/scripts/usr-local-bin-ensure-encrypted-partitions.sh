@@ -130,6 +130,13 @@ MOUNTOPTIONS="async"
 mount -o ${MOUNTOPTIONS} "$CRYPTPATH" "$MOUNTPATH"
 chmod a+w,+t "$MOUNTPATH"
 
+# Make sure docker uses the big partition
+cat <<EOF > /etc/docker/daemon.json
+{
+    "data-root": "$MOUNTPATH/docker-data"
+}
+EOF
+
 # restart docker
 if [ -d /etc/sv/docker.io ]
 then
