@@ -9,6 +9,7 @@ import (
 	"crypto/rand"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"strings"
 	"sync"
@@ -261,6 +262,21 @@ func (stage *s3stage) writeBigDirs(c *check.C, dirs int, filesPerDir int) {
 		}
 	}
 	c.Assert(fs.Sync(), check.IsNil)
+}
+
+func (s *IntegrationSuite) TestS3GetBucketVersioning(c *check.C) {
+	stage := s.s3setup(c)
+	defer stage.teardown(c)
+	for _, bucket := range []*s3.Bucket{stage.collbucket, stage.projbucket} {
+		req, err := http.NewRequest("GET", bucket.URL("/"), nil)
+		req.Header.Set("Authorization", "AWS "+arvadostest.ActiveTokenV2+":none")
+		req.URL.RawQuery = "versioning"
+		resp, err := http.DefaultClient.Do(req)
+		c.Assert(err, check.IsNil)
+		buf, err := ioutil.ReadAll(resp.Body)
+		c.Assert(err, check.IsNil)
+		c.Check(strings.TrimSpace(string(buf)), check.Equals, `<VersioningConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/"/>`)
+	}
 }
 
 func (s *IntegrationSuite) TestS3CollectionList(c *check.C) {

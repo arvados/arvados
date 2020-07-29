@@ -68,7 +68,13 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 	switch {
 	case r.Method == "GET" && strings.Count(strings.TrimSuffix(r.URL.Path, "/"), "/") == 1:
 		// Path is "/{uuid}" or "/{uuid}/", has no object name
-		h.s3list(w, r, fs)
+		if _, ok := r.URL.Query()["versioning"]; ok {
+			// GetBucketVersioning
+			fmt.Fprintln(w, `<VersioningConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/"/>`)
+		} else {
+			// ListObjects
+			h.s3list(w, r, fs)
+		}
 		return true
 	case r.Method == "GET":
 		fspath := "/by_id" + r.URL.Path
