@@ -273,7 +273,7 @@ end
  
 if $arvados_config["PostgreSQL"]["Connection"]["user"].include? "@"
   user_string = $arvados_config["PostgreSQL"]["Connection"]["user"]
-  $arvados_config["PostgreSQL"]["Connection"]["user"] = $user_string.gsub("@", "%40")
+  $arvados_config["PostgreSQL"]["Connection"]["user"] = user_string.gsub("@", "%40")
 end
 
 #
