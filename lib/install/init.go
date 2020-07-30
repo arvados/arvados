@@ -170,6 +170,8 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
         user: arvados
         password: {{printf "%q" .PostgreSQLPassword}}
     SystemRootToken: {{printf "%q" ( .RandomHex 50 )}}
+    TLS:
+      Insecure: true
     Volumes:
       {{.ClusterID}}-nyw5e-000000000000000:
         Driver: Directory

@@ -40,11 +40,18 @@ tmpdir=$(mktemp -d)
 version=$(git describe --tag --dirty)
 
 declare -a volargs=()
-for srcdir in "$@"; do
-    echo >&2 "building $srcdir..."
-    (cd $srcdir && GOBIN=$tmpdir go install -ldflags "-X git.arvados.org/arvados.git/lib/cmd.version=${version} -X main.version=${version}")
-    cmd="$(basename "$srcdir")"
-    volargs+=(-v "$tmpdir/$cmd:/var/lib/arvados/bin/$cmd:ro")
+for inject in "$@"; do
+    case "$inject" in
+        nginx.conf)
+            volargs+=(-v "$(pwd)/sdk/python/tests/$inject:/var/lib/arvados/share/$inject:ro")
+            ;;
+        *)
+            echo >&2 "building $inject..."
+            (cd $inject && GOBIN=$tmpdir go install -ldflags "-X git.arvados.org/arvados.git/lib/cmd.version=${version} -X main.version=${version}")
+            cmd="$(basename "$inject")"
+            volargs+=(-v "$tmpdir/$cmd:/var/lib/arvados/bin/$cmd:ro")
+            ;;
+    esac
 done
 
 osbase=debian:10

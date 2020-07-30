@@ -252,7 +252,7 @@ func (super *Supervisor) run(cfg *arvados.Config) error {
 	}
 	if super.ClusterType != "test" {
 		tasks = append(tasks,
-			runServiceCommand{name: "dispatch-cloud", svc: super.cluster.Services.Controller},
+			runServiceCommand{name: "dispatch-cloud", svc: super.cluster.Services.DispatchCloud},
 			runGoProgram{src: "services/keep-balance", svc: super.cluster.Services.Keepbalance},
 		)
 	}

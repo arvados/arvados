@@ -69,7 +69,13 @@ func (runNginx) Run(ctx context.Context, fail func(error), super *Supervisor) er
 		}
 		vars[cmpt.varname+"SSLPORT"] = port
 	}
-	tmpl, err := ioutil.ReadFile(filepath.Join(super.SourcePath, "sdk", "python", "tests", "nginx.conf"))
+	var conftemplate string
+	if super.ClusterType == "production" {
+		conftemplate = "/var/lib/arvados/share/nginx.conf"
+	} else {
+		conftemplate = filepath.Join(super.SourcePath, "sdk", "python", "tests", "nginx.conf")
+	}
+	tmpl, err := ioutil.ReadFile(conftemplate)
 	if err != nil {
 		return err
 	}

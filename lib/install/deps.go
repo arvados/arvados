@@ -486,6 +486,15 @@ rm ${zip}
 				return 1
 			}
 		}
+
+		// Copy assets from source tree to /var/lib/arvados/share
+		cmd := exec.Command("install", "-v", "-t", "/var/lib/arvados/share", filepath.Join(inst.SourcePath, "sdk/python/tests/nginx.conf"))
+		cmd.Stdout = stdout
+		cmd.Stderr = stderr
+		err = cmd.Run()
+		if err != nil {
+			return 1
+		}
 	}
 
 	return 0
