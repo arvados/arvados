@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -107,5 +108,11 @@ func (runNginx) Run(ctx context.Context, fail func(error), super *Supervisor) er
 			"-g", "pid "+filepath.Join(super.tempdir, "nginx.pid")+";",
 			"-c", conffile))
 	}()
-	return waitForConnect(ctx, super.cluster.Services.Controller.ExternalURL.Host)
+	// Choose one of the ports where Nginx should listen, and wait
+	// here until we can connect. If ExternalURL is https://foo (with no port) then we connect to "foo:https"
+	testurl := url.URL(super.cluster.Services.Controller.ExternalURL)
+	if testurl.Port() == "" {
+		testurl.Host = net.JoinHostPort(testurl.Host, testurl.Scheme)
+	}
+	return waitForConnect(ctx, testurl.Host)
 }
