@@ -306,7 +306,9 @@ func (h *handler) s3list(w http.ResponseWriter, r *http.Request, fs arvados.Cust
 			return errDone
 		}
 		resp.Contents = append(resp.Contents, s3.Key{
-			Key: path,
+			Key:          path,
+			LastModified: fi.ModTime().UTC().Format("2006-01-02T15:04:05.999") + "Z",
+			Size:         fi.Size(),
 		})
 		return nil
 	})
