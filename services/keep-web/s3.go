@@ -65,8 +65,10 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 	fs := client.SiteFileSystem(kc)
 	fs.ForwardSlashNameSubstitution(h.Config.cluster.Collections.ForwardSlashNameSubstitution)
 
+	objectNameGiven := strings.Count(strings.TrimSuffix(r.URL.Path, "/"), "/") > 1
+
 	switch {
-	case r.Method == "GET" && strings.Count(strings.TrimSuffix(r.URL.Path, "/"), "/") == 1:
+	case r.Method == "GET" && !objectNameGiven:
 		// Path is "/{uuid}" or "/{uuid}/", has no object name
 		if _, ok := r.URL.Query()["versioning"]; ok {
 			// GetBucketVersioning
@@ -78,9 +80,20 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 			h.s3list(w, r, fs)
 		}
 		return true
-	case r.Method == "GET":
+	case r.Method == "GET" || r.Method == "HEAD":
 		fspath := "/by_id" + r.URL.Path
 		fi, err := fs.Stat(fspath)
+		if r.Method == "HEAD" && !objectNameGiven {
+			// HeadBucket
+			if err != nil && fi.IsDir() {
+				w.WriteHeader(http.StatusOK)
+			} else if os.IsNotExist(err) {
+				w.WriteHeader(http.StatusNotFound)
+			} else {
+				http.Error(w, err.Error(), http.StatusBadGateway)
+			}
+			return true
+		}
 		if os.IsNotExist(err) ||
 			(err != nil && err.Error() == "not a directory") ||
 			(fi != nil && fi.IsDir()) {
