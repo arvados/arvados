@@ -71,6 +71,7 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 		if _, ok := r.URL.Query()["versioning"]; ok {
 			// GetBucketVersioning
 			w.Header().Set("Content-Type", "application/xml")
+			io.WriteString(w, xml.Header)
 			fmt.Fprintln(w, `<VersioningConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/"/>`)
 		} else {
 			// ListObjects
@@ -306,8 +307,13 @@ func (h *handler) s3list(w http.ResponseWriter, r *http.Request, fs arvados.Cust
 			sort.Strings(resp.CommonPrefixes)
 		}
 	}
+	wrappedResp := struct {
+		XMLName string `xml:"http://s3.amazonaws.com/doc/2006-03-01/ ListBucketResult"`
+		s3.ListResp
+	}{"", resp}
 	w.Header().Set("Content-Type", "application/xml")
-	if err := xml.NewEncoder(w).Encode(resp); err != nil {
+	io.WriteString(w, xml.Header)
+	if err := xml.NewEncoder(w).Encode(wrappedResp); err != nil {
 		ctxlog.FromContext(r.Context()).WithError(err).Error("error writing xml response")
 	}
 }
