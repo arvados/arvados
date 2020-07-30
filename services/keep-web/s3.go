@@ -85,7 +85,7 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 		fi, err := fs.Stat(fspath)
 		if r.Method == "HEAD" && !objectNameGiven {
 			// HeadBucket
-			if err != nil && fi.IsDir() {
+			if err == nil && fi.IsDir() {
 				w.WriteHeader(http.StatusOK)
 			} else if os.IsNotExist(err) {
 				w.WriteHeader(http.StatusNotFound)
