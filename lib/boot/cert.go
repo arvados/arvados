@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
+	"os"
 	"path/filepath"
 )
 
@@ -27,9 +28,14 @@ func (createCertificates) String() string {
 func (createCertificates) Run(ctx context.Context, fail func(error), super *Supervisor) error {
 	var san string
 	if net.ParseIP(super.ListenHost) != nil {
-		san = fmt.Sprintf("IP:%s", super.ListenHost)
+		san += fmt.Sprintf(",IP:%s", super.ListenHost)
 	} else {
-		san = fmt.Sprintf("DNS:%s", super.ListenHost)
+		san += fmt.Sprintf(",DNS:%s", super.ListenHost)
+	}
+	if hostname, err := os.Hostname(); err != nil {
+		return fmt.Errorf("hostname: %w", err)
+	} else {
+		san += ",DNS:" + hostname
 	}
 
 	// Generate root key
@@ -52,7 +58,7 @@ func (createCertificates) Run(ctx context.Context, fail func(error), super *Supe
 	if err != nil {
 		return err
 	}
-	err = ioutil.WriteFile(filepath.Join(super.tempdir, "server.cfg"), append(defaultconf, []byte(fmt.Sprintf("\n[SAN]\nsubjectAltName=DNS:localhost,DNS:localhost.localdomain,%s\n", san))...), 0644)
+	err = ioutil.WriteFile(filepath.Join(super.tempdir, "server.cfg"), append(defaultconf, []byte(fmt.Sprintf("\n[SAN]\nsubjectAltName=DNS:localhost,DNS:localhost.localdomain%s\n", san))...), 0644)
 	if err != nil {
 		return err
 	}
