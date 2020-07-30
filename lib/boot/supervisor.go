@@ -483,17 +483,34 @@ func (super *Supervisor) RunProgram(ctx context.Context, dir string, output io.W
 	super.logger.WithField("command", cmdline).WithField("dir", dir).Info("executing")
 
 	logprefix := prog
-	if logprefix == "setuidgid" && len(args) >= 3 {
-		logprefix = args[2]
-	}
-	logprefix = strings.TrimPrefix(logprefix, super.tempdir+"/bin/")
-	if logprefix == "bundle" && len(args) > 2 && args[0] == "exec" {
-		logprefix = args[1]
-	} else if logprefix == "arvados-server" && len(args) > 1 {
-		logprefix = args[0]
-	}
-	if !strings.HasPrefix(dir, "/") {
-		logprefix = dir + ": " + logprefix
+	{
+		if logprefix == "setuidgid" && len(args) >= 3 {
+			logprefix = args[2]
+		}
+		innerargs := args
+		if logprefix == "sudo" {
+			for i := 0; i < len(args); i++ {
+				if args[i] == "-u" {
+					i++
+				} else if args[i] == "-E" || strings.Contains(args[i], "=") {
+				} else {
+					logprefix = args[i]
+					innerargs = args[i+1:]
+					break
+				}
+			}
+		}
+		logprefix = strings.TrimPrefix(logprefix, "/var/lib/arvados/bin/")
+		logprefix = strings.TrimPrefix(logprefix, super.tempdir+"/bin/")
+		if logprefix == "bundle" && len(innerargs) > 2 && innerargs[0] == "exec" {
+			_, dirbase := filepath.Split(dir)
+			logprefix = innerargs[1] + "@" + dirbase
+		} else if logprefix == "arvados-server" && len(args) > 1 {
+			logprefix = args[0]
+		}
+		if !strings.HasPrefix(dir, "/") {
+			logprefix = dir + ": " + logprefix
+		}
 	}
 
 	cmd := exec.Command(super.lookPath(prog), args...)
