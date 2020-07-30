@@ -70,6 +70,7 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 		// Path is "/{uuid}" or "/{uuid}/", has no object name
 		if _, ok := r.URL.Query()["versioning"]; ok {
 			// GetBucketVersioning
+			w.Header().Set("Content-Type", "application/xml")
 			fmt.Fprintln(w, `<VersioningConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/"/>`)
 		} else {
 			// ListObjects
@@ -305,6 +306,7 @@ func (h *handler) s3list(w http.ResponseWriter, r *http.Request, fs arvados.Cust
 			sort.Strings(resp.CommonPrefixes)
 		}
 	}
+	w.Header().Set("Content-Type", "application/xml")
 	if err := xml.NewEncoder(w).Encode(resp); err != nil {
 		ctxlog.FromContext(r.Context()).WithError(err).Error("error writing xml response")
 	}
