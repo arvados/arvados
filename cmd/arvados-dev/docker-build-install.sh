@@ -27,7 +27,8 @@ while [[ $# -gt 0 ]]; do
             ;;
         *)
             echo >&2 "invalid argument '$arg'"
-            exit 1
+            exit 2
+            ;;
     esac
 done
 

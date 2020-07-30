@@ -16,6 +16,19 @@
 
 set -e -o pipefail
 
+declare -A opts=()
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --shell)
+            shift
+            opts[shell]=1
+            ;;
+        *)
+            break
+            ;;
+    esac
+done
+
 cleanup() {
     if [[ -n "${tmpdir}" ]]; then
         rm -rf "${tmpdir}"
@@ -36,7 +49,11 @@ done
 
 osbase=debian:10
 installimage=arvados-installpackage-${osbase}
+command="/var/lib/arvados/bin/arvados-server boot -listen-host 0.0.0.0"
+if [[ "${opts[shell]}" ]]; then
+    command="bash -login"
+fi
 docker run -it --rm \
        "${volargs[@]}" \
        "${installimage}" \
-       bash -c '/etc/init.d/postgresql start && /var/lib/arvados/bin/arvados-server init -cluster-id x1234 && /var/lib/arvados/bin/arvados-server boot'
+       bash -c "/etc/init.d/postgresql start && /var/lib/arvados/bin/arvados-server init -cluster-id x1234 && $command"
