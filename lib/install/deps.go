@@ -178,7 +178,7 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 
 	os.Mkdir("/var/lib/arvados", 0755)
 	os.Mkdir("/var/lib/arvados/tmp", 0700)
-	if prod {
+	if prod || pkg {
 		os.Mkdir("/var/lib/arvados/wwwtmp", 0700)
 		u, er := user.Lookup("www-data")
 		if er != nil {
