@@ -297,9 +297,10 @@ func (s *IntegrationSuite) TestS3GetBucketVersioning(c *check.C) {
 		req.URL.RawQuery = "versioning"
 		resp, err := http.DefaultClient.Do(req)
 		c.Assert(err, check.IsNil)
+		c.Check(resp.Header.Get("Content-Type"), check.Equals, "application/xml")
 		buf, err := ioutil.ReadAll(resp.Body)
 		c.Assert(err, check.IsNil)
-		c.Check(strings.TrimSpace(string(buf)), check.Equals, `<VersioningConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/"/>`)
+		c.Check(string(buf), check.Equals, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<VersioningConfiguration xmlns=\"http://s3.amazonaws.com/doc/2006-03-01/\"/>\n")
 	}
 }
 
