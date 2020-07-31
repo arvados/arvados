@@ -86,6 +86,8 @@ GEM
       addressable (>= 2.3.1)
       extlib (>= 0.9.15)
       multi_json (>= 1.0.0)
+    bootsnap (1.4.7)
+      msgpack (~> 1.0)
     builder (3.2.4)
     byebug (11.0.1)
     capistrano (2.15.9)
@@ -130,6 +132,9 @@ GEM
     launchy (2.4.3)
       addressable (~> 2.3)
     libv8 (3.16.14.19)
+    listen (3.2.1)
+      rb-fsevent (~> 0.10, >= 0.10.3)
+      rb-inotify (~> 0.9, >= 0.9.10)
     lograge (0.10.0)
       actionpack (>= 4)
       activesupport (>= 4)
@@ -152,6 +157,7 @@ GEM
     minitest (5.10.3)
     mocha (1.8.0)
       metaclass (~> 0.0.1)
+    msgpack (1.3.3)
     multi_json (1.14.1)
     multi_xml (0.6.0)
     multipart-post (2.1.1)
@@ -289,10 +295,12 @@ DEPENDENCIES
   acts_as_api
   andand
   arvados!
+  bootsnap
   byebug
   factory_bot_rails
   httpclient
   jquery-rails
+  listen
   lograge
   logstash-event
   minitest (= 5.10.3)
