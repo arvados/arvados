@@ -104,6 +104,18 @@ func (stage s3stage) teardown(c *check.C) {
 	}
 }
 
+func (s *IntegrationSuite) TestS3HeadBucket(c *check.C) {
+	stage := s.s3setup(c)
+	defer stage.teardown(c)
+
+	for _, bucket := range []*s3.Bucket{stage.collbucket, stage.projbucket} {
+		c.Logf("bucket %s", bucket.Name)
+		exists, err := bucket.Exists("")
+		c.Check(err, check.IsNil)
+		c.Check(exists, check.Equals, true)
+	}
+}
+
 func (s *IntegrationSuite) TestS3CollectionGetObject(c *check.C) {
 	stage := s.s3setup(c)
 	defer stage.teardown(c)
@@ -123,9 +135,16 @@ func (s *IntegrationSuite) testS3GetObject(c *check.C, bucket *s3.Bucket, prefix
 	err = rdr.Close()
 	c.Check(err, check.IsNil)
 
+	// GetObject
 	rdr, err = bucket.GetReader(prefix + "missingfile")
 	c.Check(err, check.ErrorMatches, `404 Not Found`)
 
+	// HeadObject
+	exists, err := bucket.Exists(prefix + "missingfile")
+	c.Check(err, check.IsNil)
+	c.Check(exists, check.Equals, false)
+
+	// GetObject
 	rdr, err = bucket.GetReader(prefix + "sailboat.txt")
 	c.Assert(err, check.IsNil)
 	buf, err = ioutil.ReadAll(rdr)
@@ -133,6 +152,11 @@ func (s *IntegrationSuite) testS3GetObject(c *check.C, bucket *s3.Bucket, prefix
 	c.Check(buf, check.DeepEquals, []byte("⛵\n"))
 	err = rdr.Close()
 	c.Check(err, check.IsNil)
+
+	// HeadObject
+	exists, err = bucket.Exists(prefix + "sailboat.txt")
+	c.Check(err, check.IsNil)
+	c.Check(exists, check.Equals, true)
 }
 
 func (s *IntegrationSuite) TestS3CollectionPutObjectSuccess(c *check.C) {
