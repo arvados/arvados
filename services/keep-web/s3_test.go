@@ -332,6 +332,9 @@ func (s *IntegrationSuite) testS3List(c *check.C, bucket *s3.Bucket, prefix stri
 		}
 		for _, key := range resp.Contents {
 			gotKeys[key.Key] = key
+			if strings.Contains(key.Key, "sailboat.txt") {
+				c.Check(key.Size, check.Equals, int64(4))
+			}
 		}
 		if !resp.IsTruncated {
 			c.Check(resp.NextMarker, check.Equals, "")
