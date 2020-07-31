@@ -8,8 +8,8 @@
 
 require 'enable_jobs_api'
 
-Server::Application.configure do
-  if ActiveRecord::Base.connection.tables.include?('jobs')
+Rails.application.configure do
+  if ActiveRecord::Base.connected? and ActiveRecord::Base.connection.tables.include?('jobs')
     check_enable_legacy_jobs_api
   end
 end
