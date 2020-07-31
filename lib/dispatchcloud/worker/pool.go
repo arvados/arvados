@@ -176,6 +176,7 @@ type Pool struct {
 	mInstancesPrice    *prometheus.GaugeVec
 	mVCPUs             *prometheus.GaugeVec
 	mMemory            *prometheus.GaugeVec
+	mBootOutcomes      *prometheus.CounterVec
 	mDisappearances    *prometheus.CounterVec
 }
 
@@ -593,6 +594,16 @@ func (wp *Pool) registerMetrics(reg *prometheus.Registry) {
 		Help:      "Total memory on all cloud VMs.",
 	}, []string{"category"})
 	reg.MustRegister(wp.mMemory)
+	wp.mBootOutcomes = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "arvados",
+		Subsystem: "dispatchcloud",
+		Name:      "boot_outcomes",
+		Help:      "Boot outcomes by type.",
+	}, []string{"state"})
+	for k := range validBootOutcomes {
+		wp.mBootOutcomes.WithLabelValues(string(k)).Add(0)
+	}
+	reg.MustRegister(wp.mBootOutcomes)
 	wp.mDisappearances = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "arvados",
 		Subsystem: "dispatchcloud",
@@ -867,6 +878,7 @@ func (wp *Pool) sync(threshold time.Time, instances []cloud.Instance) {
 			"WorkerState": wkr.state,
 		})
 		logger.Info("instance disappeared in cloud")
+		wkr.reportBootOutcome(BootOutcomeDisappeared)
 		if wp.mDisappearances != nil {
 			wp.mDisappearances.WithLabelValues(stateString[wkr.state]).Inc()
 		}
