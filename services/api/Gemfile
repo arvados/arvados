@@ -22,7 +22,11 @@ group :test, :development do
   gem 'simplecov-rcov', require: false
   gem 'mocha', require: false
   gem 'byebug'
+  gem 'listen'
 end
+
+# Fast app boot times
+gem 'bootsnap', require: false
 
 gem 'pg', '~> 1.0'
 
