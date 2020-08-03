@@ -303,12 +303,18 @@ class Collection < ArvadosModel
 
   def syncable_updates
     updates = {}
-    (syncable_attrs & self.changes.keys).each do |attr|
+    if self.changes.any?
+      changes = self.changes
+    else
+      # If called after save...
+      changes = self.saved_changes
+    end
+    (syncable_attrs & changes.keys).each do |attr|
       if attr == 'uuid'
         # Point old versions to current version's new UUID
-        updates['current_version_uuid'] = self.changes[attr].last
+        updates['current_version_uuid'] = changes[attr].last
       else
-        updates[attr] = self.changes[attr].last
+        updates[attr] = changes[attr].last
       end
     end
     return updates
@@ -316,7 +322,7 @@ class Collection < ArvadosModel
 
   def sync_past_versions
     updates = self.syncable_updates
-    Collection.where('current_version_uuid = ? AND uuid != ?', self.uuid_was, self.uuid_was).each do |c|
+    Collection.where('current_version_uuid = ? AND uuid != ?', self.uuid_before_last_save, self.uuid_before_last_save).each do |c|
       c.attributes = updates
       # Use a different validation context to skip the 'past_versions_cannot_be_updated'
       # validator, as on this case it is legal to update some fields.
