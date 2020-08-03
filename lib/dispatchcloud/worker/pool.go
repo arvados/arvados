@@ -176,6 +176,7 @@ type Pool struct {
 	mInstancesPrice    *prometheus.GaugeVec
 	mVCPUs             *prometheus.GaugeVec
 	mMemory            *prometheus.GaugeVec
+	mBootOutcomes      *prometheus.CounterVec
 	mDisappearances    *prometheus.CounterVec
 }
 
@@ -436,6 +437,7 @@ func (wp *Pool) Shutdown(it arvados.InstanceType) bool {
 		for _, wkr := range wp.workers {
 			if wkr.idleBehavior != IdleBehaviorHold && wkr.state == tryState && wkr.instType == it {
 				logger.WithField("Instance", wkr.instance.ID()).Info("shutting down")
+				wkr.reportBootOutcome(BootOutcomeAborted)
 				wkr.shutdown()
 				return true
 			}
@@ -593,12 +595,22 @@ func (wp *Pool) registerMetrics(reg *prometheus.Registry) {
 		Help:      "Total memory on all cloud VMs.",
 	}, []string{"category"})
 	reg.MustRegister(wp.mMemory)
+	wp.mBootOutcomes = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "arvados",
+		Subsystem: "dispatchcloud",
+		Name:      "boot_outcomes",
+		Help:      "Boot outcomes by type.",
+	}, []string{"state"})
+	for k := range validBootOutcomes {
+		wp.mBootOutcomes.WithLabelValues(string(k)).Add(0)
+	}
+	reg.MustRegister(wp.mBootOutcomes)
 	wp.mDisappearances = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "arvados",
 		Subsystem: "dispatchcloud",
 		Name:      "instances_disappeared",
 		Help:      "Number of occurrences of an instance disappearing from the cloud provider's list of instances.",
-	}, []string{"state"})
+	}, []string{"outcome"})
 	for _, v := range stateString {
 		wp.mDisappearances.WithLabelValues(v).Add(0)
 	}
@@ -765,6 +777,7 @@ func (wp *Pool) KillInstance(id cloud.InstanceID, reason string) error {
 		return errors.New("instance not found")
 	}
 	wkr.logger.WithField("Reason", reason).Info("shutting down")
+	wkr.reportBootOutcome(BootOutcomeAborted)
 	wkr.shutdown()
 	return nil
 }
@@ -867,6 +880,7 @@ func (wp *Pool) sync(threshold time.Time, instances []cloud.Instance) {
 			"WorkerState": wkr.state,
 		})
 		logger.Info("instance disappeared in cloud")
+		wkr.reportBootOutcome(BootOutcomeDisappeared)
 		if wp.mDisappearances != nil {
 			wp.mDisappearances.WithLabelValues(stateString[wkr.state]).Inc()
 		}
