@@ -41,9 +41,9 @@ type s3AWSFakeClock struct {
 
 func (c *s3AWSFakeClock) Now() time.Time {
 	if c.now == nil {
-		return time.Now()
+		return time.Now().UTC()
 	}
-	return *c.now
+	return c.now.UTC()
 }
 
 func (c *s3AWSFakeClock) Since(t time.Time) time.Duration {
