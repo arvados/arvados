@@ -279,8 +279,8 @@ end
 # section of the config from database.yml
 #
 database_url = "postgresql://#{CGI.escape $arvados_config["PostgreSQL"]["Connection"]["user"]}:"+
-                      "#{$arvados_config["PostgreSQL"]["Connection"]["password"]}@"+
-                      "#{dbhost}/#{$arvados_config["PostgreSQL"]["Connection"]["dbname"]}?"+
+                      "#{CGI.escape $arvados_config["PostgreSQL"]["Connection"]["password"]}@"+
+                      "#{dbhost}/#{CGI.escape $arvados_config["PostgreSQL"]["Connection"]["dbname"]}?"+
                       "template=#{$arvados_config["PostgreSQL"]["Connection"]["template"]}&"+
                       "encoding=#{$arvados_config["PostgreSQL"]["Connection"]["client_encoding"]}&"+
                       "collation=#{$arvados_config["PostgreSQL"]["Connection"]["collation"]}&"+
