@@ -278,7 +278,7 @@ end
 # For config migration, we've previously populated the PostgreSQL
 # section of the config from database.yml
 #
-database_url = CGI.escape("postgresql://#{$arvados_config["PostgreSQL"]["Connection"]["user"]}:"+
+database_url = "postgresql://#{CGI.escape $arvados_config["PostgreSQL"]["Connection"]["user"]}:"+
                       "#{$arvados_config["PostgreSQL"]["Connection"]["password"]}@"+
                       "#{dbhost}/#{$arvados_config["PostgreSQL"]["Connection"]["dbname"]}?"+
                       "template=#{$arvados_config["PostgreSQL"]["Connection"]["template"]}&"+
