@@ -600,7 +600,7 @@ func (wp *Pool) registerMetrics(reg *prometheus.Registry) {
 		Subsystem: "dispatchcloud",
 		Name:      "boot_outcomes",
 		Help:      "Boot outcomes by type.",
-	}, []string{"state"})
+	}, []string{"outcome"})
 	for k := range validBootOutcomes {
 		wp.mBootOutcomes.WithLabelValues(string(k)).Add(0)
 	}
@@ -610,7 +610,7 @@ func (wp *Pool) registerMetrics(reg *prometheus.Registry) {
 		Subsystem: "dispatchcloud",
 		Name:      "instances_disappeared",
 		Help:      "Number of occurrences of an instance disappearing from the cloud provider's list of instances.",
-	}, []string{"outcome"})
+	}, []string{"state"})
 	for _, v := range stateString {
 		wp.mDisappearances.WithLabelValues(v).Add(0)
 	}
