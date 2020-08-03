@@ -43,33 +43,6 @@ var stateString = map[State]string{
 	StateShutdown: "shutdown",
 }
 
-// BootOutcome is the result of a worker boot. It is used as a label in a metric.
-type BootOutcome string
-
-const (
-	BootOutcomeFailed       BootOutcome = "failure"
-	BootOutcomeSucceeded    BootOutcome = "success"
-	BootOutcomeIdleShutdown BootOutcome = "idle shutdown"
-	BootOutcomeDisappeared  BootOutcome = "disappeared"
-)
-
-var validBootOutcomes = map[BootOutcome]bool{
-	BootOutcomeFailed:       true,
-	BootOutcomeSucceeded:    true,
-	BootOutcomeIdleShutdown: true,
-	BootOutcomeDisappeared:  true,
-}
-
-func (wkr *worker) reportBootOutcome(outcome BootOutcome) {
-	if wkr.bootOutcomeReported {
-		return
-	}
-	if wkr.wp.mBootOutcomes != nil {
-		wkr.wp.mBootOutcomes.WithLabelValues(string(outcome)).Inc()
-	}
-	wkr.bootOutcomeReported = true
-}
-
 // String implements fmt.Stringer.
 func (s State) String() string {
 	return stateString[s]
@@ -79,6 +52,23 @@ func (s State) String() string {
 // map[State]anything uses the state's string representation.
 func (s State) MarshalText() ([]byte, error) {
 	return []byte(stateString[s]), nil
+}
+
+// BootOutcome is the result of a worker boot. It is used as a label in a metric.
+type BootOutcome string
+
+const (
+	BootOutcomeFailed      BootOutcome = "failure"
+	BootOutcomeSucceeded   BootOutcome = "success"
+	BootOutcomeAborted     BootOutcome = "aborted"
+	BootOutcomeDisappeared BootOutcome = "disappeared"
+)
+
+var validBootOutcomes = map[BootOutcome]bool{
+	BootOutcomeFailed:      true,
+	BootOutcomeSucceeded:   true,
+	BootOutcomeAborted:     true,
+	BootOutcomeDisappeared: true,
 }
 
 // IdleBehavior indicates the behavior desired when a node becomes idle.
@@ -137,6 +127,17 @@ func (wkr *worker) onKilled(uuid string) {
 	defer wkr.mtx.Unlock()
 	wkr.closeRunner(uuid)
 	go wkr.wp.notify()
+}
+
+// caller must have lock.
+func (wkr *worker) reportBootOutcome(outcome BootOutcome) {
+	if wkr.bootOutcomeReported {
+		return
+	}
+	if wkr.wp.mBootOutcomes != nil {
+		wkr.wp.mBootOutcomes.WithLabelValues(string(outcome)).Inc()
+	}
+	wkr.bootOutcomeReported = true
 }
 
 // caller must have lock.
@@ -499,7 +500,7 @@ func (wkr *worker) shutdownIfIdle() bool {
 		"IdleDuration": stats.Duration(time.Since(wkr.busy)),
 		"IdleBehavior": wkr.idleBehavior,
 	}).Info("shutdown worker")
-	wkr.reportBootOutcome(BootOutcomeIdleShutdown)
+	wkr.reportBootOutcome(BootOutcomeAborted)
 	wkr.shutdown()
 	return true
 }

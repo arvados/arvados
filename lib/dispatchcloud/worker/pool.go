@@ -437,6 +437,7 @@ func (wp *Pool) Shutdown(it arvados.InstanceType) bool {
 		for _, wkr := range wp.workers {
 			if wkr.idleBehavior != IdleBehaviorHold && wkr.state == tryState && wkr.instType == it {
 				logger.WithField("Instance", wkr.instance.ID()).Info("shutting down")
+				wkr.reportBootOutcome(BootOutcomeAborted)
 				wkr.shutdown()
 				return true
 			}
@@ -609,7 +610,7 @@ func (wp *Pool) registerMetrics(reg *prometheus.Registry) {
 		Subsystem: "dispatchcloud",
 		Name:      "instances_disappeared",
 		Help:      "Number of occurrences of an instance disappearing from the cloud provider's list of instances.",
-	}, []string{"state"})
+	}, []string{"outcome"})
 	for _, v := range stateString {
 		wp.mDisappearances.WithLabelValues(v).Add(0)
 	}
@@ -776,6 +777,7 @@ func (wp *Pool) KillInstance(id cloud.InstanceID, reason string) error {
 		return errors.New("instance not found")
 	}
 	wkr.logger.WithField("Reason", reason).Info("shutting down")
+	wkr.reportBootOutcome(BootOutcomeAborted)
 	wkr.shutdown()
 	return nil
 }
