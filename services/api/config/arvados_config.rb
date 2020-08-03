@@ -16,6 +16,7 @@
 # config:migrate to /etc/arvados/config.yml, you will be able to
 # delete application.yml and database.yml.
 
+require "cgi"
 require 'config_loader'
 require 'open3'
 
@@ -270,11 +271,6 @@ dbhost = $arvados_config["PostgreSQL"]["Connection"]["host"]
 if $arvados_config["PostgreSQL"]["Connection"]["port"] != 0
   dbhost += ":#{$arvados_config["PostgreSQL"]["Connection"]["port"]}"
 end
- 
-if $arvados_config["PostgreSQL"]["Connection"]["user"].include? "@"
-  user_string = $arvados_config["PostgreSQL"]["Connection"]["user"]
-  $arvados_config["PostgreSQL"]["Connection"]["user"] = user_string.gsub("@", "%40")
-end
 
 #
 # If DATABASE_URL is set, then ActiveRecord won't error out if database.yml doesn't exist.
@@ -282,13 +278,15 @@ end
 # For config migration, we've previously populated the PostgreSQL
 # section of the config from database.yml
 #
-ENV["DATABASE_URL"] = "postgresql://#{$arvados_config["PostgreSQL"]["Connection"]["user"]}:"+
+database_url = CGI.escape("postgresql://#{$arvados_config["PostgreSQL"]["Connection"]["user"]}:"+
                       "#{$arvados_config["PostgreSQL"]["Connection"]["password"]}@"+
                       "#{dbhost}/#{$arvados_config["PostgreSQL"]["Connection"]["dbname"]}?"+
                       "template=#{$arvados_config["PostgreSQL"]["Connection"]["template"]}&"+
                       "encoding=#{$arvados_config["PostgreSQL"]["Connection"]["client_encoding"]}&"+
                       "collation=#{$arvados_config["PostgreSQL"]["Connection"]["collation"]}&"+
-                      "pool=#{$arvados_config["PostgreSQL"]["ConnectionPool"]}"
+                      "pool=#{$arvados_config["PostgreSQL"]["ConnectionPool"]}")
+  
+ENV["DATABASE_URL"] = database_url
 
 Server::Application.configure do
   # Copy into the Rails config object.  This also turns Hash into
@@ -299,3 +297,4 @@ Server::Application.configure do
   ConfigLoader.copy_into_config $remaining_config, config
   secrets.secret_key_base = $arvados_config["API"]["RailsSessionSecretToken"]
 end
+
