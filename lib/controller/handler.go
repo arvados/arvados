@@ -137,7 +137,7 @@ func (h *Handler) db(ctx context.Context) (*sqlx.DB, error) {
 		db.SetMaxOpenConns(p)
 	}
 	if err := db.Ping(); err != nil {
-		ctxlog.FromContext(ctx).WithError(err).Error("postgresql connect scuceeded but ping failed")
+		ctxlog.FromContext(ctx).WithError(err).Error("postgresql connect succeeded but ping failed")
 		return nil, errDBConnection
 	}
 	h.pgdb = db
