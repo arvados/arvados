@@ -187,6 +187,7 @@ type StubVM struct {
 	CrunchRunDetachDelay  time.Duration
 	ExecuteContainer      func(arvados.Container) int
 	CrashRunningContainer func(arvados.Container)
+	ReportedBroken        bool
 
 	sis          *StubInstanceSet
 	id           cloud.InstanceID
@@ -317,6 +318,7 @@ func (svm *StubVM) Exec(env map[string]string, command string, stdin io.Reader, 
 		}
 		if !svm.ReportBroken.IsZero() && svm.ReportBroken.Before(time.Now()) {
 			fmt.Fprintln(stdout, "broken")
+			svm.ReportedBroken = true
 		}
 		return 0
 	}

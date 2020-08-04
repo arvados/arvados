@@ -147,17 +147,17 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 			close(done)
 		}
 	}
-	executeContainer := func(ctr arvados.Container) int {
-		finishContainer(ctr)
-		return int(rand.Uint32() & 0x3)
-	}
 	n := 0
 	s.stubDriver.Queue = queue
 	s.stubDriver.SetupVM = func(stubvm *test.StubVM) {
 		n++
 		stubvm.Boot = time.Now().Add(time.Duration(rand.Int63n(int64(5 * time.Millisecond))))
 		stubvm.CrunchRunDetachDelay = time.Duration(rand.Int63n(int64(10 * time.Millisecond)))
-		stubvm.ExecuteContainer = executeContainer
+		stubvm.ExecuteContainer = func(ctr arvados.Container) int {
+			c.Check(stubvm.ReportedBroken, check.Equals, false, check.Commentf("stub vm %s executing container after reported broken", stubvm))
+			finishContainer(ctr)
+			return int(rand.Uint32() & 0x3)
+		}
 		stubvm.CrashRunningContainer = finishContainer
 		switch n % 7 {
 		case 0:
