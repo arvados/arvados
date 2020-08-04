@@ -54,3 +54,53 @@ func (*SchedulerSuite) TestForgetIrrelevantContainers(c *check.C) {
 	ents, _ = queue.Entries()
 	c.Check(ents, check.HasLen, 0)
 }
+
+func (*SchedulerSuite) TestCancelOrphanedContainers(c *check.C) {
+	ctx := ctxlog.Context(context.Background(), ctxlog.TestLogger(c))
+	pool := stubPool{
+		unalloc: map[arvados.InstanceType]int{test.InstanceType(1): 1},
+		unknown: map[arvados.InstanceType]int{test.InstanceType(1): 1},
+	}
+	queue := test.Queue{
+		ChooseType: chooseType,
+		Containers: []arvados.Container{
+			{
+				UUID:     test.ContainerUUID(1),
+				Priority: 0,
+				State:    arvados.ContainerStateRunning,
+				RuntimeConstraints: arvados.RuntimeConstraints{
+					VCPUs: 1,
+					RAM:   1 << 30,
+				},
+			},
+		},
+	}
+	queue.Update()
+
+	ents, _ := queue.Entries()
+	c.Check(ents, check.HasLen, 1)
+
+	sch := New(ctx, &queue, &pool, time.Millisecond, time.Millisecond)
+
+	// Sync shouldn't cancel the container because it might be
+	// running on the VM with state=="unknown".
+	for i := 0; i < 10; i++ {
+		sch.sync()
+		time.Sleep(time.Millisecond)
+	}
+	ents, _ = queue.Entries()
+	c.Check(ents, check.HasLen, 1)
+	c.Check(ents[test.ContainerUUID(1)].Container.State, check.Equals, arvados.ContainerStateRunning)
+
+	// Sync should cancel & forget the container when the
+	// "unknown" node goes away.
+	pool.unknown = nil
+	for deadline := time.Now().Add(time.Second); ; time.Sleep(time.Millisecond) {
+		sch.sync()
+		ents, _ = queue.Entries()
+		if len(ents) == 0 || time.Now().After(deadline) {
+			break
+		}
+	}
+	c.Check(ents, check.HasLen, 0)
+}
