@@ -10,7 +10,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
 {% include 'notebox_begin_warning' %}
-arvados-dispatch-cloud is only relevant for cloud installations. Skip this section if you are installing a on premise cluster that will spool jobs to Slurm.
+arvados-dispatch-cloud is only relevant for cloud installations. Skip this section if you are installing an on premises cluster that will spool jobs to Slurm.
 {% include 'notebox_end' %}
 
 # "Introduction":#introduction
@@ -27,53 +27,11 @@ The cloud dispatch service is for running containers on cloud VMs. It works with
 
 The cloud dispatch service can run on any node that can connect to the Arvados API service, the cloud provider's API, and the SSH service on cloud VMs.  It is not resource-intensive, so you can run it on the API server node.
 
-h2(#create-image). Create compute node VM image and configure resolver
-
-Set up a VM following the steps "to set up a compute node":crunch2-slurm/install-compute-node.html
-
-Compute nodes must be able to resolve the hostnames of the API server and any keepstore servers to your internal IP addresses.  You can do this by running an internal DNS resolver and configuring the compute VMs to use that resolver, or by hardcoding the services in the @/etc/hosts@ file.  For example:
-
-<notextile><pre><code>10.20.30.40     <span class="userinput">ClusterID.example.com</span>
-10.20.30.41     <span class="userinput">keep1.ClusterID.example.com</span>
-10.20.30.42     <span class="userinput">keep2.ClusterID.example.com</span>
-</code></pre></notextile>
-
-Once the VM is fully configured, create a reusable VM image from it and make note of the image id.
-
 h2(#update-config). Update config.yml
-
-h3. Create a private key
-
-Generate an SSH private key with no passphrase. Save it in the cluster configuration file (see @PrivateKey@ in the example below).
-
-<notextile>
-<pre><code>~$ <span class="userinput">ssh-keygen -N '' -f ~/.ssh/id_dispatcher</span>
-Generating public/private rsa key pair.
-Your identification has been saved in /home/user/.ssh/id_dispatcher.
-Your public key has been saved in /home/user/.ssh/id_dispatcher.pub.
-The key fingerprint is:
-[...]
-~$ <span class="userinput">cat ~/.ssh/id_dispatcher</span>
------BEGIN RSA PRIVATE KEY-----
-MIIEpQIBAAKCAQEAqXoCzcOBkFQ7w4dvXf9B++1ctgZRqEbgRYL3SstuMV4oawks
-ttUuxJycDdsPmeYcHsKo8vsEZpN6iYsX6ZZzhkO5nEayUTU8sBjmg1ZCTo4QqKXr
-...
-oFyAjVoexx0RBcH6BveTfQtJKbktP1qBO4mXo2dP0cacuZEtlAqW9Eb06Pvaw/D9
-foktmqOY8MyctzFgXBpGTxPliGjqo8OkrOyQP2g+FL7v+Km31Xs61P8=
------END RSA PRIVATE KEY-----
-</code></pre>
-</notextile>
-
-You can delete the key files after you have copied the private key to your configuration file.
-
-<notextile>
-<pre><code>~$ <span class="userinput">rm ~/.ssh/id_dispatcher ~/.ssh/id_dispatcher.pub</span>
-</code></pre>
-</notextile>
 
 h3. Configure CloudVMs
 
-Add or update the following portions of your cluster configuration file, @config.yml@. Refer to "config.defaults.yml":{{site.baseurl}}/admin/config.html for information about additional configuration options.
+Add or update the following portions of your cluster configuration file, @config.yml@. Refer to "config.defaults.yml":{{site.baseurl}}/admin/config.html for information about additional configuration options. The @DispatchPrivateKey@ should be the *private* key generated in "the previous section":install-compute-node.html#sshkeypair.
 
 <notextile>
 <pre><code>    Services:
@@ -141,19 +99,26 @@ h4. Minimal configuration example for Azure
         ImageID: "https://zzzzzzzz.blob.core.windows.net/system/Microsoft.Compute/Images/images/zzzzz-compute-osDisk.55555555-5555-5555-5555-555555555555.vhd"
         Driver: azure
         DriverParameters:
+          # Credentials.
           SubscriptionID: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
           ClientID: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
           ClientSecret: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
           TenantID: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
-          CloudEnvironment: AzurePublicCloud
-          ResourceGroup: zzzzz
+
+          # Data center where VMs will be allocated
           Location: centralus
-          Network: zzzzz
-          Subnet: zzzzz-subnet-private
+
+          # The resource group where the VM and virtual NIC will be
+          # created.
+          ResourceGroup: zzzzz
+          NetworkResourceGroup: yyyyy   # only if different from ResourceGroup
+          Network: xxxxx
+          Subnet: xxxxx-subnet-private
+
+          # Where to store the VM VHD blobs
           StorageAccount: example
           BlobContainer: vhds
-          DeleteDanglingResourcesAfter: 20s
-          AdminUsername: arvados
+
 </code></pre>
 </notextile>
 
@@ -201,7 +166,7 @@ Run the @cloudtest@ tool to verify that your configuration works. This creates a
 </code></pre>
 </notextile>
 
-Refer to the "cloudtest tool documentation":../admin/cloudtest.html for more information.
+Refer to the "cloudtest tool documentation":../../admin/cloudtest.html for more information.
 
 {% assign arvados_component = 'arvados-dispatch-cloud' %}
 
@@ -220,7 +185,7 @@ On the dispatch node, start monitoring the arvados-dispatch-cloud logs:
 </code></pre>
 </notextile>
 
-"Make sure to install the arvados/jobs image.":install-jobs-image.html
+"Make sure to install the arvados/jobs image.":../install-jobs-image.html
 
 Submit a simple container request:
 
@@ -248,12 +213,45 @@ Submit a simple container request:
 
 This command should return a record with a @container_uuid@ field.  Once @arvados-dispatch-cloud@ polls the API server for new containers to run, you should see it dispatch that same container.
 
-The @arvados-dispatch-cloud@ API a list of queued and running jobs.  For example:
+The @arvados-dispatch-cloud@ API provides a list of queued and running jobs and cloud instances. Use your @ManagementToken@ to test the dispatcher's endpoint. For example, when one container is running:
 
 <notextile>
-<pre><code>~$ <span class="userinput">curl ...</span>
+<pre><code>~$ <span class="userinput">curl -sH "Authorization: Bearer $token" http://localhost:9006/arvados/v1/dispatch/containers</span>
+{
+  "items": [
+    {
+      "container": {
+        "uuid": "zzzzz-dz642-hdp2vpu9nq14tx0",
+        ...
+        "state": "Running",
+        "scheduling_parameters": {
+          "partitions": null,
+          "preemptible": false,
+          "max_run_time": 0
+        },
+        "exit_code": 0,
+        "runtime_status": null,
+        "started_at": null,
+        "finished_at": null
+      },
+      "instance_type": {
+        "Name": "Standard_D2s_v3",
+        "ProviderType": "Standard_D2s_v3",
+        "VCPUs": 2,
+        "RAM": 8589934592,
+        "Scratch": 16000000000,
+        "IncludedScratch": 16000000000,
+        "AddedScratch": 0,
+        "Price": 0.11,
+        "Preemptible": false
+      }
+    }
+  ]
+}
 </code></pre>
 </notextile>
+
+A similar request can be made to the @http://localhost:9006/arvados/v1/dispatch/instances@ endpoint.
 
 When the container finishes, the dispatcher will log it.
 

@@ -1,7 +1,7 @@
 ---
 layout: default
 navsection: installguide
-title: Install the SLURM dispatcher
+title: Install the Slurm dispatcher
 
 ...
 {% comment %}
@@ -11,7 +11,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
 {% include 'notebox_begin_warning' %}
-crunch-dispatch-slurm is only relevant for on premise clusters that will spool jobs to Slurm. Skip this section if you are installing a cloud cluster.
+crunch-dispatch-slurm is only relevant for on premises clusters that will spool jobs to Slurm. Skip this section if you are installing a cloud cluster.
 {% include 'notebox_end' %}
 
 # "Introduction":#introduction
@@ -22,9 +22,9 @@ crunch-dispatch-slurm is only relevant for on premise clusters that will spool j
 
 h2(#introduction). Introduction
 
-This assumes you already have a SLURM cluster, and have "set up all of your compute nodes":install-compute-node.html .  For information on installing SLURM, see "this install guide":https://slurm.schedmd.com/quickstart_admin.html
+This assumes you already have a Slurm cluster, and have "set up all of your compute nodes":install-compute-node.html .  For information on installing Slurm, see "this install guide":https://slurm.schedmd.com/quickstart_admin.html
 
-The Arvados SLURM dispatcher can run on any node that can submit requests to both the Arvados API server and the SLURM controller (via @sbatch@).  It is not resource-intensive, so you can run it on the API server node.
+The Arvados Slurm dispatcher can run on any node that can submit requests to both the Arvados API server and the Slurm controller (via @sbatch@).  It is not resource-intensive, so you can run it on the API server node.
 
 h2(#update-config). Update config.yml (optional)
 
@@ -44,7 +44,7 @@ crunch-dispatch-slurm polls the API server periodically for new containers to ru
 
 h3(#ReserveExtraRAM). Containers.ReserveExtraRAM: Extra RAM for jobs
 
-Extra RAM to reserve (in bytes) on each SLURM job submitted by Arvados, which is added to the amount specified in the container's @runtime_constraints@.  If not provided, the default value is zero.  Helpful when using @-cgroup-parent-subsystem@, where @crunch-run@ and @arv-mount@ share the control group memory limit with the user process.  In this situation, at least 256MiB is recommended to accomodate each container's @crunch-run@ and @arv-mount@ processes.
+Extra RAM to reserve (in bytes) on each Slurm job submitted by Arvados, which is added to the amount specified in the container's @runtime_constraints@.  If not provided, the default value is zero.  Helpful when using @-cgroup-parent-subsystem@, where @crunch-run@ and @arv-mount@ share the control group memory limit with the user process.  In this situation, at least 256MiB is recommended to accomodate each container's @crunch-run@ and @arv-mount@ processes.
 
 Supports suffixes @KB@, @KiB@, @MB@, @MiB@, @GB@, @GiB@, @TB@, @TiB@, @PB@, @PiB@, @EB@, @EiB@ (where @KB@ is 10[^3^], @KiB@ is 2[^10^], @MB@ is 10[^6^], @MiB@ is 2[^20^] and so forth).
 
@@ -56,7 +56,7 @@ Supports suffixes @KB@, @KiB@, @MB@, @MiB@, @GB@, @GiB@, @TB@, @TiB@, @PB@, @PiB
 
 h3(#MinRetryPeriod). Containers.MinRetryPeriod: Rate-limit repeated attempts to start containers
 
-If SLURM is unable to run a container, the dispatcher will submit it again after the next PollPeriod. If PollPeriod is very short, this can be excessive. If MinRetryPeriod is set, the dispatcher will avoid submitting the same container to SLURM more than once in the given time span.
+If Slurm is unable to run a container, the dispatcher will submit it again after the next PollPeriod. If PollPeriod is very short, this can be excessive. If MinRetryPeriod is set, the dispatcher will avoid submitting the same container to Slurm more than once in the given time span.
 
 <notextile>
 <pre>    Containers:
@@ -64,7 +64,7 @@ If SLURM is unable to run a container, the dispatcher will submit it again after
 </pre>
 </notextile>
 
-h3(#KeepServiceURIs). Containers.SLURM.SbatchEnvironmentVariables
+h3(#KeepServiceURIs). Containers.Slurm.SbatchEnvironmentVariables
 
 Some Arvados installations run a local keepstore on each compute node to handle all Keep traffic.  To override Keep service discovery and access the local keep server instead of the global servers, set ARVADOS_KEEP_SERVICES in SbatchEnvironmentVariables:
 
@@ -76,11 +76,11 @@ Some Arvados installations run a local keepstore on each compute node to handle 
 </code></pre>
 </notextile>
 
-h3(#PrioritySpread). Containers.SLURM.PrioritySpread
+h3(#PrioritySpread). Containers.Slurm.PrioritySpread
 
-crunch-dispatch-slurm adjusts the "nice" values of its SLURM jobs to ensure containers are prioritized correctly relative to one another. This option tunes the adjustment mechanism.
-* If non-Arvados jobs run on your SLURM cluster, and your Arvados containers are waiting too long in the SLURM queue because their "nice" values are too high for them to compete with other SLURM jobs, you should use a smaller PrioritySpread value.
-* If you have an older SLURM system that limits nice values to 10000, a smaller @PrioritySpread@ can help avoid reaching that limit.
+crunch-dispatch-slurm adjusts the "nice" values of its Slurm jobs to ensure containers are prioritized correctly relative to one another. This option tunes the adjustment mechanism.
+* If non-Arvados jobs run on your Slurm cluster, and your Arvados containers are waiting too long in the Slurm queue because their "nice" values are too high for them to compete with other SLURM jobs, you should use a smaller PrioritySpread value.
+* If you have an older Slurm system that limits nice values to 10000, a smaller @PrioritySpread@ can help avoid reaching that limit.
 * In other cases, a larger value is beneficial because it reduces the total number of adjustments made by executing @scontrol@.
 
 The smallest usable value is @1@. The default value of @10@ is used if this option is zero or negative. Example:
@@ -91,7 +91,7 @@ The smallest usable value is @1@. The default value of @10@ is used if this opti
         <code class="userinput">PrioritySpread: <b>1000</b></code></pre>
 </notextile>
 
-h3(#SbatchArguments). Containers.SLURM.SbatchArgumentsList
+h3(#SbatchArguments). Containers.Slurm.SbatchArgumentsList
 
 When crunch-dispatch-slurm invokes @sbatch@, you can add arguments to the command by specifying @SbatchArguments@.  You can use this to send the jobs to specific cluster partitions or add resource requests.  Set @SbatchArguments@ to an array of strings.  For example:
 
@@ -105,9 +105,9 @@ When crunch-dispatch-slurm invokes @sbatch@, you can add arguments to the comman
 
 Note: If an argument is supplied multiple times, @slurm@ uses the value of the last occurrence of the argument on the command line.  Arguments specified through Arvados are added after the arguments listed in SbatchArguments.  This means, for example, an Arvados container with that specifies @partitions@ in @scheduling_parameter@ will override an occurrence of @--partition@ in SbatchArguments.  As a result, for container parameters that can be specified through Arvados, SbatchArguments can be used to specify defaults but not enforce specific policy.
 
-h3(#CrunchRunCommand-cgroups). Containers.CrunchRunArgumentList: Dispatch to SLURM cgroups
+h3(#CrunchRunCommand-cgroups). Containers.CrunchRunArgumentList: Dispatch to Slurm cgroups
 
-If your SLURM cluster uses the @task/cgroup@ TaskPlugin, you can configure Crunch's Docker containers to be dispatched inside SLURM's cgroups.  This provides consistent enforcement of resource constraints.  To do this, use a crunch-dispatch-slurm configuration like the following:
+If your Slurm cluster uses the @task/cgroup@ TaskPlugin, you can configure Crunch's Docker containers to be dispatched inside Slurm's cgroups.  This provides consistent enforcement of resource constraints.  To do this, use a crunch-dispatch-slurm configuration like the following:
 
 <notextile>
 <pre>    Containers:
@@ -116,13 +116,13 @@ If your SLURM cluster uses the @task/cgroup@ TaskPlugin, you can configure Crunc
 </pre>
 </notextile>
 
-The choice of subsystem ("memory" in this example) must correspond to one of the resource types enabled in SLURM's @cgroup.conf@. Limits for other resource types will also be respected.  The specified subsystem is singled out only to let Crunch determine the name of the cgroup provided by SLURM.  When doing this, you should also set "ReserveExtraRAM":#ReserveExtraRAM .
+The choice of subsystem ("memory" in this example) must correspond to one of the resource types enabled in Slurm's @cgroup.conf@. Limits for other resource types will also be respected.  The specified subsystem is singled out only to let Crunch determine the name of the cgroup provided by Slurm.  When doing this, you should also set "ReserveExtraRAM":#ReserveExtraRAM .
 
 {% include 'notebox_begin' %}
 
-Some versions of Docker (at least 1.9), when run under systemd, require the cgroup parent to be specified as a systemd slice.  This causes an error when specifying a cgroup parent created outside systemd, such as those created by SLURM.
+Some versions of Docker (at least 1.9), when run under systemd, require the cgroup parent to be specified as a systemd slice.  This causes an error when specifying a cgroup parent created outside systemd, such as those created by Slurm.
 
-You can work around this issue by disabling the Docker daemon's systemd integration.  This makes it more difficult to manage Docker services with systemd, but Crunch does not require that functionality, and it will be able to use SLURM's cgroups as container parents.  To do this, "configure the Docker daemon on all compute nodes":install-compute-node.html#configure_docker_daemon to run with the option @--exec-opt native.cgroupdriver=cgroupfs@.
+You can work around this issue by disabling the Docker daemon's systemd integration.  This makes it more difficult to manage Docker services with systemd, but Crunch does not require that functionality, and it will be able to use Slurm's cgroups as container parents.  To do this, "configure the Docker daemon on all compute nodes":install-compute-node.html#configure_docker_daemon to run with the option @--exec-opt native.cgroupdriver=cgroupfs@.
 
 {% include 'notebox_end' %}
 
