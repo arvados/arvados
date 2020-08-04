@@ -94,6 +94,11 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 			}
 			return true
 		}
+		if err == nil && fi.IsDir() && objectNameGiven && strings.HasSuffix(fspath, "/") && h.Config.cluster.Collections.S3FolderObjects {
+			w.Header().Set("Content-Type", "application/x-directory")
+			w.WriteHeader(http.StatusOK)
+			return true
+		}
 		if os.IsNotExist(err) ||
 			(err != nil && err.Error() == "not a directory") ||
 			(fi != nil && fi.IsDir()) {
@@ -106,55 +111,82 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 		http.FileServer(fs).ServeHTTP(w, &r)
 		return true
 	case r.Method == "PUT":
-		if strings.HasSuffix(r.URL.Path, "/") {
-			http.Error(w, "invalid object name (trailing '/' char)", http.StatusBadRequest)
+		if !objectNameGiven {
+			http.Error(w, "missing object name in PUT request", http.StatusBadRequest)
 			return true
 		}
 		fspath := "by_id" + r.URL.Path
-		_, err = fs.Stat(fspath)
+		var objectIsDir bool
+		if strings.HasSuffix(fspath, "/") {
+			if !h.Config.cluster.Collections.S3FolderObjects {
+				http.Error(w, "invalid object name: trailing slash", http.StatusBadRequest)
+				return true
+			}
+			n, err := r.Body.Read(make([]byte, 1))
+			if err != nil && err != io.EOF {
+				http.Error(w, fmt.Sprintf("error reading request body: %s", err), http.StatusInternalServerError)
+				return true
+			} else if n > 0 {
+				http.Error(w, "cannot write a non-empty file with a trailing '/' char", http.StatusBadRequest)
+				return true
+			}
+			// Given PUT "foo/bar/", we'll use "foo/bar/."
+			// in the "ensure parents exist" block below,
+			// and then we'll be done.
+			fspath += "."
+			objectIsDir = true
+		}
+		fi, err := fs.Stat(fspath)
 		if err != nil && err.Error() == "not a directory" {
 			// requested foo/bar, but foo is a file
 			http.Error(w, "object name conflicts with existing object", http.StatusBadRequest)
 			return true
 		}
-		f, err := fs.OpenFile(fspath, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
-		if os.IsNotExist(err) {
-			// create missing intermediate directories, then try again
-			for i, c := range fspath {
-				if i > 0 && c == '/' {
-					dir := fspath[:i]
-					if strings.HasSuffix(dir, "/") {
-						err = errors.New("invalid object name (consecutive '/' chars)")
-						http.Error(w, err.Error(), http.StatusBadRequest)
-						return true
-					}
-					err := fs.Mkdir(dir, 0755)
-					if err != nil && err != os.ErrExist {
-						err = fmt.Errorf("mkdir %q failed: %w", dir, err)
-						http.Error(w, err.Error(), http.StatusInternalServerError)
-						return true
-					}
+		if strings.HasSuffix(r.URL.Path, "/") && err == nil && !fi.IsDir() {
+			// requested foo/bar/, but foo/bar is a file
+			http.Error(w, "object name conflicts with existing object", http.StatusBadRequest)
+			return true
+		}
+		// create missing parent/intermediate directories, if any
+		for i, c := range fspath {
+			if i > 0 && c == '/' {
+				dir := fspath[:i]
+				if strings.HasSuffix(dir, "/") {
+					err = errors.New("invalid object name (consecutive '/' chars)")
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return true
+				}
+				err := fs.Mkdir(dir, 0755)
+				if err != nil && err != os.ErrExist {
+					err = fmt.Errorf("mkdir %q failed: %w", dir, err)
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return true
 				}
 			}
-			f, err = fs.OpenFile(fspath, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
 		}
-		if err != nil {
-			err = fmt.Errorf("open %q failed: %w", r.URL.Path, err)
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return true
-		}
-		defer f.Close()
-		_, err = io.Copy(f, r.Body)
-		if err != nil {
-			err = fmt.Errorf("write to %q failed: %w", r.URL.Path, err)
-			http.Error(w, err.Error(), http.StatusBadGateway)
-			return true
-		}
-		err = f.Close()
-		if err != nil {
-			err = fmt.Errorf("write to %q failed: close: %w", r.URL.Path, err)
-			http.Error(w, err.Error(), http.StatusBadGateway)
-			return true
+		if !objectIsDir {
+			f, err := fs.OpenFile(fspath, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
+			if os.IsNotExist(err) {
+				f, err = fs.OpenFile(fspath, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
+			}
+			if err != nil {
+				err = fmt.Errorf("open %q failed: %w", r.URL.Path, err)
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return true
+			}
+			defer f.Close()
+			_, err = io.Copy(f, r.Body)
+			if err != nil {
+				err = fmt.Errorf("write to %q failed: %w", r.URL.Path, err)
+				http.Error(w, err.Error(), http.StatusBadGateway)
+				return true
+			}
+			err = f.Close()
+			if err != nil {
+				err = fmt.Errorf("write to %q failed: close: %w", r.URL.Path, err)
+				http.Error(w, err.Error(), http.StatusBadGateway)
+				return true
+			}
 		}
 		err = fs.Sync()
 		if err != nil {
@@ -170,9 +202,30 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 	}
 }
 
-func walkFS(fs arvados.CustomFileSystem, path string, ignoreNotFound bool, fn func(path string, fi os.FileInfo) error) error {
+// Call fn on the given path (directory) and its contents, in
+// lexicographic order.
+//
+// If isRoot==true and path is not a directory, return nil.
+//
+// If fn returns filepath.SkipDir when called on a directory, don't
+// descend into that directory.
+func walkFS(fs arvados.CustomFileSystem, path string, isRoot bool, fn func(path string, fi os.FileInfo) error) error {
+	if isRoot {
+		fi, err := fs.Stat(path)
+		if os.IsNotExist(err) || (err == nil && !fi.IsDir()) {
+			return nil
+		} else if err != nil {
+			return err
+		}
+		err = fn(path, fi)
+		if err == filepath.SkipDir {
+			return nil
+		} else if err != nil {
+			return err
+		}
+	}
 	f, err := fs.Open(path)
-	if os.IsNotExist(err) && ignoreNotFound {
+	if os.IsNotExist(err) && isRoot {
 		return nil
 	} else if err != nil {
 		return fmt.Errorf("open %q: %w", path, err)
@@ -247,7 +300,15 @@ func (h *handler) s3list(w http.ResponseWriter, r *http.Request, fs arvados.Cust
 	}
 	commonPrefixes := map[string]bool{}
 	err := walkFS(fs, strings.TrimSuffix(bucketdir+"/"+walkpath, "/"), true, func(path string, fi os.FileInfo) error {
+		if path == bucketdir {
+			return nil
+		}
 		path = path[len(bucketdir)+1:]
+		filesize := fi.Size()
+		if fi.IsDir() {
+			path += "/"
+			filesize = 0
+		}
 		if len(path) <= len(params.prefix) {
 			if path > params.prefix[:len(path)] {
 				// with prefix "foobar", walking "fooz" means we're done
@@ -257,7 +318,7 @@ func (h *handler) s3list(w http.ResponseWriter, r *http.Request, fs arvados.Cust
 				// with prefix "foobar", walking "foobag" is pointless
 				return filepath.SkipDir
 			}
-			if fi.IsDir() && !strings.HasPrefix(params.prefix+"/", path+"/") {
+			if fi.IsDir() && !strings.HasPrefix(params.prefix+"/", path) {
 				// with prefix "foo/bar", walking "fo"
 				// is pointless (but walking "foo" or
 				// "foo/bar" is necessary)
@@ -279,7 +340,12 @@ func (h *handler) s3list(w http.ResponseWriter, r *http.Request, fs arvados.Cust
 		if path < params.marker || path < params.prefix {
 			return nil
 		}
-		if fi.IsDir() {
+		if fi.IsDir() && !h.Config.cluster.Collections.S3FolderObjects {
+			// Note we don't add anything to
+			// commonPrefixes here even if delimiter is
+			// "/". We descend into the directory, and
+			// return a commonPrefix only if we end up
+			// finding a regular file inside it.
 			return nil
 		}
 		if params.delimiter != "" {
@@ -288,12 +354,7 @@ func (h *handler) s3list(w http.ResponseWriter, r *http.Request, fs arvados.Cust
 				// with prefix "foobar" and delimiter
 				// "z", when we hit "foobar/baz", we
 				// add "/baz" to commonPrefixes and
-				// stop descending (note that even if
-				// delimiter is "/" we don't add
-				// anything to commonPrefixes when
-				// seeing a dir: we wait until we see
-				// a file, so we don't incorrectly
-				// return results for empty dirs)
+				// stop descending.
 				commonPrefixes[path[:len(params.prefix)+idx+1]] = true
 				return filepath.SkipDir
 			}
@@ -308,7 +369,7 @@ func (h *handler) s3list(w http.ResponseWriter, r *http.Request, fs arvados.Cust
 		resp.Contents = append(resp.Contents, s3.Key{
 			Key:          path,
 			LastModified: fi.ModTime().UTC().Format("2006-01-02T15:04:05.999") + "Z",
-			Size:         fi.Size(),
+			Size:         filesize,
 		})
 		return nil
 	})

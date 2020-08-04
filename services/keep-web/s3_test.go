@@ -171,18 +171,26 @@ func (s *IntegrationSuite) TestS3ProjectPutObjectSuccess(c *check.C) {
 }
 func (s *IntegrationSuite) testS3PutObjectSuccess(c *check.C, bucket *s3.Bucket, prefix string) {
 	for _, trial := range []struct {
-		path string
-		size int
+		path        string
+		size        int
+		contentType string
 	}{
 		{
-			path: "newfile",
-			size: 128000000,
+			path:        "newfile",
+			size:        128000000,
+			contentType: "application/octet-stream",
 		}, {
-			path: "newdir/newfile",
-			size: 1 << 26,
+			path:        "newdir/newfile",
+			size:        1 << 26,
+			contentType: "application/octet-stream",
 		}, {
-			path: "newdir1/newdir2/newfile",
-			size: 0,
+			path:        "newdir1/newdir2/newfile",
+			size:        0,
+			contentType: "application/octet-stream",
+		}, {
+			path:        "newdir1/newdir2/newdir3/",
+			size:        0,
+			contentType: "application/x-directory",
 		},
 	} {
 		c.Logf("=== %v", trial)
@@ -195,11 +203,14 @@ func (s *IntegrationSuite) testS3PutObjectSuccess(c *check.C, bucket *s3.Bucket,
 		buf := make([]byte, trial.size)
 		rand.Read(buf)
 
-		err = bucket.PutReader(objname, bytes.NewReader(buf), int64(len(buf)), "application/octet-stream", s3.Private, s3.Options{})
+		err = bucket.PutReader(objname, bytes.NewReader(buf), int64(len(buf)), trial.contentType, s3.Private, s3.Options{})
 		c.Check(err, check.IsNil)
 
 		rdr, err := bucket.GetReader(objname)
-		if !c.Check(err, check.IsNil) {
+		if strings.HasSuffix(trial.path, "/") && !s.testServer.Config.cluster.Collections.S3FolderObjects {
+			c.Check(err, check.NotNil)
+			continue
+		} else if !c.Check(err, check.IsNil) {
 			continue
 		}
 		buf2, err := ioutil.ReadAll(rdr)
@@ -220,6 +231,7 @@ func (s *IntegrationSuite) TestS3ProjectPutObjectFailure(c *check.C) {
 	s.testS3PutObjectFailure(c, stage.projbucket, stage.coll.Name+"/")
 }
 func (s *IntegrationSuite) testS3PutObjectFailure(c *check.C, bucket *s3.Bucket, prefix string) {
+	s.testServer.Config.cluster.Collections.S3FolderObjects = false
 	var wg sync.WaitGroup
 	for _, trial := range []struct {
 		path string
@@ -308,13 +320,23 @@ func (s *IntegrationSuite) TestS3CollectionList(c *check.C) {
 	stage := s.s3setup(c)
 	defer stage.teardown(c)
 
-	filesPerDir := 1001
-	stage.writeBigDirs(c, 2, filesPerDir)
-	s.testS3List(c, stage.collbucket, "", 4000, 2+filesPerDir*2)
-	s.testS3List(c, stage.collbucket, "", 131, 2+filesPerDir*2)
-	s.testS3List(c, stage.collbucket, "dir0/", 71, filesPerDir)
+	var markers int
+	for markers, s.testServer.Config.cluster.Collections.S3FolderObjects = range []bool{false, true} {
+		dirs := 2
+		filesPerDir := 1001
+		stage.writeBigDirs(c, dirs, filesPerDir)
+		// Total # objects is:
+		//                 2 file entries from s3setup (emptyfile and sailboat.txt)
+		//                +1 fake "directory" marker from s3setup (emptydir) (if enabled)
+		//             +dirs fake "directory" marker from writeBigDirs (dir0/, dir1/) (if enabled)
+		// +filesPerDir*dirs file entries from writeBigDirs (dir0/file0.txt, etc.)
+		s.testS3List(c, stage.collbucket, "", 4000, markers+2+(filesPerDir+markers)*dirs)
+		s.testS3List(c, stage.collbucket, "", 131, markers+2+(filesPerDir+markers)*dirs)
+		s.testS3List(c, stage.collbucket, "dir0/", 71, filesPerDir+markers)
+	}
 }
 func (s *IntegrationSuite) testS3List(c *check.C, bucket *s3.Bucket, prefix string, pageSize, expectFiles int) {
+	c.Logf("testS3List: prefix=%q pageSize=%d S3FolderObjects=%v", prefix, pageSize, s.testServer.Config.cluster.Collections.S3FolderObjects)
 	expectPageSize := pageSize
 	if expectPageSize > 1000 {
 		expectPageSize = 1000
@@ -350,6 +372,12 @@ func (s *IntegrationSuite) testS3List(c *check.C, bucket *s3.Bucket, prefix stri
 }
 
 func (s *IntegrationSuite) TestS3CollectionListRollup(c *check.C) {
+	for _, s.testServer.Config.cluster.Collections.S3FolderObjects = range []bool{false, true} {
+		s.testS3CollectionListRollup(c)
+	}
+}
+
+func (s *IntegrationSuite) testS3CollectionListRollup(c *check.C) {
 	stage := s.s3setup(c)
 	defer stage.teardown(c)
 
@@ -372,17 +400,40 @@ func (s *IntegrationSuite) TestS3CollectionListRollup(c *check.C) {
 			break
 		}
 	}
-	c.Check(allfiles, check.HasLen, dirs*filesPerDir+3)
+	markers := 0
+	if s.testServer.Config.cluster.Collections.S3FolderObjects {
+		markers = 1
+	}
+	c.Check(allfiles, check.HasLen, dirs*(filesPerDir+markers)+3+markers)
+
+	gotDirMarker := map[string]bool{}
+	for _, name := range allfiles {
+		isDirMarker := strings.HasSuffix(name, "/")
+		if markers == 0 {
+			c.Check(isDirMarker, check.Equals, false, check.Commentf("name %q", name))
+		} else if isDirMarker {
+			gotDirMarker[name] = true
+		} else if i := strings.LastIndex(name, "/"); i >= 0 {
+			c.Check(gotDirMarker[name[:i+1]], check.Equals, true, check.Commentf("name %q", name))
+			gotDirMarker[name[:i+1]] = true // skip redundant complaints about this dir marker
+		}
+	}
 
 	for _, trial := range []struct {
 		prefix    string
 		delimiter string
 		marker    string
 	}{
+		{"", "", ""},
 		{"di", "/", ""},
 		{"di", "r", ""},
 		{"di", "n", ""},
 		{"dir0", "/", ""},
+		{"dir0/", "/", ""},
+		{"dir0/f", "/", ""},
+		{"dir0", "", ""},
+		{"dir0/", "", ""},
+		{"dir0/f", "", ""},
 		{"dir0", "/", "dir0/file14.txt"},       // no commonprefixes
 		{"", "", "dir0/file14.txt"},            // middle page, skip walking dir1
 		{"", "", "dir1/file14.txt"},            // middle page, skip walking dir0
@@ -393,7 +444,7 @@ func (s *IntegrationSuite) TestS3CollectionListRollup(c *check.C) {
 		{"dir2", "/", ""},                      // prefix "dir2" does not exist
 		{"", "/", ""},
 	} {
-		c.Logf("\n\n=== trial %+v", trial)
+		c.Logf("\n\n=== trial %+v markers=%d", trial, markers)
 
 		maxKeys := 20
 		resp, err := stage.collbucket.List(trial.prefix, trial.delimiter, trial.marker, maxKeys)
@@ -445,10 +496,11 @@ func (s *IntegrationSuite) TestS3CollectionListRollup(c *check.C) {
 		for _, prefix := range resp.CommonPrefixes {
 			gotPrefixes = append(gotPrefixes, prefix)
 		}
-		c.Check(gotKeys, check.DeepEquals, expectKeys)
-		c.Check(gotPrefixes, check.DeepEquals, expectPrefixes)
-		c.Check(resp.NextMarker, check.Equals, expectNextMarker)
-		c.Check(resp.IsTruncated, check.Equals, expectTruncated)
+		commentf := check.Commentf("trial %+v markers=%d", trial, markers)
+		c.Check(gotKeys, check.DeepEquals, expectKeys, commentf)
+		c.Check(gotPrefixes, check.DeepEquals, expectPrefixes, commentf)
+		c.Check(resp.NextMarker, check.Equals, expectNextMarker, commentf)
+		c.Check(resp.IsTruncated, check.Equals, expectTruncated, commentf)
 		c.Logf("=== trial %+v keys %q prefixes %q nextMarker %q", trial, gotKeys, gotPrefixes, resp.NextMarker)
 	}
 }

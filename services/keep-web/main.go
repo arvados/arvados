@@ -14,6 +14,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"github.com/coreos/go-systemd/daemon"
 	"github.com/ghodss/yaml"
+	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -111,7 +112,7 @@ func main() {
 
 	os.Setenv("ARVADOS_API_HOST", cfg.cluster.Services.Controller.ExternalURL.Host)
 	srv := &server{Config: cfg}
-	if err := srv.Start(); err != nil {
+	if err := srv.Start(logrus.StandardLogger()); err != nil {
 		log.Fatal(err)
 	}
 	if _, err := daemon.SdNotify(false, "READY=1"); err != nil {

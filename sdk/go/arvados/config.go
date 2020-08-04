@@ -121,6 +121,7 @@ type Cluster struct {
 		TrashSweepInterval           Duration
 		TrustAllContent              bool
 		ForwardSlashNameSubstitution string
+		S3FolderObjects              bool
 
 		BlobMissingReport        string
 		BalancePeriod            Duration

@@ -492,6 +492,9 @@ Clusters:
       # Use of this feature is not recommended, if it can be avoided.
       ForwardSlashNameSubstitution: ""
 
+      # Include "folder objects" in S3 ListObjects responses.
+      S3FolderObjects: true
+
       # Managed collection properties. At creation time, if the client didn't
       # provide the listed keys, they will be automatically populated following
       # one of the following behaviors:
