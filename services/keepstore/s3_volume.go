@@ -32,12 +32,12 @@ import (
 )
 
 func init() {
-	driver["S3"] = newS3Volume
+	driver["S3"] = chooseS3VolumeDriver
 }
 
 func newS3Volume(cluster *arvados.Cluster, volume arvados.Volume, logger logrus.FieldLogger, metrics *volumeMetricsVecs) (Volume, error) {
 	v := &S3Volume{cluster: cluster, volume: volume, metrics: metrics}
-	err := json.Unmarshal(volume.DriverParameters, &v)
+	err := json.Unmarshal(volume.DriverParameters, v)
 	if err != nil {
 		return nil, err
 	}

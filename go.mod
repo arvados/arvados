@@ -11,6 +11,7 @@ require (
 	github.com/anmitsu/go-shlex v0.0.0-20161002113705-648efa622239 // indirect
 	github.com/arvados/cgofuse v1.2.0-arvados1
 	github.com/aws/aws-sdk-go v1.25.30
+	github.com/aws/aws-sdk-go-v2 v0.23.0
 	github.com/bgentry/speakeasy v0.1.0 // indirect
 	github.com/bradleypeabody/godap v0.0.0-20170216002349-c249933bc092
 	github.com/coreos/go-oidc v2.1.0+incompatible
@@ -37,6 +38,7 @@ require (
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/jmcvetta/randutil v0.0.0-20150817122601-2bb1b664bcff
 	github.com/jmoiron/sqlx v1.2.0
+	github.com/johannesboyne/gofakes3 v0.0.0-20200716060623-6b2b4cb092cc
 	github.com/julienschmidt/httprouter v1.2.0
 	github.com/karalabe/xgo v0.0.0-20191115072854-c5ccff8648a7 // indirect
 	github.com/kevinburke/ssh_config v0.0.0-20171013211458-802051befeb5 // indirect
@@ -58,7 +60,7 @@ require (
 	github.com/stretchr/testify v1.4.0 // indirect
 	github.com/xanzy/ssh-agent v0.1.0 // indirect
 	golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550
-	golang.org/x/net v0.0.0-20190620200207-3b0461eec859
+	golang.org/x/net v0.0.0-20200202094626-16171245cfb2
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	golang.org/x/sys v0.0.0-20191105231009-c1f44814a5cd
 	google.golang.org/api v0.13.0

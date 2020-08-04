@@ -1094,6 +1094,8 @@ Clusters:
           ConnectTimeout: 1m
           ReadTimeout: 10m
           RaceWindow: 24h
+          # Use aws-s3-go (v2) instead of goamz
+          UseAWSS3v2Driver: false
 
           # For S3 driver, potentially unsafe tuning parameter,
           # intentionally excluded from main documentation.
