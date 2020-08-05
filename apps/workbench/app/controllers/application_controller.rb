@@ -29,7 +29,6 @@ class ApplicationController < ActionController::Base
   begin
     rescue_from(ActiveRecord::RecordNotFound,
                 ActionController::RoutingError,
-                ActionController::UnknownController,
                 AbstractController::ActionNotFound,
                 with: :render_not_found)
     rescue_from(Exception,
