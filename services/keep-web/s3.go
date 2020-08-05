@@ -127,7 +127,10 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 				http.Error(w, fmt.Sprintf("error reading request body: %s", err), http.StatusInternalServerError)
 				return true
 			} else if n > 0 {
-				http.Error(w, "cannot write a non-empty file with a trailing '/' char", http.StatusBadRequest)
+				http.Error(w, "cannot create object with trailing '/' char unless content is empty", http.StatusBadRequest)
+				return true
+			} else if strings.SplitN(r.Header.Get("Content-Type"), ";", 2)[0] != "application/x-directory" {
+				http.Error(w, "cannot create object with trailing '/' char unless Content-Type is 'application/x-directory'", http.StatusBadRequest)
 				return true
 			}
 			// Given PUT "foo/bar/", we'll use "foo/bar/."
