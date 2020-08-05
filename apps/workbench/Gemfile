@@ -14,6 +14,10 @@ gem 'sass'
 gem 'mime-types'
 gem 'responders', '~> 2.0'
 
+# Pin sprockets to < 4.0 to avoid issues when upgrading rails to 5.2
+# See: https://github.com/rails/sprockets-rails/issues/443
+gem 'sprockets', '~> 3.0'
+
 # Note: keeping this out of the "group :assets" section "may" allow us
 # to use Coffescript for UJS responses. It also prevents a
 # warning/problem when running tests: "WARN: tilt autoloading
