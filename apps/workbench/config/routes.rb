@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-ArvadosWorkbench::Application.routes.draw do
+Rails.application.routes.draw do
   themes_for_rails
 
   resources :keep_disks

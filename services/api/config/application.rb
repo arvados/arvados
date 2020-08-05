@@ -16,7 +16,7 @@ require "sprockets/railtie"
 require "rails/test_unit/railtie"
 # Skipping the following:
 # * ActionCable (new in Rails 5.0) as it adds '/cable' routes that we're not using
-# * Skip ActiveStorage (new in Rails 5.1)
+# * ActiveStorage (new in Rails 5.1)
 
 require 'digest'
 
