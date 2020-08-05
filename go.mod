@@ -15,6 +15,7 @@ require (
 	github.com/bradleypeabody/godap v0.0.0-20170216002349-c249933bc092
 	github.com/coreos/go-oidc v2.1.0+incompatible
 	github.com/coreos/go-systemd v0.0.0-20180108085132-cc4f39464dc7
+	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
 	github.com/dgrijalva/jwt-go v3.1.0+incompatible // indirect
 	github.com/dimchansky/utfbom v1.0.0 // indirect
 	github.com/dnaeon/go-vcr v1.0.1 // indirect
@@ -41,6 +42,7 @@ require (
 	github.com/kevinburke/ssh_config v0.0.0-20171013211458-802051befeb5 // indirect
 	github.com/lib/pq v1.3.0
 	github.com/marstr/guid v1.1.1-0.20170427235115-8bdf7d1a087c // indirect
+	github.com/mikunalpha/goas v1.6.0 // indirect
 	github.com/mitchellh/go-homedir v0.0.0-20161203194507-b8bc1bf76747 // indirect
 	github.com/msteinert/pam v0.0.0-20190215180659-f29b9f28d6f9
 	github.com/opencontainers/go-digest v1.0.0-rc1 // indirect
@@ -55,6 +57,7 @@ require (
 	github.com/sirupsen/logrus v1.4.2
 	github.com/src-d/gcfg v1.3.0 // indirect
 	github.com/stretchr/testify v1.4.0 // indirect
+	github.com/urfave/cli v1.22.4 // indirect
 	github.com/xanzy/ssh-agent v0.1.0 // indirect
 	golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550
 	golang.org/x/net v0.0.0-20190620200207-3b0461eec859
@@ -72,4 +75,4 @@ require (
 	rsc.io/getopt v0.0.0-20170811000552-20be20937449
 )
 
-replace github.com/AdRoll/goamz => github.com/arvados/goamz v0.0.0-20190905141525-1bba09f407ef
+//replace github.com/AdRoll/goamz => github.com/arvados/goamz v0.0.0-20190905141525-1bba09f407ef

@@ -23,6 +23,11 @@ type Controller struct {
 	parent  arvados.API
 }
 
+// @Description This method is used as an example to create new endpoints. The response are meaningless, just a help for a developer to know how to interact with the database and create new endpoints.
+// @Success  200  object  arvados.ExampleCountResponse  "kind:arvados#exampleCountResponse JSON"
+// @Failure  400  object  arvados.ExampleCountResponse  "kind:arvados#exampleCountResponse JSON"
+// @Resource example
+// @Route /arvados/v1/examples/count [get]
 func (ctrl *Controller) ExampleCount(ctx context.Context, opts arvados.ExampleCountOptions) (resp arvados.ExampleCountResponse, err error) {
 	// Example of direct database access
 	tx, err := ctrlctx.CurrentTx(ctx)
