@@ -3,15 +3,15 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 // @Version 1.0.0
-// @Title Example Count
-// @Description This method is used as an example to create new endpoints. The response are meaningless, just a help for a developer to know how to interact with the database and create new endpoints.
+// @Title Arvados API
+// @Description This is the Arvados API
 // @ContactName Nico Cesar
 // @ContactEmail nico@curii.com
 // @ContactURL https://arvados.org
 // @LicenseName Apache-2.0
 // @LicenseURL https://doc.arvados.org/user/copying/copying.html
-// @Security AuthorizationHeader read write
-// @SecurityScheme AuthorizationHeader http bearer Input your token
+// @Security Authorization read write
+// @SecurityScheme Authorization apiKey header Authorization
 
 package main
 
