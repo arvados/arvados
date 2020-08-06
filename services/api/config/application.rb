@@ -9,14 +9,14 @@ require "rails"
 require "active_model/railtie"
 require "active_job/railtie"
 require "active_record/railtie"
-# require "active_storage/engine"
 require "action_controller/railtie"
 require "action_mailer/railtie"
 require "action_view/railtie"
-# Skip ActionCable (new in Rails 5.0) as it adds '/cable' routes that we're not using
-# require "action_cable/engine"
 require "sprockets/railtie"
 require "rails/test_unit/railtie"
+# Skipping the following:
+# * ActionCable (new in Rails 5.0) as it adds '/cable' routes that we're not using
+# * Skip ActiveStorage (new in Rails 5.1)
 
 require 'digest'
 
