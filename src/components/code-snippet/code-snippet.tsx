@@ -5,7 +5,7 @@
 import * as React from 'react';
 import { StyleRulesCallback, WithStyles, Typography, withStyles } from '@material-ui/core';
 import { ArvadosTheme } from '~/common/custom-theme';
-import * as classNames from 'classnames';
+import classNames from 'classnames';
 
 type CssRules = 'root' | 'space';
 
@@ -30,8 +30,8 @@ type CodeSnippetProps = CodeSnippetDataProps & WithStyles<CssRules>;
 
 export const CodeSnippet = withStyles(styles)(
     ({ classes, lines, className, apiResponse }: CodeSnippetProps) =>
-        <Typography 
-        component="div" 
+        <Typography
+        component="div"
         className={classNames(classes.root, className)}>
             {
                 lines.map((line: string, index: number) => {
