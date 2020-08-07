@@ -53,7 +53,7 @@ export class CurrentTokenDialogComponent extends React.Component<CurrentTokenPro
         `HISTIGNORE=$HISTIGNORE:'export ARVADOS_API_TOKEN=*'
     export ARVADOS_API_TOKEN=${currentToken}
     export ARVADOS_API_HOST=${apiHost}
-    unset ARVADOS_API_HOST_INSECURE`;
+    unset ARVADOS_API_HOST_INSECURE`
 
     render() {
         const { classes, open, closeDialog, ...data } = this.props;
