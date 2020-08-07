@@ -259,10 +259,11 @@ class Collection < ArvadosModel
     should_preserve_version = should_preserve_version? # Time sensitive, cache value
     return(yield) unless (should_preserve_version || syncable_updates.any?)
 
-    # Put aside the changes because with_lock requires an explicit record reload
+    # Put aside the changes because with_lock does a record reload
     changes = self.changes
     snapshot = nil
-    reload.with_lock do
+    restore_attributes
+    with_lock do
       # Copy the original state to save it as old version
       if should_preserve_version
         snapshot = self.dup
