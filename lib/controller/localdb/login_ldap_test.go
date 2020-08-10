@@ -49,6 +49,7 @@ func (s *LDAPSuite) SetUpSuite(c *check.C) {
 	c.Assert(err, check.IsNil)
 
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	c.Assert(err, check.IsNil)
 	s.ldap = &godap.LDAPServer{
 		Listener: ln,
 		Handlers: []godap.LDAPRequestHandler{
