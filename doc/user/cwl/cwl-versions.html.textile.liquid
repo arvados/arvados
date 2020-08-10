@@ -9,7 +9,13 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-h2. Upgrading to CWL v1.1
+h2(#v12). Upgrading your workflows to CWL v1.2
+
+If you are starting from a CWL v1.0 document, see "Upgrading your workflows to CWL v1.1":#v11 below.
+
+If you are starting from a CWL v1.1 document, you should be able to trivially change @cwlVersion: v1.1@ to @cwlVersion: v1.2@ to be able to take advantage of the new features of v1.2, such as conditional workflow steps.
+
+h2(#v11). Upgrading your workflows to CWL v1.1
 
 CWL v1.1 introduces several features to the standard that were previously available as Arvados extensions.  CWL v1.1 syntax is backwards compatible with v1.0, so you can just change @cwlVersion: v1.0@ to @cwlVersion: v1.1@ and update your script to using the standard features.  On Arvados, there is only one behavior change between CWL v1.0 and v1.1 to be aware of: for performance reasons, Directory listings are no longer loaded by default.  To control loading Directory listings, use "loadListing":https://www.commonwl.org/v1.1/CommandLineTool.html#CommandInputParameter or "LoadListingRequirement":https://www.commonwl.org/v1.1/CommandLineTool.html#LoadListingRequirement (the extension @cwltool:LoadListingRequirement@ is deprecated.)
 
