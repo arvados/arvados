@@ -23,6 +23,7 @@ func (conn *Conn) generated_ContainerList(ctx context.Context, options arvados.L
 	var needSort atomic.Value
 	needSort.Store(false)
 	err := conn.splitListRequest(ctx, options, func(ctx context.Context, _ string, backend arvados.API, options arvados.ListOptions) ([]string, error) {
+		options.ForwardedFor = conn.cluster.ClusterID + "-" + options.ForwardedFor
 		cl, err := backend.ContainerList(ctx, options)
 		if err != nil {
 			return nil, err
@@ -63,6 +64,7 @@ func (conn *Conn) generated_SpecimenList(ctx context.Context, options arvados.Li
 	var needSort atomic.Value
 	needSort.Store(false)
 	err := conn.splitListRequest(ctx, options, func(ctx context.Context, _ string, backend arvados.API, options arvados.ListOptions) ([]string, error) {
+		options.ForwardedFor = conn.cluster.ClusterID + "-" + options.ForwardedFor
 		cl, err := backend.SpecimenList(ctx, options)
 		if err != nil {
 			return nil, err
@@ -103,6 +105,7 @@ func (conn *Conn) generated_UserList(ctx context.Context, options arvados.ListOp
 	var needSort atomic.Value
 	needSort.Store(false)
 	err := conn.splitListRequest(ctx, options, func(ctx context.Context, _ string, backend arvados.API, options arvados.ListOptions) ([]string, error) {
+		options.ForwardedFor = conn.cluster.ClusterID + "-" + options.ForwardedFor
 		cl, err := backend.UserList(ctx, options)
 		if err != nil {
 			return nil, err
