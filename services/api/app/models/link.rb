@@ -43,6 +43,27 @@ class Link < ArvadosModel
 
   protected
 
+  def check_readable_uuid attr, attr_value
+    if attr == 'tail_uuid' &&
+       !attr_value.nil? &&
+       self.link_class == 'permission' &&
+       attr_value[0..4] != Rails.configuration.ClusterID &&
+       ArvadosModel::resource_class_for_uuid(attr_value) == User
+      # Permission link tail is a remote user (the user permissions
+      # are being granted to), so bypass the standard check that a
+      # referenced object uuid is readable by current user.
+      #
+      # We could do a call to the remote cluster to check if the user
+      # in tail_uuid exists.  This would detect copy-and-paste errors,
+      # but add another way for the request to fail, and I don't think
+      # it would improve security.  It doesn't seem to be worth the
+      # complexity tradeoff.
+      true
+    else
+      super
+    end
+  end
+
   def permission_to_attach_to_objects
     # Anonymous users cannot write links
     return false if !current_user
@@ -75,6 +96,11 @@ class Link < ArvadosModel
     return true if current_user.is_admin
 
     head_obj = ArvadosModel.find_by_uuid(head_uuid)
+
+    if head_obj.nil?
+      errors.add(:head_uuid, "does not exist")
+      return false
+    end
 
     # No permission links can be pointed to past collection versions
     if head_obj.is_a?(Collection) && head_obj.current_version_uuid != head_uuid

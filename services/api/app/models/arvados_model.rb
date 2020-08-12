@@ -749,6 +749,20 @@ class ArvadosModel < ApplicationRecord
     %r/[a-z0-9]{5}-#{uuid_prefix}-[a-z0-9]{15}/
   end
 
+  def check_readable_uuid attr, attr_value
+    return if attr_value.nil?
+    if (r = ArvadosModel::resource_class_for_uuid attr_value)
+      unless skip_uuid_read_permission_check.include? attr
+        r = r.readable_by(current_user)
+      end
+      if r.where(uuid: attr_value).count == 0
+        errors.add(attr, "'#{attr_value}' not found")
+      end
+    else
+      errors.add(attr, "'#{attr_value}' invalid uuid")
+    end
+  end
+
   def ensure_valid_uuids
     specials = [system_user_uuid]
 
@@ -757,16 +771,7 @@ class ArvadosModel < ApplicationRecord
         next if skip_uuid_existence_check.include? attr
         attr_value = send attr
         next if specials.include? attr_value
-        if attr_value
-          if (r = ArvadosModel::resource_class_for_uuid attr_value)
-            unless skip_uuid_read_permission_check.include? attr
-              r = r.readable_by(current_user)
-            end
-            if r.where(uuid: attr_value).count == 0
-              errors.add(attr, "'#{attr_value}' not found")
-            end
-          end
-        end
+        check_readable_uuid attr, attr_value
       end
     end
   end
