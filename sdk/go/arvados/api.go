@@ -85,6 +85,7 @@ type ListOptions struct {
 	IncludeTrash       bool                   `json:"include_trash"`
 	IncludeOldVersions bool                   `json:"include_old_versions"`
 	BypassFederation   bool                   `json:"bypass_federation"`
+	ForwardedFor string   `json:"forwarded_for,omitempty"`
 }
 
 type CreateOptions struct {
