@@ -486,7 +486,6 @@ fpm_build_virtualenv () {
   esac
 
   if [[ "$PKG" != "libpam-arvados" ]] &&
-     [[ "$PKG" != "arvados-node-manager" ]] &&
      [[ "$PKG" != "arvados-docker-cleaner" ]]; then
     PYTHON_PKG=$PACKAGE_PREFIX-$PKG
   else
@@ -680,7 +679,7 @@ fpm_build_virtualenv () {
   done
 
   # make sure the systemd service file ends up in the right place
-  # used by arvados-docker-cleaner and arvados-node-manager
+  # used by arvados-docker-cleaner
   if [[ -e "${systemd_unit}" ]]; then
     COMMAND_ARR+=("usr/share/$python/dist/$PKG/share/doc/$PKG/$PKG.service=/lib/systemd/system/$PKG.service")
   fi
