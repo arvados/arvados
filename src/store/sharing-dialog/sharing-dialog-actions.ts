@@ -79,8 +79,8 @@ const initializeManagementForm = (permissionLinks: PermissionResource[]) =>
             .addIn('uuid', permissionLinks.map(({ tailUuid }) => tailUuid))
             .getFilters();
 
-        const { items: users } = await userService.list({ filters });
-        const { items: groups} = await groupsService.list({ filters });
+        const { items: users } = await userService.list({ filters, count: "none" });
+        const { items: groups } = await groupsService.list({ filters, count: "none" });
 
         const getEmail = (tailUuid: string) => {
             const user = users.find(({ uuid }) => uuid === tailUuid);
