@@ -758,6 +758,8 @@ class ArvadosModel < ApplicationRecord
       if r.where(uuid: attr_value).count == 0
         errors.add(attr, "'#{attr_value}' not found")
       end
+    elsif attr_value =~ Keep::Locator::LOCATOR_REGEXP
+      true
     else
       errors.add(attr, "'#{attr_value}' invalid uuid")
     end
