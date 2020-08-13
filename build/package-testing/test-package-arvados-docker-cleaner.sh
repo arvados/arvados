@@ -5,4 +5,4 @@
 
 set -e
 
-arv-mount --version
+arvados-docker-cleaner -h >/dev/null

@@ -231,10 +231,6 @@ default_iteration() {
            [[ ${BASH_REMATCH[1]} -le $LICENSE_PACKAGE_TS ]]; then
         iteration=2
     fi
-    if [[ $package_type =~ ^python ]]; then
-      # Fix --iteration for #9242.
-      iteration=2
-    fi
     echo $iteration
 }
 
@@ -487,13 +483,6 @@ fpm_build_virtualenv () {
         fi
         PACKAGE_PREFIX=$PYTHON3_PKG_PREFIX
         ;;
-    python)
-        # All Arvados Python2 packages depend on Python 2.7.
-        # Make sure we build with that for consistency.
-        python=python2.7
-        pip=pip
-        PACKAGE_PREFIX=$PYTHON2_PKG_PREFIX
-        ;;
   esac
 
   if [[ "$PKG" != "libpam-arvados" ]] &&
@@ -651,25 +640,6 @@ fpm_build_virtualenv () {
   LICENSE_STRING=`grep license $WORKSPACE/$PKG_DIR/setup.py|cut -f2 -d=|sed -e "s/[',\\"]//g"`
   COMMAND_ARR+=('--license' "$LICENSE_STRING")
 
-  # 12271 - As FPM-generated packages don't include scripts by default, the
-  # packages cleanup on upgrade depends on files being listed on the %files
-  # section in the generated SPEC files. To remove DIRECTORIES, they need to
-  # be listed in that section too, so we need to add this parameter to properly
-  # remove lingering dirs. But this only works for python2: if used on
-  # python33, it includes dirs like /opt/rh/python33 that belong to
-  # other packages.
-  if [[ "$FORMAT" == "rpm" ]] && [[ "$python" == "python2.7" ]]; then
-    COMMAND_ARR+=('--rpm-auto-add-directories')
-  fi
-
-  if [[ "$PKG" == "arvados-python-client" ]] || [[ "$PKG" == "arvados-fuse" ]]; then
-    if [[ "$python" == "python2.7" ]]; then
-      COMMAND_ARR+=('--conflicts' "$PYTHON3_PKG_PREFIX-$PKG")
-    else
-      COMMAND_ARR+=('--conflicts' "$PYTHON2_PKG_PREFIX-$PKG")
-    fi
-  fi
-
   if [[ "$DEBUG" != "0" ]]; then
     COMMAND_ARR+=('--verbose' '--log' 'info')
   fi
@@ -685,11 +655,7 @@ fpm_build_virtualenv () {
     COMMAND_ARR+=('--before-remove' "${WORKSPACE}/build/go-python-package-scripts/prerm")
   fi
 
-  if [[ "$python" == "python2.7" ]]; then
-    COMMAND_ARR+=('--depends' "$PYTHON2_PACKAGE")
-  else
-    COMMAND_ARR+=('--depends' "$PYTHON3_PACKAGE")
-  fi
+  COMMAND_ARR+=('--depends' "$PYTHON3_PACKAGE")
 
   # avoid warning
   COMMAND_ARR+=('--deb-no-default-config-files')
@@ -800,17 +766,6 @@ fpm_build () {
       # refer to Debian package iterations, it doesn't make sense to
       # enforce those in the .deb dependencies.
       COMMAND_ARR+=(--deb-ignore-iteration-in-dependencies)
-  fi
-
-  # 12271 - As FPM-generated packages don't include scripts by default, the
-  # packages cleanup on upgrade depends on files being listed on the %files
-  # section in the generated SPEC files. To remove DIRECTORIES, they need to
-  # be listed in that section too, so we need to add this parameter to properly
-  # remove lingering dirs. But this only works for python2: if used on
-  # python33, it includes dirs like /opt/rh/python33 that belong to
-  # other packages.
-  if [[ "$FORMAT" = rpm ]] && [[ "$python" = python2.7 ]]; then
-    COMMAND_ARR+=('--rpm-auto-add-directories')
   fi
 
   if [[ "$DEBUG" != "0" ]]; then
