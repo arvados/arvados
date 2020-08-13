@@ -47,6 +47,7 @@ class Link < ArvadosModel
        !attr_value.nil? &&
        self.link_class == 'permission' &&
        attr_value[0..4] != Rails.configuration.ClusterID &&
+       ApiClientAuthorization.remote_host(uuid_prefix: attr_value[0..4]) &&
        ArvadosModel::resource_class_for_uuid(attr_value) == User
       # Permission link tail is a remote user (the user permissions
       # are being granted to), so bypass the standard check that a
