@@ -106,6 +106,12 @@ class ArvadosBase
     end
   end
 
+  # The ActiveModel::Dirty API was changed on Rails 5.2
+  # See: https://github.com/rails/rails/commit/c3675f50d2e59b7fc173d7b332860c4b1a24a726#diff-aaddd42c7feb0834b1b5c66af69814d3
+  def mutations_from_database
+    @mutations_from_database ||= ActiveModel::NullMutationTracker.instance
+  end
+
   def self.columns
     @discovered_columns = [] if !defined?(@discovered_columns)
     return @discovered_columns if @discovered_columns.andand.any?
