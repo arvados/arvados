@@ -22,6 +22,7 @@ import hmac
 import urllib.parse
 import os
 import hashlib
+import re
 from arvados._version import __version__
 
 EMAIL=0
@@ -169,19 +170,20 @@ def read_migrations(args, by_email, by_username):
 
 def update_username(args, email, user_uuid, username, migratecluster, migratearv):
     print("(%s) Updating username of %s to '%s' on %s" % (email, user_uuid, username, migratecluster))
-    if not args.dry_run:
-        try:
-            conflicts = migratearv.users().list(filters=[["username", "=", username]], bypass_federation=True).execute()
-            if conflicts["items"]:
-                # There's already a user with the username, move the old user out of the way
-                migratearv.users().update(uuid=conflicts["items"][0]["uuid"],
-                                          bypass_federation=True,
-                                          body={"user": {"username": username+"migrate"}}).execute()
-            migratearv.users().update(uuid=user_uuid,
-                                      bypass_federation=True,
-                                      body={"user": {"username": username}}).execute()
-        except arvados.errors.ApiError as e:
-            print("(%s) Error updating username of %s to '%s' on %s: %s" % (email, user_uuid, username, migratecluster, e))
+    if args.dry_run:
+        return
+    try:
+        conflicts = migratearv.users().list(filters=[["username", "=", username]], bypass_federation=True).execute()
+        if conflicts["items"]:
+            # There's already a user with the username, move the old user out of the way
+            migratearv.users().update(uuid=conflicts["items"][0]["uuid"],
+                                        bypass_federation=True,
+                                        body={"user": {"username": username+"migrate"}}).execute()
+        migratearv.users().update(uuid=user_uuid,
+                                    bypass_federation=True,
+                                    body={"user": {"username": username}}).execute()
+    except arvados.errors.ApiError as e:
+        print("(%s) Error updating username of %s to '%s' on %s: %s" % (email, user_uuid, username, migratecluster, e))
 
 
 def choose_new_user(args, by_email, email, userhome, username, old_user_uuid, clusters):
@@ -212,11 +214,17 @@ def choose_new_user(args, by_email, email, userhome, username, old_user_uuid, cl
                 conflicts = homearv.users().list(filters=[["username", "=", username]],
                                                  bypass_federation=True).execute()
                 if conflicts["items"]:
-                    homearv.users().update(uuid=conflicts["items"][0]["uuid"],
-                                           bypass_federation=True,
-                                           body={"user": {"username": username+"migrate"}}).execute()
-                user = homearv.users().create(body={"user": {"email": email, "username": username,
-                                                             "is_active": olduser["is_active"]}}).execute()
+                    homearv.users().update(
+                        uuid=conflicts["items"][0]["uuid"],
+                        bypass_federation=True,
+                        body={"user": {"username": username+"migrate"}}).execute()
+                user = homearv.users().create(
+                    body={"user": {
+                        "email": email,
+                        "first_name": olduser["first_name"],
+                        "last_name": olduser["last_name"],
+                        "username": username,
+                        "is_active": olduser["is_active"]}}).execute()
             except arvados.errors.ApiError as e:
                 print("(%s) Could not create user: %s" % (email, str(e)))
                 return None
@@ -271,7 +279,7 @@ def activate_remote_user(args, email, homearv, migratearv, old_user_uuid, new_us
             newuser = arvados.api(host=ru.netloc, token=salted,
                                   insecure=os.environ.get("ARVADOS_API_HOST_INSECURE")).users().current().execute()
         else:
-            newuser = {"is_active": True, "username": username}
+            newuser = {"is_active": True, "username": email.split('@')[0], "is_admin": False}
     except arvados.errors.ApiError as e:
         print("(%s) Error getting user info for %s from %s: %s" % (email, new_user_uuid, migratecluster, e))
         return None
@@ -287,39 +295,48 @@ def activate_remote_user(args, email, homearv, migratearv, old_user_uuid, new_us
             return None
 
     if olduser["is_admin"] and not newuser["is_admin"]:
-        print("(%s) Not migrating %s because user is admin but target user %s is not admin on %s" % (email, old_user_uuid, new_user_uuid, migratecluster))
+        print("(%s) Not migrating %s because user is admin but target user %s is not admin on %s. Please ensure the user admin status is the same on both clusters. Note that a federated admin account has admin privileges on the entire federation." % (email, old_user_uuid, new_user_uuid, migratecluster))
         return None
 
     return newuser
 
 def migrate_user(args, migratearv, email, new_user_uuid, old_user_uuid):
+    if args.dry_run:
+        return
     try:
-        if not args.dry_run:
+        new_owner_uuid = new_user_uuid
+        if args.data_into_subproject:
             grp = migratearv.groups().create(body={
                 "owner_uuid": new_user_uuid,
                 "name": "Migrated from %s (%s)" % (email, old_user_uuid),
                 "group_class": "project"
             }, ensure_unique_name=True).execute()
-            migratearv.users().merge(old_user_uuid=old_user_uuid,
-                                     new_user_uuid=new_user_uuid,
-                                     new_owner_uuid=grp["uuid"],
-                                     redirect_to_new_user=True).execute()
+            new_owner_uuid = grp["uuid"]
+        migratearv.users().merge(old_user_uuid=old_user_uuid,
+                                    new_user_uuid=new_user_uuid,
+                                    new_owner_uuid=new_owner_uuid,
+                                    redirect_to_new_user=True).execute()
     except arvados.errors.ApiError as e:
-        print("(%s) Error migrating user: %s" % (email, e))
+        name_collision = re.search(r'Key \(owner_uuid, name\)=\((.*?), (.*?)\) already exists\.\n.*UPDATE "(.*?)"', e._get_reason())
+        if name_collision:
+            target_owner, rsc_name, rsc_type = name_collision.groups()
+            print("(%s) Cannot migrate to %s because both origin and target users have a %s named '%s'. Please rename the conflicting items or use --data-into-subproject to migrate all users' data into a special subproject." % (email, target_owner, rsc_type[:-1], rsc_name))
+        else:
+            print("(%s) Skipping user migration because of error: %s" % (email, e))
 
 
 def main():
-
     parser = argparse.ArgumentParser(description='Migrate users to federated identity, see https://doc.arvados.org/admin/merge-remote-account.html')
     parser.add_argument(
         '--version', action='version', version="%s %s" % (sys.argv[0], __version__),
         help='Print version and exit.')
-    parser.add_argument('--tokens', type=str, required=False)
+    parser.add_argument('--tokens', type=str, metavar='FILE', required=False, help="Read tokens from FILE. Not needed when using LoginCluster.")
+    parser.add_argument('--data-into-subproject', action="store_true", help="Migrate user's data into a separate subproject. This can be used to avoid name collisions from within an account.")
     group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument('--report', type=str, help="Generate report .csv file listing users by email address and their associated Arvados accounts")
-    group.add_argument('--migrate', type=str, help="Consume report .csv and migrate users to designated Arvados accounts")
-    group.add_argument('--dry-run', type=str, help="Consume report .csv and report how user would be migrated to designated Arvados accounts")
-    group.add_argument('--check', action="store_true", help="Check that tokens are usable and the federation is well connected")
+    group.add_argument('--report', type=str, metavar='FILE', help="Generate report .csv file listing users by email address and their associated Arvados accounts.")
+    group.add_argument('--migrate', type=str, metavar='FILE', help="Consume report .csv and migrate users to designated Arvados accounts.")
+    group.add_argument('--dry-run', type=str, metavar='FILE', help="Consume report .csv and report how user would be migrated to designated Arvados accounts.")
+    group.add_argument('--check', action="store_true", help="Check that tokens are usable and the federation is well connected.")
     args = parser.parse_args()
 
     clusters, errors, loginCluster = connect_clusters(args)
