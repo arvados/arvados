@@ -91,6 +91,7 @@ lib/dispatchcloud/scheduler
 lib/dispatchcloud/ssh_executor
 lib/dispatchcloud/worker
 lib/mount
+lib/pam
 lib/service
 services/api
 services/arv-git-httpd
@@ -108,8 +109,6 @@ services/crunch-dispatch-local
 services/crunch-dispatch-slurm
 services/ws
 sdk/cli
-sdk/pam
-sdk/pam:py3
 sdk/python
 sdk/python:py3
 sdk/ruby
@@ -260,7 +259,7 @@ sanity_checks() {
         || fatal "No libpq libpq-fe.h. Try: apt-get install libpq-dev"
     echo -n 'libpam pam_appl.h: '
     find /usr/include -path '*/security/pam_appl.h' | egrep --max-count=1 . \
-        || fatal "No libpam pam_appl.h. Try: apt-get install libpam-dev"
+        || fatal "No libpam pam_appl.h. Try: apt-get install libpam0g-dev"
     echo -n 'postgresql: '
     psql --version || fatal "No postgresql. Try: apt-get install postgresql postgresql-client-common"
     echo -n 'phantomjs: '
@@ -989,7 +988,6 @@ install_services/api() {
 
 declare -a pythonstuff
 pythonstuff=(
-    sdk/pam
     sdk/python
     sdk/python:py3
     sdk/cwl:py3

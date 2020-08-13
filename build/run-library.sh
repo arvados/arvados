@@ -485,8 +485,7 @@ fpm_build_virtualenv () {
         ;;
   esac
 
-  if [[ "$PKG" != "libpam-arvados" ]] &&
-     [[ "$PKG" != "arvados-docker-cleaner" ]]; then
+  if [[ "$PKG" != "arvados-docker-cleaner" ]]; then
     PYTHON_PKG=$PACKAGE_PREFIX-$PKG
   else
     # Exception to our package naming convention
@@ -696,15 +695,6 @@ fpm_build_virtualenv () {
     for binary in `ls $WORKSPACE/$PKG_DIR/bin`; do
       COMMAND_ARR+=("usr/share/$python/dist/$PYTHON_PKG/bin/$binary=/usr/bin/")
     done
-  fi
-
-  # the libpam module should place a few files in the correct place for the pam
-  # subsystem
-  if [[ -e "$WORKSPACE/$PKG_DIR/dist/build/usr/share/$python/dist/$PYTHON_PKG/lib/security/libpam_arvados.py" ]]; then
-    COMMAND_ARR+=("usr/share/$python/dist/$PYTHON_PKG/lib/security/libpam_arvados.py=/usr/lib/security/")
-  fi
-  if [[ -e "$WORKSPACE/$PKG_DIR/dist/build/usr/share/$python/dist/$PYTHON_PKG/share/pam-configs/arvados" ]]; then
-    COMMAND_ARR+=("usr/share/$python/dist/$PYTHON_PKG/share/pam-configs/arvados=/usr/share/pam-configs/")
   fi
 
   # the python-arvados-cwl-runner package comes with cwltool, expose that version
