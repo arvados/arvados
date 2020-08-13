@@ -761,7 +761,7 @@ class ArvadosModel < ApplicationRecord
     elsif attr_value =~ Keep::Locator::LOCATOR_REGEXP
       true
     else
-      errors.add(attr, "'#{attr_value}' invalid uuid")
+      # Not a valid uuid or PDH, but that (currently) is not an error.
     end
   end
 
