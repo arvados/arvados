@@ -58,6 +58,14 @@ class LinkTest < ActiveSupport::TestCase
                                   users(:active).uuid.sub(/-\w+$/, "-#{'z' * 15}"))
   end
 
+  test "link granting permission to remote user is valid" do
+    refute new_active_link_valid?(tail_uuid:
+                                  users(:active).uuid.sub(/^\w+-/, "foooo-"))
+    Rails.configuration.RemoteClusters = Rails.configuration.RemoteClusters.merge({foooo: ActiveSupport::InheritableOptions.new({Host: "bar.com"})})
+    assert new_active_link_valid?(tail_uuid:
+                                  users(:active).uuid.sub(/^\w+-/, "foooo-"))
+  end
+
   test "link granting non-project permission to unreadable user is invalid" do
     refute new_active_link_valid?(tail_uuid: users(:admin).uuid,
                                   head_uuid: collections(:bar_file).uuid)
