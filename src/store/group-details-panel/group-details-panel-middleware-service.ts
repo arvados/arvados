@@ -36,7 +36,8 @@ export class GroupDetailsPanelMiddlewareService extends DataExplorerMiddlewareSe
                 const users = await this.services.userService.list({
                     filters: new FilterBuilder()
                         .addIn('uuid', permissions.items.map(item => item.headUuid))
-                        .getFilters()
+                        .getFilters(),
+                    count: "none"
                 });
                 api.dispatch(GroupDetailsPanelActions.SET_ITEMS({
                     ...listResultsToDataExplorerItemsMeta(permissions),
