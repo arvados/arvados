@@ -57,7 +57,7 @@ export const CurrentTokenDialog =
                         </Typography>
                     </Typography>
                     <Typography  paragraph={true}>
-                        Paste the following lines at a shell prompt to set up the necessary environment for Arvados SDKs to authenticate to your klingenc account.
+                        Paste the following lines at a shell prompt to set up the necessary environment for Arvados SDKs to authenticate to your account.
                             </Typography>
                     <DefaultCodeSnippet lines={[getSnippet(data)]} />
                     <Typography >
