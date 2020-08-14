@@ -35,8 +35,7 @@ export const getDataExplorerColumnFilters = <T>(columns: DataColumns<T>, columnN
 
 export const dataExplorerToListParams = (dataExplorer: DataExplorer) => ({
     limit: dataExplorer.rowsPerPage,
-    offset: dataExplorer.page * dataExplorer.rowsPerPage,
-    count: "none"
+    offset: dataExplorer.page * dataExplorer.rowsPerPage
 });
 
 export const listResultsToDataExplorerItemsMeta = <R>({ itemsAvailable, offset, limit }: ListResults<R>) => ({
