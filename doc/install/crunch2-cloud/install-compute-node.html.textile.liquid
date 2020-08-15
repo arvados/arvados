@@ -92,8 +92,6 @@ Options:
       Azure secrets file which will be sourced from this script
   --azure-resource-group (default: false, required if building for Azure)
       Azure resource group
-  --azure-storage-account (default: false, required if building for Azure)
-      Azure storage account
   --azure-location (default: false, required if building for Azure)
       Azure location, e.g. centralus, eastus, westeurope
   --azure-sku (default: unset, required if building for Azure, e.g. 16.04-LTS)
@@ -117,7 +115,6 @@ h2(#azure). Build an Azure image
 <notextile><pre><code>~$ <span class="userinput">./build.sh --json-file arvados-images-azure.json \
            --arvados-cluster-id ClusterID \
            --azure-resource-group ResourceGroup \
-           --azure-storage-account StorageAccount \
            --azure-location AzureRegion \
            --azure-sku AzureSKU \
            --azure-secrets-file AzureSecretsFilePath \
@@ -126,7 +123,7 @@ h2(#azure). Build an Azure image
 </span>
 </code></pre></notextile>
 
-For @ClusterID@, fill in your cluster ID. The @ResourceGroup@, @StorageAccount@ and @AzureRegion@ (e.g. 'eastus2') should be configured for where you want the compute image to be generated and stored. The @AzureSKU@ is the SKU of the base image to be used, e.g. '18.04-LTS' for Ubuntu 18.04.
+For @ClusterID@, fill in your cluster ID. The @ResourceGroup@ and @AzureRegion@ (e.g. 'eastus2') should be configured for where you want the compute image to be generated and stored. The @AzureSKU@ is the SKU of the base image to be used, e.g. '18.04-LTS' for Ubuntu 18.04.
 
 @AzureSecretsFilePath@ should be replaced with the path to a shell script that loads the Azure secrets with sufficient permissions to create the image. The file would look like this:
 

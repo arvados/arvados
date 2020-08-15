@@ -18,7 +18,7 @@ import (
 
 	"git.arvados.org/arvados.git/lib/cloud"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-06-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-06-01/network"
 	storageacct "github.com/Azure/azure-sdk-for-go/services/storage/mgmt/2018-02-01/storage"
 	"github.com/Azure/azure-sdk-for-go/storage"
@@ -41,6 +41,7 @@ type azureInstanceSetConfig struct {
 	TenantID                     string
 	CloudEnvironment             string
 	ResourceGroup                string
+	ImageResourceGroup           string
 	Location                     string
 	Network                      string
 	NetworkResourceGroup         string
@@ -138,6 +139,25 @@ func (cl *interfacesClientImpl) listComplete(ctx context.Context, resourceGroupN
 	return r, wrapAzureError(err)
 }
 
+type disksClientWrapper interface {
+	listByResourceGroup(ctx context.Context, resourceGroupName string) (result compute.DiskListPage, err error)
+	delete(ctx context.Context, resourceGroupName string, diskName string) (result compute.DisksDeleteFuture, err error)
+}
+
+type disksClientImpl struct {
+	inner compute.DisksClient
+}
+
+func (cl *disksClientImpl) listByResourceGroup(ctx context.Context, resourceGroupName string) (result compute.DiskListPage, err error) {
+	r, err := cl.inner.ListByResourceGroup(ctx, resourceGroupName)
+	return r, wrapAzureError(err)
+}
+
+func (cl *disksClientImpl) delete(ctx context.Context, resourceGroupName string, diskName string) (result compute.DisksDeleteFuture, err error) {
+	r, err := cl.inner.Delete(ctx, resourceGroupName, diskName)
+	return r, wrapAzureError(err)
+}
+
 var quotaRe = regexp.MustCompile(`(?i:exceed|quota|limit)`)
 
 type azureRateLimitError struct {
@@ -196,20 +216,23 @@ func wrapAzureError(err error) error {
 }
 
 type azureInstanceSet struct {
-	azconfig     azureInstanceSetConfig
-	vmClient     virtualMachinesClientWrapper
-	netClient    interfacesClientWrapper
-	blobcont     containerWrapper
-	azureEnv     azure.Environment
-	interfaces   map[string]network.Interface
-	dispatcherID string
-	namePrefix   string
-	ctx          context.Context
-	stopFunc     context.CancelFunc
-	stopWg       sync.WaitGroup
-	deleteNIC    chan string
-	deleteBlob   chan storage.Blob
-	logger       logrus.FieldLogger
+	azconfig           azureInstanceSetConfig
+	vmClient           virtualMachinesClientWrapper
+	netClient          interfacesClientWrapper
+	disksClient        disksClientWrapper
+	imageResourceGroup string
+	blobcont           containerWrapper
+	azureEnv           azure.Environment
+	interfaces         map[string]network.Interface
+	dispatcherID       string
+	namePrefix         string
+	ctx                context.Context
+	stopFunc           context.CancelFunc
+	stopWg             sync.WaitGroup
+	deleteNIC          chan string
+	deleteBlob         chan storage.Blob
+	deleteDisk         chan compute.Disk
+	logger             logrus.FieldLogger
 }
 
 func newAzureInstanceSet(config json.RawMessage, dispatcherID cloud.InstanceSetID, _ cloud.SharedResourceTags, logger logrus.FieldLogger) (prv cloud.InstanceSet, err error) {
@@ -233,6 +256,7 @@ func (az *azureInstanceSet) setup(azcfg azureInstanceSetConfig, dispatcherID str
 	az.azconfig = azcfg
 	vmClient := compute.NewVirtualMachinesClient(az.azconfig.SubscriptionID)
 	netClient := network.NewInterfacesClient(az.azconfig.SubscriptionID)
+	disksClient := compute.NewDisksClient(az.azconfig.SubscriptionID)
 	storageAcctClient := storageacct.NewAccountsClient(az.azconfig.SubscriptionID)
 
 	az.azureEnv, err = azure.EnvironmentFromName(az.azconfig.CloudEnvironment)
@@ -253,26 +277,36 @@ func (az *azureInstanceSet) setup(azcfg azureInstanceSetConfig, dispatcherID str
 
 	vmClient.Authorizer = authorizer
 	netClient.Authorizer = authorizer
+	disksClient.Authorizer = authorizer
 	storageAcctClient.Authorizer = authorizer
 
 	az.vmClient = &virtualMachinesClientImpl{vmClient}
 	az.netClient = &interfacesClientImpl{netClient}
+	az.disksClient = &disksClientImpl{disksClient}
 
-	result, err := storageAcctClient.ListKeys(az.ctx, az.azconfig.ResourceGroup, az.azconfig.StorageAccount)
-	if err != nil {
-		az.logger.WithError(err).Warn("Couldn't get account keys")
-		return err
+	az.imageResourceGroup = az.azconfig.ImageResourceGroup
+	if az.imageResourceGroup == "" {
+		az.imageResourceGroup = az.azconfig.ResourceGroup
 	}
 
-	key1 := *(*result.Keys)[0].Value
-	client, err := storage.NewBasicClientOnSovereignCloud(az.azconfig.StorageAccount, key1, az.azureEnv)
-	if err != nil {
-		az.logger.WithError(err).Warn("Couldn't make client")
-		return err
-	}
+	var client storage.Client
+	if az.azconfig.StorageAccount != "" {
+		result, err := storageAcctClient.ListKeys(az.ctx, az.azconfig.ResourceGroup, az.azconfig.StorageAccount)
+		if err != nil {
+			az.logger.WithError(err).Warn("Couldn't get account keys")
+			return err
+		}
 
-	blobsvc := client.GetBlobService()
-	az.blobcont = blobsvc.GetContainerReference(az.azconfig.BlobContainer)
+		key1 := *(*result.Keys)[0].Value
+		client, err = storage.NewBasicClientOnSovereignCloud(az.azconfig.StorageAccount, key1, az.azureEnv)
+		if err != nil {
+			az.logger.WithError(err).Warn("Couldn't make client")
+			return err
+		}
+
+		blobsvc := client.GetBlobService()
+		az.blobcont = blobsvc.GetContainerReference(az.azconfig.BlobContainer)
+	}
 
 	az.dispatcherID = dispatcherID
 	az.namePrefix = fmt.Sprintf("compute-%s-", az.dispatcherID)
@@ -288,13 +322,17 @@ func (az *azureInstanceSet) setup(azcfg azureInstanceSetConfig, dispatcherID str
 				tk.Stop()
 				return
 			case <-tk.C:
-				az.manageBlobs()
+				if az.blobcont != nil {
+					az.manageBlobs()
+				}
+				az.manageDisks()
 			}
 		}
 	}()
 
 	az.deleteNIC = make(chan string)
 	az.deleteBlob = make(chan storage.Blob)
+	az.deleteDisk = make(chan compute.Disk)
 
 	for i := 0; i < 4; i++ {
 		go func() {
@@ -322,6 +360,20 @@ func (az *azureInstanceSet) setup(azcfg azureInstanceSetConfig, dispatcherID str
 					az.logger.WithError(err).Warnf("Error deleting %v", blob.Name)
 				} else {
 					az.logger.Printf("Deleted blob %v", blob.Name)
+				}
+			}
+		}()
+		go func() {
+			for {
+				disk, ok := <-az.deleteDisk
+				if !ok {
+					return
+				}
+				_, err := az.disksClient.delete(az.ctx, az.imageResourceGroup, *disk.Name)
+				if err != nil {
+					az.logger.WithError(err).Warnf("Error deleting disk %+v", *disk.Name)
+				} else {
+					az.logger.Printf("Deleted disk %v", *disk.Name)
 				}
 			}
 		}()
@@ -390,13 +442,44 @@ func (az *azureInstanceSet) Create(
 	}
 
 	blobname := fmt.Sprintf("%s-os.vhd", name)
-	instanceVhd := fmt.Sprintf("https://%s.blob.%s/%s/%s",
-		az.azconfig.StorageAccount,
-		az.azureEnv.StorageEndpointSuffix,
-		az.azconfig.BlobContainer,
-		blobname)
-
 	customData := base64.StdEncoding.EncodeToString([]byte("#!/bin/sh\n" + initCommand + "\n"))
+	var storageProfile *compute.StorageProfile
+
+	re := regexp.MustCompile(`^http(s?)://`)
+	if re.MatchString(string(imageID)) {
+		instanceVhd := fmt.Sprintf("https://%s.blob.%s/%s/%s",
+			az.azconfig.StorageAccount,
+			az.azureEnv.StorageEndpointSuffix,
+			az.azconfig.BlobContainer,
+			blobname)
+		az.logger.Info("using deprecated VHD image")
+		storageProfile = &compute.StorageProfile{
+			OsDisk: &compute.OSDisk{
+				OsType:       compute.Linux,
+				Name:         to.StringPtr(name + "-os"),
+				CreateOption: compute.DiskCreateOptionTypesFromImage,
+				Image: &compute.VirtualHardDisk{
+					URI: to.StringPtr(string(imageID)),
+				},
+				Vhd: &compute.VirtualHardDisk{
+					URI: &instanceVhd,
+				},
+			},
+		}
+	} else {
+		az.logger.Info("using managed image")
+
+		storageProfile = &compute.StorageProfile{
+			ImageReference: &compute.ImageReference{
+				ID: to.StringPtr("/subscriptions/" + az.azconfig.SubscriptionID + "/resourceGroups/" + az.imageResourceGroup + "/providers/Microsoft.Compute/images/" + string(imageID)),
+			},
+			OsDisk: &compute.OSDisk{
+				OsType:       compute.Linux,
+				Name:         to.StringPtr(name + "-os"),
+				CreateOption: compute.DiskCreateOptionTypesFromImage,
+			},
+		}
+	}
 
 	vmParameters := compute.VirtualMachine{
 		Location: &az.azconfig.Location,
@@ -405,19 +488,7 @@ func (az *azureInstanceSet) Create(
 			HardwareProfile: &compute.HardwareProfile{
 				VMSize: compute.VirtualMachineSizeTypes(instanceType.ProviderType),
 			},
-			StorageProfile: &compute.StorageProfile{
-				OsDisk: &compute.OSDisk{
-					OsType:       compute.Linux,
-					Name:         to.StringPtr(name + "-os"),
-					CreateOption: compute.FromImage,
-					Image: &compute.VirtualHardDisk{
-						URI: to.StringPtr(string(imageID)),
-					},
-					Vhd: &compute.VirtualHardDisk{
-						URI: &instanceVhd,
-					},
-				},
-			},
+			StorageProfile: storageProfile,
 			NetworkProfile: &compute.NetworkProfile{
 				NetworkInterfaces: &[]compute.NetworkInterfaceReference{
 					compute.NetworkInterfaceReference{
@@ -449,12 +520,14 @@ func (az *azureInstanceSet) Create(
 
 	vm, err := az.vmClient.createOrUpdate(az.ctx, az.azconfig.ResourceGroup, name, vmParameters)
 	if err != nil {
-		_, delerr := az.blobcont.GetBlobReference(blobname).DeleteIfExists(nil)
-		if delerr != nil {
-			az.logger.WithError(delerr).Warnf("Error cleaning up vhd blob after failed create")
+		if az.blobcont != nil {
+			_, delerr := az.blobcont.GetBlobReference(blobname).DeleteIfExists(nil)
+			if delerr != nil {
+				az.logger.WithError(delerr).Warnf("Error cleaning up vhd blob after failed create")
+			}
 		}
 
-		_, delerr = az.netClient.delete(context.Background(), az.azconfig.ResourceGroup, *nic.Name)
+		_, delerr := az.netClient.delete(context.Background(), az.azconfig.ResourceGroup, *nic.Name)
 		if delerr != nil {
 			az.logger.WithError(delerr).Warnf("Error cleaning up NIC after failed create")
 		}
@@ -567,6 +640,41 @@ func (az *azureInstanceSet) manageBlobs() {
 		}
 		if response.NextMarker != "" {
 			page.Marker = response.NextMarker
+		} else {
+			break
+		}
+	}
+}
+
+// ManageDisks garbage collects managed compute disks (VM disk images) in the
+// configured resource group.  It will delete disks which
+// have "namePrefix", are "available" (which means they are not
+// leased to a VM) and were created more than DeleteDanglingResourcesAfter seconds ago.
+// (Azure provides no modification timestamp on managed disks, there is only a
+// creation timestamp)
+func (az *azureInstanceSet) manageDisks() {
+
+	re := regexp.MustCompile(`^` + az.namePrefix + `.*-os$`)
+	timestamp := time.Now()
+
+	for {
+		response, err := az.disksClient.listByResourceGroup(az.ctx, az.imageResourceGroup)
+		if err != nil {
+			az.logger.WithError(err).Warn("Error listing disks")
+			return
+		}
+		for _, d := range response.Values() {
+			age := timestamp.Sub(d.DiskProperties.TimeCreated.ToTime())
+			if d.DiskProperties.DiskState == "Unattached" &&
+				re.MatchString(*d.Name) &&
+				age.Seconds() > az.azconfig.DeleteDanglingResourcesAfter.Duration().Seconds() {
+
+				az.logger.Printf("Disk %v is unlocked and not modified for %v seconds, will delete", *d.Name, age.Seconds())
+				az.deleteDisk <- d
+			}
+		}
+		if response.Values() != nil {
+			response.Next()
 		} else {
 			break
 		}
