@@ -81,10 +81,12 @@ func (s *RPCSuite) TestSpecimenCRUD(c *check.C) {
 	c.Check(sp.Properties["foo"], check.Equals, "bar")
 
 	spGet, err := s.conn.SpecimenGet(s.ctx, arvados.GetOptions{UUID: sp.UUID})
+	c.Check(err, check.IsNil)
 	c.Check(spGet.UUID, check.Equals, sp.UUID)
 	c.Check(spGet.Properties["foo"], check.Equals, "bar")
 
 	spList, err := s.conn.SpecimenList(s.ctx, arvados.ListOptions{Limit: -1, Filters: []arvados.Filter{{"uuid", "=", sp.UUID}}})
+	c.Check(err, check.IsNil)
 	c.Check(spList.ItemsAvailable, check.Equals, 1)
 	c.Assert(spList.Items, check.HasLen, 1)
 	c.Check(spList.Items[0].UUID, check.Equals, sp.UUID)
@@ -92,9 +94,11 @@ func (s *RPCSuite) TestSpecimenCRUD(c *check.C) {
 
 	anonCtx := context.WithValue(context.Background(), contextKeyTestTokens, []string{arvadostest.AnonymousToken})
 	spList, err = s.conn.SpecimenList(anonCtx, arvados.ListOptions{Limit: -1, Filters: []arvados.Filter{{"uuid", "=", sp.UUID}}})
+	c.Check(err, check.IsNil)
 	c.Check(spList.ItemsAvailable, check.Equals, 0)
 	c.Check(spList.Items, check.HasLen, 0)
 
 	spDel, err := s.conn.SpecimenDelete(s.ctx, arvados.DeleteOptions{UUID: sp.UUID})
+	c.Check(err, check.IsNil)
 	c.Check(spDel.UUID, check.Equals, sp.UUID)
 }
