@@ -25,6 +25,10 @@ while [[ $# -gt 0 ]]; do
         --force-installimage)
             opts[force-installimage]=1
             ;;
+        --os)
+            opts[os]="$1"
+            shift
+            ;;
         *)
             echo >&2 "invalid argument '$arg'"
             exit 2
@@ -43,7 +47,7 @@ cleanup() {
 trap cleanup ERR EXIT
 
 version=$(git describe --tag --dirty)
-osbase=debian:10
+osbase=${opts[os]:-debian:10}
 
 mkdir -p /tmp/pkg
 

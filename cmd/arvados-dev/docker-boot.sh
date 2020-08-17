@@ -19,6 +19,11 @@ set -e -o pipefail
 declare -A opts=()
 while [[ $# -gt 0 ]]; do
     case "$1" in
+        --os)
+            shift
+            opts[os]="$1"
+            shift
+            ;;
         --shell)
             shift
             opts[shell]=1
@@ -54,7 +59,7 @@ for inject in "$@"; do
     esac
 done
 
-osbase=debian:10
+osbase=${opts[os]:-debian:10}
 installimage=arvados-installpackage-${osbase}
 command="/var/lib/arvados/bin/arvados-server boot -listen-host 0.0.0.0"
 if [[ "${opts[shell]}" ]]; then
