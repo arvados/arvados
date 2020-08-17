@@ -56,7 +56,7 @@ func (runner installPassenger) Run(ctx context.Context, fail func(error), super 
 	}
 	for _, version := range []string{"1.16.6", "1.17.3", "2.0.2"} {
 		if !strings.Contains(buf.String(), "("+version+")") {
-			err = super.RunProgram(ctx, runner.src, nil, nil, "gem", "install", "--user", "--conservative", "--no-rdoc", "--no-ri", "bundler:1.16.6", "bundler:1.17.3", "bundler:2.0.2")
+			err = super.RunProgram(ctx, runner.src, nil, nil, "gem", "install", "--user", "--conservative", "--no-document", "bundler:1.16.6", "bundler:1.17.3", "bundler:2.0.2")
 			if err != nil {
 				return err
 			}

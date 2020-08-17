@@ -62,7 +62,7 @@ func (bldr *builder) run(ctx context.Context, prog string, args []string, stdin 
 			return fmt.Errorf("arvados-server install failed: exit code %d", exitcode)
 		}
 	}
-	cmd := exec.Command("/var/lib/arvados/bin/gem", "install", "--user", "--no-rdoc", "--no-ri", "fpm")
+	cmd := exec.Command("/var/lib/arvados/bin/gem", "install", "--user", "--no-document", "fpm")
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
 	err = cmd.Run()
