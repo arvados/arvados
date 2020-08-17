@@ -4,12 +4,11 @@
 
 source 'https://rubygems.org'
 
-gem 'rails', '~> 5.0.0'
+gem 'rails', '~> 5.2.0'
 gem 'responders', '~> 2.0'
 
 group :test, :development do
   gem 'factory_bot_rails'
-  gem 'database_cleaner'
 
   # As of now (2019-03-27) There's an open issue about incompatibilities with
   # newer versions of this gem: https://github.com/rails/rails-perftest/issues/38
@@ -23,7 +22,11 @@ group :test, :development do
   gem 'simplecov-rcov', require: false
   gem 'mocha', require: false
   gem 'byebug'
+  gem 'listen'
 end
+
+# Fast app boot times
+gem 'bootsnap', require: false
 
 gem 'pg', '~> 1.0'
 

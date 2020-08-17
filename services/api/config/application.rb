@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-require File.expand_path('../boot', __FILE__)
+require_relative 'boot'
 
 require "rails"
 # Pick only the frameworks we need:
@@ -12,10 +12,11 @@ require "active_record/railtie"
 require "action_controller/railtie"
 require "action_mailer/railtie"
 require "action_view/railtie"
-# Skip ActionCable (new in Rails 5.0) as it adds '/cable' routes that we're not using
-# require "action_cable/engine"
 require "sprockets/railtie"
 require "rails/test_unit/railtie"
+# Skipping the following:
+# * ActionCable (new in Rails 5.0) as it adds '/cable' routes that we're not using
+# * Skip ActiveStorage (new in Rails 5.1)
 
 require 'digest'
 

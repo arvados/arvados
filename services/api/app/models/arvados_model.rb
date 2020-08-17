@@ -16,6 +16,7 @@ class ArvadosModel < ApplicationRecord
   include DbCurrentTime
   extend RecordFilters
 
+  after_find :schedule_restoring_changes
   after_initialize :log_start_state
   before_save :ensure_permission_to_save
   before_save :ensure_owner_uuid_is_permitted
@@ -137,6 +138,7 @@ class ArvadosModel < ApplicationRecord
   def reload(*args)
     super
     log_start_state
+    self
   end
 
   def self.create raw_params={}, *args
@@ -838,10 +840,24 @@ class ArvadosModel < ApplicationRecord
              Rails.configuration.AuditLogs.MaxDeleteBatch.to_i > 0)
   end
 
+  def schedule_restoring_changes
+    # This will be checked at log_start_state, to reset any (virtual) changes
+    # produced by the act of reading a serialized attribute.
+    @fresh_from_database = true
+  end
+
   def log_start_state
     if is_audit_logging_enabled?
       @old_attributes = Marshal.load(Marshal.dump(attributes))
       @old_logged_attributes = Marshal.load(Marshal.dump(logged_attributes))
+      if @fresh_from_database
+        # This instance was created from reading a database record. Attributes
+        # haven't been changed, but those serialized attributes will be reported
+        # as unpersisted, so we restore them to avoid issues with lock!() and
+        # with_lock().
+        restore_attributes
+        @fresh_from_database = nil
+      end
     end
   end
 
