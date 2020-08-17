@@ -38,8 +38,14 @@ group :assets do
   gem 'therubyracer', :platforms => :ruby
 end
 
-group :development do
+group :development, :test, :performance do
   gem 'byebug'
+  # Pinning launchy because 2.5 requires ruby >= 2.4, which arvbox currently
+  # doesn't have because of SSO.
+  gem 'launchy', '~> 2.4.0'
+end
+
+group :development do
   gem 'ruby-debug-passenger'
   gem 'rack-mini-profiler', require: false
   gem 'flamegraph', require: false
@@ -55,7 +61,6 @@ group :test, :diagnostics, :performance do
 end
 
 group :test, :performance do
-  gem 'byebug'
   gem 'rails-perftest'
   gem 'ruby-prof'
   gem 'rvm-capistrano'
