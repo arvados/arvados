@@ -80,10 +80,12 @@ func (s *ServerRequiredSuite) TestDefaultReplications(c *C) {
 	c.Assert(err, Equals, nil)
 
 	kc, err := MakeKeepClient(arv)
+	c.Check(err, IsNil)
 	c.Assert(kc.Want_replicas, Equals, 2)
 
 	arv.DiscoveryDoc["defaultCollectionReplication"] = 3.0
 	kc, err = MakeKeepClient(arv)
+	c.Check(err, IsNil)
 	c.Assert(kc.Want_replicas, Equals, 3)
 
 	arv.DiscoveryDoc["defaultCollectionReplication"] = 1.0
@@ -367,6 +369,7 @@ func (s *StandaloneSuite) TestPutWithFail(c *C) {
 		make(chan string, 1)}
 
 	arv, err := arvadosclient.MakeArvadosClient()
+	c.Check(err, IsNil)
 	kc, _ := MakeKeepClient(arv)
 
 	kc.Want_replicas = 2
@@ -426,6 +429,7 @@ func (s *StandaloneSuite) TestPutWithTooManyFail(c *C) {
 		make(chan string, 4)}
 
 	arv, err := arvadosclient.MakeArvadosClient()
+	c.Check(err, IsNil)
 	kc, _ := MakeKeepClient(arv)
 
 	kc.Want_replicas = 2
@@ -487,6 +491,7 @@ func (s *StandaloneSuite) TestGet(c *C) {
 	defer ks.listener.Close()
 
 	arv, err := arvadosclient.MakeArvadosClient()
+	c.Check(err, IsNil)
 	kc, _ := MakeKeepClient(arv)
 	arv.ApiToken = "abc123"
 	kc.SetServiceRoots(map[string]string{"x": ks.url}, nil, nil)
@@ -511,6 +516,7 @@ func (s *StandaloneSuite) TestGet404(c *C) {
 	defer ks.listener.Close()
 
 	arv, err := arvadosclient.MakeArvadosClient()
+	c.Check(err, IsNil)
 	kc, _ := MakeKeepClient(arv)
 	arv.ApiToken = "abc123"
 	kc.SetServiceRoots(map[string]string{"x": ks.url}, nil, nil)
@@ -552,6 +558,7 @@ func (s *StandaloneSuite) TestGetFail(c *C) {
 	defer ks.listener.Close()
 
 	arv, err := arvadosclient.MakeArvadosClient()
+	c.Check(err, IsNil)
 	kc, _ := MakeKeepClient(arv)
 	arv.ApiToken = "abc123"
 	kc.SetServiceRoots(map[string]string{"x": ks.url}, nil, nil)
@@ -583,6 +590,7 @@ func (s *StandaloneSuite) TestGetFailRetry(c *C) {
 	defer ks.listener.Close()
 
 	arv, err := arvadosclient.MakeArvadosClient()
+	c.Check(err, IsNil)
 	kc, _ := MakeKeepClient(arv)
 	arv.ApiToken = "abc123"
 	kc.SetServiceRoots(map[string]string{"x": ks.url}, nil, nil)
@@ -609,6 +617,7 @@ func (s *StandaloneSuite) TestGetNetError(c *C) {
 	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
 
 	arv, err := arvadosclient.MakeArvadosClient()
+	c.Check(err, IsNil)
 	kc, _ := MakeKeepClient(arv)
 	arv.ApiToken = "abc123"
 	kc.SetServiceRoots(map[string]string{"x": "http://localhost:62222"}, nil, nil)
@@ -645,6 +654,7 @@ func (s *StandaloneSuite) TestGetWithServiceHint(c *C) {
 	defer ks.listener.Close()
 
 	arv, err := arvadosclient.MakeArvadosClient()
+	c.Check(err, IsNil)
 	kc, _ := MakeKeepClient(arv)
 	arv.ApiToken = "abc123"
 	kc.SetServiceRoots(
@@ -688,6 +698,7 @@ func (s *StandaloneSuite) TestGetWithLocalServiceHint(c *C) {
 	defer ks.listener.Close()
 
 	arv, err := arvadosclient.MakeArvadosClient()
+	c.Check(err, IsNil)
 	kc, _ := MakeKeepClient(arv)
 	arv.ApiToken = "abc123"
 	kc.SetServiceRoots(
@@ -735,6 +746,7 @@ func (s *StandaloneSuite) TestGetWithServiceHintFailoverToLocals(c *C) {
 	defer ksGateway.listener.Close()
 
 	arv, err := arvadosclient.MakeArvadosClient()
+	c.Check(err, IsNil)
 	kc, _ := MakeKeepClient(arv)
 	arv.ApiToken = "abc123"
 	kc.SetServiceRoots(
@@ -772,11 +784,13 @@ func (s *StandaloneSuite) TestChecksum(c *C) {
 	defer ks.listener.Close()
 
 	arv, err := arvadosclient.MakeArvadosClient()
+	c.Check(err, IsNil)
 	kc, _ := MakeKeepClient(arv)
 	arv.ApiToken = "abc123"
 	kc.SetServiceRoots(map[string]string{"x": ks.url}, nil, nil)
 
 	r, n, _, err := kc.Get(barhash)
+	c.Check(err, IsNil)
 	_, err = ioutil.ReadAll(r)
 	c.Check(n, Equals, int64(3))
 	c.Check(err, Equals, nil)
@@ -784,6 +798,7 @@ func (s *StandaloneSuite) TestChecksum(c *C) {
 	<-st.handled
 
 	r, n, _, err = kc.Get(foohash)
+	c.Check(err, IsNil)
 	_, err = ioutil.ReadAll(r)
 	c.Check(n, Equals, int64(3))
 	c.Check(err, Equals, BadChecksum)
@@ -806,6 +821,7 @@ func (s *StandaloneSuite) TestGetWithFailures(c *C) {
 		content}
 
 	arv, err := arvadosclient.MakeArvadosClient()
+	c.Check(err, IsNil)
 	kc, _ := MakeKeepClient(arv)
 	arv.ApiToken = "abc123"
 	localRoots := make(map[string]string)
@@ -852,6 +868,7 @@ func (s *ServerRequiredSuite) TestPutGetHead(c *C) {
 	content := []byte("TestPutGetHead")
 
 	arv, err := arvadosclient.MakeArvadosClient()
+	c.Check(err, IsNil)
 	kc, err := MakeKeepClient(arv)
 	c.Assert(err, Equals, nil)
 
@@ -912,6 +929,7 @@ func (s *StandaloneSuite) TestPutProxy(c *C) {
 	st := StubProxyHandler{make(chan string, 1)}
 
 	arv, err := arvadosclient.MakeArvadosClient()
+	c.Check(err, IsNil)
 	kc, _ := MakeKeepClient(arv)
 
 	kc.Want_replicas = 2
@@ -940,6 +958,7 @@ func (s *StandaloneSuite) TestPutProxyInsufficientReplicas(c *C) {
 	st := StubProxyHandler{make(chan string, 1)}
 
 	arv, err := arvadosclient.MakeArvadosClient()
+	c.Check(err, IsNil)
 	kc, _ := MakeKeepClient(arv)
 
 	kc.Want_replicas = 3
@@ -1133,6 +1152,7 @@ func (s *StandaloneSuite) TestGetIndexWithPrefix(c *C) {
 	defer ks.listener.Close()
 
 	arv, err := arvadosclient.MakeArvadosClient()
+	c.Check(err, IsNil)
 	kc, _ := MakeKeepClient(arv)
 	arv.ApiToken = "abc123"
 	kc.SetServiceRoots(map[string]string{"x": ks.url}, nil, nil)
@@ -1159,6 +1179,7 @@ func (s *StandaloneSuite) TestGetIndexIncomplete(c *C) {
 	defer ks.listener.Close()
 
 	arv, err := arvadosclient.MakeArvadosClient()
+	c.Check(err, IsNil)
 	kc, _ := MakeKeepClient(arv)
 	arv.ApiToken = "abc123"
 	kc.SetServiceRoots(map[string]string{"x": ks.url}, nil, nil)
@@ -1181,6 +1202,7 @@ func (s *StandaloneSuite) TestGetIndexWithNoSuchServer(c *C) {
 	defer ks.listener.Close()
 
 	arv, err := arvadosclient.MakeArvadosClient()
+	c.Check(err, IsNil)
 	kc, _ := MakeKeepClient(arv)
 	arv.ApiToken = "abc123"
 	kc.SetServiceRoots(map[string]string{"x": ks.url}, nil, nil)
@@ -1201,6 +1223,7 @@ func (s *StandaloneSuite) TestGetIndexWithNoSuchPrefix(c *C) {
 	defer ks.listener.Close()
 
 	arv, err := arvadosclient.MakeArvadosClient()
+	c.Check(err, IsNil)
 	kc, _ := MakeKeepClient(arv)
 	arv.ApiToken = "abc123"
 	kc.SetServiceRoots(map[string]string{"x": ks.url}, nil, nil)

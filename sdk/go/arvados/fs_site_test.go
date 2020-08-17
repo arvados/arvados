@@ -79,6 +79,7 @@ func (s *SiteFSSuite) TestByUUIDAndPDH(c *check.C) {
 		f, err = s.fs.Open("/by_id/" + path)
 		c.Assert(err, check.IsNil)
 		fis, err = f.Readdir(-1)
+		c.Assert(err, check.IsNil)
 		var names []string
 		for _, fi := range fis {
 			names = append(names, fi.Name())
@@ -89,6 +90,7 @@ func (s *SiteFSSuite) TestByUUIDAndPDH(c *check.C) {
 	f, err = s.fs.Open("/by_id/" + fixtureAProjectUUID + "/A Subproject/baz_file")
 	c.Assert(err, check.IsNil)
 	fis, err = f.Readdir(-1)
+	c.Assert(err, check.IsNil)
 	var names []string
 	for _, fi := range fis {
 		names = append(names, fi.Name())

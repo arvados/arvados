@@ -107,6 +107,7 @@ Clusters:
 				continue
 			}
 			body, err := ioutil.ReadAll(resp.Body)
+			c.Check(err, check.IsNil)
 			c.Logf("status %d, body %s", resp.StatusCode, string(body))
 			c.Check(resp.StatusCode, check.Equals, http.StatusOK)
 			break

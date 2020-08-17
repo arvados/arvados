@@ -300,6 +300,7 @@ func (s *IntegrationSuite) TestCreateContainerRequestWithFedToken(c *check.C) {
 	resp, err = arvados.InsecureHTTPClient.Do(req)
 	if c.Check(err, check.IsNil) {
 		err = json.NewDecoder(resp.Body).Decode(&cr)
+		c.Check(err, check.IsNil)
 		c.Check(cr.UUID, check.Matches, "z2222-.*")
 	}
 }

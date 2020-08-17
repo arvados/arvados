@@ -166,7 +166,9 @@ func (s *StubbedS3AWSSuite) TestIAMRoleCredentials(c *check.C) {
 		metrics: newVolumeMetricsVecs(prometheus.NewRegistry()),
 	}
 	err := v.check(s.metadata.URL + "/latest")
+	c.Check(err, check.IsNil)
 	creds, err := v.bucket.svc.Client.Config.Credentials.Retrieve(context.Background())
+	c.Check(err, check.IsNil)
 	c.Check(creds.AccessKeyID, check.Equals, "ASIAIOSFODNN7EXAMPLE")
 	c.Check(creds.SecretAccessKey, check.Equals, "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY")
 
@@ -185,6 +187,7 @@ func (s *StubbedS3AWSSuite) TestIAMRoleCredentials(c *check.C) {
 		metrics: newVolumeMetricsVecs(prometheus.NewRegistry()),
 	}
 	err = deadv.check(s.metadata.URL + "/latest")
+	c.Check(err, check.IsNil)
 	_, err = deadv.bucket.svc.Client.Config.Credentials.Retrieve(context.Background())
 	c.Check(err, check.ErrorMatches, `(?s).*EC2RoleRequestError: no EC2 instance role found.*`)
 	c.Check(err, check.ErrorMatches, `(?s).*404.*`)

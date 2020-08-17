@@ -8,6 +8,8 @@ SPDX-License-Identifier: AGPL-3.0 %>
      [User, Group].each do |type|
        type
          .filter([['uuid','in',@share_links.collect(&:tail_uuid)]])
+         .with_count("none")
+         .fetch_multiple_pages(false)
          .each do |o|
          uuid_map[o.uuid] = o
        end
