@@ -50,11 +50,11 @@ export const openRunProcess = (uuid: string) =>
     };
 
 export const getPublicUserUuid = (state: RootState) => {
-    const prefix = getProperty<string>(UUID_PREFIX_PROPERTY_NAME)(state.properties);
+    const prefix = state.auth.localCluster;
     return `${prefix}-tpzed-anonymouspublic`;
 };
 export const getPublicGroupUuid = (state: RootState) => {
-    const prefix = getProperty<string>(UUID_PREFIX_PROPERTY_NAME)(state.properties);
+    const prefix = state.auth.localCluster;
     return `${prefix}-j7d0g-anonymouspublic`;
 };
 

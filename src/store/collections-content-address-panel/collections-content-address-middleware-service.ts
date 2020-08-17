@@ -77,25 +77,24 @@ export class CollectionsWithSameContentAddressMiddlewareService extends DataExpl
                     }
                 });
                 const responseUsers = await this.services.userService.list({
-                    limit: dataExplorer.rowsPerPage,
-                    offset: dataExplorer.page * dataExplorer.rowsPerPage,
                     filters: new FilterBuilder()
                         .addIn('uuid', userUuids)
-                        .getFilters()
+                        .getFilters(),
+                    count: "none"
                 });
                 const responseGroups = await this.services.groupsService.list({
-                    limit: dataExplorer.rowsPerPage,
-                    offset: dataExplorer.page * dataExplorer.rowsPerPage,
                     filters: new FilterBuilder()
                         .addIn('uuid', groupUuids)
-                        .getFilters()
+                        .getFilters(),
+                    count: "none"
                 });
                 responseUsers.items.map(it => {
                     api.dispatch<any>(ownerNameActions.SET_OWNER_NAME({
                         name: it.uuid === userUuid
                             ? 'User: Me'
                             : `User: ${getUserDisplayName(it)}`,
-                        uuid: it.uuid }));
+                        uuid: it.uuid
+                    }));
                 });
                 responseGroups.items.map(it => {
                     api.dispatch<any>(ownerNameActions.SET_OWNER_NAME({ name: `Project: ${it.name}`, uuid: it.uuid }));

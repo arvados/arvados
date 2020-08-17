@@ -157,7 +157,7 @@ export const userBindedActions = bindDataExplorerActions(USERS_PANEL_ID);
 
 export const loadUsersData = () =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        await services.userService.list();
+        await services.userService.list({ count: "none" });
     };
 
 export const loadUsersPanel = () =>

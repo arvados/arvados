@@ -41,7 +41,7 @@ interface ParticipantSelectState {
 }
 
 const getDisplayName = (item: GroupResource & UserResource) => {
-    switch(item.kind) {
+    switch (item.kind) {
         case ResourceKind.USER:
             return getUserDisplayName(item, true);
         case ResourceKind.GROUP:
@@ -131,14 +131,14 @@ export const ParticipantSelect = connect()(
             const filterUsers = new FilterBuilder()
                 .addILike('any', value)
                 .getFilters();
-            const userItems: ListResults<any> = await userService.list({ filters: filterUsers, limit });
+            const userItems: ListResults<any> = await userService.list({ filters: filterUsers, limit, count: "none" });
 
             const filterGroups = new FilterBuilder()
                 .addNotIn('group_class', [GroupClass.PROJECT])
                 .addILike('name', value)
                 .getFilters();
 
-            const groupItems: ListResults<any> = await groupsService.list({ filters: filterGroups, limit });
+            const groupItems: ListResults<any> = await groupsService.list({ filters: filterGroups, limit, count: "none" });
             this.setState({
                 suggestions: this.props.onlyPeople
                     ? userItems.items

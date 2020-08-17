@@ -51,9 +51,9 @@ export class CurrentTokenDialogComponent extends React.Component<CurrentTokenPro
 
     getSnippet = ({ apiHost, currentToken }: CurrentTokenDialogData) =>
         `HISTIGNORE=$HISTIGNORE:'export ARVADOS_API_TOKEN=*'
-    export ARVADOS_API_TOKEN=${currentToken}
-    export ARVADOS_API_HOST=${apiHost}
-    unset ARVADOS_API_HOST_INSECURE`
+export ARVADOS_API_TOKEN=${currentToken}
+export ARVADOS_API_HOST=${apiHost}
+unset ARVADOS_API_HOST_INSECURE`
 
     render() {
         const { classes, open, closeDialog, ...data } = this.props;
@@ -66,32 +66,32 @@ export class CurrentTokenDialogComponent extends React.Component<CurrentTokenPro
             <DialogContent>
                 <Typography paragraph={true}>
                     The Arvados API token is a secret key that enables the Arvados SDKs to access Arvados with the proper permissions.
-                            <Typography component='p'>
-                        For more information see
-                                <a href='http://doc.arvados.org/user/reference/api-tokens.html' target='blank' className={classes.link}>
-                            Getting an API token.
-                                </a>
-                    </Typography>
+                        <Typography component='span'>
+                            For more information see
+                            <a href='http://doc.arvados.org/user/reference/api-tokens.html' target='blank' className={classes.link}>
+                                Getting an API token.
+                            </a>
+                        </Typography>
                 </Typography>
                 <Typography paragraph={true}>
-                    Paste the following lines at a shell prompt to set up the necessary environment for Arvados SDKs to authenticate to your klingenc account.
-                        </Typography>
+                    Paste the following lines at a shell prompt to set up the necessary environment for Arvados SDKs to authenticate to your account.
+                </Typography>
                 <DefaultCodeSnippet lines={[this.getSnippet(data)]} />
-                <CopyToClipboard text={data.currentToken} onCopy={() => this.onCopy('Token copied to clipboard')}>
+                <CopyToClipboard text={this.getSnippet(data)} onCopy={() => this.onCopy('Token copied to clipboard')}>
                     <Button
                         color="primary"
                         size="small"
                         variant="contained"
                         className={classes.copyButton}
                     >
-                        Copy Api Token
+                        COPY TO CLIPBOARD
                     </Button>
                 </CopyToClipboard>
                 <Typography >
                     Arvados
                             <a href='http://doc.arvados.org/user/reference/api-tokens.html' target='blank' className={classes.link}>virtual machines</a>
                     do this for you automatically. This setup is needed only when you use the API remotely (e.g., from your own workstation).
-                        </Typography>
+                </Typography>
             </DialogContent>
             <DialogActions>
                 <Button onClick={closeDialog} className={classes.button} color="primary">CLOSE</Button>
