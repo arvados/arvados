@@ -84,6 +84,14 @@ func (*SchedulerSuite) TestCancelOrphanedContainers(c *check.C) {
 
 	// Sync shouldn't cancel the container because it might be
 	// running on the VM with state=="unknown".
+	//
+	// (Cancel+forget happens asynchronously and requires multiple
+	// sync() calls, so even after 10x sync-and-sleep iterations,
+	// we aren't 100% confident that sync isn't trying to
+	// cancel. But in the test environment, the goroutines started
+	// by sync() access stubs and therefore run quickly, so it
+	// works fine in practice. We accept that if the code is
+	// broken, the test will still pass occasionally.)
 	for i := 0; i < 10; i++ {
 		sch.sync()
 		time.Sleep(time.Millisecond)
@@ -94,6 +102,10 @@ func (*SchedulerSuite) TestCancelOrphanedContainers(c *check.C) {
 
 	// Sync should cancel & forget the container when the
 	// "unknown" node goes away.
+	//
+	// (As above, cancel+forget is async and requires multiple
+	// sync() calls, but stubs are fast so in practice this takes
+	// much less than 1s to complete.)
 	pool.unknown = nil
 	for deadline := time.Now().Add(time.Second); ; time.Sleep(time.Millisecond) {
 		sch.sync()
