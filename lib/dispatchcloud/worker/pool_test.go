@@ -148,13 +148,13 @@ func (suite *PoolSuite) TestResumeAfterRestart(c *check.C) {
 
 func (suite *PoolSuite) TestDrain(c *check.C) {
 	logger := ctxlog.TestLogger(c)
-	driver := test.StubDriver{HoldCloudOps: true}
+	driver := test.StubDriver{}
 	instanceSet, err := driver.InstanceSet(nil, "test-instance-set-id", nil, logger)
 	c.Assert(err, check.IsNil)
 
 	ac := arvados.NewClientFromEnv()
 
-	type1 := arvados.InstanceType{Name: "a1s", ProviderType: "a1.small", VCPUs: 1, RAM: 1 * GiB, Price: .01}
+	type1 := test.InstanceType(1)
 	pool := &Pool{
 		arvClient:   ac,
 		logger:      logger,
@@ -167,12 +167,7 @@ func (suite *PoolSuite) TestDrain(c *check.C) {
 	notify := pool.Subscribe()
 	defer pool.Unsubscribe(notify)
 
-	c.Check(pool.Unallocated()[type1], check.Equals, 0)
 	pool.Create(type1)
-	c.Check(pool.Unallocated()[type1], check.Equals, 1)
-
-	// Unblock the pending Create call.
-	go driver.ReleaseCloudOps(1)
 
 	// Wait for the instance to either return from its Create
 	// call, or show up in a poll.
@@ -194,13 +189,11 @@ func (suite *PoolSuite) TestDrain(c *check.C) {
 
 	for _, test := range tests {
 		for _, wkr := range pool.workers {
-			if wkr.instType == type1 {
-				wkr.state = test.state
-				wkr.idleBehavior = test.idleBehavior
-			}
+			wkr.state = test.state
+			wkr.idleBehavior = test.idleBehavior
 		}
 
-		// Try to start another container
+		// Try to start a container
 		started := pool.StartContainer(type1, arvados.Container{UUID: "testcontainer"})
 		c.Check(started, check.Equals, test.result)
 	}
