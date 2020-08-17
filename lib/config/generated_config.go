@@ -145,9 +145,6 @@ Clusters:
       Workbench2:
         InternalURLs: {}
         ExternalURL: ""
-      Nodemanager:
-        InternalURLs: {}
-        ExternalURL: "-"
       Health:
         InternalURLs: {}
         ExternalURL: "-"

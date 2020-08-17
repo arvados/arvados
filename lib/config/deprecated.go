@@ -43,7 +43,6 @@ type nodeProfile struct {
 	Keepproxy     systemServiceInstance `json:"keepproxy"`
 	Keepstore     systemServiceInstance `json:"keepstore"`
 	Keepweb       systemServiceInstance `json:"keep-web"`
-	Nodemanager   systemServiceInstance `json:"arvados-node-manager"`
 	DispatchCloud systemServiceInstance `json:"arvados-dispatch-cloud"`
 	RailsAPI      systemServiceInstance `json:"arvados-api-server"`
 	Websocket     systemServiceInstance `json:"arvados-ws"`
