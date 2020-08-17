@@ -273,7 +273,7 @@ func (s *RouterIntegrationSuite) TestContainerLock(c *check.C) {
 	c.Check(rr.Code, check.Equals, http.StatusOK)
 	c.Check(jresp["uuid"], check.HasLen, 27)
 	c.Check(jresp["state"], check.Equals, "Locked")
-	_, rr, jresp = doRequest(c, s.rtr, token, "POST", "/arvados/v1/containers/"+uuid+"/lock", nil, nil)
+	_, rr, _ = doRequest(c, s.rtr, token, "POST", "/arvados/v1/containers/"+uuid+"/lock", nil, nil)
 	c.Check(rr.Code, check.Equals, http.StatusUnprocessableEntity)
 	c.Check(rr.Body.String(), check.Not(check.Matches), `.*"uuid":.*`)
 	_, rr, jresp = doRequest(c, s.rtr, token, "POST", "/arvados/v1/containers/"+uuid+"/unlock", nil, nil)

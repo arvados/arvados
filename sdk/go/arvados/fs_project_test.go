@@ -52,6 +52,7 @@ func (s *SiteFSSuite) testHomeProject(c *check.C, path string) {
 	f, err := s.fs.Open(path)
 	c.Assert(err, check.IsNil)
 	fis, err := f.Readdir(-1)
+	c.Assert(err, check.IsNil)
 	c.Check(len(fis), check.Not(check.Equals), 0)
 
 	ok := false

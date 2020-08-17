@@ -205,6 +205,7 @@ func (s *LoadSuite) TestLegacyKeepproxyConfig(c *check.C) {
 
 	content = []byte(fmtKeepproxyConfig("", false))
 	cluster, err = testLoadLegacyConfig(content, f, c)
+	c.Check(err, check.IsNil)
 	c.Check(cluster.SystemLogs.LogLevel, check.Equals, "info")
 
 	content = []byte(fmtKeepproxyConfig(`"DisableGet": true,`, true))
