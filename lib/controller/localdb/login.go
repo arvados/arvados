@@ -33,8 +33,9 @@ func chooseLoginController(cluster *arvados.Cluster, railsProxy *railsProxy) log
 	wantSSO := cluster.Login.SSO.Enable
 	wantPAM := cluster.Login.PAM.Enable
 	wantLDAP := cluster.Login.LDAP.Enable
+	wantTest := cluster.Login.Test.Enable
 	switch {
-	case wantGoogle && !wantOpenIDConnect && !wantSSO && !wantPAM && !wantLDAP:
+	case wantGoogle && !wantOpenIDConnect && !wantSSO && !wantPAM && !wantLDAP && !wantTest:
 		return &oidcLoginController{
 			Cluster:            cluster,
 			RailsProxy:         railsProxy,
@@ -45,7 +46,7 @@ func chooseLoginController(cluster *arvados.Cluster, railsProxy *railsProxy) log
 			EmailClaim:         "email",
 			EmailVerifiedClaim: "email_verified",
 		}
-	case !wantGoogle && wantOpenIDConnect && !wantSSO && !wantPAM && !wantLDAP:
+	case !wantGoogle && wantOpenIDConnect && !wantSSO && !wantPAM && !wantLDAP && !wantTest:
 		return &oidcLoginController{
 			Cluster:            cluster,
 			RailsProxy:         railsProxy,
@@ -56,15 +57,17 @@ func chooseLoginController(cluster *arvados.Cluster, railsProxy *railsProxy) log
 			EmailVerifiedClaim: cluster.Login.OpenIDConnect.EmailVerifiedClaim,
 			UsernameClaim:      cluster.Login.OpenIDConnect.UsernameClaim,
 		}
-	case !wantGoogle && !wantOpenIDConnect && wantSSO && !wantPAM && !wantLDAP:
+	case !wantGoogle && !wantOpenIDConnect && wantSSO && !wantPAM && !wantLDAP && !wantTest:
 		return &ssoLoginController{railsProxy}
-	case !wantGoogle && !wantOpenIDConnect && !wantSSO && wantPAM && !wantLDAP:
+	case !wantGoogle && !wantOpenIDConnect && !wantSSO && wantPAM && !wantLDAP && !wantTest:
 		return &pamLoginController{Cluster: cluster, RailsProxy: railsProxy}
-	case !wantGoogle && !wantOpenIDConnect && !wantSSO && !wantPAM && wantLDAP:
+	case !wantGoogle && !wantOpenIDConnect && !wantSSO && !wantPAM && wantLDAP && !wantTest:
 		return &ldapLoginController{Cluster: cluster, RailsProxy: railsProxy}
+	case !wantGoogle && !wantOpenIDConnect && !wantSSO && !wantPAM && !wantLDAP && wantTest:
+		return &testLoginController{Cluster: cluster, RailsProxy: railsProxy}
 	default:
 		return errorLoginController{
-			error: errors.New("configuration problem: exactly one of Login.Google, Login.OpenIDConnect, Login.SSO, Login.PAM, and Login.LDAP must be enabled"),
+			error: errors.New("configuration problem: exactly one of Login.Google, Login.OpenIDConnect, Login.SSO, Login.PAM, Login.LDAP, and Login.Test must be enabled"),
 		}
 	}
 }
