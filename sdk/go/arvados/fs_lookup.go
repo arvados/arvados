@@ -15,7 +15,7 @@ import (
 //
 // See (*customFileSystem)MountUsers for example usage.
 type lookupnode struct {
-	inode
+	treenode
 	loadOne func(parent inode, name string) (inode, error)
 	loadAll func(parent inode) ([]inode, error)
 	stale   func(time.Time) bool
@@ -24,6 +24,20 @@ type lookupnode struct {
 	staleLock sync.Mutex
 	staleAll  time.Time
 	staleOne  map[string]time.Time
+}
+
+// Sync flushes pending writes for loaded children and, if successful,
+// triggers a reload on next lookup.
+func (ln *lookupnode) Sync() error {
+	err := ln.treenode.Sync()
+	if err != nil {
+		return err
+	}
+	ln.staleLock.Lock()
+	ln.staleAll = time.Time{}
+	ln.staleOne = nil
+	ln.staleLock.Unlock()
+	return nil
 }
 
 func (ln *lookupnode) Readdir() ([]os.FileInfo, error) {
@@ -36,7 +50,7 @@ func (ln *lookupnode) Readdir() ([]os.FileInfo, error) {
 			return nil, err
 		}
 		for _, child := range all {
-			_, err = ln.inode.Child(child.FileInfo().Name(), func(inode) (inode, error) {
+			_, err = ln.treenode.Child(child.FileInfo().Name(), func(inode) (inode, error) {
 				return child, nil
 			})
 			if err != nil {
@@ -49,25 +63,47 @@ func (ln *lookupnode) Readdir() ([]os.FileInfo, error) {
 		// newer than ln.staleAll. Reclaim memory.
 		ln.staleOne = nil
 	}
-	return ln.inode.Readdir()
+	return ln.treenode.Readdir()
 }
 
+// Child rejects (with ErrInvalidArgument) calls to add/replace
+// children, instead calling loadOne when a non-existing child is
+// looked up.
 func (ln *lookupnode) Child(name string, replace func(inode) (inode, error)) (inode, error) {
 	ln.staleLock.Lock()
 	defer ln.staleLock.Unlock()
 	checkTime := time.Now()
+	var existing inode
+	var err error
 	if ln.stale(ln.staleAll) && ln.stale(ln.staleOne[name]) {
-		_, err := ln.inode.Child(name, func(inode) (inode, error) {
+		existing, err = ln.treenode.Child(name, func(inode) (inode, error) {
 			return ln.loadOne(ln, name)
 		})
-		if err != nil {
-			return nil, err
+		if err == nil && existing != nil {
+			if ln.staleOne == nil {
+				ln.staleOne = map[string]time.Time{name: checkTime}
+			} else {
+				ln.staleOne[name] = checkTime
+			}
 		}
-		if ln.staleOne == nil {
-			ln.staleOne = map[string]time.Time{name: checkTime}
-		} else {
-			ln.staleOne[name] = checkTime
+	} else {
+		existing, err = ln.treenode.Child(name, nil)
+		if err != nil && !os.IsNotExist(err) {
+			return existing, err
 		}
 	}
-	return ln.inode.Child(name, replace)
+	if replace != nil {
+		// Let the callback try to delete or replace the
+		// existing node; if it does, return
+		// ErrInvalidArgument.
+		if tryRepl, err := replace(existing); err != nil {
+			// Propagate error from callback
+			return existing, err
+		} else if tryRepl != existing {
+			return existing, ErrInvalidArgument
+		}
+	}
+	// Return original error from ln.treenode.Child() (it might be
+	// ErrNotExist).
+	return existing, err
 }

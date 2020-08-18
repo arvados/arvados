@@ -20,12 +20,12 @@ type server struct {
 	Config *Config
 }
 
-func (srv *server) Start() error {
+func (srv *server) Start(logger *logrus.Logger) error {
 	h := &handler{Config: srv.Config}
 	reg := prometheus.NewRegistry()
 	h.Config.Cache.registry = reg
-	ctx := ctxlog.Context(context.Background(), logrus.StandardLogger())
-	mh := httpserver.Instrument(reg, nil, httpserver.HandlerWithContext(ctx, httpserver.AddRequestIDs(httpserver.LogRequests(h))))
+	ctx := ctxlog.Context(context.Background(), logger)
+	mh := httpserver.Instrument(reg, logger, httpserver.HandlerWithContext(ctx, httpserver.AddRequestIDs(httpserver.LogRequests(h))))
 	h.MetricsAPI = mh.ServeAPI(h.Config.cluster.ManagementToken, http.NotFoundHandler())
 	srv.Handler = mh
 	var listen arvados.URL
