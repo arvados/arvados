@@ -19,30 +19,27 @@ h2. Running arvados-cwl-runner
 
 h3. Get the example files
 
-The tutorial files are located in the "documentation section of the Arvados source repository:":https://github.com/arvados/arvados/tree/master/doc/user/cwl/bwa-mem
+The tutorial files are located in the documentation section of the Arvados source repository, which can be found on "git.arvados.org": https://git.arvados.org/arvados.git/tree/HEAD:/doc/user/cwl/bwa-mem or "github":https://github.com/arvados/arvados/tree/master/doc/user/cwl/bwa-mem
 
 <notextile>
-<pre><code>~$ <span class="userinput">git clone https://github.com/arvados/arvados</span>
+<pre><code>~$ <span class="userinput">git clone https://git.arvados.org/arvados.git</span>
 ~$ <span class="userinput">cd arvados/doc/user/cwl/bwa-mem</span>
 </code></pre>
 </notextile>
 
-The tutorial data is hosted on "https://playground.arvados.org":https://playground.arvados.org (also referred to by the identifier *qr1hi*).  If you are using a different Arvados instance, you may need to copy the data to your own instance.  The easiest way to do this is with "arv-copy":{{site.baseurl}}/user/topics/arv-copy.html (this requires signing up for a free playground.arvados.org account).
+The tutorial data is hosted on "https://playground.arvados.org":https://playground.arvados.org (also referred to by the identifier *pirca*).  If you are using a different Arvados instance, you may need to copy the data to your own instance.  One way to do this is with "arv-copy":{{site.baseurl}}/user/topics/arv-copy.html (this requires signing up for a free playground.arvados.org account).
 
 <notextile>
-<pre><code>~$ <span class="userinput">arv-copy --src qr1hi --dst settings 2463fa9efeb75e099685528b3b9071e0+438</span>
-~$ <span class="userinput">arv-copy --src qr1hi --dst settings ae480c5099b81e17267b7445e35b4bc7+180</span>
-~$ <span class="userinput">arv-copy --src qr1hi --dst settings 655c6cd07550151b210961ed1d3852cf+57</span>
+<pre><code>~$ <span class="userinput">arv-copy --src pirca --dst settings 2463fa9efeb75e099685528b3b9071e0+438</span>
+~$ <span class="userinput">arv-copy --src pirca --dst settings ae480c5099b81e17267b7445e35b4bc7+180</span>
 </code></pre>
 </notextile>
 
 If you do not wish to create an account on "https://playground.arvados.org":https://playground.arvados.org, you may download the files anonymously and upload them to your local Arvados instance:
 
-"https://playground.arvados.org/collections/2463fa9efeb75e099685528b3b9071e0+438":https://playground.arvados.org/collections/2463fa9efeb75e099685528b3b9071e0+438
+"https://collections.pirca.arvadosapi.com/c=2463fa9efeb75e099685528b3b9071e0+438/":https://collections.pirca.arvadosapi.com/c=2463fa9efeb75e099685528b3b9071e0+438/
 
-"https://playground.arvados.org/collections/ae480c5099b81e17267b7445e35b4bc7+180":https://playground.arvados.org/collections/ae480c5099b81e17267b7445e35b4bc7+180
-
-"https://playground.arvados.org/collections/655c6cd07550151b210961ed1d3852cf+57":https://playground.arvados.org/collections/655c6cd07550151b210961ed1d3852cf+57
+"https://collections.pirca.arvadosapi.com/c=ae480c5099b81e17267b7445e35b4bc7+180/":https://collections.pirca.arvadosapi.com/c=ae480c5099b81e17267b7445e35b4bc7+180/
 
 h2. Submitting a workflow to an Arvados cluster
 
@@ -56,10 +53,10 @@ Use @arvados-cwl-runner@ to submit CWL workflows to Arvados.  After submitting t
 <pre><code>~/arvados/doc/user/cwl/bwa-mem$ <span class="userinput">arvados-cwl-runner bwa-mem.cwl bwa-mem-input.yml</span>
 arvados-cwl-runner 1.0.20160628195002, arvados-python-client 0.1.20160616015107, cwltool 1.0.20160629140624
 2016-06-30 14:56:36 arvados.arv-run[27002] INFO: Upload local files: "bwa-mem.cwl"
-2016-06-30 14:56:36 arvados.arv-run[27002] INFO: Uploaded to qr1hi-4zz18-h7ljh5u76760ww2
-2016-06-30 14:56:40 arvados.cwl-runner[27002] INFO: Submitted job qr1hi-8i9sb-fm2n3b1w0l6bskg
-2016-06-30 14:56:41 arvados.cwl-runner[27002] INFO: Job bwa-mem.cwl (qr1hi-8i9sb-fm2n3b1w0l6bskg) is Running
-2016-06-30 14:57:12 arvados.cwl-runner[27002] INFO: Job bwa-mem.cwl (qr1hi-8i9sb-fm2n3b1w0l6bskg) is Complete
+2016-06-30 14:56:36 arvados.arv-run[27002] INFO: Uploaded to zzzzz-4zz18-h7ljh5u76760ww2
+2016-06-30 14:56:40 arvados.cwl-runner[27002] INFO: Submitted job zzzzz-8i9sb-fm2n3b1w0l6bskg
+2016-06-30 14:56:41 arvados.cwl-runner[27002] INFO: Job bwa-mem.cwl (zzzzz-8i9sb-fm2n3b1w0l6bskg) is Running
+2016-06-30 14:57:12 arvados.cwl-runner[27002] INFO: Job bwa-mem.cwl (zzzzz-8i9sb-fm2n3b1w0l6bskg) is Complete
 2016-06-30 14:57:12 arvados.cwl-runner[27002] INFO: Overall process status is success
 {
     "aligned_sam": {
@@ -87,10 +84,10 @@ You can also execute CWL files directly from Keep:
 <notextile>
 <pre><code>~/arvados/doc/user/cwl/bwa-mem$ <span class="userinput">arvados-cwl-runner keep:655c6cd07550151b210961ed1d3852cf+57/bwa-mem.cwl bwa-mem-input.yml</span>
 arvados-cwl-runner 1.0.20160628195002, arvados-python-client 0.1.20160616015107, cwltool 1.0.20160629140624
-2016-06-30 14:56:36 arvados.arv-run[27002] INFO: Uploaded to qr1hi-4zz18-h7ljh5u76760ww2
-2016-06-30 14:56:40 arvados.cwl-runner[27002] INFO: Submitted job qr1hi-8i9sb-fm2n3b1w0l6bskg
-2016-06-30 14:56:41 arvados.cwl-runner[27002] INFO: Job bwa-mem.cwl (qr1hi-8i9sb-fm2n3b1w0l6bskg) is Running
-2016-06-30 14:57:12 arvados.cwl-runner[27002] INFO: Job bwa-mem.cwl (qr1hi-8i9sb-fm2n3b1w0l6bskg) is Complete
+2016-06-30 14:56:36 arvados.arv-run[27002] INFO: Uploaded to zzzzz-4zz18-h7ljh5u76760ww2
+2016-06-30 14:56:40 arvados.cwl-runner[27002] INFO: Submitted job zzzzz-8i9sb-fm2n3b1w0l6bskg
+2016-06-30 14:56:41 arvados.cwl-runner[27002] INFO: Job bwa-mem.cwl (zzzzz-8i9sb-fm2n3b1w0l6bskg) is Running
+2016-06-30 14:57:12 arvados.cwl-runner[27002] INFO: Job bwa-mem.cwl (zzzzz-8i9sb-fm2n3b1w0l6bskg) is Complete
 2016-06-30 14:57:12 arvados.cwl-runner[27002] INFO: Overall process status is success
 {
     "aligned_sam": {

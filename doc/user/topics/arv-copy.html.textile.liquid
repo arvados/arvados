@@ -17,54 +17,54 @@ h2. arv-copy
 
 @arv-copy@ allows users to copy collections and workflows from one cluster to another. By default, @arv-copy@ will recursively go through the workflow and copy all dependencies associated with the object.
 
-For example, let's copy from the <a href="https://playground.arvados.org/">Arvados playground</a>, also known as *qr1hi*, to *dst_cluster*. The names *qr1hi* and *dst_cluster* are interchangable with any cluster name. You can find the cluster name from the prefix of the uuid of the object you want to copy. For example, in *qr1hi*-4zz18-tci4vn4fa95w0zx, the cluster name is qr1hi.
+For example, let's copy from the <a href="https://playground.arvados.org/">Arvados playground</a>, also known as *pirca*, to *dstcl*. The names *pirca* and *dstcl* are interchangable with any cluster id. You can find the cluster name from the prefix of the uuid of the object you want to copy. For example, in *zzzzz*-4zz18-tci4vn4fa95w0zx, the cluster name is zzzzz.
 
-In order to communicate with both clusters, you must create custom configuration files for each cluster. In the Arvados Workbench, click on the dropdown menu icon <span class="fa fa-lg fa-user"></span> <span class="caret"></span> in the upper right corner of the top navigation menu to access the user settings menu, and click on the menu item *Current token*. Copy the @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ in both of your clusters. Then, create two configuration files, one for each cluster. The names of the files must have the format of *ClusterID.conf*. In our example, let's make two files, one for *qr1hi* and one for *dst_cluster*. From your *Current token* page in *qr1hi* and *dst_cluster*, copy the @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@.
+In order to communicate with both clusters, you must create custom configuration files for each cluster. In the Arvados Workbench, click on the dropdown menu icon <span class="fa fa-lg fa-user"></span> <span class="caret"></span> in the upper right corner of the top navigation menu to access the user settings menu, and click on the menu item *Current token*. Copy the @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ in both of your clusters. Then, create two configuration files, one for each cluster. The names of the files must have the format of *ClusterID.conf*. In our example, let's make two files, one for *pirca* and one for *dstcl*. From your *Current token* page in *pirca* and *dstcl*, copy the @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@.
 
 !{display: block;margin-left: 25px;margin-right: auto;}{{ site.baseurl }}/images/api-token-host.png!
 
-Copy your @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ into the config files as shown below in the shell account from which you are executing the commands. For example, the default shell you may have access to is shell.qr1hi. You can add these files in ~/.config/arvados/ in the qr1hi shell terminal.
+Copy your @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ into the config files as shown below in the shell account from which you are executing the commands. For example, the default shell you may have access to is shell.pirca. You can add these files in ~/.config/arvados/ in the pirca shell terminal.
 
 <notextile>
 <pre><code>~$ <span class="userinput">cd ~/.config/arvados</span>
-~$ <span class="userinput">echo "ARVADOS_API_HOST=qr1hi.arvadosapi.com" >> qr1hi.conf</span>
-~$ <span class="userinput">echo "ARVADOS_API_TOKEN=123456789abcdefghijkl" >> qr1hi.conf</span>
-~$ <span class="userinput">echo "ARVADOS_API_HOST=dst_cluster.arvadosapi.com" >> dst_cluster.conf</span>
-~$ <span class="userinput">echo "ARVADOS_API_TOKEN=987654321lkjihgfedcba" >> dst_cluster.conf</span>
+~$ <span class="userinput">echo "ARVADOS_API_HOST=pirca.arvadosapi.com" >> pirca.conf</span>
+~$ <span class="userinput">echo "ARVADOS_API_TOKEN=123456789abcdefghijkl" >> pirca.conf</span>
+~$ <span class="userinput">echo "ARVADOS_API_HOST=dstcl.arvadosapi.com" >> dstcl.conf</span>
+~$ <span class="userinput">echo "ARVADOS_API_TOKEN=987654321lkjihgfedcba" >> dstcl.conf</span>
 </code></pre>
 </notextile>
 
-Now you're ready to copy between *qr1hi* and *dst_cluster*!
+Now you're ready to copy between *pirca* and *dstcl*!
 
 h3. How to copy a collection
 
 First, select the uuid of the collection you want to copy from the source cluster. The uuid can be found in the collection display page in the collection summary area (top left box), or from the URL bar (the part after @collections/...@)
 
-Now copy the collection from *qr1hi* to *dst_cluster*. We will use the uuid @qr1hi-4zz18-tci4vn4fa95w0zx@ as an example. You can find this collection in the <a href="https://playground.arvados.org/collections/qr1hi-4zz18-tci4vn4fa95w0zx">lobSTR v.3 project on playground.arvados.org</a>.
+Now copy the collection from *pirca* to *dstcl*. We will use the uuid @pirca-4zz18-jyjuzyqq14qspl7@ as an example. You can find this collection in the <a href="https://playground.arvados.org/collections/pirca-4zz18-jyjuzyqq14qspl7">User guide resources project on playground.arvados.org</a>.
 <notextile>
-<pre><code>~$ <span class="userinput">arv-copy --src qr1hi --dst dst_cluster qr1hi-4zz18-tci4vn4fa95w0zx</span>
-qr1hi-4zz18-tci4vn4fa95w0zx: 6.1M / 6.1M 100.0%
-arvados.arv-copy[1234] INFO: Success: created copy with uuid dst_cluster-4zz18-8765943210cdbae
+<pre><code>~$ <span class="userinput">arv-copy --src pirca --dst dstcl pirca-4zz18-jyjuzyqq14qspl7</span>
+pirca-4zz18-tci4vn4fa95w0zx: 6.1M / 6.1M 100.0%
+arvados.arv-copy[1234] INFO: Success: created copy with uuid dstcl-4zz18-8765943210cdbae
 </code></pre>
 </notextile>
 
 The output of arv-copy displays the uuid of the collection generated in the destination cluster. By default, the output is placed in your home project in the destination cluster. If you want to place your collection in a pre-created project, you can specify the project you want it to be in using the tag @--project-uuid@ followed by the project uuid.
 
-For example, this will copy the collection to project dst_cluster-j7d0g-a894213ukjhal12 in the destination cluster.
+For example, this will copy the collection to project dstcl-j7d0g-a894213ukjhal12 in the destination cluster.
 
-<notextile> <pre><code>~$ <span class="userinput">arv-copy --src qr1hi --dst dst_cluster --project-uuid dst_cluster-j7d0g-a894213ukjhal12 qr1hi-4zz18-tci4vn4fa95w0zx</span>
+<notextile> <pre><code>~$ <span class="userinput">arv-copy --src pirca --dst dstcl --project-uuid dstcl-j7d0g-a894213ukjhal12 pirca-4zz18-tci4vn4fa95w0zx</span>
 </code></pre>
 </notextile>
 
 h3. How to copy a workflow
 
-We will use the uuid @zzzzz-7fd4e-sampleworkflow1@ as an example workflow.
+We will use the uuid @pirca-7fd4e-sampleworkflow1@ as an example workflow.
 
 <notextile>
-<pre><code>~$ <span class="userinput">arv-copy --src zzzzz --dst dst_cluster --dst-git-repo $USER/tutorial zzzzz-7fd4e-sampleworkflow1</span>
-zzzzz-4zz18-jidprdejysravcr: 1143M / 1143M 100.0%
+<pre><code>~$ <span class="userinput">arv-copy --src pirca --dst dstcl --dst-git-repo $USER/tutorial pirca-7fd4e-sampleworkflow1</span>
+pirca-4zz18-jidprdejysravcr: 1143M / 1143M 100.0%
 2017-01-04 04:11:58 arvados.arv-copy[5906] INFO:
-2017-01-04 04:11:58 arvados.arv-copy[5906] INFO: Success: created copy with uuid dst_cluster-7fd4e-ojtgpne594ubkt7
+2017-01-04 04:11:58 arvados.arv-copy[5906] INFO: Success: created copy with uuid dstcl-7fd4e-ojtgpne594ubkt7
 </code></pre>
 </notextile>
 
@@ -75,6 +75,6 @@ If you would like to copy the object without dependencies, you can use the @--no
 For example, we can copy the same object non-recursively using the following:
 
 <notextile>
-<pre><code>~$ <span class="userinput">arv-copy --src zzzzz --dst dst_cluster --dst-git-repo $USER/tutorial --no-recursive zzzzz-7fd4e-sampleworkflow1</span>
+<pre><code>~$ <span class="userinput">arv-copy --src pirca --dst dstcl --dst-git-repo $USER/tutorial --no-recursive pirca-7fd4e-sampleworkflow1</span>
 </code></pre>
 </notextile>

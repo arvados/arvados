@@ -8,7 +8,7 @@ class: CommandLineTool
 
 hints:
   DockerRequirement:
-    dockerPull: lh3lh3/bwa
+    dockerPull: quay.io/biocontainers/bwa:0.7.17--ha92aebf_3
 
 baseCommand: [mem]
 

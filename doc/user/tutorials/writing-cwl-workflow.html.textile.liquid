@@ -35,9 +35,9 @@ Use @--create-workflow@ to register a CWL workflow with Arvados.  This enables y
 <pre><code>~/arvados/doc/user/cwl/bwa-mem$ <span class="userinput">arvados-cwl-runner --create-workflow bwa-mem.cwl</span>
 arvados-cwl-runner 1.0.20160628195002, arvados-python-client 0.1.20160616015107, cwltool 1.0.20160629140624
 2016-07-01 12:21:01 arvados.arv-run[15796] INFO: Upload local files: "bwa-mem.cwl"
-2016-07-01 12:21:01 arvados.arv-run[15796] INFO: Uploaded to qr1hi-4zz18-7e0hedrmkuyoei3
-2016-07-01 12:21:01 arvados.cwl-runner[15796] INFO: Created template qr1hi-p5p6p-rjleou1dwr167v5
-qr1hi-p5p6p-rjleou1dwr167v5
+2016-07-01 12:21:01 arvados.arv-run[15796] INFO: Uploaded to zzzzz-4zz18-7e0hedrmkuyoei3
+2016-07-01 12:21:01 arvados.cwl-runner[15796] INFO: Created template zzzzz-p5p6p-rjleou1dwr167v5
+zzzzz-p5p6p-rjleou1dwr167v5
 </code></pre>
 </notextile>
 
@@ -47,9 +47,9 @@ You can provide a partial input file to set default values for the workflow inpu
 <pre><code>~/arvados/doc/user/cwl/bwa-mem$ <span class="userinput">arvados-cwl-runner --name "My workflow with defaults" --create-workflow bwa-mem.cwl bwa-mem-template.yml</span>
 arvados-cwl-runner 1.0.20160628195002, arvados-python-client 0.1.20160616015107, cwltool 1.0.20160629140624
 2016-07-01 14:09:50 arvados.arv-run[3730] INFO: Upload local files: "bwa-mem.cwl"
-2016-07-01 14:09:50 arvados.arv-run[3730] INFO: Uploaded to qr1hi-4zz18-0f91qkovk4ml18o
-2016-07-01 14:09:50 arvados.cwl-runner[3730] INFO: Created template qr1hi-p5p6p-0deqe6nuuyqns2i
-qr1hi-p5p6p-zuniv58hn8d0qd8
+2016-07-01 14:09:50 arvados.arv-run[3730] INFO: Uploaded to zzzzz-4zz18-0f91qkovk4ml18o
+2016-07-01 14:09:50 arvados.cwl-runner[3730] INFO: Created template zzzzz-p5p6p-0deqe6nuuyqns2i
+zzzzz-p5p6p-zuniv58hn8d0qd8
 </code></pre>
 </notextile>
 
@@ -58,10 +58,10 @@ h3. Running registered workflows at the command line
 You can run a registered workflow at the command line by its UUID:
 
 <notextile>
-<pre><code>~/arvados/doc/user/cwl/bwa-mem$ <span class="userinput">arvados-cwl-runner qr1hi-p5p6p-zuniv58hn8d0qd8 --help</span>
+<pre><code>~/arvados/doc/user/cwl/bwa-mem$ <span class="userinput">arvados-cwl-runner zzzzz-p5p6p-zuniv58hn8d0qd8 --help</span>
 /home/peter/work/scripts/venv/bin/arvados-cwl-runner 0d62edcb9d25bf4dcdb20d8872ea7b438e12fc59 1.0.20161209192028, arvados-python-client 0.1.20161212125425, cwltool 1.0.20161207161158
-Resolved 'qr1hi-p5p6p-zuniv58hn8d0qd8' to 'keep:655c6cd07550151b210961ed1d3852cf+57/bwa-mem.cwl'
-usage: qr1hi-p5p6p-zuniv58hn8d0qd8 [-h] [--PL PL] --group_id GROUP_ID
+Resolved 'zzzzz-p5p6p-zuniv58hn8d0qd8' to 'keep:655c6cd07550151b210961ed1d3852cf+57/bwa-mem.cwl'
+usage: zzzzz-p5p6p-zuniv58hn8d0qd8 [-h] [--PL PL] --group_id GROUP_ID
                                    --read_p1 READ_P1 [--read_p2 READ_P2]
                                    [--reference REFERENCE] --sample_id
                                    SAMPLE_ID
@@ -164,10 +164,10 @@ You can make a workflow file directly executable (@cwl-runner@ should be an alia
 <pre><code>~/arvados/doc/user/cwl/bwa-mem$ <span class="userinput">./bwa-mem.cwl bwa-mem-input.yml</span>
 arvados-cwl-runner 1.0.20160628195002, arvados-python-client 0.1.20160616015107, cwltool 1.0.20160629140624
 2016-06-30 14:56:36 arvados.arv-run[27002] INFO: Upload local files: "bwa-mem.cwl"
-2016-06-30 14:56:36 arvados.arv-run[27002] INFO: Uploaded to qr1hi-4zz18-h7ljh5u76760ww2
-2016-06-30 14:56:40 arvados.cwl-runner[27002] INFO: Submitted job qr1hi-8i9sb-fm2n3b1w0l6bskg
-2016-06-30 14:56:41 arvados.cwl-runner[27002] INFO: Job bwa-mem.cwl (qr1hi-8i9sb-fm2n3b1w0l6bskg) is Running
-2016-06-30 14:57:12 arvados.cwl-runner[27002] INFO: Job bwa-mem.cwl (qr1hi-8i9sb-fm2n3b1w0l6bskg) is Complete
+2016-06-30 14:56:36 arvados.arv-run[27002] INFO: Uploaded to zzzzz-4zz18-h7ljh5u76760ww2
+2016-06-30 14:56:40 arvados.cwl-runner[27002] INFO: Submitted job zzzzz-8i9sb-fm2n3b1w0l6bskg
+2016-06-30 14:56:41 arvados.cwl-runner[27002] INFO: Job bwa-mem.cwl (zzzzz-8i9sb-fm2n3b1w0l6bskg) is Running
+2016-06-30 14:57:12 arvados.cwl-runner[27002] INFO: Job bwa-mem.cwl (zzzzz-8i9sb-fm2n3b1w0l6bskg) is Complete
 2016-06-30 14:57:12 arvados.cwl-runner[27002] INFO: Overall process status is success
 {
     "aligned_sam": {
@@ -192,10 +192,10 @@ cwl:tool: <span class="userinput">bwa-mem.cwl</span>
 <pre><code>~/arvados/doc/user/cwl/bwa-mem$ <span class="userinput">./bwa-mem-input.yml</span>
 arvados-cwl-runner 1.0.20160628195002, arvados-python-client 0.1.20160616015107, cwltool 1.0.20160629140624
 2016-06-30 14:56:36 arvados.arv-run[27002] INFO: Upload local files: "bwa-mem.cwl"
-2016-06-30 14:56:36 arvados.arv-run[27002] INFO: Uploaded to qr1hi-4zz18-h7ljh5u76760ww2
-2016-06-30 14:56:40 arvados.cwl-runner[27002] INFO: Submitted job qr1hi-8i9sb-fm2n3b1w0l6bskg
-2016-06-30 14:56:41 arvados.cwl-runner[27002] INFO: Job bwa-mem.cwl (qr1hi-8i9sb-fm2n3b1w0l6bskg) is Running
-2016-06-30 14:57:12 arvados.cwl-runner[27002] INFO: Job bwa-mem.cwl (qr1hi-8i9sb-fm2n3b1w0l6bskg) is Complete
+2016-06-30 14:56:36 arvados.arv-run[27002] INFO: Uploaded to zzzzz-4zz18-h7ljh5u76760ww2
+2016-06-30 14:56:40 arvados.cwl-runner[27002] INFO: Submitted job zzzzz-8i9sb-fm2n3b1w0l6bskg
+2016-06-30 14:56:41 arvados.cwl-runner[27002] INFO: Job bwa-mem.cwl (zzzzz-8i9sb-fm2n3b1w0l6bskg) is Running
+2016-06-30 14:57:12 arvados.cwl-runner[27002] INFO: Job bwa-mem.cwl (zzzzz-8i9sb-fm2n3b1w0l6bskg) is Complete
 2016-06-30 14:57:12 arvados.cwl-runner[27002] INFO: Overall process status is success
 {
     "aligned_sam": {
