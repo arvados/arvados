@@ -27,6 +27,7 @@ func (conn *Conn) generated_CollectionList(ctx context.Context, options arvados.
 	var needSort atomic.Value
 	needSort.Store(false)
 	err := conn.splitListRequest(ctx, options, func(ctx context.Context, _ string, backend arvados.API, options arvados.ListOptions) ([]string, error) {
+		options.ForwardedFor = conn.cluster.ClusterID + "-" + options.ForwardedFor
 		cl, err := backend.CollectionList(ctx, options)
 		if err != nil {
 			return nil, err
@@ -107,7 +108,7 @@ func (conn *Conn) generated_CollectionList(ctx context.Context, options arvados.
 // backend.
 func (conn *Conn) splitListRequest(ctx context.Context, opts arvados.ListOptions, fn func(context.Context, string, arvados.API, arvados.ListOptions) ([]string, error)) error {
 
-	if opts.BypassFederation {
+	if opts.BypassFederation || opts.ForwardedFor != "" {
 		// Client requested no federation.  Pass through.
 		_, err := fn(ctx, conn.cluster.ClusterID, conn.local, opts)
 		return err
@@ -249,7 +250,7 @@ func (conn *Conn) splitListRequest(ctx context.Context, opts arvados.ListOptions
 
 				done, err := fn(ctx, clusterID, backend, remoteOpts)
 				if err != nil {
-					errs <- httpErrorf(http.StatusBadGateway, err.Error())
+					errs <- httpErrorf(http.StatusBadGateway, "%s", err.Error())
 					return
 				}
 				progress := false

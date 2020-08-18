@@ -23,6 +23,7 @@ func (s *DurationSuite) TestMarshalJSON(c *check.C) {
 	c.Check(err, check.IsNil)
 	c.Check(d.D, check.Equals, Duration(time.Second+234*time.Millisecond))
 	buf, err := json.Marshal(d)
+	c.Check(err, check.IsNil)
 	c.Check(string(buf), check.Equals, `{"D":"1.234s"}`)
 
 	for _, trial := range []struct {

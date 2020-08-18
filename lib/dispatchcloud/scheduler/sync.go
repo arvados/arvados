@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"git.arvados.org/arvados.git/lib/dispatchcloud/container"
+	"git.arvados.org/arvados.git/lib/dispatchcloud/worker"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"github.com/sirupsen/logrus"
 )
@@ -23,6 +24,7 @@ import (
 // Running containers whose crunch-run processes have exited are
 // cancelled.
 func (sch *Scheduler) sync() {
+	anyUnknownWorkers := sch.pool.CountWorkers()[worker.StateUnknown] > 0
 	running := sch.pool.Running()
 	qEntries, qUpdated := sch.queue.Entries()
 	for uuid, ent := range qEntries {
@@ -30,7 +32,9 @@ func (sch *Scheduler) sync() {
 		switch ent.Container.State {
 		case arvados.ContainerStateRunning:
 			if !running {
-				go sch.cancel(uuid, "not running on any worker")
+				if !anyUnknownWorkers {
+					go sch.cancel(uuid, "not running on any worker")
+				}
 			} else if !exited.IsZero() && qUpdated.After(exited) {
 				go sch.cancel(uuid, "state=Running after crunch-run exited")
 			} else if ent.Container.Priority == 0 {

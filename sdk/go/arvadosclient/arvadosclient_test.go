@@ -63,6 +63,7 @@ func (s *ServerRequiredSuite) TestMakeArvadosClientInsecure(c *C) {
 
 func (s *ServerRequiredSuite) TestGetInvalidUUID(c *C) {
 	arv, err := MakeArvadosClient()
+	c.Assert(err, IsNil)
 
 	getback := make(Dict)
 	err = arv.Get("collections", "", nil, &getback)
@@ -80,6 +81,7 @@ func (s *ServerRequiredSuite) TestGetInvalidUUID(c *C) {
 
 func (s *ServerRequiredSuite) TestGetValidUUID(c *C) {
 	arv, err := MakeArvadosClient()
+	c.Assert(err, IsNil)
 
 	getback := make(Dict)
 	err = arv.Get("collections", "zzzzz-4zz18-abcdeabcdeabcde", nil, &getback)
@@ -95,6 +97,7 @@ func (s *ServerRequiredSuite) TestGetValidUUID(c *C) {
 
 func (s *ServerRequiredSuite) TestInvalidResourceType(c *C) {
 	arv, err := MakeArvadosClient()
+	c.Assert(err, IsNil)
 
 	getback := make(Dict)
 	err = arv.Get("unicorns", "zzzzz-zebra-unicorn7unicorn", nil, &getback)
@@ -141,6 +144,7 @@ func (s *ServerRequiredSuite) TestErrorResponse(c *C) {
 
 func (s *ServerRequiredSuite) TestAPIDiscovery_Get_defaultCollectionReplication(c *C) {
 	arv, err := MakeArvadosClient()
+	c.Assert(err, IsNil)
 	value, err := arv.Discovery("defaultCollectionReplication")
 	c.Assert(err, IsNil)
 	c.Assert(value, NotNil)
@@ -148,6 +152,7 @@ func (s *ServerRequiredSuite) TestAPIDiscovery_Get_defaultCollectionReplication(
 
 func (s *ServerRequiredSuite) TestAPIDiscovery_Get_noSuchParameter(c *C) {
 	arv, err := MakeArvadosClient()
+	c.Assert(err, IsNil)
 	value, err := arv.Discovery("noSuchParameter")
 	c.Assert(err, NotNil)
 	c.Assert(value, IsNil)
