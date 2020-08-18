@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import * as classnames from "classnames";
+import classnames from "classnames";
 import { StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core/styles';
 import { ReactElement } from "react";
 import { FixedSizeList, ListChildComponentProps } from "react-window";

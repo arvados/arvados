@@ -7,7 +7,7 @@ import { IconButton, Tabs, Tab, Typography, Grid, Tooltip } from '@material-ui/c
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
 import { Transition } from 'react-transition-group';
 import { ArvadosTheme } from '~/common/custom-theme';
-import * as classnames from "classnames";
+import classnames from "classnames";
 import { connect } from 'react-redux';
 import { RootState } from '~/store/store';
 import { CloseIcon } from '~/components/icon/icon';

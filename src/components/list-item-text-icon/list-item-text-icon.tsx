@@ -7,7 +7,7 @@ import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/st
 import { ArvadosTheme } from '~/common/custom-theme';
 import { ListItemIcon, ListItemText, Typography } from '@material-ui/core';
 import { IconType } from '../icon/icon';
-import * as classnames from "classnames";
+import classnames from "classnames";
 
 type CssRules = 'root' | 'listItemText' | 'hasMargin' | 'active';
 

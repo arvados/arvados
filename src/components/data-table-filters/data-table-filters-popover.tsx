@@ -18,7 +18,7 @@ import {
     Tooltip,
     IconButton
 } from "@material-ui/core";
-import * as classnames from "classnames";
+import classnames from "classnames";
 import { DefaultTransformOrigin } from "~/components/popover/helpers";
 import { createTree } from '~/models/tree';
 import { DataTableFilters, DataTableFiltersTree } from "./data-table-filters-tree";

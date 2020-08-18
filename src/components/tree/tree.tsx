@@ -7,7 +7,7 @@ import { List, ListItem, ListItemIcon, Collapse, Checkbox, Radio } from "@materi
 import { StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core/styles';
 import { ReactElement } from "react";
 import CircularProgress from '@material-ui/core/CircularProgress';
-import * as classnames from "classnames";
+import classnames from "classnames";
 
 import { ArvadosTheme } from '~/common/custom-theme';
 import { SidePanelRightArrowIcon } from '../icon/icon';
