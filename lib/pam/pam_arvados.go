@@ -102,7 +102,7 @@ func authenticate(logger *logrus.Logger, username, token string, argv []string) 
 		} else if arg == "debug" {
 			logger.SetLevel(logrus.DebugLevel)
 		} else {
-			logger.Warnf("unkown option: %s\n", arg)
+			logger.Warnf("unknown option: %s\n", arg)
 		}
 	}
 	if hostname == "" || hostname == "-" {

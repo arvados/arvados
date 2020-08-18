@@ -527,9 +527,12 @@ class TestSubmit(unittest.TestCase):
 
     @mock.patch("arvados_cwl.task_queue.TaskQueue")
     @mock.patch("arvados_cwl.arvworkflow.ArvadosWorkflow.job")
-    @mock.patch("arvados_cwl.executor.ArvCwlExecutor.make_output_collection", return_value = (None, None))
+    @mock.patch("arvados_cwl.executor.ArvCwlExecutor.make_output_collection")
     @stubs
     def test_storage_classes_correctly_propagate_to_make_output_collection(self, stubs, make_output, job, tq):
+        final_output_c = arvados.collection.Collection()
+        make_output.return_value = ({},final_output_c)
+
         def set_final_output(job_order, output_callback, runtimeContext):
             output_callback("zzzzz-4zz18-zzzzzzzzzzzzzzzz", "success")
             return []
@@ -538,16 +541,19 @@ class TestSubmit(unittest.TestCase):
         exited = arvados_cwl.main(
             ["--debug", "--local", "--storage-classes=foo",
                 "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-            sys.stdin, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+            stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
 
         make_output.assert_called_with(u'Output of submit_wf.cwl', ['foo'], '', 'zzzzz-4zz18-zzzzzzzzzzzzzzzz')
         self.assertEqual(exited, 0)
 
     @mock.patch("arvados_cwl.task_queue.TaskQueue")
     @mock.patch("arvados_cwl.arvworkflow.ArvadosWorkflow.job")
-    @mock.patch("arvados_cwl.executor.ArvCwlExecutor.make_output_collection", return_value = (None, None))
+    @mock.patch("arvados_cwl.executor.ArvCwlExecutor.make_output_collection")
     @stubs
     def test_default_storage_classes_correctly_propagate_to_make_output_collection(self, stubs, make_output, job, tq):
+        final_output_c = arvados.collection.Collection()
+        make_output.return_value = ({},final_output_c)
+
         def set_final_output(job_order, output_callback, runtimeContext):
             output_callback("zzzzz-4zz18-zzzzzzzzzzzzzzzz", "success")
             return []
@@ -556,7 +562,7 @@ class TestSubmit(unittest.TestCase):
         exited = arvados_cwl.main(
             ["--debug", "--local",
                 "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-            sys.stdin, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+            stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
 
         make_output.assert_called_with(u'Output of submit_wf.cwl', ['default'], '', 'zzzzz-4zz18-zzzzzzzzzzzzzzzz')
         self.assertEqual(exited, 0)
@@ -1103,7 +1109,10 @@ class TestSubmit(unittest.TestCase):
                                 "outputs": [
                                     {
                                         "id": "#secret_job.cwl/out",
-                                        "type": "stdout"
+                                        "type": "File",
+                                        "outputBinding": {
+                                              "glob": "hashed_example.txt"
+                                        }
                                     }
                                 ],
                                 "stdout": "hashed_example.txt",
@@ -1312,7 +1321,7 @@ class TestSubmit(unittest.TestCase):
                     stubs.capture_stdout, capture_stderr, api_client=stubs.api, keep_client=stubs.keep_client)
 
                 self.assertEqual(exited, 1)
-                self.assertRegexpMatches(
+                self.assertRegex(
                     re.sub(r'[ \n]+', ' ', capture_stderr.getvalue()),
                     r"Expected collection uuid zzzzz-4zz18-zzzzzzzzzzzzzzz to be 99999999999999999999999999999998\+99 but API server reported 99999999999999999999999999999997\+99")
             finally:
@@ -1335,7 +1344,7 @@ class TestSubmit(unittest.TestCase):
 
         try:
             self.assertEqual(exited, 1)
-            self.assertRegexpMatches(
+            self.assertRegex(
                 capture_stderr.getvalue(),
                 r"Collection uuid zzzzz-4zz18-zzzzzzzzzzzzzzz not found")
         finally:

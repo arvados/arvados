@@ -36,6 +36,7 @@ type stubPool struct {
 	notify    <-chan struct{}
 	unalloc   map[arvados.InstanceType]int // idle+booting+unknown
 	idle      map[arvados.InstanceType]int
+	unknown   map[arvados.InstanceType]int
 	running   map[string]time.Time
 	atQuota   bool
 	canCreate int
@@ -62,7 +63,7 @@ func (p *stubPool) Unallocated() map[arvados.InstanceType]int {
 	defer p.Unlock()
 	r := map[arvados.InstanceType]int{}
 	for it, n := range p.unalloc {
-		r[it] = n
+		r[it] = n - p.unknown[it]
 	}
 	return r
 }
@@ -96,6 +97,7 @@ func (p *stubPool) CountWorkers() map[worker.State]int {
 		worker.StateBooting: len(p.unalloc) - len(p.idle),
 		worker.StateIdle:    len(p.idle),
 		worker.StateRunning: len(p.running),
+		worker.StateUnknown: len(p.unknown),
 	}
 }
 func (p *stubPool) StartContainer(it arvados.InstanceType, ctr arvados.Container) bool {

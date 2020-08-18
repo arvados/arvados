@@ -30,7 +30,7 @@ setup(name='arvados-cwl-runner',
       download_url="https://github.com/arvados/arvados.git",
       license='Apache 2.0',
       packages=find_packages(),
-      package_data={'arvados_cwl': ['arv-cwl-schema-v1.0.yml', 'arv-cwl-schema-v1.1.yml']},
+      package_data={'arvados_cwl': ['arv-cwl-schema-v1.0.yml', 'arv-cwl-schema-v1.1.yml', 'arv-cwl-schema-v1.2.yml']},
       scripts=[
           'bin/cwl-runner',
           'bin/arvados-cwl-runner',
@@ -39,8 +39,8 @@ setup(name='arvados-cwl-runner',
       # file to determine what version of cwltool and schema-salad to
       # build.
       install_requires=[
-          'cwltool==3.0.20200530110633',
-          'schema-salad==6.0.20200601095207',
+          'cwltool==3.0.20200807132242',
+          'schema-salad==7.0.20200612160654',
           'arvados-python-client{}'.format(pysdk_dep),
           'setuptools',
           'ciso8601 >= 2.0.0'

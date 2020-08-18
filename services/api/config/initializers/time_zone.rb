@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-ActiveRecord::Base.connection.class.set_callback :checkout, :after do
+ActiveRecord::ConnectionAdapters::AbstractAdapter.set_callback :checkout, :before, ->(conn) do
   # If the database connection is in a time zone other than UTC,
   # "timestamp" values don't behave as desired.
   #
@@ -11,5 +11,5 @@ ActiveRecord::Base.connection.class.set_callback :checkout, :after do
   # before now()), but false in time zone -0100 (now() returns an
   # earlier clock time, and its time zone is dropped when comparing to
   # a "timestamp without time zone").
-  raw_connection.sync_exec("SET TIME ZONE 'UTC'")
+  conn.execute("SET TIME ZONE 'UTC'")
 end

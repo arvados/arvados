@@ -176,6 +176,7 @@ type Pool struct {
 	mInstancesPrice    *prometheus.GaugeVec
 	mVCPUs             *prometheus.GaugeVec
 	mMemory            *prometheus.GaugeVec
+	mBootOutcomes      *prometheus.CounterVec
 	mDisappearances    *prometheus.CounterVec
 }
 
@@ -436,6 +437,7 @@ func (wp *Pool) Shutdown(it arvados.InstanceType) bool {
 		for _, wkr := range wp.workers {
 			if wkr.idleBehavior != IdleBehaviorHold && wkr.state == tryState && wkr.instType == it {
 				logger.WithField("Instance", wkr.instance.ID()).Info("shutting down")
+				wkr.reportBootOutcome(BootOutcomeAborted)
 				wkr.shutdown()
 				return true
 			}
@@ -494,7 +496,7 @@ func (wp *Pool) StartContainer(it arvados.InstanceType, ctr arvados.Container) b
 	defer wp.mtx.Unlock()
 	var wkr *worker
 	for _, w := range wp.workers {
-		if w.instType == it && w.state == StateIdle {
+		if w.instType == it && w.state == StateIdle && w.idleBehavior == IdleBehaviorRun {
 			if wkr == nil || w.busy.After(wkr.busy) {
 				wkr = w
 			}
@@ -593,6 +595,16 @@ func (wp *Pool) registerMetrics(reg *prometheus.Registry) {
 		Help:      "Total memory on all cloud VMs.",
 	}, []string{"category"})
 	reg.MustRegister(wp.mMemory)
+	wp.mBootOutcomes = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "arvados",
+		Subsystem: "dispatchcloud",
+		Name:      "boot_outcomes",
+		Help:      "Boot outcomes by type.",
+	}, []string{"outcome"})
+	for k := range validBootOutcomes {
+		wp.mBootOutcomes.WithLabelValues(string(k)).Add(0)
+	}
+	reg.MustRegister(wp.mBootOutcomes)
 	wp.mDisappearances = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "arvados",
 		Subsystem: "dispatchcloud",
@@ -765,6 +777,7 @@ func (wp *Pool) KillInstance(id cloud.InstanceID, reason string) error {
 		return errors.New("instance not found")
 	}
 	wkr.logger.WithField("Reason", reason).Info("shutting down")
+	wkr.reportBootOutcome(BootOutcomeAborted)
 	wkr.shutdown()
 	return nil
 }
@@ -867,6 +880,7 @@ func (wp *Pool) sync(threshold time.Time, instances []cloud.Instance) {
 			"WorkerState": wkr.state,
 		})
 		logger.Info("instance disappeared in cloud")
+		wkr.reportBootOutcome(BootOutcomeDisappeared)
 		if wp.mDisappearances != nil {
 			wp.mDisappearances.WithLabelValues(stateString[wkr.state]).Inc()
 		}

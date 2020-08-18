@@ -164,6 +164,7 @@ func (s *LoadSuite) TestSampleKeys(c *check.C) {
 		cfg, err := testLoader(c, yaml, nil).Load()
 		c.Assert(err, check.IsNil)
 		cc, err := cfg.GetCluster("z1111")
+		c.Assert(err, check.IsNil)
 		_, hasSample := cc.InstanceTypes["SAMPLE"]
 		c.Check(hasSample, check.Equals, false)
 		if strings.Contains(yaml, "Foo") {

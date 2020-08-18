@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	"git.arvados.org/arvados.git/lib/controller/rpc"
+	"git.arvados.org/arvados.git/lib/ctrlctx"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
@@ -117,7 +118,7 @@ func createAPIClientAuthorization(ctx context.Context, conn *rpc.Conn, rootToken
 		return
 	}
 	token := target.Query().Get("api_token")
-	tx, err := currenttx(ctx)
+	tx, err := ctrlctx.CurrentTx(ctx)
 	if err != nil {
 		return
 	}
@@ -130,7 +131,7 @@ func createAPIClientAuthorization(ctx context.Context, conn *rpc.Conn, rootToken
 	}
 	var exp sql.NullString
 	var scopes []byte
-	err = tx.QueryRowContext(ctx, "select uuid, api_token, expires_at, scopes from api_client_authorizations where api_token=$1", tokensecret).Scan(&resp.UUID, &resp.APIToken, &exp, &scopes)
+	err = tx.QueryRowxContext(ctx, "select uuid, api_token, expires_at, scopes from api_client_authorizations where api_token=$1", tokensecret).Scan(&resp.UUID, &resp.APIToken, &exp, &scopes)
 	if err != nil {
 		return
 	}

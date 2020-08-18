@@ -54,6 +54,23 @@ func (s State) MarshalText() ([]byte, error) {
 	return []byte(stateString[s]), nil
 }
 
+// BootOutcome is the result of a worker boot. It is used as a label in a metric.
+type BootOutcome string
+
+const (
+	BootOutcomeFailed      BootOutcome = "failure"
+	BootOutcomeSucceeded   BootOutcome = "success"
+	BootOutcomeAborted     BootOutcome = "aborted"
+	BootOutcomeDisappeared BootOutcome = "disappeared"
+)
+
+var validBootOutcomes = map[BootOutcome]bool{
+	BootOutcomeFailed:      true,
+	BootOutcomeSucceeded:   true,
+	BootOutcomeAborted:     true,
+	BootOutcomeDisappeared: true,
+}
+
 // IdleBehavior indicates the behavior desired when a node becomes idle.
 type IdleBehavior string
 
@@ -74,22 +91,23 @@ type worker struct {
 	executor Executor
 	wp       *Pool
 
-	mtx          sync.Locker // must be wp's Locker.
-	state        State
-	idleBehavior IdleBehavior
-	instance     cloud.Instance
-	instType     arvados.InstanceType
-	vcpus        int64
-	memory       int64
-	appeared     time.Time
-	probed       time.Time
-	updated      time.Time
-	busy         time.Time
-	destroyed    time.Time
-	lastUUID     string
-	running      map[string]*remoteRunner // remember to update state idle<->running when this changes
-	starting     map[string]*remoteRunner // remember to update state idle<->running when this changes
-	probing      chan struct{}
+	mtx                 sync.Locker // must be wp's Locker.
+	state               State
+	idleBehavior        IdleBehavior
+	instance            cloud.Instance
+	instType            arvados.InstanceType
+	vcpus               int64
+	memory              int64
+	appeared            time.Time
+	probed              time.Time
+	updated             time.Time
+	busy                time.Time
+	destroyed           time.Time
+	lastUUID            string
+	running             map[string]*remoteRunner // remember to update state idle<->running when this changes
+	starting            map[string]*remoteRunner // remember to update state idle<->running when this changes
+	probing             chan struct{}
+	bootOutcomeReported bool
 }
 
 func (wkr *worker) onUnkillable(uuid string) {
@@ -109,6 +127,17 @@ func (wkr *worker) onKilled(uuid string) {
 	defer wkr.mtx.Unlock()
 	wkr.closeRunner(uuid)
 	go wkr.wp.notify()
+}
+
+// caller must have lock.
+func (wkr *worker) reportBootOutcome(outcome BootOutcome) {
+	if wkr.bootOutcomeReported {
+		return
+	}
+	if wkr.wp.mBootOutcomes != nil {
+		wkr.wp.mBootOutcomes.WithLabelValues(string(outcome)).Inc()
+	}
+	wkr.bootOutcomeReported = true
 }
 
 // caller must have lock.
@@ -224,6 +253,7 @@ func (wkr *worker) probeAndUpdate() {
 	defer wkr.mtx.Unlock()
 	if reportedBroken && wkr.idleBehavior == IdleBehaviorRun {
 		logger.Info("probe reported broken instance")
+		wkr.reportBootOutcome(BootOutcomeFailed)
 		wkr.setIdleBehavior(IdleBehaviorDrain)
 	}
 	if !ok || (!booted && len(ctrUUIDs) == 0 && len(wkr.running) == 0) {
@@ -247,6 +277,7 @@ func (wkr *worker) probeAndUpdate() {
 			// some evidence about why the node never
 			// booted, even in non-debug mode.
 			if !booted {
+				wkr.reportBootOutcome(BootOutcomeFailed)
 				logger.WithFields(logrus.Fields{
 					"Duration": dur,
 					"stderr":   string(stderr),
@@ -311,6 +342,7 @@ func (wkr *worker) probeAndUpdate() {
 	}
 	wkr.updated = updateTime
 	if booted && (initialState == StateUnknown || initialState == StateBooting) {
+		wkr.reportBootOutcome(BootOutcomeSucceeded)
 		logger.WithFields(logrus.Fields{
 			"RunningContainers": len(wkr.running),
 			"State":             wkr.state,
@@ -468,6 +500,7 @@ func (wkr *worker) shutdownIfIdle() bool {
 		"IdleDuration": stats.Duration(time.Since(wkr.busy)),
 		"IdleBehavior": wkr.idleBehavior,
 	}).Info("shutdown worker")
+	wkr.reportBootOutcome(BootOutcomeAborted)
 	wkr.shutdown()
 	return true
 }

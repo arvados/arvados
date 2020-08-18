@@ -57,7 +57,7 @@ class ArvadosCommandTool(CommandLineTool):
                                  "/keep/%s/%s")
 
     def job(self, joborder, output_callback, runtimeContext):
-        builder = make_builder(joborder, self.hints, self.requirements, runtimeContext)
+        builder = make_builder(joborder, self.hints, self.requirements, runtimeContext, self.metadata)
         runtimeContext = set_cluster_target(self.tool, self.arvrunner, builder, runtimeContext)
 
         if runtimeContext.work_api == "containers":

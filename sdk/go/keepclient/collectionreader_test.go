@@ -134,11 +134,11 @@ func (s *CollectionReaderUnit) TestCollectionReaderContent(c *check.C) {
 			c.Check(err, check.Equals, want)
 		case string:
 			buf := make([]byte, len(want))
-			n, err := io.ReadFull(rdr, buf)
+			_, err := io.ReadFull(rdr, buf)
 			c.Check(err, check.IsNil)
 			for i := 0; i < 4; i++ {
 				c.Check(string(buf), check.Equals, want)
-				n, err = rdr.Read(buf)
+				n, err := rdr.Read(buf)
 				c.Check(n, check.Equals, 0)
 				c.Check(err, check.Equals, io.EOF)
 			}
@@ -173,6 +173,7 @@ func (s *CollectionReaderUnit) TestCollectionReaderManyBlocks(c *check.C) {
 	filesize := 0
 	for i := range locs {
 		_, err := rand.Read(buf[:i])
+		c.Assert(err, check.IsNil)
 		h.Write(buf[:i])
 		locs[i], _, err = s.kc.PutB(buf[:i])
 		c.Assert(err, check.IsNil)
@@ -202,9 +203,9 @@ func (s *CollectionReaderUnit) TestCollectionReaderManyBlocks(c *check.C) {
 		offset := rand.Intn(len(buf) - 1)
 		count := rand.Intn(len(buf) - offset)
 		if rand.Intn(2) == 0 {
-			curPos, err = rdr.Seek(int64(offset)-curPos, io.SeekCurrent)
+			curPos, _ = rdr.Seek(int64(offset)-curPos, io.SeekCurrent)
 		} else {
-			curPos, err = rdr.Seek(int64(offset), io.SeekStart)
+			curPos, _ = rdr.Seek(int64(offset), io.SeekStart)
 		}
 		c.Check(curPos, check.Equals, int64(offset))
 		for count > 0 {
@@ -215,6 +216,7 @@ func (s *CollectionReaderUnit) TestCollectionReaderManyBlocks(c *check.C) {
 			count -= n
 		}
 		curPos, err = rdr.Seek(0, io.SeekCurrent)
+		c.Check(err, check.IsNil)
 		c.Check(curPos, check.Equals, int64(offset))
 	}
 	c.Check(md5.Sum(buf), check.DeepEquals, md5.Sum(testdata))

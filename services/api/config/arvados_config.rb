@@ -16,6 +16,7 @@
 # config:migrate to /etc/arvados/config.yml, you will be able to
 # delete application.yml and database.yml.
 
+require "cgi"
 require 'config_loader'
 require 'open3'
 
@@ -277,13 +278,15 @@ end
 # For config migration, we've previously populated the PostgreSQL
 # section of the config from database.yml
 #
-ENV["DATABASE_URL"] = "postgresql://#{$arvados_config["PostgreSQL"]["Connection"]["user"]}:"+
-                      "#{$arvados_config["PostgreSQL"]["Connection"]["password"]}@"+
-                      "#{dbhost}/#{$arvados_config["PostgreSQL"]["Connection"]["dbname"]}?"+
+database_url = "postgresql://#{CGI.escape $arvados_config["PostgreSQL"]["Connection"]["user"]}:"+
+                      "#{CGI.escape $arvados_config["PostgreSQL"]["Connection"]["password"]}@"+
+                      "#{dbhost}/#{CGI.escape $arvados_config["PostgreSQL"]["Connection"]["dbname"]}?"+
                       "template=#{$arvados_config["PostgreSQL"]["Connection"]["template"]}&"+
                       "encoding=#{$arvados_config["PostgreSQL"]["Connection"]["client_encoding"]}&"+
                       "collation=#{$arvados_config["PostgreSQL"]["Connection"]["collation"]}&"+
                       "pool=#{$arvados_config["PostgreSQL"]["ConnectionPool"]}"
+
+ENV["DATABASE_URL"] = database_url
 
 Server::Application.configure do
   # Copy into the Rails config object.  This also turns Hash into

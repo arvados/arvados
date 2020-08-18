@@ -176,7 +176,7 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
 
     parser.add_argument("--enable-dev", action="store_true",
                         help="Enable loading and running development versions "
-                             "of CWL spec.", default=False)
+                             "of the CWL standards.", default=False)
     parser.add_argument('--storage-classes', default="default",
                         help="Specify comma separated list of storage classes to be used when saving workflow output to Keep.")
 
@@ -202,6 +202,14 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     parser.add_argument("--http-timeout", type=int,
                         default=5*60, dest="http_timeout", help="API request timeout in seconds. Default is 300 seconds (5 minutes).")
 
+    parser.add_argument(
+        "--skip-schemas",
+        action="store_true",
+        help="Skip loading of schemas",
+        default=False,
+        dest="skip_schemas",
+    )
+
     exgroup = parser.add_mutually_exclusive_group()
     exgroup.add_argument("--trash-intermediate", action="store_true",
                         default=False, dest="trash_intermediate",
@@ -218,15 +226,12 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
 def add_arv_hints():
     cwltool.command_line_tool.ACCEPTLIST_EN_RELAXED_RE = re.compile(r".*")
     cwltool.command_line_tool.ACCEPTLIST_RE = cwltool.command_line_tool.ACCEPTLIST_EN_RELAXED_RE
-    res10 = pkg_resources.resource_stream(__name__, 'arv-cwl-schema-v1.0.yml')
-    res11 = pkg_resources.resource_stream(__name__, 'arv-cwl-schema-v1.1.yml')
-    customschema10 = res10.read().decode('utf-8')
-    customschema11 = res11.read().decode('utf-8')
-    use_custom_schema("v1.0", "http://arvados.org/cwl", customschema10)
-    use_custom_schema("v1.1.0-dev1", "http://arvados.org/cwl", customschema11)
-    use_custom_schema("v1.1", "http://arvados.org/cwl", customschema11)
-    res10.close()
-    res11.close()
+    supported_versions = ["v1.0", "v1.1", "v1.2"]
+    for s in supported_versions:
+        res = pkg_resources.resource_stream(__name__, 'arv-cwl-schema-%s.yml' % s)
+        customschema = res.read().decode('utf-8')
+        use_custom_schema(s, "http://arvados.org/cwl", customschema)
+        res.close()
     cwltool.process.supportedProcessRequirements.extend([
         "http://arvados.org/cwl#RunInSingleContainer",
         "http://arvados.org/cwl#OutputDirType",

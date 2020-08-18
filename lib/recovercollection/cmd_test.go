@@ -90,6 +90,7 @@ func (*Suite) TestUntrashAndTouchBlock(c *check.C) {
 		c.Assert(err, check.IsNil)
 		t := time.Now().Add(-time.Hour * 24 * 365)
 		err = os.Chtimes(trashfile, t, t)
+		c.Assert(err, check.IsNil)
 	}
 
 	var stdout, stderr bytes.Buffer

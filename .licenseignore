@@ -80,3 +80,5 @@ lib/dispatchcloud/test/sshkey_*
 sdk/java-v2/build.gradle
 sdk/java-v2/settings.gradle
 sdk/cwl/tests/wf/feddemo
+go.mod
+go.sum

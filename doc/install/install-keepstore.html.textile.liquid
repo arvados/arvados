@@ -52,6 +52,8 @@ Fill in the @Volumes@ section of @config.yml@ for each storage volume.  Availabl
 * If you are using S3-compatible object storage (including Amazon S3, Google Cloud Storage, and Ceph RADOS), follow the setup instructions on "S3 Object Storage":configure-s3-object-storage.html
 * If you are using Azure Blob Storage, follow the setup instructions on "Azure Blob Storage":configure-azure-blob-storage.html
 
+There are a number of general configuration parameters for Keepstore. They are described in the "configuration reference":{{site.baseurl}}/admin/config.html. In particular, you probably want to change @API/MaxKeepBlobBuffers@ to align Keepstore's memory usage with the available memory on the machine that hosts it.
+
 h3. List services
 
 Add each keepstore server to the @Services.Keepstore@ section of @/etc/arvados/config.yml@ .
