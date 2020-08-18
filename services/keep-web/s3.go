@@ -159,8 +159,14 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return true
 				}
-				err := fs.Mkdir(dir, 0755)
-				if err != nil && err != os.ErrExist {
+				err = fs.Mkdir(dir, 0755)
+				if err == arvados.ErrInvalidArgument {
+					// Cannot create a directory
+					// here.
+					err = fmt.Errorf("mkdir %q failed: %w", dir, err)
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return true
+				} else if err != nil && !os.IsExist(err) {
 					err = fmt.Errorf("mkdir %q failed: %w", dir, err)
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return true

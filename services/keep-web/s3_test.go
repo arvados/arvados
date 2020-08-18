@@ -220,6 +220,46 @@ func (s *IntegrationSuite) testS3PutObjectSuccess(c *check.C, bucket *s3.Bucket,
 	}
 }
 
+func (s *IntegrationSuite) TestS3ProjectPutObjectNotSupported(c *check.C) {
+	stage := s.s3setup(c)
+	defer stage.teardown(c)
+	bucket := stage.projbucket
+
+	for _, trial := range []struct {
+		path        string
+		size        int
+		contentType string
+	}{
+		{
+			path:        "newfile",
+			size:        1234,
+			contentType: "application/octet-stream",
+		}, {
+			path:        "newdir/newfile",
+			size:        1234,
+			contentType: "application/octet-stream",
+		}, {
+			path:        "newdir2/",
+			size:        0,
+			contentType: "application/x-directory",
+		},
+	} {
+		c.Logf("=== %v", trial)
+
+		_, err := bucket.GetReader(trial.path)
+		c.Assert(err, check.ErrorMatches, `404 Not Found`)
+
+		buf := make([]byte, trial.size)
+		rand.Read(buf)
+
+		err = bucket.PutReader(trial.path, bytes.NewReader(buf), int64(len(buf)), trial.contentType, s3.Private, s3.Options{})
+		c.Check(err, check.ErrorMatches, `400 Bad Request`)
+
+		_, err = bucket.GetReader(trial.path)
+		c.Assert(err, check.ErrorMatches, `404 Not Found`)
+	}
+}
+
 func (s *IntegrationSuite) TestS3CollectionPutObjectFailure(c *check.C) {
 	stage := s.s3setup(c)
 	defer stage.teardown(c)
