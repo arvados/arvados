@@ -169,6 +169,7 @@ var whitelist = map[string]bool{
 	"Login.SSO.ProviderAppID":                      false,
 	"Login.SSO.ProviderAppSecret":                  false,
 	"Login.RemoteTokenRefresh":                     true,
+	"Login.TokenLifetime":                          false,
 	"Mail":                                         true,
 	"Mail.MailchimpAPIKey":                         false,
 	"Mail.MailchimpListID":                         false,
