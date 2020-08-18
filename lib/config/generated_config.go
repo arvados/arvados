@@ -960,7 +960,7 @@ Clusters:
         # Worker VM image ID.
         # (aws) AMI identifier
         # (azure) managed disks: the name of the managed disk image
-        # (azure) unmanaged disks: the complete URI of the VHD, e.g.
+        # (azure) unmanaged disks (deprecated): the complete URI of the VHD, e.g.
         # https://xxxxx.blob.core.windows.net/system/Microsoft.Compute/Images/images/xxxxx.vhd
         ImageID: ""
 
@@ -1034,7 +1034,7 @@ Clusters:
           # image can be found (if different from ResourceGroup).
           ImageResourceGroup: ""
 
-          # (azure) unmanaged disks: Where to store the VM VHD blobs
+          # (azure) unmanaged disks (deprecated): Where to store the VM VHD blobs
           StorageAccount: ""
           BlobContainer: ""
 
