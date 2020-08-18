@@ -38,6 +38,10 @@ h2(#master). development master (as of 2020-06-17)
 
 "Upgrading from 2.0.0":#v2_0_0
 
+h3. Removing libpam-arvados, replaced with libpam-arvados-go
+
+The Python-based PAM package has been replaced with a version written in Go. See "using PAM for authentication":{{site.baseurl}}/install/setup-login.html#pam for details.
+
 h3. Removing sso-provider
 
 The SSO (single sign-on) component is deprecated and will not be supported in future releases. Existing configurations will continue to work in this release, but you should switch to one of the built-in authentication mechanisms as soon as possible. See "setting up web based login":{{site.baseurl}}/install/setup-login.html for details.
@@ -569,7 +573,7 @@ As part of story "#11349":https://dev.arvados.org/issues/11349, commit "2c094e2"
 
 * To enable it, add to your configuration file: <pre>[Manage]
   address = 127.0.0.1
-  port = 8989</pre> (see example configuration files in source:services/nodemanager/doc or https://doc.arvados.org/install/install-nodemanager.html for more info)
+  port = 8989</pre>
 * The server responds to @http://{address}:{port}/status.json@ with a summary of how many nodes are in each state (booting, busy, shutdown, etc.)
 
 h3. New websockets component (2017-03-23)

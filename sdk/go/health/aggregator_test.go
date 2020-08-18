@@ -157,7 +157,6 @@ func (s *AggregatorSuite) setAllServiceURLs(listen string) {
 		&svcs.Keepproxy,
 		&svcs.Keepstore,
 		&svcs.Health,
-		&svcs.Nodemanager,
 		&svcs.RailsAPI,
 		&svcs.WebDAV,
 		&svcs.Websocket,

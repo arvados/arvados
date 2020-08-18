@@ -3,6 +3,6 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-exec python <<EOF
-import cwltest
-EOF
+set -e
+
+crunchstat-summary -h >/dev/null

@@ -195,7 +195,6 @@ if [ $PYTHON -eq 1 ]; then
   python_wrapper arvados-pam "$WORKSPACE/sdk/pam"
   python_wrapper arvados-cwl-runner "$WORKSPACE/sdk/cwl"
   python_wrapper arvados_fuse "$WORKSPACE/services/fuse"
-  python_wrapper arvados-node-manager "$WORKSPACE/services/nodemanager"
 
   if [ $((${#failures[@]} - $GEM_BUILD_FAILURES)) -ne 0 ]; then
     PYTHON_BUILD_FAILURES=$((${#failures[@]} - $GEM_BUILD_FAILURES))

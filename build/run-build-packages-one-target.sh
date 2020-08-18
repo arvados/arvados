@@ -192,27 +192,47 @@ popd
 if test -z "$packages" ; then
     packages="arvados-api-server
         arvados-client
+        arvados-controller
+        arvados-dispatch-cloud
         arvados-docker-cleaner
         arvados-git-httpd
-        arvados-node-manager
+        arvados-health
+        arvados-server
         arvados-src
+        arvados-sync-groups
         arvados-workbench
+        arvados-workbench2
+        arvados-ws
         crunch-dispatch-local
         crunch-dispatch-slurm
         crunch-run
         crunchstat
+        keepproxy
+        keepstore
         keep-balance
         keep-block-check
-        keepproxy
         keep-rsync
-        keepstore
+        keep-exercise
+        keep-rsync
+        keep-block-check
         keep-web
         libarvados-perl
-        libpam-arvados
-        libpam-arvados-go
-        python-arvados-fuse
-        python-arvados-python-client
-        python-arvados-cwl-runner"
+        libpam-arvados-go"
+    if [[ "$TARGET" =~ "centos" ]]; then
+      packages="$packages
+        rh-python36-python-cwltest
+        rh-python36-python-arvados-fuse
+        rh-python36-python-arvados-python-client
+        rh-python36-python-arvados-cwl-runner
+        rh-python36-python-crunchstat-summary"
+    else
+      packages="$packages
+        python3-cwltest
+        python3-arvados-fuse
+        python3-arvados-python-client
+        python3-arvados-cwl-runner
+        python3-crunchstat-summary"
+    fi
 fi
 
 FINAL_EXITCODE=0

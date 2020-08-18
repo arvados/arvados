@@ -141,7 +141,7 @@ class NodeTest < ActiveSupport::TestCase
     assert_equal "custom1", node2.hostname
   end
 
-  test "update dns when nodemanager clears hostname and ip_address" do
+  test "update dns when hostname and ip_address are cleared" do
     act_as_system_user do
       node = ping_node(:new_with_custom_hostname, {})
       Node.expects(:dns_server_update).with(node.hostname, Node::UNUSED_NODE_IP)

@@ -25,14 +25,14 @@ Clusters:
       UsePreemptibleInstances: true
     InstanceTypes:
       m4.large:
-	Preemptible: false
+        Preemptible: false
         ProviderType: m4.large
         VCPUs: 2
         RAM: 8GiB
         AddedScratch: 32GB
         Price: 0.1
       m4.large.spot:
-	Preemptible: true
+        Preemptible: true
         ProviderType: m4.large
         VCPUs: 2
         RAM: 8GiB
@@ -43,8 +43,6 @@ Clusters:
 When @UsePreemptibleInstances@ is enabled, child containers (workflow steps) will automatically be made preemptible.  Note that because preempting the workflow runner would cancel the entire workflow, the workflow runner runs in a reserved (non-preemptible) instance.
 
 If you are using "arvados-dispatch-cloud":{{site.baseurl}}/install/crunch2-cloud/install-dispatch-cloud.html no additional configuration is required.
-
-If you are using the legacy Nodemanager, "see below":#nodemanager .
 
 h2. Preemptible instances on AWS
 
@@ -62,22 +60,7 @@ The account needs to have a service linked role created. This can be done by log
 
 h3. Cost Tracking
 
-Amazon's Spot instances prices are declared at instance request time and defined by the maximum price that the user is willing to pay per hour. By default, this price is the same amount as the on-demand version of each instance type, and this setting is the one that nodemanager uses for now, as it doesn't include any pricing data to the spot instance request.
+Amazon's Spot instances prices are declared at instance request time and defined by the maximum price that the user is willing to pay per hour. By default, this price is the same amount as the on-demand version of each instance type, and this setting is the one that @arvados-dispatch-cloud@ uses for now, as it doesn't include any pricing data to the spot instance request.
 
 The real price that a spot instance has at any point in time is discovered at the end of each usage hour, depending on instance demand. For this reason, AWS provides a data feed subscription to get hourly logs, as described on "Amazon's User Guide":https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/spot-data-feeds.html.
 
-h2(#nodemanager). Nodemanager
-
-If you are using the legacy Nodemanager, its config file must also declare preemptible instance sizes, which must match the API server's @InstanceTypes@:
-
-<pre>
-[Size m4.large]
-cores = 2
-scratch = 32000
-
-[Size m4.large.spot]
-cores = 2
-instance_type = m4.large
-preemptible = true
-scratch = 32000
-</pre>
