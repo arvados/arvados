@@ -68,7 +68,7 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 	objectNameGiven := strings.Count(strings.TrimSuffix(r.URL.Path, "/"), "/") > 1
 
 	switch {
-	case r.Method == "GET" && !objectNameGiven:
+	case r.Method == http.MethodGet && !objectNameGiven:
 		// Path is "/{uuid}" or "/{uuid}/", has no object name
 		if _, ok := r.URL.Query()["versioning"]; ok {
 			// GetBucketVersioning
@@ -80,7 +80,7 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 			h.s3list(w, r, fs)
 		}
 		return true
-	case r.Method == "GET" || r.Method == "HEAD":
+	case r.Method == http.MethodGet || r.Method == http.MethodHead:
 		fspath := "/by_id" + r.URL.Path
 		fi, err := fs.Stat(fspath)
 		if r.Method == "HEAD" && !objectNameGiven {
@@ -110,7 +110,7 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 		r.URL.Path = fspath
 		http.FileServer(fs).ServeHTTP(w, &r)
 		return true
-	case r.Method == "PUT":
+	case r.Method == http.MethodPut:
 		if !objectNameGiven {
 			http.Error(w, "missing object name in PUT request", http.StatusBadRequest)
 			return true
