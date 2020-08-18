@@ -6,7 +6,6 @@ package arvados
 
 import (
 	"log"
-	"os"
 	"strings"
 )
 
@@ -57,7 +56,7 @@ func (fs *customFileSystem) projectsLoadOne(parent inode, uuid, name string) (in
 		// both "/" and the substitution string.
 	}
 	if len(contents.Items) == 0 {
-		return nil, os.ErrNotExist
+		return nil, nil
 	}
 	coll := contents.Items[0]
 

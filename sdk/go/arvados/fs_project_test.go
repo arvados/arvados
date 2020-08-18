@@ -238,3 +238,23 @@ func (s *SiteFSSuite) TestProjectUpdatedByOther(c *check.C) {
 	_, err = s.fs.Open("/home/A Project/oob")
 	c.Check(err, check.IsNil) // parent dir still has old collection -- didn't reload, because Sync failed
 }
+
+func (s *SiteFSSuite) TestProjectUnsupportedOperations(c *check.C) {
+	s.fs.MountByID("by_id")
+	s.fs.MountProject("home", "")
+
+	_, err := s.fs.OpenFile("/home/A Project/newfilename", os.O_CREATE|os.O_RDWR, 0)
+	c.Check(err, check.ErrorMatches, "invalid argument")
+
+	err = s.fs.Mkdir("/home/A Project/newdirname", 0)
+	c.Check(err, check.ErrorMatches, "invalid argument")
+
+	err = s.fs.Mkdir("/by_id/newdirname", 0)
+	c.Check(err, check.ErrorMatches, "invalid argument")
+
+	err = s.fs.Mkdir("/by_id/"+fixtureAProjectUUID+"/newdirname", 0)
+	c.Check(err, check.ErrorMatches, "invalid argument")
+
+	_, err = s.fs.OpenFile("/home/A Project", 0, 0)
+	c.Check(err, check.IsNil)
+}

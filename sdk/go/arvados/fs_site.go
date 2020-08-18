@@ -127,7 +127,7 @@ func (fs *customFileSystem) Stale(t time.Time) bool {
 }
 
 func (fs *customFileSystem) newNode(name string, perm os.FileMode, modTime time.Time) (node inode, err error) {
-	return nil, ErrInvalidOperation
+	return nil, ErrInvalidArgument
 }
 
 func (fs *customFileSystem) mountByID(parent inode, id string) inode {
@@ -173,9 +173,9 @@ func (fs *customFileSystem) newProjectNode(root inode, name, uuid string) inode 
 	}
 }
 
-// vdirnode wraps an inode by ignoring any requests to add/replace
-// children, and calling a create() func when a non-existing child is
-// looked up.
+// vdirnode wraps an inode by rejecting (with ErrInvalidArgument)
+// calls that add/replace children directly, instead calling a
+// create() func when a non-existing child is looked up.
 //
 // create() can return either a new node, which will be added to the
 // treenode, or nil for ENOENT.

@@ -103,7 +103,7 @@ func (s *SiteFSSuite) TestByUUIDAndPDH(c *check.C) {
 	c.Check(names, check.DeepEquals, []string{"baz"})
 
 	_, err = s.fs.OpenFile("/by_id/"+fixtureNonexistentCollection, os.O_RDWR|os.O_CREATE, 0755)
-	c.Check(err, check.Equals, ErrInvalidOperation)
+	c.Check(err, check.Equals, ErrInvalidArgument)
 	err = s.fs.Rename("/by_id/"+fixtureFooCollection, "/by_id/beep")
 	c.Check(err, check.Equals, ErrInvalidArgument)
 	err = s.fs.Rename("/by_id/"+fixtureFooCollection+"/foo", "/by_id/beep")
