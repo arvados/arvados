@@ -15,15 +15,15 @@ cwl:tool: bwa-mem.cwl
 reference:
   class: File
   location: keep:2463fa9efeb75e099685528b3b9071e0+438/19.fasta.bwt
-  arv:collectionUUID: pirca-4zz18-jyjuzyqq14qspl7
+  arv:collectionUUID: jutro-4zz18-tv416l321i4r01e
 read_p1:
   class: File
   location: keep:ae480c5099b81e17267b7445e35b4bc7+180/HWI-ST1027_129_D0THKACXX.1_1.fastq
-  arv:collectionUUID: pirca-4zz18-fhbq692jyemnknq
+  arv:collectionUUID: jutro-4zz18-8k5hsvee0izv2g3
 read_p2:
   class: File
   location: keep:ae480c5099b81e17267b7445e35b4bc7+180/HWI-ST1027_129_D0THKACXX.1_2.fastq
-  arv:collectionUUID: pirca-4zz18-fhbq692jyemnknq
+  arv:collectionUUID: jutro-4zz18-8k5hsvee0izv2g3
 group_id: arvados_tutorial
 sample_id: HWI-ST1027_129
 PL: illumina
