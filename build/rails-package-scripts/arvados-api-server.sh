@@ -11,9 +11,6 @@ CONFIG_PATH=/etc/arvados/api
 DOC_URL="http://doc.arvados.org/install/install-api-server.html#configure"
 
 RAILSPKG_DATABASE_LOAD_TASK=db:structure:load
-setup_extra_conffiles() {
-    setup_conffile initializers/omniauth.rb
-}
 
 setup_before_nginx_restart() {
   # initialize git_internal_dir
