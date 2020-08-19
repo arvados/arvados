@@ -185,28 +185,23 @@ if docker --version |grep " 1\.[0-9]\." ; then
     FORCE=-f
 fi
 
-#docker export arvados/jobs:$cwl_runner_version_orig | docker import - arvados/jobs:$cwl_runner_version_orig
-
 if ! [[ -z "$version_tag" ]]; then
     docker tag $FORCE arvados/jobs:$cwl_runner_version_orig arvados/jobs:"$version_tag"
-else
-    docker tag $FORCE arvados/jobs:$cwl_runner_version_orig arvados/jobs:latest
+    ECODE=$?
+
+    if [[ "$ECODE" != "0" ]]; then
+        EXITCODE=$(($EXITCODE + $ECODE))
+    fi
+
+    checkexit $ECODE "docker tag"
+    title "docker tag complete (`timer`)"
 fi
-
-ECODE=$?
-
-if [[ "$ECODE" != "0" ]]; then
-    EXITCODE=$(($EXITCODE + $ECODE))
-fi
-
-checkexit $ECODE "docker tag"
-title "docker tag complete (`timer`)"
 
 title "uploading images"
 
 timer_reset
 
-if [[ "$ECODE" != "0" ]]; then
+if [[ "$EXITCODE" != "0" ]]; then
     title "upload arvados images SKIPPED because build or tag failed"
 else
     if [[ $upload == true ]]; then
@@ -217,7 +212,6 @@ else
             docker_push arvados/jobs:"$version_tag"
         else
            docker_push arvados/jobs:$cwl_runner_version_orig
-           docker_push arvados/jobs:latest
         fi
         title "upload arvados images finished (`timer`)"
     else
