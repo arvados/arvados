@@ -9,12 +9,43 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-Arvados Data collections can be uploaded using either the @arv-put@ command line tool or using Workbench.
+Arvados Data collections can be uploaded using either Workbench or the @arv-put@ command line tool.
 
-# "*Upload using command line tool*":#upload-using-command
 # "*Upload using Workbench*":#upload-using-workbench
+# "*Creating projects*":#creating-projects
+# "*Upload using command line tool*":#upload-using-command
+
+h2(#upload-using-workbench). Upload using Workbench
+
+To upload using Workbench, visit the Workbench *Dashboard*. Click on *Projects*<span class="caret"></span> dropdown menu in the top navigation menu and select your *Home* project or any other project of your choosing.  You will see the *Data collections* tab for this project, which lists the collections in this project.
+
+To upload files into a new collection, click on *Add data*<span class="caret"></span> dropdown menu and select *Upload files from my computer*.
+
+!{display: block;margin-left: 25px;margin-right: auto;border:1px solid lightgray;}{{ site.baseurl }}/images/upload-using-workbench.png!
+
+<br/>This will create a new empty collection in your chosen project and will take you to the *Upload* tab for that collection.
+
+!{display: block;margin-left: 25px;margin-right: auto;border:1px solid lightgray;}{{ site.baseurl }}/images/upload-tab-in-new-collection.png!
+
+Click on the *Browse...* button and select the files you would like to upload. Selected files will be added to a list of files to be uploaded. After you are done selecting files to upload, click on the *<i class="fa fa-fw fa-play"></i> Start* button to start upload. This will start uploading files to Arvados and Workbench will show you the progress bar. When upload is completed, you will see an indication to that effect.
+
+!{display: block;margin-left: 25px;margin-right: auto;border:1px solid lightgray;}{{ site.baseurl }}/images/files-uploaded.png!
+
+*Note:* If you leave the collection page during the upload, the upload process will be aborted and you will need to upload the files again.
+
+*Note:* You can also use the Upload tab to add additional files to an existing collection.
 
 notextile. <div class="spaced-out">
+
+h2(#creating-projects). Creating projects
+
+Files are organized into Collections, and Collections are organized by Projects.
+
+Click on *Projects*<span class="caret"></span> <span class="rarr">&rarr;</span> <i class="fa fa-fw fa-plus"></i>*Add a new project* to add a top level project.
+
+To create a subproject, navigate to the parent project, and click on <i class="fa fa-fw fa-plus"></i>*Add a subproject*.
+
+See "Sharing collections":tutorial-keep-get.html#download-shared-collection for information about sharing projects and collections with other users.
 
 h2(#upload-using-command). Upload using command line tool
 
@@ -63,23 +94,3 @@ To move the collection to a different project, check the box at the left of the 
 Click on the *<i class="fa fa-fw fa-archive"></i> Show* button next to the collection's listing on a project page to go to the Workbench page for your collection.  On this page, you can see the collection's contents, download individual files, and set sharing options.
 
 notextile. </div>
-
-h2(#upload-using-workbench). Upload using Workbench
-
-To upload using Workbench, visit the Workbench *Dashboard*. Click on *Projects*<span class="caret"></span> dropdown menu in the top navigation menu and select your *Home* project or any other project of your choosing.  You will see the *Data collections* tab for this project, which lists the collections in this project.
-
-To upload files into a new collection, click on *Add data*<span class="caret"></span> dropdown menu and select *Upload files from my computer*.
-
-!{display: block;margin-left: 25px;margin-right: auto;border:1px solid lightgray;}{{ site.baseurl }}/images/upload-using-workbench.png!
-
-<br/>This will create a new empty collection in your chosen project and will take you to the *Upload* tab for that collection.
-
-!{display: block;margin-left: 25px;margin-right: auto;border:1px solid lightgray;}{{ site.baseurl }}/images/upload-tab-in-new-collection.png!
-
-Click on the *Browse...* button and select the files you would like to upload. Selected files will be added to a list of files to be uploaded. After you are done selecting files to upload, click on the *<i class="fa fa-fw fa-play"></i> Start* button to start upload. This will start uploading files to Arvados and Workbench will show you the progress bar. When upload is completed, you will see an indication to that effect.
-
-!{display: block;margin-left: 25px;margin-right: auto;border:1px solid lightgray;}{{ site.baseurl }}/images/files-uploaded.png!
-
-*Note:* If you leave the collection page during the upload, the upload process will be aborted and you will need to upload the files again.
-
-*Note:* You can also use the Upload tab to add additional files to an existing collection.

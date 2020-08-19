@@ -1,7 +1,7 @@
 ---
 layout: default
 navsection: userguide
-title: "Accessing Keep from OS X"
+title: "Keep network mount on OS X"
 ...
 {% comment %}
 Copyright (C) The Arvados Authors. All rights reserved.
@@ -19,6 +19,6 @@ This mount is read-only. Write support for the @/users/@ directory is planned fo
 
 h3. Accessing a specific collection in Keep (read-write)
 
-In Finder, use "Connect to Server..." under the "Go" menu and enter @https://collections.ClusterID.example.com/@ in popup dialog. When prompted for credentials, put a valid Arvados token in the @Password@ field and anything in the Name field (it will be ignored by Arvados).
+In Finder, use "Connect to Server..." under the "Go" menu and enter @https://collections.ClusterID.example.com/c=your-collection-uuid@ in popup dialog. When prompted for credentials, put a valid Arvados token in the @Password@ field and anything in the Name field (it will be ignored by Arvados).
 
 This collection is now accessible read/write.

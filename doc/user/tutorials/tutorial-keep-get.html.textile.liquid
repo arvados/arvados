@@ -11,11 +11,39 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 Arvados Data collections can be downloaded using either the arv commands or using Workbench.
 
-# "*Downloading using arv commands*":#download-using-arv
-# "*Downloading using Workbench*":#download-using-workbench
-# "*Downloading a shared collection using Workbench*":#download-shared-collection
+# "*Download using Workbench*":#download-using-workbench
+# "*Sharing collections*":#download-shared-collection
+# "*Download using command line tools*":#download-using-arv
 
-h2(#download-using-arv). Downloading using arv commands
+h2(#download-using-workbench). Download using Workbench
+
+You can also download Arvados data collections using the Workbench.
+
+Visit the Workbench *Dashboard*. Click on *Projects*<span class="caret"></span> dropdown menu in the top navigation menu, select your *Home* project. You will see the *Data collections* tab, which lists the collections in this project.
+
+You can access the contents of a collection by clicking on the *<i class="fa fa-fw fa-archive"></i> Show* button next to the collection. This will take you to the collection's page. Using this page you can see the collection's contents, and download individual files.
+
+You can now download the collection files by clicking on the <span class="btn btn-sm btn-info"><i class="fa fa-download"></i></span> button(s).
+
+h2(#download-shared-collection). Sharing collections
+
+h3. Sharing with other Arvados users
+
+Collections can be shared with other users on the Arvados cluster by sharing the parent project.  Navigate to the parent project using the "breadcrumbs" bar, then click on the *Sharing* tab.  From the sharing tab, you can choose which users or groups to share with, and their level of access.
+
+h3. Creating a special download URL
+
+To share a collection with users that do not have an account on your Arvados cluster, visit the collection page using Workbench as described in the above section. Once on this page, click on the <span class="btn btn-sm btn-primary" >Create sharing link</span> button.
+
+This will create a sharing link for the collection as shown below. You can copy the sharing link in this page and share it with other users.
+
+!{display: block;margin-left: 25px;margin-right: auto;border:1px solid lightgray;}{{ site.baseurl }}/images/shared-collection.png!
+
+A user with this url can download this collection by simply accessing this url using browser. It will present a downloadable version of the collection as shown below.
+
+!{display: block;margin-left: 25px;margin-right: auto;border:1px solid lightgray;}{{ site.baseurl }}/images/download-shared-collection.png!
+
+h2(#download-using-arv). Download using command line tools
 
 {% include 'tutorial_expectations' %}
 
@@ -71,27 +99,3 @@ You may also request a collection by UUID.  In this case, it will contact the cl
 <pre><code>~$ <span class="userinput">arv-get zzzzz-4zz18-fw6dnjxtkvzdewt/ .</span>
 </code></pre>
 </notextile>
-
-h2(#download-using-workbench). Downloading using Workbench
-
-You can also download Arvados data collections using the Workbench.
-
-Visit the Workbench *Dashboard*. Click on *Projects*<span class="caret"></span> dropdown menu in the top navigation menu, select your *Home* project. You will see the *Data collections* tab, which lists the collections in this project.
-
-You can access the contents of a collection by clicking on the *<i class="fa fa-fw fa-archive"></i> Show* button next to the collection. This will take you to the collection's page. Using this page you can see the collection's contents, download individual files, and set sharing options.
-
-You can now download the collection files by clicking on the <span class="btn btn-sm btn-info"><i class="fa fa-download"></i></span> button(s).
-
-h2(#download-shared-collection). Downloading a shared collection using Workbench
-
-Collections can be shared to allow downloads by anonymous users.
-
-To share a collection with anonymous users, visit the collection page using Workbench as described in the above section. Once on this page, click on the <span class="btn btn-sm btn-primary" >Create sharing link</span> button.
-
-This will create a sharing link for the collection as shown below. You can copy the sharing link in this page and share it with other users.
-
-!{display: block;margin-left: 25px;margin-right: auto;border:1px solid lightgray;}{{ site.baseurl }}/images/shared-collection.png!
-
-A user with this url can download this collection by simply accessing this url using browser. It will present a downloadable version of the collection as shown below.
-
-!{display: block;margin-left: 25px;margin-right: auto;border:1px solid lightgray;}{{ site.baseurl }}/images/download-shared-collection.png!
