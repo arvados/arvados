@@ -11,6 +11,11 @@ CONFIG_PATH=/etc/arvados/api
 DOC_URL="http://doc.arvados.org/install/install-api-server.html#configure"
 
 RAILSPKG_DATABASE_LOAD_TASK=db:structure:load
+setup_extra_conffiles() {
+  # Rails 5.2 does not tolerate dangling symlinks in the initializers directory, and this one
+  # can still be there, left over from a previous version of the API server package.
+  rm -f $RELEASE_PATH/config/initializers/omniauth.rb
+}
 
 setup_before_nginx_restart() {
   # initialize git_internal_dir
