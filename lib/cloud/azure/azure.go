@@ -437,7 +437,10 @@ func (az *azureInstanceSet) Create(
 	var storageProfile *compute.StorageProfile
 
 	re := regexp.MustCompile(`^http(s?)://`)
-	if re.MatchString(string(imageID)) && az.blobcont != nil {
+	if re.MatchString(string(imageID)) {
+		if az.blobcont == nil {
+			return nil, wrapAzureError(errors.New("Invalid configuration: can't configure unmanaged image URL without StorageAccount and BlobContainer"))
+		}
 		blobname = fmt.Sprintf("%s-os.vhd", name)
 		instanceVhd := fmt.Sprintf("https://%s.blob.%s/%s/%s",
 			az.azconfig.StorageAccount,
@@ -458,7 +461,7 @@ func (az *azureInstanceSet) Create(
 				},
 			},
 		}
-	} else if az.blobcont == nil {
+	} else {
 		storageProfile = &compute.StorageProfile{
 			ImageReference: &compute.ImageReference{
 				ID: to.StringPtr("/subscriptions/" + az.azconfig.SubscriptionID + "/resourceGroups/" + az.imageResourceGroup + "/providers/Microsoft.Compute/images/" + string(imageID)),
@@ -469,8 +472,6 @@ func (az *azureInstanceSet) Create(
 				CreateOption: compute.DiskCreateOptionTypesFromImage,
 			},
 		}
-	} else {
-		return nil, wrapAzureError(errors.New("Invalid configuration: can't configure unmanaged image URL without StorageAccount and BlobContainer"))
 	}
 
 	vmParameters := compute.VirtualMachine{
@@ -512,7 +513,12 @@ func (az *azureInstanceSet) Create(
 
 	vm, err := az.vmClient.createOrUpdate(az.ctx, az.azconfig.ResourceGroup, name, vmParameters)
 	if err != nil {
-		if az.blobcont != nil {
+		// Do some cleanup. Otherwise, an unbounded number of new unused nics and
+		// blobs can pile up during times when VMs can't be created and the
+		// dispatcher keeps retrying, because the garbage collection in manageBlobs
+		// and manageNics is only triggered periodically. This is most important
+		// for nics, because those are subject to a quota.
+		if blobname != "" {
 			_, delerr := az.blobcont.GetBlobReference(blobname).DeleteIfExists(nil)
 			if delerr != nil {
 				az.logger.WithError(delerr).Warnf("Error cleaning up vhd blob after failed create")
