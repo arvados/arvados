@@ -35,7 +35,6 @@ table(table table-bordered table-condensed table-hover).
 |arvados-controller|✓|
 |arvados-dispatch-cloud|✓|
 |arvados-git-httpd||
-|arvados-node-manager||
 |arvados-ws|✓|
 |composer||
 |keepproxy||
@@ -44,48 +43,3 @@ table(table table-bordered table-condensed table-hover).
 |keep-web|✓|
 |workbench1||
 |workbench2||
-
-h2. Node manager
-
-The node manager does not export prometheus-style metrics, but its @/status.json@ endpoint provides a snapshot of internal status at the time of the most recent wishlist update.
-
-<pre>curl -sfH "Authorization: Bearer your_management_token_goes_here" "http://0.0.0.0:8989/status.json"
-</pre>
-
-table(table table-bordered table-condensed).
-|_. Attribute|_. Type|_. Description|
-|nodes_booting|int|Number of nodes in booting state|
-|nodes_unpaired|int|Number of nodes in unpaired state|
-|nodes_busy|int|Number of nodes in busy state|
-|nodes_idle|int|Number of nodes in idle state|
-|nodes_fail|int|Number of nodes in fail state|
-|nodes_down|int|Number of nodes in down state|
-|nodes_shutdown|int|Number of nodes in shutdown state|
-|nodes_wish|int|Number of nodes in the current wishlist|
-|node_quota|int|Current node count ceiling due to cloud quota limits|
-|config_max_nodes|int|Configured max node count|
-
-h3. Example
-
-<pre>
-{
-  "actor_exceptions": 0,
-  "idle_times": {
-    "compute1": 0,
-    "compute3": 0,
-    "compute2": 0,
-    "compute4": 0
-  },
-  "create_node_errors": 0,
-  "destroy_node_errors": 0,
-  "nodes_idle": 0,
-  "config_max_nodes": 8,
-  "list_nodes_errors": 0,
-  "node_quota": 8,
-  "Version": "1.1.4.20180719160944",
-  "nodes_wish": 0,
-  "nodes_unpaired": 0,
-  "nodes_busy": 4,
-  "boot_failures": 0
-}
-</pre>

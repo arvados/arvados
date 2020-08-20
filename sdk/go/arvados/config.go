@@ -121,6 +121,7 @@ type Cluster struct {
 		TrashSweepInterval           Duration
 		TrustAllContent              bool
 		ForwardSlashNameSubstitution string
+		S3FolderObjects              bool
 
 		BlobMissingReport        string
 		BalancePeriod            Duration
@@ -314,7 +315,6 @@ type Services struct {
 	Keepbalance    Service
 	Keepproxy      Service
 	Keepstore      Service
-	Nodemanager    Service
 	RailsAPI       Service
 	SSO            Service
 	WebDAVDownload Service
@@ -567,7 +567,6 @@ const (
 	ServiceNameController    ServiceName = "arvados-controller"
 	ServiceNameDispatchCloud ServiceName = "arvados-dispatch-cloud"
 	ServiceNameHealth        ServiceName = "arvados-health"
-	ServiceNameNodemanager   ServiceName = "arvados-node-manager"
 	ServiceNameWorkbench1    ServiceName = "arvados-workbench1"
 	ServiceNameWorkbench2    ServiceName = "arvados-workbench2"
 	ServiceNameWebsocket     ServiceName = "arvados-ws"
@@ -585,7 +584,6 @@ func (svcs Services) Map() map[ServiceName]Service {
 		ServiceNameController:    svcs.Controller,
 		ServiceNameDispatchCloud: svcs.DispatchCloud,
 		ServiceNameHealth:        svcs.Health,
-		ServiceNameNodemanager:   svcs.Nodemanager,
 		ServiceNameWorkbench1:    svcs.Workbench1,
 		ServiceNameWorkbench2:    svcs.Workbench2,
 		ServiceNameWebsocket:     svcs.Websocket,

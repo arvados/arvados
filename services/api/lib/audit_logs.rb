@@ -62,7 +62,12 @@ module AuditLogs
       rescue => e
         Rails.logger.error "#{e.class}: #{e}\n#{e.backtrace.join("\n\t")}"
       ensure
-        ActiveRecord::Base.connection.close
+        # Rails 5.1+ makes test threads share a database connection, so we can't
+        # close a connection shared with other threads.
+        # https://github.com/rails/rails/commit/deba47799ff905f778e0c98a015789a1327d5087
+        if Rails.env != "test"
+          ActiveRecord::Base.connection.close
+        end
       end
     end
   end

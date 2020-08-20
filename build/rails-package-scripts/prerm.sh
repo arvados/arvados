@@ -10,7 +10,6 @@ remove () {
   rm -f $RELEASE_PATH/config/environments/production.rb
   rm -f $RELEASE_PATH/config/application.yml
   # Old API server configuration file.
-  rm -f $RELEASE_PATH/config/initializers/omniauth.rb
   rm -rf $RELEASE_PATH/public/assets/
   rm -rf $RELEASE_PATH/tmp
   rm -rf $RELEASE_PATH/.bundle

@@ -40,7 +40,7 @@ func (c *Client) CustomFileSystem(kc keepClient) CustomFileSystem {
 			thr:       newThrottle(concurrentWriters),
 		},
 	}
-	root.inode = &treenode{
+	root.treenode = treenode{
 		fs:     fs,
 		parent: root,
 		fileinfo: fileinfo{
@@ -54,9 +54,9 @@ func (c *Client) CustomFileSystem(kc keepClient) CustomFileSystem {
 }
 
 func (fs *customFileSystem) MountByID(mount string) {
-	fs.root.inode.Child(mount, func(inode) (inode, error) {
+	fs.root.treenode.Child(mount, func(inode) (inode, error) {
 		return &vdirnode{
-			inode: &treenode{
+			treenode: treenode{
 				fs:     fs,
 				parent: fs.root,
 				inodes: make(map[string]inode),
@@ -72,18 +72,18 @@ func (fs *customFileSystem) MountByID(mount string) {
 }
 
 func (fs *customFileSystem) MountProject(mount, uuid string) {
-	fs.root.inode.Child(mount, func(inode) (inode, error) {
+	fs.root.treenode.Child(mount, func(inode) (inode, error) {
 		return fs.newProjectNode(fs.root, mount, uuid), nil
 	})
 }
 
 func (fs *customFileSystem) MountUsers(mount string) {
-	fs.root.inode.Child(mount, func(inode) (inode, error) {
+	fs.root.treenode.Child(mount, func(inode) (inode, error) {
 		return &lookupnode{
 			stale:   fs.Stale,
 			loadOne: fs.usersLoadOne,
 			loadAll: fs.usersLoadAll,
-			inode: &treenode{
+			treenode: treenode{
 				fs:     fs,
 				parent: fs.root,
 				inodes: make(map[string]inode),
@@ -115,10 +115,7 @@ func (c *Client) SiteFileSystem(kc keepClient) CustomFileSystem {
 }
 
 func (fs *customFileSystem) Sync() error {
-	fs.staleLock.Lock()
-	defer fs.staleLock.Unlock()
-	fs.staleThreshold = time.Now()
-	return nil
+	return fs.root.Sync()
 }
 
 // Stale returns true if information obtained at time t should be
@@ -130,7 +127,7 @@ func (fs *customFileSystem) Stale(t time.Time) bool {
 }
 
 func (fs *customFileSystem) newNode(name string, perm os.FileMode, modTime time.Time) (node inode, err error) {
-	return nil, ErrInvalidOperation
+	return nil, ErrInvalidArgument
 }
 
 func (fs *customFileSystem) mountByID(parent inode, id string) inode {
@@ -149,13 +146,13 @@ func (fs *customFileSystem) mountCollection(parent inode, id string) inode {
 	if err != nil {
 		return nil
 	}
-	cfs, err := coll.FileSystem(fs, fs)
+	newfs, err := coll.FileSystem(fs, fs)
 	if err != nil {
 		return nil
 	}
-	root := cfs.rootnode()
-	root.SetParent(parent, id)
-	return root
+	cfs := newfs.(*collectionFileSystem)
+	cfs.SetParent(parent, id)
+	return cfs
 }
 
 func (fs *customFileSystem) newProjectNode(root inode, name, uuid string) inode {
@@ -163,7 +160,7 @@ func (fs *customFileSystem) newProjectNode(root inode, name, uuid string) inode 
 		stale:   fs.Stale,
 		loadOne: func(parent inode, name string) (inode, error) { return fs.projectsLoadOne(parent, uuid, name) },
 		loadAll: func(parent inode) ([]inode, error) { return fs.projectsLoadAll(parent, uuid) },
-		inode: &treenode{
+		treenode: treenode{
 			fs:     fs,
 			parent: root,
 			inodes: make(map[string]inode),
@@ -176,24 +173,24 @@ func (fs *customFileSystem) newProjectNode(root inode, name, uuid string) inode 
 	}
 }
 
-// vdirnode wraps an inode by ignoring any requests to add/replace
-// children, and calling a create() func when a non-existing child is
-// looked up.
+// vdirnode wraps an inode by rejecting (with ErrInvalidArgument)
+// calls that add/replace children directly, instead calling a
+// create() func when a non-existing child is looked up.
 //
 // create() can return either a new node, which will be added to the
 // treenode, or nil for ENOENT.
 type vdirnode struct {
-	inode
+	treenode
 	create func(parent inode, name string) inode
 }
 
 func (vn *vdirnode) Child(name string, replace func(inode) (inode, error)) (inode, error) {
-	return vn.inode.Child(name, func(existing inode) (inode, error) {
+	return vn.treenode.Child(name, func(existing inode) (inode, error) {
 		if existing == nil && vn.create != nil {
 			existing = vn.create(vn, name)
 			if existing != nil {
 				existing.SetParent(vn, name)
-				vn.inode.(*treenode).fileinfo.modTime = time.Now()
+				vn.treenode.fileinfo.modTime = time.Now()
 			}
 		}
 		if replace == nil {
