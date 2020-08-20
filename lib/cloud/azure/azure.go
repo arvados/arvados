@@ -36,21 +36,23 @@ import (
 var Driver = cloud.DriverFunc(newAzureInstanceSet)
 
 type azureInstanceSetConfig struct {
-	SubscriptionID               string
-	ClientID                     string
-	ClientSecret                 string
-	TenantID                     string
-	CloudEnvironment             string
-	ResourceGroup                string
-	ImageResourceGroup           string
-	Location                     string
-	Network                      string
-	NetworkResourceGroup         string
-	Subnet                       string
-	StorageAccount               string
-	BlobContainer                string
-	DeleteDanglingResourcesAfter arvados.Duration
-	AdminUsername                string
+	SubscriptionID                 string
+	ClientID                       string
+	ClientSecret                   string
+	TenantID                       string
+	CloudEnvironment               string
+	ResourceGroup                  string
+	ImageResourceGroup             string
+	Location                       string
+	Network                        string
+	NetworkResourceGroup           string
+	Subnet                         string
+	StorageAccount                 string
+	BlobContainer                  string
+	SharedImageGalleryName         string
+	SharedImageGalleryImageVersion string
+	DeleteDanglingResourcesAfter   arvados.Duration
+	AdminUsername                  string
 }
 
 type containerWrapper interface {
@@ -373,6 +375,13 @@ func (az *azureInstanceSet) setup(azcfg azureInstanceSetConfig, dispatcherID str
 	return nil
 }
 
+func (az *azureInstanceSet) cleanupNic(nic network.Interface) {
+	_, delerr := az.netClient.delete(context.Background(), az.azconfig.ResourceGroup, *nic.Name)
+	if delerr != nil {
+		az.logger.WithError(delerr).Warnf("Error cleaning up NIC after failed create")
+	}
+}
+
 func (az *azureInstanceSet) Create(
 	instanceType arvados.InstanceType,
 	imageID cloud.ImageID,
@@ -439,6 +448,7 @@ func (az *azureInstanceSet) Create(
 	re := regexp.MustCompile(`^http(s?)://`)
 	if re.MatchString(string(imageID)) {
 		if az.blobcont == nil {
+			az.cleanupNic(nic)
 			return nil, wrapAzureError(errors.New("Invalid configuration: can't configure unmanaged image URL without StorageAccount and BlobContainer"))
 		}
 		blobname = fmt.Sprintf("%s-os.vhd", name)
@@ -462,9 +472,16 @@ func (az *azureInstanceSet) Create(
 			},
 		}
 	} else {
+		id := to.StringPtr("/subscriptions/" + az.azconfig.SubscriptionID + "/resourceGroups/" + az.imageResourceGroup + "/providers/Microsoft.Compute/images/" + string(imageID))
+		if az.azconfig.SharedImageGalleryName != "" && az.azconfig.SharedImageGalleryImageVersion != "" {
+			id = to.StringPtr("/subscriptions/" + az.azconfig.SubscriptionID + "/resourceGroups/" + az.imageResourceGroup + "/providers/Microsoft.Compute/galleries/" + az.azconfig.SharedImageGalleryName + "/images/" + string(imageID) + "/versions/" + az.azconfig.SharedImageGalleryImageVersion)
+		} else if az.azconfig.SharedImageGalleryName != "" || az.azconfig.SharedImageGalleryImageVersion != "" {
+			az.cleanupNic(nic)
+			return nil, wrapAzureError(errors.New("Invalid configuration: SharedImageGalleryName and SharedImageGalleryImageVersion must both be set or both be empty"))
+		}
 		storageProfile = &compute.StorageProfile{
 			ImageReference: &compute.ImageReference{
-				ID: to.StringPtr("/subscriptions/" + az.azconfig.SubscriptionID + "/resourceGroups/" + az.imageResourceGroup + "/providers/Microsoft.Compute/images/" + string(imageID)),
+				ID: id,
 			},
 			OsDisk: &compute.OSDisk{
 				OsType:       compute.Linux,
@@ -518,18 +535,16 @@ func (az *azureInstanceSet) Create(
 		// dispatcher keeps retrying, because the garbage collection in manageBlobs
 		// and manageNics is only triggered periodically. This is most important
 		// for nics, because those are subject to a quota.
+		az.cleanupNic(nic)
+
 		if blobname != "" {
 			_, delerr := az.blobcont.GetBlobReference(blobname).DeleteIfExists(nil)
 			if delerr != nil {
 				az.logger.WithError(delerr).Warnf("Error cleaning up vhd blob after failed create")
 			}
 		}
-		// Leave cleaning up of managed disks to the garbage collection in manageDisks()
 
-		_, delerr := az.netClient.delete(context.Background(), az.azconfig.ResourceGroup, *nic.Name)
-		if delerr != nil {
-			az.logger.WithError(delerr).Warnf("Error cleaning up NIC after failed create")
-		}
+		// Leave cleaning up of managed disks to the garbage collection in manageDisks()
 
 		return nil, wrapAzureError(err)
 	}
