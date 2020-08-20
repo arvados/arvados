@@ -156,6 +156,7 @@ func GetInstanceSet() (cloud.InstanceSet, cloud.ImageID, arvados.Cluster, error)
 		logger:       logrus.StandardLogger(),
 		deleteNIC:    make(chan string),
 		deleteBlob:   make(chan storage.Blob),
+		deleteDisk:   make(chan compute.Disk),
 	}
 	ap.ctx, ap.stopFunc = context.WithCancel(context.Background())
 	ap.vmClient = &VirtualMachinesClientStub{}
