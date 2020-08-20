@@ -35,7 +35,11 @@ func chooseLoginController(cluster *arvados.Cluster, railsProxy *railsProxy) log
 	wantLDAP := cluster.Login.LDAP.Enable
 	wantTest := cluster.Login.Test.Enable
 	switch {
-	case wantGoogle && !wantOpenIDConnect && !wantSSO && !wantPAM && !wantLDAP && !wantTest:
+	case 1 != countTrue(wantGoogle, wantOpenIDConnect, wantSSO, wantPAM, wantLDAP, wantTest):
+		return errorLoginController{
+			error: errors.New("configuration problem: exactly one of Login.Google, Login.OpenIDConnect, Login.SSO, Login.PAM, Login.LDAP, and Login.Test must be enabled"),
+		}
+	case wantGoogle:
 		return &oidcLoginController{
 			Cluster:            cluster,
 			RailsProxy:         railsProxy,
@@ -46,7 +50,7 @@ func chooseLoginController(cluster *arvados.Cluster, railsProxy *railsProxy) log
 			EmailClaim:         "email",
 			EmailVerifiedClaim: "email_verified",
 		}
-	case !wantGoogle && wantOpenIDConnect && !wantSSO && !wantPAM && !wantLDAP && !wantTest:
+	case wantOpenIDConnect:
 		return &oidcLoginController{
 			Cluster:            cluster,
 			RailsProxy:         railsProxy,
@@ -57,19 +61,29 @@ func chooseLoginController(cluster *arvados.Cluster, railsProxy *railsProxy) log
 			EmailVerifiedClaim: cluster.Login.OpenIDConnect.EmailVerifiedClaim,
 			UsernameClaim:      cluster.Login.OpenIDConnect.UsernameClaim,
 		}
-	case !wantGoogle && !wantOpenIDConnect && wantSSO && !wantPAM && !wantLDAP && !wantTest:
+	case wantSSO:
 		return &ssoLoginController{railsProxy}
-	case !wantGoogle && !wantOpenIDConnect && !wantSSO && wantPAM && !wantLDAP && !wantTest:
+	case wantPAM:
 		return &pamLoginController{Cluster: cluster, RailsProxy: railsProxy}
-	case !wantGoogle && !wantOpenIDConnect && !wantSSO && !wantPAM && wantLDAP && !wantTest:
+	case wantLDAP:
 		return &ldapLoginController{Cluster: cluster, RailsProxy: railsProxy}
-	case !wantGoogle && !wantOpenIDConnect && !wantSSO && !wantPAM && !wantLDAP && wantTest:
+	case wantTest:
 		return &testLoginController{Cluster: cluster, RailsProxy: railsProxy}
 	default:
 		return errorLoginController{
-			error: errors.New("configuration problem: exactly one of Login.Google, Login.OpenIDConnect, Login.SSO, Login.PAM, Login.LDAP, and Login.Test must be enabled"),
+			error: errors.New("BUG: missing case in login controller setup switch"),
 		}
 	}
+}
+
+func countTrue(vals ...bool) int {
+	n := 0
+	for _, val := range vals {
+		if val {
+			n++
+		}
+	}
+	return n
 }
 
 // Login and Logout are passed through to the wrapped railsProxy;
