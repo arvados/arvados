@@ -260,6 +260,43 @@ func (s *IntegrationSuite) TestS3ProjectPutObjectNotSupported(c *check.C) {
 	}
 }
 
+func (s *IntegrationSuite) TestS3CollectionDeleteObject(c *check.C) {
+	stage := s.s3setup(c)
+	defer stage.teardown(c)
+	s.testS3DeleteObject(c, stage.collbucket, "")
+}
+func (s *IntegrationSuite) TestS3ProjectDeleteObject(c *check.C) {
+	stage := s.s3setup(c)
+	defer stage.teardown(c)
+	s.testS3DeleteObject(c, stage.projbucket, stage.coll.Name+"/")
+}
+func (s *IntegrationSuite) testS3DeleteObject(c *check.C, bucket *s3.Bucket, prefix string) {
+	s.testServer.Config.cluster.Collections.S3FolderObjects = true
+	for _, trial := range []struct {
+		path string
+	}{
+		{"/"},
+		{"nonexistentfile"},
+		{"emptyfile"},
+		{"sailboat.txt"},
+		{"sailboat.txt/"},
+		{"emptydir"},
+		{"emptydir/"},
+	} {
+		objname := prefix + trial.path
+		comment := check.Commentf("objname %q", objname)
+
+		err := bucket.Del(objname)
+		if trial.path == "/" {
+			c.Check(err, check.NotNil)
+			continue
+		}
+		c.Check(err, check.IsNil, comment)
+		_, err = bucket.GetReader(objname)
+		c.Check(err, check.NotNil, comment)
+	}
+}
+
 func (s *IntegrationSuite) TestS3CollectionPutObjectFailure(c *check.C) {
 	stage := s.s3setup(c)
 	defer stage.teardown(c)

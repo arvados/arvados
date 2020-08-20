@@ -205,6 +205,54 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 		}
 		w.WriteHeader(http.StatusOK)
 		return true
+	case r.Method == http.MethodDelete:
+		if !objectNameGiven || r.URL.Path == "/" {
+			http.Error(w, "missing object name in DELETE request", http.StatusBadRequest)
+			return true
+		}
+		fspath := "by_id" + r.URL.Path
+		if strings.HasSuffix(fspath, "/") {
+			fspath = strings.TrimSuffix(fspath, "/")
+			fi, err := fs.Stat(fspath)
+			if os.IsNotExist(err) {
+				w.WriteHeader(http.StatusNoContent)
+				return true
+			} else if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return true
+			} else if !fi.IsDir() {
+				// if "foo" exists and is a file, then
+				// "foo/" doesn't exist, so we say
+				// delete was successful.
+				w.WriteHeader(http.StatusNoContent)
+				return true
+			}
+		} else if fi, err := fs.Stat(fspath); err == nil && fi.IsDir() {
+			// if "foo" is a dir, it is visible via S3
+			// only as "foo/", not "foo" -- so we leave
+			// the dir alone and return 204 to indicate
+			// that "foo" does not exist.
+			w.WriteHeader(http.StatusNoContent)
+			return true
+		}
+		err = fs.Remove(fspath)
+		if os.IsNotExist(err) {
+			w.WriteHeader(http.StatusNoContent)
+			return true
+		}
+		if err != nil {
+			err = fmt.Errorf("rm failed: %w", err)
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return true
+		}
+		err = fs.Sync()
+		if err != nil {
+			err = fmt.Errorf("sync failed: %w", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return true
+		}
+		w.WriteHeader(http.StatusNoContent)
+		return true
 	default:
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return true
