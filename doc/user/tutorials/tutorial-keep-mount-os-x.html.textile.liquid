@@ -1,7 +1,7 @@
 ---
 layout: default
 navsection: userguide
-title: "Keep network mount on OS X"
+title: "Access Keep from OS X Finder"
 ...
 {% comment %}
 Copyright (C) The Arvados Authors. All rights reserved.
@@ -11,9 +11,9 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 OS X users can browse Keep read-only via WebDAV. Specific collections can also be accessed read-write via WebDAV.
 
-h3. Browsing Keep (read-only)
+h3. Browsing Keep in Finder (read-only)
 
-In Finder, use "Connect to Server..." under the "Go" menu and enter @https://collections.ClusterID.example.com/@ in popup dialog. When prompted for credentials, put a valid Arvados token in the @Password@ field and anything in the Name field (it will be ignored by Arvados).
+In Finder, use "Connect to Server..." under the "Go" menu and enter @https://collections.ClusterID.example.com/@ in popup dialog. When prompted for credentials, enter username "arvados" and paste a valid Arvados token for the @Password@ field.
 
 This mount is read-only. Write support for the @/users/@ directory is planned for a future release.
 

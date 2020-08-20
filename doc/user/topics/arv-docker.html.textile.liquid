@@ -11,32 +11,30 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 This page describes how to set up the runtime environment (e.g., the programs, libraries, and other dependencies needed to run a job) that a workflow step will be run in using "Docker.":https://www.docker.com/  Docker is a tool for building and running containers that isolate applications from other applications running on the same node.  For detailed information about Docker, see the "Docker User Guide.":https://docs.docker.com/userguide/
 
-This page will describe:
+This page describes:
 
-# Create a custom image using a Dockerfile
-# Uploading an image to Arvados
-# Sources of pre-built bioinformatics Docker images
+# "Create a custom image using a Dockerfile":#create
+# "Uploading an image to Arvados":#upload
+# "Sources of pre-built bioinformatics Docker images":#sources
 
 {% include 'tutorial_expectations_workstation' %}
 
 You also need ensure that "Docker is installed,":https://docs.docker.com/installation/ the Docker daemon is running, and you have permission to access Docker.  You can test this by running @docker version@.  If you receive a permission denied error, your user account may need to be added to the @docker@ group.  If you have root access, you can add yourself to the @docker@ group using @$ sudo addgroup $USER docker@ then log out and log back in again; otherwise consult your local sysadmin.
 
-h2. Create a custom image using a Dockerfile
+h2(#create). Create a custom image using a Dockerfile
 
 This example shows how to create a Docker image and add the R package.
 
 First, create new directory called @docker-example@, in that directory create a file called @Dockerfile@.
 
 <notextile>
-<pre><code>
-$ mkdir docker-example-r-base
-$ cd docker-example-r-base
+<pre><code>$ <span class="userinput">mkdir docker-example-r-base</span>
+$ <span class="userinput">cd docker-example-r-base</span>
 </code></pre>
 </notextile>
 
 <notextile>
-<pre><code>
-FROM ubuntu:bionic
+<pre><code>FROM ubuntu:bionic
 RUN apt-get update && apt-get -yq --no-install-recommends install r-base-core
 </code></pre>
 </notextile>
@@ -52,8 +50,7 @@ h3. Create a new image
 We're now ready to create a new Docker image.  Use @docker build@ to create a new image from the Dockerfile.
 
 <notextile>
-<pre><code>
-docker-example-r-base$ docker build -t docker-example-r-base .
+<pre><code>docker-example-r-base$ <span class="userinput">docker build -t docker-example-r-base .</span>
 </code></pre>
 </notextile>
 
@@ -62,17 +59,16 @@ h3. Verify image
 Now we can verify that "R" is installed:
 
 <notextile>
-<pre><code>$ docker run -ti docker-example-r-base
+<pre><code>$ <span class="userinput">docker run -ti docker-example-r-base</span>
 root@57ec8f8b2663:/# R
 
 R version 3.4.4 (2018-03-15) -- "Someone to Lean On"
 Copyright (C) 2018 The R Foundation for Statistical Computing
 Platform: x86_64-pc-linux-gnu (64-bit)
-
 </code></pre>
 </notextile>
 
-h2. Upload your image
+h2(#upload). Upload your image
 
 Finally, we are ready to upload the new Docker image to Arvados.  Use @arv-keepdocker@ with the image repository name to upload the image.  Without arguments, @arv-keepdocker@ will print out the list of Docker images in Arvados that are available to you.
 
@@ -107,7 +103,7 @@ Docker images are subject to normal Arvados permissions.  If wish to share your 
 </code></pre>
 </notextile>
 
-h2. Sources of pre-built images
+h2(#sources). Sources of pre-built images
 
 In addition to creating your own contianers, there are a number of resources where you can find bioinformatics tools already wrapped in container images:
 
