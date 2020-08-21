@@ -265,49 +265,64 @@ func (svm *StubVM) Exec(env map[string]string, command string, stdin io.Reader, 
 		})
 		logger.Printf("[test] starting crunch-run stub")
 		go func() {
+			var ctr arvados.Container
+			var started, completed bool
+			defer func() {
+				logger.Print("[test] exiting crunch-run stub")
+				svm.Lock()
+				defer svm.Unlock()
+				if svm.running[uuid] != pid {
+					if !completed {
+						logger.Errorf("[test] StubDriver bug or caller bug: pid %d exiting, running[%s]==%d", pid, uuid, svm.running[uuid])
+					}
+				} else {
+					delete(svm.running, uuid)
+				}
+				if !completed {
+					logger.WithField("State", ctr.State).Print("[test] crashing crunch-run stub")
+					if started && svm.CrashRunningContainer != nil {
+						svm.CrashRunningContainer(ctr)
+					}
+				}
+			}()
+
 			crashluck := math_rand.Float64()
+			wantCrash := crashluck < svm.CrunchRunCrashRate
+			wantCrashEarly := crashluck < svm.CrunchRunCrashRate/2
+
 			ctr, ok := queue.Get(uuid)
 			if !ok {
 				logger.Print("[test] container not in queue")
 				return
 			}
 
-			defer func() {
-				if ctr.State == arvados.ContainerStateRunning && svm.CrashRunningContainer != nil {
-					svm.CrashRunningContainer(ctr)
-				}
-			}()
-
-			if crashluck > svm.CrunchRunCrashRate/2 {
-				time.Sleep(time.Duration(math_rand.Float64()*20) * time.Millisecond)
-				ctr.State = arvados.ContainerStateRunning
-				if !queue.Notify(ctr) {
-					ctr, _ = queue.Get(uuid)
-					logger.Print("[test] erroring out because state=Running update was rejected")
-					return
-				}
-			}
-
 			time.Sleep(time.Duration(math_rand.Float64()*20) * time.Millisecond)
 
 			svm.Lock()
-			defer svm.Unlock()
-			if svm.running[uuid] != pid {
-				logger.Print("[test] container was killed")
+			killed := svm.running[uuid] != pid
+			svm.Unlock()
+			if killed || wantCrashEarly {
 				return
 			}
-			delete(svm.running, uuid)
 
-			if crashluck < svm.CrunchRunCrashRate {
-				logger.WithField("State", ctr.State).Print("[test] crashing crunch-run stub")
-			} else {
-				if svm.ExecuteContainer != nil {
-					ctr.ExitCode = svm.ExecuteContainer(ctr)
-				}
-				logger.WithField("ExitCode", ctr.ExitCode).Print("[test] exiting crunch-run stub")
-				ctr.State = arvados.ContainerStateComplete
-				go queue.Notify(ctr)
+			ctr.State = arvados.ContainerStateRunning
+			started = queue.Notify(ctr)
+			if !started {
+				ctr, _ = queue.Get(uuid)
+				logger.Print("[test] erroring out because state=Running update was rejected")
+				return
 			}
+
+			if wantCrash {
+				logger.WithField("State", ctr.State).Print("[test] crashing crunch-run stub")
+				return
+			}
+			if svm.ExecuteContainer != nil {
+				ctr.ExitCode = svm.ExecuteContainer(ctr)
+			}
+			logger.WithField("ExitCode", ctr.ExitCode).Print("[test] completing container")
+			ctr.State = arvados.ContainerStateComplete
+			completed = queue.Notify(ctr)
 		}()
 		return 0
 	}
