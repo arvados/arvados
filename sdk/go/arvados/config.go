@@ -177,6 +177,10 @@ type Cluster struct {
 			ProviderAppID     string
 			ProviderAppSecret string
 		}
+		Test struct {
+			Enable bool
+			Users  map[string]TestUser
+		}
 		LoginCluster       string
 		RemoteTokenRefresh Duration
 	}
@@ -328,6 +332,11 @@ type Services struct {
 type Service struct {
 	InternalURLs map[URL]ServiceInstance
 	ExternalURL  URL
+}
+
+type TestUser struct {
+	Email    string
+	Password string
 }
 
 // URL is a url.URL that is also usable as a JSON key/value.
