@@ -305,7 +305,7 @@ func (s *DispatcherSuite) TestInstancesAPI(c *check.C) {
 		time.Sleep(time.Millisecond)
 	}
 	c.Assert(len(sr.Items), check.Equals, 1)
-	c.Check(sr.Items[0].Instance, check.Matches, "stub.*")
+	c.Check(sr.Items[0].Instance, check.Matches, "inst.*")
 	c.Check(sr.Items[0].WorkerState, check.Equals, "booting")
 	c.Check(sr.Items[0].Price, check.Equals, 0.123)
 	c.Check(sr.Items[0].LastContainerUUID, check.Equals, "")
