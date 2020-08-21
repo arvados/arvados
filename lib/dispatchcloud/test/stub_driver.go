@@ -34,6 +34,11 @@ type StubDriver struct {
 	// VM's error rate and other behaviors.
 	SetupVM func(*StubVM)
 
+	// Bugf, if set, is called if a bug is detected in the caller
+	// or stub. Typically set to (*check.C)Errorf. If unset,
+	// logger.Warnf is called instead.
+	Bugf func(string, ...interface{})
+
 	// StubVM's fake crunch-run uses this Queue to read and update
 	// container state.
 	Queue *Queue
@@ -273,7 +278,11 @@ func (svm *StubVM) Exec(env map[string]string, command string, stdin io.Reader, 
 				defer svm.Unlock()
 				if svm.running[uuid] != pid {
 					if !completed {
-						logger.Errorf("[test] StubDriver bug or caller bug: pid %d exiting, running[%s]==%d", pid, uuid, svm.running[uuid])
+						bugf := svm.sis.driver.Bugf
+						if bugf == nil {
+							bugf = logger.Warnf
+						}
+						bugf("[test] StubDriver bug or caller bug: pid %d exiting, running[%s]==%d", pid, uuid, svm.running[uuid])
 					}
 				} else {
 					delete(svm.running, uuid)

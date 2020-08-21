@@ -171,6 +171,7 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 			stubvm.CrunchRunCrashRate = 0.1
 		}
 	}
+	s.stubDriver.Bugf = c.Errorf
 
 	start := time.Now()
 	go s.disp.run()
