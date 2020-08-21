@@ -57,6 +57,7 @@ unset ARVADOS_API_HOST_INSECURE`
 
     render() {
         const { classes, open, closeDialog, ...data } = this.props;
+
         return <Dialog
             open={open}
             onClose={closeDialog}
