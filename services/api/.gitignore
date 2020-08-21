@@ -7,7 +7,6 @@
 
 # Sensitive files and local configuration
 /config/database.yml
-/config/initializers/omniauth.rb
 /config/application.yml
 
 # asset cache

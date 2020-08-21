@@ -5,7 +5,7 @@
 
 set -e
 
-arv-put --version
+arv-put --version >/dev/null
 
 /usr/share/python3/dist/python3-arvados-python-client/bin/python3 << EOF
 import arvados

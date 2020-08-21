@@ -5,4 +5,4 @@
 
 set -e
 
-arvados-cwl-runner --version
+crunchstat-summary -h >/dev/null

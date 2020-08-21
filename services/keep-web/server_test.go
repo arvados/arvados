@@ -442,7 +442,7 @@ func (s *IntegrationSuite) SetUpTest(c *check.C) {
 	cfg.cluster.ManagementToken = arvadostest.ManagementToken
 	cfg.cluster.Users.AnonymousUserToken = arvadostest.AnonymousToken
 	s.testServer = &server{Config: cfg}
-	err = s.testServer.Start()
+	err = s.testServer.Start(ctxlog.TestLogger(c))
 	c.Assert(err, check.Equals, nil)
 }
 

@@ -5,4 +5,4 @@
 
 set -e
 
-arv-mount --version
+cwltest -h >/dev/null

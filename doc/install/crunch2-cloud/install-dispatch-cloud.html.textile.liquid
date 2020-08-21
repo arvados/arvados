@@ -93,6 +93,77 @@ h4. Minimal configuration example for Amazon EC2
 
 h4. Minimal configuration example for Azure
 
+Using managed disks:
+
+<notextile>
+<pre><code>    Containers:
+      CloudVMs:
+        ImageID: "zzzzz-compute-v1597349873"
+        Driver: azure
+        DriverParameters:
+          # Credentials.
+          SubscriptionID: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+          ClientID: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+          ClientSecret: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+          TenantID: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+
+          # Data center where VMs will be allocated
+          Location: centralus
+
+          # The resource group where the VM and virtual NIC will be
+          # created.
+          ResourceGroup: zzzzz
+          NetworkResourceGroup: yyyyy   # only if different from ResourceGroup
+          Network: xxxxx
+          Subnet: xxxxx-subnet-private
+
+          # The resource group where the disk image is stored, only needs to
+          # be specified if it is different from ResourceGroup
+          ImageResourceGroup: aaaaa
+
+</code></pre>
+</notextile>
+
+Azure recommends using managed images. If you plan to start more than 20 VMs simultaneously, Azure recommends using a shared image gallery instead to avoid slowdowns and timeouts during the creation of the VMs.
+
+Using an image from a shared image gallery:
+
+<notextile>
+<pre><code>    Containers:
+      CloudVMs:
+        ImageID: "shared_image_gallery_image_definition_name"
+        Driver: azure
+        DriverParameters:
+          # Credentials.
+          SubscriptionID: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+          ClientID: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+          ClientSecret: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+          TenantID: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+
+          # Data center where VMs will be allocated
+          Location: centralus
+
+          # The resource group where the VM and virtual NIC will be
+          # created.
+          ResourceGroup: zzzzz
+          NetworkResourceGroup: yyyyy   # only if different from ResourceGroup
+          Network: xxxxx
+          Subnet: xxxxx-subnet-private
+
+          # The resource group where the disk image is stored, only needs to
+          # be specified if it is different from ResourceGroup
+          ImageResourceGroup: aaaaa
+
+          # (azure) shared image gallery: the name of the gallery
+          SharedImageGalleryName: "shared_image_gallery_1"
+          # (azure) shared image gallery: the version of the image definition
+          SharedImageGalleryImageVersion: "0.0.1"
+
+</code></pre>
+</notextile>
+
+Using unmanaged disks (deprecated):
+
 <notextile>
 <pre><code>    Containers:
       CloudVMs:

@@ -16,24 +16,6 @@ Services must have ManagementToken configured.  This is used to authorize access
 
 To access a monitoring endpoint, the requester must provide the HTTP header @Authorization: Bearer (ManagementToken)@.
 
-h2. Node Manager
-
-Set @port@ (the listen port) and @ManagementToken@ in the @Manage@ section of @node-manager.ini@.
-
-<pre>
-[Manage]
-# The management server responds to http://addr:port/status.json with
-# a snapshot of internal state.
-
-# Management server listening address (default 127.0.0.1)
-#address = 0.0.0.0
-
-# Management server port number (default -1, server is disabled)
-#port = 8989
-
-ManagementToken = xxx
-</pre>
-
 h2. API server and other services
 
 The following services also support monitoring.
@@ -45,7 +27,7 @@ The following services also support monitoring.
 * keepproxy
 * keepstore
 * keep-web
-* websockets
+* arvados-ws 
 
 Set @ManagementToken@ in the appropriate section of @/etc/arvados/config.yml@.
 
