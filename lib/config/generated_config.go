@@ -958,6 +958,12 @@ Clusters:
         TimeoutShutdown: 10s
 
         # Worker VM image ID.
+        # (aws) AMI identifier
+        # (azure) managed disks: the name of the managed disk image
+        # (azure) shared image gallery: the name of the image definition. Also
+        # see the SharedImageGalleryName and SharedImageGalleryImageVersion fields.
+        # (azure) unmanaged disks (deprecated): the complete URI of the VHD, e.g.
+        # https://xxxxx.blob.core.windows.net/system/Microsoft.Compute/Images/images/xxxxx.vhd
         ImageID: ""
 
         # An executable file (located on the dispatcher host) to be
@@ -1026,7 +1032,16 @@ Clusters:
           Network: ""
           Subnet: ""
 
-          # (azure) Where to store the VM VHD blobs
+          # (azure) managed disks: The resource group where the managed disk
+          # image can be found (if different from ResourceGroup).
+          ImageResourceGroup: ""
+
+          # (azure) shared image gallery: the name of the gallery
+          SharedImageGalleryName: ""
+          # (azure) shared image gallery: the version of the image definition
+          SharedImageGalleryImageVersion: ""
+
+          # (azure) unmanaged disks (deprecated): Where to store the VM VHD blobs
           StorageAccount: ""
           BlobContainer: ""
 

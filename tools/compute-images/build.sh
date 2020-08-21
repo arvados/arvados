@@ -43,8 +43,6 @@ Options:
       Azure secrets file which will be sourced from this script
   --azure-resource-group (default: false, required if building for Azure)
       Azure resource group
-  --azure-storage-account (default: false, required if building for Azure)
-      Azure storage account
   --azure-location (default: false, required if building for Azure)
       Azure location, e.g. centralus, eastus, westeurope
   --azure-sku (default: unset, required if building for Azure, e.g. 16.04-LTS)
@@ -76,7 +74,6 @@ GCP_ACCOUNT_FILE=
 GCP_ZONE=
 AZURE_SECRETS_FILE=
 AZURE_RESOURCE_GROUP=
-AZURE_STORAGE_ACCOUNT=
 AZURE_LOCATION=
 AZURE_CLOUD_ENVIRONMENT=
 DEBUG=
@@ -86,7 +83,7 @@ AWS_DEFAULT_REGION=us-east-1
 PUBLIC_KEY_FILE=
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
-    help,json-file:,arvados-cluster-id:,aws-source-ami:,aws-profile:,aws-secrets-file:,aws-region:,aws-vpc-id:,aws-subnet-id:,gcp-project-id:,gcp-account-file:,gcp-zone:,azure-secrets-file:,azure-resource-group:,azure-storage-account:,azure-location:,azure-sku:,azure-cloud-environment:,ssh_user:,domain:,resolver:,reposuffix:,public-key-file:,debug \
+    help,json-file:,arvados-cluster-id:,aws-source-ami:,aws-profile:,aws-secrets-file:,aws-region:,aws-vpc-id:,aws-subnet-id:,gcp-project-id:,gcp-account-file:,gcp-zone:,azure-secrets-file:,azure-resource-group:,azure-location:,azure-sku:,azure-cloud-environment:,ssh_user:,domain:,resolver:,reposuffix:,public-key-file:,debug \
     -- "" "$@")
 if [ $? -ne 0 ]; then
     exit 1
@@ -138,9 +135,6 @@ while [ $# -gt 0 ]; do
             ;;
         --azure-resource-group)
             AZURE_RESOURCE_GROUP="$2"; shift
-            ;;
-        --azure-storage-account)
-            AZURE_STORAGE_ACCOUNT="$2"; shift
             ;;
         --azure-location)
             AZURE_LOCATION="$2"; shift
@@ -247,9 +241,6 @@ if [[ "$GCP_ZONE" != "" ]]; then
 fi
 if [[ "$AZURE_RESOURCE_GROUP" != "" ]]; then
   EXTRA2+=" -var resource_group=$AZURE_RESOURCE_GROUP"
-fi
-if [[ "$AZURE_STORAGE_ACCOUNT" != "" ]]; then
-  EXTRA2+=" -var storage_account=$AZURE_STORAGE_ACCOUNT"
 fi
 if [[ "$AZURE_LOCATION" != "" ]]; then
   EXTRA2+=" -var location=$AZURE_LOCATION"
