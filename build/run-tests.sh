@@ -195,7 +195,7 @@ sanity_checks() {
     ( [[ -n "$WORKSPACE" ]] && [[ -d "$WORKSPACE/services" ]] ) \
         || fatal "WORKSPACE environment variable not set to a source directory (see: $0 --help)"
     [[ -z "$CONFIGSRC" ]] || [[ -s "$CONFIGSRC/config.yml" ]] \
-	|| fatal "CONFIGSRC is $CONFIGSRC but '$CONFIGSRC/config.yml' is empty or not found (see: $0 --help)"
+        || fatal "CONFIGSRC is $CONFIGSRC but '$CONFIGSRC/config.yml' is empty or not found (see: $0 --help)"
     echo Checking dependencies:
     echo "locale: ${LANG}"
     [[ "$(locale charmap)" = "UTF-8" ]] \
@@ -373,7 +373,7 @@ if [[ ${skip["sdk/R"]} == 1 && ${skip["doc"]} == 1 ]]; then
 fi
 
 if [[ $NEED_SDK_R == false ]]; then
-	echo "R SDK not needed, it will not be installed."
+        echo "R SDK not needed, it will not be installed."
 fi
 
 checkpidfile() {
@@ -414,11 +414,11 @@ start_services() {
     . "$VENVDIR/bin/activate"
     echo 'Starting API, controller, keepproxy, keep-web, arv-git-httpd, ws, and nginx ssl proxy...'
     if [[ ! -d "$WORKSPACE/services/api/log" ]]; then
-	mkdir -p "$WORKSPACE/services/api/log"
+        mkdir -p "$WORKSPACE/services/api/log"
     fi
     # Remove empty api.pid file if it exists
     if [[ -f "$WORKSPACE/tmp/api.pid" && ! -s "$WORKSPACE/tmp/api.pid" ]]; then
-	rm -f "$WORKSPACE/tmp/api.pid"
+        rm -f "$WORKSPACE/tmp/api.pid"
     fi
     all_services_stopped=
     fail=1
@@ -817,19 +817,19 @@ do_test_once() {
 
 check_arvados_config() {
     if [[ "$1" = "env" ]] ; then
-	return
+        return
     fi
     if [[ -z "$ARVADOS_CONFIG" ]] ; then
-	# Create config file.  The run_test_server script requires PyYAML,
-	# so virtualenv needs to be active.  Downstream steps like
-	# workbench install which require a valid config.yml.
-	if [[ ! -s "$VENVDIR/bin/activate" ]] ; then
-	    install_env
-	fi
-	. "$VENVDIR/bin/activate"
+        # Create config file.  The run_test_server script requires PyYAML,
+        # so virtualenv needs to be active.  Downstream steps like
+        # workbench install which require a valid config.yml.
+        if [[ ! -s "$VENVDIR/bin/activate" ]] ; then
+            install_env
+        fi
+        . "$VENVDIR/bin/activate"
         cd "$WORKSPACE"
-	eval $(python sdk/python/tests/run_test_server.py setup_config)
-	deactivate
+        eval $(python sdk/python/tests/run_test_server.py setup_config)
+        deactivate
     fi
 }
 
