@@ -11,6 +11,7 @@ import (
 
 	"git.arvados.org/arvados.git/lib/dispatchcloud/container"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"github.com/sirupsen/logrus"
 )
 
 // Queue is a test stub for container.Queue. The caller specifies the
@@ -22,6 +23,8 @@ type Queue struct {
 	// ChooseType will be called for each entry in Containers. It
 	// must not be nil.
 	ChooseType func(*arvados.Container) (arvados.InstanceType, error)
+
+	Logger logrus.FieldLogger
 
 	entries     map[string]container.QueueEnt
 	updTime     time.Time
@@ -166,13 +169,36 @@ func (q *Queue) Notify(upd arvados.Container) bool {
 	defer q.mtx.Unlock()
 	for i, ctr := range q.Containers {
 		if ctr.UUID == upd.UUID {
-			if ctr.State != arvados.ContainerStateComplete && ctr.State != arvados.ContainerStateCancelled {
+			if allowContainerUpdate[ctr.State][upd.State] {
 				q.Containers[i] = upd
 				return true
+			} else {
+				if q.Logger != nil {
+					q.Logger.WithField("ContainerUUID", ctr.UUID).Infof("test.Queue rejected update from %s to %s", ctr.State, upd.State)
+				}
+				return false
 			}
-			return false
 		}
 	}
 	q.Containers = append(q.Containers, upd)
 	return true
+}
+
+var allowContainerUpdate = map[arvados.ContainerState]map[arvados.ContainerState]bool{
+	arvados.ContainerStateQueued: map[arvados.ContainerState]bool{
+		arvados.ContainerStateQueued:    true,
+		arvados.ContainerStateLocked:    true,
+		arvados.ContainerStateCancelled: true,
+	},
+	arvados.ContainerStateLocked: map[arvados.ContainerState]bool{
+		arvados.ContainerStateQueued:    true,
+		arvados.ContainerStateLocked:    true,
+		arvados.ContainerStateRunning:   true,
+		arvados.ContainerStateCancelled: true,
+	},
+	arvados.ContainerStateRunning: map[arvados.ContainerState]bool{
+		arvados.ContainerStateRunning:   true,
+		arvados.ContainerStateCancelled: true,
+		arvados.ContainerStateComplete:  true,
+	},
 }

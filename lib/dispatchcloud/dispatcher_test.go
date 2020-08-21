@@ -115,6 +115,7 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 		ChooseType: func(ctr *arvados.Container) (arvados.InstanceType, error) {
 			return ChooseInstanceType(s.cluster, ctr)
 		},
+		Logger: ctxlog.TestLogger(c),
 	}
 	for i := 0; i < 200; i++ {
 		queue.Containers = append(queue.Containers, arvados.Container{
