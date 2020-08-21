@@ -1,0 +1,18 @@
+For configuration advice, please refer to https://doc.arvados.org/install/install-webshell.html
+
+Usage (in pam config):
+
+    pam_arvados.so arvados_api_host my_vm_hostname ["insecure"] ["debug"]
+
+pam_arvados.so passes authentication if (according to
+arvados_api_host) the supplied PAM token belongs to an Arvados user
+who is allowed to log in to my_vm_host_name with the supplied PAM
+username.
+
+If my_vm_hostname is omitted or "-", the current hostname is used.
+
+"insecure" -- continue even if the TLS certificate presented by
+arvados_api_host fails verification.
+
+"debug" -- enable debug-level log messages in syslog and (when not in
+"silent" mode) on the calling application's stderr.

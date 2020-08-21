@@ -83,7 +83,7 @@ def find_defaults(d, op):
             for i in viewvalues(d):
                 find_defaults(i, op)
 
-def make_builder(joborder, hints, requirements, runtimeContext):
+def make_builder(joborder, hints, requirements, runtimeContext, metadata):
     return Builder(
                  job=joborder,
                  files=[],               # type: List[Dict[Text, Text]]
@@ -106,6 +106,7 @@ def make_builder(joborder, hints, requirements, runtimeContext):
                  outdir="",              # type: Text
                  tmpdir="",              # type: Text
                  stagedir="",            # type: Text
+                 cwlVersion=metadata.get("http://commonwl.org/cwltool#original_cwlVersion") or metadata.get("cwlVersion")
                 )
 
 def search_schemadef(name, reqs):
@@ -172,7 +173,10 @@ def set_secondary(fsaccess, builder, inputschema, secondaryspec, primary, discov
         specs = []
         primary["secondaryFiles"] = secondaryspec
         for i, sf in enumerate(aslist(secondaryspec)):
-            pattern = builder.do_eval(sf["pattern"], context=primary)
+            if builder.cwlVersion == "v1.0":
+                pattern = builder.do_eval(sf, context=primary)
+            else:
+                pattern = builder.do_eval(sf["pattern"], context=primary)
             if pattern is None:
                 continue
             if isinstance(pattern, list):
@@ -262,6 +266,8 @@ def upload_dependencies(arvrunner, name, document_loader,
         # Need raw file content (before preprocessing) to ensure
         # that external references in $include and $mixin are captured.
         scanobj = loadref("", workflowobj["id"])
+
+    metadata = scanobj
 
     sc_result = scandeps(uri, scanobj,
                   loadref_fields,
@@ -354,7 +360,8 @@ def upload_dependencies(arvrunner, name, document_loader,
         builder = make_builder(builder_job_order,
                                obj.get("hints", []),
                                obj.get("requirements", []),
-                               ArvRuntimeContext())
+                               ArvRuntimeContext(),
+                               metadata)
         discover_secondary_files(arvrunner.fs_access,
                                  builder,
                                  obj["inputs"],
@@ -460,6 +467,8 @@ def packed_workflow(arvrunner, tool, merged_map):
     def visit(v, cur_id):
         if isinstance(v, dict):
             if v.get("class") in ("CommandLineTool", "Workflow"):
+                if tool.metadata["cwlVersion"] == "v1.0" and "id" not in v:
+                    raise SourceLine(v, None, Exception).makeError("Embedded process object is missing required 'id' field, add an 'id' or use to cwlVersion: v1.1")
                 if "id" in v:
                     cur_id = rewrite_to_orig.get(v["id"], v["id"])
             if "path" in v and "location" not in v:
@@ -514,7 +523,8 @@ def upload_job_order(arvrunner, name, tool, job_order):
     builder = make_builder(builder_job_order,
                            tool.hints,
                            tool.requirements,
-                           ArvRuntimeContext())
+                           ArvRuntimeContext(),
+                           tool.metadata)
     # Now update job_order with secondaryFiles
     discover_secondary_files(arvrunner.fs_access,
                              builder,

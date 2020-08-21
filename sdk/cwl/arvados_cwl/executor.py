@@ -507,7 +507,7 @@ The 'jobs' API is no longer supported.
                                               }).execute(num_retries=self.num_retries)
             except Exception:
                 logger.exception("Setting container output")
-                return
+                raise
 
     def apply_reqs(self, job_order_object, tool):
         if "https://w3id.org/cwl/cwl#requirements" in job_order_object:

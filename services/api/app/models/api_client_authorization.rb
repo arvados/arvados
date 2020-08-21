@@ -325,6 +325,7 @@ class ApiClientAuthorization < ArvadosModel
   end
 
   def log_update
-    super unless (changed - UNLOGGED_CHANGES).empty?
+
+    super unless (saved_changes.keys - UNLOGGED_CHANGES).empty?
   end
 end

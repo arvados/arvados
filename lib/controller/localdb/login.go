@@ -6,11 +6,16 @@ package localdb
 
 import (
 	"context"
+	"database/sql"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"git.arvados.org/arvados.git/lib/controller/rpc"
+	"git.arvados.org/arvados.git/lib/ctrlctx"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
@@ -96,9 +101,9 @@ func noopLogout(cluster *arvados.Cluster, opts arvados.LogoutOptions) (arvados.L
 	return arvados.LogoutResponse{RedirectLocation: target}, nil
 }
 
-func createAPIClientAuthorization(ctx context.Context, conn *rpc.Conn, rootToken string, authinfo rpc.UserSessionAuthInfo) (arvados.APIClientAuthorization, error) {
+func createAPIClientAuthorization(ctx context.Context, conn *rpc.Conn, rootToken string, authinfo rpc.UserSessionAuthInfo) (resp arvados.APIClientAuthorization, err error) {
 	ctxRoot := auth.NewContext(ctx, &auth.Credentials{Tokens: []string{rootToken}})
-	resp, err := conn.UserSessionCreate(ctxRoot, rpc.UserSessionCreateOptions{
+	newsession, err := conn.UserSessionCreate(ctxRoot, rpc.UserSessionCreateOptions{
 		// Send a fake ReturnTo value instead of the caller's
 		// opts.ReturnTo. We won't follow the resulting
 		// redirect target anyway.
@@ -106,12 +111,36 @@ func createAPIClientAuthorization(ctx context.Context, conn *rpc.Conn, rootToken
 		AuthInfo: authinfo,
 	})
 	if err != nil {
-		return arvados.APIClientAuthorization{}, err
+		return
 	}
-	target, err := url.Parse(resp.RedirectLocation)
+	target, err := url.Parse(newsession.RedirectLocation)
 	if err != nil {
-		return arvados.APIClientAuthorization{}, err
+		return
 	}
 	token := target.Query().Get("api_token")
-	return conn.APIClientAuthorizationCurrent(auth.NewContext(ctx, auth.NewCredentials(token)), arvados.GetOptions{})
+	tx, err := ctrlctx.CurrentTx(ctx)
+	if err != nil {
+		return
+	}
+	tokensecret := token
+	if strings.Contains(token, "/") {
+		tokenparts := strings.Split(token, "/")
+		if len(tokenparts) >= 3 {
+			tokensecret = tokenparts[2]
+		}
+	}
+	var exp sql.NullString
+	var scopes []byte
+	err = tx.QueryRowxContext(ctx, "select uuid, api_token, expires_at, scopes from api_client_authorizations where api_token=$1", tokensecret).Scan(&resp.UUID, &resp.APIToken, &exp, &scopes)
+	if err != nil {
+		return
+	}
+	resp.ExpiresAt = exp.String
+	if len(scopes) > 0 {
+		err = json.Unmarshal(scopes, &resp.Scopes)
+		if err != nil {
+			return resp, fmt.Errorf("unmarshal scopes: %s", err)
+		}
+	}
+	return
 }

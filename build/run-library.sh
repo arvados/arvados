@@ -146,7 +146,7 @@ calculate_go_package_version() {
   __returnvar="$version"
 }
 
-# Usage: package_go_binary services/foo arvados-foo "Compute foo to arbitrary precision"
+# Usage: package_go_binary services/foo arvados-foo "Compute foo to arbitrary precision" [apache-2.0.txt]
 package_go_binary() {
     local src_path="$1"; shift
     local prog="$1"; shift
@@ -185,7 +185,37 @@ package_go_binary() {
     fi
     switches+=("$WORKSPACE/${license_file}=/usr/share/doc/$prog/${license_file}")
 
-    fpm_build "$GOPATH/bin/${basename}=/usr/bin/${prog}" "${prog}" dir "${go_package_version}" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=${description}" "${switches[@]}"
+    fpm_build "${WORKSPACE}/${src_path}" "$GOPATH/bin/${basename}=/usr/bin/${prog}" "${prog}" dir "${go_package_version}" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=${description}" "${switches[@]}"
+}
+
+# Usage: package_go_so lib/foo arvados_foo.so arvados-foo "Arvados foo library"
+package_go_so() {
+    local src_path="$1"; shift
+    local sofile="$1"; shift
+    local pkg="$1"; shift
+    local description="$1"; shift
+
+    debug_echo "package_go_so $src_path as $pkg"
+
+    calculate_go_package_version go_package_version $src_path
+    cd $WORKSPACE/packages/$TARGET
+    test_package_presence $pkg $go_package_version go || return 1
+    cd $WORKSPACE/$src_path
+    go build -buildmode=c-shared -o ${GOPATH}/bin/${sofile}
+    cd $WORKSPACE/packages/$TARGET
+    local -a fpmargs=(
+        "--url=https://arvados.org"
+        "--license=Apache License, Version 2.0"
+        "--description=${description}"
+        "$WORKSPACE/apache-2.0.txt=/usr/share/doc/$pkg/apache-2.0.txt"
+    )
+    if [[ -e "$WORKSPACE/$src_path/pam-configs-arvados" ]]; then
+        fpmargs+=("$WORKSPACE/$src_path/pam-configs-arvados=/usr/share/pam-configs/arvados-go")
+    fi
+    if [[ -e "$WORKSPACE/$src_path/README" ]]; then
+        fpmargs+=("$WORKSPACE/$src_path/README=/usr/share/doc/$pkg/README")
+    fi
+    fpm_build "${WORKSPACE}/${src_path}" "$GOPATH/bin/${sofile}=/usr/lib/${sofile}" "${pkg}" dir "${go_package_version}" "${fpmargs[@]}"
 }
 
 default_iteration() {
@@ -200,10 +230,6 @@ default_iteration() {
     if [[ $package_version =~ ^0\.1\.([0-9]{14})(\.|$) ]] && \
            [[ ${BASH_REMATCH[1]} -le $LICENSE_PACKAGE_TS ]]; then
         iteration=2
-    fi
-    if [[ $package_type =~ ^python ]]; then
-      # Fix --iteration for #9242.
-      iteration=2
     fi
     echo $iteration
 }
@@ -417,7 +443,7 @@ handle_rails_package() {
     for exclude in ${exclude_list[@]}; do
         switches+=(-x "$exclude_root/$exclude")
     done
-    fpm_build "${pos_args[@]}" "${switches[@]}" \
+    fpm_build "${srcdir}" "${pos_args[@]}" "${switches[@]}" \
               -x "$exclude_root/vendor/cache-*" \
               -x "$exclude_root/vendor/bundle" "$@" "$license_arg"
     rm -rf "$scripts_dir"
@@ -457,18 +483,9 @@ fpm_build_virtualenv () {
         fi
         PACKAGE_PREFIX=$PYTHON3_PKG_PREFIX
         ;;
-    python)
-        # All Arvados Python2 packages depend on Python 2.7.
-        # Make sure we build with that for consistency.
-        python=python2.7
-        pip=pip
-        PACKAGE_PREFIX=$PYTHON2_PKG_PREFIX
-        ;;
   esac
 
-  if [[ "$PKG" != "libpam-arvados" ]] &&
-     [[ "$PKG" != "arvados-node-manager" ]] &&
-     [[ "$PKG" != "arvados-docker-cleaner" ]]; then
+  if [[ "$PKG" != "arvados-docker-cleaner" ]]; then
     PYTHON_PKG=$PACKAGE_PREFIX-$PKG
   else
     # Exception to our package naming convention
@@ -621,25 +638,6 @@ fpm_build_virtualenv () {
   LICENSE_STRING=`grep license $WORKSPACE/$PKG_DIR/setup.py|cut -f2 -d=|sed -e "s/[',\\"]//g"`
   COMMAND_ARR+=('--license' "$LICENSE_STRING")
 
-  # 12271 - As FPM-generated packages don't include scripts by default, the
-  # packages cleanup on upgrade depends on files being listed on the %files
-  # section in the generated SPEC files. To remove DIRECTORIES, they need to
-  # be listed in that section too, so we need to add this parameter to properly
-  # remove lingering dirs. But this only works for python2: if used on
-  # python33, it includes dirs like /opt/rh/python33 that belong to
-  # other packages.
-  if [[ "$FORMAT" == "rpm" ]] && [[ "$python" == "python2.7" ]]; then
-    COMMAND_ARR+=('--rpm-auto-add-directories')
-  fi
-
-  if [[ "$PKG" == "arvados-python-client" ]] || [[ "$PKG" == "arvados-fuse" ]]; then
-    if [[ "$python" == "python2.7" ]]; then
-      COMMAND_ARR+=('--conflicts' "$PYTHON3_PKG_PREFIX-$PKG")
-    else
-      COMMAND_ARR+=('--conflicts' "$PYTHON2_PKG_PREFIX-$PKG")
-    fi
-  fi
-
   if [[ "$DEBUG" != "0" ]]; then
     COMMAND_ARR+=('--verbose' '--log' 'info')
   fi
@@ -655,11 +653,7 @@ fpm_build_virtualenv () {
     COMMAND_ARR+=('--before-remove' "${WORKSPACE}/build/go-python-package-scripts/prerm")
   fi
 
-  if [[ "$python" == "python2.7" ]]; then
-    COMMAND_ARR+=('--depends' "$PYTHON2_PACKAGE")
-  else
-    COMMAND_ARR+=('--depends' "$PYTHON3_PACKAGE")
-  fi
+  COMMAND_ARR+=('--depends' "$PYTHON3_PACKAGE")
 
   # avoid warning
   COMMAND_ARR+=('--deb-no-default-config-files')
@@ -684,7 +678,7 @@ fpm_build_virtualenv () {
   done
 
   # make sure the systemd service file ends up in the right place
-  # used by arvados-docker-cleaner and arvados-node-manager
+  # used by arvados-docker-cleaner
   if [[ -e "${systemd_unit}" ]]; then
     COMMAND_ARR+=("usr/share/$python/dist/$PKG/share/doc/$PKG/$PKG.service=/lib/systemd/system/$PKG.service")
   fi
@@ -701,15 +695,6 @@ fpm_build_virtualenv () {
     for binary in `ls $WORKSPACE/$PKG_DIR/bin`; do
       COMMAND_ARR+=("usr/share/$python/dist/$PYTHON_PKG/bin/$binary=/usr/bin/")
     done
-  fi
-
-  # the libpam module should place a few files in the correct place for the pam
-  # subsystem
-  if [[ -e "$WORKSPACE/$PKG_DIR/dist/build/usr/share/$python/dist/$PYTHON_PKG/lib/security/libpam_arvados.py" ]]; then
-    COMMAND_ARR+=("usr/share/$python/dist/$PYTHON_PKG/lib/security/libpam_arvados.py=/usr/lib/security/")
-  fi
-  if [[ -e "$WORKSPACE/$PKG_DIR/dist/build/usr/share/$python/dist/$PYTHON_PKG/share/pam-configs/arvados" ]]; then
-    COMMAND_ARR+=("usr/share/$python/dist/$PYTHON_PKG/share/pam-configs/arvados=/usr/share/pam-configs/")
   fi
 
   # the python-arvados-cwl-runner package comes with cwltool, expose that version
@@ -736,6 +721,9 @@ fpm_build_virtualenv () {
 
 # Build packages for everything
 fpm_build () {
+  # Source dir where fpm-info.sh (if any) will be found.
+  SRC_DIR=$1
+  shift
   # The package source.  Depending on the source type, this can be a
   # path, or the name of the package in an upstream repository (e.g.,
   # pip).
@@ -767,17 +755,6 @@ fpm_build () {
       # refer to Debian package iterations, it doesn't make sense to
       # enforce those in the .deb dependencies.
       COMMAND_ARR+=(--deb-ignore-iteration-in-dependencies)
-  fi
-
-  # 12271 - As FPM-generated packages don't include scripts by default, the
-  # packages cleanup on upgrade depends on files being listed on the %files
-  # section in the generated SPEC files. To remove DIRECTORIES, they need to
-  # be listed in that section too, so we need to add this parameter to properly
-  # remove lingering dirs. But this only works for python2: if used on
-  # python33, it includes dirs like /opt/rh/python33 that belong to
-  # other packages.
-  if [[ "$FORMAT" = rpm ]] && [[ "$python" = python2.7 ]]; then
-    COMMAND_ARR+=('--rpm-auto-add-directories')
   fi
 
   if [[ "$DEBUG" != "0" ]]; then
@@ -812,17 +789,15 @@ fpm_build () {
   declare -a build_depends=()
   declare -a fpm_depends=()
   declare -a fpm_exclude=()
-  declare -a fpm_dirs=(
-      # source dir part of 'dir' package ("/source=/dest" => "/source"):
-      "${PACKAGE%%=/*}")
-  for pkgdir in "${fpm_dirs[@]}"; do
-      fpminfo="$pkgdir/fpm-info.sh"
-      if [[ -e "$fpminfo" ]]; then
-          debug_echo "Loading fpm overrides from $fpminfo"
-          source "$fpminfo"
-          break
-      fi
-  done
+  if [[ ! -d "$SRC_DIR" ]]; then
+      echo >&2 "BUG: looking in wrong dir for fpm-info.sh: $pkgdir"
+      exit 1
+  fi
+  fpminfo="${SRC_DIR}/fpm-info.sh"
+  if [[ -e "$fpminfo" ]]; then
+      debug_echo "Loading fpm overrides from $fpminfo"
+      source "$fpminfo"
+  fi
   for pkg in "${build_depends[@]}"; do
       if [[ $TARGET =~ debian|ubuntu ]]; then
           pkg_deb=$(ls "$WORKSPACE/packages/$TARGET/$pkg_"*.deb | sort -rg | awk 'NR==1')

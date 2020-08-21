@@ -12,11 +12,13 @@ import (
 
 	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/lib/controller/railsproxy"
+	"git.arvados.org/arvados.git/lib/ctrlctx"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"github.com/bradleypeabody/godap"
+	"github.com/jmoiron/sqlx"
 	check "gopkg.in/check.v1"
 )
 
@@ -26,6 +28,11 @@ type LDAPSuite struct {
 	cluster *arvados.Cluster
 	ctrl    *ldapLoginController
 	ldap    *godap.LDAPServer // fake ldap server that accepts auth goodusername/goodpassword
+	db      *sqlx.DB
+
+	// transaction context
+	ctx      context.Context
+	rollback func() error
 }
 
 func (s *LDAPSuite) TearDownSuite(c *check.C) {
@@ -42,6 +49,7 @@ func (s *LDAPSuite) SetUpSuite(c *check.C) {
 	c.Assert(err, check.IsNil)
 
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	c.Assert(err, check.IsNil)
 	s.ldap = &godap.LDAPServer{
 		Listener: ln,
 		Handlers: []godap.LDAPRequestHandler{
@@ -85,10 +93,26 @@ func (s *LDAPSuite) SetUpSuite(c *check.C) {
 		Cluster:    s.cluster,
 		RailsProxy: railsproxy.NewConn(s.cluster),
 	}
+	s.db = arvadostest.DB(c, s.cluster)
+}
+
+func (s *LDAPSuite) SetUpTest(c *check.C) {
+	tx, err := s.db.Beginx()
+	c.Assert(err, check.IsNil)
+	s.ctx = ctrlctx.NewWithTransaction(context.Background(), tx)
+	s.rollback = tx.Rollback
+}
+
+func (s *LDAPSuite) TearDownTest(c *check.C) {
+	if s.rollback != nil {
+		s.rollback()
+	}
 }
 
 func (s *LDAPSuite) TestLoginSuccess(c *check.C) {
-	resp, err := s.ctrl.UserAuthenticate(context.Background(), arvados.UserAuthenticateOptions{
+	conn := NewConn(s.cluster)
+	conn.loginController = s.ctrl
+	resp, err := conn.UserAuthenticate(s.ctx, arvados.UserAuthenticateOptions{
 		Username: "goodusername",
 		Password: "goodpassword",
 	})
@@ -97,7 +121,7 @@ func (s *LDAPSuite) TestLoginSuccess(c *check.C) {
 	c.Check(resp.UUID, check.Matches, `zzzzz-gj3su-.*`)
 	c.Check(resp.Scopes, check.DeepEquals, []string{"all"})
 
-	ctx := auth.NewContext(context.Background(), &auth.Credentials{Tokens: []string{"v2/" + resp.UUID + "/" + resp.APIToken}})
+	ctx := auth.NewContext(s.ctx, &auth.Credentials{Tokens: []string{"v2/" + resp.UUID + "/" + resp.APIToken}})
 	user, err := railsproxy.NewConn(s.cluster).UserGetCurrent(ctx, arvados.GetOptions{})
 	c.Check(err, check.IsNil)
 	c.Check(user.Email, check.Equals, "goodusername@example.com")
@@ -107,7 +131,7 @@ func (s *LDAPSuite) TestLoginSuccess(c *check.C) {
 func (s *LDAPSuite) TestLoginFailure(c *check.C) {
 	// search returns no results
 	s.cluster.Login.LDAP.SearchBase = "dc=example,dc=invalid"
-	resp, err := s.ctrl.UserAuthenticate(context.Background(), arvados.UserAuthenticateOptions{
+	resp, err := s.ctrl.UserAuthenticate(s.ctx, arvados.UserAuthenticateOptions{
 		Username: "goodusername",
 		Password: "goodpassword",
 	})
@@ -120,7 +144,7 @@ func (s *LDAPSuite) TestLoginFailure(c *check.C) {
 
 	// search returns result, but auth fails
 	s.cluster.Login.LDAP.SearchBase = "dc=example,dc=com"
-	resp, err = s.ctrl.UserAuthenticate(context.Background(), arvados.UserAuthenticateOptions{
+	resp, err = s.ctrl.UserAuthenticate(s.ctx, arvados.UserAuthenticateOptions{
 		Username: "badusername",
 		Password: "badpassword",
 	})

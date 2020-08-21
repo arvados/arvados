@@ -138,7 +138,7 @@ class Container < ArvadosModel
   end
 
   def propagate_priority
-    return true unless priority_changed?
+    return true unless saved_change_to_priority?
     act_as_system_user do
       # Update the priority of child container requests to match new
       # priority of the parent container (ignoring requests with no
@@ -387,7 +387,7 @@ class Container < ArvadosModel
     if users_list.select { |u| u.is_admin }.any?
       return super
     end
-    Container.where(ContainerRequest.readable_by(*users_list).where("containers.uuid = container_requests.container_uuid").exists)
+    Container.where(ContainerRequest.readable_by(*users_list).where("containers.uuid = container_requests.container_uuid").arel.exists)
   end
 
   def final?
@@ -556,7 +556,7 @@ class Container < ArvadosModel
     # If self.final?, this update is superfluous: the final log/output
     # update will be done when handle_completed calls finalize! on
     # each requesting CR.
-    return if self.final? || !self.log_changed?
+    return if self.final? || !saved_change_to_log?
     leave_modified_by_user_alone do
       ContainerRequest.where(container_uuid: self.uuid).each do |cr|
         cr.update_collections(container: self, collections: ['log'])
@@ -653,11 +653,11 @@ class Container < ArvadosModel
   def handle_completed
     # This container is finished so finalize any associated container requests
     # that are associated with this container.
-    if self.state_changed? and self.final?
+    if saved_change_to_state? and self.final?
       # These get wiped out by with_lock (which reloads the record),
       # so record them now in case we need to schedule a retry.
-      prev_secret_mounts = self.secret_mounts_was
-      prev_runtime_token = self.runtime_token_was
+      prev_secret_mounts = secret_mounts_before_last_save
+      prev_runtime_token = runtime_token_before_last_save
 
       # Need to take a lock on the container to ensure that any
       # concurrent container requests that might try to reuse this

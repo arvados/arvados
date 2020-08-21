@@ -3,8 +3,8 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-. `dirname "$(readlink -f "$0")"`/run-library.sh
-. `dirname "$(readlink -f "$0")"`/libcloud-pin.sh
+. `dirname "$(readlink -f "$0")"`/run-library.sh || exit 1
+. `dirname "$(readlink -f "$0")"`/libcloud-pin.sh || exit 1
 
 read -rd "\000" helpmessage <<EOF
 $(basename $0): Build Arvados packages
@@ -102,18 +102,12 @@ if [[ "$DEBUG" != 0 ]]; then
     DASHQ_UNLESS_DEBUG=
 fi
 
-declare -a PYTHON_BACKPORTS PYTHON3_BACKPORTS
+declare -a PYTHON3_BACKPORTS
 
-PYTHON2_VERSION=2.7
 PYTHON3_VERSION=$(python3 -c 'import sys; print("{v.major}.{v.minor}".format(v=sys.version_info))')
 
 ## These defaults are suitable for any Debian-based distribution.
 # You can customize them as needed in distro sections below.
-PYTHON2_PACKAGE=python$PYTHON2_VERSION
-PYTHON2_PKG_PREFIX=python
-PYTHON2_PREFIX=/usr
-PYTHON2_INSTALL_LIB=lib/python$PYTHON2_VERSION/dist-packages
-
 PYTHON3_PACKAGE=python$PYTHON3_VERSION
 PYTHON3_PKG_PREFIX=python3
 PYTHON3_PREFIX=/usr
@@ -129,9 +123,6 @@ case "$TARGET" in
         ;;
     centos*)
         FORMAT=rpm
-        PYTHON2_PACKAGE=$(rpm -qf "$(which python$PYTHON2_VERSION)" --queryformat '%{NAME}\n')
-        PYTHON2_PKG_PREFIX=$PYTHON2_PACKAGE
-        PYTHON2_INSTALL_LIB=lib/python$PYTHON2_VERSION/site-packages
         PYTHON3_PACKAGE=$(rpm -qf "$(which python$PYTHON3_VERSION)" --queryformat '%{NAME}\n')
         PYTHON3_PKG_PREFIX=$PYTHON3_PACKAGE
         PYTHON3_PREFIX=/opt/rh/rh-python36/root/usr
@@ -223,7 +214,7 @@ if [[ -z "$ONLY_BUILD" ]] || [[ "libarvados-perl" = "$ONLY_BUILD" ]] ; then
 
     perl Makefile.PL INSTALL_BASE=install >"$STDOUT_IF_DEBUG" && \
         make install INSTALLDIRS=perl >"$STDOUT_IF_DEBUG" && \
-        fpm_build install/lib/=/usr/share libarvados-perl \
+        fpm_build "$WORKSPACE/sdk/perl" install/lib/=/usr/share libarvados-perl \
         dir "$(version_from_git)" install/man/=/usr/share/man \
         "$WORKSPACE/apache-2.0.txt=/usr/share/doc/libarvados-perl/apache-2.0.txt" && \
         mv --no-clobber libarvados-perl*.$FORMAT "$WORKSPACE/packages/$TARGET/"
@@ -271,7 +262,7 @@ debug_echo -e "\nPython packages\n"
       cd "$SRC_BUILD_DIR"
       PKG_VERSION=$(version_from_git)
       cd $WORKSPACE/packages/$TARGET
-      fpm_build $SRC_BUILD_DIR/=/usr/local/arvados/src arvados-src 'dir' "$PKG_VERSION" "--exclude=usr/local/arvados/src/.git" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=The Arvados source code" "--architecture=all"
+      fpm_build "$WORKSPACE" $SRC_BUILD_DIR/=/usr/local/arvados/src arvados-src 'dir' "$PKG_VERSION" "--exclude=usr/local/arvados/src/.git" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=The Arvados source code" "--architecture=all"
 
       rm -rf "$SRC_BUILD_DIR"
     fi
@@ -318,30 +309,20 @@ package_go_binary tools/keep-rsync keep-rsync \
     "Copy all data from one set of Keep servers to another"
 package_go_binary tools/keep-exercise keep-exercise \
     "Performance testing tool for Arvados Keep"
-
-# The Python SDK - Should be built first because it's needed by others
-fpm_build_virtualenv "arvados-python-client" "sdk/python"
+package_go_so lib/pam pam_arvados.so libpam-arvados-go \
+    "Arvados PAM authentication module"
 
 # The Python SDK - Python3 package
 fpm_build_virtualenv "arvados-python-client" "sdk/python" "python3"
 
-# Arvados cwl runner - Only supports Python3 now
+# Arvados cwl runner - Python3 package
 fpm_build_virtualenv "arvados-cwl-runner" "sdk/cwl" "python3"
-
-# The PAM module
-fpm_build_virtualenv "libpam-arvados" "sdk/pam"
-
-# The FUSE driver
-fpm_build_virtualenv "arvados-fuse" "services/fuse"
 
 # The FUSE driver - Python3 package
 fpm_build_virtualenv "arvados-fuse" "services/fuse" "python3"
 
-# The node manager
-fpm_build_virtualenv "arvados-node-manager" "services/nodemanager"
-
 # The Arvados crunchstat-summary tool
-fpm_build_virtualenv "crunchstat-summary" "tools/crunchstat-summary"
+fpm_build_virtualenv "crunchstat-summary" "tools/crunchstat-summary" "python3"
 
 # The Docker image cleaner
 fpm_build_virtualenv "arvados-docker-cleaner" "services/dockercleaner" "python3"
@@ -352,11 +333,9 @@ if [[ -e "$WORKSPACE/cwltest" ]]; then
 	rm -rf "$WORKSPACE/cwltest"
 fi
 git clone https://github.com/common-workflow-language/cwltest.git
-# last release to support python 2.7
-(cd cwltest && git checkout 1.0.20190906212748)
 # signal to our build script that we want a cwltest executable installed in /usr/bin/
 mkdir cwltest/bin && touch cwltest/bin/cwltest
-fpm_build_virtualenv "cwltest" "cwltest"
+fpm_build_virtualenv "cwltest" "cwltest" "python3"
 rm -rf "$WORKSPACE/cwltest"
 
 calculate_go_package_version arvados_server_version cmd/arvados-server

@@ -1,0 +1,356 @@
+---
+layout: default
+navsection: installguide
+title: Install the cloud dispatcher
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+{% include 'notebox_begin_warning' %}
+arvados-dispatch-cloud is only relevant for cloud installations. Skip this section if you are installing an on premises cluster that will spool jobs to Slurm.
+{% include 'notebox_end' %}
+
+# "Introduction":#introduction
+# "Create compute node VM image":#create-image
+# "Update config.yml":#update-config
+# "Install arvados-dispatch-cloud":#install-packages
+# "Start the service":#start-service
+# "Restart the API server and controller":#restart-api
+# "Confirm working installation":#confirm-working
+
+h2(#introduction). Introduction
+
+The cloud dispatch service is for running containers on cloud VMs. It works with Microsoft Azure and Amazon EC2; future versions will also support Google Compute Engine.
+
+The cloud dispatch service can run on any node that can connect to the Arvados API service, the cloud provider's API, and the SSH service on cloud VMs.  It is not resource-intensive, so you can run it on the API server node.
+
+h2(#update-config). Update config.yml
+
+h3. Configure CloudVMs
+
+Add or update the following portions of your cluster configuration file, @config.yml@. Refer to "config.defaults.yml":{{site.baseurl}}/admin/config.html for information about additional configuration options. The @DispatchPrivateKey@ should be the *private* key generated in "the previous section":install-compute-node.html#sshkeypair.
+
+<notextile>
+<pre><code>    Services:
+      DispatchCloud:
+        InternalURLs:
+          "http://localhost:9006": {}
+    Containers:
+      CloudVMs:
+        # BootProbeCommand is a shell command that succeeds when an instance is ready for service
+        BootProbeCommand: "sudo systemctl status docker"
+
+        <b># --- driver-specific configuration goes here --- see Amazon and Azure examples below ---</b>
+
+      DispatchPrivateKey: |
+        -----BEGIN RSA PRIVATE KEY-----
+        MIIEpQIBAAKCAQEAqXoCzcOBkFQ7w4dvXf9B++1ctgZRqEbgRYL3SstuMV4oawks
+        ttUuxJycDdsPmeYcHsKo8vsEZpN6iYsX6ZZzhkO5nEayUTU8sBjmg1ZCTo4QqKXr
+        FJ+amZ7oYMDof6QEdwl6KNDfIddL+NfBCLQTVInOAaNss7GRrxLTuTV7HcRaIUUI
+        jYg0Ibg8ZZTzQxCvFXXnjseTgmOcTv7CuuGdt91OVdoq8czG/w8TwOhymEb7mQlt
+        lXuucwQvYgfoUgcnTgpJr7j+hafp75g2wlPozp8gJ6WQ2yBWcfqL2aw7m7Ll88Nd
+        [...]
+        oFyAjVoexx0RBcH6BveTfQtJKbktP1qBO4mXo2dP0cacuZEtlAqW9Eb06Pvaw/D9
+        foktmqOY8MyctzFgXBpGTxPliGjqo8OkrOyQP2g+FL7v+Km31Xs61P8=
+        -----END RSA PRIVATE KEY-----
+    InstanceTypes:
+      x1md:
+        ProviderType: x1.medium
+        VCPUs: 8
+        RAM: 64GiB
+        IncludedScratch: 64GB
+        Price: 0.62
+      x1lg:
+        ProviderType: x1.large
+        VCPUs: 16
+        RAM: 128GiB
+        IncludedScratch: 128GB
+        Price: 1.23
+</code></pre>
+</notextile>
+
+h4. Minimal configuration example for Amazon EC2
+
+<notextile>
+<pre><code>    Containers:
+      CloudVMs:
+        ImageID: ami-01234567890abcdef
+        Driver: ec2
+        DriverParameters:
+          AccessKeyID: XXXXXXXXXXXXXXXXXXXX
+          SecretAccessKey: YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY
+          SecurityGroupIDs:
+          - sg-0123abcd
+          SubnetID: subnet-0123abcd
+          Region: us-east-1
+          EBSVolumeType: gp2
+          AdminUsername: arvados
+</code></pre>
+</notextile>
+
+h4. Minimal configuration example for Azure
+
+Using managed disks:
+
+<notextile>
+<pre><code>    Containers:
+      CloudVMs:
+        ImageID: "zzzzz-compute-v1597349873"
+        Driver: azure
+        DriverParameters:
+          # Credentials.
+          SubscriptionID: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+          ClientID: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+          ClientSecret: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+          TenantID: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+
+          # Data center where VMs will be allocated
+          Location: centralus
+
+          # The resource group where the VM and virtual NIC will be
+          # created.
+          ResourceGroup: zzzzz
+          NetworkResourceGroup: yyyyy   # only if different from ResourceGroup
+          Network: xxxxx
+          Subnet: xxxxx-subnet-private
+
+          # The resource group where the disk image is stored, only needs to
+          # be specified if it is different from ResourceGroup
+          ImageResourceGroup: aaaaa
+
+</code></pre>
+</notextile>
+
+Azure recommends using managed images. If you plan to start more than 20 VMs simultaneously, Azure recommends using a shared image gallery instead to avoid slowdowns and timeouts during the creation of the VMs.
+
+Using an image from a shared image gallery:
+
+<notextile>
+<pre><code>    Containers:
+      CloudVMs:
+        ImageID: "shared_image_gallery_image_definition_name"
+        Driver: azure
+        DriverParameters:
+          # Credentials.
+          SubscriptionID: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+          ClientID: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+          ClientSecret: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+          TenantID: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+
+          # Data center where VMs will be allocated
+          Location: centralus
+
+          # The resource group where the VM and virtual NIC will be
+          # created.
+          ResourceGroup: zzzzz
+          NetworkResourceGroup: yyyyy   # only if different from ResourceGroup
+          Network: xxxxx
+          Subnet: xxxxx-subnet-private
+
+          # The resource group where the disk image is stored, only needs to
+          # be specified if it is different from ResourceGroup
+          ImageResourceGroup: aaaaa
+
+          # (azure) shared image gallery: the name of the gallery
+          SharedImageGalleryName: "shared_image_gallery_1"
+          # (azure) shared image gallery: the version of the image definition
+          SharedImageGalleryImageVersion: "0.0.1"
+
+</code></pre>
+</notextile>
+
+Using unmanaged disks (deprecated):
+
+<notextile>
+<pre><code>    Containers:
+      CloudVMs:
+        ImageID: "https://zzzzzzzz.blob.core.windows.net/system/Microsoft.Compute/Images/images/zzzzz-compute-osDisk.55555555-5555-5555-5555-555555555555.vhd"
+        Driver: azure
+        DriverParameters:
+          # Credentials.
+          SubscriptionID: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+          ClientID: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+          ClientSecret: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+          TenantID: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+
+          # Data center where VMs will be allocated
+          Location: centralus
+
+          # The resource group where the VM and virtual NIC will be
+          # created.
+          ResourceGroup: zzzzz
+          NetworkResourceGroup: yyyyy   # only if different from ResourceGroup
+          Network: xxxxx
+          Subnet: xxxxx-subnet-private
+
+          # Where to store the VM VHD blobs
+          StorageAccount: example
+          BlobContainer: vhds
+
+</code></pre>
+</notextile>
+
+Get the @SubscriptionID@ and @TenantID@:
+
+<pre>
+$ az account list
+[
+  {
+    "cloudName": "AzureCloud",
+    "id": "XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXX",
+    "isDefault": true,
+    "name": "Your Subscription",
+    "state": "Enabled",
+    "tenantId": "YYYYYYYY-YYYY-YYYY-YYYYYYYY",
+    "user": {
+      "name": "you@example.com",
+      "type": "user"
+    }
+  }
+]
+</pre>
+
+You will need to create a "service principal" to use as a delegated authority for API access.
+
+<notextile><pre><code>$ az ad app create --display-name "Arvados Dispatch Cloud (<span class="userinput">ClusterID</span>)" --homepage "https://arvados.org" --identifier-uris "https://<span class="userinput">ClusterID.example.com</span>" --end-date 2299-12-31 --password <span class="userinput">Your_Password</span>
+$ az ad sp create "<span class="userinput">appId</span>"
+(appId is part of the response of the previous command)
+$ az role assignment create --assignee "<span class="userinput">objectId</span>" --role Owner --scope /subscriptions/{subscriptionId}/
+(objectId is part of the response of the previous command)
+</code></pre></notextile>
+
+Now update your @config.yml@ file:
+
+@ClientID@ is the 'appId' value.
+
+@ClientSecret@ is what was provided as <span class="userinput">Your_Password</span>.
+
+h3. Test your configuration
+
+Run the @cloudtest@ tool to verify that your configuration works. This creates a new cloud VM, confirms that it boots correctly and accepts your configured SSH private key, and shuts it down.
+
+<notextile>
+<pre><code>~$ <span class="userinput">arvados-server cloudtest && echo "OK!"</span>
+</code></pre>
+</notextile>
+
+Refer to the "cloudtest tool documentation":../../admin/cloudtest.html for more information.
+
+{% assign arvados_component = 'arvados-dispatch-cloud' %}
+
+{% include 'install_packages' %}
+
+{% include 'start_service' %}
+
+{% include 'restart_api' %}
+
+h2(#confirm-working). Confirm working installation
+
+On the dispatch node, start monitoring the arvados-dispatch-cloud logs:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo journalctl -o cat -fu arvados-dispatch-cloud.service</span>
+</code></pre>
+</notextile>
+
+"Make sure to install the arvados/jobs image.":../install-jobs-image.html
+
+Submit a simple container request:
+
+<notextile>
+<pre><code>shell:~$ <span class="userinput">arv container_request create --container-request '{
+  "name":            "test",
+  "state":           "Committed",
+  "priority":        1,
+  "container_image": "arvados/jobs:latest",
+  "command":         ["echo", "Hello, Crunch!"],
+  "output_path":     "/out",
+  "mounts": {
+    "/out": {
+      "kind":        "tmp",
+      "capacity":    1000
+    }
+  },
+  "runtime_constraints": {
+    "vcpus": 1,
+    "ram": 1048576
+  }
+}'</span>
+</code></pre>
+</notextile>
+
+This command should return a record with a @container_uuid@ field.  Once @arvados-dispatch-cloud@ polls the API server for new containers to run, you should see it dispatch that same container.
+
+The @arvados-dispatch-cloud@ API provides a list of queued and running jobs and cloud instances. Use your @ManagementToken@ to test the dispatcher's endpoint. For example, when one container is running:
+
+<notextile>
+<pre><code>~$ <span class="userinput">curl -sH "Authorization: Bearer $token" http://localhost:9006/arvados/v1/dispatch/containers</span>
+{
+  "items": [
+    {
+      "container": {
+        "uuid": "zzzzz-dz642-hdp2vpu9nq14tx0",
+        ...
+        "state": "Running",
+        "scheduling_parameters": {
+          "partitions": null,
+          "preemptible": false,
+          "max_run_time": 0
+        },
+        "exit_code": 0,
+        "runtime_status": null,
+        "started_at": null,
+        "finished_at": null
+      },
+      "instance_type": {
+        "Name": "Standard_D2s_v3",
+        "ProviderType": "Standard_D2s_v3",
+        "VCPUs": 2,
+        "RAM": 8589934592,
+        "Scratch": 16000000000,
+        "IncludedScratch": 16000000000,
+        "AddedScratch": 0,
+        "Price": 0.11,
+        "Preemptible": false
+      }
+    }
+  ]
+}
+</code></pre>
+</notextile>
+
+A similar request can be made to the @http://localhost:9006/arvados/v1/dispatch/instances@ endpoint.
+
+When the container finishes, the dispatcher will log it.
+
+After the container finishes, you can get the container record by UUID *from a shell server* to see its results:
+
+<notextile>
+<pre><code>shell:~$ <span class="userinput">arv get <b>zzzzz-dz642-hdp2vpu9nq14tx0</b></span>
+{
+ ...
+ "exit_code":0,
+ "log":"a01df2f7e5bc1c2ad59c60a837e90dc6+166",
+ "output":"d41d8cd98f00b204e9800998ecf8427e+0",
+ "state":"Complete",
+ ...
+}
+</code></pre>
+</notextile>
+
+You can use standard Keep tools to view the container's output and logs from their corresponding fields.  For example, to see the logs from the collection referenced in the @log@ field:
+
+<notextile>
+<pre><code>~$ <span class="userinput">arv keep ls <b>a01df2f7e5bc1c2ad59c60a837e90dc6+166</b></span>
+./crunch-run.txt
+./stderr.txt
+./stdout.txt
+~$ <span class="userinput">arv-get <b>a01df2f7e5bc1c2ad59c60a837e90dc6+166</b>/stdout.txt</span>
+2016-08-05T13:53:06.201011Z Hello, Crunch!
+</code></pre>
+</notextile>
+
+If the container does not dispatch successfully, refer to the @arvados-dispatch-cloud@ logs for information about why it failed.

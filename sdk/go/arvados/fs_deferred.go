@@ -32,14 +32,14 @@ func deferredCollectionFS(fs FileSystem, parent inode, coll Collection) inode {
 			log.Printf("BUG: unhandled error: %s", err)
 			return placeholder
 		}
-		cfs, err := coll.FileSystem(fs, fs)
+		newfs, err := coll.FileSystem(fs, fs)
 		if err != nil {
 			log.Printf("BUG: unhandled error: %s", err)
 			return placeholder
 		}
-		root := cfs.rootnode()
-		root.SetParent(parent, coll.Name)
-		return root
+		cfs := newfs.(*collectionFileSystem)
+		cfs.SetParent(parent, coll.Name)
+		return cfs
 	}}
 }
 
@@ -85,6 +85,19 @@ func (dn *deferrednode) Write(p []byte, pos filenodePtr) (int, filenodePtr, erro
 
 func (dn *deferrednode) Child(name string, replace func(inode) (inode, error)) (inode, error) {
 	return dn.realinode().Child(name, replace)
+}
+
+// Sync is a no-op if the real inode hasn't even been created yet.
+func (dn *deferrednode) Sync() error {
+	dn.mtx.Lock()
+	defer dn.mtx.Unlock()
+	if !dn.created {
+		return nil
+	} else if syncer, ok := dn.wrapped.(syncer); ok {
+		return syncer.Sync()
+	} else {
+		return ErrInvalidOperation
+	}
 }
 
 func (dn *deferrednode) Truncate(size int64) error       { return dn.realinode().Truncate(size) }

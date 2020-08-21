@@ -86,15 +86,12 @@ do
             | *.py \
             | sdk/python/bin/arv-* \
             | sdk/cwl/bin/* \
-            | services/nodemanager/bin/* \
             | services/fuse/bin/* \
             | tools/crunchstat-summary/bin/* \
             | crunch_scripts/* \
             | *.yaml | *.yml | *.yml.example | *.cwl \
             | *.sh | *.service \
             | */run | */run-service | */restart-dns-server \
-            | */nodemanager/doc/*.cfg \
-            | */nodemanager/tests/fake*.cfg.template \
             | */nginx.conf \
             | build/build.list | *.R)
             fixer=fixer

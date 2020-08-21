@@ -10,14 +10,14 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-What you need to know and do in order to upgrade your Arvados installation.
+For Arvados administrators, this page will cover what you need to know and do in order to ensure a smooth upgrade of your Arvados installation.  For general release notes covering features added and bugs fixed, see "Arvados releases":https://arvados.org/releases .
 
 h2. General process
 
 # Consult upgrade notes below to see if any manual configuration updates are necessary.
 # Wait for the cluster to be idle and stop Arvados services.
 # Install new packages using @apt-get upgrade@ or @yum upgrade@.
-# Package installation scripts will perform any necessary data migrations.
+# Wait for package installation scripts as they perform any necessary data migrations.
 # Restart Arvados services.
 
 h2. Upgrade notes
@@ -37,6 +37,10 @@ TODO: extract this information based on git commit messages and generate changel
 h2(#master). development master (as of 2020-06-17)
 
 "Upgrading from 2.0.0":#v2_0_0
+
+h3. Removing libpam-arvados, replaced with libpam-arvados-go
+
+The Python-based PAM package has been replaced with a version written in Go. See "using PAM for authentication":{{site.baseurl}}/install/setup-login.html#pam for details.
 
 h3. Removing sso-provider
 
@@ -179,7 +183,7 @@ h3. New property vocabulary format for Workbench2
 
 h3. Cloud installations only: node manager replaced by arvados-dispatch-cloud
 
-Node manager is deprecated and replaced by @arvados-dispatch-cloud@.  No automated config migration is available.  Follow the instructions to "install the cloud dispatcher":../install/install-dispatch-cloud.html
+Node manager is deprecated and replaced by @arvados-dispatch-cloud@.  No automated config migration is available.  Follow the instructions to "install the cloud dispatcher":../install/crunch2-cloud/install-dispatch-cloud.html
 
 *Only one dispatch process should be running at a time.* If you are migrating a system that currently runs Node manager and @crunch-dispatch-slurm@, it is safest to remove the @crunch-dispatch-slurm@ service entirely before installing @arvados-dispatch-cloud@.
 
@@ -569,7 +573,7 @@ As part of story "#11349":https://dev.arvados.org/issues/11349, commit "2c094e2"
 
 * To enable it, add to your configuration file: <pre>[Manage]
   address = 127.0.0.1
-  port = 8989</pre> (see example configuration files in source:services/nodemanager/doc or https://doc.arvados.org/install/install-nodemanager.html for more info)
+  port = 8989</pre>
 * The server responds to @http://{address}:{port}/status.json@ with a summary of how many nodes are in each state (booting, busy, shutdown, etc.)
 
 h3. New websockets component (2017-03-23)

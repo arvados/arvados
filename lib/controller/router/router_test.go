@@ -38,8 +38,8 @@ type RouterSuite struct {
 func (s *RouterSuite) SetUpTest(c *check.C) {
 	s.stub = arvadostest.APIStub{}
 	s.rtr = &router{
-		mux: mux.NewRouter(),
-		fed: &s.stub,
+		mux:     mux.NewRouter(),
+		backend: &s.stub,
 	}
 	s.rtr.addRoutes()
 }
@@ -169,7 +169,7 @@ func (s *RouterIntegrationSuite) SetUpTest(c *check.C) {
 	cluster.TLS.Insecure = true
 	arvadostest.SetServiceURL(&cluster.Services.RailsAPI, "https://"+os.Getenv("ARVADOS_TEST_API_HOST"))
 	url, _ := url.Parse("https://" + os.Getenv("ARVADOS_TEST_API_HOST"))
-	s.rtr = New(rpc.NewConn("zzzzz", url, true, rpc.PassthroughTokenProvider))
+	s.rtr = New(rpc.NewConn("zzzzz", url, true, rpc.PassthroughTokenProvider), nil)
 }
 
 func (s *RouterIntegrationSuite) TearDownSuite(c *check.C) {
@@ -273,7 +273,7 @@ func (s *RouterIntegrationSuite) TestContainerLock(c *check.C) {
 	c.Check(rr.Code, check.Equals, http.StatusOK)
 	c.Check(jresp["uuid"], check.HasLen, 27)
 	c.Check(jresp["state"], check.Equals, "Locked")
-	_, rr, jresp = doRequest(c, s.rtr, token, "POST", "/arvados/v1/containers/"+uuid+"/lock", nil, nil)
+	_, rr, _ = doRequest(c, s.rtr, token, "POST", "/arvados/v1/containers/"+uuid+"/lock", nil, nil)
 	c.Check(rr.Code, check.Equals, http.StatusUnprocessableEntity)
 	c.Check(rr.Body.String(), check.Not(check.Matches), `.*"uuid":.*`)
 	_, rr, jresp = doRequest(c, s.rtr, token, "POST", "/arvados/v1/containers/"+uuid+"/unlock", nil, nil)

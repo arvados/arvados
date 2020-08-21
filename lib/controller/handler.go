@@ -6,7 +6,6 @@ package controller
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"net/http"
@@ -18,9 +17,12 @@ import (
 	"git.arvados.org/arvados.git/lib/controller/federation"
 	"git.arvados.org/arvados.git/lib/controller/railsproxy"
 	"git.arvados.org/arvados.git/lib/controller/router"
+	"git.arvados.org/arvados.git/lib/ctrlctx"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/health"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
+	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 )
 
@@ -32,7 +34,7 @@ type Handler struct {
 	proxy          *proxy
 	secureClient   *http.Client
 	insecureClient *http.Client
-	pgdb           *sql.DB
+	pgdb           *sqlx.DB
 	pgdbMtx        sync.Mutex
 }
 
@@ -63,7 +65,11 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 func (h *Handler) CheckHealth() error {
 	h.setupOnce.Do(h.setup)
-	_, _, err := railsproxy.FindRailsAPI(h.Cluster)
+	_, err := h.db(context.TODO())
+	if err != nil {
+		return err
+	}
+	_, _, err = railsproxy.FindRailsAPI(h.Cluster)
 	return err
 }
 
@@ -78,10 +84,10 @@ func (h *Handler) setup() {
 	mux.Handle("/_health/", &health.Handler{
 		Token:  h.Cluster.ManagementToken,
 		Prefix: "/_health/",
-		Routes: health.Routes{"ping": func() error { _, err := h.db(&http.Request{}); return err }},
+		Routes: health.Routes{"ping": func() error { _, err := h.db(context.TODO()); return err }},
 	})
 
-	rtr := router.New(federation.New(h.Cluster))
+	rtr := router.New(federation.New(h.Cluster), ctrlctx.WrapCallsInTransactions(h.db))
 	mux.Handle("/arvados/v1/config", rtr)
 	mux.Handle("/"+arvados.EndpointUserAuthenticate.Path, rtr)
 
@@ -115,23 +121,23 @@ func (h *Handler) setup() {
 
 var errDBConnection = errors.New("database connection error")
 
-func (h *Handler) db(req *http.Request) (*sql.DB, error) {
+func (h *Handler) db(ctx context.Context) (*sqlx.DB, error) {
 	h.pgdbMtx.Lock()
 	defer h.pgdbMtx.Unlock()
 	if h.pgdb != nil {
 		return h.pgdb, nil
 	}
 
-	db, err := sql.Open("postgres", h.Cluster.PostgreSQL.Connection.String())
+	db, err := sqlx.Open("postgres", h.Cluster.PostgreSQL.Connection.String())
 	if err != nil {
-		httpserver.Logger(req).WithError(err).Error("postgresql connect failed")
+		ctxlog.FromContext(ctx).WithError(err).Error("postgresql connect failed")
 		return nil, errDBConnection
 	}
 	if p := h.Cluster.PostgreSQL.ConnectionPool; p > 0 {
 		db.SetMaxOpenConns(p)
 	}
 	if err := db.Ping(); err != nil {
-		httpserver.Logger(req).WithError(err).Error("postgresql connect succeeded but ping failed")
+		ctxlog.FromContext(ctx).WithError(err).Error("postgresql connect succeeded but ping failed")
 		return nil, errDBConnection
 	}
 	h.pgdb = db

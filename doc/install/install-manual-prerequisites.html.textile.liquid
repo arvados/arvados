@@ -9,7 +9,7 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-Before attempting installation, you should begin by reviewing supported platforms, choosing backends for identity, storage, and scheduling, and decide how you will distribute Arvados services onto machines.  You should also choose an Arvados Cluster ID, choose your hostnames, and aquire TLS certificates.  It may be helpful to make notes as you go along using one of these worksheets:  "New cluster checklist for AWS":new_cluster_checklist_AWS.xlsx - "New cluster checklist for Azure":new_cluster_checklist_Azure.xlsx - "New cluster checklist for on premise SLURM":new_cluster_checklist_slurm.xlsx
+Before attempting installation, you should begin by reviewing supported platforms, choosing backends for identity, storage, and scheduling, and decide how you will distribute Arvados services onto machines.  You should also choose an Arvados Cluster ID, choose your hostnames, and aquire TLS certificates.  It may be helpful to make notes as you go along using one of these worksheets:  "New cluster checklist for AWS":new_cluster_checklist_AWS.xlsx - "New cluster checklist for Azure":new_cluster_checklist_Azure.xlsx - "New cluster checklist for on premises Slurm":new_cluster_checklist_slurm.xlsx
 
 The Arvados storage subsystem is called "keep".  The compute subsystem is called "crunch".
 
@@ -60,8 +60,8 @@ table(table table-bordered table-condensed).
 |"Shell server":install-shell-server.html |Synchronize (create/delete/configure) Unix shell accounts with Arvados users.|Optional.|
 |"Git server":install-arv-git-httpd.html |Arvados-hosted git repositories, with Arvados-token based authentication.|Optional, but required by Workflow Composer.|
 |\3=. *Crunch (running containers)*|
-|"crunch-dispatch-slurm":crunch2-slurm/install-prerequisites.html |Run analysis workflows using Docker containers distributed across a SLURM cluster.|Optional if you wish to use Arvados for data management only.|
-|"Node Manager":install-nodemanager.html, "arvados-dispatch-cloud":install-dispatch-cloud.html |Allocate and free cloud VM instances on demand based on workload.|Optional, not needed for a static SLURM cluster (such as on-premise HPC).|
+|"arvados-dispatch-cloud":crunch2-cloud/install-dispatch-cloud.html |Allocate and free cloud VM instances on demand based on workload.|Optional, not needed for a static Slurm cluster such as on-premises HPC.|
+|"crunch-dispatch-slurm":crunch2-slurm/install-prerequisites.html |Run analysis workflows using Docker containers distributed across a Slurm cluster.|Optional, not needed for a Cloud installation, or if you wish to use Arvados for data management only.|
 
 h2(#identity). Identity provider
 

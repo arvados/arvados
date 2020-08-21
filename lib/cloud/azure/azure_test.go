@@ -47,7 +47,7 @@ import (
 	"git.arvados.org/arvados.git/lib/dispatchcloud/test"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/config"
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-06-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-06-01/network"
 	"github.com/Azure/azure-sdk-for-go/storage"
 	"github.com/Azure/go-autorest/autorest"
@@ -156,6 +156,7 @@ func GetInstanceSet() (cloud.InstanceSet, cloud.ImageID, arvados.Cluster, error)
 		logger:       logrus.StandardLogger(),
 		deleteNIC:    make(chan string),
 		deleteBlob:   make(chan storage.Blob),
+		deleteDisk:   make(chan compute.Disk),
 	}
 	ap.ctx, ap.stopFunc = context.WithCancel(context.Background())
 	ap.vmClient = &VirtualMachinesClientStub{}

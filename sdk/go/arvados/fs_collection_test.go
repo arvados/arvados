@@ -7,7 +7,6 @@ package arvados
 import (
 	"bytes"
 	"crypto/md5"
-	"crypto/sha1"
 	"errors"
 	"fmt"
 	"io"
@@ -33,6 +32,9 @@ type keepClientStub struct {
 	blocks      map[string][]byte
 	refreshable map[string]bool
 	onPut       func(bufcopy []byte) // called from PutB, before acquiring lock
+	authToken   string               // client's auth token (used for signing locators)
+	sigkey      string               // blob signing key
+	sigttl      time.Duration        // blob signing ttl
 	sync.RWMutex
 }
 
@@ -49,7 +51,7 @@ func (kcs *keepClientStub) ReadAt(locator string, p []byte, off int) (int, error
 }
 
 func (kcs *keepClientStub) PutB(p []byte) (string, int, error) {
-	locator := fmt.Sprintf("%x+%d+A12345@abcde", md5.Sum(p), len(p))
+	locator := SignLocator(fmt.Sprintf("%x+%d", md5.Sum(p), len(p)), kcs.authToken, time.Now().Add(kcs.sigttl), kcs.sigttl, []byte(kcs.sigkey))
 	buf := make([]byte, len(p))
 	copy(buf, p)
 	if kcs.onPut != nil {
@@ -61,9 +63,12 @@ func (kcs *keepClientStub) PutB(p []byte) (string, int, error) {
 	return locator, 1, nil
 }
 
-var localOrRemoteSignature = regexp.MustCompile(`\+[AR][^+]*`)
+var reRemoteSignature = regexp.MustCompile(`\+[AR][^+]*`)
 
 func (kcs *keepClientStub) LocalLocator(locator string) (string, error) {
+	if strings.Contains(locator, "+A") {
+		return locator, nil
+	}
 	kcs.Lock()
 	defer kcs.Unlock()
 	if strings.Contains(locator, "+R") {
@@ -74,8 +79,9 @@ func (kcs *keepClientStub) LocalLocator(locator string) (string, error) {
 			return "", fmt.Errorf("kcs.refreshable[%q]==false", locator)
 		}
 	}
-	fakeSig := fmt.Sprintf("+A%x@%x", sha1.Sum(nil), time.Now().Add(time.Hour*24*14).Unix())
-	return localOrRemoteSignature.ReplaceAllLiteralString(locator, fakeSig), nil
+	locator = reRemoteSignature.ReplaceAllLiteralString(locator, "")
+	locator = SignLocator(locator, kcs.authToken, time.Now().Add(kcs.sigttl), kcs.sigttl, []byte(kcs.sigkey))
+	return locator, nil
 }
 
 type CollectionFSSuite struct {
@@ -92,7 +98,11 @@ func (s *CollectionFSSuite) SetUpTest(c *check.C) {
 	s.kc = &keepClientStub{
 		blocks: map[string][]byte{
 			"3858f62230ac3c915f300c664312c63f": []byte("foobar"),
-		}}
+		},
+		sigkey:    fixtureBlobSigningKey,
+		sigttl:    fixtureBlobSigningTTL,
+		authToken: fixtureActiveToken,
+	}
 	s.fs, err = s.coll.FileSystem(s.client, s.kc)
 	c.Assert(err, check.IsNil)
 }

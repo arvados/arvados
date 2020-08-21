@@ -364,7 +364,7 @@ class Summarizer(object):
                 constraint_key,
                 int(used_cores))
 
-    # FIXME: This needs to be updated to account for current nodemanager algorithms
+    # FIXME: This needs to be updated to account for current a-d-c algorithms
     def _recommend_ram(self):
         """Recommend an economical RAM constraint for this job.
 

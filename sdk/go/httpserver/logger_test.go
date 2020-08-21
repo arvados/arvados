@@ -58,6 +58,7 @@ func (s *Suite) TestLogRequests(c *check.C) {
 
 	gotReq := make(map[string]interface{})
 	err = dec.Decode(&gotReq)
+	c.Check(err, check.IsNil)
 	c.Logf("%#v", gotReq)
 	c.Check(gotReq["RequestID"], check.Matches, "req-[a-z0-9]{20}")
 	c.Check(gotReq["reqForwardedFor"], check.Equals, "1.2.3.4:12345")
@@ -65,6 +66,7 @@ func (s *Suite) TestLogRequests(c *check.C) {
 
 	gotResp := make(map[string]interface{})
 	err = dec.Decode(&gotResp)
+	c.Check(err, check.IsNil)
 	c.Logf("%#v", gotResp)
 	c.Check(gotResp["RequestID"], check.Equals, gotReq["RequestID"])
 	c.Check(gotResp["reqForwardedFor"], check.Equals, "1.2.3.4:12345")
@@ -111,9 +113,11 @@ func (s *Suite) TestLogErrorBody(c *check.C) {
 
 		gotReq := make(map[string]interface{})
 		err = dec.Decode(&gotReq)
+		c.Check(err, check.IsNil)
 		c.Logf("%#v", gotReq)
 		gotResp := make(map[string]interface{})
 		err = dec.Decode(&gotResp)
+		c.Check(err, check.IsNil)
 		c.Logf("%#v", gotResp)
 		if trial.expectLog {
 			c.Check(gotResp["respBody"], check.Equals, trial.expectBody, comment)

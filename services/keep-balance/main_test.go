@@ -31,6 +31,7 @@ func (s *mainSuite) TestHTTPServer(c *check.C) {
 		c.Fatal(err)
 	}
 	_, p, err := net.SplitHostPort(ln.Addr().String())
+	c.Check(err, check.IsNil)
 	ln.Close()
 	config := "Clusters:\n zzzzz:\n  ManagementToken: abcdefg\n  Services: {Keepbalance: {InternalURLs: {'http://localhost:" + p + "/': {}}}}\n"
 

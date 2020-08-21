@@ -1,7 +1,7 @@
 ---
 layout: default
 navsection: installguide
-title: Set up SLURM
+title: Set up Slurm
 ...
 {% comment %}
 Copyright (C) The Arvados Authors. All rights reserved.
@@ -9,12 +9,12 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-Containers can be dispatched to a SLURM cluster.  The dispatcher sends work to the cluster using SLURM's @sbatch@ command, so it works in a variety of SLURM configurations.
+Containers can be dispatched to a Slurm cluster.  The dispatcher sends work to the cluster using Slurm's @sbatch@ command, so it works in a variety of SLURM configurations.
 
 In order to run containers, you must run the dispatcher as a user that has permission to set up FUSE mounts and run Docker containers on each compute node.  This install guide refers to this user as the @crunch@ user.  We recommend you create this user on each compute node with the same UID and GID, and add it to the @fuse@ and @docker@ system groups to grant it the necessary permissions.  However, you can run the dispatcher under any account with sufficient permissions across the cluster.
 
 
-On the API server, install SLURM and munge, and generate a munge key.
+On the API server, install Slurm and munge, and generate a munge key.
 
 On Debian-based systems:
 
@@ -31,7 +31,7 @@ On Red Hat-based systems:
 </code></pre>
 </notextile>
 
-Now we need to give SLURM a configuration file.  On Debian-based systems, this is installed at @/etc/slurm-llnl/slurm.conf@.  On Red Hat-based systems, this is installed at @/etc/slurm/slurm.conf@.  Here's an example @slurm.conf@:
+Now we need to give Slurm a configuration file.  On Debian-based systems, this is installed at @/etc/slurm-llnl/slurm.conf@.  On Red Hat-based systems, this is installed at @/etc/slurm/slurm.conf@.  Here's an example @slurm.conf@:
 
 <notextile>
 <pre><code>
@@ -82,19 +82,19 @@ PartitionName=compute Nodes=compute[0-255] Default=YES Shared=YES
 </code></pre>
 </notextile>
 
-h3. SLURM configuration essentials
+h3. Slurm configuration essentials
 
 Whenever you change this file, you will need to update the copy _on every compute node_ as well as the controller node, and then run @sudo scontrol reconfigure@.
 
-*@ControlMachine@* should be a DNS name that resolves to the SLURM controller (dispatch/API server). This must resolve correctly on all SLURM worker nodes as well as the controller itself. In general SLURM is very sensitive about all of the nodes being able to communicate with the controller _and one another_, all using the same DNS names.
+*@ControlMachine@* should be a DNS name that resolves to the Slurm controller (dispatch/API server). This must resolve correctly on all Slurm worker nodes as well as the controller itself. In general SLURM is very sensitive about all of the nodes being able to communicate with the controller _and one another_, all using the same DNS names.
 
 *@SelectType=select/linear@* is needed on cloud-based installations that update node sizes dynamically, but it can only schedule one container at a time on each node. On a static or homogeneous cluster, use @SelectType=select/cons_res@ with @SelectTypeParameters=CR_CPU_Memory@ instead to enable node sharing.
 
 *@NodeName=compute[0-255]@* establishes that the hostnames of the worker nodes will be compute0, compute1, etc. through compute255.
 * There are several ways to compress sequences of names, like @compute[0-9,80,100-110]@. See the "hostlist" discussion in the @slurm.conf(5)@ and @scontrol(1)@ man pages for more information.
-* It is not necessary for all of the nodes listed here to be alive in order for SLURM to work, although you should make sure the DNS entries exist. It is easiest to define lots of hostnames up front, assigning them to real nodes and updating your DNS records as the nodes appear. This minimizes the frequency of @slurm.conf@ updates and use of @scontrol reconfigure@.
+* It is not necessary for all of the nodes listed here to be alive in order for Slurm to work, although you should make sure the DNS entries exist. It is easiest to define lots of hostnames up front, assigning them to real nodes and updating your DNS records as the nodes appear. This minimizes the frequency of @slurm.conf@ updates and use of @scontrol reconfigure@.
 
-Each hostname in @slurm.conf@ must also resolve correctly on all SLURM worker nodes as well as the controller itself. Furthermore, the hostnames used in the configuration file must match the hostnames reported by @hostname@ or @hostname -s@ on the nodes themselves. This applies to the ControlMachine as well as the worker nodes.
+Each hostname in @slurm.conf@ must also resolve correctly on all Slurm worker nodes as well as the controller itself. Furthermore, the hostnames used in the configuration file must match the hostnames reported by @hostname@ or @hostname -s@ on the nodes themselves. This applies to the ControlMachine as well as the worker nodes.
 
 For example:
 * In @slurm.conf@ on control and worker nodes: @ControlMachine=ClusterID.example.com@

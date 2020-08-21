@@ -61,7 +61,7 @@ class TestHttpToKeep(unittest.TestCase):
         getmock.assert_called_with("http://example.com/file1.txt", stream=True, allow_redirects=True)
 
         cm.open.assert_called_with("file1.txt", "wb")
-        cm.save_new.assert_called_with(name="Downloaded from http://example.com/file1.txt",
+        cm.save_new.assert_called_with(name="Downloaded from http%3A%2F%2Fexample.com%2Ffile1.txt",
                                        owner_uuid=None, ensure_unique_name=True)
 
         api.collections().update.assert_has_calls([
@@ -189,7 +189,7 @@ class TestHttpToKeep(unittest.TestCase):
         getmock.assert_called_with("http://example.com/file1.txt", stream=True, allow_redirects=True)
 
         cm.open.assert_called_with("file1.txt", "wb")
-        cm.save_new.assert_called_with(name="Downloaded from http://example.com/file1.txt",
+        cm.save_new.assert_called_with(name="Downloaded from http%3A%2F%2Fexample.com%2Ffile1.txt",
                                        owner_uuid=None, ensure_unique_name=True)
 
         api.collections().update.assert_has_calls([
@@ -280,7 +280,7 @@ class TestHttpToKeep(unittest.TestCase):
         getmock.assert_called_with("http://example.com/download?fn=/file1.txt", stream=True, allow_redirects=True)
 
         cm.open.assert_called_with("file1.txt", "wb")
-        cm.save_new.assert_called_with(name="Downloaded from http://example.com/download?fn=/file1.txt",
+        cm.save_new.assert_called_with(name="Downloaded from http%3A%2F%2Fexample.com%2Fdownload%3Ffn%3D%2Ffile1.txt",
                                        owner_uuid=None, ensure_unique_name=True)
 
         api.collections().update.assert_has_calls([

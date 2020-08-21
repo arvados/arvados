@@ -91,6 +91,7 @@ lib/dispatchcloud/scheduler
 lib/dispatchcloud/ssh_executor
 lib/dispatchcloud/worker
 lib/mount
+lib/pam
 lib/service
 services/api
 services/arv-git-httpd
@@ -104,14 +105,10 @@ services/keepproxy
 services/keepstore
 services/keep-balance
 services/login-sync
-services/nodemanager
-services/nodemanager_integration
 services/crunch-dispatch-local
 services/crunch-dispatch-slurm
 services/ws
 sdk/cli
-sdk/pam
-sdk/pam:py3
 sdk/python
 sdk/python:py3
 sdk/ruby
@@ -198,7 +195,7 @@ sanity_checks() {
     ( [[ -n "$WORKSPACE" ]] && [[ -d "$WORKSPACE/services" ]] ) \
         || fatal "WORKSPACE environment variable not set to a source directory (see: $0 --help)"
     [[ -z "$CONFIGSRC" ]] || [[ -s "$CONFIGSRC/config.yml" ]] \
-	|| fatal "CONFIGSRC is $CONFIGSRC but '$CONFIGSRC/config.yml' is empty or not found (see: $0 --help)"
+        || fatal "CONFIGSRC is $CONFIGSRC but '$CONFIGSRC/config.yml' is empty or not found (see: $0 --help)"
     echo Checking dependencies:
     echo "locale: ${LANG}"
     [[ "$(locale charmap)" = "UTF-8" ]] \
@@ -262,7 +259,7 @@ sanity_checks() {
         || fatal "No libpq libpq-fe.h. Try: apt-get install libpq-dev"
     echo -n 'libpam pam_appl.h: '
     find /usr/include -path '*/security/pam_appl.h' | egrep --max-count=1 . \
-        || fatal "No libpam pam_appl.h. Try: apt-get install libpam-dev"
+        || fatal "No libpam pam_appl.h. Try: apt-get install libpam0g-dev"
     echo -n 'postgresql: '
     psql --version || fatal "No postgresql. Try: apt-get install postgresql postgresql-client-common"
     echo -n 'phantomjs: '
@@ -306,8 +303,6 @@ declare -A skip
 declare -A only
 declare -A testargs
 skip[apps/workbench_profile]=1
-# nodemanager_integration tests are not reliable, see #12061.
-skip[services/nodemanager_integration]=1
 
 while [[ -n "$1" ]]
 do
@@ -378,7 +373,7 @@ if [[ ${skip["sdk/R"]} == 1 && ${skip["doc"]} == 1 ]]; then
 fi
 
 if [[ $NEED_SDK_R == false ]]; then
-	echo "R SDK not needed, it will not be installed."
+        echo "R SDK not needed, it will not be installed."
 fi
 
 checkpidfile() {
@@ -419,11 +414,11 @@ start_services() {
     . "$VENVDIR/bin/activate"
     echo 'Starting API, controller, keepproxy, keep-web, arv-git-httpd, ws, and nginx ssl proxy...'
     if [[ ! -d "$WORKSPACE/services/api/log" ]]; then
-	mkdir -p "$WORKSPACE/services/api/log"
+        mkdir -p "$WORKSPACE/services/api/log"
     fi
     # Remove empty api.pid file if it exists
     if [[ -f "$WORKSPACE/tmp/api.pid" && ! -s "$WORKSPACE/tmp/api.pid" ]]; then
-	rm -f "$WORKSPACE/tmp/api.pid"
+        rm -f "$WORKSPACE/tmp/api.pid"
     fi
     all_services_stopped=
     fail=1
@@ -668,14 +663,6 @@ install_env() {
         python setup.py install
     ) || fatal "installing PyYAML and sdk/python failed"
 
-    # Preinstall libcloud if using a fork; otherwise nodemanager "pip
-    # install" won't pick it up by default.
-    if [[ -n "$LIBCLOUD_PIN_SRC" ]]; then
-        pip freeze 2>/dev/null | egrep ^apache-libcloud==$LIBCLOUD_PIN \
-            || pip install --pre --ignore-installed --no-cache-dir "$LIBCLOUD_PIN_SRC" >/dev/null \
-            || fatal "pip install apache-libcloud failed"
-    fi
-
     # Deactivate Python 2 virtualenv
     deactivate
 
@@ -721,9 +708,6 @@ do_test() {
     case "${1}" in
         apps/workbench_units | apps/workbench_functionals | apps/workbench_integration)
             suite=apps/workbench
-            ;;
-        services/nodemanager | services/nodemanager_integration)
-            suite=services/nodemanager_suite
             ;;
         *)
             suite="${1}"
@@ -833,19 +817,19 @@ do_test_once() {
 
 check_arvados_config() {
     if [[ "$1" = "env" ]] ; then
-	return
+        return
     fi
     if [[ -z "$ARVADOS_CONFIG" ]] ; then
-	# Create config file.  The run_test_server script requires PyYAML,
-	# so virtualenv needs to be active.  Downstream steps like
-	# workbench install which require a valid config.yml.
-	if [[ ! -s "$VENVDIR/bin/activate" ]] ; then
-	    install_env
-	fi
-	. "$VENVDIR/bin/activate"
+        # Create config file.  The run_test_server script requires PyYAML,
+        # so virtualenv needs to be active.  Downstream steps like
+        # workbench install which require a valid config.yml.
+        if [[ ! -s "$VENVDIR/bin/activate" ]] ; then
+            install_env
+        fi
+        . "$VENVDIR/bin/activate"
         cd "$WORKSPACE"
-	eval $(python sdk/python/tests/run_test_server.py setup_config)
-	deactivate
+        eval $(python sdk/python/tests/run_test_server.py setup_config)
+        deactivate
     fi
 }
 
@@ -1004,14 +988,12 @@ install_services/api() {
 
 declare -a pythonstuff
 pythonstuff=(
-    sdk/pam
     sdk/python
     sdk/python:py3
     sdk/cwl:py3
     services/dockercleaner:py3
     services/fuse
     services/fuse:py3
-    services/nodemanager
     tools/crunchstat-summary
     tools/crunchstat-summary:py3
 )
@@ -1074,11 +1056,6 @@ test_sdk/java-v2() {
 test_services/login-sync() {
     cd "$WORKSPACE/services/login-sync" \
         && "$bundle" exec rake test TESTOPTS=-v ${testargs[services/login-sync]}
-}
-
-test_services/nodemanager_integration() {
-    cd "$WORKSPACE/services/nodemanager" \
-        && tests/integration_test.py ${testargs[services/nodemanager_integration]}
 }
 
 test_apps/workbench_units() {
@@ -1175,7 +1152,6 @@ test_all() {
     do_test sdk/cli
     do_test services/login-sync
     do_test sdk/java-v2
-    do_test services/nodemanager_integration
     for p in "${pythonstuff[@]}"
     do
         dir=${p%:py3}

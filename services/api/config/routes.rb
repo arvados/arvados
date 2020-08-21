@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-Server::Application.routes.draw do
+Rails.application.routes.draw do
   themes_for_rails
 
   # OPTIONS requests are not allowed at routes that use cookies.
