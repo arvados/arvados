@@ -76,6 +76,9 @@ export interface ClusterConfigJSON {
         SSO: {
             Enable: boolean;
         }
+        Test: {
+            Enable: boolean;
+        }
     };
     Collections: {
         ForwardSlashNameSubstitution: string;
@@ -231,6 +234,9 @@ export const mockClusterConfigJSON = (config: Partial<ClusterConfigJSON>): Clust
         SSO: {
             Enable: false,
         },
+        Test: {
+            Enable: false;
+        }
     },
     Collections: {
         ForwardSlashNameSubstitution: "",
