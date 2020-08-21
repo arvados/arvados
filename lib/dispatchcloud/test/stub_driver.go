@@ -99,6 +99,7 @@ type StubInstanceSet struct {
 
 	allowCreateCall    time.Time
 	allowInstancesCall time.Time
+	lastInstanceID     int
 }
 
 func (sis *StubInstanceSet) Create(it arvados.InstanceType, image cloud.ImageID, tags cloud.InstanceTags, cmd cloud.InitCommand, authKey ssh.PublicKey) (cloud.Instance, error) {
@@ -120,9 +121,10 @@ func (sis *StubInstanceSet) Create(it arvados.InstanceType, image cloud.ImageID,
 	if authKey != nil {
 		ak = append([]ssh.PublicKey{authKey}, ak...)
 	}
+	sis.lastInstanceID++
 	svm := &StubVM{
 		sis:          sis,
-		id:           cloud.InstanceID(fmt.Sprintf("stub-%s-%x", it.ProviderType, math_rand.Int63())),
+		id:           cloud.InstanceID(fmt.Sprintf("inst%d,%s", sis.lastInstanceID, it.ProviderType)),
 		tags:         copyTags(tags),
 		providerType: it.ProviderType,
 		initCommand:  cmd,
