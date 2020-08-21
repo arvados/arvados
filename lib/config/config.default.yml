@@ -696,8 +696,8 @@ Clusters:
         Enable: false
         Users:
           SAMPLE:
-            email: alice@example.com
-            password: xyzzy
+            Email: alice@example.com
+            Password: xyzzy
 
       # The cluster ID to delegate the user database.  When set,
       # logins on this cluster will be redirected to the login cluster
