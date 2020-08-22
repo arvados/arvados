@@ -115,6 +115,7 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 		ChooseType: func(ctr *arvados.Container) (arvados.InstanceType, error) {
 			return ChooseInstanceType(s.cluster, ctr)
 		},
+		Logger: ctxlog.TestLogger(c),
 	}
 	for i := 0; i < 200; i++ {
 		queue.Containers = append(queue.Containers, arvados.Container{
@@ -170,6 +171,7 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 			stubvm.CrunchRunCrashRate = 0.1
 		}
 	}
+	s.stubDriver.Bugf = c.Errorf
 
 	start := time.Now()
 	go s.disp.run()
@@ -303,7 +305,7 @@ func (s *DispatcherSuite) TestInstancesAPI(c *check.C) {
 		time.Sleep(time.Millisecond)
 	}
 	c.Assert(len(sr.Items), check.Equals, 1)
-	c.Check(sr.Items[0].Instance, check.Matches, "stub.*")
+	c.Check(sr.Items[0].Instance, check.Matches, "inst.*")
 	c.Check(sr.Items[0].WorkerState, check.Equals, "booting")
 	c.Check(sr.Items[0].Price, check.Equals, 0.123)
 	c.Check(sr.Items[0].LastContainerUUID, check.Equals, "")

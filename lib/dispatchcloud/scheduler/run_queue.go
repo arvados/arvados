@@ -88,6 +88,8 @@ tryrun:
 				// a higher-priority container on the
 				// same instance type. Don't let this
 				// one sneak in ahead of it.
+			} else if sch.pool.KillContainer(ctr.UUID, "about to lock") {
+				logger.Info("not restarting yet: crunch-run process from previous attempt has not exited")
 			} else if sch.pool.StartContainer(it, ctr) {
 				// Success.
 			} else {

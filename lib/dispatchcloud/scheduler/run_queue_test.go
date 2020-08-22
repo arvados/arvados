@@ -83,8 +83,9 @@ func (p *stubPool) ForgetContainer(uuid string) {
 func (p *stubPool) KillContainer(uuid, reason string) bool {
 	p.Lock()
 	defer p.Unlock()
-	delete(p.running, uuid)
-	return true
+	defer delete(p.running, uuid)
+	t, ok := p.running[uuid]
+	return ok && t.IsZero()
 }
 func (p *stubPool) Shutdown(arvados.InstanceType) bool {
 	p.shutdowns++
