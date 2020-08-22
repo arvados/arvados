@@ -568,8 +568,6 @@ func (fn *filenode) Write(p []byte, startPtr filenodePtr) (n int, ptr filenodePt
 				seg.Truncate(len(cando))
 				fn.memsize += int64(len(cando))
 				fn.segments[cur] = seg
-				cur++
-				prev++
 			}
 		}
 
@@ -1109,9 +1107,9 @@ func (dn *dirnode) loadManifest(txt string) error {
 				// situation might be rare anyway)
 				segIdx, pos = 0, 0
 			}
-			for next := int64(0); segIdx < len(segments); segIdx++ {
+			for ; segIdx < len(segments); segIdx++ {
 				seg := segments[segIdx]
-				next = pos + int64(seg.Len())
+				next := pos + int64(seg.Len())
 				if next <= offset || seg.Len() == 0 {
 					pos = next
 					continue
