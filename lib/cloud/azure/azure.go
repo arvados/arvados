@@ -677,6 +677,10 @@ func (az *azureInstanceSet) manageDisks() {
 	}
 
 	for ; response.NotDone(); err = response.Next() {
+		if err != nil {
+			az.logger.WithError(err).Warn("Error getting next page of disks")
+			return
+		}
 		for _, d := range response.Values() {
 			if d.DiskProperties.DiskState == compute.Unattached &&
 				d.Name != nil && re.MatchString(*d.Name) &&

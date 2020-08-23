@@ -345,6 +345,7 @@ func (s *IntegrationSuite) TestS3GetBucketVersioning(c *check.C) {
 	defer stage.teardown(c)
 	for _, bucket := range []*s3.Bucket{stage.collbucket, stage.projbucket} {
 		req, err := http.NewRequest("GET", bucket.URL("/"), nil)
+		c.Check(err, check.IsNil)
 		req.Header.Set("Authorization", "AWS "+arvadostest.ActiveTokenV2+":none")
 		req.URL.RawQuery = "versioning"
 		resp, err := http.DefaultClient.Do(req)
