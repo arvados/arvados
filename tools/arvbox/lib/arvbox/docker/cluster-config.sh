@@ -39,11 +39,6 @@ if ! test -s /var/lib/arvados/system_root_token ; then
 fi
 system_root_token=$(cat /var/lib/arvados/system_root_token)
 
-if ! test -s /var/lib/arvados/sso_app_secret ; then
-    ruby -e 'puts rand(2**400).to_s(36)' > /var/lib/arvados/sso_app_secret
-fi
-sso_app_secret=$(cat /var/lib/arvados/sso_app_secret)
-
 if ! test -s /var/lib/arvados/vm-uuid ; then
     echo $uuid_prefix-2x53u-$(ruby -e 'puts rand(2**400).to_s(36)[0,15]') > /var/lib/arvados/vm-uuid
 fi
@@ -83,8 +78,6 @@ Clusters:
         ExternalURL: "https://$localip:${services[workbench]}"
       Workbench2:
         ExternalURL: "https://$localip:${services[workbench2-ssl]}"
-      SSO:
-        ExternalURL: "https://$localip:${services[sso]}"
       Keepproxy:
         ExternalURL: "https://$localip:${services[keepproxy-ssl]}"
         InternalURLs:
@@ -139,13 +132,18 @@ Clusters:
       DefaultReplication: 1
       TrustAllContent: true
     Login:
-      SSO:
+      Test:
         Enable: true
-        ProviderAppSecret: $sso_app_secret
-        ProviderAppID: arvados-server
+        Users:
+          admin:
+            Email: admin@example.com
+            Password: admin
+          user:
+            Email: user@example.com
+            Password: user
     Users:
       NewUsersAreActive: true
-      AutoAdminFirstUser: true
+      AutoAdminUserWithEmail: admin@example.com
       AutoSetupNewUsers: true
       AutoSetupNewUsersWithVmUUID: $vm_uuid
       AutoSetupNewUsersWithRepository: true

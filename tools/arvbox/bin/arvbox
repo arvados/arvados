@@ -44,10 +44,6 @@ if test -z "$ARVADOS_ROOT" ; then
     ARVADOS_ROOT="$ARVBOX_DATA/arvados"
 fi
 
-if test -z "$SSO_ROOT" ; then
-    SSO_ROOT="$ARVBOX_DATA/sso-devise-omniauth-provider"
-fi
-
 if test -z "$COMPOSER_ROOT" ; then
     COMPOSER_ROOT="$ARVBOX_DATA/composer"
 fi
@@ -126,7 +122,6 @@ wait_for_arvbox() {
 docker_run_dev() {
     docker run \
 	   "--volume=$ARVADOS_ROOT:/usr/src/arvados:rw" \
-           "--volume=$SSO_ROOT:/usr/src/sso:rw" \
            "--volume=$COMPOSER_ROOT:/usr/src/composer:rw" \
            "--volume=$WORKBENCH2_ROOT:/usr/src/workbench2:rw" \
            "--volume=$PG_DATA:/var/lib/postgresql:rw" \
@@ -238,9 +233,6 @@ run() {
         if ! test -d "$ARVADOS_ROOT" ; then
             git clone https://git.arvados.org/arvados.git "$ARVADOS_ROOT"
         fi
-        if ! test -d "$SSO_ROOT" ; then
-            git clone https://github.com/arvados/sso-devise-omniauth-provider.git "$SSO_ROOT"
-        fi
         if ! test -d "$COMPOSER_ROOT" ; then
             git clone https://github.com/arvados/composer.git "$COMPOSER_ROOT"
             git -C "$COMPOSER_ROOT" checkout arvados-fork
@@ -266,11 +258,6 @@ run() {
                        $ARVBOX_CONTAINER \
                        /usr/local/lib/arvbox/runsu.sh \
                        /usr/local/lib/arvbox/waitforpostgres.sh
-
-                docker exec -ti \
-                       $ARVBOX_CONTAINER \
-                       /usr/local/lib/arvbox/runsu.sh \
-                       /var/lib/arvbox/service/sso/run-service --only-setup
 
                 docker exec -ti \
                        $ARVBOX_CONTAINER \
@@ -572,7 +559,6 @@ case "$subcmd" in
 	       "$ARVBOX_BASE/$1/gopath" \
 	       "$ARVBOX_BASE/$1/Rlibs" \
 	       "$ARVBOX_BASE/$1/arvados" \
-	       "$ARVBOX_BASE/$1/sso-devise-omniauth-provider" \
 	       "$ARVBOX_BASE/$1/composer" \
 	       "$ARVBOX_BASE/$1/workbench2" \
 	       "$ARVBOX_BASE/$2"
