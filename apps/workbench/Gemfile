@@ -4,7 +4,7 @@
 
 source 'https://rubygems.org'
 
-gem 'rails', '~> 5.0.0'
+gem 'rails', '~> 5.2.0'
 gem 'arvados', git: 'https://github.com/arvados/arvados.git', glob: 'sdk/ruby/arvados.gemspec'
 
 gem 'activerecord-nulldb-adapter', git: 'https://github.com/arvados/nulldb'
@@ -13,6 +13,13 @@ gem 'oj'
 gem 'sass'
 gem 'mime-types'
 gem 'responders', '~> 2.0'
+
+# Pin sprockets to < 4.0 to avoid issues when upgrading rails to 5.2
+# See: https://github.com/rails/sprockets-rails/issues/443
+gem 'sprockets', '~> 3.0'
+
+# Fast app boot times
+gem 'bootsnap', require: false
 
 # Note: keeping this out of the "group :assets" section "may" allow us
 # to use Coffescript for UJS responses. It also prevents a
@@ -31,8 +38,14 @@ group :assets do
   gem 'therubyracer', :platforms => :ruby
 end
 
-group :development do
+group :development, :test, :performance do
   gem 'byebug'
+  # Pinning launchy because 2.5 requires ruby >= 2.4, which arvbox currently
+  # doesn't have because of SSO.
+  gem 'launchy', '~> 2.4.0'
+end
+
+group :development do
   gem 'ruby-debug-passenger'
   gem 'rack-mini-profiler', require: false
   gem 'flamegraph', require: false
@@ -48,7 +61,6 @@ group :test, :diagnostics, :performance do
 end
 
 group :test, :performance do
-  gem 'byebug'
   gem 'rails-perftest'
   gem 'ruby-prof'
   gem 'rvm-capistrano'
@@ -70,12 +82,6 @@ gem 'angularjs-rails', '~> 1.3.8'
 
 gem 'less'
 gem 'less-rails'
-
-# Wiselinks hasn't been updated for many years and it's using deprecated methods
-# Use our own Wiselinks fork until this PR is accepted:
-# https://github.com/igor-alexandrov/wiselinks/pull/116
-# gem 'wiselinks', git: 'https://github.com/arvados/wiselinks.git', branch: 'rails-5.1-compatibility'
-
 gem 'sshkey'
 
 # To use ActiveModel has_secure_password

@@ -2,13 +2,15 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-require File.expand_path('../boot', __FILE__)
+require_relative 'boot'
 
 require "rails"
 # Pick only the frameworks we need:
 require "active_model/railtie"
 require "active_job/railtie"
 require "active_record/railtie"
+# Skip ActiveStorage (new in Rails 5.1)
+# require "active_storage/engine"
 require "action_controller/railtie"
 require "action_mailer/railtie"
 require "action_view/railtie"
@@ -27,6 +29,9 @@ module ArvadosWorkbench
   class Application < Rails::Application
 
     require_relative "arvados_config.rb"
+
+    # Initialize configuration defaults for originally generated Rails version.
+    config.load_defaults 5.1
 
     # Settings in config/environments/* take precedence over those specified here.
     # Application configuration should go into files in config/initializers
