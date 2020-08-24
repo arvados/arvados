@@ -113,5 +113,24 @@ describe('<LoginPanel />', () => {
             // then
             expect(result).toBeTruthy();
         });
+
+        it('should return false for not specified config option config.clusterConfig.Login.NOT_EXISTING.Enable', () => {
+            // given
+            const config = {
+                clusterConfig: {
+                    Login: {
+                        NOT_EXISTING: {
+                            Enable: true
+                        },
+                    },
+                },
+            };
+
+            // when
+            const result = requirePasswordLogin(config);
+
+            // then
+            expect(result).toBeFalsy();
+        });
     });
 });
