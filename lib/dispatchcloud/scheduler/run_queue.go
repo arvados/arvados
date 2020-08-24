@@ -51,6 +51,10 @@ tryrun:
 				overquota = sorted[i:]
 				break tryrun
 			}
+			if sch.pool.KillContainer(ctr.UUID, "about to lock") {
+				logger.Info("not locking: crunch-run process from previous attempt has not exited")
+				continue
+			}
 			go sch.lockContainer(logger, ctr.UUID)
 			unalloc[it]--
 		case arvados.ContainerStateLocked:
@@ -88,7 +92,7 @@ tryrun:
 				// a higher-priority container on the
 				// same instance type. Don't let this
 				// one sneak in ahead of it.
-			} else if sch.pool.KillContainer(ctr.UUID, "about to lock") {
+			} else if sch.pool.KillContainer(ctr.UUID, "about to start") {
 				logger.Info("not restarting yet: crunch-run process from previous attempt has not exited")
 			} else if sch.pool.StartContainer(it, ctr) {
 				// Success.
