@@ -123,10 +123,10 @@ class ContainerRequest < ArvadosModel
     while true
       # get container lock first, then lock current container request
       # (same order as Container#handle_completed). Locking always
-      # requires explicit Container and ContainerRequest records reload.
+      # reloads the Container and ContainerRequest records.
       c = Container.find_by_uuid(container_uuid)
-      c.reload.lock! if !c.nil?
-      self.reload.lock!
+      c.lock! if !c.nil?
+      self.lock!
 
       if !c.nil? && container_uuid != c.uuid
         # After locking, we've noticed a race, the container_uuid is
@@ -263,7 +263,7 @@ class ContainerRequest < ArvadosModel
     if state_changed? and state == Committed and container_uuid.nil?
       while true
         c = Container.resolve(self)
-        c.reload.lock!
+        c.lock!
         if c.state == Container::Cancelled
           # Lost a race, we have a lock on the container but the
           # container was cancelled in a different request, restart
