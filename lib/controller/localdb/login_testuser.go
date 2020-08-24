@@ -5,9 +5,10 @@
 package localdb
 
 import (
+	"bytes"
 	"context"
-	"errors"
 	"fmt"
+	"html/template"
 
 	"git.arvados.org/arvados.git/lib/controller/rpc"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
@@ -25,7 +26,16 @@ func (ctrl *testLoginController) Logout(ctx context.Context, opts arvados.Logout
 }
 
 func (ctrl *testLoginController) Login(ctx context.Context, opts arvados.LoginOptions) (arvados.LoginResponse, error) {
-	return arvados.LoginResponse{}, errors.New("interactive login is not available")
+	tmpl, err := template.New("form").Parse(loginform)
+	if err != nil {
+		return arvados.LoginResponse{}, err
+	}
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, opts)
+	if err != nil {
+		return arvados.LoginResponse{}, err
+	}
+	return arvados.LoginResponse{HTML: buf}, nil
 }
 
 func (ctrl *testLoginController) UserAuthenticate(ctx context.Context, opts arvados.UserAuthenticateOptions) (arvados.APIClientAuthorization, error) {
@@ -43,3 +53,52 @@ func (ctrl *testLoginController) UserAuthenticate(ctx context.Context, opts arva
 	}
 	return arvados.APIClientAuthorization{}, fmt.Errorf("authentication failed for user %q with password len=%d", opts.Username, len(opts.Password))
 }
+
+const loginform = `
+<!doctype html>
+<html>
+  <head><title>Arvados test login</title>
+    <script>
+      async function authenticate(event) {
+        event.preventDefault()
+	document.getElementById('error').innerHTML = ''
+	const resp = await fetch('/arvados/v1/users/authenticate', {
+	  method: 'POST',
+	  mode: 'same-origin',
+	  headers: {'Content-Type': 'application/json'},
+	  body: JSON.stringify({
+	    username: document.getElementById('username').value,
+	    password: document.getElementById('password').value,
+	  }),
+	})
+	if (!resp.ok) {
+	  document.getElementById('error').innerHTML = 'authentication failed (default accounts are user/user, admin/admin)'
+	  return
+	}
+	var redir = document.getElementById('return_to').value
+	if (redir.indexOf('?') > 0) {
+	  redir += '&'
+	} else {
+	  redir += '?'
+	}
+        const respj = await resp.json()
+	document.location = redir + "api_token=" + respj.api_token
+      }
+    </script>
+  </head>
+  <body>
+    <h3>Arvados test login</h3>
+    <form method="POST">
+      <input id="return_to" type="hidden" name="return_to" value="{{.ReturnTo}}">
+      username <input id="username" type="text" name="username" size=16>
+      password <input id="password" type="password" name="password" size=16>
+      <input type="submit" value="Log in">
+      <br>
+      <p id="error"></p>
+    </form>
+  </body>
+  <script>
+    document.getElementsByTagName('form')[0].onsubmit = authenticate
+  </script>
+</html>
+`

@@ -92,3 +92,12 @@ func (s *TestUserSuite) TestLogin(c *check.C) {
 		}
 	}
 }
+
+func (s *TestUserSuite) TestLoginForm(c *check.C) {
+	resp, err := s.ctrl.Login(s.ctx, arvados.LoginOptions{
+		ReturnTo: "https://localhost:12345/example",
+	})
+	c.Check(err, check.IsNil)
+	c.Check(resp.HTML.String(), check.Matches, `(?ms).*<form method="POST".*`)
+	c.Check(resp.HTML.String(), check.Matches, `(?ms).*<input id="return_to" type="hidden" name="return_to" value="https://localhost:12345/example">.*`)
+}
