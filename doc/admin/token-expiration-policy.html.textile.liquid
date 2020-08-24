@@ -1,0 +1,56 @@
+---
+layout: default
+navsection: admin
+title: Limiting user session's lifetime
+...
+
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+Whenever a user authenticates to start a session on Workbench, a token is created that grants the user access to the Arvados API. This token has an expiration date that by default isn't set.
+
+Depending on the local security policies where any given Arvados cluster is installed, it may be needed to restrict these access tokens by giving them a default expiration date at creation time.
+
+For this very purpose, the site administrator can use the @Login.TokenLifetime@ configuration, assigning a token lifetime value that will be used for newly created tokens. When setting this value to zero, the feature is disabled.
+
+h2. Setting token's expiration
+
+Suppose that the organization's security policy requires that no user session should be valid for more than 12 hours from being created, the cluster configuration should be set like the following:
+
+<pre>
+Clusters:
+  zzzzz:
+    ...
+    Login:
+      TokenLifetime: 12h
+    ...
+</pre>
+
+This will force users to re-login every 12 hours and avoid any leaked token to be abused indefinitely.
+
+h2. Applying a policy to previously created tokens
+
+If you happen to have a previously working Arvados installation and need to set a token lifetime policy, chances are that the system has already issued user tokens without expiration. You can reset or remove these tokens using the Arvados API endpoints with the system root token, but we provide a couple of @rake@ tasks to make it easier:
+
+The @db:check_long_lived_tokens@ will list users owning tokens with no expiration date.
+
+<pre>
+# bundle exec rake db:check_long_lived_tokens
+Found 6 long-lived tokens from users:
+user2,user2@example.com,zzzzz-tpzed-5vzt5wc62k46p6r
+admin,admin@example.com,zzzzz-tpzed-6drplgwq9nm5cox
+user1,user1@example.com,zzzzz-tpzed-ftz2tfurbpf7xox
+</pre>
+
+To apply the currently configured policy to the non-expiring tokens, you need to execute the @db:fix_long_lived_tokens@ task.
+
+<pre>
+# bundle exec rake db:fix_long_lived_tokens
+Setting token expiration to: 2020-08-25 03:30:50 +0000
+6 tokens updated.
+</pre>
+
+NOTE: As there's no clear way to differentiate tokens created on user logins from other tokens, these rake tasks operate on the entire token collection so you may need to re-create special tokens, although tokens related to the system root user (@zzzzz-tpzed-000000000000000@) will be ignored.
