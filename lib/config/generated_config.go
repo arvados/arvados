@@ -489,6 +489,9 @@ Clusters:
       # Use of this feature is not recommended, if it can be avoided.
       ForwardSlashNameSubstitution: ""
 
+      # Include "folder objects" in S3 ListObjects responses.
+      S3FolderObjects: true
+
       # Managed collection properties. At creation time, if the client didn't
       # provide the listed keys, they will be automatically populated following
       # one of the following behaviors:
@@ -699,8 +702,8 @@ Clusters:
         Enable: false
         Users:
           SAMPLE:
-            email: alice@example.com
-            password: xyzzy
+            Email: alice@example.com
+            Password: xyzzy
 
       # The cluster ID to delegate the user database.  When set,
       # logins on this cluster will be redirected to the login cluster
@@ -710,6 +713,11 @@ Clusters:
       # How long a cached token belonging to a remote cluster will
       # remain valid before it needs to be revalidated.
       RemoteTokenRefresh: 5m
+
+      # How long a client token created from a login flow will be valid without
+      # asking the user to re-login. Example values: 60m, 8h.
+      # Default value zero means tokens don't have expiration.
+      TokenLifetime: 0s
 
     Git:
       # Path to git or gitolite-shell executable. Each authenticated
@@ -965,6 +973,12 @@ Clusters:
         TimeoutShutdown: 10s
 
         # Worker VM image ID.
+        # (aws) AMI identifier
+        # (azure) managed disks: the name of the managed disk image
+        # (azure) shared image gallery: the name of the image definition. Also
+        # see the SharedImageGalleryName and SharedImageGalleryImageVersion fields.
+        # (azure) unmanaged disks (deprecated): the complete URI of the VHD, e.g.
+        # https://xxxxx.blob.core.windows.net/system/Microsoft.Compute/Images/images/xxxxx.vhd
         ImageID: ""
 
         # An executable file (located on the dispatcher host) to be
@@ -1033,7 +1047,16 @@ Clusters:
           Network: ""
           Subnet: ""
 
-          # (azure) Where to store the VM VHD blobs
+          # (azure) managed disks: The resource group where the managed disk
+          # image can be found (if different from ResourceGroup).
+          ImageResourceGroup: ""
+
+          # (azure) shared image gallery: the name of the gallery
+          SharedImageGalleryName: ""
+          # (azure) shared image gallery: the version of the image definition
+          SharedImageGalleryImageVersion: ""
+
+          # (azure) unmanaged disks (deprecated): Where to store the VM VHD blobs
           StorageAccount: ""
           BlobContainer: ""
 
@@ -1297,7 +1320,7 @@ Clusters:
       # a link to the multi-site search page on a "home" Workbench site.
       #
       # Example:
-      #   https://workbench.qr1hi.arvadosapi.com/collections/multisite
+      #   https://workbench.zzzzz.arvadosapi.com/collections/multisite
       MultiSiteSearch: ""
 
       # Should workbench allow management of local git repositories? Set to false if

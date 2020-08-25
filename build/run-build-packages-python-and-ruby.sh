@@ -192,7 +192,6 @@ PYTHON_BUILD_FAILURES=0
 if [ $PYTHON -eq 1 ]; then
   debug_echo "Building Python packages"
   python_wrapper arvados-python-client "$WORKSPACE/sdk/python"
-  python_wrapper arvados-pam "$WORKSPACE/sdk/pam"
   python_wrapper arvados-cwl-runner "$WORKSPACE/sdk/cwl"
   python_wrapper arvados_fuse "$WORKSPACE/services/fuse"
 

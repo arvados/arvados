@@ -18,6 +18,10 @@ Paste your public key into the text area labeled *Public Key*, and click on the 
 
 h1(#login). Using SSH to log into an Arvados VM
 
-To see a list of virtual machines that you have access to and determine the name and login information, click on the dropdown menu icon <span class="fa fa-lg fa-user"></span> <span class="caret"></span> in the upper right corner of the top navigation menu to access the user settings menu and click on the menu item *Virtual machines* to go to the Virtual machines page. This page lists the virtual machines you can access. The *Host name* column lists the name of each available VM.  The *Login name* column will have a list of comma separated values of the form @you@. In this guide the hostname will be *_shell_* and the login will be *_you_*.  Replace these with your hostname and login name as appropriate.
+To see a list of virtual machines that you have access to, click on the dropdown menu icon <span class="fa fa-lg fa-user"></span> <span class="caret"></span> in the upper right corner of the top navigation menu to access the user settings menu, then click on the menu item *Virtual machines* to go to the Virtual machines page.
 
+This page lists the virtual machines you can access. The *Host name* column lists the name of each available VM.  The *Login name* column lists your login name on that VM.  The *Command line* column provides a sample @ssh@ command line.
 
+At the bottom of the page there may be additional instructions for connecting your specific Arvados instance.  If so, follow your site-specific instructions.  If there are no site-specific instructions, you can probably connect directly with @ssh@.
+
+The following are generic instructions.  In the examples the login will be *_you_* and the hostname will be *_shell.ClusterID.example.com_* and .  Replace these with your login name and hostname as appropriate.

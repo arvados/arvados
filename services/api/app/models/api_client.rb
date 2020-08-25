@@ -15,12 +15,15 @@ class ApiClient < ArvadosModel
   end
 
   def is_trusted
-    norm(self.url_prefix) == norm(Rails.configuration.Services.Workbench1.ExternalURL) ||
-      norm(self.url_prefix) == norm(Rails.configuration.Services.Workbench2.ExternalURL) ||
-      super
+    (from_trusted_url && Rails.configuration.Login.TokenLifetime == 0) || super
   end
 
   protected
+
+  def from_trusted_url
+    norm(self.url_prefix) == norm(Rails.configuration.Services.Workbench1.ExternalURL) ||
+      norm(self.url_prefix) == norm(Rails.configuration.Services.Workbench2.ExternalURL)
+  end
 
   def norm url
     # normalize URL for comparison

@@ -64,7 +64,7 @@ func (s *LDAPSuite) SetUpSuite(c *check.C) {
 						return []*godap.LDAPSimpleSearchResultEntry{}
 					}
 					return []*godap.LDAPSimpleSearchResultEntry{
-						&godap.LDAPSimpleSearchResultEntry{
+						{
 							DN: "cn=" + req.FilterValue + "," + req.BaseDN,
 							Attrs: map[string]interface{}{
 								"SN":   req.FilterValue,

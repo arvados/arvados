@@ -111,6 +111,7 @@ arvcfg.declare_config "Login.SSO.ProviderAppSecret", String, :sso_app_secret
 arvcfg.declare_config "Login.SSO.ProviderAppID", String, :sso_app_id
 arvcfg.declare_config "Login.LoginCluster", String
 arvcfg.declare_config "Login.RemoteTokenRefresh", ActiveSupport::Duration
+arvcfg.declare_config "Login.TokenLifetime", ActiveSupport::Duration
 arvcfg.declare_config "TLS.Insecure", Boolean, :sso_insecure
 arvcfg.declare_config "Services.SSO.ExternalURL", String, :sso_provider_url
 arvcfg.declare_config "AuditLogs.MaxAge", ActiveSupport::Duration, :max_audit_log_age

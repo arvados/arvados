@@ -27,38 +27,37 @@ navbar:
     - Run a workflow using Workbench:
       - user/getting_started/workbench.html.textile.liquid
       - user/tutorials/tutorial-workflow-workbench.html.textile.liquid
-      - user/composer/composer.html.textile.liquid
+    - Working at the Command Line:
+      - user/getting_started/setup-cli.html.textile.liquid
+      - user/reference/api-tokens.html.textile.liquid
+      - user/getting_started/check-environment.html.textile.liquid
     - Access an Arvados virtual machine:
       - user/getting_started/vm-login-with-webshell.html.textile.liquid
       - user/getting_started/ssh-access-unix.html.textile.liquid
       - user/getting_started/ssh-access-windows.html.textile.liquid
-      - user/getting_started/check-environment.html.textile.liquid
-      - user/reference/api-tokens.html.textile.liquid
     - Working with data sets:
       - user/tutorials/tutorial-keep.html.textile.liquid
       - user/tutorials/tutorial-keep-get.html.textile.liquid
       - user/tutorials/tutorial-keep-mount-gnu-linux.html.textile.liquid
       - user/tutorials/tutorial-keep-mount-os-x.html.textile.liquid
       - user/tutorials/tutorial-keep-mount-windows.html.textile.liquid
-      - user/topics/keep.html.textile.liquid
       - user/tutorials/tutorial-keep-collection-lifecycle.html.textile.liquid
       - user/topics/arv-copy.html.textile.liquid
-      - user/topics/storage-classes.html.textile.liquid
       - user/topics/collection-versioning.html.textile.liquid
+      - user/topics/storage-classes.html.textile.liquid
+      - user/topics/keep.html.textile.liquid
+    - Data Analysis with Workflows:
+      - user/cwl/cwl-runner.html.textile.liquid
+      - user/cwl/cwl-run-options.html.textile.liquid
+      - user/tutorials/writing-cwl-workflow.html.textile.liquid
+      - user/topics/arv-docker.html.textile.liquid
+      - user/cwl/cwl-style.html.textile.liquid
+      - user/cwl/cwl-extensions.html.textile.liquid
+      - user/cwl/federated-workflows.html.textile.liquid
+      - user/cwl/cwl-versions.html.textile.liquid
     - Working with git repositories:
       - user/tutorials/add-new-repository.html.textile.liquid
       - user/tutorials/git-arvados-guide.html.textile.liquid
-    - Running workflows at the command line:
-      - user/cwl/cwl-runner.html.textile.liquid
-      - user/cwl/cwl-run-options.html.textile.liquid
-    - Develop an Arvados workflow:
-      - user/tutorials/intro-crunch.html.textile.liquid
-      - user/tutorials/writing-cwl-workflow.html.textile.liquid
-      - user/cwl/cwl-style.html.textile.liquid
-      - user/cwl/federated-workflows.html.textile.liquid
-      - user/cwl/cwl-extensions.html.textile.liquid
-      - user/cwl/cwl-versions.html.textile.liquid
-      - user/topics/arv-docker.html.textile.liquid
     - Reference:
       - user/topics/link-accounts.html.textile.liquid
       - user/reference/cookbook.html.textile.liquid
@@ -75,8 +74,9 @@ navbar:
       - sdk/python/example.html.textile.liquid
       - sdk/python/python.html.textile.liquid
       - sdk/python/arvados-fuse.html.textile.liquid
-      - sdk/python/events.html.textile.liquid
+      - sdk/python/arvados-cwl-runner.html.textile.liquid
       - sdk/python/cookbook.html.textile.liquid
+      - sdk/python/events.html.textile.liquid
     - CLI:
       - sdk/cli/install.html.textile.liquid
       - sdk/cli/index.html.textile.liquid
@@ -162,6 +162,7 @@ navbar:
       - admin/migrating-providers.html.textile.liquid
       - user/topics/arvados-sync-groups.html.textile.liquid
       - admin/scoped-tokens.html.textile.liquid
+      - admin/token-expiration-policy.html.textile.liquid
     - Monitoring:
       - admin/logging.html.textile.liquid
       - admin/metrics.html.textile.liquid

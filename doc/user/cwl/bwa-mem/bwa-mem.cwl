@@ -8,13 +8,13 @@ class: CommandLineTool
 
 hints:
   DockerRequirement:
-    dockerPull: lh3lh3/bwa
+    dockerPull: quay.io/biocontainers/bwa:0.7.17--ha92aebf_3
 
-baseCommand: [mem]
+baseCommand: [bwa, mem]
 
 arguments:
   - {prefix: "-t", valueFrom: $(runtime.cores)}
-  - {prefix: "-R", valueFrom: "@RG\tID:$(inputs.group_id)\tPL:$(inputs.PL)\tSM:$(inputs.sample_id)"}
+  - {prefix: "-R", valueFrom: '@RG\\\tID:$(inputs.group_id)\\\tPL:$(inputs.PL)\\\tSM:$(inputs.sample_id)'}
 
 inputs:
   reference:

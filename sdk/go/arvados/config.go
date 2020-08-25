@@ -121,6 +121,7 @@ type Cluster struct {
 		TrashSweepInterval           Duration
 		TrustAllContent              bool
 		ForwardSlashNameSubstitution string
+		S3FolderObjects              bool
 
 		BlobMissingReport        string
 		BalancePeriod            Duration
@@ -182,6 +183,7 @@ type Cluster struct {
 		}
 		LoginCluster       string
 		RemoteTokenRefresh Duration
+		TokenLifetime      Duration
 	}
 	Mail struct {
 		MailchimpAPIKey                string

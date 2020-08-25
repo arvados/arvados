@@ -7,6 +7,7 @@ package arvados
 import (
 	"net/http"
 	"os"
+	"time"
 
 	check "gopkg.in/check.v1"
 )
@@ -22,6 +23,8 @@ const (
 	fixtureFooCollectionPDH        = "1f4b0bc7583c2a7f9102c395f4ffc5e3+45"
 	fixtureFooCollection           = "zzzzz-4zz18-fy296fx3hot09f7"
 	fixtureNonexistentCollection   = "zzzzz-4zz18-totallynotexist"
+	fixtureBlobSigningKey          = "zfhgfenhffzltr9dixws36j1yhksjoll2grmku38mi7yxd66h5j4q9w4jzanezacp8s6q0ro3hxakfye02152hncy6zml2ed0uc"
+	fixtureBlobSigningTTL          = 336 * time.Hour
 )
 
 var _ = check.Suite(&SiteFSSuite{})
@@ -41,7 +44,11 @@ func (s *SiteFSSuite) SetUpTest(c *check.C) {
 	s.kc = &keepClientStub{
 		blocks: map[string][]byte{
 			"3858f62230ac3c915f300c664312c63f": []byte("foobar"),
-		}}
+		},
+		sigkey:    fixtureBlobSigningKey,
+		sigttl:    fixtureBlobSigningTTL,
+		authToken: fixtureActiveToken,
+	}
 	s.fs = s.client.SiteFileSystem(s.kc)
 }
 
@@ -98,7 +105,7 @@ func (s *SiteFSSuite) TestByUUIDAndPDH(c *check.C) {
 	c.Check(names, check.DeepEquals, []string{"baz"})
 
 	_, err = s.fs.OpenFile("/by_id/"+fixtureNonexistentCollection, os.O_RDWR|os.O_CREATE, 0755)
-	c.Check(err, check.Equals, ErrInvalidOperation)
+	c.Check(err, check.Equals, ErrInvalidArgument)
 	err = s.fs.Rename("/by_id/"+fixtureFooCollection, "/by_id/beep")
 	c.Check(err, check.Equals, ErrInvalidArgument)
 	err = s.fs.Rename("/by_id/"+fixtureFooCollection+"/foo", "/by_id/beep")

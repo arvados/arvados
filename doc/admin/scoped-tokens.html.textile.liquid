@@ -4,6 +4,12 @@ navsection: admin
 title: Securing API access with scoped tokens
 ...
 
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
 By default, Arvados API tokens grant unlimited access to a user account, and admin account tokens have unlimited access to the whole system.  If you want to grant restricted access to a user account, you can create a "scoped token" which is an Arvados API token which is limited to accessing specific APIs.
 
 One use of token scopes is to grant access to data, such as a collection, to users who do not have an Arvados accounts on your cluster.  This is done by creating scoped token that only allows getting a specific record.  An example of this is "creating a collection sharing link.":{{site.baseurl}}/sdk/python/cookbook.html#sharing_link

@@ -535,6 +535,7 @@ func (s *StandaloneSuite) TestGetEmptyBlock(c *C) {
 	defer ks.listener.Close()
 
 	arv, err := arvadosclient.MakeArvadosClient()
+	c.Check(err, IsNil)
 	kc, _ := MakeKeepClient(arv)
 	arv.ApiToken = "abc123"
 	kc.SetServiceRoots(map[string]string{"x": ks.url}, nil, nil)

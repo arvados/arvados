@@ -601,7 +601,7 @@ func (super *Supervisor) autofillConfig(cfg *arvados.Config) error {
 		}
 		if len(svc.InternalURLs) == 0 {
 			svc.InternalURLs = map[arvados.URL]arvados.ServiceInstance{
-				arvados.URL{Scheme: "http", Host: fmt.Sprintf("%s:%s", super.ListenHost, nextPort(super.ListenHost)), Path: "/"}: arvados.ServiceInstance{},
+				{Scheme: "http", Host: fmt.Sprintf("%s:%s", super.ListenHost, nextPort(super.ListenHost)), Path: "/"}: {},
 			}
 		}
 	}

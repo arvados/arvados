@@ -185,10 +185,6 @@ var (
 func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	h.setupOnce.Do(h.setup)
 
-	remoteAddr := r.RemoteAddr
-	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		remoteAddr = xff + "," + remoteAddr
-	}
 	if xfp := r.Header.Get("X-Forwarded-Proto"); xfp != "" && xfp != "http" {
 		r.URL.Scheme = xfp
 	}
@@ -225,6 +221,10 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		// http://www.w3.org/TR/cors/#user-credentials).
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Expose-Headers", "Content-Range")
+	}
+
+	if h.serveS3(w, r) {
+		return
 	}
 
 	pathParts := strings.Split(r.URL.Path[1:], "/")
@@ -509,6 +509,27 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (h *handler) getClients(reqID, token string) (arv *arvadosclient.ArvadosClient, kc *keepclient.KeepClient, client *arvados.Client, release func(), err error) {
+	arv = h.clientPool.Get()
+	if arv == nil {
+		return nil, nil, nil, nil, err
+	}
+	release = func() { h.clientPool.Put(arv) }
+	arv.ApiToken = token
+	kc, err = keepclient.MakeKeepClient(arv)
+	if err != nil {
+		release()
+		return
+	}
+	kc.RequestID = reqID
+	client = (&arvados.Client{
+		APIHost:   arv.ApiServer,
+		AuthToken: arv.ApiToken,
+		Insecure:  arv.ApiInsecure,
+	}).WithRequestID(reqID)
+	return
+}
+
 func (h *handler) serveSiteFS(w http.ResponseWriter, r *http.Request, tokens []string, credentialsOK, attachment bool) {
 	if len(tokens) == 0 {
 		w.Header().Add("WWW-Authenticate", "Basic realm=\"collections\"")
@@ -519,25 +540,13 @@ func (h *handler) serveSiteFS(w http.ResponseWriter, r *http.Request, tokens []s
 		http.Error(w, errReadOnly.Error(), http.StatusMethodNotAllowed)
 		return
 	}
-	arv := h.clientPool.Get()
-	if arv == nil {
+	_, kc, client, release, err := h.getClients(r.Header.Get("X-Request-Id"), tokens[0])
+	if err != nil {
 		http.Error(w, "Pool failed: "+h.clientPool.Err().Error(), http.StatusInternalServerError)
 		return
 	}
-	defer h.clientPool.Put(arv)
-	arv.ApiToken = tokens[0]
+	defer release()
 
-	kc, err := keepclient.MakeKeepClient(arv)
-	if err != nil {
-		http.Error(w, "error setting up keep client: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-	kc.RequestID = r.Header.Get("X-Request-Id")
-	client := (&arvados.Client{
-		APIHost:   arv.ApiServer,
-		AuthToken: arv.ApiToken,
-		Insecure:  arv.ApiInsecure,
-	}).WithRequestID(r.Header.Get("X-Request-Id"))
 	fs := client.SiteFileSystem(kc)
 	fs.ForwardSlashNameSubstitution(h.Config.cluster.Collections.ForwardSlashNameSubstitution)
 	f, err := fs.Open(r.URL.Path)

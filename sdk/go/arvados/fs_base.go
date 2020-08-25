@@ -31,6 +31,10 @@ var (
 	ErrPermission        = os.ErrPermission
 )
 
+type syncer interface {
+	Sync() error
+}
+
 // A File is an *os.File-like interface for reading and writing files
 // in a FileSystem.
 type File interface {
@@ -297,6 +301,22 @@ func (n *treenode) Readdir() (fi []os.FileInfo, err error) {
 		fi = append(fi, inode.FileInfo())
 	}
 	return
+}
+
+func (n *treenode) Sync() error {
+	n.RLock()
+	defer n.RUnlock()
+	for _, inode := range n.inodes {
+		syncer, ok := inode.(syncer)
+		if !ok {
+			return ErrInvalidOperation
+		}
+		err := syncer.Sync()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 type fileSystem struct {
@@ -576,8 +596,11 @@ func (fs *fileSystem) remove(name string, recursive bool) error {
 }
 
 func (fs *fileSystem) Sync() error {
-	log.Printf("TODO: sync fileSystem")
-	return ErrInvalidOperation
+	if syncer, ok := fs.root.(syncer); ok {
+		return syncer.Sync()
+	} else {
+		return ErrInvalidOperation
+	}
 }
 
 func (fs *fileSystem) Flush(string, bool) error {

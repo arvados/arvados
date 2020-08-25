@@ -47,7 +47,7 @@ h2. Get input of a CWL workflow
 {% codeblock as python %}
 import arvados
 api = arvados.api()
-container_request_uuid="qr1hi-xvhdp-zzzzzzzzzzzzzzz"
+container_request_uuid="zzzzz-xvhdp-zzzzzzzzzzzzzzz"
 container_request = api.container_requests().get(uuid=container_request_uuid).execute()
 print(container_request["mounts"]["/var/lib/cwl/cwl.input.json"])
 {% endcodeblock %}
@@ -58,7 +58,7 @@ h2. Get output of a CWL workflow
 import arvados
 import arvados.collection
 api = arvados.api()
-container_request_uuid="qr1hi-xvhdp-zzzzzzzzzzzzzzz"
+container_request_uuid="zzzzz-xvhdp-zzzzzzzzzzzzzzz"
 container_request = api.container_requests().get(uuid=container_request_uuid).execute()
 collection = arvados.collection.CollectionReader(container_request["output_uuid"])
 print(collection.open("cwl.output.json").read())
@@ -81,7 +81,7 @@ def get_cr_state(cr_uuid):
             return 'On hold'
         else:
             return 'Queued'
-    elif c['state'] == 'Complete' and c['exit_code'] != 0
+    elif c['state'] == 'Complete' and c['exit_code'] != 0:
         return 'Failed'
     elif c['state'] == 'Running':
         if c['runtime_status'].get('error', None):
@@ -89,7 +89,7 @@ def get_cr_state(cr_uuid):
         elif c['runtime_status'].get('warning', None):
             return 'Warning'
     return c['state']
-container_request_uuid = 'qr1hi-xvhdp-zzzzzzzzzzzzzzz'
+container_request_uuid = 'zzzzz-xvhdp-zzzzzzzzzzzzzzz'
 print(get_cr_state(container_request_uuid))
 {% endcodeblock %}
 
@@ -98,7 +98,7 @@ h2. List input of child requests
 {% codeblock as python %}
 import arvados
 api = arvados.api()
-parent_request_uuid = "qr1hi-xvhdp-zzzzzzzzzzzzzzz"
+parent_request_uuid = "zzzzz-xvhdp-zzzzzzzzzzzzzzz"
 namefilter = "bwa%"  # the "like" filter uses SQL pattern match syntax
 container_request = api.container_requests().get(uuid=parent_request_uuid).execute()
 parent_container_uuid = container_request["container_uuid"]
@@ -117,7 +117,7 @@ h2. List output of child requests
 {% codeblock as python %}
 import arvados
 api = arvados.api()
-parent_request_uuid = "qr1hi-xvhdp-zzzzzzzzzzzzzzz"
+parent_request_uuid = "zzzzz-xvhdp-zzzzzzzzzzzzzzz"
 namefilter = "bwa%"  # the "like" filter uses SQL pattern match syntax
 container_request = api.container_requests().get(uuid=parent_request_uuid).execute()
 parent_container_uuid = container_request["container_uuid"]
@@ -136,7 +136,7 @@ h2. List failed child requests
 {% codeblock as python %}
 import arvados
 api = arvados.api()
-parent_request_uuid = "qr1hi-xvhdp-zzzzzzzzzzzzzzz"
+parent_request_uuid = "zzzzz-xvhdp-zzzzzzzzzzzzzzz"
 container_request = api.container_requests().get(uuid=parent_request_uuid).execute()
 parent_container_uuid = container_request["container_uuid"]
 child_requests = api.container_requests().list(filters=[
@@ -144,7 +144,7 @@ child_requests = api.container_requests().list(filters=[
 child_containers = {c["container_uuid"]: c for c in child_requests["items"]}
 cancelled_child_containers = api.containers().list(filters=[
     ["exit_code", "!=", "0"],
-    ["uuid", "in", child_containers.keys()]], limit=1000).execute()
+    ["uuid", "in", list(child_containers.keys())]], limit=1000).execute()
 for c in cancelled_child_containers["items"]:
     print("%s (%s)" % (child_containers[c["uuid"]]["name"], child_containers[c["uuid"]]["uuid"]))
 {% endcodeblock %}
@@ -155,11 +155,12 @@ h2. Get log of a child request
 import arvados
 import arvados.collection
 api = arvados.api()
-container_request_uuid = "qr1hi-xvhdp-zzzzzzzzzzzzzzz"
+container_request_uuid = "zzzzz-xvhdp-zzzzzzzzzzzzzzz"
 container_request = api.container_requests().get(uuid=container_request_uuid).execute()
 collection = arvados.collection.CollectionReader(container_request["log_uuid"])
 for c in collection:
-    print(collection.open(c).read())
+    if isinstance(collection.find(c), arvados.arvfile.ArvadosFile):
+        print(collection.open(c).read())
 {% endcodeblock %}
 
 h2(#sharing_link). Create a collection sharing link
@@ -168,7 +169,7 @@ h2(#sharing_link). Create a collection sharing link
 import arvados
 api = arvados.api()
 download="https://your.download.server"
-collection_uuid="qr1hi-4zz18-zzzzzzzzzzzzzzz"
+collection_uuid="zzzzz-4zz18-zzzzzzzzzzzzzzz"
 token = api.api_client_authorizations().create(body={"api_client_authorization":{"scopes": [
     "GET /arvados/v1/collections/%s" % collection_uuid,
     "GET /arvados/v1/collections/%s/" % collection_uuid,
@@ -184,8 +185,8 @@ Note, if two collections have files of the same name, the contents will be conca
 import arvados
 import arvados.collection
 api = arvados.api()
-project_uuid = "qr1hi-tpzed-zzzzzzzzzzzzzzz"
-collection_uuids = ["qr1hi-4zz18-aaaaaaaaaaaaaaa", "qr1hi-4zz18-bbbbbbbbbbbbbbb"]
+project_uuid = "zzzzz-tpzed-zzzzzzzzzzzzzzz"
+collection_uuids = ["zzzzz-4zz18-aaaaaaaaaaaaaaa", "zzzzz-4zz18-bbbbbbbbbbbbbbb"]
 combined_manifest = ""
 for u in collection_uuids:
     c = api.collections().get(uuid=u).execute()
@@ -200,7 +201,7 @@ h2. Upload a file into a new collection
 import arvados
 import arvados.collection
 
-project_uuid = "qr1hi-j7d0g-zzzzzzzzzzzzzzz"
+project_uuid = "zzzzz-j7d0g-zzzzzzzzzzzzzzz"
 collection_name = "My collection"
 filename = "file1.txt"
 
@@ -222,7 +223,7 @@ h2. Download a file from a collection
 import arvados
 import arvados.collection
 
-collection_uuid = "qr1hi-4zz18-zzzzzzzzzzzzzzz"
+collection_uuid = "zzzzz-4zz18-zzzzzzzzzzzzzzz"
 filename = "file1.txt"
 
 api = arvados.api()
