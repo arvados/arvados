@@ -162,9 +162,12 @@ temp_preserve=
 
 clear_temp() {
     if [[ -z "$temp" ]]; then
-        # we didn't even get as far as making a temp dir
+        # we did not even get as far as making a temp dir
         :
     elif [[ -z "$temp_preserve" ]]; then
+        # Go creates readonly dirs in the module cache, which cause
+        # "rm -rf" to fail unless we chmod first.
+        chmod -R u+w "$temp"
         rm -rf "$temp"
     else
         echo "Leaving behind temp dirs in $temp"

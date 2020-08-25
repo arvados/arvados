@@ -497,6 +497,7 @@ case "$subcmd" in
                     exit 1
                 fi
                 set -x
+                chmod -R u+w "$ARVBOX_DATA"
                 rm -rf "$ARVBOX_DATA"
             else
                 if test "$1" != -f ; then
