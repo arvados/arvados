@@ -38,7 +38,7 @@ func (s *FederationSuite) SetUpTest(c *check.C) {
 		ClusterID:       "aaaaa",
 		SystemRootToken: arvadostest.SystemRootToken,
 		RemoteClusters: map[string]arvados.RemoteCluster{
-			"aaaaa": arvados.RemoteCluster{
+			"aaaaa": {
 				Host: os.Getenv("ARVADOS_API_HOST"),
 			},
 		},
