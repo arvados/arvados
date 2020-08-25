@@ -39,7 +39,7 @@ h2. Applying policy to existing tokens
 
 If you have an existing Arvados installation and want to set a token lifetime policy, there may be user tokens already granted.  The administrator can use the following @rake@ tasks to enforce the new policy.
 
-The @db:check_long_lived_tokens@ will list which users have tokens with no expiration date.
+The @db:check_long_lived_tokens@ task will list which users have tokens with no expiration date.
 
 <notextile>
 <pre><code># <span class="userinput">bundle exec rake db:check_long_lived_tokens</span>
@@ -59,4 +59,4 @@ Setting token expiration to: 2020-08-25 03:30:50 +0000
 </code></pre>
 </notextile>
 
-NOTE: These rake tasks adjust the expiration of all tokens except those belonging to the system root user (@zzzzz-tpzed-000000000000000@).  If you have tokens used by automated service accouts that need to be long-lived, you can "create tokens that don't expire using the command line":user-management-cli.html#create-token .
+NOTE: These rake tasks adjust the expiration of all tokens except those belonging to the system root user (@zzzzz-tpzed-000000000000000@).  If you have tokens used by automated service accounts that need to be long-lived, you can "create tokens that don't expire using the command line":user-management-cli.html#create-token .
