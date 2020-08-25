@@ -189,6 +189,16 @@ module CurrentApiClient
     end
   end
 
+  def system_root_token_api_client
+    $system_root_token_api_client = check_cache $system_root_token_api_client do
+      act_as_system_user do
+        ActiveRecord::Base.transaction do
+          ApiClient.find_or_create_by!(is_trusted: true, url_prefix: "SystemRootToken")
+        end
+      end
+    end
+  end
+
   def empty_collection_pdh
     'd41d8cd98f00b204e9800998ecf8427e+0'
   end

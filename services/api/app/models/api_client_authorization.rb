@@ -113,7 +113,7 @@ class ApiClientAuthorization < ArvadosModel
       return ApiClientAuthorization.new(user: User.find_by_uuid(system_user_uuid),
                                         uuid: Rails.configuration.ClusterID+"-gj3su-000000000000000",
                                         api_token: token,
-                                        api_client: ApiClient.new(is_trusted: true, url_prefix: ""))
+                                        api_client: system_root_token_api_client)
     else
       return nil
     end
