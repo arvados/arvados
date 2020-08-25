@@ -549,7 +549,7 @@ setup_ruby_environment() {
         echo "Will install dependencies to $(gem env gemdir)"
         echo "Will install arvados gems to $tmpdir_gem_home"
         echo "Gem search path is GEM_PATH=$GEM_PATH"
-        bundle="$(gem env gempath | cut -f1 -d:)/bin/bundle"
+        bundle="$(gem env gemdir)/bin/bundle"
         (
             export HOME=$GEMHOME
             bundlers="$(gem list --details bundler)"
