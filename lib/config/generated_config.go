@@ -714,6 +714,11 @@ Clusters:
       # remain valid before it needs to be revalidated.
       RemoteTokenRefresh: 5m
 
+      # How long a client token created from a login flow will be valid without
+      # asking the user to re-login. Example values: 60m, 8h.
+      # Default value zero means tokens don't have expiration.
+      TokenLifetime: 0s
+
     Git:
       # Path to git or gitolite-shell executable. Each authenticated
       # request will execute this program with the single argument "http-backend"

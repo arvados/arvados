@@ -183,6 +183,7 @@ type Cluster struct {
 		}
 		LoginCluster       string
 		RemoteTokenRefresh Duration
+		TokenLifetime      Duration
 	}
 	Mail struct {
 		MailchimpAPIKey                string

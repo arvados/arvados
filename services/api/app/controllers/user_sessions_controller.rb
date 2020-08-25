@@ -147,10 +147,15 @@ class UserSessionsController < ApplicationController
         find_or_create_by(url_prefix: api_client_url_prefix)
     end
 
+    token_expiration = nil
+    if Rails.configuration.Login.TokenLifetime > 0
+      token_expiration = Time.now + Rails.configuration.Login.TokenLifetime
+    end
     @api_client_auth = ApiClientAuthorization.
       new(user: user,
           api_client: @api_client,
           created_by_ip_address: remote_ip,
+          expires_at: token_expiration,
           scopes: ["all"])
     @api_client_auth.save!
 
