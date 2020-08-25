@@ -1,7 +1,7 @@
 ---
 layout: default
 navsection: userguide
-title: "Accessing Keep from Windows"
+title: "Access Keep from Windows File Explorer"
 ...
 {% comment %}
 Copyright (C) The Arvados Authors. All rights reserved.
@@ -11,7 +11,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 Windows users can browse Keep read-only via WebDAV. Specific collections can also be accessed read-write via WebDAV.
 
-h3. Browsing Keep (read-only)
+h3. Browsing Keep in File Explorer (read-only)
 
 Use the 'Map network drive' functionality, and enter @https://collections.ClusterID.example.com/@ in the Folder field. When prompted for credentials, you can fill in an arbitrary string for @Username@, it is ignored by Arvados. Windows will not accept an empty @Username@. Put a valid Arvados token in the @Password@ field.
 

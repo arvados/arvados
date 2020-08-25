@@ -9,60 +9,11 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-Arvados Data collections can be uploaded using either the @arv-put@ command line tool or using Workbench.
+Arvados Data collections can be uploaded using either Workbench or the @arv-put@ command line tool.
 
-# "*Upload using command line tool*":#upload-using-command
 # "*Upload using Workbench*":#upload-using-workbench
-
-notextile. <div class="spaced-out">
-
-h2(#upload-using-command). Upload using command line tool
-
-{% include 'tutorial_expectations' %}
-
-To upload a file to Keep using @arv-put@:
-<notextile>
-<pre><code>~$ <span class="userinput">arv-put var-GS000016015-ASM.tsv.bz2</span>
-216M / 216M 100.0%
-Collection saved as ...
-qr1hi-4zz18-xxxxxxxxxxxxxxx
-</code></pre>
-</notextile>
-
-
-The output value @qr1hi-4zz18-xxxxxxxxxxxxxxx@ is the uuid of the Arvados collection created.
-
-Note: The file used in this example is a freely available TSV file containing variant annotations from the "Personal Genome Project (PGP)":http://www.pgp-hms.org participant "hu599905":https://my.pgp-hms.org/profile/hu599905), downloadable "here":https://warehouse.pgp-hms.org/warehouse/f815ec01d5d2f11cb12874ab2ed50daa+234+K@ant/var-GS000016015-ASM.tsv.bz2. Alternatively, you can replace @var-GS000016015-ASM.tsv.bz2@ with the name of any file you have locally, or you could get the TSV file by "downloading it from Keep.":{{site.baseurl}}/user/tutorials/tutorial-keep-get.html
-
-<notextile><a name="dir"></a></notextile>It is also possible to upload an entire directory with @arv-put@:
-
-<notextile>
-<pre><code>~$ <span class="userinput">mkdir tmp</span>
-~$ <span class="userinput">echo "hello alice" > tmp/alice.txt</span>
-~$ <span class="userinput">echo "hello bob" > tmp/bob.txt</span>
-~$ <span class="userinput">echo "hello carol" > tmp/carol.txt</span>
-~$ <span class="userinput">arv-put tmp</span>
-0M / 0M 100.0%
-Collection saved as ...
-qr1hi-4zz18-yyyyyyyyyyyyyyy
-</code></pre>
-</notextile>
-
-In both examples, the @arv-put@ command created a collection. The first collection contains the single uploaded file. The second collection contains the entire uploaded directory.
-
-@arv-put@ accepts quite a few optional command line arguments, which are described on the "arv subcommands":{{site.baseurl}}/sdk/cli/subcommands.html#arv-keep-put page.
-
-h3. Locate your collection in Workbench
-
-Visit the Workbench *Dashboard*.  Click on *Projects*<span class="caret"></span> dropdown menu in the top navigation menu, select your *Home* project.  Your newly uploaded collection should appear near the top of the *Data collections* tab.  The collection name printed by @arv-put@ will appear under the *name* column.
-
-To move the collection to a different project, check the box at the left of the collection row.  Pull down the *Selection...*<span class="caret"></span> menu near the top of the page tab, and select *Move selected...* button. This will open a dialog box where you can select a destination project for the collection.  Click a project, then finally the <span class="btn btn-sm btn-primary">Move</span> button.
-
-!{display: block;margin-left: 25px;margin-right: auto;}{{ site.baseurl }}/images/workbench-move-selected.png!
-
-Click on the *<i class="fa fa-fw fa-archive"></i> Show* button next to the collection's listing on a project page to go to the Workbench page for your collection.  On this page, you can see the collection's contents, download individual files, and set sharing options.
-
-notextile. </div>
+# "*Creating projects*":#creating-projects
+# "*Upload using command line tool*":#upload-using-command
 
 h2(#upload-using-workbench). Upload using Workbench
 
@@ -83,3 +34,63 @@ Click on the *Browse...* button and select the files you would like to upload. S
 *Note:* If you leave the collection page during the upload, the upload process will be aborted and you will need to upload the files again.
 
 *Note:* You can also use the Upload tab to add additional files to an existing collection.
+
+notextile. <div class="spaced-out">
+
+h2(#creating-projects). Creating projects
+
+Files are organized into Collections, and Collections are organized by Projects.
+
+Click on *Projects*<span class="caret"></span> <span class="rarr">&rarr;</span> <i class="fa fa-fw fa-plus"></i>*Add a new project* to add a top level project.
+
+To create a subproject, navigate to the parent project, and click on <i class="fa fa-fw fa-plus"></i>*Add a subproject*.
+
+See "Sharing collections":tutorial-keep-get.html#download-shared-collection for information about sharing projects and collections with other users.
+
+h2(#upload-using-command). Upload using command line tool
+
+{% include 'tutorial_expectations' %}
+
+To upload a file to Keep using @arv-put@:
+<notextile>
+<pre><code>~$ <span class="userinput">arv-put var-GS000016015-ASM.tsv.bz2</span>
+216M / 216M 100.0%
+Collection saved as ...
+zzzzz-4zz18-xxxxxxxxxxxxxxx
+</code></pre>
+</notextile>
+
+
+The output value @zzzzz-4zz18-xxxxxxxxxxxxxxx@ is the uuid of the Arvados collection created.
+
+Note: The file used in this example is a freely available TSV file containing variant annotations from the "Personal Genome Project (PGP)":http://www.pgp-hms.org participant "hu599905":https://my.pgp-hms.org/profile/hu599905), downloadable "here":https://warehouse.pgp-hms.org/warehouse/f815ec01d5d2f11cb12874ab2ed50daa+234+K@ant/var-GS000016015-ASM.tsv.bz2. Alternatively, you can replace @var-GS000016015-ASM.tsv.bz2@ with the name of any file you have locally, or you could get the TSV file by "downloading it from Keep.":{{site.baseurl}}/user/tutorials/tutorial-keep-get.html
+
+<notextile><a name="dir"></a></notextile>It is also possible to upload an entire directory with @arv-put@:
+
+<notextile>
+<pre><code>~$ <span class="userinput">mkdir tmp</span>
+~$ <span class="userinput">echo "hello alice" > tmp/alice.txt</span>
+~$ <span class="userinput">echo "hello bob" > tmp/bob.txt</span>
+~$ <span class="userinput">echo "hello carol" > tmp/carol.txt</span>
+~$ <span class="userinput">arv-put tmp</span>
+0M / 0M 100.0%
+Collection saved as ...
+zzzzz-4zz18-yyyyyyyyyyyyyyy
+</code></pre>
+</notextile>
+
+In both examples, the @arv-put@ command created a collection. The first collection contains the single uploaded file. The second collection contains the entire uploaded directory.
+
+@arv-put@ accepts quite a few optional command line arguments, which are described on the "arv subcommands":{{site.baseurl}}/sdk/cli/subcommands.html#arv-keep-put page.
+
+h3. Locate your collection in Workbench
+
+Visit the Workbench *Dashboard*.  Click on *Projects*<span class="caret"></span> dropdown menu in the top navigation menu, select your *Home* project.  Your newly uploaded collection should appear near the top of the *Data collections* tab.  The collection name printed by @arv-put@ will appear under the *name* column.
+
+To move the collection to a different project, check the box at the left of the collection row.  Pull down the *Selection...*<span class="caret"></span> menu near the top of the page tab, and select *Move selected...* button. This will open a dialog box where you can select a destination project for the collection.  Click a project, then finally the <span class="btn btn-sm btn-primary">Move</span> button.
+
+!{display: block;margin-left: 25px;margin-right: auto;}{{ site.baseurl }}/images/workbench-move-selected.png!
+
+Click on the *<i class="fa fa-fw fa-archive"></i> Show* button next to the collection's listing on a project page to go to the Workbench page for your collection.  On this page, you can see the collection's contents, download individual files, and set sharing options.
+
+notextile. </div>

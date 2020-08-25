@@ -1,7 +1,7 @@
 ---
 layout: default
 navsection: userguide
-title: "Using arvados-cwl-runner"
+title: "arvados-cwl-runner options"
 ...
 {% comment %}
 Copyright (C) The Arvados Authors. All rights reserved.
@@ -74,10 +74,10 @@ Use the @--name@ and @--output-name@ options to specify the name of the workflow
 <pre><code>~/arvados/doc/user/cwl/bwa-mem$ <span class="userinput">arvados-cwl-runner --name "Example bwa run" --output-name "Example bwa output" bwa-mem.cwl bwa-mem-input.yml</span>
 arvados-cwl-runner 1.0.20160628195002, arvados-python-client 0.1.20160616015107, cwltool 1.0.20160629140624
 2016-06-30 14:56:36 arvados.arv-run[27002] INFO: Upload local files: "bwa-mem.cwl"
-2016-06-30 14:56:36 arvados.arv-run[27002] INFO: Uploaded to qr1hi-4zz18-h7ljh5u76760ww2
-2016-06-30 14:56:40 arvados.cwl-runner[27002] INFO: Submitted job qr1hi-8i9sb-fm2n3b1w0l6bskg
-2016-06-30 14:56:41 arvados.cwl-runner[27002] INFO: Job bwa-mem.cwl (qr1hi-8i9sb-fm2n3b1w0l6bskg) is Running
-2016-06-30 14:57:12 arvados.cwl-runner[27002] INFO: Job bwa-mem.cwl (qr1hi-8i9sb-fm2n3b1w0l6bskg) is Complete
+2016-06-30 14:56:36 arvados.arv-run[27002] INFO: Uploaded to zzzzz-4zz18-h7ljh5u76760ww2
+2016-06-30 14:56:40 arvados.cwl-runner[27002] INFO: Submitted job zzzzz-8i9sb-fm2n3b1w0l6bskg
+2016-06-30 14:56:41 arvados.cwl-runner[27002] INFO: Job bwa-mem.cwl (zzzzz-8i9sb-fm2n3b1w0l6bskg) is Running
+2016-06-30 14:57:12 arvados.cwl-runner[27002] INFO: Job bwa-mem.cwl (zzzzz-8i9sb-fm2n3b1w0l6bskg) is Complete
 2016-06-30 14:57:12 arvados.cwl-runner[27002] INFO: Overall process status is success
 {
     "aligned_sam": {
@@ -98,9 +98,9 @@ To submit a workflow and exit immediately, use the @--no-wait@ option.  This wil
 <pre><code>~/arvados/doc/user/cwl/bwa-mem$ <span class="userinput">arvados-cwl-runner --no-wait bwa-mem.cwl bwa-mem-input.yml</span>
 arvados-cwl-runner 1.0.20160628195002, arvados-python-client 0.1.20160616015107, cwltool 1.0.20160629140624
 2016-06-30 15:07:52 arvados.arv-run[12480] INFO: Upload local files: "bwa-mem.cwl"
-2016-06-30 15:07:52 arvados.arv-run[12480] INFO: Uploaded to qr1hi-4zz18-eqnfwrow8aysa9q
-2016-06-30 15:07:52 arvados.cwl-runner[12480] INFO: Submitted job qr1hi-8i9sb-fm2n3b1w0l6bskg
-qr1hi-8i9sb-fm2n3b1w0l6bskg
+2016-06-30 15:07:52 arvados.arv-run[12480] INFO: Uploaded to zzzzz-4zz18-eqnfwrow8aysa9q
+2016-06-30 15:07:52 arvados.cwl-runner[12480] INFO: Submitted job zzzzz-8i9sb-fm2n3b1w0l6bskg
+zzzzz-8i9sb-fm2n3b1w0l6bskg
 </code></pre>
 </notextile>
 
@@ -111,10 +111,10 @@ To run a workflow with local control, use @--local@.  This means that the host w
 <notextile>
 <pre><code>~/arvados/doc/user/cwl/bwa-mem$ <span class="userinput">arvados-cwl-runner --local bwa-mem.cwl bwa-mem-input.yml</span>
 arvados-cwl-runner 1.0.20160628195002, arvados-python-client 0.1.20160616015107, cwltool 1.0.20160629140624
-2016-07-01 10:05:19 arvados.cwl-runner[16290] INFO: Pipeline instance qr1hi-d1hrv-92wcu6ldtio74r4
-2016-07-01 10:05:28 arvados.cwl-runner[16290] INFO: Job bwa-mem.cwl (qr1hi-8i9sb-2nzzfbuf9zjrj4g) is Queued
-2016-07-01 10:05:29 arvados.cwl-runner[16290] INFO: Job bwa-mem.cwl (qr1hi-8i9sb-2nzzfbuf9zjrj4g) is Running
-2016-07-01 10:05:45 arvados.cwl-runner[16290] INFO: Job bwa-mem.cwl (qr1hi-8i9sb-2nzzfbuf9zjrj4g) is Complete
+2016-07-01 10:05:19 arvados.cwl-runner[16290] INFO: Pipeline instance zzzzz-d1hrv-92wcu6ldtio74r4
+2016-07-01 10:05:28 arvados.cwl-runner[16290] INFO: Job bwa-mem.cwl (zzzzz-8i9sb-2nzzfbuf9zjrj4g) is Queued
+2016-07-01 10:05:29 arvados.cwl-runner[16290] INFO: Job bwa-mem.cwl (zzzzz-8i9sb-2nzzfbuf9zjrj4g) is Running
+2016-07-01 10:05:45 arvados.cwl-runner[16290] INFO: Job bwa-mem.cwl (zzzzz-8i9sb-2nzzfbuf9zjrj4g) is Complete
 2016-07-01 10:05:46 arvados.cwl-runner[16290] INFO: Overall process status is success
 {
     "aligned_sam": {

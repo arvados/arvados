@@ -38,7 +38,7 @@ notextile. <pre><code>~$ <span class="userinput">cd /scratch/<b>you</b></span>
 
 When you run this command, you may get this API warning:
 
-notextile. <pre><code>WARNING:root:API lookup failed for collection 204e43b8a1185621ca55a94839582e6f+67108864 (&lt;class 'apiclient.errors.HttpError'&gt;: &lt;HttpError 404 when requesting https://qr1hi.arvadosapi.com/arvados/v1/collections/204e43b8a1185621ca55a94839582e6f%2B67108864?alt=json returned "Not Found"&gt;)</code></pre>
+notextile. <pre><code>WARNING:root:API lookup failed for collection 204e43b8a1185621ca55a94839582e6f+67108864 (&lt;class 'apiclient.errors.HttpError'&gt;: &lt;HttpError 404 when requesting https://zzzzz.arvadosapi.com/arvados/v1/collections/204e43b8a1185621ca55a94839582e6f%2B67108864?alt=json returned "Not Found"&gt;)</code></pre>
 
 This happens because @arv-get@ tries to find a collection with this identifier.  When that fails, it emits this warning, then looks for a datablock instead, which succeeds.
 

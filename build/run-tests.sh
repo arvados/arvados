@@ -1012,7 +1012,7 @@ test_doc() {
     (
         set -e
         cd "$WORKSPACE/doc"
-        ARVADOS_API_HOST=qr1hi.arvadosapi.com
+        ARVADOS_API_HOST=pirca.arvadosapi.com
         # Make sure python-epydoc is installed or the next line won't
         # do much good!
         PYTHONPATH=$WORKSPACE/sdk/python/ "$bundle" exec rake linkchecker baseurl=file://$WORKSPACE/doc/.site/ arvados_workbench_host=https://workbench.$ARVADOS_API_HOST arvados_api_host=$ARVADOS_API_HOST

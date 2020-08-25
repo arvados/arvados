@@ -1,7 +1,7 @@
 ---
 layout: default
 navsection: userguide
-title: "Customizing Crunch environment using Docker"
+title: "Working with Docker images"
 ...
 {% comment %}
 Copyright (C) The Arvados Authors. All rights reserved.
@@ -9,145 +9,80 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-This page describes how to customize the runtime environment (e.g., the programs, libraries, and other dependencies needed to run a job) that a crunch script will be run in using "Docker.":https://www.docker.com/  Docker is a tool for building and running containers that isolate applications from other applications running on the same node.  For detailed information about Docker, see the "Docker User Guide.":https://docs.docker.com/userguide/
+This page describes how to set up the runtime environment (e.g., the programs, libraries, and other dependencies needed to run a job) that a workflow step will be run in using "Docker.":https://www.docker.com/  Docker is a tool for building and running containers that isolate applications from other applications running on the same node.  For detailed information about Docker, see the "Docker User Guide.":https://docs.docker.com/userguide/
 
-This page will demonstrate how to:
+This page describes:
 
-# Fetch the arvados/jobs Docker image
-# Manually install additional software into the container
-# Create a new custom image
-# Upload that image to Arvados for use by Crunch jobs
-# Share your image with others
+# "Create a custom image using a Dockerfile":#create
+# "Uploading an image to Arvados":#upload
+# "Sources of pre-built bioinformatics Docker images":#sources
 
 {% include 'tutorial_expectations_workstation' %}
 
 You also need ensure that "Docker is installed,":https://docs.docker.com/installation/ the Docker daemon is running, and you have permission to access Docker.  You can test this by running @docker version@.  If you receive a permission denied error, your user account may need to be added to the @docker@ group.  If you have root access, you can add yourself to the @docker@ group using @$ sudo addgroup $USER docker@ then log out and log back in again; otherwise consult your local sysadmin.
 
-h2. Fetch a starting image
+h2(#create). Create a custom image using a Dockerfile
 
-The easiest way to begin is to start from the "arvados/jobs" image which already has the Arvados SDK installed along with other configuration required for use with Crunch.
+This example shows how to create a Docker image and add the R package.
 
-Download the latest "arvados/jobs" image from the Docker registry:
+First, create new directory called @docker-example@, in that directory create a file called @Dockerfile@.
 
 <notextile>
-<pre><code>$ <span class="userinput">docker pull arvados/jobs:latest</span>
-Pulling repository arvados/jobs
-3132168f2acb: Download complete
-a42b7f2c59b6: Download complete
-e5afdf26a7ae: Download complete
-5cae48636278: Download complete
-7a4f91b70558: Download complete
-a04a275c1fd6: Download complete
-c433ff206a22: Download complete
-b2e539b45f96: Download complete
-073b2581c6be: Download complete
-593915af19dc: Download complete
-32260b35005e: Download complete
-6e5b860c1cde: Download complete
-95f0bfb43d4d: Download complete
-c7fd77eedb96: Download complete
-0d7685aafd00: Download complete
+<pre><code>$ <span class="userinput">mkdir docker-example-r-base</span>
+$ <span class="userinput">cd docker-example-r-base</span>
 </code></pre>
 </notextile>
 
-h2. Install new packages
-
-Next, enter the container using @docker run@, providing the arvados/jobs image and the program you want to run (in this case the bash shell).
-
 <notextile>
-<pre><code>$ <span class="userinput">docker run --interactive --tty --user root arvados/jobs /bin/bash</span>
-root@fbf1d0f529d5:/#
+<pre><code>FROM ubuntu:bionic
+RUN apt-get update && apt-get -yq --no-install-recommends install r-base-core
 </code></pre>
 </notextile>
 
-Next, update the package list using @apt-get update@.
+The "RUN" command is executed inside the container and can be any shell command line.  You are not limited to installing Debian packages.  You may compile programs or libraries from source and install them, edit systemwide configuration files, use other package managers such as @pip@ or @gem@, and perform any other customization necessary to run your program.
+
+You can also visit the "Docker tutorial":https://docs.docker.com/get-started/part2/ for more information and examples.
+
+You should add your Dockerfiles to the same source control repository as the Workflows that use them.
+
+h3. Create a new image
+
+We're now ready to create a new Docker image.  Use @docker build@ to create a new image from the Dockerfile.
 
 <notextile>
-<pre><code>root@fbf1d0f529d5:/# apt-get update
-Get:2 http://apt.arvados.org stretch-dev InRelease [3260 B]
-Get:1 http://security-cdn.debian.org/debian-security stretch/updates InRelease [94.3 kB]
-Ign:3 http://cdn-fastly.deb.debian.org/debian stretch InRelease
-Get:4 http://cdn-fastly.deb.debian.org/debian stretch-updates InRelease [91.0 kB]
-Get:5 http://apt.arvados.org stretch-dev/main amd64 Packages [208 kB]
-Get:6 http://cdn-fastly.deb.debian.org/debian stretch Release [118 kB]
-Get:7 http://security-cdn.debian.org/debian-security stretch/updates/main amd64 Packages [499 kB]
-Get:8 http://cdn-fastly.deb.debian.org/debian stretch Release.gpg [2434 B]
-Get:9 http://cdn-fastly.deb.debian.org/debian stretch-updates/main amd64 Packages.diff/Index [10.6 kB]
-Get:10 http://cdn-fastly.deb.debian.org/debian stretch-updates/main amd64 Packages 2019-07-08-0821.07.pdiff [445 B]
-Get:10 http://cdn-fastly.deb.debian.org/debian stretch-updates/main amd64 Packages 2019-07-08-0821.07.pdiff [445 B]
-Fetched 1026 kB in 0s (1384 kB/s)
-Reading package lists... Done
+<pre><code>docker-example-r-base$ <span class="userinput">docker build -t docker-example-r-base .</span>
 </code></pre>
 </notextile>
 
-In this example, we will install the "R" statistical language Debian package "r-base-core".  Use @apt-get install@:
-
-<notextile>
-<pre><code>root@fbf1d0f529d5:/# <span class="userinput">apt-get install r-base-core</span>
-Reading package lists... Done
-Building dependency tree
-Reading state information... Done
-The following additional packages will be installed:
-[...]
-done.
-</code></pre>
-</notextile>
+h3. Verify image
 
 Now we can verify that "R" is installed:
 
 <notextile>
-<pre><code>root@fbf1d0f529d5:/# <span class="userinput">R</span>
+<pre><code>$ <span class="userinput">docker run -ti docker-example-r-base</span>
+root@57ec8f8b2663:/# R
 
-R version 3.3.3 (2017-03-06) -- "Another Canoe"
-Copyright (C) 2017 The R Foundation for Statistical Computing
+R version 3.4.4 (2018-03-15) -- "Someone to Lean On"
+Copyright (C) 2018 The R Foundation for Statistical Computing
 Platform: x86_64-pc-linux-gnu (64-bit)
-
-R is free software and comes with ABSOLUTELY NO WARRANTY.
-You are welcome to redistribute it under certain conditions.
-Type 'license()' or 'licence()' for distribution details.
-
-R is a collaborative project with many contributors.
-Type 'contributors()' for more information and
-'citation()' on how to cite R or R packages in publications.
-
-Type 'demo()' for some demos, 'help()' for on-line help, or
-'help.start()' for an HTML browser interface to help.
-Type 'q()' to quit R.
-
->
 </code></pre>
 </notextile>
 
-Note that you are not limited to installing Debian packages.  You may compile programs or libraries from source and install them, edit systemwide configuration files, use other package managers such as @pip@ or @gem@, and perform any other customization necessary to run your program.
-
-h2. Create a new image
-
-We're now ready to create a new Docker image.  First, quit the container, then use @docker commit@ to create a new image from the stopped container.  The container id can be found in the default hostname of the container displayed in the prompt, in this case @fbf1d0f529d5@:
-
-<notextile>
-<pre><code>root@fbf1d0f529d5:/# <span class="userinput">exit</span>
-$ <span class="userinput">docker commit fbf1d0f529d5 arvados/jobs-with-r</span>
-sha256:2818853ff9f9af5d7f77979803baac9c4710790ad2b84c1a754b02728fdff205
-$ <span class="userinput">docker images</span>
-$ docker images |head
-REPOSITORY            TAG                 IMAGE ID            CREATED             SIZE
-arvados/jobs-with-r   latest              2818853ff9f9        9 seconds ago       703.1 MB
-arvados/jobs          latest              12b9f859d48c        4 days ago          362 MB
-</code></pre>
-</notextile>
-
-h2. Upload your image
+h2(#upload). Upload your image
 
 Finally, we are ready to upload the new Docker image to Arvados.  Use @arv-keepdocker@ with the image repository name to upload the image.  Without arguments, @arv-keepdocker@ will print out the list of Docker images in Arvados that are available to you.
 
 <notextile>
-<pre><code>$ <span class="userinput">arv-keepdocker arvados/jobs-with-r</span>
-703M / 703M 100.0%
-Collection saved as 'Docker image arvados/jobs-with-r:latest 2818853ff9f9'
-qr1hi-4zz18-abcdefghijklmno
-$ <span class="userinput">arv-keepdocker</span>
+<pre><code>$ <span class="userinput">arv-keepdocker docker-example-r-base</span>
+2020-06-29 13:48:19 arvados.arv_put[769] INFO: Creating new cache file at /home/peter/.cache/arvados/arv-put/39ddb51ebf6c5fcb3d713b5969466967
+206M / 206M 100.0% 2020-06-29 13:48:21 arvados.arv_put[769] INFO:
+
+2020-06-29 13:48:21 arvados.arv_put[769] INFO: Collection saved as 'Docker image docker-example-r-base:latest sha256:edd10'
+zzzzz-4zz18-0tayximqcyb6uf8
+
+$ <span class="userinput">arv-keepdocker images</span>
 REPOSITORY                      TAG         IMAGE ID      COLLECTION                     CREATED
-arvados/jobs-with-r             latest      2818853ff9f9  qr1hi-4zz18-abcdefghijklmno    Tue Jan 17 20:35:53 2017
+docker-example-r-base           latest      sha256:edd10  zzzzz-4zz18-0tayximqcyb6uf8    Mon Jun 29 17:46:16 2020
 </code></pre>
 </notextile>
 
@@ -156,14 +91,24 @@ You are now able to specify the runtime environment for your program using @Dock
 <pre>
 hints:
   DockerRequirement:
-    dockerPull: arvados/jobs-with-r
+    dockerPull: docker-example-r-base
 </pre>
 
-h2. Share Docker images
+h3. Uploading Docker images to a shared project
 
-Docker images are subject to normal Arvados permissions.  If wish to share your Docker image with others (or wish to share a pipeline template that uses your Docker image) you will need to use @arv-keepdocker@ with the @--project-uuid@ option to upload the image to a shared project.
+Docker images are subject to normal Arvados permissions.  If wish to share your Docker image with others you should use @arv-keepdocker@ with the @--project-uuid@ option to add the image to a shared project and ensure that metadata is set correctly.
 
 <notextile>
-<pre><code>$ <span class="userinput">arv-keepdocker arvados/jobs-with-r --project-uuid qr1hi-j7d0g-xxxxxxxxxxxxxxx</span>
+<pre><code>$ <span class="userinput">arv-keepdocker docker-example-r-base --project-uuid zzzzz-j7d0g-xxxxxxxxxxxxxxx</span>
 </code></pre>
 </notextile>
+
+h2(#sources). Sources of pre-built images
+
+In addition to creating your own contianers, there are a number of resources where you can find bioinformatics tools already wrapped in container images:
+
+"BioContainers":https://biocontainers.pro/
+
+"Dockstore":https://dockstore.org/
+
+"Docker Hub":https://hub.docker.com/

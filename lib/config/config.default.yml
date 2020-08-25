@@ -1314,7 +1314,7 @@ Clusters:
       # a link to the multi-site search page on a "home" Workbench site.
       #
       # Example:
-      #   https://workbench.qr1hi.arvadosapi.com/collections/multisite
+      #   https://workbench.zzzzz.arvadosapi.com/collections/multisite
       MultiSiteSearch: ""
 
       # Should workbench allow management of local git repositories? Set to false if
