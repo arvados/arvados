@@ -70,7 +70,7 @@ type LoginPanelProps = DispatchProp<any> & WithStyles<CssRules> & {
     passwordLogin: boolean,
 };
 
-const loginOptions = ['LDAP', 'PAM'];
+const loginOptions = ['LDAP', 'PAM', 'Test'];
 
 export const requirePasswordLogin = (config: Config): boolean => {
     if (config && config.clusterConfig && config.clusterConfig.Login) {
