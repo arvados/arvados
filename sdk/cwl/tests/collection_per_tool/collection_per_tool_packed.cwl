@@ -6,6 +6,12 @@
     "$graph": [
         {
             "class": "Workflow",
+            "hints": [
+                {
+                    "acrContainerImage": "999999999999999999999999999999d3+99",
+                    "class": "http://arvados.org/cwl#WorkflowRunnerResources"
+                }
+            ],
             "id": "#main",
             "inputs": [],
             "outputs": [],
