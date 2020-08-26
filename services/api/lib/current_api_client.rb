@@ -193,7 +193,7 @@ module CurrentApiClient
     $system_root_token_api_client = check_cache $system_root_token_api_client do
       act_as_system_user do
         ActiveRecord::Base.transaction do
-          ApiClient.find_or_create_by!(is_trusted: true, url_prefix: "SystemRootToken")
+          ApiClient.find_or_create_by!(is_trusted: true, url_prefix: "", name: "SystemRootToken")
         end
       end
     end
