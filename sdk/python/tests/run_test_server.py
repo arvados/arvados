@@ -660,7 +660,7 @@ def setup_config():
     health_httpd_external_port = find_available_port()
     keepproxy_port = find_available_port()
     keepproxy_external_port = find_available_port()
-    keepstore_ports = sorted([str(find_available_port()) for _ in xrange(0,4)])
+    keepstore_ports = sorted([str(find_available_port()) for _ in range(0,4)])
     keep_web_port = find_available_port()
     keep_web_external_port = find_available_port()
     keep_web_dl_port = find_available_port()
