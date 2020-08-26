@@ -28,7 +28,6 @@ else
     secret_token=$(cat /var/lib/arvados/api_secret_token)
     blob_signing_key=$(cat /var/lib/arvados/blob_signing_key)
     management_token=$(cat /var/lib/arvados/management_token)
-    sso_app_secret=$(cat /var/lib/arvados/sso_app_secret)
     database_pw=$(cat /var/lib/arvados/api_database_pw)
     vm_uuid=$(cat /var/lib/arvados/vm-uuid)
 
@@ -37,10 +36,6 @@ $RAILS_ENV:
   uuid_prefix: $uuid_prefix
   secret_token: $secret_token
   blob_signing_key: $blob_signing_key
-  sso_app_secret: $sso_app_secret
-  sso_app_id: arvados-server
-  sso_provider_url: "https://$localip:${services[sso]}"
-  sso_insecure: false
   workbench_address: "https://$localip/"
   websocket_address: "wss://$localip:${services[websockets-ssl]}/websocket"
   git_repo_ssh_base: "git@$localip:"

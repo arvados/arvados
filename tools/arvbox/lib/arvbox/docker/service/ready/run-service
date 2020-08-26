@@ -67,8 +67,7 @@ if ! [[ -z "$waiting" ]] ; then
 
         gemlockcount=0
         for l in /usr/src/arvados/services/api/Gemfile.lock \
-                     /usr/src/arvados/apps/workbench/Gemfile.lock \
-                     /usr/src/sso/Gemfile.lock ; do
+                     /usr/src/arvados/apps/workbench/Gemfile.lock ; do
             gc=$(cat $l \
                         | grep -vE "(GEM|PLATFORMS|DEPENDENCIES|BUNDLED|GIT|$^|remote:|specs:|revision:)" \
                         | sed 's/^ *//' | sed 's/(.*)//' | sed 's/ *$//' | sort | uniq | wc -l)
