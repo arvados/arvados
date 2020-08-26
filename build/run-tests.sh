@@ -478,7 +478,6 @@ interrupt() {
 trap interrupt INT
 
 setup_ruby_environment() {
-    set -x
     if [[ -s "$HOME/.rvm/scripts/rvm" ]] ; then
         source "$HOME/.rvm/scripts/rvm"
         using_rvm=true
@@ -939,7 +938,7 @@ install_services/api() {
     if [[ ! -e "$cert.pem" || "$(date -r "$cert.pem" +%s)" -lt 1512659226 ]]; then
         (
             dir="$WORKSPACE/services/api/tmp"
-            set -ex
+            set -e
             openssl req -newkey rsa:2048 -nodes -subj '/C=US/ST=State/L=City/CN=localhost' -out "$cert.csr" -keyout "$cert.key" </dev/null
             openssl x509 -req -in "$cert.csr" -signkey "$cert.key" -out "$cert.pem" -days 3650 -extfile <(printf 'subjectAltName=DNS:localhost,DNS:::1,DNS:0.0.0.0,DNS:127.0.0.1,IP:::1,IP:0.0.0.0,IP:127.0.0.1')
         ) || return 1
