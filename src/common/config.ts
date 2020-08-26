@@ -235,8 +235,8 @@ export const mockClusterConfigJSON = (config: Partial<ClusterConfigJSON>): Clust
             Enable: false,
         },
         Test: {
-            Enable: false;
-        }
+            Enable: false,
+        },
     },
     Collections: {
         ForwardSlashNameSubstitution: "",
