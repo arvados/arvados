@@ -109,7 +109,7 @@ ADD gitolite.rc \
     keep-setup.sh common.sh createusers.sh \
     logger runsu.sh waitforpostgres.sh \
     yml_override.py api-setup.sh \
-    go-setup.sh devenv.sh cluster-config.sh \
+    go-setup.sh devenv.sh cluster-config.sh edit_users.py \
     /usr/local/lib/arvbox/
 
 ADD runit /etc/runit
