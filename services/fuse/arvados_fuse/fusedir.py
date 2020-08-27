@@ -7,17 +7,17 @@ from __future__ import division
 from future.utils import viewitems
 from future.utils import itervalues
 from builtins import dict
+import apiclient
+import arvados
+import errno
+import functools
+import llfuse
 import logging
 import re
-import time
-import llfuse
-import arvados
-import apiclient
-import functools
+import sys
 import threading
-from apiclient import errors as apiclient_errors
-import errno
 import time
+from apiclient import errors as apiclient_errors
 
 from .fusefile import StringFile, ObjectFile, FuncToJSONFile, FuseArvadosFile
 from .fresh import FreshBase, convertTime, use_counter, check_update
@@ -689,7 +689,6 @@ and the directory will appear if it exists.
                 e = self.inodes.add_entry(ProjectDirectory(
                     self.inode, self.inodes, self.api, self.num_retries, project[u'items'][0]))
             else:
-                import sys
                 e = self.inodes.add_entry(CollectionDirectory(
                         self.inode, self.inodes, self.api, self.num_retries, k))
 
