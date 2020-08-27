@@ -72,7 +72,7 @@ const loginform = `
 	  }),
 	})
 	if (!resp.ok) {
-	  document.getElementById('error').innerHTML = 'authentication failed (default accounts are user/user, admin/admin)'
+	  document.getElementById('error').innerHTML = '<p>Authentication failed.</p><p>The "test login" users are defined in Clusters.[ClusterID].Login.Test.Users section of config.yml</p><p>If you are using arvbox, use "arvbox adduser" to add users.</p>'
 	  return
 	}
 	var redir = document.getElementById('return_to').value
