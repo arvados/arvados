@@ -54,11 +54,12 @@ const transformOrigin: PopoverOrigin = {
     horizontal: 0
 };
 
-const isProjectTrashed = (proj: GroupResource, resources: ResourcesState): boolean => {
+export const isProjectTrashed = (proj: GroupResource | undefined, resources: ResourcesState): boolean => {
+    if (proj === undefined) { return false; }
     if (proj.isTrashed) { return true; }
     if (extractUuidKind(proj.ownerUuid) === ResourceKind.USER) { return false; }
     const parentProj = getResource<GroupResource>(proj.ownerUuid)(resources);
-    return isProjectTrashed(parentProj!, resources);
+    return isProjectTrashed(parentProj, resources);
 };
 
 export const SidePanelButton = withStyles(styles)(
