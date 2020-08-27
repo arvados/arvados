@@ -131,7 +131,7 @@ func runProxy(c *C, bogusClientToken bool, loadKeepstoresFromConfig bool) *keepc
 		cluster.Services.Keepstore.InternalURLs = make(map[arvados.URL]arvados.ServiceInstance)
 	}
 
-	cluster.Services.Keepproxy.InternalURLs = map[arvados.URL]arvados.ServiceInstance{arvados.URL{Host: ":0"}: arvados.ServiceInstance{}}
+	cluster.Services.Keepproxy.InternalURLs = map[arvados.URL]arvados.ServiceInstance{{Host: ":0"}: {}}
 
 	listener = nil
 	go func() {
