@@ -6,6 +6,18 @@ import { isProjectTrashed } from './side-panel-button';
 
 describe('<SidePanelButton />', () => {
     describe('isProjectTrashed', () => {
+        it('should return false if project is undefined', () => {
+            // given
+            const proj = undefined;
+            const resources = {};
+
+            // when
+            const result = isProjectTrashed(proj, resources);
+
+            // then
+            expect(result).toBeFalsy();
+        });
+
         it('should return false if parent project is undefined', () => {
             // given
             const proj = {};
@@ -46,7 +58,7 @@ describe('<SidePanelButton />', () => {
             expect(result).toBeTruthy();
         });
 
-        it.only('should return false for undefined parent projects', () => {
+        it('should return false for undefined parent projects', () => {
             // given
             const proj = {
                 ownerUuid: 'ce8i5-j7d0g-000000000000000',
