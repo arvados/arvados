@@ -76,24 +76,29 @@ export const openSetWorkflowDialog = (workflow: WorkflowResource) =>
         }
     };
 
+export const getWorkflowRunnerSettings = (workflow: WorkflowResource) => {
+    const advancedFormValues = {};
+    Object.assign(advancedFormValues, DEFAULT_ADVANCED_FORM_VALUES);
+
+    const wf = getWorkflow(parseWorkflowDefinition(workflow));
+    const hints = wf ? wf.hints : undefined;
+    if (hints) {
+        const resc = hints.find(item => item.class === 'http://arvados.org/cwl#WorkflowRunnerResources') as WorkflowRunnerResources | undefined;
+        if (resc) {
+            if (resc.ramMin) { advancedFormValues[RAM_FIELD] = resc.ramMin; }
+            if (resc.coresMin) { advancedFormValues[VCPUS_FIELD] = resc.coresMin; }
+            if (resc.keep_cache) { advancedFormValues[KEEP_CACHE_RAM_FIELD] = resc.keep_cache; }
+            if (resc.acrContainerImage) { advancedFormValues[RUNNER_IMAGE_FIELD] = resc.acrContainerImage; }
+        }
+    }
+    return advancedFormValues;
+}
+
 export const setWorkflow = (workflow: WorkflowResource, isWorkflowChanged = true) =>
     (dispatch: Dispatch<any>, getState: () => RootState) => {
         const isStepChanged = getState().runProcessPanel.isStepChanged;
 
-        const advancedFormValues = {};
-        Object.assign(advancedFormValues, DEFAULT_ADVANCED_FORM_VALUES);
-
-        const wf = getWorkflow(parseWorkflowDefinition(workflow));
-        const hints = wf ? wf.hints : undefined;
-        if (hints) {
-            const resc = hints.find(item => item.class === 'http://arvados.org/cwl#WorkflowRunnerResources') as WorkflowRunnerResources | undefined;
-            if (resc) {
-                if (resc.ramMin) { advancedFormValues[RAM_FIELD] = resc.ramMin; }
-                if (resc.coresMin) { advancedFormValues[VCPUS_FIELD] = resc.coresMin; }
-                if (resc.keep_cache) { advancedFormValues[KEEP_CACHE_RAM_FIELD] = resc.keep_cache; }
-                if (resc.acrContainerImage) { advancedFormValues[RUNNER_IMAGE_FIELD] = resc.acrContainerImage; }
-            }
-        }
+        const advancedFormValues = getWorkflowRunnerSettings(workflow);
 
         if (isStepChanged && isWorkflowChanged) {
             dispatch(runProcessPanelActions.SET_STEP_CHANGED(false));
@@ -137,13 +142,13 @@ export const runProcess = async (dispatch: Dispatch<any>, getState: () => RootSt
     const state = getState();
     const basicForm = getFormValues(RUN_PROCESS_BASIC_FORM)(state) as RunProcessBasicFormData;
     const inputsForm = getFormValues(RUN_PROCESS_INPUTS_FORM)(state) as WorkflowInputsData;
-    const advancedForm = getFormValues(RUN_PROCESS_ADVANCED_FORM)(state) as RunProcessAdvancedFormData || DEFAULT_ADVANCED_FORM_VALUES;
     const userUuid = getUserUuid(getState());
     if (!userUuid) { return; }
     const pathname = getState().runProcessPanel.processPathname;
     const { processOwnerUuid, selectedWorkflow } = state.runProcessPanel;
     const ownerUUid = !matchProjectRoute(pathname) ? userUuid : processOwnerUuid;
     if (selectedWorkflow) {
+        const advancedForm = getFormValues(RUN_PROCESS_ADVANCED_FORM)(state) as RunProcessAdvancedFormData || getWorkflowRunnerSettings(selectedWorkflow);
         const newProcessData = {
             ownerUuid: ownerUUid,
             name: basicForm.name,
