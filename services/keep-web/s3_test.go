@@ -394,6 +394,23 @@ func (s *IntegrationSuite) TestS3GetBucketVersioning(c *check.C) {
 	}
 }
 
+// If there are no CommonPrefixes entries, the CommonPrefixes XML tag
+// should not appear at all.
+func (s *IntegrationSuite) TestS3ListNoCommonPrefixes(c *check.C) {
+	stage := s.s3setup(c)
+	defer stage.teardown(c)
+
+	req, err := http.NewRequest("GET", stage.collbucket.URL("/"), nil)
+	c.Assert(err, check.IsNil)
+	req.Header.Set("Authorization", "AWS "+arvadostest.ActiveTokenV2+":none")
+	req.URL.RawQuery = "prefix=asdfasdfasdf&delimiter=/"
+	resp, err := http.DefaultClient.Do(req)
+	c.Assert(err, check.IsNil)
+	buf, err := ioutil.ReadAll(resp.Body)
+	c.Assert(err, check.IsNil)
+	c.Check(string(buf), check.Not(check.Matches), `(?ms).*CommonPrefixes.*`)
+}
+
 func (s *IntegrationSuite) TestS3CollectionList(c *check.C) {
 	stage := s.s3setup(c)
 	defer stage.teardown(c)
