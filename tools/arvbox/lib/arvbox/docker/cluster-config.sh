@@ -104,8 +104,6 @@ Clusters:
         InternalURLs:
           "http://localhost:${services[keep-web]}/": {}
         ExternalURL: "https://$localip:${services[keep-web-ssl]}/"
-        InternalURLs:
-          "http://localhost:${services[keep-web]}/": {}
       Composer:
         ExternalURL: "https://$localip:${services[composer]}"
       Controller:
@@ -136,7 +134,7 @@ Clusters:
         Enable: true
     Users:
       NewUsersAreActive: true
-      AutoAdminUserWithEmail: admin@example.com
+      AutoAdminFirstUser: true
       AutoSetupNewUsers: true
       AutoSetupNewUsersWithVmUUID: $vm_uuid
       AutoSetupNewUsersWithRepository: true

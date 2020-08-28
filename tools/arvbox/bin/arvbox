@@ -240,7 +240,7 @@ run() {
             git -C "$COMPOSER_ROOT" pull
         fi
         if ! test -d "$WORKBENCH2_ROOT" ; then
-            git clone https://github.com/arvados/arvados-workbench2.git "$WORKBENCH2_ROOT"
+            git clone https://git.arvados.org/arvados-workbench2.git "$WORKBENCH2_ROOT"
         fi
 
         if [[ "$CONFIG" = test ]] ; then
