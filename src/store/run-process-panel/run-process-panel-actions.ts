@@ -92,7 +92,7 @@ export const getWorkflowRunnerSettings = (workflow: WorkflowResource) => {
         }
     }
     return advancedFormValues;
-}
+};
 
 export const setWorkflow = (workflow: WorkflowResource, isWorkflowChanged = true) =>
     (dispatch: Dispatch<any>, getState: () => RootState) => {
