@@ -348,12 +348,25 @@ func (h *handler) s3list(w http.ResponseWriter, r *http.Request, fs arvados.Cust
 		walkpath = ""
 	}
 
-	resp := s3.ListResp{
-		Name:      strings.SplitN(r.URL.Path[1:], "/", 2)[0],
-		Prefix:    params.prefix,
-		Delimiter: params.delimiter,
-		Marker:    params.marker,
-		MaxKeys:   params.maxKeys,
+	type commonPrefix struct {
+		Prefix string
+	}
+	type listResp struct {
+		XMLName string `xml:"http://s3.amazonaws.com/doc/2006-03-01/ ListBucketResult"`
+		s3.ListResp
+		// s3.ListResp marshals an empty tag when
+		// CommonPrefixes is nil, which confuses some clients.
+		// Fix by using this nested struct instead.
+		CommonPrefixes []commonPrefix
+	}
+	resp := listResp{
+		ListResp: s3.ListResp{
+			Name:      strings.SplitN(r.URL.Path[1:], "/", 2)[0],
+			Prefix:    params.prefix,
+			Delimiter: params.delimiter,
+			Marker:    params.marker,
+			MaxKeys:   params.maxKeys,
+		},
 	}
 	commonPrefixes := map[string]bool{}
 	err := walkFS(fs, strings.TrimSuffix(bucketdir+"/"+walkpath, "/"), true, func(path string, fi os.FileInfo) error {
@@ -435,18 +448,15 @@ func (h *handler) s3list(w http.ResponseWriter, r *http.Request, fs arvados.Cust
 		return
 	}
 	if params.delimiter != "" {
+		resp.CommonPrefixes = make([]commonPrefix, 0, len(commonPrefixes))
 		for prefix := range commonPrefixes {
-			resp.CommonPrefixes = append(resp.CommonPrefixes, prefix)
-			sort.Strings(resp.CommonPrefixes)
+			resp.CommonPrefixes = append(resp.CommonPrefixes, commonPrefix{prefix})
 		}
+		sort.Slice(resp.CommonPrefixes, func(i, j int) bool { return resp.CommonPrefixes[i].Prefix < resp.CommonPrefixes[j].Prefix })
 	}
-	wrappedResp := struct {
-		XMLName string `xml:"http://s3.amazonaws.com/doc/2006-03-01/ ListBucketResult"`
-		s3.ListResp
-	}{"", resp}
 	w.Header().Set("Content-Type", "application/xml")
 	io.WriteString(w, xml.Header)
-	if err := xml.NewEncoder(w).Encode(wrappedResp); err != nil {
+	if err := xml.NewEncoder(w).Encode(resp); err != nil {
 		ctxlog.FromContext(r.Context()).WithError(err).Error("error writing xml response")
 	}
 }
