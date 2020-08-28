@@ -128,7 +128,7 @@ func (instanceSet *ec2InstanceSet) Create(
 	var ok bool
 	if keyname, ok = instanceSet.keys[md5keyFingerprint]; !ok {
 		keyout, err := instanceSet.client.DescribeKeyPairs(&ec2.DescribeKeyPairsInput{
-			Filters: []*ec2.Filter{&ec2.Filter{
+			Filters: []*ec2.Filter{{
 				Name:   aws.String("fingerprint"),
 				Values: []*string{&md5keyFingerprint, &sha1keyFingerprint},
 			}},
@@ -174,7 +174,7 @@ func (instanceSet *ec2InstanceSet) Create(
 		KeyName:      &keyname,
 
 		NetworkInterfaces: []*ec2.InstanceNetworkInterfaceSpecification{
-			&ec2.InstanceNetworkInterfaceSpecification{
+			{
 				AssociatePublicIpAddress: aws.Bool(false),
 				DeleteOnTermination:      aws.Bool(true),
 				DeviceIndex:              aws.Int64(0),
@@ -184,7 +184,7 @@ func (instanceSet *ec2InstanceSet) Create(
 		DisableApiTermination:             aws.Bool(false),
 		InstanceInitiatedShutdownBehavior: aws.String("terminate"),
 		TagSpecifications: []*ec2.TagSpecification{
-			&ec2.TagSpecification{
+			{
 				ResourceType: aws.String("instance"),
 				Tags:         ec2tags,
 			}},
@@ -192,7 +192,7 @@ func (instanceSet *ec2InstanceSet) Create(
 	}
 
 	if instanceType.AddedScratch > 0 {
-		rii.BlockDeviceMappings = []*ec2.BlockDeviceMapping{&ec2.BlockDeviceMapping{
+		rii.BlockDeviceMappings = []*ec2.BlockDeviceMapping{{
 			DeviceName: aws.String("/dev/xvdt"),
 			Ebs: &ec2.EbsBlockDevice{
 				DeleteOnTermination: aws.Bool(true),

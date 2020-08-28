@@ -352,7 +352,7 @@ func (*SchedulerSuite) TestKillNonexistentContainer(c *check.C) {
 			test.InstanceType(2): 0,
 		},
 		running: map[string]time.Time{
-			test.ContainerUUID(2): time.Time{},
+			test.ContainerUUID(2): {},
 		},
 	}
 	queue := test.Queue{

@@ -72,7 +72,7 @@ func (*serviceSuite) testConfig(c *check.C) (*arvados.Cluster, error) {
 	cluster.TLS.Insecure = client.Insecure
 	cluster.PostgreSQL.Connection = testDBConfig()
 	cluster.PostgreSQL.ConnectionPool = 12
-	cluster.Services.Websocket.InternalURLs = map[arvados.URL]arvados.ServiceInstance{arvados.URL{Host: ":"}: arvados.ServiceInstance{}}
+	cluster.Services.Websocket.InternalURLs = map[arvados.URL]arvados.ServiceInstance{{Host: ":"}: {}}
 	cluster.ManagementToken = arvadostest.ManagementToken
 	return cluster, nil
 }
