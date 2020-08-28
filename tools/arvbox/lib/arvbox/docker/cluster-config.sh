@@ -104,8 +104,6 @@ Clusters:
         InternalURLs:
           "http://localhost:${services[keep-web]}/": {}
         ExternalURL: "https://$localip:${services[keep-web-ssl]}/"
-        InternalURLs:
-          "http://localhost:${services[keep-web]}/": {}
       Composer:
         ExternalURL: "https://$localip:${services[composer]}"
       Controller:
@@ -134,16 +132,9 @@ Clusters:
     Login:
       Test:
         Enable: true
-        Users:
-          admin:
-            Email: admin@example.com
-            Password: admin
-          user:
-            Email: user@example.com
-            Password: user
     Users:
       NewUsersAreActive: true
-      AutoAdminUserWithEmail: admin@example.com
+      AutoAdminFirstUser: true
       AutoSetupNewUsers: true
       AutoSetupNewUsersWithVmUUID: $vm_uuid
       AutoSetupNewUsersWithRepository: true
@@ -172,6 +163,18 @@ EOF
 /usr/local/lib/arvbox/yml_override.py /var/lib/arvados/cluster_config.yml
 
 cp /var/lib/arvados/cluster_config.yml /etc/arvados/config.yml
+
+chmod og-rw \
+      /var/lib/arvados/cluster_config.yml.override \
+      /var/lib/arvados/cluster_config.yml \
+      /etc/arvados/config.yml \
+      /var/lib/arvados/api_secret_token \
+      /var/lib/arvados/blob_signing_key \
+      /var/lib/arvados/management_token \
+      /var/lib/arvados/system_root_token \
+      /var/lib/arvados/api_database_pw \
+      /var/lib/arvados/workbench_secret_token \
+      /var/lib/arvados/superuser_token \
 
 mkdir -p /var/lib/arvados/run_tests
 cat >/var/lib/arvados/run_tests/config.yml <<EOF

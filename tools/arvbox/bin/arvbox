@@ -240,7 +240,7 @@ run() {
             git -C "$COMPOSER_ROOT" pull
         fi
         if ! test -d "$WORKBENCH2_ROOT" ; then
-            git clone https://github.com/arvados/arvados-workbench2.git "$WORKBENCH2_ROOT"
+            git clone https://git.arvados.org/arvados-workbench2.git "$WORKBENCH2_ROOT"
         fi
 
         if [[ "$CONFIG" = test ]] ; then
@@ -619,6 +619,20 @@ sv restart keepproxy
 EOF
 	;;
 
+    adduser)
+	docker exec -ti $ARVBOX_CONTAINER /usr/local/lib/arvbox/edit_users.py /var/lib/arvados/cluster_config.yml.override $(getclusterid) add $@
+	docker exec $ARVBOX_CONTAINER sv restart controller
+	;;
+
+    removeuser)
+	docker exec -ti $ARVBOX_CONTAINER /usr/local/lib/arvbox/edit_users.py /var/lib/arvados/cluster_config.yml.override $(getclusterid) remove $@
+	docker exec $ARVBOX_CONTAINER sv restart controller
+	;;
+
+    listusers)
+	exec docker exec -ti $ARVBOX_CONTAINER /usr/local/lib/arvbox/edit_users.py /var/lib/arvados/cluster_config.yml $(getclusterid) list
+	;;
+
     *)
         echo "Arvados-in-a-box             https://doc.arvados.org/install/arvbox.html"
         echo
@@ -649,5 +663,10 @@ EOF
         echo "sv <start|stop|restart> <service> "
 	echo "                   change state of service inside arvbox"
         echo "clone <from> <to>  clone dev arvbox"
+	echo "adduser <username> <email>"
+	echo "                   add a user login"
+	echo "removeuser <username>"
+	echo "                   remove user login"
+	echo "listusers          list user logins"
         ;;
 esac
