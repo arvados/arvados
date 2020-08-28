@@ -7,7 +7,7 @@ import { unionize, ofType, UnionOf } from "~/common/unionize";
 import { ServiceRepository } from "~/services/services";
 import { RootState } from '~/store/store';
 import { getUserUuid } from "~/common/getuser";
-import { WorkflowResource, getWorkflowInputs, parseWorkflowDefinition } from '~/models/workflow';
+import { WorkflowResource, WorkflowRunnerResources, getWorkflow, getWorkflowInputs, parseWorkflowDefinition } from '~/models/workflow';
 import { getFormValues, initialize } from 'redux-form';
 import { RUN_PROCESS_BASIC_FORM, RunProcessBasicFormData } from '~/views/run-process-panel/run-process-basic-form';
 import { RUN_PROCESS_INPUTS_FORM } from '~/views/run-process-panel/run-process-inputs-form';
@@ -15,7 +15,10 @@ import { WorkflowInputsData } from '~/models/workflow';
 import { createWorkflowMounts } from '~/models/process';
 import { ContainerRequestState } from '~/models/container-request';
 import { navigateTo } from '../navigation/navigation-action';
-import { RunProcessAdvancedFormData, RUN_PROCESS_ADVANCED_FORM, VCPUS_FIELD, RAM_FIELD, RUNTIME_FIELD, OUTPUT_FIELD, API_FIELD } from '~/views/run-process-panel/run-process-advanced-form';
+import {
+    RunProcessAdvancedFormData, RUN_PROCESS_ADVANCED_FORM, VCPUS_FIELD,
+    KEEP_CACHE_RAM_FIELD, RAM_FIELD, RUNTIME_FIELD, OUTPUT_FIELD, RUNNER_IMAGE_FIELD
+} from '~/views/run-process-panel/run-process-advanced-form';
 import { dialogActions } from '~/store/dialog/dialog-actions';
 import { setBreadcrumbs } from '~/store/breadcrumbs/breadcrumbs-actions';
 import { matchProjectRoute } from '~/routes/routes';
@@ -73,19 +76,40 @@ export const openSetWorkflowDialog = (workflow: WorkflowResource) =>
         }
     };
 
+export const getWorkflowRunnerSettings = (workflow: WorkflowResource) => {
+    const advancedFormValues = {};
+    Object.assign(advancedFormValues, DEFAULT_ADVANCED_FORM_VALUES);
+
+    const wf = getWorkflow(parseWorkflowDefinition(workflow));
+    const hints = wf ? wf.hints : undefined;
+    if (hints) {
+        const resc = hints.find(item => item.class === 'http://arvados.org/cwl#WorkflowRunnerResources') as WorkflowRunnerResources | undefined;
+        if (resc) {
+            if (resc.ramMin) { advancedFormValues[RAM_FIELD] = resc.ramMin; }
+            if (resc.coresMin) { advancedFormValues[VCPUS_FIELD] = resc.coresMin; }
+            if (resc.keep_cache) { advancedFormValues[KEEP_CACHE_RAM_FIELD] = resc.keep_cache; }
+            if (resc.acrContainerImage) { advancedFormValues[RUNNER_IMAGE_FIELD] = resc.acrContainerImage; }
+        }
+    }
+    return advancedFormValues;
+};
+
 export const setWorkflow = (workflow: WorkflowResource, isWorkflowChanged = true) =>
     (dispatch: Dispatch<any>, getState: () => RootState) => {
         const isStepChanged = getState().runProcessPanel.isStepChanged;
+
+        const advancedFormValues = getWorkflowRunnerSettings(workflow);
+
         if (isStepChanged && isWorkflowChanged) {
             dispatch(runProcessPanelActions.SET_STEP_CHANGED(false));
             dispatch(runProcessPanelActions.SET_SELECTED_WORKFLOW(workflow));
             dispatch<any>(loadPresets(workflow.uuid));
-            dispatch(initialize(RUN_PROCESS_ADVANCED_FORM, DEFAULT_ADVANCED_FORM_VALUES));
+            dispatch(initialize(RUN_PROCESS_ADVANCED_FORM, advancedFormValues));
         }
         if (!isWorkflowChanged) {
             dispatch(runProcessPanelActions.SET_SELECTED_WORKFLOW(workflow));
             dispatch<any>(loadPresets(workflow.uuid));
-            dispatch(initialize(RUN_PROCESS_ADVANCED_FORM, DEFAULT_ADVANCED_FORM_VALUES));
+            dispatch(initialize(RUN_PROCESS_ADVANCED_FORM, advancedFormValues));
         }
     };
 
@@ -118,13 +142,13 @@ export const runProcess = async (dispatch: Dispatch<any>, getState: () => RootSt
     const state = getState();
     const basicForm = getFormValues(RUN_PROCESS_BASIC_FORM)(state) as RunProcessBasicFormData;
     const inputsForm = getFormValues(RUN_PROCESS_INPUTS_FORM)(state) as WorkflowInputsData;
-    const advancedForm = getFormValues(RUN_PROCESS_ADVANCED_FORM)(state) as RunProcessAdvancedFormData || DEFAULT_ADVANCED_FORM_VALUES;
     const userUuid = getUserUuid(getState());
     if (!userUuid) { return; }
     const pathname = getState().runProcessPanel.processPathname;
     const { processOwnerUuid, selectedWorkflow } = state.runProcessPanel;
     const ownerUUid = !matchProjectRoute(pathname) ? userUuid : processOwnerUuid;
     if (selectedWorkflow) {
+        const advancedForm = getFormValues(RUN_PROCESS_ADVANCED_FORM)(state) as RunProcessAdvancedFormData || getWorkflowRunnerSettings(selectedWorkflow);
         const newProcessData = {
             ownerUuid: ownerUUid,
             name: basicForm.name,
@@ -135,12 +159,11 @@ export const runProcess = async (dispatch: Dispatch<any>, getState: () => RootSt
                 API: true,
                 vcpus: advancedForm[VCPUS_FIELD],
                 ram: advancedForm[RAM_FIELD],
-                api: advancedForm[API_FIELD],
             },
             schedulingParameters: {
                 max_run_time: advancedForm[RUNTIME_FIELD]
             },
-            containerImage: 'arvados/jobs',
+            containerImage: advancedForm[RUNNER_IMAGE_FIELD],
             cwd: '/var/spool/cwl',
             command: [
                 'arvados-cwl-runner',
@@ -166,7 +189,7 @@ export const runProcess = async (dispatch: Dispatch<any>, getState: () => RootSt
 export const DEFAULT_ADVANCED_FORM_VALUES: Partial<RunProcessAdvancedFormData> = {
     [VCPUS_FIELD]: 1,
     [RAM_FIELD]: 1073741824,
-    [API_FIELD]: true,
+    [RUNNER_IMAGE_FIELD]: "arvados/jobs"
 };
 
 const normalizeInputKeys = (inputs: WorkflowInputsData): WorkflowInputsData =>

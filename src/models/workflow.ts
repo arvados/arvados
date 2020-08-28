@@ -22,6 +22,7 @@ export interface Workflow {
     inputs: CommandInputParameter[];
     outputs: any[];
     steps: any[];
+    hints?: ProcessRequirement[];
 }
 
 export interface CommandLineTool {
@@ -29,6 +30,21 @@ export interface CommandLineTool {
     id: string;
     inputs: CommandInputParameter[];
     outputs: any[];
+    hints?: ProcessRequirement[];
+}
+
+export type ProcessRequirement = GenericProcessRequirement | WorkflowRunnerResources;
+
+export interface GenericProcessRequirement {
+    class: string;
+}
+
+export interface WorkflowRunnerResources {
+    class: 'http://arvados.org/cwl#WorkflowRunnerResources';
+    ramMin?: number;
+    coresMin?: number;
+    keep_cache?: number;
+    acrContainerImage?: string;
 }
 
 export type CommandInputParameter =

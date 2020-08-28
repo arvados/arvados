@@ -69,7 +69,7 @@ export const reRunProcess = (processUuid: string, workflowUuid: string) =>
                 ram: process.runtimeConstraints.ram,
                 vcpus: process.runtimeConstraints.vcpus,
                 keep_cache_ram: process.runtimeConstraints.keep_cache_ram,
-                api: process.runtimeConstraints.API
+                acr_container_image: process.containerImage
             };
             dispatch<any>(initialize(RUN_PROCESS_ADVANCED_FORM, advancedInitialData));
 
