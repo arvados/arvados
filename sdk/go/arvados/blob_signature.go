@@ -57,9 +57,8 @@ func SignManifest(manifest string, apiToken string, expiry time.Time, ttl time.D
 	return regexp.MustCompile(`\S+`).ReplaceAllStringFunc(manifest, func(tok string) string {
 		if mBlkRe.MatchString(tok) {
 			return SignLocator(mPermHintRe.ReplaceAllString(tok, ""), apiToken, expiry, ttl, permissionSecret)
-		} else {
-			return tok
 		}
+		return tok
 	})
 }
 

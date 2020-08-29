@@ -70,12 +70,11 @@ func (e APIServerError) Error() string {
 			e.HttpStatusCode,
 			e.HttpStatusMessage,
 			e.ServerAddress)
-	} else {
-		return fmt.Sprintf("arvados API server error: %d: %s returned by %s",
-			e.HttpStatusCode,
-			e.HttpStatusMessage,
-			e.ServerAddress)
 	}
+	return fmt.Sprintf("arvados API server error: %d: %s returned by %s",
+		e.HttpStatusCode,
+		e.HttpStatusMessage,
+		e.ServerAddress)
 }
 
 // StringBool tests whether s is suggestive of true. It returns true
@@ -420,9 +419,8 @@ func (c *ArvadosClient) Discovery(parameter string) (value interface{}, err erro
 	value, found = c.DiscoveryDoc[parameter]
 	if found {
 		return value, nil
-	} else {
-		return value, ErrInvalidArgument
 	}
+	return value, ErrInvalidArgument
 }
 
 func (ac *ArvadosClient) httpClient() *http.Client {

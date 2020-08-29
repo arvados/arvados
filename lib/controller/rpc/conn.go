@@ -28,9 +28,8 @@ type TokenProvider func(context.Context) ([]string, error)
 func PassthroughTokenProvider(ctx context.Context) ([]string, error) {
 	if incoming, ok := auth.FromContext(ctx); !ok {
 		return nil, errors.New("no token provided")
-	} else {
-		return incoming.Tokens, nil
 	}
+	return incoming.Tokens, nil
 }
 
 type Conn struct {
@@ -170,9 +169,8 @@ func (conn *Conn) relativeToBaseURL(location string) string {
 		u.User = nil
 		u.Host = ""
 		return u.String()
-	} else {
-		return location
 	}
+	return location
 }
 
 func (conn *Conn) CollectionCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Collection, error) {

@@ -17,9 +17,8 @@ import (
 var DefaultConfigFile = func() string {
 	if path := os.Getenv("ARVADOS_CONFIG"); path != "" {
 		return path
-	} else {
-		return "/etc/arvados/config.yml"
 	}
+	return "/etc/arvados/config.yml"
 }()
 
 type Config struct {

@@ -118,10 +118,8 @@ func (sis *StubInstanceSet) Create(it arvados.InstanceType, image cloud.ImageID,
 	}
 	if sis.allowCreateCall.After(time.Now()) {
 		return nil, RateLimitError{sis.allowCreateCall}
-	} else {
-		sis.allowCreateCall = time.Now().Add(sis.driver.MinTimeBetweenCreateCalls)
 	}
-
+	sis.allowCreateCall = time.Now().Add(sis.driver.MinTimeBetweenCreateCalls)
 	ak := sis.driver.AuthorizedKeys
 	if authKey != nil {
 		ak = append([]ssh.PublicKey{authKey}, ak...)
@@ -154,9 +152,8 @@ func (sis *StubInstanceSet) Instances(cloud.InstanceTags) ([]cloud.Instance, err
 	defer sis.mtx.RUnlock()
 	if sis.allowInstancesCall.After(time.Now()) {
 		return nil, RateLimitError{sis.allowInstancesCall}
-	} else {
-		sis.allowInstancesCall = time.Now().Add(sis.driver.MinTimeBetweenInstancesCalls)
 	}
+	sis.allowInstancesCall = time.Now().Add(sis.driver.MinTimeBetweenInstancesCalls)
 	var r []cloud.Instance
 	for _, ss := range sis.servers {
 		r = append(r, ss.Instance())
@@ -372,10 +369,9 @@ func (svm *StubVM) Exec(env map[string]string, command string, stdin io.Reader, 
 		if running {
 			fmt.Fprintf(stderr, "%s: container is running\n", uuid)
 			return 1
-		} else {
-			fmt.Fprintf(stderr, "%s: container is not running\n", uuid)
-			return 0
 		}
+		fmt.Fprintf(stderr, "%s: container is not running\n", uuid)
+		return 0
 	}
 	if command == "true" {
 		return 0

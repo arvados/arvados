@@ -870,25 +870,24 @@ func (runner *ContainerRunner) LogNodeRecord() error {
 			return err
 		}
 		return w.Close()
-	} else {
-		// Dispatched via crunch-dispatch-slurm. Look up
-		// apiserver's node record corresponding to
-		// $SLURMD_NODENAME.
-		hostname := os.Getenv("SLURMD_NODENAME")
-		if hostname == "" {
-			hostname, _ = os.Hostname()
-		}
-		_, err := runner.logAPIResponse("node", "nodes", map[string]interface{}{"filters": [][]string{{"hostname", "=", hostname}}}, func(resp interface{}) {
-			// The "info" field has admin-only info when
-			// obtained with a privileged token, and
-			// should not be logged.
-			node, ok := resp.(map[string]interface{})
-			if ok {
-				delete(node, "info")
-			}
-		})
-		return err
 	}
+	// Dispatched via crunch-dispatch-slurm. Look up
+	// apiserver's node record corresponding to
+	// $SLURMD_NODENAME.
+	hostname := os.Getenv("SLURMD_NODENAME")
+	if hostname == "" {
+		hostname, _ = os.Hostname()
+	}
+	_, err := runner.logAPIResponse("node", "nodes", map[string]interface{}{"filters": [][]string{{"hostname", "=", hostname}}}, func(resp interface{}) {
+		// The "info" field has admin-only info when
+		// obtained with a privileged token, and
+		// should not be logged.
+		node, ok := resp.(map[string]interface{})
+		if ok {
+			delete(node, "info")
+		}
+	})
+	return err
 }
 
 func (runner *ContainerRunner) logAPIResponse(label, path string, params map[string]interface{}, munge func(interface{})) (logged bool, err error) {
@@ -1489,7 +1488,7 @@ func (runner *ContainerRunner) ContainerToken() (string, error) {
 	return runner.token, nil
 }
 
-// UpdateContainerComplete updates the container record state on API
+// UpdateContainerFinal updates the container record state on API
 // server to "Complete" or "Cancelled"
 func (runner *ContainerRunner) UpdateContainerFinal() error {
 	update := arvadosclient.Dict{}
