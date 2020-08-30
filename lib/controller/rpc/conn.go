@@ -26,7 +26,8 @@ import (
 type TokenProvider func(context.Context) ([]string, error)
 
 func PassthroughTokenProvider(ctx context.Context) ([]string, error) {
-	if incoming, ok := auth.FromContext(ctx); !ok {
+	incoming, ok := auth.FromContext(ctx)
+	if !ok {
 		return nil, errors.New("no token provided")
 	}
 	return incoming.Tokens, nil
