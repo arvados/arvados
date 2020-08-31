@@ -117,6 +117,9 @@ class WorkUnitsController < ApplicationController
               if hint[:keep_cache]
                 keep_cache = hint[:keep_cache]
               end
+              if hint[:acrContainerImage]
+                attrs['container_image'] = hint[:acrContainerImage]
+              end
             end
           end
         end
