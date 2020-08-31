@@ -170,9 +170,6 @@ type Pool struct {
 	runnerMD5    [md5.Size]byte
 	runnerCmd    string
 
-	throttleCreate    throttle
-	throttleInstances throttle
-
 	mContainersRunning prometheus.Gauge
 	mInstances         *prometheus.GaugeVec
 	mInstancesPrice    *prometheus.GaugeVec
@@ -307,7 +304,7 @@ func (wp *Pool) Create(it arvados.InstanceType) bool {
 	}
 	wp.mtx.Lock()
 	defer wp.mtx.Unlock()
-	if time.Now().Before(wp.atQuotaUntil) || wp.throttleCreate.Error() != nil {
+	if time.Now().Before(wp.atQuotaUntil) || wp.instanceSet.throttleCreate.Error() != nil {
 		return false
 	}
 	// The maxConcurrentNodeCreateOps knob throttles the number of node create
