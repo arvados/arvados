@@ -100,6 +100,9 @@ Using managed disks:
       CloudVMs:
         ImageID: "zzzzz-compute-v1597349873"
         Driver: azure
+        # (azure) managed disks: set MaxConcurrentNodeCreateOps to 20 to avoid timeouts, cf
+        # https://docs.microsoft.com/en-us/azure/virtual-machines/linux/capture-image
+        MaxConcurrentNodeCreateOps: 20
         DriverParameters:
           # Credentials.
           SubscriptionID: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX

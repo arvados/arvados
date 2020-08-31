@@ -945,6 +945,12 @@ Clusters:
         # unlimited).
         MaxCloudOpsPerSecond: 0
 
+        # Maximum concurrent node creation operations (0 = unlimited).  (azure)
+        # managed disks: set MaxConcurrentNodeCreateOps to 20 to avoid
+        # timeouts, cf
+        # https://docs.microsoft.com/en-us/azure/virtual-machines/linux/capture-image
+        MaxConcurrentNodeCreateOps: 0
+
         # Interval between cloud provider syncs/updates ("list all
         # instances").
         SyncInterval: 1m
