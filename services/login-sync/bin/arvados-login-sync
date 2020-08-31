@@ -36,7 +36,7 @@ begin
 
   logins = arv.virtual_machine.logins(:uuid => vm_uuid)[:items]
   logins = [] if logins.nil?
-  logins = logins.reject { |l| l[:username].nil? or l[:hostname].nil? or l[:public_key].nil? or l[:virtual_machine_uuid] != vm_uuid }
+  logins = logins.reject { |l| l[:username].nil? or l[:hostname].nil? or l[:virtual_machine_uuid] != vm_uuid }
 
   # No system users
   uid_min = 1000
@@ -79,13 +79,15 @@ begin
   logins.each do |l|
     keys[l[:username]] = Array.new() if not keys.has_key?(l[:username])
     key = l[:public_key]
-    # Handle putty-style ssh public keys
-    key.sub!(/^(Comment: "r[^\n]*\n)(.*)$/m,'ssh-rsa \2 \1')
-    key.sub!(/^(Comment: "d[^\n]*\n)(.*)$/m,'ssh-dss \2 \1')
-    key.gsub!(/\n/,'')
-    key.strip
+    if !key.nil?
+      # Handle putty-style ssh public keys
+      key.sub!(/^(Comment: "r[^\n]*\n)(.*)$/m,'ssh-rsa \2 \1')
+      key.sub!(/^(Comment: "d[^\n]*\n)(.*)$/m,'ssh-dss \2 \1')
+      key.gsub!(/\n/,'')
+      key.strip
 
-    keys[l[:username]].push(key) if not keys[l[:username]].include?(key)
+      keys[l[:username]].push(key) if not keys[l[:username]].include?(key)
+    end
   end
 
   seen = Hash.new()
@@ -123,35 +125,38 @@ begin
     userdotssh = File.join(@homedir, ".ssh")
     Dir.mkdir(userdotssh) if !File.exist?(userdotssh)
 
-    newkeys = "###\n###\n" + keys[l[:username]].join("\n") + "\n###\n###\n"
+    if !keys[l[:username]].nil?
+      newkeys = "###\n###\n" + keys[l[:username]].join("\n") + "\n###\n###\n"
 
-    keysfile = File.join(userdotssh, "authorized_keys")
+      keysfile = File.join(userdotssh, "authorized_keys")
 
-    if File.exist?(keysfile)
-      oldkeys = IO::read(keysfile)
-    else
-      oldkeys = ""
-    end
+      if File.exist?(keysfile)
+        oldkeys = IO::read(keysfile)
+      else
+        oldkeys = ""
+      end
 
-    if exclusive_mode
-      newkeys = exclusive_banner + newkeys
-    elsif oldkeys.start_with?(exclusive_banner)
-      newkeys = start_banner + newkeys + end_banner
-    elsif (m = /^(.*?\n|)#{start_banner}(.*?\n|)#{end_banner}(.*)/m.match(oldkeys))
-      newkeys = m[1] + start_banner + newkeys + end_banner + m[3]
-    else
-      newkeys = start_banner + newkeys + end_banner + oldkeys
-    end
+      if exclusive_mode
+        newkeys = exclusive_banner + newkeys
+      elsif oldkeys.start_with?(exclusive_banner)
+        newkeys = start_banner + newkeys + end_banner
+      elsif (m = /^(.*?\n|)#{start_banner}(.*?\n|)#{end_banner}(.*)/m.match(oldkeys))
+        newkeys = m[1] + start_banner + newkeys + end_banner + m[3]
+      else
+        newkeys = start_banner + newkeys + end_banner + oldkeys
+      end
 
-    if oldkeys != newkeys then
-      f = File.new(keysfile, 'w')
-      f.write(newkeys)
-      f.close()
+      if oldkeys != newkeys then
+        f = File.new(keysfile, 'w')
+        f.write(newkeys)
+        f.close()
+      end
+
+      File.chmod(0600, keysfile)
     end
     FileUtils.chown_R(l[:username], nil, userdotssh)
     File.chmod(0700, userdotssh)
     File.chmod(0750, @homedir)
-    File.chmod(0600, keysfile)
   end
 
   devnull.close
