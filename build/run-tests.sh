@@ -648,12 +648,12 @@ install_env() {
     # Needed for run_test_server.py which is used by certain (non-Python) tests.
     (
         set -e
+        "${VENV3DIR}/bin/pip3" install wheel
         "${VENV3DIR}/bin/pip3" install PyYAML
         "${VENV3DIR}/bin/pip3" install httplib2 
         "${VENV3DIR}/bin/pip3" install future
         "${VENV3DIR}/bin/pip3" install google-api-python-client
         "${VENV3DIR}/bin/pip3" install ciso8601
-        "${VENV3DIR}/bin/pip3" install wheel
         "${VENV3DIR}/bin/pip3" install pycurl
         "${VENV3DIR}/bin/pip3" install ws4py
         cd "$WORKSPACE/sdk/python"
