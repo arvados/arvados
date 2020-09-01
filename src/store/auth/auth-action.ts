@@ -97,8 +97,8 @@ export const login = (uuidPrefix: string, homeCluster: string, loginCluster: str
         dispatch(authActions.LOGIN());
     };
 
-export const logout = (deleteLinkData: boolean = false) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-    dispatch(authActions.LOGOUT({ deleteLinkData }));
-};
+export const logout = (deleteLinkData: boolean = false) =>
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) =>
+        dispatch(authActions.LOGOUT({ deleteLinkData }));
 
 export type AuthAction = UnionOf<typeof authActions>;
