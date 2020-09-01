@@ -268,13 +268,13 @@ func (svm *StubVM) Exec(env map[string]string, command string, stdin io.Reader, 
 		logger.Printf("[test] starting crunch-run stub")
 		go func() {
 			var ctr arvados.Container
-			var started, completed bool
+			var started, completed, killed bool
 			defer func() {
 				logger.Print("[test] exiting crunch-run stub")
 				svm.Lock()
 				defer svm.Unlock()
 				if svm.running[uuid] != pid {
-					if !completed {
+					if !completed && !killed {
 						bugf := svm.sis.driver.Bugf
 						if bugf == nil {
 							bugf = logger.Warnf
@@ -305,7 +305,7 @@ func (svm *StubVM) Exec(env map[string]string, command string, stdin io.Reader, 
 			time.Sleep(time.Duration(math_rand.Float64()*20) * time.Millisecond)
 
 			svm.Lock()
-			killed := svm.running[uuid] != pid
+			killed = svm.running[uuid] != pid
 			svm.Unlock()
 			if killed || wantCrashEarly {
 				return
