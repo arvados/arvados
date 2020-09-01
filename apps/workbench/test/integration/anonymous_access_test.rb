@@ -197,7 +197,7 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
         assert_text 'script version'
         assert_no_selector 'a', text: 'Run this pipeline'
       else
-        within first('tr[data-kind="arvados#workflow"]') do
+        within 'tr[data-kind="arvados#workflow"]', text: "Workflow with default input specifications" do
           click_link 'Show'
         end
 

@@ -36,7 +36,7 @@ begin
 
   logins = arv.virtual_machine.logins(:uuid => vm_uuid)[:items]
   logins = [] if logins.nil?
-  logins = logins.reject { |l| l[:username].nil? or l[:hostname].nil? or l[:public_key].nil? or l[:virtual_machine_uuid] != vm_uuid }
+  logins = logins.reject { |l| l[:username].nil? or l[:hostname].nil? or l[:virtual_machine_uuid] != vm_uuid }
 
   # No system users
   uid_min = 1000
@@ -79,13 +79,15 @@ begin
   logins.each do |l|
     keys[l[:username]] = Array.new() if not keys.has_key?(l[:username])
     key = l[:public_key]
-    # Handle putty-style ssh public keys
-    key.sub!(/^(Comment: "r[^\n]*\n)(.*)$/m,'ssh-rsa \2 \1')
-    key.sub!(/^(Comment: "d[^\n]*\n)(.*)$/m,'ssh-dss \2 \1')
-    key.gsub!(/\n/,'')
-    key.strip
+    if !key.nil?
+      # Handle putty-style ssh public keys
+      key.sub!(/^(Comment: "r[^\n]*\n)(.*)$/m,'ssh-rsa \2 \1')
+      key.sub!(/^(Comment: "d[^\n]*\n)(.*)$/m,'ssh-dss \2 \1')
+      key.gsub!(/\n/,'')
+      key.strip
 
-    keys[l[:username]].push(key) if not keys[l[:username]].include?(key)
+      keys[l[:username]].push(key) if not keys[l[:username]].include?(key)
+    end
   end
 
   seen = Hash.new()

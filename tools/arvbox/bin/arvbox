@@ -95,6 +95,10 @@ EOF
     fi
 }
 
+listusers() {
+    docker exec -ti $ARVBOX_CONTAINER /usr/local/lib/arvbox/edit_users.py /var/lib/arvados/cluster_config.yml $(getclusterid) list
+}
+
 wait_for_arvbox() {
     FF=/tmp/arvbox-fifo-$$
     mkfifo $FF
@@ -314,6 +318,11 @@ run() {
             wait_for_arvbox
             echo "The Arvados source code is checked out at: $ARVADOS_ROOT"
 	    echo "The Arvados testing root certificate is $VAR_DATA/root-cert.pem"
+	    if [[ "$(listusers)" =~ ^\{\} ]] ; then
+		echo "No users defined, use 'arvbox adduser' to add user logins"
+	    else
+		echo "Use 'arvbox listusers' to see user logins"
+	    fi
         else
             echo "Unknown configuration '$CONFIG'"
         fi
@@ -630,7 +639,7 @@ EOF
 	;;
 
     listusers)
-	exec docker exec -ti $ARVBOX_CONTAINER /usr/local/lib/arvbox/edit_users.py /var/lib/arvados/cluster_config.yml $(getclusterid) list
+	listusers
 	;;
 
     *)

@@ -283,4 +283,23 @@ class WorkUnitsTest < ActionDispatch::IntegrationTest
     assert_text "This container request was created from the workflow"
     assert_match /Provide a value for .* then click the \"Run\" button to start the workflow/, page.text
   end
+
+  test "create workflow with WorkflowRunnerResources" do
+    visit page_with_token('active', '/workflows/zzzzz-7fd4e-validwithinput3')
+
+    find('a,button', text: 'Run this workflow').click
+
+    # Choose project for the container_request being created
+    within('.modal-dialog') do
+      find('.selectable', text: 'A Project').click
+      find('button', text: 'Choose').click
+    end
+    click_link 'Advanced'
+    click_link("API response")
+    assert_text('"container_image": "arvados/jobs:2.0.4"')
+    assert_text('"vcpus": 2')
+    assert_text('"ram": 1293942784')
+    assert_text('"--collection-cache-size=678"')
+
+  end
 end

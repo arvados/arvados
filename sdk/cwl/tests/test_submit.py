@@ -1354,7 +1354,7 @@ class TestSubmit(unittest.TestCase):
 class TestCreateWorkflow(unittest.TestCase):
     existing_workflow_uuid = "zzzzz-7fd4e-validworkfloyml"
     expect_workflow = StripYAMLComments(
-        open("tests/wf/expect_packed.cwl").read())
+        open("tests/wf/expect_upload_packed.cwl").read().rstrip())
 
     @stubs
     def test_create(self, stubs):
@@ -1472,7 +1472,7 @@ class TestCreateWorkflow(unittest.TestCase):
             stubs.capture_stdout, sys.stderr, api_client=stubs.api)
 
         toolfile = "tests/collection_per_tool/collection_per_tool_packed.cwl"
-        expect_workflow = StripYAMLComments(open(toolfile).read())
+        expect_workflow = StripYAMLComments(open(toolfile).read().rstrip())
 
         body = {
             "workflow": {

@@ -110,9 +110,6 @@ Clusters:
         ExternalURL: "https://$localip:${services[controller-ssl]}"
         InternalURLs:
           "http://localhost:${services[controller]}": {}
-      RailsAPI:
-        InternalURLs:
-          "http://localhost:${services[api]}/": {}
     PostgreSQL:
       ConnectionPool: 32 # max concurrent connections per arvados server daemon
       Connection:
