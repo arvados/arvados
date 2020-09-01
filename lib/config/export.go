@@ -173,7 +173,7 @@ var whitelist = map[string]bool{
 	"Login.Test":                                   true,
 	"Login.Test.Enable":                            true,
 	"Login.Test.Users":                             false,
-	"Login.TokenLifetime":                          false,
+	"Login.TokenLifetime":                          true,
 	"Mail":                                         true,
 	"Mail.EmailFrom":                               false,
 	"Mail.IssueReporterEmailFrom":                  false,
