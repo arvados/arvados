@@ -199,6 +199,46 @@ func (suite *PoolSuite) TestDrain(c *check.C) {
 	}
 }
 
+func (suite *PoolSuite) TestNodeCreateThrottle(c *check.C) {
+	logger := ctxlog.TestLogger(c)
+	driver := test.StubDriver{HoldCloudOps: true}
+	instanceSet, err := driver.InstanceSet(nil, "test-instance-set-id", nil, logger)
+	c.Assert(err, check.IsNil)
+
+	type1 := test.InstanceType(1)
+	pool := &Pool{
+		logger:                         logger,
+		instanceSet:                    &throttledInstanceSet{InstanceSet: instanceSet},
+		maxConcurrentInstanceCreateOps: 1,
+		instanceTypes: arvados.InstanceTypeMap{
+			type1.Name: type1,
+		},
+	}
+
+	c.Check(pool.Unallocated()[type1], check.Equals, 0)
+	res := pool.Create(type1)
+	c.Check(pool.Unallocated()[type1], check.Equals, 1)
+	c.Check(res, check.Equals, true)
+
+	res = pool.Create(type1)
+	c.Check(pool.Unallocated()[type1], check.Equals, 1)
+	c.Check(res, check.Equals, false)
+
+	pool.instanceSet.throttleCreate.err = nil
+	pool.maxConcurrentInstanceCreateOps = 2
+
+	res = pool.Create(type1)
+	c.Check(pool.Unallocated()[type1], check.Equals, 2)
+	c.Check(res, check.Equals, true)
+
+	pool.instanceSet.throttleCreate.err = nil
+	pool.maxConcurrentInstanceCreateOps = 0
+
+	res = pool.Create(type1)
+	c.Check(pool.Unallocated()[type1], check.Equals, 3)
+	c.Check(res, check.Equals, true)
+}
+
 func (suite *PoolSuite) TestCreateUnallocShutdown(c *check.C) {
 	logger := ctxlog.TestLogger(c)
 	driver := test.StubDriver{HoldCloudOps: true}

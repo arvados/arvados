@@ -951,6 +951,12 @@ Clusters:
         # unlimited).
         MaxCloudOpsPerSecond: 0
 
+        # Maximum concurrent node creation operations (0 = unlimited). This is
+        # recommended by Azure in certain scenarios (see
+        # https://docs.microsoft.com/en-us/azure/virtual-machines/linux/capture-image)
+        # and can be used with other cloud providers too, if desired.
+        MaxConcurrentInstanceCreateOps: 0
+
         # Interval between cloud provider syncs/updates ("list all
         # instances").
         SyncInterval: 1m
