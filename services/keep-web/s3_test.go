@@ -154,9 +154,10 @@ func (s *IntegrationSuite) testS3GetObject(c *check.C, bucket *s3.Bucket, prefix
 	c.Check(err, check.IsNil)
 
 	// HeadObject
-	exists, err = bucket.Exists(prefix + "sailboat.txt")
+	resp, err := bucket.Head(prefix+"sailboat.txt", nil)
 	c.Check(err, check.IsNil)
-	c.Check(exists, check.Equals, true)
+	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+	c.Check(resp.ContentLength, check.Equals, int64(4))
 }
 
 func (s *IntegrationSuite) TestS3CollectionPutObjectSuccess(c *check.C) {
