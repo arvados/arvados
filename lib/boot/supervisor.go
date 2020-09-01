@@ -617,6 +617,10 @@ func (super *Supervisor) autofillConfig(cfg *arvados.Config) error {
 	if cluster.Collections.BlobSigningKey == "" {
 		cluster.Collections.BlobSigningKey = randomHexString(64)
 	}
+	if cluster.Users.AnonymousUserToken == "" {
+		cluster.Users.AnonymousUserToken = randomHexString(64)
+	}
+
 	if super.ClusterType != "production" && cluster.Containers.DispatchPrivateKey == "" {
 		buf, err := ioutil.ReadFile(filepath.Join(super.SourcePath, "lib", "dispatchcloud", "test", "sshkey_dispatch"))
 		if err != nil {
