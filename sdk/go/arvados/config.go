@@ -259,6 +259,7 @@ type Cluster struct {
 		InactivePageHTML       string
 		SSHHelpPageHTML        string
 		SSHHelpHostSuffix      string
+		IdleTimeout            Duration
 	}
 
 	ForceLegacyAPI14 bool
