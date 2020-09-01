@@ -224,14 +224,14 @@ func (suite *PoolSuite) TestNodeCreateThrottle(c *check.C) {
 	c.Check(pool.Unallocated()[type1], check.Equals, 1)
 	c.Check(res, check.Equals, false)
 
-	pool.instanceSet.throttleCreate.ResetError()
+	pool.instanceSet.throttleCreate.err = nil
 	pool.maxConcurrentInstanceCreateOps = 2
 
 	res = pool.Create(type1)
 	c.Check(pool.Unallocated()[type1], check.Equals, 2)
 	c.Check(res, check.Equals, true)
 
-	pool.instanceSet.throttleCreate.ResetError()
+	pool.instanceSet.throttleCreate.err = nil
 	pool.maxConcurrentInstanceCreateOps = 0
 
 	res = pool.Create(type1)
