@@ -411,6 +411,26 @@ func (s *IntegrationSuite) TestS3ListNoCommonPrefixes(c *check.C) {
 	c.Check(string(buf), check.Not(check.Matches), `(?ms).*CommonPrefixes.*`)
 }
 
+// If there is no delimiter in the request, or the results are not
+// truncated, the NextMarker XML tag should not appear in the response
+// body.
+func (s *IntegrationSuite) TestS3ListNoNextMarker(c *check.C) {
+	stage := s.s3setup(c)
+	defer stage.teardown(c)
+
+	for _, query := range []string{"prefix=e&delimiter=/", ""} {
+		req, err := http.NewRequest("GET", stage.collbucket.URL("/"), nil)
+		c.Assert(err, check.IsNil)
+		req.Header.Set("Authorization", "AWS "+arvadostest.ActiveTokenV2+":none")
+		req.URL.RawQuery = query
+		resp, err := http.DefaultClient.Do(req)
+		c.Assert(err, check.IsNil)
+		buf, err := ioutil.ReadAll(resp.Body)
+		c.Assert(err, check.IsNil)
+		c.Check(string(buf), check.Not(check.Matches), `(?ms).*NextMarker.*`)
+	}
+}
+
 func (s *IntegrationSuite) TestS3CollectionList(c *check.C) {
 	stage := s.s3setup(c)
 	defer stage.teardown(c)
