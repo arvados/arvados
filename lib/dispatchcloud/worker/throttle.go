@@ -61,6 +61,12 @@ func (thr *throttle) Error() error {
 	return thr.err
 }
 
+func (thr *throttle) ResetError() {
+	thr.mtx.Lock()
+	defer thr.mtx.Unlock()
+	thr.err = nil
+}
+
 type throttledInstanceSet struct {
 	cloud.InstanceSet
 	throttleCreate    throttle

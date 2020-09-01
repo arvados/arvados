@@ -207,9 +207,9 @@ func (suite *PoolSuite) TestNodeCreateThrottle(c *check.C) {
 
 	type1 := test.InstanceType(1)
 	pool := &Pool{
-		logger:                     logger,
-		instanceSet:                &throttledInstanceSet{InstanceSet: instanceSet},
-		maxConcurrentNodeCreateOps: 1,
+		logger:                         logger,
+		instanceSet:                    &throttledInstanceSet{InstanceSet: instanceSet},
+		maxConcurrentInstanceCreateOps: 1,
 		instanceTypes: arvados.InstanceTypeMap{
 			type1.Name: type1,
 		},
@@ -224,13 +224,15 @@ func (suite *PoolSuite) TestNodeCreateThrottle(c *check.C) {
 	c.Check(pool.Unallocated()[type1], check.Equals, 1)
 	c.Check(res, check.Equals, false)
 
-	pool.maxConcurrentNodeCreateOps = 2
+	pool.instanceSet.throttleCreate.ResetError()
+	pool.maxConcurrentInstanceCreateOps = 2
 
 	res = pool.Create(type1)
 	c.Check(pool.Unallocated()[type1], check.Equals, 2)
 	c.Check(res, check.Equals, true)
 
-	pool.maxConcurrentNodeCreateOps = 0
+	pool.instanceSet.throttleCreate.ResetError()
+	pool.maxConcurrentInstanceCreateOps = 0
 
 	res = pool.Create(type1)
 	c.Check(pool.Unallocated()[type1], check.Equals, 3)
