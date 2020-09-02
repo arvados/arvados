@@ -1344,6 +1344,10 @@ Clusters:
       VocabularyURL: ""
       FileViewersConfigURL: ""
 
+      # Idle time after which the user's session will be auto closed.
+      # This feature is disabled when set to zero.
+      IdleTimeout: 0s
+
       # Workbench welcome screen, this is HTML text that will be
       # incorporated directly onto the page.
       WelcomePageHTML: |
