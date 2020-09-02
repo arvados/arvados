@@ -44,7 +44,7 @@ SPDX-License-Identifier: AGPL-3.0 %>
         var trySendToken = function() {
           // change this text when PAM is reconfigured to present a
           // password prompt that we can wait for.
-          if (findText("login:")) {
+          if (findText("assword:")) {
              sh.keysPressed("<%= j Thread.current[:arvados_api_token] %>\n");
              sh.vt100('(sent authentication token)\n');
           } else {
@@ -57,7 +57,7 @@ SPDX-License-Identifier: AGPL-3.0 %>
             sh.keysPressed("<%= j params[:login] %>\n");
             // Make this wait shorter when PAM is reconfigured to
             // present a password prompt that we can wait for.
-            setTimeout(trySendToken, 3000);
+            setTimeout(trySendToken, 200);
           } else {
             setTimeout(trySendLogin, 200);
           }
