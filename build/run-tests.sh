@@ -643,6 +643,7 @@ install_env() {
     go mod download || fatal "Go deps failed"
     which goimports >/dev/null || go get golang.org/x/tools/cmd/goimports || fatal "Go setup failed"
 
+     . "$VENV3DIR/bin/activate"
     setup_virtualenv "$VENV3DIR"
 
     # Needed for run_test_server.py which is used by certain (non-Python) tests.
