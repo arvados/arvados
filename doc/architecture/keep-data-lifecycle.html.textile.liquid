@@ -1,0 +1,57 @@
+---
+layout: default
+navsection: architecture
+title: "Data lifecycle"
+...
+
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+h2(#overview). Overview
+
+Arvados collections consist of a "manifest":{{site.baseurl}}/architecture/manifest-format.html and the data blocks referenced in that manifest. Manifests are stored in the PosgreSQL database, @data blocks@ are stored by a @keepstore@.
+
+Data blocks are frequently shared between collections. Each collection has its own @manifest@. Collection manifests and data blocks have a separate lifecycle, which is described in detail below.
+
+h2(#collection_lifecycle). Collection lifecycle
+
+During its lifetime, a collection can be in various states. These states are *persisted*, *expiring*, *trashed*  and *permanently deleted*.
+
+The nominal state is *persisted* which means the data can be can be accessed normally and will be retained indefinitely.
+
+A collection is *expiring* when it has a *trash_at* time in the future. An expiring collection can be accessed as normal, but is scheduled to be trashed automatically at the *trash_at* time.
+
+A collection is *trashed* when it has a *trash_at* time in the past. The *is_trashed* attribute will also be "true". The delete operation immediately puts the collection in the trash by setting the *trash_at* time to "now". Once trashed, the collection is no longer readable through normal data access APIs. The collection will have *delete_at* set to some time in the future. The trashed collection is recoverable until the delete_at time passes, at which point the collection is permanently deleted.
+
+h3(#collection_attributes). Collection lifecycle attributes
+
+As listed above the attributes that are used to manage a collection lifecycle are *is_trashed*, *trash_at*, and *delete_at*. The table below lists the values of these attributes and how they influence the state of a collection and its accessibility.
+
+table(table table-bordered table-condensed).
+|_. collection state|_. is_trashed|_. trash_at|_. delete_at|_. get|_. list|_. list?include_trash=true|_. can be modified|
+|persisted collection|false |null |null |yes |yes |yes |yes |
+|expiring collection|false |future |future |yes  |yes |yes |yes |
+|trashed collection|true |past |future |no |no |yes |only is_trashed, trash_at and delete_at attribtues|
+|deleted collection|true|past |past |no |no |no |no |
+
+h2(#block_lifecycle). Block lifecycle
+
+During its lifetime, a data block can be in various states. These states are *persisted*, *unreferenced*, *trashed* and *permanently deleted*.
+
+The nominal state is *persisted* which means the block can be can be retrieved normally from a @keepstore@ process.
+
+A block is *unreferenced* when there are no collection manifests in the PostgreSQL collections table that reference it. The block can still be retrieved normally from a @keepstore@ process, e.g. by creating a new collection with a manifest that references the hash of the block. Unreferenced blocks will be moved to the *trashed* state by @keep-balance@ after @BlobSigningTTL@, if @BlobTrash@ is enabled and @keep-balance@ is running and configured to send trash lists to the keepstores.
+
+A block is *trashed* when @keep-balance@ has asked a @keepstore@ to move it to its trash and @BlobTrash@ is enabled. It will stay there for a period of time, subject to the @BlobTrashLifetime@ settings.
+
+A block is *permanently deleted* on the first wakeup of its @keepstore@ trash process after the block has spent @BlobTrashLifetime@ in that keepstore's trash. The trash process wakes up with a frequency defined by the @BlobTrashCheckInterval@.
+
+table(table table-bordered table-condensed).
+|_. block state|_. duration|_. retrievable via Keep|_. can be recovered|
+|persisted block|indefinitely|yes |n/a |
+|unreferenced block|@BlobSigningTTL@ + up to @BalancePeriod@ + duration of keep-balance run|yes |n/a |
+|trashed block|@BlobTrashLifetime@ + up to @BlobTrashCheckInterval@|no |yes |
+|deleted block||no |no |

@@ -82,23 +82,6 @@ In the REST API, POST requests create new records, so there is no uuid to use fo
 
 h3. Collections and Keep block retrieval
 
-Each collection record has @manifest_text@, which describes how to reassemble keep blocks into files as described in the "Storage in Keep.":{{site.baseurl}}/api/storage.html.  Each block identifier in the manifest has an added signature which is used to confirm permission to read the block.  To read a block from a keepstore server, the client must provide the block identifier, the signature, and the same API token used to retrieve the collection record.
+Each collection record has @manifest_text@, which describes how to reassemble keep blocks into files as described in the "Manifest format":{{site.baseurl}}/architecture/manifest-format.html.  Each block identifier in the manifest has an added signature which is used to confirm permission to read the block.  To read a block from a keepstore server, the client must provide the block identifier, the signature, and the same API token used to retrieve the collection record.
 
-When a collection record is returned through a federation request, the keep blocks listed in the manifest may not be available on the local cluster, and the keep block signatures returned by the remote cluster are not valid for the local cluster.  To solve this, arvados-controller rewrites the signatures in the manifest to "remote cluster" signatures.
-
-A local signature comes after the block identifier and block size, and starts with @+A@:
-
-<code>930625b054ce894ac40596c3f5a0d947+33+A1f27a35dd9af37191d63ad8eb8985624451e7b79@5835c8bc</code>
-
-A remote cluster signature starts with @+R@, then the cluster id of the cluster it originated from (@zzzzz@ in this example), a dash, and then the original signature:
-
-<code>930625b054ce894ac40596c3f5a0d947+33+Rzzzzz-1f27a35dd9af37191d63ad8eb8985624451e7b79@5835c8bc</code>
-
-When the client provides a remote-signed block locator to keepstore, the keepstore proxies the request to the remote cluster.
-
-# keepstore determines the cluster id to contact from the first part of the @+R@ signature
-# creates a salted token using the API token and cluster id
-# contacts the "accessible" endpoint on the remote cluster to determine the remote cluster's keepstore or keepproxy hosts
-# converts the remote signature @+R@ back to a local signature @+A@
-# contacts the remote keepstore or keepproxy host and requests the block using the local signature
-# returns the block contents back to the client
+See "Federation signatures":{{site.baseurl}}/architecture/manifest-format.html#federationsignatures for details on how federation affects block signatures.
