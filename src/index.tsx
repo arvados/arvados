@@ -14,7 +14,7 @@ import { configureStore, RootStore } from '~/store/store';
 import { ConnectedRouter } from "react-router-redux";
 import { ApiToken } from "~/views-components/api-token/api-token";
 import { AddSession } from "~/views-components/add-session/add-session";
-import { initAuth } from "~/store/auth/auth-action";
+import { initAuth, logout } from "~/store/auth/auth-action";
 import { createServices } from "~/services/services";
 import { MuiThemeProvider } from '@material-ui/core/styles';
 import { CustomTheme } from '~/common/custom-theme';
@@ -108,8 +108,10 @@ fetchConfig()
                 if (showSnackBar) {
                     console.error("Backend error:", error);
 
-                    if (error.errors[0].indexOf("not found") > -1) {
+                    if (error.status === 404) {
                         store.dispatch(openNotFoundDialog());
+                    } else if (error.status === 401 && error.errors[0].indexOf("Not logged in") > -1) {
+                        store.dispatch(logout());
                     } else {
                         store.dispatch(snackbarActions.OPEN_SNACKBAR({
                             message: `${error.errors

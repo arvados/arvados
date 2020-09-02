@@ -9,6 +9,7 @@ import { ApiActions } from "~/services/api/api-actions";
 import * as QueryString from "query-string";
 
 interface Errors {
+    status: number;
     errors: string[];
     errorToken: string;
 }
@@ -80,6 +81,7 @@ export class CommonService<T> {
             .catch(({ response }) => {
                 actions.progressFn(reqId, false);
                 const errors = CommonService.mapResponseKeys(response) as Errors;
+                errors.status = response.status;
                 actions.errorFn(reqId, errors, showErrors);
                 throw errors;
             });
