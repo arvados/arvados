@@ -38,7 +38,7 @@ type stubPool struct {
 	idle      map[arvados.InstanceType]int
 	unknown   map[arvados.InstanceType]int
 	running   map[string]time.Time
-	atQuota   bool
+	quota     int
 	canCreate int
 	creates   []arvados.InstanceType
 	starts    []string
@@ -46,7 +46,11 @@ type stubPool struct {
 	sync.Mutex
 }
 
-func (p *stubPool) AtQuota() bool               { return p.atQuota }
+func (p *stubPool) AtQuota() bool {
+	p.Lock()
+	defer p.Unlock()
+	return len(p.unalloc)+len(p.running)+len(p.unknown) >= p.quota
+}
 func (p *stubPool) Subscribe() <-chan struct{}  { return p.notify }
 func (p *stubPool) Unsubscribe(<-chan struct{}) {}
 func (p *stubPool) Running() map[string]time.Time {
@@ -122,11 +126,8 @@ var _ = check.Suite(&SchedulerSuite{})
 
 type SchedulerSuite struct{}
 
-// Assign priority=4 container to idle node. Create a new instance for
-// the priority=3 container. Don't try to start any priority<3
-// containers because priority=3 container didn't start
-// immediately. Don't try to create any other nodes after the failed
-// create.
+// Assign priority=4 container to idle node. Create new instances for
+// the priority=3, 2, 1 containers.
 func (*SchedulerSuite) TestUseIdleWorkers(c *check.C) {
 	ctx := ctxlog.Context(context.Background(), ctxlog.TestLogger(c))
 	queue := test.Queue{
@@ -172,6 +173,7 @@ func (*SchedulerSuite) TestUseIdleWorkers(c *check.C) {
 	}
 	queue.Update()
 	pool := stubPool{
+		quota: 1000,
 		unalloc: map[arvados.InstanceType]int{
 			test.InstanceType(1): 1,
 			test.InstanceType(2): 2,
@@ -184,7 +186,7 @@ func (*SchedulerSuite) TestUseIdleWorkers(c *check.C) {
 		canCreate: 0,
 	}
 	New(ctx, &queue, &pool, time.Millisecond, time.Millisecond).runQueue()
-	c.Check(pool.creates, check.DeepEquals, []arvados.InstanceType{test.InstanceType(1)})
+	c.Check(pool.creates, check.DeepEquals, []arvados.InstanceType{test.InstanceType(1), test.InstanceType(1), test.InstanceType(1)})
 	c.Check(pool.starts, check.DeepEquals, []string{test.ContainerUUID(4)})
 	c.Check(pool.running, check.HasLen, 1)
 	for uuid := range pool.running {
@@ -192,14 +194,14 @@ func (*SchedulerSuite) TestUseIdleWorkers(c *check.C) {
 	}
 }
 
-// If Create() fails, shutdown some nodes, and don't call Create()
-// again.  Don't call Create() at all if AtQuota() is true.
+// If pool.AtQuota() is true, shutdown some unalloc nodes, and don't
+// call Create().
 func (*SchedulerSuite) TestShutdownAtQuota(c *check.C) {
 	ctx := ctxlog.Context(context.Background(), ctxlog.TestLogger(c))
-	for quota := 0; quota < 2; quota++ {
+	for quota := 1; quota < 3; quota++ {
 		c.Logf("quota=%d", quota)
 		shouldCreate := []arvados.InstanceType{}
-		for i := 0; i < quota; i++ {
+		for i := 1; i < quota; i++ {
 			shouldCreate = append(shouldCreate, test.InstanceType(3))
 		}
 		queue := test.Queue{
@@ -227,7 +229,7 @@ func (*SchedulerSuite) TestShutdownAtQuota(c *check.C) {
 		}
 		queue.Update()
 		pool := stubPool{
-			atQuota: quota == 0,
+			quota: quota,
 			unalloc: map[arvados.InstanceType]int{
 				test.InstanceType(2): 2,
 			},
@@ -241,8 +243,13 @@ func (*SchedulerSuite) TestShutdownAtQuota(c *check.C) {
 		}
 		New(ctx, &queue, &pool, time.Millisecond, time.Millisecond).runQueue()
 		c.Check(pool.creates, check.DeepEquals, shouldCreate)
-		c.Check(pool.starts, check.DeepEquals, []string{})
-		c.Check(pool.shutdowns, check.Not(check.Equals), 0)
+		if len(shouldCreate) == 0 {
+			c.Check(pool.starts, check.DeepEquals, []string{})
+			c.Check(pool.shutdowns, check.Not(check.Equals), 0)
+		} else {
+			c.Check(pool.starts, check.DeepEquals, []string{test.ContainerUUID(2)})
+			c.Check(pool.shutdowns, check.Equals, 0)
+		}
 	}
 }
 
@@ -251,6 +258,7 @@ func (*SchedulerSuite) TestShutdownAtQuota(c *check.C) {
 func (*SchedulerSuite) TestStartWhileCreating(c *check.C) {
 	ctx := ctxlog.Context(context.Background(), ctxlog.TestLogger(c))
 	pool := stubPool{
+		quota: 1000,
 		unalloc: map[arvados.InstanceType]int{
 			test.InstanceType(1): 2,
 			test.InstanceType(2): 2,
@@ -345,6 +353,7 @@ func (*SchedulerSuite) TestStartWhileCreating(c *check.C) {
 func (*SchedulerSuite) TestKillNonexistentContainer(c *check.C) {
 	ctx := ctxlog.Context(context.Background(), ctxlog.TestLogger(c))
 	pool := stubPool{
+		quota: 1000,
 		unalloc: map[arvados.InstanceType]int{
 			test.InstanceType(2): 0,
 		},
