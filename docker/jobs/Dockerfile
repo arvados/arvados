@@ -23,8 +23,7 @@ ARG cwl_runner_version
 RUN echo cwl_runner_version $cwl_runner_version python_sdk_version $python_sdk_version
 
 RUN apt-get update -q
-RUN apt-get install -yq --no-install-recommends nodejs \
-    python3-arvados-cwl-runner=$cwl_runner_version
+RUN apt-get install -yq --no-install-recommends python3-arvados-cwl-runner=$cwl_runner_version
 
 # use the Python executable from the python-arvados-cwl-runner package
 RUN rm -f /usr/bin/python && ln -s /usr/share/python3/dist/python3-arvados-cwl-runner/bin/python /usr/bin/python
