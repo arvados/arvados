@@ -3,7 +3,8 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-set -ex
+exec 2>&1
+set -ex -o pipefail
 
 . /usr/local/lib/arvbox/common.sh
 
