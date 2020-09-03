@@ -121,8 +121,8 @@ begin
       end
     end
 
-    @homedir = pwnam[l[:username]].dir
-    userdotssh = File.join(@homedir, ".ssh")
+    homedir = pwnam[l[:username]].dir
+    userdotssh = File.join(homedir, ".ssh")
     Dir.mkdir(userdotssh) if !File.exist?(userdotssh)
 
     newkeys = "###\n###\n" + keys[l[:username]].join("\n") + "\n###\n###\n"
@@ -150,10 +150,39 @@ begin
       f.write(newkeys)
       f.close()
     end
+
+    userdotconfig = File.join(homedir, ".config")
+    if !File.exist?(userdotconfig)
+      Dir.mkdir(userdotconfig)
+    end
+
+    configarvados = File.join(userdotconfig, "arvados")
+    Dir.mkdir(configarvados) if !File.exist?(configarvados)
+
+    tokenfile = File.join(configarvados, "settings.conf")
+
+    begin
+      if !File.exist?(tokenfile)
+        user_token = arv.api_client_authorization.create(api_client_authorization: {owner_uuid: l[:user_uuid], api_client_id: 0})
+        f = File.new(tokenfile, 'w')
+        f.write("ARVADOS_API_HOST=#{ENV['ARVADOS_API_HOST']}\n")
+        f.write("ARVADOS_API_TOKEN=v2/#{user_token[:uuid]}/#{user_token[:api_token]}\n")
+        f.close()
+      end
+    rescue => e
+      STDERR.puts "Error setting token for #{l[:username]}: #{e}"
+    end
+
     FileUtils.chown_R(l[:username], nil, userdotssh)
+    FileUtils.chown_R(l[:username], nil, userdotconfig)
     File.chmod(0700, userdotssh)
-    File.chmod(0750, @homedir)
+    File.chmod(0700, userdotconfig)
+    File.chmod(0700, configarvados)
+    File.chmod(0750, homedir)
     File.chmod(0600, keysfile)
+    if File.exist?(tokenfile)
+      File.chmod(0600, tokenfile)
+    end
   end
 
   devnull.close

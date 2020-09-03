@@ -22,9 +22,15 @@ h2(#introduction). Introduction
 
 Arvados support for shell nodes allows you to use Arvados permissions to grant Linux shell accounts to users.
 
-A shell node runs the @arvados-login-sync@ service, and has some additional configuration to make it convenient for users to use Arvados utilites and SDKs.  Users are allowed to log in and run arbitrary programs.  For optimal performance, the Arvados shell server should be on the same LAN as the Arvados cluster.
+A shell node runs the @arvados-login-sync@ service to manage user accounts, and typically has Arvados utilities and SDKs pre-installed.  Users are allowed to log in and run arbitrary programs.  For optimal performance, the Arvados shell server should be on the same LAN as the Arvados cluster.
 
-Because it _contains secrets_ shell nodes should *not* have a copy of the complete @config.yml@.  For example, if users have access to the @docker@ daemon, it is trival to gain *root* access to any file on the system.  Users sharing a shell node should be implicitly trusted, or not given access to Docker.  In more secure environments, the admin should allocate a separate VM for each user.
+Because it _contains secrets_ shell nodes should *not* have a copy of the Arvados @config.yml@.
+
+Shell nodes should be separate virtual machines from the VMs running other Arvados services.  You may choose to grant root access to users so that they can customize the node, for example, installing new programs.  This has security considerations depending on whether a shell node is single-user or multi-user.
+
+A single-user shell node should be set up so that it only stores Arvados access tokens that belong to that user.  In that case, that user can be safely granted root access without compromising other Arvados users.
+
+In the multi-user shell node case, a malicious user with @root@ access could access other user's Arvados tokens.  Users should only be given @root@ access on a multi-user shell node if you would trust them them to be Arvados administrators.  Be aware that with access to the @docker@ daemon, it is trival to gain *root* access to any file on the system, so giving users @docker@ access should be considered equivalent to @root@ access.
 
 h2(#dependencies). Install Dependecies and SDKs
 
@@ -52,37 +58,20 @@ Configure git to use the ARVADOS_API_TOKEN environment variable to authenticate 
 
 h2(#vm-record). Create record for VM
 
-This program makes it possible for Arvados users to log in to the shell server -- subject to permissions assigned by the Arvados administrator -- using the SSH keys they upload to Workbench. It sets up login accounts, updates group membership, and adds users' public keys to the appropriate @authorized_keys@ files.
-
-Create an Arvados virtual_machine object representing this shell server. This will assign a UUID.
+As an admin, create an Arvados virtual_machine object representing this shell server. This will return a uuid.
 
 <notextile>
 <pre>
-<code>apiserver:~$ <span class="userinput">arv --format=uuid virtual_machine create --virtual-machine '{"hostname":"<b>your.shell.server.hostname.without.domain</b>"}'</span>
+<code>apiserver:~$ <span class="userinput">arv --format=uuid virtual_machine create --virtual-machine '{"hostname":"<b>shell.ClusterID.example.com</b>"}'</span>
 zzzzz-2x53u-zzzzzzzzzzzzzzz</code>
 </pre>
 </notextile>
 
-h2(#scoped-token). Create scoped token
-
-As an Arvados admin user (such as the system root user), create a "scoped token":{{site.baseurl}}/admin/scoped-tokens.html that is permits only reading login information for this VM.  Setting a scope on the token means that even though a user with root access on the shell node can access the token, the token is not usable for admin actions on Arvados.
-
-<notextile>
-<pre>
-<code>apiserver:~$ <span class="userinput">arv api_client_authorization create --api-client-authorization '{"scopes":["GET /arvados/v1/virtual_machines/<b>zzzzz-2x53u-zzzzzzzzzzzzzzz</b>/logins"]}'</span>
-{
- ...
- "api_token":"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
- ...
-}</code>
-</pre>
-</notextile>
-
-Note the UUID and the API token output by the above commands: you will need them in a minute.
-
 h2(#arvados-login-sync). Install arvados-login-sync
 
-Install the arvados-login-sync program from RubyGems.
+The @arvados-login-sync@ service makes it possible for Arvados users to log in to the shell server.  It sets up login accounts, updates group membership, adds each user's SSH public keys to the @~/.ssh/authorized_keys@ file, and adds an Arvados token to @~/.config/arvados/settings.conf@ .
+
+Install the @arvados-login-sync@ program from RubyGems.
 
 <notextile>
 <pre>
@@ -90,13 +79,21 @@ Install the arvados-login-sync program from RubyGems.
 </pre>
 </notextile>
 
-Configure cron to run the @arvados-login-sync@ program every 2 minutes.
+h2(#arvados-login-sync). Run arvados-login-sync periodically
+
+Create a cron job to run the @arvados-login-sync@ program every 2 minutes.  This will synchronize user accounts.
+
+If this is a single-user shell node, then @ARVADOS_API_TOKEN@ should be a token for that user.  See "Create a token for a user":{{site.baseurl}}/admin/user-management-cli.html#create-token .
+
+If this is a multi-user shell node, then @ARVADOS_API_TOKEN@ should be an administrator token such as the @SystemRootToken@.  See discussion in the "introduction":#introduction about security on multi-user shell nodes.
+
+Set @ARVADOS_VIRTUAL_MACHINE_UUID@ to the UUID from "Create record for VM":#vm-record
 
 <notextile>
 <pre>
-<code>shellserver:# <span class="userinput">umask 077; tee /etc/cron.d/arvados-login-sync &lt;&lt;EOF
+<code>shellserver:# <span class="userinput">umask 0700; tee /etc/cron.d/arvados-login-sync &lt;&lt;EOF
 ARVADOS_API_HOST="<strong>ClusterID.example.com</strong>"
-ARVADOS_API_TOKEN="<strong>the_token_you_created_above</strong>"
+ARVADOS_API_TOKEN="<strong>xxxxxxxxxxxxxxxxx</strong>"
 ARVADOS_VIRTUAL_MACHINE_UUID="<strong>zzzzz-2x53u-zzzzzzzzzzzzzzz</strong>"
 */2 * * * * root arvados-login-sync
 EOF</span></code>
@@ -107,8 +104,9 @@ h2(#confirm-working). Confirm working installation
 
 A user should be able to log in to the shell server when the following conditions are satisfied:
 
-# The user has uploaded an SSH public key: Workbench &rarr; Account menu &rarr; "SSH keys" item &rarr; "Add new SSH key" button.
 # As an admin user, you have given the user permission to log in using the Workbench &rarr; Admin menu &rarr; "Users" item &rarr; "Show" button &rarr; "Admin" tab &rarr; "Setup account" button.
 # The cron job has run.
+
+In order to log in via SSH, the user must also upload an SSH public key.  Alternately, if configured, users can log in using "Webshell":install-webshell.html .
 
 See also "how to add a VM login permission link at the command line":../admin/user-management-cli.html
