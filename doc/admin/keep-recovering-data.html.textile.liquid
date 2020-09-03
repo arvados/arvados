@@ -1,0 +1,91 @@
+---
+layout: default
+navsection: admin
+title: "Recovering data"
+...
+
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+h2(#recover_collection). Recovering collections
+
+To recover a collection the manifest is required. Arvados has a built-in audit log, which consists of a row added to the "logs" table in the PostgreSQL database each time an Arvados object is created, modified, or deleted. Collection manifests are included, unless they are listed in the @UnloggedAttributes@ configuration parameter. The audit log is retained for up to @MaxAge@.
+
+In some cases, it is possible to recover files that have been lost by modifying or deleting a collection.
+
+Possibility of recovery depends on many factors, including:
+* Whether the collection manifest is still available, e.g., in an audit log entry
+* Whether the data blocks are also referenced by other collections
+* Whether the data blocks have been unreferenced long enough to be marked for deletion/trash by keep-balance
+* Blob signature TTL, trash lifetime, trash check interval, and other config settings
+
+To attempt recovery of a previous version of a deleted/modified collection, use the @arvados-server recover-collection@ command. It should be run on one of your server nodes where the @arvados-server@ package is installed and the @/etc/arvados/config.yml@ file is up to date.
+
+Specify the collection you want to recover by passing either the UUID of an audit log entry, or a file containing the manifest.
+
+If recovery is successful, the @recover-collection@ program saves the recovered data a new collection belonging to the system user, and prints the new collection's UUID on stdout.
+
+<pre>
+# arvados-server recover-collection 9tee4-57u5n-nb5awmk1pahac2t
+INFO[2020-06-05T19:52:29.557761245Z] loaded log entry                              logged_event_time="2020-06-05 16:48:01.438791 +0000 UTC" logged_event_type=update old_collection_uuid=9tee4-4zz18-1ex26g95epmgw5w src=9tee4-57u5n-nb5awmk1pahac2t
+INFO[2020-06-05T19:52:29.642145127Z] recovery succeeded                            UUID=9tee4-4zz18-5trfp4k4xxg97f1 src=9tee4-57u5n-nb5awmk1pahac2t
+9tee4-4zz18-5trfp4k4xxg97f1
+INFO[2020-06-05T19:52:29.644699436Z] exiting
+</pre>
+
+In this example, the original data has been restored and saved in a new collection with UUID @9tee4-4zz18-5trfp4k4xxg97f1@.
+
+For more options, run @arvados-server recover-collection -help@.
+
+h2(#untrashing_lost_blocks). Untrashing lost blocks
+
+In some cases it is possible to recover data blocks that were trashed erroneously by @keep-balance@ (e.g. due to an install/config error).
+
+If you suspect blocks have been trashed erroneously, you should immediately:
+
+* On all keepstore servers: set @BlobTrashCheckInterval@ to a long time like 2400h
+* On all keepstore servers: restart keepstore
+* Stop the keep-balance service
+
+When you think you have corrected the underlying problem, you should:
+
+* Set @BlobMissingReport@ to a suitable value (perhaps "/tmp/keep-balance-lost-blocks.txt").
+* Start @keep-balance@
+* After @keep-balance@ completes its first sweep, inspect /tmp/keep-balance-lost-blocks.txt. If it's not empty, you can request all keepstores to untrash any blocks that are still recoverable with a script like this:
+
+<notextile>
+<pre><code>
+#!/bin/bash
+set -e
+
+# see Client.AuthToken in /etc/arvados/keep-balance/keep-balance.yml
+token=xxxxxxx-your-system-auth-token-xxxxxxx
+
+# all keep server hostnames
+hosts=(keep0 keep1 keep2 keep3 keep4 keep5)
+
+while read hash pdhs; do
+  echo "${hash}"
+  for h in ${hosts[@]}; do
+    if curl -fgs -H "Authorization: Bearer $token" -X PUT "http://${h}:25107/untrash/$hash"; then
+      echo "${hash} ok ${host}"
+    fi
+  done
+done < /tmp/keep-balance-lost-blocks.txt
+</code>
+</pre>
+</notextile>
+
+Obviously this could be improved upon with increased parallelism for large scale tasks, if needed. Any blocks which were successfully untrashed can be removed from the list of blocks and collections which need to be recovered.
+
+h2(#regenerating_lost_blocks). Regenerating lost blocks
+
+For blocks which were trashed long enough ago that they've been deleted, it may be possible to regenerate them by rerunning the workflows which generated them. To do this, the process is:
+
+* Delete the affected collections so that job reuse doesn't attempt to reuse them (it's likely that if one block is missing, they all are, so they're unlikely to contain any useful data)
+* Resubmit any container requests for which you want the output collections regenerated
+
+The Arvados repository contains a tool that can be used to generate a report to help with this task at "arvados/tools/keep-xref/keep-xref.py":https://github.com/arvados/arvados/blob/master/tools/keep-xref/keep-xref.py
