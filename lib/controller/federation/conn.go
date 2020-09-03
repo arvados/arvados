@@ -111,6 +111,14 @@ func (conn *Conn) chooseBackend(id string) backend {
 	}
 }
 
+func (conn *Conn) localOrLoginCluster() backend {
+	if conn.cluster.Login.LoginCluster != "" {
+		return conn.chooseBackend(conn.cluster.Login.LoginCluster)
+	} else {
+		return conn.local
+	}
+}
+
 // Call fn with the local backend; then, if fn returned 404, call fn
 // on the available remote backends (possibly concurrently) until one
 // succeeds.
@@ -462,15 +470,48 @@ func (conn *Conn) UserMerge(ctx context.Context, options arvados.UserMergeOption
 }
 
 func (conn *Conn) UserActivate(ctx context.Context, options arvados.UserActivateOptions) (arvados.User, error) {
-	return conn.chooseBackend(options.UUID).UserActivate(ctx, options)
+	return conn.localOrLoginCluster().UserActivate(ctx, options)
 }
 
 func (conn *Conn) UserSetup(ctx context.Context, options arvados.UserSetupOptions) (map[string]interface{}, error) {
-	return conn.chooseBackend(options.UUID).UserSetup(ctx, options)
+	var setupVM string
+	var setupRepo string
+	if conn.cluster.Login.LoginCluster != "" {
+		if options.VMUUID != "" && options.VMUUID[0:5] != options.UUID[0:5] {
+			// When LoginCluster is in effect, and we're
+			// setting up a remote user, and we want to
+			// give that user access to a local VM, then
+			// we need to set up the user on the remote
+			// LoginCluster first, followed by calling
+			// setup on the local instance to give access
+			// to the VM.
+			setupVM = options.VMUUID
+			options.VMUUID = ""
+		}
+		if options.RepoName != "" {
+			// Similarly, if we want to create a git repo,
+			// it should be created on the local cluster,
+			// not the remote one.
+			setupRepo = options.RepoName
+			options.RepoName = ""
+		}
+	}
+
+	ret, err := conn.localOrLoginCluster().UserSetup(ctx, options)
+	if err != nil {
+		return ret, err
+	}
+
+	if setupVM != "" || setupRepo != "" {
+		options.VMUUID = setupVM
+		options.RepoName = setupRepo
+		ret, err = conn.local.UserSetup(ctx, options)
+	}
+	return ret, err
 }
 
 func (conn *Conn) UserUnsetup(ctx context.Context, options arvados.GetOptions) (arvados.User, error) {
-	return conn.chooseBackend(options.UUID).UserUnsetup(ctx, options)
+	return conn.localOrLoginCluster().UserUnsetup(ctx, options)
 }
 
 func (conn *Conn) UserGet(ctx context.Context, options arvados.GetOptions) (arvados.User, error) {
