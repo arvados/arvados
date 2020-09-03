@@ -226,6 +226,11 @@ class ApiClientAuthorization < ArvadosModel
       # Add or update user and token in local database so we can
       # validate subsequent requests faster.
 
+      if remote_user['uuid'][-22..-1] == '-tpzed-anonymouspublic'
+        # Special case: map the remote anonymous user to local anonymous user
+        remote_user['uuid'] = anonymous_user_uuid
+      end
+
       user = User.find_by_uuid(remote_user['uuid'])
 
       if !user
@@ -255,6 +260,11 @@ class ApiClientAuthorization < ArvadosModel
 
       %w[first_name last_name email prefs].each do |attr|
         user.send(attr+'=', remote_user[attr])
+      end
+
+      if remote_user['uuid'][-22..-1] == '-tpzed-000000000000000'
+        user.first_name = "root"
+        user.last_name = "from cluster #{remote_user_prefix}"
       end
 
       act_as_system_user do

@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"math"
 	"net"
@@ -139,10 +140,15 @@ func (s *IntegrationSuite) TearDownSuite(c *check.C) {
 	}
 }
 
+// Get rpc connection struct initialized to communicate with the
+// specified cluster.
 func (s *IntegrationSuite) conn(clusterID string) *rpc.Conn {
 	return rpc.NewConn(clusterID, s.testClusters[clusterID].controllerURL, true, rpc.PassthroughTokenProvider)
 }
 
+// Return Context, Arvados.Client and keepclient structs initialized
+// to connect to the specified cluster (by clusterID) using with the supplied
+// Arvados token.
 func (s *IntegrationSuite) clientsWithToken(clusterID string, token string) (context.Context, *arvados.Client, *keepclient.KeepClient) {
 	cl := s.testClusters[clusterID].config.Clusters[clusterID]
 	ctx := auth.NewContext(context.Background(), auth.NewCredentials(token))
@@ -159,6 +165,10 @@ func (s *IntegrationSuite) clientsWithToken(clusterID string, token string) (con
 	return ctx, ac, kc
 }
 
+// Log in as a user called "example", get the user's API token,
+// initialize clients with the API token, set up the user and
+// optionally activate the user.  Return client structs for
+// communicating with the cluster on behalf of the 'example' user.
 func (s *IntegrationSuite) userClients(rootctx context.Context, c *check.C, conn *rpc.Conn, clusterID string, activate bool) (context.Context, *arvados.Client, *keepclient.KeepClient) {
 	login, err := conn.UserSessionCreate(rootctx, rpc.UserSessionCreateOptions{
 		ReturnTo: ",https://example.com",
@@ -192,8 +202,16 @@ func (s *IntegrationSuite) userClients(rootctx context.Context, c *check.C, conn
 	return ctx, ac, kc
 }
 
+// Return Context, arvados.Client and keepclient structs initialized
+// to communicate with the cluster as the system root user.
 func (s *IntegrationSuite) rootClients(clusterID string) (context.Context, *arvados.Client, *keepclient.KeepClient) {
 	return s.clientsWithToken(clusterID, s.testClusters[clusterID].config.Clusters[clusterID].SystemRootToken)
+}
+
+// Return Context, arvados.Client and keepclient structs initialized
+// to communicate with the cluster as the anonymous user.
+func (s *IntegrationSuite) anonymousClients(clusterID string) (context.Context, *arvados.Client, *keepclient.KeepClient) {
+	return s.clientsWithToken(clusterID, s.testClusters[clusterID].config.Clusters[clusterID].Users.AnonymousUserToken)
 }
 
 func (s *IntegrationSuite) TestGetCollectionByPDH(c *check.C) {
@@ -230,6 +248,71 @@ func (s *IntegrationSuite) TestGetCollectionByPDH(c *check.C) {
 
 	// Retrieve the collection from cluster z3333.
 	coll, err := conn3.CollectionGet(userctx1, arvados.GetOptions{UUID: pdh})
+	c.Check(err, check.IsNil)
+	c.Check(coll.PortableDataHash, check.Equals, pdh)
+}
+
+func (s *IntegrationSuite) TestGetCollectionAsAnonymous(c *check.C) {
+	conn1 := s.conn("z1111")
+	conn3 := s.conn("z3333")
+	rootctx1, rootac1, rootkc1 := s.rootClients("z1111")
+	anonctx3, anonac3, _ := s.anonymousClients("z3333")
+
+	// Make sure anonymous token was set
+	c.Assert(anonac3.AuthToken, check.Not(check.Equals), "")
+
+	// Create the collection to find its PDH (but don't save it
+	// anywhere yet)
+	var coll1 arvados.Collection
+	fs1, err := coll1.FileSystem(rootac1, rootkc1)
+	c.Assert(err, check.IsNil)
+	f, err := fs1.OpenFile("test.txt", os.O_CREATE|os.O_RDWR, 0777)
+	c.Assert(err, check.IsNil)
+	_, err = io.WriteString(f, "IntegrationSuite.TestGetCollectionAsAnonymous")
+	c.Assert(err, check.IsNil)
+	err = f.Close()
+	c.Assert(err, check.IsNil)
+	mtxt, err := fs1.MarshalManifest(".")
+	c.Assert(err, check.IsNil)
+	pdh := arvados.PortableDataHash(mtxt)
+
+	// Save the collection on cluster z1111.
+	coll1, err = conn1.CollectionCreate(rootctx1, arvados.CreateOptions{Attrs: map[string]interface{}{
+		"manifest_text": mtxt,
+	}})
+	c.Assert(err, check.IsNil)
+
+	// Share it with the anonymous users group.
+	var outLink arvados.Link
+	err = rootac1.RequestAndDecode(&outLink, "POST", "/arvados/v1/links", nil,
+		map[string]interface{}{"link": map[string]interface{}{
+			"link_class": "permission",
+			"name":       "can_read",
+			"tail_uuid":  "z1111-j7d0g-anonymouspublic",
+			"head_uuid":  coll1.UUID,
+		},
+		})
+	c.Check(err, check.IsNil)
+
+	// Current user should be z3 anonymous user
+	outUser, err := anonac3.CurrentUser()
+	c.Check(err, check.IsNil)
+	c.Check(outUser.UUID, check.Equals, "z3333-tpzed-anonymouspublic")
+
+	// Get the token uuid
+	var outAuth arvados.APIClientAuthorization
+	err = anonac3.RequestAndDecode(&outAuth, "GET", "/arvados/v1/api_client_authorizations/current", nil, nil)
+	c.Check(err, check.IsNil)
+
+	// Make a v2 token of the z3 anonymous user, and use it on z1
+	_, anonac1, _ := s.clientsWithToken("z1111", fmt.Sprintf("v2/%v/%v", outAuth.UUID, outAuth.APIToken))
+	outUser2, err := anonac1.CurrentUser()
+	c.Check(err, check.IsNil)
+	// z3 anonymous user will be mapped to the z1 anonymous user
+	c.Check(outUser2.UUID, check.Equals, "z1111-tpzed-anonymouspublic")
+
+	// Retrieve the collection (which is on z1) using anonymous from cluster z3333.
+	coll, err := conn3.CollectionGet(anonctx3, arvados.GetOptions{UUID: coll1.UUID})
 	c.Check(err, check.IsNil)
 	c.Check(coll.PortableDataHash, check.Equals, pdh)
 }
