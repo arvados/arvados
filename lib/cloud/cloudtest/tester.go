@@ -127,7 +127,7 @@ func (t *tester) Run() bool {
 	defer t.destroyTestInstance()
 
 	bootDeadline := time.Now().Add(t.TimeoutBooting)
-	initCommand := worker.TagVerifier{nil, t.secret}.InitCommand()
+	initCommand := worker.TagVerifier{Instance: nil, Secret: t.secret, ReportVerified: nil}.InitCommand()
 
 	t.Logger.WithFields(logrus.Fields{
 		"InstanceType":         t.InstanceType.Name,
@@ -160,7 +160,7 @@ func (t *tester) Run() bool {
 		// Create() succeeded. Make sure the new instance
 		// appears right away in the Instances() list.
 		lgrC.WithField("Instance", inst.ID()).Info("created instance")
-		t.testInstance = &worker.TagVerifier{inst, t.secret}
+		t.testInstance = &worker.TagVerifier{Instance: inst, Secret: t.secret, ReportVerified: nil}
 		t.showLoginInfo()
 		err = t.refreshTestInstance()
 		if err == errTestInstanceNotFound {
@@ -236,7 +236,7 @@ func (t *tester) refreshTestInstance() error {
 			"Instance": i.ID(),
 			"Address":  i.Address(),
 		}).Info("found our instance in returned list")
-		t.testInstance = &worker.TagVerifier{i, t.secret}
+		t.testInstance = &worker.TagVerifier{Instance: i, Secret: t.secret, ReportVerified: nil}
 		if !t.showedLoginInfo {
 			t.showLoginInfo()
 		}

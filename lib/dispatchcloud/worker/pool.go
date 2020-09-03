@@ -371,19 +371,19 @@ func (wp *Pool) SetIdleBehavior(id cloud.InstanceID, idleBehavior IdleBehavior) 
 
 // Successful connection to the SSH daemon, update the mTimeToSSH metric
 func (wp *Pool) reportSSHConnected(inst cloud.Instance) {
+	wp.mtx.Lock()
+	defer wp.mtx.Unlock()
 	wkr := wp.workers[inst.ID()]
-	wkr.mtx.Lock()
-	defer wkr.mtx.Unlock()
 	if wkr.state != StateBooting || !wkr.firstSSHConnection.IsZero() {
 		// the node is not in booting state (can happen if a-d-c is restarted) OR
 		// this is not the first SSH connection
 		return
 	}
 
-	if wp.mTimeToSSH != nil {
-		wp.mTimeToSSH.Observe(time.Since(wkr.appeared).Seconds())
-	}
 	wkr.firstSSHConnection = time.Now()
+	if wp.mTimeToSSH != nil {
+		wp.mTimeToSSH.Observe(wkr.firstSSHConnection.Sub(wkr.appeared).Seconds())
+	}
 }
 
 // Add or update worker attached to the given instance.

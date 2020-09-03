@@ -32,7 +32,9 @@ func (tv TagVerifier) InitCommand() cloud.InitCommand {
 }
 
 func (tv TagVerifier) VerifyHostKey(pubKey ssh.PublicKey, client *ssh.Client) error {
-	tv.ReportVerified(tv.Instance)
+	if tv.ReportVerified != nil {
+		tv.ReportVerified(tv.Instance)
+	}
 	if err := tv.Instance.VerifyHostKey(pubKey, client); err != cloud.ErrNotImplemented || tv.Secret == "" {
 		// If the wrapped instance indicates it has a way to
 		// verify the key, return that decision.
