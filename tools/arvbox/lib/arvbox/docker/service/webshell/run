@@ -39,4 +39,4 @@ session [success=ok ignore=ignore module_unknown=ignore default=bad] pam_selinux
 EOF
 
 exec shellinaboxd --verbose --port ${services[webshell]} --user arvbox --group arvbox \
-                  --disable-ssl --no-beep --service=/:AUTH:HOME:SHELL
+                  --disable-ssl --no-beep --service=/$localip:AUTH:HOME:SHELL
