@@ -24,11 +24,10 @@ RUN echo cwl_runner_version $cwl_runner_version python_sdk_version $python_sdk_v
 
 RUN apt-get update -q
 RUN apt-get install -yq --no-install-recommends nodejs \
-    python-arvados-python-client=$python_sdk_version \
     python3-arvados-cwl-runner=$cwl_runner_version
 
 # use the Python executable from the python-arvados-cwl-runner package
-RUN rm -f /usr/bin/python && ln -s /usr/share/python2.7/dist/python-arvados-python-client/bin/python /usr/bin/python
+RUN rm -f /usr/bin/python && ln -s /usr/share/python3/dist/python3-arvados-cwl-runner/bin/python /usr/bin/python
 RUN rm -f /usr/bin/python3 && ln -s /usr/share/python3/dist/python3-arvados-cwl-runner/bin/python /usr/bin/python3
 
 # Install dependencies and set up system.
