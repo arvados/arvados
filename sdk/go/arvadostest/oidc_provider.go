@@ -47,6 +47,10 @@ func NewOIDCProvider(c *check.C) *OIDCProvider {
 	return p
 }
 
+func (p *OIDCProvider) ValidAccessToken() string {
+	return p.fakeToken([]byte("fake access token"))
+}
+
 func (p *OIDCProvider) serveOIDC(w http.ResponseWriter, req *http.Request) {
 	req.ParseForm()
 	p.c.Logf("serveOIDC: got req: %s %s %s", req.Method, req.URL, req.Form)
@@ -99,7 +103,7 @@ func (p *OIDCProvider) serveOIDC(w http.ResponseWriter, req *http.Request) {
 			ExpiresIn    int32  `json:"expires_in"`
 			IDToken      string `json:"id_token"`
 		}{
-			AccessToken:  p.fakeToken([]byte("fake access token")),
+			AccessToken:  p.ValidAccessToken(),
 			TokenType:    "Bearer",
 			RefreshToken: "test-refresh-token",
 			ExpiresIn:    30,
@@ -114,7 +118,20 @@ func (p *OIDCProvider) serveOIDC(w http.ResponseWriter, req *http.Request) {
 	case "/auth":
 		w.WriteHeader(http.StatusInternalServerError)
 	case "/userinfo":
-		w.WriteHeader(http.StatusInternalServerError)
+		if authhdr := req.Header.Get("Authorization"); strings.TrimPrefix(authhdr, "Bearer ") != p.ValidAccessToken() {
+			p.c.Logf("OIDCProvider: bad auth %q", authhdr)
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"sub":            "fake-user-id",
+			"name":           p.AuthName,
+			"given_name":     p.AuthName,
+			"family_name":    "",
+			"alt_username":   "desired-username",
+			"email":          p.AuthEmail,
+			"email_verified": p.AuthEmailVerified,
+		})
 	default:
 		w.WriteHeader(http.StatusNotFound)
 	}

@@ -9,9 +9,11 @@ import (
 	"context"
 	"crypto/hmac"
 	"crypto/sha256"
+	"database/sql"
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -19,15 +21,26 @@ import (
 	"text/template"
 	"time"
 
+	"git.arvados.org/arvados.git/lib/controller/api"
+	"git.arvados.org/arvados.git/lib/controller/railsproxy"
 	"git.arvados.org/arvados.git/lib/controller/rpc"
+	"git.arvados.org/arvados.git/lib/ctrlctx"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
 	"github.com/coreos/go-oidc"
+	lru "github.com/hashicorp/golang-lru"
+	"github.com/jmoiron/sqlx"
 	"golang.org/x/oauth2"
 	"google.golang.org/api/option"
 	"google.golang.org/api/people/v1"
+)
+
+const (
+	tokenCacheSize        = 1000
+	tokenCacheNegativeTTL = time.Minute * 5
+	tokenCacheTTL         = time.Minute * 10
 )
 
 type oidcLoginController struct {
@@ -139,17 +152,23 @@ func (ctrl *oidcLoginController) UserAuthenticate(ctx context.Context, opts arva
 	return arvados.APIClientAuthorization{}, httpserver.ErrorWithStatus(errors.New("username/password authentication is not available"), http.StatusBadRequest)
 }
 
+// claimser can decode arbitrary claims into a map. Implemented by
+// *oauth2.IDToken and *oauth2.UserInfo.
+type claimser interface {
+	Claims(interface{}) error
+}
+
 // Use a person's token to get all of their email addresses, with the
 // primary address at index 0. The provided defaultAddr is always
 // included in the returned slice, and is used as the primary if the
 // Google API does not indicate one.
-func (ctrl *oidcLoginController) getAuthInfo(ctx context.Context, token *oauth2.Token, idToken *oidc.IDToken) (*rpc.UserSessionAuthInfo, error) {
+func (ctrl *oidcLoginController) getAuthInfo(ctx context.Context, token *oauth2.Token, claimser claimser) (*rpc.UserSessionAuthInfo, error) {
 	var ret rpc.UserSessionAuthInfo
 	defer ctxlog.FromContext(ctx).WithField("ret", &ret).Debug("getAuthInfo returned")
 
 	var claims map[string]interface{}
-	if err := idToken.Claims(&claims); err != nil {
-		return nil, fmt.Errorf("error extracting claims from ID token: %s", err)
+	if err := claimser.Claims(&claims); err != nil {
+		return nil, fmt.Errorf("error extracting claims from token: %s", err)
 	} else if verified, _ := claims[ctrl.EmailVerifiedClaim].(bool); verified || ctrl.EmailVerifiedClaim == "" {
 		// Fall back to this info if the People API call
 		// (below) doesn't return a primary && verified email.
@@ -296,4 +315,172 @@ func (s oauth2State) computeHMAC(key []byte) []byte {
 	mac := hmac.New(sha256.New, key)
 	fmt.Fprintf(mac, "%x %s %s", s.Time, s.Remote, s.ReturnTo)
 	return mac.Sum(nil)
+}
+
+func OIDCAccessTokenAuthorizer(cluster *arvados.Cluster, getdb func(context.Context) (*sqlx.DB, error)) *oidcTokenAuthorizer {
+	// We want ctrl to be nil if the chosen controller is not a
+	// *oidcLoginController, so we can ignore the 2nd return value
+	// of this type cast.
+	ctrl, _ := chooseLoginController(cluster, railsproxy.NewConn(cluster)).(*oidcLoginController)
+	cache, err := lru.New2Q(tokenCacheSize)
+	if err != nil {
+		panic(err)
+	}
+	return &oidcTokenAuthorizer{
+		ctrl:  ctrl,
+		getdb: getdb,
+		cache: cache,
+	}
+}
+
+type oidcTokenAuthorizer struct {
+	ctrl  *oidcLoginController
+	getdb func(context.Context) (*sqlx.DB, error)
+	cache *lru.TwoQueueCache
+}
+
+func (ta *oidcTokenAuthorizer) Middleware(w http.ResponseWriter, r *http.Request, next http.Handler) {
+	if authhdr := strings.Split(r.Header.Get("Authorization"), " "); len(authhdr) > 1 && (authhdr[0] == "OAuth2" || authhdr[0] == "Bearer") {
+		tok, err := ta.exchangeToken(r.Context(), authhdr[1])
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		r.Header.Set("Authorization", "Bearer "+tok)
+	}
+	next.ServeHTTP(w, r)
+}
+
+func (ta *oidcTokenAuthorizer) WrapCalls(origFunc api.RoutableFunc) api.RoutableFunc {
+	if ta.ctrl == nil {
+		// Not using a compatible (OIDC) login controller.
+		return origFunc
+	}
+	return func(ctx context.Context, opts interface{}) (_ interface{}, err error) {
+		creds, ok := auth.FromContext(ctx)
+		if !ok {
+			return origFunc(ctx, opts)
+		}
+		// Check each token in the incoming request. If any
+		// are OAuth2 access tokens, swap them out for Arvados
+		// tokens.
+		for tokidx, tok := range creds.Tokens {
+			tok, err = ta.exchangeToken(ctx, tok)
+			if err != nil {
+				return nil, err
+			}
+			creds.Tokens[tokidx] = tok
+		}
+		ctxlog.FromContext(ctx).WithField("creds", creds).Debug("(*oidcTokenAuthorizer)WrapCalls: new creds")
+		ctx = auth.NewContext(ctx, creds)
+		return origFunc(ctx, opts)
+	}
+}
+
+func (ta *oidcTokenAuthorizer) exchangeToken(ctx context.Context, tok string) (string, error) {
+	if strings.HasPrefix(tok, "v2/") {
+		return tok, nil
+	}
+	if cached, hit := ta.cache.Get(tok); !hit {
+		// Fall through to database and OIDC provider checks
+		// below
+	} else if exp, ok := cached.(time.Time); ok {
+		// cached negative result (value is expiry time)
+		if time.Now().Before(exp) {
+			return tok, nil
+		} else {
+			ta.cache.Remove(tok)
+		}
+	} else {
+		// cached positive result
+		aca := cached.(*arvados.APIClientAuthorization)
+		var expiring bool
+		if aca.ExpiresAt != "" {
+			t, err := time.Parse(time.RFC3339Nano, aca.ExpiresAt)
+			if err != nil {
+				return "", fmt.Errorf("error parsing expires_at value: %w", err)
+			}
+			expiring = t.Before(time.Now().Add(time.Minute))
+		}
+		if !expiring {
+			return aca.TokenV2(), nil
+		}
+	}
+
+	db, err := ta.getdb(ctx)
+	if err != nil {
+		return "", err
+	}
+	tx, err := db.Beginx()
+	if err != nil {
+		return "", err
+	}
+	defer tx.Rollback()
+	ctx = ctrlctx.NewWithTransaction(ctx, tx)
+
+	// We use hmac-sha256(accesstoken,systemroottoken) as the
+	// secret part of our own token, and avoid storing the auth
+	// provider's real secret in our database.
+	mac := hmac.New(sha256.New, []byte(ta.ctrl.Cluster.SystemRootToken))
+	io.WriteString(mac, tok)
+	hmac := fmt.Sprintf("%x", mac.Sum(nil))
+
+	var expiring bool
+	err = tx.QueryRowContext(ctx, `select (expires_at is not null and expires_at - interval '1 minute' <= current_timestamp at time zone 'UTC') from api_client_authorizations where api_token=$1`, hmac).Scan(&expiring)
+	if err != nil && err != sql.ErrNoRows {
+		return "", fmt.Errorf("database error while checking token: %w", err)
+	} else if err == nil && !expiring {
+		// Token is already in the database as an Arvados
+		// token, and isn't about to expire, so we can pass it
+		// through to RailsAPI etc. regardless of whether it's
+		// an OIDC access token.
+		return tok, nil
+	}
+	updating := err == nil
+
+	// Check whether the token is a valid OIDC access token. If
+	// so, swap it out for an Arvados token (creating/updating an
+	// api_client_authorizations row if needed) which downstream
+	// server components will accept.
+	err = ta.ctrl.setup()
+	if err != nil {
+		return "", fmt.Errorf("error setting up OpenID Connect provider: %s", err)
+	}
+	oauth2Token := &oauth2.Token{
+		AccessToken: tok,
+	}
+	userinfo, err := ta.ctrl.provider.UserInfo(ctx, oauth2.StaticTokenSource(oauth2Token))
+	if err != nil {
+		ta.cache.Add(tok, time.Now().Add(tokenCacheNegativeTTL))
+		return tok, nil
+	}
+	ctxlog.FromContext(ctx).WithField("userinfo", userinfo).Debug("(*oidcTokenAuthorizer)exchangeToken: got userinfo")
+	authinfo, err := ta.ctrl.getAuthInfo(ctx, oauth2Token, userinfo)
+	if err != nil {
+		return "", err
+	}
+
+	var aca arvados.APIClientAuthorization
+	if updating {
+		_, err = tx.ExecContext(ctx, `update api_client_authorizations set expires_at=$1 where api_token=$2`, time.Now().Add(tokenCacheTTL+time.Minute), hmac)
+		if err != nil {
+			return "", fmt.Errorf("error adding OIDC access token to database: %w", err)
+		}
+	} else {
+		aca, err = createAPIClientAuthorization(ctx, ta.ctrl.RailsProxy, ta.ctrl.Cluster.SystemRootToken, *authinfo)
+		if err != nil {
+			return "", err
+		}
+		_, err = tx.ExecContext(ctx, `update api_client_authorizations set api_token=$1 where uuid=$2`, hmac, aca.UUID)
+		if err != nil {
+			return "", fmt.Errorf("error adding OIDC access token to database: %w", err)
+		}
+		aca.APIToken = hmac
+	}
+	err = tx.Commit()
+	if err != nil {
+		return "", err
+	}
+	ta.cache.Add(tok, aca)
+	return aca.TokenV2(), nil
 }
