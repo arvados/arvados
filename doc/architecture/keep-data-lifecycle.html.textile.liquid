@@ -24,7 +24,9 @@ The nominal state is *persisted* which means the data can be can be accessed nor
 
 A collection is *expiring* when it has a *trash_at* time in the future. An expiring collection can be accessed as normal, but is scheduled to be trashed automatically at the *trash_at* time.
 
-A collection is *trashed* when it has a *trash_at* time in the past. The *is_trashed* attribute will also be "true". The delete operation immediately puts the collection in the trash by setting the *trash_at* time to "now". Once trashed, the collection is no longer readable through normal data access APIs. The collection will have *delete_at* set to some time in the future. The trashed collection is recoverable until the delete_at time passes, at which point the collection is permanently deleted.
+A collection is *trashed* when it has a *trash_at* time in the past. The *is_trashed* attribute will also be "true". The delete operation immediately puts the collection in the trash by setting the *trash_at* time to "now", and *delete_at* defaults to "now" + @Collections.DefaultTrashLifetime@. Once trashed, the collection is no longer readable through normal data access APIs. The collection will have *delete_at* set to some time in the future. The trashed collection is recoverable until the *delete_at* time passes, at which point the collection is permanently deleted.
+
+See "Recovering trashed collections":{{ site.baseurl }}/user/tutorials/tutorial-keep-collection-lifecycle.html#trash-recovery for instructions to recover trashed collections.
 
 h3(#collection_attributes). Collection lifecycle attributes
 

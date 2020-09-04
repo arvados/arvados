@@ -1,7 +1,7 @@
 ---
 layout: default
 navsection: userguide
-title: "Keep collection lifecycle"
+title: "Trashing and untrashing data"
 ...
 {% comment %}
 Copyright (C) The Arvados Authors. All rights reserved.
@@ -9,23 +9,18 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-During it's lifetime, a keep collection can be in various states. These states are *persisted*, *expiring*, *trashed*  and *permanently deleted*.
+Collections have a sophisticated data lifecycle, which is documented in the architecture guide at "Collection lifecycle":{{ site.baseurl }}/architecture/keep-data-lifecycle.html#collection_lifecycle.
 
-The nominal state is *persisted* which means the data can be can be accessed normally and will be retained indefinitely.
+Arvados supports trashing (deletion) of collections. For a period of time after a collection is trashed, it can be "untrashed". After that period, the collection is permanently deleted, though there may still be ways to recover the data, see "Recovering data":{{ site.baseurl }}/admin/keep-recovering-data.html in the admin guide for more details.
 
-A collection is *expiring* when it has a *trash_at* time in the future. An expiring collection can be accessed as normal, but is scheduled to be trashed automatically at the *trash_at* time.
-
-A collection is *trashed* when it has a *trash_at* time in the past. The *is_trashed* attribute will also be "true". The delete operation immediately puts the collection in the trash by setting the *trash_at* time to "now". Once trashed, the collection is no longer readable through normal data access APIs. The collection will have *delete_at* set to some time in the future. The trashed collection is recoverable until the delete_at time passes, at which point the collection is permanently deleted.
-
-# "*Deleting / trashing collections*":#delete-collection
+# "*Trashing (deleting) collections*":#delete-collection
 # "*Recovering trashed collections*":#trash-recovery
-# "*Collection lifecycle attributes*":#collection_attributes
 
 {% include 'tutorial_expectations' %}
 
-h2(#delete-collection). Deleting / trashing collections
+h2(#delete-collection). Trashing (deleting) collections
 
-A collection can be deleted using either the arv command line tool or the workbench.
+A collection can be trashed using workbench or the arv command line tool.
 
 h3. Trashing a collection using workbench
 
@@ -39,15 +34,15 @@ arv collection delete --uuid=zzzzz-4zz18-xxxxxxxxxxxxxxx
 
 h2(#trash-recovery). Recovering trashed collections
 
-A collection can be un-trashed / recovered using either the arv command line tool or the workbench.
+A collection can be untrashed / recovered using workbench or the arv command line tool.
 
-h3. Un-trashing a collection using workbench
+h3. Untrashing a collection using workbench
 
 To untrash a collection using workbench, go to trash page on workbench by clicking on the "Trash" icon in the top navigation in workbench and use the recycle icon or selection dropdown option.
 
 !{display: block;margin-left: 25px;margin-right: auto;border:1px solid lightgray;}{{ site.baseurl }}/images/trash-button-topnav.png!
 
-h3. Un-trashing a collection using arv command line tool
+h3. Untrashing a collection using arv command line tool
 
 You can list the trashed collections using the list command.
 
@@ -61,13 +56,4 @@ You can then untrash a particular collection using arv using it's uuid.
 arv collection untrash --uuid=zzzzz-4zz18-xxxxxxxxxxxxxxx
 </pre>
 
-h2(#collection_attributes). Collection lifecycle attributes
-
-As listed above the attributes that are used to manage a collection lifecycle are it's *is_trashed*, *trash_at*, and *delete_at*. The table below lists the values of these attributes and how they influence the state of a collection and it's accessibility.
-
-table(table table-bordered table-condensed).
-|_. collection state|_. is_trashed|_. trash_at|_. delete_at|_. get|_. list|_. list?include_trash=true|_. can be modified|
-|persisted collection|false |null |null |yes |yes |yes |yes |
-|expiring collection|false |future |future |yes  |yes |yes |yes |
-|trashed collection|true |past |future |no |no |yes |only is_trashed, trash_at and delete_at attribtues|
-|deleted collection|true|past |past |no |no |no |no |
+The architecture section has a more detailed description of the "data lifecycle":{{ site.baseurl }}/architecture/keep-data-lifecycle.html  in Keep.

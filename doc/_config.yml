@@ -143,12 +143,12 @@ navbar:
   architecture:
     - Topics:
       - architecture/index.html.textile.liquid
-    - Keep (storage):
+    - Storage in Keep:
       - architecture/storage.html.textile.liquid
+      - architecture/keep-clients.html.textile.liquid
       - architecture/keep-data-lifecycle.html.textile.liquid
       - architecture/manifest-format.html.textile.liquid
-      - architecture/keep-clients.html.textile.liquid
-    - Crunch (computation):
+    - Computation with Crunch:
       - api/execution.html.textile.liquid
     - Other:
       - api/permission-model.html.textile.liquid

@@ -10,9 +10,27 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
+Arvados has several features to prevent accidental loss or deletion of data, but accidents can happen. This page lays out the options to recover deleted or overwritten collections.
+
+For more detail on the data lifecycle in Arvados, see the "Data lifecycle":{{ site.baseurl }}/architecture/keep-data-lifecycle.html page.
+
+h2(#check_the_trash). Check the trash
+
+When a collection is deleted, it is moved to the trash. It will remain there for the duration of @Collections.DefaultTrashLifetime@, and it can be untrashed via workbench or with the cli tools, as described in "Recovering trashed collections":{{ site.baseurl }}/user/tutorials/tutorial-keep-collection-lifecycle.html#trash-recovery.
+
+h2(#check_other_collections). Check for other collections with the same PDH
+
+Multiple collections may share a _portable data hash_, i.e. have the same contents. If another collection exists with the same portable data hash, recovering data is not necessary, everything is still stored in Keep. A new copy of the collection can be made to make the data available in the correct project and with the correct permissions.
+
+h2(#check_collection_versioning). Consider collection versioning
+
+Arvados supports collection versioning. If it has been "enabled":{{ site.baseurl }}/admin/collection-versioning.html on your cluster, the deleted collection may be recoverable from an older version. See "Using collection versioning":{{ site.baseurl }}/user/topics/collection-versioning.html for details.
+
 h2(#recover_collection). Recovering collections
 
-To recover a collection the manifest is required. Arvados has a built-in audit log, which consists of a row added to the "logs" table in the PostgreSQL database each time an Arvados object is created, modified, or deleted. Collection manifests are included, unless they are listed in the @UnloggedAttributes@ configuration parameter. The audit log is retained for up to @MaxAge@.
+When all the above options fail, it may still be possible to recover a collection that has been deleted.
+
+To recover a collection the manifest is required. Arvados has a built-in audit log, which consists of a row added to the "logs" table in the PostgreSQL database each time an Arvados object is created, modified, or deleted. Collection manifests are included, unless they are listed in the @AuditLogs.UnloggedAttributes@ configuration parameter. The audit log is retained for up to @AuditLogs.MaxAge@.
 
 In some cases, it is possible to recover files that have been lost by modifying or deleting a collection.
 
@@ -52,7 +70,7 @@ If you suspect blocks have been trashed erroneously, you should immediately:
 
 When you think you have corrected the underlying problem, you should:
 
-* Set @BlobMissingReport@ to a suitable value (perhaps "/tmp/keep-balance-lost-blocks.txt").
+* Set @Collections.BlobMissingReport@ to a suitable value (perhaps "/tmp/keep-balance-lost-blocks.txt").
 * Start @keep-balance@
 * After @keep-balance@ completes its first sweep, inspect /tmp/keep-balance-lost-blocks.txt. If it's not empty, you can request all keepstores to untrash any blocks that are still recoverable with a script like this:
 
@@ -79,7 +97,7 @@ done < /tmp/keep-balance-lost-blocks.txt
 </pre>
 </notextile>
 
-Obviously this could be improved upon with increased parallelism for large scale tasks, if needed. Any blocks which were successfully untrashed can be removed from the list of blocks and collections which need to be recovered.
+Any blocks which were successfully untrashed can be removed from the list of blocks and collections which need to be recovered.
 
 h2(#regenerating_lost_blocks). Regenerating lost blocks
 
