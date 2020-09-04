@@ -111,6 +111,14 @@ func (conn *Conn) chooseBackend(id string) backend {
 	}
 }
 
+func (conn *Conn) localOrLoginCluster() backend {
+	if conn.cluster.Login.LoginCluster != "" {
+		return conn.chooseBackend(conn.cluster.Login.LoginCluster)
+	} else {
+		return conn.local
+	}
+}
+
 // Call fn with the local backend; then, if fn returned 404, call fn
 // on the available remote backends (possibly concurrently) until one
 // succeeds.
@@ -462,15 +470,37 @@ func (conn *Conn) UserMerge(ctx context.Context, options arvados.UserMergeOption
 }
 
 func (conn *Conn) UserActivate(ctx context.Context, options arvados.UserActivateOptions) (arvados.User, error) {
-	return conn.chooseBackend(options.UUID).UserActivate(ctx, options)
+	return conn.localOrLoginCluster().UserActivate(ctx, options)
 }
 
 func (conn *Conn) UserSetup(ctx context.Context, options arvados.UserSetupOptions) (map[string]interface{}, error) {
-	return conn.chooseBackend(options.UUID).UserSetup(ctx, options)
+	upstream := conn.localOrLoginCluster()
+	if upstream != conn.local {
+		// When LoginCluster is in effect, and we're setting
+		// up a remote user, and we want to give that user
+		// access to a local VM, we can't include the VM in
+		// the setup call, because the remote cluster won't
+		// recognize it.
+
+		// Similarly, if we want to create a git repo,
+		// it should be created on the local cluster,
+		// not the remote one.
+
+		upstreamOptions := options
+		upstreamOptions.VMUUID = ""
+		upstreamOptions.RepoName = ""
+
+		ret, err := upstream.UserSetup(ctx, upstreamOptions)
+		if err != nil {
+			return ret, err
+		}
+	}
+
+	return conn.local.UserSetup(ctx, options)
 }
 
 func (conn *Conn) UserUnsetup(ctx context.Context, options arvados.GetOptions) (arvados.User, error) {
-	return conn.chooseBackend(options.UUID).UserUnsetup(ctx, options)
+	return conn.localOrLoginCluster().UserUnsetup(ctx, options)
 }
 
 func (conn *Conn) UserGet(ctx context.Context, options arvados.GetOptions) (arvados.User, error) {
