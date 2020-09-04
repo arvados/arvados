@@ -58,6 +58,7 @@ export interface ClusterConfigJSON {
         SSHHelpPageHTML: string;
         SSHHelpHostSuffix: string;
         SiteName: string;
+        IdleTimeout: string;
     };
     Login: {
         LoginCluster: string;
@@ -216,6 +217,7 @@ export const mockClusterConfigJSON = (config: Partial<ClusterConfigJSON>): Clust
         SSHHelpPageHTML: "",
         SSHHelpHostSuffix: "",
         SiteName: "",
+        IdleTimeout: "0s",
     },
     Login: {
         LoginCluster: "",

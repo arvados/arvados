@@ -98,6 +98,7 @@ import { FedLogin } from './fed-login';
 import { CollectionsContentAddressPanel } from '~/views/collection-content-address-panel/collection-content-address-panel';
 import { AllProcessesPanel } from '../all-processes-panel/all-processes-panel';
 import { NotFoundPanel } from '../not-found-panel/not-found-panel';
+import { AutoLogout } from '~/views-components/auto-logout/auto-logout';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -132,6 +133,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 interface WorkbenchDataProps {
     isUserActive: boolean;
     isNotLinking: boolean;
+    sessionIdleTimeout: number;
 }
 
 type WorkbenchPanelProps = WithStyles<CssRules> & WorkbenchDataProps;
@@ -148,6 +150,7 @@ const saveSplitterSize = (size: number) => localStorage.setItem('splitterSize', 
 export const WorkbenchPanel =
     withStyles(styles)((props: WorkbenchPanelProps) =>
         <Grid container item xs className={props.classes.root}>
+            { props.sessionIdleTimeout > 0 && <AutoLogout />}
             <Grid container item xs className={props.classes.container}>
                 <SplitterLayout customClassName={props.classes.splitter} percentage={true}
                     primaryIndex={0} primaryMinSize={10}
