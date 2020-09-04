@@ -486,20 +486,14 @@ func (conn *Conn) UserSetup(ctx context.Context, options arvados.UserSetupOption
 		// it should be created on the local cluster,
 		// not the remote one.
 
-		setupVM := options.VMUUID
-		setupRepo := options.RepoName
-		options.VMUUID = ""
-		options.RepoName = ""
+		upstreamOptions := options
+		upstreamOptions.VMUUID = ""
+		upstreamOptions.RepoName = ""
 
-		ret, err := upstream.UserSetup(ctx, options)
+		ret, err := upstream.UserSetup(ctx, upstreamOptions)
 		if err != nil {
 			return ret, err
 		}
-
-		// Restore VMUUID and RepoName for the call to local
-		// UserSetup below.
-		options.VMUUID = setupVM
-		options.RepoName = setupRepo
 	}
 
 	return conn.local.UserSetup(ctx, options)
