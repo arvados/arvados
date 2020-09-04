@@ -65,7 +65,7 @@ server {
 
   location /<span class="userinput">shell.ClusterID</span> {
     if ($request_method = 'OPTIONS') {
-       add_header 'Access-Control-Allow-Origin' '*'; 
+       add_header 'Access-Control-Allow-Origin' '*';
        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
        add_header 'Access-Control-Allow-Headers' 'DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type';
        add_header 'Access-Control-Max-Age' 1728000;
@@ -146,7 +146,7 @@ SHELLINABOX_ARGS="--disable-ssl --no-beep --service=/<span class="userinput">she
 
 h2(#config-pam). Configure pam
 
-Use a text editor to create a new file @/etc/pam.d/shellinabox@ with the following configuration. Options that need attention are marked in <span class="userinput">red</span>.
+Use a text editor to create a new file @/etc/pam.d/shellinabox@ with the following configuration.  Options that need attention are marked in <span class="userinput">red</span>.
 
 <notextile><pre>
 # This example is a stock debian "login" file with pam_arvados
@@ -159,7 +159,11 @@ session [success=ok ignore=ignore module_unknown=ignore default=bad] pam_selinux
 session       required   pam_env.so readenv=1
 session       required   pam_env.so readenv=1 envfile=/etc/default/locale
 
+# The first argument is the address of the API server.  The second
+# argument is this shell node's hostname.  The hostname must match the
+# "hostname" field of the virtual_machine record.
 auth [success=1 default=ignore] /usr/lib/pam_arvados.so <span class="userinput">ClusterID.example.com</span> <span class="userinput">shell.ClusterID.example.com</span>
+
 auth    requisite            pam_deny.so
 auth    required            pam_permit.so
 
@@ -179,5 +183,4 @@ session [success=ok ignore=ignore module_unknown=ignore default=bad] pam_selinux
 
 h2(#confirm-working). Confirm working installation
 
-A user should be able to log in to the shell server, using webshell via workbench. Please refer to "Accessing an Arvados VM with Webshell":{{site.baseurl}}/user/getting_started/vm-login-with-webshell.html
-
+A user should now be able to log in to the shell server, using webshell via workbench. Please refer to "Accessing an Arvados VM with Webshell":{{site.baseurl}}/user/getting_started/vm-login-with-webshell.html
