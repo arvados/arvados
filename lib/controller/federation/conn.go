@@ -474,40 +474,35 @@ func (conn *Conn) UserActivate(ctx context.Context, options arvados.UserActivate
 }
 
 func (conn *Conn) UserSetup(ctx context.Context, options arvados.UserSetupOptions) (map[string]interface{}, error) {
-	var setupVM string
-	var setupRepo string
-	if conn.cluster.Login.LoginCluster != "" {
-		if options.VMUUID != "" && options.VMUUID[0:5] != options.UUID[0:5] {
-			// When LoginCluster is in effect, and we're
-			// setting up a remote user, and we want to
-			// give that user access to a local VM, then
-			// we need to set up the user on the remote
-			// LoginCluster first, followed by calling
-			// setup on the local instance to give access
-			// to the VM.
-			setupVM = options.VMUUID
-			options.VMUUID = ""
-		}
-		if options.RepoName != "" {
-			// Similarly, if we want to create a git repo,
-			// it should be created on the local cluster,
-			// not the remote one.
-			setupRepo = options.RepoName
-			options.RepoName = ""
-		}
-	}
+	upstream := conn.localOrLoginCluster()
+	if upstream != conn.local {
+		// When LoginCluster is in effect, and we're setting
+		// up a remote user, and we want to give that user
+		// access to a local VM, we can't include the VM in
+		// the setup call, because the remote cluster won't
+		// recognize it.
 
-	ret, err := conn.localOrLoginCluster().UserSetup(ctx, options)
-	if err != nil {
-		return ret, err
-	}
+		// Similarly, if we want to create a git repo,
+		// it should be created on the local cluster,
+		// not the remote one.
 
-	if setupVM != "" || setupRepo != "" {
+		setupVM := options.VMUUID
+		setupRepo := options.RepoName
+		options.VMUUID = ""
+		options.RepoName = ""
+
+		ret, err := upstream.UserSetup(ctx, options)
+		if err != nil {
+			return ret, err
+		}
+
+		// Restore VMUUID and RepoName for the call to local
+		// UserSetup below.
 		options.VMUUID = setupVM
 		options.RepoName = setupRepo
-		ret, err = conn.local.UserSetup(ctx, options)
 	}
-	return ret, err
+
+	return conn.local.UserSetup(ctx, options)
 }
 
 func (conn *Conn) UserUnsetup(ctx context.Context, options arvados.GetOptions) (arvados.User, error) {

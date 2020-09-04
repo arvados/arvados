@@ -8,7 +8,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"math"
 	"net"
@@ -305,7 +304,7 @@ func (s *IntegrationSuite) TestGetCollectionAsAnonymous(c *check.C) {
 	c.Check(err, check.IsNil)
 
 	// Make a v2 token of the z3 anonymous user, and use it on z1
-	_, anonac1, _ := s.clientsWithToken("z1111", fmt.Sprintf("v2/%v/%v", outAuth.UUID, outAuth.APIToken))
+	_, anonac1, _ := s.clientsWithToken("z1111", outAuth.TokenV2())
 	outUser2, err := anonac1.CurrentUser()
 	c.Check(err, check.IsNil)
 	// z3 anonymous user will be mapped to the z1 anonymous user
@@ -472,7 +471,7 @@ func (s *IntegrationSuite) TestSetupUserWithVM(c *check.C) {
 	c.Check(err, check.IsNil)
 
 	// Make a v2 root token to communicate with z3333
-	rootctx3, rootac3, _ := s.clientsWithToken("z3333", fmt.Sprintf("v2/%v/%v", outAuth.UUID, outAuth.APIToken))
+	rootctx3, rootac3, _ := s.clientsWithToken("z3333", outAuth.TokenV2())
 
 	// Create VM on z3333
 	var outVM arvados.VirtualMachine
