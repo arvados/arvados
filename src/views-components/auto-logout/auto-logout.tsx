@@ -39,34 +39,35 @@ const mapDispatchToProps = (dispatch: Dispatch): AutoLogoutActionProps => ({
     doCloseWarn: () => dispatch(snackbarActions.CLOSE_SNACKBAR()),
 });
 
-type AutoLogoutProps = AutoLogoutDataProps & AutoLogoutActionProps;
+export type AutoLogoutProps = AutoLogoutDataProps & AutoLogoutActionProps;
 
-export const AutoLogout = connect(mapStateToProps, mapDispatchToProps)(
-    (props: AutoLogoutProps) => {
-        let logoutTimer: NodeJS.Timer;
-        const lastWarningDuration = min([props.lastWarningDuration, props.sessionIdleTimeout])! * 1000 ;
+export const AutoLogoutComponent = (props: AutoLogoutProps) => {
+    let logoutTimer: NodeJS.Timer;
+    const lastWarningDuration = min([props.lastWarningDuration, props.sessionIdleTimeout])! * 1000 ;
 
-        const handleOnIdle = () => {
-            logoutTimer = setTimeout(
-                () => props.doLogout(), lastWarningDuration);
-            props.doWarn(
-                "Your session is about to be closed due to inactivity",
-                lastWarningDuration);
-        };
+    const handleOnIdle = () => {
+        logoutTimer = setTimeout(
+            () => props.doLogout(), lastWarningDuration);
+        props.doWarn(
+            "Your session is about to be closed due to inactivity",
+            lastWarningDuration);
+    };
 
-        const handleOnActive = () => {
-            clearTimeout(logoutTimer);
-            props.doCloseWarn();
-        };
+    const handleOnActive = () => {
+        clearTimeout(logoutTimer);
+        props.doCloseWarn();
+    };
 
-        useIdleTimer({
-            timeout: (props.lastWarningDuration < props.sessionIdleTimeout)
-                ? 1000 * (props.sessionIdleTimeout - props.lastWarningDuration)
-                : 1,
-            onIdle: handleOnIdle,
-            onActive: handleOnActive,
-            debounce: 500
-        });
-
-        return <span />;
+    useIdleTimer({
+        timeout: (props.lastWarningDuration < props.sessionIdleTimeout)
+            ? 1000 * (props.sessionIdleTimeout - props.lastWarningDuration)
+            : 1,
+        onIdle: handleOnIdle,
+        onActive: handleOnActive,
+        debounce: 500
     });
+
+    return <span />;
+};
+
+export const AutoLogout = connect(mapStateToProps, mapDispatchToProps)(AutoLogoutComponent);
