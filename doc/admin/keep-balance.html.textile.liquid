@@ -20,7 +20,7 @@ The keep-balance service determines which blocks are candidates for deletion and
 
 If keep-balance instructs keepstore to trash a block which is older than @BlobSigningTTL@, and @BlobTrashLifetime@ is non-zero, the block will be moved to "trash".  A block which is in the trash is no longer accessible by read requests, but has not yet been permanently deleted.  Blocks which are in the trash may be recovered using the "untrash" API endpoint.  Blocks are permanently deleted after they have been in the trash for the duration in @BlobTrashLifetime@.
 
-Keep-balance is also responsible for balancing the distribution of blocks across keepstore servers by asking servers to pull blocks from other servers (as determined by their "storage class":{{site.baseurl}}/admin/storage-classes.html and "rendezvous hashing order":{{site.baseurl}}/api/storage.html).  Pulling a block makes a copy.  If a block is overreplicated (i.e. there are excess copies) after pulling, it will be subsequently trashed and deleted on the original server, subject to @BlobTrash@ and @BlobTrashLifetime@ settings.
+Keep-balance is also responsible for balancing the distribution of blocks across keepstore servers by asking servers to pull blocks from other servers (as determined by their "storage class":{{site.baseurl}}/admin/storage-classes.html and "rendezvous hashing order":{{site.baseurl}}/architecture/keep-clients.html#rendezvous).  Pulling a block makes a copy.  If a block is overreplicated (i.e. there are excess copies) after pulling, it will be subsequently trashed and deleted on the original server, subject to @BlobTrash@ and @BlobTrashLifetime@ settings.
 
 h3. Scanning
 
