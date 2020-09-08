@@ -17,7 +17,7 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-// Map of available cloud drivers.
+// Drivers is a map of available cloud drivers.
 // Clusters.*.Containers.CloudVMs.Driver configuration values
 // correspond to keys in this map.
 var Drivers = map[string]cloud.Driver{
@@ -180,7 +180,6 @@ func (inst instrumentedInstance) SetTags(tags cloud.InstanceTags) error {
 func boolLabelValue(v bool) string {
 	if v {
 		return "1"
-	} else {
-		return "0"
 	}
+	return "0"
 }

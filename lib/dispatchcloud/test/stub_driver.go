@@ -118,10 +118,8 @@ func (sis *StubInstanceSet) Create(it arvados.InstanceType, image cloud.ImageID,
 	}
 	if sis.allowCreateCall.After(time.Now()) {
 		return nil, RateLimitError{sis.allowCreateCall}
-	} else {
-		sis.allowCreateCall = time.Now().Add(sis.driver.MinTimeBetweenCreateCalls)
 	}
-
+	sis.allowCreateCall = time.Now().Add(sis.driver.MinTimeBetweenCreateCalls)
 	ak := sis.driver.AuthorizedKeys
 	if authKey != nil {
 		ak = append([]ssh.PublicKey{authKey}, ak...)
@@ -154,9 +152,8 @@ func (sis *StubInstanceSet) Instances(cloud.InstanceTags) ([]cloud.Instance, err
 	defer sis.mtx.RUnlock()
 	if sis.allowInstancesCall.After(time.Now()) {
 		return nil, RateLimitError{sis.allowInstancesCall}
-	} else {
-		sis.allowInstancesCall = time.Now().Add(sis.driver.MinTimeBetweenInstancesCalls)
 	}
+	sis.allowInstancesCall = time.Now().Add(sis.driver.MinTimeBetweenInstancesCalls)
 	var r []cloud.Instance
 	for _, ss := range sis.servers {
 		r = append(r, ss.Instance())
@@ -277,13 +274,11 @@ func (svm *StubVM) Exec(env map[string]string, command string, stdin io.Reader, 
 				svm.Lock()
 				defer svm.Unlock()
 				if svm.running[uuid] != pid {
-					if !completed {
-						bugf := svm.sis.driver.Bugf
-						if bugf == nil {
-							bugf = logger.Warnf
-						}
-						bugf("[test] StubDriver bug or caller bug: pid %d exiting, running[%s]==%d", pid, uuid, svm.running[uuid])
+					bugf := svm.sis.driver.Bugf
+					if bugf == nil {
+						bugf = logger.Warnf
 					}
+					bugf("[test] StubDriver bug or caller bug: pid %d exiting, running[%s]==%d", pid, uuid, svm.running[uuid])
 				} else {
 					delete(svm.running, uuid)
 				}
@@ -308,7 +303,7 @@ func (svm *StubVM) Exec(env map[string]string, command string, stdin io.Reader, 
 			time.Sleep(time.Duration(math_rand.Float64()*20) * time.Millisecond)
 
 			svm.Lock()
-			killed := svm.running[uuid] != pid
+			killed := svm.killing[uuid]
 			svm.Unlock()
 			if killed || wantCrashEarly {
 				return
@@ -348,21 +343,9 @@ func (svm *StubVM) Exec(env map[string]string, command string, stdin io.Reader, 
 	}
 	if strings.HasPrefix(command, "crunch-run --kill ") {
 		svm.Lock()
-		pid, running := svm.running[uuid]
-		if running && !svm.killing[uuid] {
+		_, running := svm.running[uuid]
+		if running {
 			svm.killing[uuid] = true
-			go func() {
-				time.Sleep(time.Duration(math_rand.Float64()*30) * time.Millisecond)
-				svm.Lock()
-				defer svm.Unlock()
-				if svm.running[uuid] == pid {
-					// Kill only if the running entry
-					// hasn't since been killed and
-					// replaced with a different one.
-					delete(svm.running, uuid)
-				}
-				delete(svm.killing, uuid)
-			}()
 			svm.Unlock()
 			time.Sleep(time.Duration(math_rand.Float64()*2) * time.Millisecond)
 			svm.Lock()
@@ -372,10 +355,9 @@ func (svm *StubVM) Exec(env map[string]string, command string, stdin io.Reader, 
 		if running {
 			fmt.Fprintf(stderr, "%s: container is running\n", uuid)
 			return 1
-		} else {
-			fmt.Fprintf(stderr, "%s: container is not running\n", uuid)
-			return 0
 		}
+		fmt.Fprintf(stderr, "%s: container is not running\n", uuid)
+		return 0
 	}
 	if command == "true" {
 		return 0

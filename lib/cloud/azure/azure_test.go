@@ -127,7 +127,7 @@ var live = flag.String("live-azure-cfg", "", "Test with real azure API, provide 
 func GetInstanceSet() (cloud.InstanceSet, cloud.ImageID, arvados.Cluster, error) {
 	cluster := arvados.Cluster{
 		InstanceTypes: arvados.InstanceTypeMap(map[string]arvados.InstanceType{
-			"tiny": arvados.InstanceType{
+			"tiny": {
 				Name:         "tiny",
 				ProviderType: "Standard_D1_v2",
 				VCPUs:        1,
@@ -259,7 +259,7 @@ func (*AzureInstanceSetSuite) TestWrapError(c *check.C) {
 			DetailedError: autorest.DetailedError{
 				Response: &http.Response{
 					StatusCode: 429,
-					Header:     map[string][]string{"Retry-After": []string{"123"}},
+					Header:     map[string][]string{"Retry-After": {"123"}},
 				},
 			},
 			ServiceError: &azure.ServiceError{},

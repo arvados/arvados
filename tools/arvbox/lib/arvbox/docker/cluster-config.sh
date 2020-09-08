@@ -39,11 +39,6 @@ if ! test -s /var/lib/arvados/system_root_token ; then
 fi
 system_root_token=$(cat /var/lib/arvados/system_root_token)
 
-if ! test -s /var/lib/arvados/sso_app_secret ; then
-    ruby -e 'puts rand(2**400).to_s(36)' > /var/lib/arvados/sso_app_secret
-fi
-sso_app_secret=$(cat /var/lib/arvados/sso_app_secret)
-
 if ! test -s /var/lib/arvados/vm-uuid ; then
     echo $uuid_prefix-2x53u-$(ruby -e 'puts rand(2**400).to_s(36)[0,15]') > /var/lib/arvados/vm-uuid
 fi
@@ -83,8 +78,6 @@ Clusters:
         ExternalURL: "https://$localip:${services[workbench]}"
       Workbench2:
         ExternalURL: "https://$localip:${services[workbench2-ssl]}"
-      SSO:
-        ExternalURL: "https://$localip:${services[sso]}"
       Keepproxy:
         ExternalURL: "https://$localip:${services[keepproxy-ssl]}"
         InternalURLs:
@@ -111,17 +104,15 @@ Clusters:
         InternalURLs:
           "http://localhost:${services[keep-web]}/": {}
         ExternalURL: "https://$localip:${services[keep-web-ssl]}/"
-        InternalURLs:
-          "http://localhost:${services[keep-web]}/": {}
       Composer:
         ExternalURL: "https://$localip:${services[composer]}"
       Controller:
         ExternalURL: "https://$localip:${services[controller-ssl]}"
         InternalURLs:
           "http://localhost:${services[controller]}": {}
-      RailsAPI:
-        InternalURLs:
-          "http://localhost:${services[api]}/": {}
+      WebShell:
+        InternalURLs: {}
+        ExternalURL: "https://$localip:${services[webshell-ssl]}"
     PostgreSQL:
       ConnectionPool: 32 # max concurrent connections per arvados server daemon
       Connection:
@@ -139,10 +130,8 @@ Clusters:
       DefaultReplication: 1
       TrustAllContent: true
     Login:
-      SSO:
+      Test:
         Enable: true
-        ProviderAppSecret: $sso_app_secret
-        ProviderAppID: arvados-server
     Users:
       NewUsersAreActive: true
       AutoAdminFirstUser: true
@@ -174,6 +163,18 @@ EOF
 /usr/local/lib/arvbox/yml_override.py /var/lib/arvados/cluster_config.yml
 
 cp /var/lib/arvados/cluster_config.yml /etc/arvados/config.yml
+
+chmod og-rw \
+      /var/lib/arvados/cluster_config.yml.override \
+      /var/lib/arvados/cluster_config.yml \
+      /etc/arvados/config.yml \
+      /var/lib/arvados/api_secret_token \
+      /var/lib/arvados/blob_signing_key \
+      /var/lib/arvados/management_token \
+      /var/lib/arvados/system_root_token \
+      /var/lib/arvados/api_database_pw \
+      /var/lib/arvados/workbench_secret_token \
+      /var/lib/arvados/superuser_token \
 
 mkdir -p /var/lib/arvados/run_tests
 cat >/var/lib/arvados/run_tests/config.yml <<EOF

@@ -91,7 +91,7 @@ func (s *ProxyRemoteSuite) SetUpTest(c *check.C) {
 	s.cluster.Collections.BlobSigningKey = knownKey
 	s.cluster.SystemRootToken = arvadostest.SystemRootToken
 	s.cluster.RemoteClusters = map[string]arvados.RemoteCluster{
-		s.remoteClusterID: arvados.RemoteCluster{
+		s.remoteClusterID: {
 			Host:     strings.Split(s.remoteAPI.URL, "//")[1],
 			Proxy:    true,
 			Scheme:   "http",

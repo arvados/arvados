@@ -127,7 +127,7 @@ func (this *KeepClient) putReplicas(
 	sv := NewRootSorter(this.WritableLocalRoots(), hash).GetSortedRoots()
 
 	// The next server to try contacting
-	next_server := 0
+	nextServer := 0
 
 	// The number of active writers
 	active := 0
@@ -162,15 +162,15 @@ func (this *KeepClient) putReplicas(
 
 	for retriesRemaining > 0 {
 		retriesRemaining -= 1
-		next_server = 0
+		nextServer = 0
 		retryServers = []string{}
 		for replicasTodo > 0 {
 			for active*replicasPerThread < replicasTodo {
 				// Start some upload requests
-				if next_server < len(sv) {
-					DebugPrintf("DEBUG: [%s] Begin upload %s to %s", reqid, hash, sv[next_server])
-					go this.uploadToKeepServer(sv[next_server], hash, getReader(), upload_status, expectedLength, reqid)
-					next_server += 1
+				if nextServer < len(sv) {
+					DebugPrintf("DEBUG: [%s] Begin upload %s to %s", reqid, hash, sv[nextServer])
+					go this.uploadToKeepServer(sv[nextServer], hash, getReader(), upload_status, expectedLength, reqid)
+					nextServer += 1
 					active += 1
 				} else {
 					if active == 0 && retriesRemaining == 0 {
@@ -180,9 +180,8 @@ func (this *KeepClient) putReplicas(
 						}
 						msg = msg[:len(msg)-2]
 						return locator, replicasDone, InsufficientReplicasError(errors.New(msg))
-					} else {
-						break
 					}
+					break
 				}
 			}
 			DebugPrintf("DEBUG: [%s] Replicas remaining to write: %v active uploads: %v",

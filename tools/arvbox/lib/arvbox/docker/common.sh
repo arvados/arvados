@@ -33,7 +33,6 @@ services=(
   [api]=8004
   [controller]=8003
   [controller-ssl]=8000
-  [sso]=8900
   [composer]=4200
   [arv-git-httpd-ssl]=9000
   [arv-git-httpd]=9001
@@ -47,6 +46,8 @@ services=(
   [doc]=8001
   [websockets]=8005
   [websockets-ssl]=8002
+  [webshell]=4201
+  [webshell-ssl]=4202
 )
 
 if test "$(id arvbox -u 2>/dev/null)" = 0 ; then

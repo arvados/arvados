@@ -951,6 +951,12 @@ Clusters:
         # unlimited).
         MaxCloudOpsPerSecond: 0
 
+        # Maximum concurrent node creation operations (0 = unlimited). This is
+        # recommended by Azure in certain scenarios (see
+        # https://docs.microsoft.com/en-us/azure/virtual-machines/linux/capture-image)
+        # and can be used with other cloud providers too, if desired.
+        MaxConcurrentInstanceCreateOps: 0
+
         # Interval between cloud provider syncs/updates ("list all
         # instances").
         SyncInterval: 1m
@@ -1337,6 +1343,10 @@ Clusters:
       # Workbench2 configs
       VocabularyURL: ""
       FileViewersConfigURL: ""
+
+      # Idle time after which the user's session will be auto closed.
+      # This feature is disabled when set to zero.
+      IdleTimeout: 0s
 
       # Workbench welcome screen, this is HTML text that will be
       # incorporated directly onto the page.

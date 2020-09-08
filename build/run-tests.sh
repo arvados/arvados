@@ -162,9 +162,12 @@ temp_preserve=
 
 clear_temp() {
     if [[ -z "$temp" ]]; then
-        # we didn't even get as far as making a temp dir
+        # we did not even get as far as making a temp dir
         :
     elif [[ -z "$temp_preserve" ]]; then
+        # Go creates readonly dirs in the module cache, which cause
+        # "rm -rf" to fail unless we chmod first.
+        chmod -R u+w "$temp"
         rm -rf "$temp"
     else
         echo "Leaving behind temp dirs in $temp"
@@ -541,12 +544,12 @@ setup_ruby_environment() {
 
         tmpdir_gem_home="$(env - PATH="$PATH" HOME="$GEMHOME" gem env gempath | cut -f1 -d:)"
         PATH="$tmpdir_gem_home/bin:$PATH"
-        export GEM_PATH="$tmpdir_gem_home"
+        export GEM_PATH="$tmpdir_gem_home:$(gem env gempath)"
 
         echo "Will install dependencies to $(gem env gemdir)"
-        echo "Will install arvados gems to $tmpdir_gem_home"
+        echo "Will install bundler and arvados gems to $tmpdir_gem_home"
         echo "Gem search path is GEM_PATH=$GEM_PATH"
-        bundle="$(gem env gempath | cut -f1 -d:)/bin/bundle"
+        bundle="$tmpdir_gem_home/bin/bundle"
         (
             export HOME=$GEMHOME
             bundlers="$(gem list --details bundler)"

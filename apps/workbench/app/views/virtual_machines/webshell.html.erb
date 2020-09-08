@@ -30,17 +30,43 @@ SPDX-License-Identifier: AGPL-3.0 %>
 
       function login(username, token) {
         var sh = new ShellInABox("<%= j @webshell_url %>");
-        setTimeout(function() {
-          sh.keysPressed("<%= j params[:login] %>\n");
-          setTimeout(function() {
-            sh.keysPressed("<%= j Thread.current[:arvados_api_token] %>\n");
-            sh.vt100('(sent authentication token)\n');
-          }, 2000);
-        }, 2000);
+
+        var findText = function(txt) {
+          var a = document.querySelectorAll("span.ansi0");
+          for (var i = 0; i < a.length; i++) {
+            if (a[i].textContent.indexOf(txt) > -1) {
+              return true;
+            }
+          }
+          return false;
+        }
+
+        var trySendToken = function() {
+          // change this text when PAM is reconfigured to present a
+          // password prompt that we can wait for.
+          if (findText("assword:")) {
+             sh.keysPressed("<%= j Thread.current[:arvados_api_token] %>\n");
+             sh.vt100('(sent authentication token)\n');
+          } else {
+            setTimeout(trySendToken, 200);
+          }
+        };
+
+        var trySendLogin = function() {
+          if (findText("login:")) {
+            sh.keysPressed("<%= j params[:login] %>\n");
+            // Make this wait shorter when PAM is reconfigured to
+            // present a password prompt that we can wait for.
+            setTimeout(trySendToken, 200);
+          } else {
+            setTimeout(trySendLogin, 200);
+          }
+        };
+
+        trySendLogin();
       }
     // -->
 </script>
-    <link rel="icon" href="<%= asset_path 'favicon.ico' %>" type="image/x-icon">
     <script type="text/javascript" src="<%= asset_path 'webshell/shell_in_a_box.js' %>"></script>
   </head>
   <!-- Load ShellInABox from a timer as Konqueror sometimes fails to

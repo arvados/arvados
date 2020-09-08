@@ -195,9 +195,8 @@ func (cp *copier) walkMount(dest, src string, maxSymlinks int, walkMountsBelow b
 	}
 	if walkMountsBelow {
 		return cp.walkMountsBelow(dest, src)
-	} else {
-		return nil
 	}
+	return nil
 }
 
 func (cp *copier) walkMountsBelow(dest, src string) error {

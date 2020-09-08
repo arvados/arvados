@@ -185,18 +185,18 @@ func (q *Queue) Notify(upd arvados.Container) bool {
 }
 
 var allowContainerUpdate = map[arvados.ContainerState]map[arvados.ContainerState]bool{
-	arvados.ContainerStateQueued: map[arvados.ContainerState]bool{
+	arvados.ContainerStateQueued: {
 		arvados.ContainerStateQueued:    true,
 		arvados.ContainerStateLocked:    true,
 		arvados.ContainerStateCancelled: true,
 	},
-	arvados.ContainerStateLocked: map[arvados.ContainerState]bool{
+	arvados.ContainerStateLocked: {
 		arvados.ContainerStateQueued:    true,
 		arvados.ContainerStateLocked:    true,
 		arvados.ContainerStateRunning:   true,
 		arvados.ContainerStateCancelled: true,
 	},
-	arvados.ContainerStateRunning: map[arvados.ContainerState]bool{
+	arvados.ContainerStateRunning: {
 		arvados.ContainerStateRunning:   true,
 		arvados.ContainerStateCancelled: true,
 		arvados.ContainerStateComplete:  true,

@@ -334,7 +334,7 @@ func (s *HandlerSuite) TestGetObjects(c *check.C) {
 		"api_clients/" + arvadostest.TrustedWorkbenchAPIClientUUID:     nil,
 		"api_client_authorizations/" + arvadostest.AdminTokenUUID:      nil,
 		"authorized_keys/" + arvadostest.AdminAuthorizedKeysUUID:       nil,
-		"collections/" + arvadostest.CollectionWithUniqueWordsUUID:     map[string]bool{"href": true},
+		"collections/" + arvadostest.CollectionWithUniqueWordsUUID:     {"href": true},
 		"containers/" + arvadostest.RunningContainerUUID:               nil,
 		"container_requests/" + arvadostest.QueuedContainerRequestUUID: nil,
 		"groups/" + arvadostest.AProjectUUID:                           nil,
@@ -343,7 +343,7 @@ func (s *HandlerSuite) TestGetObjects(c *check.C) {
 		"logs/" + arvadostest.CrunchstatForRunningJobLogUUID:           nil,
 		"nodes/" + arvadostest.IdleNodeUUID:                            nil,
 		"repositories/" + arvadostest.ArvadosRepoUUID:                  nil,
-		"users/" + arvadostest.ActiveUserUUID:                          map[string]bool{"href": true},
+		"users/" + arvadostest.ActiveUserUUID:                          {"href": true},
 		"virtual_machines/" + arvadostest.TestVMUUID:                   nil,
 		"workflows/" + arvadostest.WorkflowWithDefinitionYAMLUUID:      nil,
 	}

@@ -596,7 +596,8 @@ The 'jobs' API is no longer supported.
                                         uuid=existing_uuid,
                                         submit_runner_ram=runtimeContext.submit_runner_ram,
                                         name=runtimeContext.name,
-                                        merged_map=merged_map),
+                                        merged_map=merged_map,
+                                        submit_runner_image=runtimeContext.submit_runner_image),
                         "success")
 
         self.apply_reqs(job_order, tool)

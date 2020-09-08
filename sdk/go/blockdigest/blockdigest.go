@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-// Stores a Block Locator Digest compactly. Can be used as a map key.
+// Package blockdigest stores a Block Locator Digest compactly. Can be used as a map key.
 package blockdigest
 
 import (

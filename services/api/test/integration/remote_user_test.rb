@@ -79,7 +79,7 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     Arvados::V1::SchemaController.any_instance.stubs(:root_url).returns "https://#{@remote_host[0]}"
     @stub_status = 200
     @stub_content = {
-      uuid: 'zbbbb-tpzed-000000000000000',
+      uuid: 'zbbbb-tpzed-000000000000001',
       email: 'foo@example.com',
       username: 'barney',
       is_admin: true,
@@ -98,7 +98,7 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
       params: {format: 'json'},
       headers: auth(remote: 'zbbbb')
     assert_response :success
-    assert_equal 'zbbbb-tpzed-000000000000000', json_response['uuid']
+    assert_equal 'zbbbb-tpzed-000000000000001', json_response['uuid']
     assert_equal false, json_response['is_admin']
     assert_equal false, json_response['is_active']
     assert_equal 'foo@example.com', json_response['email']
@@ -286,12 +286,12 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
       params: {format: 'json'},
       headers: auth(remote: 'zbbbb')
     assert_response :success
-    assert_equal 'zbbbb-tpzed-000000000000000', json_response['uuid']
+    assert_equal 'zbbbb-tpzed-000000000000001', json_response['uuid']
     assert_equal false, json_response['is_admin']
     assert_equal false, json_response['is_active']
     assert_equal 'foo@example.com', json_response['email']
     assert_equal 'barney', json_response['username']
-    post '/arvados/v1/users/zbbbb-tpzed-000000000000000/activate',
+    post '/arvados/v1/users/zbbbb-tpzed-000000000000001/activate',
       params: {format: 'json'},
       headers: auth(remote: 'zbbbb')
     assert_response 422
@@ -303,7 +303,7 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
       params: {format: 'json'},
       headers: auth(remote: 'zbbbb')
     assert_response :success
-    assert_equal 'zbbbb-tpzed-000000000000000', json_response['uuid']
+    assert_equal 'zbbbb-tpzed-000000000000001', json_response['uuid']
     assert_equal false, json_response['is_admin']
     assert_equal true, json_response['is_active']
     assert_equal 'foo@example.com', json_response['email']
@@ -316,7 +316,7 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
       params: {format: 'json'},
       headers: auth(remote: 'zbbbb')
     assert_response :success
-    assert_equal 'zbbbb-tpzed-000000000000000', json_response['uuid']
+    assert_equal 'zbbbb-tpzed-000000000000001', json_response['uuid']
     assert_equal true, json_response['is_admin']
     assert_equal true, json_response['is_active']
     assert_equal 'foo@example.com', json_response['email']
@@ -411,5 +411,23 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
       end
     end
   end
+
+  test 'authenticate with remote token, remote user is system user' do
+    @stub_content[:uuid] = 'zbbbb-tpzed-000000000000000'
+    get '/arvados/v1/users/current',
+      params: {format: 'json'},
+      headers: auth(remote: 'zbbbb')
+    assert_equal 'from cluster zbbbb', json_response['last_name']
+  end
+
+  test 'authenticate with remote token, remote user is anonymous user' do
+    @stub_content[:uuid] = 'zbbbb-tpzed-anonymouspublic'
+    get '/arvados/v1/users/current',
+      params: {format: 'json'},
+      headers: auth(remote: 'zbbbb')
+    assert_response :success
+    assert_equal 'zzzzz-tpzed-anonymouspublic', json_response['uuid']
+  end
+
 
 end

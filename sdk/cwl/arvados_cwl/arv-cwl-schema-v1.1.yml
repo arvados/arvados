@@ -184,6 +184,12 @@ $graph:
         MiB.  Default 256 MiB.  Will be added on to the RAM request
         when determining node size to request.
       jsonldPredicate: "http://arvados.org/cwl#RuntimeConstraints/keep_cache"
+    acrContainerImage:
+      type: string?
+      doc: |
+        The container image containing the correct version of
+        arvados-cwl-runner to use when invoking the workflow on
+        Arvados.
 
 - name: ClusterTarget
   type: record

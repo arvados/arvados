@@ -44,10 +44,6 @@ if test -z "$ARVADOS_ROOT" ; then
     ARVADOS_ROOT="$ARVBOX_DATA/arvados"
 fi
 
-if test -z "$SSO_ROOT" ; then
-    SSO_ROOT="$ARVBOX_DATA/sso-devise-omniauth-provider"
-fi
-
 if test -z "$COMPOSER_ROOT" ; then
     COMPOSER_ROOT="$ARVBOX_DATA/composer"
 fi
@@ -99,6 +95,10 @@ EOF
     fi
 }
 
+listusers() {
+    docker exec -ti $ARVBOX_CONTAINER /usr/local/lib/arvbox/edit_users.py /var/lib/arvados/cluster_config.yml $(getclusterid) list
+}
+
 wait_for_arvbox() {
     FF=/tmp/arvbox-fifo-$$
     mkfifo $FF
@@ -126,7 +126,6 @@ wait_for_arvbox() {
 docker_run_dev() {
     docker run \
 	   "--volume=$ARVADOS_ROOT:/usr/src/arvados:rw" \
-           "--volume=$SSO_ROOT:/usr/src/sso:rw" \
            "--volume=$COMPOSER_ROOT:/usr/src/composer:rw" \
            "--volume=$WORKBENCH2_ROOT:/usr/src/workbench2:rw" \
            "--volume=$PG_DATA:/var/lib/postgresql:rw" \
@@ -207,6 +206,7 @@ run() {
               --publish=25101:25101
               --publish=8001:8001
               --publish=8002:8002
+              --publish=4202:4202
 	      --publish=45000-45020:45000-45020"
     else
         PUBLIC=""
@@ -239,16 +239,13 @@ run() {
         if ! test -d "$ARVADOS_ROOT" ; then
             git clone https://git.arvados.org/arvados.git "$ARVADOS_ROOT"
         fi
-        if ! test -d "$SSO_ROOT" ; then
-            git clone https://github.com/arvados/sso-devise-omniauth-provider.git "$SSO_ROOT"
-        fi
         if ! test -d "$COMPOSER_ROOT" ; then
             git clone https://github.com/arvados/composer.git "$COMPOSER_ROOT"
             git -C "$COMPOSER_ROOT" checkout arvados-fork
             git -C "$COMPOSER_ROOT" pull
         fi
         if ! test -d "$WORKBENCH2_ROOT" ; then
-            git clone https://github.com/arvados/arvados-workbench2.git "$WORKBENCH2_ROOT"
+            git clone https://git.arvados.org/arvados-workbench2.git "$WORKBENCH2_ROOT"
         fi
 
         if [[ "$CONFIG" = test ]] ; then
@@ -267,11 +264,6 @@ run() {
                        $ARVBOX_CONTAINER \
                        /usr/local/lib/arvbox/runsu.sh \
                        /usr/local/lib/arvbox/waitforpostgres.sh
-
-                docker exec -ti \
-                       $ARVBOX_CONTAINER \
-                       /usr/local/lib/arvbox/runsu.sh \
-                       /var/lib/arvbox/service/sso/run-service --only-setup
 
                 docker exec -ti \
                        $ARVBOX_CONTAINER \
@@ -327,6 +319,11 @@ run() {
             wait_for_arvbox
             echo "The Arvados source code is checked out at: $ARVADOS_ROOT"
 	    echo "The Arvados testing root certificate is $VAR_DATA/root-cert.pem"
+	    if [[ "$(listusers)" =~ ^\{\} ]] ; then
+		echo "No users defined, use 'arvbox adduser' to add user logins"
+	    else
+		echo "Use 'arvbox listusers' to see user logins"
+	    fi
         else
             echo "Unknown configuration '$CONFIG'"
         fi
@@ -511,6 +508,7 @@ case "$subcmd" in
                     exit 1
                 fi
                 set -x
+                chmod -R u+w "$ARVBOX_DATA"
                 rm -rf "$ARVBOX_DATA"
             else
                 if test "$1" != -f ; then
@@ -573,7 +571,6 @@ case "$subcmd" in
 	       "$ARVBOX_BASE/$1/gopath" \
 	       "$ARVBOX_BASE/$1/Rlibs" \
 	       "$ARVBOX_BASE/$1/arvados" \
-	       "$ARVBOX_BASE/$1/sso-devise-omniauth-provider" \
 	       "$ARVBOX_BASE/$1/composer" \
 	       "$ARVBOX_BASE/$1/workbench2" \
 	       "$ARVBOX_BASE/$2"
@@ -632,6 +629,20 @@ sv restart keepproxy
 EOF
 	;;
 
+    adduser)
+	docker exec -ti $ARVBOX_CONTAINER /usr/local/lib/arvbox/edit_users.py /var/lib/arvados/cluster_config.yml.override $(getclusterid) add $@
+	docker exec $ARVBOX_CONTAINER sv restart controller
+	;;
+
+    removeuser)
+	docker exec -ti $ARVBOX_CONTAINER /usr/local/lib/arvbox/edit_users.py /var/lib/arvados/cluster_config.yml.override $(getclusterid) remove $@
+	docker exec $ARVBOX_CONTAINER sv restart controller
+	;;
+
+    listusers)
+	listusers
+	;;
+
     *)
         echo "Arvados-in-a-box             https://doc.arvados.org/install/arvbox.html"
         echo
@@ -662,5 +673,10 @@ EOF
         echo "sv <start|stop|restart> <service> "
 	echo "                   change state of service inside arvbox"
         echo "clone <from> <to>  clone dev arvbox"
+	echo "adduser <username> <email>"
+	echo "                   add a user login"
+	echo "removeuser <username>"
+	echo "                   remove user login"
+	echo "listusers          list user logins"
         ;;
 esac

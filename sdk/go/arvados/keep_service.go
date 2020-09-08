@@ -140,7 +140,7 @@ func (s *KeepService) Untrash(ctx context.Context, c *Client, blk string) error 
 	return nil
 }
 
-// Index returns an unsorted list of blocks at the given mount point.
+// IndexMount returns an unsorted list of blocks at the given mount point.
 func (s *KeepService) IndexMount(ctx context.Context, c *Client, mountUUID string, prefix string) ([]KeepServiceIndexEntry, error) {
 	return s.index(ctx, c, s.url("mounts/"+mountUUID+"/blocks?prefix="+prefix))
 }

@@ -28,7 +28,7 @@ func (s *GitHandlerSuite) SetUpTest(c *check.C) {
 	s.cluster, err = cfg.GetCluster("")
 	c.Assert(err, check.Equals, nil)
 
-	s.cluster.Services.GitHTTP.InternalURLs = map[arvados.URL]arvados.ServiceInstance{arvados.URL{Host: "localhost:80"}: arvados.ServiceInstance{}}
+	s.cluster.Services.GitHTTP.InternalURLs = map[arvados.URL]arvados.ServiceInstance{{Host: "localhost:80"}: {}}
 	s.cluster.Git.GitoliteHome = "/test/ghh"
 	s.cluster.Git.Repositories = "/"
 }

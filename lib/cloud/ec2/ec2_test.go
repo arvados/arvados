@@ -65,7 +65,7 @@ func (e *ec2stub) DescribeKeyPairs(input *ec2.DescribeKeyPairsInput) (*ec2.Descr
 }
 
 func (e *ec2stub) RunInstances(input *ec2.RunInstancesInput) (*ec2.Reservation, error) {
-	return &ec2.Reservation{Instances: []*ec2.Instance{&ec2.Instance{
+	return &ec2.Reservation{Instances: []*ec2.Instance{{
 		InstanceId: aws.String("i-123"),
 		Tags:       input.TagSpecifications[0].Tags,
 	}}}, nil
@@ -86,7 +86,7 @@ func (e *ec2stub) TerminateInstances(input *ec2.TerminateInstancesInput) (*ec2.T
 func GetInstanceSet() (cloud.InstanceSet, cloud.ImageID, arvados.Cluster, error) {
 	cluster := arvados.Cluster{
 		InstanceTypes: arvados.InstanceTypeMap(map[string]arvados.InstanceType{
-			"tiny": arvados.InstanceType{
+			"tiny": {
 				Name:         "tiny",
 				ProviderType: "t2.micro",
 				VCPUs:        1,
@@ -95,7 +95,7 @@ func GetInstanceSet() (cloud.InstanceSet, cloud.ImageID, arvados.Cluster, error)
 				Price:        .02,
 				Preemptible:  false,
 			},
-			"tiny-with-extra-scratch": arvados.InstanceType{
+			"tiny-with-extra-scratch": {
 				Name:         "tiny",
 				ProviderType: "t2.micro",
 				VCPUs:        1,
@@ -104,7 +104,7 @@ func GetInstanceSet() (cloud.InstanceSet, cloud.ImageID, arvados.Cluster, error)
 				Preemptible:  false,
 				AddedScratch: 20000000000,
 			},
-			"tiny-preemptible": arvados.InstanceType{
+			"tiny-preemptible": {
 				Name:         "tiny",
 				ProviderType: "t2.micro",
 				VCPUs:        1,
