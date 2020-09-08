@@ -305,7 +305,7 @@ def workflow_collections(obj, locations, docker_images):
             if loc.startswith("keep:"):
                 locations.append(loc[5:])
 
-        docker_image = obj.get('dockerImageId', None) or obj.get('dockerPull', None)
+        docker_image = obj.get('dockerImageId', None) or obj.get('dockerPull', None) or obj.get('acrContainerImage', None)
         if docker_image is not None:
             ds = docker_image.split(":", 1)
             tag = ds[1] if len(ds)==2 else 'latest'
