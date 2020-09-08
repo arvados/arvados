@@ -161,9 +161,8 @@ func (checkCommand) RunCommand(prog string, args []string, stdin io.Reader, stdo
 
 	if problems {
 		return 1
-	} else {
-		return 0
 	}
+	return 0
 }
 
 func warnAboutProblems(logger logrus.FieldLogger, cfg *arvados.Config) bool {
