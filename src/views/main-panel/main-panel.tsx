@@ -4,6 +4,7 @@
 
 import { RootState } from '~/store/store';
 import { connect } from 'react-redux';
+import parse from 'parse-duration';
 import { MainPanelRoot, MainPanelRootDataProps } from '~/views/main-panel/main-panel-root';
 import { isSystemWorking } from '~/store/progress-indicator/progress-indicator-reducer';
 import { isWorkbenchLoading } from '~/store/workbench/workbench-actions';
@@ -19,7 +20,8 @@ const mapStateToProps = (state: RootState): MainPanelRootDataProps => {
         uuidPrefix: state.auth.localCluster,
         isNotLinking: state.linkAccountPanel.status === LinkAccountPanelStatus.NONE || state.linkAccountPanel.status === LinkAccountPanelStatus.INITIAL,
         isLinkingPath: state.router.location ? matchLinkAccountRoute(state.router.location.pathname) !== null : false,
-        siteBanner: state.auth.config.clusterConfig.Workbench.SiteName
+        siteBanner: state.auth.config.clusterConfig.Workbench.SiteName,
+        sessionIdleTimeout: parse(state.auth.config.clusterConfig.Workbench.IdleTimeout, 's') || 0
     };
 };
 

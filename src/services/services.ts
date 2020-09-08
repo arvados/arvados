@@ -32,6 +32,7 @@ import { VocabularyService } from '~/services/vocabulary-service/vocabulary-serv
 import { NodeService } from '~/services/node-service/node-service';
 import { FileViewersConfigService } from '~/services/file-viewers-config-service/file-viewers-config-service';
 import { LinkAccountService } from "./link-account-service/link-account-service";
+import parse from "parse-duration";
 
 export type ServiceRepository = ReturnType<typeof createServices>;
 
@@ -78,7 +79,11 @@ export const createServices = (config: Config, actions: ApiActions, useApiClient
     const linkAccountService = new LinkAccountService(apiClient, actions);
 
     const ancestorsService = new AncestorService(groupsService, userService);
-    const authService = new AuthService(apiClient, config.rootUrl, actions);
+
+    const idleTimeout = config && config.clusterConfig && config.clusterConfig.Workbench.IdleTimeout || '0s';
+    const authService = new AuthService(apiClient, config.rootUrl, actions,
+        (parse(idleTimeout, 's') || 0) > 0);
+
     const collectionService = new CollectionService(apiClient, webdavClient, authService, actions);
     const favoriteService = new FavoriteService(linkService, groupsService);
     const tagService = new TagService(linkService);

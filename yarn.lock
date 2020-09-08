@@ -8010,6 +8010,11 @@ parse-asn1@^5.0.0:
     pbkdf2 "^3.0.3"
     safe-buffer "^5.1.1"
 
+parse-duration@0.4.4:
+  version "0.4.4"
+  resolved "https://registry.yarnpkg.com/parse-duration/-/parse-duration-0.4.4.tgz#11c0f51a689e97d06c57bd772f7fda7dc013243c"
+  integrity sha512-KbAJuYGUhZkB9gotDiKLnZ7Z3VTacK3fgwmDdB6ZVDtJbMBT6MfLga0WJaYpPDu0mzqT0NgHtHDt5PY4l0nidg==
+
 parse-glob@^3.0.4:
   version "3.0.4"
   resolved "https://registry.yarnpkg.com/parse-glob/-/parse-glob-3.0.4.tgz#b2c376cfb11f35513badd173ef0bb6e3a388391c"
@@ -8947,6 +8952,11 @@ react-highlight-words@0.14.0:
     highlight-words-core "^1.2.0"
     memoize-one "^4.0.0"
     prop-types "^15.5.8"
+
+react-idle-timer@4.3.6:
+  version "4.3.6"
+  resolved "https://registry.yarnpkg.com/react-idle-timer/-/react-idle-timer-4.3.6.tgz#bdf56cee6ccc8c144ece18d152b3e304e13f3fa2"
+  integrity sha512-sJS4w123E4HkuM/l3j8FTVl0St6ghGA22Ich/Nz/luJSM4MEA6PvSwEBaAXLx3uCLB1fK7CACjvB4ozW3uWuCA==
 
 react-is@^16.4.2, react-is@^16.6.3, react-is@^16.7.0, react-is@^16.8.1, react-is@^16.8.6, react-is@^16.9.0:
   version "16.11.0"

@@ -39,38 +39,46 @@ export class AuthService {
     constructor(
         protected apiClient: AxiosInstance,
         protected baseUrl: string,
-        protected actions: ApiActions) { }
+        protected actions: ApiActions,
+        protected useSessionStorage: boolean = false) { }
+
+    private getStorage() {
+        if (this.useSessionStorage) {
+            return sessionStorage;
+        }
+        return localStorage;
+    }
 
     public saveApiToken(token: string) {
-        localStorage.setItem(API_TOKEN_KEY, token);
+        this.getStorage().setItem(API_TOKEN_KEY, token);
         const sp = token.split('/');
         if (sp.length === 3) {
-            localStorage.setItem(HOME_CLUSTER, sp[1].substr(0, 5));
+            this.getStorage().setItem(HOME_CLUSTER, sp[1].substr(0, 5));
         }
     }
 
     public removeApiToken() {
-        localStorage.removeItem(API_TOKEN_KEY);
+        this.getStorage().removeItem(API_TOKEN_KEY);
     }
 
     public getApiToken() {
-        return localStorage.getItem(API_TOKEN_KEY) || undefined;
+        return this.getStorage().getItem(API_TOKEN_KEY) || undefined;
     }
 
     public getHomeCluster() {
-        return localStorage.getItem(HOME_CLUSTER) || undefined;
+        return this.getStorage().getItem(HOME_CLUSTER) || undefined;
     }
 
     public removeUser() {
-        localStorage.removeItem(USER_EMAIL_KEY);
-        localStorage.removeItem(USER_FIRST_NAME_KEY);
-        localStorage.removeItem(USER_LAST_NAME_KEY);
-        localStorage.removeItem(USER_UUID_KEY);
-        localStorage.removeItem(USER_OWNER_UUID_KEY);
-        localStorage.removeItem(USER_IS_ADMIN);
-        localStorage.removeItem(USER_IS_ACTIVE);
-        localStorage.removeItem(USER_USERNAME);
-        localStorage.removeItem(USER_PREFS);
+        this.getStorage().removeItem(USER_EMAIL_KEY);
+        this.getStorage().removeItem(USER_FIRST_NAME_KEY);
+        this.getStorage().removeItem(USER_LAST_NAME_KEY);
+        this.getStorage().removeItem(USER_UUID_KEY);
+        this.getStorage().removeItem(USER_OWNER_UUID_KEY);
+        this.getStorage().removeItem(USER_IS_ADMIN);
+        this.getStorage().removeItem(USER_IS_ACTIVE);
+        this.getStorage().removeItem(USER_USERNAME);
+        this.getStorage().removeItem(USER_PREFS);
     }
 
     public login(uuidPrefix: string, homeCluster: string, loginCluster: string, remoteHosts: { [key: string]: string }) {
@@ -113,7 +121,7 @@ export class AuthService {
 
     public getSessions(): Session[] {
         try {
-            const sessions = JSON.parse(localStorage.getItem("sessions") || '');
+            const sessions = JSON.parse(this.getStorage().getItem("sessions") || '');
             return sessions;
         } catch {
             return [];
@@ -121,7 +129,11 @@ export class AuthService {
     }
 
     public saveSessions(sessions: Session[]) {
-        localStorage.setItem("sessions", JSON.stringify(sessions));
+        this.getStorage().setItem("sessions", JSON.stringify(sessions));
+    }
+
+    public removeSessions() {
+        this.getStorage().removeItem("sessions");
     }
 
     public buildSessions(cfg: Config, user?: User) {

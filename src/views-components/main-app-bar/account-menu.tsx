@@ -9,7 +9,7 @@ import { User, getUserDisplayName } from "~/models/user";
 import { DropdownMenu } from "~/components/dropdown-menu/dropdown-menu";
 import { UserPanelIcon } from "~/components/icon/icon";
 import { DispatchProp, connect } from 'react-redux';
-import { logout } from '~/store/auth/auth-action';
+import { authActions } from '~/store/auth/auth-action';
 import { RootState } from "~/store/store";
 import { openCurrentTokenDialog } from '~/store/current-token-dialog/current-token-dialog-actions';
 import { openRepositoriesPanel } from "~/store/repositories/repositories-actions";
@@ -56,32 +56,36 @@ const styles: StyleRulesCallback<CssRules> = () => ({
     }
 });
 
-export const AccountMenu = withStyles(styles)(
-    connect(mapStateToProps)(
-        ({ user, dispatch, currentRoute, workbenchURL, apiToken, localCluster, classes }: AccountMenuProps & DispatchProp<any> & WithStyles<CssRules>) =>
-            user
-                ? <DropdownMenu
-                    icon={<UserPanelIcon />}
-                    id="account-menu"
-                    title="Account Management"
-                    key={currentRoute}>
-                    <MenuItem disabled>
-                        {getUserDisplayName(user)} {user.uuid.substr(0, 5) !== localCluster && `(${user.uuid.substr(0, 5)})`}
-                    </MenuItem>
-                    {user.isActive ? <>
-                        <MenuItem onClick={() => dispatch(openUserVirtualMachines())}>Virtual Machines</MenuItem>
-                        {!user.isAdmin && <MenuItem onClick={() => dispatch(openRepositoriesPanel())}>Repositories</MenuItem>}
-                        <MenuItem onClick={() => dispatch(openCurrentTokenDialog)}>Current token</MenuItem>
-                        <MenuItem onClick={() => dispatch(navigateToSshKeysUser)}>Ssh Keys</MenuItem>
-                        <MenuItem onClick={() => dispatch(navigateToSiteManager)}>Site Manager</MenuItem>
-                        <MenuItem onClick={() => dispatch(navigateToMyAccount)}>My account</MenuItem>
-                        <MenuItem onClick={() => dispatch(navigateToLinkAccount)}>Link account</MenuItem>
-                    </> : null}
-                    <MenuItem>
-                        <a href={`${workbenchURL.replace(/\/$/, "")}/${wb1URL(currentRoute)}?api_token=${apiToken}`}
-                            className={classes.link}>
-                            Switch to Workbench v1</a></MenuItem>
-                    <Divider />
-                    <MenuItem onClick={() => dispatch(logout(true))}>Logout</MenuItem>
-                </DropdownMenu>
-                : null));
+export const AccountMenuComponent =
+    ({ user, dispatch, currentRoute, workbenchURL, apiToken, localCluster, classes }: AccountMenuProps & DispatchProp<any> & WithStyles<CssRules>) =>
+        user
+        ? <DropdownMenu
+            icon={<UserPanelIcon />}
+            id="account-menu"
+            title="Account Management"
+            key={currentRoute}>
+            <MenuItem disabled>
+                {getUserDisplayName(user)} {user.uuid.substr(0, 5) !== localCluster && `(${user.uuid.substr(0, 5)})`}
+            </MenuItem>
+            {user.isActive ? <>
+                <MenuItem onClick={() => dispatch(openUserVirtualMachines())}>Virtual Machines</MenuItem>
+                {!user.isAdmin && <MenuItem onClick={() => dispatch(openRepositoriesPanel())}>Repositories</MenuItem>}
+                <MenuItem onClick={() => dispatch(openCurrentTokenDialog)}>Current token</MenuItem>
+                <MenuItem onClick={() => dispatch(navigateToSshKeysUser)}>Ssh Keys</MenuItem>
+                <MenuItem onClick={() => dispatch(navigateToSiteManager)}>Site Manager</MenuItem>
+                <MenuItem onClick={() => dispatch(navigateToMyAccount)}>My account</MenuItem>
+                <MenuItem onClick={() => dispatch(navigateToLinkAccount)}>Link account</MenuItem>
+            </> : null}
+            <MenuItem>
+                <a href={`${workbenchURL.replace(/\/$/, "")}/${wb1URL(currentRoute)}?api_token=${apiToken}`}
+                    className={classes.link}>
+                    Switch to Workbench v1</a></MenuItem>
+            <Divider />
+            <MenuItem data-cy="logout-menuitem"
+                onClick={() => dispatch(authActions.LOGOUT({deleteLinkData: true}))}>
+                Logout
+            </MenuItem>
+        </DropdownMenu>
+        : null;
+
+export const AccountMenu = withStyles(styles)( connect(mapStateToProps)(AccountMenuComponent) );

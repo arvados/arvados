@@ -30,6 +30,7 @@ export const authMiddleware = (services: ServiceRepository): Middleware => store
                 setAuthorizationHeader(services, state.auth.apiToken);
             } else {
                 services.authService.removeApiToken();
+                services.authService.removeSessions();
                 removeAuthorizationHeader(services);
             }
 
@@ -64,6 +65,7 @@ export const authMiddleware = (services: ServiceRepository): Middleware => store
                 services.linkAccountService.removeAccountToLink();
             }
             services.authService.removeApiToken();
+            services.authService.removeSessions();
             services.authService.removeUser();
             removeAuthorizationHeader(services);
             services.authService.logout();
