@@ -80,9 +80,9 @@ export const createServices = (config: Config, actions: ApiActions, useApiClient
 
     const ancestorsService = new AncestorService(groupsService, userService);
 
-    const tokenLifetime = config && config.clusterConfig && config.clusterConfig.Login.TokenLifetime || '0s';
+    const idleTimeout = config && config.clusterConfig && config.clusterConfig.Workbench.IdleTimeout || '0s';
     const authService = new AuthService(apiClient, config.rootUrl, actions,
-        (parse(tokenLifetime, 's') || 0) > 0);
+        (parse(idleTimeout, 's') || 0) > 0);
 
     const collectionService = new CollectionService(apiClient, webdavClient, authService, actions);
     const favoriteService = new FavoriteService(linkService, groupsService);

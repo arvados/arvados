@@ -62,7 +62,6 @@ export interface ClusterConfigJSON {
     };
     Login: {
         LoginCluster: string;
-        TokenLifetime: string;
         Google: {
             Enable: boolean;
         }
@@ -222,7 +221,6 @@ export const mockClusterConfigJSON = (config: Partial<ClusterConfigJSON>): Clust
     },
     Login: {
         LoginCluster: "",
-        TokenLifetime: "0s",
         Google: {
             Enable: false,
         },
