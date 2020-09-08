@@ -358,6 +358,11 @@ func (h *handler) s3list(w http.ResponseWriter, r *http.Request, fs arvados.Cust
 		// CommonPrefixes is nil, which confuses some clients.
 		// Fix by using this nested struct instead.
 		CommonPrefixes []commonPrefix
+		// Similarly, we need omitempty here, because an empty
+		// tag confuses some clients (e.g.,
+		// github.com/aws/aws-sdk-net never terminates its
+		// paging loop).
+		NextMarker string `xml:"NextMarker,omitempty"`
 	}
 	resp := listResp{
 		ListResp: s3.ListResp{

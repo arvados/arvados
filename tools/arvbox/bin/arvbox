@@ -206,6 +206,7 @@ run() {
               --publish=25101:25101
               --publish=8001:8001
               --publish=8002:8002
+              --publish=4202:4202
 	      --publish=45000-45020:45000-45020"
     else
         PUBLIC=""

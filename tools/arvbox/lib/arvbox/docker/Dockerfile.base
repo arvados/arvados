@@ -21,7 +21,7 @@ RUN apt-get update && \
     libgnutls28-dev python3-dev vim cadaver cython gnupg dirmngr \
     libsecret-1-dev r-base r-cran-testthat libxml2-dev pandoc \
     python3-setuptools python3-pip openjdk-8-jdk bsdmainutils net-tools \
-    ruby2.3 ruby-dev bundler && \
+    ruby2.3 ruby-dev bundler shellinabox && \
     apt-get clean
 
 ENV RUBYVERSION_MINOR 2.3

@@ -29,27 +29,37 @@ include ApplicationHelper
 act_as_system_user
 
 def create_api_client_auth(supplied_token=nil)
+  supplied_token = Rails.configuration.Users["AnonymousUserToken"]
 
-  # If token is supplied, see if it exists
-  if supplied_token
-    api_client_auth = ApiClientAuthorization.
-      where(api_token: supplied_token).
-      first
-    if !api_client_auth
-      # fall through to create a token
-    else
-      raise "Token exists, aborting!"
-    end
+  if supplied_token.nil? or supplied_token.empty?
+    puts "Users.AnonymousUserToken is empty.  Destroying tokens that belong to anonymous."
+    # Token is empty.  Destroy any anonymous tokens.
+    ApiClientAuthorization.where(user: anonymous_user).destroy_all
+    return nil
   end
 
-  api_client_auth = ApiClientAuthorization.
-    new(user: anonymous_user,
-        api_client_id: 0,
-        expires_at: Time.now + 100.years,
-        scopes: ['GET /'],
-        api_token: supplied_token)
-  api_client_auth.save!
-  api_client_auth.reload
+  attr = {user: anonymous_user,
+          api_client_id: 0,
+          scopes: ['GET /']}
+
+  secret = supplied_token
+
+  if supplied_token[0..2] == 'v2/'
+    _, token_uuid, secret, optional = supplied_token.split('/')
+    if token_uuid[0..4] != Rails.configuration.ClusterID
+      # Belongs to a different cluster.
+      puts supplied_token
+      return nil
+    end
+    attr[:uuid] = token_uuid
+  end
+
+  attr[:api_token] = secret
+
+  api_client_auth = ApiClientAuthorization.where(attr).first
+  if !api_client_auth
+    api_client_auth = ApiClientAuthorization.create!(attr)
+  end
   api_client_auth
 end
 
@@ -67,4 +77,6 @@ if !api_client_auth
 end
 
 # print it to the console
-puts api_client_auth.api_token
+if api_client_auth
+  puts "v2/#{api_client_auth.uuid}/#{api_client_auth.api_token}"
+end

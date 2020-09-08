@@ -110,6 +110,9 @@ Clusters:
         ExternalURL: "https://$localip:${services[controller-ssl]}"
         InternalURLs:
           "http://localhost:${services[controller]}": {}
+      WebShell:
+        InternalURLs: {}
+        ExternalURL: "https://$localip:${services[webshell-ssl]}"
     PostgreSQL:
       ConnectionPool: 32 # max concurrent connections per arvados server daemon
       Connection:

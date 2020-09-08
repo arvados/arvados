@@ -259,6 +259,7 @@ type Cluster struct {
 		InactivePageHTML       string
 		SSHHelpPageHTML        string
 		SSHHelpHostSuffix      string
+		IdleTimeout            Duration
 	}
 
 	ForceLegacyAPI14 bool
@@ -446,23 +447,24 @@ type ContainersConfig struct {
 type CloudVMsConfig struct {
 	Enable bool
 
-	BootProbeCommand     string
-	DeployRunnerBinary   string
-	ImageID              string
-	MaxCloudOpsPerSecond int
-	MaxProbesPerSecond   int
-	PollInterval         Duration
-	ProbeInterval        Duration
-	SSHPort              string
-	SyncInterval         Duration
-	TimeoutBooting       Duration
-	TimeoutIdle          Duration
-	TimeoutProbe         Duration
-	TimeoutShutdown      Duration
-	TimeoutSignal        Duration
-	TimeoutTERM          Duration
-	ResourceTags         map[string]string
-	TagKeyPrefix         string
+	BootProbeCommand               string
+	DeployRunnerBinary             string
+	ImageID                        string
+	MaxCloudOpsPerSecond           int
+	MaxProbesPerSecond             int
+	MaxConcurrentInstanceCreateOps int
+	PollInterval                   Duration
+	ProbeInterval                  Duration
+	SSHPort                        string
+	SyncInterval                   Duration
+	TimeoutBooting                 Duration
+	TimeoutIdle                    Duration
+	TimeoutProbe                   Duration
+	TimeoutShutdown                Duration
+	TimeoutSignal                  Duration
+	TimeoutTERM                    Duration
+	ResourceTags                   map[string]string
+	TagKeyPrefix                   string
 
 	Driver           string
 	DriverParameters json.RawMessage

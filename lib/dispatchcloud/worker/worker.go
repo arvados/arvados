@@ -103,11 +103,13 @@ type worker struct {
 	updated             time.Time
 	busy                time.Time
 	destroyed           time.Time
+	firstSSHConnection  time.Time
 	lastUUID            string
 	running             map[string]*remoteRunner // remember to update state idle<->running when this changes
 	starting            map[string]*remoteRunner // remember to update state idle<->running when this changes
 	probing             chan struct{}
 	bootOutcomeReported bool
+	timeToReadyReported bool
 }
 
 func (wkr *worker) onUnkillable(uuid string) {
@@ -138,6 +140,17 @@ func (wkr *worker) reportBootOutcome(outcome BootOutcome) {
 		wkr.wp.mBootOutcomes.WithLabelValues(string(outcome)).Inc()
 	}
 	wkr.bootOutcomeReported = true
+}
+
+// caller must have lock.
+func (wkr *worker) reportTimeBetweenFirstSSHAndReadyForContainer() {
+	if wkr.timeToReadyReported {
+		return
+	}
+	if wkr.wp.mTimeToSSH != nil {
+		wkr.wp.mTimeToReadyForContainer.Observe(time.Since(wkr.firstSSHConnection).Seconds())
+	}
+	wkr.timeToReadyReported = true
 }
 
 // caller must have lock.
@@ -313,6 +326,9 @@ func (wkr *worker) probeAndUpdate() {
 
 	// Update state if this was the first successful boot-probe.
 	if booted && (wkr.state == StateUnknown || wkr.state == StateBooting) {
+		if wkr.state == StateBooting {
+			wkr.reportTimeBetweenFirstSSHAndReadyForContainer()
+		}
 		// Note: this will change again below if
 		// len(wkr.starting)+len(wkr.running) > 0.
 		wkr.state = StateIdle

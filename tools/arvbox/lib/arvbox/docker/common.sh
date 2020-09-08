@@ -46,6 +46,8 @@ services=(
   [doc]=8001
   [websockets]=8005
   [websockets-ssl]=8002
+  [webshell]=4201
+  [webshell-ssl]=4202
 )
 
 if test "$(id arvbox -u 2>/dev/null)" = 0 ; then
