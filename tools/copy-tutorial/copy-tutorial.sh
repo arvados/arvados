@@ -42,14 +42,14 @@ make_project() {
     project_uuid=$(arv --format=uuid group list --filters '[["name", "=", "'"$name"'"], ["owner_uuid", "=", "'$owner'"]]')
     if test -z "$project_uuid" ; then
 	project_uuid=$(arv --format=uuid group create --group '{"name":"'"$name"'", "group_class": "project", "owner_uuid": "'$owner'"}')
-	link=$(arv link create --link '{"link_class": "permission", "name": "can_read", "tail_uuid": "'$dest'-j7d0g-anonymouspublic", "head_uuid": "'$project_uuid'"}')
+
     fi
     echo $project_uuid
 }
 
 copy_jobs_image() {
     if ! arv-keepdocker | grep "arvados/jobs *latest" ; then
-	arv-copy --src jutro --dst $dest --project-uuid=$project_uuid jutro-4zz18-sxmit0qs6i9n2s4
+	arv-copy --project-uuid=$parent_project jutro-4zz18-sxmit0qs6i9n2s4
     fi
 }
 
@@ -64,7 +64,7 @@ if test "$tutorial" = "bwa-mem" ; then
     arv-copy --project-uuid=$parent_project jutro-j7d0g-rehmt1w5v2p2drp
 
     echo
-    echo "Finished, data copied to \"User guide resources\" at $project_uuid"
+    echo "Finished, data copied to \"User guide resources\" at $parent_project"
     echo "You can now go to Workbench and choose 'Run a process' and then select 'bwa-mem.cwl'"
     echo
 fi
@@ -77,7 +77,7 @@ if test "$tutorial" = "whole-genome" ; then
     arv-copy --project-uuid=$parent_project jutro-j7d0g-n2g87m02rsl4cx2
 
     echo
-    echo "Finished, data copied to \"WGS Processing Tutorial\" at $project_uuid"
+    echo "Finished, data copied to \"WGS Processing Tutorial\" at $parent_project"
     echo "You can now go to Workbench and choose 'Run a process' and then select 'WGS Processing Tutorial'"
     echo
 fi
