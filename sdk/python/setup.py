@@ -50,7 +50,7 @@ setup(name='arvados-python-client',
           'future',
           'google-api-python-client >=1.6.2, <1.7',
           'httplib2 >=0.9.2',
-          'pycurl >=7.19.5.1, <7.43.0.4', # 7.43.0.4 removes support for python2
+          'pycurl >=7.19.5.1',
           'ruamel.yaml >=0.15.54, <=0.16.5',
           'setuptools',
           'ws4py >=0.4.2',
