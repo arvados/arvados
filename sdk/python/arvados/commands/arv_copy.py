@@ -34,6 +34,7 @@ import sys
 import logging
 import tempfile
 import urllib.parse
+import io
 
 import arvados
 import arvados.config
@@ -533,7 +534,7 @@ def copy_collection(obj_uuid, src, dst, args):
     # a new manifest as we go.
     src_keep = arvados.keep.KeepClient(api_client=src, num_retries=args.retries)
     dst_keep = arvados.keep.KeepClient(api_client=dst, num_retries=args.retries)
-    dst_manifest = ""
+    dst_manifest = io.StringIO()
     dst_locators = {}
     bytes_written = 0
     bytes_expected = total_collection_size(manifest)
@@ -544,14 +545,15 @@ def copy_collection(obj_uuid, src, dst, args):
 
     for line in manifest.splitlines():
         words = line.split()
-        dst_manifest += words[0]
+        dst_manifest.write(words[0])
         for word in words[1:]:
             try:
                 loc = arvados.KeepLocator(word)
             except ValueError:
                 # If 'word' can't be parsed as a locator,
                 # presume it's a filename.
-                dst_manifest += ' ' + word
+                dst_manifest.write(' ')
+                dst_manifest.write(word)
                 continue
             blockhash = loc.md5sum
             # copy this block if we haven't seen it before
@@ -564,17 +566,18 @@ def copy_collection(obj_uuid, src, dst, args):
                 dst_locator = dst_keep.put(data)
                 dst_locators[blockhash] = dst_locator
                 bytes_written += loc.size
-            dst_manifest += ' ' + dst_locators[blockhash]
-        dst_manifest += "\n"
+            dst_manifest.write(' ')
+            dst_manifest.write(dst_locators[blockhash])
+        dst_manifest.write("\n")
 
     if progress_writer:
         progress_writer.report(obj_uuid, bytes_written, bytes_expected)
         progress_writer.finish()
 
     # Copy the manifest and save the collection.
-    logger.debug('saving %s with manifest: <%s>', obj_uuid, dst_manifest)
+    logger.debug('saving %s with manifest: <%s>', obj_uuid, dst_manifest.getvalue())
 
-    c['manifest_text'] = dst_manifest
+    c['manifest_text'] = dst_manifest.getvalue()
     return create_collection_from(c, src, dst, args)
 
 def select_git_url(api, repo_name, retries, allow_insecure_http, allow_insecure_http_opt):
