@@ -60,10 +60,9 @@ require (
 	github.com/src-d/gcfg v1.3.0 // indirect
 	github.com/xanzy/ssh-agent v0.1.0 // indirect
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
-	golang.org/x/net v0.0.0-20200625001655-4c5254603344
+	golang.org/x/net v0.0.0-20200202094626-16171245cfb2
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
-	golang.org/x/sys v0.0.0-20200323222414-85ca7c5b95cd
-	golang.org/x/tools v0.0.0-20200827143046-df83f4e7c16e // indirect
+	golang.org/x/sys v0.0.0-20191105231009-c1f44814a5cd
 	google.golang.org/api v0.13.0
 	gopkg.in/asn1-ber.v1 v1.0.0-20181015200546-f715ec2f112d // indirect
 	gopkg.in/check.v1 v1.0.0-20161208181325-20d25e280405

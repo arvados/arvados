@@ -555,7 +555,7 @@ setup_ruby_environment() {
                 fi
             done
             "$bundle" version | tee /dev/stderr | grep -q 'version 2'
-        ) #|| fatal 'install bundler' ## This is needed for now.
+        ) || fatal 'install bundler'
     fi
 }
 
@@ -651,7 +651,7 @@ install_env() {
         set -e
         "${VENV3DIR}/bin/pip3" install wheel
         "${VENV3DIR}/bin/pip3" install PyYAML
-        "${VENV3DIR}/bin/pip3" install httplib2 
+        "${VENV3DIR}/bin/pip3" install httplib2
         "${VENV3DIR}/bin/pip3" install future
         "${VENV3DIR}/bin/pip3" install google-api-python-client
         "${VENV3DIR}/bin/pip3" install ciso8601
@@ -956,7 +956,7 @@ install_services/api() {
             || return 1
 
     (
-        set -e
+        set -ex
         cd "$WORKSPACE/services/api"
         export RAILS_ENV=test
         if "$bundle" exec rails db:environment:set ; then
@@ -1090,19 +1090,12 @@ install_all() {
     do_install sdk/perl
     do_install sdk/cli
     do_install services/login-sync
-    ## FIXME, ignore all python2
     for p in "${pythonstuff[@]}"
     do
-        dir=${p%:py3}
-        if [[ ${dir} = ${p} ]]; then
-            if [[ -z ${skip[python2]} ]]; then
-                do_install ${dir} pip
-            fi
-        elif [[ -n ${PYTHON3} ]]; then
-            if [[ -z ${skip[python3]} ]]; then
-                do_install ${dir} pip "$VENV3DIR/bin/"
-            fi
-        fi
+       dir=${p%:py3}
+       if [[ -z ${skip[python3]} ]]; then
+           do_install ${dir} pip "$VENV3DIR/bin/"
+       fi
     done
     for g in "${gostuff[@]}"
     do
@@ -1130,18 +1123,11 @@ test_all() {
     do_test sdk/cli
     do_test services/login-sync
     do_test sdk/java-v2
-    ## FIXME, ignore all python2
     for p in "${pythonstuff[@]}"
     do
         dir=${p%:py3}
-        if [[ ${dir} = ${p} ]]; then
-            if [[ -z ${skip[python2]} ]]; then
-                do_test ${dir} pip
-            fi
-        elif [[ -n ${PYTHON3} ]]; then
-            if [[ -z ${skip[python3]} ]]; then
-                do_test ${dir} pip "$VENV3DIR/bin/"
-            fi
+        if [[ -z ${skip[python3]} ]]; then
+            do_test ${dir} pip "$VENV3DIR/bin/"
         fi
     done
 
