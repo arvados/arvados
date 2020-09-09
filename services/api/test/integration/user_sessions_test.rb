@@ -53,14 +53,14 @@ class UserSessionsApiTest < ActionDispatch::IntegrationTest
   test 'existing user login' do
     mock_auth_with(identity_url: "https://active-user.openid.local")
     u = assigns(:user)
-    assert_equal 'zzzzz-tpzed-xurymjxw79nv3jz', u.uuid
+    assert_equal users(:active).uuid, u.uuid
   end
 
   test 'trusted api client token cannot create tokens with expiration dates past its own' do
     exp_date = Time.now + 12.hours
     mock_auth_with(identity_url: "https://active-user.openid.local")
     u = assigns(:user)
-    assert_equal 'zzzzz-tpzed-xurymjxw79nv3jz', u.uuid
+    assert_equal users(:active).uuid, u.uuid
     auth = assigns(:api_client_auth)
     assert_equal auth.user_id, u.id
     act_as_system_user do
@@ -83,7 +83,7 @@ class UserSessionsApiTest < ActionDispatch::IntegrationTest
   test 'trusted api client expiring token cannot create tokens with no expiration' do
     mock_auth_with(identity_url: "https://active-user.openid.local")
     u = assigns(:user)
-    assert_equal 'zzzzz-tpzed-xurymjxw79nv3jz', u.uuid
+    assert_equal users(:active).uuid, u.uuid
     auth = assigns(:api_client_auth)
     assert_equal auth.user_id, u.id
     act_as_system_user do
@@ -103,16 +103,61 @@ class UserSessionsApiTest < ActionDispatch::IntegrationTest
     assert_response 403
   end
 
+  test 'trusted api client token cannot update tokens with expiration dates past its own' do
+    exp_date = Time.now + 12.hours
+    mock_auth_with(identity_url: "https://active-user.openid.local")
+    u = assigns(:user)
+    assert_equal users(:active).uuid, u.uuid
+    auth = assigns(:api_client_auth)
+    assert_equal auth.user_id, u.id
+    act_as_system_user do
+      assert auth.update_attributes!(expires_at: exp_date)
+      assert auth.api_client.update_attributes!(is_trusted: true)
+    end
+    assert_not_nil auth.expires_at
+    put "/arvados/v1/api_client_authorizations/#{auth.uuid}",
+      params: {
+        :format => :json,
+        :api_client_authorization => {
+          :expires_at => exp_date + 1.hour
+        }
+      },
+      headers: {'HTTP_AUTHORIZATION' => "OAuth2 #{auth.api_token}"}
+    assert_response 403
+  end
+
+  test 'trusted api client expiring token cannot update tokens with no expiration' do
+    mock_auth_with(identity_url: "https://active-user.openid.local")
+    u = assigns(:user)
+    assert_equal users(:active).uuid, u.uuid
+    auth = assigns(:api_client_auth)
+    assert_equal auth.user_id, u.id
+    act_as_system_user do
+      assert auth.update_attributes!(expires_at: Time.now + 12.hours)
+      assert auth.api_client.update_attributes!(is_trusted: true)
+    end
+    assert_not_nil auth.expires_at
+    put "/arvados/v1/api_client_authorizations/#{auth.uuid}",
+      params: {
+        :format => :json,
+        :api_client_authorization => {
+          :expires_at => nil
+        }
+      },
+      headers: {'HTTP_AUTHORIZATION' => "OAuth2 #{auth.api_token}"}
+    assert_response 403
+  end
+
   test 'user redirect_to_user_uuid' do
     mock_auth_with(identity_url: "https://redirects-to-active-user.openid.local")
     u = assigns(:user)
-    assert_equal 'zzzzz-tpzed-xurymjxw79nv3jz', u.uuid
+    assert_equal users(:active).uuid, u.uuid
   end
 
   test 'user double redirect_to_user_uuid' do
     mock_auth_with(identity_url: "https://double-redirects-to-active-user.openid.local")
     u = assigns(:user)
-    assert_equal 'zzzzz-tpzed-xurymjxw79nv3jz', u.uuid
+    assert_equal users(:active).uuid, u.uuid
   end
 
   test 'create new user during omniauth callback' do
