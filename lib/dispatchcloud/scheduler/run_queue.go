@@ -33,6 +33,7 @@ func (sch *Scheduler) runQueue() {
 
 	dontstart := map[arvados.InstanceType]bool{}
 	var overquota []container.QueueEnt // entries that are unmappable because of worker pool quota
+	var containerAllocatedWorkerBootingCount int
 
 tryrun:
 	for i, ctr := range sorted {
@@ -92,10 +93,14 @@ tryrun:
 			} else if sch.pool.StartContainer(it, ctr) {
 				// Success.
 			} else {
+				containerAllocatedWorkerBootingCount += 1
 				dontstart[it] = true
 			}
 		}
 	}
+
+	sch.mContainersAllocatedNotStarted.Set(float64(containerAllocatedWorkerBootingCount))
+	sch.mContainersNotAllocatedOverQuota.Set(float64(len(overquota)))
 
 	if len(overquota) > 0 {
 		// Unlock any containers that are unmappable while
