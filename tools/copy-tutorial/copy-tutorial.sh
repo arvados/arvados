@@ -5,26 +5,22 @@
 
 set -e -o pipefail
 
-if test -z "$1" -o -z "$2"  ; then
+if test -z "$1" ; then
   echo "$0: Copies Arvados tutorial resources from public data cluster (jutro)"
-  echo "Usage: copy-tutorial.sh <dest> <tutorial>"
-  echo "<dest> is 5-character cluster id of the destination"
+  echo "Usage: copy-tutorial.sh <tutorial>"
   echo "<tutorial> is which tutorial to copy, one of:"
   echo " bwa-mem        Tutorial from https://doc.arvados.org/user/tutorials/tutorial-workflow-workbench.html"
   echo " whole-genome   Whole genome variant calling tutorial workflow (large)"
   exit
 fi
 
-src=jutro
-dest=$1
-tutorial=$2
-
-if ! test -f $HOME/.config/arvados/${dest}.conf ; then
-    echo "Please create $HOME/.config/arvados/${dest}.conf with the following contents:"
-    echo "ARVADOS_API_HOST=<${dest} host>"
-    echo "ARVADOS_API_TOKEN=<${dest} token>"
-    exit 1
+if test -z "ARVADOS_API_HOST" ; then
+    echo "Please set ARVADOS_API_HOST to the destination cluster"
+    exit
 fi
+
+src=jutro
+tutorial=$1
 
 if ! test -f $HOME/.config/arvados/jutro.conf ; then
     # Set it up with the anonymous user token.
@@ -33,10 +29,8 @@ if ! test -f $HOME/.config/arvados/jutro.conf ; then
     exit 1
 fi
 
-for a in $(cat $HOME/.config/arvados/${dest}.conf) ; do export $a ; done
-
 echo
-echo "Copying from public data cluster (jutro) to $dest"
+echo "Copying from public data cluster (jutro) to $ARVADOS_API_HOST"
 echo
 
 make_project() {
@@ -67,14 +61,7 @@ if test "$tutorial" = "bwa-mem" ; then
     echo "Copying bwa mem tutorial"
     echo
 
-    set -x
-
-    project_uuid=$(make_project 'User guide resources' $parent_project)
-
-    # Bwa-mem workflow
-    arv-copy --src jutro --dst $dest --project-uuid=$project_uuid jutro-7fd4e-mkmmq53m1ze6apx
-
-    set +x
+    arv-copy --project-uuid=$parent_project jutro-j7d0g-rehmt1w5v2p2drp
 
     echo
     echo "Finished, data copied to \"User guide resources\" at $project_uuid"
@@ -87,17 +74,10 @@ if test "$tutorial" = "whole-genome" ; then
     echo "Copying whole genome variant calling tutorial"
     echo
 
-    set -x
-
-    project_uuid=$(make_project 'WGS Processing Tutorial' $parent_project)
-
-    # WGS workflow
-    arv-copy --src jutro --dst $dest --project-uuid=$project_uuid jutro-7fd4e-tnxg9ytblbxm26i
-
-    set +x
+    arv-copy --project-uuid=$parent_project jutro-j7d0g-n2g87m02rsl4cx2
 
     echo
     echo "Finished, data copied to \"WGS Processing Tutorial\" at $project_uuid"
-    echo "You can now go to Workbench and choose 'Run a process' and then select 'bwa-mem.cwl'"
+    echo "You can now go to Workbench and choose 'Run a process' and then select 'WGS Processing Tutorial'"
     echo
 fi
