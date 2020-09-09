@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# arv-copy [--recursive] [--no-recursive] object-uuid src dst
+# arv-copy [--recursive] [--no-recursive] object-uuid
 #
 # Copies an object from Arvados instance src to instance dst.
 #
@@ -87,17 +87,17 @@ def main():
         '-f', '--force', dest='force', action='store_true',
         help='Perform copy even if the object appears to exist at the remote destination.')
     copy_opts.add_argument(
-        '--src', dest='source_arvados', required=True,
+        '--src', dest='source_arvados',
         help='The name of the source Arvados instance (required) - points at an Arvados config file. May be either a pathname to a config file, or (for example) "foo" as shorthand for $HOME/.config/arvados/foo.conf.')
     copy_opts.add_argument(
-        '--dst', dest='destination_arvados', required=True,
+        '--dst', dest='destination_arvados',
         help='The name of the destination Arvados instance (required) - points at an Arvados config file. May be either a pathname to a config file, or (for example) "foo" as shorthand for $HOME/.config/arvados/foo.conf.')
     copy_opts.add_argument(
         '--recursive', dest='recursive', action='store_true',
-        help='Recursively copy any dependencies for this object. (default)')
+        help='Recursively copy any dependencies for this object, and subprojects. (default)')
     copy_opts.add_argument(
         '--no-recursive', dest='recursive', action='store_false',
-        help='Do not copy any dependencies. NOTE: if this option is given, the copied object will need to be updated manually in order to be functional.')
+        help='Do not copy any dependencies or subprojects.')
     copy_opts.add_argument(
         '--project-uuid', dest='project_uuid',
         help='The UUID of the project at the destination to which the collection or workflow should be copied.')
@@ -118,6 +118,9 @@ def main():
     else:
         logger.setLevel(logging.INFO)
 
+    if not args.source_arvados:
+        args.source_arvados = args.object_uuid[:5]
+
     # Create API clients for the source and destination instances
     src_arv = api_for_instance(args.source_arvados)
     dst_arv = api_for_instance(args.destination_arvados)
@@ -135,6 +138,9 @@ def main():
     elif t == 'Workflow':
         set_src_owner_uuid(src_arv.workflows(), args.object_uuid, args)
         result = copy_workflow(args.object_uuid, src_arv, dst_arv, args)
+    elif t == 'Group':
+        set_src_owner_uuid(src_arv.groups(), args.object_uuid, args)
+        result = copy_project(args.object_uuid, src_arv, dst_arv, args.project_uuid, args)
     else:
         abort("cannot copy object {} of type {}".format(args.object_uuid, t))
 
@@ -170,6 +176,10 @@ def set_src_owner_uuid(resource, uuid, args):
 #     $HOME/.config/arvados/instance_name.conf
 #
 def api_for_instance(instance_name):
+    if not instance_name:
+        # Use environment
+        return arvados.api('v1', model=OrderedJsonModel())
+
     if '/' in instance_name:
         config_file = instance_name
     else:
@@ -296,7 +306,14 @@ def copy_workflow(wf_uuid, src, dst, args):
     # copy the workflow itself
     del wf['uuid']
     wf['owner_uuid'] = args.project_uuid
-    return dst.workflows().create(body=wf).execute(num_retries=args.retries)
+
+    existing = dst.workflows().list(filters=[["owner_uuid", "=", args.project_uuid],
+                                             ["name", "=", wf["name"]]]).execute()
+    if len(existing["items"]) == 0:
+        return dst.workflows().create(body=wf).execute(num_retries=args.retries)
+    else:
+        return dst.workflows().update(uuid=existing["items"][0]["uuid"], body=wf).execute(num_retries=args.retries)
+
 
 def workflow_collections(obj, locations, docker_images):
     if isinstance(obj, dict):
@@ -632,6 +649,42 @@ def copy_docker_image(docker_image, docker_image_tag, src, dst, args):
     else:
         logger.warning('Could not find docker image {}:{}'.format(docker_image, docker_image_tag))
 
+def copy_project(obj_uuid, src, dst, owner_uuid, args):
+
+    src_project_record = src.groups().get(uuid=obj_uuid).execute(num_retries=args.retries)
+
+    # Create/update the destination project
+    existing = dst.groups().list(filters=[["owner_uuid", "=", owner_uuid],
+                                          ["name", "=", src_project_record["name"]]]).execute(num_retries=args.retries)
+    if len(existing["items"]) == 0:
+        project_record = dst.groups().create(body={"group": {"group_class": "project",
+                                                             "owner_uuid": owner_uuid,
+                                                             "name": src_project_record["name"]}}).execute(num_retries=args.retries)
+    else:
+        project_record = existing["items"][0]
+
+    dst.groups().update(uuid=project_record["uuid"],
+                        body={"group": {
+                            "description": src_project_record["description"]}}).execute(num_retries=args.retries)
+
+    args.project_uuid = project_record["uuid"]
+
+    logger.debug('Copying %s to %s', obj_uuid, project_record["uuid"])
+
+    # Copy collections
+    copy_collections([col["uuid"] for col in arvados.util.list_all(src.collections().list, filters=[["owner_uuid", "=", obj_uuid]])],
+                     src, dst, args)
+
+    # Copy workflows
+    for w in arvados.util.list_all(src.workflows().list, filters=[["owner_uuid", "=", obj_uuid]]):
+        copy_workflow(w["uuid"], src, dst, args)
+
+    if args.recursive:
+        for g in arvados.util.list_all(src.groups().list, filters=[["owner_uuid", "=", obj_uuid]]):
+            copy_project(g["uuid"], src, dst, project_record["uuid"], args)
+
+    return project_record
+
 # git_rev_parse(rev, repo)
 #
 #    Returns the 40-character commit hash corresponding to 'rev' in
@@ -654,7 +707,7 @@ def git_rev_parse(rev, repo):
 #    Special case: if handed a Keep locator hash, return 'Collection'.
 #
 def uuid_type(api, object_uuid):
-    if re.match(r'^[a-f0-9]{32}\+[0-9]+(\+[A-Za-z0-9+-]+)?$', object_uuid):
+    if re.match(arvados.util.keep_locator_pattern, object_uuid):
         return 'Collection'
     p = object_uuid.split('-')
     if len(p) == 3:
