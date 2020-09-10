@@ -181,7 +181,7 @@ func (disp *dispatcher) run() {
 	if pollInterval <= 0 {
 		pollInterval = defaultPollInterval
 	}
-	sched := scheduler.New(disp.Context, disp.queue, disp.pool, staleLockTimeout, pollInterval)
+	sched := scheduler.New(disp.Context, disp.queue, disp.pool, disp.Registry, staleLockTimeout, pollInterval)
 	sched.Start()
 	defer sched.Stop()
 
