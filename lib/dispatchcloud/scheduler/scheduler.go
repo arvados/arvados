@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 )
 
@@ -31,6 +32,7 @@ type Scheduler struct {
 	logger              logrus.FieldLogger
 	queue               ContainerQueue
 	pool                WorkerPool
+	reg                 *prometheus.Registry
 	staleLockTimeout    time.Duration
 	queueUpdateInterval time.Duration
 
@@ -41,17 +43,21 @@ type Scheduler struct {
 	runOnce sync.Once
 	stop    chan struct{}
 	stopped chan struct{}
+
+	mContainersAllocatedNotStarted   prometheus.Gauge
+	mContainersNotAllocatedOverQuota prometheus.Gauge
 }
 
 // New returns a new unstarted Scheduler.
 //
 // Any given queue and pool should not be used by more than one
 // scheduler at a time.
-func New(ctx context.Context, queue ContainerQueue, pool WorkerPool, staleLockTimeout, queueUpdateInterval time.Duration) *Scheduler {
-	return &Scheduler{
+func New(ctx context.Context, queue ContainerQueue, pool WorkerPool, reg *prometheus.Registry, staleLockTimeout, queueUpdateInterval time.Duration) *Scheduler {
+	sch := &Scheduler{
 		logger:              ctxlog.FromContext(ctx),
 		queue:               queue,
 		pool:                pool,
+		reg:                 reg,
 		staleLockTimeout:    staleLockTimeout,
 		queueUpdateInterval: queueUpdateInterval,
 		wakeup:              time.NewTimer(time.Second),
@@ -59,6 +65,28 @@ func New(ctx context.Context, queue ContainerQueue, pool WorkerPool, staleLockTi
 		stopped:             make(chan struct{}),
 		uuidOp:              map[string]string{},
 	}
+	sch.registerMetrics(reg)
+	return sch
+}
+
+func (sch *Scheduler) registerMetrics(reg *prometheus.Registry) {
+	if reg == nil {
+		reg = prometheus.NewRegistry()
+	}
+	sch.mContainersAllocatedNotStarted = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "arvados",
+		Subsystem: "dispatchcloud",
+		Name:      "containers_allocated_not_started",
+		Help:      "Number of containers allocated to a worker but not started yet (worker is booting).",
+	})
+	reg.MustRegister(sch.mContainersAllocatedNotStarted)
+	sch.mContainersNotAllocatedOverQuota = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "arvados",
+		Subsystem: "dispatchcloud",
+		Name:      "containers_not_allocated_over_quota",
+		Help:      "Number of containers not allocated to a worker because the system has hit a quota.",
+	})
+	reg.MustRegister(sch.mContainersNotAllocatedOverQuota)
 }
 
 // Start starts the scheduler.
