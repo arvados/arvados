@@ -25,6 +25,7 @@ import { getSortColumn } from "~/store/data-explorer/data-explorer-reducer";
 import { getDataExplorerColumnFilters } from '~/store/data-explorer/data-explorer-middleware-service';
 import { serializeSimpleObjectTypeFilters } from '../resource-type-filters/resource-type-filters';
 import { ResourceKind } from "~/models/resource";
+import { LinkClass } from "~/models/link";
 
 export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -59,7 +60,7 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
                 api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
                 const responseLinks = await this.services.linkService.list({
                     filters: new FilterBuilder()
-                        .addEqual("link_class", 'star')
+                        .addEqual("link_class", LinkClass.STAR)
                         .addEqual('tail_uuid', getUserUuid(api.getState()))
                         .addEqual('tail_kind', ResourceKind.USER)
                         .getFilters()
