@@ -61,7 +61,6 @@ export class PublicFavoritesMiddlewareService extends DataExplorerMiddlewareServ
                     offset: dataExplorer.page * dataExplorer.rowsPerPage,
                     filters: new FilterBuilder()
                         .addEqual('link_class', LinkClass.STAR)
-                        .addILike("name", dataExplorer.searchValue)
                         .addIn('owner_uuid', [allusersUuid, systemUuid])
                         .addEqual('tail_uuid', allusersUuid)
                         .addIsA("head_uuid", typeFilters)
