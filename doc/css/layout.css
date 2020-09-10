@@ -1,0 +1,53 @@
+/* Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0 */
+
+html {
+    height:100%;
+}
+body {
+    padding-top: 61px;
+    height: 90%; /* If calc() is not supported */
+    height: calc(100% - 46px); /* Sets the body full height minus the padding for the menu bar */
+}
+@media (max-width: 1050px) {
+    body {
+	padding-top: 121px;
+    }
+    div.frontpagehero {
+	margin-left: -20px;
+	margin-right: -20px;
+	padding-left: 20px;
+    }
+}
+.sidebar-nav {
+    padding: 9px 0;
+}
+.section-block {
+    background: #eeeeee;
+    padding: 1em;
+    -webkit-border-radius: 12px;
+    -moz-border-radius: 12px;
+    border-radius: 12px;
+    margin: 0 2em;
+}
+.row-fluid :first-child .section-block {
+    margin-left: 0;
+}
+.row-fluid :last-child .section-block {
+    margin-right: 0;
+}
+.rarr {
+    font-size: 1.5em;
+}
+.darr {
+    font-size: 4em;
+    text-align: center;
+    margin-bottom: 1em;
+}
+:target {
+    padding-top: 61px;
+    margin-top: -61px;
+}
+
+#annotate-notify { position: fixed; right: 40px; top: 3px;  }
