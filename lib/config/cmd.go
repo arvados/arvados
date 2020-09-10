@@ -148,15 +148,21 @@ func (checkCommand) RunCommand(prog string, args []string, stdin io.Reader, stdo
 		fmt.Fprintln(stdout, "Your configuration is relying on deprecated entries. Suggest making the following changes.")
 		stdout.Write(diff)
 		err = nil
-		return 1
+		if loader.Strict {
+			return 1
+		}
 	} else if len(diff) > 0 {
 		fmt.Fprintf(stderr, "Unexpected diff output:\n%s", diff)
-		return 1
+		if loader.Strict {
+			return 1
+		}
 	} else if err != nil {
 		return 1
 	}
 	if logbuf.Len() > 0 {
-		return 1
+		if loader.Strict {
+			return 1
+		}
 	}
 
 	if problems {
