@@ -327,9 +327,9 @@ class ApiClientAuthorization < ArvadosModel
 
   def permission_to_create
     current_user.andand.is_admin or
-      ((current_user.andand.id == self.user_id)) and
+      ((current_user.andand.id == self.user_id) and
         (current_api_client_authorization.andand.expires_at.nil? or
-          (self.expires_at and current_api_client_authorization.expires_at >= self.expires_at))
+          (self.expires_at and current_api_client_authorization.expires_at >= self.expires_at)))
   end
 
   def permission_to_update
