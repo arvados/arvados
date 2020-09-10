@@ -22,7 +22,15 @@ class Arvados::V1::UsersController < ApplicationController
       rescue ActiveRecord::RecordNotUnique
         retry
       end
-      u.update_attributes!(nullify_attrs(attrs))
+      needupdate = {}
+      nullify_attrs(attrs).each do |k,v|
+        if !v.nil? && u.send(k) != v
+          needupdate[k] = v
+        end
+      end
+      if needupdate.length > 0
+        u.update_attributes!(needupdate)
+      end
       @objects << u
     end
     @offset = 0
