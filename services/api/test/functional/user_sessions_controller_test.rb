@@ -30,6 +30,7 @@ class UserSessionsControllerTest < ActionController::TestCase
     authorize_with :inactive
     api_client_page = 'http://client.example.com/home'
     get :login, params: {return_to: api_client_page}
+    assert_response :redirect
     assert_not_nil assigns(:api_client)
     assert_nil assigns(:api_client_auth).expires_at
   end
@@ -40,6 +41,7 @@ class UserSessionsControllerTest < ActionController::TestCase
     authorize_with :inactive
     api_client_page = 'http://client.example.com/home'
     get :login, params: {return_to: api_client_page}
+    assert_response :redirect
     assert_not_nil assigns(:api_client)
     api_client_auth = assigns(:api_client_auth)
     assert_in_delta(api_client_auth.expires_at,
