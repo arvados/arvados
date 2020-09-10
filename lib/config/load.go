@@ -29,7 +29,6 @@ type Loader struct {
 	SkipDeprecated bool // Don't load deprecated config keys
 	SkipLegacy     bool // Don't load legacy config files
 	SkipAPICalls   bool // Don't do checks that call RailsAPI/controller
-	Strict         bool // In config-check, any warnings or diff is non-empty will result in a non-zero exit code
 
 	Path                    string
 	KeepstorePath           string
@@ -74,7 +73,6 @@ func (ldr *Loader) SetupFlags(flagset *flag.FlagSet) {
 		flagset.StringVar(&ldr.GitHttpdPath, "legacy-git-httpd-config", defaultGitHttpdConfigPath, "Legacy arv-git-httpd configuration `file`")
 		flagset.StringVar(&ldr.KeepBalancePath, "legacy-keepbalance-config", defaultKeepBalanceConfigPath, "Legacy keep-balance configuration `file`")
 		flagset.BoolVar(&ldr.SkipLegacy, "skip-legacy", false, "Don't load legacy config files")
-		flagset.BoolVar(&ldr.Strict, "strict", true, "Strict validation of configuration file (warnings result in non-zero exit code)")
 	}
 }
 
