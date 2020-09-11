@@ -282,7 +282,9 @@ class LogTest < ActiveSupport::TestCase
   end
 
   test "non-empty configuration.unlogged_attributes" do
-    Rails.configuration.AuditLogs.UnloggedAttributes = {"manifest_text"=>{}}
+    conf = ActiveSupport::OrderedOptions.new
+    conf["manifest_text"] = {}
+    Rails.configuration.AuditLogs.UnloggedAttributes = conf
     txt = ". acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:foo\n"
 
     act_as_system_user do
@@ -297,7 +299,7 @@ class LogTest < ActiveSupport::TestCase
   end
 
   test "empty configuration.unlogged_attributes" do
-    Rails.configuration.AuditLogs.UnloggedAttributes = {}
+    Rails.configuration.AuditLogs.UnloggedAttributes = ActiveSupport::OrderedOptions.new
     txt = ". acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:foo\n"
 
     act_as_system_user do
