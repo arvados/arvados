@@ -12,21 +12,30 @@ export const collectionPanelFilesReducer = (state: CollectionPanelFilesState = c
     // for performance reasons, so we pass a copy of 'state' to avoid side effects.
     return collectionPanelFilesAction.match(action, {
         SET_COLLECTION_FILES: files =>
-            mergeCollectionPanelFilesStates({...state}, mapTree(mapCollectionFileToCollectionPanelFile)(files)),
+            mergeCollectionPanelFilesStates({ ...state }, mapTree(mapCollectionFileToCollectionPanelFile)(files)),
 
         TOGGLE_COLLECTION_FILE_COLLAPSE: data =>
-            toggleCollapse(data.id)({...state}),
+            toggleCollapse(data.id)({ ...state }),
 
-        TOGGLE_COLLECTION_FILE_SELECTION: data => [{...state}]
+        TOGGLE_COLLECTION_FILE_SELECTION: data => [{ ...state }]
             .map(toggleSelected(data.id))
             .map(toggleAncestors(data.id))
             .map(toggleDescendants(data.id))[0],
 
+        ON_SEARCH_CHANGE: (data) =>
+            mapTreeValues((v: CollectionPanelDirectory | CollectionPanelFile) => {
+                if (v.type === CollectionFileType.DIRECTORY) {
+                    return ({ ...v, collapsed: data.length === 0 });
+                }
+
+                return ({ ...v });
+            })({ ...state }),
+
         SELECT_ALL_COLLECTION_FILES: () =>
-            mapTreeValues(v => ({ ...v, selected: true }))({...state}),
+            mapTreeValues(v => ({ ...v, selected: true }))({ ...state }),
 
         UNSELECT_ALL_COLLECTION_FILES: () =>
-            mapTreeValues(v => ({ ...v, selected: false }))({...state}),
+            mapTreeValues(v => ({ ...v, selected: false }))({ ...state }),
 
         default: () => state
     }) as CollectionPanelFilesState;
