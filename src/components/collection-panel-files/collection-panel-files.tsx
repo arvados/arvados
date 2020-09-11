@@ -28,7 +28,7 @@ export interface CollectionPanelFilesProps {
     currentItemUuid?: string;
 }
 
-type CssRules = 'root' | 'cardSubheader' | 'nameHeader' | 'fileSizeHeader' | 'uploadIcon' | 'button' | 'centeredLabel' | 'cardHeaderContent' | 'cardHeaderContentTitle';
+export type CssRules = 'root' | 'cardSubheader' | 'nameHeader' | 'fileSizeHeader' | 'uploadIcon' | 'button' | 'centeredLabel' | 'cardHeaderContent' | 'cardHeaderContentTitle';
 
 const styles: StyleRulesCallback<CssRules> = theme => ({
     root: {
@@ -69,80 +69,77 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
     },
 });
 
+export const CollectionPanelFilesComponent = ({ onItemMenuOpen, onSearchChange, onOptionsMenuOpen, onUploadDataClick, classes,
+    isWritable, isLoading, tooManyFiles, loadFilesFunc, ...treeProps }: CollectionPanelFilesProps & WithStyles<CssRules>) => {
+    const { useState, useEffect } = React;
+    const [searchValue, setSearchValue] = useState('');
 
+    useEffect(() => {
+        onSearchChange(searchValue);
+    }, [searchValue]);
 
-export const CollectionPanelFiles =
-    withStyles(styles)(
-        ({ onItemMenuOpen, onSearchChange, onOptionsMenuOpen, onUploadDataClick, classes,
-            isWritable, isLoading, tooManyFiles, loadFilesFunc, ...treeProps }: CollectionPanelFilesProps & WithStyles<CssRules>) => {
-            const { useState, useEffect } = React;
-            const [searchValue, setSearchValue] = useState('');
+    return (<Card data-cy='collection-files-panel' className={classes.root}>
+        <CardHeader
+            title={
+                <div className={classes.cardHeaderContent}>
+                    <span className={classes.cardHeaderContentTitle}>Files</span>
+                    <SearchInput
+                        value={searchValue}
+                        onSearch={setSearchValue} />
+                </div>
+            }
+            className={classes.cardSubheader}
+            classes={{ action: classes.button }}
+            action={<>
+                {isWritable &&
+                    <Button
+                        data-cy='upload-button'
+                        onClick={onUploadDataClick}
+                        variant='contained'
+                        color='primary'
+                        size='small'>
+                        <DownloadIcon className={classes.uploadIcon} />
+                    Upload data
+                </Button>}
+                {!tooManyFiles &&
+                    <Tooltip title="More options" disableFocusListener>
+                        <IconButton
+                            data-cy='collection-files-panel-options-btn'
+                            onClick={(ev) => onOptionsMenuOpen(ev, isWritable)}>
+                            <CustomizeTableIcon />
+                        </IconButton>
+                    </Tooltip>}
+            </>
+            } />
+        {tooManyFiles
+            ? <div className={classes.centeredLabel}>
+                File listing may take some time, please click to browse: <Button onClick={loadFilesFunc}><DownloadIcon />Show files</Button>
+            </div>
+            : <>
+                <Grid container justify="space-between">
+                    <Typography variant="caption" className={classes.nameHeader}>
+                        Name
+                </Typography>
+                    <Typography variant="caption" className={classes.fileSizeHeader}>
+                        File size
+                </Typography>
+                </Grid>
+                {isLoading
+                    ? <div className={classes.centeredLabel}><CircularProgress /></div>
+                    : <div style={{ height: 'calc(100% - 60px)' }}>
+                        <FileTree
+                            onMenuOpen={(ev, item) => onItemMenuOpen(ev, item, isWritable)}
+                            {...treeProps}
+                            items={treeProps.items.filter((item) => {
+                                if (item.data.type === CollectionFileType.FILE) {
+                                    return item.data.name.toLowerCase().indexOf(searchValue.toLowerCase()) > -1;
+                                }
 
-            useEffect(() => {
-                onSearchChange(searchValue);
-            }, [searchValue]);
-
-            return (<Card data-cy='collection-files-panel' className={classes.root}>
-                <CardHeader
-                    title={
-                        <div className={classes.cardHeaderContent}>
-                            <span className={classes.cardHeaderContentTitle}>Files</span>
-                            <SearchInput
-                                value={searchValue}
-                                onSearch={setSearchValue} />
-                        </div>
-                    }
-                    className={classes.cardSubheader}
-                    classes={{ action: classes.button }}
-                    action={<>
-                        {isWritable &&
-                            <Button
-                                data-cy='upload-button'
-                                onClick={onUploadDataClick}
-                                variant='contained'
-                                color='primary'
-                                size='small'>
-                                <DownloadIcon className={classes.uploadIcon} />
-                            Upload data
-                        </Button>}
-                        {!tooManyFiles &&
-                            <Tooltip title="More options" disableFocusListener>
-                                <IconButton
-                                    data-cy='collection-files-panel-options-btn'
-                                    onClick={(ev) => onOptionsMenuOpen(ev, isWritable)}>
-                                    <CustomizeTableIcon />
-                                </IconButton>
-                            </Tooltip>}
-                    </>
-                    } />
-                {tooManyFiles
-                    ? <div className={classes.centeredLabel}>
-                        File listing may take some time, please click to browse: <Button onClick={loadFilesFunc}><DownloadIcon />Show files</Button>
-                    </div>
-                    : <>
-                        <Grid container justify="space-between">
-                            <Typography variant="caption" className={classes.nameHeader}>
-                                Name
-                        </Typography>
-                            <Typography variant="caption" className={classes.fileSizeHeader}>
-                                File size
-                        </Typography>
-                        </Grid>
-                        {isLoading
-                            ? <div className={classes.centeredLabel}><CircularProgress /></div>
-                            : <div style={{ height: 'calc(100% - 60px)' }}>
-                                <FileTree
-                                    onMenuOpen={(ev, item) => onItemMenuOpen(ev, item, isWritable)}
-                                    {...treeProps}
-                                    items={treeProps.items.filter((item) => {
-                                        if (item.data.type === CollectionFileType.FILE) {
-                                            return item.data.name.toLowerCase().indexOf(searchValue.toLowerCase()) > -1;
-                                        }
-
-                                        return true;
-                                    })} /></div>}
-                    </>
-                }
-            </Card>);
+                                return true;
+                            })} /></div>}
+            </>
         }
-    );
+    </Card>);
+};
+
+export const CollectionPanelFiles = withStyles(styles)(CollectionPanelFilesComponent);
