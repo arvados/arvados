@@ -110,7 +110,9 @@ class UserTest < ActiveSupport::TestCase
   end
 
   test "new username set avoiding blacklist" do
-    Rails.configuration.Users.AutoSetupUsernameBlacklist = {"root"=>{}}
+    conf = ActiveSupport::OrderedOptions.new
+    conf["root"] = {}
+    Rails.configuration.Users.AutoSetupUsernameBlacklist = conf
     check_new_username_setting("root", "root2")
   end
 

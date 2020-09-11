@@ -430,7 +430,10 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
   end
 
   test 'get contents with jobs and pipeline instances disabled' do
-    Rails.configuration.API.DisabledAPIs = {'jobs.index'=>{}, 'pipeline_instances.index'=>{}}
+    conf = ActiveSupport::OrderedOptions.new
+    conf['jobs.index'] = {}
+    conf['pipeline_instances.index'] = {}
+    Rails.configuration.API.DisabledAPIs = conf
 
     authorize_with :active
     get :contents, params: {
