@@ -110,6 +110,7 @@ type worker struct {
 	probing             chan struct{}
 	bootOutcomeReported bool
 	timeToReadyReported bool
+	staleRunLockSince   time.Time
 }
 
 func (wkr *worker) onUnkillable(uuid string) {
@@ -382,12 +383,28 @@ func (wkr *worker) probeRunning() (running []string, reportsBroken, ok bool) {
 		return
 	}
 	ok = true
+
+	staleRunLock := false
 	for _, s := range strings.Split(string(stdout), "\n") {
 		if s == "broken" {
 			reportsBroken = true
-		} else if s != "" {
+		} else if s == "" {
+		} else if toks := strings.Split(s, " "); len(toks) == 1 {
 			running = append(running, s)
+		} else if toks[1] == "stale" {
+			wkr.logger.WithField("ContainerUUID", toks[0]).Info("probe reported stale run lock")
+			staleRunLock = true
 		}
+	}
+	wkr.mtx.Lock()
+	defer wkr.mtx.Unlock()
+	if !staleRunLock {
+		wkr.staleRunLockSince = time.Time{}
+	} else if wkr.staleRunLockSince.IsZero() {
+		wkr.staleRunLockSince = time.Now()
+	} else if dur := time.Now().Sub(wkr.staleRunLockSince); dur > wkr.wp.timeoutStaleRunLock {
+		wkr.logger.WithField("Duration", dur).Warn("reporting broken after reporting stale run lock for too long")
+		reportsBroken = true
 	}
 	return
 }
