@@ -327,7 +327,10 @@ def run(leave_running_atexit=False):
     env.pop('ARVADOS_API_HOST', None)
     env.pop('ARVADOS_API_HOST_INSECURE', None)
     env.pop('ARVADOS_API_TOKEN', None)
-    logf = open(_logfilename('railsapi'), 'a')
+    if not os.environ.get('ARVADOS_DEBUG', ''):
+        logf = open(_logfilename('railsapi'), 'a')
+    else:
+        logf = open(_logfilename('railsapi'), 'w')
     railsapi = subprocess.Popen(
         ['bundle', 'exec',
          'passenger', 'start', '-p{}'.format(port),
