@@ -46,6 +46,7 @@ type Scheduler struct {
 
 	mContainersAllocatedNotStarted   prometheus.Gauge
 	mContainersNotAllocatedOverQuota prometheus.Gauge
+	mLongestWaitTimeSinceQueue       prometheus.Gauge
 }
 
 // New returns a new unstarted Scheduler.
@@ -87,6 +88,13 @@ func (sch *Scheduler) registerMetrics(reg *prometheus.Registry) {
 		Help:      "Number of containers not allocated to a worker because the system has hit a quota.",
 	})
 	reg.MustRegister(sch.mContainersNotAllocatedOverQuota)
+	sch.mLongestWaitTimeSinceQueue = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "arvados",
+		Subsystem: "dispatchcloud",
+		Name:      "containers_longest_wait_time_seconds",
+		Help:      "Current longest wait time of any container since queuing, and before the start of crunch-run.",
+	})
+	reg.MustRegister(sch.mLongestWaitTimeSinceQueue)
 }
 
 // Start starts the scheduler.

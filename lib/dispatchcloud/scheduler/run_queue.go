@@ -34,6 +34,7 @@ func (sch *Scheduler) runQueue() {
 	dontstart := map[arvados.InstanceType]bool{}
 	var overquota []container.QueueEnt // entries that are unmappable because of worker pool quota
 	var containerAllocatedWorkerBootingCount int
+	var longestWaitTimeCandidate, previousLongestWaitTimeCandidate float64
 
 tryrun:
 	for i, ctr := range sorted {
@@ -44,6 +45,11 @@ tryrun:
 		})
 		if _, running := running[ctr.UUID]; running || ctr.Priority < 1 {
 			continue
+		}
+		previousLongestWaitTimeCandidate = longestWaitTimeCandidate
+		since := time.Since(ctr.CreatedAt).Seconds()
+		if since > longestWaitTimeCandidate {
+			longestWaitTimeCandidate = since
 		}
 		switch ctr.State {
 		case arvados.ContainerStateQueued:
@@ -92,6 +98,7 @@ tryrun:
 				logger.Info("not restarting yet: crunch-run process from previous attempt has not exited")
 			} else if sch.pool.StartContainer(it, ctr) {
 				// Success.
+				longestWaitTimeCandidate = previousLongestWaitTimeCandidate
 			} else {
 				containerAllocatedWorkerBootingCount += 1
 				dontstart[it] = true
@@ -101,6 +108,7 @@ tryrun:
 
 	sch.mContainersAllocatedNotStarted.Set(float64(containerAllocatedWorkerBootingCount))
 	sch.mContainersNotAllocatedOverQuota.Set(float64(len(overquota)))
+	sch.mLongestWaitTimeSinceQueue.Set(longestWaitTimeCandidate)
 
 	if len(overquota) > 0 {
 		// Unlock any containers that are unmappable while
