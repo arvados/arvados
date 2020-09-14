@@ -54,15 +54,13 @@ export class PublicFavoritesMiddlewareService extends DataExplorerMiddlewareServ
             try {
                 api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
                 const uuidPrefix = api.getState().auth.config.uuidPrefix;
-                const systemUuid = `${uuidPrefix}-tpzed-000000000000000`;
-                const allusersUuid = `${uuidPrefix}-j7d0g-fffffffffffffff`;
+                const publicProjectUuid = `${uuidPrefix}-j7d0g-publicfavorites`;
                 const responseLinks = await this.services.linkService.list({
                     limit: dataExplorer.rowsPerPage,
                     offset: dataExplorer.page * dataExplorer.rowsPerPage,
                     filters: new FilterBuilder()
                         .addEqual('link_class', LinkClass.STAR)
-                        .addIn('owner_uuid', [allusersUuid, systemUuid])
-                        .addEqual('tail_uuid', allusersUuid)
+                        .addEqual('owner_uuid', publicProjectUuid)
                         .addIsA("head_uuid", typeFilters)
                         .getFilters()
                 });

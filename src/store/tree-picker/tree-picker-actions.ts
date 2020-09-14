@@ -271,8 +271,7 @@ export const loadPublicFavoritesProject = (params: LoadFavoritesProjectParams) =
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         const { pickerId, includeCollections = false, includeFiles = false } = params;
         const uuidPrefix = getState().auth.config.uuidPrefix;
-        const systemUuid = `${uuidPrefix}-tpzed-000000000000000`;
-        const allusersUuid = `${uuidPrefix}-j7d0g-fffffffffffffff`;
+        const publicProjectUuid = `${uuidPrefix}-j7d0g-publicfavorites`;
 
         const filters = pipe(
             (fb: FilterBuilder) => includeCollections
@@ -280,8 +279,7 @@ export const loadPublicFavoritesProject = (params: LoadFavoritesProjectParams) =
                 : fb.addIsA('head_uuid', [ResourceKind.PROJECT]),
             fb => fb
                 .addEqual('link_class', LinkClass.STAR)
-                .addIn('owner_uuid', [systemUuid, allusersUuid])
-                .addEqual('tail_uuid', allusersUuid)
+                .addEqual('owner_uuid', publicProjectUuid)
                 .getFilters(),
         )(new FilterBuilder());
 

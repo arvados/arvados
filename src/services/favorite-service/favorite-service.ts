@@ -23,38 +23,20 @@ export class FavoriteService {
     ) { }
 
     create(data: { userUuid: string; resource: { uuid: string; name: string } }) {
-        const l = this.linkService.create({
-            // If this is for the all users group, it must be owned by
-            // the system user.
-            ownerUuid: (data.userUuid.substr(-22) === "-j7d0g-fffffffffffffff" ?
-                data.userUuid.substr(0, 5) + "-tpzed-000000000000000"
-                : data.userUuid),
+        return this.linkService.create({
+            ownerUuid: data.userUuid,
             tailUuid: data.userUuid,
             headUuid: data.resource.uuid,
             linkClass: LinkClass.STAR,
             name: data.resource.name
         });
-
-        if (data.userUuid.substr(-22) === "-j7d0g-fffffffffffffff") {
-            // If this is for the all users group, we need to create a
-            // permission link as well.
-            l.then(result =>
-                this.linkService.create({
-                    tailUuid: data.userUuid,
-                    headUuid: result.uuid,
-                    linkClass: LinkClass.PERMISSION,
-                    name: "can_read"
-                }));
-        }
-
-        return l;
     }
 
     delete(data: { userUuid: string; resourceUuid: string; }) {
         return this.linkService
             .list({
                 filters: new FilterBuilder()
-                    .addEqual('tail_uuid', data.userUuid)
+                    .addEqual('owner_uuid', data.userUuid)
                     .addEqual('head_uuid', data.resourceUuid)
                     .addEqual('link_class', LinkClass.STAR)
                     .getFilters()
@@ -93,7 +75,7 @@ export class FavoriteService {
             .list({
                 filters: new FilterBuilder()
                     .addIn("head_uuid", resourceUuids)
-                    .addEqual("tail_uuid", userUuid)
+                    .addEqual("owner_uuid", userUuid)
                     .addEqual("link_class", LinkClass.STAR)
                     .getFilters()
             })
