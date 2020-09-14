@@ -68,7 +68,7 @@ class UserSessionsControllerTest < ActionController::TestCase
 
   test "login to LoginCluster" do
     Rails.configuration.Login.LoginCluster = 'zbbbb'
-    Rails.configuration.RemoteClusters['zbbbb'] = {'Host' => 'zbbbb.example.com'}
+    Rails.configuration.RemoteClusters['zbbbb'] = ConfigLoader.to_OrderedOptions({'Host' => 'zbbbb.example.com'})
     api_client_page = 'http://client.example.com/home'
     get :login, params: {return_to: api_client_page}
     assert_response :redirect

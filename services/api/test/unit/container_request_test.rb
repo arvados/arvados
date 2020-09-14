@@ -576,9 +576,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
   test "Container.resolve_container_image(pdh)" do
     set_user_from_auth :active
     [[:docker_image, 'v1'], [:docker_image_1_12, 'v2']].each do |coll, ver|
-      conf = ActiveSupport::OrderedOptions.new
-      conf[ver] = {}
-      Rails.configuration.Containers.SupportedDockerImageFormats = conf
+      Rails.configuration.Containers.SupportedDockerImageFormats = ConfigLoader.to_OrderedOptions({ver=>{}})
       pdh = collections(coll).portable_data_hash
       resolved = Container.resolve_container_image(pdh)
       assert_equal resolved, pdh
@@ -604,9 +602,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
   end
 
   test "migrated docker image" do
-    conf = ActiveSupport::OrderedOptions.new
-    conf['v2'] = {}
-    Rails.configuration.Containers.SupportedDockerImageFormats = conf
+    Rails.configuration.Containers.SupportedDockerImageFormats = ConfigLoader.to_OrderedOptions({'v2'=>{}})
     add_docker19_migration_link
 
     # Test that it returns only v2 images even though request is for v1 image.
@@ -624,9 +620,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
   end
 
   test "use unmigrated docker image" do
-    conf = ActiveSupport::OrderedOptions.new
-    conf['v1'] = {}
-    Rails.configuration.Containers.SupportedDockerImageFormats = conf
+    Rails.configuration.Containers.SupportedDockerImageFormats = ConfigLoader.to_OrderedOptions({'v1'=>{}})
     add_docker19_migration_link
 
     # Test that it returns only supported v1 images even though there is a
@@ -645,9 +639,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
   end
 
   test "incompatible docker image v1" do
-    conf = ActiveSupport::OrderedOptions.new
-    conf['v1'] = {}
-    Rails.configuration.Containers.SupportedDockerImageFormats = conf
+    Rails.configuration.Containers.SupportedDockerImageFormats = ConfigLoader.to_OrderedOptions({'v1'=>{}})
     add_docker19_migration_link
 
     # Don't return unsupported v2 image even if we ask for it directly.
@@ -660,9 +652,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
   end
 
   test "incompatible docker image v2" do
-    conf = ActiveSupport::OrderedOptions.new
-    conf['v2'] = {}
-    Rails.configuration.Containers.SupportedDockerImageFormats = conf
+    Rails.configuration.Containers.SupportedDockerImageFormats = ConfigLoader.to_OrderedOptions({'v2'=>{}})
     # No migration link, don't return unsupported v1 image,
 
     set_user_from_auth :active
