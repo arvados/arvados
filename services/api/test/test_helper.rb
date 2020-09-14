@@ -62,7 +62,7 @@ class ActiveSupport::TestCase
   include ArvadosTestSupport
   include CurrentApiClient
 
-  teardown do
+  setup do
     Thread.current[:api_client_ip_address] = nil
     Thread.current[:api_client_authorization] = nil
     Thread.current[:api_client_uuid] = nil
@@ -70,6 +70,14 @@ class ActiveSupport::TestCase
     Thread.current[:token] = nil
     Thread.current[:user] = nil
     restore_configuration
+  end
+
+  teardown do
+    # Confirm that any changed configuration doesn't include non-symbol keys
+    $arvados_config.keys.each do |conf_name|
+      conf = Rails.configuration.send(conf_name)
+      confirm_keys_as_symbols(conf, conf_name) if conf.respond_to?('keys')
+    end
   end
 
   def assert_equal(expect, *args)
@@ -108,11 +116,6 @@ class ActiveSupport::TestCase
   end
 
   def restore_configuration
-    # Confirm that any changed configuration doesn't include non-symbol keys
-    $arvados_config.keys.each do |conf_name|
-      conf = Rails.configuration.send("#{conf_name}")
-      confirm_keys_as_symbols(conf, conf_name) if conf.respond_to?('keys')
-    end
     # Restore configuration settings changed during tests
     ConfigLoader.copy_into_config $arvados_config, Rails.configuration
     ConfigLoader.copy_into_config $remaining_config, Rails.configuration
