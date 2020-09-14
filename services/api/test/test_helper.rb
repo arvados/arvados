@@ -99,20 +99,19 @@ class ActiveSupport::TestCase
     end
   end
 
-  def confirm_keys_as_symbols(a_hash, section_name)
-    a_hash.keys.each do |k|
-      assert(k.is_a?(Symbol), "Key '#{k}' on section '#{section_name}' should be a Symbol")
-      confirm_keys_as_symbols(a_hash[k], "#{section_name}.#{k}") if a_hash[k].is_a?(Hash)
+  def confirm_keys_as_symbols(conf, conf_name)
+    assert(conf.is_a?(ActiveSupport::OrderedOptions), "#{conf_name} should be an OrderedOptions object")
+    conf.keys.each do |k|
+      assert(k.is_a?(Symbol), "Key '#{k}' on section '#{conf_name}' should be a Symbol")
+      confirm_keys_as_symbols(conf[k], "#{conf_name}.#{k}") if conf[k].respond_to?('keys')
     end
   end
 
   def restore_configuration
     # Confirm that any changed configuration doesn't include non-symbol keys
-    $arvados_config.keys.each do |config_section_name|
-      config_section = Rails.configuration.send("#{config_section_name}")
-      if config_section.is_a?(Hash)
-        confirm_keys_as_symbols(config_section, config_section_name)
-      end
+    $arvados_config.keys.each do |conf_name|
+      conf = Rails.configuration.send("#{conf_name}")
+      confirm_keys_as_symbols(conf, conf_name) if conf.respond_to?('keys')
     end
     # Restore configuration settings changed during tests
     ConfigLoader.copy_into_config $arvados_config, Rails.configuration
