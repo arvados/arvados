@@ -14,6 +14,8 @@ class DatabaseSeeds
     anonymous_group_read_permission
     anonymous_user
     system_root_token_api_client
+    public_project_group
+    public_project_read_permission
     empty_collection
     refresh_permissions
     refresh_trashed
