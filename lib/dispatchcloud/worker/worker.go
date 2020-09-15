@@ -386,9 +386,23 @@ func (wkr *worker) probeRunning() (running []string, reportsBroken, ok bool) {
 
 	staleRunLock := false
 	for _, s := range strings.Split(string(stdout), "\n") {
-		if s == "broken" {
+		// Each line of the "crunch-run --list" output is one
+		// of the following:
+		//
+		// * a container UUID, indicating that processes
+		//   related to that container are currently running.
+		//   Optionally followed by " stale", indicating that
+		//   the crunch-run process itself has exited (the
+		//   remaining process is probably arv-mount).
+		//
+		// * the string "broken", indicating that the instance
+		//   appears incapable of starting containers.
+		//
+		// See ListProcesses() in lib/crunchrun/background.go.
+		if s == "" {
+			// empty string following final newline
+		} else if s == "broken" {
 			reportsBroken = true
-		} else if s == "" {
 		} else if toks := strings.Split(s, " "); len(toks) == 1 {
 			running = append(running, s)
 		} else if toks[1] == "stale" {
