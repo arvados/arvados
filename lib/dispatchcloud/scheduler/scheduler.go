@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
@@ -97,6 +98,30 @@ func (sch *Scheduler) registerMetrics(reg *prometheus.Registry) {
 	reg.MustRegister(sch.mLongestWaitTimeSinceQueue)
 }
 
+func (sch *Scheduler) updateMetrics() {
+	earliest := time.Now()
+	entries, _ := sch.queue.Entries()
+	running := sch.pool.Running()
+	for _, ent := range entries {
+		if ent.Container.Priority > 0 &&
+			(ent.Container.State == arvados.ContainerStateQueued || ent.Container.State == arvados.ContainerStateLocked) {
+			// Exclude containers that are preparing to run the payload (i.e.
+			// ContainerStateLocked and running on a worker, most likely loading the
+			// payload image
+			if _, ok := running[ent.Container.UUID]; !ok {
+				if ent.Container.CreatedAt.Before(earliest) {
+					earliest = ent.Container.CreatedAt
+				}
+			}
+		}
+	}
+	if !earliest.IsZero() {
+		sch.mLongestWaitTimeSinceQueue.Set(time.Since(earliest).Seconds())
+	} else {
+		sch.mLongestWaitTimeSinceQueue.Set(0)
+	}
+}
+
 // Start starts the scheduler.
 func (sch *Scheduler) Start() {
 	go sch.runOnce.Do(sch.run)
@@ -149,6 +174,7 @@ func (sch *Scheduler) run() {
 	for {
 		sch.runQueue()
 		sch.sync()
+		sch.updateMetrics()
 		select {
 		case <-sch.stop:
 			return

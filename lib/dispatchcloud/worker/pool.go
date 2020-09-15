@@ -948,7 +948,8 @@ func (wp *Pool) sync(threshold time.Time, instances []cloud.Instance) {
 		if wp.mDisappearances != nil {
 			wp.mDisappearances.WithLabelValues(stateString[wkr.state]).Inc()
 		}
-		if wp.mTimeFromShutdownToGone != nil {
+		// wkr.destroyed.IsZero() can happen if instance disappeared but we weren't trying to shut it down
+		if wp.mTimeFromShutdownToGone != nil && !wkr.destroyed.IsZero() {
 			wp.mTimeFromShutdownToGone.Observe(time.Now().Sub(wkr.destroyed).Seconds())
 		}
 		delete(wp.workers, id)

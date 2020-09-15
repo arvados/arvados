@@ -418,6 +418,7 @@ func (*SchedulerSuite) TestContainersMetrics(c *check.C) {
 	}
 	sch := New(ctx, &queue, &pool, nil, time.Millisecond, time.Millisecond)
 	sch.runQueue()
+	sch.updateMetrics()
 
 	c.Check(int(testutil.ToFloat64(sch.mContainersAllocatedNotStarted)), check.Equals, 1)
 	c.Check(int(testutil.ToFloat64(sch.mContainersNotAllocatedOverQuota)), check.Equals, 0)
@@ -429,6 +430,7 @@ func (*SchedulerSuite) TestContainersMetrics(c *check.C) {
 	pool = stubPool{}
 	sch = New(ctx, &queue, &pool, nil, time.Millisecond, time.Millisecond)
 	sch.runQueue()
+	sch.updateMetrics()
 
 	c.Check(int(testutil.ToFloat64(sch.mContainersAllocatedNotStarted)), check.Equals, 0)
 	c.Check(int(testutil.ToFloat64(sch.mContainersNotAllocatedOverQuota)), check.Equals, 1)
@@ -461,6 +463,7 @@ func (*SchedulerSuite) TestContainersMetrics(c *check.C) {
 	}
 	sch = New(ctx, &queue, &pool, nil, time.Millisecond, time.Millisecond)
 	sch.runQueue()
+	sch.updateMetrics()
 
 	c.Check(int(testutil.ToFloat64(sch.mLongestWaitTimeSinceQueue)), check.Equals, 0)
 }
