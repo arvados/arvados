@@ -99,7 +99,7 @@ func (sch *Scheduler) registerMetrics(reg *prometheus.Registry) {
 }
 
 func (sch *Scheduler) updateMetrics() {
-	earliest := time.Now()
+	earliest := time.Time{}
 	entries, _ := sch.queue.Entries()
 	running := sch.pool.Running()
 	for _, ent := range entries {
@@ -109,7 +109,7 @@ func (sch *Scheduler) updateMetrics() {
 			// ContainerStateLocked and running on a worker, most likely loading the
 			// payload image
 			if _, ok := running[ent.Container.UUID]; !ok {
-				if ent.Container.CreatedAt.Before(earliest) {
+				if ent.Container.CreatedAt.Before(earliest) || earliest.IsZero() {
 					earliest = ent.Container.CreatedAt
 				}
 			}
