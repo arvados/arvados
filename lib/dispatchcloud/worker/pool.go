@@ -173,15 +173,17 @@ type Pool struct {
 	runnerMD5    [md5.Size]byte
 	runnerCmd    string
 
-	mContainersRunning       prometheus.Gauge
-	mInstances               *prometheus.GaugeVec
-	mInstancesPrice          *prometheus.GaugeVec
-	mVCPUs                   *prometheus.GaugeVec
-	mMemory                  *prometheus.GaugeVec
-	mBootOutcomes            *prometheus.CounterVec
-	mDisappearances          *prometheus.CounterVec
-	mTimeToSSH               prometheus.Summary
-	mTimeToReadyForContainer prometheus.Summary
+	mContainersRunning        prometheus.Gauge
+	mInstances                *prometheus.GaugeVec
+	mInstancesPrice           *prometheus.GaugeVec
+	mVCPUs                    *prometheus.GaugeVec
+	mMemory                   *prometheus.GaugeVec
+	mBootOutcomes             *prometheus.CounterVec
+	mDisappearances           *prometheus.CounterVec
+	mTimeToSSH                prometheus.Summary
+	mTimeToReadyForContainer  prometheus.Summary
+	mTimeFromShutdownToGone   prometheus.Summary
+	mTimeFromQueueToCrunchRun prometheus.Summary
 }
 
 type createCall struct {
@@ -664,6 +666,22 @@ func (wp *Pool) registerMetrics(reg *prometheus.Registry) {
 		Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.95: 0.005, 0.99: 0.001},
 	})
 	reg.MustRegister(wp.mTimeToReadyForContainer)
+	wp.mTimeFromShutdownToGone = prometheus.NewSummary(prometheus.SummaryOpts{
+		Namespace:  "arvados",
+		Subsystem:  "dispatchcloud",
+		Name:       "instances_time_from_shutdown_request_to_disappearance_seconds",
+		Help:       "Number of seconds between the first shutdown attempt and the disappearance of the worker.",
+		Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.95: 0.005, 0.99: 0.001},
+	})
+	reg.MustRegister(wp.mTimeFromShutdownToGone)
+	wp.mTimeFromQueueToCrunchRun = prometheus.NewSummary(prometheus.SummaryOpts{
+		Namespace:  "arvados",
+		Subsystem:  "dispatchcloud",
+		Name:       "containers_time_from_queue_to_crunch_run_seconds",
+		Help:       "Number of seconds between the queuing of a container and the start of crunch-run.",
+		Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.95: 0.005, 0.99: 0.001},
+	})
+	reg.MustRegister(wp.mTimeFromQueueToCrunchRun)
 }
 
 func (wp *Pool) runMetrics() {
@@ -932,6 +950,10 @@ func (wp *Pool) sync(threshold time.Time, instances []cloud.Instance) {
 		wkr.reportBootOutcome(BootOutcomeDisappeared)
 		if wp.mDisappearances != nil {
 			wp.mDisappearances.WithLabelValues(stateString[wkr.state]).Inc()
+		}
+		// wkr.destroyed.IsZero() can happen if instance disappeared but we weren't trying to shut it down
+		if wp.mTimeFromShutdownToGone != nil && !wkr.destroyed.IsZero() {
+			wp.mTimeFromShutdownToGone.Observe(time.Now().Sub(wkr.destroyed).Seconds())
 		}
 		delete(wp.workers, id)
 		go wkr.Close()

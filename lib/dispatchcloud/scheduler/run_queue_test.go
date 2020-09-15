@@ -391,15 +391,16 @@ func (*SchedulerSuite) TestKillNonexistentContainer(c *check.C) {
 	c.Check(pool.Running(), check.HasLen, 0)
 }
 
-func (*SchedulerSuite) TestContainersAllocatedNotStartedMetric(c *check.C) {
+func (*SchedulerSuite) TestContainersMetrics(c *check.C) {
 	ctx := ctxlog.Context(context.Background(), ctxlog.TestLogger(c))
 	queue := test.Queue{
 		ChooseType: chooseType,
 		Containers: []arvados.Container{
 			{
-				UUID:     test.ContainerUUID(1),
-				Priority: 1,
-				State:    arvados.ContainerStateLocked,
+				UUID:      test.ContainerUUID(1),
+				Priority:  1,
+				State:     arvados.ContainerStateLocked,
+				CreatedAt: time.Now().Add(-10 * time.Second),
 				RuntimeConstraints: arvados.RuntimeConstraints{
 					VCPUs: 1,
 					RAM:   1 << 30,
@@ -417,9 +418,11 @@ func (*SchedulerSuite) TestContainersAllocatedNotStartedMetric(c *check.C) {
 	}
 	sch := New(ctx, &queue, &pool, nil, time.Millisecond, time.Millisecond)
 	sch.runQueue()
+	sch.updateMetrics()
 
 	c.Check(int(testutil.ToFloat64(sch.mContainersAllocatedNotStarted)), check.Equals, 1)
 	c.Check(int(testutil.ToFloat64(sch.mContainersNotAllocatedOverQuota)), check.Equals, 0)
+	c.Check(int(testutil.ToFloat64(sch.mLongestWaitTimeSinceQueue)), check.Equals, 10)
 
 	// Create a pool without workers. The queued container will not be started, and the
 	// 'over quota' metric will be 1 because no workers are available and canCreate defaults
@@ -427,7 +430,40 @@ func (*SchedulerSuite) TestContainersAllocatedNotStartedMetric(c *check.C) {
 	pool = stubPool{}
 	sch = New(ctx, &queue, &pool, nil, time.Millisecond, time.Millisecond)
 	sch.runQueue()
+	sch.updateMetrics()
 
 	c.Check(int(testutil.ToFloat64(sch.mContainersAllocatedNotStarted)), check.Equals, 0)
 	c.Check(int(testutil.ToFloat64(sch.mContainersNotAllocatedOverQuota)), check.Equals, 1)
+	c.Check(int(testutil.ToFloat64(sch.mLongestWaitTimeSinceQueue)), check.Equals, 10)
+
+	// Reset the queue, and create a pool with an idle worker. The queued
+	// container will be started immediately and mLongestWaitTimeSinceQueue
+	// should be zero.
+	queue = test.Queue{
+		ChooseType: chooseType,
+		Containers: []arvados.Container{
+			{
+				UUID:      test.ContainerUUID(1),
+				Priority:  1,
+				State:     arvados.ContainerStateLocked,
+				CreatedAt: time.Now().Add(-10 * time.Second),
+				RuntimeConstraints: arvados.RuntimeConstraints{
+					VCPUs: 1,
+					RAM:   1 << 30,
+				},
+			},
+		},
+	}
+	queue.Update()
+
+	pool = stubPool{
+		idle:    map[arvados.InstanceType]int{test.InstanceType(1): 1},
+		unalloc: map[arvados.InstanceType]int{test.InstanceType(1): 1},
+		running: map[string]time.Time{},
+	}
+	sch = New(ctx, &queue, &pool, nil, time.Millisecond, time.Millisecond)
+	sch.runQueue()
+	sch.updateMetrics()
+
+	c.Check(int(testutil.ToFloat64(sch.mLongestWaitTimeSinceQueue)), check.Equals, 0)
 }

@@ -177,6 +177,9 @@ func (wkr *worker) startContainer(ctr arvados.Container) {
 	}
 	go func() {
 		rr.Start()
+		if wkr.wp.mTimeFromQueueToCrunchRun != nil {
+			wkr.wp.mTimeFromQueueToCrunchRun.Observe(time.Since(ctr.CreatedAt).Seconds())
+		}
 		wkr.mtx.Lock()
 		defer wkr.mtx.Unlock()
 		now := time.Now()
