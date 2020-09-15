@@ -64,15 +64,16 @@ type Executor interface {
 }
 
 const (
-	defaultSyncInterval       = time.Minute
-	defaultProbeInterval      = time.Second * 10
-	defaultMaxProbesPerSecond = 10
-	defaultTimeoutIdle        = time.Minute
-	defaultTimeoutBooting     = time.Minute * 10
-	defaultTimeoutProbe       = time.Minute * 10
-	defaultTimeoutShutdown    = time.Second * 10
-	defaultTimeoutTERM        = time.Minute * 2
-	defaultTimeoutSignal      = time.Second * 5
+	defaultSyncInterval        = time.Minute
+	defaultProbeInterval       = time.Second * 10
+	defaultMaxProbesPerSecond  = 10
+	defaultTimeoutIdle         = time.Minute
+	defaultTimeoutBooting      = time.Minute * 10
+	defaultTimeoutProbe        = time.Minute * 10
+	defaultTimeoutShutdown     = time.Second * 10
+	defaultTimeoutTERM         = time.Minute * 2
+	defaultTimeoutSignal       = time.Second * 5
+	defaultTimeoutStaleRunLock = time.Second * 5
 
 	// Time after a quota error to try again anyway, even if no
 	// instances have been shutdown.
@@ -115,6 +116,7 @@ func NewPool(logger logrus.FieldLogger, arvClient *arvados.Client, reg *promethe
 		timeoutShutdown:                duration(cluster.Containers.CloudVMs.TimeoutShutdown, defaultTimeoutShutdown),
 		timeoutTERM:                    duration(cluster.Containers.CloudVMs.TimeoutTERM, defaultTimeoutTERM),
 		timeoutSignal:                  duration(cluster.Containers.CloudVMs.TimeoutSignal, defaultTimeoutSignal),
+		timeoutStaleRunLock:            duration(cluster.Containers.CloudVMs.TimeoutStaleRunLock, defaultTimeoutStaleRunLock),
 		installPublicKey:               installPublicKey,
 		tagKeyPrefix:                   cluster.Containers.CloudVMs.TagKeyPrefix,
 		stop:                           make(chan bool),
@@ -152,6 +154,7 @@ type Pool struct {
 	timeoutShutdown                time.Duration
 	timeoutTERM                    time.Duration
 	timeoutSignal                  time.Duration
+	timeoutStaleRunLock            time.Duration
 	installPublicKey               ssh.PublicKey
 	tagKeyPrefix                   string
 

@@ -131,7 +131,7 @@ func (sis *StubInstanceSet) Create(it arvados.InstanceType, image cloud.ImageID,
 		tags:         copyTags(tags),
 		providerType: it.ProviderType,
 		initCommand:  cmd,
-		running:      map[string]int64{},
+		running:      map[string]stubProcess{},
 		killing:      map[string]bool{},
 	}
 	svm.SSHService = SSHService{
@@ -189,6 +189,8 @@ type StubVM struct {
 	CrunchRunMissing      bool
 	CrunchRunCrashRate    float64
 	CrunchRunDetachDelay  time.Duration
+	ArvMountMaxExitLag    time.Duration
+	ArvMountDeadlockRate  float64
 	ExecuteContainer      func(arvados.Container) int
 	CrashRunningContainer func(arvados.Container)
 
@@ -198,10 +200,19 @@ type StubVM struct {
 	initCommand  cloud.InitCommand
 	providerType string
 	SSHService   SSHService
-	running      map[string]int64
+	running      map[string]stubProcess
 	killing      map[string]bool
 	lastPID      int64
+	deadlocked   string
 	sync.Mutex
+}
+
+type stubProcess struct {
+	pid int64
+
+	// crunch-run has exited, but arv-mount process (or something)
+	// still holds lock in /var/run/
+	exited bool
 }
 
 func (svm *StubVM) Instance() stubInstance {
@@ -256,7 +267,7 @@ func (svm *StubVM) Exec(env map[string]string, command string, stdin io.Reader, 
 		svm.Lock()
 		svm.lastPID++
 		pid := svm.lastPID
-		svm.running[uuid] = pid
+		svm.running[uuid] = stubProcess{pid: pid}
 		svm.Unlock()
 		time.Sleep(svm.CrunchRunDetachDelay)
 		fmt.Fprintf(stderr, "starting %s\n", uuid)
@@ -273,20 +284,28 @@ func (svm *StubVM) Exec(env map[string]string, command string, stdin io.Reader, 
 				logger.Print("[test] exiting crunch-run stub")
 				svm.Lock()
 				defer svm.Unlock()
-				if svm.running[uuid] != pid {
+				if svm.running[uuid].pid != pid {
 					bugf := svm.sis.driver.Bugf
 					if bugf == nil {
 						bugf = logger.Warnf
 					}
-					bugf("[test] StubDriver bug or caller bug: pid %d exiting, running[%s]==%d", pid, uuid, svm.running[uuid])
-				} else {
-					delete(svm.running, uuid)
+					bugf("[test] StubDriver bug or caller bug: pid %d exiting, running[%s].pid==%d", pid, uuid, svm.running[uuid].pid)
+					return
 				}
 				if !completed {
 					logger.WithField("State", ctr.State).Print("[test] crashing crunch-run stub")
 					if started && svm.CrashRunningContainer != nil {
 						svm.CrashRunningContainer(ctr)
 					}
+				}
+				sproc := svm.running[uuid]
+				sproc.exited = true
+				svm.running[uuid] = sproc
+				svm.Unlock()
+				time.Sleep(svm.ArvMountMaxExitLag * time.Duration(math_rand.Float64()))
+				svm.Lock()
+				if math_rand.Float64() >= svm.ArvMountDeadlockRate {
+					delete(svm.running, uuid)
 				}
 			}()
 
@@ -333,26 +352,31 @@ func (svm *StubVM) Exec(env map[string]string, command string, stdin io.Reader, 
 	if command == "crunch-run --list" {
 		svm.Lock()
 		defer svm.Unlock()
-		for uuid := range svm.running {
-			fmt.Fprintf(stdout, "%s\n", uuid)
+		for uuid, sproc := range svm.running {
+			if sproc.exited {
+				fmt.Fprintf(stdout, "%s stale\n", uuid)
+			} else {
+				fmt.Fprintf(stdout, "%s\n", uuid)
+			}
 		}
 		if !svm.ReportBroken.IsZero() && svm.ReportBroken.Before(time.Now()) {
 			fmt.Fprintln(stdout, "broken")
 		}
+		fmt.Fprintln(stdout, svm.deadlocked)
 		return 0
 	}
 	if strings.HasPrefix(command, "crunch-run --kill ") {
 		svm.Lock()
-		_, running := svm.running[uuid]
-		if running {
+		sproc, running := svm.running[uuid]
+		if running && !sproc.exited {
 			svm.killing[uuid] = true
 			svm.Unlock()
 			time.Sleep(time.Duration(math_rand.Float64()*2) * time.Millisecond)
 			svm.Lock()
-			_, running = svm.running[uuid]
+			sproc, running = svm.running[uuid]
 		}
 		svm.Unlock()
-		if running {
+		if running && !sproc.exited {
 			fmt.Fprintf(stderr, "%s: container is running\n", uuid)
 			return 1
 		}

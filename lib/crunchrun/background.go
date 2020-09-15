@@ -218,6 +218,24 @@ func ListProcesses(stdout, stderr io.Writer) int {
 			return nil
 		}
 
+		proc, err := os.FindProcess(pi.PID)
+		if err != nil {
+			// FindProcess should have succeeded, even if the
+			// process does not exist.
+			fmt.Fprintf(stderr, "%s: find process %d: %s", path, pi.PID, err)
+			return nil
+		}
+		err = proc.Signal(syscall.Signal(0))
+		if err != nil {
+			// Process is dead, even though lockfile was
+			// still locked. Most likely a stuck arv-mount
+			// process that inherited the lock from
+			// crunch-run. Report container UUID as
+			// "stale".
+			fmt.Fprintln(stdout, pi.UUID, "stale")
+			return nil
+		}
+
 		fmt.Fprintln(stdout, pi.UUID)
 		return nil
 	}))

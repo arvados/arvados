@@ -2,16 +2,19 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-Disable_update_jobs_api_method_list = {"jobs.create"=>{},
-                                "pipeline_instances.create"=>{},
-                                "pipeline_templates.create"=>{},
-                                "jobs.update"=>{},
-                                "pipeline_instances.update"=>{},
-                                "pipeline_templates.update"=>{},
-                                "job_tasks.create"=>{},
-                                "job_tasks.update"=>{}}
+Disable_update_jobs_api_method_list = ConfigLoader.to_OrderedOptions({
+                                        "jobs.create"=>{},
+                                        "pipeline_instances.create"=>{},
+                                        "pipeline_templates.create"=>{},
+                                        "jobs.update"=>{},
+                                        "pipeline_instances.update"=>{},
+                                        "pipeline_templates.update"=>{},
+                                        "job_tasks.create"=>{},
+                                        "job_tasks.update"=>{}
+                                      })
 
-Disable_jobs_api_method_list = {"jobs.create"=>{},
+Disable_jobs_api_method_list = ConfigLoader.to_OrderedOptions({
+                                "jobs.create"=>{},
                                 "pipeline_instances.create"=>{},
                                 "pipeline_templates.create"=>{},
                                 "jobs.get"=>{},
@@ -36,7 +39,7 @@ Disable_jobs_api_method_list = {"jobs.create"=>{},
                                 "jobs.show"=>{},
                                 "pipeline_instances.show"=>{},
                                 "pipeline_templates.show"=>{},
-                                "job_tasks.show"=>{}}
+                                "job_tasks.show"=>{}})
 
 def check_enable_legacy_jobs_api
   # Create/update is permanently disabled (legacy functionality has been removed)
