@@ -35,12 +35,12 @@ file "sdk/python/arvados/index.html" do |t|
   if ENV['NO_SDK'] || File.exists?("no-sdk")
     next
   end
-  `which epydoc`
+  `which pdoc`
   if $? == 0
-    STDERR.puts `epydoc --html --parse-only -o sdk/python/arvados ../sdk/python/arvados/ 2>&1`
+    STDERR.puts `pdoc --html -o sdk/python ../sdk/python/arvados/ 2>&1`
     raise if $? != 0
   else
-    puts "Warning: epydoc not found, Python documentation will not be generated".colorize(:light_red)
+    puts "Warning: pdoc3 not found, Python documentation will not be generated".colorize(:light_red)
   end
 end
 
