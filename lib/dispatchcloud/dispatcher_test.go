@@ -66,6 +66,7 @@ func (s *DispatcherSuite) SetUpTest(c *check.C) {
 				ProbeInterval:        arvados.Duration(5 * time.Millisecond),
 				MaxProbesPerSecond:   1000,
 				TimeoutSignal:        arvados.Duration(3 * time.Millisecond),
+				TimeoutStaleRunLock:  arvados.Duration(3 * time.Millisecond),
 				TimeoutTERM:          arvados.Duration(20 * time.Millisecond),
 				ResourceTags:         map[string]string{"testtag": "test value"},
 				TagKeyPrefix:         "test:",
@@ -169,6 +170,7 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 			stubvm.ReportBroken = time.Now().Add(time.Duration(rand.Int63n(200)) * time.Millisecond)
 		default:
 			stubvm.CrunchRunCrashRate = 0.1
+			stubvm.ArvMountDeadlockRate = 0.1
 		}
 	}
 	s.stubDriver.Bugf = c.Errorf

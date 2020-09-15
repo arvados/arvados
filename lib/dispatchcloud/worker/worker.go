@@ -110,6 +110,7 @@ type worker struct {
 	probing             chan struct{}
 	bootOutcomeReported bool
 	timeToReadyReported bool
+	staleRunLockSince   time.Time
 }
 
 func (wkr *worker) onUnkillable(uuid string) {
@@ -382,12 +383,42 @@ func (wkr *worker) probeRunning() (running []string, reportsBroken, ok bool) {
 		return
 	}
 	ok = true
+
+	staleRunLock := false
 	for _, s := range strings.Split(string(stdout), "\n") {
-		if s == "broken" {
+		// Each line of the "crunch-run --list" output is one
+		// of the following:
+		//
+		// * a container UUID, indicating that processes
+		//   related to that container are currently running.
+		//   Optionally followed by " stale", indicating that
+		//   the crunch-run process itself has exited (the
+		//   remaining process is probably arv-mount).
+		//
+		// * the string "broken", indicating that the instance
+		//   appears incapable of starting containers.
+		//
+		// See ListProcesses() in lib/crunchrun/background.go.
+		if s == "" {
+			// empty string following final newline
+		} else if s == "broken" {
 			reportsBroken = true
-		} else if s != "" {
+		} else if toks := strings.Split(s, " "); len(toks) == 1 {
 			running = append(running, s)
+		} else if toks[1] == "stale" {
+			wkr.logger.WithField("ContainerUUID", toks[0]).Info("probe reported stale run lock")
+			staleRunLock = true
 		}
+	}
+	wkr.mtx.Lock()
+	defer wkr.mtx.Unlock()
+	if !staleRunLock {
+		wkr.staleRunLockSince = time.Time{}
+	} else if wkr.staleRunLockSince.IsZero() {
+		wkr.staleRunLockSince = time.Now()
+	} else if dur := time.Now().Sub(wkr.staleRunLockSince); dur > wkr.wp.timeoutStaleRunLock {
+		wkr.logger.WithField("Duration", dur).Warn("reporting broken after reporting stale run lock for too long")
+		reportsBroken = true
 	}
 	return
 }

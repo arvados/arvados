@@ -462,6 +462,7 @@ type CloudVMsConfig struct {
 	TimeoutProbe                   Duration
 	TimeoutShutdown                Duration
 	TimeoutSignal                  Duration
+	TimeoutStaleRunLock            Duration
 	TimeoutTERM                    Duration
 	ResourceTags                   map[string]string
 	TagKeyPrefix                   string
