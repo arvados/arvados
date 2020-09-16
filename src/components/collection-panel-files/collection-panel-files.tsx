@@ -6,7 +6,6 @@ import * as React from 'react';
 import { TreeItem, TreeItemStatus } from '~/components/tree/tree';
 import { FileTreeData } from '~/components/file-tree/file-tree-data';
 import { FileTree } from '~/components/file-tree/file-tree';
-import { CollectionFileType } from "~/models/collection-file";
 import { IconButton, Grid, Typography, StyleRulesCallback, withStyles, WithStyles, CardHeader, Card, Button, Tooltip, CircularProgress } from '@material-ui/core';
 import { CustomizeTableIcon } from '~/components/icon/icon';
 import { DownloadIcon } from '~/components/icon/icon';
@@ -130,13 +129,7 @@ export const CollectionPanelFilesComponent = ({ onItemMenuOpen, onSearchChange, 
                         <FileTree
                             onMenuOpen={(ev, item) => onItemMenuOpen(ev, item, isWritable)}
                             {...treeProps}
-                            items={treeProps.items.filter((item) => {
-                                if (item.data.type === CollectionFileType.FILE) {
-                                    return item.data.name.toLowerCase().indexOf(searchValue.toLowerCase()) > -1;
-                                }
-
-                                return true;
-                            })} /></div>}
+                            items={treeProps.items} /></div>}
             </>
         }
     </Card>);

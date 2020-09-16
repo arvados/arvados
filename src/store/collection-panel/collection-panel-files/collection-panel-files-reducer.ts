@@ -7,12 +7,16 @@ import { CollectionPanelFilesAction, collectionPanelFilesAction } from "./collec
 import { createTree, mapTreeValues, getNode, setNode, getNodeAncestorsIds, getNodeDescendantsIds, setNodeValueWith, mapTree } from "~/models/tree";
 import { CollectionFileType } from "~/models/collection-file";
 
+let fetchedFiles: any = {};
+
 export const collectionPanelFilesReducer = (state: CollectionPanelFilesState = createTree(), action: CollectionPanelFilesAction) => {
     // Low-level tree handling setNode() func does in-place data modifications
     // for performance reasons, so we pass a copy of 'state' to avoid side effects.
     return collectionPanelFilesAction.match(action, {
-        SET_COLLECTION_FILES: files =>
-            mergeCollectionPanelFilesStates({ ...state }, mapTree(mapCollectionFileToCollectionPanelFile)(files)),
+        SET_COLLECTION_FILES: files => {
+            fetchedFiles = files;
+            return mergeCollectionPanelFilesStates({ ...state }, mapTree(mapCollectionFileToCollectionPanelFile)(files));
+        },
 
         TOGGLE_COLLECTION_FILE_COLLAPSE: data =>
             toggleCollapse(data.id)({ ...state }),
@@ -22,14 +26,50 @@ export const collectionPanelFilesReducer = (state: CollectionPanelFilesState = c
             .map(toggleAncestors(data.id))
             .map(toggleDescendants(data.id))[0],
 
-        ON_SEARCH_CHANGE: (data) =>
-            mapTreeValues((v: CollectionPanelDirectory | CollectionPanelFile) => {
+        ON_SEARCH_CHANGE: (searchValue) => {
+            // node.children = children.filter((id: string) => id.replace(parentId, '').toLowerCase().indexOf(searchValue.toLowerCase()) > -1);
+            const ids: string[] = [];
+            const filteredFiles = Object.keys(fetchedFiles)
+                .filter((key: string) => {
+                    const node = fetchedFiles[key];
+
+                    if (node.value === undefined) {
+                        return false;
+                    }
+
+                    const { id, value: { type, name } } = node;
+
+                    if (type === CollectionFileType.DIRECTORY) {
+                        ids.push(id);
+                        return true;
+                    }
+
+                    const includeFile = name.toLowerCase().indexOf(searchValue.toLowerCase()) > -1;
+
+                    if (includeFile) {
+                        ids.push(id);
+                    }
+
+                    return includeFile;
+                })
+                .reduce((prev, next) => {
+                    const node = JSON.parse(JSON.stringify(fetchedFiles[next]));
+                    node.children = node.children.filter((key: string) => ids.indexOf(key) > -1);
+                    prev[next] = node;
+                    return prev;
+                }, {});
+
+            return mapTreeValues((v: CollectionPanelDirectory | CollectionPanelFile) => {
                 if (v.type === CollectionFileType.DIRECTORY) {
-                    return ({ ...v, collapsed: data.length === 0 });
+                    return ({ 
+                        ...v,
+                        collapsed: searchValue.length === 0,
+                    });
                 }
 
                 return ({ ...v });
-            })({ ...state }),
+            })({ ...filteredFiles });
+        },
 
         SELECT_ALL_COLLECTION_FILES: () =>
             mapTreeValues(v => ({ ...v, selected: true }))({ ...state }),
