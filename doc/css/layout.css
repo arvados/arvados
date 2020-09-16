@@ -51,3 +51,7 @@ body {
 }
 
 #annotate-notify { position: fixed; right: 40px; top: 3px;  }
+
+figure {
+    margin-bottom: 20px;
+}
