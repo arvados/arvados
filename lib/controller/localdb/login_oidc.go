@@ -460,11 +460,16 @@ func (ta *oidcTokenAuthorizer) registerToken(ctx context.Context, tok string) er
 		return err
 	}
 
+	// Expiry time for our token is one minute longer than our
+	// cache TTL, so we don't pass it through to RailsAPI just as
+	// it's expiring.
+	exp := time.Now().Add(tokenCacheTTL + time.Minute)
+
 	var aca arvados.APIClientAuthorization
 	if updating {
-		_, err = tx.ExecContext(ctx, `update api_client_authorizations set expires_at=$1 where api_token=$2`, time.Now().Add(tokenCacheTTL+time.Minute), hmac)
+		_, err = tx.ExecContext(ctx, `update api_client_authorizations set expires_at=$1 where api_token=$2`, exp, hmac)
 		if err != nil {
-			return fmt.Errorf("error adding OIDC access token to database: %w", err)
+			return fmt.Errorf("error updating token expiry time: %w", err)
 		}
 		ctxlog.FromContext(ctx).WithField("HMAC", hmac).Debug("(*oidcTokenAuthorizer)registerToken: updated api_client_authorizations row")
 	} else {
@@ -472,7 +477,7 @@ func (ta *oidcTokenAuthorizer) registerToken(ctx context.Context, tok string) er
 		if err != nil {
 			return err
 		}
-		_, err = tx.ExecContext(ctx, `update api_client_authorizations set api_token=$1 where uuid=$2`, hmac, aca.UUID)
+		_, err = tx.ExecContext(ctx, `update api_client_authorizations set api_token=$1, expires_at=$2 where uuid=$3`, hmac, exp, aca.UUID)
 		if err != nil {
 			return fmt.Errorf("error adding OIDC access token to database: %w", err)
 		}
