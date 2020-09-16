@@ -32,6 +32,7 @@ import (
 	"github.com/coreos/go-oidc"
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/jmoiron/sqlx"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 	"google.golang.org/api/option"
 	"google.golang.org/api/people/v1"
@@ -341,12 +342,11 @@ type oidcTokenAuthorizer struct {
 
 func (ta *oidcTokenAuthorizer) Middleware(w http.ResponseWriter, r *http.Request, next http.Handler) {
 	if authhdr := strings.Split(r.Header.Get("Authorization"), " "); len(authhdr) > 1 && (authhdr[0] == "OAuth2" || authhdr[0] == "Bearer") {
-		tok, err := ta.exchangeToken(r.Context(), authhdr[1])
+		err := ta.registerToken(r.Context(), authhdr[1])
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		r.Header.Set("Authorization", "Bearer "+tok)
 	}
 	next.ServeHTTP(w, r)
 }
@@ -364,22 +364,22 @@ func (ta *oidcTokenAuthorizer) WrapCalls(origFunc api.RoutableFunc) api.Routable
 		// Check each token in the incoming request. If any
 		// are OAuth2 access tokens, swap them out for Arvados
 		// tokens.
-		for tokidx, tok := range creds.Tokens {
-			tok, err = ta.exchangeToken(ctx, tok)
+		for _, tok := range creds.Tokens {
+			err = ta.registerToken(ctx, tok)
 			if err != nil {
 				return nil, err
 			}
-			creds.Tokens[tokidx] = tok
 		}
-		ctxlog.FromContext(ctx).WithField("creds", creds).Debug("(*oidcTokenAuthorizer)WrapCalls: new creds")
-		ctx = auth.NewContext(ctx, creds)
 		return origFunc(ctx, opts)
 	}
 }
 
-func (ta *oidcTokenAuthorizer) exchangeToken(ctx context.Context, tok string) (string, error) {
+// registerToken checks whether tok is a valid OIDC Access Token and,
+// if so, ensures that an api_client_authorizations row exists so that
+// RailsAPI will accept it as an Arvados token.
+func (ta *oidcTokenAuthorizer) registerToken(ctx context.Context, tok string) error {
 	if strings.HasPrefix(tok, "v2/") {
-		return tok, nil
+		return nil
 	}
 	if cached, hit := ta.cache.Get(tok); !hit {
 		// Fall through to database and OIDC provider checks
@@ -387,7 +387,7 @@ func (ta *oidcTokenAuthorizer) exchangeToken(ctx context.Context, tok string) (s
 	} else if exp, ok := cached.(time.Time); ok {
 		// cached negative result (value is expiry time)
 		if time.Now().Before(exp) {
-			return tok, nil
+			return nil
 		} else {
 			ta.cache.Remove(tok)
 		}
@@ -398,22 +398,22 @@ func (ta *oidcTokenAuthorizer) exchangeToken(ctx context.Context, tok string) (s
 		if aca.ExpiresAt != "" {
 			t, err := time.Parse(time.RFC3339Nano, aca.ExpiresAt)
 			if err != nil {
-				return "", fmt.Errorf("error parsing expires_at value: %w", err)
+				return fmt.Errorf("error parsing expires_at value: %w", err)
 			}
 			expiring = t.Before(time.Now().Add(time.Minute))
 		}
 		if !expiring {
-			return aca.TokenV2(), nil
+			return nil
 		}
 	}
 
 	db, err := ta.getdb(ctx)
 	if err != nil {
-		return "", err
+		return err
 	}
 	tx, err := db.Beginx()
 	if err != nil {
-		return "", err
+		return err
 	}
 	defer tx.Rollback()
 	ctx = ctrlctx.NewWithTransaction(ctx, tx)
@@ -428,13 +428,13 @@ func (ta *oidcTokenAuthorizer) exchangeToken(ctx context.Context, tok string) (s
 	var expiring bool
 	err = tx.QueryRowContext(ctx, `select (expires_at is not null and expires_at - interval '1 minute' <= current_timestamp at time zone 'UTC') from api_client_authorizations where api_token=$1`, hmac).Scan(&expiring)
 	if err != nil && err != sql.ErrNoRows {
-		return "", fmt.Errorf("database error while checking token: %w", err)
+		return fmt.Errorf("database error while checking token: %w", err)
 	} else if err == nil && !expiring {
 		// Token is already in the database as an Arvados
 		// token, and isn't about to expire, so we can pass it
 		// through to RailsAPI etc. regardless of whether it's
 		// an OIDC access token.
-		return tok, nil
+		return nil
 	}
 	updating := err == nil
 
@@ -444,7 +444,7 @@ func (ta *oidcTokenAuthorizer) exchangeToken(ctx context.Context, tok string) (s
 	// server components will accept.
 	err = ta.ctrl.setup()
 	if err != nil {
-		return "", fmt.Errorf("error setting up OpenID Connect provider: %s", err)
+		return fmt.Errorf("error setting up OpenID Connect provider: %s", err)
 	}
 	oauth2Token := &oauth2.Token{
 		AccessToken: tok,
@@ -452,35 +452,37 @@ func (ta *oidcTokenAuthorizer) exchangeToken(ctx context.Context, tok string) (s
 	userinfo, err := ta.ctrl.provider.UserInfo(ctx, oauth2.StaticTokenSource(oauth2Token))
 	if err != nil {
 		ta.cache.Add(tok, time.Now().Add(tokenCacheNegativeTTL))
-		return tok, nil
+		return nil
 	}
-	ctxlog.FromContext(ctx).WithField("userinfo", userinfo).Debug("(*oidcTokenAuthorizer)exchangeToken: got userinfo")
+	ctxlog.FromContext(ctx).WithField("userinfo", userinfo).Debug("(*oidcTokenAuthorizer)registerToken: got userinfo")
 	authinfo, err := ta.ctrl.getAuthInfo(ctx, oauth2Token, userinfo)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	var aca arvados.APIClientAuthorization
 	if updating {
 		_, err = tx.ExecContext(ctx, `update api_client_authorizations set expires_at=$1 where api_token=$2`, time.Now().Add(tokenCacheTTL+time.Minute), hmac)
 		if err != nil {
-			return "", fmt.Errorf("error adding OIDC access token to database: %w", err)
+			return fmt.Errorf("error adding OIDC access token to database: %w", err)
 		}
+		ctxlog.FromContext(ctx).WithField("HMAC", hmac).Debug("(*oidcTokenAuthorizer)registerToken: updated api_client_authorizations row")
 	} else {
 		aca, err = createAPIClientAuthorization(ctx, ta.ctrl.RailsProxy, ta.ctrl.Cluster.SystemRootToken, *authinfo)
 		if err != nil {
-			return "", err
+			return err
 		}
 		_, err = tx.ExecContext(ctx, `update api_client_authorizations set api_token=$1 where uuid=$2`, hmac, aca.UUID)
 		if err != nil {
-			return "", fmt.Errorf("error adding OIDC access token to database: %w", err)
+			return fmt.Errorf("error adding OIDC access token to database: %w", err)
 		}
 		aca.APIToken = hmac
+		ctxlog.FromContext(ctx).WithFields(logrus.Fields{"UUID": aca.UUID, "HMAC": hmac}).Debug("(*oidcTokenAuthorizer)registerToken: inserted api_client_authorizations row")
 	}
 	err = tx.Commit()
 	if err != nil {
-		return "", err
+		return err
 	}
 	ta.cache.Add(tok, aca)
-	return aca.TokenV2(), nil
+	return nil
 }

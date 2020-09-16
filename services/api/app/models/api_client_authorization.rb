@@ -186,17 +186,28 @@ class ApiClientAuthorization < ArvadosModel
       end
 
     else
-      # token is not a 'v2' token
+      # token is not a 'v2' token. It could be just the secret part
+      # ("v1 token") -- or it could be an OpenIDConnect access token,
+      # in which case either (a) the controller will have inserted a
+      # row with api_token = hmac(systemroottoken,oidctoken) before
+      # forwarding it, or (b) we'll have done that ourselves, or (c)
+      # we'll need to ask LoginCluster to validate it for us below,
+      # and then insert a local row for a faster lookup next time.
+      hmac = OpenSSL::HMAC.hexdigest('sha256', Rails.configuration.SystemRootToken, token)
       auth = ApiClientAuthorization.
                includes(:user, :api_client).
-               where('api_token=? and (expires_at is null or expires_at > CURRENT_TIMESTAMP)', token).
+               where('api_token in (?, ?) and (expires_at is null or expires_at > CURRENT_TIMESTAMP)', token, hmac).
                first
       if auth && auth.user
         return auth
-      elsif Rails.configuration.Login.LoginCluster && Rails.configuration.Login.LoginCluster != Rails.configuration.ClusterID
+      elsif !Rails.configuration.Login.LoginCluster.blank? && Rails.configuration.Login.LoginCluster != Rails.configuration.ClusterID
         # An unrecognized non-v2 token might be an OIDC Access Token
-        # that can be verified by our login cluster in the code below.
+        # that can be verified by our login cluster in the code
+        # below. If so, we'll stuff the database with hmac instead of
+        # the real OIDC token.
         upstream_cluster_id = Rails.configuration.Login.LoginCluster
+        token_uuid = generate_uuid
+        secret = hmac
       else
         return nil
       end
