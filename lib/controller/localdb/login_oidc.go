@@ -341,7 +341,9 @@ type oidcTokenAuthorizer struct {
 }
 
 func (ta *oidcTokenAuthorizer) Middleware(w http.ResponseWriter, r *http.Request, next http.Handler) {
-	if authhdr := strings.Split(r.Header.Get("Authorization"), " "); len(authhdr) > 1 && (authhdr[0] == "OAuth2" || authhdr[0] == "Bearer") {
+	if ta.ctrl == nil {
+		// Not using a compatible (OIDC) login controller.
+	} else if authhdr := strings.Split(r.Header.Get("Authorization"), " "); len(authhdr) > 1 && (authhdr[0] == "OAuth2" || authhdr[0] == "Bearer") {
 		err := ta.registerToken(r.Context(), authhdr[1])
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
