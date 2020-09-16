@@ -586,7 +586,10 @@ func (v *S3Volume) IndexTo(prefix string, writer io.Writer) error {
 		if err != nil {
 			return err
 		}
-		fmt.Fprintf(writer, "%s+%d %d\n", data.Key, data.Size, t.UnixNano())
+		// We truncate sub-second precision here. Otherwise
+		// timestamps will never match the RFC1123-formatted
+		// Last-Modified values parsed by Mtime().
+		fmt.Fprintf(writer, "%s+%d %d\n", data.Key, data.Size, t.Unix()*1000000000)
 	}
 	return dataL.Error()
 }
