@@ -1044,10 +1044,10 @@ class CollectionTest < ActiveSupport::TestCase
   end
 
   test "create collections with managed properties" do
-    Rails.configuration.Collections.ManagedProperties = {
+    Rails.configuration.Collections.ManagedProperties = ConfigLoader.to_OrderedOptions({
       'default_prop1' => {'Value' => 'prop1_value'},
       'responsible_person_uuid' => {'Function' => 'original_owner'}
-    }
+    })
     # Test collection without initial properties
     act_as_user users(:active) do
       c = create_collection 'foo', Encoding::US_ASCII
@@ -1076,9 +1076,9 @@ class CollectionTest < ActiveSupport::TestCase
   end
 
   test "update collection with protected managed properties" do
-    Rails.configuration.Collections.ManagedProperties = {
+    Rails.configuration.Collections.ManagedProperties = ConfigLoader.to_OrderedOptions({
       'default_prop1' => {'Value' => 'prop1_value', 'Protected' => true},
-    }
+    })
     act_as_user users(:active) do
       c = create_collection 'foo', Encoding::US_ASCII
       assert c.valid?
