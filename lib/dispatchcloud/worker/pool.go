@@ -184,6 +184,7 @@ type Pool struct {
 	mTimeToReadyForContainer  prometheus.Summary
 	mTimeFromShutdownToGone   prometheus.Summary
 	mTimeFromQueueToCrunchRun prometheus.Summary
+	mRunProbeDuration         *prometheus.SummaryVec
 }
 
 type createCall struct {
@@ -682,6 +683,17 @@ func (wp *Pool) registerMetrics(reg *prometheus.Registry) {
 		Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.95: 0.005, 0.99: 0.001},
 	})
 	reg.MustRegister(wp.mTimeFromQueueToCrunchRun)
+	wp.mRunProbeDuration = prometheus.NewSummaryVec(prometheus.SummaryOpts{
+		Namespace:  "arvados",
+		Subsystem:  "dispatchcloud",
+		Name:       "instances_run_probe_duration_seconds",
+		Help:       "Number of seconds per runProbe call.",
+		Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.95: 0.005, 0.99: 0.001},
+	}, []string{"outcome"})
+	for _, v := range []string{"success", "fail"} {
+		wp.mRunProbeDuration.WithLabelValues(v).Observe(0)
+	}
+	reg.MustRegister(wp.mRunProbeDuration)
 }
 
 func (wp *Pool) runMetrics() {
