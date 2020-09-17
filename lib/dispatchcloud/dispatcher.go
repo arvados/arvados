@@ -17,7 +17,7 @@ import (
 	"git.arvados.org/arvados.git/lib/cloud"
 	"git.arvados.org/arvados.git/lib/dispatchcloud/container"
 	"git.arvados.org/arvados.git/lib/dispatchcloud/scheduler"
-	"git.arvados.org/arvados.git/lib/dispatchcloud/ssh_executor"
+	"git.arvados.org/arvados.git/lib/dispatchcloud/sshexecutor"
 	"git.arvados.org/arvados.git/lib/dispatchcloud/worker"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/auth"
@@ -100,7 +100,7 @@ func (disp *dispatcher) Close() {
 
 // Make a worker.Executor for the given instance.
 func (disp *dispatcher) newExecutor(inst cloud.Instance) worker.Executor {
-	exr := ssh_executor.New(inst)
+	exr := sshexecutor.New(inst)
 	exr.SetTargetPort(disp.Cluster.Containers.CloudVMs.SSHPort)
 	exr.SetSigners(disp.sshKey)
 	return exr
