@@ -88,7 +88,7 @@ lib/cloud/cloudtest
 lib/dispatchcloud
 lib/dispatchcloud/container
 lib/dispatchcloud/scheduler
-lib/dispatchcloud/ssh_executor
+lib/dispatchcloud/sshexecutor
 lib/dispatchcloud/worker
 lib/mount
 lib/pam
@@ -709,7 +709,7 @@ do_test() {
             stop_services
             check_arvados_config "$1"
             ;;
-        gofmt | doc | lib/cli | lib/cloud/azure | lib/cloud/ec2 | lib/cloud/cloudtest | lib/cmd | lib/dispatchcloud/ssh_executor | lib/dispatchcloud/worker)
+        gofmt | doc | lib/cli | lib/cloud/azure | lib/cloud/ec2 | lib/cloud/cloudtest | lib/cmd | lib/dispatchcloud/sshexecutor | lib/dispatchcloud/worker)
             check_arvados_config "$1"
             # don't care whether services are running
             ;;
