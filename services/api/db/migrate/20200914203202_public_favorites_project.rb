@@ -4,7 +4,7 @@
 
 class PublicFavoritesProject < ActiveRecord::Migration[5.2]
   include CurrentApiClient
-  def change
+  def up
     act_as_system_user do
       public_project_group
       public_project_read_permission
@@ -16,5 +16,8 @@ class PublicFavoritesProject < ActiveRecord::Migration[5.2]
         ln.save!
       end
     end
+  end
+
+  def down
   end
 end
