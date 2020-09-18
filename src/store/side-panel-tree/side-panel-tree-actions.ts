@@ -106,13 +106,14 @@ const loadProject = (projectUuid: string) =>
         dispatch(resourcesActions.SET_RESOURCES(items));
     };
 
-const loadSharedRoot = async (dispatch: Dispatch, _: () => RootState, services: ServiceRepository) => {
+const loadSharedRoot = async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
     dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ id: SidePanelTreeCategory.SHARED_WITH_ME, pickerId: SIDE_PANEL_TREE }));
 
     const params = {
         filters: `[${new FilterBuilder()
             .addIsA('uuid', ResourceKind.PROJECT)
             .addEqual('group_class', GroupClass.PROJECT)
+            .addDistinct('uuid', getState().auth.config.uuidPrefix + '-j7d0g-publicfavorites')
             .getFilters()}]`,
         order: new OrderBuilder<ProjectResource>()
             .addAsc('name', GroupContentsResourcePrefix.PROJECT)

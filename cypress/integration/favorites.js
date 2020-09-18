@@ -28,6 +28,12 @@ describe('Collection panel tests', function() {
         cy.clearLocalStorage()
     })
 
+    it('checks that Public favorites does not appear under shared with me', function() {
+        cy.loginAs(adminUser);
+        cy.contains('Shared with me').click();
+        cy.get('main').contains('Public favorites').should('not.exist');
+    })
+
     it('creates and removes a public favorite', function() {
         cy.loginAs(adminUser);
             cy.createGroup(adminUser.token, {
