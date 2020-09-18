@@ -363,6 +363,8 @@ func (h *handler) s3list(w http.ResponseWriter, r *http.Request, fs arvados.Cust
 		// github.com/aws/aws-sdk-net never terminates its
 		// paging loop).
 		NextMarker string `xml:"NextMarker,omitempty"`
+		// ListObjectsV2 has a KeyCount response field.
+		KeyCount int
 	}
 	resp := listResp{
 		ListResp: s3.ListResp{
@@ -459,6 +461,7 @@ func (h *handler) s3list(w http.ResponseWriter, r *http.Request, fs arvados.Cust
 		}
 		sort.Slice(resp.CommonPrefixes, func(i, j int) bool { return resp.CommonPrefixes[i].Prefix < resp.CommonPrefixes[j].Prefix })
 	}
+	resp.KeyCount = len(resp.Contents)
 	w.Header().Set("Content-Type", "application/xml")
 	io.WriteString(w, xml.Header)
 	if err := xml.NewEncoder(w).Encode(resp); err != nil {
