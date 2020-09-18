@@ -372,7 +372,7 @@ class LogTest < ActiveSupport::TestCase
     act_as_system_user do
       Log.create!()
     end
-    deadline = Time.now + 1
+    deadline = Time.now + 10
     while remaining_audit_logs.count == initial_audit_log_count
       if Time.now > deadline
         raise "timed out"
