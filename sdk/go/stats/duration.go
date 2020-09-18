@@ -29,7 +29,7 @@ func (d *Duration) UnmarshalJSON(data []byte) error {
 	return d.Set(string(data))
 }
 
-// Value implements flag.Value
+// Set implements flag.Value
 func (d *Duration) Set(s string) error {
 	sec, err := strconv.ParseFloat(s, 64)
 	if err == nil {
