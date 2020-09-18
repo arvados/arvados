@@ -690,9 +690,6 @@ func (wp *Pool) registerMetrics(reg *prometheus.Registry) {
 		Help:       "Number of seconds per runProbe call.",
 		Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.95: 0.005, 0.99: 0.001},
 	}, []string{"outcome"})
-	for _, v := range []string{"success", "fail"} {
-		wp.mRunProbeDuration.WithLabelValues(v).Observe(0)
-	}
 	reg.MustRegister(wp.mRunProbeDuration)
 }
 
