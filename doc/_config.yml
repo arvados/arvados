@@ -24,6 +24,8 @@ navbar:
     - Welcome:
       - user/index.html.textile.liquid
       - user/getting_started/community.html.textile.liquid
+    - Walkthough:
+      - user/tutorials/wgs-tutorial.html.textile.liquid
     - Run a workflow using Workbench:
       - user/getting_started/workbench.html.textile.liquid
       - user/tutorials/tutorial-workflow-workbench.html.textile.liquid

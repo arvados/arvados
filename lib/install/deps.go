@@ -142,7 +142,6 @@ func (installCommand) RunCommand(prog string, args []string, stdin io.Reader, st
 			"postgresql",
 			"postgresql-contrib",
 			"python3-dev",
-			"python-epydoc",
 			"r-base",
 			"r-cran-testthat",
 			"sudo",

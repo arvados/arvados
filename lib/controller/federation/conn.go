@@ -114,9 +114,8 @@ func (conn *Conn) chooseBackend(id string) backend {
 func (conn *Conn) localOrLoginCluster() backend {
 	if conn.cluster.Login.LoginCluster != "" {
 		return conn.chooseBackend(conn.cluster.Login.LoginCluster)
-	} else {
-		return conn.local
 	}
+	return conn.local
 }
 
 // Call fn with the local backend; then, if fn returned 404, call fn
@@ -243,40 +242,39 @@ func (conn *Conn) CollectionGet(ctx context.Context, options arvados.GetOptions)
 			c.ManifestText = rewriteManifest(c.ManifestText, options.UUID[:5])
 		}
 		return c, err
-	} else {
-		// UUID is a PDH
-		first := make(chan arvados.Collection, 1)
-		err := conn.tryLocalThenRemotes(ctx, options.ForwardedFor, func(ctx context.Context, remoteID string, be backend) error {
-			remoteOpts := options
-			remoteOpts.ForwardedFor = conn.cluster.ClusterID + "-" + options.ForwardedFor
-			c, err := be.CollectionGet(ctx, remoteOpts)
-			if err != nil {
-				return err
-			}
-			// options.UUID is either hash+size or
-			// hash+size+hints; only hash+size need to
-			// match the computed PDH.
-			if pdh := arvados.PortableDataHash(c.ManifestText); pdh != options.UUID && !strings.HasPrefix(options.UUID, pdh+"+") {
-				err = httpErrorf(http.StatusBadGateway, "bad portable data hash %q received from remote %q (expected %q)", pdh, remoteID, options.UUID)
-				ctxlog.FromContext(ctx).Warn(err)
-				return err
-			}
-			if remoteID != "" {
-				c.ManifestText = rewriteManifest(c.ManifestText, remoteID)
-			}
-			select {
-			case first <- c:
-				return nil
-			default:
-				// lost race, return value doesn't matter
-				return nil
-			}
-		})
-		if err != nil {
-			return arvados.Collection{}, err
-		}
-		return <-first, nil
 	}
+	// UUID is a PDH
+	first := make(chan arvados.Collection, 1)
+	err := conn.tryLocalThenRemotes(ctx, options.ForwardedFor, func(ctx context.Context, remoteID string, be backend) error {
+		remoteOpts := options
+		remoteOpts.ForwardedFor = conn.cluster.ClusterID + "-" + options.ForwardedFor
+		c, err := be.CollectionGet(ctx, remoteOpts)
+		if err != nil {
+			return err
+		}
+		// options.UUID is either hash+size or
+		// hash+size+hints; only hash+size need to
+		// match the computed PDH.
+		if pdh := arvados.PortableDataHash(c.ManifestText); pdh != options.UUID && !strings.HasPrefix(options.UUID, pdh+"+") {
+			err = httpErrorf(http.StatusBadGateway, "bad portable data hash %q received from remote %q (expected %q)", pdh, remoteID, options.UUID)
+			ctxlog.FromContext(ctx).Warn(err)
+			return err
+		}
+		if remoteID != "" {
+			c.ManifestText = rewriteManifest(c.ManifestText, remoteID)
+		}
+		select {
+		case first <- c:
+			return nil
+		default:
+			// lost race, return value doesn't matter
+			return nil
+		}
+	})
+	if err != nil {
+		return arvados.Collection{}, err
+	}
+	return <-first, nil
 }
 
 func (conn *Conn) CollectionList(ctx context.Context, options arvados.ListOptions) (arvados.CollectionList, error) {
@@ -445,9 +443,8 @@ func (conn *Conn) UserList(ctx context.Context, options arvados.ListOptions) (ar
 			return arvados.UserList{}, err
 		}
 		return resp, nil
-	} else {
-		return conn.generated_UserList(ctx, options)
 	}
+	return conn.generated_UserList(ctx, options)
 }
 
 func (conn *Conn) UserCreate(ctx context.Context, options arvados.CreateOptions) (arvados.User, error) {
@@ -544,7 +541,6 @@ func (notFoundError) Error() string   { return "not found" }
 func errStatus(err error) int {
 	if httpErr, ok := err.(interface{ HTTPStatus() int }); ok {
 		return httpErr.HTTPStatus()
-	} else {
-		return http.StatusInternalServerError
 	}
+	return http.StatusInternalServerError
 }
