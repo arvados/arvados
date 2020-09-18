@@ -46,7 +46,6 @@ if ! grep "^arvbox:" /etc/passwd >/dev/null 2>/dev/null ; then
     cat <<EOF > /etc/profile.d/paths.sh
 export PATH=/usr/local/bin:/usr/bin:/bin:/usr/local/go/bin:/var/lib/gems/bin:$(ls -d /usr/local/node-*)/bin
 export GEM_HOME=/var/lib/gems
-export GEM_PATH=/var/lib/gems
 export npm_config_cache=/var/lib/npm
 export npm_config_cache_min=Infinity
 export R_LIBS=/var/lib/Rlibs

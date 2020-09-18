@@ -20,20 +20,6 @@ ln -sf /usr/src/arvados/sdk/cli/binstubs/arv /usr/local/bin/arv
 
 export PYCMD=python3
 
-# Need to install the upstream version of pip because the python-pip package
-# shipped with Debian 9 is patched to change behavior in a way that breaks our
-# use case.
-# See https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=876145
-# When a non-root user attempts to install system packages, it makes the
-# --ignore-installed flag the default (and there is no way to turn it off),
-# this has the effect of making it very hard to share dependencies shared among
-# multiple packages, because it will blindly install the latest version of each
-# dependency requested by each package, even if a compatible package version is
-# already installed.
-if ! pip3 install --no-index --find-links /var/lib/pip pip==9.0.3 ; then
-    pip3 install pip==9.0.3
-fi
-
 pip_install wheel
 
 cd /usr/src/arvados/sdk/python

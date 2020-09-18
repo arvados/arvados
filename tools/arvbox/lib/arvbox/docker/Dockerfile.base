@@ -2,17 +2,17 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-FROM debian:9
+FROM debian:10
 
 ENV DEBIAN_FRONTEND noninteractive
 
 RUN apt-get update && \
     apt-get -yq --no-install-recommends -o Acquire::Retries=6 install \
-    postgresql-9.6 postgresql-contrib-9.6 git build-essential runit curl libpq-dev \
-    libcurl4-openssl-dev libssl1.0-dev zlib1g-dev libpcre3-dev libpam-dev \
+    postgresql postgresql-contrib git build-essential runit curl libpq-dev \
+    libcurl4-openssl-dev libssl-dev zlib1g-dev libpcre3-dev libpam-dev \
     openssh-server netcat-traditional \
     graphviz bzip2 less sudo virtualenv \
-    libpython-dev fuse libfuse-dev \
+    fuse libfuse-dev \
     pkg-config libattr1-dev \
     libwww-perl libio-socket-ssl-perl libcrypt-ssleay-perl \
     libjson-perl nginx gitolite3 lsof libreadline-dev \
@@ -20,14 +20,12 @@ RUN apt-get update && \
     linkchecker python3-virtualenv python3-venv xvfb iceweasel \
     libgnutls28-dev python3-dev vim cadaver cython gnupg dirmngr \
     libsecret-1-dev r-base r-cran-testthat libxml2-dev pandoc \
-    python3-setuptools python3-pip openjdk-8-jdk bsdmainutils net-tools \
-    ruby2.3 ruby-dev bundler shellinabox  && \
-    apt-get remove -yq libpython-dev libpython-stdlib libpython2.7 libpython2.7-dev \
-    libpython2.7-minimal libpython2.7-stdlib python2.7-minimal python2.7 && \
+    python3-setuptools python3-pip default-jdk-headless bsdmainutils net-tools \
+    ruby ruby-dev bundler shellinabox  && \
     apt-get clean
 
-ENV RUBYVERSION_MINOR 2.3
-ENV RUBYVERSION 2.3.5
+ENV RUBYVERSION_MINOR 2.5
+ENV RUBYVERSION 2.5.1
 
 # Install Ruby from source
 # RUN cd /tmp && \
@@ -40,10 +38,9 @@ ENV RUBYVERSION 2.3.5
 #  rm -rf ruby-${RUBYVERSION}
 
 ENV GEM_HOME /var/lib/gems
-ENV GEM_PATH /var/lib/gems
 ENV PATH $PATH:/var/lib/gems/bin
 
-ENV GOVERSION 1.13.6
+ENV GOVERSION 1.15.2
 
 # Install golang binary
 RUN curl -f http://storage.googleapis.com/golang/go${GOVERSION}.linux-amd64.tar.gz | \
@@ -60,9 +57,9 @@ RUN apt-key add --no-tty /tmp/8D81803C0EBFCD88.asc && \
     rm -f /tmp/8D81803C0EBFCD88.asc
 
 RUN mkdir -p /etc/apt/sources.list.d && \
-    echo deb https://download.docker.com/linux/debian/ stretch stable > /etc/apt/sources.list.d/docker.list && \
+    echo deb https://download.docker.com/linux/debian/ buster stable > /etc/apt/sources.list.d/docker.list && \
     apt-get update && \
-    apt-get -yq --no-install-recommends install docker-ce=17.06.0~ce-0~debian && \
+    apt-get -yq --no-install-recommends install docker-ce=5:19.03.13~3-0~debian-buster && \
     apt-get clean
 
 RUN rm -rf /var/lib/postgresql && mkdir -p /var/lib/postgresql
@@ -117,4 +114,4 @@ ADD runit /etc/runit
 # Start the supervisor.
 ENV SVDIR /etc/service
 STOPSIGNAL SIGINT
-CMD ["/sbin/runit"]
+CMD ["/etc/runit/2"]
