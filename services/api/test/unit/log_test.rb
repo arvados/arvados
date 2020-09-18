@@ -319,6 +319,7 @@ class LogTest < ActiveSupport::TestCase
 
   def assert_no_logs_deleted
     logs_before = Log.unscoped.all.count
+    assert logs_before > 0
     yield
     assert_equal logs_before, Log.unscoped.all.count
   end
@@ -350,34 +351,34 @@ class LogTest < ActiveSupport::TestCase
   # but 3 minutes suits our test data better (and is test-worthy in
   # that it's expected to work correctly in production).
   test 'delete old audit logs with production settings' do
-    initial_log_count = Log.unscoped.all.count
+    initial_log_count = remaining_audit_logs.count
+    assert initial_log_count > 0
     AuditLogs.delete_old(max_age: 180, max_batch: 100000)
     assert_operator remaining_audit_logs.count, :<, initial_log_count
   end
 
   test 'delete all audit logs in multiple batches' do
+    assert remaining_audit_logs.count > 2
     AuditLogs.delete_old(max_age: 0.00001, max_batch: 2)
     assert_equal [], remaining_audit_logs.collect(&:uuid)
   end
 
   test 'delete old audit logs in thread' do
-    begin
-      Rails.configuration.AuditLogs.MaxAge = 20
-      Rails.configuration.AuditLogs.MaxDeleteBatch = 100000
-      Rails.cache.delete 'AuditLogs'
-      initial_log_count = Log.unscoped.all.count + 1
-      act_as_system_user do
-        Log.create!()
-        initial_log_count += 1
-      end
-      deadline = Time.now + 10
-      while remaining_audit_logs.count == initial_log_count
-        if Time.now > deadline
-          raise "timed out"
-        end
-        sleep 0.1
-      end
-      assert_operator remaining_audit_logs.count, :<, initial_log_count
+    Rails.configuration.AuditLogs.MaxAge = 20
+    Rails.configuration.AuditLogs.MaxDeleteBatch = 100000
+    Rails.cache.delete 'AuditLogs'
+    initial_audit_log_count = remaining_audit_logs.count
+    assert initial_audit_log_count > 0
+    act_as_system_user do
+      Log.create!()
     end
+    deadline = Time.now + 1
+    while remaining_audit_logs.count == initial_audit_log_count
+      if Time.now > deadline
+        raise "timed out"
+      end
+      sleep 0.1
+    end
+    assert_operator remaining_audit_logs.count, :<, initial_audit_log_count
   end
 end
