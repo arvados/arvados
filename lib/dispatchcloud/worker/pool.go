@@ -86,9 +86,8 @@ const (
 func duration(conf arvados.Duration, def time.Duration) time.Duration {
 	if conf > 0 {
 		return time.Duration(conf)
-	} else {
-		return def
 	}
+	return def
 }
 
 // NewPool creates a Pool of workers backed by instanceSet.
