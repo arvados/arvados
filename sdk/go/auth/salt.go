@@ -26,9 +26,8 @@ func SaltToken(token, remote string) (string, error) {
 	if len(parts) < 3 || parts[0] != "v2" {
 		if reObsoleteToken.MatchString(token) {
 			return "", ErrObsoleteToken
-		} else {
-			return "", ErrTokenFormat
 		}
+		return "", ErrTokenFormat
 	}
 	uuid := parts[1]
 	secret := parts[2]

@@ -33,7 +33,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// S3Volume implements Volume using an S3 bucket.
+// S3AWSVolume implements Volume using an S3 bucket.
 type S3AWSVolume struct {
 	arvados.S3VolumeDriverParameters
 	AuthToken      string    // populated automatically when IAMRole is used
@@ -69,10 +69,9 @@ func chooseS3VolumeDriver(cluster *arvados.Cluster, volume arvados.Volume, logge
 	if v.UseAWSS3v2Driver {
 		logger.Debugln("Using AWS S3 v2 driver")
 		return newS3AWSVolume(cluster, volume, logger, metrics)
-	} else {
-		logger.Debugln("Using goamz S3 driver")
-		return newS3Volume(cluster, volume, logger, metrics)
 	}
+	logger.Debugln("Using goamz S3 driver")
+	return newS3Volume(cluster, volume, logger, metrics)
 }
 
 const (

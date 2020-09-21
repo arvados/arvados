@@ -80,7 +80,7 @@ func (h *handler) pullItemAndProcess(pullRequest PullRequest) error {
 	return writePulledBlock(h.volmgr, vol, readContent, pullRequest.Locator)
 }
 
-// Fetch the content for the given locator using keepclient.
+// GetContent fetches the content for the given locator using keepclient.
 var GetContent = func(signedLocator string, keepClient *keepclient.KeepClient) (io.ReadCloser, int64, string, error) {
 	return keepClient.Get(signedLocator)
 }
@@ -88,8 +88,7 @@ var GetContent = func(signedLocator string, keepClient *keepclient.KeepClient) (
 var writePulledBlock = func(volmgr *RRVolumeManager, volume Volume, data []byte, locator string) error {
 	if volume != nil {
 		return volume.Put(context.Background(), locator, data)
-	} else {
-		_, err := PutBlock(context.Background(), volmgr, data, locator)
-		return err
 	}
+	_, err := PutBlock(context.Background(), volmgr, data, locator)
+	return err
 }
