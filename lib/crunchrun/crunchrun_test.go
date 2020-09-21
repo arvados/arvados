@@ -157,9 +157,8 @@ func (t *TestDockerClient) ContainerStart(ctx context.Context, container string,
 	if container == "abcde" {
 		// t.fn gets executed in ContainerWait
 		return nil
-	} else {
-		return errors.New("Invalid container id")
 	}
+	return errors.New("Invalid container id")
 }
 
 func (t *TestDockerClient) ContainerRemove(ctx context.Context, container string, options dockertypes.ContainerRemoveOptions) error {
@@ -196,9 +195,8 @@ func (t *TestDockerClient) ImageInspectWithRaw(ctx context.Context, image string
 
 	if t.imageLoaded == image {
 		return dockertypes.ImageInspect{}, nil, nil
-	} else {
-		return dockertypes.ImageInspect{}, nil, errors.New("")
 	}
+	return dockertypes.ImageInspect{}, nil, errors.New("")
 }
 
 func (t *TestDockerClient) ImageLoad(ctx context.Context, input io.Reader, quiet bool) (dockertypes.ImageLoadResponse, error) {
@@ -208,10 +206,9 @@ func (t *TestDockerClient) ImageLoad(ctx context.Context, input io.Reader, quiet
 	_, err := io.Copy(ioutil.Discard, input)
 	if err != nil {
 		return dockertypes.ImageLoadResponse{}, err
-	} else {
-		t.imageLoaded = hwImageId
-		return dockertypes.ImageLoadResponse{Body: ioutil.NopCloser(input)}, nil
 	}
+	t.imageLoaded = hwImageId
+	return dockertypes.ImageLoadResponse{Body: ioutil.NopCloser(input)}, nil
 }
 
 func (*TestDockerClient) ImageRemove(ctx context.Context, image string, options dockertypes.ImageRemoveOptions) ([]dockertypes.ImageDeleteResponseItem, error) {
@@ -260,9 +257,8 @@ func (client *ArvTestClient) Call(method, resourceType, uuid, action string, par
 	case method == "GET" && resourceType == "containers" && action == "secret_mounts":
 		if client.secretMounts != nil {
 			return json.Unmarshal(client.secretMounts, output)
-		} else {
-			return json.Unmarshal([]byte(`{"secret_mounts":{}}`), output)
 		}
+		return json.Unmarshal([]byte(`{"secret_mounts":{}}`), output)
 	default:
 		return fmt.Errorf("Not found")
 	}

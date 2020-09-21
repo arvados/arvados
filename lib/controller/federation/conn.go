@@ -203,9 +203,8 @@ func (conn *Conn) Login(ctx context.Context, options arvados.LoginOptions) (arva
 		return arvados.LoginResponse{
 			RedirectLocation: target.String(),
 		}, nil
-	} else {
-		return conn.local.Login(ctx, options)
 	}
+	return conn.local.Login(ctx, options)
 }
 
 func (conn *Conn) Logout(ctx context.Context, options arvados.LogoutOptions) (arvados.LogoutResponse, error) {
