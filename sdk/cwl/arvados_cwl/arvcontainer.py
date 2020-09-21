@@ -325,8 +325,8 @@ class ArvadosContainer(JobBase):
                 logger.info("%s reused container %s", self.arvrunner.label(self), response["container_uuid"])
             else:
                 logger.info("%s %s state is %s", self.arvrunner.label(self), response["uuid"], response["state"])
-        except Exception:
-            logger.exception("%s got an error", self.arvrunner.label(self))
+        except Exception as e:
+            logger.exception("%s error submitting container\n%s", self.arvrunner.label(self), e)
             logger.debug("Container request was %s", container_request)
             self.output_callback({}, "permanentFail")
 

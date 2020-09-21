@@ -14,12 +14,12 @@
 #  of the docker build root.)
 
 FROM debian:9
-MAINTAINER Ward Vandewege <ward@curoverse.com>
+MAINTAINER Peter Amstutz <peter.amstutz@curii.com>
 
 ENV DEBIAN_FRONTEND noninteractive
 
-ARG pythoncmd=python
-ARG pipcmd=pip
+ARG pythoncmd=python3
+ARG pipcmd=pip3
 
 RUN apt-get update -q && apt-get install -qy --no-install-recommends \
     git ${pythoncmd}-pip ${pythoncmd}-virtualenv ${pythoncmd}-dev libcurl4-gnutls-dev \
