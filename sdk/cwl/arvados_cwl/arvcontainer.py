@@ -475,6 +475,7 @@ class RunnerContainer(Runner):
                    "--api=containers",
                    "--no-log-timestamps",
                    "--disable-validate",
+                   "--disable-color",
                    "--eval-timeout=%s" % self.arvrunner.eval_timeout,
                    "--thread-count=%s" % self.arvrunner.thread_count,
                    "--enable-reuse" if self.enable_reuse else "--disable-reuse",
