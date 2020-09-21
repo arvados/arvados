@@ -107,11 +107,11 @@ wait_for_arvbox() {
     while read line ; do
         if [[ $line =~ "ok: down: ready:" ]] ; then
             kill $LOGPID
-	    set +e
-	    wait $LOGPID 2>/dev/null
-	    set -e
-	else
-	    echo $line
+            set +e
+            wait $LOGPID 2>/dev/null
+            set -e
+        else
+            echo $line
         fi
     done < $FF
     rm $FF
@@ -125,7 +125,7 @@ wait_for_arvbox() {
 
 docker_run_dev() {
     docker run \
-	   "--volume=$ARVADOS_ROOT:/usr/src/arvados:rw" \
+           "--volume=$ARVADOS_ROOT:/usr/src/arvados:rw" \
            "--volume=$COMPOSER_ROOT:/usr/src/composer:rw" \
            "--volume=$WORKBENCH2_ROOT:/usr/src/workbench2:rw" \
            "--volume=$PG_DATA:/var/lib/postgresql:rw" \
@@ -136,8 +136,8 @@ docker_run_dev() {
            "--volume=$NPMCACHE:/var/lib/npm:rw" \
            "--volume=$GOSTUFF:/var/lib/gopath:rw" \
            "--volume=$RLIBS:/var/lib/Rlibs:rw" \
-	   --label "org.arvados.arvbox_config=$CONFIG" \
-	   "$@"
+           --label "org.arvados.arvbox_config=$CONFIG" \
+           "$@"
 }
 
 running_config() {
@@ -153,10 +153,10 @@ run() {
     need_setup=1
 
     if docker ps -a --filter "status=running" | grep -E "$ARVBOX_CONTAINER$" -q ; then
-	if [[ $(running_config) != "$CONFIG" ]] ; then
-	    echo "Container $ARVBOX_CONTAINER is '$(running_config)' config but requested '$CONFIG'; use restart or reboot"
-	    return 1
-	fi
+        if [[ $(running_config) != "$CONFIG" ]] ; then
+            echo "Container $ARVBOX_CONTAINER is '$(running_config)' config but requested '$CONFIG'; use restart or reboot"
+            return 1
+        fi
         if test "$CONFIG" = test -o "$CONFIG" = devenv ; then
             need_setup=0
         else
@@ -175,12 +175,12 @@ run() {
     if test -n "$TAG"
     then
         if test $(echo $TAG | cut -c1-1) != '-' ; then
-	    TAG=":$TAG"
+            TAG=":$TAG"
             shift
         else
-	    if [[ $TAG = '-' ]] ; then
-		shift
-	    fi
+            if [[ $TAG = '-' ]] ; then
+                shift
+            fi
             unset TAG
         fi
     fi
@@ -192,7 +192,7 @@ run() {
             defaultdev=$(/sbin/ip route|awk '/default/ { print $5 }')
             localip=$(ip addr show $defaultdev | grep 'inet ' | sed 's/ *inet \(.*\)\/.*/\1/')
         fi
-	echo "Public arvbox will use address $localip"
+        echo "Public arvbox will use address $localip"
         iptemp=$(mktemp)
         echo $localip > $iptemp
         chmod og+r $iptemp
@@ -207,7 +207,7 @@ run() {
               --publish=8001:8001
               --publish=8002:8002
               --publish=4202:4202
-	      --publish=45000-45020:45000-45020"
+              --publish=45000-45020:45000-45020"
     else
         PUBLIC=""
     fi
@@ -228,7 +228,7 @@ run() {
                --name=$ARVBOX_CONTAINER \
                --privileged \
                --volumes-from $ARVBOX_CONTAINER-data \
-	       --label "org.arvados.arvbox_config=$CONFIG" \
+               --label "org.arvados.arvbox_config=$CONFIG" \
                $PUBLIC \
                arvados/arvbox-demo$TAG
         updateconf
@@ -257,7 +257,7 @@ run() {
                        --detach \
                        --name=$ARVBOX_CONTAINER \
                        --privileged \
-		       "--env=SVDIR=/etc/test-service" \
+                       "--env=SVDIR=/etc/test-service" \
                        arvados/arvbox-dev$TAG
 
                 docker exec -ti \
@@ -271,10 +271,10 @@ run() {
                        /var/lib/arvbox/service/api/run-service --only-setup
             fi
 
-	    interactive=""
-	    if [[ -z "$@" ]] ; then
-		interactive=--interactive
-	    fi
+            interactive=""
+            if [[ -z "$@" ]] ; then
+                interactive=--interactive
+            fi
 
             docker exec -ti \
                    -e LINES=$(tput lines) \
@@ -282,32 +282,32 @@ run() {
                    -e TERM=$TERM \
                    -e WORKSPACE=/usr/src/arvados \
                    -e GEM_HOME=/var/lib/gems \
-		   -e CONFIGSRC=/var/lib/arvados/run_tests \
+                   -e CONFIGSRC=/var/lib/arvados/run_tests \
                    $ARVBOX_CONTAINER \
                    /usr/local/lib/arvbox/runsu.sh \
                    /usr/src/arvados/build/run-tests.sh \
                    --temp /var/lib/arvados/test \
-		   $interactive \
+                   $interactive \
                    "$@"
         elif [[ "$CONFIG" = devenv ]] ; then
-	    if [[ $need_setup = 1 ]] ; then
-    		docker_run_dev \
+            if [[ $need_setup = 1 ]] ; then
+                    docker_run_dev \
                     --detach \
-		    --name=${ARVBOX_CONTAINER} \
-		    "--env=SVDIR=/etc/devenv-service" \
-    		    "--volume=$HOME:$HOME:rw" \
-		    --volume=/tmp/.X11-unix:/tmp/.X11-unix:rw \
-    		    arvados/arvbox-dev$TAG
-	    fi
-    	    exec docker exec --interactive --tty \
-    		 -e LINES=$(tput lines) \
-    		 -e COLUMNS=$(tput cols) \
-    		 -e TERM=$TERM \
-    		 -e "ARVBOX_HOME=$HOME" \
-    		 -e "DISPLAY=$DISPLAY" \
-    		 --workdir=$PWD \
-		 ${ARVBOX_CONTAINER} \
-    		 /usr/local/lib/arvbox/devenv.sh "$@"
+                    --name=${ARVBOX_CONTAINER} \
+                    "--env=SVDIR=/etc/devenv-service" \
+                        "--volume=$HOME:$HOME:rw" \
+                    --volume=/tmp/.X11-unix:/tmp/.X11-unix:rw \
+                        arvados/arvbox-dev$TAG
+            fi
+                exec docker exec --interactive --tty \
+                     -e LINES=$(tput lines) \
+                     -e COLUMNS=$(tput cols) \
+                     -e TERM=$TERM \
+                     -e "ARVBOX_HOME=$HOME" \
+                     -e "DISPLAY=$DISPLAY" \
+                     --workdir=$PWD \
+                 ${ARVBOX_CONTAINER} \
+                     /usr/local/lib/arvbox/devenv.sh "$@"
         elif [[ "$CONFIG" =~ dev$ ]] ; then
             docker_run_dev \
                    --detach \
@@ -318,12 +318,12 @@ run() {
             updateconf
             wait_for_arvbox
             echo "The Arvados source code is checked out at: $ARVADOS_ROOT"
-	    echo "The Arvados testing root certificate is $VAR_DATA/root-cert.pem"
-	    if [[ "$(listusers)" =~ ^\{\} ]] ; then
-		echo "No users defined, use 'arvbox adduser' to add user logins"
-	    else
-		echo "Use 'arvbox listusers' to see user logins"
-	    fi
+            echo "The Arvados testing root certificate is $VAR_DATA/root-cert.pem"
+            if [[ "$(listusers)" =~ ^\{\} ]] ; then
+                echo "No users defined, use 'arvbox adduser' to add user logins"
+            else
+                echo "Use 'arvbox listusers' to see user logins"
+            fi
         else
             echo "Unknown configuration '$CONFIG'"
         fi
@@ -337,7 +337,7 @@ update() {
     if test -n "$TAG"
     then
         if test $(echo $TAG | cut -c1-1) != '-' ; then
-	    TAG=":$TAG"
+            TAG=":$TAG"
             shift
         else
             unset TAG
@@ -345,9 +345,9 @@ update() {
     fi
 
     if echo "$CONFIG" | grep 'demo$' ; then
-	docker pull arvados/arvbox-demo$TAG
+        docker pull arvados/arvbox-demo$TAG
     else
-	docker pull arvados/arvbox-dev$TAG
+        docker pull arvados/arvbox-dev$TAG
     fi
 }
 
@@ -421,22 +421,22 @@ case "$subcmd" in
 
     sh*)
         exec docker exec --interactive --tty \
-	       -e LINES=$(tput lines) \
-	       -e COLUMNS=$(tput cols) \
-	       -e TERM=$TERM \
-	       -e GEM_HOME=/var/lib/gems \
-	       $ARVBOX_CONTAINER /bin/bash
+               -e LINES=$(tput lines) \
+               -e COLUMNS=$(tput cols) \
+               -e TERM=$TERM \
+               -e GEM_HOME=/var/lib/gems \
+               $ARVBOX_CONTAINER /bin/bash
         ;;
 
     ash*)
         exec docker exec --interactive --tty \
-	       -e LINES=$(tput lines) \
-	       -e COLUMNS=$(tput cols) \
-	       -e TERM=$TERM \
-	       -e GEM_HOME=/var/lib/gems \
-	       -u arvbox \
-	       -w /usr/src/arvados \
-	       $ARVBOX_CONTAINER /bin/bash --login
+               -e LINES=$(tput lines) \
+               -e COLUMNS=$(tput cols) \
+               -e TERM=$TERM \
+               -e GEM_HOME=/var/lib/gems \
+               -u arvbox \
+               -w /usr/src/arvados \
+               $ARVBOX_CONTAINER /bin/bash --login
         ;;
 
     pipe)
@@ -463,7 +463,7 @@ case "$subcmd" in
     update)
         check $@
         stop
-	update $@
+        update $@
         run $@
         ;;
 
@@ -482,7 +482,7 @@ case "$subcmd" in
     status)
         echo "Container: $ARVBOX_CONTAINER"
         if docker ps -a --filter "status=running" | grep -E "$ARVBOX_CONTAINER$" -q ; then
-	    echo "Cluster id: $(getclusterid)"
+            echo "Cluster id: $(getclusterid)"
             echo "Status: running"
             echo "Container IP: $(getip)"
             echo "Published host: $(gethost)"
@@ -563,17 +563,17 @@ case "$subcmd" in
 
     clone)
         if test -n "$2" ; then
-	    mkdir -p "$ARVBOX_BASE/$2"
+            mkdir -p "$ARVBOX_BASE/$2"
             cp -a "$ARVBOX_BASE/$1/passenger" \
-	       "$ARVBOX_BASE/$1/gems" \
-	       "$ARVBOX_BASE/$1/pip" \
-	       "$ARVBOX_BASE/$1/npm" \
-	       "$ARVBOX_BASE/$1/gopath" \
-	       "$ARVBOX_BASE/$1/Rlibs" \
-	       "$ARVBOX_BASE/$1/arvados" \
-	       "$ARVBOX_BASE/$1/composer" \
-	       "$ARVBOX_BASE/$1/workbench2" \
-	       "$ARVBOX_BASE/$2"
+               "$ARVBOX_BASE/$1/gems" \
+               "$ARVBOX_BASE/$1/pip" \
+               "$ARVBOX_BASE/$1/npm" \
+               "$ARVBOX_BASE/$1/gopath" \
+               "$ARVBOX_BASE/$1/Rlibs" \
+               "$ARVBOX_BASE/$1/arvados" \
+               "$ARVBOX_BASE/$1/composer" \
+               "$ARVBOX_BASE/$1/workbench2" \
+               "$ARVBOX_BASE/$2"
             echo "Created new arvbox $2"
             echo "export ARVBOX_CONTAINER=$2"
         else
@@ -583,28 +583,28 @@ case "$subcmd" in
         ;;
 
     root-cert)
-	CERT=$PWD/${ARVBOX_CONTAINER}-root-cert.crt
-	if test -n "$1" ; then
-	    CERT="$1"
-	fi
-	docker exec $ARVBOX_CONTAINER cat /var/lib/arvados/root-cert.pem > "$CERT"
-	echo "Certificate copied to $CERT"
-	;;
+        CERT=$PWD/${ARVBOX_CONTAINER}-root-cert.crt
+        if test -n "$1" ; then
+            CERT="$1"
+        fi
+        docker exec $ARVBOX_CONTAINER cat /var/lib/arvados/root-cert.pem > "$CERT"
+        echo "Certificate copied to $CERT"
+        ;;
 
     psql)
-	exec docker exec -ti $ARVBOX_CONTAINER bash -c 'PGPASSWORD=$(cat /var/lib/arvados/api_database_pw) exec psql --dbname=arvados_development --host=localhost --username=arvados'
-	;;
+        exec docker exec -ti $ARVBOX_CONTAINER bash -c 'PGPASSWORD=$(cat /var/lib/arvados/api_database_pw) exec psql --dbname=arvados_development --host=localhost --username=arvados'
+        ;;
 
     checkpoint)
-	exec docker exec -ti $ARVBOX_CONTAINER bash -c 'PGPASSWORD=$(cat /var/lib/arvados/api_database_pw) exec pg_dump --host=localhost --username=arvados --clean arvados_development > /var/lib/arvados/checkpoint.sql'
-	;;
+        exec docker exec -ti $ARVBOX_CONTAINER bash -c 'PGPASSWORD=$(cat /var/lib/arvados/api_database_pw) exec pg_dump --host=localhost --username=arvados --clean arvados_development > /var/lib/arvados/checkpoint.sql'
+        ;;
 
     restore)
-	exec docker exec -ti $ARVBOX_CONTAINER bash -c 'PGPASSWORD=$(cat /var/lib/arvados/api_database_pw) exec psql --dbname=arvados_development --host=localhost --username=arvados --quiet --file=/var/lib/arvados/checkpoint.sql'
-	;;
+        exec docker exec -ti $ARVBOX_CONTAINER bash -c 'PGPASSWORD=$(cat /var/lib/arvados/api_database_pw) exec psql --dbname=arvados_development --host=localhost --username=arvados --quiet --file=/var/lib/arvados/checkpoint.sql'
+        ;;
 
     hotreset)
-	exec docker exec -i $ARVBOX_CONTAINER /usr/bin/env GEM_HOME=/var/lib/gems /bin/bash - <<EOF
+        exec docker exec -i $ARVBOX_CONTAINER /usr/bin/env GEM_HOME=/var/lib/gems /bin/bash - <<EOF
 sv stop api
 sv stop controller
 sv stop websockets
@@ -627,21 +627,21 @@ sv restart keepstore0
 sv restart keepstore1
 sv restart keepproxy
 EOF
-	;;
+        ;;
 
     adduser)
-	docker exec -ti $ARVBOX_CONTAINER /usr/local/lib/arvbox/edit_users.py /var/lib/arvados/cluster_config.yml.override $(getclusterid) add $@
-	docker exec $ARVBOX_CONTAINER sv restart controller
-	;;
+        docker exec -ti $ARVBOX_CONTAINER /usr/local/lib/arvbox/edit_users.py /var/lib/arvados/cluster_config.yml.override $(getclusterid) add $@
+        docker exec $ARVBOX_CONTAINER sv restart controller
+        ;;
 
     removeuser)
-	docker exec -ti $ARVBOX_CONTAINER /usr/local/lib/arvbox/edit_users.py /var/lib/arvados/cluster_config.yml.override $(getclusterid) remove $@
-	docker exec $ARVBOX_CONTAINER sv restart controller
-	;;
+        docker exec -ti $ARVBOX_CONTAINER /usr/local/lib/arvbox/edit_users.py /var/lib/arvados/cluster_config.yml.override $(getclusterid) remove $@
+        docker exec $ARVBOX_CONTAINER sv restart controller
+        ;;
 
     listusers)
-	listusers
-	;;
+        listusers
+        ;;
 
     *)
         echo "Arvados-in-a-box             https://doc.arvados.org/install/arvbox.html"
@@ -661,9 +661,9 @@ EOF
         echo "build   <config>   build arvbox Docker image"
         echo "reboot  <config>   stop, build arvbox Docker image, run"
         echo "rebuild <config>   build arvbox Docker image, no layer cache"
-	echo "checkpoint         create database backup"
-	echo "restore            restore checkpoint"
-	echo "hotreset           reset database and restart API without restarting container"
+        echo "checkpoint         create database backup"
+        echo "restore            restore checkpoint"
+        echo "hotreset           reset database and restart API without restarting container"
         echo "reset              delete arvbox arvados data (be careful!)"
         echo "destroy            delete all arvbox code and data (be careful!)"
         echo "log <service>      tail log of specified service"
@@ -671,12 +671,12 @@ EOF
         echo "cat <files>        get contents of files inside arvbox"
         echo "pipe               run a bash script piped in from stdin"
         echo "sv <start|stop|restart> <service> "
-	echo "                   change state of service inside arvbox"
+        echo "                   change state of service inside arvbox"
         echo "clone <from> <to>  clone dev arvbox"
-	echo "adduser <username> <email>"
-	echo "                   add a user login"
-	echo "removeuser <username>"
-	echo "                   remove user login"
-	echo "listusers          list user logins"
+        echo "adduser <username> <email>"
+        echo "                   add a user login"
+        echo "removeuser <username>"
+        echo "                   remove user login"
+        echo "listusers          list user logins"
         ;;
 esac
