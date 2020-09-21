@@ -27,8 +27,8 @@ export const collectionPanelFilesReducer = (state: CollectionPanelFilesState = c
             .map(toggleDescendants(data.id))[0],
 
         ON_SEARCH_CHANGE: (searchValue) => {
-            // node.children = children.filter((id: string) => id.replace(parentId, '').toLowerCase().indexOf(searchValue.toLowerCase()) > -1);
-            const ids: string[] = [];
+            const fileIds: string[] = [];
+            const directoryIds: string[] = [];
             const filteredFiles = Object.keys(fetchedFiles)
                 .filter((key: string) => {
                     const node = fetchedFiles[key];
@@ -40,22 +40,33 @@ export const collectionPanelFilesReducer = (state: CollectionPanelFilesState = c
                     const { id, value: { type, name } } = node;
 
                     if (type === CollectionFileType.DIRECTORY) {
-                        ids.push(id);
+                        directoryIds.push(id);
                         return true;
                     }
 
                     const includeFile = name.toLowerCase().indexOf(searchValue.toLowerCase()) > -1;
 
                     if (includeFile) {
-                        ids.push(id);
+                        fileIds.push(id);
                     }
 
                     return includeFile;
                 })
                 .reduce((prev, next) => {
                     const node = JSON.parse(JSON.stringify(fetchedFiles[next]));
-                    node.children = node.children.filter((key: string) => ids.indexOf(key) > -1);
-                    prev[next] = node;
+                    const { value: { type }, children } = node;
+
+                    node.children = node.children.filter((key: string) => {
+                        const isFile = directoryIds.indexOf(key) === -1;
+                        return isFile ?
+                          fileIds.indexOf(key) > -1 :
+                          !!fileIds.find(id => id.indexOf(key) > -1);
+                    });
+
+                    if (type === CollectionFileType.FILE || children.length > 0) {
+                        prev[next] = node;
+                    }
+
                     return prev;
                 }, {});
 

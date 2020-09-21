@@ -61,8 +61,16 @@ export const copyCollectionPartial = ({ name, description, projectUuid }: Collec
                     manifestText: collection.manifestText,
                 };
                 const newCollection = await services.collectionService.create(collectionCopy);
-                const paths = filterCollectionFilesBySelection(state.collectionPanelFiles, false).map(file => file.id);
-                await services.collectionService.deleteFiles(newCollection.uuid, paths);
+                const copiedFiles = await services.collectionService.files(newCollection.uuid);
+                const paths = filterCollectionFilesBySelection(state.collectionPanelFiles, true).map(file => file.id);
+                const filesToDelete = copiedFiles.map(({ id }) => id).filter(file => {
+                    return !paths.find(path => path.indexOf(file.replace(newCollection.uuid, '')) > -1);
+                });
+                // console.log(paths.length, filesToDelete.length, copiedFiles.length);
+                await services.collectionService.deleteFiles(
+                    '',
+                    filesToDelete
+                );
                 dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_COPY_FORM_NAME }));
                 dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: 'New collection created.',
