@@ -308,9 +308,8 @@ func (inst *ec2Instance) Destroy() error {
 func (inst *ec2Instance) Address() string {
 	if inst.instance.PrivateIpAddress != nil {
 		return *inst.instance.PrivateIpAddress
-	} else {
-		return ""
 	}
+	return ""
 }
 
 func (inst *ec2Instance) RemoteUser() string {

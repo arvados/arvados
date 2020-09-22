@@ -704,6 +704,8 @@ fpm_build_virtualenv () {
 
   COMMAND_ARR+=(".")
 
+  debug_echo -e "\n${COMMAND_ARR[@]}\n"
+
   FPM_RESULTS=$("${COMMAND_ARR[@]}")
   FPM_EXIT_CODE=$?
 
@@ -827,12 +829,12 @@ fpm_build () {
     COMMAND_ARR+=('--exclude' "$i")
   done
 
+  COMMAND_ARR+=("${fpm_args[@]}")
+
   # Append remaining function arguments directly to fpm's command line.
   for i; do
     COMMAND_ARR+=("$i")
   done
-
-  COMMAND_ARR+=("${fpm_args[@]}")
 
   COMMAND_ARR+=("$PACKAGE")
 

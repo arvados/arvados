@@ -20,7 +20,7 @@ with open(fn) as f:
 def recursiveMerge(a, b):
     if isinstance(a, dict) and isinstance(b, dict):
         for k in b:
-            print k
+            print(k)
             a[k] = recursiveMerge(a.get(k), b[k])
         return a
     else:

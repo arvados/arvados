@@ -64,15 +64,16 @@ type Executor interface {
 }
 
 const (
-	defaultSyncInterval       = time.Minute
-	defaultProbeInterval      = time.Second * 10
-	defaultMaxProbesPerSecond = 10
-	defaultTimeoutIdle        = time.Minute
-	defaultTimeoutBooting     = time.Minute * 10
-	defaultTimeoutProbe       = time.Minute * 10
-	defaultTimeoutShutdown    = time.Second * 10
-	defaultTimeoutTERM        = time.Minute * 2
-	defaultTimeoutSignal      = time.Second * 5
+	defaultSyncInterval        = time.Minute
+	defaultProbeInterval       = time.Second * 10
+	defaultMaxProbesPerSecond  = 10
+	defaultTimeoutIdle         = time.Minute
+	defaultTimeoutBooting      = time.Minute * 10
+	defaultTimeoutProbe        = time.Minute * 10
+	defaultTimeoutShutdown     = time.Second * 10
+	defaultTimeoutTERM         = time.Minute * 2
+	defaultTimeoutSignal       = time.Second * 5
+	defaultTimeoutStaleRunLock = time.Second * 5
 
 	// Time after a quota error to try again anyway, even if no
 	// instances have been shutdown.
@@ -85,9 +86,8 @@ const (
 func duration(conf arvados.Duration, def time.Duration) time.Duration {
 	if conf > 0 {
 		return time.Duration(conf)
-	} else {
-		return def
 	}
+	return def
 }
 
 // NewPool creates a Pool of workers backed by instanceSet.
@@ -115,6 +115,7 @@ func NewPool(logger logrus.FieldLogger, arvClient *arvados.Client, reg *promethe
 		timeoutShutdown:                duration(cluster.Containers.CloudVMs.TimeoutShutdown, defaultTimeoutShutdown),
 		timeoutTERM:                    duration(cluster.Containers.CloudVMs.TimeoutTERM, defaultTimeoutTERM),
 		timeoutSignal:                  duration(cluster.Containers.CloudVMs.TimeoutSignal, defaultTimeoutSignal),
+		timeoutStaleRunLock:            duration(cluster.Containers.CloudVMs.TimeoutStaleRunLock, defaultTimeoutStaleRunLock),
 		installPublicKey:               installPublicKey,
 		tagKeyPrefix:                   cluster.Containers.CloudVMs.TagKeyPrefix,
 		stop:                           make(chan bool),
@@ -152,6 +153,7 @@ type Pool struct {
 	timeoutShutdown                time.Duration
 	timeoutTERM                    time.Duration
 	timeoutSignal                  time.Duration
+	timeoutStaleRunLock            time.Duration
 	installPublicKey               ssh.PublicKey
 	tagKeyPrefix                   string
 
@@ -170,15 +172,18 @@ type Pool struct {
 	runnerMD5    [md5.Size]byte
 	runnerCmd    string
 
-	mContainersRunning       prometheus.Gauge
-	mInstances               *prometheus.GaugeVec
-	mInstancesPrice          *prometheus.GaugeVec
-	mVCPUs                   *prometheus.GaugeVec
-	mMemory                  *prometheus.GaugeVec
-	mBootOutcomes            *prometheus.CounterVec
-	mDisappearances          *prometheus.CounterVec
-	mTimeToSSH               prometheus.Summary
-	mTimeToReadyForContainer prometheus.Summary
+	mContainersRunning        prometheus.Gauge
+	mInstances                *prometheus.GaugeVec
+	mInstancesPrice           *prometheus.GaugeVec
+	mVCPUs                    *prometheus.GaugeVec
+	mMemory                   *prometheus.GaugeVec
+	mBootOutcomes             *prometheus.CounterVec
+	mDisappearances           *prometheus.CounterVec
+	mTimeToSSH                prometheus.Summary
+	mTimeToReadyForContainer  prometheus.Summary
+	mTimeFromShutdownToGone   prometheus.Summary
+	mTimeFromQueueToCrunchRun prometheus.Summary
+	mRunProbeDuration         *prometheus.SummaryVec
 }
 
 type createCall struct {
@@ -661,6 +666,30 @@ func (wp *Pool) registerMetrics(reg *prometheus.Registry) {
 		Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.95: 0.005, 0.99: 0.001},
 	})
 	reg.MustRegister(wp.mTimeToReadyForContainer)
+	wp.mTimeFromShutdownToGone = prometheus.NewSummary(prometheus.SummaryOpts{
+		Namespace:  "arvados",
+		Subsystem:  "dispatchcloud",
+		Name:       "instances_time_from_shutdown_request_to_disappearance_seconds",
+		Help:       "Number of seconds between the first shutdown attempt and the disappearance of the worker.",
+		Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.95: 0.005, 0.99: 0.001},
+	})
+	reg.MustRegister(wp.mTimeFromShutdownToGone)
+	wp.mTimeFromQueueToCrunchRun = prometheus.NewSummary(prometheus.SummaryOpts{
+		Namespace:  "arvados",
+		Subsystem:  "dispatchcloud",
+		Name:       "containers_time_from_queue_to_crunch_run_seconds",
+		Help:       "Number of seconds between the queuing of a container and the start of crunch-run.",
+		Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.95: 0.005, 0.99: 0.001},
+	})
+	reg.MustRegister(wp.mTimeFromQueueToCrunchRun)
+	wp.mRunProbeDuration = prometheus.NewSummaryVec(prometheus.SummaryOpts{
+		Namespace:  "arvados",
+		Subsystem:  "dispatchcloud",
+		Name:       "instances_run_probe_duration_seconds",
+		Help:       "Number of seconds per runProbe call.",
+		Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.95: 0.005, 0.99: 0.001},
+	}, []string{"outcome"})
+	reg.MustRegister(wp.mRunProbeDuration)
 }
 
 func (wp *Pool) runMetrics() {
@@ -929,6 +958,10 @@ func (wp *Pool) sync(threshold time.Time, instances []cloud.Instance) {
 		wkr.reportBootOutcome(BootOutcomeDisappeared)
 		if wp.mDisappearances != nil {
 			wp.mDisappearances.WithLabelValues(stateString[wkr.state]).Inc()
+		}
+		// wkr.destroyed.IsZero() can happen if instance disappeared but we weren't trying to shut it down
+		if wp.mTimeFromShutdownToGone != nil && !wkr.destroyed.IsZero() {
+			wp.mTimeFromShutdownToGone.Observe(time.Now().Sub(wkr.destroyed).Seconds())
 		}
 		delete(wp.workers, id)
 		go wkr.Close()

@@ -944,6 +944,11 @@ Clusters:
         # Time before repeating SIGTERM when killing a container.
         TimeoutSignal: 5s
 
+        # Time to give up on a process (most likely arv-mount) that
+        # still holds a container lockfile after its main supervisor
+        # process has exited, and declare the instance broken.
+        TimeoutStaleRunLock: 5s
+
         # Time to give up on SIGTERM and write off the worker.
         TimeoutTERM: 2m
 

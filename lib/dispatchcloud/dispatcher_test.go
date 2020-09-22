@@ -66,6 +66,7 @@ func (s *DispatcherSuite) SetUpTest(c *check.C) {
 				ProbeInterval:        arvados.Duration(5 * time.Millisecond),
 				MaxProbesPerSecond:   1000,
 				TimeoutSignal:        arvados.Duration(3 * time.Millisecond),
+				TimeoutStaleRunLock:  arvados.Duration(3 * time.Millisecond),
 				TimeoutTERM:          arvados.Duration(20 * time.Millisecond),
 				ResourceTags:         map[string]string{"testtag": "test value"},
 				TagKeyPrefix:         "test:",
@@ -169,6 +170,7 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 			stubvm.ReportBroken = time.Now().Add(time.Duration(rand.Int63n(200)) * time.Millisecond)
 		default:
 			stubvm.CrunchRunCrashRate = 0.1
+			stubvm.ArvMountDeadlockRate = 0.1
 		}
 	}
 	s.stubDriver.Bugf = c.Errorf
@@ -221,6 +223,14 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 	c.Check(resp.Body.String(), check.Matches, `(?ms).*time_to_ready_for_container_seconds{quantile="0.95"} [0-9.]*`)
 	c.Check(resp.Body.String(), check.Matches, `(?ms).*time_to_ready_for_container_seconds_count [0-9]*`)
 	c.Check(resp.Body.String(), check.Matches, `(?ms).*time_to_ready_for_container_seconds_sum [0-9.]*`)
+	c.Check(resp.Body.String(), check.Matches, `(?ms).*time_from_shutdown_request_to_disappearance_seconds_count [0-9]*`)
+	c.Check(resp.Body.String(), check.Matches, `(?ms).*time_from_shutdown_request_to_disappearance_seconds_sum [0-9.]*`)
+	c.Check(resp.Body.String(), check.Matches, `(?ms).*time_from_queue_to_crunch_run_seconds_count [0-9]*`)
+	c.Check(resp.Body.String(), check.Matches, `(?ms).*time_from_queue_to_crunch_run_seconds_sum [0-9e+.]*`)
+	c.Check(resp.Body.String(), check.Matches, `(?ms).*run_probe_duration_seconds_count{outcome="success"} [0-9]*`)
+	c.Check(resp.Body.String(), check.Matches, `(?ms).*run_probe_duration_seconds_sum{outcome="success"} [0-9e+.]*`)
+	c.Check(resp.Body.String(), check.Matches, `(?ms).*run_probe_duration_seconds_count{outcome="fail"} [0-9]*`)
+	c.Check(resp.Body.String(), check.Matches, `(?ms).*run_probe_duration_seconds_sum{outcome="fail"} [0-9e+.]*`)
 }
 
 func (s *DispatcherSuite) TestAPIPermissions(c *check.C) {

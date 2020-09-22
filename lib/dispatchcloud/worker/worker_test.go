@@ -17,6 +17,7 @@ import (
 	"git.arvados.org/arvados.git/lib/dispatchcloud/test"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"github.com/prometheus/client_golang/prometheus"
 	check "gopkg.in/check.v1"
 )
 
@@ -239,6 +240,7 @@ func (suite *WorkerSuite) TestProbeAndUpdate(c *check.C) {
 			runnerData:       trial.deployRunner,
 			runnerMD5:        md5.Sum(trial.deployRunner),
 		}
+		wp.registerMetrics(prometheus.NewRegistry())
 		if trial.deployRunner != nil {
 			svHash := md5.Sum(trial.deployRunner)
 			wp.runnerCmd = fmt.Sprintf("/var/run/arvados/crunch-run~%x", svHash)

@@ -2,10 +2,9 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-
+export DEBIAN_FRONTEND=noninteractive
 export PATH=${PATH}:/usr/local/go/bin:/var/lib/gems/bin
 export GEM_HOME=/var/lib/gems
-export GEM_PATH=/var/lib/gems
 export npm_config_cache=/var/lib/npm
 export npm_config_cache_min=Infinity
 export R_LIBS=/var/lib/Rlibs
@@ -60,6 +59,10 @@ fi
 
 run_bundler() {
     if test -f Gemfile.lock ; then
+        # The 'gem install bundler line below' is cf.
+        # https://bundler.io/blog/2019/05/14/solutions-for-cant-find-gem-bundler-with-executable-bundle.html,
+        # until we get bundler 2.7.10/3.0.0 or higher
+        gem install bundler --no-document -v "$(grep -A 1 "BUNDLED WITH" Gemfile.lock | tail -n 1|tr -d ' ')"
         frozen=--frozen
     else
         frozen=""
@@ -73,8 +76,8 @@ run_bundler() {
     #         flock /var/lib/gems/gems.lock gem install --verbose --no-document bundler --version ${bundleversion}
     #     fi
     # fi
-    if ! flock /var/lib/gems/gems.lock bundler install --verbose --path $GEM_HOME --local --no-deployment $frozen "$@" ; then
-        flock /var/lib/gems/gems.lock bundler install --verbose --path $GEM_HOME --no-deployment $frozen "$@"
+    if ! flock /var/lib/gems/gems.lock bundler install --verbose --local --no-deployment $frozen "$@" ; then
+        flock /var/lib/gems/gems.lock bundler install --verbose --no-deployment $frozen "$@"
     fi
 }
 

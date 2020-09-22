@@ -13,6 +13,9 @@ import (
 	"git.arvados.org/arvados.git/lib/dispatchcloud/worker"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+
+	"github.com/prometheus/client_golang/prometheus/testutil"
+
 	check "gopkg.in/check.v1"
 )
 
@@ -185,7 +188,7 @@ func (*SchedulerSuite) TestUseIdleWorkers(c *check.C) {
 		running:   map[string]time.Time{},
 		canCreate: 0,
 	}
-	New(ctx, &queue, &pool, time.Millisecond, time.Millisecond).runQueue()
+	New(ctx, &queue, &pool, nil, time.Millisecond, time.Millisecond).runQueue()
 	c.Check(pool.creates, check.DeepEquals, []arvados.InstanceType{test.InstanceType(1), test.InstanceType(1), test.InstanceType(1)})
 	c.Check(pool.starts, check.DeepEquals, []string{test.ContainerUUID(4)})
 	c.Check(pool.running, check.HasLen, 1)
@@ -241,7 +244,7 @@ func (*SchedulerSuite) TestShutdownAtQuota(c *check.C) {
 			starts:    []string{},
 			canCreate: 0,
 		}
-		New(ctx, &queue, &pool, time.Millisecond, time.Millisecond).runQueue()
+		New(ctx, &queue, &pool, nil, time.Millisecond, time.Millisecond).runQueue()
 		c.Check(pool.creates, check.DeepEquals, shouldCreate)
 		if len(shouldCreate) == 0 {
 			c.Check(pool.starts, check.DeepEquals, []string{})
@@ -336,7 +339,7 @@ func (*SchedulerSuite) TestStartWhileCreating(c *check.C) {
 		},
 	}
 	queue.Update()
-	New(ctx, &queue, &pool, time.Millisecond, time.Millisecond).runQueue()
+	New(ctx, &queue, &pool, nil, time.Millisecond, time.Millisecond).runQueue()
 	c.Check(pool.creates, check.DeepEquals, []arvados.InstanceType{test.InstanceType(2), test.InstanceType(1)})
 	c.Check(pool.starts, check.DeepEquals, []string{uuids[6], uuids[5], uuids[3], uuids[2]})
 	running := map[string]bool{}
@@ -380,10 +383,87 @@ func (*SchedulerSuite) TestKillNonexistentContainer(c *check.C) {
 		},
 	}
 	queue.Update()
-	sch := New(ctx, &queue, &pool, time.Millisecond, time.Millisecond)
+	sch := New(ctx, &queue, &pool, nil, time.Millisecond, time.Millisecond)
 	c.Check(pool.running, check.HasLen, 1)
 	sch.sync()
 	for deadline := time.Now().Add(time.Second); len(pool.Running()) > 0 && time.Now().Before(deadline); time.Sleep(time.Millisecond) {
 	}
 	c.Check(pool.Running(), check.HasLen, 0)
+}
+
+func (*SchedulerSuite) TestContainersMetrics(c *check.C) {
+	ctx := ctxlog.Context(context.Background(), ctxlog.TestLogger(c))
+	queue := test.Queue{
+		ChooseType: chooseType,
+		Containers: []arvados.Container{
+			{
+				UUID:      test.ContainerUUID(1),
+				Priority:  1,
+				State:     arvados.ContainerStateLocked,
+				CreatedAt: time.Now().Add(-10 * time.Second),
+				RuntimeConstraints: arvados.RuntimeConstraints{
+					VCPUs: 1,
+					RAM:   1 << 30,
+				},
+			},
+		},
+	}
+	queue.Update()
+
+	// Create a pool with one unallocated (idle/booting/unknown) worker,
+	// and `idle` and `unknown` not set (empty). Iow this worker is in the booting
+	// state, and the container will be allocated but not started yet.
+	pool := stubPool{
+		unalloc: map[arvados.InstanceType]int{test.InstanceType(1): 1},
+	}
+	sch := New(ctx, &queue, &pool, nil, time.Millisecond, time.Millisecond)
+	sch.runQueue()
+	sch.updateMetrics()
+
+	c.Check(int(testutil.ToFloat64(sch.mContainersAllocatedNotStarted)), check.Equals, 1)
+	c.Check(int(testutil.ToFloat64(sch.mContainersNotAllocatedOverQuota)), check.Equals, 0)
+	c.Check(int(testutil.ToFloat64(sch.mLongestWaitTimeSinceQueue)), check.Equals, 10)
+
+	// Create a pool without workers. The queued container will not be started, and the
+	// 'over quota' metric will be 1 because no workers are available and canCreate defaults
+	// to zero.
+	pool = stubPool{}
+	sch = New(ctx, &queue, &pool, nil, time.Millisecond, time.Millisecond)
+	sch.runQueue()
+	sch.updateMetrics()
+
+	c.Check(int(testutil.ToFloat64(sch.mContainersAllocatedNotStarted)), check.Equals, 0)
+	c.Check(int(testutil.ToFloat64(sch.mContainersNotAllocatedOverQuota)), check.Equals, 1)
+	c.Check(int(testutil.ToFloat64(sch.mLongestWaitTimeSinceQueue)), check.Equals, 10)
+
+	// Reset the queue, and create a pool with an idle worker. The queued
+	// container will be started immediately and mLongestWaitTimeSinceQueue
+	// should be zero.
+	queue = test.Queue{
+		ChooseType: chooseType,
+		Containers: []arvados.Container{
+			{
+				UUID:      test.ContainerUUID(1),
+				Priority:  1,
+				State:     arvados.ContainerStateLocked,
+				CreatedAt: time.Now().Add(-10 * time.Second),
+				RuntimeConstraints: arvados.RuntimeConstraints{
+					VCPUs: 1,
+					RAM:   1 << 30,
+				},
+			},
+		},
+	}
+	queue.Update()
+
+	pool = stubPool{
+		idle:    map[arvados.InstanceType]int{test.InstanceType(1): 1},
+		unalloc: map[arvados.InstanceType]int{test.InstanceType(1): 1},
+		running: map[string]time.Time{},
+	}
+	sch = New(ctx, &queue, &pool, nil, time.Millisecond, time.Millisecond)
+	sch.runQueue()
+	sch.updateMetrics()
+
+	c.Check(int(testutil.ToFloat64(sch.mLongestWaitTimeSinceQueue)), check.Equals, 0)
 }

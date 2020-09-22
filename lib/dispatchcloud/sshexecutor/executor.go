@@ -2,9 +2,9 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-// Package ssh_executor provides an implementation of pool.Executor
+// Package sshexecutor provides an implementation of pool.Executor
 // using a long-lived multiplexed SSH session.
-package ssh_executor
+package sshexecutor
 
 import (
 	"bytes"

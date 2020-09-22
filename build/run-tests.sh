@@ -88,7 +88,7 @@ lib/cloud/cloudtest
 lib/dispatchcloud
 lib/dispatchcloud/container
 lib/dispatchcloud/scheduler
-lib/dispatchcloud/ssh_executor
+lib/dispatchcloud/sshexecutor
 lib/dispatchcloud/worker
 lib/mount
 lib/pam
@@ -650,6 +650,7 @@ install_env() {
     . "$VENV3DIR/bin/activate"
 
     # Needed for run_test_server.py which is used by certain (non-Python) tests.
+    # pdoc3 needed to generate the Python SDK documentation.
     (
         set -e
         "${VENV3DIR}/bin/pip3" install wheel
@@ -660,6 +661,7 @@ install_env() {
         "${VENV3DIR}/bin/pip3" install ciso8601
         "${VENV3DIR}/bin/pip3" install pycurl
         "${VENV3DIR}/bin/pip3" install ws4py
+        "${VENV3DIR}/bin/pip3" install pdoc3
         cd "$WORKSPACE/sdk/python"
         python3 setup.py install
     ) || fatal "installing PyYAML and sdk/python failed"
@@ -707,7 +709,7 @@ do_test() {
             stop_services
             check_arvados_config "$1"
             ;;
-        gofmt | doc | lib/cli | lib/cloud/azure | lib/cloud/ec2 | lib/cloud/cloudtest | lib/cmd | lib/dispatchcloud/ssh_executor | lib/dispatchcloud/worker)
+        gofmt | doc | lib/cli | lib/cloud/azure | lib/cloud/ec2 | lib/cloud/cloudtest | lib/cmd | lib/dispatchcloud/sshexecutor | lib/dispatchcloud/worker)
             check_arvados_config "$1"
             # don't care whether services are running
             ;;

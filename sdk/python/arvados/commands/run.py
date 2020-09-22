@@ -236,7 +236,7 @@ def uploadfiles(files, api, dry_run=False, num_retries=0,
             # empty collection
             pdh = collection.portable_data_hash()
             assert (pdh == config.EMPTY_BLOCK_LOCATOR), "Empty collection portable_data_hash did not have expected locator, was %s" % pdh
-            logger.info("Using empty collection %s", pdh)
+            logger.debug("Using empty collection %s", pdh)
 
     for c in files:
         c.keepref = "%s/%s" % (pdh, c.fn)
