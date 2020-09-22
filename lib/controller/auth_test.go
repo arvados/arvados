@@ -115,4 +115,12 @@ func (s *AuthSuite) TestLocalOIDCAccessToken(c *check.C) {
 	c.Check(json.NewDecoder(resp.Body).Decode(&u), check.IsNil)
 	c.Check(u.UUID, check.Equals, arvadostest.ActiveUserUUID)
 	c.Check(u.OwnerUUID, check.Equals, "zzzzz-tpzed-000000000000000")
+
+	// Request again to exercise cache.
+	req = httptest.NewRequest("GET", "/arvados/v1/users/current", nil)
+	req.Header.Set("Authorization", "Bearer "+s.fakeProvider.ValidAccessToken())
+	rr = httptest.NewRecorder()
+	s.testServer.Server.Handler.ServeHTTP(rr, req)
+	resp = rr.Result()
+	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
 }

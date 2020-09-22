@@ -395,7 +395,7 @@ func (ta *oidcTokenAuthorizer) registerToken(ctx context.Context, tok string) er
 		}
 	} else {
 		// cached positive result
-		aca := cached.(*arvados.APIClientAuthorization)
+		aca := cached.(arvados.APIClientAuthorization)
 		var expiring bool
 		if aca.ExpiresAt != "" {
 			t, err := time.Parse(time.RFC3339Nano, aca.ExpiresAt)
