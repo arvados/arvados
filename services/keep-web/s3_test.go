@@ -105,6 +105,40 @@ func (stage s3stage) teardown(c *check.C) {
 	}
 }
 
+func (s *IntegrationSuite) TestS3Signatures(c *check.C) {
+	stage := s.s3setup(c)
+	defer stage.teardown(c)
+
+	bucket := stage.collbucket
+	for _, trial := range []struct {
+		success   bool
+		signature int
+		accesskey string
+		secretkey string
+	}{
+		{true, aws.V2Signature, arvadostest.ActiveToken, "none"},
+		{false, aws.V2Signature, "none", "none"},
+		{false, aws.V2Signature, "none", arvadostest.ActiveToken},
+
+		{true, aws.V4Signature, arvadostest.ActiveTokenUUID, arvadostest.ActiveToken},
+		{true, aws.V4Signature, arvadostest.ActiveToken, arvadostest.ActiveToken},
+		{false, aws.V4Signature, arvadostest.ActiveToken, ""},
+		{false, aws.V4Signature, arvadostest.ActiveToken, "none"},
+		{false, aws.V4Signature, "none", arvadostest.ActiveToken},
+		{false, aws.V4Signature, "none", "none"},
+	} {
+		c.Logf("%#v", trial)
+		bucket.S3.Auth = *(aws.NewAuth(trial.accesskey, trial.secretkey, "", time.Now().Add(time.Hour)))
+		bucket.S3.Signature = trial.signature
+		_, err := bucket.GetReader("emptyfile")
+		if trial.success {
+			c.Check(err, check.IsNil)
+		} else {
+			c.Check(err, check.NotNil)
+		}
+	}
+}
+
 func (s *IntegrationSuite) TestS3HeadBucket(c *check.C) {
 	stage := s.s3setup(c)
 	defer stage.teardown(c)

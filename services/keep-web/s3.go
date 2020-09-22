@@ -138,19 +138,32 @@ func (h *handler) checks3signature(r *http.Request) (string, error) {
 		Insecure: h.Config.cluster.TLS.Insecure,
 	}).WithRequestID(r.Header.Get("X-Request-Id"))
 	var aca arvados.APIClientAuthorization
-	ctx := arvados.ContextWithAuthorization(r.Context(), "Bearer "+h.Config.cluster.SystemRootToken)
-	err := client.RequestAndDecodeContext(ctx, &aca, "GET", "arvados/v1/api_client_authorizations/"+key, nil, nil)
+	var secret string
+	var err error
+	if len(key) == 27 && key[5:12] == "-gj3su-" {
+		// Access key is the UUID of an Arvados token, secret
+		// key is the secret part.
+		ctx := arvados.ContextWithAuthorization(r.Context(), "Bearer "+h.Config.cluster.SystemRootToken)
+		err = client.RequestAndDecodeContext(ctx, &aca, "GET", "arvados/v1/api_client_authorizations/"+key, nil, nil)
+		secret = aca.APIToken
+	} else {
+		// Access key and secret key are both an entire
+		// Arvados token or OIDC access token.
+		ctx := arvados.ContextWithAuthorization(r.Context(), "Bearer "+key)
+		err = client.RequestAndDecodeContext(ctx, &aca, "GET", "arvados/v1/api_client_authorizations/current", nil, nil)
+		secret = key
+	}
 	if err != nil {
-		ctxlog.FromContext(ctx).WithError(err).WithField("UUID", key).Info("token lookup failed")
+		ctxlog.FromContext(r.Context()).WithError(err).WithField("UUID", key).Info("token lookup failed")
 		return "", errors.New("invalid access key")
 	}
-	expect, err := s3signature(s3SignAlgorithm, aca.APIToken, scope, signedHeaders, r)
+	expect, err := s3signature(s3SignAlgorithm, secret, scope, signedHeaders, r)
 	if err != nil {
 		return "", err
 	} else if expect != signature {
 		return "", errors.New("signature does not match")
 	}
-	return aca.TokenV2(), nil
+	return secret, nil
 }
 
 // serveS3 handles r and returns true if r is a request from an S3
