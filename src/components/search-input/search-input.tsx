@@ -60,14 +60,14 @@ export const SearchInput = withStyles(styles)(
         render() {
             return <form onSubmit={this.handleSubmit}>
                 <FormControl>
-                    <InputLabel>Search</InputLabel>
+                    <InputLabel>Search files</InputLabel>
                     <Input
                         type="text"
                         value={this.state.value}
                         onChange={this.handleChange}
                         endAdornment={
                             <InputAdornment position="end">
-                                <Tooltip title='Search'>
+                                <Tooltip title='Search files'>
                                     <IconButton
                                         onClick={this.handleSubmit}>
                                         <SearchIcon />
