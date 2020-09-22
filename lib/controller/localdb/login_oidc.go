@@ -465,7 +465,7 @@ func (ta *oidcTokenAuthorizer) registerToken(ctx context.Context, tok string) er
 	// Expiry time for our token is one minute longer than our
 	// cache TTL, so we don't pass it through to RailsAPI just as
 	// it's expiring.
-	exp := time.Now().Add(tokenCacheTTL + time.Minute)
+	exp := time.Now().UTC().Add(tokenCacheTTL + time.Minute)
 
 	var aca arvados.APIClientAuthorization
 	if updating {
