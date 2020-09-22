@@ -313,8 +313,10 @@ func (s *IntegrationSuite) testS3PutObjectFailure(c *check.C, bucket *s3.Bucket,
 	s.testServer.Config.cluster.Collections.S3FolderObjects = false
 
 	// Can't use V4 signature for these tests, because
-	// double-slash is incorrectly cleaned by goamz, resulting in
-	// a "bad signature" error.
+	// double-slash is incorrectly cleaned by the aws.V4Signature,
+	// resulting in a "bad signature" error. (Cleaning the path is
+	// appropriate for other services, but not in S3 where object
+	// names "foo//bar" and "foo/bar" are semantically different.)
 	bucket.S3.Auth = *(aws.NewAuth(arvadostest.ActiveToken, "none", "", time.Now().Add(time.Hour)))
 	bucket.S3.Signature = aws.V2Signature
 
