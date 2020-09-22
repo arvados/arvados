@@ -70,12 +70,13 @@ func (s *IntegrationSuite) s3setup(c *check.C) s3stage {
 	err = arv.RequestAndDecode(&coll, "GET", "arvados/v1/collections/"+coll.UUID, nil, nil)
 	c.Assert(err, check.IsNil)
 
-	auth := aws.NewAuth(arvadostest.ActiveTokenV2, arvadostest.ActiveTokenV2, "", time.Now().Add(time.Hour))
+	auth := aws.NewAuth(arvadostest.ActiveTokenUUID, arvadostest.ActiveToken, "", time.Now().Add(time.Hour))
 	region := aws.Region{
 		Name:       s.testServer.Addr,
 		S3Endpoint: "http://" + s.testServer.Addr,
 	}
 	client := s3.New(*auth, region)
+	client.Signature = aws.V4Signature
 	return s3stage{
 		arv:  arv,
 		ac:   ac,
@@ -310,6 +311,13 @@ func (s *IntegrationSuite) TestS3ProjectPutObjectFailure(c *check.C) {
 }
 func (s *IntegrationSuite) testS3PutObjectFailure(c *check.C, bucket *s3.Bucket, prefix string) {
 	s.testServer.Config.cluster.Collections.S3FolderObjects = false
+
+	// Can't use V4 signature for these tests, because
+	// double-slash is incorrectly cleaned by goamz, resulting in
+	// a "bad signature" error.
+	bucket.S3.Auth = *(aws.NewAuth(arvadostest.ActiveToken, "none", "", time.Now().Add(time.Hour)))
+	bucket.S3.Signature = aws.V2Signature
+
 	var wg sync.WaitGroup
 	for _, trial := range []struct {
 		path string

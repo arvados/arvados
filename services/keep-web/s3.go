@@ -5,23 +5,153 @@
 package main
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
 	"encoding/xml"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"github.com/AdRoll/goamz/s3"
 )
 
-const s3MaxKeys = 1000
+const (
+	s3MaxKeys       = 1000
+	s3SignAlgorithm = "AWS4-HMAC-SHA256"
+	s3MaxClockSkew  = 5 * time.Minute
+)
+
+func hmacstring(msg string, key []byte) []byte {
+	h := hmac.New(sha256.New, key)
+	io.WriteString(h, msg)
+	return h.Sum(nil)
+}
+
+// Signing key for given secret key and request attrs.
+func s3signatureKey(key, datestamp, regionName, serviceName string) []byte {
+	return hmacstring("aws4_request",
+		hmacstring(serviceName,
+			hmacstring(regionName,
+				hmacstring(datestamp, []byte("AWS4"+key)))))
+}
+
+// Canonical query string for S3 V4 signature: sorted keys, spaces
+// escaped as %20 instead of +, keyvalues joined with &.
+func s3querystring(u *url.URL) string {
+	keys := make([]string, 0, len(u.Query()))
+	values := make(map[string]string, len(u.Query()))
+	for k, vs := range u.Query() {
+		k = strings.Replace(url.QueryEscape(k), "+", "%20", -1)
+		keys = append(keys, k)
+		for _, v := range vs {
+			v = strings.Replace(url.QueryEscape(v), "+", "%20", -1)
+			if values[k] != "" {
+				values[k] += "&"
+			}
+			values[k] += k + "=" + v
+		}
+	}
+	sort.Strings(keys)
+	for i, k := range keys {
+		keys[i] = values[k]
+	}
+	return strings.Join(keys, "&")
+}
+
+func s3signature(alg, secretKey, scope, signedHeaders string, r *http.Request) (string, error) {
+	timefmt, timestr := "20060102T150405Z", r.Header.Get("X-Amz-Date")
+	if timestr == "" {
+		timefmt, timestr = time.RFC1123, r.Header.Get("Date")
+	}
+	t, err := time.Parse(timefmt, timestr)
+	if err != nil {
+		return "", fmt.Errorf("invalid timestamp %q: %s", timestr, err)
+	}
+	if skew := time.Now().Sub(t); skew < -s3MaxClockSkew || skew > s3MaxClockSkew {
+		return "", errors.New("exceeded max clock skew")
+	}
+
+	var canonicalHeaders string
+	for _, h := range strings.Split(signedHeaders, ";") {
+		if h == "host" {
+			canonicalHeaders += h + ":" + r.URL.Host + "\n"
+		} else {
+			canonicalHeaders += h + ":" + r.Header.Get(h) + "\n"
+		}
+	}
+
+	crhash := sha256.New()
+	fmt.Fprintf(crhash, "%s\n%s\n%s\n%s\n%s\n%s", r.Method, r.URL.EscapedPath(), s3querystring(r.URL), canonicalHeaders, signedHeaders, r.Header.Get("X-Amz-Content-Sha256"))
+	crdigest := fmt.Sprintf("%x", crhash.Sum(nil))
+
+	payload := fmt.Sprintf("%s\n%s\n%s\n%s", alg, r.Header.Get("X-Amz-Date"), scope, crdigest)
+
+	// scope is {datestamp}/{region}/{service}/aws4_request
+	drs := strings.Split(scope, "/")
+	if len(drs) != 4 {
+		return "", fmt.Errorf("invalid scope %q", scope)
+	}
+
+	key := s3signatureKey(secretKey, drs[0], drs[1], drs[2])
+	h := hmac.New(sha256.New, key)
+	h.Write([]byte(payload))
+	return fmt.Sprintf("%x", h.Sum(nil)), nil
+}
+
+// checks3signature verifies the given S3 V4 signature and returns the
+// Arvados token that corresponds to the given accessKey. An error is
+// returned if accessKey is not a valid token UUID or the signature
+// does not match.
+func (h *handler) checks3signature(r *http.Request) (string, error) {
+	var key, scope, signedHeaders, signature string
+	authstring := strings.TrimPrefix(r.Header.Get("Authorization"), s3SignAlgorithm+" ")
+	for _, cmpt := range strings.Split(authstring, ",") {
+		cmpt = strings.TrimSpace(cmpt)
+		split := strings.SplitN(cmpt, "=", 2)
+		switch {
+		case len(split) != 2:
+			// (?) ignore
+		case split[0] == "Credential":
+			keyandscope := strings.SplitN(split[1], "/", 2)
+			if len(keyandscope) == 2 {
+				key, scope = keyandscope[0], keyandscope[1]
+			}
+		case split[0] == "SignedHeaders":
+			signedHeaders = split[1]
+		case split[0] == "Signature":
+			signature = split[1]
+		}
+	}
+
+	client := (&arvados.Client{
+		APIHost:  h.Config.cluster.Services.Controller.ExternalURL.Host,
+		Insecure: h.Config.cluster.TLS.Insecure,
+	}).WithRequestID(r.Header.Get("X-Request-Id"))
+	var aca arvados.APIClientAuthorization
+	ctx := arvados.ContextWithAuthorization(r.Context(), "Bearer "+h.Config.cluster.SystemRootToken)
+	err := client.RequestAndDecodeContext(ctx, &aca, "GET", "arvados/v1/api_client_authorizations/"+key, nil, nil)
+	if err != nil {
+		ctxlog.FromContext(ctx).WithError(err).WithField("UUID", key).Info("token lookup failed")
+		return "", errors.New("invalid access key")
+	}
+	expect, err := s3signature(s3SignAlgorithm, aca.APIToken, scope, signedHeaders, r)
+	if err != nil {
+		return "", err
+	} else if expect != signature {
+		return "", errors.New("signature does not match")
+	}
+	return aca.TokenV2(), nil
+}
 
 // serveS3 handles r and returns true if r is a request from an S3
 // client, otherwise it returns false.
@@ -30,27 +160,17 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 	if auth := r.Header.Get("Authorization"); strings.HasPrefix(auth, "AWS ") {
 		split := strings.SplitN(auth[4:], ":", 2)
 		if len(split) < 2 {
-			w.WriteHeader(http.StatusUnauthorized)
+			http.Error(w, "malformed Authorization header", http.StatusUnauthorized)
 			return true
 		}
 		token = split[0]
-	} else if strings.HasPrefix(auth, "AWS4-HMAC-SHA256 ") {
-		for _, cmpt := range strings.Split(auth[17:], ",") {
-			cmpt = strings.TrimSpace(cmpt)
-			split := strings.SplitN(cmpt, "=", 2)
-			if len(split) == 2 && split[0] == "Credential" {
-				keyandscope := strings.Split(split[1], "/")
-				if len(keyandscope[0]) > 0 {
-					token = keyandscope[0]
-					break
-				}
-			}
-		}
-		if token == "" {
-			w.WriteHeader(http.StatusBadRequest)
-			fmt.Println(w, "invalid V4 signature")
+	} else if strings.HasPrefix(auth, s3SignAlgorithm+" ") {
+		t, err := h.checks3signature(r)
+		if err != nil {
+			http.Error(w, "signature verification failed: "+err.Error(), http.StatusForbidden)
 			return true
 		}
+		token = t
 	} else {
 		return false
 	}
