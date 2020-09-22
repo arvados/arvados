@@ -18,11 +18,13 @@ Future versions of Arvados may require a newer version of Ruby than is packaged 
 
 h3. Centos 7
 
-The Ruby version shipped with Centos 7 is too old.  Use "RVM":#rvm.
+The Ruby version shipped with Centos 7 is too old.  Use "RVM":#rvm to install Ruby 2.5 or later.
 
 h3. Debian and Ubuntu
 
-Debian 9 (stretch) and Ubuntu 16.04 (xenial) ship Ruby 2.3, which is too old to run Arvados.  Use "RVM":#rvm. Later releases have newer versions of Ruby that can also run Arvados.
+Debian 9 (stretch) and Ubuntu 16.04 (xenial) ship Ruby 2.3, which is not supported by Arvados.  Use "RVM":#rvm to install Ruby 2.5 or later.
+
+Debian 10 (buster) and Ubuntu 18.04 (bionic) and later ship with Ruby 2.5, which is supported by Arvados.
 
 <notextile>
 <pre><code># <span class="userinput">apt-get --no-install-recommends install ruby ruby-dev bundler</span></code></pre>
