@@ -627,7 +627,12 @@ class ArvadosModel < ApplicationRecord
   end
 
   def permission_to_destroy
-    permission_to_update
+    if [system_user_uuid, system_group_uuid, anonymous_group_uuid,
+        anonymous_user_uuid, public_project_uuid].include? uuid
+      false
+    else
+      permission_to_update
+    end
   end
 
   def maybe_update_modified_by_fields
