@@ -66,7 +66,6 @@ export const copyCollectionPartial = ({ name, description, projectUuid }: Collec
                 const filesToDelete = copiedFiles.map(({ id }) => id).filter(file => {
                     return !paths.find(path => path.indexOf(file.replace(newCollection.uuid, '')) > -1);
                 });
-                // console.log(paths.length, filesToDelete.length, copiedFiles.length);
                 await services.collectionService.deleteFiles(
                     '',
                     filesToDelete
