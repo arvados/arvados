@@ -23,7 +23,7 @@ test_that("get always returns NULL", {
     dog <- ArvadosFile$new("dog")
 
     responseIsNull <- is.null(dog$get("something"))
-    expect_that(responseIsNull, is_true())
+    expect_true(responseIsNull)
 })
 
 test_that("getFirst always returns NULL", {
@@ -31,7 +31,7 @@ test_that("getFirst always returns NULL", {
     dog <- ArvadosFile$new("dog")
 
     responseIsNull <- is.null(dog$getFirst())
-    expect_that(responseIsNull, is_true())
+    expect_true(responseIsNull)
 })
 
 test_that(paste("getSizeInBytes returns zero if arvadosFile",
@@ -266,8 +266,8 @@ test_that("move moves arvados file inside collection tree", {
     dogIsNullOnOldLocation <- is.null(collection$get("animal/dog"))
     dogExistsOnNewLocation <- !is.null(collection$get("dog"))
 
-    expect_that(dogIsNullOnOldLocation, is_true())
-    expect_that(dogExistsOnNewLocation, is_true())
+    expect_true(dogIsNullOnOldLocation)
+    expect_true(dogExistsOnNewLocation)
 })
 
 test_that(paste("copy raises exception if arvados file",
@@ -339,8 +339,8 @@ test_that("copy copies arvados file inside collection tree", {
     dogExistsOnOldLocation <- !is.null(collection$get("animal/dog"))
     dogExistsOnNewLocation <- !is.null(collection$get("dog"))
 
-    expect_that(dogExistsOnOldLocation, is_true())
-    expect_that(dogExistsOnNewLocation, is_true())
+    expect_true(dogExistsOnOldLocation)
+    expect_true(dogExistsOnNewLocation)
 })
 
 test_that("duplicate performs deep cloning of Arvados file", {

@@ -31,14 +31,13 @@ HttpParser <- R6::R6Class(
         {
             text <- rawToChar(response$content)
             doc <- XML::xmlParse(text, asText=TRUE)
-            base <- paste(paste("/", strsplit(uri, "/")[[1]][-1:-3], sep="", collapse=""), "/", sep="")
+            base <- paste("/", strsplit(uri, "/")[[1]][4], "/", sep="")
             result <- unlist(
                 XML::xpathApply(doc, "//D:response/D:href", function(node) {
                     sub(base, "", URLdecode(XML::xmlValue(node)), fixed=TRUE)
                 })
             )
-            result <- result[result != ""]
-            result[-1]
+            result[result != ""]
         },
 
         getFileSizesFromResponse = function(response, uri)

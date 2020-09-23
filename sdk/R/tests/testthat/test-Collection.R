@@ -86,7 +86,7 @@ test_that(paste("add adds ArvadosFile or Subcollection",
     dog <- collection$get("animal/dog")
     dogExistsInCollection <- !is.null(dog) && dog$getName() == "dog"
 
-    expect_that(dogExistsInCollection, is_true())
+    expect_true(dogExistsInCollection)
     expect_that(fakeREST$createCallCount, equals(1))
 })
 
@@ -119,8 +119,8 @@ test_that(paste("create adds files specified by fileNames",
     dogExistsInCollection <- !is.null(dog) && dog$getName() == "dog"
     catExistsInCollection <- !is.null(cat) && cat$getName() == "cat"
 
-    expect_that(dogExistsInCollection, is_true())
-    expect_that(catExistsInCollection, is_true())
+    expect_true(dogExistsInCollection)
+    expect_true(catExistsInCollection)
     expect_that(fakeREST$createCallCount, equals(2))
 })
 
@@ -168,8 +168,8 @@ test_that(paste("remove removes files specified by paths",
     dogExistsInCollection <- !is.null(dog) && dog$getName() == "dog"
     catExistsInCollection <- !is.null(cat) && cat$getName() == "cat"
 
-    expect_that(dogExistsInCollection, is_false())
-    expect_that(catExistsInCollection, is_false())
+    expect_false(dogExistsInCollection)
+    expect_false(catExistsInCollection)
     expect_that(fakeREST$deleteCallCount, equals(2))
 })
 
@@ -188,8 +188,8 @@ test_that(paste("move moves content to a new location inside file tree",
     dogIsNullOnOldLocation <- is.null(collection$get("animal/dog"))
     dogExistsOnNewLocation <- !is.null(collection$get("dog"))
 
-    expect_that(dogIsNullOnOldLocation, is_true())
-    expect_that(dogExistsOnNewLocation, is_true())
+    expect_true(dogIsNullOnOldLocation)
+    expect_true(dogExistsOnNewLocation)
     expect_that(fakeREST$moveCallCount, equals(1))
 })
 
@@ -219,7 +219,7 @@ test_that("getFileListing returns sorted collection content received from REST s
     contentMatchExpected <- all(collection$getFileListing() ==
                                 c("animal", "animal/fish", "ball"))
 
-    expect_that(contentMatchExpected, is_true())
+    expect_true(contentMatchExpected)
     #2 calls because Collection$new calls getFileListing once
     expect_that(fakeREST$getCollectionContentCallCount, equals(2))
 
@@ -237,7 +237,7 @@ test_that("get returns arvados file or subcollection from internal tree structur
     fish <- collection$get("animal/fish")
     fishIsNotNull <- !is.null(fish)
 
-    expect_that(fishIsNotNull, is_true())
+    expect_true(fishIsNotNull)
     expect_that(fish$getName(), equals("fish"))
 })
 
@@ -256,8 +256,8 @@ test_that(paste("copy copies content to a new location inside file tree",
     dogExistsOnOldLocation <- !is.null(collection$get("animal/dog"))
     dogExistsOnNewLocation <- !is.null(collection$get("dog"))
 
-    expect_that(dogExistsOnOldLocation, is_true())
-    expect_that(dogExistsOnNewLocation, is_true())
+    expect_true(dogExistsOnOldLocation)
+    expect_true(dogExistsOnNewLocation)
     expect_that(fakeREST$copyCallCount, equals(1))
 })
 

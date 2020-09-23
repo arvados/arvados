@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 getAPIDocument <- function(){
-    url <- "https://4xphq.arvadosapi.com/discovery/v1/apis/arvados/v1/rest"
+    url <- "https://ce8i5.arvadosapi.com/discovery/v1/apis/arvados/v1/rest"
     serverResponse <- httr::RETRY("GET", url = url)
 
     httr::content(serverResponse, as = "parsed", type = "application/json")

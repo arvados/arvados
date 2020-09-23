@@ -10,8 +10,8 @@ context("REST service")
 
 test_that("getWebDavHostName calls REST service properly", {
 
-    expectedURL <- "https://host/discovery/v1/apis/arvados/v1/rest"
-    serverResponse <- list(keepWebServiceUrl = "https://myWebDavServer.com")
+    expectedURL <- "https://host/arvados/v1/config"
+    serverResponse <- list(Services = list(WebDAVDownload = list(ExternalURL = "https://myWebDavServer.com")))
     httpRequest <- FakeHttpRequest$new(expectedURL, serverResponse)
 
     REST <- RESTService$new("token", "host",
@@ -19,14 +19,14 @@ test_that("getWebDavHostName calls REST service properly", {
 
     REST$getWebDavHostName()
 
-    expect_that(httpRequest$URLIsProperlyConfigured, is_true())
-    expect_that(httpRequest$requestHeaderContainsAuthorizationField, is_true())
+    expect_true(httpRequest$URLIsProperlyConfigured)
+    expect_false(httpRequest$requestHeaderContainsAuthorizationField)
     expect_that(httpRequest$numberOfGETRequests, equals(1))
 })
 
 test_that("getWebDavHostName returns webDAV host name properly", {
 
-    serverResponse <- list(keepWebServiceUrl = "https://myWebDavServer.com")
+    serverResponse <- list(Services = list(WebDAVDownload = list(ExternalURL = "https://myWebDavServer.com")))
     httpRequest <- FakeHttpRequest$new(expectedURL = NULL, serverResponse)
 
     REST <- RESTService$new("token", "host",
@@ -48,8 +48,8 @@ test_that("create calls REST service properly", {
 
     REST$create("file", uuid)
 
-    expect_that(fakeHttp$URLIsProperlyConfigured, is_true())
-    expect_that(fakeHttp$requestHeaderContainsAuthorizationField, is_true())
+    expect_true(fakeHttp$URLIsProperlyConfigured)
+    expect_true(fakeHttp$requestHeaderContainsAuthorizationField)
     expect_that(fakeHttp$numberOfPUTRequests, equals(1))
 })
 
@@ -81,8 +81,8 @@ test_that("delete calls REST service properly", {
 
     REST$delete("file", uuid)
 
-    expect_that(fakeHttp$URLIsProperlyConfigured, is_true())
-    expect_that(fakeHttp$requestHeaderContainsAuthorizationField, is_true())
+    expect_true(fakeHttp$URLIsProperlyConfigured)
+    expect_true(fakeHttp$requestHeaderContainsAuthorizationField)
     expect_that(fakeHttp$numberOfDELETERequests, equals(1))
 })
 
@@ -114,9 +114,9 @@ test_that("move calls REST service properly", {
 
     REST$move("file", "newDestination/file", uuid)
 
-    expect_that(fakeHttp$URLIsProperlyConfigured, is_true())
-    expect_that(fakeHttp$requestHeaderContainsAuthorizationField, is_true())
-    expect_that(fakeHttp$requestHeaderContainsDestinationField, is_true())
+    expect_true(fakeHttp$URLIsProperlyConfigured)
+    expect_true(fakeHttp$requestHeaderContainsAuthorizationField)
+    expect_true(fakeHttp$requestHeaderContainsDestinationField)
     expect_that(fakeHttp$numberOfMOVERequests, equals(1))
 })
 
@@ -148,9 +148,9 @@ test_that("copy calls REST service properly", {
 
     REST$copy("file", "newDestination/file", uuid)
 
-    expect_that(fakeHttp$URLIsProperlyConfigured, is_true())
-    expect_that(fakeHttp$requestHeaderContainsAuthorizationField, is_true())
-    expect_that(fakeHttp$requestHeaderContainsDestinationField, is_true())
+    expect_true(fakeHttp$URLIsProperlyConfigured)
+    expect_true(fakeHttp$requestHeaderContainsAuthorizationField)
+    expect_true(fakeHttp$requestHeaderContainsDestinationField)
     expect_that(fakeHttp$numberOfCOPYRequests, equals(1))
 })
 
@@ -187,8 +187,8 @@ test_that("getCollectionContent retreives correct content from WebDAV server", {
     returnedContentMatchExpected <- all.equal(returnResult,
                                               c("animal", "animal/dog", "ball"))
 
-    expect_that(returnedContentMatchExpected, is_true())
-    expect_that(fakeHttp$requestHeaderContainsAuthorizationField, is_true())
+    expect_true(returnedContentMatchExpected)
+    expect_true(fakeHttp$requestHeaderContainsAuthorizationField)
 })
 
 test_that("getCollectionContent raises exception if server returns empty response", {
@@ -266,9 +266,9 @@ test_that("getResourceSize calls REST service properly", {
     returnedContentMatchExpected <- all.equal(returnResult,
                                               c(6, 2, 931, 12003))
 
-    expect_that(fakeHttp$URLIsProperlyConfigured, is_true())
-    expect_that(fakeHttp$requestHeaderContainsAuthorizationField, is_true())
-    expect_that(returnedContentMatchExpected, is_true())
+    expect_true(fakeHttp$URLIsProperlyConfigured)
+    expect_true(fakeHttp$requestHeaderContainsAuthorizationField)
+    expect_true(returnedContentMatchExpected)
 })
 
 test_that("getResourceSize raises exception if server returns empty response", {
@@ -330,9 +330,9 @@ test_that("read calls REST service properly", {
 
     returnResult <- REST$read("file", uuid, "text", 1024, 512)
 
-    expect_that(fakeHttp$URLIsProperlyConfigured, is_true())
-    expect_that(fakeHttp$requestHeaderContainsAuthorizationField, is_true())
-    expect_that(fakeHttp$requestHeaderContainsRangeField, is_true())
+    expect_true(fakeHttp$URLIsProperlyConfigured)
+    expect_true(fakeHttp$requestHeaderContainsAuthorizationField)
+    expect_true(fakeHttp$requestHeaderContainsRangeField)
     expect_that(returnResult, equals("file content"))
 })
 
@@ -390,10 +390,10 @@ test_that("write calls REST service properly", {
 
     REST$write("file", uuid, fileContent, "text/html")
 
-    expect_that(fakeHttp$URLIsProperlyConfigured, is_true())
-    expect_that(fakeHttp$requestBodyIsProvided, is_true())
-    expect_that(fakeHttp$requestHeaderContainsAuthorizationField, is_true())
-    expect_that(fakeHttp$requestHeaderContainsContentTypeField, is_true())
+    expect_true(fakeHttp$URLIsProperlyConfigured)
+    expect_true(fakeHttp$requestBodyIsProvided)
+    expect_true(fakeHttp$requestHeaderContainsAuthorizationField)
+    expect_true(fakeHttp$requestHeaderContainsContentTypeField)
 })
 
 test_that("write raises exception if server response code is not between 200 and 300", {
