@@ -6,47 +6,36 @@ FROM debian:10
 
 ENV DEBIAN_FRONTEND noninteractive
 
+RUN echo "deb http://deb.debian.org/debian buster-backports main" > /etc/apt/sources.list.d/backports.list
+
 RUN apt-get update && \
     apt-get -yq --no-install-recommends -o Acquire::Retries=6 install \
-    postgresql postgresql-contrib git build-essential runit curl libpq-dev \
-    libcurl4-openssl-dev libssl-dev zlib1g-dev libpcre3-dev libpam-dev \
-    openssh-server netcat-traditional \
-    graphviz bzip2 less sudo virtualenv \
-    fuse libfuse-dev \
-    pkg-config libattr1-dev \
-    libwww-perl libio-socket-ssl-perl libcrypt-ssleay-perl \
-    libjson-perl nginx gitolite3 lsof libreadline-dev \
-    apt-transport-https ca-certificates python3-yaml \
-    linkchecker python3-virtualenv python3-venv xvfb iceweasel \
-    libgnutls28-dev python3-dev vim cadaver cython gnupg dirmngr \
-    libsecret-1-dev r-base r-cran-testthat libxml2-dev pandoc \
-    python3-setuptools python3-pip default-jdk-headless bsdmainutils net-tools \
-    ruby ruby-dev bundler shellinabox  && \
+    golang -t buster-backports
+
+# The arvbox-specific dependencies are
+#  gnupg2 runit python3-pip python3-setuptools python3-yaml shellinabox netcat less
+RUN apt-get -yq --no-install-recommends -o Acquire::Retries=6 install \
+    build-essential ca-certificates git libpam0g-dev \
+    gnupg2 runit python3-pip python3-setuptools python3-yaml shellinabox netcat less && \
     apt-get clean
 
-ENV RUBYVERSION_MINOR 2.5
-ENV RUBYVERSION 2.5.1
+ENV GOPATH /var/lib/gopath
 
-# Install Ruby from source
-# RUN cd /tmp && \
-#  curl -f http://cache.ruby-lang.org/pub/ruby/${RUBYVERSION_MINOR}/ruby-${RUBYVERSION}.tar.gz | tar -xzf - && \
-#  cd ruby-${RUBYVERSION} && \
-#  ./configure --disable-install-doc && \
-#  make && \
-#  make install && \
-#  cd /tmp && \
-#  rm -rf ruby-${RUBYVERSION}
+RUN cd /usr/src && \
+    git clone https://git.arvados.org/arvados.git && \
+    cd arvados && \
+    go mod download && \
+    cd cmd/arvados-server && \
+    go install && \
+    $GOPATH/bin/arvados-server install -type test
 
-ENV GEM_HOME /var/lib/gems
-ENV PATH $PATH:/var/lib/gems/bin
+RUN /etc/init.d/postgresql start && \
+    su postgres -c 'dropuser arvados' && \
+    su postgres -c 'createuser -s arvbox' && \
+    /etc/init.d/postgresql stop
 
-ENV GOVERSION 1.15.2
-
-# Install golang binary
-RUN curl -f http://storage.googleapis.com/golang/go${GOVERSION}.linux-amd64.tar.gz | \
-    tar -C /usr/local -xzf -
-
-ENV PATH ${PATH}:/usr/local/go/bin
+ENV GEM_HOME /var/lib/arvados/lib/ruby/gems/2.5.0
+ENV PATH $PATH:$GEM_HOME/bin
 
 VOLUME /var/lib/docker
 VOLUME /var/log/nginx
@@ -61,35 +50,6 @@ RUN mkdir -p /etc/apt/sources.list.d && \
     apt-get update && \
     apt-get -yq --no-install-recommends install docker-ce=5:19.03.13~3-0~debian-buster && \
     apt-get clean
-
-RUN rm -rf /var/lib/postgresql && mkdir -p /var/lib/postgresql
-
-ENV PJSVERSION=1.9.8
-# bitbucket is the origin, but downloads fail sometimes, so use our own mirror instead.
-#ENV PJSURL=https://bitbucket.org/ariya/phantomjs/downloads/phantomjs-${PJSVERSION}-linux-x86_64.tar.bz2
-ENV PJSURL=http://cache.arvados.org/phantomjs-${PJSVERSION}-linux-x86_64.tar.bz2
-
-RUN set -e && \
- curl -L -f ${PJSURL} | tar -C /usr/local -xjf - && \
- ln -s ../phantomjs-${PJSVERSION}-linux-x86_64/bin/phantomjs /usr/local/bin
-
-ENV GDVERSION=v0.23.0
-ENV GDURL=https://github.com/mozilla/geckodriver/releases/download/$GDVERSION/geckodriver-$GDVERSION-linux64.tar.gz
-RUN set -e && curl -L -f ${GDURL} | tar -C /usr/local/bin -xzf - geckodriver
-
-ENV NODEVERSION v8.15.1
-
-# Install nodejs binary
-RUN curl -L -f https://nodejs.org/dist/${NODEVERSION}/node-${NODEVERSION}-linux-x64.tar.xz | tar -C /usr/local -xJf - && \
-    ln -s ../node-${NODEVERSION}-linux-x64/bin/node ../node-${NODEVERSION}-linux-x64/bin/npm /usr/local/bin
-
-ENV GRADLEVERSION 5.3.1
-
-RUN cd /tmp && \
-    curl -L -O https://services.gradle.org/distributions/gradle-${GRADLEVERSION}-bin.zip && \
-    unzip gradle-${GRADLEVERSION}-bin.zip -d /usr/local && \
-    ln -s ../gradle-${GRADLEVERSION}/bin/gradle /usr/local/bin && \
-    rm gradle-${GRADLEVERSION}-bin.zip
 
 # Set UTF-8 locale
 RUN echo en_US.UTF-8 UTF-8 > /etc/locale.gen && locale-gen
@@ -110,6 +70,11 @@ ADD gitolite.rc \
     /usr/local/lib/arvbox/
 
 ADD runit /etc/runit
+
+# arvbox mounts a docker volume at $ARVADOS_CONTAINER_PATH, make sure that that
+# doesn't overlap with the directory where `arvados-server install -type test`
+# put everything (/var/lib/arvados)
+ENV ARVADOS_CONTAINER_PATH /var/lib/arvados-arvbox
 
 # Start the supervisor.
 ENV SVDIR /etc/service

@@ -3,7 +3,8 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-flock /var/lib/arvados/createusers.lock /usr/local/lib/arvbox/createusers.sh --no-chown
+export ARVADOS_CONTAINER_PATH=/var/lib/arvados-arvbox
+flock $ARVADOS_CONTAINER_PATH/createusers.lock /usr/local/lib/arvbox/createusers.sh --no-chown
 
 if [[ -n "$*" ]] ; then
     exec su --preserve-environment arvbox -c "$*"

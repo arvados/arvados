@@ -8,7 +8,6 @@ ARG composer_version=arvados-fork
 ARG workbench2_version=master
 
 RUN cd /usr/src && \
-    git clone --no-checkout https://git.arvados.org/arvados.git && \
     git -C arvados checkout ${arvados_version} && \
     git -C arvados pull && \
     git clone --no-checkout https://github.com/arvados/composer.git && \
@@ -19,11 +18,14 @@ RUN cd /usr/src && \
     git -C workbench2 pull && \
     chown -R 1000:1000 /usr/src
 
+# avoid rebuilding arvados-server, it's already been built as part of the base image
+RUN install $GOPATH/bin/arvados-server /usr/local/bin
+
 ADD service/ /var/lib/arvbox/service
 RUN ln -sf /var/lib/arvbox/service /etc
-RUN mkdir -p /var/lib/arvados
-RUN echo "production" > /var/lib/arvados/api_rails_env
-RUN echo "production" > /var/lib/arvados/workbench_rails_env
+RUN mkdir -p $ARVADOS_CONTAINER_PATH
+RUN echo "production" > $ARVADOS_CONTAINER_PATH/api_rails_env
+RUN echo "production" > $ARVADOS_CONTAINER_PATH/workbench_rails_env
 
 RUN /usr/local/lib/arvbox/createusers.sh
 

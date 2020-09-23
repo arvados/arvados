@@ -15,8 +15,8 @@ rm -rf tmp
 mkdir tmp
 chown arvbox:arvbox tmp
 
-if test -s /var/lib/arvados/workbench_rails_env ; then
-  export RAILS_ENV=$(cat /var/lib/arvados/workbench_rails_env)
+if test -s $ARVADOS_CONTAINER_PATH/workbench_rails_env ; then
+  export RAILS_ENV=$(cat $ARVADOS_CONTAINER_PATH/workbench_rails_env)
 else
   export RAILS_ENV=development
 fi
@@ -24,7 +24,7 @@ fi
 if test "$1" != "--only-deps" ; then
     openssl verify -CAfile $root_cert $server_cert
     exec bundle exec passenger start --port=${services[workbench]} \
-	 --ssl --ssl-certificate=/var/lib/arvados/server-cert-${localip}.pem \
-	 --ssl-certificate-key=/var/lib/arvados/server-cert-${localip}.key \
+	 --ssl --ssl-certificate=$ARVADOS_CONTAINER_PATH/server-cert-${localip}.pem \
+	 --ssl-certificate-key=$ARVADOS_CONTAINER_PATH/server-cert-${localip}.key \
          --user arvbox
 fi

@@ -18,7 +18,7 @@ fi
 
 export ARVADOS_API_HOST=$localip:${services[controller-ssl]}
 export ARVADOS_API_HOST_INSECURE=1
-export PATH="$PATH:/var/lib/arvados/git/bin"
+export PATH="$PATH:$ARVADOS_CONTAINER_PATH/git/bin"
 cd ~git
 
 exec /usr/local/bin/arv-git-httpd

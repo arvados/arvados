@@ -10,8 +10,8 @@ set -ex -o pipefail
 
 cd /usr/src/arvados/apps/workbench
 
-if test -s /var/lib/arvados/workbench_rails_env ; then
-  export RAILS_ENV=$(cat /var/lib/arvados/workbench_rails_env)
+if test -s $ARVADOS_CONTAINER_PATH/workbench_rails_env ; then
+  export RAILS_ENV=$(cat $ARVADOS_CONTAINER_PATH/workbench_rails_env)
 else
   export RAILS_ENV=development
 fi
@@ -35,7 +35,7 @@ fi
 
 set -u
 
-secret_token=$(cat /var/lib/arvados/workbench_secret_token)
+secret_token=$(cat $ARVADOS_CONTAINER_PATH/workbench_secret_token)
 
 if test -a /usr/src/arvados/apps/workbench/config/arvados_config.rb ; then
     rm -f config/application.yml

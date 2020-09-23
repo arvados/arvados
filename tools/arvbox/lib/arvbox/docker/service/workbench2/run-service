@@ -27,7 +27,7 @@ cat <<EOF > /usr/src/workbench2/public/config.json
 EOF
 
 export ARVADOS_API_HOST=$localip:${services[controller-ssl]}
-export ARVADOS_API_TOKEN=$(cat /var/lib/arvados/superuser_token)
+export ARVADOS_API_TOKEN=$(cat $ARVADOS_CONTAINER_PATH/superuser_token)
 
 url_prefix="https://$localip:${services[workbench2-ssl]}/"
 
