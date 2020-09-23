@@ -19,6 +19,9 @@ For an example of this, see Rusoto, the AWS SDK.
 - [ ] Update client to make requests via async reqwest.
 - [ ] Build CI tests and run them or integrate with existing Aravdos tests.
 - [ ] Expand the CI tests to Windows and OSX platforms.
+- [ ] Implement Keep Service logic.
+- [ ] Review process.
+- [ ] Merge to main branch.
 
 ## Resources
 
