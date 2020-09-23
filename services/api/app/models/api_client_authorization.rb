@@ -206,7 +206,7 @@ class ApiClientAuthorization < ArvadosModel
         # below. If so, we'll stuff the database with hmac instead of
         # the real OIDC token.
         upstream_cluster_id = Rails.configuration.Login.LoginCluster
-        token_uuid = generate_uuid
+        token_uuid = upstream_cluster_id + generate_uuid[5..27]
         secret = hmac
       else
         return nil

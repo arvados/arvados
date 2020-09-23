@@ -263,17 +263,20 @@ func (h *Handler) saltAuthToken(req *http.Request, remote string) (updatedReq *h
 		return updatedReq, nil
 	}
 
+	ctxlog.FromContext(req.Context()).Infof("saltAuthToken: cluster %s token %s remote %s", h.Cluster.ClusterID, creds.Tokens[0], remote)
 	token, err := auth.SaltToken(creds.Tokens[0], remote)
 
 	if err == auth.ErrObsoleteToken {
-		// If the token exists in our own database, salt it
-		// for the remote. Otherwise, assume it was issued by
-		// the remote, and pass it through unmodified.
+		// If the token exists in our own database for our own
+		// user, salt it for the remote. Otherwise, assume it
+		// was issued by the remote, and pass it through
+		// unmodified.
 		currentUser, ok, err := h.validateAPItoken(req, creds.Tokens[0])
 		if err != nil {
 			return nil, err
-		} else if !ok {
-			// Not ours; pass through unmodified.
+		} else if !ok || strings.HasPrefix(currentUser.UUID, remote) {
+			// Unknown, or cached + belongs to remote;
+			// pass through unmodified.
 			token = creds.Tokens[0]
 		} else {
 			// Found; make V2 version and salt it.

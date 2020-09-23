@@ -380,7 +380,7 @@ func (ta *oidcTokenAuthorizer) WrapCalls(origFunc api.RoutableFunc) api.Routable
 // if so, ensures that an api_client_authorizations row exists so that
 // RailsAPI will accept it as an Arvados token.
 func (ta *oidcTokenAuthorizer) registerToken(ctx context.Context, tok string) error {
-	if strings.HasPrefix(tok, "v2/") {
+	if tok == ta.ctrl.Cluster.SystemRootToken || strings.HasPrefix(tok, "v2/") {
 		return nil
 	}
 	if cached, hit := ta.cache.Get(tok); !hit {
