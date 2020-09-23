@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 getAPIDocument <- function(){
-    url <- "https://ce8i5.arvadosapi.com/discovery/v1/apis/arvados/v1/rest"
+    url <- "https://jutro.arvadosapi.com/discovery/v1/apis/arvados/v1/rest"
     serverResponse <- httr::RETRY("GET", url = url)
 
     httr::content(serverResponse, as = "parsed", type = "application/json")
@@ -17,6 +17,10 @@ generateAPI <- function()
     discoveryDocument <- getAPIDocument()
 
     methodResources <- discoveryDocument$resources
+
+    # Don't emit deprecated APIs
+    methodResources <- methodResources[!(names(methodResources) %in% c("jobs", "job_tasks", "pipeline_templates", "pipeline_instances",
+	    		    "keep_disks", "nodes", "humans", "traits", "specimens"))]
     resourceNames   <- names(methodResources)
 
     methodDoc <- genMethodsDoc(methodResources, resourceNames)
@@ -34,6 +38,10 @@ generateAPI <- function()
                       arvadosAPIFooter)
 
     fileConn <- file("./R/Arvados.R", "w")
+    writeLines(c(
+    "# Copyright (C) The Arvados Authors. All rights reserved.",
+    "#",
+    "# SPDX-License-Identifier: Apache-2.0", ""), fileConn)
     writeLines(unlist(arvadosClass), fileConn)
     close(fileConn)
     NULL
@@ -252,7 +260,7 @@ getRequestURL <- function(methodMetaData)
 
 getRequestHeaders <- function()
 {
-    c("headers <- list(Authorization = paste(\"OAuth2\", private$token), ",
+    c("headers <- list(Authorization = paste(\"Bearer\", private$token), ",
       "                \"Content-Type\" = \"application/json\")")
 }
 

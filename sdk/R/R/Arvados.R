@@ -1,130 +1,60 @@
-#' users.get
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+#' api_clients.get
 #' 
-#' users.get is a method defined in Arvados class.
+#' api_clients.get is a method defined in Arvados class.
 #' 
-#' @usage arv$users.get(uuid)
-#' @param uuid The UUID of the User in question.
-#' @return User object.
-#' @name users.get
+#' @usage arv$api_clients.get(uuid)
+#' @param uuid The UUID of the ApiClient in question.
+#' @return ApiClient object.
+#' @name api_clients.get
 NULL
 
-#' users.create
+#' api_clients.create
 #' 
-#' users.create is a method defined in Arvados class.
+#' api_clients.create is a method defined in Arvados class.
 #' 
-#' @usage arv$users.create(user, ensure_unique_name = "false")
-#' @param user User object.
+#' @usage arv$api_clients.create(apiclient,
+#' 	ensure_unique_name = "false", cluster_id = NULL)
+#' @param apiClient ApiClient object.
 #' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
-#' @return User object.
-#' @name users.create
+#' @param cluster_id Create object on a remote federated cluster instead of the current one.
+#' @return ApiClient object.
+#' @name api_clients.create
 NULL
 
-#' users.update
+#' api_clients.update
 #' 
-#' users.update is a method defined in Arvados class.
+#' api_clients.update is a method defined in Arvados class.
 #' 
-#' @usage arv$users.update(user, uuid)
-#' @param user User object.
-#' @param uuid The UUID of the User in question.
-#' @return User object.
-#' @name users.update
+#' @usage arv$api_clients.update(apiclient,
+#' 	uuid)
+#' @param apiClient ApiClient object.
+#' @param uuid The UUID of the ApiClient in question.
+#' @return ApiClient object.
+#' @name api_clients.update
 NULL
 
-#' users.delete
+#' api_clients.delete
 #' 
-#' users.delete is a method defined in Arvados class.
+#' api_clients.delete is a method defined in Arvados class.
 #' 
-#' @usage arv$users.delete(uuid)
-#' @param uuid The UUID of the User in question.
-#' @return User object.
-#' @name users.delete
+#' @usage arv$api_clients.delete(uuid)
+#' @param uuid The UUID of the ApiClient in question.
+#' @return ApiClient object.
+#' @name api_clients.delete
 NULL
 
-#' users.current
+#' api_clients.list
 #' 
-#' users.current is a method defined in Arvados class.
+#' api_clients.list is a method defined in Arvados class.
 #' 
-#' @usage arv$users.current(NULL)
-#' @return User object.
-#' @name users.current
-NULL
-
-#' users.system
-#' 
-#' users.system is a method defined in Arvados class.
-#' 
-#' @usage arv$users.system(NULL)
-#' @return User object.
-#' @name users.system
-NULL
-
-#' users.activate
-#' 
-#' users.activate is a method defined in Arvados class.
-#' 
-#' @usage arv$users.activate(uuid)
-#' @param uuid 
-#' @return User object.
-#' @name users.activate
-NULL
-
-#' users.setup
-#' 
-#' users.setup is a method defined in Arvados class.
-#' 
-#' @usage arv$users.setup(user = NULL, openid_prefix = NULL,
-#' 	repo_name = NULL, vm_uuid = NULL, send_notification_email = "false")
-#' @param user 
-#' @param openid_prefix 
-#' @param repo_name 
-#' @param vm_uuid 
-#' @param send_notification_email 
-#' @return User object.
-#' @name users.setup
-NULL
-
-#' users.unsetup
-#' 
-#' users.unsetup is a method defined in Arvados class.
-#' 
-#' @usage arv$users.unsetup(uuid)
-#' @param uuid 
-#' @return User object.
-#' @name users.unsetup
-NULL
-
-#' users.update_uuid
-#' 
-#' users.update_uuid is a method defined in Arvados class.
-#' 
-#' @usage arv$users.update_uuid(uuid, new_uuid)
-#' @param uuid 
-#' @param new_uuid 
-#' @return User object.
-#' @name users.update_uuid
-NULL
-
-#' users.merge
-#' 
-#' users.merge is a method defined in Arvados class.
-#' 
-#' @usage arv$users.merge(new_owner_uuid,
-#' 	new_user_token, redirect_to_new_user = NULL)
-#' @param new_owner_uuid 
-#' @param new_user_token 
-#' @param redirect_to_new_user 
-#' @return User object.
-#' @name users.merge
-NULL
-
-#' users.list
-#' 
-#' users.list is a method defined in Arvados class.
-#' 
-#' @usage arv$users.list(filters = NULL,
+#' @usage arv$api_clients.list(filters = NULL,
 #' 	where = NULL, order = NULL, select = NULL,
 #' 	distinct = NULL, limit = "100", offset = "0",
-#' 	count = "exact")
+#' 	count = "exact", cluster_id = NULL, bypass_federation = NULL)
 #' @param filters 
 #' @param where 
 #' @param order 
@@ -133,8 +63,10 @@ NULL
 #' @param limit 
 #' @param offset 
 #' @param count 
-#' @return UserList object.
-#' @name users.list
+#' @param cluster_id List objects on a remote federated cluster instead of the current one.
+#' @param bypass_federation bypass federation behavior, list items from local instance database only
+#' @return ApiClientList object.
+#' @name api_clients.list
 NULL
 
 #' api_client_authorizations.get
@@ -152,9 +84,10 @@ NULL
 #' api_client_authorizations.create is a method defined in Arvados class.
 #' 
 #' @usage arv$api_client_authorizations.create(apiclientauthorization,
-#' 	ensure_unique_name = "false")
+#' 	ensure_unique_name = "false", cluster_id = NULL)
 #' @param apiClientAuthorization ApiClientAuthorization object.
 #' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @param cluster_id Create object on a remote federated cluster instead of the current one.
 #' @return ApiClientAuthorization object.
 #' @name api_client_authorizations.create
 NULL
@@ -209,7 +142,7 @@ NULL
 #' @usage arv$api_client_authorizations.list(filters = NULL,
 #' 	where = NULL, order = NULL, select = NULL,
 #' 	distinct = NULL, limit = "100", offset = "0",
-#' 	count = "exact")
+#' 	count = "exact", cluster_id = NULL, bypass_federation = NULL)
 #' @param filters 
 #' @param where 
 #' @param order 
@@ -218,8 +151,187 @@ NULL
 #' @param limit 
 #' @param offset 
 #' @param count 
+#' @param cluster_id List objects on a remote federated cluster instead of the current one.
+#' @param bypass_federation bypass federation behavior, list items from local instance database only
 #' @return ApiClientAuthorizationList object.
 #' @name api_client_authorizations.list
+NULL
+
+#' authorized_keys.get
+#' 
+#' authorized_keys.get is a method defined in Arvados class.
+#' 
+#' @usage arv$authorized_keys.get(uuid)
+#' @param uuid The UUID of the AuthorizedKey in question.
+#' @return AuthorizedKey object.
+#' @name authorized_keys.get
+NULL
+
+#' authorized_keys.create
+#' 
+#' authorized_keys.create is a method defined in Arvados class.
+#' 
+#' @usage arv$authorized_keys.create(authorizedkey,
+#' 	ensure_unique_name = "false", cluster_id = NULL)
+#' @param authorizedKey AuthorizedKey object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @param cluster_id Create object on a remote federated cluster instead of the current one.
+#' @return AuthorizedKey object.
+#' @name authorized_keys.create
+NULL
+
+#' authorized_keys.update
+#' 
+#' authorized_keys.update is a method defined in Arvados class.
+#' 
+#' @usage arv$authorized_keys.update(authorizedkey,
+#' 	uuid)
+#' @param authorizedKey AuthorizedKey object.
+#' @param uuid The UUID of the AuthorizedKey in question.
+#' @return AuthorizedKey object.
+#' @name authorized_keys.update
+NULL
+
+#' authorized_keys.delete
+#' 
+#' authorized_keys.delete is a method defined in Arvados class.
+#' 
+#' @usage arv$authorized_keys.delete(uuid)
+#' @param uuid The UUID of the AuthorizedKey in question.
+#' @return AuthorizedKey object.
+#' @name authorized_keys.delete
+NULL
+
+#' authorized_keys.list
+#' 
+#' authorized_keys.list is a method defined in Arvados class.
+#' 
+#' @usage arv$authorized_keys.list(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact", cluster_id = NULL, bypass_federation = NULL)
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @param cluster_id List objects on a remote federated cluster instead of the current one.
+#' @param bypass_federation bypass federation behavior, list items from local instance database only
+#' @return AuthorizedKeyList object.
+#' @name authorized_keys.list
+NULL
+
+#' collections.get
+#' 
+#' collections.get is a method defined in Arvados class.
+#' 
+#' @usage arv$collections.get(uuid)
+#' @param uuid The UUID of the Collection in question.
+#' @return Collection object.
+#' @name collections.get
+NULL
+
+#' collections.create
+#' 
+#' collections.create is a method defined in Arvados class.
+#' 
+#' @usage arv$collections.create(collection,
+#' 	ensure_unique_name = "false", cluster_id = NULL)
+#' @param collection Collection object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @param cluster_id Create object on a remote federated cluster instead of the current one.
+#' @return Collection object.
+#' @name collections.create
+NULL
+
+#' collections.update
+#' 
+#' collections.update is a method defined in Arvados class.
+#' 
+#' @usage arv$collections.update(collection,
+#' 	uuid)
+#' @param collection Collection object.
+#' @param uuid The UUID of the Collection in question.
+#' @return Collection object.
+#' @name collections.update
+NULL
+
+#' collections.delete
+#' 
+#' collections.delete is a method defined in Arvados class.
+#' 
+#' @usage arv$collections.delete(uuid)
+#' @param uuid The UUID of the Collection in question.
+#' @return Collection object.
+#' @name collections.delete
+NULL
+
+#' collections.provenance
+#' 
+#' collections.provenance is a method defined in Arvados class.
+#' 
+#' @usage arv$collections.provenance(uuid)
+#' @param uuid 
+#' @return Collection object.
+#' @name collections.provenance
+NULL
+
+#' collections.used_by
+#' 
+#' collections.used_by is a method defined in Arvados class.
+#' 
+#' @usage arv$collections.used_by(uuid)
+#' @param uuid 
+#' @return Collection object.
+#' @name collections.used_by
+NULL
+
+#' collections.trash
+#' 
+#' collections.trash is a method defined in Arvados class.
+#' 
+#' @usage arv$collections.trash(uuid)
+#' @param uuid 
+#' @return Collection object.
+#' @name collections.trash
+NULL
+
+#' collections.untrash
+#' 
+#' collections.untrash is a method defined in Arvados class.
+#' 
+#' @usage arv$collections.untrash(uuid)
+#' @param uuid 
+#' @return Collection object.
+#' @name collections.untrash
+NULL
+
+#' collections.list
+#' 
+#' collections.list is a method defined in Arvados class.
+#' 
+#' @usage arv$collections.list(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact", cluster_id = NULL, bypass_federation = NULL,
+#' 	include_trash = NULL, include_old_versions = NULL)
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @param cluster_id List objects on a remote federated cluster instead of the current one.
+#' @param bypass_federation bypass federation behavior, list items from local instance database only
+#' @param include_trash Include collections whose is_trashed attribute is true.
+#' @param include_old_versions Include past collection versions.
+#' @return CollectionList object.
+#' @name collections.list
 NULL
 
 #' containers.get
@@ -237,9 +349,10 @@ NULL
 #' containers.create is a method defined in Arvados class.
 #' 
 #' @usage arv$containers.create(container,
-#' 	ensure_unique_name = "false")
+#' 	ensure_unique_name = "false", cluster_id = NULL)
 #' @param container Container object.
 #' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @param cluster_id Create object on a remote federated cluster instead of the current one.
 #' @return Container object.
 #' @name containers.create
 NULL
@@ -322,7 +435,7 @@ NULL
 #' @usage arv$containers.list(filters = NULL,
 #' 	where = NULL, order = NULL, select = NULL,
 #' 	distinct = NULL, limit = "100", offset = "0",
-#' 	count = "exact")
+#' 	count = "exact", cluster_id = NULL, bypass_federation = NULL)
 #' @param filters 
 #' @param where 
 #' @param order 
@@ -331,72 +444,10 @@ NULL
 #' @param limit 
 #' @param offset 
 #' @param count 
+#' @param cluster_id List objects on a remote federated cluster instead of the current one.
+#' @param bypass_federation bypass federation behavior, list items from local instance database only
 #' @return ContainerList object.
 #' @name containers.list
-NULL
-
-#' api_clients.get
-#' 
-#' api_clients.get is a method defined in Arvados class.
-#' 
-#' @usage arv$api_clients.get(uuid)
-#' @param uuid The UUID of the ApiClient in question.
-#' @return ApiClient object.
-#' @name api_clients.get
-NULL
-
-#' api_clients.create
-#' 
-#' api_clients.create is a method defined in Arvados class.
-#' 
-#' @usage arv$api_clients.create(apiclient,
-#' 	ensure_unique_name = "false")
-#' @param apiClient ApiClient object.
-#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
-#' @return ApiClient object.
-#' @name api_clients.create
-NULL
-
-#' api_clients.update
-#' 
-#' api_clients.update is a method defined in Arvados class.
-#' 
-#' @usage arv$api_clients.update(apiclient,
-#' 	uuid)
-#' @param apiClient ApiClient object.
-#' @param uuid The UUID of the ApiClient in question.
-#' @return ApiClient object.
-#' @name api_clients.update
-NULL
-
-#' api_clients.delete
-#' 
-#' api_clients.delete is a method defined in Arvados class.
-#' 
-#' @usage arv$api_clients.delete(uuid)
-#' @param uuid The UUID of the ApiClient in question.
-#' @return ApiClient object.
-#' @name api_clients.delete
-NULL
-
-#' api_clients.list
-#' 
-#' api_clients.list is a method defined in Arvados class.
-#' 
-#' @usage arv$api_clients.list(filters = NULL,
-#' 	where = NULL, order = NULL, select = NULL,
-#' 	distinct = NULL, limit = "100", offset = "0",
-#' 	count = "exact")
-#' @param filters 
-#' @param where 
-#' @param order 
-#' @param select 
-#' @param distinct 
-#' @param limit 
-#' @param offset 
-#' @param count 
-#' @return ApiClientList object.
-#' @name api_clients.list
 NULL
 
 #' container_requests.get
@@ -414,9 +465,10 @@ NULL
 #' container_requests.create is a method defined in Arvados class.
 #' 
 #' @usage arv$container_requests.create(containerrequest,
-#' 	ensure_unique_name = "false")
+#' 	ensure_unique_name = "false", cluster_id = NULL)
 #' @param containerRequest ContainerRequest object.
 #' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @param cluster_id Create object on a remote federated cluster instead of the current one.
 #' @return ContainerRequest object.
 #' @name container_requests.create
 NULL
@@ -450,7 +502,8 @@ NULL
 #' @usage arv$container_requests.list(filters = NULL,
 #' 	where = NULL, order = NULL, select = NULL,
 #' 	distinct = NULL, limit = "100", offset = "0",
-#' 	count = "exact")
+#' 	count = "exact", cluster_id = NULL, bypass_federation = NULL,
+#' 	include_trash = NULL)
 #' @param filters 
 #' @param where 
 #' @param order 
@@ -459,62 +512,96 @@ NULL
 #' @param limit 
 #' @param offset 
 #' @param count 
+#' @param cluster_id List objects on a remote federated cluster instead of the current one.
+#' @param bypass_federation bypass federation behavior, list items from local instance database only
+#' @param include_trash Include container requests whose owner project is trashed.
 #' @return ContainerRequestList object.
 #' @name container_requests.list
 NULL
 
-#' authorized_keys.get
+#' groups.get
 #' 
-#' authorized_keys.get is a method defined in Arvados class.
+#' groups.get is a method defined in Arvados class.
 #' 
-#' @usage arv$authorized_keys.get(uuid)
-#' @param uuid The UUID of the AuthorizedKey in question.
-#' @return AuthorizedKey object.
-#' @name authorized_keys.get
+#' @usage arv$groups.get(uuid)
+#' @param uuid The UUID of the Group in question.
+#' @return Group object.
+#' @name groups.get
 NULL
 
-#' authorized_keys.create
+#' groups.create
 #' 
-#' authorized_keys.create is a method defined in Arvados class.
+#' groups.create is a method defined in Arvados class.
 #' 
-#' @usage arv$authorized_keys.create(authorizedkey,
-#' 	ensure_unique_name = "false")
-#' @param authorizedKey AuthorizedKey object.
+#' @usage arv$groups.create(group, ensure_unique_name = "false",
+#' 	cluster_id = NULL, async = "false")
+#' @param group Group object.
 #' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
-#' @return AuthorizedKey object.
-#' @name authorized_keys.create
+#' @param cluster_id Create object on a remote federated cluster instead of the current one.
+#' @param async defer permissions update
+#' @return Group object.
+#' @name groups.create
 NULL
 
-#' authorized_keys.update
+#' groups.update
 #' 
-#' authorized_keys.update is a method defined in Arvados class.
+#' groups.update is a method defined in Arvados class.
 #' 
-#' @usage arv$authorized_keys.update(authorizedkey,
-#' 	uuid)
-#' @param authorizedKey AuthorizedKey object.
-#' @param uuid The UUID of the AuthorizedKey in question.
-#' @return AuthorizedKey object.
-#' @name authorized_keys.update
+#' @usage arv$groups.update(group, uuid,
+#' 	async = "false")
+#' @param group Group object.
+#' @param uuid The UUID of the Group in question.
+#' @param async defer permissions update
+#' @return Group object.
+#' @name groups.update
 NULL
 
-#' authorized_keys.delete
+#' groups.delete
 #' 
-#' authorized_keys.delete is a method defined in Arvados class.
+#' groups.delete is a method defined in Arvados class.
 #' 
-#' @usage arv$authorized_keys.delete(uuid)
-#' @param uuid The UUID of the AuthorizedKey in question.
-#' @return AuthorizedKey object.
-#' @name authorized_keys.delete
+#' @usage arv$groups.delete(uuid)
+#' @param uuid The UUID of the Group in question.
+#' @return Group object.
+#' @name groups.delete
 NULL
 
-#' authorized_keys.list
+#' groups.contents
 #' 
-#' authorized_keys.list is a method defined in Arvados class.
+#' groups.contents is a method defined in Arvados class.
 #' 
-#' @usage arv$authorized_keys.list(filters = NULL,
+#' @usage arv$groups.contents(filters = NULL,
+#' 	where = NULL, order = NULL, distinct = NULL,
+#' 	limit = "100", offset = "0", count = "exact",
+#' 	cluster_id = NULL, bypass_federation = NULL,
+#' 	include_trash = NULL, uuid = NULL, recursive = NULL,
+#' 	include = NULL)
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @param cluster_id List objects on a remote federated cluster instead of the current one.
+#' @param bypass_federation bypass federation behavior, list items from local instance database only
+#' @param include_trash Include items whose is_trashed attribute is true.
+#' @param uuid 
+#' @param recursive Include contents from child groups recursively.
+#' @param include Include objects referred to by listed field in "included" (only owner_uuid)
+#' @return Group object.
+#' @name groups.contents
+NULL
+
+#' groups.shared
+#' 
+#' groups.shared is a method defined in Arvados class.
+#' 
+#' @usage arv$groups.shared(filters = NULL,
 #' 	where = NULL, order = NULL, select = NULL,
 #' 	distinct = NULL, limit = "100", offset = "0",
-#' 	count = "exact")
+#' 	count = "exact", cluster_id = NULL, bypass_federation = NULL,
+#' 	include_trash = NULL, include = NULL)
 #' @param filters 
 #' @param where 
 #' @param order 
@@ -523,102 +610,43 @@ NULL
 #' @param limit 
 #' @param offset 
 #' @param count 
-#' @return AuthorizedKeyList object.
-#' @name authorized_keys.list
+#' @param cluster_id List objects on a remote federated cluster instead of the current one.
+#' @param bypass_federation bypass federation behavior, list items from local instance database only
+#' @param include_trash Include items whose is_trashed attribute is true.
+#' @param include 
+#' @return Group object.
+#' @name groups.shared
 NULL
 
-#' collections.get
+#' groups.trash
 #' 
-#' collections.get is a method defined in Arvados class.
+#' groups.trash is a method defined in Arvados class.
 #' 
-#' @usage arv$collections.get(uuid)
-#' @param uuid The UUID of the Collection in question.
-#' @return Collection object.
-#' @name collections.get
-NULL
-
-#' collections.create
-#' 
-#' collections.create is a method defined in Arvados class.
-#' 
-#' @usage arv$collections.create(collection,
-#' 	ensure_unique_name = "false")
-#' @param collection Collection object.
-#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
-#' @return Collection object.
-#' @name collections.create
-NULL
-
-#' collections.update
-#' 
-#' collections.update is a method defined in Arvados class.
-#' 
-#' @usage arv$collections.update(collection,
-#' 	uuid)
-#' @param collection Collection object.
-#' @param uuid The UUID of the Collection in question.
-#' @return Collection object.
-#' @name collections.update
-NULL
-
-#' collections.delete
-#' 
-#' collections.delete is a method defined in Arvados class.
-#' 
-#' @usage arv$collections.delete(uuid)
-#' @param uuid The UUID of the Collection in question.
-#' @return Collection object.
-#' @name collections.delete
-NULL
-
-#' collections.provenance
-#' 
-#' collections.provenance is a method defined in Arvados class.
-#' 
-#' @usage arv$collections.provenance(uuid)
+#' @usage arv$groups.trash(uuid)
 #' @param uuid 
-#' @return Collection object.
-#' @name collections.provenance
+#' @return Group object.
+#' @name groups.trash
 NULL
 
-#' collections.used_by
+#' groups.untrash
 #' 
-#' collections.used_by is a method defined in Arvados class.
+#' groups.untrash is a method defined in Arvados class.
 #' 
-#' @usage arv$collections.used_by(uuid)
+#' @usage arv$groups.untrash(uuid)
 #' @param uuid 
-#' @return Collection object.
-#' @name collections.used_by
+#' @return Group object.
+#' @name groups.untrash
 NULL
 
-#' collections.trash
+#' groups.list
 #' 
-#' collections.trash is a method defined in Arvados class.
+#' groups.list is a method defined in Arvados class.
 #' 
-#' @usage arv$collections.trash(uuid)
-#' @param uuid 
-#' @return Collection object.
-#' @name collections.trash
-NULL
-
-#' collections.untrash
-#' 
-#' collections.untrash is a method defined in Arvados class.
-#' 
-#' @usage arv$collections.untrash(uuid)
-#' @param uuid 
-#' @return Collection object.
-#' @name collections.untrash
-NULL
-
-#' collections.list
-#' 
-#' collections.list is a method defined in Arvados class.
-#' 
-#' @usage arv$collections.list(filters = NULL,
+#' @usage arv$groups.list(filters = NULL,
 #' 	where = NULL, order = NULL, select = NULL,
 #' 	distinct = NULL, limit = "100", offset = "0",
-#' 	count = "exact", include_trash = NULL)
+#' 	count = "exact", cluster_id = NULL, bypass_federation = NULL,
+#' 	include_trash = NULL)
 #' @param filters 
 #' @param where 
 #' @param order 
@@ -627,479 +655,11 @@ NULL
 #' @param limit 
 #' @param offset 
 #' @param count 
-#' @param include_trash Include collections whose is_trashed attribute is true.
-#' @return CollectionList object.
-#' @name collections.list
-NULL
-
-#' humans.get
-#' 
-#' humans.get is a method defined in Arvados class.
-#' 
-#' @usage arv$humans.get(uuid)
-#' @param uuid The UUID of the Human in question.
-#' @return Human object.
-#' @name humans.get
-NULL
-
-#' humans.create
-#' 
-#' humans.create is a method defined in Arvados class.
-#' 
-#' @usage arv$humans.create(human, ensure_unique_name = "false")
-#' @param human Human object.
-#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
-#' @return Human object.
-#' @name humans.create
-NULL
-
-#' humans.update
-#' 
-#' humans.update is a method defined in Arvados class.
-#' 
-#' @usage arv$humans.update(human, uuid)
-#' @param human Human object.
-#' @param uuid The UUID of the Human in question.
-#' @return Human object.
-#' @name humans.update
-NULL
-
-#' humans.delete
-#' 
-#' humans.delete is a method defined in Arvados class.
-#' 
-#' @usage arv$humans.delete(uuid)
-#' @param uuid The UUID of the Human in question.
-#' @return Human object.
-#' @name humans.delete
-NULL
-
-#' humans.list
-#' 
-#' humans.list is a method defined in Arvados class.
-#' 
-#' @usage arv$humans.list(filters = NULL,
-#' 	where = NULL, order = NULL, select = NULL,
-#' 	distinct = NULL, limit = "100", offset = "0",
-#' 	count = "exact")
-#' @param filters 
-#' @param where 
-#' @param order 
-#' @param select 
-#' @param distinct 
-#' @param limit 
-#' @param offset 
-#' @param count 
-#' @return HumanList object.
-#' @name humans.list
-NULL
-
-#' job_tasks.get
-#' 
-#' job_tasks.get is a method defined in Arvados class.
-#' 
-#' @usage arv$job_tasks.get(uuid)
-#' @param uuid The UUID of the JobTask in question.
-#' @return JobTask object.
-#' @name job_tasks.get
-NULL
-
-#' job_tasks.create
-#' 
-#' job_tasks.create is a method defined in Arvados class.
-#' 
-#' @usage arv$job_tasks.create(jobtask, ensure_unique_name = "false")
-#' @param jobTask JobTask object.
-#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
-#' @return JobTask object.
-#' @name job_tasks.create
-NULL
-
-#' job_tasks.update
-#' 
-#' job_tasks.update is a method defined in Arvados class.
-#' 
-#' @usage arv$job_tasks.update(jobtask, uuid)
-#' @param jobTask JobTask object.
-#' @param uuid The UUID of the JobTask in question.
-#' @return JobTask object.
-#' @name job_tasks.update
-NULL
-
-#' job_tasks.delete
-#' 
-#' job_tasks.delete is a method defined in Arvados class.
-#' 
-#' @usage arv$job_tasks.delete(uuid)
-#' @param uuid The UUID of the JobTask in question.
-#' @return JobTask object.
-#' @name job_tasks.delete
-NULL
-
-#' job_tasks.list
-#' 
-#' job_tasks.list is a method defined in Arvados class.
-#' 
-#' @usage arv$job_tasks.list(filters = NULL,
-#' 	where = NULL, order = NULL, select = NULL,
-#' 	distinct = NULL, limit = "100", offset = "0",
-#' 	count = "exact")
-#' @param filters 
-#' @param where 
-#' @param order 
-#' @param select 
-#' @param distinct 
-#' @param limit 
-#' @param offset 
-#' @param count 
-#' @return JobTaskList object.
-#' @name job_tasks.list
-NULL
-
-#' jobs.get
-#' 
-#' jobs.get is a method defined in Arvados class.
-#' 
-#' @usage arv$jobs.get(uuid)
-#' @param uuid The UUID of the Job in question.
-#' @return Job object.
-#' @name jobs.get
-NULL
-
-#' jobs.create
-#' 
-#' jobs.create is a method defined in Arvados class.
-#' 
-#' @usage arv$jobs.create(job, ensure_unique_name = "false",
-#' 	find_or_create = "false", filters = NULL,
-#' 	minimum_script_version = NULL, exclude_script_versions = NULL)
-#' @param job Job object.
-#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
-#' @param find_or_create 
-#' @param filters 
-#' @param minimum_script_version 
-#' @param exclude_script_versions 
-#' @return Job object.
-#' @name jobs.create
-NULL
-
-#' jobs.update
-#' 
-#' jobs.update is a method defined in Arvados class.
-#' 
-#' @usage arv$jobs.update(job, uuid)
-#' @param job Job object.
-#' @param uuid The UUID of the Job in question.
-#' @return Job object.
-#' @name jobs.update
-NULL
-
-#' jobs.delete
-#' 
-#' jobs.delete is a method defined in Arvados class.
-#' 
-#' @usage arv$jobs.delete(uuid)
-#' @param uuid The UUID of the Job in question.
-#' @return Job object.
-#' @name jobs.delete
-NULL
-
-#' jobs.queue
-#' 
-#' jobs.queue is a method defined in Arvados class.
-#' 
-#' @usage arv$jobs.queue(filters = NULL,
-#' 	where = NULL, order = NULL, select = NULL,
-#' 	distinct = NULL, limit = "100", offset = "0",
-#' 	count = "exact")
-#' @param filters 
-#' @param where 
-#' @param order 
-#' @param select 
-#' @param distinct 
-#' @param limit 
-#' @param offset 
-#' @param count 
-#' @return Job object.
-#' @name jobs.queue
-NULL
-
-#' jobs.queue_size
-#' 
-#' jobs.queue_size is a method defined in Arvados class.
-#' 
-#' @usage arv$jobs.queue_size(NULL)
-#' @return Job object.
-#' @name jobs.queue_size
-NULL
-
-#' jobs.cancel
-#' 
-#' jobs.cancel is a method defined in Arvados class.
-#' 
-#' @usage arv$jobs.cancel(uuid)
-#' @param uuid 
-#' @return Job object.
-#' @name jobs.cancel
-NULL
-
-#' jobs.lock
-#' 
-#' jobs.lock is a method defined in Arvados class.
-#' 
-#' @usage arv$jobs.lock(uuid)
-#' @param uuid 
-#' @return Job object.
-#' @name jobs.lock
-NULL
-
-#' jobs.list
-#' 
-#' jobs.list is a method defined in Arvados class.
-#' 
-#' @usage arv$jobs.list(filters = NULL, where = NULL,
-#' 	order = NULL, select = NULL, distinct = NULL,
-#' 	limit = "100", offset = "0", count = "exact")
-#' @param filters 
-#' @param where 
-#' @param order 
-#' @param select 
-#' @param distinct 
-#' @param limit 
-#' @param offset 
-#' @param count 
-#' @return JobList object.
-#' @name jobs.list
-NULL
-
-#' keep_disks.get
-#' 
-#' keep_disks.get is a method defined in Arvados class.
-#' 
-#' @usage arv$keep_disks.get(uuid)
-#' @param uuid The UUID of the KeepDisk in question.
-#' @return KeepDisk object.
-#' @name keep_disks.get
-NULL
-
-#' keep_disks.create
-#' 
-#' keep_disks.create is a method defined in Arvados class.
-#' 
-#' @usage arv$keep_disks.create(keepdisk,
-#' 	ensure_unique_name = "false")
-#' @param keepDisk KeepDisk object.
-#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
-#' @return KeepDisk object.
-#' @name keep_disks.create
-NULL
-
-#' keep_disks.update
-#' 
-#' keep_disks.update is a method defined in Arvados class.
-#' 
-#' @usage arv$keep_disks.update(keepdisk,
-#' 	uuid)
-#' @param keepDisk KeepDisk object.
-#' @param uuid The UUID of the KeepDisk in question.
-#' @return KeepDisk object.
-#' @name keep_disks.update
-NULL
-
-#' keep_disks.delete
-#' 
-#' keep_disks.delete is a method defined in Arvados class.
-#' 
-#' @usage arv$keep_disks.delete(uuid)
-#' @param uuid The UUID of the KeepDisk in question.
-#' @return KeepDisk object.
-#' @name keep_disks.delete
-NULL
-
-#' keep_disks.ping
-#' 
-#' keep_disks.ping is a method defined in Arvados class.
-#' 
-#' @usage arv$keep_disks.ping(uuid = NULL,
-#' 	ping_secret, node_uuid = NULL, filesystem_uuid = NULL,
-#' 	service_host = NULL, service_port, service_ssl_flag)
-#' @param uuid 
-#' @param ping_secret 
-#' @param node_uuid 
-#' @param filesystem_uuid 
-#' @param service_host 
-#' @param service_port 
-#' @param service_ssl_flag 
-#' @return KeepDisk object.
-#' @name keep_disks.ping
-NULL
-
-#' keep_disks.list
-#' 
-#' keep_disks.list is a method defined in Arvados class.
-#' 
-#' @usage arv$keep_disks.list(filters = NULL,
-#' 	where = NULL, order = NULL, select = NULL,
-#' 	distinct = NULL, limit = "100", offset = "0",
-#' 	count = "exact")
-#' @param filters 
-#' @param where 
-#' @param order 
-#' @param select 
-#' @param distinct 
-#' @param limit 
-#' @param offset 
-#' @param count 
-#' @return KeepDiskList object.
-#' @name keep_disks.list
-NULL
-
-#' nodes.get
-#' 
-#' nodes.get is a method defined in Arvados class.
-#' 
-#' @usage arv$nodes.get(uuid)
-#' @param uuid The UUID of the Node in question.
-#' @return Node object.
-#' @name nodes.get
-NULL
-
-#' nodes.create
-#' 
-#' nodes.create is a method defined in Arvados class.
-#' 
-#' @usage arv$nodes.create(node, ensure_unique_name = "false",
-#' 	assign_slot = NULL)
-#' @param node Node object.
-#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
-#' @param assign_slot assign slot and hostname
-#' @return Node object.
-#' @name nodes.create
-NULL
-
-#' nodes.update
-#' 
-#' nodes.update is a method defined in Arvados class.
-#' 
-#' @usage arv$nodes.update(node, uuid, assign_slot = NULL)
-#' @param node Node object.
-#' @param uuid The UUID of the Node in question.
-#' @param assign_slot assign slot and hostname
-#' @return Node object.
-#' @name nodes.update
-NULL
-
-#' nodes.delete
-#' 
-#' nodes.delete is a method defined in Arvados class.
-#' 
-#' @usage arv$nodes.delete(uuid)
-#' @param uuid The UUID of the Node in question.
-#' @return Node object.
-#' @name nodes.delete
-NULL
-
-#' nodes.ping
-#' 
-#' nodes.ping is a method defined in Arvados class.
-#' 
-#' @usage arv$nodes.ping(uuid, ping_secret)
-#' @param uuid 
-#' @param ping_secret 
-#' @return Node object.
-#' @name nodes.ping
-NULL
-
-#' nodes.list
-#' 
-#' nodes.list is a method defined in Arvados class.
-#' 
-#' @usage arv$nodes.list(filters = NULL,
-#' 	where = NULL, order = NULL, select = NULL,
-#' 	distinct = NULL, limit = "100", offset = "0",
-#' 	count = "exact")
-#' @param filters 
-#' @param where 
-#' @param order 
-#' @param select 
-#' @param distinct 
-#' @param limit 
-#' @param offset 
-#' @param count 
-#' @return NodeList object.
-#' @name nodes.list
-NULL
-
-#' links.get
-#' 
-#' links.get is a method defined in Arvados class.
-#' 
-#' @usage arv$links.get(uuid)
-#' @param uuid The UUID of the Link in question.
-#' @return Link object.
-#' @name links.get
-NULL
-
-#' links.create
-#' 
-#' links.create is a method defined in Arvados class.
-#' 
-#' @usage arv$links.create(link, ensure_unique_name = "false")
-#' @param link Link object.
-#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
-#' @return Link object.
-#' @name links.create
-NULL
-
-#' links.update
-#' 
-#' links.update is a method defined in Arvados class.
-#' 
-#' @usage arv$links.update(link, uuid)
-#' @param link Link object.
-#' @param uuid The UUID of the Link in question.
-#' @return Link object.
-#' @name links.update
-NULL
-
-#' links.delete
-#' 
-#' links.delete is a method defined in Arvados class.
-#' 
-#' @usage arv$links.delete(uuid)
-#' @param uuid The UUID of the Link in question.
-#' @return Link object.
-#' @name links.delete
-NULL
-
-#' links.list
-#' 
-#' links.list is a method defined in Arvados class.
-#' 
-#' @usage arv$links.list(filters = NULL,
-#' 	where = NULL, order = NULL, select = NULL,
-#' 	distinct = NULL, limit = "100", offset = "0",
-#' 	count = "exact")
-#' @param filters 
-#' @param where 
-#' @param order 
-#' @param select 
-#' @param distinct 
-#' @param limit 
-#' @param offset 
-#' @param count 
-#' @return LinkList object.
-#' @name links.list
-NULL
-
-#' links.get_permissions
-#' 
-#' links.get_permissions is a method defined in Arvados class.
-#' 
-#' @usage arv$links.get_permissions(uuid)
-#' @param uuid 
-#' @return Link object.
-#' @name links.get_permissions
+#' @param cluster_id List objects on a remote federated cluster instead of the current one.
+#' @param bypass_federation bypass federation behavior, list items from local instance database only
+#' @param include_trash Include items whose is_trashed attribute is true.
+#' @return GroupList object.
+#' @name groups.list
 NULL
 
 #' keep_services.get
@@ -1117,9 +677,10 @@ NULL
 #' keep_services.create is a method defined in Arvados class.
 #' 
 #' @usage arv$keep_services.create(keepservice,
-#' 	ensure_unique_name = "false")
+#' 	ensure_unique_name = "false", cluster_id = NULL)
 #' @param keepService KeepService object.
 #' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @param cluster_id Create object on a remote federated cluster instead of the current one.
 #' @return KeepService object.
 #' @name keep_services.create
 NULL
@@ -1162,7 +723,7 @@ NULL
 #' @usage arv$keep_services.list(filters = NULL,
 #' 	where = NULL, order = NULL, select = NULL,
 #' 	distinct = NULL, limit = "100", offset = "0",
-#' 	count = "exact")
+#' 	count = "exact", cluster_id = NULL, bypass_federation = NULL)
 #' @param filters 
 #' @param where 
 #' @param order 
@@ -1171,62 +732,64 @@ NULL
 #' @param limit 
 #' @param offset 
 #' @param count 
+#' @param cluster_id List objects on a remote federated cluster instead of the current one.
+#' @param bypass_federation bypass federation behavior, list items from local instance database only
 #' @return KeepServiceList object.
 #' @name keep_services.list
 NULL
 
-#' pipeline_templates.get
+#' links.get
 #' 
-#' pipeline_templates.get is a method defined in Arvados class.
+#' links.get is a method defined in Arvados class.
 #' 
-#' @usage arv$pipeline_templates.get(uuid)
-#' @param uuid The UUID of the PipelineTemplate in question.
-#' @return PipelineTemplate object.
-#' @name pipeline_templates.get
+#' @usage arv$links.get(uuid)
+#' @param uuid The UUID of the Link in question.
+#' @return Link object.
+#' @name links.get
 NULL
 
-#' pipeline_templates.create
+#' links.create
 #' 
-#' pipeline_templates.create is a method defined in Arvados class.
+#' links.create is a method defined in Arvados class.
 #' 
-#' @usage arv$pipeline_templates.create(pipelinetemplate,
-#' 	ensure_unique_name = "false")
-#' @param pipelineTemplate PipelineTemplate object.
+#' @usage arv$links.create(link, ensure_unique_name = "false",
+#' 	cluster_id = NULL)
+#' @param link Link object.
 #' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
-#' @return PipelineTemplate object.
-#' @name pipeline_templates.create
+#' @param cluster_id Create object on a remote federated cluster instead of the current one.
+#' @return Link object.
+#' @name links.create
 NULL
 
-#' pipeline_templates.update
+#' links.update
 #' 
-#' pipeline_templates.update is a method defined in Arvados class.
+#' links.update is a method defined in Arvados class.
 #' 
-#' @usage arv$pipeline_templates.update(pipelinetemplate,
-#' 	uuid)
-#' @param pipelineTemplate PipelineTemplate object.
-#' @param uuid The UUID of the PipelineTemplate in question.
-#' @return PipelineTemplate object.
-#' @name pipeline_templates.update
+#' @usage arv$links.update(link, uuid)
+#' @param link Link object.
+#' @param uuid The UUID of the Link in question.
+#' @return Link object.
+#' @name links.update
 NULL
 
-#' pipeline_templates.delete
+#' links.delete
 #' 
-#' pipeline_templates.delete is a method defined in Arvados class.
+#' links.delete is a method defined in Arvados class.
 #' 
-#' @usage arv$pipeline_templates.delete(uuid)
-#' @param uuid The UUID of the PipelineTemplate in question.
-#' @return PipelineTemplate object.
-#' @name pipeline_templates.delete
+#' @usage arv$links.delete(uuid)
+#' @param uuid The UUID of the Link in question.
+#' @return Link object.
+#' @name links.delete
 NULL
 
-#' pipeline_templates.list
+#' links.list
 #' 
-#' pipeline_templates.list is a method defined in Arvados class.
+#' links.list is a method defined in Arvados class.
 #' 
-#' @usage arv$pipeline_templates.list(filters = NULL,
+#' @usage arv$links.list(filters = NULL,
 #' 	where = NULL, order = NULL, select = NULL,
 #' 	distinct = NULL, limit = "100", offset = "0",
-#' 	count = "exact")
+#' 	count = "exact", cluster_id = NULL, bypass_federation = NULL)
 #' @param filters 
 #' @param where 
 #' @param order 
@@ -1235,72 +798,74 @@ NULL
 #' @param limit 
 #' @param offset 
 #' @param count 
-#' @return PipelineTemplateList object.
-#' @name pipeline_templates.list
+#' @param cluster_id List objects on a remote federated cluster instead of the current one.
+#' @param bypass_federation bypass federation behavior, list items from local instance database only
+#' @return LinkList object.
+#' @name links.list
 NULL
 
-#' pipeline_instances.get
+#' links.get_permissions
 #' 
-#' pipeline_instances.get is a method defined in Arvados class.
+#' links.get_permissions is a method defined in Arvados class.
 #' 
-#' @usage arv$pipeline_instances.get(uuid)
-#' @param uuid The UUID of the PipelineInstance in question.
-#' @return PipelineInstance object.
-#' @name pipeline_instances.get
-NULL
-
-#' pipeline_instances.create
-#' 
-#' pipeline_instances.create is a method defined in Arvados class.
-#' 
-#' @usage arv$pipeline_instances.create(pipelineinstance,
-#' 	ensure_unique_name = "false")
-#' @param pipelineInstance PipelineInstance object.
-#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
-#' @return PipelineInstance object.
-#' @name pipeline_instances.create
-NULL
-
-#' pipeline_instances.update
-#' 
-#' pipeline_instances.update is a method defined in Arvados class.
-#' 
-#' @usage arv$pipeline_instances.update(pipelineinstance,
-#' 	uuid)
-#' @param pipelineInstance PipelineInstance object.
-#' @param uuid The UUID of the PipelineInstance in question.
-#' @return PipelineInstance object.
-#' @name pipeline_instances.update
-NULL
-
-#' pipeline_instances.delete
-#' 
-#' pipeline_instances.delete is a method defined in Arvados class.
-#' 
-#' @usage arv$pipeline_instances.delete(uuid)
-#' @param uuid The UUID of the PipelineInstance in question.
-#' @return PipelineInstance object.
-#' @name pipeline_instances.delete
-NULL
-
-#' pipeline_instances.cancel
-#' 
-#' pipeline_instances.cancel is a method defined in Arvados class.
-#' 
-#' @usage arv$pipeline_instances.cancel(uuid)
+#' @usage arv$links.get_permissions(uuid)
 #' @param uuid 
-#' @return PipelineInstance object.
-#' @name pipeline_instances.cancel
+#' @return Link object.
+#' @name links.get_permissions
 NULL
 
-#' pipeline_instances.list
+#' logs.get
 #' 
-#' pipeline_instances.list is a method defined in Arvados class.
+#' logs.get is a method defined in Arvados class.
 #' 
-#' @usage arv$pipeline_instances.list(filters = NULL,
-#' 	where = NULL, order = NULL, select = NULL,
-#' 	distinct = NULL, limit = "100", offset = "0",
-#' 	count = "exact")
+#' @usage arv$logs.get(uuid)
+#' @param uuid The UUID of the Log in question.
+#' @return Log object.
+#' @name logs.get
+NULL
+
+#' logs.create
+#' 
+#' logs.create is a method defined in Arvados class.
+#' 
+#' @usage arv$logs.create(log, ensure_unique_name = "false",
+#' 	cluster_id = NULL)
+#' @param log Log object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @param cluster_id Create object on a remote federated cluster instead of the current one.
+#' @return Log object.
+#' @name logs.create
+NULL
+
+#' logs.update
+#' 
+#' logs.update is a method defined in Arvados class.
+#' 
+#' @usage arv$logs.update(log, uuid)
+#' @param log Log object.
+#' @param uuid The UUID of the Log in question.
+#' @return Log object.
+#' @name logs.update
+NULL
+
+#' logs.delete
+#' 
+#' logs.delete is a method defined in Arvados class.
+#' 
+#' @usage arv$logs.delete(uuid)
+#' @param uuid The UUID of the Log in question.
+#' @return Log object.
+#' @name logs.delete
+NULL
+
+#' logs.list
+#' 
+#' logs.list is a method defined in Arvados class.
+#' 
+#' @usage arv$logs.list(filters = NULL, where = NULL,
+#' 	order = NULL, select = NULL, distinct = NULL,
+#' 	limit = "100", offset = "0", count = "exact",
+#' 	cluster_id = NULL, bypass_federation = NULL)
 #' @param filters 
 #' @param where 
 #' @param order 
@@ -1309,8 +874,157 @@ NULL
 #' @param limit 
 #' @param offset 
 #' @param count 
-#' @return PipelineInstanceList object.
-#' @name pipeline_instances.list
+#' @param cluster_id List objects on a remote federated cluster instead of the current one.
+#' @param bypass_federation bypass federation behavior, list items from local instance database only
+#' @return LogList object.
+#' @name logs.list
+NULL
+
+#' users.get
+#' 
+#' users.get is a method defined in Arvados class.
+#' 
+#' @usage arv$users.get(uuid)
+#' @param uuid The UUID of the User in question.
+#' @return User object.
+#' @name users.get
+NULL
+
+#' users.create
+#' 
+#' users.create is a method defined in Arvados class.
+#' 
+#' @usage arv$users.create(user, ensure_unique_name = "false",
+#' 	cluster_id = NULL)
+#' @param user User object.
+#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @param cluster_id Create object on a remote federated cluster instead of the current one.
+#' @return User object.
+#' @name users.create
+NULL
+
+#' users.update
+#' 
+#' users.update is a method defined in Arvados class.
+#' 
+#' @usage arv$users.update(user, uuid, bypass_federation = NULL)
+#' @param user User object.
+#' @param uuid The UUID of the User in question.
+#' @param bypass_federation 
+#' @return User object.
+#' @name users.update
+NULL
+
+#' users.delete
+#' 
+#' users.delete is a method defined in Arvados class.
+#' 
+#' @usage arv$users.delete(uuid)
+#' @param uuid The UUID of the User in question.
+#' @return User object.
+#' @name users.delete
+NULL
+
+#' users.current
+#' 
+#' users.current is a method defined in Arvados class.
+#' 
+#' @usage arv$users.current(NULL)
+#' @return User object.
+#' @name users.current
+NULL
+
+#' users.system
+#' 
+#' users.system is a method defined in Arvados class.
+#' 
+#' @usage arv$users.system(NULL)
+#' @return User object.
+#' @name users.system
+NULL
+
+#' users.activate
+#' 
+#' users.activate is a method defined in Arvados class.
+#' 
+#' @usage arv$users.activate(uuid)
+#' @param uuid 
+#' @return User object.
+#' @name users.activate
+NULL
+
+#' users.setup
+#' 
+#' users.setup is a method defined in Arvados class.
+#' 
+#' @usage arv$users.setup(uuid = NULL, user = NULL,
+#' 	repo_name = NULL, vm_uuid = NULL, send_notification_email = "false")
+#' @param uuid 
+#' @param user 
+#' @param repo_name 
+#' @param vm_uuid 
+#' @param send_notification_email 
+#' @return User object.
+#' @name users.setup
+NULL
+
+#' users.unsetup
+#' 
+#' users.unsetup is a method defined in Arvados class.
+#' 
+#' @usage arv$users.unsetup(uuid)
+#' @param uuid 
+#' @return User object.
+#' @name users.unsetup
+NULL
+
+#' users.update_uuid
+#' 
+#' users.update_uuid is a method defined in Arvados class.
+#' 
+#' @usage arv$users.update_uuid(uuid, new_uuid)
+#' @param uuid 
+#' @param new_uuid 
+#' @return User object.
+#' @name users.update_uuid
+NULL
+
+#' users.merge
+#' 
+#' users.merge is a method defined in Arvados class.
+#' 
+#' @usage arv$users.merge(new_owner_uuid,
+#' 	new_user_token = NULL, redirect_to_new_user = NULL,
+#' 	old_user_uuid = NULL, new_user_uuid = NULL)
+#' @param new_owner_uuid 
+#' @param new_user_token 
+#' @param redirect_to_new_user 
+#' @param old_user_uuid 
+#' @param new_user_uuid 
+#' @return User object.
+#' @name users.merge
+NULL
+
+#' users.list
+#' 
+#' users.list is a method defined in Arvados class.
+#' 
+#' @usage arv$users.list(filters = NULL,
+#' 	where = NULL, order = NULL, select = NULL,
+#' 	distinct = NULL, limit = "100", offset = "0",
+#' 	count = "exact", cluster_id = NULL, bypass_federation = NULL)
+#' @param filters 
+#' @param where 
+#' @param order 
+#' @param select 
+#' @param distinct 
+#' @param limit 
+#' @param offset 
+#' @param count 
+#' @param cluster_id List objects on a remote federated cluster instead of the current one.
+#' @param bypass_federation bypass federation behavior, list items from local instance database only
+#' @return UserList object.
+#' @name users.list
 NULL
 
 #' repositories.get
@@ -1328,9 +1042,10 @@ NULL
 #' repositories.create is a method defined in Arvados class.
 #' 
 #' @usage arv$repositories.create(repository,
-#' 	ensure_unique_name = "false")
+#' 	ensure_unique_name = "false", cluster_id = NULL)
 #' @param repository Repository object.
 #' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @param cluster_id Create object on a remote federated cluster instead of the current one.
 #' @return Repository object.
 #' @name repositories.create
 NULL
@@ -1373,7 +1088,7 @@ NULL
 #' @usage arv$repositories.list(filters = NULL,
 #' 	where = NULL, order = NULL, select = NULL,
 #' 	distinct = NULL, limit = "100", offset = "0",
-#' 	count = "exact")
+#' 	count = "exact", cluster_id = NULL, bypass_federation = NULL)
 #' @param filters 
 #' @param where 
 #' @param order 
@@ -1382,195 +1097,10 @@ NULL
 #' @param limit 
 #' @param offset 
 #' @param count 
+#' @param cluster_id List objects on a remote federated cluster instead of the current one.
+#' @param bypass_federation bypass federation behavior, list items from local instance database only
 #' @return RepositoryList object.
 #' @name repositories.list
-NULL
-
-#' specimens.get
-#' 
-#' specimens.get is a method defined in Arvados class.
-#' 
-#' @usage arv$specimens.get(uuid)
-#' @param uuid The UUID of the Specimen in question.
-#' @return Specimen object.
-#' @name specimens.get
-NULL
-
-#' specimens.create
-#' 
-#' specimens.create is a method defined in Arvados class.
-#' 
-#' @usage arv$specimens.create(specimen,
-#' 	ensure_unique_name = "false")
-#' @param specimen Specimen object.
-#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
-#' @return Specimen object.
-#' @name specimens.create
-NULL
-
-#' specimens.update
-#' 
-#' specimens.update is a method defined in Arvados class.
-#' 
-#' @usage arv$specimens.update(specimen,
-#' 	uuid)
-#' @param specimen Specimen object.
-#' @param uuid The UUID of the Specimen in question.
-#' @return Specimen object.
-#' @name specimens.update
-NULL
-
-#' specimens.delete
-#' 
-#' specimens.delete is a method defined in Arvados class.
-#' 
-#' @usage arv$specimens.delete(uuid)
-#' @param uuid The UUID of the Specimen in question.
-#' @return Specimen object.
-#' @name specimens.delete
-NULL
-
-#' specimens.list
-#' 
-#' specimens.list is a method defined in Arvados class.
-#' 
-#' @usage arv$specimens.list(filters = NULL,
-#' 	where = NULL, order = NULL, select = NULL,
-#' 	distinct = NULL, limit = "100", offset = "0",
-#' 	count = "exact")
-#' @param filters 
-#' @param where 
-#' @param order 
-#' @param select 
-#' @param distinct 
-#' @param limit 
-#' @param offset 
-#' @param count 
-#' @return SpecimenList object.
-#' @name specimens.list
-NULL
-
-#' logs.get
-#' 
-#' logs.get is a method defined in Arvados class.
-#' 
-#' @usage arv$logs.get(uuid)
-#' @param uuid The UUID of the Log in question.
-#' @return Log object.
-#' @name logs.get
-NULL
-
-#' logs.create
-#' 
-#' logs.create is a method defined in Arvados class.
-#' 
-#' @usage arv$logs.create(log, ensure_unique_name = "false")
-#' @param log Log object.
-#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
-#' @return Log object.
-#' @name logs.create
-NULL
-
-#' logs.update
-#' 
-#' logs.update is a method defined in Arvados class.
-#' 
-#' @usage arv$logs.update(log, uuid)
-#' @param log Log object.
-#' @param uuid The UUID of the Log in question.
-#' @return Log object.
-#' @name logs.update
-NULL
-
-#' logs.delete
-#' 
-#' logs.delete is a method defined in Arvados class.
-#' 
-#' @usage arv$logs.delete(uuid)
-#' @param uuid The UUID of the Log in question.
-#' @return Log object.
-#' @name logs.delete
-NULL
-
-#' logs.list
-#' 
-#' logs.list is a method defined in Arvados class.
-#' 
-#' @usage arv$logs.list(filters = NULL, where = NULL,
-#' 	order = NULL, select = NULL, distinct = NULL,
-#' 	limit = "100", offset = "0", count = "exact")
-#' @param filters 
-#' @param where 
-#' @param order 
-#' @param select 
-#' @param distinct 
-#' @param limit 
-#' @param offset 
-#' @param count 
-#' @return LogList object.
-#' @name logs.list
-NULL
-
-#' traits.get
-#' 
-#' traits.get is a method defined in Arvados class.
-#' 
-#' @usage arv$traits.get(uuid)
-#' @param uuid The UUID of the Trait in question.
-#' @return Trait object.
-#' @name traits.get
-NULL
-
-#' traits.create
-#' 
-#' traits.create is a method defined in Arvados class.
-#' 
-#' @usage arv$traits.create(trait, ensure_unique_name = "false")
-#' @param trait Trait object.
-#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
-#' @return Trait object.
-#' @name traits.create
-NULL
-
-#' traits.update
-#' 
-#' traits.update is a method defined in Arvados class.
-#' 
-#' @usage arv$traits.update(trait, uuid)
-#' @param trait Trait object.
-#' @param uuid The UUID of the Trait in question.
-#' @return Trait object.
-#' @name traits.update
-NULL
-
-#' traits.delete
-#' 
-#' traits.delete is a method defined in Arvados class.
-#' 
-#' @usage arv$traits.delete(uuid)
-#' @param uuid The UUID of the Trait in question.
-#' @return Trait object.
-#' @name traits.delete
-NULL
-
-#' traits.list
-#' 
-#' traits.list is a method defined in Arvados class.
-#' 
-#' @usage arv$traits.list(filters = NULL,
-#' 	where = NULL, order = NULL, select = NULL,
-#' 	distinct = NULL, limit = "100", offset = "0",
-#' 	count = "exact")
-#' @param filters 
-#' @param where 
-#' @param order 
-#' @param select 
-#' @param distinct 
-#' @param limit 
-#' @param offset 
-#' @param count 
-#' @return TraitList object.
-#' @name traits.list
 NULL
 
 #' virtual_machines.get
@@ -1588,9 +1118,10 @@ NULL
 #' virtual_machines.create is a method defined in Arvados class.
 #' 
 #' @usage arv$virtual_machines.create(virtualmachine,
-#' 	ensure_unique_name = "false")
+#' 	ensure_unique_name = "false", cluster_id = NULL)
 #' @param virtualMachine VirtualMachine object.
 #' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @param cluster_id Create object on a remote federated cluster instead of the current one.
 #' @return VirtualMachine object.
 #' @name virtual_machines.create
 NULL
@@ -1643,7 +1174,7 @@ NULL
 #' @usage arv$virtual_machines.list(filters = NULL,
 #' 	where = NULL, order = NULL, select = NULL,
 #' 	distinct = NULL, limit = "100", offset = "0",
-#' 	count = "exact")
+#' 	count = "exact", cluster_id = NULL, bypass_federation = NULL)
 #' @param filters 
 #' @param where 
 #' @param order 
@@ -1652,6 +1183,8 @@ NULL
 #' @param limit 
 #' @param offset 
 #' @param count 
+#' @param cluster_id List objects on a remote federated cluster instead of the current one.
+#' @param bypass_federation bypass federation behavior, list items from local instance database only
 #' @return VirtualMachineList object.
 #' @name virtual_machines.list
 NULL
@@ -1671,9 +1204,10 @@ NULL
 #' workflows.create is a method defined in Arvados class.
 #' 
 #' @usage arv$workflows.create(workflow,
-#' 	ensure_unique_name = "false")
+#' 	ensure_unique_name = "false", cluster_id = NULL)
 #' @param workflow Workflow object.
 #' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @param cluster_id Create object on a remote federated cluster instead of the current one.
 #' @return Workflow object.
 #' @name workflows.create
 NULL
@@ -1707,7 +1241,7 @@ NULL
 #' @usage arv$workflows.list(filters = NULL,
 #' 	where = NULL, order = NULL, select = NULL,
 #' 	distinct = NULL, limit = "100", offset = "0",
-#' 	count = "exact")
+#' 	count = "exact", cluster_id = NULL, bypass_federation = NULL)
 #' @param filters 
 #' @param where 
 #' @param order 
@@ -1716,113 +1250,10 @@ NULL
 #' @param limit 
 #' @param offset 
 #' @param count 
+#' @param cluster_id List objects on a remote federated cluster instead of the current one.
+#' @param bypass_federation bypass federation behavior, list items from local instance database only
 #' @return WorkflowList object.
 #' @name workflows.list
-NULL
-
-#' groups.get
-#' 
-#' groups.get is a method defined in Arvados class.
-#' 
-#' @usage arv$groups.get(uuid)
-#' @param uuid The UUID of the Group in question.
-#' @return Group object.
-#' @name groups.get
-NULL
-
-#' groups.create
-#' 
-#' groups.create is a method defined in Arvados class.
-#' 
-#' @usage arv$groups.create(group, ensure_unique_name = "false")
-#' @param group Group object.
-#' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
-#' @return Group object.
-#' @name groups.create
-NULL
-
-#' groups.update
-#' 
-#' groups.update is a method defined in Arvados class.
-#' 
-#' @usage arv$groups.update(group, uuid)
-#' @param group Group object.
-#' @param uuid The UUID of the Group in question.
-#' @return Group object.
-#' @name groups.update
-NULL
-
-#' groups.delete
-#' 
-#' groups.delete is a method defined in Arvados class.
-#' 
-#' @usage arv$groups.delete(uuid)
-#' @param uuid The UUID of the Group in question.
-#' @return Group object.
-#' @name groups.delete
-NULL
-
-#' groups.contents
-#' 
-#' groups.contents is a method defined in Arvados class.
-#' 
-#' @usage arv$groups.contents(filters = NULL,
-#' 	where = NULL, order = NULL, distinct = NULL,
-#' 	limit = "100", offset = "0", count = "exact",
-#' 	include_trash = NULL, uuid = NULL, recursive = NULL)
-#' @param filters 
-#' @param where 
-#' @param order 
-#' @param distinct 
-#' @param limit 
-#' @param offset 
-#' @param count 
-#' @param include_trash Include items whose is_trashed attribute is true.
-#' @param uuid 
-#' @param recursive Include contents from child groups recursively.
-#' @return Group object.
-#' @name groups.contents
-NULL
-
-#' groups.trash
-#' 
-#' groups.trash is a method defined in Arvados class.
-#' 
-#' @usage arv$groups.trash(uuid)
-#' @param uuid 
-#' @return Group object.
-#' @name groups.trash
-NULL
-
-#' groups.untrash
-#' 
-#' groups.untrash is a method defined in Arvados class.
-#' 
-#' @usage arv$groups.untrash(uuid)
-#' @param uuid 
-#' @return Group object.
-#' @name groups.untrash
-NULL
-
-#' groups.list
-#' 
-#' groups.list is a method defined in Arvados class.
-#' 
-#' @usage arv$groups.list(filters = NULL,
-#' 	where = NULL, order = NULL, select = NULL,
-#' 	distinct = NULL, limit = "100", offset = "0",
-#' 	count = "exact", include_trash = NULL)
-#' @param filters 
-#' @param where 
-#' @param order 
-#' @param select 
-#' @param distinct 
-#' @param limit 
-#' @param offset 
-#' @param count 
-#' @param include_trash Include items whose is_trashed attribute is true.
-#' @return GroupList object.
-#' @name groups.list
 NULL
 
 #' user_agreements.get
@@ -1840,9 +1271,10 @@ NULL
 #' user_agreements.create is a method defined in Arvados class.
 #' 
 #' @usage arv$user_agreements.create(useragreement,
-#' 	ensure_unique_name = "false")
+#' 	ensure_unique_name = "false", cluster_id = NULL)
 #' @param userAgreement UserAgreement object.
 #' @param ensure_unique_name Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.
+#' @param cluster_id Create object on a remote federated cluster instead of the current one.
 #' @return UserAgreement object.
 #' @name user_agreements.create
 NULL
@@ -1894,7 +1326,7 @@ NULL
 #' @usage arv$user_agreements.list(filters = NULL,
 #' 	where = NULL, order = NULL, select = NULL,
 #' 	distinct = NULL, limit = "100", offset = "0",
-#' 	count = "exact")
+#' 	count = "exact", cluster_id = NULL, bypass_federation = NULL)
 #' @param filters 
 #' @param where 
 #' @param order 
@@ -1903,6 +1335,8 @@ NULL
 #' @param limit 
 #' @param offset 
 #' @param count 
+#' @param cluster_id List objects on a remote federated cluster instead of the current one.
+#' @param bypass_federation bypass federation behavior, list items from local instance database only
 #' @return UserAgreementList object.
 #' @name user_agreements.list
 NULL
@@ -1914,6 +1348,15 @@ NULL
 #' @usage arv$user_agreements.new(NULL)
 #' @return UserAgreement object.
 #' @name user_agreements.new
+NULL
+
+#' configs.get
+#' 
+#' configs.get is a method defined in Arvados class.
+#' 
+#' @usage arv$configs.get(NULL)
+#' @return  object.
+#' @name configs.get
 NULL
 
 #' project.get
@@ -2022,6 +1465,7 @@ NULL
 #' 	\item{}{\code{\link{collections.untrash}}}
 #' 	\item{}{\code{\link{collections.update}}}
 #' 	\item{}{\code{\link{collections.used_by}}}
+#' 	\item{}{\code{\link{configs.get}}}
 #' 	\item{}{\code{\link{container_requests.create}}}
 #' 	\item{}{\code{\link{container_requests.delete}}}
 #' 	\item{}{\code{\link{container_requests.get}}}
@@ -2042,34 +1486,10 @@ NULL
 #' 	\item{}{\code{\link{groups.delete}}}
 #' 	\item{}{\code{\link{groups.get}}}
 #' 	\item{}{\code{\link{groups.list}}}
+#' 	\item{}{\code{\link{groups.shared}}}
 #' 	\item{}{\code{\link{groups.trash}}}
 #' 	\item{}{\code{\link{groups.untrash}}}
 #' 	\item{}{\code{\link{groups.update}}}
-#' 	\item{}{\code{\link{humans.create}}}
-#' 	\item{}{\code{\link{humans.delete}}}
-#' 	\item{}{\code{\link{humans.get}}}
-#' 	\item{}{\code{\link{humans.list}}}
-#' 	\item{}{\code{\link{humans.update}}}
-#' 	\item{}{\code{\link{jobs.cancel}}}
-#' 	\item{}{\code{\link{jobs.create}}}
-#' 	\item{}{\code{\link{jobs.delete}}}
-#' 	\item{}{\code{\link{jobs.get}}}
-#' 	\item{}{\code{\link{jobs.list}}}
-#' 	\item{}{\code{\link{jobs.lock}}}
-#' 	\item{}{\code{\link{jobs.queue}}}
-#' 	\item{}{\code{\link{jobs.queue_size}}}
-#' 	\item{}{\code{\link{jobs.update}}}
-#' 	\item{}{\code{\link{job_tasks.create}}}
-#' 	\item{}{\code{\link{job_tasks.delete}}}
-#' 	\item{}{\code{\link{job_tasks.get}}}
-#' 	\item{}{\code{\link{job_tasks.list}}}
-#' 	\item{}{\code{\link{job_tasks.update}}}
-#' 	\item{}{\code{\link{keep_disks.create}}}
-#' 	\item{}{\code{\link{keep_disks.delete}}}
-#' 	\item{}{\code{\link{keep_disks.get}}}
-#' 	\item{}{\code{\link{keep_disks.list}}}
-#' 	\item{}{\code{\link{keep_disks.ping}}}
-#' 	\item{}{\code{\link{keep_disks.update}}}
 #' 	\item{}{\code{\link{keep_services.accessible}}}
 #' 	\item{}{\code{\link{keep_services.create}}}
 #' 	\item{}{\code{\link{keep_services.delete}}}
@@ -2087,23 +1507,6 @@ NULL
 #' 	\item{}{\code{\link{logs.get}}}
 #' 	\item{}{\code{\link{logs.list}}}
 #' 	\item{}{\code{\link{logs.update}}}
-#' 	\item{}{\code{\link{nodes.create}}}
-#' 	\item{}{\code{\link{nodes.delete}}}
-#' 	\item{}{\code{\link{nodes.get}}}
-#' 	\item{}{\code{\link{nodes.list}}}
-#' 	\item{}{\code{\link{nodes.ping}}}
-#' 	\item{}{\code{\link{nodes.update}}}
-#' 	\item{}{\code{\link{pipeline_instances.cancel}}}
-#' 	\item{}{\code{\link{pipeline_instances.create}}}
-#' 	\item{}{\code{\link{pipeline_instances.delete}}}
-#' 	\item{}{\code{\link{pipeline_instances.get}}}
-#' 	\item{}{\code{\link{pipeline_instances.list}}}
-#' 	\item{}{\code{\link{pipeline_instances.update}}}
-#' 	\item{}{\code{\link{pipeline_templates.create}}}
-#' 	\item{}{\code{\link{pipeline_templates.delete}}}
-#' 	\item{}{\code{\link{pipeline_templates.get}}}
-#' 	\item{}{\code{\link{pipeline_templates.list}}}
-#' 	\item{}{\code{\link{pipeline_templates.update}}}
 #' 	\item{}{\code{\link{projects.create}}}
 #' 	\item{}{\code{\link{projects.delete}}}
 #' 	\item{}{\code{\link{projects.get}}}
@@ -2115,16 +1518,6 @@ NULL
 #' 	\item{}{\code{\link{repositories.get_all_permissions}}}
 #' 	\item{}{\code{\link{repositories.list}}}
 #' 	\item{}{\code{\link{repositories.update}}}
-#' 	\item{}{\code{\link{specimens.create}}}
-#' 	\item{}{\code{\link{specimens.delete}}}
-#' 	\item{}{\code{\link{specimens.get}}}
-#' 	\item{}{\code{\link{specimens.list}}}
-#' 	\item{}{\code{\link{specimens.update}}}
-#' 	\item{}{\code{\link{traits.create}}}
-#' 	\item{}{\code{\link{traits.delete}}}
-#' 	\item{}{\code{\link{traits.get}}}
-#' 	\item{}{\code{\link{traits.list}}}
-#' 	\item{}{\code{\link{traits.update}}}
 #' 	\item{}{\code{\link{user_agreements.create}}}
 #' 	\item{}{\code{\link{user_agreements.delete}}}
 #' 	\item{}{\code{\link{user_agreements.get}}}
@@ -2243,636 +1636,11 @@ Arvados <- R6::R6Class(
 			self$groups.delete(uuid)
 		},
 
-		users.get = function(uuid)
-		{
-			endPoint <- stringr::str_interp("users/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		users.create = function(user, ensure_unique_name = "false")
-		{
-			endPoint <- stringr::str_interp("users")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(ensure_unique_name = ensure_unique_name)
-			
-			if(length(user) > 0)
-				body <- jsonlite::toJSON(list(user = user), 
-				                         auto_unbox = TRUE)
-			else
-				body <- NULL
-			
-			response <- private$REST$http$exec("POST", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		users.update = function(user, uuid)
-		{
-			endPoint <- stringr::str_interp("users/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			if(length(user) > 0)
-				body <- jsonlite::toJSON(list(user = user), 
-				                         auto_unbox = TRUE)
-			else
-				body <- NULL
-			
-			response <- private$REST$http$exec("PUT", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		users.delete = function(uuid)
-		{
-			endPoint <- stringr::str_interp("users/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("DELETE", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		users.current = function()
-		{
-			endPoint <- stringr::str_interp("users/current")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		users.system = function()
-		{
-			endPoint <- stringr::str_interp("users/system")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		users.activate = function(uuid)
-		{
-			endPoint <- stringr::str_interp("users/${uuid}/activate")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("POST", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		users.setup = function(user = NULL, openid_prefix = NULL,
-			repo_name = NULL, vm_uuid = NULL, send_notification_email = "false")
-		{
-			endPoint <- stringr::str_interp("users/setup")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(user = user, openid_prefix = openid_prefix,
-							  repo_name = repo_name, vm_uuid = vm_uuid,
-							  send_notification_email = send_notification_email)
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("POST", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		users.unsetup = function(uuid)
-		{
-			endPoint <- stringr::str_interp("users/${uuid}/unsetup")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("POST", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		users.update_uuid = function(uuid, new_uuid)
-		{
-			endPoint <- stringr::str_interp("users/${uuid}/update_uuid")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(new_uuid = new_uuid)
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("POST", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		users.merge = function(new_owner_uuid, new_user_token,
-			redirect_to_new_user = NULL)
-		{
-			endPoint <- stringr::str_interp("users/merge")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(new_owner_uuid = new_owner_uuid,
-							  new_user_token = new_user_token, redirect_to_new_user = redirect_to_new_user)
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("POST", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		users.list = function(filters = NULL, where = NULL,
-			order = NULL, select = NULL, distinct = NULL,
-			limit = "100", offset = "0", count = "exact")
-		{
-			endPoint <- stringr::str_interp("users")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(filters = filters, where = where,
-							  order = order, select = select, distinct = distinct,
-							  limit = limit, offset = offset, count = count)
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		api_client_authorizations.get = function(uuid)
-		{
-			endPoint <- stringr::str_interp("api_client_authorizations/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		api_client_authorizations.create = function(apiclientauthorization,
-			ensure_unique_name = "false")
-		{
-			endPoint <- stringr::str_interp("api_client_authorizations")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(ensure_unique_name = ensure_unique_name)
-			
-			if(length(apiclientauthorization) > 0)
-				body <- jsonlite::toJSON(list(apiclientauthorization = apiclientauthorization), 
-				                         auto_unbox = TRUE)
-			else
-				body <- NULL
-			
-			response <- private$REST$http$exec("POST", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		api_client_authorizations.update = function(apiclientauthorization, uuid)
-		{
-			endPoint <- stringr::str_interp("api_client_authorizations/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			if(length(apiclientauthorization) > 0)
-				body <- jsonlite::toJSON(list(apiclientauthorization = apiclientauthorization), 
-				                         auto_unbox = TRUE)
-			else
-				body <- NULL
-			
-			response <- private$REST$http$exec("PUT", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		api_client_authorizations.delete = function(uuid)
-		{
-			endPoint <- stringr::str_interp("api_client_authorizations/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("DELETE", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		api_client_authorizations.create_system_auth = function(api_client_id = NULL, scopes = NULL)
-		{
-			endPoint <- stringr::str_interp("api_client_authorizations/create_system_auth")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(api_client_id = api_client_id,
-							  scopes = scopes)
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("POST", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		api_client_authorizations.current = function()
-		{
-			endPoint <- stringr::str_interp("api_client_authorizations/current")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		api_client_authorizations.list = function(filters = NULL,
-			where = NULL, order = NULL, select = NULL,
-			distinct = NULL, limit = "100", offset = "0",
-			count = "exact")
-		{
-			endPoint <- stringr::str_interp("api_client_authorizations")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(filters = filters, where = where,
-							  order = order, select = select, distinct = distinct,
-							  limit = limit, offset = offset, count = count)
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		containers.get = function(uuid)
-		{
-			endPoint <- stringr::str_interp("containers/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		containers.create = function(container, ensure_unique_name = "false")
-		{
-			endPoint <- stringr::str_interp("containers")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(ensure_unique_name = ensure_unique_name)
-			
-			if(length(container) > 0)
-				body <- jsonlite::toJSON(list(container = container), 
-				                         auto_unbox = TRUE)
-			else
-				body <- NULL
-			
-			response <- private$REST$http$exec("POST", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		containers.update = function(container, uuid)
-		{
-			endPoint <- stringr::str_interp("containers/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			if(length(container) > 0)
-				body <- jsonlite::toJSON(list(container = container), 
-				                         auto_unbox = TRUE)
-			else
-				body <- NULL
-			
-			response <- private$REST$http$exec("PUT", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		containers.delete = function(uuid)
-		{
-			endPoint <- stringr::str_interp("containers/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("DELETE", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		containers.auth = function(uuid)
-		{
-			endPoint <- stringr::str_interp("containers/${uuid}/auth")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		containers.lock = function(uuid)
-		{
-			endPoint <- stringr::str_interp("containers/${uuid}/lock")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("POST", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		containers.unlock = function(uuid)
-		{
-			endPoint <- stringr::str_interp("containers/${uuid}/unlock")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("POST", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		containers.secret_mounts = function(uuid)
-		{
-			endPoint <- stringr::str_interp("containers/${uuid}/secret_mounts")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		containers.current = function()
-		{
-			endPoint <- stringr::str_interp("containers/current")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		containers.list = function(filters = NULL,
-			where = NULL, order = NULL, select = NULL,
-			distinct = NULL, limit = "100", offset = "0",
-			count = "exact")
-		{
-			endPoint <- stringr::str_interp("containers")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(filters = filters, where = where,
-							  order = order, select = select, distinct = distinct,
-							  limit = limit, offset = offset, count = count)
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
 		api_clients.get = function(uuid)
 		{
 			endPoint <- stringr::str_interp("api_clients/${uuid}")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
 			
@@ -2888,13 +1656,15 @@ Arvados <- R6::R6Class(
 			resource
 		},
 
-		api_clients.create = function(apiclient, ensure_unique_name = "false")
+		api_clients.create = function(apiclient,
+			ensure_unique_name = "false", cluster_id = NULL)
 		{
 			endPoint <- stringr::str_interp("api_clients")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(ensure_unique_name = ensure_unique_name)
+			queryArgs <- list(ensure_unique_name = ensure_unique_name,
+							  cluster_id = cluster_id)
 			
 			if(length(apiclient) > 0)
 				body <- jsonlite::toJSON(list(apiclient = apiclient), 
@@ -2916,7 +1686,7 @@ Arvados <- R6::R6Class(
 		{
 			endPoint <- stringr::str_interp("api_clients/${uuid}")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
 			
@@ -2940,7 +1710,7 @@ Arvados <- R6::R6Class(
 		{
 			endPoint <- stringr::str_interp("api_clients/${uuid}")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
 			
@@ -2959,15 +1729,16 @@ Arvados <- R6::R6Class(
 		api_clients.list = function(filters = NULL,
 			where = NULL, order = NULL, select = NULL,
 			distinct = NULL, limit = "100", offset = "0",
-			count = "exact")
+			count = "exact", cluster_id = NULL, bypass_federation = NULL)
 		{
 			endPoint <- stringr::str_interp("api_clients")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
 							  order = order, select = select, distinct = distinct,
-							  limit = limit, offset = offset, count = count)
+							  limit = limit, offset = offset, count = count,
+							  cluster_id = cluster_id, bypass_federation = bypass_federation)
 			
 			body <- NULL
 			
@@ -2981,11 +1752,11 @@ Arvados <- R6::R6Class(
 			resource
 		},
 
-		container_requests.get = function(uuid)
+		api_client_authorizations.get = function(uuid)
 		{
-			endPoint <- stringr::str_interp("container_requests/${uuid}")
+			endPoint <- stringr::str_interp("api_client_authorizations/${uuid}")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
 			
@@ -3001,17 +1772,18 @@ Arvados <- R6::R6Class(
 			resource
 		},
 
-		container_requests.create = function(containerrequest,
-			ensure_unique_name = "false")
+		api_client_authorizations.create = function(apiclientauthorization,
+			ensure_unique_name = "false", cluster_id = NULL)
 		{
-			endPoint <- stringr::str_interp("container_requests")
+			endPoint <- stringr::str_interp("api_client_authorizations")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(ensure_unique_name = ensure_unique_name)
+			queryArgs <- list(ensure_unique_name = ensure_unique_name,
+							  cluster_id = cluster_id)
 			
-			if(length(containerrequest) > 0)
-				body <- jsonlite::toJSON(list(containerrequest = containerrequest), 
+			if(length(apiclientauthorization) > 0)
+				body <- jsonlite::toJSON(list(apiclientauthorization = apiclientauthorization), 
 				                         auto_unbox = TRUE)
 			else
 				body <- NULL
@@ -3026,16 +1798,16 @@ Arvados <- R6::R6Class(
 			resource
 		},
 
-		container_requests.update = function(containerrequest, uuid)
+		api_client_authorizations.update = function(apiclientauthorization, uuid)
 		{
-			endPoint <- stringr::str_interp("container_requests/${uuid}")
+			endPoint <- stringr::str_interp("api_client_authorizations/${uuid}")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
 			
-			if(length(containerrequest) > 0)
-				body <- jsonlite::toJSON(list(containerrequest = containerrequest), 
+			if(length(apiclientauthorization) > 0)
+				body <- jsonlite::toJSON(list(apiclientauthorization = apiclientauthorization), 
 				                         auto_unbox = TRUE)
 			else
 				body <- NULL
@@ -3050,11 +1822,11 @@ Arvados <- R6::R6Class(
 			resource
 		},
 
-		container_requests.delete = function(uuid)
+		api_client_authorizations.delete = function(uuid)
 		{
-			endPoint <- stringr::str_interp("container_requests/${uuid}")
+			endPoint <- stringr::str_interp("api_client_authorizations/${uuid}")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
 			
@@ -3070,18 +1842,60 @@ Arvados <- R6::R6Class(
 			resource
 		},
 
-		container_requests.list = function(filters = NULL,
+		api_client_authorizations.create_system_auth = function(api_client_id = NULL, scopes = NULL)
+		{
+			endPoint <- stringr::str_interp("api_client_authorizations/create_system_auth")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("Bearer", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(api_client_id = api_client_id,
+							  scopes = scopes)
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		api_client_authorizations.current = function()
+		{
+			endPoint <- stringr::str_interp("api_client_authorizations/current")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("Bearer", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		api_client_authorizations.list = function(filters = NULL,
 			where = NULL, order = NULL, select = NULL,
 			distinct = NULL, limit = "100", offset = "0",
-			count = "exact")
+			count = "exact", cluster_id = NULL, bypass_federation = NULL)
 		{
-			endPoint <- stringr::str_interp("container_requests")
+			endPoint <- stringr::str_interp("api_client_authorizations")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
 							  order = order, select = select, distinct = distinct,
-							  limit = limit, offset = offset, count = count)
+							  limit = limit, offset = offset, count = count,
+							  cluster_id = cluster_id, bypass_federation = bypass_federation)
 			
 			body <- NULL
 			
@@ -3099,7 +1913,7 @@ Arvados <- R6::R6Class(
 		{
 			endPoint <- stringr::str_interp("authorized_keys/${uuid}")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
 			
@@ -3116,13 +1930,14 @@ Arvados <- R6::R6Class(
 		},
 
 		authorized_keys.create = function(authorizedkey,
-			ensure_unique_name = "false")
+			ensure_unique_name = "false", cluster_id = NULL)
 		{
 			endPoint <- stringr::str_interp("authorized_keys")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(ensure_unique_name = ensure_unique_name)
+			queryArgs <- list(ensure_unique_name = ensure_unique_name,
+							  cluster_id = cluster_id)
 			
 			if(length(authorizedkey) > 0)
 				body <- jsonlite::toJSON(list(authorizedkey = authorizedkey), 
@@ -3144,7 +1959,7 @@ Arvados <- R6::R6Class(
 		{
 			endPoint <- stringr::str_interp("authorized_keys/${uuid}")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
 			
@@ -3168,7 +1983,7 @@ Arvados <- R6::R6Class(
 		{
 			endPoint <- stringr::str_interp("authorized_keys/${uuid}")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
 			
@@ -3187,15 +2002,16 @@ Arvados <- R6::R6Class(
 		authorized_keys.list = function(filters = NULL,
 			where = NULL, order = NULL, select = NULL,
 			distinct = NULL, limit = "100", offset = "0",
-			count = "exact")
+			count = "exact", cluster_id = NULL, bypass_federation = NULL)
 		{
 			endPoint <- stringr::str_interp("authorized_keys")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
 							  order = order, select = select, distinct = distinct,
-							  limit = limit, offset = offset, count = count)
+							  limit = limit, offset = offset, count = count,
+							  cluster_id = cluster_id, bypass_federation = bypass_federation)
 			
 			body <- NULL
 			
@@ -3213,7 +2029,7 @@ Arvados <- R6::R6Class(
 		{
 			endPoint <- stringr::str_interp("collections/${uuid}")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
 			
@@ -3229,13 +2045,15 @@ Arvados <- R6::R6Class(
 			resource
 		},
 
-		collections.create = function(collection, ensure_unique_name = "false")
+		collections.create = function(collection,
+			ensure_unique_name = "false", cluster_id = NULL)
 		{
 			endPoint <- stringr::str_interp("collections")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(ensure_unique_name = ensure_unique_name)
+			queryArgs <- list(ensure_unique_name = ensure_unique_name,
+							  cluster_id = cluster_id)
 			
 			if(length(collection) > 0)
 				body <- jsonlite::toJSON(list(collection = collection), 
@@ -3257,7 +2075,7 @@ Arvados <- R6::R6Class(
 		{
 			endPoint <- stringr::str_interp("collections/${uuid}")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
 			
@@ -3281,7 +2099,7 @@ Arvados <- R6::R6Class(
 		{
 			endPoint <- stringr::str_interp("collections/${uuid}")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
 			
@@ -3301,7 +2119,7 @@ Arvados <- R6::R6Class(
 		{
 			endPoint <- stringr::str_interp("collections/${uuid}/provenance")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
 			
@@ -3321,7 +2139,7 @@ Arvados <- R6::R6Class(
 		{
 			endPoint <- stringr::str_interp("collections/${uuid}/used_by")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
 			
@@ -3341,7 +2159,7 @@ Arvados <- R6::R6Class(
 		{
 			endPoint <- stringr::str_interp("collections/${uuid}/trash")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
 			
@@ -3361,7 +2179,7 @@ Arvados <- R6::R6Class(
 		{
 			endPoint <- stringr::str_interp("collections/${uuid}/untrash")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
 			
@@ -3380,15 +2198,351 @@ Arvados <- R6::R6Class(
 		collections.list = function(filters = NULL,
 			where = NULL, order = NULL, select = NULL,
 			distinct = NULL, limit = "100", offset = "0",
-			count = "exact", include_trash = NULL)
+			count = "exact", cluster_id = NULL, bypass_federation = NULL,
+			include_trash = NULL, include_old_versions = NULL)
 		{
 			endPoint <- stringr::str_interp("collections")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
 							  order = order, select = select, distinct = distinct,
 							  limit = limit, offset = offset, count = count,
+							  cluster_id = cluster_id, bypass_federation = bypass_federation,
+							  include_trash = include_trash, include_old_versions = include_old_versions)
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		containers.get = function(uuid)
+		{
+			endPoint <- stringr::str_interp("containers/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("Bearer", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		containers.create = function(container, ensure_unique_name = "false",
+			cluster_id = NULL)
+		{
+			endPoint <- stringr::str_interp("containers")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("Bearer", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(ensure_unique_name = ensure_unique_name,
+							  cluster_id = cluster_id)
+			
+			if(length(container) > 0)
+				body <- jsonlite::toJSON(list(container = container), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		containers.update = function(container, uuid)
+		{
+			endPoint <- stringr::str_interp("containers/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("Bearer", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			if(length(container) > 0)
+				body <- jsonlite::toJSON(list(container = container), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("PUT", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		containers.delete = function(uuid)
+		{
+			endPoint <- stringr::str_interp("containers/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("Bearer", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("DELETE", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		containers.auth = function(uuid)
+		{
+			endPoint <- stringr::str_interp("containers/${uuid}/auth")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("Bearer", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		containers.lock = function(uuid)
+		{
+			endPoint <- stringr::str_interp("containers/${uuid}/lock")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("Bearer", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		containers.unlock = function(uuid)
+		{
+			endPoint <- stringr::str_interp("containers/${uuid}/unlock")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("Bearer", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		containers.secret_mounts = function(uuid)
+		{
+			endPoint <- stringr::str_interp("containers/${uuid}/secret_mounts")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("Bearer", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		containers.current = function()
+		{
+			endPoint <- stringr::str_interp("containers/current")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("Bearer", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		containers.list = function(filters = NULL,
+			where = NULL, order = NULL, select = NULL,
+			distinct = NULL, limit = "100", offset = "0",
+			count = "exact", cluster_id = NULL, bypass_federation = NULL)
+		{
+			endPoint <- stringr::str_interp("containers")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("Bearer", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(filters = filters, where = where,
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count,
+							  cluster_id = cluster_id, bypass_federation = bypass_federation)
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		container_requests.get = function(uuid)
+		{
+			endPoint <- stringr::str_interp("container_requests/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("Bearer", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		container_requests.create = function(containerrequest,
+			ensure_unique_name = "false", cluster_id = NULL)
+		{
+			endPoint <- stringr::str_interp("container_requests")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("Bearer", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(ensure_unique_name = ensure_unique_name,
+							  cluster_id = cluster_id)
+			
+			if(length(containerrequest) > 0)
+				body <- jsonlite::toJSON(list(containerrequest = containerrequest), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		container_requests.update = function(containerrequest, uuid)
+		{
+			endPoint <- stringr::str_interp("container_requests/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("Bearer", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			if(length(containerrequest) > 0)
+				body <- jsonlite::toJSON(list(containerrequest = containerrequest), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("PUT", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		container_requests.delete = function(uuid)
+		{
+			endPoint <- stringr::str_interp("container_requests/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("Bearer", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("DELETE", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		container_requests.list = function(filters = NULL,
+			where = NULL, order = NULL, select = NULL,
+			distinct = NULL, limit = "100", offset = "0",
+			count = "exact", cluster_id = NULL, bypass_federation = NULL,
+			include_trash = NULL)
+		{
+			endPoint <- stringr::str_interp("container_requests")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("Bearer", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(filters = filters, where = where,
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count,
+							  cluster_id = cluster_id, bypass_federation = bypass_federation,
 							  include_trash = include_trash)
 			
 			body <- NULL
@@ -3403,11 +2557,11 @@ Arvados <- R6::R6Class(
 			resource
 		},
 
-		humans.get = function(uuid)
+		groups.get = function(uuid)
 		{
-			endPoint <- stringr::str_interp("humans/${uuid}")
+			endPoint <- stringr::str_interp("groups/${uuid}")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
 			
@@ -3423,246 +2577,18 @@ Arvados <- R6::R6Class(
 			resource
 		},
 
-		humans.create = function(human, ensure_unique_name = "false")
+		groups.create = function(group, ensure_unique_name = "false",
+			cluster_id = NULL, async = "false")
 		{
-			endPoint <- stringr::str_interp("humans")
+			endPoint <- stringr::str_interp("groups")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(ensure_unique_name = ensure_unique_name)
-			
-			if(length(human) > 0)
-				body <- jsonlite::toJSON(list(human = human), 
-				                         auto_unbox = TRUE)
-			else
-				body <- NULL
-			
-			response <- private$REST$http$exec("POST", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		humans.update = function(human, uuid)
-		{
-			endPoint <- stringr::str_interp("humans/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			if(length(human) > 0)
-				body <- jsonlite::toJSON(list(human = human), 
-				                         auto_unbox = TRUE)
-			else
-				body <- NULL
-			
-			response <- private$REST$http$exec("PUT", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		humans.delete = function(uuid)
-		{
-			endPoint <- stringr::str_interp("humans/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("DELETE", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		humans.list = function(filters = NULL, where = NULL,
-			order = NULL, select = NULL, distinct = NULL,
-			limit = "100", offset = "0", count = "exact")
-		{
-			endPoint <- stringr::str_interp("humans")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(filters = filters, where = where,
-							  order = order, select = select, distinct = distinct,
-							  limit = limit, offset = offset, count = count)
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		job_tasks.get = function(uuid)
-		{
-			endPoint <- stringr::str_interp("job_tasks/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		job_tasks.create = function(jobtask, ensure_unique_name = "false")
-		{
-			endPoint <- stringr::str_interp("job_tasks")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(ensure_unique_name = ensure_unique_name)
-			
-			if(length(jobtask) > 0)
-				body <- jsonlite::toJSON(list(jobtask = jobtask), 
-				                         auto_unbox = TRUE)
-			else
-				body <- NULL
-			
-			response <- private$REST$http$exec("POST", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		job_tasks.update = function(jobtask, uuid)
-		{
-			endPoint <- stringr::str_interp("job_tasks/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			if(length(jobtask) > 0)
-				body <- jsonlite::toJSON(list(jobtask = jobtask), 
-				                         auto_unbox = TRUE)
-			else
-				body <- NULL
-			
-			response <- private$REST$http$exec("PUT", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		job_tasks.delete = function(uuid)
-		{
-			endPoint <- stringr::str_interp("job_tasks/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("DELETE", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		job_tasks.list = function(filters = NULL,
-			where = NULL, order = NULL, select = NULL,
-			distinct = NULL, limit = "100", offset = "0",
-			count = "exact")
-		{
-			endPoint <- stringr::str_interp("job_tasks")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(filters = filters, where = where,
-							  order = order, select = select, distinct = distinct,
-							  limit = limit, offset = offset, count = count)
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		jobs.get = function(uuid)
-		{
-			endPoint <- stringr::str_interp("jobs/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		jobs.create = function(job, ensure_unique_name = "false",
-			find_or_create = "false", filters = NULL,
-			minimum_script_version = NULL, exclude_script_versions = NULL)
-		{
-			endPoint <- stringr::str_interp("jobs")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(ensure_unique_name = ensure_unique_name,
-							  find_or_create = find_or_create, filters = filters,
-							  minimum_script_version = minimum_script_version,
-							  exclude_script_versions = exclude_script_versions)
+							  cluster_id = cluster_id, async = async)
 			
-			if(length(job) > 0)
-				body <- jsonlite::toJSON(list(job = job), 
+			if(length(group) > 0)
+				body <- jsonlite::toJSON(list(group = group), 
 				                         auto_unbox = TRUE)
 			else
 				body <- NULL
@@ -3677,16 +2603,16 @@ Arvados <- R6::R6Class(
 			resource
 		},
 
-		jobs.update = function(job, uuid)
+		groups.update = function(group, uuid, async = "false")
 		{
-			endPoint <- stringr::str_interp("jobs/${uuid}")
+			endPoint <- stringr::str_interp("groups/${uuid}")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- NULL
+			queryArgs <- list(async = async)
 			
-			if(length(job) > 0)
-				body <- jsonlite::toJSON(list(job = job), 
+			if(length(group) > 0)
+				body <- jsonlite::toJSON(list(group = group), 
 				                         auto_unbox = TRUE)
 			else
 				body <- NULL
@@ -3701,11 +2627,11 @@ Arvados <- R6::R6Class(
 			resource
 		},
 
-		jobs.delete = function(uuid)
+		groups.delete = function(uuid)
 		{
-			endPoint <- stringr::str_interp("jobs/${uuid}")
+			endPoint <- stringr::str_interp("groups/${uuid}")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
 			
@@ -3721,17 +2647,22 @@ Arvados <- R6::R6Class(
 			resource
 		},
 
-		jobs.queue = function(filters = NULL, where = NULL,
-			order = NULL, select = NULL, distinct = NULL,
-			limit = "100", offset = "0", count = "exact")
+		groups.contents = function(filters = NULL,
+			where = NULL, order = NULL, distinct = NULL,
+			limit = "100", offset = "0", count = "exact",
+			cluster_id = NULL, bypass_federation = NULL,
+			include_trash = NULL, uuid = NULL, recursive = NULL,
+			include = NULL)
 		{
-			endPoint <- stringr::str_interp("jobs/queue")
+			endPoint <- stringr::str_interp("groups/contents")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
-							  order = order, select = select, distinct = distinct,
-							  limit = limit, offset = offset, count = count)
+							  order = order, distinct = distinct, limit = limit,
+							  offset = offset, count = count, cluster_id = cluster_id,
+							  bypass_federation = bypass_federation, include_trash = include_trash,
+							  uuid = uuid, recursive = recursive, include = include)
 			
 			body <- NULL
 			
@@ -3745,215 +2676,21 @@ Arvados <- R6::R6Class(
 			resource
 		},
 
-		jobs.queue_size = function()
-		{
-			endPoint <- stringr::str_interp("jobs/queue_size")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		jobs.cancel = function(uuid)
-		{
-			endPoint <- stringr::str_interp("jobs/${uuid}/cancel")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("POST", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		jobs.lock = function(uuid)
-		{
-			endPoint <- stringr::str_interp("jobs/${uuid}/lock")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("POST", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		jobs.list = function(filters = NULL, where = NULL,
-			order = NULL, select = NULL, distinct = NULL,
-			limit = "100", offset = "0", count = "exact")
-		{
-			endPoint <- stringr::str_interp("jobs")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(filters = filters, where = where,
-							  order = order, select = select, distinct = distinct,
-							  limit = limit, offset = offset, count = count)
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		keep_disks.get = function(uuid)
-		{
-			endPoint <- stringr::str_interp("keep_disks/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		keep_disks.create = function(keepdisk, ensure_unique_name = "false")
-		{
-			endPoint <- stringr::str_interp("keep_disks")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(ensure_unique_name = ensure_unique_name)
-			
-			if(length(keepdisk) > 0)
-				body <- jsonlite::toJSON(list(keepdisk = keepdisk), 
-				                         auto_unbox = TRUE)
-			else
-				body <- NULL
-			
-			response <- private$REST$http$exec("POST", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		keep_disks.update = function(keepdisk, uuid)
-		{
-			endPoint <- stringr::str_interp("keep_disks/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			if(length(keepdisk) > 0)
-				body <- jsonlite::toJSON(list(keepdisk = keepdisk), 
-				                         auto_unbox = TRUE)
-			else
-				body <- NULL
-			
-			response <- private$REST$http$exec("PUT", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		keep_disks.delete = function(uuid)
-		{
-			endPoint <- stringr::str_interp("keep_disks/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("DELETE", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		keep_disks.ping = function(uuid = NULL, ping_secret,
-			node_uuid = NULL, filesystem_uuid = NULL,
-			service_host = NULL, service_port, service_ssl_flag)
-		{
-			endPoint <- stringr::str_interp("keep_disks/ping")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(uuid = uuid, ping_secret = ping_secret,
-							  node_uuid = node_uuid, filesystem_uuid = filesystem_uuid,
-							  service_host = service_host, service_port = service_port,
-							  service_ssl_flag = service_ssl_flag)
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("POST", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		keep_disks.list = function(filters = NULL,
+		groups.shared = function(filters = NULL,
 			where = NULL, order = NULL, select = NULL,
 			distinct = NULL, limit = "100", offset = "0",
-			count = "exact")
+			count = "exact", cluster_id = NULL, bypass_federation = NULL,
+			include_trash = NULL, include = NULL)
 		{
-			endPoint <- stringr::str_interp("keep_disks")
+			endPoint <- stringr::str_interp("groups/shared")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
 							  order = order, select = select, distinct = distinct,
-							  limit = limit, offset = offset, count = count)
+							  limit = limit, offset = offset, count = count,
+							  cluster_id = cluster_id, bypass_federation = bypass_federation,
+							  include_trash = include_trash, include = include)
 			
 			body <- NULL
 			
@@ -3967,103 +2704,13 @@ Arvados <- R6::R6Class(
 			resource
 		},
 
-		nodes.get = function(uuid)
+		groups.trash = function(uuid)
 		{
-			endPoint <- stringr::str_interp("nodes/${uuid}")
+			endPoint <- stringr::str_interp("groups/${uuid}/trash")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		nodes.create = function(node, ensure_unique_name = "false",
-			assign_slot = NULL)
-		{
-			endPoint <- stringr::str_interp("nodes")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(ensure_unique_name = ensure_unique_name,
-							  assign_slot = assign_slot)
-			
-			if(length(node) > 0)
-				body <- jsonlite::toJSON(list(node = node), 
-				                         auto_unbox = TRUE)
-			else
-				body <- NULL
-			
-			response <- private$REST$http$exec("POST", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		nodes.update = function(node, uuid, assign_slot = NULL)
-		{
-			endPoint <- stringr::str_interp("nodes/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(assign_slot = assign_slot)
-			
-			if(length(node) > 0)
-				body <- jsonlite::toJSON(list(node = node), 
-				                         auto_unbox = TRUE)
-			else
-				body <- NULL
-			
-			response <- private$REST$http$exec("PUT", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		nodes.delete = function(uuid)
-		{
-			endPoint <- stringr::str_interp("nodes/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("DELETE", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		nodes.ping = function(uuid, ping_secret)
-		{
-			endPoint <- stringr::str_interp("nodes/${uuid}/ping")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(ping_secret = ping_secret)
 			
 			body <- NULL
 			
@@ -4077,149 +2724,41 @@ Arvados <- R6::R6Class(
 			resource
 		},
 
-		nodes.list = function(filters = NULL, where = NULL,
+		groups.untrash = function(uuid)
+		{
+			endPoint <- stringr::str_interp("groups/${uuid}/untrash")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("Bearer", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		groups.list = function(filters = NULL, where = NULL,
 			order = NULL, select = NULL, distinct = NULL,
-			limit = "100", offset = "0", count = "exact")
+			limit = "100", offset = "0", count = "exact",
+			cluster_id = NULL, bypass_federation = NULL,
+			include_trash = NULL)
 		{
-			endPoint <- stringr::str_interp("nodes")
+			endPoint <- stringr::str_interp("groups")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
 							  order = order, select = select, distinct = distinct,
-							  limit = limit, offset = offset, count = count)
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		links.get = function(uuid)
-		{
-			endPoint <- stringr::str_interp("links/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		links.create = function(link, ensure_unique_name = "false")
-		{
-			endPoint <- stringr::str_interp("links")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(ensure_unique_name = ensure_unique_name)
-			
-			if(length(link) > 0)
-				body <- jsonlite::toJSON(list(link = link), 
-				                         auto_unbox = TRUE)
-			else
-				body <- NULL
-			
-			response <- private$REST$http$exec("POST", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		links.update = function(link, uuid)
-		{
-			endPoint <- stringr::str_interp("links/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			if(length(link) > 0)
-				body <- jsonlite::toJSON(list(link = link), 
-				                         auto_unbox = TRUE)
-			else
-				body <- NULL
-			
-			response <- private$REST$http$exec("PUT", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		links.delete = function(uuid)
-		{
-			endPoint <- stringr::str_interp("links/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("DELETE", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		links.list = function(filters = NULL, where = NULL,
-			order = NULL, select = NULL, distinct = NULL,
-			limit = "100", offset = "0", count = "exact")
-		{
-			endPoint <- stringr::str_interp("links")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(filters = filters, where = where,
-							  order = order, select = select, distinct = distinct,
-							  limit = limit, offset = offset, count = count)
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		links.get_permissions = function(uuid)
-		{
-			endPoint <- stringr::str_interp("permissions/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
+							  limit = limit, offset = offset, count = count,
+							  cluster_id = cluster_id, bypass_federation = bypass_federation,
+							  include_trash = include_trash)
 			
 			body <- NULL
 			
@@ -4237,7 +2776,7 @@ Arvados <- R6::R6Class(
 		{
 			endPoint <- stringr::str_interp("keep_services/${uuid}")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
 			
@@ -4254,13 +2793,14 @@ Arvados <- R6::R6Class(
 		},
 
 		keep_services.create = function(keepservice,
-			ensure_unique_name = "false")
+			ensure_unique_name = "false", cluster_id = NULL)
 		{
 			endPoint <- stringr::str_interp("keep_services")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(ensure_unique_name = ensure_unique_name)
+			queryArgs <- list(ensure_unique_name = ensure_unique_name,
+							  cluster_id = cluster_id)
 			
 			if(length(keepservice) > 0)
 				body <- jsonlite::toJSON(list(keepservice = keepservice), 
@@ -4282,7 +2822,7 @@ Arvados <- R6::R6Class(
 		{
 			endPoint <- stringr::str_interp("keep_services/${uuid}")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
 			
@@ -4306,7 +2846,7 @@ Arvados <- R6::R6Class(
 		{
 			endPoint <- stringr::str_interp("keep_services/${uuid}")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
 			
@@ -4326,7 +2866,7 @@ Arvados <- R6::R6Class(
 		{
 			endPoint <- stringr::str_interp("keep_services/accessible")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
 			
@@ -4345,15 +2885,16 @@ Arvados <- R6::R6Class(
 		keep_services.list = function(filters = NULL,
 			where = NULL, order = NULL, select = NULL,
 			distinct = NULL, limit = "100", offset = "0",
-			count = "exact")
+			count = "exact", cluster_id = NULL, bypass_federation = NULL)
 		{
 			endPoint <- stringr::str_interp("keep_services")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
 							  order = order, select = select, distinct = distinct,
-							  limit = limit, offset = offset, count = count)
+							  limit = limit, offset = offset, count = count,
+							  cluster_id = cluster_id, bypass_federation = bypass_federation)
 			
 			body <- NULL
 			
@@ -4367,11 +2908,11 @@ Arvados <- R6::R6Class(
 			resource
 		},
 
-		pipeline_templates.get = function(uuid)
+		links.get = function(uuid)
 		{
-			endPoint <- stringr::str_interp("pipeline_templates/${uuid}")
+			endPoint <- stringr::str_interp("links/${uuid}")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
 			
@@ -4387,17 +2928,18 @@ Arvados <- R6::R6Class(
 			resource
 		},
 
-		pipeline_templates.create = function(pipelinetemplate,
-			ensure_unique_name = "false")
+		links.create = function(link, ensure_unique_name = "false",
+			cluster_id = NULL)
 		{
-			endPoint <- stringr::str_interp("pipeline_templates")
+			endPoint <- stringr::str_interp("links")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(ensure_unique_name = ensure_unique_name)
+			queryArgs <- list(ensure_unique_name = ensure_unique_name,
+							  cluster_id = cluster_id)
 			
-			if(length(pipelinetemplate) > 0)
-				body <- jsonlite::toJSON(list(pipelinetemplate = pipelinetemplate), 
+			if(length(link) > 0)
+				body <- jsonlite::toJSON(list(link = link), 
 				                         auto_unbox = TRUE)
 			else
 				body <- NULL
@@ -4412,16 +2954,16 @@ Arvados <- R6::R6Class(
 			resource
 		},
 
-		pipeline_templates.update = function(pipelinetemplate, uuid)
+		links.update = function(link, uuid)
 		{
-			endPoint <- stringr::str_interp("pipeline_templates/${uuid}")
+			endPoint <- stringr::str_interp("links/${uuid}")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
 			
-			if(length(pipelinetemplate) > 0)
-				body <- jsonlite::toJSON(list(pipelinetemplate = pipelinetemplate), 
+			if(length(link) > 0)
+				body <- jsonlite::toJSON(list(link = link), 
 				                         auto_unbox = TRUE)
 			else
 				body <- NULL
@@ -4436,11 +2978,11 @@ Arvados <- R6::R6Class(
 			resource
 		},
 
-		pipeline_templates.delete = function(uuid)
+		links.delete = function(uuid)
 		{
-			endPoint <- stringr::str_interp("pipeline_templates/${uuid}")
+			endPoint <- stringr::str_interp("links/${uuid}")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
 			
@@ -4456,18 +2998,19 @@ Arvados <- R6::R6Class(
 			resource
 		},
 
-		pipeline_templates.list = function(filters = NULL,
-			where = NULL, order = NULL, select = NULL,
-			distinct = NULL, limit = "100", offset = "0",
-			count = "exact")
+		links.list = function(filters = NULL, where = NULL,
+			order = NULL, select = NULL, distinct = NULL,
+			limit = "100", offset = "0", count = "exact",
+			cluster_id = NULL, bypass_federation = NULL)
 		{
-			endPoint <- stringr::str_interp("pipeline_templates")
+			endPoint <- stringr::str_interp("links")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
 							  order = order, select = select, distinct = distinct,
-							  limit = limit, offset = offset, count = count)
+							  limit = limit, offset = offset, count = count,
+							  cluster_id = cluster_id, bypass_federation = bypass_federation)
 			
 			body <- NULL
 			
@@ -4481,373 +3024,13 @@ Arvados <- R6::R6Class(
 			resource
 		},
 
-		pipeline_instances.get = function(uuid)
+		links.get_permissions = function(uuid)
 		{
-			endPoint <- stringr::str_interp("pipeline_instances/${uuid}")
+			endPoint <- stringr::str_interp("permissions/${uuid}")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		pipeline_instances.create = function(pipelineinstance,
-			ensure_unique_name = "false")
-		{
-			endPoint <- stringr::str_interp("pipeline_instances")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(ensure_unique_name = ensure_unique_name)
-			
-			if(length(pipelineinstance) > 0)
-				body <- jsonlite::toJSON(list(pipelineinstance = pipelineinstance), 
-				                         auto_unbox = TRUE)
-			else
-				body <- NULL
-			
-			response <- private$REST$http$exec("POST", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		pipeline_instances.update = function(pipelineinstance, uuid)
-		{
-			endPoint <- stringr::str_interp("pipeline_instances/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			if(length(pipelineinstance) > 0)
-				body <- jsonlite::toJSON(list(pipelineinstance = pipelineinstance), 
-				                         auto_unbox = TRUE)
-			else
-				body <- NULL
-			
-			response <- private$REST$http$exec("PUT", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		pipeline_instances.delete = function(uuid)
-		{
-			endPoint <- stringr::str_interp("pipeline_instances/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("DELETE", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		pipeline_instances.cancel = function(uuid)
-		{
-			endPoint <- stringr::str_interp("pipeline_instances/${uuid}/cancel")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("POST", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		pipeline_instances.list = function(filters = NULL,
-			where = NULL, order = NULL, select = NULL,
-			distinct = NULL, limit = "100", offset = "0",
-			count = "exact")
-		{
-			endPoint <- stringr::str_interp("pipeline_instances")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(filters = filters, where = where,
-							  order = order, select = select, distinct = distinct,
-							  limit = limit, offset = offset, count = count)
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		repositories.get = function(uuid)
-		{
-			endPoint <- stringr::str_interp("repositories/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		repositories.create = function(repository, ensure_unique_name = "false")
-		{
-			endPoint <- stringr::str_interp("repositories")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(ensure_unique_name = ensure_unique_name)
-			
-			if(length(repository) > 0)
-				body <- jsonlite::toJSON(list(repository = repository), 
-				                         auto_unbox = TRUE)
-			else
-				body <- NULL
-			
-			response <- private$REST$http$exec("POST", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		repositories.update = function(repository, uuid)
-		{
-			endPoint <- stringr::str_interp("repositories/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			if(length(repository) > 0)
-				body <- jsonlite::toJSON(list(repository = repository), 
-				                         auto_unbox = TRUE)
-			else
-				body <- NULL
-			
-			response <- private$REST$http$exec("PUT", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		repositories.delete = function(uuid)
-		{
-			endPoint <- stringr::str_interp("repositories/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("DELETE", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		repositories.get_all_permissions = function()
-		{
-			endPoint <- stringr::str_interp("repositories/get_all_permissions")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		repositories.list = function(filters = NULL,
-			where = NULL, order = NULL, select = NULL,
-			distinct = NULL, limit = "100", offset = "0",
-			count = "exact")
-		{
-			endPoint <- stringr::str_interp("repositories")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(filters = filters, where = where,
-							  order = order, select = select, distinct = distinct,
-							  limit = limit, offset = offset, count = count)
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		specimens.get = function(uuid)
-		{
-			endPoint <- stringr::str_interp("specimens/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		specimens.create = function(specimen, ensure_unique_name = "false")
-		{
-			endPoint <- stringr::str_interp("specimens")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(ensure_unique_name = ensure_unique_name)
-			
-			if(length(specimen) > 0)
-				body <- jsonlite::toJSON(list(specimen = specimen), 
-				                         auto_unbox = TRUE)
-			else
-				body <- NULL
-			
-			response <- private$REST$http$exec("POST", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		specimens.update = function(specimen, uuid)
-		{
-			endPoint <- stringr::str_interp("specimens/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			if(length(specimen) > 0)
-				body <- jsonlite::toJSON(list(specimen = specimen), 
-				                         auto_unbox = TRUE)
-			else
-				body <- NULL
-			
-			response <- private$REST$http$exec("PUT", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		specimens.delete = function(uuid)
-		{
-			endPoint <- stringr::str_interp("specimens/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("DELETE", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		specimens.list = function(filters = NULL,
-			where = NULL, order = NULL, select = NULL,
-			distinct = NULL, limit = "100", offset = "0",
-			count = "exact")
-		{
-			endPoint <- stringr::str_interp("specimens")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(filters = filters, where = where,
-							  order = order, select = select, distinct = distinct,
-							  limit = limit, offset = offset, count = count)
 			
 			body <- NULL
 			
@@ -4865,7 +3048,7 @@ Arvados <- R6::R6Class(
 		{
 			endPoint <- stringr::str_interp("logs/${uuid}")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
 			
@@ -4881,13 +3064,15 @@ Arvados <- R6::R6Class(
 			resource
 		},
 
-		logs.create = function(log, ensure_unique_name = "false")
+		logs.create = function(log, ensure_unique_name = "false",
+			cluster_id = NULL)
 		{
 			endPoint <- stringr::str_interp("logs")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(ensure_unique_name = ensure_unique_name)
+			queryArgs <- list(ensure_unique_name = ensure_unique_name,
+							  cluster_id = cluster_id)
 			
 			if(length(log) > 0)
 				body <- jsonlite::toJSON(list(log = log), 
@@ -4909,7 +3094,7 @@ Arvados <- R6::R6Class(
 		{
 			endPoint <- stringr::str_interp("logs/${uuid}")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
 			
@@ -4933,7 +3118,7 @@ Arvados <- R6::R6Class(
 		{
 			endPoint <- stringr::str_interp("logs/${uuid}")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
 			
@@ -4951,15 +3136,17 @@ Arvados <- R6::R6Class(
 
 		logs.list = function(filters = NULL, where = NULL,
 			order = NULL, select = NULL, distinct = NULL,
-			limit = "100", offset = "0", count = "exact")
+			limit = "100", offset = "0", count = "exact",
+			cluster_id = NULL, bypass_federation = NULL)
 		{
 			endPoint <- stringr::str_interp("logs")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
 							  order = order, select = select, distinct = distinct,
-							  limit = limit, offset = offset, count = count)
+							  limit = limit, offset = offset, count = count,
+							  cluster_id = cluster_id, bypass_federation = bypass_federation)
 			
 			body <- NULL
 			
@@ -4973,11 +3160,11 @@ Arvados <- R6::R6Class(
 			resource
 		},
 
-		traits.get = function(uuid)
+		users.get = function(uuid)
 		{
-			endPoint <- stringr::str_interp("traits/${uuid}")
+			endPoint <- stringr::str_interp("users/${uuid}")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
 			
@@ -4993,16 +3180,18 @@ Arvados <- R6::R6Class(
 			resource
 		},
 
-		traits.create = function(trait, ensure_unique_name = "false")
+		users.create = function(user, ensure_unique_name = "false",
+			cluster_id = NULL)
 		{
-			endPoint <- stringr::str_interp("traits")
+			endPoint <- stringr::str_interp("users")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(ensure_unique_name = ensure_unique_name)
+			queryArgs <- list(ensure_unique_name = ensure_unique_name,
+							  cluster_id = cluster_id)
 			
-			if(length(trait) > 0)
-				body <- jsonlite::toJSON(list(trait = trait), 
+			if(length(user) > 0)
+				body <- jsonlite::toJSON(list(user = user), 
 				                         auto_unbox = TRUE)
 			else
 				body <- NULL
@@ -5017,16 +3206,16 @@ Arvados <- R6::R6Class(
 			resource
 		},
 
-		traits.update = function(trait, uuid)
+		users.update = function(user, uuid, bypass_federation = NULL)
 		{
-			endPoint <- stringr::str_interp("traits/${uuid}")
+			endPoint <- stringr::str_interp("users/${uuid}")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- NULL
+			queryArgs <- list(bypass_federation = bypass_federation)
 			
-			if(length(trait) > 0)
-				body <- jsonlite::toJSON(list(trait = trait), 
+			if(length(user) > 0)
+				body <- jsonlite::toJSON(list(user = user), 
 				                         auto_unbox = TRUE)
 			else
 				body <- NULL
@@ -5041,11 +3230,11 @@ Arvados <- R6::R6Class(
 			resource
 		},
 
-		traits.delete = function(uuid)
+		users.delete = function(uuid)
 		{
-			endPoint <- stringr::str_interp("traits/${uuid}")
+			endPoint <- stringr::str_interp("users/${uuid}")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
 			
@@ -5061,17 +3250,302 @@ Arvados <- R6::R6Class(
 			resource
 		},
 
-		traits.list = function(filters = NULL, where = NULL,
-			order = NULL, select = NULL, distinct = NULL,
-			limit = "100", offset = "0", count = "exact")
+		users.current = function()
 		{
-			endPoint <- stringr::str_interp("traits")
+			endPoint <- stringr::str_interp("users/current")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		users.system = function()
+		{
+			endPoint <- stringr::str_interp("users/system")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("Bearer", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		users.activate = function(uuid)
+		{
+			endPoint <- stringr::str_interp("users/${uuid}/activate")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("Bearer", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		users.setup = function(uuid = NULL, user = NULL,
+			repo_name = NULL, vm_uuid = NULL, send_notification_email = "false")
+		{
+			endPoint <- stringr::str_interp("users/setup")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("Bearer", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(uuid = uuid, user = user,
+							  repo_name = repo_name, vm_uuid = vm_uuid,
+							  send_notification_email = send_notification_email)
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		users.unsetup = function(uuid)
+		{
+			endPoint <- stringr::str_interp("users/${uuid}/unsetup")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("Bearer", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		users.update_uuid = function(uuid, new_uuid)
+		{
+			endPoint <- stringr::str_interp("users/${uuid}/update_uuid")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("Bearer", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(new_uuid = new_uuid)
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		users.merge = function(new_owner_uuid, new_user_token = NULL,
+			redirect_to_new_user = NULL, old_user_uuid = NULL,
+			new_user_uuid = NULL)
+		{
+			endPoint <- stringr::str_interp("users/merge")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("Bearer", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(new_owner_uuid = new_owner_uuid,
+							  new_user_token = new_user_token, redirect_to_new_user = redirect_to_new_user,
+							  old_user_uuid = old_user_uuid, new_user_uuid = new_user_uuid)
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		users.list = function(filters = NULL, where = NULL,
+			order = NULL, select = NULL, distinct = NULL,
+			limit = "100", offset = "0", count = "exact",
+			cluster_id = NULL, bypass_federation = NULL)
+		{
+			endPoint <- stringr::str_interp("users")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
 							  order = order, select = select, distinct = distinct,
-							  limit = limit, offset = offset, count = count)
+							  limit = limit, offset = offset, count = count,
+							  cluster_id = cluster_id, bypass_federation = bypass_federation)
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		repositories.get = function(uuid)
+		{
+			endPoint <- stringr::str_interp("repositories/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("Bearer", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		repositories.create = function(repository,
+			ensure_unique_name = "false", cluster_id = NULL)
+		{
+			endPoint <- stringr::str_interp("repositories")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("Bearer", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(ensure_unique_name = ensure_unique_name,
+							  cluster_id = cluster_id)
+			
+			if(length(repository) > 0)
+				body <- jsonlite::toJSON(list(repository = repository), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("POST", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		repositories.update = function(repository, uuid)
+		{
+			endPoint <- stringr::str_interp("repositories/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("Bearer", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			if(length(repository) > 0)
+				body <- jsonlite::toJSON(list(repository = repository), 
+				                         auto_unbox = TRUE)
+			else
+				body <- NULL
+			
+			response <- private$REST$http$exec("PUT", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		repositories.delete = function(uuid)
+		{
+			endPoint <- stringr::str_interp("repositories/${uuid}")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("Bearer", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("DELETE", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		repositories.get_all_permissions = function()
+		{
+			endPoint <- stringr::str_interp("repositories/get_all_permissions")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("Bearer", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		repositories.list = function(filters = NULL,
+			where = NULL, order = NULL, select = NULL,
+			distinct = NULL, limit = "100", offset = "0",
+			count = "exact", cluster_id = NULL, bypass_federation = NULL)
+		{
+			endPoint <- stringr::str_interp("repositories")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("Bearer", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- list(filters = filters, where = where,
+							  order = order, select = select, distinct = distinct,
+							  limit = limit, offset = offset, count = count,
+							  cluster_id = cluster_id, bypass_federation = bypass_federation)
 			
 			body <- NULL
 			
@@ -5089,7 +3563,7 @@ Arvados <- R6::R6Class(
 		{
 			endPoint <- stringr::str_interp("virtual_machines/${uuid}")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
 			
@@ -5106,13 +3580,14 @@ Arvados <- R6::R6Class(
 		},
 
 		virtual_machines.create = function(virtualmachine,
-			ensure_unique_name = "false")
+			ensure_unique_name = "false", cluster_id = NULL)
 		{
 			endPoint <- stringr::str_interp("virtual_machines")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(ensure_unique_name = ensure_unique_name)
+			queryArgs <- list(ensure_unique_name = ensure_unique_name,
+							  cluster_id = cluster_id)
 			
 			if(length(virtualmachine) > 0)
 				body <- jsonlite::toJSON(list(virtualmachine = virtualmachine), 
@@ -5134,7 +3609,7 @@ Arvados <- R6::R6Class(
 		{
 			endPoint <- stringr::str_interp("virtual_machines/${uuid}")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
 			
@@ -5158,7 +3633,7 @@ Arvados <- R6::R6Class(
 		{
 			endPoint <- stringr::str_interp("virtual_machines/${uuid}")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
 			
@@ -5178,7 +3653,7 @@ Arvados <- R6::R6Class(
 		{
 			endPoint <- stringr::str_interp("virtual_machines/${uuid}/logins")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
 			
@@ -5198,7 +3673,7 @@ Arvados <- R6::R6Class(
 		{
 			endPoint <- stringr::str_interp("virtual_machines/get_all_logins")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
 			
@@ -5217,15 +3692,16 @@ Arvados <- R6::R6Class(
 		virtual_machines.list = function(filters = NULL,
 			where = NULL, order = NULL, select = NULL,
 			distinct = NULL, limit = "100", offset = "0",
-			count = "exact")
+			count = "exact", cluster_id = NULL, bypass_federation = NULL)
 		{
 			endPoint <- stringr::str_interp("virtual_machines")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
 							  order = order, select = select, distinct = distinct,
-							  limit = limit, offset = offset, count = count)
+							  limit = limit, offset = offset, count = count,
+							  cluster_id = cluster_id, bypass_federation = bypass_federation)
 			
 			body <- NULL
 			
@@ -5243,7 +3719,7 @@ Arvados <- R6::R6Class(
 		{
 			endPoint <- stringr::str_interp("workflows/${uuid}")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
 			
@@ -5259,13 +3735,15 @@ Arvados <- R6::R6Class(
 			resource
 		},
 
-		workflows.create = function(workflow, ensure_unique_name = "false")
+		workflows.create = function(workflow, ensure_unique_name = "false",
+			cluster_id = NULL)
 		{
 			endPoint <- stringr::str_interp("workflows")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(ensure_unique_name = ensure_unique_name)
+			queryArgs <- list(ensure_unique_name = ensure_unique_name,
+							  cluster_id = cluster_id)
 			
 			if(length(workflow) > 0)
 				body <- jsonlite::toJSON(list(workflow = workflow), 
@@ -5287,7 +3765,7 @@ Arvados <- R6::R6Class(
 		{
 			endPoint <- stringr::str_interp("workflows/${uuid}")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
 			
@@ -5311,7 +3789,7 @@ Arvados <- R6::R6Class(
 		{
 			endPoint <- stringr::str_interp("workflows/${uuid}")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
 			
@@ -5330,195 +3808,16 @@ Arvados <- R6::R6Class(
 		workflows.list = function(filters = NULL,
 			where = NULL, order = NULL, select = NULL,
 			distinct = NULL, limit = "100", offset = "0",
-			count = "exact")
+			count = "exact", cluster_id = NULL, bypass_federation = NULL)
 		{
 			endPoint <- stringr::str_interp("workflows")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(filters = filters, where = where,
-							  order = order, select = select, distinct = distinct,
-							  limit = limit, offset = offset, count = count)
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		groups.get = function(uuid)
-		{
-			endPoint <- stringr::str_interp("groups/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		groups.create = function(group, ensure_unique_name = "false")
-		{
-			endPoint <- stringr::str_interp("groups")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(ensure_unique_name = ensure_unique_name)
-			
-			if(length(group) > 0)
-				body <- jsonlite::toJSON(list(group = group), 
-				                         auto_unbox = TRUE)
-			else
-				body <- NULL
-			
-			response <- private$REST$http$exec("POST", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		groups.update = function(group, uuid)
-		{
-			endPoint <- stringr::str_interp("groups/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			if(length(group) > 0)
-				body <- jsonlite::toJSON(list(group = group), 
-				                         auto_unbox = TRUE)
-			else
-				body <- NULL
-			
-			response <- private$REST$http$exec("PUT", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		groups.delete = function(uuid)
-		{
-			endPoint <- stringr::str_interp("groups/${uuid}")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("DELETE", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		groups.contents = function(filters = NULL,
-			where = NULL, order = NULL, distinct = NULL,
-			limit = "100", offset = "0", count = "exact",
-			include_trash = NULL, uuid = NULL, recursive = NULL)
-		{
-			endPoint <- stringr::str_interp("groups/contents")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- list(filters = filters, where = where,
-							  order = order, distinct = distinct, limit = limit,
-							  offset = offset, count = count, include_trash = include_trash,
-							  uuid = uuid, recursive = recursive)
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("GET", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		groups.trash = function(uuid)
-		{
-			endPoint <- stringr::str_interp("groups/${uuid}/trash")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("POST", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		groups.untrash = function(uuid)
-		{
-			endPoint <- stringr::str_interp("groups/${uuid}/untrash")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
-			                "Content-Type" = "application/json")
-			queryArgs <- NULL
-			
-			body <- NULL
-			
-			response <- private$REST$http$exec("POST", url, headers, body,
-			                                   queryArgs, private$numRetries)
-			resource <- private$REST$httpParser$parseJSONResponse(response)
-			
-			if(!is.null(resource$errors))
-				stop(resource$errors)
-			
-			resource
-		},
-
-		groups.list = function(filters = NULL, where = NULL,
-			order = NULL, select = NULL, distinct = NULL,
-			limit = "100", offset = "0", count = "exact",
-			include_trash = NULL)
-		{
-			endPoint <- stringr::str_interp("groups")
-			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
 							  order = order, select = select, distinct = distinct,
 							  limit = limit, offset = offset, count = count,
-							  include_trash = include_trash)
+							  cluster_id = cluster_id, bypass_federation = bypass_federation)
 			
 			body <- NULL
 			
@@ -5536,7 +3835,7 @@ Arvados <- R6::R6Class(
 		{
 			endPoint <- stringr::str_interp("user_agreements/${uuid}")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
 			
@@ -5553,13 +3852,14 @@ Arvados <- R6::R6Class(
 		},
 
 		user_agreements.create = function(useragreement,
-			ensure_unique_name = "false")
+			ensure_unique_name = "false", cluster_id = NULL)
 		{
 			endPoint <- stringr::str_interp("user_agreements")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
-			queryArgs <- list(ensure_unique_name = ensure_unique_name)
+			queryArgs <- list(ensure_unique_name = ensure_unique_name,
+							  cluster_id = cluster_id)
 			
 			if(length(useragreement) > 0)
 				body <- jsonlite::toJSON(list(useragreement = useragreement), 
@@ -5581,7 +3881,7 @@ Arvados <- R6::R6Class(
 		{
 			endPoint <- stringr::str_interp("user_agreements/${uuid}")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
 			
@@ -5605,7 +3905,7 @@ Arvados <- R6::R6Class(
 		{
 			endPoint <- stringr::str_interp("user_agreements/${uuid}")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
 			
@@ -5625,7 +3925,7 @@ Arvados <- R6::R6Class(
 		{
 			endPoint <- stringr::str_interp("user_agreements/signatures")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
 			
@@ -5645,7 +3945,7 @@ Arvados <- R6::R6Class(
 		{
 			endPoint <- stringr::str_interp("user_agreements/sign")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
 			
@@ -5664,15 +3964,16 @@ Arvados <- R6::R6Class(
 		user_agreements.list = function(filters = NULL,
 			where = NULL, order = NULL, select = NULL,
 			distinct = NULL, limit = "100", offset = "0",
-			count = "exact")
+			count = "exact", cluster_id = NULL, bypass_federation = NULL)
 		{
 			endPoint <- stringr::str_interp("user_agreements")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- list(filters = filters, where = where,
 							  order = order, select = select, distinct = distinct,
-							  limit = limit, offset = offset, count = count)
+							  limit = limit, offset = offset, count = count,
+							  cluster_id = cluster_id, bypass_federation = bypass_federation)
 			
 			body <- NULL
 			
@@ -5690,7 +3991,27 @@ Arvados <- R6::R6Class(
 		{
 			endPoint <- stringr::str_interp("user_agreements/new")
 			url <- paste0(private$host, endPoint)
-			headers <- list(Authorization = paste("OAuth2", private$token), 
+			headers <- list(Authorization = paste("Bearer", private$token), 
+			                "Content-Type" = "application/json")
+			queryArgs <- NULL
+			
+			body <- NULL
+			
+			response <- private$REST$http$exec("GET", url, headers, body,
+			                                   queryArgs, private$numRetries)
+			resource <- private$REST$httpParser$parseJSONResponse(response)
+			
+			if(!is.null(resource$errors))
+				stop(resource$errors)
+			
+			resource
+		},
+
+		configs.get = function()
+		{
+			endPoint <- stringr::str_interp("config")
+			url <- paste0(private$host, endPoint)
+			headers <- list(Authorization = paste("Bearer", private$token), 
 			                "Content-Type" = "application/json")
 			queryArgs <- NULL
 			
