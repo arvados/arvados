@@ -62,7 +62,7 @@ describe('WebDAV', () => {
         expect(request).toBeInstanceOf(XMLHttpRequest);
     });
 
-    it('COPY - adds baseURL to Destination header', async () => {
+    it('COPY - adds baseURL with trailing slash to Destination header', async () => {
         const { open, setRequestHeader, load, createRequest } = mockCreateRequest();
         const webdav = new WebDAV(undefined, createRequest);
         webdav.defaults.baseURL = 'base/';
@@ -74,21 +74,45 @@ describe('WebDAV', () => {
         expect(request).toBeInstanceOf(XMLHttpRequest);
     });
 
-    it('MOVE', async () => {
+    it('COPY - adds baseURL without trailing slash to Destination header', async () => {
         const { open, setRequestHeader, load, createRequest } = mockCreateRequest();
         const webdav = new WebDAV(undefined, createRequest);
-        const promise = webdav.move('foo', 'foo-copy');
+        webdav.defaults.baseURL = 'base';
+        const promise = webdav.copy('foo', 'foo-copy');
         load();
         const request = await promise;
-        expect(open).toHaveBeenCalledWith('MOVE', 'foo');
-        expect(setRequestHeader).toHaveBeenCalledWith('Destination', 'foo-copy');
+        expect(open).toHaveBeenCalledWith('COPY', 'base/foo');
+        expect(setRequestHeader).toHaveBeenCalledWith('Destination', 'base/foo-copy');
         expect(request).toBeInstanceOf(XMLHttpRequest);
     });
 
-    it('MOVE - adds baseURL to Destination header', async () => {
+    it('MOVE', async () => {
+        const { open, setRequestHeader, load, createRequest } = mockCreateRequest();
+        const webdav = new WebDAV(undefined, createRequest);
+        const promise = webdav.move('foo', 'foo-moved');
+        load();
+        const request = await promise;
+        expect(open).toHaveBeenCalledWith('MOVE', 'foo');
+        expect(setRequestHeader).toHaveBeenCalledWith('Destination', 'foo-moved');
+        expect(request).toBeInstanceOf(XMLHttpRequest);
+    });
+
+    it('MOVE - adds baseURL with trailing slash to Destination header', async () => {
         const { open, setRequestHeader, load, createRequest } = mockCreateRequest();
         const webdav = new WebDAV(undefined, createRequest);
         webdav.defaults.baseURL = 'base/';
+        const promise = webdav.move('foo', 'foo-moved');
+        load();
+        const request = await promise;
+        expect(open).toHaveBeenCalledWith('MOVE', 'base/foo');
+        expect(setRequestHeader).toHaveBeenCalledWith('Destination', 'base/foo-moved');
+        expect(request).toBeInstanceOf(XMLHttpRequest);
+    });
+
+    it('MOVE - adds baseURL without trailing slash to Destination header', async () => {
+        const { open, setRequestHeader, load, createRequest } = mockCreateRequest();
+        const webdav = new WebDAV(undefined, createRequest);
+        webdav.defaults.baseURL = 'base';
         const promise = webdav.move('foo', 'foo-moved');
         load();
         const request = await promise;
