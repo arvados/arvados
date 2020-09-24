@@ -22,7 +22,7 @@ export const togglePublicFavorite = (resource: { uuid: string; name: string }) =
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<any> => {
         dispatch(progressIndicatorActions.START_WORKING("togglePublicFavorite"));
         const uuidPrefix = getState().auth.config.uuidPrefix;
-        const uuid = `${uuidPrefix}-j7d0g-fffffffffffffff`;
+        const uuid = `${uuidPrefix}-j7d0g-publicfavorites`;
         dispatch(publicFavoritesActions.TOGGLE_PUBLIC_FAVORITE({ resourceUuid: resource.uuid }));
         const isPublicFavorite = checkPublicFavorite(resource.uuid, getState().publicFavorites);
         dispatch(snackbarActions.OPEN_SNACKBAR({
@@ -58,7 +58,7 @@ export const togglePublicFavorite = (resource: { uuid: string; name: string }) =
 export const updatePublicFavorites = (resourceUuids: string[]) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const uuidPrefix = getState().auth.config.uuidPrefix;
-        const uuid = `${uuidPrefix}-j7d0g-fffffffffffffff`;
+        const uuid = `${uuidPrefix}-j7d0g-publicfavorites`;
         dispatch(publicFavoritesActions.CHECK_PRESENCE_IN_PUBLIC_FAVORITES(resourceUuids));
         services.favoriteService
             .checkPresenceInFavorites(uuid, resourceUuids)
