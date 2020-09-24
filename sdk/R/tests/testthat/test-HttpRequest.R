@@ -20,7 +20,7 @@ test_that("createQuery generates and encodes query portion of http", {
     queryParams$limit <- 20
     queryParams$offset <- 50
     expect_that(http$createQuery(queryParams),
-                equals(paste0("/?filters=%5B%5B%22color%22%2C%22%3D%22%2C%22red",
+                equals(paste0("?filters=%5B%5B%22color%22%2C%22%3D%22%2C%22red",
                               "%22%5D%5D&limit=20&offset=50")))
 })
 
@@ -59,8 +59,8 @@ test_that("exec calls httr functions correctly", {
     http <- HttpRequest$new()
     http$exec("GET", "url")
 
-    expect_that(add_headersCalled, is_true())
-    expect_that(retryCalled, is_true())
+    expect_true(add_headersCalled)
+    expect_true(retryCalled)
     expect_that(expectedConfig$options, equals(list(ssl_verifypeer = 0L)))
 })
 
@@ -101,8 +101,8 @@ test_that("getConnection calls curl functions correctly", {
     http <- HttpRequest$new()
     http$getConnection("location", list(), "r")
 
-    expect_that(new_handleCalled, is_true())
-    expect_that(handle_setheadersCalled, is_true())
-    expect_that(handle_setoptCalled, is_true())
-    expect_that(curlCalled, is_true())
+    expect_true(new_handleCalled)
+    expect_true(handle_setheadersCalled)
+    expect_true(handle_setoptCalled)
+    expect_true(curlCalled)
 })

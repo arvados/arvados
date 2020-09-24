@@ -2,10 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-source("./R/Subcollection.R")
-source("./R/ArvadosFile.R")
-source("./R/util.R")
-
 CollectionTree <- R6::R6Class(
     "CollectionTree",
     public = list(

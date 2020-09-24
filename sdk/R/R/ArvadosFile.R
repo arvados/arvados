@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-source("./R/util.R")
-
 #' ArvadosFile
 #'
 #' ArvadosFile class represents a file inside Arvados collection.
