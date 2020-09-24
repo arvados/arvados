@@ -587,7 +587,7 @@ func (s *IntegrationSuite) TestOIDCAccessTokenAuth(c *check.C) {
 		{
 			user, err := conn.UserGetCurrent(ctx, arvados.GetOptions{})
 			c.Assert(err, check.IsNil)
-			c.Check(user.FullName, check.Equals, "Active User")
+			c.Check(user.FullName, check.Equals, "Example User")
 			coll, err = conn.CollectionGet(ctx, arvados.GetOptions{UUID: coll.UUID})
 			c.Assert(err, check.IsNil)
 			c.Check(coll.ManifestText, check.Not(check.Equals), "")
