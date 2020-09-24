@@ -37,7 +37,7 @@ test_that(paste("getFileListing by default returns sorted path of all files",
     resultsMatch <- length(expectedResult) == length(result) &&
                     all(expectedResult == result)
 
-    expect_that(resultsMatch, is_true())
+    expect_true(resultsMatch)
 })
 
 test_that(paste("getFileListing returns sorted names of all direct children",
@@ -58,7 +58,7 @@ test_that(paste("getFileListing returns sorted names of all direct children",
     resultsMatch <- length(expectedResult) == length(result) &&
                     all(expectedResult == result)
 
-    expect_that(resultsMatch, is_true())
+    expect_true(resultsMatch)
 })
 
 test_that("add adds content to inside collection tree", {
@@ -73,8 +73,8 @@ test_that("add adds content to inside collection tree", {
     animalContainsFish <- animal$get("fish")$getName() == fish$getName()
     animalContainsDog  <- animal$get("dog")$getName()  == dog$getName()
 
-    expect_that(animalContainsFish, is_true())
-    expect_that(animalContainsDog, is_true())
+    expect_true(animalContainsFish)
+    expect_true(animalContainsDog)
 })
 
 test_that("add raises exception if content name is empty string", {
@@ -143,7 +143,7 @@ test_that("remove removes content from subcollection", {
 
     returnValueAfterRemovalIsNull <- is.null(animal$get("fish"))
 
-    expect_that(returnValueAfterRemovalIsNull, is_true())
+    expect_true(returnValueAfterRemovalIsNull)
 })
 
 test_that(paste("remove raises exception",
@@ -198,10 +198,10 @@ test_that(paste("get returns ArvadosFile or Subcollection",
     returnedFishIsSubcollection <- "Subcollection" %in% class(returnedFish)
     returnedDogIsArvadosFile    <- "ArvadosFile"   %in% class(returnedDog)
 
-    expect_that(returnedFishIsSubcollection, is_true())
+    expect_true(returnedFishIsSubcollection)
     expect_that(returnedFish$getName(), equals("fish"))
 
-    expect_that(returnedDogIsArvadosFile, is_true())
+    expect_true(returnedDogIsArvadosFile)
     expect_that(returnedDog$getName(), equals("dog"))
 })
 
@@ -215,7 +215,7 @@ test_that(paste("get returns NULL if file or folder",
 
     returnedDogIsNull <- is.null(animal$get("dog"))
 
-    expect_that(returnedDogIsNull, is_true())
+    expect_true(returnedDogIsNull)
 })
 
 test_that("getFirst returns first child in the subcollection", {
@@ -234,7 +234,7 @@ test_that("getFirst returns NULL if subcollection contains no children", {
 
     returnedElementIsNull <- is.null(animal$getFirst())
 
-    expect_that(returnedElementIsNull, is_true())
+    expect_true(returnedElementIsNull)
 })
 
 test_that(paste("setCollection by default sets collection",
@@ -261,7 +261,7 @@ test_that(paste("setCollection sets collection filed of subcollection only",
     fishCollectionIsNull <- is.null(fish$getCollection())
 
     expect_that(animal$getCollection(), equals("myCollection"))
-    expect_that(fishCollectionIsNull, is_true())
+    expect_true(fishCollectionIsNull)
 })
 
 test_that(paste("move raises exception if subcollection",
@@ -330,8 +330,8 @@ test_that("move moves subcollection inside collection tree", {
     fishIsNullOnOldLocation <- is.null(collection$get("animal/fish"))
     fishExistsOnNewLocation <- !is.null(collection$get("fish"))
 
-    expect_that(fishIsNullOnOldLocation, is_true())
-    expect_that(fishExistsOnNewLocation, is_true())
+    expect_true(fishIsNullOnOldLocation)
+    expect_true(fishExistsOnNewLocation)
 })
 
 test_that(paste("getSizeInBytes returns zero if subcollection",
@@ -425,8 +425,8 @@ test_that("copy copies subcollection inside collection tree", {
     fishExistsOnOldLocation <- !is.null(collection$get("animal/fish"))
     fishExistsOnNewLocation <- !is.null(collection$get("fish"))
 
-    expect_that(fishExistsOnOldLocation, is_true())
-    expect_that(fishExistsOnNewLocation, is_true())
+    expect_true(fishExistsOnOldLocation)
+    expect_true(fishExistsOnNewLocation)
 })
 
 test_that("duplicate performs deep cloning of Subcollection", {

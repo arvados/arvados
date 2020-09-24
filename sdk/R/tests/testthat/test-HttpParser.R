@@ -18,7 +18,7 @@ test_that("parseJSONResponse generates and returns JSON object from server respo
     result <- parser$parseJSONResponse(serverResponse)
     barExists <- !is.null(result$bar)
 
-    expect_that(barExists, is_true())
+    expect_true(barExists)
     expect_that(unlist(result$bar$foo), equals(10))
 })
 
@@ -40,7 +40,7 @@ test_that(paste("parseResponse generates and returns character vector",
 
 webDAVResponseSample =
     paste0("<?xml version=\"1.0\" encoding=\"UTF-8\"?><D:multistatus xmlns:",
-           "D=\"DAV:\"><D:response><D:href>/c=aaaaa-bbbbb-ccccccccccccccc</D",
+           "D=\"DAV:\"><D:response><D:href>/c=aaaaa-bbbbb-ccccccccccccccc/</D",
            ":href><D:propstat><D:prop><D:resourcetype><D:collection xmlns:D=",
            "\"DAV:\"/></D:resourcetype><D:getlastmodified>Fri, 11 Jan 2018 1",
            "1:11:11 GMT</D:getlastmodified><D:displayname></D:displayname><D",
@@ -75,7 +75,7 @@ test_that(paste("getFileNamesFromResponse returns file names belonging to specif
     expectedResult <- "myFile.exe"
     resultMatchExpected <- all.equal(result, expectedResult)
 
-    expect_that(resultMatchExpected, is_true())
+    expect_true(resultMatchExpected)
 })
 
 test_that(paste("getFileSizesFromResponse returns file sizes",
@@ -92,5 +92,5 @@ test_that(paste("getFileSizesFromResponse returns file sizes",
     result <- parser$getFileSizesFromResponse(serverResponse, url)
     resultMatchExpected <- result == expectedResult
 
-    expect_that(resultMatchExpected, is_true())
+    expect_true(resultMatchExpected)
 })

@@ -36,16 +36,13 @@ RESTService <- R6::R6Class(
         {
             if(is.null(private$webDavHostName))
             {
-                discoveryDocumentURL <- paste0("https://", private$rawHostName,
-                                               "/discovery/v1/apis/arvados/v1/rest")
+                publicConfigURL <- paste0("https://", private$rawHostName,
+                                               "/arvados/v1/config")
 
-                headers <- list(Authorization = paste("OAuth2", self$token))
+                serverResponse <- self$http$exec("GET", publicConfigURL, retryTimes = self$numRetries)
 
-                serverResponse <- self$http$exec("GET", discoveryDocumentURL, headers,
-                                                 retryTimes = self$numRetries)
-
-                discoveryDocument <- self$httpParser$parseJSONResponse(serverResponse)
-                private$webDavHostName <- discoveryDocument$keepWebServiceUrl
+                configDocument <- self$httpParser$parseJSONResponse(serverResponse)
+                private$webDavHostName <- configDocument$Services$WebDAVDownload$ExternalURL
 
                 if(is.null(private$webDavHostName))
                     stop("Unable to find WebDAV server.")
@@ -118,7 +115,7 @@ RESTService <- R6::R6Class(
             collectionURL <- URLencode(paste0(self$getWebDavHostName(),
                                               "c=", uuid))
 
-            headers <- list("Authorization" = paste("OAuth2", self$token))
+            headers <- list("Authorization" = paste("Bearer", self$token))
 
             response <- self$http$exec("PROPFIND", collectionURL, headers,
                                        retryTimes = self$numRetries)

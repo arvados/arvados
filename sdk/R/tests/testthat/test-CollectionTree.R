@@ -34,16 +34,16 @@ test_that("constructor creates file tree from character array properly", {
                                          boat$getCollection()   == "myCollection"
 
     expect_that(root$getName(), equals(""))
-    expect_that(rootIsOfTypeSubcollection, is_true())
-    expect_that(rootHasNoParent, is_true())
-    expect_that(animalIsOfTypeSubcollection, is_true())
-    expect_that(animalsParentIsRoot, is_true())
-    expect_that(animalContainsDog, is_true())
-    expect_that(dogIsOfTypeArvadosFile, is_true())
-    expect_that(dogsParentIsAnimal, is_true())
-    expect_that(boatIsOfTypeArvadosFile, is_true())
-    expect_that(boatsParentIsRoot, is_true())
-    expect_that(allElementsBelongToSameCollection, is_true())
+    expect_true(rootIsOfTypeSubcollection)
+    expect_true(rootHasNoParent)
+    expect_true(animalIsOfTypeSubcollection)
+    expect_true(animalsParentIsRoot)
+    expect_true(animalContainsDog)
+    expect_true(dogIsOfTypeArvadosFile)
+    expect_true(dogsParentIsAnimal)
+    expect_true(boatIsOfTypeArvadosFile)
+    expect_true(boatsParentIsRoot)
+    expect_true(allElementsBelongToSameCollection)
 })
 
 test_that("getElement returns element from tree if element exists on specified path", {
@@ -72,7 +72,7 @@ test_that("getElement returns NULL from tree if element doesn't exists on specif
     fish <- collectionTree$getElement("animal/fish")
     fishIsNULL <- is.null(fish)
 
-    expect_that(fishIsNULL, is_true())
+    expect_true(fishIsNULL)
 })
 
 test_that("getElement trims ./ from start of relativePath", {
