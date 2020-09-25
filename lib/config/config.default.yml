@@ -287,6 +287,20 @@ Clusters:
       # address is used.
       PreferDomainForUsername: ""
 
+      UserSetupMailText: |
+        <% if not @user.full_name.empty? -%>
+        <%= @user.full_name %>,
+        <% else -%>
+        Hi there,
+        <% end -%>
+
+        Your Arvados account has been set up.  You can log in at
+
+        <%= Rails.configuration.Services.Workbench1.ExternalURL %>
+
+        Thanks,
+        Your Arvados administrator.
+
     AuditLogs:
       # Time to keep audit logs, in seconds. (An audit log is a row added
       # to the "logs" table in the PostgreSQL database each time an

@@ -219,6 +219,7 @@ type Cluster struct {
 		UserNotifierEmailFrom                 string
 		UserProfileNotificationAddress        string
 		PreferDomainForUsername               string
+		UserSetupMailText                     string
 	}
 	Volumes   map[string]Volume
 	Workbench struct {

@@ -609,6 +609,23 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
   test "setup user with send notification param true and verify email" do
     authorize_with :admin
 
+    Rails.configuration.Users.UserSetupMailText = %{
+<% if not @user.full_name.empty? -%>
+<%= @user.full_name %>,
+<% else -%>
+Hi there,
+<% end -%>
+
+Your Arvados shell account has been set up. Please visit the virtual machines page <% if Rails.configuration.Services.Workbench1.ExternalURL %>at
+
+<%= Rails.configuration.Services.Workbench1.ExternalURL %><%= "/" if !Rails.configuration.Services.Workbench1.ExternalURL.to_s.end_with?("/") %>users/<%= @user.uuid%>/virtual_machines <% else %><% end %>
+
+for connection instructions.
+
+Thanks,
+The Arvados team.
+}
+
     post :setup, params: {
       send_notification_email: 'true',
       user: {

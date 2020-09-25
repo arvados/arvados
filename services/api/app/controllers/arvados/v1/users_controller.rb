@@ -135,7 +135,7 @@ class Arvados::V1::UsersController < ApplicationController
                               vm_uuid: params[:vm_uuid])
 
     # setup succeeded. send email to user
-    if params[:send_notification_email]
+    if params[:send_notification_email] && !Rails.configuration.Users.UserSetupMailText.empty?
       begin
         UserNotifier.account_is_setup(@object).deliver_now
       rescue => e
