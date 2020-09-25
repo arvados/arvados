@@ -90,7 +90,7 @@ func s3stringToSign(alg, scope, signedHeaders string, r *http.Request) (string, 
 	var canonicalHeaders string
 	for _, h := range strings.Split(signedHeaders, ";") {
 		if h == "host" {
-			canonicalHeaders += h + ":" + r.URL.Host + "\n"
+			canonicalHeaders += h + ":" + r.Host + "\n"
 		} else {
 			canonicalHeaders += h + ":" + r.Header.Get(h) + "\n"
 		}
