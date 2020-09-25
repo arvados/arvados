@@ -10,6 +10,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"hash"
 	"io"
 	"net/http"
 	"net/url"
@@ -35,6 +36,11 @@ func hmacstring(msg string, key []byte) []byte {
 	h := hmac.New(sha256.New, key)
 	io.WriteString(h, msg)
 	return h.Sum(nil)
+}
+
+func hashdigest(h hash.Hash, payload string) string {
+	io.WriteString(h, payload)
+	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
 // Signing key for given secret key and request attrs.
@@ -68,7 +74,7 @@ func s3querystring(u *url.URL) string {
 	return strings.Join(keys, "&")
 }
 
-func s3signature(alg, secretKey, scope, signedHeaders string, r *http.Request) (string, error) {
+func s3stringToSign(alg, scope, signedHeaders string, r *http.Request) (string, error) {
 	timefmt, timestr := "20060102T150405Z", r.Header.Get("X-Amz-Date")
 	if timestr == "" {
 		timefmt, timestr = time.RFC1123, r.Header.Get("Date")
@@ -90,22 +96,19 @@ func s3signature(alg, secretKey, scope, signedHeaders string, r *http.Request) (
 		}
 	}
 
-	crhash := sha256.New()
-	fmt.Fprintf(crhash, "%s\n%s\n%s\n%s\n%s\n%s", r.Method, r.URL.EscapedPath(), s3querystring(r.URL), canonicalHeaders, signedHeaders, r.Header.Get("X-Amz-Content-Sha256"))
-	crdigest := fmt.Sprintf("%x", crhash.Sum(nil))
+	canonicalRequest := fmt.Sprintf("%s\n%s\n%s\n%s\n%s\n%s", r.Method, r.URL.EscapedPath(), s3querystring(r.URL), canonicalHeaders, signedHeaders, r.Header.Get("X-Amz-Content-Sha256"))
+	ctxlog.FromContext(r.Context()).Debugf("s3stringToSign: canonicalRequest %s", canonicalRequest)
+	return fmt.Sprintf("%s\n%s\n%s\n%s", alg, r.Header.Get("X-Amz-Date"), scope, hashdigest(sha256.New(), canonicalRequest)), nil
+}
 
-	payload := fmt.Sprintf("%s\n%s\n%s\n%s", alg, r.Header.Get("X-Amz-Date"), scope, crdigest)
-
+func s3signature(secretKey, scope, signedHeaders, stringToSign string) (string, error) {
 	// scope is {datestamp}/{region}/{service}/aws4_request
 	drs := strings.Split(scope, "/")
 	if len(drs) != 4 {
 		return "", fmt.Errorf("invalid scope %q", scope)
 	}
-
 	key := s3signatureKey(secretKey, drs[0], drs[1], drs[2])
-	h := hmac.New(sha256.New, key)
-	h.Write([]byte(payload))
-	return fmt.Sprintf("%x", h.Sum(nil)), nil
+	return hashdigest(hmac.New(sha256.New, key), stringToSign), nil
 }
 
 // checks3signature verifies the given S3 V4 signature and returns the
@@ -157,11 +160,15 @@ func (h *handler) checks3signature(r *http.Request) (string, error) {
 		ctxlog.FromContext(r.Context()).WithError(err).WithField("UUID", key).Info("token lookup failed")
 		return "", errors.New("invalid access key")
 	}
-	expect, err := s3signature(s3SignAlgorithm, secret, scope, signedHeaders, r)
+	stringToSign, err := s3stringToSign(s3SignAlgorithm, scope, signedHeaders, r)
+	if err != nil {
+		return "", err
+	}
+	expect, err := s3signature(secret, scope, signedHeaders, stringToSign)
 	if err != nil {
 		return "", err
 	} else if expect != signature {
-		return "", errors.New("signature does not match")
+		return "", fmt.Errorf("signature does not match (scope %q signedHeaders %q stringToSign %q)", scope, signedHeaders, stringToSign)
 	}
 	return secret, nil
 }
