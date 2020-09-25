@@ -14,7 +14,7 @@ knitr::opts_chunk$set(eval=FALSE)
 ```
 
 ```{r}
-install.packages("ArvadosR", repos=c("http://r.arvados.org", getOption("repos")["CRAN"]), dependencies=TRUE)
+install.packages("ArvadosR", repos=c("https://r.arvados.org", getOption("repos")["CRAN"]), dependencies=TRUE)
 ```
 
 Note: on Linux, you may have to install supporting packages.
