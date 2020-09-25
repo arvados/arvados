@@ -48,8 +48,8 @@ export const MainContentBar =
         withStyles(styles)(
             (props: MainContentBarProps & WithStyles<CssRules> & any) =>
                 <Toolbar>
-                    <Grid container>
-                        <Grid item xs alignItems="center">
+                    <Grid container alignItems="center">
+                        <Grid item xs>
                             <Breadcrumbs />
                         </Grid>
                         <Grid item>

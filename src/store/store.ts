@@ -6,6 +6,7 @@ import { createStore, applyMiddleware, compose, Middleware, combineReducers, Sto
 import { routerMiddleware, routerReducer } from "react-router-redux";
 import thunkMiddleware from 'redux-thunk';
 import { History } from "history";
+import { handleRedirects } from '../common/redirect-to';
 
 import { authReducer } from "./auth/auth-reducer";
 import { authMiddleware } from "./auth/auth-middleware";
@@ -130,6 +131,16 @@ export function configureStore(history: History, services: ServiceRepository): R
     const subprocessMiddleware = dataExplorerMiddleware(
         new SubprocessMiddlewareService(services, SUBPROCESS_PANEL_ID)
     );
+    const redirectToMiddleware = (store: any) => (next: any) => (action: any) => {
+        const state = store.getState();
+
+        if (state.auth && state.auth.apiToken) {
+            const { apiToken } = state.auth;
+            handleRedirects(apiToken);
+        }
+
+        return next(action);
+    };
 
     const middlewares: Middleware[] = [
         routerMiddleware(history),
@@ -150,9 +161,9 @@ export function configureStore(history: History, services: ServiceRepository): R
         apiClientAuthorizationMiddlewareService,
         publicFavoritesMiddleware,
         collectionsContentAddress,
-        subprocessMiddleware
+        subprocessMiddleware,
     ];
-    const enhancer = composeEnhancers(applyMiddleware(...middlewares));
+    const enhancer = composeEnhancers(applyMiddleware(redirectToMiddleware, ...middlewares));
     return createStore(rootReducer, enhancer);
 }
 

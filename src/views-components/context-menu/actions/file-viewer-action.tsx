@@ -5,6 +5,7 @@
 import * as React from "react";
 import { ListItemIcon, ListItemText, ListItem } from "@material-ui/core";
 import { OpenIcon } from "~/components/icon/icon";
+import { sanitizeToken } from "./helpers";
 
 export const FileViewerAction = (props: { href?: any, download?: any, onClick?: () => void, kind?: string, currentCollectionUuid?: string; }) => {
     const fileProps = props.download ? { download: props.download } : {};
@@ -12,7 +13,7 @@ export const FileViewerAction = (props: { href?: any, download?: any, onClick?: 
     return props.href
         ? <a
             style={{ textDecoration: 'none' }}
-            href={props.href}
+            href={sanitizeToken(props.href)}
             target="_blank"
             onClick={props.onClick}
             {...fileProps}>
