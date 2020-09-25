@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"os/exec"
 	"strings"
 	"sync"
 	"time"
@@ -663,4 +664,19 @@ func (s *IntegrationSuite) testS3CollectionListRollup(c *check.C) {
 		c.Check(resp.IsTruncated, check.Equals, expectTruncated, commentf)
 		c.Logf("=== trial %+v keys %q prefixes %q nextMarker %q", trial, gotKeys, gotPrefixes, resp.NextMarker)
 	}
+}
+
+func (s *IntegrationSuite) TestS3cmd(c *check.C) {
+	if _, err := exec.LookPath("s3cmd"); err != nil {
+		c.Skip("s3cmd not found")
+		return
+	}
+
+	stage := s.s3setup(c)
+	defer stage.teardown(c)
+
+	cmd := exec.Command("s3cmd", "--no-ssl", "--host="+s.testServer.Addr, "--host-bucket="+s.testServer.Addr, "--access_key="+arvadostest.ActiveTokenUUID, "--secret_key="+arvadostest.ActiveToken, "ls", "s3://"+arvadostest.FooCollection)
+	buf, err := cmd.CombinedOutput()
+	c.Check(err, check.IsNil)
+	c.Check(string(buf), check.Matches, `.* 3 +s3://`+arvadostest.FooCollection+`/foo\n`)
 }
