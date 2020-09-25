@@ -8,6 +8,7 @@ ARG composer_version=arvados-fork
 ARG workbench2_version=master
 
 RUN cd /usr/src && \
+    git clone --no-checkout https://git.arvados.org/arvados.git && \
     git -C arvados checkout ${arvados_version} && \
     git -C arvados pull && \
     git clone --no-checkout https://github.com/arvados/composer.git && \

@@ -77,6 +77,8 @@ run_bundler() {
     #         flock $GEM_HOME/gems.lock gem install --verbose --no-document bundler --version ${bundleversion}
     #     fi
     # fi
+    # Make sure to put the gem binaries in the right place
+    flock /var/lib/arvados/lib/ruby/gems/2.5.0/gems.lock bundler config bin $GEM_HOME/bin
     if ! flock $GEM_HOME/gems.lock bundler install --verbose --local --no-deployment $frozen "$@" ; then
         flock $GEM_HOME/gems.lock bundler install --verbose --no-deployment $frozen "$@"
     fi

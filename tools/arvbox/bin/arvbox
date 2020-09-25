@@ -363,6 +363,7 @@ stop() {
 }
 
 build() {
+    export DOCKER_BUILDKIT=1
     if ! test -f "$ARVBOX_DOCKER/Dockerfile.base" ;  then
         echo "Could not find Dockerfile (expected it at $ARVBOX_DOCKER/Dockerfile.base)"
         exit 1
@@ -373,12 +374,24 @@ build() {
         FORCE=-f
     fi
     GITHEAD=$(cd $ARVBOX_DOCKER && git log --format=%H -n1 HEAD)
-    docker build --build-arg=arvados_version=$GITHEAD $NO_CACHE -t arvados/arvbox-base:$GITHEAD -f "$ARVBOX_DOCKER/Dockerfile.base" "$ARVBOX_DOCKER"
-    docker tag $FORCE arvados/arvbox-base:$GITHEAD arvados/arvbox-base:latest
     if test "$1" = localdemo -o "$1" = publicdemo ; then
+        set +e
+        if which greadlink >/dev/null 2>/dev/null ; then
+          ARVADOS_ROOT=$(greadlink -f $(dirname $0)/../../../)
+        else
+          ARVADOS_ROOT=$(readlink -f $(dirname $0)/../../../)
+        fi
+        set -e
+        docker build --build-arg=BUILDTYPE=demo $NO_CACHE --build-arg=arvados_version=$GITHEAD --build-arg=workdir=/tools/arvbox/lib/arvbox/docker -t arvados/arvbox-base:$GITHEAD -f "$ARVBOX_DOCKER/Dockerfile.base" "$ARVADOS_ROOT"
+        docker tag $FORCE arvados/arvbox-base:$GITHEAD arvados/arvbox-base:latest
         docker build $NO_CACHE -t arvados/arvbox-demo:$GITHEAD -f "$ARVBOX_DOCKER/Dockerfile.demo" "$ARVBOX_DOCKER"
         docker tag $FORCE arvados/arvbox-demo:$GITHEAD arvados/arvbox-demo:latest
     else
+        if ! test -d "$ARVADOS_ROOT" ; then
+            git clone https://git.arvados.org/arvados.git "$ARVADOS_ROOT"
+        fi
+        docker build --build-arg=BUILDTYPE=dev $NO_CACHE --build-arg=arvados_version=$GITHEAD --build-arg=workdir=/tools/arvbox/lib/arvbox/docker -t arvados/arvbox-base:$GITHEAD -f "$ARVBOX_DOCKER/Dockerfile.base" "$ARVADOS_ROOT"
+        docker tag $FORCE arvados/arvbox-base:$GITHEAD arvados/arvbox-base:latest
         docker build $NO_CACHE -t arvados/arvbox-dev:$GITHEAD -f "$ARVBOX_DOCKER/Dockerfile.dev" "$ARVBOX_DOCKER"
         docker tag $FORCE arvados/arvbox-dev:$GITHEAD arvados/arvbox-dev:latest
     fi
