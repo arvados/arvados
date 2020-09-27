@@ -150,9 +150,8 @@ func (t *tester) Run() bool {
 			if time.Now().After(bootDeadline) {
 				t.Logger.Error("timed out")
 				return false
-			} else {
-				t.sleepSyncInterval()
 			}
+			t.sleepSyncInterval()
 		}
 		t.Logger.WithField("Instance", t.testInstance.ID()).Info("new instance appeared")
 		t.showLoginInfo()
