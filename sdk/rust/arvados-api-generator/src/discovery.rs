@@ -31,15 +31,25 @@ fn snake_to_camel(s: &str) -> String {
     res
 }
 
-// Convert a decription to a doc comment.
-fn desc_to_doc(s: &str) -> String {
-    let mut res = String::new();
+///  Convert a decription to a doc comment.
+/// Currently broken for unknown reasons!
+fn desc_to_doc(_s: &str) -> String {
+    let res = String::new();
     // for s in s.split(|c| c == '\n') {
     //     res.extend("/// ".chars());
     //     res.extend(s.chars());
     //     res.extend("\n".chars());
     // }
-    res
+
+    // let re = Regex::new("</?code>").unwrap();
+    // let res = re.replace_all(res.as_str(), ""); 
+    // let re = Regex::new("<pre>").unwrap();
+    // let res = re.replace_all(res.as_ref(), ""); 
+    // let re = Regex::new("</pre>").unwrap();
+    // let res = re.replace_all(res.as_ref(), ""); 
+    // let re = Regex::new("<a[^>]*>|</a>").unwrap();
+    // let res = re.replace_all(res.as_ref(), ""); 
+    res.to_string()
 }
 
 /// make a rust type from a JsonSchema
@@ -559,7 +569,7 @@ fn make_resource_structs<S : std::io::Write>(writer: &mut S, resources: &HashMap
             for (name, method) in methods {
                 let method_struct_name = format!("{}{}Method", resource_camel, snake_to_camel(name.as_ref()));
                 if let Some(description) = &method.description {
-                    writeln!(writer, "{}", desc_to_doc(description.as_str()))?;
+                    write!(writer, "{}", desc_to_doc(description.as_str()))?;
                 }
                 if let Some(id) = &method.id {
                     writeln!(writer, "/// method id: {}", id.as_str())?;
