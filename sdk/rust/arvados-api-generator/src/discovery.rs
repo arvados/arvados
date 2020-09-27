@@ -15,6 +15,127 @@
 
 use serde::Deserialize;
 use std::collections::HashMap;
+use crate::Result;
+
+/// Convert snake case xyz_abc to camel case XyzAbc.
+fn snake_to_camel(s: &str) -> String {
+    let mut res = String::new();
+    for s in s.split(|c| c == '_') {
+        if !s.is_empty() {
+            let mut it = s.chars();
+            let c0 = it.next().unwrap();
+            res.push(c0.to_ascii_uppercase());
+            res.extend(it);
+        }
+    }
+    res
+}
+
+// Convert a decription to a doc comment.
+fn desc_to_doc(s: &str) -> String {
+    let mut res = String::new();
+    // for s in s.split(|c| c == '\n') {
+    //     res.extend("/// ".chars());
+    //     res.extend(s.chars());
+    //     res.extend("\n".chars());
+    // }
+    res
+}
+
+/// make a rust type from a JsonSchema
+/// The schema must have a type field or be a ref.
+/// properties (ie Objects) are not supported.
+fn to_rust_type(sch: &JsonSchema) -> Result<String> {
+    let mut items = "Value".to_string();
+    if let Some(Some(ref i)) = &sch.items {
+        items = to_rust_type(i)?;
+    }
+    if sch.properties.is_some() {
+        return Err("did not expect properties in schema".into());
+    }
+    let mapped = if let Some(ref_) = &sch.ref_ {
+        ref_.clone()
+    } else if let Some(type_) = &sch.type_ {
+        // https://tools.ietf.org/html/draft-zyp-json-schema-03#section-5.1
+        match type_.as_ref() {
+            "string" => "String".to_string(),
+            "number" => "f64".to_string(),
+            "integer" => "i64".to_string(),
+            "boolean" => "bool".to_string(),
+            "object" => format!("HashMap<String, {}>", items),
+            "array" => format!("Vec<{}>", items),
+            "float" => "f64".to_string(),
+            "null" => "()".to_string(),
+            "any" => "Value".to_string(),
+            _ => "String".to_string()
+        }
+    } else {
+        return Err("Unknown json schema".into())
+    };
+    if sch.required == Some(true) {
+        Ok(mapped)
+    } else {
+        Ok(format!("Option<{}>", mapped))
+    }
+}
+
+fn to_ident(s: &str) -> String {
+    match s {
+        "as" |
+        "break" |
+        "const" |
+        "continue" |
+        "crate" |
+        "else" |
+        "enum" |
+        "extern" |
+        "false" |
+        "fn" |
+        "for" |
+        "if" |
+        "impl" |
+        "in" |
+        "let" |
+        "loop" |
+        "match" |
+        "mod" |
+        "move" |
+        "mut" |
+        "pub" |
+        "ref" |
+        "return" |
+        "selfvalue" |
+        "selftype" |
+        "static" |
+        "pub struct" |
+        "super" |
+        "trait" |
+        "true" |
+        "type" |
+        "unsafe" |
+        "use" |
+        "where" |
+        "while" |
+        "async" |
+        "await" |
+        "dyn" |
+        "abstract" |
+        "become" |
+        "box" |
+        "do" |
+        "final" |
+        "macro" |
+        "override" |
+        "priv" |
+        "typeof" |
+        "unsized" |
+        "virtual" |
+        "yield" |
+        "try" |
+        "union" => format!("{}_", s),
+        _ => s.to_string()
+    }
+}
 
 /// OAuth 2.0 authentication information.
 /// 
@@ -425,19 +546,122 @@ pub struct RestMethodMediaUploadProtocolsSimple {
     pub multipart: Option<bool>,
 }
 
+fn make_resource_structs<S : std::io::Write>(writer: &mut S, resources: &HashMap<String, RestResource>) -> Result<()> {
+    for (name, res) in resources {
+        let resource_camel = snake_to_camel(name.as_ref());
+        let resource_struct_name = format!("{}Resource", resource_camel);
+
+        writeln!(writer, "pub struct {}<'a> {{", resource_struct_name)?;
+        writeln!(writer, "    client: &'a ArvadosApi,")?;
+        writeln!(writer, "}}\n")?;
+
+        if let Some(methods) = &res.methods {
+            for (name, method) in methods {
+                let method_struct_name = format!("{}{}Method", resource_camel, snake_to_camel(name.as_ref()));
+                if let Some(description) = &method.description {
+                    writeln!(writer, "{}", desc_to_doc(description.as_str()))?;
+                }
+                if let Some(id) = &method.id {
+                    writeln!(writer, "/// method id: {}", id.as_str())?;
+                }
+                writeln!(writer, "pub struct {}<'a> {{", method_struct_name)?;
+                if let Some(parameters) = &method.parameters {
+                    writeln!(writer, "    client: &'a ArvadosApi,")?;
+                    for (pname, param) in parameters {
+                        writeln!(writer, "    pub {}: {},", to_ident(pname), to_rust_type(param)?)?;
+                    }
+                }
+                writeln!(writer, "}}")?;
+            }
+        };
+
+        if let Some(_resources) = &res.resources {
+            panic!("nested resources not supported");
+            //make_resource_structs()
+        };
+    }
+    Ok(())
+}
+
+fn make_api_root<S : std::io::Write>(writer: &mut S, resources: &HashMap<String, RestResource>) -> Result<()> {
+    writeln!(writer, r#"
+use serde_json::Value;
+use std::collections::HashMap;
+pub struct ArvadosApi {{
+}}
+impl ArvadosApi {{"#)?;
+    
+    for (name, _res) in resources {
+        let resource_camel = snake_to_camel(name.as_ref());
+        let resource_struct_name = format!("{}Resource", resource_camel);
+        writeln!(writer, "   fn {}(&self) -> {} {{", to_ident(name.as_ref()), resource_struct_name)?;
+        writeln!(writer, "       {} {{ client: &self }}", resource_struct_name)?;
+        writeln!(writer, "   }}\n")?;
+    }
+    writeln!(writer, "}}\n")?;
+    Ok(())
+}
+
+fn make_resource_interfaces<S : std::io::Write>(_writer: &mut S, resources: &HashMap<String, RestResource>) -> Result<()> {
+    for (name, _res) in resources {
+        let resource_camel = snake_to_camel(name.as_ref());
+        let _resource_struct_name = format!("{}Resource", resource_camel);
+    }
+    Ok(())
+}
+        /// Convert the aravdos discovery file into a rust module.
+pub fn convert<R : std::io::Read, W : std::io::Write>(reader: R, mut writer: W) -> Result<()> {
+    let desc : RestDescription = serde_json::from_reader(reader)?;
+
+    use std::io::Write;
+    let mut structs: Vec<u8> = Vec::new();
+    if let Some(resources) = &desc.resources {
+        make_resource_structs(&mut structs, resources)?;
+    }
+
+    let mut interfaces: Vec<u8> = Vec::new();
+    if let Some(resources) = &desc.resources {
+        make_resource_interfaces(&mut interfaces, resources)?;
+    }
+    let mut api_root: Vec<u8> = Vec::new();
+    if let Some(resources) = &desc.resources {
+        make_api_root(&mut api_root, resources)?;
+    }
+
+    if let Some(schemas) = &desc.schemas {
+        for (name, schema) in schemas {
+            if let  Some(id) = &schema.id {
+                writeln!(structs, "/// schema id {}", id)?;
+            }
+            if schema.properties.is_none() {
+                return Err("expected properties in discovery json.".into());
+            }
+            let properties = schema.properties.as_ref().unwrap();
+            writeln!(structs, "pub struct {} {{", name)?;
+            for (pname, prop) in properties {
+                writeln!(structs, "    pub {}: {},", to_ident(pname), to_rust_type(prop)?)?;
+            }
+            writeln!(structs, "}}")?;
+        }
+    };
+
+    writer.write_all(api_root.as_ref())?;
+    writer.write_all(interfaces.as_ref())?;
+    writer.write_all(structs.as_ref())?;
+    Ok(())
+}
+
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    // use super::*;
 
-    #[test]
-    fn testd1() -> Result<(), Box<dyn std::error::Error>> {
-        let arvados_api_json = std::fs::File::open("arvados-api.json")?;
-        let desc : RestDescription = serde_json::from_reader(arvados_api_json)?;
-        //let desc_json = serde_json::to_vec_pretty(&desc);
-        let mut t = std::fs::File::create("/tmp/1")?;
-        use std::io::Write;
-        write!(t, "{:#?}", desc)?;
-        Ok(())
-    }
+    // #[test]
+    // fn testd2() -> Result<()> {
+    //     let arvados_api_json = std::fs::File::open("arvados-api.json")?;
+    //     let mut res = Vec::new();
+    //     convert(&arvados_api_json, &mut res)?;
+    //     std::fs::write("src/arvados_api.rs", res)?;
+    //     Ok(())
+    // }
 }

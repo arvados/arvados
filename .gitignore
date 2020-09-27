@@ -32,3 +32,4 @@ services/api/config/arvados-clients.yml
 .Rproj.user
 _version.py
 *.bak
+sdk/rust/arvados-api-generator/arvados-api.txt

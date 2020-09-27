@@ -1,5 +1,5 @@
 [package]
-name = "arvados-api-generator"
+name = "arvados_api_generator"
 version = "0.1.0"
 authors = ["andy-thomason <andy@andythomason.com>"]
 edition = "2018"
@@ -9,4 +9,3 @@ edition = "2018"
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0" }
-google-discovery1 = { version = "1.0" }

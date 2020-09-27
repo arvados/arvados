@@ -1,7 +1,8 @@
 
-//!
-//! Example generated code for one endpoint.
-//!
+include!(concat!(env!("OUT_DIR"), "/arvados-api.rs"));
+
+
+
 
 use reqwest::{Request, Url, Client};
 use reqwest::header::{HeaderValue, HeaderMap, AUTHORIZATION};
