@@ -43,8 +43,6 @@ func (s *LoginSuite) TestDeferToLoginCluster(c *check.C) {
 func (s *LoginSuite) TestLogout(c *check.C) {
 	s.cluster.Services.Workbench1.ExternalURL = arvados.URL{Scheme: "https", Host: "workbench1.example.com"}
 	s.cluster.Services.Workbench2.ExternalURL = arvados.URL{Scheme: "https", Host: "workbench2.example.com"}
-	s.cluster.Login.Google.Enable = true
-	s.cluster.Login.Google.ClientID = "zzzzzzzzzzzzzz"
 	s.addHTTPRemote(c, "zhome", &arvadostest.APIStub{})
 	s.cluster.Login.LoginCluster = "zhome"
 	// s.fed is already set by SetUpTest, but we need to
