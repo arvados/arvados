@@ -117,7 +117,7 @@ fn to_ident(s: &str) -> String {
         "selfvalue" |
         "selftype" |
         "static" |
-        "pub struct" |
+        "struct" |
         "super" |
         "trait" |
         "true" |
@@ -561,8 +561,9 @@ fn make_resource_structs<S : std::io::Write>(writer: &mut S, resources: &HashMap
         let resource_camel = snake_to_camel(name.as_ref());
         let resource_struct_name = format!("{}Resource", resource_camel);
 
-        writeln!(writer, "pub struct {}<'a> {{", resource_struct_name)?;
-        writeln!(writer, "    client: &'a ArvadosApi,")?;
+        writeln!(writer, "#[derive(Debug)]")?;
+        writeln!(writer, "pub struct {} {{", resource_struct_name)?;
+        writeln!(writer, "    client: Rc<ArvadosClient>,")?;
         writeln!(writer, "}}\n")?;
 
         if let Some(methods) = &res.methods {
@@ -574,14 +575,16 @@ fn make_resource_structs<S : std::io::Write>(writer: &mut S, resources: &HashMap
                 if let Some(id) = &method.id {
                     writeln!(writer, "/// method id: {}", id.as_str())?;
                 }
-                writeln!(writer, "pub struct {}<'a> {{", method_struct_name)?;
+                writeln!(writer, "#[derive(Serialize, Deserialize, Debug)]")?;
+                writeln!(writer, "pub struct {} {{", method_struct_name)?;
                 if let Some(parameters) = &method.parameters {
-                    writeln!(writer, "    client: &'a ArvadosApi,")?;
                     for (pname, param) in parameters {
                         writeln!(writer, "    pub {}: {},", to_ident(pname), to_rust_type(param)?)?;
                     }
                 }
-                writeln!(writer, "}}")?;
+                writeln!(writer, "}}\n")?;
+                writeln!(writer, "#[derive(Debug)]")?;
+                writeln!(writer, "pub struct {}Wrapper(Rc<ArvadosClient>, {});\n", method_struct_name, method_struct_name)?;
             }
         };
 
@@ -594,32 +597,103 @@ fn make_resource_structs<S : std::io::Write>(writer: &mut S, resources: &HashMap
 }
 
 fn make_api_root<S : std::io::Write>(writer: &mut S, resources: &HashMap<String, RestResource>) -> Result<()> {
-    writeln!(writer, r#"
-use serde_json::Value;
-use std::collections::HashMap;
-pub struct ArvadosApi {{
-}}
-impl ArvadosApi {{"#)?;
-    
+    writeln!(writer, "impl ArvadosApi {{")?;
     for (name, _res) in resources {
         let resource_camel = snake_to_camel(name.as_ref());
         let resource_struct_name = format!("{}Resource", resource_camel);
         writeln!(writer, "   fn {}(&self) -> {} {{", to_ident(name.as_ref()), resource_struct_name)?;
-        writeln!(writer, "       {} {{ client: &self }}", resource_struct_name)?;
+        writeln!(writer, "       {} {{ client: self.client.clone() }}", resource_struct_name)?;
         writeln!(writer, "   }}\n")?;
     }
     writeln!(writer, "}}\n")?;
     Ok(())
 }
 
-fn make_resource_interfaces<S : std::io::Write>(_writer: &mut S, resources: &HashMap<String, RestResource>) -> Result<()> {
-    for (name, _res) in resources {
+fn make_resource_interfaces<S : std::io::Write>(writer: &mut S, resources: &HashMap<String, RestResource>) -> Result<()> {
+    for (name, res) in resources {
         let resource_camel = snake_to_camel(name.as_ref());
-        let _resource_struct_name = format!("{}Resource", resource_camel);
+        let resource_struct_name = format!("{}Resource", resource_camel);
+        writeln!(writer, "impl {} {{", resource_struct_name)?;
+        if let Some(methods) = &res.methods {
+            for (name, method) in methods {
+                let method_struct_name = format!("{}{}Method", resource_camel, snake_to_camel(name.as_ref()));
+                if let Some(description) = &method.description {
+                    write!(writer, "{}", desc_to_doc(description.as_str()))?;
+                }
+                if let Some(id) = &method.id {
+                    writeln!(writer, "    /// method id: {}", id.as_str())?;
+                }
+                write!(writer, "    pub fn {}(&self", to_ident(name))?;
+                if let Some(parameters) = &method.parameters {
+                    for (pname, param) in parameters {
+                        if param.required == Some(true) {
+                            write!(writer, ", {}: {}", to_ident(pname), to_rust_type(param)?)?;
+                        }
+                    }
+                }
+                writeln!(writer, ") -> {}Wrapper {{", method_struct_name)?;
+                write!(writer, "        {}Wrapper(self.client.clone(), {} {{", method_struct_name, method_struct_name)?;
+                if let Some(parameters) = &method.parameters {
+                    for (pname, param) in parameters {
+                        if param.required == Some(true)  {
+                            write!(writer, " {},", to_ident(pname))?;
+                        } else {
+                            write!(writer, " {}: None,", to_ident(pname))?;
+                        }
+                    }
+                }
+                writeln!(writer, "}})")?;
+                writeln!(writer, "    }}")?;
+            }
+        }
+        writeln!(writer, "}}")?;
     }
     Ok(())
 }
-        /// Convert the aravdos discovery file into a rust module.
+
+fn make_request_interfaces<S : std::io::Write>(writer: &mut S, resources: &HashMap<String, RestResource>) -> Result<()> {
+    for (name, res) in resources {
+        let resource_camel = snake_to_camel(name.as_ref());
+        let resource_struct_name = format!("{}Resource", resource_camel);
+        writeln!(writer, "impl {} {{", resource_struct_name)?;
+        if let Some(methods) = &res.methods {
+            for (name, method) in methods {
+                let method_struct_name = format!("{}{}Method", resource_camel, snake_to_camel(name.as_ref()));
+                if let Some(description) = &method.description {
+                    write!(writer, "{}", desc_to_doc(description.as_str()))?;
+                }
+                if let Some(id) = &method.id {
+                    writeln!(writer, "    /// method id: {}", id.as_str())?;
+                }
+                write!(writer, "    pub fn {}(&self", to_ident(name))?;
+                if let Some(parameters) = &method.parameters {
+                    for (pname, param) in parameters {
+                        if param.required == Some(true) {
+                            write!(writer, ", {}: {}", to_ident(pname), to_rust_type(param)?)?;
+                        }
+                    }
+                }
+                writeln!(writer, ") -> (Rc<ArvadosClient>, {}) {{", method_struct_name)?;
+                write!(writer, "        (self.client.clone(), {} {{", method_struct_name)?;
+                if let Some(parameters) = &method.parameters {
+                    for (pname, param) in parameters {
+                        if param.required == Some(true)  {
+                            write!(writer, " {},", to_ident(pname))?;
+                        } else {
+                            write!(writer, " {}: None,", to_ident(pname))?;
+                        }
+                    }
+                }
+                writeln!(writer, "}})")?;
+                writeln!(writer, "    }}")?;
+            }
+        }
+        writeln!(writer, "}}")?;
+    }
+    Ok(())
+}
+
+/// Convert the aravdos discovery file into a rust module.
 pub fn convert<R : std::io::Read, W : std::io::Write>(reader: R, mut writer: W) -> Result<()> {
     let desc : RestDescription = serde_json::from_reader(reader)?;
 
@@ -647,6 +721,7 @@ pub fn convert<R : std::io::Read, W : std::io::Write>(reader: R, mut writer: W) 
                 return Err("expected properties in discovery json.".into());
             }
             let properties = schema.properties.as_ref().unwrap();
+            writeln!(structs, "#[derive(Serialize, Deserialize, Debug)]")?;
             writeln!(structs, "pub struct {} {{", name)?;
             for (pname, prop) in properties {
                 writeln!(structs, "    pub {}: {},", to_ident(pname), to_rust_type(prop)?)?;
