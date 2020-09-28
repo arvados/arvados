@@ -109,16 +109,15 @@ func (fs *collectionFileSystem) newNode(name string, perm os.FileMode, modTime t
 				inodes: make(map[string]inode),
 			},
 		}, nil
-	} else {
-		return &filenode{
-			fs: fs,
-			fileinfo: fileinfo{
-				name:    name,
-				mode:    perm & ^os.ModeDir,
-				modTime: modTime,
-			},
-		}, nil
 	}
+	return &filenode{
+		fs: fs,
+		fileinfo: fileinfo{
+			name:    name,
+			mode:    perm & ^os.ModeDir,
+			modTime: modTime,
+		},
+	}, nil
 }
 
 func (fs *collectionFileSystem) Child(name string, replace func(inode) (inode, error)) (inode, error) {
@@ -802,9 +801,8 @@ func (dn *dirnode) commitBlock(ctx context.Context, refs []fnSegmentRef, bufsize
 	}()
 	if sync {
 		return <-errs
-	} else {
-		return nil
 	}
+	return nil
 }
 
 type flushOpts struct {

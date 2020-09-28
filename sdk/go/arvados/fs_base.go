@@ -598,9 +598,8 @@ func (fs *fileSystem) remove(name string, recursive bool) error {
 func (fs *fileSystem) Sync() error {
 	if syncer, ok := fs.root.(syncer); ok {
 		return syncer.Sync()
-	} else {
-		return ErrInvalidOperation
 	}
+	return ErrInvalidOperation
 }
 
 func (fs *fileSystem) Flush(string, bool) error {
