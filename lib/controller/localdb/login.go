@@ -34,10 +34,11 @@ func chooseLoginController(cluster *arvados.Cluster, railsProxy *railsProxy) log
 	wantPAM := cluster.Login.PAM.Enable
 	wantLDAP := cluster.Login.LDAP.Enable
 	wantTest := cluster.Login.Test.Enable
+	wantLoginCluster := cluster.Login.LoginCluster != "" && cluster.Login.LoginCluster != cluster.ClusterID
 	switch {
-	case 1 != countTrue(wantGoogle, wantOpenIDConnect, wantSSO, wantPAM, wantLDAP, wantTest):
+	case 1 != countTrue(wantGoogle, wantOpenIDConnect, wantSSO, wantPAM, wantLDAP, wantTest, wantLoginCluster):
 		return errorLoginController{
-			error: errors.New("configuration problem: exactly one of Login.Google, Login.OpenIDConnect, Login.SSO, Login.PAM, Login.LDAP, and Login.Test must be enabled"),
+			error: errors.New("configuration problem: exactly one of Login.Google, Login.OpenIDConnect, Login.SSO, Login.PAM, Login.LDAP, Login.Test, or Login.LoginCluster must be set"),
 		}
 	case wantGoogle:
 		return &oidcLoginController{
@@ -69,6 +70,8 @@ func chooseLoginController(cluster *arvados.Cluster, railsProxy *railsProxy) log
 		return &ldapLoginController{Cluster: cluster, RailsProxy: railsProxy}
 	case wantTest:
 		return &testLoginController{Cluster: cluster, RailsProxy: railsProxy}
+	case wantLoginCluster:
+		return &federatedLoginController{Cluster: cluster}
 	default:
 		return errorLoginController{
 			error: errors.New("BUG: missing case in login controller setup switch"),
@@ -104,6 +107,20 @@ func (ctrl errorLoginController) Logout(context.Context, arvados.LogoutOptions) 
 }
 func (ctrl errorLoginController) UserAuthenticate(context.Context, arvados.UserAuthenticateOptions) (arvados.APIClientAuthorization, error) {
 	return arvados.APIClientAuthorization{}, ctrl.error
+}
+
+type federatedLoginController struct {
+	Cluster *arvados.Cluster
+}
+
+func (ctrl federatedLoginController) Login(context.Context, arvados.LoginOptions) (arvados.LoginResponse, error) {
+	return arvados.LoginResponse{}, httpserver.ErrorWithStatus(errors.New("Should have been redirected to login cluster"), http.StatusBadRequest)
+}
+func (ctrl federatedLoginController) Logout(_ context.Context, opts arvados.LogoutOptions) (arvados.LogoutResponse, error) {
+	return noopLogout(ctrl.Cluster, opts)
+}
+func (ctrl federatedLoginController) UserAuthenticate(context.Context, arvados.UserAuthenticateOptions) (arvados.APIClientAuthorization, error) {
+	return arvados.APIClientAuthorization{}, httpserver.ErrorWithStatus(errors.New("username/password authentication is not available"), http.StatusBadRequest)
 }
 
 func noopLogout(cluster *arvados.Cluster, opts arvados.LogoutOptions) (arvados.LogoutResponse, error) {
