@@ -25,6 +25,6 @@ chmod +x /usr/local/bin/crunch-run.sh
 
 export ARVADOS_API_HOST=$localip:${services[controller-ssl]}
 export ARVADOS_API_HOST_INSECURE=1
-export ARVADOS_API_TOKEN=$(cat /var/lib/arvados/superuser_token)
+export ARVADOS_API_TOKEN=$(cat $ARVADOS_CONTAINER_PATH/superuser_token)
 
 exec /usr/local/bin/crunch-dispatch-local -crunch-run-command=/usr/local/bin/crunch-run.sh -poll-interval=1

@@ -5,16 +5,19 @@
 
 set -e -o pipefail
 
+export GEM_HOME=/var/lib/arvados/lib/ruby/gems/2.5.0
+export ARVADOS_CONTAINER_PATH=/var/lib/arvados-arvbox
+
 if ! grep "^arvbox:" /etc/passwd >/dev/null 2>/dev/null ; then
     HOSTUID=$(ls -nd /usr/src/arvados | sed 's/ */ /' | cut -d' ' -f4)
     HOSTGID=$(ls -nd /usr/src/arvados | sed 's/ */ /' | cut -d' ' -f5)
 
-    mkdir -p /var/lib/arvados/git /var/lib/gems \
+    mkdir -p $ARVADOS_CONTAINER_PATH/git $GEM_HOME \
           /var/lib/passenger /var/lib/gopath \
           /var/lib/pip /var/lib/npm
 
     if test -z "$ARVBOX_HOME" ; then
-	ARVBOX_HOME=/var/lib/arvados
+        ARVBOX_HOME=$ARVADOS_CONTAINER_PATH
     fi
 
     groupadd --gid $HOSTGID --non-unique arvbox
@@ -25,18 +28,16 @@ if ! grep "^arvbox:" /etc/passwd >/dev/null 2>/dev/null ; then
             --groups docker \
             --shell /bin/bash \
             arvbox
-    useradd --home-dir /var/lib/arvados/git --uid $HOSTUID --gid $HOSTGID --non-unique git
+    useradd --home-dir $ARVADOS_CONTAINER_PATH/git --uid $HOSTUID --gid $HOSTGID --non-unique git
     useradd --groups docker crunch
 
     if [[ "$1" != --no-chown ]] ; then
-	chown arvbox:arvbox -R /usr/local /var/lib/arvados /var/lib/gems \
+        chown arvbox:arvbox -R /usr/local $ARVADOS_CONTAINER_PATH $GEM_HOME \
               /var/lib/passenger /var/lib/postgresql \
               /var/lib/nginx /var/log/nginx /etc/ssl/private \
-              /var/lib/gopath /var/lib/pip /var/lib/npm
+              /var/lib/gopath /var/lib/pip /var/lib/npm \
+              /var/lib/arvados
     fi
-
-    mkdir -p /var/lib/gems/ruby
-    chown arvbox:arvbox -R /var/lib/gems/ruby
 
     mkdir -p /tmp/crunch0 /tmp/crunch1
     chown crunch:crunch -R /tmp/crunch0 /tmp/crunch1
@@ -44,8 +45,8 @@ if ! grep "^arvbox:" /etc/passwd >/dev/null 2>/dev/null ; then
     echo "arvbox    ALL=(crunch) NOPASSWD: ALL" >> /etc/sudoers
 
     cat <<EOF > /etc/profile.d/paths.sh
-export PATH=/usr/local/bin:/usr/bin:/bin:/usr/local/go/bin:/var/lib/gems/bin:$(ls -d /usr/local/node-*)/bin
-export GEM_HOME=/var/lib/gems
+export PATH=/usr/local/bin:/usr/bin:/bin:$GEM_HOME/bin
+export GEM_HOME=/var/lib/arvados/lib/ruby/gems/2.5.0
 export npm_config_cache=/var/lib/npm
 export npm_config_cache_min=Infinity
 export R_LIBS=/var/lib/Rlibs

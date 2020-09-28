@@ -21,9 +21,9 @@ fi
 
 openssl verify -CAfile $root_cert $server_cert
 
-cat <<EOF >/var/lib/arvados/nginx.conf
+cat <<EOF >$ARVADOS_CONTAINER_PATH/nginx.conf
 worker_processes auto;
-pid /var/lib/arvados/nginx.pid;
+pid $ARVADOS_CONTAINER_PATH/nginx.pid;
 
 error_log stderr;
 daemon off;
@@ -235,4 +235,4 @@ server {
 
 EOF
 
-exec nginx -c /var/lib/arvados/nginx.conf
+exec nginx -c $ARVADOS_CONTAINER_PATH/nginx.conf

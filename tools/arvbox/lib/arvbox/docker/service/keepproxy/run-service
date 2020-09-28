@@ -19,7 +19,7 @@ fi
 
 export ARVADOS_API_HOST=$localip:${services[controller-ssl]}
 export ARVADOS_API_HOST_INSECURE=1
-export ARVADOS_API_TOKEN=$(cat /var/lib/arvados/superuser_token)
+export ARVADOS_API_TOKEN=$(cat $ARVADOS_CONTAINER_PATH/superuser_token)
 
 set +e
 read -rd $'\000' keepservice <<EOF
@@ -32,12 +32,12 @@ read -rd $'\000' keepservice <<EOF
 EOF
 set -e
 
-if test -s /var/lib/arvados/keepproxy-uuid ; then
-    keep_uuid=$(cat /var/lib/arvados/keepproxy-uuid)
+if test -s $ARVADOS_CONTAINER_PATH/keepproxy-uuid ; then
+    keep_uuid=$(cat $ARVADOS_CONTAINER_PATH/keepproxy-uuid)
     arv keep_service update --uuid $keep_uuid --keep-service "$keepservice"
 else
     UUID=$(arv --format=uuid keep_service create --keep-service "$keepservice")
-    echo $UUID > /var/lib/arvados/keepproxy-uuid
+    echo $UUID > $ARVADOS_CONTAINER_PATH/keepproxy-uuid
 fi
 
 exec /usr/local/bin/keepproxy

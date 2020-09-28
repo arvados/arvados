@@ -60,6 +60,8 @@ PIPCACHE="$ARVBOX_DATA/pip"
 NPMCACHE="$ARVBOX_DATA/npm"
 GOSTUFF="$ARVBOX_DATA/gopath"
 RLIBS="$ARVBOX_DATA/Rlibs"
+ARVADOS_CONTAINER_PATH="/var/lib/arvados-arvbox"
+GEM_HOME="/var/lib/arvados/lib/ruby/gems/2.5.0"
 
 getip() {
     docker inspect --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $ARVBOX_CONTAINER
@@ -78,7 +80,7 @@ gethost() {
 }
 
 getclusterid() {
-    docker exec $ARVBOX_CONTAINER cat /var/lib/arvados/api_uuid_prefix
+    docker exec $ARVBOX_CONTAINER cat $ARVADOS_CONTAINER_PATH/api_uuid_prefix
 }
 
 updateconf() {
@@ -96,7 +98,7 @@ EOF
 }
 
 listusers() {
-    docker exec -ti $ARVBOX_CONTAINER /usr/local/lib/arvbox/edit_users.py /var/lib/arvados/cluster_config.yml $(getclusterid) list
+    docker exec -ti $ARVBOX_CONTAINER /usr/local/lib/arvbox/edit_users.py $ARVADOS_CONTAINER_PATH/cluster_config.yml $(getclusterid) list
 }
 
 wait_for_arvbox() {
@@ -129,9 +131,9 @@ docker_run_dev() {
            "--volume=$COMPOSER_ROOT:/usr/src/composer:rw" \
            "--volume=$WORKBENCH2_ROOT:/usr/src/workbench2:rw" \
            "--volume=$PG_DATA:/var/lib/postgresql:rw" \
-           "--volume=$VAR_DATA:/var/lib/arvados:rw" \
+           "--volume=$VAR_DATA:$ARVADOS_CONTAINER_PATH:rw" \
            "--volume=$PASSENGER:/var/lib/passenger:rw" \
-           "--volume=$GEMS:/var/lib/gems:rw" \
+           "--volume=$GEMS:$GEM_HOME:rw" \
            "--volume=$PIPCACHE:/var/lib/pip:rw" \
            "--volume=$NPMCACHE:/var/lib/npm:rw" \
            "--volume=$GOSTUFF:/var/lib/gopath:rw" \
@@ -220,7 +222,7 @@ run() {
         fi
 
         if ! (docker ps -a | grep -E "$ARVBOX_CONTAINER-data$" -q) ; then
-            docker create -v /var/lib/postgresql -v /var/lib/arvados --name $ARVBOX_CONTAINER-data arvados/arvbox-demo /bin/true
+            docker create -v /var/lib/postgresql -v $ARVADOS_CONTAINER_PATH --name $ARVBOX_CONTAINER-data arvados/arvbox-demo /bin/true
         fi
 
         docker run \
@@ -264,11 +266,6 @@ run() {
                        $ARVBOX_CONTAINER \
                        /usr/local/lib/arvbox/runsu.sh \
                        /usr/local/lib/arvbox/waitforpostgres.sh
-
-                docker exec -ti \
-                       $ARVBOX_CONTAINER \
-                       /usr/local/lib/arvbox/runsu.sh \
-                       /var/lib/arvbox/service/api/run-service --only-setup
             fi
 
             interactive=""
@@ -281,12 +278,12 @@ run() {
                    -e COLUMNS=$(tput cols) \
                    -e TERM=$TERM \
                    -e WORKSPACE=/usr/src/arvados \
-                   -e GEM_HOME=/var/lib/gems \
-                   -e CONFIGSRC=/var/lib/arvados/run_tests \
+                   -e GEM_HOME=$GEM_HOME \
+                   -e CONFIGSRC=$ARVADOS_CONTAINER_PATH/run_tests \
                    $ARVBOX_CONTAINER \
                    /usr/local/lib/arvbox/runsu.sh \
                    /usr/src/arvados/build/run-tests.sh \
-                   --temp /var/lib/arvados/test \
+                   --temp $ARVADOS_CONTAINER_PATH/test \
                    $interactive \
                    "$@"
         elif [[ "$CONFIG" = devenv ]] ; then
@@ -299,15 +296,15 @@ run() {
                     --volume=/tmp/.X11-unix:/tmp/.X11-unix:rw \
                         arvados/arvbox-dev$TAG
             fi
-                exec docker exec --interactive --tty \
-                     -e LINES=$(tput lines) \
-                     -e COLUMNS=$(tput cols) \
-                     -e TERM=$TERM \
-                     -e "ARVBOX_HOME=$HOME" \
-                     -e "DISPLAY=$DISPLAY" \
-                     --workdir=$PWD \
+            exec docker exec --interactive --tty \
+                 -e LINES=$(tput lines) \
+                 -e COLUMNS=$(tput cols) \
+                 -e TERM=$TERM \
+                 -e "ARVBOX_HOME=$HOME" \
+                 -e "DISPLAY=$DISPLAY" \
+                 --workdir=$PWD \
                  ${ARVBOX_CONTAINER} \
-                     /usr/local/lib/arvbox/devenv.sh "$@"
+                 /usr/local/lib/arvbox/devenv.sh "$@"
         elif [[ "$CONFIG" =~ dev$ ]] ; then
             docker_run_dev \
                    --detach \
@@ -366,6 +363,7 @@ stop() {
 }
 
 build() {
+    export DOCKER_BUILDKIT=1
     if ! test -f "$ARVBOX_DOCKER/Dockerfile.base" ;  then
         echo "Could not find Dockerfile (expected it at $ARVBOX_DOCKER/Dockerfile.base)"
         exit 1
@@ -376,15 +374,25 @@ build() {
         FORCE=-f
     fi
     GITHEAD=$(cd $ARVBOX_DOCKER && git log --format=%H -n1 HEAD)
-    docker build --build-arg=arvados_version=$GITHEAD $NO_CACHE -t arvados/arvbox-base:$GITHEAD -f "$ARVBOX_DOCKER/Dockerfile.base" "$ARVBOX_DOCKER"
-    docker tag $FORCE arvados/arvbox-base:$GITHEAD arvados/arvbox-base:latest
-    if test "$1" = localdemo -o "$1" = publicdemo ; then
-        docker build $NO_CACHE -t arvados/arvbox-demo:$GITHEAD -f "$ARVBOX_DOCKER/Dockerfile.demo" "$ARVBOX_DOCKER"
-        docker tag $FORCE arvados/arvbox-demo:$GITHEAD arvados/arvbox-demo:latest
+
+    set +e
+    if which greadlink >/dev/null 2>/dev/null ; then
+        LOCAL_ARVADOS_ROOT=$(greadlink -f $(dirname $0)/../../../)
     else
-        docker build $NO_CACHE -t arvados/arvbox-dev:$GITHEAD -f "$ARVBOX_DOCKER/Dockerfile.dev" "$ARVBOX_DOCKER"
-        docker tag $FORCE arvados/arvbox-dev:$GITHEAD arvados/arvbox-dev:latest
+        LOCAL_ARVADOS_ROOT=$(readlink -f $(dirname $0)/../../../)
     fi
+    set -e
+
+    if test "$1" = localdemo -o "$1" = publicdemo ; then
+        BUILDTYPE=demo
+    else
+        BUILDTYPE=dev
+    fi
+
+    docker build --build-arg=BUILDTYPE=$BUILDTYPE $NO_CACHE --build-arg=arvados_version=$GITHEAD --build-arg=workdir=/tools/arvbox/lib/arvbox/docker -t arvados/arvbox-base:$GITHEAD -f "$ARVBOX_DOCKER/Dockerfile.base" "$LOCAL_ARVADOS_ROOT"
+    docker tag $FORCE arvados/arvbox-base:$GITHEAD arvados/arvbox-base:latest
+    docker build $NO_CACHE -t arvados/arvbox-$BUILDTYPE:$GITHEAD -f "$ARVBOX_DOCKER/Dockerfile.$BUILDTYPE" "$ARVBOX_DOCKER"
+    docker tag $FORCE arvados/arvbox-$BUILDTYPE:$GITHEAD arvados/arvbox-$BUILDTYPE:latest
 }
 
 check() {
@@ -424,7 +432,7 @@ case "$subcmd" in
                -e LINES=$(tput lines) \
                -e COLUMNS=$(tput cols) \
                -e TERM=$TERM \
-               -e GEM_HOME=/var/lib/gems \
+               -e GEM_HOME=$GEM_HOME \
                $ARVBOX_CONTAINER /bin/bash
         ;;
 
@@ -433,14 +441,14 @@ case "$subcmd" in
                -e LINES=$(tput lines) \
                -e COLUMNS=$(tput cols) \
                -e TERM=$TERM \
-               -e GEM_HOME=/var/lib/gems \
+               -e GEM_HOME=$GEM_HOME \
                -u arvbox \
                -w /usr/src/arvados \
                $ARVBOX_CONTAINER /bin/bash --login
         ;;
 
     pipe)
-        exec docker exec -i $ARVBOX_CONTAINER /usr/bin/env GEM_HOME=/var/lib/gems /bin/bash -
+        exec docker exec -i $ARVBOX_CONTAINER /usr/bin/env GEM_HOME=$GEM_HOME /bin/bash -
         ;;
 
     stop)
@@ -587,24 +595,24 @@ case "$subcmd" in
         if test -n "$1" ; then
             CERT="$1"
         fi
-        docker exec $ARVBOX_CONTAINER cat /var/lib/arvados/root-cert.pem > "$CERT"
+        docker exec $ARVBOX_CONTAINER cat $ARVADOS_CONTAINER_PATH/root-cert.pem > "$CERT"
         echo "Certificate copied to $CERT"
         ;;
 
     psql)
-        exec docker exec -ti $ARVBOX_CONTAINER bash -c 'PGPASSWORD=$(cat /var/lib/arvados/api_database_pw) exec psql --dbname=arvados_development --host=localhost --username=arvados'
+        exec docker exec -ti $ARVBOX_CONTAINER bash -c 'PGPASSWORD=$(cat $ARVADOS_CONTAINER_PATH/api_database_pw) exec psql --dbname=arvados_development --host=localhost --username=arvados'
         ;;
 
     checkpoint)
-        exec docker exec -ti $ARVBOX_CONTAINER bash -c 'PGPASSWORD=$(cat /var/lib/arvados/api_database_pw) exec pg_dump --host=localhost --username=arvados --clean arvados_development > /var/lib/arvados/checkpoint.sql'
+        exec docker exec -ti $ARVBOX_CONTAINER bash -c 'PGPASSWORD=$(cat $ARVADOS_CONTAINER_PATH/api_database_pw) exec pg_dump --host=localhost --username=arvados --clean arvados_development > $ARVADOS_CONTAINER_PATH/checkpoint.sql'
         ;;
 
     restore)
-        exec docker exec -ti $ARVBOX_CONTAINER bash -c 'PGPASSWORD=$(cat /var/lib/arvados/api_database_pw) exec psql --dbname=arvados_development --host=localhost --username=arvados --quiet --file=/var/lib/arvados/checkpoint.sql'
+        exec docker exec -ti $ARVBOX_CONTAINER bash -c 'PGPASSWORD=$(cat $ARVADOS_CONTAINER_PATH/api_database_pw) exec psql --dbname=arvados_development --host=localhost --username=arvados --quiet --file=$ARVADOS_CONTAINER_PATH/checkpoint.sql'
         ;;
 
     hotreset)
-        exec docker exec -i $ARVBOX_CONTAINER /usr/bin/env GEM_HOME=/var/lib/gems /bin/bash - <<EOF
+        exec docker exec -i $ARVBOX_CONTAINER /usr/bin/env GEM_HOME=$GEM_HOME /bin/bash - <<EOF
 sv stop api
 sv stop controller
 sv stop websockets
@@ -615,11 +623,11 @@ cd /usr/src/arvados/services/api
 export DISABLE_DATABASE_ENVIRONMENT_CHECK=1
 export RAILS_ENV=development
 bundle exec rake db:drop
-rm /var/lib/arvados/api_database_setup
-rm /var/lib/arvados/superuser_token
-rm /var/lib/arvados/keep0-uuid
-rm /var/lib/arvados/keep1-uuid
-rm /var/lib/arvados/keepproxy-uuid
+rm $ARVADOS_CONTAINER_PATH/api_database_setup
+rm $ARVADOS_CONTAINER_PATH/superuser_token
+rm $ARVADOS_CONTAINER_PATH/keep0-uuid
+rm $ARVADOS_CONTAINER_PATH/keep1-uuid
+rm $ARVADOS_CONTAINER_PATH/keepproxy-uuid
 sv start api
 sv start controller
 sv start websockets
@@ -630,12 +638,12 @@ EOF
         ;;
 
     adduser)
-        docker exec -ti $ARVBOX_CONTAINER /usr/local/lib/arvbox/edit_users.py /var/lib/arvados/cluster_config.yml.override $(getclusterid) add $@
+        docker exec -ti $ARVBOX_CONTAINER /usr/local/lib/arvbox/edit_users.py $ARVADOS_CONTAINER_PATH/cluster_config.yml.override $(getclusterid) add $@
         docker exec $ARVBOX_CONTAINER sv restart controller
         ;;
 
     removeuser)
-        docker exec -ti $ARVBOX_CONTAINER /usr/local/lib/arvbox/edit_users.py /var/lib/arvados/cluster_config.yml.override $(getclusterid) remove $@
+        docker exec -ti $ARVBOX_CONTAINER /usr/local/lib/arvbox/edit_users.py $ARVADOS_CONTAINER_PATH/cluster_config.yml.override $(getclusterid) remove $@
         docker exec $ARVBOX_CONTAINER sv restart controller
         ;;
 

@@ -8,16 +8,16 @@ set -eux -o pipefail
 
 . /usr/local/lib/arvbox/common.sh
 
-mkdir -p /var/lib/arvados/git
+mkdir -p $ARVADOS_CONTAINER_PATH/git
 
 export ARVADOS_API_HOST=$localip:${services[controller-ssl]}
 export ARVADOS_API_HOST_INSECURE=1
-export ARVADOS_API_TOKEN=$(cat /var/lib/arvados/superuser_token)
+export ARVADOS_API_TOKEN=$(cat $ARVADOS_CONTAINER_PATH/superuser_token)
 
 export USER=git
 export USERNAME=git
 export LOGNAME=git
-export HOME=/var/lib/arvados/git
+export HOME=$ARVADOS_CONTAINER_PATH/git
 
 cd ~arvbox
 
@@ -33,7 +33,7 @@ if test -s ~arvbox/.ssh/known_hosts ; then
     ssh-keygen -f ".ssh/known_hosts" -R localhost
 fi
 
-if ! test -f /var/lib/arvados/gitolite-setup ; then
+if ! test -f $ARVADOS_CONTAINER_PATH/gitolite-setup ; then
     cd ~git
 
     # Do a no-op login to populate known_hosts
@@ -57,7 +57,7 @@ if ! test -f /var/lib/arvados/gitolite-setup ; then
     git config push.default simple
     git push
 
-    touch /var/lib/arvados/gitolite-setup
+    touch $ARVADOS_CONTAINER_PATH/gitolite-setup
 else
     # Do a no-op login to populate known_hosts
     # with the hostkey, so it won't try to ask
@@ -68,14 +68,14 @@ fi
 
 prefix=$(arv --format=uuid user current | cut -d- -f1)
 
-if ! test -s /var/lib/arvados/arvados-git-uuid ; then
+if ! test -s $ARVADOS_CONTAINER_PATH/arvados-git-uuid ; then
     repo_uuid=$(arv --format=uuid repository create --repository "{\"owner_uuid\":\"$prefix-tpzed-000000000000000\", \"name\":\"arvados\"}")
-    echo $repo_uuid > /var/lib/arvados/arvados-git-uuid
+    echo $repo_uuid > $ARVADOS_CONTAINER_PATH/arvados-git-uuid
 fi
 
-repo_uuid=$(cat /var/lib/arvados/arvados-git-uuid)
+repo_uuid=$(cat $ARVADOS_CONTAINER_PATH/arvados-git-uuid)
 
-if ! test -s /var/lib/arvados/arvados-git-link-uuid ; then
+if ! test -s $ARVADOS_CONTAINER_PATH/arvados-git-link-uuid ; then
     all_users_group_uuid="$prefix-j7d0g-fffffffffffffff"
 
     set +e
@@ -89,19 +89,19 @@ if ! test -s /var/lib/arvados/arvados-git-link-uuid ; then
 EOF
     set -e
     link_uuid=$(arv --format=uuid link create --link "$newlink")
-    echo $link_uuid > /var/lib/arvados/arvados-git-link-uuid
+    echo $link_uuid > $ARVADOS_CONTAINER_PATH/arvados-git-link-uuid
 fi
 
-if ! test -d /var/lib/arvados/git/repositories/$repo_uuid.git ; then
-    git clone --bare /usr/src/arvados /var/lib/arvados/git/repositories/$repo_uuid.git
+if ! test -d $ARVADOS_CONTAINER_PATH/git/repositories/$repo_uuid.git ; then
+    git clone --bare /usr/src/arvados $ARVADOS_CONTAINER_PATH/git/repositories/$repo_uuid.git
 else
-    git --git-dir=/var/lib/arvados/git/repositories/$repo_uuid.git fetch -f /usr/src/arvados master:master
+    git --git-dir=$ARVADOS_CONTAINER_PATH/git/repositories/$repo_uuid.git fetch -f /usr/src/arvados master:master
 fi
 
 cd /usr/src/arvados/services/api
 
-if test -s /var/lib/arvados/api_rails_env ; then
-  RAILS_ENV=$(cat /var/lib/arvados/api_rails_env)
+if test -s $ARVADOS_CONTAINER_PATH/api_rails_env ; then
+  RAILS_ENV=$(cat $ARVADOS_CONTAINER_PATH/api_rails_env)
 else
   RAILS_ENV=development
 fi
@@ -110,8 +110,8 @@ git_user_key=$(cat ~git/.ssh/id_rsa.pub)
 
 cat > config/arvados-clients.yml <<EOF
 $RAILS_ENV:
-  gitolite_url: /var/lib/arvados/git/repositories/gitolite-admin.git
-  gitolite_tmp: /var/lib/arvados/git
+  gitolite_url: $ARVADOS_CONTAINER_PATH/git/repositories/gitolite-admin.git
+  gitolite_tmp: $ARVADOS_CONTAINER_PATH/git
   arvados_api_host: $localip:${services[controller-ssl]}
   arvados_api_token: "$ARVADOS_API_TOKEN"
   arvados_api_host_insecure: false

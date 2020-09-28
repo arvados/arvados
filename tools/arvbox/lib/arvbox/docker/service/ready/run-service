@@ -49,9 +49,9 @@ export ARVADOS_API_HOST=$localip:${services[controller-ssl]}
 export ARVADOS_API_HOST_INSECURE=1
 
 vm_ok=0
-if test -s /var/lib/arvados/vm-uuid -a -s /var/lib/arvados/superuser_token; then
-    vm_uuid=$(cat /var/lib/arvados/vm-uuid)
-    export ARVADOS_API_TOKEN=$(cat /var/lib/arvados/superuser_token)
+if test -s $ARVADOS_CONTAINER_PATH/vm-uuid -a -s $ARVADOS_CONTAINER_PATH/superuser_token; then
+    vm_uuid=$(cat $ARVADOS_CONTAINER_PATH/vm-uuid)
+    export ARVADOS_API_TOKEN=$(cat $ARVADOS_CONTAINER_PATH/superuser_token)
     if (which arv && arv virtual_machine get --uuid $vm_uuid) >/dev/null 2>/dev/null ; then
         vm_ok=1
     fi
@@ -63,7 +63,7 @@ fi
 
 if ! [[ -z "$waiting" ]] ; then
     if ps x | grep -v grep | grep "bundle install" > /dev/null; then
-        gemcount=$(ls /var/lib/gems/ruby/2.1.0/gems 2>/dev/null | wc -l)
+        gemcount=$(ls $GEM_HOME/gems 2>/dev/null | wc -l)
 
         gemlockcount=0
         for l in /usr/src/arvados/services/api/Gemfile.lock \

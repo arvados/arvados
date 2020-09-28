@@ -9,6 +9,6 @@ while ! psql postgres -c\\du >/dev/null 2>/dev/null ; do
     sleep 1
 done
 
-while ! test -s /var/lib/arvados/server-cert-${localip}.pem ; do
+while ! test -s $ARVADOS_CONTAINER_PATH/server-cert-${localip}.pem ; do
     sleep 1
 done
