@@ -35,9 +35,13 @@ TODO: extract this information based on git commit messages and generate changel
 <div class="releasenotes">
 </notextile>
 
-h2(#master). development master (as of 2020-09-22)
+h2(#master). development master (as of 2020-09-28)
 
 "Upgrading from 2.0.0":#v2_0_0
+
+h3. LoginCluster conflicts with other Login providers
+
+A satellite cluster that delegates its user login to a central user database must only have `Login.LoginCluster` set, or it will return an error.  This is a change in behavior, previously it would return an error if another login provider was _not_ configured, even though the provider would never be used.
 
 h3. Minimum supported Ruby version is now 2.5
 
