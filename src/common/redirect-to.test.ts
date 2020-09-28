@@ -12,7 +12,8 @@ describe('redirect-to', () => {
             Object.defineProperty(window, 'location', {
                 value: {
                     href: `${window.location.href}?redirectTo=${redirectTo}`
-                }
+                },
+                writable: true
             });
             Object.defineProperty(window, 'sessionStorage', {
                 value: {
@@ -36,7 +37,8 @@ describe('redirect-to', () => {
             Object.defineProperty(window, 'location', {
                 value: {
                     href: ''
-                }
+                },
+                writable: true
             });
             Object.defineProperty(window, 'sessionStorage', {
                 value: {
