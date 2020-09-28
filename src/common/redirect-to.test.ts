@@ -5,16 +5,19 @@
 import { storeRedirects, handleRedirects } from './redirect-to';
 
 describe('redirect-to', () => {
+    const { location } = window;
     const redirectTo = 'http://localhost/test123';
+
+    afterAll((): void => {
+        window.location = location;
+    });
 
     describe('storeRedirects', () => {
         beforeEach(() => {
-            Object.defineProperty(window, 'location', {
-                value: {
-                    href: `${window.location.href}?redirectTo=${redirectTo}`
-                },
-                writable: true
-            });
+            delete window.location;
+            window.location = {
+                href: `${location.href}?redirectTo=${redirectTo}`,
+            };
             Object.defineProperty(window, 'sessionStorage', {
                 value: {
                     setItem: jest.fn(),
@@ -34,12 +37,10 @@ describe('redirect-to', () => {
 
     describe('handleRedirects', () => {
         beforeEach(() => {
-            Object.defineProperty(window, 'location', {
-                value: {
-                    href: ''
-                },
-                writable: true
-            });
+            delete window.location;
+            window.location = {
+                href: `${location.href}?redirectTo=${redirectTo}`,
+            };
             Object.defineProperty(window, 'sessionStorage', {
                 value: {
                     getItem: () => redirectTo,
