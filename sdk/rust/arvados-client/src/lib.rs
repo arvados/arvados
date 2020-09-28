@@ -18,7 +18,11 @@ impl KeepServicesGetMethodWrapper {
         let KeepServicesGetMethodWrapper(ref client, ref method) = self;
         let url = format!("{}keep_services/{}/", client.base_url, method.uuid);
         let ksresp = client.http_client.get(&url).send().await?;
-        let res : KeepService = serde_json::from_str("{}")?;
+        if ksresp.status() != 200 {
+            return Err(format!("{:?}", ksresp).into());
+        }
+        let text = ksresp.text().await?;
+        let res : KeepService = serde_json::from_str(text.as_ref())?;
         Ok(res)
     }
 }
@@ -68,27 +72,29 @@ mod tests {
 
     use std::convert::Infallible;
     use std::net::SocketAddr;
-    // use hyper::{Body, Request, Response, Server};
     use hyper::service::{make_service_fn, service_fn};
     
-    async fn handle(req: hyper::Request<hyper::Body>) -> std::result::Result<hyper::Response<hyper::Body>, Infallible> {
+    async fn mock_handler(req: hyper::Request<hyper::Body>) -> std::result::Result<hyper::Response<hyper::Body>, Infallible> {
         eprintln!("in handle {:?}", req);
-        Ok(hyper::Response::new(hyper::Body::from("Hello World")))
+        match (req.method(), req.uri().path()) {
+            (&reqwest::Method::GET, "/arvados/v1/keep_services/xyz/") => Ok(hyper::Response::new(hyper::Body::from(r#"{ "etag": "12345" }"#))),
+            _ => Ok(hyper::Response::builder().status(hyper::StatusCode::NOT_FOUND).body(hyper::Body::from("{}")).unwrap())
+        }
     }
     
     #[tokio::test]
     async fn test_keep_services_get() {
-        // Construct our SocketAddr to listen on...
+        // TODO: use an ephemeral port
         let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
     
-        // And a MakeService to handle each connection...
         let make_service = make_service_fn(|_conn| async {
-            Ok::<_, Infallible>(service_fn(handle))
+            Ok::<_, Infallible>(service_fn(mock_handler))
         });
     
-        // Then bind and serve...
+        // server will make a service on every new connection
         let server = hyper::Server::bind(&addr).serve(make_service);
     
+        // run the server until the queries have finished.
         let e = server.with_graceful_shutdown(
             async {
                 let arv_api_host = "localhost:3000";
@@ -96,8 +102,8 @@ mod tests {
                 let arv_api_host_insecure = true;
 
                 let arvados = ArvadosApi::new(arv_api_host, arv_api_token, arv_api_host_insecure).unwrap();
-                let req = arvados.keep_services().get("xyz".to_string()).fetch().await;
-                assert_eq!(format!("{:?}", req), "Request { method: GET, url: \"http://localhost/arvados/v1/keep_services/xyz/\", headers: {} }");
+                let resp = arvados.keep_services().get("xyz".to_string()).fetch().await;
+                assert_eq!(format!("{:?}", resp), "Ok(KeepService { owner_uuid: None, etag: Some(\"12345\"), modified_by_client_uuid: None, service_port: None, service_type: None, read_only: None, created_at: None, uuid: None, modified_at: None, service_host: None, modified_by_user_uuid: None, service_ssl_flag: None, updated_at: None })");
             }
         ).await;
     }
