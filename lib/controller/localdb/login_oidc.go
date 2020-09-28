@@ -106,34 +106,33 @@ func (ctrl *oidcLoginController) Login(ctx context.Context, opts arvados.LoginOp
 				// one Google account.
 				oauth2.SetAuthURLParam("prompt", "select_account")),
 		}, nil
-	} else {
-		// Callback after OIDC sign-in.
-		state := ctrl.parseOAuth2State(opts.State)
-		if !state.verify([]byte(ctrl.Cluster.SystemRootToken)) {
-			return loginError(errors.New("invalid OAuth2 state"))
-		}
-		oauth2Token, err := ctrl.oauth2conf.Exchange(ctx, opts.Code)
-		if err != nil {
-			return loginError(fmt.Errorf("error in OAuth2 exchange: %s", err))
-		}
-		rawIDToken, ok := oauth2Token.Extra("id_token").(string)
-		if !ok {
-			return loginError(errors.New("error in OAuth2 exchange: no ID token in OAuth2 token"))
-		}
-		idToken, err := ctrl.verifier.Verify(ctx, rawIDToken)
-		if err != nil {
-			return loginError(fmt.Errorf("error verifying ID token: %s", err))
-		}
-		authinfo, err := ctrl.getAuthInfo(ctx, oauth2Token, idToken)
-		if err != nil {
-			return loginError(err)
-		}
-		ctxRoot := auth.NewContext(ctx, &auth.Credentials{Tokens: []string{ctrl.Cluster.SystemRootToken}})
-		return ctrl.RailsProxy.UserSessionCreate(ctxRoot, rpc.UserSessionCreateOptions{
-			ReturnTo: state.Remote + "," + state.ReturnTo,
-			AuthInfo: *authinfo,
-		})
 	}
+	// Callback after OIDC sign-in.
+	state := ctrl.parseOAuth2State(opts.State)
+	if !state.verify([]byte(ctrl.Cluster.SystemRootToken)) {
+		return loginError(errors.New("invalid OAuth2 state"))
+	}
+	oauth2Token, err := ctrl.oauth2conf.Exchange(ctx, opts.Code)
+	if err != nil {
+		return loginError(fmt.Errorf("error in OAuth2 exchange: %s", err))
+	}
+	rawIDToken, ok := oauth2Token.Extra("id_token").(string)
+	if !ok {
+		return loginError(errors.New("error in OAuth2 exchange: no ID token in OAuth2 token"))
+	}
+	idToken, err := ctrl.verifier.Verify(ctx, rawIDToken)
+	if err != nil {
+		return loginError(fmt.Errorf("error verifying ID token: %s", err))
+	}
+	authinfo, err := ctrl.getAuthInfo(ctx, oauth2Token, idToken)
+	if err != nil {
+		return loginError(err)
+	}
+	ctxRoot := auth.NewContext(ctx, &auth.Credentials{Tokens: []string{ctrl.Cluster.SystemRootToken}})
+	return ctrl.RailsProxy.UserSessionCreate(ctxRoot, rpc.UserSessionCreateOptions{
+		ReturnTo: state.Remote + "," + state.ReturnTo,
+		AuthInfo: *authinfo,
+	})
 }
 
 func (ctrl *oidcLoginController) UserAuthenticate(ctx context.Context, opts arvados.UserAuthenticateOptions) (arvados.APIClientAuthorization, error) {
@@ -190,9 +189,8 @@ func (ctrl *oidcLoginController) getAuthInfo(ctx context.Context, token *oauth2.
 			// only the "fix config" advice to the user.
 			ctxlog.FromContext(ctx).WithError(err).WithField("email", ret.Email).Error("People API is not enabled")
 			return nil, errors.New("configuration error: Login.GoogleAlternateEmailAddresses is true, but Google People API is not enabled")
-		} else {
-			return nil, fmt.Errorf("error getting profile info from People API: %s", err)
 		}
+		return nil, fmt.Errorf("error getting profile info from People API: %s", err)
 	}
 
 	// The given/family names returned by the People API and

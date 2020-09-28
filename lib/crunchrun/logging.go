@@ -368,9 +368,8 @@ func (arvlog *ArvLogWriter) rateLimit(line []byte, now time.Time) (bool, []byte)
 		// instead of the log message that exceeded the limit.
 		message += " A complete log is still being written to Keep, and will be available when the job finishes."
 		return true, []byte(message)
-	} else {
-		return arvlog.logThrottleIsOpen, line
 	}
+	return arvlog.logThrottleIsOpen, line
 }
 
 // load the rate limit discovery config parameters

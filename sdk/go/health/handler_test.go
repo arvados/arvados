@@ -81,9 +81,8 @@ func (s *Suite) TestPingOverride(c *check.C) {
 				ok = !ok
 				if ok {
 					return nil
-				} else {
-					return errors.New("good error")
 				}
+				return errors.New("good error")
 			},
 		},
 	}

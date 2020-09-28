@@ -192,7 +192,7 @@ func (wkr *worker) startContainer(ctr arvados.Container) {
 }
 
 // ProbeAndUpdate conducts appropriate boot/running probes (if any)
-// for the worker's curent state. If a previous probe is still
+// for the worker's current state. If a previous probe is still
 // running, it does nothing.
 //
 // It should be called in a new goroutine.
@@ -376,6 +376,7 @@ func (wkr *worker) probeRunning() (running []string, reportsBroken, ok bool) {
 	if u := wkr.instance.RemoteUser(); u != "root" {
 		cmd = "sudo " + cmd
 	}
+	before := time.Now()
 	stdout, stderr, err := wkr.executor.Execute(nil, cmd, nil)
 	if err != nil {
 		wkr.logger.WithFields(logrus.Fields{
@@ -383,8 +384,10 @@ func (wkr *worker) probeRunning() (running []string, reportsBroken, ok bool) {
 			"stdout":  string(stdout),
 			"stderr":  string(stderr),
 		}).WithError(err).Warn("probe failed")
+		wkr.wp.mRunProbeDuration.WithLabelValues("fail").Observe(time.Now().Sub(before).Seconds())
 		return
 	}
+	wkr.wp.mRunProbeDuration.WithLabelValues("success").Observe(time.Now().Sub(before).Seconds())
 	ok = true
 
 	staleRunLock := false

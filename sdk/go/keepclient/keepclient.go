@@ -290,10 +290,9 @@ func (kc *KeepClient) getOrHead(method string, locator string, header http.Heade
 					Hash:   md5.New(),
 					Check:  locator[0:32],
 				}, expectLength, url, resp.Header, nil
-			} else {
-				resp.Body.Close()
-				return nil, expectLength, url, resp.Header, nil
 			}
+			resp.Body.Close()
+			return nil, expectLength, url, resp.Header, nil
 		}
 		serversToTry = retryList
 	}

@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"git.arvados.org/arvados.git/lib/cloud"
-	"git.arvados.org/arvados.git/lib/dispatchcloud/ssh_executor"
+	"git.arvados.org/arvados.git/lib/dispatchcloud/sshexecutor"
 	"git.arvados.org/arvados.git/lib/dispatchcloud/worker"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"github.com/sirupsen/logrus"
@@ -48,7 +48,7 @@ type tester struct {
 	is              cloud.InstanceSet
 	testInstance    *worker.TagVerifier
 	secret          string
-	executor        *ssh_executor.Executor
+	executor        *sshexecutor.Executor
 	showedLoginInfo bool
 
 	failed bool
@@ -150,9 +150,8 @@ func (t *tester) Run() bool {
 			if time.Now().After(bootDeadline) {
 				t.Logger.Error("timed out")
 				return false
-			} else {
-				t.sleepSyncInterval()
 			}
+			t.sleepSyncInterval()
 		}
 		t.Logger.WithField("Instance", t.testInstance.ID()).Info("new instance appeared")
 		t.showLoginInfo()
@@ -308,7 +307,7 @@ func (t *tester) waitForBoot(deadline time.Time) bool {
 // current address.
 func (t *tester) updateExecutor() {
 	if t.executor == nil {
-		t.executor = ssh_executor.New(t.testInstance)
+		t.executor = sshexecutor.New(t.testInstance)
 		t.executor.SetTargetPort(t.SSHPort)
 		t.executor.SetSigners(t.SSHKey)
 	} else {

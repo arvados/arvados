@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package ssh_executor
+package sshexecutor
 
 import (
 	"bytes"

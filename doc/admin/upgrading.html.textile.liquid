@@ -16,6 +16,7 @@ h2. General process
 
 # Consult upgrade notes below to see if any manual configuration updates are necessary.
 # Wait for the cluster to be idle and stop Arvados services.
+# Make a backup of your database, as a precaution.
 # Install new packages using @apt-get upgrade@ or @yum upgrade@.
 # Wait for package installation scripts as they perform any necessary data migrations.
 # Restart Arvados services.
@@ -34,9 +35,13 @@ TODO: extract this information based on git commit messages and generate changel
 <div class="releasenotes">
 </notextile>
 
-h2(#master). development master (as of 2020-06-17)
+h2(#master). development master (as of 2020-09-22)
 
 "Upgrading from 2.0.0":#v2_0_0
+
+h3. Minimum supported Ruby version is now 2.5
+
+The minimum supported Ruby version is now 2.5.  If you are running Arvados on Debian 9 or Ubuntu 16.04, you may need to switch to using RVM or upgrade your OS.  See "Install Ruby and Bundler":../install/ruby.html for more information.
 
 h3. Removing libpam-arvados, replaced with libpam-arvados-go
 
@@ -86,6 +91,10 @@ for uuid in $(arv link list --filters '[["link_class", "=", "permission"], ["tai
    arv group list --filters '[["group_class", "=", "project"], ["uuid", "=", "'$uuid'"]]' | jq .items
 done
 </pre>
+
+h4. "Public favorites" moved to their own project
+
+As a side effect of new permission system constraints, "star" links (indicating shortcuts in Workbench) that were previously owned by "All users" (which is now a "role" and cannot own things) will be migrated to a new system project called "Public favorites" which is readable by the "Anonymous users" role.
 
 h2(#v2_0_0). v2.0.0 (2020-02-07)
 

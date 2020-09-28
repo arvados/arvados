@@ -56,10 +56,18 @@ class Arvados::V1::CollectionsController < ApplicationController
   end
 
   def find_object_by_uuid
-    @include_old_versions = true
+    if params[:include_old_versions].nil?
+      @include_old_versions = true
+    else
+      @include_old_versions = params[:include_old_versions]
+    end
 
     if loc = Keep::Locator.parse(params[:id])
       loc.strip_hints!
+
+      opts = {}
+      opts.update({include_trash: true}) if params[:include_trash]
+      opts.update({include_old_versions: @include_old_versions})
 
       # It matters which Collection object we pick because we use it to get signed_manifest_text,
       # the value of which is affected by the value of trash_at.
@@ -72,14 +80,13 @@ class Arvados::V1::CollectionsController < ApplicationController
       # it will select the Collection object with the longest
       # available lifetime.
 
-      if c = Collection.readable_by(*@read_users).where({ portable_data_hash: loc.to_s }).order("trash_at desc").limit(1).first
+      if c = Collection.readable_by(*@read_users, opts).where({ portable_data_hash: loc.to_s }).order("trash_at desc").limit(1).first
         @object = {
           uuid: c.portable_data_hash,
           portable_data_hash: c.portable_data_hash,
           manifest_text: c.signed_manifest_text,
         }
       end
-      true
     else
       super
     end
