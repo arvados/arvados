@@ -19,7 +19,7 @@ describe('redirect-to', () => {
         reload: () => {},
         replace: () => {},
         assign: () => {},
-        ancestorOrigins: new DOMStringList(),
+        ancestorOrigins: [],
         href: '',
     };
 
@@ -33,7 +33,7 @@ describe('redirect-to', () => {
             window.location = {
                 ...locationTemplate,
                 href: `${location.href}?redirectTo=${redirectTo}`,
-            };
+            } as any;
             Object.defineProperty(window, 'sessionStorage', {
                 value: {
                     setItem: jest.fn(),
@@ -57,7 +57,7 @@ describe('redirect-to', () => {
             window.location = {
                 ...locationTemplate,
                 href: `${location.href}?redirectTo=${redirectTo}`,
-            };
+            } as any;;
             Object.defineProperty(window, 'sessionStorage', {
                 value: {
                     getItem: () => redirectTo,
