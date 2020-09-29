@@ -17,7 +17,7 @@ describe('redirect-to', () => {
             delete window.location;
             window.location = {
                 href: `${location.href}?redirectTo=${redirectTo}`,
-            };
+            } as any;
             Object.defineProperty(window, 'sessionStorage', {
                 value: {
                     setItem: jest.fn(),
@@ -40,7 +40,7 @@ describe('redirect-to', () => {
             delete window.location;
             window.location = {
                 href: `${location.href}?redirectTo=${redirectTo}`,
-            };
+            } as any;
             Object.defineProperty(window, 'sessionStorage', {
                 value: {
                     getItem: () => redirectTo,
