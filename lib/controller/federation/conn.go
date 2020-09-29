@@ -517,32 +517,7 @@ func (conn *Conn) UserGet(ctx context.Context, options arvados.GetOptions) (arva
 }
 
 func (conn *Conn) UserGetCurrent(ctx context.Context, options arvados.GetOptions) (arvados.User, error) {
-	c, ok := auth.FromContext(ctx)
-	if !ok || len(c.Tokens) == 0 {
-		return arvados.User{}, httpErrorf(http.StatusUnauthorized, "Must supply a token")
-	}
-
-	tok := c.Tokens[0]
-	if !strings.HasPrefix(tok, "v2/") || len(tok) < 30 {
-		return conn.localOrLoginCluster().UserGetCurrent(ctx, options)
-	}
-
-	// Contact the cluster that issued the token to find out what
-	// user it belongs to.
-	remote := tok[3:8]
-	resp, err := conn.chooseBackend(remote).UserGetCurrent(ctx, options)
-	if err != nil {
-		return resp, err
-	}
-
-	// If it is a remote cluster that owns the user, update the local user record.
-	if remote != conn.cluster.ClusterID && remote == resp.UUID[:5] {
-		err = conn.batchUpdateUsers(ctx, arvados.ListOptions{}, []arvados.User{resp})
-		if err != nil {
-			return arvados.User{}, err
-		}
-	}
-	return resp, nil
+	return conn.local.UserGetCurrent(ctx, options)
 }
 
 func (conn *Conn) UserGetSystem(ctx context.Context, options arvados.GetOptions) (arvados.User, error) {
