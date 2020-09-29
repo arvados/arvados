@@ -7,6 +7,21 @@ import { storeRedirects, handleRedirects } from './redirect-to';
 describe('redirect-to', () => {
     const { location } = window;
     const redirectTo = 'http://localhost/test123';
+    const locationTemplate = {
+        hash: '',
+        hostname: '',
+        origin: '',
+        host: '',
+        pathname: '',
+        port: '80',
+        protocol: 'http',
+        search: '',
+        reload: () => {},
+        replace: () => {},
+        assign: () => {},
+        ancestorOrigins: new DOMStringList(),
+        href: '',
+    };
 
     afterAll((): void => {
         window.location = location;
@@ -16,8 +31,9 @@ describe('redirect-to', () => {
         beforeEach(() => {
             delete window.location;
             window.location = {
+                ...locationTemplate,
                 href: `${location.href}?redirectTo=${redirectTo}`,
-            } as any;
+            };
             Object.defineProperty(window, 'sessionStorage', {
                 value: {
                     setItem: jest.fn(),
@@ -39,8 +55,9 @@ describe('redirect-to', () => {
         beforeEach(() => {
             delete window.location;
             window.location = {
+                ...locationTemplate,
                 href: `${location.href}?redirectTo=${redirectTo}`,
-            } as any;
+            };
             Object.defineProperty(window, 'sessionStorage', {
                 value: {
                     getItem: () => redirectTo,
