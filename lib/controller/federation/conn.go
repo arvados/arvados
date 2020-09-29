@@ -500,11 +500,24 @@ func (conn *Conn) UserUnsetup(ctx context.Context, options arvados.GetOptions) (
 }
 
 func (conn *Conn) UserGet(ctx context.Context, options arvados.GetOptions) (arvados.User, error) {
-	return conn.chooseBackend(options.UUID).UserGet(ctx, options)
+	resp, err := conn.chooseBackend(options.UUID).UserGet(ctx, options)
+	if err != nil {
+		return resp, err
+	}
+	if options.UUID != resp.UUID {
+		return arvados.User{}, httpErrorf(http.StatusBadGateway, "Had requested %v but response was for %v", options.UUID, resp.UUID)
+	}
+	if options.UUID[:5] != conn.cluster.ClusterID {
+		err = conn.batchUpdateUsers(ctx, arvados.ListOptions{}, []arvados.User{resp})
+		if err != nil {
+			return arvados.User{}, err
+		}
+	}
+	return resp, nil
 }
 
 func (conn *Conn) UserGetCurrent(ctx context.Context, options arvados.GetOptions) (arvados.User, error) {
-	return conn.chooseBackend(options.UUID).UserGetCurrent(ctx, options)
+	return conn.local.UserGetCurrent(ctx, options)
 }
 
 func (conn *Conn) UserGetSystem(ctx context.Context, options arvados.GetOptions) (arvados.User, error) {

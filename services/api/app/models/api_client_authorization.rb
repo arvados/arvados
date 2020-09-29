@@ -268,11 +268,15 @@ class ApiClientAuthorization < ArvadosModel
       end
 
       act_as_system_user do
-        if user.is_active && !remote_user['is_active']
+        user.save!
+
+        if (user.is_active && !remote_user['is_active']) or (user.is_invited && !remote_user['is_invited'])
+          # If the user is newly created and AutoSetupNewUsers is
+          # true, they will auto-setup in an after_create hook.
+          # Synchronize the user's "active/invited" state state after the record
+          # has been saved.
           user.unsetup
         end
-
-        user.save!
 
         # We will accept this token (and avoid reloading the user
         # record) for 'RemoteTokenRefresh' (default 5 minutes).
