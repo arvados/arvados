@@ -2,11 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# This file is packaged as /usr/share/pam-configs/arvados-go; see build/run-library.sh
-
-# 1. Run `pam-auth-update` and choose Arvados authentication
-# 2. In /etc/pam.d/common-auth, change "api.example" to your ARVADOS_API_HOST
-# 3. In /etc/pam.d/common-auth, change "shell.example" to this host's hostname
+# 1. Copy the contents of this file *minus all comment lines* to /usr/share/pam-configs/arvados-go
+# 2. Run `pam-auth-update` and choose Arvados authentication
+# 3. In /etc/pam.d/common-auth, change "api.example" to your ARVADOS_API_HOST
+# 4. In /etc/pam.d/common-auth, change "shell.example" to this host's hostname
 #    (as it appears in the Arvados virtual_machines list)
 
 Name: Arvados authentication

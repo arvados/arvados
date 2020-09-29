@@ -210,7 +210,7 @@ package_go_so() {
         "$WORKSPACE/apache-2.0.txt=/usr/share/doc/$pkg/apache-2.0.txt"
     )
     if [[ -e "$WORKSPACE/$src_path/pam-configs-arvados" ]]; then
-        fpmargs+=("$WORKSPACE/$src_path/pam-configs-arvados=/usr/share/pam-configs/arvados-go")
+        fpmargs+=("$WORKSPACE/$src_path/pam-configs-arvados=/usr/share/doc/$pkg/pam-configs-arvados-go")
     fi
     if [[ -e "$WORKSPACE/$src_path/README" ]]; then
         fpmargs+=("$WORKSPACE/$src_path/README=/usr/share/doc/$pkg/README")
