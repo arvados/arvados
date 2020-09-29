@@ -21,8 +21,10 @@ class ApiClient < ArvadosModel
   protected
 
   def from_trusted_url
-    norm(self.url_prefix) == norm(Rails.configuration.Services.Workbench1.ExternalURL) ||
-      norm(self.url_prefix) == norm(Rails.configuration.Services.Workbench2.ExternalURL)
+    norm_url_prefix = norm(self.url_prefix)
+    norm_url_prefix == norm(Rails.configuration.Services.Workbench1.ExternalURL) or
+      norm_url_prefix == norm(Rails.configuration.Services.Workbench2.ExternalURL) or
+      norm_url_prefix == norm("https://controller.api.client.invalid")
   end
 
   def norm url
