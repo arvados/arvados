@@ -110,6 +110,7 @@ arvcfg.declare_config "Users.NewInactiveUserNotificationRecipients", Hash, :new_
 arvcfg.declare_config "Login.SSO.ProviderAppSecret", String, :sso_app_secret
 arvcfg.declare_config "Login.SSO.ProviderAppID", String, :sso_app_id
 arvcfg.declare_config "Login.LoginCluster", String
+arvcfg.declare_config "Login.TrustedClients", Hash
 arvcfg.declare_config "Login.RemoteTokenRefresh", ActiveSupport::Duration
 arvcfg.declare_config "Login.TokenLifetime", ActiveSupport::Duration
 arvcfg.declare_config "TLS.Insecure", Boolean, :sso_insecure

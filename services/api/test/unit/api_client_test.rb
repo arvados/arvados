@@ -12,6 +12,8 @@ class ApiClientTest < ActiveSupport::TestCase
       Rails.configuration.Login.TokenLifetime = token_lifetime_enabled ? 8.hours : 0
       Rails.configuration.Services.Workbench1.ExternalURL = URI("http://wb1.example.com")
       Rails.configuration.Services.Workbench2.ExternalURL = URI("https://wb2.example.com:443")
+      Rails.configuration.Login.TrustedClients = ActiveSupport::OrderedOptions.new
+      Rails.configuration.Login.TrustedClients[:"https://wb3.example.com"] = ActiveSupport::OrderedOptions.new
 
       act_as_system_user do
         [["http://wb0.example.com", false],
@@ -19,6 +21,8 @@ class ApiClientTest < ActiveSupport::TestCase
         ["http://wb2.example.com", false],
         ["https://wb2.example.com", true],
         ["https://wb2.example.com/", true],
+        ["https://wb3.example.com/", true],
+        ["https://wb4.example.com/", false],
         ].each do |pfx, result|
           a = ApiClient.create(url_prefix: pfx, is_trusted: false)
           if token_lifetime_enabled
