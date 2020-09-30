@@ -570,7 +570,6 @@ fn make_resource_structs<S : std::io::Write>(writer: &mut S, resources: &HashMap
         if let Some(methods) = &res.methods {
             for (name, method) in methods {
                 let method_struct_name = format!("{}{}Method", resource_camel, snake_to_camel(name.as_ref()));
-                let wrapper_name = format!("{}{}Wrapper", resource_camel, snake_to_camel(name.as_ref()));
                 if let Some(description) = &method.description {
                     write!(writer, "{}", desc_to_doc(description.as_str()))?;
                 }
@@ -579,14 +578,13 @@ fn make_resource_structs<S : std::io::Write>(writer: &mut S, resources: &HashMap
                 }
                 writeln!(writer, "#[derive(Debug)]")?;
                 writeln!(writer, "pub struct {} {{", method_struct_name)?;
+                writeln!(writer, "    client: Rc<ArvadosClient>,")?;
                 if let Some(parameters) = &method.parameters {
                     for (pname, param) in parameters {
                         writeln!(writer, "    pub {}: {},", to_ident(pname), to_rust_type(param)?)?;
                     }
                 }
                 writeln!(writer, "}}\n")?;
-                writeln!(writer, "#[derive(Debug)]")?;
-                writeln!(writer, "pub struct {}(Rc<ArvadosClient>, {});\n", wrapper_name, method_struct_name)?;
             }
         };
 
@@ -619,7 +617,6 @@ fn make_resource_interfaces<S : std::io::Write>(writer: &mut S, resources: &Hash
         if let Some(methods) = &res.methods {
             for (name, method) in methods {
                 let method_struct_name = format!("{}{}Method", resource_camel, snake_to_camel(name.as_ref()));
-                let wrapper_name = format!("{}{}Wrapper", resource_camel, snake_to_camel(name.as_ref()));
                 if let Some(description) = &method.description {
                     write!(writer, "{}", desc_to_doc(description.as_str()))?;
                 }
@@ -634,8 +631,8 @@ fn make_resource_interfaces<S : std::io::Write>(writer: &mut S, resources: &Hash
                         }
                     }
                 }
-                writeln!(writer, ") -> {} {{", wrapper_name)?;
-                write!(writer, "        {}(self.client.clone(), {} {{", wrapper_name, method_struct_name)?;
+                writeln!(writer, ") -> {} {{", method_struct_name)?;
+                write!(writer, "        {} {{ client: self.client.clone(),", method_struct_name)?;
                 if let Some(parameters) = &method.parameters {
                     for (pname, param) in parameters {
                         if param.required == Some(true)  {
@@ -645,7 +642,7 @@ fn make_resource_interfaces<S : std::io::Write>(writer: &mut S, resources: &Hash
                         }
                     }
                 }
-                writeln!(writer, "}})")?;
+                writeln!(writer, "}}")?;
                 writeln!(writer, "    }}")?;
             }
         }
@@ -672,7 +669,7 @@ fn url_param_string(method: &RestMethod)-> String {
     let path_param_re = Regex::new("[{]([^}]+)[}]").unwrap();
     if let Some(path) = method.path.as_ref() {
         for cap in path_param_re.captures_iter(&path) {
-            res.extend(", method.".chars());
+            res.extend(", self.".chars());
             res.extend(cap[1].chars());
         }
     }
@@ -687,21 +684,20 @@ fn http_method(method: &RestMethod)-> String {
     }
 }
 
-fn make_wrapper_interfaces<S : std::io::Write>(writer: &mut S, resources: &HashMap<String, RestResource>) -> Result<()> {
+fn make_method_interfaces<S : std::io::Write>(writer: &mut S, resources: &HashMap<String, RestResource>) -> Result<()> {
     for (name, res) in resources {
         let resource_camel = snake_to_camel(name.as_ref());
         //let resource_struct_name = format!("{}Resource", resource_camel);
         if let Some(methods) = &res.methods {
             for (name, method) in methods {
                 //let method_struct_name = format!("{}{}Method", resource_camel, snake_to_camel(name.as_ref()));
-                let wrapper_name = format!("{}{}Wrapper", resource_camel, snake_to_camel(name.as_ref()));
+                let method_name = format!("{}{}Method", resource_camel, snake_to_camel(name.as_ref()));
                 let response = method.response.as_ref().unwrap();
                 let result_name = response.ref_.as_ref().unwrap();
-                writeln!(writer, "impl {} {{", wrapper_name)?;
+                writeln!(writer, "impl {} {{", method_name)?;
                 writeln!(writer, "    async fn fetch(&self) -> Result<{}> {{", result_name)?;
-                writeln!(writer, "        let {}(ref client, ref method) = self;", wrapper_name)?;
-                writeln!(writer, "        let url = format!(\"{{}}{}\", client.base_url{});", url_format_string(method), url_param_string(method))?;
-                writeln!(writer, "        let ksresp = client.http_client.{}(&url).send().await?;", http_method(method))?;
+                writeln!(writer, "        let url = format!(\"{{}}{}\", self.client.base_url{});", url_format_string(method), url_param_string(method))?;
+                writeln!(writer, "        let ksresp = self.client.http_client.{}(&url).send().await?;", http_method(method))?;
                 writeln!(writer, "        if ksresp.status() != 200 {{")?;
                 writeln!(writer, "            return Err(format!(\"{{:?}}\", ksresp).into());")?;
                 writeln!(writer, "        }}")?;
@@ -724,7 +720,7 @@ pub fn convert<R : std::io::Read, W : std::io::Write>(reader: R, mut writer: W) 
         make_api_root(&mut writer, resources)?;
         make_resource_interfaces(&mut writer, resources)?;
         make_resource_structs(&mut writer, resources)?;
-        make_wrapper_interfaces(&mut writer, resources)?;
+        make_method_interfaces(&mut writer, resources)?;
     }
 
     if let Some(schemas) = &desc.schemas {

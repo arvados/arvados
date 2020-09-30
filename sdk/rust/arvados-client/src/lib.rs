@@ -15,12 +15,16 @@ include!(concat!(env!("OUT_DIR"), "/arvados-api.rs"));
 
 #[derive(Debug)]
 pub struct ArvadosApi {
+    // Ref counted pointer to client data. Ideally should be a reference.
     client: Rc<ArvadosClient>,
 }
 
 #[derive(Debug)]
 pub struct ArvadosClient {
+    /// Reqwest client. Could be hyper?
     http_client: Client,
+
+    /// base of the http request string.
     base_url: String,
 }
 
