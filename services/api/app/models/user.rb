@@ -38,7 +38,8 @@ class User < ArvadosModel
   after_create :auto_setup_new_user, :if => Proc.new {
     Rails.configuration.Users.AutoSetupNewUsers and
     (uuid != system_user_uuid) and
-    (uuid != anonymous_user_uuid)
+    (uuid != anonymous_user_uuid) and
+    (uuid[0..4] == Rails.configuration.ClusterID)
   }
   after_create :send_admin_notifications
 
