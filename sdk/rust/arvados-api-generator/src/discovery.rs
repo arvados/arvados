@@ -16,6 +16,7 @@
 use serde::Deserialize;
 use std::collections::HashMap;
 use crate::Result;
+use regex::Regex;
 
 /// Convert snake case xyz_abc to camel case XyzAbc.
 fn snake_to_camel(s: &str) -> String {
@@ -569,13 +570,14 @@ fn make_resource_structs<S : std::io::Write>(writer: &mut S, resources: &HashMap
         if let Some(methods) = &res.methods {
             for (name, method) in methods {
                 let method_struct_name = format!("{}{}Method", resource_camel, snake_to_camel(name.as_ref()));
+                let wrapper_name = format!("{}{}Wrapper", resource_camel, snake_to_camel(name.as_ref()));
                 if let Some(description) = &method.description {
                     write!(writer, "{}", desc_to_doc(description.as_str()))?;
                 }
                 if let Some(id) = &method.id {
                     writeln!(writer, "/// method id: {}", id.as_str())?;
                 }
-                writeln!(writer, "#[derive(Serialize, Deserialize, Debug)]")?;
+                writeln!(writer, "#[derive(Debug)]")?;
                 writeln!(writer, "pub struct {} {{", method_struct_name)?;
                 if let Some(parameters) = &method.parameters {
                     for (pname, param) in parameters {
@@ -584,7 +586,7 @@ fn make_resource_structs<S : std::io::Write>(writer: &mut S, resources: &HashMap
                 }
                 writeln!(writer, "}}\n")?;
                 writeln!(writer, "#[derive(Debug)]")?;
-                writeln!(writer, "pub struct {}Wrapper(Rc<ArvadosClient>, {});\n", method_struct_name, method_struct_name)?;
+                writeln!(writer, "pub struct {}(Rc<ArvadosClient>, {});\n", wrapper_name, method_struct_name)?;
             }
         };
 
@@ -617,6 +619,7 @@ fn make_resource_interfaces<S : std::io::Write>(writer: &mut S, resources: &Hash
         if let Some(methods) = &res.methods {
             for (name, method) in methods {
                 let method_struct_name = format!("{}{}Method", resource_camel, snake_to_camel(name.as_ref()));
+                let wrapper_name = format!("{}{}Wrapper", resource_camel, snake_to_camel(name.as_ref()));
                 if let Some(description) = &method.description {
                     write!(writer, "{}", desc_to_doc(description.as_str()))?;
                 }
@@ -631,8 +634,8 @@ fn make_resource_interfaces<S : std::io::Write>(writer: &mut S, resources: &Hash
                         }
                     }
                 }
-                writeln!(writer, ") -> {}Wrapper {{", method_struct_name)?;
-                write!(writer, "        {}Wrapper(self.client.clone(), {} {{", method_struct_name, method_struct_name)?;
+                writeln!(writer, ") -> {} {{", wrapper_name)?;
+                write!(writer, "        {}(self.client.clone(), {} {{", wrapper_name, method_struct_name)?;
                 if let Some(parameters) = &method.parameters {
                     for (pname, param) in parameters {
                         if param.required == Some(true)  {
@@ -651,44 +654,64 @@ fn make_resource_interfaces<S : std::io::Write>(writer: &mut S, resources: &Hash
     Ok(())
 }
 
-fn make_request_interfaces<S : std::io::Write>(writer: &mut S, resources: &HashMap<String, RestResource>) -> Result<()> {
+// NOTE: we are ignoring parameter order!
+// eg. "/path/{}"
+fn url_format_string(method: &RestMethod)-> String {
+    let mut res = String::with_capacity(256);
+    let path_param_re = Regex::new("[{]([^}]+)[}]").unwrap();
+    if let Some(path) = method.path.as_ref() {
+        res.extend(path_param_re.replace_all(path.as_str(), "{}").chars());
+    }
+    res
+}
+
+
+// eg. ", method.uuid"
+fn url_param_string(method: &RestMethod)-> String {
+    let mut res = String::with_capacity(256);
+    let path_param_re = Regex::new("[{]([^}]+)[}]").unwrap();
+    if let Some(path) = method.path.as_ref() {
+        for cap in path_param_re.captures_iter(&path) {
+            res.extend(", method.".chars());
+            res.extend(cap[1].chars());
+        }
+    }
+    res
+}
+
+fn http_method(method: &RestMethod)-> String {
+    if let Some(method) = method.http_method.as_ref() {
+        method.to_ascii_lowercase()
+    } else {
+        "get".to_string()
+    }
+}
+
+fn make_wrapper_interfaces<S : std::io::Write>(writer: &mut S, resources: &HashMap<String, RestResource>) -> Result<()> {
     for (name, res) in resources {
         let resource_camel = snake_to_camel(name.as_ref());
-        let resource_struct_name = format!("{}Resource", resource_camel);
-        writeln!(writer, "impl {} {{", resource_struct_name)?;
+        //let resource_struct_name = format!("{}Resource", resource_camel);
         if let Some(methods) = &res.methods {
             for (name, method) in methods {
-                let method_struct_name = format!("{}{}Method", resource_camel, snake_to_camel(name.as_ref()));
-                if let Some(description) = &method.description {
-                    write!(writer, "{}", desc_to_doc(description.as_str()))?;
-                }
-                if let Some(id) = &method.id {
-                    writeln!(writer, "    /// method id: {}", id.as_str())?;
-                }
-                write!(writer, "    pub fn {}(&self", to_ident(name))?;
-                if let Some(parameters) = &method.parameters {
-                    for (pname, param) in parameters {
-                        if param.required == Some(true) {
-                            write!(writer, ", {}: {}", to_ident(pname), to_rust_type(param)?)?;
-                        }
-                    }
-                }
-                writeln!(writer, ") -> (Rc<ArvadosClient>, {}) {{", method_struct_name)?;
-                write!(writer, "        (self.client.clone(), {} {{", method_struct_name)?;
-                if let Some(parameters) = &method.parameters {
-                    for (pname, param) in parameters {
-                        if param.required == Some(true)  {
-                            write!(writer, " {},", to_ident(pname))?;
-                        } else {
-                            write!(writer, " {}: None,", to_ident(pname))?;
-                        }
-                    }
-                }
-                writeln!(writer, "}})")?;
+                //let method_struct_name = format!("{}{}Method", resource_camel, snake_to_camel(name.as_ref()));
+                let wrapper_name = format!("{}{}Wrapper", resource_camel, snake_to_camel(name.as_ref()));
+                let response = method.response.as_ref().unwrap();
+                let result_name = response.ref_.as_ref().unwrap();
+                writeln!(writer, "impl {} {{", wrapper_name)?;
+                writeln!(writer, "    async fn fetch(&self) -> Result<{}> {{", result_name)?;
+                writeln!(writer, "        let {}(ref client, ref method) = self;", wrapper_name)?;
+                writeln!(writer, "        let url = format!(\"{{}}{}\", client.base_url{});", url_format_string(method), url_param_string(method))?;
+                writeln!(writer, "        let ksresp = client.http_client.{}(&url).send().await?;", http_method(method))?;
+                writeln!(writer, "        if ksresp.status() != 200 {{")?;
+                writeln!(writer, "            return Err(format!(\"{{:?}}\", ksresp).into());")?;
+                writeln!(writer, "        }}")?;
+                writeln!(writer, "        let text = ksresp.text().await?;")?;
+                writeln!(writer, "        let res : {} = serde_json::from_str(text.as_ref())?;", result_name)?;
+                writeln!(writer, "        Ok(res)")?;
                 writeln!(writer, "    }}")?;
+                writeln!(writer, "}}")?;
             }
         }
-        writeln!(writer, "}}")?;
     }
     Ok(())
 }
@@ -697,42 +720,31 @@ fn make_request_interfaces<S : std::io::Write>(writer: &mut S, resources: &HashM
 pub fn convert<R : std::io::Read, W : std::io::Write>(reader: R, mut writer: W) -> Result<()> {
     let desc : RestDescription = serde_json::from_reader(reader)?;
 
-    use std::io::Write;
-    let mut structs: Vec<u8> = Vec::new();
     if let Some(resources) = &desc.resources {
-        make_resource_structs(&mut structs, resources)?;
-    }
-
-    let mut interfaces: Vec<u8> = Vec::new();
-    if let Some(resources) = &desc.resources {
-        make_resource_interfaces(&mut interfaces, resources)?;
-    }
-    let mut api_root: Vec<u8> = Vec::new();
-    if let Some(resources) = &desc.resources {
-        make_api_root(&mut api_root, resources)?;
+        make_api_root(&mut writer, resources)?;
+        make_resource_interfaces(&mut writer, resources)?;
+        make_resource_structs(&mut writer, resources)?;
+        make_wrapper_interfaces(&mut writer, resources)?;
     }
 
     if let Some(schemas) = &desc.schemas {
         for (name, schema) in schemas {
             if let  Some(id) = &schema.id {
-                writeln!(structs, "/// schema id {}", id)?;
+                writeln!(writer, "/// schema id {}", id)?;
             }
             if schema.properties.is_none() {
                 return Err("expected properties in discovery json.".into());
             }
             let properties = schema.properties.as_ref().unwrap();
-            writeln!(structs, "#[derive(Serialize, Deserialize, Debug)]")?;
-            writeln!(structs, "pub struct {} {{", name)?;
+            writeln!(writer, "#[derive(Serialize, Deserialize, Debug)]")?;
+            writeln!(writer, "pub struct {} {{", name)?;
             for (pname, prop) in properties {
-                writeln!(structs, "    pub {}: {},", to_ident(pname), to_rust_type(prop)?)?;
+                writeln!(writer, "    pub {}: {},", to_ident(pname), to_rust_type(prop)?)?;
             }
-            writeln!(structs, "}}")?;
+            writeln!(writer, "}}")?;
         }
     };
 
-    writer.write_all(api_root.as_ref())?;
-    writer.write_all(interfaces.as_ref())?;
-    writer.write_all(structs.as_ref())?;
     Ok(())
 }
 

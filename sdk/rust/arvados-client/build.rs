@@ -10,3 +10,4 @@ fn main() {
     let dest_file = std::fs::File::create(dest_path).unwrap();
     arvados_api_generator::convert(src_file, dest_file).unwrap();
 }
+
