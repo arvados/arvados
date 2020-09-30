@@ -43,7 +43,7 @@ API clients may be marked as "trusted" by making an API call to create or update
 
 A authorization token which is not associated with a trusted client may only use the @current@ method to query its own api_client_authorization object.  The "untrusted" token is forbidden performing any other operations on API client authorizations, such as listing other authorizations or creating new authorizations.
 
-Authorization tokens which are not issued via the browser login flow (created directly via the API) will not have an associated api client.  This means authorization tokens created via the API are always "untrusted".
+Authorization tokens which are not issued via the browser login flow (created directly via the API) inherit the api client of the token used to create them.  They will always be "trusted" because untrusted API clients cannot create tokens.
 
 h2(#scopes). Scopes
 
