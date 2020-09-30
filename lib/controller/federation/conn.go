@@ -508,7 +508,7 @@ func (conn *Conn) UserGet(ctx context.Context, options arvados.GetOptions) (arva
 		return arvados.User{}, httpErrorf(http.StatusBadGateway, "Had requested %v but response was for %v", options.UUID, resp.UUID)
 	}
 	if options.UUID[:5] != conn.cluster.ClusterID {
-		err = conn.batchUpdateUsers(ctx, arvados.ListOptions{}, []arvados.User{resp})
+		err = conn.batchUpdateUsers(ctx, arvados.ListOptions{Select: options.Select}, []arvados.User{resp})
 		if err != nil {
 			return arvados.User{}, err
 		}
