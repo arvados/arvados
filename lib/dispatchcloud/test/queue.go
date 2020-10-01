@@ -172,12 +172,11 @@ func (q *Queue) Notify(upd arvados.Container) bool {
 			if allowContainerUpdate[ctr.State][upd.State] {
 				q.Containers[i] = upd
 				return true
-			} else {
-				if q.Logger != nil {
-					q.Logger.WithField("ContainerUUID", ctr.UUID).Infof("test.Queue rejected update from %s to %s", ctr.State, upd.State)
-				}
-				return false
 			}
+			if q.Logger != nil {
+				q.Logger.WithField("ContainerUUID", ctr.UUID).Infof("test.Queue rejected update from %s to %s", ctr.State, upd.State)
+			}
+			return false
 		}
 	}
 	q.Containers = append(q.Containers, upd)

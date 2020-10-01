@@ -492,9 +492,8 @@ func (kc *KeepClient) getSortedRoots(locator string) []string {
 func (kc *KeepClient) cache() *BlockCache {
 	if kc.BlockCache != nil {
 		return kc.BlockCache
-	} else {
-		return DefaultBlockCache
 	}
+	return DefaultBlockCache
 }
 
 func (kc *KeepClient) ClearBlockCache() {
@@ -575,9 +574,8 @@ var reqIDGen = httpserver.IDGenerator{Prefix: "req-"}
 func (kc *KeepClient) getRequestID() string {
 	if kc.RequestID != "" {
 		return kc.RequestID
-	} else {
-		return reqIDGen.Next()
 	}
+	return reqIDGen.Next()
 }
 
 type Locator struct {

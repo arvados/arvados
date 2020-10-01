@@ -353,9 +353,8 @@ func (vm *RRVolumeManager) Mounts() []*VolumeMount {
 func (vm *RRVolumeManager) Lookup(uuid string, needWrite bool) *VolumeMount {
 	if mnt, ok := vm.mountMap[uuid]; ok && (!needWrite || !mnt.ReadOnly) {
 		return mnt
-	} else {
-		return nil
 	}
+	return nil
 }
 
 // AllReadable returns an array of all readable volumes

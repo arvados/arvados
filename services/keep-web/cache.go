@@ -224,13 +224,12 @@ func (c *cache) Get(arv *arvadosclient.ArvadosClient, targetID string, forceRelo
 				})
 			}
 			return collection, err
-		} else {
-			// PDH changed, but now we know we have
-			// permission -- and maybe we already have the
-			// new PDH in the cache.
-			if coll := c.lookupCollection(arv.ApiToken + "\000" + current.PortableDataHash); coll != nil {
-				return coll, nil
-			}
+		}
+		// PDH changed, but now we know we have
+		// permission -- and maybe we already have the
+		// new PDH in the cache.
+		if coll := c.lookupCollection(arv.ApiToken + "\000" + current.PortableDataHash); coll != nil {
+			return coll, nil
 		}
 	}
 
