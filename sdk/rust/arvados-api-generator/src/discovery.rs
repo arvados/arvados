@@ -572,6 +572,38 @@ fn make_resource_struct<S : std::io::Write>(writer: &mut S, resource_struct_name
     Ok(())
 }
 
+/// Make a method structure to represent a pending request to the API.
+///
+/// Method structs contain parameters in paths, query strings and bodies.
+fn make_method_struct<S : std::io::Write>(writer: &mut S, resource_camel: &str, name: &String, method: &RestMethod) -> Result<()> {
+    let method_struct_name = format!("{}{}Method", resource_camel, snake_to_camel(name.as_ref()));
+    if let Some(description) = &method.description {
+        write!(writer, "{}", desc_to_doc(description.as_str()))?;
+    }
+    if let Some(id) = &method.id {
+        writeln!(writer, "/// method id: {}", id.as_str())?;
+    }
+    writeln!(writer, "#[derive(Debug)]")?;
+    writeln!(writer, "pub struct {} {{", method_struct_name)?;
+    writeln!(writer, "    client: Rc<ArvadosClient>,")?;
+    if let Some(parameters) = &method.parameters {
+        for (pname, param) in parameters {
+            writeln!(writer, "    pub {}: {},", to_ident(pname), to_rust_type(param)?)?;
+        }
+    }
+    if let Some(request) = &method.request {
+        if let Some(properties) = &request.properties {
+            for (name, property) in properties {
+                if let Some(ref_) = &property.ref_ {
+                    writeln!(writer, "    pub {}: {},", to_ident(name), ref_)?;
+                }
+            }
+        }
+    }
+    writeln!(writer, "}}\n")?;
+    Ok(())
+}
+
 /// Build all the structs used in queries.
 fn make_resource_structs<S : std::io::Write>(writer: &mut S, resources: &HashMap<String, RestResource>) -> Result<()> {
     for (name, res) in resources {
@@ -582,31 +614,7 @@ fn make_resource_structs<S : std::io::Write>(writer: &mut S, resources: &HashMap
 
         if let Some(methods) = &res.methods {
             for (name, method) in methods {
-                let method_struct_name = format!("{}{}Method", resource_camel, snake_to_camel(name.as_ref()));
-                if let Some(description) = &method.description {
-                    write!(writer, "{}", desc_to_doc(description.as_str()))?;
-                }
-                if let Some(id) = &method.id {
-                    writeln!(writer, "/// method id: {}", id.as_str())?;
-                }
-                writeln!(writer, "#[derive(Debug)]")?;
-                writeln!(writer, "pub struct {} {{", method_struct_name)?;
-                writeln!(writer, "    client: Rc<ArvadosClient>,")?;
-                if let Some(parameters) = &method.parameters {
-                    for (pname, param) in parameters {
-                        writeln!(writer, "    pub {}: {},", to_ident(pname), to_rust_type(param)?)?;
-                    }
-                }
-                if let Some(request) = &method.request {
-                    if let Some(properties) = &request.properties {
-                        for (name, property) in properties {
-                            if let Some(ref_) = &property.ref_ {
-                                writeln!(writer, "    pub {}: {},", to_ident(name), ref_)?;
-                            }
-                        }
-                    }
-                }
-                writeln!(writer, "}}\n")?;
+                make_method_struct(writer, resource_camel.as_str(), name, method)?;
             }
         };
 
