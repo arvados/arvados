@@ -735,10 +735,10 @@ Clusters:
 
       # When the token is returned to a client, the token itself may
       # be restricted from manipulating other tokens based on whether
-      # the client is "trusted" or not.  The local Workbench1 are
-      # trusted by default, but if this is a LoginCluster, you
-      # probably want to include the Workbench instances in the
-      # federation in this list.
+      # the client is "trusted" or not.  The local Workbench1 and
+      # Workbench2 are trusted by default, but if this is a
+      # LoginCluster, you probably want to include the other Workbench
+      # instances in the federation in this list.
       TrustedClients:
         SAMPLE:
           "https://workbench.federate1.example": {}
