@@ -561,15 +561,24 @@ pub struct RestMethodMediaUploadProtocolsSimple {
     pub multipart: Option<bool>,
 }
 
+/// Make a structure that represents a group of methods.
+/// This enables us to do:
+///    `arvados.collections().list()` etc.
+fn make_resource_struct<S : std::io::Write>(writer: &mut S, resource_struct_name: &str) -> Result<()> {
+    writeln!(writer, "#[derive(Debug)]")?;
+    writeln!(writer, "pub struct {} {{", resource_struct_name)?;
+    writeln!(writer, "    client: Rc<ArvadosClient>,")?;
+    writeln!(writer, "}}\n")?;
+    Ok(())
+}
+
+/// Build all the structs used in queries.
 fn make_resource_structs<S : std::io::Write>(writer: &mut S, resources: &HashMap<String, RestResource>) -> Result<()> {
     for (name, res) in resources {
         let resource_camel = snake_to_camel(name.as_ref());
         let resource_struct_name = format!("{}Resource", resource_camel);
 
-        writeln!(writer, "#[derive(Debug)]")?;
-        writeln!(writer, "pub struct {} {{", resource_struct_name)?;
-        writeln!(writer, "    client: Rc<ArvadosClient>,")?;
-        writeln!(writer, "}}\n")?;
+        make_resource_struct(writer, resource_struct_name.as_str())?;
 
         if let Some(methods) = &res.methods {
             for (name, method) in methods {
