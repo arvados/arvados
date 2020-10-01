@@ -610,22 +610,27 @@ fn make_resource_structs<S : std::io::Write>(writer: &mut S, resources: &HashMap
         let resource_camel = snake_to_camel(name.as_ref());
         let resource_struct_name = format!("{}Resource", resource_camel);
 
+        // resources are a "path" to methods. eg. `collections()` in `arvados.collections().list()`
         make_resource_struct(writer, resource_struct_name.as_str())?;
 
         if let Some(methods) = &res.methods {
             for (name, method) in methods {
+                // methods represent pending queries to the API.
+                // eg. `list()` in `arvados.collections().list()`
                 make_method_struct(writer, resource_camel.as_str(), name, method)?;
             }
         };
 
         if let Some(_resources) = &res.resources {
             panic!("nested resources not supported");
-            //make_resource_structs()
+            //make_resource_structs(...)
         };
     }
     Ok(())
 }
 
+/// The api root contains resource struct generators.
+/// eg. `arvados` in `arvados.collections().list()`
 fn make_api_root<S : std::io::Write>(writer: &mut S, resources: &HashMap<String, RestResource>) -> Result<()> {
     writeln!(writer, "impl ArvadosApi {{")?;
     for (name, _res) in resources {
