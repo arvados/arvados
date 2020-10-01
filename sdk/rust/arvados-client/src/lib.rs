@@ -102,9 +102,7 @@ mod tests {
                 let _resp : KeepService = arvados.keep_services().get("xyz".to_string()).fetch().await.unwrap();
                 let _resp : KeepService = arvados.keep_services().delete("xyz".to_string()).fetch().await.unwrap();
 
-                let mut list : KeepServicesListMethod = arvados.keep_services().list();
-                list.filters = Some(vec!["1".into(), "2".into()]);
-                let _resp : KeepServiceList = list.fetch().await.unwrap();
+                let _resp = arvados.keep_services().list().filters(Some(vec!["1".into(), "2".into()])).fetch().await.unwrap();
 
                 assert!(false);
             }

@@ -34,8 +34,14 @@ fn snake_to_camel(s: &str) -> String {
 
 ///  Convert a decription to a doc comment.
 /// Currently broken for unknown reasons!
-fn desc_to_doc(_s: &str) -> String {
-    let res = String::new();
+fn desc_to_doc(whitespace: &str, s: &str) -> String {
+    let mut res = String::new();
+    let mut split = s.split(|c| c == '\n');
+    res.extend(whitespace.chars());
+    res.extend("/// ".chars());
+    res.extend(split.next().unwrap().chars());
+    res.extend("\n".chars());
+
     // for s in s.split(|c| c == '\n') {
     //     res.extend("/// ".chars());
     //     res.extend(s.chars());
@@ -578,7 +584,7 @@ fn make_resource_struct<S : std::io::Write>(writer: &mut S, resource_struct_name
 fn make_method_struct<S : std::io::Write>(writer: &mut S, resource_camel: &str, name: &String, method: &RestMethod) -> Result<()> {
     let method_struct_name = format!("{}{}Method", resource_camel, snake_to_camel(name.as_ref()));
     if let Some(description) = &method.description {
-        write!(writer, "{}", desc_to_doc(description.as_str()))?;
+        write!(writer, "{}", desc_to_doc("", description.as_str()))?;
     }
     if let Some(id) = &method.id {
         writeln!(writer, "/// method id: {}", id.as_str())?;
@@ -653,11 +659,11 @@ fn make_resource_interfaces<S : std::io::Write>(writer: &mut S, resources: &Hash
             for (name, method) in methods {
                 let method_struct_name = format!("{}{}Method", resource_camel, snake_to_camel(name.as_ref()));
                 if let Some(description) = &method.description {
-                    write!(writer, "{}", desc_to_doc(description.as_str()))?;
+                    writeln!(writer, "{}", desc_to_doc("    ", description.as_str()))?;
                 }
-                if let Some(id) = &method.id {
-                    writeln!(writer, "    /// method id: {}", id.as_str())?;
-                }
+                // if let Some(id) = &method.id {
+                //     writeln!(writer, "    /// method id: {}", id.as_str())?;
+                // }
                 write!(writer, "    pub fn {}(&self", to_ident(name))?;
                 if let Some(parameters) = &method.parameters {
                     for (pname, param) in parameters {
@@ -766,7 +772,6 @@ fn make_method_interfaces<S : std::io::Write>(writer: &mut S, resources: &HashMa
         //let resource_struct_name = format!("{}Resource", resource_camel);
         if let Some(methods) = &res.methods {
             for (name, method) in methods {
-                //let method_struct_name = format!("{}{}Method", resource_camel, snake_to_camel(name.as_ref()));
                 let method_name = format!("{}{}Method", resource_camel, snake_to_camel(name.as_ref()));
                 let response = method.response.as_ref().unwrap();
                 let result_name = response.ref_.as_ref().unwrap();
@@ -782,11 +787,12 @@ fn make_method_interfaces<S : std::io::Write>(writer: &mut S, resources: &HashMa
                     writeln!(writer, "        let mut query = String::with_capacity(256);")?;
                     if let Some(parameters) = &method.parameters {
                         for (pname, param) in parameters {
+                            let pname_ident = to_ident(pname);
                             if is_query(param) {
                                 if is_optional(param) {
-                                    writeln!(writer, "        opt(&mut query, {:?}, &self.{});", pname, to_ident(pname))?;
+                                    writeln!(writer, "        opt(&mut query, {:?}, &self.{});", pname, pname_ident)?;
                                 } else {
-                                    writeln!(writer, "        req(&mut query, {:?}, &self.{});", pname, to_ident(pname))?;
+                                    writeln!(writer, "        req(&mut query, {:?}, &self.{});", pname, pname_ident)?;
                                 }
                             }
                         }
@@ -801,6 +807,15 @@ fn make_method_interfaces<S : std::io::Write>(writer: &mut S, resources: &HashMa
                 writeln!(writer, "        }}")?;
                 writeln!(writer, "        Ok(resp.json().await?)")?;
                 writeln!(writer, "    }}")?;
+                if let Some(parameters) = &method.parameters {
+                    for (pname, param) in parameters {
+                        if is_optional(param) {
+                            let pname_ident = to_ident(pname);
+                            let rust_type = to_rust_type(param)?;
+                            writeln!(writer, "    pub fn {}(&mut self, {}: {}) -> &mut Self {{ self.{} = {}; self }}", pname_ident, pname_ident, rust_type, pname_ident, pname_ident)?;
+                        }
+                    }
+                }
                 writeln!(writer, "}}")?;
             }
         }
