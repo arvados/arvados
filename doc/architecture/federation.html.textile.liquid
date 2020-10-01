@@ -47,9 +47,9 @@ In this example, the cluster @clsr1@ is configured to contact @api.cluster2.com@
 
 h2(#identity). Identity
 
-A federated user has a single identity across the cluster federation.  This identity is a user account on a specific "home cluster".  When arvados-controller contacts a remote cluster, the remote cluster verifies the user's identity (see below) and then creates a mirror of the user account with the same uuid of the user's home cluster.  On the remote cluster, permissions can then be granted to the federated user, and the federated user can create and own objects.
+The goal is for a federated user to have a single identity across the cluster federation.  This identity is a user account on a specific "home cluster".  When arvados-controller contacts a remote cluster, the remote cluster verifies the user's identity (see below) and then creates a mirror of the user account with the same uuid of the user's home cluster.  On the remote cluster, permissions can then be granted to the federated user, and the federated user can create and own objects.
 
-h3. Authenticating remote users with salted tokens
+h3. Peer federation: Authenticating remote users with salted tokens
 
 When making a request to the home cluster, authorization is established by looking up the API token in the @api_client_authorizations@ table to determine the user identity.  When making a request to a remote cluster, we need to provide an API token which can be used to establish the user's identity.  The remote cluster will connect back to the home cluster to determine if the token valid and the user it corresponds to.  However, we do not want to send along the same API token used for the original request.  If the remote cluster is malicious or compromised, sending along user's regular token would compromise the user account on the home cluster.  Instead, the controller sends a "salted token".  The salted token is restricted to only to fetching the user account and group membership.  The salted token consists of the uuid of the token in @api_client_authorizations@ and the SHA1 HMAC of the original token and the cluster id of remote cluster.  To verify the token, the remote cluster contacts the home cluster and provides the token uuid, the hash, and its cluster id.  The home cluster uses the uuid to look up the token re-computes the SHA1 HMAC of the original token and cluster id.  If that hash matches, then the token is valid.  To avoid having to re-validate the token on every request, it is cached for a short period.
 
@@ -58,6 +58,10 @@ The security properties of this scheme are:
 * The salted token does not grant access on the home cluster beyond what is needed to verify user identity
 * Revoking a token on the home cluster also revokes it for remote clusters (after the cache period)
 * A salted token given to a malicious/compromised cluster cannot be used to gain access to the user account on another remote cluster
+
+h3. LoginCluster federation: Centralized user database
+
+In a LoginCluster federation, there is a central "home" called the LoginCluster, and one or more "satellite" clusters.  The satellite clusters delegate their user management to the LoginCluster.  Unlike the peer federation, satellite clusters implicitly trust the home cluster, so the "salted token" scheme is not used.  Users arriving at a satellite cluster are redirected to the home cluster for login, the user token is issued by the LoginCluster, and then the user is sent back to the satellite cluster.   Tokens issued by the LoginCluster are accepted by all clusters in the federation.  All requests for user records on a satellite cluster is forwarded to the LoginCluster.
 
 h2(#retrieval). Federated records
 

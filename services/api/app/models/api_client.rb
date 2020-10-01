@@ -21,13 +21,28 @@ class ApiClient < ArvadosModel
   protected
 
   def from_trusted_url
-    norm(self.url_prefix) == norm(Rails.configuration.Services.Workbench1.ExternalURL) ||
-      norm(self.url_prefix) == norm(Rails.configuration.Services.Workbench2.ExternalURL)
+    norm_url_prefix = norm(self.url_prefix)
+
+    [Rails.configuration.Services.Workbench1.ExternalURL,
+     Rails.configuration.Services.Workbench2.ExternalURL,
+     "https://controller.api.client.invalid"].each do |url|
+      if norm_url_prefix == norm(url)
+        return true
+      end
+    end
+
+    Rails.configuration.Login.TrustedClients.keys.each do |url|
+      if norm_url_prefix == norm(url)
+        return true
+      end
+    end
+
+    false
   end
 
   def norm url
     # normalize URL for comparison
-    url = URI(url)
+    url = URI(url.to_s)
     if url.scheme == "https"
       url.port == "443"
     end

@@ -141,7 +141,7 @@ func createAPIClientAuthorization(ctx context.Context, conn *rpc.Conn, rootToken
 		// Send a fake ReturnTo value instead of the caller's
 		// opts.ReturnTo. We won't follow the resulting
 		// redirect target anyway.
-		ReturnTo: ",https://none.invalid",
+		ReturnTo: ",https://controller.api.client.invalid",
 		AuthInfo: authinfo,
 	})
 	if err != nil {

@@ -733,6 +733,17 @@ Clusters:
       # Default value zero means tokens don't have expiration.
       TokenLifetime: 0s
 
+      # When the token is returned to a client, the token itself may
+      # be restricted from manipulating other tokens based on whether
+      # the client is "trusted" or not.  The local Workbench1 and
+      # Workbench2 are trusted by default, but if this is a
+      # LoginCluster, you probably want to include the other Workbench
+      # instances in the federation in this list.
+      TrustedClients:
+        SAMPLE:
+          "https://workbench.federate1.example": {}
+          "https://workbench.federate2.example": {}
+
     Git:
       # Path to git or gitolite-shell executable. Each authenticated
       # request will execute this program with the single argument "http-backend"
