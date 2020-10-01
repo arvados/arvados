@@ -144,6 +144,7 @@ fn to_ident(s: &str) -> String {
         "yield" |
         "try" |
         "union" => format!("{}_", s),
+        "selfLink" => "self_link".to_string(),
         _ => s.to_string()
     }
 }
@@ -519,19 +520,22 @@ pub struct DirectoryListItemsIcons {
 
 
 
-
+// "request": {
+//     "required": true,
+//     "properties": {
+//       "job": {
+//         "$ref": "Job"
+//       }
+//     }
+//   },
 
 /// The schema for the request.
 /// 
 /// 
 #[derive(Deserialize, Debug)]
 pub struct RestMethodRequest {
-    /// parameter name.
-    #[serde(rename="parameterName")]
-    pub parameter_name: Option<String>,
-    /// Schema ID for the request schema.
-    #[serde(rename="$ref")]
-    pub ref_: Option<String>,
+    pub required: Option<bool>,
+    pub properties: Option<HashMap<String, JsonSchema>>,
 }
 
 /// 
@@ -584,6 +588,15 @@ fn make_resource_structs<S : std::io::Write>(writer: &mut S, resources: &HashMap
                         writeln!(writer, "    pub {}: {},", to_ident(pname), to_rust_type(param)?)?;
                     }
                 }
+                if let Some(request) = &method.request {
+                    if let Some(properties) = &request.properties {
+                        for (name, property) in properties {
+                            if let Some(ref_) = &property.ref_ {
+                                writeln!(writer, "    pub {}: {},", to_ident(name), ref_)?;
+                            }
+                        }
+                    }
+                }
                 writeln!(writer, "}}\n")?;
             }
         };
@@ -601,7 +614,7 @@ fn make_api_root<S : std::io::Write>(writer: &mut S, resources: &HashMap<String,
     for (name, _res) in resources {
         let resource_camel = snake_to_camel(name.as_ref());
         let resource_struct_name = format!("{}Resource", resource_camel);
-        writeln!(writer, "   fn {}(&self) -> {} {{", to_ident(name.as_ref()), resource_struct_name)?;
+        writeln!(writer, "   pub fn {}(&self) -> {} {{", to_ident(name.as_ref()), resource_struct_name)?;
         writeln!(writer, "       {} {{ client: self.client.clone() }}", resource_struct_name)?;
         writeln!(writer, "   }}\n")?;
     }
@@ -631,6 +644,15 @@ fn make_resource_interfaces<S : std::io::Write>(writer: &mut S, resources: &Hash
                         }
                     }
                 }
+                if let Some(request) = &method.request {
+                    if let Some(properties) = &request.properties {
+                        for (name, property) in properties {
+                            if let Some(ref_) = &property.ref_ {
+                                write!(writer, ", {}: {}", to_ident(name), ref_)?;
+                            }
+                        }
+                    }
+                }
                 writeln!(writer, ") -> {} {{", method_struct_name)?;
                 write!(writer, "        {} {{ client: self.client.clone(),", method_struct_name)?;
                 if let Some(parameters) = &method.parameters {
@@ -639,6 +661,15 @@ fn make_resource_interfaces<S : std::io::Write>(writer: &mut S, resources: &Hash
                             write!(writer, " {},", to_ident(pname))?;
                         } else {
                             write!(writer, " {}: None,", to_ident(pname))?;
+                        }
+                    }
+                }
+                if let Some(request) = &method.request {
+                    if let Some(properties) = &request.properties {
+                        for (name, property) in properties {
+                            if let Some(_) = &property.ref_ {
+                                write!(writer, " {},", to_ident(name))?;
+                            }
                         }
                     }
                 }
@@ -684,6 +715,29 @@ fn http_method(method: &RestMethod)-> String {
     }
 }
 
+// Add .json(&self.request) to request.
+fn json_requests(method: &RestMethod)-> String {
+    let mut res = String::new();
+    if let Some(request) = &method.request {
+        if let Some(properties) = &request.properties {
+            for (name, property) in properties {
+                if let Some(_) = &property.ref_ {
+                    res.extend(format!(".json(&self.{})", to_ident(name)).chars());
+                }
+            }
+        }
+    }
+    res
+}
+
+fn is_query(param: &JsonSchema) -> bool {
+    param.location.as_ref().unwrap() == "query"
+}
+
+fn is_optional(param: &JsonSchema) -> bool {
+    param.required != Some(true)
+}
+
 fn make_method_interfaces<S : std::io::Write>(writer: &mut S, resources: &HashMap<String, RestResource>) -> Result<()> {
     for (name, res) in resources {
         let resource_camel = snake_to_camel(name.as_ref());
@@ -695,15 +749,35 @@ fn make_method_interfaces<S : std::io::Write>(writer: &mut S, resources: &HashMa
                 let response = method.response.as_ref().unwrap();
                 let result_name = response.ref_.as_ref().unwrap();
                 writeln!(writer, "impl {} {{", method_name)?;
-                writeln!(writer, "    async fn fetch(&self) -> Result<{}> {{", result_name)?;
-                writeln!(writer, "        let url = format!(\"{{}}{}\", self.client.base_url{});", url_format_string(method), url_param_string(method))?;
-                writeln!(writer, "        let ksresp = self.client.http_client.{}(&url).send().await?;", http_method(method))?;
-                writeln!(writer, "        if ksresp.status() != 200 {{")?;
-                writeln!(writer, "            return Err(format!(\"{{:?}}\", ksresp).into());")?;
+                writeln!(writer, "    pub async fn fetch(&self) -> Result<{}> {{", result_name)?;
+
+                let has_query = if let Some(parameters) = &method.parameters {
+                    parameters.iter().any(|(_, param)| is_query(param))
+                } else {
+                    false
+                };
+                if has_query {
+                    writeln!(writer, "        let mut query = String::with_capacity(256);")?;
+                    if let Some(parameters) = &method.parameters {
+                        for (pname, param) in parameters {
+                            if is_query(param) {
+                                if is_optional(param) {
+                                    writeln!(writer, "        opt(&mut query, {:?}, &self.{});", pname, to_ident(pname))?;
+                                } else {
+                                    writeln!(writer, "        req(&mut query, {:?}, &self.{});", pname, to_ident(pname))?;
+                                }
+                            }
+                        }
+                    }
+                    writeln!(writer, "        let url = format!(\"{{}}{}{{}}\", self.client.base_url{}, query);", url_format_string(method), url_param_string(method))?;
+                } else {
+                    writeln!(writer, "        let url = format!(\"{{}}{}\", self.client.base_url{});", url_format_string(method), url_param_string(method))?;
+                }
+                writeln!(writer, "        let resp = self.client.http_client.{}(&url){}.send().await?;", http_method(method), json_requests(method))?;
+                writeln!(writer, "        if resp.status() != 200 {{")?;
+                writeln!(writer, "            return Err(format!(\"{{:?}}\", resp).into());")?;
                 writeln!(writer, "        }}")?;
-                writeln!(writer, "        let text = ksresp.text().await?;")?;
-                writeln!(writer, "        let res : {} = serde_json::from_str(text.as_ref())?;", result_name)?;
-                writeln!(writer, "        Ok(res)")?;
+                writeln!(writer, "        Ok(resp.json().await?)")?;
                 writeln!(writer, "    }}")?;
                 writeln!(writer, "}}")?;
             }

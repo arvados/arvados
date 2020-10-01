@@ -1,11 +1,9 @@
 
-#![allow(dead_code)]
-#![allow(non_snake_case)]
-
 use serde_json::Value;
 use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
 use std::rc::Rc;
+use std::fmt::{Write};
 use reqwest::{Client};
 use reqwest::header::{HeaderValue, HeaderMap, AUTHORIZATION};
 
@@ -54,6 +52,17 @@ impl ArvadosClient {
     }
 }
 
+fn opt<T : Serialize>(query_string : &mut String, name: &str, val: &Option<T>) {
+    if val.is_some() {
+        req(query_string, name, val.as_ref().unwrap());
+    }
+}
+
+fn req<T : Serialize>(query_string : &mut String, name: &str, val: &T) {
+    let json = serde_json::to_string(val).unwrap();
+    let delim = if query_string.is_empty() { '?' } else { '&' };
+    write!(query_string, "{}{}={}", delim, name, json).unwrap();
+}
 
 
 #[cfg(test)]
@@ -65,17 +74,16 @@ mod tests {
     use hyper::service::{make_service_fn, service_fn};
     
     async fn mock_handler(req: hyper::Request<hyper::Body>) -> std::result::Result<hyper::Response<hyper::Body>, Infallible> {
-        eprintln!("in handle {:?}", req);
+        eprintln!("in handler {} {:?} {:?}", req.method(), req.uri().path(), req.uri().query());
         match (req.method(), req.uri().path()) {
-            (&reqwest::Method::GET, "/arvados/v1/keep_services/xyz/") => Ok(hyper::Response::new(hyper::Body::from(r#"{ "etag": "12345" }"#))),
-            _ => Ok(hyper::Response::builder().status(hyper::StatusCode::NOT_FOUND).body(hyper::Body::from("{}")).unwrap())
+            _ => Ok(hyper::Response::builder().status(hyper::StatusCode::OK).body(hyper::Body::from("{}")).unwrap())
         }
     }
     
     #[tokio::test]
     async fn test_keep_services_get() {
-        // TODO: use an ephemeral port
-        let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+        // Use an ephemeral port for a test server
+        let addr = SocketAddr::from(([0, 0, 0, 0], 0));
     
         let make_service = make_service_fn(|_conn| async {
             Ok::<_, Infallible>(service_fn(mock_handler))
@@ -83,17 +91,22 @@ mod tests {
     
         // server will make a service on every new connection
         let server = hyper::Server::bind(&addr).serve(make_service);
-    
+        let arv_api_host = server.local_addr().to_string();
+        let arv_api_token = "token";
+        let arv_api_host_insecure = true;
+
         // run the server until the queries have finished.
         let e = server.with_graceful_shutdown(
             async {
-                let arv_api_host = "localhost:3000";
-                let arv_api_token = "token";
-                let arv_api_host_insecure = true;
+                let arvados = ArvadosApi::new(arv_api_host.as_ref(), arv_api_token, arv_api_host_insecure).unwrap();
+                let _resp : KeepService = arvados.keep_services().get("xyz".to_string()).fetch().await.unwrap();
+                let _resp : KeepService = arvados.keep_services().delete("xyz".to_string()).fetch().await.unwrap();
 
-                let arvados = ArvadosApi::new(arv_api_host, arv_api_token, arv_api_host_insecure).unwrap();
-                let resp = arvados.keep_services().get("xyz".to_string()).fetch().await.unwrap();
-                assert_eq!(resp.etag.unwrap(), "12345");
+                let mut list : KeepServicesListMethod = arvados.keep_services().list();
+                list.filters = Some(vec!["1".into(), "2".into()]);
+                let _resp : KeepServiceList = list.fetch().await.unwrap();
+
+                assert!(false);
             }
         ).await;
         assert!(e.is_ok());
