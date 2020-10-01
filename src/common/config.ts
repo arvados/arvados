@@ -157,7 +157,6 @@ export const fetchConfig = () => {
             return Axios.get<ClusterConfigJSON>(getClusterConfigURL(workbenchConfig.API_HOST)).then(async response => {
                 const apiRevision = await getApiRevision(response.data.Services.Controller.ExternalURL.replace(/\/+$/, ''));
                 const config = { ...buildConfig(response.data), apiRevision };
-                const clusterConfigJSON = config.clusterConfig;
                 const warnLocalConfig = (varName: string) => console.warn(
                     `A value for ${varName} was found in ${WORKBENCH_CONFIG_URL}. To use the Arvados centralized configuration instead, \
 remove the entire ${varName} entry from ${WORKBENCH_CONFIG_URL}`);
@@ -171,7 +170,7 @@ remove the entire ${varName} entry from ${WORKBENCH_CONFIG_URL}`);
                     fileViewerConfigUrl = workbenchConfig.FILE_VIEWERS_CONFIG_URL;
                 }
                 else {
-                    fileViewerConfigUrl = clusterConfigJSON.Workbench.FileViewersConfigURL || "/file-viewers-example.json";
+                    fileViewerConfigUrl = config.clusterConfig.Workbench.FileViewersConfigURL || "/file-viewers-example.json";
                 }
                 config.fileViewersConfigUrl = fileViewerConfigUrl;
 
@@ -181,7 +180,7 @@ remove the entire ${varName} entry from ${WORKBENCH_CONFIG_URL}`);
                     vocabularyUrl = workbenchConfig.VOCABULARY_URL;
                 }
                 else {
-                    vocabularyUrl = clusterConfigJSON.Workbench.VocabularyURL || "/vocabulary-example.json";
+                    vocabularyUrl = config.clusterConfig.Workbench.VocabularyURL || "/vocabulary-example.json";
                 }
                 config.vocabularyUrl = vocabularyUrl;
 
