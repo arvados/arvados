@@ -44,7 +44,7 @@ const getClusterConfig = async (origin: string): Promise<Config | null> => {
     // Try the new public config endpoint
     try {
         const config = (await Axios.get<ClusterConfigJSON>(`${origin}/${CLUSTER_CONFIG_PATH}`)).data;
-        return {...buildConfig(config), apiRevision: configFromDD ? configFromDD.apiRevision : 0};
+        return { ...buildConfig(config), apiRevision: configFromDD ? configFromDD.apiRevision : 0 };
     } catch { }
 
     // Fall back to discovery document
