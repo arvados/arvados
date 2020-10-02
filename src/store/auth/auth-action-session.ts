@@ -130,6 +130,7 @@ export const validateSession = (session: Session, activeSession: Session) =>
             session.baseUrl = baseUrl;
             session.token = token;
             session.email = user.email;
+            session.userIsActive = user.isActive;
             session.uuid = user.uuid;
             session.name = getUserDisplayName(user);
             session.loggedIn = true;
@@ -242,6 +243,7 @@ export const addSession = (remoteHost: string, token?: string, sendToLogin?: boo
                     status: SessionStatus.VALIDATED,
                     active: false,
                     email: user.email,
+                    userIsActive: user.isActive,
                     name: getUserDisplayName(user),
                     uuid: user.uuid,
                     baseUrl: config.baseUrl,

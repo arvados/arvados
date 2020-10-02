@@ -158,7 +158,10 @@ export const SiteManagerPanelRoot = compose(
                                             disabled={validating || session.status === SessionStatus.INVALIDATED || session.active}
                                             className={session.loggedIn ? classes.buttonLoggedIn : classes.buttonLoggedOut}
                                             onClick={() => toggleSession(session)}>
-                                            {validating ? "Validating" : (session.loggedIn ? "Logged in" : "Logged out")}
+                                            {validating ? "Validating"
+                                                : (session.loggedIn ?
+                                                    (session.userIsActive ? "Logged in" : "Inactive")
+                                                    : "Logged out")}
                                         </Button>
                                     </TableCell>
                                     <TableCell>
