@@ -20,10 +20,10 @@ import { AuthService } from "~/services/auth-service/auth-service";
 import { snackbarActions, SnackbarKind } from "~/store/snackbar/snackbar-actions";
 import * as jsSHA from "jssha";
 
-const getClusterConfig = async (origin: string): Promise<Config | null> => {
+const getClusterConfig = async (origin: string, apiClient: AxiosInstance): Promise<Config | null> => {
     let configFromDD: Config | undefined;
     try {
-        const dd = (await Axios.get<any>(`${origin}/${DISCOVERY_DOC_PATH}`)).data;
+        const dd = (await apiClient.get<any>(`${origin}/${DISCOVERY_DOC_PATH}`)).data;
         configFromDD = {
             baseUrl: normalizeURLPath(dd.baseUrl),
             keepWebServiceUrl: dd.keepWebServiceUrl,
@@ -41,9 +41,9 @@ const getClusterConfig = async (origin: string): Promise<Config | null> => {
         };
     } catch { }
 
-    // Try the new public config endpoint
+    // Try public config endpoint
     try {
-        const config = (await Axios.get<ClusterConfigJSON>(`${origin}/${CLUSTER_CONFIG_PATH}`)).data;
+        const config = (await apiClient.get<ClusterConfigJSON>(`${origin}/${CLUSTER_CONFIG_PATH}`)).data;
         return { ...buildConfig(config), apiRevision: configFromDD ? configFromDD.apiRevision : 0 };
     } catch { }
 
@@ -55,7 +55,9 @@ const getClusterConfig = async (origin: string): Promise<Config | null> => {
     return null;
 };
 
-const getRemoteHostConfig = async (remoteHost: string): Promise<Config | null> => {
+const getRemoteHostConfig = async (remoteHost: string, useApiClient?: AxiosInstance): Promise<Config | null> => {
+    const apiClient = useApiClient || Axios.create({ headers: {} });
+
     let url = remoteHost;
     if (url.indexOf('://') < 0) {
         url = 'https://' + url;
@@ -63,14 +65,14 @@ const getRemoteHostConfig = async (remoteHost: string): Promise<Config | null> =
     const origin = new URL(url).origin;
 
     // Maybe it is an API server URL, try fetching config and discovery doc
-    let r = await getClusterConfig(origin);
+    let r = await getClusterConfig(origin, apiClient);
     if (r !== null) {
         return r;
     }
 
     // Maybe it is a Workbench2 URL, try getting config.json
     try {
-        r = await getClusterConfig((await Axios.get<any>(`${origin}/config.json`)).data.API_HOST);
+        r = await getClusterConfig((await apiClient.get<any>(`${origin}/config.json`)).data.API_HOST, apiClient);
         if (r !== null) {
             return r;
         }
@@ -78,7 +80,7 @@ const getRemoteHostConfig = async (remoteHost: string): Promise<Config | null> =
 
     // Maybe it is a Workbench1 URL, try getting status.json
     try {
-        r = await getClusterConfig((await Axios.get<any>(`${origin}/status.json`)).data.apiBaseURL);
+        r = await getClusterConfig((await apiClient.get<any>(`${origin}/status.json`)).data.apiBaseURL, apiClient);
         if (r !== null) {
             return r;
         }
@@ -121,7 +123,7 @@ export const validateCluster = async (config: Config, useToken: string):
     };
 };
 
-export const validateSession = (session: Session, activeSession: Session) =>
+export const validateSession = (session: Session, activeSession: Session, useApiClient?: AxiosInstance) =>
     async (dispatch: Dispatch): Promise<Session> => {
         dispatch(authActions.UPDATE_SESSION({ ...session, status: SessionStatus.BEING_VALIDATED }));
         session.loggedIn = false;
@@ -138,7 +140,7 @@ export const validateSession = (session: Session, activeSession: Session) =>
         };
 
         let fail: Error | null = null;
-        const config = await getRemoteHostConfig(session.remoteHost);
+        const config = await getRemoteHostConfig(session.remoteHost, useApiClient);
         if (config !== null) {
             dispatch(authActions.REMOTE_CLUSTER_CONFIG({ config }));
             try {
@@ -169,7 +171,7 @@ export const validateSession = (session: Session, activeSession: Session) =>
         return session;
     };
 
-export const validateSessions = () =>
+export const validateSessions = (useApiClient?: AxiosInstance) =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         const sessions = getState().auth.sessions;
         const activeSession = getActiveSession(sessions);
@@ -187,7 +189,7 @@ export const validateSessions = () =>
 			   override it using Dispatch<any>.  This
 			   pattern is used in a bunch of different
 			   places in Workbench2. */
-                        await dispatch(validateSession(session, activeSession));
+                        await dispatch(validateSession(session, activeSession, useApiClient));
                     } catch (e) {
                         dispatch(snackbarActions.OPEN_SNACKBAR({
                             message: e.message,
@@ -311,7 +313,7 @@ export const initSessions = (authService: AuthService, config: Config, user: Use
     (dispatch: Dispatch<any>) => {
         const sessions = authService.buildSessions(config, user);
         dispatch(authActions.SET_SESSIONS(sessions));
-        dispatch(validateSessions());
+        dispatch(validateSessions(authService.apiClient));
     };
 
 export const loadSiteManagerPanel = () =>
