@@ -491,6 +491,21 @@ func (az *azureInstanceSet) Create(
 		}
 	}
 
+	priority := compute.Regular
+	evictionPolicy := compute.Deallocate
+	var billingProfile compute.BillingProfile
+	var maxPrice float64
+	if instanceType.Preemptible {
+		priority = compute.Spot
+		evictionPolicy = compute.Delete
+		// Setting maxPrice to -1 is the equivalent of paying spot price, up to the
+		// normal price. This means the node will not be pre-empted for price
+		// reasons. It may still be pre-empted for capacity reasons though. And
+		// Azure offers *no* SLA on spot instances.
+		maxPrice = -1
+		billingProfile = compute.BillingProfile{MaxPrice: &maxPrice}
+	}
+
 	vmParameters := compute.VirtualMachine{
 		Location: &az.azconfig.Location,
 		Tags:     tags,
@@ -499,6 +514,9 @@ func (az *azureInstanceSet) Create(
 				VMSize: compute.VirtualMachineSizeTypes(instanceType.ProviderType),
 			},
 			StorageProfile: storageProfile,
+			Priority:       priority,
+			EvictionPolicy: evictionPolicy,
+			BillingProfile: &billingProfile,
 			NetworkProfile: &compute.NetworkProfile{
 				NetworkInterfaces: &[]compute.NetworkInterfaceReference{
 					{

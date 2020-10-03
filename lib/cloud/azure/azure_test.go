@@ -136,6 +136,15 @@ func GetInstanceSet() (cloud.InstanceSet, cloud.ImageID, arvados.Cluster, error)
 				Price:        .02,
 				Preemptible:  false,
 			},
+			"tinyp": {
+				Name:         "tiny",
+				ProviderType: "Standard_D1_v2",
+				VCPUs:        1,
+				RAM:          4000000000,
+				Scratch:      10000000000,
+				Price:        .002,
+				Preemptible:  true,
+			},
 		})}
 	if *live != "" {
 		var exampleCfg testConfig
@@ -184,6 +193,17 @@ func (*AzureInstanceSetSuite) TestCreate(c *check.C) {
 	tags := inst.Tags()
 	c.Check(tags["TestTagName"], check.Equals, "test tag value")
 	c.Logf("inst.String()=%v Address()=%v Tags()=%v", inst.String(), inst.Address(), tags)
+
+	instPreemptable, err := ap.Create(cluster.InstanceTypes["tinyp"],
+		img, map[string]string{
+			"TestTagName": "test tag value",
+		}, "umask 0600; echo -n test-file-data >/var/run/test-file", pk)
+
+	c.Assert(err, check.IsNil)
+
+	tags = instPreemptable.Tags()
+	c.Check(tags["TestTagName"], check.Equals, "test tag value")
+	c.Logf("instPreemptable.String()=%v Address()=%v Tags()=%v", instPreemptable.String(), instPreemptable.Address(), tags)
 
 }
 
