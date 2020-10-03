@@ -1,0 +1,6 @@
+[workspace]
+
+members = [
+    "arvados-api-generator",
+    "arvados-client"
+]

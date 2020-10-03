@@ -10,6 +10,20 @@ server and local configuration files.
 
 For an example of this, see Rusoto, the AWS SDK.
 
+## Testing
+
+To run the unit tests, install rust using rustup:
+
+```
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
+Then run:
+
+```
+cargo test
+```
+
 ## Roadmap
 
 - [ ] Create arvados-api-generator and aravados-client crates.
