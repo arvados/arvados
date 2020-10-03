@@ -27,8 +27,8 @@ pub struct ArvadosClient {
 }
 
 impl ArvadosApi {
-    pub fn new(arv_api_host: &str, arv_api_token: &str, arv_api_host_insecure: bool) -> Result<Self> {
-        Ok(ArvadosApi { client: Rc::new(ArvadosClient::new(arv_api_host, arv_api_token, arv_api_host_insecure)?)})
+    pub fn new(arv_api_host: &str, arv_api_token: &str, arv_api_host_insecure: bool, proto: &str) -> Result<Self> {
+        Ok(ArvadosApi { client: Rc::new(ArvadosClient::new(arv_api_host, arv_api_token, arv_api_host_insecure, proto)?)})
     }
 }
 
@@ -37,14 +37,20 @@ pub type Result<T> = std::result::Result<T, ArvadosError>;
 
 
 impl ArvadosClient {
-    pub fn new(arv_api_host: &str, arv_api_token: &str, arv_api_host_insecure: bool) -> Result<Self> {
-        let proto = if arv_api_host_insecure { "http" } else {"https" };
+    pub fn new(arv_api_host: &str, arv_api_token: &str, _arv_api_host_insecure: bool, proto: &str) -> Result<Self> {
         let base_url = format!("{}://{}/arvados/v1/", proto, arv_api_host);
         let mut headers = HeaderMap::new();
-        let auth = format!("OAuth2 {}", arv_api_token);
+        let auth = format!("Bearer {}", arv_api_token);
         headers.insert(AUTHORIZATION, HeaderValue::from_str(auth.as_ref())?);
         let http_client = Client::builder().default_headers(headers).build()?;
         Ok(Self { http_client, base_url })
+    }
+
+    pub fn from_env() -> Result<Self> {
+        let arv_api_host = std::env::var("ARVADOS_API_HOST")?;
+        let arv_api_token = std::env::var("ARVADOS_API_TOKEN")?;
+        let arv_api_insecure = std::env::var("ARVADOS_API_INSECURE")?.parse::<bool>()?;
+        Self::new(arv_api_host.as_str(), arv_api_token.as_str(), arv_api_insecure, "https")
     }
 
     pub fn http_client(&self) -> &Client {
@@ -98,7 +104,7 @@ mod tests {
         // run the server until the queries have finished.
         let e = server.with_graceful_shutdown(
             async {
-                let arvados = ArvadosApi::new(arv_api_host.as_ref(), arv_api_token, arv_api_host_insecure).unwrap();
+                let arvados = ArvadosApi::new(arv_api_host.as_ref(), arv_api_token, arv_api_host_insecure, "http").unwrap();
                 let _resp : KeepService = arvados.keep_services().get("xyz".to_string()).fetch().await.unwrap();
                 let _resp : KeepService = arvados.keep_services().delete("xyz".to_string()).fetch().await.unwrap();
 
