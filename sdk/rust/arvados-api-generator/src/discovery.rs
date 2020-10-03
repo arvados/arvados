@@ -672,7 +672,7 @@ fn make_resource_interfaces<S : std::io::Write>(writer: &mut S, resources: &Vec<
                 if !DEPRECATED_METHODS.contains(&name.as_str()) {
                     let method_struct_name = format!("{}{}Method", resource_camel, snake_to_camel(name.as_ref()));
                     if let Some(description) = &method.description {
-                        writeln!(writer, "{}", desc_to_doc("    ", description.as_str()))?;
+                        write!(writer, "{}", desc_to_doc("    ", description.as_str()))?;
                     }
                     // if let Some(id) = &method.id {
                     //     writeln!(writer, "    /// method id: {}", id.as_str())?;
