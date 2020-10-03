@@ -854,18 +854,3 @@ pub fn convert<R : std::io::Read, W : std::io::Write>(reader: R, mut writer: W) 
 
     Ok(())
 }
-
-
-#[cfg(test)]
-mod tests {
-    // use super::*;
-
-    // #[test]
-    // fn testd2() -> Result<()> {
-    //     let arvados_api_json = std::fs::File::open("arvados-api.json")?;
-    //     let mut res = Vec::new();
-    //     convert(&arvados_api_json, &mut res)?;
-    //     std::fs::write("src/arvados_api.rs", res)?;
-    //     Ok(())
-    // }
-}

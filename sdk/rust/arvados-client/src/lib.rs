@@ -103,8 +103,6 @@ mod tests {
                 let _resp : KeepService = arvados.keep_services().delete("xyz".to_string()).fetch().await.unwrap();
 
                 let _resp = arvados.keep_services().list().filters(Some(vec!["1".into(), "2".into()])).fetch().await.unwrap();
-
-                assert!(false);
             }
         ).await;
         assert!(e.is_ok());
