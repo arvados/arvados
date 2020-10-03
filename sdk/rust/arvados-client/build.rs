@@ -13,6 +13,8 @@ fn main() {
     let dest_path = Path::new(&out_dir).join(OUTPUT_FILENAME);
     let src_path = Path::new(INPUT_FILENAME);
 
+    println!("cargo:rerun-if-changed={}", INPUT_FILENAME);
+
     let src_file = std::fs::File::open(src_path).unwrap();
     let dest_file = std::fs::File::create(dest_path).unwrap();
 
