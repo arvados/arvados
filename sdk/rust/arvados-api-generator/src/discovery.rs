@@ -18,6 +18,16 @@ use std::collections::HashMap;
 use crate::Result;
 use regex::Regex;
 
+/// List of deprecated resources.
+/// see https://github.com/arvados/arvados/pull/136#issuecomment-702902508
+const DEPRECATED_RESOURCES : &[&str] = &[
+    "jobs", "job_tasks", "pipeline_templates", "pipeline_instances", 
+    "keep_disks", "nodes", "humans", "traits", "specimens"];
+
+/// List of derecated methods.
+/// see https://github.com/arvados/arvados/pull/136#issuecomment-702902508
+const DEPRECATED_METHODS : &[&str] = &["index", "show", "destroy"];
+
 /// Convert snake case xyz_abc to camel case XyzAbc.
 fn snake_to_camel(s: &str) -> String {
     let mut res = String::new();
@@ -611,7 +621,7 @@ fn make_method_struct<S : std::io::Write>(writer: &mut S, resource_camel: &str, 
 }
 
 /// Build all the structs used in queries.
-fn make_resource_structs<S : std::io::Write>(writer: &mut S, resources: &HashMap<String, RestResource>) -> Result<()> {
+fn make_resource_structs<S : std::io::Write>(writer: &mut S, resources: &Vec<(&String, &RestResource)>) -> Result<()> {
     for (name, res) in resources {
         let resource_camel = snake_to_camel(name.as_ref());
         let resource_struct_name = format!("{}Resource", resource_camel);
@@ -621,9 +631,11 @@ fn make_resource_structs<S : std::io::Write>(writer: &mut S, resources: &HashMap
 
         if let Some(methods) = &res.methods {
             for (name, method) in methods {
-                // methods represent pending queries to the API.
-                // eg. `list()` in `arvados.collections().list()`
-                make_method_struct(writer, resource_camel.as_str(), name, method)?;
+                if !DEPRECATED_METHODS.contains(&name.as_str()) {
+                    // methods represent pending queries to the API.
+                    // eg. `list()` in `arvados.collections().list()`
+                    make_method_struct(writer, resource_camel.as_str(), name, method)?;
+                }
             }
         };
 
@@ -637,7 +649,7 @@ fn make_resource_structs<S : std::io::Write>(writer: &mut S, resources: &HashMap
 
 /// The api root contains resource struct generators.
 /// eg. `arvados` in `arvados.collections().list()`
-fn make_api_root<S : std::io::Write>(writer: &mut S, resources: &HashMap<String, RestResource>) -> Result<()> {
+fn make_api_root<S : std::io::Write>(writer: &mut S, resources: &Vec<(&String, &RestResource)>) -> Result<()> {
     writeln!(writer, "impl ArvadosApi {{")?;
     for (name, _res) in resources {
         let resource_camel = snake_to_camel(name.as_ref());
@@ -650,59 +662,61 @@ fn make_api_root<S : std::io::Write>(writer: &mut S, resources: &HashMap<String,
     Ok(())
 }
 
-fn make_resource_interfaces<S : std::io::Write>(writer: &mut S, resources: &HashMap<String, RestResource>) -> Result<()> {
+fn make_resource_interfaces<S : std::io::Write>(writer: &mut S, resources: &Vec<(&String, &RestResource)>) -> Result<()> {
     for (name, res) in resources {
         let resource_camel = snake_to_camel(name.as_ref());
         let resource_struct_name = format!("{}Resource", resource_camel);
         writeln!(writer, "impl {} {{", resource_struct_name)?;
         if let Some(methods) = &res.methods {
             for (name, method) in methods {
-                let method_struct_name = format!("{}{}Method", resource_camel, snake_to_camel(name.as_ref()));
-                if let Some(description) = &method.description {
-                    writeln!(writer, "{}", desc_to_doc("    ", description.as_str()))?;
-                }
-                // if let Some(id) = &method.id {
-                //     writeln!(writer, "    /// method id: {}", id.as_str())?;
-                // }
-                write!(writer, "    pub fn {}(&self", to_ident(name))?;
-                if let Some(parameters) = &method.parameters {
-                    for (pname, param) in parameters {
-                        if param.required == Some(true) {
-                            write!(writer, ", {}: {}", to_ident(pname), to_rust_type(param)?)?;
-                        }
+                if !DEPRECATED_METHODS.contains(&name.as_str()) {
+                    let method_struct_name = format!("{}{}Method", resource_camel, snake_to_camel(name.as_ref()));
+                    if let Some(description) = &method.description {
+                        writeln!(writer, "{}", desc_to_doc("    ", description.as_str()))?;
                     }
-                }
-                if let Some(request) = &method.request {
-                    if let Some(properties) = &request.properties {
-                        for (name, property) in properties {
-                            if let Some(ref_) = &property.ref_ {
-                                write!(writer, ", {}: {}", to_ident(name), ref_)?;
+                    // if let Some(id) = &method.id {
+                    //     writeln!(writer, "    /// method id: {}", id.as_str())?;
+                    // }
+                    write!(writer, "    pub fn {}(&self", to_ident(name))?;
+                    if let Some(parameters) = &method.parameters {
+                        for (pname, param) in parameters {
+                            if param.required == Some(true) {
+                                write!(writer, ", {}: {}", to_ident(pname), to_rust_type(param)?)?;
                             }
                         }
                     }
-                }
-                writeln!(writer, ") -> {} {{", method_struct_name)?;
-                write!(writer, "        {} {{ client: self.client.clone(),", method_struct_name)?;
-                if let Some(parameters) = &method.parameters {
-                    for (pname, param) in parameters {
-                        if param.required == Some(true)  {
-                            write!(writer, " {},", to_ident(pname))?;
-                        } else {
-                            write!(writer, " {}: None,", to_ident(pname))?;
-                        }
-                    }
-                }
-                if let Some(request) = &method.request {
-                    if let Some(properties) = &request.properties {
-                        for (name, property) in properties {
-                            if let Some(_) = &property.ref_ {
-                                write!(writer, " {},", to_ident(name))?;
+                    if let Some(request) = &method.request {
+                        if let Some(properties) = &request.properties {
+                            for (name, property) in properties {
+                                if let Some(ref_) = &property.ref_ {
+                                    write!(writer, ", {}: {}", to_ident(name), ref_)?;
+                                }
                             }
                         }
                     }
+                    writeln!(writer, ") -> {} {{", method_struct_name)?;
+                    write!(writer, "        {} {{ client: self.client.clone(),", method_struct_name)?;
+                    if let Some(parameters) = &method.parameters {
+                        for (pname, param) in parameters {
+                            if param.required == Some(true)  {
+                                write!(writer, " {},", to_ident(pname))?;
+                            } else {
+                                write!(writer, " {}: None,", to_ident(pname))?;
+                            }
+                        }
+                    }
+                    if let Some(request) = &method.request {
+                        if let Some(properties) = &request.properties {
+                            for (name, property) in properties {
+                                if let Some(_) = &property.ref_ {
+                                    write!(writer, " {},", to_ident(name))?;
+                                }
+                            }
+                        }
+                    }
+                    writeln!(writer, "}}")?;
+                    writeln!(writer, "    }}")?;
                 }
-                writeln!(writer, "}}")?;
-                writeln!(writer, "    }}")?;
             }
         }
         writeln!(writer, "}}")?;
@@ -766,57 +780,59 @@ fn is_optional(param: &JsonSchema) -> bool {
     param.required != Some(true)
 }
 
-fn make_method_interfaces<S : std::io::Write>(writer: &mut S, resources: &HashMap<String, RestResource>) -> Result<()> {
+fn make_method_interfaces<S : std::io::Write>(writer: &mut S, resources: &Vec<(&String, &RestResource)>) -> Result<()> {
     for (name, res) in resources {
         let resource_camel = snake_to_camel(name.as_ref());
         //let resource_struct_name = format!("{}Resource", resource_camel);
         if let Some(methods) = &res.methods {
             for (name, method) in methods {
-                let method_name = format!("{}{}Method", resource_camel, snake_to_camel(name.as_ref()));
-                let response = method.response.as_ref().unwrap();
-                let result_name = response.ref_.as_ref().unwrap();
-                writeln!(writer, "impl {} {{", method_name)?;
-                writeln!(writer, "    pub async fn fetch(&self) -> Result<{}> {{", result_name)?;
+                if !DEPRECATED_METHODS.contains(&name.as_str()) {
+                    let method_name = format!("{}{}Method", resource_camel, snake_to_camel(name.as_ref()));
+                    let response = method.response.as_ref().unwrap();
+                    let result_name = response.ref_.as_ref().unwrap();
+                    writeln!(writer, "impl {} {{", method_name)?;
+                    writeln!(writer, "    pub async fn fetch(&self) -> Result<{}> {{", result_name)?;
 
-                let has_query = if let Some(parameters) = &method.parameters {
-                    parameters.iter().any(|(_, param)| is_query(param))
-                } else {
-                    false
-                };
-                if has_query {
-                    writeln!(writer, "        let mut query = String::with_capacity(256);")?;
-                    if let Some(parameters) = &method.parameters {
-                        for (pname, param) in parameters {
-                            let pname_ident = to_ident(pname);
-                            if is_query(param) {
-                                if is_optional(param) {
-                                    writeln!(writer, "        opt(&mut query, {:?}, &self.{});", pname, pname_ident)?;
-                                } else {
-                                    writeln!(writer, "        req(&mut query, {:?}, &self.{});", pname, pname_ident)?;
+                    let has_query = if let Some(parameters) = &method.parameters {
+                        parameters.iter().any(|(_, param)| is_query(param))
+                    } else {
+                        false
+                    };
+                    if has_query {
+                        writeln!(writer, "        let mut query = String::with_capacity(256);")?;
+                        if let Some(parameters) = &method.parameters {
+                            for (pname, param) in parameters {
+                                let pname_ident = to_ident(pname);
+                                if is_query(param) {
+                                    if is_optional(param) {
+                                        writeln!(writer, "        opt(&mut query, {:?}, &self.{});", pname, pname_ident)?;
+                                    } else {
+                                        writeln!(writer, "        req(&mut query, {:?}, &self.{});", pname, pname_ident)?;
+                                    }
                                 }
                             }
                         }
+                        writeln!(writer, "        let url = format!(\"{{}}{}{{}}\", self.client.base_url{}, query);", url_format_string(method), url_param_string(method))?;
+                    } else {
+                        writeln!(writer, "        let url = format!(\"{{}}{}\", self.client.base_url{});", url_format_string(method), url_param_string(method))?;
                     }
-                    writeln!(writer, "        let url = format!(\"{{}}{}{{}}\", self.client.base_url{}, query);", url_format_string(method), url_param_string(method))?;
-                } else {
-                    writeln!(writer, "        let url = format!(\"{{}}{}\", self.client.base_url{});", url_format_string(method), url_param_string(method))?;
-                }
-                writeln!(writer, "        let resp = self.client.http_client.{}(&url){}.send().await?;", http_method(method), json_requests(method))?;
-                writeln!(writer, "        if resp.status() != 200 {{")?;
-                writeln!(writer, "            return Err(format!(\"{{:?}}\", resp).into());")?;
-                writeln!(writer, "        }}")?;
-                writeln!(writer, "        Ok(resp.json().await?)")?;
-                writeln!(writer, "    }}")?;
-                if let Some(parameters) = &method.parameters {
-                    for (pname, param) in parameters {
-                        if is_optional(param) {
-                            let pname_ident = to_ident(pname);
-                            let rust_type = to_rust_type(param)?;
-                            writeln!(writer, "    pub fn {}(&mut self, {}: {}) -> &mut Self {{ self.{} = {}; self }}", pname_ident, pname_ident, rust_type, pname_ident, pname_ident)?;
+                    writeln!(writer, "        let resp = self.client.http_client.{}(&url){}.send().await?;", http_method(method), json_requests(method))?;
+                    writeln!(writer, "        if resp.status() != 200 {{")?;
+                    writeln!(writer, "            return Err(format!(\"{{:?}}\", resp).into());")?;
+                    writeln!(writer, "        }}")?;
+                    writeln!(writer, "        Ok(resp.json().await?)")?;
+                    writeln!(writer, "    }}")?;
+                    if let Some(parameters) = &method.parameters {
+                        for (pname, param) in parameters {
+                            if is_optional(param) {
+                                let pname_ident = to_ident(pname);
+                                let rust_type = to_rust_type(param)?;
+                                writeln!(writer, "    pub fn {}(&mut self, {}: {}) -> &mut Self {{ self.{} = {}; self }}", pname_ident, pname_ident, rust_type, pname_ident, pname_ident)?;
+                            }
                         }
                     }
+                    writeln!(writer, "}}")?;
                 }
-                writeln!(writer, "}}")?;
             }
         }
     }
@@ -828,10 +844,15 @@ pub fn convert<R : std::io::Read, W : std::io::Write>(reader: R, mut writer: W) 
     let desc : RestDescription = serde_json::from_reader(reader)?;
 
     if let Some(resources) = &desc.resources {
-        make_api_root(&mut writer, resources)?;
-        make_resource_interfaces(&mut writer, resources)?;
-        make_resource_structs(&mut writer, resources)?;
-        make_method_interfaces(&mut writer, resources)?;
+        let resources : Vec<(&String, &RestResource)> = resources.iter().filter(
+            |(n, _)| DEPRECATED_RESOURCES.iter().position(|dn| dn == n).is_none()
+        )
+        .collect();
+
+        make_api_root(&mut writer, &resources)?;
+        make_resource_interfaces(&mut writer, &resources)?;
+        make_resource_structs(&mut writer, &resources)?;
+        make_method_interfaces(&mut writer, &resources)?;
     }
 
     if let Some(schemas) = &desc.schemas {
