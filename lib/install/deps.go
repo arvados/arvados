@@ -146,7 +146,6 @@ func (installCommand) RunCommand(prog string, args []string, stdin io.Reader, st
 			"python3-virtualenv",
 			"r-base",
 			"r-cran-testthat",
-			"s3cmd",
 			"sudo",
 			"wget",
 			"xvfb",
