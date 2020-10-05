@@ -77,7 +77,8 @@ const getParams = (dataExplorer: DataExplorer, query: string, apiRevision: numbe
         typeFilters(dataExplorer.columns)
     ),
     order: getOrder(dataExplorer),
-    includeTrash: getAdvancedDataFromQuery(query).inTrash
+    includeTrash: getAdvancedDataFromQuery(query).inTrash,
+    includeOldVersions: getAdvancedDataFromQuery(query).pastVersions
 });
 
 const getOrder = (dataExplorer: DataExplorer) => {

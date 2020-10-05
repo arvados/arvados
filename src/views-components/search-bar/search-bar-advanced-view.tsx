@@ -17,7 +17,7 @@ import { SearchBarAdvancedFormData } from '~/models/search-bar';
 import {
     SearchBarTypeField, SearchBarClusterField, SearchBarProjectField, SearchBarTrashField,
     SearchBarDateFromField, SearchBarDateToField, SearchBarPropertiesField,
-    SearchBarSaveSearchField, SearchBarQuerySearchField
+    SearchBarSaveSearchField, SearchBarQuerySearchField, SearchBarPastVersionsField
 } from '~/views-components/form-fields/search-bar-form-fields';
 import { treePickerActions } from "~/store/tree-picker/tree-picker-actions";
 
@@ -140,6 +140,9 @@ export const SearchBarAdvancedView = compose(
                                 <Grid item xs={2} className={classes.label} />
                                 <Grid item xs={5}>
                                     <SearchBarTrashField />
+                                </Grid>
+                                <Grid item xs={5}>
+                                    <SearchBarPastVersionsField />
                                 </Grid>
                             </Grid>
                             <IconButton onClick={closeAdvanceView} className={classes.closeIcon}>

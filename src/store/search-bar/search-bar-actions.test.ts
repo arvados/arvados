@@ -15,6 +15,7 @@ describe('search-bar-actions', () => {
                 cluster: undefined,
                 projectUuid: undefined,
                 inTrash: true,
+                pastVersions: false,
                 dateFrom: '',
                 dateTo: '',
                 properties: [{
@@ -37,6 +38,7 @@ describe('search-bar-actions', () => {
                 cluster: 'c97qx',
                 projectUuid: undefined,
                 inTrash: true,
+                pastVersions: false,
                 dateFrom: '2017-08-01',
                 dateTo: '',
                 properties: [{
@@ -57,6 +59,7 @@ describe('search-bar-actions', () => {
                 cluster: 'c97qx',
                 projectUuid: undefined,
                 inTrash: true,
+                pastVersions: false,
                 dateFrom: '2017-08-01',
                 dateTo: '',
                 properties: [
@@ -78,6 +81,7 @@ describe('search-bar-actions', () => {
                 cluster: undefined,
                 projectUuid: undefined,
                 inTrash: false,
+                pastVersions: false,
                 dateFrom: '',
                 dateTo: '',
                 properties: [
@@ -107,6 +111,7 @@ describe('search-bar-actions', () => {
                 cluster: undefined,
                 projectUuid: undefined,
                 inTrash: false,
+                pastVersions: false,
                 dateFrom: '',
                 dateTo: '',
                 properties: [
@@ -134,6 +139,7 @@ describe('search-bar-actions', () => {
                 cluster: undefined,
                 projectUuid: undefined,
                 inTrash: false,
+                pastVersions: false,
                 dateFrom: '',
                 dateTo: '',
                 properties: [

@@ -9,6 +9,7 @@ export type SearchBarAdvancedFormData = {
     cluster?: string;
     projectUuid?: string;
     inTrash: boolean;
+    pastVersions: boolean;
     dateFrom: string;
     dateTo: string;
     saveQuery: boolean;
