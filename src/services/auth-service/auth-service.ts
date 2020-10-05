@@ -69,6 +69,10 @@ export class AuthService {
         return this.getStorage().getItem(HOME_CLUSTER) || undefined;
     }
 
+    public getApiClient() {
+        return this.apiClient;
+    }
+
     public removeUser() {
         this.getStorage().removeItem(USER_EMAIL_KEY);
         this.getStorage().removeItem(USER_FIRST_NAME_KEY);

@@ -6,7 +6,7 @@ import { Dispatch } from "redux";
 import { setBreadcrumbs } from "~/store/breadcrumbs/breadcrumbs-actions";
 import { RootState } from "~/store/store";
 import { ServiceRepository, createServices, setAuthorizationHeader } from "~/services/services";
-import Axios from "axios";
+import Axios, { AxiosInstance } from "axios";
 import { User, getUserDisplayName } from "~/models/user";
 import { authActions } from "~/store/auth/auth-action";
 import {
@@ -313,7 +313,7 @@ export const initSessions = (authService: AuthService, config: Config, user: Use
     (dispatch: Dispatch<any>) => {
         const sessions = authService.buildSessions(config, user);
         dispatch(authActions.SET_SESSIONS(sessions));
-        dispatch(validateSessions(authService.apiClient));
+        dispatch(validateSessions(authService.getApiClient()));
     };
 
 export const loadSiteManagerPanel = () =>
