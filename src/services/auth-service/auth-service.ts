@@ -96,7 +96,7 @@ export class AuthService {
         window.location.assign(`${this.baseUrl || ""}/logout?return_to=${currentUrl}`);
     }
 
-    public getUserDetails = (): Promise<User> => {
+    public getUserDetails = (showErrors?: boolean): Promise<User> => {
         const reqId = uuid();
         this.actions.progressFn(reqId, true);
         return this.apiClient
@@ -118,7 +118,7 @@ export class AuthService {
             })
             .catch(e => {
                 this.actions.progressFn(reqId, false);
-                this.actions.errorFn(reqId, e);
+                this.actions.errorFn(reqId, e, showErrors);
                 throw e;
             });
     }
