@@ -188,10 +188,11 @@ export const validateSessions = () =>
 			   places in Workbench2. */
                         await dispatch(validateSession(session, activeSession));
                     } catch (e) {
-                        dispatch(snackbarActions.OPEN_SNACKBAR({
-                            message: e.message,
-                            kind: SnackbarKind.ERROR
-                        }));
+                        // Don't do anything here.  User may get
+                        // spammed with multiple messages that are not
+                        // helpful.  They can see the individual
+                        // errors by going to site manager and trying
+                        // to toggle the session.
                     }
                 }
             }
