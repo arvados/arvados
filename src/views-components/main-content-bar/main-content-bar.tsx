@@ -43,26 +43,26 @@ export const MainContentBar =
     connect((state: RootState) => ({
         buttonVisible: isButtonVisible(state)
     }), {
-        onDetailsPanelToggle: toggleDetailsPanel,
-    })(
-        withStyles(styles)(
-            (props: MainContentBarProps & WithStyles<CssRules> & any) =>
-                <Toolbar>
-                    <Grid container>
-                        <Grid item xs alignItems="center">
-                            <Breadcrumbs />
+            onDetailsPanelToggle: toggleDetailsPanel,
+        })(
+            withStyles(styles)(
+                (props: MainContentBarProps & WithStyles<CssRules> & any) =>
+                    <Toolbar>
+                        <Grid container>
+                            <Grid container item xs alignItems="center">
+                                <Breadcrumbs />
+                            </Grid>
+                            <Grid item>
+                                <RefreshButton />
+                            </Grid>
+                            <Grid item>
+                                {props.buttonVisible && <Tooltip title="Additional Info">
+                                    <IconButton color="inherit" className={props.classes.infoTooltip} onClick={props.onDetailsPanelToggle}>
+                                        <DetailsIcon />
+                                    </IconButton>
+                                </Tooltip>}
+                            </Grid>
                         </Grid>
-                        <Grid item>
-                            <RefreshButton />
-                        </Grid>
-                        <Grid item>
-                            {props.buttonVisible && <Tooltip title="Additional Info">
-                                <IconButton color="inherit" className={props.classes.infoTooltip} onClick={props.onDetailsPanelToggle}>
-                                    <DetailsIcon />
-                                </IconButton>
-                            </Tooltip>}
-                        </Grid>
-                    </Grid>
-                </Toolbar>
-        )
-    );
+                    </Toolbar>
+            )
+        );

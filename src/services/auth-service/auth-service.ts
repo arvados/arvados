@@ -69,6 +69,10 @@ export class AuthService {
         return this.getStorage().getItem(HOME_CLUSTER) || undefined;
     }
 
+    public getApiClient() {
+        return this.apiClient;
+    }
+
     public removeUser() {
         this.getStorage().removeItem(USER_EMAIL_KEY);
         this.getStorage().removeItem(USER_FIRST_NAME_KEY);
@@ -141,8 +145,9 @@ export class AuthService {
             clusterId: cfg.uuidPrefix,
             remoteHost: cfg.rootUrl,
             baseUrl: cfg.baseUrl,
-            name: user ? getUserDisplayName(user): '',
+            name: user ? getUserDisplayName(user) : '',
             email: user ? user.email : '',
+            userIsActive: user ? user.isActive : false,
             token: this.getApiToken(),
             loggedIn: true,
             active: true,
