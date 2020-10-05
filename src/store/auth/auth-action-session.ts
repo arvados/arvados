@@ -114,7 +114,7 @@ export const validateCluster = async (config: Config, useToken: string):
     const svc = createServices(config, { progressFn: () => { }, errorFn: () => { } });
     setAuthorizationHeader(svc, saltedToken);
 
-    const user = await svc.authService.getUserDetails();
+    const user = await svc.authService.getUserDetails(false);
     return {
         user,
         token: saltedToken,
