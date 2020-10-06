@@ -82,3 +82,6 @@ sdk/java-v2/settings.gradle
 sdk/cwl/tests/wf/feddemo
 go.mod
 go.sum
+sdk/python/tests/fed-migrate/CWLFile
+sdk/python/tests/fed-migrate/*.cwl
+sdk/python/tests/fed-migrate/*.cwlex

@@ -293,7 +293,7 @@ $graph:
   - arguments:
       - arvbox
       - cat
-      - /var/lib/arvados/superuser_token
+      - /var/lib/arvados-arvbox/superuser_token
     class: CommandLineTool
     cwlVersion: v1.0
     id: '#superuser_tok'
@@ -476,10 +476,10 @@ $graph:
 
 
                           ARVADOS_VIRTUAL_MACHINE_UUID=\$($(inputs.arvbox_bin.path)
-                          cat /var/lib/arvados/vm-uuid)
+                          cat /var/lib/arvados-arvbox/vm-uuid)
 
                           ARVADOS_API_TOKEN=\$($(inputs.arvbox_bin.path) cat
-                          /var/lib/arvados/superuser_token)
+                          /var/lib/arvados-arvbox/superuser_token)
 
                           while ! curl --fail --insecure --silent -H
                           "Authorization: Bearer $ARVADOS_API_TOKEN"
