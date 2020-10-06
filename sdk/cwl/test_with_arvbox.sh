@@ -129,7 +129,7 @@ fi
 
 export ARVADOS_API_HOST=localhost:8000
 export ARVADOS_API_HOST_INSECURE=1
-export ARVADOS_API_TOKEN=\$(cat /var/lib/arvados/superuser_token)
+export ARVADOS_API_TOKEN=\$(cat /var/lib/arvados-arvbox/superuser_token)
 
 if test -n "$build" ; then
   /usr/src/arvados/build/build-dev-docker-jobs-image.sh
