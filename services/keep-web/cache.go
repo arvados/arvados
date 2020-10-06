@@ -144,14 +144,14 @@ var selectPDH = map[string]interface{}{
 func (c *cache) Update(client *arvados.Client, coll arvados.Collection, fs arvados.CollectionFileSystem) error {
 	c.setupOnce.Do(c.setup)
 
-	if m, err := fs.MarshalManifest("."); err != nil || m == coll.ManifestText {
+	m, err := fs.MarshalManifest(".")
+	if err != nil || m == coll.ManifestText {
 		return err
-	} else {
-		coll.ManifestText = m
 	}
+	coll.ManifestText = m
 	var updated arvados.Collection
 	defer c.pdhs.Remove(coll.UUID)
-	err := client.RequestAndDecode(&updated, "PATCH", "arvados/v1/collections/"+coll.UUID, nil, map[string]interface{}{
+	err = client.RequestAndDecode(&updated, "PATCH", "arvados/v1/collections/"+coll.UUID, nil, map[string]interface{}{
 		"collection": map[string]string{
 			"manifest_text": coll.ManifestText,
 		},

@@ -728,12 +728,11 @@ func (dn *dirnode) commitBlock(ctx context.Context, refs []fnSegmentRef, bufsize
 			// it fails, we'll try again next time.
 			close(done)
 			return nil
-		} else {
-			// In sync mode, we proceed regardless of
-			// whether another flush is in progress: It
-			// can't finish before we do, because we hold
-			// fn's lock until we finish our own writes.
 		}
+		// In sync mode, we proceed regardless of
+		// whether another flush is in progress: It
+		// can't finish before we do, because we hold
+		// fn's lock until we finish our own writes.
 		seg.flushing = done
 		offsets = append(offsets, len(block))
 		if len(refs) == 1 {
