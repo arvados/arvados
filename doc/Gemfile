@@ -5,6 +5,6 @@
 source 'https://rubygems.org'
 
 gem 'zenweb'
-gem 'liquid'
+gem 'liquid', '~>4.0.0'
 gem 'RedCloth'
 gem 'colorize'
