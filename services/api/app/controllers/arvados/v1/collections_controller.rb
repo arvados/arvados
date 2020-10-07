@@ -13,10 +13,10 @@ class Arvados::V1::CollectionsController < ApplicationController
     (super rescue {}).
       merge({
         include_trash: {
-          type: 'boolean', required: false, description: "Include collections whose is_trashed attribute is true."
+          type: 'boolean', required: false, default: false, description: "Include collections whose is_trashed attribute is true.",
         },
         include_old_versions: {
-          type: 'boolean', required: false, description: "Include past collection versions."
+          type: 'boolean', required: false, default: false, description: "Include past collection versions.",
         },
       })
   end
@@ -25,7 +25,7 @@ class Arvados::V1::CollectionsController < ApplicationController
     (super rescue {}).
       merge({
         include_trash: {
-          type: 'boolean', required: false, description: "Show collection even if its is_trashed attribute is true."
+          type: 'boolean', required: false, default: false, description: "Show collection even if its is_trashed attribute is true.",
         },
         include_old_versions: {
           type: 'boolean', required: false, default: true, description: "Include past collection versions.",
