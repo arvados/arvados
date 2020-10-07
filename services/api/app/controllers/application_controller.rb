@@ -182,7 +182,7 @@ class ApplicationController < ActionController::Base
       if params[pname].is_a?(Boolean)
         return params[pname]
       else
-        logger.warn "Warning: received non-boolean parameter '#{pname}' on #{self.class.inspect}."
+        logger.warn "Warning: received non-boolean value #{params[pname].inspect} for boolean parameter #{pname} on #{self.class.inspect}, treating as false."
       end
     end
     false
@@ -611,7 +611,7 @@ class ApplicationController < ActionController::Base
         # Make sure params[key] is either true or false -- not a
         # string, not nil, etc.
         if not params.include?(key)
-          params[key] = info[:default]
+          params[key] = info[:default] || false
         elsif [false, 'false', '0', 0].include? params[key]
           params[key] = false
         elsif [true, 'true', '1', 1].include? params[key]
