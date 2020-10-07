@@ -28,6 +28,17 @@ RUN mkdir -p $ARVADOS_CONTAINER_PATH
 RUN echo "production" > $ARVADOS_CONTAINER_PATH/api_rails_env
 RUN echo "production" > $ARVADOS_CONTAINER_PATH/workbench_rails_env
 
+# for the federation tests, the dev server watches a lot of files,
+# and we run three instances of the docker container. Bump up the
+# inotify limit from 8192, to avoid errors like
+#   events.js:183
+#         throw er; // Unhandled 'error' event
+#         ^
+#
+#   Error: watch /usr/src/workbench2/public ENOSPC
+# cf. https://github.com/facebook/jest/issues/3254
+RUN echo fs.inotify.max_user_watches=524288 >> /etc/sysctl.conf
+
 RUN /usr/local/lib/arvbox/createusers.sh
 
 RUN sudo -u arvbox /var/lib/arvbox/service/api/run-service --only-deps

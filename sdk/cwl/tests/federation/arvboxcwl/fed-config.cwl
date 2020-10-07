@@ -65,7 +65,7 @@ requirements:
 arguments:
   - shellQuote: false
     valueFrom: |
-      docker cp cluster_config.yml.override $(inputs.container_name):/var/lib/arvados
+      docker cp cluster_config.yml.override $(inputs.container_name):/var/lib/arvados-arvbox
       docker cp application.yml.override $(inputs.container_name):/usr/src/arvados/services/api/config
       $(inputs.arvbox_bin.path) sv restart api
       $(inputs.arvbox_bin.path) sv restart controller
