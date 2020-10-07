@@ -14,6 +14,9 @@ export HOME=$ARVADOS_CONTAINER_PATH
 
 chown arvbox /dev/stderr
 
+# Load our custom sysctl.conf entries
+/sbin/sysctl -p
+
 if test -z "$1" ; then
     exec chpst -u arvbox:arvbox:docker $0-service
 else
