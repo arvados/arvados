@@ -1,0 +1,53 @@
+---
+layout: default
+navsection: installguide
+title: Install Arvados using Saltstack's arvados-formula
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+# "For the impatient (tl;rl)":#tlrl
+# "Introduction":#introduction
+# "Install dependencies":#dependencies
+
+h2(#tlrl). For the impatient (TL;RL)
+
+We added a "script"::https://github.com/arvados/arvados/tree/master/tools/salt-install/bin/provision.sh
+and example configuration files under the "tools/salt-install":https://github.com/arvados/arvados/tree/master/tools/salt-install
+directory, which you can use to get all the Arvados components up and running
+in a single node (The whole directory can be used to create a local VM with all
+Arvados' components in it, using "Vagrant":https://www.vagrantup.com/ )
+
+Just edit the parameters in the "provision.sh" script and run
+
+<notextile>
+<pre><code>
+vagrant up
+</notextile>
+
+If you want to run these scripts in another host or instance, just copy the
+directory to a temporary directory, edit it and run
+
+<notextile>
+<pre><code>
+bash ./bin/provision.sh
+</notextile>
+
+h2(#introduction). Introduction
+
+To ease the installation of the various Arvados components, we have developed a
+"Saltstack":https://www.saltstack.com/ 's
+"arvados-formula":https://github.com/saltstack-formulas/arvados-formula which
+can help you get an Arvados cluster up and running.
+
+Saltstack is a Python-based, open-source software for event-driven IT
+automation, remote task execution, and configuration management. It can be used
+in a master/minion setup or master-less.
+
+h2(#dependencies). Install dependencies
+
+Arvados depends in a few applications (postgresql, nginx) that can also be installed using Salt.
+
