@@ -625,8 +625,6 @@ export RAILS_ENV=development
 bundle exec rake db:drop
 rm $ARVADOS_CONTAINER_PATH/api_database_setup
 rm $ARVADOS_CONTAINER_PATH/superuser_token
-rm $ARVADOS_CONTAINER_PATH/keep0-uuid
-rm $ARVADOS_CONTAINER_PATH/keep1-uuid
 rm $ARVADOS_CONTAINER_PATH/keepproxy-uuid
 sv start api
 sv start controller
