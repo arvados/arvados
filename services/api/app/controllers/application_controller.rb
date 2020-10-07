@@ -611,7 +611,7 @@ class ApplicationController < ActionController::Base
         # Make sure params[key] is either true or false -- not a
         # string, not nil, etc.
         if not params.include?(key)
-          params[key] = info[:default]
+          params[key] = info[:default] || false
         elsif [false, 'false', '0', 0].include? params[key]
           params[key] = false
         elsif [true, 'true', '1', 1].include? params[key]
