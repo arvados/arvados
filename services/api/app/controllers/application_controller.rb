@@ -182,7 +182,7 @@ class ApplicationController < ActionController::Base
       if params[pname].is_a?(Boolean)
         return params[pname]
       else
-        logger.warn "Warning: received non-boolean parameter '#{pname}' on #{self.class.inspect}."
+        logger.warn "Warning: received non-boolean value #{params[pname].inspect} for boolean parameter #{pname} on #{self.class.inspect}, treating as false."
       end
     end
     false
