@@ -11,11 +11,12 @@ import { ContainerRequestState } from '~/models/container-request';
 import { SEARCH_RESULTS_PANEL_ID } from '~/store/search-results-panel/search-results-panel-actions';
 import { DataExplorer } from '~/views-components/data-explorer/data-explorer';
 import {
-    ProcessStatus, ResourceCluster,
+    ResourceCluster,
     ResourceFileSize,
     ResourceLastModifiedDate,
     ResourceName,
     ResourceOwner,
+    ResourceStatus,
     ResourceType
 } from '~/views-components/data-explorer/renderers';
 import { createTree } from '~/models/tree';
@@ -78,7 +79,7 @@ export const searchResultsPanelColumns: DataColumns<string> = [
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ProcessStatus uuid={uuid} />
+        render: uuid => <ResourceStatus uuid={uuid} />
     },
     {
         name: SearchResultsPanelColumnNames.TYPE,

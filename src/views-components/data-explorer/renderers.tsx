@@ -17,7 +17,7 @@ import { getProcess, Process, getProcessStatus, getProcessStatusColor, getProces
 import { ArvadosTheme } from '~/common/custom-theme';
 import { compose, Dispatch } from 'redux';
 import { WorkflowResource } from '~/models/workflow';
-import { ResourceStatus } from '~/views/workflow-panel/workflow-panel-view';
+import { ResourceStatus as WorkflowStatus } from '~/views/workflow-panel/workflow-panel-view';
 import { getUuidPrefix, openRunProcess } from '~/store/workflow-panel/workflow-panel-actions';
 import { openSharingDialog } from '~/store/sharing-dialog/sharing-dialog-actions';
 import { UserResource } from '~/models/user';
@@ -358,9 +358,9 @@ export const ResourceRunProcess = connect(
 
 const renderWorkflowStatus = (uuidPrefix: string, ownerUuid?: string) => {
     if (ownerUuid === getPublicUuid(uuidPrefix)) {
-        return renderStatus(ResourceStatus.PUBLIC);
+        return renderStatus(WorkflowStatus.PUBLIC);
     } else {
-        return renderStatus(ResourceStatus.PRIVATE);
+        return renderStatus(WorkflowStatus.PRIVATE);
     }
 };
 
@@ -441,6 +441,22 @@ export const ResourceType = connect(
         const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
         return { type: resource ? resource.kind : '' };
     })((props: { type: string }) => renderType(props.type));
+
+export const ResourceStatus = connect((state: RootState, props: { uuid: string }) => {
+        return { resource: getResource<GroupContentsResource>(props.uuid)(state.resources) };
+    })((props: { resource: GroupContentsResource }) =>
+        (props.resource && props.resource.kind === ResourceKind.COLLECTION)
+        ? <CollectionStatus uuid={props.resource.uuid} />
+        : <ProcessStatus uuid={props.resource.uuid} />
+    );
+
+export const CollectionStatus = connect((state: RootState, props: { uuid: string }) => {
+        return { collection: getResource<CollectionResource>(props.uuid)(state.resources) };
+    })((props: { collection: CollectionResource }) =>
+        (props.collection.uuid !== props.collection.currentVersionUuid)
+        ? <Typography>old version</Typography>
+        : <Typography>current</Typography>
+    );
 
 export const ProcessStatus = compose(
     connect((state: RootState, props: { uuid: string }) => {
