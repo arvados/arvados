@@ -31,4 +31,6 @@ if test "$1" = "--only-setup" ; then
     exit
 fi
 
+touch $ARVADOS_CONTAINER_PATH/api.ready
+
 exec bundle exec passenger start --port=${services[api]}
