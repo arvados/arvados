@@ -190,18 +190,6 @@ if docker --version |grep " 1\.[0-9]\." ; then
     FORCE=-f
 fi
 
-if ! [[ -z "$version_tag" ]]; then
-    docker tag $FORCE arvados/jobs:$cwl_runner_version_tag arvados/jobs:"$version_tag"
-    ECODE=$?
-
-    if [[ "$ECODE" != "0" ]]; then
-        EXITCODE=$(($EXITCODE + $ECODE))
-    fi
-
-    checkexit $ECODE "docker tag"
-    title "docker tag complete (`timer`)"
-fi
-
 title "uploading images"
 
 timer_reset
@@ -213,11 +201,7 @@ else
         ## 20150526 nico -- *sometimes* dockerhub needs re-login
         ## even though credentials are already in .dockercfg
         docker login -u arvados
-        if ! [[ -z "$version_tag" ]]; then
-            docker_push arvados/jobs:"$version_tag"
-        else
-           docker_push arvados/jobs:$cwl_runner_version_tag
-        fi
+        docker_push arvados/jobs:$cwl_runner_version_tag
         title "upload arvados images finished (`timer`)"
     else
         title "upload arvados images SKIPPED because no --upload option set (`timer`)"
