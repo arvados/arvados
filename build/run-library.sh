@@ -525,13 +525,19 @@ fpm_build_virtualenv () {
   fi
 
   # Determine the package version from the generated sdist archive
-  PYTHON_VERSION=${ARVADOS_BUILDING_VERSION:-$(awk '($1 == "Version:"){print $2}' *.egg-info/PKG-INFO)}
+  if [[ -n "$ARVADOS_BUILDING_VERSION" ]] ; then
+      UNFILTERED_PYTHON_VERSION=$(echo -n $ARVADOS_BUILDING_VERSION)
+      PYTHON_VERSION=$(echo -n $ARVADOS_BUILDING_VERSION | sed s/~rc/rc/g)
+  else
+      UNFILTERED_PYTHON_VERSION=$(awk '($1 == "Version:"){print $2}' *.egg-info/PKG-INFO)
+      PYTHON_VERSION=$(awk '($1 == "Version:"){print $2}' *.egg-info/PKG-INFO)
+  fi
 
   # See if we actually need to build this package; does it exist already?
   # We can't do this earlier than here, because we need PYTHON_VERSION...
   # This isn't so bad; the sdist call above is pretty quick compared to
   # the invocation of virtualenv and fpm, below.
-  if ! test_package_presence "$PYTHON_PKG" $PYTHON_VERSION $PACKAGE_TYPE $ARVADOS_BUILDING_ITERATION; then
+  if ! test_package_presence "$PYTHON_PKG" $UNFILTERED_PYTHON_VERSION $PACKAGE_TYPE $ARVADOS_BUILDING_ITERATION; then
     return 0
   fi
 
@@ -642,7 +648,7 @@ fpm_build_virtualenv () {
     COMMAND_ARR+=('--verbose' '--log' 'info')
   fi
 
-  COMMAND_ARR+=('-v' "$PYTHON_VERSION")
+  COMMAND_ARR+=('-v' $(echo "$PYTHON_VERSION" | sed s/rc/~rc/g))
   COMMAND_ARR+=('--iteration' "$ARVADOS_BUILDING_ITERATION")
   COMMAND_ARR+=('-n' "$PYTHON_PKG")
   COMMAND_ARR+=('-C' "build")
