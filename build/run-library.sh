@@ -526,8 +526,10 @@ fpm_build_virtualenv () {
 
   # Determine the package version from the generated sdist archive
   if [[ -n "$ARVADOS_BUILDING_VERSION" ]] ; then
+      UNFILTERED_PYTHON_VERSION=$(echo -n $ARVADOS_BUILDING_VERSION)
       PYTHON_VERSION=$(echo -n $ARVADOS_BUILDING_VERSION | sed s/~rc/rc/g)
   else
+      UNFILTERED_PYTHON_VERSION=$(awk '($1 == "Version:"){print $2}' *.egg-info/PKG-INFO)
       PYTHON_VERSION=$(awk '($1 == "Version:"){print $2}' *.egg-info/PKG-INFO)
   fi
 
@@ -535,7 +537,7 @@ fpm_build_virtualenv () {
   # We can't do this earlier than here, because we need PYTHON_VERSION...
   # This isn't so bad; the sdist call above is pretty quick compared to
   # the invocation of virtualenv and fpm, below.
-  if ! test_package_presence "$PYTHON_PKG" $PYTHON_VERSION $PACKAGE_TYPE $ARVADOS_BUILDING_ITERATION; then
+  if ! test_package_presence "$PYTHON_PKG" $UNFILTERED_PYTHON_VERSION $PACKAGE_TYPE $ARVADOS_BUILDING_ITERATION; then
     return 0
   fi
 
