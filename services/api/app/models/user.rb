@@ -221,6 +221,11 @@ SELECT target_uuid, perm_level
 
     group_perm = create_user_group_link
     repo_perm = create_user_repo_link repo_name
+
+    if vm_uuid.nil? and !Rails.configuration.Users.AutoSetupNewUsersWithVmUUID.empty?
+      vm_uuid = Rails.configuration.Users.AutoSetupNewUsersWithVmUUID
+    end
+
     vm_login_perm = create_vm_login_permission_link(vm_uuid, username) if vm_uuid
 
     if send_notification_email.nil?
