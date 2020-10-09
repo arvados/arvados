@@ -213,10 +213,27 @@ SELECT target_uuid, perm_level
   end
 
   # create links
-  def setup(repo_name: nil, vm_uuid: nil)
+  def setup(repo_name: nil, vm_uuid: nil, send_notification_email: nil)
+    newly_invited = Link.where(tail_uuid: self.uuid,
+                              head_uuid: all_users_group_uuid,
+                              link_class: 'permission',
+                              name: 'can_read').empty?
+
+    group_perm = create_user_group_link
     repo_perm = create_user_repo_link repo_name
     vm_login_perm = create_vm_login_permission_link(vm_uuid, username) if vm_uuid
-    group_perm = create_user_group_link
+
+    if send_notification_email.nil?
+      send_notification_email = Rails.configuration.Mail.SendUserSetupNotificationEmail
+    end
+
+    if newly_invited and send_notification_email and !Rails.configuration.Users.UserSetupMailText.empty?
+      begin
+        UserNotifier.account_is_setup(self).deliver_now
+      rescue => e
+        logger.warn "Failed to send email to #{self.email}: #{e}"
+      end
+    end
 
     return [repo_perm, vm_login_perm, group_perm, self].compact
   end
@@ -255,6 +272,7 @@ SELECT target_uuid, perm_level
     self.prefs = {}
 
     # mark the user as inactive
+    self.is_admin = false  # can't be admin and inactive
     self.is_active = false
     self.save!
   end
