@@ -244,36 +244,47 @@ class ApiClientAuthorization < ArvadosModel
       end
 
       # Sync user record.
-      if remote_user_prefix == Rails.configuration.Login.LoginCluster
-        # Remote cluster controls our user database, set is_active if
-        # remote is active.  If remote is not active, user will be
-        # unsetup (see below).
-        user.is_active = true if remote_user['is_active']
-        user.is_admin = remote_user['is_admin']
-      else
-        if Rails.configuration.Users.NewUsersAreActive ||
-           Rails.configuration.RemoteClusters[remote_user_prefix].andand["ActivateUsers"]
-          # Default policy is to activate users
-          user.is_active = true if remote_user['is_active']
-        end
-      end
-
-      %w[first_name last_name email prefs].each do |attr|
-        user.send(attr+'=', remote_user[attr])
-      end
-
-      if remote_user['uuid'][-22..-1] == '-tpzed-000000000000000'
-        user.first_name = "root"
-        user.last_name = "from cluster #{remote_user_prefix}"
-      end
-
       act_as_system_user do
-        if (user.is_active && !remote_user['is_active']) or (user.is_invited && !remote_user['is_invited'])
-          # Synchronize the user's "active/invited" state state.  This
-          # also saves the record.
+        %w[first_name last_name email prefs].each do |attr|
+          user.send(attr+'=', remote_user[attr])
+        end
+
+        if remote_user['uuid'][-22..-1] == '-tpzed-000000000000000'
+          user.first_name = "root"
+          user.last_name = "from cluster #{remote_user_prefix}"
+        end
+
+        user.save!
+
+        if user.is_invited && !remote_user['is_invited']
+          # Remote user is not "invited" state, they should be unsetup, which
+          # also makes them inactive.
           user.unsetup
         else
-          user.save!
+          if !user.is_invited && remote_user['is_invited'] and
+            (remote_user_prefix == Rails.configuration.Login.LoginCluster or
+             Rails.configuration.Users.AutoSetupNewUsers or
+             Rails.configuration.Users.NewUsersAreActive or
+             Rails.configuration.RemoteClusters[remote_user_prefix].andand["ActivateUsers"])
+            user.setup
+          end
+
+          if !user.is_active && remote_user['is_active'] && user.is_invited and
+            (remote_user_prefix == Rails.configuration.Login.LoginCluster or
+             Rails.configuration.Users.NewUsersAreActive or
+             Rails.configuration.RemoteClusters[remote_user_prefix].andand["ActivateUsers"])
+            user.update_attributes!(is_active: true)
+          elsif user.is_active && !remote_user['is_active']
+            user.update_attributes!(is_active: false)
+          end
+
+          if remote_user_prefix == Rails.configuration.Login.LoginCluster and
+            user.is_active and
+            user.is_admin != remote_user['is_admin']
+            # Remote cluster controls our user database, including the
+            # admin flag.
+            user.update_attributes!(is_admin: remote_user['is_admin'])
+          end
         end
 
         # We will accept this token (and avoid reloading the user

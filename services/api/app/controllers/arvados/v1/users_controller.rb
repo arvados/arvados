@@ -132,16 +132,8 @@ class Arvados::V1::UsersController < ApplicationController
     end
 
     @response = @object.setup(repo_name: full_repo_name,
-                              vm_uuid: params[:vm_uuid])
-
-    # setup succeeded. send email to user
-    if params[:send_notification_email] && !Rails.configuration.Users.UserSetupMailText.empty?
-      begin
-        UserNotifier.account_is_setup(@object).deliver_now
-      rescue => e
-        logger.warn "Failed to send email to #{@object.email}: #{e}"
-      end
-    end
+                              vm_uuid: params[:vm_uuid],
+                              send_notification_email: params[:send_notification_email])
 
     send_json kind: "arvados#HashList", items: @response.as_api_response(nil)
   end
