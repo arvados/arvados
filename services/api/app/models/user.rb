@@ -219,15 +219,29 @@ SELECT target_uuid, perm_level
                               link_class: 'permission',
                               name: 'can_read').empty?
 
+    # Add can_read link from this user to "all users" which makes this
+    # user "invited"
     group_perm = create_user_group_link
-    repo_perm = create_user_repo_link repo_name
 
+    # Add git repo
+    if repo_name.nil? && username && Rails.configuration.Users.AutoSetupNewUsersWithRepository
+      repo_name = "#{username}/#{username}"
+    end
+
+    repo_perm = if repo_name
+                  create_user_repo_link repo_name
+                end
+
+    # Add virtual machine
     if vm_uuid.nil? and !Rails.configuration.Users.AutoSetupNewUsersWithVmUUID.empty?
       vm_uuid = Rails.configuration.Users.AutoSetupNewUsersWithVmUUID
     end
 
-    vm_login_perm = create_vm_login_permission_link(vm_uuid, username) if vm_uuid
+    vm_login_perm = if vm_uuid && username
+                      create_vm_login_permission_link(vm_uuid, username)
+                    end
 
+    # Send welcome email
     if send_notification_email.nil?
       send_notification_email = Rails.configuration.Mail.SendUserSetupNotificationEmail
     end
@@ -769,17 +783,6 @@ update #{PERMISSION_VIEW} set target_uuid=$1 where target_uuid = $2
   # Automatically setup new user during creation
   def auto_setup_new_user
     setup
-    if username
-      create_vm_login_permission_link(Rails.configuration.Users.AutoSetupNewUsersWithVmUUID,
-                                      username)
-      repo_name = "#{username}/#{username}"
-      if Rails.configuration.Users.AutoSetupNewUsersWithRepository and
-          Repository.where(name: repo_name).first.nil?
-        repo = Repository.create!(name: repo_name, owner_uuid: uuid)
-        Link.create!(tail_uuid: uuid, head_uuid: repo.uuid,
-                     link_class: "permission", name: "can_manage")
-      end
-    end
   end
 
   # Send notification if the user saved profile for the first time
