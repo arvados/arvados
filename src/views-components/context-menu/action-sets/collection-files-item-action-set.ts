@@ -4,16 +4,16 @@
 
 import { ContextMenuActionSet } from "../context-menu-action-set";
 import { RemoveIcon, RenameIcon } from "~/components/icon/icon";
-// import { DownloadCollectionFileAction } from "../actions/download-collection-file-action";
+import { DownloadCollectionFileAction } from "../actions/download-collection-file-action";
 import { openFileRemoveDialog, openRenameFileDialog } from '~/store/collection-panel/collection-panel-files/collection-panel-files-actions';
 import { CollectionFileViewerAction } from '~/views-components/context-menu/actions/collection-file-viewer-action';
 
 
 export const readOnlyCollectionFilesItemActionSet: ContextMenuActionSet = [[
-    // {
-    //     component: DownloadCollectionFileAction,
-    //     execute: () => { return; }
-    // },
+    {
+        component: DownloadCollectionFileAction,
+        execute: () => { return; }
+    },
     {
         component: CollectionFileViewerAction,
         execute: () => { return; },

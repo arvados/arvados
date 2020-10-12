@@ -20,7 +20,7 @@ export const readOnlyCollectionFilesActionSet: ContextMenuActionSet = [[
             dispatch(collectionPanelFilesAction.UNSELECT_ALL_COLLECTION_FILES());
         }
     },
-    // {
+    // { // Disabled for now as we need to create backend version of this feature which will be less buggy
     //     component: DownloadCollectionFileAction,
     //     execute: () => { return; }
     // },
