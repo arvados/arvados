@@ -9,7 +9,7 @@ import 'jest-localstorage-mock';
 import { ServiceRepository, createServices } from "~/services/services";
 import { configureStore, RootStore } from "../store";
 import { createBrowserHistory } from "history";
-import { mockConfig } from '~/common/config';
+import { mockConfig, DISCOVERY_DOC_PATH, } from '~/common/config';
 import { ApiActions } from "~/services/api/api-actions";
 import { ACCOUNT_LINK_STATUS_KEY } from '~/services/link-account-service/link-account-service';
 import Axios from "axios";
@@ -55,6 +55,20 @@ describe('auth-actions', () => {
                 is_active: true,
                 username: "jdoe",
                 prefs: {}
+            });
+
+        axiosMock
+            .onGet("https://xc59z.arvadosapi.com/discovery/v1/apis/arvados/v1/rest")
+            .reply(200, {
+                baseUrl: "https://xc59z.arvadosapi.com/arvados/v1",
+                keepWebServiceUrl: "",
+                remoteHosts: {},
+                rootUrl: "https://xc59z.arvadosapi.com",
+                uuidPrefix: "xc59z",
+                websocketUrl: "",
+                workbenchUrl: "",
+                workbench2Url: "",
+                revision: 12345678
             });
 
         importMocks.push(ImportMock.mockFunction(servicesModule, 'createServices', services));
@@ -103,6 +117,12 @@ describe('auth-actions', () => {
                                 "rootUrl": "https://zzzzz.arvadosapi.com",
                                 "uuidPrefix": "zzzzz",
                             },
+                            "xc59z": mockConfig({
+                                apiRevision: 12345678,
+                                baseUrl: "https://xc59z.arvadosapi.com/arvados/v1",
+                                rootUrl: "https://xc59z.arvadosapi.com",
+                                uuidPrefix: "xc59z"
+                            })
                         },
                         remoteHosts: {
                             zzzzz: "zzzzz.arvadosapi.com",
@@ -120,6 +140,7 @@ describe('auth-actions', () => {
                             "name": "John Doe",
                             "apiRevision": 12345678,
                             "uuid": "zzzzz-tpzed-abcefg",
+                            "userIsActive": true
                         }, {
                             "active": false,
                             "baseUrl": "",
@@ -156,22 +177,22 @@ describe('auth-actions', () => {
 
     // TODO: Add remaining action tests
     /*
-    it('should fire external url to login', () => {
-        const initialState = undefined;
-        window.location.assign = jest.fn();
-        reducer(initialState, authActions.LOGIN());
-        expect(window.location.assign).toBeCalledWith(
-            `/login?return_to=${window.location.protocol}//${window.location.host}/token`
-        );
-    });
+       it('should fire external url to login', () => {
+       const initialState = undefined;
+       window.location.assign = jest.fn();
+       reducer(initialState, authActions.LOGIN());
+       expect(window.location.assign).toBeCalledWith(
+       `/login?return_to=${window.location.protocol}//${window.location.host}/token`
+       );
+       });
 
-    it('should fire external url to logout', () => {
-        const initialState = undefined;
-        window.location.assign = jest.fn();
-        reducer(initialState, authActions.LOGOUT());
-        expect(window.location.assign).toBeCalledWith(
-            `/logout?return_to=${location.protocol}//${location.host}`
-        );
-    });
-    */
+       it('should fire external url to logout', () => {
+       const initialState = undefined;
+       window.location.assign = jest.fn();
+       reducer(initialState, authActions.LOGOUT());
+       expect(window.location.assign).toBeCalledWith(
+       `/logout?return_to=${location.protocol}//${location.host}`
+       );
+       });
+     */
 });

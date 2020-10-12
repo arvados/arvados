@@ -2,10 +2,10 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from "react";
-import { ListItemIcon, ListItemText, ListItem } from "@material-ui/core";
-import { DownloadIcon } from "../../../components/icon/icon";
-import * as JSZip from "jszip";
+import * as React from 'react';
+import { ListItemIcon, ListItemText, ListItem } from '@material-ui/core';
+import { DownloadIcon } from '../../../components/icon/icon';
+import * as JSZip from 'jszip';
 import * as FileSaver from 'file-saver';
 import axios from 'axios';
 
@@ -13,28 +13,35 @@ export const DownloadAction = (props: { href?: any, download?: any, onClick?: ()
     const downloadProps = props.download ? { download: props.download } : {};
 
     const createZip = (fileUrls: string[], download: string[]) => {
-        const zip = new JSZip();
         let id = 1;
-        fileUrls.map((href: string) => {
-            axios.get(href).then(response => response).then(({ data }: any) => {
-                const splittedByDot = href.split('.');
-                if (splittedByDot[splittedByDot.length - 1] !== 'json') {
-                    if (fileUrls.length === id) {
-                        zip.file(download[id - 1], data);
-                        zip.generateAsync({ type: 'blob' }).then((content) => {
-                            FileSaver.saveAs(content, `download-${props.currentCollectionUuid}.zip`);
-                        });
+        const zip = new JSZip();
+        const filteredFileUrls = fileUrls
+            .filter((href: string) => {
+                const letter = href.split('').pop();
+                return letter !== '/';
+            });
+
+        filteredFileUrls
+            .map((href: string) => {
+                axios.get(href).then(response => response).then(({ data }: any) => {
+                    const splittedByDot = href.split('.');
+                    if (splittedByDot[splittedByDot.length - 1] !== 'json') {
+                        if (filteredFileUrls.length === id) {
+                            zip.file(download[id - 1], data);
+                            zip.generateAsync({ type: 'blob' }).then((content) => {
+                                FileSaver.saveAs(content, `download-${props.currentCollectionUuid}.zip`);
+                            });
+                        } else {
+                            zip.file(download[id - 1], data);
+                            zip.generateAsync({ type: 'blob' });
+                        }
                     } else {
-                        zip.file(download[id - 1], data);
+                        zip.file(download[id - 1], JSON.stringify(data));
                         zip.generateAsync({ type: 'blob' });
                     }
-                } else {
-                    zip.file(download[id - 1], JSON.stringify(data));
-                    zip.generateAsync({ type: 'blob' });
-                }
-                id++;
+                    id++;
+                });
             });
-        });
     };
 
     return props.href || props.kind === 'files'
