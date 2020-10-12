@@ -30,7 +30,6 @@ import { ArvadosTheme } from '~/common/custom-theme';
 export enum SearchResultsPanelColumnNames {
     CLUSTER = "Cluster",
     NAME = "Name",
-    PROJECT = "Project",
     STATUS = "Status",
     TYPE = 'Type',
     OWNER = "Owner",
@@ -66,13 +65,6 @@ export const searchResultsPanelColumns: DataColumns<string> = [
         sortDirection: SortDirection.NONE,
         filters: createTree(),
         render: (uuid: string) => <ResourceName uuid={uuid} />
-    },
-    {
-        name: SearchResultsPanelColumnNames.PROJECT,
-        selected: true,
-        configurable: true,
-        filters: createTree(),
-        render: uuid => <ResourceFileSize uuid={uuid} />
     },
     {
         name: SearchResultsPanelColumnNames.STATUS,
