@@ -224,11 +224,8 @@ SELECT target_uuid, perm_level
     group_perm = create_user_group_link
 
     # Add git repo
-    if repo_name.nil? && username && Rails.configuration.Users.AutoSetupNewUsersWithRepository
-      repo_name = "#{username}/#{username}"
-    end
-
-    repo_perm = if repo_name
+    repo_perm = if (!repo_name.nil? || Rails.configuration.Users.AutoSetupNewUsersWithRepository) and !username.nil?
+                  repo_name ||= "#{username}/#{username}"
                   create_user_repo_link repo_name
                 end
 
