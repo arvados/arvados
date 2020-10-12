@@ -387,7 +387,7 @@ class UserTest < ActiveSupport::TestCase
     [false, active_notify_list, inactive_notify_list, "&4a_d9.@example.com", true, true, "ad9"],
     [false, active_notify_list, inactive_notify_list, "&4a_d9.@example.com", false, false, "ad9"],
   ].each do |active, new_user_recipients, inactive_recipients, email, auto_setup_vm, auto_setup_repo, expect_username|
-    test "create new user with auto setup #{active} #{email} #{auto_setup_vm} #{auto_setup_repo}" do
+    test "create new user with auto setup active=#{active} email=#{email} vm=#{auto_setup_vm} repo=#{auto_setup_repo}" do
       set_user_from_auth :admin
 
       Rails.configuration.Users.AutoSetupNewUsers = true
@@ -621,6 +621,7 @@ class UserTest < ActiveSupport::TestCase
                           Rails.configuration.Users.AutoSetupNewUsersWithRepository),
                          named_repo.uuid, user.uuid, "permission", "can_manage")
     end
+
     # Check for VM login.
     if (auto_vm_uuid = Rails.configuration.Users.AutoSetupNewUsersWithVmUUID) != ""
       verify_link_exists(can_setup, auto_vm_uuid, user.uuid,
@@ -677,7 +678,7 @@ class UserTest < ActiveSupport::TestCase
                            tail_uuid: tail_uuid,
                            link_class: link_class,
                            name: link_name)
-    assert_equal link_exists, all_links.any?, "Link #{'not' if link_exists} found for #{link_name} #{link_class} #{property_value}"
+    assert_equal link_exists, all_links.any?, "Link#{' not' if link_exists} found for #{link_name} #{link_class} #{property_value}"
     if link_exists && property_name && property_value
       all_links.each do |link|
         assert_equal true, all_links.first.properties[property_name].start_with?(property_value), 'Property not found in link'

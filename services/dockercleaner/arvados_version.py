@@ -26,6 +26,7 @@ def get_version(setup_dir, module):
     env_version = os.environ.get("ARVADOS_BUILDING_VERSION")
 
     if env_version:
+        env_version = env_version.replace("~rc", "rc")
         save_version(setup_dir, module, env_version)
     else:
         try:

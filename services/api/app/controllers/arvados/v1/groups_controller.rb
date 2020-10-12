@@ -14,7 +14,7 @@ class Arvados::V1::GroupsController < ApplicationController
     (super rescue {}).
       merge({
         include_trash: {
-          type: 'boolean', required: false, description: "Include items whose is_trashed attribute is true."
+          type: 'boolean', required: false, default: false, description: "Include items whose is_trashed attribute is true.",
         },
       })
   end
@@ -23,7 +23,7 @@ class Arvados::V1::GroupsController < ApplicationController
     (super rescue {}).
       merge({
         include_trash: {
-          type: 'boolean', required: false, description: "Show group/project even if its is_trashed attribute is true."
+          type: 'boolean', required: false, default: false, description: "Show group/project even if its is_trashed attribute is true.",
         },
       })
   end
@@ -32,16 +32,16 @@ class Arvados::V1::GroupsController < ApplicationController
     params = _index_requires_parameters.
       merge({
               uuid: {
-                type: 'string', required: false, default: nil
+                type: 'string', required: false, default: nil,
               },
               recursive: {
-                type: 'boolean', required: false, description: 'Include contents from child groups recursively.'
+                type: 'boolean', required: false, default: false, description: 'Include contents from child groups recursively.',
               },
               include: {
-                type: 'string', required: false, description: 'Include objects referred to by listed field in "included" (only owner_uuid).'
+                type: 'string', required: false, description: 'Include objects referred to by listed field in "included" (only owner_uuid).',
               },
               include_old_versions: {
-                type: 'boolean', required: false, description: 'Include past collection versions.'
+                type: 'boolean', required: false, default: false, description: 'Include past collection versions.',
               }
             })
     params.delete(:select)
@@ -56,7 +56,7 @@ class Arvados::V1::GroupsController < ApplicationController
           type: 'boolean',
           location: 'query',
           default: false,
-          description: 'defer permissions update'
+          description: 'defer permissions update',
         }
       }
     )
@@ -70,7 +70,7 @@ class Arvados::V1::GroupsController < ApplicationController
           type: 'boolean',
           location: 'query',
           default: false,
-          description: 'defer permissions update'
+          description: 'defer permissions update',
         }
       }
     )

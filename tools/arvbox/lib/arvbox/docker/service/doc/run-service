@@ -8,6 +8,11 @@ set -ex -o pipefail
 
 . /usr/local/lib/arvbox/common.sh
 
+if test "$1" != "--only-deps" ; then
+  while [ ! -f $ARVADOS_CONTAINER_PATH/api.ready ]; do
+    sleep 1
+  done
+fi
 
 cd /usr/src/arvados/doc
 run_bundler --without=development
@@ -24,4 +29,4 @@ if test "$1" = "--only-deps" ; then
 fi
 
 cd /usr/src/arvados/doc
-bundle exec rake generate baseurl=http://$localip:${services[doc]} arvados_api_host=$localip:${services[controller-ssl]} arvados_workbench_host=http://$localip
+flock $GEM_HOME/gems.lock bundle exec rake generate baseurl=http://$localip:${services[doc]} arvados_api_host=$localip:${services[controller-ssl]} arvados_workbench_host=http://$localip

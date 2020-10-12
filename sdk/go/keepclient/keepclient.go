@@ -191,11 +191,11 @@ func (kc *KeepClient) PutB(buffer []byte) (string, int, error) {
 //
 // If the block hash and data size are known, PutHR is more efficient.
 func (kc *KeepClient) PutR(r io.Reader) (locator string, replicas int, err error) {
-	if buffer, err := ioutil.ReadAll(r); err != nil {
+	buffer, err := ioutil.ReadAll(r)
+	if err != nil {
 		return "", 0, err
-	} else {
-		return kc.PutB(buffer)
 	}
+	return kc.PutB(buffer)
 }
 
 func (kc *KeepClient) getOrHead(method string, locator string, header http.Header) (io.ReadCloser, int64, string, http.Header, error) {

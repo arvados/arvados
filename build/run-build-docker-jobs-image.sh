@@ -149,7 +149,12 @@ else
 	python_sdk_version="${ARVADOS_BUILDING_VERSION}-${ARVADOS_BUILDING_ITERATION}"
 fi
 
-cwl_runner_version_orig=$cwl_runner_version
+# What we use to tag the Docker image.  For release candidate
+# packages, the OS package has a "~rc" suffix, but Python requires
+# just an "rc" suffix.  Arvados-cwl-runner will be expecting the
+# Python-compatible version string when it tries to pull the Docker
+# image, but --build-arg is expecting the OS package version.
+cwl_runner_version_tag=$(echo -n $cwl_runner_version | sed s/~rc/rc/g)
 
 if [[ "${cwl_runner_version}" != "${ARVADOS_BUILDING_VERSION}" ]]; then
 	cwl_runner_version="${cwl_runner_version}-1"
@@ -162,7 +167,7 @@ docker build $NOCACHE \
        --build-arg python_sdk_version=${python_sdk_version} \
        --build-arg cwl_runner_version=${cwl_runner_version} \
        --build-arg repo_version=${REPO} \
-       -t arvados/jobs:$cwl_runner_version_orig .
+       -t arvados/jobs:$cwl_runner_version_tag .
 
 ECODE=$?
 
@@ -185,18 +190,6 @@ if docker --version |grep " 1\.[0-9]\." ; then
     FORCE=-f
 fi
 
-if ! [[ -z "$version_tag" ]]; then
-    docker tag $FORCE arvados/jobs:$cwl_runner_version_orig arvados/jobs:"$version_tag"
-    ECODE=$?
-
-    if [[ "$ECODE" != "0" ]]; then
-        EXITCODE=$(($EXITCODE + $ECODE))
-    fi
-
-    checkexit $ECODE "docker tag"
-    title "docker tag complete (`timer`)"
-fi
-
 title "uploading images"
 
 timer_reset
@@ -208,11 +201,7 @@ else
         ## 20150526 nico -- *sometimes* dockerhub needs re-login
         ## even though credentials are already in .dockercfg
         docker login -u arvados
-        if ! [[ -z "$version_tag" ]]; then
-            docker_push arvados/jobs:"$version_tag"
-        else
-           docker_push arvados/jobs:$cwl_runner_version_orig
-        fi
+        docker_push arvados/jobs:$cwl_runner_version_tag
         title "upload arvados images finished (`timer`)"
     else
         title "upload arvados images SKIPPED because no --upload option set (`timer`)"

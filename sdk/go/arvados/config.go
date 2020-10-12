@@ -49,12 +49,12 @@ func (sc *Config) GetCluster(clusterID string) (*Cluster, error) {
 			}
 		}
 	}
-	if cc, ok := sc.Clusters[clusterID]; !ok {
+	cc, ok := sc.Clusters[clusterID]
+	if !ok {
 		return nil, fmt.Errorf("cluster %q is not configured", clusterID)
-	} else {
-		cc.ClusterID = clusterID
-		return &cc, nil
 	}
+	cc.ClusterID = clusterID
+	return &cc, nil
 }
 
 type WebDAVCacheConfig struct {

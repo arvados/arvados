@@ -6,7 +6,7 @@
 
 package blockdigest
 
-// Just used for testing when we need some distinct BlockDigests
+// MakeTestBlockDigest is used for testing with distinct BlockDigests
 func MakeTestBlockDigest(i int) BlockDigest {
 	return BlockDigest{L: uint64(i)}
 }

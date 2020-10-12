@@ -6,23 +6,23 @@ all: centos7/generated debian9/generated  debian10/generated ubuntu1604/generate
 
 centos7/generated: common-generated-all
 	test -d centos7/generated || mkdir centos7/generated
-	cp -rlt centos7/generated common-generated/*
+	cp -f -rlt centos7/generated common-generated/*
 
 debian9/generated: common-generated-all
 	test -d debian9/generated || mkdir debian9/generated
-	cp -rlt debian9/generated common-generated/*
+	cp -f -rlt debian9/generated common-generated/*
 
 debian10/generated: common-generated-all
 	test -d debian10/generated || mkdir debian10/generated
-	cp -rlt debian10/generated common-generated/*
+	cp -f -rlt debian10/generated common-generated/*
 
 ubuntu1604/generated: common-generated-all
 	test -d ubuntu1604/generated || mkdir ubuntu1604/generated
-	cp -rlt ubuntu1604/generated common-generated/*
+	cp -f -rlt ubuntu1604/generated common-generated/*
 
 ubuntu1804/generated: common-generated-all
 	test -d ubuntu1804/generated || mkdir ubuntu1804/generated
-	cp -rlt ubuntu1804/generated common-generated/*
+	cp -f -rlt ubuntu1804/generated common-generated/*
 
 RVMKEY1=mpapis.asc
 RVMKEY2=pkuczynski.asc
