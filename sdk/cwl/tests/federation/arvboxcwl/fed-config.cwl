@@ -44,6 +44,7 @@ requirements:
           r["Clusters"][inputs.this_cluster_id] = {"RemoteClusters": remoteClusters};
           if (r["Clusters"][inputs.this_cluster_id]) {
             r["Clusters"][inputs.this_cluster_id]["Login"] = {"LoginCluster": inputs.cluster_ids[0]};
+            r["Clusters"][inputs.this_cluster_id]["Users"] = {"AutoAdminFirstUser": false};
           }
           return JSON.stringify(r);
           }
