@@ -15,6 +15,7 @@
 
 # If branch is set, the script will switch to it before running salt
 BRANCH="refactor-config-add-service"
+RELEASE="testing"
 
 CLUSTER="arva2"
 DOMAIN="arv.local"
@@ -79,8 +80,9 @@ base:
     - nginx_controller_configuration
     - nginx_keepproxy_configuration
     - nginx_keepweb_configuration
-    - nginx_passenger		
+    - nginx_passenger
     - nginx_websocket_configuration
+    - nginx_webshell_configuration
     - nginx_workbench2_configuration
     - nginx_workbench_configuration
     - postgresql
@@ -99,7 +101,7 @@ if [ "x${BRANCH}" != "x" ]; then
   cd -
 fi
 
-sed "s/example.net/${DOMAIN}/g; s/fixme/${CLUSTER}/g" \
+sed "s/example.net/${DOMAIN}/g; s/fixme/${CLUSTER}/g; s/release: development/release: ${RELEASE}/g" \
   ${F_DIR}/arvados-formula/test/salt/pillar/arvados_dev.sls > ${P_DIR}/arvados.sls
 
 # Replace cluster and domain name in the example pillars
