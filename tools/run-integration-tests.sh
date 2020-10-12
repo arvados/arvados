@@ -7,6 +7,7 @@ set -e -o pipefail
 
 cleanup() {
     set -x
+    set +e +o pipefail
     kill ${arvboot_PID} ${consume_stdout_PID} ${wb2_PID} ${consume_wb2_stdout_PID}
     wait ${arvboot_PID} ${consume_stdout_PID} ${wb2_PID} ${consume_wb2_stdout_PID} || true
     if [ "${CLEANUP_ARVADOS_DIR}" -eq "1" ]; then

@@ -104,7 +104,8 @@ export class Config {
     apiRevision: number;
 }
 
-export const buildConfig = (clusterConfigJSON: ClusterConfigJSON): Config => {
+export const buildConfig = (clusterConfig: ClusterConfigJSON): Config => {
+    const clusterConfigJSON = removeTrailingSlashes(clusterConfig);
     const config = new Config();
     config.rootUrl = clusterConfigJSON.Services.Controller.ExternalURL;
     config.baseUrl = `${config.rootUrl}/${ARVADOS_API_PATH}`;
@@ -138,7 +139,7 @@ const removeTrailingSlashes = (config: ClusterConfigJSON): ClusterConfigJSON => 
             svcs[s].ExternalURL = svcs[s].ExternalURL.replace(/\/+$/, '');
         }
     });
-    return {...config, Services: svcs};
+    return { ...config, Services: svcs };
 };
 
 export const fetchConfig = () => {
@@ -154,9 +155,8 @@ export const fetchConfig = () => {
                 throw new Error(`Unable to start Workbench. API_HOST is undefined in ${WORKBENCH_CONFIG_URL} or the environment.`);
             }
             return Axios.get<ClusterConfigJSON>(getClusterConfigURL(workbenchConfig.API_HOST)).then(async response => {
-                const clusterConfigJSON = removeTrailingSlashes(response.data);
-                const apiRevision = await getApiRevision(clusterConfigJSON.Services.Controller.ExternalURL);
-                const config = { ...buildConfig(clusterConfigJSON), apiRevision };
+                const apiRevision = await getApiRevision(response.data.Services.Controller.ExternalURL.replace(/\/+$/, ''));
+                const config = { ...buildConfig(response.data), apiRevision };
                 const warnLocalConfig = (varName: string) => console.warn(
                     `A value for ${varName} was found in ${WORKBENCH_CONFIG_URL}. To use the Arvados centralized configuration instead, \
 remove the entire ${varName} entry from ${WORKBENCH_CONFIG_URL}`);
@@ -170,7 +170,7 @@ remove the entire ${varName} entry from ${WORKBENCH_CONFIG_URL}`);
                     fileViewerConfigUrl = workbenchConfig.FILE_VIEWERS_CONFIG_URL;
                 }
                 else {
-                    fileViewerConfigUrl = clusterConfigJSON.Workbench.FileViewersConfigURL || "/file-viewers-example.json";
+                    fileViewerConfigUrl = config.clusterConfig.Workbench.FileViewersConfigURL || "/file-viewers-example.json";
                 }
                 config.fileViewersConfigUrl = fileViewerConfigUrl;
 
@@ -180,7 +180,7 @@ remove the entire ${varName} entry from ${WORKBENCH_CONFIG_URL}`);
                     vocabularyUrl = workbenchConfig.VOCABULARY_URL;
                 }
                 else {
-                    vocabularyUrl = clusterConfigJSON.Workbench.VocabularyURL || "/vocabulary-example.json";
+                    vocabularyUrl = config.clusterConfig.Workbench.VocabularyURL || "/vocabulary-example.json";
                 }
                 config.vocabularyUrl = vocabularyUrl;
 

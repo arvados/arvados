@@ -42,14 +42,24 @@ export class WebDAV {
         this.request({
             ...config, url,
             method: 'COPY',
-            headers: { ...config.headers, Destination: this.defaults.baseURL + destination }
+            headers: {
+                ...config.headers,
+                Destination: this.defaults.baseURL
+                    ? this.defaults.baseURL.replace(/\/+$/, '') + '/' + destination.replace(/^\/+/, '')
+                    : destination
+            }
         })
 
     move = (url: string, destination: string, config: WebDAVRequestConfig = {}) =>
         this.request({
             ...config, url,
             method: 'MOVE',
-            headers: { ...config.headers, Destination: this.defaults.baseURL + destination }
+            headers: {
+                ...config.headers,
+                Destination: this.defaults.baseURL
+                    ? this.defaults.baseURL.replace(/\/+$/, '') + '/' + destination.replace(/^\/+/, '')
+                    : destination
+            }
         })
 
     delete = (url: string, config: WebDAVRequestConfig = {}) =>

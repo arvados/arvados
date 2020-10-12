@@ -44,7 +44,7 @@ const memoizedMapStateToProps = () => {
     };
 };
 
-const mapDispatchToProps = (dispatch: Dispatch): Pick<CollectionPanelFilesProps, 'onFileClick' | 'onUploadDataClick' | 'onCollapseToggle' | 'onSelectionToggle' | 'onItemMenuOpen' | 'onOptionsMenuOpen'> => ({
+const mapDispatchToProps = (dispatch: Dispatch): Pick<CollectionPanelFilesProps, 'onSearchChange' | 'onFileClick' | 'onUploadDataClick' | 'onCollapseToggle' | 'onSelectionToggle' | 'onItemMenuOpen' | 'onOptionsMenuOpen'> => ({
     onUploadDataClick: () => {
         dispatch<any>(openUploadCollectionFilesDialog());
     },
@@ -67,6 +67,9 @@ const mapDispatchToProps = (dispatch: Dispatch): Pick<CollectionPanelFilesProps,
                 ownerUuid: ''
             }
         ));
+    },
+    onSearchChange: (searchValue: string) => {
+        dispatch(collectionPanelFilesAction.ON_SEARCH_CHANGE(searchValue));
     },
     onOptionsMenuOpen: (event, isWritable) => {
         dispatch<any>(openCollectionFilesContextMenu(event, isWritable));

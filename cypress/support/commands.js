@@ -111,6 +111,12 @@ Cypress.Commands.add(
 )
 
 Cypress.Commands.add(
+    "trashGroup", (token, uuid) => {
+        return cy.deleteResource(token, 'groups', uuid);
+    }
+)
+
+Cypress.Commands.add(
     "createCollection", (token, data) => {
         return cy.createResource(token, 'collections', {
             collection: JSON.stringify(data),
@@ -122,6 +128,16 @@ Cypress.Commands.add(
 Cypress.Commands.add(
     "createResource", (token, suffix, data) => {
         return cy.doRequest('POST', '/arvados/v1/'+suffix, data, null, token, true)
+        .its('body').as('resource')
+        .then(function() {
+            return this.resource;
+        })
+    }
+)
+
+Cypress.Commands.add(
+    "deleteResource", (token, suffix, uuid) => {
+        return cy.doRequest('DELETE', '/arvados/v1/'+suffix+'/'+uuid)
         .its('body').as('resource')
         .then(function() {
             return this.resource;

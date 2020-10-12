@@ -10,7 +10,7 @@ import { getDataExplorer, DataExplorer } from '~/store/data-explorer/data-explor
 import { updateFavorites } from '~/store/favorites/favorites-actions';
 import { updateResources } from '~/store/resources/resources-actions';
 import { loadMissingProcessesInformation, getFilters } from '~/store/project-panel/project-panel-middleware-service';
-import {snackbarActions, SnackbarKind} from '~/store/snackbar/snackbar-actions';
+import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
 import { sharedWithMePanelActions } from './shared-with-me-panel-actions';
 import { ListResults } from '~/services/common-service/common-service';
 import { GroupContentsResource, GroupContentsResourcePrefix } from '~/services/groups-service/groups-service';
@@ -20,6 +20,7 @@ import { ProjectResource } from '~/models/project';
 import { ProjectPanelColumnNames } from '~/views/project-panel/project-panel';
 import { getSortColumn } from "~/store/data-explorer/data-explorer-reducer";
 import { updatePublicFavorites } from '~/store/public-favorites/public-favorites-actions';
+import { FilterBuilder } from '~/services/api/filter-builder';
 
 export class SharedWithMeMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -34,6 +35,7 @@ export class SharedWithMeMiddlewareService extends DataExplorerMiddlewareService
                 .contents('', {
                     ...getParams(dataExplorer),
                     excludeHomeProject: true,
+                    filters: new FilterBuilder().addDistinct('uuid', `${state.auth.config.uuidPrefix}-j7d0g-publicfavorites`).getFilters()
                 });
             api.dispatch<any>(updateFavorites(response.items.map(item => item.uuid)));
             api.dispatch<any>(updatePublicFavorites(response.items.map(item => item.uuid)));

@@ -22,6 +22,7 @@ export const collectionPanelFilesAction = unionize({
     TOGGLE_COLLECTION_FILE_SELECTION: ofType<{ id: string }>(),
     SELECT_ALL_COLLECTION_FILES: ofType<{}>(),
     UNSELECT_ALL_COLLECTION_FILES: ofType<{}>(),
+    ON_SEARCH_CHANGE: ofType<string>(),
 });
 
 export type CollectionPanelFilesAction = UnionOf<typeof collectionPanelFilesAction>;

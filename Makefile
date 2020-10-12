@@ -72,7 +72,7 @@ integration-tests-in-docker: workbench2-build-image
 
 test: unit-tests integration-tests
 
-build: test
+build: yarn-install
 	VERSION=$(VERSION) yarn build
 
 $(DEB_FILE): build

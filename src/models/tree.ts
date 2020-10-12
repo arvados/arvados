@@ -74,6 +74,7 @@ export const setNodeValueWith = <T>(mapFn: (value: T) => T) => (id: string) => (
 export const mapTreeValues = <T, R>(mapFn: (value: T) => R) => (tree: Tree<T>): Tree<R> =>
     getNodeDescendantsIds('')(tree)
         .map(id => getNode(id)(tree))
+        .filter(node => !!node)
         .map(mapNodeValue(mapFn))
         .reduce((newTree, node) => setNode(node)(newTree), createTree<R>());
 

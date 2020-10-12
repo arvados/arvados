@@ -69,6 +69,10 @@ export class AuthService {
         return this.getStorage().getItem(HOME_CLUSTER) || undefined;
     }
 
+    public getApiClient() {
+        return this.apiClient;
+    }
+
     public removeUser() {
         this.getStorage().removeItem(USER_EMAIL_KEY);
         this.getStorage().removeItem(USER_FIRST_NAME_KEY);
@@ -92,7 +96,7 @@ export class AuthService {
         window.location.assign(`${this.baseUrl || ""}/logout?return_to=${currentUrl}`);
     }
 
-    public getUserDetails = (): Promise<User> => {
+    public getUserDetails = (showErrors?: boolean): Promise<User> => {
         const reqId = uuid();
         this.actions.progressFn(reqId, true);
         return this.apiClient
@@ -114,7 +118,7 @@ export class AuthService {
             })
             .catch(e => {
                 this.actions.progressFn(reqId, false);
-                this.actions.errorFn(reqId, e);
+                this.actions.errorFn(reqId, e, showErrors);
                 throw e;
             });
     }
@@ -141,8 +145,9 @@ export class AuthService {
             clusterId: cfg.uuidPrefix,
             remoteHost: cfg.rootUrl,
             baseUrl: cfg.baseUrl,
-            name: user ? getUserDisplayName(user): '',
+            name: user ? getUserDisplayName(user) : '',
             email: user ? user.email : '',
+            userIsActive: user ? user.isActive : false,
             token: this.getApiToken(),
             loggedIn: true,
             active: true,

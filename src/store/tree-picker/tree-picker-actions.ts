@@ -271,36 +271,34 @@ export const loadPublicFavoritesProject = (params: LoadFavoritesProjectParams) =
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         const { pickerId, includeCollections = false, includeFiles = false } = params;
         const uuidPrefix = getState().auth.config.uuidPrefix;
-        const uuid = `${uuidPrefix}-j7d0g-fffffffffffffff`;
-        if (uuid) {
+        const publicProjectUuid = `${uuidPrefix}-j7d0g-publicfavorites`;
 
-            const filters = pipe(
-                (fb: FilterBuilder) => includeCollections
-                    ? fb.addIsA('head_uuid', [ResourceKind.PROJECT, ResourceKind.COLLECTION])
-                    : fb.addIsA('head_uuid', [ResourceKind.PROJECT]),
-                fb => fb
-                    .addEqual('link_class', LinkClass.STAR)
-                    .addEqual('owner_uuid', uuid)
-                    .getFilters(),
-            )(new FilterBuilder());
+        const filters = pipe(
+            (fb: FilterBuilder) => includeCollections
+                ? fb.addIsA('head_uuid', [ResourceKind.PROJECT, ResourceKind.COLLECTION])
+                : fb.addIsA('head_uuid', [ResourceKind.PROJECT]),
+            fb => fb
+                .addEqual('link_class', LinkClass.STAR)
+                .addEqual('owner_uuid', publicProjectUuid)
+                .getFilters(),
+        )(new FilterBuilder());
 
-            const { items } = await services.linkService.list({ filters });
+        const { items } = await services.linkService.list({ filters });
 
-            dispatch<any>(receiveTreePickerData<LinkResource>({
-                id: 'Public Favorites',
-                pickerId,
-                data: items,
-                extractNodeData: item => ({
-                    id: item.headUuid,
-                    value: item,
-                    status: item.headKind === ResourceKind.PROJECT
+        dispatch<any>(receiveTreePickerData<LinkResource>({
+            id: 'Public Favorites',
+            pickerId,
+            data: items,
+            extractNodeData: item => ({
+                id: item.headUuid,
+                value: item,
+                status: item.headKind === ResourceKind.PROJECT
+                    ? TreeNodeStatus.INITIAL
+                    : includeFiles
                         ? TreeNodeStatus.INITIAL
-                        : includeFiles
-                            ? TreeNodeStatus.INITIAL
-                            : TreeNodeStatus.LOADED
-                }),
-            }));
-        }
+                        : TreeNodeStatus.LOADED
+            }),
+        }));
     };
 
 export const receiveTreePickerProjectsData = (id: string, projects: ProjectResource[], pickerId: string) =>
