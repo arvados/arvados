@@ -103,8 +103,8 @@ describe('Collection panel tests', function() {
                     cy.get('[data-cy=collection-files-panel-options-btn]')
                         .click()
                     cy.get('[data-cy=context-menu]')
-                        .should('contain', 'Download selected')
-                        .and(`${isWritable ? '' : 'not.'}contain`, 'Remove selected')
+                        // .should('contain', 'Download selected')
+                        .should(`${isWritable ? '' : 'not.'}contain`, 'Remove selected')
                         .type('{esc}'); // Collapse the options menu
                     // File item 'more options' button
                     cy.get('[data-cy=file-item-options-btn')
