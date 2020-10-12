@@ -26,7 +26,7 @@ class User < ArvadosModel
   before_update :verify_repositories_empty, :if => Proc.new {
     username.nil? and username_changed?
   }
-  before_update :setup_on_activate
+  after_update :setup_on_activate
 
   before_create :check_auto_admin
   before_create :set_initial_username, :if => Proc.new {
@@ -224,11 +224,8 @@ SELECT target_uuid, perm_level
     group_perm = create_user_group_link
 
     # Add git repo
-    if repo_name.nil? && username && Rails.configuration.Users.AutoSetupNewUsersWithRepository
-      repo_name = "#{username}/#{username}"
-    end
-
-    repo_perm = if repo_name
+    repo_perm = if (!repo_name.nil? || Rails.configuration.Users.AutoSetupNewUsersWithRepository) and !username.nil?
+                  repo_name ||= "#{username}/#{username}"
                   create_user_repo_link repo_name
                 end
 
