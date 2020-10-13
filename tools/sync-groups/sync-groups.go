@@ -438,7 +438,7 @@ func ProcessFile(
 				"group_class": "role",
 			}
 			if e := CreateGroup(cfg, &newGroup, groupData); e != nil {
-				err = fmt.Errorf("error creating group named %q: %s", groupName, err)
+				err = fmt.Errorf("error creating group named %q: %s", groupName, e)
 				return
 			}
 			// Update cached group data
