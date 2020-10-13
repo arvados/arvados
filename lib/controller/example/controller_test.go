@@ -11,6 +11,7 @@ import (
 	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
+	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	check "gopkg.in/check.v1"
 )
@@ -35,6 +36,7 @@ func (s *ExampleSuite) SetUpTest(c *check.C) {
 	cluster, err := cfg.GetCluster("")
 	c.Assert(err, check.IsNil)
 	s.ctx, s.rollback = arvadostest.TransactionContext(c, arvadostest.DB(c, cluster))
+	s.ctx = auth.NewContext(s.ctx, &auth.Credentials{Tokens: []string{arvadostest.ActiveTokenV2}})
 	s.stub = &arvadostest.APIStub{}
 	s.ctrl = New(cluster, s.stub)
 }
