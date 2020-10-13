@@ -11,6 +11,7 @@ export const sanitizeToken = (href: string, tokenAsQueryParam: boolean = true): 
 
 export const getClipboardUrl = (href: string): string => {
     const { origin } = window.location;
+    const url = sanitizeToken(href, false);
 
-    return `${origin}?redirectTo=${sanitizeToken(href, false)}`;
+    return `${origin}?redirectTo=${url}`;
 };

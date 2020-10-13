@@ -6,7 +6,10 @@ import { storeRedirects, handleRedirects } from './redirect-to';
 
 describe('redirect-to', () => {
     const { location } = window;
-    const redirectTo = 'http://localhost/test123';
+    const config: any = {
+        keepWebServiceUrl: 'http://localhost'
+    };
+    const redirectTo = '/test123';
     const locationTemplate = {
         hash: '',
         hostname: '',
@@ -68,14 +71,11 @@ describe('redirect-to', () => {
         });
 
         it('should redirect to page when it is present in session storage', () => {
-            // given
-            const token = 'testToken';
-
             // when
-            handleRedirects(token);
+            handleRedirects(config);
 
             // then
-            expect(window.location.href).toBe(`${redirectTo}?api_token=${token}`);
+            expect(window.location.href).toBe(`${config.keepWebServiceUrl}${redirectTo}`);
         });
     });
 });

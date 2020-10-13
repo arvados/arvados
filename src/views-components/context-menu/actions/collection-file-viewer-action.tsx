@@ -6,7 +6,6 @@ import { connect } from "react-redux";
 import { RootState } from "../../../store/store";
 import { FileViewerAction } from '~/views-components/context-menu/actions/file-viewer-action';
 import { getNodeValue } from "~/models/tree";
-import { CollectionFileType } from "~/models/collection-file";
 import { ContextMenuKind } from '~/views-components/context-menu/context-menu';
 
 const mapStateToProps = (state: RootState) => {
@@ -17,7 +16,6 @@ const mapStateToProps = (state: RootState) => {
         if (file) {
             return {
                 href: file.url,
-                download: file.type === CollectionFileType.DIRECTORY ? undefined : file.name,
                 kind: 'file',
                 currentCollectionUuid
             };

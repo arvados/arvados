@@ -127,7 +127,7 @@ fetchConfig()
                 }
             }
         });
-        const store = configureStore(history, services);
+        const store = configureStore(history, services, config);
 
         store.subscribe(initListener(history, store, services, config));
         store.dispatch(initAuth(config));

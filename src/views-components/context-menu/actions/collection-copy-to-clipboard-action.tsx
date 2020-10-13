@@ -5,19 +5,18 @@
 import { connect } from "react-redux";
 import { RootState } from "../../../store/store";
 import { getNodeValue } from "~/models/tree";
-import { CollectionFileType } from "~/models/collection-file";
 import { ContextMenuKind } from '~/views-components/context-menu/context-menu';
 import { CopyToClipboardAction } from "./copy-to-clipboard-action";
 
 const mapStateToProps = (state: RootState) => {
     const { resource } = state.contextMenu;
     const currentCollectionUuid = state.collectionPanel.item ? state.collectionPanel.item.uuid : '';
+    const { keepWebServiceUrl } = state.auth.config;
     if (resource && resource.menuKind === ContextMenuKind.COLLECTION_FILES_ITEM) {
         const file = getNodeValue(resource.uuid)(state.collectionPanelFiles);
         if (file) {
             return {
-                href: file.url,
-                download: file.type === CollectionFileType.DIRECTORY ? undefined : file.name,
+                href: file.url.replace(keepWebServiceUrl, ''),
                 kind: 'file',
                 currentCollectionUuid
             };

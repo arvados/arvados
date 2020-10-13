@@ -69,6 +69,7 @@ import { ownerNameReducer } from '~/store/owner-name/owner-name-reducer';
 import { SubprocessMiddlewareService } from '~/store/subprocess-panel/subprocess-panel-middleware-service';
 import { SUBPROCESS_PANEL_ID } from '~/store/subprocess-panel/subprocess-panel-actions';
 import { ALL_PROCESSES_PANEL_ID } from './all-processes-panel/all-processes-panel-action';
+import { Config } from '~/common/config';
 
 const composeEnhancers =
     (process.env.NODE_ENV === 'development' &&
@@ -80,7 +81,7 @@ export type RootState = ReturnType<ReturnType<typeof createRootReducer>>;
 
 export type RootStore = Store<RootState, Action> & { dispatch: Dispatch<any> };
 
-export function configureStore(history: History, services: ServiceRepository): RootStore {
+export function configureStore(history: History, services: ServiceRepository, config: Config): RootStore {
     const rootReducer = createRootReducer(services);
 
     const projectPanelMiddleware = dataExplorerMiddleware(
@@ -135,8 +136,7 @@ export function configureStore(history: History, services: ServiceRepository): R
         const state = store.getState();
 
         if (state.auth && state.auth.apiToken) {
-            const { apiToken } = state.auth;
-            handleRedirects(apiToken);
+            handleRedirects(config);
         }
 
         return next(action);

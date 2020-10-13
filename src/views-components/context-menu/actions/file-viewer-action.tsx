@@ -8,15 +8,13 @@ import { OpenIcon } from "~/components/icon/icon";
 import { sanitizeToken } from "./helpers";
 
 export const FileViewerAction = (props: { href?: any, download?: any, onClick?: () => void, kind?: string, currentCollectionUuid?: string; }) => {
-    const fileProps = props.download ? { download: props.download } : {};
 
     return props.href
         ? <a
             style={{ textDecoration: 'none' }}
-            href={sanitizeToken(props.href)}
+            href={sanitizeToken(props.href, false)}
             target="_blank"
-            onClick={props.onClick}
-            {...fileProps}>
+            onClick={props.onClick}>
             <ListItem button>
                     <ListItemIcon>
                         <OpenIcon />

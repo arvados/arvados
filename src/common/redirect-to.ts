@@ -2,6 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
+import { Config } from './config';
+
 const REDIRECT_TO_KEY = 'redirectTo';
 
 export const storeRedirects = () => {
@@ -15,12 +17,13 @@ export const storeRedirects = () => {
     }
 };
 
-export const handleRedirects = (token: string) => {
+export const handleRedirects = (config: Config) => {
     const { sessionStorage } = window;
+    const { keepWebServiceUrl } = config;
 
     if (sessionStorage && sessionStorage.getItem(REDIRECT_TO_KEY)) {
         const redirectUrl = sessionStorage.getItem(REDIRECT_TO_KEY);
         sessionStorage.removeItem(REDIRECT_TO_KEY);
-        window.location.href = `${redirectUrl}?api_token=${token}`;
+        window.location.href = `${keepWebServiceUrl}${redirectUrl}`;
     }
 };
