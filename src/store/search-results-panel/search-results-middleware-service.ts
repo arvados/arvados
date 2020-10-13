@@ -70,7 +70,7 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
 
 const typeFilters = (columns: DataColumns<string>) => serializeResourceTypeFilters(getDataExplorerColumnFilters(columns, ProjectPanelColumnNames.TYPE));
 
-const getParams = (dataExplorer: DataExplorer, query: string, apiRevision: number) => ({
+export const getParams = (dataExplorer: DataExplorer, query: string, apiRevision: number) => ({
     ...dataExplorerToListParams(dataExplorer),
     filters: joinFilters(
         queryToFilters(query, apiRevision),
