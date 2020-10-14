@@ -12,7 +12,7 @@ import { connect, DispatchProp } from "react-redux";
 import { RouteComponentProps } from 'react-router';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { RootState } from '~/store/store';
-import { MoreOptionsIcon, CollectionIcon, ReadOnlyIcon, ExpandIcon } from '~/components/icon/icon';
+import { MoreOptionsIcon, CollectionIcon, ReadOnlyIcon, ExpandIcon, CollectionOldVersionIcon } from '~/components/icon/icon';
 import { DetailsAttribute } from '~/components/details-attribute/details-attribute';
 import { CollectionResource } from '~/models/collection';
 import { CollectionPanelFiles } from '~/views-components/collection-panel-files/collection-panel-files';
@@ -40,6 +40,8 @@ type CssRules = 'root'
     | 'value'
     | 'link'
     | 'centeredLabel'
+    | 'warningLabel'
+    | 'collectionName'
     | 'readOnlyIcon';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
@@ -67,6 +69,13 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         fontSize: '0.875rem',
         textAlign: 'center'
     },
+    warningLabel: {
+        fontStyle: 'italic',
+        fontWeight: 'bold'
+    },
+    collectionName: {
+        flexDirection: 'column',
+    },
     value: {
         textTransform: 'none',
         fontSize: '0.875rem'
@@ -87,6 +96,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 interface CollectionPanelDataProps {
     item: CollectionResource;
     isWritable: boolean;
+    isOldVersion: boolean;
     isLoadingFiles: boolean;
     tooManyFiles: boolean;
 }
@@ -99,37 +109,49 @@ export const CollectionPanel = withStyles(styles)(
         const currentUserUUID = getUserUuid(state);
         const item = getResource<CollectionResource>(props.match.params.id)(state.resources);
         let isWritable = false;
-        if (item && item.ownerUuid === currentUserUUID) {
-            isWritable = true;
-        } else if (item) {
-            const itemOwner = getResource<GroupResource|UserResource>(item.ownerUuid)(state.resources);
-            if (itemOwner) {
-                isWritable = itemOwner.writableBy.indexOf(currentUserUUID || '') >= 0;
+        const isOldVersion = item && item.currentVersionUuid !== item.uuid;
+        if (item && !isOldVersion) {
+            if (item.ownerUuid === currentUserUUID) {
+                isWritable = true;
+            } else {
+                const itemOwner = getResource<GroupResource|UserResource>(item.ownerUuid)(state.resources);
+                if (itemOwner) {
+                    isWritable = itemOwner.writableBy.indexOf(currentUserUUID || '') >= 0;
+                }
             }
         }
         const loadingFilesIndicator = getProgressIndicator(COLLECTION_PANEL_LOAD_FILES)(state.progressIndicator);
         const isLoadingFiles = loadingFilesIndicator && loadingFilesIndicator!.working || false;
         const tooManyFiles = !state.collectionPanel.loadBigCollections && item && item.fileCount > COLLECTION_PANEL_LOAD_FILES_THRESHOLD || false;
-        return { item, isWritable, isLoadingFiles, tooManyFiles };
+        return { item, isWritable, isOldVersion, isLoadingFiles, tooManyFiles };
     })(
         class extends React.Component<CollectionPanelProps> {
             render() {
-                const { classes, item, dispatch, isWritable, isLoadingFiles, tooManyFiles } = this.props;
+                const { classes, item, dispatch, isWritable, isOldVersion, isLoadingFiles, tooManyFiles } = this.props;
                 return item
                     ? <div className={classes.root}>
                         <ExpansionPanel data-cy='collection-info-panel' defaultExpanded>
                             <ExpansionPanelSummary expandIcon={<ExpandIcon />}>
                                 <span>
                                     <IconButton onClick={this.openCollectionDetails}>
-                                        <CollectionIcon className={classes.iconHeader} />
+                                        { isOldVersion
+                                        ? <CollectionOldVersionIcon className={classes.iconHeader} />
+                                        : <CollectionIcon className={classes.iconHeader} /> }
                                     </IconButton>
                                     <IllegalNamingWarning name={item.name}/>
-                                    {item.name}
-                                    {isWritable ||
-                                    <Tooltip title="Read-only">
-                                        <ReadOnlyIcon data-cy="read-only-icon" className={classes.readOnlyIcon} />
-                                    </Tooltip>
-                                    }
+                                    <span>
+                                        {item.name}
+                                        {isWritable ||
+                                        <Tooltip title="Read-only">
+                                            <ReadOnlyIcon data-cy="read-only-icon" className={classes.readOnlyIcon} />
+                                        </Tooltip>
+                                        }
+                                        {isOldVersion &&
+                                        <Typography className={classes.warningLabel} variant="caption">
+                                            This is an old version. Copy it as a new one if you need to make changes. Go to the current version if you need to share it.
+                                        </Typography>
+                                        }
+                                    </span>
                                 </span>
                             </ExpansionPanelSummary>
                             <ExpansionPanelDetails>
@@ -144,6 +166,11 @@ export const CollectionPanel = withStyles(styles)(
                                         <DetailsAttribute classLabel={classes.label} classValue={classes.value}
                                             label='Portable data hash'
                                             linkToUuid={item.portableDataHash} />
+                                        {isOldVersion &&
+                                        <DetailsAttribute classLabel={classes.label} classValue={classes.value}
+                                            label='Current Version UUID'
+                                            linkToUuid={item.currentVersionUuid} />
+                                        }
                                         <DetailsAttribute classLabel={classes.label} classValue={classes.value}
                                             label='Number of files' value={item.fileCount} />
                                         <DetailsAttribute classLabel={classes.label} classValue={classes.value}

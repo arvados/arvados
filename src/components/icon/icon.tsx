@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
+import { Badge, Tooltip } from '@material-ui/core';
 import Add from '@material-ui/icons/Add';
 import ArrowBack from '@material-ui/icons/ArrowBack';
 import ArrowDropDown from '@material-ui/icons/ArrowDropDown';
@@ -27,6 +28,7 @@ import Folder from '@material-ui/icons/Folder';
 import GetApp from '@material-ui/icons/GetApp';
 import Help from '@material-ui/icons/Help';
 import HelpOutline from '@material-ui/icons/HelpOutline';
+import History from '@material-ui/icons/History';
 import Inbox from '@material-ui/icons/Inbox';
 import Info from '@material-ui/icons/Info';
 import Input from '@material-ui/icons/Input';
@@ -72,6 +74,13 @@ export const ReadOnlyIcon = (props:any) =>
         </div>
     </span>;
 
+export const CollectionOldVersionIcon = (props: any) =>
+    <Tooltip title='Old version'>
+        <Badge badgeContent={<History fontSize='small' />}>
+            <CollectionIcon {...props} />
+        </Badge>
+    </Tooltip>;
+
 export type IconType = React.SFC<{ className?: string, style?: object }>;
 
 export const AddIcon: IconType = (props) => <Add {...props} />;
@@ -88,11 +97,13 @@ export const CloseIcon: IconType = (props) => <Close {...props} />;
 export const CloudUploadIcon: IconType = (props) => <CloudUpload {...props} />;
 export const DefaultIcon: IconType = (props) => <RateReview {...props} />;
 export const DetailsIcon: IconType = (props) => <Info {...props} />;
+export const DirectoryIcon: IconType = (props) => <Folder {...props} />;
 export const DownloadIcon: IconType = (props) => <GetApp {...props} />;
 export const EditSavedQueryIcon: IconType = (props) => <Create {...props} />;
 export const ExpandIcon: IconType = (props) => <ExpandMoreIcon {...props} />;
 export const ErrorIcon: IconType = (props) => <ErrorRoundedIcon style={{color: '#ff0000'}} {...props} />;
 export const FavoriteIcon: IconType = (props) => <Star {...props} />;
+export const FileIcon: IconType = (props) => <LibraryBooks {...props} />;
 export const HelpIcon: IconType = (props) => <Help {...props} />;
 export const HelpOutlineIcon: IconType = (props) => <HelpOutline {...props} />;
 export const ImportContactsIcon: IconType = (props) => <ImportContacts {...props} />;
