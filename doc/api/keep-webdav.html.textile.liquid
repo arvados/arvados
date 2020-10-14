@@ -17,7 +17,23 @@ Most major operating systems include built-in support for mounting WebDAV resour
 
 Keep-web provides read/write HTTP (WebDAV) access to files stored in Keep. It serves public data to anonymous and unauthenticated clients, and serves private data to clients that supply Arvados API tokens. It can be installed anywhere with access to Keep services, typically behind a web proxy that supports TLS.
 
+h3. Browsing
+
+Fetching the root path an Arvados WebDAV service will return a 401 Unauthorized response with a @WWW-Authenticate@ header indicating "support for RFC 7617 Basic Authentication":https://tools.ietf.org/html/rfc7617 .  Requests may provide an Arvados token using @Authorization: Basic@ as described in "Authorization mechanisms":#auth .
+
+Getting a listing from keep-web starting at the root path @/@ will return two folders, @by_id@ and @users@.
+
+The @by_id@ folder will return an empty listing.  However, a path which starts with /by_id/ followed by a collection uuid, portable data hash, or project uuid will return the listing of that object.
+
+The @users@ folder will return a listing of the users for whom the client has permission to read the "home" project of that user.  Browsing an individual user will return the collections and projects directly owned by that user.  Browsing those collections and projects return listings of the files, directories, collections, and subprojects they contain, and so forth.
+
 h3. URL structure
+
+Files served by @keep-web@ can be rendered directly in the browser, or @keep-web@ can instruct the browser to only download the file.
+
+When serving files that will render directly in the browser, it is important to properly configure the WebDAV service to migitate cross-site-scripting (XSS) attacks.  A HTML page can be stored in a collection.  If an attacker causes a victim to visit that page through Workbench, the HTML will be rendered by the browser.  If all collections are served at the same domain, the browser will consider collections as coming from the same origin, which will grant access to the same browsing data (cookies and local storage).  This would enable malicious Javascript on that page to access Arvados on behalf of the victim.
+
+This can be mitigated by having separate domains for each collection, or limiting preview to circumstances where the collection is not accessed with the user's regular full-access token.  For cluster administrators that understand the risks, this protection can also be turned off.
 
 The following "same origin" URL patterns are supported for public collections and collections shared anonymously via secret links (i.e., collections which can be served by keep-web without making use of any implicit credentials like cookies). See "Same-origin URLs" below.
 
@@ -79,12 +95,18 @@ pre. http://collections.example.com/collections/uuid_or_pdh/foo/bar.txt
 
 Collections can also be accessed (read-only) via "/by_id/X" where X is a UUID or portable data hash.
 
-h3. Authorization mechanisms
+h3(#auth). Authorization mechanisms
 
-A token can be provided in an Authorization header:
+A token can be provided in an Authorization header as a @Bearer@ token:
 
 <pre>
-Authorization: OAuth2 o07j4px7RlJK4CuMYp7C0LDT4CzR1J1qBE5Avo7eCcUjOTikxK
+Authorization: Bearer o07j4px7RlJK4CuMYp7C0LDT4CzR1J1qBE5Avo7eCcUjOTikxK
+</pre>
+
+A token can also be provided with "RFC 7617 Basic Authentication":https://tools.ietf.org/html/rfc7617 in this case, the payload is formatted as @username:token@ and encoded with base64.  The username must be non-empty, but is ignored.  In this example, the username is "user":
+
+<pre>
+Authorization: Basic dXNlcjpvMDdqNHB4N1JsSks0Q3VNWXA3QzBMRFQ0Q3pSMUoxcUJFNUF2bzdlQ2NVak9UaWt4Swo=
 </pre>
 
 A base64-encoded token can be provided in a cookie named "api_token":
@@ -97,6 +119,12 @@ A token can be provided in an URL-encoded query string:
 
 <pre>
 GET /foo/bar.txt?api_token=o07j4px7RlJK4CuMYp7C0LDT4CzR1J1qBE5Avo7eCcUjOTikxK<
+</pre>
+
+A token can be provided in a URL-encoded path (as described in the previous section):
+
+<pre>
+GET /t=o07j4px7RlJK4CuMYp7C0LDT4CzR1J1qBE5Avo7eCcUjOTikxK/_/foo/bar.txt
 </pre>
 
 A suitably encoded token can be provided in a POST body if the request has a content type of application/x-www-form-urlencoded or multipart/form-data:
