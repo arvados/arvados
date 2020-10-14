@@ -11,30 +11,40 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 # "For the impatient (tl;rl)":#tlrl
 # "Introduction":#introduction
+# "Install Saltstack":#saltstack
 # "Install dependencies":#dependencies
+# "Install Arvados":#arvados
 
 h2(#tlrl). For the impatient (TL;RL)
 
-We added a "script"::https://github.com/arvados/arvados/tree/master/tools/salt-install/bin/provision.sh
-and example configuration files under the "tools/salt-install":https://github.com/arvados/arvados/tree/master/tools/salt-install
-directory, which you can use to get all the Arvados components up and running
-in a single node (The whole directory can be used to create a local VM with all
-Arvados' components in it, using "Vagrant":https://www.vagrantup.com/ )
+We added a "script":https://github.com/arvados/arvados/tree/master/tools/salt-install/provision.sh
+under the "tools/salt-install":https://github.com/arvados/arvados/tree/master/tools/salt-install directory.
 
-Just edit the parameters in the "provision.sh" script and run
+Just edit the @provision.sh@ script, modify the variables at the top of the file to suit your needs
+(usually not required), copy the file to the host where you want to install Arvados and run it as root
+
+<notextile>
+<pre><code>
+bash ./provision.sh
+</code></pre>
+</notextile>
+
+It will install all the main Arvados components to get you up and running.
+
+There is a companion @Vagrantfile@ to install Arvados in a local Vagrant virtual machine. If you have
+"Vagrant":https://www.vagrantup.com/ installed in your computer, you can just get Arvados installed
+running in a local virtual machine with the command
 
 <notextile>
 <pre><code>
 vagrant up
+</code></pre>
 </notextile>
 
-If you want to run these scripts in another host or instance, just copy the
-directory to a temporary directory, edit it and run
+If you want to run these scripts in another host or instance, just copy the @provision.sh@ file to the
+desired host and run it.
 
-<notextile>
-<pre><code>
-bash ./bin/provision.sh
-</notextile>
+The rest of the document is a description of the individual steps the @provision.sh@ script perform.
 
 h2(#introduction). Introduction
 
@@ -47,7 +57,47 @@ Saltstack is a Python-based, open-source software for event-driven IT
 automation, remote task execution, and configuration management. It can be used
 in a master/minion setup or master-less.
 
+h2(#saltstack). Install Saltsack
+
+If you already have a Saltstack environment you can skip this section. 
+
+The simplest way to get Salt up and running on a node is to use the bootstrap script they provide:
+
+<notextile>
+<pre><code>
+curl -L https://bootstrap.saltstack.com -o /tmp/bootstrap_salt.sh
+sudo sh /tmp/bootstrap_salt.sh -XUdfP -x python3
+</code></pre>
+</notextile>
+
+For more information check "Saltstack's documentation":https://docs.saltstack.com/en/latest/topics/installation/index.html
+
 h2(#dependencies). Install dependencies
 
-Arvados depends in a few applications (postgresql, nginx) that can also be installed using Salt.
+Arvados depends in a few applications and packages (postgresql, nginx+passenger, ruby) that can also be
+installed using their respective Saltstack formulas.
 
+The formulas we use are:
+
+* "postgres":https://github.com/saltstack-formulas/postgres-formula.git
+* "nginx":https://github.com/saltstack-formulas/nginx-formula.git
+* "docker":https://github.com/saltstack-formulas/docker-formula.git
+* "locale":https://github.com/saltstack-formulas/locale-formula.git
+
+There are example Salt pillar files for each of those formulas in the
+test/salt/pillar/examples":https://github.com/saltstack-formulas/arvados-formula/tree/master/test/salt/pillar/examples
+directory. As they are, they allow you to get all the main Arvados components up and running
+in a single node.
+
+h2(#arvados). Install Arvados
+
+The Arvados formula we maintain is located in the Saltstack's community repository of
+formulas:
+
+* "arvados-formula":https://github.com/saltstack-formulas/arvados-formula.git
+
+and we keep a @development@ version at our own repo
+
+* "arvados-formula develpment":https://github.com/arvados/arvados-formula.git
+
+This last one might break from time to time, as we try and add new features. Use with caution.

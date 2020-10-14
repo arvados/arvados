@@ -16,7 +16,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     arv.vm.hostname = "arv.local"
     # Networking
     arv.vm.network "forwarded_port", guest: 8443, host: 8443
-    arv.vm.network "forwarded_port", guest: 25101, host: 25101
+    arv.vm.network "forwarded_port", guest: 25100, host: 25100
     arv.vm.network "forwarded_port", guest: 9002, host: 9002
     arv.vm.network "forwarded_port", guest: 9000, host: 9000
     arv.vm.network "forwarded_port", guest: 8900, host: 8900
@@ -25,9 +25,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     arv.vm.network "forwarded_port", guest: 8000, host: 8000
     arv.vm.network "forwarded_port", guest: 3001, host: 3001
     # config.vm.network "private_network", ip: "192.168.33.10"
-    arv.vm.synced_folder "salt_pillars", "/srv/pillars",
-                         create: true
+    # arv.vm.synced_folder "salt_pillars", "/srv/pillars",
+    #                      create: true
     arv.vm.provision "shell",
-                     path: "bin/provision.sh"
+                     path: "provision.sh"
   end
 end

@@ -10,15 +10,24 @@
 #
 # vagrant up
 
-# This could have been done with the Salt vagrant provisioner, but this script
-# can be used in environments other than vagrant.
-
-# If branch is set, the script will switch to it before running salt
-BRANCH="refactor-config-add-service"
-RELEASE="testing"
-
+##########################################################
+# The 5 letters name you want to give your cluster
 CLUSTER="arva2"
 DOMAIN="arv.local"
+
+# Which release of Arvados repo you want to use
+RELEASE="production"
+# Which version of Arvados you want to install. Defaults to 'latest'
+# in the desired repo
+# VERSION="2.0.4"
+
+# This is a arvados-formula setting. 
+# If branch is set, the script will switch to it before running salt
+# Usually not needed, only used for testing
+# BRANCH="master"
+
+##########################################################
+# Usually there's no need to modify things below this line
 
 # Salt's dir
 ## states
@@ -60,6 +69,7 @@ mkdir -p ${S_DIR}
 mkdir -p ${F_DIR}
 mkdir -p ${P_DIR}
 
+# States
 cat > ${S_DIR}/top.sls << EOFTSLS
 base:
   '*':
@@ -71,6 +81,7 @@ base:
     - arvados
 EOFTSLS
 
+# Pillars
 cat > ${P_DIR}/top.sls << EOFPSLS
 base:
   '*':
@@ -92,7 +103,7 @@ EOFPSLS
 # Get the formula and dependencies
 cd ${F_DIR} || exit 1
 for f in postgres arvados nginx docker locale; do
-  git clone https://github.com/netmanagers/${f}-formula.git
+  git clone https://github.com/saltstack-formulas/${f}-formula.git
 done
 
 if [ "x${BRANCH}" != "x" ]; then
@@ -101,7 +112,7 @@ if [ "x${BRANCH}" != "x" ]; then
   cd -
 fi
 
-sed "s/example.net/${DOMAIN}/g; s/fixme/${CLUSTER}/g; s/release: development/release: ${RELEASE}/g" \
+sed "s/example.net/${DOMAIN}/g; s/fixme/${CLUSTER}/g; s/release: development/release: ${RELEASE}/g; s/# version: '2.0.4'/version: '${VERSION}'/g" \
   ${F_DIR}/arvados-formula/test/salt/pillar/arvados_dev.sls > ${P_DIR}/arvados.sls
 
 # Replace cluster and domain name in the example pillars
@@ -110,22 +121,9 @@ for f in ${F_DIR}/arvados-formula/test/salt/pillar/examples/*; do
   ${f} > ${P_DIR}/$(basename ${f})
 done
 
-# # Copy arvados' pillar.example file to the pillars dir, so it's used
-# sed "s/example.net/${DOMAIN}/g" ${F_DIR}/arvados-formula/pillar.example > ${P_DIR}/arvados.sls
-#
-# # Replace domain name in the example pillars
-# for f in ${F_DIR}/arvados-formula/test/salt/pillar/examples/*; do
-#   sed "s/example.net/${DOMAIN}/g" ${f} > ${P_DIR}/$(basename ${f})
-# done
-#
 # Let's write a /etc/hosts file that points all the hosts to localhost
 
 echo "127.0.0.2 api keep keep0 collections download ws workbench workbench2 ${CLUSTER}.${DOMAIN} api.${CLUSTER}.${DOMAIN} keep.${CLUSTER}.${DOMAIN} keep0.${CLUSTER}.${DOMAIN} collections.${CLUSTER}.${DOMAIN} download.${CLUSTER}.${DOMAIN} ws.${CLUSTER}.${DOMAIN} workbench.${CLUSTER}.${DOMAIN} workbench2.${CLUSTER}.${DOMAIN}" >> /etc/hosts
-
-# FIXME! Test to see if arvados-api-server progresses without issues
-cat > /root/.psqlrc << EOF
-\pset pager off
-EOF
 
 # Now run the install
 salt-call --local state.apply -l debug
