@@ -22,6 +22,7 @@ export interface ListArguments {
     select?: string[];
     distinct?: boolean;
     count?: string;
+    includeOldVersions?: boolean;
 }
 
 export interface ListResults<T> {
@@ -116,7 +117,7 @@ export class CommonService<T> {
     list(args: ListArguments = {}): Promise<ListResults<T>> {
         const { filters, order, ...other } = args;
         const params = {
-            ...other,
+            ...CommonService.mapKeys(_.snakeCase)(other),
             filters: filters ? `[${filters}]` : undefined,
             order: order ? order : undefined
         };

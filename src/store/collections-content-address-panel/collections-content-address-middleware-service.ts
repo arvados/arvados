@@ -59,7 +59,8 @@ export class CollectionsWithSameContentAddressMiddlewareService extends DataExpl
                     filters: new FilterBuilder()
                         .addEqual('portable_data_hash', contentAddress)
                         .addILike("name", dataExplorer.searchValue)
-                        .getFilters()
+                        .getFilters(),
+                    includeOldVersions: true
                 });
                 const userUuids = response.items.map(it => {
                     if (extractUuidKind(it.ownerUuid) === ResourceKind.USER) {
