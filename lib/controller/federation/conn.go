@@ -328,6 +328,30 @@ func (conn *Conn) ContainerUnlock(ctx context.Context, options arvados.GetOption
 	return conn.chooseBackend(options.UUID).ContainerUnlock(ctx, options)
 }
 
+func (conn *Conn) ContainerRequestList(ctx context.Context, options arvados.ListOptions) (arvados.ContainerRequestList, error) {
+	return conn.generated_ContainerRequestList(ctx, options)
+}
+
+func (conn *Conn) ContainerRequestCreate(ctx context.Context, options arvados.CreateOptions) (arvados.ContainerRequest, error) {
+	return conn.chooseBackend(options.ClusterID).ContainerRequestCreate(ctx, options)
+}
+
+func (conn *Conn) ContainerRequestUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.ContainerRequest, error) {
+	return conn.chooseBackend(options.UUID).ContainerRequestUpdate(ctx, options)
+}
+
+func (conn *Conn) ContainerRequestGet(ctx context.Context, options arvados.GetOptions) (arvados.ContainerRequest, error) {
+	return conn.chooseBackend(options.UUID).ContainerRequestGet(ctx, options)
+}
+
+func (conn *Conn) ContainerRequestDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.ContainerRequest, error) {
+	return conn.chooseBackend(options.UUID).ContainerRequestDelete(ctx, options)
+}
+
+func (conn *Conn) ForecastDatapoints(ctx context.Context, options arvados.GetOptions) (resp arvados.ForecastDatapointsResponse, err error) {
+	return conn.chooseBackend(options.UUID).ForecastDatapoints(ctx, options)
+}
+
 func (conn *Conn) SpecimenList(ctx context.Context, options arvados.ListOptions) (arvados.SpecimenList, error) {
 	return conn.generated_SpecimenList(ctx, options)
 }

@@ -7,6 +7,7 @@ package localdb
 import (
 	"context"
 
+	"git.arvados.org/arvados.git/lib/controller/forecast"
 	"git.arvados.org/arvados.git/lib/controller/railsproxy"
 	"git.arvados.org/arvados.git/lib/controller/rpc"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
@@ -18,6 +19,7 @@ type Conn struct {
 	cluster     *arvados.Cluster
 	*railsProxy // handles API methods that aren't defined on Conn itself
 	loginController
+	forecast *forecast.Controller
 }
 
 func NewConn(cluster *arvados.Cluster) *Conn {
@@ -27,6 +29,7 @@ func NewConn(cluster *arvados.Cluster) *Conn {
 		cluster:         cluster,
 		railsProxy:      railsProxy,
 		loginController: chooseLoginController(cluster, railsProxy),
+		forecast:        forecast.New(cluster, &conn),
 	}
 	return &conn
 }
@@ -41,4 +44,8 @@ func (conn *Conn) Login(ctx context.Context, opts arvados.LoginOptions) (arvados
 
 func (conn *Conn) UserAuthenticate(ctx context.Context, opts arvados.UserAuthenticateOptions) (arvados.APIClientAuthorization, error) {
 	return conn.loginController.UserAuthenticate(ctx, opts)
+}
+
+func (conn *Conn) ForecastDatapoints(ctx context.Context, opts arvados.GetOptions) (resp arvados.ForecastDatapointsResponse, err error) {
+	return conn.forecast.ForecastDatapoints(ctx, opts)
 }

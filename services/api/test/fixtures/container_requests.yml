@@ -784,6 +784,154 @@ runtime_token:
     vcpus: 1
     ram: 123
 
+hasher_root:
+  uuid: zzzzz-xvhdp-p1i7h1gy5z1ft4p
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2020-09-28 15:04:32.071726
+  modified_at: 2020-09-28 15:05:15.375109
+  modified_by_client_uuid: zzzzz-ozdt8-46y931btt3kk8ty
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  name: CWL diagnostics hasher
+  description:
+  properties: {}
+  state: Final
+  requesting_container_uuid:
+  container_uuid: zzzzz-dz642-gxfj5yt5x6x6nr2
+  container_count_max: 3
+  mounts: >
+    {"/var/lib/cwl/cwl.input.json":{"content":{"hasher1_outputname":"hasher1.md5sum.txt","hasher2_outputname":"hasher2.md5sum.txt","hasher3_outputname":"hasher3.md5sum.txt","inputfile":{"basename":"test.txt","class":"File","location":"keep:ea34d971b71d5536b4f6b7d6c69dc7f6+50/test.txt","size":5}},"kind":"json"},"/var/lib/cwl/workflow.json":{"content":{"$graph":[{"$namespaces":{"arv":"http://arvados.org/cwl#","cwltool":"http://commonwl.org/cwltool#"},"class":"Workflow","id":"#main","inputs":[{"id":"#main/hasher1_outputname","type":"string"},{"id":"#main/hasher2_outputname","type":"string"},{"id":"#main/hasher3_outputname","type":"string"},{"id":"#main/inputfile","type":"File"}],"outputs":[{"id":"#main/hasher_out","outputSource":"#main/hasher3/hasher_out","type":"File"}],"steps":[{"hints":[{"class":"DockerRequirement","dockerImageId":"arvados/jobs:2.1.0.dev20200914171718","http://arvados.org/cwl#dockerCollectionPDH":"3a788efec8044cb001b2e335b4ac0ed4+261"},{"class":"ResourceRequirement","coresMin":4},{"class":"http://arvados.org/cwl#IntermediateOutput","outputTTL":3600},{"class":"http://arvados.org/cwl#ReuseRequirement","enableReuse":false}],"id":"#main/hasher1","in":[{"id":"#main/hasher1/inputfile","source":"#main/inputfile"},{"id":"#main/hasher1/outputname","source":"#main/hasher1_outputname"}],"out":["#main/hasher1/hasher_out"],"run":"#hasher.cwl"},{"hints":[{"class":"DockerRequirement","dockerImageId":"arvados/jobs:2.1.0.dev20200914171718","http://arvados.org/cwl#dockerCollectionPDH":"3a788efec8044cb001b2e335b4ac0ed4+261"},{"class":"ResourceRequirement","coresMin":2},{"class":"http://arvados.org/cwl#IntermediateOutput","outputTTL":3600},{"class":"http://arvados.org/cwl#ReuseRequirement","enableReuse":false}],"id":"#main/hasher2","in":[{"id":"#main/hasher2/inputfile","source":"#main/hasher1/hasher_out"},{"id":"#main/hasher2/outputname","source":"#main/hasher2_outputname"}],"out":["#main/hasher2/hasher_out"],"run":"#hasher.cwl"},{"hints":[{"class":"DockerRequirement","dockerImageId":"arvados/jobs:2.1.0.dev20200914171718","http://arvados.org/cwl#dockerCollectionPDH":"3a788efec8044cb001b2e335b4ac0ed4+261"},{"class":"ResourceRequirement","coresMin":1},{"class":"http://arvados.org/cwl#IntermediateOutput","outputTTL":3600},{"class":"http://arvados.org/cwl#ReuseRequirement","enableReuse":false}],"id":"#main/hasher3","in":[{"id":"#main/hasher3/inputfile","source":"#main/hasher2/hasher_out"},{"id":"#main/hasher3/outputname","source":"#main/hasher3_outputname"}],"out":["#main/hasher3/hasher_out"],"run":"#hasher.cwl"}]},{"baseCommand":"md5sum","class":"CommandLineTool","id":"#hasher.cwl","inputs":[{"id":"#hasher.cwl/inputfile","inputBinding":{"position":1},"type":"File"},{"id":"#hasher.cwl/outputname","type":"string"}],"outputs":[{"id":"#hasher.cwl/hasher_out","outputBinding":{"glob":"$(inputs.outputname)"},"type":"File"}],"stdout":"$(inputs.outputname)"}],"cwlVersion":"v1.0"},"kind":"json"},"/var/spool/cwl":{"kind":"collection","writable":true},"stdout":{"kind":"file","path":"/var/spool/cwl/cwl.output.json"}}
+  runtime_constraints: {"API": true,"ram": 1342177280,"vcpus": 1}
+  container_image: 3a788efec8044cb001b2e335b4ac0ed4+261
+  environment:
+  cwd: /var/spool/cwl
+  command: ["arvados-cwl-runner","--local","--api=containers","--no-log-timestamps","--disable-validate","--eval-timeout=20","--thread-count=1","--enable-reuse","--collection-cache-size=256","--on-error=continue","/var/lib/cwl/workflow.json#main","/var/lib/cwl/cwl.input.json"]
+  output_path: /var/spool/cwl
+  priority: 500
+  expires_at:
+  filters:
+  updated_at: 2020-09-28 15:05:15.375109
+  container_count: 1
+  use_existing: f
+  scheduling_parameters:
+  output_uuid: zzzzz-4zz18-3gqysg55opl8sj8
+  log_uuid: zzzzz-4zz18-bbv1ovqlhypf3mb
+  output_name:
+  output_ttl: 0
+  secret_mounts: {}
+  runtime_token:
+
+hasher_hasher1:
+  uuid: zzzzz-xvhdp-et5v1vofm3109fn
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2020-09-28 15:04:38.079301
+  modified_at: 2020-09-28 15:04:40.817619
+  modified_by_client_uuid: zzzzz-ozdt8-46y931btt3kk8ty
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  name: hasher1
+  description:
+  properties: {}
+  state: Final
+  requesting_container_uuid: zzzzz-dz642-gxfj5yt5x6x6nr2
+  container_uuid: zzzzz-dz642-1wfe84lcxvojijy
+  container_count_max: 3
+  mounts: >
+    {"/keep/ea34d971b71d5536b4f6b7d6c69dc7f6+50":{"kind":"collection","portable_data_hash":"ea34d971b71d5536b4f6b7d6c69dc7f6+50"},"/tmp":{"capacity":1073741824,"kind":"tmp"},"/var/spool/cwl":{"capacity":1073741824,"kind":"tmp"},"stdout":{"kind":"file","path":"/var/spool/cwl/hasher1.md5sum.txt"}}
+  runtime_constraints: {"API": true,"ram": 268435456,"vcpus": 4}
+  container_image: 3a788efec8044cb001b2e335b4ac0ed4+261
+  environment: {"HOME": "/var/spool/cwl","TMPDIR": "/tmp"}
+  cwd: /var/spool/cwl
+  command: ["md5sum","/keep/ea34d971b71d5536b4f6b7d6c69dc7f6+50/test.txt"]
+  output_path: /var/spool/cwl
+  priority: 500
+  expires_at:
+  filters:
+  updated_at: 2020-09-28 15:04:40.817619
+  container_count: 1
+  use_existing: f
+  scheduling_parameters:
+  output_uuid: zzzzz-4zz18-boap9rwain15i2f
+  log_uuid: zzzzz-4zz18-eec29m2p2b0hfqa
+  output_name: Output for step hasher1
+  output_ttl: 3600
+  secret_mounts: {}
+  runtime_token:
+
+hasher_hasher2:
+  uuid: zzzzz-xvhdp-k2i0vu6n1ebsyvo
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2020-09-28 15:04:50.144907
+  modified_at: 2020-09-28 15:04:52.832845
+  modified_by_client_uuid: zzzzz-ozdt8-46y931btt3kk8ty
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  name: hasher2
+  description:
+  properties: {}
+  state: Final
+  requesting_container_uuid: zzzzz-dz642-gxfj5yt5x6x6nr2
+  container_uuid: zzzzz-dz642-80yksfp68lxz3gs
+  container_count_max: 3
+  mounts: >
+    {"/keep/c2b231b7faa0f013ef36680f79a42803+62":{"kind":"collection","portable_data_hash":"c2b231b7faa0f013ef36680f79a42803+62"},"/tmp":{"capacity":1073741824,"kind":"tmp"},"/var/spool/cwl":{"capacity":1073741824,"kind":"tmp"},"stdout":{"kind":"file","path":"/var/spool/cwl/hasher2.md5sum.txt"}}
+  runtime_constraints: {"API": true,"ram": 268435456,"vcpus": 2}
+  container_image: 3a788efec8044cb001b2e335b4ac0ed4+261
+  environment:
+    HOME: /var/spool/cwl
+    TMPDIR: /tmp
+  cwd: /var/spool/cwl
+  command: ["md5sum","/keep/c2b231b7faa0f013ef36680f79a42803+62/hasher1.md5sum.txt"]
+  output_path: /var/spool/cwl
+  priority: 500
+  expires_at:
+  filters:
+  updated_at: 2020-09-28 15:04:52.832845
+  container_count: 1
+  use_existing: f
+  scheduling_parameters:
+  output_uuid: zzzzz-4zz18-q7oqzldeumc4qdt
+  log_uuid: zzzzz-4zz18-fkk99y5mnl5fsf8
+  output_name: Output for step hasher2
+  output_ttl: 3600
+  secret_mounts: {}
+  runtime_token:
+
+hasher_hasher3:
+  uuid: zzzzz-xvhdp-37vzxz1l2k2ywvd
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2020-09-28 15:05:02.111066
+  modified_at: 2020-09-28 15:05:04.836305
+  modified_by_client_uuid: zzzzz-ozdt8-46y931btt3kk8ty
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  name: hasher3
+  description:
+  properties: {}
+  state: Final
+  requesting_container_uuid: zzzzz-dz642-gxfj5yt5x6x6nr2
+  container_uuid: zzzzz-dz642-xzw7j59tkq7u8pe
+  container_count_max: 3
+  mounts: >
+    {"/keep/e38398fd9da7d50a4bb5664d730dc8d9+62":{"kind": "collection","portable_data_hash":"e38398fd9da7d50a4bb5664d730dc8d9+62"},"/tmp":{"capacity":1073741824,"kind":"tmp"},"/var/spool/cwl":{"capacity":1073741824,"kind":"tmp"},"stdout":{"kind":"file","path":"/var/spool/cwl/hasher3.md5sum.txt"}}
+  runtime_constraints:
+    API: true
+    ram: 268435456
+    vcpus: 1
+  container_image: 3a788efec8044cb001b2e335b4ac0ed4+261
+  environment: {"HOME": "/var/spool/cwl","TMPDIR": "/tmp"}
+  cwd: /var/spool/cwl
+  command: ["md5sum","/keep/e38398fd9da7d50a4bb5664d730dc8d9+62/hasher2.md5sum.txt"]
+  output_path: /var/spool/cwl
+  priority: 500
+  expires_at:
+  filters:
+  updated_at: 2020-09-28 15:05:04.836305
+  container_count: 1
+  use_existing: f
+  scheduling_parameters:
+  output_uuid: zzzzz-4zz18-jk7r2tbrp0ay9zd
+  log_uuid: zzzzz-4zz18-oawvdtwla40bkg6
+  output_name: Output for step hasher3
+  output_ttl: 3600
+  secret_mounts: {}
+  runtime_token:
 
 # Test Helper trims the rest of the file
 

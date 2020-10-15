@@ -73,6 +73,15 @@ const (
 	TestVMUUID = "zzzzz-2x53u-382brsig8rp3064"
 
 	CollectionWithUniqueWordsUUID = "zzzzz-4zz18-mnt690klmb51aud"
+
+	HasherRootUUID             = "zzzzz-xvhdp-p1i7h1gy5z1ft4p"
+	HasherRootContainerUUID    = "zzzzz-dz642-gxfj5yt5x6x6nr2"
+	HasherHasher1UUID          = "zzzzz-xvhdp-et5v1vofm3109fn"
+	HasherHasher1ContainerUUID = "zzzzz-dz642-1wfe84lcxvojijy"
+	HasherHasher2UUID          = "zzzzz-xvhdp-k2i0vu6n1ebsyvo"
+	HasherHasher2ContainerUUID = "zzzzz-dz642-80yksfp68lxz3gs"
+	HasherHasher3UUID          = "zzzzz-xvhdp-37vzxz1l2k2ywvd"
+	HasherHasher3ContainerUUID = "zzzzz-dz642-gxfj5yt5x6x6nr2"
 )
 
 // PathologicalManifest : A valid manifest designed to test
