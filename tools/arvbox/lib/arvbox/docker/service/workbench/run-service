@@ -43,25 +43,5 @@ set -u
 
 secret_token=$(cat $ARVADOS_CONTAINER_PATH/workbench_secret_token)
 
-if test -a /usr/src/arvados/apps/workbench/config/arvados_config.rb ; then
-    rm -f config/application.yml
-else
-cat >config/application.yml <<EOF
-$RAILS_ENV:
-  secret_token: $secret_token
-  arvados_login_base: https://$localip:${services[controller-ssl]}/login
-  arvados_v1_base: https://$localip:${services[controller-ssl]}/arvados/v1
-  arvados_insecure_https: false
-  keep_web_download_url: https://$localip:${services[keep-web-ssl]}/c=%{uuid_or_pdh}
-  keep_web_url: https://$localip:${services[keep-web-ssl]}/c=%{uuid_or_pdh}
-  arvados_docsite: http://$localip:${services[doc]}/
-  force_ssl: false
-  composer_url: http://$localip:${services[composer]}
-  workbench2_url: https://$localip:${services[workbench2-ssl]}
-EOF
-
-(cd config && /usr/local/lib/arvbox/yml_override.py application.yml)
-fi
-
 RAILS_GROUPS=assets flock $GEM_HOME/gems.lock bundle exec rake npm:install
 flock $GEM_HOME/gems.lock bundle exec rake assets:precompile
