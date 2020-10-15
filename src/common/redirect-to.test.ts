@@ -19,9 +19,9 @@ describe('redirect-to', () => {
         port: '80',
         protocol: 'http',
         search: '',
-        reload: () => {},
-        replace: () => {},
-        assign: () => {},
+        reload: () => { },
+        replace: () => { },
+        assign: () => { },
         ancestorOrigins: [],
         href: '',
     };
@@ -72,10 +72,10 @@ describe('redirect-to', () => {
 
         it('should redirect to page when it is present in session storage', () => {
             // when
-            handleRedirects(config);
+            handleRedirects("abcxyz", config);
 
             // then
-            expect(window.location.href).toBe(`${config.keepWebServiceUrl}${redirectTo}`);
+            expect(window.location.href).toBe(`${config.keepWebServiceUrl}${redirectTo}?api_token=abcxyz`);
         });
     });
 });

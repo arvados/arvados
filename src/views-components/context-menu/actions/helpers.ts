@@ -6,7 +6,9 @@ export const sanitizeToken = (href: string, tokenAsQueryParam: boolean = true): 
     const [prefix, suffix] = href.split('/t=');
     const [token, ...rest] = suffix.split('/');
 
-    return `${[prefix, ...rest].join('/')}${tokenAsQueryParam ? `?api_token=${token}` : ''}`;
+    const sep = href.indexOf("?") > -1 ? "&" : "?";
+
+    return `${[prefix, ...rest].join('/')}${tokenAsQueryParam ? `${sep}api_token=${token}` : ''}`;
 };
 
 export const getClipboardUrl = (href: string): string => {

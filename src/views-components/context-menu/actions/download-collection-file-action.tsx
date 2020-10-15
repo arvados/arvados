@@ -17,7 +17,7 @@ const mapStateToProps = (state: RootState) => {
         const file = getNodeValue(resource.uuid)(state.collectionPanelFiles);
         if (file) {
             return {
-                href: sanitizeToken(file.url, false),
+                href: sanitizeToken(file.url, true),
                 kind: 'file',
                 currentCollectionUuid
             };
@@ -25,7 +25,7 @@ const mapStateToProps = (state: RootState) => {
     } else {
         const files = filterCollectionFilesBySelection(state.collectionPanelFiles, true);
         return {
-            href: files.map(file => sanitizeToken(file.url, false)),
+            href: files.map(file => sanitizeToken(file.url, true)),
             kind: 'files',
             currentCollectionUuid
         };

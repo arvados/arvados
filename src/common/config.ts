@@ -89,6 +89,7 @@ export interface ClusterConfigJSON {
 export class Config {
     baseUrl: string;
     keepWebServiceUrl: string;
+    keepWebInlineServiceUrl: string;
     remoteHosts: {
         [key: string]: string
     };
@@ -114,6 +115,7 @@ export const buildConfig = (clusterConfig: ClusterConfigJSON): Config => {
     config.workbench2Url = clusterConfigJSON.Services.Workbench2.ExternalURL;
     config.workbenchUrl = clusterConfigJSON.Services.Workbench1.ExternalURL;
     config.keepWebServiceUrl = clusterConfigJSON.Services.WebDAVDownload.ExternalURL;
+    config.keepWebInlineServiceUrl = clusterConfigJSON.Services.WebDAV.ExternalURL;
     config.loginCluster = clusterConfigJSON.Login.LoginCluster;
     config.clusterConfig = clusterConfigJSON;
     config.apiRevision = 0;
@@ -249,6 +251,7 @@ export const mockClusterConfigJSON = (config: Partial<ClusterConfigJSON>): Clust
 export const mockConfig = (config: Partial<Config>): Config => ({
     baseUrl: "",
     keepWebServiceUrl: "",
+    keepWebInlineServiceUrl: "",
     remoteHosts: {},
     rootUrl: "",
     uuidPrefix: "",

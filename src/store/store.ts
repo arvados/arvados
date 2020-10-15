@@ -136,7 +136,7 @@ export function configureStore(history: History, services: ServiceRepository, co
         const state = store.getState();
 
         if (state.auth && state.auth.apiToken) {
-            handleRedirects(config);
+            handleRedirects(state.auth.apiToken, config);
         }
 
         return next(action);

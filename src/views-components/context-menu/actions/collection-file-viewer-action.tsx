@@ -15,15 +15,15 @@ const mapStateToProps = (state: RootState) => {
         const file = getNodeValue(resource.uuid)(state.collectionPanelFiles);
         if (file) {
             return {
-                href: file.url,
+                href: file.url.replace(state.auth.config.keepWebServiceUrl, state.auth.config.keepWebInlineServiceUrl),
                 kind: 'file',
                 currentCollectionUuid
             };
         }
     } else {
-        return ;
+        return;
     }
-    return ;
+    return;
 };
 
 export const CollectionFileViewerAction = connect(mapStateToProps)(FileViewerAction);

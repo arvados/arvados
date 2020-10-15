@@ -47,7 +47,7 @@ export const DownloadAction = (props: { href?: any, download?: any, onClick?: ()
     return props.href || props.kind === 'files'
         ? <a
             style={{ textDecoration: 'none' }}
-            href={props.kind === 'files' ? undefined : `${props.href}?disposition=attachment`}
+            href={props.kind === 'files' ? undefined : props.href}
             onClick={props.onClick}
             {...downloadProps}>
             <ListItem button onClick={() => props.kind === 'files' ? createZip(props.href, props.download) : undefined}>

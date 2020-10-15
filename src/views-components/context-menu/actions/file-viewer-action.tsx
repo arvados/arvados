@@ -12,16 +12,16 @@ export const FileViewerAction = (props: { href?: any, download?: any, onClick?: 
     return props.href
         ? <a
             style={{ textDecoration: 'none' }}
-            href={sanitizeToken(props.href, false)}
+            href={sanitizeToken(props.href, true)}
             target="_blank"
             onClick={props.onClick}>
             <ListItem button>
-                    <ListItemIcon>
-                        <OpenIcon />
-                    </ListItemIcon>
+                <ListItemIcon>
+                    <OpenIcon />
+                </ListItemIcon>
                 <ListItemText>
                     Open in new tab
-                </ListItemText>
+                 </ListItemText>
             </ListItem>
         </a>
         : null;
