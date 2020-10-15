@@ -11,11 +11,17 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-"Web Distributed Authoring and Versioning (WebDAV)":https://tools.ietf.org/html/rfc2518 is an IETF standard set of extensions to HTTP to manipulate and retrieve hierarchical web resources, similar to directories in a file system.  Arvados supports accessing files in Keep using WebDAV.
+"Web Distributed Authoring and Versioning (WebDAV)":https://tools.ietf.org/html/rfc4918 is an IETF standard set of extensions to HTTP to manipulate and retrieve hierarchical web resources, similar to directories in a file system.  Arvados supports accessing files in Keep using WebDAV.
 
 Most major operating systems include built-in support for mounting WebDAV resources as network file systems, see user guide sections for "Windows":{{site.baseurl}}/user/tutorials/tutorial-keep-mount-windows.html , "macOS":{{site.baseurl}}/user/tutorials/tutorial-keep-mount-os-x.html , "Linux (Gnome)":{{site.baseurl}}/user/tutorials/tutorial-keep-mount-gnu-linux.html#gnome .  WebDAV is also supported by various standalone storage browser applications such as "Cyberduck":https://cyberduck.io/ and client libraries exist in many languages for programmatic access.
 
 Keep-web provides read/write HTTP (WebDAV) access to files stored in Keep. It serves public data to anonymous and unauthenticated clients, and serves private data to clients that supply Arvados API tokens. It can be installed anywhere with access to Keep services, typically behind a web proxy that supports TLS.
+
+h3. Supported Operations
+
+Supports WebDAV HTTP methods @GET@, @PUT@, @DELETE@, @PROPFIND@, @COPY@, and @MOVE@.
+
+Does not support @LOCK@ or @UNLOCK@.  These methods will be accepted, but are no-ops.
 
 h3. Browsing
 
@@ -148,7 +154,7 @@ Keep-web supports partial resource reads using the HTTP @Range@ header as specif
 
 h3. Compatibility
 
-Client-provided authorization tokens are ignored if the client does not provide a Host header.
+Client-provided authorization tokens are ignored if the client does not provide a @Host@ header.
 
 In order to use the query string or a POST form authorization mechanisms, the client must follow 303 redirects; the client must accept cookies with a 303 response and send those cookies when performing the redirect; and either the client or an intervening proxy must resolve a relative URL ("//host/path") if given in a response Location header.
 

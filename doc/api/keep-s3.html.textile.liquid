@@ -11,7 +11,7 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-The Simple Storage Service (S3) is a de-facto standard for object storage originally developed by Amazon Web Services.  Arvados supports accessing files in Keep using the S3 API.
+The Simple Storage Service (S3) API is a de-facto standard for object storage originally developed by Amazon Web Services.  Arvados supports accessing files in Keep using the S3 API.
 
 S3 is supported by many "cloud native" applications, and client libraries exist in many languages for programmatic access.
 
@@ -19,9 +19,9 @@ h3. Endpoints and Buckets
 
 To access Arvados S3 using an S3 client library, you must tell it to use URL of the keep-web server (this is @Services.WebDAVDownload.ExternalURL@ in the public configuration) as the custom endpoint.
 
-The "bucket name" must be encoded as the first path segment of every request.  This is what Amazon calls "Path-Style Requests".
+The "bucket name" is an Arvados collection uuid, portable data hash, or project uuid.
 
-The bucket name must be an Arvados collection uuid, portable data hash, or project uuid.
+The bucket name must be encoded as the first path segment of every request.  This is what the S3 documentation calls "Path-Style Requests".
 
 h3. Supported Operations
 
@@ -75,4 +75,6 @@ Can be used one of two ways:
 * The "Credential" is the Arvados token uuid, and the "Signature" is derived from request headers and the Arvados token secret
 * The "Credential" is the Arvados token secret, and "Signature" is derived from the same Arvados token secret
 
-Also accepts older format @Authorization: AWS AccessKey:signature@ .  Provide the Arvados secret token for the "Access Key".  In this case, the signature is ignored.
+Consult the S3 documentation for information on how to produce AWS4-HMAC-SHA256 signatures.  If you are using a S3 client library, it should be handled for you already.
+
+Keep-web also accepts older format header @Authorization: AWS AccessKey:signature@ .  Provide the Arvados secret token for the "Access Key".  In this case, the signature can be anything as keep-web will ignore it.
