@@ -13,3 +13,4 @@ public/*
 .yarnrc
 .npmrc
 src/lib/cwl-svg/*
+tools/arvados_config.yml
