@@ -130,9 +130,9 @@ calculate_go_package_version() {
       checkdirs+=("$1")
       shift
   done
-  if grep -qr git.arvados.org/arvados .; then
-      checkdirs+=(sdk/go lib)
-  fi
+  # Even our rails packages (version calculation happens here!) depend on a go component (arvados-server)
+  # Everything depends on the build directory.
+  checkdirs+=(sdk/go lib build)
   local timestamp=0
   for dir in ${checkdirs[@]}; do
       cd "$WORKSPACE"
