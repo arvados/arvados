@@ -15,6 +15,13 @@
 CLUSTER="arva2"
 DOMAIN="arv.local"
 
+INITIAL_USER="admin"
+
+# If not specified, the initial user email will be composed as
+# INITIAL_USER@CLUSTER.DOMAIN
+INITIAL_USER_EMAIL="${INITIAL_USER}@${CLUSTER}.${DOMAIN}"
+INITIAL_USER_PASSWORD="password"
+
 # The example config you want to use. Currently, only "single_host" is
 # available
 CONFIG_DIR="single_host"
@@ -187,6 +194,9 @@ for f in ${SOURCE_PILLARS_DIR}/*; do
        s/__RELEASE__/${RELEASE}/g;
        s/__HOST_SSL_PORT__/${HOST_SSL_PORT}/g;
        s/__GUEST_SSL_PORT__/${GUEST_SSL_PORT}/g;
+       s/__INITIAL_USER__/${INITIAL_USER}/g;
+       s/__INITIAL_USER_EMAIL__/${INITIAL_USER_EMAIL}/g;
+       s/__INITIAL_USER_PASSWORD__/${INITIAL_USER_PASSWORD}/g;
        s/__VERSION__/${VERSION}/g" \
   ${f} > ${P_DIR}/$(basename ${f})
 done

@@ -95,13 +95,10 @@ arvados:
     Login:
       Test:
         Enable: true
-        javier:
-          User: javier@arva2.arv.local
-          Password: perico
-
-    AuditLogs:
-      Section_to_ignore:
-        - some_random_value
+        Users:
+          __INITIAL_USER__:
+            Email: __INITIAL_USER_EMAIL__
+            Password: __INITIAL_USER_PASSWORD__
 
     ### VOLUMES
     ## This should usually match all your `keepstore` instances

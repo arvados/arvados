@@ -16,6 +16,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 # "Install Arvados using Saltstack":#saltstack
 # "Single host install using the provision.sh script":#single_host
 # "Local testing Arvados in a Vagrant box":#vagrant
+# "Initial user and login":#initial_user
 
 h2(#tlrl). For the impatient (TL;RL)
 
@@ -29,6 +30,8 @@ Just edit the @provision.sh@ script, modify the variables at the top of the file
 </notextile>
 
 It will install all the main Arvados components to get you up and running.
+
+The whole installation procedure takes somewhere between 15 to 60 minutes, depending on the host and your network bandwith. On a virtual machine with 1 core and 1 GB RAM, it takes ~25 minutes to do the initial install.
 
 There is a companion @Vagrantfile@ to install Arvados in a local Vagrant virtual machine. If you have "Vagrant":https://www.vagrantup.com/ installed in your computer, you can just get Arvados installed running in a local virtual machine with the command
 
@@ -121,3 +124,30 @@ To get it running, simply install Vagrant in your computer, edit the @provision@
 <pre><code>vagrant up
 </code></pre>
 </notextile>
+
+After the setup is done, you need to edit your @/etc/hosts@ file to be able to reach the cluster. You can do it this way (as root):
+<notextile>
+<pre><code>export CLUSTER="arva2"
+export DOMAIN="arv.local"
+echo "127.0.0.2 api keep keep0 collections download ws workbench workbench2 ${CLUSTER}.${DOMAIN} api.${CLUSTER}.${DOMAIN} keep.${CLUSTER}.${DOMAIN} keep0.${CLUSTER}.${DOMAIN} collections.${CLUSTER}.${DOMAIN} download.${CLUSTER}.${DOMAIN} ws.${CLUSTER}.${DOMAIN} workbench.${CLUSTER}.${DOMAIN} workbench2.${CLUSTER}.${DOMAIN}" >> /etc/hosts
+</code></pre>
+</notextile>
+
+If you want to reconfigure the running box, you can just:
+
+1. edit the pillars to suit your needs
+2. run
+<notextile>
+<pre><code>vagrant reload --provision
+</code></pre>
+</notextile>
+
+h2#(initial_user). "Initial user and login
+
+The provision script, by default, sets an initial user for testing purposes, configured as administrator of the newly created cluster.
+
+Assuming you don't change any value from the script, the initial credentials are:
+
+* User: 'admin'
+* Password: 'password'
+* Email: 'admin@arva2.arv.local'
