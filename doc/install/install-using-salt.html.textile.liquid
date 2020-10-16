@@ -13,49 +13,39 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 # "Introduction":#introduction
 # "Install Saltstack":#saltstack
 # "Install dependencies":#dependencies
-# "Install Arvados":#arvados
+# "Install Arvados using Saltstack":#saltstack
+# "Single host install using the provision.sh script":#single_host
+# "Local testing Arvados in a Vagrant box":#vagrant
 
 h2(#tlrl). For the impatient (TL;RL)
 
-We added a "script":https://github.com/arvados/arvados/tree/master/tools/salt-install/provision.sh
-under the "tools/salt-install":https://github.com/arvados/arvados/tree/master/tools/salt-install directory.
+We added a "script":https://github.com/arvados/arvados/tree/master/tools/salt-install/provision.sh under the "tools/salt-install":https://github.com/arvados/arvados/tree/master/tools/salt-install directory.
 
-Just edit the @provision.sh@ script, modify the variables at the top of the file to suit your needs
-(usually not required), copy the file to the host where you want to install Arvados and run it as root
+Just edit the @provision.sh@ script, modify the variables at the top of the file to suit your needs (usually not required), copy the file to the host where you want to install Arvados and run it as root
 
 <notextile>
-<pre><code>
-bash ./provision.sh
+<pre><code>sudo bash ./provision.sh
 </code></pre>
 </notextile>
 
 It will install all the main Arvados components to get you up and running.
 
-There is a companion @Vagrantfile@ to install Arvados in a local Vagrant virtual machine. If you have
-"Vagrant":https://www.vagrantup.com/ installed in your computer, you can just get Arvados installed
-running in a local virtual machine with the command
+There is a companion @Vagrantfile@ to install Arvados in a local Vagrant virtual machine. If you have "Vagrant":https://www.vagrantup.com/ installed in your computer, you can just get Arvados installed running in a local virtual machine with the command
 
 <notextile>
-<pre><code>
-vagrant up
+<pre><code>vagrant up
 </code></pre>
 </notextile>
 
-If you want to run these scripts in another host or instance, just copy the @provision.sh@ file to the
-desired host and run it.
+If you want to run these scripts in another host or instance, just copy the directory to the destination host, edit the @provision.sh@ file and run it.
 
 The rest of the document is a description of the individual steps the @provision.sh@ script perform.
 
 h2(#introduction). Introduction
 
-To ease the installation of the various Arvados components, we have developed a
-"Saltstack":https://www.saltstack.com/ 's
-"arvados-formula":https://github.com/saltstack-formulas/arvados-formula which
-can help you get an Arvados cluster up and running.
+To ease the installation of the various Arvados components, we have developed a "Saltstack":https://www.saltstack.com/ 's "arvados-formula":https://github.com/saltstack-formulas/arvados-formula which can help you get an Arvados cluster up and running.
 
-Saltstack is a Python-based, open-source software for event-driven IT
-automation, remote task execution, and configuration management. It can be used
-in a master/minion setup or master-less.
+Saltstack is a Python-based, open-source software for event-driven IT automation, remote task execution, and configuration management. It can be used in a master/minion setup or master-less.
 
 h2(#saltstack). Install Saltsack
 
@@ -64,8 +54,7 @@ If you already have a Saltstack environment you can skip this section.
 The simplest way to get Salt up and running on a node is to use the bootstrap script they provide:
 
 <notextile>
-<pre><code>
-curl -L https://bootstrap.saltstack.com -o /tmp/bootstrap_salt.sh
+<pre><code>curl -L https://bootstrap.saltstack.com -o /tmp/bootstrap_salt.sh
 sudo sh /tmp/bootstrap_salt.sh -XUdfP -x python3
 </code></pre>
 </notextile>
@@ -74,8 +63,7 @@ For more information check "Saltstack's documentation":https://docs.saltstack.co
 
 h2(#dependencies). Install dependencies
 
-Arvados depends in a few applications and packages (postgresql, nginx+passenger, ruby) that can also be
-installed using their respective Saltstack formulas.
+Arvados depends in a few applications and packages (postgresql, nginx+passenger, ruby) that can also be installed using their respective Saltstack formulas.
 
 The formulas we use are:
 
@@ -84,15 +72,11 @@ The formulas we use are:
 * "docker":https://github.com/saltstack-formulas/docker-formula.git
 * "locale":https://github.com/saltstack-formulas/locale-formula.git
 
-There are example Salt pillar files for each of those formulas in the
-test/salt/pillar/examples":https://github.com/saltstack-formulas/arvados-formula/tree/master/test/salt/pillar/examples
-directory. As they are, they allow you to get all the main Arvados components up and running
-in a single node.
+There are example Salt pillar files for each of those formulas in the test/salt/pillar/examples":https://github.com/saltstack-formulas/arvados-formula/tree/master/test/salt/pillar/examples directory. As they are, they allow you to get all the main Arvados components up and running.
 
-h2(#arvados). Install Arvados
+h2(#saltstack). Install Arvados using Saltstack
 
-The Arvados formula we maintain is located in the Saltstack's community repository of
-formulas:
+The Arvados formula we maintain is located in the Saltstack's community repository of formulas:
 
 * "arvados-formula":https://github.com/saltstack-formulas/arvados-formula.git
 
@@ -101,3 +85,39 @@ and we keep a @development@ version at our own repo
 * "arvados-formula develpment":https://github.com/arvados/arvados-formula.git
 
 This last one might break from time to time, as we try and add new features. Use with caution.
+
+As much as possible, we try to keep it up to date, with example pillars to help you deploy Arvados.
+
+For those familiar with Saltstack, the process to get it deployed is similar to any other formula:
+
+1. Fork/copy the formula to your Salt master host.
+2. Edit the Arvados, nginx, postgres, locale and docker pillars to match your desired configuration.
+3. Run a @state.apply@ to get it deployed.
+
+h2(#single_host). Single host install using the provision.sh script
+
+In case you want to run it on a single node and don't want to (or don't have) a Saltstack master/minion infrastructure in place, we provide a very simple script named @provision.sh@ which can be used to deploy Arvados, using the @arvados-formula@ in a master-less setup.
+
+Just
+
+1. edit the variables at the very beginning ot the file,
+2. run the script
+3. wait for it to finish
+
+If everything goes OK, you'll get some final lines stating something like:
+
+<notextile>
+<pre><code>arvados: Succeeded: 109 (changed=9)
+arvados: Failed:      0
+</code></pre>
+</notextile>
+
+h2(#vagrant). Local testing Arvados in a Vagrant box
+
+If you want to try Arvados in a local virtual machine, there's a companion @Vagrantfile@ to install it on a virtual machine in your computer using "Vagrant":https://www.vagrantup.com/.
+
+To get it running, simply install Vagrant in your computer, edit the @provision@ file as described in the previous section, and run
+<notextile>
+<pre><code>vagrant up
+</code></pre>
+</notextile>
