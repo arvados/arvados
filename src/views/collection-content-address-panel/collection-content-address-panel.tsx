@@ -20,7 +20,7 @@ import { navigateTo } from '~/store/navigation/navigation-action';
 import { DataColumns } from '~/components/data-table/data-table';
 import { SortDirection } from '~/components/data-table/data-column';
 import { createTree } from '~/models/tree';
-import { ResourceName, ResourceOwnerName, ResourceLastModifiedDate } from '~/views-components/data-explorer/renderers';
+import { ResourceName, ResourceOwnerName, ResourceLastModifiedDate, ResourceStatus } from '~/views-components/data-explorer/renderers';
 
 type CssRules = 'backLink' | 'backIcon' | 'card' | 'title' | 'iconHeader' | 'link';
 
@@ -59,6 +59,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 enum CollectionContentAddressPanelColumnNames {
     COLLECTION_WITH_THIS_ADDRESS = "Collection with this address",
+    STATUS = "Status",
     LOCATION = "Location",
     LAST_MODIFIED = "Last modified"
 }
@@ -71,6 +72,13 @@ export const collectionContentAddressPanelColumns: DataColumns<string> = [
         sortDirection: SortDirection.NONE,
         filters: createTree(),
         render: uuid => <ResourceName uuid={uuid} />
+    },
+    {
+        name: CollectionContentAddressPanelColumnNames.STATUS,
+        selected: true,
+        configurable: true,
+        filters: createTree(),
+        render: uuid => <ResourceStatus uuid={uuid} />
     },
     {
         name: CollectionContentAddressPanelColumnNames.LOCATION,

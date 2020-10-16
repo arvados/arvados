@@ -6,7 +6,7 @@ import * as React from 'react';
 import { Grid, Typography, withStyles, Tooltip, IconButton, Checkbox } from '@material-ui/core';
 import { FavoriteStar, PublicFavoriteStar } from '../favorite-star/favorite-star';
 import { ResourceKind, TrashableResource } from '~/models/resource';
-import { ProjectIcon, CollectionIcon, ProcessIcon, DefaultIcon, WorkflowIcon, ShareIcon } from '~/components/icon/icon';
+import { ProjectIcon, CollectionIcon, ProcessIcon, DefaultIcon, ShareIcon, CollectionOldVersionIcon, WorkflowIcon } from '~/components/icon/icon';
 import { formatDate, formatFileSize, formatTime } from '~/common/formatters';
 import { resourceLabel } from '~/common/labels';
 import { connect, DispatchProp } from 'react-redux';
@@ -28,10 +28,10 @@ import { withResourceData } from '~/views-components/data-explorer/with-resource
 import { CollectionResource } from '~/models/collection';
 import { IllegalNamingWarning } from '~/components/warning/warning';
 
-const renderName = (dispatch: Dispatch, item: { name: string; uuid: string, kind: string }) =>
+const renderName = (dispatch: Dispatch, item: GroupContentsResource) =>
     <Grid container alignItems="center" wrap="nowrap" spacing={16}>
         <Grid item>
-            {renderIcon(item.kind)}
+            {renderIcon(item)}
         </Grid>
         <Grid item>
             <Typography color="primary" style={{ width: 'auto', cursor: 'pointer' }} onClick={() => dispatch<any>(navigateTo(item.uuid))}>
@@ -52,15 +52,18 @@ const renderName = (dispatch: Dispatch, item: { name: string; uuid: string, kind
 export const ResourceName = connect(
     (state: RootState, props: { uuid: string }) => {
         const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
-        return resource || { name: '', uuid: '', kind: '' };
-    })((resource: { name: string; uuid: string, kind: string } & DispatchProp<any>) => renderName(resource.dispatch, resource));
+        return resource;
+    })((resource: GroupContentsResource & DispatchProp<any>) => renderName(resource.dispatch, resource));
 
-const renderIcon = (kind: string) => {
-    switch (kind) {
+const renderIcon = (item: GroupContentsResource) => {
+    switch (item.kind) {
         case ResourceKind.PROJECT:
             return <ProjectIcon />;
         case ResourceKind.COLLECTION:
-            return <CollectionIcon />;
+            if (item.uuid === item.currentVersionUuid) {
+                return <CollectionIcon />;
+            }
+            return <CollectionOldVersionIcon />;
         case ResourceKind.PROCESS:
             return <ProcessIcon />;
         case ResourceKind.WORKFLOW:
@@ -74,10 +77,10 @@ const renderDate = (date?: string) => {
     return <Typography noWrap style={{ minWidth: '100px' }}>{formatDate(date)}</Typography>;
 };
 
-const renderWorkflowName = (item: { name: string; uuid: string, kind: string, ownerUuid: string }) =>
+const renderWorkflowName = (item: WorkflowResource) =>
     <Grid container alignItems="center" wrap="nowrap" spacing={16}>
         <Grid item>
-            {renderIcon(item.kind)}
+            {renderIcon(item)}
         </Grid>
         <Grid item>
             <Typography color="primary" style={{ width: '100px' }}>
@@ -89,7 +92,7 @@ const renderWorkflowName = (item: { name: string; uuid: string, kind: string, ow
 export const ResourceWorkflowName = connect(
     (state: RootState, props: { uuid: string }) => {
         const resource = getResource<WorkflowResource>(props.uuid)(state.resources);
-        return resource || { name: '', uuid: '', kind: '', ownerUuid: '' };
+        return resource;
     })(renderWorkflowName);
 
 const getPublicUuid = (uuidPrefix: string) => {
