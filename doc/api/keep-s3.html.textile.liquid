@@ -64,17 +64,11 @@ Can be used to determine if an object exists and if client has read access to it
 
 h4. GetBucketVersioning
 
-This is a stub to avoid breaking clients that request information about versioning.  Versioning is not actually supported.
+Bucket versioning is presently not supported, so this will always respond that bucket versioning is not enabled.
 
 h3. Authorization mechanisms
 
-Accepts AWS Signature Version 4 format @Authorization: AWS AWS4-HMAC-SHA256 Credential=...,SignedHeaders=...,Signature=...@
+Keep-web accepts AWS Signature Version 4 (AWS4-HMAC-SHA256) as well as the older V2 AWS signature.
 
-Can be used one of two ways:
-
-* The "Credential" is the Arvados token uuid, and the "Signature" is derived from request headers and the Arvados token secret
-* The "Credential" is the Arvados token secret, and "Signature" is derived from the same Arvados token secret
-
-Consult the S3 documentation for information on how to produce AWS4-HMAC-SHA256 signatures.  If you are using a S3 client library, it should be handled for you already.
-
-Keep-web also accepts older format header @Authorization: AWS AccessKey:signature@ .  Provide the Arvados secret token for the "Access Key".  In this case, the signature can be anything as keep-web will ignore it.
+* If your client uses V4 signatures exclusively: use the Arvados token's UUID part as AccessKey, and its secret part as SecretKey.  This is preferred.
+* If your client uses V2 signatures, or a combination of V2 and V4, or the Arvados token UUID is unknown: use the secret part of the Arvados token for both AccessKey and SecretKey.
