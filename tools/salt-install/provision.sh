@@ -11,6 +11,8 @@
 # vagrant up
 
 ##########################################################
+# This section are the basic parameters to configure the installation
+
 # The 5 letters name you want to give your cluster
 CLUSTER="arva2"
 DOMAIN="arv.local"
@@ -167,8 +169,7 @@ EOFPSLS
 # Get the formula and dependencies
 cd ${F_DIR} || exit 1
 for f in postgres arvados nginx docker locale; do
-  # git clone https://github.com/saltstack-formulas/${f}-formula.git
-  git clone https://github.com/netmanagers/${f}-formula.git
+  git clone https://github.com/saltstack-formulas/${f}-formula.git
 done
 
 if [ "x${BRANCH}" != "x" ]; then

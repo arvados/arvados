@@ -16,6 +16,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 # "Install Arvados using Saltstack":#saltstack
 # "Single host install using the provision.sh script":#single_host
 # "Local testing Arvados in a Vagrant box":#vagrant
+# "Final DNS configuration":#final_steps
 # "Initial user and login":#initial_user
 
 h2(#tlrl). For the impatient (TL;RL)
@@ -25,7 +26,7 @@ We added a "script":https://github.com/arvados/arvados/tree/master/tools/salt-in
 Just edit the @provision.sh@ script, modify the variables at the top of the file to suit your needs (usually not required), copy the file to the host where you want to install Arvados and run it as root
 
 <notextile>
-<pre><code>sudo bash ./provision.sh
+<pre><code>bash ./provision.sh
 </code></pre>
 </notextile>
 
@@ -33,7 +34,7 @@ It will install all the main Arvados components to get you up and running.
 
 The whole installation procedure takes somewhere between 15 to 60 minutes, depending on the host and your network bandwith. On a virtual machine with 1 core and 1 GB RAM, it takes ~25 minutes to do the initial install.
 
-There is a companion @Vagrantfile@ to install Arvados in a local Vagrant virtual machine. If you have "Vagrant":https://www.vagrantup.com/ installed in your computer, you can just get Arvados installed running in a local virtual machine with the command
+There is a companion @Vagrantfile@ to install Arvados in a local Vagrant virtual machine. If you have "Vagrant":https://www.vagrantup.com/ installed in your computer, you can just get Arvados installed running in a local virtual machine with the command (this can ben done as a regular user). You will only need root to perform the "final dns configuration":#final_steps
 
 <notextile>
 <pre><code>vagrant up
@@ -41,6 +42,13 @@ There is a companion @Vagrantfile@ to install Arvados in a local Vagrant virtual
 </notextile>
 
 If you want to run these scripts in another host or instance, just copy the directory to the destination host, edit the @provision.sh@ file and run it.
+
+Once the installation is over, you can just point your browser to the Workbench url and log in using the user you configured. 
+
+If you changed nothing from the script, the initial URL will be:
+
+* https://workbench.arva2.arv.local for regular installations, or
+* https://workbench.arva2.arv.local:8443 for vagrant installations
 
 The rest of the document is a description of the individual steps the @provision.sh@ script perform.
 
@@ -120,16 +128,9 @@ h2(#vagrant). Local testing Arvados in a Vagrant box
 If you want to try Arvados in a local virtual machine, there's a companion @Vagrantfile@ to install it on a virtual machine in your computer using "Vagrant":https://www.vagrantup.com/.
 
 To get it running, simply install Vagrant in your computer, edit the @provision@ file as described in the previous section, and run
+
 <notextile>
 <pre><code>vagrant up
-</code></pre>
-</notextile>
-
-After the setup is done, you need to edit your @/etc/hosts@ file to be able to reach the cluster. You can do it this way (as root):
-<notextile>
-<pre><code>export CLUSTER="arva2"
-export DOMAIN="arv.local"
-echo "127.0.0.2 api keep keep0 collections download ws workbench workbench2 ${CLUSTER}.${DOMAIN} api.${CLUSTER}.${DOMAIN} keep.${CLUSTER}.${DOMAIN} keep0.${CLUSTER}.${DOMAIN} collections.${CLUSTER}.${DOMAIN} download.${CLUSTER}.${DOMAIN} ws.${CLUSTER}.${DOMAIN} workbench.${CLUSTER}.${DOMAIN} workbench2.${CLUSTER}.${DOMAIN}" >> /etc/hosts
 </code></pre>
 </notextile>
 
@@ -137,12 +138,41 @@ If you want to reconfigure the running box, you can just:
 
 1. edit the pillars to suit your needs
 2. run
+
 <notextile>
 <pre><code>vagrant reload --provision
 </code></pre>
 </notextile>
 
-h2#(initial_user). "Initial user and login
+h2(#final_steps). Final DNS configuration
+
+After the setup is done, you need to set up your DNS to be able to access the cluster.
+
+The simplest way to do this is to edit your @/etc/hosts@ file (as root):
+
+<notextile>
+<pre><code>export CLUSTER="arva2"
+export DOMAIN="arv.local"
+export HOST_IP="127.0.0.2"    # This is valid either if installing in your computer directly
+                              # or in a Vagrant VM. If you're installing it on a remote host
+                              # just change the IP to match that of the host.
+echo "${HOST_IP} api keep keep0 collections download ws workbench workbench2 ${CLUSTER}.${DOMAIN} api.${CLUSTER}.${DOMAIN} keep.${CLUSTER}.${DOMAIN} keep0.${CLUSTER}.${DOMAIN} collections.${CLUSTER}.${DOMAIN} download.${CLUSTER}.${DOMAIN} ws.${CLUSTER}.${DOMAIN} workbench.${CLUSTER}.${DOMAIN} workbench2.${CLUSTER}.${DOMAIN}" >> /etc/hosts
+</code></pre>
+</notextile>
+
+h2(#initial_user). Initial user and login
+
+Once you finished running the @provision.sh@ script you'll be able to log into the Arvados cluster.
+
+If you changed nothing from the script, the initial URL will be:
+
+* https://workbench.arva2.arv.local for regular installations, or
+* https://workbench.arva2.arv.local:8443 for vagrant installations
+
+or, in general, the url format will be:
+
+* https://workbench.<cluster>.<domain> for regular installations, or
+* https://workbench.<cluster>.<domain>:8443 for vagrant installations
 
 The provision script, by default, sets an initial user for testing purposes, configured as administrator of the newly created cluster.
 
