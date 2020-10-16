@@ -253,7 +253,7 @@ rails_package_version() {
     fi
     local version="$(version_from_git)"
     if [ $pkgname = "arvados-api-server" -o $pkgname = "arvados-workbench" ] ; then
-	calculate_go_package_version version cmd/arvados-server "$srcdir"
+        calculate_go_package_version version cmd/arvados-server "$srcdir"
     fi
     echo $version
 }
