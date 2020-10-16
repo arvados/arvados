@@ -84,9 +84,7 @@ reading and writing, and is described in the next section.
 collectionList <- arv$collections.list(list(list("name", "like", "Test%")))
 
 collectionList <- arv$collections.list(list(list("name", "like", "Test%")), limit = 10, offset = 2)
-```
 
-```{r}
 # count of total number of items (may be more than returned due to paging)
 collectionList$items_available
 
@@ -189,7 +187,7 @@ or
 size <- arvadosSubcollection$getSizeInBytes()
 ```
 
-* Create new file in a collection:
+* Create new file in a collection (returns a vector of one or more ArvadosFile objects):
 
 ```{r}
 collection$create(files)
