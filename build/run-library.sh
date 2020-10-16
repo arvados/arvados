@@ -529,8 +529,8 @@ fpm_build_virtualenv () {
       UNFILTERED_PYTHON_VERSION=$ARVADOS_BUILDING_VERSION
       PYTHON_VERSION=$(echo -n $ARVADOS_BUILDING_VERSION | sed s/~dev/.dev/g | sed s/~rc/rc/g)
   else
-      UNFILTERED_PYTHON_VERSION=$(awk '($1 == "Version:"){print $2}' *.egg-info/PKG-INFO)
-      PYTHON_VERSION=$UNFILTERED_PYTHON_VERSION
+      PYTHON_VERSION=$(awk '($1 == "Version:"){print $2}' *.egg-info/PKG-INFO)
+      UNFILTERED_PYTHON_VERSION=$(echo -n $PYTHON_VERSION | sed s/\.dev/~dev/g |sed 's/\([0-9]\)rc/\1~rc/g')
   fi
 
   # See if we actually need to build this package; does it exist already?
