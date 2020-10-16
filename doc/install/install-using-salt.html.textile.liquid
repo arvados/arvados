@@ -43,7 +43,7 @@ There is a companion @Vagrantfile@ to install Arvados in a local Vagrant virtual
 
 If you want to run these scripts in another host or instance, just copy the directory to the destination host, edit the @provision.sh@ file and run it.
 
-Once the installation is over, you can just point your browser to the Workbench url and log in using the user you configured. 
+Once the installation is over, you can just point your browser to the Workbench url and log in using the user you configured.
 
 If you changed nothing from the script, the initial URL will be:
 
@@ -60,7 +60,7 @@ Saltstack is a Python-based, open-source software for event-driven IT automation
 
 h2(#saltstack). Install Saltsack
 
-If you already have a Saltstack environment you can skip this section. 
+If you already have a Saltstack environment you can skip this section.
 
 The simplest way to get Salt up and running on a node is to use the bootstrap script they provide:
 
@@ -171,8 +171,8 @@ If you changed nothing from the script, the initial URL will be:
 
 or, in general, the url format will be:
 
-* https://workbench.<cluster>.<domain> for regular installations, or
-* https://workbench.<cluster>.<domain>:8443 for vagrant installations
+* https://workbench.@<cluster>.<domain>@ for regular installations, or
+* https://workbench.@<cluster>.<domain>:8443@ for vagrant installations
 
 The provision script, by default, sets an initial user for testing purposes, configured as administrator of the newly created cluster.
 
