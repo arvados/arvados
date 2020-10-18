@@ -63,6 +63,7 @@ describe('auth-actions', () => {
             .reply(200, {
                 baseUrl: "https://xc59z.arvadosapi.com/arvados/v1",
                 keepWebServiceUrl: "",
+                keepWebInlineServiceUrl: "",
                 remoteHosts: {},
                 rootUrl: "https://xc59z.arvadosapi.com",
                 uuidPrefix: "xc59z",
