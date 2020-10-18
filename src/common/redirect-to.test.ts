@@ -7,7 +7,8 @@ import { storeRedirects, handleRedirects } from './redirect-to';
 describe('redirect-to', () => {
     const { location } = window;
     const config: any = {
-        keepWebServiceUrl: 'http://localhost'
+        keepWebServiceUrl: 'http://localhost',
+        keepWebServiceInlineUrl: 'http://localhost'
     };
     const redirectTo = '/test123';
     const locationTemplate = {
@@ -37,7 +38,7 @@ describe('redirect-to', () => {
                 ...locationTemplate,
                 href: `${location.href}?redirectTo=${redirectTo}`,
             } as any;
-            Object.defineProperty(window, 'sessionStorage', {
+            Object.defineProperty(window, 'localStorage', {
                 value: {
                     setItem: jest.fn(),
                 },
@@ -50,7 +51,7 @@ describe('redirect-to', () => {
             storeRedirects();
 
             // then
-            expect(window.sessionStorage.setItem).toHaveBeenCalledWith('redirectTo', redirectTo);
+            expect(window.localStorage.setItem).toHaveBeenCalledWith('redirectTo', redirectTo);
         });
     });
 
@@ -61,7 +62,7 @@ describe('redirect-to', () => {
                 ...locationTemplate,
                 href: `${location.href}?redirectTo=${redirectTo}`,
             } as any;;
-            Object.defineProperty(window, 'sessionStorage', {
+            Object.defineProperty(window, 'localStorage', {
                 value: {
                     getItem: () => redirectTo,
                     removeItem: jest.fn(),
