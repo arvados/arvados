@@ -1,0 +1,101 @@
+---
+layout: default
+navsection: installguide
+title: Multi host Arvados
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+# "Install Saltstack":#saltstack
+# "Install dependencies":#dependencies
+# "Install Arvados using Saltstack":#saltstack
+# "DNS configuration":#final_steps
+# "Initial user and login":#initial_user
+
+h2(#saltstack). Install Saltstack
+
+If you already have a Saltstack environment you can skip this section.
+
+The simplest way to get Salt up and running on a node is to use the bootstrap script they provide:
+
+<notextile>
+<pre><code>curl -L https://bootstrap.saltstack.com -o /tmp/bootstrap_salt.sh
+sudo sh /tmp/bootstrap_salt.sh -XUdfP -x python3
+</code></pre>
+</notextile>
+
+For more information check "Saltstack's documentation":https://docs.saltstack.com/en/latest/topics/installation/index.html
+
+h2(#dependencies). Install dependencies
+
+Arvados depends in a few applications and packages (postgresql, nginx+passenger, ruby) that can also be installed using their respective Saltstack formulas.
+
+The formulas we use are:
+
+* "postgres":https://github.com/saltstack-formulas/postgres-formula.git
+* "nginx":https://github.com/saltstack-formulas/nginx-formula.git
+* "docker":https://github.com/saltstack-formulas/docker-formula.git
+* "locale":https://github.com/saltstack-formulas/locale-formula.git
+
+There are example Salt pillar files for each of those formulas in the "test/salt/pillar/examples":https://github.com/saltstack-formulas/arvados-formula/tree/master/test/salt/pillar/examples directory. As they are, they allow you to get all the main Arvados components up and running.
+
+h2(#saltstack). Install Arvados using Saltstack
+
+This is a source-based installation method. The Salt scripts are available from the "tools/salt-install":https://github.com/arvados/arvados/tree/master/tools/salt-install directory in the Arvados git repository.
+
+The Arvados formula we maintain is located in the Saltstack's community repository of formulas:
+
+* "arvados-formula":https://github.com/saltstack-formulas/arvados-formula.git
+
+The @development@ version lives in our own repository
+
+* "arvados-formula development":https://github.com/arvados/arvados-formula.git
+
+This last one might break from time to time, as we try and add new features. Use with caution.
+
+As much as possible, we try to keep it up to date, with example pillars to help you deploy Arvados.
+
+For those familiar with Saltstack, the process to get it deployed is similar to any other formula:
+
+1. Fork/copy the formula to your Salt master host.
+2. Edit the Arvados, nginx, postgres, locale and docker pillars to match your desired configuration.
+3. Run a @state.apply@ to get it deployed.
+
+h2(#final_steps). DNS configuration
+
+After the setup is done, you need to set up your DNS to be able to access the cluster.
+
+The simplest way to do this is to edit your @/etc/hosts@ file (as root):
+
+<notextile>
+<pre><code>export CLUSTER="arva2"
+export DOMAIN="arv.local"
+export HOST_IP="127.0.0.2"    # This is valid either if installing in your computer directly
+                              # or in a Vagrant VM. If you're installing it on a remote host
+                              # just change the IP to match that of the host.
+echo "${HOST_IP} api keep keep0 collections download ws workbench workbench2 ${CLUSTER}.${DOMAIN} api.${CLUSTER}.${DOMAIN} keep.${CLUSTER}.${DOMAIN} keep0.${CLUSTER}.${DOMAIN} collections.${CLUSTER}.${DOMAIN} download.${CLUSTER}.${DOMAIN} ws.${CLUSTER}.${DOMAIN} workbench.${CLUSTER}.${DOMAIN} workbench2.${CLUSTER}.${DOMAIN}" >> /etc/hosts
+</code></pre>
+</notextile>
+
+h2(#initial_user). Initial user and login
+
+At this point you should be able to log into the Arvados cluster.
+
+If you did not change the defaults, the initial URL will be:
+
+* https://workbench.arva2.arv.local
+
+or, in general, the url format will be:
+
+* https://workbench.@<cluster>.<domain>@
+
+By default, the provision script creates an initial user for testing purposes. This user is configured as administrator of the newly created cluster.
+
+Assuming you didn't change the defaults, the initial credentials are:
+
+* User: 'admin'
+* Password: 'password'
+* Email: 'admin@arva2.arv.local'

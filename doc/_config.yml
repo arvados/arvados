@@ -193,10 +193,13 @@ navbar:
   installguide:
     - Overview:
       - install/index.html.textile.liquid
-    - SaltStack quick start:
-      - install/install-using-salt.html.textile.liquid
     - Docker quick start:
       - install/arvbox.html.textile.liquid
+    - Installation with Salt:
+      - install/salt.html.textile.liquid
+      - install/salt-vagrant.html.textile.liquid
+      - install/salt-single-host.html.textile.liquid
+      - install/salt-multi-host.html.textile.liquid
     - Arvados on Kubernetes:
       - install/arvados-on-kubernetes.html.textile.liquid
       - install/arvados-on-kubernetes-minikube.html.textile.liquid
