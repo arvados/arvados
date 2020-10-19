@@ -34,7 +34,7 @@ It will install all the main Arvados components to get you up and running.
 
 The whole installation procedure takes somewhere between 15 to 60 minutes, depending on the host and your network bandwith. On a virtual machine with 1 core and 1 GB RAM, it takes ~25 minutes to do the initial install.
 
-There is a companion @Vagrantfile@ to install Arvados in a local Vagrant virtual machine. If you have "Vagrant":https://www.vagrantup.com/ installed in your computer, you can just get Arvados installed running in a local virtual machine with the command (this can ben done as a regular user). You will only need root to perform the "final dns configuration":#final_steps
+There is a companion @Vagrantfile@ to install Arvados in a local Vagrant virtual machine. If you have "Vagrant":https://www.vagrantup.com/ installed in your computer, you can just get Arvados installed running in a local virtual machine with the command (this can be done as a regular user). You will only need root to perform the "final dns configuration":#final_steps
 
 <notextile>
 <pre><code>vagrant up
@@ -83,7 +83,7 @@ The formulas we use are:
 * "docker":https://github.com/saltstack-formulas/docker-formula.git
 * "locale":https://github.com/saltstack-formulas/locale-formula.git
 
-There are example Salt pillar files for each of those formulas in the test/salt/pillar/examples":https://github.com/saltstack-formulas/arvados-formula/tree/master/test/salt/pillar/examples directory. As they are, they allow you to get all the main Arvados components up and running.
+There are example Salt pillar files for each of those formulas in the "test/salt/pillar/examples":https://github.com/saltstack-formulas/arvados-formula/tree/master/test/salt/pillar/examples directory. As they are, they allow you to get all the main Arvados components up and running.
 
 h2(#saltstack). Install Arvados using Saltstack
 

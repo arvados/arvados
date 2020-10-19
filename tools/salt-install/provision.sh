@@ -40,7 +40,7 @@ VERSION="latest"
 # In Vagrant, make sure it matches what you set in the Vagrantfile
 # HOST_SSL_PORT=443
 
-# This is a arvados-formula setting. 
+# This is a arvados-formula setting.
 # If branch is set, the script will switch to it before running salt
 # Usually not needed, only used for testing
 # BRANCH="master"
