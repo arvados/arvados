@@ -85,3 +85,4 @@ go.sum
 sdk/python/tests/fed-migrate/CWLFile
 sdk/python/tests/fed-migrate/*.cwl
 sdk/python/tests/fed-migrate/*.cwlex
+doc/install/*.xlsx
