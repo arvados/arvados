@@ -8,6 +8,7 @@ import { DownloadAction } from "./download-action";
 import { getNodeValue } from "../../../models/tree";
 import { ContextMenuKind } from '../context-menu';
 import { filterCollectionFilesBySelection } from "~/store/collection-panel/collection-panel-files/collection-panel-files-state";
+import { sanitizeToken } from "./helpers";
 
 const mapStateToProps = (state: RootState) => {
     const { resource } = state.contextMenu;
@@ -16,7 +17,7 @@ const mapStateToProps = (state: RootState) => {
         const file = getNodeValue(resource.uuid)(state.collectionPanelFiles);
         if (file) {
             return {
-                href: file.url,
+                href: sanitizeToken(file.url, true),
                 kind: 'file',
                 currentCollectionUuid
             };
