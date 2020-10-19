@@ -55,7 +55,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         padding: theme.spacing.unit
     },
     tableCell: {
-        wordWrap: 'break-word'
+        wordWrap: 'break-word',
+        paddingRight: '24px'
     },
     tableCellWorkflows: {
         '&:nth-last-child(2)': {
@@ -107,8 +108,8 @@ export const DataTable = withStyles(styles)(
 
         renderHeadCell = (column: DataColumn<T>, index: number) => {
             const { name, key, renderHeader, filters, sortDirection } = column;
-            const { onSortToggle, onFiltersChange } = this.props;
-            return <TableCell key={key || index}>
+            const { onSortToggle, onFiltersChange, classes } = this.props;
+            return <TableCell className={classes.tableCell} key={key || index}>
                 {renderHeader ?
                     renderHeader() :
                     countNodes(filters) > 0

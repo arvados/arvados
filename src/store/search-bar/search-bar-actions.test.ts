@@ -8,13 +8,14 @@ import { ResourceKind } from "~/models/resource";
 describe('search-bar-actions', () => {
     describe('getAdvancedDataFromQuery', () => {
         it('should correctly build advanced data record from query #1', () => {
-            const r = getAdvancedDataFromQuery('val0 has:"file size":"100mb" val2 has:"user":"daniel" is:starred val2 val0 is:trashed');
+            const r = getAdvancedDataFromQuery('val0 has:"file size":"100mb" val2 has:"user":"daniel" is:starred val2 val0');
             expect(r).toEqual({
                 searchValue: 'val0 val2',
                 type: undefined,
                 cluster: undefined,
                 projectUuid: undefined,
-                inTrash: true,
+                inTrash: false,
+                pastVersions: false,
                 dateFrom: '',
                 dateTo: '',
                 properties: [{
@@ -30,13 +31,14 @@ describe('search-bar-actions', () => {
         });
 
         it('should correctly build advanced data record from query #2', () => {
-            const r = getAdvancedDataFromQuery('document from:2017-08-01 pdf has:"filesize":"101mb" is:trashed type:arvados#collection cluster:c97qx');
+            const r = getAdvancedDataFromQuery('document from:2017-08-01 pdf has:"filesize":"101mb" is:trashed type:arvados#collection cluster:c97qx is:pastVersion');
             expect(r).toEqual({
                 searchValue: 'document pdf',
                 type: ResourceKind.COLLECTION,
                 cluster: 'c97qx',
                 projectUuid: undefined,
                 inTrash: true,
+                pastVersions: true,
                 dateFrom: '2017-08-01',
                 dateTo: '',
                 properties: [{
@@ -57,6 +59,7 @@ describe('search-bar-actions', () => {
                 cluster: 'c97qx',
                 projectUuid: undefined,
                 inTrash: true,
+                pastVersions: false,
                 dateFrom: '2017-08-01',
                 dateTo: '',
                 properties: [
@@ -70,6 +73,27 @@ describe('search-bar-actions', () => {
             expect(q).toBe('document pdf type:arvados#collection cluster:c97qx is:trashed from:2017-08-01 has:"file size":"101mb" has:"Species":"Human" has:"Species":"Canine"');
         });
 
+        it('should build query from advanced data #2', () => {
+            const q = getQueryFromAdvancedData({
+                searchValue: 'document pdf',
+                type: ResourceKind.COLLECTION,
+                cluster: 'c97qx',
+                projectUuid: undefined,
+                inTrash: false,
+                pastVersions: true,
+                dateFrom: '2017-08-01',
+                dateTo: '',
+                properties: [
+                    { key: 'file size', value: '101mb' },
+                    { key: 'Species', value: 'Human' },
+                    { key: 'Species', value: 'Canine' },
+                ],
+                saveQuery: false,
+                queryName: ''
+            });
+            expect(q).toBe('document pdf type:arvados#collection cluster:c97qx is:pastVersion from:2017-08-01 has:"file size":"101mb" has:"Species":"Human" has:"Species":"Canine"');
+        });
+
         it('should add has:"key":"value" expression to query from same property key', () => {
             const searchValue = 'document pdf has:"file size":"101mb" has:"Species":"Canine"';
             const prevData = {
@@ -78,6 +102,7 @@ describe('search-bar-actions', () => {
                 cluster: undefined,
                 projectUuid: undefined,
                 inTrash: false,
+                pastVersions: false,
                 dateFrom: '',
                 dateTo: '',
                 properties: [
@@ -107,6 +132,7 @@ describe('search-bar-actions', () => {
                 cluster: undefined,
                 projectUuid: undefined,
                 inTrash: false,
+                pastVersions: false,
                 dateFrom: '',
                 dateTo: '',
                 properties: [
@@ -134,6 +160,7 @@ describe('search-bar-actions', () => {
                 cluster: undefined,
                 projectUuid: undefined,
                 inTrash: false,
+                pastVersions: false,
                 dateFrom: '',
                 dateTo: '',
                 properties: [

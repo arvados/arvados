@@ -268,6 +268,7 @@ export const getQueryFromAdvancedData = (data: SearchBarAdvancedFormData, prevDa
             cluster: data.cluster,
             projectUuid: data.projectUuid,
             inTrash: data.inTrash,
+            pastVersions: data.pastVersions,
             dateFrom: data.dateFrom,
             dateTo: data.dateTo,
         };
@@ -282,6 +283,7 @@ export const getQueryFromAdvancedData = (data: SearchBarAdvancedFormData, prevDa
         ['cluster', 'cluster'],
         ['project', 'projectUuid'],
         [`is:${parser.States.TRASHED}`, 'inTrash'],
+        [`is:${parser.States.PAST_VERSION}`, 'pastVersions'],
         ['from', 'dateFrom'],
         ['to', 'dateTo']
     ];
@@ -307,6 +309,7 @@ export const getAdvancedDataFromQuery = (query: string, vocabulary?: Vocabulary)
         cluster: getValue(Keywords.CLUSTER),
         projectUuid: getValue(Keywords.PROJECT),
         inTrash: parser.isTrashed(tokens),
+        pastVersions: parser.isPastVersion(tokens),
         dateFrom: getValue(Keywords.FROM) || '',
         dateTo: getValue(Keywords.TO) || '',
         properties: vocabulary

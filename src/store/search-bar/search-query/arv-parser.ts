@@ -20,7 +20,8 @@ export enum Keywords {
 }
 
 export enum States {
-    TRASHED = 'trashed'
+    TRASHED = 'trashed',
+    PAST_VERSION = 'pastVersion'
 }
 
 const keyValuePattern = (key: string) => new RegExp(`${key}:([^ ]*)`);
@@ -60,12 +61,16 @@ export const getProperties = (tokens: string[]) =>
     }, [] as Property[]);
 
 
-export const isTrashed = (tokens: string[]) => {
+export const isTrashed = (tokens: string[]) => isSomeState(States.TRASHED, tokens);
+
+export const isPastVersion = (tokens: string[]) => isSomeState(States.PAST_VERSION, tokens);
+
+const isSomeState = (state: string, tokens: string[]) => {
     for (const token of tokens) {
         const match = token.match(keyValuePattern(Keywords.IS)) || ['', ''];
         if (match) {
             const [, value] = match;
-            if(value === States.TRASHED) {
+            if(value === state) {
                 return true;
             }
         }

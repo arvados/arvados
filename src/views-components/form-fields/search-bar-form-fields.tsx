@@ -71,6 +71,12 @@ export const SearchBarTrashField = () =>
         component={CheckboxField}
         label="In trash" />;
 
+export const SearchBarPastVersionsField = () =>
+    <Field
+        name='pastVersions'
+        component={CheckboxField}
+        label="Past versions" />;
+
 export const SearchBarDateFromField = () =>
     <Field
         name='dateFrom'
