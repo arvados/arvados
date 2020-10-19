@@ -142,6 +142,8 @@ else
   TMPHERE=\$(pwd)
   cd /usr/src/arvados
   calculate_python_sdk_cwl_package_versions
+
+  cwl_runner_version=\$(echo -n \$cwl_runner_version | sed s/~dev/.dev/g | sed s/~rc/rc/g)
   cd \$TMPHERE
   set -u
 

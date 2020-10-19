@@ -149,12 +149,13 @@ else
 	python_sdk_version="${ARVADOS_BUILDING_VERSION}-${ARVADOS_BUILDING_ITERATION}"
 fi
 
-# What we use to tag the Docker image.  For release candidate
-# packages, the OS package has a "~rc" suffix, but Python requires
-# just an "rc" suffix.  Arvados-cwl-runner will be expecting the
-# Python-compatible version string when it tries to pull the Docker
-# image, but --build-arg is expecting the OS package version.
-cwl_runner_version_tag=$(echo -n $cwl_runner_version | sed s/~rc/rc/g)
+# What we use to tag the Docker image.  For development and release
+# candidate packages, the OS package has a "~dev" or "~rc" suffix, but
+# Python requires a ".dev" or "rc" suffix.  Arvados-cwl-runner will be
+# expecting the Python-compatible version string when it tries to pull
+# the Docker image, but --build-arg is expecting the OS package
+# version.
+cwl_runner_version_tag=$(echo -n $cwl_runner_version | sed s/~dev/.dev/g | sed s/~rc/rc/g)
 
 if [[ "${cwl_runner_version}" != "${ARVADOS_BUILDING_VERSION}" ]]; then
 	cwl_runner_version="${cwl_runner_version}-1"

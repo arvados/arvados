@@ -30,18 +30,18 @@ def git_version_at_commit():
     return myversion
 
 def save_version(setup_dir, module, v):
-  with open(os.path.join(setup_dir, module, "_version.py"), 'wt') as fp:
-      return fp.write("__version__ = '%s'\n" % v)
+    v = v.replace("~dev", ".dev").replace("~rc", "rc")
+    with open(os.path.join(setup_dir, module, "_version.py"), 'wt') as fp:
+        return fp.write("__version__ = '%s'\n" % v)
 
 def read_version(setup_dir, module):
-  with open(os.path.join(setup_dir, module, "_version.py"), 'rt') as fp:
-      return re.match("__version__ = '(.*)'$", fp.read()).groups()[0]
+    with open(os.path.join(setup_dir, module, "_version.py"), 'rt') as fp:
+        return re.match("__version__ = '(.*)'$", fp.read()).groups()[0]
 
 def get_version(setup_dir, module):
     env_version = os.environ.get("ARVADOS_BUILDING_VERSION")
 
     if env_version:
-        env_version = env_version.replace("~rc", "rc")
         save_version(setup_dir, module, env_version)
     else:
         try:

@@ -130,9 +130,9 @@ calculate_go_package_version() {
       checkdirs+=("$1")
       shift
   done
-  if grep -qr git.arvados.org/arvados .; then
-      checkdirs+=(sdk/go lib)
-  fi
+  # Even our rails packages (version calculation happens here!) depend on a go component (arvados-server)
+  # Everything depends on the build directory.
+  checkdirs+=(sdk/go lib build)
   local timestamp=0
   for dir in ${checkdirs[@]}; do
       cd "$WORKSPACE"
@@ -253,7 +253,7 @@ rails_package_version() {
     fi
     local version="$(version_from_git)"
     if [ $pkgname = "arvados-api-server" -o $pkgname = "arvados-workbench" ] ; then
-	calculate_go_package_version version cmd/arvados-server "$srcdir"
+        calculate_go_package_version version cmd/arvados-server "$srcdir"
     fi
     echo $version
 }
@@ -526,11 +526,11 @@ fpm_build_virtualenv () {
 
   # Determine the package version from the generated sdist archive
   if [[ -n "$ARVADOS_BUILDING_VERSION" ]] ; then
-      UNFILTERED_PYTHON_VERSION=$(echo -n $ARVADOS_BUILDING_VERSION)
-      PYTHON_VERSION=$(echo -n $ARVADOS_BUILDING_VERSION | sed s/~rc/rc/g)
+      UNFILTERED_PYTHON_VERSION=$ARVADOS_BUILDING_VERSION
+      PYTHON_VERSION=$(echo -n $ARVADOS_BUILDING_VERSION | sed s/~dev/.dev/g | sed s/~rc/rc/g)
   else
-      UNFILTERED_PYTHON_VERSION=$(awk '($1 == "Version:"){print $2}' *.egg-info/PKG-INFO)
       PYTHON_VERSION=$(awk '($1 == "Version:"){print $2}' *.egg-info/PKG-INFO)
+      UNFILTERED_PYTHON_VERSION=$(echo -n $PYTHON_VERSION | sed s/\.dev/~dev/g |sed 's/\([0-9]\)rc/\1~rc/g')
   fi
 
   # See if we actually need to build this package; does it exist already?
@@ -648,7 +648,7 @@ fpm_build_virtualenv () {
     COMMAND_ARR+=('--verbose' '--log' 'info')
   fi
 
-  COMMAND_ARR+=('-v' $(echo "$PYTHON_VERSION" | sed s/rc/~rc/g))
+  COMMAND_ARR+=('-v' $(echo -n "$PYTHON_VERSION" | sed s/.dev/~dev/g | sed s/rc/~rc/g))
   COMMAND_ARR+=('--iteration' "$ARVADOS_BUILDING_ITERATION")
   COMMAND_ARR+=('-n' "$PYTHON_PKG")
   COMMAND_ARR+=('-C' "build")

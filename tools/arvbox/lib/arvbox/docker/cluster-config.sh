@@ -105,7 +105,7 @@ Clusters:
       WebDAVDownload:
         InternalURLs:
           "http://localhost:${services[keep-web]}/": {}
-        ExternalURL: "https://$localip:${services[keep-web-ssl]}/"
+        ExternalURL: "https://$localip:${services[keep-web-dl-ssl]}/"
       Composer:
         ExternalURL: "https://$localip:${services[composer]}"
       Controller:

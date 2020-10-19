@@ -1,0 +1,75 @@
+---
+layout: default
+navsection: api
+navmenu: API Methods
+title: "Keep-web URL patterns"
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+Files served by @keep-web@ can be rendered directly in the browser, or @keep-web@ can instruct the browser to only download the file.
+
+When serving files that will render directly in the browser, it is important to properly configure the keep-web service to migitate cross-site-scripting (XSS) attacks.  A HTML page can be stored in a collection.  If an attacker causes a victim to visit that page through Workbench, the HTML will be rendered by the browser.  If all collections are served at the same domain, the browser will consider collections as coming from the same origin, which will grant access to the same browsing data (cookies and local storage).  This would enable malicious Javascript on that page to access Arvados on behalf of the victim.
+
+This can be mitigated by having separate domains for each collection, or limiting preview to circumstances where the collection is not accessed with the user's regular full-access token.  For cluster administrators that understand the risks, this protection can also be turned off.
+
+The following "same origin" URL patterns are supported for public collections and collections shared anonymously via secret links (i.e., collections which can be served by keep-web without making use of any implicit credentials like cookies). See "Same-origin URLs" below.
+
+<pre>
+http://collections.example.com/c=uuid_or_pdh/path/file.txt
+http://collections.example.com/c=uuid_or_pdh/t=TOKEN/path/file.txt
+</pre>
+
+The following "multiple origin" URL patterns are supported for all collections:
+
+<pre>
+http://uuid_or_pdh--collections.example.com/path/file.txt
+http://uuid_or_pdh--collections.example.com/t=TOKEN/path/file.txt
+</pre>
+
+In the "multiple origin" form, the string @--@ can be replaced with @.@ with identical results (assuming the downstream proxy is configured accordingly). These two are equivalent:
+
+<pre>
+http://uuid_or_pdh--collections.example.com/path/file.txt
+http://uuid_or_pdh.collections.example.com/path/file.txt
+</pre>
+
+The first form (with @--@ instead of @.@) avoids the cost and effort of deploying a wildcard TLS certificate for @*.collections.example.com@ at sites that already have a wildcard certificate for @*.example.com@ . The second form is likely to be easier to configure, and more efficient to run, on a downstream proxy.
+
+In all of the above forms, the @collections.example.com@ part can be anything at all: keep-web itself ignores everything after the first @.@ or @--@. (Of course, in order for clients to connect at all, DNS and any relevant proxies must be configured accordingly.)
+
+In all of the above forms, the @uuid_or_pdh@ part can be either a collection UUID or a portable data hash with the @+@ character optionally replaced by @-@ . (When @uuid_or_pdh@ appears in the domain name, replacing @+@ with @-@ is mandatory, because @+@ is not a valid character in a domain name.)
+
+In all of the above forms, a top level directory called @_@ is skipped. In cases where the @path/file.txt@ part might start with @t=@ or @c=@ or @_/@, links should be constructed with a leading @_/@ to ensure the top level directory is not interpreted as a token or collection ID.
+
+Assuming there is a collection with UUID @zzzzz-4zz18-znfnqtbbv4spc3w@ and portable data hash @1f4b0bc7583c2a7f9102c395f4ffc5e3+45@, the following URLs are interchangeable:
+
+<pre>
+http://zzzzz-4zz18-znfnqtbbv4spc3w.collections.example.com/foo/bar.txt
+http://zzzzz-4zz18-znfnqtbbv4spc3w.collections.example.com/_/foo/bar.txt
+http://zzzzz-4zz18-znfnqtbbv4spc3w--collections.example.com/_/foo/bar.txt
+</pre>
+
+The following URLs are read-only, but will return the same content as above:
+
+<pre>
+http://1f4b0bc7583c2a7f9102c395f4ffc5e3-45--foo.example.com/foo/bar.txt
+http://1f4b0bc7583c2a7f9102c395f4ffc5e3-45--.invalid/foo/bar.txt
+http://collections.example.com/by_id/1f4b0bc7583c2a7f9102c395f4ffc5e3%2B45/foo/bar.txt
+http://collections.example.com/by_id/zzzzz-4zz18-znfnqtbbv4spc3w/foo/bar.txt
+</pre>
+
+If the collection is named "MyCollection" and located in a project called "MyProject" which is in the home project of a user with username is "bob", the following read-only URL is also available when authenticating as bob:
+
+pre. http://collections.example.com/users/bob/MyProject/MyCollection/foo/bar.txt
+
+An additional form is supported specifically to make it more convenient to maintain support for existing Workbench download links:
+
+pre. http://collections.example.com/collections/download/uuid_or_pdh/TOKEN/foo/bar.txt
+
+A regular Workbench "download" link is also accepted, but credentials passed via cookie, header, etc. are ignored. Only public data can be served this way:
+
+pre. http://collections.example.com/collections/uuid_or_pdh/foo/bar.txt

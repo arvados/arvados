@@ -212,6 +212,8 @@ configure_version() {
   chown "$WWW_OWNER:" $RELEASE_PATH/Gemfile.lock
   chown -R "$WWW_OWNER:" $RELEASE_PATH/tmp || true
   chown -R "$WWW_OWNER:" $SHARED_PATH/log
+  # Make sure postgres doesn't try to use a pager.
+  export PAGER=
   case "$RAILSPKG_DATABASE_LOAD_TASK" in
       db:schema:load) chown "$WWW_OWNER:" $RELEASE_PATH/db/schema.rb ;;
       db:structure:load) chown "$WWW_OWNER:" $RELEASE_PATH/db/structure.sql ;;
