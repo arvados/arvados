@@ -261,9 +261,10 @@ export const CollectionPanel = withStyles(styles)(
                 this.props.dispatch<any>(deleteCollectionTag(key, value));
             }
 
-            openCollectionDetails = () => {
+            openCollectionDetails = (e: React.MouseEvent<HTMLElement>) => {
                 const { item } = this.props;
                 if (item) {
+                    e.stopPropagation();
                     this.props.dispatch(openDetailsPanel(item.uuid));
                 }
             }
