@@ -27,7 +27,7 @@ type loginController interface {
 	UserAuthenticate(ctx context.Context, options arvados.UserAuthenticateOptions) (arvados.APIClientAuthorization, error)
 }
 
-func chooseLoginController(cluster *arvados.Cluster, railsProxy *railsProxy) loginController {
+func chooseLoginController(cluster *arvados.Cluster, parent *Conn) loginController {
 	wantGoogle := cluster.Login.Google.Enable
 	wantOpenIDConnect := cluster.Login.OpenIDConnect.Enable
 	wantSSO := cluster.Login.SSO.Enable
@@ -43,7 +43,7 @@ func chooseLoginController(cluster *arvados.Cluster, railsProxy *railsProxy) log
 	case wantGoogle:
 		return &oidcLoginController{
 			Cluster:            cluster,
-			RailsProxy:         railsProxy,
+			Parent:             parent,
 			Issuer:             "https://accounts.google.com",
 			ClientID:           cluster.Login.Google.ClientID,
 			ClientSecret:       cluster.Login.Google.ClientSecret,
@@ -54,7 +54,7 @@ func chooseLoginController(cluster *arvados.Cluster, railsProxy *railsProxy) log
 	case wantOpenIDConnect:
 		return &oidcLoginController{
 			Cluster:            cluster,
-			RailsProxy:         railsProxy,
+			Parent:             parent,
 			Issuer:             cluster.Login.OpenIDConnect.Issuer,
 			ClientID:           cluster.Login.OpenIDConnect.ClientID,
 			ClientSecret:       cluster.Login.OpenIDConnect.ClientSecret,
@@ -63,13 +63,13 @@ func chooseLoginController(cluster *arvados.Cluster, railsProxy *railsProxy) log
 			UsernameClaim:      cluster.Login.OpenIDConnect.UsernameClaim,
 		}
 	case wantSSO:
-		return &ssoLoginController{railsProxy}
+		return &ssoLoginController{parent}
 	case wantPAM:
-		return &pamLoginController{Cluster: cluster, RailsProxy: railsProxy}
+		return &pamLoginController{Cluster: cluster, Parent: parent}
 	case wantLDAP:
-		return &ldapLoginController{Cluster: cluster, RailsProxy: railsProxy}
+		return &ldapLoginController{Cluster: cluster, Parent: parent}
 	case wantTest:
-		return &testLoginController{Cluster: cluster, RailsProxy: railsProxy}
+		return &testLoginController{Cluster: cluster, Parent: parent}
 	case wantLoginCluster:
 		return &federatedLoginController{Cluster: cluster}
 	default:
@@ -91,7 +91,7 @@ func countTrue(vals ...bool) int {
 
 // Login and Logout are passed through to the wrapped railsProxy;
 // UserAuthenticate is rejected.
-type ssoLoginController struct{ *railsProxy }
+type ssoLoginController struct{ *Conn }
 
 func (ctrl *ssoLoginController) UserAuthenticate(ctx context.Context, opts arvados.UserAuthenticateOptions) (arvados.APIClientAuthorization, error) {
 	return arvados.APIClientAuthorization{}, httpserver.ErrorWithStatus(errors.New("username/password authentication is not available"), http.StatusBadRequest)
@@ -135,7 +135,7 @@ func noopLogout(cluster *arvados.Cluster, opts arvados.LogoutOptions) (arvados.L
 	return arvados.LogoutResponse{RedirectLocation: target}, nil
 }
 
-func createAPIClientAuthorization(ctx context.Context, conn *rpc.Conn, rootToken string, authinfo rpc.UserSessionAuthInfo) (resp arvados.APIClientAuthorization, err error) {
+func CreateAPIClientAuthorization(ctx context.Context, conn *Conn, rootToken string, authinfo rpc.UserSessionAuthInfo) (resp arvados.APIClientAuthorization, err error) {
 	ctxRoot := auth.NewContext(ctx, &auth.Credentials{Tokens: []string{rootToken}})
 	newsession, err := conn.UserSessionCreate(ctxRoot, rpc.UserSessionCreateOptions{
 		// Send a fake ReturnTo value instead of the caller's

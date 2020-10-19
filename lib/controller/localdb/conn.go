@@ -24,10 +24,10 @@ func NewConn(cluster *arvados.Cluster) *Conn {
 	railsProxy := railsproxy.NewConn(cluster)
 	var conn Conn
 	conn = Conn{
-		cluster:         cluster,
-		railsProxy:      railsProxy,
-		loginController: chooseLoginController(cluster, railsProxy),
+		cluster:    cluster,
+		railsProxy: railsProxy,
 	}
+	conn.loginController = chooseLoginController(cluster, &conn)
 	return &conn
 }
 

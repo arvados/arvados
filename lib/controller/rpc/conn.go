@@ -437,6 +437,7 @@ func (conn *Conn) APIClientAuthorizationCurrent(ctx context.Context, options arv
 }
 
 type UserSessionAuthInfo struct {
+	UserUUID        string   `json:"user_uuid"`
 	Email           string   `json:"email"`
 	AlternateEmails []string `json:"alternate_emails"`
 	FirstName       string   `json:"first_name"`

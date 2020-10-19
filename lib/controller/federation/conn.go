@@ -26,7 +26,7 @@ import (
 
 type Conn struct {
 	cluster *arvados.Cluster
-	local   backend
+	local   *localdb.Conn
 	remotes map[string]backend
 }
 
@@ -333,7 +333,43 @@ func (conn *Conn) ContainerRequestList(ctx context.Context, options arvados.List
 }
 
 func (conn *Conn) ContainerRequestCreate(ctx context.Context, options arvados.CreateOptions) (arvados.ContainerRequest, error) {
-	return conn.chooseBackend(options.ClusterID).ContainerRequestCreate(ctx, options)
+	be := conn.chooseBackend(options.ClusterID)
+	if be == conn.local {
+		return be.ContainerRequestCreate(ctx, options)
+	}
+	if _, ok := options.Attrs["runtime_token"]; !ok {
+		// If runtime_token is not set, create a new token
+		aca, err := conn.local.APIClientAuthorizationCurrent(ctx, arvados.GetOptions{})
+		if err != nil {
+			// This should probably be StatusUnauthorized
+			// (need to update test in
+			// lib/controller/federation_test.go):
+			return arvados.ContainerRequest{}, httpErrorf(http.StatusForbidden, "%w", err)
+		}
+		user, err := conn.local.UserGetCurrent(ctx, arvados.GetOptions{})
+		if err != nil {
+			return arvados.ContainerRequest{}, err
+		}
+		if len(aca.Scopes) != 0 || aca.Scopes[0] != "all" {
+			return arvados.ContainerRequest{}, httpErrorf(http.StatusForbidden, "token scope is not [all]")
+		}
+		if strings.HasPrefix(aca.UUID, conn.cluster.ClusterID) {
+			// Local user, submitting to a remote cluster.
+			// Create a new (FIXME: needs to be
+			// time-limited!) token.
+			aca, err = localdb.CreateAPIClientAuthorization(ctx, conn.local, conn.cluster.SystemRootToken, rpc.UserSessionAuthInfo{UserUUID: user.UUID})
+			if err != nil {
+				return arvados.ContainerRequest{}, err
+			}
+			options.Attrs["runtime_token"] = aca.TokenV2()
+		} else {
+			// Remote user. Container request will use the
+			// current token, minus the trailing portion
+			// (optional container uuid).
+			options.Attrs["runtime_token"] = aca.TokenV2()
+		}
+	}
+	return be.ContainerRequestCreate(ctx, options)
 }
 
 func (conn *Conn) ContainerRequestUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.ContainerRequest, error) {

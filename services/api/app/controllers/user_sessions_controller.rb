@@ -30,12 +30,20 @@ class UserSessionsController < ApplicationController
       authinfo = request.env['omniauth.auth']['info'].with_indifferent_access
     end
 
-    begin
-      user = User.register(authinfo)
-    rescue => e
-      Rails.logger.warn "User.register error #{e}"
-      Rails.logger.warn "authinfo was #{authinfo.inspect}"
-      return redirect_to login_failure_url
+    if !authinfo['user_uuid'].blank?
+      user = User.find_by_uuid(authinfo['user_uuid'])
+      if !user
+        Rails.logger.warn "Nonexistent user_uuid in authinfo #{authinfo.inspect}"
+        return redirect_to login_failure_url
+      end
+    else
+      begin
+        user = User.register(authinfo)
+      rescue => e
+        Rails.logger.warn "User.register error #{e}"
+        Rails.logger.warn "authinfo was #{authinfo.inspect}"
+        return redirect_to login_failure_url
+      end
     end
 
     # For the benefit of functional and integration tests:
