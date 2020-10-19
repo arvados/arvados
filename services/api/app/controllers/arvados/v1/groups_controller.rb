@@ -38,7 +38,10 @@ class Arvados::V1::GroupsController < ApplicationController
                 type: 'boolean', required: false, default: false, description: 'Include contents from child groups recursively.',
               },
               include: {
-                type: 'string', required: false, description: 'Include objects referred to by listed field in "included" (only owner_uuid)',
+                type: 'string', required: false, description: 'Include objects referred to by listed field in "included" (only owner_uuid).',
+              },
+              include_old_versions: {
+                type: 'boolean', required: false, default: false, description: 'Include past collection versions.',
               }
             })
     params.delete(:select)
@@ -283,8 +286,10 @@ class Arvados::V1::GroupsController < ApplicationController
         end
       end.compact
 
-      @objects = klass.readable_by(*@read_users, {:include_trash => params[:include_trash]}).
-                 order(request_order).where(where_conds)
+      @objects = klass.readable_by(*@read_users, {
+          :include_trash => params[:include_trash],
+          :include_old_versions => params[:include_old_versions]
+        }).order(request_order).where(where_conds)
 
       if params['exclude_home_project']
         @objects = exclude_home @objects, klass
