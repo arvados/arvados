@@ -84,6 +84,7 @@ export const CollectionPanelFilesComponent = ({ onItemMenuOpen, onSearchChange, 
                     <span className={classes.cardHeaderContentTitle}>Files</span>
                     <SearchInput
                         value={searchValue}
+                        label='Search files'
                         onSearch={setSearchValue} />
                 </div>
             }

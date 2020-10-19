@@ -145,6 +145,7 @@ export const CollectionsContentAddressPanel = withStyles(styles)(
                     </Button>
                     <DataExplorer
                         id={COLLECTIONS_CONTENT_ADDRESS_PANEL_ID}
+                        hideSearchInput
                         onRowClick={this.props.onItemClick}
                         onRowDoubleClick={this.props.onItemDoubleClick}
                         onContextMenu={this.props.onContextMenu}
