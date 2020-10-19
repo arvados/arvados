@@ -14,7 +14,26 @@ export class CollectionDetails extends DetailsData<CollectionResource> {
         return <CollectionIcon className={className} />;
     }
 
-    getDetails() {
+    getTabLabels() {
+        return ['Details', 'Versions'];
+    }
+
+    getDetails(tabNumber: number) {
+        switch (tabNumber) {
+            case 0:
+                return this.getCollectionInfo();
+            case 1:
+                return this.getVersionBrowser();
+            default:
+                return <div />;
+        }
+    }
+
+    private getCollectionInfo() {
         return <CollectionDetailsAttributes item={this.item} />;
+    }
+
+    private getVersionBrowser() {
+        return <div />;
     }
 }

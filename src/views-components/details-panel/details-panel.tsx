@@ -162,14 +162,15 @@ export const DetailsPanel = withStyles(styles)(
                     </Grid>
                     <Grid item>
                         <Tabs value={tabsValue} onChange={this.handleChange}>
-                            <Tab disableRipple label="Details" />
-                            <Tab disableRipple label="Activity" disabled />
+                            { item.getTabLabels().map((tabLabel, idx) =>
+                                <Tab key={`tab-label-${idx}`} disableRipple label={tabLabel} />)
+                            }
                         </Tabs>
                     </Grid>
                     <Grid item xs className={this.props.classes.tabContainer} >
-                        {tabsValue === 0
-                            ? item.getDetails()
-                            : null}
+                    {tabsValue !== undefined
+                        ? item.getDetails(tabsValue)
+                        : null}
                     </Grid>
                 </Grid >;
             }
