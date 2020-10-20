@@ -19,10 +19,7 @@ export const openInNewTabAction = (resource: any) => (dispatch: Dispatch) => {
 
     if (kind === ResourceKind.COLLECTION) {
         dispatch(openInNewTabActions.OPEN_COLLECTION_IN_NEW_TAB(uuid));
-    }
-    if (kind === ResourceKind.PROJECT) {
+    } else if (kind === ResourceKind.PROJECT) {
         dispatch(openInNewTabActions.OPEN_PROJECT_IN_NEW_TAB(uuid));
     }
-
-    console.log(uuid);
 };
