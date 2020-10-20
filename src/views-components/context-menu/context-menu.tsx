@@ -77,7 +77,6 @@ export enum ContextMenuKind {
     COLLECTION_FILES_NOT_SELECTED = "CollectionFilesNotSelected",
     COLLECTION = 'Collection',
     COLLECTION_ADMIN = 'CollectionAdmin',
-    COLLECTION_RESOURCE = 'CollectionResource',
     READONLY_COLLECTION = 'ReadOnlyCollection',
     TRASHED_COLLECTION = 'TrashedCollection',
     PROCESS = "Process",
