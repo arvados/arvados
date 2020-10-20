@@ -63,6 +63,7 @@ import { processResourceAdminActionSet } from '~/views-components/context-menu/a
 import { projectAdminActionSet } from '~/views-components/context-menu/action-sets/project-admin-action-set';
 import { snackbarActions, SnackbarKind } from "~/store/snackbar/snackbar-actions";
 import { openNotFoundDialog } from './store/not-found-panel/not-found-panel-action';
+import { storeRedirects } from './common/redirect-to';
 
 console.log(`Starting arvados [${getBuildInfo()}]`);
 
@@ -97,6 +98,8 @@ addMenuActionSet(ContextMenuKind.COLLECTION_ADMIN, collectionAdminActionSet);
 addMenuActionSet(ContextMenuKind.PROCESS_ADMIN, processResourceAdminActionSet);
 addMenuActionSet(ContextMenuKind.PROJECT_ADMIN, projectAdminActionSet);
 
+storeRedirects();
+
 fetchConfig()
     .then(({ config, apiHost }) => {
         const history = createBrowserHistory();
@@ -124,7 +127,7 @@ fetchConfig()
                 }
             }
         });
-        const store = configureStore(history, services);
+        const store = configureStore(history, services, config);
 
         store.subscribe(initListener(history, store, services, config));
         store.dispatch(initAuth(config));

@@ -65,8 +65,8 @@ export class CollectionService extends TrashableResourceService<CollectionResour
             ? this.webdavClient.defaults.baseURL.slice(0, -1)
             : this.webdavClient.defaults.baseURL;
         const apiToken = this.authService.getApiToken();
-        const splittedApiToken = apiToken ? apiToken.split('/') : [];
-        const userApiToken = `/t=${splittedApiToken[2]}/`;
+        const encodedApiToken = apiToken ? encodeURI(apiToken) : '';
+        const userApiToken = `/t=${encodedApiToken}/`;
         const splittedPrevFileUrl = file.url.split('/');
         const url = `${baseUrl}/${splittedPrevFileUrl[1]}${userApiToken}${splittedPrevFileUrl.slice(2).join('/')}`;
         return {
