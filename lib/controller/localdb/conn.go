@@ -32,13 +32,14 @@ func NewConn(cluster *arvados.Cluster) *Conn {
 }
 
 func (conn *Conn) Logout(ctx context.Context, opts arvados.LogoutOptions) (arvados.LogoutResponse, error) {
-	return conn.loginController.Logout(ctx, opts)
+	return conn.railsProxy.Logout(ctx, opts) // REVIEW: will this handle return_to?
 }
 
 func (conn *Conn) Login(ctx context.Context, opts arvados.LoginOptions) (arvados.LoginResponse, error) {
-	return conn.loginController.Login(ctx, opts)
+	return conn.railsProxy.Login(ctx, opts)
 }
 
 func (conn *Conn) UserAuthenticate(ctx context.Context, opts arvados.UserAuthenticateOptions) (arvados.APIClientAuthorization, error) {
-	return conn.loginController.UserAuthenticate(ctx, opts)
+	// REVIEW:Should this be conn.railsProxy?
+	return conn.railsProxy.UserAuthenticate(ctx, opts)
 }

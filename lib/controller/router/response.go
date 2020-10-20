@@ -107,11 +107,6 @@ func (rtr *router) sendResponse(w http.ResponseWriter, req *http.Request, resp i
 	}
 
 	for k, v := range tmp {
-		if k == "output_uuid" {
-			if tv == "" {
-				tmp[k] = nil
-			}
-		}
 		if strings.HasSuffix(k, "_at") {
 			// Format non-nil timestamps as
 			// rfc3339NanoFixed (by default they will have
@@ -124,13 +119,27 @@ func (rtr *router) sendResponse(w http.ResponseWriter, req *http.Request, resp i
 				}
 				tmp[k] = tv.Format(rfc3339NanoFixed)
 			case time.Time:
-				tmp[k] = tv.Format(rfc3339NanoFixed)
+				if tv.IsZero() {
+					tmp[k] = nil
+				} else {
+					tmp[k] = tv.Format(rfc3339NanoFixed)
+				}
 			case string:
 				t, err := time.Parse(time.RFC3339Nano, tv)
 				if err != nil {
 					break
 				}
 				tmp[k] = t.Format(rfc3339NanoFixed)
+			}
+		}
+		switch k {
+		case "output_uuid", "output_name", "log_uuid", "modified_by_client_uuid", "description", "requesting_container_uuid", "expires_at":
+			if v == "" {
+				tmp[k] = nil
+			}
+		case "container_count_max":
+			if v == float64(0) {
+				tmp[k] = nil
 			}
 		}
 	}
