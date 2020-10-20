@@ -27,6 +27,7 @@ const getClusterConfig = async (origin: string, apiClient: AxiosInstance): Promi
         configFromDD = {
             baseUrl: normalizeURLPath(dd.baseUrl),
             keepWebServiceUrl: dd.keepWebServiceUrl,
+            keepWebInlineServiceUrl: dd.keepWebInlineServiceUrl,
             remoteHosts: dd.remoteHosts,
             rootUrl: dd.rootUrl,
             uuidPrefix: dd.uuidPrefix,

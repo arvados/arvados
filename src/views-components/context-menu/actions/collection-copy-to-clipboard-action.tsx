@@ -4,26 +4,27 @@
 
 import { connect } from "react-redux";
 import { RootState } from "../../../store/store";
-import { FileViewerAction } from '~/views-components/context-menu/actions/file-viewer-action';
 import { getNodeValue } from "~/models/tree";
 import { ContextMenuKind } from '~/views-components/context-menu/context-menu';
+import { CopyToClipboardAction } from "./copy-to-clipboard-action";
 
 const mapStateToProps = (state: RootState) => {
     const { resource } = state.contextMenu;
     const currentCollectionUuid = state.collectionPanel.item ? state.collectionPanel.item.uuid : '';
+    const { keepWebServiceUrl } = state.auth.config;
     if (resource && resource.menuKind === ContextMenuKind.COLLECTION_FILES_ITEM) {
         const file = getNodeValue(resource.uuid)(state.collectionPanelFiles);
         if (file) {
             return {
-                href: file.url.replace(state.auth.config.keepWebServiceUrl, state.auth.config.keepWebInlineServiceUrl),
+                href: file.url.replace(keepWebServiceUrl, ''),
                 kind: 'file',
                 currentCollectionUuid
             };
         }
     } else {
-        return;
+        return ;
     }
-    return;
+    return ;
 };
 
-export const CollectionFileViewerAction = connect(mapStateToProps)(FileViewerAction);
+export const CollectionCopyToClipboardAction = connect(mapStateToProps)(CopyToClipboardAction);

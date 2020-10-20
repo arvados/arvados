@@ -7,7 +7,7 @@ import { RemoveIcon, RenameIcon } from "~/components/icon/icon";
 import { DownloadCollectionFileAction } from "../actions/download-collection-file-action";
 import { openFileRemoveDialog, openRenameFileDialog } from '~/store/collection-panel/collection-panel-files/collection-panel-files-actions';
 import { CollectionFileViewerAction } from '~/views-components/context-menu/actions/collection-file-viewer-action';
-
+import { CollectionCopyToClipboardAction } from "../actions/collection-copy-to-clipboard-action";
 
 export const readOnlyCollectionFilesItemActionSet: ContextMenuActionSet = [[
     {
@@ -16,6 +16,10 @@ export const readOnlyCollectionFilesItemActionSet: ContextMenuActionSet = [[
     },
     {
         component: CollectionFileViewerAction,
+        execute: () => { return; },
+    },
+    {
+        component: CollectionCopyToClipboardAction,
         execute: () => { return; },
     }
 ]];

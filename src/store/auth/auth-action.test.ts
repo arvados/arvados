@@ -23,6 +23,7 @@ describe('auth-actions', () => {
 
     let store: RootStore;
     let services: ServiceRepository;
+    const config: any = {};
     const actions: ApiActions = {
         progressFn: (id: string, working: boolean) => { },
         errorFn: (id: string, message: string) => { }
@@ -32,7 +33,7 @@ describe('auth-actions', () => {
     beforeEach(() => {
         axiosMock.reset();
         services = createServices(mockConfig({}), actions, axiosInst);
-        store = configureStore(createBrowserHistory(), services);
+        store = configureStore(createBrowserHistory(), services, config);
         localStorage.clear();
         importMocks = [];
     });
@@ -62,6 +63,7 @@ describe('auth-actions', () => {
             .reply(200, {
                 baseUrl: "https://xc59z.arvadosapi.com/arvados/v1",
                 keepWebServiceUrl: "",
+                keepWebInlineServiceUrl: "",
                 remoteHosts: {},
                 rootUrl: "https://xc59z.arvadosapi.com",
                 uuidPrefix: "xc59z",
