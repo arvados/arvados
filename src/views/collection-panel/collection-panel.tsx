@@ -21,7 +21,7 @@ import { deleteCollectionTag, navigateToProcess, collectionPanelActions } from '
 import { getResource } from '~/store/resources/resources';
 import { openContextMenu } from '~/store/context-menu/context-menu-actions';
 import { ContextMenuKind } from '~/views-components/context-menu/context-menu';
-import { formatFileSize } from "~/common/formatters";
+import { formatDate, formatFileSize } from "~/common/formatters";
 import { openDetailsPanel } from '~/store/details-panel/details-panel-action';
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
 import { getPropertyChip } from '~/views-components/resource-properties-form/property-chip';
@@ -70,8 +70,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         textAlign: 'center'
     },
     warningLabel: {
-        fontStyle: 'italic',
-        fontWeight: 'bold'
+        fontStyle: 'italic'
     },
     collectionName: {
         flexDirection: 'column',
@@ -132,45 +131,56 @@ export const CollectionPanel = withStyles(styles)(
                     ? <div className={classes.root}>
                         <ExpansionPanel data-cy='collection-info-panel' defaultExpanded>
                             <ExpansionPanelSummary expandIcon={<ExpandIcon />}>
-                                <span>
-                                    <IconButton onClick={this.openCollectionDetails}>
-                                        { isOldVersion
-                                        ? <CollectionOldVersionIcon className={classes.iconHeader} />
-                                        : <CollectionIcon className={classes.iconHeader} /> }
-                                    </IconButton>
-                                    <IllegalNamingWarning name={item.name}/>
-                                    <span>
-                                        {item.name}
-                                        {isWritable ||
-                                        <Tooltip title="Read-only">
-                                            <ReadOnlyIcon data-cy="read-only-icon" className={classes.readOnlyIcon} />
+                                <Grid container justify="space-between">
+                                    <Grid item xs={11}><span>
+                                        <IconButton onClick={this.openCollectionDetails}>
+                                            { isOldVersion
+                                            ? <CollectionOldVersionIcon className={classes.iconHeader} />
+                                            : <CollectionIcon className={classes.iconHeader} /> }
+                                        </IconButton>
+                                        <IllegalNamingWarning name={item.name}/>
+                                        <span>
+                                            {item.name}
+                                            {isWritable ||
+                                            <Tooltip title="Read-only">
+                                                <ReadOnlyIcon data-cy="read-only-icon" className={classes.readOnlyIcon} />
+                                            </Tooltip>
+                                            }
+                                        </span>
+                                    </span></Grid>
+                                    <Grid item xs={1} style={{textAlign: "right"}}>
+                                        <Tooltip title="Actions" disableFocusListener>
+                                            <IconButton
+                                                data-cy='collection-panel-options-btn'
+                                                aria-label="Actions"
+                                                onClick={this.handleContextMenu}>
+                                                <MoreOptionsIcon />
+                                            </IconButton>
                                         </Tooltip>
-                                        }
-                                        {isOldVersion &&
-                                        <Typography className={classes.warningLabel} variant="caption">
-                                            This is an old version. Copy it as a new one if you need to make changes. Go to the current version if you need to share it.
-                                        </Typography>
-                                        }
-                                    </span>
-                                </span>
+                                    </Grid>
+                                </Grid>
                             </ExpansionPanelSummary>
                             <ExpansionPanelDetails>
                                 <Grid container justify="space-between">
-                                    <Grid item xs={11}>
+                                    <Grid item xs={12}>
                                         <Typography variant="caption">
                                             {item.description}
                                         </Typography>
                                         <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                                            label='Collection UUID'
+                                            label={isOldVersion ? "This version's UUID" : "Collection UUID"}
                                             linkToUuid={item.uuid} />
                                         <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                                            label='Portable data hash'
+                                            label={isOldVersion ? "This version's PDH" : "Portable data hash"}
                                             linkToUuid={item.portableDataHash} />
                                         {isOldVersion &&
                                         <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                                            label='Current Version UUID'
+                                            label='Most recent version'
                                             linkToUuid={item.currentVersionUuid} />
                                         }
+                                        <DetailsAttribute label='Last modified' value={formatDate(item.modifiedAt)} />
+                                        <DetailsAttribute label='Created at' value={formatDate(item.createdAt)} />
+                                        <DetailsAttribute classLabel={classes.label} classValue={classes.value}
+                                            label='Version number' value={item.version} />
                                         <DetailsAttribute classLabel={classes.label} classValue={classes.value}
                                             label='Number of files' value={item.fileCount} />
                                         <DetailsAttribute classLabel={classes.label} classValue={classes.value}
@@ -182,16 +192,11 @@ export const CollectionPanel = withStyles(styles)(
                                                 <DetailsAttribute classLabel={classes.link} label='Link to process' />
                                             </span>
                                         }
-                                    </Grid>
-                                    <Grid item xs={1} style={{textAlign: "right"}}>
-                                        <Tooltip title="More options" disableFocusListener>
-                                            <IconButton
-                                                data-cy='collection-panel-options-btn'
-                                                aria-label="More options"
-                                                onClick={this.handleContextMenu}>
-                                                <MoreOptionsIcon />
-                                            </IconButton>
-                                        </Tooltip>
+                                        {isOldVersion &&
+                                        <Typography className={classes.warningLabel} variant="caption">
+                                            This is an old version. Copy it as a new one if you need to make changes. Go to the current version if you need to share it.
+                                        </Typography>
+                                        }
                                     </Grid>
                                 </Grid>
                             </ExpansionPanelDetails>
@@ -260,6 +265,8 @@ export const CollectionPanel = withStyles(styles)(
                             : ContextMenuKind.COLLECTION
                         : ContextMenuKind.READONLY_COLLECTION
                 };
+                // Avoid expanding/collapsing the panel
+                event.stopPropagation();
                 this.props.dispatch<any>(openContextMenu(event, resource));
             }
 

@@ -21,8 +21,7 @@ type CssRules = 'attribute' | 'label' | 'value' | 'lowercaseValue' | 'link' | 'c
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     attribute: {
         display: 'flex',
-        alignItems: 'flex-start',
-        marginBottom: theme.spacing.unit
+        alignItems: 'flex-start'
     },
     label: {
         boxSizing: 'border-box',
