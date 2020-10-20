@@ -166,27 +166,7 @@ export const CollectionPanel = withStyles(styles)(
                                         <Typography variant="caption">
                                             {item.description}
                                         </Typography>
-                                        <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                                            label={isOldVersion ? "This version's UUID" : "Collection UUID"}
-                                            linkToUuid={item.uuid} />
-                                        <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                                            label={isOldVersion ? "This version's PDH" : "Portable data hash"}
-                                            linkToUuid={item.portableDataHash} />
-                                        {isOldVersion &&
-                                        <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                                            label='Most recent version'
-                                            linkToUuid={item.currentVersionUuid} />
-                                        }
-                                        <DetailsAttribute label='Last modified' value={formatDate(item.modifiedAt)} />
-                                        <DetailsAttribute label='Created at' value={formatDate(item.createdAt)} />
-                                        <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                                            label='Version number' value={item.version} />
-                                        <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                                            label='Number of files' value={item.fileCount} />
-                                        <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                                            label='Content size' value={formatFileSize(item.fileSizeTotal)} />
-                                        <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                                            label='Owner' linkToUuid={item.ownerUuid} />
+                                        <CollectionDetailsAttributes item={item} classes={classes} />
                                         {(item.properties.container_request || item.properties.containerRequest) &&
                                             <span onClick={() => dispatch<any>(navigateToProcess(item.properties.container_request || item.properties.containerRequest))}>
                                                 <DetailsAttribute classLabel={classes.link} label='Link to process' />
@@ -295,3 +275,32 @@ export const CollectionPanel = withStyles(styles)(
         }
     )
 );
+
+export const CollectionDetailsAttributes = (props: {item: CollectionResource, classes?: Record<CssRules, string>}) => {
+    const item = props.item;
+    const classes = props.classes || {label: '', value: ''};
+    const isOldVersion = item && item.currentVersionUuid !== item.uuid;
+    return <span>
+        <DetailsAttribute classLabel={classes.label} classValue={classes.value}
+            label={isOldVersion ? "This version's UUID" : "Collection UUID"}
+            linkToUuid={item.uuid} />
+        <DetailsAttribute classLabel={classes.label} classValue={classes.value}
+            label={isOldVersion ? "This version's PDH" : "Portable data hash"}
+            linkToUuid={item.portableDataHash} />
+        {isOldVersion &&
+        <DetailsAttribute classLabel={classes.label} classValue={classes.value}
+            label='Most recent version'
+            linkToUuid={item.currentVersionUuid} />
+        }
+        <DetailsAttribute label='Last modified' value={formatDate(item.modifiedAt)} />
+        <DetailsAttribute label='Created at' value={formatDate(item.createdAt)} />
+        <DetailsAttribute classLabel={classes.label} classValue={classes.value}
+            label='Version number' value={item.version} />
+        <DetailsAttribute classLabel={classes.label} classValue={classes.value}
+            label='Number of files' value={item.fileCount} />
+        <DetailsAttribute classLabel={classes.label} classValue={classes.value}
+            label='Content size' value={formatFileSize(item.fileSizeTotal)} />
+        <DetailsAttribute classLabel={classes.label} classValue={classes.value}
+            label='Owner' linkToUuid={item.ownerUuid} />
+    </span>;
+};
