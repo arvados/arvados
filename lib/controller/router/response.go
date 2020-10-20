@@ -106,27 +106,32 @@ func (rtr *router) sendResponse(w http.ResponseWriter, req *http.Request, resp i
 		tmp = applySelectParam(opts.Select, tmp)
 	}
 
-	// Format non-nil timestamps as rfc3339NanoFixed (by default
-	// they will have been encoded to time.RFC3339Nano, which
-	// omits trailing zeroes).
 	for k, v := range tmp {
-		if !strings.HasSuffix(k, "_at") {
-			continue
+		if k == "output_uuid" {
+			if tv == "" {
+				tmp[k] = nil
+			}
 		}
-		switch tv := v.(type) {
-		case *time.Time:
-			if tv == nil {
-				break
+		if strings.HasSuffix(k, "_at") {
+			// Format non-nil timestamps as
+			// rfc3339NanoFixed (by default they will have
+			// been encoded to time.RFC3339Nano, which
+			// omits trailing zeroes).
+			switch tv := v.(type) {
+			case *time.Time:
+				if tv == nil {
+					break
+				}
+				tmp[k] = tv.Format(rfc3339NanoFixed)
+			case time.Time:
+				tmp[k] = tv.Format(rfc3339NanoFixed)
+			case string:
+				t, err := time.Parse(time.RFC3339Nano, tv)
+				if err != nil {
+					break
+				}
+				tmp[k] = t.Format(rfc3339NanoFixed)
 			}
-			tmp[k] = tv.Format(rfc3339NanoFixed)
-		case time.Time:
-			tmp[k] = tv.Format(rfc3339NanoFixed)
-		case string:
-			t, err := time.Parse(time.RFC3339Nano, tv)
-			if err != nil {
-				break
-			}
-			tmp[k] = t.Format(rfc3339NanoFixed)
 		}
 	}
 	w.Header().Set("Content-Type", "application/json")
