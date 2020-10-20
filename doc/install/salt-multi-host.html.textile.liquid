@@ -40,11 +40,11 @@ The formulas we use are:
 * "docker":https://github.com/saltstack-formulas/docker-formula.git
 * "locale":https://github.com/saltstack-formulas/locale-formula.git
 
-There are example Salt pillar files for each of those formulas in the "test/salt/pillar/examples":https://github.com/saltstack-formulas/arvados-formula/tree/master/test/salt/pillar/examples directory. As they are, they allow you to get all the main Arvados components up and running.
+There are example Salt pillar files for each of those formulas in the "arvados-formula's test/salt/pillar/examples":https://github.com/saltstack-formulas/arvados-formula/tree/master/test/salt/pillar/examples directory. As they are, they allow you to get all the main Arvados components up and running.
 
 h2(#saltstack). Install Arvados using Saltstack
 
-This is a source-based installation method. The Salt scripts are available from the "tools/salt-install":https://github.com/arvados/arvados/tree/master/tools/salt-install directory in the Arvados git repository.
+This is a package-based installation method. The Salt scripts are available from the "tools/salt-install":https://github.com/arvados/arvados/tree/master/tools/salt-install directory in the Arvados git repository.
 
 The Arvados formula we maintain is located in the Saltstack's community repository of formulas:
 
@@ -66,19 +66,28 @@ For those familiar with Saltstack, the process to get it deployed is similar to 
 
 h2(#final_steps). DNS configuration
 
-After the setup is done, you need to set up your DNS to be able to access the cluster.
+After the setup is done, you need to set up your DNS to be able to access the cluster's nodes.
 
-The simplest way to do this is to edit your @/etc/hosts@ file (as root):
+The simplest way to do this is to add entries in the @/etc/hosts@ file of every host:
 
 <notextile>
 <pre><code>export CLUSTER="arva2"
 export DOMAIN="arv.local"
-export HOST_IP="127.0.0.2"    # This is valid either if installing in your computer directly
-                              # or in a Vagrant VM. If you're installing it on a remote host
-                              # just change the IP to match that of the host.
-echo "${HOST_IP} api keep keep0 collections download ws workbench workbench2 ${CLUSTER}.${DOMAIN} api.${CLUSTER}.${DOMAIN} keep.${CLUSTER}.${DOMAIN} keep0.${CLUSTER}.${DOMAIN} collections.${CLUSTER}.${DOMAIN} download.${CLUSTER}.${DOMAIN} ws.${CLUSTER}.${DOMAIN} workbench.${CLUSTER}.${DOMAIN} workbench2.${CLUSTER}.${DOMAIN}" >> /etc/hosts
+
+echo A.B.C.a  api ${CLUSTER}.${DOMAIN} api.${CLUSTER}.${DOMAIN} >> /etc/hosts
+echo A.B.C.b  keep keep.${CLUSTER}.${DOMAIN} >> /etc/hosts
+echo A.B.C.c  keep0 keep0.${CLUSTER}.${DOMAIN} >> /etc/hosts
+echo A.B.C.d  collections collections.${CLUSTER}.${DOMAIN} >> /etc/hosts
+echo A.B.C.e  download download.${CLUSTER}.${DOMAIN} >> /etc/hosts
+echo A.B.C.f  ws ws.${CLUSTER}.${DOMAIN} >> /etc/hosts
+echo A.B.C.g  workbench workbench.${CLUSTER}.${DOMAIN} >> /etc/hosts
+echo A.B.C.h  workbench2 workbench2.${CLUSTER}.${DOMAIN}" >> /etc/hosts
 </code></pre>
 </notextile>
+
+Replacing in each case de @A.B.C.x@ IP with the corresponding IP of the node.
+
+If your infrastructure uses another DNS service setup, add the corresponding entries accordingly.
 
 h2(#initial_user). Initial user and login
 
