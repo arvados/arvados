@@ -36,8 +36,8 @@ func (s *PamSuite) SetUpSuite(c *check.C) {
 	s.cluster.Login.PAM.DefaultEmailDomain = "example.com"
 	s.railsSpy = arvadostest.NewProxy(c, s.cluster.Services.RailsAPI)
 	s.ctrl = &pamLoginController{
-		Cluster:    s.cluster,
-		RailsProxy: rpc.NewConn(s.cluster.ClusterID, s.railsSpy.URL, true, rpc.PassthroughTokenProvider),
+		Cluster: s.cluster,
+		Parent:  &Conn{railsProxy: rpc.NewConn(s.cluster.ClusterID, s.railsSpy.URL, true, rpc.PassthroughTokenProvider)},
 	}
 }
 

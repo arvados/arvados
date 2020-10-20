@@ -45,7 +45,7 @@ func (ctrl *testLoginController) UserAuthenticate(ctx context.Context, opts arva
 				"username": username,
 				"email":    user.Email,
 			}).Debug("test authentication succeeded")
-			return CreateAPIClientAuthorization(ctx, ctrl.Parent, ctrl.Cluster.SystemRootToken, rpc.UserSessionAuthInfo{
+			return ctrl.Parent.CreateAPIClientAuthorization(ctx, ctrl.Cluster.SystemRootToken, rpc.UserSessionAuthInfo{
 				Username: username,
 				Email:    user.Email,
 			})

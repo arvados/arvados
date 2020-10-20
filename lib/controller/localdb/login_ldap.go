@@ -143,7 +143,7 @@ func (ctrl *ldapLoginController) UserAuthenticate(ctx context.Context, opts arva
 		return arvados.APIClientAuthorization{}, errors.New("authentication succeeded but ldap returned no email address")
 	}
 
-	return CreateAPIClientAuthorization(ctx, ctrl.Parent, ctrl.Cluster.SystemRootToken, rpc.UserSessionAuthInfo{
+	return ctrl.Parent.CreateAPIClientAuthorization(ctx, ctrl.Cluster.SystemRootToken, rpc.UserSessionAuthInfo{
 		Email:     email,
 		FirstName: attrs["givenname"],
 		LastName:  attrs["sn"],

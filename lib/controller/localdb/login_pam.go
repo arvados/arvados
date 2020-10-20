@@ -87,7 +87,7 @@ func (ctrl *pamLoginController) UserAuthenticate(ctx context.Context, opts arvad
 		"user":  user,
 		"email": email,
 	}).Debug("pam authentication succeeded")
-	return CreateAPIClientAuthorization(ctx, ctrl.Parent, ctrl.Cluster.SystemRootToken, rpc.UserSessionAuthInfo{
+	return ctrl.Parent.CreateAPIClientAuthorization(ctx, ctrl.Cluster.SystemRootToken, rpc.UserSessionAuthInfo{
 		Username: user,
 		Email:    email,
 	})

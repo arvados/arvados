@@ -41,8 +41,8 @@ func (s *TestUserSuite) SetUpSuite(c *check.C) {
 	}
 	s.railsSpy = arvadostest.NewProxy(c, s.cluster.Services.RailsAPI)
 	s.ctrl = &testLoginController{
-		Cluster:    s.cluster,
-		RailsProxy: rpc.NewConn(s.cluster.ClusterID, s.railsSpy.URL, true, rpc.PassthroughTokenProvider),
+		Cluster: s.cluster,
+		Parent:  &Conn{railsProxy: rpc.NewConn(s.cluster.ClusterID, s.railsSpy.URL, true, rpc.PassthroughTokenProvider)},
 	}
 	s.db = arvadostest.DB(c, s.cluster)
 }

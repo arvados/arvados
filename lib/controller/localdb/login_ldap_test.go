@@ -90,8 +90,8 @@ func (s *LDAPSuite) SetUpSuite(c *check.C) {
 	s.cluster.Login.LDAP.SearchBase = "dc=example,dc=com"
 	c.Assert(err, check.IsNil)
 	s.ctrl = &ldapLoginController{
-		Cluster:    s.cluster,
-		RailsProxy: railsproxy.NewConn(s.cluster),
+		Cluster: s.cluster,
+		Parent:  &Conn{railsProxy: railsproxy.NewConn(s.cluster)},
 	}
 	s.db = arvadostest.DB(c, s.cluster)
 }

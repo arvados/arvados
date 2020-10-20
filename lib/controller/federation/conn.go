@@ -26,7 +26,7 @@ import (
 
 type Conn struct {
 	cluster *arvados.Cluster
-	local   *localdb.Conn
+	local   backend
 	remotes map[string]backend
 }
 
@@ -357,7 +357,11 @@ func (conn *Conn) ContainerRequestCreate(ctx context.Context, options arvados.Cr
 			// Local user, submitting to a remote cluster.
 			// Create a new (FIXME: needs to be
 			// time-limited!) token.
-			aca, err = localdb.CreateAPIClientAuthorization(ctx, conn.local, conn.cluster.SystemRootToken, rpc.UserSessionAuthInfo{UserUUID: user.UUID})
+			local, ok := conn.local.(*localdb.Conn)
+			if !ok {
+				return arvados.ContainerRequest{}, httpErrorf(http.StatusInternalServerError, "bug: local backend is a %T, not a *localdb.Conn", conn.local)
+			}
+			aca, err = local.CreateAPIClientAuthorization(ctx, conn.cluster.SystemRootToken, rpc.UserSessionAuthInfo{UserUUID: user.UUID})
 			if err != nil {
 				return arvados.ContainerRequest{}, err
 			}
