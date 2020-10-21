@@ -43,7 +43,7 @@ class ArvadosApiToken
     auth = nil
     [params["api_token"],
      params["oauth_token"],
-     env["HTTP_AUTHORIZATION"].andand.match(/(OAuth2|Bearer) ([-\/a-zA-Z0-9]+)/).andand[2],
+     env["HTTP_AUTHORIZATION"].andand.match(/(OAuth2|Bearer) ([!-~]+)/).andand[2],
      *reader_tokens,
     ].each do |supplied|
       next if !supplied

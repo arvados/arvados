@@ -79,6 +79,14 @@ func saltedTokenProvider(local backend, remoteID string) rpc.TokenProvider {
 				} else if err != nil {
 					return nil, err
 				}
+				if strings.HasPrefix(aca.UUID, remoteID) {
+					// We have it cached here, but
+					// the token belongs to the
+					// remote target itself, so
+					// pass it through unmodified.
+					tokens = append(tokens, token)
+					continue
+				}
 				salted, err := auth.SaltToken(aca.TokenV2(), remoteID)
 				if err != nil {
 					return nil, err
