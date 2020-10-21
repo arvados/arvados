@@ -181,8 +181,12 @@ else
         ## even though credentials are already in .dockercfg
         docker login -u arvados
 
-        docker_push arvados/arvbox-dev
-        docker_push arvados/arvbox-demo
+        if [[ "$images" =~ dev ]]; then
+          docker_push arvados/arvbox-dev
+        fi
+        if [[ "$images" =~ demo ]]; then
+          docker_push arvados/arvbox-demo
+        fi
         title "upload arvados images complete (`timer`)"
     else
         title "upload arvados images SKIPPED because no --upload option set"
