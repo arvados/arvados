@@ -1,0 +1,73 @@
+---
+layout: default
+navsection: installguide
+title: Arvados in a VM with Vagrant
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+# "Vagrant":#vagrant
+# "DNS configuration":#final_steps
+# "Initial user and login":#initial_user
+
+h2(#vagrant). Vagrant
+
+This is a package-based installation method. The Salt scripts are available from the "tools/salt-install":https://github.com/arvados/arvados/tree/master/tools/salt-install directory in the Arvados git repository.
+
+A @Vagrantfile@ is provided to install Arvados in a virtual machine on your computer using "Vagrant":https://www.vagrantup.com/.
+
+To get it running, install Vagrant in your computer, edit the variables at the top of the @provision.sh@ script as needed, and run
+
+<notextile>
+<pre><code>vagrant up
+</code></pre>
+</notextile>
+
+If you want to reconfigure the running box, you can just:
+
+1. edit the pillars to suit your needs
+2. run
+
+<notextile>
+<pre><code>vagrant reload --provision
+</code></pre>
+</notextile>
+
+h2(#final_steps). DNS configuration
+
+After the setup is done, you need to set up your DNS to be able to access the cluster.
+
+The simplest way to do this is to edit your @/etc/hosts@ file (as root):
+
+<notextile>
+<pre><code>export CLUSTER="arva2"
+export DOMAIN="arv.local"
+export HOST_IP="127.0.0.2"    # This is valid either if installing in your computer directly
+                              # or in a Vagrant VM. If you're installing it on a remote host
+                              # just change the IP to match that of the host.
+echo "${HOST_IP} api keep keep0 collections download ws workbench workbench2 ${CLUSTER}.${DOMAIN} api.${CLUSTER}.${DOMAIN} keep.${CLUSTER}.${DOMAIN} keep0.${CLUSTER}.${DOMAIN} collections.${CLUSTER}.${DOMAIN} download.${CLUSTER}.${DOMAIN} ws.${CLUSTER}.${DOMAIN} workbench.${CLUSTER}.${DOMAIN} workbench2.${CLUSTER}.${DOMAIN}" >> /etc/hosts
+</code></pre>
+</notextile>
+
+h2(#initial_user). Initial user and login
+
+At this point you should be able to log into the Arvados cluster.
+
+If you didn't change the defaults, the initial URL will be:
+
+* https://workbench.arva2.arv.local:8443
+
+or, in general, the url format will be:
+
+* https://workbench.@<cluster>.<domain>:8443@
+
+By default, the provision script creates an initial user for testing purposes. This user is configured as administrator of the newly created cluster.
+
+Assuming you didn't change the defaults, the initial credentials are:
+
+* User: 'admin'
+* Password: 'password'
+* Email: 'admin@arva2.arv.local'
