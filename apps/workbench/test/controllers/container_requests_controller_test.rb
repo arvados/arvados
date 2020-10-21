@@ -42,7 +42,7 @@ class ContainerRequestsControllerTest < ActionController::TestCase
     get :show, params: {id: uuid}, session: session_for(:active)
     assert_response :success
 
-    assert_includes @response.body, "action=\"/container_requests/#{uuid}/copy\""
+    assert_includes @response.body, "action_href=%2Fcontainer_requests%2F#{uuid}%2Fcopy"
   end
 
   test "cancel request for queued container" do
