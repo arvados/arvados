@@ -152,7 +152,7 @@ class ContainerRequestsController < ApplicationController
     @object = ContainerRequest.new
 
     # set owner_uuid to that of source, provided it is a project and writable by current user
-    if params[:work_unit][:owner_uuid]
+    if params[:work_unit].andand[:owner_uuid]
       @object.owner_uuid = src.owner_uuid = params[:work_unit][:owner_uuid]
     else
       current_project = Group.find(src.owner_uuid) rescue nil
@@ -161,7 +161,8 @@ class ContainerRequestsController < ApplicationController
       end
     end
 
-    if src.command[0] == 'arvados-cwl-runner'
+    command = src.command
+    if command[0] == 'arvados-cwl-runner'
       command.each_with_index do |arg, i|
         if arg.start_with? "--project-uuid="
           command[i] = "--project-uuid=#{@object.owner_uuid}"
@@ -174,11 +175,10 @@ class ContainerRequestsController < ApplicationController
 
     # By default the copied CR won't be reusing containers, unless use_existing=true
     # param is passed.
-    command = src.command
     if params[:use_existing]
       @object.use_existing = true
       # Pass the correct argument to arvados-cwl-runner command.
-      if src.command[0] == 'arvados-cwl-runner'
+      if command[0] == 'arvados-cwl-runner'
         command = src.command - ['--disable-reuse']
         command.insert(1, '--enable-reuse')
       end
