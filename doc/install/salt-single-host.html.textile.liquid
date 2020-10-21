@@ -1,0 +1,86 @@
+---
+layout: default
+navsection: installguide
+title: Single host Arvados
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+# "Install Saltstack":#saltstack
+# "Single host install using the provision.sh script":#single_host
+# "Local testing Arvados in a Vagrant box":#vagrant
+# "DNS configuration":#final_steps
+# "Initial user and login":#initial_user
+
+h2(#saltstack). Install Saltstack
+
+If you already have a Saltstack environment you can skip this section.
+
+The simplest way to get Salt up and running on a node is to use the bootstrap script they provide:
+
+<notextile>
+<pre><code>curl -L https://bootstrap.saltstack.com -o /tmp/bootstrap_salt.sh
+sudo sh /tmp/bootstrap_salt.sh -XUdfP -x python3
+</code></pre>
+</notextile>
+
+For more information check "Saltstack's documentation":https://docs.saltstack.com/en/latest/topics/installation/index.html
+
+h2(#single_host). Single host install using the provision.sh script
+
+You will need to check out the Arvados git repository to get the Salt scripts. They can be found in the "tools/salt-install":https://github.com/arvados/arvados/tree/master/tools/salt-install directory.
+
+Use the @provision.sh@ script to deploy Arvados, which is implemented with the @arvados-formula@ in a Saltstack master-less setup:
+
+* edit the variables at the very beginning of the file,
+* run the script as root
+* wait for it to finish
+
+This will install all the main Arvados components to get you up and running. The whole installation procedure takes somewhere between 15 to 60 minutes, depending on the host and your network bandwidth. On a virtual machine with 1 core and 1 GB RAM, it takes ~25 minutes to do the initial install.
+
+If everything goes OK, you'll get some final lines stating something like:
+
+<notextile>
+<pre><code>arvados: Succeeded: 109 (changed=9)
+arvados: Failed:      0
+</code></pre>
+</notextile>
+
+h2(#final_steps). DNS configuration
+
+After the setup is done, you need to set up your DNS to be able to access the cluster.
+
+The simplest way to do this is to edit your @/etc/hosts@ file (as root):
+
+<notextile>
+<pre><code>export CLUSTER="arva2"
+export DOMAIN="arv.local"
+export HOST_IP="127.0.0.2"    # This is valid either if installing in your computer directly
+                              # or in a Vagrant VM. If you're installing it on a remote host
+                              # just change the IP to match that of the host.
+echo "${HOST_IP} api keep keep0 collections download ws workbench workbench2 ${CLUSTER}.${DOMAIN} api.${CLUSTER}.${DOMAIN} keep.${CLUSTER}.${DOMAIN} keep0.${CLUSTER}.${DOMAIN} collections.${CLUSTER}.${DOMAIN} download.${CLUSTER}.${DOMAIN} ws.${CLUSTER}.${DOMAIN} workbench.${CLUSTER}.${DOMAIN} workbench2.${CLUSTER}.${DOMAIN}" >> /etc/hosts
+</code></pre>
+</notextile>
+
+h2(#initial_user). Initial user and login
+
+At this point you should be able to log into the Arvados cluster.
+
+If you changed nothing in the @provision.sh@ script, the initial URL will be:
+
+* https://workbench.arva2.arv.local
+
+or, in general, the url format will be:
+
+* https://workbench.@<cluster>.<domain>@
+
+By default, the provision script creates an initial user for testing purposes. This user is configured as administrator of the newly created cluster.
+
+Assuming you didn't change these values in the @provision.sh@ script, the initial credentials are:
+
+* User: 'admin'
+* Password: 'password'
+* Email: 'admin@arva2.arv.local'
