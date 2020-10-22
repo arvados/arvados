@@ -121,6 +121,21 @@ class ContainerRequestsController < ApplicationController
       end
     end
     params[:merge] = true
+
+    if !@updates[:reuse_steps].nil?
+      if @updates[:reuse_steps] == "false"
+        @updates[:reuse_steps] = false
+      end
+      @updates[:command] ||= @object.command
+      @updates[:command] -= ["--disable-reuse", "--enable-reuse"]
+      if @updates[:reuse_steps]
+        @updates[:command].insert(1, "--enable-reuse")
+      else
+        @updates[:command].insert(1, "--disable-reuse")
+      end
+      @updates.delete(:reuse_steps)
+    end
+
     begin
       super
     rescue => e
@@ -134,21 +149,47 @@ class ContainerRequestsController < ApplicationController
 
     @object = ContainerRequest.new
 
-    # By default the copied CR won't be reusing containers, unless use_existing=true
-    # param is passed.
+    # set owner_uuid to that of source, provided it is a project and writable by current user
+    if params[:work_unit].andand[:owner_uuid]
+      @object.owner_uuid = src.owner_uuid = params[:work_unit][:owner_uuid]
+    else
+      current_project = Group.find(src.owner_uuid) rescue nil
+      if (current_project && current_project.writable_by.andand.include?(current_user.uuid))
+        @object.owner_uuid = src.owner_uuid
+      end
+    end
+
     command = src.command
-    if params[:use_existing]
-      @object.use_existing = true
+    if command[0] == 'arvados-cwl-runner'
+      command.each_with_index do |arg, i|
+        if arg.start_with? "--project-uuid="
+          command[i] = "--project-uuid=#{@object.owner_uuid}"
+        end
+      end
+      command -= ["--disable-reuse", "--enable-reuse"]
+      command.insert(1, '--enable-reuse')
+    end
+
+    if params[:use_existing] == "false"
+      params[:use_existing] = false
+    elsif params[:use_existing] == "true"
+      params[:use_existing] = true
+    end
+
+    if params[:use_existing] || params[:use_existing].nil?
+      # If nil, reuse workflow steps but not the workflow runner.
+      @object.use_existing = !!params[:use_existing]
+
       # Pass the correct argument to arvados-cwl-runner command.
-      if src.command[0] == 'arvados-cwl-runner'
-        command = src.command - ['--disable-reuse']
+      if command[0] == 'arvados-cwl-runner'
+        command -= ["--disable-reuse", "--enable-reuse"]
         command.insert(1, '--enable-reuse')
       end
     else
       @object.use_existing = false
       # Pass the correct argument to arvados-cwl-runner command.
-      if src.command[0] == 'arvados-cwl-runner'
-        command = src.command - ['--enable-reuse']
+      if command[0] == 'arvados-cwl-runner'
+        command -= ["--disable-reuse", "--enable-reuse"]
         command.insert(1, '--disable-reuse')
       end
     end
@@ -166,12 +207,6 @@ class ContainerRequestsController < ApplicationController
     @object.runtime_constraints = src.runtime_constraints
     @object.scheduling_parameters = src.scheduling_parameters
     @object.state = 'Uncommitted'
-
-    # set owner_uuid to that of source, provided it is a project and writable by current user
-    current_project = Group.find(src.owner_uuid) rescue nil
-    if (current_project && current_project.writable_by.andand.include?(current_user.uuid))
-      @object.owner_uuid = src.owner_uuid
-    end
 
     super
   end
