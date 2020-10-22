@@ -163,7 +163,9 @@ class WorkUnitsTest < ActionDispatch::IntegrationTest
       assert_text process_txt
       assert_selector 'a', text: template_name
 
-      assert_equal "Set value for ex_string_def", find('div.form-group > div > p.form-control-static > a', text: "hello-testing-123")[:"data-title"]
+      assert_equal "true", find('span[data-name="reuse_steps"]').text
+
+      assert_equal "Set value for ex_string_def", find('div.form-group > div.form-control-static > a', text: "hello-testing-123")[:"data-title"]
 
       page.assert_selector 'a.disabled,button.disabled', text: 'Run'
     end
