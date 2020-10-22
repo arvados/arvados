@@ -146,7 +146,7 @@ export const renameFile = (newName: string) =>
                     dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'File name changed.', hideDuration: 2000 }));
                 } catch (e) {
                     const errors: FormErrors<RenameFileDialogData, string> = {
-                        name: 'Could not rename the file'
+                        name: `Could not rename the file: ${e.responseText}`
                     };
                     dispatch(stopSubmit(RENAME_FILE_DIALOG, errors));
                 }
