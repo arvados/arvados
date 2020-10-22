@@ -127,14 +127,12 @@ class ContainerRequestsController < ApplicationController
         @updates[:reuse_steps] = false
       end
       @updates[:command] ||= @object.command
+      @updates[:command] -= ["--disable-reuse", "--enable-reuse"]
       if @updates[:reuse_steps]
-        @updates[:command] = @updates[:command] - ["--disable-reuse"]
-        @updates[:command].insert(1, '--enable-reuse')
+        @updates[:command].insert(1, "--enable-reuse")
       else
-        @updates[:command] -= @updates[:command] - ["--enable-reuse"]
-        @updates[:command].insert(1, '--disable-reuse')
+        @updates[:command].insert(1, "--disable-reuse")
       end
-
       @updates.delete(:reuse_steps)
     end
 
@@ -167,26 +165,31 @@ class ContainerRequestsController < ApplicationController
         if arg.start_with? "--project-uuid="
           command[i] = "--project-uuid=#{@object.owner_uuid}"
         end
-        if arg == "--disable-reuse"
-          command[i] = "--enable-reuse"
-        end
       end
+      command -= ["--disable-reuse", "--enable-reuse"]
+      command.insert(1, '--enable-reuse')
     end
 
-    # By default the copied CR won't be reusing containers, unless use_existing=true
-    # param is passed.
-    if params[:use_existing]
-      @object.use_existing = true
+    if params[:use_existing] == "false"
+      params[:use_existing] = false
+    elsif params[:use_existing] == "true"
+      params[:use_existing] = true
+    end
+
+    if params[:use_existing] || params[:use_existing].nil?
+      # If nil, reuse workflow steps but not the workflow runner.
+      @object.use_existing = (params[:use_existing] ? true : false)
+
       # Pass the correct argument to arvados-cwl-runner command.
       if command[0] == 'arvados-cwl-runner'
-        command = src.command - ['--disable-reuse']
+        command -= ['--disable-reuse']
         command.insert(1, '--enable-reuse')
       end
     else
       @object.use_existing = false
       # Pass the correct argument to arvados-cwl-runner command.
-      if src.command[0] == 'arvados-cwl-runner'
-        command = src.command - ['--enable-reuse']
+      if command[0] == 'arvados-cwl-runner'
+        command -= ['--enable-reuse']
         command.insert(1, '--disable-reuse')
       end
     end
