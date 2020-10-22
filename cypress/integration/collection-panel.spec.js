@@ -21,12 +21,12 @@ describe('Collection panel tests', function() {
                 activeUser = this.activeUser;
             }
         );
-    })
+    });
 
     beforeEach(function() {
-        cy.clearCookies()
-        cy.clearLocalStorage()
-    })
+        cy.clearCookies();
+        cy.clearLocalStorage();
+    });
 
     it('shows collection by URL', function() {
         cy.loginAs(activeUser);
@@ -117,4 +117,60 @@ describe('Collection panel tests', function() {
             })
         })
     })
+
+    it('renames a file', function() {
+        // Creates the collection using the admin token so we can set up
+        // a bogus manifest text without block signatures.
+        cy.createCollection(adminUser.token, {
+            name: `Test collection ${Math.floor(Math.random() * Math.floor(999999))}`,
+            owner_uuid: activeUser.user.uuid,
+            manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"})
+        .as('testCollection').then(function() {
+            cy.loginAs(activeUser);
+            cy.visit(`/collections/${this.testCollection.uuid}`);
+            cy.get('[data-cy=collection-files-panel]')
+                .contains('bar').rightclick();
+            cy.get('[data-cy=context-menu]')
+                .contains('Rename')
+                .click();
+            cy.get('[data-cy=form-dialog]')
+                .should('contain', 'Rename')
+                .within(() => {
+                    cy.get('input').type('{backspace}{backspace}{backspace}foo');
+                });
+            cy.get('[data-cy=form-submit-btn]').click();
+            cy.get('[data-cy=collection-files-panel]')
+                .should('not.contain', 'bar')
+                .and('contain', 'foo');
+        });
+    });
+
+    it('tries to rename a file with an illegal name', function() {
+        // Creates the collection using the admin token so we can set up
+        // a bogus manifest text without block signatures.
+        cy.createCollection(adminUser.token, {
+            name: `Test collection ${Math.floor(Math.random() * Math.floor(999999))}`,
+            owner_uuid: activeUser.user.uuid,
+            manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"})
+        .as('testCollection').then(function() {
+            cy.loginAs(activeUser);
+            cy.visit(`/collections/${this.testCollection.uuid}`);
+            cy.get('[data-cy=collection-files-panel]')
+                .contains('bar').rightclick();
+            cy.get('[data-cy=context-menu]')
+                .contains('Rename')
+                .click();
+            cy.get('[data-cy=form-dialog]')
+                .should('contain', 'Rename')
+                .within(() => {
+                    cy.get('input').type('{backspace}{backspace}{backspace}');
+                });
+            cy.get('[data-cy=form-submit-btn]').click();
+            cy.get('[data-cy=form-dialog]')
+                .should('contain', 'Rename')
+                .within(() => {
+                    cy.contains('Could not rename');
+                });
+        });
+    });
 })
