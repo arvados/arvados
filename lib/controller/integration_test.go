@@ -7,6 +7,7 @@ package controller
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"io"
 	"math"
@@ -131,6 +132,19 @@ func (s *IntegrationSuite) SetUpSuite(c *check.C) {
 		u := url.URL(*au)
 		tc.controllerURL = &u
 	}
+}
+
+func (s *IntegrationSuite) TestDatabaseConnection(c *check.C) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	db, err := sql.Open("postgres", s.testClusters["z1111"].super.Cluster().PostgreSQL.Connection.String())
+	c.Assert(err, check.IsNil)
+	defer db.Close()
+	conn, err := db.Conn(ctx)
+	c.Assert(err, check.IsNil)
+	defer conn.Close()
+	_, err = conn.ExecContext(ctx, `SELECT 1`)
+	c.Assert(err, check.IsNil)
 }
 
 func (s *IntegrationSuite) TearDownSuite(c *check.C) {
