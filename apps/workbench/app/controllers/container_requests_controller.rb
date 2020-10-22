@@ -178,7 +178,7 @@ class ContainerRequestsController < ApplicationController
 
     if params[:use_existing] || params[:use_existing].nil?
       # If nil, reuse workflow steps but not the workflow runner.
-      @object.use_existing = (params[:use_existing] ? true : false)
+      @object.use_existing = !!params[:use_existing]
 
       # Pass the correct argument to arvados-cwl-runner command.
       if command[0] == 'arvados-cwl-runner'
