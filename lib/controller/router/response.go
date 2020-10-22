@@ -108,7 +108,7 @@ func (rtr *router) sendResponse(w http.ResponseWriter, req *http.Request, resp i
 
 	for k, v := range tmp {
 		if k == "output_uuid" {
-			if tv == "" {
+			if v == "" {
 				tmp[k] = nil
 			}
 		}
