@@ -182,14 +182,14 @@ class ContainerRequestsController < ApplicationController
 
       # Pass the correct argument to arvados-cwl-runner command.
       if command[0] == 'arvados-cwl-runner'
-        command -= ['--disable-reuse']
+        command -= ["--disable-reuse", "--enable-reuse"]
         command.insert(1, '--enable-reuse')
       end
     else
       @object.use_existing = false
       # Pass the correct argument to arvados-cwl-runner command.
       if command[0] == 'arvados-cwl-runner'
-        command -= ['--enable-reuse']
+        command -= ["--disable-reuse", "--enable-reuse"]
         command.insert(1, '--disable-reuse')
       end
     end
