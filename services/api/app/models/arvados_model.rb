@@ -353,8 +353,9 @@ class ArvadosModel < ApplicationRecord
       # other user owns.
       owner_check = ""
       if sql_table != "api_client_authorizations" and sql_table != "groups" then
-        owner_check = "OR #{sql_table}.owner_uuid IN (SELECT target_uuid FROM #{PERMISSION_VIEW} "+
-          "WHERE user_uuid IN (#{user_uuids_subquery}) AND perm_level >= 1 #{trashed_check} AND traverse_owned) "
+        owner_check = "#{sql_table}.owner_uuid IN (SELECT target_uuid FROM #{PERMISSION_VIEW} "+
+                      "WHERE user_uuid IN (#{user_uuids_subquery}) AND perm_level >= 1 #{trashed_check} AND traverse_owned) "
+        direct_check = " OR " + direct_check
       end
 
       links_cond = ""
@@ -366,7 +367,7 @@ class ArvadosModel < ApplicationRecord
                        "(#{sql_table}.head_uuid IN (#{user_uuids_subquery}) OR #{sql_table}.tail_uuid IN (#{user_uuids_subquery})))"
       end
 
-      sql_conds = "(#{direct_check} #{owner_check} #{links_cond}) #{exclude_trashed_records}"
+      sql_conds = "(#{owner_check} #{direct_check} #{links_cond}) #{exclude_trashed_records}"
 
     end
 
