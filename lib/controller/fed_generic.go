@@ -112,7 +112,6 @@ func (h *genericFederatedRequestHandler) remoteQueryUUIDs(w http.ResponseWriter,
 
 func (h *genericFederatedRequestHandler) handleMultiClusterQuery(w http.ResponseWriter,
 	req *http.Request, clusterId *string) bool {
-
 	var filters [][]interface{}
 	err := json.Unmarshal([]byte(req.Form.Get("filters")), &filters)
 	if err != nil {
@@ -143,7 +142,7 @@ func (h *genericFederatedRequestHandler) handleMultiClusterQuery(w http.Response
 					if u, ok := i.(string); ok && len(u) == 27 {
 						*clusterId = u[0:5]
 						queryClusters[u[0:5]] = append(queryClusters[u[0:5]], u)
-						expectCount += 1
+						expectCount++
 					}
 				}
 			}
@@ -151,7 +150,7 @@ func (h *genericFederatedRequestHandler) handleMultiClusterQuery(w http.Response
 			if u, ok := filter[2].(string); ok && len(u) == 27 {
 				*clusterId = u[0:5]
 				queryClusters[u[0:5]] = append(queryClusters[u[0:5]], u)
-				expectCount += 1
+				expectCount++
 			}
 		} else {
 			return false
@@ -295,6 +294,8 @@ func (h *genericFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req *h
 		uuid = m[1][1:]
 	}
 	for _, d := range h.delegates {
+		// Any delegate that was successful on dealing with the request will
+		// return true and probably sent the response in w
 		if d(h, effectiveMethod, &clusterId, uuid, m[3], w, req) {
 			return
 		}

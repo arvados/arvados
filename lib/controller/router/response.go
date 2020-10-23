@@ -133,6 +133,8 @@ func (rtr *router) sendResponse(w http.ResponseWriter, req *http.Request, resp i
 			}
 		}
 		switch k {
+		// in all this cases, RoR returns nil instead the Zero value for the type.
+		// Maytbe, this should all go away when RoR is out of the picture.
 		case "output_uuid", "output_name", "log_uuid", "modified_by_client_uuid", "description", "requesting_container_uuid", "expires_at":
 			if v == "" {
 				tmp[k] = nil
