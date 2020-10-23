@@ -31,7 +31,7 @@ Gem::Specification.new do |s|
   s.summary     = "Set up local login accounts for Arvados users"
   s.description = "Creates and updates local login accounts for Arvados users. Built from git commit #{git_hash}"
   s.authors     = ["Arvados Authors"]
-  s.email       = 'gem-dev@curoverse.com'
+  s.email       = 'packaging@arvados.org'
   s.licenses    = ['AGPL-3.0']
   s.files       = ["bin/arvados-login-sync", "agpl-3.0.txt"]
   s.executables << "arvados-login-sync"

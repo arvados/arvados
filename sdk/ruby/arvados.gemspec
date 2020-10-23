@@ -31,7 +31,7 @@ Gem::Specification.new do |s|
   s.summary     = "Arvados client library"
   s.description = "Arvados client library, git commit #{git_hash}"
   s.authors     = ["Arvados Authors"]
-  s.email       = 'gem-dev@curoverse.com'
+  s.email       = 'packaging@arvados.org'
   s.licenses    = ['Apache-2.0']
   s.files       = ["lib/arvados.rb", "lib/arvados/google_api_client.rb",
                    "lib/arvados/collection.rb", "lib/arvados/keep.rb",
