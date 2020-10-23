@@ -63,8 +63,8 @@ describe('Collection panel tests', function() {
                         .click()
                     cy.get('[data-cy=context-menu]')
                         .should('contain', 'Add to favorites')
-                        .and(`${isWritable ? '' : 'not.'}contain`, 'Edit collection')
-                        .type('{esc}'); // Collapse the options menu
+                        .and(`${isWritable ? '' : 'not.'}contain`, 'Edit collection');
+                    cy.get('body').click(); // Collapse the menu avoiding details panel expansion
                     cy.get('[data-cy=collection-properties-panel]')
                         .should('contain', 'someKey')
                         .and('contain', 'someValue')
@@ -94,6 +94,15 @@ describe('Collection panel tests', function() {
                         cy.get('[data-cy=upload-button]')
                             .should(`${isWritable ? '' : 'not.'}contain`, 'Upload data');
                     });
+                    cy.get('[data-cy=collection-files-panel]')
+                        .contains('bar').rightclick();
+                    cy.get('[data-cy=context-menu]')
+                        .should('contain', 'Download')
+                        .and('contain', 'Open in new tab')
+                        .and('contain', 'Copy to clipboard')
+                        .and(`${isWritable ? '' : 'not.'}contain`, 'Rename')
+                        .and(`${isWritable ? '' : 'not.'}contain`, 'Remove');
+                    cy.get('body').click(); // Collapse the menu
                     // Hamburger 'more options' menu button
                     cy.get('[data-cy=collection-files-panel-options-btn]')
                         .click()
@@ -105,14 +114,14 @@ describe('Collection panel tests', function() {
                     cy.get('[data-cy=context-menu]')
                         // .should('contain', 'Download selected')
                         .should(`${isWritable ? '' : 'not.'}contain`, 'Remove selected')
-                        .type('{esc}'); // Collapse the options menu
+                    cy.get('body').click(); // Collapse the menu
                     // File item 'more options' button
                     cy.get('[data-cy=file-item-options-btn')
                         .click()
                     cy.get('[data-cy=context-menu]')
                         .should('contain', 'Download')
-                        .and(`${isWritable ? '' : 'not.'}contain`, 'Remove')
-                        .type('{esc}'); // Collapse
+                        .and(`${isWritable ? '' : 'not.'}contain`, 'Remove');
+                    cy.get('body').click(); // Collapse the menu
                 })
             })
         })
