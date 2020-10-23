@@ -82,6 +82,9 @@ title () {
 }
 
 docker_push () {
+    # docker always creates a local 'latest' tag, and we don't want to push that
+    # tag in every case. Remove it.
+    docker rmi $1:latest
     if [[ ! -z "$tags" ]]
     then
         for tag in $( echo $tags|tr "," " " )
