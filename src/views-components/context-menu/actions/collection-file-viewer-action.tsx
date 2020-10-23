@@ -11,7 +11,9 @@ import { ContextMenuKind } from '~/views-components/context-menu/context-menu';
 const mapStateToProps = (state: RootState) => {
     const { resource } = state.contextMenu;
     const currentCollectionUuid = state.collectionPanel.item ? state.collectionPanel.item.uuid : '';
-    if (resource && resource.menuKind === ContextMenuKind.COLLECTION_FILES_ITEM) {
+    if (resource && (
+        resource.menuKind === ContextMenuKind.COLLECTION_FILES_ITEM ||
+        resource.menuKind === ContextMenuKind.READONLY_COLLECTION_FILES_ITEM)) {
         const file = getNodeValue(resource.uuid)(state.collectionPanelFiles);
         if (file) {
             return {
@@ -20,10 +22,8 @@ const mapStateToProps = (state: RootState) => {
                 currentCollectionUuid
             };
         }
-    } else {
-        return;
     }
-    return;
+    return {};
 };
 
 export const CollectionFileViewerAction = connect(mapStateToProps)(FileViewerAction);
