@@ -34,9 +34,8 @@ func (s *IntegrationSuite) TestS3AWSSDK(c *check.C) {
 				URL:           "http://" + s.testServer.Addr,
 				SigningRegion: "custom-signing-region",
 			}, nil
-		} else {
-			return endpoints.NewDefaultResolver().ResolveEndpoint(service, region)
 		}
+		return endpoints.NewDefaultResolver().ResolveEndpoint(service, region)
 	})
 	client := s3.New(cfg)
 	client.ForcePathStyle = true

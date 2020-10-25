@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-// package service provides a cmd.Handler that brings up a system service.
+// Package service provides a cmd.Handler that brings up a system service.
 package service
 
 import (

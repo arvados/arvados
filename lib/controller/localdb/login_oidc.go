@@ -390,9 +390,8 @@ func (ta *oidcTokenAuthorizer) registerToken(ctx context.Context, tok string) er
 		// cached negative result (value is expiry time)
 		if time.Now().Before(exp) {
 			return nil
-		} else {
-			ta.cache.Remove(tok)
 		}
+		ta.cache.Remove(tok)
 	} else {
 		// cached positive result
 		aca := cached.(arvados.APIClientAuthorization)
