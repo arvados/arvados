@@ -507,7 +507,7 @@ func (h *proxyHandler) Put(resp http.ResponseWriter, req *http.Request) {
 	// Check if the client specified the number of replicas
 	if req.Header.Get("X-Keep-Desired-Replicas") != "" {
 		var r int
-		_, err := fmt.Sscanf(req.Header.Get(keepclient.X_Keep_Desired_Replicas), "%d", &r)
+		_, err := fmt.Sscanf(req.Header.Get(keepclient.XKeepDesiredReplicas), "%d", &r)
 		if err == nil {
 			kc.Want_replicas = r
 		}
@@ -527,7 +527,7 @@ func (h *proxyHandler) Put(resp http.ResponseWriter, req *http.Request) {
 	}
 
 	// Tell the client how many successful PUTs we accomplished
-	resp.Header().Set(keepclient.X_Keep_Replicas_Stored, fmt.Sprintf("%d", wroteReplicas))
+	resp.Header().Set(keepclient.XKeepReplicasStored, fmt.Sprintf("%d", wroteReplicas))
 
 	switch err.(type) {
 	case nil:

@@ -69,14 +69,14 @@ type Client struct {
 	defaultRequestID string
 }
 
-// The default http.Client used by a Client with Insecure==true and
-// Client==nil.
+// InsecureHTTPClient is the default http.Client used by a Client with
+// Insecure==true and Client==nil.
 var InsecureHTTPClient = &http.Client{
 	Transport: &http.Transport{
 		TLSClientConfig: &tls.Config{
 			InsecureSkipVerify: true}}}
 
-// The default http.Client used by a Client otherwise.
+// DefaultSecureClient is the default http.Client used by a Client otherwise.
 var DefaultSecureClient = &http.Client{}
 
 // NewClientFromConfig creates a new Client that uses the endpoints in

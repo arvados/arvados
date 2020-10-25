@@ -79,7 +79,7 @@ func (this *KeepClient) uploadToKeepServer(host string, hash string, body io.Rea
 	req.Header.Add("X-Request-Id", reqid)
 	req.Header.Add("Authorization", "OAuth2 "+this.Arvados.ApiToken)
 	req.Header.Add("Content-Type", "application/octet-stream")
-	req.Header.Add(X_Keep_Desired_Replicas, fmt.Sprint(this.Want_replicas))
+	req.Header.Add(XKeepDesiredReplicas, fmt.Sprint(this.Want_replicas))
 	if len(this.StorageClasses) > 0 {
 		req.Header.Add("X-Keep-Storage-Classes", strings.Join(this.StorageClasses, ", "))
 	}
@@ -92,7 +92,7 @@ func (this *KeepClient) uploadToKeepServer(host string, hash string, body io.Rea
 	}
 
 	rep := 1
-	if xr := resp.Header.Get(X_Keep_Replicas_Stored); xr != "" {
+	if xr := resp.Header.Get(XKeepReplicasStored); xr != "" {
 		fmt.Sscanf(xr, "%d", &rep)
 	}
 

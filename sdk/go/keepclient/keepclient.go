@@ -2,7 +2,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-/* Provides low-level Get/Put primitives for accessing Arvados Keep blocks. */
+// Package keepclient provides low-level Get/Put primitives for accessing
+// Arvados Keep blocks.
 package keepclient
 
 import (
@@ -25,7 +26,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
 )
 
-// A Keep "block" is 64MB.
+// BLOCKSIZE defines the length of a Keep "block", which is 64MB.
 const BLOCKSIZE = 64 * 1024 * 1024
 
 var (
@@ -82,8 +83,8 @@ var ErrNoSuchKeepServer = errors.New("No keep server matching the given UUID is 
 // ErrIncompleteIndex is returned when the Index response does not end with a new empty line
 var ErrIncompleteIndex = errors.New("Got incomplete index")
 
-const X_Keep_Desired_Replicas = "X-Keep-Desired-Replicas"
-const X_Keep_Replicas_Stored = "X-Keep-Replicas-Stored"
+const XKeepDesiredReplicas = "X-Keep-Desired-Replicas"
+const XKeepReplicasStored = "X-Keep-Replicas-Stored"
 
 type HTTPClient interface {
 	Do(*http.Request) (*http.Response, error)
@@ -139,7 +140,7 @@ func New(arv *arvadosclient.ArvadosClient) *KeepClient {
 	}
 }
 
-// Put a block given the block hash, a reader, and the number of bytes
+// PutHR puts a block given the block hash, a reader, and the number of bytes
 // to read from the reader (which must be between 0 and BLOCKSIZE).
 //
 // Returns the locator for the written block, the number of replicas
@@ -216,7 +217,7 @@ func (kc *KeepClient) getOrHead(method string, locator string, header http.Heade
 
 	var errs []string
 
-	tries_remaining := 1 + kc.Retries
+	triesRemaining := 1 + kc.Retries
 
 	serversToTry := kc.getSortedRoots(locator)
 
@@ -225,8 +226,8 @@ func (kc *KeepClient) getOrHead(method string, locator string, header http.Heade
 
 	var retryList []string
 
-	for tries_remaining > 0 {
-		tries_remaining -= 1
+	for triesRemaining > 0 {
+		triesRemaining -= 1
 		retryList = nil
 
 		for _, host := range serversToTry {
