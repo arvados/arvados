@@ -10,7 +10,7 @@ hints:
   "cwltool:Secrets":
     secrets: [pw]
   DockerRequirement:
-    dockerPull: debian:8
+    dockerPull: debian:buster-slim
 inputs:
   pw: string
 outputs:
