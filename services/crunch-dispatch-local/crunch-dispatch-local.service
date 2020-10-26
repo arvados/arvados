@@ -1,0 +1,29 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+[Unit]
+Description=Arvados Crunch Dispatcher for LOCAL service
+Documentation=https://doc.arvados.org/
+After=network.target
+
+# systemd==229 (ubuntu:xenial) obeys StartLimitInterval in the [Unit] section
+StartLimitInterval=0
+
+# systemd>=230 (debian:9) obeys StartLimitIntervalSec in the [Unit] section
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+EnvironmentFile=-/etc/arvados/crunch-dispatch-local-credentials
+ExecStart=/usr/bin/crunch-dispatch-local -poll-interval=1 -crunch-run-command=/usr/bin/crunch-run
+# Set a reasonable default for the open file limit
+LimitNOFILE=65536
+Restart=always
+RestartSec=1
+LimitNOFILE=1000000
+
+# systemd<=219 (centos:7, debian:8, ubuntu:trusty) obeys StartLimitInterval in the [Service] section
+StartLimitInterval=0
+
+[Install]
+WantedBy=multi-user.target
