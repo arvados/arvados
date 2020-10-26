@@ -352,7 +352,6 @@ test_package_presence() {
       echo "Package $full_pkgname build forced with --force-build, building"
     elif [[ "$FORMAT" == "deb" ]]; then
       declare -A dd
-      dd[debian9]=stretch
       dd[debian10]=buster
       dd[ubuntu1604]=xenial
       dd[ubuntu1804]=bionic
