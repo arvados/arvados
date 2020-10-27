@@ -296,21 +296,19 @@ class ArvadosModel < ApplicationRecord
       exclude_trashed_records = "AND (#{sql_table}.trash_at is NULL or #{sql_table}.trash_at > statement_timestamp())"
     end
 
+    trashed_check = ""
+    if !include_trash && sql_table != "api_client_authorizations"
+      trashed_check = "#{sql_table}.owner_uuid NOT IN (SELECT group_uuid FROM #{TRASHED_GROUPS} " +
+                      "where trash_at <= statement_timestamp()) #{exclude_trashed_records}"
+    end
+
     if users_list.select { |u| u.is_admin }.any?
       # Admin skips most permission checks, but still want to filter on trashed items.
-      if !include_trash
-        if sql_table != "api_client_authorizations"
-          # Only include records where the owner is not trashed
-          sql_conds = "#{sql_table}.owner_uuid NOT IN (SELECT group_uuid FROM #{TRASHED_GROUPS} "+
-                      "where trash_at <= statement_timestamp()) #{exclude_trashed_records}"
-        end
+      if !include_trash && sql_table != "api_client_authorizations"
+        # Only include records where the owner is not trashed
+        sql_conds = trashed_check
       end
     else
-      trashed_check = ""
-      if !include_trash then
-        trashed_check = "AND target_uuid NOT IN (SELECT group_uuid FROM #{TRASHED_GROUPS} where trash_at <= statement_timestamp())"
-      end
-
       # The core of the permission check is a join against the
       # materialized_permissions table to determine if the user has at
       # least read permission to either the object itself or its
@@ -333,7 +331,7 @@ class ArvadosModel < ApplicationRecord
 
       # Match a direct read permission link from the user to the record uuid
       direct_check = "#{sql_table}.uuid IN (SELECT target_uuid FROM #{PERMISSION_VIEW} "+
-                     "WHERE user_uuid IN (#{user_uuids_subquery}) AND perm_level >= 1 #{trashed_check})"
+                     "WHERE user_uuid IN (#{user_uuids_subquery}) AND perm_level >= 1)"
 
       # Match a read permission for the user to the record's
       # owner_uuid.  This is so we can have a permissions table that
@@ -354,7 +352,7 @@ class ArvadosModel < ApplicationRecord
       owner_check = ""
       if sql_table != "api_client_authorizations" and sql_table != "groups" then
         owner_check = "#{sql_table}.owner_uuid IN (SELECT target_uuid FROM #{PERMISSION_VIEW} "+
-                      "WHERE user_uuid IN (#{user_uuids_subquery}) AND perm_level >= 1 #{trashed_check} AND traverse_owned) "
+                      "WHERE user_uuid IN (#{user_uuids_subquery}) AND perm_level >= 1 AND traverse_owned) "
         direct_check = " OR " + direct_check
       end
 
@@ -367,7 +365,7 @@ class ArvadosModel < ApplicationRecord
                        "(#{sql_table}.head_uuid IN (#{user_uuids_subquery}) OR #{sql_table}.tail_uuid IN (#{user_uuids_subquery})))"
       end
 
-      sql_conds = "(#{owner_check} #{direct_check} #{links_cond}) #{exclude_trashed_records}"
+      sql_conds = "(#{owner_check} #{direct_check} #{links_cond}) #{trashed_check.empty? ? "" : "AND"} #{trashed_check}"
 
     end
 
