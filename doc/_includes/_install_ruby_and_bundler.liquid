@@ -22,7 +22,7 @@ The Ruby version shipped with Centos 7 is too old.  Use "RVM":#rvm to install Ru
 
 h3. Debian and Ubuntu
 
-Debian 9 (stretch) and Ubuntu 16.04 (xenial) ship Ruby 2.3, which is not supported by Arvados.  Use "RVM":#rvm to install Ruby 2.5 or later.
+Ubuntu 16.04 (xenial) ships with Ruby 2.3, which is not supported by Arvados.  Use "RVM":#rvm to install Ruby 2.5 or later.
 
 Debian 10 (buster) and Ubuntu 18.04 (bionic) and later ship with Ruby 2.5, which is supported by Arvados.
 
@@ -73,11 +73,11 @@ Finally, install Bundler:
 
 h2(#fromsource). Option 3: Install from source
 
-Install prerequisites for Debian 8:
+Install prerequisites for Debian 10:
 
 <notextile>
 <pre><code><span class="userinput">sudo apt-get install \
-    bison build-essential gettext libcurl3 libcurl3-gnutls \
+    bison build-essential gettext libcurl4 \
     libcurl4-openssl-dev libpcre3-dev libreadline-dev \
     libssl-dev libxslt1.1 zlib1g-dev
 </span></code></pre></notextile>
@@ -91,13 +91,13 @@ Install prerequisites for CentOS 7:
     make automake libtool bison sqlite-devel tar
 </span></code></pre></notextile>
 
-Install prerequisites for Ubuntu 12.04 or 14.04:
+Install prerequisites for Ubuntu 16.04:
 
 <notextile>
 <pre><code><span class="userinput">sudo apt-get install \
-    gawk g++ gcc make libc6-dev libreadline6-dev zlib1g-dev libssl-dev \
-    libyaml-dev libsqlite3-dev sqlite3 autoconf libgdbm-dev \
-    libncurses5-dev automake libtool bison pkg-config libffi-dev curl
+    bison build-essential gettext libcurl3 \
+    libcurl3-openssl-dev libpcre3-dev libreadline-dev \
+    libssl-dev libxslt1.1 zlib1g-dev
 </span></code></pre></notextile>
 
 Build and install Ruby:

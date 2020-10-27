@@ -25,4 +25,4 @@ $graph:
     type: string
   outputs: []
   requirements:
-  - {class: DockerRequirement, dockerPull: 'debian:8'}
+  - {class: DockerRequirement, dockerPull: 'debian:buster-slim'}

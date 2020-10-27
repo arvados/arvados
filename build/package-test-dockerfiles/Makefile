@@ -2,15 +2,11 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-all: centos7/generated debian9/generated  debian10/generated ubuntu1604/generated ubuntu1804/generated
+all: centos7/generated debian10/generated ubuntu1604/generated ubuntu1804/generated
 
 centos7/generated: common-generated-all
 	test -d centos7/generated || mkdir centos7/generated
 	cp -f -rlt centos7/generated common-generated/*
-
-debian9/generated: common-generated-all
-	test -d debian9/generated || mkdir debian9/generated
-	cp -f -rlt debian9/generated common-generated/*
 
 debian10/generated: common-generated-all
 	test -d debian10/generated || mkdir debian10/generated

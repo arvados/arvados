@@ -5,7 +5,7 @@
 fpm_depends+=(nodejs)
 
 case "$TARGET" in
-    debian9 | ubuntu1604)
+    ubuntu1604)
         fpm_depends+=(libcurl3-gnutls)
         ;;
     debian* | ubuntu*)
