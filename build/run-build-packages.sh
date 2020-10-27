@@ -123,10 +123,10 @@ case "$TARGET" in
         ;;
     centos*)
         FORMAT=rpm
-        PYTHON3_PACKAGE=$(rpm -qf "$(which python$PYTHON3_VERSION)" --queryformat '%{NAME}\n')
-        PYTHON3_PKG_PREFIX=$PYTHON3_PACKAGE
-        PYTHON3_PREFIX=/opt/rh/rh-python36/root/usr
-        PYTHON3_INSTALL_LIB=lib/python$PYTHON3_VERSION/site-packages
+        # PYTHON3_PACKAGE=$(rpm -qf "$(which python$PYTHON3_VERSION)" --queryformat '%{NAME}\n')
+        # PYTHON3_PKG_PREFIX=$PYTHON3_PACKAGE
+        # PYTHON3_PREFIX=/opt/rh/rh-python36/root/usr
+        # PYTHON3_INSTALL_LIB=lib/python$PYTHON3_VERSION/site-packages
         export PYCURL_SSL_LIBRARY=nss
         ;;
     *)
