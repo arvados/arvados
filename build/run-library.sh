@@ -431,9 +431,7 @@ handle_rails_package() {
     fi
     # For some reason fpm excludes need to not start with /.
     local exclude_root="${railsdir#/}"
-    # .git and packages are for the SSO server, which is built from its
-    # repository root.
-    local -a exclude_list=(.git packages tmp log coverage Capfile\* \
+    local -a exclude_list=(tmp log coverage Capfile\* \
                            config/deploy\* config/application.yml)
     # for arvados-workbench, we need to have the (dummy) config/database.yml in the package
     if  [[ "$pkgname" != "arvados-workbench" ]]; then

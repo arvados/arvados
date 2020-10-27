@@ -16,8 +16,6 @@ run-build-packages.sh                    Actually build packages.  Intended to r
                                          inside Docker container with proper
                                          build environment.
 
-run-build-packages-sso.sh                Build single-sign-on server packages.
-
 run-build-packages-python-and-ruby.sh    Build Python and Ruby packages suitable
                                          for upload to PyPi and Rubygems.
 

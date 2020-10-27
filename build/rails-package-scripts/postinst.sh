@@ -256,9 +256,4 @@ elif [ "$1" = "0" ] || [ "$1" = "1" ] || [ "$1" = "2" ]; then
   configure_version
 fi
 
-if printf '%s\n' "$CONFIG_PATH" | grep -Fqe "sso"; then
-	report_not_ready "$APPLICATION_READY" "$CONFIG_PATH/application.yml"
-	report_not_ready "$DATABASE_READY" "$CONFIG_PATH/database.yml"
-else
-	report_not_ready "$APPLICATION_READY" "/etc/arvados/config.yml"
-fi
+report_not_ready "$APPLICATION_READY" "/etc/arvados/config.yml"
