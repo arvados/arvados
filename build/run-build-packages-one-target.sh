@@ -217,22 +217,12 @@ if test -z "$packages" ; then
         keep-block-check
         keep-web
         libarvados-perl
-        libpam-arvados-go"
-    if [[ "$TARGET" =~ "centos" ]]; then
-      packages="$packages
-        rh-python36-python-cwltest
-        rh-python36-python-arvados-fuse
-        rh-python36-python-arvados-python-client
-        rh-python36-python-arvados-cwl-runner
-        rh-python36-python-crunchstat-summary"
-    else
-      packages="$packages
+        libpam-arvados-go
         python3-cwltest
         python3-arvados-fuse
         python3-arvados-python-client
         python3-arvados-cwl-runner
         python3-crunchstat-summary"
-    fi
 fi
 
 FINAL_EXITCODE=0
