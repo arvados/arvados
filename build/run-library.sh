@@ -475,12 +475,7 @@ fpm_build_virtualenv () {
   case "$PACKAGE_TYPE" in
     python3)
         python=python3
-        if [[ "$FORMAT" != "rpm" ]]; then
-          pip=pip3
-        else
-          # In CentOS, we use a different mechanism to get the right version of pip
-          pip=pip
-        fi
+        pip=pip3
         PACKAGE_PREFIX=$PYTHON3_PKG_PREFIX
         ;;
   esac

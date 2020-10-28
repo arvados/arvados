@@ -19,14 +19,14 @@ h3(#centos7). CentOS 7
 {% include 'note_python_sc' %}
 
 # Install PostgreSQL
-  <notextile><pre># <span class="userinput">yum install rh-postgresql95 rh-postgresql95-postgresql-contrib</span>
-~$ <span class="userinput">scl enable rh-postgresql95 bash</span></pre></notextile>
+  <notextile><pre># <span class="userinput">yum install rh-postgresql12 rh-postgresql12-postgresql-contrib</span>
+~$ <span class="userinput">scl enable rh-postgresql12 bash</span></pre></notextile>
 # Initialize the database
   <notextile><pre># <span class="userinput">postgresql-setup initdb</span></pre></notextile>
 # Configure the database to accept password connections
   <notextile><pre><code># <span class="userinput">sed -ri -e 's/^(host +all +all +(127\.0\.0\.1\/32|::1\/128) +)ident$/\1md5/' /var/lib/pgsql/data/pg_hba.conf</span></code></pre></notextile>
 # Configure the database to launch at boot and start now
-  <notextile><pre># <span class="userinput">systemctl enable --now rh-postgresql95-postgresql</span></pre></notextile>
+  <notextile><pre># <span class="userinput">systemctl enable --now rh-postgresql12-postgresql</span></pre></notextile>
 
 h3(#debian). Debian or Ubuntu
 
