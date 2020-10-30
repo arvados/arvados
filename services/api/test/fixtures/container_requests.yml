@@ -94,7 +94,7 @@ completed:
   output_path: test
   command: ["echo", "hello"]
   container_uuid: zzzzz-dz642-compltcontainer
-  log_uuid: zzzzz-4zz18-y9vne9npefyxh8g
+  log_uuid: zzzzz-4zz18-logcollection01
   output_uuid: zzzzz-4zz18-znfnqtbbv4spc3w
   runtime_constraints:
     vcpus: 1
@@ -309,7 +309,7 @@ completed_with_input_mounts:
     vcpus: 1
     ram: 123
   container_uuid: zzzzz-dz642-compltcontainer
-  log_uuid: zzzzz-4zz18-y9vne9npefyxh8g
+  log_uuid: zzzzz-4zz18-logcollection01
   output_uuid: zzzzz-4zz18-znfnqtbbv4spc3w
   mounts:
     /var/lib/cwl/cwl.input.json:
@@ -758,7 +758,7 @@ cr_in_trashed_project:
   output_path: test
   command: ["echo", "hello"]
   container_uuid: zzzzz-dz642-compltcontainer
-  log_uuid: zzzzz-4zz18-y9vne9npefyxh8g
+  log_uuid: zzzzz-4zz18-logcollection01
   output_uuid: zzzzz-4zz18-znfnqtbbv4spc3w
   runtime_constraints:
     vcpus: 1

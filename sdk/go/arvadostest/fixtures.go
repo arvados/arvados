@@ -44,7 +44,8 @@ const (
 
 	RunningContainerUUID = "zzzzz-dz642-runningcontainr"
 
-	CompletedContainerUUID = "zzzzz-dz642-compltcontainer"
+	CompletedContainerUUID        = "zzzzz-dz642-compltcontainer"
+	CompletedContainerRequestUUID = "zzzzz-xvhdp-cr4completedctr"
 
 	ArvadosRepoUUID = "zzzzz-s0uqq-arvadosrepo0123"
 	ArvadosRepoName = "arvados"
@@ -73,6 +74,8 @@ const (
 	TestVMUUID = "zzzzz-2x53u-382brsig8rp3064"
 
 	CollectionWithUniqueWordsUUID = "zzzzz-4zz18-mnt690klmb51aud"
+
+	LogCollectionUUID = "zzzzz-4zz18-logcollection01"
 )
 
 // PathologicalManifest : A valid manifest designed to test
