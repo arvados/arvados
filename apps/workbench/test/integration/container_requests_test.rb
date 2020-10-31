@@ -79,7 +79,7 @@ class ContainerRequestsTest < ActionDispatch::IntegrationTest
       assert_text 'This workflow does not need any further inputs'
       click_link "Run"
       wait_for_ajax
-      assert_text 'This container is queued'
+      assert_text 'This container is committed'
     end
   end
 
@@ -98,7 +98,7 @@ class ContainerRequestsTest < ActionDispatch::IntegrationTest
     page.assert_no_selector 'a.disabled,button.disabled', text: 'Run'
     click_link "Run"
     wait_for_ajax
-    assert_text 'This container is queued'
+    assert_text 'This container is committed'
   end
 
   test "Run button enabled when workflow is empty and no inputs are needed" do

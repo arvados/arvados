@@ -10,7 +10,7 @@ class ContainerWorkUnit < ProxyWorkUnit
     super proxied, label, parent
     if @proxied.is_a?(ContainerRequest)
       container_uuid = get(:container_uuid)
-      if container_uuid
+      if container_uuid and uuid.length < 27 #REVIEW: is this a good place to match with a "valid UUID" regexp?
         @container = Container.find(container_uuid)
       end
     end
