@@ -48,7 +48,7 @@ type ContainerRequest struct {
 	Properties              map[string]interface{} `json:"properties"`
 	State                   ContainerRequestState  `json:"state"`
 	RequestingContainerUUID string                 `json:"requesting_container_uuid"`
-	ContainerUUID           string                 `json:"container_uuid"`
+	ContainerUUID           *string                `json:"container_uuid"`
 	ContainerCountMax       int                    `json:"container_count_max"`
 	Mounts                  map[string]Mount       `json:"mounts"`
 	RuntimeConstraints      RuntimeConstraints     `json:"runtime_constraints"`
