@@ -136,6 +136,7 @@ class Link < ArvadosModel
   def call_update_permissions
     if self.link_class == 'permission'
       update_permissions tail_uuid, head_uuid, PERM_LEVEL[name], self.uuid
+      current_user.forget_cached_group_perms
     end
   end
 
