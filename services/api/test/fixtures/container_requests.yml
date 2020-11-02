@@ -328,21 +328,22 @@ completed_with_input_mounts:
   output_uuid: zzzzz-4zz18-znfnqtbbv4spc3w
   mounts: {
     "/var/lib/cwl/cwl.input.json": {
+      "kind": "json",
       "content": {
         "input1": {
           "basename": "foo",
           "class": "File",
           "location": "keep:fa7aeb5140e2848d39b416daeef4ffc5+45/foo",
         },
-         "input2": {
+        "input2": {
           "basename": "bar",
           "class": "File",
           "location": "keep:fa7aeb5140e2848d39b416daeef4ffc5+45/bar",
-          }
-        },
-    "/var/lib/cwl/workflow.json": "keep:f9ddda46bb293b6847da984e3aa735db+290"
+        }
+      }
+    }
   }
-}
+
 uncommitted:
   uuid: zzzzz-xvhdp-cr4uncommittedc
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
