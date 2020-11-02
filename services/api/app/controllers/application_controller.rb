@@ -578,7 +578,7 @@ class ApplicationController < ActionController::Base
       if @objects.respond_to? :except
         list[:items_available] = @objects.
           except(:limit).except(:offset).
-          distinct.count(:id)
+          count(@distinct ? :id : '*')
       end
     when 'none'
     else
