@@ -286,6 +286,7 @@ class ArvadosModel < ApplicationRecord
 
     sql_conds = nil
     user_uuids = users_list.map { |u| u.uuid }
+    all_user_uuids = []
 
     # For details on how the trashed_groups table is constructed, see
     # see db/migrate/20200501150153_permission_table.rb
@@ -319,12 +320,31 @@ class ArvadosModel < ApplicationRecord
       # A user can have can_manage access to another user, this grants
       # full access to all that user's stuff.  To implement that we
       # need to include those other users in the permission query.
-      user_uuids_subquery = USER_UUIDS_SUBQUERY_TEMPLATE % {user: ":user_uuids", perm_level: 1}
+
+      # This was previously implemented by embedding the subquery
+      # directly into the query, but it was discovered later that this
+      # causes the Postgres query planner to do silly things because
+      # the query heuristics assumed the subquery would have a lot
+      # more rows that it does, and choose a bad merge strategy.  By
+      # doing the query here and embedding the result as a constant,
+      # Postgres also knows exactly how many items there are and can
+      # choose the right query strategy.
+      #
+      # (note: you could also do this with a temporary table, but that
+      # would require all every request be wrapped in a transaction,
+      # which is not currently the case).
+
+      all_user_uuids = ActiveRecord::Base.connection.exec_query %{
+#{USER_UUIDS_SUBQUERY_TEMPLATE % {user: "'#{user_uuids.join "', '"}'", perm_level: 1}}
+},
+                                             'readable_by.user_uuids'
+
+      user_uuids_subquery = ":user_uuids"
 
       # Note: it is possible to combine the direct_check and
-      # owner_check into a single EXISTS() clause, however it turns
+      # owner_check into a single IN (SELECT) clause, however it turns
       # out query optimizer doesn't like it and forces a sequential
-      # table scan.  Constructing the query with separate EXISTS()
+      # table scan.  Constructing the query with separate IN (SELECT)
       # clauses enables it to use the index.
       #
       # see issue 13208 for details.
@@ -353,6 +373,14 @@ class ArvadosModel < ApplicationRecord
       if sql_table != "api_client_authorizations" and sql_table != "groups" then
         owner_check = "#{sql_table}.owner_uuid IN (SELECT target_uuid FROM #{PERMISSION_VIEW} "+
                       "WHERE user_uuid IN (#{user_uuids_subquery}) AND perm_level >= 1 AND traverse_owned) "
+
+        # We want to do owner_check before direct_check in the OR
+        # clause.  The order of the OR clause isn't supposed to
+        # matter, but in practice, it does -- apparently in the
+        # absence of other hints, it uses the ordering from the query.
+        # For certain types of queries (like filtering on owner_uuid),
+        # every item will match the owner_check clause, so then
+        # Postgres will optimize out the direct_check entirely.
         direct_check = " OR " + direct_check
       end
 
@@ -379,7 +407,7 @@ class ArvadosModel < ApplicationRecord
     end
 
     self.where(sql_conds,
-               user_uuids: user_uuids,
+               user_uuids: all_user_uuids.collect{|c| c["target_uuid"]},
                permission_link_classes: ['permission', 'resources'])
   end
 
