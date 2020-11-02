@@ -149,6 +149,9 @@ module CurrentApiClient
       yield
     ensure
       Thread.current[:user] = user_was
+      if user_was
+        user_was.forget_cached_group_perms
+      end
     end
   end
 
