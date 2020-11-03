@@ -126,6 +126,153 @@ completed_older:
   secret_mounts: {}
   secret_mounts_md5: 99914b932bd37a50b983c5e7c90ae93b
 
+diagnostics_completed_requester:
+  uuid: zzzzz-dz642-diagcompreq0001
+  owner_uuid: zzzzz-tpzed-000000000000000
+  state: Complete
+  exit_code: 0
+  priority: 562948349145881771
+  created_at: 2020-11-02T00:03:50.192697000Z
+  modified_at: 2020-11-02T00:20:43.987275000Z
+  started_at: 2020-11-02T00:08:07.186711000Z
+  finished_at: 2020-11-02T00:20:43.975416000Z
+  container_image: d967ef4a1ca90a096a39f5ce68e4a2e7+261
+  cwd: /var/spool/cwl
+  log: 6129e376cb05c942f75a0c36083383e8+244
+  output: 1f4b0bc7583c2a7f9102c395f4ffc5e3+45
+  output_path: /var/spool/cwl
+  command: [
+             "arvados-cwl-runner",
+             "--local",
+             "--api=containers",
+             "--no-log-timestamps",
+             "--disable-validate",
+             "--disable-color",
+             "--eval-timeout=20",
+             "--thread-count=1",
+             "--disable-reuse",
+             "--collection-cache-size=256",
+             "--on-error=continue",
+             "/var/lib/cwl/workflow.json#main",
+             "/var/lib/cwl/cwl.input.json"
+           ]
+  runtime_constraints:
+    API: true
+    keep_cache_ram: 268435456
+    ram: 1342177280
+    vcpus: 1
+
+diagnostics_completed_hasher1:
+  uuid: zzzzz-dz642-diagcomphasher1
+  owner_uuid: zzzzz-tpzed-000000000000000
+  state: Complete
+  exit_code: 0
+  priority: 562948349145881771
+  created_at: 2020-11-02T00:08:18.829222000Z
+  modified_at: 2020-11-02T00:16:55.142023000Z
+  started_at: 2020-11-02T00:16:52.375871000Z
+  finished_at: 2020-11-02T00:16:55.105985000Z
+  container_image: d967ef4a1ca90a096a39f5ce68e4a2e7+261
+  cwd: /var/spool/cwl
+  log: fed8fb19fe8e3a320c29fed0edab12dd+220
+  output: d3a687732e84061f3bae15dc7e313483+62
+  output_path: /var/spool/cwl
+  command: [
+             "md5sum",
+             "/keep/9f26a86b6030a69ad222cf67d71c9502+65/hasher-input-file.txt"
+           ]
+  runtime_constraints:
+    API: true
+    keep_cache_ram: 268435456
+    ram: 268435456
+    vcpus: 1
+
+diagnostics_completed_hasher2:
+  uuid: zzzzz-dz642-diagcomphasher2
+  owner_uuid: zzzzz-tpzed-000000000000000
+  state: Complete
+  exit_code: 0
+  priority: 562948349145881771
+  created_at: 2020-11-02T00:17:07.026493000Z
+  modified_at: 2020-11-02T00:20:23.505908000Z
+  started_at: 2020-11-02T00:20:21.513185000Z
+  finished_at: 2020-11-02T00:20:23.478317000Z
+  container_image: d967ef4a1ca90a096a39f5ce68e4a2e7+261
+  cwd: /var/spool/cwl
+  log: 4fc03b95fc2646b0dec7383dbb7d56d8+221
+  output: 6bd770f6cf8f83e7647c602eecfaeeb8+62
+  output_path: /var/spool/cwl
+  command: [
+             "md5sum",
+             "/keep/d3a687732e84061f3bae15dc7e313483+62/hasher1.md5sum.txt"
+           ]
+  runtime_constraints:
+    API: true
+    keep_cache_ram: 268435456
+    ram: 268435456
+    vcpus: 2
+
+diagnostics_completed_hasher3:
+  uuid: zzzzz-dz642-diagcomphasher3
+  owner_uuid: zzzzz-tpzed-000000000000000
+  state: Complete
+  exit_code: 0
+  priority: 562948349145881771
+  created_at: 2020-11-02T00:20:30.943856000Z
+  modified_at: 2020-11-02T00:20:38.746541000Z
+  started_at: 2020-11-02T00:20:36.748957000Z
+  finished_at: 2020-11-02T00:20:38.732199000Z
+  container_image: d967ef4a1ca90a096a39f5ce68e4a2e7+261
+  cwd: /var/spool/cwl
+  log: 1eeaf70de0f65b1346e54c59f09e848d+210
+  output: 11b5fdaa380102e760c3eb6de80a9876+62
+  output_path: /var/spool/cwl
+  command: [
+             "md5sum",
+             "/keep/6bd770f6cf8f83e7647c602eecfaeeb8+62/hasher2.md5sum.txt"
+           ]
+  runtime_constraints:
+    API: true
+    keep_cache_ram: 268435456
+    ram: 268435456
+    vcpus: 1
+
+diagnostics_completed_requester2:
+  uuid: zzzzz-dz642-diagcompreq0002
+  owner_uuid: zzzzz-tpzed-000000000000000
+  state: Complete
+  exit_code: 0
+  priority: 1124295487972526
+  created_at: 2020-11-03T15:54:36.504661000Z
+  modified_at: 2020-11-03T16:17:53.242868000Z
+  started_at: 2020-11-03T16:09:51.123659000Z
+  finished_at: 2020-11-03T16:17:53.220358000Z
+  container_image: d967ef4a1ca90a096a39f5ce68e4a2e7+261
+  cwd: /var/spool/cwl
+  log: f1933bf5191f576613ea7f65bd0ead53+244
+  output: 941b71a57208741ce8742eca62352fb1+123
+  output_path: /var/spool/cwl
+  command: [
+             "arvados-cwl-runner",
+             "--local",
+             "--api=containers",
+             "--no-log-timestamps",
+             "--disable-validate",
+             "--disable-color",
+             "--eval-timeout=20",
+             "--thread-count=1",
+             "--disable-reuse",
+             "--collection-cache-size=256",
+             "--on-error=continue",
+             "/var/lib/cwl/workflow.json#main",
+             "/var/lib/cwl/cwl.input.json"
+           ]
+  runtime_constraints:
+    API: true
+    keep_cache_ram: 268435456
+    ram: 1342177280
+    vcpus: 1
+
 requester:
   uuid: zzzzz-dz642-requestingcntnr
   owner_uuid: zzzzz-tpzed-000000000000000

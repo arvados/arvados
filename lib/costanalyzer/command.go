@@ -22,7 +22,7 @@ func (f *NoPrefixFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	return []byte(entry.Message), nil
 }
 
-// RunCommand implements the subcommand "deduplication-report <collection> <collection> ..."
+// RunCommand implements the subcommand "costanalyzer <collection> <collection> ..."
 func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	var err error
 	logger := ctxlog.New(stderr, "text", "info")
