@@ -123,6 +123,7 @@ class ActiveSupport::TestCase
 
   def set_user_from_auth(auth_name)
     client_auth = api_client_authorizations(auth_name)
+    client_auth.user.forget_cached_group_perms
     Thread.current[:api_client_authorization] = client_auth
     Thread.current[:api_client] = client_auth.api_client
     Thread.current[:user] = client_auth.user

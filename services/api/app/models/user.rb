@@ -161,6 +161,10 @@ SELECT 1 FROM #{PERMISSION_VIEW}
     MaterializedPermission.where("user_uuid = ? and target_uuid != ?", uuid, uuid).delete_all
   end
 
+  def forget_cached_group_perms
+    @group_perms = nil
+  end
+
   def remove_self_from_permissions
     MaterializedPermission.where("target_uuid = ?", uuid).delete_all
     check_permissions_against_full_refresh
@@ -191,25 +195,35 @@ SELECT user_uuid, target_uuid, perm_level
   # and perm_hash[:write] are true if this user can read and write
   # objects owned by group_uuid.
   def group_permissions(level=1)
-    group_perms = {}
+    @group_perms ||= {}
+    if @group_perms.empty?
+      user_uuids_subquery = USER_UUIDS_SUBQUERY_TEMPLATE % {user: "$1", perm_level: 1}
 
-    user_uuids_subquery = USER_UUIDS_SUBQUERY_TEMPLATE % {user: "$1", perm_level: "$2"}
-
-    ActiveRecord::Base.connection.
-      exec_query(%{
+      ActiveRecord::Base.connection.
+        exec_query(%{
 SELECT target_uuid, perm_level
   FROM #{PERMISSION_VIEW}
-  WHERE user_uuid in (#{user_uuids_subquery}) and perm_level >= $2
+  WHERE user_uuid in (#{user_uuids_subquery}) and perm_level >= 1
 },
-                  # "name" arg is a query label that appears in logs:
-                  "User.group_permissions",
-                  # "binds" arg is an array of [col_id, value] for '$1' vars:
-                  [[nil, uuid],
-                   [nil, level]]).
-      rows.each do |group_uuid, max_p_val|
-      group_perms[group_uuid] = PERMS_FOR_VAL[max_p_val.to_i]
+                   # "name" arg is a query label that appears in logs:
+                   "User.group_permissions",
+                   # "binds" arg is an array of [col_id, value] for '$1' vars:
+                   [[nil, uuid]]).
+        rows.each do |group_uuid, max_p_val|
+        @group_perms[group_uuid] = PERMS_FOR_VAL[max_p_val.to_i]
+      end
     end
-    group_perms
+
+    case level
+    when 1
+      @group_perms
+    when 2
+      @group_perms.select {|k,v| v[:write] }
+    when 3
+      @group_perms.select {|k,v| v[:manage] }
+    else
+      raise "level must be 1, 2 or 3"
+    end
   end
 
   # create links
@@ -251,6 +265,8 @@ SELECT target_uuid, perm_level
       end
     end
 
+    forget_cached_group_perms
+
     return [repo_perm, vm_login_perm, group_perm, self].compact
   end
 
@@ -290,6 +306,7 @@ SELECT target_uuid, perm_level
     # mark the user as inactive
     self.is_admin = false  # can't be admin and inactive
     self.is_active = false
+    forget_cached_group_perms
     self.save!
   end
 
