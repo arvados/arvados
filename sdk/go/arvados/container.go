@@ -4,7 +4,9 @@
 
 package arvados
 
-import "time"
+import (
+	"time"
+)
 
 // Container is an arvados#container resource.
 type Container struct {
