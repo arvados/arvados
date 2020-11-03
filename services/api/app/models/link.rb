@@ -143,6 +143,7 @@ class Link < ArvadosModel
   def clear_permissions
     if self.link_class == 'permission'
       update_permissions tail_uuid, head_uuid, REVOKE_PERM, self.uuid
+      current_user.forget_cached_group_perms
     end
   end
 
