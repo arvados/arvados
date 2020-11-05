@@ -15,6 +15,6 @@ export class CollectionDetails extends DetailsData<CollectionResource> {
     }
 
     getDetails() {
-        return <CollectionDetailsAttributes item={this.item} />;
+        return <CollectionDetailsAttributes item={this.item} twoCol={false} />;
     }
 }
