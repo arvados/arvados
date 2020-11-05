@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-describe('Collection panel tests', function() {
+describe('Favorites tests', function() {
     let activeUser;
     let adminUser;
 

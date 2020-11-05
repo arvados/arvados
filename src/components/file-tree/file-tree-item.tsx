@@ -4,7 +4,7 @@
 
 import * as React from "react";
 import { TreeItem } from "../tree/tree";
-import { ProjectIcon, MoreOptionsIcon, DefaultIcon, CollectionIcon } from "../icon/icon";
+import { DirectoryIcon, MoreOptionsIcon, DefaultIcon, FileIcon } from "../icon/icon";
 import { Typography, IconButton, StyleRulesCallback, withStyles, WithStyles, Tooltip } from '@material-ui/core';
 import { formatFileSize } from "~/common/formatters";
 import { ListItemTextIcon } from "../list-item-text-icon/list-item-text-icon";
@@ -71,9 +71,9 @@ export const FileTreeItem = withStyles(fileTreeItemStyle)(
 export const getIcon = (type: string) => {
     switch (type) {
         case 'directory':
-            return ProjectIcon;
+            return DirectoryIcon;
         case 'file':
-            return CollectionIcon;
+            return FileIcon;
         default:
             return DefaultIcon;
     }

@@ -54,7 +54,8 @@ describe('Collection panel tests', function() {
                     // Check that name & uuid are correct.
                     cy.get('[data-cy=collection-info-panel]')
                         .should('contain', this.testCollection.name)
-                        .and('contain', this.testCollection.uuid);
+                        .and('contain', this.testCollection.uuid)
+                        .and('not.contain', 'This is an old version');
                     // Check for the read-only icon
                     cy.get('[data-cy=read-only-icon]').should(`${isWritable ? 'not.' : ''}exist`);
                     // Check that both read and write operations are available on
@@ -117,4 +118,54 @@ describe('Collection panel tests', function() {
             })
         })
     })
+
+    it('can correctly display old versions', function() {
+        const colName = `Versioned Collection ${Math.floor(Math.random() * Math.floor(999999))}`;
+        let colUuid = '';
+        let oldVersionUuid = '';
+        // Make sure no other collections with this name exist
+        cy.doRequest('GET', '/arvados/v1/collections', null, {
+            filters: `[["name", "=", "${colName}"]]`,
+            include_old_versions: true
+        })
+        .its('body.items').as('collections')
+        .then(function() {
+            expect(this.collections).to.be.empty;
+        });
+        // Creates the collection using the admin token so we can set up
+        // a bogus manifest text without block signatures.
+        cy.createCollection(adminUser.token, {
+            name: colName,
+            owner_uuid: activeUser.user.uuid,
+            manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"})
+        .as('originalVersion').then(function() {
+            // Change the file name to create a new version.
+            cy.updateCollection(adminUser.token, this.originalVersion.uuid, {
+                manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:foo\n"
+            })
+            colUuid = this.originalVersion.uuid;
+        });
+        // Confirm that there are 2 versions of the collection
+        cy.doRequest('GET', '/arvados/v1/collections', null, {
+            filters: `[["name", "=", "${colName}"]]`,
+            include_old_versions: true
+        })
+        .its('body.items').as('collections')
+        .then(function() {
+            expect(this.collections).to.have.lengthOf(2);
+            this.collections.map(function(aCollection) {
+                expect(aCollection.current_version_uuid).to.equal(colUuid);
+                if (aCollection.uuid !== aCollection.current_version_uuid) {
+                    oldVersionUuid = aCollection.uuid;
+                }
+            });
+            // Check the old version displays as what it is.
+            cy.loginAs(activeUser)
+            cy.visit(`/collections/${oldVersionUuid}`);
+            cy.get('[data-cy=collection-info-panel]').should('contain', 'This is an old version');
+            cy.get('[data-cy=read-only-icon]').should('exist');
+            cy.get('[data-cy=collection-info-panel]').should('contain', colName);
+            cy.get('[data-cy=collection-files-panel]').should('contain', 'bar');
+        });
+    });
 })

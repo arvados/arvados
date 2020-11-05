@@ -57,7 +57,7 @@ export const collectionAdminActionSet: ContextMenuActionSet = [[
     },
     {
         icon: CopyIcon,
-        name: "Copy to project",
+        name: "Make a copy",
         execute: (dispatch, resource) => {
             dispatch<any>(openCollectionCopyDialog(resource));
         }
@@ -70,13 +70,6 @@ export const collectionAdminActionSet: ContextMenuActionSet = [[
             dispatch<any>(toggleDetailsPanel());
         }
     },
-    // {
-    //     icon: ProvenanceGraphIcon,
-    //     name: "Provenance graph",
-    //     execute: (dispatch, resource) => {
-    //         // add code
-    //     }
-    // },
     {
         icon: AdvancedIcon,
         name: "Advanced",
@@ -90,11 +83,4 @@ export const collectionAdminActionSet: ContextMenuActionSet = [[
             dispatch<any>(toggleCollectionTrashed(resource.uuid, resource.isTrashed!!));
         }
     },
-    // {
-    //     icon: RemoveIcon,
-    //     name: "Remove",
-    //     execute: (dispatch, resource) => {
-    //         // add code
-    //     }
-    // }
 ]];

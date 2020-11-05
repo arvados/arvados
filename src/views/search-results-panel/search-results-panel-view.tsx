@@ -108,7 +108,7 @@ export const SearchResultsPanelView = withStyles(styles, { withTheme: true })(
     (props: SearchResultsPanelProps & WithStyles<CssRules, true>) => {
         const homeCluster = props.user.uuid.substr(0, 5);
         const loggedIn = props.sessions.filter((ss) => ss.loggedIn && ss.userIsActive);
-        return <DataExplorer
+        return <span data-cy='search-results'><DataExplorer
             id={SEARCH_RESULTS_PANEL_ID}
             onRowClick={props.onItemClick}
             onRowDoubleClick={props.onItemDoubleClick}
@@ -127,5 +127,5 @@ export const SearchResultsPanelView = withStyles(styles, { withTheme: true })(
                         : <span style={{ marginLeft: "2em" }}>Use <Link to={Routes.SITE_MANAGER} >Site Manager</Link> to manage which clusters will be searched.</span>}
                 </div >
             }
-        />;
+        /></span>;
     });

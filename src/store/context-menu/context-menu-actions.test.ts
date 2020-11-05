@@ -71,7 +71,7 @@ describe('context-menu-actions', () => {
                 expect(result).toEqual(ContextMenuKind.COLLECTION_ADMIN);
             });
 
-            it('should return ContextMenuKind.COLLECTION_RESOURCE', () => {
+            it('should return ContextMenuKind.COLLECTION', () => {
                 // given
                 const isAdmin = false;
                 const isEditable = true;
@@ -80,7 +80,7 @@ describe('context-menu-actions', () => {
                 const result = resourceKindToContextMenuKind(uuid, isAdmin, isEditable);
 
                 // then
-                expect(result).toEqual(ContextMenuKind.COLLECTION_RESOURCE);
+                expect(result).toEqual(ContextMenuKind.COLLECTION);
             });
 
             it('should return ContextMenuKind.READONLY_COLLECTION', () => {
