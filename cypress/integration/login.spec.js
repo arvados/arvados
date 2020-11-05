@@ -84,6 +84,7 @@ describe('Login tests', function() {
         cy.url().should('contain', '/projects/');
         cy.get('div#root').should('contain', 'Arvados Workbench (zzzzz)');
         cy.get('div#root').should('not.contain', 'Your account is inactive');
+        cy.get('[data-cy=breadcrumb-first]');
         // Invalidate own token.
         const tokenUuid = activeUser.token.split('/')[1];
         cy.doRequest('PUT', `/arvados/v1/api_client_authorizations/${tokenUuid}`, {
