@@ -355,6 +355,7 @@ test_package_presence() {
       dd[debian10]=buster
       dd[ubuntu1604]=xenial
       dd[ubuntu1804]=bionic
+      dd[ubuntu2004]=focal
       D=${dd[$TARGET]}
       if [ ${pkgname:0:3} = "lib" ]; then
         repo_subdir=${pkgname:0:4}
