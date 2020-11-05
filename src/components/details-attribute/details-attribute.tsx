@@ -20,24 +20,21 @@ type CssRules = 'attribute' | 'label' | 'value' | 'lowercaseValue' | 'link' | 'c
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     attribute: {
-        display: 'flex',
-        alignItems: 'flex-start'
+        marginBottom: ".6 rem"
     },
     label: {
         boxSizing: 'border-box',
         color: theme.palette.grey["500"],
-        width: '40%'
+        width: '100%'
     },
     value: {
         boxSizing: 'border-box',
-        width: '60%',
         alignItems: 'flex-start'
     },
     lowercaseValue: {
         textTransform: 'lowercase'
     },
     link: {
-        width: '60%',
         color: theme.palette.primary.main,
         textDecoration: 'none',
         overflowWrap: 'break-word',
@@ -45,9 +42,12 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     copyIcon: {
         marginLeft: theme.spacing.unit,
-        fontSize: '1.125rem',
         color: theme.palette.grey["500"],
-        cursor: 'pointer'
+        cursor: 'pointer',
+        display: 'inline',
+        '& svg': {
+            fontSize: '1rem'
+        }
     }
 });
 
@@ -101,17 +101,19 @@ export const DetailsAttribute = connect(mapStateToProps)(withStyles(styles)(
                 valueNode = value;
             }
             return <Typography component="div" className={classes.attribute}>
-                <Typography component="span" className={classnames([classes.label, classLabel])}>{label}</Typography>
+                <Typography component="div" className={classnames([classes.label, classLabel])}>{label}</Typography>
                 <Typography
                     onClick={onValueClick}
-                    component="span"
+                    component="div"
                     className={classnames([classes.value, classValue, { [classes.lowercaseValue]: lowercaseValue }])}>
                     {valueNode}
                     {children}
                     {linkToUuid && <Tooltip title="Copy">
-                        <CopyToClipboard text={linkToUuid || ""} onCopy={() => this.onCopy("Copied")}>
-                            <CopyIcon className={classes.copyIcon} />
-                        </CopyToClipboard>
+                        <span className={classes.copyIcon}>
+                            <CopyToClipboard text={linkToUuid || ""} onCopy={() => this.onCopy("Copied")}>
+                                <CopyIcon />
+                            </CopyToClipboard>
+                        </span>
                     </Tooltip>}
                 </Typography>
             </Typography>;
