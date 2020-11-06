@@ -122,7 +122,7 @@ describe('Collection panel tests', function() {
         // Creates the collection using the admin token so we can set up
         // a bogus manifest text without block signatures.
         cy.createCollection(adminUser.token, {
-            name: `Test collection ${Math.floor(Math.random() * Math.floor(999999))}`,
+            name: `Test collection ${Math.floor(Math.random() * 999999)}`,
             owner_uuid: activeUser.user.uuid,
             manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"})
         .as('testCollection').then(function() {
@@ -149,7 +149,7 @@ describe('Collection panel tests', function() {
         // Creates the collection using the admin token so we can set up
         // a bogus manifest text without block signatures.
         cy.createCollection(adminUser.token, {
-            name: `Test collection ${Math.floor(Math.random() * Math.floor(999999))}`,
+            name: `Test collection ${Math.floor(Math.random() * 999999)}`,
             owner_uuid: activeUser.user.uuid,
             manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"})
         .as('testCollection').then(function() {
