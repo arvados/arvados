@@ -27,7 +27,7 @@ export const readOnlyCollectionActionSet: ContextMenuActionSet = [[
     },
     {
         icon: CopyIcon,
-        name: "Copy to project",
+        name: "Make a copy",
         execute: (dispatch, resource) => {
             dispatch<any>(openCollectionCopyDialog(resource));
         }

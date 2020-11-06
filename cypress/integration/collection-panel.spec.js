@@ -54,7 +54,8 @@ describe('Collection panel tests', function() {
                     // Check that name & uuid are correct.
                     cy.get('[data-cy=collection-info-panel]')
                         .should('contain', this.testCollection.name)
-                        .and('contain', this.testCollection.uuid);
+                        .and('contain', this.testCollection.uuid)
+                        .and('not.contain', 'This is an old version');
                     // Check for the read-only icon
                     cy.get('[data-cy=read-only-icon]').should(`${isWritable ? 'not.' : ''}exist`);
                     // Check that both read and write operations are available on
@@ -63,8 +64,8 @@ describe('Collection panel tests', function() {
                         .click()
                     cy.get('[data-cy=context-menu]')
                         .should('contain', 'Add to favorites')
-                        .and(`${isWritable ? '' : 'not.'}contain`, 'Edit collection')
-                        .type('{esc}'); // Collapse the options menu
+                        .and(`${isWritable ? '' : 'not.'}contain`, 'Edit collection');
+                    cy.get('body').click(); // Collapse the menu avoiding details panel expansion
                     cy.get('[data-cy=collection-properties-panel]')
                         .should('contain', 'someKey')
                         .and('contain', 'someValue')
@@ -94,6 +95,15 @@ describe('Collection panel tests', function() {
                         cy.get('[data-cy=upload-button]')
                             .should(`${isWritable ? '' : 'not.'}contain`, 'Upload data');
                     });
+                    cy.get('[data-cy=collection-files-panel]')
+                        .contains('bar').rightclick();
+                    cy.get('[data-cy=context-menu]')
+                        .should('contain', 'Download')
+                        .and('contain', 'Open in new tab')
+                        .and('contain', 'Copy to clipboard')
+                        .and(`${isWritable ? '' : 'not.'}contain`, 'Rename')
+                        .and(`${isWritable ? '' : 'not.'}contain`, 'Remove');
+                    cy.get('body').click(); // Collapse the menu
                     // Hamburger 'more options' menu button
                     cy.get('[data-cy=collection-files-panel-options-btn]')
                         .click()
@@ -105,14 +115,14 @@ describe('Collection panel tests', function() {
                     cy.get('[data-cy=context-menu]')
                         // .should('contain', 'Download selected')
                         .should(`${isWritable ? '' : 'not.'}contain`, 'Remove selected')
-                        .type('{esc}'); // Collapse the options menu
+                    cy.get('body').click(); // Collapse the menu
                     // File item 'more options' button
                     cy.get('[data-cy=file-item-options-btn')
                         .click()
                     cy.get('[data-cy=context-menu]')
                         .should('contain', 'Download')
-                        .and(`${isWritable ? '' : 'not.'}contain`, 'Remove')
-                        .type('{esc}'); // Collapse
+                        .and(`${isWritable ? '' : 'not.'}contain`, 'Remove');
+                    cy.get('body').click(); // Collapse the menu
                 })
             })
         })
@@ -171,6 +181,56 @@ describe('Collection panel tests', function() {
                 .within(() => {
                     cy.contains('Could not rename');
                 });
+        });
+    });
+
+    it('can correctly display old versions', function() {
+        const colName = `Versioned Collection ${Math.floor(Math.random() * 999999)}`;
+        let colUuid = '';
+        let oldVersionUuid = '';
+        // Make sure no other collections with this name exist
+        cy.doRequest('GET', '/arvados/v1/collections', null, {
+            filters: `[["name", "=", "${colName}"]]`,
+            include_old_versions: true
+        })
+        .its('body.items').as('collections')
+        .then(function() {
+            expect(this.collections).to.be.empty;
+        });
+        // Creates the collection using the admin token so we can set up
+        // a bogus manifest text without block signatures.
+        cy.createCollection(adminUser.token, {
+            name: colName,
+            owner_uuid: activeUser.user.uuid,
+            manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"})
+        .as('originalVersion').then(function() {
+            // Change the file name to create a new version.
+            cy.updateCollection(adminUser.token, this.originalVersion.uuid, {
+                manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:foo\n"
+            })
+            colUuid = this.originalVersion.uuid;
+        });
+        // Confirm that there are 2 versions of the collection
+        cy.doRequest('GET', '/arvados/v1/collections', null, {
+            filters: `[["name", "=", "${colName}"]]`,
+            include_old_versions: true
+        })
+        .its('body.items').as('collections')
+        .then(function() {
+            expect(this.collections).to.have.lengthOf(2);
+            this.collections.map(function(aCollection) {
+                expect(aCollection.current_version_uuid).to.equal(colUuid);
+                if (aCollection.uuid !== aCollection.current_version_uuid) {
+                    oldVersionUuid = aCollection.uuid;
+                }
+            });
+            // Check the old version displays as what it is.
+            cy.loginAs(activeUser)
+            cy.visit(`/collections/${oldVersionUuid}`);
+            cy.get('[data-cy=collection-info-panel]').should('contain', 'This is an old version');
+            cy.get('[data-cy=read-only-icon]').should('exist');
+            cy.get('[data-cy=collection-info-panel]').should('contain', colName);
+            cy.get('[data-cy=collection-files-panel]').should('contain', 'bar');
         });
     });
 })

@@ -28,7 +28,7 @@ export const formatFileSize = (size?: number) => {
             }
         }
     }
-    return "";
+    return "0 B";
 };
 
 export const formatTime = (time: number, seconds?: boolean) => {

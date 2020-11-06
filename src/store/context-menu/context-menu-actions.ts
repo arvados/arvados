@@ -204,15 +204,21 @@ export const resourceKindToContextMenuKind = (uuid: string, isAdmin?: boolean, i
     const kind = extractUuidKind(uuid);
     switch (kind) {
         case ResourceKind.PROJECT:
-            return !isAdmin ?
-                isEditable ? ContextMenuKind.PROJECT : ContextMenuKind.READONLY_PROJECT :
-                ContextMenuKind.PROJECT_ADMIN;
+            return !isAdmin
+                ? isEditable
+                    ? ContextMenuKind.PROJECT
+                    : ContextMenuKind.READONLY_PROJECT
+                : ContextMenuKind.PROJECT_ADMIN;
         case ResourceKind.COLLECTION:
-            return !isAdmin ?
-                isEditable ? ContextMenuKind.COLLECTION_RESOURCE : ContextMenuKind.READONLY_COLLECTION :
-                ContextMenuKind.COLLECTION_ADMIN;
+            return !isAdmin
+                ? isEditable
+                    ? ContextMenuKind.COLLECTION
+                    : ContextMenuKind.READONLY_COLLECTION
+                : ContextMenuKind.COLLECTION_ADMIN;
         case ResourceKind.PROCESS:
-            return !isAdmin ? ContextMenuKind.PROCESS_RESOURCE : ContextMenuKind.PROCESS_ADMIN;
+            return !isAdmin
+                ? ContextMenuKind.PROCESS_RESOURCE
+                : ContextMenuKind.PROCESS_ADMIN;
         case ResourceKind.USER:
             return ContextMenuKind.ROOT_PROJECT;
         case ResourceKind.LINK:

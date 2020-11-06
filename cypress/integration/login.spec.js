@@ -93,7 +93,7 @@ describe('Login tests', function() {
             })
         }, null, activeUser.token, true);
         // Should log the user out.
-        cy.get('[data-cy=breadcrumb-first]').click();
+        cy.visit('/');
         cy.get('div#root').should('contain', 'Please log in');
     })
 

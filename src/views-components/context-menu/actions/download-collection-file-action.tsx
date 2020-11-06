@@ -13,7 +13,9 @@ import { sanitizeToken } from "./helpers";
 const mapStateToProps = (state: RootState) => {
     const { resource } = state.contextMenu;
     const currentCollectionUuid = state.collectionPanel.item ? state.collectionPanel.item.uuid : '';
-    if (resource && resource.menuKind === ContextMenuKind.COLLECTION_FILES_ITEM) {
+    if (resource && (
+        resource.menuKind === ContextMenuKind.COLLECTION_FILES_ITEM ||
+        resource.menuKind === ContextMenuKind.READONLY_COLLECTION_FILES_ITEM)) {
         const file = getNodeValue(resource.uuid)(state.collectionPanelFiles);
         if (file) {
             return {

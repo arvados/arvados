@@ -126,6 +126,14 @@ Cypress.Commands.add(
 )
 
 Cypress.Commands.add(
+    "updateCollection", (token, uuid, data) => {
+        return cy.updateResource(token, 'collections', uuid, {
+            collection: JSON.stringify(data)
+        })
+    }
+)
+
+Cypress.Commands.add(
     "createResource", (token, suffix, data) => {
         return cy.doRequest('POST', '/arvados/v1/'+suffix, data, null, token, true)
         .its('body').as('resource')
@@ -138,6 +146,16 @@ Cypress.Commands.add(
 Cypress.Commands.add(
     "deleteResource", (token, suffix, uuid) => {
         return cy.doRequest('DELETE', '/arvados/v1/'+suffix+'/'+uuid)
+        .its('body').as('resource')
+        .then(function() {
+            return this.resource;
+        })
+    }
+)
+
+Cypress.Commands.add(
+    "updateResource", (token, suffix, uuid, data) => {
+        return cy.doRequest('PUT', '/arvados/v1/'+suffix+'/'+uuid, data, null, token, true)
         .its('body').as('resource')
         .then(function() {
             return this.resource;

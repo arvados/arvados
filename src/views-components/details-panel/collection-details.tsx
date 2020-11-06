@@ -5,11 +5,8 @@
 import * as React from 'react';
 import { CollectionIcon } from '~/components/icon/icon';
 import { CollectionResource } from '~/models/collection';
-import { formatDate, formatFileSize } from '~/common/formatters';
-import { resourceLabel } from '~/common/labels';
-import { ResourceKind } from '~/models/resource';
 import { DetailsData } from "./details-data";
-import { DetailsAttribute } from "~/components/details-attribute/details-attribute";
+import { CollectionDetailsAttributes } from '~/views/collection-panel/collection-panel';
 
 export class CollectionDetails extends DetailsData<CollectionResource> {
 
@@ -18,17 +15,6 @@ export class CollectionDetails extends DetailsData<CollectionResource> {
     }
 
     getDetails() {
-        return <div>
-            <DetailsAttribute label='Type' value={resourceLabel(ResourceKind.COLLECTION)} />
-            <DetailsAttribute label='Size' value='---' />
-            <DetailsAttribute label='Owner' linkToUuid={this.item.ownerUuid} lowercaseValue={true} />
-            <DetailsAttribute label='Last modified' value={formatDate(this.item.modifiedAt)} />
-            <DetailsAttribute label='Created at' value={formatDate(this.item.createdAt)} />
-            <DetailsAttribute label='Collection UUID' linkToUuid={this.item.uuid} value={this.item.uuid} />
-            <DetailsAttribute label='Content address' linkToUuid={this.item.portableDataHash} value={this.item.portableDataHash} />
-            {/* Missing attrs */}
-            <DetailsAttribute label='Number of files' value={this.item.fileCount} />
-            <DetailsAttribute label='Content size' value={formatFileSize(this.item.fileSizeTotal)} />
-        </div>;
+        return <CollectionDetailsAttributes item={this.item} twoCol={false} />;
     }
 }
