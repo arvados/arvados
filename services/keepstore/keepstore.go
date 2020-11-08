@@ -8,10 +8,10 @@ import (
 	"time"
 )
 
-// A Keep "block" is 64MB.
+// BlockSize for a Keep "block" is 64MB.
 const BlockSize = 64 * 1024 * 1024
 
-// A Keep volume must have at least MinFreeKilobytes available
+// MinFreeKilobytes is the amount of space a Keep volume must have available
 // in order to permit writes.
 const MinFreeKilobytes = BlockSize / 1024
 

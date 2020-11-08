@@ -438,9 +438,9 @@ func (super *Supervisor) lookPath(prog string) string {
 	return prog
 }
 
-// Run prog with args, using dir as working directory. If ctx is
-// cancelled while the child is running, RunProgram terminates the
-// child, waits for it to exit, then returns.
+// RunProgram runs prog with args, using dir as working directory. If ctx is
+// cancelled while the child is running, RunProgram terminates the child, waits
+// for it to exit, then returns.
 //
 // Child's environment will have our env vars, plus any given in env.
 //

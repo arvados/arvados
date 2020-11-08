@@ -32,7 +32,7 @@ type Container struct {
 	FinishedAt           *time.Time             `json:"finished_at"` // nil if not yet finished
 }
 
-// Container is an arvados#container resource.
+// ContainerRequest is an arvados#container_request resource.
 type ContainerRequest struct {
 	UUID                    string                 `json:"uuid"`
 	OwnerUUID               string                 `json:"owner_uuid"`
@@ -127,7 +127,7 @@ const (
 	ContainerStateCancelled = ContainerState("Cancelled")
 )
 
-// ContainerState is a string corresponding to a valid Container state.
+// ContainerRequestState is a string corresponding to a valid Container Request state.
 type ContainerRequestState string
 
 const (
