@@ -202,12 +202,7 @@ class ArvadosBase
 
   def self.find(uuid, opts={})
     if uuid.class != String or uuid.length < 27 then
-      begin
-        raise
-      rescue => e
-        raise e.message + e.backtrace[0..20].join("\n") + "'#{uuid}': argument to find() must be a uuid string. Acceptable formats: warehouse locator or string with format xxxxx-xxxxx-xxxxxxxxxxxxxxx"
-      end
-      
+      raise 'argument to find() must be a uuid string. Acceptable formats: warehouse locator or string with format xxxxx-xxxxx-xxxxxxxxxxxxxxx'
     end
 
     if self == ArvadosBase
