@@ -125,4 +125,4 @@ docker run -it --rm \
        -v /tmp/pkg:/pkg:ro \
        -v ${sourcesfile}:/etc/apt/sources.list.d/arvados-local.list:ro \
        "${installimage}" \
-       bash -c 'apt update && DEBIAN_FRONTEND=noninteractive apt install --reinstall -y arvados-server-easy postgresql && /etc/init.d/postgresql start && /var/lib/arvados/bin/arvados-server init -cluster-id x1234 && /var/lib/arvados/bin/arvados-server boot'
+       bash -c 'apt update && DEBIAN_FRONTEND=noninteractive apt install --reinstall -y arvados-server-easy postgresql && /etc/init.d/postgresql start && /var/lib/arvados/bin/arvados-server init -cluster-id x1234 && /var/lib/arvados/bin/arvados-server boot -listen-host 0.0.0.0'
