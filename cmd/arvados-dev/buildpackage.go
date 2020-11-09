@@ -87,7 +87,7 @@ func (bldr *builder) run(ctx context.Context, prog string, args []string, stdin 
 	cmd.Args = append(cmd.Args,
 		"--deb-use-file-permissions",
 		"--rpm-use-file-permissions",
-		"--exclude", "/var/lib/arvados/go",
+		"--exclude", "var/lib/arvados/go",
 		"/var/lib/arvados",
 		"/var/www/.gem",
 		"/var/www/.passenger",
