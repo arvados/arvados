@@ -428,9 +428,9 @@ rm ${zip}
 				return 1
 			}
 			for _, cmdline := range [][]string{
-				{"mkdir", "-p", "log", "tmp", ".bundle", "/var/www/.gem", "/var/www/.passenger"},
+				{"mkdir", "-p", "log", "tmp", ".bundle", "/var/www/.gem", "/var/www/.bundle", "/var/www/.passenger"},
 				{"touch", "log/production.log"},
-				{"chown", "-R", "--from=root", "www-data:www-data", "/var/www/.gem", "/var/www/.passenger", "log", "tmp", ".bundle", "Gemfile.lock", "config.ru", "config/environment.rb"},
+				{"chown", "-R", "--from=root", "www-data:www-data", "/var/www/.gem", "/var/www/.bundle", "/var/www/.passenger", "log", "tmp", ".bundle", "Gemfile.lock", "config.ru", "config/environment.rb"},
 				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/gem", "install", "--user", "--conservative", "--no-document", "bundler:1.16.6", "bundler:1.17.3", "bundler:2.0.2"},
 				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "install", "--deployment", "--jobs", "8", "--path", "/var/www/.gem"},
 				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "exec", "passenger-config", "build-native-support"},

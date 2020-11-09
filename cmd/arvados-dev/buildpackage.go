@@ -91,6 +91,7 @@ func (bldr *builder) run(ctx context.Context, prog string, args []string, stdin 
 		"/var/lib/arvados",
 		"/var/www/.gem",
 		"/var/www/.passenger",
+		"/var/www/.bundle",
 	)
 	fmt.Fprintf(stderr, "... %s\n", cmd.Args)
 	cmd.Dir = bldr.OutputDir
