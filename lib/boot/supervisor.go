@@ -143,6 +143,7 @@ func (super *Supervisor) run(cfg *arvados.Config) error {
 		super.tempdir = "/var/lib/arvados/tmp"
 		super.wwwtempdir = "/var/lib/arvados/wwwtmp"
 		super.bindir = "/var/lib/arvados/bin"
+		super.configfile = "/etc/arvados/config.yml"
 	} else {
 		super.tempdir, err = ioutil.TempDir("", "arvados-server-boot-")
 		if err != nil {
@@ -154,28 +155,28 @@ func (super *Supervisor) run(cfg *arvados.Config) error {
 		if err := os.Mkdir(super.bindir, 0755); err != nil {
 			return err
 		}
-	}
 
-	// Fill in any missing config keys, and write the resulting
-	// config in the temp dir for child services to use.
-	err = super.autofillConfig(cfg)
-	if err != nil {
-		return err
+		// Fill in any missing config keys, and write the resulting
+		// config in the temp dir for child services to use.
+		err = super.autofillConfig(cfg)
+		if err != nil {
+			return err
+		}
+		conffile, err := os.OpenFile(filepath.Join(super.tempdir, "config.yml"), os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			return err
+		}
+		defer conffile.Close()
+		err = json.NewEncoder(conffile).Encode(cfg)
+		if err != nil {
+			return err
+		}
+		err = conffile.Close()
+		if err != nil {
+			return err
+		}
+		super.configfile = conffile.Name()
 	}
-	conffile, err := os.OpenFile(filepath.Join(super.tempdir, "config.yml"), os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return err
-	}
-	defer conffile.Close()
-	err = json.NewEncoder(conffile).Encode(cfg)
-	if err != nil {
-		return err
-	}
-	err = conffile.Close()
-	if err != nil {
-		return err
-	}
-	super.configfile = conffile.Name()
 
 	super.environ = os.Environ()
 	super.cleanEnv([]string{"ARVADOS_"})

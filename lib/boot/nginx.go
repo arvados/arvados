@@ -37,7 +37,7 @@ func (runNginx) Run(ctx context.Context, fail func(error), super *Supervisor) er
 		"SSLKEY":     filepath.Join(super.tempdir, "server.key"),
 		"ACCESSLOG":  filepath.Join(super.tempdir, "nginx_access.log"),
 		"ERRORLOG":   filepath.Join(super.tempdir, "nginx_error.log"),
-		"TMPDIR":     super.tempdir,
+		"TMPDIR":     super.wwwtempdir,
 	}
 	for _, cmpt := range []struct {
 		varname string
@@ -105,7 +105,7 @@ func (runNginx) Run(ctx context.Context, fail func(error), super *Supervisor) er
 		defer super.waitShutdown.Done()
 		fail(super.RunProgram(ctx, ".", nil, nil, nginx,
 			"-g", "error_log stderr info;",
-			"-g", "pid "+filepath.Join(super.tempdir, "nginx.pid")+";",
+			"-g", "user www-data; pid "+filepath.Join(super.wwwtempdir, "nginx.pid")+";",
 			"-c", conffile))
 	}()
 	// Choose one of the ports where Nginx should listen, and wait
