@@ -286,6 +286,41 @@ func (conn *Conn) ContainerUnlock(ctx context.Context, options arvados.GetOption
 	return resp, err
 }
 
+func (conn *Conn) ContainerRequestCreate(ctx context.Context, options arvados.CreateOptions) (arvados.ContainerRequest, error) {
+	ep := arvados.EndpointContainerRequestCreate
+	var resp arvados.ContainerRequest
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) ContainerRequestUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.ContainerRequest, error) {
+	ep := arvados.EndpointContainerRequestUpdate
+	var resp arvados.ContainerRequest
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) ContainerRequestGet(ctx context.Context, options arvados.GetOptions) (arvados.ContainerRequest, error) {
+	ep := arvados.EndpointContainerRequestGet
+	var resp arvados.ContainerRequest
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) ContainerRequestList(ctx context.Context, options arvados.ListOptions) (arvados.ContainerRequestList, error) {
+	ep := arvados.EndpointContainerRequestList
+	var resp arvados.ContainerRequestList
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) ContainerRequestDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.ContainerRequest, error) {
+	ep := arvados.EndpointContainerRequestDelete
+	var resp arvados.ContainerRequest
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
 func (conn *Conn) SpecimenCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Specimen, error) {
 	ep := arvados.EndpointSpecimenCreate
 	var resp arvados.Specimen
@@ -402,6 +437,7 @@ func (conn *Conn) APIClientAuthorizationCurrent(ctx context.Context, options arv
 }
 
 type UserSessionAuthInfo struct {
+	UserUUID        string   `json:"user_uuid"`
 	Email           string   `json:"email"`
 	AlternateEmails []string `json:"alternate_emails"`
 	FirstName       string   `json:"first_name"`

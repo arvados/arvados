@@ -28,7 +28,6 @@ func remoteContainerRequestCreate(
 	if effectiveMethod != "POST" || uuid != "" || remainder != "" {
 		return false
 	}
-
 	// First make sure supplied token is valid.
 	creds := auth.NewCredentials()
 	creds.LoadTokensFromHTTPRequest(req)

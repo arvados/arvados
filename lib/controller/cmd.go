@@ -13,6 +13,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+// Command intanciates a cmd.Handler with the service.Command used in package cmd
 var Command cmd.Handler = service.Command(arvados.ServiceNameController, newHandler)
 
 func newHandler(_ context.Context, cluster *arvados.Cluster, _ string, _ *prometheus.Registry) service.Handler {

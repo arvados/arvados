@@ -46,7 +46,7 @@ const (
 
 type oidcLoginController struct {
 	Cluster            *arvados.Cluster
-	RailsProxy         *railsProxy
+	Parent             *Conn
 	Issuer             string // OIDC issuer URL, e.g., "https://accounts.google.com"
 	ClientID           string
 	ClientSecret       string
@@ -143,7 +143,7 @@ func (ctrl *oidcLoginController) Login(ctx context.Context, opts arvados.LoginOp
 		return loginError(err)
 	}
 	ctxRoot := auth.NewContext(ctx, &auth.Credentials{Tokens: []string{ctrl.Cluster.SystemRootToken}})
-	return ctrl.RailsProxy.UserSessionCreate(ctxRoot, rpc.UserSessionCreateOptions{
+	return ctrl.Parent.UserSessionCreate(ctxRoot, rpc.UserSessionCreateOptions{
 		ReturnTo: state.Remote + "," + state.ReturnTo,
 		AuthInfo: *authinfo,
 	})

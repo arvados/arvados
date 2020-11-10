@@ -48,7 +48,7 @@ type ContainerRequest struct {
 	Properties              map[string]interface{} `json:"properties"`
 	State                   ContainerRequestState  `json:"state"`
 	RequestingContainerUUID string                 `json:"requesting_container_uuid"`
-	ContainerUUID           string                 `json:"container_uuid"`
+	ContainerUUID           *string                `json:"container_uuid"`
 	ContainerCountMax       int                    `json:"container_count_max"`
 	Mounts                  map[string]Mount       `json:"mounts"`
 	RuntimeConstraints      RuntimeConstraints     `json:"runtime_constraints"`
@@ -65,6 +65,9 @@ type ContainerRequest struct {
 	LogUUID                 string                 `json:"log_uuid"`
 	OutputUUID              string                 `json:"output_uuid"`
 	RuntimeToken            string                 `json:"runtime_token"`
+	ExpiresAt               string                 `json:"expires_at"`
+	Filters                 []string               `json:"filters"`
+	ContainerCount          int                    `json:"container_count"`
 }
 
 // Mount is special behavior to attach to a filesystem path or device.
@@ -86,18 +89,18 @@ type Mount struct {
 // RuntimeConstraints specify a container's compute resources (RAM,
 // CPU) and network connectivity.
 type RuntimeConstraints struct {
-	API          *bool
-	RAM          int64 `json:"ram"`
-	VCPUs        int   `json:"vcpus"`
-	KeepCacheRAM int64 `json:"keep_cache_ram"`
+	API          *bool `json:",omitempty"`
+	RAM          int64 `json:"ram,omitempty"`
+	VCPUs        int   `json:"vcpus,omitempty"`
+	KeepCacheRAM int64 `json:"keep_cache_ram,omitempty"`
 }
 
 // SchedulingParameters specify a container's scheduling parameters
 // such as Partitions
 type SchedulingParameters struct {
-	Partitions  []string `json:"partitions"`
-	Preemptible bool     `json:"preemptible"`
-	MaxRunTime  int      `json:"max_run_time"`
+	Partitions  []string `json:"partitions,omitempty"`
+	Preemptible bool     `json:"preemptible,omitempty"`
+	MaxRunTime  int      `json:"max_run_time,omitempty"`
 }
 
 // ContainerList is an arvados#containerList resource.

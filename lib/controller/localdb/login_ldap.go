@@ -21,8 +21,8 @@ import (
 )
 
 type ldapLoginController struct {
-	Cluster    *arvados.Cluster
-	RailsProxy *railsProxy
+	Cluster *arvados.Cluster
+	Parent  *Conn
 }
 
 func (ctrl *ldapLoginController) Logout(ctx context.Context, opts arvados.LogoutOptions) (arvados.LogoutResponse, error) {
@@ -143,7 +143,7 @@ func (ctrl *ldapLoginController) UserAuthenticate(ctx context.Context, opts arva
 		return arvados.APIClientAuthorization{}, errors.New("authentication succeeded but ldap returned no email address")
 	}
 
-	return createAPIClientAuthorization(ctx, ctrl.RailsProxy, ctrl.Cluster.SystemRootToken, rpc.UserSessionAuthInfo{
+	return ctrl.Parent.CreateAPIClientAuthorization(ctx, ctrl.Cluster.SystemRootToken, rpc.UserSessionAuthInfo{
 		Email:     email,
 		FirstName: attrs["givenname"],
 		LastName:  attrs["sn"],

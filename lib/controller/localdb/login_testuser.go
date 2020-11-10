@@ -17,8 +17,8 @@ import (
 )
 
 type testLoginController struct {
-	Cluster    *arvados.Cluster
-	RailsProxy *railsProxy
+	Cluster *arvados.Cluster
+	Parent  *Conn
 }
 
 func (ctrl *testLoginController) Logout(ctx context.Context, opts arvados.LogoutOptions) (arvados.LogoutResponse, error) {
@@ -45,7 +45,7 @@ func (ctrl *testLoginController) UserAuthenticate(ctx context.Context, opts arva
 				"username": username,
 				"email":    user.Email,
 			}).Debug("test authentication succeeded")
-			return createAPIClientAuthorization(ctx, ctrl.RailsProxy, ctrl.Cluster.SystemRootToken, rpc.UserSessionAuthInfo{
+			return ctrl.Parent.CreateAPIClientAuthorization(ctx, ctrl.Cluster.SystemRootToken, rpc.UserSessionAuthInfo{
 				Username: username,
 				Email:    user.Email,
 			})
