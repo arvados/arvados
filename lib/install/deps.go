@@ -201,7 +201,7 @@ tmp=/var/lib/arvados/tmp/ruby-`+rubyversion+`
 trap "rm -r ${tmp}" ERR
 wget --progress=dot:giga -O- https://cache.ruby-lang.org/pub/ruby/2.5/ruby-`+rubyversion+`.tar.gz | tar -C /var/lib/arvados/tmp -xzf -
 cd ${tmp}
-./configure --disable-install-doc --prefix /var/lib/arvados
+./configure --disable-install-static-library --enable-shared --disable-install-doc --prefix /var/lib/arvados
 make -j8
 make install
 /var/lib/arvados/bin/gem install bundler --no-ri --no-rdoc
