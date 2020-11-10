@@ -12,7 +12,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"net/http"
 	"net/url"
@@ -288,7 +287,6 @@ func (conn *Conn) ContainerUnlock(ctx context.Context, options arvados.GetOption
 }
 
 func (conn *Conn) ContainerRequestCreate(ctx context.Context, options arvados.CreateOptions) (arvados.ContainerRequest, error) {
-	log.Printf("THIS IS rcp.Conn.ContainerRequestCreate() for %s we are %s", options.ClusterID, conn.clusterID)
 	ep := arvados.EndpointContainerRequestCreate
 	var resp arvados.ContainerRequest
 	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)

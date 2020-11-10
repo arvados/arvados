@@ -10,7 +10,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -343,7 +342,6 @@ func (conn *Conn) ContainerRequestList(ctx context.Context, options arvados.List
 
 func (conn *Conn) ContainerRequestCreate(ctx context.Context, options arvados.CreateOptions) (arvados.ContainerRequest, error) {
 	be := conn.chooseBackend(options.ClusterID)
-	log.Printf("THIS IS federation.Conn.ContainerRequestCreate() for %s we are %s", options.ClusterID, conn.cluster.ClusterID)
 	if be == conn.local {
 		return be.ContainerRequestCreate(ctx, options)
 	}
