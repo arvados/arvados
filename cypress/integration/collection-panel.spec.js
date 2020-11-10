@@ -128,7 +128,7 @@ describe('Collection panel tests', function() {
         })
     })
 
-    it('renames a file', function() {
+    it('renames a file using valid names', function() {
         // Creates the collection using the admin token so we can set up
         // a bogus manifest text without block signatures.
         cy.createCollection(adminUser.token, {
@@ -138,24 +138,34 @@ describe('Collection panel tests', function() {
         .as('testCollection').then(function() {
             cy.loginAs(activeUser);
             cy.visit(`/collections/${this.testCollection.uuid}`);
-            cy.get('[data-cy=collection-files-panel]')
-                .contains('bar').rightclick();
-            cy.get('[data-cy=context-menu]')
-                .contains('Rename')
-                .click();
-            cy.get('[data-cy=form-dialog]')
-                .should('contain', 'Rename')
-                .within(() => {
-                    cy.get('input').type('{backspace}{backspace}{backspace}foo');
-                });
-            cy.get('[data-cy=form-submit-btn]').click();
-            cy.get('[data-cy=collection-files-panel]')
-                .should('not.contain', 'bar')
-                .and('contain', 'foo');
+            const nameTransitions = [
+                ['bar', '&'],
+                ['&', 'foo'],
+                ['foo', '&amp;'],
+                ['&amp;', 'I ❤️ ⛵️'],
+                ['I ❤️ ⛵️', ' baz'],
+                [' baz', ' '] // Must be the last case as cy.contains(' ') doesn't work
+            ];
+            nameTransitions.forEach(([from, to]) => {
+                cy.get('[data-cy=collection-files-panel]')
+                    .contains(`${from}`).rightclick();
+                cy.get('[data-cy=context-menu]')
+                    .contains('Rename')
+                    .click();
+                cy.get('[data-cy=form-dialog]')
+                    .should('contain', 'Rename')
+                    .within(() => {
+                        cy.get('input').type(`{selectall}{backspace}${to}`);
+                    });
+                cy.get('[data-cy=form-submit-btn]').click();
+                cy.get('[data-cy=collection-files-panel]')
+                    .should('not.contain', `${from}`)
+                    .and('contain', `${to}`);
+            })
         });
     });
 
-    it('tries to rename a file with an illegal name', function() {
+    it('tries to rename a file with an illegal names', function() {
         // Creates the collection using the admin token so we can set up
         // a bogus manifest text without block signatures.
         cy.createCollection(adminUser.token, {
@@ -165,22 +175,26 @@ describe('Collection panel tests', function() {
         .as('testCollection').then(function() {
             cy.loginAs(activeUser);
             cy.visit(`/collections/${this.testCollection.uuid}`);
-            cy.get('[data-cy=collection-files-panel]')
-                .contains('bar').rightclick();
-            cy.get('[data-cy=context-menu]')
-                .contains('Rename')
-                .click();
-            cy.get('[data-cy=form-dialog]')
-                .should('contain', 'Rename')
-                .within(() => {
-                    cy.get('input').type('{backspace}{backspace}{backspace}');
-                });
-            cy.get('[data-cy=form-submit-btn]').click();
-            cy.get('[data-cy=form-dialog]')
-                .should('contain', 'Rename')
-                .within(() => {
-                    cy.contains('Could not rename');
-                });
+            const illegalNames = ['', '.', '..'];
+            illegalNames.forEach((name) => {
+                cy.get('[data-cy=collection-files-panel]')
+                    .contains('bar').rightclick();
+                cy.get('[data-cy=context-menu]')
+                    .contains('Rename')
+                    .click();
+                cy.get('[data-cy=form-dialog]')
+                    .should('contain', 'Rename')
+                    .within(() => {
+                        cy.get('input').type(`{selectall}{backspace}${name}`);
+                    });
+                cy.get('[data-cy=form-submit-btn]').click();
+                cy.get('[data-cy=form-dialog]')
+                    .should('contain', 'Rename')
+                    .within(() => {
+                        cy.contains('Could not rename');
+                    });
+                cy.get('[data-cy=form-cancel-btn]').click();
+            })
         });
     });
 

@@ -63,6 +63,7 @@ export const FormDialog = withStyles(styles)((props: DialogProjectProps) =>
             </DialogContent>
             <DialogActions className={props.classes.dialogActions}>
                 <Button
+                    data-cy='form-cancel-btn'
                     onClick={props.closeDialog}
                     className={props.classes.button}
                     color="primary"
