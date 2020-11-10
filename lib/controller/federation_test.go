@@ -602,7 +602,7 @@ func (s *FederationSuite) TestCreateRemoteContainerRequestError(c *check.C) {
   }
 }
 `))
-	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveTokenV2)
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
 	req.Header.Set("Content-type", "application/json")
 	resp := s.testRequest(req).Result()
 	c.Check(resp.StatusCode, check.Equals, http.StatusNotFound)
@@ -644,7 +644,7 @@ func (s *FederationSuite) TestListMultiRemoteContainers(c *check.C) {
 			arvadostest.QueuedContainerUUID)),
 		url.QueryEscape(`["uuid", "command"]`)),
 		nil)
-	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveTokenV2)
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
 	resp := s.testRequest(req).Result()
 	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
 	var cn arvados.ContainerList
