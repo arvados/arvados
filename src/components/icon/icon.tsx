@@ -56,6 +56,7 @@ import Star from '@material-ui/icons/Star';
 import StarBorder from '@material-ui/icons/StarBorder';
 import Warning from '@material-ui/icons/Warning';
 import VpnKey from '@material-ui/icons/VpnKey';
+import LinkOutlined from '@material-ui/icons/LinkOutlined';
 
 // Import FontAwesome icons
 import { library } from '@fortawesome/fontawesome-svg-core';
@@ -139,3 +140,4 @@ export const UserPanelIcon: IconType = (props) => <Person {...props} />;
 export const UsedByIcon: IconType = (props) => <Folder {...props} />;
 export const WorkflowIcon: IconType = (props) => <Code {...props} />;
 export const WarningIcon: IconType = (props) => <Warning style={{ color: '#fbc02d', height: '30px', width: '30px' }} {...props} />;
+export const Link: IconType = (props) => <LinkOutlined {...props} />;

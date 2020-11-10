@@ -18,6 +18,7 @@ describe("AuthMiddleware", () => {
     let store: RootStore;
     let services: ServiceRepository;
     let axiosInst: AxiosInstance;
+    const config: any = {};
     const actions: ApiActions = {
         progressFn: (id: string, working: boolean) => { },
         errorFn: (id: string, message: string) => { }
@@ -26,7 +27,7 @@ describe("AuthMiddleware", () => {
     beforeEach(() => {
         axiosInst = Axios.create({ headers: {} });
         services = createServices(mockConfig({}), actions, axiosInst);
-        store = configureStore(createBrowserHistory(), services);
+        store = configureStore(createBrowserHistory(), services, config);
         localStorage.clear();
     });
 

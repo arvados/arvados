@@ -30,7 +30,7 @@ export class CollectionDetails extends DetailsData<CollectionResource> {
     }
 
     private getCollectionInfo() {
-        return <CollectionDetailsAttributes item={this.item} />;
+        return <CollectionDetailsAttributes twoCol={false} item={this.item} />;
     }
 
     private getVersionBrowser() {

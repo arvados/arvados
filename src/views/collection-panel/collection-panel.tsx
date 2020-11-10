@@ -14,7 +14,7 @@ import { ArvadosTheme } from '~/common/custom-theme';
 import { RootState } from '~/store/store';
 import { MoreOptionsIcon, CollectionIcon, ReadOnlyIcon, ExpandIcon, CollectionOldVersionIcon } from '~/components/icon/icon';
 import { DetailsAttribute } from '~/components/details-attribute/details-attribute';
-import { CollectionResource } from '~/models/collection';
+import { CollectionResource, getCollectionUrl } from '~/models/collection';
 import { CollectionPanelFiles } from '~/views-components/collection-panel-files/collection-panel-files';
 import { CollectionTagForm } from './collection-tag-form';
 import { deleteCollectionTag, navigateToProcess, collectionPanelActions } from '~/store/collection-panel/collection-panel-action';
@@ -31,6 +31,7 @@ import { UserResource } from '~/models/user';
 import { getUserUuid } from '~/common/getuser';
 import { getProgressIndicator } from '~/store/progress-indicator/progress-indicator-reducer';
 import { COLLECTION_PANEL_LOAD_FILES, loadCollectionFiles, COLLECTION_PANEL_LOAD_FILES_THRESHOLD } from '~/store/collection-panel/collection-panel-files/collection-panel-files-actions';
+import { Link } from 'react-router-dom';
 
 type CssRules = 'root'
     | 'filesCard'
@@ -113,7 +114,7 @@ export const CollectionPanel = withStyles(styles)(
             if (item.ownerUuid === currentUserUUID) {
                 isWritable = true;
             } else {
-                const itemOwner = getResource<GroupResource|UserResource>(item.ownerUuid)(state.resources);
+                const itemOwner = getResource<GroupResource | UserResource>(item.ownerUuid)(state.resources);
                 if (itemOwner) {
                     isWritable = itemOwner.writableBy.indexOf(currentUserUUID || '') >= 0;
                 }
@@ -134,21 +135,21 @@ export const CollectionPanel = withStyles(styles)(
                                 <Grid container justify="space-between">
                                     <Grid item xs={11}><span>
                                         <IconButton onClick={this.openCollectionDetails}>
-                                            { isOldVersion
-                                            ? <CollectionOldVersionIcon className={classes.iconHeader} />
-                                            : <CollectionIcon className={classes.iconHeader} /> }
+                                            {isOldVersion
+                                                ? <CollectionOldVersionIcon className={classes.iconHeader} />
+                                                : <CollectionIcon className={classes.iconHeader} />}
                                         </IconButton>
-                                        <IllegalNamingWarning name={item.name}/>
+                                        <IllegalNamingWarning name={item.name} />
                                         <span>
                                             {item.name}
                                             {isWritable ||
-                                            <Tooltip title="Read-only">
-                                                <ReadOnlyIcon data-cy="read-only-icon" className={classes.readOnlyIcon} />
-                                            </Tooltip>
+                                                <Tooltip title="Read-only">
+                                                    <ReadOnlyIcon data-cy="read-only-icon" className={classes.readOnlyIcon} />
+                                                </Tooltip>
                                             }
                                         </span>
                                     </span></Grid>
-                                    <Grid item xs={1} style={{textAlign: "right"}}>
+                                    <Grid item xs={1} style={{ textAlign: "right" }}>
                                         <Tooltip title="Actions" disableFocusListener>
                                             <IconButton
                                                 data-cy='collection-panel-options-btn'
@@ -166,16 +167,16 @@ export const CollectionPanel = withStyles(styles)(
                                         <Typography variant="caption">
                                             {item.description}
                                         </Typography>
-                                        <CollectionDetailsAttributes item={item} classes={classes} />
+                                        <CollectionDetailsAttributes item={item} classes={classes} twoCol={true} />
                                         {(item.properties.container_request || item.properties.containerRequest) &&
                                             <span onClick={() => dispatch<any>(navigateToProcess(item.properties.container_request || item.properties.containerRequest))}>
                                                 <DetailsAttribute classLabel={classes.link} label='Link to process' />
                                             </span>
                                         }
                                         {isOldVersion &&
-                                        <Typography className={classes.warningLabel} variant="caption">
-                                            This is an old version. Copy it as a new one if you need to make changes. Go to the current version if you need to share it.
-                                        </Typography>
+                                            <Typography className={classes.warningLabel} variant="caption">
+                                                This is an old version. Make a copy to make changes. Go to the <Link to={getCollectionUrl(item.currentVersionUuid)}>head version</Link> for sharing options.
+                                          </Typography>
                                         }
                                     </Grid>
                                 </Grid>
@@ -192,25 +193,25 @@ export const CollectionPanel = withStyles(styles)(
                                         <CollectionTagForm />
                                     </Grid>}
                                     <Grid item xs={12}>
-                                    { Object.keys(item.properties).length > 0
-                                        ? Object.keys(item.properties).map(k =>
-                                            Array.isArray(item.properties[k])
-                                            ? item.properties[k].map((v: string) =>
-                                                getPropertyChip(
-                                                    k, v,
-                                                    isWritable
-                                                        ? this.handleDelete(k, item.properties[k])
-                                                        : undefined,
-                                                    classes.tag))
-                                            : getPropertyChip(
-                                                k, item.properties[k],
-                                                isWritable
-                                                    ? this.handleDelete(k, item.properties[k])
-                                                    : undefined,
-                                                classes.tag)
-                                        )
-                                        : <div className={classes.centeredLabel}>No properties set on this collection.</div>
-                                    }
+                                        {Object.keys(item.properties).length > 0
+                                            ? Object.keys(item.properties).map(k =>
+                                                Array.isArray(item.properties[k])
+                                                    ? item.properties[k].map((v: string) =>
+                                                        getPropertyChip(
+                                                            k, v,
+                                                            isWritable
+                                                                ? this.handleDelete(k, item.properties[k])
+                                                                : undefined,
+                                                            classes.tag))
+                                                    : getPropertyChip(
+                                                        k, item.properties[k],
+                                                        isWritable
+                                                            ? this.handleDelete(k, item.properties[k])
+                                                            : undefined,
+                                                        classes.tag)
+                                            )
+                                            : <div className={classes.centeredLabel}>No properties set on this collection.</div>
+                                        }
                                     </Grid>
                                 </Grid>
                             </ExpansionPanelDetails>
@@ -224,7 +225,7 @@ export const CollectionPanel = withStyles(styles)(
                                     dispatch(collectionPanelActions.LOAD_BIG_COLLECTIONS(true));
                                     dispatch<any>(loadCollectionFiles(this.props.item.uuid));
                                 }
-                            } />
+                                } />
                         </div>
                     </div>
                     : null;
@@ -277,31 +278,51 @@ export const CollectionPanel = withStyles(styles)(
     )
 );
 
-export const CollectionDetailsAttributes = (props: {item: CollectionResource, classes?: Record<CssRules, string>}) => {
+export const CollectionDetailsAttributes = (props: { item: CollectionResource, twoCol: boolean, classes?: Record<CssRules, string> }) => {
     const item = props.item;
-    const classes = props.classes || {label: '', value: ''};
+    const classes = props.classes || { label: '', value: '' };
     const isOldVersion = item && item.currentVersionUuid !== item.uuid;
-    return <span>
-        <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-            label={isOldVersion ? "This version's UUID" : "Collection UUID"}
-            linkToUuid={item.uuid} />
-        <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-            label={isOldVersion ? "This version's PDH" : "Portable data hash"}
-            linkToUuid={item.portableDataHash} />
+    const mdSize = props.twoCol ? 6 : 12;
+    return <Grid container>
+        <Grid item xs={12} md={mdSize}>
+            <DetailsAttribute classLabel={classes.label} classValue={classes.value}
+                label={isOldVersion ? "This version's UUID" : "Collection UUID"}
+                linkToUuid={item.uuid} />
+        </Grid>
+        <Grid item xs={12} md={mdSize}>
+            <DetailsAttribute classLabel={classes.label} classValue={classes.value}
+                label={isOldVersion ? "This version's PDH" : "Portable data hash"}
+                linkToUuid={item.portableDataHash} />
+        </Grid>
+        <Grid item xs={12} md={mdSize}>
+            <DetailsAttribute classLabel={classes.label} classValue={classes.value}
+                label='Owner' linkToUuid={item.ownerUuid} />
+        </Grid>
+
         {isOldVersion &&
-        <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-            label='Most recent version'
-            linkToUuid={item.currentVersionUuid} />
+            <Grid item xs={12} md={mdSize}>
+                <DetailsAttribute classLabel={classes.label} classValue={classes.value}
+                    label='Head version'
+                    linkToUuid={item.currentVersionUuid} />
+            </Grid>
         }
-        <DetailsAttribute label='Last modified' value={formatDate(item.modifiedAt)} />
-        <DetailsAttribute label='Created at' value={formatDate(item.createdAt)} />
-        <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-            label='Version number' value={item.version} />
-        <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-            label='Number of files' value={item.fileCount} />
-        <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-            label='Content size' value={formatFileSize(item.fileSizeTotal)} />
-        <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-            label='Owner' linkToUuid={item.ownerUuid} />
-    </span>;
+        <Grid item xs={12} md={mdSize}>
+            <DetailsAttribute classLabel={classes.label} classValue={classes.value}
+                label='Version number' value={item.version} />
+        </Grid>
+        <Grid item xs={12} md={mdSize}>
+            <DetailsAttribute label='Created at' value={formatDate(item.createdAt)} />
+        </Grid>
+        <Grid item xs={12} md={mdSize}>
+            <DetailsAttribute label='Last modified' value={formatDate(item.modifiedAt)} />
+        </Grid>
+        <Grid item xs={12} md={mdSize}>
+            <DetailsAttribute classLabel={classes.label} classValue={classes.value}
+                label='Number of files' value={item.fileCount} />
+        </Grid>
+        <Grid item xs={12} md={mdSize}>
+            <DetailsAttribute classLabel={classes.label} classValue={classes.value}
+                label='Content size' value={formatFileSize(item.fileSizeTotal)} />
+        </Grid>
+    </Grid>;
 };
