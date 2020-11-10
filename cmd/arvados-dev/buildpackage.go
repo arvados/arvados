@@ -69,6 +69,14 @@ func (bldr *builder) run(ctx context.Context, prog string, args []string, stdin 
 	if err != nil {
 		return fmt.Errorf("gem install fpm: %w", err)
 	}
+	// Shrink our package, remove unneeded stuff
+	cmd = exec.Command("bash", "-c", "rm -rf /var/www/.gem/ruby/*/cache/ /var/www/.gem/ruby/*/bundler/gems/arvados-*/.git /var/www/.gem/ruby/*/bundler/gems/nulldb-*/.git /var/www/.gem/ruby/*/bundler/gems/themes_for_rails-*/.git")
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
+	err = cmd.Run()
+	if err != nil {
+		return fmt.Errorf("rm -rf /var/www/.gem/ruby/*/cache/: %w", err)
+	}
 
 	format := "deb" // TODO: rpm
 
@@ -88,6 +96,9 @@ func (bldr *builder) run(ctx context.Context, prog string, args []string, stdin 
 		"--deb-use-file-permissions",
 		"--rpm-use-file-permissions",
 		"--exclude", "var/lib/arvados/go",
+		"--exclude", "tmp",
+		"--exclude", "log",
+		"--exclude", "coverage",
 		"/var/lib/arvados",
 		"/var/www/.gem",
 		"/var/www/.passenger",
