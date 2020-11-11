@@ -10,6 +10,7 @@ import { Session, SessionStatus } from "~/models/session";
 import { Config } from "~/common/config";
 import { uniqBy } from "lodash";
 
+export const TARGET_URL = 'targetURL';
 export const API_TOKEN_KEY = 'apiToken';
 export const USER_EMAIL_KEY = 'userEmail';
 export const USER_FIRST_NAME_KEY = 'userFirstName';
@@ -57,6 +58,14 @@ export class AuthService {
         }
     }
 
+    public removeTargetURL() {
+        this.getStorage().removeItem(TARGET_URL);
+    }
+
+    public getTargetURL() {
+       return this.getStorage().getItem(TARGET_URL);
+    }
+
     public removeApiToken() {
         this.getStorage().removeItem(API_TOKEN_KEY);
     }
@@ -83,11 +92,13 @@ export class AuthService {
         this.getStorage().removeItem(USER_IS_ACTIVE);
         this.getStorage().removeItem(USER_USERNAME);
         this.getStorage().removeItem(USER_PREFS);
+        this.getStorage().removeItem(TARGET_URL);
     }
 
     public login(uuidPrefix: string, homeCluster: string, loginCluster: string, remoteHosts: { [key: string]: string }) {
         const currentUrl = `${window.location.protocol}//${window.location.host}/token`;
         const homeClusterHost = remoteHosts[homeCluster];
+        this.getStorage().setItem(TARGET_URL, window.location.href);
         window.location.assign(`https://${homeClusterHost}/login?${(uuidPrefix !== homeCluster && homeCluster !== loginCluster) ? "remote=" + uuidPrefix + "&" : ""}return_to=${currentUrl}`);
     }
 

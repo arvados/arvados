@@ -25,7 +25,13 @@ export const ApiToken = connect()(
             const apiToken = getUrlParameter(search, 'api_token');
             const loadMainApp = this.props.loadMainApp;
             this.props.dispatch<any>(saveApiToken(apiToken)).finally(() => {
-                if (loadMainApp) {
+                const redirectURL = this.props.authService.getTargetURL();
+
+                if (redirectURL) {
+                    this.props.authService.removeTargetURL();
+                    window.location.href = redirectURL;
+                }
+                else if (loadMainApp) {
                     if (this.props.dispatch(getAccountLinkData())) {
                         this.props.dispatch(navigateToLinkAccount);
                     }
