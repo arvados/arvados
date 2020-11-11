@@ -2,8 +2,6 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { REDIRECT_TO_APPLY_TO_PATH } from "~/common/redirect-to";
-
 export const sanitizeToken = (href: string, tokenAsQueryParam = true): string => {
     const [prefix, suffix] = href.split('/t=');
     const [token1, token2, token3, ...rest] = suffix.split('/');
@@ -17,5 +15,5 @@ export const getClipboardUrl = (href: string, shouldSanitizeToken = true): strin
     const { origin } = window.location;
     const url = shouldSanitizeToken ? sanitizeToken(href, false) : href;
 
-    return `${origin}${!shouldSanitizeToken ? `?${REDIRECT_TO_APPLY_TO_PATH}=true&` : `?`}redirectTo=${url}`;
+    return shouldSanitizeToken ? `${origin}?redirectTo=${url}` : `${origin}${url}`;
 };
