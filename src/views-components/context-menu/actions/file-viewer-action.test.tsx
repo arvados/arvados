@@ -15,7 +15,7 @@ describe('FileViewerAction', () => {
     beforeEach(() => {
         props = {
             onClick: jest.fn(),
-            href: 'https://collections.ardev.roche.com/c=ardev-4zz18-k0hamvtwyit6q56/t=1ha4ykd3w14ed19b2gh3uyjrjup38vsx27x1utwdne0bxcfg5d/LIMS/1.html',
+            href: 'https://collections.example.com/c=zzzzz-4zz18-k0hamvtwyit6q56/t=xxxxxxx/LIMS/1.html',
         };
     });
 
