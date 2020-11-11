@@ -43,14 +43,14 @@ const getSidePanelTreeBreadcrumbs = (uuid: string) => (treePicker: TreePicker): 
 
 export const setSidePanelBreadcrumbs = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const { treePicker } = getState();
+        const { treePicker, collectionPanel: { item } } = getState();
         const breadcrumbs = getSidePanelTreeBreadcrumbs(uuid)(treePicker);
         const path = getState().router.location!.pathname;
         const currentUuid = path.split('/')[2];
         const uuidKind = extractUuidKind(currentUuid);
 
         if (uuidKind === ResourceKind.COLLECTION) {
-            const collectionItem = await services.collectionService.get(currentUuid);
+            const collectionItem = item ? item : await services.collectionService.get(currentUuid);
             dispatch(setBreadcrumbs(breadcrumbs, collectionItem));
         } else if (uuidKind === ResourceKind.PROCESS) {
             const processItem = await services.containerRequestService.get(currentUuid);
@@ -72,6 +72,7 @@ export const setCategoryBreadcrumbs = (uuid: string, category: SidePanelTreeCate
         const initialBreadcrumbs: ResourceBreadcrumb[] = [
             { label: category, uuid: category }
         ];
+        const { collectionPanel: { item } } = getState();
         const path = getState().router.location!.pathname;
         const currentUuid = path.split('/')[2];
         const uuidKind = extractUuidKind(currentUuid);
@@ -81,7 +82,7 @@ export const setCategoryBreadcrumbs = (uuid: string, category: SidePanelTreeCate
                 : breadcrumbs,
             initialBreadcrumbs);
         if (uuidKind === ResourceKind.COLLECTION) {
-            const collectionItem = await services.collectionService.get(currentUuid);
+            const collectionItem = item ? item : await services.collectionService.get(currentUuid);
             dispatch(setBreadcrumbs(breadcrumbs, collectionItem));
         } else if (uuidKind === ResourceKind.PROCESS) {
             const processItem = await services.containerRequestService.get(currentUuid);

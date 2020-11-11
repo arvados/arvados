@@ -29,8 +29,9 @@ export const COLLECTION_TAG_FORM_NAME = 'collectionTagForm';
 
 export const loadCollectionPanel = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const { collectionPanel: { item } } = getState();
         dispatch(collectionPanelActions.LOAD_COLLECTION({ uuid }));
-        const collection = await services.collectionService.get(uuid);
+        const collection = item ? item : await services.collectionService.get(uuid);
         dispatch(loadDetailsPanel(collection.uuid));
         dispatch(collectionPanelActions.LOAD_COLLECTION_SUCCESS({ item: collection }));
         dispatch(resourcesActions.SET_RESOURCES([collection]));
