@@ -6,7 +6,7 @@ import { require } from './require';
 import { maxLength } from './max-length';
 import { isRsaKey } from './is-rsa-key';
 import { isRemoteHost } from "./is-remote-host";
-import { validName, validNameAllowSlash } from "./valid-name";
+import { validFilePath, validName, validNameAllowSlash } from "./valid-name";
 
 export const TAG_KEY_VALIDATION = [require, maxLength(255)];
 export const TAG_VALUE_VALIDATION = [require, maxLength(255)];
@@ -21,6 +21,7 @@ export const COLLECTION_PROJECT_VALIDATION = [require];
 
 export const COPY_NAME_VALIDATION = [require, maxLength(255)];
 export const COPY_FILE_VALIDATION = [require];
+export const RENAME_FILE_VALIDATION = [require, validFilePath];
 
 export const MOVE_TO_VALIDATION = [require];
 
