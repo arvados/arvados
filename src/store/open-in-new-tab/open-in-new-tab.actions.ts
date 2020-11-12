@@ -2,24 +2,36 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { Dispatch } from 'redux';
+import * as copy from 'copy-to-clipboard';
 import { ResourceKind } from '~/models/resource';
-import { unionize, ofType } from '~/common/unionize';
+import { getClipboardUrl } from '~/views-components/context-menu/actions/helpers';
 
-export const openInNewTabActions = unionize({
-    COPY_STORE: ofType<{}>(),
-    OPEN_COLLECTION_IN_NEW_TAB: ofType<string>(),
-    OPEN_PROJECT_IN_NEW_TAB: ofType<string>()
-});
-
-export const openInNewTabAction = (resource: any) => (dispatch: Dispatch) => {
+const getUrl = (resource: any) => {
+    let url = null;
     const { uuid, kind } = resource;
 
-    dispatch(openInNewTabActions.COPY_STORE());
-
     if (kind === ResourceKind.COLLECTION) {
-        dispatch(openInNewTabActions.OPEN_COLLECTION_IN_NEW_TAB(uuid));
-    } else if (kind === ResourceKind.PROJECT) {
-        dispatch(openInNewTabActions.OPEN_PROJECT_IN_NEW_TAB(uuid));
+        url = `/collections/${uuid}`;
+    }
+    if (kind === ResourceKind.PROJECT) {
+        url = `/projects/${uuid}`;
+    }
+
+    return url;
+};
+
+export const openInNewTabAction = (resource: any) => () => {
+    const url = getUrl(resource);
+
+    if (url) {
+        window.open(`${window.location.origin}${url}`, '_blank');
+    }
+};
+
+export const copyToClipboardAction = (resource: any) => () => {
+    const url = getUrl(resource);
+
+    if (url) {
+        copy(getClipboardUrl(url, false));
     }
 };
