@@ -33,6 +33,7 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	}()
 
 	logger.SetFormatter(new(NoPrefixFormatter))
+	logger.SetOutput(stdout)
 
 	loader := config.NewLoader(stdin, logger)
 	loader.SkipLegacy = true
