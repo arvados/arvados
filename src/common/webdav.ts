@@ -75,7 +75,7 @@ export class WebDAV {
             r.open(config.method,
                 `${this.defaults.baseURL
                     ? this.defaults.baseURL+'/'
-                    : ''}${config.url}`);
+                    : ''}${encodeURI(config.url)}`);
             const headers = { ...this.defaults.headers, ...config.headers };
             Object
                 .keys(headers)
@@ -85,14 +85,16 @@ export class WebDAV {
                 r.upload.addEventListener('progress', config.onUploadProgress);
             }
 
+            // This event gets triggered on *any* server response
             r.addEventListener('load', () => {
-                if (r.status === 404) {
+                if (r.status >= 400) {
                     return reject(r);
                 } else {
                     return resolve(r);
                 }
             });
 
+            // This event gets triggered on network errors
             r.addEventListener('error', () => {
                 return reject(r);
             });

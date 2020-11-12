@@ -15,6 +15,7 @@ export const CopyCollectionDialog = compose(
     withDialog(COLLECTION_COPY_FORM_NAME),
     reduxForm<CopyFormDialogData>({
         form: COLLECTION_COPY_FORM_NAME,
+        touchOnChange: true,
         onSubmit: (data, dispatch) => {
             dispatch(copyCollection(data));
         }

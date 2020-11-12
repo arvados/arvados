@@ -130,7 +130,7 @@ export const Row =  <T, _>(itemList: VirtualTreeItem<T>[], render: any, treeProp
                 : undefined;
         };
 
-        return <div style={style}>
+        return <div data-cy='virtual-file-tree' style={style}>
             <ListItem button className={listItem}
                 style={{
                     paddingLeft: (level + 1) * levelIndentation,

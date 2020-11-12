@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { ContextMenuActionSet } from "../context-menu-action-set";
-import { NewProjectIcon, RenameIcon, MoveToIcon, DetailsIcon, AdvancedIcon } from '~/components/icon/icon';
+import { NewProjectIcon, RenameIcon, MoveToIcon, DetailsIcon, AdvancedIcon, OpenIcon, Link } from '~/components/icon/icon';
 import { ToggleFavoriteAction } from "../actions/favorite-action";
 import { toggleFavorite } from "~/store/favorites/favorites-actions";
 import { favoritePanelActions } from "~/store/favorite-panel/favorite-panel-action";
@@ -16,14 +16,30 @@ import { ShareIcon } from '~/components/icon/icon';
 import { openSharingDialog } from "~/store/sharing-dialog/sharing-dialog-actions";
 import { openAdvancedTabDialog } from "~/store/advanced-tab/advanced-tab";
 import { toggleDetailsPanel } from '~/store/details-panel/details-panel-action';
+import { copyToClipboardAction, openInNewTabAction } from "~/store/open-in-new-tab/open-in-new-tab.actions";
 
 export const readOnlyProjectActionSet: ContextMenuActionSet = [[
     {
         component: ToggleFavoriteAction,
+        name: 'ToggleFavoriteAction',
         execute: (dispatch, resource) => {
             dispatch<any>(toggleFavorite(resource)).then(() => {
                 dispatch<any>(favoritePanelActions.REQUEST_ITEMS());
             });
+        }
+    },
+    {
+        icon: OpenIcon,
+        name: "Open in new tab",
+        execute: (dispatch, resource) => {
+            dispatch<any>(openInNewTabAction(resource));
+        }
+    },
+    {
+        icon: Link,
+        name: "Copy to clipboard",
+        execute: (dispatch, resource) => {
+            dispatch<any>(copyToClipboardAction(resource));
         }
     },
     {
@@ -75,6 +91,7 @@ export const projectActionSet: ContextMenuActionSet = [
         },
         {
             component: ToggleTrashAction,
+            name: 'ToggleTrashAction',
             execute: (dispatch, resource) => {
                 dispatch<any>(toggleProjectTrashed(resource.uuid, resource.ownerUuid, resource.isTrashed!!));
             }

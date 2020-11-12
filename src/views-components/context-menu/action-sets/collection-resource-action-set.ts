@@ -4,42 +4,25 @@
 
 import { ContextMenuActionSet } from "../context-menu-action-set";
 import { ToggleFavoriteAction } from "../actions/favorite-action";
+import { ToggleTrashAction } from "~/views-components/context-menu/actions/trash-action";
 import { toggleFavorite } from "~/store/favorites/favorites-actions";
-import { RenameIcon, ShareIcon, MoveToIcon, CopyIcon, DetailsIcon, AdvancedIcon, OpenIcon, Link } from "~/components/icon/icon";
+import { RenameIcon, ShareIcon, MoveToIcon, CopyIcon, DetailsIcon, AdvancedIcon, OpenIcon } from '~/components/icon/icon';
 import { openCollectionUpdateDialog } from "~/store/collections/collection-update-actions";
 import { favoritePanelActions } from "~/store/favorite-panel/favorite-panel-action";
 import { openMoveCollectionDialog } from '~/store/collections/collection-move-actions';
-import { openCollectionCopyDialog } from "~/store/collections/collection-copy-actions";
-import { ToggleTrashAction } from "~/views-components/context-menu/actions/trash-action";
+import { openCollectionCopyDialog } from '~/store/collections/collection-copy-actions';
 import { toggleCollectionTrashed } from "~/store/trash/trash-actions";
-import { openSharingDialog } from '~/store/sharing-dialog/sharing-dialog-actions';
-import { openAdvancedTabDialog } from "~/store/advanced-tab/advanced-tab";
+import { openSharingDialog } from "~/store/sharing-dialog/sharing-dialog-actions";
+import { openAdvancedTabDialog } from '~/store/advanced-tab/advanced-tab';
 import { toggleDetailsPanel } from '~/store/details-panel/details-panel-action';
-import { TogglePublicFavoriteAction } from "~/views-components/context-menu/actions/public-favorite-action";
-import { publicFavoritePanelActions } from "~/store/public-favorites-panel/public-favorites-action";
-import { togglePublicFavorite } from "~/store/public-favorites/public-favorites-actions";
-import { copyToClipboardAction, openInNewTabAction } from "~/store/open-in-new-tab/open-in-new-tab.actions";
+import { openInNewTabAction } from "~/store/open-in-new-tab/open-in-new-tab.actions";
 
-export const collectionAdminActionSet: ContextMenuActionSet = [[
+export const collectionResourceActionSet: ContextMenuActionSet = [[
     {
         icon: RenameIcon,
         name: "Edit collection",
         execute: (dispatch, resource) => {
             dispatch<any>(openCollectionUpdateDialog(resource));
-        }
-    },
-    {
-        icon: OpenIcon,
-        name: "Open in new tab",
-        execute: (dispatch, resource) => {
-            dispatch<any>(openInNewTabAction(resource));
-        }
-    },
-    {
-        icon: Link,
-        name: "Copy to clipboard",
-        execute: (dispatch, resource) => {
-            dispatch<any>(copyToClipboardAction(resource));
         }
     },
     {
@@ -51,7 +34,6 @@ export const collectionAdminActionSet: ContextMenuActionSet = [[
     },
     {
         component: ToggleFavoriteAction,
-        name: 'ToggleFavoriteAction',
         execute: (dispatch, resource) => {
             dispatch<any>(toggleFavorite(resource)).then(() => {
                 dispatch<any>(favoritePanelActions.REQUEST_ITEMS());
@@ -59,26 +41,25 @@ export const collectionAdminActionSet: ContextMenuActionSet = [[
         }
     },
     {
-        component: TogglePublicFavoriteAction,
-        name: 'TogglePublicFavoriteAction',
+        icon: OpenIcon,
+        name: "Open in new tab",
         execute: (dispatch, resource) => {
-            dispatch<any>(togglePublicFavorite(resource)).then(() => {
-                dispatch<any>(publicFavoritePanelActions.REQUEST_ITEMS());
-            });
+            dispatch<any>(openInNewTabAction(resource));
         }
     },
     {
         icon: MoveToIcon,
         name: "Move to",
-        execute: (dispatch, resource) => dispatch<any>(openMoveCollectionDialog(resource))
+        execute: (dispatch, resource) => {
+            dispatch<any>(openMoveCollectionDialog(resource));
+        }
     },
     {
         icon: CopyIcon,
-        name: "Make a copy",
+        name: "Copy to project",
         execute: (dispatch, resource) => {
             dispatch<any>(openCollectionCopyDialog(resource));
         }
-
     },
     {
         icon: DetailsIcon,
@@ -96,9 +77,15 @@ export const collectionAdminActionSet: ContextMenuActionSet = [[
     },
     {
         component: ToggleTrashAction,
-        name: 'ToggleTrashAction',
         execute: (dispatch, resource) => {
             dispatch<any>(toggleCollectionTrashed(resource.uuid, resource.isTrashed!!));
         }
     },
+    // {
+    //     icon: RemoveIcon,
+    //     name: "Remove",
+    //     execute: (dispatch, resource) => {
+    //         // add code
+    //     }
+    // }
 ]];

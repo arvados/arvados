@@ -163,6 +163,7 @@ export function configureStore(history: History, services: ServiceRepository, co
         collectionsContentAddress,
         subprocessMiddleware,
     ];
+
     const enhancer = composeEnhancers(applyMiddleware(redirectToMiddleware, ...middlewares));
     return createStore(rootReducer, enhancer);
 }
