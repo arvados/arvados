@@ -142,9 +142,7 @@ describe('Collection panel tests', function() {
                 ['bar', '&'],
                 ['&', 'foo'],
                 ['foo', '&amp;'],
-                ['&amp;', 'I ❤️ ⛵️'],
-                ['I ❤️ ⛵️', ' baz'],
-                [' baz', ' '] // Must be the last case as cy.contains(' ') doesn't work
+                ['&amp;', 'I ❤️ ⛵️']
             ];
             nameTransitions.forEach(([from, to]) => {
                 cy.get('[data-cy=collection-files-panel]')
