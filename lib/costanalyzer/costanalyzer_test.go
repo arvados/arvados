@@ -6,6 +6,7 @@ package costanalyzer
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"io/ioutil"
 	"os"
@@ -105,13 +106,13 @@ func (s *Suite) SetUpSuite(c *check.C) {
 func createNodeJSON(c *check.C, arv *arvadosclient.ArvadosClient, ac *arvados.Client, kc *keepclient.KeepClient, crUUID string, logUUID string, nodeJSON string) {
 	// Get the CR
 	var cr arvados.ContainerRequest
-	err := arv.Get("container_requests", crUUID, arvadosclient.Dict{}, &cr)
+	err := ac.RequestAndDecodeContext(context.Background(), &cr, "GET", "arvados/v1/container_requests/"+crUUID, nil, nil)
 	c.Assert(err, check.Equals, nil)
 	c.Assert(cr.LogUUID, check.Equals, logUUID)
 
 	// Get the log collection
 	var coll arvados.Collection
-	err = arv.Get("collections", cr.LogUUID, arvadosclient.Dict{}, &coll)
+	err = ac.RequestAndDecodeContext(context.Background(), &coll, "GET", "arvados/v1/collections/"+cr.LogUUID, nil, nil)
 	c.Assert(err, check.IsNil)
 
 	// Create a node.json file -- the fixture doesn't actually contain the contents of the collection.
@@ -130,7 +131,11 @@ func createNodeJSON(c *check.C, arv *arvadosclient.ArvadosClient, ac *arvados.Cl
 	c.Assert(mtxt, check.NotNil)
 
 	// Update collection record
-	err = arv.Update("collections", cr.LogUUID, arvadosclient.Dict{"collection": arvadosclient.Dict{"manifest_text": mtxt}}, &coll)
+	err = ac.RequestAndDecodeContext(context.Background(), &coll, "PUT", "arvados/v1/collections/"+cr.LogUUID, nil, map[string]interface{}{
+		"collection": map[string]interface{}{
+			"manifest_text": mtxt,
+		},
+	})
 	c.Assert(err, check.IsNil)
 }
 
@@ -147,13 +152,13 @@ func (*Suite) TestContainerRequestUUID(c *check.C) {
 	// Run costanalyzer with 1 container request uuid
 	exitcode := Command.RunCommand("costanalyzer.test", []string{"-uuid", arvadostest.CompletedContainerRequestUUID}, &bytes.Buffer{}, &stdout, &stderr)
 	c.Check(exitcode, check.Equals, 0)
-	c.Check(stderr.String(), check.Matches, "(?ms).*supplied uuids in .*")
+	c.Assert(stdout.String(), check.Matches, "(?ms).*supplied uuids in .*")
 
 	uuidReport, err := ioutil.ReadFile("results/" + arvadostest.CompletedContainerRequestUUID + ".csv")
 	c.Assert(err, check.IsNil)
 	c.Check(string(uuidReport), check.Matches, "(?ms).*TOTAL,,,,,,,,,7.01302889")
 	re := regexp.MustCompile(`(?ms).*supplied uuids in (.*?)\n`)
-	matches := re.FindStringSubmatch(stderr.String()) // matches[1] contains a string like 'results/2020-11-02-18-57-45-aggregate-costaccounting.csv'
+	matches := re.FindStringSubmatch(stdout.String()) // matches[1] contains a string like 'results/2020-11-02-18-57-45-aggregate-costaccounting.csv'
 
 	aggregateCostReport, err := ioutil.ReadFile(matches[1])
 	c.Assert(err, check.IsNil)
@@ -166,7 +171,7 @@ func (*Suite) TestDoubleContainerRequestUUID(c *check.C) {
 	// Run costanalyzer with 2 container request uuids
 	exitcode := Command.RunCommand("costanalyzer.test", []string{"-uuid", arvadostest.CompletedContainerRequestUUID, "-uuid", arvadostest.CompletedContainerRequestUUID2}, &bytes.Buffer{}, &stdout, &stderr)
 	c.Check(exitcode, check.Equals, 0)
-	c.Check(stderr.String(), check.Matches, "(?ms).*supplied uuids in .*")
+	c.Assert(stdout.String(), check.Matches, "(?ms).*supplied uuids in .*")
 
 	uuidReport, err := ioutil.ReadFile("results/" + arvadostest.CompletedContainerRequestUUID + ".csv")
 	c.Assert(err, check.IsNil)
@@ -177,28 +182,36 @@ func (*Suite) TestDoubleContainerRequestUUID(c *check.C) {
 	c.Check(string(uuidReport2), check.Matches, "(?ms).*TOTAL,,,,,,,,,42.27031111")
 
 	re := regexp.MustCompile(`(?ms).*supplied uuids in (.*?)\n`)
-	matches := re.FindStringSubmatch(stderr.String()) // matches[1] contains a string like 'results/2020-11-02-18-57-45-aggregate-costaccounting.csv'
+	matches := re.FindStringSubmatch(stdout.String()) // matches[1] contains a string like 'results/2020-11-02-18-57-45-aggregate-costaccounting.csv'
 
 	aggregateCostReport, err := ioutil.ReadFile(matches[1])
 	c.Assert(err, check.IsNil)
 
 	c.Check(string(aggregateCostReport), check.Matches, "(?ms).*TOTAL,49.28334000")
+	stdout.Truncate(0)
+	stderr.Truncate(0)
 
 	// Now move both container requests into an existing project, and then re-run
 	// the analysis with the project uuid. The results should be identical.
-	arv, err := arvadosclient.MakeArvadosClient()
-	c.Assert(err, check.Equals, nil)
-
+	ac := arvados.NewClientFromEnv()
 	var cr arvados.ContainerRequest
-	err = arv.Update("container_requests", arvadostest.CompletedContainerRequestUUID, arvadosclient.Dict{"container_request": arvadosclient.Dict{"owner_uuid": arvadostest.AProjectUUID}}, &cr)
+	err = ac.RequestAndDecodeContext(context.Background(), &cr, "PUT", "arvados/v1/container_requests/"+arvadostest.CompletedContainerRequestUUID, nil, map[string]interface{}{
+		"container_request": map[string]interface{}{
+			"owner_uuid": arvadostest.AProjectUUID,
+		},
+	})
 	c.Assert(err, check.IsNil)
-	err = arv.Update("container_requests", arvadostest.CompletedContainerRequestUUID2, arvadosclient.Dict{"container_request": arvadosclient.Dict{"owner_uuid": arvadostest.AProjectUUID}}, &cr)
+	err = ac.RequestAndDecodeContext(context.Background(), &cr, "PUT", "arvados/v1/container_requests/"+arvadostest.CompletedContainerRequestUUID2, nil, map[string]interface{}{
+		"container_request": map[string]interface{}{
+			"owner_uuid": arvadostest.AProjectUUID,
+		},
+	})
 	c.Assert(err, check.IsNil)
 
 	// Run costanalyzer with the project uuid
-	exitcode = Command.RunCommand("costanalyzer.test", []string{"-uuid", arvadostest.AProjectUUID}, &bytes.Buffer{}, &stdout, &stderr)
+	exitcode = Command.RunCommand("costanalyzer.test", []string{"-uuid", arvadostest.AProjectUUID, "-cache=false", "-log-level", "debug"}, &bytes.Buffer{}, &stdout, &stderr)
 	c.Check(exitcode, check.Equals, 0)
-	c.Check(stderr.String(), check.Matches, "(?ms).*supplied uuids in .*")
+	c.Assert(stdout.String(), check.Matches, "(?ms).*supplied uuids in .*")
 
 	uuidReport, err = ioutil.ReadFile("results/" + arvadostest.CompletedContainerRequestUUID + ".csv")
 	c.Assert(err, check.IsNil)
@@ -209,7 +222,7 @@ func (*Suite) TestDoubleContainerRequestUUID(c *check.C) {
 	c.Check(string(uuidReport2), check.Matches, "(?ms).*TOTAL,,,,,,,,,42.27031111")
 
 	re = regexp.MustCompile(`(?ms).*supplied uuids in (.*?)\n`)
-	matches = re.FindStringSubmatch(stderr.String()) // matches[1] contains a string like 'results/2020-11-02-18-57-45-aggregate-costaccounting.csv'
+	matches = re.FindStringSubmatch(stdout.String()) // matches[1] contains a string like 'results/2020-11-02-18-57-45-aggregate-costaccounting.csv'
 
 	aggregateCostReport, err = ioutil.ReadFile(matches[1])
 	c.Assert(err, check.IsNil)
@@ -222,7 +235,7 @@ func (*Suite) TestMultipleContainerRequestUUIDWithReuse(c *check.C) {
 	// Run costanalyzer with 2 container request uuids
 	exitcode := Command.RunCommand("costanalyzer.test", []string{"-uuid", arvadostest.CompletedDiagnosticsContainerRequest1UUID, "-uuid", arvadostest.CompletedDiagnosticsContainerRequest2UUID}, &bytes.Buffer{}, &stdout, &stderr)
 	c.Check(exitcode, check.Equals, 0)
-	c.Check(stderr.String(), check.Matches, "(?ms).*supplied uuids in .*")
+	c.Assert(stdout.String(), check.Matches, "(?ms).*supplied uuids in .*")
 
 	uuidReport, err := ioutil.ReadFile("results/" + arvadostest.CompletedDiagnosticsContainerRequest1UUID + ".csv")
 	c.Assert(err, check.IsNil)
@@ -233,7 +246,7 @@ func (*Suite) TestMultipleContainerRequestUUIDWithReuse(c *check.C) {
 	c.Check(string(uuidReport2), check.Matches, "(?ms).*TOTAL,,,,,,,,,0.00586435")
 
 	re := regexp.MustCompile(`(?ms).*supplied uuids in (.*?)\n`)
-	matches := re.FindStringSubmatch(stderr.String()) // matches[1] contains a string like 'results/2020-11-02-18-57-45-aggregate-costaccounting.csv'
+	matches := re.FindStringSubmatch(stdout.String()) // matches[1] contains a string like 'results/2020-11-02-18-57-45-aggregate-costaccounting.csv'
 
 	aggregateCostReport, err := ioutil.ReadFile(matches[1])
 	c.Assert(err, check.IsNil)
