@@ -142,7 +142,8 @@ describe('Collection panel tests', function() {
                 ['bar', '&'],
                 ['&', 'foo'],
                 ['foo', '&amp;'],
-                ['&amp;', 'I ❤️ ⛵️']
+                ['&amp;', 'I ❤️ ⛵️'],
+                ['I ❤️ ⛵️', '...']
             ];
             nameTransitions.forEach(([from, to]) => {
                 cy.get('[data-cy=collection-files-panel]')
@@ -220,27 +221,9 @@ describe('Collection panel tests', function() {
         .as('testCollection').then(function() {
             cy.loginAs(activeUser);
             cy.visit(`/collections/${this.testCollection.uuid}`);
-            const illegalNamesFromBackend = ['.', '..'];
-            illegalNamesFromBackend.forEach((name) => {
-                cy.get('[data-cy=collection-files-panel]')
-                    .contains('bar').rightclick();
-                cy.get('[data-cy=context-menu]')
-                    .contains('Rename')
-                    .click();
-                cy.get('[data-cy=form-dialog]')
-                    .should('contain', 'Rename')
-                    .within(() => {
-                        cy.get('input').type(`{selectall}{backspace}${name}`);
-                    });
-                cy.get('[data-cy=form-submit-btn]').click();
-                cy.get('[data-cy=form-dialog]')
-                    .should('contain', 'Rename')
-                    .within(() => {
-                        cy.contains('Could not rename');
-                    });
-                cy.get('[data-cy=form-cancel-btn]').click();
-            });
             const illegalNamesFromUI = [
+                ['.', "Name cannot be '.' or '..'"],
+                ['..', "Name cannot be '.' or '..'"],
                 ['', 'This field is required'],
                 [' ', 'Leading/trailing whitespaces not allowed'],
                 [' foo', 'Leading/trailing whitespaces not allowed'],
@@ -258,7 +241,6 @@ describe('Collection panel tests', function() {
                     .within(() => {
                         cy.get('input').type(`{selectall}{backspace}${name}`);
                     });
-                cy.get('[data-cy=form-cancel-btn]').focus();
                 cy.get('[data-cy=form-dialog]')
                     .should('contain', 'Rename')
                     .within(() => {

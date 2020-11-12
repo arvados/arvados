@@ -31,7 +31,7 @@ export const validFileName = (value: string) => {
 export const validFilePath = (filePath: string) => {
     const errors = filePath.split('/').map(pathPart => {
         if (pathPart === "") { return "Empty dir name not allowed"; }
-        return validFileName(pathPart);
+        return validNameAllowSlash(pathPart) || validFileName(pathPart);
     });
     return errors.filter(e => e !== undefined)[0];
 };
