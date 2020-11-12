@@ -13,6 +13,7 @@ export const CreateCollectionDialog = compose(
     withDialog(COLLECTION_CREATE_FORM_NAME),
     reduxForm<CollectionCreateFormDialogData>({
         form: COLLECTION_CREATE_FORM_NAME,
+        touchOnChange: true,
         onSubmit: (data, dispatch) => {
             // Somehow an extra field called 'files' gets added, copy
             // the data object to get rid of it.
