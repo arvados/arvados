@@ -121,6 +121,7 @@ export const RENAME_FILE_DIALOG = 'renameFileDialog';
 export interface RenameFileDialogData {
     name: string;
     id: string;
+    path: string;
 }
 
 export const openRenameFileDialog = (data: RenameFileDialogData) =>
@@ -129,7 +130,7 @@ export const openRenameFileDialog = (data: RenameFileDialogData) =>
         dispatch(dialogActions.OPEN_DIALOG({ id: RENAME_FILE_DIALOG, data }));
     };
 
-export const renameFile = (newName: string) =>
+export const renameFile = (newFullPath: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const dialog = getDialog<RenameFileDialogData>(getState().dialog, RENAME_FILE_DIALOG);
         const currentCollection = getState().collectionPanel.item;
@@ -138,7 +139,7 @@ export const renameFile = (newName: string) =>
             if (file) {
                 dispatch(startSubmit(RENAME_FILE_DIALOG));
                 const oldPath = getFileFullPath(file);
-                const newPath = getFileFullPath({ ...file, name: newName });
+                const newPath = newFullPath;
                 try {
                     await services.collectionService.moveFile(currentCollection.uuid, oldPath, newPath);
                     dispatch<any>(loadCollectionFiles(currentCollection.uuid));
@@ -146,7 +147,7 @@ export const renameFile = (newName: string) =>
                     dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'File name changed.', hideDuration: 2000 }));
                 } catch (e) {
                     const errors: FormErrors<RenameFileDialogData, string> = {
-                        name: 'Could not rename the file'
+                        path: `Could not rename the file: ${e.responseText}`
                     };
                     dispatch(stopSubmit(RENAME_FILE_DIALOG, errors));
                 }

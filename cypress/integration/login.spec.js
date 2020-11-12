@@ -28,7 +28,7 @@ describe('Login tests', function() {
                 inactiveUser = this.inactiveUser;
             }
         );
-        randomUser.username = `randomuser${Math.floor(Math.random() * Math.floor(999999))}`;
+        randomUser.username = `randomuser${Math.floor(Math.random() * 999999)}`;
         randomUser.password = {
             crypt: 'zpAReoZzPnwmQ',
             clear: 'topsecret',
@@ -89,7 +89,7 @@ describe('Login tests', function() {
         cy.doRequest('PUT', `/arvados/v1/api_client_authorizations/${tokenUuid}`, {
             id: tokenUuid,
             api_client_authorization: JSON.stringify({
-                api_token: `randomToken${Math.floor(Math.random() * Math.floor(999999))}`
+                api_token: `randomToken${Math.floor(Math.random() * 999999)}`
             })
         }, null, activeUser.token, true);
         // Should log the user out.

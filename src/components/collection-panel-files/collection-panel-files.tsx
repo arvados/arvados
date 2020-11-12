@@ -128,8 +128,7 @@ export const CollectionPanelFilesComponent = ({ onItemMenuOpen, onSearchChange, 
                     : <div style={{ height: 'calc(100% - 60px)' }}>
                         <FileTree
                             onMenuOpen={(ev, item) => onItemMenuOpen(ev, item, isWritable)}
-                            {...treeProps}
-                            items={treeProps.items} /></div>}
+                            {...treeProps} /></div>}
             </>
         }
     </Card>);

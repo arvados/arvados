@@ -21,12 +21,12 @@ describe('Collection panel tests', function() {
                 activeUser = this.activeUser;
             }
         );
-    })
+    });
 
     beforeEach(function() {
-        cy.clearCookies()
-        cy.clearLocalStorage()
-    })
+        cy.clearCookies();
+        cy.clearLocalStorage();
+    });
 
     it('shows collection by URL', function() {
         cy.loginAs(activeUser);
@@ -128,8 +128,131 @@ describe('Collection panel tests', function() {
         })
     })
 
+    it('renames a file using valid names', function() {
+        // Creates the collection using the admin token so we can set up
+        // a bogus manifest text without block signatures.
+        cy.createCollection(adminUser.token, {
+            name: `Test collection ${Math.floor(Math.random() * 999999)}`,
+            owner_uuid: activeUser.user.uuid,
+            manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"})
+        .as('testCollection').then(function() {
+            cy.loginAs(activeUser);
+            cy.visit(`/collections/${this.testCollection.uuid}`);
+            const nameTransitions = [
+                ['bar', '&'],
+                ['&', 'foo'],
+                ['foo', '&amp;'],
+                ['&amp;', 'I ❤️ ⛵️'],
+                ['I ❤️ ⛵️', '...']
+            ];
+            nameTransitions.forEach(([from, to]) => {
+                cy.get('[data-cy=collection-files-panel]')
+                    .contains(`${from}`).rightclick();
+                cy.get('[data-cy=context-menu]')
+                    .contains('Rename')
+                    .click();
+                cy.get('[data-cy=form-dialog]')
+                    .should('contain', 'Rename')
+                    .within(() => {
+                        cy.get('input').type(`{selectall}{backspace}${to}`);
+                    });
+                cy.get('[data-cy=form-submit-btn]').click();
+                cy.get('[data-cy=collection-files-panel]')
+                    .should('not.contain', `${from}`)
+                    .and('contain', `${to}`);
+            })
+        });
+    });
+
+    it('renames a file to a different directory', function() {
+        // Creates the collection using the admin token so we can set up
+        // a bogus manifest text without block signatures.
+        cy.createCollection(adminUser.token, {
+            name: `Test collection ${Math.floor(Math.random() * 999999)}`,
+            owner_uuid: activeUser.user.uuid,
+            manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"})
+        .as('testCollection').then(function() {
+            cy.loginAs(activeUser);
+            cy.visit(`/collections/${this.testCollection.uuid}`);
+            // Rename 'bar' to 'subdir/foo'
+            cy.get('[data-cy=collection-files-panel]')
+                .contains('bar').rightclick();
+            cy.get('[data-cy=context-menu]')
+                .contains('Rename')
+                .click();
+            cy.get('[data-cy=form-dialog]')
+                .should('contain', 'Rename')
+                .within(() => {
+                    cy.get('input').type(`{selectall}{backspace}subdir/foo`);
+                });
+            cy.get('[data-cy=form-submit-btn]').click();
+            cy.get('[data-cy=collection-files-panel]')
+                .should('not.contain', 'bar')
+                .and('contain', 'subdir');
+            // Look for the "arrow icon" and expand the "subdir" directory.
+            cy.get('[data-cy=virtual-file-tree] > div > i').click();
+            // Rename 'subdir/foo' to 'baz'
+            cy.get('[data-cy=collection-files-panel]')
+                .contains('foo').rightclick();
+            cy.get('[data-cy=context-menu]')
+                .contains('Rename')
+                .click();
+            cy.get('[data-cy=form-dialog]')
+                .should('contain', 'Rename')
+                .within(() => {
+                    cy.get('input')
+                        .should('have.value', 'subdir/foo')
+                        .type(`{selectall}{backspace}baz`);
+                });
+            cy.get('[data-cy=form-submit-btn]').click();
+            cy.get('[data-cy=collection-files-panel]')
+                .should('contain', 'subdir') // empty dir kept
+                .and('contain', 'baz');
+        });
+    });
+
+    it('tries to rename a file with an illegal names', function() {
+        // Creates the collection using the admin token so we can set up
+        // a bogus manifest text without block signatures.
+        cy.createCollection(adminUser.token, {
+            name: `Test collection ${Math.floor(Math.random() * 999999)}`,
+            owner_uuid: activeUser.user.uuid,
+            manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"})
+        .as('testCollection').then(function() {
+            cy.loginAs(activeUser);
+            cy.visit(`/collections/${this.testCollection.uuid}`);
+            const illegalNamesFromUI = [
+                ['.', "Name cannot be '.' or '..'"],
+                ['..', "Name cannot be '.' or '..'"],
+                ['', 'This field is required'],
+                [' ', 'Leading/trailing whitespaces not allowed'],
+                [' foo', 'Leading/trailing whitespaces not allowed'],
+                ['foo ', 'Leading/trailing whitespaces not allowed'],
+                ['//foo', 'Empty dir name not allowed']
+            ]
+            illegalNamesFromUI.forEach(([name, errMsg]) => {
+                cy.get('[data-cy=collection-files-panel]')
+                    .contains('bar').rightclick();
+                cy.get('[data-cy=context-menu]')
+                    .contains('Rename')
+                    .click();
+                cy.get('[data-cy=form-dialog]')
+                    .should('contain', 'Rename')
+                    .within(() => {
+                        cy.get('input').type(`{selectall}{backspace}${name}`);
+                    });
+                cy.get('[data-cy=form-dialog]')
+                    .should('contain', 'Rename')
+                    .within(() => {
+                        cy.contains(`${errMsg}`);
+                    });
+                cy.get('[data-cy=form-cancel-btn]').click();
+            })
+        });
+    });
+
     it('can correctly display old versions', function() {
-        const colName = `Versioned Collection ${Math.floor(Math.random() * Math.floor(999999))}`;
+        const colName = `Versioned Collection ${Math.floor(Math.random() * 999999)}`;
         let colUuid = '';
         let oldVersionUuid = '';
         // Make sure no other collections with this name exist

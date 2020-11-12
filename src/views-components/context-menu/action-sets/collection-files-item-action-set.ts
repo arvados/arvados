@@ -29,7 +29,10 @@ export const collectionFilesItemActionSet: ContextMenuActionSet = readOnlyCollec
         name: "Rename",
         icon: RenameIcon,
         execute: (dispatch, resource) => {
-            dispatch<any>(openRenameFileDialog({ name: resource.name, id: resource.uuid }));
+            dispatch<any>(openRenameFileDialog({
+                name: resource.name,
+                id: resource.uuid,
+                path: resource.uuid.split('/').slice(1).join('/') }));
         }
     },
     {

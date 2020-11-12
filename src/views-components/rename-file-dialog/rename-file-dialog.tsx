@@ -11,16 +11,18 @@ import { DialogContentText } from '@material-ui/core';
 import { TextField } from '~/components/text-field/text-field';
 import { RENAME_FILE_DIALOG, RenameFileDialogData, renameFile } from '~/store/collection-panel/collection-panel-files/collection-panel-files-actions';
 import { WarningCollection } from '~/components/warning-collection/warning-collection';
+import { RENAME_FILE_VALIDATION } from '~/validators/validators';
 
 export const RenameFileDialog = compose(
     withDialog(RENAME_FILE_DIALOG),
     reduxForm({
         form: RENAME_FILE_DIALOG,
-        onSubmit: (data: { name: string }, dispatch) => {
-            dispatch<any>(renameFile(data.name));
+        touchOnChange: true,
+        onSubmit: (data: { path: string }, dispatch) => {
+            dispatch<any>(renameFile(data.path));
         }
     })
-)((props: WithDialogProps<RenameFileDialogData> & InjectedFormProps<{ name: string }>) =>
+)((props: WithDialogProps<RenameFileDialogData> & InjectedFormProps<{ name: string, path: string }>) =>
     <FormDialog
         dialogTitle='Rename'
         formFields={RenameDialogFormFields}
@@ -33,9 +35,10 @@ const RenameDialogFormFields = (props: WithDialogProps<RenameFileDialogData>) =>
         {`Please, enter a new name for ${props.data.name}`}
     </DialogContentText>
     <Field
-        name='name'
+        name='path'
         component={TextField}
         autoFocus={true}
+        validate={RENAME_FILE_VALIDATION}
     />
-    <WarningCollection text="Renaming a file will change content address." />
+    <WarningCollection text="Renaming a file will change the collection's content address." />
 </>;
