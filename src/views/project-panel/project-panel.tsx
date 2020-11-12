@@ -15,7 +15,13 @@ import { DataTableFilterItem } from '~/components/data-table-filters/data-table-
 import { ContainerRequestState } from '~/models/container-request';
 import { SortDirection } from '~/components/data-table/data-column';
 import { ResourceKind, Resource, EditableResource } from '~/models/resource';
-import { ResourceFileSize, ResourceLastModifiedDate, ProcessStatus, ResourceType, ResourceOwner } from '~/views-components/data-explorer/renderers';
+import {
+    ResourceFileSize,
+    ResourceLastModifiedDate,
+    ProcessStatus,
+    ResourceType,
+    ResourceOwner
+} from '~/views-components/data-explorer/renderers';
 import { ProjectIcon } from '~/components/icon/icon';
 import { ResourceName } from '~/views-components/data-explorer/renderers';
 import { ResourcesState, getResourceWithEditableStatus } from '~/store/resources/resources';
@@ -82,7 +88,7 @@ export const projectPanelColumns: DataColumns<string> = [
     },
     {
         name: ProjectPanelColumnNames.OWNER,
-        selected: true,
+        selected: false,
         configurable: true,
         filters: createTree(),
         render: uuid => <ResourceOwner uuid={uuid} />

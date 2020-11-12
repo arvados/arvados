@@ -84,7 +84,7 @@ export const favoritePanelColumns: DataColumns<string> = [
     },
     {
         name: FavoritePanelColumnNames.OWNER,
-        selected: true,
+        selected: false,
         configurable: true,
         filters: createTree(),
         render: uuid => <ResourceOwner uuid={uuid} />
