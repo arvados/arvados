@@ -17,6 +17,7 @@ export const RenameFileDialog = compose(
     withDialog(RENAME_FILE_DIALOG),
     reduxForm({
         form: RENAME_FILE_DIALOG,
+        touchOnChange: true,
         onSubmit: (data: { path: string }, dispatch) => {
             dispatch<any>(renameFile(data.path));
         }

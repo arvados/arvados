@@ -12,6 +12,7 @@ import { updateCollection } from "~/store/workbench/workbench-actions";
 export const UpdateCollectionDialog = compose(
     withDialog(COLLECTION_UPDATE_FORM_NAME),
     reduxForm<CollectionUpdateFormDialogData>({
+        touchOnChange: true,
         form: COLLECTION_UPDATE_FORM_NAME,
         onSubmit: (data, dispatch) => {
             dispatch(updateCollection(data));
