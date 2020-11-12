@@ -165,6 +165,53 @@ describe('Collection panel tests', function() {
         });
     });
 
+    it('renames a file to a different directory', function() {
+        // Creates the collection using the admin token so we can set up
+        // a bogus manifest text without block signatures.
+        cy.createCollection(adminUser.token, {
+            name: `Test collection ${Math.floor(Math.random() * 999999)}`,
+            owner_uuid: activeUser.user.uuid,
+            manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"})
+        .as('testCollection').then(function() {
+            cy.loginAs(activeUser);
+            cy.visit(`/collections/${this.testCollection.uuid}`);
+            // Rename 'bar' to 'subdir/foo'
+            cy.get('[data-cy=collection-files-panel]')
+                .contains('bar').rightclick();
+            cy.get('[data-cy=context-menu]')
+                .contains('Rename')
+                .click();
+            cy.get('[data-cy=form-dialog]')
+                .should('contain', 'Rename')
+                .within(() => {
+                    cy.get('input').type(`{selectall}{backspace}subdir/foo`);
+                });
+            cy.get('[data-cy=form-submit-btn]').click();
+            cy.get('[data-cy=collection-files-panel]')
+                .should('not.contain', 'bar')
+                .and('contain', 'subdir');
+            // Look for the "arrow icon" and expand the "subdir" directory.
+            cy.get('[data-cy=virtual-file-tree] > div > i').click();
+            // Rename 'subdir/foo' to 'baz'
+            cy.get('[data-cy=collection-files-panel]')
+                .contains('foo').rightclick();
+            cy.get('[data-cy=context-menu]')
+                .contains('Rename')
+                .click();
+            cy.get('[data-cy=form-dialog]')
+                .should('contain', 'Rename')
+                .within(() => {
+                    cy.get('input')
+                        .should('have.value', 'subdir/foo')
+                        .type(`{selectall}{backspace}baz`);
+                });
+            cy.get('[data-cy=form-submit-btn]').click();
+            cy.get('[data-cy=collection-files-panel]')
+                .should('contain', 'subdir') // empty dir kept
+                .and('contain', 'baz');
+        });
+    });
+
     it('tries to rename a file with an illegal names', function() {
         // Creates the collection using the admin token so we can set up
         // a bogus manifest text without block signatures.
@@ -175,8 +222,8 @@ describe('Collection panel tests', function() {
         .as('testCollection').then(function() {
             cy.loginAs(activeUser);
             cy.visit(`/collections/${this.testCollection.uuid}`);
-            const illegalNames = ['', '.', '..'];
-            illegalNames.forEach((name) => {
+            const illegalNamesFromBackend = ['.', '..'];
+            illegalNamesFromBackend.forEach((name) => {
                 cy.get('[data-cy=collection-files-panel]')
                     .contains('bar').rightclick();
                 cy.get('[data-cy=context-menu]')
@@ -192,6 +239,32 @@ describe('Collection panel tests', function() {
                     .should('contain', 'Rename')
                     .within(() => {
                         cy.contains('Could not rename');
+                    });
+                cy.get('[data-cy=form-cancel-btn]').click();
+            });
+            const illegalNamesFromUI = [
+                ['', 'This field is required'],
+                [' ', 'Leading/trailing whitespaces not allowed'],
+                [' foo', 'Leading/trailing whitespaces not allowed'],
+                ['foo ', 'Leading/trailing whitespaces not allowed'],
+                ['//foo', 'Empty dir name not allowed']
+            ]
+            illegalNamesFromUI.forEach(([name, errMsg]) => {
+                cy.get('[data-cy=collection-files-panel]')
+                    .contains('bar').rightclick();
+                cy.get('[data-cy=context-menu]')
+                    .contains('Rename')
+                    .click();
+                cy.get('[data-cy=form-dialog]')
+                    .should('contain', 'Rename')
+                    .within(() => {
+                        cy.get('input').type(`{selectall}{backspace}${name}`);
+                    });
+                cy.get('[data-cy=form-cancel-btn]').focus();
+                cy.get('[data-cy=form-dialog]')
+                    .should('contain', 'Rename')
+                    .within(() => {
+                        cy.contains(`${errMsg}`);
                     });
                 cy.get('[data-cy=form-cancel-btn]').click();
             })
