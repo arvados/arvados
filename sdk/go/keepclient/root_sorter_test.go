@@ -19,14 +19,14 @@ func FakeSvcRoot(i uint64) string {
 	return fmt.Sprintf("https://%x.svc/", i)
 }
 
-func FakeSvcUuid(i uint64) string {
+func FakeSvcUUID(i uint64) string {
 	return fmt.Sprintf("zzzzz-bi6l4-%015x", i)
 }
 
 func FakeServiceRoots(n uint64) map[string]string {
 	sr := map[string]string{}
 	for i := uint64(0); i < n; i++ {
-		sr[FakeSvcUuid(i)] = FakeSvcRoot(i)
+		sr[FakeSvcUUID(i)] = FakeSvcRoot(i)
 	}
 	return sr
 }
@@ -45,19 +45,19 @@ func (*RootSorterSuite) ReferenceSet(c *C) {
 	fakeroots := FakeServiceRoots(16)
 	// These reference probe orders are explained further in
 	// ../../python/tests/test_keep_client.py:
-	expected_orders := []string{
+	expectedOrders := []string{
 		"3eab2d5fc9681074",
 		"097dba52e648f1c3",
 		"c5b4e023f8a7d691",
 		"9d81c02e76a3bf54",
 	}
-	for h, expected_order := range expected_orders {
+	for h, expectedOrder := range expectedOrders {
 		hash := Md5String(fmt.Sprintf("%064x", h))
 		roots := NewRootSorter(fakeroots, hash).GetSortedRoots()
-		for i, svc_id_s := range strings.Split(expected_order, "") {
-			svc_id, err := strconv.ParseUint(svc_id_s, 16, 64)
+		for i, svcIDs := range strings.Split(expectedOrder, "") {
+			svcID, err := strconv.ParseUint(svcIDs, 16, 64)
 			c.Assert(err, Equals, nil)
-			c.Check(roots[i], Equals, FakeSvcRoot(svc_id))
+			c.Check(roots[i], Equals, FakeSvcRoot(svcID))
 		}
 	}
 }
