@@ -112,11 +112,14 @@ export const createProjectProperty = (data: TagProperty) =>
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: e.errors[0], hideDuration: 2000, kind: SnackbarKind.ERROR }));
         }
     };
-export const toggleDetailsPanel = () => (dispatch: Dispatch) => {
+export const toggleDetailsPanel = () => (dispatch: Dispatch, getState: () => RootState) => {
     // because of material-ui issue resizing details panel breaks tabs.
     // triggering window resize event fixes that.
     setTimeout(() => {
         window.dispatchEvent(new Event('resize'));
     }, SLIDE_TIMEOUT);
     dispatch(detailsPanelActions.TOGGLE_DETAILS_PANEL());
+    if (getState().detailsPanel.isOpened) {
+        dispatch<any>(loadDetailsPanel(getState().detailsPanel.resourceUuid));
+    }
 };
