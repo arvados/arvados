@@ -271,7 +271,7 @@ class Arvados::V1::GroupsController < ApplicationController
       @select = nil
       where_conds = filter_by_owner
       if klass == Collection
-        @select = klass.selectable_attributes - ["manifest_text"]
+        @select = klass.selectable_attributes - ["manifest_text", "unsigned_manifest_text"]
       elsif klass == Group
         where_conds = where_conds.merge(group_class: "project")
       end
