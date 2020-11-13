@@ -90,7 +90,7 @@ type HTTPClient interface {
 	Do(*http.Request) (*http.Response, error)
 }
 
-// Information about Arvados and Keep servers.
+// KeepClient holds information about Arvados and Keep servers.
 type KeepClient struct {
 	Arvados            *arvadosclient.ArvadosClient
 	Want_replicas      int
@@ -333,7 +333,7 @@ func (kc *KeepClient) LocalLocator(locator string) (string, error) {
 	return loc, nil
 }
 
-// Get() retrieves a block, given a locator. Returns a reader, the
+// Get retrieves a block, given a locator. Returns a reader, the
 // expected data length, the URL the block is being fetched from, and
 // an error.
 //
@@ -345,13 +345,13 @@ func (kc *KeepClient) Get(locator string) (io.ReadCloser, int64, string, error) 
 	return rdr, size, url, err
 }
 
-// ReadAt() retrieves a portion of block from the cache if it's
+// ReadAt retrieves a portion of block from the cache if it's
 // present, otherwise from the network.
 func (kc *KeepClient) ReadAt(locator string, p []byte, off int) (int, error) {
 	return kc.cache().ReadAt(kc, locator, p, off)
 }
 
-// Ask() verifies that a block with the given hash is available and
+// Ask verifies that a block with the given hash is available and
 // readable, according to at least one Keep service. Unlike Get, it
 // does not retrieve the data or verify that the data content matches
 // the hash specified by the locator.
@@ -416,7 +416,7 @@ func (kc *KeepClient) GetIndex(keepServiceUUID, prefix string) (io.Reader, error
 	return bytes.NewReader(respBody[0 : len(respBody)-1]), nil
 }
 
-// LocalRoots() returns the map of local (i.e., disk and proxy) Keep
+// LocalRoots returns the map of local (i.e., disk and proxy) Keep
 // services: uuid -> baseURI.
 func (kc *KeepClient) LocalRoots() map[string]string {
 	kc.discoverServices()
@@ -425,7 +425,7 @@ func (kc *KeepClient) LocalRoots() map[string]string {
 	return kc.localRoots
 }
 
-// GatewayRoots() returns the map of Keep remote gateway services:
+// GatewayRoots returns the map of Keep remote gateway services:
 // uuid -> baseURI.
 func (kc *KeepClient) GatewayRoots() map[string]string {
 	kc.discoverServices()
@@ -434,7 +434,7 @@ func (kc *KeepClient) GatewayRoots() map[string]string {
 	return kc.gatewayRoots
 }
 
-// WritableLocalRoots() returns the map of writable local Keep services:
+// WritableLocalRoots returns the map of writable local Keep services:
 // uuid -> baseURI.
 func (kc *KeepClient) WritableLocalRoots() map[string]string {
 	kc.discoverServices()
