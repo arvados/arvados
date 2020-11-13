@@ -14,12 +14,16 @@ import { startSubmit, stopSubmit } from 'redux-form';
 import { resourcesActions } from '~/store/resources/resources-actions';
 import {snackbarActions, SnackbarKind} from '~/store/snackbar/snackbar-actions';
 import { addProperty, deleteProperty } from '~/lib/resource-properties';
+import { FilterBuilder } from '~/services/api/filter-builder';
+import { OrderBuilder } from '~/services/api/order-builder';
+import { CollectionResource } from '~/models/collection';
+import { extractUuidKind, ResourceKind } from '~/models/resource';
 
 export const SLIDE_TIMEOUT = 500;
 
 export const detailsPanelActions = unionize({
     TOGGLE_DETAILS_PANEL: ofType<{}>(),
-    OPEN_DETAILS_PANEL: ofType<string>(),
+    OPEN_DETAILS_PANEL: ofType<number>(),
     LOAD_DETAILS_PANEL: ofType<string>()
 });
 
@@ -28,13 +32,41 @@ export type DetailsPanelAction = UnionOf<typeof detailsPanelActions>;
 export const PROJECT_PROPERTIES_FORM_NAME = 'projectPropertiesFormName';
 export const PROJECT_PROPERTIES_DIALOG_NAME = 'projectPropertiesDialogName';
 
-export const loadDetailsPanel = (uuid: string) => detailsPanelActions.LOAD_DETAILS_PANEL(uuid);
+export const loadDetailsPanel = (uuid: string) =>
+    (dispatch: Dispatch, getState: () => RootState) => {
+        if (getState().detailsPanel.isOpened) {
+            switch(extractUuidKind(uuid)) {
+                case ResourceKind.COLLECTION:
+                    dispatch<any>(refreshCollectionVersionsList(uuid));
+                    break;
+                default:
+                    break;
+            }
+        }
+        dispatch(detailsPanelActions.LOAD_DETAILS_PANEL(uuid));
+    };
 
-export const openDetailsPanel = (uuid: string) => detailsPanelActions.OPEN_DETAILS_PANEL(uuid);
+export const openDetailsPanel = (uuid: string, tabNr: number = 0) =>
+    (dispatch: Dispatch) => {
+        dispatch<any>(loadDetailsPanel(uuid));
+        dispatch(detailsPanelActions.OPEN_DETAILS_PANEL(tabNr));
+    };
 
 export const openProjectPropertiesDialog = () =>
     (dispatch: Dispatch) => {
         dispatch<any>(dialogActions.OPEN_DIALOG({ id: PROJECT_PROPERTIES_DIALOG_NAME, data: { } }));
+    };
+
+export const refreshCollectionVersionsList = (uuid: string) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const versions = await services.collectionService.list({
+            filters: new FilterBuilder()
+                .addEqual('current_version_uuid', uuid)
+                .getFilters(),
+            includeOldVersions: true,
+            order: new OrderBuilder<CollectionResource>().addDesc("version").getOrder()
+        });
+        dispatch(resourcesActions.SET_RESOURCES(versions.items.slice(1)));
     };
 
 export const deleteProjectProperty = (key: string, value: string) =>

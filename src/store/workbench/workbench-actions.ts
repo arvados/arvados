@@ -379,7 +379,7 @@ export const loadProcess = (uuid: string) =>
             const process = await dispatch<any>(processesActions.loadProcess(uuid));
             await dispatch<any>(activateSidePanelTreeItem(process.containerRequest.ownerUuid));
             dispatch<any>(setProcessBreadcrumbs(uuid));
-            dispatch(loadDetailsPanel(uuid));
+            dispatch<any>(loadDetailsPanel(uuid));
         });
 
 export const updateProcess = (data: processUpdateActions.ProcessUpdateFormDialogData) =>

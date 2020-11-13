@@ -178,7 +178,7 @@ export const ProjectPanel = withStyles(styles)(
             }
 
             handleRowClick = (uuid: string) => {
-                this.props.dispatch(loadDetailsPanel(uuid));
+                this.props.dispatch<any>(loadDetailsPanel(uuid));
             }
 
         }

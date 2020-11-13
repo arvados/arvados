@@ -266,7 +266,7 @@ export const CollectionPanel = withStyles(styles)(
                 const { item } = this.props;
                 if (item) {
                     e.stopPropagation();
-                    this.props.dispatch(openDetailsPanel(item.uuid));
+                    this.props.dispatch<any>(openDetailsPanel(item.uuid));
                 }
             }
 
