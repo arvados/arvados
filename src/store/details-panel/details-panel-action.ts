@@ -37,7 +37,8 @@ export const loadDetailsPanel = (uuid: string) =>
         if (getState().detailsPanel.isOpened) {
             switch(extractUuidKind(uuid)) {
                 case ResourceKind.COLLECTION:
-                    dispatch<any>(refreshCollectionVersionsList(uuid));
+                    const c = getResource<CollectionResource>(uuid)(getState().resources);
+                    dispatch<any>(refreshCollectionVersionsList(c!.currentVersionUuid));
                     break;
                 default:
                     break;
@@ -46,10 +47,12 @@ export const loadDetailsPanel = (uuid: string) =>
         dispatch(detailsPanelActions.LOAD_DETAILS_PANEL(uuid));
     };
 
-export const openDetailsPanel = (uuid: string, tabNr: number = 0) =>
+export const openDetailsPanel = (uuid?: string, tabNr: number = 0) =>
     (dispatch: Dispatch) => {
-        dispatch<any>(loadDetailsPanel(uuid));
         dispatch(detailsPanelActions.OPEN_DETAILS_PANEL(tabNr));
+        if (uuid !== undefined) {
+            dispatch<any>(loadDetailsPanel(uuid));
+        }
     };
 
 export const openProjectPropertiesDialog = () =>
@@ -66,7 +69,7 @@ export const refreshCollectionVersionsList = (uuid: string) =>
             includeOldVersions: true,
             order: new OrderBuilder<CollectionResource>().addDesc("version").getOrder()
         });
-        dispatch(resourcesActions.SET_RESOURCES(versions.items.slice(1)));
+        dispatch(resourcesActions.SET_RESOURCES(versions.items));
     };
 
 export const deleteProjectProperty = (key: string, value: string) =>
