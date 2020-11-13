@@ -316,7 +316,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     end
   end
 
-  test "Collection contents don't include manifest_text" do
+  test "Collection contents don't include manifest_text or unsigned_manifest_text" do
     authorize_with :active
     get :contents, params: {
       id: groups(:aproject).uuid,
@@ -327,7 +327,9 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     refute(json_response["items"].any? { |c| not c["portable_data_hash"] },
            "response included an item without a portable data hash")
     refute(json_response["items"].any? { |c| c.include?("manifest_text") },
-           "response included an item with a manifest text")
+           "response included an item with manifest_text")
+    refute(json_response["items"].any? { |c| c.include?("unsigned_manifest_text") },
+           "response included an item with unsigned_manifest_text")
   end
 
   test 'get writable_by list for owned group' do
