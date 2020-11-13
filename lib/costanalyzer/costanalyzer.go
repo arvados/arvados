@@ -5,8 +5,6 @@
 package costanalyzer
 
 import (
-	"bytes"
-	"context"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -26,52 +24,17 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// LegacyNodeInfo is a struct for records created by Arvados Node Manager (Arvados <= 1.4.3)
-// Example:
-// {
-//    "total_cpu_cores":2,
-//    "total_scratch_mb":33770,
-//    "cloud_node":
-//      {
-//        "price":0.1,
-//        "size":"m4.large"
-//      },
-//     "total_ram_mb":7986
-// }
-type LegacyNodeInfo struct {
-	CPUCores  int64           `json:"total_cpu_cores"`
-	ScratchMb int64           `json:"total_scratch_mb"`
-	RAMMb     int64           `json:"total_ram_mb"`
-	CloudNode LegacyCloudNode `json:"cloud_node"`
-}
-
-// LegacyCloudNode is a struct for records created by Arvados Node Manager (Arvados <= 1.4.3)
-type LegacyCloudNode struct {
-	Price float64 `json:"price"`
-	Size  string  `json:"size"`
-}
-
-// Node is a struct for records created by Arvados Dispatch Cloud (Arvados >= 2.0.0)
-// Example:
-// {
-//    "Name": "Standard_D1_v2",
-//    "ProviderType": "Standard_D1_v2",
-//    "VCPUs": 1,
-//    "RAM": 3584000000,
-//    "Scratch": 50000000000,
-//    "IncludedScratch": 50000000000,
-//    "AddedScratch": 0,
-//    "Price": 0.057,
-//    "Preemptible": false
-//}
-type Node struct {
-	VCPUs        int64
-	Scratch      int64
-	RAM          int64
-	Price        float64
-	Name         string
+type nodeInfo struct {
+	// Legacy (records created by Arvados Node Manager with Arvados <= 1.4.3)
+	Properties struct {
+		CloudNode struct {
+			Price float64
+			Size  string
+		} `json:"cloud_node"`
+	}
+	// Modern
 	ProviderType string
-	Preemptible  bool
+	Price        float64
 }
 
 type arrayFlags []string
@@ -85,7 +48,7 @@ func (i *arrayFlags) Set(value string) error {
 	return nil
 }
 
-func parseFlags(prog string, args []string, loader *config.Loader, logger *logrus.Logger, stderr io.Writer) (exitCode int, uuids arrayFlags, resultsDir string, cache bool) {
+func parseFlags(prog string, args []string, loader *config.Loader, logger *logrus.Logger, stderr io.Writer) (exitCode int, uuids arrayFlags, resultsDir string, cache bool, err error) {
 	flags := flag.NewFlagSet("", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	flags.Usage = func() {
@@ -127,12 +90,13 @@ Options:
 `, prog)
 		flags.PrintDefaults()
 	}
-	loglevel := flags.String("log-level", "info", "logging level (debug, info, ...)")
-	resultsDir = *flags.String("output", "results", "output directory for the CSV reports")
-	flags.Var(&uuids, "uuid", "Toplevel project or container request uuid. May be specified more than once.")
+	loglevel := flags.String("log-level", "info", "logging `level` (debug, info, ...)")
+	resultsDir = *flags.String("output", "results", "output `directory` for the CSV reports")
+	flags.Var(&uuids, "uuid", "Toplevel `project or container request` uuid. May be specified more than once.")
 	flags.BoolVar(&cache, "cache", true, "create and use a local disk cache of Arvados objects")
-	err := flags.Parse(args)
+	err = flags.Parse(args)
 	if err == flag.ErrHelp {
+		err = nil
 		exitCode = 1
 		return
 	} else if err != nil {
@@ -141,8 +105,8 @@ Options:
 	}
 
 	if len(uuids) < 1 {
-		logger.Errorf("Error: no uuid(s) provided")
 		flags.Usage()
+		err = fmt.Errorf("Error: no uuid(s) provided")
 		exitCode = 2
 		return
 	}
@@ -161,90 +125,87 @@ func ensureDirectory(logger *logrus.Logger, dir string) (err error) {
 	if os.IsNotExist(err) {
 		err = os.MkdirAll(dir, 0700)
 		if err != nil {
-			return fmt.Errorf("Error creating directory %s: %s\n", dir, err.Error())
+			return fmt.Errorf("error creating directory %s: %s", dir, err.Error())
 		}
 	} else {
 		if !statData.IsDir() {
-			return fmt.Errorf("The path %s is not a directory\n", dir)
+			return fmt.Errorf("the path %s is not a directory", dir)
 		}
 	}
 	return
 }
 
-func addContainerLine(logger *logrus.Logger, node interface{}, cr, container map[string]interface{}) (csv string, cost float64) {
-	csv = cr["uuid"].(string) + ","
-	csv += cr["name"].(string) + ","
-	csv += container["uuid"].(string) + ","
-	csv += container["state"].(string) + ","
-	if container["started_at"] != nil {
-		csv += container["started_at"].(string) + ","
+func addContainerLine(logger *logrus.Logger, node nodeInfo, cr arvados.ContainerRequest, container arvados.Container) (csv string, cost float64) {
+	csv = cr.UUID + ","
+	csv += cr.Name + ","
+	csv += container.UUID + ","
+	csv += string(container.State) + ","
+	if container.StartedAt != nil {
+		csv += container.StartedAt.String() + ","
 	} else {
 		csv += ","
 	}
 
 	var delta time.Duration
-	if container["finished_at"] != nil {
-		csv += container["finished_at"].(string) + ","
-		finishedTimestamp, err := time.Parse("2006-01-02T15:04:05.000000000Z", container["finished_at"].(string))
-		if err != nil {
-			fmt.Println(err)
-		}
-		startedTimestamp, err := time.Parse("2006-01-02T15:04:05.000000000Z", container["started_at"].(string))
-		if err != nil {
-			fmt.Println(err)
-		}
-		delta = finishedTimestamp.Sub(startedTimestamp)
+	if container.FinishedAt != nil {
+		csv += container.FinishedAt.String() + ","
+		delta = container.FinishedAt.Sub(*container.StartedAt)
 		csv += strconv.FormatFloat(delta.Seconds(), 'f', 0, 64) + ","
 	} else {
 		csv += ",,"
 	}
 	var price float64
 	var size string
-	switch n := node.(type) {
-	case Node:
-		price = n.Price
-		size = n.ProviderType
-	case LegacyNodeInfo:
-		price = n.CloudNode.Price
-		size = n.CloudNode.Size
-	default:
-		logger.Warn("WARNING: unknown node type found!")
+	if node.Properties.CloudNode.Price != 0 {
+		price = node.Properties.CloudNode.Price
+		size = node.Properties.CloudNode.Size
+	} else {
+		price = node.Price
+		size = node.ProviderType
 	}
 	cost = delta.Seconds() / 3600 * price
 	csv += size + "," + strconv.FormatFloat(price, 'f', 8, 64) + "," + strconv.FormatFloat(cost, 'f', 8, 64) + "\n"
 	return
 }
 
-func loadCachedObject(logger *logrus.Logger, file string, uuid string) (reload bool, object map[string]interface{}) {
+func loadCachedObject(logger *logrus.Logger, file string, uuid string, object interface{}) (reload bool) {
 	reload = true
 	// See if we have a cached copy of this object
-	if _, err := os.Stat(file); err == nil {
-		data, err := ioutil.ReadFile(file)
-		if err != nil {
-			logger.Errorf("error reading %q: %s", file, err)
-			return
-		}
-		err = json.Unmarshal(data, &object)
-		if err != nil {
-			logger.Errorf("failed to unmarshal json: %s: %s", data, err)
-			return
-		}
+	_, err := os.Stat(file)
+	if err != nil {
+		return
+	}
+	data, err := ioutil.ReadFile(file)
+	if err != nil {
+		logger.Errorf("error reading %q: %s", file, err)
+		return
+	}
+	err = json.Unmarshal(data, &object)
+	if err != nil {
+		logger.Errorf("failed to unmarshal json: %s: %s", data, err)
+		return
+	}
 
-		// See if it is in a final state, if that makes sense
+	// See if it is in a final state, if that makes sense
+	switch v := object.(type) {
+	case arvados.Group:
 		// Projects (j7d0g) do not have state so they should always be reloaded
-		if !strings.Contains(uuid, "-j7d0g-") {
-			if object["state"].(string) == "Complete" || object["state"].(string) == "Failed" {
-				reload = false
-				logger.Debugf("Loaded object %s from local cache (%s)\n", uuid, file)
-				return
-			}
+	case arvados.Container:
+		if v.State == arvados.ContainerStateComplete || v.State == arvados.ContainerStateCancelled {
+			reload = false
+			logger.Debugf("Loaded object %s from local cache (%s)\n", uuid, file)
+		}
+	case arvados.ContainerRequest:
+		if v.State == arvados.ContainerRequestStateFinal {
+			reload = false
+			logger.Debugf("Loaded object %s from local cache (%s)\n", uuid, file)
 		}
 	}
 	return
 }
 
 // Load an Arvados object.
-func loadObject(logger *logrus.Logger, arv *arvadosclient.ArvadosClient, path string, uuid string, cache bool) (object map[string]interface{}, err error) {
+func loadObject(logger *logrus.Logger, ac *arvados.Client, path string, uuid string, cache bool, object interface{}) (err error) {
 	err = ensureDirectory(logger, path)
 	if err != nil {
 		return
@@ -256,104 +217,69 @@ func loadObject(logger *logrus.Logger, arv *arvadosclient.ArvadosClient, path st
 	if !cache {
 		reload = true
 	} else {
-		reload, object = loadCachedObject(logger, file, uuid)
+		reload = loadCachedObject(logger, file, uuid, &object)
 	}
 	if !reload {
 		return
 	}
 
 	if strings.Contains(uuid, "-j7d0g-") {
-		err = arv.Get("groups", uuid, nil, &object)
+		err = ac.RequestAndDecode(&object, "GET", "arvados/v1/groups/"+uuid, nil, nil)
 	} else if strings.Contains(uuid, "-xvhdp-") {
-		err = arv.Get("container_requests", uuid, nil, &object)
+		err = ac.RequestAndDecode(&object, "GET", "arvados/v1/container_requests/"+uuid, nil, nil)
 	} else if strings.Contains(uuid, "-dz642-") {
-		err = arv.Get("containers", uuid, nil, &object)
+		err = ac.RequestAndDecode(&object, "GET", "arvados/v1/containers/"+uuid, nil, nil)
 	} else {
-		err = arv.Get("jobs", uuid, nil, &object)
+		err = fmt.Errorf("unsupported object type with UUID %q:\n  %s", uuid, err)
+		return
 	}
 	if err != nil {
-		err = fmt.Errorf("Error loading object with UUID %q:\n  %s\n", uuid, err)
+		err = fmt.Errorf("error loading object with UUID %q:\n  %s", uuid, err)
 		return
 	}
 	encoded, err := json.MarshalIndent(object, "", " ")
 	if err != nil {
-		err = fmt.Errorf("Error marshaling object with UUID %q:\n  %s\n", uuid, err)
+		err = fmt.Errorf("error marshaling object with UUID %q:\n  %s", uuid, err)
 		return
 	}
 	err = ioutil.WriteFile(file, encoded, 0644)
 	if err != nil {
-		err = fmt.Errorf("Error writing file %s:\n  %s\n", file, err)
+		err = fmt.Errorf("error writing file %s:\n  %s", file, err)
 		return
 	}
 	return
 }
 
-func getNode(arv *arvadosclient.ArvadosClient, ac *arvados.Client, kc *keepclient.KeepClient, itemMap map[string]interface{}) (node interface{}, err error) {
-	logUuid, ok := itemMap["log_uuid"]
-	if !ok {
+func getNode(arv *arvadosclient.ArvadosClient, ac *arvados.Client, kc *keepclient.KeepClient, cr arvados.ContainerRequest) (node nodeInfo, err error) {
+	if cr.LogUUID == "" {
 		err = errors.New("No log collection")
 		return
 	}
 
 	var collection arvados.Collection
-	err = arv.Get("collections", logUuid.(string), nil, &collection)
+	err = ac.RequestAndDecode(&collection, "GET", "arvados/v1/collections/"+cr.LogUUID, nil, nil)
 	if err != nil {
-		err = fmt.Errorf("Error getting collection: %s", err)
+		err = fmt.Errorf("error getting collection: %s", err)
 		return
 	}
 
 	var fs arvados.CollectionFileSystem
 	fs, err = collection.FileSystem(ac, kc)
 	if err != nil {
-		err = fmt.Errorf("Error opening collection as filesystem: %s", err)
+		err = fmt.Errorf("error opening collection as filesystem: %s", err)
 		return
 	}
 	var f http.File
 	f, err = fs.Open("node.json")
 	if err != nil {
-		err = fmt.Errorf("Error opening file 'node.json' in collection %s: %s", logUuid.(string), err)
+		err = fmt.Errorf("error opening file 'node.json' in collection %s: %s", cr.LogUUID, err)
 		return
 	}
 
-	var nodeDict map[string]interface{}
-	buf := new(bytes.Buffer)
-	_, err = buf.ReadFrom(f)
+	err = json.NewDecoder(f).Decode(&node)
 	if err != nil {
-		err = fmt.Errorf("Error reading file 'node.json' in collection %s: %s", logUuid.(string), err)
+		err = fmt.Errorf("error reading file 'node.json' in collection %s: %s", cr.LogUUID, err)
 		return
-	}
-	contents := buf.String()
-	f.Close()
-
-	err = json.Unmarshal([]byte(contents), &nodeDict)
-	if err != nil {
-		err = fmt.Errorf("Error unmarshalling: %s", err)
-		return
-	}
-	if val, ok := nodeDict["properties"]; ok {
-		var encoded []byte
-		encoded, err = json.MarshalIndent(val, "", " ")
-		if err != nil {
-			err = fmt.Errorf("Error marshalling: %s", err)
-			return
-		}
-		// node is type LegacyNodeInfo
-		var newNode LegacyNodeInfo
-		err = json.Unmarshal(encoded, &newNode)
-		if err != nil {
-			err = fmt.Errorf("Error unmarshalling: %s", err)
-			return
-		}
-		node = newNode
-	} else {
-		// node is type Node
-		var newNode Node
-		err = json.Unmarshal([]byte(contents), &newNode)
-		if err != nil {
-			err = fmt.Errorf("Error unmarshalling: %s", err)
-			return
-		}
-		node = newNode
 	}
 	return
 }
@@ -362,20 +288,18 @@ func handleProject(logger *logrus.Logger, uuid string, arv *arvadosclient.Arvado
 
 	cost = make(map[string]float64)
 
-	project, err := loadObject(logger, arv, resultsDir+"/"+uuid, uuid, cache)
+	var project arvados.Group
+	err = loadObject(logger, ac, resultsDir+"/"+uuid, uuid, cache, &project)
 	if err != nil {
-		return nil, fmt.Errorf("Error loading object %s: %s\n", uuid, err.Error())
+		return nil, fmt.Errorf("error loading object %s: %s", uuid, err.Error())
 	}
 
-	// arv -f uuid container_request list --filters '[["owner_uuid","=","<someuuid>"],["requesting_container_uuid","=",null]]'
-
-	// Now find all container requests that have the container we found above as requesting_container_uuid
 	var childCrs map[string]interface{}
 	filterset := []arvados.Filter{
 		{
 			Attr:     "owner_uuid",
 			Operator: "=",
-			Operand:  project["uuid"].(string),
+			Operand:  project.UUID,
 		},
 		{
 			Attr:     "requesting_container_uuid",
@@ -383,12 +307,12 @@ func handleProject(logger *logrus.Logger, uuid string, arv *arvadosclient.Arvado
 			Operand:  nil,
 		},
 	}
-	err = ac.RequestAndDecodeContext(context.Background(), &childCrs, "GET", "arvados/v1/container_requests", nil, map[string]interface{}{
+	err = ac.RequestAndDecode(&childCrs, "GET", "arvados/v1/container_requests", nil, map[string]interface{}{
 		"filters": filterset,
 		"limit":   10000,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("Error querying container_requests: %s\n", err.Error())
+		return nil, fmt.Errorf("error querying container_requests: %s", err.Error())
 	}
 	if value, ok := childCrs["items"]; ok {
 		logger.Infof("Collecting top level container requests in project %s\n", uuid)
@@ -397,7 +321,7 @@ func handleProject(logger *logrus.Logger, uuid string, arv *arvadosclient.Arvado
 			itemMap := item.(map[string]interface{})
 			crCsv, err := generateCrCsv(logger, itemMap["uuid"].(string), arv, ac, kc, resultsDir, cache)
 			if err != nil {
-				return nil, fmt.Errorf("Error generating container_request CSV: %s\n", err.Error())
+				return nil, fmt.Errorf("error generating container_request CSV: %s", err.Error())
 			}
 			for k, v := range crCsv {
 				cost[k] = v
@@ -419,59 +343,59 @@ func generateCrCsv(logger *logrus.Logger, uuid string, arv *arvadosclient.Arvado
 	var totalCost float64
 
 	// This is a container request, find the container
-	cr, err := loadObject(logger, arv, resultsDir+"/"+uuid, uuid, cache)
+	var cr arvados.ContainerRequest
+	err = loadObject(logger, ac, resultsDir+"/"+uuid, uuid, cache, &cr)
 	if err != nil {
-		return nil, fmt.Errorf("Error loading object %s: %s", uuid, err)
+		return nil, fmt.Errorf("error loading cr object %s: %s", uuid, err)
 	}
-	container, err := loadObject(logger, arv, resultsDir+"/"+uuid, cr["container_uuid"].(string), cache)
+	fmt.Printf("cr: %+v\n", cr)
+	var container arvados.Container
+	err = loadObject(logger, ac, resultsDir+"/"+uuid, cr.ContainerUUID, cache, &container)
 	if err != nil {
-		return nil, fmt.Errorf("Error loading object %s: %s", cr["container_uuid"].(string), err)
+		return nil, fmt.Errorf("error loading container object %s: %s", cr.ContainerUUID, err)
 	}
 
 	topNode, err := getNode(arv, ac, kc, cr)
 	if err != nil {
-		return nil, fmt.Errorf("Error getting node %s: %s\n", cr["uuid"], err)
+		return nil, fmt.Errorf("error getting node %s: %s", cr.UUID, err)
 	}
 	tmpCsv, totalCost = addContainerLine(logger, topNode, cr, container)
 	csv += tmpCsv
 	totalCost += tmpTotalCost
-	cost[container["uuid"].(string)] = totalCost
+	cost[container.UUID] = totalCost
 
-	// Now find all container requests that have the container we found above as requesting_container_uuid
-	var childCrs map[string]interface{}
+	// Find all container requests that have the container we found above as requesting_container_uuid
+	var childCrs arvados.ContainerRequestList
 	filterset := []arvados.Filter{
 		{
 			Attr:     "requesting_container_uuid",
 			Operator: "=",
-			Operand:  container["uuid"].(string),
+			Operand:  container.UUID,
 		}}
-	err = ac.RequestAndDecodeContext(context.Background(), &childCrs, "GET", "arvados/v1/container_requests", nil, map[string]interface{}{
+	err = ac.RequestAndDecode(&childCrs, "GET", "arvados/v1/container_requests", nil, map[string]interface{}{
 		"filters": filterset,
 		"limit":   10000,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("error querying container_requests: %s", err.Error())
 	}
-	if value, ok := childCrs["items"]; ok {
-		logger.Infof("Collecting child containers for container request %s", uuid)
-		items := value.([]interface{})
-		for _, item := range items {
-			logger.Info(".")
-			itemMap := item.(map[string]interface{})
-			node, err := getNode(arv, ac, kc, itemMap)
-			if err != nil {
-				return nil, fmt.Errorf("Error getting node %s: %s\n", itemMap["uuid"], err)
-			}
-			logger.Debug("\nChild container: " + itemMap["container_uuid"].(string) + "\n")
-			c2, err := loadObject(logger, arv, resultsDir+"/"+uuid, itemMap["container_uuid"].(string), cache)
-			if err != nil {
-				return nil, fmt.Errorf("Error loading object %s: %s", cr["container_uuid"].(string), err)
-			}
-			tmpCsv, tmpTotalCost = addContainerLine(logger, node, itemMap, c2)
-			cost[itemMap["container_uuid"].(string)] = tmpTotalCost
-			csv += tmpCsv
-			totalCost += tmpTotalCost
+	logger.Infof("Collecting child containers for container request %s", uuid)
+	for _, cr2 := range childCrs.Items {
+		logger.Info(".")
+		node, err := getNode(arv, ac, kc, cr2)
+		if err != nil {
+			return nil, fmt.Errorf("error getting node %s: %s", cr2.UUID, err)
 		}
+		logger.Debug("\nChild container: " + cr2.ContainerUUID + "\n")
+		var c2 arvados.Container
+		err = loadObject(logger, ac, resultsDir+"/"+uuid, cr2.ContainerUUID, cache, &c2)
+		if err != nil {
+			return nil, fmt.Errorf("error loading object %s: %s", cr2.ContainerUUID, err)
+		}
+		tmpCsv, tmpTotalCost = addContainerLine(logger, node, cr2, c2)
+		cost[cr2.ContainerUUID] = tmpTotalCost
+		csv += tmpCsv
+		totalCost += tmpTotalCost
 	}
 	logger.Info(" done\n")
 
@@ -481,20 +405,19 @@ func generateCrCsv(logger *logrus.Logger, uuid string, arv *arvadosclient.Arvado
 	fName := resultsDir + "/" + uuid + ".csv"
 	err = ioutil.WriteFile(fName, []byte(csv), 0644)
 	if err != nil {
-		return nil, fmt.Errorf("Error writing file with path %s: %s\n", fName, err.Error())
+		return nil, fmt.Errorf("error writing file with path %s: %s", fName, err.Error())
 	}
 
 	return
 }
 
-func costanalyzer(prog string, args []string, loader *config.Loader, logger *logrus.Logger, stdout, stderr io.Writer) (exitcode int) {
-	exitcode, uuids, resultsDir, cache := parseFlags(prog, args, loader, logger, stderr)
+func costanalyzer(prog string, args []string, loader *config.Loader, logger *logrus.Logger, stdout, stderr io.Writer) (exitcode int, err error) {
+	exitcode, uuids, resultsDir, cache, err := parseFlags(prog, args, loader, logger, stderr)
 	if exitcode != 0 {
 		return
 	}
-	err := ensureDirectory(logger, resultsDir)
+	err = ensureDirectory(logger, resultsDir)
 	if err != nil {
-		logger.Errorf("%s", err)
 		exitcode = 3
 		return
 	}
@@ -502,13 +425,13 @@ func costanalyzer(prog string, args []string, loader *config.Loader, logger *log
 	// Arvados Client setup
 	arv, err := arvadosclient.MakeArvadosClient()
 	if err != nil {
-		logger.Errorf("error creating Arvados object: %s", err)
+		err = fmt.Errorf("error creating Arvados object: %s", err)
 		exitcode = 1
 		return
 	}
 	kc, err := keepclient.MakeKeepClient(arv)
 	if err != nil {
-		logger.Errorf("error creating Keep object: %s", err)
+		err = fmt.Errorf("error creating Keep object: %s", err)
 		exitcode = 1
 		return
 	}
@@ -521,8 +444,6 @@ func costanalyzer(prog string, args []string, loader *config.Loader, logger *log
 			// This is a project (group)
 			cost, err = handleProject(logger, uuid, arv, ac, kc, resultsDir, cache)
 			if err != nil {
-				// FIXME print error
-				logger.Info(err.Error())
 				exitcode = 1
 				return
 			}
@@ -531,9 +452,12 @@ func costanalyzer(prog string, args []string, loader *config.Loader, logger *log
 			}
 		} else if strings.Contains(uuid, "-xvhdp-") {
 			// This is a container request
-			crCsv, err := generateCrCsv(logger, uuid, arv, ac, kc, resultsDir, cache)
+			var crCsv map[string]float64
+			crCsv, err = generateCrCsv(logger, uuid, arv, ac, kc, resultsDir, cache)
 			if err != nil {
-				logger.Fatalf("Error generating container_request CSV: %s\n", err.Error())
+				err = fmt.Errorf("Error generating container_request CSV for uuid %s: %s", uuid, err.Error())
+				exitcode = 2
+				return
 			}
 			for k, v := range crCsv {
 				cost[k] = v
@@ -541,7 +465,8 @@ func costanalyzer(prog string, args []string, loader *config.Loader, logger *log
 		} else if strings.Contains(uuid, "-tpzed-") {
 			// This is a user. The "Home" project for a user is not a real project.
 			// It is identified by the user uuid. As such, cost analysis for the
-			// "Home" project is not supported by this program.
+			// "Home" project is not supported by this program. Skip this uuid, but
+			// keep going.
 			logger.Errorf("Cost analysis is not supported for the 'Home' project: %s", uuid)
 		}
 	}
@@ -575,11 +500,10 @@ func costanalyzer(prog string, args []string, loader *config.Loader, logger *log
 	aFile := resultsDir + "/" + time.Now().Format("2006-01-02-15-04-05") + "-aggregate-costaccounting.csv"
 	err = ioutil.WriteFile(aFile, []byte(csv), 0644)
 	if err != nil {
-		logger.Errorf("Error writing file with path %s: %s\n", aFile, err.Error())
+		err = fmt.Errorf("Error writing file with path %s: %s", aFile, err.Error())
 		exitcode = 1
 		return
-	} else {
-		logger.Infof("\nAggregate cost accounting for all supplied uuids in %s\n", aFile)
 	}
+	logger.Infof("\nAggregate cost accounting for all supplied uuids in %s\n", aFile)
 	return
 }

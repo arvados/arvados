@@ -6,7 +6,6 @@ package costanalyzer
 
 import (
 	"bytes"
-	"context"
 	"io"
 	"io/ioutil"
 	"os"
@@ -92,6 +91,18 @@ func (s *Suite) SetUpSuite(c *check.C) {
     "Preemptible": false
 }`
 
+	legacyD1V2JSON := `{
+    "properties": {
+        "cloud_node": {
+            "price": 0.073001,
+            "size": "Standard_D1_v2"
+        },
+        "total_cpu_cores": 1,
+        "total_ram_mb": 3418,
+        "total_scratch_mb": 51170
+    }
+}`
+
 	// Our fixtures do not actually contain file contents. Populate the log collections we're going to use with the node.json file
 	createNodeJSON(c, arv, ac, kc, arvadostest.CompletedContainerRequestUUID, arvadostest.LogCollectionUUID, standardE4sV3JSON)
 	createNodeJSON(c, arv, ac, kc, arvadostest.CompletedContainerRequestUUID2, arvadostest.LogCollectionUUID2, standardD32sV3JSON)
@@ -100,19 +111,19 @@ func (s *Suite) SetUpSuite(c *check.C) {
 	createNodeJSON(c, arv, ac, kc, arvadostest.CompletedDiagnosticsContainerRequest2UUID, arvadostest.DiagnosticsContainerRequest2LogCollectionUUID, standardA1V2JSON)
 	createNodeJSON(c, arv, ac, kc, arvadostest.CompletedDiagnosticsHasher1ContainerRequestUUID, arvadostest.Hasher1LogCollectionUUID, standardA1V2JSON)
 	createNodeJSON(c, arv, ac, kc, arvadostest.CompletedDiagnosticsHasher2ContainerRequestUUID, arvadostest.Hasher2LogCollectionUUID, standardA2V2JSON)
-	createNodeJSON(c, arv, ac, kc, arvadostest.CompletedDiagnosticsHasher3ContainerRequestUUID, arvadostest.Hasher3LogCollectionUUID, standardA1V2JSON)
+	createNodeJSON(c, arv, ac, kc, arvadostest.CompletedDiagnosticsHasher3ContainerRequestUUID, arvadostest.Hasher3LogCollectionUUID, legacyD1V2JSON)
 }
 
 func createNodeJSON(c *check.C, arv *arvadosclient.ArvadosClient, ac *arvados.Client, kc *keepclient.KeepClient, crUUID string, logUUID string, nodeJSON string) {
 	// Get the CR
 	var cr arvados.ContainerRequest
-	err := ac.RequestAndDecodeContext(context.Background(), &cr, "GET", "arvados/v1/container_requests/"+crUUID, nil, nil)
+	err := ac.RequestAndDecode(&cr, "GET", "arvados/v1/container_requests/"+crUUID, nil, nil)
 	c.Assert(err, check.Equals, nil)
 	c.Assert(cr.LogUUID, check.Equals, logUUID)
 
 	// Get the log collection
 	var coll arvados.Collection
-	err = ac.RequestAndDecodeContext(context.Background(), &coll, "GET", "arvados/v1/collections/"+cr.LogUUID, nil, nil)
+	err = ac.RequestAndDecode(&coll, "GET", "arvados/v1/collections/"+cr.LogUUID, nil, nil)
 	c.Assert(err, check.IsNil)
 
 	// Create a node.json file -- the fixture doesn't actually contain the contents of the collection.
@@ -131,7 +142,7 @@ func createNodeJSON(c *check.C, arv *arvadosclient.ArvadosClient, ac *arvados.Cl
 	c.Assert(mtxt, check.NotNil)
 
 	// Update collection record
-	err = ac.RequestAndDecodeContext(context.Background(), &coll, "PUT", "arvados/v1/collections/"+cr.LogUUID, nil, map[string]interface{}{
+	err = ac.RequestAndDecode(&coll, "PUT", "arvados/v1/collections/"+cr.LogUUID, nil, map[string]interface{}{
 		"collection": map[string]interface{}{
 			"manifest_text": mtxt,
 		},
@@ -195,13 +206,13 @@ func (*Suite) TestDoubleContainerRequestUUID(c *check.C) {
 	// the analysis with the project uuid. The results should be identical.
 	ac := arvados.NewClientFromEnv()
 	var cr arvados.ContainerRequest
-	err = ac.RequestAndDecodeContext(context.Background(), &cr, "PUT", "arvados/v1/container_requests/"+arvadostest.CompletedContainerRequestUUID, nil, map[string]interface{}{
+	err = ac.RequestAndDecode(&cr, "PUT", "arvados/v1/container_requests/"+arvadostest.CompletedContainerRequestUUID, nil, map[string]interface{}{
 		"container_request": map[string]interface{}{
 			"owner_uuid": arvadostest.AProjectUUID,
 		},
 	})
 	c.Assert(err, check.IsNil)
-	err = ac.RequestAndDecodeContext(context.Background(), &cr, "PUT", "arvados/v1/container_requests/"+arvadostest.CompletedContainerRequestUUID2, nil, map[string]interface{}{
+	err = ac.RequestAndDecode(&cr, "PUT", "arvados/v1/container_requests/"+arvadostest.CompletedContainerRequestUUID2, nil, map[string]interface{}{
 		"container_request": map[string]interface{}{
 			"owner_uuid": arvadostest.AProjectUUID,
 		},
@@ -234,16 +245,18 @@ func (*Suite) TestMultipleContainerRequestUUIDWithReuse(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	// Run costanalyzer with 2 container request uuids
 	exitcode := Command.RunCommand("costanalyzer.test", []string{"-uuid", arvadostest.CompletedDiagnosticsContainerRequest1UUID, "-uuid", arvadostest.CompletedDiagnosticsContainerRequest2UUID}, &bytes.Buffer{}, &stdout, &stderr)
+	c.Logf("%s", stderr.Bytes())
+	c.Logf("%s", stdout.Bytes())
 	c.Check(exitcode, check.Equals, 0)
 	c.Assert(stdout.String(), check.Matches, "(?ms).*supplied uuids in .*")
 
 	uuidReport, err := ioutil.ReadFile("results/" + arvadostest.CompletedDiagnosticsContainerRequest1UUID + ".csv")
 	c.Assert(err, check.IsNil)
-	c.Check(string(uuidReport), check.Matches, "(?ms).*TOTAL,,,,,,,,,0.00914539")
+	c.Check(string(uuidReport), check.Matches, "(?ms).*TOTAL,,,,,,,,,0.00916192")
 
 	uuidReport2, err := ioutil.ReadFile("results/" + arvadostest.CompletedDiagnosticsContainerRequest2UUID + ".csv")
 	c.Assert(err, check.IsNil)
-	c.Check(string(uuidReport2), check.Matches, "(?ms).*TOTAL,,,,,,,,,0.00586435")
+	c.Check(string(uuidReport2), check.Matches, "(?ms).*TOTAL,,,,,,,,,0.00588088")
 
 	re := regexp.MustCompile(`(?ms).*supplied uuids in (.*?)\n`)
 	matches := re.FindStringSubmatch(stdout.String()) // matches[1] contains a string like 'results/2020-11-02-18-57-45-aggregate-costaccounting.csv'
@@ -251,5 +264,5 @@ func (*Suite) TestMultipleContainerRequestUUIDWithReuse(c *check.C) {
 	aggregateCostReport, err := ioutil.ReadFile(matches[1])
 	c.Assert(err, check.IsNil)
 
-	c.Check(string(aggregateCostReport), check.Matches, "(?ms).*TOTAL,0.01490377")
+	c.Check(string(aggregateCostReport), check.Matches, "(?ms).*TOTAL,0.01492030")
 }

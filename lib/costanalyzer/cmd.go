@@ -28,7 +28,7 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	logger := ctxlog.New(stderr, "text", "info")
 	defer func() {
 		if err != nil {
-			logger.WithError(err).Error("fatal")
+			logger.Error("\n" + err.Error() + "\n")
 		}
 	}()
 
@@ -38,7 +38,7 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	loader := config.NewLoader(stdin, logger)
 	loader.SkipLegacy = true
 
-	exitcode := costanalyzer(prog, args, loader, logger, stdout, stderr)
+	exitcode, err := costanalyzer(prog, args, loader, logger, stdout, stderr)
 
 	return exitcode
 }
