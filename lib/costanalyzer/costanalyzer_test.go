@@ -245,8 +245,6 @@ func (*Suite) TestMultipleContainerRequestUUIDWithReuse(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	// Run costanalyzer with 2 container request uuids
 	exitcode := Command.RunCommand("costanalyzer.test", []string{"-uuid", arvadostest.CompletedDiagnosticsContainerRequest1UUID, "-uuid", arvadostest.CompletedDiagnosticsContainerRequest2UUID}, &bytes.Buffer{}, &stdout, &stderr)
-	c.Logf("%s", stderr.Bytes())
-	c.Logf("%s", stdout.Bytes())
 	c.Check(exitcode, check.Equals, 0)
 	c.Assert(stdout.String(), check.Matches, "(?ms).*supplied uuids in .*")
 

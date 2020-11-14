@@ -17,6 +17,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"os/user"
 	"strconv"
 	"strings"
 	"time"
@@ -117,6 +118,9 @@ Options:
 		return
 	}
 	logger.SetLevel(lvl)
+	if !cache {
+		logger.Debug("Caching disabled\n")
+	}
 	return
 }
 
@@ -170,6 +174,10 @@ func addContainerLine(logger *logrus.Logger, node nodeInfo, cr arvados.Container
 
 func loadCachedObject(logger *logrus.Logger, file string, uuid string, object interface{}) (reload bool) {
 	reload = true
+	if strings.Contains(uuid, "-j7d0g-") {
+		// We do not cache projects, they have no final state
+		return
+	}
 	// See if we have a cached copy of this object
 	_, err := os.Stat(file)
 	if err != nil {
@@ -188,15 +196,13 @@ func loadCachedObject(logger *logrus.Logger, file string, uuid string, object in
 
 	// See if it is in a final state, if that makes sense
 	switch v := object.(type) {
-	case arvados.Group:
-		// Projects (j7d0g) do not have state so they should always be reloaded
-	case arvados.Container:
-		if v.State == arvados.ContainerStateComplete || v.State == arvados.ContainerStateCancelled {
+	case *arvados.ContainerRequest:
+		if v.State == arvados.ContainerRequestStateFinal {
 			reload = false
 			logger.Debugf("Loaded object %s from local cache (%s)\n", uuid, file)
 		}
-	case arvados.ContainerRequest:
-		if v.State == arvados.ContainerRequestStateFinal {
+	case *arvados.Container:
+		if v.State == arvados.ContainerStateComplete || v.State == arvados.ContainerStateCancelled {
 			reload = false
 			logger.Debugf("Loaded object %s from local cache (%s)\n", uuid, file)
 		}
@@ -206,18 +212,28 @@ func loadCachedObject(logger *logrus.Logger, file string, uuid string, object in
 
 // Load an Arvados object.
 func loadObject(logger *logrus.Logger, ac *arvados.Client, path string, uuid string, cache bool, object interface{}) (err error) {
-	err = ensureDirectory(logger, path)
-	if err != nil {
-		return
-	}
-
-	file := path + "/" + uuid + ".json"
+	file := uuid + ".json"
 
 	var reload bool
+	var cacheDir string
+
 	if !cache {
 		reload = true
 	} else {
-		reload = loadCachedObject(logger, file, uuid, &object)
+		user, err := user.Current()
+		if err != nil {
+			reload = true
+			logger.Info("Unable to determine current user, not using cache")
+		} else {
+			cacheDir = user.HomeDir + "/.cache/arvados/costanalyzer/"
+			err = ensureDirectory(logger, cacheDir)
+			if err != nil {
+				reload = true
+				logger.Infof("Unable to create cache directory at %s, not using cache: %s", cacheDir, err.Error())
+			} else {
+				reload = loadCachedObject(logger, cacheDir+file, uuid, object)
+			}
+		}
 	}
 	if !reload {
 		return
@@ -242,10 +258,12 @@ func loadObject(logger *logrus.Logger, ac *arvados.Client, path string, uuid str
 		err = fmt.Errorf("error marshaling object with UUID %q:\n  %s", uuid, err)
 		return
 	}
-	err = ioutil.WriteFile(file, encoded, 0644)
-	if err != nil {
-		err = fmt.Errorf("error writing file %s:\n  %s", file, err)
-		return
+	if cacheDir != "" {
+		err = ioutil.WriteFile(cacheDir+file, encoded, 0644)
+		if err != nil {
+			err = fmt.Errorf("error writing file %s:\n  %s", file, err)
+			return
+		}
 	}
 	return
 }
@@ -289,7 +307,7 @@ func handleProject(logger *logrus.Logger, uuid string, arv *arvadosclient.Arvado
 	cost = make(map[string]float64)
 
 	var project arvados.Group
-	err = loadObject(logger, ac, resultsDir+"/"+uuid, uuid, cache, &project)
+	err = loadObject(logger, ac, uuid, uuid, cache, &project)
 	if err != nil {
 		return nil, fmt.Errorf("error loading object %s: %s", uuid, err.Error())
 	}
@@ -344,13 +362,12 @@ func generateCrCsv(logger *logrus.Logger, uuid string, arv *arvadosclient.Arvado
 
 	// This is a container request, find the container
 	var cr arvados.ContainerRequest
-	err = loadObject(logger, ac, resultsDir+"/"+uuid, uuid, cache, &cr)
+	err = loadObject(logger, ac, uuid, uuid, cache, &cr)
 	if err != nil {
 		return nil, fmt.Errorf("error loading cr object %s: %s", uuid, err)
 	}
-	fmt.Printf("cr: %+v\n", cr)
 	var container arvados.Container
-	err = loadObject(logger, ac, resultsDir+"/"+uuid, cr.ContainerUUID, cache, &container)
+	err = loadObject(logger, ac, uuid, cr.ContainerUUID, cache, &container)
 	if err != nil {
 		return nil, fmt.Errorf("error loading container object %s: %s", cr.ContainerUUID, err)
 	}
@@ -388,7 +405,7 @@ func generateCrCsv(logger *logrus.Logger, uuid string, arv *arvadosclient.Arvado
 		}
 		logger.Debug("\nChild container: " + cr2.ContainerUUID + "\n")
 		var c2 arvados.Container
-		err = loadObject(logger, ac, resultsDir+"/"+uuid, cr2.ContainerUUID, cache, &c2)
+		err = loadObject(logger, ac, uuid, cr2.ContainerUUID, cache, &c2)
 		if err != nil {
 			return nil, fmt.Errorf("error loading object %s: %s", cr2.ContainerUUID, err)
 		}
@@ -407,6 +424,7 @@ func generateCrCsv(logger *logrus.Logger, uuid string, arv *arvadosclient.Arvado
 	if err != nil {
 		return nil, fmt.Errorf("error writing file with path %s: %s", fName, err.Error())
 	}
+	logger.Infof("\nUUID report in %s\n\n", fName)
 
 	return
 }
@@ -471,11 +489,6 @@ func costanalyzer(prog string, args []string, loader *config.Loader, logger *log
 		}
 	}
 
-	logger.Info("\n")
-	for k := range cost {
-		logger.Infof("Uuid report in %s/%s.csv\n", resultsDir, k)
-	}
-
 	if len(cost) == 0 {
 		logger.Info("Nothing to do!\n")
 		return
@@ -504,6 +517,6 @@ func costanalyzer(prog string, args []string, loader *config.Loader, logger *log
 		exitcode = 1
 		return
 	}
-	logger.Infof("\nAggregate cost accounting for all supplied uuids in %s\n", aFile)
+	logger.Infof("Aggregate cost accounting for all supplied uuids in %s\n", aFile)
 	return
 }
