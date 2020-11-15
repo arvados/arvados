@@ -306,6 +306,7 @@ func (c *Client) RequestAndDecode(dst interface{}, method, path string, body io.
 	return c.RequestAndDecodeContext(context.Background(), dst, method, path, body, params)
 }
 
+// RequestAndDecodeContext does the same as RequestAndDecode, but with a context
 func (c *Client) RequestAndDecodeContext(ctx context.Context, dst interface{}, method, path string, body io.Reader, params interface{}) error {
 	if body, ok := body.(io.Closer); ok {
 		// Ensure body is closed even if we error out early
