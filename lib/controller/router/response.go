@@ -109,9 +109,8 @@ func (rtr *router) sendResponse(w http.ResponseWriter, req *http.Request, resp i
 	for k, v := range tmp {
 		if strings.HasSuffix(k, "_at") {
 			// Format non-nil timestamps as
-			// rfc3339NanoFixed (by default they will have
-			// been encoded to time.RFC3339Nano, which
-			// omits trailing zeroes).
+			// rfc3339NanoFixed (otherwise they
+			// would use the default time encoding).
 			switch tv := v.(type) {
 			case *time.Time:
 				if tv == nil {
@@ -133,10 +132,22 @@ func (rtr *router) sendResponse(w http.ResponseWriter, req *http.Request, resp i
 			}
 		}
 		switch k {
-		// in all this cases, RoR returns nil instead the Zero value for the type.
-		// Maytbe, this should all go away when RoR is out of the picture.
-		case "output_uuid", "output_name", "log_uuid", "modified_by_client_uuid", "description", "requesting_container_uuid", "expires_at":
+		// lib/controller/handler_test.go:TestGetObjects tries to test if we break
+		// RoR compatibility. The main reason that we keep this transformations is to comply
+		// with that test.
+		// In some cases the Arvados specification doesn't mention how to treat "" or nil values,
+		// as a first step, we'll just try to return the same that railsapi. In the future,
+		// when railsapi is not used anymore, this could all be changed to return whatever we define
+		// in the specification.
+		case "output_uuid", "output_name", "log_uuid", "description", "requesting_container_uuid":
 			if v == "" {
+				tmp[k] = nil
+			}
+		case "expires_at":
+			// For some reason this case isn't covered by the "case time.Time" above.
+			// easy to change the code and test it with:
+			// test lib/controller -gocheck.f TestGetObjects
+			if tmp[k] == "0001-01-01T00:00:00.000000000Z" {
 				tmp[k] = nil
 			}
 		case "container_count_max":

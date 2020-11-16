@@ -65,8 +65,8 @@ type ContainerRequest struct {
 	LogUUID                 string                 `json:"log_uuid"`
 	OutputUUID              string                 `json:"output_uuid"`
 	RuntimeToken            string                 `json:"runtime_token"`
-	ExpiresAt               string                 `json:"expires_at"`
-	Filters                 []string               `json:"filters"`
+	ExpiresAt               time.Time              `json:"expires_at"`
+	Filters                 []Filter               `json:"filters"`
 	ContainerCount          int                    `json:"container_count"`
 }
 

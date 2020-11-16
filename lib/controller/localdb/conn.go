@@ -31,17 +31,17 @@ func NewConn(cluster *arvados.Cluster) *Conn {
 	return &conn
 }
 
-// Logout handles the logout of conn giving to the appropiate loginController
+// Logout handles the logout of conn giving to the appropriate loginController
 func (conn *Conn) Logout(ctx context.Context, opts arvados.LogoutOptions) (arvados.LogoutResponse, error) {
 	return conn.loginController.Logout(ctx, opts)
 }
 
-// Login handles the logout of conn giving to the appropiate loginController
+// Login handles the login of conn giving to the appropriate loginController
 func (conn *Conn) Login(ctx context.Context, opts arvados.LoginOptions) (arvados.LoginResponse, error) {
 	return conn.loginController.Login(ctx, opts)
 }
 
-// UserAuthenticate handles the User Authentication of conn giving to the appropiate loginController
+// UserAuthenticate handles the User Authentication of conn giving to the appropriate loginController
 func (conn *Conn) UserAuthenticate(ctx context.Context, opts arvados.UserAuthenticateOptions) (arvados.APIClientAuthorization, error) {
 	return conn.loginController.UserAuthenticate(ctx, opts)
 }
