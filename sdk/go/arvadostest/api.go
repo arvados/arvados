@@ -106,23 +106,23 @@ func (as *APIStub) ContainerUnlock(ctx context.Context, options arvados.GetOptio
 	return arvados.Container{}, as.Error
 }
 func (as *APIStub) ContainerRequestCreate(ctx context.Context, options arvados.CreateOptions) (arvados.ContainerRequest, error) {
-	as.appendCall(as.ContainerRequestCreate, ctx, options)
+	as.appendCall(ctx, as.ContainerRequestCreate, options)
 	return arvados.ContainerRequest{}, as.Error
 }
 func (as *APIStub) ContainerRequestUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.ContainerRequest, error) {
-	as.appendCall(as.ContainerRequestUpdate, ctx, options)
+	as.appendCall(ctx, as.ContainerRequestUpdate, options)
 	return arvados.ContainerRequest{}, as.Error
 }
 func (as *APIStub) ContainerRequestGet(ctx context.Context, options arvados.GetOptions) (arvados.ContainerRequest, error) {
-	as.appendCall(as.ContainerRequestGet, ctx, options)
+	as.appendCall(ctx, as.ContainerRequestGet, options)
 	return arvados.ContainerRequest{}, as.Error
 }
 func (as *APIStub) ContainerRequestList(ctx context.Context, options arvados.ListOptions) (arvados.ContainerRequestList, error) {
-	as.appendCall(as.ContainerRequestList, ctx, options)
+	as.appendCall(ctx, as.ContainerRequestList, options)
 	return arvados.ContainerRequestList{}, as.Error
 }
 func (as *APIStub) ContainerRequestDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.ContainerRequest, error) {
-	as.appendCall(as.ContainerRequestDelete, ctx, options)
+	as.appendCall(ctx, as.ContainerRequestDelete, options)
 	return arvados.ContainerRequest{}, as.Error
 }
 func (as *APIStub) SpecimenCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Specimen, error) {
