@@ -165,11 +165,6 @@ func (h *Handler) validateAPItoken(req *http.Request, token string) (*CurrentUse
 		token = sp[2]
 	}
 
-	if len(token) < 41 {
-		ctxlog.FromContext(req.Context()).Debugf("validateAPItoken(%s): The lenght of the token is not 41", token)
-		return nil, false, nil
-	}
-
 	user.Authorization.APIToken = token
 	var scopes string
 	err = db.QueryRowContext(req.Context(), `SELECT api_client_authorizations.uuid, api_client_authorizations.scopes, users.uuid FROM api_client_authorizations JOIN users on api_client_authorizations.user_id=users.id WHERE api_token=$1 AND (expires_at IS NULL OR expires_at > current_timestamp AT TIME ZONE 'UTC') LIMIT 1`, token).Scan(&user.Authorization.UUID, &scopes, &user.UUID)
