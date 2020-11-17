@@ -522,12 +522,11 @@ func (s *IntegrationSuite) TestRuntimeTokenInCR(c *check.C) {
 		c.Logf("cr.UUID: %s", cr.UUID)
 		row := dbconn.QueryRowContext(rootctx1, `SELECT runtime_token from container_requests where uuid=$1`, cr.UUID)
 		c.Assert(row, check.NotNil)
-		// runtimeToken is *string and not a string because the database has a NULL column for this
-		var runtimeToken *string
-		err = row.Scan(&runtimeToken)
-		c.Assert(err, check.IsNil)
-		c.Assert(runtimeToken, check.NotNil)
-		c.Assert(*runtimeToken, check.DeepEquals, *tt.expectedToken)
+		var token sql.NullString
+		row.Scan(&token)
+		if c.Check(token.Valid, check.Equals, true) {
+			c.Check(token.String, check.Equals, *tt.expectedToken)
+		}
 	}
 }
 
