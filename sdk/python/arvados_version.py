@@ -6,6 +6,7 @@ import subprocess
 import time
 import os
 import re
+import sys
 
 SETUP_DIR = os.path.dirname(os.path.abspath(__file__))
 VERSION_PATHS = {
@@ -22,7 +23,7 @@ def choose_version_from():
 
     sorted_ts = sorted(ts.items())
     getver = sorted_ts[-1][1]
-    print("Using "+getver+" for version number calculation of "+SETUP_DIR)
+    print("Using "+getver+" for version number calculation of "+SETUP_DIR, file=sys.stderr)
     return getver
 
 def git_version_at_commit():
@@ -50,7 +51,11 @@ def get_version(setup_dir, module):
         try:
             save_version(setup_dir, module, git_version_at_commit())
         except (subprocess.CalledProcessError, OSError) as err:
-            print("ERROR: {0}".format(err))
+            print("ERROR: {0}".format(err), file=sys.stderr)
             pass
 
     return read_version(setup_dir, module)
+
+# Called from calculate_python_sdk_cwl_package_versions() in run-library.sh
+if __name__ == '__main__':
+    print(get_version(SETUP_DIR, "arvados"))

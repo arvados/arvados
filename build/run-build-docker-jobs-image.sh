@@ -157,6 +157,11 @@ fi
 # version.
 cwl_runner_version_tag=$(echo -n $cwl_runner_version | sed s/~dev/.dev/g | sed s/~rc/rc/g)
 
+if [[ -z "$cwl_runner_version_tag" ]]; then
+  echo "ERROR: cwl_runner_version_tag is empty";
+  exit 1
+fi
+
 if [[ "${cwl_runner_version}" != "${ARVADOS_BUILDING_VERSION}" ]]; then
 	cwl_runner_version="${cwl_runner_version}-1"
 else
