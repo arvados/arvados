@@ -152,7 +152,14 @@ func (h *handler) checks3signature(r *http.Request) (string, error) {
 	} else {
 		// Access key and secret key are both an entire
 		// Arvados token or OIDC access token.
-		ctx := arvados.ContextWithAuthorization(r.Context(), "Bearer "+key)
+		mungedKey := key
+		if strings.HasPrefix(key, "v2_") {
+			// Entire Arvados token, with "/" replaced by
+			// "_" to avoid colliding with the
+			// Authorization header format.
+			mungedKey = strings.Replace(key, "_", "/", -1)
+		}
+		ctx := arvados.ContextWithAuthorization(r.Context(), "Bearer "+mungedKey)
 		err = client.RequestAndDecodeContext(ctx, &aca, "GET", "arvados/v1/api_client_authorizations/current", nil, nil)
 		secret = key
 	}
@@ -170,7 +177,7 @@ func (h *handler) checks3signature(r *http.Request) (string, error) {
 	} else if expect != signature {
 		return "", fmt.Errorf("signature does not match (scope %q signedHeaders %q stringToSign %q)", scope, signedHeaders, stringToSign)
 	}
-	return secret, nil
+	return aca.TokenV2(), nil
 }
 
 // serveS3 handles r and returns true if r is a request from an S3
