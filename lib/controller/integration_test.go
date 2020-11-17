@@ -510,9 +510,9 @@ func (s *IntegrationSuite) TestRuntimeTokenInCR(c *check.C) {
 		}
 		cr, err := conn1.ContainerRequestCreate(rootctx1, arvados.CreateOptions{Attrs: rq})
 		if tt.expectAToGetAValidCR {
-			c.Assert(err, check.IsNil)
-			c.Assert(cr, check.NotNil)
-			c.Assert(cr.UUID, check.Not(check.Equals), "")
+			c.Check(err, check.IsNil)
+			c.Check(cr, check.NotNil)
+			c.Check(cr.UUID, check.Not(check.Equals), "")
 		}
 
 		if tt.expectedToken == nil {
@@ -521,7 +521,7 @@ func (s *IntegrationSuite) TestRuntimeTokenInCR(c *check.C) {
 
 		c.Logf("cr.UUID: %s", cr.UUID)
 		row := dbconn.QueryRowContext(rootctx1, `SELECT runtime_token from container_requests where uuid=$1`, cr.UUID)
-		c.Assert(row, check.NotNil)
+		c.Check(row, check.NotNil)
 		var token sql.NullString
 		row.Scan(&token)
 		if c.Check(token.Valid, check.Equals, true) {
