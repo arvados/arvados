@@ -285,6 +285,11 @@ func (s *IntegrationSuite) TestGetCollectionByPDH(c *check.C) {
 }
 
 func (s *IntegrationSuite) TestS3WithFederatedToken(c *check.C) {
+	if _, err := exec.LookPath("s3cmd"); err != nil {
+		c.Skip("s3cmd not in PATH")
+		return
+	}
+
 	testText := "IntegrationSuite.TestS3WithFederatedToken"
 
 	conn1 := s.conn("z1111")
