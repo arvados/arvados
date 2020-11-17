@@ -61,11 +61,12 @@ version_from_git() {
 }
 
 nohash_version_from_git() {
+    local subdir="$1"; shift
     if [[ -n "$ARVADOS_BUILDING_VERSION" ]]; then
         echo "$ARVADOS_BUILDING_VERSION"
         return
     fi
-    version_from_git | cut -d. -f1-4
+    version_from_git $subdir | cut -d. -f1-4
 }
 
 timestamp_from_git() {
@@ -76,11 +77,21 @@ timestamp_from_git() {
 calculate_python_sdk_cwl_package_versions() {
   python_sdk_ts=$(cd sdk/python && timestamp_from_git)
   cwl_runner_ts=$(cd sdk/cwl && timestamp_from_git)
+  build_ts=$(cd build && timestamp_from_git version-at-commit.sh)
+
+  ar=($python_sdk_ts $cwl_runner_ts $build_ts)
+  OLDIFS=$IFS
+  IFS=$'\n'
+  max=`echo "${ar[*]}" | sort -nr | head -n1`
+  IFS=$OLDIFS
 
   python_sdk_version=$(cd sdk/python && nohash_version_from_git)
   cwl_runner_version=$(cd sdk/cwl && nohash_version_from_git)
+  build_version=$(cd build && nohash_version_from_git version-at-commit.sh)
 
-  if [[ $python_sdk_ts -gt $cwl_runner_ts ]]; then
+  if [[ $max -eq $build_ts ]]; then
+    cwl_runner_version=$build_version
+  elif [[ $max -eq $python_sdk_ts ]]; then
     cwl_runner_version=$python_sdk_version
   fi
 }
