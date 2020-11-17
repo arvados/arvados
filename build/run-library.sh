@@ -61,11 +61,12 @@ version_from_git() {
 }
 
 nohash_version_from_git() {
+    local subdir="$1"; shift
     if [[ -n "$ARVADOS_BUILDING_VERSION" ]]; then
         echo "$ARVADOS_BUILDING_VERSION"
         return
     fi
-    version_from_git | cut -d. -f1-4
+    version_from_git $subdir | cut -d. -f1-4
 }
 
 timestamp_from_git() {
@@ -74,15 +75,8 @@ timestamp_from_git() {
 }
 
 calculate_python_sdk_cwl_package_versions() {
-  python_sdk_ts=$(cd sdk/python && timestamp_from_git)
-  cwl_runner_ts=$(cd sdk/cwl && timestamp_from_git)
-
-  python_sdk_version=$(cd sdk/python && nohash_version_from_git)
-  cwl_runner_version=$(cd sdk/cwl && nohash_version_from_git)
-
-  if [[ $python_sdk_ts -gt $cwl_runner_ts ]]; then
-    cwl_runner_version=$python_sdk_version
-  fi
+  python_sdk_version=$(cd sdk/python && python3 arvados_version.py)
+  cwl_runner_version=$(cd sdk/cwl && python3 arvados_version.py)
 }
 
 handle_python_package () {
