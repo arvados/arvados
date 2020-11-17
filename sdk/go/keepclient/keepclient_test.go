@@ -209,7 +209,7 @@ func (fh *FailThenSucceedHandler) ServeHTTP(resp http.ResponseWriter, req *http.
 	fh.reqIDs = append(fh.reqIDs, req.Header.Get("X-Request-Id"))
 	if fh.count == 0 {
 		resp.WriteHeader(500)
-		fh.count += 1
+		fh.count++
 		fh.handled <- fmt.Sprintf("http://%s", req.Host)
 	} else {
 		fh.successhandler.ServeHTTP(resp, req)
