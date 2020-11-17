@@ -462,23 +462,26 @@ func (s *IntegrationSuite) TestCreateContainerRequestWithBadToken(c *check.C) {
 // We test the direct access to the database
 // normally an integration test would not have a database access, but  in this case we need
 // to test tokens that are secret, so there is no API response that will give them back
-func (s *IntegrationSuite) TestDatabaseConnection(c *check.C) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	db, err := sql.Open("postgres", s.testClusters["z1111"].super.Cluster().PostgreSQL.Connection.String())
+func (s *IntegrationSuite) dbConn(c *check.C, clusterID string) (*sql.DB, *sql.Conn) {
+	ctx := context.Background()
+	db, err := sql.Open("postgres", s.testClusters[clusterID].super.Cluster().PostgreSQL.Connection.String())
 	c.Assert(err, check.IsNil)
-	defer db.Close()
+
 	conn, err := db.Conn(ctx)
 	c.Assert(err, check.IsNil)
-	defer conn.Close()
+
 	rows, err := conn.ExecContext(ctx, `SELECT 1`)
 	c.Assert(err, check.IsNil)
 	n, err := rows.RowsAffected()
 	c.Assert(err, check.IsNil)
 	c.Assert(n, check.Equals, int64(1))
+	return db, conn
 }
 
 func (s *IntegrationSuite) TestRuntimeTokenInCR(c *check.C) {
+	db, dbconn := s.dbConn(c, "z1111")
+	defer db.Close()
+	defer dbconn.Close()
 	conn1 := s.conn("z1111")
 	rootctx1, _, _ := s.rootClients("z1111")
 	_, ac1, _, au := s.userClients(rootctx1, c, conn1, "z1111", true)
@@ -516,19 +519,8 @@ func (s *IntegrationSuite) TestRuntimeTokenInCR(c *check.C) {
 			break
 		}
 
-		ctx2, cancel2 := context.WithCancel(context.Background())
-		defer cancel2()
-
-		db, err := sql.Open("postgres", s.testClusters["z1111"].super.Cluster().PostgreSQL.Connection.String())
-		c.Assert(err, check.IsNil)
-		defer db.Close()
-
-		conn, err := db.Conn(ctx2)
-		c.Assert(err, check.IsNil)
-		defer conn.Close()
-
 		c.Logf("cr.UUID: %s", cr.UUID)
-		row := conn.QueryRowContext(ctx2, `SELECT runtime_token from container_requests where uuid=$1`, cr.UUID)
+		row := dbconn.QueryRowContext(rootctx1, `SELECT runtime_token from container_requests where uuid=$1`, cr.UUID)
 		c.Assert(row, check.NotNil)
 		// runtimeToken is *string and not a string because the database has a NULL column for this
 		var runtimeToken *string
