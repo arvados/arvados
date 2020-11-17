@@ -516,7 +516,7 @@ func (s *IntegrationSuite) TestRuntimeTokenInCR(c *check.C) {
 		}
 
 		if tt.expectedToken == nil {
-			break
+			continue
 		}
 
 		c.Logf("cr.UUID: %s", cr.UUID)
