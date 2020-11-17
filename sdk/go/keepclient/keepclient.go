@@ -227,7 +227,7 @@ func (kc *KeepClient) getOrHead(method string, locator string, header http.Heade
 	var retryList []string
 
 	for triesRemaining > 0 {
-		triesRemaining -= 1
+		triesRemaining--
 		retryList = nil
 
 		for _, host := range serversToTry {
