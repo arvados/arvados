@@ -304,14 +304,12 @@ export const CollectionDetailsAttributes = (props: { item: CollectionResource, t
             <DetailsAttribute classLabel={classes.label} classValue={classes.value}
                 label='Owner' linkToUuid={item.ownerUuid} />
         </Grid>
-
-        {isOldVersion &&
-            <Grid item xs={12} md={mdSize}>
-                <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                    label='Head version'
-                    linkToUuid={item.currentVersionUuid} />
-            </Grid>
-        }
+        <Grid item xs={12} md={mdSize}>
+            <DetailsAttribute classLabel={classes.label} classValue={classes.value}
+                label='Head version'
+                value={isOldVersion ? undefined : 'this one'}
+                linkToUuid={isOldVersion ? item.currentVersionUuid : undefined} />
+        </Grid>
         <Grid item xs={12} md={mdSize}>
             <DetailsAttribute
                 classLabel={classes.label} classValue={classes.value}
