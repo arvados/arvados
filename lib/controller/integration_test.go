@@ -294,71 +294,63 @@ func (s *IntegrationSuite) TestS3WithFederatedToken(c *check.C) {
 
 	conn1 := s.conn("z1111")
 	rootctx1, _, _ := s.rootClients("z1111")
-	userctx1, ac1, kc1, _ := s.userClients(rootctx1, c, conn1, "z1111", true)
+	userctx1, ac1, _, _ := s.userClients(rootctx1, c, conn1, "z1111", true)
 	conn3 := s.conn("z3333")
-	_, ac3, kc3 := s.clientsWithToken("z3333", ac1.AuthToken)
 
-	// Create a collection on z1111
-	var coll arvados.Collection
-	fs1, err := coll.FileSystem(ac1, kc1)
-	c.Assert(err, check.IsNil)
-	f, err := fs1.OpenFile("test.txt", os.O_CREATE|os.O_RDWR, 0777)
-	c.Assert(err, check.IsNil)
-	_, err = io.WriteString(f, testText)
-	c.Assert(err, check.IsNil)
-	err = f.Close()
-	c.Assert(err, check.IsNil)
-	mtxt, err := fs1.MarshalManifest(".")
-	c.Assert(err, check.IsNil)
-	coll1, err := conn1.CollectionCreate(userctx1, arvados.CreateOptions{Attrs: map[string]interface{}{
-		"manifest_text": mtxt,
-	}})
-	c.Assert(err, check.IsNil)
-
-	// Create same collection on z3333
-	fs3, err := coll.FileSystem(ac3, kc3)
-	c.Assert(err, check.IsNil)
-	f, err = fs3.OpenFile("test.txt", os.O_CREATE|os.O_RDWR, 0777)
-	c.Assert(err, check.IsNil)
-	_, err = io.WriteString(f, testText)
-	c.Assert(err, check.IsNil)
-	err = f.Close()
-	c.Assert(err, check.IsNil)
-	mtxt, err = fs3.MarshalManifest(".")
-	c.Assert(err, check.IsNil)
-	coll3, err := conn3.CollectionCreate(userctx1, arvados.CreateOptions{Attrs: map[string]interface{}{
-		"manifest_text": mtxt,
-	}})
-	c.Assert(err, check.IsNil)
+	createColl := func(clusterID string) arvados.Collection {
+		_, ac, kc := s.clientsWithToken(clusterID, ac1.AuthToken)
+		var coll arvados.Collection
+		fs, err := coll.FileSystem(ac, kc)
+		c.Assert(err, check.IsNil)
+		f, err := fs.OpenFile("test.txt", os.O_CREATE|os.O_RDWR, 0777)
+		c.Assert(err, check.IsNil)
+		_, err = io.WriteString(f, testText)
+		c.Assert(err, check.IsNil)
+		err = f.Close()
+		c.Assert(err, check.IsNil)
+		mtxt, err := fs.MarshalManifest(".")
+		c.Assert(err, check.IsNil)
+		coll, err = s.conn(clusterID).CollectionCreate(userctx1, arvados.CreateOptions{Attrs: map[string]interface{}{
+			"manifest_text": mtxt,
+		}})
+		c.Assert(err, check.IsNil)
+		return coll
+	}
 
 	for _, trial := range []struct {
-		label string
-		conn  *rpc.Conn
-		coll  arvados.Collection
+		clusterID string // create the collection on this cluster (then use z3333 to access it)
+		token     string
 	}{
-		{"z1111", conn1, coll1},
-		{"z3333", conn3, coll3},
+		// Try the hardest test first: z3333 hasn't seen
+		// z1111's token yet, and we're just passing the
+		// opaque secret part, so z3333 has to guess that it
+		// belongs to z1111.
+		{"z1111", strings.Split(ac1.AuthToken, "/")[2]},
+		{"z3333", strings.Split(ac1.AuthToken, "/")[2]},
+		{"z1111", strings.Replace(ac1.AuthToken, "/", "_", -1)},
+		{"z3333", strings.Replace(ac1.AuthToken, "/", "_", -1)},
 	} {
-		c.Logf("================ %s", trial.label)
-		cfgjson, err := trial.conn.ConfigGet(userctx1)
+		c.Logf("================ %v", trial)
+		coll := createColl(trial.clusterID)
+
+		cfgjson, err := conn3.ConfigGet(userctx1)
 		c.Assert(err, check.IsNil)
 		var cluster arvados.Cluster
 		err = json.Unmarshal(cfgjson, &cluster)
 		c.Assert(err, check.IsNil)
 
 		c.Logf("TokenV2 is %s", ac1.AuthToken)
-		mungedtoken := strings.Replace(ac1.AuthToken, "/", "_", -1)
 		host := cluster.Services.WebDAV.ExternalURL.Host
 		s3args := []string{
 			"--ssl", "--no-check-certificate",
 			"--host=" + host, "--host-bucket=" + host,
-			"--access_key=" + mungedtoken, "--secret_key=" + mungedtoken,
+			"--access_key=" + trial.token, "--secret_key=" + trial.token,
 		}
-		buf, err := exec.Command("s3cmd", append(s3args, "ls", "s3://"+trial.coll.UUID)...).CombinedOutput()
+		buf, err := exec.Command("s3cmd", append(s3args, "ls", "s3://"+coll.UUID)...).CombinedOutput()
 		c.Check(err, check.IsNil)
-		c.Check(string(buf), check.Matches, `.* `+fmt.Sprintf("%d", len(testText))+` +s3://`+trial.coll.UUID+`/test.txt\n`)
+		c.Check(string(buf), check.Matches, `.* `+fmt.Sprintf("%d", len(testText))+` +s3://`+coll.UUID+`/test.txt\n`)
 
-		buf, err = exec.Command("s3cmd", append(s3args, "get", "s3://"+trial.coll.UUID+"/test.txt", c.MkDir()+"/tmpfile")...).CombinedOutput()
+		buf, err = exec.Command("s3cmd", append(s3args, "get", "s3://"+coll.UUID+"/test.txt", c.MkDir()+"/tmpfile")...).CombinedOutput()
 		// Command fails because we don't return Etag header.
 		// c.Check(err, check.IsNil)
 		flen := strconv.Itoa(len(testText))
