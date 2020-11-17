@@ -161,7 +161,7 @@ func (this *KeepClient) putReplicas(
 	lastError := make(map[string]string)
 
 	for retriesRemaining > 0 {
-		retriesRemaining -= 1
+		retriesRemaining--
 		nextServer = 0
 		retryServers = []string{}
 		for replicasTodo > 0 {
@@ -170,8 +170,8 @@ func (this *KeepClient) putReplicas(
 				if nextServer < len(sv) {
 					DebugPrintf("DEBUG: [%s] Begin upload %s to %s", reqid, hash, sv[nextServer])
 					go this.uploadToKeepServer(sv[nextServer], hash, getReader(), uploadStatusChan, expectedLength, reqid)
-					nextServer += 1
-					active += 1
+					nextServer++
+					active++
 				} else {
 					if active == 0 && retriesRemaining == 0 {
 						msg := "Could not write sufficient replicas: "
@@ -190,7 +190,7 @@ func (this *KeepClient) putReplicas(
 			// Now wait for something to happen.
 			if active > 0 {
 				status := <-uploadStatusChan
-				active -= 1
+				active--
 
 				if status.statusCode == 200 {
 					// good news!
