@@ -50,6 +50,9 @@ VERSION="latest"
 
 set -o pipefail
 
+# capture the directory that the script is running from
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+
 usage() {
   echo >&2
   echo >&2 "Usage: $0 [-h] [-h]"
@@ -184,7 +187,7 @@ fi
 if [ "x${VAGRANT}" = "xyes" ]; then
   SOURCE_PILLARS_DIR="/vagrant/${CONFIG_DIR}"
 else
-  SOURCE_PILLARS_DIR="./${CONFIG_DIR}"
+  SOURCE_PILLARS_DIR="${SCRIPT_DIR}/${CONFIG_DIR}"
 fi
 
 # Replace cluster and domain name in the example pillars
