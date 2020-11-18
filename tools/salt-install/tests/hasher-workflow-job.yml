@@ -1,0 +1,10 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+inputfile:
+  class: File
+  path: test.txt
+hasher1_outputname: hasher1.md5sum.txt
+hasher2_outputname: hasher2.md5sum.txt
+hasher3_outputname: hasher3.md5sum.txt

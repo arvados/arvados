@@ -11,7 +11,7 @@ nginx:
       ### STREAMS
       http:
         upstream websocket_upstream:
-          - server: '127.0.0.2:8005 fail_timeout=10s'
+          - server: 'ws.internal:8005 fail_timeout=10s'
 
   servers:
     managed:

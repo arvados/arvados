@@ -17,7 +17,7 @@ nginx:
       ### STREAMS
       http:
         upstream workbench_upstream:
-          - server: '127.0.0.2:9000 fail_timeout=10s'
+          - server: 'workbench.internal:9000 fail_timeout=10s'
 
   ### SITES
   servers:
@@ -64,7 +64,7 @@ nginx:
         overwrite: true
         config:
           - server:
-            - listen: '127.0.0.2:9000'
+            - listen: 'workbench.internal:9000'
             - server_name: workbench
             - root: /var/www/arvados-workbench/current/public
             - index:  index.html index.htm

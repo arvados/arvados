@@ -11,9 +11,9 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 # "Install Saltstack":#saltstack
 # "Single host install using the provision.sh script":#single_host
-# "Local testing Arvados in a Vagrant box":#vagrant
 # "DNS configuration":#final_steps
 # "Initial user and login":#initial_user
+# "Test the installed cluster running a simple workflow":#test_install
 
 h2(#saltstack). Install Saltstack
 
@@ -84,3 +84,95 @@ Assuming you didn't change these values in the @provision.sh@ script, the initia
 * User: 'admin'
 * Password: 'password'
 * Email: 'admin@arva2.arv.local'
+
+h2(#test_install). Test the installed cluster running a simple workflow
+
+The @provision.sh@ script saves a simple example test workflow in the @/tmp/cluster_tests@. If you want to run it, just change to that directory and run:
+
+<notextile>
+<pre><code>cd /tmp/cluster_tests
+./run-test.sh
+</code></pre>
+</notextile>
+
+It will create a test user, upload a small workflow and run it. If everything goes OK, the output should similar to this (some output was shortened for clarity):
+
+<notextile>
+<pre><code>Creating Arvados Standard Docker Images project
+Arvados project uuid is 'arva2-j7d0g-0prd8cjlk6kfl7y'
+{
+ ...
+ "uuid":"arva2-o0j2j-n4zu4cak5iifq2a",
+ "owner_uuid":"arva2-tpzed-000000000000000",
+ ...
+}
+Uploading arvados/jobs' docker image to the project
+2.1.1: Pulling from arvados/jobs
+8559a31e96f4: Pulling fs layer
+...
+Status: Downloaded newer image for arvados/jobs:2.1.1
+docker.io/arvados/jobs:2.1.1
+2020-11-23 21:43:39 arvados.arv_put[32678] INFO: Creating new cache file at /home/vagrant/.cache/arvados/arv-put/c59256eda1829281424c80f588c7cc4d
+2020-11-23 21:43:46 arvados.arv_put[32678] INFO: Collection saved as 'Docker image arvados jobs:2.1.1 sha256:0dd50'
+arva2-4zz18-1u5pvbld7cvxuy2
+Creating initial user ('admin')
+Setting up user ('admin')
+{
+ "items":[
+  {
+   ...
+   "owner_uuid":"arva2-tpzed-000000000000000",
+   ...
+   "uuid":"arva2-o0j2j-1ownrdne0ok9iox"
+  },
+  {
+   ...
+   "owner_uuid":"arva2-tpzed-000000000000000",
+   ...
+   "uuid":"arva2-o0j2j-1zbeyhcwxc1tvb7"
+  },
+  {
+   ...
+   "email":"admin@arva2.arv.local",
+   ...
+   "owner_uuid":"arva2-tpzed-000000000000000",
+   ...
+   "username":"admin",
+   "uuid":"arva2-tpzed-3wrm93zmzpshrq2",
+   ...
+  }
+ ],
+ "kind":"arvados#HashList"
+}
+Activating user 'admin'
+{
+ ...
+ "email":"admin@arva2.arv.local",
+ ...
+ "username":"admin",
+ "uuid":"arva2-tpzed-3wrm93zmzpshrq2",
+ ...
+}
+Running test CWL workflow
+INFO /usr/bin/cwl-runner 2.1.1, arvados-python-client 2.1.1, cwltool 3.0.20200807132242
+INFO Resolved 'hasher-workflow.cwl' to 'file:///tmp/cluster_tests/hasher-workflow.cwl'
+...
+INFO Using cluster arva2 (https://arva2.arv.local:8443/)
+INFO Upload local files: "test.txt"
+INFO Uploaded to ea34d971b71d5536b4f6b7d6c69dc7f6+50 (arva2-4zz18-c8uvwqdry4r8jao)
+INFO Using collection cache size 256 MiB
+INFO [container hasher-workflow.cwl] submitted container_request arva2-xvhdp-v1bkywd58gyocwm
+INFO [container hasher-workflow.cwl] arva2-xvhdp-v1bkywd58gyocwm is Final
+INFO Overall process status is success
+INFO Final output collection d6c69a88147dde9d52a418d50ef788df+123
+{
+    "hasher_out": {
+        "basename": "hasher3.md5sum.txt",
+        "class": "File",
+        "location": "keep:d6c69a88147dde9d52a418d50ef788df+123/hasher3.md5sum.txt",
+        "size": 95
+    }
+}
+INFO Final process status is success
+</code></pre>
+</notextile>

@@ -12,6 +12,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 # "Vagrant":#vagrant
 # "DNS configuration":#final_steps
 # "Initial user and login":#initial_user
+# "Test the installed cluster running a simple workflow":#test_install
 
 h2(#vagrant). Vagrant
 
@@ -71,3 +72,19 @@ Assuming you didn't change the defaults, the initial credentials are:
 * User: 'admin'
 * Password: 'password'
 * Email: 'admin@arva2.arv.local'
+
+h2(#test_install). Test the installed cluster running a simple workflow
+
+As documented in the <a href="{{ site.baseurl }}/install/salt-single-host.html">Single Host installation</a> page, You can run a test workflow to verify the installation finished correctly. To do so, you can follow these steps:
+
+<notextile>
+<pre><code>vagrant ssh</code></pre>
+</notextile>
+
+and once in the instance:
+
+<notextile>
+<pre><code>cd /tmp/cluster_tests
+./run-test.sh
+</code></pre>
+</notextile>

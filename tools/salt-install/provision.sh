@@ -50,21 +50,26 @@ VERSION="latest"
 
 set -o pipefail
 
+# capture the directory that the script is running from
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+
 usage() {
   echo >&2
   echo >&2 "Usage: $0 [-h] [-h]"
   echo >&2
   echo >&2 "$0 options:"
-  echo >&2 "  -v, --vagrant           Run in vagrant and use the /vagrant shared dir"
+  echo >&2 "  -d, --debug             Run salt installation in debug mode"
   echo >&2 "  -p <N>, --ssl-port <N>  SSL port to use for the web applications"
+  echo >&2 "  -t, --test              Test installation running a CWL workflow"
   echo >&2 "  -h, --help              Display this help and exit"
+  echo >&2 "  -v, --vagrant           Run in vagrant and use the /vagrant shared dir"
   echo >&2
 }
 
 arguments() {
   # NOTE: This requires GNU getopt (part of the util-linux package on Debian-based distros).
-  TEMP=`getopt -o hvp: \
-    --long help,vagrant,ssl-port: \
+  TEMP=`getopt -o dhp:tv \
+    --long debug,help,ssl-port:,test,vagrant \
     -n "$0" -- "$@"`
 
   if [ $? != 0 ] ; then echo "GNU getopt missing? Use -h for help"; exit 1 ; fi
@@ -73,6 +78,14 @@ arguments() {
 
   while [ $# -ge 1 ]; do
     case $1 in
+      -d | --debug)
+        LOG_LEVEL="debug"
+        shift
+        ;;
+      -t | --test)
+        TEST="yes"
+        shift
+        ;;
       -v | --vagrant)
         VAGRANT="yes"
         shift
@@ -93,7 +106,9 @@ arguments() {
   done
 }
 
+LOG_LEVEL="info"
 HOST_SSL_PORT=443
+TESTS_DIR="tests"
 
 arguments $@
 
@@ -106,7 +121,7 @@ F_DIR="/srv/formulas"
 P_DIR="/srv/pillars"
 
 apt-get update
-apt-get install -y curl git
+apt-get install -y curl git jq
 
 dpkg -l |grep salt-minion
 if [ ${?} -eq 0 ]; then
@@ -139,6 +154,7 @@ mkdir -p ${P_DIR}
 cat > ${S_DIR}/top.sls << EOFTSLS
 base:
   '*':
+    - example_single_host_host_entries
     - example_add_snakeoil_certs
     - locale
     - nginx.passenger
@@ -169,7 +185,7 @@ EOFPSLS
 # Get the formula and dependencies
 cd ${F_DIR} || exit 1
 for f in postgres arvados nginx docker locale; do
-  git clone https://github.com/saltstack-formulas/${f}-formula.git
+  git clone https://github.com/netmanagers/${f}-formula.git
 done
 
 if [ "x${BRANCH}" != "x" ]; then
@@ -183,15 +199,16 @@ fi
 
 if [ "x${VAGRANT}" = "xyes" ]; then
   SOURCE_PILLARS_DIR="/vagrant/${CONFIG_DIR}"
+  TESTS_DIR="/vagrant/${TESTS_DIR}"
 else
-  SOURCE_PILLARS_DIR="./${CONFIG_DIR}"
+  SOURCE_PILLARS_DIR="${SCRIPT_DIR}/${CONFIG_DIR}"
+  TESTS_DIR="${SCRIPT_DIR}/${TESTS_DIR}"
 fi
 
-# Replace cluster and domain name in the example pillars
+# Replace cluster and domain name in the example pillars and test files
 for f in ${SOURCE_PILLARS_DIR}/*; do
-  # sed "s/example.net/${DOMAIN}/g; s/fixme/${CLUSTER}/g" \
-  sed "s/__DOMAIN__/${DOMAIN}/g;
-       s/__CLUSTER__/${CLUSTER}/g;
+  sed "s/__CLUSTER__/${CLUSTER}/g;
+       s/__DOMAIN__/${DOMAIN}/g;
        s/__RELEASE__/${RELEASE}/g;
        s/__HOST_SSL_PORT__/${HOST_SSL_PORT}/g;
        s/__GUEST_SSL_PORT__/${GUEST_SSL_PORT}/g;
@@ -202,9 +219,18 @@ for f in ${SOURCE_PILLARS_DIR}/*; do
   ${f} > ${P_DIR}/$(basename ${f})
 done
 
-# Let's write an /etc/hosts file that points all the hosts to localhost
-
-echo "127.0.0.2 api keep keep0 collections download ws workbench workbench2 ${CLUSTER}.${DOMAIN} api.${CLUSTER}.${DOMAIN} keep.${CLUSTER}.${DOMAIN} keep0.${CLUSTER}.${DOMAIN} collections.${CLUSTER}.${DOMAIN} download.${CLUSTER}.${DOMAIN} ws.${CLUSTER}.${DOMAIN} workbench.${CLUSTER}.${DOMAIN} workbench2.${CLUSTER}.${DOMAIN}" >> /etc/hosts
+mkdir -p /tmp/cluster_tests
+# Replace cluster and domain name in the example pillars and test files
+for f in ${TESTS_DIR}/*; do
+  sed "s/__CLUSTER__/${CLUSTER}/g;
+       s/__DOMAIN__/${DOMAIN}/g;
+       s/__HOST_SSL_PORT__/${HOST_SSL_PORT}/g;
+       s/__INITIAL_USER__/${INITIAL_USER}/g;
+       s/__INITIAL_USER_EMAIL__/${INITIAL_USER_EMAIL}/g;
+       s/__INITIAL_USER_PASSWORD__/${INITIAL_USER_PASSWORD}/g" \
+  ${f} > /tmp/cluster_tests/$(basename ${f})
+done
+chmod 755 /tmp/cluster_tests/run-test.sh
 
 # FIXME! #16992 Temporary fix for psql call in arvados-api-server
 if [ -e /root/.psqlrc ]; then
@@ -220,7 +246,7 @@ echo '\pset pager off' >> /root/.psqlrc
 # END FIXME! #16992 Temporary fix for psql call in arvados-api-server
 
 # Now run the install
-salt-call --local state.apply -l debug
+salt-call --local state.apply -l ${LOG_LEVEL}
 
 # FIXME! #16992 Temporary fix for psql call in arvados-api-server
 if [ "x${DELETE_PSQL}" = "xyes" ]; then
@@ -229,7 +255,18 @@ if [ "x${DELETE_PSQL}" = "xyes" ]; then
 fi
 
 if [ "x${RESTORE_PSQL}" = "xyes" ]; then
-  echo "Restroting .psql file"
+  echo "Restoring .psql file"
   mv -v /root/.psqlrc.provision.backup /root/.psqlrc
 fi
 # END FIXME! #16992 Temporary fix for psql call in arvados-api-server
+
+# If running in a vagrant VM, add default user to docker group
+if [ "x${VAGRANT}" = "xyes" ]; then
+  usermod -a -G docker vagrant 
+fi
+
+# Test that the installation finished correctly
+if [ "x${TEST}" = "xyes" ]; then
+  cd /tmp/cluster_tests
+  ./run-test.sh
+fi
