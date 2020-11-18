@@ -79,11 +79,13 @@ const getItem = (res: DetailsResource): DetailsData => {
 
 const mapStateToProps = ({ detailsPanel, resources, collectionPanelFiles }: RootState) => {
     const resource = getResource(detailsPanel.resourceUuid)(resources) as DetailsResource | undefined;
-    const file = getNode(detailsPanel.resourceUuid)(collectionPanelFiles);
+    const file = resource
+        ? undefined
+        : getNode(detailsPanel.resourceUuid)(collectionPanelFiles);
     return {
         isOpened: detailsPanel.isOpened,
         tabNr: detailsPanel.tabNr,
-        item: getItem(resource || (file && file.value) || EMPTY_RESOURCE),
+        res: resource || (file && file.value) || EMPTY_RESOURCE,
     };
 };
 
@@ -101,7 +103,7 @@ export interface DetailsPanelDataProps {
     setActiveTab: (tabNr: number) => void;
     isOpened: boolean;
     tabNr: number;
-    item: DetailsData;
+    res: DetailsResource;
 }
 
 type DetailsPanelProps = DetailsPanelDataProps & WithStyles<CssRules>;
@@ -109,6 +111,16 @@ type DetailsPanelProps = DetailsPanelDataProps & WithStyles<CssRules>;
 export const DetailsPanel = withStyles(styles)(
     connect(mapStateToProps, mapDispatchToProps)(
         class extends React.Component<DetailsPanelProps> {
+            shouldComponentUpdate(nextProps: DetailsPanelProps) {
+                if ('etag' in nextProps.res && 'etag' in this.props.res &&
+                    nextProps.res.etag === this.props.res.etag &&
+                    nextProps.isOpened === this.props.isOpened &&
+                    nextProps.tabNr === this.props.tabNr) {
+                    return false;
+                }
+                return true;
+            }
+
             handleChange = (event: any, value: number) => {
                 this.props.setActiveTab(value);
             }
@@ -124,14 +136,15 @@ export const DetailsPanel = withStyles(styles)(
                             in={isOpened}
                             timeout={SLIDE_TIMEOUT}
                             unmountOnExit>
-                            {this.renderContent()}
+                            {isOpened ? this.renderContent() : <div />}
                         </Transition>
                     </Grid>
                 );
             }
 
             renderContent() {
-                const { classes, onCloseDrawer, item, tabNr } = this.props;
+                const { classes, onCloseDrawer, res, tabNr } = this.props;
+                const item = getItem(res);
                 return <Grid
                     container
                     direction="column"
