@@ -164,7 +164,11 @@ func (rtr *router) mungeItemFields(tmp map[string]interface{}) {
 				if err != nil {
 					break
 				}
-				tmp[k] = t.Format(rfc3339NanoFixed)
+				if t.IsZero() {
+					tmp[k] = nil
+				} else {
+					tmp[k] = t.Format(rfc3339NanoFixed)
+				}
 			}
 		}
 		switch k {
@@ -175,15 +179,8 @@ func (rtr *router) mungeItemFields(tmp map[string]interface{}) {
 		// as a first step, we'll just try to return the same that railsapi. In the future,
 		// when railsapi is not used anymore, this could all be changed to return whatever we define
 		// in the specification.
-		case "output_uuid", "output_name", "log_uuid", "description", "requesting_container_uuid":
+		case "output_uuid", "output_name", "log_uuid", "description", "requesting_container_uuid", "container_uuid":
 			if v == "" {
-				tmp[k] = nil
-			}
-		case "expires_at":
-			// For some reason this case isn't covered by the "case time.Time" above.
-			// easy to change the code and test it with:
-			// test lib/controller -gocheck.f TestGetObjects
-			if tmp[k] == "0001-01-01T00:00:00.000000000Z" {
 				tmp[k] = nil
 			}
 		case "container_count_max":
