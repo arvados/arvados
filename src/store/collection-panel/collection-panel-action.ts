@@ -44,27 +44,32 @@ export const loadCollectionPanel = (uuid: string) =>
     };
 
 export const createCollectionTag = (data: TagProperty) =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const item = getState().collectionPanel.item;
         if (!item) { return; }
 
         const properties = Object.assign({}, item.properties);
-        try {
-            const key = data.keyID || data.key;
-            const value = data.valueID || data.value;
-            const updatedCollection = await services.collectionService.update(
-                item.uuid, {
-                    properties: addProperty(properties, key, value)
-                }
-            );
+        const key = data.keyID || data.key;
+        const value = data.valueID || data.value;
+        services.collectionService.update(
+            item.uuid, {
+                properties: addProperty(properties, key, value)
+            }
+        ).then(updatedCollection => {
             dispatch(collectionPanelActions.SET_COLLECTION(updatedCollection));
             dispatch(resourcesActions.SET_RESOURCES([updatedCollection]));
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Tag has been successfully added.", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({
+                message: "Tag has been successfully added.",
+                hideDuration: 2000,
+                kind: SnackbarKind.SUCCESS }));
+            dispatch<any>(loadDetailsPanel(updatedCollection.uuid));
             return updatedCollection;
-        } catch (e) {
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: e.errors[0], hideDuration: 2000, kind: SnackbarKind.ERROR }));
-            return;
-        }
+        }).catch (e =>
+            dispatch(snackbarActions.OPEN_SNACKBAR({
+                message: e.errors[0],
+                hideDuration: 2000,
+                kind: SnackbarKind.ERROR }))
+        );
     };
 
 export const navigateToProcess = (uuid: string) =>
@@ -78,23 +83,25 @@ export const navigateToProcess = (uuid: string) =>
     };
 
 export const deleteCollectionTag = (key: string, value: string) =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const item = getState().collectionPanel.item;
         if (!item) { return; }
 
         const properties = Object.assign({}, item.properties);
-        try {
-            const updatedCollection = await services.collectionService.update(
-                item.uuid, {
-                    properties: deleteProperty(properties, key, value)
-                }
-            );
+        services.collectionService.update(
+            item.uuid, {
+                properties: deleteProperty(properties, key, value)
+            }
+        ).then(updatedCollection => {
             dispatch(collectionPanelActions.SET_COLLECTION(updatedCollection));
             dispatch(resourcesActions.SET_RESOURCES([updatedCollection]));
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Tag has been successfully deleted.", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
+            dispatch<any>(loadDetailsPanel(updatedCollection.uuid));
             return updatedCollection;
-        } catch (e) {
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: e.errors[0], hideDuration: 2000, kind: SnackbarKind.ERROR }));
-            return;
-        }
+        }).catch (e => {
+            dispatch(snackbarActions.OPEN_SNACKBAR({
+                message: e.errors[0],
+                hideDuration: 2000,
+                kind: SnackbarKind.ERROR }));
+        });
     };

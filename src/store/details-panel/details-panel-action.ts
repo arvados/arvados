@@ -61,15 +61,19 @@ export const openProjectPropertiesDialog = () =>
     };
 
 export const refreshCollectionVersionsList = (uuid: string) =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const versions = await services.collectionService.list({
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        services.collectionService.list({
             filters: new FilterBuilder()
                 .addEqual('current_version_uuid', uuid)
                 .getFilters(),
             includeOldVersions: true,
             order: new OrderBuilder<CollectionResource>().addDesc("version").getOrder()
-        });
-        dispatch(resourcesActions.SET_RESOURCES(versions.items));
+        }).then(versions => dispatch(resourcesActions.SET_RESOURCES(versions.items))
+        ).catch(e => snackbarActions.OPEN_SNACKBAR({
+            message: `Couldn't retrieve versions: ${e.errors[0]}`,
+            hideDuration: 2000,
+            kind: SnackbarKind.ERROR })
+        );
     };
 
 export const deleteProjectProperty = (key: string, value: string) =>

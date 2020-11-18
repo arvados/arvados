@@ -15,6 +15,7 @@ import { startSubmit, stopSubmit, initialize, FormErrors } from 'redux-form';
 import { getDialog } from "~/store/dialog/dialog-reducer";
 import { getFileFullPath, sortFilesTree } from "~/services/collection-service/collection-service-files-response";
 import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
+import { loadDetailsPanel } from "~/store/details-panel/details-panel-action";
 
 export const collectionPanelFilesAction = unionize({
     SET_COLLECTION_FILES: ofType<CollectionFilesTree>(),
@@ -31,39 +32,44 @@ export const COLLECTION_PANEL_LOAD_FILES = 'collectionPanelLoadFiles';
 export const COLLECTION_PANEL_LOAD_FILES_THRESHOLD = 40000;
 
 export const loadCollectionFiles = (uuid: string) =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(progressIndicatorActions.START_WORKING(COLLECTION_PANEL_LOAD_FILES));
-        const files = await services.collectionService.files(uuid);
-
-        // Given the array of directories and files, create the appropriate tree nodes,
-        // sort them, and add the complete url to each.
-        const tree = createCollectionFilesTree(files);
-        const sorted = sortFilesTree(tree);
-        const mapped = mapTreeValues(services.collectionService.extendFileURL)(sorted);
-        dispatch(collectionPanelFilesAction.SET_COLLECTION_FILES(mapped));
-        dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PANEL_LOAD_FILES));
+        services.collectionService.files(uuid).then(files => {
+            // Given the array of directories and files, create the appropriate tree nodes,
+            // sort them, and add the complete url to each.
+            const tree = createCollectionFilesTree(files);
+            const sorted = sortFilesTree(tree);
+            const mapped = mapTreeValues(services.collectionService.extendFileURL)(sorted);
+            dispatch(collectionPanelFilesAction.SET_COLLECTION_FILES(mapped));
+            dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PANEL_LOAD_FILES));
+        }).catch(e => {
+            dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PANEL_LOAD_FILES));
+            dispatch(snackbarActions.OPEN_SNACKBAR({
+                message: `Error getting file list: ${e.errors[0]}`,
+                hideDuration: 2000,
+                kind: SnackbarKind.ERROR }));
+        });
     };
 
 export const removeCollectionFiles = (filePaths: string[]) =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const currentCollection = getState().collectionPanel.item;
         if (currentCollection) {
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removing...' }));
-            try {
-                await services.collectionService.deleteFiles(currentCollection.uuid, filePaths);
+            services.collectionService.deleteFiles(currentCollection.uuid, filePaths).then(() => {
                 dispatch<any>(loadCollectionFiles(currentCollection.uuid));
                 dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: 'Removed.',
                     hideDuration: 2000,
                     kind: SnackbarKind.SUCCESS
                 }));
-            } catch (e) {
+                dispatch<any>(loadDetailsPanel(currentCollection.uuid));
+            }).catch(e =>
                 dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: 'Could not remove file.',
                     hideDuration: 2000,
                     kind: SnackbarKind.ERROR
-                }));
-            }
+                }))
+            );
         }
     };
 
@@ -131,7 +137,7 @@ export const openRenameFileDialog = (data: RenameFileDialogData) =>
     };
 
 export const renameFile = (newFullPath: string) =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const dialog = getDialog<RenameFileDialogData>(getState().dialog, RENAME_FILE_DIALOG);
         const currentCollection = getState().collectionPanel.item;
         if (dialog && currentCollection) {
@@ -140,17 +146,17 @@ export const renameFile = (newFullPath: string) =>
                 dispatch(startSubmit(RENAME_FILE_DIALOG));
                 const oldPath = getFileFullPath(file);
                 const newPath = newFullPath;
-                try {
-                    await services.collectionService.moveFile(currentCollection.uuid, oldPath, newPath);
+                services.collectionService.moveFile(currentCollection.uuid, oldPath, newPath).then(() => {
                     dispatch<any>(loadCollectionFiles(currentCollection.uuid));
                     dispatch(dialogActions.CLOSE_DIALOG({ id: RENAME_FILE_DIALOG }));
                     dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'File name changed.', hideDuration: 2000 }));
-                } catch (e) {
+                    dispatch<any>(loadDetailsPanel(currentCollection.uuid));
+                }).catch (e => {
                     const errors: FormErrors<RenameFileDialogData, string> = {
                         path: `Could not rename the file: ${e.responseText}`
                     };
                     dispatch(stopSubmit(RENAME_FILE_DIALOG, errors));
-                }
+                });
             }
         }
     };
