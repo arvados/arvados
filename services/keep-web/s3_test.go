@@ -700,3 +700,12 @@ func (s *IntegrationSuite) TestS3cmd(c *check.C) {
 	c.Check(err, check.IsNil)
 	c.Check(string(buf), check.Matches, `.* 3 +s3://`+arvadostest.FooCollection+`/foo\n`)
 }
+
+func (s *IntegrationSuite) TestS3BucketInHost(c *check.C) {
+	stage := s.s3setup(c)
+	defer stage.teardown(c)
+
+	hdr, body, _ := s.runCurl(c, "AWS "+arvadostest.ActiveTokenV2+":none", stage.coll.UUID+".collections.example.com", "/sailboat.txt")
+	c.Check(hdr, check.Matches, `(?s)HTTP/1.1 200 OK\r\n.*`)
+	c.Check(body, check.Equals, "⛵\n")
+}

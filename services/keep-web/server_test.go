@@ -257,12 +257,16 @@ func (s *IntegrationSuite) Test200(c *check.C) {
 }
 
 // Return header block and body.
-func (s *IntegrationSuite) runCurl(c *check.C, token, host, uri string, args ...string) (hdr, bodyPart string, bodySize int64) {
+func (s *IntegrationSuite) runCurl(c *check.C, auth, host, uri string, args ...string) (hdr, bodyPart string, bodySize int64) {
 	curlArgs := []string{"--silent", "--show-error", "--include"}
 	testHost, testPort, _ := net.SplitHostPort(s.testServer.Addr)
 	curlArgs = append(curlArgs, "--resolve", host+":"+testPort+":"+testHost)
-	if token != "" {
-		curlArgs = append(curlArgs, "-H", "Authorization: OAuth2 "+token)
+	if strings.Contains(auth, " ") {
+		// caller supplied entire Authorization header value
+		curlArgs = append(curlArgs, "-H", "Authorization: "+auth)
+	} else if auth != "" {
+		// caller supplied Arvados token
+		curlArgs = append(curlArgs, "-H", "Authorization: Bearer "+auth)
 	}
 	curlArgs = append(curlArgs, args...)
 	curlArgs = append(curlArgs, "http://"+host+":"+testPort+uri)

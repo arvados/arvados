@@ -21,7 +21,11 @@ To access Arvados S3 using an S3 client library, you must tell it to use the URL
 
 The "bucket name" is an Arvados collection uuid, portable data hash, or project uuid.
 
-The bucket name must be encoded as the first path segment of every request.  This is what the S3 documentation calls "Path-Style Requests".
+Path-style and virtual host-style requests are supported.
+* A path-style request uses the hostname indicated by @Services.WebDAVDownload.ExternalURL@, with the bucket name in the first path segment: @https://download.example.com/zzzzz-4zz18-asdfgasdfgasdfg/@.
+* A virtual host-style request uses the hostname pattern indicated by @Services.WebDAV.ExternalURL@, with a bucket name in place of the leading @*@: @https://zzzzz-4zz18-asdfgasdfgasdfg.collections.example.com/@.
+
+If you have wildcard DNS, TLS, and routing set up, an S3 client configured with endpoint @collections.example.com@ should work regardless of which request style it uses.
 
 h3. Supported Operations
 
