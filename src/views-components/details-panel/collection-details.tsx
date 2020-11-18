@@ -15,15 +15,15 @@ import { formatDate, formatFileSize } from '~/common/formatters';
 import { Dispatch } from 'redux';
 import { navigateTo } from '~/store/navigation/navigation-action';
 
-export type CssRules = 'versionBrowserHeader' | 'selectedVersion';
+export type CssRules = 'versionBrowserHeader' | 'versionBrowserItem';
 
 const styles: StyleRulesCallback<CssRules> = theme => ({
     versionBrowserHeader: {
         textAlign: 'center',
-        fontWeight: 'bold'
+        fontWeight: 'bold',
     },
-    selectedVersion: {
-        fontWeight: 'bold'
+    versionBrowserItem: {
+        textAlign: 'center',
     }
 });
 
@@ -85,38 +85,47 @@ const CollectionVersionBrowser = withStyles(styles)(
     connect(mapStateToProps, mapDispatchToProps)(
         ({ currentCollection, versions, showVersion, classes }: CollectionVersionBrowserProps & CollectionVersionBrowserDispatchProps & WithStyles<CssRules>) => {
             return <>
-                <Grid container justify="space-between">
-                    <Typography variant="caption" className={classes.versionBrowserHeader}>
-                        Version
-                    </Typography>
-                    <Typography variant="caption" className={classes.versionBrowserHeader}>
-                        Size
-                    </Typography>
-                    <Typography variant="caption" className={classes.versionBrowserHeader}>
-                        Date
-                    </Typography>
-                </Grid>
+                <Grid container>
+                    <Grid item xs={2}>
+                        <Typography variant="caption" className={classes.versionBrowserHeader}>
+                            Nr
+                        </Typography>
+                    </Grid>
+                    <Grid item xs={4}>
+                        <Typography variant="caption" className={classes.versionBrowserHeader}>
+                            Size
+                        </Typography>
+                    </Grid>
+                    <Grid item xs={6}>
+                        <Typography variant="caption" className={classes.versionBrowserHeader}>
+                            Date
+                        </Typography>
+                    </Grid>
                 { versions.map(item => {
                     const isSelectedVersion = !!(currentCollection && currentCollection.uuid === item.uuid);
                     return (
-                        <ListItem button
-                            className={isSelectedVersion ? 'selectedVersion' : ''}
+                        <ListItem button style={{padding: '4px'}}
                             key={item.version}
                             onClick={e => showVersion(item)}
                             selected={isSelectedVersion}>
-                            <Grid container justify="space-between">
-                                <Typography variant="caption">
+                            <Grid item xs={2}>
+                                <Typography variant="caption" className={classes.versionBrowserItem}>
                                     {item.version}
                                 </Typography>
-                                <Typography variant="caption">
+                            </Grid>
+                            <Grid item xs={4}>
+                                <Typography variant="caption" className={classes.versionBrowserItem}>
                                     {formatFileSize(item.fileSizeTotal)}
                                 </Typography>
-                                <Typography variant="caption">
+                            </Grid>
+                            <Grid item xs={6}>
+                                <Typography variant="caption" className={classes.versionBrowserItem}>
                                     {formatDate(item.modifiedAt)}
                                 </Typography>
                             </Grid>
                         </ListItem>
                     );
                 })}
+                </Grid>
             </>;
         }));
