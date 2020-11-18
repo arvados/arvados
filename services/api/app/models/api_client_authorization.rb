@@ -345,6 +345,11 @@ class ApiClientAuthorization < ArvadosModel
         auth.user = user
         auth.api_client_id = 0
       end
+      # If stored_secret is set, we save stored_secret in the database
+      # but return the real secret to the caller. This way, if we end
+      # up returning the auth record to the client, they see the same
+      # secret they supplied, instead of the HMAC we saved in the
+      # database.
       stored_secret = stored_secret || secret
       auth.update_attributes!(user: user,
                               api_token: stored_secret,
