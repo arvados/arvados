@@ -40,16 +40,16 @@ class Arvados::V1::JobsController < ApplicationController
     (super rescue {}).
       merge({
               find_or_create: {
-                type: 'boolean', required: false, default: false
+                type: 'boolean', required: false, default: false,
               },
               filters: {
-                type: 'array', required: false
+                type: 'array', required: false,
               },
               minimum_script_version: {
-                type: 'string', required: false
+                type: 'string', required: false,
               },
               exclude_script_versions: {
-                type: 'array', required: false
+                type: 'array', required: false,
               },
             })
   end

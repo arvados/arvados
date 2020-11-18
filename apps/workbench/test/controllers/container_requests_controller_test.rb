@@ -42,7 +42,7 @@ class ContainerRequestsControllerTest < ActionController::TestCase
     get :show, params: {id: uuid}, session: session_for(:active)
     assert_response :success
 
-    assert_includes @response.body, "action=\"/container_requests/#{uuid}/copy\""
+    assert_includes @response.body, "action_href=%2Fcontainer_requests%2F#{uuid}%2Fcopy"
   end
 
   test "cancel request for queued container" do
@@ -60,17 +60,19 @@ class ContainerRequestsControllerTest < ActionController::TestCase
   end
 
   [
-    ['completed', false, false],
-    ['completed', true, false],
+    ['completed',       false, false],
+    ['completed',        true, false],
+    ['completed',         nil, false],
     ['completed-older', false, true],
-    ['completed-older', true, true],
+    ['completed-older',  true, true],
+    ['completed-older',   nil, true],
   ].each do |cr_fixture, reuse_enabled, uses_acr|
-    test "container request #{uses_acr ? '' : 'not'} using arvados-cwl-runner copy #{reuse_enabled ? 'with' : 'without'} reuse enabled" do
+    test "container request #{uses_acr ? '' : 'not'} using arvados-cwl-runner copy #{reuse_enabled.nil? ? 'nil' : (reuse_enabled ? 'with' : 'without')} reuse enabled" do
       completed_cr = api_fixture('container_requests')[cr_fixture]
       # Set up post request params
       copy_params = {id: completed_cr['uuid']}
-      if reuse_enabled
-        copy_params.merge!({use_existing: true})
+      if !reuse_enabled.nil?
+        copy_params.merge!({use_existing: reuse_enabled})
       end
       post(:copy, params: copy_params, session: session_for(:active))
       assert_response 302
@@ -87,12 +89,11 @@ class ContainerRequestsControllerTest < ActionController::TestCase
       # If the CR's command is arvados-cwl-runner, the appropriate flag should
       # be passed to it
       if uses_acr
-        if reuse_enabled
-          # arvados-cwl-runner's default behavior is to enable reuse
-          assert_includes copied_cr['command'], 'arvados-cwl-runner'
+        assert_equal copied_cr['command'][0], 'arvados-cwl-runner'
+        if reuse_enabled.nil? || reuse_enabled
+          assert_includes copied_cr['command'], '--enable-reuse'
           assert_not_includes copied_cr['command'], '--disable-reuse'
         else
-          assert_includes copied_cr['command'], 'arvados-cwl-runner'
           assert_includes copied_cr['command'], '--disable-reuse'
           assert_not_includes copied_cr['command'], '--enable-reuse'
         end

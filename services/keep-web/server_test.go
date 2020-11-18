@@ -440,6 +440,7 @@ func (s *IntegrationSuite) SetUpTest(c *check.C) {
 	cfg.cluster.Services.WebDAV.InternalURLs[arvados.URL{Host: listen}] = arvados.ServiceInstance{}
 	cfg.cluster.Services.WebDAVDownload.InternalURLs[arvados.URL{Host: listen}] = arvados.ServiceInstance{}
 	cfg.cluster.ManagementToken = arvadostest.ManagementToken
+	cfg.cluster.SystemRootToken = arvadostest.SystemRootToken
 	cfg.cluster.Users.AnonymousUserToken = arvadostest.AnonymousToken
 	s.testServer = &server{Config: cfg}
 	err = s.testServer.Start(ctxlog.TestLogger(c))

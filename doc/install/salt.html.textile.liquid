@@ -1,0 +1,29 @@
+---
+layout: default
+navsection: installguide
+title: Salt prerequisites
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+# "Introduction":#introduction
+# "Choose an installation method":#installmethod
+
+h2(#introduction). Introduction
+
+To ease the installation of the various Arvados components, we have developed a "Saltstack":https://www.saltstack.com/ 's "arvados-formula":https://github.com/saltstack-formulas/arvados-formula which can help you get an Arvados cluster up and running.
+
+Saltstack is a Python-based, open-source software for event-driven IT automation, remote task execution, and configuration management. It can be used in a master/minion setup or master-less.
+
+This is a package-based installation method. The Salt scripts are available from the "tools/salt-install":https://github.com/arvados/arvados/tree/master/tools/salt-install directory in the Arvados git repository.
+
+h2(#installmethod). Choose an installation method
+
+The salt formulas can be used in different ways. Choose one of these three options to install Arvados:
+
+* "Use Vagrant to install Arvados in a virtual machine":salt-vagrant.html
+* "Arvados on a single host":salt-single-host.html
+* "Arvados across multiple hosts":salt-multi-host.html

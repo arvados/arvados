@@ -173,37 +173,42 @@ type APITokenCache struct {
 	expireTime int64
 }
 
-// Cache the token and set an expire time.  If we already have an expire time
-// on the token, it is not updated.
-func (this *APITokenCache) RememberToken(token string) {
-	this.lock.Lock()
-	defer this.lock.Unlock()
+// RememberToken caches the token and set an expire time.  If we already have
+// an expire time on the token, it is not updated.
+func (cache *APITokenCache) RememberToken(token string) {
+	cache.lock.Lock()
+	defer cache.lock.Unlock()
 
 	now := time.Now().Unix()
-	if this.tokens[token] == 0 {
-		this.tokens[token] = now + this.expireTime
+	if cache.tokens[token] == 0 {
+		cache.tokens[token] = now + cache.expireTime
 	}
 }
 
-// Check if the cached token is known and still believed to be valid.
-func (this *APITokenCache) RecallToken(token string) bool {
-	this.lock.Lock()
-	defer this.lock.Unlock()
+// RecallToken checks if the cached token is known and still believed to be
+// valid.
+func (cache *APITokenCache) RecallToken(token string) bool {
+	cache.lock.Lock()
+	defer cache.lock.Unlock()
 
 	now := time.Now().Unix()
-	if this.tokens[token] == 0 {
+	if cache.tokens[token] == 0 {
 		// Unknown token
 		return false
-	} else if now < this.tokens[token] {
+	} else if now < cache.tokens[token] {
 		// Token is known and still valid
 		return true
 	} else {
 		// Token is expired
-		this.tokens[token] = 0
+		cache.tokens[token] = 0
 		return false
 	}
 }
 
+// GetRemoteAddress returns a string with the remote address for the request.
+// If the X-Forwarded-For header is set and has a non-zero length, it returns a
+// string made from a comma separated list of all the remote addresses,
+// starting with the one(s) from the X-Forwarded-For header.
 func GetRemoteAddress(req *http.Request) string {
 	if xff := req.Header.Get("X-Forwarded-For"); xff != "" {
 		return xff + "," + req.RemoteAddr
@@ -507,7 +512,7 @@ func (h *proxyHandler) Put(resp http.ResponseWriter, req *http.Request) {
 	// Check if the client specified the number of replicas
 	if req.Header.Get("X-Keep-Desired-Replicas") != "" {
 		var r int
-		_, err := fmt.Sscanf(req.Header.Get(keepclient.X_Keep_Desired_Replicas), "%d", &r)
+		_, err := fmt.Sscanf(req.Header.Get(keepclient.XKeepDesiredReplicas), "%d", &r)
 		if err == nil {
 			kc.Want_replicas = r
 		}
@@ -527,7 +532,7 @@ func (h *proxyHandler) Put(resp http.ResponseWriter, req *http.Request) {
 	}
 
 	// Tell the client how many successful PUTs we accomplished
-	resp.Header().Set(keepclient.X_Keep_Replicas_Stored, fmt.Sprintf("%d", wroteReplicas))
+	resp.Header().Set(keepclient.XKeepReplicasStored, fmt.Sprintf("%d", wroteReplicas))
 
 	switch err.(type) {
 	case nil:

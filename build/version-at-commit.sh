@@ -1,9 +1,12 @@
 #!/bin/bash
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
 
 set -e -o pipefail
 commit="$1"
 versionglob="[0-9].[0-9]*.[0-9]*"
-devsuffix=".dev"
+devsuffix="~dev"
 
 # automatically assign version
 #

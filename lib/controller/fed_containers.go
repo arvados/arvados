@@ -19,7 +19,7 @@ import (
 func remoteContainerRequestCreate(
 	h *genericFederatedRequestHandler,
 	effectiveMethod string,
-	clusterId *string,
+	clusterID *string,
 	uuid string,
 	remainder string,
 	w http.ResponseWriter,
@@ -42,7 +42,7 @@ func remoteContainerRequestCreate(
 		return true
 	}
 
-	if *clusterId == "" || *clusterId == h.handler.Cluster.ClusterID {
+	if *clusterID == "" || *clusterID == h.handler.Cluster.ClusterID {
 		// Submitting container request to local cluster. No
 		// need to set a runtime_token (rails api will create
 		// one when the container runs) or do a remote cluster
@@ -117,7 +117,7 @@ func remoteContainerRequestCreate(
 	req.ContentLength = int64(buf.Len())
 	req.Header.Set("Content-Length", fmt.Sprintf("%v", buf.Len()))
 
-	resp, err := h.handler.remoteClusterRequest(*clusterId, req)
+	resp, err := h.handler.remoteClusterRequest(*clusterID, req)
 	h.handler.proxy.ForwardResponse(w, resp, err)
 	return true
 }

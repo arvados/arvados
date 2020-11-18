@@ -126,6 +126,7 @@ class WorkUnitsController < ApplicationController
       end
 
       attrs['command'] = ["arvados-cwl-runner",
+                          "--enable-reuse",
                           "--local",
                           "--api=containers",
                           "--project-uuid=#{params['work_unit']['owner_uuid']}",

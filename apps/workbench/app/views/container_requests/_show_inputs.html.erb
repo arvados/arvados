@@ -17,22 +17,22 @@ n_inputs = if @object.mounts[:"/var/lib/cwl/workflow.json"] && @object.mounts[:"
     <% if workflow %>
       <% inputs = get_cwl_inputs(workflow) %>
       <% inputs.each do |input| %>
-        <label for="#input-<%= cwl_shortname(input[:id]) %>">
-          <%= input[:label] || cwl_shortname(input[:id]) %>
-        </label>
-        <div>
-          <p class="form-control-static">
-            <%= render_cwl_input @object, input, [:mounts, :"/var/lib/cwl/cwl.input.json", :content] %>
+        <div class="form-control-static">
+          <label for="#input-<%= cwl_shortname(input[:id]) %>">
+            <%= input[:label] || cwl_shortname(input[:id]) %>
+          </label>
+          <%= render_cwl_input @object, input, [:mounts, :"/var/lib/cwl/cwl.input.json", :content] %>
+          <p class="help-block">
+            <%= input[:doc] %>
           </p>
         </div>
-        <p class="help-block">
-          <%= input[:doc] %>
-        </p>
       <% end %>
     <% end %>
   </div>
 </form>
 <% end %>
+
+<p style="margin-bottom: 2em"><b style="margin-right: 3em">Reuse past workflow steps if available?</b>  <%= render_editable_attribute(@object, :reuse_steps) %></p>
 
 <% if n_inputs == 0 %>
   <p><i>This workflow does not need any further inputs specified.  Click the "Run" button at the bottom of the page to start the workflow.</i></p>

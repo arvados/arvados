@@ -286,6 +286,7 @@ class ArvadosModel < ApplicationRecord
 
     sql_conds = nil
     user_uuids = users_list.map { |u| u.uuid }
+    all_user_uuids = []
 
     # For details on how the trashed_groups table is constructed, see
     # see db/migrate/20200501150153_permission_table.rb
@@ -296,21 +297,19 @@ class ArvadosModel < ApplicationRecord
       exclude_trashed_records = "AND (#{sql_table}.trash_at is NULL or #{sql_table}.trash_at > statement_timestamp())"
     end
 
+    trashed_check = ""
+    if !include_trash && sql_table != "api_client_authorizations"
+      trashed_check = "#{sql_table}.owner_uuid NOT IN (SELECT group_uuid FROM #{TRASHED_GROUPS} " +
+                      "where trash_at <= statement_timestamp()) #{exclude_trashed_records}"
+    end
+
     if users_list.select { |u| u.is_admin }.any?
       # Admin skips most permission checks, but still want to filter on trashed items.
-      if !include_trash
-        if sql_table != "api_client_authorizations"
-          # Only include records where the owner is not trashed
-          sql_conds = "#{sql_table}.owner_uuid NOT IN (SELECT group_uuid FROM #{TRASHED_GROUPS} "+
-                      "where trash_at <= statement_timestamp()) #{exclude_trashed_records}"
-        end
+      if !include_trash && sql_table != "api_client_authorizations"
+        # Only include records where the owner is not trashed
+        sql_conds = trashed_check
       end
     else
-      trashed_check = ""
-      if !include_trash then
-        trashed_check = "AND target_uuid NOT IN (SELECT group_uuid FROM #{TRASHED_GROUPS} where trash_at <= statement_timestamp())"
-      end
-
       # The core of the permission check is a join against the
       # materialized_permissions table to determine if the user has at
       # least read permission to either the object itself or its
@@ -321,19 +320,38 @@ class ArvadosModel < ApplicationRecord
       # A user can have can_manage access to another user, this grants
       # full access to all that user's stuff.  To implement that we
       # need to include those other users in the permission query.
-      user_uuids_subquery = USER_UUIDS_SUBQUERY_TEMPLATE % {user: ":user_uuids", perm_level: 1}
+
+      # This was previously implemented by embedding the subquery
+      # directly into the query, but it was discovered later that this
+      # causes the Postgres query planner to do silly things because
+      # the query heuristics assumed the subquery would have a lot
+      # more rows that it does, and choose a bad merge strategy.  By
+      # doing the query here and embedding the result as a constant,
+      # Postgres also knows exactly how many items there are and can
+      # choose the right query strategy.
+      #
+      # (note: you could also do this with a temporary table, but that
+      # would require all every request be wrapped in a transaction,
+      # which is not currently the case).
+
+      all_user_uuids = ActiveRecord::Base.connection.exec_query %{
+#{USER_UUIDS_SUBQUERY_TEMPLATE % {user: "'#{user_uuids.join "', '"}'", perm_level: 1}}
+},
+                                             'readable_by.user_uuids'
+
+      user_uuids_subquery = ":user_uuids"
 
       # Note: it is possible to combine the direct_check and
-      # owner_check into a single EXISTS() clause, however it turns
+      # owner_check into a single IN (SELECT) clause, however it turns
       # out query optimizer doesn't like it and forces a sequential
-      # table scan.  Constructing the query with separate EXISTS()
+      # table scan.  Constructing the query with separate IN (SELECT)
       # clauses enables it to use the index.
       #
       # see issue 13208 for details.
 
       # Match a direct read permission link from the user to the record uuid
       direct_check = "#{sql_table}.uuid IN (SELECT target_uuid FROM #{PERMISSION_VIEW} "+
-                     "WHERE user_uuid IN (#{user_uuids_subquery}) AND perm_level >= 1 #{trashed_check})"
+                     "WHERE user_uuid IN (#{user_uuids_subquery}) AND perm_level >= 1)"
 
       # Match a read permission for the user to the record's
       # owner_uuid.  This is so we can have a permissions table that
@@ -353,8 +371,17 @@ class ArvadosModel < ApplicationRecord
       # other user owns.
       owner_check = ""
       if sql_table != "api_client_authorizations" and sql_table != "groups" then
-        owner_check = "OR #{sql_table}.owner_uuid IN (SELECT target_uuid FROM #{PERMISSION_VIEW} "+
-          "WHERE user_uuid IN (#{user_uuids_subquery}) AND perm_level >= 1 #{trashed_check} AND traverse_owned) "
+        owner_check = "#{sql_table}.owner_uuid IN (SELECT target_uuid FROM #{PERMISSION_VIEW} "+
+                      "WHERE user_uuid IN (#{user_uuids_subquery}) AND perm_level >= 1 AND traverse_owned) "
+
+        # We want to do owner_check before direct_check in the OR
+        # clause.  The order of the OR clause isn't supposed to
+        # matter, but in practice, it does -- apparently in the
+        # absence of other hints, it uses the ordering from the query.
+        # For certain types of queries (like filtering on owner_uuid),
+        # every item will match the owner_check clause, so then
+        # Postgres will optimize out the direct_check entirely.
+        direct_check = " OR " + direct_check
       end
 
       links_cond = ""
@@ -366,7 +393,7 @@ class ArvadosModel < ApplicationRecord
                        "(#{sql_table}.head_uuid IN (#{user_uuids_subquery}) OR #{sql_table}.tail_uuid IN (#{user_uuids_subquery})))"
       end
 
-      sql_conds = "(#{direct_check} #{owner_check} #{links_cond}) #{exclude_trashed_records}"
+      sql_conds = "(#{owner_check} #{direct_check} #{links_cond}) #{trashed_check.empty? ? "" : "AND"} #{trashed_check}"
 
     end
 
@@ -380,7 +407,7 @@ class ArvadosModel < ApplicationRecord
     end
 
     self.where(sql_conds,
-               user_uuids: user_uuids,
+               user_uuids: all_user_uuids.collect{|c| c["target_uuid"]},
                permission_link_classes: ['permission', 'resources'])
   end
 

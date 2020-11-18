@@ -16,7 +16,7 @@ Syntax:
 WORKSPACE=path         Path to the Arvados source tree to build packages from
 CWLTOOL=path           (optional) Path to cwltool git repository.
 SALAD=path             (optional) Path to schema_salad git repository.
-PYCMD=pythonexec       (optional) Specify the python executable to use in the docker image. Defaults to "python3".
+PYCMD=pythonexec       (optional) Specify the python3 executable to use in the docker image. Defaults to "python3".
 
 EOF
 
@@ -45,16 +45,16 @@ if [[ $py = python3 ]] ; then
     pipcmd=pip3
 fi
 
-(cd sdk/python && python setup.py sdist)
+(cd sdk/python && python3 setup.py sdist)
 sdk=$(cd sdk/python/dist && ls -t arvados-python-client-*.tar.gz | head -n1)
 
-(cd sdk/cwl && python setup.py sdist)
+(cd sdk/cwl && python3 setup.py sdist)
 runner=$(cd sdk/cwl/dist && ls -t arvados-cwl-runner-*.tar.gz | head -n1)
 
 rm -rf sdk/cwl/salad_dist
 mkdir -p sdk/cwl/salad_dist
 if [[ -n "$SALAD" ]] ; then
-    (cd "$SALAD" && python setup.py sdist)
+    (cd "$SALAD" && python3 setup.py sdist)
     salad=$(cd "$SALAD/dist" && ls -t schema-salad-*.tar.gz | head -n1)
     cp "$SALAD/dist/$salad" $WORKSPACE/sdk/cwl/salad_dist
 fi
@@ -62,7 +62,7 @@ fi
 rm -rf sdk/cwl/cwltool_dist
 mkdir -p sdk/cwl/cwltool_dist
 if [[ -n "$CWLTOOL" ]] ; then
-    (cd "$CWLTOOL" && python setup.py sdist)
+    (cd "$CWLTOOL" && python3 setup.py sdist)
     cwltool=$(cd "$CWLTOOL/dist" && ls -t cwltool-*.tar.gz | head -n1)
     cp "$CWLTOOL/dist/$cwltool" $WORKSPACE/sdk/cwl/cwltool_dist
 fi
@@ -70,6 +70,8 @@ fi
 . build/run-library.sh
 
 calculate_python_sdk_cwl_package_versions
+
+cwl_runner_version=$(echo -n $cwl_runner_version | sed s/~dev/.dev/g | sed s/~rc/rc/g)
 
 set -x
 docker build --no-cache --build-arg sdk=$sdk --build-arg runner=$runner --build-arg salad=$salad --build-arg cwltool=$cwltool --build-arg pythoncmd=$py --build-arg pipcmd=$pipcmd -f "$WORKSPACE/sdk/dev-jobs.dockerfile" -t arvados/jobs:$cwl_runner_version "$WORKSPACE/sdk"

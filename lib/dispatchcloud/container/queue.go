@@ -145,11 +145,11 @@ func (cq *Queue) Forget(uuid string) {
 func (cq *Queue) Get(uuid string) (arvados.Container, bool) {
 	cq.mtx.Lock()
 	defer cq.mtx.Unlock()
-	if ctr, ok := cq.current[uuid]; !ok {
+	ctr, ok := cq.current[uuid]
+	if !ok {
 		return arvados.Container{}, false
-	} else {
-		return ctr.Container, true
 	}
+	return ctr.Container, true
 }
 
 // Entries returns all cache entries, keyed by container UUID.

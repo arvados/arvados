@@ -1,0 +1,103 @@
+---
+layout: default
+navsection: api
+navmenu: API Methods
+title: "WebDAV"
+...
+
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+"Web Distributed Authoring and Versioning (WebDAV)":https://tools.ietf.org/html/rfc4918 is an IETF standard set of extensions to HTTP to manipulate and retrieve hierarchical web resources, similar to directories in a file system.  Arvados supports accessing files in Keep using WebDAV.
+
+Most major operating systems include built-in support for mounting WebDAV resources as network file systems, see user guide sections for "Windows":{{site.baseurl}}/user/tutorials/tutorial-keep-mount-windows.html , "macOS":{{site.baseurl}}/user/tutorials/tutorial-keep-mount-os-x.html , "Linux (Gnome)":{{site.baseurl}}/user/tutorials/tutorial-keep-mount-gnu-linux.html#gnome .  WebDAV is also supported by various standalone storage browser applications such as "Cyberduck":https://cyberduck.io/ and client libraries exist in many languages for programmatic access.
+
+Keep-web provides read/write HTTP (WebDAV) access to files stored in Keep. It serves public data to anonymous and unauthenticated clients, and serves private data to clients that supply Arvados API tokens.
+
+h3. Supported Operations
+
+Supports WebDAV HTTP methods @GET@, @PUT@, @DELETE@, @PROPFIND@, @COPY@, and @MOVE@.
+
+Does not support @LOCK@ or @UNLOCK@.  These methods will be accepted, but are no-ops.
+
+h3. Browsing
+
+Requests can be authenticated a variety of ways as described below in "Authentication mechanisms":#auth .  An unauthenticated request will return a 401 Unauthorized response with a @WWW-Authenticate@ header indicating "support for RFC 7617 Basic Authentication":https://tools.ietf.org/html/rfc7617 .
+
+Getting a listing from keep-web starting at the root path @/@ will return two folders, @by_id@ and @users@.
+
+The @by_id@ folder will return an empty listing.  However, a path which starts with /by_id/ followed by a collection uuid, portable data hash, or project uuid will return the listing of that object.
+
+The @users@ folder will return a listing of the users for whom the client has permission to read the "home" project of that user.  Browsing an individual user will return the collections and projects directly owned by that user.  Browsing those collections and projects return listings of the files, directories, collections, and subprojects they contain, and so forth.
+
+In addition to the @/by_id/@ path prefix, the collection or project can be specified using a path prefix of @/c=<uuid or pdh>/@ or (if the cluster is properly configured) as a virtual host.  This is described on "Keep-web URLs":keep-web-urls.html
+
+h3(#auth). Authentication mechanisms
+
+A token can be provided in an Authorization header as a @Bearer@ token:
+
+<pre>
+Authorization: Bearer o07j4px7RlJK4CuMYp7C0LDT4CzR1J1qBE5Avo7eCcUjOTikxK
+</pre>
+
+A token can also be provided with "RFC 7617 Basic Authentication":https://tools.ietf.org/html/rfc7617 in this case, the payload is formatted as @username:token@ and encoded with base64.  The username must be non-empty, but is ignored.  In this example, the username is "user":
+
+<pre>
+Authorization: Basic dXNlcjpvMDdqNHB4N1JsSks0Q3VNWXA3QzBMRFQ0Q3pSMUoxcUJFNUF2bzdlQ2NVak9UaWt4Swo=
+</pre>
+
+A base64-encoded token can be provided in a cookie named "api_token":
+
+<pre>
+Cookie: api_token=bzA3ajRweDdSbEpLNEN1TVlwN0MwTERUNEN6UjFKMXFCRTVBdm83ZUNjVWpPVGlreEs=
+</pre>
+
+A token can be provided in an URL-encoded query string:
+
+<pre>
+GET /foo/bar.txt?api_token=o07j4px7RlJK4CuMYp7C0LDT4CzR1J1qBE5Avo7eCcUjOTikxK
+</pre>
+
+A token can be provided in a URL-encoded path (as described in the previous section):
+
+<pre>
+GET /t=o07j4px7RlJK4CuMYp7C0LDT4CzR1J1qBE5Avo7eCcUjOTikxK/_/foo/bar.txt
+</pre>
+
+A suitably encoded token can be provided in a POST body if the request has a content type of application/x-www-form-urlencoded or multipart/form-data:
+
+<pre>
+POST /foo/bar.txt
+Content-Type: application/x-www-form-urlencoded
+[...]
+api_token=o07j4px7RlJK4CuMYp7C0LDT4CzR1J1qBE5Avo7eCcUjOTikxK
+</pre>
+
+If a token is provided in a query string or in a POST request, the response is an HTTP 303 redirect to an equivalent GET request, with the token stripped from the query string and added to a cookie instead.
+
+h3. Indexes
+
+Keep-web returns a generic HTML index listing when a directory is requested with the GET method. It does not serve a default file like "index.html". Directory listings are also returned for WebDAV PROPFIND requests.
+
+h3. Range requests
+
+Keep-web supports partial resource reads using the HTTP @Range@ header as specified in "RFC 7233":https://tools.ietf.org/html/rfc7233 .
+
+h3. Compatibility
+
+Client-provided authorization tokens are ignored if the client does not provide a @Host@ header.
+
+In order to use the query string or a POST form authorization mechanisms, the client must follow 303 redirects; the client must accept cookies with a 303 response and send those cookies when performing the redirect; and either the client or an intervening proxy must resolve a relative URL ("//host/path") if given in a response Location header.
+
+h3. Intranet mode
+
+Normally, Keep-web accepts requests for multiple collections using the same host name, provided the client's credentials are not being used. This provides insufficient XSS protection in an installation where the "anonymously accessible" data is not truly public, but merely protected by network topology.
+
+In such cases -- for example, a site which is not reachable from the internet, where some data is world-readable from Arvados's perspective but is intended to be available only to users within the local network -- the downstream proxy should configured to return 401 for all paths beginning with "/c=".
+
+h3. Same-origin URLs
+
+Without the same-origin protection outlined above, a web page stored in collection X could execute JavaScript code that uses the current viewer's credentials to download additional data from collection Y -- data which is accessible to the current viewer, but not to the author of collection X -- from the same origin (``https://collections.example.com/'') and upload it to some other site chosen by the author of collection X.

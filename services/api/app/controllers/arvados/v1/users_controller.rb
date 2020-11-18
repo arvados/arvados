@@ -132,16 +132,8 @@ class Arvados::V1::UsersController < ApplicationController
     end
 
     @response = @object.setup(repo_name: full_repo_name,
-                              vm_uuid: params[:vm_uuid])
-
-    # setup succeeded. send email to user
-    if params[:send_notification_email] && !Rails.configuration.Users.UserSetupMailText.empty?
-      begin
-        UserNotifier.account_is_setup(@object).deliver_now
-      rescue => e
-        logger.warn "Failed to send email to #{@object.email}: #{e}"
-      end
-    end
+                              vm_uuid: params[:vm_uuid],
+                              send_notification_email: params[:send_notification_email])
 
     send_json kind: "arvados#HashList", items: @response.as_api_response(nil)
   end
@@ -230,7 +222,7 @@ class Arvados::V1::UsersController < ApplicationController
         type: 'string', required: false,
       },
       redirect_to_new_user: {
-        type: 'boolean', required: false,
+        type: 'boolean', required: false, default: false,
       },
       old_user_uuid: {
         type: 'string', required: false,
@@ -244,19 +236,19 @@ class Arvados::V1::UsersController < ApplicationController
   def self._setup_requires_parameters
     {
       uuid: {
-        type: 'string', required: false
+        type: 'string', required: false,
       },
       user: {
-        type: 'object', required: false
+        type: 'object', required: false,
       },
       repo_name: {
-        type: 'string', required: false
+        type: 'string', required: false,
       },
       vm_uuid: {
-        type: 'string', required: false
+        type: 'string', required: false,
       },
       send_notification_email: {
-        type: 'boolean', required: false, default: false
+        type: 'boolean', required: false, default: false,
       },
     }
   end
@@ -264,7 +256,7 @@ class Arvados::V1::UsersController < ApplicationController
   def self._update_requires_parameters
     super.merge({
       bypass_federation: {
-        type: 'boolean', required: false,
+        type: 'boolean', required: false, default: false,
       },
     })
   end

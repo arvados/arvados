@@ -18,6 +18,7 @@ begin
   else
     version = `#{__dir__}/../../build/version-at-commit.sh #{git_hash}`.encode('utf-8').strip
   end
+  version = version.sub("~dev", ".dev").sub("~rc", ".rc")
   git_timestamp = Time.at(git_timestamp.to_i).utc
 ensure
   ENV["GIT_DIR"] = git_dir
@@ -31,7 +32,7 @@ Gem::Specification.new do |s|
   s.summary     = "Arvados CLI tools"
   s.description = "Arvados command line tools, git commit #{git_hash}"
   s.authors     = ["Arvados Authors"]
-  s.email       = 'gem-dev@arvados.org'
+  s.email       = 'packaging@arvados.org'
   #s.bindir      = '.'
   s.licenses    = ['Apache-2.0']
   s.files       = ["bin/arv", "bin/arv-tag", "LICENSE-2.0.txt"]

@@ -17,7 +17,7 @@ type Link struct {
 	Properties map[string]interface{} `json:"properties"`
 }
 
-// UserList is an arvados#userList resource.
+// LinkList is an arvados#linkList resource.
 type LinkList struct {
 	Items          []Link `json:"items"`
 	ItemsAvailable int    `json:"items_available"`

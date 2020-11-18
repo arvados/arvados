@@ -16,4 +16,4 @@ requirements:
     envDef:
       ARVBOX_CONTAINER: "$(inputs.container)"
   InlineJavascriptRequirement: {}
-arguments: [arvbox, cat, /var/lib/arvados/superuser_token]
+arguments: [arvbox, cat, /var/lib/arvados-arvbox/superuser_token]

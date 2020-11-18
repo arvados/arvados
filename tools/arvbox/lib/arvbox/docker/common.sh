@@ -38,6 +38,7 @@ services=(
   [arv-git-httpd]=9001
   [keep-web]=9003
   [keep-web-ssl]=9002
+  [keep-web-dl-ssl]=9004
   [keepproxy]=25100
   [keepproxy-ssl]=25101
   [keepstore0]=25107

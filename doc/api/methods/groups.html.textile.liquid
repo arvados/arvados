@@ -55,6 +55,8 @@ table(table table-bordered table-condensed).
 |recursive|boolean (default false)|Include items owned by subprojects.|query|@true@|
 |exclude_home_project|boolean (default false)|Only return items which are visible to the user but not accessible within the user's home project.  Use this to get a list of items that are shared with the user.  Uses the logic described under the "shared" endpoint.|query|@true@|
 |include|string|If provided with the value "owner_uuid", this will return owner objects in the "included" field of the response.|query||
+|include_trash|boolean (default false)|Include trashed objects.|query|@true@|
+|include_old_versions|boolean (default false)|Include past versions of the collections being listed.|query|@true@|
 
 Notes:
 

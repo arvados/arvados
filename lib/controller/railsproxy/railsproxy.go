@@ -15,8 +15,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 )
 
-// For now, FindRailsAPI always uses the rails API running on this
-// node.
+// FindRailsAPI always uses the rails API running on this node, for now.
 func FindRailsAPI(cluster *arvados.Cluster) (*url.URL, bool, error) {
 	var best *url.URL
 	for target := range cluster.Services.RailsAPI.InternalURLs {

@@ -9,6 +9,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"io/ioutil"
 	"math"
 	"net"
 	"net/http"
@@ -22,6 +23,7 @@ import (
 	"git.arvados.org/arvados.git/lib/service"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
+	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
@@ -38,6 +40,7 @@ type testCluster struct {
 
 type IntegrationSuite struct {
 	testClusters map[string]*testCluster
+	oidcprovider *arvadostest.OIDCProvider
 }
 
 func (s *IntegrationSuite) SetUpSuite(c *check.C) {
@@ -47,6 +50,14 @@ func (s *IntegrationSuite) SetUpSuite(c *check.C) {
 	}
 
 	cwd, _ := os.Getwd()
+
+	s.oidcprovider = arvadostest.NewOIDCProvider(c)
+	s.oidcprovider.AuthEmail = "user@example.com"
+	s.oidcprovider.AuthEmailVerified = true
+	s.oidcprovider.AuthName = "Example User"
+	s.oidcprovider.ValidClientID = "clientid"
+	s.oidcprovider.ValidClientSecret = "clientsecret"
+
 	s.testClusters = map[string]*testCluster{
 		"z1111": nil,
 		"z2222": nil,
@@ -103,6 +114,24 @@ func (s *IntegrationSuite) SetUpSuite(c *check.C) {
         Insecure: true
         Proxy: true
         ActivateUsers: true
+`
+		}
+		if id == "z1111" {
+			yaml += `
+    Login:
+      LoginCluster: z1111
+      OpenIDConnect:
+        Enable: true
+        Issuer: ` + s.oidcprovider.Issuer.URL + `
+        ClientID: ` + s.oidcprovider.ValidClientID + `
+        ClientSecret: ` + s.oidcprovider.ValidClientSecret + `
+        EmailClaim: email
+        EmailVerifiedClaim: email_verified
+`
+		} else {
+			yaml += `
+    Login:
+      LoginCluster: z1111
 `
 		}
 
@@ -519,4 +548,56 @@ func (s *IntegrationSuite) TestSetupUserWithVM(c *check.C) {
 	c.Check(err, check.IsNil)
 
 	c.Check(len(outLinks.Items), check.Equals, 1)
+}
+
+func (s *IntegrationSuite) TestOIDCAccessTokenAuth(c *check.C) {
+	conn1 := s.conn("z1111")
+	rootctx1, _, _ := s.rootClients("z1111")
+	s.userClients(rootctx1, c, conn1, "z1111", true)
+
+	accesstoken := s.oidcprovider.ValidAccessToken()
+
+	for _, clusterid := range []string{"z1111", "z2222"} {
+		c.Logf("trying clusterid %s", clusterid)
+
+		conn := s.conn(clusterid)
+		ctx, ac, kc := s.clientsWithToken(clusterid, accesstoken)
+
+		var coll arvados.Collection
+
+		// Write some file data and create a collection
+		{
+			fs, err := coll.FileSystem(ac, kc)
+			c.Assert(err, check.IsNil)
+			f, err := fs.OpenFile("test.txt", os.O_CREATE|os.O_RDWR, 0777)
+			c.Assert(err, check.IsNil)
+			_, err = io.WriteString(f, "IntegrationSuite.TestOIDCAccessTokenAuth")
+			c.Assert(err, check.IsNil)
+			err = f.Close()
+			c.Assert(err, check.IsNil)
+			mtxt, err := fs.MarshalManifest(".")
+			c.Assert(err, check.IsNil)
+			coll, err = conn.CollectionCreate(ctx, arvados.CreateOptions{Attrs: map[string]interface{}{
+				"manifest_text": mtxt,
+			}})
+			c.Assert(err, check.IsNil)
+		}
+
+		// Read the collection & file data
+		{
+			user, err := conn.UserGetCurrent(ctx, arvados.GetOptions{})
+			c.Assert(err, check.IsNil)
+			c.Check(user.FullName, check.Equals, "Example User")
+			coll, err = conn.CollectionGet(ctx, arvados.GetOptions{UUID: coll.UUID})
+			c.Assert(err, check.IsNil)
+			c.Check(coll.ManifestText, check.Not(check.Equals), "")
+			fs, err := coll.FileSystem(ac, kc)
+			c.Assert(err, check.IsNil)
+			f, err := fs.Open("test.txt")
+			c.Assert(err, check.IsNil)
+			buf, err := ioutil.ReadAll(f)
+			c.Assert(err, check.IsNil)
+			c.Check(buf, check.DeepEquals, []byte("IntegrationSuite.TestOIDCAccessTokenAuth"))
+		}
+	}
 }

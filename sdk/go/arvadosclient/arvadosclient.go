@@ -50,7 +50,7 @@ var (
 	defaultHTTPClientMtx      sync.Mutex
 )
 
-// Indicates an error that was returned by the API server.
+// APIServerError contains an error that was returned by the API server.
 type APIServerError struct {
 	// Address of server returning error, of the form "host:port".
 	ServerAddress string
@@ -84,10 +84,10 @@ func StringBool(s string) bool {
 	return s == "1" || s == "yes" || s == "true"
 }
 
-// Helper type so we don't have to write out 'map[string]interface{}' every time.
+// Dict is a helper type so we don't have to write out 'map[string]interface{}' every time.
 type Dict map[string]interface{}
 
-// Information about how to contact the Arvados server
+// ArvadosClient contains information about how to contact the Arvados server
 type ArvadosClient struct {
 	// https
 	Scheme string
@@ -378,7 +378,7 @@ func (c *ArvadosClient) Delete(resource string, uuid string, parameters Dict, ou
 	return c.Call("DELETE", resource, uuid, "", parameters, output)
 }
 
-// Modify attributes of a resource. See Call for argument descriptions.
+// Update attributes of a resource. See Call for argument descriptions.
 func (c *ArvadosClient) Update(resourceType string, uuid string, parameters Dict, output interface{}) (err error) {
 	return c.Call("PUT", resourceType, uuid, "", parameters, output)
 }
@@ -423,19 +423,19 @@ func (c *ArvadosClient) Discovery(parameter string) (value interface{}, err erro
 	return value, ErrInvalidArgument
 }
 
-func (ac *ArvadosClient) httpClient() *http.Client {
-	if ac.Client != nil {
-		return ac.Client
+func (c *ArvadosClient) httpClient() *http.Client {
+	if c.Client != nil {
+		return c.Client
 	}
-	c := &defaultSecureHTTPClient
-	if ac.ApiInsecure {
-		c = &defaultInsecureHTTPClient
+	cl := &defaultSecureHTTPClient
+	if c.ApiInsecure {
+		cl = &defaultInsecureHTTPClient
 	}
-	if *c == nil {
+	if *cl == nil {
 		defaultHTTPClientMtx.Lock()
 		defer defaultHTTPClientMtx.Unlock()
-		*c = &http.Client{Transport: &http.Transport{
-			TLSClientConfig: MakeTLSConfig(ac.ApiInsecure)}}
+		*cl = &http.Client{Transport: &http.Transport{
+			TLSClientConfig: MakeTLSConfig(c.ApiInsecure)}}
 	}
-	return *c
+	return *cl
 }

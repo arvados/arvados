@@ -325,30 +325,43 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     assert_equal 'barney', json_response['username']
   end
 
-  test 'get inactive user from Login cluster when AutoSetupNewUsers is set' do
-    Rails.configuration.Login.LoginCluster = 'zbbbb'
-    Rails.configuration.Users.AutoSetupNewUsers = true
-    @stub_content = {
-      uuid: 'zbbbb-tpzed-000000000000001',
-      email: 'foo@example.com',
-      username: 'barney',
-      is_admin: false,
-      is_active: false,
-      is_invited: false,
-    }
-    get '/arvados/v1/users/current',
-      params: {format: 'json'},
-      headers: auth(remote: 'zbbbb')
-    assert_response :success
-    assert_equal 'zbbbb-tpzed-000000000000001', json_response['uuid']
-    assert_equal false, json_response['is_admin']
-    assert_equal false, json_response['is_active']
-    assert_equal false, json_response['is_invited']
-    assert_equal 'foo@example.com', json_response['email']
-    assert_equal 'barney', json_response['username']
+  [true, false].each do |trusted|
+    [true, false].each do |logincluster|
+      [true, false].each do |admin|
+        [true, false].each do |active|
+          [true, false].each do |autosetup|
+            [true, false].each do |invited|
+              test "get invited=#{invited}, active=#{active}, admin=#{admin} user from #{if logincluster then "Login" else "peer" end} cluster when AutoSetupNewUsers=#{autosetup} ActivateUsers=#{trusted}" do
+                Rails.configuration.Login.LoginCluster = 'zbbbb' if logincluster
+                Rails.configuration.RemoteClusters['zbbbb'].ActivateUsers = trusted
+                Rails.configuration.Users.AutoSetupNewUsers = autosetup
+                @stub_content = {
+                  uuid: 'zbbbb-tpzed-000000000000001',
+                  email: 'foo@example.com',
+                  username: 'barney',
+                  is_admin: admin,
+                  is_active: active,
+                  is_invited: invited,
+                }
+                get '/arvados/v1/users/current',
+                    params: {format: 'json'},
+                    headers: auth(remote: 'zbbbb')
+                assert_response :success
+                assert_equal 'zbbbb-tpzed-000000000000001', json_response['uuid']
+                assert_equal (logincluster && admin && invited && active), json_response['is_admin']
+                assert_equal (invited and (logincluster || trusted || autosetup)), json_response['is_invited']
+                assert_equal (invited and (logincluster || trusted) and active), json_response['is_active']
+                assert_equal 'foo@example.com', json_response['email']
+                assert_equal 'barney', json_response['username']
+              end
+            end
+          end
+        end
+      end
+    end
   end
 
-    test 'get active user from Login cluster when AutoSetupNewUsers is set' do
+  test 'get active user from Login cluster when AutoSetupNewUsers is set' do
     Rails.configuration.Login.LoginCluster = 'zbbbb'
     Rails.configuration.Users.AutoSetupNewUsers = true
     @stub_content = {

@@ -116,9 +116,8 @@ Collection <- R6::R6Class(
 
                     private$REST$create(file, self$uuid)
                     newTreeBranch$setCollection(self)
+		    newTreeBranch
                 })
-
-                "Created"
             }
             else
             {

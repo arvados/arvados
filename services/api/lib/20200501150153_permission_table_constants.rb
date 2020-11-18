@@ -63,7 +63,7 @@ def refresh_trashed
 INSERT INTO #{TRASHED_GROUPS}
 select ps.target_uuid as group_uuid, ps.trash_at from groups,
   lateral project_subtree_with_trash_at(groups.uuid, groups.trash_at) ps
-  where groups.owner_uuid like '_____-tpzed-_______________'
+  where groups.owner_uuid like '_____-tpzed-_______________' and ps.trash_at is not NULL
 })
   end
 end

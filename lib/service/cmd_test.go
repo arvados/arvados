@@ -29,6 +29,11 @@ func Test(t *testing.T) {
 var _ = check.Suite(&Suite{})
 
 type Suite struct{}
+type key int
+
+const (
+	contextKey key = iota
+)
 
 func (*Suite) TestCommand(c *check.C) {
 	cf, err := ioutil.TempFile("", "cmd_test.")
@@ -42,11 +47,11 @@ func (*Suite) TestCommand(c *check.C) {
 	defer cancel()
 
 	cmd := Command(arvados.ServiceNameController, func(ctx context.Context, _ *arvados.Cluster, token string, reg *prometheus.Registry) Handler {
-		c.Check(ctx.Value("foo"), check.Equals, "bar")
+		c.Check(ctx.Value(contextKey), check.Equals, "bar")
 		c.Check(token, check.Equals, "abcde")
 		return &testHandler{ctx: ctx, healthCheck: healthCheck}
 	})
-	cmd.(*command).ctx = context.WithValue(ctx, "foo", "bar")
+	cmd.(*command).ctx = context.WithValue(ctx, contextKey, "bar")
 
 	done := make(chan bool)
 	var stdin, stdout, stderr bytes.Buffer

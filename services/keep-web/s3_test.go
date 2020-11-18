@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"os/exec"
 	"strings"
 	"sync"
 	"time"
@@ -70,12 +71,13 @@ func (s *IntegrationSuite) s3setup(c *check.C) s3stage {
 	err = arv.RequestAndDecode(&coll, "GET", "arvados/v1/collections/"+coll.UUID, nil, nil)
 	c.Assert(err, check.IsNil)
 
-	auth := aws.NewAuth(arvadostest.ActiveTokenV2, arvadostest.ActiveTokenV2, "", time.Now().Add(time.Hour))
+	auth := aws.NewAuth(arvadostest.ActiveTokenUUID, arvadostest.ActiveToken, "", time.Now().Add(time.Hour))
 	region := aws.Region{
 		Name:       s.testServer.Addr,
 		S3Endpoint: "http://" + s.testServer.Addr,
 	}
 	client := s3.New(*auth, region)
+	client.Signature = aws.V4Signature
 	return s3stage{
 		arv:  arv,
 		ac:   ac,
@@ -101,6 +103,40 @@ func (stage s3stage) teardown(c *check.C) {
 	if stage.proj.UUID != "" {
 		err := stage.arv.RequestAndDecode(&stage.proj, "DELETE", "arvados/v1/groups/"+stage.proj.UUID, nil, nil)
 		c.Check(err, check.IsNil)
+	}
+}
+
+func (s *IntegrationSuite) TestS3Signatures(c *check.C) {
+	stage := s.s3setup(c)
+	defer stage.teardown(c)
+
+	bucket := stage.collbucket
+	for _, trial := range []struct {
+		success   bool
+		signature int
+		accesskey string
+		secretkey string
+	}{
+		{true, aws.V2Signature, arvadostest.ActiveToken, "none"},
+		{false, aws.V2Signature, "none", "none"},
+		{false, aws.V2Signature, "none", arvadostest.ActiveToken},
+
+		{true, aws.V4Signature, arvadostest.ActiveTokenUUID, arvadostest.ActiveToken},
+		{true, aws.V4Signature, arvadostest.ActiveToken, arvadostest.ActiveToken},
+		{false, aws.V4Signature, arvadostest.ActiveToken, ""},
+		{false, aws.V4Signature, arvadostest.ActiveToken, "none"},
+		{false, aws.V4Signature, "none", arvadostest.ActiveToken},
+		{false, aws.V4Signature, "none", "none"},
+	} {
+		c.Logf("%#v", trial)
+		bucket.S3.Auth = *(aws.NewAuth(trial.accesskey, trial.secretkey, "", time.Now().Add(time.Hour)))
+		bucket.S3.Signature = trial.signature
+		_, err := bucket.GetReader("emptyfile")
+		if trial.success {
+			c.Check(err, check.IsNil)
+		} else {
+			c.Check(err, check.NotNil)
+		}
 	}
 }
 
@@ -310,6 +346,15 @@ func (s *IntegrationSuite) TestS3ProjectPutObjectFailure(c *check.C) {
 }
 func (s *IntegrationSuite) testS3PutObjectFailure(c *check.C, bucket *s3.Bucket, prefix string) {
 	s.testServer.Config.cluster.Collections.S3FolderObjects = false
+
+	// Can't use V4 signature for these tests, because
+	// double-slash is incorrectly cleaned by the aws.V4Signature,
+	// resulting in a "bad signature" error. (Cleaning the path is
+	// appropriate for other services, but not in S3 where object
+	// names "foo//bar" and "foo/bar" are semantically different.)
+	bucket.S3.Auth = *(aws.NewAuth(arvadostest.ActiveToken, "none", "", time.Now().Add(time.Hour)))
+	bucket.S3.Signature = aws.V2Signature
+
 	var wg sync.WaitGroup
 	for _, trial := range []struct {
 		path string
@@ -635,4 +680,23 @@ func (s *IntegrationSuite) testS3CollectionListRollup(c *check.C) {
 		c.Check(resp.IsTruncated, check.Equals, expectTruncated, commentf)
 		c.Logf("=== trial %+v keys %q prefixes %q nextMarker %q", trial, gotKeys, gotPrefixes, resp.NextMarker)
 	}
+}
+
+// TestS3cmd checks compatibility with the s3cmd command line tool, if
+// it's installed. As of Debian buster, s3cmd is only in backports, so
+// `arvados-server install` don't install it, and this test skips if
+// it's not installed.
+func (s *IntegrationSuite) TestS3cmd(c *check.C) {
+	if _, err := exec.LookPath("s3cmd"); err != nil {
+		c.Skip("s3cmd not found")
+		return
+	}
+
+	stage := s.s3setup(c)
+	defer stage.teardown(c)
+
+	cmd := exec.Command("s3cmd", "--no-ssl", "--host="+s.testServer.Addr, "--host-bucket="+s.testServer.Addr, "--access_key="+arvadostest.ActiveTokenUUID, "--secret_key="+arvadostest.ActiveToken, "ls", "s3://"+arvadostest.FooCollection)
+	buf, err := cmd.CombinedOutput()
+	c.Check(err, check.IsNil)
+	c.Check(string(buf), check.Matches, `.* 3 +s3://`+arvadostest.FooCollection+`/foo\n`)
 }

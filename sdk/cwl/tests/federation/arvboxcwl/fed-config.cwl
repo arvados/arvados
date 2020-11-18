@@ -44,6 +44,7 @@ requirements:
           r["Clusters"][inputs.this_cluster_id] = {"RemoteClusters": remoteClusters};
           if (r["Clusters"][inputs.this_cluster_id]) {
             r["Clusters"][inputs.this_cluster_id]["Login"] = {"LoginCluster": inputs.cluster_ids[0]};
+            r["Clusters"][inputs.this_cluster_id]["Users"] = {"AutoAdminFirstUser": false};
           }
           return JSON.stringify(r);
           }
@@ -65,7 +66,7 @@ requirements:
 arguments:
   - shellQuote: false
     valueFrom: |
-      docker cp cluster_config.yml.override $(inputs.container_name):/var/lib/arvados
+      docker cp cluster_config.yml.override $(inputs.container_name):/var/lib/arvados-arvbox
       docker cp application.yml.override $(inputs.container_name):/usr/src/arvados/services/api/config
       $(inputs.arvbox_bin.path) sv restart api
       $(inputs.arvbox_bin.path) sv restart controller

@@ -68,7 +68,7 @@ def stubs(func):
         stubs.keep_client = keep_client2
         stubs.docker_images = {
             "arvados/jobs:"+arvados_cwl.__version__: [("zzzzz-4zz18-zzzzzzzzzzzzzd3", "")],
-            "debian:8": [("zzzzz-4zz18-zzzzzzzzzzzzzd4", "")],
+            "debian:buster-slim": [("zzzzz-4zz18-zzzzzzzzzzzzzd4", "")],
             "arvados/jobs:123": [("zzzzz-4zz18-zzzzzzzzzzzzzd5", "")],
             "arvados/jobs:latest": [("zzzzz-4zz18-zzzzzzzzzzzzzd6", "")],
         }
@@ -771,7 +771,7 @@ class TestSubmit(unittest.TestCase):
                                 ],
                                 'requirements': [
                                     {
-                                        'dockerPull': 'debian:8',
+                                        'dockerPull': 'debian:buster-slim',
                                         'class': 'DockerRequirement',
                                         "http://arvados.org/cwl#dockerCollectionPDH": "999999999999999999999999999999d4+99"
                                     }
@@ -1134,7 +1134,7 @@ class TestSubmit(unittest.TestCase):
                                 "hints": [
                                     {
                                         "class": "DockerRequirement",
-                                        "dockerPull": "debian:8",
+                                        "dockerPull": "debian:buster-slim",
                                         "http://arvados.org/cwl#dockerCollectionPDH": "999999999999999999999999999999d4+99"
                                     },
                                     {

@@ -1,0 +1,74 @@
+---
+layout: default
+navsection: api
+navmenu: API Methods
+title: "S3 API"
+
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+The Simple Storage Service (S3) API is a de-facto standard for object storage originally developed by Amazon Web Services.  Arvados supports accessing files in Keep using the S3 API.
+
+S3 is supported by many "cloud native" applications, and client libraries exist in many languages for programmatic access.
+
+h3. Endpoints and Buckets
+
+To access Arvados S3 using an S3 client library, you must tell it to use the URL of the keep-web server (this is @Services.WebDAVDownload.ExternalURL@ in the public configuration) as the custom endpoint.  The keep-web server will decide to treat it as an S3 API request based on the presence of an AWS-format Authorization header.  Requests without an Authorization header, or differently formatted Authorization, will be treated as "WebDAV":keep-webdav.html .
+
+The "bucket name" is an Arvados collection uuid, portable data hash, or project uuid.
+
+The bucket name must be encoded as the first path segment of every request.  This is what the S3 documentation calls "Path-Style Requests".
+
+h3. Supported Operations
+
+h4. ListObjects
+
+Supports the following request query parameters:
+
+* delimiter
+* marker
+* max-keys
+* prefix
+
+h4. GetObject
+
+Supports the @Range@ header.
+
+h4. PutObject
+
+Can be used to create or replace a file in a collection.
+
+An empty PUT with a trailing slash and @Content-Type: application/x-directory@ will create a directory within a collection if Arvados configuration option @Collections.S3FolderObjects@ is true.
+
+Missing parent/intermediate directories within a collection are created automatically.
+
+Cannot be used to create a collection or project.
+
+h4. DeleteObject
+
+Can be used to remove files from a collection.
+
+If used on a directory marker, it will delete the directory only if the directory is empty.
+
+h4. HeadBucket
+
+Can be used to determine if a bucket exists and if client has read access to it.
+
+h4. HeadObject
+
+Can be used to determine if an object exists and if client has read access to it.
+
+h4. GetBucketVersioning
+
+Bucket versioning is presently not supported, so this will always respond that bucket versioning is not enabled.
+
+h3. Authorization mechanisms
+
+Keep-web accepts AWS Signature Version 4 (AWS4-HMAC-SHA256) as well as the older V2 AWS signature.
+
+* If your client uses V4 signatures exclusively: use the Arvados token's UUID part as AccessKey, and its secret part as SecretKey.  This is preferred.
+* If your client uses V2 signatures, or a combination of V2 and V4, or the Arvados token UUID is unknown: use the secret part of the Arvados token for both AccessKey and SecretKey.
