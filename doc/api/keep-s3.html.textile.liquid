@@ -70,5 +70,5 @@ h3. Authorization mechanisms
 
 Keep-web accepts AWS Signature Version 4 (AWS4-HMAC-SHA256) as well as the older V2 AWS signature.
 
-* If your client uses V4 signatures exclusively: use the Arvados token's UUID part as AccessKey, and its secret part as SecretKey.  This is preferred.
-* If your client uses V2 signatures, or a combination of V2 and V4, or the Arvados token UUID is unknown: use the secret part of the Arvados token for both AccessKey and SecretKey.
+* If your client uses V4 signatures exclusively, and your Arvados token was issued by the same cluster you are connecting to: use the Arvados token's UUID part as AccessKey, and its secret part as SecretKey. This is preferred, where applicable.
+* If your client uses V2 signatures, or a combination of V2 and V4, or the Arvados token UUID is unknown, or a LoginCluster is in use: use the secret part of the Arvados token for both AccessKey and SecretKey.
