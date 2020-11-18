@@ -205,7 +205,7 @@ export const CollectionPanel = withStyles(styles)(
                                                         getPropertyChip(
                                                             k, v,
                                                             isWritable
-                                                                ? this.handleDelete(k, item.properties[k])
+                                                                ? this.handleDelete(k, v)
                                                                 : undefined,
                                                             classes.tag))
                                                     : getPropertyChip(
