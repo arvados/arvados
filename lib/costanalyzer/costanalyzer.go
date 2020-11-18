@@ -92,8 +92,8 @@ Options:
 		flags.PrintDefaults()
 	}
 	loglevel := flags.String("log-level", "info", "logging `level` (debug, info, ...)")
-	resultsDir = *flags.String("output", "results", "output `directory` for the CSV reports")
-	flags.Var(&uuids, "uuid", "Toplevel `project or container request` uuid. May be specified more than once.")
+	flags.StringVar(&resultsDir, "output", "", "output `directory` for the CSV reports (required)")
+	flags.Var(&uuids, "uuid", "Toplevel `project or container request` uuid. May be specified more than once. (required)")
 	flags.BoolVar(&cache, "cache", true, "create and use a local disk cache of Arvados objects")
 	err = flags.Parse(args)
 	if err == flag.ErrHelp {
@@ -108,6 +108,13 @@ Options:
 	if len(uuids) < 1 {
 		flags.Usage()
 		err = fmt.Errorf("Error: no uuid(s) provided")
+		exitCode = 2
+		return
+	}
+
+	if resultsDir == "" {
+		flags.Usage()
+		err = fmt.Errorf("Error: output directory must be specified")
 		exitCode = 2
 		return
 	}
