@@ -14,7 +14,7 @@ nginx:
           default: 1
           '127.0.0.0/8': 0
         upstream controller_upstream:
-          - server: '127.0.0.2:8003  fail_timeout=10s'
+          - server: 'controller.internal:8003  fail_timeout=10s'
 
   ### SITES
   servers:
