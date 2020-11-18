@@ -205,7 +205,15 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 	fs := client.SiteFileSystem(kc)
 	fs.ForwardSlashNameSubstitution(h.Config.cluster.Collections.ForwardSlashNameSubstitution)
 
-	objectNameGiven := strings.Count(strings.TrimSuffix(r.URL.Path, "/"), "/") > 1
+	var objectNameGiven bool
+	fspath := "/by_id"
+	if id := parseCollectionIDFromDNSName(r.Host); id != "" {
+		fspath += "/" + id
+		objectNameGiven = true
+	} else {
+		objectNameGiven = strings.Count(strings.TrimSuffix(r.URL.Path, "/"), "/") > 1
+	}
+	fspath += r.URL.Path
 
 	switch {
 	case r.Method == http.MethodGet && !objectNameGiven:
@@ -221,7 +229,6 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 		}
 		return true
 	case r.Method == http.MethodGet || r.Method == http.MethodHead:
-		fspath := "/by_id" + r.URL.Path
 		fi, err := fs.Stat(fspath)
 		if r.Method == "HEAD" && !objectNameGiven {
 			// HeadBucket
@@ -255,7 +262,6 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 			http.Error(w, "missing object name in PUT request", http.StatusBadRequest)
 			return true
 		}
-		fspath := "by_id" + r.URL.Path
 		var objectIsDir bool
 		if strings.HasSuffix(fspath, "/") {
 			if !h.Config.cluster.Collections.S3FolderObjects {
@@ -350,7 +356,6 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 			http.Error(w, "missing object name in DELETE request", http.StatusBadRequest)
 			return true
 		}
-		fspath := "by_id" + r.URL.Path
 		if strings.HasSuffix(fspath, "/") {
 			fspath = strings.TrimSuffix(fspath, "/")
 			fi, err := fs.Stat(fspath)
