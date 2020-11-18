@@ -44,7 +44,27 @@ const (
 
 	RunningContainerUUID = "zzzzz-dz642-runningcontainr"
 
-	CompletedContainerUUID = "zzzzz-dz642-compltcontainer"
+	CompletedContainerUUID         = "zzzzz-dz642-compltcontainer"
+	CompletedContainerRequestUUID  = "zzzzz-xvhdp-cr4completedctr"
+	CompletedContainerRequestUUID2 = "zzzzz-xvhdp-cr4completedcr2"
+
+	CompletedDiagnosticsContainerRequest1UUID     = "zzzzz-xvhdp-diagnostics0001"
+	CompletedDiagnosticsContainerRequest2UUID     = "zzzzz-xvhdp-diagnostics0002"
+	CompletedDiagnosticsContainer1UUID            = "zzzzz-dz642-diagcompreq0001"
+	CompletedDiagnosticsContainer2UUID            = "zzzzz-dz642-diagcompreq0002"
+	DiagnosticsContainerRequest1LogCollectionUUID = "zzzzz-4zz18-diagcompreqlog1"
+	DiagnosticsContainerRequest2LogCollectionUUID = "zzzzz-4zz18-diagcompreqlog2"
+
+	CompletedDiagnosticsHasher1ContainerRequestUUID = "zzzzz-xvhdp-diag1hasher0001"
+	CompletedDiagnosticsHasher2ContainerRequestUUID = "zzzzz-xvhdp-diag1hasher0002"
+	CompletedDiagnosticsHasher3ContainerRequestUUID = "zzzzz-xvhdp-diag1hasher0003"
+	CompletedDiagnosticsHasher1ContainerUUID        = "zzzzz-dz642-diagcomphasher1"
+	CompletedDiagnosticsHasher2ContainerUUID        = "zzzzz-dz642-diagcomphasher2"
+	CompletedDiagnosticsHasher3ContainerUUID        = "zzzzz-dz642-diagcomphasher3"
+
+	Hasher1LogCollectionUUID = "zzzzz-4zz18-dlogcollhash001"
+	Hasher2LogCollectionUUID = "zzzzz-4zz18-dlogcollhash002"
+	Hasher3LogCollectionUUID = "zzzzz-4zz18-dlogcollhash003"
 
 	ArvadosRepoUUID = "zzzzz-s0uqq-arvadosrepo0123"
 	ArvadosRepoName = "arvados"
@@ -73,6 +93,9 @@ const (
 	TestVMUUID = "zzzzz-2x53u-382brsig8rp3064"
 
 	CollectionWithUniqueWordsUUID = "zzzzz-4zz18-mnt690klmb51aud"
+
+	LogCollectionUUID  = "zzzzz-4zz18-logcollection01"
+	LogCollectionUUID2 = "zzzzz-4zz18-logcollection02"
 )
 
 // PathologicalManifest : A valid manifest designed to test

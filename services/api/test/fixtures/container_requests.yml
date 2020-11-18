@@ -94,7 +94,7 @@ completed:
   output_path: test
   command: ["echo", "hello"]
   container_uuid: zzzzz-dz642-compltcontainer
-  log_uuid: zzzzz-4zz18-y9vne9npefyxh8g
+  log_uuid: zzzzz-4zz18-logcollection01
   output_uuid: zzzzz-4zz18-znfnqtbbv4spc3w
   runtime_constraints:
     vcpus: 1
@@ -115,9 +115,237 @@ completed-older:
   output_path: test
   command: ["arvados-cwl-runner", "echo", "hello"]
   container_uuid: zzzzz-dz642-compltcontainr2
+  log_uuid: zzzzz-4zz18-logcollection02
+  output_uuid: zzzzz-4zz18-znfnqtbbv4spc3w
   runtime_constraints:
     vcpus: 1
     ram: 123
+
+completed_diagnostics:
+  name: CWL diagnostics hasher
+  uuid: zzzzz-xvhdp-diagnostics0001
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  state: Final
+  priority: 1
+  created_at: 2020-11-02T00:03:50.229364000Z
+  modified_at: 2020-11-02T00:20:44.041122000Z
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  container_image: d967ef4a1ca90a096a39f5ce68e4a2e7+261
+  cwd: /var/spool/cwl
+  output_path: /var/spool/cwl
+  command: [
+             "arvados-cwl-runner",
+             "--local",
+             "--api=containers",
+             "--no-log-timestamps",
+             "--disable-validate",
+             "--disable-color",
+             "--eval-timeout=20",
+             "--thread-count=1",
+             "--disable-reuse",
+             "--collection-cache-size=256",
+             "--on-error=continue",
+             "/var/lib/cwl/workflow.json#main",
+             "/var/lib/cwl/cwl.input.json"
+           ]
+  container_uuid: zzzzz-dz642-diagcompreq0001
+  log_uuid: zzzzz-4zz18-diagcompreqlog1
+  output_uuid: zzzzz-4zz18-znfnqtbbv4spc3w
+  runtime_constraints:
+    vcpus: 1
+    ram: 1342177280
+    API: true
+
+completed_diagnostics_hasher1:
+  name: hasher1
+  uuid: zzzzz-xvhdp-diag1hasher0001
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  state: Final
+  priority: 500
+  created_at: 2020-11-02T00:03:50.229364000Z
+  modified_at: 2020-11-02T00:20:44.041122000Z
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  container_image: d967ef4a1ca90a096a39f5ce68e4a2e7+261
+  cwd: /var/spool/cwl
+  output_name: Output for step hasher1
+  output_path: /var/spool/cwl
+  command: [
+             "md5sum",
+             "/keep/9f26a86b6030a69ad222cf67d71c9502+65/hasher-input-file.txt"
+           ]
+  container_uuid: zzzzz-dz642-diagcomphasher1
+  requesting_container_uuid: zzzzz-dz642-diagcompreq0001
+  log_uuid: zzzzz-4zz18-dlogcollhash001
+  output_uuid: zzzzz-4zz18-znfnqtbbv4spc3w
+  runtime_constraints:
+    vcpus: 1
+    ram: 2684354560
+    API: true
+
+completed_diagnostics_hasher2:
+  name: hasher2
+  uuid: zzzzz-xvhdp-diag1hasher0002
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  state: Final
+  priority: 500
+  created_at: 2020-11-02T00:17:07.067464000Z
+  modified_at: 2020-11-02T00:20:23.557498000Z
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  container_image: d967ef4a1ca90a096a39f5ce68e4a2e7+261
+  cwd: /var/spool/cwl
+  output_name: Output for step hasher2
+  output_path: /var/spool/cwl
+  command: [
+             "md5sum",
+             "/keep/d3a687732e84061f3bae15dc7e313483+62/hasher1.md5sum.txt"
+           ]
+  container_uuid: zzzzz-dz642-diagcomphasher2
+  requesting_container_uuid: zzzzz-dz642-diagcompreq0001
+  log_uuid: zzzzz-4zz18-dlogcollhash002
+  output_uuid: zzzzz-4zz18-znfnqtbbv4spc3w
+  runtime_constraints:
+    vcpus: 2
+    ram: 2684354560
+    API: true
+
+completed_diagnostics_hasher3:
+  name: hasher3
+  uuid: zzzzz-xvhdp-diag1hasher0003
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  state: Final
+  priority: 500
+  created_at: 2020-11-02T00:20:30.960251000Z
+  modified_at: 2020-11-02T00:20:38.799377000Z
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  container_image: d967ef4a1ca90a096a39f5ce68e4a2e7+261
+  cwd: /var/spool/cwl
+  output_name: Output for step hasher3
+  output_path: /var/spool/cwl
+  command: [
+             "md5sum",
+             "/keep/6bd770f6cf8f83e7647c602eecfaeeb8+62/hasher2.md5sum.txt"
+           ]
+  container_uuid: zzzzz-dz642-diagcomphasher3
+  requesting_container_uuid: zzzzz-dz642-diagcompreq0001
+  log_uuid: zzzzz-4zz18-dlogcollhash003
+  output_uuid: zzzzz-4zz18-znfnqtbbv4spc3w
+  runtime_constraints:
+    vcpus: 1
+    ram: 2684354560
+    API: true
+
+completed_diagnostics2:
+  name: Copy of CWL diagnostics hasher
+  uuid: zzzzz-xvhdp-diagnostics0002
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  state: Final
+  priority: 1
+  created_at: 2020-11-03T15:54:30.098485000Z
+  modified_at: 2020-11-03T16:17:53.406809000Z
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  container_image: d967ef4a1ca90a096a39f5ce68e4a2e7+261
+  cwd: /var/spool/cwl
+  output_path: /var/spool/cwl
+  command: [
+             "arvados-cwl-runner",
+             "--local",
+             "--api=containers",
+             "--no-log-timestamps",
+             "--disable-validate",
+             "--disable-color",
+             "--eval-timeout=20",
+             "--thread-count=1",
+             "--disable-reuse",
+             "--collection-cache-size=256",
+             "--on-error=continue",
+             "/var/lib/cwl/workflow.json#main",
+             "/var/lib/cwl/cwl.input.json"
+           ]
+  container_uuid: zzzzz-dz642-diagcompreq0002
+  log_uuid: zzzzz-4zz18-diagcompreqlog2
+  output_uuid: zzzzz-4zz18-znfnqtbbv4spc3w
+  runtime_constraints:
+    vcpus: 1
+    ram: 1342177280
+    API: true
+
+completed_diagnostics_hasher1_reuse:
+  name: hasher1
+  uuid: zzzzz-xvhdp-diag2hasher0001
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  state: Final
+  priority: 500
+  created_at: 2020-11-02T00:03:50.229364000Z
+  modified_at: 2020-11-02T00:20:44.041122000Z
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  container_image: d967ef4a1ca90a096a39f5ce68e4a2e7+261
+  cwd: /var/spool/cwl
+  output_name: Output for step hasher1
+  output_path: /var/spool/cwl
+  command: [
+             "md5sum",
+             "/keep/9f26a86b6030a69ad222cf67d71c9502+65/hasher-input-file.txt"
+           ]
+  container_uuid: zzzzz-dz642-diagcomphasher1
+  requesting_container_uuid: zzzzz-dz642-diagcompreq0002
+  log_uuid: zzzzz-4zz18-dlogcollhash001
+  output_uuid: zzzzz-4zz18-znfnqtbbv4spc3w
+  runtime_constraints:
+    vcpus: 1
+    ram: 2684354560
+    API: true
+
+completed_diagnostics_hasher2_reuse:
+  name: hasher2
+  uuid: zzzzz-xvhdp-diag2hasher0002
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  state: Final
+  priority: 500
+  created_at: 2020-11-02T00:17:07.067464000Z
+  modified_at: 2020-11-02T00:20:23.557498000Z
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  container_image: d967ef4a1ca90a096a39f5ce68e4a2e7+261
+  cwd: /var/spool/cwl
+  output_name: Output for step hasher2
+  output_path: /var/spool/cwl
+  command: [
+             "md5sum",
+             "/keep/d3a687732e84061f3bae15dc7e313483+62/hasher1.md5sum.txt"
+           ]
+  container_uuid: zzzzz-dz642-diagcomphasher2
+  requesting_container_uuid: zzzzz-dz642-diagcompreq0002
+  log_uuid: zzzzz-4zz18-dlogcollhash002
+  output_uuid: zzzzz-4zz18-znfnqtbbv4spc3w
+  runtime_constraints:
+    vcpus: 2
+    ram: 2684354560
+    API: true
+
+completed_diagnostics_hasher3_reuse:
+  name: hasher3
+  uuid: zzzzz-xvhdp-diag2hasher0003
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  state: Final
+  priority: 500
+  created_at: 2020-11-02T00:20:30.960251000Z
+  modified_at: 2020-11-02T00:20:38.799377000Z
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  container_image: d967ef4a1ca90a096a39f5ce68e4a2e7+261
+  cwd: /var/spool/cwl
+  output_name: Output for step hasher3
+  output_path: /var/spool/cwl
+  command: [
+             "md5sum",
+             "/keep/6bd770f6cf8f83e7647c602eecfaeeb8+62/hasher2.md5sum.txt"
+           ]
+  container_uuid: zzzzz-dz642-diagcomphasher3
+  requesting_container_uuid: zzzzz-dz642-diagcompreq0002
+  log_uuid: zzzzz-4zz18-dlogcollhash003
+  output_uuid: zzzzz-4zz18-znfnqtbbv4spc3w
+  runtime_constraints:
+    vcpus: 1
+    ram: 2684354560
+    API: true
 
 requester:
   uuid: zzzzz-xvhdp-9zacv3o1xw6sxz5
@@ -309,7 +537,7 @@ completed_with_input_mounts:
     vcpus: 1
     ram: 123
   container_uuid: zzzzz-dz642-compltcontainer
-  log_uuid: zzzzz-4zz18-y9vne9npefyxh8g
+  log_uuid: zzzzz-4zz18-logcollection01
   output_uuid: zzzzz-4zz18-znfnqtbbv4spc3w
   mounts:
     /var/lib/cwl/cwl.input.json:
@@ -758,7 +986,7 @@ cr_in_trashed_project:
   output_path: test
   command: ["echo", "hello"]
   container_uuid: zzzzz-dz642-compltcontainer
-  log_uuid: zzzzz-4zz18-y9vne9npefyxh8g
+  log_uuid: zzzzz-4zz18-logcollection01
   output_uuid: zzzzz-4zz18-znfnqtbbv4spc3w
   runtime_constraints:
     vcpus: 1
