@@ -17,7 +17,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"os/user"
 	"strconv"
 	"strings"
 	"time"
@@ -227,12 +226,12 @@ func loadObject(logger *logrus.Logger, ac *arvados.Client, path string, uuid str
 	if !cache {
 		reload = true
 	} else {
-		user, err := user.Current()
+		homeDir, err := os.UserHomeDir()
 		if err != nil {
 			reload = true
-			logger.Info("Unable to determine current user, not using cache")
+			logger.Info("Unable to determine current user home directory, not using cache")
 		} else {
-			cacheDir = user.HomeDir + "/.cache/arvados/costanalyzer/"
+			cacheDir = homeDir + "/.cache/arvados/costanalyzer/"
 			err = ensureDirectory(logger, cacheDir)
 			if err != nil {
 				reload = true
