@@ -97,15 +97,51 @@ func (rtr *router) sendResponse(w http.ResponseWriter, req *http.Request, resp i
 			} else if defaultItemKind != "" {
 				item["kind"] = defaultItemKind
 			}
-			items[i] = applySelectParam(opts.Select, item)
+			item = applySelectParam(opts.Select, item)
+			rtr.mungeItemFields(item)
+			items[i] = item
 		}
 		if opts.Count == "none" {
 			delete(tmp, "items_available")
 		}
 	} else {
 		tmp = applySelectParam(opts.Select, tmp)
+		rtr.mungeItemFields(tmp)
 	}
 
+	w.Header().Set("Content-Type", "application/json")
+	enc := json.NewEncoder(w)
+	enc.SetEscapeHTML(false)
+	enc.Encode(tmp)
+}
+
+func (rtr *router) sendError(w http.ResponseWriter, err error) {
+	code := http.StatusInternalServerError
+	if err, ok := err.(interface{ HTTPStatus() int }); ok {
+		code = err.HTTPStatus()
+	}
+	httpserver.Error(w, err.Error(), code)
+}
+
+var infixMap = map[string]interface{}{
+	"4zz18": arvados.Collection{},
+	"j7d0g": arvados.Group{},
+}
+
+var mungeKind = regexp.MustCompile(`\..`)
+
+func kind(resp interface{}) string {
+	t := fmt.Sprintf("%T", resp)
+	if !strings.HasPrefix(t, "arvados.") {
+		return ""
+	}
+	return mungeKind.ReplaceAllStringFunc(t, func(s string) string {
+		// "arvados.CollectionList" => "arvados#collectionList"
+		return "#" + strings.ToLower(s[1:])
+	})
+}
+
+func (rtr *router) mungeItemFields(tmp map[string]interface{}) {
 	for k, v := range tmp {
 		if strings.HasSuffix(k, "_at") {
 			// Format non-nil timestamps as
@@ -156,34 +192,4 @@ func (rtr *router) sendResponse(w http.ResponseWriter, req *http.Request, resp i
 			}
 		}
 	}
-	w.Header().Set("Content-Type", "application/json")
-	enc := json.NewEncoder(w)
-	enc.SetEscapeHTML(false)
-	enc.Encode(tmp)
-}
-
-func (rtr *router) sendError(w http.ResponseWriter, err error) {
-	code := http.StatusInternalServerError
-	if err, ok := err.(interface{ HTTPStatus() int }); ok {
-		code = err.HTTPStatus()
-	}
-	httpserver.Error(w, err.Error(), code)
-}
-
-var infixMap = map[string]interface{}{
-	"4zz18": arvados.Collection{},
-	"j7d0g": arvados.Group{},
-}
-
-var mungeKind = regexp.MustCompile(`\..`)
-
-func kind(resp interface{}) string {
-	t := fmt.Sprintf("%T", resp)
-	if !strings.HasPrefix(t, "arvados.") {
-		return ""
-	}
-	return mungeKind.ReplaceAllStringFunc(t, func(s string) string {
-		// "arvados.CollectionList" => "arvados#collectionList"
-		return "#" + strings.ToLower(s[1:])
-	})
 }
