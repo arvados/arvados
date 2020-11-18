@@ -194,7 +194,7 @@ class ContainerRequest < ArvadosModel
       coll_name = "Container #{out_type} for request #{uuid}"
       trash_at = nil
       if out_type == 'output'
-        if self.output_name
+        if self.output_name and self.output_name != ""
           coll_name = self.output_name
         end
         if self.output_ttl > 0
