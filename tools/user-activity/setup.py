@@ -16,7 +16,7 @@ README = os.path.join(SETUP_DIR, 'README.rst')
 import arvados_version
 version = arvados_version.get_version(SETUP_DIR, "arvados_user_activity")
 
-setup(name='arvados_user_activity',
+setup(name='arvados-user-activity',
       version=version,
       description='Summarize user activity from Arvados audit logs',
       author='Arvados',
@@ -31,7 +31,7 @@ setup(name='arvados_user_activity',
           ('share/doc/arvados_user_activity', ['agpl-3.0.txt']),
       ],
       install_requires=[
-          'arvados-python-client',
+          'arvados-python-client > 2.2.0.dev20201118185221',
       ],
       zip_safe=True,
 )
