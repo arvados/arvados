@@ -13,7 +13,7 @@ import ciso8601
 
 def parse_arguments(arguments):
     arg_parser = argparse.ArgumentParser()
-    arg_parser.add_argument('--days', type=int)
+    arg_parser.add_argument('--days', type=int, required=True)
     args = arg_parser.parse_args(arguments)
     return args
 
@@ -39,7 +39,10 @@ def getusername(arv, uuid):
 def getname(u):
     return "\"%s\" (%s)" % (u["name"], u["uuid"])
 
-def main(arguments):
+def main(arguments=None):
+    if arguments is None:
+        arguments = sys.argv[1:]
+
     args = parse_arguments(arguments)
 
     arv = arvados.api()
@@ -132,4 +135,5 @@ def main(arguments):
             print("  %s" % ev)
         print("")
 
-main(sys.argv[1:])
+if __name__ == "__main__":
+    main()
