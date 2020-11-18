@@ -31,7 +31,7 @@ setup(name='arvados-user-activity',
           ('share/doc/arvados_user_activity', ['agpl-3.0.txt']),
       ],
       install_requires=[
-          'arvados-python-client > 2.2.0.dev20201118185221',
+          'arvados-python-client >= 2.2.0.dev20201118185221',
       ],
       zip_safe=True,
 )
