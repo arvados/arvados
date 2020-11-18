@@ -457,8 +457,8 @@ export const CollectionStatus = connect((state: RootState, props: { uuid: string
         return { collection: getResource<CollectionResource>(props.uuid)(state.resources) };
     })((props: { collection: CollectionResource }) =>
         (props.collection.uuid !== props.collection.currentVersionUuid)
-        ? <Typography>old version</Typography>
-        : <Typography>current</Typography>
+        ? <Typography>version {props.collection.version}</Typography>
+        : <Typography>head version</Typography>
     );
 
 export const ProcessStatus = compose(
