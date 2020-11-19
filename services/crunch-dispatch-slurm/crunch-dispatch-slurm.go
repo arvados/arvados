@@ -202,7 +202,7 @@ var containerUuidPattern = regexp.MustCompile(`^[a-z0-9]{5}-dz642-[a-z0-9]{15}$`
 // Cancelled or Complete. See https://dev.arvados.org/issues/10979
 func (disp *Dispatcher) checkSqueueForOrphans() {
 	for _, uuid := range disp.sqCheck.All() {
-		if !containerUuidPattern.MatchString(uuid) {
+		if !containerUuidPattern.MatchString(uuid) || !strings.HasPrefix(uuid, disp.cluster.ClusterID) {
 			continue
 		}
 		err := disp.TrackContainer(uuid)
