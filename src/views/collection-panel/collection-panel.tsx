@@ -315,9 +315,9 @@ export const CollectionDetailsAttributes = (props: { item: CollectionResource, t
                 classLabel={classes.label} classValue={classes.value}
                 label='Version number'
                 value={ showVersionBrowser !== undefined
-                    ? <ButtonLink underline='none' className={classes.button} onClick={() => showVersionBrowser()}>
+                    ? <Tooltip title="Open version browser"><ButtonLink underline='none' className={classes.button} onClick={() => showVersionBrowser()}>
                         {item.version}
-                    </ButtonLink>
+                    </ButtonLink></Tooltip>
                     : item.version
                 }
             />
