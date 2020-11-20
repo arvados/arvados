@@ -173,6 +173,27 @@ func (h *handler) checks3signature(r *http.Request) (string, error) {
 	return secret, nil
 }
 
+func s3ErrorResponse(w http.ResponseWriter, s3code string, message string, resource string, code int) {
+	w.Header().Set("Content-Type", "application/xml")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.WriteHeader(code)
+	fmt.Fprintf(w, `<?xml version="1.0" encoding="UTF-8"?>
+<Error>
+  <Code>%v</Code>
+  <Message>%v</Message>
+  <Resource>%v</Resource>
+  <RequestId></RequestId>
+</Error>`, code, message, resource)
+}
+
+var NoSuchKey = "NoSuchKey"
+var NoSuchBucket = "NoSuchBucket"
+var InvalidArgument = "InvalidArgument"
+var InternalError = "InternalError"
+var UnauthorizedAccess = "UnauthorizedAccess"
+var InvalidRequest = "InvalidRequest"
+var SignatureDoesNotMatch = "SignatureDoesNotMatch"
+
 // serveS3 handles r and returns true if r is a request from an S3
 // client, otherwise it returns false.
 func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
@@ -180,14 +201,14 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 	if auth := r.Header.Get("Authorization"); strings.HasPrefix(auth, "AWS ") {
 		split := strings.SplitN(auth[4:], ":", 2)
 		if len(split) < 2 {
-			http.Error(w, "malformed Authorization header", http.StatusUnauthorized)
+			s3ErrorResponse(w, InvalidRequest, "malformed Authorization header", r.URL.Path, http.StatusUnauthorized)
 			return true
 		}
 		token = split[0]
 	} else if strings.HasPrefix(auth, s3SignAlgorithm+" ") {
 		t, err := h.checks3signature(r)
 		if err != nil {
-			http.Error(w, "signature verification failed: "+err.Error(), http.StatusForbidden)
+			s3ErrorResponse(w, SignatureDoesNotMatch, "signature verification failed: "+err.Error(), r.URL.Path, http.StatusForbidden)
 			return true
 		}
 		token = t
@@ -197,7 +218,7 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 
 	_, kc, client, release, err := h.getClients(r.Header.Get("X-Request-Id"), token)
 	if err != nil {
-		http.Error(w, "Pool failed: "+h.clientPool.Err().Error(), http.StatusInternalServerError)
+		s3ErrorResponse(w, InternalError, "Pool failed: "+h.clientPool.Err().Error(), r.URL.Path, http.StatusInternalServerError)
 		return true
 	}
 	defer release()
@@ -238,9 +259,9 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 			if err == nil && fi.IsDir() {
 				w.WriteHeader(http.StatusOK)
 			} else if os.IsNotExist(err) {
-				w.WriteHeader(http.StatusNotFound)
+				s3ErrorResponse(w, NoSuchBucket, "The specified bucket does not exist.", r.URL.Path, http.StatusNotFound)
 			} else {
-				http.Error(w, err.Error(), http.StatusBadGateway)
+				s3ErrorResponse(w, InternalError, err.Error(), r.URL.Path, http.StatusBadGateway)
 			}
 			return true
 		}
@@ -252,7 +273,7 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 		if os.IsNotExist(err) ||
 			(err != nil && err.Error() == "not a directory") ||
 			(fi != nil && fi.IsDir()) {
-			http.Error(w, "not found", http.StatusNotFound)
+			s3ErrorResponse(w, NoSuchKey, "The specified key does not exist.", r.URL.Path, http.StatusNotFound)
 			return true
 		}
 		// shallow copy r, and change URL path
@@ -262,24 +283,24 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 		return true
 	case r.Method == http.MethodPut:
 		if !objectNameGiven {
-			http.Error(w, "missing object name in PUT request", http.StatusBadRequest)
+			s3ErrorResponse(w, InvalidArgument, "Missing object name in PUT request.", r.URL.Path, http.StatusBadRequest)
 			return true
 		}
 		var objectIsDir bool
 		if strings.HasSuffix(fspath, "/") {
 			if !h.Config.cluster.Collections.S3FolderObjects {
-				http.Error(w, "invalid object name: trailing slash", http.StatusBadRequest)
+				s3ErrorResponse(w, InvalidArgument, "invalid object name: trailing slash", r.URL.Path, http.StatusBadRequest)
 				return true
 			}
 			n, err := r.Body.Read(make([]byte, 1))
 			if err != nil && err != io.EOF {
-				http.Error(w, fmt.Sprintf("error reading request body: %s", err), http.StatusInternalServerError)
+				s3ErrorResponse(w, InternalError, fmt.Sprintf("error reading request body: %s", err), r.URL.Path, http.StatusInternalServerError)
 				return true
 			} else if n > 0 {
-				http.Error(w, "cannot create object with trailing '/' char unless content is empty", http.StatusBadRequest)
+				s3ErrorResponse(w, InvalidArgument, "cannot create object with trailing '/' char unless content is empty", r.URL.Path, http.StatusBadRequest)
 				return true
 			} else if strings.SplitN(r.Header.Get("Content-Type"), ";", 2)[0] != "application/x-directory" {
-				http.Error(w, "cannot create object with trailing '/' char unless Content-Type is 'application/x-directory'", http.StatusBadRequest)
+				s3ErrorResponse(w, InvalidArgument, "cannot create object with trailing '/' char unless Content-Type is 'application/x-directory'", r.URL.Path, http.StatusBadRequest)
 				return true
 			}
 			// Given PUT "foo/bar/", we'll use "foo/bar/."
@@ -291,12 +312,12 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 		fi, err := fs.Stat(fspath)
 		if err != nil && err.Error() == "not a directory" {
 			// requested foo/bar, but foo is a file
-			http.Error(w, "object name conflicts with existing object", http.StatusBadRequest)
+			s3ErrorResponse(w, InvalidArgument, "object name conflicts with existing object", r.URL.Path, http.StatusBadRequest)
 			return true
 		}
 		if strings.HasSuffix(r.URL.Path, "/") && err == nil && !fi.IsDir() {
 			// requested foo/bar/, but foo/bar is a file
-			http.Error(w, "object name conflicts with existing object", http.StatusBadRequest)
+			s3ErrorResponse(w, InvalidArgument, "object name conflicts with existing object", r.URL.Path, http.StatusBadRequest)
 			return true
 		}
 		// create missing parent/intermediate directories, if any
@@ -305,7 +326,7 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 				dir := fspath[:i]
 				if strings.HasSuffix(dir, "/") {
 					err = errors.New("invalid object name (consecutive '/' chars)")
-					http.Error(w, err.Error(), http.StatusBadRequest)
+					s3ErrorResponse(w, InvalidArgument, err.Error(), r.URL.Path, http.StatusBadRequest)
 					return true
 				}
 				err = fs.Mkdir(dir, 0755)
@@ -313,11 +334,11 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 					// Cannot create a directory
 					// here.
 					err = fmt.Errorf("mkdir %q failed: %w", dir, err)
-					http.Error(w, err.Error(), http.StatusBadRequest)
+					s3ErrorResponse(w, InvalidArgument, err.Error(), r.URL.Path, http.StatusBadRequest)
 					return true
 				} else if err != nil && !os.IsExist(err) {
 					err = fmt.Errorf("mkdir %q failed: %w", dir, err)
-					http.Error(w, err.Error(), http.StatusInternalServerError)
+					s3ErrorResponse(w, InternalError, err.Error(), r.URL.Path, http.StatusInternalServerError)
 					return true
 				}
 			}
@@ -329,34 +350,34 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 			}
 			if err != nil {
 				err = fmt.Errorf("open %q failed: %w", r.URL.Path, err)
-				http.Error(w, err.Error(), http.StatusBadRequest)
+				s3ErrorResponse(w, InvalidArgument, err.Error(), r.URL.Path, http.StatusBadRequest)
 				return true
 			}
 			defer f.Close()
 			_, err = io.Copy(f, r.Body)
 			if err != nil {
 				err = fmt.Errorf("write to %q failed: %w", r.URL.Path, err)
-				http.Error(w, err.Error(), http.StatusBadGateway)
+				s3ErrorResponse(w, InternalError, err.Error(), r.URL.Path, http.StatusBadGateway)
 				return true
 			}
 			err = f.Close()
 			if err != nil {
 				err = fmt.Errorf("write to %q failed: close: %w", r.URL.Path, err)
-				http.Error(w, err.Error(), http.StatusBadGateway)
+				s3ErrorResponse(w, InternalError, err.Error(), r.URL.Path, http.StatusBadGateway)
 				return true
 			}
 		}
 		err = fs.Sync()
 		if err != nil {
 			err = fmt.Errorf("sync failed: %w", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			s3ErrorResponse(w, InternalError, err.Error(), r.URL.Path, http.StatusInternalServerError)
 			return true
 		}
 		w.WriteHeader(http.StatusOK)
 		return true
 	case r.Method == http.MethodDelete:
 		if !objectNameGiven || r.URL.Path == "/" {
-			http.Error(w, "missing object name in DELETE request", http.StatusBadRequest)
+			s3ErrorResponse(w, InvalidArgument, "missing object name in DELETE request", r.URL.Path, http.StatusBadRequest)
 			return true
 		}
 		if strings.HasSuffix(fspath, "/") {
@@ -366,7 +387,7 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 				w.WriteHeader(http.StatusNoContent)
 				return true
 			} else if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				s3ErrorResponse(w, InternalError, err.Error(), r.URL.Path, http.StatusInternalServerError)
 				return true
 			} else if !fi.IsDir() {
 				// if "foo" exists and is a file, then
@@ -390,19 +411,20 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 		}
 		if err != nil {
 			err = fmt.Errorf("rm failed: %w", err)
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			s3ErrorResponse(w, InvalidArgument, err.Error(), r.URL.Path, http.StatusBadRequest)
 			return true
 		}
 		err = fs.Sync()
 		if err != nil {
 			err = fmt.Errorf("sync failed: %w", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			s3ErrorResponse(w, InternalError, err.Error(), r.URL.Path, http.StatusInternalServerError)
 			return true
 		}
 		w.WriteHeader(http.StatusNoContent)
 		return true
 	default:
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		s3ErrorResponse(w, InvalidRequest, "method not allowed", r.URL.Path, http.StatusMethodNotAllowed)
+
 		return true
 	}
 }

@@ -62,6 +62,9 @@ func parseCollectionIDFromDNSName(s string) string {
 
 var urlPDHDecoder = strings.NewReplacer(" ", "+", "-", "+")
 
+var notFoundMessage = "404 Not found\n\nThe requested path was not found, or you do not have permission to access it."
+var unauthorizedMessage = "401 Unauthorized\n\nA valid Arvados token must be provided to access this resource."
+
 // parseCollectionIDFromURL returns a UUID or PDH if s is a UUID or a
 // PDH (even if it is a PDH with "+" replaced by " " or "-");
 // otherwise "".
@@ -279,7 +282,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	}
 
 	if collectionID == "" && !useSiteFS {
-		w.WriteHeader(http.StatusNotFound)
+		http.Error(w, notFoundMessage, http.StatusNotFound)
 		return
 	}
 
@@ -388,14 +391,14 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			// for additional credentials would just be
 			// confusing), or we don't even accept
 			// credentials at this path.
-			w.WriteHeader(http.StatusNotFound)
+			http.Error(w, notFoundMessage, http.StatusNotFound)
 			return
 		}
 		for _, t := range reqTokens {
 			if tokenResult[t] == 404 {
 				// The client provided valid token(s), but the
 				// collection was not found.
-				w.WriteHeader(http.StatusNotFound)
+				http.Error(w, notFoundMessage, http.StatusNotFound)
 				return
 			}
 		}
@@ -409,7 +412,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		// data that has been deleted.  Allow a referrer to
 		// provide this context somehow?
 		w.Header().Add("WWW-Authenticate", "Basic realm=\"collections\"")
-		w.WriteHeader(http.StatusUnauthorized)
+		http.Error(w, unauthorizedMessage, http.StatusUnauthorized)
 		return
 	}
 
@@ -479,7 +482,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	openPath := "/" + strings.Join(targetPath, "/")
 	if f, err := fs.Open(openPath); os.IsNotExist(err) {
 		// Requested non-existent path
-		w.WriteHeader(http.StatusNotFound)
+		http.Error(w, notFoundMessage, http.StatusNotFound)
 	} else if err != nil {
 		// Some other (unexpected) error
 		http.Error(w, "open: "+err.Error(), http.StatusInternalServerError)
@@ -533,7 +536,7 @@ func (h *handler) getClients(reqID, token string) (arv *arvadosclient.ArvadosCli
 func (h *handler) serveSiteFS(w http.ResponseWriter, r *http.Request, tokens []string, credentialsOK, attachment bool) {
 	if len(tokens) == 0 {
 		w.Header().Add("WWW-Authenticate", "Basic realm=\"collections\"")
-		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		http.Error(w, unauthorizedMessage, http.StatusUnauthorized)
 		return
 	}
 	if writeMethod[r.Method] {
