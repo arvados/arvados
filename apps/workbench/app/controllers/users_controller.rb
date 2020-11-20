@@ -39,6 +39,7 @@ class UsersController < ApplicationController
 
   def profile
     params[:offer_return_to] ||= params[:return_to]
+    Thread.current[:user] = User.find(current_user.uuid)
   end
 
   def activity
