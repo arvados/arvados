@@ -454,7 +454,18 @@ func (conn *Conn) UserUpdate(ctx context.Context, options arvados.UpdateOptions)
 	if options.BypassFederation {
 		return conn.local.UserUpdate(ctx, options)
 	}
-	return conn.chooseBackend(options.UUID).UserUpdate(ctx, options)
+	resp, err := conn.chooseBackend(options.UUID).UserUpdate(ctx, options)
+	if err != nil {
+		return resp, err
+	}
+	if options.UUID[:5] != conn.cluster.ClusterID {
+		// Copy the updated user record to the local cluster
+		err = conn.batchUpdateUsers(ctx, arvados.ListOptions{}, []arvados.User{resp})
+		if err != nil {
+			return arvados.User{}, err
+		}
+	}
+	return resp, err
 }
 
 func (conn *Conn) UserUpdateUUID(ctx context.Context, options arvados.UpdateUUIDOptions) (arvados.User, error) {
