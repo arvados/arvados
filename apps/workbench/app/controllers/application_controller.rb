@@ -760,7 +760,7 @@ class ApplicationController < ActionController::Base
     if current_user && !profile_config.empty?
       current_user_profile = current_user.prefs[:profile]
       profile_config.each do |k, entry|
-        if entry['Required']
+        if entry[:Required]
           if !current_user_profile ||
              !current_user_profile[k] ||
              current_user_profile[k].empty?
