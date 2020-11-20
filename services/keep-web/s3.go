@@ -191,6 +191,12 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 			return true
 		}
 		token = split[0]
+		if strings.HasPrefix(token, "v2_") {
+			// User provided a full Arvados token with "/"
+			// munged to "_" (see V4 signature validation)
+			// but client software used S3 V2 signature.
+			token = strings.Replace(token, "_", "/", -1)
+		}
 	} else if strings.HasPrefix(auth, s3SignAlgorithm+" ") {
 		t, err := h.checks3signature(r)
 		if err != nil {
