@@ -10,7 +10,7 @@ import { WarningIcon } from '~/components/icon/icon';
 export interface ConfirmationDialogDataProps {
     title: string;
     text: string;
-    info?: string; 
+    info?: string;
     cancelButtonLabel?: string;
     confirmButtonLabel?: string;
 }
@@ -21,27 +21,31 @@ export interface ConfirmationDialogProps {
 
 export const ConfirmationDialog = (props: ConfirmationDialogProps & WithDialogProps<ConfirmationDialogDataProps>) =>
     <Dialog open={props.open}>
-        <DialogTitle>{props.data.title}</DialogTitle>
-        <DialogContent style={{ display: 'flex', alignItems: 'center' }}>
-            <WarningIcon />
-            <DialogContentText style={{ paddingLeft: '8px' }}>
-                <div>{props.data.text}</div>
-                <div>{props.data.info}</div>
-            </DialogContentText>
-        </DialogContent>
-        <DialogActions style={{ margin: '0px 24px 24px' }}>
-            <Button
-                variant='text'
-                color='primary'
-                onClick={props.closeDialog}>
-                {props.data.cancelButtonLabel || 'Cancel'}
-            </Button>
-            <Button
-                variant='contained'
-                color='primary'
-                type='submit'
-                onClick={props.onConfirm}>
-                {props.data.confirmButtonLabel || 'Ok'}
-            </Button>
-        </DialogActions>
+        <div data-cy='confirmation-dialog'>
+            <DialogTitle>{props.data.title}</DialogTitle>
+            <DialogContent style={{ display: 'flex', alignItems: 'center' }}>
+                <WarningIcon />
+                <DialogContentText style={{ paddingLeft: '8px' }}>
+                    <div>{props.data.text}</div>
+                    <div>{props.data.info}</div>
+                </DialogContentText>
+            </DialogContent>
+            <DialogActions style={{ margin: '0px 24px 24px' }}>
+                <Button
+                    data-cy='confirmation-dialog-cancel-btn'
+                    variant='text'
+                    color='primary'
+                    onClick={props.closeDialog}>
+                    {props.data.cancelButtonLabel || 'Cancel'}
+                </Button>
+                <Button
+                    data-cy='confirmation-dialog-ok-btn'
+                    variant='contained'
+                    color='primary'
+                    type='submit'
+                    onClick={props.onConfirm}>
+                    {props.data.confirmButtonLabel || 'Ok'}
+                </Button>
+            </DialogActions>
+        </div>
     </Dialog>;

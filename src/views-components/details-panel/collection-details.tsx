@@ -84,7 +84,7 @@ const mapDispatchToProps = () =>
 const CollectionVersionBrowser = withStyles(styles)(
     connect(mapStateToProps, mapDispatchToProps)(
         ({ currentCollection, versions, showVersion, classes }: CollectionVersionBrowserProps & CollectionVersionBrowserDispatchProps & WithStyles<CssRules>) => {
-            return <>
+            return <div data-cy="collection-version-browser">
                 <Grid container>
                     <Grid item xs={2}>
                         <Typography variant="caption" className={classes.versionBrowserHeader}>
@@ -105,6 +105,7 @@ const CollectionVersionBrowser = withStyles(styles)(
                     const isSelectedVersion = !!(currentCollection && currentCollection.uuid === item.uuid);
                     return (
                         <ListItem button style={{padding: '4px'}}
+                            data-cy={`collection-version-browser-select-${item.version}`}
                             key={item.version}
                             onClick={e => showVersion(item)}
                             selected={isSelectedVersion}>
@@ -127,5 +128,5 @@ const CollectionVersionBrowser = withStyles(styles)(
                     );
                 })}
                 </Grid>
-            </>;
+            </div>;
         }));

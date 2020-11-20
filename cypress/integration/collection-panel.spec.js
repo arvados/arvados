@@ -300,4 +300,87 @@ describe('Collection panel tests', function() {
             cy.get('[data-cy=collection-files-panel]').should('contain', 'bar');
         });
     });
+
+    it.only('uses the collection version browser to view a previous version', function() {
+        const colName = `Test Collection ${Math.floor(Math.random() * 999999)}`;
+
+        // Creates the collection using the admin token so we can set up
+        // a bogus manifest text without block signatures.
+        cy.createCollection(adminUser.token, {
+            name: colName,
+            owner_uuid: activeUser.user.uuid,
+            manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:foo 0:3:bar\n"})
+        .as('collection').then(function() {
+            // Visit collection, check basic information
+            cy.loginAs(activeUser)
+            cy.visit(`/collections/${this.collection.uuid}`);
+            cy.get('[data-cy=collection-info-panel]').should('not.contain', 'This is an old version');
+            cy.get('[data-cy=read-only-icon]').should('not.exist');
+            cy.get('[data-cy=collection-version-number]').should('contain', '1');
+            cy.get('[data-cy=collection-info-panel]').should('contain', colName);
+            cy.get('[data-cy=collection-files-panel]').should('contain', 'foo').and('contain', 'bar');
+
+            // Modify collection, expect version number change
+            cy.get('[data-cy=collection-files-panel]').contains('foo').rightclick();
+            cy.get('[data-cy=context-menu]').contains('Remove').click();
+            cy.get('[data-cy=confirmation-dialog]').should('contain', 'Removing file');
+            cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
+            cy.get('[data-cy=collection-version-number]').should('contain', '2');
+            cy.get('[data-cy=collection-files-panel]').should('not.contain', 'foo').and('contain', 'bar');
+
+            // Click on version number, check version browser. Click on past version.
+            cy.get('[data-cy=collection-version-browser]').should('not.exist');
+            cy.get('[data-cy=collection-version-number]').contains('2').click();
+            cy.get('[data-cy=collection-version-browser]')
+                .should('contain', 'Nr').and('contain', 'Size').and('contain', 'Date')
+                .within(() => {
+                    // Version 1: 6 bytes in size
+                    cy.get('[data-cy=collection-version-browser-select-1]')
+                        .should('contain', '1').and('contain', '6 B');
+                    // Version 2: 3 bytes in size (one file removed)
+                    cy.get('[data-cy=collection-version-browser-select-2]')
+                        .should('contain', '2').and('contain', '3 B');
+                    cy.get('[data-cy=collection-version-browser-select-3]')
+                        .should('not.exist');
+                    cy.get('[data-cy=collection-version-browser-select-1]')
+                        .click();
+            });
+            cy.get('[data-cy=collection-info-panel]').should('contain', 'This is an old version');
+            cy.get('[data-cy=read-only-icon]').should('exist');
+            cy.get('[data-cy=collection-version-number]').should('contain', '1');
+            cy.get('[data-cy=collection-info-panel]').should('contain', colName);
+            cy.get('[data-cy=collection-files-panel]')
+                .should('contain', 'foo').and('contain', 'bar');
+
+            // Click on "head version" link, confirm that it's the latest version.
+            cy.get('[data-cy=collection-info-panel]').contains('head version').click();
+            cy.get('[data-cy=collection-info-panel]')
+                .should('not.contain', 'This is an old version');
+            cy.get('[data-cy=read-only-icon]').should('not.exist');
+            cy.get('[data-cy=collection-version-number]').should('contain', '2');
+            cy.get('[data-cy=collection-info-panel]').should('contain', colName);
+            cy.get('[data-cy=collection-files-panel]').
+                should('not.contain', 'foo').and('contain', 'bar');
+
+            // Make another change, confirm new version.
+            cy.get('[data-cy=collection-panel-options-btn]').click();
+            cy.get('[data-cy=context-menu]').contains('Edit collection').click();
+            cy.get('[data-cy=form-dialog]')
+                .should('contain', 'Edit Collection')
+                .within(() => {
+                    // appends some text
+                    cy.get('input').first().type(' renamed');
+                });
+            cy.get('[data-cy=form-submit-btn]').click();
+            cy.get('[data-cy=collection-info-panel]')
+                .should('not.contain', 'This is an old version');
+            cy.get('[data-cy=read-only-icon]').should('not.exist');
+            cy.get('[data-cy=collection-version-number]').should('contain', '3');
+            cy.get('[data-cy=collection-info-panel]').should('contain', colName + ' renamed');
+            cy.get('[data-cy=collection-files-panel]')
+                .should('not.contain', 'foo').and('contain', 'bar');
+            cy.get('[data-cy=collection-version-browser-select-3]')
+                .should('contain', '3').and('contain', '3 B');
+        });
+    });
 })
