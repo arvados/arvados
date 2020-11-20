@@ -15,7 +15,7 @@ import { startSubmit, stopSubmit, initialize, FormErrors } from 'redux-form';
 import { getDialog } from "~/store/dialog/dialog-reducer";
 import { getFileFullPath, sortFilesTree } from "~/services/collection-service/collection-service-files-response";
 import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
-import { loadDetailsPanel } from "~/store/details-panel/details-panel-action";
+import { loadCollectionPanel } from "../collection-panel-action";
 
 export const collectionPanelFilesAction = unionize({
     SET_COLLECTION_FILES: ofType<CollectionFilesTree>(),
@@ -56,13 +56,12 @@ export const removeCollectionFiles = (filePaths: string[]) =>
         const currentCollection = getState().collectionPanel.item;
         if (currentCollection) {
             services.collectionService.deleteFiles(currentCollection.uuid, filePaths).then(() => {
-                dispatch<any>(loadCollectionFiles(currentCollection.uuid));
+                dispatch<any>(loadCollectionPanel(currentCollection.uuid, true));
                 dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: 'Removed.',
                     hideDuration: 2000,
                     kind: SnackbarKind.SUCCESS
                 }));
-                dispatch<any>(loadDetailsPanel(currentCollection.uuid));
             }).catch(e =>
                 dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: 'Could not remove file.',
@@ -147,10 +146,9 @@ export const renameFile = (newFullPath: string) =>
                 const oldPath = getFileFullPath(file);
                 const newPath = newFullPath;
                 services.collectionService.moveFile(currentCollection.uuid, oldPath, newPath).then(() => {
-                    dispatch<any>(loadCollectionFiles(currentCollection.uuid));
+                    dispatch<any>(loadCollectionPanel(currentCollection.uuid, true));
                     dispatch(dialogActions.CLOSE_DIALOG({ id: RENAME_FILE_DIALOG }));
                     dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'File name changed.', hideDuration: 2000 }));
-                    dispatch<any>(loadDetailsPanel(currentCollection.uuid));
                 }).catch (e => {
                     const errors: FormErrors<RenameFileDialogData, string> = {
                         path: `Could not rename the file: ${e.responseText}`

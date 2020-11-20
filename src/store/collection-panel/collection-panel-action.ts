@@ -29,10 +29,12 @@ export type CollectionPanelAction = UnionOf<typeof collectionPanelActions>;
 
 export const COLLECTION_TAG_FORM_NAME = 'collectionTagForm';
 
-export const loadCollectionPanel = (uuid: string) =>
+export const loadCollectionPanel = (uuid: string, forceReload = false) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const { collectionPanel: { item } } = getState();
-        const collection = item ? item : await services.collectionService.get(uuid);
+        const collection = (item && item.uuid === uuid && !forceReload)
+            ? item
+            : await services.collectionService.get(uuid);
         dispatch<any>(loadDetailsPanel(collection.uuid));
         dispatch(collectionPanelActions.LOAD_COLLECTION_SUCCESS({ item: collection }));
         dispatch(resourcesActions.SET_RESOURCES([collection]));
