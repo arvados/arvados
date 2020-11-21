@@ -24,7 +24,11 @@ func Test(t *testing.T) {
 
 var _ = check.Suite(&RPCSuite{})
 
-const contextKeyTestTokens = "testTokens"
+type key int
+
+const (
+	contextKeyTestTokens key = iota
+)
 
 type RPCSuite struct {
 	log  logrus.FieldLogger
