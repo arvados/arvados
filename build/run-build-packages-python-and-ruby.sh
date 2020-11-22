@@ -6,7 +6,6 @@
 COLUMNS=80
 
 . `dirname "$(readlink -f "$0")"`/run-library.sh
-#. `dirname "$(readlink -f "$0")"`/libcloud-pin.sh
 
 read -rd "\000" helpmessage <<EOF
 $(basename $0): Build Arvados Python packages and Ruby gems
@@ -48,6 +47,16 @@ gem_wrapper() {
 
   checkexit $? "$gem_name gem build"
   title "End of $gem_name gem build (`timer`)"
+}
+
+handle_python_package () {
+  # This function assumes the current working directory is the python package directory
+  if [ -n "$(find dist -name "*-$(nohash_version_from_git).tar.gz" -print -quit)" ]; then
+    # This package doesn't need rebuilding.
+    return
+  fi
+  # Make sure only to use sdist - that's the only format pip can deal with (sigh)
+  python3 setup.py $DASHQ_UNLESS_DEBUG sdist
 }
 
 python_wrapper() {
