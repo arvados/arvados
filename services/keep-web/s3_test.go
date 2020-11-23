@@ -175,7 +175,7 @@ func (s *IntegrationSuite) testS3GetObject(c *check.C, bucket *s3.Bucket, prefix
 
 	// GetObject
 	rdr, err = bucket.GetReader(prefix + "missingfile")
-	c.Check(err, check.ErrorMatches, `404 Not Found`)
+	c.Check(err, check.ErrorMatches, `The specified key does not exist.`)
 
 	// HeadObject
 	exists, err := bucket.Exists(prefix + "missingfile")
@@ -237,7 +237,7 @@ func (s *IntegrationSuite) testS3PutObjectSuccess(c *check.C, bucket *s3.Bucket,
 		objname := prefix + trial.path
 
 		_, err := bucket.GetReader(objname)
-		c.Assert(err, check.ErrorMatches, `404 Not Found`)
+		c.Assert(err, check.ErrorMatches, `The specified key does not exist.`)
 
 		buf := make([]byte, trial.size)
 		rand.Read(buf)
@@ -286,16 +286,16 @@ func (s *IntegrationSuite) TestS3ProjectPutObjectNotSupported(c *check.C) {
 		c.Logf("=== %v", trial)
 
 		_, err := bucket.GetReader(trial.path)
-		c.Assert(err, check.ErrorMatches, `404 Not Found`)
+		c.Assert(err, check.ErrorMatches, `The specified key does not exist.`)
 
 		buf := make([]byte, trial.size)
 		rand.Read(buf)
 
 		err = bucket.PutReader(trial.path, bytes.NewReader(buf), int64(len(buf)), trial.contentType, s3.Private, s3.Options{})
-		c.Check(err, check.ErrorMatches, `400 Bad Request`)
+		c.Check(err, check.ErrorMatches, `(mkdir "by_id/zzzzz-j7d0g-[a-z0-9]{15}/newdir2?"|open "/zzzzz-j7d0g-[a-z0-9]{15}/newfile") failed: invalid argument`)
 
 		_, err = bucket.GetReader(trial.path)
-		c.Assert(err, check.ErrorMatches, `404 Not Found`)
+		c.Assert(err, check.ErrorMatches, `The specified key does not exist.`)
 	}
 }
 
@@ -397,13 +397,13 @@ func (s *IntegrationSuite) testS3PutObjectFailure(c *check.C, bucket *s3.Bucket,
 			rand.Read(buf)
 
 			err := bucket.PutReader(objname, bytes.NewReader(buf), int64(len(buf)), "application/octet-stream", s3.Private, s3.Options{})
-			if !c.Check(err, check.ErrorMatches, `400 Bad.*`, check.Commentf("PUT %q should fail", objname)) {
+			if !c.Check(err, check.ErrorMatches, `(invalid object name.*|open ".*" failed.*|object name conflicts with existing object|Missing object name in PUT request.)`, check.Commentf("PUT %q should fail", objname)) {
 				return
 			}
 
 			if objname != "" && objname != "/" {
 				_, err = bucket.GetReader(objname)
-				c.Check(err, check.ErrorMatches, `404 Not Found`, check.Commentf("GET %q should return 404", objname))
+				c.Check(err, check.ErrorMatches, `The specified key does not exist.`, check.Commentf("GET %q should return 404", objname))
 			}
 		}()
 	}
