@@ -143,13 +143,12 @@ fi
 # package suffixes (.dev/rc)
 calculate_python_sdk_cwl_package_versions
 
-echo cwl_runner_version $cwl_runner_version python_sdk_version $python_sdk_version
-
-if [[ "${python_sdk_version}" != "${ARVADOS_BUILDING_VERSION}" ]]; then
-	python_sdk_version="${python_sdk_version}-1"
-else
-	python_sdk_version="${ARVADOS_BUILDING_VERSION}-${ARVADOS_BUILDING_ITERATION}"
+if [[ -z "$cwl_runner_version" ]]; then
+  echo "ERROR: cwl_runner_version is empty";
+  exit 1
 fi
+
+echo cwl_runner_version $cwl_runner_version python_sdk_version $python_sdk_version
 
 # For development and release candidate packages, the OS package has a "~dev"
 # or "~rc" suffix, but Python requires a ".dev" or "rc" suffix.
@@ -163,15 +162,16 @@ fi
 python_sdk_version_os=$(echo -n $python_sdk_version | sed s/.dev/~dev/g | sed s/rc/~rc/g)
 cwl_runner_version_os=$(echo -n $cwl_runner_version | sed s/.dev/~dev/g | sed s/rc/~rc/g)
 
-if [[ -z "$cwl_runner_version" ]]; then
-  echo "ERROR: cwl_runner_version is empty";
-  exit 1
+if [[ "${python_sdk_version}" != "${ARVADOS_BUILDING_VERSION}" ]]; then
+	python_sdk_version_os="${python_sdk_version_os}-1"
+else
+	python_sdk_version_os="${ARVADOS_BUILDING_VERSION}-${ARVADOS_BUILDING_ITERATION}"
 fi
 
-if [[ "${cwl_runner_version}" != "${ARVADOS_BUILDING_VERSION}" ]]; then
-	cwl_runner_version="${cwl_runner_version}-1"
+if [[ "${cwl_runner_version_os}" != "${ARVADOS_BUILDING_VERSION}" ]]; then
+	cwl_runner_version_os="${cwl_runner_version_os}-1"
 else
-	cwl_runner_version="${ARVADOS_BUILDING_VERSION}-${ARVADOS_BUILDING_ITERATION}"
+	cwl_runner_version_os="${ARVADOS_BUILDING_VERSION}-${ARVADOS_BUILDING_ITERATION}"
 fi
 
 cd docker/jobs
