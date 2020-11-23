@@ -3,7 +3,13 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { StyleRulesCallback, WithStyles, withStyles, Grid, Button } from '@material-ui/core';
+import {
+    StyleRulesCallback,
+    WithStyles,
+    withStyles,
+    Grid,
+    Button
+} from '@material-ui/core';
 import { CollectionIcon } from '~/components/icon/icon';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { BackIcon } from '~/components/icon/icon';
@@ -11,8 +17,10 @@ import { DataTableDefaultView } from '~/components/data-table-default-view/data-
 import { COLLECTIONS_CONTENT_ADDRESS_PANEL_ID } from '~/store/collections-content-address-panel/collections-content-address-panel-actions';
 import { DataExplorer } from "~/views-components/data-explorer/data-explorer";
 import { Dispatch } from 'redux';
-import { getIsAdmin } from '~/store/public-favorites/public-favorites-actions';
-import { resourceKindToContextMenuKind, openContextMenu } from '~/store/context-menu/context-menu-actions';
+import {
+    resourceUuidToContextMenuKind,
+    openContextMenu
+} from '~/store/context-menu/context-menu-actions';
 import { ResourceKind } from '~/models/resource';
 import { loadDetailsPanel } from '~/store/details-panel/details-panel-action';
 import { connect } from 'react-redux';
@@ -20,7 +28,12 @@ import { navigateTo } from '~/store/navigation/navigation-action';
 import { DataColumns } from '~/components/data-table/data-table';
 import { SortDirection } from '~/components/data-table/data-column';
 import { createTree } from '~/models/tree';
-import { ResourceName, ResourceOwnerName, ResourceLastModifiedDate, ResourceStatus } from '~/views-components/data-explorer/renderers';
+import {
+    ResourceName,
+    ResourceOwnerName,
+    ResourceLastModifiedDate,
+    ResourceStatus
+} from '~/views-components/data-explorer/renderers';
 
 type CssRules = 'backLink' | 'backIcon' | 'card' | 'title' | 'iconHeader' | 'link';
 
@@ -105,8 +118,7 @@ export interface CollectionContentAddressPanelActionProps {
 
 const mapDispatchToProps = (dispatch: Dispatch): CollectionContentAddressPanelActionProps => ({
     onContextMenu: (event, resourceUuid) => {
-        const isAdmin = dispatch<any>(getIsAdmin());
-        const kind = resourceKindToContextMenuKind(resourceUuid, isAdmin);
+        const kind = dispatch<any>(resourceUuidToContextMenuKind(resourceUuid));
         if (kind) {
             dispatch<any>(openContextMenu(event, {
                 name: '',

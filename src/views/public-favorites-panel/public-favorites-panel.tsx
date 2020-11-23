@@ -22,7 +22,10 @@ import {
 } from '~/views-components/data-explorer/renderers';
 import { PublicFavoriteIcon } from '~/components/icon/icon';
 import { Dispatch } from 'redux';
-import { openContextMenu, resourceKindToContextMenuKind } from '~/store/context-menu/context-menu-actions';
+import {
+    openContextMenu,
+    resourceUuidToContextMenuKind
+} from '~/store/context-menu/context-menu-actions';
 import { loadDetailsPanel } from '~/store/details-panel/details-panel-action';
 import { navigateTo } from '~/store/navigation/navigation-action';
 import { ContainerRequestState } from "~/models/container-request";
@@ -32,7 +35,6 @@ import { createTree } from '~/models/tree';
 import { getSimpleObjectTypeFilters } from '~/store/resource-type-filters/resource-type-filters';
 import { PUBLIC_FAVORITE_PANEL_ID } from '~/store/public-favorites-panel/public-favorites-action';
 import { PublicFavoritesState } from '~/store/public-favorites/public-favorites-reducer';
-import { getIsAdmin } from '~/store/public-favorites/public-favorites-actions';
 
 type CssRules = "toolbar" | "button";
 
@@ -122,8 +124,7 @@ const mapStateToProps = ({ publicFavorites }: RootState): PublicFavoritePanelDat
 
 const mapDispatchToProps = (dispatch: Dispatch): PublicFavoritePanelActionProps => ({
     onContextMenu: (event, resourceUuid) => {
-        const isAdmin = dispatch<any>(getIsAdmin());
-        const kind = resourceKindToContextMenuKind(resourceUuid, isAdmin);
+        const kind = dispatch<any>(resourceUuidToContextMenuKind(resourceUuid));
         if (kind) {
             dispatch<any>(openContextMenu(event, {
                 name: '',

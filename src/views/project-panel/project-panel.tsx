@@ -14,7 +14,7 @@ import { RootState } from '~/store/store';
 import { DataTableFilterItem } from '~/components/data-table-filters/data-table-filters';
 import { ContainerRequestState } from '~/models/container-request';
 import { SortDirection } from '~/components/data-table/data-column';
-import { ResourceKind, Resource, EditableResource } from '~/models/resource';
+import { ResourceKind, Resource } from '~/models/resource';
 import {
     ResourceFileSize,
     ResourceLastModifiedDate,
@@ -24,17 +24,26 @@ import {
 } from '~/views-components/data-explorer/renderers';
 import { ProjectIcon } from '~/components/icon/icon';
 import { ResourceName } from '~/views-components/data-explorer/renderers';
-import { ResourcesState, getResourceWithEditableStatus } from '~/store/resources/resources';
+import {
+    ResourcesState,
+    getResource
+} from '~/store/resources/resources';
 import { loadDetailsPanel } from '~/store/details-panel/details-panel-action';
-import { resourceKindToContextMenuKind, openContextMenu } from '~/store/context-menu/context-menu-actions';
-import { ProjectResource } from '~/models/project';
+import {
+    openContextMenu,
+    resourceUuidToContextMenuKind
+} from '~/store/context-menu/context-menu-actions';
 import { navigateTo } from '~/store/navigation/navigation-action';
 import { getProperty } from '~/store/properties/properties';
 import { PROJECT_PANEL_CURRENT_UUID } from '~/store/project-panel/project-panel-action';
 import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
 import { ArvadosTheme } from "~/common/custom-theme";
 import { createTree } from '~/models/tree';
-import { getInitialResourceTypeFilters, getInitialProcessStatusFilters } from '~/store/resource-type-filters/resource-type-filters';
+import {
+    getInitialResourceTypeFilters,
+    getInitialProcessStatusFilters
+} from '~/store/resource-type-filters/resource-type-filters';
+import { GroupContentsResource } from '~/services/groups-service/groups-service';
 
 type CssRules = 'root' | "button";
 
@@ -131,7 +140,6 @@ export const ProjectPanel = withStyles(styles)(
     connect((state: RootState) => ({
         currentItemId: getProperty(PROJECT_PANEL_CURRENT_UUID)(state.properties),
         resources: state.resources,
-        isAdmin: state.auth.user!.isAdmin,
         userUuid: state.auth.user!.uuid,
     }))(
         class extends React.Component<ProjectPanelProps> {
@@ -157,15 +165,15 @@ export const ProjectPanel = withStyles(styles)(
             }
 
             handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
-                const { isAdmin, userUuid, resources } = this.props;
-                const resource = getResourceWithEditableStatus<ProjectResource & EditableResource>(resourceUuid, userUuid)(resources);
-                const menuKind = resourceKindToContextMenuKind(resourceUuid, isAdmin, (resource || {} as EditableResource).isEditable);
+                const { resources } = this.props;
+                const resource = getResource<GroupContentsResource>(resourceUuid)(resources);
+                const menuKind = this.props.dispatch<any>(resourceUuidToContextMenuKind(resourceUuid));
                 if (menuKind && resource) {
                     this.props.dispatch<any>(openContextMenu(event, {
                         name: resource.name,
                         uuid: resource.uuid,
                         ownerUuid: resource.ownerUuid,
-                        isTrashed: resource.isTrashed,
+                        isTrashed: ('isTrashed' in resource) ? resource.isTrashed: false,
                         kind: resource.kind,
                         menuKind
                     }));

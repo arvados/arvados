@@ -8,7 +8,6 @@ import { ContextMenuKind } from '~/views-components/context-menu/context-menu';
 import { Dispatch } from 'redux';
 import { RootState } from '~/store/store';
 import { getResource, getResourceWithEditableStatus } from '../resources/resources';
-import { ProjectResource } from '~/models/project';
 import { UserResource } from '~/models/user';
 import { isSidePanelTreeCategory } from '~/store/side-panel-tree/side-panel-tree-actions';
 import { extractUuidKind, ResourceKind, EditableResource } from '~/models/resource';
@@ -18,6 +17,9 @@ import { SshKeyResource } from '~/models/ssh-key';
 import { VirtualMachinesResource } from '~/models/virtual-machines';
 import { KeepServiceResource } from '~/models/keep-services';
 import { ProcessResource } from '~/models/process';
+import { CollectionResource } from '~/models/collection';
+import { GroupResource } from '~/models/group';
+import { GroupContentsResource } from '~/services/groups-service/groups-service';
 
 export const contextMenuActions = unionize({
     OPEN_CONTEXT_MENU: ofType<{ position: ContextMenuPosition, resource: ContextMenuResource }>(),
@@ -156,9 +158,8 @@ export const openRootProjectContextMenu = (event: React.MouseEvent<HTMLElement>,
 
 export const openProjectContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) =>
     (dispatch: Dispatch, getState: () => RootState) => {
-        const { isAdmin, uuid: userUuid } = getState().auth.user!;
-        const res = getResourceWithEditableStatus<ProjectResource & EditableResource>(resourceUuid, userUuid)(getState().resources);
-        const menuKind = resourceKindToContextMenuKind(resourceUuid, isAdmin, (res || {} as EditableResource).isEditable);
+        const res = getResource<GroupContentsResource>(resourceUuid)(getState().resources);
+        const menuKind = dispatch<any>(resourceUuidToContextMenuKind(resourceUuid));
         if (res && menuKind) {
             dispatch<any>(openContextMenu(event, {
                 name: res.name,
@@ -166,7 +167,7 @@ export const openProjectContextMenu = (event: React.MouseEvent<HTMLElement>, res
                 kind: res.kind,
                 menuKind,
                 ownerUuid: res.ownerUuid,
-                isTrashed: res.isTrashed
+                isTrashed: ('isTrashed' in res) ? res.isTrashed: false,
             }));
         }
     };
@@ -200,30 +201,42 @@ export const openProcessContextMenu = (event: React.MouseEvent<HTMLElement>, pro
         }
     };
 
-export const resourceKindToContextMenuKind = (uuid: string, isAdmin?: boolean, isEditable?: boolean) => {
-    const kind = extractUuidKind(uuid);
-    switch (kind) {
-        case ResourceKind.PROJECT:
-            return !isAdmin
-                ? isEditable
-                    ? ContextMenuKind.PROJECT
-                    : ContextMenuKind.READONLY_PROJECT
-                : ContextMenuKind.PROJECT_ADMIN;
-        case ResourceKind.COLLECTION:
-            return !isAdmin
-                ? isEditable
-                    ? ContextMenuKind.COLLECTION
-                    : ContextMenuKind.READONLY_COLLECTION
-                : ContextMenuKind.COLLECTION_ADMIN;
-        case ResourceKind.PROCESS:
-            return !isAdmin
-                ? ContextMenuKind.PROCESS_RESOURCE
-                : ContextMenuKind.PROCESS_ADMIN;
-        case ResourceKind.USER:
-            return ContextMenuKind.ROOT_PROJECT;
-        case ResourceKind.LINK:
-            return ContextMenuKind.LINK;
-        default:
-            return;
-    }
-};
+export const resourceUuidToContextMenuKind = (uuid: string) =>
+    (dispatch: Dispatch, getState: () => RootState) => {
+        const { isAdmin, uuid: userUuid } = getState().auth.user!;
+        const kind = extractUuidKind(uuid);
+        const resource = getResourceWithEditableStatus<GroupResource & EditableResource>(uuid, userUuid)(getState().resources);
+        const isEditable = (resource || {} as EditableResource).isEditable;
+        switch (kind) {
+            case ResourceKind.PROJECT:
+                return !isAdmin
+                    ? isEditable
+                        ? ContextMenuKind.PROJECT
+                        : ContextMenuKind.READONLY_PROJECT
+                    : ContextMenuKind.PROJECT_ADMIN;
+            case ResourceKind.COLLECTION:
+                const c = getResource<CollectionResource>(uuid)(getState().resources);
+                if (c === undefined) { return; }
+                const isOldVersion = c.uuid !== c.currentVersionUuid;
+                const isTrashed = c.isTrashed;
+                return (isTrashed && isEditable)
+                    ? ContextMenuKind.TRASHED_COLLECTION
+                    : isOldVersion
+                        ? ContextMenuKind.OLD_VERSION_COLLECTION
+                        : isAdmin
+                            ? ContextMenuKind.COLLECTION_ADMIN
+                            : isEditable
+                                ? ContextMenuKind.COLLECTION
+                                : ContextMenuKind.READONLY_COLLECTION;
+            case ResourceKind.PROCESS:
+                return !isAdmin
+                    ? ContextMenuKind.PROCESS_RESOURCE
+                    : ContextMenuKind.PROCESS_ADMIN;
+            case ResourceKind.USER:
+                return ContextMenuKind.ROOT_PROJECT;
+            case ResourceKind.LINK:
+                return ContextMenuKind.LINK;
+            default:
+                return;
+        }
+    };

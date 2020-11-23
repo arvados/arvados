@@ -5,8 +5,15 @@
 import { Dispatch } from "redux";
 import { connect } from "react-redux";
 import { RootState } from '~/store/store';
-import { openContextMenu, resourceKindToContextMenuKind } from '~/store/context-menu/context-menu-actions';
-import { LinkPanelRoot, LinkPanelRootActionProps, LinkPanelRootDataProps } from '~/views/link-panel/link-panel-root';
+import {
+    openContextMenu,
+    resourceUuidToContextMenuKind
+} from '~/store/context-menu/context-menu-actions';
+import {
+    LinkPanelRoot,
+    LinkPanelRootActionProps,
+    LinkPanelRootDataProps
+} from '~/views/link-panel/link-panel-root';
 import { ResourceKind } from '~/models/resource';
 
 const mapStateToProps = (state: RootState): LinkPanelRootDataProps => {
@@ -17,7 +24,7 @@ const mapStateToProps = (state: RootState): LinkPanelRootDataProps => {
 
 const mapDispatchToProps = (dispatch: Dispatch): LinkPanelRootActionProps => ({
     onContextMenu: (event, resourceUuid) => {
-        const kind = resourceKindToContextMenuKind(resourceUuid);
+        const kind = dispatch<any>(resourceUuidToContextMenuKind(resourceUuid));
         if (kind) {
             dispatch<any>(openContextMenu(event, {
                 name: '',
