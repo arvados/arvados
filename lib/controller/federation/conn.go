@@ -466,7 +466,7 @@ func (conn *Conn) UserUpdate(ctx context.Context, options arvados.UpdateOptions)
 	if err != nil {
 		return resp, err
 	}
-	if options.UUID[:5] != conn.cluster.ClusterID {
+	if !strings.HasPrefix(options.UUID, conn.cluster.ClusterID) {
 		// Copy the updated user record to the local cluster
 		err = conn.batchUpdateUsers(ctx, arvados.ListOptions{}, []arvados.User{resp})
 		if err != nil {
