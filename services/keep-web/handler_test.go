@@ -122,7 +122,7 @@ func (s *IntegrationSuite) TestVhost404(c *check.C) {
 		}
 		s.testServer.Handler.ServeHTTP(resp, req)
 		c.Check(resp.Code, check.Equals, http.StatusNotFound)
-		c.Check(resp.Body.String(), check.Equals, "")
+		c.Check(resp.Body.String(), check.Equals, notFoundMessage+"\n")
 	}
 }
 
@@ -250,7 +250,11 @@ func (s *IntegrationSuite) doVhostRequestsWithHostPath(c *check.C, authz authori
 				// depending on the authz method.
 				c.Check(code, check.Equals, failCode)
 			}
-			c.Check(body, check.Equals, "")
+			if code == 404 {
+				c.Check(body, check.Equals, notFoundMessage+"\n")
+			} else {
+				c.Check(body, check.Equals, unauthorizedMessage+"\n")
+			}
 		}
 	}
 }
@@ -307,7 +311,7 @@ func (s *IntegrationSuite) TestSingleOriginSecretLinkBadToken(c *check.C) {
 		"",
 		"",
 		http.StatusNotFound,
-		"",
+		notFoundMessage+"\n",
 	)
 }
 
@@ -321,7 +325,7 @@ func (s *IntegrationSuite) TestVhostRedirectQueryTokenToBogusCookie(c *check.C) 
 		"",
 		"",
 		http.StatusUnauthorized,
-		"",
+		unauthorizedMessage+"\n",
 	)
 }
 
@@ -439,7 +443,7 @@ func (s *IntegrationSuite) TestVhostRedirectPOSTFormTokenToCookie404(c *check.C)
 		"application/x-www-form-urlencoded",
 		url.Values{"api_token": {arvadostest.SpectatorToken}}.Encode(),
 		http.StatusNotFound,
-		"",
+		notFoundMessage+"\n",
 	)
 }
 
@@ -463,7 +467,7 @@ func (s *IntegrationSuite) TestAnonymousTokenError(c *check.C) {
 		"",
 		"",
 		http.StatusNotFound,
-		"",
+		notFoundMessage+"\n",
 	)
 }
 
