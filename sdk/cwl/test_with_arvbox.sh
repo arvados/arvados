@@ -141,9 +141,11 @@ else
   . /usr/src/arvados/build/run-library.sh
   TMPHERE=\$(pwd)
   cd /usr/src/arvados
+
+  # This defines python_sdk_version and cwl_runner_version with python-style
+  # package suffixes (.dev/rc)
   calculate_python_sdk_cwl_package_versions
 
-  cwl_runner_version=\$(echo -n \$cwl_runner_version | sed s/~dev/.dev/g | sed s/~rc/rc/g)
   cd \$TMPHERE
   set -u
 
