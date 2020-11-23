@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"strings"
@@ -118,11 +119,15 @@ func (s *IntegrationSuite) TestS3Signatures(c *check.C) {
 		secretkey string
 	}{
 		{true, aws.V2Signature, arvadostest.ActiveToken, "none"},
+		{true, aws.V2Signature, url.QueryEscape(arvadostest.ActiveTokenV2), "none"},
+		{true, aws.V2Signature, strings.Replace(arvadostest.ActiveTokenV2, "/", "_", -1), "none"},
 		{false, aws.V2Signature, "none", "none"},
 		{false, aws.V2Signature, "none", arvadostest.ActiveToken},
 
 		{true, aws.V4Signature, arvadostest.ActiveTokenUUID, arvadostest.ActiveToken},
 		{true, aws.V4Signature, arvadostest.ActiveToken, arvadostest.ActiveToken},
+		{true, aws.V4Signature, url.QueryEscape(arvadostest.ActiveTokenV2), url.QueryEscape(arvadostest.ActiveTokenV2)},
+		{true, aws.V4Signature, strings.Replace(arvadostest.ActiveTokenV2, "/", "_", -1), strings.Replace(arvadostest.ActiveTokenV2, "/", "_", -1)},
 		{false, aws.V4Signature, arvadostest.ActiveToken, ""},
 		{false, aws.V4Signature, arvadostest.ActiveToken, "none"},
 		{false, aws.V4Signature, "none", arvadostest.ActiveToken},
