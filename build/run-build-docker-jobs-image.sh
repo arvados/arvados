@@ -139,6 +139,8 @@ if [[ -z "$ARVADOS_BUILDING_VERSION" ]] && ! [[ -z "$version_tag" ]]; then
 	ARVADOS_BUILDING_ITERATION="1"
 fi
 
+# This defines python_sdk_version and cwl_runner_version with python-style
+# package suffixes (.dev/rc)
 calculate_python_sdk_cwl_package_versions
 
 echo cwl_runner_version $cwl_runner_version python_sdk_version $python_sdk_version
@@ -149,13 +151,17 @@ else
 	python_sdk_version="${ARVADOS_BUILDING_VERSION}-${ARVADOS_BUILDING_ITERATION}"
 fi
 
-# What we use to tag the Docker image.  For development and release
-# candidate packages, the OS package has a "~dev" or "~rc" suffix, but
-# Python requires a ".dev" or "rc" suffix.  Arvados-cwl-runner will be
-# expecting the Python-compatible version string when it tries to pull
-# the Docker image, but --build-arg is expecting the OS package
+# For development and release candidate packages, the OS package has a "~dev"
+# or "~rc" suffix, but Python requires a ".dev" or "rc" suffix.
+#
+# Arvados-cwl-runner will be expecting the Python-compatible version string
+# when it tries to pull the Docker image, so we use that to tag the Docker
+# image.
+#
+# The --build-arg docker invocation arguments are expecting the OS package
 # version.
-cwl_runner_version_tag=$(echo -n $cwl_runner_version | sed s/~dev/.dev/g | sed s/~rc/rc/g)
+python_sdk_version_os=$(echo -n $python_sdk_version | sed s/.dev/~dev/g | sed s/rc/~rc/g)
+cwl_runner_version_os=$(echo -n $cwl_runner_version | sed s/.dev/~dev/g | sed s/rc/~rc/g)
 
 if [[ -z "$cwl_runner_version_tag" ]]; then
   echo "ERROR: cwl_runner_version_tag is empty";
@@ -170,10 +176,10 @@ fi
 
 cd docker/jobs
 docker build $NOCACHE \
-       --build-arg python_sdk_version=${python_sdk_version} \
-       --build-arg cwl_runner_version=${cwl_runner_version} \
+       --build-arg python_sdk_version=${python_sdk_version_os} \
+       --build-arg cwl_runner_version=${cwl_runner_version_os} \
        --build-arg repo_version=${REPO} \
-       -t arvados/jobs:$cwl_runner_version_tag .
+       -t arvados/jobs:$cwl_runner_version .
 
 ECODE=$?
 
@@ -207,7 +213,7 @@ else
         ## 20150526 nico -- *sometimes* dockerhub needs re-login
         ## even though credentials are already in .dockercfg
         docker login -u arvados
-        docker_push arvados/jobs:$cwl_runner_version_tag
+        docker_push arvados/jobs:$cwl_runner_version
         title "upload arvados images finished (`timer`)"
     else
         title "upload arvados images SKIPPED because no --upload option set (`timer`)"

@@ -69,9 +69,9 @@ fi
 
 . build/run-library.sh
 
+# This defines python_sdk_version and cwl_runner_version with python-style
+# package suffixes (.dev/rc)
 calculate_python_sdk_cwl_package_versions
-
-cwl_runner_version=$(echo -n $cwl_runner_version | sed s/~dev/.dev/g | sed s/~rc/rc/g)
 
 set -x
 docker build --no-cache --build-arg sdk=$sdk --build-arg runner=$runner --build-arg salad=$salad --build-arg cwltool=$cwltool --build-arg pythoncmd=$py --build-arg pipcmd=$pipcmd -f "$WORKSPACE/sdk/dev-jobs.dockerfile" -t arvados/jobs:$cwl_runner_version "$WORKSPACE/sdk"
