@@ -163,8 +163,8 @@ fi
 python_sdk_version_os=$(echo -n $python_sdk_version | sed s/.dev/~dev/g | sed s/rc/~rc/g)
 cwl_runner_version_os=$(echo -n $cwl_runner_version | sed s/.dev/~dev/g | sed s/rc/~rc/g)
 
-if [[ -z "$cwl_runner_version_tag" ]]; then
-  echo "ERROR: cwl_runner_version_tag is empty";
+if [[ -z "$cwl_runner_version" ]]; then
+  echo "ERROR: cwl_runner_version is empty";
   exit 1
 fi
 
