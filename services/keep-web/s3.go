@@ -177,13 +177,19 @@ func s3ErrorResponse(w http.ResponseWriter, s3code string, message string, resou
 	w.Header().Set("Content-Type", "application/xml")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.WriteHeader(code)
-	fmt.Fprintf(w, `<?xml version="1.0" encoding="UTF-8"?>
-<Error>
-  <Code>%v</Code>
-  <Message>%v</Message>
-  <Resource>%v</Resource>
-  <RequestId></RequestId>
-</Error>`, code, message, resource)
+	var errstruct struct {
+		Code      string
+		Message   string
+		Resource  string
+		RequestId string
+	}
+	errstruct.Code = s3code
+	errstruct.Message = message
+	errstruct.Resource = resource
+	errstruct.RequestId = ""
+	enc := xml.NewEncoder(w)
+	fmt.Fprint(w, xml.Header)
+	enc.EncodeElement(errstruct, xml.StartElement{Name: xml.Name{Local: "Error"}})
 }
 
 var NoSuchKey = "NoSuchKey"
