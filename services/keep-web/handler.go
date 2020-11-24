@@ -62,8 +62,8 @@ func parseCollectionIDFromDNSName(s string) string {
 
 var urlPDHDecoder = strings.NewReplacer(" ", "+", "-", "+")
 
-var notFoundMessage = "404 Not found\n\nThe requested path was not found, or you do not have permission to access it."
-var unauthorizedMessage = "401 Unauthorized\n\nA valid Arvados token must be provided to access this resource."
+var notFoundMessage = "404 Not found\r\n\r\nThe requested path was not found, or you do not have permission to access it.\r"
+var unauthorizedMessage = "401 Unauthorized\r\n\r\nA valid Arvados token must be provided to access this resource.\r"
 
 // parseCollectionIDFromURL returns a UUID or PDH if s is a UUID or a
 // PDH (even if it is a PDH with "+" replaced by " " or "-");
