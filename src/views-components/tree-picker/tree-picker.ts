@@ -43,6 +43,7 @@ const memoizedMapStateToProps = () => {
                     .map(treePickerToTreeItems(tree))
                     .map(parentItem => ({
                         ...parentItem,
+                        flatTree: true,
                         items: flatTree(2, parentItem.items || []),
                     }))
             };

@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { List, ListItem, ListItemIcon, Checkbox, Radio } from "@material-ui/core";
+import { List, ListItem, ListItemIcon, Checkbox, Radio, Collapse } from "@material-ui/core";
 import { StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core/styles';
 import { ProjectIcon } from '~/components/icon/icon';
 import { ReactElement } from "react";
@@ -95,6 +95,7 @@ export interface TreeItem<T> {
     open: boolean;
     active: boolean;
     selected?: boolean;
+    flatTree?: boolean;
     status: TreeItemStatus;
     items?: Array<TreeItem<T>>;
 }
@@ -141,12 +142,68 @@ const getActionAndId = (event: any, initAction: string | undefined = undefined) 
     return [action, id];
 };
 
+interface FlatTreeProps {
+    it: TreeItem<any>;
+    levelIndentation: number;
+    onContextMenu: Function;
+    handleToggleItemOpen: Function;
+    toggleItemActive: Function;
+    getToggableIconClassNames: Function;
+    getProperArrowAnimation: Function;
+    classes: any;
+}
+
+const FlatTree = (props: FlatTreeProps) =>
+    <div
+        onContextMenu={(event) => {
+            const [action, id] = getActionAndId(event, 'CONTEXT_MENU');
+            props.onContextMenu(event, { id } as any);
+        }}
+        onClick={(event) => {
+            const [action, id] = getActionAndId(event);
+
+            if (action && id) {
+                switch (action) {
+                    case 'TOGGLE_OPEN':
+                        props.handleToggleItemOpen({ id } as any, event);
+                        break;
+                    case 'TOGGLE_ACTIVE':
+                        props.toggleItemActive(event, { id } as any);
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }}
+    >
+        {
+            (props.it.items || [])
+                .map((item: any) => <div key={item.id} data-id={item.id}
+                    className={classnames(props.classes.childItem, { [props.classes.active]: item.active })}
+                    style={{ paddingLeft: `${item.depth * props.levelIndentation}px` }}>
+                    <i data-action="TOGGLE_OPEN" className={props.classes.toggableIconContainer}>
+                        <ListItemIcon className={props.getToggableIconClassNames(item.open, item.active)}>
+                            {props.getProperArrowAnimation(item.status, item.items!)}
+                        </ListItemIcon>
+                    </i>
+                    <div data-action="TOGGLE_ACTIVE" className={props.classes.renderContainer}>
+                        <span style={{ display: 'flex', alignItems: 'center' }}>
+                            <ProjectIcon className={classnames({ [props.classes.active]: item.active }, props.classes.childItemIcon)} />
+                            <span style={{ fontSize: '0.875rem' }}>
+                                {item.data.name}
+                            </span>
+                        </span>
+                    </div>
+                </div>)
+        }
+    </div>;
+
 export const Tree = withStyles(styles)(
     class Component<T> extends React.Component<TreeProps<T> & WithStyles<CssRules>, {}> {
         render(): ReactElement<any> {
             const level = this.props.level ? this.props.level : 0;
-            const { classes, render, items, toggleItemActive, disableRipple, currentItemUuid, useRadioButtons } = this.props;
-            const { list, listItem, loader, toggableIconContainer, renderContainer, childItem, active, childItemIcon } = classes;
+            const { classes, render, items, toggleItemActive, toggleItemOpen, disableRipple, currentItemUuid, useRadioButtons } = this.props;
+            const { list, listItem, loader, toggableIconContainer, renderContainer } = classes;
             const showSelection = typeof this.props.showSelection === 'function'
                 ? this.props.showSelection
                 : () => this.props.showSelection ? true : false;
@@ -188,51 +245,32 @@ export const Tree = withStyles(styles)(
                                 {render(it, level)}
                             </div>
                         </ListItem>
-                        {it.open && it.items && it.items.length > 0 &&
-                            <div
-                                onContextMenu={(event) => {
-                                    const [action, id] = getActionAndId(event, 'CONTEXT_MENU');
-                                    this.props.onContextMenu(event, { id } as any);
-                                }}
-                                onClick={(event) => {
-                                    const [action, id] = getActionAndId(event);
-
-                                    if (action && id) {
-                                        switch(action) {
-                                            case 'TOGGLE_OPEN':
-                                                this.handleToggleItemOpen({ id } as any, event);
-                                                break;
-                                            case 'TOGGLE_ACTIVE':
-                                                toggleItemActive(event, { id } as any);
-                                                break;
-                                            default:
-                                                break;
-                                        }
-                                    }
-                                }}
-                            >
-                                {
-                                    it.items
-                                        .slice(0, 30)
-                                        .map((item: any) => <div key={item.id} data-id={item.id}
-                                            className={classnames(childItem, { [active]: item.active })}
-                                            style={{ paddingLeft: `${item.depth * levelIndentation}px`}}>
-                                            <i data-action="TOGGLE_OPEN" className={toggableIconContainer}>
-                                                <ListItemIcon className={this.getToggableIconClassNames(item.open, item.active)}>
-                                                    {this.getProperArrowAnimation(item.status, item.items!)}
-                                                </ListItemIcon>
-                                            </i>
-                                            <div data-action="TOGGLE_ACTIVE" className={renderContainer}>
-                                                <span style={{ display: 'flex', alignItems: 'center' }}>
-                                                    <ProjectIcon className={classnames({ [active]: item.active }, childItemIcon)} />
-                                                    <span style={{ fontSize: '0.875rem' }}>
-                                                        {item.data.name}
-                                                    </span>
-                                                </span>
-                                            </div>
-                                        </div>)
-                                }
-                            </div>}
+                        {
+                            it.open && it.items && it.items.length > 0 &&
+                                it.flatTree ?
+                                    <FlatTree
+                                        it={it}
+                                        classes={this.props.classes}
+                                        levelIndentation={levelIndentation}
+                                        onContextMenu={this.props.onContextMenu}
+                                        handleToggleItemOpen={this.handleToggleItemOpen}
+                                        toggleItemActive={this.props.toggleItemActive}
+                                        getToggableIconClassNames={this.getToggableIconClassNames}
+                                        getProperArrowAnimation={this.getProperArrowAnimation}
+                                    /> :
+                                    <Collapse in={it.open} timeout="auto" unmountOnExit>
+                                        <Tree
+                                            showSelection={this.props.showSelection}
+                                            items={it.items}
+                                            render={render}
+                                            disableRipple={disableRipple}
+                                            toggleItemOpen={toggleItemOpen}
+                                            toggleItemActive={toggleItemActive}
+                                            level={level + 1}
+                                            onContextMenu={this.props.onContextMenu}
+                                            toggleItemSelection={this.props.toggleItemSelection} />
+                                    </Collapse>
+                        }
                     </div>)}
             </List>;
         }
