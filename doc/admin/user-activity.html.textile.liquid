@@ -1,0 +1,95 @@
+---
+layout: default
+navsection: admin
+title: "User activity report"
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+The @arv-user-activity@ tool generates a summary report of user activity on an Arvados instance based on the audit logs (the @logs@ table).
+
+h2. Installation
+
+h2. Option 1: Install from a distribution package
+
+This installation method is recommended to make the CLI tools available system-wide. It can coexist with the installation method described in option 2, below.
+
+First, configure the "Arvados package repositories":../../install/packages.html
+
+{% assign arvados_component = 'python3-arvados-user-activity' %}
+
+{% include 'install_packages' %}
+
+h2. Option 2: Install with pip
+
+Run @pip install arvados-user-activity'@ in an appropriate installation environment, such as a @virtualenv@.
+
+Note: depends on the "Arvados Python SDK":../sdk/python/sdk-python.html and its associated build prerequisites (e.g. @pycurl@).
+
+h2. Usage
+
+Set your Arvados environment, then run the tool giving it the number of days to report for.  It will query the logs and generate a summary report on standard output.
+
+Example run:
+
+<pre>
+$ bin/arv-user-activity --days 14
+User activity on pirca between 2020-11-10 16:42 and 2020-11-24 16:42
+
+Peter Amstutz <peter.amstutz@curii.com> (https://workbench.pirca.arvadosapi.com/users/jutro-tpzed-a4qnxq3pcfcgtkz)
+  organization: "Curii"
+  role: "Software Developer"
+
+  2020-11-10 16:51-05:00 to 2020-11-11 13:51-05:00 (21:00) Account activity
+  2020-11-13 13:47-05:00 to 2020-11-14 03:32-05:00 (13:45) Account activity
+  2020-11-14 04:33-05:00 to 2020-11-15 20:33-05:00 (40:00) Account activity
+  2020-11-15 21:34-05:00 to 2020-11-16 13:34-05:00 (16:00) Account activity
+  2020-11-16 16:21-05:00 to 2020-11-16 16:28-05:00 (00:07) Account activity
+  2020-11-17 15:49-05:00 to 2020-11-17 15:49-05:00 (00:00) Account activity
+  2020-11-17 15:51-05:00 Created project "New project" (pirca-j7d0g-7bxvkyr4khfa1a4)
+  2020-11-17 15:51-05:00 Updated project "Test run" (pirca-j7d0g-7bxvkyr4khfa1a4)
+  2020-11-17 15:51-05:00 Ran container "bwa-mem.cwl container" (pirca-xvhdp-xf2w8dkk17jkk5r)
+  2020-11-17 15:51-05:00 to 2020-11-17 15:51-05:00 (0:00) Account activity
+  2020-11-17 15:53-05:00 Ran container "WGS processing workflow scattered over samples container" (pirca-xvhdp-u7bm0wdy6lq4r8k)
+  2020-11-17 15:53-05:00 to 2020-11-17 15:54-05:00 (00:01) Account activity
+  2020-11-17 15:55-05:00 Created collection "output for pirca-dz642-36ffk81c8zzopxz" (pirca-4zz18-np35gw690ndzzk7)
+  2020-11-17 15:55-05:00 to 2020-11-17 15:55-05:00 (0:00) Account activity
+  2020-11-17 15:55-05:00 Created collection "Output of main" (pirca-4zz18-oiiymetwhnnhhwc)
+  2020-11-17 15:55-05:00 Tagged pirca-4zz18-oiiymetwhnnhhwc
+  2020-11-17 15:55-05:00 Updated collection "Output of main" (pirca-4zz18-oiiymetwhnnhhwc)
+  2020-11-17 15:55-05:00 to 2020-11-17 16:04-05:00 (00:09) Account activity
+  2020-11-17 16:04-05:00 Created collection "Output of main" (pirca-4zz18-f6n9n89e3dhtwvl)
+  2020-11-17 16:04-05:00 Tagged pirca-4zz18-f6n9n89e3dhtwvl
+  2020-11-17 16:04-05:00 Updated collection "Output of main" (pirca-4zz18-f6n9n89e3dhtwvl)
+  2020-11-17 16:04-05:00 to 2020-11-17 17:55-05:00 (01:51) Account activity
+  2020-11-17 20:09-05:00 to 2020-11-17 20:09-05:00 (00:00) Account activity
+  2020-11-17 21:35-05:00 to 2020-11-17 21:35-05:00 (00:00) Account activity
+  2020-11-18 10:09-05:00 to 2020-11-18 11:00-05:00 (00:51) Account activity
+  2020-11-18 14:37-05:00 Untagged pirca-4zz18-st8yzjan1nhxo1a
+  2020-11-18 14:37-05:00 Deleted collection "Output of main" (pirca-4zz18-st8yzjan1nhxo1a)
+  2020-11-18 17:44-05:00 to 2020-11-18 17:44-05:00 (00:00) Account activity
+  2020-11-19 12:18-05:00 to 2020-11-19 12:19-05:00 (00:01) Account activity
+  2020-11-19 13:57-05:00 to 2020-11-19 14:21-05:00 (00:24) Account activity
+  2020-11-20 09:48-05:00 to 2020-11-20 22:51-05:00 (13:03) Account activity
+  2020-11-20 23:52-05:00 to 2020-11-22 22:32-05:00 (46:40) Account activity
+  2020-11-22 23:37-05:00 to 2020-11-23 13:52-05:00 (14:15) Account activity
+  2020-11-23 14:53-05:00 to 2020-11-24 11:58-05:00 (21:05) Account activity
+  2020-11-24 15:06-05:00 to 2020-11-24 16:38-05:00 (01:32) Account activity
+
+Marc Rubenfield <mrubenfield@gmail.com> (https://workbench.pirca.arvadosapi.com/users/jutro-tpzed-v9s9q97pgydh1yf)
+  2020-11-11 12:27-05:00 Untagged pirca-4zz18-xmq257bsla4kdco
+  2020-11-11 12:27-05:00 Deleted collection "Output of main" (pirca-4zz18-xmq257bsla4kdco)
+
+Ward Vandewege <ward@curii.com> (https://workbench.pirca.arvadosapi.com/users/jutro-tpzed-9z6foyez9ydn2hl)
+  organization: "Curii Corporation, Inc."
+  organization_email: "ward@curii.com"
+  role: "System Administrator"
+  website_url: "https://curii.com"
+
+  2020-11-19 19:30-05:00 to 2020-11-19 19:46-05:00 (00:16) Account activity
+  2020-11-20 10:51-05:00 to 2020-11-20 11:26-05:00 (00:35) Account activity
+  2020-11-24 12:01-05:00 to 2020-11-24 13:01-05:00 (01:00) Account activity
+</pre>

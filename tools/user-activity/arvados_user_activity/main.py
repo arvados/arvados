@@ -32,9 +32,14 @@ def getowner(arv, uuid, owners):
 
     return getowner(arv, owners[uuid], owners)
 
-def getusername(arv, uuid):
+def getuserinfo(arv, uuid):
     u = arv.users().get(uuid=uuid).execute()
-    return "%s %s <%s> (%s)" % (u["first_name"], u["last_name"], u["email"], uuid)
+    prof = "\n".join("  %s: \"%s\"" % (k, v) for k, v in u["prefs"].get("profile", {}).items() if v)
+    if prof:
+        prof = "\n"+prof+"\n"
+    return "%s %s <%s> (%susers/%s)%s" % (u["first_name"], u["last_name"], u["email"],
+                                                       arv.config()["Services"]["Workbench1"]["ExternalURL"],
+                                                       uuid, prof)
 
 def getname(u):
     return "\"%s\" (%s)" % (u["name"], u["uuid"])
@@ -49,7 +54,9 @@ def main(arguments=None):
 
     since = datetime.datetime.utcnow() - datetime.timedelta(days=args.days)
 
-    print("Activity since %s\n" % (datetime.datetime.now() - datetime.timedelta(days=args.days)).isoformat())
+    print("User activity on %s between %s and %s\n" % (arv.config()["ClusterID"],
+                                                       (datetime.datetime.now() - datetime.timedelta(days=args.days)).isoformat(sep=" ", timespec="minutes"),
+                                                       datetime.datetime.now().isoformat(sep=" ", timespec="minutes")))
 
     events = arvados.util.keyset_list_all(arv.logs().list, filters=[["created_at", ">=", since.isoformat()]])
 
@@ -59,7 +66,7 @@ def main(arguments=None):
     for e in events:
         owner = getowner(arv, e["object_owner_uuid"], owners)
         users.setdefault(owner, [])
-        event_at = ciso8601.parse_datetime(e["event_at"]).astimezone().isoformat()
+        event_at = ciso8601.parse_datetime(e["event_at"]).astimezone().isoformat(sep=" ", timespec="minutes")
         # loguuid = e["uuid"]
         loguuid = ""
 
@@ -87,11 +94,17 @@ def main(arguments=None):
             users[owner].append("%s Updated project %s" % (event_at, getname(e["properties"]["new_attributes"])))
 
         elif e["event_type"] in ("create", "update") and e["object_uuid"][6:11] == "gj3su":
+            since_last = None
             if len(users[owner]) > 0 and users[owner][-1].endswith("activity"):
                 sp = users[owner][-1].split(" ")
-                users[owner][-1] = "%s to %s Account activity" % (sp[0], event_at)
+                start = sp[0]+" "+sp[1]
+                since_last = ciso8601.parse_datetime(event_at) - ciso8601.parse_datetime(sp[3]+" "+sp[4])
+                span = ciso8601.parse_datetime(event_at) - ciso8601.parse_datetime(start)
+
+            if since_last is not None and since_last < datetime.timedelta(minutes=61):
+                users[owner][-1] = "%s to %s (%02d:%02d) Account activity" % (start, event_at, span.days*24 + int(span.seconds/3600), int((span.seconds % 3600)/60))
             else:
-                users[owner].append("%s Account activity" % (event_at))
+                users[owner].append("%s to %s (0:00) Account activity" % (event_at, event_at))
 
         elif e["event_type"] == "create" and e["object_uuid"][6:11] == "o0j2j":
             if e["properties"]["new_attributes"]["link_class"] == "tag":
@@ -130,7 +143,7 @@ def main(arguments=None):
     for k,v in users.items():
         if k is None or k.endswith("-tpzed-000000000000000"):
             continue
-        print("%s:" % getusername(arv, k))
+        print(getuserinfo(arv, k))
         for ev in v:
             print("  %s" % ev)
         print("")

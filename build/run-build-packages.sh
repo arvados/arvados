@@ -327,7 +327,7 @@ fpm_build_virtualenv "crunchstat-summary" "tools/crunchstat-summary" "python3"
 # The Docker image cleaner
 fpm_build_virtualenv "arvados-docker-cleaner" "services/dockercleaner" "python3"
 
-# The Arvados crunchstat-summary tool
+# The Arvados user activity tool
 fpm_build_virtualenv "arvados-user-activity" "tools/user-activity" "python3"
 
 # The cwltest package, which lives out of tree
