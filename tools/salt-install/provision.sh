@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash 
 
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
@@ -55,9 +55,9 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 usage() {
   echo >&2
-  echo >&2 "Usage: $0 [-h] [-h]"
+  echo >&2 "Usage: ${0} [-h] [-h]"
   echo >&2
-  echo >&2 "$0 options:"
+  echo >&2 "${0} options:"
   echo >&2 "  -d, --debug             Run salt installation in debug mode"
   echo >&2 "  -p <N>, --ssl-port <N>  SSL port to use for the web applications"
   echo >&2 "  -t, --test              Test installation running a CWL workflow"
@@ -68,16 +68,16 @@ usage() {
 
 arguments() {
   # NOTE: This requires GNU getopt (part of the util-linux package on Debian-based distros).
-  TEMP=`getopt -o dhp:tv \
+  TEMP=$(getopt -o dhp:tv \
     --long debug,help,ssl-port:,test,vagrant \
-    -n "$0" -- "$@"`
+    -n "${0}" -- "${@}")
 
-  if [ $? != 0 ] ; then echo "GNU getopt missing? Use -h for help"; exit 1 ; fi
+  if [ ${?} != 0 ] ; then echo "GNU getopt missing? Use -h for help"; exit 1 ; fi
   # Note the quotes around `$TEMP': they are essential!
   eval set -- "$TEMP"
 
-  while [ $# -ge 1 ]; do
-    case $1 in
+  while [ ${#} -ge 1 ]; do
+    case ${1} in
       -d | --debug)
         LOG_LEVEL="debug"
         shift
@@ -110,7 +110,7 @@ LOG_LEVEL="info"
 HOST_SSL_PORT=443
 TESTS_DIR="tests"
 
-arguments $@
+arguments ${@}
 
 # Salt's dir
 ## states
@@ -185,17 +185,14 @@ EOFPSLS
 # Get the formula and dependencies
 cd ${F_DIR} || exit 1
 for f in postgres arvados nginx docker locale; do
-  git clone https://github.com/netmanagers/${f}-formula.git
+  git clone https://github.com/saltstack-formulas/${f}-formula.git
 done
 
 if [ "x${BRANCH}" != "x" ]; then
-  cd ${F_DIR}/arvados-formula
-  git checkout -t origin/${BRANCH}
+  cd ${F_DIR}/arvados-formula || exit 1
+  git checkout -t origin/"${BRANCH}"
   cd -
 fi
-
-# sed "s/__DOMAIN__/${DOMAIN}/g; s/__CLUSTER__/${CLUSTER}/g; s/__RELEASE__/${RELEASE}/g; s/__VERSION__/${VERSION}/g" \
-#   ${CONFIG_DIR}/arvados_dev.sls > ${P_DIR}/arvados.sls
 
 if [ "x${VAGRANT}" = "xyes" ]; then
   SOURCE_PILLARS_DIR="/vagrant/${CONFIG_DIR}"
@@ -206,7 +203,7 @@ else
 fi
 
 # Replace cluster and domain name in the example pillars and test files
-for f in ${SOURCE_PILLARS_DIR}/*; do
+for f in "${SOURCE_PILLARS_DIR}"/*; do
   sed "s/__CLUSTER__/${CLUSTER}/g;
        s/__DOMAIN__/${DOMAIN}/g;
        s/__RELEASE__/${RELEASE}/g;
@@ -216,12 +213,12 @@ for f in ${SOURCE_PILLARS_DIR}/*; do
        s/__INITIAL_USER_EMAIL__/${INITIAL_USER_EMAIL}/g;
        s/__INITIAL_USER_PASSWORD__/${INITIAL_USER_PASSWORD}/g;
        s/__VERSION__/${VERSION}/g" \
-  ${f} > ${P_DIR}/$(basename ${f})
+  "${f}" > "${P_DIR}"/$(basename "${f}")
 done
 
 mkdir -p /tmp/cluster_tests
 # Replace cluster and domain name in the example pillars and test files
-for f in ${TESTS_DIR}/*; do
+for f in "${TESTS_DIR}"/*; do
   sed "s/__CLUSTER__/${CLUSTER}/g;
        s/__DOMAIN__/${DOMAIN}/g;
        s/__HOST_SSL_PORT__/${HOST_SSL_PORT}/g;
