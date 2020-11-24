@@ -52,7 +52,7 @@ gem_wrapper() {
 handle_python_package () {
   # This function assumes the current working directory is the python package directory
   if [ -n "$(find dist -name "*-$(nohash_version_from_git).tar.gz" -print -quit)" ]; then
-    # This package doesn't need rebuilding.
+    echo "This package doesn't need rebuilding."
     return
   fi
   # Make sure only to use sdist - that's the only format pip can deal with (sigh)
