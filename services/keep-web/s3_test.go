@@ -175,6 +175,8 @@ func (s *IntegrationSuite) testS3GetObject(c *check.C, bucket *s3.Bucket, prefix
 
 	// GetObject
 	rdr, err = bucket.GetReader(prefix + "missingfile")
+	c.Check(err.(*s3.Error).StatusCode, check.Equals, 404)
+	c.Check(err.(*s3.Error).Code, check.Equals, `NoSuchKey`)
 	c.Check(err, check.ErrorMatches, `The specified key does not exist.`)
 
 	// HeadObject
@@ -237,6 +239,8 @@ func (s *IntegrationSuite) testS3PutObjectSuccess(c *check.C, bucket *s3.Bucket,
 		objname := prefix + trial.path
 
 		_, err := bucket.GetReader(objname)
+		c.Check(err.(*s3.Error).StatusCode, check.Equals, 404)
+		c.Check(err.(*s3.Error).Code, check.Equals, `NoSuchKey`)
 		c.Assert(err, check.ErrorMatches, `The specified key does not exist.`)
 
 		buf := make([]byte, trial.size)
@@ -286,15 +290,21 @@ func (s *IntegrationSuite) TestS3ProjectPutObjectNotSupported(c *check.C) {
 		c.Logf("=== %v", trial)
 
 		_, err := bucket.GetReader(trial.path)
+		c.Check(err.(*s3.Error).StatusCode, check.Equals, 404)
+		c.Check(err.(*s3.Error).Code, check.Equals, `NoSuchKey`)
 		c.Assert(err, check.ErrorMatches, `The specified key does not exist.`)
 
 		buf := make([]byte, trial.size)
 		rand.Read(buf)
 
 		err = bucket.PutReader(trial.path, bytes.NewReader(buf), int64(len(buf)), trial.contentType, s3.Private, s3.Options{})
+		c.Check(err.(*s3.Error).StatusCode, check.Equals, 400)
+		c.Check(err.(*s3.Error).Code, check.Equals, `InvalidArgument`)
 		c.Check(err, check.ErrorMatches, `(mkdir "by_id/zzzzz-j7d0g-[a-z0-9]{15}/newdir2?"|open "/zzzzz-j7d0g-[a-z0-9]{15}/newfile") failed: invalid argument`)
 
 		_, err = bucket.GetReader(trial.path)
+		c.Check(err.(*s3.Error).StatusCode, check.Equals, 404)
+		c.Check(err.(*s3.Error).Code, check.Equals, `NoSuchKey`)
 		c.Assert(err, check.ErrorMatches, `The specified key does not exist.`)
 	}
 }
@@ -403,6 +413,8 @@ func (s *IntegrationSuite) testS3PutObjectFailure(c *check.C, bucket *s3.Bucket,
 
 			if objname != "" && objname != "/" {
 				_, err = bucket.GetReader(objname)
+				c.Check(err.(*s3.Error).StatusCode, check.Equals, 404)
+				c.Check(err.(*s3.Error).Code, check.Equals, `NoSuchKey`)
 				c.Check(err, check.ErrorMatches, `The specified key does not exist.`, check.Commentf("GET %q should return 404", objname))
 			}
 		}()
