@@ -130,6 +130,7 @@ class ApiClientAuthorization < ArvadosModel
 
     token_uuid = ''
     secret = token
+    stored_secret = nil         # ...if different from secret
     optional = nil
 
     case token[0..2]
@@ -206,8 +207,7 @@ class ApiClientAuthorization < ArvadosModel
         # below. If so, we'll stuff the database with hmac instead of
         # the real OIDC token.
         upstream_cluster_id = Rails.configuration.Login.LoginCluster
-        token_uuid = upstream_cluster_id + generate_uuid[5..27]
-        secret = hmac
+        stored_secret = hmac
       else
         return nil
       end
@@ -245,6 +245,23 @@ class ApiClientAuthorization < ArvadosModel
     end
 
     remote_user_prefix = remote_user['uuid'][0..4]
+
+    if token_uuid == ''
+      # Use the same UUID as the remote when caching the token.
+      begin
+        remote_token = SafeJSON.load(
+          clnt.get_content('https://' + host + '/arvados/v1/api_client_authorizations/current',
+                           {'remote' => Rails.configuration.ClusterID},
+                           {'Authorization' => 'Bearer ' + token}))
+        token_uuid = remote_token['uuid']
+        if !token_uuid.match(HasUuid::UUID_REGEX) || token_uuid[0..4] != upstream_cluster_id
+          raise "remote cluster #{upstream_cluster_id} returned invalid token uuid #{token_uuid.inspect}"
+        end
+      rescue => e
+        Rails.logger.warn "error getting remote token details for #{token.inspect}: #{e}"
+        return nil
+      end
+    end
 
     # Clusters can only authenticate for their own users.
     if remote_user_prefix != upstream_cluster_id
@@ -328,11 +345,18 @@ class ApiClientAuthorization < ArvadosModel
         auth.user = user
         auth.api_client_id = 0
       end
+      # If stored_secret is set, we save stored_secret in the database
+      # but return the real secret to the caller. This way, if we end
+      # up returning the auth record to the client, they see the same
+      # secret they supplied, instead of the HMAC we saved in the
+      # database.
+      stored_secret = stored_secret || secret
       auth.update_attributes!(user: user,
-                              api_token: secret,
+                              api_token: stored_secret,
                               api_client_id: 0,
                               expires_at: Time.now + Rails.configuration.Login.RemoteTokenRefresh)
-      Rails.logger.debug "cached remote token #{token_uuid} with secret #{secret} in local db"
+      Rails.logger.debug "cached remote token #{token_uuid} with secret #{stored_secret} in local db"
+      auth.api_token = secret
       return auth
     end
 

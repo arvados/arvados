@@ -16,6 +16,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -111,6 +112,21 @@ func s3signature(secretKey, scope, signedHeaders, stringToSign string) (string, 
 	return hashdigest(hmac.New(sha256.New, key), stringToSign), nil
 }
 
+var v2tokenUnderscore = regexp.MustCompile(`^v2_[a-z0-9]{5}-gj3su-[a-z0-9]{15}_`)
+
+func unescapeKey(key string) string {
+	if v2tokenUnderscore.MatchString(key) {
+		// Entire Arvados token, with "/" replaced by "_" to
+		// avoid colliding with the Authorization header
+		// format.
+		return strings.Replace(key, "_", "/", -1)
+	} else if s, err := url.PathUnescape(key); err == nil {
+		return s
+	} else {
+		return key
+	}
+}
+
 // checks3signature verifies the given S3 V4 signature and returns the
 // Arvados token that corresponds to the given accessKey. An error is
 // returned if accessKey is not a valid token UUID or the signature
@@ -152,7 +168,7 @@ func (h *handler) checks3signature(r *http.Request) (string, error) {
 	} else {
 		// Access key and secret key are both an entire
 		// Arvados token or OIDC access token.
-		ctx := arvados.ContextWithAuthorization(r.Context(), "Bearer "+key)
+		ctx := arvados.ContextWithAuthorization(r.Context(), "Bearer "+unescapeKey(key))
 		err = client.RequestAndDecodeContext(ctx, &aca, "GET", "arvados/v1/api_client_authorizations/current", nil, nil)
 		secret = key
 	}
@@ -170,7 +186,7 @@ func (h *handler) checks3signature(r *http.Request) (string, error) {
 	} else if expect != signature {
 		return "", fmt.Errorf("signature does not match (scope %q signedHeaders %q stringToSign %q)", scope, signedHeaders, stringToSign)
 	}
-	return secret, nil
+	return aca.TokenV2(), nil
 }
 
 // serveS3 handles r and returns true if r is a request from an S3
@@ -183,7 +199,7 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 			http.Error(w, "malformed Authorization header", http.StatusUnauthorized)
 			return true
 		}
-		token = split[0]
+		token = unescapeKey(split[0])
 	} else if strings.HasPrefix(auth, s3SignAlgorithm+" ") {
 		t, err := h.checks3signature(r)
 		if err != nil {
