@@ -5,6 +5,7 @@
 import * as React from 'react';
 import { List, ListItem, ListItemIcon, Checkbox, Radio } from "@material-ui/core";
 import { StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core/styles';
+import { ProjectIcon } from '~/components/icon/icon';
 import { ReactElement } from "react";
 import CircularProgress from '@material-ui/core/CircularProgress';
 import classnames from "classnames";
@@ -22,7 +23,8 @@ type CssRules = 'list'
     | 'iconOpen'
     | 'toggableIcon'
     | 'checkbox'
-    | 'childItem';
+    | 'childItem'
+    | 'childItemIcon';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     list: {
@@ -47,9 +49,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     renderContainer: {
         flex: 1
     },
-    active: {
-        color: theme.palette.primary.main,
-    },
     iconClose: {
         transition: 'all 0.1s ease',
     },
@@ -69,9 +68,18 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         display: 'flex',
         padding: '3px 20px',
         fontSize: '0.875rem',
+        alignItems: 'center',
         '&:hover': {
             backgroundColor: 'rgba(0, 0, 0, 0.08)',
         }
+    },
+    childItemIcon: {
+        marginLeft: '8px',
+        marginRight: '16px',
+        color: 'rgba(0, 0, 0, 0.54)',
+    },
+    active: {
+        color: theme.palette.primary.main,
     },
 });
 
@@ -113,18 +121,6 @@ export interface TreeProps<T> {
     useRadioButtons?: boolean;
 }
 
-const flatTree = (depth: number, items?: any): [] => {
-    return items ? items.reduce((prev: any, next: any) => {
-        const { items } = next;
-        // delete next.items;
-        return [
-            ...prev,
-            { ...next, depth },
-            ...(next.open ? flatTree(depth + 1, items) : []),
-        ];
-    }, []) : [];
-};
-
 const getActionAndId = (event: any, initAction: string | undefined = undefined) => {
     const { nativeEvent: { target } } = event;
     let currentTarget: HTMLElement = target as HTMLElement;
@@ -150,21 +146,15 @@ export const Tree = withStyles(styles)(
         render(): ReactElement<any> {
             const level = this.props.level ? this.props.level : 0;
             const { classes, render, items, toggleItemActive, disableRipple, currentItemUuid, useRadioButtons } = this.props;
-            const { list, listItem, loader, toggableIconContainer, renderContainer, childItem, active } = classes;
+            const { list, listItem, loader, toggableIconContainer, renderContainer, childItem, active, childItemIcon } = classes;
             const showSelection = typeof this.props.showSelection === 'function'
                 ? this.props.showSelection
                 : () => this.props.showSelection ? true : false;
 
             const { levelIndentation = 20, itemRightPadding = 20 } = this.props;
 
-            const flatItems = (items || [])
-                .map(parentItem => ({
-                    ...parentItem,
-                    items: flatTree(2, parentItem.items || []),
-                }));
-
             return <List className={list}>
-                {flatItems && flatItems.map((it: TreeItem<T>, idx: number) =>
+                {items && items.map((it: TreeItem<T>, idx: number) =>
                     <div key={`item/${level}/${it.id}`}>
                         <ListItem button className={listItem}
                             style={{
@@ -198,7 +188,7 @@ export const Tree = withStyles(styles)(
                                 {render(it, level)}
                             </div>
                         </ListItem>
-                        {it.items && it.items.length > 0 &&
+                        {it.open && it.items && it.items.length > 0 &&
                             <div
                                 onContextMenu={(event) => {
                                     const [action, id] = getActionAndId(event, 'CONTEXT_MENU');
@@ -223,6 +213,7 @@ export const Tree = withStyles(styles)(
                             >
                                 {
                                     it.items
+                                        .slice(0, 30)
                                         .map((item: any) => <div key={item.id} data-id={item.id}
                                             className={classnames(childItem, { [active]: item.active })}
                                             style={{ paddingLeft: `${item.depth * levelIndentation}px`}}>
@@ -231,21 +222,16 @@ export const Tree = withStyles(styles)(
                                                     {this.getProperArrowAnimation(item.status, item.items!)}
                                                 </ListItemIcon>
                                             </i>
-                                            <div style={{ marginLeft: '8px' }} data-action="TOGGLE_ACTIVE" className={renderContainer}>
-                                                {item.data.name}
+                                            <div data-action="TOGGLE_ACTIVE" className={renderContainer}>
+                                                <span style={{ display: 'flex', alignItems: 'center' }}>
+                                                    <ProjectIcon className={classnames({ [active]: item.active }, childItemIcon)} />
+                                                    <span style={{ fontSize: '0.875rem' }}>
+                                                        {item.data.name}
+                                                    </span>
+                                                </span>
                                             </div>
                                         </div>)
                                 }
-                                {/* <Tree
-                                    showSelection={this.props.showSelection}
-                                    items={it.items}
-                                    render={render}
-                                    disableRipple={disableRipple}
-                                    toggleItemOpen={toggleItemOpen}
-                                    toggleItemActive={toggleItemActive}
-                                    level={level + 1}
-                                    onContextMenu={onContextMenu}
-                                    toggleItemSelection={this.props.toggleItemSelection} /> */}
                             </div>}
                     </div>)}
             </List>;
