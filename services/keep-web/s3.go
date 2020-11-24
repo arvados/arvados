@@ -120,7 +120,7 @@ func unescapeKey(key string) string {
 		// avoid colliding with the Authorization header
 		// format.
 		return strings.Replace(key, "_", "/", -1)
-	} else if s, err := url.QueryUnescape(key); err == nil {
+	} else if s, err := url.PathUnescape(key); err == nil {
 		return s
 	} else {
 		return key
