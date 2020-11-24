@@ -57,7 +57,7 @@ See "Specifying Git versions":#script_version below for more detail about accept
 
 h3(#script_version). Specifying Git versions
 
-The script_version attribute and arvados_sdk_version runtime constraint are typically given as a branch, tag, or commit hash, but there are many more ways to specify a Git commit. The "specifying revisions" section of the "gitrevisions manual page":http://git-scm.com/docs/gitrevisions.html has a definitive list. Arvados accepts Git versions in any format listed there that names a single commit (not a tree, a blob, or a range of commits). However, some kinds of names can be expected to resolve differently in Arvados than they do in your local repository. For example, <code>HEAD@{1}</code> refers to the local reflog, and @origin/master@ typically refers to a remote branch: neither is likely to work as desired if given as a Git version.
+The script_version attribute and arvados_sdk_version runtime constraint are typically given as a branch, tag, or commit hash, but there are many more ways to specify a Git commit. The "specifying revisions" section of the "gitrevisions manual page":http://git-scm.com/docs/gitrevisions.html has a definitive list. Arvados accepts Git versions in any format listed there that names a single commit (not a tree, a blob, or a range of commits). However, some kinds of names can be expected to resolve differently in Arvados than they do in your local repository. For example, <code>HEAD@{1}</code> refers to the local reflog, and @origin/main@ typically refers to a remote branch: neither is likely to work as desired if given as a Git version.
 
 h3. Runtime constraints
 
@@ -138,14 +138,14 @@ notextile. <div class="spaced-out">
 
 h4. Examples
 
-Run the script "crunch_scripts/hash.py" in the repository "you" using the "master" commit.  Arvados should re-use a previous job if the script_version of the previous job is the same as the current "master" commit. This works irrespective of whether the previous job was submitted using the name "master", a different branch name or tag indicating the same commit, a SHA-1 commit hash, etc.
+Run the script "crunch_scripts/hash.py" in the repository "you" using the "main" commit.  Arvados should re-use a previous job if the script_version of the previous job is the same as the current "main" commit. This works irrespective of whether the previous job was submitted using the name "main", a different branch name or tag indicating the same commit, a SHA-1 commit hash, etc.
 
 <notextile><pre>
 {
   "job": {
     "script": "hash.py",
     "repository": "<b>you</b>/<b>you</b>",
-    "script_version": "master",
+    "script_version": "main",
     "script_parameters": {
       "input": "c1bad4b39ca5a924e481008009d94e32+210"
     }
@@ -170,14 +170,14 @@ Run using exactly the version "d00220fb38d4b85ca8fc28a8151702a2b9d1dec5". Arvado
 }
 </pre></notextile>
 
-Arvados should re-use a previous job if the "script_version" of the previous job is between "earlier_version_tag" and the "master" commit (inclusive), but not the commit indicated by "blacklisted_version_tag". If there are no previous jobs matching these criteria, run the job using the "master" commit.
+Arvados should re-use a previous job if the "script_version" of the previous job is between "earlier_version_tag" and the "main" commit (inclusive), but not the commit indicated by "blacklisted_version_tag". If there are no previous jobs matching these criteria, run the job using the "main" commit.
 
 <notextile><pre>
 {
   "job": {
     "script": "hash.py",
     "repository": "<b>you</b>/<b>you</b>",
-    "script_version": "master",
+    "script_version": "main",
     "script_parameters": {
       "input": "c1bad4b39ca5a924e481008009d94e32+210"
     }
@@ -195,7 +195,7 @@ The same behavior, using filters:
   "job": {
     "script": "hash.py",
     "repository": "<b>you</b>/<b>you</b>",
-    "script_version": "master",
+    "script_version": "main",
     "script_parameters": {
       "input": "c1bad4b39ca5a924e481008009d94e32+210"
     }
@@ -208,14 +208,14 @@ The same behavior, using filters:
 }
 </pre></notextile>
 
-Run the script "crunch_scripts/monte-carlo.py" in the repository "you/you" using the current "master" commit. Because it is marked as "nondeterministic", this job will not be considered as a suitable candidate for future job submissions that use the "find_or_create" feature.
+Run the script "crunch_scripts/monte-carlo.py" in the repository "you/you" using the current "main" commit. Because it is marked as "nondeterministic", this job will not be considered as a suitable candidate for future job submissions that use the "find_or_create" feature.
 
 <notextile><pre>
 {
   "job": {
     "script": "monte-carlo.py",
     "repository": "<b>you</b>/<b>you</b>",
-    "script_version": "master",
+    "script_version": "main",
     "nondeterministic": true,
     "script_parameters": {
       "input": "c1bad4b39ca5a924e481008009d94e32+210"

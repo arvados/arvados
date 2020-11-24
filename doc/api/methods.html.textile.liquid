@@ -103,7 +103,7 @@ table(table table-bordered table-condensed).
 |@=@, @!=@|string, number, timestamp, or null|Equality comparison|@["tail_uuid","=","xyzzy-j7d0g-fffffffffffffff"]@ @["tail_uuid","!=",null]@|
 |@<@, @<=@, @>=@, @>@|string, number, or timestamp|Ordering comparison|@["script_version",">","123"]@|
 |@like@, @ilike@|string|SQL pattern match.  Single character match is @_@ and wildcard is @%@. The @ilike@ operator is case-insensitive|@["script_version","like","d00220fb%"]@|
-|@in@, @not in@|array of strings|Set membership|@["script_version","in",["master","d00220fb38d4b85ca8fc28a8151702a2b9d1dec5"]]@|
+|@in@, @not in@|array of strings|Set membership|@["script_version","in",["main","d00220fb38d4b85ca8fc28a8151702a2b9d1dec5"]]@|
 |@is_a@|string|Arvados object type|@["head_uuid","is_a","arvados#collection"]@|
 |@exists@|string|Test if a subproperty is present.|@["properties","exists","my_subproperty"]@|
 
