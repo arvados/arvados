@@ -47,6 +47,7 @@ interface DataExplorerDataProps<T> {
     items: T[];
     itemsAvailable: number;
     columns: DataColumns<T>;
+    searchLabel?: string;
     searchValue: string;
     rowsPerPage: number;
     rowsPerPageOptions: number[];
@@ -90,7 +91,7 @@ export const DataExplorer = withStyles(styles)(
         render() {
             const {
                 columns, onContextMenu, onFiltersChange, onSortToggle, working, extractKey,
-                rowsPerPage, rowsPerPageOptions, onColumnToggle, searchValue, onSearch,
+                rowsPerPage, rowsPerPageOptions, onColumnToggle, searchLabel, searchValue, onSearch,
                 items, itemsAvailable, onRowClick, onRowDoubleClick, classes,
                 dataTableDefaultView, hideColumnSelector, actions, paperProps, hideSearchInput,
                 paperKey, fetchMode, currentItemUuid, title
@@ -101,6 +102,7 @@ export const DataExplorer = withStyles(styles)(
                     <Grid container justify="space-between" wrap="nowrap" alignItems="center">
                         <div className={classes.searchBox}>
                             {!hideSearchInput && <SearchInput
+                                label={searchLabel}
                                 value={searchValue}
                                 onSearch={onSearch} />}
                         </div>

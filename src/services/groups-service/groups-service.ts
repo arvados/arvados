@@ -9,6 +9,7 @@ import { AxiosInstance, AxiosRequestConfig } from "axios";
 import { CollectionResource } from "~/models/collection";
 import { ProjectResource } from "~/models/project";
 import { ProcessResource } from "~/models/process";
+import { WorkflowResource } from "~/models/workflow";
 import { TrashableResourceService } from "~/services/common-service/trashable-resource-service";
 import { ApiActions } from "~/services/api/api-actions";
 import { GroupResource } from "~/models/group";
@@ -31,7 +32,8 @@ export interface SharedArguments extends ListArguments {
 export type GroupContentsResource =
     CollectionResource |
     ProjectResource |
-    ProcessResource;
+    ProcessResource |
+    WorkflowResource;
 
 export class GroupsService<T extends GroupResource = GroupResource> extends TrashableResourceService<T> {
 
@@ -73,5 +75,6 @@ export class GroupsService<T extends GroupResource = GroupResource> extends Tras
 export enum GroupContentsResourcePrefix {
     COLLECTION = "collections",
     PROJECT = "groups",
-    PROCESS = "container_requests"
+    PROCESS = "container_requests",
+    WORKFLOW = "workflows"
 }

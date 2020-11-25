@@ -84,7 +84,7 @@ export const favoritePanelColumns: DataColumns<string> = [
     },
     {
         name: FavoritePanelColumnNames.OWNER,
-        selected: true,
+        selected: false,
         configurable: true,
         filters: createTree(),
         render: uuid => <ResourceOwner uuid={uuid} />
@@ -153,7 +153,7 @@ export const FavoritePanel = withStyles(styles)(
             }
 
             handleRowClick = (uuid: string) => {
-                this.props.dispatch(loadDetailsPanel(uuid));
+                this.props.dispatch<any>(loadDetailsPanel(uuid));
             }
 
             render() {

@@ -34,6 +34,7 @@ const styles: StyleRulesCallback<CssRules> = theme => {
 
 interface SearchInputDataProps {
     value: string;
+    label?: string;
 }
 
 interface SearchInputActionProps {
@@ -45,6 +46,7 @@ type SearchInputProps = SearchInputDataProps & SearchInputActionProps & WithStyl
 
 interface SearchInputState {
     value: string;
+    label: string;
 }
 
 export const DEFAULT_SEARCH_DEBOUNCE = 1000;
@@ -52,7 +54,8 @@ export const DEFAULT_SEARCH_DEBOUNCE = 1000;
 export const SearchInput = withStyles(styles)(
     class extends React.Component<SearchInputProps> {
         state: SearchInputState = {
-            value: ""
+            value: "",
+            label: ""
         };
 
         timeout: number;
@@ -60,14 +63,14 @@ export const SearchInput = withStyles(styles)(
         render() {
             return <form onSubmit={this.handleSubmit}>
                 <FormControl>
-                    <InputLabel>Search files</InputLabel>
+                    <InputLabel>{this.state.label}</InputLabel>
                     <Input
                         type="text"
                         value={this.state.value}
                         onChange={this.handleChange}
                         endAdornment={
                             <InputAdornment position="end">
-                                <Tooltip title='Search files'>
+                                <Tooltip title='Search'>
                                     <IconButton
                                         onClick={this.handleSubmit}>
                                         <SearchIcon />
@@ -80,7 +83,10 @@ export const SearchInput = withStyles(styles)(
         }
 
         componentDidMount() {
-            this.setState({ value: this.props.value });
+            this.setState({
+                value: this.props.value,
+                label: this.props.label || 'Search'
+            });
         }
 
         componentWillReceiveProps(nextProps: SearchInputProps) {

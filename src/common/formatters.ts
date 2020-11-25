@@ -22,6 +22,8 @@ export const formatDate = (isoDate?: string | null, utc: boolean = false) => {
 
 export const formatFileSize = (size?: number) => {
     if (typeof size === "number") {
+        if (size === 0) { return "0 B"; }
+
         for (const { base, unit } of FILE_SIZES) {
             if (size >= base) {
                 return `${(size / base).toFixed()} ${unit}`;

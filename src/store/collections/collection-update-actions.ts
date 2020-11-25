@@ -11,6 +11,10 @@ import { getCommonResourceServiceError, CommonResourceServiceError } from "~/ser
 import { ServiceRepository } from "~/services/services";
 import { CollectionResource } from '~/models/collection';
 import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
+import { snackbarActions, SnackbarKind } from "../snackbar/snackbar-actions";
+import { updateResources } from "../resources/resources-actions";
+import { reloadProjectMatchingUuid } from "../workbench/workbench-actions";
+import { loadDetailsPanel } from "../details-panel/details-panel-action";
 
 export interface CollectionUpdateFormDialogData {
     uuid: string;
@@ -27,26 +31,38 @@ export const openCollectionUpdateDialog = (resource: CollectionUpdateFormDialogD
     };
 
 export const updateCollection = (collection: CollectionUpdateFormDialogData) =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const uuid = collection.uuid || '';
         dispatch(startSubmit(COLLECTION_UPDATE_FORM_NAME));
         dispatch(progressIndicatorActions.START_WORKING(COLLECTION_UPDATE_FORM_NAME));
-        try {
-            const updatedCollection = await services.collectionService.update(uuid, { name: collection.name, description: collection.description });
+
+        services.collectionService.update(uuid, {
+            name: collection.name,
+            description: collection.description }
+        ).then(updatedCollection => {
             dispatch(collectionPanelActions.LOAD_COLLECTION_SUCCESS({ item: updatedCollection as CollectionResource }));
             dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_UPDATE_FORM_NAME }));
             dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_UPDATE_FORM_NAME));
-            return updatedCollection;
-        } catch (e) {
+            dispatch(snackbarActions.OPEN_SNACKBAR({
+                message: "Collection has been successfully updated.",
+                hideDuration: 2000,
+                kind: SnackbarKind.SUCCESS
+            }));
+            dispatch<any>(updateResources([updatedCollection]));
+            dispatch<any>(reloadProjectMatchingUuid([updatedCollection.ownerUuid]));
+            dispatch<any>(loadDetailsPanel(updatedCollection.uuid));
+        }).catch (e => {
             dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_UPDATE_FORM_NAME));
             const error = getCommonResourceServiceError(e);
             if (error === CommonResourceServiceError.UNIQUE_NAME_VIOLATION) {
                 dispatch(stopSubmit(COLLECTION_UPDATE_FORM_NAME, { name: 'Collection with the same name already exists.' } as FormErrors));
             } else {
-                // Unknown error, handling left to caller.
                 dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_UPDATE_FORM_NAME }));
-                throw(e);
+                dispatch(snackbarActions.OPEN_SNACKBAR({
+                    message: e.errors.join(''),
+                    hideDuration: 2000,
+                    kind: SnackbarKind.ERROR }));
+                }
             }
-        }
-        return;
+        );
     };

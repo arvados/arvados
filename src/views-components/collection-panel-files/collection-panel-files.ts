@@ -75,7 +75,7 @@ const mapDispatchToProps = (dispatch: Dispatch): Pick<CollectionPanelFilesProps,
         dispatch<any>(openCollectionFilesContextMenu(event, isWritable));
     },
     onFileClick: (id) => {
-        dispatch(openDetailsPanel(id));
+        dispatch<any>(openDetailsPanel(id));
     },
 });
 

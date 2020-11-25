@@ -32,8 +32,10 @@ import { getUserUuid } from '~/common/getuser';
 import { getProgressIndicator } from '~/store/progress-indicator/progress-indicator-reducer';
 import { COLLECTION_PANEL_LOAD_FILES, loadCollectionFiles, COLLECTION_PANEL_LOAD_FILES_THRESHOLD } from '~/store/collection-panel/collection-panel-files/collection-panel-files-actions';
 import { Link } from 'react-router-dom';
+import { Link as ButtonLink } from '@material-ui/core';
 
 type CssRules = 'root'
+    | 'button'
     | 'filesCard'
     | 'iconHeader'
     | 'tag'
@@ -50,6 +52,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         display: 'flex',
         flexFlow: 'column',
         height: 'calc(100vh - 130px)', // (100% viewport height) - (top bar + breadcrumbs)
+    },
+    button: {
+        cursor: 'pointer'
     },
     filesCard: {
         marginBottom: theme.spacing.unit * 2,
@@ -167,7 +172,7 @@ export const CollectionPanel = withStyles(styles)(
                                         <Typography variant="caption">
                                             {item.description}
                                         </Typography>
-                                        <CollectionDetailsAttributes item={item} classes={classes} twoCol={true} />
+                                        <CollectionDetailsAttributes item={item} classes={classes} twoCol={true} showVersionBrowser={() => dispatch<any>(openDetailsPanel(item.uuid, 1))} />
                                         {(item.properties.container_request || item.properties.containerRequest) &&
                                             <span onClick={() => dispatch<any>(navigateToProcess(item.properties.container_request || item.properties.containerRequest))}>
                                                 <DetailsAttribute classLabel={classes.link} label='Link to process' />
@@ -200,7 +205,7 @@ export const CollectionPanel = withStyles(styles)(
                                                         getPropertyChip(
                                                             k, v,
                                                             isWritable
-                                                                ? this.handleDelete(k, item.properties[k])
+                                                                ? this.handleDelete(k, v)
                                                                 : undefined,
                                                             classes.tag))
                                                     : getPropertyChip(
@@ -262,10 +267,11 @@ export const CollectionPanel = withStyles(styles)(
                 this.props.dispatch<any>(deleteCollectionTag(key, value));
             }
 
-            openCollectionDetails = () => {
+            openCollectionDetails = (e: React.MouseEvent<HTMLElement>) => {
                 const { item } = this.props;
                 if (item) {
-                    this.props.dispatch(openDetailsPanel(item.uuid));
+                    e.stopPropagation();
+                    this.props.dispatch<any>(openDetailsPanel(item.uuid));
                 }
             }
 
@@ -277,11 +283,12 @@ export const CollectionPanel = withStyles(styles)(
     )
 );
 
-export const CollectionDetailsAttributes = (props: { item: CollectionResource, twoCol: boolean, classes?: Record<CssRules, string> }) => {
+export const CollectionDetailsAttributes = (props: { item: CollectionResource, twoCol: boolean, classes?: Record<CssRules, string>, showVersionBrowser?: () => void }) => {
     const item = props.item;
-    const classes = props.classes || { label: '', value: '' };
+    const classes = props.classes || { label: '', value: '', button: '' };
     const isOldVersion = item && item.currentVersionUuid !== item.uuid;
     const mdSize = props.twoCol ? 6 : 12;
+    const showVersionBrowser = props.showVersionBrowser;
     return <Grid container>
         <Grid item xs={12} md={mdSize}>
             <DetailsAttribute classLabel={classes.label} classValue={classes.value}
@@ -297,17 +304,23 @@ export const CollectionDetailsAttributes = (props: { item: CollectionResource, t
             <DetailsAttribute classLabel={classes.label} classValue={classes.value}
                 label='Owner' linkToUuid={item.ownerUuid} />
         </Grid>
-
-        {isOldVersion &&
-            <Grid item xs={12} md={mdSize}>
-                <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                    label='Head version'
-                    linkToUuid={item.currentVersionUuid} />
-            </Grid>
-        }
         <Grid item xs={12} md={mdSize}>
             <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                label='Version number' value={item.version} />
+                label='Head version'
+                value={isOldVersion ? undefined : 'this one'}
+                linkToUuid={isOldVersion ? item.currentVersionUuid : undefined} />
+        </Grid>
+        <Grid item xs={12} md={mdSize}>
+            <DetailsAttribute
+                classLabel={classes.label} classValue={classes.value}
+                label='Version number'
+                value={ showVersionBrowser !== undefined
+                    ? <Tooltip title="Open version browser"><ButtonLink underline='none' className={classes.button} onClick={() => showVersionBrowser()}>
+                        {<span data-cy='collection-version-number'>{item.version}</span>}
+                    </ButtonLink></Tooltip>
+                    : item.version
+                }
+            />
         </Grid>
         <Grid item xs={12} md={mdSize}>
             <DetailsAttribute label='Created at' value={formatDate(item.createdAt)} />

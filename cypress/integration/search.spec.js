@@ -72,12 +72,12 @@ describe('Search tests', function() {
             const searchQuery = `${colName} type:arvados#collection`;
             // Search for only collection's current version
             cy.visit(`/search-results?q=${encodeURIComponent(searchQuery)}`);
-            cy.get('[data-cy=search-results]').should('contain', 'current');
-            cy.get('[data-cy=search-results]').should('not.contain', 'old version');
+            cy.get('[data-cy=search-results]').should('contain', 'head version');
+            cy.get('[data-cy=search-results]').should('not.contain', 'version 1');
             // ...and then, include old versions.
             cy.visit(`/search-results?q=${encodeURIComponent(searchQuery + ' is:pastVersion')}`);
-            cy.get('[data-cy=search-results]').should('contain', 'current');
-            cy.get('[data-cy=search-results]').should('contain', 'old version');
+            cy.get('[data-cy=search-results]').should('contain', 'head version');
+            cy.get('[data-cy=search-results]').should('contain', 'version 1');
         });
     });
 });

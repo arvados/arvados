@@ -42,7 +42,6 @@ import * as projectMoveActions from '~/store/projects/project-move-actions';
 import * as projectUpdateActions from '~/store/projects/project-update-actions';
 import * as collectionCreateActions from '~/store/collections/collection-create-actions';
 import * as collectionCopyActions from '~/store/collections/collection-copy-actions';
-import * as collectionUpdateActions from '~/store/collections/collection-update-actions';
 import * as collectionMoveActions from '~/store/collections/collection-move-actions';
 import * as processesActions from '~/store/processes/processes-actions';
 import * as processMoveActions from '~/store/processes/process-move-actions';
@@ -323,24 +322,6 @@ export const createCollection = (data: collectionCreateActions.CollectionCreateF
         }
     };
 
-export const updateCollection = (data: collectionUpdateActions.CollectionUpdateFormDialogData) =>
-    async (dispatch: Dispatch) => {
-        try {
-            const collection = await dispatch<any>(collectionUpdateActions.updateCollection(data));
-            if (collection) {
-                dispatch(snackbarActions.OPEN_SNACKBAR({
-                    message: "Collection has been successfully updated.",
-                    hideDuration: 2000,
-                    kind: SnackbarKind.SUCCESS
-                }));
-                dispatch<any>(updateResources([collection]));
-                dispatch<any>(reloadProjectMatchingUuid([collection.ownerUuid]));
-            }
-        } catch (e) {
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: e.errors.join(''), hideDuration: 2000, kind: SnackbarKind.ERROR }));
-        }
-    };
-
 export const copyCollection = (data: CopyFormDialogData) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         try {
@@ -379,7 +360,7 @@ export const loadProcess = (uuid: string) =>
             const process = await dispatch<any>(processesActions.loadProcess(uuid));
             await dispatch<any>(activateSidePanelTreeItem(process.containerRequest.ownerUuid));
             dispatch<any>(setProcessBreadcrumbs(uuid));
-            dispatch(loadDetailsPanel(uuid));
+            dispatch<any>(loadDetailsPanel(uuid));
         });
 
 export const updateProcess = (data: processUpdateActions.ProcessUpdateFormDialogData) =>

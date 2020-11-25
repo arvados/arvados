@@ -12,10 +12,10 @@ export abstract class DetailsData<T extends DetailsResource = DetailsResource> {
         return this.item.name || 'Projects';
     }
 
-    abstract getIcon(className?: string): React.ReactElement<any>;
-    abstract getDetails(): React.ReactElement<any>;
-
-    getActivity(): React.ReactElement<any> {
-        return <div />;
+    getTabLabels(): string[] {
+        return ['Details'];
     }
+
+    abstract getIcon(className?: string): React.ReactElement<any>;
+    abstract getDetails(tabNr?: number): React.ReactElement<any>;
 }

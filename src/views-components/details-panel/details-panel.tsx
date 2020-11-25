@@ -21,7 +21,7 @@ import { EmptyDetails } from "./empty-details";
 import { DetailsData } from "./details-data";
 import { DetailsResource } from "~/models/details";
 import { getResource } from '~/store/resources/resources';
-import { toggleDetailsPanel, SLIDE_TIMEOUT } from '~/store/details-panel/details-panel-action';
+import { toggleDetailsPanel, SLIDE_TIMEOUT, openDetailsPanel } from '~/store/details-panel/details-panel-action';
 import { FileDetails } from '~/views-components/details-panel/file-details';
 import { getNode } from '~/models/tree';
 
@@ -79,23 +79,31 @@ const getItem = (res: DetailsResource): DetailsData => {
 
 const mapStateToProps = ({ detailsPanel, resources, collectionPanelFiles }: RootState) => {
     const resource = getResource(detailsPanel.resourceUuid)(resources) as DetailsResource | undefined;
-    const file = getNode(detailsPanel.resourceUuid)(collectionPanelFiles);
+    const file = resource
+        ? undefined
+        : getNode(detailsPanel.resourceUuid)(collectionPanelFiles);
     return {
         isOpened: detailsPanel.isOpened,
-        item: getItem(resource || (file && file.value) || EMPTY_RESOURCE),
+        tabNr: detailsPanel.tabNr,
+        res: resource || (file && file.value) || EMPTY_RESOURCE,
     };
 };
 
 const mapDispatchToProps = (dispatch: Dispatch) => ({
     onCloseDrawer: () => {
         dispatch<any>(toggleDetailsPanel());
-    }
+    },
+    setActiveTab: (tabNr: number) => {
+        dispatch<any>(openDetailsPanel(undefined, tabNr));
+    },
 });
 
 export interface DetailsPanelDataProps {
     onCloseDrawer: () => void;
+    setActiveTab: (tabNr: number) => void;
     isOpened: boolean;
-    item: DetailsData;
+    tabNr: number;
+    res: DetailsResource;
 }
 
 type DetailsPanelProps = DetailsPanelDataProps & WithStyles<CssRules>;
@@ -103,12 +111,18 @@ type DetailsPanelProps = DetailsPanelDataProps & WithStyles<CssRules>;
 export const DetailsPanel = withStyles(styles)(
     connect(mapStateToProps, mapDispatchToProps)(
         class extends React.Component<DetailsPanelProps> {
-            state = {
-                tabsValue: 0
-            };
+            shouldComponentUpdate(nextProps: DetailsPanelProps) {
+                if ('etag' in nextProps.res && 'etag' in this.props.res &&
+                    nextProps.res.etag === this.props.res.etag &&
+                    nextProps.isOpened === this.props.isOpened &&
+                    nextProps.tabNr === this.props.tabNr) {
+                    return false;
+                }
+                return true;
+            }
 
-            handleChange = (event: any, value: boolean) => {
-                this.setState({ tabsValue: value });
+            handleChange = (event: any, value: number) => {
+                this.props.setActiveTab(value);
             }
 
             render() {
@@ -122,15 +136,15 @@ export const DetailsPanel = withStyles(styles)(
                             in={isOpened}
                             timeout={SLIDE_TIMEOUT}
                             unmountOnExit>
-                            {this.renderContent()}
+                            {isOpened ? this.renderContent() : <div />}
                         </Transition>
                     </Grid>
                 );
             }
 
             renderContent() {
-                const { classes, onCloseDrawer, item } = this.props;
-                const { tabsValue } = this.state;
+                const { classes, onCloseDrawer, res, tabNr } = this.props;
+                const item = getItem(res);
                 return <Grid
                     container
                     direction="column"
@@ -161,15 +175,15 @@ export const DetailsPanel = withStyles(styles)(
                         </Grid>
                     </Grid>
                     <Grid item>
-                        <Tabs value={tabsValue} onChange={this.handleChange}>
-                            <Tab disableRipple label="Details" />
-                            <Tab disableRipple label="Activity" disabled />
+                        <Tabs onChange={this.handleChange}
+                            value={(item.getTabLabels().length >= tabNr+1) ? tabNr : 0}>
+                            { item.getTabLabels().map((tabLabel, idx) =>
+                                <Tab key={`tab-label-${idx}`} disableRipple label={tabLabel} />)
+                            }
                         </Tabs>
                     </Grid>
                     <Grid item xs className={this.props.classes.tabContainer} >
-                        {tabsValue === 0
-                            ? item.getDetails()
-                            : null}
+                        {item.getDetails(tabNr)}
                     </Grid>
                 </Grid >;
             }

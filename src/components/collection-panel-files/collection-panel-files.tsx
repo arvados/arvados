@@ -84,6 +84,7 @@ export const CollectionPanelFilesComponent = ({ onItemMenuOpen, onSearchChange, 
                     <span className={classes.cardHeaderContentTitle}>Files</span>
                     <SearchInput
                         value={searchValue}
+                        label='Search files'
                         onSearch={setSearchValue} />
                 </div>
             }
@@ -118,10 +119,10 @@ export const CollectionPanelFilesComponent = ({ onItemMenuOpen, onSearchChange, 
                 <Grid container justify="space-between">
                     <Typography variant="caption" className={classes.nameHeader}>
                         Name
-                </Typography>
+                    </Typography>
                     <Typography variant="caption" className={classes.fileSizeHeader}>
                         File size
-                </Typography>
+                    </Typography>
                 </Grid>
                 {isLoading
                     ? <div className={classes.centeredLabel}><CircularProgress /></div>
