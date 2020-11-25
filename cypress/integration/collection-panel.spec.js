@@ -393,6 +393,19 @@ describe('Collection panel tests', function() {
                 .should('not.contain', 'foo').and('contain', 'bar');
             cy.get('[data-cy=collection-version-browser-select-3]')
                 .should('contain', '3').and('contain', '3 B');
+
+            // Recover first version
+            cy.get('[data-cy=collection-version-browser]').within(() => {
+                cy.get('[data-cy=collection-version-browser-select-1]').click();
+            });
+            cy.get('[data-cy=collection-panel-options-btn]').click()
+            cy.get('[data-cy=context-menu]').contains('Recover version').click();
+            cy.get('[data-cy=collection-info-panel]')
+                .should('not.contain', 'This is an old version');
+            cy.get('[data-cy=collection-version-number]').should('contain', '4');
+            cy.get('[data-cy=collection-info-panel]').should('contain', colName);
+            cy.get('[data-cy=collection-files-panel]')
+                .should('contain', 'foo').and('contain', 'bar');
         });
     });
 })
