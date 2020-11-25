@@ -21,7 +21,9 @@ import arvados.collection
 from schema_salad.sourceline import SourceLine
 
 from arvados.errors import ApiError
-from cwltool.pathmapper import PathMapper, MapperEnt, abspath, adjustFileObjs, adjustDirObjs
+from cwltool.pathmapper import PathMapper, MapperEnt
+from cwltool.utils import adjustFileObjs, adjustDirObjs
+from cwltool.stdfsaccess import abspath
 from cwltool.workflow import WorkflowException
 
 from .http import http_to_keep
