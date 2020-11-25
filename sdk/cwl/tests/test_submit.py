@@ -525,7 +525,7 @@ class TestSubmit(unittest.TestCase):
                          stubs.expect_container_request_uuid + '\n')
         self.assertEqual(exited, 0)
 
-    @mock.patch("arvados_cwl.task_queue.TaskQueue")
+    @mock.patch("cwltool.task_queue.TaskQueue")
     @mock.patch("arvados_cwl.arvworkflow.ArvadosWorkflow.job")
     @mock.patch("arvados_cwl.executor.ArvCwlExecutor.make_output_collection")
     @stubs
@@ -546,7 +546,7 @@ class TestSubmit(unittest.TestCase):
         make_output.assert_called_with(u'Output of submit_wf.cwl', ['foo'], '', 'zzzzz-4zz18-zzzzzzzzzzzzzzzz')
         self.assertEqual(exited, 0)
 
-    @mock.patch("arvados_cwl.task_queue.TaskQueue")
+    @mock.patch("cwltool.task_queue.TaskQueue")
     @mock.patch("arvados_cwl.arvworkflow.ArvadosWorkflow.job")
     @mock.patch("arvados_cwl.executor.ArvCwlExecutor.make_output_collection")
     @stubs
