@@ -13,8 +13,8 @@ import (
 
 func getStackTrace() string {
 	buf := make([]byte, 1000)
-	bytes_written := runtime.Stack(buf, false)
-	return "Stack Trace:\n" + string(buf[:bytes_written])
+	bytesWritten := runtime.Stack(buf, false)
+	return "Stack Trace:\n" + string(buf[:bytesWritten])
 }
 
 func expectEqual(t *testing.T, actual interface{}, expected interface{}) {
