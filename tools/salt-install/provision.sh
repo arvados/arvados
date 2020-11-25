@@ -168,6 +168,7 @@ cat > ${P_DIR}/top.sls << EOFPSLS
 base:
   '*':
     - arvados
+    - docker
     - locale
     - nginx_api_configuration
     - nginx_controller_configuration
