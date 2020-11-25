@@ -18,7 +18,7 @@ nginx:
         overwrite: true
         config:
           - server:
-            - listen: '127.0.0.2:8004'
+            - listen: 'api.internal:8004'
             - server_name: api
             - root: /var/www/arvados-api/current/public
             - index:  index.html index.htm

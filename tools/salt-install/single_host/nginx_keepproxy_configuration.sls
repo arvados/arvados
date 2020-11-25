@@ -11,7 +11,7 @@ nginx:
       ### STREAMS
       http:
         upstream keepproxy_upstream:
-          - server: '127.0.0.2:25100 fail_timeout=10s'
+          - server: 'keep.internal:25100 fail_timeout=10s'
 
   servers:
     managed:

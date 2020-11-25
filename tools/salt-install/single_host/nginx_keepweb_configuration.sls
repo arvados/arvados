@@ -11,7 +11,7 @@ nginx:
       ### STREAMS
       http:
         upstream collections_downloads_upstream:
-          - server: '127.0.0.2:9002 fail_timeout=10s'
+          - server: 'collections.internal:9002 fail_timeout=10s'
 
   servers:
     managed:

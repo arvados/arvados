@@ -13,7 +13,13 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   config.vm.define "arvados" do |arv|
     arv.vm.box = "bento/debian-10"
-    arv.vm.hostname = "arva2.arv.local"
+    arv.vm.hostname = "vagrant.local"
+    # CPU/RAM
+    config.vm.provider :virtualbox do |v|
+      v.memory = 2048
+      v.cpus = 2
+    end
+
     # Networking
     arv.vm.network "forwarded_port", guest: 8443, host: 8443
     arv.vm.network "forwarded_port", guest: 25100, host: 25100
@@ -24,12 +30,10 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     arv.vm.network "forwarded_port", guest: 8001, host: 8001
     arv.vm.network "forwarded_port", guest: 8000, host: 8000
     arv.vm.network "forwarded_port", guest: 3001, host: 3001
-    # config.vm.network "private_network", ip: "192.168.33.10"
-    # arv.vm.synced_folder "salt_pillars", "/srv/pillars",
-    #                      create: true
     arv.vm.provision "shell",
                      path: "provision.sh",
                      args: [
+                       "--test",
                        "--vagrant",
                        "--ssl-port=8443"
                      ].join(" ")
