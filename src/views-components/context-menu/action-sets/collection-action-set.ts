@@ -2,10 +2,23 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ContextMenuActionSet } from "../context-menu-action-set";
+import {
+    ContextMenuAction,
+    ContextMenuActionSet
+} from "../context-menu-action-set";
 import { ToggleFavoriteAction } from "../actions/favorite-action";
 import { toggleFavorite } from "~/store/favorites/favorites-actions";
-import { RenameIcon, ShareIcon, MoveToIcon, CopyIcon, DetailsIcon, AdvancedIcon, OpenIcon, Link, RecoverVersionIcon } from "~/components/icon/icon";
+import {
+    RenameIcon,
+    ShareIcon,
+    MoveToIcon,
+    CopyIcon,
+    DetailsIcon,
+    AdvancedIcon,
+    OpenIcon,
+    Link,
+    RecoverVersionIcon
+} from "~/components/icon/icon";
 import { openCollectionUpdateDialog } from "~/store/collections/collection-update-actions";
 import { favoritePanelActions } from "~/store/favorite-panel/favorite-panel-action";
 import { openMoveCollectionDialog } from '~/store/collections/collection-move-actions';
@@ -21,16 +34,17 @@ import { TogglePublicFavoriteAction } from "../actions/public-favorite-action";
 import { togglePublicFavorite } from "~/store/public-favorites/public-favorites-actions";
 import { publicFavoritePanelActions } from "~/store/public-favorites-panel/public-favorites-action";
 
-export const readOnlyCollectionActionSet: ContextMenuActionSet = [[
-    {
-        component: ToggleFavoriteAction,
-        name: 'ToggleFavoriteAction',
-        execute: (dispatch, resource) => {
-            dispatch<any>(toggleFavorite(resource)).then(() => {
-                dispatch<any>(favoritePanelActions.REQUEST_ITEMS());
-            });
-        }
-    },
+const toggleFavoriteAction: ContextMenuAction = {
+    component: ToggleFavoriteAction,
+    name: 'ToggleFavoriteAction',
+    execute: (dispatch, resource) => {
+        dispatch<any>(toggleFavorite(resource)).then(() => {
+            dispatch<any>(favoritePanelActions.REQUEST_ITEMS());
+        });
+    }
+};
+
+const commonActionSet: ContextMenuActionSet = [[
     {
         icon: OpenIcon,
         name: "Open in new tab",
@@ -67,6 +81,11 @@ export const readOnlyCollectionActionSet: ContextMenuActionSet = [[
             dispatch<any>(openAdvancedTabDialog(resource.uuid));
         }
     },
+]];
+
+export const readOnlyCollectionActionSet: ContextMenuActionSet = [[
+    ...commonActionSet.reduce((prev, next) => prev.concat(next), []),
+    toggleFavoriteAction,
 ]];
 
 export const collectionActionSet: ContextMenuActionSet = [
@@ -118,7 +137,7 @@ export const collectionAdminActionSet: ContextMenuActionSet = [
 
 export const oldCollectionVersionActionSet: ContextMenuActionSet = [
     [
-        ...readOnlyCollectionActionSet.reduce((prev, next) => prev.concat(next), []),
+        ...commonActionSet.reduce((prev, next) => prev.concat(next), []),
         {
             icon: RecoverVersionIcon,
             name: 'Recover version',

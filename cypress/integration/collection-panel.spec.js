@@ -352,9 +352,11 @@ describe('Collection panel tests', function() {
             cy.get('[data-cy=collection-files-panel]')
                 .should('contain', 'foo').and('contain', 'bar');
 
-            // Check that old collection action is available on context menu
-            cy.get('[data-cy=collection-panel-options-btn]').click()
-            cy.get('[data-cy=context-menu]').should('contain', 'Recover version')
+            // Check that only old collection action are available on context menu
+            cy.get('[data-cy=collection-panel-options-btn]').click();
+            cy.get('[data-cy=context-menu]')
+                .should('contain', 'Recover version')
+                .and('not.contain', 'Add to favorites');
             cy.get('body').click(); // Collapse the menu avoiding details panel expansion
 
             // Click on "head version" link, confirm that it's the latest version.
