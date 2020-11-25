@@ -394,6 +394,21 @@ describe('Collection panel tests', function() {
             cy.get('[data-cy=collection-version-browser-select-3]')
                 .should('contain', '3').and('contain', '3 B');
 
+            // Check context menus on version browser
+            cy.get('[data-cy=collection-version-browser-select-3]').rightclick()
+            cy.get('[data-cy=context-menu]')
+                .should('contain', 'Add to favorites')
+                .and('contain', 'Make a copy')
+                .and('contain', 'Edit collection');
+            cy.get('body').click();
+            // (and now an old version...)
+            cy.get('[data-cy=collection-version-browser-select-1]').rightclick()
+            cy.get('[data-cy=context-menu]')
+                .should('not.contain', 'Add to favorites')
+                .and('contain', 'Make a copy')
+                .and('not.contain', 'Edit collection');
+            cy.get('body').click();
+
             // Recover first version
             cy.get('[data-cy=collection-version-browser]').within(() => {
                 cy.get('[data-cy=collection-version-browser-select-1]').click();
