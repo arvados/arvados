@@ -18,7 +18,8 @@ logger = logging.getLogger('arvados.cwl-runner')
 cached_lookups = {}
 cached_lookups_lock = threading.Lock()
 
-def arv_docker_get_image(api_client, dockerRequirement, pull_image, project_uuid):
+def arv_docker_get_image(api_client, dockerRequirement, pull_image, project_uuid,
+                         force_pull, tmp_outdir_prefix):
     """Check if a Docker image is available in Keep, if not, upload it using arv-keepdocker."""
 
     if "http://arvados.org/cwl#dockerCollectionPDH" in dockerRequirement:
@@ -48,7 +49,8 @@ def arv_docker_get_image(api_client, dockerRequirement, pull_image, project_uuid
         if not images:
             # Fetch Docker image if necessary.
             try:
-                cwltool.docker.DockerCommandLineJob.get_image(dockerRequirement, pull_image)
+                cwltool.docker.DockerCommandLineJob.get_image(dockerRequirement, pull_image,
+                                                              force_pull, tmp_outdir_prefix)
             except OSError as e:
                 raise WorkflowException("While trying to get Docker image '%s', failed to execute 'docker': %s" % (dockerRequirement["dockerImageId"], e))
 
