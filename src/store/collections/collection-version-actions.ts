@@ -24,7 +24,7 @@ export const recoverVersion = (resourceUuid: string) =>
             dispatch<any>(navigateTo(headVersion.uuid));
         } catch (e) {
             dispatch(snackbarActions.OPEN_SNACKBAR({
-                message: `Couldn't make new version: ${e.errors[0]}`,
+                message: `Couldn't recover version: ${e.errors[0]}`,
                 hideDuration: 2000,
                 kind: SnackbarKind.ERROR
             }));

@@ -352,6 +352,11 @@ describe('Collection panel tests', function() {
             cy.get('[data-cy=collection-files-panel]')
                 .should('contain', 'foo').and('contain', 'bar');
 
+            // Check that old collection action is available on context menu
+            cy.get('[data-cy=collection-panel-options-btn]').click()
+            cy.get('[data-cy=context-menu]').should('contain', 'Recover version')
+            cy.get('body').click(); // Collapse the menu avoiding details panel expansion
+
             // Click on "head version" link, confirm that it's the latest version.
             cy.get('[data-cy=collection-info-panel]').contains('head version').click();
             cy.get('[data-cy=collection-info-panel]')
@@ -361,6 +366,11 @@ describe('Collection panel tests', function() {
             cy.get('[data-cy=collection-info-panel]').should('contain', colName);
             cy.get('[data-cy=collection-files-panel]').
                 should('not.contain', 'foo').and('contain', 'bar');
+
+            // Check that old collection action isn't available on context menu
+            cy.get('[data-cy=collection-panel-options-btn]').click()
+            cy.get('[data-cy=context-menu]').should('not.contain', 'Recover version')
+            cy.get('body').click(); // Collapse the menu avoiding details panel expansion
 
             // Make another change, confirm new version.
             cy.get('[data-cy=collection-panel-options-btn]').click();
