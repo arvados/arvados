@@ -61,7 +61,6 @@ export class CollectionDetails extends DetailsData<CollectionResource> {
 interface CollectionVersionBrowserProps {
     currentCollection: CollectionResource | undefined;
     versions: CollectionResource[];
-    isAdmin: boolean;
 }
 
 interface CollectionVersionBrowserDispatchProps {
@@ -71,13 +70,12 @@ interface CollectionVersionBrowserDispatchProps {
 
 const mapStateToProps = (state: RootState): CollectionVersionBrowserProps => {
     const currentCollection = getResource<CollectionResource>(state.detailsPanel.resourceUuid)(state.resources);
-    const isAdmin = state.auth.user!.isAdmin;
     const versions = currentCollection
         && filterResources(rsc =>
             (rsc as CollectionResource).currentVersionUuid === currentCollection.currentVersionUuid)(state.resources)
                 .sort((a: CollectionResource, b: CollectionResource) => b.version - a.version) as CollectionResource[]
         || [];
-    return { currentCollection, versions, isAdmin };
+    return { currentCollection, versions };
 };
 
 const mapDispatchToProps = () =>
@@ -100,7 +98,7 @@ const mapDispatchToProps = () =>
 
 const CollectionVersionBrowser = withStyles(styles)(
     connect(mapStateToProps, mapDispatchToProps)(
-        ({ currentCollection, versions, isAdmin, showVersion, handleContextMenu, classes }: CollectionVersionBrowserProps & CollectionVersionBrowserDispatchProps & WithStyles<CssRules>) => {
+        ({ currentCollection, versions, showVersion, handleContextMenu, classes }: CollectionVersionBrowserProps & CollectionVersionBrowserDispatchProps & WithStyles<CssRules>) => {
             return <div data-cy="collection-version-browser">
                 <Grid container>
                     <Grid item xs={2}>
