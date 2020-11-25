@@ -209,7 +209,7 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 	fspath := "/by_id"
 	if id := parseCollectionIDFromDNSName(r.Host); id != "" {
 		fspath += "/" + id
-		objectNameGiven = true
+		objectNameGiven = strings.Count(strings.TrimSuffix(r.URL.Path, "/"), "/") > 0
 	} else {
 		objectNameGiven = strings.Count(strings.TrimSuffix(r.URL.Path, "/"), "/") > 1
 	}
