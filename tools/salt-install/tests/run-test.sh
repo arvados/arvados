@@ -48,7 +48,7 @@ arv user update --uuid "${user_uuid}" --user '{"is_active": true}'
 echo "Getting the user API TOKEN"
 user_api_token=$(arv api_client_authorization list --filters "[[\"owner_uuid\", \"=\", \"${user_uuid}\"],[\"kind\", \"==\", \"arvados#apiClientAuthorization\"]]" --limit=1 |jq -r .items[].api_token)
 
-if [ "x${user_uuid}" = "x" ]; then
+if [ "x${user_api_token}" = "x" ]; then
   user_api_token=$(arv api_client_authorization create --api-client-authorization "{\"owner_uuid\": \"${user_uuid}\"}" | jq -r .api_token)
 fi
 
