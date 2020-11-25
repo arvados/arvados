@@ -2,159 +2,128 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as resource from '~/models/resource';
 import { ContextMenuKind } from '~/views-components/context-menu/context-menu';
-import { resourceKindToContextMenuKind } from './context-menu-actions';
+import { resourceUuidToContextMenuKind } from './context-menu-actions';
+import configureStore from 'redux-mock-store';
+import thunk from 'redux-thunk';
 
 describe('context-menu-actions', () => {
-    describe('resourceKindToContextMenuKind', () => {
-        const uuid = '123';
+    describe('resourceUuidToContextMenuKind', () => {
+        const middlewares = [thunk];
+        const mockStore = configureStore(middlewares);
+        const userUuid = 'zzzzz-tpzed-bbbbbbbbbbbbbbb';
+        const otherUserUuid = 'zzzzz-tpzed-bbbbbbbbbbbbbbc';
+        const headCollectionUuid = 'zzzzz-4zz18-aaaaaaaaaaaaaaa';
+        const oldCollectionUuid = 'zzzzz-4zz18-aaaaaaaaaaaaaab';
+        const projectUuid = 'zzzzz-j7d0g-ccccccccccccccc';
+        const linkUuid = 'zzzzz-o0j2j-0123456789abcde';
+        const containerRequestUuid = 'zzzzz-xvhdp-0123456789abcde';
 
-        describe('ResourceKind.PROJECT', () => {
-            beforeEach(() => {
-                // setup
-                jest.spyOn(resource, 'extractUuidKind')
-                    .mockImplementation(() => resource.ResourceKind.PROJECT);
-            });
+        it('should return the correct menu kind', () => {
+            const cases = [
+                // resourceUuid, isAdminUser, isEditable, isTrashed, expected
+                [headCollectionUuid, false, true, true, ContextMenuKind.TRASHED_COLLECTION],
+                [headCollectionUuid, false, true, false, ContextMenuKind.COLLECTION],
+                [headCollectionUuid, false, false, true, ContextMenuKind.READONLY_COLLECTION],
+                [headCollectionUuid, false, false, false, ContextMenuKind.READONLY_COLLECTION],
+                [headCollectionUuid, true, true, true, ContextMenuKind.TRASHED_COLLECTION],
+                [headCollectionUuid, true, true, false, ContextMenuKind.COLLECTION_ADMIN],
+                [headCollectionUuid, true, false, true, ContextMenuKind.TRASHED_COLLECTION],
+                [headCollectionUuid, true, false, false, ContextMenuKind.COLLECTION_ADMIN],
 
-            it('should return ContextMenuKind.PROJECT_ADMIN', () => {
-                // given
-                const isAdmin = true;
+                [oldCollectionUuid, false, true, true, ContextMenuKind.OLD_VERSION_COLLECTION],
+                [oldCollectionUuid, false, true, false, ContextMenuKind.OLD_VERSION_COLLECTION],
+                [oldCollectionUuid, false, false, true, ContextMenuKind.OLD_VERSION_COLLECTION],
+                [oldCollectionUuid, false, false, false, ContextMenuKind.OLD_VERSION_COLLECTION],
+                [oldCollectionUuid, true, true, true, ContextMenuKind.OLD_VERSION_COLLECTION],
+                [oldCollectionUuid, true, true, false, ContextMenuKind.OLD_VERSION_COLLECTION],
+                [oldCollectionUuid, true, false, true, ContextMenuKind.OLD_VERSION_COLLECTION],
+                [oldCollectionUuid, true, false, false, ContextMenuKind.OLD_VERSION_COLLECTION],
 
-                // when
-                const result = resourceKindToContextMenuKind(uuid, isAdmin);
+                // FIXME: WB2 doesn't currently have context menu for trashed projects
+                // [projectUuid, false, true, true, ContextMenuKind.TRASHED_PROJECT],
+                [projectUuid, false, true, false, ContextMenuKind.PROJECT],
+                [projectUuid, false, false, true, ContextMenuKind.READONLY_PROJECT],
+                [projectUuid, false, false, false, ContextMenuKind.READONLY_PROJECT],
+                // [projectUuid, true, true, true, ContextMenuKind.TRASHED_PROJECT],
+                [projectUuid, true, true, false, ContextMenuKind.PROJECT_ADMIN],
+                // [projectUuid, true, false, true, ContextMenuKind.TRASHED_PROJECT],
+                [projectUuid, true, false, false, ContextMenuKind.PROJECT_ADMIN],
 
-                // then
-                expect(result).toEqual(ContextMenuKind.PROJECT_ADMIN);
-            });
+                [linkUuid, false, true, true, ContextMenuKind.LINK],
+                [linkUuid, false, true, false, ContextMenuKind.LINK],
+                [linkUuid, false, false, true, ContextMenuKind.LINK],
+                [linkUuid, false, false, false, ContextMenuKind.LINK],
+                [linkUuid, true, true, true, ContextMenuKind.LINK],
+                [linkUuid, true, true, false, ContextMenuKind.LINK],
+                [linkUuid, true, false, true, ContextMenuKind.LINK],
+                [linkUuid, true, false, false, ContextMenuKind.LINK],
 
-            it('should return ContextMenuKind.PROJECT', () => {
-                // given
-                const isAdmin = false;
-                const isEditable = true;
+                [userUuid, false, true, true, ContextMenuKind.ROOT_PROJECT],
+                [userUuid, false, true, false, ContextMenuKind.ROOT_PROJECT],
+                [userUuid, false, false, true, ContextMenuKind.ROOT_PROJECT],
+                [userUuid, false, false, false, ContextMenuKind.ROOT_PROJECT],
+                [userUuid, true, true, true, ContextMenuKind.ROOT_PROJECT],
+                [userUuid, true, true, false, ContextMenuKind.ROOT_PROJECT],
+                [userUuid, true, false, true, ContextMenuKind.ROOT_PROJECT],
+                [userUuid, true, false, false, ContextMenuKind.ROOT_PROJECT],
 
-                // when
-                const result = resourceKindToContextMenuKind(uuid, isAdmin, isEditable);
+                [containerRequestUuid, false, true, true, ContextMenuKind.PROCESS_RESOURCE],
+                [containerRequestUuid, false, true, false, ContextMenuKind.PROCESS_RESOURCE],
+                [containerRequestUuid, false, false, true, ContextMenuKind.PROCESS_RESOURCE],
+                [containerRequestUuid, false, false, false, ContextMenuKind.PROCESS_RESOURCE],
+                [containerRequestUuid, true, true, true, ContextMenuKind.PROCESS_ADMIN],
+                [containerRequestUuid, true, true, false, ContextMenuKind.PROCESS_ADMIN],
+                [containerRequestUuid, true, false, true, ContextMenuKind.PROCESS_ADMIN],
+                [containerRequestUuid, true, false, false, ContextMenuKind.PROCESS_ADMIN],
+            ]
 
-                // then
-                expect(result).toEqual(ContextMenuKind.PROJECT);
-            });
+            cases.forEach(([resourceUuid, isAdminUser, isEditable, isTrashed, expected]) => {
+                const initialState = {
+                    resources: {
+                        [headCollectionUuid]: {
+                            uuid: headCollectionUuid,
+                            ownerUuid: projectUuid,
+                            currentVersionUuid: headCollectionUuid,
+                            isTrashed: isTrashed,
+                        },
+                        [oldCollectionUuid]: {
+                            uuid: oldCollectionUuid,
+                            currentVersionUuid: headCollectionUuid,
+                            isTrashed: isTrashed,
 
-            it('should return ContextMenuKind.READONLY_PROJECT', () => {
-                // given
-                const isAdmin = false;
-                const isEditable = false;
+                        },
+                        [projectUuid]: {
+                            uuid: projectUuid,
+                            ownerUuid: isEditable ? userUuid : otherUserUuid,
+                            writableBy: isEditable ? [userUuid] : [otherUserUuid],
+                        },
+                        [linkUuid]: {
+                            uuid: linkUuid,
+                        },
+                        [userUuid]: {
+                            uuid: userUuid,
+                        },
+                        [containerRequestUuid]: {
+                            uuid: containerRequestUuid,
+                            ownerUuid: projectUuid,
+                        },
+                    },
+                    auth: {
+                        user: {
+                            uuid: userUuid,
+                            isAdmin: isAdminUser,
+                        },
+                    },
+                };
+                const store = mockStore(initialState);
 
-                // when
-                const result = resourceKindToContextMenuKind(uuid, isAdmin, isEditable);
-
-                // then
-                expect(result).toEqual(ContextMenuKind.READONLY_PROJECT);
-            });
-        });
-
-        describe('ResourceKind.COLLECTION', () => {
-            beforeEach(() => {
-                // setup
-                jest.spyOn(resource, 'extractUuidKind')
-                    .mockImplementation(() => resource.ResourceKind.COLLECTION);
-            });
-
-            it('should return ContextMenuKind.COLLECTION_ADMIN', () => {
-                // given
-                const isAdmin = true;
-
-                // when
-                const result = resourceKindToContextMenuKind(uuid, isAdmin);
-
-                // then
-                expect(result).toEqual(ContextMenuKind.COLLECTION_ADMIN);
-            });
-
-            it('should return ContextMenuKind.COLLECTION', () => {
-                // given
-                const isAdmin = false;
-                const isEditable = true;
-
-                // when
-                const result = resourceKindToContextMenuKind(uuid, isAdmin, isEditable);
-
-                // then
-                expect(result).toEqual(ContextMenuKind.COLLECTION);
-            });
-
-            it('should return ContextMenuKind.READONLY_COLLECTION', () => {
-                // given
-                const isAdmin = false;
-                const isEditable = false;
-
-                // when
-                const result = resourceKindToContextMenuKind(uuid, isAdmin, isEditable);
-
-                // then
-                expect(result).toEqual(ContextMenuKind.READONLY_COLLECTION);
-            });
-        });
-
-        describe('ResourceKind.PROCESS', () => {
-            beforeEach(() => {
-                // setup
-                jest.spyOn(resource, 'extractUuidKind')
-                    .mockImplementation(() => resource.ResourceKind.PROCESS);
-            });
-
-            it('should return ContextMenuKind.PROCESS_ADMIN', () => {
-                // given
-                const isAdmin = true;
-
-                // when
-                const result = resourceKindToContextMenuKind(uuid, isAdmin);
-
-                // then
-                expect(result).toEqual(ContextMenuKind.PROCESS_ADMIN);
-            });
-
-            it('should return ContextMenuKind.PROCESS_RESOURCE', () => {
-                // given
-                const isAdmin = false;
-
-                // when
-                const result = resourceKindToContextMenuKind(uuid, isAdmin);
-
-                // then
-                expect(result).toEqual(ContextMenuKind.PROCESS_RESOURCE);
-            });
-        });
-
-        describe('ResourceKind.USER', () => {
-            beforeEach(() => {
-                // setup
-                jest.spyOn(resource, 'extractUuidKind')
-                    .mockImplementation(() => resource.ResourceKind.USER);
-            });
-
-            it('should return ContextMenuKind.ROOT_PROJECT', () => {
-                // when
-                const result = resourceKindToContextMenuKind(uuid);
-
-                // then
-                expect(result).toEqual(ContextMenuKind.ROOT_PROJECT);
-            });
-        });
-
-        describe('ResourceKind.LINK', () => {
-            beforeEach(() => {
-                // setup
-                jest.spyOn(resource, 'extractUuidKind')
-                    .mockImplementation(() => resource.ResourceKind.LINK);
-            });
-
-            it('should return ContextMenuKind.LINK', () => {
-                // when
-                const result = resourceKindToContextMenuKind(uuid);
-
-                // then
-                expect(result).toEqual(ContextMenuKind.LINK);
+                const menuKind = store.dispatch<any>(resourceUuidToContextMenuKind(resourceUuid as string))
+                try {
+                    expect(menuKind).toBe(expected);
+                } catch (err) {
+                    throw new Error(`menuKind for resource ${JSON.stringify(initialState.resources[resourceUuid as string])} expected to be ${expected} but got ${menuKind}.`);
+                }
             });
         });
     });

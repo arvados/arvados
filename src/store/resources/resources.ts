@@ -31,6 +31,8 @@ const getResourceWritableBy = (state: ResourcesState, id: string, userUuid: stri
 
 export const getResourceWithEditableStatus = <T extends EditableResource & GroupResource>(id: string, userUuid?: string) =>
     (state: ResourcesState): T | undefined => {
+        if (state[id] === undefined) { return; }
+
         const resource = JSON.parse(JSON.stringify(state[id] as T));
 
         if (resource) {

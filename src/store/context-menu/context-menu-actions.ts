@@ -203,13 +203,13 @@ export const openProcessContextMenu = (event: React.MouseEvent<HTMLElement>, pro
 
 export const resourceUuidToContextMenuKind = (uuid: string) =>
     (dispatch: Dispatch, getState: () => RootState) => {
-        const { isAdmin, uuid: userUuid } = getState().auth.user!;
+        const { isAdmin: isAdminUser, uuid: userUuid } = getState().auth.user!;
         const kind = extractUuidKind(uuid);
         const resource = getResourceWithEditableStatus<GroupResource & EditableResource>(uuid, userUuid)(getState().resources);
-        const isEditable = (resource || {} as EditableResource).isEditable;
+        const isEditable = isAdminUser || (resource || {} as EditableResource).isEditable;
         switch (kind) {
             case ResourceKind.PROJECT:
-                return !isAdmin
+                return !isAdminUser
                     ? isEditable
                         ? ContextMenuKind.PROJECT
                         : ContextMenuKind.READONLY_PROJECT
@@ -219,17 +219,17 @@ export const resourceUuidToContextMenuKind = (uuid: string) =>
                 if (c === undefined) { return; }
                 const isOldVersion = c.uuid !== c.currentVersionUuid;
                 const isTrashed = c.isTrashed;
-                return (isTrashed && isEditable)
-                    ? ContextMenuKind.TRASHED_COLLECTION
-                    : isOldVersion
-                        ? ContextMenuKind.OLD_VERSION_COLLECTION
-                        : isAdmin
+                return isOldVersion
+                    ? ContextMenuKind.OLD_VERSION_COLLECTION
+                    : (isTrashed && isEditable)
+                        ? ContextMenuKind.TRASHED_COLLECTION
+                        : isAdminUser
                             ? ContextMenuKind.COLLECTION_ADMIN
                             : isEditable
                                 ? ContextMenuKind.COLLECTION
                                 : ContextMenuKind.READONLY_COLLECTION;
             case ResourceKind.PROCESS:
-                return !isAdmin
+                return !isAdminUser
                     ? ContextMenuKind.PROCESS_RESOURCE
                     : ContextMenuKind.PROCESS_ADMIN;
             case ResourceKind.USER:
