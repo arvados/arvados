@@ -153,10 +153,17 @@ interface FlatTreeProps {
     classes: any;
 }
 
+
+const FLAT_TREE_ACTIONS = {
+    toggleOpen: 'TOGGLE_OPEN',
+    contextMenu: 'CONTEXT_MENU',
+    toggleActive: 'TOGGLE_ACTIVE',
+};
+
 const FlatTree = (props: FlatTreeProps) =>
     <div
         onContextMenu={(event) => {
-            const [action, id] = getActionAndId(event, 'CONTEXT_MENU');
+            const [action, id] = getActionAndId(event, FLAT_TREE_ACTIONS.contextMenu);
             props.onContextMenu(event, { id } as any);
         }}
         onClick={(event) => {
@@ -164,10 +171,10 @@ const FlatTree = (props: FlatTreeProps) =>
 
             if (action && id) {
                 switch (action) {
-                    case 'TOGGLE_OPEN':
+                    case FLAT_TREE_ACTIONS.toggleOpen:
                         props.handleToggleItemOpen({ id } as any, event);
                         break;
-                    case 'TOGGLE_ACTIVE':
+                    case FLAT_TREE_ACTIONS.toggleActive:
                         props.toggleItemActive(event, { id } as any);
                         break;
                     default:
@@ -181,12 +188,12 @@ const FlatTree = (props: FlatTreeProps) =>
                 .map((item: any) => <div key={item.id} data-id={item.id}
                     className={classnames(props.classes.childItem, { [props.classes.active]: item.active })}
                     style={{ paddingLeft: `${item.depth * props.levelIndentation}px` }}>
-                    <i data-action="TOGGLE_OPEN" className={props.classes.toggableIconContainer}>
+                    <i data-action={FLAT_TREE_ACTIONS.toggleOpen} className={props.classes.toggableIconContainer}>
                         <ListItemIcon className={props.getToggableIconClassNames(item.open, item.active)}>
                             {props.getProperArrowAnimation(item.status, item.items!)}
                         </ListItemIcon>
                     </i>
-                    <div data-action="TOGGLE_ACTIVE" className={props.classes.renderContainer}>
+                    <div data-action={FLAT_TREE_ACTIONS.toggleActive} className={props.classes.renderContainer}>
                         <span style={{ display: 'flex', alignItems: 'center' }}>
                             <ProjectIcon className={classnames({ [props.classes.active]: item.active }, props.classes.childItemIcon)} />
                             <span style={{ fontSize: '0.875rem' }}>

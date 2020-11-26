@@ -41,7 +41,7 @@ export const SidePanelTree = connect(undefined, mapDispatchToProps)(
     (props: SidePanelTreeActionProps) =>
         <TreePicker {...props} render={renderSidePanelItem} pickerId={SIDE_PANEL_TREE} />);
 
-export const renderSidePanelItem = (item: TreeItem<ProjectResource>) => {
+const renderSidePanelItem = (item: TreeItem<ProjectResource>) => {
     const name = typeof item.data === 'string' ? item.data : item.data.name;
     const warn = typeof item.data !== 'string' && item.data.kind === ResourceKind.PROJECT
         ? <IllegalNamingWarning name={name} />

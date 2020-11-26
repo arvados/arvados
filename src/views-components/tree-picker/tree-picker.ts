@@ -21,7 +21,7 @@ export interface TreePickerProps<T> {
 const flatTree = (depth: number, items?: any): [] => {
     return items ? items.reduce((prev: any, next: any) => {
         const { items } = next;
-        // delete next.items;
+
         return [
             ...prev,
             { ...next, depth },
