@@ -34,7 +34,7 @@ arv-keepdocker --pull arvados/jobs "${VERSION}" --project-uuid "${project_uuid}"
 
 # Create the initial user
 echo "Creating initial user '__INITIAL_USER__'"
-user_uuid=$(arv --format=uuid user list --filters '[["email", "=", "admin@arva2.arv.local"], ["username", "=", "admin"]]')
+user_uuid=$(arv --format=uuid user list --filters '[["email", "=", "__INITIAL_USER_EMAIL__"], ["username", "=", "__INITIAL_USER__"]]')
 
 if [ "x${user_uuid}" = "x" ]; then
   user_uuid=$(arv --format=uuid user create --user '{"email": "__INITIAL_USER_EMAIL__", "username": "__INITIAL_USER__"}')
