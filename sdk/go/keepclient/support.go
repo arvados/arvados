@@ -55,7 +55,7 @@ type uploadStatus struct {
 	response       string
 }
 
-func (this *KeepClient) uploadToKeepServer(host string, hash string, body io.Reader,
+func (kc *KeepClient) uploadToKeepServer(host string, hash string, body io.Reader,
 	uploadStatusChan chan<- uploadStatus, expectedLength int64, reqid string) {
 
 	var req *http.Request
@@ -77,15 +77,15 @@ func (this *KeepClient) uploadToKeepServer(host string, hash string, body io.Rea
 	}
 
 	req.Header.Add("X-Request-Id", reqid)
-	req.Header.Add("Authorization", "OAuth2 "+this.Arvados.ApiToken)
+	req.Header.Add("Authorization", "OAuth2 "+kc.Arvados.ApiToken)
 	req.Header.Add("Content-Type", "application/octet-stream")
-	req.Header.Add(XKeepDesiredReplicas, fmt.Sprint(this.Want_replicas))
-	if len(this.StorageClasses) > 0 {
-		req.Header.Add("X-Keep-Storage-Classes", strings.Join(this.StorageClasses, ", "))
+	req.Header.Add(XKeepDesiredReplicas, fmt.Sprint(kc.Want_replicas))
+	if len(kc.StorageClasses) > 0 {
+		req.Header.Add("X-Keep-Storage-Classes", strings.Join(kc.StorageClasses, ", "))
 	}
 
 	var resp *http.Response
-	if resp, err = this.httpClient().Do(req); err != nil {
+	if resp, err = kc.httpClient().Do(req); err != nil {
 		DebugPrintf("DEBUG: [%s] Upload failed %v error: %v", reqid, url, err.Error())
 		uploadStatusChan <- uploadStatus{err, url, 0, 0, err.Error()}
 		return
@@ -116,15 +116,15 @@ func (this *KeepClient) uploadToKeepServer(host string, hash string, body io.Rea
 	}
 }
 
-func (this *KeepClient) putReplicas(
+func (kc *KeepClient) putReplicas(
 	hash string,
 	getReader func() io.Reader,
 	expectedLength int64) (locator string, replicas int, err error) {
 
-	reqid := this.getRequestID()
+	reqid := kc.getRequestID()
 
 	// Calculate the ordering for uploading to servers
-	sv := NewRootSorter(this.WritableLocalRoots(), hash).GetSortedRoots()
+	sv := NewRootSorter(kc.WritableLocalRoots(), hash).GetSortedRoots()
 
 	// The next server to try contacting
 	nextServer := 0
@@ -147,15 +147,15 @@ func (this *KeepClient) putReplicas(
 	}()
 
 	replicasDone := 0
-	replicasTodo := this.Want_replicas
+	replicasTodo := kc.Want_replicas
 
-	replicasPerThread := this.replicasPerService
+	replicasPerThread := kc.replicasPerService
 	if replicasPerThread < 1 {
 		// unlimited or unknown
 		replicasPerThread = replicasTodo
 	}
 
-	retriesRemaining := 1 + this.Retries
+	retriesRemaining := 1 + kc.Retries
 	var retryServers []string
 
 	lastError := make(map[string]string)
@@ -169,7 +169,7 @@ func (this *KeepClient) putReplicas(
 				// Start some upload requests
 				if nextServer < len(sv) {
 					DebugPrintf("DEBUG: [%s] Begin upload %s to %s", reqid, hash, sv[nextServer])
-					go this.uploadToKeepServer(sv[nextServer], hash, getReader(), uploadStatusChan, expectedLength, reqid)
+					go kc.uploadToKeepServer(sv[nextServer], hash, getReader(), uploadStatusChan, expectedLength, reqid)
 					nextServer++
 					active++
 				} else {
