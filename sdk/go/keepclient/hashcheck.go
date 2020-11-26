@@ -29,36 +29,36 @@ type HashCheckingReader struct {
 // Reads from the underlying reader, update the hashing function, and
 // pass the results through. Returns BadChecksum (instead of EOF) on
 // the last read if the checksum doesn't match.
-func (this HashCheckingReader) Read(p []byte) (n int, err error) {
-	n, err = this.Reader.Read(p)
+func (hcr HashCheckingReader) Read(p []byte) (n int, err error) {
+	n, err = hcr.Reader.Read(p)
 	if n > 0 {
-		this.Hash.Write(p[:n])
+		hcr.Hash.Write(p[:n])
 	}
 	if err == io.EOF {
-		sum := this.Hash.Sum(nil)
-		if fmt.Sprintf("%x", sum) != this.Check {
+		sum := hcr.Hash.Sum(nil)
+		if fmt.Sprintf("%x", sum) != hcr.Check {
 			err = BadChecksum
 		}
 	}
 	return n, err
 }
 
-// WriteTo writes the entire contents of this.Reader to dest. Returns
+// WriteTo writes the entire contents of hcr.Reader to dest. Returns
 // BadChecksum if writing is successful but the checksum doesn't
 // match.
-func (this HashCheckingReader) WriteTo(dest io.Writer) (written int64, err error) {
-	if writeto, ok := this.Reader.(io.WriterTo); ok {
-		written, err = writeto.WriteTo(io.MultiWriter(dest, this.Hash))
+func (hcr HashCheckingReader) WriteTo(dest io.Writer) (written int64, err error) {
+	if writeto, ok := hcr.Reader.(io.WriterTo); ok {
+		written, err = writeto.WriteTo(io.MultiWriter(dest, hcr.Hash))
 	} else {
-		written, err = io.Copy(io.MultiWriter(dest, this.Hash), this.Reader)
+		written, err = io.Copy(io.MultiWriter(dest, hcr.Hash), hcr.Reader)
 	}
 
 	if err != nil {
 		return written, err
 	}
 
-	sum := this.Hash.Sum(nil)
-	if fmt.Sprintf("%x", sum) != this.Check {
+	sum := hcr.Hash.Sum(nil)
+	if fmt.Sprintf("%x", sum) != hcr.Check {
 		return written, BadChecksum
 	}
 
@@ -68,10 +68,10 @@ func (this HashCheckingReader) WriteTo(dest io.Writer) (written int64, err error
 // Close reads all remaining data from the underlying Reader and
 // returns BadChecksum if the checksum doesn't match. It also closes
 // the underlying Reader if it implements io.ReadCloser.
-func (this HashCheckingReader) Close() (err error) {
-	_, err = io.Copy(this.Hash, this.Reader)
+func (hcr HashCheckingReader) Close() (err error) {
+	_, err = io.Copy(hcr.Hash, hcr.Reader)
 
-	if closer, ok := this.Reader.(io.Closer); ok {
+	if closer, ok := hcr.Reader.(io.Closer); ok {
 		closeErr := closer.Close()
 		if err == nil {
 			err = closeErr
@@ -80,7 +80,7 @@ func (this HashCheckingReader) Close() (err error) {
 	if err != nil {
 		return err
 	}
-	if fmt.Sprintf("%x", this.Hash.Sum(nil)) != this.Check {
+	if fmt.Sprintf("%x", hcr.Hash.Sum(nil)) != hcr.Check {
 		return BadChecksum
 	}
 	return nil

@@ -97,7 +97,7 @@ func (s *ServerRequiredSuite) TestDefaultReplications(c *C) {
 type StubPutHandler struct {
 	c                  *C
 	expectPath         string
-	expectApiToken     string
+	expectAPIToken     string
 	expectBody         string
 	expectStorageClass string
 	handled            chan string
@@ -105,7 +105,7 @@ type StubPutHandler struct {
 
 func (sph StubPutHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	sph.c.Check(req.URL.Path, Equals, "/"+sph.expectPath)
-	sph.c.Check(req.Header.Get("Authorization"), Equals, fmt.Sprintf("OAuth2 %s", sph.expectApiToken))
+	sph.c.Check(req.Header.Get("Authorization"), Equals, fmt.Sprintf("OAuth2 %s", sph.expectAPIToken))
 	sph.c.Check(req.Header.Get("X-Keep-Storage-Classes"), Equals, sph.expectStorageClass)
 	body, err := ioutil.ReadAll(req.Body)
 	sph.c.Check(err, Equals, nil)
@@ -256,7 +256,7 @@ type KeepServer struct {
 func RunSomeFakeKeepServers(st http.Handler, n int) (ks []KeepServer) {
 	ks = make([]KeepServer, n)
 
-	for i := 0; i < n; i += 1 {
+	for i := 0; i < n; i++ {
 		ks[i] = RunFakeKeepServer(st)
 	}
 
@@ -464,14 +464,14 @@ func (s *StandaloneSuite) TestPutWithTooManyFail(c *C) {
 type StubGetHandler struct {
 	c              *C
 	expectPath     string
-	expectApiToken string
+	expectAPIToken string
 	httpStatus     int
 	body           []byte
 }
 
 func (sgh StubGetHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	sgh.c.Check(req.URL.Path, Equals, "/"+sgh.expectPath)
-	sgh.c.Check(req.Header.Get("Authorization"), Equals, fmt.Sprintf("OAuth2 %s", sgh.expectApiToken))
+	sgh.c.Check(req.Header.Get("Authorization"), Equals, fmt.Sprintf("OAuth2 %s", sgh.expectAPIToken))
 	resp.WriteHeader(sgh.httpStatus)
 	resp.Header().Set("Content-Length", fmt.Sprintf("%d", len(sgh.body)))
 	resp.Write(sgh.body)
