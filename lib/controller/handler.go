@@ -25,6 +25,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/health"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
 	"github.com/jmoiron/sqlx"
+	// sqlx needs lib/pq to talk to PostgreSQL
 	_ "github.com/lib/pq"
 )
 

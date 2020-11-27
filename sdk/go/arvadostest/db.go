@@ -10,6 +10,7 @@ import (
 	"git.arvados.org/arvados.git/lib/ctrlctx"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"github.com/jmoiron/sqlx"
+	// sqlx needs lib/pq to talk to PostgreSQL
 	_ "github.com/lib/pq"
 	"gopkg.in/check.v1"
 )
