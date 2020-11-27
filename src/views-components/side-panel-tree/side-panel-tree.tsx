@@ -52,7 +52,6 @@ const renderSidePanelItem = (item: TreeItem<ProjectResource>) => {
         nameDecorator={warn}
         isActive={item.active}
         hasMargin={true}
-        iconSize={1.25}
     />;
 };
 

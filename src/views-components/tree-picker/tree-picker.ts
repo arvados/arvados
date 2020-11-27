@@ -18,6 +18,18 @@ export interface TreePickerProps<T> {
     toggleItemSelection: Callback<T>;
 }
 
+const flatTree = (depth: number, items?: any): [] => {
+    return items ? items.reduce((prev: any, next: any) => {
+        const { items } = next;
+
+        return [
+            ...prev,
+            { ...next, depth },
+            ...(next.open ? flatTree(depth + 1, items) : []),
+        ];
+    }, []) : [];
+};
+
 const memoizedMapStateToProps = () => {
     let prevTree: Ttree<any>;
     let mappedProps: Pick<TreeProps<any>, 'items' | 'disableRipple'>;
@@ -29,6 +41,11 @@ const memoizedMapStateToProps = () => {
                 disableRipple: true,
                 items: getNodeChildrenIds('')(tree)
                     .map(treePickerToTreeItems(tree))
+                    .map(parentItem => ({
+                        ...parentItem,
+                        flatTree: true,
+                        items: flatTree(2, parentItem.items || []),
+                    }))
             };
         }
         return mappedProps;
