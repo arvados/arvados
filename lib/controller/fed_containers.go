@@ -66,14 +66,14 @@ func remoteContainerRequestCreate(
 
 	crString, ok := request["container_request"].(string)
 	if ok {
-		var crJson map[string]interface{}
-		err := json.Unmarshal([]byte(crString), &crJson)
+		var crJSON map[string]interface{}
+		err := json.Unmarshal([]byte(crString), &crJSON)
 		if err != nil {
 			httpserver.Error(w, err.Error(), http.StatusBadRequest)
 			return true
 		}
 
-		request["container_request"] = crJson
+		request["container_request"] = crJSON
 	}
 
 	containerRequest, ok := request["container_request"].(map[string]interface{})
