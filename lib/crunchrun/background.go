@@ -132,7 +132,7 @@ func kill(uuid string, signal syscall.Signal, stdout, stderr io.Writer) error {
 	var pi procinfo
 	err = json.NewDecoder(f).Decode(&pi)
 	if err != nil {
-		return fmt.Errorf("decode %s: %s\n", path, err)
+		return fmt.Errorf("decode %s: %s", path, err)
 	}
 
 	if pi.UUID != uuid || pi.PID == 0 {

@@ -455,11 +455,11 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 	}
 	for bind := range runner.SecretMounts {
 		if _, ok := runner.Container.Mounts[bind]; ok {
-			return fmt.Errorf("Secret mount %q conflicts with regular mount", bind)
+			return fmt.Errorf("secret mount %q conflicts with regular mount", bind)
 		}
 		if runner.SecretMounts[bind].Kind != "json" &&
 			runner.SecretMounts[bind].Kind != "text" {
-			return fmt.Errorf("Secret mount %q type is %q but only 'json' and 'text' are permitted.",
+			return fmt.Errorf("secret mount %q type is %q but only 'json' and 'text' are permitted",
 				bind, runner.SecretMounts[bind].Kind)
 		}
 		binds = append(binds, bind)
@@ -474,7 +474,7 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 		if bind == "stdout" || bind == "stderr" {
 			// Is it a "file" mount kind?
 			if mnt.Kind != "file" {
-				return fmt.Errorf("Unsupported mount kind '%s' for %s. Only 'file' is supported.", mnt.Kind, bind)
+				return fmt.Errorf("unsupported mount kind '%s' for %s: only 'file' is supported", mnt.Kind, bind)
 			}
 
 			// Does path start with OutputPath?
@@ -490,7 +490,7 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 		if bind == "stdin" {
 			// Is it a "collection" mount kind?
 			if mnt.Kind != "collection" && mnt.Kind != "json" {
-				return fmt.Errorf("Unsupported mount kind '%s' for stdin. Only 'collection' or 'json' are supported.", mnt.Kind)
+				return fmt.Errorf("unsupported mount kind '%s' for stdin: only 'collection' and 'json' are supported", mnt.Kind)
 			}
 		}
 
@@ -500,7 +500,7 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 
 		if strings.HasPrefix(bind, runner.Container.OutputPath+"/") && bind != runner.Container.OutputPath+"/" {
 			if mnt.Kind != "collection" && mnt.Kind != "text" && mnt.Kind != "json" {
-				return fmt.Errorf("Only mount points of kind 'collection', 'text' or 'json' are supported underneath the output_path for %q, was %q", bind, mnt.Kind)
+				return fmt.Errorf("only mount points of kind 'collection', 'text' or 'json' are supported underneath the output_path for %q, was %q", bind, mnt.Kind)
 			}
 		}
 
@@ -508,17 +508,17 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 		case mnt.Kind == "collection" && bind != "stdin":
 			var src string
 			if mnt.UUID != "" && mnt.PortableDataHash != "" {
-				return fmt.Errorf("Cannot specify both 'uuid' and 'portable_data_hash' for a collection mount")
+				return fmt.Errorf("cannot specify both 'uuid' and 'portable_data_hash' for a collection mount")
 			}
 			if mnt.UUID != "" {
 				if mnt.Writable {
-					return fmt.Errorf("Writing to existing collections currently not permitted.")
+					return fmt.Errorf("writing to existing collections currently not permitted")
 				}
 				pdhOnly = false
 				src = fmt.Sprintf("%s/by_id/%s", runner.ArvMountPoint, mnt.UUID)
 			} else if mnt.PortableDataHash != "" {
 				if mnt.Writable && !strings.HasPrefix(bind, runner.Container.OutputPath+"/") {
-					return fmt.Errorf("Can never write to a collection specified by portable data hash")
+					return fmt.Errorf("can never write to a collection specified by portable data hash")
 				}
 				idx := strings.Index(mnt.PortableDataHash, "/")
 				if idx > 0 {
@@ -559,15 +559,15 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 			var tmpdir string
 			tmpdir, err = runner.MkTempDir(runner.parentTemp, "tmp")
 			if err != nil {
-				return fmt.Errorf("While creating mount temp dir: %v", err)
+				return fmt.Errorf("while creating mount temp dir: %v", err)
 			}
 			st, staterr := os.Stat(tmpdir)
 			if staterr != nil {
-				return fmt.Errorf("While Stat on temp dir: %v", staterr)
+				return fmt.Errorf("while Stat on temp dir: %v", staterr)
 			}
 			err = os.Chmod(tmpdir, st.Mode()|os.ModeSetgid|0777)
 			if staterr != nil {
-				return fmt.Errorf("While Chmod temp dir: %v", err)
+				return fmt.Errorf("while Chmod temp dir: %v", err)
 			}
 			runner.Binds = append(runner.Binds, fmt.Sprintf("%s:%s", tmpdir, bind))
 			if bind == runner.Container.OutputPath {
@@ -618,7 +618,7 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 	}
 
 	if runner.HostOutputDir == "" {
-		return fmt.Errorf("Output path does not correspond to a writable mount point")
+		return fmt.Errorf("output path does not correspond to a writable mount point")
 	}
 
 	if wantAPI := runner.Container.RuntimeConstraints.API; needCertMount && wantAPI != nil && *wantAPI {
@@ -640,20 +640,20 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 
 	runner.ArvMount, err = runner.RunArvMount(arvMountCmd, token)
 	if err != nil {
-		return fmt.Errorf("While trying to start arv-mount: %v", err)
+		return fmt.Errorf("while trying to start arv-mount: %v", err)
 	}
 
 	for _, p := range collectionPaths {
 		_, err = os.Stat(p)
 		if err != nil {
-			return fmt.Errorf("While checking that input files exist: %v", err)
+			return fmt.Errorf("while checking that input files exist: %v", err)
 		}
 	}
 
 	for _, cp := range copyFiles {
 		st, err := os.Stat(cp.src)
 		if err != nil {
-			return fmt.Errorf("While staging writable file from %q to %q: %v", cp.src, cp.bind, err)
+			return fmt.Errorf("while staging writable file from %q to %q: %v", cp.src, cp.bind, err)
 		}
 		if st.IsDir() {
 			err = filepath.Walk(cp.src, func(walkpath string, walkinfo os.FileInfo, walkerr error) error {
@@ -674,7 +674,7 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 					}
 					return os.Chmod(target, walkinfo.Mode()|os.ModeSetgid|0777)
 				} else {
-					return fmt.Errorf("Source %q is not a regular file or directory", cp.src)
+					return fmt.Errorf("source %q is not a regular file or directory", cp.src)
 				}
 			})
 		} else if st.Mode().IsRegular() {
@@ -684,7 +684,7 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 			}
 		}
 		if err != nil {
-			return fmt.Errorf("While staging writable file from %q to %q: %v", cp.src, cp.bind, err)
+			return fmt.Errorf("while staging writable file from %q to %q: %v", cp.src, cp.bind, err)
 		}
 	}
 

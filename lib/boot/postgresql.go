@@ -61,7 +61,7 @@ func (runPostgreSQL) Run(ctx context.Context, fail func(error), super *Superviso
 		if err != nil {
 			return fmt.Errorf("user.Lookup(\"postgres\"): %s", err)
 		}
-		postgresUid, err := strconv.Atoi(postgresUser.Uid)
+		postgresUID, err := strconv.Atoi(postgresUser.Uid)
 		if err != nil {
 			return fmt.Errorf("user.Lookup(\"postgres\"): non-numeric uid?: %q", postgresUser.Uid)
 		}
@@ -77,7 +77,7 @@ func (runPostgreSQL) Run(ctx context.Context, fail func(error), super *Superviso
 		if err != nil {
 			return err
 		}
-		err = os.Chown(datadir, postgresUid, 0)
+		err = os.Chown(datadir, postgresUID, 0)
 		if err != nil {
 			return err
 		}
