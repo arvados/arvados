@@ -11,10 +11,6 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 This page documents setting up and running the "Arvados on Kubernetes":/install/arvados-on-kubernetes.html @Helm@ chart on @Google Kubernetes Engine@ (GKE).
 
-{% include 'notebox_begin_warning' %}
-This Helm chart does not retain any state after it is deleted. An Arvados cluster created with this Helm chart is entirely ephemeral, and all data stored on the cluster will be deleted when it is shut down. This will be fixed in a future version.
-{% include 'notebox_end' %}
-
 h2. Prerequisites
 
 h3. Install tooling
@@ -141,10 +137,6 @@ $ helm upgrade arvados .
 </pre>
 
 h2. Shut down
-
-{% include 'notebox_begin_warning' %}
-This Helm chart does not retain any state after it is deleted. An Arvados cluster created with this Helm chart is entirely ephemeral, and <strong>all data stored on the Arvados cluster will be deleted</strong> when it is shut down. This will be fixed in a future version.
-{% include 'notebox_end' %}
 
 <pre>
 $ helm del arvados
