@@ -29,7 +29,7 @@ import { openSharingDialog } from '~/store/sharing-dialog/sharing-dialog-actions
 import { openAdvancedTabDialog } from "~/store/advanced-tab/advanced-tab";
 import { toggleDetailsPanel } from '~/store/details-panel/details-panel-action';
 import { copyToClipboardAction, openInNewTabAction } from "~/store/open-in-new-tab/open-in-new-tab.actions";
-import { recoverVersion } from "~/store/collections/collection-version-actions";
+import { openRecoverCollectionVersionDialog } from "~/store/collections/collection-version-actions";
 import { TogglePublicFavoriteAction } from "../actions/public-favorite-action";
 import { togglePublicFavorite } from "~/store/public-favorites/public-favorites-actions";
 import { publicFavoritePanelActions } from "~/store/public-favorites-panel/public-favorites-action";
@@ -142,7 +142,7 @@ export const oldCollectionVersionActionSet: ContextMenuActionSet = [
             icon: RecoverVersionIcon,
             name: 'Recover version',
             execute: (dispatch, { uuid }) => {
-                dispatch<any>(recoverVersion(uuid));
+                dispatch<any>(openRecoverCollectionVersionDialog(uuid));
             }
         },
     ]

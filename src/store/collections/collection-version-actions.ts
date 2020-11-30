@@ -8,6 +8,22 @@ import { ServiceRepository } from '~/services/services';
 import { snackbarActions, SnackbarKind } from "../snackbar/snackbar-actions";
 import { resourcesActions } from "../resources/resources-actions";
 import { navigateTo } from "../navigation/navigation-action";
+import { dialogActions } from "../dialog/dialog-actions";
+
+export const COLLECTION_RECOVER_VERSION_DIALOG = 'collectionRecoverVersionDialog';
+
+export const openRecoverCollectionVersionDialog = (uuid: string) =>
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        dispatch(dialogActions.OPEN_DIALOG({
+            id: COLLECTION_RECOVER_VERSION_DIALOG,
+            data: {
+                title: 'Recover version',
+                text: "Do you want to copy this as the new collection's head version? If you don't want to modify the current head version, you can just make a copy.",
+                confirmButtonLabel: 'Recover',
+                uuid
+            }
+        }));
+    };
 
 export const recoverVersion = (resourceUuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {

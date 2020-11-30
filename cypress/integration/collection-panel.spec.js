@@ -415,6 +415,8 @@ describe('Collection panel tests', function() {
             });
             cy.get('[data-cy=collection-panel-options-btn]').click()
             cy.get('[data-cy=context-menu]').contains('Recover version').click();
+            cy.get('[data-cy=confirmation-dialog]').should('contain', 'Recover version');
+            cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
             cy.get('[data-cy=collection-info-panel]')
                 .should('not.contain', 'This is an old version');
             cy.get('[data-cy=collection-version-number]').should('contain', '4');
