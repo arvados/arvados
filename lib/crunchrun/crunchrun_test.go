@@ -1506,7 +1506,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 
 		err := cr.SetupMounts()
 		c.Check(err, NotNil)
-		c.Check(err, ErrorMatches, `Only mount points of kind 'collection', 'text' or 'json' are supported underneath the output_path.*`)
+		c.Check(err, ErrorMatches, `only mount points of kind 'collection', 'text' or 'json' are supported underneath the output_path.*`)
 		os.RemoveAll(cr.ArvMountPoint)
 		cr.CleanupDirs()
 		checkEmpty()
@@ -1523,7 +1523,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 
 		err := cr.SetupMounts()
 		c.Check(err, NotNil)
-		c.Check(err, ErrorMatches, `Unsupported mount kind 'tmp' for stdin.*`)
+		c.Check(err, ErrorMatches, `unsupported mount kind 'tmp' for stdin.*`)
 		os.RemoveAll(cr.ArvMountPoint)
 		cr.CleanupDirs()
 		checkEmpty()
@@ -1654,7 +1654,7 @@ func (s *TestSuite) TestStdoutWithWrongKindTmp(c *C) {
 }`, func(t *TestDockerClient) {})
 
 	c.Check(err, NotNil)
-	c.Check(strings.Contains(err.Error(), "Unsupported mount kind 'tmp' for stdout"), Equals, true)
+	c.Check(strings.Contains(err.Error(), "unsupported mount kind 'tmp' for stdout"), Equals, true)
 }
 
 func (s *TestSuite) TestStdoutWithWrongKindCollection(c *C) {
@@ -1665,7 +1665,7 @@ func (s *TestSuite) TestStdoutWithWrongKindCollection(c *C) {
 }`, func(t *TestDockerClient) {})
 
 	c.Check(err, NotNil)
-	c.Check(strings.Contains(err.Error(), "Unsupported mount kind 'collection' for stdout"), Equals, true)
+	c.Check(strings.Contains(err.Error(), "unsupported mount kind 'collection' for stdout"), Equals, true)
 }
 
 func (s *TestSuite) TestFullRunWithAPI(c *C) {
