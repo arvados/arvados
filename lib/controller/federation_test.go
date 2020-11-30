@@ -602,6 +602,31 @@ func (s *FederationSuite) TestCreateContainerRequestBadToken(c *check.C) {
 	c.Check(e["errors"], check.DeepEquals, []string{"invalid API token"})
 }
 
+func (s *FederationSuite) TestCreateRemoteContainerRequest(c *check.C) {
+	defer s.localServiceReturns404(c).Close()
+	// pass cluster_id via query parameter, this allows arvados-controller
+	// to avoid parsing the body
+	req := httptest.NewRequest("POST", "/arvados/v1/container_requests?cluster_id=zzzzz",
+		strings.NewReader(`{
+	  "container_request": {
+	    "name": "hello world",
+	    "state": "Uncommitted",
+	    "output_path": "/",
+	    "container_image": "123",
+	    "command": ["abc"]
+	  }
+	}
+	`))
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	req.Header.Set("Content-type", "application/json")
+	resp := s.testRequest(req).Result()
+	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+	var cr arvados.ContainerRequest
+	c.Check(json.NewDecoder(resp.Body).Decode(&cr), check.IsNil)
+	c.Check(cr.Name, check.Equals, "hello world")
+	c.Check(strings.HasPrefix(cr.UUID, "zzzzz-"), check.Equals, true)
+}
+
 func (s *FederationSuite) TestCreateRemoteContainerRequestError(c *check.C) {
 	defer s.localServiceReturns404(c).Close()
 	// pass cluster_id via query parameter, this allows arvados-controller
