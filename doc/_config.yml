@@ -173,6 +173,7 @@ navbar:
       - user/topics/arvados-sync-groups.html.textile.liquid
       - admin/scoped-tokens.html.textile.liquid
       - admin/token-expiration-policy.html.textile.liquid
+      - admin/user-activity.html.textile.liquid
     - Monitoring:
       - admin/logging.html.textile.liquid
       - admin/metrics.html.textile.liquid

@@ -222,7 +222,8 @@ if test -z "$packages" ; then
         python3-arvados-fuse
         python3-arvados-python-client
         python3-arvados-cwl-runner
-        python3-crunchstat-summary"
+        python3-crunchstat-summary
+        python3-arvados-user-activity"
 fi
 
 FINAL_EXITCODE=0
