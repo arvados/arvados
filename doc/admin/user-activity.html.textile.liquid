@@ -23,15 +23,21 @@ First, configure the "Arvados package repositories":../../install/packages.html
 
 {% include 'install_packages' %}
 
-h2. Option 2: Install with pip
+h2. Option 2: Install from source
 
-Run @pip install arvados-user-activity'@ in an appropriate installation environment, such as a @virtualenv@.
+Step 1: Check out the arvados source code
+
+Step 2: Change directory to @arvados/tools/user-activity@
+
+Step 3: Run @pip install .@ in an appropriate installation environment, such as a @virtualenv@.
 
 Note: depends on the "Arvados Python SDK":../sdk/python/sdk-python.html and its associated build prerequisites (e.g. @pycurl@).
 
 h2. Usage
 
-Set your Arvados environment, then run the tool giving it the number of days to report for.  It will query the logs and generate a summary report on standard output.
+Set ARVADOS_API_HOST and ARVADOS_API_TOKEN for an admin user or system root token.
+
+Run the tool with the option @--days@ giving the number of days to report on.  It will request activity logs from the API and generate a summary report on standard output.
 
 Example run:
 
@@ -79,7 +85,7 @@ Peter Amstutz <peter.amstutz@curii.com> (https://workbench.pirca.arvadosapi.com/
   2020-11-23 14:53-05:00 to 2020-11-24 11:58-05:00 (21:05) Account activity
   2020-11-24 15:06-05:00 to 2020-11-24 16:38-05:00 (01:32) Account activity
 
-Marc Rubenfield <mrubenfield@gmail.com> (https://workbench.pirca.arvadosapi.com/users/jutro-tpzed-v9s9q97pgydh1yf)
+Marc Rubenfield <mrubenfield@curii.com> (https://workbench.pirca.arvadosapi.com/users/jutro-tpzed-v9s9q97pgydh1yf)
   2020-11-11 12:27-05:00 Untagged pirca-4zz18-xmq257bsla4kdco
   2020-11-11 12:27-05:00 Deleted collection "Output of main" (pirca-4zz18-xmq257bsla4kdco)
 
