@@ -352,7 +352,9 @@ func (conn *Conn) ContainerRequestCreate(ctx context.Context, options arvados.Cr
 			// This should probably be StatusUnauthorized
 			// (need to update test in
 			// lib/controller/federation_test.go):
-			return arvados.ContainerRequest{}, httpErrorf(http.StatusForbidden, "%w", err)
+			// When RoR is out of the picture this should be:
+			// return arvados.ContainerRequest{}, httpErrorf(http.StatusUnauthorized, "%w", err)
+			return arvados.ContainerRequest{}, httpErrorf(http.StatusForbidden, "%s", "invalid API token")
 		}
 		user, err := conn.local.UserGetCurrent(ctx, arvados.GetOptions{})
 		if err != nil {
