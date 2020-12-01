@@ -37,7 +37,7 @@ from .arvworkflow import ArvadosWorkflow, upload_workflow
 from .fsaccess import CollectionFsAccess, CollectionFetcher, collectionResolver, CollectionCache, pdh_size
 from .perf import Perf
 from .pathmapper import NoFollowPathMapper
-from .task_queue import TaskQueue
+from cwltool.task_queue import TaskQueue
 from .context import ArvLoadingContext, ArvRuntimeContext
 from ._version import __version__
 

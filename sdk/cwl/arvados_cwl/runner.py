@@ -31,8 +31,7 @@ import cwltool.workflow
 from cwltool.process import (scandeps, UnsupportedRequirement, normalizeFilesDirs,
                              shortname, Process, fill_in_defaults)
 from cwltool.load_tool import fetch_document
-from cwltool.pathmapper import adjustFileObjs, adjustDirObjs, visit_class
-from cwltool.utils import aslist
+from cwltool.utils import aslist, adjustFileObjs, adjustDirObjs, visit_class
 from cwltool.builder import substitute
 from cwltool.pack import pack
 from cwltool.update import INTERNAL_VERSION
@@ -444,9 +443,14 @@ def upload_docker(arvrunner, tool):
                 # TODO: can be supported by containers API, but not jobs API.
                 raise SourceLine(docker_req, "dockerOutputDirectory", UnsupportedRequirement).makeError(
                     "Option 'dockerOutputDirectory' of DockerRequirement not supported.")
-            arvados_cwl.arvdocker.arv_docker_get_image(arvrunner.api, docker_req, True, arvrunner.project_uuid)
+            arvados_cwl.arvdocker.arv_docker_get_image(arvrunner.api, docker_req, True, arvrunner.project_uuid,
+                                                       arvrunner.runtimeContext.force_docker_pull,
+                                                       arvrunner.runtimeContext.tmp_outdir_prefix)
         else:
-            arvados_cwl.arvdocker.arv_docker_get_image(arvrunner.api, {"dockerPull": "arvados/jobs:"+__version__}, True, arvrunner.project_uuid)
+            arvados_cwl.arvdocker.arv_docker_get_image(arvrunner.api, {"dockerPull": "arvados/jobs:"+__version__},
+                                                       True, arvrunner.project_uuid,
+                                                       arvrunner.runtimeContext.force_docker_pull,
+                                                       arvrunner.runtimeContext.tmp_outdir_prefix)
     elif isinstance(tool, cwltool.workflow.Workflow):
         for s in tool.steps:
             upload_docker(arvrunner, s.embedded_tool)
@@ -479,7 +483,10 @@ def packed_workflow(arvrunner, tool, merged_map):
             if "location" in v and v["location"] in merged_map[cur_id].secondaryFiles:
                 v["secondaryFiles"] = merged_map[cur_id].secondaryFiles[v["location"]]
             if v.get("class") == "DockerRequirement":
-                v["http://arvados.org/cwl#dockerCollectionPDH"] = arvados_cwl.arvdocker.arv_docker_get_image(arvrunner.api, v, True, arvrunner.project_uuid)
+                v["http://arvados.org/cwl#dockerCollectionPDH"] = arvados_cwl.arvdocker.arv_docker_get_image(arvrunner.api, v, True,
+                                                                                                             arvrunner.project_uuid,
+                                                                                                             arvrunner.runtimeContext.force_docker_pull,
+                                                                                                             arvrunner.runtimeContext.tmp_outdir_prefix)
             for l in v:
                 visit(v[l], cur_id)
         if isinstance(v, list):
@@ -584,7 +591,9 @@ def arvados_jobs_image(arvrunner, img):
     """Determine if the right arvados/jobs image version is available.  If not, try to pull and upload it."""
 
     try:
-        return arvados_cwl.arvdocker.arv_docker_get_image(arvrunner.api, {"dockerPull": img}, True, arvrunner.project_uuid)
+        return arvados_cwl.arvdocker.arv_docker_get_image(arvrunner.api, {"dockerPull": img}, True, arvrunner.project_uuid,
+                                                          arvrunner.runtimeContext.force_docker_pull,
+                                                          arvrunner.runtimeContext.tmp_outdir_prefix)
     except Exception as e:
         raise Exception("Docker image %s is not available\n%s" % (img, e) )
 

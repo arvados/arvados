@@ -11,7 +11,7 @@ import logging
 import os
 import threading
 
-from arvados_cwl.task_queue import TaskQueue
+from cwltool.task_queue import TaskQueue
 
 def success_task():
     pass

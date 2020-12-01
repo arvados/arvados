@@ -17,7 +17,7 @@ from cwltool.pack import pack
 from cwltool.load_tool import fetch_document, resolve_and_validate_document
 from cwltool.process import shortname
 from cwltool.workflow import Workflow, WorkflowException, WorkflowStep
-from cwltool.pathmapper import adjustFileObjs, adjustDirObjs, visit_class
+from cwltool.utils import adjustFileObjs, adjustDirObjs, visit_class
 from cwltool.context import LoadingContext
 
 import ruamel.yaml as yaml
