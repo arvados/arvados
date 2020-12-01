@@ -130,7 +130,7 @@ export const RemoveIcon: IconType = (props) => <Delete {...props} />;
 export const RemoveFavoriteIcon: IconType = (props) => <Star {...props} />;
 export const PublicFavoriteIcon: IconType = (props) => <Public {...props} />;
 export const RenameIcon: IconType = (props) => <Edit {...props} />;
-export const RecoverVersionIcon: IconType = (props) => <FlipToFront {...props} />;
+export const RestoreVersionIcon: IconType = (props) => <FlipToFront {...props} />;
 export const RestoreFromTrashIcon: IconType = (props) => <RestoreFromTrash {...props} />;
 export const ReRunProcessIcon: IconType = (props) => <Cached {...props} />;
 export const SearchIcon: IconType = (props) => <Search {...props} />;

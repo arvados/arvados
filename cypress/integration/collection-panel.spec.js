@@ -355,7 +355,7 @@ describe('Collection panel tests', function() {
             // Check that only old collection action are available on context menu
             cy.get('[data-cy=collection-panel-options-btn]').click();
             cy.get('[data-cy=context-menu]')
-                .should('contain', 'Recover version')
+                .should('contain', 'Restore version')
                 .and('not.contain', 'Add to favorites');
             cy.get('body').click(); // Collapse the menu avoiding details panel expansion
 
@@ -371,7 +371,7 @@ describe('Collection panel tests', function() {
 
             // Check that old collection action isn't available on context menu
             cy.get('[data-cy=collection-panel-options-btn]').click()
-            cy.get('[data-cy=context-menu]').should('not.contain', 'Recover version')
+            cy.get('[data-cy=context-menu]').should('not.contain', 'Restore version')
             cy.get('body').click(); // Collapse the menu avoiding details panel expansion
 
             // Make another change, confirm new version.
@@ -409,13 +409,13 @@ describe('Collection panel tests', function() {
                 .and('not.contain', 'Edit collection');
             cy.get('body').click();
 
-            // Recover first version
+            // Restore first version
             cy.get('[data-cy=collection-version-browser]').within(() => {
                 cy.get('[data-cy=collection-version-browser-select-1]').click();
             });
             cy.get('[data-cy=collection-panel-options-btn]').click()
-            cy.get('[data-cy=context-menu]').contains('Recover version').click();
-            cy.get('[data-cy=confirmation-dialog]').should('contain', 'Recover version');
+            cy.get('[data-cy=context-menu]').contains('Restore version').click();
+            cy.get('[data-cy=confirmation-dialog]').should('contain', 'Restore version');
             cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
             cy.get('[data-cy=collection-info-panel]')
                 .should('not.contain', 'This is an old version');

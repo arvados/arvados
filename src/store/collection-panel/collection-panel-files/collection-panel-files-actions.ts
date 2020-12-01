@@ -42,10 +42,10 @@ export const loadCollectionFiles = (uuid: string) =>
             const mapped = mapTreeValues(services.collectionService.extendFileURL)(sorted);
             dispatch(collectionPanelFilesAction.SET_COLLECTION_FILES(mapped));
             dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PANEL_LOAD_FILES));
-        }).catch(e => {
+        }).catch(() => {
             dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PANEL_LOAD_FILES));
             dispatch(snackbarActions.OPEN_SNACKBAR({
-                message: `Error getting file list: ${e.errors[0]}`,
+                message: `Error getting file list`,
                 hideDuration: 2000,
                 kind: SnackbarKind.ERROR }));
         });

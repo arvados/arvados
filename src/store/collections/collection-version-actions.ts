@@ -10,22 +10,22 @@ import { resourcesActions } from "../resources/resources-actions";
 import { navigateTo } from "../navigation/navigation-action";
 import { dialogActions } from "../dialog/dialog-actions";
 
-export const COLLECTION_RECOVER_VERSION_DIALOG = 'collectionRecoverVersionDialog';
+export const COLLECTION_RESTORE_VERSION_DIALOG = 'collectionRestoreVersionDialog';
 
-export const openRecoverCollectionVersionDialog = (uuid: string) =>
+export const openRestoreCollectionVersionDialog = (uuid: string) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(dialogActions.OPEN_DIALOG({
-            id: COLLECTION_RECOVER_VERSION_DIALOG,
+            id: COLLECTION_RESTORE_VERSION_DIALOG,
             data: {
-                title: 'Recover version',
-                text: "Do you want to make this the new collection's head version? If you don't want to modify the current head version, you can just make a copy.",
-                confirmButtonLabel: 'Recover',
+                title: 'Restore version',
+                text: "This will copy the content of the selected version to the head. To make a new collection with the content of the selected version, use 'Make a copy' instead.",
+                confirmButtonLabel: 'Restore',
                 uuid
             }
         }));
     };
 
-export const recoverVersion = (resourceUuid: string) =>
+export const restoreVersion = (resourceUuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         try {
             // Request que entire record because stored old versions usually
@@ -40,7 +40,7 @@ export const recoverVersion = (resourceUuid: string) =>
             dispatch<any>(navigateTo(headVersion.uuid));
         } catch (e) {
             dispatch(snackbarActions.OPEN_SNACKBAR({
-                message: `Couldn't recover version: ${e.errors[0]}`,
+                message: `Couldn't restore version: ${e.errors[0]}`,
                 hideDuration: 2000,
                 kind: SnackbarKind.ERROR
             }));

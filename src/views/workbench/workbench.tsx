@@ -99,7 +99,7 @@ import { CollectionsContentAddressPanel } from '~/views/collection-content-addre
 import { AllProcessesPanel } from '../all-processes-panel/all-processes-panel';
 import { NotFoundPanel } from '../not-found-panel/not-found-panel';
 import { AutoLogout } from '~/views-components/auto-logout/auto-logout';
-import { RecoverCollectionVersionDialog } from '~/views-components/collections-dialog/recover-version-dialog';
+import { RestoreCollectionVersionDialog } from '~/views-components/collections-dialog/restore-version-dialog';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -236,7 +236,7 @@ export const WorkbenchPanel =
             <ProcessCommandDialog />
             <ProcessInputDialog />
             <ProjectPropertiesDialog />
-            <RecoverCollectionVersionDialog />
+            <RestoreCollectionVersionDialog />
             <RemoveApiClientAuthorizationDialog />
             <RemoveComputeNodeDialog />
             <RemoveGroupDialog />
