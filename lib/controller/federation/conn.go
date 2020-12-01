@@ -360,7 +360,7 @@ func (conn *Conn) ContainerRequestCreate(ctx context.Context, options arvados.Cr
 		if err != nil {
 			return arvados.ContainerRequest{}, err
 		}
-		if len(aca.Scopes) != 0 || aca.Scopes[0] != "all" {
+		if len(aca.Scopes) == 0 || aca.Scopes[0] != "all" {
 			return arvados.ContainerRequest{}, httpErrorf(http.StatusForbidden, "token scope is not [all]")
 		}
 		if strings.HasPrefix(aca.UUID, conn.cluster.ClusterID) {

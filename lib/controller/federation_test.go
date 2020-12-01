@@ -352,7 +352,13 @@ func (s *FederationSuite) localServiceReturns404(c *check.C) *httpserver.Server 
 	return s.localServiceHandler(c, http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		if req.URL.Path == "/arvados/v1/api_client_authorizations/current" {
 			if req.Header.Get("Authorization") == "Bearer "+arvadostest.ActiveToken {
-				json.NewEncoder(w).Encode(arvados.APIClientAuthorization{UUID: arvadostest.ActiveTokenUUID, APIToken: arvadostest.ActiveToken})
+				json.NewEncoder(w).Encode(arvados.APIClientAuthorization{UUID: arvadostest.ActiveTokenUUID, APIToken: arvadostest.ActiveToken, Scopes: []string{"all"}})
+			} else {
+				w.WriteHeader(http.StatusUnauthorized)
+			}
+		} else if req.URL.Path == "/arvados/v1/users/current" {
+			if req.Header.Get("Authorization") == "Bearer "+arvadostest.ActiveToken {
+				json.NewEncoder(w).Encode(arvados.User{UUID: arvadostest.ActiveUserUUID})
 			} else {
 				w.WriteHeader(http.StatusUnauthorized)
 			}
