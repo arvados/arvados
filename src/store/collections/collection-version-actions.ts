@@ -18,7 +18,7 @@ export const openRecoverCollectionVersionDialog = (uuid: string) =>
             id: COLLECTION_RECOVER_VERSION_DIALOG,
             data: {
                 title: 'Recover version',
-                text: "Do you want to copy this as the new collection's head version? If you don't want to modify the current head version, you can just make a copy.",
+                text: "Do you want to make this the new collection's head version? If you don't want to modify the current head version, you can just make a copy.",
                 confirmButtonLabel: 'Recover',
                 uuid
             }
