@@ -334,6 +334,7 @@ class CollectionTest < ActiveSupport::TestCase
       # Set up initial collection
       c = create_collection 'foo', Encoding::US_ASCII
       assert c.valid?
+      original_version_modified_at = c.modified_at.to_f
       # Make changes so that a new version is created
       c.update_attributes!({'name' => 'bar'})
       c.reload
@@ -344,9 +345,7 @@ class CollectionTest < ActiveSupport::TestCase
 
       version_creation_datetime = c_old.modified_at.to_f
       assert_equal c.created_at.to_f, c_old.created_at.to_f
-      # Current version is updated just a few milliseconds before the version is
-      # saved on the database.
-      assert_operator c.modified_at.to_f, :<, version_creation_datetime
+      assert_equal original_version_modified_at, version_creation_datetime
 
       # Make update on current version so old version get the attribute synced;
       # its modified_at should not change.
