@@ -47,7 +47,8 @@ export const loadCollectionFiles = (uuid: string) =>
             dispatch(snackbarActions.OPEN_SNACKBAR({
                 message: `Error getting file list: ${e.errors[0]}`,
                 hideDuration: 2000,
-                kind: SnackbarKind.ERROR }));
+                kind: SnackbarKind.ERROR
+            }));
         });
     };
 
@@ -149,7 +150,7 @@ export const renameFile = (newFullPath: string) =>
                     dispatch<any>(loadCollectionPanel(currentCollection.uuid, true));
                     dispatch(dialogActions.CLOSE_DIALOG({ id: RENAME_FILE_DIALOG }));
                     dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'File name changed.', hideDuration: 2000 }));
-                }).catch (e => {
+                }).catch(e => {
                     const errors: FormErrors<RenameFileDialogData, string> = {
                         path: `Could not rename the file: ${e.responseText}`
                     };
