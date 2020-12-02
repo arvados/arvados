@@ -19,8 +19,7 @@ import { CollectionPanelFiles } from '~/views-components/collection-panel-files/
 import { CollectionTagForm } from './collection-tag-form';
 import { deleteCollectionTag, navigateToProcess, collectionPanelActions } from '~/store/collection-panel/collection-panel-action';
 import { getResource } from '~/store/resources/resources';
-import { openContextMenu } from '~/store/context-menu/context-menu-actions';
-import { ContextMenuKind } from '~/views-components/context-menu/context-menu';
+import { openContextMenu, resourceUuidToContextMenuKind } from '~/store/context-menu/context-menu-actions';
 import { formatDate, formatFileSize } from "~/common/formatters";
 import { openDetailsPanel } from '~/store/details-panel/details-panel-action';
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
@@ -237,19 +236,15 @@ export const CollectionPanel = withStyles(styles)(
             }
 
             handleContextMenu = (event: React.MouseEvent<any>) => {
-                const { uuid, ownerUuid, name, description, kind, isTrashed } = this.props.item;
-                const { isWritable } = this.props;
+                const { uuid, ownerUuid, name, description, kind } = this.props.item;
+                const menuKind = this.props.dispatch<any>(resourceUuidToContextMenuKind(uuid));
                 const resource = {
                     uuid,
                     ownerUuid,
                     name,
                     description,
                     kind,
-                    menuKind: isWritable
-                        ? isTrashed
-                            ? ContextMenuKind.TRASHED_COLLECTION
-                            : ContextMenuKind.COLLECTION
-                        : ContextMenuKind.READONLY_COLLECTION
+                    menuKind,
                 };
                 // Avoid expanding/collapsing the panel
                 event.stopPropagation();

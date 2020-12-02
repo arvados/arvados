@@ -9,14 +9,16 @@ import { connect, DispatchProp } from 'react-redux';
 import { RootState } from '~/store/store';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { ShareMeIcon } from '~/components/icon/icon';
-import { ResourcesState, getResourceWithEditableStatus } from '~/store/resources/resources';
+import { ResourcesState, getResource } from '~/store/resources/resources';
 import { navigateTo } from "~/store/navigation/navigation-action";
 import { loadDetailsPanel } from "~/store/details-panel/details-panel-action";
 import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
 import { SHARED_WITH_ME_PANEL_ID } from '~/store/shared-with-me-panel/shared-with-me-panel-actions';
-import { openContextMenu, resourceKindToContextMenuKind } from '~/store/context-menu/context-menu-actions';
-import { GroupResource } from '~/models/group';
-import { EditableResource } from '~/models/resource';
+import {
+    openContextMenu,
+    resourceUuidToContextMenuKind
+} from '~/store/context-menu/context-menu-actions';
+import { GroupContentsResource } from '~/services/groups-service/groups-service';
 
 type CssRules = "toolbar" | "button";
 
@@ -32,7 +34,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 interface SharedWithMePanelDataProps {
     resources: ResourcesState;
-    isAdmin: boolean;
     userUuid: string;
 }
 
@@ -41,7 +42,6 @@ type SharedWithMePanelProps = SharedWithMePanelDataProps & DispatchProp & WithSt
 export const SharedWithMePanel = withStyles(styles)(
     connect((state: RootState) => ({
         resources: state.resources,
-        isAdmin: state.auth.user!.isAdmin,
         userUuid: state.auth.user!.uuid,
     }))(
         class extends React.Component<SharedWithMePanelProps> {
@@ -56,15 +56,15 @@ export const SharedWithMePanel = withStyles(styles)(
             }
 
             handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
-                const { isAdmin, userUuid, resources } = this.props;
-                const resource = getResourceWithEditableStatus<GroupResource & EditableResource>(resourceUuid, userUuid)(resources);
-                const menuKind = resourceKindToContextMenuKind(resourceUuid, isAdmin, (resource || {} as EditableResource).isEditable);
+                const { resources } = this.props;
+                const resource = getResource<GroupContentsResource>(resourceUuid)(resources);
+                const menuKind = this.props.dispatch<any>(resourceUuidToContextMenuKind(resourceUuid));
                 if (menuKind && resource) {
                     this.props.dispatch<any>(openContextMenu(event, {
                         name: '',
                         uuid: resource.uuid,
                         ownerUuid: resource.ownerUuid,
-                        isTrashed: resource.isTrashed,
+                        isTrashed: ('isTrashed' in resource) ? resource.isTrashed: false,
                         kind: resource.kind,
                         menuKind
                     }));

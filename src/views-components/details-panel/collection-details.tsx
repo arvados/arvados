@@ -14,8 +14,7 @@ import { Grid, ListItem, StyleRulesCallback, Typography, withStyles, WithStyles 
 import { formatDate, formatFileSize } from '~/common/formatters';
 import { Dispatch } from 'redux';
 import { navigateTo } from '~/store/navigation/navigation-action';
-import { resourceKindToContextMenuKind, openContextMenu } from '~/store/context-menu/context-menu-actions';
-import { ContextMenuKind } from '../context-menu/context-menu';
+import { openContextMenu, resourceUuidToContextMenuKind } from '~/store/context-menu/context-menu-actions';
 
 export type CssRules = 'versionBrowserHeader' | 'versionBrowserItem';
 
@@ -62,29 +61,28 @@ export class CollectionDetails extends DetailsData<CollectionResource> {
 interface CollectionVersionBrowserProps {
     currentCollection: CollectionResource | undefined;
     versions: CollectionResource[];
-    isAdmin: boolean;
 }
 
 interface CollectionVersionBrowserDispatchProps {
     showVersion: (c: CollectionResource) => void;
-    handleContextMenu: (event: React.MouseEvent<HTMLElement>, collection: CollectionResource, menuKind: ContextMenuKind | undefined) => void;
+    handleContextMenu: (event: React.MouseEvent<HTMLElement>, collection: CollectionResource) => void;
 }
 
 const mapStateToProps = (state: RootState): CollectionVersionBrowserProps => {
     const currentCollection = getResource<CollectionResource>(state.detailsPanel.resourceUuid)(state.resources);
-    const isAdmin = state.auth.user!.isAdmin;
     const versions = currentCollection
         && filterResources(rsc =>
             (rsc as CollectionResource).currentVersionUuid === currentCollection.currentVersionUuid)(state.resources)
                 .sort((a: CollectionResource, b: CollectionResource) => b.version - a.version) as CollectionResource[]
         || [];
-    return { currentCollection, versions, isAdmin };
+    return { currentCollection, versions };
 };
 
 const mapDispatchToProps = () =>
     (dispatch: Dispatch): CollectionVersionBrowserDispatchProps => ({
         showVersion: (collection) => dispatch<any>(navigateTo(collection.uuid)),
-        handleContextMenu: (event: React.MouseEvent<HTMLElement>, collection: CollectionResource, menuKind: ContextMenuKind) => {
+        handleContextMenu: (event: React.MouseEvent<HTMLElement>, collection: CollectionResource) => {
+            const menuKind = dispatch<any>(resourceUuidToContextMenuKind(collection.uuid));
             if (collection && menuKind) {
                 dispatch<any>(openContextMenu(event, {
                     name: collection.name,
@@ -100,7 +98,7 @@ const mapDispatchToProps = () =>
 
 const CollectionVersionBrowser = withStyles(styles)(
     connect(mapStateToProps, mapDispatchToProps)(
-        ({ currentCollection, versions, isAdmin, showVersion, handleContextMenu, classes }: CollectionVersionBrowserProps & CollectionVersionBrowserDispatchProps & WithStyles<CssRules>) => {
+        ({ currentCollection, versions, showVersion, handleContextMenu, classes }: CollectionVersionBrowserProps & CollectionVersionBrowserDispatchProps & WithStyles<CssRules>) => {
             return <div data-cy="collection-version-browser">
                 <Grid container>
                     <Grid item xs={2}>
@@ -125,14 +123,7 @@ const CollectionVersionBrowser = withStyles(styles)(
                             data-cy={`collection-version-browser-select-${item.version}`}
                             key={item.version}
                             onClick={e => showVersion(item)}
-                            onContextMenu={event => handleContextMenu(
-                                event,
-                                item,
-                                resourceKindToContextMenuKind(
-                                    item.uuid,
-                                    isAdmin,
-                                    (item.uuid === item.currentVersionUuid))
-                            )}
+                            onContextMenu={event => handleContextMenu(event, item)}
                             selected={isSelectedVersion}>
                             <Grid item xs={2}>
                                 <Typography variant="caption" className={classes.versionBrowserItem}>

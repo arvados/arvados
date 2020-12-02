@@ -80,6 +80,7 @@ export enum ContextMenuKind {
     COLLECTION = 'Collection',
     COLLECTION_ADMIN = 'CollectionAdmin',
     READONLY_COLLECTION = 'ReadOnlyCollection',
+    OLD_VERSION_COLLECTION = 'OldVersionCollection',
     TRASHED_COLLECTION = 'TrashedCollection',
     PROCESS = "Process",
     PROCESS_ADMIN = 'ProcessAdmin',

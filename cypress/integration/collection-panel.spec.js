@@ -352,6 +352,13 @@ describe('Collection panel tests', function() {
             cy.get('[data-cy=collection-files-panel]')
                 .should('contain', 'foo').and('contain', 'bar');
 
+            // Check that only old collection action are available on context menu
+            cy.get('[data-cy=collection-panel-options-btn]').click();
+            cy.get('[data-cy=context-menu]')
+                .should('contain', 'Restore version')
+                .and('not.contain', 'Add to favorites');
+            cy.get('body').click(); // Collapse the menu avoiding details panel expansion
+
             // Click on "head version" link, confirm that it's the latest version.
             cy.get('[data-cy=collection-info-panel]').contains('head version').click();
             cy.get('[data-cy=collection-info-panel]')
@@ -361,6 +368,11 @@ describe('Collection panel tests', function() {
             cy.get('[data-cy=collection-info-panel]').should('contain', colName);
             cy.get('[data-cy=collection-files-panel]').
                 should('not.contain', 'foo').and('contain', 'bar');
+
+            // Check that old collection action isn't available on context menu
+            cy.get('[data-cy=collection-panel-options-btn]').click()
+            cy.get('[data-cy=context-menu]').should('not.contain', 'Restore version')
+            cy.get('body').click(); // Collapse the menu avoiding details panel expansion
 
             // Make another change, confirm new version.
             cy.get('[data-cy=collection-panel-options-btn]').click();
@@ -392,10 +404,25 @@ describe('Collection panel tests', function() {
             // (and now an old version...)
             cy.get('[data-cy=collection-version-browser-select-1]').rightclick()
             cy.get('[data-cy=context-menu]')
-                .should('contain', 'Add to favorites')
+                .should('not.contain', 'Add to favorites')
                 .and('contain', 'Make a copy')
                 .and('not.contain', 'Edit collection');
             cy.get('body').click();
+
+            // Restore first version
+            cy.get('[data-cy=collection-version-browser]').within(() => {
+                cy.get('[data-cy=collection-version-browser-select-1]').click();
+            });
+            cy.get('[data-cy=collection-panel-options-btn]').click()
+            cy.get('[data-cy=context-menu]').contains('Restore version').click();
+            cy.get('[data-cy=confirmation-dialog]').should('contain', 'Restore version');
+            cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
+            cy.get('[data-cy=collection-info-panel]')
+                .should('not.contain', 'This is an old version');
+            cy.get('[data-cy=collection-version-number]').should('contain', '4');
+            cy.get('[data-cy=collection-info-panel]').should('contain', colName);
+            cy.get('[data-cy=collection-files-panel]')
+                .should('contain', 'foo').and('contain', 'bar');
         });
     });
 })

@@ -2,10 +2,23 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ContextMenuActionSet } from "../context-menu-action-set";
+import {
+    ContextMenuAction,
+    ContextMenuActionSet
+} from "../context-menu-action-set";
 import { ToggleFavoriteAction } from "../actions/favorite-action";
 import { toggleFavorite } from "~/store/favorites/favorites-actions";
-import { RenameIcon, ShareIcon, MoveToIcon, CopyIcon, DetailsIcon, AdvancedIcon, OpenIcon, Link } from "~/components/icon/icon";
+import {
+    RenameIcon,
+    ShareIcon,
+    MoveToIcon,
+    CopyIcon,
+    DetailsIcon,
+    AdvancedIcon,
+    OpenIcon,
+    Link,
+    RestoreVersionIcon
+} from "~/components/icon/icon";
 import { openCollectionUpdateDialog } from "~/store/collections/collection-update-actions";
 import { favoritePanelActions } from "~/store/favorite-panel/favorite-panel-action";
 import { openMoveCollectionDialog } from '~/store/collections/collection-move-actions';
@@ -16,17 +29,22 @@ import { openSharingDialog } from '~/store/sharing-dialog/sharing-dialog-actions
 import { openAdvancedTabDialog } from "~/store/advanced-tab/advanced-tab";
 import { toggleDetailsPanel } from '~/store/details-panel/details-panel-action';
 import { copyToClipboardAction, openInNewTabAction } from "~/store/open-in-new-tab/open-in-new-tab.actions";
+import { openRestoreCollectionVersionDialog } from "~/store/collections/collection-version-actions";
+import { TogglePublicFavoriteAction } from "../actions/public-favorite-action";
+import { togglePublicFavorite } from "~/store/public-favorites/public-favorites-actions";
+import { publicFavoritePanelActions } from "~/store/public-favorites-panel/public-favorites-action";
 
-export const readOnlyCollectionActionSet: ContextMenuActionSet = [[
-    {
-        component: ToggleFavoriteAction,
-        name: 'ToggleFavoriteAction',
-        execute: (dispatch, resource) => {
-            dispatch<any>(toggleFavorite(resource)).then(() => {
-                dispatch<any>(favoritePanelActions.REQUEST_ITEMS());
-            });
-        }
-    },
+const toggleFavoriteAction: ContextMenuAction = {
+    component: ToggleFavoriteAction,
+    name: 'ToggleFavoriteAction',
+    execute: (dispatch, resource) => {
+        dispatch<any>(toggleFavorite(resource)).then(() => {
+            dispatch<any>(favoritePanelActions.REQUEST_ITEMS());
+        });
+    }
+};
+
+const commonActionSet: ContextMenuActionSet = [[
     {
         icon: OpenIcon,
         name: "Open in new tab",
@@ -65,6 +83,11 @@ export const readOnlyCollectionActionSet: ContextMenuActionSet = [[
     },
 ]];
 
+export const readOnlyCollectionActionSet: ContextMenuActionSet = [[
+    ...commonActionSet.reduce((prev, next) => prev.concat(next), []),
+    toggleFavoriteAction,
+]];
+
 export const collectionActionSet: ContextMenuActionSet = [
     [
         ...readOnlyCollectionActionSet.reduce((prev, next) => prev.concat(next), []),
@@ -92,6 +115,34 @@ export const collectionActionSet: ContextMenuActionSet = [
             name: 'ToggleTrashAction',
             execute: (dispatch, resource) => {
                 dispatch<any>(toggleCollectionTrashed(resource.uuid, resource.isTrashed!!));
+            }
+        },
+    ]
+];
+
+export const collectionAdminActionSet: ContextMenuActionSet = [
+    [
+        ...collectionActionSet.reduce((prev, next) => prev.concat(next), []),
+        {
+            component: TogglePublicFavoriteAction,
+            name: 'TogglePublicFavoriteAction',
+            execute: (dispatch, resource) => {
+                dispatch<any>(togglePublicFavorite(resource)).then(() => {
+                    dispatch<any>(publicFavoritePanelActions.REQUEST_ITEMS());
+                });
+            }
+        },
+    ]
+];
+
+export const oldCollectionVersionActionSet: ContextMenuActionSet = [
+    [
+        ...commonActionSet.reduce((prev, next) => prev.concat(next), []),
+        {
+            icon: RestoreVersionIcon,
+            name: 'Restore version',
+            execute: (dispatch, { uuid }) => {
+                dispatch<any>(openRestoreCollectionVersionDialog(uuid));
             }
         },
     ]

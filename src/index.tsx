@@ -27,7 +27,7 @@ import { favoriteActionSet } from "~/views-components/context-menu/action-sets/f
 import { collectionFilesActionSet, readOnlyCollectionFilesActionSet } from '~/views-components/context-menu/action-sets/collection-files-action-set';
 import { collectionFilesItemActionSet, readOnlyCollectionFilesItemActionSet } from '~/views-components/context-menu/action-sets/collection-files-item-action-set';
 import { collectionFilesNotSelectedActionSet } from '~/views-components/context-menu/action-sets/collection-files-not-selected-action-set';
-import { collectionActionSet, readOnlyCollectionActionSet } from '~/views-components/context-menu/action-sets/collection-action-set';
+import { collectionActionSet, collectionAdminActionSet, oldCollectionVersionActionSet, readOnlyCollectionActionSet } from '~/views-components/context-menu/action-sets/collection-action-set';
 import { processActionSet } from '~/views-components/context-menu/action-sets/process-action-set';
 import { loadWorkbench } from '~/store/workbench/workbench-actions';
 import { Routes } from '~/routes/routes';
@@ -57,7 +57,6 @@ import { groupActionSet } from '~/views-components/context-menu/action-sets/grou
 import { groupMemberActionSet } from '~/views-components/context-menu/action-sets/group-member-action-set';
 import { linkActionSet } from '~/views-components/context-menu/action-sets/link-action-set';
 import { loadFileViewersConfig } from '~/store/file-viewers/file-viewers-actions';
-import { collectionAdminActionSet } from '~/views-components/context-menu/action-sets/collection-admin-action-set';
 import { processResourceAdminActionSet } from '~/views-components/context-menu/action-sets/process-resource-admin-action-set';
 import { projectAdminActionSet } from '~/views-components/context-menu/action-sets/project-admin-action-set';
 import { snackbarActions, SnackbarKind } from "~/store/snackbar/snackbar-actions";
@@ -78,6 +77,7 @@ addMenuActionSet(ContextMenuKind.COLLECTION_FILES_ITEM, collectionFilesItemActio
 addMenuActionSet(ContextMenuKind.READONLY_COLLECTION_FILES_ITEM, readOnlyCollectionFilesItemActionSet);
 addMenuActionSet(ContextMenuKind.COLLECTION, collectionActionSet);
 addMenuActionSet(ContextMenuKind.READONLY_COLLECTION, readOnlyCollectionActionSet);
+addMenuActionSet(ContextMenuKind.OLD_VERSION_COLLECTION, oldCollectionVersionActionSet);
 addMenuActionSet(ContextMenuKind.TRASHED_COLLECTION, trashedCollectionActionSet);
 addMenuActionSet(ContextMenuKind.PROCESS, processActionSet);
 addMenuActionSet(ContextMenuKind.PROCESS_RESOURCE, processResourceActionSet);
