@@ -18,6 +18,8 @@ var DefaultYAML = []byte(`# Copyright (C) The Arvados Authors. All rights reserv
 
 Clusters:
   xxxxx:
+    # Token used internally by Arvados components to authenticate to
+    # one another. Use a string of at least 50 random alphanumerics.
     SystemRootToken: ""
 
     # Token to be included in all healthcheck requests. Disabled by default.
