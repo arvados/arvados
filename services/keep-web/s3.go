@@ -206,11 +206,14 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 	fs.ForwardSlashNameSubstitution(h.Config.cluster.Collections.ForwardSlashNameSubstitution)
 
 	var objectNameGiven bool
+	var bucketName string
 	fspath := "/by_id"
 	if id := parseCollectionIDFromDNSName(r.Host); id != "" {
 		fspath += "/" + id
+		bucketName = id
 		objectNameGiven = strings.Count(strings.TrimSuffix(r.URL.Path, "/"), "/") > 0
 	} else {
+		bucketName = strings.SplitN(strings.TrimPrefix(r.URL.Path, "/"), "/", 2)[0]
 		objectNameGiven = strings.Count(strings.TrimSuffix(r.URL.Path, "/"), "/") > 1
 	}
 	fspath += r.URL.Path
@@ -225,7 +228,7 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 			fmt.Fprintln(w, `<VersioningConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/"/>`)
 		} else {
 			// ListObjects
-			h.s3list(w, r, fs)
+			h.s3list(bucketName, w, r, fs)
 		}
 		return true
 	case r.Method == http.MethodGet || r.Method == http.MethodHead:
@@ -460,15 +463,13 @@ func walkFS(fs arvados.CustomFileSystem, path string, isRoot bool, fn func(path 
 
 var errDone = errors.New("done")
 
-func (h *handler) s3list(w http.ResponseWriter, r *http.Request, fs arvados.CustomFileSystem) {
+func (h *handler) s3list(bucket string, w http.ResponseWriter, r *http.Request, fs arvados.CustomFileSystem) {
 	var params struct {
-		bucket    string
 		delimiter string
 		marker    string
 		maxKeys   int
 		prefix    string
 	}
-	params.bucket = strings.SplitN(r.URL.Path[1:], "/", 2)[0]
 	params.delimiter = r.FormValue("delimiter")
 	params.marker = r.FormValue("marker")
 	if mk, _ := strconv.ParseInt(r.FormValue("max-keys"), 10, 64); mk > 0 && mk < s3MaxKeys {
@@ -478,7 +479,7 @@ func (h *handler) s3list(w http.ResponseWriter, r *http.Request, fs arvados.Cust
 	}
 	params.prefix = r.FormValue("prefix")
 
-	bucketdir := "by_id/" + params.bucket
+	bucketdir := "by_id/" + bucket
 	// walkpath is the directory (relative to bucketdir) we need
 	// to walk: the innermost directory that is guaranteed to
 	// contain all paths that have the requested prefix. Examples:
@@ -513,7 +514,7 @@ func (h *handler) s3list(w http.ResponseWriter, r *http.Request, fs arvados.Cust
 	}
 	resp := listResp{
 		ListResp: s3.ListResp{
-			Name:      strings.SplitN(r.URL.Path[1:], "/", 2)[0],
+			Name:      bucket,
 			Prefix:    params.prefix,
 			Delimiter: params.delimiter,
 			Marker:    params.marker,
