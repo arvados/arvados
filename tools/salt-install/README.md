@@ -17,4 +17,4 @@ and run it as root.
 There's an example `Vagrantfile` also, to install it in a vagrant box if you want
 to try it locally.
 
-For more information, please read https://doc.arvados.org/v2.1/install/install-using-salt.html
+For more information, please read https://doc.arvados.org/main/install/salt-single-host.html
