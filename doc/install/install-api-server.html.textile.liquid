@@ -49,20 +49,24 @@ h3. Tokens
 <pre><code>    SystemRootToken: <span class="userinput">"$system_root_token"</span>
     ManagementToken: <span class="userinput">"$management_token"</span>
     Collections:
-      BlobSigningKey: <span class="userinput">"blob_signing_key"</span>
+      BlobSigningKey: <span class="userinput">"$blob_signing_key"</span>
 </code></pre>
 </notextile>
 
-@SystemRootToken@ is used by Arvados system services to authenticate as the system (root) user when communicating with the API server.
+These secret tokens are used to authenticate messages between Arvados components.
+* @SystemRootToken@ is used by Arvados system services to authenticate as the system (root) user when communicating with the API server.
+* @ManagementToken@ is used to authenticate access to system metrics.
+* @API.RailsSessionSecretToken@ is used to sign session cookies.
+* @Collections.BlobSigningKey@ is used to control access to Keep blocks.
 
 @ManagementToken@ is used to authenticate access to system metrics.
 
 @Collections.BlobSigningKey@ is used to control access to Keep blocks.
 
-You can generate a random token for each of these items at the command line like this:
+Each token should be a string of at least 50 alphanumeric characters. You can generate a suitable token with the following command:
 
 <notextile>
-<pre><code>~$ <span class="userinput">tr -dc 0-9a-zA-Z &lt;/dev/urandom | head -c50; echo</span>
+<pre><code>~$ <span class="userinput">tr -dc 0-9a-zA-Z &lt;/dev/urandom | head -c50 ; echo</span>
 </code></pre>
 </notextile>
 
