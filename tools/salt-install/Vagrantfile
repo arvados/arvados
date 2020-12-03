@@ -33,6 +33,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     arv.vm.provision "shell",
                      path: "provision.sh",
                      args: [
+                       "--debug",
                        "--test",
                        "--vagrant",
                        "--ssl-port=8443"
