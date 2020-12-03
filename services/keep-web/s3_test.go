@@ -10,6 +10,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"os"
 	"os/exec"
 	"strings"
@@ -421,6 +423,70 @@ func (stage *s3stage) writeBigDirs(c *check.C, dirs int, filesPerDir int) {
 		}
 	}
 	c.Assert(fs.Sync(), check.IsNil)
+}
+
+func (s *IntegrationSuite) TestS3VirtualHostStyleRequests(c *check.C) {
+	stage := s.s3setup(c)
+	defer stage.teardown(c)
+	for _, trial := range []struct {
+		url            string
+		method         string
+		body           string
+		responseCode   int
+		responseRegexp []string
+	}{
+		{
+			url:            "https://" + stage.collbucket.Name + ".example.com/",
+			method:         "GET",
+			responseCode:   http.StatusOK,
+			responseRegexp: []string{`(?ms).*sailboat\.txt.*`},
+		},
+		{
+			url:            "https://" + strings.Replace(stage.coll.PortableDataHash, "+", "-", -1) + ".example.com/",
+			method:         "GET",
+			responseCode:   http.StatusOK,
+			responseRegexp: []string{`(?ms).*sailboat\.txt.*`},
+		},
+		{
+			url:            "https://" + stage.projbucket.Name + ".example.com/?prefix=" + stage.coll.Name + "/&delimiter=/",
+			method:         "GET",
+			responseCode:   http.StatusOK,
+			responseRegexp: []string{`(?ms).*sailboat\.txt.*`},
+		},
+		{
+			url:            "https://" + stage.projbucket.Name + ".example.com/" + stage.coll.Name + "/sailboat.txt",
+			method:         "GET",
+			responseCode:   http.StatusOK,
+			responseRegexp: []string{`⛵\n`},
+		},
+		{
+			url:          "https://" + stage.projbucket.Name + ".example.com/" + stage.coll.Name + "/beep",
+			method:       "PUT",
+			body:         "boop",
+			responseCode: http.StatusOK,
+		},
+		{
+			url:            "https://" + stage.projbucket.Name + ".example.com/" + stage.coll.Name + "/beep",
+			method:         "GET",
+			responseCode:   http.StatusOK,
+			responseRegexp: []string{`boop`},
+		},
+	} {
+		url, err := url.Parse(trial.url)
+		c.Assert(err, check.IsNil)
+		req, err := http.NewRequest(trial.method, url.String(), bytes.NewReader([]byte(trial.body)))
+		c.Assert(err, check.IsNil)
+		req.Header.Set("Authorization", "AWS "+arvadostest.ActiveTokenV2+":none")
+		rr := httptest.NewRecorder()
+		s.testServer.Server.Handler.ServeHTTP(rr, req)
+		resp := rr.Result()
+		c.Check(resp.StatusCode, check.Equals, trial.responseCode)
+		body, err := ioutil.ReadAll(resp.Body)
+		c.Assert(err, check.IsNil)
+		for _, re := range trial.responseRegexp {
+			c.Check(string(body), check.Matches, re)
+		}
+	}
 }
 
 func (s *IntegrationSuite) TestS3GetBucketVersioning(c *check.C) {
