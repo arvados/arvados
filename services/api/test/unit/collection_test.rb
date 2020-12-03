@@ -4,6 +4,7 @@
 
 require 'test_helper'
 require 'sweep_trashed_objects'
+require 'fix_collection_versions_timestamps'
 
 class CollectionTest < ActiveSupport::TestCase
   include DbCurrentTime
@@ -357,6 +358,29 @@ class CollectionTest < ActiveSupport::TestCase
       assert_equal new_replication, c_old.replication_desired
       assert_equal version_creation_datetime, c_old.modified_at.to_f
       assert_operator c.modified_at.to_f, :>, c_old.modified_at.to_f
+    end
+  end
+
+  # Bug #17152 - This test relies on fixtures simulating the problem.
+  test "migration fixing collection versions' modified_at timestamps" do
+    versioned_collection_fixtures = [
+      collections(:w_a_z_file).uuid,
+      collections(:collection_owned_by_active).uuid
+    ]
+    versioned_collection_fixtures.each do |uuid|
+      cols = Collection.where(current_version_uuid: uuid).order(version: :desc)
+      assert_equal cols.size, 2
+      # cols[0] -> head version // cols[1] -> old version
+      assert_operator (cols[0].modified_at.to_f - cols[1].modified_at.to_f), :==, 0
+      assert cols[1].modified_at != cols[1].created_at
+    end
+    fix_collection_versions_timestamps
+    versioned_collection_fixtures.each do |uuid|
+      cols = Collection.where(current_version_uuid: uuid).order(version: :desc)
+      assert_equal cols.size, 2
+      # cols[0] -> head version // cols[1] -> old version
+      assert_operator (cols[0].modified_at.to_f - cols[1].modified_at.to_f), :>, 1
+      assert_operator cols[1].modified_at, :==, cols[1].created_at
     end
   end
 
