@@ -35,7 +35,7 @@ Note: depends on the "Arvados Python SDK":../sdk/python/sdk-python.html and its 
 
 h2. Usage
 
-Set ARVADOS_API_HOST and ARVADOS_API_TOKEN for an admin user or system root token.
+Set ARVADOS_API_HOST to the api server of the cluster for which the report should be generated. ARVADOS_API_TOKEN needs to be a "v2 token":../admin/scoped-tokens.html for an admin user, or a superuser token (e.g. generated with @script/create_superuser_token.rb@). Please note that in a login cluster federation, the token needs to be issued by the login cluster, but the report should be generated against the API server of the cluster for which it is desired. In other words, ARVADOS_API_HOST would point at the satellite cluster for which the report is desired, but ARVADOS_API_TOKEN would be a token that belongs to a login cluster user.
 
 Run the tool with the option @--days@ giving the number of days to report on.  It will request activity logs from the API and generate a summary report on standard output.
 
