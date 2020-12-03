@@ -27,6 +27,18 @@ export class CollectionService extends TrashableResourceService<CollectionResour
         ]);
     }
 
+    create(data?: Partial<CollectionResource>) {
+        return super.create({ ...data, preserveVersion: true });
+    }
+
+    async update(uuid: string, data: Partial<CollectionResource>) {
+        // First make the changes
+        const collection = await super.update(uuid, data);
+        if (data === { preserveVersion: true }) { return collection; }
+        // Then set the head version to be preserved
+        return await super.update(uuid, { preserveVersion: true });
+    }
+
     async files(uuid: string) {
         const request = await this.webdavClient.propfind(`c=${uuid}`);
         if (request.responseXML != null) {
@@ -36,6 +48,7 @@ export class CollectionService extends TrashableResourceService<CollectionResour
     }
 
     async deleteFiles(collectionUuid: string, filePaths: string[]) {
+        if (collectionUuid === "" || filePaths.length === 0) { return; }
         for (const path of filePaths) {
             const splittedPath = path.split('/');
             if (collectionUuid) {
@@ -44,20 +57,24 @@ export class CollectionService extends TrashableResourceService<CollectionResour
                 await this.webdavClient.delete(`c=${collectionUuid}${path}`);
             }
         }
+        await this.update(collectionUuid, { preserveVersion: true });
     }
 
     async uploadFiles(collectionUuid: string, files: File[], onProgress?: UploadProgress) {
+        if (collectionUuid === "" || files.length === 0) { return; }
         // files have to be uploaded sequentially
         for (let idx = 0; idx < files.length; idx++) {
             await this.uploadFile(collectionUuid, files[idx], idx, onProgress);
         }
+        await this.update(collectionUuid, { preserveVersion: true });
     }
 
-    moveFile(collectionUuid: string, oldPath: string, newPath: string) {
-        return this.webdavClient.move(
+    async moveFile(collectionUuid: string, oldPath: string, newPath: string) {
+        await this.webdavClient.move(
             `c=${collectionUuid}${oldPath}`,
             `c=${collectionUuid}${encodeURI(newPath)}`
         );
+        return await this.update(collectionUuid, { preserveVersion: true });
     }
 
     extendFileURL = (file: CollectionDirectory | CollectionFile) => {
