@@ -54,7 +54,7 @@ module CreateSuperUserToken
         end
       end
 
-      api_client_auth.api_token
+      "v2/" + api_client_auth.uuid + "/" + api_client_auth.api_token
     end
   end
 end
