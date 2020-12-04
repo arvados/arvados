@@ -258,7 +258,7 @@ fi
 # END FIXME! #16992 Temporary fix for psql call in arvados-api-server
 
 # Leave a copy of the Arvados CA so the user can copy it where it's required
-echo "Copying the Arvados CA file to the installer dir, so you can import it"
+echo "Copying the Arvados CA certificate to the installer dir, so you can import it"
 # If running in a vagrant VM, also add default user to docker group
 if [ "x${VAGRANT}" = "xyes" ]; then
   cp /etc/ssl/certs/arvados-snakeoil-ca.pem /vagrant
