@@ -538,7 +538,7 @@ func (s *IntegrationSuite) TestRuntimeTokenInCR(c *check.C) {
 func (s *IntegrationSuite) TestIntermediateCluster(c *check.C) {
 	conn1 := s.conn("z1111")
 	rootctx1, _, _ := s.rootClients("z1111")
-	_, ac1, _, _ := s.userClients(rootctx1, c, conn1, "z1111", true)
+	uctx1, ac1, _, _ := s.userClients(rootctx1, c, conn1, "z1111", true)
 	//conn2 := s.conn("z2222")
 	//rootctx2, _, _ := s.rootClients("z2222")
 	//_, ac2, _, _ := s.userClients(rootctx2, c, conn2, "z2222", true)
@@ -559,7 +559,7 @@ func (s *IntegrationSuite) TestIntermediateCluster(c *check.C) {
 			"output_path":     "/",
 			"runtime_token":   tt.token,
 		}
-		cr, err := conn1.ContainerRequestCreate(rootctx1, arvados.CreateOptions{ClusterID: "z2222", Attrs: rq})
+		cr, err := conn1.ContainerRequestCreate(uctx1, arvados.CreateOptions{ClusterID: "z2222", Attrs: rq})
 
 		c.Check(err, check.IsNil)
 		c.Check(cr, check.NotNil)
