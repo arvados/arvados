@@ -52,7 +52,6 @@ nginx:
               - proxy_set_header: 'X-Real-IP $remote_addr'
               - proxy_set_header: 'X-Forwarded-For $proxy_add_x_forwarded_for'
               - proxy_set_header: 'X-External-Client $external_client'
-            # - include: 'snippets/letsencrypt.conf'
             - include: 'snippets/arvados-snakeoil.conf'
             - access_log: /var/log/nginx/__CLUSTER__.__DOMAIN__.access.log combined
             - error_log: /var/log/nginx/__CLUSTER__.__DOMAIN__.error.log
