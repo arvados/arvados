@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash
 
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
@@ -47,6 +47,12 @@ VERSION="latest"
 
 ##########################################################
 # Usually there's no need to modify things below this line
+
+# Formulas versions
+POSTGRES_TAG="v0.41.3"
+NGINX_TAG="v2.4.0"
+DOCKER_TAG="v1.0.0"
+LOCALE_TAG="v0.3.4"
 
 set -o pipefail
 
@@ -184,9 +190,11 @@ EOFPSLS
 
 # Get the formula and dependencies
 cd ${F_DIR} || exit 1
-for f in postgres arvados nginx docker locale; do
-  git clone https://github.com/saltstack-formulas/${f}-formula.git
-done
+git clone https://github.com/saltstack-formulas/arvados-formula.git
+git clone --branch "${DOCKER_TAG}" https://github.com/saltstack-formulas/docker-formula.git
+git clone --branch "${LOCALE_TAG}" https://github.com/saltstack-formulas/locale-formula.git
+git clone --branch "${NGINX_TAG}" https://github.com/saltstack-formulas/nginx-formula.git
+git clone --branch "${POSTGRES_TAG}" https://github.com/saltstack-formulas/postgres-formula.git
 
 if [ "x${BRANCH}" != "x" ]; then
   cd ${F_DIR}/arvados-formula || exit 1

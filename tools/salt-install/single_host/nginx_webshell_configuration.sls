@@ -68,7 +68,6 @@ nginx:
                 - add_header: "'Access-Control-Allow-Methods' 'GET, POST, OPTIONS'"
                 - add_header: "'Access-Control-Allow-Headers' 'DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type'"
 
-            # - include: 'snippets/letsencrypt.conf'
             - include: 'snippets/arvados-snakeoil.conf'
             - access_log: /var/log/nginx/webshell.__CLUSTER__.__DOMAIN__.access.log combined
             - error_log: /var/log/nginx/webshell.__CLUSTER__.__DOMAIN__.error.log
