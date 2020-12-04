@@ -478,6 +478,8 @@ func (s *IntegrationSuite) dbConn(c *check.C, clusterID string) (*sql.DB, *sql.C
 	return db, conn
 }
 
+// TestRuntimeTokenInCR will test several different tokens in the runtime attribute
+// and check the expected retualts
 func (s *IntegrationSuite) TestRuntimeTokenInCR(c *check.C) {
 	db, dbconn := s.dbConn(c, "z1111")
 	defer db.Close()
@@ -527,6 +529,42 @@ func (s *IntegrationSuite) TestRuntimeTokenInCR(c *check.C) {
 		if c.Check(token.Valid, check.Equals, true) {
 			c.Check(token.String, check.Equals, *tt.expectedToken)
 		}
+	}
+}
+
+// TestIntermediateCluster will send a container request to
+// one cluster with another cluster as the destination
+// and check the tokens are being handled properly
+func (s *IntegrationSuite) TestIntermediateCluster(c *check.C) {
+	conn1 := s.conn("z1111")
+	rootctx1, _, _ := s.rootClients("z1111")
+	_, ac1, _, _ := s.userClients(rootctx1, c, conn1, "z1111", true)
+	//conn2 := s.conn("z2222")
+	//rootctx2, _, _ := s.rootClients("z2222")
+	//_, ac2, _, _ := s.userClients(rootctx2, c, conn2, "z2222", true)
+
+	tests := []struct {
+		name  string
+		token string
+	}{
+		{"Good token z1111 user sending a CR to z2222", ac1.AuthToken},
+	}
+
+	for _, tt := range tests {
+		c.Log(c.TestName() + " " + tt.name)
+		rq := map[string]interface{}{
+			"command":         []string{"echo"},
+			"container_image": "d41d8cd98f00b204e9800998ecf8427e+0",
+			"cwd":             "/",
+			"output_path":     "/",
+			"runtime_token":   tt.token,
+		}
+		cr, err := conn1.ContainerRequestCreate(rootctx1, arvados.CreateOptions{ClusterID: "z2222", Attrs: rq})
+
+		c.Check(err, check.IsNil)
+		c.Check(cr, check.NotNil)
+		c.Check(cr.UUID, check.Not(check.Equals), "")
+
 	}
 }
 
