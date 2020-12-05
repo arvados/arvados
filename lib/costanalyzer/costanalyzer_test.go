@@ -177,6 +177,48 @@ func (*Suite) TestContainerRequestUUID(c *check.C) {
 	c.Check(string(aggregateCostReport), check.Matches, "(?ms).*TOTAL,7.01302889")
 }
 
+func (*Suite) TestCollectionUUID(c *check.C) {
+	var stdout, stderr bytes.Buffer
+
+	// Run costanalyzer with 1 collection uuid, without 'container_request' property
+	exitcode := Command.RunCommand("costanalyzer.test", []string{"-uuid", arvadostest.FooCollection, "-output", "results"}, &bytes.Buffer{}, &stdout, &stderr)
+	c.Check(exitcode, check.Equals, 2)
+	c.Assert(stderr.String(), check.Matches, "(?ms).*does not have a 'container_request' property.*")
+
+	// Update the collection, attach a 'container_request' property
+	ac := arvados.NewClientFromEnv()
+	var coll arvados.Collection
+
+	// Update collection record
+	err := ac.RequestAndDecode(&coll, "PUT", "arvados/v1/collections/"+arvadostest.FooCollection, nil, map[string]interface{}{
+		"collection": map[string]interface{}{
+			"properties": map[string]interface{}{
+				"container_request": arvadostest.CompletedContainerRequestUUID,
+			},
+		},
+	})
+	c.Assert(err, check.IsNil)
+
+	stdout.Truncate(0)
+	stderr.Truncate(0)
+
+	// Run costanalyzer with 1 collection uuid
+	exitcode = Command.RunCommand("costanalyzer.test", []string{"-uuid", arvadostest.FooCollection, "-output", "results"}, &bytes.Buffer{}, &stdout, &stderr)
+	c.Check(exitcode, check.Equals, 0)
+	c.Assert(stderr.String(), check.Matches, "(?ms).*supplied uuids in .*")
+
+	uuidReport, err := ioutil.ReadFile("results/" + arvadostest.CompletedContainerRequestUUID + ".csv")
+	c.Assert(err, check.IsNil)
+	c.Check(string(uuidReport), check.Matches, "(?ms).*TOTAL,,,,,,,,,7.01302889")
+	re := regexp.MustCompile(`(?ms).*supplied uuids in (.*?)\n`)
+	matches := re.FindStringSubmatch(stderr.String()) // matches[1] contains a string like 'results/2020-11-02-18-57-45-aggregate-costaccounting.csv'
+
+	aggregateCostReport, err := ioutil.ReadFile(matches[1])
+	c.Assert(err, check.IsNil)
+
+	c.Check(string(aggregateCostReport), check.Matches, "(?ms).*TOTAL,7.01302889")
+}
+
 func (*Suite) TestDoubleContainerRequestUUID(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	// Run costanalyzer with 2 container request uuids

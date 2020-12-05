@@ -62,12 +62,18 @@ Usage:
 	each container.
 
 	When supplied with the uuid of a container request, it will calculate the
-	cost of that container request and all its children. When suplied with a
-	project uuid or when supplied with multiple container request uuids, it will
-	create a CSV report for each supplied uuid, as well as a CSV file with
-	aggregate cost accounting for all supplied uuids. The aggregate cost report
-	takes container reuse into account: if a container was reused between several
-	container requests, its cost will only be counted once.
+	cost of that container request and all its children.
+
+	When supplied with the uuid of a collection, it will see if there is a
+	container_request uuid in the properties of the collection, and if so, it
+	will calculate the cost of that container request and all its children.
+
+	When supplied with a project uuid or when supplied with multiple container
+	request or collection uuids, it will create a CSV report for each supplied
+	uuid, as well as a CSV file with aggregate cost accounting for all supplied
+	uuids. The aggregate cost report takes container reuse into account: if a
+	container was reused between several container requests, its cost will only
+	be counted once.
 
 	To get the node costs, the progam queries the Arvados API for current cost
 	data for each node type used. This means that the reported cost always
@@ -180,8 +186,8 @@ func addContainerLine(logger *logrus.Logger, node nodeInfo, cr arvados.Container
 
 func loadCachedObject(logger *logrus.Logger, file string, uuid string, object interface{}) (reload bool) {
 	reload = true
-	if strings.Contains(uuid, "-j7d0g-") {
-		// We do not cache projects, they have no final state
+	if strings.Contains(uuid, "-j7d0g-") || strings.Contains(uuid, "-4zz18-") {
+		// We do not cache projects or collections, they have no final state
 		return
 	}
 	// See if we have a cached copy of this object
@@ -251,6 +257,8 @@ func loadObject(logger *logrus.Logger, ac *arvados.Client, path string, uuid str
 		err = ac.RequestAndDecode(&object, "GET", "arvados/v1/container_requests/"+uuid, nil, nil)
 	} else if strings.Contains(uuid, "-dz642-") {
 		err = ac.RequestAndDecode(&object, "GET", "arvados/v1/containers/"+uuid, nil, nil)
+	} else if strings.Contains(uuid, "-4zz18-") {
+		err = ac.RequestAndDecode(&object, "GET", "arvados/v1/collections/"+uuid, nil, nil)
 	} else {
 		err = fmt.Errorf("unsupported object type with UUID %q:\n  %s", uuid, err)
 		return
@@ -309,7 +317,6 @@ func getNode(arv *arvadosclient.ArvadosClient, ac *arvados.Client, kc *keepclien
 }
 
 func handleProject(logger *logrus.Logger, uuid string, arv *arvadosclient.ArvadosClient, ac *arvados.Client, kc *keepclient.KeepClient, resultsDir string, cache bool) (cost map[string]float64, err error) {
-
 	cost = make(map[string]float64)
 
 	var project arvados.Group
@@ -366,9 +373,24 @@ func generateCrCsv(logger *logrus.Logger, uuid string, arv *arvadosclient.Arvado
 	var tmpTotalCost float64
 	var totalCost float64
 
+	var crUUID = uuid
+	if strings.Contains(uuid, "-4zz18-") {
+		// This is a collection, find the associated container request (if any)
+		var c arvados.Collection
+		err = loadObject(logger, ac, uuid, uuid, cache, &c)
+		if err != nil {
+			return nil, fmt.Errorf("error loading collection object %s: %s", uuid, err)
+		}
+		value, ok := c.Properties["container_request"]
+		if !ok {
+			return nil, fmt.Errorf("error: collection %s does not have a 'container_request' property", uuid)
+		}
+		crUUID = value.(string)
+	}
+
 	// This is a container request, find the container
 	var cr arvados.ContainerRequest
-	err = loadObject(logger, ac, uuid, uuid, cache, &cr)
+	err = loadObject(logger, ac, crUUID, crUUID, cache, &cr)
 	if err != nil {
 		return nil, fmt.Errorf("error loading cr object %s: %s", uuid, err)
 	}
@@ -474,12 +496,12 @@ func costanalyzer(prog string, args []string, loader *config.Loader, logger *log
 			for k, v := range cost {
 				cost[k] = v
 			}
-		} else if strings.Contains(uuid, "-xvhdp-") {
+		} else if strings.Contains(uuid, "-xvhdp-") || strings.Contains(uuid, "-4zz18-") {
 			// This is a container request
 			var crCsv map[string]float64
 			crCsv, err = generateCrCsv(logger, uuid, arv, ac, kc, resultsDir, cache)
 			if err != nil {
-				err = fmt.Errorf("Error generating container_request CSV for uuid %s: %s", uuid, err.Error())
+				err = fmt.Errorf("Error generating CSV for uuid %s: %s", uuid, err.Error())
 				exitcode = 2
 				return
 			}
