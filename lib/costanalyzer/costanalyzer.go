@@ -94,6 +94,9 @@ Usage:
 	In order to get the data for the uuids supplied, the ARVADOS_API_HOST and
 	ARVADOS_API_TOKEN environment variables must be set.
 
+	This program prints the total dollar amount from the aggregate cost
+	accounting across all provided uuids on stdout.
+
 Options:
 `, prog)
 		flags.PrintDefaults()
@@ -548,5 +551,8 @@ func costanalyzer(prog string, args []string, loader *config.Loader, logger *log
 		return
 	}
 	logger.Infof("Aggregate cost accounting for all supplied uuids in %s\n", aFile)
+	// Output the total dollar amount on stdout
+	fmt.Fprintf(stdout, "%s\n", strconv.FormatFloat(total, 'f', 8, 64))
+
 	return
 }

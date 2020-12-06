@@ -290,6 +290,12 @@ func (*Suite) TestMultipleContainerRequestUUIDWithReuse(c *check.C) {
 	c.Check(exitcode, check.Equals, 0)
 	c.Assert(stderr.String(), check.Matches, "(?ms).*supplied uuids in .*")
 
+	// Check that the total amount was printed to stdout
+	c.Check(stdout.String(), check.Matches, "0.01492030\n")
+
+	stdout.Truncate(0)
+	stderr.Truncate(0)
+
 	// Run costanalyzer with 2 container request uuids
 	exitcode = Command.RunCommand("costanalyzer.test", []string{"-uuid", arvadostest.CompletedDiagnosticsContainerRequest1UUID, "-uuid", arvadostest.CompletedDiagnosticsContainerRequest2UUID, "-output", "results"}, &bytes.Buffer{}, &stdout, &stderr)
 	c.Check(exitcode, check.Equals, 0)
