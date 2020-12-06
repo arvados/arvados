@@ -44,7 +44,9 @@ func (i *arrayFlags) String() string {
 }
 
 func (i *arrayFlags) Set(value string) error {
-	*i = append(*i, value)
+	for _, s := range strings.Split(value, ",") {
+		*i = append(*i, s)
+	}
 	return nil
 }
 
@@ -98,7 +100,7 @@ Options:
 	}
 	loglevel := flags.String("log-level", "info", "logging `level` (debug, info, ...)")
 	flags.StringVar(&resultsDir, "output", "", "output `directory` for the CSV reports (required)")
-	flags.Var(&uuids, "uuid", "Toplevel `project or container request` uuid. May be specified more than once. (required)")
+	flags.Var(&uuids, "uuid", "object uuid. May be specified more than once. Also accepts a comma separated list of uuids (required)")
 	flags.BoolVar(&cache, "cache", true, "create and use a local disk cache of Arvados objects")
 	err = flags.Parse(args)
 	if err == flag.ErrHelp {
