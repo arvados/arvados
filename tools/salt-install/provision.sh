@@ -190,7 +190,7 @@ EOFPSLS
 
 # Get the formula and dependencies
 cd ${F_DIR} || exit 1
-git clone https://github.com/saltstack-formulas/arvados-formula.git
+git clone https://github.com/netmanagers/arvados-formula.git
 git clone --branch "${DOCKER_TAG}" https://github.com/saltstack-formulas/docker-formula.git
 git clone --branch "${LOCALE_TAG}" https://github.com/saltstack-formulas/locale-formula.git
 git clone --branch "${NGINX_TAG}" https://github.com/saltstack-formulas/nginx-formula.git

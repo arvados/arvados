@@ -32,3 +32,5 @@ services/api/config/arvados-clients.yml
 .Rproj.user
 _version.py
 *.bak
+arvados-snakeoil-ca.pem
+.vagrant
