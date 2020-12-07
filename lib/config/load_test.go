@@ -192,6 +192,10 @@ func (s *LoadSuite) TestDeprecatedOrUnknownWarning(c *check.C) {
 	_, err := testLoader(c, `
 Clusters:
   zzzzz:
+    ManagementToken: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    SystemRootToken: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    Collections:
+     BlobSigningKey: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
     postgresql: {}
     BadKey: {}
     Containers: {}
@@ -261,6 +265,10 @@ func (s *LoadSuite) TestNoUnrecognizedKeysInDefaultConfig(c *check.C) {
 	err = yaml.Unmarshal(buf, &loaded)
 	c.Assert(err, check.IsNil)
 
+	c.Check(logbuf.String(), check.Matches, `(?ms).*SystemRootToken: secret token is not set.*`)
+	c.Check(logbuf.String(), check.Matches, `(?ms).*ManagementToken: secret token is not set.*`)
+	c.Check(logbuf.String(), check.Matches, `(?ms).*Collections.BlobSigningKey: secret token is not set.*`)
+	logbuf.Reset()
 	loader.logExtraKeys(loaded, supplied, "")
 	c.Check(logbuf.String(), check.Equals, "")
 }
@@ -269,7 +277,13 @@ func (s *LoadSuite) TestNoWarningsForDumpedConfig(c *check.C) {
 	var logbuf bytes.Buffer
 	logger := logrus.New()
 	logger.Out = &logbuf
-	cfg, err := testLoader(c, `{"Clusters":{"zzzzz":{}}}`, &logbuf).Load()
+	cfg, err := testLoader(c, `
+Clusters:
+ zzzzz:
+  ManagementToken: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+  SystemRootToken: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+  Collections:
+   BlobSigningKey: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`, &logbuf).Load()
 	c.Assert(err, check.IsNil)
 	yaml, err := yaml.Marshal(cfg)
 	c.Assert(err, check.IsNil)
@@ -277,6 +291,31 @@ func (s *LoadSuite) TestNoWarningsForDumpedConfig(c *check.C) {
 	c.Assert(err, check.IsNil)
 	c.Check(cfg, check.DeepEquals, cfgDumped)
 	c.Check(logbuf.String(), check.Equals, "")
+}
+
+func (s *LoadSuite) TestUnacceptableTokens(c *check.C) {
+	for _, trial := range []struct {
+		short      bool
+		configPath string
+		example    string
+	}{
+		{false, "SystemRootToken", "SystemRootToken: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa_b_c"},
+		{false, "ManagementToken", "ManagementToken: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa b c"},
+		{false, "ManagementToken", "ManagementToken: \"$aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabc\""},
+		{false, "Collections.BlobSigningKey", "Collections: {BlobSigningKey: \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa⛵\"}"},
+		{true, "SystemRootToken", "SystemRootToken: a_b_c"},
+		{true, "ManagementToken", "ManagementToken: a b c"},
+		{true, "ManagementToken", "ManagementToken: \"$abc\""},
+		{true, "Collections.BlobSigningKey", "Collections: {BlobSigningKey: \"⛵\"}"},
+	} {
+		c.Logf("trying bogus config: %s", trial.example)
+		_, err := testLoader(c, "Clusters:\n zzzzz:\n  "+trial.example, nil).Load()
+		if trial.short {
+			c.Check(err, check.ErrorMatches, `Clusters.zzzzz.`+trial.configPath+`: unacceptable characters in token.*`)
+		} else {
+			c.Check(err, check.ErrorMatches, `Clusters.zzzzz.`+trial.configPath+`: unacceptable characters in token.*`)
+		}
+	}
 }
 
 func (s *LoadSuite) TestPostgreSQLKeyConflict(c *check.C) {

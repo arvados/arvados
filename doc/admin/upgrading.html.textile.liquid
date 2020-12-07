@@ -39,6 +39,12 @@ h2(#main). development main (as of 2020-10-28)
 
 "Upgrading from 2.1.0":#v2_1_0
 
+h3. System token requirements
+
+System services now log a warning at startup if any of the system tokens (@ManagementToken@, @SystemRootToken@, and @Collections.BlobSigningKey@) are less than 32 characters, or contain characters other than a-z, A-Z, and 0-9. After upgrading, run @arvados-server config-check@ and update your configuration file if needed to resolve any warnings.
+
+The @API.RailsSessionSecretToken@ configuration key has been removed. Delete this entry from your configuration file after upgrading.
+
 h3. Centos7 Python 3 dependency upgraded to python3
 
 Now that Python 3 is part of the base repository in CentOS 7, the Python 3 dependency for Centos7 Arvados packages was changed from SCL rh-python36 to python3.

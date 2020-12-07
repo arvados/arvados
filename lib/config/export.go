@@ -69,7 +69,6 @@ var whitelist = map[string]bool{
 	"API.MaxKeepBlobBuffers":                       false,
 	"API.MaxRequestAmplification":                  false,
 	"API.MaxRequestSize":                           true,
-	"API.RailsSessionSecretToken":                  false,
 	"API.RequestTimeout":                           true,
 	"API.SendTimeout":                              true,
 	"API.WebsocketClientEventQueue":                false,

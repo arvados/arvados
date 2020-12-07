@@ -611,9 +611,6 @@ func (super *Supervisor) autofillConfig(cfg *arvados.Config) error {
 	if cluster.ManagementToken == "" {
 		cluster.ManagementToken = randomHexString(64)
 	}
-	if cluster.API.RailsSessionSecretToken == "" {
-		cluster.API.RailsSessionSecretToken = randomHexString(64)
-	}
 	if cluster.Collections.BlobSigningKey == "" {
 		cluster.Collections.BlobSigningKey = randomHexString(64)
 	}

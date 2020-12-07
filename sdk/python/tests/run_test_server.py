@@ -762,7 +762,6 @@ def setup_config():
                 "SystemRootToken": auth_token('system_user'),
                 "API": {
                     "RequestTimeout": "30s",
-                    "RailsSessionSecretToken": "e24205c490ac07e028fd5f8a692dcb398bcd654eff1aef5f9fe6891994b18483",
                 },
                 "Login": {
                     "SSO": {
