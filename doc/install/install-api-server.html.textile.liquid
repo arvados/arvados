@@ -48,8 +48,6 @@ h3. Tokens
 <notextile>
 <pre><code>    SystemRootToken: <span class="userinput">"$system_root_token"</span>
     ManagementToken: <span class="userinput">"$management_token"</span>
-    API:
-      RailsSessionSecretToken: <span class="userinput">"$rails_secret_token"</span>
     Collections:
       BlobSigningKey: <span class="userinput">"blob_signing_key"</span>
 </code></pre>
@@ -58,8 +56,6 @@ h3. Tokens
 @SystemRootToken@ is used by Arvados system services to authenticate as the system (root) user when communicating with the API server.
 
 @ManagementToken@ is used to authenticate access to system metrics.
-
-@API.RailsSessionSecretToken@ is required by the API server.
 
 @Collections.BlobSigningKey@ is used to control access to Keep blocks.
 

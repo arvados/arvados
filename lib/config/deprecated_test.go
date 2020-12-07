@@ -150,7 +150,7 @@ func (s *LoadSuite) TestLegacyKeepWebConfig(c *check.C) {
 }
 `)
 	cluster, err := testLoadLegacyConfig(content, "-legacy-keepweb-config", c)
-	c.Check(err, check.IsNil)
+	c.Assert(err, check.IsNil)
 
 	c.Check(cluster.Services.Controller.ExternalURL, check.Equals, arvados.URL{Scheme: "https", Host: "example.com", Path: "/"})
 	c.Check(cluster.SystemRootToken, check.Equals, "abcdefg")
@@ -183,7 +183,7 @@ func (s *LoadSuite) TestLegacyKeepWebConfigDoesntDisableMissingItems(c *check.C)
 }
 `)
 	cluster, err := testLoadLegacyConfig(content, "-legacy-keepweb-config", c)
-	c.Check(err, check.IsNil)
+	c.Assert(err, check.IsNil)
 	// The resulting ManagementToken should be the one set up on the test server.
 	c.Check(cluster.ManagementToken, check.Equals, TestServerManagementToken)
 }
@@ -193,8 +193,8 @@ func (s *LoadSuite) TestLegacyKeepproxyConfig(c *check.C) {
 	content := []byte(fmtKeepproxyConfig("", true))
 	cluster, err := testLoadLegacyConfig(content, f, c)
 
-	c.Check(err, check.IsNil)
-	c.Check(cluster, check.NotNil)
+	c.Assert(err, check.IsNil)
+	c.Assert(cluster, check.NotNil)
 	c.Check(cluster.Services.Controller.ExternalURL, check.Equals, arvados.URL{Scheme: "https", Host: "example.com", Path: "/"})
 	c.Check(cluster.SystemRootToken, check.Equals, "abcdefg")
 	c.Check(cluster.ManagementToken, check.Equals, "xyzzy")
@@ -262,8 +262,8 @@ func (s *LoadSuite) TestLegacyArvGitHttpdConfig(c *check.C) {
 	f := "-legacy-git-httpd-config"
 	cluster, err := testLoadLegacyConfig(content, f, c)
 
-	c.Check(err, check.IsNil)
-	c.Check(cluster, check.NotNil)
+	c.Assert(err, check.IsNil)
+	c.Assert(cluster, check.NotNil)
 	c.Check(cluster.Services.Controller.ExternalURL, check.Equals, arvados.URL{Scheme: "https", Host: "example.com", Path: "/"})
 	c.Check(cluster.SystemRootToken, check.Equals, "abcdefg")
 	c.Check(cluster.ManagementToken, check.Equals, "xyzzy")
@@ -285,7 +285,7 @@ func (s *LoadSuite) TestLegacyArvGitHttpdConfigDoesntDisableMissingItems(c *chec
 }
 `)
 	cluster, err := testLoadLegacyConfig(content, "-legacy-git-httpd-config", c)
-	c.Check(err, check.IsNil)
+	c.Assert(err, check.IsNil)
 	// The resulting ManagementToken should be the one set up on the test server.
 	c.Check(cluster.ManagementToken, check.Equals, TestServerManagementToken)
 }
@@ -295,8 +295,8 @@ func (s *LoadSuite) TestLegacyKeepBalanceConfig(c *check.C) {
 	content := []byte(fmtKeepBalanceConfig(""))
 	cluster, err := testLoadLegacyConfig(content, f, c)
 
-	c.Check(err, check.IsNil)
-	c.Check(cluster, check.NotNil)
+	c.Assert(err, check.IsNil)
+	c.Assert(cluster, check.NotNil)
 	c.Check(cluster.ManagementToken, check.Equals, "xyzzy")
 	c.Check(cluster.Services.Keepbalance.InternalURLs[arvados.URL{Host: ":80"}], check.Equals, arvados.ServiceInstance{})
 	c.Check(cluster.Collections.BalanceCollectionBuffers, check.Equals, 1000)

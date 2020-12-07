@@ -35,6 +35,16 @@ TODO: extract this information based on git commit messages and generate changel
 <div class="releasenotes">
 </notextile>
 
+h2(#main). v2.1.2 (as of 2021-02-22)
+
+"Upgrading from 2.1.0":#v2_1_0
+
+h3. System token requirements
+
+System services now log a warning at startup if any of the system tokens (@ManagementToken@, @SystemRootToken@, and @Collections.BlobSigningKey@) are less than 32 characters, or contain characters other than a-z, A-Z, and 0-9. After upgrading, run @arvados-server config-check@ and update your configuration file if needed to resolve any warnings.
+
+The @API.RailsSessionSecretToken@ configuration key has been removed. Delete this entry from your configuration file after upgrading.
+
 h2(#v2_1_0). v2.1.0 (2020-10-13)
 
 "Upgrading from 2.0.0":#v2_0_0
