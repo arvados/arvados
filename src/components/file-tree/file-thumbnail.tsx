@@ -7,6 +7,7 @@ import isImage from 'is-image';
 import { withStyles, WithStyles } from '@material-ui/core';
 import { FileTreeData } from '~/components/file-tree/file-tree-data';
 import { CollectionFileType } from '~/models/collection-file';
+import { sanitizeToken } from "~/views-components/context-menu/actions/helpers";
 
 export interface FileThumbnailProps {
     file: FileTreeData;
@@ -32,5 +33,5 @@ const ImageFileThumbnail = imageFileThumbnailStyle(
         <img
             className={classes.thumbnail}
             alt={file.name}
-            src={file.url} />
+            src={sanitizeToken(file.url, false)} />
 );
