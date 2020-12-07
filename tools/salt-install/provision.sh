@@ -49,7 +49,7 @@ VERSION="latest"
 # Usually there's no need to modify things below this line
 
 # Formulas versions
-ARVADOS_TAG="v1.1.2"
+ARVADOS_TAG="v1.1.3"
 POSTGRES_TAG="v0.41.3"
 NGINX_TAG="v2.4.0"
 DOCKER_TAG="v1.0.0"
