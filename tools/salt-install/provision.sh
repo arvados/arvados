@@ -49,6 +49,7 @@ VERSION="latest"
 # Usually there's no need to modify things below this line
 
 # Formulas versions
+ARVADOS_TAG="v1.1.2"
 POSTGRES_TAG="v0.41.3"
 NGINX_TAG="v2.4.0"
 DOCKER_TAG="v1.0.0"
@@ -190,7 +191,7 @@ EOFPSLS
 
 # Get the formula and dependencies
 cd ${F_DIR} || exit 1
-git clone https://github.com/netmanagers/arvados-formula.git
+git clone --branch "${ARVADOS_TAG}" https://github.com/saltstack-formulas/arvados-formula.git
 git clone --branch "${DOCKER_TAG}" https://github.com/saltstack-formulas/docker-formula.git
 git clone --branch "${LOCALE_TAG}" https://github.com/saltstack-formulas/locale-formula.git
 git clone --branch "${NGINX_TAG}" https://github.com/saltstack-formulas/nginx-formula.git
