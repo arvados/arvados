@@ -42,8 +42,7 @@ nginx:
               - 'if (-f $document_root/maintenance.html)':
                 - return: 503
             - location /config.json:
-              - return: {{ "200 '" ~ '{"API_HOST":"__CLUSTER__.__DOMAIN__"}' ~ "'" }}
-            # - include: 'snippets/letsencrypt.conf'
-            - include: 'snippets/snakeoil.conf'
+              - return: {{ "200 '" ~ '{"API_HOST":"__CLUSTER__.__DOMAIN__:__HOST_SSL_PORT__"}' ~ "'" }}
+            - include: 'snippets/arvados-snakeoil.conf'
             - access_log: /var/log/nginx/workbench2.__CLUSTER__.__DOMAIN__.access.log combined
             - error_log: /var/log/nginx/workbench2.__CLUSTER__.__DOMAIN__.error.log

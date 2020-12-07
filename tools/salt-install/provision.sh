@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/bash
 
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
@@ -47,6 +47,13 @@ VERSION="latest"
 
 ##########################################################
 # Usually there's no need to modify things below this line
+
+# Formulas versions
+ARVADOS_TAG="v1.1.3"
+POSTGRES_TAG="v0.41.3"
+NGINX_TAG="v2.4.0"
+DOCKER_TAG="v1.0.0"
+LOCALE_TAG="v0.3.4"
 
 set -o pipefail
 
@@ -139,7 +146,7 @@ file_roots:
   base:
     - ${S_DIR}
     - ${F_DIR}/*
-    - ${F_DIR}/*/test/salt/states
+    - ${F_DIR}/*/test/salt/states/examples
 
 pillar_roots:
   base:
@@ -154,8 +161,8 @@ mkdir -p ${P_DIR}
 cat > ${S_DIR}/top.sls << EOFTSLS
 base:
   '*':
-    - example_single_host_host_entries
-    - example_add_snakeoil_certs
+    - single_host.host_entries
+    - single_host.snakeoil_certs
     - locale
     - nginx.passenger
     - postgres
@@ -182,12 +189,13 @@ base:
     - postgresql
 EOFPSLS
 
-
 # Get the formula and dependencies
 cd ${F_DIR} || exit 1
-for f in postgres arvados nginx docker locale; do
-  git clone https://github.com/saltstack-formulas/${f}-formula.git
-done
+git clone --branch "${ARVADOS_TAG}" https://github.com/saltstack-formulas/arvados-formula.git
+git clone --branch "${DOCKER_TAG}" https://github.com/saltstack-formulas/docker-formula.git
+git clone --branch "${LOCALE_TAG}" https://github.com/saltstack-formulas/locale-formula.git
+git clone --branch "${NGINX_TAG}" https://github.com/saltstack-formulas/nginx-formula.git
+git clone --branch "${POSTGRES_TAG}" https://github.com/saltstack-formulas/postgres-formula.git
 
 if [ "x${BRANCH}" != "x" ]; then
   cd ${F_DIR}/arvados-formula || exit 1
@@ -258,9 +266,16 @@ if [ "x${RESTORE_PSQL}" = "xyes" ]; then
 fi
 # END FIXME! #16992 Temporary fix for psql call in arvados-api-server
 
-# If running in a vagrant VM, add default user to docker group
+# Leave a copy of the Arvados CA so the user can copy it where it's required
+echo "Copying the Arvados CA certificate to the installer dir, so you can import it"
+# If running in a vagrant VM, also add default user to docker group
 if [ "x${VAGRANT}" = "xyes" ]; then
-  usermod -a -G docker vagrant 
+  cp /etc/ssl/certs/arvados-snakeoil-ca.pem /vagrant
+
+  echo "Adding the vagrant user to the docker group"
+  usermod -a -G docker vagrant
+else
+  cp /etc/ssl/certs/arvados-snakeoil-ca.pem ${SCRIPT_DIR}
 fi
 
 # Test that the installation finished correctly
