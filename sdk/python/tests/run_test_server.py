@@ -73,6 +73,7 @@ if not os.path.exists(TEST_TMPDIR):
 my_api_host = None
 _cached_config = {}
 _cached_db_config = {}
+_already_used_port = {}
 
 def find_server_pid(PID_PATH, wait=10):
     now = time.time()
@@ -181,11 +182,15 @@ def find_available_port():
     would take care of the races, and this wouldn't be needed at all.
     """
 
-    sock = socket.socket()
-    sock.bind(('0.0.0.0', 0))
-    port = sock.getsockname()[1]
-    sock.close()
-    return port
+    global _already_used_port
+    while True:
+        sock = socket.socket()
+        sock.bind(('0.0.0.0', 0))
+        port = sock.getsockname()[1]
+        sock.close()
+        if port not in _already_used_port:
+            _already_used_port[port] = True
+            return port
 
 def _wait_until_port_listens(port, timeout=10, warn=True):
     """Wait for a process to start listening on the given port.
