@@ -633,6 +633,38 @@ func (s *FederationSuite) TestCreateRemoteContainerRequest(c *check.C) {
 	c.Check(strings.HasPrefix(cr.UUID, "zzzzz-"), check.Equals, true)
 }
 
+func (s *FederationSuite) TestCreateRemoteContainerRequestCheckRuntimeToken(c *check.C) {
+	// Send request to zmock and check that outgoing request has
+	// runtime_token set with a new random v2 token.
+
+	defer s.localServiceReturns404(c).Close()
+	req := httptest.NewRequest("POST", "/arvados/v1/container_requests?cluster_id=zmock",
+		strings.NewReader(`{
+	  "container_request": {
+	    "name": "hello world",
+	    "state": "Uncommitted",
+	    "output_path": "/",
+	    "container_image": "123",
+	    "command": ["abc"]
+	  }
+	}
+	`))
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveTokenV2)
+	req.Header.Set("Content-type", "application/json")
+
+	arvadostest.SetServiceURL(&s.testHandler.Cluster.Services.RailsAPI, "https://"+os.Getenv("ARVADOS_TEST_API_HOST"))
+	s.testHandler.Cluster.ClusterID = "zzzzz"
+
+	resp := s.testRequest(req).Result()
+	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+	var cr struct {
+		arvados.ContainerRequest `json:"container_request"`
+	}
+	c.Check(json.NewDecoder(s.remoteMockRequests[0].Body).Decode(&cr), check.IsNil)
+	c.Check(strings.HasPrefix(cr.ContainerRequest.RuntimeToken, "v2/zzzzz-gj3su-"), check.Equals, true)
+	c.Check(cr.ContainerRequest.RuntimeToken, check.Not(check.Equals), arvadostest.ActiveTokenV2)
+}
+
 func (s *FederationSuite) TestCreateRemoteContainerRequestError(c *check.C) {
 	defer s.localServiceReturns404(c).Close()
 	// pass cluster_id via query parameter, this allows arvados-controller
