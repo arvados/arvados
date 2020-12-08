@@ -44,7 +44,9 @@ func (i *arrayFlags) String() string {
 }
 
 func (i *arrayFlags) Set(value string) error {
-	*i = append(*i, value)
+	for _, s := range strings.Split(value, ",") {
+		*i = append(*i, s)
+	}
 	return nil
 }
 
@@ -54,20 +56,26 @@ func parseFlags(prog string, args []string, loader *config.Loader, logger *logru
 	flags.Usage = func() {
 		fmt.Fprintf(flags.Output(), `
 Usage:
-  %s [options ...]
+  %s [options ...] <uuid> ...
 
 	This program analyzes the cost of Arvados container requests. For each uuid
 	supplied, it creates a CSV report that lists all the containers used to
 	fulfill the container request, together with the machine type and cost of
-	each container.
+	each container. At least one uuid must be specified.
 
 	When supplied with the uuid of a container request, it will calculate the
-	cost of that container request and all its children. When suplied with a
-	project uuid or when supplied with multiple container request uuids, it will
-	create a CSV report for each supplied uuid, as well as a CSV file with
-	aggregate cost accounting for all supplied uuids. The aggregate cost report
-	takes container reuse into account: if a container was reused between several
-	container requests, its cost will only be counted once.
+	cost of that container request and all its children.
+
+	When supplied with the uuid of a collection, it will see if there is a
+	container_request uuid in the properties of the collection, and if so, it
+	will calculate the cost of that container request and all its children.
+
+	When supplied with a project uuid or when supplied with multiple container
+	request or collection uuids, it will create a CSV report for each supplied
+	uuid, as well as a CSV file with aggregate cost accounting for all supplied
+	uuids. The aggregate cost report takes container reuse into account: if a
+	container was reused between several container requests, its cost will only
+	be counted once.
 
 	To get the node costs, the progam queries the Arvados API for current cost
 	data for each node type used. This means that the reported cost always
@@ -86,13 +94,18 @@ Usage:
 	In order to get the data for the uuids supplied, the ARVADOS_API_HOST and
 	ARVADOS_API_TOKEN environment variables must be set.
 
+	This program prints the total dollar amount from the aggregate cost
+	accounting across all provided uuids on stdout.
+
+	When the '-output' option is specified, a set of CSV files with cost details
+	will be written to the provided directory.
+
 Options:
 `, prog)
 		flags.PrintDefaults()
 	}
 	loglevel := flags.String("log-level", "info", "logging `level` (debug, info, ...)")
-	flags.StringVar(&resultsDir, "output", "", "output `directory` for the CSV reports (required)")
-	flags.Var(&uuids, "uuid", "Toplevel `project or container request` uuid. May be specified more than once. (required)")
+	flags.StringVar(&resultsDir, "output", "", "output `directory` for the CSV reports")
 	flags.BoolVar(&cache, "cache", true, "create and use a local disk cache of Arvados objects")
 	err = flags.Parse(args)
 	if err == flag.ErrHelp {
@@ -103,17 +116,11 @@ Options:
 		exitCode = 2
 		return
 	}
+	uuids = flags.Args()
 
 	if len(uuids) < 1 {
 		flags.Usage()
 		err = fmt.Errorf("Error: no uuid(s) provided")
-		exitCode = 2
-		return
-	}
-
-	if resultsDir == "" {
-		flags.Usage()
-		err = fmt.Errorf("Error: output directory must be specified")
 		exitCode = 2
 		return
 	}
@@ -180,8 +187,8 @@ func addContainerLine(logger *logrus.Logger, node nodeInfo, cr arvados.Container
 
 func loadCachedObject(logger *logrus.Logger, file string, uuid string, object interface{}) (reload bool) {
 	reload = true
-	if strings.Contains(uuid, "-j7d0g-") {
-		// We do not cache projects, they have no final state
+	if strings.Contains(uuid, "-j7d0g-") || strings.Contains(uuid, "-4zz18-") {
+		// We do not cache projects or collections, they have no final state
 		return
 	}
 	// See if we have a cached copy of this object
@@ -251,6 +258,8 @@ func loadObject(logger *logrus.Logger, ac *arvados.Client, path string, uuid str
 		err = ac.RequestAndDecode(&object, "GET", "arvados/v1/container_requests/"+uuid, nil, nil)
 	} else if strings.Contains(uuid, "-dz642-") {
 		err = ac.RequestAndDecode(&object, "GET", "arvados/v1/containers/"+uuid, nil, nil)
+	} else if strings.Contains(uuid, "-4zz18-") {
+		err = ac.RequestAndDecode(&object, "GET", "arvados/v1/collections/"+uuid, nil, nil)
 	} else {
 		err = fmt.Errorf("unsupported object type with UUID %q:\n  %s", uuid, err)
 		return
@@ -309,7 +318,6 @@ func getNode(arv *arvadosclient.ArvadosClient, ac *arvados.Client, kc *keepclien
 }
 
 func handleProject(logger *logrus.Logger, uuid string, arv *arvadosclient.ArvadosClient, ac *arvados.Client, kc *keepclient.KeepClient, resultsDir string, cache bool) (cost map[string]float64, err error) {
-
 	cost = make(map[string]float64)
 
 	var project arvados.Group
@@ -366,9 +374,27 @@ func generateCrCsv(logger *logrus.Logger, uuid string, arv *arvadosclient.Arvado
 	var tmpTotalCost float64
 	var totalCost float64
 
+	var crUUID = uuid
+	if strings.Contains(uuid, "-4zz18-") {
+		// This is a collection, find the associated container request (if any)
+		var c arvados.Collection
+		err = loadObject(logger, ac, uuid, uuid, cache, &c)
+		if err != nil {
+			return nil, fmt.Errorf("error loading collection object %s: %s", uuid, err)
+		}
+		value, ok := c.Properties["container_request"]
+		if !ok {
+			return nil, fmt.Errorf("error: collection %s does not have a 'container_request' property", uuid)
+		}
+		crUUID, ok = value.(string)
+		if !ok {
+			return nil, fmt.Errorf("error: collection %s does not have a 'container_request' property of the string type", uuid)
+		}
+	}
+
 	// This is a container request, find the container
 	var cr arvados.ContainerRequest
-	err = loadObject(logger, ac, uuid, uuid, cache, &cr)
+	err = loadObject(logger, ac, crUUID, crUUID, cache, &cr)
 	if err != nil {
 		return nil, fmt.Errorf("error loading cr object %s: %s", uuid, err)
 	}
@@ -424,13 +450,15 @@ func generateCrCsv(logger *logrus.Logger, uuid string, arv *arvadosclient.Arvado
 
 	csv += "TOTAL,,,,,,,,," + strconv.FormatFloat(totalCost, 'f', 8, 64) + "\n"
 
-	// Write the resulting CSV file
-	fName := resultsDir + "/" + uuid + ".csv"
-	err = ioutil.WriteFile(fName, []byte(csv), 0644)
-	if err != nil {
-		return nil, fmt.Errorf("error writing file with path %s: %s", fName, err.Error())
+	if resultsDir != "" {
+		// Write the resulting CSV file
+		fName := resultsDir + "/" + uuid + ".csv"
+		err = ioutil.WriteFile(fName, []byte(csv), 0644)
+		if err != nil {
+			return nil, fmt.Errorf("error writing file with path %s: %s", fName, err.Error())
+		}
+		logger.Infof("\nUUID report in %s\n\n", fName)
 	}
-	logger.Infof("\nUUID report in %s\n\n", fName)
 
 	return
 }
@@ -440,10 +468,12 @@ func costanalyzer(prog string, args []string, loader *config.Loader, logger *log
 	if exitcode != 0 {
 		return
 	}
-	err = ensureDirectory(logger, resultsDir)
-	if err != nil {
-		exitcode = 3
-		return
+	if resultsDir != "" {
+		err = ensureDirectory(logger, resultsDir)
+		if err != nil {
+			exitcode = 3
+			return
+		}
 	}
 
 	// Arvados Client setup
@@ -474,12 +504,12 @@ func costanalyzer(prog string, args []string, loader *config.Loader, logger *log
 			for k, v := range cost {
 				cost[k] = v
 			}
-		} else if strings.Contains(uuid, "-xvhdp-") {
+		} else if strings.Contains(uuid, "-xvhdp-") || strings.Contains(uuid, "-4zz18-") {
 			// This is a container request
 			var crCsv map[string]float64
 			crCsv, err = generateCrCsv(logger, uuid, arv, ac, kc, resultsDir, cache)
 			if err != nil {
-				err = fmt.Errorf("Error generating container_request CSV for uuid %s: %s", uuid, err.Error())
+				err = fmt.Errorf("Error generating CSV for uuid %s: %s", uuid, err.Error())
 				exitcode = 2
 				return
 			}
@@ -492,6 +522,10 @@ func costanalyzer(prog string, args []string, loader *config.Loader, logger *log
 			// "Home" project is not supported by this program. Skip this uuid, but
 			// keep going.
 			logger.Errorf("Cost analysis is not supported for the 'Home' project: %s", uuid)
+		} else {
+			logger.Errorf("This argument does not look like a uuid: %s\n", uuid)
+			exitcode = 3
+			return
 		}
 	}
 
@@ -515,14 +549,20 @@ func costanalyzer(prog string, args []string, loader *config.Loader, logger *log
 
 	csv += "TOTAL," + strconv.FormatFloat(total, 'f', 8, 64) + "\n"
 
-	// Write the resulting CSV file
-	aFile := resultsDir + "/" + time.Now().Format("2006-01-02-15-04-05") + "-aggregate-costaccounting.csv"
-	err = ioutil.WriteFile(aFile, []byte(csv), 0644)
-	if err != nil {
-		err = fmt.Errorf("Error writing file with path %s: %s", aFile, err.Error())
-		exitcode = 1
-		return
+	if resultsDir != "" {
+		// Write the resulting CSV file
+		aFile := resultsDir + "/" + time.Now().Format("2006-01-02-15-04-05") + "-aggregate-costaccounting.csv"
+		err = ioutil.WriteFile(aFile, []byte(csv), 0644)
+		if err != nil {
+			err = fmt.Errorf("Error writing file with path %s: %s", aFile, err.Error())
+			exitcode = 1
+			return
+		}
+		logger.Infof("Aggregate cost accounting for all supplied uuids in %s\n", aFile)
 	}
-	logger.Infof("Aggregate cost accounting for all supplied uuids in %s\n", aFile)
+
+	// Output the total dollar amount on stdout
+	fmt.Fprintf(stdout, "%s\n", strconv.FormatFloat(total, 'f', 8, 64))
+
 	return
 }
