@@ -33,5 +33,5 @@ const ImageFileThumbnail = imageFileThumbnailStyle(
         <img
             className={classes.thumbnail}
             alt={file.name}
-            src={sanitizeToken(file.url, false)} />
+            src={sanitizeToken(file.url)} />
 );
