@@ -654,6 +654,7 @@ func (s *FederationSuite) TestCreateRemoteContainerRequestCheckRuntimeToken(c *c
 
 	arvadostest.SetServiceURL(&s.testHandler.Cluster.Services.RailsAPI, "https://"+os.Getenv("ARVADOS_TEST_API_HOST"))
 	s.testHandler.Cluster.ClusterID = "zzzzz"
+	s.testHandler.Cluster.SystemRootToken = arvadostest.SystemRootToken
 
 	resp := s.testRequest(req).Result()
 	c.Check(resp.StatusCode, check.Equals, http.StatusOK)

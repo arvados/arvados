@@ -142,6 +142,10 @@ func noopLogout(cluster *arvados.Cluster, opts arvados.LogoutOptions) (arvados.L
 }
 
 func (conn *Conn) CreateAPIClientAuthorization(ctx context.Context, rootToken string, authinfo rpc.UserSessionAuthInfo) (resp arvados.APIClientAuthorization, err error) {
+	// rootToken is "" then complain!
+	if rootToken == "" {
+		return arvados.APIClientAuthorization{}, errors.New("In CreateAPIClientAuthorization() rootToken can't be empty string")
+	}
 	ctxRoot := auth.NewContext(ctx, &auth.Credentials{Tokens: []string{rootToken}})
 	newsession, err := conn.railsProxy.UserSessionCreate(ctxRoot, rpc.UserSessionCreateOptions{
 		// Send a fake ReturnTo value instead of the caller's
