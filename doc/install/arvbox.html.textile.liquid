@@ -80,10 +80,23 @@ Arvbox creates root certificate to authorize Arvbox services.  Installing the ro
 
 The certificate will be added under the "Arvados testing" organization as "arvbox testing root CA".
 
-To access your Arvbox instance using command line clients (such as arv-get and arv-put) without security errors, install the certificate into the OS certificate storage (instructions for Debian/Ubuntu):
+To access your Arvbox instance using command line clients (such as arv-get and arv-put) without security errors, install the certificate into the OS certificate storage.
 
-# copy @arvbox-root-cert.pem@ to @/usr/local/share/ca-certificates/@
-# run @/usr/sbin/update-ca-certificates@
+h3. On Debian/Ubuntu:
+
+<notextile>
+<pre><code>cp arvbox-root-cert.pem /usr/local/share/ca-certificates/
+/usr/sbin/update-ca-certificates
+</code></pre>
+</notextile>
+
+h3. On CentOS:
+
+<notextile>
+<pre><code>cp arvbox-root-cert.pem /etc/pki/ca-trust/source/anchors/
+/usr/bin/update-ca-trust
+</code></pre>
+</notextile>
 
 h2. Configs
 

@@ -52,7 +52,6 @@ nginx:
             - client_max_body_size: 0
             - proxy_http_version: '1.1'
             - proxy_request_buffering: 'off'
-            # - include: 'snippets/letsencrypt.conf'
-            - include: 'snippets/snakeoil.conf'
+            - include: 'snippets/arvados-snakeoil.conf'
             - access_log: /var/log/nginx/collections.__CLUSTER__.__DOMAIN__.access.log combined
             - error_log: /var/log/nginx/collections.__CLUSTER__.__DOMAIN__.error.log

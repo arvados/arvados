@@ -73,7 +73,7 @@ arvados:
     tls:
       # certificate: ''
       # key: ''
-      # required to test with snakeoil certs
+      # required to test with arvados-snakeoil certs
       insecure: true
 
     ### TOKENS
