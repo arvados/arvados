@@ -1225,6 +1225,9 @@ else
             "reset")
                 stop_services
                 ;;
+            "shell")
+                /bin/bash
+                ;;
             "test" | "install")
                 case "$target" in
                     "")
