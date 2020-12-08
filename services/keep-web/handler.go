@@ -768,6 +768,8 @@ func (h *handler) seeOtherWithCookie(w http.ResponseWriter, r *http.Request, loc
 			Value:    auth.EncodeTokenCookie([]byte(formToken)),
 			Path:     "/",
 			HttpOnly: true,
+			SameSite: http.SameSiteNoneMode,
+			Secure:   true,
 		})
 	}
 
