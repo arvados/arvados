@@ -161,7 +161,7 @@ func (*Suite) TestUsage(c *check.C) {
 func (*Suite) TestContainerRequestUUID(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	// Run costanalyzer with 1 container request uuid
-	exitcode := Command.RunCommand("costanalyzer.test", []string{"-uuid", arvadostest.CompletedContainerRequestUUID, "-output", "results"}, &bytes.Buffer{}, &stdout, &stderr)
+	exitcode := Command.RunCommand("costanalyzer.test", []string{"-output", "results", arvadostest.CompletedContainerRequestUUID}, &bytes.Buffer{}, &stdout, &stderr)
 	c.Check(exitcode, check.Equals, 0)
 	c.Assert(stderr.String(), check.Matches, "(?ms).*supplied uuids in .*")
 
@@ -181,7 +181,7 @@ func (*Suite) TestCollectionUUID(c *check.C) {
 	var stdout, stderr bytes.Buffer
 
 	// Run costanalyzer with 1 collection uuid, without 'container_request' property
-	exitcode := Command.RunCommand("costanalyzer.test", []string{"-uuid", arvadostest.FooCollection, "-output", "results"}, &bytes.Buffer{}, &stdout, &stderr)
+	exitcode := Command.RunCommand("costanalyzer.test", []string{"-output", "results", arvadostest.FooCollection}, &bytes.Buffer{}, &stdout, &stderr)
 	c.Check(exitcode, check.Equals, 2)
 	c.Assert(stderr.String(), check.Matches, "(?ms).*does not have a 'container_request' property.*")
 
@@ -203,7 +203,7 @@ func (*Suite) TestCollectionUUID(c *check.C) {
 	stderr.Truncate(0)
 
 	// Run costanalyzer with 1 collection uuid
-	exitcode = Command.RunCommand("costanalyzer.test", []string{"-uuid", arvadostest.FooCollection, "-output", "results"}, &bytes.Buffer{}, &stdout, &stderr)
+	exitcode = Command.RunCommand("costanalyzer.test", []string{"-output", "results", arvadostest.FooCollection}, &bytes.Buffer{}, &stdout, &stderr)
 	c.Check(exitcode, check.Equals, 0)
 	c.Assert(stderr.String(), check.Matches, "(?ms).*supplied uuids in .*")
 
@@ -222,7 +222,7 @@ func (*Suite) TestCollectionUUID(c *check.C) {
 func (*Suite) TestDoubleContainerRequestUUID(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	// Run costanalyzer with 2 container request uuids
-	exitcode := Command.RunCommand("costanalyzer.test", []string{"-uuid", arvadostest.CompletedContainerRequestUUID, "-uuid", arvadostest.CompletedContainerRequestUUID2, "-output", "results"}, &bytes.Buffer{}, &stdout, &stderr)
+	exitcode := Command.RunCommand("costanalyzer.test", []string{"-output", "results", arvadostest.CompletedContainerRequestUUID, arvadostest.CompletedContainerRequestUUID2}, &bytes.Buffer{}, &stdout, &stderr)
 	c.Check(exitcode, check.Equals, 0)
 	c.Assert(stderr.String(), check.Matches, "(?ms).*supplied uuids in .*")
 
@@ -262,7 +262,7 @@ func (*Suite) TestDoubleContainerRequestUUID(c *check.C) {
 	c.Assert(err, check.IsNil)
 
 	// Run costanalyzer with the project uuid
-	exitcode = Command.RunCommand("costanalyzer.test", []string{"-uuid", arvadostest.AProjectUUID, "-cache=false", "-log-level", "debug", "-output", "results"}, &bytes.Buffer{}, &stdout, &stderr)
+	exitcode = Command.RunCommand("costanalyzer.test", []string{"-cache=false", "-log-level", "debug", "-output", "results", arvadostest.AProjectUUID}, &bytes.Buffer{}, &stdout, &stderr)
 	c.Check(exitcode, check.Equals, 0)
 	c.Assert(stderr.String(), check.Matches, "(?ms).*supplied uuids in .*")
 
@@ -285,10 +285,10 @@ func (*Suite) TestDoubleContainerRequestUUID(c *check.C) {
 
 func (*Suite) TestMultipleContainerRequestUUIDWithReuse(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	// Run costanalyzer with 2 container request uuids, as one comma separated -uuid argument
-	exitcode := Command.RunCommand("costanalyzer.test", []string{"-uuid", arvadostest.CompletedDiagnosticsContainerRequest1UUID + "," + arvadostest.CompletedDiagnosticsContainerRequest2UUID, "-output", "results"}, &bytes.Buffer{}, &stdout, &stderr)
+	// Run costanalyzer with 2 container request uuids, without output directory specified
+	exitcode := Command.RunCommand("costanalyzer.test", []string{arvadostest.CompletedDiagnosticsContainerRequest1UUID, arvadostest.CompletedDiagnosticsContainerRequest2UUID}, &bytes.Buffer{}, &stdout, &stderr)
 	c.Check(exitcode, check.Equals, 0)
-	c.Assert(stderr.String(), check.Matches, "(?ms).*supplied uuids in .*")
+	c.Assert(stderr.String(), check.Not(check.Matches), "(?ms).*supplied uuids in .*")
 
 	// Check that the total amount was printed to stdout
 	c.Check(stdout.String(), check.Matches, "0.01492030\n")
@@ -297,7 +297,7 @@ func (*Suite) TestMultipleContainerRequestUUIDWithReuse(c *check.C) {
 	stderr.Truncate(0)
 
 	// Run costanalyzer with 2 container request uuids
-	exitcode = Command.RunCommand("costanalyzer.test", []string{"-uuid", arvadostest.CompletedDiagnosticsContainerRequest1UUID, "-uuid", arvadostest.CompletedDiagnosticsContainerRequest2UUID, "-output", "results"}, &bytes.Buffer{}, &stdout, &stderr)
+	exitcode = Command.RunCommand("costanalyzer.test", []string{"-output", "results", arvadostest.CompletedDiagnosticsContainerRequest1UUID, arvadostest.CompletedDiagnosticsContainerRequest2UUID}, &bytes.Buffer{}, &stdout, &stderr)
 	c.Check(exitcode, check.Equals, 0)
 	c.Assert(stderr.String(), check.Matches, "(?ms).*supplied uuids in .*")
 
