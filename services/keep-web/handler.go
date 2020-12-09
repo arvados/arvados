@@ -296,27 +296,32 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	}
 
 	formToken := r.FormValue("api_token")
-	if formToken != "" && r.Header.Get("Origin") != "" && attachment && r.URL.Query().Get("api_token") == "" {
-		// The client provided an explicit token in the POST
-		// body. The Origin header indicates this *might* be
-		// an AJAX request, in which case redirect-with-cookie
-		// won't work: we should just serve the content in the
-		// POST response. This is safe because:
+	origin := r.Header.Get("Origin")
+	cors := origin != "" && !strings.HasSuffix(origin, "://"+r.Host)
+	safeAjax := cors && (r.Method == http.MethodGet || r.Method == http.MethodHead)
+	safeAttachment := attachment && r.URL.Query().Get("api_token") == ""
+	if formToken == "" {
+		// No token to use or redact.
+	} else if safeAjax || safeAttachment {
+		// If this is a cross-origin request, the URL won't
+		// appear in the browser's address bar, so
+		// substituting a clipboard-safe URL is pointless.
+		// Redirect-with-cookie wouldn't work anyway, because
+		// it's not safe to allow third-party use of our
+		// cookie.
 		//
-		// * We're supplying an attachment, not inline
-		//   content, so we don't need to convert the POST to
-		//   a GET and avoid the "really resubmit form?"
-		//   problem.
-		//
-		// * The token isn't embedded in the URL, so we don't
-		//   need to worry about bookmarks and copy/paste.
+		// If we're supplying an attachment, we don't need to
+		// convert POST to GET to avoid the "really resubmit
+		// form?" problem, so provided the token isn't
+		// embedded in the URL, there's no reason to do
+		// redirect-with-cookie in this case either.
 		reqTokens = append(reqTokens, formToken)
-	} else if formToken != "" && browserMethod[r.Method] {
-		// The client provided an explicit token in the query
-		// string, or a form in POST body. We must put the
-		// token in an HttpOnly cookie, and redirect to the
-		// same URL with the query param redacted and method =
-		// GET.
+	} else if browserMethod[r.Method] {
+		// If this is a page view, and the client provided a
+		// token via query string or POST body, we must put
+		// the token in an HttpOnly cookie, and redirect to an
+		// equivalent URL with the query param redacted and
+		// method = GET.
 		h.seeOtherWithCookie(w, r, "", credentialsOK)
 		return
 	}
