@@ -269,6 +269,7 @@ class Collection < ArvadosModel
         snapshot = self.dup
         snapshot.uuid = nil # Reset UUID so it's created as a new record
         snapshot.created_at = self.created_at
+        snapshot.modified_at = self.modified_at_was
       end
 
       # Restore requested changes on the current version
@@ -294,8 +295,10 @@ class Collection < ArvadosModel
       if snapshot
         snapshot.attributes = self.syncable_updates
         leave_modified_by_user_alone do
-          act_as_system_user do
-            snapshot.save
+          leave_modified_at_alone do
+            act_as_system_user do
+              snapshot.save
+            end
           end
         end
       end
