@@ -583,6 +583,25 @@ func (s *IntegrationSuite) TestXHRNoRedirect(c *check.C) {
 	c.Check(resp.Code, check.Equals, http.StatusOK)
 	c.Check(resp.Body.String(), check.Equals, "foo")
 	c.Check(resp.Header().Get("Access-Control-Allow-Origin"), check.Equals, "*")
+
+	// GET + Origin header is representative of both AJAX GET
+	// requests and inline images via <IMG crossorigin="anonymous"
+	// src="...">.
+	u.RawQuery = "api_token=" + url.QueryEscape(arvadostest.ActiveTokenV2)
+	req = &http.Request{
+		Method:     "GET",
+		Host:       u.Host,
+		URL:        u,
+		RequestURI: u.RequestURI(),
+		Header: http.Header{
+			"Origin": {"https://origin.example"},
+		},
+	}
+	resp = httptest.NewRecorder()
+	s.testServer.Handler.ServeHTTP(resp, req)
+	c.Check(resp.Code, check.Equals, http.StatusOK)
+	c.Check(resp.Body.String(), check.Equals, "foo")
+	c.Check(resp.Header().Get("Access-Control-Allow-Origin"), check.Equals, "*")
 }
 
 func (s *IntegrationSuite) testVhostRedirectTokenToCookie(c *check.C, method, hostPath, queryString, contentType, reqBody string, expectStatus int, expectRespBody string) *httptest.ResponseRecorder {
