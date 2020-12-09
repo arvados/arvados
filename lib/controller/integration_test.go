@@ -350,9 +350,8 @@ func (s *IntegrationSuite) TestS3WithFederatedToken(c *check.C) {
 		c.Check(err, check.IsNil)
 		c.Check(string(buf), check.Matches, `.* `+fmt.Sprintf("%d", len(testText))+` +s3://`+coll.UUID+`/test.txt\n`)
 
-		buf, err = exec.Command("s3cmd", append(s3args, "get", "s3://"+coll.UUID+"/test.txt", c.MkDir()+"/tmpfile")...).CombinedOutput()
+		buf, _ = exec.Command("s3cmd", append(s3args, "get", "s3://"+coll.UUID+"/test.txt", c.MkDir()+"/tmpfile")...).CombinedOutput()
 		// Command fails because we don't return Etag header.
-		// c.Check(err, check.IsNil)
 		flen := strconv.Itoa(len(testText))
 		c.Check(string(buf), check.Matches, `(?ms).*`+flen+` of `+flen+`.*`)
 	}
