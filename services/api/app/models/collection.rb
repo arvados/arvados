@@ -37,6 +37,8 @@ class Collection < ArvadosModel
   validate :protected_managed_properties_updates, on: :update
   after_validation :set_file_count_and_total_size
   before_save :set_file_names
+  before_update :preserve_version_exclusive_updates_leave_modified_at_alone,
+    if: Proc.new { |col| col.changes.keys.sort == ['modified_at', 'updated_at', 'preserve_version'].sort }
   around_update :manage_versioning, unless: :is_past_version?
 
   api_accessible :user, extend: :common do |t|
@@ -286,7 +288,9 @@ class Collection < ArvadosModel
 
       if should_preserve_version
         self.version += 1
-        self.preserve_version = false
+        if !changes.keys.include?('preserve_version')
+          self.preserve_version = false
+        end
       end
 
       yield
@@ -303,6 +307,10 @@ class Collection < ArvadosModel
         end
       end
     end
+  end
+
+  def preserve_version_exclusive_updates_leave_modified_at_alone
+    self.modified_at = self.modified_at_was
   end
 
   def syncable_updates
@@ -359,6 +367,7 @@ class Collection < ArvadosModel
 
     idle_threshold = Rails.configuration.Collections.PreserveVersionIfIdle
     if !self.preserve_version_was &&
+      !self.preserve_version &&
       (idle_threshold < 0 ||
         (idle_threshold > 0 && self.modified_at_was > db_current_time-idle_threshold.seconds))
       return false
