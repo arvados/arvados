@@ -109,8 +109,6 @@ func (rtr *router) sendResponse(w http.ResponseWriter, req *http.Request, resp i
 		rtr.mungeItemFields(tmp)
 	}
 
-<<<<<<< HEAD
-=======
 	for k, v := range tmp {
 		if strings.HasSuffix(k, "_at") {
 			// Format non-nil timestamps as
@@ -150,7 +148,6 @@ func (rtr *router) sendResponse(w http.ResponseWriter, req *http.Request, resp i
 			}
 		}
 	}
->>>>>>> 611e6e5fd (container requests in the new codepath for controller)
 	w.Header().Set("Content-Type", "application/json")
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
