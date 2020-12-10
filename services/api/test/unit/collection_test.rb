@@ -188,7 +188,7 @@ class CollectionTest < ActiveSupport::TestCase
     end
   end
 
-  test "preserve_version=false assignment is ignored while being true and not producing a new version" do
+  test "preserve_version updates" do
     Rails.configuration.Collections.CollectionVersioning = true
     Rails.configuration.Collections.PreserveVersionIfIdle = 3600
     act_as_user users(:active) do
@@ -199,28 +199,58 @@ class CollectionTest < ActiveSupport::TestCase
       assert_equal false, c.preserve_version
       # This update shouldn't produce a new version, as the idle time is not up
       c.update_attributes!({
-        'name' => 'bar',
-        'preserve_version' => true
+        'name' => 'bar'
       })
       c.reload
       assert_equal 1, c.version
       assert_equal 'bar', c.name
+      assert_equal false, c.preserve_version
+      # This update should produce a new version, even if the idle time is not up
+      # and also keep the preserve_version=true flag to persist it.
+      c.update_attributes!({
+        'name' => 'baz',
+        'preserve_version' => true
+      })
+      c.reload
+      assert_equal 2, c.version
+      assert_equal 'baz', c.name
       assert_equal true, c.preserve_version
       # Make sure preserve_version is not disabled after being enabled, unless
       # a new version is created.
+      # This is a non-versionable update
       c.update_attributes!({
         'preserve_version' => false,
         'replication_desired' => 2
       })
       c.reload
-      assert_equal 1, c.version
+      assert_equal 2, c.version
       assert_equal 2, c.replication_desired
       assert_equal true, c.preserve_version
+      # This is a versionable update
       c.update_attributes!({'name' => 'foobar'})
       c.reload
-      assert_equal 2, c.version
+      assert_equal 3, c.version
       assert_equal false, c.preserve_version
       assert_equal 'foobar', c.name
+      # Flipping only 'preserve_version' to true doesn't create a new version
+      c.update_attributes!({'preserve_version' => true})
+      c.reload
+      assert_equal 3, c.version
+      assert_equal true, c.preserve_version
+    end
+  end
+
+  test "preserve_version updates don't change modified_at timestamp" do
+    act_as_user users(:active) do
+      c = create_collection 'foo', Encoding::US_ASCII
+      assert c.valid?
+      assert_equal false, c.preserve_version
+      modified_at = c.modified_at.to_f
+      c.update_attributes!({'preserve_version' => true})
+      c.reload
+      assert_equal true, c.preserve_version
+      assert_equal modified_at, c.modified_at.to_f,
+        'preserve_version updates should not trigger modified_at changes'
     end
   end
 
