@@ -64,6 +64,8 @@ class Collection < ArvadosModel
     t.add :file_size_total
   end
 
+  UNLOGGED_CHANGES = ['preserve_version', 'updated_at']
+
   after_initialize do
     @signatures_checked = false
     @computed_pdh_for_manifest_text = false
@@ -750,5 +752,9 @@ class Collection < ArvadosModel
     super
     self.current_version_uuid ||= self.uuid
     true
+  end
+
+  def log_update
+    super unless (saved_changes.keys - UNLOGGED_CHANGES).empty?
   end
 end
