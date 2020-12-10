@@ -652,6 +652,11 @@ func (s *FederationSuite) TestCreateRemoteContainerRequestCheckRuntimeToken(c *c
 	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveTokenV2)
 	req.Header.Set("Content-type", "application/json")
 
+	// We replace zhome with zzzzz values (RailsAPI, ClusterID, SystemRootToken)
+	// SystemRoot token is needed because we check the
+	// https://[RailsAPI]/arvados/v1/api_client_authorizations/current
+	// https://[RailsAPI]/arvados/v1/users/current and
+	// https://[RailsAPI]/auth/controller/callback
 	arvadostest.SetServiceURL(&s.testHandler.Cluster.Services.RailsAPI, "https://"+os.Getenv("ARVADOS_TEST_API_HOST"))
 	s.testHandler.Cluster.ClusterID = "zzzzz"
 	s.testHandler.Cluster.SystemRootToken = arvadostest.SystemRootToken
@@ -661,8 +666,19 @@ func (s *FederationSuite) TestCreateRemoteContainerRequestCheckRuntimeToken(c *c
 	var cr struct {
 		arvados.ContainerRequest `json:"container_request"`
 	}
-	c.Check(json.NewDecoder(s.remoteMockRequests[0].Body).Decode(&cr), check.IsNil)
+
+	// Body can be a json formated or something like:
+	//  cluster_id=zmock&container_request=%7B%22command%22%3A%5B%22abc%22%5D%2C%22container_image%22%3A%22123%22%2C%22...7D
+	data, err := ioutil.ReadAll(s.remoteMockRequests[0].Body)
+	c.Check(err, check.IsNil)
+	// decodedValue is somethikng like:
+	//  {"container_request":{"command":["abc"],"container_image":"123","name":"hello world",...}
+	decodedValue, err := url.QueryUnescape(string(data))
+	c.Check(err, check.IsNil)
+	c.Check(json.Unmarshal([]byte(decodedValue), &cr), check.IsNil)
+	// let's make sure the Runtime token is there
 	c.Check(strings.HasPrefix(cr.ContainerRequest.RuntimeToken, "v2/zzzzz-gj3su-"), check.Equals, true)
+	// the Runtimetoken should be a different one than than the Token we originally did the request with.
 	c.Check(cr.ContainerRequest.RuntimeToken, check.Not(check.Equals), arvadostest.ActiveTokenV2)
 }
 
