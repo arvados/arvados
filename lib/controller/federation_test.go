@@ -681,7 +681,44 @@ func (s *FederationSuite) TestCreateRemoteContainerRequestCheckRuntimeToken(c *c
 	// the Runtimetoken should be a different one than than the Token we originally did the request with.
 	c.Check(cr.ContainerRequest.RuntimeToken, check.Not(check.Equals), arvadostest.ActiveTokenV2)
 }
+func (s *FederationSuite) TestCreateRemoteContainerRequestCheckSetRuntimeToken(c *check.C) {
+	// Send request to zmock and check that outgoing request has
+	// runtime_token set with the explicitly provided token.
 
+	defer s.localServiceReturns404(c).Close()
+	// pass cluster_id via query parameter, this allows arvados-controller
+	// to avoid parsing the body
+	req := httptest.NewRequest("POST", "/arvados/v1/container_requests?cluster_id=zmock",
+		strings.NewReader(`{
+	  "container_request": {
+	    "name": "hello world",
+	    "state": "Uncommitted",
+	    "output_path": "/",
+	    "container_image": "123",
+	    "command": ["abc"],
+	    "runtime_token": "xyz"
+	  }
+	}
+	`))
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	req.Header.Set("Content-type", "application/json")
+	resp := s.testRequest(req).Result()
+	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+	var cr struct {
+		arvados.ContainerRequest `json:"container_request"`
+	}
+	// Body can be a json formated or something like:
+	//  cluster_id=zmock&container_request=%7B%22command%22%3A%5B%22abc%22%5D%2C%22container_image%22%3A%22123%22%2C%22...7D
+	data, err := ioutil.ReadAll(s.remoteMockRequests[0].Body)
+	c.Check(err, check.IsNil)
+	// decodedValue is somethikng like:
+	//  {"container_request":{"command":["abc"],"container_image":"123","name":"hello world",...}
+	decodedValue, err := url.QueryUnescape(string(data))
+	c.Check(err, check.IsNil)
+	c.Check(json.Unmarshal([]byte(decodedValue), &cr), check.IsNil)
+
+	c.Check(cr.ContainerRequest.RuntimeToken, check.Equals, "xyz")
+}
 func (s *FederationSuite) TestCreateRemoteContainerRequestError(c *check.C) {
 	defer s.localServiceReturns404(c).Close()
 	// pass cluster_id via query parameter, this allows arvados-controller
