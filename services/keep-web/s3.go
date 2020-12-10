@@ -74,6 +74,8 @@ func s3querystring(u *url.URL) string {
 	return strings.Join(keys, "&")
 }
 
+var reMultipleSlashChars = regexp.MustCompile(`//+`)
+
 func s3stringToSign(alg, scope, signedHeaders string, r *http.Request) (string, error) {
 	timefmt, timestr := "20060102T150405Z", r.Header.Get("X-Amz-Date")
 	if timestr == "" {
@@ -96,7 +98,10 @@ func s3stringToSign(alg, scope, signedHeaders string, r *http.Request) (string, 
 		}
 	}
 
-	canonicalRequest := fmt.Sprintf("%s\n%s\n%s\n%s\n%s\n%s", r.Method, r.URL.EscapedPath(), s3querystring(r.URL), canonicalHeaders, signedHeaders, r.Header.Get("X-Amz-Content-Sha256"))
+	normalizedURL := *r.URL
+	normalizedURL.RawPath = ""
+	normalizedURL.Path = reMultipleSlashChars.ReplaceAllString(normalizedURL.Path, "/")
+	canonicalRequest := fmt.Sprintf("%s\n%s\n%s\n%s\n%s\n%s", r.Method, normalizedURL.EscapedPath(), s3querystring(r.URL), canonicalHeaders, signedHeaders, r.Header.Get("X-Amz-Content-Sha256"))
 	ctxlog.FromContext(r.Context()).Debugf("s3stringToSign: canonicalRequest %s", canonicalRequest)
 	return fmt.Sprintf("%s\n%s\n%s\n%s", alg, r.Header.Get("X-Amz-Date"), scope, hashdigest(sha256.New(), canonicalRequest)), nil
 }
@@ -243,7 +248,7 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 		bucketName = strings.SplitN(strings.TrimPrefix(r.URL.Path, "/"), "/", 2)[0]
 		objectNameGiven = strings.Count(strings.TrimSuffix(r.URL.Path, "/"), "/") > 1
 	}
-	fspath += r.URL.Path
+	fspath += reMultipleSlashChars.ReplaceAllString(r.URL.Path, "/")
 
 	switch {
 	case r.Method == http.MethodGet && !objectNameGiven:
