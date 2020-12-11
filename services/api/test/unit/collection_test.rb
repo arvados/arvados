@@ -190,7 +190,7 @@ class CollectionTest < ActiveSupport::TestCase
 
   test "preserve_version updates" do
     Rails.configuration.Collections.CollectionVersioning = true
-    Rails.configuration.Collections.PreserveVersionIfIdle = 3600
+    Rails.configuration.Collections.PreserveVersionIfIdle = -1 # disabled
     act_as_user users(:active) do
       # Set up initial collection
       c = create_collection 'foo', Encoding::US_ASCII
@@ -227,7 +227,10 @@ class CollectionTest < ActiveSupport::TestCase
       assert_equal 2, c.replication_desired
       assert_equal true, c.preserve_version
       # This is a versionable update
-      c.update_attributes!({'name' => 'foobar'})
+      c.update_attributes!({
+        'preserve_version' => false,
+        'name' => 'foobar'
+      })
       c.reload
       assert_equal 3, c.version
       assert_equal false, c.preserve_version

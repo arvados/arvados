@@ -278,7 +278,7 @@ class Collection < ArvadosModel
 
       # Restore requested changes on the current version
       changes.keys.each do |attr|
-        if attr == 'preserve_version' && changes[attr].last == false
+        if attr == 'preserve_version' && changes[attr].last == false && !should_preserve_version
           next # Ignore false assignment, once true it'll be true until next version
         end
         self.attributes = {attr => changes[attr].last}
@@ -290,9 +290,6 @@ class Collection < ArvadosModel
 
       if should_preserve_version
         self.version += 1
-        if !changes.keys.include?('preserve_version')
-          self.preserve_version = false
-        end
       end
 
       yield
