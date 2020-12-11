@@ -70,7 +70,7 @@ export class CollectionService extends TrashableResourceService<CollectionResour
             `c=${collectionUuid}${oldPath}`,
             `c=${collectionUuid}${encodeURI(newPath)}`
         );
-        return await this.update(collectionUuid, { preserveVersion: true });
+        await this.update(collectionUuid, { preserveVersion: true });
     }
 
     extendFileURL = (file: CollectionDirectory | CollectionFile) => {
