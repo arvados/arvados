@@ -31,12 +31,8 @@ export class CollectionService extends TrashableResourceService<CollectionResour
         return super.create({ ...data, preserveVersion: true });
     }
 
-    async update(uuid: string, data: Partial<CollectionResource>) {
-        // First make the changes
-        const collection = await super.update(uuid, data);
-        if (data === { preserveVersion: true }) { return collection; }
-        // Then set the head version to be preserved
-        return await super.update(uuid, { preserveVersion: true });
+    update(uuid: string, data: Partial<CollectionResource>) {
+        return super.update(uuid, { ...data, preserveVersion: true });
     }
 
     async files(uuid: string) {
