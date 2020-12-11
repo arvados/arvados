@@ -399,7 +399,7 @@ func generateCrCsv(logger *logrus.Logger, uuid string, arv *arvadosclient.Arvado
 		return nil, fmt.Errorf("error loading cr object %s: %s", uuid, err)
 	}
 	var container arvados.Container
-	err = loadObject(logger, ac, uuid, cr.ContainerUUID, cache, &container)
+	err = loadObject(logger, ac, crUUID, cr.ContainerUUID, cache, &container)
 	if err != nil {
 		return nil, fmt.Errorf("error loading container object %s: %s", cr.ContainerUUID, err)
 	}
@@ -428,7 +428,7 @@ func generateCrCsv(logger *logrus.Logger, uuid string, arv *arvadosclient.Arvado
 	if err != nil {
 		return nil, fmt.Errorf("error querying container_requests: %s", err.Error())
 	}
-	logger.Infof("Collecting child containers for container request %s", uuid)
+	logger.Infof("Collecting child containers for container request %s", crUUID)
 	for _, cr2 := range childCrs.Items {
 		logger.Info(".")
 		node, err := getNode(arv, ac, kc, cr2)
@@ -437,7 +437,7 @@ func generateCrCsv(logger *logrus.Logger, uuid string, arv *arvadosclient.Arvado
 		}
 		logger.Debug("\nChild container: " + cr2.ContainerUUID + "\n")
 		var c2 arvados.Container
-		err = loadObject(logger, ac, uuid, cr2.ContainerUUID, cache, &c2)
+		err = loadObject(logger, ac, cr.UUID, cr2.ContainerUUID, cache, &c2)
 		if err != nil {
 			return nil, fmt.Errorf("error loading object %s: %s", cr2.ContainerUUID, err)
 		}
@@ -452,7 +452,7 @@ func generateCrCsv(logger *logrus.Logger, uuid string, arv *arvadosclient.Arvado
 
 	if resultsDir != "" {
 		// Write the resulting CSV file
-		fName := resultsDir + "/" + uuid + ".csv"
+		fName := resultsDir + "/" + crUUID + ".csv"
 		err = ioutil.WriteFile(fName, []byte(csv), 0644)
 		if err != nil {
 			return nil, fmt.Errorf("error writing file with path %s: %s", fName, err.Error())
