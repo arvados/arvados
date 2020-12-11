@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -633,7 +634,8 @@ func (s *FederationSuite) TestCreateRemoteContainerRequest(c *check.C) {
 	c.Check(strings.HasPrefix(cr.UUID, "zzzzz-"), check.Equals, true)
 }
 
-func (s *FederationSuite) TestCreateRemoteContainerRequestCheckRuntimeToken(c *check.C) {
+func (s *FederationSuite) TestCreateRemoteContainerRequestCheckRuntimeToken1(c *check.C) {
+	s.remoteMockRequests = nil
 	// Send request to zmock and check that outgoing request has
 	// runtime_token set with a new random v2 token.
 
@@ -663,9 +665,7 @@ func (s *FederationSuite) TestCreateRemoteContainerRequestCheckRuntimeToken(c *c
 
 	resp := s.testRequest(req).Result()
 	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
-	var cr struct {
-		arvados.ContainerRequest `json:"container_request"`
-	}
+	var cr arvados.ContainerRequest
 
 	// Body can be a json formated or something like:
 	//  cluster_id=zmock&container_request=%7B%22command%22%3A%5B%22abc%22%5D%2C%22container_image%22%3A%22123%22%2C%22...7D
@@ -673,15 +673,24 @@ func (s *FederationSuite) TestCreateRemoteContainerRequestCheckRuntimeToken(c *c
 	c.Check(err, check.IsNil)
 	// decodedValue is somethikng like:
 	//  {"container_request":{"command":["abc"],"container_image":"123","name":"hello world",...}
-	decodedValue, err := url.QueryUnescape(string(data))
+	// but we have to eliminate 'cluster_id=zmock'
+	// for some reason url.ParseQuery(string(data)) doesn't have the desired effect becausethe value is an JSON object instead of a string
+	//escapedQuery := strings.TrimPrefix(string(data), "cluster_id=zmock&container_request=")
+	//decodedValue, err := url.QueryUnescape(escapedQuery)
+	decodedValue, err := url.ParseQuery(string(data))
+	decodedValueCR := decodedValue.Get("container_request")
+	log.Println(decodedValue)
 	c.Check(err, check.IsNil)
-	c.Check(json.Unmarshal([]byte(decodedValue), &cr), check.IsNil)
+	log.Printf("dvCR: %s", decodedValueCR)
+	c.Check(json.Unmarshal([]byte(decodedValueCR), &cr), check.IsNil)
 	// let's make sure the Runtime token is there
-	c.Check(strings.HasPrefix(cr.ContainerRequest.RuntimeToken, "v2/zzzzz-gj3su-"), check.Equals, true)
+	c.Check(strings.HasPrefix(cr.RuntimeToken, "v2/zzzzz-gj3su-"), check.Equals, true)
 	// the Runtimetoken should be a different one than than the Token we originally did the request with.
-	c.Check(cr.ContainerRequest.RuntimeToken, check.Not(check.Equals), arvadostest.ActiveTokenV2)
+	c.Check(cr.RuntimeToken, check.Not(check.Equals), arvadostest.ActiveTokenV2)
 }
-func (s *FederationSuite) TestCreateRemoteContainerRequestCheckSetRuntimeToken(c *check.C) {
+
+func (s *FederationSuite) TestCreateRemoteContainerRequestCheckSetRuntimeToken2(c *check.C) {
+	s.remoteMockRequests = nil
 	// Send request to zmock and check that outgoing request has
 	// runtime_token set with the explicitly provided token.
 
@@ -704,21 +713,25 @@ func (s *FederationSuite) TestCreateRemoteContainerRequestCheckSetRuntimeToken(c
 	req.Header.Set("Content-type", "application/json")
 	resp := s.testRequest(req).Result()
 	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
-	var cr struct {
-		arvados.ContainerRequest `json:"container_request"`
-	}
+	var cr arvados.ContainerRequest
 	// Body can be a json formated or something like:
 	//  cluster_id=zmock&container_request=%7B%22command%22%3A%5B%22abc%22%5D%2C%22container_image%22%3A%22123%22%2C%22...7D
 	data, err := ioutil.ReadAll(s.remoteMockRequests[0].Body)
 	c.Check(err, check.IsNil)
 	// decodedValue is somethikng like:
 	//  {"container_request":{"command":["abc"],"container_image":"123","name":"hello world",...}
-	decodedValue, err := url.QueryUnescape(string(data))
+	// but we have to eliminate 'cluster_id=zmock'
+	// for some reason url.ParseQuery(string(data)) doesn't have the desired effect becausethe value is an JSON object instead of a string
+	//escapedQuery := strings.TrimPrefix(string(data), "cluster_id=zmock&container_request=")
+	decodedValue, err := url.ParseQuery(string(data))
+	log.Printf(">> decodedValues: %#v", decodedValue)
+	decodedValueCR := decodedValue.Get("container_request")
 	c.Check(err, check.IsNil)
-	c.Check(json.Unmarshal([]byte(decodedValue), &cr), check.IsNil)
-
-	c.Check(cr.ContainerRequest.RuntimeToken, check.Equals, "xyz")
+	c.Check(json.Unmarshal([]byte(decodedValueCR), &cr), check.IsNil)
+	log.Printf(">>> CR: %#v\n>>>JSON string: %s", cr, decodedValueCR)
+	c.Check(cr.RuntimeToken, check.Equals, "xyz")
 }
+
 func (s *FederationSuite) TestCreateRemoteContainerRequestError(c *check.C) {
 	defer s.localServiceReturns404(c).Close()
 	// pass cluster_id via query parameter, this allows arvados-controller
