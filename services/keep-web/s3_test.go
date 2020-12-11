@@ -7,6 +7,7 @@ package main
 import (
 	"bytes"
 	"crypto/rand"
+	"crypto/sha256"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -538,6 +539,38 @@ func (s *IntegrationSuite) TestS3VirtualHostStyleRequests(c *check.C) {
 		for _, re := range trial.responseRegexp {
 			c.Check(string(body), check.Matches, re)
 		}
+	}
+}
+
+func (s *IntegrationSuite) TestS3NormalizeURIForSignature(c *check.C) {
+	stage := s.s3setup(c)
+	defer stage.teardown(c)
+	for _, trial := range []struct {
+		rawPath        string
+		normalizedPath string
+	}{
+		{"/foo", "/foo"},             // boring case
+		{"/foo%5fbar", "/foo_bar"},   // _ must not be escaped
+		{"/foo%2fbar", "/foo/bar"},   // / must not be escaped
+		{"/(foo)", "/%28foo%29"},     // () must be escaped
+		{"/foo%5bbar", "/foo%5Bbar"}, // %XX must be uppercase
+	} {
+		date := time.Now().UTC().Format("20060102T150405Z")
+		scope := "20200202/fakeregion/S3/aws4_request"
+		canonicalRequest := fmt.Sprintf("%s\n%s\n%s\n%s\n%s\n%s", "GET", trial.normalizedPath, "", "host:host.example.com\n", "host", "")
+		c.Logf("canonicalRequest %q", canonicalRequest)
+		expect := fmt.Sprintf("%s\n%s\n%s\n%s", s3SignAlgorithm, date, scope, hashdigest(sha256.New(), canonicalRequest))
+		c.Logf("expected stringToSign %q", expect)
+
+		req, err := http.NewRequest("GET", "https://host.example.com"+trial.rawPath, nil)
+		req.Header.Set("X-Amz-Date", date)
+		req.Host = "host.example.com"
+
+		obtained, err := s3stringToSign(s3SignAlgorithm, scope, "host", req)
+		if !c.Check(err, check.IsNil) {
+			continue
+		}
+		c.Check(obtained, check.Equals, expect)
 	}
 }
 
