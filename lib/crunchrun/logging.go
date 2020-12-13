@@ -335,7 +335,7 @@ func (arvlog *ArvLogWriter) rateLimit(line []byte, now time.Time) (bool, []byte)
 
 		arvlog.bytesLogged += lineSize
 		arvlog.logThrottleBytesSoFar += lineSize
-		arvlog.logThrottleLinesSoFar += 1
+		arvlog.logThrottleLinesSoFar++
 
 		if arvlog.bytesLogged > crunchLimitLogBytesPerJob {
 			message = fmt.Sprintf("%s Exceeded log limit %d bytes (crunch_limit_log_bytes_per_job). Log will be truncated.",
