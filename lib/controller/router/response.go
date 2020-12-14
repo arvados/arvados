@@ -97,36 +97,55 @@ func (rtr *router) sendResponse(w http.ResponseWriter, req *http.Request, resp i
 			} else if defaultItemKind != "" {
 				item["kind"] = defaultItemKind
 			}
-			items[i] = applySelectParam(opts.Select, item)
+			item = applySelectParam(opts.Select, item)
+			rtr.mungeItemFields(item)
+			items[i] = item
 		}
 		if opts.Count == "none" {
 			delete(tmp, "items_available")
 		}
 	} else {
 		tmp = applySelectParam(opts.Select, tmp)
+		rtr.mungeItemFields(tmp)
 	}
 
-	// Format non-nil timestamps as rfc3339NanoFixed (by default
-	// they will have been encoded to time.RFC3339Nano, which
-	// omits trailing zeroes).
 	for k, v := range tmp {
-		if !strings.HasSuffix(k, "_at") {
-			continue
+		if strings.HasSuffix(k, "_at") {
+			// Format non-nil timestamps as
+			// rfc3339NanoFixed (by default they will have
+			// been encoded to time.RFC3339Nano, which
+			// omits trailing zeroes).
+			switch tv := v.(type) {
+			case *time.Time:
+				if tv == nil {
+					break
+				}
+				tmp[k] = tv.Format(rfc3339NanoFixed)
+			case time.Time:
+				if tv.IsZero() {
+					tmp[k] = nil
+				} else {
+					tmp[k] = tv.Format(rfc3339NanoFixed)
+				}
+			case string:
+				t, err := time.Parse(time.RFC3339Nano, tv)
+				if err != nil {
+					break
+				}
+				tmp[k] = t.Format(rfc3339NanoFixed)
+			}
 		}
-		switch tv := v.(type) {
-		case *time.Time:
-			if tv == nil {
-				break
+		switch k {
+		// in all this cases, RoR returns nil instead the Zero value for the type.
+		// Maytbe, this should all go away when RoR is out of the picture.
+		case "output_uuid", "output_name", "log_uuid", "modified_by_client_uuid", "description", "requesting_container_uuid", "expires_at":
+			if v == "" {
+				tmp[k] = nil
 			}
-			tmp[k] = tv.Format(rfc3339NanoFixed)
-		case time.Time:
-			tmp[k] = tv.Format(rfc3339NanoFixed)
-		case string:
-			t, err := time.Parse(time.RFC3339Nano, tv)
-			if err != nil {
-				break
+		case "container_count_max":
+			if v == float64(0) {
+				tmp[k] = nil
 			}
-			tmp[k] = t.Format(rfc3339NanoFixed)
 		}
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -159,4 +178,54 @@ func kind(resp interface{}) string {
 		// "arvados.CollectionList" => "arvados#collectionList"
 		return "#" + strings.ToLower(s[1:])
 	})
+}
+
+func (rtr *router) mungeItemFields(tmp map[string]interface{}) {
+	for k, v := range tmp {
+		if strings.HasSuffix(k, "_at") {
+			// Format non-nil timestamps as
+			// rfc3339NanoFixed (otherwise they
+			// would use the default time encoding).
+			switch tv := v.(type) {
+			case *time.Time:
+				if tv == nil {
+					break
+				}
+				tmp[k] = tv.Format(rfc3339NanoFixed)
+			case time.Time:
+				if tv.IsZero() {
+					tmp[k] = nil
+				} else {
+					tmp[k] = tv.Format(rfc3339NanoFixed)
+				}
+			case string:
+				t, err := time.Parse(time.RFC3339Nano, tv)
+				if err != nil {
+					break
+				}
+				if t.IsZero() {
+					tmp[k] = nil
+				} else {
+					tmp[k] = t.Format(rfc3339NanoFixed)
+				}
+			}
+		}
+		switch k {
+		// lib/controller/handler_test.go:TestGetObjects tries to test if we break
+		// RoR compatibility. The main reason that we keep this transformations is to comply
+		// with that test.
+		// In some cases the Arvados specification doesn't mention how to treat "" or nil values,
+		// as a first step, we'll just try to return the same that railsapi. In the future,
+		// when railsapi is not used anymore, this could all be changed to return whatever we define
+		// in the specification.
+		case "output_uuid", "output_name", "log_uuid", "description", "requesting_container_uuid", "container_uuid":
+			if v == "" {
+				tmp[k] = nil
+			}
+		case "container_count_max":
+			if v == float64(0) {
+				tmp[k] = nil
+			}
+		}
+	}
 }

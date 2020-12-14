@@ -169,6 +169,41 @@ func (rtr *router) addRoutes() {
 			},
 		},
 		{
+			arvados.EndpointContainerRequestCreate,
+			func() interface{} { return &arvados.CreateOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.ContainerRequestCreate(ctx, *opts.(*arvados.CreateOptions))
+			},
+		},
+		{
+			arvados.EndpointContainerRequestUpdate,
+			func() interface{} { return &arvados.UpdateOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.ContainerRequestUpdate(ctx, *opts.(*arvados.UpdateOptions))
+			},
+		},
+		{
+			arvados.EndpointContainerRequestGet,
+			func() interface{} { return &arvados.GetOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.ContainerRequestGet(ctx, *opts.(*arvados.GetOptions))
+			},
+		},
+		{
+			arvados.EndpointContainerRequestList,
+			func() interface{} { return &arvados.ListOptions{Limit: -1} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.ContainerRequestList(ctx, *opts.(*arvados.ListOptions))
+			},
+		},
+		{
+			arvados.EndpointContainerRequestDelete,
+			func() interface{} { return &arvados.DeleteOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.ContainerRequestDelete(ctx, *opts.(*arvados.DeleteOptions))
+			},
+		},
+		{
 			arvados.EndpointContainerLock,
 			func() interface{} {
 				return &arvados.GetOptions{Select: []string{"uuid", "state", "priority", "auth_uuid", "locked_by_uuid"}}
