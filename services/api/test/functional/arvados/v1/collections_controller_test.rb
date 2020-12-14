@@ -1145,7 +1145,7 @@ EOS
   end
 
   [:admin, :active].each do |user|
-    test "get trashed collection via filters and #{user} user" do
+    test "get trashed collection via filters and #{user} user without including its past versions" do
       uuid = 'zzzzz-4zz18-mto52zx1s7sn3ih' # expired_collection
       authorize_with user
       get :index, params: {

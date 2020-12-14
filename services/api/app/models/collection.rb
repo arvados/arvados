@@ -62,6 +62,8 @@ class Collection < ArvadosModel
     t.add :file_size_total
   end
 
+  UNLOGGED_CHANGES = ['preserve_version', 'updated_at']
+
   after_initialize do
     @signatures_checked = false
     @computed_pdh_for_manifest_text = false
@@ -274,7 +276,7 @@ class Collection < ArvadosModel
 
       # Restore requested changes on the current version
       changes.keys.each do |attr|
-        if attr == 'preserve_version' && changes[attr].last == false
+        if attr == 'preserve_version' && changes[attr].last == false && !should_preserve_version
           next # Ignore false assignment, once true it'll be true until next version
         end
         self.attributes = {attr => changes[attr].last}
@@ -286,7 +288,6 @@ class Collection < ArvadosModel
 
       if should_preserve_version
         self.version += 1
-        self.preserve_version = false
       end
 
       yield
@@ -302,6 +303,12 @@ class Collection < ArvadosModel
           end
         end
       end
+    end
+  end
+
+  def maybe_update_modified_by_fields
+    if !(self.changes.keys - ['updated_at', 'preserve_version']).empty?
+      super
     end
   end
 
@@ -359,6 +366,7 @@ class Collection < ArvadosModel
 
     idle_threshold = Rails.configuration.Collections.PreserveVersionIfIdle
     if !self.preserve_version_was &&
+      !self.preserve_version &&
       (idle_threshold < 0 ||
         (idle_threshold > 0 && self.modified_at_was > db_current_time-idle_threshold.seconds))
       return false
@@ -741,5 +749,9 @@ class Collection < ArvadosModel
     super
     self.current_version_uuid ||= self.uuid
     true
+  end
+
+  def log_update
+    super unless (saved_changes.keys - UNLOGGED_CHANGES).empty?
   end
 end
