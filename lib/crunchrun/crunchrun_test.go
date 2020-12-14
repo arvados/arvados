@@ -74,7 +74,7 @@ type KeepTestClient struct {
 
 var hwManifest = ". 82ab40c24fc8df01798e57ba66795bb1+841216+Aa124ac75e5168396c73c0a18eda641a4f41791c0@569fa8c3 0:841216:9c31ee32b3d15268a0754e8edc74d4f815ee014b693bc5109058e431dd5caea7.tar\n"
 var hwPDH = "a45557269dcb65a6b78f9ac061c0850b+120"
-var hwImageId = "9c31ee32b3d15268a0754e8edc74d4f815ee014b693bc5109058e431dd5caea7"
+var hwImageID = "9c31ee32b3d15268a0754e8edc74d4f815ee014b693bc5109058e431dd5caea7"
 
 var otherManifest = ". 68a84f561b1d1708c6baff5e019a9ab3+46+Ae5d0af96944a3690becb1decdf60cc1c937f556d@5693216f 0:46:md5sum.txt\n"
 var otherPDH = "a3e8f74c6f101eae01fa08bfb4e49b3a+54"
@@ -207,7 +207,7 @@ func (t *TestDockerClient) ImageLoad(ctx context.Context, input io.Reader, quiet
 	if err != nil {
 		return dockertypes.ImageLoadResponse{}, err
 	}
-	t.imageLoaded = hwImageId
+	t.imageLoaded = hwImageID
 	return dockertypes.ImageLoadResponse{Body: ioutil.NopCloser(input)}, nil
 }
 
@@ -425,7 +425,7 @@ func (fw FileWrapper) Sync() error {
 }
 
 func (client *KeepTestClient) ManifestFileReader(m manifest.Manifest, filename string) (arvados.File, error) {
-	if filename == hwImageId+".tar" {
+	if filename == hwImageID+".tar" {
 		rdr := ioutil.NopCloser(&bytes.Buffer{})
 		client.Called = true
 		return FileWrapper{rdr, 1321984}, nil
@@ -447,10 +447,10 @@ func (s *TestSuite) TestLoadImage(c *C) {
 	cr.ContainerArvClient = &ArvTestClient{}
 	cr.ContainerKeepClient = kc
 
-	_, err = cr.Docker.ImageRemove(nil, hwImageId, dockertypes.ImageRemoveOptions{})
+	_, err = cr.Docker.ImageRemove(nil, hwImageID, dockertypes.ImageRemoveOptions{})
 	c.Check(err, IsNil)
 
-	_, _, err = cr.Docker.ImageInspectWithRaw(nil, hwImageId)
+	_, _, err = cr.Docker.ImageInspectWithRaw(nil, hwImageID)
 	c.Check(err, NotNil)
 
 	cr.Container.ContainerImage = hwPDH
@@ -463,13 +463,13 @@ func (s *TestSuite) TestLoadImage(c *C) {
 
 	c.Check(err, IsNil)
 	defer func() {
-		cr.Docker.ImageRemove(nil, hwImageId, dockertypes.ImageRemoveOptions{})
+		cr.Docker.ImageRemove(nil, hwImageID, dockertypes.ImageRemoveOptions{})
 	}()
 
 	c.Check(kc.Called, Equals, true)
-	c.Check(cr.ContainerConfig.Image, Equals, hwImageId)
+	c.Check(cr.ContainerConfig.Image, Equals, hwImageID)
 
-	_, _, err = cr.Docker.ImageInspectWithRaw(nil, hwImageId)
+	_, _, err = cr.Docker.ImageInspectWithRaw(nil, hwImageID)
 	c.Check(err, IsNil)
 
 	// (2) Test using image that's already loaded
@@ -479,7 +479,7 @@ func (s *TestSuite) TestLoadImage(c *C) {
 	err = cr.LoadImage()
 	c.Check(err, IsNil)
 	c.Check(kc.Called, Equals, false)
-	c.Check(cr.ContainerConfig.Image, Equals, hwImageId)
+	c.Check(cr.ContainerConfig.Image, Equals, hwImageID)
 
 }
 
@@ -771,7 +771,7 @@ func (s *TestSuite) fullRunHelper(c *C, record string, extraMounts []string, exi
 
 	s.docker.exitCode = exitCode
 	s.docker.fn = fn
-	s.docker.ImageRemove(nil, hwImageId, dockertypes.ImageRemoveOptions{})
+	s.docker.ImageRemove(nil, hwImageID, dockertypes.ImageRemoveOptions{})
 
 	api = &ArvTestClient{Container: rec}
 	s.docker.api = api
@@ -1131,7 +1131,7 @@ func (s *TestSuite) testStopContainer(c *C, setup func(cr *ContainerRunner)) {
 		t.logWriter.Write(dockerLog(1, "foo\n"))
 		t.logWriter.Close()
 	}
-	s.docker.ImageRemove(nil, hwImageId, dockertypes.ImageRemoveOptions{})
+	s.docker.ImageRemove(nil, hwImageID, dockertypes.ImageRemoveOptions{})
 
 	api := &ArvTestClient{Container: rec}
 	kc := &KeepTestClient{}
@@ -1618,7 +1618,7 @@ func (s *TestSuite) stdoutErrorRunHelper(c *C, record string, fn func(t *TestDoc
 	c.Check(err, IsNil)
 
 	s.docker.fn = fn
-	s.docker.ImageRemove(nil, hwImageId, dockertypes.ImageRemoveOptions{})
+	s.docker.ImageRemove(nil, hwImageID, dockertypes.ImageRemoveOptions{})
 
 	api = &ArvTestClient{Container: rec}
 	kc := &KeepTestClient{}

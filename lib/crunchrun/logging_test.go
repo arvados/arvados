@@ -23,9 +23,9 @@ type TestTimestamper struct {
 	count int
 }
 
-func (this *TestTimestamper) Timestamp(t time.Time) string {
-	this.count += 1
-	t, err := time.ParseInLocation(time.RFC3339Nano, fmt.Sprintf("2015-12-29T15:51:45.%09dZ", this.count), t.Location())
+func (stamper *TestTimestamper) Timestamp(t time.Time) string {
+	stamper.count++
+	t, err := time.ParseInLocation(time.RFC3339Nano, fmt.Sprintf("2015-12-29T15:51:45.%09dZ", stamper.count), t.Location())
 	if err != nil {
 		panic(err)
 	}

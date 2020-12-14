@@ -103,10 +103,10 @@ func awsKeyFingerprint(pk ssh.PublicKey) (md5fp string, sha1fp string, err error
 	sha1pkix := sha1.Sum([]byte(pkix))
 	md5fp = ""
 	sha1fp = ""
-	for i := 0; i < len(md5pkix); i += 1 {
+	for i := 0; i < len(md5pkix); i++ {
 		md5fp += fmt.Sprintf(":%02x", md5pkix[i])
 	}
-	for i := 0; i < len(sha1pkix); i += 1 {
+	for i := 0; i < len(sha1pkix); i++ {
 		sha1fp += fmt.Sprintf(":%02x", sha1pkix[i])
 	}
 	return md5fp[1:], sha1fp[1:], nil
@@ -251,7 +251,7 @@ func (instanceSet *ec2InstanceSet) Instances(tags cloud.InstanceTags) (instances
 	}
 }
 
-func (az *ec2InstanceSet) Stop() {
+func (instanceSet *ec2InstanceSet) Stop() {
 }
 
 type ec2Instance struct {

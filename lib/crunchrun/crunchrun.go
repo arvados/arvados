@@ -539,7 +539,7 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 				src = fmt.Sprintf("%s/tmp%d", runner.ArvMountPoint, tmpcount)
 				arvMountCmd = append(arvMountCmd, "--mount-tmp")
 				arvMountCmd = append(arvMountCmd, fmt.Sprintf("tmp%d", tmpcount))
-				tmpcount += 1
+				tmpcount++
 			}
 			if mnt.Writable {
 				if bind == runner.Container.OutputPath {
@@ -944,15 +944,15 @@ func (runner *ContainerRunner) AttachStreams() (err error) {
 
 	// If stdin mount is provided, attach it to the docker container
 	var stdinRdr arvados.File
-	var stdinJson []byte
+	var stdinJSON []byte
 	if stdinMnt, ok := runner.Container.Mounts["stdin"]; ok {
 		if stdinMnt.Kind == "collection" {
 			var stdinColl arvados.Collection
-			collId := stdinMnt.UUID
-			if collId == "" {
-				collId = stdinMnt.PortableDataHash
+			collID := stdinMnt.UUID
+			if collID == "" {
+				collID = stdinMnt.PortableDataHash
 			}
-			err = runner.ContainerArvClient.Get("collections", collId, nil, &stdinColl)
+			err = runner.ContainerArvClient.Get("collections", collID, nil, &stdinColl)
 			if err != nil {
 				return fmt.Errorf("While getting stdin collection: %v", err)
 			}
@@ -966,14 +966,14 @@ func (runner *ContainerRunner) AttachStreams() (err error) {
 				return fmt.Errorf("While getting stdin collection path %v: %v", stdinMnt.Path, err)
 			}
 		} else if stdinMnt.Kind == "json" {
-			stdinJson, err = json.Marshal(stdinMnt.Content)
+			stdinJSON, err = json.Marshal(stdinMnt.Content)
 			if err != nil {
 				return fmt.Errorf("While encoding stdin json data: %v", err)
 			}
 		}
 	}
 
-	stdinUsed := stdinRdr != nil || len(stdinJson) != 0
+	stdinUsed := stdinRdr != nil || len(stdinJSON) != 0
 	response, err := runner.Docker.ContainerAttach(context.TODO(), runner.ContainerID,
 		dockertypes.ContainerAttachOptions{Stream: true, Stdin: stdinUsed, Stdout: true, Stderr: true})
 	if err != nil {
@@ -1016,9 +1016,9 @@ func (runner *ContainerRunner) AttachStreams() (err error) {
 			stdinRdr.Close()
 			response.CloseWrite()
 		}()
-	} else if len(stdinJson) != 0 {
+	} else if len(stdinJSON) != 0 {
 		go func() {
-			_, err := io.Copy(response.Conn, bytes.NewReader(stdinJson))
+			_, err := io.Copy(response.Conn, bytes.NewReader(stdinJSON))
 			if err != nil {
 				runner.CrunchLog.Printf("While writing stdin json to docker container: %v", err)
 				runner.stop(nil)
@@ -1814,18 +1814,18 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 		}
 	}
 
-	containerId := flags.Arg(0)
+	containerID := flags.Arg(0)
 
 	switch {
 	case *detach && !ignoreDetachFlag:
-		return Detach(containerId, prog, args, os.Stdout, os.Stderr)
+		return Detach(containerID, prog, args, os.Stdout, os.Stderr)
 	case *kill >= 0:
-		return KillProcess(containerId, syscall.Signal(*kill), os.Stdout, os.Stderr)
+		return KillProcess(containerID, syscall.Signal(*kill), os.Stdout, os.Stderr)
 	case *list:
 		return ListProcesses(os.Stdout, os.Stderr)
 	}
 
-	if containerId == "" {
+	if containerID == "" {
 		log.Printf("usage: %s [options] UUID", prog)
 		return 1
 	}
@@ -1839,14 +1839,14 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 
 	api, err := arvadosclient.MakeArvadosClient()
 	if err != nil {
-		log.Printf("%s: %v", containerId, err)
+		log.Printf("%s: %v", containerID, err)
 		return 1
 	}
 	api.Retries = 8
 
 	kc, kcerr := keepclient.MakeKeepClient(api)
 	if kcerr != nil {
-		log.Printf("%s: %v", containerId, kcerr)
+		log.Printf("%s: %v", containerID, kcerr)
 		return 1
 	}
 	kc.BlockCache = &keepclient.BlockCache{MaxBlocks: 2}
@@ -1856,21 +1856,21 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	// minimum version we want to support.
 	docker, dockererr := dockerclient.NewClient(dockerclient.DefaultDockerHost, "1.21", nil, nil)
 
-	cr, err := NewContainerRunner(arvados.NewClientFromEnv(), api, kc, docker, containerId)
+	cr, err := NewContainerRunner(arvados.NewClientFromEnv(), api, kc, docker, containerID)
 	if err != nil {
 		log.Print(err)
 		return 1
 	}
 	if dockererr != nil {
-		cr.CrunchLog.Printf("%s: %v", containerId, dockererr)
+		cr.CrunchLog.Printf("%s: %v", containerID, dockererr)
 		cr.checkBrokenNode(dockererr)
 		cr.CrunchLog.Close()
 		return 1
 	}
 
-	parentTemp, tmperr := cr.MkTempDir("", "crunch-run."+containerId+".")
+	parentTemp, tmperr := cr.MkTempDir("", "crunch-run."+containerID+".")
 	if tmperr != nil {
-		log.Printf("%s: %v", containerId, tmperr)
+		log.Printf("%s: %v", containerID, tmperr)
 		return 1
 	}
 
@@ -1904,7 +1904,7 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	}
 
 	if runerr != nil {
-		log.Printf("%s: %v", containerId, runerr)
+		log.Printf("%s: %v", containerID, runerr)
 		return 1
 	}
 	return 0
