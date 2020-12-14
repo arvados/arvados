@@ -90,9 +90,8 @@ func transform(input *Datapoint) (output arvados.Datapoint) {
 		extraInfo += fmt.Sprintf("Container duration: %s\n", d)
 	}
 
-	legend := fmt.Sprintf(`<p>%s</p><p>Container Request: <a href="https://workbench.x2bo2.arvadosapi.com/container_requests/%s">%s</a></p><p>%s</p>`,
+	legend := fmt.Sprintf(`<p>%s</p><p>Container Request: %s</a></p><p>%s</p>`,
 		input.CheckpointName,
-		input.ContainerRequest.UUID,
 		input.ContainerRequest.UUID,
 		extraInfo)
 
