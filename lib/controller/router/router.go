@@ -204,6 +204,14 @@ func (rtr *router) addRoutes() {
 			},
 		},
 		{
+			arvados.EndpointForecastDatapoint,
+			func() interface{} { return &arvados.GetOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.ForecastDatapoints(ctx, *opts.(*arvados.GetOptions))
+			},
+		},
+
+		{
 			arvados.EndpointContainerLock,
 			func() interface{} {
 				return &arvados.GetOptions{Select: []string{"uuid", "state", "priority", "auth_uuid", "locked_by_uuid"}}

@@ -321,6 +321,13 @@ func (conn *Conn) ContainerRequestDelete(ctx context.Context, options arvados.De
 	return resp, err
 }
 
+func (conn *Conn) ForecastDatapoints(ctx context.Context, options arvados.GetOptions) (arvados.ForecastDatapointsResponse, error) {
+	ep := arvados.EndpointForecastDatapoint
+	var resp arvados.ForecastDatapointsResponse
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
 func (conn *Conn) SpecimenCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Specimen, error) {
 	ep := arvados.EndpointSpecimenCreate
 	var resp arvados.Specimen

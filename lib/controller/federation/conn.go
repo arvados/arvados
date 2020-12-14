@@ -398,6 +398,10 @@ func (conn *Conn) ContainerRequestDelete(ctx context.Context, options arvados.De
 	return conn.chooseBackend(options.UUID).ContainerRequestDelete(ctx, options)
 }
 
+func (conn *Conn) ForecastDatapoints(ctx context.Context, options arvados.GetOptions) (resp arvados.ForecastDatapointsResponse, err error) {
+	return conn.chooseBackend(options.UUID).ForecastDatapoints(ctx, options)
+}
+
 func (conn *Conn) SpecimenList(ctx context.Context, options arvados.ListOptions) (arvados.SpecimenList, error) {
 	return conn.generated_SpecimenList(ctx, options)
 }

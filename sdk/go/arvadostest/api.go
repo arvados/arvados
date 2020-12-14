@@ -125,6 +125,10 @@ func (as *APIStub) ContainerRequestDelete(ctx context.Context, options arvados.D
 	as.appendCall(ctx, as.ContainerRequestDelete, options)
 	return arvados.ContainerRequest{}, as.Error
 }
+func (as *APIStub) ForecastDatapoints(ctx context.Context, options arvados.GetOptions) (resp arvados.ForecastDatapointsResponse, err error) {
+	as.appendCall(ctx, as.ForecastDatapoints, options)
+	return arvados.ForecastDatapointsResponse{}, as.Error
+}
 func (as *APIStub) SpecimenCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Specimen, error) {
 	as.appendCall(ctx, as.SpecimenCreate, options)
 	return arvados.Specimen{}, as.Error
