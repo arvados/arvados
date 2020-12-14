@@ -46,6 +46,7 @@ describe('Search tests', function() {
         cy.createCollection(adminUser.token, {
             name: colName,
             owner_uuid: activeUser.user.uuid,
+            preserve_version: true,
             manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"})
         .as('originalVersion').then(function() {
             // Change the file name to create a new version.
