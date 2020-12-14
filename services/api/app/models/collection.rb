@@ -37,8 +37,6 @@ class Collection < ArvadosModel
   validate :protected_managed_properties_updates, on: :update
   after_validation :set_file_count_and_total_size
   before_save :set_file_names
-  before_update :preserve_version_exclusive_updates_leave_modified_at_alone,
-    if: Proc.new { |col| col.changes.keys.sort == ['modified_at', 'updated_at', 'preserve_version'].sort }
   around_update :manage_versioning, unless: :is_past_version?
 
   api_accessible :user, extend: :common do |t|
@@ -308,8 +306,10 @@ class Collection < ArvadosModel
     end
   end
 
-  def preserve_version_exclusive_updates_leave_modified_at_alone
-    self.modified_at = self.modified_at_was
+  def maybe_update_modified_by_fields
+    if !(self.changes.keys - ['updated_at', 'preserve_version']).empty?
+      super
+    end
   end
 
   def syncable_updates
