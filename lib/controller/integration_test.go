@@ -616,15 +616,14 @@ func (s *IntegrationSuite) TestIntermediateCluster(c *check.C) {
 	conn1 := s.conn("z1111")
 	rootctx1, _, _ := s.rootClients("z1111")
 	uctx1, ac1, _, _ := s.userClients(rootctx1, c, conn1, "z1111", true)
-	//conn2 := s.conn("z2222")
-	//rootctx2, _, _ := s.rootClients("z2222")
-	//_, ac2, _, _ := s.userClients(rootctx2, c, conn2, "z2222", true)
 
 	tests := []struct {
-		name  string
-		token string
+		name                 string
+		token                string
+		expectedRuntimeToken string
+		expectedUUIDprefix   string
 	}{
-		{"Good token z1111 user sending a CR to z2222", ac1.AuthToken},
+		{"Good token z1111 user sending a CR to z2222", ac1.AuthToken, "", "z2222-xvhdp-"},
 	}
 
 	for _, tt := range tests {
@@ -639,9 +638,8 @@ func (s *IntegrationSuite) TestIntermediateCluster(c *check.C) {
 		cr, err := conn1.ContainerRequestCreate(uctx1, arvados.CreateOptions{ClusterID: "z2222", Attrs: rq})
 
 		c.Check(err, check.IsNil)
-		c.Check(cr, check.NotNil)
-		c.Check(cr.UUID, check.Not(check.Equals), "")
-
+		c.Check(strings.HasPrefix(cr.UUID, tt.expectedUUIDprefix), check.Equals, true)
+		c.Check(cr.RuntimeToken, check.Equals, tt.expectedRuntimeToken)
 	}
 }
 
