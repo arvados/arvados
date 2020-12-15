@@ -7,6 +7,7 @@ package main
 import (
 	"bytes"
 	"crypto/rand"
+	"crypto/sha256"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -202,6 +203,11 @@ func (s *IntegrationSuite) testS3GetObject(c *check.C, bucket *s3.Bucket, prefix
 	c.Check(err, check.IsNil)
 	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
 	c.Check(resp.ContentLength, check.Equals, int64(4))
+
+	// HeadObject with superfluous leading slashes
+	exists, err = bucket.Exists(prefix + "//sailboat.txt")
+	c.Check(err, check.IsNil)
+	c.Check(exists, check.Equals, true)
 }
 
 func (s *IntegrationSuite) TestS3CollectionPutObjectSuccess(c *check.C) {
@@ -229,6 +235,18 @@ func (s *IntegrationSuite) testS3PutObjectSuccess(c *check.C, bucket *s3.Bucket,
 			size:        1 << 26,
 			contentType: "application/octet-stream",
 		}, {
+			path:        "/aaa",
+			size:        2,
+			contentType: "application/octet-stream",
+		}, {
+			path:        "//bbb",
+			size:        2,
+			contentType: "application/octet-stream",
+		}, {
+			path:        "ccc//",
+			size:        0,
+			contentType: "application/x-directory",
+		}, {
 			path:        "newdir1/newdir2/newfile",
 			size:        0,
 			contentType: "application/octet-stream",
@@ -243,9 +261,14 @@ func (s *IntegrationSuite) testS3PutObjectSuccess(c *check.C, bucket *s3.Bucket,
 		objname := prefix + trial.path
 
 		_, err := bucket.GetReader(objname)
+		if !c.Check(err, check.NotNil) {
+			continue
+		}
 		c.Check(err.(*s3.Error).StatusCode, check.Equals, 404)
 		c.Check(err.(*s3.Error).Code, check.Equals, `NoSuchKey`)
-		c.Assert(err, check.ErrorMatches, `The specified key does not exist.`)
+		if !c.Check(err, check.ErrorMatches, `The specified key does not exist.`) {
+			continue
+		}
 
 		buf := make([]byte, trial.size)
 		rand.Read(buf)
@@ -363,14 +386,6 @@ func (s *IntegrationSuite) TestS3ProjectPutObjectFailure(c *check.C) {
 func (s *IntegrationSuite) testS3PutObjectFailure(c *check.C, bucket *s3.Bucket, prefix string) {
 	s.testServer.Config.cluster.Collections.S3FolderObjects = false
 
-	// Can't use V4 signature for these tests, because
-	// double-slash is incorrectly cleaned by the aws.V4Signature,
-	// resulting in a "bad signature" error. (Cleaning the path is
-	// appropriate for other services, but not in S3 where object
-	// names "foo//bar" and "foo/bar" are semantically different.)
-	bucket.S3.Auth = *(aws.NewAuth(arvadostest.ActiveToken, "none", "", time.Now().Add(time.Hour)))
-	bucket.S3.Signature = aws.V2Signature
-
 	var wg sync.WaitGroup
 	for _, trial := range []struct {
 		path string
@@ -393,8 +408,6 @@ func (s *IntegrationSuite) testS3PutObjectFailure(c *check.C, bucket *s3.Bucket,
 			path: "/",
 		}, {
 			path: "//",
-		}, {
-			path: "foo//bar",
 		}, {
 			path: "",
 		},
@@ -439,6 +452,17 @@ func (stage *s3stage) writeBigDirs(c *check.C, dirs int, filesPerDir int) {
 		}
 	}
 	c.Assert(fs.Sync(), check.IsNil)
+}
+
+func (s *IntegrationSuite) sign(c *check.C, req *http.Request, key, secret string) {
+	scope := "20200202/region/service/aws4_request"
+	signedHeaders := "date"
+	req.Header.Set("Date", time.Now().UTC().Format(time.RFC1123))
+	stringToSign, err := s3stringToSign(s3SignAlgorithm, scope, signedHeaders, req)
+	c.Assert(err, check.IsNil)
+	sig, err := s3signature(secret, scope, signedHeaders, stringToSign)
+	c.Assert(err, check.IsNil)
+	req.Header.Set("Authorization", s3SignAlgorithm+" Credential="+key+"/"+scope+", SignedHeaders="+signedHeaders+", Signature="+sig)
 }
 
 func (s *IntegrationSuite) TestS3VirtualHostStyleRequests(c *check.C) {
@@ -487,12 +511,29 @@ func (s *IntegrationSuite) TestS3VirtualHostStyleRequests(c *check.C) {
 			responseCode:   http.StatusOK,
 			responseRegexp: []string{`boop`},
 		},
+		{
+			url:          "https://" + stage.projbucket.Name + ".example.com/" + stage.coll.Name + "//boop",
+			method:       "GET",
+			responseCode: http.StatusNotFound,
+		},
+		{
+			url:          "https://" + stage.projbucket.Name + ".example.com/" + stage.coll.Name + "//boop",
+			method:       "PUT",
+			body:         "boop",
+			responseCode: http.StatusOK,
+		},
+		{
+			url:            "https://" + stage.projbucket.Name + ".example.com/" + stage.coll.Name + "//boop",
+			method:         "GET",
+			responseCode:   http.StatusOK,
+			responseRegexp: []string{`boop`},
+		},
 	} {
 		url, err := url.Parse(trial.url)
 		c.Assert(err, check.IsNil)
 		req, err := http.NewRequest(trial.method, url.String(), bytes.NewReader([]byte(trial.body)))
 		c.Assert(err, check.IsNil)
-		req.Header.Set("Authorization", "AWS "+arvadostest.ActiveTokenV2+":none")
+		s.sign(c, req, arvadostest.ActiveTokenUUID, arvadostest.ActiveToken)
 		rr := httptest.NewRecorder()
 		s.testServer.Server.Handler.ServeHTTP(rr, req)
 		resp := rr.Result()
@@ -502,6 +543,38 @@ func (s *IntegrationSuite) TestS3VirtualHostStyleRequests(c *check.C) {
 		for _, re := range trial.responseRegexp {
 			c.Check(string(body), check.Matches, re)
 		}
+	}
+}
+
+func (s *IntegrationSuite) TestS3NormalizeURIForSignature(c *check.C) {
+	stage := s.s3setup(c)
+	defer stage.teardown(c)
+	for _, trial := range []struct {
+		rawPath        string
+		normalizedPath string
+	}{
+		{"/foo", "/foo"},             // boring case
+		{"/foo%5fbar", "/foo_bar"},   // _ must not be escaped
+		{"/foo%2fbar", "/foo/bar"},   // / must not be escaped
+		{"/(foo)", "/%28foo%29"},     // () must be escaped
+		{"/foo%5bbar", "/foo%5Bbar"}, // %XX must be uppercase
+	} {
+		date := time.Now().UTC().Format("20060102T150405Z")
+		scope := "20200202/fakeregion/S3/aws4_request"
+		canonicalRequest := fmt.Sprintf("%s\n%s\n%s\n%s\n%s\n%s", "GET", trial.normalizedPath, "", "host:host.example.com\n", "host", "")
+		c.Logf("canonicalRequest %q", canonicalRequest)
+		expect := fmt.Sprintf("%s\n%s\n%s\n%s", s3SignAlgorithm, date, scope, hashdigest(sha256.New(), canonicalRequest))
+		c.Logf("expected stringToSign %q", expect)
+
+		req, err := http.NewRequest("GET", "https://host.example.com"+trial.rawPath, nil)
+		req.Header.Set("X-Amz-Date", date)
+		req.Host = "host.example.com"
+
+		obtained, err := s3stringToSign(s3SignAlgorithm, scope, "host", req)
+		if !c.Check(err, check.IsNil) {
+			continue
+		}
+		c.Check(obtained, check.Equals, expect)
 	}
 }
 
