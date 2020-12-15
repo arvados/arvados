@@ -529,6 +529,8 @@ func (m *Manifest) FileSegmentIterByName(filepath string) <-chan *FileSegment {
 	return ch
 }
 
+// BlockIterWithDuplicates iterates over the block locators of a manifest.
+//
 // Blocks may appear multiple times within the same manifest if they
 // are used by multiple files. In that case this Iterator will output
 // the same block multiple times.
