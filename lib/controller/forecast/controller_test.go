@@ -80,9 +80,9 @@ func (s *ForecastSuite) TearDownTest(c *check.C) {
 
 func (s *ForecastSuite) TestDatapoints(c *check.C) {
 	// Just as basic test to make sure the datapoints endpoint is there and giving out some data
-	// HasherRootUUID (zzzzz-xvhdp-p1i7h1gy5z1ft4p) is hasher_root from services/api/test/fixtures/container_requests.yml
+	// CompletedDiagnosticsContainerRequest1UUID (zzzzz-xvhdp-p1i7h1gy5z1ft4p) is hasher_root from services/api/test/fixtures/container_requests.yml
 	// this container request start all the
-	resp, err := s.ctrl.ForecastDatapoints(s.ctx, arvados.GetOptions{UUID: arvadostest.HasherRootUUID})
+	resp, err := s.ctrl.ForecastDatapoints(s.ctx, arvados.GetOptions{UUID: arvadostest.CompletedDiagnosticsContainerRequest1UUID})
 	c.Check(err, check.IsNil)
 	c.Check(len(resp.Datapoints), check.Equals, 3)
 }
@@ -99,7 +99,7 @@ func (s *ForecastSuite) TestDatapointsValues(c *check.C) {
 		{"hasher2_data", "hasher2"},
 		{"hasher3_data", "hasher3"},
 	}
-	resp, err := s.ctrl.ForecastDatapoints(s.ctx, arvados.GetOptions{UUID: arvadostest.HasherRootUUID})
+	resp, err := s.ctrl.ForecastDatapoints(s.ctx, arvados.GetOptions{UUID: arvadostest.CompletedDiagnosticsContainerRequest1UUID})
 	c.Check(err, check.IsNil)
 
 	for _, tc := range cases {
@@ -123,6 +123,6 @@ func (s *ForecastSuite) TestDatapointsValues(c *check.C) {
 
 		expected, err := ioutil.ReadFile(golden)
 		c.Check(err, check.IsNil)
-		c.Check(actualBytes, check.DeepEquals, expected)
+		c.Check(string(actualBytes), check.Equals, string(expected))
 	}
 }
