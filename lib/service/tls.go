@@ -23,7 +23,7 @@ func tlsConfigWithCertUpdater(cluster *arvados.Cluster, logger logrus.FieldLogge
 
 	key, cert := cluster.TLS.Key, cluster.TLS.Certificate
 	if !strings.HasPrefix(key, "file://") || !strings.HasPrefix(cert, "file://") {
-		return nil, errors.New("cannot use TLS certificate: TLS.Key and TLS.Certificate must be specified as file://...")
+		return nil, errors.New("cannot use TLS certificate: TLS.Key and TLS.Certificate must be specified with a 'file://' prefix")
 	}
 	key, cert = key[7:], cert[7:]
 

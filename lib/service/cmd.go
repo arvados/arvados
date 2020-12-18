@@ -165,8 +165,6 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 	return 0
 }
 
-const rfc3339NanoFixed = "2006-01-02T15:04:05.000000000Z07:00"
-
 func getListenAddr(svcs arvados.Services, prog arvados.ServiceName, log logrus.FieldLogger) (arvados.URL, error) {
 	svc, ok := svcs.Map()[prog]
 	if !ok {
