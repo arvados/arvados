@@ -18,6 +18,8 @@ import (
 	check "gopkg.in/check.v1"
 )
 
+// LoadTestKey returns a public/private ssh keypair, read from the files
+// identified by the path of the private key.
 func LoadTestKey(c *check.C, fnm string) (ssh.PublicKey, ssh.Signer) {
 	rawpubkey, err := ioutil.ReadFile(fnm + ".pub")
 	c.Assert(err, check.IsNil)
