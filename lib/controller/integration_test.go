@@ -495,11 +495,6 @@ func (s *IntegrationSuite) TestCreateContainerRequestWithFedToken(c *check.C) {
 }
 
 func (s *IntegrationSuite) TestCreateContainerRequestWithBadToken(c *check.C) {
-	var (
-		body bytes.Buffer
-		resp *http.Response
-	)
-
 	conn1 := s.conn("z1111")
 	rootctx1, _, _ := s.rootClients("z1111")
 	_, ac1, _, au := s.userClients(rootctx1, c, conn1, "z1111", true)
@@ -515,7 +510,7 @@ func (s *IntegrationSuite) TestCreateContainerRequestWithBadToken(c *check.C) {
 		{"v2-looking token", "v2/" + au.UUID + "/badtoken00badtoken00badtoken00badtoken00b", http.StatusUnauthorized},
 	}
 
-	json.NewEncoder(&body).Encode(map[string]interface{}{
+	body, _ := json.Marshal(map[string]interface{}{
 		"container_request": map[string]interface{}{
 			"command":         []string{"echo"},
 			"container_image": "d41d8cd98f00b204e9800998ecf8427e+0",
@@ -527,10 +522,10 @@ func (s *IntegrationSuite) TestCreateContainerRequestWithBadToken(c *check.C) {
 	for _, tt := range tests {
 		c.Log(c.TestName() + " " + tt.name)
 		ac1.AuthToken = tt.token
-		req, err := http.NewRequest("POST", "https://"+ac1.APIHost+"/arvados/v1/container_requests", bytes.NewReader(body.Bytes()))
+		req, err := http.NewRequest("POST", "https://"+ac1.APIHost+"/arvados/v1/container_requests", bytes.NewReader(body))
 		c.Assert(err, check.IsNil)
 		req.Header.Set("Content-Type", "application/json")
-		resp, err = ac1.Do(req)
+		resp, err := ac1.Do(req)
 		c.Assert(err, check.IsNil)
 		c.Assert(resp.StatusCode, check.Equals, tt.expectedCode)
 	}
@@ -556,14 +551,14 @@ func (s *IntegrationSuite) dbConn(c *check.C, clusterID string) (*sql.DB, *sql.C
 }
 
 // TestRuntimeTokenInCR will test several different tokens in the runtime attribute
-// and check the expected retualts
+// and check the expected results accessing directly to the database if needed.
 func (s *IntegrationSuite) TestRuntimeTokenInCR(c *check.C) {
 	db, dbconn := s.dbConn(c, "z1111")
 	defer db.Close()
 	defer dbconn.Close()
 	conn1 := s.conn("z1111")
 	rootctx1, _, _ := s.rootClients("z1111")
-	_, ac1, _, au := s.userClients(rootctx1, c, conn1, "z1111", true)
+	userctx1, ac1, _, au := s.userClients(rootctx1, c, conn1, "z1111", true)
 
 	tests := []struct {
 		name                 string
@@ -587,7 +582,7 @@ func (s *IntegrationSuite) TestRuntimeTokenInCR(c *check.C) {
 			"output_path":     "/",
 			"runtime_token":   tt.token,
 		}
-		cr, err := conn1.ContainerRequestCreate(rootctx1, arvados.CreateOptions{Attrs: rq})
+		cr, err := conn1.ContainerRequestCreate(userctx1, arvados.CreateOptions{Attrs: rq})
 		if tt.expectAToGetAValidCR {
 			c.Check(err, check.IsNil)
 			c.Check(cr, check.NotNil)

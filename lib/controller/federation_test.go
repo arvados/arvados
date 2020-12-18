@@ -633,6 +633,39 @@ func (s *FederationSuite) TestCreateRemoteContainerRequest(c *check.C) {
 	c.Check(strings.HasPrefix(cr.UUID, "zzzzz-"), check.Equals, true)
 }
 
+// getCRfromMockRequest returns a ContainerRequest with the content of
+func (s *FederationSuite) getCRfromMockRequest(c *check.C) arvados.ContainerRequest {
+
+	// Body can be a json formated or something like:
+	//  cluster_id=zmock&container_request=%7B%22command%22%3A%5B%22abc%22%5D%2C%22container_image%22%3A%22123%22%2C%22...7D
+	// or:
+	//  "{\"container_request\":{\"command\":[\"abc\"],\"container_image\":\"12...Uncommitted\"}}"
+
+	var cr arvados.ContainerRequest
+	data, err := ioutil.ReadAll(s.remoteMockRequests[0].Body)
+	c.Check(err, check.IsNil)
+
+	if s.remoteMockRequests[0].Header.Get("Content-Type") == "application/json" {
+		// legacy code path sends a JSON request body
+		var answerCR struct {
+			ContainerRequest arvados.ContainerRequest `json:"container_request"`
+		}
+		c.Check(json.Unmarshal(data, &answerCR), check.IsNil)
+		cr = answerCR.ContainerRequest
+	} else if s.remoteMockRequests[0].Header.Get("Content-Type") == "application/x-www-form-urlencoded" {
+		// new code path sends a form-encoded request body with a JSON-encoded parameter value
+		decodedValue, err := url.ParseQuery(string(data))
+		c.Check(err, check.IsNil)
+		decodedValueCR := decodedValue.Get("container_request")
+		c.Check(json.Unmarshal([]byte(decodedValueCR), &cr), check.IsNil)
+	} else {
+		// mock needs to have Content-Type that we can parse.
+		c.Fail()
+	}
+
+	return cr
+}
+
 func (s *FederationSuite) TestCreateRemoteContainerRequestCheckRuntimeToken(c *check.C) {
 	// Send request to zmock and check that outgoing request has
 	// runtime_token set with a new random v2 token.
@@ -663,33 +696,12 @@ func (s *FederationSuite) TestCreateRemoteContainerRequestCheckRuntimeToken(c *c
 
 	resp := s.testRequest(req).Result()
 	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
-	var cr arvados.ContainerRequest
 
-	// Body can be a json formated or something like:
-	//  (forceLegacyAPI14==false) cluster_id=zmock&container_request=%7B%22command%22%3A%5B%22abc%22%5D%2C%22container_image%22%3A%22123%22%2C%22...7D
-	// or:
-	//  (forceLegacyAPI14==true) "{\"container_request\":{\"command\":[\"abc\"],\"container_image\":\"12...Uncommitted\"}}"
-	data, err := ioutil.ReadAll(s.remoteMockRequests[0].Body)
-	c.Check(err, check.IsNil)
+	cr := s.getCRfromMockRequest(c)
 
-	// this exposes the different inputs we get in the mock
-	if forceLegacyAPI14 {
-		var answerCR struct {
-			ContainerRequest arvados.ContainerRequest `json:"container_request"`
-		}
-		c.Check(json.Unmarshal(data, &answerCR), check.IsNil)
-		cr = answerCR.ContainerRequest
-	} else {
-		var decodedValueCR string
-		decodedValue, err := url.ParseQuery(string(data))
-		c.Check(err, check.IsNil)
-		decodedValueCR = decodedValue.Get("container_request")
-		c.Check(json.Unmarshal([]byte(decodedValueCR), &cr), check.IsNil)
-	}
-
-	// let's make sure the Runtime token is there
-	c.Check(strings.HasPrefix(cr.RuntimeToken, "v2/zzzzz-gj3su-"), check.Equals, true)
-	// the Runtimetoken should be a different one than than the Token we originally did the request with.
+	// Runtime token must match zzzzz cluster
+	c.Check(cr.RuntimeToken, check.Matches, "v2/zzzzz-gj3su-.*")
+	// RuntimeToken must be different than the Original Token we originally did the request with.
 	c.Check(cr.RuntimeToken, check.Not(check.Equals), arvadostest.ActiveTokenV2)
 }
 

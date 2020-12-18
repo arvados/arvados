@@ -142,9 +142,8 @@ func noopLogout(cluster *arvados.Cluster, opts arvados.LogoutOptions) (arvados.L
 }
 
 func (conn *Conn) CreateAPIClientAuthorization(ctx context.Context, rootToken string, authinfo rpc.UserSessionAuthInfo) (resp arvados.APIClientAuthorization, err error) {
-	// if rootToken is "" then return an error.
 	if rootToken == "" {
-		return arvados.APIClientAuthorization{}, errors.New("In CreateAPIClientAuthorization() rootToken can't be empty string")
+		return arvados.APIClientAuthorization{}, errors.New("configuration error: empty SystemRootToken")
 	}
 	ctxRoot := auth.NewContext(ctx, &auth.Credentials{Tokens: []string{rootToken}})
 	newsession, err := conn.railsProxy.UserSessionCreate(ctxRoot, rpc.UserSessionCreateOptions{
