@@ -89,18 +89,18 @@ type Mount struct {
 // RuntimeConstraints specify a container's compute resources (RAM,
 // CPU) and network connectivity.
 type RuntimeConstraints struct {
-	API          *bool `json:",omitempty"`
-	RAM          int64 `json:"ram,omitempty"`
-	VCPUs        int   `json:"vcpus,omitempty"`
-	KeepCacheRAM int64 `json:"keep_cache_ram,omitempty"`
+	API          bool  `json:"api"`
+	RAM          int64 `json:"ram"`
+	VCPUs        int   `json:"vcpus"`
+	KeepCacheRAM int64 `json:"keep_cache_ram"`
 }
 
 // SchedulingParameters specify a container's scheduling parameters
 // such as Partitions
 type SchedulingParameters struct {
-	Partitions  []string `json:"partitions,omitempty"`
-	Preemptible bool     `json:"preemptible,omitempty"`
-	MaxRunTime  int      `json:"max_run_time,omitempty"`
+	Partitions  []string `json:"partitions"`
+	Preemptible bool     `json:"preemptible"`
+	MaxRunTime  int      `json:"max_run_time"`
 }
 
 // ContainerList is an arvados#containerList resource.

@@ -1293,7 +1293,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		cr.Container.OutputPath = "/tmp"
 
 		apiflag := true
-		cr.Container.RuntimeConstraints.API = &apiflag
+		cr.Container.RuntimeConstraints.API = apiflag
 
 		err := cr.SetupMounts()
 		c.Check(err, IsNil)
