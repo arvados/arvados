@@ -9,6 +9,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 
 	"git.arvados.org/arvados.git/lib/install"
@@ -68,6 +69,17 @@ func (bldr *builder) run(ctx context.Context, prog string, args []string, stdin 
 	err = cmd.Run()
 	if err != nil {
 		return fmt.Errorf("gem install fpm: %w", err)
+	}
+
+	if _, err := os.Stat("/root/.gem/ruby/2.5.0/gems/fpm-1.11.0/lib/fpm/package/deb.rb"); err == nil {
+		// Workaround for fpm bug https://github.com/jordansissel/fpm/issues/1739
+		cmd = exec.Command("sed", "-i", `/require "digest"/a require "zlib"`, "/root/.gem/ruby/2.5.0/gems/fpm-1.11.0/lib/fpm/package/deb.rb")
+		cmd.Stdout = stdout
+		cmd.Stderr = stderr
+		err = cmd.Run()
+		if err != nil {
+			return fmt.Errorf("monkeypatch fpm: %w", err)
+		}
 	}
 
 	// Remove unneeded files. This is much faster than "fpm
