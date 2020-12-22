@@ -42,7 +42,7 @@ func (runPostgreSQL) Run(ctx context.Context, fail func(error), super *Superviso
 
 	iamroot := false
 	if u, err := user.Current(); err != nil {
-		return fmt.Errorf("user.Current(): %s", err)
+		return fmt.Errorf("user.Current(): %w", err)
 	} else if u.Uid == "0" {
 		iamroot = true
 	}
