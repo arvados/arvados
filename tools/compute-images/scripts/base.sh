@@ -29,7 +29,7 @@ LSB_RELEASE_CODENAME=${TMP_LSB//[$'\t\r\n ']}
 
 # Add the arvados apt repository
 echo "# apt.arvados.org" |$SUDO tee --append /etc/apt/sources.list.d/apt.arvados.org.list
-echo "deb http://apt.arvados.org/ $LSB_RELEASE_CODENAME${REPOSUFFIX} main" |$SUDO tee --append /etc/apt/sources.list.d/apt.arvados.org.list
+echo "deb http://apt.arvados.org/$LSB_RELEASE_CODENAME $LSB_RELEASE_CODENAME${REPOSUFFIX} main" |$SUDO tee --append /etc/apt/sources.list.d/apt.arvados.org.list
 
 # Add the arvados signing key
 cat /tmp/1078ECD7.asc | $SUDO apt-key add -
