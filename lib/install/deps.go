@@ -120,6 +120,8 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 
 	if dev || test || pkg {
 		pkgs = append(pkgs,
+			"automake",
+			"bison",
 			"bsdmainutils",
 			"build-essential",
 			"cadaver",
@@ -144,6 +146,7 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 			"libxslt1-dev",
 			"linkchecker",
 			"lsof",
+			"make",
 			"net-tools",
 			"pandoc",
 			"perl-modules",
@@ -412,14 +415,20 @@ rm ${zip}
 		}
 	}
 
-	if pkg {
+	if prod || pkg {
 		// Install Rails apps to /var/lib/arvados/{railsapi,workbench1}/
 		for dstdir, srcdir := range map[string]string{
 			"railsapi":   "services/api",
 			"workbench1": "apps/workbench",
 		} {
 			fmt.Fprintf(stderr, "building %s...\n", srcdir)
-			cmd := exec.Command("rsync", "-a", "--no-owner", "--delete-after", "--exclude", "/tmp", "--exclude", "/log", "--exclude", "/vendor", "./", "/var/lib/arvados/"+dstdir+"/")
+			cmd := exec.Command("rsync",
+				"-a", "--no-owner", "--delete-after", "--delete-excluded",
+				"--exclude", "/coverage",
+				"--exclude", "/log",
+				"--exclude", "/tmp",
+				"--exclude", "/vendor",
+				"./", "/var/lib/arvados/"+dstdir+"/")
 			cmd.Dir = filepath.Join(inst.SourcePath, srcdir)
 			cmd.Stdout = stdout
 			cmd.Stderr = stderr
@@ -580,8 +589,6 @@ func runBash(script string, stdout, stderr io.Writer) error {
 
 func prodpkgs(osv osversion) []string {
 	pkgs := []string{
-		"automake",
-		"bison",
 		"ca-certificates",
 		"curl",
 		"fuse",
@@ -591,7 +598,6 @@ func prodpkgs(osv osversion) []string {
 		"haveged",
 		"libcurl3-gnutls",
 		"libxslt1.1",
-		"make",
 		"nginx",
 		"python",
 		"sudo",
