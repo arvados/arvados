@@ -45,13 +45,13 @@ SPDX-License-Identifier: AGPL-3.0 %>
       <div class="panel-heading">
         <h4 class="panel-title">
           <a class="component-detail-panel" data-toggle="collapse" href="#errorDetail">
-            <span class="caret"></span> Error: <%= sanitize(wu.runtime_status[:error]) %>
+            <span class="caret"></span> Error: <%= h(wu.runtime_status[:error]) %>
           </a>
         </h4>
       </div>
       <div id="errorDetail" class="panel-body panel-collapse collapse">
         <% if wu.runtime_status[:errorDetail] %>
-          <pre><%= sanitize(wu.runtime_status[:errorDetail]) %></pre>
+          <pre><%= h(wu.runtime_status[:errorDetail]) %></pre>
         <% else %>
           No detailed information available.
         <% end %>
@@ -69,13 +69,13 @@ SPDX-License-Identifier: AGPL-3.0 %>
       <div class="panel-heading">
         <h4 class="panel-title">
           <a class="component-detail-panel" data-toggle="collapse" href="#warningDetail">
-            <span class="caret"></span> Warning: <%= sanitize(wu.runtime_status[:warning]) %>
+            <span class="caret"></span> Warning: <%= h(wu.runtime_status[:warning]) %>
           </a>
         </h4>
       </div>
       <div id="warningDetail" class="panel-body panel-collapse collapse">
         <% if wu.runtime_status[:warningDetail] %>
-          <pre><%= sanitize(wu.runtime_status[:warningDetail]) %></pre>
+          <pre><%= h(wu.runtime_status[:warningDetail]) %></pre>
         <% else %>
           No detailed information available.
         <% end %>

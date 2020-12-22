@@ -20,7 +20,7 @@ import (
 type federatedRequestDelegate func(
 	h *genericFederatedRequestHandler,
 	effectiveMethod string,
-	clusterId *string,
+	clusterID *string,
 	uuid string,
 	remainder string,
 	w http.ResponseWriter,
@@ -38,12 +38,12 @@ func (h *genericFederatedRequestHandler) remoteQueryUUIDs(w http.ResponseWriter,
 	clusterID string, uuids []string) (rp []map[string]interface{}, kind string, err error) {
 
 	found := make(map[string]bool)
-	prev_len_uuids := len(uuids) + 1
+	prevLenUuids := len(uuids) + 1
 	// Loop while
 	// (1) there are more uuids to query
 	// (2) we're making progress - on each iteration the set of
 	// uuids we are expecting for must shrink.
-	for len(uuids) > 0 && len(uuids) < prev_len_uuids {
+	for len(uuids) > 0 && len(uuids) < prevLenUuids {
 		var remoteReq http.Request
 		remoteReq.Header = req.Header
 		remoteReq.Method = "POST"
@@ -103,7 +103,7 @@ func (h *genericFederatedRequestHandler) remoteQueryUUIDs(w http.ResponseWriter,
 				l = append(l, u)
 			}
 		}
-		prev_len_uuids = len(uuids)
+		prevLenUuids = len(uuids)
 		uuids = l
 	}
 
@@ -111,7 +111,7 @@ func (h *genericFederatedRequestHandler) remoteQueryUUIDs(w http.ResponseWriter,
 }
 
 func (h *genericFederatedRequestHandler) handleMultiClusterQuery(w http.ResponseWriter,
-	req *http.Request, clusterId *string) bool {
+	req *http.Request, clusterID *string) bool {
 
 	var filters [][]interface{}
 	err := json.Unmarshal([]byte(req.Form.Get("filters")), &filters)
@@ -141,17 +141,17 @@ func (h *genericFederatedRequestHandler) handleMultiClusterQuery(w http.Response
 			if rhs, ok := filter[2].([]interface{}); ok {
 				for _, i := range rhs {
 					if u, ok := i.(string); ok && len(u) == 27 {
-						*clusterId = u[0:5]
+						*clusterID = u[0:5]
 						queryClusters[u[0:5]] = append(queryClusters[u[0:5]], u)
-						expectCount += 1
+						expectCount++
 					}
 				}
 			}
 		} else if op == "=" {
 			if u, ok := filter[2].(string); ok && len(u) == 27 {
-				*clusterId = u[0:5]
+				*clusterID = u[0:5]
 				queryClusters[u[0:5]] = append(queryClusters[u[0:5]], u)
-				expectCount += 1
+				expectCount++
 			}
 		} else {
 			return false
@@ -256,10 +256,10 @@ func (h *genericFederatedRequestHandler) handleMultiClusterQuery(w http.Response
 
 func (h *genericFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	m := h.matcher.FindStringSubmatch(req.URL.Path)
-	clusterId := ""
+	clusterID := ""
 
 	if len(m) > 0 && m[2] != "" {
-		clusterId = m[2]
+		clusterID = m[2]
 	}
 
 	// Get form parameters from URL and form body (if POST).
@@ -270,7 +270,7 @@ func (h *genericFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req *h
 
 	// Check if the parameters have an explicit cluster_id
 	if req.Form.Get("cluster_id") != "" {
-		clusterId = req.Form.Get("cluster_id")
+		clusterID = req.Form.Get("cluster_id")
 	}
 
 	// Handle the POST-as-GET special case (workaround for large
@@ -283,9 +283,9 @@ func (h *genericFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req *h
 	}
 
 	if effectiveMethod == "GET" &&
-		clusterId == "" &&
+		clusterID == "" &&
 		req.Form.Get("filters") != "" &&
-		h.handleMultiClusterQuery(w, req, &clusterId) {
+		h.handleMultiClusterQuery(w, req, &clusterID) {
 		return
 	}
 
@@ -295,15 +295,15 @@ func (h *genericFederatedRequestHandler) ServeHTTP(w http.ResponseWriter, req *h
 		uuid = m[1][1:]
 	}
 	for _, d := range h.delegates {
-		if d(h, effectiveMethod, &clusterId, uuid, m[3], w, req) {
+		if d(h, effectiveMethod, &clusterID, uuid, m[3], w, req) {
 			return
 		}
 	}
 
-	if clusterId == "" || clusterId == h.handler.Cluster.ClusterID {
+	if clusterID == "" || clusterID == h.handler.Cluster.ClusterID {
 		h.next.ServeHTTP(w, req)
 	} else {
-		resp, err := h.handler.remoteClusterRequest(clusterId, req)
+		resp, err := h.handler.remoteClusterRequest(clusterID, req)
 		h.handler.proxy.ForwardResponse(w, resp, err)
 	}
 }

@@ -6,7 +6,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 h2(#cgroups). Configure Linux cgroups accounting
 
-Linux can report what compute resources are used by processes in a specific cgroup or Docker container.  Crunch can use these reports to share that information with users running compute work.  This can help pipeline authors debug and optimize their workflows.
+Linux can report what compute resources are used by processes in a specific cgroup or Docker container.  Crunch can use these reports to share that information with users running compute work.  This can help workflow authors debug and optimize their workflows.
 
 To enable cgroups accounting, you must boot Linux with the command line parameters @cgroup_enable=memory swapaccount=1@.
 

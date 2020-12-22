@@ -163,7 +163,9 @@ class WorkUnitsTest < ActionDispatch::IntegrationTest
       assert_text process_txt
       assert_selector 'a', text: template_name
 
-      assert_equal "Set value for ex_string_def", find('div.form-group > div > p.form-control-static > a', text: "hello-testing-123")[:"data-title"]
+      assert_equal "true", find('span[data-name="reuse_steps"]').text
+
+      assert_equal "Set value for ex_string_def", find('div.form-group > div.form-control-static > a', text: "hello-testing-123")[:"data-title"]
 
       page.assert_selector 'a.disabled,button.disabled', text: 'Run'
     end
@@ -282,5 +284,24 @@ class WorkUnitsTest < ActionDispatch::IntegrationTest
     assert_text 'A Project' # CR created in "A Project"
     assert_text "This container request was created from the workflow"
     assert_match /Provide a value for .* then click the \"Run\" button to start the workflow/, page.text
+  end
+
+  test "create workflow with WorkflowRunnerResources" do
+    visit page_with_token('active', '/workflows/zzzzz-7fd4e-validwithinput3')
+
+    find('a,button', text: 'Run this workflow').click
+
+    # Choose project for the container_request being created
+    within('.modal-dialog') do
+      find('.selectable', text: 'A Project').click
+      find('button', text: 'Choose').click
+    end
+    click_link 'Advanced'
+    click_link("API response")
+    assert_text('"container_image": "arvados/jobs:2.0.4"')
+    assert_text('"vcpus": 2')
+    assert_text('"ram": 1293942784')
+    assert_text('"--collection-cache-size=678"')
+
   end
 end

@@ -11,7 +11,7 @@ class: CommandLineTool
 cwlVersion: v1.0
 requirements:
   - class: DockerRequirement
-    dockerPull: debian:8
+    dockerPull: debian:buster-slim
 inputs:
   - id: x
     type: File

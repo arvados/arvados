@@ -6,7 +6,9 @@
 exec 2>&1
 set -ex -o pipefail
 
-if [[ -s /etc/arvados/config.yml ]] && [[ /var/lib/arvados/cluster_config.yml.override -ot /etc/arvados/config.yml ]] ; then
+export ARVADOS_CONTAINER_PATH=/var/lib/arvados-arvbox
+
+if [[ -s /etc/arvados/config.yml ]] && [[ $ARVADOS_CONTAINER_PATH/cluster_config.yml.override -ot /etc/arvados/config.yml ]] ; then
    exit
 fi
 
@@ -14,63 +16,58 @@ fi
 
 set -u
 
-if ! test -s /var/lib/arvados/api_uuid_prefix ; then
-  ruby -e 'puts "x#{rand(2**64).to_s(36)[0,4]}"' > /var/lib/arvados/api_uuid_prefix
+if ! test -s $ARVADOS_CONTAINER_PATH/api_uuid_prefix ; then
+  ruby -e 'puts "x#{rand(2**64).to_s(36)[0,4]}"' > $ARVADOS_CONTAINER_PATH/api_uuid_prefix
 fi
-uuid_prefix=$(cat /var/lib/arvados/api_uuid_prefix)
+uuid_prefix=$(cat $ARVADOS_CONTAINER_PATH/api_uuid_prefix)
 
-if ! test -s /var/lib/arvados/api_secret_token ; then
-    ruby -e 'puts rand(2**400).to_s(36)' > /var/lib/arvados/api_secret_token
+if ! test -s $ARVADOS_CONTAINER_PATH/api_secret_token ; then
+    ruby -e 'puts rand(2**400).to_s(36)' > $ARVADOS_CONTAINER_PATH/api_secret_token
 fi
-secret_token=$(cat /var/lib/arvados/api_secret_token)
+secret_token=$(cat $ARVADOS_CONTAINER_PATH/api_secret_token)
 
-if ! test -s /var/lib/arvados/blob_signing_key ; then
-    ruby -e 'puts rand(2**400).to_s(36)' > /var/lib/arvados/blob_signing_key
+if ! test -s $ARVADOS_CONTAINER_PATH/blob_signing_key ; then
+    ruby -e 'puts rand(2**400).to_s(36)' > $ARVADOS_CONTAINER_PATH/blob_signing_key
 fi
-blob_signing_key=$(cat /var/lib/arvados/blob_signing_key)
+blob_signing_key=$(cat $ARVADOS_CONTAINER_PATH/blob_signing_key)
 
-if ! test -s /var/lib/arvados/management_token ; then
-    ruby -e 'puts rand(2**400).to_s(36)' > /var/lib/arvados/management_token
+if ! test -s $ARVADOS_CONTAINER_PATH/management_token ; then
+    ruby -e 'puts rand(2**400).to_s(36)' > $ARVADOS_CONTAINER_PATH/management_token
 fi
-management_token=$(cat /var/lib/arvados/management_token)
+management_token=$(cat $ARVADOS_CONTAINER_PATH/management_token)
 
-if ! test -s /var/lib/arvados/system_root_token ; then
-    ruby -e 'puts rand(2**400).to_s(36)' > /var/lib/arvados/system_root_token
+if ! test -s $ARVADOS_CONTAINER_PATH/system_root_token ; then
+    ruby -e 'puts rand(2**400).to_s(36)' > $ARVADOS_CONTAINER_PATH/system_root_token
 fi
-system_root_token=$(cat /var/lib/arvados/system_root_token)
+system_root_token=$(cat $ARVADOS_CONTAINER_PATH/system_root_token)
 
-if ! test -s /var/lib/arvados/sso_app_secret ; then
-    ruby -e 'puts rand(2**400).to_s(36)' > /var/lib/arvados/sso_app_secret
+if ! test -s $ARVADOS_CONTAINER_PATH/vm-uuid ; then
+    echo $uuid_prefix-2x53u-$(ruby -e 'puts rand(2**400).to_s(36)[0,15]') > $ARVADOS_CONTAINER_PATH/vm-uuid
 fi
-sso_app_secret=$(cat /var/lib/arvados/sso_app_secret)
+vm_uuid=$(cat $ARVADOS_CONTAINER_PATH/vm-uuid)
 
-if ! test -s /var/lib/arvados/vm-uuid ; then
-    echo $uuid_prefix-2x53u-$(ruby -e 'puts rand(2**400).to_s(36)[0,15]') > /var/lib/arvados/vm-uuid
+if ! test -f $ARVADOS_CONTAINER_PATH/api_database_pw ; then
+    ruby -e 'puts rand(2**128).to_s(36)' > $ARVADOS_CONTAINER_PATH/api_database_pw
 fi
-vm_uuid=$(cat /var/lib/arvados/vm-uuid)
-
-if ! test -f /var/lib/arvados/api_database_pw ; then
-    ruby -e 'puts rand(2**128).to_s(36)' > /var/lib/arvados/api_database_pw
-fi
-database_pw=$(cat /var/lib/arvados/api_database_pw)
+database_pw=$(cat $ARVADOS_CONTAINER_PATH/api_database_pw)
 
 if ! (psql postgres -c "\du" | grep "^ arvados ") >/dev/null ; then
     psql postgres -c "create user arvados with password '$database_pw'"
 fi
 psql postgres -c "ALTER USER arvados WITH SUPERUSER;"
 
-if ! test -s /var/lib/arvados/workbench_secret_token ; then
-  ruby -e 'puts rand(2**400).to_s(36)' > /var/lib/arvados/workbench_secret_token
+if ! test -s $ARVADOS_CONTAINER_PATH/workbench_secret_token ; then
+  ruby -e 'puts rand(2**400).to_s(36)' > $ARVADOS_CONTAINER_PATH/workbench_secret_token
 fi
-workbench_secret_key_base=$(cat /var/lib/arvados/workbench_secret_token)
+workbench_secret_key_base=$(cat $ARVADOS_CONTAINER_PATH/workbench_secret_token)
 
-if test -s /var/lib/arvados/api_rails_env ; then
-  database_env=$(cat /var/lib/arvados/api_rails_env)
+if test -s $ARVADOS_CONTAINER_PATH/api_rails_env ; then
+  database_env=$(cat $ARVADOS_CONTAINER_PATH/api_rails_env)
 else
   database_env=development
 fi
 
-cat >/var/lib/arvados/cluster_config.yml <<EOF
+cat >$ARVADOS_CONTAINER_PATH/cluster_config.yml <<EOF
 Clusters:
   ${uuid_prefix}:
     SystemRootToken: $system_root_token
@@ -83,8 +80,6 @@ Clusters:
         ExternalURL: "https://$localip:${services[workbench]}"
       Workbench2:
         ExternalURL: "https://$localip:${services[workbench2-ssl]}"
-      SSO:
-        ExternalURL: "https://$localip:${services[sso]}"
       Keepproxy:
         ExternalURL: "https://$localip:${services[keepproxy-ssl]}"
         InternalURLs:
@@ -110,18 +105,16 @@ Clusters:
       WebDAVDownload:
         InternalURLs:
           "http://localhost:${services[keep-web]}/": {}
-        ExternalURL: "https://$localip:${services[keep-web-ssl]}/"
-        InternalURLs:
-          "http://localhost:${services[keep-web]}/": {}
+        ExternalURL: "https://$localip:${services[keep-web-dl-ssl]}/"
       Composer:
         ExternalURL: "https://$localip:${services[composer]}"
       Controller:
         ExternalURL: "https://$localip:${services[controller-ssl]}"
         InternalURLs:
           "http://localhost:${services[controller]}": {}
-      RailsAPI:
-        InternalURLs:
-          "http://localhost:${services[api]}/": {}
+      WebShell:
+        InternalURLs: {}
+        ExternalURL: "https://$localip:${services[webshell-ssl]}"
     PostgreSQL:
       ConnectionPool: 32 # max concurrent connections per arvados server daemon
       Connection:
@@ -139,10 +132,8 @@ Clusters:
       DefaultReplication: 1
       TrustAllContent: true
     Login:
-      SSO:
+      Test:
         Enable: true
-        ProviderAppSecret: $sso_app_secret
-        ProviderAppID: arvados-server
     Users:
       NewUsersAreActive: true
       AutoAdminFirstUser: true
@@ -154,29 +145,44 @@ Clusters:
       ArvadosDocsite: http://$localip:${services[doc]}/
     Git:
       GitCommand: /usr/share/gitolite3/gitolite-shell
-      GitoliteHome: /var/lib/arvados/git
-      Repositories: /var/lib/arvados/git/repositories
+      GitoliteHome: $ARVADOS_CONTAINER_PATH/git
+      Repositories: $ARVADOS_CONTAINER_PATH/git/repositories
     Volumes:
       ${uuid_prefix}-nyw5e-000000000000000:
         Driver: Directory
         DriverParameters:
-          Root: /var/lib/arvados/keep0
+          Root: $ARVADOS_CONTAINER_PATH/keep0
         AccessViaHosts:
           "http://localhost:${services[keepstore0]}": {}
       ${uuid_prefix}-nyw5e-111111111111111:
         Driver: Directory
         DriverParameters:
-          Root: /var/lib/arvados/keep1
+          Root: $ARVADOS_CONTAINER_PATH/keep1
         AccessViaHosts:
           "http://localhost:${services[keepstore1]}": {}
 EOF
 
-/usr/local/lib/arvbox/yml_override.py /var/lib/arvados/cluster_config.yml
+/usr/local/lib/arvbox/yml_override.py $ARVADOS_CONTAINER_PATH/cluster_config.yml
 
-cp /var/lib/arvados/cluster_config.yml /etc/arvados/config.yml
+cp $ARVADOS_CONTAINER_PATH/cluster_config.yml /etc/arvados/config.yml
 
-mkdir -p /var/lib/arvados/run_tests
-cat >/var/lib/arvados/run_tests/config.yml <<EOF
+# Do not abort if certain optional files don't exist (e.g. cluster_config.yml.override)
+set +e
+chmod og-rw \
+      $ARVADOS_CONTAINER_PATH/cluster_config.yml.override \
+      $ARVADOS_CONTAINER_PATH/cluster_config.yml \
+      /etc/arvados/config.yml \
+      $ARVADOS_CONTAINER_PATH/api_secret_token \
+      $ARVADOS_CONTAINER_PATH/blob_signing_key \
+      $ARVADOS_CONTAINER_PATH/management_token \
+      $ARVADOS_CONTAINER_PATH/system_root_token \
+      $ARVADOS_CONTAINER_PATH/api_database_pw \
+      $ARVADOS_CONTAINER_PATH/workbench_secret_token \
+      $ARVADOS_CONTAINER_PATH/superuser_token \
+set -e
+
+mkdir -p $ARVADOS_CONTAINER_PATH/run_tests
+cat >$ARVADOS_CONTAINER_PATH/run_tests/config.yml <<EOF
 Clusters:
   zzzzz:
     PostgreSQL:

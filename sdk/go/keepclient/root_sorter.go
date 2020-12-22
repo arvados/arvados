@@ -33,10 +33,9 @@ func NewRootSorter(serviceRoots map[string]string, hash string) *RootSorter {
 func (rs RootSorter) getWeight(hash string, uuid string) string {
 	if len(uuid) == 27 {
 		return Md5String(hash + uuid[12:])
-	} else {
-		// Only useful for testing, a set of one service root, etc.
-		return Md5String(hash + uuid)
 	}
+	// Only useful for testing, a set of one service root, etc.
+	return Md5String(hash + uuid)
 }
 
 func (rs RootSorter) GetSortedRoots() []string {

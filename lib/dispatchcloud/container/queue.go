@@ -145,11 +145,11 @@ func (cq *Queue) Forget(uuid string) {
 func (cq *Queue) Get(uuid string) (arvados.Container, bool) {
 	cq.mtx.Lock()
 	defer cq.mtx.Unlock()
-	if ctr, ok := cq.current[uuid]; !ok {
+	ctr, ok := cq.current[uuid]
+	if !ok {
 		return arvados.Container{}, false
-	} else {
-		return ctr.Container, true
 	}
+	return ctr.Container, true
 }
 
 // Entries returns all cache entries, keyed by container UUID.
@@ -382,7 +382,7 @@ func (cq *Queue) poll() (map[string]*arvados.Container, error) {
 			*next[upd.UUID] = upd
 		}
 	}
-	selectParam := []string{"uuid", "state", "priority", "runtime_constraints", "container_image", "mounts", "scheduling_parameters"}
+	selectParam := []string{"uuid", "state", "priority", "runtime_constraints", "container_image", "mounts", "scheduling_parameters", "created_at"}
 	limitParam := 1000
 
 	mine, err := cq.fetchAll(arvados.ResourceListParams{

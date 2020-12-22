@@ -132,7 +132,7 @@ func kill(uuid string, signal syscall.Signal, stdout, stderr io.Writer) error {
 	var pi procinfo
 	err = json.NewDecoder(f).Decode(&pi)
 	if err != nil {
-		return fmt.Errorf("decode %s: %s\n", path, err)
+		return fmt.Errorf("decode %s: %s", path, err)
 	}
 
 	if pi.UUID != uuid || pi.PID == 0 {
@@ -162,7 +162,7 @@ func kill(uuid string, signal syscall.Signal, stdout, stderr io.Writer) error {
 	return nil
 }
 
-// List UUIDs of active crunch-run processes.
+// ListProcesses lists UUIDs of active crunch-run processes.
 func ListProcesses(stdout, stderr io.Writer) int {
 	// filepath.Walk does not follow symlinks, so we must walk
 	// lockdir+"/." in case lockdir itself is a symlink.
@@ -215,6 +215,24 @@ func ListProcesses(stdout, stderr io.Writer) int {
 		}
 		if pi.UUID == "" || pi.PID == 0 {
 			fmt.Fprintf(stderr, "%s: bogus procinfo: %+v", path, pi)
+			return nil
+		}
+
+		proc, err := os.FindProcess(pi.PID)
+		if err != nil {
+			// FindProcess should have succeeded, even if the
+			// process does not exist.
+			fmt.Fprintf(stderr, "%s: find process %d: %s", path, pi.PID, err)
+			return nil
+		}
+		err = proc.Signal(syscall.Signal(0))
+		if err != nil {
+			// Process is dead, even though lockfile was
+			// still locked. Most likely a stuck arv-mount
+			// process that inherited the lock from
+			// crunch-run. Report container UUID as
+			// "stale".
+			fmt.Fprintln(stdout, pi.UUID, "stale")
 			return nil
 		}
 

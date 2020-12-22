@@ -50,7 +50,7 @@ var (
 	defaultHTTPClientMtx      sync.Mutex
 )
 
-// Indicates an error that was returned by the API server.
+// APIServerError contains an error that was returned by the API server.
 type APIServerError struct {
 	// Address of server returning error, of the form "host:port".
 	ServerAddress string
@@ -70,12 +70,11 @@ func (e APIServerError) Error() string {
 			e.HttpStatusCode,
 			e.HttpStatusMessage,
 			e.ServerAddress)
-	} else {
-		return fmt.Sprintf("arvados API server error: %d: %s returned by %s",
-			e.HttpStatusCode,
-			e.HttpStatusMessage,
-			e.ServerAddress)
 	}
+	return fmt.Sprintf("arvados API server error: %d: %s returned by %s",
+		e.HttpStatusCode,
+		e.HttpStatusMessage,
+		e.ServerAddress)
 }
 
 // StringBool tests whether s is suggestive of true. It returns true
@@ -85,10 +84,10 @@ func StringBool(s string) bool {
 	return s == "1" || s == "yes" || s == "true"
 }
 
-// Helper type so we don't have to write out 'map[string]interface{}' every time.
+// Dict is a helper type so we don't have to write out 'map[string]interface{}' every time.
 type Dict map[string]interface{}
 
-// Information about how to contact the Arvados server
+// ArvadosClient contains information about how to contact the Arvados server
 type ArvadosClient struct {
 	// https
 	Scheme string
@@ -211,7 +210,7 @@ func (c *ArvadosClient) CallRaw(method string, resourceType string, uuid string,
 		Scheme: scheme,
 		Host:   c.ApiServer}
 
-	if resourceType != API_DISCOVERY_RESOURCE {
+	if resourceType != ApiDiscoveryResource {
 		u.Path = "/arvados/v1"
 	}
 
@@ -379,7 +378,7 @@ func (c *ArvadosClient) Delete(resource string, uuid string, parameters Dict, ou
 	return c.Call("DELETE", resource, uuid, "", parameters, output)
 }
 
-// Modify attributes of a resource. See Call for argument descriptions.
+// Update attributes of a resource. See Call for argument descriptions.
 func (c *ArvadosClient) Update(resourceType string, uuid string, parameters Dict, output interface{}) (err error) {
 	return c.Call("PUT", resourceType, uuid, "", parameters, output)
 }
@@ -401,7 +400,7 @@ func (c *ArvadosClient) List(resource string, parameters Dict, output interface{
 	return c.Call("GET", resource, "", "", parameters, output)
 }
 
-const API_DISCOVERY_RESOURCE = "discovery/v1/apis/arvados/v1/rest"
+const ApiDiscoveryResource = "discovery/v1/apis/arvados/v1/rest"
 
 // Discovery returns the value of the given parameter in the discovery
 // document. Returns a non-nil error if the discovery document cannot
@@ -410,7 +409,7 @@ const API_DISCOVERY_RESOURCE = "discovery/v1/apis/arvados/v1/rest"
 func (c *ArvadosClient) Discovery(parameter string) (value interface{}, err error) {
 	if len(c.DiscoveryDoc) == 0 {
 		c.DiscoveryDoc = make(Dict)
-		err = c.Call("GET", API_DISCOVERY_RESOURCE, "", "", nil, &c.DiscoveryDoc)
+		err = c.Call("GET", ApiDiscoveryResource, "", "", nil, &c.DiscoveryDoc)
 		if err != nil {
 			return nil, err
 		}
@@ -420,24 +419,23 @@ func (c *ArvadosClient) Discovery(parameter string) (value interface{}, err erro
 	value, found = c.DiscoveryDoc[parameter]
 	if found {
 		return value, nil
-	} else {
-		return value, ErrInvalidArgument
 	}
+	return value, ErrInvalidArgument
 }
 
-func (ac *ArvadosClient) httpClient() *http.Client {
-	if ac.Client != nil {
-		return ac.Client
+func (c *ArvadosClient) httpClient() *http.Client {
+	if c.Client != nil {
+		return c.Client
 	}
-	c := &defaultSecureHTTPClient
-	if ac.ApiInsecure {
-		c = &defaultInsecureHTTPClient
+	cl := &defaultSecureHTTPClient
+	if c.ApiInsecure {
+		cl = &defaultInsecureHTTPClient
 	}
-	if *c == nil {
+	if *cl == nil {
 		defaultHTTPClientMtx.Lock()
 		defer defaultHTTPClientMtx.Unlock()
-		*c = &http.Client{Transport: &http.Transport{
-			TLSClientConfig: MakeTLSConfig(ac.ApiInsecure)}}
+		*cl = &http.Client{Transport: &http.Transport{
+			TLSClientConfig: MakeTLSConfig(c.ApiInsecure)}}
 	}
-	return *c
+	return *cl
 }

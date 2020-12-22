@@ -38,13 +38,17 @@ Similar settings should be added to @clsr2@ & @clsr3@ hosts, so that all cluster
 
 The @ActivateUsers@ setting indicates whether users from a given cluster are automatically activated or they require manual activation.  User activation is covered in more detail in the "user activation section":{{site.baseurl}}/admin/activation.html.  In the current example, users from @clsr2@ would be automatically, activated, but users from @clsr3@ would require an admin to activate the account.
 
-h2(#LoginCluster). Federation user management
+h2(#LoginCluster). User management
 
 A federation of clusters can be configured to use a separate user database per cluster, or delegate a central cluster to manage the database.
 
-If clusters belong to separate organizations, each cluster will have its own user database for the members of that organization.  Through federation, a user from one organization can be granted access to the cluster of another organization.  The admin of the second cluster controls access on a individual basis by choosing to activate or deactivate accounts from other organizations (with the default policy the value of  @ActivateUsers@).
+h3. Peer federation
 
-On the other hand, if all clusters belong to the same organization, and users in that organization should have access to all the clusters, user management can be simplified by setting the @LoginCluster@ which manages the user database used by all other clusters in the federation.  To do this, choose one cluster in the federation which will be the 'login cluster'.  Set the the @Login.LoginCluster@ configuration value on all clusters in the federation to the cluster id of the login cluster.  After setting @LoginCluster@, restart arvados-api-server and arvados-controller.
+If clusters belong to separate organizations, each cluster will have its own user database for the members of that organization.  Through federation, a user from one organization can be granted access to the cluster of another organization.  The admin of the second cluster can control access on a individual basis by choosing to activate or deactivate accounts from other organizations.
+
+h3. Centralized (LoginCluster) federation
+
+If all clusters belong to the same organization, and users in that organization should have access to all the clusters, user management can be simplified by setting the @LoginCluster@ which manages the user database used by all other clusters in the federation.  To do this, choose one cluster in the federation which will be the 'login cluster'.  Set the the @Login.LoginCluster@ configuration value on all clusters in the federation to the cluster id of the login cluster.  After setting @LoginCluster@, restart arvados-api-server and arvados-controller.
 
 <pre>
 Clusters:
@@ -53,11 +57,32 @@ Clusters:
       LoginCluster: clsr1
 </pre>
 
-The @LoginCluster@ configuration redirects all user logins to the LoginCluster, and the LoginCluster will issue API tokens which are valid on any cluster in the federation.  Users are activated or deactivated across the entire federation based on their status on the master cluster.
+The @LoginCluster@ configuration redirects all user logins to the LoginCluster, and the LoginCluster will issue API tokens which will be accepted by the federation.  Users are activated or deactivated across the entire federation based on their status on the login cluster.
 
-Note: tokens issued by the master cluster need to be periodically re-validated when used on other clusters in the federation.  The period between revalidation attempts is configured with @Login.RemoteTokenRefresh@.  The default is 5 minutes.  A longer period reduces overhead from validating tokens, but means it will take longer for other clusters to notice when a token has been revoked or a user has changed status (being activated/deactivated, admin flag changed).
+Note: tokens issued by the login cluster need to be periodically re-validated when used on other clusters in the federation.  The period between revalidation attempts is configured with @Login.RemoteTokenRefresh@.  The default is 5 minutes.  A longer period reduces overhead from validating tokens, but means it may take longer for other clusters to notice when a token has been revoked or a user has changed status (being activated/deactivated, admin flag changed).
 
 To migrate users of existing clusters with separate user databases to use a single LoginCluster, use "arv-federation-migrate":merge-remote-account.html .
+
+h2. Groups
+
+In order for a user to see (and be able to share with) other users, the admin needs to create a "can_read" permission link from the user to either the "All users" group, or another group that grants visibility to a subset of users.
+
+In a peer federation, this means that for a user that has joined a second cluster, that user needs to be added to the "All users" group on the second cluster as well, to be able to share with other users.
+
+In a LoginCluster federation, all visibility of users to share with other users is set by the LoginCluster.  It is not necessary to add users to "All users" on the other clusters.
+
+h3. Trusted clients
+
+When a cluster is configured to use a LoginCluster, the login flow goes to the LoginCluster to log in and issue a token, then returns the user to the starting workbench.  In this case, you want to configure the LoginCluster to "trust" the workbench instances associated with the other clusters.
+
+<pre>
+Clusters:
+  clsr1:
+    Login:
+      TrustedClients:
+        "https://workbench.cluster2.com": {}
+        "https://workbench.cluster3.com": {}
+</pre>
 
 h2. Testing
 

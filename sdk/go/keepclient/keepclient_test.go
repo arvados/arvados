@@ -97,7 +97,7 @@ func (s *ServerRequiredSuite) TestDefaultReplications(c *C) {
 type StubPutHandler struct {
 	c                  *C
 	expectPath         string
-	expectApiToken     string
+	expectAPIToken     string
 	expectBody         string
 	expectStorageClass string
 	handled            chan string
@@ -105,7 +105,7 @@ type StubPutHandler struct {
 
 func (sph StubPutHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	sph.c.Check(req.URL.Path, Equals, "/"+sph.expectPath)
-	sph.c.Check(req.Header.Get("Authorization"), Equals, fmt.Sprintf("OAuth2 %s", sph.expectApiToken))
+	sph.c.Check(req.Header.Get("Authorization"), Equals, fmt.Sprintf("OAuth2 %s", sph.expectAPIToken))
 	sph.c.Check(req.Header.Get("X-Keep-Storage-Classes"), Equals, sph.expectStorageClass)
 	body, err := ioutil.ReadAll(req.Body)
 	sph.c.Check(err, Equals, nil)
@@ -139,9 +139,9 @@ func UploadToStubHelper(c *C, st http.Handler, f func(*KeepClient, string,
 	kc, _ := MakeKeepClient(arv)
 
 	reader, writer := io.Pipe()
-	upload_status := make(chan uploadStatus)
+	uploadStatusChan := make(chan uploadStatus)
 
-	f(kc, ks.url, reader, writer, upload_status)
+	f(kc, ks.url, reader, writer, uploadStatusChan)
 }
 
 func (s *StandaloneSuite) TestUploadToStubKeepServer(c *C) {
@@ -156,15 +156,15 @@ func (s *StandaloneSuite) TestUploadToStubKeepServer(c *C) {
 		make(chan string)}
 
 	UploadToStubHelper(c, st,
-		func(kc *KeepClient, url string, reader io.ReadCloser, writer io.WriteCloser, upload_status chan uploadStatus) {
+		func(kc *KeepClient, url string, reader io.ReadCloser, writer io.WriteCloser, uploadStatusChan chan uploadStatus) {
 			kc.StorageClasses = []string{"hot"}
-			go kc.uploadToKeepServer(url, st.expectPath, reader, upload_status, int64(len("foo")), kc.getRequestID())
+			go kc.uploadToKeepServer(url, st.expectPath, reader, uploadStatusChan, int64(len("foo")), kc.getRequestID())
 
 			writer.Write([]byte("foo"))
 			writer.Close()
 
 			<-st.handled
-			status := <-upload_status
+			status := <-uploadStatusChan
 			c.Check(status, DeepEquals, uploadStatus{nil, fmt.Sprintf("%s/%s", url, st.expectPath), 200, 1, ""})
 		})
 }
@@ -179,12 +179,12 @@ func (s *StandaloneSuite) TestUploadToStubKeepServerBufferReader(c *C) {
 		make(chan string)}
 
 	UploadToStubHelper(c, st,
-		func(kc *KeepClient, url string, _ io.ReadCloser, _ io.WriteCloser, upload_status chan uploadStatus) {
-			go kc.uploadToKeepServer(url, st.expectPath, bytes.NewBuffer([]byte("foo")), upload_status, 3, kc.getRequestID())
+		func(kc *KeepClient, url string, _ io.ReadCloser, _ io.WriteCloser, uploadStatusChan chan uploadStatus) {
+			go kc.uploadToKeepServer(url, st.expectPath, bytes.NewBuffer([]byte("foo")), uploadStatusChan, 3, kc.getRequestID())
 
 			<-st.handled
 
-			status := <-upload_status
+			status := <-uploadStatusChan
 			c.Check(status, DeepEquals, uploadStatus{nil, fmt.Sprintf("%s/%s", url, st.expectPath), 200, 1, ""})
 		})
 }
@@ -209,7 +209,7 @@ func (fh *FailThenSucceedHandler) ServeHTTP(resp http.ResponseWriter, req *http.
 	fh.reqIDs = append(fh.reqIDs, req.Header.Get("X-Request-Id"))
 	if fh.count == 0 {
 		resp.WriteHeader(500)
-		fh.count += 1
+		fh.count++
 		fh.handled <- fmt.Sprintf("http://%s", req.Host)
 	} else {
 		fh.successhandler.ServeHTTP(resp, req)
@@ -233,16 +233,16 @@ func (s *StandaloneSuite) TestFailedUploadToStubKeepServer(c *C) {
 
 	UploadToStubHelper(c, st,
 		func(kc *KeepClient, url string, reader io.ReadCloser,
-			writer io.WriteCloser, upload_status chan uploadStatus) {
+			writer io.WriteCloser, uploadStatusChan chan uploadStatus) {
 
-			go kc.uploadToKeepServer(url, hash, reader, upload_status, 3, kc.getRequestID())
+			go kc.uploadToKeepServer(url, hash, reader, uploadStatusChan, 3, kc.getRequestID())
 
 			writer.Write([]byte("foo"))
 			writer.Close()
 
 			<-st.handled
 
-			status := <-upload_status
+			status := <-uploadStatusChan
 			c.Check(status.url, Equals, fmt.Sprintf("%s/%s", url, hash))
 			c.Check(status.statusCode, Equals, 500)
 		})
@@ -256,7 +256,7 @@ type KeepServer struct {
 func RunSomeFakeKeepServers(st http.Handler, n int) (ks []KeepServer) {
 	ks = make([]KeepServer, n)
 
-	for i := 0; i < n; i += 1 {
+	for i := 0; i < n; i++ {
 		ks[i] = RunFakeKeepServer(st)
 	}
 
@@ -464,14 +464,14 @@ func (s *StandaloneSuite) TestPutWithTooManyFail(c *C) {
 type StubGetHandler struct {
 	c              *C
 	expectPath     string
-	expectApiToken string
+	expectAPIToken string
 	httpStatus     int
 	body           []byte
 }
 
 func (sgh StubGetHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	sgh.c.Check(req.URL.Path, Equals, "/"+sgh.expectPath)
-	sgh.c.Check(req.Header.Get("Authorization"), Equals, fmt.Sprintf("OAuth2 %s", sgh.expectApiToken))
+	sgh.c.Check(req.Header.Get("Authorization"), Equals, fmt.Sprintf("OAuth2 %s", sgh.expectAPIToken))
 	resp.WriteHeader(sgh.httpStatus)
 	resp.Header().Set("Content-Length", fmt.Sprintf("%d", len(sgh.body)))
 	resp.Write(sgh.body)
@@ -535,6 +535,7 @@ func (s *StandaloneSuite) TestGetEmptyBlock(c *C) {
 	defer ks.listener.Close()
 
 	arv, err := arvadosclient.MakeArvadosClient()
+	c.Check(err, IsNil)
 	kc, _ := MakeKeepClient(arv)
 	arv.ApiToken = "abc123"
 	kc.SetServiceRoots(map[string]string{"x": ks.url}, nil, nil)
@@ -769,9 +770,9 @@ type BarHandler struct {
 	handled chan string
 }
 
-func (this BarHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+func (h BarHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	resp.Write([]byte("bar"))
-	this.handled <- fmt.Sprintf("http://%s", req.Host)
+	h.handled <- fmt.Sprintf("http://%s", req.Host)
 }
 
 func (s *StandaloneSuite) TestChecksum(c *C) {
@@ -859,9 +860,9 @@ func (s *StandaloneSuite) TestGetWithFailures(c *C) {
 	c.Check(n, Equals, int64(3))
 	c.Check(url2, Equals, fmt.Sprintf("%s/%s", ks1[0].url, hash))
 
-	read_content, err2 := ioutil.ReadAll(r)
+	readContent, err2 := ioutil.ReadAll(r)
 	c.Check(err2, Equals, nil)
-	c.Check(read_content, DeepEquals, content)
+	c.Check(readContent, DeepEquals, content)
 }
 
 func (s *ServerRequiredSuite) TestPutGetHead(c *C) {
@@ -891,9 +892,9 @@ func (s *ServerRequiredSuite) TestPutGetHead(c *C) {
 		c.Check(n, Equals, int64(len(content)))
 		c.Check(url2, Matches, fmt.Sprintf("http://localhost:\\d+/%s", hash))
 
-		read_content, err2 := ioutil.ReadAll(r)
+		readContent, err2 := ioutil.ReadAll(r)
 		c.Check(err2, Equals, nil)
-		c.Check(read_content, DeepEquals, content)
+		c.Check(readContent, DeepEquals, content)
 	}
 	{
 		n, url2, err := kc.Ask(hash)
@@ -920,9 +921,9 @@ type StubProxyHandler struct {
 	handled chan string
 }
 
-func (this StubProxyHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+func (h StubProxyHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	resp.Header().Set("X-Keep-Replicas-Stored", "2")
-	this.handled <- fmt.Sprintf("http://%s", req.Host)
+	h.handled <- fmt.Sprintf("http://%s", req.Host)
 }
 
 func (s *StandaloneSuite) TestPutProxy(c *C) {

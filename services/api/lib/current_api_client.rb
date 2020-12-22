@@ -9,6 +9,8 @@ $anonymous_user = nil
 $anonymous_group = nil
 $anonymous_group_read_permission = nil
 $empty_collection = nil
+$public_project_group = nil
+$public_project_group_read_permission = nil
 
 module CurrentApiClient
   def current_user
@@ -63,6 +65,12 @@ module CurrentApiClient
     [Rails.configuration.ClusterID,
      User.uuid_prefix,
      'anonymouspublic'].join('-')
+  end
+
+  def public_project_uuid
+    [Rails.configuration.ClusterID,
+     Group.uuid_prefix,
+     'publicfavorites'].join('-')
   end
 
   def system_user
@@ -141,6 +149,9 @@ module CurrentApiClient
       yield
     ensure
       Thread.current[:user] = user_was
+      if user_was
+        user_was.forget_cached_group_perms
+      end
     end
   end
 
@@ -184,6 +195,41 @@ module CurrentApiClient
                      link_class: 'permission',
                      name: 'can_read').
             first_or_create!
+        end
+      end
+    end
+  end
+
+  def public_project_group
+    $public_project_group = check_cache $public_project_group do
+      act_as_system_user do
+        ActiveRecord::Base.transaction do
+          Group.where(uuid: public_project_uuid).
+            first_or_create!(group_class: "project",
+                             name: "Public favorites",
+                             description: "Public favorites")
+        end
+      end
+    end
+  end
+
+  def public_project_read_permission
+    $public_project_group_read_permission =
+        check_cache $public_project_group_read_permission do
+      act_as_system_user do
+        Link.where(tail_uuid: anonymous_group.uuid,
+                   head_uuid: public_project_group.uuid,
+                   link_class: "permission",
+                   name: "can_read").first_or_create!
+      end
+    end
+  end
+
+  def system_root_token_api_client
+    $system_root_token_api_client = check_cache $system_root_token_api_client do
+      act_as_system_user do
+        ActiveRecord::Base.transaction do
+          ApiClient.find_or_create_by!(is_trusted: true, url_prefix: "", name: "SystemRootToken")
         end
       end
     end

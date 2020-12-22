@@ -17,42 +17,6 @@ if test "$1" = "--only-deps" ; then
     exit
 fi
 
-mkdir -p /var/lib/arvados/$1
+mkdir -p $ARVADOS_CONTAINER_PATH/$1
 
-export ARVADOS_API_HOST=$localip:${services[controller-ssl]}
-export ARVADOS_API_HOST_INSECURE=1
-export ARVADOS_API_TOKEN=$(cat /var/lib/arvados/superuser_token)
-
-set +e
-read -rd $'\000' keepservice <<EOF
-{
- "service_host":"localhost",
- "service_port":$2,
- "service_ssl_flag":false,
- "service_type":"disk"
-}
-EOF
-set -e
-
-if test -s /var/lib/arvados/$1-uuid ; then
-    keep_uuid=$(cat /var/lib/arvados/$1-uuid)
-    arv keep_service update --uuid $keep_uuid --keep-service "$keepservice"
-else
-    UUID=$(arv --format=uuid keep_service create --keep-service "$keepservice")
-    echo $UUID > /var/lib/arvados/$1-uuid
-fi
-
-management_token=$(cat /var/lib/arvados/management_token)
-
-set +e
-sv hup /var/lib/arvbox/service/keepproxy
-
-cat >/var/lib/arvados/$1.yml <<EOF
-Listen: "localhost:$2"
-BlobSigningKeyFile: /var/lib/arvados/blob_signing_key
-SystemAuthTokenFile: /var/lib/arvados/superuser_token
-ManagementToken: $management_token
-MaxBuffers: 20
-EOF
-
-exec /usr/local/bin/keepstore -config=/var/lib/arvados/$1.yml
+exec /usr/local/bin/keepstore

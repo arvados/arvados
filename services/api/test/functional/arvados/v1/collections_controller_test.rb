@@ -1145,7 +1145,7 @@ EOS
   end
 
   [:admin, :active].each do |user|
-    test "get trashed collection via filters and #{user} user" do
+    test "get trashed collection via filters and #{user} user without including its past versions" do
       uuid = 'zzzzz-4zz18-mto52zx1s7sn3ih' # expired_collection
       authorize_with user
       get :index, params: {
@@ -1386,6 +1386,16 @@ EOS
     assert_response :success
     assert_equal collections(:collection_owned_by_active_past_version_1).name,
                   json_response['name']
+  end
+
+  test 'can get old version collection by PDH' do
+    authorize_with :active
+    get :show, params: {
+      id: collections(:collection_owned_by_active_past_version_1).portable_data_hash,
+    }
+    assert_response :success
+    assert_equal collections(:collection_owned_by_active_past_version_1).portable_data_hash,
+                  json_response['portable_data_hash']
   end
 
   test 'version and current_version_uuid are ignored at creation time' do

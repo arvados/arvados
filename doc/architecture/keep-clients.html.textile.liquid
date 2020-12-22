@@ -1,0 +1,39 @@
+---
+layout: default
+navsection: architecture
+title: Keep clients
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+Keep clients are applications such as @arv-get@, @arv-put@ and @arv-mount@ which store and retrieve data from Keep.  In doing so, these programs interact with both the API server (which stores file metadata in the form of @collection@ objects) and individual @keepstore@ servers (which store the actual data blocks).
+
+!(full-width){{site.baseurl}}/images/Keep_reading_writing_block.svg!
+
+h2. Storing a file
+
+# The client discovers keep servers (or proxies) using the @accessible@ method on "keep_services":{{site.baseurl}}/api/methods/keep_services.html
+# Data is split into 64 MiB blocks and the MD5 hash is computed for each block.
+# The client uploads each block to one or more Keep servers, based on the number of desired replicas.  The priority order is determined using rendezvous hashing, described below.
+# The Keep server returns a block locator (the MD5 sum of the block) and a "signed token" which the client can use as proof of knowledge for the block.
+# The client constructs a @manifest@ which lists the blocks by MD5 hash and how to reassemble them into the original files.
+# The client creates a "collection":{{site.baseurl}}/api/methods/collections.html and provides the @manifest_text@
+# The API server accepts the collection after validating the signed tokens (proof of knowledge) for each block.
+
+h2. Fetching a file
+
+# The client requests a @collection@ object including @manifest_text@ from the APIs server
+# The server adds "token signatures" to the @manifest_text@ and returns it to the client.
+# The client discovers keep servers (or proxies) using the @accessible@ method on "keep_services":{{site.baseurl}}/api/methods/keep_services.html
+# For each data block, the client chooses the highest priority server using rendezvous hashing, described below.
+# The client sends the data block request to the keep server, along with the token signature from the API which proves to Keep servers that the client is permitted to read a given block.
+# The server provides the block data after validating the token signature for the block (if the server does not have the block, it returns a 404 and the client tries the next highest priority server)
+
+h2(#rendezvous). Rendezvous hashing
+!(full-width){{site.baseurl}}/images/Keep_rendezvous_hashing.svg!
+
+Each @keep_service@ resource has an assigned uuid.  To determine priority assignments of blocks to servers, for each keep service compute the MD5 sum of the string concatenation of the block locator (hex-coded hash part only) and service uuid, then sort this list in descending order.  Blocks are preferentially placed on servers with the highest weight.
+

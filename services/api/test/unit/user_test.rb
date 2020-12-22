@@ -110,7 +110,7 @@ class UserTest < ActiveSupport::TestCase
   end
 
   test "new username set avoiding blacklist" do
-    Rails.configuration.Users.AutoSetupUsernameBlacklist = {"root"=>{}}
+    Rails.configuration.Users.AutoSetupUsernameBlacklist = ConfigLoader.to_OrderedOptions({"root"=>{}})
     check_new_username_setting("root", "root2")
   end
 
@@ -340,50 +340,54 @@ class UserTest < ActiveSupport::TestCase
     assert_equal(user.first_name, 'first_name_for_newly_created_user_updated')
   end
 
+  active_notify_list = ConfigLoader.to_OrderedOptions({"active-notify@example.com"=>{}})
+  inactive_notify_list = ConfigLoader.to_OrderedOptions({"inactive-notify@example.com"=>{}})
+  empty_notify_list = ConfigLoader.to_OrderedOptions({})
+
   test "create new user with notifications" do
     set_user_from_auth :admin
 
-    create_user_and_verify_setup_and_notifications true, {'active-notify-address@example.com'=>{}}, {'inactive-notify-address@example.com'=>{}}, nil, nil
-    create_user_and_verify_setup_and_notifications true, {'active-notify-address@example.com'=>{}}, {}, nil, nil
-    create_user_and_verify_setup_and_notifications true, {}, [], nil, nil
-    create_user_and_verify_setup_and_notifications false, {'active-notify-address@example.com'=>{}}, {'inactive-notify-address@example.com'=>{}}, nil, nil
-    create_user_and_verify_setup_and_notifications false, {}, {'inactive-notify-address@example.com'=>{}}, nil, nil
-    create_user_and_verify_setup_and_notifications false, {}, {}, nil, nil
+    create_user_and_verify_setup_and_notifications true, active_notify_list, inactive_notify_list, nil, nil
+    create_user_and_verify_setup_and_notifications true, active_notify_list, empty_notify_list, nil, nil
+    create_user_and_verify_setup_and_notifications true, empty_notify_list, empty_notify_list, nil, nil
+    create_user_and_verify_setup_and_notifications false, active_notify_list, inactive_notify_list, nil, nil
+    create_user_and_verify_setup_and_notifications false, empty_notify_list, inactive_notify_list, nil, nil
+    create_user_and_verify_setup_and_notifications false, empty_notify_list, empty_notify_list, nil, nil
   end
 
   [
     # Easy inactive user tests.
-    [false, {}, {}, "inactive-none@example.com", false, false, "inactivenone"],
-    [false, {}, {}, "inactive-vm@example.com", true, false, "inactivevm"],
-    [false, {}, {}, "inactive-repo@example.com", false, true, "inactiverepo"],
-    [false, {}, {}, "inactive-both@example.com", true, true, "inactiveboth"],
+    [false, empty_notify_list, empty_notify_list, "inactive-none@example.com", false, false, "inactivenone"],
+    [false, empty_notify_list, empty_notify_list, "inactive-vm@example.com", true, false, "inactivevm"],
+    [false, empty_notify_list, empty_notify_list, "inactive-repo@example.com", false, true, "inactiverepo"],
+    [false, empty_notify_list, empty_notify_list, "inactive-both@example.com", true, true, "inactiveboth"],
 
     # Easy active user tests.
-    [true, {"active-notify@example.com"=>{}}, {"inactive-notify@example.com"=>{}}, "active-none@example.com", false, false, "activenone"],
-    [true, {"active-notify@example.com"=>{}}, {"inactive-notify@example.com"=>{}}, "active-vm@example.com", true, false, "activevm"],
-    [true, {"active-notify@example.com"=>{}}, {"inactive-notify@example.com"=>{}}, "active-repo@example.com", false, true, "activerepo"],
-    [true, {"active-notify@example.com"=>{}}, {"inactive-notify@example.com"=>{}}, "active-both@example.com", true, true, "activeboth"],
+    [true, active_notify_list, inactive_notify_list, "active-none@example.com", false, false, "activenone"],
+    [true, active_notify_list, inactive_notify_list, "active-vm@example.com", true, false, "activevm"],
+    [true, active_notify_list, inactive_notify_list, "active-repo@example.com", false, true, "activerepo"],
+    [true, active_notify_list, inactive_notify_list, "active-both@example.com", true, true, "activeboth"],
 
     # Test users with malformed e-mail addresses.
-    [false, {}, {}, nil, true, true, nil],
-    [false, {}, {}, "arvados", true, true, nil],
-    [false, {}, {}, "@example.com", true, true, nil],
-    [true, {"active-notify@example.com"=>{}}, {"inactive-notify@example.com"=>{}}, "*!*@example.com", true, false, nil],
-    [true, {"active-notify@example.com"=>{}}, {"inactive-notify@example.com"=>{}}, "*!*@example.com", false, false, nil],
+    [false, empty_notify_list, empty_notify_list, nil, true, true, nil],
+    [false, empty_notify_list, empty_notify_list, "arvados", true, true, nil],
+    [false, empty_notify_list, empty_notify_list, "@example.com", true, true, nil],
+    [true, active_notify_list, inactive_notify_list, "*!*@example.com", true, false, nil],
+    [true, active_notify_list, inactive_notify_list, "*!*@example.com", false, false, nil],
 
     # Test users with various username transformations.
-    [false, {}, {}, "arvados@example.com", false, false, "arvados2"],
-    [true, {"active-notify@example.com"=>{}}, {"inactive-notify@example.com"=>{}}, "arvados@example.com", false, false, "arvados2"],
-    [true, {"active-notify@example.com"=>{}}, {"inactive-notify@example.com"=>{}}, "root@example.com", true, false, "root2"],
-    [false, {"active-notify@example.com"=>{}}, {"inactive-notify@example.com"=>{}}, "root@example.com", true, false, "root2"],
-    [true, {"active-notify@example.com"=>{}}, {"inactive-notify@example.com"=>{}}, "roo_t@example.com", false, true, "root2"],
-    [false, {}, {}, "^^incorrect_format@example.com", true, true, "incorrectformat"],
-    [true, {"active-notify@example.com"=>{}}, {"inactive-notify@example.com"=>{}}, "&4a_d9.@example.com", true, true, "ad9"],
-    [true, {"active-notify@example.com"=>{}}, {"inactive-notify@example.com"=>{}}, "&4a_d9.@example.com", false, false, "ad9"],
-    [false, {"active-notify@example.com"=>{}}, {"inactive-notify@example.com"=>{}}, "&4a_d9.@example.com", true, true, "ad9"],
-    [false, {"active-notify@example.com"=>{}}, {"inactive-notify@example.com"=>{}}, "&4a_d9.@example.com", false, false, "ad9"],
+    [false, empty_notify_list, empty_notify_list, "arvados@example.com", false, false, "arvados2"],
+    [true, active_notify_list, inactive_notify_list, "arvados@example.com", false, false, "arvados2"],
+    [true, active_notify_list, inactive_notify_list, "root@example.com", true, false, "root2"],
+    [false, active_notify_list, inactive_notify_list, "root@example.com", true, false, "root2"],
+    [true, active_notify_list, inactive_notify_list, "roo_t@example.com", false, true, "root2"],
+    [false, empty_notify_list, empty_notify_list, "^^incorrect_format@example.com", true, true, "incorrectformat"],
+    [true, active_notify_list, inactive_notify_list, "&4a_d9.@example.com", true, true, "ad9"],
+    [true, active_notify_list, inactive_notify_list, "&4a_d9.@example.com", false, false, "ad9"],
+    [false, active_notify_list, inactive_notify_list, "&4a_d9.@example.com", true, true, "ad9"],
+    [false, active_notify_list, inactive_notify_list, "&4a_d9.@example.com", false, false, "ad9"],
   ].each do |active, new_user_recipients, inactive_recipients, email, auto_setup_vm, auto_setup_repo, expect_username|
-    test "create new user with auto setup #{active} #{email} #{auto_setup_vm} #{auto_setup_repo}" do
+    test "create new user with auto setup active=#{active} email=#{email} vm=#{auto_setup_vm} repo=#{auto_setup_repo}" do
       set_user_from_auth :admin
 
       Rails.configuration.Users.AutoSetupNewUsers = true
@@ -569,7 +573,6 @@ class UserTest < ActiveSupport::TestCase
     assert_not_nil resp_user, 'expected user object'
     assert_not_nil resp_user['uuid'], 'expected user object'
     assert_equal email, resp_user['email'], 'expected email not found'
-
   end
 
   def verify_link (link_object, link_class, link_name, tail_uuid, head_uuid)
@@ -618,6 +621,7 @@ class UserTest < ActiveSupport::TestCase
                           Rails.configuration.Users.AutoSetupNewUsersWithRepository),
                          named_repo.uuid, user.uuid, "permission", "can_manage")
     end
+
     # Check for VM login.
     if (auto_vm_uuid = Rails.configuration.Users.AutoSetupNewUsersWithVmUUID) != ""
       verify_link_exists(can_setup, auto_vm_uuid, user.uuid,
@@ -648,7 +652,7 @@ class UserTest < ActiveSupport::TestCase
     if not new_user_recipients.empty? then
       assert_not_nil new_user_email, 'Expected new user email after setup'
       assert_equal Rails.configuration.Users.UserNotifierEmailFrom, new_user_email.from[0]
-      assert_equal new_user_recipients.keys.first, new_user_email.to[0]
+      assert_equal new_user_recipients.stringify_keys.keys.first, new_user_email.to[0]
       assert_equal new_user_email_subject, new_user_email.subject
     else
       assert_nil new_user_email, 'Did not expect new user email after setup'
@@ -658,7 +662,7 @@ class UserTest < ActiveSupport::TestCase
       if not inactive_recipients.empty? then
         assert_not_nil new_inactive_user_email, 'Expected new inactive user email after setup'
         assert_equal Rails.configuration.Users.UserNotifierEmailFrom, new_inactive_user_email.from[0]
-        assert_equal inactive_recipients.keys.first, new_inactive_user_email.to[0]
+        assert_equal inactive_recipients.stringify_keys.keys.first, new_inactive_user_email.to[0]
         assert_equal "#{Rails.configuration.Users.EmailSubjectPrefix}New inactive user notification", new_inactive_user_email.subject
       else
         assert_nil new_inactive_user_email, 'Did not expect new inactive user email after setup'
@@ -667,7 +671,6 @@ class UserTest < ActiveSupport::TestCase
       assert_nil new_inactive_user_email, 'Expected no inactive user email after setting up active user'
     end
     ActionMailer::Base.deliveries = []
-
   end
 
   def verify_link_exists link_exists, head_uuid, tail_uuid, link_class, link_name, property_name=nil, property_value=nil
@@ -675,7 +678,7 @@ class UserTest < ActiveSupport::TestCase
                            tail_uuid: tail_uuid,
                            link_class: link_class,
                            name: link_name)
-    assert_equal link_exists, all_links.any?, "Link #{'not' if link_exists} found for #{link_name} #{link_class} #{property_value}"
+    assert_equal link_exists, all_links.any?, "Link#{' not' if link_exists} found for #{link_name} #{link_class} #{property_value}"
     if link_exists && property_name && property_value
       all_links.each do |link|
         assert_equal true, all_links.first.properties[property_name].start_with?(property_value), 'Property not found in link'

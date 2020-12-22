@@ -125,7 +125,7 @@ case "$TARGET" in
         FORMAT=rpm
         PYTHON3_PACKAGE=$(rpm -qf "$(which python$PYTHON3_VERSION)" --queryformat '%{NAME}\n')
         PYTHON3_PKG_PREFIX=$PYTHON3_PACKAGE
-        PYTHON3_PREFIX=/opt/rh/rh-python36/root/usr
+        PYTHON3_PREFIX=/usr
         PYTHON3_INSTALL_LIB=lib/python$PYTHON3_VERSION/site-packages
         export PYCURL_SSL_LIBRARY=nss
         ;;
@@ -326,6 +326,9 @@ fpm_build_virtualenv "crunchstat-summary" "tools/crunchstat-summary" "python3"
 
 # The Docker image cleaner
 fpm_build_virtualenv "arvados-docker-cleaner" "services/dockercleaner" "python3"
+
+# The Arvados user activity tool
+fpm_build_virtualenv "arvados-user-activity" "tools/user-activity" "python3"
 
 # The cwltest package, which lives out of tree
 cd "$WORKSPACE"

@@ -2,7 +2,7 @@
 layout: default
 navsection: sdk
 navmenu: Python
-title: Subscribing to events
+title: Subscribing to database events
 ...
 {% comment %}
 Copyright (C) The Arvados Authors. All rights reserved.
@@ -13,7 +13,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 Arvados applications can subscribe to a live event stream from the database.  Events are described in the "Log resource.":{{site.baseurl}}/api/methods/logs.html
 
 {% codeblock as python %}
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import arvados
 import arvados.events

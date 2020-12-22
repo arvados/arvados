@@ -14,7 +14,6 @@ class UserSessionsControllerTest < ActionController::TestCase
     assert_nil assigns(:api_client)
   end
 
-
   test "send token when user is already logged in" do
     authorize_with :inactive
     api_client_page = 'http://client.example.com/home'
@@ -24,6 +23,28 @@ class UserSessionsControllerTest < ActionController::TestCase
                  'Redirect url ' + @response.redirect_url +
                  ' should start with ' + api_client_page + '?')
     assert_not_nil assigns(:api_client)
+  end
+
+  test "login creates token without expiration by default" do
+    assert_equal Rails.configuration.Login.TokenLifetime, 0
+    authorize_with :inactive
+    api_client_page = 'http://client.example.com/home'
+    get :login, params: {return_to: api_client_page}
+    assert_not_nil assigns(:api_client)
+    assert_nil assigns(:api_client_auth).expires_at
+  end
+
+  test "login creates token with configured lifetime" do
+    token_lifetime = 1.hour
+    Rails.configuration.Login.TokenLifetime = token_lifetime
+    authorize_with :inactive
+    api_client_page = 'http://client.example.com/home'
+    get :login, params: {return_to: api_client_page}
+    assert_not_nil assigns(:api_client)
+    api_client_auth = assigns(:api_client_auth)
+    assert_in_delta(api_client_auth.expires_at,
+                    api_client_auth.updated_at + token_lifetime,
+                    1.second)
   end
 
   test "login with remote param returns a salted token" do
@@ -47,7 +68,7 @@ class UserSessionsControllerTest < ActionController::TestCase
 
   test "login to LoginCluster" do
     Rails.configuration.Login.LoginCluster = 'zbbbb'
-    Rails.configuration.RemoteClusters['zbbbb'] = {'Host' => 'zbbbb.example.com'}
+    Rails.configuration.RemoteClusters['zbbbb'] = ConfigLoader.to_OrderedOptions({'Host' => 'zbbbb.example.com'})
     api_client_page = 'http://client.example.com/home'
     get :login, params: {return_to: api_client_page}
     assert_response :redirect

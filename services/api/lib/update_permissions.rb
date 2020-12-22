@@ -62,10 +62,12 @@ def update_permissions perm_origin_uuid, starting_uuid, perm_level, edge_id=nil
 
   ActiveRecord::Base.transaction do
 
-    # "Conflicts with the ROW EXCLUSIVE, SHARE UPDATE EXCLUSIVE, SHARE
-    # ROW EXCLUSIVE, EXCLUSIVE, and ACCESS EXCLUSIVE lock modes. This
-    # mode protects a table against concurrent data changes."
-    ActiveRecord::Base.connection.execute "LOCK TABLE #{PERMISSION_VIEW} in SHARE MODE"
+    # "Conflicts with the ROW SHARE, ROW EXCLUSIVE, SHARE UPDATE
+    # EXCLUSIVE, SHARE, SHARE ROW EXCLUSIVE, EXCLUSIVE, and ACCESS
+    # EXCLUSIVE lock modes. This mode allows only concurrent ACCESS
+    # SHARE locks, i.e., only reads from the table can proceed in
+    # parallel with a transaction holding this lock mode."
+    ActiveRecord::Base.connection.execute "LOCK TABLE #{PERMISSION_VIEW} in EXCLUSIVE MODE"
 
     # Workaround for
     # BUG #15160: planner overestimates number of rows in join when there are more than 200 rows coming from CTE

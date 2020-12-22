@@ -14,7 +14,9 @@ import (
 	"sync"
 	"time"
 
+	"git.arvados.org/arvados.git/lib/controller/api"
 	"git.arvados.org/arvados.git/lib/controller/federation"
+	"git.arvados.org/arvados.git/lib/controller/localdb"
 	"git.arvados.org/arvados.git/lib/controller/railsproxy"
 	"git.arvados.org/arvados.git/lib/controller/router"
 	"git.arvados.org/arvados.git/lib/ctrlctx"
@@ -23,6 +25,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/health"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
 	"github.com/jmoiron/sqlx"
+	// sqlx needs lib/pq to talk to PostgreSQL
 	_ "github.com/lib/pq"
 )
 
@@ -87,7 +90,8 @@ func (h *Handler) setup() {
 		Routes: health.Routes{"ping": func() error { _, err := h.db(context.TODO()); return err }},
 	})
 
-	rtr := router.New(federation.New(h.Cluster), ctrlctx.WrapCallsInTransactions(h.db))
+	oidcAuthorizer := localdb.OIDCAccessTokenAuthorizer(h.Cluster, h.db)
+	rtr := router.New(federation.New(h.Cluster), api.ComposeWrappers(ctrlctx.WrapCallsInTransactions(h.db), oidcAuthorizer.WrapCalls))
 	mux.Handle("/arvados/v1/config", rtr)
 	mux.Handle("/"+arvados.EndpointUserAuthenticate.Path, rtr)
 
@@ -103,6 +107,7 @@ func (h *Handler) setup() {
 	hs := http.NotFoundHandler()
 	hs = prepend(hs, h.proxyRailsAPI)
 	hs = h.setupProxyRemoteCluster(hs)
+	hs = prepend(hs, oidcAuthorizer.Middleware)
 	mux.Handle("/", hs)
 	h.handlerStack = mux
 

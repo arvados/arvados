@@ -167,43 +167,48 @@ func run(logger log.FieldLogger, cluster *arvados.Cluster) error {
 	return http.Serve(listener, httpserver.AddRequestIDs(httpserver.LogRequests(router)))
 }
 
-type ApiTokenCache struct {
+type APITokenCache struct {
 	tokens     map[string]int64
 	lock       sync.Mutex
 	expireTime int64
 }
 
-// Cache the token and set an expire time.  If we already have an expire time
-// on the token, it is not updated.
-func (this *ApiTokenCache) RememberToken(token string) {
-	this.lock.Lock()
-	defer this.lock.Unlock()
+// RememberToken caches the token and set an expire time.  If we already have
+// an expire time on the token, it is not updated.
+func (cache *APITokenCache) RememberToken(token string) {
+	cache.lock.Lock()
+	defer cache.lock.Unlock()
 
 	now := time.Now().Unix()
-	if this.tokens[token] == 0 {
-		this.tokens[token] = now + this.expireTime
+	if cache.tokens[token] == 0 {
+		cache.tokens[token] = now + cache.expireTime
 	}
 }
 
-// Check if the cached token is known and still believed to be valid.
-func (this *ApiTokenCache) RecallToken(token string) bool {
-	this.lock.Lock()
-	defer this.lock.Unlock()
+// RecallToken checks if the cached token is known and still believed to be
+// valid.
+func (cache *APITokenCache) RecallToken(token string) bool {
+	cache.lock.Lock()
+	defer cache.lock.Unlock()
 
 	now := time.Now().Unix()
-	if this.tokens[token] == 0 {
+	if cache.tokens[token] == 0 {
 		// Unknown token
 		return false
-	} else if now < this.tokens[token] {
+	} else if now < cache.tokens[token] {
 		// Token is known and still valid
 		return true
 	} else {
 		// Token is expired
-		this.tokens[token] = 0
+		cache.tokens[token] = 0
 		return false
 	}
 }
 
+// GetRemoteAddress returns a string with the remote address for the request.
+// If the X-Forwarded-For header is set and has a non-zero length, it returns a
+// string made from a comma separated list of all the remote addresses,
+// starting with the one(s) from the X-Forwarded-For header.
 func GetRemoteAddress(req *http.Request) string {
 	if xff := req.Header.Get("X-Forwarded-For"); xff != "" {
 		return xff + "," + req.RemoteAddr
@@ -211,7 +216,7 @@ func GetRemoteAddress(req *http.Request) string {
 	return req.RemoteAddr
 }
 
-func CheckAuthorizationHeader(kc *keepclient.KeepClient, cache *ApiTokenCache, req *http.Request) (pass bool, tok string) {
+func CheckAuthorizationHeader(kc *keepclient.KeepClient, cache *APITokenCache, req *http.Request) (pass bool, tok string) {
 	parts := strings.SplitN(req.Header.Get("Authorization"), " ", 2)
 	if len(parts) < 2 || !(parts[0] == "OAuth2" || parts[0] == "Bearer") || len(parts[1]) == 0 {
 		return false, ""
@@ -265,7 +270,7 @@ var defaultTransport = *(http.DefaultTransport.(*http.Transport))
 type proxyHandler struct {
 	http.Handler
 	*keepclient.KeepClient
-	*ApiTokenCache
+	*APITokenCache
 	timeout   time.Duration
 	transport *http.Transport
 }
@@ -289,7 +294,7 @@ func MakeRESTRouter(kc *keepclient.KeepClient, timeout time.Duration, mgmtToken 
 		KeepClient: kc,
 		timeout:    timeout,
 		transport:  &transport,
-		ApiTokenCache: &ApiTokenCache{
+		APITokenCache: &APITokenCache{
 			tokens:     make(map[string]int64),
 			expireTime: 300,
 		},
@@ -349,9 +354,9 @@ func (h *proxyHandler) Options(resp http.ResponseWriter, req *http.Request) {
 	SetCorsHeaders(resp)
 }
 
-var BadAuthorizationHeader = errors.New("Missing or invalid Authorization header")
-var ContentLengthMismatch = errors.New("Actual length != expected content length")
-var MethodNotSupported = errors.New("Method not supported")
+var errBadAuthorizationHeader = errors.New("Missing or invalid Authorization header")
+var errContentLengthMismatch = errors.New("Actual length != expected content length")
+var errMethodNotSupported = errors.New("Method not supported")
 
 var removeHint, _ = regexp.Compile("\\+K@[a-z0-9]{5}(\\+|$)")
 
@@ -379,8 +384,8 @@ func (h *proxyHandler) Get(resp http.ResponseWriter, req *http.Request) {
 
 	var pass bool
 	var tok string
-	if pass, tok = CheckAuthorizationHeader(kc, h.ApiTokenCache, req); !pass {
-		status, err = http.StatusForbidden, BadAuthorizationHeader
+	if pass, tok = CheckAuthorizationHeader(kc, h.APITokenCache, req); !pass {
+		status, err = http.StatusForbidden, errBadAuthorizationHeader
 		return
 	}
 
@@ -402,7 +407,7 @@ func (h *proxyHandler) Get(resp http.ResponseWriter, req *http.Request) {
 			defer reader.Close()
 		}
 	default:
-		status, err = http.StatusNotImplemented, MethodNotSupported
+		status, err = http.StatusNotImplemented, errMethodNotSupported
 		return
 	}
 
@@ -420,7 +425,7 @@ func (h *proxyHandler) Get(resp http.ResponseWriter, req *http.Request) {
 		case "GET":
 			responseLength, err = io.Copy(resp, reader)
 			if err == nil && expectLength > -1 && responseLength != expectLength {
-				err = ContentLengthMismatch
+				err = errContentLengthMismatch
 			}
 		}
 	case keepclient.Error:
@@ -436,8 +441,8 @@ func (h *proxyHandler) Get(resp http.ResponseWriter, req *http.Request) {
 	}
 }
 
-var LengthRequiredError = errors.New(http.StatusText(http.StatusLengthRequired))
-var LengthMismatchError = errors.New("Locator size hint does not match Content-Length header")
+var errLengthRequired = errors.New(http.StatusText(http.StatusLengthRequired))
+var errLengthMismatch = errors.New("Locator size hint does not match Content-Length header")
 
 func (h *proxyHandler) Put(resp http.ResponseWriter, req *http.Request) {
 	if err := h.checkLoop(resp, req); err != nil {
@@ -474,7 +479,7 @@ func (h *proxyHandler) Put(resp http.ResponseWriter, req *http.Request) {
 
 	_, err = fmt.Sscanf(req.Header.Get("Content-Length"), "%d", &expectLength)
 	if err != nil || expectLength < 0 {
-		err = LengthRequiredError
+		err = errLengthRequired
 		status = http.StatusLengthRequired
 		return
 	}
@@ -485,7 +490,7 @@ func (h *proxyHandler) Put(resp http.ResponseWriter, req *http.Request) {
 			status = http.StatusBadRequest
 			return
 		} else if loc.Size > 0 && int64(loc.Size) != expectLength {
-			err = LengthMismatchError
+			err = errLengthMismatch
 			status = http.StatusBadRequest
 			return
 		}
@@ -493,8 +498,8 @@ func (h *proxyHandler) Put(resp http.ResponseWriter, req *http.Request) {
 
 	var pass bool
 	var tok string
-	if pass, tok = CheckAuthorizationHeader(kc, h.ApiTokenCache, req); !pass {
-		err = BadAuthorizationHeader
+	if pass, tok = CheckAuthorizationHeader(kc, h.APITokenCache, req); !pass {
+		err = errBadAuthorizationHeader
 		status = http.StatusForbidden
 		return
 	}
@@ -507,7 +512,7 @@ func (h *proxyHandler) Put(resp http.ResponseWriter, req *http.Request) {
 	// Check if the client specified the number of replicas
 	if req.Header.Get("X-Keep-Desired-Replicas") != "" {
 		var r int
-		_, err := fmt.Sscanf(req.Header.Get(keepclient.X_Keep_Desired_Replicas), "%d", &r)
+		_, err := fmt.Sscanf(req.Header.Get(keepclient.XKeepDesiredReplicas), "%d", &r)
 		if err == nil {
 			kc.Want_replicas = r
 		}
@@ -527,7 +532,7 @@ func (h *proxyHandler) Put(resp http.ResponseWriter, req *http.Request) {
 	}
 
 	// Tell the client how many successful PUTs we accomplished
-	resp.Header().Set(keepclient.X_Keep_Replicas_Stored, fmt.Sprintf("%d", wroteReplicas))
+	resp.Header().Set(keepclient.XKeepReplicasStored, fmt.Sprintf("%d", wroteReplicas))
 
 	switch err.(type) {
 	case nil:
@@ -575,9 +580,9 @@ func (h *proxyHandler) Index(resp http.ResponseWriter, req *http.Request) {
 	}()
 
 	kc := h.makeKeepClient(req)
-	ok, token := CheckAuthorizationHeader(kc, h.ApiTokenCache, req)
+	ok, token := CheckAuthorizationHeader(kc, h.APITokenCache, req)
 	if !ok {
-		status, err = http.StatusForbidden, BadAuthorizationHeader
+		status, err = http.StatusForbidden, errBadAuthorizationHeader
 		return
 	}
 
@@ -588,7 +593,7 @@ func (h *proxyHandler) Index(resp http.ResponseWriter, req *http.Request) {
 
 	// Only GET method is supported
 	if req.Method != "GET" {
-		status, err = http.StatusNotImplemented, MethodNotSupported
+		status, err = http.StatusNotImplemented, errMethodNotSupported
 		return
 	}
 

@@ -98,4 +98,4 @@ arguments:
         $(inputs.arvbox_bin.path) restart $(inputs.arvbox_mode)
       fi
       $(inputs.arvbox_bin.path) status > status.txt
-      $(inputs.arvbox_bin.path) cat /var/lib/arvados/superuser_token > superuser_token.txt
+      $(inputs.arvbox_bin.path) cat /var/lib/arvados-arvbox/superuser_token > superuser_token.txt

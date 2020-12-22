@@ -62,6 +62,9 @@ func parseCollectionIDFromDNSName(s string) string {
 
 var urlPDHDecoder = strings.NewReplacer(" ", "+", "-", "+")
 
+var notFoundMessage = "404 Not found\r\n\r\nThe requested path was not found, or you do not have permission to access it.\r"
+var unauthorizedMessage = "401 Unauthorized\r\n\r\nA valid Arvados token must be provided to access this resource.\r"
+
 // parseCollectionIDFromURL returns a UUID or PDH if s is a UUID or a
 // PDH (even if it is a PDH with "+" replaced by " " or "-");
 // otherwise "".
@@ -185,10 +188,6 @@ var (
 func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	h.setupOnce.Do(h.setup)
 
-	remoteAddr := r.RemoteAddr
-	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		remoteAddr = xff + "," + remoteAddr
-	}
 	if xfp := r.Header.Get("X-Forwarded-Proto"); xfp != "" && xfp != "http" {
 		r.URL.Scheme = xfp
 	}
@@ -283,7 +282,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	}
 
 	if collectionID == "" && !useSiteFS {
-		w.WriteHeader(http.StatusNotFound)
+		http.Error(w, notFoundMessage, http.StatusNotFound)
 		return
 	}
 
@@ -297,27 +296,32 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	}
 
 	formToken := r.FormValue("api_token")
-	if formToken != "" && r.Header.Get("Origin") != "" && attachment && r.URL.Query().Get("api_token") == "" {
-		// The client provided an explicit token in the POST
-		// body. The Origin header indicates this *might* be
-		// an AJAX request, in which case redirect-with-cookie
-		// won't work: we should just serve the content in the
-		// POST response. This is safe because:
+	origin := r.Header.Get("Origin")
+	cors := origin != "" && !strings.HasSuffix(origin, "://"+r.Host)
+	safeAjax := cors && (r.Method == http.MethodGet || r.Method == http.MethodHead)
+	safeAttachment := attachment && r.URL.Query().Get("api_token") == ""
+	if formToken == "" {
+		// No token to use or redact.
+	} else if safeAjax || safeAttachment {
+		// If this is a cross-origin request, the URL won't
+		// appear in the browser's address bar, so
+		// substituting a clipboard-safe URL is pointless.
+		// Redirect-with-cookie wouldn't work anyway, because
+		// it's not safe to allow third-party use of our
+		// cookie.
 		//
-		// * We're supplying an attachment, not inline
-		//   content, so we don't need to convert the POST to
-		//   a GET and avoid the "really resubmit form?"
-		//   problem.
-		//
-		// * The token isn't embedded in the URL, so we don't
-		//   need to worry about bookmarks and copy/paste.
+		// If we're supplying an attachment, we don't need to
+		// convert POST to GET to avoid the "really resubmit
+		// form?" problem, so provided the token isn't
+		// embedded in the URL, there's no reason to do
+		// redirect-with-cookie in this case either.
 		reqTokens = append(reqTokens, formToken)
-	} else if formToken != "" && browserMethod[r.Method] {
-		// The client provided an explicit token in the query
-		// string, or a form in POST body. We must put the
-		// token in an HttpOnly cookie, and redirect to the
-		// same URL with the query param redacted and method =
-		// GET.
+	} else if browserMethod[r.Method] {
+		// If this is a page view, and the client provided a
+		// token via query string or POST body, we must put
+		// the token in an HttpOnly cookie, and redirect to an
+		// equivalent URL with the query param redacted and
+		// method = GET.
 		h.seeOtherWithCookie(w, r, "", credentialsOK)
 		return
 	}
@@ -392,14 +396,14 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			// for additional credentials would just be
 			// confusing), or we don't even accept
 			// credentials at this path.
-			w.WriteHeader(http.StatusNotFound)
+			http.Error(w, notFoundMessage, http.StatusNotFound)
 			return
 		}
 		for _, t := range reqTokens {
 			if tokenResult[t] == 404 {
 				// The client provided valid token(s), but the
 				// collection was not found.
-				w.WriteHeader(http.StatusNotFound)
+				http.Error(w, notFoundMessage, http.StatusNotFound)
 				return
 			}
 		}
@@ -413,7 +417,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		// data that has been deleted.  Allow a referrer to
 		// provide this context somehow?
 		w.Header().Add("WWW-Authenticate", "Basic realm=\"collections\"")
-		w.WriteHeader(http.StatusUnauthorized)
+		http.Error(w, unauthorizedMessage, http.StatusUnauthorized)
 		return
 	}
 
@@ -483,7 +487,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	openPath := "/" + strings.Join(targetPath, "/")
 	if f, err := fs.Open(openPath); os.IsNotExist(err) {
 		// Requested non-existent path
-		w.WriteHeader(http.StatusNotFound)
+		http.Error(w, notFoundMessage, http.StatusNotFound)
 	} else if err != nil {
 		// Some other (unexpected) error
 		http.Error(w, "open: "+err.Error(), http.StatusInternalServerError)
@@ -537,7 +541,7 @@ func (h *handler) getClients(reqID, token string) (arv *arvadosclient.ArvadosCli
 func (h *handler) serveSiteFS(w http.ResponseWriter, r *http.Request, tokens []string, credentialsOK, attachment bool) {
 	if len(tokens) == 0 {
 		w.Header().Add("WWW-Authenticate", "Basic realm=\"collections\"")
-		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		http.Error(w, unauthorizedMessage, http.StatusUnauthorized)
 		return
 	}
 	if writeMethod[r.Method] {
@@ -769,6 +773,7 @@ func (h *handler) seeOtherWithCookie(w http.ResponseWriter, r *http.Request, loc
 			Value:    auth.EncodeTokenCookie([]byte(formToken)),
 			Path:     "/",
 			HttpOnly: true,
+			SameSite: http.SameSiteLaxMode,
 		})
 	}
 

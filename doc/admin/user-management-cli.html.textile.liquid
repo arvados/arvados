@@ -16,7 +16,7 @@ ARVADOS_API_HOST={{ site.arvados_api_host }}
 ARVADOS_API_TOKEN=1234567890qwertyuiopasdfghjklzxcvbnm1234567890zzzz
 </pre>
 
-In these examples, @x1u39-tpzed-3kz0nwtjehhl0u4@ is the sample user account.  Replace with the uuid of the user you wish to manipulate.
+In these examples, @zzzzz-tpzed-3kz0nwtjehhl0u4@ is the sample user account.  Replace with the uuid of the user you wish to manipulate.
 
 See "user management":{{site.baseurl}}/admin/activation.html for an overview of how to use these commands.
 
@@ -24,28 +24,114 @@ h3. Setup a user
 
 This creates a default git repository and VM login.  Enables user to self-activate using Workbench.
 
-<pre>
-arv user setup --uuid x1u39-tpzed-3kz0nwtjehhl0u4
-</pre>
+<notextile>
+<pre><code>$ <span class="userinput">arv user setup --uuid zzzzz-tpzed-3kz0nwtjehhl0u4</span>
+</code></pre>
+</notextile>
+
 
 h3. Deactivate user
 
-<pre>
-arv user unsetup --uuid x1u39-tpzed-3kz0nwtjehhl0u4
-</pre>
+<notextile>
+<pre><code>$ <span class="userinput">arv user unsetup --uuid zzzzz-tpzed-3kz0nwtjehhl0u4</span>
+</code></pre>
+</notextile>
+
 
 When deactivating a user, you may also want to "reassign ownership of their data":{{site.baseurl}}/admin/reassign-ownership.html .
 
 h3. Directly activate user
 
+<notextile>
+<pre><code>$ <span class="userinput">arv user update --uuid "zzzzz-tpzed-3kz0nwtjehhl0u4" --user '{"is_active":true}'</span>
+</code></pre>
+</notextile>
+
+Note: this bypasses user agreements checks, and does not set up the user with a default git repository or VM login.
+
+h3(#create-token). Create a token for a user
+
+As an admin, you can create tokens for other users.
+
+<notextile>
+<pre><code>$ <span class="userinput">arv api_client_authorization create --api-client-authorization '{"owner_uuid": "zzzzz-tpzed-fr97h9t4m5jffxs"}'</span>
+{
+ "href":"/api_client_authorizations/zzzzz-gj3su-yyyyyyyyyyyyyyy",
+ "kind":"arvados#apiClientAuthorization",
+ "etag":"9yk144t0v6cvyp0342exoh2vq",
+ "uuid":"zzzzz-gj3su-yyyyyyyyyyyyyyy",
+ "owner_uuid":"zzzzz-tpzed-fr97h9t4m5jffxs",
+ "created_at":"2020-03-12T20:36:12.517375422Z",
+ "modified_by_client_uuid":null,
+ "modified_by_user_uuid":null,
+ "modified_at":null,
+ "user_id":3,
+ "api_client_id":7,
+ "api_token":"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+ "created_by_ip_address":null,
+ "default_owner_uuid":null,
+ "expires_at":null,
+ "last_used_at":null,
+ "last_used_by_ip_address":null,
+ "scopes":["all"]
+}
+</code></pre>
+</notextile>
+
+
+To get the token string, combine the values of @uuid@ and @api_token@ in the form "v2/$uuid/$api_token".  In this example the string that goes in @ARVADOS_API_TOKEN@ would be:
+
 <pre>
-arv user update --uuid "x1u39-tpzed-3kz0nwtjehhl0u4" --user '{"is_active":true}'
+ARVADOS_API_TOKEN=v2/zzzzz-gj3su-yyyyyyyyyyyyyyy/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 </pre>
 
-Note this bypasses user agreements checks, and does not set up the user with a default git repository or VM login.
+h3(#delete-token). Delete a token
 
+If you need to revoke a token, for example the token is leaked to an unauthorized party, you can delete the token at the command line.
 
-h2. Permissions
+1. First, determine the token UUID.  If it is a "v2" format token (starts with "v2/") then the token UUID is middle section between the two slashes.   For example:
+
+<pre>
+v2/zzzzz-gj3su-yyyyyyyyyyyyyyy/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+</pre>
+
+the UUID is "zzzzz-gj3su-yyyyyyyyyyyyyyy" and you can skip to the next step.
+
+If you have a "bare" token (only the secret part) then, as an admin, you need to query the token to get the uuid:
+
+<pre>
+$ ARVADOS_API_TOKEN=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx arv api_client_authorization current
+{
+ "href":"/api_client_authorizations/x33hz-gj3su-fk8nbj4byptz6ma",
+ "kind":"arvados#apiClientAuthorization",
+ "etag":"77wktnitqeelbgb4riv84zi2q",
+ "uuid":"zzzzz-gj3su-yyyyyyyyyyyyyyy",
+ "owner_uuid":"zzzzz-tpzed-j8w1ymjsn4vf4v4",
+ "created_at":"2020-09-25T15:19:48.606984000Z",
+ "modified_by_client_uuid":null,
+ "modified_by_user_uuid":null,
+ "modified_at":null,
+ "user_id":3,
+ "api_client_id":1,
+ "api_token":"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+ "created_by_ip_address":null,
+ "default_owner_uuid":null,
+ "expires_at":null,
+ "last_used_at":null,
+ "last_used_by_ip_address":null,
+ "scopes":[
+  "all"
+ ]
+}
+</pre>
+
+2. Now use the token to delete itself:
+
+<pre>
+$ ARVADOS_API_TOKEN=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx arv api_client_authorization delete --uuid zzzzz-gj3su-yyyyyyyyyyyyyyy
+</pre>
+
+h2. Adding Permissions
 
 h3. VM login
 

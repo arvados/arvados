@@ -275,7 +275,13 @@ func GetConfig() (config ConfigParams, err error) {
 	if !u.IsActive || !u.IsAdmin {
 		return config, fmt.Errorf("current user (%s) is not an active admin user", u.UUID)
 	}
-	config.SysUserUUID = u.UUID[:12] + "000000000000000"
+
+	var ac struct{ ClusterID string }
+	err = config.Client.RequestAndDecode(&ac, "GET", "arvados/v1/config", nil, nil)
+	if err != nil {
+		return config, fmt.Errorf("error getting the exported config: %s", err)
+	}
+	config.SysUserUUID = ac.ClusterID + "-tpzed-000000000000000"
 
 	// Set up remote groups' parent
 	if err = SetParentGroup(&config); err != nil {
@@ -432,7 +438,7 @@ func ProcessFile(
 				"group_class": "role",
 			}
 			if e := CreateGroup(cfg, &newGroup, groupData); e != nil {
-				err = fmt.Errorf("error creating group named %q: %s", groupName, err)
+				err = fmt.Errorf("error creating group named %q: %s", groupName, e)
 				return
 			}
 			// Update cached group data

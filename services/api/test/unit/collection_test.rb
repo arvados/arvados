@@ -4,6 +4,7 @@
 
 require 'test_helper'
 require 'sweep_trashed_objects'
+require 'fix_collection_versions_timestamps'
 
 class CollectionTest < ActiveSupport::TestCase
   include DbCurrentTime
@@ -187,9 +188,9 @@ class CollectionTest < ActiveSupport::TestCase
     end
   end
 
-  test "preserve_version=false assignment is ignored while being true and not producing a new version" do
+  test "preserve_version updates" do
     Rails.configuration.Collections.CollectionVersioning = true
-    Rails.configuration.Collections.PreserveVersionIfIdle = 3600
+    Rails.configuration.Collections.PreserveVersionIfIdle = -1 # disabled
     act_as_user users(:active) do
       # Set up initial collection
       c = create_collection 'foo', Encoding::US_ASCII
@@ -198,28 +199,61 @@ class CollectionTest < ActiveSupport::TestCase
       assert_equal false, c.preserve_version
       # This update shouldn't produce a new version, as the idle time is not up
       c.update_attributes!({
-        'name' => 'bar',
-        'preserve_version' => true
+        'name' => 'bar'
       })
       c.reload
       assert_equal 1, c.version
       assert_equal 'bar', c.name
+      assert_equal false, c.preserve_version
+      # This update should produce a new version, even if the idle time is not up
+      # and also keep the preserve_version=true flag to persist it.
+      c.update_attributes!({
+        'name' => 'baz',
+        'preserve_version' => true
+      })
+      c.reload
+      assert_equal 2, c.version
+      assert_equal 'baz', c.name
       assert_equal true, c.preserve_version
       # Make sure preserve_version is not disabled after being enabled, unless
       # a new version is created.
+      # This is a non-versionable update
       c.update_attributes!({
         'preserve_version' => false,
         'replication_desired' => 2
       })
       c.reload
-      assert_equal 1, c.version
+      assert_equal 2, c.version
       assert_equal 2, c.replication_desired
       assert_equal true, c.preserve_version
-      c.update_attributes!({'name' => 'foobar'})
+      # This is a versionable update
+      c.update_attributes!({
+        'preserve_version' => false,
+        'name' => 'foobar'
+      })
       c.reload
-      assert_equal 2, c.version
+      assert_equal 3, c.version
       assert_equal false, c.preserve_version
       assert_equal 'foobar', c.name
+      # Flipping only 'preserve_version' to true doesn't create a new version
+      c.update_attributes!({'preserve_version' => true})
+      c.reload
+      assert_equal 3, c.version
+      assert_equal true, c.preserve_version
+    end
+  end
+
+  test "preserve_version updates don't change modified_at timestamp" do
+    act_as_user users(:active) do
+      c = create_collection 'foo', Encoding::US_ASCII
+      assert c.valid?
+      assert_equal false, c.preserve_version
+      modified_at = c.modified_at.to_f
+      c.update_attributes!({'preserve_version' => true})
+      c.reload
+      assert_equal true, c.preserve_version
+      assert_equal modified_at, c.modified_at.to_f,
+        'preserve_version updates should not trigger modified_at changes'
     end
   end
 
@@ -334,6 +368,7 @@ class CollectionTest < ActiveSupport::TestCase
       # Set up initial collection
       c = create_collection 'foo', Encoding::US_ASCII
       assert c.valid?
+      original_version_modified_at = c.modified_at.to_f
       # Make changes so that a new version is created
       c.update_attributes!({'name' => 'bar'})
       c.reload
@@ -344,9 +379,7 @@ class CollectionTest < ActiveSupport::TestCase
 
       version_creation_datetime = c_old.modified_at.to_f
       assert_equal c.created_at.to_f, c_old.created_at.to_f
-      # Current version is updated just a few milliseconds before the version is
-      # saved on the database.
-      assert_operator c.modified_at.to_f, :<, version_creation_datetime
+      assert_equal original_version_modified_at, version_creation_datetime
 
       # Make update on current version so old version get the attribute synced;
       # its modified_at should not change.
@@ -358,6 +391,29 @@ class CollectionTest < ActiveSupport::TestCase
       assert_equal new_replication, c_old.replication_desired
       assert_equal version_creation_datetime, c_old.modified_at.to_f
       assert_operator c.modified_at.to_f, :>, c_old.modified_at.to_f
+    end
+  end
+
+  # Bug #17152 - This test relies on fixtures simulating the problem.
+  test "migration fixing collection versions' modified_at timestamps" do
+    versioned_collection_fixtures = [
+      collections(:w_a_z_file).uuid,
+      collections(:collection_owned_by_active).uuid
+    ]
+    versioned_collection_fixtures.each do |uuid|
+      cols = Collection.where(current_version_uuid: uuid).order(version: :desc)
+      assert_equal cols.size, 2
+      # cols[0] -> head version // cols[1] -> old version
+      assert_operator (cols[0].modified_at.to_f - cols[1].modified_at.to_f), :==, 0
+      assert cols[1].modified_at != cols[1].created_at
+    end
+    fix_collection_versions_timestamps
+    versioned_collection_fixtures.each do |uuid|
+      cols = Collection.where(current_version_uuid: uuid).order(version: :desc)
+      assert_equal cols.size, 2
+      # cols[0] -> head version // cols[1] -> old version
+      assert_operator (cols[0].modified_at.to_f - cols[1].modified_at.to_f), :>, 1
+      assert_operator cols[1].modified_at, :==, cols[1].created_at
     end
   end
 
@@ -1044,10 +1100,10 @@ class CollectionTest < ActiveSupport::TestCase
   end
 
   test "create collections with managed properties" do
-    Rails.configuration.Collections.ManagedProperties = {
+    Rails.configuration.Collections.ManagedProperties = ConfigLoader.to_OrderedOptions({
       'default_prop1' => {'Value' => 'prop1_value'},
       'responsible_person_uuid' => {'Function' => 'original_owner'}
-    }
+    })
     # Test collection without initial properties
     act_as_user users(:active) do
       c = create_collection 'foo', Encoding::US_ASCII
@@ -1076,9 +1132,9 @@ class CollectionTest < ActiveSupport::TestCase
   end
 
   test "update collection with protected managed properties" do
-    Rails.configuration.Collections.ManagedProperties = {
+    Rails.configuration.Collections.ManagedProperties = ConfigLoader.to_OrderedOptions({
       'default_prop1' => {'Value' => 'prop1_value', 'Protected' => true},
-    }
+    })
     act_as_user users(:active) do
       c = create_collection 'foo', Encoding::US_ASCII
       assert c.valid?

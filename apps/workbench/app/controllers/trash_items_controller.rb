@@ -95,12 +95,12 @@ class TrashItemsController < ApplicationController
         owner_uuids = @objects.collect(&:owner_uuid).uniq
         @owners = {}
         @not_trashed = {}
-        Group.filter([["uuid", "in", owner_uuids]]).with_count("none").include_trash(true).each do |grp|
-          @owners[grp.uuid] = grp
-        end
-        User.filter([["uuid", "in", owner_uuids]]).with_count("none").include_trash(true).each do |grp|
-          @owners[grp.uuid] = grp
-          @not_trashed[grp.uuid] = true
+        [Group, User].each do |owner_class|
+          owner_class.filter([["uuid", "in", owner_uuids]]).with_count("none")
+            .include_trash(true).fetch_multiple_pages(false)
+            .each do |owner|
+            @owners[owner.uuid] = owner
+          end
         end
         Group.filter([["uuid", "in", owner_uuids]]).with_count("none").select([:uuid]).each do |grp|
           @not_trashed[grp.uuid] = true

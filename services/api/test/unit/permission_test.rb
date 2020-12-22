@@ -579,4 +579,24 @@ class PermissionTest < ActiveSupport::TestCase
     assert users(:active).can?(write: prj.uuid)
     assert users(:active).can?(manage: prj.uuid)
   end
+
+  [system_user_uuid, anonymous_user_uuid].each do |u|
+    test "cannot delete system user #{u}" do
+      act_as_system_user do
+        assert_raises ArvadosModel::PermissionDeniedError do
+          User.find_by_uuid(u).destroy
+        end
+      end
+    end
+  end
+
+  [system_group_uuid, anonymous_group_uuid, public_project_uuid].each do |g|
+    test "cannot delete system group #{g}" do
+      act_as_system_user do
+        assert_raises ArvadosModel::PermissionDeniedError do
+          Group.find_by_uuid(g).destroy
+        end
+      end
+    end
+  end
 end

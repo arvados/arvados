@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
 # SPDX-License-Identifier: Apache-2.0
@@ -192,12 +192,16 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
                         action="store_false", default=True,
                         help=argparse.SUPPRESS)
 
+    parser.add_argument("--disable-color", dest="enable_color",
+                        action="store_false", default=True,
+                        help=argparse.SUPPRESS)
+
     parser.add_argument("--disable-js-validation",
                         action="store_true", default=False,
                         help=argparse.SUPPRESS)
 
     parser.add_argument("--thread-count", type=int,
-                        default=1, help="Number of threads to use for job submit and output collection.")
+                        default=4, help="Number of threads to use for job submit and output collection.")
 
     parser.add_argument("--http-timeout", type=int,
                         default=5*60, dest="http_timeout", help="API request timeout in seconds. Default is 300 seconds (5 minutes).")

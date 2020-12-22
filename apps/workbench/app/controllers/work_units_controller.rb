@@ -117,12 +117,16 @@ class WorkUnitsController < ApplicationController
               if hint[:keep_cache]
                 keep_cache = hint[:keep_cache]
               end
+              if hint[:acrContainerImage]
+                attrs['container_image'] = hint[:acrContainerImage]
+              end
             end
           end
         end
       end
 
       attrs['command'] = ["arvados-cwl-runner",
+                          "--enable-reuse",
                           "--local",
                           "--api=containers",
                           "--project-uuid=#{params['work_unit']['owner_uuid']}",

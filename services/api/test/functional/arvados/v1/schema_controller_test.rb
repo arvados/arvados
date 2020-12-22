@@ -65,8 +65,8 @@ class Arvados::V1::SchemaControllerTest < ActionController::TestCase
   end
 
   test "non-empty disable_api_methods" do
-    Rails.configuration.API.DisabledAPIs =
-      {'jobs.create'=>{}, 'pipeline_instances.create'=>{}, 'pipeline_templates.create'=>{}}
+    Rails.configuration.API.DisabledAPIs = ConfigLoader.to_OrderedOptions(
+      {'jobs.create'=>{}, 'pipeline_instances.create'=>{}, 'pipeline_templates.create'=>{}})
     get :index
     assert_response :success
     discovery_doc = JSON.parse(@response.body)
@@ -84,7 +84,7 @@ class Arvados::V1::SchemaControllerTest < ActionController::TestCase
     group_index_params = discovery_doc['resources']['groups']['methods']['index']['parameters']
     group_contents_params = discovery_doc['resources']['groups']['methods']['contents']['parameters']
 
-    assert_equal group_contents_params.keys.sort, (group_index_params.keys - ['select'] + ['uuid', 'recursive', 'include']).sort
+    assert_equal group_contents_params.keys.sort, (group_index_params.keys - ['select'] + ['uuid', 'recursive', 'include', 'include_old_versions']).sort
 
     recursive_param = group_contents_params['recursive']
     assert_equal 'boolean', recursive_param['type']

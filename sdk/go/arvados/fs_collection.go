@@ -109,16 +109,15 @@ func (fs *collectionFileSystem) newNode(name string, perm os.FileMode, modTime t
 				inodes: make(map[string]inode),
 			},
 		}, nil
-	} else {
-		return &filenode{
-			fs: fs,
-			fileinfo: fileinfo{
-				name:    name,
-				mode:    perm & ^os.ModeDir,
-				modTime: modTime,
-			},
-		}, nil
 	}
+	return &filenode{
+		fs: fs,
+		fileinfo: fileinfo{
+			name:    name,
+			mode:    perm & ^os.ModeDir,
+			modTime: modTime,
+		},
+	}, nil
 }
 
 func (fs *collectionFileSystem) Child(name string, replace func(inode) (inode, error)) (inode, error) {
@@ -568,8 +567,6 @@ func (fn *filenode) Write(p []byte, startPtr filenodePtr) (n int, ptr filenodePt
 				seg.Truncate(len(cando))
 				fn.memsize += int64(len(cando))
 				fn.segments[cur] = seg
-				cur++
-				prev++
 			}
 		}
 
@@ -731,12 +728,11 @@ func (dn *dirnode) commitBlock(ctx context.Context, refs []fnSegmentRef, bufsize
 			// it fails, we'll try again next time.
 			close(done)
 			return nil
-		} else {
-			// In sync mode, we proceed regardless of
-			// whether another flush is in progress: It
-			// can't finish before we do, because we hold
-			// fn's lock until we finish our own writes.
 		}
+		// In sync mode, we proceed regardless of
+		// whether another flush is in progress: It
+		// can't finish before we do, because we hold
+		// fn's lock until we finish our own writes.
 		seg.flushing = done
 		offsets = append(offsets, len(block))
 		if len(refs) == 1 {
@@ -804,9 +800,8 @@ func (dn *dirnode) commitBlock(ctx context.Context, refs []fnSegmentRef, bufsize
 	}()
 	if sync {
 		return <-errs
-	} else {
-		return nil
 	}
+	return nil
 }
 
 type flushOpts struct {
@@ -1109,9 +1104,9 @@ func (dn *dirnode) loadManifest(txt string) error {
 				// situation might be rare anyway)
 				segIdx, pos = 0, 0
 			}
-			for next := int64(0); segIdx < len(segments); segIdx++ {
+			for ; segIdx < len(segments); segIdx++ {
 				seg := segments[segIdx]
-				next = pos + int64(seg.Len())
+				next := pos + int64(seg.Len())
 				if next <= offset || seg.Len() == 0 {
 					pos = next
 					continue

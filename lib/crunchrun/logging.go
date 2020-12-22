@@ -335,7 +335,7 @@ func (arvlog *ArvLogWriter) rateLimit(line []byte, now time.Time) (bool, []byte)
 
 		arvlog.bytesLogged += lineSize
 		arvlog.logThrottleBytesSoFar += lineSize
-		arvlog.logThrottleLinesSoFar += 1
+		arvlog.logThrottleLinesSoFar++
 
 		if arvlog.bytesLogged > crunchLimitLogBytesPerJob {
 			message = fmt.Sprintf("%s Exceeded log limit %d bytes (crunch_limit_log_bytes_per_job). Log will be truncated.",
@@ -368,9 +368,8 @@ func (arvlog *ArvLogWriter) rateLimit(line []byte, now time.Time) (bool, []byte)
 		// instead of the log message that exceeded the limit.
 		message += " A complete log is still being written to Keep, and will be available when the job finishes."
 		return true, []byte(message)
-	} else {
-		return arvlog.logThrottleIsOpen, line
 	}
+	return arvlog.logThrottleIsOpen, line
 }
 
 // load the rate limit discovery config parameters

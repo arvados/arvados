@@ -79,6 +79,14 @@ func saltedTokenProvider(local backend, remoteID string) rpc.TokenProvider {
 				} else if err != nil {
 					return nil, err
 				}
+				if strings.HasPrefix(aca.UUID, remoteID) {
+					// We have it cached here, but
+					// the token belongs to the
+					// remote target itself, so
+					// pass it through unmodified.
+					tokens = append(tokens, token)
+					continue
+				}
 				salted, err := auth.SaltToken(aca.TokenV2(), remoteID)
 				if err != nil {
 					return nil, err
@@ -109,6 +117,13 @@ func (conn *Conn) chooseBackend(id string) backend {
 		// TODO: return an "always error" backend?
 		return conn.local
 	}
+}
+
+func (conn *Conn) localOrLoginCluster() backend {
+	if conn.cluster.Login.LoginCluster != "" {
+		return conn.chooseBackend(conn.cluster.Login.LoginCluster)
+	}
+	return conn.local
 }
 
 // Call fn with the local backend; then, if fn returned 404, call fn
@@ -196,9 +211,8 @@ func (conn *Conn) Login(ctx context.Context, options arvados.LoginOptions) (arva
 		return arvados.LoginResponse{
 			RedirectLocation: target.String(),
 		}, nil
-	} else {
-		return conn.local.Login(ctx, options)
 	}
+	return conn.local.Login(ctx, options)
 }
 
 func (conn *Conn) Logout(ctx context.Context, options arvados.LogoutOptions) (arvados.LogoutResponse, error) {
@@ -235,40 +249,39 @@ func (conn *Conn) CollectionGet(ctx context.Context, options arvados.GetOptions)
 			c.ManifestText = rewriteManifest(c.ManifestText, options.UUID[:5])
 		}
 		return c, err
-	} else {
-		// UUID is a PDH
-		first := make(chan arvados.Collection, 1)
-		err := conn.tryLocalThenRemotes(ctx, options.ForwardedFor, func(ctx context.Context, remoteID string, be backend) error {
-			remoteOpts := options
-			remoteOpts.ForwardedFor = conn.cluster.ClusterID + "-" + options.ForwardedFor
-			c, err := be.CollectionGet(ctx, remoteOpts)
-			if err != nil {
-				return err
-			}
-			// options.UUID is either hash+size or
-			// hash+size+hints; only hash+size need to
-			// match the computed PDH.
-			if pdh := arvados.PortableDataHash(c.ManifestText); pdh != options.UUID && !strings.HasPrefix(options.UUID, pdh+"+") {
-				err = httpErrorf(http.StatusBadGateway, "bad portable data hash %q received from remote %q (expected %q)", pdh, remoteID, options.UUID)
-				ctxlog.FromContext(ctx).Warn(err)
-				return err
-			}
-			if remoteID != "" {
-				c.ManifestText = rewriteManifest(c.ManifestText, remoteID)
-			}
-			select {
-			case first <- c:
-				return nil
-			default:
-				// lost race, return value doesn't matter
-				return nil
-			}
-		})
-		if err != nil {
-			return arvados.Collection{}, err
-		}
-		return <-first, nil
 	}
+	// UUID is a PDH
+	first := make(chan arvados.Collection, 1)
+	err := conn.tryLocalThenRemotes(ctx, options.ForwardedFor, func(ctx context.Context, remoteID string, be backend) error {
+		remoteOpts := options
+		remoteOpts.ForwardedFor = conn.cluster.ClusterID + "-" + options.ForwardedFor
+		c, err := be.CollectionGet(ctx, remoteOpts)
+		if err != nil {
+			return err
+		}
+		// options.UUID is either hash+size or
+		// hash+size+hints; only hash+size need to
+		// match the computed PDH.
+		if pdh := arvados.PortableDataHash(c.ManifestText); pdh != options.UUID && !strings.HasPrefix(options.UUID, pdh+"+") {
+			err = httpErrorf(http.StatusBadGateway, "bad portable data hash %q received from remote %q (expected %q)", pdh, remoteID, options.UUID)
+			ctxlog.FromContext(ctx).Warn(err)
+			return err
+		}
+		if remoteID != "" {
+			c.ManifestText = rewriteManifest(c.ManifestText, remoteID)
+		}
+		select {
+		case first <- c:
+			return nil
+		default:
+			// lost race, return value doesn't matter
+			return nil
+		}
+	})
+	if err != nil {
+		return arvados.Collection{}, err
+	}
+	return <-first, nil
 }
 
 func (conn *Conn) CollectionList(ctx context.Context, options arvados.ListOptions) (arvados.CollectionList, error) {
@@ -437,9 +450,8 @@ func (conn *Conn) UserList(ctx context.Context, options arvados.ListOptions) (ar
 			return arvados.UserList{}, err
 		}
 		return resp, nil
-	} else {
-		return conn.generated_UserList(ctx, options)
 	}
+	return conn.generated_UserList(ctx, options)
 }
 
 func (conn *Conn) UserCreate(ctx context.Context, options arvados.CreateOptions) (arvados.User, error) {
@@ -450,7 +462,18 @@ func (conn *Conn) UserUpdate(ctx context.Context, options arvados.UpdateOptions)
 	if options.BypassFederation {
 		return conn.local.UserUpdate(ctx, options)
 	}
-	return conn.chooseBackend(options.UUID).UserUpdate(ctx, options)
+	resp, err := conn.chooseBackend(options.UUID).UserUpdate(ctx, options)
+	if err != nil {
+		return resp, err
+	}
+	if !strings.HasPrefix(options.UUID, conn.cluster.ClusterID) {
+		// Copy the updated user record to the local cluster
+		err = conn.batchUpdateUsers(ctx, arvados.ListOptions{}, []arvados.User{resp})
+		if err != nil {
+			return arvados.User{}, err
+		}
+	}
+	return resp, err
 }
 
 func (conn *Conn) UserUpdateUUID(ctx context.Context, options arvados.UpdateUUIDOptions) (arvados.User, error) {
@@ -462,23 +485,58 @@ func (conn *Conn) UserMerge(ctx context.Context, options arvados.UserMergeOption
 }
 
 func (conn *Conn) UserActivate(ctx context.Context, options arvados.UserActivateOptions) (arvados.User, error) {
-	return conn.chooseBackend(options.UUID).UserActivate(ctx, options)
+	return conn.localOrLoginCluster().UserActivate(ctx, options)
 }
 
 func (conn *Conn) UserSetup(ctx context.Context, options arvados.UserSetupOptions) (map[string]interface{}, error) {
-	return conn.chooseBackend(options.UUID).UserSetup(ctx, options)
+	upstream := conn.localOrLoginCluster()
+	if upstream != conn.local {
+		// When LoginCluster is in effect, and we're setting
+		// up a remote user, and we want to give that user
+		// access to a local VM, we can't include the VM in
+		// the setup call, because the remote cluster won't
+		// recognize it.
+
+		// Similarly, if we want to create a git repo,
+		// it should be created on the local cluster,
+		// not the remote one.
+
+		upstreamOptions := options
+		upstreamOptions.VMUUID = ""
+		upstreamOptions.RepoName = ""
+
+		ret, err := upstream.UserSetup(ctx, upstreamOptions)
+		if err != nil {
+			return ret, err
+		}
+	}
+
+	return conn.local.UserSetup(ctx, options)
 }
 
 func (conn *Conn) UserUnsetup(ctx context.Context, options arvados.GetOptions) (arvados.User, error) {
-	return conn.chooseBackend(options.UUID).UserUnsetup(ctx, options)
+	return conn.localOrLoginCluster().UserUnsetup(ctx, options)
 }
 
 func (conn *Conn) UserGet(ctx context.Context, options arvados.GetOptions) (arvados.User, error) {
-	return conn.chooseBackend(options.UUID).UserGet(ctx, options)
+	resp, err := conn.chooseBackend(options.UUID).UserGet(ctx, options)
+	if err != nil {
+		return resp, err
+	}
+	if options.UUID != resp.UUID {
+		return arvados.User{}, httpErrorf(http.StatusBadGateway, "Had requested %v but response was for %v", options.UUID, resp.UUID)
+	}
+	if options.UUID[:5] != conn.cluster.ClusterID {
+		err = conn.batchUpdateUsers(ctx, arvados.ListOptions{Select: options.Select}, []arvados.User{resp})
+		if err != nil {
+			return arvados.User{}, err
+		}
+	}
+	return resp, nil
 }
 
 func (conn *Conn) UserGetCurrent(ctx context.Context, options arvados.GetOptions) (arvados.User, error) {
-	return conn.chooseBackend(options.UUID).UserGetCurrent(ctx, options)
+	return conn.local.UserGetCurrent(ctx, options)
 }
 
 func (conn *Conn) UserGetSystem(ctx context.Context, options arvados.GetOptions) (arvados.User, error) {
@@ -514,7 +572,6 @@ func (notFoundError) Error() string   { return "not found" }
 func errStatus(err error) int {
 	if httpErr, ok := err.(interface{ HTTPStatus() int }); ok {
 		return httpErr.HTTPStatus()
-	} else {
-		return http.StatusInternalServerError
 	}
+	return http.StatusInternalServerError
 }

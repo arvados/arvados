@@ -18,6 +18,8 @@ var DefaultYAML = []byte(`# Copyright (C) The Arvados Authors. All rights reserv
 
 Clusters:
   xxxxx:
+    # Token used internally by Arvados components to authenticate to
+    # one another. Use a string of at least 50 random alphanumerics.
     SystemRootToken: ""
 
     # Token to be included in all healthcheck requests. Disabled by default.
@@ -292,6 +294,20 @@ Clusters:
       # user's default username. Otherwise, the user's primary email
       # address is used.
       PreferDomainForUsername: ""
+
+      UserSetupMailText: |
+        <% if not @user.full_name.empty? -%>
+        <%= @user.full_name %>,
+        <% else -%>
+        Hi there,
+        <% end -%>
+
+        Your Arvados account has been set up.  You can log in at
+
+        <%= Rails.configuration.Services.Workbench1.ExternalURL %>
+
+        Thanks,
+        Your Arvados administrator.
 
     AuditLogs:
       # Time to keep audit logs, in seconds. (An audit log is a row added
@@ -695,6 +711,16 @@ Clusters:
         ProviderAppID: ""
         ProviderAppSecret: ""
 
+      Test:
+        # Authenticate users listed here in the config file. This
+        # feature is intended to be used in test environments, and
+        # should not be used in production.
+        Enable: false
+        Users:
+          SAMPLE:
+            Email: alice@example.com
+            Password: xyzzy
+
       # The cluster ID to delegate the user database.  When set,
       # logins on this cluster will be redirected to the login cluster
       # (login cluster must appear in RemoteClusters with Proxy: true)
@@ -703,6 +729,22 @@ Clusters:
       # How long a cached token belonging to a remote cluster will
       # remain valid before it needs to be revalidated.
       RemoteTokenRefresh: 5m
+
+      # How long a client token created from a login flow will be valid without
+      # asking the user to re-login. Example values: 60m, 8h.
+      # Default value zero means tokens don't have expiration.
+      TokenLifetime: 0s
+
+      # When the token is returned to a client, the token itself may
+      # be restricted from manipulating other tokens based on whether
+      # the client is "trusted" or not.  The local Workbench1 and
+      # Workbench2 are trusted by default, but if this is a
+      # LoginCluster, you probably want to include the other Workbench
+      # instances in the federation in this list.
+      TrustedClients:
+        SAMPLE:
+          "https://workbench.federate1.example": {}
+          "https://workbench.federate2.example": {}
 
     Git:
       # Path to git or gitolite-shell executable. Each authenticated
@@ -929,12 +971,23 @@ Clusters:
         # Time before repeating SIGTERM when killing a container.
         TimeoutSignal: 5s
 
+        # Time to give up on a process (most likely arv-mount) that
+        # still holds a container lockfile after its main supervisor
+        # process has exited, and declare the instance broken.
+        TimeoutStaleRunLock: 5s
+
         # Time to give up on SIGTERM and write off the worker.
         TimeoutTERM: 2m
 
         # Maximum create/destroy-instance operations per second (0 =
         # unlimited).
         MaxCloudOpsPerSecond: 0
+
+        # Maximum concurrent node creation operations (0 = unlimited). This is
+        # recommended by Azure in certain scenarios (see
+        # https://docs.microsoft.com/en-us/azure/virtual-machines/linux/capture-image)
+        # and can be used with other cloud providers too, if desired.
+        MaxConcurrentInstanceCreateOps: 0
 
         # Interval between cloud provider syncs/updates ("list all
         # instances").
@@ -1305,7 +1358,7 @@ Clusters:
       # a link to the multi-site search page on a "home" Workbench site.
       #
       # Example:
-      #   https://workbench.qr1hi.arvadosapi.com/collections/multisite
+      #   https://workbench.zzzzz.arvadosapi.com/collections/multisite
       MultiSiteSearch: ""
 
       # Should workbench allow management of local git repositories? Set to false if
@@ -1322,6 +1375,10 @@ Clusters:
       # Workbench2 configs
       VocabularyURL: ""
       FileViewersConfigURL: ""
+
+      # Idle time after which the user's session will be auto closed.
+      # This feature is disabled when set to zero.
+      IdleTimeout: 0s
 
       # Workbench welcome screen, this is HTML text that will be
       # incorporated directly onto the page.

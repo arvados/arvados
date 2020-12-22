@@ -2,11 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-source("./R/Subcollection.R")
-source("./R/ArvadosFile.R")
-source("./R/RESTService.R")
-source("./R/util.R")
-
 #' Collection
 #'
 #' Collection class provides interface for working with Arvados collections.
@@ -121,9 +116,8 @@ Collection <- R6::R6Class(
 
                     private$REST$create(file, self$uuid)
                     newTreeBranch$setCollection(self)
+		    newTreeBranch
                 })
-
-                "Created"
             }
             else
             {

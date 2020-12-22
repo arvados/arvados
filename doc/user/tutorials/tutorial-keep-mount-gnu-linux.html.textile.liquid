@@ -1,7 +1,7 @@
 ---
 layout: default
 navsection: userguide
-title: "Accessing Keep from GNU/Linux"
+title: "Access Keep as a GNU/Linux filesystem"
 ...
 {% comment %}
 Copyright (C) The Arvados Authors. All rights reserved.
@@ -9,17 +9,16 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-This tutoral describes how to access Arvados collections on GNU/Linux using traditional filesystem tools by mounting Keep as a file system using @arv-mount@.
+GNU/Linux users can use @arv-mount@ or Gnome to mount Keep as a file system in order to access Arvados collections using traditional filesystem tools.
 
 {% include 'tutorial_expectations' %}
 
-h2. Arv-mount
+# "*Mounting at the command line with arv-mount*":#arv-mount
+# "*Mounting in Gnome File manager*":#gnome
 
-@arv-mount@ provides several features:
+h2(#arv-mount). Arv-mount
 
-* You can browse, open and read Keep entries as if they are regular files.
-* It is easy for existing tools to access files in Keep.
-* Data is streamed on demand.  It is not necessary to download an entire file or collection to start processing.
+@arv-mount@ provides a file system view of Arvados Keep using File System in Userspace (FUSE).  You can browse, open and read Keep entries as if they are regular files, and existing tools can access files in Keep.  Data is streamed on demand.  It is not necessary to download an entire file or collection to start processing.
 
 The default mode permits browsing any collection in Arvados as a subdirectory under the mount directory.  To avoid having to fetch a potentially large list of all collections, collection directories only come into existence when explicitly accessed by UUID or portable data hash. For instance, a collection may be found by its content hash in the @keep/by_id@ directory.
 
@@ -59,3 +58,11 @@ Not supported:
 If multiple clients (separate instances of arv-mount or other arvados applications) modify the same file in the same collection within a short time interval, this may result in a conflict.  In this case, the most recent commit wins, and the "loser" will be renamed to a conflict file in the form @name~YYYYMMDD-HHMMSS~conflict~@.
 
 Please note this feature is in beta testing.  In particular, the conflict mechanism is itself currently subject to race conditions with potential for data loss when a collection is being modified simultaneously by multiple clients.  This issue will be resolved in future development.
+
+h2(#gnome). Mounting in Gnome File manager
+
+As an alternative to @arv-mount@ you can also access the WebDAV mount through the Gnome File manager.
+
+# Open "Files"
+# On the left sidebar, click on "Other Locations"
+# At the bottom of the window, enter @davs://collections.ClusterID.example.com/@  When prompted for credentials, enter username "arvados" and a valid Arvados token in the @Password@ field.

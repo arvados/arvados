@@ -34,6 +34,11 @@ type StubDriver struct {
 	// VM's error rate and other behaviors.
 	SetupVM func(*StubVM)
 
+	// Bugf, if set, is called if a bug is detected in the caller
+	// or stub. Typically set to (*check.C)Errorf. If unset,
+	// logger.Warnf is called instead.
+	Bugf func(string, ...interface{})
+
 	// StubVM's fake crunch-run uses this Queue to read and update
 	// container state.
 	Queue *Queue
@@ -99,6 +104,7 @@ type StubInstanceSet struct {
 
 	allowCreateCall    time.Time
 	allowInstancesCall time.Time
+	lastInstanceID     int
 }
 
 func (sis *StubInstanceSet) Create(it arvados.InstanceType, image cloud.ImageID, tags cloud.InstanceTags, cmd cloud.InitCommand, authKey ssh.PublicKey) (cloud.Instance, error) {
@@ -112,21 +118,20 @@ func (sis *StubInstanceSet) Create(it arvados.InstanceType, image cloud.ImageID,
 	}
 	if sis.allowCreateCall.After(time.Now()) {
 		return nil, RateLimitError{sis.allowCreateCall}
-	} else {
-		sis.allowCreateCall = time.Now().Add(sis.driver.MinTimeBetweenCreateCalls)
 	}
-
+	sis.allowCreateCall = time.Now().Add(sis.driver.MinTimeBetweenCreateCalls)
 	ak := sis.driver.AuthorizedKeys
 	if authKey != nil {
 		ak = append([]ssh.PublicKey{authKey}, ak...)
 	}
+	sis.lastInstanceID++
 	svm := &StubVM{
 		sis:          sis,
-		id:           cloud.InstanceID(fmt.Sprintf("stub-%s-%x", it.ProviderType, math_rand.Int63())),
+		id:           cloud.InstanceID(fmt.Sprintf("inst%d,%s", sis.lastInstanceID, it.ProviderType)),
 		tags:         copyTags(tags),
 		providerType: it.ProviderType,
 		initCommand:  cmd,
-		running:      map[string]int64{},
+		running:      map[string]stubProcess{},
 		killing:      map[string]bool{},
 	}
 	svm.SSHService = SSHService{
@@ -147,9 +152,8 @@ func (sis *StubInstanceSet) Instances(cloud.InstanceTags) ([]cloud.Instance, err
 	defer sis.mtx.RUnlock()
 	if sis.allowInstancesCall.After(time.Now()) {
 		return nil, RateLimitError{sis.allowInstancesCall}
-	} else {
-		sis.allowInstancesCall = time.Now().Add(sis.driver.MinTimeBetweenInstancesCalls)
 	}
+	sis.allowInstancesCall = time.Now().Add(sis.driver.MinTimeBetweenInstancesCalls)
 	var r []cloud.Instance
 	for _, ss := range sis.servers {
 		r = append(r, ss.Instance())
@@ -185,6 +189,8 @@ type StubVM struct {
 	CrunchRunMissing      bool
 	CrunchRunCrashRate    float64
 	CrunchRunDetachDelay  time.Duration
+	ArvMountMaxExitLag    time.Duration
+	ArvMountDeadlockRate  float64
 	ExecuteContainer      func(arvados.Container) int
 	CrashRunningContainer func(arvados.Container)
 
@@ -194,10 +200,19 @@ type StubVM struct {
 	initCommand  cloud.InitCommand
 	providerType string
 	SSHService   SSHService
-	running      map[string]int64
+	running      map[string]stubProcess
 	killing      map[string]bool
 	lastPID      int64
+	deadlocked   string
 	sync.Mutex
+}
+
+type stubProcess struct {
+	pid int64
+
+	// crunch-run has exited, but arv-mount process (or something)
+	// still holds lock in /var/run/
+	exited bool
 }
 
 func (svm *StubVM) Instance() stubInstance {
@@ -252,7 +267,7 @@ func (svm *StubVM) Exec(env map[string]string, command string, stdin io.Reader, 
 		svm.Lock()
 		svm.lastPID++
 		pid := svm.lastPID
-		svm.running[uuid] = pid
+		svm.running[uuid] = stubProcess{pid: pid}
 		svm.Unlock()
 		time.Sleep(svm.CrunchRunDetachDelay)
 		fmt.Fprintf(stderr, "starting %s\n", uuid)
@@ -263,93 +278,110 @@ func (svm *StubVM) Exec(env map[string]string, command string, stdin io.Reader, 
 		})
 		logger.Printf("[test] starting crunch-run stub")
 		go func() {
+			var ctr arvados.Container
+			var started, completed bool
+			defer func() {
+				logger.Print("[test] exiting crunch-run stub")
+				svm.Lock()
+				defer svm.Unlock()
+				if svm.running[uuid].pid != pid {
+					bugf := svm.sis.driver.Bugf
+					if bugf == nil {
+						bugf = logger.Warnf
+					}
+					bugf("[test] StubDriver bug or caller bug: pid %d exiting, running[%s].pid==%d", pid, uuid, svm.running[uuid].pid)
+					return
+				}
+				if !completed {
+					logger.WithField("State", ctr.State).Print("[test] crashing crunch-run stub")
+					if started && svm.CrashRunningContainer != nil {
+						svm.CrashRunningContainer(ctr)
+					}
+				}
+				sproc := svm.running[uuid]
+				sproc.exited = true
+				svm.running[uuid] = sproc
+				svm.Unlock()
+				time.Sleep(svm.ArvMountMaxExitLag * time.Duration(math_rand.Float64()))
+				svm.Lock()
+				if math_rand.Float64() >= svm.ArvMountDeadlockRate {
+					delete(svm.running, uuid)
+				}
+			}()
+
 			crashluck := math_rand.Float64()
+			wantCrash := crashluck < svm.CrunchRunCrashRate
+			wantCrashEarly := crashluck < svm.CrunchRunCrashRate/2
+
 			ctr, ok := queue.Get(uuid)
 			if !ok {
 				logger.Print("[test] container not in queue")
 				return
 			}
 
-			defer func() {
-				if ctr.State == arvados.ContainerStateRunning && svm.CrashRunningContainer != nil {
-					svm.CrashRunningContainer(ctr)
-				}
-			}()
-
-			if crashluck > svm.CrunchRunCrashRate/2 {
-				time.Sleep(time.Duration(math_rand.Float64()*20) * time.Millisecond)
-				ctr.State = arvados.ContainerStateRunning
-				if !queue.Notify(ctr) {
-					ctr, _ = queue.Get(uuid)
-					logger.Print("[test] erroring out because state=Running update was rejected")
-					return
-				}
-			}
-
 			time.Sleep(time.Duration(math_rand.Float64()*20) * time.Millisecond)
 
 			svm.Lock()
-			defer svm.Unlock()
-			if svm.running[uuid] != pid {
-				logger.Print("[test] container was killed")
+			killed := svm.killing[uuid]
+			svm.Unlock()
+			if killed || wantCrashEarly {
 				return
 			}
-			delete(svm.running, uuid)
 
-			if crashluck < svm.CrunchRunCrashRate {
-				logger.WithField("State", ctr.State).Print("[test] crashing crunch-run stub")
-			} else {
-				if svm.ExecuteContainer != nil {
-					ctr.ExitCode = svm.ExecuteContainer(ctr)
-				}
-				logger.WithField("ExitCode", ctr.ExitCode).Print("[test] exiting crunch-run stub")
-				ctr.State = arvados.ContainerStateComplete
-				go queue.Notify(ctr)
+			ctr.State = arvados.ContainerStateRunning
+			started = queue.Notify(ctr)
+			if !started {
+				ctr, _ = queue.Get(uuid)
+				logger.Print("[test] erroring out because state=Running update was rejected")
+				return
 			}
+
+			if wantCrash {
+				logger.WithField("State", ctr.State).Print("[test] crashing crunch-run stub")
+				return
+			}
+			if svm.ExecuteContainer != nil {
+				ctr.ExitCode = svm.ExecuteContainer(ctr)
+			}
+			logger.WithField("ExitCode", ctr.ExitCode).Print("[test] completing container")
+			ctr.State = arvados.ContainerStateComplete
+			completed = queue.Notify(ctr)
 		}()
 		return 0
 	}
 	if command == "crunch-run --list" {
 		svm.Lock()
 		defer svm.Unlock()
-		for uuid := range svm.running {
-			fmt.Fprintf(stdout, "%s\n", uuid)
+		for uuid, sproc := range svm.running {
+			if sproc.exited {
+				fmt.Fprintf(stdout, "%s stale\n", uuid)
+			} else {
+				fmt.Fprintf(stdout, "%s\n", uuid)
+			}
 		}
 		if !svm.ReportBroken.IsZero() && svm.ReportBroken.Before(time.Now()) {
 			fmt.Fprintln(stdout, "broken")
 		}
+		fmt.Fprintln(stdout, svm.deadlocked)
 		return 0
 	}
 	if strings.HasPrefix(command, "crunch-run --kill ") {
 		svm.Lock()
-		pid, running := svm.running[uuid]
-		if running && !svm.killing[uuid] {
+		sproc, running := svm.running[uuid]
+		if running && !sproc.exited {
 			svm.killing[uuid] = true
-			go func() {
-				time.Sleep(time.Duration(math_rand.Float64()*30) * time.Millisecond)
-				svm.Lock()
-				defer svm.Unlock()
-				if svm.running[uuid] == pid {
-					// Kill only if the running entry
-					// hasn't since been killed and
-					// replaced with a different one.
-					delete(svm.running, uuid)
-				}
-				delete(svm.killing, uuid)
-			}()
 			svm.Unlock()
 			time.Sleep(time.Duration(math_rand.Float64()*2) * time.Millisecond)
 			svm.Lock()
-			_, running = svm.running[uuid]
+			sproc, running = svm.running[uuid]
 		}
 		svm.Unlock()
-		if running {
+		if running && !sproc.exited {
 			fmt.Fprintf(stderr, "%s: container is running\n", uuid)
 			return 1
-		} else {
-			fmt.Fprintf(stderr, "%s: container is not running\n", uuid)
-			return 0
 		}
+		fmt.Fprintf(stderr, "%s: container is not running\n", uuid)
+		return 0
 	}
 	if command == "true" {
 		return 0

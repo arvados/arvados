@@ -109,13 +109,17 @@ func (sch *Scheduler) cancel(uuid string, reason string) {
 }
 
 func (sch *Scheduler) kill(uuid string, reason string) {
+	if !sch.uuidLock(uuid, "kill") {
+		return
+	}
+	defer sch.uuidUnlock(uuid)
 	sch.pool.KillContainer(uuid, reason)
 	sch.pool.ForgetContainer(uuid)
 }
 
 func (sch *Scheduler) requeue(ent container.QueueEnt, reason string) {
 	uuid := ent.Container.UUID
-	if !sch.uuidLock(uuid, "cancel") {
+	if !sch.uuidLock(uuid, "requeue") {
 		return
 	}
 	defer sch.uuidUnlock(uuid)

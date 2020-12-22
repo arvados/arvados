@@ -17,9 +17,8 @@ import (
 var DefaultConfigFile = func() string {
 	if path := os.Getenv("ARVADOS_CONFIG"); path != "" {
 		return path
-	} else {
-		return "/etc/arvados/config.yml"
 	}
+	return "/etc/arvados/config.yml"
 }()
 
 type Config struct {
@@ -50,12 +49,12 @@ func (sc *Config) GetCluster(clusterID string) (*Cluster, error) {
 			}
 		}
 	}
-	if cc, ok := sc.Clusters[clusterID]; !ok {
+	cc, ok := sc.Clusters[clusterID]
+	if !ok {
 		return nil, fmt.Errorf("cluster %q is not configured", clusterID)
-	} else {
-		cc.ClusterID = clusterID
-		return &cc, nil
 	}
+	cc.ClusterID = clusterID
+	return &cc, nil
 }
 
 type WebDAVCacheConfig struct {
@@ -177,8 +176,14 @@ type Cluster struct {
 			ProviderAppID     string
 			ProviderAppSecret string
 		}
+		Test struct {
+			Enable bool
+			Users  map[string]TestUser
+		}
 		LoginCluster       string
 		RemoteTokenRefresh Duration
+		TokenLifetime      Duration
+		TrustedClients     map[string]struct{}
 	}
 	Mail struct {
 		MailchimpAPIKey                string
@@ -215,6 +220,7 @@ type Cluster struct {
 		UserNotifierEmailFrom                 string
 		UserProfileNotificationAddress        string
 		PreferDomainForUsername               string
+		UserSetupMailText                     string
 	}
 	Volumes   map[string]Volume
 	Workbench struct {
@@ -255,6 +261,7 @@ type Cluster struct {
 		InactivePageHTML       string
 		SSHHelpPageHTML        string
 		SSHHelpHostSuffix      string
+		IdleTimeout            Duration
 	}
 
 	ForceLegacyAPI14 bool
@@ -328,6 +335,11 @@ type Services struct {
 type Service struct {
 	InternalURLs map[URL]ServiceInstance
 	ExternalURL  URL
+}
+
+type TestUser struct {
+	Email    string
+	Password string
 }
 
 // URL is a url.URL that is also usable as a JSON key/value.
@@ -437,23 +449,25 @@ type ContainersConfig struct {
 type CloudVMsConfig struct {
 	Enable bool
 
-	BootProbeCommand     string
-	DeployRunnerBinary   string
-	ImageID              string
-	MaxCloudOpsPerSecond int
-	MaxProbesPerSecond   int
-	PollInterval         Duration
-	ProbeInterval        Duration
-	SSHPort              string
-	SyncInterval         Duration
-	TimeoutBooting       Duration
-	TimeoutIdle          Duration
-	TimeoutProbe         Duration
-	TimeoutShutdown      Duration
-	TimeoutSignal        Duration
-	TimeoutTERM          Duration
-	ResourceTags         map[string]string
-	TagKeyPrefix         string
+	BootProbeCommand               string
+	DeployRunnerBinary             string
+	ImageID                        string
+	MaxCloudOpsPerSecond           int
+	MaxProbesPerSecond             int
+	MaxConcurrentInstanceCreateOps int
+	PollInterval                   Duration
+	ProbeInterval                  Duration
+	SSHPort                        string
+	SyncInterval                   Duration
+	TimeoutBooting                 Duration
+	TimeoutIdle                    Duration
+	TimeoutProbe                   Duration
+	TimeoutShutdown                Duration
+	TimeoutSignal                  Duration
+	TimeoutStaleRunLock            Duration
+	TimeoutTERM                    Duration
+	ResourceTags                   map[string]string
+	TagKeyPrefix                   string
 
 	Driver           string
 	DriverParameters json.RawMessage

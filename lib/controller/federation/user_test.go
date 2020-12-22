@@ -117,6 +117,60 @@ func (s *UserSuite) TestLoginClusterUserList(c *check.C) {
 	}
 }
 
+func (s *UserSuite) TestLoginClusterUserGet(c *check.C) {
+	s.cluster.ClusterID = "local"
+	s.cluster.Login.LoginCluster = "zzzzz"
+	s.fed = New(s.cluster)
+	s.addDirectRemote(c, "zzzzz", rpc.NewConn("zzzzz", &url.URL{Scheme: "https", Host: os.Getenv("ARVADOS_API_HOST")}, true, rpc.PassthroughTokenProvider))
+
+	opts := arvados.GetOptions{UUID: "zzzzz-tpzed-xurymjxw79nv3jz", Select: []string{"uuid", "email"}}
+
+	stub := &arvadostest.APIStub{Error: errors.New("local cluster failure")}
+	s.fed.local = stub
+	s.fed.UserGet(s.ctx, opts)
+
+	calls := stub.Calls(stub.UserBatchUpdate)
+	if c.Check(calls, check.HasLen, 1) {
+		c.Logf("... stub.UserUpdate called with options: %#v", calls[0].Options)
+		shouldUpdate := map[string]bool{
+			"uuid":       false,
+			"email":      true,
+			"first_name": true,
+			"last_name":  true,
+			"is_admin":   true,
+			"is_active":  true,
+			"prefs":      true,
+			// can't safely update locally
+			"owner_uuid":   false,
+			"identity_url": false,
+			// virtual attrs
+			"full_name":  false,
+			"is_invited": false,
+		}
+		if opts.Select != nil {
+			// Only the selected
+			// fields (minus uuid)
+			// should be updated.
+			for k := range shouldUpdate {
+				shouldUpdate[k] = false
+			}
+			for _, k := range opts.Select {
+				if k != "uuid" {
+					shouldUpdate[k] = true
+				}
+			}
+		}
+		var uuid string
+		for uuid = range calls[0].Options.(arvados.UserBatchUpdateOptions).Updates {
+		}
+		for k, shouldFind := range shouldUpdate {
+			_, found := calls[0].Options.(arvados.UserBatchUpdateOptions).Updates[uuid][k]
+			c.Check(found, check.Equals, shouldFind, check.Commentf("offending attr: %s", k))
+		}
+	}
+
+}
+
 func (s *UserSuite) TestLoginClusterUserListBypassFederation(c *check.C) {
 	s.cluster.ClusterID = "local"
 	s.cluster.Login.LoginCluster = "zzzzz"

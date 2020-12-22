@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-// Arvados-ws exposes Arvados APIs (currently just one, the
+// Package ws exposes Arvados APIs (currently just one, the
 // cache-invalidation event feed at "ws://.../websocket") to
 // websocket clients.
 //

@@ -14,7 +14,7 @@ class Arvados::V1::GroupsController < ApplicationController
     (super rescue {}).
       merge({
         include_trash: {
-          type: 'boolean', required: false, description: "Include items whose is_trashed attribute is true."
+          type: 'boolean', required: false, default: false, description: "Include items whose is_trashed attribute is true.",
         },
       })
   end
@@ -23,7 +23,7 @@ class Arvados::V1::GroupsController < ApplicationController
     (super rescue {}).
       merge({
         include_trash: {
-          type: 'boolean', required: false, description: "Show group/project even if its is_trashed attribute is true."
+          type: 'boolean', required: false, default: false, description: "Show group/project even if its is_trashed attribute is true.",
         },
       })
   end
@@ -32,13 +32,16 @@ class Arvados::V1::GroupsController < ApplicationController
     params = _index_requires_parameters.
       merge({
               uuid: {
-                type: 'string', required: false, default: nil
+                type: 'string', required: false, default: nil,
               },
               recursive: {
-                type: 'boolean', required: false, description: 'Include contents from child groups recursively.'
+                type: 'boolean', required: false, default: false, description: 'Include contents from child groups recursively.',
               },
               include: {
-                type: 'string', required: false, description: 'Include objects referred to by listed field in "included" (only owner_uuid)'
+                type: 'string', required: false, description: 'Include objects referred to by listed field in "included" (only owner_uuid).',
+              },
+              include_old_versions: {
+                type: 'boolean', required: false, default: false, description: 'Include past collection versions.',
               }
             })
     params.delete(:select)
@@ -53,7 +56,7 @@ class Arvados::V1::GroupsController < ApplicationController
           type: 'boolean',
           location: 'query',
           default: false,
-          description: 'defer permissions update'
+          description: 'defer permissions update',
         }
       }
     )
@@ -67,7 +70,7 @@ class Arvados::V1::GroupsController < ApplicationController
           type: 'boolean',
           location: 'query',
           default: false,
-          description: 'defer permissions update'
+          description: 'defer permissions update',
         }
       }
     )
@@ -268,7 +271,7 @@ class Arvados::V1::GroupsController < ApplicationController
       @select = nil
       where_conds = filter_by_owner
       if klass == Collection
-        @select = klass.selectable_attributes - ["manifest_text"]
+        @select = klass.selectable_attributes - ["manifest_text", "unsigned_manifest_text"]
       elsif klass == Group
         where_conds = where_conds.merge(group_class: "project")
       end
@@ -283,8 +286,10 @@ class Arvados::V1::GroupsController < ApplicationController
         end
       end.compact
 
-      @objects = klass.readable_by(*@read_users, {:include_trash => params[:include_trash]}).
-                 order(request_order).where(where_conds)
+      @objects = klass.readable_by(*@read_users, {
+          :include_trash => params[:include_trash],
+          :include_old_versions => params[:include_old_versions]
+        }).order(request_order).where(where_conds)
 
       if params['exclude_home_project']
         @objects = exclude_home @objects, klass

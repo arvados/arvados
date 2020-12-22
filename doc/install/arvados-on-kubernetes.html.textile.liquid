@@ -11,10 +11,6 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 Arvados on Kubernetes is implemented as a @Helm 3@ chart.
 
-{% include 'notebox_begin_warning' %}
-This Helm chart does not retain any state after it is deleted. An Arvados cluster created with this Helm chart is entirely ephemeral, and all data stored on the cluster will be deleted when it is shut down. This will be fixed in a future version.
-{% include 'notebox_end' %}
-
 h2(#overview). Overview
 
 This Helm chart provides a basic, small Arvados cluster.

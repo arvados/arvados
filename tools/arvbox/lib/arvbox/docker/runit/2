@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-PATH=/usr/local/bin:/usr/local/sbin:/bin:/sbin:/usr/bin:/usr/sbin:/usr/X11R6/bin
+PATH=/usr/local/bin:/usr/local/sbin:/bin:/sbin:/usr/bin:/usr/sbin
 
 echo
 echo "Arvados-in-a-box starting"

@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 case "$TARGET" in
-    debian9 | ubuntu1604)
+    ubuntu1604)
         fpm_depends+=()
         ;;
     debian* | ubuntu*)

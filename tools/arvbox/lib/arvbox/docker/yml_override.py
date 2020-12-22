@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
 # SPDX-License-Identifier: AGPL-3.0
@@ -20,7 +20,7 @@ with open(fn) as f:
 def recursiveMerge(a, b):
     if isinstance(a, dict) and isinstance(b, dict):
         for k in b:
-            print k
+            print(k)
             a[k] = recursiveMerge(a.get(k), b[k])
         return a
     else:

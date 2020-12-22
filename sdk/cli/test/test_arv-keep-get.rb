@@ -28,8 +28,10 @@ class TestArvKeepGet < Minitest::Test
     out, err = capture_subprocess_io do
       assert_arv_get '--version'
     end
-    assert_empty(out, "STDOUT not expected: '#{out}'")
-    assert_match(/[0-9]+\.[0-9]+\.[0-9]+/, err, "Version information incorrect: '#{err}'")
+    # python3 handles action='version' differently than python2
+    # https://dev.arvados.org/issues/15888#note-23
+    assert_empty(err, "STDERR not expected: '#{err}'")
+    assert_match(/[0-9]+\.[0-9]+\.[0-9]+/, out, "Version information incorrect: '#{out}'")
   end
 
   def test_help

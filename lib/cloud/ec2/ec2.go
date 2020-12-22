@@ -103,10 +103,10 @@ func awsKeyFingerprint(pk ssh.PublicKey) (md5fp string, sha1fp string, err error
 	sha1pkix := sha1.Sum([]byte(pkix))
 	md5fp = ""
 	sha1fp = ""
-	for i := 0; i < len(md5pkix); i += 1 {
+	for i := 0; i < len(md5pkix); i++ {
 		md5fp += fmt.Sprintf(":%02x", md5pkix[i])
 	}
-	for i := 0; i < len(sha1pkix); i += 1 {
+	for i := 0; i < len(sha1pkix); i++ {
 		sha1fp += fmt.Sprintf(":%02x", sha1pkix[i])
 	}
 	return md5fp[1:], sha1fp[1:], nil
@@ -128,7 +128,7 @@ func (instanceSet *ec2InstanceSet) Create(
 	var ok bool
 	if keyname, ok = instanceSet.keys[md5keyFingerprint]; !ok {
 		keyout, err := instanceSet.client.DescribeKeyPairs(&ec2.DescribeKeyPairsInput{
-			Filters: []*ec2.Filter{&ec2.Filter{
+			Filters: []*ec2.Filter{{
 				Name:   aws.String("fingerprint"),
 				Values: []*string{&md5keyFingerprint, &sha1keyFingerprint},
 			}},
@@ -174,7 +174,7 @@ func (instanceSet *ec2InstanceSet) Create(
 		KeyName:      &keyname,
 
 		NetworkInterfaces: []*ec2.InstanceNetworkInterfaceSpecification{
-			&ec2.InstanceNetworkInterfaceSpecification{
+			{
 				AssociatePublicIpAddress: aws.Bool(false),
 				DeleteOnTermination:      aws.Bool(true),
 				DeviceIndex:              aws.Int64(0),
@@ -184,7 +184,7 @@ func (instanceSet *ec2InstanceSet) Create(
 		DisableApiTermination:             aws.Bool(false),
 		InstanceInitiatedShutdownBehavior: aws.String("terminate"),
 		TagSpecifications: []*ec2.TagSpecification{
-			&ec2.TagSpecification{
+			{
 				ResourceType: aws.String("instance"),
 				Tags:         ec2tags,
 			}},
@@ -192,7 +192,7 @@ func (instanceSet *ec2InstanceSet) Create(
 	}
 
 	if instanceType.AddedScratch > 0 {
-		rii.BlockDeviceMappings = []*ec2.BlockDeviceMapping{&ec2.BlockDeviceMapping{
+		rii.BlockDeviceMappings = []*ec2.BlockDeviceMapping{{
 			DeviceName: aws.String("/dev/xvdt"),
 			Ebs: &ec2.EbsBlockDevice{
 				DeleteOnTermination: aws.Bool(true),
@@ -251,7 +251,7 @@ func (instanceSet *ec2InstanceSet) Instances(tags cloud.InstanceTags) (instances
 	}
 }
 
-func (az *ec2InstanceSet) Stop() {
+func (instanceSet *ec2InstanceSet) Stop() {
 }
 
 type ec2Instance struct {
@@ -308,9 +308,8 @@ func (inst *ec2Instance) Destroy() error {
 func (inst *ec2Instance) Address() string {
 	if inst.instance.PrivateIpAddress != nil {
 		return *inst.instance.PrivateIpAddress
-	} else {
-		return ""
 	}
+	return ""
 }
 
 func (inst *ec2Instance) RemoteUser() string {

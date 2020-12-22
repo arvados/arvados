@@ -64,9 +64,8 @@ func rewrapResponseWriter(w http.ResponseWriter, wrapped http.ResponseWriter) ht
 			http.ResponseWriter
 			http.Hijacker
 		}{w, hijacker}
-	} else {
-		return w
 	}
+	return w
 }
 
 func Logger(req *http.Request) logrus.FieldLogger {

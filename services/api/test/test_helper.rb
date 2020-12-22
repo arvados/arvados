@@ -62,7 +62,7 @@ class ActiveSupport::TestCase
   include ArvadosTestSupport
   include CurrentApiClient
 
-  teardown do
+  setup do
     Thread.current[:api_client_ip_address] = nil
     Thread.current[:api_client_authorization] = nil
     Thread.current[:api_client_uuid] = nil
@@ -70,6 +70,14 @@ class ActiveSupport::TestCase
     Thread.current[:token] = nil
     Thread.current[:user] = nil
     restore_configuration
+  end
+
+  teardown do
+    # Confirm that any changed configuration doesn't include non-symbol keys
+    $arvados_config.keys.each do |conf_name|
+      conf = Rails.configuration.send(conf_name)
+      confirm_keys_as_symbols(conf, conf_name) if conf.respond_to?('keys')
+    end
   end
 
   def assert_equal(expect, *args)
@@ -99,6 +107,14 @@ class ActiveSupport::TestCase
     end
   end
 
+  def confirm_keys_as_symbols(conf, conf_name)
+    assert(conf.is_a?(ActiveSupport::OrderedOptions), "#{conf_name} should be an OrderedOptions object")
+    conf.keys.each do |k|
+      assert(k.is_a?(Symbol), "Key '#{k}' on section '#{conf_name}' should be a Symbol")
+      confirm_keys_as_symbols(conf[k], "#{conf_name}.#{k}") if conf[k].respond_to?('keys')
+    end
+  end
+
   def restore_configuration
     # Restore configuration settings changed during tests
     ConfigLoader.copy_into_config $arvados_config, Rails.configuration
@@ -107,6 +123,7 @@ class ActiveSupport::TestCase
 
   def set_user_from_auth(auth_name)
     client_auth = api_client_authorizations(auth_name)
+    client_auth.user.forget_cached_group_perms
     Thread.current[:api_client_authorization] = client_auth
     Thread.current[:api_client] = client_auth.api_client
     Thread.current[:user] = client_auth.user

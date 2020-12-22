@@ -125,7 +125,8 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 			"bsdmainutils",
 			"build-essential",
 			"cadaver",
-			"cython",
+			"curl",
+			"cython3",
 			"daemontools", // lib/boot uses setuidgid to drop privileges when running as root
 			"default-jdk-headless",
 			"default-jre-headless",
@@ -138,7 +139,7 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 			"libjson-perl",
 			"libpam-dev",
 			"libpcre3-dev",
-			"libpython2.7-dev",
+			"libpq-dev",
 			"libreadline-dev",
 			"libssl-dev",
 			"libwww-perl",
@@ -154,11 +155,16 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 			"postgresql",
 			"postgresql-contrib",
 			"python3-dev",
-			"python-epydoc",
+			"python3-venv",
+			"python3-virtualenv",
 			"r-base",
 			"r-cran-testthat",
+			"r-cran-devtools",
+			"r-cran-knitr",
+			"r-cran-markdown",
+			"r-cran-roxygen2",
+			"r-cran-xml",
 			"sudo",
-			"virtualenv",
 			"wget",
 			"xvfb",
 		)
@@ -316,10 +322,10 @@ rm ${zip}
 			DataDirectory string
 			LogFile       string
 		}
-		if pg_lsclusters, err2 := exec.Command("pg_lsclusters", "--no-header").CombinedOutput(); err2 != nil {
+		if pgLsclusters, err2 := exec.Command("pg_lsclusters", "--no-header").CombinedOutput(); err2 != nil {
 			err = fmt.Errorf("pg_lsclusters: %s", err2)
 			return 1
-		} else if pgclusters := strings.Split(strings.TrimSpace(string(pg_lsclusters)), "\n"); len(pgclusters) != 1 {
+		} else if pgclusters := strings.Split(strings.TrimSpace(string(pgLsclusters)), "\n"); len(pgclusters) != 1 {
 			logger.Warnf("pg_lsclusters returned %d postgresql clusters -- skipping postgresql initdb/startup, hope that's ok", len(pgclusters))
 		} else if _, err = fmt.Sscanf(pgclusters[0], "%s %s %d %s %s %s %s", &pgc.Version, &pgc.Cluster, &pgc.Port, &pgc.Status, &pgc.Owner, &pgc.DataDirectory, &pgc.LogFile); err != nil {
 			err = fmt.Errorf("error parsing pg_lsclusters output: %s", err)

@@ -79,11 +79,12 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     Arvados::V1::SchemaController.any_instance.stubs(:root_url).returns "https://#{@remote_host[0]}"
     @stub_status = 200
     @stub_content = {
-      uuid: 'zbbbb-tpzed-000000000000000',
+      uuid: 'zbbbb-tpzed-000000000000001',
       email: 'foo@example.com',
       username: 'barney',
       is_admin: true,
       is_active: true,
+      is_invited: true,
     }
   end
 
@@ -98,7 +99,7 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
       params: {format: 'json'},
       headers: auth(remote: 'zbbbb')
     assert_response :success
-    assert_equal 'zbbbb-tpzed-000000000000000', json_response['uuid']
+    assert_equal 'zbbbb-tpzed-000000000000001', json_response['uuid']
     assert_equal false, json_response['is_admin']
     assert_equal false, json_response['is_active']
     assert_equal 'foo@example.com', json_response['email']
@@ -153,6 +154,7 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
 
     # revoke original token
     @stub_content[:is_active] = false
+    @stub_content[:is_invited] = false
 
     # simulate cache expiry
     ApiClientAuthorization.where(
@@ -286,12 +288,12 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
       params: {format: 'json'},
       headers: auth(remote: 'zbbbb')
     assert_response :success
-    assert_equal 'zbbbb-tpzed-000000000000000', json_response['uuid']
+    assert_equal 'zbbbb-tpzed-000000000000001', json_response['uuid']
     assert_equal false, json_response['is_admin']
     assert_equal false, json_response['is_active']
     assert_equal 'foo@example.com', json_response['email']
     assert_equal 'barney', json_response['username']
-    post '/arvados/v1/users/zbbbb-tpzed-000000000000000/activate',
+    post '/arvados/v1/users/zbbbb-tpzed-000000000000001/activate',
       params: {format: 'json'},
       headers: auth(remote: 'zbbbb')
     assert_response 422
@@ -303,7 +305,7 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
       params: {format: 'json'},
       headers: auth(remote: 'zbbbb')
     assert_response :success
-    assert_equal 'zbbbb-tpzed-000000000000000', json_response['uuid']
+    assert_equal 'zbbbb-tpzed-000000000000001', json_response['uuid']
     assert_equal false, json_response['is_admin']
     assert_equal true, json_response['is_active']
     assert_equal 'foo@example.com', json_response['email']
@@ -316,11 +318,109 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
       params: {format: 'json'},
       headers: auth(remote: 'zbbbb')
     assert_response :success
-    assert_equal 'zbbbb-tpzed-000000000000000', json_response['uuid']
+    assert_equal 'zbbbb-tpzed-000000000000001', json_response['uuid']
     assert_equal true, json_response['is_admin']
     assert_equal true, json_response['is_active']
     assert_equal 'foo@example.com', json_response['email']
     assert_equal 'barney', json_response['username']
+  end
+
+  [true, false].each do |trusted|
+    [true, false].each do |logincluster|
+      [true, false].each do |admin|
+        [true, false].each do |active|
+          [true, false].each do |autosetup|
+            [true, false].each do |invited|
+              test "get invited=#{invited}, active=#{active}, admin=#{admin} user from #{if logincluster then "Login" else "peer" end} cluster when AutoSetupNewUsers=#{autosetup} ActivateUsers=#{trusted}" do
+                Rails.configuration.Login.LoginCluster = 'zbbbb' if logincluster
+                Rails.configuration.RemoteClusters['zbbbb'].ActivateUsers = trusted
+                Rails.configuration.Users.AutoSetupNewUsers = autosetup
+                @stub_content = {
+                  uuid: 'zbbbb-tpzed-000000000000001',
+                  email: 'foo@example.com',
+                  username: 'barney',
+                  is_admin: admin,
+                  is_active: active,
+                  is_invited: invited,
+                }
+                get '/arvados/v1/users/current',
+                    params: {format: 'json'},
+                    headers: auth(remote: 'zbbbb')
+                assert_response :success
+                assert_equal 'zbbbb-tpzed-000000000000001', json_response['uuid']
+                assert_equal (logincluster && admin && invited && active), json_response['is_admin']
+                assert_equal (invited and (logincluster || trusted || autosetup)), json_response['is_invited']
+                assert_equal (invited and (logincluster || trusted) and active), json_response['is_active']
+                assert_equal 'foo@example.com', json_response['email']
+                assert_equal 'barney', json_response['username']
+              end
+            end
+          end
+        end
+      end
+    end
+  end
+
+  test 'get active user from Login cluster when AutoSetupNewUsers is set' do
+    Rails.configuration.Login.LoginCluster = 'zbbbb'
+    Rails.configuration.Users.AutoSetupNewUsers = true
+    @stub_content = {
+      uuid: 'zbbbb-tpzed-000000000000001',
+      email: 'foo@example.com',
+      username: 'barney',
+      is_admin: false,
+      is_active: true,
+      is_invited: true,
+    }
+    get '/arvados/v1/users/current',
+      params: {format: 'json'},
+      headers: auth(remote: 'zbbbb')
+    assert_response :success
+    assert_equal 'zbbbb-tpzed-000000000000001', json_response['uuid']
+    assert_equal false, json_response['is_admin']
+    assert_equal true, json_response['is_active']
+    assert_equal true, json_response['is_invited']
+    assert_equal 'foo@example.com', json_response['email']
+    assert_equal 'barney', json_response['username']
+
+    @stub_content = {
+      uuid: 'zbbbb-tpzed-000000000000001',
+      email: 'foo@example.com',
+      username: 'barney',
+      is_admin: false,
+      is_active: false,
+      is_invited: false,
+    }
+
+    # Use cached value.  User will still be active because we haven't
+    # re-queried the upstream cluster.
+    get '/arvados/v1/users/current',
+      params: {format: 'json'},
+      headers: auth(remote: 'zbbbb')
+    assert_response :success
+    assert_equal 'zbbbb-tpzed-000000000000001', json_response['uuid']
+    assert_equal false, json_response['is_admin']
+    assert_equal true, json_response['is_active']
+    assert_equal true, json_response['is_invited']
+    assert_equal 'foo@example.com', json_response['email']
+    assert_equal 'barney', json_response['username']
+
+    # Delete cached value.  User should be inactive now.
+    act_as_system_user do
+      ApiClientAuthorization.delete_all
+    end
+
+    get '/arvados/v1/users/current',
+      params: {format: 'json'},
+      headers: auth(remote: 'zbbbb')
+    assert_response :success
+    assert_equal 'zbbbb-tpzed-000000000000001', json_response['uuid']
+    assert_equal false, json_response['is_admin']
+    assert_equal false, json_response['is_active']
+    assert_equal false, json_response['is_invited']
+    assert_equal 'foo@example.com', json_response['email']
+    assert_equal 'barney', json_response['username']
+
   end
 
   test 'pre-activate remote user' do
@@ -330,6 +430,7 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
       username: 'barney',
       is_admin: true,
       is_active: true,
+      is_invited: true,
     }
 
     post '/arvados/v1/users',
@@ -364,6 +465,7 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
       username: 'barney',
       is_admin: true,
       is_active: true,
+      is_invited: true,
     }
 
     get '/arvados/v1/users/current',
@@ -411,5 +513,23 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
       end
     end
   end
+
+  test 'authenticate with remote token, remote user is system user' do
+    @stub_content[:uuid] = 'zbbbb-tpzed-000000000000000'
+    get '/arvados/v1/users/current',
+      params: {format: 'json'},
+      headers: auth(remote: 'zbbbb')
+    assert_equal 'from cluster zbbbb', json_response['last_name']
+  end
+
+  test 'authenticate with remote token, remote user is anonymous user' do
+    @stub_content[:uuid] = 'zbbbb-tpzed-anonymouspublic'
+    get '/arvados/v1/users/current',
+      params: {format: 'json'},
+      headers: auth(remote: 'zbbbb')
+    assert_response :success
+    assert_equal 'zzzzz-tpzed-anonymouspublic', json_response['uuid']
+  end
+
 
 end

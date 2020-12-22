@@ -13,10 +13,10 @@ class Arvados::V1::CollectionsController < ApplicationController
     (super rescue {}).
       merge({
         include_trash: {
-          type: 'boolean', required: false, description: "Include collections whose is_trashed attribute is true."
+          type: 'boolean', required: false, default: false, description: "Include collections whose is_trashed attribute is true.",
         },
         include_old_versions: {
-          type: 'boolean', required: false, description: "Include past collection versions."
+          type: 'boolean', required: false, default: false, description: "Include past collection versions.",
         },
       })
   end
@@ -25,10 +25,10 @@ class Arvados::V1::CollectionsController < ApplicationController
     (super rescue {}).
       merge({
         include_trash: {
-          type: 'boolean', required: false, description: "Show collection even if its is_trashed attribute is true."
+          type: 'boolean', required: false, default: false, description: "Show collection even if its is_trashed attribute is true.",
         },
         include_old_versions: {
-          type: 'boolean', required: false, description: "Include past collection versions."
+          type: 'boolean', required: false, default: true, description: "Include past collection versions.",
         },
       })
   end
@@ -43,23 +43,31 @@ class Arvados::V1::CollectionsController < ApplicationController
     super
   end
 
+  def update
+    # preserve_version should be disabled unless explicitly asked otherwise.
+    if !resource_attrs[:preserve_version]
+      resource_attrs[:preserve_version] = false
+    end
+    super
+  end
+
   def find_objects_for_index
-    opts = {}
-    if params[:include_trash] || ['destroy', 'trash', 'untrash'].include?(action_name)
-      opts.update({include_trash: true})
-    end
-    if params[:include_old_versions] || @include_old_versions
-      opts.update({include_old_versions: true})
-    end
+    opts = {
+      include_trash: params[:include_trash] || ['destroy', 'trash', 'untrash'].include?(action_name),
+      include_old_versions: params[:include_old_versions] || false,
+    }
     @objects = Collection.readable_by(*@read_users, opts) if !opts.empty?
     super
   end
 
   def find_object_by_uuid
-    @include_old_versions = true
-
     if loc = Keep::Locator.parse(params[:id])
       loc.strip_hints!
+
+      opts = {
+        include_trash: params[:include_trash],
+        include_old_versions: params[:include_old_versions],
+      }
 
       # It matters which Collection object we pick because we use it to get signed_manifest_text,
       # the value of which is affected by the value of trash_at.
@@ -72,14 +80,13 @@ class Arvados::V1::CollectionsController < ApplicationController
       # it will select the Collection object with the longest
       # available lifetime.
 
-      if c = Collection.readable_by(*@read_users).where({ portable_data_hash: loc.to_s }).order("trash_at desc").limit(1).first
+      if c = Collection.readable_by(*@read_users, opts).where({ portable_data_hash: loc.to_s }).order("trash_at desc").limit(1).first
         @object = {
           uuid: c.portable_data_hash,
           portable_data_hash: c.portable_data_hash,
           manifest_text: c.signed_manifest_text,
         }
       end
-      true
     else
       super
     end

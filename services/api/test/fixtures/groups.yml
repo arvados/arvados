@@ -56,6 +56,13 @@ system_group:
   description: System-owned Group
   group_class: role
 
+public_favorites_project:
+  uuid: zzzzz-j7d0g-publicfavorites
+  owner_uuid: zzzzz-tpzed-000000000000000
+  name: Public favorites
+  description: Public favorites
+  group_class: project
+
 empty_lonely_group:
   uuid: zzzzz-j7d0g-jtp06ulmvsezgyu
   owner_uuid: zzzzz-tpzed-000000000000000

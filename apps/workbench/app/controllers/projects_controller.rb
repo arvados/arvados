@@ -133,7 +133,7 @@ class ProjectsController < ApplicationController
   def remove_items
     @removed_uuids = []
     params[:item_uuids].collect { |uuid| ArvadosBase.find uuid }.each do |item|
-      if item.class == Collection or item.class == Group
+      if item.class == Collection or item.class == Group or item.class == Workflow or item.class == ContainerRequest
         # Use delete API on collections and projects/groups
         item.destroy
         @removed_uuids << item.uuid

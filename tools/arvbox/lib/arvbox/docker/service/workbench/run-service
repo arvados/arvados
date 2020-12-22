@@ -8,17 +8,23 @@ set -ex -o pipefail
 
 .  /usr/local/lib/arvbox/common.sh
 
+if test "$1" != "--only-deps" ; then
+  while [ ! -f $ARVADOS_CONTAINER_PATH/api.ready ]; do
+    sleep 1
+  done
+fi
+
 cd /usr/src/arvados/apps/workbench
 
-if test -s /var/lib/arvados/workbench_rails_env ; then
-  export RAILS_ENV=$(cat /var/lib/arvados/workbench_rails_env)
+if test -s $ARVADOS_CONTAINER_PATH/workbench_rails_env ; then
+  export RAILS_ENV=$(cat $ARVADOS_CONTAINER_PATH/workbench_rails_env)
 else
   export RAILS_ENV=development
 fi
 
 run_bundler --without=development
-bundle exec passenger-config build-native-support
-bundle exec passenger-config install-standalone-runtime
+flock $GEM_HOME/gems.lock bundle exec passenger-config build-native-support
+flock $GEM_HOME/gems.lock bundle exec passenger-config install-standalone-runtime
 mkdir -p /usr/src/arvados/apps/workbench/tmp
 
 if test "$1" = "--only-deps" ; then
@@ -28,34 +34,14 @@ cat >config/application.yml <<EOF
 $RAILS_ENV:
   keep_web_url: https://example.com/c=%{uuid_or_pdh}
 EOF
-   RAILS_GROUPS=assets bundle exec rake npm:install
+   RAILS_GROUPS=assets flock $GEM_HOME/gems.lock bundle exec rake npm:install
    rm config/application.yml
    exit
 fi
 
 set -u
 
-secret_token=$(cat /var/lib/arvados/workbench_secret_token)
+secret_token=$(cat $ARVADOS_CONTAINER_PATH/workbench_secret_token)
 
-if test -a /usr/src/arvados/apps/workbench/config/arvados_config.rb ; then
-    rm -f config/application.yml
-else
-cat >config/application.yml <<EOF
-$RAILS_ENV:
-  secret_token: $secret_token
-  arvados_login_base: https://$localip:${services[controller-ssl]}/login
-  arvados_v1_base: https://$localip:${services[controller-ssl]}/arvados/v1
-  arvados_insecure_https: false
-  keep_web_download_url: https://$localip:${services[keep-web-ssl]}/c=%{uuid_or_pdh}
-  keep_web_url: https://$localip:${services[keep-web-ssl]}/c=%{uuid_or_pdh}
-  arvados_docsite: http://$localip:${services[doc]}/
-  force_ssl: false
-  composer_url: http://$localip:${services[composer]}
-  workbench2_url: https://$localip:${services[workbench2-ssl]}
-EOF
-
-(cd config && /usr/local/lib/arvbox/yml_override.py application.yml)
-fi
-
-RAILS_GROUPS=assets bundle exec rake npm:install
-bundle exec rake assets:precompile
+RAILS_GROUPS=assets flock $GEM_HOME/gems.lock bundle exec rake npm:install
+flock $GEM_HOME/gems.lock bundle exec rake assets:precompile

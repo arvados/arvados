@@ -1,0 +1,89 @@
+---
+layout: default
+navsection: api
+navmenu: API Methods
+title: "S3 API"
+
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+The Simple Storage Service (S3) API is a de-facto standard for object storage originally developed by Amazon Web Services.  Arvados supports accessing files in Keep using the S3 API.
+
+S3 is supported by many "cloud native" applications, and client libraries exist in many languages for programmatic access.
+
+h3. Endpoints and Buckets
+
+To access Arvados S3 using an S3 client library, you must tell it to use the URL of the keep-web server (this is @Services.WebDAVDownload.ExternalURL@ in the public configuration) as the custom endpoint.  The keep-web server will decide to treat it as an S3 API request based on the presence of an AWS-format Authorization header.  Requests without an Authorization header, or differently formatted Authorization, will be treated as "WebDAV":keep-webdav.html .
+
+The "bucket name" is an Arvados collection uuid, portable data hash, or project uuid.
+
+Path-style and virtual host-style requests are supported.
+* A path-style request uses the hostname indicated by @Services.WebDAVDownload.ExternalURL@, with the bucket name in the first path segment: @https://download.example.com/zzzzz-4zz18-asdfgasdfgasdfg/@.
+* A virtual host-style request uses the hostname pattern indicated by @Services.WebDAV.ExternalURL@, with a bucket name in place of the leading @*@: @https://zzzzz-4zz18-asdfgasdfgasdfg.collections.example.com/@.
+
+If you have wildcard DNS, TLS, and routing set up, an S3 client configured with endpoint @collections.example.com@ should work regardless of which request style it uses.
+
+h3. Supported Operations
+
+h4. ListObjects
+
+Supports the following request query parameters:
+
+* delimiter
+* marker
+* max-keys
+* prefix
+
+h4. GetObject
+
+Supports the @Range@ header.
+
+h4. PutObject
+
+Can be used to create or replace a file in a collection.
+
+An empty PUT with a trailing slash and @Content-Type: application/x-directory@ will create a directory within a collection if Arvados configuration option @Collections.S3FolderObjects@ is true.
+
+Missing parent/intermediate directories within a collection are created automatically.
+
+Cannot be used to create a collection or project.
+
+h4. DeleteObject
+
+Can be used to remove files from a collection.
+
+If used on a directory marker, it will delete the directory only if the directory is empty.
+
+h4. HeadBucket
+
+Can be used to determine if a bucket exists and if client has read access to it.
+
+h4. HeadObject
+
+Can be used to determine if an object exists and if client has read access to it.
+
+h4. GetBucketVersioning
+
+Bucket versioning is presently not supported, so this will always respond that bucket versioning is not enabled.
+
+h3. Authorization mechanisms
+
+Keep-web accepts AWS Signature Version 4 (AWS4-HMAC-SHA256) as well as the older V2 AWS signature.
+
+If your client uses V4 signatures exclusively _and_ your Arvados token was issued by the same cluster you are connecting to, you can use the Arvados token's UUID part as your S3 Access Key, and its secret part as your S3 Secret Key. This is preferred, where applicable.
+
+Example using cluster @zzzzz@:
+* Arvados token: @v2/zzzzz-gj3su-yyyyyyyyyyyyyyy/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx@
+* Access Key: @zzzzz-gj3su-yyyyyyyyyyyyyyy@
+* Secret Key: @xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx@
+
+In all other cases, replace every @/@ character in your Arvados token with @_@, and use the resulting string as both Access Key and Secret Key.
+
+Example using a cluster other than @zzzzz@ _or_ an S3 client that uses V2 signatures:
+* Arvados token: @v2/zzzzz-gj3su-yyyyyyyyyyyyyyy/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx@
+* Access Key: @v2_zzzzz-gj3su-yyyyyyyyyyyyyyy_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx@
+* Secret Key: @v2_zzzzz-gj3su-yyyyyyyyyyyyyyy_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx@

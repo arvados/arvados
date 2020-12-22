@@ -33,8 +33,14 @@ func chooseLoginController(cluster *arvados.Cluster, railsProxy *railsProxy) log
 	wantSSO := cluster.Login.SSO.Enable
 	wantPAM := cluster.Login.PAM.Enable
 	wantLDAP := cluster.Login.LDAP.Enable
+	wantTest := cluster.Login.Test.Enable
+	wantLoginCluster := cluster.Login.LoginCluster != "" && cluster.Login.LoginCluster != cluster.ClusterID
 	switch {
-	case wantGoogle && !wantOpenIDConnect && !wantSSO && !wantPAM && !wantLDAP:
+	case 1 != countTrue(wantGoogle, wantOpenIDConnect, wantSSO, wantPAM, wantLDAP, wantTest, wantLoginCluster):
+		return errorLoginController{
+			error: errors.New("configuration problem: exactly one of Login.Google, Login.OpenIDConnect, Login.SSO, Login.PAM, Login.LDAP, Login.Test, or Login.LoginCluster must be set"),
+		}
+	case wantGoogle:
 		return &oidcLoginController{
 			Cluster:            cluster,
 			RailsProxy:         railsProxy,
@@ -45,7 +51,7 @@ func chooseLoginController(cluster *arvados.Cluster, railsProxy *railsProxy) log
 			EmailClaim:         "email",
 			EmailVerifiedClaim: "email_verified",
 		}
-	case !wantGoogle && wantOpenIDConnect && !wantSSO && !wantPAM && !wantLDAP:
+	case wantOpenIDConnect:
 		return &oidcLoginController{
 			Cluster:            cluster,
 			RailsProxy:         railsProxy,
@@ -56,17 +62,31 @@ func chooseLoginController(cluster *arvados.Cluster, railsProxy *railsProxy) log
 			EmailVerifiedClaim: cluster.Login.OpenIDConnect.EmailVerifiedClaim,
 			UsernameClaim:      cluster.Login.OpenIDConnect.UsernameClaim,
 		}
-	case !wantGoogle && !wantOpenIDConnect && wantSSO && !wantPAM && !wantLDAP:
+	case wantSSO:
 		return &ssoLoginController{railsProxy}
-	case !wantGoogle && !wantOpenIDConnect && !wantSSO && wantPAM && !wantLDAP:
+	case wantPAM:
 		return &pamLoginController{Cluster: cluster, RailsProxy: railsProxy}
-	case !wantGoogle && !wantOpenIDConnect && !wantSSO && !wantPAM && wantLDAP:
+	case wantLDAP:
 		return &ldapLoginController{Cluster: cluster, RailsProxy: railsProxy}
+	case wantTest:
+		return &testLoginController{Cluster: cluster, RailsProxy: railsProxy}
+	case wantLoginCluster:
+		return &federatedLoginController{Cluster: cluster}
 	default:
 		return errorLoginController{
-			error: errors.New("configuration problem: exactly one of Login.Google, Login.OpenIDConnect, Login.SSO, Login.PAM, and Login.LDAP must be enabled"),
+			error: errors.New("BUG: missing case in login controller setup switch"),
 		}
 	}
+}
+
+func countTrue(vals ...bool) int {
+	n := 0
+	for _, val := range vals {
+		if val {
+			n++
+		}
+	}
+	return n
 }
 
 // Login and Logout are passed through to the wrapped railsProxy;
@@ -89,6 +109,20 @@ func (ctrl errorLoginController) UserAuthenticate(context.Context, arvados.UserA
 	return arvados.APIClientAuthorization{}, ctrl.error
 }
 
+type federatedLoginController struct {
+	Cluster *arvados.Cluster
+}
+
+func (ctrl federatedLoginController) Login(context.Context, arvados.LoginOptions) (arvados.LoginResponse, error) {
+	return arvados.LoginResponse{}, httpserver.ErrorWithStatus(errors.New("Should have been redirected to login cluster"), http.StatusBadRequest)
+}
+func (ctrl federatedLoginController) Logout(_ context.Context, opts arvados.LogoutOptions) (arvados.LogoutResponse, error) {
+	return noopLogout(ctrl.Cluster, opts)
+}
+func (ctrl federatedLoginController) UserAuthenticate(context.Context, arvados.UserAuthenticateOptions) (arvados.APIClientAuthorization, error) {
+	return arvados.APIClientAuthorization{}, httpserver.ErrorWithStatus(errors.New("username/password authentication is not available"), http.StatusBadRequest)
+}
+
 func noopLogout(cluster *arvados.Cluster, opts arvados.LogoutOptions) (arvados.LogoutResponse, error) {
 	target := opts.ReturnTo
 	if target == "" {
@@ -107,7 +141,7 @@ func createAPIClientAuthorization(ctx context.Context, conn *rpc.Conn, rootToken
 		// Send a fake ReturnTo value instead of the caller's
 		// opts.ReturnTo. We won't follow the resulting
 		// redirect target anyway.
-		ReturnTo: ",https://none.invalid",
+		ReturnTo: ",https://controller.api.client.invalid",
 		AuthInfo: authinfo,
 	})
 	if err != nil {

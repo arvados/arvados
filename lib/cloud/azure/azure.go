@@ -419,7 +419,7 @@ func (az *azureInstanceSet) Create(
 		Tags:     tags,
 		InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
 			IPConfigurations: &[]network.InterfaceIPConfiguration{
-				network.InterfaceIPConfiguration{
+				{
 					Name: to.StringPtr("ip1"),
 					InterfaceIPConfigurationPropertiesFormat: &network.InterfaceIPConfigurationPropertiesFormat{
 						Subnet: &network.Subnet{
@@ -501,7 +501,7 @@ func (az *azureInstanceSet) Create(
 			StorageProfile: storageProfile,
 			NetworkProfile: &compute.NetworkProfile{
 				NetworkInterfaces: &[]compute.NetworkInterfaceReference{
-					compute.NetworkInterfaceReference{
+					{
 						ID: nic.ID,
 						NetworkInterfaceReferenceProperties: &compute.NetworkInterfaceReferenceProperties{
 							Primary: to.BoolPtr(true),
@@ -677,6 +677,10 @@ func (az *azureInstanceSet) manageDisks() {
 	}
 
 	for ; response.NotDone(); err = response.Next() {
+		if err != nil {
+			az.logger.WithError(err).Warn("Error getting next page of disks")
+			return
+		}
 		for _, d := range response.Values() {
 			if d.DiskProperties.DiskState == compute.Unattached &&
 				d.Name != nil && re.MatchString(*d.Name) &&

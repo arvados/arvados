@@ -144,14 +144,14 @@ var selectPDH = map[string]interface{}{
 func (c *cache) Update(client *arvados.Client, coll arvados.Collection, fs arvados.CollectionFileSystem) error {
 	c.setupOnce.Do(c.setup)
 
-	if m, err := fs.MarshalManifest("."); err != nil || m == coll.ManifestText {
+	m, err := fs.MarshalManifest(".")
+	if err != nil || m == coll.ManifestText {
 		return err
-	} else {
-		coll.ManifestText = m
 	}
+	coll.ManifestText = m
 	var updated arvados.Collection
 	defer c.pdhs.Remove(coll.UUID)
-	err := client.RequestAndDecode(&updated, "PATCH", "arvados/v1/collections/"+coll.UUID, nil, map[string]interface{}{
+	err = client.RequestAndDecode(&updated, "PATCH", "arvados/v1/collections/"+coll.UUID, nil, map[string]interface{}{
 		"collection": map[string]string{
 			"manifest_text": coll.ManifestText,
 		},
@@ -224,13 +224,12 @@ func (c *cache) Get(arv *arvadosclient.ArvadosClient, targetID string, forceRelo
 				})
 			}
 			return collection, err
-		} else {
-			// PDH changed, but now we know we have
-			// permission -- and maybe we already have the
-			// new PDH in the cache.
-			if coll := c.lookupCollection(arv.ApiToken + "\000" + current.PortableDataHash); coll != nil {
-				return coll, nil
-			}
+		}
+		// PDH changed, but now we know we have
+		// permission -- and maybe we already have the
+		// new PDH in the cache.
+		if coll := c.lookupCollection(arv.ApiToken + "\000" + current.PortableDataHash); coll != nil {
+			return coll, nil
 		}
 	}
 

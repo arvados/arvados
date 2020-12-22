@@ -2,17 +2,4 @@
 
 SPDX-License-Identifier: AGPL-3.0 %>
 
-<% if not @user.full_name.empty? -%>
-<%= @user.full_name %>,
-<% else -%>
-Hi there,
-<% end -%>
-
-Your Arvados shell account has been set up. Please visit the virtual machines page <% if Rails.configuration.Services.Workbench1.ExternalURL %>at
-
-  <%= Rails.configuration.Services.Workbench1.ExternalURL %><%= "/" if !Rails.configuration.Services.Workbench1.ExternalURL.to_s.end_with?("/") %>users/<%= @user.uuid%>/virtual_machines <% else %><% end %>
-
-for connection instructions.
-
-Thanks,
-The Arvados team.
+<%= ERB.new(Rails.configuration.Users.UserSetupMailText, 0, "-").result(binding) %>

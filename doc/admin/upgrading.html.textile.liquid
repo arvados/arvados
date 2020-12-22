@@ -16,6 +16,7 @@ h2. General process
 
 # Consult upgrade notes below to see if any manual configuration updates are necessary.
 # Wait for the cluster to be idle and stop Arvados services.
+# Make a backup of your database, as a precaution.
 # Install new packages using @apt-get upgrade@ or @yum upgrade@.
 # Wait for package installation scripts as they perform any necessary data migrations.
 # Restart Arvados services.
@@ -34,9 +35,29 @@ TODO: extract this information based on git commit messages and generate changel
 <div class="releasenotes">
 </notextile>
 
-h2(#master). development master (as of 2020-06-17)
+h2(#main). development main (as of 2020-12-10)
+
+"Upgrading from 2.1.0":#v2_1_0
+
+h3. Changes on the collection's @preserve_version@ attribute semantics
+
+The @preserve_version@ attribute on collections was originally designed to allow clients to persist a preexisting collection version. This forced clients to make 2 requests if the intention is to "make this set of changes in a new version that will be kept", so we have changed the semantics to do just that: When passing @preserve_version=true@ along with other collection updates, the current version is persisted and also the newly created one will be persisted on the next update.
+
+h3. Centos7 Python 3 dependency upgraded to python3
+
+Now that Python 3 is part of the base repository in CentOS 7, the Python 3 dependency for Centos7 Arvados packages was changed from SCL rh-python36 to python3.
+
+h2(#v2_1_0). v2.1.0 (2020-10-13)
 
 "Upgrading from 2.0.0":#v2_0_0
+
+h3. LoginCluster conflicts with other Login providers
+
+A satellite cluster that delegates its user login to a central user database must only have `Login.LoginCluster` set, or it will return an error.  This is a change in behavior, previously it would return an error if another login provider was _not_ configured, even though the provider would never be used.
+
+h3. Minimum supported Ruby version is now 2.5
+
+The minimum supported Ruby version is now 2.5.  If you are running Arvados on Debian 9 or Ubuntu 16.04, you may need to switch to using RVM or upgrade your OS.  See "Install Ruby and Bundler":../install/ruby.html for more information.
 
 h3. Removing libpam-arvados, replaced with libpam-arvados-go
 
@@ -86,6 +107,10 @@ for uuid in $(arv link list --filters '[["link_class", "=", "permission"], ["tai
    arv group list --filters '[["group_class", "=", "project"], ["uuid", "=", "'$uuid'"]]' | jq .items
 done
 </pre>
+
+h4. "Public favorites" moved to their own project
+
+As a side effect of new permission system constraints, "star" links (indicating shortcuts in Workbench) that were previously owned by "All users" (which is now a "role" and cannot own things) will be migrated to a new system project called "Public favorites" which is readable by the "Anonymous users" role.
 
 h2(#v2_0_0). v2.0.0 (2020-02-07)
 

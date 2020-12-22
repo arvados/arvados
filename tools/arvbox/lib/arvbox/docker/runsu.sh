@@ -6,11 +6,16 @@
 HOSTUID=$(ls -nd /usr/src/arvados | sed 's/ */ /' | cut -d' ' -f4)
 HOSTGID=$(ls -nd /usr/src/arvados | sed 's/ */ /' | cut -d' ' -f5)
 
-flock /var/lib/arvados/createusers.lock /usr/local/lib/arvbox/createusers.sh
+export ARVADOS_CONTAINER_PATH=/var/lib/arvados-arvbox
 
-export HOME=/var/lib/arvados
+flock $ARVADOS_CONTAINER_PATH/createusers.lock /usr/local/lib/arvbox/createusers.sh
+
+export HOME=$ARVADOS_CONTAINER_PATH
 
 chown arvbox /dev/stderr
+
+# Load our custom sysctl.conf entries
+/sbin/sysctl -p >/dev/null
 
 if test -z "$1" ; then
     exec chpst -u arvbox:arvbox:docker $0-service

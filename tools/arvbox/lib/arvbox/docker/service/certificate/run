@@ -8,9 +8,9 @@ set -ex -o pipefail
 
 . /usr/local/lib/arvbox/common.sh
 
-/usr/local/lib/arvbox/runsu.sh flock /var/lib/arvados/cluster_config.yml.lock /usr/local/lib/arvbox/cluster-config.sh
+/usr/local/lib/arvbox/runsu.sh flock $ARVADOS_CONTAINER_PATH/cluster_config.yml.lock /usr/local/lib/arvbox/cluster-config.sh
 
-uuid_prefix=$(cat /var/lib/arvados/api_uuid_prefix)
+uuid_prefix=$(cat $ARVADOS_CONTAINER_PATH/api_uuid_prefix)
 
 if ! openssl verify -CAfile $root_cert $root_cert ; then
     # req           signing request sub-command
@@ -74,13 +74,13 @@ if ! openssl verify -CAfile $root_cert $server_cert ; then
 	    -extensions x509_ext \
 	    -config <(cat /etc/ssl/openssl.cnf \
 			  <(printf "\n[x509_ext]\nkeyUsage=critical,digitalSignature,keyEncipherment\nsubjectAltName=DNS:localhost,$san")) \
-            -out /var/lib/arvados/server-cert-${localip}.csr \
+            -out $ARVADOS_CONTAINER_PATH/server-cert-${localip}.csr \
             -keyout $server_cert_key \
             -days 365
 
     openssl x509 \
 	    -req \
-	    -in /var/lib/arvados/server-cert-${localip}.csr \
+	    -in $ARVADOS_CONTAINER_PATH/server-cert-${localip}.csr \
 	    -CA $root_cert \
 	    -CAkey $root_cert_key \
 	    -out $server_cert \

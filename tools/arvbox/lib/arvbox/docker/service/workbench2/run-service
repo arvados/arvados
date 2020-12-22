@@ -8,6 +8,12 @@ set -ex -o pipefail
 
 .  /usr/local/lib/arvbox/common.sh
 
+if test "$1" != "--only-deps" ; then
+  while [ ! -f $ARVADOS_CONTAINER_PATH/api.ready ]; do
+    sleep 1
+  done
+fi
+
 cd /usr/src/workbench2
 
 npm -d install --prefix /usr/local --global yarn@1.17.3
@@ -27,7 +33,7 @@ cat <<EOF > /usr/src/workbench2/public/config.json
 EOF
 
 export ARVADOS_API_HOST=$localip:${services[controller-ssl]}
-export ARVADOS_API_TOKEN=$(cat /var/lib/arvados/superuser_token)
+export ARVADOS_API_TOKEN=$(cat $ARVADOS_CONTAINER_PATH/superuser_token)
 
 url_prefix="https://$localip:${services[workbench2-ssl]}/"
 

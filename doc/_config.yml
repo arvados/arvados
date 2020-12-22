@@ -24,41 +24,41 @@ navbar:
     - Welcome:
       - user/index.html.textile.liquid
       - user/getting_started/community.html.textile.liquid
+    - Walkthough:
+      - user/tutorials/wgs-tutorial.html.textile.liquid
     - Run a workflow using Workbench:
       - user/getting_started/workbench.html.textile.liquid
       - user/tutorials/tutorial-workflow-workbench.html.textile.liquid
-      - user/composer/composer.html.textile.liquid
+    - Working at the Command Line:
+      - user/getting_started/setup-cli.html.textile.liquid
+      - user/reference/api-tokens.html.textile.liquid
+      - user/getting_started/check-environment.html.textile.liquid
     - Access an Arvados virtual machine:
       - user/getting_started/vm-login-with-webshell.html.textile.liquid
       - user/getting_started/ssh-access-unix.html.textile.liquid
       - user/getting_started/ssh-access-windows.html.textile.liquid
-      - user/getting_started/check-environment.html.textile.liquid
-      - user/reference/api-tokens.html.textile.liquid
     - Working with data sets:
       - user/tutorials/tutorial-keep.html.textile.liquid
       - user/tutorials/tutorial-keep-get.html.textile.liquid
       - user/tutorials/tutorial-keep-mount-gnu-linux.html.textile.liquid
       - user/tutorials/tutorial-keep-mount-os-x.html.textile.liquid
       - user/tutorials/tutorial-keep-mount-windows.html.textile.liquid
-      - user/topics/keep.html.textile.liquid
       - user/tutorials/tutorial-keep-collection-lifecycle.html.textile.liquid
       - user/topics/arv-copy.html.textile.liquid
-      - user/topics/storage-classes.html.textile.liquid
       - user/topics/collection-versioning.html.textile.liquid
+      - user/topics/storage-classes.html.textile.liquid
+    - Data Analysis with Workflows:
+      - user/cwl/cwl-runner.html.textile.liquid
+      - user/cwl/cwl-run-options.html.textile.liquid
+      - user/tutorials/writing-cwl-workflow.html.textile.liquid
+      - user/topics/arv-docker.html.textile.liquid
+      - user/cwl/cwl-style.html.textile.liquid
+      - user/cwl/cwl-extensions.html.textile.liquid
+      - user/cwl/federated-workflows.html.textile.liquid
+      - user/cwl/cwl-versions.html.textile.liquid
     - Working with git repositories:
       - user/tutorials/add-new-repository.html.textile.liquid
       - user/tutorials/git-arvados-guide.html.textile.liquid
-    - Running workflows at the command line:
-      - user/cwl/cwl-runner.html.textile.liquid
-      - user/cwl/cwl-run-options.html.textile.liquid
-    - Develop an Arvados workflow:
-      - user/tutorials/intro-crunch.html.textile.liquid
-      - user/tutorials/writing-cwl-workflow.html.textile.liquid
-      - user/cwl/cwl-style.html.textile.liquid
-      - user/cwl/federated-workflows.html.textile.liquid
-      - user/cwl/cwl-extensions.html.textile.liquid
-      - user/cwl/cwl-versions.html.textile.liquid
-      - user/topics/arv-docker.html.textile.liquid
     - Reference:
       - user/topics/link-accounts.html.textile.liquid
       - user/reference/cookbook.html.textile.liquid
@@ -75,8 +75,9 @@ navbar:
       - sdk/python/example.html.textile.liquid
       - sdk/python/python.html.textile.liquid
       - sdk/python/arvados-fuse.html.textile.liquid
-      - sdk/python/events.html.textile.liquid
+      - sdk/python/arvados-cwl-runner.html.textile.liquid
       - sdk/python/cookbook.html.textile.liquid
+      - sdk/python/events.html.textile.liquid
     - CLI:
       - sdk/cli/install.html.textile.liquid
       - sdk/cli/index.html.textile.liquid
@@ -123,6 +124,9 @@ navbar:
       - api/methods/virtual_machines.html.textile.liquid
       - api/methods/keep_disks.html.textile.liquid
     - Data management:
+      - api/keep-webdav.html.textile.liquid
+      - api/keep-s3.html.textile.liquid
+      - api/keep-web-urls.html.textile.liquid
       - api/methods/collections.html.textile.liquid
       - api/methods/repositories.html.textile.liquid
     - Container engine:
@@ -144,8 +148,14 @@ navbar:
   architecture:
     - Topics:
       - architecture/index.html.textile.liquid
-      - api/storage.html.textile.liquid
+    - Storage in Keep:
+      - architecture/storage.html.textile.liquid
+      - architecture/keep-clients.html.textile.liquid
+      - architecture/keep-data-lifecycle.html.textile.liquid
+      - architecture/manifest-format.html.textile.liquid
+    - Computation with Crunch:
       - api/execution.html.textile.liquid
+    - Other:
       - api/permission-model.html.textile.liquid
       - architecture/federation.html.textile.liquid
   admin:
@@ -162,6 +172,8 @@ navbar:
       - admin/migrating-providers.html.textile.liquid
       - user/topics/arvados-sync-groups.html.textile.liquid
       - admin/scoped-tokens.html.textile.liquid
+      - admin/token-expiration-policy.html.textile.liquid
+      - admin/user-activity.html.textile.liquid
     - Monitoring:
       - admin/logging.html.textile.liquid
       - admin/metrics.html.textile.liquid
@@ -175,7 +187,7 @@ navbar:
       - admin/logs-table-management.html.textile.liquid
       - admin/workbench2-vocabulary.html.textile.liquid
       - admin/storage-classes.html.textile.liquid
-      - admin/recovering-deleted-collections.html.textile.liquid
+      - admin/keep-recovering-data.html.textile.liquid
     - Cloud:
       - admin/spot-instances.html.textile.liquid
       - admin/cloudtest.html.textile.liquid
@@ -187,6 +199,11 @@ navbar:
       - install/index.html.textile.liquid
     - Docker quick start:
       - install/arvbox.html.textile.liquid
+    - Installation with Salt:
+      - install/salt.html.textile.liquid
+      - install/salt-vagrant.html.textile.liquid
+      - install/salt-single-host.html.textile.liquid
+      - install/salt-multi-host.html.textile.liquid
     - Arvados on Kubernetes:
       - install/arvados-on-kubernetes.html.textile.liquid
       - install/arvados-on-kubernetes-minikube.html.textile.liquid
@@ -213,14 +230,14 @@ navbar:
       - install/install-keep-balance.html.textile.liquid
     - User interface:
       - install/setup-login.html.textile.liquid
+      - install/install-ws.html.textile.liquid
       - install/install-workbench-app.html.textile.liquid
       - install/install-workbench2-app.html.textile.liquid
       - install/install-composer.html.textile.liquid
     - Additional services:
-      - install/install-ws.html.textile.liquid
-      - install/install-arv-git-httpd.html.textile.liquid
       - install/install-shell-server.html.textile.liquid
       - install/install-webshell.html.textile.liquid
+      - install/install-arv-git-httpd.html.textile.liquid
     - Containers API:
       - install/install-jobs-image.html.textile.liquid
       - install/crunch2-cloud/install-compute-node.html.textile.liquid

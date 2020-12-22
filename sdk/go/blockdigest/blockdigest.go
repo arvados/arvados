@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-// Stores a Block Locator Digest compactly. Can be used as a map key.
+// Package blockdigest stores a Block Locator Digest compactly. Can be used as a map key.
 package blockdigest
 
 import (
@@ -15,8 +15,8 @@ import (
 var LocatorPattern = regexp.MustCompile(
 	"^[0-9a-fA-F]{32}\\+[0-9]+(\\+[A-Z][A-Za-z0-9@_-]*)*$")
 
-// Stores a Block Locator Digest compactly, up to 128 bits.
-// Can be used as a map key.
+// BlockDigest stores a Block Locator Digest compactly, up to 128 bits. Can be
+// used as a map key.
 type BlockDigest struct {
 	H uint64
 	L uint64
@@ -41,7 +41,7 @@ func (w DigestWithSize) String() string {
 	return fmt.Sprintf("%s+%d", w.Digest.String(), w.Size)
 }
 
-// Will create a new BlockDigest unless an error is encountered.
+// FromString creates a new BlockDigest unless an error is encountered.
 func FromString(s string) (dig BlockDigest, err error) {
 	if len(s) != 32 {
 		err = fmt.Errorf("Block digest should be exactly 32 characters but this one is %d: %s", len(s), s)

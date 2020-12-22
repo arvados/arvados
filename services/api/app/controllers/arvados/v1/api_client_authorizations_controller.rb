@@ -81,7 +81,9 @@ class Arvados::V1::ApiClientAuthorizationsController < ApplicationController
         val.is_a?(String) && (attr == 'uuid' || attr == 'api_token')
       }
     end
-    @objects = model_class.where('user_id=?', current_user.id)
+    if current_api_client_authorization.andand.api_token != Rails.configuration.SystemRootToken
+      @objects = model_class.where('user_id=?', current_user.id)
+    end
     if wanted_scopes.compact.any?
       # We can't filter on scopes effectively using AR/postgres.
       # Instead we get the entire result set, do our own filtering on
@@ -122,8 +124,8 @@ class Arvados::V1::ApiClientAuthorizationsController < ApplicationController
 
   def find_object_by_uuid
     uuid_param = params[:uuid] || params[:id]
-    if (uuid_param != current_api_client_authorization.andand.uuid and
-        not Thread.current[:api_client].andand.is_trusted)
+    if (uuid_param != current_api_client_authorization.andand.uuid &&
+        !Thread.current[:api_client].andand.is_trusted)
       return forbidden
     end
     @limit = 1

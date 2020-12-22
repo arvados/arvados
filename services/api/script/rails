@@ -4,7 +4,7 @@
 
 ##### SSL - ward, 2012-10-15
 require 'rubygems'
-require 'rails/commands/server'
+require 'rails/command'
 require 'rack'
 require 'webrick'
 require 'webrick/https'

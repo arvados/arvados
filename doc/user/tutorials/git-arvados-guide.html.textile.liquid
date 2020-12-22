@@ -9,20 +9,13 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-This tutorial describes how to work with a new Arvados git repository. Working with an Arvados git repository is analogous to working with other public git repositories. It will show you how to upload custom scripts to a remote Arvados repository, so you can use it in Arvados pipelines.
+This tutorial describes how to work with an Arvados-managed git repository. Working with an Arvados git repository is very similar to working with other public git repositories.
 
 {% include 'tutorial_expectations' %}
 
 {% include 'tutorial_git_repo_expectations' %}
 
-{% include 'notebox_begin' %}
-For more information about using Git, try
-<notextile>
-<pre><code>$ <span class="userinput">man gittutorial</span></code></pre>
-</notextile> or *"search Google for Git tutorials":http://google.com/#q=git+tutorial*.
-{% include 'notebox_end' %}
-
-h2. Cloning an Arvados repository
+h2. Cloning a git repository
 
 Before you start using Git, you should do some basic configuration (you only need to do this the first time):
 
@@ -65,33 +58,22 @@ Create a git branch named *tutorial_branch* in the *tutorial* Arvados git reposi
 
 h2. Adding scripts to an Arvados repository
 
-Arvados crunch scripts need to be added in a *crunch_scripts* subdirectory in the repository. If this subdirectory does not exist, first create it in the local repository and change to that directory:
+A git repository is a good place to store the CWL workflows that you run on Arvados.
 
-<notextile>
-<pre><code>~/tutorial$ <span class="userinput">mkdir crunch_scripts</span>
-~/tutorial$ <span class="userinput">cd crunch_scripts</span></code></pre>
-</notextile>
+First, create a simple CWL CommandLineTool:
 
-Next, using @nano@ or your favorite Unix text editor, create a new file called @hash.py@ in the @crunch_scripts@ directory.
+notextile. <pre>~/tutorials$ <code class="userinput">nano hello.cwl</code></pre>
 
-notextile. <pre>~/tutorial/crunch_scripts$ <code class="userinput">nano hash.py</code></pre>
-
-Add the following code to compute the MD5 hash of each file in a collection
-
-<notextile> {% code 'tutorial_hash_script_py' as python %} </notextile>
-
-Make the file executable:
-
-notextile. <pre><code>~/tutorial/crunch_scripts$ <span class="userinput">chmod +x hash.py</span></code></pre>
+<notextile> {% code tutorial_hello_cwl as yaml %} </notextile>
 
 Next, add the file to the git repository.  This tells @git@ that the file should be included on the next commit.
 
-notextile. <pre><code>~/tutorial/crunch_scripts$ <span class="userinput">git add hash.py</span></code></pre>
+notextile. <pre><code>~/tutorial$ <span class="userinput">git add hello.cwl</span></code></pre>
 
 Next, commit your changes.  All staged changes are recorded into the local git repository:
 
 <notextile>
-<pre><code>~/tutorial/crunch_scripts$ <span class="userinput">git commit -m "my first script"</span>
+<pre><code>~/tutorial$ <span class="userinput">git commit -m "my first script"</span>
 </code></pre>
 </notextile>
 
@@ -102,4 +84,4 @@ Finally, upload your changes to the remote repository:
 </code></pre>
 </notextile>
 
-Although this tutorial shows how to add a python script to Arvados, the same steps can be used to add any of your custom bash, R, or python scripts to an Arvados repository.
+The same steps can be used to add any of your custom bash, R, or python scripts to an Arvados repository.

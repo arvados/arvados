@@ -29,7 +29,6 @@ class ApplicationController < ActionController::Base
   begin
     rescue_from(ActiveRecord::RecordNotFound,
                 ActionController::RoutingError,
-                ActionController::UnknownController,
                 AbstractController::ActionNotFound,
                 with: :render_not_found)
     rescue_from(Exception,
@@ -761,7 +760,7 @@ class ApplicationController < ActionController::Base
     if current_user && !profile_config.empty?
       current_user_profile = current_user.prefs[:profile]
       profile_config.each do |k, entry|
-        if entry['Required']
+        if entry[:Required]
           if !current_user_profile ||
              !current_user_profile[k] ||
              current_user_profile[k].empty?
@@ -928,7 +927,7 @@ class ApplicationController < ActionController::Base
   helper_method :my_starred_projects
   def my_starred_projects user
     return if defined?(@starred_projects) && @starred_projects
-    links = Link.filter([['owner_uuid', 'in', ["#{Rails.configuration.ClusterID}-j7d0g-fffffffffffffff", user.uuid]],
+    links = Link.filter([['owner_uuid', 'in', ["#{Rails.configuration.ClusterID}-j7d0g-publicfavorites", user.uuid]],
                          ['link_class', '=', 'star'],
                          ['head_uuid', 'is_a', 'arvados#group']]).with_count("none").select(%w(head_uuid))
     uuids = links.collect { |x| x.head_uuid }

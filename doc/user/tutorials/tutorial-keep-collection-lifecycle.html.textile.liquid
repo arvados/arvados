@@ -1,7 +1,7 @@
 ---
 layout: default
 navsection: userguide
-title: "Keep collection lifecycle"
+title: "Trashing and untrashing data"
 ...
 {% comment %}
 Copyright (C) The Arvados Authors. All rights reserved.
@@ -9,48 +9,40 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-During it's lifetime, a keep collection can be in various states. These states are *persisted*, *expiring*, *trashed*  and *permanently deleted*.
+Collections have a sophisticated data lifecycle, which is documented in the architecture guide at "Collection lifecycle":{{ site.baseurl }}/architecture/keep-data-lifecycle.html#collection_lifecycle.
 
-A collection is *expiring* when it has a *trash_at* time in the future. An expiring collection can be accessed as normal, but is scheduled to be trashed automatically at the *trash_at* time.
+Arvados supports trashing (deletion) of collections. For a period of time after a collection is trashed, it can be "untrashed". After that period, the collection is permanently deleted, though there may still be ways to recover the data, see "Recovering data":{{ site.baseurl }}/admin/keep-recovering-data.html in the admin guide for more details.
 
-A collection is *trashed* when it has a *trash_at* time in the past. The *is_trashed* attribute will also be "true". The delete operation immediately puts the collection in the trash by setting the *trash_at* time to "now". Once trashed, the collection is no longer readable through normal data access APIs. The collection will have *delete_at* set to some time in the future. The trashed collection is recoverable until the delete_at time passes, at which point the collection is permanently deleted.
-
-# "*Collection lifecycle attributes*":#collection_attributes
-# "*Deleting / trashing collections*":#delete-collection
+# "*Trashing (deleting) collections*":#delete-collection
 # "*Recovering trashed collections*":#trash-recovery
 
 {% include 'tutorial_expectations' %}
 
-h2(#collection_attributes). Collection lifecycle attributes
+h2(#delete-collection). Trashing (deleting) collections
 
-As listed above the attributes that are used to manage a collection lifecycle are it's *is_trashed*, *trash_at*, and *delete_at*. The table below lists the values of these attributes and how they influence the state of a collection and it's accessibility.
+A collection can be trashed using workbench or the arv command line tool.
 
-table(table table-bordered table-condensed).
-|_. collection state|_. is_trashed|_. trash_at|_. delete_at|_. get|_. list|_. list?include_trash=true|_. can be modified|
-|persisted collection|false |null |null |yes |yes |yes |yes |
-|expiring collection|false |future |future |yes  |yes |yes |yes |
-|trashed collection|true |past |future |no |no |yes |only is_trashed, trash_at and delete_at attribtues|
-|deleted collection|true|past |past |no |no |no |no |
+h3. Trashing a collection using workbench
 
-h2(#delete-collection). Deleting / trashing collections
-
-A collection can be deleted using either the arv command line tool or the workbench.
+To trash a collection using workbench, go to the Data collections tab in the project, and use the <i class="fa fa-fw fa-trash-o"></i> trash icon for this collection row.
 
 h3. Trashing a collection using arv command line tool
 
 <pre>
-arv collection delete --uuid=qr1hi-4zz18-xxxxxxxxxxxxxxx
+arv collection delete --uuid=zzzzz-4zz18-xxxxxxxxxxxxxxx
 </pre>
-
-h3. Trashing a collection using workbench
-
-To trash a collection using workbench, go to the Data collections tab in the project, and use the trash icon for this collection row.
 
 h2(#trash-recovery). Recovering trashed collections
 
-A collection can be un-trashed / recovered using either the arv command line tool or the workbench.
+A collection can be untrashed / recovered using workbench or the arv command line tool.
 
-h3. Un-trashing a collection using arv command line tool
+h3. Untrashing a collection using workbench
+
+To untrash a collection using workbench, go to trash page on workbench by clicking on the "Trash" icon in the top navigation in workbench and use the recycle icon or selection dropdown option.
+
+!{display: block;margin-left: 25px;margin-right: auto;border:1px solid lightgray;}{{ site.baseurl }}/images/trash-button-topnav.png!
+
+h3. Untrashing a collection using arv command line tool
 
 You can list the trashed collections using the list command.
 
@@ -61,11 +53,7 @@ arv collection list --include-trash=true --filters '[["is_trashed", "=", "true"]
 You can then untrash a particular collection using arv using it's uuid.
 
 <pre>
-arv collection untrash --uuid=qr1hi-4zz18-xxxxxxxxxxxxxxx
+arv collection untrash --uuid=zzzzz-4zz18-xxxxxxxxxxxxxxx
 </pre>
 
-h3. Un-trashing a collection using workbench
-
-To untrash a collection using workbench, go to trash page on workbench by clicking on the "Trash" icon in the top navigation in workbench and use the recycle icon or selection dropdown option.
-
-!{display: block;margin-left: 25px;margin-right: auto;border:1px solid lightgray;}{{ site.baseurl }}/images/trash-button-topnav.png!
+The architecture section has a more detailed description of the "data lifecycle":{{ site.baseurl }}/architecture/keep-data-lifecycle.html  in Keep.

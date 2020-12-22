@@ -43,6 +43,14 @@ import arvados.config
 
 ARVADOS_DIR = os.path.realpath(os.path.join(MY_DIRNAME, '../../..'))
 SERVICES_SRC_DIR = os.path.join(ARVADOS_DIR, 'services')
+
+# Work around https://bugs.python.org/issue27805, should be no longer
+# necessary from sometime in Python 3.8.x
+if not os.environ.get('ARVADOS_DEBUG', ''):
+    WRITE_MODE = 'a'
+else:
+    WRITE_MODE = 'w'
+
 if 'GOPATH' in os.environ:
     # Add all GOPATH bin dirs to PATH -- but insert them after the
     # ruby gems bin dir, to ensure "bundle" runs the Ruby bundler
@@ -65,6 +73,7 @@ if not os.path.exists(TEST_TMPDIR):
 my_api_host = None
 _cached_config = {}
 _cached_db_config = {}
+_already_used_port = {}
 
 def find_server_pid(PID_PATH, wait=10):
     now = time.time()
@@ -173,11 +182,15 @@ def find_available_port():
     would take care of the races, and this wouldn't be needed at all.
     """
 
-    sock = socket.socket()
-    sock.bind(('0.0.0.0', 0))
-    port = sock.getsockname()[1]
-    sock.close()
-    return port
+    global _already_used_port
+    while True:
+        sock = socket.socket()
+        sock.bind(('0.0.0.0', 0))
+        port = sock.getsockname()[1]
+        sock.close()
+        if port not in _already_used_port:
+            _already_used_port[port] = True
+            return port
 
 def _wait_until_port_listens(port, timeout=10, warn=True):
     """Wait for a process to start listening on the given port.
@@ -327,7 +340,7 @@ def run(leave_running_atexit=False):
     env.pop('ARVADOS_API_HOST', None)
     env.pop('ARVADOS_API_HOST_INSECURE', None)
     env.pop('ARVADOS_API_TOKEN', None)
-    logf = open(_logfilename('railsapi'), 'a')
+    logf = open(_logfilename('railsapi'), WRITE_MODE)
     railsapi = subprocess.Popen(
         ['bundle', 'exec',
          'passenger', 'start', '-p{}'.format(port),
@@ -409,7 +422,7 @@ def run_controller():
     if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
         return
     stop_controller()
-    logf = open(_logfilename('controller'), 'a')
+    logf = open(_logfilename('controller'), WRITE_MODE)
     port = internal_port_from_config("Controller")
     controller = subprocess.Popen(
         ["arvados-server", "controller"],
@@ -429,7 +442,7 @@ def run_ws():
         return
     stop_ws()
     port = internal_port_from_config("Websocket")
-    logf = open(_logfilename('ws'), 'a')
+    logf = open(_logfilename('ws'), WRITE_MODE)
     ws = subprocess.Popen(
         ["arvados-server", "ws"],
         stdin=open('/dev/null'), stdout=logf, stderr=logf, close_fds=True)
@@ -462,7 +475,7 @@ def _start_keep(n, blob_signing=False):
         yaml.safe_dump(confdata, f)
     keep_cmd = ["keepstore", "-config", conf]
 
-    with open(_logfilename('keep{}'.format(n)), 'a') as logf:
+    with open(_logfilename('keep{}'.format(n)), WRITE_MODE) as logf:
         with open('/dev/null') as _stdin:
             child = subprocess.Popen(
                 keep_cmd, stdin=_stdin, stdout=logf, stderr=logf, close_fds=True)
@@ -529,7 +542,7 @@ def run_keep_proxy():
     port = internal_port_from_config("Keepproxy")
     env = os.environ.copy()
     env['ARVADOS_API_TOKEN'] = auth_token('anonymous')
-    logf = open(_logfilename('keepproxy'), 'a')
+    logf = open(_logfilename('keepproxy'), WRITE_MODE)
     kp = subprocess.Popen(
         ['keepproxy'], env=env, stdin=open('/dev/null'), stdout=logf, stderr=logf, close_fds=True)
 
@@ -568,7 +581,7 @@ def run_arv_git_httpd():
     gitport = internal_port_from_config("GitHTTP")
     env = os.environ.copy()
     env.pop('ARVADOS_API_TOKEN', None)
-    logf = open(_logfilename('arv-git-httpd'), 'a')
+    logf = open(_logfilename('arv-git-httpd'), WRITE_MODE)
     agh = subprocess.Popen(['arv-git-httpd'],
         env=env, stdin=open('/dev/null'), stdout=logf, stderr=logf)
     with open(_pidfile('arv-git-httpd'), 'w') as f:
@@ -587,7 +600,7 @@ def run_keep_web():
 
     keepwebport = internal_port_from_config("WebDAV")
     env = os.environ.copy()
-    logf = open(_logfilename('keep-web'), 'a')
+    logf = open(_logfilename('keep-web'), WRITE_MODE)
     keepweb = subprocess.Popen(
         ['keep-web'],
         env=env, stdin=open('/dev/null'), stdout=logf, stderr=logf)
@@ -660,7 +673,7 @@ def setup_config():
     health_httpd_external_port = find_available_port()
     keepproxy_port = find_available_port()
     keepproxy_external_port = find_available_port()
-    keepstore_ports = sorted([str(find_available_port()) for _ in xrange(0,4)])
+    keepstore_ports = sorted([str(find_available_port()) for _ in range(0,4)])
     keep_web_port = find_available_port()
     keep_web_external_port = find_available_port()
     keep_web_dl_port = find_available_port()

@@ -12,6 +12,7 @@ import (
 	"git.arvados.org/arvados.git/lib/controller/api"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"github.com/jmoiron/sqlx"
+	// sqlx needs lib/pq to talk to PostgreSQL
 	_ "github.com/lib/pq"
 )
 

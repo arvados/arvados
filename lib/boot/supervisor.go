@@ -470,9 +470,9 @@ func (super *Supervisor) lookPath(prog string) string {
 	return prog
 }
 
-// Run prog with args, using dir as working directory. If ctx is
-// cancelled while the child is running, RunProgram terminates the
-// child, waits for it to exit, then returns.
+// RunProgram runs prog with args, using dir as working directory. If ctx is
+// cancelled while the child is running, RunProgram terminates the child, waits
+// for it to exit, then returns.
 //
 // Child's environment will have our env vars, plus any given in env.
 //
@@ -650,7 +650,7 @@ func (super *Supervisor) autofillConfig(cfg *arvados.Config) error {
 		}
 		if len(svc.InternalURLs) == 0 {
 			svc.InternalURLs = map[arvados.URL]arvados.ServiceInstance{
-				arvados.URL{Scheme: "http", Host: fmt.Sprintf("%s:%s", super.ListenHost, nextPort(super.ListenHost)), Path: "/"}: arvados.ServiceInstance{},
+				{Scheme: "http", Host: fmt.Sprintf("%s:%s", super.ListenHost, nextPort(super.ListenHost)), Path: "/"}: {},
 			}
 		}
 	}

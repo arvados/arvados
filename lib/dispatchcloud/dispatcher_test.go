@@ -66,6 +66,7 @@ func (s *DispatcherSuite) SetUpTest(c *check.C) {
 				ProbeInterval:        arvados.Duration(5 * time.Millisecond),
 				MaxProbesPerSecond:   1000,
 				TimeoutSignal:        arvados.Duration(3 * time.Millisecond),
+				TimeoutStaleRunLock:  arvados.Duration(3 * time.Millisecond),
 				TimeoutTERM:          arvados.Duration(20 * time.Millisecond),
 				ResourceTags:         map[string]string{"testtag": "test value"},
 				TagKeyPrefix:         "test:",
@@ -115,6 +116,7 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 		ChooseType: func(ctr *arvados.Container) (arvados.InstanceType, error) {
 			return ChooseInstanceType(s.cluster, ctr)
 		},
+		Logger: ctxlog.TestLogger(c),
 	}
 	for i := 0; i < 200; i++ {
 		queue.Containers = append(queue.Containers, arvados.Container{
@@ -168,8 +170,10 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 			stubvm.ReportBroken = time.Now().Add(time.Duration(rand.Int63n(200)) * time.Millisecond)
 		default:
 			stubvm.CrunchRunCrashRate = 0.1
+			stubvm.ArvMountDeadlockRate = 0.1
 		}
 	}
+	s.stubDriver.Bugf = c.Errorf
 
 	start := time.Now()
 	go s.disp.run()
@@ -213,6 +217,20 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 	c.Check(resp.Body.String(), check.Matches, `(?ms).*boot_outcomes{outcome="success"} [^0].*`)
 	c.Check(resp.Body.String(), check.Matches, `(?ms).*instances_disappeared{state="shutdown"} [^0].*`)
 	c.Check(resp.Body.String(), check.Matches, `(?ms).*instances_disappeared{state="unknown"} 0\n.*`)
+	c.Check(resp.Body.String(), check.Matches, `(?ms).*time_to_ssh_seconds{quantile="0.95"} [0-9.]*`)
+	c.Check(resp.Body.String(), check.Matches, `(?ms).*time_to_ssh_seconds_count [0-9]*`)
+	c.Check(resp.Body.String(), check.Matches, `(?ms).*time_to_ssh_seconds_sum [0-9.]*`)
+	c.Check(resp.Body.String(), check.Matches, `(?ms).*time_to_ready_for_container_seconds{quantile="0.95"} [0-9.]*`)
+	c.Check(resp.Body.String(), check.Matches, `(?ms).*time_to_ready_for_container_seconds_count [0-9]*`)
+	c.Check(resp.Body.String(), check.Matches, `(?ms).*time_to_ready_for_container_seconds_sum [0-9.]*`)
+	c.Check(resp.Body.String(), check.Matches, `(?ms).*time_from_shutdown_request_to_disappearance_seconds_count [0-9]*`)
+	c.Check(resp.Body.String(), check.Matches, `(?ms).*time_from_shutdown_request_to_disappearance_seconds_sum [0-9.]*`)
+	c.Check(resp.Body.String(), check.Matches, `(?ms).*time_from_queue_to_crunch_run_seconds_count [0-9]*`)
+	c.Check(resp.Body.String(), check.Matches, `(?ms).*time_from_queue_to_crunch_run_seconds_sum [0-9e+.]*`)
+	c.Check(resp.Body.String(), check.Matches, `(?ms).*run_probe_duration_seconds_count{outcome="success"} [0-9]*`)
+	c.Check(resp.Body.String(), check.Matches, `(?ms).*run_probe_duration_seconds_sum{outcome="success"} [0-9e+.]*`)
+	c.Check(resp.Body.String(), check.Matches, `(?ms).*run_probe_duration_seconds_count{outcome="fail"} [0-9]*`)
+	c.Check(resp.Body.String(), check.Matches, `(?ms).*run_probe_duration_seconds_sum{outcome="fail"} [0-9e+.]*`)
 }
 
 func (s *DispatcherSuite) TestAPIPermissions(c *check.C) {
@@ -303,7 +321,7 @@ func (s *DispatcherSuite) TestInstancesAPI(c *check.C) {
 		time.Sleep(time.Millisecond)
 	}
 	c.Assert(len(sr.Items), check.Equals, 1)
-	c.Check(sr.Items[0].Instance, check.Matches, "stub.*")
+	c.Check(sr.Items[0].Instance, check.Matches, "inst.*")
 	c.Check(sr.Items[0].WorkerState, check.Equals, "booting")
 	c.Check(sr.Items[0].Price, check.Equals, 0.123)
 	c.Check(sr.Items[0].LastContainerUUID, check.Equals, "")

@@ -19,7 +19,7 @@ Example UUID: @zzzzz-4zz18-0123456789abcde@
 
 h2. Resource
 
-Collections describe sets of files in terms of data blocks stored in Keep.  See "storage in Keep":{{site.baseurl}}/api/storage.html for details.
+Collections describe sets of files in terms of data blocks stored in Keep.  See "Keep - Content-Addressable Storage":{{site.baseurl}}/architecture/storage.html for details.
 
 Each collection has, in addition to the "Common resource fields":{{site.baseurl}}/api/resources.html:
 
@@ -38,7 +38,7 @@ table(table table-bordered table-condensed).
 |is_trashed|boolean|True if @trash_at@ is in the past, false if not.||
 |current_version_uuid|string|UUID of the collection's current version. On new collections, it'll be equal to the @uuid@ attribute.||
 |version|number|Version number, starting at 1 on new collections. This attribute is read-only.||
-|preserve_version|boolean|When set to true on a current version, it will be saved on the next versionable update.||
+|preserve_version|boolean|When set to true on a current version, it will be persisted. When passing @true@ as part of a bigger update call, both current and newly created versions are persisted.||
 |file_count|number|The total number of files in the collection. This attribute is read-only.||
 |file_size_total|number|The sum of the file sizes in the collection. This attribute is read-only.||
 

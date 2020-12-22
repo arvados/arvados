@@ -1,0 +1,184 @@
+---
+layout: default
+navsection: architecture
+title: Manifest format
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+Each collection record has a @manifest_text@ field, which describes how to reassemble keep blocks into files. Each block identifier in the manifest has an added signature which is used to confirm permission to read the block.  To read a block from a keepstore server, the client must provide the block identifier, the signature, and the same API token used to retrieve the collection record.
+
+!(full-width){{site.baseurl}}/images/Keep_manifests.svg!
+
+h2. Manifest v1
+
+A manifest is utf-8 encoded text, consisting of zero or more newline-terminated streams.
+
+<pre>
+manifest       ::= stream*
+stream         ::= stream-name (" " locator)+ (" " file-segment)+ "\n"
+stream-name    ::= "." ("/" path-component)*
+path-component ::= <printable ASCII - (whitespace, "/")>+
+file-segment   ::= position ":" size ":" filename
+position       ::= [0-9]+
+size           ::= [0-9]+
+filename       ::= path-component ("/" path-component)*
+</pre>
+
+Notes:
+
+* The first token is the stream name, consisting of one or more path components, delimited by @"/"@.
+** The first path component is always @"."@.
+** No path component is empty.
+** No path component following the first one can be "." or "..".
+** The stream name never begins or ends with @"/"@.
+* The next N tokens are "keep locators":#locator
+** These describe the "data stream".  By logically concatenating the blocks in the order that they appear, we can refer to "positions" in the data stream.
+* File tokens come after the sequence of keep locators.
+** A file token has three parts, delimited by @":"@: position, size, filename.
+** Position and size are given in decimal
+** The position is the position in the data stream
+** The size is the count of bytes following the position in the data stream.  A file size may cross multiple blocks in the data stream.
+** Filename may contain @"/"@ characters, but must not start or end with @"/"@, and must not contain @"//"@.
+** Filename components (delimited by @"/"@) must not be @"."@ or @".."@.
+** There may be multiple file tokens.
+
+It is legal to have multiple file tokens in the manifest (possible across different streams) with the same combined path name @stream name + "/" + filename@.  This must be interpreted as a concatenation of file content, in the order that the file tokens appear in the manifest.
+
+Spaces are represented by the escape sequence @\040@.  Spaces in stream names and filenames must be translated when reading and writing manifests.  A manifest may not contain TAB characters, nor other ASCII whitespace characters or control codes other than the spaces or newlines used as delimiters specified above.  A manifest always ends with a newline -- except the empty (zero-length) string, which is a valid manifest.
+
+h3. Normalized manifest v1
+
+A normalized manifest is a manifest that meets the following additional restrictions:
+
+* Streams are in alphanumeric order.
+* Each stream name is unique within the manifest.
+* Files within a stream are listed in alphanumeric order.
+* Blocks within a stream are ordered based on order of file tokens of the stream.  A given block is listed at most once in a stream.
+* Filename must not contain @"/"@ (the stream name represents the path prefix)
+
+h3. Example manifests
+
+A manifest with four files in two directories:
+
+<pre>
+. 930625b054ce894ac40596c3f5a0d947+33 0:0:a 0:0:b 0:33:output.txt
+./c d41d8cd98f00b204e9800998ecf8427e+0 0:0:d
+</pre>
+
+The same manifest with permission signatures on each block:
+
+<pre>
+. 930625b054ce894ac40596c3f5a0d947+33+A1f27a35dd9af37191d63ad8eb8985624451e7b79@5835c8bc 0:0:a 0:0:b 0:33:output.txt
+./c d41d8cd98f00b204e9800998ecf8427e+0+A27117dcd30c013a6e85d6d74c9a50179a1446efa@5835c8bc 0:0:d
+</pre>
+
+A manifest containing a file consisting of multiple blocks and a space in the file name:
+
+<pre>
+. c449ed86671e4a34a8b8b9430850beba+67108864 09fcfea01c3a141b89dd0dcfa1b7768e+22534144 0:89643008:Docker\040image.tar
+</pre>
+h2(#locator). Keep locator format
+
+BNF notation for a valid Keep locator string (with hints).  For example: *d41d8cd98f00b204e9800998ecf8427e+0+Z+Ada39a3ee5e6b4b0d3255bfef95601890afd80709@53bed294*
+
+<pre>
+locator          ::= sized-digest hint*
+sized-digest     ::= digest size-hint
+digest           ::= <32 lowercase hexadecimal digits>
+size-hint        ::= "+" [0-9]+
+hint             ::= "+" hint-type hint-content
+hint-type        ::= [A-Z]+
+hint-content     ::= [A-Za-z0-9@_-]*
+sign-hint        ::= "+A" <40 lowercase hexadecimal digits> "@" sign-timestamp
+remote-sign-hint ::= "+R" [A-Za-z0-9]{5} "-" <40 lowercase hexadecimal digits> "@" sign-timestamp
+sign-timestamp   ::= <8 lowercase hexadecimal digits>
+</pre>
+
+h3. Regular expression to validate locator
+
+<pre>
+/^([0-9a-f]{32})\+([0-9]+)(\+[A-Z][-A-Za-z0-9@_]*)*$/
+</pre>
+
+h3. Valid locators
+
+table(table table-bordered table-condensed).
+|@d41d8cd98f00b204e9800998ecf8427e+0@|
+|@d41d8cd98f00b204e9800998ecf8427e+0+Z@|
+|<code>d41d8cd98f00b204e9800998ecf8427e+0+Z+Ada39a3ee5e6b4b0d3255bfef95601890afd80709@53bed294</code>|
+|<code>930625b054ce894ac40596c3f5a0d947+33+Rzzzzz-1f27a35dd9af37191d63ad8eb8985624451e7b79@5835c8bc</code>|
+
+h3. Invalid locators
+
+table(table table-bordered table-condensed).
+||Why|
+|@d41d8cd98f00b204e9800998ecf8427e@|No size hint|
+|@d41d8cd98f00b204e9800998ecf8427e+Z+0@|Other hint before size hint|
+|@d41d8cd98f00b204e9800998ecf8427e+0+0@|Multiple size hints|
+|@d41d8cd98f00b204e9800998ecf8427e+0+z@|Hint does not start with uppercase letter|
+|@d41d8cd98f00b204e9800998ecf8427e+0+Zfoo*bar@|Hint contains invalid character @*@|
+
+h3. Token signatures
+
+A token signature (sign-hint) provides proof-of-access for a data block.  It is computed by taking a SHA1 HMAC of the blob signing token (a shared secret between the API server and keep servers), block digest, current API token, expiration timestamp, and blob signature TTL.
+
+When communicating with the @keepstore@ to fetch a block, or the API server to create or update a collection, the service computes the expected token signature for each block and compares it to the token signature that was presented by the client.  Keep clients receive valid block signatures when uploading a block to a keep store (getting back a signed token as proof of knowledge) or, from the API server, getting the manifest text of a collection on which the user has read permission.
+
+Security of a token signature is derived from the following characteristics:
+
+# Valid signatures can only be generated by entities that know the shared secret (the "blob signing token")
+# A signature can only be used by an entity that also know the API token that was used to generate it.
+# It expires after a set date (the expiration time, based on the "blob signature time-to-live (TTL)")
+
+h3(#federationsignatures). Federation and signatures
+
+When a collection record is returned through a federation request, the keep blocks listed in the manifest may not be available on the local cluster, and the keep block signatures returned by the remote cluster are not valid for the local cluster.  To solve this, @arvados-controller@ rewrites the signatures in the manifest to "remote cluster" signatures.
+
+A local signature comes after the block identifier and block size, and starts with @+A@:
+
+<code>930625b054ce894ac40596c3f5a0d947+33+A1f27a35dd9af37191d63ad8eb8985624451e7b79@5835c8bc</code>
+
+A remote cluster signature starts with @+R@, then the cluster id of the cluster it originated from (@zzzzz@ in this example), a dash, and then the original signature:
+
+<code>930625b054ce894ac40596c3f5a0d947+33+Rzzzzz-1f27a35dd9af37191d63ad8eb8985624451e7b79@5835c8bc</code>
+
+When the client provides a remote-signed block locator to keepstore, the keepstore proxies the request to the remote cluster.
+
+# keepstore determines the cluster id to contact from the first part of the @+R@ signature
+# creates a salted token using the API token and cluster id
+# contacts the "accessible" endpoint on the remote cluster to determine the remote cluster's keepstore or keepproxy hosts
+# converts the remote signature @+R@ back to a local signature @+A@
+# contacts the remote keepstore or keepproxy host and requests the block using the local signature
+# returns the block contents back to the client
+
+h3(#example). Example
+
+This example uses @c1bad4b39ca5a924e481008009d94e32+210@, which is the content hash of a @collection@ that was added to Keep in "how to upload data":{{ site.baseurl }}/user/tutorials/tutorial-keep.html.  Get the collection manifest using @arv-get@:
+
+<notextile>
+<pre><code>~$ <span class="userinput">arv-get c1bad4b39ca5a924e481008009d94e32+210</span>
+. 204e43b8a1185621ca55a94839582e6f+67108864+Aasignatureforthisblockaaaaaaaaaaaaaaaaaa@5f612ee6 b9677abbac956bd3e86b1deb28dfac03+67108864+Aasignatureforthisblockbbbbbbbbbbbbbbbbbb@5f612ee6 fc15aff2a762b13f521baf042140acec+67108864+Aasignatureforthisblockcccccccccccccccccc@5f612ee6 323d2a3ce20370c4ca1d3462a344f8fd+25885655+Aasignatureforthisblockdddddddddddddddddd@5f612ee6 0:227212247:var-GS000016015-ASM.tsv.bz2
+</code></pre>
+</notextile>
+
+This collection includes a single file @var-GS000016015-ASM.tsv.bz2@ which is 227212247 bytes long. It is stored using four sequential data blocks with hashes @204e43b8a1185621ca55a94839582e6f+67108864@, @b9677abbac956bd3e86b1deb28dfac03+67108864@, @fc15aff2a762b13f521baf042140acec+67108864@, and @323d2a3ce20370c4ca1d3462a344f8fd+25885655@. Each of the block hashes is followed by the rest of their "locator":#locator.
+
+Use @arv-get@ to download the first data block:
+
+notextile. <pre><code>~$ <span class="userinput">arv-get 204e43b8a1185621ca55a94839582e6f+67108864+Aasignatureforthisblockaaaaaaaaaaaaaaaaaa@5f612ee6 &gt; block1</span></code></pre>
+
+Inspect the size and compute the MD5 hash of @block1@:
+
+<notextile>
+<pre><code>~$ <span class="userinput">ls -l block1</span>
+-rw-r--r-- 1 you group 67108864 Dec  9 20:14 block1
+~$ <span class="userinput">md5sum block1</span>
+204e43b8a1185621ca55a94839582e6f  block1
+</code></pre>
+</notextile>
+
+As expected, the md5sum of the contents of the block matches the @digest@ part of the "locator":#locator, and the size of the contents matches the @size-hint@.

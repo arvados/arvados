@@ -11,10 +11,6 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 This page documents setting up and running the "Arvados on Kubernetes":/install/arvados-on-kubernetes.html @Helm@ chart on @Minikube@.
 
-{% include 'notebox_begin_warning' %}
-This Helm chart does not retain any state after it is deleted. An Arvados cluster created with this Helm chart is entirely ephemeral, and all data stored on the cluster will be deleted when it is shut down. This will be fixed in a future version.
-{% include 'notebox_end' %}
-
 h2. Prerequisites
 
 h3. Install tooling
@@ -128,7 +124,7 @@ $ helm upgrade arvados .
 h2. Shut down
 
 {% include 'notebox_begin_warning' %}
-This Helm chart does not retain any state after it is deleted. An Arvados cluster created with this Helm chart is entirely ephemeral, and <strong>all data stored on the Arvados cluster will be deleted</strong> when it is shut down. This will be fixed in a future version.
+This Helm chart uses Kubernetes <i>persistent volumes</i> for the Postgresql and Keepstore data volumes. These volumes will be retained after you delete the Arvados helm chart with the command below. Because those volumes are stored in the local Minikube Kubernetes cluster, if you delete that cluster (e.g. with <i>minikube delete</i>) the Kubernetes persistent volumes will also be deleted.
 {% include 'notebox_end' %}
 
 <pre>

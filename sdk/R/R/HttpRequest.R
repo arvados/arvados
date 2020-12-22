@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-source("./R/util.R")
-
 HttpRequest <- R6::R6Class(
 
     "HttrRequest",
@@ -54,7 +52,7 @@ HttpRequest <- R6::R6Class(
             {
                 query <- paste0(names(query), "=", query, collapse = "&")
 
-                return(paste0("/?", query))
+                return(paste0("?", query))
             }
 
             return("")

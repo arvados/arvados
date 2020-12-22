@@ -37,7 +37,7 @@ from .arvworkflow import ArvadosWorkflow, upload_workflow
 from .fsaccess import CollectionFsAccess, CollectionFetcher, collectionResolver, CollectionCache, pdh_size
 from .perf import Perf
 from .pathmapper import NoFollowPathMapper
-from .task_queue import TaskQueue
+from cwltool.task_queue import TaskQueue
 from .context import ArvLoadingContext, ArvRuntimeContext
 from ._version import __version__
 
@@ -524,6 +524,8 @@ The 'jobs' API is no longer supported.
     def arv_executor(self, updated_tool, job_order, runtimeContext, logger=None):
         self.debug = runtimeContext.debug
 
+        logger.info("Using cluster %s (%s)", self.api.config()["ClusterID"], self.api.config()["Services"]["Controller"]["ExternalURL"])
+
         updated_tool.visit(self.check_features)
 
         self.project_uuid = runtimeContext.project_uuid
@@ -596,7 +598,8 @@ The 'jobs' API is no longer supported.
                                         uuid=existing_uuid,
                                         submit_runner_ram=runtimeContext.submit_runner_ram,
                                         name=runtimeContext.name,
-                                        merged_map=merged_map),
+                                        merged_map=merged_map,
+                                        submit_runner_image=runtimeContext.submit_runner_image),
                         "success")
 
         self.apply_reqs(job_order, tool)

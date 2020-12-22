@@ -21,8 +21,7 @@ import ruamel.yaml as yaml
 
 from cwltool.errors import WorkflowException
 from cwltool.process import UnsupportedRequirement, shortname
-from cwltool.pathmapper import adjustFileObjs, adjustDirObjs, visit_class
-from cwltool.utils import aslist
+from cwltool.utils import aslist, adjustFileObjs, adjustDirObjs, visit_class
 from cwltool.job import JobBase
 
 import arvados.collection
@@ -235,7 +234,9 @@ class ArvadosContainer(JobBase):
         container_request["container_image"] = arv_docker_get_image(self.arvrunner.api,
                                                                     docker_req,
                                                                     runtimeContext.pull_image,
-                                                                    runtimeContext.project_uuid)
+                                                                    runtimeContext.project_uuid,
+                                                                    runtimeContext.force_docker_pull,
+                                                                    runtimeContext.tmp_outdir_prefix)
 
         network_req, _ = self.get_requirement("NetworkAccess")
         if network_req:
@@ -325,8 +326,8 @@ class ArvadosContainer(JobBase):
                 logger.info("%s reused container %s", self.arvrunner.label(self), response["container_uuid"])
             else:
                 logger.info("%s %s state is %s", self.arvrunner.label(self), response["uuid"], response["state"])
-        except Exception:
-            logger.exception("%s got an error", self.arvrunner.label(self))
+        except Exception as e:
+            logger.exception("%s error submitting container\n%s", self.arvrunner.label(self), e)
             logger.debug("Container request was %s", container_request)
             self.output_callback({}, "permanentFail")
 
@@ -475,6 +476,7 @@ class RunnerContainer(Runner):
                    "--api=containers",
                    "--no-log-timestamps",
                    "--disable-validate",
+                   "--disable-color",
                    "--eval-timeout=%s" % self.arvrunner.eval_timeout,
                    "--thread-count=%s" % self.arvrunner.thread_count,
                    "--enable-reuse" if self.enable_reuse else "--disable-reuse",

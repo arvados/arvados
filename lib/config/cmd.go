@@ -91,6 +91,7 @@ func (checkCommand) RunCommand(prog string, args []string, stdin io.Reader, stdo
 	flags := flag.NewFlagSet("", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	loader.SetupFlags(flags)
+	strict := flags.Bool("strict", true, "Strict validation of configuration file (warnings result in non-zero exit code)")
 
 	err = flags.Parse(args)
 	if err == flag.ErrHelp {
@@ -148,22 +149,27 @@ func (checkCommand) RunCommand(prog string, args []string, stdin io.Reader, stdo
 		fmt.Fprintln(stdout, "Your configuration is relying on deprecated entries. Suggest making the following changes.")
 		stdout.Write(diff)
 		err = nil
-		return 1
+		if *strict {
+			return 1
+		}
 	} else if len(diff) > 0 {
 		fmt.Fprintf(stderr, "Unexpected diff output:\n%s", diff)
-		return 1
+		if *strict {
+			return 1
+		}
 	} else if err != nil {
 		return 1
 	}
 	if logbuf.Len() > 0 {
-		return 1
+		if *strict {
+			return 1
+		}
 	}
 
 	if problems {
 		return 1
-	} else {
-		return 0
 	}
+	return 0
 }
 
 func warnAboutProblems(logger logrus.FieldLogger, cfg *arvados.Config) bool {

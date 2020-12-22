@@ -214,6 +214,7 @@ func (s *SiteFSSuite) TestProjectUpdatedByOther(c *check.C) {
 	// Ensure collection was flushed by Sync
 	var latest Collection
 	err = s.client.RequestAndDecode(&latest, "GET", "arvados/v1/collections/"+oob.UUID, nil, nil)
+	c.Check(err, check.IsNil)
 	c.Check(latest.ManifestText, check.Matches, `.*:test.txt.*\n`)
 
 	// Delete test.txt behind s.fs's back by updating the

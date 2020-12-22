@@ -9,14 +9,26 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-If you are using the default Arvados instance for this guide, you can Access Arvados Workbench using this link:
+{% include 'notebox_begin' %}
+This guide covers the classic Arvados Workbench web application, sometimes referred to as "Workbench 1".  There is also a new Workbench web application under development called "Workbench 2".  Sites which have both Workbench applications installed will have a dropdown menu option "Switch to Workbench 2" to switch between versions.
 
-<a href="{{site.arvados_workbench_host}}/" target="_blank">{{site.arvados_workbench_host}}/</a>
+This guide will be updated to cover "Workbench 2" in the future.
+{% include 'notebox_end' %}
 
-(If you are using a different Arvados instance than the default for this guide, replace *{{ site.arvados_workbench_host }}* with your private instance in all of the examples in this guide.)
+You can access the Arvados Workbench used in this guide using this link:
 
-You may be asked to log in using a Google account.  Arvados uses only your name and email address from Google services for identification, and will never access any personal information.  If you are accessing Arvados for the first time, the Workbench may indicate your account status is *New / inactive*.  If this is the case, contact the administrator of the Arvados instance to request activation of your account.
+<a href="{{site.arvados_workbench_host}}/" target="_blank">{{site.arvados_workbench_host}}</a>
 
-Once your account is active, logging in to the Workbench will present you with the Dashboard. This gives a summary of your projects and recent activity in the Arvados instance.  "You are now ready to run your first pipeline.":{{ site.baseurl }}/user/tutorials/tutorial-workflow-workbench.html
+If you are using a different Arvados instance replace @{{ site.arvados_workbench_host }}@ with your private instance in all of the examples in this guide.
+
+h2. Playground
+
+Curii operates a public demonstration instance of Arvados called the Arvados Playground, which can be found at <a href="https://playground.arvados.org" target="_blank">https://playground.arvados.org</a> .  Some examples in this guide involve getting data from the Playground instance.
+
+h2. Logging in
+
+You will be asked to log in.  Arvados uses only your name and email address for identification, and will never access any personal information.  If you are accessing Arvados for the first time, the Workbench may indicate your account status is *New / inactive*.  If this is the case, contact the administrator of the Arvados instance to request activation of your account.
+
+Once your account is active, logging in to the Workbench will present you with the Dashboard. This gives a summary of your projects and recent activity in the Arvados instance.  You are now ready to "upload data":{{ site.baseurl }}/user/tutorials/tutorial-keep.html or "run your first workflow.":{{ site.baseurl }}/user/tutorials/tutorial-workflow-workbench.html
 
 !{display: block;margin-left: 25px;margin-right: auto;border:1px solid lightgray;}{{ site.baseurl }}/images/workbench-dashboard.png!

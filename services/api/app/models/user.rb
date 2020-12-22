@@ -26,7 +26,7 @@ class User < ArvadosModel
   before_update :verify_repositories_empty, :if => Proc.new {
     username.nil? and username_changed?
   }
-  before_update :setup_on_activate
+  after_update :setup_on_activate
 
   before_create :check_auto_admin
   before_create :set_initial_username, :if => Proc.new {
@@ -38,7 +38,8 @@ class User < ArvadosModel
   after_create :auto_setup_new_user, :if => Proc.new {
     Rails.configuration.Users.AutoSetupNewUsers and
     (uuid != system_user_uuid) and
-    (uuid != anonymous_user_uuid)
+    (uuid != anonymous_user_uuid) and
+    (uuid[0..4] == Rails.configuration.ClusterID)
   }
   after_create :send_admin_notifications
 
@@ -160,6 +161,10 @@ SELECT 1 FROM #{PERMISSION_VIEW}
     MaterializedPermission.where("user_uuid = ? and target_uuid != ?", uuid, uuid).delete_all
   end
 
+  def forget_cached_group_perms
+    @group_perms = nil
+  end
+
   def remove_self_from_permissions
     MaterializedPermission.where("target_uuid = ?", uuid).delete_all
     check_permissions_against_full_refresh
@@ -190,32 +195,77 @@ SELECT user_uuid, target_uuid, perm_level
   # and perm_hash[:write] are true if this user can read and write
   # objects owned by group_uuid.
   def group_permissions(level=1)
-    group_perms = {}
+    @group_perms ||= {}
+    if @group_perms.empty?
+      user_uuids_subquery = USER_UUIDS_SUBQUERY_TEMPLATE % {user: "$1", perm_level: 1}
 
-    user_uuids_subquery = USER_UUIDS_SUBQUERY_TEMPLATE % {user: "$1", perm_level: "$2"}
-
-    ActiveRecord::Base.connection.
-      exec_query(%{
+      ActiveRecord::Base.connection.
+        exec_query(%{
 SELECT target_uuid, perm_level
   FROM #{PERMISSION_VIEW}
-  WHERE user_uuid in (#{user_uuids_subquery}) and perm_level >= $2
+  WHERE user_uuid in (#{user_uuids_subquery}) and perm_level >= 1
 },
-                  # "name" arg is a query label that appears in logs:
-                  "User.group_permissions",
-                  # "binds" arg is an array of [col_id, value] for '$1' vars:
-                  [[nil, uuid],
-                   [nil, level]]).
-      rows.each do |group_uuid, max_p_val|
-      group_perms[group_uuid] = PERMS_FOR_VAL[max_p_val.to_i]
+                   # "name" arg is a query label that appears in logs:
+                   "User.group_permissions",
+                   # "binds" arg is an array of [col_id, value] for '$1' vars:
+                   [[nil, uuid]]).
+        rows.each do |group_uuid, max_p_val|
+        @group_perms[group_uuid] = PERMS_FOR_VAL[max_p_val.to_i]
+      end
     end
-    group_perms
+
+    case level
+    when 1
+      @group_perms
+    when 2
+      @group_perms.select {|k,v| v[:write] }
+    when 3
+      @group_perms.select {|k,v| v[:manage] }
+    else
+      raise "level must be 1, 2 or 3"
+    end
   end
 
   # create links
-  def setup(repo_name: nil, vm_uuid: nil)
-    repo_perm = create_user_repo_link repo_name
-    vm_login_perm = create_vm_login_permission_link(vm_uuid, username) if vm_uuid
+  def setup(repo_name: nil, vm_uuid: nil, send_notification_email: nil)
+    newly_invited = Link.where(tail_uuid: self.uuid,
+                              head_uuid: all_users_group_uuid,
+                              link_class: 'permission',
+                              name: 'can_read').empty?
+
+    # Add can_read link from this user to "all users" which makes this
+    # user "invited"
     group_perm = create_user_group_link
+
+    # Add git repo
+    repo_perm = if (!repo_name.nil? || Rails.configuration.Users.AutoSetupNewUsersWithRepository) and !username.nil?
+                  repo_name ||= "#{username}/#{username}"
+                  create_user_repo_link repo_name
+                end
+
+    # Add virtual machine
+    if vm_uuid.nil? and !Rails.configuration.Users.AutoSetupNewUsersWithVmUUID.empty?
+      vm_uuid = Rails.configuration.Users.AutoSetupNewUsersWithVmUUID
+    end
+
+    vm_login_perm = if vm_uuid && username
+                      create_vm_login_permission_link(vm_uuid, username)
+                    end
+
+    # Send welcome email
+    if send_notification_email.nil?
+      send_notification_email = Rails.configuration.Mail.SendUserSetupNotificationEmail
+    end
+
+    if newly_invited and send_notification_email and !Rails.configuration.Users.UserSetupMailText.empty?
+      begin
+        UserNotifier.account_is_setup(self).deliver_now
+      rescue => e
+        logger.warn "Failed to send email to #{self.email}: #{e}"
+      end
+    end
+
+    forget_cached_group_perms
 
     return [repo_perm, vm_login_perm, group_perm, self].compact
   end
@@ -254,7 +304,9 @@ SELECT target_uuid, perm_level
     self.prefs = {}
 
     # mark the user as inactive
+    self.is_admin = false  # can't be admin and inactive
     self.is_active = false
+    forget_cached_group_perms
     self.save!
   end
 
@@ -745,17 +797,6 @@ update #{PERMISSION_VIEW} set target_uuid=$1 where target_uuid = $2
   # Automatically setup new user during creation
   def auto_setup_new_user
     setup
-    if username
-      create_vm_login_permission_link(Rails.configuration.Users.AutoSetupNewUsersWithVmUUID,
-                                      username)
-      repo_name = "#{username}/#{username}"
-      if Rails.configuration.Users.AutoSetupNewUsersWithRepository and
-          Repository.where(name: repo_name).first.nil?
-        repo = Repository.create!(name: repo_name, owner_uuid: uuid)
-        Link.create!(tail_uuid: uuid, head_uuid: repo.uuid,
-                     link_class: "permission", name: "can_manage")
-      end
-    end
   end
 
   # Send notification if the user saved profile for the first time

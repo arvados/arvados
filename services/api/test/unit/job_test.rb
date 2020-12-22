@@ -117,7 +117,7 @@ class JobTest < ActiveSupport::TestCase
     'locator' => BAD_COLLECTION,
   }.each_pair do |spec_type, image_spec|
     test "Job validation fails with nonexistent Docker image #{spec_type}" do
-      Rails.configuration.RemoteClusters = {}
+      Rails.configuration.RemoteClusters = ConfigLoader.to_OrderedOptions({})
       job = Job.new job_attrs(runtime_constraints:
                               {'docker_image' => image_spec})
       assert(job.invalid?, "nonexistent Docker image #{spec_type} #{image_spec} was valid")

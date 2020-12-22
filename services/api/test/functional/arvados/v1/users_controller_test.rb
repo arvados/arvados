@@ -609,6 +609,23 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
   test "setup user with send notification param true and verify email" do
     authorize_with :admin
 
+    Rails.configuration.Users.UserSetupMailText = %{
+<% if not @user.full_name.empty? -%>
+<%= @user.full_name %>,
+<% else -%>
+Hi there,
+<% end -%>
+
+Your Arvados shell account has been set up. Please visit the virtual machines page <% if Rails.configuration.Services.Workbench1.ExternalURL %>at
+
+<%= Rails.configuration.Services.Workbench1.ExternalURL %><%= "/" if !Rails.configuration.Services.Workbench1.ExternalURL.to_s.end_with?("/") %>users/<%= @user.uuid%>/virtual_machines <% else %><% end %>
+
+for connection instructions.
+
+Thanks,
+The Arvados team.
+}
+
     post :setup, params: {
       send_notification_email: 'true',
       user: {
@@ -1039,9 +1056,12 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
   test "batch update" do
     existinguuid = 'remot-tpzed-foobarbazwazqux'
     newuuid = 'remot-tpzed-newnarnazwazqux'
+    unchanginguuid = 'remot-tpzed-nochangingattrs'
     act_as_system_user do
       User.create!(uuid: existinguuid, email: 'root@existing.example.com')
+      User.create!(uuid: unchanginguuid, email: 'root@unchanging.example.com', prefs: {'foo' => {'bar' => 'baz'}})
     end
+    assert_equal(1, Log.where(object_uuid: unchanginguuid).count)
 
     authorize_with(:admin)
     patch(:batch_update,
@@ -1059,6 +1079,10 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
                 'email' => 'root@remot.example.com',
                 'username' => '',
               },
+              unchanginguuid => {
+                'email' => 'root@unchanging.example.com',
+                'prefs' => {'foo' => {'bar' => 'baz'}},
+              },
             }})
     assert_response(:success)
 
@@ -1070,6 +1094,8 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
     assert_equal('noot', User.find_by_uuid(newuuid).first_name)
     assert_equal('root@remot.example.com', User.find_by_uuid(newuuid).email)
+
+    assert_equal(1, Log.where(object_uuid: unchanginguuid).count)
   end
 
   NON_ADMIN_USER_DATA = ["uuid", "kind", "is_active", "email", "first_name",

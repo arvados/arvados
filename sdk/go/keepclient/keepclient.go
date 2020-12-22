@@ -2,7 +2,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-/* Provides low-level Get/Put primitives for accessing Arvados Keep blocks. */
+// Package keepclient provides low-level Get/Put primitives for accessing
+// Arvados Keep blocks.
 package keepclient
 
 import (
@@ -25,7 +26,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
 )
 
-// A Keep "block" is 64MB.
+// BLOCKSIZE defines the length of a Keep "block", which is 64MB.
 const BLOCKSIZE = 64 * 1024 * 1024
 
 var (
@@ -82,14 +83,14 @@ var ErrNoSuchKeepServer = errors.New("No keep server matching the given UUID is 
 // ErrIncompleteIndex is returned when the Index response does not end with a new empty line
 var ErrIncompleteIndex = errors.New("Got incomplete index")
 
-const X_Keep_Desired_Replicas = "X-Keep-Desired-Replicas"
-const X_Keep_Replicas_Stored = "X-Keep-Replicas-Stored"
+const XKeepDesiredReplicas = "X-Keep-Desired-Replicas"
+const XKeepReplicasStored = "X-Keep-Replicas-Stored"
 
 type HTTPClient interface {
 	Do(*http.Request) (*http.Response, error)
 }
 
-// Information about Arvados and Keep servers.
+// KeepClient holds information about Arvados and Keep servers.
 type KeepClient struct {
 	Arvados            *arvadosclient.ArvadosClient
 	Want_replicas      int
@@ -139,7 +140,7 @@ func New(arv *arvadosclient.ArvadosClient) *KeepClient {
 	}
 }
 
-// Put a block given the block hash, a reader, and the number of bytes
+// PutHR puts a block given the block hash, a reader, and the number of bytes
 // to read from the reader (which must be between 0 and BLOCKSIZE).
 //
 // Returns the locator for the written block, the number of replicas
@@ -191,11 +192,11 @@ func (kc *KeepClient) PutB(buffer []byte) (string, int, error) {
 //
 // If the block hash and data size are known, PutHR is more efficient.
 func (kc *KeepClient) PutR(r io.Reader) (locator string, replicas int, err error) {
-	if buffer, err := ioutil.ReadAll(r); err != nil {
+	buffer, err := ioutil.ReadAll(r)
+	if err != nil {
 		return "", 0, err
-	} else {
-		return kc.PutB(buffer)
 	}
+	return kc.PutB(buffer)
 }
 
 func (kc *KeepClient) getOrHead(method string, locator string, header http.Header) (io.ReadCloser, int64, string, http.Header, error) {
@@ -216,7 +217,7 @@ func (kc *KeepClient) getOrHead(method string, locator string, header http.Heade
 
 	var errs []string
 
-	tries_remaining := 1 + kc.Retries
+	triesRemaining := 1 + kc.Retries
 
 	serversToTry := kc.getSortedRoots(locator)
 
@@ -225,8 +226,8 @@ func (kc *KeepClient) getOrHead(method string, locator string, header http.Heade
 
 	var retryList []string
 
-	for tries_remaining > 0 {
-		tries_remaining -= 1
+	for triesRemaining > 0 {
+		triesRemaining--
 		retryList = nil
 
 		for _, host := range serversToTry {
@@ -290,10 +291,9 @@ func (kc *KeepClient) getOrHead(method string, locator string, header http.Heade
 					Hash:   md5.New(),
 					Check:  locator[0:32],
 				}, expectLength, url, resp.Header, nil
-			} else {
-				resp.Body.Close()
-				return nil, expectLength, url, resp.Header, nil
 			}
+			resp.Body.Close()
+			return nil, expectLength, url, resp.Header, nil
 		}
 		serversToTry = retryList
 	}
@@ -333,7 +333,7 @@ func (kc *KeepClient) LocalLocator(locator string) (string, error) {
 	return loc, nil
 }
 
-// Get() retrieves a block, given a locator. Returns a reader, the
+// Get retrieves a block, given a locator. Returns a reader, the
 // expected data length, the URL the block is being fetched from, and
 // an error.
 //
@@ -345,13 +345,13 @@ func (kc *KeepClient) Get(locator string) (io.ReadCloser, int64, string, error) 
 	return rdr, size, url, err
 }
 
-// ReadAt() retrieves a portion of block from the cache if it's
+// ReadAt retrieves a portion of block from the cache if it's
 // present, otherwise from the network.
 func (kc *KeepClient) ReadAt(locator string, p []byte, off int) (int, error) {
 	return kc.cache().ReadAt(kc, locator, p, off)
 }
 
-// Ask() verifies that a block with the given hash is available and
+// Ask verifies that a block with the given hash is available and
 // readable, according to at least one Keep service. Unlike Get, it
 // does not retrieve the data or verify that the data content matches
 // the hash specified by the locator.
@@ -416,7 +416,7 @@ func (kc *KeepClient) GetIndex(keepServiceUUID, prefix string) (io.Reader, error
 	return bytes.NewReader(respBody[0 : len(respBody)-1]), nil
 }
 
-// LocalRoots() returns the map of local (i.e., disk and proxy) Keep
+// LocalRoots returns the map of local (i.e., disk and proxy) Keep
 // services: uuid -> baseURI.
 func (kc *KeepClient) LocalRoots() map[string]string {
 	kc.discoverServices()
@@ -425,7 +425,7 @@ func (kc *KeepClient) LocalRoots() map[string]string {
 	return kc.localRoots
 }
 
-// GatewayRoots() returns the map of Keep remote gateway services:
+// GatewayRoots returns the map of Keep remote gateway services:
 // uuid -> baseURI.
 func (kc *KeepClient) GatewayRoots() map[string]string {
 	kc.discoverServices()
@@ -434,7 +434,7 @@ func (kc *KeepClient) GatewayRoots() map[string]string {
 	return kc.gatewayRoots
 }
 
-// WritableLocalRoots() returns the map of writable local Keep services:
+// WritableLocalRoots returns the map of writable local Keep services:
 // uuid -> baseURI.
 func (kc *KeepClient) WritableLocalRoots() map[string]string {
 	kc.discoverServices()
@@ -493,9 +493,8 @@ func (kc *KeepClient) getSortedRoots(locator string) []string {
 func (kc *KeepClient) cache() *BlockCache {
 	if kc.BlockCache != nil {
 		return kc.BlockCache
-	} else {
-		return DefaultBlockCache
 	}
+	return DefaultBlockCache
 }
 
 func (kc *KeepClient) ClearBlockCache() {
@@ -576,9 +575,8 @@ var reqIDGen = httpserver.IDGenerator{Prefix: "req-"}
 func (kc *KeepClient) getRequestID() string {
 	if kc.RequestID != "" {
 		return kc.RequestID
-	} else {
-		return reqIDGen.Next()
 	}
+	return reqIDGen.Next()
 }
 
 type Locator struct {

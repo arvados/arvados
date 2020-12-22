@@ -14,6 +14,7 @@ import logging
 import os
 import re
 import socket
+import sys
 import time
 import types
 
@@ -31,6 +32,9 @@ MAX_IDLE_CONNECTION_DURATION = 30
 RETRY_DELAY_INITIAL = 2
 RETRY_DELAY_BACKOFF = 2
 RETRY_COUNT = 2
+
+if sys.version_info >= (3,):
+    httplib2.SSLHandshakeError = None
 
 class OrderedJsonModel(apiclient.model.JsonModel):
     """Model class for JSON that preserves the contents' order.

@@ -27,5 +27,9 @@ func (seedDatabase) Run(ctx context.Context, fail func(error), super *Supervisor
 	if err != nil {
 		return err
 	}
+	err = super.RunProgram(ctx, "services/api", nil, railsEnv, "bundle", "exec", "./script/get_anonymous_user_token.rb")
+	if err != nil {
+		return err
+	}
 	return nil
 }

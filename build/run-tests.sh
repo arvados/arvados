@@ -88,7 +88,7 @@ lib/cloud/cloudtest
 lib/dispatchcloud
 lib/dispatchcloud/container
 lib/dispatchcloud/scheduler
-lib/dispatchcloud/ssh_executor
+lib/dispatchcloud/sshexecutor
 lib/dispatchcloud/worker
 lib/mount
 lib/pam
@@ -162,9 +162,12 @@ temp_preserve=
 
 clear_temp() {
     if [[ -z "$temp" ]]; then
-        # we didn't even get as far as making a temp dir
+        # we did not even get as far as making a temp dir
         :
     elif [[ -z "$temp_preserve" ]]; then
+        # Go creates readonly dirs in the module cache, which cause
+        # "rm -rf" to fail unless we chmod first.
+        chmod -R u+w "$temp"
         rm -rf "$temp"
     else
         echo "Leaving behind temp dirs in $temp"
@@ -200,9 +203,6 @@ sanity_checks() {
     echo "locale: ${LANG}"
     [[ "$(locale charmap)" = "UTF-8" ]] \
         || fatal "Locale '${LANG}' is broken/missing. Try: echo ${LANG} | sudo tee -a /etc/locale.gen && sudo locale-gen"
-    echo -n 'virtualenv: '
-    virtualenv --version \
-        || fatal "No virtualenv. Try: apt-get install virtualenv (on ubuntu: python-virtualenv)"
     echo -n 'ruby: '
     ruby -v \
         || fatal "No ruby. Install >=2.1.9 (using rbenv, rvm, or source)"
@@ -220,9 +220,9 @@ sanity_checks() {
     echo -n 'gnutls.h: '
     find /usr/include -path '*gnutls/gnutls.h' | egrep --max-count=1 . \
         || fatal "No gnutls/gnutls.h. Try: apt-get install libgnutls28-dev"
-    echo -n 'Python2 pyconfig.h: '
-    find /usr/include -path '*/python2*/pyconfig.h' | egrep --max-count=1 . \
-        || fatal "No Python2 pyconfig.h. Try: apt-get install python2.7-dev"
+    echo -n 'virtualenv: '
+    python3 -m venv -h | egrep --max-count=1 . \
+        || fatal "No virtualenv. Try: apt-get install python3-venv"
     echo -n 'Python3 pyconfig.h: '
     find /usr/include -path '*/python3*/pyconfig.h' | egrep --max-count=1 . \
         || fatal "No Python3 pyconfig.h. Try: apt-get install python3-dev"
@@ -389,7 +389,7 @@ checkpidfile() {
 
 checkhealth() {
     svc="$1"
-    base=$("${VENVDIR}/bin/python" -c "import yaml; print list(yaml.safe_load(file('$ARVADOS_CONFIG'))['Clusters']['zzzzz']['Services']['$1']['InternalURLs'].keys())[0]")
+    base=$("${VENV3DIR}/bin/python3" -c "import yaml; print(list(yaml.safe_load(open('$ARVADOS_CONFIG','r'))['Clusters']['zzzzz']['Services']['$1']['InternalURLs'].keys())[0])")
     url="$base/_health/ping"
     if ! curl -Ss -H "Authorization: Bearer e687950a23c3a9bceec28c6223a06c79" "${url}" | tee -a /dev/stderr | grep '"OK"'; then
         echo "${url} failed"
@@ -411,7 +411,7 @@ start_services() {
     if [[ -n "$ARVADOS_TEST_API_HOST" ]]; then
         return 0
     fi
-    . "$VENVDIR/bin/activate"
+    . "$VENV3DIR/bin/activate"
     echo 'Starting API, controller, keepproxy, keep-web, arv-git-httpd, ws, and nginx ssl proxy...'
     if [[ ! -d "$WORKSPACE/services/api/log" ]]; then
         mkdir -p "$WORKSPACE/services/api/log"
@@ -424,26 +424,26 @@ start_services() {
     fail=1
 
     cd "$WORKSPACE" \
-        && eval $(python sdk/python/tests/run_test_server.py start --auth admin) \
+        && eval $(python3 sdk/python/tests/run_test_server.py start --auth admin) \
         && export ARVADOS_TEST_API_HOST="$ARVADOS_API_HOST" \
         && export ARVADOS_TEST_API_INSTALLED="$$" \
         && checkpidfile api \
         && checkdiscoverydoc $ARVADOS_API_HOST \
-        && eval $(python sdk/python/tests/run_test_server.py start_nginx) \
+        && eval $(python3 sdk/python/tests/run_test_server.py start_nginx) \
         && checkpidfile nginx \
-        && python sdk/python/tests/run_test_server.py start_controller \
+        && python3 sdk/python/tests/run_test_server.py start_controller \
         && checkpidfile controller \
         && checkhealth Controller \
         && checkdiscoverydoc $ARVADOS_API_HOST \
-        && python sdk/python/tests/run_test_server.py start_keep_proxy \
+        && python3 sdk/python/tests/run_test_server.py start_keep_proxy \
         && checkpidfile keepproxy \
-        && python sdk/python/tests/run_test_server.py start_keep-web \
+        && python3 sdk/python/tests/run_test_server.py start_keep-web \
         && checkpidfile keep-web \
         && checkhealth WebDAV \
-        && python sdk/python/tests/run_test_server.py start_arv-git-httpd \
+        && python3 sdk/python/tests/run_test_server.py start_arv-git-httpd \
         && checkpidfile arv-git-httpd \
         && checkhealth GitHTTP \
-        && python sdk/python/tests/run_test_server.py start_ws \
+        && python3 sdk/python/tests/run_test_server.py start_ws \
         && checkpidfile ws \
         && export ARVADOS_TEST_PROXY_SERVICES=1 \
         && (env | egrep ^ARVADOS) \
@@ -460,15 +460,15 @@ stop_services() {
         return
     fi
     unset ARVADOS_TEST_API_HOST ARVADOS_TEST_PROXY_SERVICES
-    . "$VENVDIR/bin/activate" || return
+    . "$VENV3DIR/bin/activate" || return
     cd "$WORKSPACE" \
-        && python sdk/python/tests/run_test_server.py stop_nginx \
-        && python sdk/python/tests/run_test_server.py stop_arv-git-httpd \
-        && python sdk/python/tests/run_test_server.py stop_ws \
-        && python sdk/python/tests/run_test_server.py stop_keep-web \
-        && python sdk/python/tests/run_test_server.py stop_keep_proxy \
-        && python sdk/python/tests/run_test_server.py stop_controller \
-        && python sdk/python/tests/run_test_server.py stop \
+        && python3 sdk/python/tests/run_test_server.py stop_nginx \
+        && python3 sdk/python/tests/run_test_server.py stop_arv-git-httpd \
+        && python3 sdk/python/tests/run_test_server.py stop_ws \
+        && python3 sdk/python/tests/run_test_server.py stop_keep-web \
+        && python3 sdk/python/tests/run_test_server.py stop_keep_proxy \
+        && python3 sdk/python/tests/run_test_server.py stop_controller \
+        && python3 sdk/python/tests/run_test_server.py stop \
         && all_services_stopped=1
     deactivate
     unset ARVADOS_CONFIG
@@ -541,12 +541,12 @@ setup_ruby_environment() {
 
         tmpdir_gem_home="$(env - PATH="$PATH" HOME="$GEMHOME" gem env gempath | cut -f1 -d:)"
         PATH="$tmpdir_gem_home/bin:$PATH"
-        export GEM_PATH="$tmpdir_gem_home"
+        export GEM_PATH="$tmpdir_gem_home:$(gem env gempath)"
 
         echo "Will install dependencies to $(gem env gemdir)"
-        echo "Will install arvados gems to $tmpdir_gem_home"
+        echo "Will install bundler and arvados gems to $tmpdir_gem_home"
         echo "Gem search path is GEM_PATH=$GEM_PATH"
-        bundle="$(gem env gempath | cut -f1 -d:)/bin/bundle"
+        bundle="$tmpdir_gem_home/bin/bundle"
         (
             export HOME=$GEMHOME
             bundlers="$(gem list --details bundler)"
@@ -578,17 +578,12 @@ gem_uninstall_if_exists() {
 
 setup_virtualenv() {
     local venvdest="$1"; shift
-    if ! [[ -e "$venvdest/bin/activate" ]] || ! [[ -e "$venvdest/bin/pip" ]]; then
-        virtualenv --setuptools "$@" "$venvdest" || fatal "virtualenv $venvdest failed"
+    if ! [[ -e "$venvdest/bin/activate" ]] || ! [[ -e "$venvdest/bin/pip3" ]]; then
+        python3 -m venv "$@" "$venvdest" || fatal "virtualenv $venvdest failed"
     elif [[ -n "$short" ]]; then
         return
     fi
-    if [[ $("$venvdest/bin/python" --version 2>&1) =~ \ 3\.[012]\. ]]; then
-        # pip 8.0.0 dropped support for python 3.2, e.g., debian wheezy
-        "$venvdest/bin/pip" install --no-cache-dir 'setuptools>=18.5' 'pip>=7,<8'
-    else
-        "$venvdest/bin/pip" install --no-cache-dir 'setuptools>=18.5' 'pip>=7'
-    fi
+    "$venvdest/bin/pip3" install --no-cache-dir 'setuptools>=18.5' 'pip>=7'
 }
 
 initialize() {
@@ -610,7 +605,7 @@ initialize() {
     fi
 
     # Set up temporary install dirs (unless existing dirs were supplied)
-    for tmpdir in VENVDIR VENV3DIR GOPATH GEMHOME PERLINSTALLBASE R_LIBS
+    for tmpdir in VENV3DIR GOPATH GEMHOME PERLINSTALLBASE R_LIBS
     do
         if [[ -z "${!tmpdir}" ]]; then
             eval "$tmpdir"="$temp/$tmpdir"
@@ -651,34 +646,25 @@ install_env() {
     go mod download || fatal "Go deps failed"
     which goimports >/dev/null || go get golang.org/x/tools/cmd/goimports || fatal "Go setup failed"
 
-    setup_virtualenv "$VENVDIR" --python python2.7
-    . "$VENVDIR/bin/activate"
+    setup_virtualenv "$VENV3DIR"
+    . "$VENV3DIR/bin/activate"
 
     # Needed for run_test_server.py which is used by certain (non-Python) tests.
+    # pdoc3 needed to generate the Python SDK documentation.
     (
         set -e
-        "${VENVDIR}/bin/pip" install PyYAML
-        "${VENV3DIR}/bin/pip" install PyYAML
+        "${VENV3DIR}/bin/pip3" install wheel
+        "${VENV3DIR}/bin/pip3" install PyYAML
+        "${VENV3DIR}/bin/pip3" install httplib2
+        "${VENV3DIR}/bin/pip3" install future
+        "${VENV3DIR}/bin/pip3" install google-api-python-client
+        "${VENV3DIR}/bin/pip3" install ciso8601
+        "${VENV3DIR}/bin/pip3" install pycurl
+        "${VENV3DIR}/bin/pip3" install ws4py
+        "${VENV3DIR}/bin/pip3" install pdoc3
         cd "$WORKSPACE/sdk/python"
-        python setup.py install
+        python3 setup.py install
     ) || fatal "installing PyYAML and sdk/python failed"
-
-    # Deactivate Python 2 virtualenv
-    deactivate
-
-    # If Python 3 is available, set up its virtualenv in $VENV3DIR.
-    # Otherwise, skip dependent tests.
-    PYTHON3=$(which python3)
-    if [[ ${?} = 0 ]]; then
-        setup_virtualenv "$VENV3DIR" --python python3
-    else
-        PYTHON3=
-        cat >&2 <<EOF
-
-Warning: python3 could not be found. Python 3 tests will be skipped.
-
-EOF
-    fi
 }
 
 retry() {
@@ -723,7 +709,7 @@ do_test() {
             stop_services
             check_arvados_config "$1"
             ;;
-        gofmt | doc | lib/cli | lib/cloud/azure | lib/cloud/ec2 | lib/cloud/cloudtest | lib/cmd | lib/dispatchcloud/ssh_executor | lib/dispatchcloud/worker)
+        gofmt | doc | lib/cli | lib/cloud/azure | lib/cloud/ec2 | lib/cloud/cloudtest | lib/cmd | lib/dispatchcloud/sshexecutor | lib/dispatchcloud/worker)
             check_arvados_config "$1"
             # don't care whether services are running
             ;;
@@ -752,7 +738,7 @@ do_test_once() {
 
     result=
     if which deactivate >/dev/null; then deactivate; fi
-    if ! . "$VENVDIR/bin/activate"
+    if ! . "$VENV3DIR/bin/activate"
     then
         result=1
     elif [[ "$2" == "go" ]]
@@ -823,12 +809,12 @@ check_arvados_config() {
         # Create config file.  The run_test_server script requires PyYAML,
         # so virtualenv needs to be active.  Downstream steps like
         # workbench install which require a valid config.yml.
-        if [[ ! -s "$VENVDIR/bin/activate" ]] ; then
+        if [[ ! -s "$VENV3DIR/bin/activate" ]] ; then
             install_env
         fi
-        . "$VENVDIR/bin/activate"
+        . "$VENV3DIR/bin/activate"
         cd "$WORKSPACE"
-        eval $(python sdk/python/tests/run_test_server.py setup_config)
+        eval $(python3 sdk/python/tests/run_test_server.py setup_config)
         deactivate
     fi
 }
@@ -847,7 +833,7 @@ do_install_once() {
 
     result=
     if which deactivate >/dev/null; then deactivate; fi
-    if [[ "$1" != "env" ]] && ! . "$VENVDIR/bin/activate"; then
+    if [[ "$1" != "env" ]] && ! . "$VENV3DIR/bin/activate"; then
         result=1
     elif [[ "$2" == "go" ]]
     then
@@ -867,10 +853,10 @@ do_install_once() {
         # install" ensures that we've actually installed the local package
         # we just built.
         cd "$WORKSPACE/$1" \
-            && "${3}python" setup.py sdist rotate --keep=1 --match .tar.gz \
+            && "${3}python3" setup.py sdist rotate --keep=1 --match .tar.gz \
             && cd "$WORKSPACE" \
-            && "${3}pip" install --no-cache-dir "$WORKSPACE/$1/dist"/*.tar.gz \
-            && "${3}pip" install --no-cache-dir --no-deps --ignore-installed "$WORKSPACE/$1/dist"/*.tar.gz
+            && "${3}pip3" install --no-cache-dir "$WORKSPACE/$1/dist"/*.tar.gz \
+            && "${3}pip3" install --no-cache-dir --no-deps --ignore-installed "$WORKSPACE/$1/dist"/*.tar.gz
     elif [[ "$2" != "" ]]
     then
         "install_$2"
@@ -950,7 +936,7 @@ install_services/api() {
     # database, so that we can drop it. This assumes the current user
     # is a postgresql superuser.
     cd "$WORKSPACE/services/api" \
-        && test_database=$("${VENVDIR}/bin/python" -c "import yaml; print yaml.safe_load(file('$ARVADOS_CONFIG'))['Clusters']['zzzzz']['PostgreSQL']['Connection']['dbname']") \
+        && test_database=$("${VENV3DIR}/bin/python3" -c "import yaml; print(yaml.safe_load(open('$ARVADOS_CONFIG','r'))['Clusters']['zzzzz']['PostgreSQL']['Connection']['dbname'])") \
         && psql "$test_database" -c "SELECT pg_terminate_backend (pg_stat_activity.pid::int) FROM pg_stat_activity WHERE pg_stat_activity.datname = '$test_database';" 2>/dev/null
 
     mkdir -p "$WORKSPACE/services/api/tmp/pids"
@@ -959,7 +945,7 @@ install_services/api() {
     if [[ ! -e "$cert.pem" || "$(date -r "$cert.pem" +%s)" -lt 1512659226 ]]; then
         (
             dir="$WORKSPACE/services/api/tmp"
-            set -ex
+            set -e
             openssl req -newkey rsa:2048 -nodes -subj '/C=US/ST=State/L=City/CN=localhost' -out "$cert.csr" -keyout "$cert.key" </dev/null
             openssl x509 -req -in "$cert.csr" -signkey "$cert.key" -out "$cert.pem" -days 3650 -extfile <(printf 'subjectAltName=DNS:localhost,DNS:::1,DNS:0.0.0.0,DNS:127.0.0.1,IP:::1,IP:0.0.0.0,IP:127.0.0.1')
         ) || return 1
@@ -975,7 +961,7 @@ install_services/api() {
             || return 1
 
     (
-        set -e
+        set -ex
         cd "$WORKSPACE/services/api"
         export RAILS_ENV=test
         if "$bundle" exec rails db:environment:set ; then
@@ -988,13 +974,10 @@ install_services/api() {
 
 declare -a pythonstuff
 pythonstuff=(
-    sdk/python
     sdk/python:py3
     sdk/cwl:py3
     services/dockercleaner:py3
-    services/fuse
     services/fuse:py3
-    tools/crunchstat-summary
     tools/crunchstat-summary:py3
 )
 
@@ -1012,7 +995,7 @@ test_doc() {
     (
         set -e
         cd "$WORKSPACE/doc"
-        ARVADOS_API_HOST=qr1hi.arvadosapi.com
+        ARVADOS_API_HOST=pirca.arvadosapi.com
         # Make sure python-epydoc is installed or the next line won't
         # do much good!
         PYTHONPATH=$WORKSPACE/sdk/python/ "$bundle" exec rake linkchecker baseurl=file://$WORKSPACE/doc/.site/ arvados_workbench_host=https://workbench.$ARVADOS_API_HOST arvados_api_host=$ARVADOS_API_HOST
@@ -1094,7 +1077,6 @@ install_deps() {
     do_install cmd/arvados-server go
     do_install sdk/cli
     do_install sdk/perl
-    do_install sdk/python pip
     do_install sdk/python pip "${VENV3DIR}/bin/"
     do_install sdk/ruby
     do_install services/api
@@ -1115,16 +1097,10 @@ install_all() {
     do_install services/login-sync
     for p in "${pythonstuff[@]}"
     do
-        dir=${p%:py3}
-        if [[ ${dir} = ${p} ]]; then
-            if [[ -z ${skip[python2]} ]]; then
-                do_install ${dir} pip
-            fi
-        elif [[ -n ${PYTHON3} ]]; then
-            if [[ -z ${skip[python3]} ]]; then
-                do_install ${dir} pip "$VENV3DIR/bin/"
-            fi
-        fi
+       dir=${p%:py3}
+       if [[ -z ${skip[python3]} ]]; then
+           do_install ${dir} pip "$VENV3DIR/bin/"
+       fi
     done
     for g in "${gostuff[@]}"
     do
@@ -1155,14 +1131,8 @@ test_all() {
     for p in "${pythonstuff[@]}"
     do
         dir=${p%:py3}
-        if [[ ${dir} = ${p} ]]; then
-            if [[ -z ${skip[python2]} ]]; then
-                do_test ${dir} pip
-            fi
-        elif [[ -n ${PYTHON3} ]]; then
-            if [[ -z ${skip[python3]} ]]; then
-                do_test ${dir} pip "$VENV3DIR/bin/"
-            fi
+        if [[ -z ${skip[python3]} ]]; then
+            do_test ${dir} pip "$VENV3DIR/bin/"
         fi
     done
 
@@ -1201,7 +1171,6 @@ for g in "${gostuff[@]}"; do
 done
 for p in "${pythonstuff[@]}"; do
     dir=${p%:py3}
-    testfuncargs[$dir]="$dir pip $VENVDIR/bin/"
     testfuncargs[$dir:py3]="$dir pip $VENV3DIR/bin/"
 done
 
@@ -1221,13 +1190,13 @@ else
     skip=()
     only=()
     only_install=()
-    if [[ -e "$VENVDIR/bin/activate" ]]; then stop_services; fi
+    if [[ -e "$VENV3DIR/bin/activate" ]]; then stop_services; fi
     setnextcmd() {
         if [[ "$TERM" = dumb ]]; then
             # assume emacs, or something, is offering a history buffer
             # and pre-populating the command will only cause trouble
             nextcmd=
-        elif [[ ! -e "$VENVDIR/bin/activate" ]]; then
+        elif [[ ! -e "$VENV3DIR/bin/activate" ]]; then
             nextcmd="install deps"
         else
             nextcmd=""

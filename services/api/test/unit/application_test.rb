@@ -7,7 +7,7 @@ require 'test_helper'
 class ApplicationTest < ActiveSupport::TestCase
   include CurrentApiClient
 
-  test "test act_as_system_user" do
+  test "act_as_system_user" do
     Thread.current[:user] = users(:active)
     assert_equal users(:active), Thread.current[:user]
     act_as_system_user do
@@ -17,7 +17,7 @@ class ApplicationTest < ActiveSupport::TestCase
     assert_equal users(:active), Thread.current[:user]
   end
 
-  test "test act_as_system_user is exception safe" do
+  test "act_as_system_user is exception safe" do
     Thread.current[:user] = users(:active)
     assert_equal users(:active), Thread.current[:user]
     caught = false
@@ -32,5 +32,13 @@ class ApplicationTest < ActiveSupport::TestCase
     end
     assert caught
     assert_equal users(:active), Thread.current[:user]
+  end
+
+  test "config maps' keys are returned as symbols" do
+    assert Rails.configuration.Users.AutoSetupUsernameBlacklist.is_a? ActiveSupport::OrderedOptions
+    assert Rails.configuration.Users.AutoSetupUsernameBlacklist.keys.size > 0
+    Rails.configuration.Users.AutoSetupUsernameBlacklist.keys.each do |k|
+      assert k.is_a? Symbol
+    end
   end
 end

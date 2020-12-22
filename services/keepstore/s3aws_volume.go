@@ -33,7 +33,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// S3Volume implements Volume using an S3 bucket.
+// S3AWSVolume implements Volume using an S3 bucket.
 type S3AWSVolume struct {
 	arvados.S3VolumeDriverParameters
 	AuthToken      string    // populated automatically when IAMRole is used
@@ -69,10 +69,9 @@ func chooseS3VolumeDriver(cluster *arvados.Cluster, volume arvados.Volume, logge
 	if v.UseAWSS3v2Driver {
 		logger.Debugln("Using AWS S3 v2 driver")
 		return newS3AWSVolume(cluster, volume, logger, metrics)
-	} else {
-		logger.Debugln("Using goamz S3 driver")
-		return newS3Volume(cluster, volume, logger, metrics)
 	}
+	logger.Debugln("Using goamz S3 driver")
+	return newS3Volume(cluster, volume, logger, metrics)
 }
 
 const (
@@ -728,7 +727,10 @@ func (v *S3AWSVolume) IndexTo(prefix string, writer io.Writer) error {
 		if err := recentL.Error(); err != nil {
 			return err
 		}
-		fmt.Fprintf(writer, "%s+%d %d\n", *data.Key, *data.Size, stamp.LastModified.UnixNano())
+		// We truncate sub-second precision here. Otherwise
+		// timestamps will never match the RFC1123-formatted
+		// Last-Modified values parsed by Mtime().
+		fmt.Fprintf(writer, "%s+%d %d\n", *data.Key, *data.Size, stamp.LastModified.Unix()*1000000000)
 	}
 	return dataL.Error()
 }

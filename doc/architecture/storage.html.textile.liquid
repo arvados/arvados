@@ -1,0 +1,40 @@
+---
+layout: default
+navsection: architecture
+title: Introduction to Keep
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+Keep is a content-addressable storage system that yields high performance for I/O-bound workloads. Keep is designed to run on low-cost commodity hardware or cloud services and is tightly integrated with the rest of the Arvados system. It provides high fault tolerance and high aggregate performance to a large number of clients.
+
+h2. Design goals and core features
+
+* *Scale* - Keep installations are managing petabytes of data today. Keep scales horizontally.
+
+* *Data deduplication* - Keep automatically deduplicates data through its use of content addressing.
+
+* *Flexibility* - Keep can store data in S3, S3-compatible storage systems (e.g. Ceph) and Azure blob storage. Keep can also store data on POSIX file systems.
+
+* *Fault-Tolerance* - Errors and failure are expected. Keep has redundancy and recovery capabilities at its core.
+
+* *Optimized for Aggregate Throughput* - Like S3 and Azure blob storage, Keep is optimized for aggregate throughput. This is optimal in a scenario with many reader/writer processes.
+
+* *Complex Data Management* - Keep operates well in environments where there are many independent users accessing the same data or users who want to organize data in many different ways. Keep facilitates data sharing without expecting users either to agree with one another about directory structures or to create redundant copies of the data.
+
+* *Security* - Keep works well combined with encryption at rest and transport encryption. All data is managed through @collection@ objects, which implement a rich "permission model":{{site.baseurl}}/api/permission-model.html.
+
+h2. How Keep works
+
+Keep is a content-addressable file system.  This means that files are managed using special unique identifiers derived from the _contents_ of the file (specifically, the MD5 hash), rather than human-assigned file names.  This has a number of advantages:
+* Files can be stored and replicated across a cluster of servers without requiring a central name server.
+* Both the server and client systematically validate data integrity because the checksum is built into the identifier.
+* Data duplication is minimized—two files with the same contents will have in the same identifier, and will not be stored twice.
+* It avoids data race conditions, since an identifier always points to the same data.
+
+In Keep, information is stored in @data blocks@.  Data blocks are normally between 1 byte and 64 megabytes in size.  If a file exceeds the maximum size of a single data block, the file will be split across multiple data blocks until the entire file can be stored.  These data blocks may be stored and replicated across multiple disks, servers, or clusters.  Each data block has its own identifier for the contents of that specific data block.
+
+In order to reassemble the file, Keep stores a @collection@ manifest which lists in sequence the data blocks that make up the original file.  A @manifest@ may store the information for multiple files, including a directory structure. See "manifest format":{{site.baseurl}}/architecture/manifest-format.html for more information on how manifests are structured.

@@ -103,11 +103,14 @@ type worker struct {
 	updated             time.Time
 	busy                time.Time
 	destroyed           time.Time
+	firstSSHConnection  time.Time
 	lastUUID            string
 	running             map[string]*remoteRunner // remember to update state idle<->running when this changes
 	starting            map[string]*remoteRunner // remember to update state idle<->running when this changes
 	probing             chan struct{}
 	bootOutcomeReported bool
+	timeToReadyReported bool
+	staleRunLockSince   time.Time
 }
 
 func (wkr *worker) onUnkillable(uuid string) {
@@ -141,6 +144,17 @@ func (wkr *worker) reportBootOutcome(outcome BootOutcome) {
 }
 
 // caller must have lock.
+func (wkr *worker) reportTimeBetweenFirstSSHAndReadyForContainer() {
+	if wkr.timeToReadyReported {
+		return
+	}
+	if wkr.wp.mTimeToSSH != nil {
+		wkr.wp.mTimeToReadyForContainer.Observe(time.Since(wkr.firstSSHConnection).Seconds())
+	}
+	wkr.timeToReadyReported = true
+}
+
+// caller must have lock.
 func (wkr *worker) setIdleBehavior(idleBehavior IdleBehavior) {
 	wkr.logger.WithField("IdleBehavior", idleBehavior).Info("set idle behavior")
 	wkr.idleBehavior = idleBehavior
@@ -163,6 +177,9 @@ func (wkr *worker) startContainer(ctr arvados.Container) {
 	}
 	go func() {
 		rr.Start()
+		if wkr.wp.mTimeFromQueueToCrunchRun != nil {
+			wkr.wp.mTimeFromQueueToCrunchRun.Observe(time.Since(ctr.CreatedAt).Seconds())
+		}
 		wkr.mtx.Lock()
 		defer wkr.mtx.Unlock()
 		now := time.Now()
@@ -175,7 +192,7 @@ func (wkr *worker) startContainer(ctr arvados.Container) {
 }
 
 // ProbeAndUpdate conducts appropriate boot/running probes (if any)
-// for the worker's curent state. If a previous probe is still
+// for the worker's current state. If a previous probe is still
 // running, it does nothing.
 //
 // It should be called in a new goroutine.
@@ -313,6 +330,9 @@ func (wkr *worker) probeAndUpdate() {
 
 	// Update state if this was the first successful boot-probe.
 	if booted && (wkr.state == StateUnknown || wkr.state == StateBooting) {
+		if wkr.state == StateBooting {
+			wkr.reportTimeBetweenFirstSSHAndReadyForContainer()
+		}
 		// Note: this will change again below if
 		// len(wkr.starting)+len(wkr.running) > 0.
 		wkr.state = StateIdle
@@ -356,6 +376,7 @@ func (wkr *worker) probeRunning() (running []string, reportsBroken, ok bool) {
 	if u := wkr.instance.RemoteUser(); u != "root" {
 		cmd = "sudo " + cmd
 	}
+	before := time.Now()
 	stdout, stderr, err := wkr.executor.Execute(nil, cmd, nil)
 	if err != nil {
 		wkr.logger.WithFields(logrus.Fields{
@@ -363,15 +384,47 @@ func (wkr *worker) probeRunning() (running []string, reportsBroken, ok bool) {
 			"stdout":  string(stdout),
 			"stderr":  string(stderr),
 		}).WithError(err).Warn("probe failed")
+		wkr.wp.mRunProbeDuration.WithLabelValues("fail").Observe(time.Now().Sub(before).Seconds())
 		return
 	}
+	wkr.wp.mRunProbeDuration.WithLabelValues("success").Observe(time.Now().Sub(before).Seconds())
 	ok = true
+
+	staleRunLock := false
 	for _, s := range strings.Split(string(stdout), "\n") {
-		if s == "broken" {
+		// Each line of the "crunch-run --list" output is one
+		// of the following:
+		//
+		// * a container UUID, indicating that processes
+		//   related to that container are currently running.
+		//   Optionally followed by " stale", indicating that
+		//   the crunch-run process itself has exited (the
+		//   remaining process is probably arv-mount).
+		//
+		// * the string "broken", indicating that the instance
+		//   appears incapable of starting containers.
+		//
+		// See ListProcesses() in lib/crunchrun/background.go.
+		if s == "" {
+			// empty string following final newline
+		} else if s == "broken" {
 			reportsBroken = true
-		} else if s != "" {
+		} else if toks := strings.Split(s, " "); len(toks) == 1 {
 			running = append(running, s)
+		} else if toks[1] == "stale" {
+			wkr.logger.WithField("ContainerUUID", toks[0]).Info("probe reported stale run lock")
+			staleRunLock = true
 		}
+	}
+	wkr.mtx.Lock()
+	defer wkr.mtx.Unlock()
+	if !staleRunLock {
+		wkr.staleRunLockSince = time.Time{}
+	} else if wkr.staleRunLockSince.IsZero() {
+		wkr.staleRunLockSince = time.Now()
+	} else if dur := time.Now().Sub(wkr.staleRunLockSince); dur > wkr.wp.timeoutStaleRunLock {
+		wkr.logger.WithField("Duration", dur).Warn("reporting broken after reporting stale run lock for too long")
+		reportsBroken = true
 	}
 	return
 }

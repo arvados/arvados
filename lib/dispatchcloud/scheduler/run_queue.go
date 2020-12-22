@@ -33,6 +33,7 @@ func (sch *Scheduler) runQueue() {
 
 	dontstart := map[arvados.InstanceType]bool{}
 	var overquota []container.QueueEnt // entries that are unmappable because of worker pool quota
+	var containerAllocatedWorkerBootingCount int
 
 tryrun:
 	for i, ctr := range sorted {
@@ -51,36 +52,35 @@ tryrun:
 				overquota = sorted[i:]
 				break tryrun
 			}
+			if sch.pool.KillContainer(ctr.UUID, "about to lock") {
+				logger.Info("not locking: crunch-run process from previous attempt has not exited")
+				continue
+			}
 			go sch.lockContainer(logger, ctr.UUID)
 			unalloc[it]--
 		case arvados.ContainerStateLocked:
 			if unalloc[it] > 0 {
 				unalloc[it]--
 			} else if sch.pool.AtQuota() {
-				logger.Debug("not starting: AtQuota and no unalloc workers")
+				// Don't let lower-priority containers
+				// starve this one by using keeping
+				// idle workers alive on different
+				// instance types.
+				logger.Debug("unlocking: AtQuota and no unalloc workers")
+				sch.queue.Unlock(ctr.UUID)
 				overquota = sorted[i:]
 				break tryrun
+			} else if logger.Info("creating new instance"); sch.pool.Create(it) {
+				// Success. (Note pool.Create works
+				// asynchronously and does its own
+				// logging, so we don't need to.)
 			} else {
-				logger.Info("creating new instance")
-				if !sch.pool.Create(it) {
-					// (Note pool.Create works
-					// asynchronously and logs its
-					// own failures, so we don't
-					// need to log this as a
-					// failure.)
-
-					sch.queue.Unlock(ctr.UUID)
-					// Don't let lower-priority
-					// containers starve this one
-					// by using keeping idle
-					// workers alive on different
-					// instance types.  TODO:
-					// avoid getting starved here
-					// if instances of a specific
-					// type always fail.
-					overquota = sorted[i:]
-					break tryrun
-				}
+				// Failed despite not being at quota,
+				// e.g., cloud ops throttled.  TODO:
+				// avoid getting starved here if
+				// instances of a specific type always
+				// fail.
+				continue
 			}
 
 			if dontstart[it] {
@@ -88,13 +88,19 @@ tryrun:
 				// a higher-priority container on the
 				// same instance type. Don't let this
 				// one sneak in ahead of it.
+			} else if sch.pool.KillContainer(ctr.UUID, "about to start") {
+				logger.Info("not restarting yet: crunch-run process from previous attempt has not exited")
 			} else if sch.pool.StartContainer(it, ctr) {
 				// Success.
 			} else {
+				containerAllocatedWorkerBootingCount += 1
 				dontstart[it] = true
 			}
 		}
 	}
+
+	sch.mContainersAllocatedNotStarted.Set(float64(containerAllocatedWorkerBootingCount))
+	sch.mContainersNotAllocatedOverQuota.Set(float64(len(overquota)))
 
 	if len(overquota) > 0 {
 		// Unlock any containers that are unmappable while
