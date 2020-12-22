@@ -69,8 +69,11 @@ func (bldr *builder) run(ctx context.Context, prog string, args []string, stdin 
 	if err != nil {
 		return fmt.Errorf("gem install fpm: %w", err)
 	}
-	// Shrink our package, remove unneeded stuff
-	cmd = exec.Command("bash", "-c", "rm -rf /var/www/.gem/ruby/*/cache/ /var/www/.gem/ruby/*/bundler/gems/arvados-*/.git /var/www/.gem/ruby/*/bundler/gems/nulldb-*/.git /var/www/.gem/ruby/*/bundler/gems/themes_for_rails-*/.git")
+
+	// Remove unneeded files. This is much faster than "fpm
+	// --exclude X" because fpm copies everything into a staging
+	// area before looking at the --exclude args.
+	cmd = exec.Command("bash", "-c", "cd /var/www/.gem/ruby && rm -rf */cache */bundler/gems/*/.git /var/lib/arvados/go")
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
 	err = cmd.Run()
@@ -93,12 +96,9 @@ func (bldr *builder) run(ctx context.Context, prog string, args []string, stdin 
 		cmd.Args = append(cmd.Args, "--depends", pkg)
 	}
 	cmd.Args = append(cmd.Args,
+		"--verbose",
 		"--deb-use-file-permissions",
 		"--rpm-use-file-permissions",
-		"--exclude", "var/lib/arvados/go",
-		"--exclude", "tmp",
-		"--exclude", "log",
-		"--exclude", "coverage",
 		"/var/lib/arvados",
 		"/var/www/.gem",
 		"/var/www/.passenger",
