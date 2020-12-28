@@ -451,8 +451,8 @@ func (super *Supervisor) RunProgram(ctx context.Context, dir string, output io.W
 	super.logger.WithField("command", cmdline).WithField("dir", dir).Info("executing")
 
 	logprefix := prog
-	if logprefix == "setuidgid" && len(args) >= 3 {
-		logprefix = args[2]
+	if logprefix == "setuidgid" && len(args) >= 2 {
+		logprefix = args[1]
 	}
 	logprefix = strings.TrimPrefix(logprefix, super.tempdir+"/bin/")
 	if logprefix == "bundle" && len(args) > 2 && args[0] == "exec" {
