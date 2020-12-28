@@ -224,17 +224,16 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 		logger.Print("ruby " + rubyversion + " already installed")
 	} else {
 		err = inst.runBash(`
-tmp=/var/lib/arvados/tmp/ruby-`+rubyversion+`
-trap "rm -r ${tmp}" ERR
-wget --progress=dot:giga -O- https://cache.ruby-lang.org/pub/ruby/2.5/ruby-`+rubyversion+`.tar.gz | tar -C /var/lib/arvados/tmp -xzf -
-cd ${tmp}
+tmp="$(mktemp -d)"
+trap 'rm -r "${tmp}"' ERR EXIT
+wget --progress=dot:giga -O- https://cache.ruby-lang.org/pub/ruby/2.5/ruby-`+rubyversion+`.tar.gz | tar -C "${tmp}" -xzf -
+cd "${tmp}/ruby-`+rubyversion+`"
 ./configure --disable-install-static-library --enable-shared --disable-install-doc --prefix /var/lib/arvados
 make -j8
 make install
 /var/lib/arvados/bin/gem install bundler --no-ri --no-rdoc
 # "gem update --system" can be removed when we use ruby ≥2.6.3: https://bundler.io/blog/2019/05/14/solutions-for-cant-find-gem-bundler-with-executable-bundle.html
 /var/lib/arvados/bin/gem update --system --no-ri --no-rdoc
-rm -r ${tmp}
 `, stdout, stderr)
 		if err != nil {
 			return 1

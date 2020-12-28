@@ -63,7 +63,7 @@ if [[ "${opts[force-buildimage]}" || -z "$(docker images --format {{.Repository}
     docker rm "${buildctr}" || true
     docker run \
            --name "${buildctr}" \
-           -v /tmp/pkg:/pkg \
+           --tmpfs /tmp:exec,mode=01777 \
            -v "${GOPATH:-${HOME}/go}"/bin/arvados-server:/arvados-server:ro \
            -v "$(pwd)":/arvados:ro \
            "${osbase}" \
@@ -87,6 +87,7 @@ rm -v -f "${pkgfile}"
 )
 echo >&2 building ${pkgfile}...
 docker run --rm \
+       --tmpfs /tmp:exec,mode=01777 \
        -v /tmp/pkg:/pkg \
        -v "${GOPATH:-${HOME}/go}"/bin/arvados-dev:/arvados-dev:ro \
        -v "$(pwd)":/arvados:ro \
@@ -113,6 +114,7 @@ if [[ "${opts[force-installimage]}" || -z "$(docker images --format {{.Repositor
     docker rm "${installctr}" || true
     docker run -it \
            --name "${installctr}" \
+           --tmpfs /tmp \
            -v /tmp/pkg:/pkg:ro \
            -v ${sourcesfile}:/etc/apt/sources.list.d/arvados-local.list:ro \
            --env DEBIAN_FRONTEND=noninteractive \
