@@ -68,6 +68,7 @@ if [[ "${opts[force-buildimage]}" || -z "$(docker images --format {{.Repository}
            -v "$(pwd)":/arvados:ro \
            "${osbase}" \
            /arvados-server install \
+           -eatmydata \
            -type package \
            -source /arvados \
            -package-version "${version}"
@@ -90,6 +91,7 @@ docker run --rm \
        -v "${GOPATH:-${HOME}/go}"/bin/arvados-dev:/arvados-dev:ro \
        -v "$(pwd)":/arvados:ro \
        "${buildimage}" \
+       eatmydata \
        /arvados-dev buildpackage \
        -source /arvados \
        -package-version "${version}" \
@@ -113,8 +115,9 @@ if [[ "${opts[force-installimage]}" || -z "$(docker images --format {{.Repositor
            --name "${installctr}" \
            -v /tmp/pkg:/pkg:ro \
            -v ${sourcesfile}:/etc/apt/sources.list.d/arvados-local.list:ro \
+           --env DEBIAN_FRONTEND=noninteractive \
            "${osbase}" \
-           bash -c 'apt update && DEBIAN_FRONTEND=noninteractive apt install -y arvados-server-easy postgresql'
+           bash -c 'apt update && apt install -y eatmydata && eatmydata apt install -y arvados-server-easy postgresql'
     docker commit "${installctr}" "${installimage}"
     docker rm "${installctr}"
     installctr=
@@ -125,4 +128,4 @@ docker run -it --rm \
        -v /tmp/pkg:/pkg:ro \
        -v ${sourcesfile}:/etc/apt/sources.list.d/arvados-local.list:ro \
        "${installimage}" \
-       bash -c 'apt update && DEBIAN_FRONTEND=noninteractive apt install --reinstall -y arvados-server-easy postgresql && /etc/init.d/postgresql start && /var/lib/arvados/bin/arvados-server init -cluster-id x1234 && /var/lib/arvados/bin/arvados-server boot -listen-host 0.0.0.0'
+       bash -c 'apt update && DEBIAN_FRONTEND=noninteractive eatmydata apt install --reinstall -y arvados-server-easy postgresql && /etc/init.d/postgresql start && /var/lib/arvados/bin/arvados-server init -cluster-id x1234 && /var/lib/arvados/bin/arvados-server boot -listen-host 0.0.0.0'

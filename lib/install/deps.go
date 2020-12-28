@@ -34,6 +34,7 @@ type installCommand struct {
 	ClusterType    string
 	SourcePath     string
 	PackageVersion string
+	EatMyData      bool
 }
 
 func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
@@ -55,6 +56,7 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 	flags.StringVar(&inst.ClusterType, "type", "production", "cluster `type`: development, test, production, or package")
 	flags.StringVar(&inst.SourcePath, "source", "/arvados", "source tree location (required for -type=package)")
 	flags.StringVar(&inst.PackageVersion, "package-version", "0.0.0", "version string to embed in executable files")
+	flags.BoolVar(&inst.EatMyData, "eatmydata", false, "use eatmydata to speed up install")
 	err = flags.Parse(args)
 	if err == flag.ErrHelp {
 		err = nil
@@ -109,11 +111,23 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 		}
 	}
 
+	if inst.EatMyData {
+		cmd := exec.CommandContext(ctx, "apt-get", "install", "--yes", "--no-install-recommends", "eatmydata")
+		cmd.Env = append(os.Environ(), "DEBIAN_FRONTEND=noninteractive")
+		cmd.Stdout = stdout
+		cmd.Stderr = stderr
+		err = cmd.Run()
+		if err != nil {
+			return 1
+		}
+	}
+
 	pkgs := prodpkgs(osv)
 
 	if pkg {
 		pkgs = append(pkgs,
 			"dpkg-dev",
+			"eatmydata", // install it for later steps, even if we're not using it now
 			"rsync",
 		)
 	}
@@ -174,7 +188,11 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 		default:
 			pkgs = append(pkgs, "libcurl3")
 		}
-		cmd := exec.CommandContext(ctx, "apt-get", "install", "--yes", "--no-install-recommends")
+		cmd := exec.CommandContext(ctx, "apt-get")
+		if inst.EatMyData {
+			cmd = exec.CommandContext(ctx, "eatmydata", "apt-get")
+		}
+		cmd.Args = append(cmd.Args, "install", "--yes", "--no-install-recommends")
 		cmd.Args = append(cmd.Args, pkgs...)
 		cmd.Env = append(os.Environ(), "DEBIAN_FRONTEND=noninteractive")
 		cmd.Stdout = stdout
@@ -205,7 +223,7 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 	if haverubyversion, err := exec.Command("/var/lib/arvados/bin/ruby", "-v").CombinedOutput(); err == nil && bytes.HasPrefix(haverubyversion, []byte("ruby "+rubyversion)) {
 		logger.Print("ruby " + rubyversion + " already installed")
 	} else {
-		err = runBash(`
+		err = inst.runBash(`
 tmp=/var/lib/arvados/tmp/ruby-`+rubyversion+`
 trap "rm -r ${tmp}" ERR
 wget --progress=dot:giga -O- https://cache.ruby-lang.org/pub/ruby/2.5/ruby-`+rubyversion+`.tar.gz | tar -C /var/lib/arvados/tmp -xzf -
@@ -228,7 +246,7 @@ rm -r ${tmp}
 		if havegoversion, err := exec.Command("/usr/local/bin/go", "version").CombinedOutput(); err == nil && bytes.HasPrefix(havegoversion, []byte("go version go"+goversion+" ")) {
 			logger.Print("go " + goversion + " already installed")
 		} else {
-			err = runBash(`
+			err = inst.runBash(`
 cd /tmp
 wget --progress=dot:giga -O- https://storage.googleapis.com/golang/go`+goversion+`.linux-amd64.tar.gz | tar -C /var/lib/arvados -xzf -
 ln -sf /var/lib/arvados/go/bin/* /usr/local/bin/
@@ -244,7 +262,7 @@ ln -sf /var/lib/arvados/go/bin/* /usr/local/bin/
 		if havepjsversion, err := exec.Command("/usr/local/bin/phantomjs", "--version").CombinedOutput(); err == nil && string(havepjsversion) == "1.9.8\n" {
 			logger.Print("phantomjs " + pjsversion + " already installed")
 		} else {
-			err = runBash(`
+			err = inst.runBash(`
 PJS=phantomjs-`+pjsversion+`-linux-x86_64
 wget --progress=dot:giga -O- https://bitbucket.org/ariya/phantomjs/downloads/$PJS.tar.bz2 | tar -C /var/lib/arvados -xjf -
 ln -sf /var/lib/arvados/$PJS/bin/phantomjs /usr/local/bin/
@@ -258,7 +276,7 @@ ln -sf /var/lib/arvados/$PJS/bin/phantomjs /usr/local/bin/
 		if havegeckoversion, err := exec.Command("/usr/local/bin/geckodriver", "--version").CombinedOutput(); err == nil && strings.Contains(string(havegeckoversion), " "+geckoversion+" ") {
 			logger.Print("geckodriver " + geckoversion + " already installed")
 		} else {
-			err = runBash(`
+			err = inst.runBash(`
 GD=v`+geckoversion+`
 wget --progress=dot:giga -O- https://github.com/mozilla/geckodriver/releases/download/$GD/geckodriver-$GD-linux64.tar.gz | tar -C /var/lib/arvados/bin -xzf - geckodriver
 ln -sf /var/lib/arvados/bin/geckodriver /usr/local/bin/
@@ -272,7 +290,7 @@ ln -sf /var/lib/arvados/bin/geckodriver /usr/local/bin/
 		if havenodejsversion, err := exec.Command("/usr/local/bin/node", "--version").CombinedOutput(); err == nil && string(havenodejsversion) == nodejsversion+"\n" {
 			logger.Print("nodejs " + nodejsversion + " already installed")
 		} else {
-			err = runBash(`
+			err = inst.runBash(`
 NJS=`+nodejsversion+`
 wget --progress=dot:giga -O- https://nodejs.org/dist/${NJS}/node-${NJS}-linux-x64.tar.xz | sudo tar -C /var/lib/arvados -xJf -
 ln -sf /var/lib/arvados/node-${NJS}-linux-x64/bin/{node,npm} /usr/local/bin/
@@ -286,7 +304,7 @@ ln -sf /var/lib/arvados/node-${NJS}-linux-x64/bin/{node,npm} /usr/local/bin/
 		if havegradleversion, err := exec.Command("/usr/local/bin/gradle", "--version").CombinedOutput(); err == nil && strings.Contains(string(havegradleversion), "Gradle "+gradleversion+"\n") {
 			logger.Print("gradle " + gradleversion + " already installed")
 		} else {
-			err = runBash(`
+			err = inst.runBash(`
 G=`+gradleversion+`
 zip=/var/lib/arvados/tmp/gradle-${G}-bin.zip
 trap "rm ${zip}" ERR
@@ -307,7 +325,7 @@ rm ${zip}
 		if havelocales, err := exec.Command("locale", "-a").CombinedOutput(); err == nil && bytes.Contains(havelocales, []byte(strings.Replace(wantlocale+"\n", "UTF-", "utf", 1))) {
 			logger.Print("locale " + wantlocale + " already installed")
 		} else {
-			err = runBash(`sed -i 's/^# *\(`+wantlocale+`\)/\1/' /etc/locale.gen && locale-gen`, stdout, stderr)
+			err = inst.runBash(`sed -i 's/^# *\(`+wantlocale+`\)/\1/' /etc/locale.gen && locale-gen`, stdout, stderr)
 			if err != nil {
 				return 1
 			}
@@ -386,7 +404,7 @@ rm ${zip}
 			// locales. Otherwise, it might need a
 			// restart, so we attempt to restart it with
 			// systemd.
-			if err = runBash(`sudo systemctl restart postgresql`, stdout, stderr); err != nil {
+			if err = inst.runBash(`sudo systemctl restart postgresql`, stdout, stderr); err != nil {
 				logger.Warn("`systemctl restart postgresql` failed; hoping postgresql does not need to be restarted")
 			} else if err = waitPostgreSQLReady(); err != nil {
 				return 1
@@ -585,8 +603,11 @@ func waitPostgreSQLReady() error {
 	}
 }
 
-func runBash(script string, stdout, stderr io.Writer) error {
+func (inst *installCommand) runBash(script string, stdout, stderr io.Writer) error {
 	cmd := exec.Command("bash", "-")
+	if inst.EatMyData {
+		cmd = exec.Command("eatmydata", "bash", "-")
+	}
 	cmd.Stdin = bytes.NewBufferString("set -ex -o pipefail\n" + script)
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
