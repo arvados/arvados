@@ -216,16 +216,16 @@ func (super *Supervisor) run(cfg *arvados.Config) error {
 		createCertificates{},
 		runPostgreSQL{},
 		runNginx{},
-		runServiceCommand{name: "controller", svc: super.cluster.Services.Controller, depends: []supervisedTask{runPostgreSQL{}}},
+		runServiceCommand{name: "controller", svc: super.cluster.Services.Controller, depends: []supervisedTask{seedDatabase{}}},
 		runGoProgram{src: "services/arv-git-httpd", svc: super.cluster.Services.GitHTTP},
 		runGoProgram{src: "services/health", svc: super.cluster.Services.Health},
 		runGoProgram{src: "services/keepproxy", svc: super.cluster.Services.Keepproxy, depends: []supervisedTask{runPassenger{src: "services/api"}}},
 		runGoProgram{src: "services/keepstore", svc: super.cluster.Services.Keepstore},
 		runGoProgram{src: "services/keep-web", svc: super.cluster.Services.WebDAV},
-		runServiceCommand{name: "ws", svc: super.cluster.Services.Websocket, depends: []supervisedTask{runPostgreSQL{}}},
+		runServiceCommand{name: "ws", svc: super.cluster.Services.Websocket, depends: []supervisedTask{seedDatabase{}}},
 		installPassenger{src: "services/api"},
-		runPassenger{src: "services/api", svc: super.cluster.Services.RailsAPI, depends: []supervisedTask{createCertificates{}, runPostgreSQL{}, installPassenger{src: "services/api"}}},
-		installPassenger{src: "apps/workbench", depends: []supervisedTask{installPassenger{src: "services/api"}}}, // dependency ensures workbench doesn't delay api startup
+		runPassenger{src: "services/api", svc: super.cluster.Services.RailsAPI, depends: []supervisedTask{createCertificates{}, seedDatabase{}, installPassenger{src: "services/api"}}},
+		installPassenger{src: "apps/workbench", depends: []supervisedTask{seedDatabase{}}}, // dependency ensures workbench doesn't delay api install/startup
 		runPassenger{src: "apps/workbench", svc: super.cluster.Services.Workbench1, depends: []supervisedTask{installPassenger{src: "apps/workbench"}}},
 		seedDatabase{},
 	}
