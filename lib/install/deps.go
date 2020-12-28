@@ -508,7 +508,8 @@ rm ${zip}
 		} {
 			fmt.Fprintf(stderr, "building %s...\n", srcdir)
 			cmd := exec.Command("go", "install", "-ldflags", "-X git.arvados.org/arvados.git/lib/cmd.version="+inst.PackageVersion+" -X main.version="+inst.PackageVersion)
-			cmd.Env = append([]string{"GOBIN=/var/lib/arvados/bin"}, os.Environ()...)
+			cmd.Env = append(cmd.Env, os.Environ()...)
+			cmd.Env = append(cmd.Env, "GOBIN=/var/lib/arvados/bin")
 			cmd.Dir = filepath.Join(inst.SourcePath, srcdir)
 			cmd.Stdout = stdout
 			cmd.Stderr = stderr
