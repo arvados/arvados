@@ -193,6 +193,9 @@ func (agg *Aggregator) ping(target *url.URL) (result CheckResult) {
 	}
 	req.Header.Set("Authorization", "Bearer "+agg.Cluster.ManagementToken)
 
+	// Avoid workbench1's redirect-http-to-https feature
+	req.Header.Set("X-Forwarded-Proto", "https")
+
 	ctx, cancel := context.WithTimeout(req.Context(), time.Duration(agg.timeout))
 	defer cancel()
 	req = req.WithContext(ctx)
