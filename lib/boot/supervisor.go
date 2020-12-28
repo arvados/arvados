@@ -162,7 +162,7 @@ func (super *Supervisor) run(cfg *arvados.Config) error {
 	if err != nil {
 		return err
 	}
-	conffile, err := os.OpenFile(filepath.Join(super.tempdir, "config.yml"), os.O_CREATE|os.O_WRONLY, 0644)
+	conffile, err := os.OpenFile(filepath.Join(super.wwwtempdir, "config.yml"), os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
 	}

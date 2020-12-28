@@ -446,7 +446,7 @@ rm ${zip}
 		} {
 			fmt.Fprintf(stderr, "building %s...\n", srcdir)
 			cmd := exec.Command("rsync",
-				"-a", "--no-owner", "--delete-after", "--delete-excluded",
+				"-a", "--no-owner", "--no-group", "--delete-after", "--delete-excluded",
 				"--exclude", "/coverage",
 				"--exclude", "/log",
 				"--exclude", "/tmp",
@@ -469,7 +469,6 @@ rm ${zip}
 				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "exec", "passenger-config", "install-standalone-runtime"},
 			} {
 				cmd = exec.Command(cmdline[0], cmdline[1:]...)
-				cmd.Env = append([]string{}, os.Environ()...)
 				cmd.Dir = "/var/lib/arvados/" + dstdir
 				cmd.Stdout = stdout
 				cmd.Stderr = stderr
