@@ -27,13 +27,13 @@ func init() {
 	flag.StringVar(&buildimage, "test.buildimage", "debian:10", "docker image to use when running buildpackage")
 }
 
-type BuildpackageSuite struct{}
+type BuildSuite struct{}
 
-var _ = check.Suite(&BuildpackageSuite{})
+var _ = check.Suite(&BuildSuite{})
 
 func Test(t *testing.T) { check.TestingT(t) }
 
-func (s *BuildpackageSuite) TestBuildAndInstall(c *check.C) {
+func (s *BuildSuite) TestBuildAndInstall(c *check.C) {
 	if testing.Short() {
 		c.Skip("skipping docker tests in short mode")
 	} else if _, err := exec.Command("docker", "info").CombinedOutput(); err != nil {
@@ -59,10 +59,10 @@ func (s *BuildpackageSuite) TestBuildAndInstall(c *check.C) {
 
 	cmd = exec.Command("docker", "run", "--rm",
 		"-v", tmpdir+"/pkg:/pkg",
-		"-v", tmpdir+"/bin/arvados-dev:/arvados-dev:ro",
+		"-v", tmpdir+"/bin/arvados-package:/arvados-package:ro",
 		"-v", srctree+":/usr/local/src/arvados:ro",
 		buildimage,
-		"/arvados-dev", "buildpackage",
+		"/arvados-package", "build",
 		"-package-version", "0.9.99",
 		"-source", "/usr/local/src/arvados",
 		"-output-directory", "/pkg")
@@ -71,7 +71,7 @@ func (s *BuildpackageSuite) TestBuildAndInstall(c *check.C) {
 	err = cmd.Run()
 	c.Assert(err, check.IsNil)
 
-	fi, err := os.Stat(tmpdir + "/pkg/arvados-server_0.9.99_amd64.deb")
+	fi, err := os.Stat(tmpdir + "/pkg/arvados-server-easy_0.9.99_amd64.deb")
 	c.Assert(err, check.IsNil)
 	c.Logf("%#v", fi)
 }

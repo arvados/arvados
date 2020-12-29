@@ -51,7 +51,7 @@ osbase=${opts[os]:-debian:10}
 
 mkdir -p /tmp/pkg
 
-buildimage=arvados-buildpackage-${osbase}
+buildimage=arvados-package-build-${osbase}
 if [[ "${opts[force-buildimage]}" || -z "$(docker images --format {{.Repository}} "${buildimage}")" ]]; then
     (
         echo >&2 building arvados-server...
@@ -81,19 +81,19 @@ pkgfile=/tmp/pkg/arvados-server-easy_${version}_amd64.deb
 rm -v -f "${pkgfile}"
 
 (
-    echo >&2 building arvados-dev...
-    cd cmd/arvados-dev
+    echo >&2 building arvados-package...
+    cd cmd/arvados-package
     go install
 )
 echo >&2 building ${pkgfile}...
 docker run --rm \
        --tmpfs /tmp:exec,mode=01777 \
        -v /tmp/pkg:/pkg \
-       -v "${GOPATH:-${HOME}/go}"/bin/arvados-dev:/arvados-dev:ro \
+       -v "${GOPATH:-${HOME}/go}"/bin/arvados-package:/arvados-package:ro \
        -v "$(pwd)":/arvados:ro \
        "${buildimage}" \
        eatmydata \
-       /arvados-dev buildpackage \
+       /arvados-package build \
        -source /arvados \
        -package-version "${version}" \
        -output-directory /pkg
@@ -119,7 +119,7 @@ if [[ "${opts[force-installimage]}" || -z "$(docker images --format {{.Repositor
            -v ${sourcesfile}:/etc/apt/sources.list.d/arvados-local.list:ro \
            --env DEBIAN_FRONTEND=noninteractive \
            "${osbase}" \
-           bash -c 'apt update && apt install -y eatmydata && eatmydata apt install -y arvados-server-easy postgresql'
+           bash -c 'apt update && apt install -y eatmydata && eatmydata apt install -y arvados-server-easy postgresql && eatmydata apt remove -y arvados-server-easy'
     docker commit "${installctr}" "${installimage}"
     docker rm "${installctr}"
     installctr=

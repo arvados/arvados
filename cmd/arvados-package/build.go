@@ -17,9 +17,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type buildPackage struct{}
+type build struct{}
 
-func (bld buildPackage) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+func (bld build) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	logger := ctxlog.New(stderr, "text", "info")
 	err := (&builder{
 		PackageVersion: "0.0.0",

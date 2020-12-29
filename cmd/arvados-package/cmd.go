@@ -16,7 +16,7 @@ var (
 		"-version":  cmd.Version,
 		"--version": cmd.Version,
 
-		"buildpackage": buildPackage{},
+		"build": build{},
 	})
 )
 
