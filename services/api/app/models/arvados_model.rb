@@ -16,6 +16,7 @@ class ArvadosModel < ApplicationRecord
   include DbCurrentTime
   extend RecordFilters
 
+  after_find :set_zero_values
   after_find :schedule_restoring_changes
   after_initialize :log_start_state
   before_save :ensure_permission_to_save
@@ -31,7 +32,6 @@ class ArvadosModel < ApplicationRecord
   before_validation :normalize_collection_uuids
   before_validation :set_default_owner
   validate :ensure_valid_uuids
-  after_find :set_defaults
 
   # Note: This only returns permission links. It does not account for
   # permissions obtained via user.is_admin or
@@ -47,13 +47,17 @@ class ArvadosModel < ApplicationRecord
   # penalty.
   attr_accessor :async_permissions_update
 
-  # set_defaults will fill out default values that are not in the database
-  # this is meant to be implemented in the children as needed.
-  def set_defaults
+  # Fill out zero values that are not in the database
+  # this is meant to be implemented in the subclasses as needed.
+  def set_zero_values
     ## to do this correctly this is an example:
     ## attributes["runtime_constraints"]["keep_cache_ram"] = 0
     ## self.clear_attribute_changes(["runtime_constraints"])
-    ## super  # <- we should call arvados_model's set_defaults() 
+    ## super  # <- we should call arvados_model's set_zero_values()
+
+    # Having read the `attributes`, makes serializable attrs to be seen as changed
+    # even if they aren't
+    self.clear_attribute_changes(changes.keys)
   end
 
   # Ignore listed attributes on mass assignments

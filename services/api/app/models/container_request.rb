@@ -464,8 +464,8 @@ class ContainerRequest < ArvadosModel
     super(permitted)
   end
 
-  def set_defaults
-    # this will fill out default values that are not in the database,
+  def set_zero_values
+    # this will fill out zero values that are not in the database,
     # see https://dev.arvados.org/issues/17014#note-28 for details
 
     AttrsRuntimeConstraintsDefaults.each do |key, value|
