@@ -473,10 +473,10 @@ class ContainerRequest < ArvadosModel
         if !self.scheduling_parameters.key?(key)
           attributes["scheduling_parameters"][key] = value
         end
-        self.clear_attribute_changes("scheduling_parameters"])
+        self.clear_attribute_changes(["scheduling_parameters"])
       end
     end
-    
+
     super
   end
 
