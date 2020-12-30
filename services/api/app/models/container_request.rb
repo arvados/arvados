@@ -460,17 +460,23 @@ class ContainerRequest < ArvadosModel
     # this will fill out default values that are not in the database,
     # see https://dev.arvados.org/issues/17014#note-28 for details
 
-    AttrsRuntimeConstraintsDefaults.each do |key, value|
-      if !self.runtime_constraints.key?(key)
-        attributes["runtime_constraints"][key] = value
+    if self.runtime_constraints?
+      AttrsRuntimeConstraintsDefaults.each do |key, value|
+        if !self.runtime_constraints.key?(key)
+          attributes["runtime_constraints"][key] = value
+          self.clear_attribute_changes(["runtime_constraints"])
+        end
       end
     end
-    AttrsSchedulingParametersDefaults.each do |key, value|
-      if !self.scheduling_parameters.key?(key)
-        attributes["scheduling_parameters"][key] = value
+    if self.scheduling_parameters?
+      AttrsSchedulingParametersDefaults.each do |key, value|
+        if !self.scheduling_parameters.key?(key)
+          attributes["scheduling_parameters"][key] = value
+        end
+        self.clear_attribute_changes("scheduling_parameters"])
       end
     end
-    self.clear_attribute_changes(["runtime_constraints","scheduling_parameters"])
+    
     super
   end
 
