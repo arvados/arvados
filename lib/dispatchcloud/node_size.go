@@ -105,7 +105,7 @@ func ChooseInstanceType(cc *arvados.Cluster, ctr *arvados.Container) (best arvad
 		case int64(it.Scratch) < needScratch:
 		case int64(it.RAM) < needRAM:
 		case it.VCPUs < needVCPUs:
-		case it.Preemptible != ctr.SchedulingParameters.Preemptible:
+		case it.Preemptible != *ctr.SchedulingParameters.Preemptible:
 		case it.Price == best.Price && (it.RAM < best.RAM || it.VCPUs < best.VCPUs):
 			// Equal price, but worse specs
 		default:
