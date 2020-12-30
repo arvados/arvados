@@ -31,6 +31,7 @@ class ArvadosModel < ApplicationRecord
   before_validation :normalize_collection_uuids
   before_validation :set_default_owner
   validate :ensure_valid_uuids
+  after_find :set_defaults
 
   # Note: This only returns permission links. It does not account for
   # permissions obtained via user.is_admin or
@@ -45,6 +46,15 @@ class ArvadosModel < ApplicationRecord
   # update is deferred allowing making multiple calls without the performance
   # penalty.
   attr_accessor :async_permissions_update
+
+  # set_defaults will fill out default values that are not in the database
+  # this is meant to be implemented in the children as needed.
+  def set_defaults
+    ## to do this correctly this is an example:
+    ## attributes["runtime_constraints"]["keep_cache_ram"] = 0
+    ## self.clear_attribute_changes(["runtime_constraints"])
+    ## super  # <- we should call arvados_model's set_defaults() 
+  end
 
   # Ignore listed attributes on mass assignments
   def self.protected_attributes

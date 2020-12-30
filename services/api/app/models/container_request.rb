@@ -97,6 +97,19 @@ class ContainerRequest < ArvadosModel
   :runtime_constraints, :state, :container_uuid, :use_existing,
   :scheduling_parameters, :secret_mounts, :output_name, :output_ttl]
 
+  AttrsRuntimeConstraintsDefaults = {
+    "vcpus"=>0,
+    "ram"=>0,
+    "api"=>false,
+    "keep_cache_ram"=>0
+  }
+
+  AttrsSchedulingParametersDefaults = {
+    "max_run_time"=>0,
+    "partitions"=>nil,
+    "preemptible"=>false
+  }
+
   def self.limit_index_columns_read
     ["mounts"]
   end
@@ -441,6 +454,24 @@ class ContainerRequest < ArvadosModel
     end
 
     super(permitted)
+  end
+
+  def set_defaults
+    # this will fill out default values that are not in the database,
+    # see https://dev.arvados.org/issues/17014#note-28 for details
+
+    AttrsRuntimeConstraintsDefaults.each do |key, value|
+      if !self.runtime_constraints.key?(key)
+        attributes["runtime_constraints"][key] = value
+      end
+    end
+    AttrsSchedulingParametersDefaults.each do |key, value|
+      if !self.scheduling_parameters.key?(key)
+        attributes["scheduling_parameters"][key] = value
+      end
+    end
+    self.clear_attribute_changes(["runtime_constraints","scheduling_parameters"])
+    super
   end
 
   def secret_mounts_key_conflict

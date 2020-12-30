@@ -62,6 +62,28 @@ class Arvados::V1::ContainerRequestsControllerTest < ActionController::TestCase
     assert_equal 'bar', req.secret_mounts['/foo']['content']
   end
 
+  test "runtime constraints with default values" do
+    authorize_with :active
+    req = container_requests(:queued)
+
+    patch :update, params: {
+      id: req.uuid,
+      container_request: {
+        state: 'Final',
+        priority: 0,
+        runtime_constraints: {
+          'vcpus' => 1,
+          'ram' => 123,
+          'keep_cache_ram' => 0,
+        },
+        scheduling_parameters: {
+          "preemptible"=>false
+        }
+      },
+    }
+    assert_response :success
+  end
+
   test "update without deleting secret_mounts" do
     authorize_with :active
     req = container_requests(:uncommitted)
