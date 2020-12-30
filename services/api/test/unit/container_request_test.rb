@@ -153,7 +153,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
     cr.reload
 
-    assert_equal({"vcpus" => 2, "ram" => 30}, cr.runtime_constraints)
+    assert ({"vcpus" => 2, "ram" => 30}.to_a - cr.runtime_constraints.to_a).empty?
 
     assert_not_nil cr.container_uuid
     c = Container.find_by_uuid cr.container_uuid
@@ -164,7 +164,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     assert_equal({}, c.environment)
     assert_equal({"/out" => {"kind"=>"tmp", "capacity"=>1000000}}, c.mounts)
     assert_equal "/out", c.output_path
-    assert_equal({"keep_cache_ram"=>268435456, "vcpus" => 2, "ram" => 30}, c.runtime_constraints)
+    assert ({"keep_cache_ram"=>268435456, "vcpus" => 2, "ram" => 30}.to_a - c.runtime_constraints.to_a).empty?
     assert_operator 0, :<, c.priority
 
     assert_raises(ActiveRecord::RecordInvalid) do
@@ -973,7 +973,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
         end
       else
         cr.save!
-        assert_equal sp, cr.scheduling_parameters
+        assert (sp.to_a - cr.scheduling_parameters.to_a).empty?
       end
     end
   end
@@ -1068,11 +1068,11 @@ class ContainerRequestTest < ActiveSupport::TestCase
         end
       else
         cr = create_minimal_req!(common_attrs.merge({state: state}))
-        assert_equal sp, cr.scheduling_parameters
+        assert (sp.to_a - cr.scheduling_parameters.to_a).empty?
 
         if state == ContainerRequest::Committed
           c = Container.find_by_uuid(cr.container_uuid)
-          assert_equal sp, c.scheduling_parameters
+          assert (sp.to_a - c.scheduling_parameters.to_a).empty?
         end
       end
     end

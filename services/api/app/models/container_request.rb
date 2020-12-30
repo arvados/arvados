@@ -106,8 +106,8 @@ class ContainerRequest < ArvadosModel
 
   AttrsSchedulingParametersDefaults = {
     "max_run_time"=>0,
-    "partitions"=>nil,
-    "preemptible"=>false
+    "partitions"=>[],
+    "preemptible"=>nil
   }
 
   def self.limit_index_columns_read
@@ -120,6 +120,14 @@ class ContainerRequest < ArvadosModel
 
   def state_transitions
     State_transitions
+  end
+
+  def self.runtime_constraints_defaults
+    AttrsRuntimeConstraintsDefaults
+  end
+
+  def self.scheduling_parameters_defaults
+    AttrsSchedulingParametersDefaults
   end
 
   def skip_uuid_read_permission_check
@@ -342,7 +350,7 @@ class ContainerRequest < ArvadosModel
       [['vcpus', true],
        ['ram', true],
        ['keep_cache_ram', false]].each do |k, required|
-        if !required && !runtime_constraints.include?(k)
+        if !required && (!runtime_constraints.include?(k) || runtime_constraints[k] == 0)
           next
         end
         v = runtime_constraints[k]
@@ -460,22 +468,17 @@ class ContainerRequest < ArvadosModel
     # this will fill out default values that are not in the database,
     # see https://dev.arvados.org/issues/17014#note-28 for details
 
-    if self.runtime_constraints?
-      AttrsRuntimeConstraintsDefaults.each do |key, value|
-        if !self.runtime_constraints.key?(key)
-          attributes["runtime_constraints"][key] = value
-          self.clear_attribute_changes(["runtime_constraints"])
-        end
+    AttrsRuntimeConstraintsDefaults.each do |key, value|
+      if !attributes["runtime_constraints"].key?(key)
+        attributes["runtime_constraints"][key] = value
       end
     end
-    if self.scheduling_parameters?
-      AttrsSchedulingParametersDefaults.each do |key, value|
-        if !self.scheduling_parameters.key?(key)
-          attributes["scheduling_parameters"][key] = value
-        end
-        self.clear_attribute_changes(["scheduling_parameters"])
+    AttrsSchedulingParametersDefaults.each do |key, value|
+      if !attributes["scheduling_parameters"].key?(key)
+        attributes["scheduling_parameters"][key] = value
       end
     end
+    self.clear_attribute_changes(["runtime_constraints", "scheduling_parameters"])
 
     super
   end

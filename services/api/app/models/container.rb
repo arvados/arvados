@@ -206,12 +206,19 @@ class Container < ArvadosModel
   # is not implemented yet, or we have already found that no existing
   # containers are suitable).
   def self.resolve_runtime_constraints(runtime_constraints)
+    # Remove zero-values before merging to avoid stepping over other defaults.
+    cleaned_rc = {}
+    runtime_constraints.each do |k, v|
+      if ContainerRequest.runtime_constraints_defaults[k] != v
+        cleaned_rc[k] = v
+      end
+    end
     rc = {}
     defaults = {
       'keep_cache_ram' =>
       Rails.configuration.Containers.DefaultKeepCacheRAM,
     }
-    defaults.merge(runtime_constraints).each do |k, v|
+    defaults.merge(cleaned_rc).each do |k, v|
       if v.is_a? Array
         rc[k] = v[0]
       else
