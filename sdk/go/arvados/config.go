@@ -395,7 +395,7 @@ type InstanceType struct {
 	IncludedScratch ByteSize
 	AddedScratch    ByteSize
 	Price           float64
-	Preemptible     bool
+	Preemptible     *bool
 }
 
 type ContainersConfig struct {
