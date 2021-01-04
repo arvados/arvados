@@ -491,9 +491,6 @@ func (super *Supervisor) RunProgram(ctx context.Context, dir string, opts runOpt
 
 	logprefix := prog
 	{
-		if logprefix == "setuidgid" && len(args) >= 3 {
-			logprefix = args[2]
-		}
 		innerargs := args
 		if logprefix == "sudo" {
 			for i := 0; i < len(args); i++ {
@@ -556,6 +553,15 @@ func (super *Supervisor) RunProgram(ctx context.Context, dir string, opts runOpt
 	cmd.Env = dedupEnv(env)
 
 	if opts.user != "" {
+		// Note: We use this approach instead of "sudo"
+		// because in certain circumstances (we are pid 1 in a
+		// docker container, and our passenger child process
+		// changes to pgid 1) the intermediate sudo process
+		// notices we have the same pgid as our child and
+		// refuses to propagate signals from us to our child,
+		// so we can't signal/shutdown our passenger/rails
+		// apps. "chpst" or "setuidgid" would work, but these
+		// few lines avoid depending on runit/daemontools.
 		u, err := user.Lookup(opts.user)
 		if err != nil {
 			return fmt.Errorf("user.Lookup(%q): %w", opts.user, err)

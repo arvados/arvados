@@ -148,11 +148,11 @@ func (runner runPassenger) Run(ctx context.Context, fail func(error), super *Sup
 		if super.ClusterType == "production" {
 			opts.user = "www-data"
 		} else {
-			// This would be desirable in the production
-			// case too, but it fails with sudo because
-			// /dev/stderr is a symlink to a pty owned by
-			// root: "nginx: [emerg] open() "/dev/stderr"
-			// failed (13: Permission denied)"
+			// This would be desirable when changing uid
+			// too, but it fails because /dev/stderr is a
+			// symlink to a pty owned by root: "nginx:
+			// [emerg] open() "/dev/stderr" failed (13:
+			// Permission denied)"
 			cmdline = append(cmdline, "--log-file", "/dev/stderr")
 		}
 		err = super.RunProgram(ctx, appdir, opts, cmdline[0], cmdline[1:]...)

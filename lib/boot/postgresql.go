@@ -60,6 +60,7 @@ func (runPostgreSQL) Run(ctx context.Context, fail func(error), super *Superviso
 		return err
 	}
 	prog, args := filepath.Join(bindir, "initdb"), []string{"-D", datadir, "-E", "utf8"}
+	opts := runOptions{}
 	if iamroot {
 		postgresUser, err := user.Lookup("postgres")
 		if err != nil {
@@ -85,15 +86,9 @@ func (runPostgreSQL) Run(ctx context.Context, fail func(error), super *Superviso
 		if err != nil {
 			return err
 		}
-		// We can't use "sudo -u" here because it creates an
-		// intermediate process that interferes with our
-		// ability to reliably kill postgres. The setuidgid
-		// program just calls exec without forking, so it
-		// doesn't have this problem.
-		args = append([]string{"postgres", prog}, args...)
-		prog = "setuidgid"
+		opts.user = "postgres"
 	}
-	err = super.RunProgram(ctx, super.tempdir, runOptions{}, prog, args...)
+	err = super.RunProgram(ctx, super.tempdir, opts, prog, args...)
 	if err != nil {
 		return err
 	}
@@ -120,11 +115,11 @@ func (runPostgreSQL) Run(ctx context.Context, fail func(error), super *Superviso
 			"-k", datadir, // socket dir
 			"-p", super.cluster.PostgreSQL.Connection["port"],
 		}
+		opts := runOptions{}
 		if iamroot {
-			args = append([]string{"postgres", prog}, args...)
-			prog = "setuidgid"
+			opts.user = "postgres"
 		}
-		fail(super.RunProgram(ctx, super.tempdir, runOptions{}, prog, args...))
+		fail(super.RunProgram(ctx, super.tempdir, opts, prog, args...))
 	}()
 
 	for {
