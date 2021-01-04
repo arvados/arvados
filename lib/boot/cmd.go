@@ -108,6 +108,11 @@ func (bcmd bootCommand) run(ctx context.Context, prog string, args []string, std
 		fmt.Fprintln(stdout, url)
 		if *shutdown {
 			super.Stop()
+			// Wait for children to exit. Don't report the
+			// ensuing "context cancelled" error, though:
+			// return nil to indicate successful startup.
+			_ = super.Wait()
+			return nil
 		}
 	}
 	// Wait for signal/crash + orderly shutdown
