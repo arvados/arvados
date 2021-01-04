@@ -23,6 +23,7 @@ import { openCollectionUpdateDialog } from "~/store/collections/collection-updat
 import { favoritePanelActions } from "~/store/favorite-panel/favorite-panel-action";
 import { openMoveCollectionDialog } from '~/store/collections/collection-move-actions';
 import { openCollectionCopyDialog } from "~/store/collections/collection-copy-actions";
+import { openWebDavS3InfoDialog } from "~/store/collections/collection-info-actions";
 import { ToggleTrashAction } from "~/views-components/context-menu/actions/trash-action";
 import { toggleCollectionTrashed } from "~/store/trash/trash-actions";
 import { openSharingDialog } from '~/store/sharing-dialog/sharing-dialog-actions';
@@ -86,6 +87,13 @@ const commonActionSet: ContextMenuActionSet = [[
 export const readOnlyCollectionActionSet: ContextMenuActionSet = [[
     ...commonActionSet.reduce((prev, next) => prev.concat(next), []),
     toggleFavoriteAction,
+    {
+        icon: AdvancedIcon,
+        name: "Connecting with WebDav or S3",
+        execute: (dispatch, resource) => {
+            dispatch<any>(openWebDavS3InfoDialog(resource.uuid));
+        }
+    },
 ]];
 
 export const collectionActionSet: ContextMenuActionSet = [

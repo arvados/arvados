@@ -61,6 +61,7 @@ interface DetailsAttributeDataProps {
     children?: React.ReactNode;
     onValueClick?: () => void;
     linkToUuid?: string;
+    copyValue?: string;
 }
 
 type DetailsAttributeProps = DetailsAttributeDataProps & WithStyles<CssRules> & FederationConfig & DispatchProp;
@@ -85,7 +86,7 @@ export const DetailsAttribute = connect(mapStateToProps)(withStyles(styles)(
         render() {
             const { label, link, value, children, classes, classLabel,
                 classValue, lowercaseValue, onValueClick, linkToUuid,
-                localCluster, remoteHostsConfig, sessions } = this.props;
+                localCluster, remoteHostsConfig, sessions, copyValue } = this.props;
             let valueNode: React.ReactNode;
 
             if (linkToUuid) {
@@ -108,9 +109,9 @@ export const DetailsAttribute = connect(mapStateToProps)(withStyles(styles)(
                     className={classnames([classes.value, classValue, { [classes.lowercaseValue]: lowercaseValue }])}>
                     {valueNode}
                     {children}
-                    {linkToUuid && <Tooltip title="Copy">
+                    {(linkToUuid || copyValue) && <Tooltip title="Copy to clipboard">
                         <span className={classes.copyIcon}>
-                            <CopyToClipboard text={linkToUuid || ""} onCopy={() => this.onCopy("Copied")}>
+                            <CopyToClipboard text={linkToUuid || copyValue || ""} onCopy={() => this.onCopy("Copied")}>
                                 <CopyIcon />
                             </CopyToClipboard>
                         </span>

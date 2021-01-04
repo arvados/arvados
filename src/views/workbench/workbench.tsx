@@ -100,6 +100,7 @@ import { AllProcessesPanel } from '../all-processes-panel/all-processes-panel';
 import { NotFoundPanel } from '../not-found-panel/not-found-panel';
 import { AutoLogout } from '~/views-components/auto-logout/auto-logout';
 import { RestoreCollectionVersionDialog } from '~/views-components/collections-dialog/restore-version-dialog';
+import { WebDavS3InfoDialog } from '~/views-components/webdav-s3-dialog/webdav-s3-dialog';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -151,18 +152,18 @@ const saveSplitterSize = (size: number) => localStorage.setItem('splitterSize', 
 export const WorkbenchPanel =
     withStyles(styles)((props: WorkbenchPanelProps) =>
         <Grid container item xs className={props.classes.root}>
-            { props.sessionIdleTimeout > 0 && <AutoLogout />}
+            {props.sessionIdleTimeout > 0 && <AutoLogout />}
             <Grid container item xs className={props.classes.container}>
                 <SplitterLayout customClassName={props.classes.splitter} percentage={true}
                     primaryIndex={0} primaryMinSize={10}
                     secondaryInitialSize={getSplitterInitialSize()} secondaryMinSize={40}
                     onSecondaryPaneSizeChange={saveSplitterSize}>
-                    { props.isUserActive && props.isNotLinking && <Grid container item xs component='aside' direction='column' className={props.classes.asidePanel}>
+                    {props.isUserActive && props.isNotLinking && <Grid container item xs component='aside' direction='column' className={props.classes.asidePanel}>
                         <SidePanel />
-                    </Grid> }
+                    </Grid>}
                     <Grid container item xs component="main" direction="column" className={props.classes.contentWrapper}>
                         <Grid item xs>
-                            { props.isNotLinking && <MainContentBar /> }
+                            {props.isNotLinking && <MainContentBar />}
                         </Grid>
                         <Grid item xs className={props.classes.content}>
                             <Switch>
@@ -262,5 +263,6 @@ export const WorkbenchPanel =
             <UserManageDialog />
             <VirtualMachineAttributesDialog />
             <FedLogin />
+            <WebDavS3InfoDialog />
         </Grid>
     );
