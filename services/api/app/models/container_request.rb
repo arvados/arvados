@@ -107,7 +107,7 @@ class ContainerRequest < ArvadosModel
   AttrsSchedulingParametersDefaults = {
     "max_run_time"=>0,
     "partitions"=>[],
-    "preemptible"=>nil
+    "preemptible"=>false
   }
 
   def self.limit_index_columns_read

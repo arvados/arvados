@@ -99,7 +99,7 @@ type RuntimeConstraints struct {
 // such as Partitions
 type SchedulingParameters struct {
 	Partitions  []string `json:"partitions"`
-	Preemptible *bool    `json:"preemptible"`
+	Preemptible bool     `json:"preemptible"`
 	MaxRunTime  int      `json:"max_run_time"`
 }
 
