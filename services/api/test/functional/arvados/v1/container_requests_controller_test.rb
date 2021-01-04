@@ -62,7 +62,7 @@ class Arvados::V1::ContainerRequestsControllerTest < ActionController::TestCase
     assert_equal 'bar', req.secret_mounts['/foo']['content']
   end
 
-  test "runtime constraints with default values" do
+  test "cancel with runtime_constraints and scheduling_params with default values" do
     authorize_with :active
     req = container_requests(:queued)
 
@@ -77,7 +77,7 @@ class Arvados::V1::ContainerRequestsControllerTest < ActionController::TestCase
           'keep_cache_ram' => 0,
         },
         scheduling_parameters: {
-          "preemptible"=>false
+          "preemptible"=>nil
         }
       },
     }
