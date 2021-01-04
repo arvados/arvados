@@ -50,32 +50,32 @@ func (runner installPassenger) Run(ctx context.Context, fail func(error), super 
 	defer passengerInstallMutex.Unlock()
 
 	var buf bytes.Buffer
-	err = super.RunProgram(ctx, runner.src, &buf, nil, "gem", "list", "--details", "bundler")
+	err = super.RunProgram(ctx, runner.src, runOptions{output: &buf}, "gem", "list", "--details", "bundler")
 	if err != nil {
 		return err
 	}
 	for _, version := range []string{"1.16.6", "1.17.3", "2.0.2"} {
 		if !strings.Contains(buf.String(), "("+version+")") {
-			err = super.RunProgram(ctx, runner.src, nil, nil, "gem", "install", "--user", "--conservative", "--no-document", "bundler:1.16.6", "bundler:1.17.3", "bundler:2.0.2")
+			err = super.RunProgram(ctx, runner.src, runOptions{}, "gem", "install", "--user", "--conservative", "--no-document", "bundler:1.16.6", "bundler:1.17.3", "bundler:2.0.2")
 			if err != nil {
 				return err
 			}
 			break
 		}
 	}
-	err = super.RunProgram(ctx, runner.src, nil, nil, "bundle", "install", "--jobs", "4", "--path", filepath.Join(os.Getenv("HOME"), ".gem"))
+	err = super.RunProgram(ctx, runner.src, runOptions{}, "bundle", "install", "--jobs", "4", "--path", filepath.Join(os.Getenv("HOME"), ".gem"))
 	if err != nil {
 		return err
 	}
-	err = super.RunProgram(ctx, runner.src, nil, nil, "bundle", "exec", "passenger-config", "build-native-support")
+	err = super.RunProgram(ctx, runner.src, runOptions{}, "bundle", "exec", "passenger-config", "build-native-support")
 	if err != nil {
 		return err
 	}
-	err = super.RunProgram(ctx, runner.src, nil, nil, "bundle", "exec", "passenger-config", "install-standalone-runtime")
+	err = super.RunProgram(ctx, runner.src, runOptions{}, "bundle", "exec", "passenger-config", "install-standalone-runtime")
 	if err != nil {
 		return err
 	}
-	err = super.RunProgram(ctx, runner.src, nil, nil, "bundle", "exec", "passenger-config", "validate-install")
+	err = super.RunProgram(ctx, runner.src, runOptions{}, "bundle", "exec", "passenger-config", "validate-install")
 	if err != nil && !strings.Contains(err.Error(), "exit status 2") {
 		// Exit code 2 indicates there were warnings (like
 		// "other passenger installations have been detected",
@@ -139,8 +139,14 @@ func (runner runPassenger) Run(ctx context.Context, fail func(error), super *Sup
 			"--no-install-runtime",
 			"--pid-file", filepath.Join(super.wwwtempdir, "passenger."+strings.Replace(appdir, "/", "_", -1)+".pid"),
 		}
+		opts := runOptions{
+			env: append([]string{
+				"HOME=/var/www",
+				"TMPDIR=" + super.wwwtempdir,
+			}, railsEnv...),
+		}
 		if super.ClusterType == "production" {
-			cmdline = append([]string{"sudo", "-u", "www-data", "-E", "HOME=/var/www", "PATH=/var/lib/arvados/bin:" + os.Getenv("PATH"), "/var/lib/arvados/bin/bundle"}, cmdline[1:]...)
+			opts.user = "www-data"
 		} else {
 			// This would be desirable in the production
 			// case too, but it fails with sudo because
@@ -149,8 +155,7 @@ func (runner runPassenger) Run(ctx context.Context, fail func(error), super *Sup
 			// failed (13: Permission denied)"
 			cmdline = append(cmdline, "--log-file", "/dev/stderr")
 		}
-		env := append([]string{"TMPDIR=" + super.wwwtempdir}, railsEnv...)
-		err = super.RunProgram(ctx, appdir, nil, env, cmdline[0], cmdline[1:]...)
+		err = super.RunProgram(ctx, appdir, opts, cmdline[0], cmdline[1:]...)
 		fail(err)
 	}()
 	return nil

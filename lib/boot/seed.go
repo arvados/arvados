@@ -23,11 +23,11 @@ func (seedDatabase) Run(ctx context.Context, fail func(error), super *Supervisor
 	if super.ClusterType == "production" {
 		return nil
 	}
-	err = super.RunProgram(ctx, "services/api", nil, railsEnv, "bundle", "exec", "rake", "db:setup")
+	err = super.RunProgram(ctx, "services/api", runOptions{env: railsEnv}, "bundle", "exec", "rake", "db:setup")
 	if err != nil {
 		return err
 	}
-	err = super.RunProgram(ctx, "services/api", nil, railsEnv, "bundle", "exec", "./script/get_anonymous_user_token.rb")
+	err = super.RunProgram(ctx, "services/api", runOptions{env: railsEnv}, "bundle", "exec", "./script/get_anonymous_user_token.rb")
 	if err != nil {
 		return err
 	}

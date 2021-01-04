@@ -48,7 +48,7 @@ func (runPostgreSQL) Run(ctx context.Context, fail func(error), super *Superviso
 	}
 
 	buf := bytes.NewBuffer(nil)
-	err = super.RunProgram(ctx, super.tempdir, buf, nil, "pg_config", "--bindir")
+	err = super.RunProgram(ctx, super.tempdir, runOptions{output: buf}, "pg_config", "--bindir")
 	if err != nil {
 		return err
 	}
@@ -93,17 +93,17 @@ func (runPostgreSQL) Run(ctx context.Context, fail func(error), super *Superviso
 		args = append([]string{"postgres", prog}, args...)
 		prog = "setuidgid"
 	}
-	err = super.RunProgram(ctx, super.tempdir, nil, nil, prog, args...)
+	err = super.RunProgram(ctx, super.tempdir, runOptions{}, prog, args...)
 	if err != nil {
 		return err
 	}
 
-	err = super.RunProgram(ctx, super.tempdir, nil, nil, "cp", "server.crt", "server.key", datadir)
+	err = super.RunProgram(ctx, super.tempdir, runOptions{}, "cp", "server.crt", "server.key", datadir)
 	if err != nil {
 		return err
 	}
 	if iamroot {
-		err = super.RunProgram(ctx, super.tempdir, nil, nil, "chown", "postgres", datadir+"/server.crt", datadir+"/server.key")
+		err = super.RunProgram(ctx, super.tempdir, runOptions{}, "chown", "postgres", datadir+"/server.crt", datadir+"/server.key")
 		if err != nil {
 			return err
 		}
@@ -124,7 +124,7 @@ func (runPostgreSQL) Run(ctx context.Context, fail func(error), super *Superviso
 			args = append([]string{"postgres", prog}, args...)
 			prog = "setuidgid"
 		}
-		fail(super.RunProgram(ctx, super.tempdir, nil, nil, prog, args...))
+		fail(super.RunProgram(ctx, super.tempdir, runOptions{}, prog, args...))
 	}()
 
 	for {

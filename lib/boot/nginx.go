@@ -120,7 +120,7 @@ func (runNginx) Run(ctx context.Context, fail func(error), super *Supervisor) er
 	super.waitShutdown.Add(1)
 	go func() {
 		defer super.waitShutdown.Done()
-		fail(super.RunProgram(ctx, ".", nil, nil, nginx, args...))
+		fail(super.RunProgram(ctx, ".", runOptions{}, nginx, args...))
 	}()
 	// Choose one of the ports where Nginx should listen, and wait
 	// here until we can connect. If ExternalURL is https://foo (with no port) then we connect to "foo:https"

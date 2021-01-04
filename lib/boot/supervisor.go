@@ -21,6 +21,7 @@ import (
 	"os/user"
 	"path/filepath"
 	"reflect"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -206,13 +207,13 @@ func (super *Supervisor) run(cfg *arvados.Config) error {
 	} else if super.SourceVersion == "" {
 		// Find current source tree version.
 		var buf bytes.Buffer
-		err = super.RunProgram(super.ctx, ".", &buf, nil, "git", "diff", "--shortstat")
+		err = super.RunProgram(super.ctx, ".", runOptions{output: &buf}, "git", "diff", "--shortstat")
 		if err != nil {
 			return err
 		}
 		dirty := buf.Len() > 0
 		buf.Reset()
-		err = super.RunProgram(super.ctx, ".", &buf, nil, "git", "log", "-n1", "--format=%H")
+		err = super.RunProgram(super.ctx, ".", runOptions{output: &buf}, "git", "log", "-n1", "--format=%H")
 		if err != nil {
 			return err
 		}
@@ -407,7 +408,7 @@ func (super *Supervisor) installGoProgram(ctx context.Context, srcpath string) (
 	if super.ClusterType == "production" {
 		return binfile, nil
 	}
-	err := super.RunProgram(ctx, filepath.Join(super.SourcePath, srcpath), nil, []string{"GOBIN=" + super.bindir}, "go", "install", "-ldflags", "-X git.arvados.org/arvados.git/lib/cmd.version="+super.SourceVersion+" -X main.version="+super.SourceVersion)
+	err := super.RunProgram(ctx, filepath.Join(super.SourcePath, srcpath), runOptions{env: []string{"GOBIN=" + super.bindir}}, "go", "install", "-ldflags", "-X git.arvados.org/arvados.git/lib/cmd.version="+super.SourceVersion+" -X main.version="+super.SourceVersion)
 	return binfile, err
 }
 
@@ -470,6 +471,12 @@ func (super *Supervisor) lookPath(prog string) string {
 	return prog
 }
 
+type runOptions struct {
+	output io.Writer // attach stdout
+	env    []string  // add/replace environment variables
+	user   string    // run as specified user
+}
+
 // RunProgram runs prog with args, using dir as working directory. If ctx is
 // cancelled while the child is running, RunProgram terminates the child, waits
 // for it to exit, then returns.
@@ -478,7 +485,7 @@ func (super *Supervisor) lookPath(prog string) string {
 //
 // Child's stdout will be written to output if non-nil, otherwise the
 // boot command's stderr.
-func (super *Supervisor) RunProgram(ctx context.Context, dir string, output io.Writer, env []string, prog string, args ...string) error {
+func (super *Supervisor) RunProgram(ctx context.Context, dir string, opts runOptions, prog string, args ...string) error {
 	cmdline := fmt.Sprintf("%s", append([]string{prog}, args...))
 	super.logger.WithField("command", cmdline).WithField("dir", dir).Info("executing")
 
@@ -531,10 +538,10 @@ func (super *Supervisor) RunProgram(ctx context.Context, dir string, output io.W
 	}()
 	copiers.Add(1)
 	go func() {
-		if output == nil {
+		if opts.output == nil {
 			io.Copy(logwriter, stdout)
 		} else {
-			io.Copy(output, stdout)
+			io.Copy(opts.output, stdout)
 		}
 		copiers.Done()
 	}()
@@ -544,9 +551,24 @@ func (super *Supervisor) RunProgram(ctx context.Context, dir string, output io.W
 	} else {
 		cmd.Dir = filepath.Join(super.SourcePath, dir)
 	}
-	env = append([]string(nil), env...)
+	env := append([]string(nil), opts.env...)
 	env = append(env, super.environ...)
 	cmd.Env = dedupEnv(env)
+
+	if opts.user != "" {
+		u, err := user.Lookup(opts.user)
+		if err != nil {
+			return fmt.Errorf("user.Lookup(%q): %w", opts.user, err)
+		}
+		uid, _ := strconv.Atoi(u.Uid)
+		gid, _ := strconv.Atoi(u.Gid)
+		cmd.SysProcAttr = &syscall.SysProcAttr{
+			Credential: &syscall.Credential{
+				Uid: uint32(uid),
+				Gid: uint32(gid),
+			},
+		}
+	}
 
 	exited := false
 	defer func() { exited = true }()
