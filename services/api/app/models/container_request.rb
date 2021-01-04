@@ -31,7 +31,6 @@ class ContainerRequest < ArvadosModel
   serialize :scheduling_parameters, Hash
 
   before_validation :fill_field_defaults, :if => :new_record?
-  before_validation :forget_innocuous_serialized_fields_updates, on: :update
   before_validation :validate_runtime_constraints
   before_validation :set_default_preemptible_scheduling_parameter
   before_validation :set_container
@@ -345,19 +344,6 @@ class ContainerRequest < ArvadosModel
     end
   end
 
-  # Updates to serialized fields are all-or-nothing. Here we avoid making
-  # unnecessary updates.
-  def forget_innocuous_serialized_fields_updates
-    forgettable_attrs = []
-    if (runtime_constraints.to_a - runtime_constraints_was.to_a).empty?
-      forgettable_attrs.append('runtime_constraints')
-    end
-    if (scheduling_parameters.to_a - scheduling_parameters_was.to_a).empty?
-      forgettable_attrs.append('scheduling_parameters')
-    end
-    self.clear_attribute_changes(forgettable_attrs) if !forgettable_attrs.empty?
-  end
-
   def validate_runtime_constraints
     case self.state
     when Committed
@@ -483,12 +469,12 @@ class ContainerRequest < ArvadosModel
     # see https://dev.arvados.org/issues/17014#note-28 for details
 
     AttrsRuntimeConstraintsDefaults.each do |key, value|
-      if attributes["runtime_constraints"] && !attributes["runtime_constraints"].key?(key)
+      if !attributes["runtime_constraints"].key?(key)
         attributes["runtime_constraints"][key] = value
       end
     end
     AttrsSchedulingParametersDefaults.each do |key, value|
-      if attributes["scheduling_parameters"] && !attributes["scheduling_parameters"].key?(key)
+      if !attributes["scheduling_parameters"].key?(key)
         attributes["scheduling_parameters"][key] = value
       end
     end
