@@ -1011,9 +1011,9 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
   [
     [true, 'zzzzz-dz642-runningcontainr', true],
-    [true, nil, nil],
-    [false, 'zzzzz-dz642-runningcontainr', nil],
-    [false, nil, nil],
+    [true, nil, true],
+    [false, 'zzzzz-dz642-runningcontainr', false],
+    [false, nil, false],
   ].each do |preemptible_conf, requesting_c, schedule_preemptible|
     test "having Rails.configuration.Containers.UsePreemptibleInstances=#{preemptible_conf}, #{requesting_c.nil? ? 'non-':''}child CR should #{schedule_preemptible ? '':'not'} ask for preemptible instance by default" do
       common_attrs = {cwd: "test",

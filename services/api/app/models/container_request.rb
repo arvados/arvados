@@ -108,7 +108,7 @@ class ContainerRequest < ArvadosModel
   AttrsSchedulingParametersDefaults = {
     "max_run_time"=>0,
     "partitions"=>[],
-    "preemptible"=>false
+    ## "preemptible"=> Rails.configuration.Containers.UsePreemptibleInstances  ##  we have to read this on the fly to pass the tests
   }
 
   def self.limit_index_columns_read
@@ -492,6 +492,12 @@ class ContainerRequest < ArvadosModel
         attributes["scheduling_parameters"][key] = value
       end
     end
+
+    ## We treat scheduling parameters["preemtible"] differently
+    if attributes["scheduling_parameters"] && !attributes["scheduling_parameters"].key?("preemptible")
+      attributes["scheduling_parameters"]["preemptible"] = Rails.configuration.Containers.UsePreemptibleInstances
+    end
+
     self.clear_attribute_changes(["runtime_constraints", "scheduling_parameters"])
 
     super

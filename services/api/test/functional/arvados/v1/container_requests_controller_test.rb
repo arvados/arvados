@@ -77,7 +77,7 @@ class Arvados::V1::ContainerRequestsControllerTest < ActionController::TestCase
           'keep_cache_ram' => 0,
         },
         scheduling_parameters: {
-          "preemptible"=>nil
+          "preemptible"=>false
         }
       },
     }
