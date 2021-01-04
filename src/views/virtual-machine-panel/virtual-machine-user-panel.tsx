@@ -61,7 +61,7 @@ const mapStateToProps = (state: RootState) => {
         userUuid: state.auth.user!.uuid,
         helpText: state.auth.config.clusterConfig.Workbench.SSHHelpPageHTML,
         hostSuffix: state.auth.config.clusterConfig.Workbench.SSHHelpHostSuffix || "",
-        webShell: state.auth.config.clusterConfig.Services.WebShell.ExternalURL,
+        webShell: state.auth.config.clusterConfig.Services.Workbench1.ExternalURL,
         ...state.virtualMachines
     };
 };
