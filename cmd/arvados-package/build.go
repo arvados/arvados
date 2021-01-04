@@ -5,120 +5,158 @@
 package main
 
 import (
+	"bytes"
 	"context"
-	"flag"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
+	"os/user"
+	"path/filepath"
+	"strings"
 
-	"git.arvados.org/arvados.git/lib/install"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
-	"github.com/sirupsen/logrus"
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/client"
 )
 
-type build struct{}
-
-func (bld build) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
-	logger := ctxlog.New(stderr, "text", "info")
-	err := (&builder{
-		PackageVersion: "0.0.0",
-		logger:         logger,
-	}).run(context.Background(), prog, args, stdin, stdout, stderr)
-	if err != nil {
-		logger.WithError(err).Error("failed")
-		return 1
+func build(ctx context.Context, opts opts, stdin io.Reader, stdout, stderr io.Writer) error {
+	if opts.PackageVersion == "" {
+		var buf bytes.Buffer
+		cmd := exec.CommandContext(ctx, "git", "describe", "--tag", "--dirty")
+		cmd.Stdout = &buf
+		cmd.Stderr = stderr
+		cmd.Dir = opts.SourceDir
+		err := cmd.Run()
+		if err != nil {
+			return fmt.Errorf("git describe: %w", err)
+		}
+		opts.PackageVersion = strings.TrimSpace(buf.String())
+		ctxlog.FromContext(ctx).Infof("version not specified; using %s", opts.PackageVersion)
 	}
-	return 0
-}
 
-type builder struct {
-	PackageVersion string
-	SourcePath     string
-	OutputDir      string
-	SkipInstall    bool
-	logger         logrus.FieldLogger
-}
+	if opts.PackageChown == "" {
+		whoami, err := user.Current()
+		if err != nil {
+			return fmt.Errorf("user.Current: %w", err)
+		}
+		opts.PackageChown = whoami.Uid + ":" + whoami.Gid
+	}
 
-func (bldr *builder) run(ctx context.Context, prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) error {
-	flags := flag.NewFlagSet("", flag.ContinueOnError)
-	flags.StringVar(&bldr.PackageVersion, "package-version", bldr.PackageVersion, "package version")
-	flags.StringVar(&bldr.SourcePath, "source", bldr.SourcePath, "source tree location")
-	flags.StringVar(&bldr.OutputDir, "output-directory", bldr.OutputDir, "destination directory for new package (default is cwd)")
-	flags.BoolVar(&bldr.SkipInstall, "skip-install", bldr.SkipInstall, "skip install step, assume you have already run 'arvados-server install -type package'")
-	err := flags.Parse(args)
+	// Build in a tempdir, then move to the desired destination
+	// dir. Otherwise, errors might cause us to leave a mess:
+	// truncated files, files owned by root, etc.
+	_, prog := filepath.Split(os.Args[0])
+	tmpdir, err := ioutil.TempDir(opts.PackageDir, prog+".")
 	if err != nil {
 		return err
 	}
-	if len(flags.Args()) > 0 {
-		return fmt.Errorf("unrecognized command line arguments: %v", flags.Args())
-	}
-	if !bldr.SkipInstall {
-		exitcode := install.Command.RunCommand("arvados-server install", []string{
-			"-type", "package",
-			"-package-version", bldr.PackageVersion,
-			"-source", bldr.SourcePath,
-		}, stdin, stdout, stderr)
-		if exitcode != 0 {
-			return fmt.Errorf("arvados-server install failed: exit code %d", exitcode)
-		}
-	}
-	cmd := exec.Command("/var/lib/arvados/bin/gem", "install", "--user", "--no-document", "fpm")
-	cmd.Stdout = stdout
-	cmd.Stderr = stderr
-	err = cmd.Run()
-	if err != nil {
-		return fmt.Errorf("gem install fpm: %w", err)
-	}
+	defer os.RemoveAll(tmpdir)
 
-	if _, err := os.Stat("/root/.gem/ruby/2.5.0/gems/fpm-1.11.0/lib/fpm/package/deb.rb"); err == nil {
-		// Workaround for fpm bug https://github.com/jordansissel/fpm/issues/1739
-		cmd = exec.Command("sed", "-i", `/require "digest"/a require "zlib"`, "/root/.gem/ruby/2.5.0/gems/fpm-1.11.0/lib/fpm/package/deb.rb")
+	selfbin, err := os.Readlink("/proc/self/exe")
+	if err != nil {
+		return fmt.Errorf("readlink /proc/self/exe: %w", err)
+	}
+	buildImageName := "arvados-package-build-" + opts.TargetOS
+	packageFilename := "arvados-server-easy_" + opts.PackageVersion + "_amd64.deb"
+
+	if ok, err := dockerImageExists(ctx, buildImageName); err != nil {
+		return err
+	} else if !ok || opts.RebuildImage {
+		buildCtrName := strings.Replace(buildImageName, ":", "-", -1)
+		err = dockerRm(ctx, buildCtrName)
+		if err != nil {
+			return err
+		}
+
+		defer dockerRm(ctx, buildCtrName)
+		cmd := exec.CommandContext(ctx, "docker", "run",
+			"--name", buildCtrName,
+			"--tmpfs", "/tmp:exec,mode=01777",
+			"-v", selfbin+":/arvados-package:ro",
+			"-v", opts.SourceDir+":/arvados:ro",
+			opts.TargetOS,
+			"/arvados-package", "_install",
+			"-eatmydata",
+			"-type", "package",
+			"-source", "/arvados",
+			"-package-version", opts.PackageVersion,
+		)
 		cmd.Stdout = stdout
 		cmd.Stderr = stderr
 		err = cmd.Run()
 		if err != nil {
-			return fmt.Errorf("monkeypatch fpm: %w", err)
+			return fmt.Errorf("docker run: %w", err)
 		}
+
+		cmd = exec.CommandContext(ctx, "docker", "commit", buildCtrName, buildImageName)
+		cmd.Stdout = stdout
+		cmd.Stderr = stderr
+		err = cmd.Run()
+		if err != nil {
+			return fmt.Errorf("docker commit: %w", err)
+		}
+
+		ctxlog.FromContext(ctx).Infof("created docker image %s", buildImageName)
 	}
 
-	// Remove unneeded files. This is much faster than "fpm
-	// --exclude X" because fpm copies everything into a staging
-	// area before looking at the --exclude args.
-	cmd = exec.Command("bash", "-c", "cd /var/www/.gem/ruby && rm -rf */cache */bundler/gems/*/.git */bundler/gems/arvados-*/[^s]* */bundler/gems/arvados-*/s[^d]* */bundler/gems/arvados-*/sdk/[^cr]* */gems/passenger-*/src/cxx* ruby/*/gems/*/ext /var/lib/arvados/go")
+	cmd := exec.CommandContext(ctx, "docker", "run",
+		"--rm",
+		"--tmpfs", "/tmp:exec,mode=01777",
+		"-v", tmpdir+":/pkg",
+		"-v", selfbin+":/arvados-package:ro",
+		"-v", opts.SourceDir+":/arvados:ro",
+		buildImageName,
+		"eatmydata", "/arvados-package", "fpm",
+		"-source", "/arvados",
+		"-package-version", opts.PackageVersion,
+		"-package-dir", "/pkg",
+		"-package-chown", opts.PackageChown,
+	)
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
 	err = cmd.Run()
 	if err != nil {
-		return fmt.Errorf("rm -rf [...]: %w", err)
+		return fmt.Errorf("docker run: %w", err)
 	}
 
-	format := "deb" // TODO: rpm
-
-	cmd = exec.Command("/root/.gem/ruby/2.5.0/bin/fpm",
-		"--name", "arvados-server-easy",
-		"--version", bldr.PackageVersion,
-		"--input-type", "dir",
-		"--output-type", format)
-	deps, err := install.ProductionDependencies()
+	err = os.Rename(tmpdir+"/"+packageFilename, opts.PackageDir+"/"+packageFilename)
 	if err != nil {
 		return err
 	}
-	for _, pkg := range deps {
-		cmd.Args = append(cmd.Args, "--depends", pkg)
-	}
-	cmd.Args = append(cmd.Args,
-		"--verbose",
-		"--deb-use-file-permissions",
-		"--rpm-use-file-permissions",
-		"/var/lib/arvados",
-		"/var/www/.gem",
-		"/var/www/.passenger",
-		"/var/www/.bundle",
-	)
-	fmt.Fprintf(stderr, "... %s\n", cmd.Args)
-	cmd.Dir = bldr.OutputDir
+
+	cmd = exec.CommandContext(ctx, "bash", "-c", "dpkg-scanpackages . | gzip > Packages.gz.tmp && mv Packages.gz.tmp Packages.gz")
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
-	return cmd.Run()
+	cmd.Dir = opts.PackageDir
+	err = cmd.Run()
+	if err != nil {
+		return fmt.Errorf("dpkg-scanpackages: %w", err)
+	}
+
+	return nil
+}
+
+func dockerRm(ctx context.Context, name string) error {
+	cli, err := client.NewEnvClient()
+	if err != nil {
+		return err
+	}
+	ctrs, err := cli.ContainerList(ctx, types.ContainerListOptions{All: true, Limit: -1})
+	if err != nil {
+		return err
+	}
+	for _, ctr := range ctrs {
+		for _, ctrname := range ctr.Names {
+			if ctrname == "/"+name {
+				err = cli.ContainerRemove(ctx, ctr.ID, types.ContainerRemoveOptions{})
+				if err != nil {
+					return fmt.Errorf("error removing container %s: %w", ctr.ID, err)
+				}
+				break
+			}
+		}
+	}
+	return nil
 }
