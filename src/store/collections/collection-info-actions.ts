@@ -13,6 +13,7 @@ export interface WebDavS3InfoDialogData {
     uuid: string;
     token: string;
     downloadUrl: string;
+    collectionsUrl: string;
     homeCluster: string;
     localCluster: string;
     username: string;
@@ -27,7 +28,8 @@ export const openWebDavS3InfoDialog = (uuid: string, activeTab?: number) =>
             data: {
                 title: 'Access Collection using WebDAV or S3',
                 token: getState().auth.apiToken,
-                downloadUrl: getState().auth.config.keepWebInlineServiceUrl,
+                downloadUrl: getState().auth.config.keepWebServiceUrl,
+                collectionsUrl: getState().auth.config.keepWebInlineServiceUrl,
                 homeCluster: getState().auth.homeCluster,
                 localCluster: getState().auth.localCluster,
                 username: getState().auth.user!.username,

@@ -47,16 +47,23 @@ export const WebDavS3InfoDialog = compose(
     (props: WithDialogProps<WebDavS3InfoDialogData> & WithStyles<CssRules>) => {
         if (!props.data.downloadUrl) { return null; }
 
-        const keepwebUrl = props.data.downloadUrl.replace(/\/\*(--[^.]+)?\./, "/");
+        let winDav;
+        let cyberDav;
 
-        const winDav = new URL(props.data.downloadUrl.replace("*", props.data.uuid));
+        if (props.data.collectionsUrl.indexOf("*") > -1) {
+            const withuuid = props.data.collectionsUrl.replace("*", props.data.uuid);
+            winDav = new URL(withuuid);
+            cyberDav = new URL(withuuid);
+        } else {
+            winDav = new URL(props.data.downloadUrl);
+            cyberDav = new URL(props.data.downloadUrl);
+            winDav.pathname = `/by_id/${props.data.uuid}/`;
+            cyberDav.pathname = `/by_id/${props.data.uuid}/`;
+        }
 
-        const gnomeDav = new URL(keepwebUrl);
-        gnomeDav.username = props.data.username;
-        gnomeDav.pathname = `/c=${props.data.uuid}/`;
-        gnomeDav.protocol = "davs:";
+        cyberDav.protocol = { "http:": "dav:", "https:": "davs:" }[cyberDav.protocol];
 
-        const s3endpoint = new URL(keepwebUrl);
+        const s3endpoint = new URL(props.data.collectionsUrl.replace(/\/\*(--[^.]+)?\./, "/"));
 
         const sp = props.data.token.split("/");
         let tokenUuid;
@@ -78,17 +85,13 @@ export const WebDavS3InfoDialog = compose(
                 title={`WebDAV and S3`} />
             <div className={props.classes.details} >
                 <Tabs value={props.data.activeTab} onChange={props.data.setActiveTab}>
-                    <Tab key="windows" label="Add a Network Location in Windows" />
-                    <Tab key="gnome" label="Connect to Server in GNOME" />
+                    <Tab key="cyberduck" label="Cyberduck/Mountain Duck or Gnome Files" />
+                    <Tab key="windows" label="Windows or MacOS" />
                     <Tab key="s3" label="Using an S3 client" />
                 </Tabs>
 
-                <TabPanel index={0} value={props.data.activeTab}>
-                    <ol>
-                        <li>Open File Explorer</li>
-                        <li>Click on "This PC", then go to Computer &rarr; Add a Network Location</li>
-                        <li>Click Next, then choose "Add a custom network location", then click Next</li>
-                    </ol>
+                <TabPanel index={1} value={props.data.activeTab}>
+                    <h2>Settings</h2>
 
                     <DetailsAttribute
                         label='Internet address'
@@ -104,24 +107,44 @@ export const WebDavS3InfoDialog = compose(
                         label='Password'
                         value={props.data.token}
                         copyValue={props.data.token} />
+
+                    <h3>Windows</h3>
+                    <ol>
+                        <li>Open File Explorer</li>
+                        <li>Click on "This PC", then go to Computer &rarr; Add a Network Location</li>
+                        <li>Click Next, then choose "Add a custom network location", then click Next</li>
+                    </ol>
+
+                    <h3>MacOS</h3>
+                    <ol>
+                        <li>Open Finder</li>
+                        <li>Click Go &rarr; Connect to server</li>
+                    </ol>
                 </TabPanel>
 
-                <TabPanel index={1} value={props.data.activeTab}>
+                <TabPanel index={0} value={props.data.activeTab}>
+                    <DetailsAttribute
+                        label='Server'
+                        value={<a href={cyberDav.toString()}>{cyberDav.toString()}</a>}
+                        copyValue={cyberDav.toString()} />
+
+                    <DetailsAttribute
+                        label='Username'
+                        value={props.data.username}
+                        copyValue={props.data.username} />
+
+                    <DetailsAttribute
+                        label='Password'
+                        value={props.data.token}
+                        copyValue={props.data.token} />
+
+                    <h3>Gnome</h3>
                     <ol>
                         <li>Open Files</li>
                         <li>Select +Other Locations</li>
                         <li>Connect to Server &rarr; Enter server address</li>
                     </ol>
 
-                    <DetailsAttribute
-                        label='Server address'
-                        value={gnomeDav.toString()}
-                        copyValue={gnomeDav.toString()} />
-
-                    <DetailsAttribute
-                        label='Password'
-                        value={props.data.token}
-                        copyValue={props.data.token} />
                 </TabPanel>
 
                 <TabPanel index={2} value={props.data.activeTab}>
