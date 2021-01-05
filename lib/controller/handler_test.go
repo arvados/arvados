@@ -333,25 +333,21 @@ func (s *HandlerSuite) TestGetObjects(c *check.C) {
 	ksUUID := ksList.Items[0].UUID
 
 	testCases := map[string]map[string]bool{
-		"api_clients/" + arvadostest.TrustedWorkbenchAPIClientUUID: nil,
-		"api_client_authorizations/" + arvadostest.AdminTokenUUID:  nil,
-		"authorized_keys/" + arvadostest.AdminAuthorizedKeysUUID:   nil,
-		"collections/" + arvadostest.CollectionWithUniqueWordsUUID: {"href": true},
-		"containers/" + arvadostest.RunningContainerUUID:           nil,
-		"container_requests/" + arvadostest.QueuedContainerRequestUUID: {
-			"runtime_constraints":     true,
-			"scheduling_parameters":   true,
-			"modified_by_client_uuid": true,
-		}, // see https://dev.arvados.org/issues/17014#note-25
-		"groups/" + arvadostest.AProjectUUID:                      nil,
-		"keep_services/" + ksUUID:                                 nil,
-		"links/" + arvadostest.ActiveUserCanReadAllUsersLinkUUID:  nil,
-		"logs/" + arvadostest.CrunchstatForRunningJobLogUUID:      nil,
-		"nodes/" + arvadostest.IdleNodeUUID:                       nil,
-		"repositories/" + arvadostest.ArvadosRepoUUID:             nil,
-		"users/" + arvadostest.ActiveUserUUID:                     {"href": true},
-		"virtual_machines/" + arvadostest.TestVMUUID:              nil,
-		"workflows/" + arvadostest.WorkflowWithDefinitionYAMLUUID: nil,
+		"api_clients/" + arvadostest.TrustedWorkbenchAPIClientUUID:     nil,
+		"api_client_authorizations/" + arvadostest.AdminTokenUUID:      nil,
+		"authorized_keys/" + arvadostest.AdminAuthorizedKeysUUID:       nil,
+		"collections/" + arvadostest.CollectionWithUniqueWordsUUID:     {"href": true},
+		"containers/" + arvadostest.RunningContainerUUID:               nil,
+		"container_requests/" + arvadostest.QueuedContainerRequestUUID: nil,
+		"groups/" + arvadostest.AProjectUUID:                           nil,
+		"keep_services/" + ksUUID:                                      nil,
+		"links/" + arvadostest.ActiveUserCanReadAllUsersLinkUUID:       nil,
+		"logs/" + arvadostest.CrunchstatForRunningJobLogUUID:           nil,
+		"nodes/" + arvadostest.IdleNodeUUID:                            nil,
+		"repositories/" + arvadostest.ArvadosRepoUUID:                  nil,
+		"users/" + arvadostest.ActiveUserUUID:                          {"href": true},
+		"virtual_machines/" + arvadostest.TestVMUUID:                   nil,
+		"workflows/" + arvadostest.WorkflowWithDefinitionYAMLUUID:      nil,
 	}
 	for url, skippedFields := range testCases {
 		s.CheckObjectType(c, "/arvados/v1/"+url, arvadostest.AdminToken, skippedFields)
