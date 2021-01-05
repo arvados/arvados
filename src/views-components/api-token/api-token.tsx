@@ -11,7 +11,6 @@ import { AuthService } from "~/services/auth-service/auth-service";
 import { navigateToRootProject, navigateToLinkAccount } from "~/store/navigation/navigation-action";
 import { Config } from "~/common/config";
 import { getAccountLinkData } from "~/store/link-account-panel/link-account-panel-actions";
-import { replace } from "react-router-redux";
 
 interface ApiTokenProps {
     authService: AuthService;
@@ -31,7 +30,7 @@ export const ApiToken = connect()(
                 if (loadMainApp) {
                     if (redirectURL) {
                         this.props.authService.removeTargetURL();
-                        this.props.dispatch(replace(redirectURL));
+                        window.location.href = redirectURL;
                     }
                     else if (this.props.dispatch(getAccountLinkData())) {
                         this.props.dispatch(navigateToLinkAccount);
