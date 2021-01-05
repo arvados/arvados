@@ -728,29 +728,8 @@ func (s *FederationSuite) TestCreateRemoteContainerRequestCheckSetRuntimeToken(c
 	req.Header.Set("Content-type", "application/json")
 	resp := s.testRequest(req).Result()
 	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
-	var cr arvados.ContainerRequest
 
-	// Body can be a json formated or something like:
-	//  (forceLegacyAPI14==false) cluster_id=zmock&container_request=%7B%22command%22%3A%5B%22abc%22%5D%2C%22container_image%22%3A%22123%22%2C%22...7D
-	// or:
-	//  (forceLegacyAPI14==true) "{\"container_request\":{\"command\":[\"abc\"],\"container_image\":\"12...Uncommitted\"}}"
-	data, err := ioutil.ReadAll(s.remoteMockRequests[0].Body)
-	c.Check(err, check.IsNil)
-
-	// this exposes the different inputs we get in the mock
-	if forceLegacyAPI14 {
-		var answerCR struct {
-			ContainerRequest arvados.ContainerRequest `json:"container_request"`
-		}
-		c.Check(json.Unmarshal(data, &answerCR), check.IsNil)
-		cr = answerCR.ContainerRequest
-	} else {
-		var decodedValueCR string
-		decodedValue, err := url.ParseQuery(string(data))
-		c.Check(err, check.IsNil)
-		decodedValueCR = decodedValue.Get("container_request")
-		c.Check(json.Unmarshal([]byte(decodedValueCR), &cr), check.IsNil)
-	}
+	cr := s.getCRfromMockRequest(c)
 
 	// After mocking around now making sure the runtime_token we sent is still there.
 	c.Check(cr.RuntimeToken, check.Equals, "xyz")
