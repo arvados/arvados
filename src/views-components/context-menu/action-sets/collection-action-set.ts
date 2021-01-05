@@ -17,7 +17,8 @@ import {
     AdvancedIcon,
     OpenIcon,
     Link,
-    RestoreVersionIcon
+    RestoreVersionIcon,
+    FolderSharedIcon
 } from "~/components/icon/icon";
 import { openCollectionUpdateDialog } from "~/store/collections/collection-update-actions";
 import { favoritePanelActions } from "~/store/favorite-panel/favorite-panel-action";
@@ -88,8 +89,8 @@ export const readOnlyCollectionActionSet: ContextMenuActionSet = [[
     ...commonActionSet.reduce((prev, next) => prev.concat(next), []),
     toggleFavoriteAction,
     {
-        icon: AdvancedIcon,
-        name: "Connecting with WebDav or S3",
+        icon: FolderSharedIcon,
+        name: "Open as network folder or S3 bucket",
         execute: (dispatch, resource) => {
             dispatch<any>(openWebDavS3InfoDialog(resource.uuid));
         }

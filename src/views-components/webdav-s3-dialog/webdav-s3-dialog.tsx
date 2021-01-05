@@ -82,12 +82,12 @@ export const WebDavS3InfoDialog = compose(
             onClose={props.closeDialog}
             style={{ alignSelf: 'stretch' }}>
             <CardHeader
-                title={`WebDAV and S3`} />
+                title={`Open as Network Folder or S3 Bucket`} />
             <div className={props.classes.details} >
                 <Tabs value={props.data.activeTab} onChange={props.data.setActiveTab}>
                     <Tab key="cyberduck" label="Cyberduck/Mountain Duck or Gnome Files" />
                     <Tab key="windows" label="Windows or MacOS" />
-                    <Tab key="s3" label="Using an S3 client" />
+                    <Tab key="s3" label="S3 bucket" />
                 </Tabs>
 
                 <TabPanel index={1} value={props.data.activeTab}>
