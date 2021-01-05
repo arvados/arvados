@@ -95,7 +95,7 @@ export const WebDavS3InfoDialog = compose(
 
                     <DetailsAttribute
                         label='Internet address'
-                        value={winDav.toString()}
+                        value={<a href={winDav.toString()}>{winDav.toString()}</a>}
                         copyValue={winDav.toString()} />
 
                     <DetailsAttribute
