@@ -76,6 +76,13 @@ export const WebDavS3InfoDialog = compose(
             tokenSecret = tokenUuid;
         }
 
+        const supportsWebdav = (props.data.uuid.indexOf("-4zz18-") === 5);
+
+        let activeTab = props.data.activeTab;
+        if (!supportsWebdav) {
+            activeTab = 2;
+        }
+
         return <Dialog
             open={props.open}
             maxWidth="md"
@@ -84,13 +91,13 @@ export const WebDavS3InfoDialog = compose(
             <CardHeader
                 title={`Open as Network Folder or S3 Bucket`} />
             <div className={props.classes.details} >
-                <Tabs value={props.data.activeTab} onChange={props.data.setActiveTab}>
-                    <Tab key="cyberduck" label="Cyberduck/Mountain Duck or Gnome Files" />
-                    <Tab key="windows" label="Windows or MacOS" />
-                    <Tab key="s3" label="S3 bucket" />
+                <Tabs value={activeTab} onChange={props.data.setActiveTab}>
+                    {supportsWebdav && <Tab value={0} key="cyberduck" label="Cyberduck/Mountain Duck or Gnome Files" />}
+                    {supportsWebdav && <Tab value={1} key="windows" label="Windows or MacOS" />}
+                    <Tab value={2} key="s3" label="S3 bucket" />
                 </Tabs>
 
-                <TabPanel index={1} value={props.data.activeTab}>
+                <TabPanel index={0} value={activeTab}>
                     <h2>Settings</h2>
 
                     <DetailsAttribute
@@ -122,7 +129,7 @@ export const WebDavS3InfoDialog = compose(
                     </ol>
                 </TabPanel>
 
-                <TabPanel index={0} value={props.data.activeTab}>
+                <TabPanel index={1} value={activeTab}>
                     <DetailsAttribute
                         label='Server'
                         value={<a href={cyberDav.toString()}>{cyberDav.toString()}</a>}
@@ -147,7 +154,7 @@ export const WebDavS3InfoDialog = compose(
 
                 </TabPanel>
 
-                <TabPanel index={2} value={props.data.activeTab}>
+                <TabPanel index={2} value={activeTab}>
                     <DetailsAttribute
                         label='Endpoint'
                         value={s3endpoint.host}
