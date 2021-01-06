@@ -82,7 +82,7 @@ const loginform = `
 	  redir += '?'
 	}
         const respj = await resp.json()
-	document.location = redir + "api_token=" + respj.api_token
+	document.location = redir + "api_token=v2/" + respj.uuid + "/" + respj.api_token
       }
     </script>
   </head>

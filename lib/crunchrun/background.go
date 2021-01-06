@@ -132,7 +132,7 @@ func kill(uuid string, signal syscall.Signal, stdout, stderr io.Writer) error {
 	var pi procinfo
 	err = json.NewDecoder(f).Decode(&pi)
 	if err != nil {
-		return fmt.Errorf("decode %s: %s\n", path, err)
+		return fmt.Errorf("decode %s: %s", path, err)
 	}
 
 	if pi.UUID != uuid || pi.PID == 0 {
@@ -162,7 +162,7 @@ func kill(uuid string, signal syscall.Signal, stdout, stderr io.Writer) error {
 	return nil
 }
 
-// List UUIDs of active crunch-run processes.
+// ListProcesses lists UUIDs of active crunch-run processes.
 func ListProcesses(stdout, stderr io.Writer) int {
 	// filepath.Walk does not follow symlinks, so we must walk
 	// lockdir+"/." in case lockdir itself is a symlink.

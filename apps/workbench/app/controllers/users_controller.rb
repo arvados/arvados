@@ -39,6 +39,18 @@ class UsersController < ApplicationController
 
   def profile
     params[:offer_return_to] ||= params[:return_to]
+
+    # In a federation situation, when you get a user record using
+    # "current user of token" it can fetch a stale user record from
+    # the local cluster. So even if profile settings were just written
+    # to the user record on the login cluster (because the user just
+    # filled out the profile), those profile settings may not appear
+    # in the "current user" response because it is returning a cached
+    # record from the local cluster.
+    #
+    # In this case, explicitly fetching user record forces it to get a
+    # fresh record from the login cluster.
+    Thread.current[:user] = User.find(current_user.uuid)
   end
 
   def activity

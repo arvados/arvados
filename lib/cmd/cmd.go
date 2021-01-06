@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-// package cmd helps define reusable functions that can be exposed as
+// Package cmd helps define reusable functions that can be exposed as
 // [subcommands of] command line programs.
 package cmd
 

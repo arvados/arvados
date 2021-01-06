@@ -820,7 +820,7 @@ func (s *FederationSuite) TestListMultiRemoteContainersPaged(c *check.C) {
 			w.WriteHeader(200)
 			w.Write([]byte(`{"kind": "arvados#containerList", "items": [{"uuid": "zhome-xvhdp-cr6queuedcontnr", "command": ["efg"]}]}`))
 		}
-		callCount += 1
+		callCount++
 	})).Close()
 	req := httptest.NewRequest("GET", fmt.Sprintf("/arvados/v1/containers?count=none&filters=%s",
 		url.QueryEscape(fmt.Sprintf(`[["uuid", "in", ["%v", "zhome-xvhdp-cr5queuedcontnr", "zhome-xvhdp-cr6queuedcontnr"]]]`,
@@ -856,7 +856,7 @@ func (s *FederationSuite) TestListMultiRemoteContainersMissing(c *check.C) {
 			w.WriteHeader(200)
 			w.Write([]byte(`{"kind": "arvados#containerList", "items": []}`))
 		}
-		callCount += 1
+		callCount++
 	})).Close()
 	req := httptest.NewRequest("GET", fmt.Sprintf("/arvados/v1/containers?count=none&filters=%s",
 		url.QueryEscape(fmt.Sprintf(`[["uuid", "in", ["%v", "zhome-xvhdp-cr5queuedcontnr", "zhome-xvhdp-cr6queuedcontnr"]]]`,

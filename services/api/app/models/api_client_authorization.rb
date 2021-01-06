@@ -128,6 +128,11 @@ class ApiClientAuthorization < ArvadosModel
       return auth
     end
 
+    token_uuid = ''
+    secret = token
+    stored_secret = nil         # ...if different from secret
+    optional = nil
+
     case token[0..2]
     when 'v2/'
       _, token_uuid, secret, optional = token.split('/')
@@ -170,94 +175,125 @@ class ApiClientAuthorization < ArvadosModel
         return auth
       end
 
-      token_uuid_prefix = token_uuid[0..4]
-      if token_uuid_prefix == Rails.configuration.ClusterID
+      upstream_cluster_id = token_uuid[0..4]
+      if upstream_cluster_id == Rails.configuration.ClusterID
         # Token is supposedly issued by local cluster, but if the
         # token were valid, we would have been found in the database
         # in the above query.
         return nil
-      elsif token_uuid_prefix.length != 5
+      elsif upstream_cluster_id.length != 5
         # malformed
         return nil
       end
 
-      # Invariant: token_uuid_prefix != Rails.configuration.ClusterID
-      #
-      # In other words the remaing code in this method below is the
-      # case that determines whether to accept a token that was issued
-      # by a remote cluster when the token absent or expired in our
-      # database.  To begin, we need to ask the cluster that issued
-      # the token to [re]validate it.
-      clnt = ApiClientAuthorization.make_http_client(uuid_prefix: token_uuid_prefix)
-
-      host = remote_host(uuid_prefix: token_uuid_prefix)
-      if !host
-        Rails.logger.warn "remote authentication rejected: no host for #{token_uuid_prefix.inspect}"
+    else
+      # token is not a 'v2' token. It could be just the secret part
+      # ("v1 token") -- or it could be an OpenIDConnect access token,
+      # in which case either (a) the controller will have inserted a
+      # row with api_token = hmac(systemroottoken,oidctoken) before
+      # forwarding it, or (b) we'll have done that ourselves, or (c)
+      # we'll need to ask LoginCluster to validate it for us below,
+      # and then insert a local row for a faster lookup next time.
+      hmac = OpenSSL::HMAC.hexdigest('sha256', Rails.configuration.SystemRootToken, token)
+      auth = ApiClientAuthorization.
+               includes(:user, :api_client).
+               where('api_token in (?, ?) and (expires_at is null or expires_at > CURRENT_TIMESTAMP)', token, hmac).
+               first
+      if auth && auth.user
+        return auth
+      elsif !Rails.configuration.Login.LoginCluster.blank? && Rails.configuration.Login.LoginCluster != Rails.configuration.ClusterID
+        # An unrecognized non-v2 token might be an OIDC Access Token
+        # that can be verified by our login cluster in the code
+        # below. If so, we'll stuff the database with hmac instead of
+        # the real OIDC token.
+        upstream_cluster_id = Rails.configuration.Login.LoginCluster
+        stored_secret = hmac
+      else
         return nil
       end
+    end
 
+    # Invariant: upstream_cluster_id != Rails.configuration.ClusterID
+    #
+    # In other words the remaining code in this method decides
+    # whether to accept a token that was issued by a remote cluster
+    # when the token is absent or expired in our database.  To
+    # begin, we need to ask the cluster that issued the token to
+    # [re]validate it.
+    clnt = ApiClientAuthorization.make_http_client(uuid_prefix: upstream_cluster_id)
+
+    host = remote_host(uuid_prefix: upstream_cluster_id)
+    if !host
+      Rails.logger.warn "remote authentication rejected: no host for #{upstream_cluster_id.inspect}"
+      return nil
+    end
+
+    begin
+      remote_user = SafeJSON.load(
+        clnt.get_content('https://' + host + '/arvados/v1/users/current',
+                         {'remote' => Rails.configuration.ClusterID},
+                         {'Authorization' => 'Bearer ' + token}))
+    rescue => e
+      Rails.logger.warn "remote authentication with token #{token.inspect} failed: #{e}"
+      return nil
+    end
+
+    # Check the response is well formed.
+    if !remote_user.is_a?(Hash) || !remote_user['uuid'].is_a?(String)
+      Rails.logger.warn "remote authentication rejected: remote_user=#{remote_user.inspect}"
+      return nil
+    end
+
+    remote_user_prefix = remote_user['uuid'][0..4]
+
+    if token_uuid == ''
+      # Use the same UUID as the remote when caching the token.
       begin
-        remote_user = SafeJSON.load(
-          clnt.get_content('https://' + host + '/arvados/v1/users/current',
+        remote_token = SafeJSON.load(
+          clnt.get_content('https://' + host + '/arvados/v1/api_client_authorizations/current',
                            {'remote' => Rails.configuration.ClusterID},
                            {'Authorization' => 'Bearer ' + token}))
-      rescue => e
-        Rails.logger.warn "remote authentication with token #{token.inspect} failed: #{e}"
-        return nil
-      end
-
-      # Check the response is well formed.
-      if !remote_user.is_a?(Hash) || !remote_user['uuid'].is_a?(String)
-        Rails.logger.warn "remote authentication rejected: remote_user=#{remote_user.inspect}"
-        return nil
-      end
-
-      remote_user_prefix = remote_user['uuid'][0..4]
-
-      # Clusters can only authenticate for their own users.
-      if remote_user_prefix != token_uuid_prefix
-        Rails.logger.warn "remote authentication rejected: claimed remote user #{remote_user_prefix} but token was issued by #{token_uuid_prefix}"
-        return nil
-      end
-
-      # Invariant:    remote_user_prefix == token_uuid_prefix
-      # therefore:    remote_user_prefix != Rails.configuration.ClusterID
-
-      # Add or update user and token in local database so we can
-      # validate subsequent requests faster.
-
-      if remote_user['uuid'][-22..-1] == '-tpzed-anonymouspublic'
-        # Special case: map the remote anonymous user to local anonymous user
-        remote_user['uuid'] = anonymous_user_uuid
-      end
-
-      user = User.find_by_uuid(remote_user['uuid'])
-
-      if !user
-        # Create a new record for this user.
-        user = User.new(uuid: remote_user['uuid'],
-                        is_active: false,
-                        is_admin: false,
-                        email: remote_user['email'],
-                        owner_uuid: system_user_uuid)
-        user.set_initial_username(requested: remote_user['username'])
-      end
-
-      # Sync user record.
-      if remote_user_prefix == Rails.configuration.Login.LoginCluster
-        # Remote cluster controls our user database, set is_active if
-        # remote is active.  If remote is not active, user will be
-        # unsetup (see below).
-        user.is_active = true if remote_user['is_active']
-        user.is_admin = remote_user['is_admin']
-      else
-        if Rails.configuration.Users.NewUsersAreActive ||
-           Rails.configuration.RemoteClusters[remote_user_prefix].andand["ActivateUsers"]
-          # Default policy is to activate users
-          user.is_active = true if remote_user['is_active']
+        token_uuid = remote_token['uuid']
+        if !token_uuid.match(HasUuid::UUID_REGEX) || token_uuid[0..4] != upstream_cluster_id
+          raise "remote cluster #{upstream_cluster_id} returned invalid token uuid #{token_uuid.inspect}"
         end
+      rescue => e
+        Rails.logger.warn "error getting remote token details for #{token.inspect}: #{e}"
+        return nil
       end
+    end
 
+    # Clusters can only authenticate for their own users.
+    if remote_user_prefix != upstream_cluster_id
+      Rails.logger.warn "remote authentication rejected: claimed remote user #{remote_user_prefix} but token was issued by #{upstream_cluster_id}"
+      return nil
+    end
+
+    # Invariant:    remote_user_prefix == upstream_cluster_id
+    # therefore:    remote_user_prefix != Rails.configuration.ClusterID
+
+    # Add or update user and token in local database so we can
+    # validate subsequent requests faster.
+
+    if remote_user['uuid'][-22..-1] == '-tpzed-anonymouspublic'
+      # Special case: map the remote anonymous user to local anonymous user
+      remote_user['uuid'] = anonymous_user_uuid
+    end
+
+    user = User.find_by_uuid(remote_user['uuid'])
+
+    if !user
+      # Create a new record for this user.
+      user = User.new(uuid: remote_user['uuid'],
+                      is_active: false,
+                      is_admin: false,
+                      email: remote_user['email'],
+                      owner_uuid: system_user_uuid)
+      user.set_initial_username(requested: remote_user['username'])
+    end
+
+    # Sync user record.
+    act_as_system_user do
       %w[first_name last_name email prefs].each do |attr|
         user.send(attr+'=', remote_user[attr])
       end
@@ -267,40 +303,61 @@ class ApiClientAuthorization < ArvadosModel
         user.last_name = "from cluster #{remote_user_prefix}"
       end
 
-      act_as_system_user do
-        if (user.is_active && !remote_user['is_active']) or (user.is_invited && !remote_user['is_invited'])
-          # Synchronize the user's "active/invited" state state.  This
-          # also saves the record.
-          user.unsetup
-        else
-          user.save!
+      user.save!
+
+      if user.is_invited && !remote_user['is_invited']
+        # Remote user is not "invited" state, they should be unsetup, which
+        # also makes them inactive.
+        user.unsetup
+      else
+        if !user.is_invited && remote_user['is_invited'] and
+          (remote_user_prefix == Rails.configuration.Login.LoginCluster or
+           Rails.configuration.Users.AutoSetupNewUsers or
+           Rails.configuration.Users.NewUsersAreActive or
+           Rails.configuration.RemoteClusters[remote_user_prefix].andand["ActivateUsers"])
+          user.setup
         end
 
-        # We will accept this token (and avoid reloading the user
-        # record) for 'RemoteTokenRefresh' (default 5 minutes).
-        # Possible todo:
-        # Request the actual api_client_auth record from the remote
-        # server in case it wants the token to expire sooner.
-        auth = ApiClientAuthorization.find_or_create_by(uuid: token_uuid) do |auth|
-          auth.user = user
-          auth.api_client_id = 0
+        if !user.is_active && remote_user['is_active'] && user.is_invited and
+          (remote_user_prefix == Rails.configuration.Login.LoginCluster or
+           Rails.configuration.Users.NewUsersAreActive or
+           Rails.configuration.RemoteClusters[remote_user_prefix].andand["ActivateUsers"])
+          user.update_attributes!(is_active: true)
+        elsif user.is_active && !remote_user['is_active']
+          user.update_attributes!(is_active: false)
         end
-        auth.update_attributes!(user: user,
-                                api_token: secret,
-                                api_client_id: 0,
-                                expires_at: Time.now + Rails.configuration.Login.RemoteTokenRefresh)
-        Rails.logger.debug "cached remote token #{token_uuid} with secret #{secret} in local db"
+
+        if remote_user_prefix == Rails.configuration.Login.LoginCluster and
+          user.is_active and
+          user.is_admin != remote_user['is_admin']
+          # Remote cluster controls our user database, including the
+          # admin flag.
+          user.update_attributes!(is_admin: remote_user['is_admin'])
+        end
       end
+
+      # We will accept this token (and avoid reloading the user
+      # record) for 'RemoteTokenRefresh' (default 5 minutes).
+      # Possible todo:
+      # Request the actual api_client_auth record from the remote
+      # server in case it wants the token to expire sooner.
+      auth = ApiClientAuthorization.find_or_create_by(uuid: token_uuid) do |auth|
+        auth.user = user
+        auth.api_client_id = 0
+      end
+      # If stored_secret is set, we save stored_secret in the database
+      # but return the real secret to the caller. This way, if we end
+      # up returning the auth record to the client, they see the same
+      # secret they supplied, instead of the HMAC we saved in the
+      # database.
+      stored_secret = stored_secret || secret
+      auth.update_attributes!(user: user,
+                              api_token: stored_secret,
+                              api_client_id: 0,
+                              expires_at: Time.now + Rails.configuration.Login.RemoteTokenRefresh)
+      Rails.logger.debug "cached remote token #{token_uuid} with secret #{stored_secret} in local db"
+      auth.api_token = secret
       return auth
-    else
-      # token is not a 'v2' token
-      auth = ApiClientAuthorization.
-               includes(:user, :api_client).
-               where('api_token=? and (expires_at is null or expires_at > CURRENT_TIMESTAMP)', token).
-               first
-      if auth && auth.user
-        return auth
-      end
     end
 
     return nil
@@ -337,7 +394,6 @@ class ApiClientAuthorization < ArvadosModel
   end
 
   def log_update
-
     super unless (saved_changes.keys - UNLOGGED_CHANGES).empty?
   end
 end

@@ -21,10 +21,10 @@ collection_owned_by_active:
   portable_data_hash: fa7aeb5140e2848d39b416daeef4ffc5+45
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-02-03T17:22:54Z
-  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_client_uuid: zzzzz-ozdt8-teyxzyd8qllg11h
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
-  modified_at: 2014-02-03T17:22:54Z
-  updated_at: 2014-02-03T17:22:54Z
+  modified_at: 2014-02-03T18:22:54Z
+  updated_at: 2014-02-03T18:22:54Z
   manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
   name: owned_by_active
   version: 2
@@ -43,7 +43,7 @@ collection_owned_by_active_with_file_stats:
   file_count: 1
   file_size_total: 3
   name: owned_by_active_with_file_stats
-  version: 2
+  version: 1
 
 collection_owned_by_active_past_version_1:
   uuid: zzzzz-4zz18-znfnqtbbv4spast
@@ -53,8 +53,8 @@ collection_owned_by_active_past_version_1:
   created_at: 2014-02-03T17:22:54Z
   modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
-  modified_at: 2014-02-03T15:22:54Z
-  updated_at: 2014-02-03T15:22:54Z
+  modified_at: 2014-02-03T18:22:54Z
+  updated_at: 2014-02-03T18:22:54Z
   manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
   name: owned_by_active_version_1
   version: 1
@@ -106,8 +106,8 @@ w_a_z_file:
   created_at: 2015-02-09T10:53:38Z
   modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
-  modified_at: 2015-02-09T10:53:38Z
-  updated_at: 2015-02-09T10:53:38Z
+  modified_at: 2015-02-09T10:55:38Z
+  updated_at: 2015-02-09T10:55:38Z
   manifest_text: ". 4c6c2c0ac8aa0696edd7316a3be5ca3c+5 0:5:w\\040\\141\\040z\n"
   name: "\"w a z\" file"
   version: 2
@@ -120,8 +120,8 @@ w_a_z_file_version_1:
   created_at: 2015-02-09T10:53:38Z
   modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
-  modified_at: 2015-02-09T10:53:38Z
-  updated_at: 2015-02-09T10:53:38Z
+  modified_at: 2015-02-09T10:55:38Z
+  updated_at: 2015-02-09T10:55:38Z
   manifest_text: ". 4d20280d5e516a0109768d49ab0f3318+3 0:3:waz\n"
   name: "waz file"
   version: 1
@@ -1030,6 +1030,90 @@ collection_with_uri_prop:
   name: collection with RDF-style URI property key
   properties:
     "http://schema.org/example": "value1"
+
+log_collection:
+  uuid: zzzzz-4zz18-logcollection01
+  current_version_uuid: zzzzz-4zz18-logcollection01
+  portable_data_hash: 680c855fd6cf2c78778b3728b268925a+475
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2020-10-29T00:51:44.075594000Z
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  modified_at: 2020-10-29T00:51:44.072109000Z
+  manifest_text: ". 8c12f5f5297b7337598170c6f531fcee+7882 0:0:arv-mount.txt 0:1910:container.json 1910:1264:crunch-run.txt 3174:1005:crunchstat.txt 4179:659:hoststat.txt 4838:2811:node-info.txt 7649:233:node.json 0:0:stderr.txt\n./log\\040for\\040container\\040ce8i5-dz642-h4kd64itncdcz8l 8c12f5f5297b7337598170c6f531fcee+7882 0:0:arv-mount.txt 0:1910:container.json 1910:1264:crunch-run.txt 3174:1005:crunchstat.txt 4179:659:hoststat.txt 4838:2811:node-info.txt 7649:233:node.json 0:0:stderr.txt\n"
+  name: a real log collection for a completed container
+
+log_collection2:
+  uuid: zzzzz-4zz18-logcollection02
+  current_version_uuid: zzzzz-4zz18-logcollection02
+  portable_data_hash: 680c855fd6cf2c78778b3728b268925a+475
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2020-10-29T00:51:44.075594000Z
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  modified_at: 2020-10-29T00:51:44.072109000Z
+  manifest_text: ". 8c12f5f5297b7337598170c6f531fcee+7882 0:0:arv-mount.txt 0:1910:container.json 1910:1264:crunch-run.txt 3174:1005:crunchstat.txt 4179:659:hoststat.txt 4838:2811:node-info.txt 7649:233:node.json 0:0:stderr.txt\n./log\\040for\\040container\\040ce8i5-dz642-h4kd64itncdcz8l 8c12f5f5297b7337598170c6f531fcee+7882 0:0:arv-mount.txt 0:1910:container.json 1910:1264:crunch-run.txt 3174:1005:crunchstat.txt 4179:659:hoststat.txt 4838:2811:node-info.txt 7649:233:node.json 0:0:stderr.txt\n"
+  name: another real log collection for a completed container
+
+diagnostics_request_container_log_collection:
+  uuid: zzzzz-4zz18-diagcompreqlog1
+  current_version_uuid: zzzzz-4zz18-diagcompreqlog1
+  portable_data_hash: 680c855fd6cf2c78778b3728b268925a+475
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2020-11-02T00:20:44.007557000Z
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  modified_at: 2020-11-02T00:20:44.005381000Z
+  manifest_text: ". 8c12f5f5297b7337598170c6f531fcee+7882 0:0:arv-mount.txt 0:1910:container.json 1910:1264:crunch-run.txt 3174:1005:crunchstat.txt 4179:659:hoststat.txt 4838:2811:node-info.txt 7649:233:node.json 0:0:stderr.txt\n./log\\040for\\040container\\040ce8i5-dz642-h4kd64itncdcz8l 8c12f5f5297b7337598170c6f531fcee+7882 0:0:arv-mount.txt 0:1910:container.json 1910:1264:crunch-run.txt 3174:1005:crunchstat.txt 4179:659:hoststat.txt 4838:2811:node-info.txt 7649:233:node.json 0:0:stderr.txt\n"
+  name: Container log for request zzzzz-xvhdp-diagnostics0001
+
+hasher1_log_collection:
+  uuid: zzzzz-4zz18-dlogcollhash001
+  current_version_uuid: zzzzz-4zz18-dlogcollhash001
+  portable_data_hash: 680c855fd6cf2c78778b3728b268925a+475
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2020-11-02T00:16:55.272606000Z
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  modified_at: 2020-11-02T00:16:55.267006000Z
+  manifest_text: ". 8c12f5f5297b7337598170c6f531fcee+7882 0:0:arv-mount.txt 0:1910:container.json 1910:1264:crunch-run.txt 3174:1005:crunchstat.txt 4179:659:hoststat.txt 4838:2811:node-info.txt 7649:233:node.json 0:0:stderr.txt\n./log\\040for\\040container\\040ce8i5-dz642-h4kd64itncdcz8l 8c12f5f5297b7337598170c6f531fcee+7882 0:0:arv-mount.txt 0:1910:container.json 1910:1264:crunch-run.txt 3174:1005:crunchstat.txt 4179:659:hoststat.txt 4838:2811:node-info.txt 7649:233:node.json 0:0:stderr.txt\n"
+  name: hasher1 log collection
+
+hasher2_log_collection:
+  uuid: zzzzz-4zz18-dlogcollhash002
+  current_version_uuid: zzzzz-4zz18-dlogcollhash002
+  portable_data_hash: 680c855fd6cf2c78778b3728b268925a+475
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2020-11-02T00:20:23.547251000Z
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  modified_at: 2020-11-02T00:20:23.545275000Z
+  manifest_text: ". 8c12f5f5297b7337598170c6f531fcee+7882 0:0:arv-mount.txt 0:1910:container.json 1910:1264:crunch-run.txt 3174:1005:crunchstat.txt 4179:659:hoststat.txt 4838:2811:node-info.txt 7649:233:node.json 0:0:stderr.txt\n./log\\040for\\040container\\040ce8i5-dz642-h4kd64itncdcz8l 8c12f5f5297b7337598170c6f531fcee+7882 0:0:arv-mount.txt 0:1910:container.json 1910:1264:crunch-run.txt 3174:1005:crunchstat.txt 4179:659:hoststat.txt 4838:2811:node-info.txt 7649:233:node.json 0:0:stderr.txt\n"
+  name: hasher2 log collection
+
+hasher3_log_collection:
+  uuid: zzzzz-4zz18-dlogcollhash003
+  current_version_uuid: zzzzz-4zz18-dlogcollhash003
+  portable_data_hash: 680c855fd6cf2c78778b3728b268925a+475
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2020-11-02T00:20:38.789204000Z
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  modified_at: 2020-11-02T00:20:38.787329000Z
+  manifest_text: ". 8c12f5f5297b7337598170c6f531fcee+7882 0:0:arv-mount.txt 0:1910:container.json 1910:1264:crunch-run.txt 3174:1005:crunchstat.txt 4179:659:hoststat.txt 4838:2811:node-info.txt 7649:233:node.json 0:0:stderr.txt\n./log\\040for\\040container\\040ce8i5-dz642-h4kd64itncdcz8l 8c12f5f5297b7337598170c6f531fcee+7882 0:0:arv-mount.txt 0:1910:container.json 1910:1264:crunch-run.txt 3174:1005:crunchstat.txt 4179:659:hoststat.txt 4838:2811:node-info.txt 7649:233:node.json 0:0:stderr.txt\n"
+  name: hasher3 log collection
+
+diagnostics_request_container_log_collection2:
+  uuid: zzzzz-4zz18-diagcompreqlog2
+  current_version_uuid: zzzzz-4zz18-diagcompreqlog2
+  portable_data_hash: 680c855fd6cf2c78778b3728b268925a+475
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2020-11-03T16:17:53.351593000Z
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  modified_at: 2020-11-03T16:17:53.346969000Z
+  manifest_text: ". 8c12f5f5297b7337598170c6f531fcee+7882 0:0:arv-mount.txt 0:1910:container.json 1910:1264:crunch-run.txt 3174:1005:crunchstat.txt 4179:659:hoststat.txt 4838:2811:node-info.txt 7649:233:node.json 0:0:stderr.txt\n./log\\040for\\040container\\040ce8i5-dz642-h4kd64itncdcz8l 8c12f5f5297b7337598170c6f531fcee+7882 0:0:arv-mount.txt 0:1910:container.json 1910:1264:crunch-run.txt 3174:1005:crunchstat.txt 4179:659:hoststat.txt 4838:2811:node-info.txt 7649:233:node.json 0:0:stderr.txt\n"
+  name: Container log for request zzzzz-xvhdp-diagnostics0002
 
 # Test Helper trims the rest of the file
 

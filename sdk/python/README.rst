@@ -39,11 +39,11 @@ Installing on Debian systems
 
 1. Add this Arvados repository to your sources list::
 
-     deb http://apt.arvados.org/ stretch main
+     deb http://apt.arvados.org/ buster main
 
 2. Update your package list.
 
-3. Install the ``python-arvados-python-client`` package.
+3. Install the ``python3-arvados-python-client`` package.
 
 Configuration
 -------------

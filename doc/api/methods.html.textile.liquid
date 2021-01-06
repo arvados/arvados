@@ -73,9 +73,9 @@ table(table table-bordered table-condensed).
 |limit   |integer|Maximum number of resources to return.  If not provided, server will provide a default limit.  Server may also impose a maximum number of records that can be returned in a single request.|query|
 |offset  |integer|Skip the first 'offset' number of resources that would be returned under the given filter conditions.|query|
 |filters |array  |"Conditions for selecting resources to return.":#filters|query|
-|order   |array  |Attributes to use as sort keys to determine the order resources are returned, each optionally followed by @asc@ or @desc@ to indicate ascending or descending order.
+|order   |array  |Attributes to use as sort keys to determine the order resources are returned, each optionally followed by @asc@ or @desc@ to indicate ascending or descending order.  (If not specified, it will be ascending).
 Example: @["head_uuid asc","modified_at desc"]@
-Default: @["created_at desc"]@|query|
+Default: @["modified_at desc", "uuid asc"]@|query|
 |select  |array  |Set of attributes to include in the response.
 Example: @["head_uuid","tail_uuid"]@
 Default: all available attributes.  As a special case, collections do not return "manifest_text" unless explicitly selected.|query|
@@ -103,7 +103,7 @@ table(table table-bordered table-condensed).
 |@=@, @!=@|string, number, timestamp, or null|Equality comparison|@["tail_uuid","=","xyzzy-j7d0g-fffffffffffffff"]@ @["tail_uuid","!=",null]@|
 |@<@, @<=@, @>=@, @>@|string, number, or timestamp|Ordering comparison|@["script_version",">","123"]@|
 |@like@, @ilike@|string|SQL pattern match.  Single character match is @_@ and wildcard is @%@. The @ilike@ operator is case-insensitive|@["script_version","like","d00220fb%"]@|
-|@in@, @not in@|array of strings|Set membership|@["script_version","in",["master","d00220fb38d4b85ca8fc28a8151702a2b9d1dec5"]]@|
+|@in@, @not in@|array of strings|Set membership|@["script_version","in",["main","d00220fb38d4b85ca8fc28a8151702a2b9d1dec5"]]@|
 |@is_a@|string|Arvados object type|@["head_uuid","is_a","arvados#collection"]@|
 |@exists@|string|Test if a subproperty is present.|@["properties","exists","my_subproperty"]@|
 

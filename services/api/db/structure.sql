@@ -11,20 +11,6 @@ SET xmloption = content;
 SET client_min_messages = warning;
 
 --
--- Name: plpgsql; Type: EXTENSION; Schema: -; Owner: -
---
-
-CREATE EXTENSION IF NOT EXISTS plpgsql WITH SCHEMA pg_catalog;
-
-
---
--- Name: EXTENSION plpgsql; Type: COMMENT; Schema: -; Owner: -
---
-
--- COMMENT ON EXTENSION plpgsql IS 'PL/pgSQL procedural language';
-
-
---
 -- Name: pg_trgm; Type: EXTENSION; Schema: -; Owner: -
 --
 
@@ -3198,6 +3184,9 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20190905151603'),
 ('20200501150153'),
 ('20200602141328'),
-('20200914203202');
+('20200914203202'),
+('20201103170213'),
+('20201105190435'),
+('20201202174753');
 
 

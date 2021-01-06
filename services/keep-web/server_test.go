@@ -43,17 +43,17 @@ func (s *IntegrationSuite) TestNoToken(c *check.C) {
 	} {
 		hdr, body, _ := s.runCurl(c, token, "collections.example.com", "/collections/"+arvadostest.FooCollection+"/foo")
 		c.Check(hdr, check.Matches, `(?s)HTTP/1.1 404 Not Found\r\n.*`)
-		c.Check(body, check.Equals, "")
+		c.Check(body, check.Equals, notFoundMessage+"\n")
 
 		if token != "" {
 			hdr, body, _ = s.runCurl(c, token, "collections.example.com", "/collections/download/"+arvadostest.FooCollection+"/"+token+"/foo")
 			c.Check(hdr, check.Matches, `(?s)HTTP/1.1 404 Not Found\r\n.*`)
-			c.Check(body, check.Equals, "")
+			c.Check(body, check.Equals, notFoundMessage+"\n")
 		}
 
 		hdr, body, _ = s.runCurl(c, token, "collections.example.com", "/bad-route")
 		c.Check(hdr, check.Matches, `(?s)HTTP/1.1 404 Not Found\r\n.*`)
-		c.Check(body, check.Equals, "")
+		c.Check(body, check.Equals, notFoundMessage+"\n")
 	}
 }
 
@@ -86,7 +86,7 @@ func (s *IntegrationSuite) Test404(c *check.C) {
 		hdr, body, _ := s.runCurl(c, arvadostest.ActiveToken, "collections.example.com", uri)
 		c.Check(hdr, check.Matches, "(?s)HTTP/1.1 404 Not Found\r\n.*")
 		if len(body) > 0 {
-			c.Check(body, check.Equals, "404 page not found\n")
+			c.Check(body, check.Equals, notFoundMessage+"\n")
 		}
 	}
 }
@@ -257,12 +257,16 @@ func (s *IntegrationSuite) Test200(c *check.C) {
 }
 
 // Return header block and body.
-func (s *IntegrationSuite) runCurl(c *check.C, token, host, uri string, args ...string) (hdr, bodyPart string, bodySize int64) {
+func (s *IntegrationSuite) runCurl(c *check.C, auth, host, uri string, args ...string) (hdr, bodyPart string, bodySize int64) {
 	curlArgs := []string{"--silent", "--show-error", "--include"}
 	testHost, testPort, _ := net.SplitHostPort(s.testServer.Addr)
 	curlArgs = append(curlArgs, "--resolve", host+":"+testPort+":"+testHost)
-	if token != "" {
-		curlArgs = append(curlArgs, "-H", "Authorization: OAuth2 "+token)
+	if strings.Contains(auth, " ") {
+		// caller supplied entire Authorization header value
+		curlArgs = append(curlArgs, "-H", "Authorization: "+auth)
+	} else if auth != "" {
+		// caller supplied Arvados token
+		curlArgs = append(curlArgs, "-H", "Authorization: Bearer "+auth)
 	}
 	curlArgs = append(curlArgs, args...)
 	curlArgs = append(curlArgs, "http://"+host+":"+testPort+uri)
@@ -440,6 +444,7 @@ func (s *IntegrationSuite) SetUpTest(c *check.C) {
 	cfg.cluster.Services.WebDAV.InternalURLs[arvados.URL{Host: listen}] = arvados.ServiceInstance{}
 	cfg.cluster.Services.WebDAVDownload.InternalURLs[arvados.URL{Host: listen}] = arvados.ServiceInstance{}
 	cfg.cluster.ManagementToken = arvadostest.ManagementToken
+	cfg.cluster.SystemRootToken = arvadostest.SystemRootToken
 	cfg.cluster.Users.AnonymousUserToken = arvadostest.AnonymousToken
 	s.testServer = &server{Config: cfg}
 	err = s.testServer.Start(ctxlog.TestLogger(c))

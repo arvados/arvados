@@ -2,14 +2,14 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-FROM debian:stretch
+FROM ubuntu:focal
 MAINTAINER Arvados Package Maintainers <packaging@arvados.org>
 
 ENV DEBIAN_FRONTEND noninteractive
 
 # Install dependencies
 RUN apt-get update && \
-    apt-get -y install --no-install-recommends curl ca-certificates gpg procps
+    apt-get -y install --no-install-recommends curl ca-certificates gnupg2
 
 # Install RVM
 ADD generated/mpapis.asc /tmp/
@@ -24,4 +24,4 @@ RUN gpg --import --no-tty /tmp/mpapis.asc && \
 # udev daemon can't start in a container, so don't try.
 RUN mkdir -p /etc/udev/disabled
 
-RUN echo "deb file:///arvados/packages/debian9/ /" >>/etc/apt/sources.list
+RUN echo "deb [trusted=yes] file:///arvados/packages/ubuntu2004/ /" >>/etc/apt/sources.list

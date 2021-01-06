@@ -133,6 +133,8 @@ COPY $workdir/runit /etc/runit
 # put everything (/var/lib/arvados)
 ENV ARVADOS_CONTAINER_PATH /var/lib/arvados-arvbox
 
+RUN /bin/ln -s /var/lib/arvados/bin/ruby /usr/local/bin/
+
 # Start the supervisor.
 ENV SVDIR /etc/service
 STOPSIGNAL SIGINT

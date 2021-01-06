@@ -61,11 +61,12 @@ version_from_git() {
 }
 
 nohash_version_from_git() {
+    local subdir="$1"; shift
     if [[ -n "$ARVADOS_BUILDING_VERSION" ]]; then
         echo "$ARVADOS_BUILDING_VERSION"
         return
     fi
-    version_from_git | cut -d. -f1-4
+    version_from_git $subdir | cut -d. -f1-4
 }
 
 timestamp_from_git() {
@@ -74,25 +75,8 @@ timestamp_from_git() {
 }
 
 calculate_python_sdk_cwl_package_versions() {
-  python_sdk_ts=$(cd sdk/python && timestamp_from_git)
-  cwl_runner_ts=$(cd sdk/cwl && timestamp_from_git)
-
-  python_sdk_version=$(cd sdk/python && nohash_version_from_git)
-  cwl_runner_version=$(cd sdk/cwl && nohash_version_from_git)
-
-  if [[ $python_sdk_ts -gt $cwl_runner_ts ]]; then
-    cwl_runner_version=$python_sdk_version
-  fi
-}
-
-handle_python_package () {
-  # This function assumes the current working directory is the python package directory
-  if [ -n "$(find dist -name "*-$(nohash_version_from_git).tar.gz" -print -quit)" ]; then
-    # This package doesn't need rebuilding.
-    return
-  fi
-  # Make sure only to use sdist - that's the only format pip can deal with (sigh)
-  python setup.py $DASHQ_UNLESS_DEBUG sdist
+  python_sdk_version=$(cd sdk/python && python3 arvados_version.py)
+  cwl_runner_version=$(cd sdk/cwl && python3 arvados_version.py)
 }
 
 handle_ruby_gem() {
@@ -130,9 +114,9 @@ calculate_go_package_version() {
       checkdirs+=("$1")
       shift
   done
-  if grep -qr git.arvados.org/arvados .; then
-      checkdirs+=(sdk/go lib)
-  fi
+  # Even our rails packages (version calculation happens here!) depend on a go component (arvados-server)
+  # Everything depends on the build directory.
+  checkdirs+=(sdk/go lib build)
   local timestamp=0
   for dir in ${checkdirs[@]}; do
       cd "$WORKSPACE"
@@ -253,7 +237,7 @@ rails_package_version() {
     fi
     local version="$(version_from_git)"
     if [ $pkgname = "arvados-api-server" -o $pkgname = "arvados-workbench" ] ; then
-	calculate_go_package_version version cmd/arvados-server "$srcdir"
+        calculate_go_package_version version cmd/arvados-server "$srcdir"
     fi
     echo $version
 }
@@ -352,10 +336,10 @@ test_package_presence() {
       echo "Package $full_pkgname build forced with --force-build, building"
     elif [[ "$FORMAT" == "deb" ]]; then
       declare -A dd
-      dd[debian9]=stretch
       dd[debian10]=buster
       dd[ubuntu1604]=xenial
       dd[ubuntu1804]=bionic
+      dd[ubuntu2004]=focal
       D=${dd[$TARGET]}
       if [ ${pkgname:0:3} = "lib" ]; then
         repo_subdir=${pkgname:0:4}
@@ -363,11 +347,11 @@ test_package_presence() {
         repo_subdir=${pkgname:0:1}
       fi
 
-      repo_pkg_list=$(curl -s -o - http://apt.arvados.org/pool/${D}-dev/main/${repo_subdir}/${pkgname}/)
+      repo_pkg_list=$(curl -s -o - http://apt.arvados.org/${D}/pool/main/${repo_subdir}/${pkgname}/)
       echo "${repo_pkg_list}" |grep -q ${full_pkgname}
       if [ $? -eq 0 ] ; then
         echo "Package $full_pkgname exists upstream, not rebuilding, downloading instead!"
-        curl -s -o "$WORKSPACE/packages/$TARGET/${full_pkgname}" http://apt.arvados.org/pool/${D}-dev/main/${repo_subdir}/${pkgname}/${full_pkgname}
+        curl -s -o "$WORKSPACE/packages/$TARGET/${full_pkgname}" http://apt.arvados.org/${D}/pool/main/${repo_subdir}/${pkgname}/${full_pkgname}
         return 1
       elif test -f "$WORKSPACE/packages/$TARGET/processed/${full_pkgname}" ; then
         echo "Package $full_pkgname exists, not rebuilding!"
@@ -432,9 +416,7 @@ handle_rails_package() {
     fi
     # For some reason fpm excludes need to not start with /.
     local exclude_root="${railsdir#/}"
-    # .git and packages are for the SSO server, which is built from its
-    # repository root.
-    local -a exclude_list=(.git packages tmp log coverage Capfile\* \
+    local -a exclude_list=(tmp log coverage Capfile\* \
                            config/deploy\* config/application.yml)
     # for arvados-workbench, we need to have the (dummy) config/database.yml in the package
     if  [[ "$pkgname" != "arvados-workbench" ]]; then
@@ -475,12 +457,7 @@ fpm_build_virtualenv () {
   case "$PACKAGE_TYPE" in
     python3)
         python=python3
-        if [[ "$FORMAT" != "rpm" ]]; then
-          pip=pip3
-        else
-          # In CentOS, we use a different mechanism to get the right version of pip
-          pip=pip
-        fi
+        pip=pip3
         PACKAGE_PREFIX=$PYTHON3_PKG_PREFIX
         ;;
   esac
@@ -525,13 +502,19 @@ fpm_build_virtualenv () {
   fi
 
   # Determine the package version from the generated sdist archive
-  PYTHON_VERSION=${ARVADOS_BUILDING_VERSION:-$(awk '($1 == "Version:"){print $2}' *.egg-info/PKG-INFO)}
+  if [[ -n "$ARVADOS_BUILDING_VERSION" ]] ; then
+      UNFILTERED_PYTHON_VERSION=$ARVADOS_BUILDING_VERSION
+      PYTHON_VERSION=$(echo -n $ARVADOS_BUILDING_VERSION | sed s/~dev/.dev/g | sed s/~rc/rc/g)
+  else
+      PYTHON_VERSION=$(awk '($1 == "Version:"){print $2}' *.egg-info/PKG-INFO)
+      UNFILTERED_PYTHON_VERSION=$(echo -n $PYTHON_VERSION | sed s/\.dev/~dev/g |sed 's/\([0-9]\)rc/\1~rc/g')
+  fi
 
   # See if we actually need to build this package; does it exist already?
   # We can't do this earlier than here, because we need PYTHON_VERSION...
   # This isn't so bad; the sdist call above is pretty quick compared to
   # the invocation of virtualenv and fpm, below.
-  if ! test_package_presence "$PYTHON_PKG" $PYTHON_VERSION $PACKAGE_TYPE $ARVADOS_BUILDING_ITERATION; then
+  if ! test_package_presence "$PYTHON_PKG" $UNFILTERED_PYTHON_VERSION $PACKAGE_TYPE $ARVADOS_BUILDING_ITERATION; then
     return 0
   fi
 
@@ -642,7 +625,7 @@ fpm_build_virtualenv () {
     COMMAND_ARR+=('--verbose' '--log' 'info')
   fi
 
-  COMMAND_ARR+=('-v' "$PYTHON_VERSION")
+  COMMAND_ARR+=('-v' $(echo -n "$PYTHON_VERSION" | sed s/.dev/~dev/g | sed s/rc/~rc/g))
   COMMAND_ARR+=('--iteration' "$ARVADOS_BUILDING_ITERATION")
   COMMAND_ARR+=('-n' "$PYTHON_PKG")
   COMMAND_ARR+=('-C' "build")
@@ -697,9 +680,9 @@ fpm_build_virtualenv () {
     done
   fi
 
-  # the python-arvados-cwl-runner package comes with cwltool, expose that version
-  if [[ -e "$WORKSPACE/$PKG_DIR/dist/build/usr/share/python2.7/dist/python-arvados-cwl-runner/bin/cwltool" ]]; then
-    COMMAND_ARR+=("usr/share/python2.7/dist/python-arvados-cwl-runner/bin/cwltool=/usr/bin/")
+  # the python3-arvados-cwl-runner package comes with cwltool, expose that version
+  if [[ -e "$WORKSPACE/$PKG_DIR/dist/build/usr/share/$python/dist/python-arvados-cwl-runner/bin/cwltool" ]]; then
+    COMMAND_ARR+=("usr/share/$python/dist/python-arvados-cwl-runner/bin/cwltool=/usr/bin/")
   fi
 
   COMMAND_ARR+=(".")

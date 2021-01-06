@@ -110,6 +110,6 @@ class User < ArvadosBase
   end
 
   def self.creatable?
-    current_user and current_user.is_admin
+    current_user.andand.is_admin
   end
 end

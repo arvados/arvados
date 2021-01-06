@@ -147,6 +147,39 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     refute_includes found_uuids, specimens(:in_asubproject).uuid, "specimen appeared unexpectedly in home project"
   end
 
+  test "list collections in home project" do
+    authorize_with :active
+    get(:contents, params: {
+          format: :json,
+          filters: [
+            ['uuid', 'is_a', 'arvados#collection'],
+          ],
+          limit: 200,
+          id: users(:active).uuid,
+        })
+    assert_response :success
+    found_uuids = json_response['items'].collect { |i| i['uuid'] }
+    assert_includes found_uuids, collections(:collection_owned_by_active).uuid, "collection did not appear in home project"
+    refute_includes found_uuids, collections(:collection_owned_by_active_past_version_1).uuid, "collection appeared unexpectedly in home project"
+  end
+
+  test "list collections in home project, including old versions" do
+    authorize_with :active
+    get(:contents, params: {
+          format: :json,
+          include_old_versions: true,
+          filters: [
+            ['uuid', 'is_a', 'arvados#collection'],
+          ],
+          limit: 200,
+          id: users(:active).uuid,
+        })
+    assert_response :success
+    found_uuids = json_response['items'].collect { |i| i['uuid'] }
+    assert_includes found_uuids, collections(:collection_owned_by_active).uuid, "collection did not appear in home project"
+    assert_includes found_uuids, collections(:collection_owned_by_active_past_version_1).uuid, "old collection version did not appear in home project"
+  end
+
   test "user with project read permission can see project collections" do
     authorize_with :project_viewer
     get :contents, params: {
@@ -316,7 +349,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     end
   end
 
-  test "Collection contents don't include manifest_text" do
+  test "Collection contents don't include manifest_text or unsigned_manifest_text" do
     authorize_with :active
     get :contents, params: {
       id: groups(:aproject).uuid,
@@ -327,7 +360,9 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     refute(json_response["items"].any? { |c| not c["portable_data_hash"] },
            "response included an item without a portable data hash")
     refute(json_response["items"].any? { |c| c.include?("manifest_text") },
-           "response included an item with a manifest text")
+           "response included an item with manifest_text")
+    refute(json_response["items"].any? { |c| c.include?("unsigned_manifest_text") },
+           "response included an item with unsigned_manifest_text")
   end
 
   test 'get writable_by list for owned group' do

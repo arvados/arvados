@@ -257,3 +257,34 @@ for f in files_to_copy:
 target.save_new(name=target_name, owner_uuid=target_project)
 print("Created collection %s" % target.manifest_locator())
 {% endcodeblock %}
+
+h2. Copy files from a collection another collection
+
+{% codeblock as python %}
+import arvados.collection
+
+source_collection = "x1u39-4zz18-krzg64ufvehgitl"
+target_collection = "x1u39-4zz18-67q94einb8ptznm"
+files_to_copy = ["folder1/sample1/sample1_R1.fastq",
+                 "folder1/sample2/sample2_R1.fastq"]
+
+source = arvados.collection.CollectionReader(source_collection)
+target = arvados.collection.Collection(target_collection)
+
+for f in files_to_copy:
+    target.copy(f, "", source_collection=source)
+
+target.save()
+{% endcodeblock %}
+
+h2. Listing records with paging
+
+Use the @arvados.util.keyset_list_all@ helper method to iterate over all the records matching an optional filter.  This method handles paging internally and returns results incrementally using a Python iterator.  The first parameter of the method takes a @list@ method of an Arvados resource (@collections@, @container_requests@, etc).
+
+{% codeblock as python %}
+import arvados.util
+
+api = arvados.api()
+for c in arvados.util.keyset_list_all(api.collections().list, filters=[["name", "like", "%sample123%"]]):
+    print("got collection " + c["uuid"])
+{% endcodeblock %}

@@ -5,23 +5,221 @@
 package main
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"hash"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"github.com/AdRoll/goamz/s3"
 )
 
-const s3MaxKeys = 1000
+const (
+	s3MaxKeys       = 1000
+	s3SignAlgorithm = "AWS4-HMAC-SHA256"
+	s3MaxClockSkew  = 5 * time.Minute
+)
+
+func hmacstring(msg string, key []byte) []byte {
+	h := hmac.New(sha256.New, key)
+	io.WriteString(h, msg)
+	return h.Sum(nil)
+}
+
+func hashdigest(h hash.Hash, payload string) string {
+	io.WriteString(h, payload)
+	return fmt.Sprintf("%x", h.Sum(nil))
+}
+
+// Signing key for given secret key and request attrs.
+func s3signatureKey(key, datestamp, regionName, serviceName string) []byte {
+	return hmacstring("aws4_request",
+		hmacstring(serviceName,
+			hmacstring(regionName,
+				hmacstring(datestamp, []byte("AWS4"+key)))))
+}
+
+// Canonical query string for S3 V4 signature: sorted keys, spaces
+// escaped as %20 instead of +, keyvalues joined with &.
+func s3querystring(u *url.URL) string {
+	keys := make([]string, 0, len(u.Query()))
+	values := make(map[string]string, len(u.Query()))
+	for k, vs := range u.Query() {
+		k = strings.Replace(url.QueryEscape(k), "+", "%20", -1)
+		keys = append(keys, k)
+		for _, v := range vs {
+			v = strings.Replace(url.QueryEscape(v), "+", "%20", -1)
+			if values[k] != "" {
+				values[k] += "&"
+			}
+			values[k] += k + "=" + v
+		}
+	}
+	sort.Strings(keys)
+	for i, k := range keys {
+		keys[i] = values[k]
+	}
+	return strings.Join(keys, "&")
+}
+
+var reMultipleSlashChars = regexp.MustCompile(`//+`)
+
+func s3stringToSign(alg, scope, signedHeaders string, r *http.Request) (string, error) {
+	timefmt, timestr := "20060102T150405Z", r.Header.Get("X-Amz-Date")
+	if timestr == "" {
+		timefmt, timestr = time.RFC1123, r.Header.Get("Date")
+	}
+	t, err := time.Parse(timefmt, timestr)
+	if err != nil {
+		return "", fmt.Errorf("invalid timestamp %q: %s", timestr, err)
+	}
+	if skew := time.Now().Sub(t); skew < -s3MaxClockSkew || skew > s3MaxClockSkew {
+		return "", errors.New("exceeded max clock skew")
+	}
+
+	var canonicalHeaders string
+	for _, h := range strings.Split(signedHeaders, ";") {
+		if h == "host" {
+			canonicalHeaders += h + ":" + r.Host + "\n"
+		} else {
+			canonicalHeaders += h + ":" + r.Header.Get(h) + "\n"
+		}
+	}
+
+	normalizedURL := *r.URL
+	normalizedURL.RawPath = ""
+	normalizedURL.Path = reMultipleSlashChars.ReplaceAllString(normalizedURL.Path, "/")
+	canonicalRequest := fmt.Sprintf("%s\n%s\n%s\n%s\n%s\n%s", r.Method, normalizedURL.EscapedPath(), s3querystring(r.URL), canonicalHeaders, signedHeaders, r.Header.Get("X-Amz-Content-Sha256"))
+	ctxlog.FromContext(r.Context()).Debugf("s3stringToSign: canonicalRequest %s", canonicalRequest)
+	return fmt.Sprintf("%s\n%s\n%s\n%s", alg, r.Header.Get("X-Amz-Date"), scope, hashdigest(sha256.New(), canonicalRequest)), nil
+}
+
+func s3signature(secretKey, scope, signedHeaders, stringToSign string) (string, error) {
+	// scope is {datestamp}/{region}/{service}/aws4_request
+	drs := strings.Split(scope, "/")
+	if len(drs) != 4 {
+		return "", fmt.Errorf("invalid scope %q", scope)
+	}
+	key := s3signatureKey(secretKey, drs[0], drs[1], drs[2])
+	return hashdigest(hmac.New(sha256.New, key), stringToSign), nil
+}
+
+var v2tokenUnderscore = regexp.MustCompile(`^v2_[a-z0-9]{5}-gj3su-[a-z0-9]{15}_`)
+
+func unescapeKey(key string) string {
+	if v2tokenUnderscore.MatchString(key) {
+		// Entire Arvados token, with "/" replaced by "_" to
+		// avoid colliding with the Authorization header
+		// format.
+		return strings.Replace(key, "_", "/", -1)
+	} else if s, err := url.PathUnescape(key); err == nil {
+		return s
+	} else {
+		return key
+	}
+}
+
+// checks3signature verifies the given S3 V4 signature and returns the
+// Arvados token that corresponds to the given accessKey. An error is
+// returned if accessKey is not a valid token UUID or the signature
+// does not match.
+func (h *handler) checks3signature(r *http.Request) (string, error) {
+	var key, scope, signedHeaders, signature string
+	authstring := strings.TrimPrefix(r.Header.Get("Authorization"), s3SignAlgorithm+" ")
+	for _, cmpt := range strings.Split(authstring, ",") {
+		cmpt = strings.TrimSpace(cmpt)
+		split := strings.SplitN(cmpt, "=", 2)
+		switch {
+		case len(split) != 2:
+			// (?) ignore
+		case split[0] == "Credential":
+			keyandscope := strings.SplitN(split[1], "/", 2)
+			if len(keyandscope) == 2 {
+				key, scope = keyandscope[0], keyandscope[1]
+			}
+		case split[0] == "SignedHeaders":
+			signedHeaders = split[1]
+		case split[0] == "Signature":
+			signature = split[1]
+		}
+	}
+
+	client := (&arvados.Client{
+		APIHost:  h.Config.cluster.Services.Controller.ExternalURL.Host,
+		Insecure: h.Config.cluster.TLS.Insecure,
+	}).WithRequestID(r.Header.Get("X-Request-Id"))
+	var aca arvados.APIClientAuthorization
+	var secret string
+	var err error
+	if len(key) == 27 && key[5:12] == "-gj3su-" {
+		// Access key is the UUID of an Arvados token, secret
+		// key is the secret part.
+		ctx := arvados.ContextWithAuthorization(r.Context(), "Bearer "+h.Config.cluster.SystemRootToken)
+		err = client.RequestAndDecodeContext(ctx, &aca, "GET", "arvados/v1/api_client_authorizations/"+key, nil, nil)
+		secret = aca.APIToken
+	} else {
+		// Access key and secret key are both an entire
+		// Arvados token or OIDC access token.
+		ctx := arvados.ContextWithAuthorization(r.Context(), "Bearer "+unescapeKey(key))
+		err = client.RequestAndDecodeContext(ctx, &aca, "GET", "arvados/v1/api_client_authorizations/current", nil, nil)
+		secret = key
+	}
+	if err != nil {
+		ctxlog.FromContext(r.Context()).WithError(err).WithField("UUID", key).Info("token lookup failed")
+		return "", errors.New("invalid access key")
+	}
+	stringToSign, err := s3stringToSign(s3SignAlgorithm, scope, signedHeaders, r)
+	if err != nil {
+		return "", err
+	}
+	expect, err := s3signature(secret, scope, signedHeaders, stringToSign)
+	if err != nil {
+		return "", err
+	} else if expect != signature {
+		return "", fmt.Errorf("signature does not match (scope %q signedHeaders %q stringToSign %q)", scope, signedHeaders, stringToSign)
+	}
+	return aca.TokenV2(), nil
+}
+
+func s3ErrorResponse(w http.ResponseWriter, s3code string, message string, resource string, code int) {
+	w.Header().Set("Content-Type", "application/xml")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.WriteHeader(code)
+	var errstruct struct {
+		Code      string
+		Message   string
+		Resource  string
+		RequestId string
+	}
+	errstruct.Code = s3code
+	errstruct.Message = message
+	errstruct.Resource = resource
+	errstruct.RequestId = ""
+	enc := xml.NewEncoder(w)
+	fmt.Fprint(w, xml.Header)
+	enc.EncodeElement(errstruct, xml.StartElement{Name: xml.Name{Local: "Error"}})
+}
+
+var NoSuchKey = "NoSuchKey"
+var NoSuchBucket = "NoSuchBucket"
+var InvalidArgument = "InvalidArgument"
+var InternalError = "InternalError"
+var UnauthorizedAccess = "UnauthorizedAccess"
+var InvalidRequest = "InvalidRequest"
+var SignatureDoesNotMatch = "SignatureDoesNotMatch"
 
 // serveS3 handles r and returns true if r is a request from an S3
 // client, otherwise it returns false.
@@ -30,34 +228,24 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 	if auth := r.Header.Get("Authorization"); strings.HasPrefix(auth, "AWS ") {
 		split := strings.SplitN(auth[4:], ":", 2)
 		if len(split) < 2 {
-			w.WriteHeader(http.StatusUnauthorized)
+			s3ErrorResponse(w, InvalidRequest, "malformed Authorization header", r.URL.Path, http.StatusUnauthorized)
 			return true
 		}
-		token = split[0]
-	} else if strings.HasPrefix(auth, "AWS4-HMAC-SHA256 ") {
-		for _, cmpt := range strings.Split(auth[17:], ",") {
-			cmpt = strings.TrimSpace(cmpt)
-			split := strings.SplitN(cmpt, "=", 2)
-			if len(split) == 2 && split[0] == "Credential" {
-				keyandscope := strings.Split(split[1], "/")
-				if len(keyandscope[0]) > 0 {
-					token = keyandscope[0]
-					break
-				}
-			}
-		}
-		if token == "" {
-			w.WriteHeader(http.StatusBadRequest)
-			fmt.Println(w, "invalid V4 signature")
+		token = unescapeKey(split[0])
+	} else if strings.HasPrefix(auth, s3SignAlgorithm+" ") {
+		t, err := h.checks3signature(r)
+		if err != nil {
+			s3ErrorResponse(w, SignatureDoesNotMatch, "signature verification failed: "+err.Error(), r.URL.Path, http.StatusForbidden)
 			return true
 		}
+		token = t
 	} else {
 		return false
 	}
 
 	_, kc, client, release, err := h.getClients(r.Header.Get("X-Request-Id"), token)
 	if err != nil {
-		http.Error(w, "Pool failed: "+h.clientPool.Err().Error(), http.StatusInternalServerError)
+		s3ErrorResponse(w, InternalError, "Pool failed: "+h.clientPool.Err().Error(), r.URL.Path, http.StatusInternalServerError)
 		return true
 	}
 	defer release()
@@ -65,7 +253,18 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 	fs := client.SiteFileSystem(kc)
 	fs.ForwardSlashNameSubstitution(h.Config.cluster.Collections.ForwardSlashNameSubstitution)
 
-	objectNameGiven := strings.Count(strings.TrimSuffix(r.URL.Path, "/"), "/") > 1
+	var objectNameGiven bool
+	var bucketName string
+	fspath := "/by_id"
+	if id := parseCollectionIDFromDNSName(r.Host); id != "" {
+		fspath += "/" + id
+		bucketName = id
+		objectNameGiven = strings.Count(strings.TrimSuffix(r.URL.Path, "/"), "/") > 0
+	} else {
+		bucketName = strings.SplitN(strings.TrimPrefix(r.URL.Path, "/"), "/", 2)[0]
+		objectNameGiven = strings.Count(strings.TrimSuffix(r.URL.Path, "/"), "/") > 1
+	}
+	fspath += reMultipleSlashChars.ReplaceAllString(r.URL.Path, "/")
 
 	switch {
 	case r.Method == http.MethodGet && !objectNameGiven:
@@ -77,20 +276,19 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 			fmt.Fprintln(w, `<VersioningConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/"/>`)
 		} else {
 			// ListObjects
-			h.s3list(w, r, fs)
+			h.s3list(bucketName, w, r, fs)
 		}
 		return true
 	case r.Method == http.MethodGet || r.Method == http.MethodHead:
-		fspath := "/by_id" + r.URL.Path
 		fi, err := fs.Stat(fspath)
 		if r.Method == "HEAD" && !objectNameGiven {
 			// HeadBucket
 			if err == nil && fi.IsDir() {
 				w.WriteHeader(http.StatusOK)
 			} else if os.IsNotExist(err) {
-				w.WriteHeader(http.StatusNotFound)
+				s3ErrorResponse(w, NoSuchBucket, "The specified bucket does not exist.", r.URL.Path, http.StatusNotFound)
 			} else {
-				http.Error(w, err.Error(), http.StatusBadGateway)
+				s3ErrorResponse(w, InternalError, err.Error(), r.URL.Path, http.StatusBadGateway)
 			}
 			return true
 		}
@@ -102,7 +300,7 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 		if os.IsNotExist(err) ||
 			(err != nil && err.Error() == "not a directory") ||
 			(fi != nil && fi.IsDir()) {
-			http.Error(w, "not found", http.StatusNotFound)
+			s3ErrorResponse(w, NoSuchKey, "The specified key does not exist.", r.URL.Path, http.StatusNotFound)
 			return true
 		}
 		// shallow copy r, and change URL path
@@ -112,25 +310,24 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 		return true
 	case r.Method == http.MethodPut:
 		if !objectNameGiven {
-			http.Error(w, "missing object name in PUT request", http.StatusBadRequest)
+			s3ErrorResponse(w, InvalidArgument, "Missing object name in PUT request.", r.URL.Path, http.StatusBadRequest)
 			return true
 		}
-		fspath := "by_id" + r.URL.Path
 		var objectIsDir bool
 		if strings.HasSuffix(fspath, "/") {
 			if !h.Config.cluster.Collections.S3FolderObjects {
-				http.Error(w, "invalid object name: trailing slash", http.StatusBadRequest)
+				s3ErrorResponse(w, InvalidArgument, "invalid object name: trailing slash", r.URL.Path, http.StatusBadRequest)
 				return true
 			}
 			n, err := r.Body.Read(make([]byte, 1))
 			if err != nil && err != io.EOF {
-				http.Error(w, fmt.Sprintf("error reading request body: %s", err), http.StatusInternalServerError)
+				s3ErrorResponse(w, InternalError, fmt.Sprintf("error reading request body: %s", err), r.URL.Path, http.StatusInternalServerError)
 				return true
 			} else if n > 0 {
-				http.Error(w, "cannot create object with trailing '/' char unless content is empty", http.StatusBadRequest)
+				s3ErrorResponse(w, InvalidArgument, "cannot create object with trailing '/' char unless content is empty", r.URL.Path, http.StatusBadRequest)
 				return true
 			} else if strings.SplitN(r.Header.Get("Content-Type"), ";", 2)[0] != "application/x-directory" {
-				http.Error(w, "cannot create object with trailing '/' char unless Content-Type is 'application/x-directory'", http.StatusBadRequest)
+				s3ErrorResponse(w, InvalidArgument, "cannot create object with trailing '/' char unless Content-Type is 'application/x-directory'", r.URL.Path, http.StatusBadRequest)
 				return true
 			}
 			// Given PUT "foo/bar/", we'll use "foo/bar/."
@@ -142,12 +339,12 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 		fi, err := fs.Stat(fspath)
 		if err != nil && err.Error() == "not a directory" {
 			// requested foo/bar, but foo is a file
-			http.Error(w, "object name conflicts with existing object", http.StatusBadRequest)
+			s3ErrorResponse(w, InvalidArgument, "object name conflicts with existing object", r.URL.Path, http.StatusBadRequest)
 			return true
 		}
 		if strings.HasSuffix(r.URL.Path, "/") && err == nil && !fi.IsDir() {
 			// requested foo/bar/, but foo/bar is a file
-			http.Error(w, "object name conflicts with existing object", http.StatusBadRequest)
+			s3ErrorResponse(w, InvalidArgument, "object name conflicts with existing object", r.URL.Path, http.StatusBadRequest)
 			return true
 		}
 		// create missing parent/intermediate directories, if any
@@ -156,7 +353,7 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 				dir := fspath[:i]
 				if strings.HasSuffix(dir, "/") {
 					err = errors.New("invalid object name (consecutive '/' chars)")
-					http.Error(w, err.Error(), http.StatusBadRequest)
+					s3ErrorResponse(w, InvalidArgument, err.Error(), r.URL.Path, http.StatusBadRequest)
 					return true
 				}
 				err = fs.Mkdir(dir, 0755)
@@ -164,11 +361,11 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 					// Cannot create a directory
 					// here.
 					err = fmt.Errorf("mkdir %q failed: %w", dir, err)
-					http.Error(w, err.Error(), http.StatusBadRequest)
+					s3ErrorResponse(w, InvalidArgument, err.Error(), r.URL.Path, http.StatusBadRequest)
 					return true
 				} else if err != nil && !os.IsExist(err) {
 					err = fmt.Errorf("mkdir %q failed: %w", dir, err)
-					http.Error(w, err.Error(), http.StatusInternalServerError)
+					s3ErrorResponse(w, InternalError, err.Error(), r.URL.Path, http.StatusInternalServerError)
 					return true
 				}
 			}
@@ -180,37 +377,36 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 			}
 			if err != nil {
 				err = fmt.Errorf("open %q failed: %w", r.URL.Path, err)
-				http.Error(w, err.Error(), http.StatusBadRequest)
+				s3ErrorResponse(w, InvalidArgument, err.Error(), r.URL.Path, http.StatusBadRequest)
 				return true
 			}
 			defer f.Close()
 			_, err = io.Copy(f, r.Body)
 			if err != nil {
 				err = fmt.Errorf("write to %q failed: %w", r.URL.Path, err)
-				http.Error(w, err.Error(), http.StatusBadGateway)
+				s3ErrorResponse(w, InternalError, err.Error(), r.URL.Path, http.StatusBadGateway)
 				return true
 			}
 			err = f.Close()
 			if err != nil {
 				err = fmt.Errorf("write to %q failed: close: %w", r.URL.Path, err)
-				http.Error(w, err.Error(), http.StatusBadGateway)
+				s3ErrorResponse(w, InternalError, err.Error(), r.URL.Path, http.StatusBadGateway)
 				return true
 			}
 		}
 		err = fs.Sync()
 		if err != nil {
 			err = fmt.Errorf("sync failed: %w", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			s3ErrorResponse(w, InternalError, err.Error(), r.URL.Path, http.StatusInternalServerError)
 			return true
 		}
 		w.WriteHeader(http.StatusOK)
 		return true
 	case r.Method == http.MethodDelete:
 		if !objectNameGiven || r.URL.Path == "/" {
-			http.Error(w, "missing object name in DELETE request", http.StatusBadRequest)
+			s3ErrorResponse(w, InvalidArgument, "missing object name in DELETE request", r.URL.Path, http.StatusBadRequest)
 			return true
 		}
-		fspath := "by_id" + r.URL.Path
 		if strings.HasSuffix(fspath, "/") {
 			fspath = strings.TrimSuffix(fspath, "/")
 			fi, err := fs.Stat(fspath)
@@ -218,7 +414,7 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 				w.WriteHeader(http.StatusNoContent)
 				return true
 			} else if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				s3ErrorResponse(w, InternalError, err.Error(), r.URL.Path, http.StatusInternalServerError)
 				return true
 			} else if !fi.IsDir() {
 				// if "foo" exists and is a file, then
@@ -242,19 +438,20 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 		}
 		if err != nil {
 			err = fmt.Errorf("rm failed: %w", err)
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			s3ErrorResponse(w, InvalidArgument, err.Error(), r.URL.Path, http.StatusBadRequest)
 			return true
 		}
 		err = fs.Sync()
 		if err != nil {
 			err = fmt.Errorf("sync failed: %w", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			s3ErrorResponse(w, InternalError, err.Error(), r.URL.Path, http.StatusInternalServerError)
 			return true
 		}
 		w.WriteHeader(http.StatusNoContent)
 		return true
 	default:
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		s3ErrorResponse(w, InvalidRequest, "method not allowed", r.URL.Path, http.StatusMethodNotAllowed)
+
 		return true
 	}
 }
@@ -315,15 +512,13 @@ func walkFS(fs arvados.CustomFileSystem, path string, isRoot bool, fn func(path 
 
 var errDone = errors.New("done")
 
-func (h *handler) s3list(w http.ResponseWriter, r *http.Request, fs arvados.CustomFileSystem) {
+func (h *handler) s3list(bucket string, w http.ResponseWriter, r *http.Request, fs arvados.CustomFileSystem) {
 	var params struct {
-		bucket    string
 		delimiter string
 		marker    string
 		maxKeys   int
 		prefix    string
 	}
-	params.bucket = strings.SplitN(r.URL.Path[1:], "/", 2)[0]
 	params.delimiter = r.FormValue("delimiter")
 	params.marker = r.FormValue("marker")
 	if mk, _ := strconv.ParseInt(r.FormValue("max-keys"), 10, 64); mk > 0 && mk < s3MaxKeys {
@@ -333,7 +528,7 @@ func (h *handler) s3list(w http.ResponseWriter, r *http.Request, fs arvados.Cust
 	}
 	params.prefix = r.FormValue("prefix")
 
-	bucketdir := "by_id/" + params.bucket
+	bucketdir := "by_id/" + bucket
 	// walkpath is the directory (relative to bucketdir) we need
 	// to walk: the innermost directory that is guaranteed to
 	// contain all paths that have the requested prefix. Examples:
@@ -368,7 +563,7 @@ func (h *handler) s3list(w http.ResponseWriter, r *http.Request, fs arvados.Cust
 	}
 	resp := listResp{
 		ListResp: s3.ListResp{
-			Name:      strings.SplitN(r.URL.Path[1:], "/", 2)[0],
+			Name:      bucket,
 			Prefix:    params.prefix,
 			Delimiter: params.delimiter,
 			Marker:    params.marker,

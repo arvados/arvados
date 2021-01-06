@@ -129,7 +129,7 @@ fi
 
 export ARVADOS_API_HOST=localhost:8000
 export ARVADOS_API_HOST_INSECURE=1
-export ARVADOS_API_TOKEN=\$(cat /var/lib/arvados/superuser_token)
+export ARVADOS_API_TOKEN=\$(cat /var/lib/arvados-arvbox/superuser_token)
 
 if test -n "$build" ; then
   /usr/src/arvados/build/build-dev-docker-jobs-image.sh
@@ -141,7 +141,11 @@ else
   . /usr/src/arvados/build/run-library.sh
   TMPHERE=\$(pwd)
   cd /usr/src/arvados
+
+  # This defines python_sdk_version and cwl_runner_version with python-style
+  # package suffixes (.dev/rc)
   calculate_python_sdk_cwl_package_versions
+
   cd \$TMPHERE
   set -u
 

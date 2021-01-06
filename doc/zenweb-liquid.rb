@@ -50,7 +50,7 @@ module Zenweb
       Liquid::Tag.instance_method(:initialize).bind(self).call(tag_name, markup, tokens)
 
       if markup =~ Syntax
-        @template_name = $1
+        @template_name_expr = $1
         @language = $3
         @attributes    = {}
       else
@@ -61,8 +61,13 @@ module Zenweb
     def render(context)
       require 'coderay'
 
-      partial = load_cached_partial(context)
+      partial = load_cached_partial(@template_name_expr, context)
       html = ''
+
+      # be explicit about errors
+      context.exception_renderer = lambda do |exc|
+        exc.is_a?(Liquid::InternalError) ? "Liquid error: #{exc.cause.message}" : exc
+      end
 
       context.stack do
         html = CodeRay.scan(partial.root.nodelist.join, @language).div
@@ -96,6 +101,11 @@ module Zenweb
 
       if partial[0] == '\n'
         partial = partial[1..-1]
+      end
+
+      # be explicit about errors
+      context.exception_renderer = lambda do |exc|
+        exc.is_a?(Liquid::InternalError) ? "Liquid error: #{exc.cause.message}" : exc
       end
 
       context.stack do

@@ -105,7 +105,7 @@ Clusters:
       WebDAVDownload:
         InternalURLs:
           "http://localhost:${services[keep-web]}/": {}
-        ExternalURL: "https://$localip:${services[keep-web-ssl]}/"
+        ExternalURL: "https://$localip:${services[keep-web-dl-ssl]}/"
       Composer:
         ExternalURL: "https://$localip:${services[composer]}"
       Controller:
@@ -125,8 +125,6 @@ Clusters:
         password: ${database_pw}
         dbname: arvados_${database_env}
         client_encoding: utf8
-    API:
-      RailsSessionSecretToken: $secret_token
     Collections:
       BlobSigningKey: $blob_signing_key
       DefaultReplication: 1

@@ -79,6 +79,14 @@ func saltedTokenProvider(local backend, remoteID string) rpc.TokenProvider {
 				} else if err != nil {
 					return nil, err
 				}
+				if strings.HasPrefix(aca.UUID, remoteID) {
+					// We have it cached here, but
+					// the token belongs to the
+					// remote target itself, so
+					// pass it through unmodified.
+					tokens = append(tokens, token)
+					continue
+				}
 				salted, err := auth.SaltToken(aca.TokenV2(), remoteID)
 				if err != nil {
 					return nil, err
@@ -454,7 +462,18 @@ func (conn *Conn) UserUpdate(ctx context.Context, options arvados.UpdateOptions)
 	if options.BypassFederation {
 		return conn.local.UserUpdate(ctx, options)
 	}
-	return conn.chooseBackend(options.UUID).UserUpdate(ctx, options)
+	resp, err := conn.chooseBackend(options.UUID).UserUpdate(ctx, options)
+	if err != nil {
+		return resp, err
+	}
+	if !strings.HasPrefix(options.UUID, conn.cluster.ClusterID) {
+		// Copy the updated user record to the local cluster
+		err = conn.batchUpdateUsers(ctx, arvados.ListOptions{}, []arvados.User{resp})
+		if err != nil {
+			return arvados.User{}, err
+		}
+	}
+	return resp, err
 }
 
 func (conn *Conn) UserUpdateUUID(ctx context.Context, options arvados.UpdateUUIDOptions) (arvados.User, error) {

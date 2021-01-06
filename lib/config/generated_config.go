@@ -18,6 +18,8 @@ var DefaultYAML = []byte(`# Copyright (C) The Arvados Authors. All rights reserv
 
 Clusters:
   xxxxx:
+    # Token used internally by Arvados components to authenticate to
+    # one another. Use a string of at least 50 random alphanumerics.
     SystemRootToken: ""
 
     # Token to be included in all healthcheck requests. Disabled by default.
@@ -217,11 +219,6 @@ Clusters:
       # Maximum number of concurrent outgoing requests to make while
       # serving a single incoming multi-cluster (federated) request.
       MaxRequestAmplification: 4
-
-      # RailsSessionSecretToken is a string of alphanumeric characters
-      # used by Rails to sign session tokens. IMPORTANT: This is a
-      # site secret. It should be at least 50 characters.
-      RailsSessionSecretToken: ""
 
       # Maximum wall clock time to spend handling an incoming request.
       RequestTimeout: 5m

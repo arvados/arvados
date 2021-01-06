@@ -388,6 +388,67 @@ def list_all(fn, num_retries=0, **kwargs):
         offset = c['offset'] + len(c['items'])
     return items
 
+def keyset_list_all(fn, order_key="created_at", num_retries=0, ascending=True, **kwargs):
+    pagesize = 1000
+    kwargs["limit"] = pagesize
+    kwargs["count"] = 'none'
+    kwargs["order"] = ["%s %s" % (order_key, "asc" if ascending else "desc"), "uuid asc"]
+    other_filters = kwargs.get("filters", [])
+
+    if "select" in kwargs and "uuid" not in kwargs["select"]:
+        kwargs["select"].append("uuid")
+
+    nextpage = []
+    tot = 0
+    expect_full_page = True
+    seen_prevpage = set()
+    seen_thispage = set()
+    lastitem = None
+    prev_page_all_same_order_key = False
+
+    while True:
+        kwargs["filters"] = nextpage+other_filters
+        items = fn(**kwargs).execute(num_retries=num_retries)
+
+        if len(items["items"]) == 0:
+            if prev_page_all_same_order_key:
+                nextpage = [[order_key, ">" if ascending else "<", lastitem[order_key]]]
+                prev_page_all_same_order_key = False
+                continue
+            else:
+                return
+
+        seen_prevpage = seen_thispage
+        seen_thispage = set()
+
+        for i in items["items"]:
+            # In cases where there's more than one record with the
+            # same order key, the result could include records we
+            # already saw in the last page.  Skip them.
+            if i["uuid"] in seen_prevpage:
+                continue
+            seen_thispage.add(i["uuid"])
+            yield i
+
+        firstitem = items["items"][0]
+        lastitem = items["items"][-1]
+
+        if firstitem[order_key] == lastitem[order_key]:
+            # Got a page where every item has the same order key.
+            # Switch to using uuid for paging.
+            nextpage = [[order_key, "=", lastitem[order_key]], ["uuid", ">", lastitem["uuid"]]]
+            prev_page_all_same_order_key = True
+        else:
+            # Start from the last order key seen, but skip the last
+            # known uuid to avoid retrieving the same row twice.  If
+            # there are multiple rows with the same order key it is
+            # still likely we'll end up retrieving duplicate rows.
+            # That's handled by tracking the "seen" rows for each page
+            # so they can be skipped if they show up on the next page.
+            nextpage = [[order_key, ">=" if ascending else "<=", lastitem[order_key]], ["uuid", "!=", lastitem["uuid"]]]
+            prev_page_all_same_order_key = False
+
+
 def ca_certs_path(fallback=httplib2.CA_CERTS):
     """Return the path of the best available CA certs source.
 

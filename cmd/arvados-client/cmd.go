@@ -9,6 +9,7 @@ import (
 
 	"git.arvados.org/arvados.git/lib/cli"
 	"git.arvados.org/arvados.git/lib/cmd"
+	"git.arvados.org/arvados.git/lib/costanalyzer"
 	"git.arvados.org/arvados.git/lib/deduplicationreport"
 	"git.arvados.org/arvados.git/lib/mount"
 )
@@ -55,6 +56,7 @@ var (
 
 		"mount":                mount.Command,
 		"deduplication-report": deduplicationreport.Command,
+		"costanalyzer":         costanalyzer.Command,
 	})
 )
 

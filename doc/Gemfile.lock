@@ -25,7 +25,7 @@ PLATFORMS
 DEPENDENCIES
   RedCloth
   colorize
-  liquid
+  liquid (~> 4.0.0)
   zenweb
 
 BUNDLED WITH

@@ -15,7 +15,7 @@ class Arvados::V1::ContainerRequestsController < ApplicationController
     (super rescue {}).
       merge({
         include_trash: {
-          type: 'boolean', required: false, description: "Include container requests whose owner project is trashed."
+          type: 'boolean', required: false, default: false, description: "Include container requests whose owner project is trashed.",
         },
       })
   end
@@ -24,7 +24,7 @@ class Arvados::V1::ContainerRequestsController < ApplicationController
     (super rescue {}).
       merge({
         include_trash: {
-          type: 'boolean', required: false, description: "Show container request even if its owner project is trashed."
+          type: 'boolean', required: false, default: false, description: "Show container request even if its owner project is trashed.",
         },
       })
   end

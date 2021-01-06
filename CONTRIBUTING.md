@@ -31,7 +31,7 @@ https://github.com/arvados/arvados .
 
 Visit [Hacking Arvados](https://dev.arvados.org/projects/arvados/wiki/Hacking) for
 detailed information about setting up an Arvados development
-environment, development process, coding standards, and notes about specific components.
+environment, development process, [coding standards](https://dev.arvados.org/projects/arvados/wiki/Coding_Standards), and notes about specific components.
 
 If you wish to build the Arvados documentation from a local git clone, see
 [doc/README.textile](doc/README.textile) for instructions.

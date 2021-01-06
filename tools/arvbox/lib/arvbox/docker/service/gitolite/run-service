@@ -8,6 +8,12 @@ set -eux -o pipefail
 
 . /usr/local/lib/arvbox/common.sh
 
+if test "$1" != "--only-deps" ; then
+  while [ ! -f $ARVADOS_CONTAINER_PATH/api.ready ]; do
+    sleep 1
+  done
+fi
+
 mkdir -p $ARVADOS_CONTAINER_PATH/git
 
 export ARVADOS_API_HOST=$localip:${services[controller-ssl]}
@@ -119,6 +125,6 @@ $RAILS_ENV:
 EOF
 
 while true ; do
-    bundle exec script/arvados-git-sync.rb $RAILS_ENV
+    flock $GEM_HOME/gems.lock bundle exec script/arvados-git-sync.rb $RAILS_ENV
     sleep 120
 done

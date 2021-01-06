@@ -34,8 +34,8 @@ $(inputs.arvbox_bin.path) hotreset
 
 while ! curl --fail --insecure --silent https://$(inputs.host)/discovery/v1/apis/arvados/v1/rest >/dev/null ; do sleep 3 ; done
 
-ARVADOS_VIRTUAL_MACHINE_UUID=\$($(inputs.arvbox_bin.path) cat /var/lib/arvados/vm-uuid)
-ARVADOS_API_TOKEN=\$($(inputs.arvbox_bin.path) cat /var/lib/arvados/superuser_token)
+ARVADOS_VIRTUAL_MACHINE_UUID=\$($(inputs.arvbox_bin.path) cat /var/lib/arvados-arvbox/vm-uuid)
+ARVADOS_API_TOKEN=\$($(inputs.arvbox_bin.path) cat /var/lib/arvados-arvbox/superuser_token)
 while ! curl --fail --insecure --silent -H "Authorization: Bearer $ARVADOS_API_TOKEN" https://$(inputs.host)/arvados/v1/virtual_machines/$ARVADOS_VIRTUAL_MACHINE_UUID >/dev/null ; do sleep 3 ; done
 
 >>>

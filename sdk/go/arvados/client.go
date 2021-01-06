@@ -69,14 +69,14 @@ type Client struct {
 	defaultRequestID string
 }
 
-// The default http.Client used by a Client with Insecure==true and
-// Client==nil.
+// InsecureHTTPClient is the default http.Client used by a Client with
+// Insecure==true and Client==nil.
 var InsecureHTTPClient = &http.Client{
 	Transport: &http.Transport{
 		TLSClientConfig: &tls.Config{
 			InsecureSkipVerify: true}}}
 
-// The default http.Client used by a Client otherwise.
+// DefaultSecureClient is the default http.Client used by a Client otherwise.
 var DefaultSecureClient = &http.Client{}
 
 // NewClientFromConfig creates a new Client that uses the endpoints in
@@ -306,6 +306,7 @@ func (c *Client) RequestAndDecode(dst interface{}, method, path string, body io.
 	return c.RequestAndDecodeContext(context.Background(), dst, method, path, body, params)
 }
 
+// RequestAndDecodeContext does the same as RequestAndDecode, but with a context
 func (c *Client) RequestAndDecodeContext(ctx context.Context, dst interface{}, method, path string, body io.Reader, params interface{}) error {
 	if body, ok := body.(io.Closer); ok {
 		// Ensure body is closed even if we error out early

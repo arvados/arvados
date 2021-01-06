@@ -48,7 +48,7 @@ type FileStreamSegment struct {
 	Name   string
 }
 
-// Represents a single line from a manifest.
+// ManifestStream represents a single line from a manifest.
 type ManifestStream struct {
 	StreamName         string
 	Blocks             []string
@@ -152,32 +152,32 @@ func (s *ManifestStream) FileSegmentIterByName(filepath string) <-chan *FileSegm
 	return ch
 }
 
-func firstBlock(offsets []uint64, range_start uint64) int {
-	// range_start/block_start is the inclusive lower bound
-	// range_end/block_end is the exclusive upper bound
+func firstBlock(offsets []uint64, rangeStart uint64) int {
+	// rangeStart/blockStart is the inclusive lower bound
+	// rangeEnd/blockEnd is the exclusive upper bound
 
 	hi := len(offsets) - 1
 	var lo int
 	i := ((hi + lo) / 2)
-	block_start := offsets[i]
-	block_end := offsets[i+1]
+	blockStart := offsets[i]
+	blockEnd := offsets[i+1]
 
 	// perform a binary search for the first block
-	// assumes that all of the blocks are contiguous, so range_start is guaranteed
+	// assumes that all of the blocks are contiguous, so rangeStart is guaranteed
 	// to either fall into the range of a block or be outside the block range entirely
-	for !(range_start >= block_start && range_start < block_end) {
+	for !(rangeStart >= blockStart && rangeStart < blockEnd) {
 		if lo == i {
 			// must be out of range, fail
 			return -1
 		}
-		if range_start > block_start {
+		if rangeStart > blockStart {
 			lo = i
 		} else {
 			hi = i
 		}
 		i = ((hi + lo) / 2)
-		block_start = offsets[i]
-		block_end = offsets[i+1]
+		blockStart = offsets[i]
+		blockEnd = offsets[i+1]
 	}
 	return i
 }
@@ -357,7 +357,7 @@ func (stream segmentedStream) normalizedText(name string) string {
 	}
 	sort.Strings(sortedfiles)
 
-	stream_tokens := []string{EscapeName(name)}
+	streamTokens := []string{EscapeName(name)}
 
 	blocks := make(map[blockdigest.BlockDigest]int64)
 	var streamoffset int64
@@ -367,50 +367,50 @@ func (stream segmentedStream) normalizedText(name string) string {
 		for _, segment := range stream[streamfile] {
 			b, _ := ParseBlockLocator(segment.Locator)
 			if _, ok := blocks[b.Digest]; !ok {
-				stream_tokens = append(stream_tokens, segment.Locator)
+				streamTokens = append(streamTokens, segment.Locator)
 				blocks[b.Digest] = streamoffset
 				streamoffset += int64(b.Size)
 			}
 		}
 	}
 
-	if len(stream_tokens) == 1 {
-		stream_tokens = append(stream_tokens, "d41d8cd98f00b204e9800998ecf8427e+0")
+	if len(streamTokens) == 1 {
+		streamTokens = append(streamTokens, "d41d8cd98f00b204e9800998ecf8427e+0")
 	}
 
 	for _, streamfile := range sortedfiles {
 		// Add in file segments
-		span_start := int64(-1)
-		span_end := int64(0)
+		spanStart := int64(-1)
+		spanEnd := int64(0)
 		fout := EscapeName(streamfile)
 		for _, segment := range stream[streamfile] {
 			// Collapse adjacent segments
 			b, _ := ParseBlockLocator(segment.Locator)
 			streamoffset = blocks[b.Digest] + int64(segment.Offset)
-			if span_start == -1 {
-				span_start = streamoffset
-				span_end = streamoffset + int64(segment.Len)
+			if spanStart == -1 {
+				spanStart = streamoffset
+				spanEnd = streamoffset + int64(segment.Len)
 			} else {
-				if streamoffset == span_end {
-					span_end += int64(segment.Len)
+				if streamoffset == spanEnd {
+					spanEnd += int64(segment.Len)
 				} else {
-					stream_tokens = append(stream_tokens, fmt.Sprintf("%d:%d:%s", span_start, span_end-span_start, fout))
-					span_start = streamoffset
-					span_end = streamoffset + int64(segment.Len)
+					streamTokens = append(streamTokens, fmt.Sprintf("%d:%d:%s", spanStart, spanEnd-spanStart, fout))
+					spanStart = streamoffset
+					spanEnd = streamoffset + int64(segment.Len)
 				}
 			}
 		}
 
-		if span_start != -1 {
-			stream_tokens = append(stream_tokens, fmt.Sprintf("%d:%d:%s", span_start, span_end-span_start, fout))
+		if spanStart != -1 {
+			streamTokens = append(streamTokens, fmt.Sprintf("%d:%d:%s", spanStart, spanEnd-spanStart, fout))
 		}
 
 		if len(stream[streamfile]) == 0 {
-			stream_tokens = append(stream_tokens, fmt.Sprintf("0:0:%s", fout))
+			streamTokens = append(streamTokens, fmt.Sprintf("0:0:%s", fout))
 		}
 	}
 
-	return strings.Join(stream_tokens, " ") + "\n"
+	return strings.Join(streamTokens, " ") + "\n"
 }
 
 func (m segmentedManifest) manifestTextForPath(srcpath, relocate string) string {
@@ -429,12 +429,12 @@ func (m segmentedManifest) manifestTextForPath(srcpath, relocate string) string 
 		filesegs, okfile := stream[filename]
 		if okfile {
 			newstream := make(segmentedStream)
-			relocate_stream, relocate_filename := splitPath(relocate)
-			if relocate_filename == "" {
-				relocate_filename = filename
+			relocateStream, relocateFilename := splitPath(relocate)
+			if relocateFilename == "" {
+				relocateFilename = filename
 			}
-			newstream[relocate_filename] = filesegs
-			return newstream.normalizedText(relocate_stream)
+			newstream[relocateFilename] = filesegs
+			return newstream.normalizedText(relocateStream)
 		}
 	}
 
@@ -529,6 +529,8 @@ func (m *Manifest) FileSegmentIterByName(filepath string) <-chan *FileSegment {
 	return ch
 }
 
+// BlockIterWithDuplicates iterates over the block locators of a manifest.
+//
 // Blocks may appear multiple times within the same manifest if they
 // are used by multiple files. In that case this Iterator will output
 // the same block multiple times.

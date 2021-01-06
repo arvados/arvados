@@ -7,10 +7,14 @@ package main
 import (
 	"bytes"
 	"crypto/rand"
+	"crypto/sha256"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"os"
+	"os/exec"
 	"strings"
 	"sync"
 	"time"
@@ -70,12 +74,13 @@ func (s *IntegrationSuite) s3setup(c *check.C) s3stage {
 	err = arv.RequestAndDecode(&coll, "GET", "arvados/v1/collections/"+coll.UUID, nil, nil)
 	c.Assert(err, check.IsNil)
 
-	auth := aws.NewAuth(arvadostest.ActiveTokenV2, arvadostest.ActiveTokenV2, "", time.Now().Add(time.Hour))
+	auth := aws.NewAuth(arvadostest.ActiveTokenUUID, arvadostest.ActiveToken, "", time.Now().Add(time.Hour))
 	region := aws.Region{
 		Name:       s.testServer.Addr,
 		S3Endpoint: "http://" + s.testServer.Addr,
 	}
 	client := s3.New(*auth, region)
+	client.Signature = aws.V4Signature
 	return s3stage{
 		arv:  arv,
 		ac:   ac,
@@ -101,6 +106,44 @@ func (stage s3stage) teardown(c *check.C) {
 	if stage.proj.UUID != "" {
 		err := stage.arv.RequestAndDecode(&stage.proj, "DELETE", "arvados/v1/groups/"+stage.proj.UUID, nil, nil)
 		c.Check(err, check.IsNil)
+	}
+}
+
+func (s *IntegrationSuite) TestS3Signatures(c *check.C) {
+	stage := s.s3setup(c)
+	defer stage.teardown(c)
+
+	bucket := stage.collbucket
+	for _, trial := range []struct {
+		success   bool
+		signature int
+		accesskey string
+		secretkey string
+	}{
+		{true, aws.V2Signature, arvadostest.ActiveToken, "none"},
+		{true, aws.V2Signature, url.QueryEscape(arvadostest.ActiveTokenV2), "none"},
+		{true, aws.V2Signature, strings.Replace(arvadostest.ActiveTokenV2, "/", "_", -1), "none"},
+		{false, aws.V2Signature, "none", "none"},
+		{false, aws.V2Signature, "none", arvadostest.ActiveToken},
+
+		{true, aws.V4Signature, arvadostest.ActiveTokenUUID, arvadostest.ActiveToken},
+		{true, aws.V4Signature, arvadostest.ActiveToken, arvadostest.ActiveToken},
+		{true, aws.V4Signature, url.QueryEscape(arvadostest.ActiveTokenV2), url.QueryEscape(arvadostest.ActiveTokenV2)},
+		{true, aws.V4Signature, strings.Replace(arvadostest.ActiveTokenV2, "/", "_", -1), strings.Replace(arvadostest.ActiveTokenV2, "/", "_", -1)},
+		{false, aws.V4Signature, arvadostest.ActiveToken, ""},
+		{false, aws.V4Signature, arvadostest.ActiveToken, "none"},
+		{false, aws.V4Signature, "none", arvadostest.ActiveToken},
+		{false, aws.V4Signature, "none", "none"},
+	} {
+		c.Logf("%#v", trial)
+		bucket.S3.Auth = *(aws.NewAuth(trial.accesskey, trial.secretkey, "", time.Now().Add(time.Hour)))
+		bucket.S3.Signature = trial.signature
+		_, err := bucket.GetReader("emptyfile")
+		if trial.success {
+			c.Check(err, check.IsNil)
+		} else {
+			c.Check(err, check.NotNil)
+		}
 	}
 }
 
@@ -137,7 +180,9 @@ func (s *IntegrationSuite) testS3GetObject(c *check.C, bucket *s3.Bucket, prefix
 
 	// GetObject
 	rdr, err = bucket.GetReader(prefix + "missingfile")
-	c.Check(err, check.ErrorMatches, `404 Not Found`)
+	c.Check(err.(*s3.Error).StatusCode, check.Equals, 404)
+	c.Check(err.(*s3.Error).Code, check.Equals, `NoSuchKey`)
+	c.Check(err, check.ErrorMatches, `The specified key does not exist.`)
 
 	// HeadObject
 	exists, err := bucket.Exists(prefix + "missingfile")
@@ -158,6 +203,11 @@ func (s *IntegrationSuite) testS3GetObject(c *check.C, bucket *s3.Bucket, prefix
 	c.Check(err, check.IsNil)
 	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
 	c.Check(resp.ContentLength, check.Equals, int64(4))
+
+	// HeadObject with superfluous leading slashes
+	exists, err = bucket.Exists(prefix + "//sailboat.txt")
+	c.Check(err, check.IsNil)
+	c.Check(exists, check.Equals, true)
 }
 
 func (s *IntegrationSuite) TestS3CollectionPutObjectSuccess(c *check.C) {
@@ -185,6 +235,18 @@ func (s *IntegrationSuite) testS3PutObjectSuccess(c *check.C, bucket *s3.Bucket,
 			size:        1 << 26,
 			contentType: "application/octet-stream",
 		}, {
+			path:        "/aaa",
+			size:        2,
+			contentType: "application/octet-stream",
+		}, {
+			path:        "//bbb",
+			size:        2,
+			contentType: "application/octet-stream",
+		}, {
+			path:        "ccc//",
+			size:        0,
+			contentType: "application/x-directory",
+		}, {
 			path:        "newdir1/newdir2/newfile",
 			size:        0,
 			contentType: "application/octet-stream",
@@ -199,7 +261,14 @@ func (s *IntegrationSuite) testS3PutObjectSuccess(c *check.C, bucket *s3.Bucket,
 		objname := prefix + trial.path
 
 		_, err := bucket.GetReader(objname)
-		c.Assert(err, check.ErrorMatches, `404 Not Found`)
+		if !c.Check(err, check.NotNil) {
+			continue
+		}
+		c.Check(err.(*s3.Error).StatusCode, check.Equals, 404)
+		c.Check(err.(*s3.Error).Code, check.Equals, `NoSuchKey`)
+		if !c.Check(err, check.ErrorMatches, `The specified key does not exist.`) {
+			continue
+		}
 
 		buf := make([]byte, trial.size)
 		rand.Read(buf)
@@ -248,16 +317,22 @@ func (s *IntegrationSuite) TestS3ProjectPutObjectNotSupported(c *check.C) {
 		c.Logf("=== %v", trial)
 
 		_, err := bucket.GetReader(trial.path)
-		c.Assert(err, check.ErrorMatches, `404 Not Found`)
+		c.Check(err.(*s3.Error).StatusCode, check.Equals, 404)
+		c.Check(err.(*s3.Error).Code, check.Equals, `NoSuchKey`)
+		c.Assert(err, check.ErrorMatches, `The specified key does not exist.`)
 
 		buf := make([]byte, trial.size)
 		rand.Read(buf)
 
 		err = bucket.PutReader(trial.path, bytes.NewReader(buf), int64(len(buf)), trial.contentType, s3.Private, s3.Options{})
-		c.Check(err, check.ErrorMatches, `400 Bad Request`)
+		c.Check(err.(*s3.Error).StatusCode, check.Equals, 400)
+		c.Check(err.(*s3.Error).Code, check.Equals, `InvalidArgument`)
+		c.Check(err, check.ErrorMatches, `(mkdir "/by_id/zzzzz-j7d0g-[a-z0-9]{15}/newdir2?"|open "/zzzzz-j7d0g-[a-z0-9]{15}/newfile") failed: invalid argument`)
 
 		_, err = bucket.GetReader(trial.path)
-		c.Assert(err, check.ErrorMatches, `404 Not Found`)
+		c.Check(err.(*s3.Error).StatusCode, check.Equals, 404)
+		c.Check(err.(*s3.Error).Code, check.Equals, `NoSuchKey`)
+		c.Assert(err, check.ErrorMatches, `The specified key does not exist.`)
 	}
 }
 
@@ -310,6 +385,7 @@ func (s *IntegrationSuite) TestS3ProjectPutObjectFailure(c *check.C) {
 }
 func (s *IntegrationSuite) testS3PutObjectFailure(c *check.C, bucket *s3.Bucket, prefix string) {
 	s.testServer.Config.cluster.Collections.S3FolderObjects = false
+
 	var wg sync.WaitGroup
 	for _, trial := range []struct {
 		path string
@@ -333,8 +409,6 @@ func (s *IntegrationSuite) testS3PutObjectFailure(c *check.C, bucket *s3.Bucket,
 		}, {
 			path: "//",
 		}, {
-			path: "foo//bar",
-		}, {
 			path: "",
 		},
 	} {
@@ -350,13 +424,15 @@ func (s *IntegrationSuite) testS3PutObjectFailure(c *check.C, bucket *s3.Bucket,
 			rand.Read(buf)
 
 			err := bucket.PutReader(objname, bytes.NewReader(buf), int64(len(buf)), "application/octet-stream", s3.Private, s3.Options{})
-			if !c.Check(err, check.ErrorMatches, `400 Bad.*`, check.Commentf("PUT %q should fail", objname)) {
+			if !c.Check(err, check.ErrorMatches, `(invalid object name.*|open ".*" failed.*|object name conflicts with existing object|Missing object name in PUT request.)`, check.Commentf("PUT %q should fail", objname)) {
 				return
 			}
 
 			if objname != "" && objname != "/" {
 				_, err = bucket.GetReader(objname)
-				c.Check(err, check.ErrorMatches, `404 Not Found`, check.Commentf("GET %q should return 404", objname))
+				c.Check(err.(*s3.Error).StatusCode, check.Equals, 404)
+				c.Check(err.(*s3.Error).Code, check.Equals, `NoSuchKey`)
+				c.Check(err, check.ErrorMatches, `The specified key does not exist.`, check.Commentf("GET %q should return 404", objname))
 			}
 		}()
 	}
@@ -376,6 +452,130 @@ func (stage *s3stage) writeBigDirs(c *check.C, dirs int, filesPerDir int) {
 		}
 	}
 	c.Assert(fs.Sync(), check.IsNil)
+}
+
+func (s *IntegrationSuite) sign(c *check.C, req *http.Request, key, secret string) {
+	scope := "20200202/region/service/aws4_request"
+	signedHeaders := "date"
+	req.Header.Set("Date", time.Now().UTC().Format(time.RFC1123))
+	stringToSign, err := s3stringToSign(s3SignAlgorithm, scope, signedHeaders, req)
+	c.Assert(err, check.IsNil)
+	sig, err := s3signature(secret, scope, signedHeaders, stringToSign)
+	c.Assert(err, check.IsNil)
+	req.Header.Set("Authorization", s3SignAlgorithm+" Credential="+key+"/"+scope+", SignedHeaders="+signedHeaders+", Signature="+sig)
+}
+
+func (s *IntegrationSuite) TestS3VirtualHostStyleRequests(c *check.C) {
+	stage := s.s3setup(c)
+	defer stage.teardown(c)
+	for _, trial := range []struct {
+		url            string
+		method         string
+		body           string
+		responseCode   int
+		responseRegexp []string
+	}{
+		{
+			url:            "https://" + stage.collbucket.Name + ".example.com/",
+			method:         "GET",
+			responseCode:   http.StatusOK,
+			responseRegexp: []string{`(?ms).*sailboat\.txt.*`},
+		},
+		{
+			url:            "https://" + strings.Replace(stage.coll.PortableDataHash, "+", "-", -1) + ".example.com/",
+			method:         "GET",
+			responseCode:   http.StatusOK,
+			responseRegexp: []string{`(?ms).*sailboat\.txt.*`},
+		},
+		{
+			url:            "https://" + stage.projbucket.Name + ".example.com/?prefix=" + stage.coll.Name + "/&delimiter=/",
+			method:         "GET",
+			responseCode:   http.StatusOK,
+			responseRegexp: []string{`(?ms).*sailboat\.txt.*`},
+		},
+		{
+			url:            "https://" + stage.projbucket.Name + ".example.com/" + stage.coll.Name + "/sailboat.txt",
+			method:         "GET",
+			responseCode:   http.StatusOK,
+			responseRegexp: []string{`⛵\n`},
+		},
+		{
+			url:          "https://" + stage.projbucket.Name + ".example.com/" + stage.coll.Name + "/beep",
+			method:       "PUT",
+			body:         "boop",
+			responseCode: http.StatusOK,
+		},
+		{
+			url:            "https://" + stage.projbucket.Name + ".example.com/" + stage.coll.Name + "/beep",
+			method:         "GET",
+			responseCode:   http.StatusOK,
+			responseRegexp: []string{`boop`},
+		},
+		{
+			url:          "https://" + stage.projbucket.Name + ".example.com/" + stage.coll.Name + "//boop",
+			method:       "GET",
+			responseCode: http.StatusNotFound,
+		},
+		{
+			url:          "https://" + stage.projbucket.Name + ".example.com/" + stage.coll.Name + "//boop",
+			method:       "PUT",
+			body:         "boop",
+			responseCode: http.StatusOK,
+		},
+		{
+			url:            "https://" + stage.projbucket.Name + ".example.com/" + stage.coll.Name + "//boop",
+			method:         "GET",
+			responseCode:   http.StatusOK,
+			responseRegexp: []string{`boop`},
+		},
+	} {
+		url, err := url.Parse(trial.url)
+		c.Assert(err, check.IsNil)
+		req, err := http.NewRequest(trial.method, url.String(), bytes.NewReader([]byte(trial.body)))
+		c.Assert(err, check.IsNil)
+		s.sign(c, req, arvadostest.ActiveTokenUUID, arvadostest.ActiveToken)
+		rr := httptest.NewRecorder()
+		s.testServer.Server.Handler.ServeHTTP(rr, req)
+		resp := rr.Result()
+		c.Check(resp.StatusCode, check.Equals, trial.responseCode)
+		body, err := ioutil.ReadAll(resp.Body)
+		c.Assert(err, check.IsNil)
+		for _, re := range trial.responseRegexp {
+			c.Check(string(body), check.Matches, re)
+		}
+	}
+}
+
+func (s *IntegrationSuite) TestS3NormalizeURIForSignature(c *check.C) {
+	stage := s.s3setup(c)
+	defer stage.teardown(c)
+	for _, trial := range []struct {
+		rawPath        string
+		normalizedPath string
+	}{
+		{"/foo", "/foo"},             // boring case
+		{"/foo%5fbar", "/foo_bar"},   // _ must not be escaped
+		{"/foo%2fbar", "/foo/bar"},   // / must not be escaped
+		{"/(foo)", "/%28foo%29"},     // () must be escaped
+		{"/foo%5bbar", "/foo%5Bbar"}, // %XX must be uppercase
+	} {
+		date := time.Now().UTC().Format("20060102T150405Z")
+		scope := "20200202/fakeregion/S3/aws4_request"
+		canonicalRequest := fmt.Sprintf("%s\n%s\n%s\n%s\n%s\n%s", "GET", trial.normalizedPath, "", "host:host.example.com\n", "host", "")
+		c.Logf("canonicalRequest %q", canonicalRequest)
+		expect := fmt.Sprintf("%s\n%s\n%s\n%s", s3SignAlgorithm, date, scope, hashdigest(sha256.New(), canonicalRequest))
+		c.Logf("expected stringToSign %q", expect)
+
+		req, err := http.NewRequest("GET", "https://host.example.com"+trial.rawPath, nil)
+		req.Header.Set("X-Amz-Date", date)
+		req.Host = "host.example.com"
+
+		obtained, err := s3stringToSign(s3SignAlgorithm, scope, "host", req)
+		if !c.Check(err, check.IsNil) {
+			continue
+		}
+		c.Check(obtained, check.Equals, expect)
+	}
 }
 
 func (s *IntegrationSuite) TestS3GetBucketVersioning(c *check.C) {
@@ -635,4 +835,32 @@ func (s *IntegrationSuite) testS3CollectionListRollup(c *check.C) {
 		c.Check(resp.IsTruncated, check.Equals, expectTruncated, commentf)
 		c.Logf("=== trial %+v keys %q prefixes %q nextMarker %q", trial, gotKeys, gotPrefixes, resp.NextMarker)
 	}
+}
+
+// TestS3cmd checks compatibility with the s3cmd command line tool, if
+// it's installed. As of Debian buster, s3cmd is only in backports, so
+// `arvados-server install` don't install it, and this test skips if
+// it's not installed.
+func (s *IntegrationSuite) TestS3cmd(c *check.C) {
+	if _, err := exec.LookPath("s3cmd"); err != nil {
+		c.Skip("s3cmd not found")
+		return
+	}
+
+	stage := s.s3setup(c)
+	defer stage.teardown(c)
+
+	cmd := exec.Command("s3cmd", "--no-ssl", "--host="+s.testServer.Addr, "--host-bucket="+s.testServer.Addr, "--access_key="+arvadostest.ActiveTokenUUID, "--secret_key="+arvadostest.ActiveToken, "ls", "s3://"+arvadostest.FooCollection)
+	buf, err := cmd.CombinedOutput()
+	c.Check(err, check.IsNil)
+	c.Check(string(buf), check.Matches, `.* 3 +s3://`+arvadostest.FooCollection+`/foo\n`)
+}
+
+func (s *IntegrationSuite) TestS3BucketInHost(c *check.C) {
+	stage := s.s3setup(c)
+	defer stage.teardown(c)
+
+	hdr, body, _ := s.runCurl(c, "AWS "+arvadostest.ActiveTokenV2+":none", stage.coll.UUID+".collections.example.com", "/sailboat.txt")
+	c.Check(hdr, check.Matches, `(?s)HTTP/1.1 200 OK\r\n.*`)
+	c.Check(body, check.Equals, "⛵\n")
 }

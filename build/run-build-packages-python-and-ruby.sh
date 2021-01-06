@@ -6,7 +6,6 @@
 COLUMNS=80
 
 . `dirname "$(readlink -f "$0")"`/run-library.sh
-#. `dirname "$(readlink -f "$0")"`/libcloud-pin.sh
 
 read -rd "\000" helpmessage <<EOF
 $(basename $0): Build Arvados Python packages and Ruby gems
@@ -48,6 +47,16 @@ gem_wrapper() {
 
   checkexit $? "$gem_name gem build"
   title "End of $gem_name gem build (`timer`)"
+}
+
+handle_python_package () {
+  # This function assumes the current working directory is the python package directory
+  if [ -n "$(find dist -name "*-$(nohash_version_from_git).tar.gz" -print -quit)" ]; then
+    echo "This package doesn't need rebuilding."
+    return
+  fi
+  # Make sure only to use sdist - that's the only format pip can deal with (sigh)
+  python3 setup.py $DASHQ_UNLESS_DEBUG sdist
 }
 
 python_wrapper() {
@@ -194,6 +203,8 @@ if [ $PYTHON -eq 1 ]; then
   python_wrapper arvados-python-client "$WORKSPACE/sdk/python"
   python_wrapper arvados-cwl-runner "$WORKSPACE/sdk/cwl"
   python_wrapper arvados_fuse "$WORKSPACE/services/fuse"
+  python_wrapper crunchstat_summary "$WORKSPACE/tools/crunchstat-summary"
+  python_wrapper arvados-user-activity "$WORKSPACE/tools/user-activity"
 
   if [ $((${#failures[@]} - $GEM_BUILD_FAILURES)) -ne 0 ]; then
     PYTHON_BUILD_FAILURES=$((${#failures[@]} - $GEM_BUILD_FAILURES))

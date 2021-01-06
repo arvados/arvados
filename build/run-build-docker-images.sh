@@ -9,6 +9,7 @@ function usage {
     echo >&2
     echo >&2 "$0 options:"
     echo >&2 "  -t, --tags [csv_tags]         comma separated tags"
+    echo >&2 "  -i, --images [dev,demo]       Choose which images to build (default: dev and demo)"
     echo >&2 "  -u, --upload                  Upload the images (docker push)"
     echo >&2 "  -h, --help                    Display this help and exit"
     echo >&2
@@ -16,10 +17,11 @@ function usage {
 }
 
 upload=false
+images=dev,demo
 
 # NOTE: This requires GNU getopt (part of the util-linux package on Debian-based distros).
-TEMP=`getopt -o hut: \
-    --long help,upload,tags: \
+TEMP=`getopt -o hut:i: \
+    --long help,upload,tags:,images: \
     -n "$0" -- "$@"`
 
 if [ $? != 0 ] ; then echo "Use -h for help"; exit 1 ; fi
@@ -32,6 +34,19 @@ do
         -u | --upload)
             upload=true
             shift
+            ;;
+        -i | --images)
+            case "$2" in
+                "")
+                  echo "ERROR: --images needs a parameter";
+                  usage;
+                  exit 1
+                  ;;
+                *)
+                  images=$2;
+                  shift 2
+                  ;;
+            esac
             ;;
         -t | --tags)
             case "$2" in
@@ -67,6 +82,9 @@ title () {
 }
 
 docker_push () {
+    # docker always creates a local 'latest' tag, and we don't want to push that
+    # tag in every case. Remove it.
+    docker rmi $1:latest
     if [[ ! -z "$tags" ]]
     then
         for tag in $( echo $tags|tr "," " " )
@@ -128,43 +146,50 @@ timer_reset
 # clean up the docker build environment
 cd "$WORKSPACE"
 
-title "Starting arvbox build localdemo"
+if [[ "$images" =~ demo ]]; then
+  title "Starting arvbox build localdemo"
 
-tools/arvbox/bin/arvbox build localdemo
-ECODE=$?
+  tools/arvbox/bin/arvbox build localdemo
+  ECODE=$?
 
-if [[ "$ECODE" != "0" ]]; then
-    title "!!!!!! docker BUILD FAILED !!!!!!"
-    EXITCODE=$(($EXITCODE + $ECODE))
+  if [[ "$ECODE" != "0" ]]; then
+      title "!!!!!! docker BUILD FAILED !!!!!!"
+      EXITCODE=$(($EXITCODE + $ECODE))
+  fi
 fi
 
-title "Starting arvbox build dev"
+if [[ "$images" =~ dev ]]; then
+  title "Starting arvbox build dev"
 
-tools/arvbox/bin/arvbox build dev
+  tools/arvbox/bin/arvbox build dev
 
-ECODE=$?
+  ECODE=$?
 
-if [[ "$ECODE" != "0" ]]; then
-    title "!!!!!! docker BUILD FAILED !!!!!!"
-    EXITCODE=$(($EXITCODE + $ECODE))
+  if [[ "$ECODE" != "0" ]]; then
+      title "!!!!!! docker BUILD FAILED !!!!!!"
+      EXITCODE=$(($EXITCODE + $ECODE))
+  fi
 fi
 
 title "docker build complete (`timer`)"
-
-title "uploading images"
-
-timer_reset
 
 if [[ "$EXITCODE" != "0" ]]; then
     title "upload arvados images SKIPPED because build failed"
 else
     if [[ $upload == true ]]; then
+        title "uploading images"
+        timer_reset
+
         ## 20150526 nico -- *sometimes* dockerhub needs re-login
         ## even though credentials are already in .dockercfg
         docker login -u arvados
 
-        docker_push arvados/arvbox-dev
-        docker_push arvados/arvbox-demo
+        if [[ "$images" =~ dev ]]; then
+          docker_push arvados/arvbox-dev
+        fi
+        if [[ "$images" =~ demo ]]; then
+          docker_push arvados/arvbox-demo
+        fi
         title "upload arvados images complete (`timer`)"
     else
         title "upload arvados images SKIPPED because no --upload option set"

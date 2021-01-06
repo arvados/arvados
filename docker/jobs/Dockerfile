@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# Based on Debian Stretch
+# Based on Debian
 FROM debian:buster-slim
 MAINTAINER Arvados Package Maintainers <packaging@arvados.org>
 

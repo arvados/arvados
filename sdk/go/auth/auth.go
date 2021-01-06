@@ -97,7 +97,7 @@ func (a *Credentials) loadTokenFromCookie(r *http.Request) {
 	a.Tokens = append(a.Tokens, string(token))
 }
 
-// LoadTokensFromHTTPRequestBody() loads credentials from the request
+// LoadTokensFromHTTPRequestBody loads credentials from the request
 // body.
 //
 // This is separate from LoadTokensFromHTTPRequest() because it's not

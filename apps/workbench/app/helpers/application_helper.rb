@@ -247,11 +247,15 @@ module ApplicationHelper
     end
 
     input_type = 'text'
+    opt_selection = nil
     attrtype = object.class.attribute_info[attr.to_sym].andand[:type]
     if attrtype == 'text' or attr == 'description'
       input_type = 'textarea'
     elsif attrtype == 'datetime'
       input_type = 'date'
+    elsif attrtype == 'boolean'
+      input_type = 'select'
+      opt_selection = ([{value: "true", text: "true"}, {value: "false", text: "false"}]).to_json
     else
       input_type = 'text'
     end
@@ -279,6 +283,7 @@ module ApplicationHelper
       "data-emptytext" => '(none)',
       "data-placement" => "bottom",
       "data-type" => input_type,
+      "data-source" => opt_selection,
       "data-title" => "Edit #{attr.to_s.gsub '_', ' '}",
       "data-name" => htmloptions['selection_name'] || attr,
       "data-object-uuid" => object.uuid,

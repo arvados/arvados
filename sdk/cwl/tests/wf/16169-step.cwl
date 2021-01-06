@@ -7,7 +7,7 @@ cwlVersion: v1.0
 requirements:
   InlineJavascriptRequirement: {}
   DockerRequirement:
-    dockerPull: debian:stretch-slim
+    dockerPull: debian:buster-slim
 inputs:
   d: Directory
 outputs:

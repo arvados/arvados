@@ -205,6 +205,7 @@ run() {
               --publish=8900:8900
               --publish=9000:9000
               --publish=9002:9002
+              --publish=9004:9004
               --publish=25101:25101
               --publish=8001:8001
               --publish=8002:8002
@@ -622,12 +623,9 @@ sv stop keepproxy
 cd /usr/src/arvados/services/api
 export DISABLE_DATABASE_ENVIRONMENT_CHECK=1
 export RAILS_ENV=development
-bundle exec rake db:drop
+flock $GEM_HOME/gems.lock bundle exec rake db:drop
 rm $ARVADOS_CONTAINER_PATH/api_database_setup
 rm $ARVADOS_CONTAINER_PATH/superuser_token
-rm $ARVADOS_CONTAINER_PATH/keep0-uuid
-rm $ARVADOS_CONTAINER_PATH/keep1-uuid
-rm $ARVADOS_CONTAINER_PATH/keepproxy-uuid
 sv start api
 sv start controller
 sv start websockets

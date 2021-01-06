@@ -125,7 +125,7 @@ case "$TARGET" in
         FORMAT=rpm
         PYTHON3_PACKAGE=$(rpm -qf "$(which python$PYTHON3_VERSION)" --queryformat '%{NAME}\n')
         PYTHON3_PKG_PREFIX=$PYTHON3_PACKAGE
-        PYTHON3_PREFIX=/opt/rh/rh-python36/root/usr
+        PYTHON3_PREFIX=/usr
         PYTHON3_INSTALL_LIB=lib/python$PYTHON3_VERSION/site-packages
         export PYCURL_SSL_LIBRARY=nss
         ;;
@@ -259,10 +259,8 @@ debug_echo -e "\nPython packages\n"
       git checkout $DASHQ_UNLESS_DEBUG "$COMMIT_HASH"
       echo "$COMMIT_HASH" >git-commit.version
 
-      cd "$SRC_BUILD_DIR"
-      PKG_VERSION=$(version_from_git)
       cd $WORKSPACE/packages/$TARGET
-      fpm_build "$WORKSPACE" $SRC_BUILD_DIR/=/usr/local/arvados/src arvados-src 'dir' "$PKG_VERSION" "--exclude=usr/local/arvados/src/.git" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=The Arvados source code" "--architecture=all"
+      fpm_build "$WORKSPACE" $SRC_BUILD_DIR/=/usr/local/arvados/src arvados-src 'dir' "$arvados_src_version" "--exclude=usr/local/arvados/src/.git" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=The Arvados source code" "--architecture=all"
 
       rm -rf "$SRC_BUILD_DIR"
     fi
@@ -326,6 +324,9 @@ fpm_build_virtualenv "crunchstat-summary" "tools/crunchstat-summary" "python3"
 
 # The Docker image cleaner
 fpm_build_virtualenv "arvados-docker-cleaner" "services/dockercleaner" "python3"
+
+# The Arvados user activity tool
+fpm_build_virtualenv "arvados-user-activity" "tools/user-activity" "python3"
 
 # The cwltest package, which lives out of tree
 cd "$WORKSPACE"

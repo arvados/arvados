@@ -157,7 +157,7 @@ type searchRemoteClusterForPDH struct {
 func fetchRemoteCollectionByUUID(
 	h *genericFederatedRequestHandler,
 	effectiveMethod string,
-	clusterId *string,
+	clusterID *string,
 	uuid string,
 	remainder string,
 	w http.ResponseWriter,
@@ -170,11 +170,11 @@ func fetchRemoteCollectionByUUID(
 
 	if uuid != "" {
 		// Collection UUID GET request
-		*clusterId = uuid[0:5]
-		if *clusterId != "" && *clusterId != h.handler.Cluster.ClusterID {
+		*clusterID = uuid[0:5]
+		if *clusterID != "" && *clusterID != h.handler.Cluster.ClusterID {
 			// request for remote collection by uuid
-			resp, err := h.handler.remoteClusterRequest(*clusterId, req)
-			newResponse, err := rewriteSignatures(*clusterId, "", resp, err)
+			resp, err := h.handler.remoteClusterRequest(*clusterID, req)
+			newResponse, err := rewriteSignatures(*clusterID, "", resp, err)
 			h.handler.proxy.ForwardResponse(w, newResponse, err)
 			return true
 		}
@@ -186,7 +186,7 @@ func fetchRemoteCollectionByUUID(
 func fetchRemoteCollectionByPDH(
 	h *genericFederatedRequestHandler,
 	effectiveMethod string,
-	clusterId *string,
+	clusterID *string,
 	uuid string,
 	remainder string,
 	w http.ResponseWriter,

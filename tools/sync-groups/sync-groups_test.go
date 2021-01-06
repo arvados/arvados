@@ -26,14 +26,6 @@ type TestSuite struct {
 	users map[string]arvados.User
 }
 
-func (s *TestSuite) SetUpSuite(c *C) {
-	arvadostest.StartAPI()
-}
-
-func (s *TestSuite) TearDownSuite(c *C) {
-	arvadostest.StopAPI()
-}
-
 func (s *TestSuite) SetUpTest(c *C) {
 	ac := arvados.NewClientFromEnv()
 	u, err := ac.CurrentUser()

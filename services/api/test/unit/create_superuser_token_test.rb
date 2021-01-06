@@ -9,11 +9,11 @@ require 'create_superuser_token'
 class CreateSuperUserTokenTest < ActiveSupport::TestCase
   include CreateSuperUserToken
 
-  test "create superuser token twice and expect same resutls" do
+  test "create superuser token twice and expect same results" do
     # Create a token with some string
     token1 = create_superuser_token 'atesttoken'
     assert_not_nil token1
-    assert_equal token1, 'atesttoken'
+    assert_match(/atesttoken$/, token1)
 
     # Create token again; this time, we should get the one created earlier
     token2 = create_superuser_token
@@ -25,22 +25,10 @@ class CreateSuperUserTokenTest < ActiveSupport::TestCase
     # Create a token with some string
     token1 = create_superuser_token 'atesttoken'
     assert_not_nil token1
-    assert_equal token1, 'atesttoken'
+    assert_match(/\/atesttoken$/, token1)
 
     # Create token again with some other string and expect the existing superuser token back
     token2 = create_superuser_token 'someothertokenstring'
-    assert_not_nil token2
-    assert_equal token1, token2
-  end
-
-  test "create superuser token twice and expect same results" do
-    # Create a token with some string
-    token1 = create_superuser_token 'atesttoken'
-    assert_not_nil token1
-    assert_equal token1, 'atesttoken'
-
-    # Create token again with that same superuser token and expect it back
-    token2 = create_superuser_token 'atesttoken'
     assert_not_nil token2
     assert_equal token1, token2
   end
@@ -49,21 +37,22 @@ class CreateSuperUserTokenTest < ActiveSupport::TestCase
     # Create a token with some string
     token1 = create_superuser_token 'atesttoken'
     assert_not_nil token1
-    assert_equal token1, 'atesttoken'
+    assert_match(/\/atesttoken$/, token1)
 
     su_token = api_client_authorizations("system_user").api_token
     token2 = create_superuser_token su_token
-    assert_equal token2, su_token
+    assert_equal token2.split('/')[2], su_token
   end
 
   test "create superuser token, expire it, and create again" do
     # Create a token with some string
     token1 = create_superuser_token 'atesttoken'
     assert_not_nil token1
-    assert_equal token1, 'atesttoken'
+    assert_match(/\/atesttoken$/, token1)
 
     # Expire this token and call create again; expect a new token created
-    apiClientAuth = ApiClientAuthorization.where(api_token: token1).first
+    apiClientAuth = ApiClientAuthorization.where(api_token: 'atesttoken').first
+    refute_nil apiClientAuth
     Thread.current[:user] = users(:admin)
     apiClientAuth.update_attributes expires_at: '2000-10-10'
 

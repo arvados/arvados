@@ -71,6 +71,12 @@ arv$setNumRetries(5)
 collection <- arv$collections.get("uuid")
 ```
 
+Be aware that the result from `collections.get` is _not_ a
+`Collection` class.  The object returned from this method lets you
+access collection fields like "name" and "description".  The
+`Collection` class lets you access the files in the collection for
+reading and writing, and is described in the next section.
+
 * List collections:
 
 ```{r}
@@ -78,9 +84,7 @@ collection <- arv$collections.get("uuid")
 collectionList <- arv$collections.list(list(list("name", "like", "Test%")))
 
 collectionList <- arv$collections.list(list(list("name", "like", "Test%")), limit = 10, offset = 2)
-```
 
-```{r}
 # count of total number of items (may be more than returned due to paging)
 collectionList$items_available
 
@@ -106,7 +110,7 @@ deletedCollection <- arv$collections.delete("uuid")
 updatedCollection <- arv$collections.update(list(name = "New name", description = "New description"), "uuid")
 ```
 
-* Create collection:
+* Create a new collection:
 
 ```{r}
 newCollection <- arv$collections.create(list(name = "Example", description = "This is a test collection"))
@@ -115,7 +119,7 @@ newCollection <- arv$collections.create(list(name = "Example", description = "Th
 
 #### Manipulating collection content
 
-* Create collection object:
+* Initialize a collection object:
 
 ```{r}
 collection <- Collection$new(arv, "uuid")
@@ -150,13 +154,13 @@ mytable       <- read.table(arvConnection)
 * Write a table:
 
 ```{r}
-arvadosFile   <- collection$create("myoutput.txt")
+arvadosFile   <- collection$create("myoutput.txt")[[1]]
 arvConnection <- arvadosFile$connection("w")
 write.table(mytable, arvConnection)
 arvadosFile$flush()
 ```
 
-* Write to existing file (override current content of the file):
+* Write to existing file (overwrites current content of the file):
 
 ```{r}
 arvadosFile <- collection$get("location/to/my/file.cpp")
@@ -183,7 +187,7 @@ or
 size <- arvadosSubcollection$getSizeInBytes()
 ```
 
-* Create new file in a collection:
+* Create new file in a collection (returns a vector of one or more ArvadosFile objects):
 
 ```{r}
 collection$create(files)
@@ -192,7 +196,7 @@ collection$create(files)
 Example:
 
 ```{r}
-mainFile <- collection$create("cpp/src/main.cpp")
+mainFile <- collection$create("cpp/src/main.cpp")[[1]]
 fileList <- collection$create(c("cpp/src/main.cpp", "cpp/src/util.h"))
 ```
 
