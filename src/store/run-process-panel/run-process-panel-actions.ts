@@ -85,9 +85,9 @@ export const getWorkflowRunnerSettings = (workflow: WorkflowResource) => {
     if (hints) {
         const resc = hints.find(item => item.class === 'http://arvados.org/cwl#WorkflowRunnerResources') as WorkflowRunnerResources | undefined;
         if (resc) {
-            if (resc.ramMin) { advancedFormValues[RAM_FIELD] = resc.ramMin; }
+            if (resc.ramMin) { advancedFormValues[RAM_FIELD] = resc.ramMin * (1024 * 1024); }
             if (resc.coresMin) { advancedFormValues[VCPUS_FIELD] = resc.coresMin; }
-            if (resc.keep_cache) { advancedFormValues[KEEP_CACHE_RAM_FIELD] = resc.keep_cache; }
+            if (resc.keep_cache) { advancedFormValues[KEEP_CACHE_RAM_FIELD] = resc.keep_cache * (1024 * 1024); }
             if (resc.acrContainerImage) { advancedFormValues[RUNNER_IMAGE_FIELD] = resc.acrContainerImage; }
         }
     }
@@ -158,7 +158,7 @@ export const runProcess = async (dispatch: Dispatch<any>, getState: () => RootSt
             runtimeConstraints: {
                 API: true,
                 vcpus: advancedForm[VCPUS_FIELD],
-                ram: advancedForm[RAM_FIELD],
+                ram: (advancedForm[KEEP_CACHE_RAM_FIELD] + advancedForm[RAM_FIELD]),
             },
             schedulingParameters: {
                 max_run_time: advancedForm[RUNTIME_FIELD]
@@ -189,6 +189,7 @@ export const runProcess = async (dispatch: Dispatch<any>, getState: () => RootSt
 export const DEFAULT_ADVANCED_FORM_VALUES: Partial<RunProcessAdvancedFormData> = {
     [VCPUS_FIELD]: 1,
     [RAM_FIELD]: 1073741824,
+    [KEEP_CACHE_RAM_FIELD]: 268435456,
     [RUNNER_IMAGE_FIELD]: "arvados/jobs"
 };
 
