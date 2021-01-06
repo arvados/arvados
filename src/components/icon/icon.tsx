@@ -26,6 +26,7 @@ import ErrorRoundedIcon from '@material-ui/icons/ErrorRounded';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import FlipToFront from '@material-ui/icons/FlipToFront';
 import Folder from '@material-ui/icons/Folder';
+import FolderShared from '@material-ui/icons/FolderShared';
 import GetApp from '@material-ui/icons/GetApp';
 import Help from '@material-ui/icons/Help';
 import HelpOutline from '@material-ui/icons/HelpOutline';
@@ -67,7 +68,7 @@ library.add(
     faSlash,
 );
 
-export const ReadOnlyIcon = (props:any) =>
+export const ReadOnlyIcon = (props: any) =>
     <span {...props}>
         <div className="fa-layers fa-1x fa-fw">
             <span className="fas fa-slash"
@@ -103,7 +104,7 @@ export const DirectoryIcon: IconType = (props) => <Folder {...props} />;
 export const DownloadIcon: IconType = (props) => <GetApp {...props} />;
 export const EditSavedQueryIcon: IconType = (props) => <Create {...props} />;
 export const ExpandIcon: IconType = (props) => <ExpandMoreIcon {...props} />;
-export const ErrorIcon: IconType = (props) => <ErrorRoundedIcon style={{color: '#ff0000'}} {...props} />;
+export const ErrorIcon: IconType = (props) => <ErrorRoundedIcon style={{ color: '#ff0000' }} {...props} />;
 export const FavoriteIcon: IconType = (props) => <Star {...props} />;
 export const FileIcon: IconType = (props) => <LibraryBooks {...props} />;
 export const HelpIcon: IconType = (props) => <Help {...props} />;
@@ -143,3 +144,4 @@ export const UsedByIcon: IconType = (props) => <Folder {...props} />;
 export const WorkflowIcon: IconType = (props) => <Code {...props} />;
 export const WarningIcon: IconType = (props) => <Warning style={{ color: '#fbc02d', height: '30px', width: '30px' }} {...props} />;
 export const Link: IconType = (props) => <LinkOutlined {...props} />;
+export const FolderSharedIcon: IconType = (props) => <FolderShared {...props} />;

@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { ContextMenuActionSet } from "../context-menu-action-set";
-import { NewProjectIcon, RenameIcon, MoveToIcon, DetailsIcon, AdvancedIcon, OpenIcon, Link } from '~/components/icon/icon';
+import { NewProjectIcon, RenameIcon, MoveToIcon, DetailsIcon, AdvancedIcon, OpenIcon, Link, FolderSharedIcon } from '~/components/icon/icon';
 import { ToggleFavoriteAction } from "../actions/favorite-action";
 import { toggleFavorite } from "~/store/favorites/favorites-actions";
 import { favoritePanelActions } from "~/store/favorite-panel/favorite-panel-action";
@@ -17,6 +17,7 @@ import { openSharingDialog } from "~/store/sharing-dialog/sharing-dialog-actions
 import { openAdvancedTabDialog } from "~/store/advanced-tab/advanced-tab";
 import { toggleDetailsPanel } from '~/store/details-panel/details-panel-action';
 import { copyToClipboardAction, openInNewTabAction } from "~/store/open-in-new-tab/open-in-new-tab.actions";
+import { openWebDavS3InfoDialog } from "~/store/collections/collection-info-actions";
 
 export const readOnlyProjectActionSet: ContextMenuActionSet = [[
     {
@@ -54,6 +55,13 @@ export const readOnlyProjectActionSet: ContextMenuActionSet = [[
         name: "Advanced",
         execute: (dispatch, resource) => {
             dispatch<any>(openAdvancedTabDialog(resource.uuid));
+        }
+    },
+    {
+        icon: FolderSharedIcon,
+        name: "Open as network folder or S3 bucket",
+        execute: (dispatch, resource) => {
+            dispatch<any>(openWebDavS3InfoDialog(resource.uuid));
         }
     },
 ]];
