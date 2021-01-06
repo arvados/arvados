@@ -24,7 +24,8 @@ class Arvados::V1::ContainerRequestsControllerTest < ActionController::TestCase
 
     cr = JSON.parse(@response.body)
     assert_not_nil cr, 'Expected container request'
-    assert_equal sp, cr['scheduling_parameters']
+    assert_equal sp['partitions'], cr['scheduling_parameters']['partitions']
+    assert_equal false, cr['scheduling_parameters']['preemptible']
   end
 
   test "secret_mounts not in #create responses" do

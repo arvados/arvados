@@ -30,15 +30,16 @@ class ContainerRequest < ArvadosModel
   serialize :command, Array
   serialize :scheduling_parameters, Hash
 
+  after_find :fill_container_defaults_after_find
   before_validation :fill_field_defaults, :if => :new_record?
-  before_validation :forget_innocuous_serialized_fields_updates, on: :update
-  before_validation :validate_runtime_constraints
+  before_validation :fill_container_defaults
   before_validation :set_default_preemptible_scheduling_parameter
   before_validation :set_container
   validates :command, :container_image, :output_path, :cwd, :presence => true
   validates :output_ttl, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
   validates :priority, numericality: { only_integer: true, greater_than_or_equal_to: 0, less_than_or_equal_to: 1000 }
   validate :validate_datatypes
+  validate :validate_runtime_constraints
   validate :validate_scheduling_parameters
   validate :validate_state_change
   validate :check_update_whitelist
@@ -98,19 +99,6 @@ class ContainerRequest < ArvadosModel
   :runtime_constraints, :state, :container_uuid, :use_existing,
   :scheduling_parameters, :secret_mounts, :output_name, :output_ttl]
 
-  AttrsRuntimeConstraintsDefaults = {
-    "vcpus"=>0,
-    "ram"=>0,
-    "api"=>false,
-    "keep_cache_ram"=>0
-  }
-
-  AttrsSchedulingParametersDefaults = {
-    "max_run_time"=>0,
-    "partitions"=>[],
-    ## "preemptible"=> Rails.configuration.Containers.UsePreemptibleInstances  ##  we have to read this on the fly to pass the tests
-  }
-
   def self.limit_index_columns_read
     ["mounts"]
   end
@@ -121,14 +109,6 @@ class ContainerRequest < ArvadosModel
 
   def state_transitions
     State_transitions
-  end
-
-  def self.runtime_constraints_defaults
-    AttrsRuntimeConstraintsDefaults
-  end
-
-  def self.scheduling_parameters_defaults
-    AttrsSchedulingParametersDefaults
   end
 
   def skip_uuid_read_permission_check
@@ -334,41 +314,17 @@ class ContainerRequest < ArvadosModel
   end
 
   def set_default_preemptible_scheduling_parameter
-    c = get_requesting_container()
-    if self.state == Committed
-      # If preemptible instances (eg: AWS Spot Instances) are allowed,
-      # ask them on child containers by default.
-      if Rails.configuration.Containers.UsePreemptibleInstances and !c.nil? and
-        self.scheduling_parameters['preemptible'].nil?
-          self.scheduling_parameters['preemptible'] = true
-      end
+    if Rails.configuration.Containers.UsePreemptibleInstances && state == Committed && get_requesting_container()
+      self.scheduling_parameters['preemptible'] = true
     end
-  end
-
-  # Updates to serialized fields are all-or-nothing. Here we avoid making
-  # unnecessary updates.
-  def forget_innocuous_serialized_fields_updates
-    forgettable_attrs = []
-    if (runtime_constraints.to_a - runtime_constraints_was.to_a).empty?
-      forgettable_attrs.append('runtime_constraints')
-    end
-    if (scheduling_parameters.to_a - scheduling_parameters_was.to_a).empty?
-      forgettable_attrs.append('scheduling_parameters')
-    end
-    self.clear_attribute_changes(forgettable_attrs) if !forgettable_attrs.empty?
   end
 
   def validate_runtime_constraints
     case self.state
     when Committed
-      [['vcpus', true],
-       ['ram', true],
-       ['keep_cache_ram', false]].each do |k, required|
-        if !required && (!runtime_constraints.include?(k) || runtime_constraints[k] == 0)
-          next
-        end
+      ['vcpus', 'ram'].each do |k|
         v = runtime_constraints[k]
-        unless (v.is_a?(Integer) && v > 0)
+        if !v.is_a?(Integer) || v <= 0
           errors.add(:runtime_constraints,
                      "[#{k}]=#{v.inspect} must be a positive integer")
         end
@@ -476,31 +432,6 @@ class ContainerRequest < ArvadosModel
     end
 
     super(permitted)
-  end
-
-  def set_zero_values
-    # this will fill out zero values that are not in the database,
-    # see https://dev.arvados.org/issues/17014#note-28 for details
-
-    AttrsRuntimeConstraintsDefaults.each do |key, value|
-      if attributes["runtime_constraints"] && !attributes["runtime_constraints"].key?(key)
-        attributes["runtime_constraints"][key] = value
-      end
-    end
-    AttrsSchedulingParametersDefaults.each do |key, value|
-      if attributes["scheduling_parameters"] && !attributes["scheduling_parameters"].key?(key)
-        attributes["scheduling_parameters"][key] = value
-      end
-    end
-
-    ## We treat scheduling parameters["preemtible"] differently
-    if attributes["scheduling_parameters"] && !attributes["scheduling_parameters"].key?("preemptible")
-      attributes["scheduling_parameters"]["preemptible"] = Rails.configuration.Containers.UsePreemptibleInstances
-    end
-
-    self.clear_attribute_changes(["runtime_constraints", "scheduling_parameters"])
-
-    super
   end
 
   def secret_mounts_key_conflict

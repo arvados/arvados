@@ -979,39 +979,8 @@ class ContainerRequestTest < ActiveSupport::TestCase
   end
 
   [
-    'zzzzz-dz642-runningcontainr',
-    nil,
-  ].each do |requesting_c|
-    test "having preemptible instances active on the API server, a committed #{requesting_c.nil? ? 'non-':''}child CR should not ask for preemptible instance if parameter already set to false" do
-      common_attrs = {cwd: "test",
-                      priority: 1,
-                      command: ["echo", "hello"],
-                      output_path: "test",
-                      scheduling_parameters: {"preemptible" => false},
-                      mounts: {"test" => {"kind" => "json"}}}
-
-      Rails.configuration.Containers.UsePreemptibleInstances = true
-      set_user_from_auth :active
-
-      if requesting_c
-        cr = with_container_auth(Container.find_by_uuid requesting_c) do
-          create_minimal_req!(common_attrs)
-        end
-        assert_not_nil cr.requesting_container_uuid
-      else
-        cr = create_minimal_req!(common_attrs)
-      end
-
-      cr.state = ContainerRequest::Committed
-      cr.save!
-
-      assert_equal false, cr.scheduling_parameters['preemptible']
-    end
-  end
-
-  [
     [true, 'zzzzz-dz642-runningcontainr', true],
-    [true, nil, true],
+    [true, nil, false],
     [false, 'zzzzz-dz642-runningcontainr', false],
     [false, nil, false],
   ].each do |preemptible_conf, requesting_c, schedule_preemptible|
