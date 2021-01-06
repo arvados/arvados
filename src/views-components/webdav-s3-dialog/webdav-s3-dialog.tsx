@@ -10,7 +10,7 @@ import { WithDialogProps } from '~/store/dialog/with-dialog';
 import { compose } from 'redux';
 import { DetailsAttribute } from "~/components/details-attribute/details-attribute";
 
-type CssRules = 'details';
+export type CssRules = 'details';
 
 const styles: StyleRulesCallback<CssRules> = theme => ({
     details: {
@@ -57,18 +57,19 @@ export const WebDavS3InfoDialog = compose(
         } else {
             winDav = new URL(props.data.downloadUrl);
             cyberDav = new URL(props.data.downloadUrl);
-            winDav.pathname = `/by_id/${props.data.uuid}/`;
-            cyberDav.pathname = `/by_id/${props.data.uuid}/`;
+            winDav.pathname = `/by_id/${props.data.uuid}`;
+            cyberDav.pathname = `/by_id/${props.data.uuid}`;
         }
 
-        cyberDav.protocol = { "http:": "dav:", "https:": "davs:" }[cyberDav.protocol];
+        cyberDav.username = props.data.username;
+        const cyberDavStr = "dav" + cyberDav.toString().slice(4);
 
         const s3endpoint = new URL(props.data.collectionsUrl.replace(/\/\*(--[^.]+)?\./, "/"));
 
         const sp = props.data.token.split("/");
         let tokenUuid;
         let tokenSecret;
-        if (sp.length === 3 && sp[0] === "v2" && props.data.homeCluster === props.data.localCluster) {
+        if (sp.length === 3 && sp[0] === "v2" && sp[1].slice(0, 5) === props.data.localCluster) {
             tokenUuid = sp[1];
             tokenSecret = sp[2];
         } else {
@@ -97,12 +98,12 @@ export const WebDavS3InfoDialog = compose(
                     <Tab value={2} key="s3" label="S3 bucket" />
                 </Tabs>
 
-                <TabPanel index={0} value={activeTab}>
+                <TabPanel index={1} value={activeTab}>
                     <h2>Settings</h2>
 
                     <DetailsAttribute
                         label='Internet address'
-                        value={<a href={winDav.toString()}>{winDav.toString()}</a>}
+                        value={<a href={winDav.toString()} target="_blank">{winDav.toString()}</a>}
                         copyValue={winDav.toString()} />
 
                     <DetailsAttribute
@@ -129,11 +130,11 @@ export const WebDavS3InfoDialog = compose(
                     </ol>
                 </TabPanel>
 
-                <TabPanel index={1} value={activeTab}>
+                <TabPanel index={0} value={activeTab}>
                     <DetailsAttribute
                         label='Server'
-                        value={<a href={cyberDav.toString()}>{cyberDav.toString()}</a>}
-                        copyValue={cyberDav.toString()} />
+                        value={<a href={cyberDavStr} target="_blank">{cyberDavStr}</a>}
+                        copyValue={cyberDavStr} />
 
                     <DetailsAttribute
                         label='Username'
