@@ -43,6 +43,14 @@ class Arvados::V1::CollectionsController < ApplicationController
     super
   end
 
+  def update
+    # preserve_version should be disabled unless explicitly asked otherwise.
+    if !resource_attrs[:preserve_version]
+      resource_attrs[:preserve_version] = false
+    end
+    super
+  end
+
   def find_objects_for_index
     opts = {
       include_trash: params[:include_trash] || ['destroy', 'trash', 'untrash'].include?(action_name),

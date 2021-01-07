@@ -125,8 +125,6 @@ Clusters:
         password: ${database_pw}
         dbname: arvados_${database_env}
         client_encoding: utf8
-    API:
-      RailsSessionSecretToken: $secret_token
     Collections:
       BlobSigningKey: $blob_signing_key
       DefaultReplication: 1

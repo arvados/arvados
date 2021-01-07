@@ -259,10 +259,8 @@ debug_echo -e "\nPython packages\n"
       git checkout $DASHQ_UNLESS_DEBUG "$COMMIT_HASH"
       echo "$COMMIT_HASH" >git-commit.version
 
-      cd "$SRC_BUILD_DIR"
-      PKG_VERSION=$(version_from_git)
       cd $WORKSPACE/packages/$TARGET
-      fpm_build "$WORKSPACE" $SRC_BUILD_DIR/=/usr/local/arvados/src arvados-src 'dir' "$PKG_VERSION" "--exclude=usr/local/arvados/src/.git" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=The Arvados source code" "--architecture=all"
+      fpm_build "$WORKSPACE" $SRC_BUILD_DIR/=/usr/local/arvados/src arvados-src 'dir' "$arvados_src_version" "--exclude=usr/local/arvados/src/.git" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=The Arvados source code" "--architecture=all"
 
       rm -rf "$SRC_BUILD_DIR"
     fi

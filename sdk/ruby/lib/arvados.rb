@@ -19,7 +19,6 @@ class Arvados
   class TransactionFailedError < StandardError
   end
 
-  @@config = nil
   @@debuglevel = 0
   class << self
     attr_accessor :debuglevel
@@ -31,12 +30,16 @@ class Arvados
 
     @arvados_api_version = opts[:api_version] || 'v1'
 
-    @arvados_api_host = opts[:api_host] ||
-      config['ARVADOS_API_HOST'] or
-      raise "#{$0}: no :api_host or ENV[ARVADOS_API_HOST] provided."
-    @arvados_api_token = opts[:api_token] ||
-      config['ARVADOS_API_TOKEN'] or
-      raise "#{$0}: no :api_token or ENV[ARVADOS_API_TOKEN] provided."
+    @config = nil
+    [[:api_host, 'ARVADOS_API_HOST'],
+     [:api_token, 'ARVADOS_API_TOKEN']].each do |op, en|
+      if opts[op]
+        config[en] = opts[op]
+      end
+      if !config[en]
+        raise "#{$0}: no :#{op} or ENV[#{en}] provided."
+      end
+    end
 
     if (opts[:suppress_ssl_warnings] or
         %w(1 true yes).index(config['ARVADOS_API_HOST_INSECURE'].
@@ -91,17 +94,15 @@ class Arvados
       # result looks like Arvados::A26949680::Job.
       namespace_class.const_set classname, klass
 
-      self.class.class_eval do
-        define_method classname.underscore do
-          klass
-        end
+      self.define_singleton_method classname.underscore do
+        klass
       end
     end
   end
 
   def client
     @client ||= Google::APIClient.
-      new(:host => @arvados_api_host,
+      new(:host => config["ARVADOS_API_HOST"],
           :application_name => @application_name,
           :application_version => @application_version.to_s)
   end
@@ -119,7 +120,7 @@ class Arvados
   end
 
   def config(config_file_path="~/.config/arvados/settings.conf")
-    return @@config if @@config
+    return @config if @config
 
     # Initialize config settings with environment variables.
     config = {}
@@ -137,7 +138,7 @@ class Arvados
       # Note: If we start using additional configuration settings from
       # this file in the future, we might have to read the file anyway
       # instead of returning here.
-      return (@@config = config)
+      return (@config = config)
     end
 
     begin
@@ -164,7 +165,7 @@ class Arvados
       debuglog "Ignoring error reading #{config_file_path}: #{e}", 0
     end
 
-    @@config = config
+    @config = config
   end
 
   class Model
@@ -202,7 +203,7 @@ class Arvados
                 :parameters => parameters,
                 :body_object => body,
                 :headers => {
-                  :authorization => 'OAuth2 '+arvados.config['ARVADOS_API_TOKEN']
+                  :authorization => 'Bearer '+arvados.config['ARVADOS_API_TOKEN']
                 })
       resp = JSON.parse result.body, :symbolize_names => true
       if resp[:errors]

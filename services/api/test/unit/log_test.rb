@@ -228,6 +228,20 @@ class LogTest < ActiveSupport::TestCase
     assert_logged(auth, :update)
   end
 
+  test "don't log changes only to Collection.preserve_version" do
+    set_user_from_auth :admin_trustedclient
+    col = collections(:collection_owned_by_active)
+    start_log_count = get_logs_about(col).size
+    assert_equal false, col.preserve_version
+    col.preserve_version = true
+    col.save!
+    assert_equal(start_log_count, get_logs_about(col).size,
+                 "log count changed after updating Collection.preserve_version")
+    col.name = 'updated by admin'
+    col.save!
+    assert_logged(col, :update)
+  end
+
   test "token isn't included in ApiClientAuthorization logs" do
     set_user_from_auth :admin_trustedclient
     auth = ApiClientAuthorization.new

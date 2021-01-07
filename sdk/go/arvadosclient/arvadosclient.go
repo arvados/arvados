@@ -210,7 +210,7 @@ func (c *ArvadosClient) CallRaw(method string, resourceType string, uuid string,
 		Scheme: scheme,
 		Host:   c.ApiServer}
 
-	if resourceType != API_DISCOVERY_RESOURCE {
+	if resourceType != ApiDiscoveryResource {
 		u.Path = "/arvados/v1"
 	}
 
@@ -400,7 +400,7 @@ func (c *ArvadosClient) List(resource string, parameters Dict, output interface{
 	return c.Call("GET", resource, "", "", parameters, output)
 }
 
-const API_DISCOVERY_RESOURCE = "discovery/v1/apis/arvados/v1/rest"
+const ApiDiscoveryResource = "discovery/v1/apis/arvados/v1/rest"
 
 // Discovery returns the value of the given parameter in the discovery
 // document. Returns a non-nil error if the discovery document cannot
@@ -409,7 +409,7 @@ const API_DISCOVERY_RESOURCE = "discovery/v1/apis/arvados/v1/rest"
 func (c *ArvadosClient) Discovery(parameter string) (value interface{}, err error) {
 	if len(c.DiscoveryDoc) == 0 {
 		c.DiscoveryDoc = make(Dict)
-		err = c.Call("GET", API_DISCOVERY_RESOURCE, "", "", nil, &c.DiscoveryDoc)
+		err = c.Call("GET", ApiDiscoveryResource, "", "", nil, &c.DiscoveryDoc)
 		if err != nil {
 			return nil, err
 		}

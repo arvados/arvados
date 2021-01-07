@@ -495,4 +495,82 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
     assert_equal Hash, json_response['properties'].class, 'Collection properties attribute should be of type hash'
     assert_equal 'value_1', json_response['properties']['property_1']
   end
+
+  test "update collection with versioning enabled and using preserve_version" do
+    Rails.configuration.Collections.CollectionVersioning = true
+    Rails.configuration.Collections.PreserveVersionIfIdle = -1 # Disable auto versioning
+
+    signed_manifest = Collection.sign_manifest(". bad42fa702ae3ea7d888fef11b46f450+44 0:44:my_test_file.txt\n", api_token(:active))
+    post "/arvados/v1/collections",
+      params: {
+        format: :json,
+        collection: {
+          name: 'Test collection',
+          manifest_text: signed_manifest,
+        }.to_json,
+      },
+      headers: auth(:active)
+    assert_response 200
+    assert_not_nil json_response['uuid']
+    assert_equal 1, json_response['version']
+    assert_equal false, json_response['preserve_version']
+
+    # Versionable update including preserve_version=true should create a new
+    # version that will also be persisted.
+    put "/arvados/v1/collections/#{json_response['uuid']}",
+      params: {
+        format: :json,
+        collection: {
+          name: 'Test collection v2',
+          preserve_version: true,
+        }.to_json,
+      },
+      headers: auth(:active)
+    assert_response 200
+    assert_equal 2, json_response['version']
+    assert_equal true, json_response['preserve_version']
+
+    # 2nd versionable update including preserve_version=true should create a new
+    # version that will also be persisted.
+    put "/arvados/v1/collections/#{json_response['uuid']}",
+      params: {
+        format: :json,
+        collection: {
+          name: 'Test collection v3',
+          preserve_version: true,
+        }.to_json,
+      },
+      headers: auth(:active)
+    assert_response 200
+    assert_equal 3, json_response['version']
+    assert_equal true, json_response['preserve_version']
+
+    # 3rd versionable update without including preserve_version should create a new
+    # version that will have its preserve_version attr reset to false.
+    put "/arvados/v1/collections/#{json_response['uuid']}",
+      params: {
+        format: :json,
+        collection: {
+          name: 'Test collection v4',
+        }.to_json,
+      },
+      headers: auth(:active)
+    assert_response 200
+    assert_equal 4, json_response['version']
+    assert_equal false, json_response['preserve_version']
+
+    # 4th versionable update without including preserve_version=true should NOT
+    # create a new version.
+    put "/arvados/v1/collections/#{json_response['uuid']}",
+      params: {
+        format: :json,
+        collection: {
+          name: 'Test collection v5?',
+        }.to_json,
+      },
+      headers: auth(:active)
+    assert_response 200
+    assert_equal 4, json_response['version']
+    assert_equal false, json_response['preserve_version']
+  end
 end

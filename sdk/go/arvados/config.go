@@ -86,7 +86,6 @@ type Cluster struct {
 		MaxKeepBlobBuffers             int
 		MaxRequestAmplification        int
 		MaxRequestSize                 int
-		RailsSessionSecretToken        string
 		RequestTimeout                 Duration
 		SendTimeout                    Duration
 		WebsocketClientEventQueue      int

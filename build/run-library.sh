@@ -347,11 +347,11 @@ test_package_presence() {
         repo_subdir=${pkgname:0:1}
       fi
 
-      repo_pkg_list=$(curl -s -o - http://apt.arvados.org/pool/${D}-dev/main/${repo_subdir}/${pkgname}/)
+      repo_pkg_list=$(curl -s -o - http://apt.arvados.org/${D}/pool/main/${repo_subdir}/${pkgname}/)
       echo "${repo_pkg_list}" |grep -q ${full_pkgname}
       if [ $? -eq 0 ] ; then
         echo "Package $full_pkgname exists upstream, not rebuilding, downloading instead!"
-        curl -s -o "$WORKSPACE/packages/$TARGET/${full_pkgname}" http://apt.arvados.org/pool/${D}-dev/main/${repo_subdir}/${pkgname}/${full_pkgname}
+        curl -s -o "$WORKSPACE/packages/$TARGET/${full_pkgname}" http://apt.arvados.org/${D}/pool/main/${repo_subdir}/${pkgname}/${full_pkgname}
         return 1
       elif test -f "$WORKSPACE/packages/$TARGET/processed/${full_pkgname}" ; then
         echo "Package $full_pkgname exists, not rebuilding!"

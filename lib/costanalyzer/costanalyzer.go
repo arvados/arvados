@@ -120,7 +120,7 @@ Options:
 
 	if len(uuids) < 1 {
 		flags.Usage()
-		err = fmt.Errorf("Error: no uuid(s) provided")
+		err = fmt.Errorf("error: no uuid(s) provided")
 		exitCode = 2
 		return
 	}
@@ -285,7 +285,7 @@ func loadObject(logger *logrus.Logger, ac *arvados.Client, path string, uuid str
 
 func getNode(arv *arvadosclient.ArvadosClient, ac *arvados.Client, kc *keepclient.KeepClient, cr arvados.ContainerRequest) (node nodeInfo, err error) {
 	if cr.LogUUID == "" {
-		err = errors.New("No log collection")
+		err = errors.New("no log collection")
 		return
 	}
 
@@ -509,7 +509,7 @@ func costanalyzer(prog string, args []string, loader *config.Loader, logger *log
 			var crCsv map[string]float64
 			crCsv, err = generateCrCsv(logger, uuid, arv, ac, kc, resultsDir, cache)
 			if err != nil {
-				err = fmt.Errorf("Error generating CSV for uuid %s: %s", uuid, err.Error())
+				err = fmt.Errorf("error generating CSV for uuid %s: %s", uuid, err.Error())
 				exitcode = 2
 				return
 			}
@@ -521,9 +521,9 @@ func costanalyzer(prog string, args []string, loader *config.Loader, logger *log
 			// It is identified by the user uuid. As such, cost analysis for the
 			// "Home" project is not supported by this program. Skip this uuid, but
 			// keep going.
-			logger.Errorf("Cost analysis is not supported for the 'Home' project: %s", uuid)
+			logger.Errorf("cost analysis is not supported for the 'Home' project: %s", uuid)
 		} else {
-			logger.Errorf("This argument does not look like a uuid: %s\n", uuid)
+			logger.Errorf("this argument does not look like a uuid: %s\n", uuid)
 			exitcode = 3
 			return
 		}
@@ -554,7 +554,7 @@ func costanalyzer(prog string, args []string, loader *config.Loader, logger *log
 		aFile := resultsDir + "/" + time.Now().Format("2006-01-02-15-04-05") + "-aggregate-costaccounting.csv"
 		err = ioutil.WriteFile(aFile, []byte(csv), 0644)
 		if err != nil {
-			err = fmt.Errorf("Error writing file with path %s: %s", aFile, err.Error())
+			err = fmt.Errorf("error writing file with path %s: %s", aFile, err.Error())
 			exitcode = 1
 			return
 		}
