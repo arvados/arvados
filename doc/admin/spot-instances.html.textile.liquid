@@ -12,11 +12,11 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 This page describes how to enable preemptible instances.  Preemptible instances typically offer lower cost computation with a tradeoff of lower service guarantees.  If a compute node is preempted, Arvados will restart the computation on a new instance.
 
-Currently Arvados supports preemptible instances using AWS spot instances.
+Currently Arvados supports preemptible instances using AWS and Azure spot instances.
 
 h2. Configuration
 
-To use preemptible instances, set @UsePreemptibleInstances: true@ and add entries to @InstanceTypes@ with @Preemptible: true@ to @config.yml@.  Typically you want to add both preemptible and non-preemptible entries for each cloud provider VM type.  The @Price@ for preemptible instances is the maximum bid price, the actual price paid is dynamic and may be lower.  For example:
+To use preemptible instances, set @UsePreemptibleInstances: true@ and add entries to @InstanceTypes@ with @Preemptible: true@ to @config.yml@.  Typically you want to add both preemptible and non-preemptible entries for each cloud provider VM type.  The @Price@ for preemptible instances is the maximum bid price, the actual price paid is dynamic and will likely be lower.  For example:
 
 <pre>
 Clusters:
@@ -42,11 +42,17 @@ Clusters:
 
 When @UsePreemptibleInstances@ is enabled, child containers (workflow steps) will automatically be made preemptible.  Note that because preempting the workflow runner would cancel the entire workflow, the workflow runner runs in a reserved (non-preemptible) instance.
 
-If you are using "arvados-dispatch-cloud":{{site.baseurl}}/install/crunch2-cloud/install-dispatch-cloud.html no additional configuration is required.
+No additional configuration is required, "arvados-dispatch-cloud":{{site.baseurl}}/install/crunch2-cloud/install-dispatch-cloud.html will now start preemptable instances where appropriate.
+
+h3. Cost Tracking
+
+Preemptable instances prices are declared at instance request time and defined by the maximum price that the user is willing to pay per hour. By default, this price is the same amount as the on-demand version of each instance type, and this setting is the one that @arvados-dispatch-cloud@ uses for now, as it doesn't include any pricing data to the spot instance request.
+
+For AWS, the real price that a spot instance has at any point in time is discovered at the end of each usage hour, depending on instance demand. For this reason, AWS provides a data feed subscription to get hourly logs, as described on "Amazon's User Guide":https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/spot-data-feeds.html.
 
 h2. Preemptible instances on AWS
 
-For general information, see "using Amazon EC2 spot instances":https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-spot-instances.html .
+For general information, see "using Amazon EC2 spot instances":https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-spot-instances.html.
 
 h3. Permissions
 
@@ -58,9 +64,12 @@ BaseHTTPError: AuthFailure.ServiceLinkedRoleCreationNotPermitted: The provided c
 
 The account needs to have a service linked role created. This can be done by logging into the AWS account, go to _IAM Management_ &rarr; _Roles_ and create the @AWSServiceRoleForEC2Spot@ role by clicking on the @Create@ button, selecting @EC2@ service and @EC2 - Spot Instances@ use case.
 
-h3. Cost Tracking
+h2. Preemptible instances on Azure
 
-Amazon's Spot instances prices are declared at instance request time and defined by the maximum price that the user is willing to pay per hour. By default, this price is the same amount as the on-demand version of each instance type, and this setting is the one that @arvados-dispatch-cloud@ uses for now, as it doesn't include any pricing data to the spot instance request.
+For general information, see "Use Spot VMs in Azure":https://docs.microsoft.com/en-us/azure/virtual-machines/spot-vms.
 
-The real price that a spot instance has at any point in time is discovered at the end of each usage hour, depending on instance demand. For this reason, AWS provides a data feed subscription to get hourly logs, as described on "Amazon's User Guide":https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/spot-data-feeds.html.
+When starting preemptible instances on Azure, Arvados configures the eviction policy to 'delete', with max price set to '-1'. This has the effect that preemptible VMs will not be evicted for pricing reasons. The price paid for the instance will be the current spot price for the VM type, up to a maximum of the price for a standard, non-spot VM of that type.
 
+Please note that Azure provides no SLA for preemptible instances. Even in this configuration, preemptable instances can still be evicted for capacity reasons. If that happens and a container is aborted, Arvados will try to restart it, subject to the usual retry rules.
+
+Spot pricing is not available on 'B-series' VMs, those should not be defined in the configuration file with the _Preemptible_ flag set to true. Spot instances have a separate quota pool, make sure you have sufficient quota available.
