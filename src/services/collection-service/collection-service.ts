@@ -37,7 +37,16 @@ export class CollectionService extends TrashableResourceService<CollectionResour
 
     async deleteFiles(collectionUuid: string, filePaths: string[]) {
         const sortedUniquePaths = Array.from(new Set(filePaths))
-            .sort((a, b) => b.length - a.length);
+            .sort((a, b) => a.length - b.length)
+            .reduce((acc, currentPath) => {
+                const parentPathFound = acc.find((parentPath) => currentPath.indexOf(`${parentPath}/`) > -1);
+
+                if (!parentPathFound) {
+                    return [...acc, currentPath];
+                }
+
+                return acc;
+            }, []);
 
         for (const path of sortedUniquePaths) {
             if (path.indexOf(collectionUuid) === -1) {
