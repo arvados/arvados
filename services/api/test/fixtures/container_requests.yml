@@ -20,6 +20,7 @@ queued:
   runtime_constraints:
     vcpus: 1
     ram: 123
+  mounts: {}
 
 running:
   uuid: zzzzz-xvhdp-cr4runningcntnr
@@ -39,6 +40,7 @@ running:
   runtime_constraints:
     vcpus: 1
     ram: 123
+  mounts: {}
 
 requester_for_running:
   uuid: zzzzz-xvhdp-req4runningcntr
@@ -59,6 +61,7 @@ requester_for_running:
   runtime_constraints:
     vcpus: 1
     ram: 123
+  mounts: {}
 
 running_older:
   uuid: zzzzz-xvhdp-cr4runningcntn2
@@ -78,6 +81,7 @@ running_older:
   runtime_constraints:
     vcpus: 1
     ram: 123
+  mounts: {}
 
 completed:
   uuid: zzzzz-xvhdp-cr4completedctr
@@ -99,6 +103,7 @@ completed:
   runtime_constraints:
     vcpus: 1
     ram: 123
+  mounts: {}
 
 completed-older:
   uuid: zzzzz-xvhdp-cr4completedcr2
@@ -120,6 +125,7 @@ completed-older:
   runtime_constraints:
     vcpus: 1
     ram: 123
+  mounts: {}
 
 completed_diagnostics:
   name: CWL diagnostics hasher
@@ -365,6 +371,7 @@ requester:
   runtime_constraints:
     vcpus: 1
     ram: 123
+  mounts: {}
 
 cr_for_requester:
   uuid: zzzzz-xvhdp-cr4requestercnt
@@ -385,6 +392,7 @@ cr_for_requester:
   runtime_constraints:
     vcpus: 1
     ram: 123
+  mounts: {}
 
 cr_for_requester2:
   uuid: zzzzz-xvhdp-cr4requestercn2
@@ -404,6 +412,7 @@ cr_for_requester2:
   runtime_constraints:
     vcpus: 1
     ram: 123
+  mounts: {}
 
 running_anonymous_accessible:
   uuid: zzzzz-xvhdp-runninganonaccs
@@ -423,6 +432,7 @@ running_anonymous_accessible:
   runtime_constraints:
     vcpus: 1
     ram: 123
+  mounts: {}
 
 cr_for_failed:
   uuid: zzzzz-xvhdp-cr4failedcontnr
@@ -442,6 +452,7 @@ cr_for_failed:
   runtime_constraints:
     vcpus: 1
     ram: 123
+  mounts: {}
 
 canceled_with_queued_container:
   uuid: zzzzz-xvhdp-canceledqueuedc
@@ -461,6 +472,7 @@ canceled_with_queued_container:
   runtime_constraints:
     vcpus: 1
     ram: 123
+  mounts: {}
 
 canceled_with_locked_container:
   uuid: zzzzz-xvhdp-canceledlocekdc
@@ -480,6 +492,7 @@ canceled_with_locked_container:
   runtime_constraints:
     vcpus: 1
     ram: 123
+  mounts: {}
 
 canceled_with_running_container:
   uuid: zzzzz-xvhdp-canceledrunning
@@ -499,6 +512,7 @@ canceled_with_running_container:
   runtime_constraints:
     vcpus: 1
     ram: 123
+  mounts: {}
 
 running_to_be_deleted:
   uuid: zzzzz-xvhdp-cr5runningcntnr
@@ -518,6 +532,7 @@ running_to_be_deleted:
   runtime_constraints:
     vcpus: 1
     ram: 123
+  mounts: {}
 
 completed_with_input_mounts:
   uuid: zzzzz-xvhdp-crwithinputmnts
@@ -539,18 +554,23 @@ completed_with_input_mounts:
   container_uuid: zzzzz-dz642-compltcontainer
   log_uuid: zzzzz-4zz18-logcollection01
   output_uuid: zzzzz-4zz18-znfnqtbbv4spc3w
-  mounts:
-    /var/lib/cwl/cwl.input.json:
-      content:
-        input1:
-          basename: foo
-          class: File
-          location: "keep:fa7aeb5140e2848d39b416daeef4ffc5+45/foo"
-        input2:
-          basename: bar
-          class: File
-          location: "keep:fa7aeb5140e2848d39b416daeef4ffc5+45/bar"
-    /var/lib/cwl/workflow.json: "keep:f9ddda46bb293b6847da984e3aa735db+290"
+  mounts: {
+    "/var/lib/cwl/cwl.input.json": {
+      "kind": "json",
+      "content": {
+        "input1": {
+          "basename": "foo",
+          "class": "File",
+          "location": "keep:fa7aeb5140e2848d39b416daeef4ffc5+45/foo",
+        },
+        "input2": {
+          "basename": "bar",
+          "class": "File",
+          "location": "keep:fa7aeb5140e2848d39b416daeef4ffc5+45/bar",
+        }
+      }
+    }
+  }
 
 uncommitted:
   uuid: zzzzz-xvhdp-cr4uncommittedc
@@ -991,6 +1011,7 @@ cr_in_trashed_project:
   runtime_constraints:
     vcpus: 1
     ram: 123
+  mounts: {}
 
 runtime_token:
   uuid: zzzzz-xvhdp-11eklkhy0n4dm86
@@ -1011,6 +1032,7 @@ runtime_token:
   runtime_constraints:
     vcpus: 1
     ram: 123
+  mounts: {}
 
 
 # Test Helper trims the rest of the file
@@ -1026,6 +1048,7 @@ cr_<%=i%>_of_60:
   name: cr-<%= i.to_s %>
   output_path: test
   command: ["echo", "hello"]
+  mounts: {}
 <% end %>
 
 # Do not add your fixtures below this line as the rest of this file will be trimmed by test_helper

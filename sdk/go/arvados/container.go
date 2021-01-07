@@ -65,6 +65,9 @@ type ContainerRequest struct {
 	LogUUID                 string                 `json:"log_uuid"`
 	OutputUUID              string                 `json:"output_uuid"`
 	RuntimeToken            string                 `json:"runtime_token"`
+	ExpiresAt               time.Time              `json:"expires_at"`
+	Filters                 []Filter               `json:"filters"`
+	ContainerCount          int                    `json:"container_count"`
 }
 
 // Mount is special behavior to attach to a filesystem path or device.
@@ -86,7 +89,7 @@ type Mount struct {
 // RuntimeConstraints specify a container's compute resources (RAM,
 // CPU) and network connectivity.
 type RuntimeConstraints struct {
-	API          *bool
+	API          bool  `json:"api"`
 	RAM          int64 `json:"ram"`
 	VCPUs        int   `json:"vcpus"`
 	KeepCacheRAM int64 `json:"keep_cache_ram"`

@@ -7,6 +7,7 @@ package controller
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -20,6 +21,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"git.arvados.org/arvados.git/lib/boot"
 	"git.arvados.org/arvados.git/lib/config"
@@ -209,6 +211,7 @@ func (s *IntegrationSuite) userClients(rootctx context.Context, c *check.C, conn
 			FirstName: "Example",
 			LastName:  "User",
 			Username:  "example",
+			ExpiresAt: time.Now().Add(1 * time.Hour),
 		},
 	})
 	c.Assert(err, check.IsNil)
@@ -460,6 +463,7 @@ func (s *IntegrationSuite) TestCreateContainerRequestWithFedToken(c *check.C) {
 	c.Assert(err, check.IsNil)
 	req.Header.Set("Content-Type", "application/json")
 	err = ac2.DoAndDecode(&cr, req)
+	c.Assert(err, check.IsNil)
 	c.Logf("err == %#v", err)
 
 	c.Log("...get user with good token")
@@ -486,10 +490,153 @@ func (s *IntegrationSuite) TestCreateContainerRequestWithFedToken(c *check.C) {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "OAuth2 "+ac2.AuthToken)
 	resp, err = arvados.InsecureHTTPClient.Do(req)
-	if c.Check(err, check.IsNil) {
-		err = json.NewDecoder(resp.Body).Decode(&cr)
+	c.Assert(err, check.IsNil)
+	err = json.NewDecoder(resp.Body).Decode(&cr)
+	c.Check(err, check.IsNil)
+	c.Check(cr.UUID, check.Matches, "z2222-.*")
+}
+
+func (s *IntegrationSuite) TestCreateContainerRequestWithBadToken(c *check.C) {
+	conn1 := s.conn("z1111")
+	rootctx1, _, _ := s.rootClients("z1111")
+	_, ac1, _, au := s.userClients(rootctx1, c, conn1, "z1111", true)
+
+	tests := []struct {
+		name         string
+		token        string
+		expectedCode int
+	}{
+		{"Good token", ac1.AuthToken, http.StatusOK},
+		{"Bogus token", "abcdef", http.StatusUnauthorized},
+		{"v1-looking token", "badtoken00badtoken00badtoken00badtoken00b", http.StatusUnauthorized},
+		{"v2-looking token", "v2/" + au.UUID + "/badtoken00badtoken00badtoken00badtoken00b", http.StatusUnauthorized},
+	}
+
+	body, _ := json.Marshal(map[string]interface{}{
+		"container_request": map[string]interface{}{
+			"command":         []string{"echo"},
+			"container_image": "d41d8cd98f00b204e9800998ecf8427e+0",
+			"cwd":             "/",
+			"output_path":     "/",
+		},
+	})
+
+	for _, tt := range tests {
+		c.Log(c.TestName() + " " + tt.name)
+		ac1.AuthToken = tt.token
+		req, err := http.NewRequest("POST", "https://"+ac1.APIHost+"/arvados/v1/container_requests", bytes.NewReader(body))
+		c.Assert(err, check.IsNil)
+		req.Header.Set("Content-Type", "application/json")
+		resp, err := ac1.Do(req)
+		c.Assert(err, check.IsNil)
+		c.Assert(resp.StatusCode, check.Equals, tt.expectedCode)
+	}
+}
+
+// We test the direct access to the database
+// normally an integration test would not have a database access, but  in this case we need
+// to test tokens that are secret, so there is no API response that will give them back
+func (s *IntegrationSuite) dbConn(c *check.C, clusterID string) (*sql.DB, *sql.Conn) {
+	ctx := context.Background()
+	db, err := sql.Open("postgres", s.testClusters[clusterID].super.Cluster().PostgreSQL.Connection.String())
+	c.Assert(err, check.IsNil)
+
+	conn, err := db.Conn(ctx)
+	c.Assert(err, check.IsNil)
+
+	rows, err := conn.ExecContext(ctx, `SELECT 1`)
+	c.Assert(err, check.IsNil)
+	n, err := rows.RowsAffected()
+	c.Assert(err, check.IsNil)
+	c.Assert(n, check.Equals, int64(1))
+	return db, conn
+}
+
+// TestRuntimeTokenInCR will test several different tokens in the runtime attribute
+// and check the expected results accessing directly to the database if needed.
+func (s *IntegrationSuite) TestRuntimeTokenInCR(c *check.C) {
+	db, dbconn := s.dbConn(c, "z1111")
+	defer db.Close()
+	defer dbconn.Close()
+	conn1 := s.conn("z1111")
+	rootctx1, _, _ := s.rootClients("z1111")
+	userctx1, ac1, _, au := s.userClients(rootctx1, c, conn1, "z1111", true)
+
+	tests := []struct {
+		name                 string
+		token                string
+		expectAToGetAValidCR bool
+		expectedToken        *string
+	}{
+		{"Good token z1111 user", ac1.AuthToken, true, &ac1.AuthToken},
+		{"Bogus token", "abcdef", false, nil},
+		{"v1-looking token", "badtoken00badtoken00badtoken00badtoken00b", false, nil},
+		{"v2-looking token", "v2/" + au.UUID + "/badtoken00badtoken00badtoken00badtoken00b", false, nil},
+	}
+
+	for _, tt := range tests {
+		c.Log(c.TestName() + " " + tt.name)
+
+		rq := map[string]interface{}{
+			"command":         []string{"echo"},
+			"container_image": "d41d8cd98f00b204e9800998ecf8427e+0",
+			"cwd":             "/",
+			"output_path":     "/",
+			"runtime_token":   tt.token,
+		}
+		cr, err := conn1.ContainerRequestCreate(userctx1, arvados.CreateOptions{Attrs: rq})
+		if tt.expectAToGetAValidCR {
+			c.Check(err, check.IsNil)
+			c.Check(cr, check.NotNil)
+			c.Check(cr.UUID, check.Not(check.Equals), "")
+		}
+
+		if tt.expectedToken == nil {
+			continue
+		}
+
+		c.Logf("cr.UUID: %s", cr.UUID)
+		row := dbconn.QueryRowContext(rootctx1, `SELECT runtime_token from container_requests where uuid=$1`, cr.UUID)
+		c.Check(row, check.NotNil)
+		var token sql.NullString
+		row.Scan(&token)
+		if c.Check(token.Valid, check.Equals, true) {
+			c.Check(token.String, check.Equals, *tt.expectedToken)
+		}
+	}
+}
+
+// TestIntermediateCluster will send a container request to
+// one cluster with another cluster as the destination
+// and check the tokens are being handled properly
+func (s *IntegrationSuite) TestIntermediateCluster(c *check.C) {
+	conn1 := s.conn("z1111")
+	rootctx1, _, _ := s.rootClients("z1111")
+	uctx1, ac1, _, _ := s.userClients(rootctx1, c, conn1, "z1111", true)
+
+	tests := []struct {
+		name                 string
+		token                string
+		expectedRuntimeToken string
+		expectedUUIDprefix   string
+	}{
+		{"Good token z1111 user sending a CR to z2222", ac1.AuthToken, "", "z2222-xvhdp-"},
+	}
+
+	for _, tt := range tests {
+		c.Log(c.TestName() + " " + tt.name)
+		rq := map[string]interface{}{
+			"command":         []string{"echo"},
+			"container_image": "d41d8cd98f00b204e9800998ecf8427e+0",
+			"cwd":             "/",
+			"output_path":     "/",
+			"runtime_token":   tt.token,
+		}
+		cr, err := conn1.ContainerRequestCreate(uctx1, arvados.CreateOptions{ClusterID: "z2222", Attrs: rq})
+
 		c.Check(err, check.IsNil)
-		c.Check(cr.UUID, check.Matches, "z2222-.*")
+		c.Check(strings.HasPrefix(cr.UUID, tt.expectedUUIDprefix), check.Equals, true)
+		c.Check(cr.RuntimeToken, check.Equals, tt.expectedRuntimeToken)
 	}
 }
 

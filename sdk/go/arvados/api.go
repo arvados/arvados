@@ -41,6 +41,11 @@ var (
 	EndpointContainerDelete               = APIEndpoint{"DELETE", "arvados/v1/containers/{uuid}", ""}
 	EndpointContainerLock                 = APIEndpoint{"POST", "arvados/v1/containers/{uuid}/lock", ""}
 	EndpointContainerUnlock               = APIEndpoint{"POST", "arvados/v1/containers/{uuid}/unlock", ""}
+	EndpointContainerRequestCreate        = APIEndpoint{"POST", "arvados/v1/container_requests", "container_request"}
+	EndpointContainerRequestUpdate        = APIEndpoint{"PATCH", "arvados/v1/container_requests/{uuid}", "container_request"}
+	EndpointContainerRequestGet           = APIEndpoint{"GET", "arvados/v1/container_requests/{uuid}", ""}
+	EndpointContainerRequestList          = APIEndpoint{"GET", "arvados/v1/container_requests", ""}
+	EndpointContainerRequestDelete        = APIEndpoint{"DELETE", "arvados/v1/container_requests/{uuid}", ""}
 	EndpointUserActivate                  = APIEndpoint{"POST", "arvados/v1/users/{uuid}/activate", ""}
 	EndpointUserCreate                    = APIEndpoint{"POST", "arvados/v1/users", "user"}
 	EndpointUserCurrent                   = APIEndpoint{"GET", "arvados/v1/users/current", ""}
@@ -175,6 +180,11 @@ type API interface {
 	ContainerDelete(ctx context.Context, options DeleteOptions) (Container, error)
 	ContainerLock(ctx context.Context, options GetOptions) (Container, error)
 	ContainerUnlock(ctx context.Context, options GetOptions) (Container, error)
+	ContainerRequestCreate(ctx context.Context, options CreateOptions) (ContainerRequest, error)
+	ContainerRequestUpdate(ctx context.Context, options UpdateOptions) (ContainerRequest, error)
+	ContainerRequestGet(ctx context.Context, options GetOptions) (ContainerRequest, error)
+	ContainerRequestList(ctx context.Context, options ListOptions) (ContainerRequestList, error)
+	ContainerRequestDelete(ctx context.Context, options DeleteOptions) (ContainerRequest, error)
 	SpecimenCreate(ctx context.Context, options CreateOptions) (Specimen, error)
 	SpecimenUpdate(ctx context.Context, options UpdateOptions) (Specimen, error)
 	SpecimenGet(ctx context.Context, options GetOptions) (Specimen, error)
