@@ -11,6 +11,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/lib/install"
@@ -24,13 +25,17 @@ var (
 		"--version": cmd.Version,
 
 		"build":       cmdFunc(build),
-		"fpm":         cmdFunc(fpm),
 		"testinstall": cmdFunc(testinstall),
+		"_fpm":        cmdFunc(fpm),    // internal use
 		"_install":    install.Command, // internal use
 	})
 )
 
 func main() {
+	if len(os.Args) < 2 || strings.HasPrefix(os.Args[1], "-") {
+		parseFlags([]string{"-help"})
+		os.Exit(2)
+	}
 	os.Exit(handler.RunCommand(os.Args[0], os.Args[1:], os.Stdin, os.Stdout, os.Stderr))
 }
 
@@ -72,6 +77,37 @@ func parseFlags(args []string) (opts, error) {
 	flags.StringVar(&opts.PackageChown, "package-chown", opts.PackageChown, "desired uid:gid for new package (default is current user:group)")
 	flags.StringVar(&opts.TargetOS, "target-os", opts.TargetOS, "target operating system vendor:version")
 	flags.BoolVar(&opts.RebuildImage, "rebuild-image", opts.RebuildImage, "rebuild docker image(s) instead of using existing")
+	flags.Usage = func() {
+		fmt.Fprint(flags.Output(), `Usage: arvados-package <subcommand> [options]
+
+Subcommands:
+	build
+		use a docker container to build a package from a checked
+		out version of the arvados source tree
+	testinstall
+		use a docker container to install a package and confirm
+		the resulting installation is functional
+	version
+		show program version
+
+Internally used subcommands:
+	_fpm
+		build a package
+	_install
+		equivalent to "arvados-server install"
+
+Automation/integration notes:
+	The first time a given machine runs "build" or "testinstall" (and
+	any time the -rebuild-image is used), new docker images are built,
+	which is quite slow. If you use on-demand VMs to run automated builds,
+	run "build" and "testinstall" once when setting up your initial VM
+	image, and be prepared to rebuild that VM image when package-building
+	slows down (this will happen when new dependencies are introduced).
+
+Options:
+`)
+		flags.PrintDefaults()
+	}
 	err := flags.Parse(args)
 	if err != nil {
 		return opts, err

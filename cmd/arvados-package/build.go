@@ -108,7 +108,7 @@ func build(ctx context.Context, opts opts, stdin io.Reader, stdout, stderr io.Wr
 		"-v", selfbin+":/arvados-package:ro",
 		"-v", opts.SourceDir+":/arvados:ro",
 		buildImageName,
-		"eatmydata", "/arvados-package", "fpm",
+		"eatmydata", "/arvados-package", "_fpm",
 		"-source", "/arvados",
 		"-package-version", opts.PackageVersion,
 		"-package-dir", "/pkg",
