@@ -2,13 +2,12 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package arvadostest
+package boot
 
 import (
 	"context"
 	"net/url"
 
-	"git.arvados.org/arvados.git/lib/boot"
 	"git.arvados.org/arvados.git/lib/controller/rpc"
 	"git.arvados.org/arvados.git/lib/service"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
@@ -21,7 +20,7 @@ import (
 
 // TestCluster stores a working test cluster data
 type TestCluster struct {
-	Super         boot.Supervisor
+	Super         Supervisor
 	Config        arvados.Config
 	ControllerURL *url.URL
 	ClusterID     string
@@ -39,7 +38,7 @@ func (l logger) Log(args ...interface{}) {
 // ready for being started.
 func NewTestCluster(srcPath, clusterID string, cfg *arvados.Config, listenHost string, logWriter func(...interface{})) *TestCluster {
 	return &TestCluster{
-		Super: boot.Supervisor{
+		Super: Supervisor{
 			SourcePath:           srcPath,
 			ClusterType:          "test",
 			ListenHost:           listenHost,

@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"git.arvados.org/arvados.git/lib/boot"
 	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
@@ -22,7 +23,7 @@ var _ = check.Suite(&FederationSuite{})
 var origAPIHost, origAPIToken string
 
 type FederationSuite struct {
-	testClusters map[string]*arvadostest.TestCluster
+	testClusters map[string]*boot.TestCluster
 	oidcprovider *arvadostest.OIDCProvider
 }
 
@@ -39,7 +40,7 @@ func (s *FederationSuite) SetUpSuite(c *check.C) {
 	s.oidcprovider.ValidClientID = "clientid"
 	s.oidcprovider.ValidClientSecret = "clientsecret"
 
-	s.testClusters = map[string]*arvadostest.TestCluster{
+	s.testClusters = map[string]*boot.TestCluster{
 		"z1111": nil,
 		"z2222": nil,
 	}
@@ -110,7 +111,7 @@ func (s *FederationSuite) SetUpSuite(c *check.C) {
 		loader.SkipAPICalls = true
 		cfg, err := loader.Load()
 		c.Assert(err, check.IsNil)
-		tc := arvadostest.NewTestCluster(
+		tc := boot.NewTestCluster(
 			filepath.Join(cwd, "..", ".."),
 			id, cfg, "127.0.0."+id[3:], c.Log)
 		s.testClusters[id] = tc
