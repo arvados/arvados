@@ -26,7 +26,7 @@ export interface RunProcessAdvancedFormData {
     [RUNTIME_FIELD]?: number;
     [RAM_FIELD]: number;
     [VCPUS_FIELD]: number;
-    [KEEP_CACHE_RAM_FIELD]?: number;
+    [KEEP_CACHE_RAM_FIELD]: number;
     [RUNNER_IMAGE_FIELD]: string;
 }
 
