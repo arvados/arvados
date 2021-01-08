@@ -74,8 +74,6 @@ func (s *IntegrationSuite) SetUpSuite(c *check.C) {
         ExternalURL: https://` + hostport[id] + `
     TLS:
       Insecure: true
-    Login:
-      LoginCluster: z1111
     SystemLogs:
       Format: text
     RemoteClusters:
