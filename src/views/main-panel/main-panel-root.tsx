@@ -48,7 +48,7 @@ export const MainPanelRoot = withStyles(styles)(
                     uuidPrefix={uuidPrefix}
                     siteBanner={siteBanner}>
                     {working
-                        ? <LinearProgress color="secondary" />
+                        ? <LinearProgress color="secondary" data-cy="linear-progress" />
                         : null}
                 </MainAppBar>}
                 <Grid container direction="column" className={classes.root}>

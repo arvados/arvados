@@ -52,6 +52,7 @@ describe('Collection panel tests', function() {
                     })
                     cy.visit(`/collections/${this.testCollection.uuid}`);
                     // Check that name & uuid are correct.
+                    cy.get('[data-cy=linear-progress]').should('not.exist');
                     cy.get('[data-cy=collection-info-panel]')
                         .should('contain', this.testCollection.name)
                         .and('contain', this.testCollection.uuid)
@@ -146,6 +147,7 @@ describe('Collection panel tests', function() {
                 ['I ❤️ ⛵️', '...']
             ];
             nameTransitions.forEach(([from, to]) => {
+                cy.get('[data-cy=linear-progress]').should('not.exist');
                 cy.get('[data-cy=collection-files-panel]')
                     .contains(`${from}`).rightclick();
                 cy.get('[data-cy=context-menu]')
@@ -175,6 +177,7 @@ describe('Collection panel tests', function() {
             cy.loginAs(activeUser);
             cy.visit(`/collections/${this.testCollection.uuid}`);
             // Rename 'bar' to 'subdir/foo'
+            cy.get('[data-cy=linear-progress]').should('not.exist');
             cy.get('[data-cy=collection-files-panel]')
                 .contains('bar').rightclick();
             cy.get('[data-cy=context-menu]')
@@ -231,6 +234,7 @@ describe('Collection panel tests', function() {
                 ['//foo', 'Empty dir name not allowed']
             ]
             illegalNamesFromUI.forEach(([name, errMsg]) => {
+                cy.get('[data-cy=linear-progress]').should('not.exist');
                 cy.get('[data-cy=collection-files-panel]')
                     .contains('bar').rightclick();
                 cy.get('[data-cy=context-menu]')
