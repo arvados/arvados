@@ -5,12 +5,10 @@
 package arvadostest
 
 import (
-	"bytes"
 	"context"
 	"net/url"
 
 	"git.arvados.org/arvados.git/lib/boot"
-	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/lib/controller/rpc"
 	"git.arvados.org/arvados.git/lib/service"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
@@ -39,15 +37,7 @@ func (l logger) Log(args ...interface{}) {
 
 // NewTestCluster loads the provided configuration, and sets up a test cluster
 // ready for being started.
-func NewTestCluster(srcPath string, clusterID, yamlConf, listenHost string, logWriter func(...interface{})) (*TestCluster, error) {
-	loader := config.NewLoader(bytes.NewBufferString(yamlConf), ctxlog.TestLogger(logger{logWriter}))
-	loader.Path = "-"
-	loader.SkipLegacy = true
-	loader.SkipAPICalls = true
-	cfg, err := loader.Load()
-	if err != nil {
-		return nil, err
-	}
+func NewTestCluster(srcPath, clusterID string, cfg *arvados.Config, listenHost string, logWriter func(...interface{})) *TestCluster {
 	return &TestCluster{
 		Super: boot.Supervisor{
 			SourcePath:           srcPath,
@@ -61,7 +51,7 @@ func NewTestCluster(srcPath string, clusterID, yamlConf, listenHost string, logW
 		},
 		Config:    *cfg,
 		ClusterID: clusterID,
-	}, nil
+	}
 }
 
 // Start the test cluster.

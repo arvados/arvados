@@ -19,8 +19,10 @@ import (
 	"strconv"
 	"strings"
 
+	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	check "gopkg.in/check.v1"
 )
 
@@ -121,10 +123,15 @@ func (s *IntegrationSuite) SetUpSuite(c *check.C) {
 `
 		}
 
-		tc, err := arvadostest.NewTestCluster(
-			filepath.Join(cwd, "..", ".."),
-			id, yaml, "127.0.0."+id[3:], c.Log)
+		loader := config.NewLoader(bytes.NewBufferString(yaml), ctxlog.TestLogger(c))
+		loader.Path = "-"
+		loader.SkipLegacy = true
+		loader.SkipAPICalls = true
+		cfg, err := loader.Load()
 		c.Assert(err, check.IsNil)
+		tc := arvadostest.NewTestCluster(
+			filepath.Join(cwd, "..", ".."),
+			id, cfg, "127.0.0."+id[3:], c.Log)
 		s.testClusters[id] = tc
 		s.testClusters[id].Start()
 	}
