@@ -31,6 +31,9 @@ keys = ''
 
 begin
   arv = Arvados.new({ :suppress_ssl_warnings => false })
+  logincluster_arv = Arvados.new({ :api_host => (ENV['LOGINCLUSTER_ARVADOS_API_HOST'] || ENV['ARVADOS_API_HOST']),
+                                   :api_token => (ENV['LOGINCLUSTER_ARVADOS_API_TOKEN'] || ENV['ARVADOS_API_TOKEN']),
+                      :suppress_ssl_warnings => false })
 
   vm_uuid = ENV['ARVADOS_VIRTUAL_MACHINE_UUID']
 
@@ -190,7 +193,7 @@ begin
 
     begin
       if !File.exist?(tokenfile)
-        user_token = arv.api_client_authorization.create(api_client_authorization: {owner_uuid: l[:user_uuid], api_client_id: 0})
+        user_token = logincluster_arv.api_client_authorization.create(api_client_authorization: {owner_uuid: l[:user_uuid], api_client_id: 0})
         f = File.new(tokenfile, 'w')
         f.write("ARVADOS_API_HOST=#{ENV['ARVADOS_API_HOST']}\n")
         f.write("ARVADOS_API_TOKEN=v2/#{user_token[:uuid]}/#{user_token[:api_token]}\n")
