@@ -42,11 +42,11 @@ Clusters:
 
 When @UsePreemptibleInstances@ is enabled, child containers (workflow steps) will automatically be made preemptible.  Note that because preempting the workflow runner would cancel the entire workflow, the workflow runner runs in a reserved (non-preemptible) instance.
 
-No additional configuration is required, "arvados-dispatch-cloud":{{site.baseurl}}/install/crunch2-cloud/install-dispatch-cloud.html will now start preemptable instances where appropriate.
+No additional configuration is required, "arvados-dispatch-cloud":{{site.baseurl}}/install/crunch2-cloud/install-dispatch-cloud.html will now start preemptible instances where appropriate.
 
 h3. Cost Tracking
 
-Preemptable instances prices are declared at instance request time and defined by the maximum price that the user is willing to pay per hour. By default, this price is the same amount as the on-demand version of each instance type, and this setting is the one that @arvados-dispatch-cloud@ uses for now, as it doesn't include any pricing data to the spot instance request.
+Preemptible instances prices are declared at instance request time and defined by the maximum price that the user is willing to pay per hour. By default, this price is the same amount as the on-demand version of each instance type, and this setting is the one that @arvados-dispatch-cloud@ uses for now, as it doesn't include any pricing data to the spot instance request.
 
 For AWS, the real price that a spot instance has at any point in time is discovered at the end of each usage hour, depending on instance demand. For this reason, AWS provides a data feed subscription to get hourly logs, as described on "Amazon's User Guide":https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/spot-data-feeds.html.
 
@@ -70,6 +70,6 @@ For general information, see "Use Spot VMs in Azure":https://docs.microsoft.com/
 
 When starting preemptible instances on Azure, Arvados configures the eviction policy to 'delete', with max price set to '-1'. This has the effect that preemptible VMs will not be evicted for pricing reasons. The price paid for the instance will be the current spot price for the VM type, up to a maximum of the price for a standard, non-spot VM of that type.
 
-Please note that Azure provides no SLA for preemptible instances. Even in this configuration, preemptable instances can still be evicted for capacity reasons. If that happens and a container is aborted, Arvados will try to restart it, subject to the usual retry rules.
+Please note that Azure provides no SLA for preemptible instances. Even in this configuration, preemptible instances can still be evicted for capacity reasons. If that happens and a container is aborted, Arvados will try to restart it, subject to the usual retry rules.
 
 Spot pricing is not available on 'B-series' VMs, those should not be defined in the configuration file with the _Preemptible_ flag set to true. Spot instances have a separate quota pool, make sure you have sufficient quota available.

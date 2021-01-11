@@ -528,13 +528,12 @@ func (az *azureInstanceSet) Create(
 		},
 	}
 
-	var maxPrice float64
 	if instanceType.Preemptible {
 		// Setting maxPrice to -1 is the equivalent of paying spot price, up to the
 		// normal price. This means the node will not be pre-empted for price
 		// reasons. It may still be pre-empted for capacity reasons though. And
 		// Azure offers *no* SLA on spot instances.
-		maxPrice = -1
+		var maxPrice float64 = -1
 		vmParameters.VirtualMachineProperties.Priority = compute.Spot
 		vmParameters.VirtualMachineProperties.EvictionPolicy = compute.Delete
 		vmParameters.VirtualMachineProperties.BillingProfile = &compute.BillingProfile{MaxPrice: &maxPrice}
