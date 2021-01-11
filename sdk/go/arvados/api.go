@@ -5,8 +5,10 @@
 package arvados
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
+	"net"
 )
 
 type APIEndpoint struct {
@@ -41,6 +43,7 @@ var (
 	EndpointContainerDelete               = APIEndpoint{"DELETE", "arvados/v1/containers/{uuid}", ""}
 	EndpointContainerLock                 = APIEndpoint{"POST", "arvados/v1/containers/{uuid}/lock", ""}
 	EndpointContainerUnlock               = APIEndpoint{"POST", "arvados/v1/containers/{uuid}/unlock", ""}
+	EndpointContainerSSH                  = APIEndpoint{"GET", "arvados/v1/connect/{uuid}/ssh", ""} // move to /containers after #17014 fixes routing
 	EndpointUserActivate                  = APIEndpoint{"POST", "arvados/v1/users/{uuid}/activate", ""}
 	EndpointUserCreate                    = APIEndpoint{"POST", "arvados/v1/users", "user"}
 	EndpointUserCurrent                   = APIEndpoint{"GET", "arvados/v1/users/current", ""}
@@ -59,6 +62,16 @@ var (
 	EndpointUserAuthenticate              = APIEndpoint{"POST", "arvados/v1/users/authenticate", ""}
 	EndpointAPIClientAuthorizationCurrent = APIEndpoint{"GET", "arvados/v1/api_client_authorizations/current", ""}
 )
+
+type ContainerSSHOptions struct {
+	UUID       string `json:"uuid"`
+	DetachKeys string `json:"detach_keys"`
+}
+
+type ContainerSSHConnection struct {
+	Conn  net.Conn          `json:"-"`
+	Bufrw *bufio.ReadWriter `json:"-"`
+}
 
 type GetOptions struct {
 	UUID         string   `json:"uuid,omitempty"`
@@ -175,6 +188,7 @@ type API interface {
 	ContainerDelete(ctx context.Context, options DeleteOptions) (Container, error)
 	ContainerLock(ctx context.Context, options GetOptions) (Container, error)
 	ContainerUnlock(ctx context.Context, options GetOptions) (Container, error)
+	ContainerSSH(ctx context.Context, options ContainerSSHOptions) (ContainerSSHConnection, error)
 	SpecimenCreate(ctx context.Context, options CreateOptions) (Specimen, error)
 	SpecimenUpdate(ctx context.Context, options UpdateOptions) (Specimen, error)
 	SpecimenGet(ctx context.Context, options GetOptions) (Specimen, error)

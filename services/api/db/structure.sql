@@ -521,7 +521,8 @@ CREATE TABLE public.containers (
     runtime_user_uuid text,
     runtime_auth_scopes jsonb,
     runtime_token text,
-    lock_count integer DEFAULT 0 NOT NULL
+    lock_count integer DEFAULT 0 NOT NULL,
+    gateway_address character varying
 );
 
 
@@ -3187,6 +3188,7 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20200914203202'),
 ('20201103170213'),
 ('20201105190435'),
-('20201202174753');
+('20201202174753'),
+('20210108033940');
 
 

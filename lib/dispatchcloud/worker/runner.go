@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"net"
 	"syscall"
 	"time"
 
@@ -48,6 +49,8 @@ func newRemoteRunner(uuid string, wkr *worker) *remoteRunner {
 		"ARVADOS_API_HOST":  wkr.wp.arvClient.APIHost,
 		"ARVADOS_API_TOKEN": wkr.wp.arvClient.AuthToken,
 		"InstanceType":      instJSON.String(),
+		"GatewayAddress":    net.JoinHostPort(wkr.instance.Address(), "0"),
+		"GatewayAuthSecret": wkr.wp.gatewayAuthSecret(uuid),
 	}
 	if wkr.wp.arvClient.Insecure {
 		env["ARVADOS_API_HOST_INSECURE"] = "1"

@@ -30,6 +30,7 @@ type Container struct {
 	RuntimeStatus        map[string]interface{} `json:"runtime_status"`
 	StartedAt            *time.Time             `json:"started_at"`  // nil if not yet started
 	FinishedAt           *time.Time             `json:"finished_at"` // nil if not yet finished
+	GatewayAddress       string                 `json:"gateway_address"`
 }
 
 // ContainerRequest is an arvados#container_request resource.

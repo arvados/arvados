@@ -76,6 +76,7 @@ class Container < ArvadosModel
     t.add :runtime_user_uuid
     t.add :runtime_auth_scopes
     t.add :lock_count
+    t.add :gateway_address
   end
 
   # Supported states for a container
@@ -478,7 +479,7 @@ class Container < ArvadosModel
     when Running
       permitted.push :priority, *progress_attrs
       if self.state_changed?
-        permitted.push :started_at
+        permitted.push :started_at, :gateway_address
       end
 
     when Complete

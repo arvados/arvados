@@ -57,6 +57,8 @@ var (
 		"mount":                mount.Command,
 		"deduplication-report": deduplicationreport.Command,
 		"costanalyzer":         costanalyzer.Command,
+		"shell":                shellCommand{},
+		"connect-ssh":          connectSSHCommand{},
 	})
 )
 
