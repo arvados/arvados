@@ -27,6 +27,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 export const WorkbenchLoadingScreen = withStyles(styles)(({ classes }: WithStyles<CssRules>) =>
     <Grid container direction="column" alignItems='center' justify='center' className={classes.root}>
         <img src='/arvados_logo.png' className={classes.img} />
-        <CircularProgress />
+        <CircularProgress data-cy='loading-spinner' />
     </Grid>
 );

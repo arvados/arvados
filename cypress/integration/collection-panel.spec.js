@@ -51,8 +51,11 @@ describe('Collection panel tests', function() {
                         tail_uuid: activeUser.user.uuid
                     })
                     cy.visit(`/collections/${this.testCollection.uuid}`);
-                    // Check that name & uuid are correct.
+
+                    cy.get('[data-cy=linear-progress]').should('exist');
                     cy.get('[data-cy=linear-progress]').should('not.exist');
+
+                    // Check that name & uuid are correct.
                     cy.get('[data-cy=collection-info-panel]')
                         .should('contain', this.testCollection.name)
                         .and('contain', this.testCollection.uuid)
@@ -139,6 +142,10 @@ describe('Collection panel tests', function() {
         .as('testCollection').then(function() {
             cy.loginAs(activeUser);
             cy.visit(`/collections/${this.testCollection.uuid}`);
+
+            cy.get('[data-cy=linear-progress]').should('exist');
+            cy.get('[data-cy=linear-progress]').should('not.exist');
+
             const nameTransitions = [
                 ['bar', '&'],
                 ['&', 'foo'],
@@ -147,7 +154,6 @@ describe('Collection panel tests', function() {
                 ['I ❤️ ⛵️', '...']
             ];
             nameTransitions.forEach(([from, to]) => {
-                cy.get('[data-cy=linear-progress]').should('not.exist');
                 cy.get('[data-cy=collection-files-panel]')
                     .contains(`${from}`).rightclick();
                 cy.get('[data-cy=context-menu]')
@@ -176,8 +182,11 @@ describe('Collection panel tests', function() {
         .as('testCollection').then(function() {
             cy.loginAs(activeUser);
             cy.visit(`/collections/${this.testCollection.uuid}`);
-            // Rename 'bar' to 'subdir/foo'
+
+            cy.get('[data-cy=linear-progress]').should('exist');
             cy.get('[data-cy=linear-progress]').should('not.exist');
+
+            // Rename 'bar' to 'subdir/foo'
             cy.get('[data-cy=collection-files-panel]')
                 .contains('bar').rightclick();
             cy.get('[data-cy=context-menu]')
@@ -214,7 +223,7 @@ describe('Collection panel tests', function() {
         });
     });
 
-    it('tries to rename a file with an illegal names', function() {
+    it('tries to rename a file with illegal names', function() {
         // Creates the collection using the admin token so we can set up
         // a bogus manifest text without block signatures.
         cy.createCollection(adminUser.token, {
@@ -224,6 +233,10 @@ describe('Collection panel tests', function() {
         .as('testCollection').then(function() {
             cy.loginAs(activeUser);
             cy.visit(`/collections/${this.testCollection.uuid}`);
+
+            cy.get('[data-cy=linear-progress]').should('exist');
+            cy.get('[data-cy=linear-progress]').should('not.exist');
+
             const illegalNamesFromUI = [
                 ['.', "Name cannot be '.' or '..'"],
                 ['..', "Name cannot be '.' or '..'"],
@@ -234,7 +247,6 @@ describe('Collection panel tests', function() {
                 ['//foo', 'Empty dir name not allowed']
             ]
             illegalNamesFromUI.forEach(([name, errMsg]) => {
-                cy.get('[data-cy=linear-progress]').should('not.exist');
                 cy.get('[data-cy=collection-files-panel]')
                     .contains('bar').rightclick();
                 cy.get('[data-cy=context-menu]')
@@ -299,6 +311,10 @@ describe('Collection panel tests', function() {
             // Check the old version displays as what it is.
             cy.loginAs(activeUser)
             cy.visit(`/collections/${oldVersionUuid}`);
+
+            cy.get('[data-cy=linear-progress]').should('exist');
+            cy.get('[data-cy=linear-progress]').should('not.exist');
+
             cy.get('[data-cy=collection-info-panel]').should('contain', 'This is an old version');
             cy.get('[data-cy=read-only-icon]').should('exist');
             cy.get('[data-cy=collection-info-panel]').should('contain', colName);
@@ -320,6 +336,10 @@ describe('Collection panel tests', function() {
             // Visit collection, check basic information
             cy.loginAs(activeUser)
             cy.visit(`/collections/${this.collection.uuid}`);
+
+            cy.get('[data-cy=linear-progress]').should('exist');
+            cy.get('[data-cy=linear-progress]').should('not.exist');
+
             cy.get('[data-cy=collection-info-panel]').should('not.contain', 'This is an old version');
             cy.get('[data-cy=read-only-icon]').should('not.exist');
             cy.get('[data-cy=collection-version-number]').should('contain', '1');
