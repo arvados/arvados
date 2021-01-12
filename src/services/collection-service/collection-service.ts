@@ -44,13 +44,23 @@ export class CollectionService extends TrashableResourceService<CollectionResour
     }
 
     async deleteFiles(collectionUuid: string, filePaths: string[]) {
-        if (collectionUuid === "" || filePaths.length === 0) { return; }
-        for (const path of filePaths) {
-            const splittedPath = path.split('/');
-            if (collectionUuid) {
-                await this.webdavClient.delete(`c=${collectionUuid}/${splittedPath[1]}`);
-            } else {
+        const sortedUniquePaths = Array.from(new Set(filePaths))
+            .sort((a, b) => a.length - b.length)
+            .reduce((acc, currentPath) => {
+                const parentPathFound = acc.find((parentPath) => currentPath.indexOf(`${parentPath}/`) > -1);
+
+                if (!parentPathFound) {
+                    return [...acc, currentPath];
+                }
+
+                return acc;
+            }, []);
+
+        for (const path of sortedUniquePaths) {
+            if (path.indexOf(collectionUuid) === -1) {
                 await this.webdavClient.delete(`c=${collectionUuid}${path}`);
+            } else {
+                await this.webdavClient.delete(`c=${path}`);
             }
         }
         await this.update(collectionUuid, { preserveVersion: true });
