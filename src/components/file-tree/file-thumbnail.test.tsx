@@ -3,10 +3,12 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from "react";
-import { shallow, configure } from "enzyme";
+import { configure, mount } from "enzyme";
 import { FileThumbnail } from "./file-thumbnail";
 import { CollectionFileType } from '../../models/collection-file';
 import * as Adapter from 'enzyme-adapter-react-16';
+import { Provider } from "react-redux";
+import { combineReducers, createStore } from "redux";
 
 configure({ adapter: new Adapter() });
 
@@ -14,10 +16,22 @@ jest.mock('is-image', () => ({
     'default': () => true,
 }));
 
+let store;
+
 describe("<FileThumbnail />", () => {
     let file;
 
     beforeEach(() => {
+        const initialAuthState = {
+            config: {
+                keepWebServiceUrl: 'http://example.com/',
+                keepWebInlineServiceUrl: 'http://*.collections.example.com/',
+            }
+        }
+        store = createStore(combineReducers({
+            auth: (state: any = initialAuthState, action: any) => state,
+        }));
+
         file = {
             name: 'test-image',
             type: CollectionFileType.FILE,
@@ -27,7 +41,7 @@ describe("<FileThumbnail />", () => {
     });
 
     it("renders file thumbnail with proper src", () => {
-        const fileThumbnail = shallow(<FileThumbnail file={file} />);
-        expect(fileThumbnail.html()).toBe('<img class="Component-thumbnail-1" alt="test-image" src="http://example.com/c=zzzzz-4zz18-0123456789abcde/test-image.jpg?api_token=v2/zzzzz-gj3su-0123456789abcde/xxxxxxtokenxxxxx"/>');
+        const fileThumbnail = mount(<Provider store={store}><FileThumbnail file={file} /></Provider>);
+        expect(fileThumbnail.html()).toBe('<img class="Component-thumbnail-1" alt="test-image" src="http://zzzzz-4zz18-0123456789abcde.collections.example.com/test-image.jpg?api_token=v2/zzzzz-gj3su-0123456789abcde/xxxxxxtokenxxxxx">');
     });
 });
