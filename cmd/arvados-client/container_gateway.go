@@ -29,7 +29,7 @@ func (shellCommand) RunCommand(prog string, args []string, stdin io.Reader, stdo
 	f.Usage = func() {
 		fmt.Print(stderr, prog+`: open an interactive shell on a running container.
 
-Usage: `+prog+` [options] container-uuid [ssh-options] [remote-command [args...]]
+Usage: `+prog+` [options] [username@]container-uuid [ssh-options] [remote-command [args...]]
 
 Options:
 `)
@@ -47,7 +47,10 @@ Options:
 		f.Usage()
 		return 2
 	}
-	targetUUID := f.Args()[0]
+	target := f.Args()[0]
+	if !strings.Contains(target, "@") {
+		target = "root@" + target
+	}
 	sshargs := f.Args()[1:]
 
 	selfbin, err := os.Readlink("/proc/self/exe")
@@ -56,9 +59,9 @@ Options:
 		return 2
 	}
 	sshargs = append([]string{
-		"-o", "ProxyCommand " + selfbin + " connect-ssh -detach-keys='" + strings.Replace(*detachKeys, "'", "'\\''", -1) + "' " + targetUUID,
+		"-o", "ProxyCommand " + selfbin + " connect-ssh -detach-keys=" + shellescape(*detachKeys) + " " + shellescape(target),
 		"-o", "StrictHostKeyChecking no",
-		"root@" + targetUUID},
+		target},
 		sshargs...)
 	cmd := exec.Command("ssh", sshargs...)
 	cmd.Stdin = stdin
@@ -91,7 +94,7 @@ func (connectSSHCommand) RunCommand(prog string, args []string, stdin io.Reader,
 	f.Usage = func() {
 		fmt.Fprint(stderr, prog+`: connect to the gateway service for a running container.
 
-Usage: `+prog+` [options] container-uuid
+Usage: `+prog+` [options] [username@]container-uuid
 
 Options:
 `)
@@ -107,6 +110,11 @@ Options:
 		return 2
 	}
 	targetUUID := f.Args()[0]
+	loginUsername := "root"
+	if i := strings.Index(targetUUID, "@"); i >= 0 {
+		loginUsername = targetUUID[:i]
+		targetUUID = targetUUID[i+1:]
+	}
 	insecure := os.Getenv("ARVADOS_API_HOST_INSECURE")
 	rpcconn := rpc.NewConn("",
 		&url.URL{
@@ -130,8 +138,9 @@ Options:
 	// 	targetUUID = cr.ContainerUUID
 	// }
 	sshconn, err := rpcconn.ContainerSSH(context.TODO(), arvados.ContainerSSHOptions{
-		UUID:       targetUUID,
-		DetachKeys: *detachKeys,
+		UUID:          targetUUID,
+		DetachKeys:    *detachKeys,
+		LoginUsername: loginUsername,
 	})
 	if err != nil {
 		fmt.Fprintln(stderr, err)
@@ -156,4 +165,8 @@ Options:
 	}()
 	<-ctx.Done()
 	return 0
+}
+
+func shellescape(s string) string {
+	return "'" + strings.Replace(s, "'", "'\\''", -1) + "'"
 }

@@ -9,6 +9,8 @@ import (
 	"context"
 	"encoding/json"
 	"net"
+
+	"github.com/sirupsen/logrus"
 )
 
 type APIEndpoint struct {
@@ -64,13 +66,15 @@ var (
 )
 
 type ContainerSSHOptions struct {
-	UUID       string `json:"uuid"`
-	DetachKeys string `json:"detach_keys"`
+	UUID          string `json:"uuid"`
+	DetachKeys    string `json:"detach_keys"`
+	LoginUsername string `json:"login_username"`
 }
 
 type ContainerSSHConnection struct {
-	Conn  net.Conn          `json:"-"`
-	Bufrw *bufio.ReadWriter `json:"-"`
+	Conn   net.Conn           `json:"-"`
+	Bufrw  *bufio.ReadWriter  `json:"-"`
+	Logger logrus.FieldLogger `json:"-"`
 }
 
 type GetOptions struct {

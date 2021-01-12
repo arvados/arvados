@@ -8,8 +8,10 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"sync"
 
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"github.com/sirupsen/logrus"
 )
 
 func (sshconn ContainerSSHConnection) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -28,26 +30,45 @@ func (sshconn ContainerSSHConnection) ServeHTTP(w http.ResponseWriter, req *http
 	}
 	defer conn.Close()
 
+	var bytesIn, bytesOut int64
+	var wg sync.WaitGroup
 	ctx, cancel := context.WithCancel(context.Background())
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		defer cancel()
-		_, err := io.CopyN(conn, sshconn.Bufrw, int64(sshconn.Bufrw.Reader.Buffered()))
+		n, err := io.CopyN(conn, sshconn.Bufrw, int64(sshconn.Bufrw.Reader.Buffered()))
+		bytesOut += n
 		if err == nil {
-			_, err = io.Copy(conn, sshconn.Conn)
+			n, err = io.Copy(conn, sshconn.Conn)
+			bytesOut += n
 		}
 		if err != nil {
 			ctxlog.FromContext(req.Context()).WithError(err).Error("error copying downstream")
 		}
 	}()
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		defer cancel()
-		_, err := io.CopyN(sshconn.Conn, bufrw, int64(bufrw.Reader.Buffered()))
+		n, err := io.CopyN(sshconn.Conn, bufrw, int64(bufrw.Reader.Buffered()))
+		bytesIn += n
 		if err == nil {
-			_, err = io.Copy(sshconn.Conn, conn)
+			n, err = io.Copy(sshconn.Conn, conn)
+			bytesIn += n
 		}
 		if err != nil {
 			ctxlog.FromContext(req.Context()).WithError(err).Error("error copying upstream")
 		}
 	}()
 	<-ctx.Done()
+	if sshconn.Logger != nil {
+		go func() {
+			wg.Wait()
+			sshconn.Logger.WithFields(logrus.Fields{
+				"bytesIn":  bytesIn,
+				"bytesOut": bytesOut,
+			}).Info("closed connection")
+		}()
+	}
 }

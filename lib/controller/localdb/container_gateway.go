@@ -17,6 +17,7 @@ import (
 	"strings"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
 )
 
@@ -60,6 +61,7 @@ func (conn *Conn) ContainerSSH(ctx context.Context, opts arvados.ContainerSSHOpt
 	bufw.WriteString("X-Arvados-Target-Uuid: " + opts.UUID + "\r\n")
 	bufw.WriteString("X-Arvados-Authorization: " + auth + "\r\n")
 	bufw.WriteString("X-Arvados-Detach-Keys: " + opts.DetachKeys + "\r\n")
+	bufw.WriteString("X-Arvados-Login-Username: " + opts.LoginUsername + "\r\n")
 	bufw.WriteString("\r\n")
 	bufw.Flush()
 	resp, err := http.ReadResponse(bufr, &http.Request{Method: "GET"})
@@ -76,5 +78,6 @@ func (conn *Conn) ContainerSSH(ctx context.Context, opts arvados.ContainerSSHOpt
 	}
 	sshconn.Conn = netconn
 	sshconn.Bufrw = &bufio.ReadWriter{Reader: bufr, Writer: bufw}
+	sshconn.Logger = ctxlog.FromContext(ctx)
 	return
 }

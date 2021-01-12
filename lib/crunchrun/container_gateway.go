@@ -29,21 +29,21 @@ func (runner *ContainerRunner) startGatewayServer() error {
 	runner.gatewaySSHConfig = &ssh.ServerConfig{
 		NoClientAuth: true,
 		PasswordCallback: func(c ssh.ConnMetadata, pass []byte) (*ssh.Permissions, error) {
-			if c.User() == "root" {
+			if c.User() == "_" {
 				return nil, nil
 			} else {
-				return nil, fmt.Errorf("unimplemented: cannot log in as non-root user %q", c.User())
+				return nil, fmt.Errorf("cannot specify user %q via ssh client", c.User())
 			}
 		},
 		PublicKeyCallback: func(c ssh.ConnMetadata, pubKey ssh.PublicKey) (*ssh.Permissions, error) {
-			if c.User() == "root" {
+			if c.User() == "_" {
 				return &ssh.Permissions{
 					Extensions: map[string]string{
 						"pubkey-fp": ssh.FingerprintSHA256(pubKey),
 					},
 				}, nil
 			} else {
-				return nil, fmt.Errorf("unimplemented: cannot log in as non-root user %q", c.User())
+				return nil, fmt.Errorf("cannot specify user %q via ssh client", c.User())
 			}
 		},
 	}
@@ -129,6 +129,10 @@ func (runner *ContainerRunner) handleSSH(w http.ResponseWriter, req *http.Reques
 		return
 	}
 	detachKeys := req.Header.Get("X-Arvados-Detach-Keys")
+	username := req.Header.Get("X-Arvados-Login-Username")
+	if username == "" {
+		username = "root"
+	}
 	hj, ok := w.(http.Hijacker)
 	if !ok {
 		http.Error(w, "ResponseWriter does not support connection upgrade", http.StatusInternalServerError)
@@ -196,7 +200,7 @@ func (runner *ContainerRunner) handleSSH(w http.ResponseWriter, req *http.Reques
 						execargs = []string{"/bin/bash", "-login"}
 					}
 					go func() {
-						cmd := exec.CommandContext(ctx, "docker", "exec", "-i", "--detach-keys="+detachKeys)
+						cmd := exec.CommandContext(ctx, "docker", "exec", "-i", "--detach-keys="+detachKeys, "--user="+username)
 						cmd.Stdin = ch
 						cmd.Stdout = ch
 						cmd.Stderr = ch.Stderr()

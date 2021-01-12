@@ -305,7 +305,10 @@ func (conn *Conn) ContainerSSH(ctx context.Context, options arvados.ContainerSSH
 		netconn.Close()
 		return
 	}
-	u.RawQuery = url.Values{"detach_keys": {options.DetachKeys}}.Encode()
+	u.RawQuery = url.Values{
+		"detach_keys":    {options.DetachKeys},
+		"login_username": {options.LoginUsername},
+	}.Encode()
 	tokens, err := conn.tokenProvider(ctx)
 	if err != nil {
 		netconn.Close()
