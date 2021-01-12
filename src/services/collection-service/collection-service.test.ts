@@ -23,6 +23,7 @@ describe('collection-service', () => {
         authService = {} as AuthService;
         actions = {} as ApiActions;
         collectionService = new CollectionService(serverApi, webdavClient, authService, actions);
+        collectionService.update = jest.fn();
     });
 
     describe('deleteFiles', () => {
