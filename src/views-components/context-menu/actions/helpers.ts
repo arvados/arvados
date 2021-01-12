@@ -17,3 +17,27 @@ export const getClipboardUrl = (href: string, shouldSanitizeToken = true): strin
 
     return shouldSanitizeToken ? `${origin}?redirectTo=${url}` : `${origin}${url}`;
 };
+
+export const getInlineFileUrl = (url: string, keepWebSvcUrl: string, keepWebInlineSvcUrl: string): string => {
+    const collUuidMatch = url.match(/\/c=([a-z0-9-]+)\//);
+    if (collUuidMatch === null) { return ''; }
+    const collUuid = collUuidMatch[1];
+    let inlineUrl = keepWebInlineSvcUrl !== ""
+        ? url.replace(keepWebSvcUrl, keepWebInlineSvcUrl)
+        : url;
+    let uuidOnHostname = false;
+    // Inline URLs as 'https://*.collections.example.com' or
+    // 'https://*--collections.example.com' should get the uuid on their hostnames
+    // See: https://doc.arvados.org/v2.1/api/keep-web-urls.html
+    if (inlineUrl.indexOf('*.') > -1) {
+        inlineUrl = inlineUrl.replace('*.', `${collUuid}.`);
+        uuidOnHostname = true;
+    } else if (inlineUrl.indexOf('*--') > -1) {
+        inlineUrl = inlineUrl.replace('*--', `${collUuid}--`);
+        uuidOnHostname = true;
+    }
+    if (uuidOnHostname) {
+        inlineUrl = inlineUrl.replace(`/c=${collUuid}`, '');
+    }
+    return inlineUrl;
+};

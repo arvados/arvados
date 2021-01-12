@@ -7,7 +7,9 @@ import isImage from 'is-image';
 import { withStyles, WithStyles } from '@material-ui/core';
 import { FileTreeData } from '~/components/file-tree/file-tree-data';
 import { CollectionFileType } from '~/models/collection-file';
-import { sanitizeToken } from "~/views-components/context-menu/actions/helpers";
+import { getInlineFileUrl, sanitizeToken } from "~/views-components/context-menu/actions/helpers";
+import { connect } from "react-redux";
+import { RootState } from "~/store/store";
 
 export interface FileThumbnailProps {
     file: FileTreeData;
@@ -28,10 +30,20 @@ const imageFileThumbnailStyle = withStyles<ImageFileThumbnailCssRules>(theme => 
     }
 }));
 
-const ImageFileThumbnail = imageFileThumbnailStyle(
-    ({ classes, file }: WithStyles<ImageFileThumbnailCssRules> & FileThumbnailProps) =>
+interface ImageFileThumbnailProps {
+    keepWebServiceUrl: string;
+    keepWebInlineServiceUrl: string;
+}
+
+const mapStateToProps = ({ auth }: RootState): ImageFileThumbnailProps => ({
+    keepWebServiceUrl: auth.config.keepWebServiceUrl,
+    keepWebInlineServiceUrl: auth.config.keepWebInlineServiceUrl,
+});
+
+const ImageFileThumbnail = connect(mapStateToProps)(imageFileThumbnailStyle(
+    ({ classes, file, keepWebServiceUrl, keepWebInlineServiceUrl }: WithStyles<ImageFileThumbnailCssRules> & FileThumbnailProps & ImageFileThumbnailProps) =>
         <img
             className={classes.thumbnail}
             alt={file.name}
-            src={sanitizeToken(file.url)} />
-);
+            src={sanitizeToken(getInlineFileUrl(file.url, keepWebServiceUrl, keepWebInlineServiceUrl))} />
+));
