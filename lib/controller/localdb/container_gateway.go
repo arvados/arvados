@@ -18,6 +18,7 @@ import (
 	"strings"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
 )
@@ -29,6 +30,26 @@ import (
 // If the returned error is nil, the caller is responsible for closing
 // sshconn.Conn.
 func (conn *Conn) ContainerSSH(ctx context.Context, opts arvados.ContainerSSHOptions) (sshconn arvados.ContainerSSHConnection, err error) {
+	user, err := conn.railsProxy.UserGetCurrent(ctx, arvados.GetOptions{})
+	if err != nil {
+		return
+	}
+	ctxRoot := auth.NewContext(ctx, &auth.Credentials{Tokens: []string{conn.cluster.SystemRootToken}})
+	crs, err := conn.railsProxy.ContainerRequestList(ctxRoot, arvados.ListOptions{Limit: -1, Filters: []arvados.Filter{{"container_uuid", "=", opts.UUID}}})
+	if err != nil {
+		return
+	}
+	for _, cr := range crs.Items {
+		if cr.ModifiedByUserUUID != user.UUID {
+			err = httpserver.ErrorWithStatus(errors.New("permission denied: container is associated with requests submitted by other users"), http.StatusForbidden)
+			return
+		}
+	}
+	if crs.ItemsAvailable != len(crs.Items) {
+		err = httpserver.ErrorWithStatus(errors.New("incomplete response while checking permission"), http.StatusInternalServerError)
+		return
+	}
+
 	ctr, err := conn.railsProxy.ContainerGet(ctx, arvados.GetOptions{UUID: opts.UUID})
 	if err != nil {
 		return
