@@ -293,7 +293,12 @@ func (conn *Conn) ContainerUnlock(ctx context.Context, options arvados.GetOption
 // a running container. If the returned error is nil, the caller is
 // responsible for closing sshconn.Conn.
 func (conn *Conn) ContainerSSH(ctx context.Context, options arvados.ContainerSSHOptions) (sshconn arvados.ContainerSSHConnection, err error) {
-	netconn, err := tls.Dial("tcp", net.JoinHostPort(conn.baseURL.Host, "https"), nil)
+	addr := conn.baseURL.Host
+	if strings.Index(addr, ":") < 1 || (strings.Contains(addr, "::") && addr[0] != '[') {
+		// hostname or ::1 or 1::1
+		addr = net.JoinHostPort(addr, "https")
+	}
+	netconn, err := tls.Dial("tcp", addr, conn.httpClient.Transport.(*http.Transport).TLSClientConfig)
 	if err != nil {
 		return
 	}
