@@ -313,6 +313,7 @@ func (conn *Conn) ContainerSSH(ctx context.Context, options arvados.ContainerSSH
 
 	u, err := conn.baseURL.Parse("/" + strings.Replace(arvados.EndpointContainerSSH.Path, "{uuid}", options.UUID, -1))
 	if err != nil {
+		err = fmt.Errorf("tls.Dial: %w", err)
 		return
 	}
 	u.RawQuery = url.Values{
@@ -334,12 +335,20 @@ func (conn *Conn) ContainerSSH(ctx context.Context, options arvados.ContainerSSH
 	bufw.Flush()
 	resp, err := http.ReadResponse(bufr, &http.Request{Method: "GET"})
 	if err != nil {
+		err = fmt.Errorf("http.ReadResponse: %w", err)
 		return
 	}
 	if resp.StatusCode != http.StatusSwitchingProtocols {
 		defer resp.Body.Close()
 		body, _ := ioutil.ReadAll(resp.Body)
-		err = fmt.Errorf("server did not provide a tunnel: %d %q", resp.StatusCode, body)
+		var message string
+		var errDoc httpserver.ErrorResponse
+		if err := json.Unmarshal(body, &errDoc); err != nil {
+			message = strings.Join(errDoc.Errors, "; ")
+		} else {
+			message = fmt.Sprintf("%q", body)
+		}
+		err = fmt.Errorf("server did not provide a tunnel: %q (HTTP %d)", message, resp.StatusCode)
 		return
 	}
 	if strings.ToLower(resp.Header.Get("Upgrade")) != "ssh" ||
