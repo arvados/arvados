@@ -996,7 +996,7 @@ func (wp *Pool) waitUntilLoaded() {
 
 func (wp *Pool) gatewayAuthSecret(uuid string) string {
 	h := hmac.New(sha256.New, []byte(wp.systemRootToken))
-	fmt.Fprint(h, "%s", uuid)
+	fmt.Fprint(h, uuid)
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
 

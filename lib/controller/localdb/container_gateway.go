@@ -63,7 +63,7 @@ func (conn *Conn) ContainerSSH(ctx context.Context, opts arvados.ContainerSSHOpt
 				return errors.New("no certificate received, cannot compute authorization header")
 			}
 			h := hmac.New(sha256.New, []byte(conn.cluster.SystemRootToken))
-			fmt.Fprint(h, "%s", opts.UUID)
+			fmt.Fprint(h, opts.UUID)
 			authKey := fmt.Sprintf("%x", h.Sum(nil))
 			h = hmac.New(sha256.New, []byte(authKey))
 			h.Write(rawCerts[0])
