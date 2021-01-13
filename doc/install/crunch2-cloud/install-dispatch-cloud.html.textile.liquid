@@ -74,10 +74,12 @@ Add or update the following portions of your cluster configuration file, @config
 
 h4. Minimal configuration example for Amazon EC2
 
+The <span class="userinput">ImageID</span> value is the compute node image that was built in "the previous section":install-compute-node.html#aws.
+
 <notextile>
 <pre><code>    Containers:
       CloudVMs:
-        ImageID: ami-01234567890abcdef
+        ImageID: <span class="userinput">ami-01234567890abcdef</span>
         Driver: ec2
         DriverParameters:
           AccessKeyID: XXXXXXXXXXXXXXXXXXXX
@@ -95,10 +97,12 @@ h4. Minimal configuration example for Azure
 
 Using managed disks:
 
+The <span class="userinput">ImageID</span> value is the compute node image that was built in "the previous section":install-compute-node.html#azure.
+
 <notextile>
 <pre><code>    Containers:
       CloudVMs:
-        ImageID: "zzzzz-compute-v1597349873"
+        ImageID: <span class="userinput">"zzzzz-compute-v1597349873"</span>
         Driver: azure
         # (azure) managed disks: set MaxConcurrentInstanceCreateOps to 20 to avoid timeouts, cf
         # https://docs.microsoft.com/en-us/azure/virtual-machines/linux/capture-image
@@ -134,7 +138,7 @@ Using an image from a shared image gallery:
 <notextile>
 <pre><code>    Containers:
       CloudVMs:
-        ImageID: "shared_image_gallery_image_definition_name"
+        ImageID: <span class="userinput">"shared_image_gallery_image_definition_name"</span>
         Driver: azure
         DriverParameters:
           # Credentials.
@@ -167,10 +171,12 @@ Using an image from a shared image gallery:
 
 Using unmanaged disks (deprecated):
 
+The <span class="userinput">ImageID</span> value is the compute node image that was built in "the previous section":install-compute-node.html#azure.
+
 <notextile>
 <pre><code>    Containers:
       CloudVMs:
-        ImageID: "https://zzzzzzzz.blob.core.windows.net/system/Microsoft.Compute/Images/images/zzzzz-compute-osDisk.55555555-5555-5555-5555-555555555555.vhd"
+        ImageID: <span class="userinput">"https://zzzzzzzz.blob.core.windows.net/system/Microsoft.Compute/Images/images/zzzzz-compute-osDisk.55555555-5555-5555-5555-555555555555.vhd"</span>
         Driver: azure
         DriverParameters:
           # Credentials.
