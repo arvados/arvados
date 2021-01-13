@@ -33,7 +33,6 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	"git.arvados.org/arvados.git/sdk/go/manifest"
-	"golang.org/x/crypto/ssh"
 	"golang.org/x/net/context"
 
 	dockertypes "github.com/docker/docker/api/types"
@@ -180,9 +179,7 @@ type ContainerRunner struct {
 
 	containerWatchdogInterval time.Duration
 
-	gatewayAddress    string
-	gatewaySSHConfig  *ssh.ServerConfig
-	gatewayAuthSecret string
+	gateway Gateway
 }
 
 // setupSignals sets up signal handling to gracefully terminate the underlying
@@ -1474,7 +1471,7 @@ func (runner *ContainerRunner) UpdateContainerRunning() error {
 		return ErrCancelled
 	}
 	return runner.DispatcherArvClient.Update("containers", runner.Container.UUID,
-		arvadosclient.Dict{"container": arvadosclient.Dict{"state": "Running", "gateway_address": runner.gatewayAddress}}, nil)
+		arvadosclient.Dict{"container": arvadosclient.Dict{"state": "Running", "gateway_address": runner.gateway.Address}}, nil)
 }
 
 // ContainerToken returns the api_token the container (and any
@@ -1873,9 +1870,15 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 		return 1
 	}
 
-	cr.gatewayAuthSecret = os.Getenv("GatewayAuthSecret")
+	cr.gateway = Gateway{
+		Address:           os.Getenv("GatewayAddress"),
+		AuthSecret:        os.Getenv("GatewayAuthSecret"),
+		ContainerUUID:     containerID,
+		DockerContainerID: &cr.ContainerID,
+		Log:               cr.CrunchLog,
+	}
 	os.Unsetenv("GatewayAuthSecret")
-	err = cr.startGatewayServer()
+	err = cr.gateway.Start()
 	if err != nil {
 		log.Printf("error starting gateway server: %s", err)
 		return 1

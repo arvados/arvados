@@ -5,8 +5,11 @@
 package crunchrun
 
 import (
+	"crypto/hmac"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/sha256"
+	"crypto/tls"
 	"fmt"
 	"io"
 	"net"
@@ -16,17 +19,32 @@ import (
 	"sync"
 	"syscall"
 
+	"git.arvados.org/arvados.git/lib/selfsigned"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
 	"github.com/creack/pty"
 	"github.com/google/shlex"
 	"golang.org/x/crypto/ssh"
 )
 
+type Gateway struct {
+	DockerContainerID *string
+	ContainerUUID     string
+	Address           string // listen host:port; if port=0, Start() will change it to the selected port
+	AuthSecret        string
+	Log               interface {
+		Printf(fmt string, args ...interface{})
+	}
+
+	sshConfig   ssh.ServerConfig
+	requestAuth string
+	respondAuth string
+}
+
 // startGatewayServer starts an http server that allows authenticated
 // clients to open an interactive "docker exec" session and (in
 // future) connect to tcp ports inside the docker container.
-func (runner *ContainerRunner) startGatewayServer() error {
-	runner.gatewaySSHConfig = &ssh.ServerConfig{
+func (gw *Gateway) Start() error {
+	gw.sshConfig = ssh.ServerConfig{
 		NoClientAuth: true,
 		PasswordCallback: func(c ssh.ConnMetadata, pass []byte) (*ssh.Permissions, error) {
 			if c.User() == "_" {
@@ -47,7 +65,7 @@ func (runner *ContainerRunner) startGatewayServer() error {
 			}
 		},
 	}
-	pvt, err := rsa.GenerateKey(rand.Reader, 4096)
+	pvt, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		return err
 	}
@@ -59,20 +77,34 @@ func (runner *ContainerRunner) startGatewayServer() error {
 	if err != nil {
 		return err
 	}
-	runner.gatewaySSHConfig.AddHostKey(signer)
+	gw.sshConfig.AddHostKey(signer)
 
-	// GatewayAddress (provided by arvados-dispatch-cloud) is
+	// Address (typically provided by arvados-dispatch-cloud) is
 	// HOST:PORT where HOST is our IP address or hostname as seen
 	// from arvados-controller, and PORT is either the desired
-	// port where we should run our gateway server, or "0" if
-	// we should choose an available port.
-	host, port, err := net.SplitHostPort(os.Getenv("GatewayAddress"))
+	// port where we should run our gateway server, or "0" if we
+	// should choose an available port.
+	host, port, err := net.SplitHostPort(gw.Address)
 	if err != nil {
 		return err
 	}
+	cert, err := selfsigned.CertGenerator{}.Generate()
+	if err != nil {
+		return err
+	}
+	h := hmac.New(sha256.New, []byte(gw.AuthSecret))
+	h.Write(cert.Certificate[0])
+	gw.requestAuth = fmt.Sprintf("%x", h.Sum(nil))
+	h.Reset()
+	h.Write([]byte(gw.requestAuth))
+	gw.respondAuth = fmt.Sprintf("%x", h.Sum(nil))
+
 	srv := &httpserver.Server{
 		Server: http.Server{
-			Handler: http.HandlerFunc(runner.handleSSH),
+			Handler: http.HandlerFunc(gw.handleSSH),
+			TLSConfig: &tls.Config{
+				Certificates: []tls.Certificate{cert},
+			},
 		},
 		Addr: ":" + port,
 	}
@@ -90,7 +122,7 @@ func (runner *ContainerRunner) startGatewayServer() error {
 	// gateway_address to "HOST:PORT" where HOST is our
 	// external hostname/IP as provided by arvados-dispatch-cloud,
 	// and PORT is the port number we ended up listening on.
-	runner.gatewayAddress = net.JoinHostPort(host, port)
+	gw.Address = net.JoinHostPort(host, port)
 	return nil
 }
 
@@ -104,15 +136,15 @@ func (runner *ContainerRunner) startGatewayServer() error {
 // Connection: upgrade
 // Upgrade: ssh
 // X-Arvados-Target-Uuid: uuid of container
-// X-Arvados-Authorization: must match GatewayAuthSecret provided by
-// a-d-c (this prevents other containers and shell nodes from
-// connecting directly)
+// X-Arvados-Authorization: must match
+// hmac(AuthSecret,certfingerprint) (this prevents other containers
+// and shell nodes from connecting directly)
 //
 // Optional header:
 //
 // X-Arvados-Detach-Keys: argument to "docker attach --detach-keys",
 // e.g., "ctrl-p,ctrl-q"
-func (runner *ContainerRunner) handleSSH(w http.ResponseWriter, req *http.Request) {
+func (gw *Gateway) handleSSH(w http.ResponseWriter, req *http.Request) {
 	// In future we'll handle browser traffic too, but for now the
 	// only traffic we expect is an SSH tunnel from
 	// (*lib/controller/localdb.Conn)ContainerSSH()
@@ -120,11 +152,11 @@ func (runner *ContainerRunner) handleSSH(w http.ResponseWriter, req *http.Reques
 		http.Error(w, "path not found", http.StatusNotFound)
 		return
 	}
-	if want := req.Header.Get("X-Arvados-Target-Uuid"); want != runner.Container.UUID {
-		http.Error(w, fmt.Sprintf("misdirected request: meant for %q but received by crunch-run %q", want, runner.Container.UUID), http.StatusBadGateway)
+	if want := req.Header.Get("X-Arvados-Target-Uuid"); want != gw.ContainerUUID {
+		http.Error(w, fmt.Sprintf("misdirected request: meant for %q but received by crunch-run %q", want, gw.ContainerUUID), http.StatusBadGateway)
 		return
 	}
-	if req.Header.Get("X-Arvados-Authorization") != runner.gatewayAuthSecret {
+	if req.Header.Get("X-Arvados-Authorization") != gw.requestAuth {
 		http.Error(w, "bad X-Arvados-Authorization header", http.StatusUnauthorized)
 		return
 	}
@@ -146,15 +178,16 @@ func (runner *ContainerRunner) handleSSH(w http.ResponseWriter, req *http.Reques
 	defer netconn.Close()
 	w.Header().Set("Connection", "upgrade")
 	w.Header().Set("Upgrade", "ssh")
+	w.Header().Set("X-Arvados-Authorization-Response", gw.respondAuth)
 	netconn.Write([]byte("HTTP/1.1 101 Switching Protocols\r\n"))
 	w.Header().Write(netconn)
 	netconn.Write([]byte("\r\n"))
 
 	ctx := req.Context()
 
-	conn, newchans, reqs, err := ssh.NewServerConn(netconn, runner.gatewaySSHConfig)
+	conn, newchans, reqs, err := ssh.NewServerConn(netconn, &gw.sshConfig)
 	if err != nil {
-		runner.CrunchLog.Printf("ssh.NewServerConn: %s", err)
+		gw.Log.Printf("ssh.NewServerConn: %s", err)
 		return
 	}
 	defer conn.Close()
@@ -166,7 +199,7 @@ func (runner *ContainerRunner) handleSSH(w http.ResponseWriter, req *http.Reques
 		}
 		ch, reqs, err := newch.Accept()
 		if err != nil {
-			runner.CrunchLog.Printf("accept channel: %s", err)
+			gw.Log.Printf("accept channel: %s", err)
 			return
 		}
 		var pty0, tty0 *os.File
@@ -217,7 +250,7 @@ func (runner *ContainerRunner) handleSSH(w http.ResponseWriter, req *http.Reques
 							// Send our own debug messages to tty as well.
 							logw = tty0
 						}
-						cmd.Args = append(cmd.Args, runner.ContainerID)
+						cmd.Args = append(cmd.Args, *gw.DockerContainerID)
 						cmd.Args = append(cmd.Args, execargs...)
 						cmd.SysProcAttr = &syscall.SysProcAttr{
 							Setctty: tty0 != nil,
