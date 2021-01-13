@@ -361,6 +361,13 @@ func (conn *Conn) ContainerSSH(ctx context.Context, options arvados.ContainerSSH
 	return
 }
 
+func (conn *Conn) ContainerRequestList(ctx context.Context, options arvados.ListOptions) (arvados.ContainerRequestList, error) {
+	ep := arvados.EndpointContainerRequestList
+	var resp arvados.ContainerRequestList
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
 func (conn *Conn) SpecimenCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Specimen, error) {
 	ep := arvados.EndpointSpecimenCreate
 	var resp arvados.Specimen

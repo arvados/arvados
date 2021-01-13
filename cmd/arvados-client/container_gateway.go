@@ -125,18 +125,24 @@ Options:
 		func(context.Context) ([]string, error) {
 			return []string{os.Getenv("ARVADOS_API_TOKEN")}, nil
 		})
-	// if strings.Contains(targetUUID, "-xvhdp-") {
-	// 	cr, err := rpcconn.ContainerRequestGet(context.TODO(), arvados.GetOptions{UUID: targetUUID})
-	// 	if err != nil {
-	// 		fmt.Fprintln(stderr, err)
-	// 		return 1
-	// 	}
-	// 	if cr.ContainerUUID == "" {
-	// 		fmt.Fprintf(stderr, "no container assigned, container request state is %s\n", strings.ToLower(cr.State))
-	// 		return 1
-	// 	}
-	// 	targetUUID = cr.ContainerUUID
-	// }
+	if strings.Contains(targetUUID, "-xvhdp-") {
+		crs, err := rpcconn.ContainerRequestList(context.TODO(), arvados.ListOptions{Limit: -1, Filters: []arvados.Filter{{"uuid", "=", targetUUID}}})
+		if err != nil {
+			fmt.Fprintln(stderr, err)
+			return 1
+		}
+		if len(crs.Items) < 1 {
+			fmt.Fprintf(stderr, "container request %q not found\n", targetUUID)
+			return 1
+		}
+		cr := crs.Items[0]
+		if cr.ContainerUUID == "" {
+			fmt.Fprintf(stderr, "no container assigned, container request state is %s\n", strings.ToLower(string(cr.State)))
+			return 1
+		}
+		targetUUID = cr.ContainerUUID
+		fmt.Fprintln(stderr, "connecting to container", targetUUID)
+	}
 	sshconn, err := rpcconn.ContainerSSH(context.TODO(), arvados.ContainerSSHOptions{
 		UUID:          targetUUID,
 		DetachKeys:    *detachKeys,
