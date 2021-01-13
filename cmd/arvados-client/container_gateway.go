@@ -143,7 +143,7 @@ Options:
 		LoginUsername: loginUsername,
 	})
 	if err != nil {
-		fmt.Fprintln(stderr, err)
+		fmt.Fprintln(stderr, "error setting up tunnel:", err)
 		return 1
 	}
 	defer sshconn.Conn.Close()

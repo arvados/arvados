@@ -337,13 +337,13 @@ func (conn *Conn) ContainerSSH(ctx context.Context, options arvados.ContainerSSH
 	if resp.StatusCode != http.StatusSwitchingProtocols {
 		defer resp.Body.Close()
 		body, _ := ioutil.ReadAll(resp.Body)
-		err = fmt.Errorf("tunnel connection failed: %d %q", resp.StatusCode, body)
+		err = fmt.Errorf("server did not provide a tunnel: %d %q", resp.StatusCode, body)
 		netconn.Close()
 		return
 	}
 	if strings.ToLower(resp.Header.Get("Upgrade")) != "ssh" ||
 		strings.ToLower(resp.Header.Get("Connection")) != "upgrade" {
-		err = fmt.Errorf("bad response: Upgrade %q Connection %q", resp.Header.Get("Upgrade"), resp.Header.Get("Connection"))
+		err = fmt.Errorf("bad response from server: Upgrade %q Connection %q", resp.Header.Get("Upgrade"), resp.Header.Get("Connection"))
 		netconn.Close()
 		return
 	}
