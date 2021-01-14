@@ -186,7 +186,7 @@ export const runProcess = async (dispatch: Dispatch<any>, getState: () => RootSt
     }
 };
 
-export const DEFAULT_ADVANCED_FORM_VALUES: Partial<RunProcessAdvancedFormData> = {
+const DEFAULT_ADVANCED_FORM_VALUES: Partial<RunProcessAdvancedFormData> = {
     [VCPUS_FIELD]: 1,
     [RAM_FIELD]: 1073741824,
     [KEEP_CACHE_RAM_FIELD]: 268435456,

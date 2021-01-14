@@ -9,7 +9,7 @@ import { bindDataExplorerActions } from '~/store/data-explorer/data-explorer-act
 import { propertiesActions } from '~/store/properties/properties-actions';
 import { getProperty } from '~/store/properties/properties';
 import { navigateToRunProcess } from '~/store/navigation/navigation-action';
-import { goToStep, runProcessPanelActions, loadPresets, DEFAULT_ADVANCED_FORM_VALUES } from '~/store/run-process-panel/run-process-panel-actions';
+import { goToStep, runProcessPanelActions, loadPresets, getWorkflowRunnerSettings } from '~/store/run-process-panel/run-process-panel-actions';
 import { snackbarActions } from '~/store/snackbar/snackbar-actions';
 import { initialize } from 'redux-form';
 import { RUN_PROCESS_ADVANCED_FORM } from '~/views/run-process-panel/run-process-advanced-form';
@@ -43,7 +43,7 @@ export const openRunProcess = (uuid: string) =>
             dispatch(runProcessPanelActions.SET_STEP_CHANGED(true));
             dispatch(runProcessPanelActions.SET_SELECTED_WORKFLOW(workflow));
             dispatch<any>(loadPresets(workflow.uuid));
-            dispatch(initialize(RUN_PROCESS_ADVANCED_FORM, DEFAULT_ADVANCED_FORM_VALUES));
+            dispatch(initialize(RUN_PROCESS_ADVANCED_FORM, getWorkflowRunnerSettings(workflow)));
         } else {
             dispatch<any>(snackbarActions.OPEN_SNACKBAR({ message: `You can't run this process` }));
         }
