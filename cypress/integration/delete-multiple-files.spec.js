@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-describe('Collection panel tests', function () {
+describe('Multi-file deletion tests', function () {
     let activeUser;
     let adminUser;
 
@@ -33,6 +33,10 @@ describe('Collection panel tests', function () {
             .as('testCollection').then(function () {
                 cy.loginAs(activeUser);
                 cy.visit(`/collections/${this.testCollection.uuid}`);
+
+                cy.get('[data-cy=linear-progress]').should('exist');
+                cy.get('[data-cy=linear-progress]').should('not.exist');
+
                 cy.get('[data-cy=collection-files-panel]').within(() => {
                     cy.get('[type="checkbox"]').first().check();
                     cy.get('[type="checkbox"]').last().check();
@@ -55,6 +59,9 @@ describe('Collection panel tests', function () {
             .as('testCollection').then(function () {
                 cy.loginAs(activeUser);
                 cy.visit(`/collections/${this.testCollection.uuid}`);
+
+                cy.get('[data-cy=linear-progress]').should('exist');
+                cy.get('[data-cy=linear-progress]').should('not.exist');
 
                 cy.get('[data-cy=virtual-file-tree] > div > i').first().click();
                 cy.get('[data-cy=collection-files-panel]')
