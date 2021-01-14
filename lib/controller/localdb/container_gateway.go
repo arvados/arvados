@@ -55,12 +55,17 @@ func (conn *Conn) ContainerSSH(ctx context.Context, opts arvados.ContainerSSHOpt
 		return
 	}
 
-	ctr, err := conn.railsProxy.ContainerGet(ctx, arvados.GetOptions{UUID: opts.UUID})
-	if err != nil {
+	switch ctr.State {
+	case arvados.ContainerStateQueued, arvados.ContainerStateLocked:
+		err = httpserver.ErrorWithStatus(fmt.Errorf("gateway is not available, container is %s", strings.ToLower(string(ctr.State))), http.StatusServiceUnavailable)
 		return
-	}
-	if ctr.GatewayAddress == "" || ctr.State != arvados.ContainerStateRunning {
-		err = httpserver.ErrorWithStatus(fmt.Errorf("gateway is not available, container is %s", strings.ToLower(string(ctr.State))), http.StatusBadGateway)
+	case arvados.ContainerStateRunning:
+		if ctr.GatewayAddress == "" {
+			err = httpserver.ErrorWithStatus(errors.New("container is running but gateway is not available"), http.StatusServiceUnavailable)
+			return
+		}
+	default:
+		err = httpserver.ErrorWithStatus(fmt.Errorf("gateway is not available, container is %s", strings.ToLower(string(ctr.State))), http.StatusGone)
 		return
 	}
 	// crunch-run uses a self-signed / unverifiable TLS
@@ -101,6 +106,7 @@ func (conn *Conn) ContainerSSH(ctx context.Context, opts arvados.ContainerSSHOpt
 		},
 	})
 	if err != nil {
+		err = httpserver.ErrorWithStatus(err, http.StatusBadGateway)
 		return
 	}
 	if respondAuth == "" {

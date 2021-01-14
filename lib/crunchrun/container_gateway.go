@@ -194,7 +194,7 @@ func (gw *Gateway) handleSSH(w http.ResponseWriter, req *http.Request) {
 	go ssh.DiscardRequests(reqs)
 	for newch := range newchans {
 		if newch.ChannelType() != "session" {
-			newch.Reject(ssh.UnknownChannelType, "unknown channel type")
+			newch.Reject(ssh.UnknownChannelType, fmt.Sprintf("unsupported channel type %q", newch.ChannelType()))
 			continue
 		}
 		ch, reqs, err := newch.Accept()
