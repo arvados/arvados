@@ -58,26 +58,19 @@ Options:
 		return 2
 	}
 	sshargs = append([]string{
+		"ssh",
 		"-o", "ProxyCommand " + selfbin + " connect-ssh -detach-keys=" + shellescape(*detachKeys) + " " + shellescape(target),
 		"-o", "StrictHostKeyChecking no",
 		target},
 		sshargs...)
-	cmd := exec.Command("ssh", sshargs...)
-	cmd.Stdin = stdin
-	cmd.Stdout = stdout
-	cmd.Stderr = stderr
-	err = cmd.Run()
-	if err == nil {
-		return 0
-	} else if exiterr, ok := err.(*exec.ExitError); !ok {
+	sshbin, err := exec.LookPath("ssh")
+	if err != nil {
 		fmt.Fprintln(stderr, err)
 		return 1
-	} else if status, ok := exiterr.Sys().(syscall.WaitStatus); !ok {
-		fmt.Fprintln(stderr, err)
-		return 1
-	} else {
-		return status.ExitStatus()
 	}
+	err = syscall.Exec(sshbin, sshargs, os.Environ())
+	fmt.Fprintf(stderr, "exec(%q) failed: %s\n", sshbin, err)
+	return 1
 }
 
 // connectSSHCommand connects stdin/stdout to a container's gateway
