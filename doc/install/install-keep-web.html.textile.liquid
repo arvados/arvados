@@ -29,7 +29,7 @@ It is important to properly configure the keep-web service to so it does not ope
 There are two approaches to mitigate this.
 
 # The service can tell the browser that all files should go to download instead of in-browser preview, except in situations where an attacker is unlikely to be able to gain access to anything they didn't already have access to.
-# Each each collection served by @keep-web@ is served on its own virtual host.  This allows for file with executable content to be displayed in-browser securely.  The virtual host embeds the collection uuid or portable data hash in the hostname.  For example, a collection with uuid @xxxxx-4zz18-tci4vn4fa95w0zx@ could be served as @xxxxx-4zz18-tci4vn4fa95w0zx.collections.ClusterID.example.com@ .  The portable data hash @dd755dbc8d49a67f4fe7dc843e4f10a6+54@ could be served at @dd755dbc8d49a67f4fe7dc843e4f10a6-54.collections.ClusterID.example.com@ .  This requires "wildcard DNS record":https://en.wikipedia.org/wiki/Wildcard_DNS_record and "wildcard TLS certificate.":https://en.wikipedia.org/wiki/Wildcard_certificate
+# Each collection served by @keep-web@ is served on its own virtual host.  This allows for file with executable content to be displayed in-browser securely.  The virtual host embeds the collection uuid or portable data hash in the hostname.  For example, a collection with uuid @xxxxx-4zz18-tci4vn4fa95w0zx@ could be served as @xxxxx-4zz18-tci4vn4fa95w0zx.collections.ClusterID.example.com@ .  The portable data hash @dd755dbc8d49a67f4fe7dc843e4f10a6+54@ could be served at @dd755dbc8d49a67f4fe7dc843e4f10a6-54.collections.ClusterID.example.com@ .  This requires "wildcard DNS record":https://en.wikipedia.org/wiki/Wildcard_DNS_record and "wildcard TLS certificate.":https://en.wikipedia.org/wiki/Wildcard_certificate
 
 h3. Collections download URL
 
@@ -86,6 +86,11 @@ Serve preview links from a single domain, setting uuid or pdh in the path (simil
 </notextile>
 
 Note the trailing slash.
+
+{% include 'notebox_begin' %}
+Whether you choose to serve collections from their own subdomain or from a single domain, it's important to keep in mind that they should be served from me same _site_ as Workbench for the inline previews to work.
+As an example of same _site_ we refer to  @*.collections.ClusterID.example.com@ being on the same site as @workbench.ClusterID.example.com@, but not the same as @workbench.OtherClusterID.example.com@.
+{% include 'notebox_end' %}
 
 h2. Set InternalURLs
 

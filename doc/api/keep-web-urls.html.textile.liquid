@@ -41,6 +41,10 @@ The first form (with @--@ instead of @.@) avoids the cost and effort of deployin
 
 In all of the above forms, the @collections.example.com@ part can be anything at all: keep-web itself ignores everything after the first @.@ or @--@. (Of course, in order for clients to connect at all, DNS and any relevant proxies must be configured accordingly.)
 
+{% include 'notebox_begin' %}
+Although keep-web doesn't care about the domain part of the URL, the clients do: specially when rendering inline content, because keep-web uses the @Set-Cookie@ header with the @SameSite=Lax@ attribute, that requires the domain part of the URL to match between keep-web and workbench.
+{% include 'notebox_end' %}
+
 In all of the above forms, the @uuid_or_pdh@ part can be either a collection UUID or a portable data hash with the @+@ character optionally replaced by @-@ . (When @uuid_or_pdh@ appears in the domain name, replacing @+@ with @-@ is mandatory, because @+@ is not a valid character in a domain name.)
 
 In all of the above forms, a top level directory called @_@ is skipped. In cases where the @path/file.txt@ part might start with @t=@ or @c=@ or @_/@, links should be constructed with a leading @_/@ to ensure the top level directory is not interpreted as a token or collection ID.
