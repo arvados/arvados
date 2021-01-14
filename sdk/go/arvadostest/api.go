@@ -105,6 +105,10 @@ func (as *APIStub) ContainerUnlock(ctx context.Context, options arvados.GetOptio
 	as.appendCall(ctx, as.ContainerUnlock, options)
 	return arvados.Container{}, as.Error
 }
+func (as *APIStub) ContainerSSH(ctx context.Context, options arvados.ContainerSSHOptions) (arvados.ContainerSSHConnection, error) {
+	as.appendCall(ctx, as.ContainerSSH, options)
+	return arvados.ContainerSSHConnection{}, as.Error
+}
 func (as *APIStub) SpecimenCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Specimen, error) {
 	as.appendCall(ctx, as.SpecimenCreate, options)
 	return arvados.Specimen{}, as.Error
