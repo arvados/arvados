@@ -343,12 +343,12 @@ func (conn *Conn) ContainerSSH(ctx context.Context, options arvados.ContainerSSH
 		body, _ := ioutil.ReadAll(resp.Body)
 		var message string
 		var errDoc httpserver.ErrorResponse
-		if err := json.Unmarshal(body, &errDoc); err != nil {
+		if err := json.Unmarshal(body, &errDoc); err == nil {
 			message = strings.Join(errDoc.Errors, "; ")
 		} else {
 			message = fmt.Sprintf("%q", body)
 		}
-		err = fmt.Errorf("server did not provide a tunnel: %q (HTTP %d)", message, resp.StatusCode)
+		err = fmt.Errorf("server did not provide a tunnel: %s (HTTP %d)", message, resp.StatusCode)
 		return
 	}
 	if strings.ToLower(resp.Header.Get("Upgrade")) != "ssh" ||
