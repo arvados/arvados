@@ -204,8 +204,6 @@ func (gw *Gateway) handleSSH(w http.ResponseWriter, req *http.Request) {
 		}
 		var pty0, tty0 *os.File
 		go func() {
-			defer pty0.Close()
-			defer tty0.Close()
 			// Where to send errors/messages for the
 			// client to see
 			logw := io.Writer(ch.Stderr())
@@ -280,6 +278,8 @@ func (gw *Gateway) handleSSH(w http.ResponseWriter, req *http.Request) {
 						fmt.Fprintf(ch.Stderr(), "pty failed: %s"+eol, err)
 						break
 					}
+					defer p.Close()
+					defer t.Close()
 					pty0, tty0 = p, t
 					ok = true
 					var payload struct {
