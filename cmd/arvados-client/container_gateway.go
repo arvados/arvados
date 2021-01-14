@@ -27,7 +27,7 @@ func (shellCommand) RunCommand(prog string, args []string, stdin io.Reader, stdo
 	f := flag.NewFlagSet(prog, flag.ContinueOnError)
 	f.SetOutput(stderr)
 	f.Usage = func() {
-		fmt.Print(stderr, prog+`: open an interactive shell on a running container.
+		fmt.Fprint(stderr, prog+`: open an interactive shell on a running container.
 
 Usage: `+prog+` [options] [username@]container-uuid [ssh-options] [remote-command [args...]]
 
@@ -38,8 +38,7 @@ Options:
 	detachKeys := f.String("detach-keys", "ctrl-],ctrl-]", "set detach key sequence, as in docker-attach(1)")
 	err := f.Parse(args)
 	if err != nil {
-		fmt.Println(stderr, err)
-		f.Usage()
+		fmt.Fprintln(stderr, err)
 		return 2
 	}
 
@@ -103,7 +102,6 @@ Options:
 	detachKeys := f.String("detach-keys", "", "set detach key sequence, as in docker-attach(1)")
 	if err := f.Parse(args); err != nil {
 		fmt.Fprintln(stderr, err)
-		f.Usage()
 		return 2
 	} else if f.NArg() != 1 {
 		f.Usage()
