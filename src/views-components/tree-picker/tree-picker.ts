@@ -19,21 +19,29 @@ export interface TreePickerProps<T> {
 }
 
 const flatTree = (depth: number, items?: any): [] => {
-    return items ? items.reduce((prev: any, next: any) => {
-        const { items } = next;
+    return items ? items
+        .map(addToItemsIdMap)
+        .reduce((prev: any, next: any) => {
+            const { items } = next;
 
-        return [
-            ...prev,
-            { ...next, depth },
-            ...(next.open ? flatTree(depth + 1, items) : []),
-        ];
-    }, []) : [];
+            return [
+                ...prev,
+                { ...next, depth },
+                ...(next.open ? flatTree(depth + 1, items) : []),
+            ];
+        }, []) : [];
+};
+
+const itemsIdMap = new Map();
+const addToItemsIdMap = <T>(item: TreeItem<T>) => {
+    itemsIdMap[item.id] = item;
+    return item;
 };
 
 const memoizedMapStateToProps = () => {
     let prevTree: Ttree<any>;
-    let mappedProps: Pick<TreeProps<any>, 'items' | 'disableRipple'>;
-    return <T>(state: RootState, props: TreePickerProps<T>): Pick<TreeProps<T>, 'items' | 'disableRipple'> => {
+    let mappedProps: Pick<TreeProps<any>, 'items' | 'disableRipple' | 'itemsMap'>;
+    return <T>(state: RootState, props: TreePickerProps<T>): Pick<TreeProps<T>, 'items' | 'disableRipple' | 'itemsMap'> => {
         const tree = state.treePicker[props.pickerId] || createTree();
         if (tree !== prevTree) {
             prevTree = tree;
@@ -41,11 +49,13 @@ const memoizedMapStateToProps = () => {
                 disableRipple: true,
                 items: getNodeChildrenIds('')(tree)
                     .map(treePickerToTreeItems(tree))
+                    .map(addToItemsIdMap)
                     .map(parentItem => ({
                         ...parentItem,
                         flatTree: true,
                         items: flatTree(2, parentItem.items || []),
-                    }))
+                    })),
+                itemsMap: itemsIdMap,
             };
         }
         return mappedProps;
