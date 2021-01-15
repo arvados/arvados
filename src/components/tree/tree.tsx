@@ -105,6 +105,7 @@ export interface TreeProps<T> {
     currentItemUuid?: string;
     items?: Array<TreeItem<T>>;
     level?: number;
+    itemsMap?: Map<string, TreeItem<T>>;
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: TreeItem<T>) => void;
     render: (item: TreeItem<T>, level?: number) => ReactElement<{}>;
     showSelection?: boolean | ((item: TreeItem<T>) => boolean);
@@ -150,9 +151,9 @@ interface FlatTreeProps {
     toggleItemActive: Function;
     getToggableIconClassNames: Function;
     getProperArrowAnimation: Function;
+    itemsMap?: Map<string, TreeItem<any>>;
     classes: any;
 }
-
 
 const FLAT_TREE_ACTIONS = {
     toggleOpen: 'TOGGLE_OPEN',
@@ -170,12 +171,14 @@ const FlatTree = (props: FlatTreeProps) =>
             const [action, id] = getActionAndId(event);
 
             if (action && id) {
+                const item = props.itemsMap ? props.itemsMap[id] : { id };
+
                 switch (action) {
                     case FLAT_TREE_ACTIONS.toggleOpen:
-                        props.handleToggleItemOpen({ id } as any, event);
+                        props.handleToggleItemOpen(item as any, event);
                         break;
                     case FLAT_TREE_ACTIONS.toggleActive:
-                        props.toggleItemActive(event, { id } as any);
+                        props.toggleItemActive(event, item as any);
                         break;
                     default:
                         break;
@@ -209,7 +212,7 @@ export const Tree = withStyles(styles)(
     class Component<T> extends React.Component<TreeProps<T> & WithStyles<CssRules>, {}> {
         render(): ReactElement<any> {
             const level = this.props.level ? this.props.level : 0;
-            const { classes, render, items, toggleItemActive, toggleItemOpen, disableRipple, currentItemUuid, useRadioButtons } = this.props;
+            const { classes, render, items, toggleItemActive, toggleItemOpen, disableRipple, currentItemUuid, useRadioButtons, itemsMap } = this.props;
             const { list, listItem, loader, toggableIconContainer, renderContainer } = classes;
             const showSelection = typeof this.props.showSelection === 'function'
                 ? this.props.showSelection
@@ -257,6 +260,7 @@ export const Tree = withStyles(styles)(
                                 it.flatTree ?
                                     <FlatTree
                                         it={it}
+                                        itemsMap={itemsMap}
                                         classes={this.props.classes}
                                         levelIndentation={levelIndentation}
                                         onContextMenu={this.props.onContextMenu}
