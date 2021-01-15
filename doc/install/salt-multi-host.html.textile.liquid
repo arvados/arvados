@@ -40,25 +40,25 @@ The formulas we use are:
 * "docker":https://github.com/saltstack-formulas/docker-formula.git
 * "locale":https://github.com/saltstack-formulas/locale-formula.git
 
-There are example Salt pillar files for each of those formulas in the "arvados-formula's test/salt/pillar/examples":https://github.com/saltstack-formulas/arvados-formula/tree/master/test/salt/pillar/examples directory. As they are, they allow you to get all the main Arvados components up and running.
+There are example Salt pillar files for each of those formulas in the "arvados-formula's test/salt/pillar/examples":https://github.com/arvados/arvados-formula/tree/master/test/salt/pillar/examples directory. As they are, they allow you to get all the main Arvados components up and running.
 
 h2(#saltstack). Install Arvados using Saltstack
 
 This is a package-based installation method. The Salt scripts are available from the "tools/salt-install":https://github.com/arvados/arvados/tree/master/tools/salt-install directory in the Arvados git repository.
 
-The Arvados formula we maintain is located in the Saltstack's community repository of formulas:
+The Arvados formula we maintain is located in Arvados' Github account and should be considered the canonical place to download its most up-to-date version:
 
-* "arvados-formula":https://github.com/saltstack-formulas/arvados-formula.git
+* "arvados-formula":https://github.com/arvados/arvados-formula.git
 
-The @development@ version lives in our own repository
+As the Saltstack's community keeps a "repository of formulas":https://github.com/saltstack-formulas/ in Github, we also provide
 
-* "arvados-formula development":https://github.com/arvados/arvados-formula.git
+* "a copy of the formula":https://github.com/saltstack-formulas/arvados-formula.git
 
-This last one might break from time to time, as we try and add new features. Use with caution.
+there, and do our best effort to keep it in sync with ours.
 
-As much as possible, we try to keep it up to date, with example pillars to help you deploy Arvados.
+A @development@ branch exists which uses Arvados' development repositories. This last one might break from time to time, as we try and add new features. As much as possible, we try to keep it up to date, with example pillars to help you deploy Arvados. Use with caution.
 
-For those familiar with Saltstack, the process to get it deployed is similar to any other formula:
+For those familiar with Saltstack, the process to get Arvados deployed is similar to any other formula:
 
 1. Fork/copy the formula to your Salt master host.
 2. Edit the Arvados, nginx, postgres, locale and docker pillars to match your desired configuration.
