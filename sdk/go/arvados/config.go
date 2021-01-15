@@ -86,6 +86,7 @@ type Cluster struct {
 		MaxKeepBlobBuffers             int
 		MaxRequestAmplification        int
 		MaxRequestSize                 int
+		MaxTokenLifetime               Duration
 		RequestTimeout                 Duration
 		SendTimeout                    Duration
 		WebsocketClientEventQueue      int

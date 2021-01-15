@@ -164,6 +164,13 @@ Clusters:
         dbname: ""
         SAMPLE: ""
     API:
+      # Limits for how long a client token created by regular users can be valid,
+      # and also is used as a default expiration policy when no expiration date is
+      # specified.
+      # Default value zero menans token expirations don't get clamped and no
+      # default expiration is set.
+      MaxTokenLifetime: 0s
+
       # Maximum size (in bytes) allowed for a single API request.  This
       # limit is published in the discovery document for use by clients.
       # Note: You must separately configure the upstream web server or
