@@ -99,9 +99,12 @@ class ArvPathMapper(PathMapper):
                 if srcobj["class"] == "Directory" and "listing" not in srcobj:
                     raise WorkflowException("Directory literal '%s' is missing `listing`" % src)
             elif src.startswith("http:") or src.startswith("https:"):
-                keepref = http_to_keep(self.arvrunner.api, self.arvrunner.project_uuid, src)
-                logger.info("%s is %s", src, keepref)
-                self._pathmap[src] = MapperEnt(keepref, keepref, srcobj["class"], True)
+                try:
+                    keepref = http_to_keep(self.arvrunner.api, self.arvrunner.project_uuid, src)
+                    logger.info("%s is %s", src, keepref)
+                    self._pathmap[src] = MapperEnt(keepref, keepref, srcobj["class"], True)
+                except Exception as e:
+                    logger.warning(str(e))
             else:
                 self._pathmap[src] = MapperEnt(src, src, srcobj["class"], True)
 
