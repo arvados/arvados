@@ -5,10 +5,8 @@
 package main
 
 import (
-	"flag"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"testing"
 
 	"gopkg.in/check.v1"
@@ -18,13 +16,6 @@ var buildimage string
 
 func init() {
 	os.Args = append(os.Args, "-test.timeout=30m") // kludge
-
-	// This enables a hack to speed up repeated tests: hit "docker
-	// commit --pause {containername} checkpointtag" after the
-	// test container has downloaded/compiled some stuff, then run
-	// tests with "-test.buildimage=checkpointtag" next time to
-	// retry/resume/update from that point.
-	flag.StringVar(&buildimage, "test.buildimage", "debian:10", "docker image to use when running buildpackage")
 }
 
 type BuildSuite struct{}
@@ -42,36 +33,30 @@ func (s *BuildSuite) TestBuildAndInstall(c *check.C) {
 	tmpdir := c.MkDir()
 	defer os.RemoveAll(tmpdir)
 
-	err := os.Mkdir(tmpdir+"/pkg", 0755)
-	c.Assert(err, check.IsNil)
-	err = os.Mkdir(tmpdir+"/bin", 0755)
-	c.Assert(err, check.IsNil)
-
-	cmd := exec.Command("go", "install")
-	cmd.Env = append(append([]string(nil), os.Environ()...), "GOPATH="+tmpdir)
-	cmd.Stdout = os.Stdout
+	cmd := exec.Command("go", "run", ".",
+		"build",
+		"-package-dir", tmpdir,
+		"-package-version", "1.2.3~rc4",
+		"-source", "../..",
+	)
+	cmd.Stdout = os.Stderr
 	cmd.Stderr = os.Stderr
-	err = cmd.Run()
-	c.Assert(err, check.IsNil)
+	err := cmd.Run()
+	c.Check(err, check.IsNil)
 
-	srctree, err := filepath.Abs("../..")
-	c.Assert(err, check.IsNil)
-
-	cmd = exec.Command("docker", "run", "--rm",
-		"-v", tmpdir+"/pkg:/pkg",
-		"-v", tmpdir+"/bin/arvados-package:/arvados-package:ro",
-		"-v", srctree+":/usr/local/src/arvados:ro",
-		buildimage,
-		"/arvados-package", "build",
-		"-package-version", "0.9.99",
-		"-source", "/usr/local/src/arvados",
-		"-output-directory", "/pkg")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err = cmd.Run()
-	c.Assert(err, check.IsNil)
-
-	fi, err := os.Stat(tmpdir + "/pkg/arvados-server-easy_0.9.99_amd64.deb")
+	fi, err := os.Stat(tmpdir + "/arvados-server-easy_1.2.3~rc4_amd64.deb")
 	c.Assert(err, check.IsNil)
 	c.Logf("%#v", fi)
+
+	cmd = exec.Command("go", "run", ".",
+		"testinstall",
+		"-package-dir", tmpdir,
+	)
+	cmd.Stdout = os.Stderr
+	cmd.Stderr = os.Stderr
+	err = cmd.Run()
+	c.Check(err, check.IsNil)
+
+	err = os.RemoveAll(tmpdir)
+	c.Check(err, check.IsNil)
 }
