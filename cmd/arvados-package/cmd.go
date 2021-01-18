@@ -68,7 +68,8 @@ type opts struct {
 
 func parseFlags(args []string) (opts, error) {
 	opts := opts{
-		TargetOS: "debian:10",
+		SourceDir: ".",
+		TargetOS:  "debian:10",
 	}
 	flags := flag.NewFlagSet("", flag.ContinueOnError)
 	flags.StringVar(&opts.PackageVersion, "package-version", opts.PackageVersion, "package version to build/test, like \"1.2.3\"")
@@ -123,5 +124,9 @@ Options:
 		opts.SourceDir = d
 	}
 	opts.PackageDir = filepath.Clean(opts.PackageDir)
+	opts.SourceDir, err = filepath.Abs(opts.SourceDir)
+	if err != nil {
+		return opts, err
+	}
 	return opts, nil
 }
