@@ -93,7 +93,6 @@ arvcfg.declare_config "API.MaxRequestSize", Integer, :max_request_size
 arvcfg.declare_config "API.MaxIndexDatabaseRead", Integer, :max_index_database_read
 arvcfg.declare_config "API.MaxItemsPerResponse", Integer, :max_items_per_response
 arvcfg.declare_config "API.AsyncPermissionsUpdateInterval", ActiveSupport::Duration, :async_permissions_update_interval
-arvcfg.declare_config "API.RailsSessionSecretToken", NonemptyString, :secret_token
 arvcfg.declare_config "Users.AutoSetupNewUsers", Boolean, :auto_setup_new_users
 arvcfg.declare_config "Users.AutoSetupNewUsersWithVmUUID", String, :auto_setup_new_users_with_vm_uuid
 arvcfg.declare_config "Users.AutoSetupNewUsersWithRepository", Boolean, :auto_setup_new_users_with_repository
@@ -297,5 +296,9 @@ Server::Application.configure do
   # Rails.configuration.API["Blah"]
   ConfigLoader.copy_into_config $arvados_config, config
   ConfigLoader.copy_into_config $remaining_config, config
-  secrets.secret_key_base = $arvados_config["API"]["RailsSessionSecretToken"]
+
+  # We don't rely on cookies for authentication, so instead of
+  # requiring a signing key in config, we assign a new random one at
+  # startup.
+  secrets.secret_key_base = rand(1<<255).to_s(36)
 end

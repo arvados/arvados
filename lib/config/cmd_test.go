@@ -49,10 +49,12 @@ func (s *CommandSuite) TestCheck_NoWarnings(c *check.C) {
 	in := `
 Clusters:
  z1234:
-  ManagementToken: xyzzy
-  SystemRootToken: xyzzy
+  ManagementToken: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+  SystemRootToken: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
   API:
     MaxItemsPerResponse: 1234
+  Collections:
+    BlobSigningKey: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
   PostgreSQL:
     Connection:
       sslmode: require

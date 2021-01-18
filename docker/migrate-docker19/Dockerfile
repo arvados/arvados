@@ -14,7 +14,7 @@ RUN apt-key adv --keyserver pool.sks-keyservers.net --recv 1078ECD7 && \
 VOLUME /var/lib/docker
 
 RUN mkdir -p /etc/apt/sources.list.d && \
-    echo deb http://apt.arvados.org/ jessie main > /etc/apt/sources.list.d/apt.arvados.org.list && \
+    echo deb http://apt.arvados.org/jessie jessie main > /etc/apt/sources.list.d/apt.arvados.org.list && \
     apt-get clean && \
     apt-get update && \
     apt-get install -yq --no-install-recommends -o Acquire::Retries=6 \
