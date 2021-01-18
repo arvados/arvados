@@ -19,27 +19,6 @@ import (
 	"github.com/docker/docker/client"
 )
 
-// sourcesfile=/tmp/sources.conf.d-arvados
-// echo >$sourcesfile "deb [trusted=yes] file:///pkg ./"
-
-// installimage="arvados-installpackage-${osbase}"
-// if [[ "${opts[force-installimage]}" || -z "$(docker images --format {{.Repository}} "${installimage}")" ]]; then
-//     echo >&2 building ${installimage}...
-//     installctr=${installimage/:/-}
-//     docker rm "${installctr}" || true
-//     docker run -it \
-//            --name "${installctr}" \
-//            --tmpfs /tmp \
-//            -v /tmp/pkg:/pkg:ro \
-//            -v ${sourcesfile}:/etc/apt/sources.list.d/arvados-local.list:ro \
-//            --env DEBIAN_FRONTEND=noninteractive \
-//            "${osbase}" \
-//            bash -c 'apt update && apt install -y eatmydata && eatmydata apt install -y arvados-server-easy postgresql && eatmydata apt remove -y arvados-server-easy'
-//     docker commit "${installctr}" "${installimage}"
-//     docker rm "${installctr}"
-//     installctr=
-// fi
-
 func testinstall(ctx context.Context, opts opts, stdin io.Reader, stdout, stderr io.Writer) error {
 	if opts.PackageVersion != "" {
 		return errors.New("not implemented: package version was specified, but I only know how to test the latest version in pkgdir")
