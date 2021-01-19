@@ -32,6 +32,8 @@ func (s *BuildSuite) TestBuildAndInstall(c *check.C) {
 	}
 	tmpdir := c.MkDir()
 	defer os.RemoveAll(tmpdir)
+	err := os.Chmod(tmpdir, 0755)
+	c.Assert(err, check.IsNil)
 
 	cmd := exec.Command("go", "run", ".",
 		"build",
@@ -41,12 +43,15 @@ func (s *BuildSuite) TestBuildAndInstall(c *check.C) {
 	)
 	cmd.Stdout = os.Stderr
 	cmd.Stderr = os.Stderr
-	err := cmd.Run()
+	err = cmd.Run()
 	c.Check(err, check.IsNil)
 
 	fi, err := os.Stat(tmpdir + "/arvados-server-easy_1.2.3~rc4_amd64.deb")
 	c.Assert(err, check.IsNil)
 	c.Logf("%#v", fi)
+
+	buf, _ := exec.Command("ls", "-l", tmpdir).CombinedOutput()
+	c.Logf("%s", buf)
 
 	cmd = exec.Command("go", "run", ".",
 		"testinstall",
