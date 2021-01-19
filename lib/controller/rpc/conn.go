@@ -298,7 +298,11 @@ func (conn *Conn) ContainerSSH(ctx context.Context, options arvados.ContainerSSH
 		// hostname or ::1 or 1::1
 		addr = net.JoinHostPort(addr, "https")
 	}
-	netconn, err := tls.Dial("tcp", addr, &tls.Config{InsecureSkipVerify: conn.httpClient.Transport.(*http.Transport).TLSClientConfig.InsecureSkipVerify})
+	insecure := false
+	if tlsconf := conn.httpClient.Transport.(*http.Transport).TLSClientConfig; tlsconf != nil && tlsconf.InsecureSkipVerify {
+		insecure = true
+	}
+	netconn, err := tls.Dial("tcp", addr, &tls.Config{InsecureSkipVerify: insecure})
 	if err != nil {
 		err = fmt.Errorf("tls.Dial: %w", err)
 		return
