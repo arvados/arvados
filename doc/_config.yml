@@ -208,8 +208,6 @@ navbar:
       - install/arvados-on-kubernetes.html.textile.liquid
       - install/arvados-on-kubernetes-minikube.html.textile.liquid
       - install/arvados-on-kubernetes-GKE.html.textile.liquid
-    - Automatic installation:
-      - install/automatic.html.textile.liquid
     - Manual installation:
       - install/install-manual-prerequisites.html.textile.liquid
       - install/packages.html.textile.liquid
