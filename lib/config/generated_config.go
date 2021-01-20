@@ -1068,7 +1068,7 @@ Clusters:
         # Cloud-specific driver parameters.
         DriverParameters:
 
-          # (ec2) Credentials.
+          # (ec2) Credentials. Omit or leave blank if using IAM role.
           AccessKeyID: ""
           SecretAccessKey: ""
 

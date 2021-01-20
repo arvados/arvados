@@ -19,6 +19,8 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
+	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/sirupsen/logrus"
@@ -65,12 +67,19 @@ func newEC2InstanceSet(config json.RawMessage, instanceSetID cloud.InstanceSetID
 	if err != nil {
 		return nil, err
 	}
-	awsConfig := aws.NewConfig().
-		WithCredentials(credentials.NewStaticCredentials(
-			instanceSet.ec2config.AccessKeyID,
-			instanceSet.ec2config.SecretAccessKey,
-			"")).
-		WithRegion(instanceSet.ec2config.Region)
+
+	sess, err := session.NewSession()
+	if err != nil {
+		return nil, err
+	}
+	// First try any static credentials, fall back to an IAM instance profile/role
+	creds := credentials.NewChainCredentials(
+		[]credentials.Provider{
+			&credentials.StaticProvider{Value: credentials.Value{AccessKeyID: instanceSet.ec2config.AccessKeyID, SecretAccessKey: instanceSet.ec2config.SecretAccessKey}},
+			&ec2rolecreds.EC2RoleProvider{Client: ec2metadata.New(sess)},
+		})
+
+	awsConfig := aws.NewConfig().WithCredentials(creds).WithRegion(instanceSet.ec2config.Region)
 	instanceSet.client = ec2.New(session.Must(session.NewSession(awsConfig)))
 	instanceSet.keys = make(map[string]string)
 	if instanceSet.ec2config.EBSVolumeType == "" {
