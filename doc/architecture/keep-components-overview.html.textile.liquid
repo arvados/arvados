@@ -1,0 +1,59 @@
+---
+layout: default
+navsection: architecture
+title: Keep components overview
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+Keep has a number of components. This page describes each component and the role it plays.
+
+h3. Keep client
+
+In order to access data in Keep, a client is needed to store data in and retrieve data from Keep. Different types of Keep clients exist:
+* a command line client like "@arv-get@":/user/tutorials/tutorial-keep-get.html#download-using-arv or "@arv-put@":/user/tutorials/tutorial-keep.html#upload-using-command
+* a FUSE mount provided by "@arv-mount@":/user/tutorials/tutorial-keep-mount-gnu-linux.html
+* a WebDAV mount provided by @keep-web@
+* an S3-compatible endpoint provided by @keep-web@
+* programmatic access via the "Arvados SDKs":/sdk/index.html
+
+In essense, these clients all do the same thing: they translate file and directory references into requests for Keep blocks and collection manifests.
+
+For example, when a request comes in to read a file from Keep, the client will
+* request the collection object (including its manifest) from the API server
+* look up the file in the collection manifest, and retrieve the hashes of the block(s) that contain its content
+* ask the keepstore(s) for the block hashes
+* return the contents of the file to the requestor
+
+All of those steps are subject to access control, which applies at the level of the collection: in the example above, the API server and the keepstore daemons verify that the client has permission to read the collection, and will reject the request if it does not.
+
+h3. API server
+
+The API server stores collection objects. It also stores the ACLs that control access to the collections.
+
+h3. Keepstore
+
+The @keepstore@ daemon is Keep's workhorse, the storage server that stores and retrieves data from an underlying storage system. Keepstore exposes an HTTP REST API. Keepstore only handles requests for blocks. Because blocks are content-addressed, they can be written and deleted, but there is no _update_ operation: blocks are immutable.
+
+So what happens if the content of a file changes? When a client changes a file, it first writes any new blocks to the keepstore(s). Then, it updates the manifest for the collection the file belongs to with the references to the new blocks.
+
+A keepstore can store its blocks in object storage (S3 or an S3-compatible system, or Azure Blob Storage). It can also store blocks on a POSIX file system. A keepstore can be configured with multiple storage volumes. Each keepstore volume is configured with a replication number; e.g. a POSIX file system backed by a single disk would have a replication factor of 1, while an Azure 'LRS'  storage volume could be configured with a replication factor of 3 (that is how many copies LRS stores under the hood, according to the Azure documentation).
+
+By default, Arvados uses a replication factor of 2. See the @DefaultReplication@ configuration parameter in "the configuration reference":https://doc.arvados.org/admin/config.html. Additionally, each collection can be configured with its own replication factor.
+
+h3. Keepproxy
+
+The @keepproxy@ server is a gateway into your Keep storage. Unlike the Keepstore servers, which are only accessible on the local LAN, Keepproxy is suitable for clients located elsewhere on the internet. A client writing through Keepproxy only writes one copy of each block; the Keepproxy server will write additional copies of the data to the Keepstore servers, to fulfill the requested replication factor. Keepproxy also checks API token validity before processing requests.
+
+h3. Keep-web
+
+The @keep-web@ server provides read/write access to files stored in Keep using WebDAV and S3 protocols. This makes it easy to access files in Keep from a browser, or mount Keep as a network folder using WebDAV support in various operating systems. It serves public data to unauthenticated clients, and serves private data to clients that supply Arvados API tokens.
+
+h3. Keep-balance
+
+Keep is a garbage-collected system. When a block is no longer referenced in any collection manifest in the system, it becomes eligible for garbage collection. When the desired replication factor for a block (derived from the default replication factor, in addition to the replication factor of any collection(s) the block belongs to) does not match reality, the number of copies stored in the available Keepstore servers needs to be adjusted.
+
+The @keep-balance@ service takes care of these things. It runs as a service, and wakes up periodically to do a scan of the system and send instructions to the Keepstore servers. That process is described in more detail at "Balancing Keep servers":https://doc.arvados.org/admin/keep-balance.html.
