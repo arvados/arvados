@@ -111,6 +111,7 @@ const FileInputComponent = connect()(
                 open={this.state.open}
                 onClose={this.closeDialog}
                 fullWidth
+                data-cy="choose-a-file-dialog"
                 maxWidth='md'>
                 <DialogTitle>Choose a file</DialogTitle>
                 <DialogContent>
