@@ -11,7 +11,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 Keep has a number of components. This page describes each component and the role it plays.
 
-h3. Keep client
+h3. Keep clients for data access
 
 In order to access data in Keep, a client is needed to store data in and retrieve data from Keep. Different types of Keep clients exist:
 * a command line client like "@arv-get@":/user/tutorials/tutorial-keep-get.html#download-using-arv or "@arv-put@":/user/tutorials/tutorial-keep.html#upload-using-command
@@ -20,7 +20,7 @@ In order to access data in Keep, a client is needed to store data in and retriev
 * an S3-compatible endpoint provided by @keep-web@
 * programmatic access via the "Arvados SDKs":/sdk/index.html
 
-In essense, these clients all do the same thing: they translate file and directory references into requests for Keep blocks and collection manifests.
+In essense, these clients all do the same thing: they translate file and directory references into requests for Keep blocks and collection manifests. How Keep clients work, and how they use rendezvous hashing, is described in greater detail in "the next section":/architecture/keep-clients.html.
 
 For example, when a request comes in to read a file from Keep, the client will
 * request the collection object (including its manifest) from the API server
@@ -32,7 +32,7 @@ All of those steps are subject to access control, which applies at the level of 
 
 h3. API server
 
-The API server stores collection objects. It also stores the ACLs that control access to the collections.
+The API server stores collection objects and all associated metadata. That includes data about where the blocks for a collection are to be stored, e.g. when "storage classes":/admin/storage-classes.html are configured, as well as the desired and confirmed replication count for each block. It also stores the ACLs that control access to the collections. Finally, the API server provides Keep clients with time-based block signatures for access.
 
 h3. Keepstore
 
@@ -42,7 +42,9 @@ So what happens if the content of a file changes? When a client changes a file, 
 
 A keepstore can store its blocks in object storage (S3 or an S3-compatible system, or Azure Blob Storage). It can also store blocks on a POSIX file system. A keepstore can be configured with multiple storage volumes. Each keepstore volume is configured with a replication number; e.g. a POSIX file system backed by a single disk would have a replication factor of 1, while an Azure 'LRS'  storage volume could be configured with a replication factor of 3 (that is how many copies LRS stores under the hood, according to the Azure documentation).
 
-By default, Arvados uses a replication factor of 2. See the @DefaultReplication@ configuration parameter in "the configuration reference":https://doc.arvados.org/admin/config.html. Additionally, each collection can be configured with its own replication factor.
+By default, Arvados uses a replication factor of 2. See the @DefaultReplication@ configuration parameter in "the configuration reference":https://doc.arvados.org/admin/config.html. Additionally, each collection can be configured with its own replication factor. It's worth noting that it is the responsibility of the Keep clients to make sure that all blocks are stored subject to their desired replica count, which is derived from the collections the blocks belong to. @keepstore@ itself does not provide replication; all it does is store blocks on the volumes it knows about. The @keepproxy@ and @keep-balance@ processes (see below) make sure that blocks are replicated properly.
+
+The maximum block size for @keepstore@ is 64 MiB, and keep clients typically combine small files into larger blocks. In a typical Arvados installation, the majority of blocks stored in Keep will be 64 MiB, though some fraction will be smaller.
 
 h3. Keepproxy
 
@@ -50,10 +52,10 @@ The @keepproxy@ server is a gateway into your Keep storage. Unlike the Keepstore
 
 h3. Keep-web
 
-The @keep-web@ server provides read/write access to files stored in Keep using WebDAV and S3 protocols. This makes it easy to access files in Keep from a browser, or mount Keep as a network folder using WebDAV support in various operating systems. It serves public data to unauthenticated clients, and serves private data to clients that supply Arvados API tokens.
+The @keep-web@ server provides read/write access to files stored in Keep using the HTTP, WebDAV and S3 protocols. This makes it easy to access files in Keep from a browser, or mount Keep as a network folder using WebDAV support in various operating systems. It serves public data to unauthenticated clients, and serves private data to clients that supply Arvados API tokens.
 
 h3. Keep-balance
 
 Keep is a garbage-collected system. When a block is no longer referenced in any collection manifest in the system, it becomes eligible for garbage collection. When the desired replication factor for a block (derived from the default replication factor, in addition to the replication factor of any collection(s) the block belongs to) does not match reality, the number of copies stored in the available Keepstore servers needs to be adjusted.
 
-The @keep-balance@ service takes care of these things. It runs as a service, and wakes up periodically to do a scan of the system and send instructions to the Keepstore servers. That process is described in more detail at "Balancing Keep servers":https://doc.arvados.org/admin/keep-balance.html.
+The @keep-balance@ program takes care of these things. It runs as a service, and wakes up periodically to do a scan of the system and send instructions to the Keepstore servers. That process is described in more detail at "Balancing Keep servers":https://doc.arvados.org/admin/keep-balance.html.
