@@ -47,6 +47,31 @@ class UserSessionsControllerTest < ActionController::TestCase
                     1.second)
   end
 
+  [[0, 1.hour, 1.hour],
+  [1.hour, 2.hour, 1.hour],
+  [2.hour, 1.hour, 1.hour],
+  [2.hour, nil, 2.hour],
+  ].each do |config_lifetime, request_lifetime, expect_lifetime|
+    test "login with TokenLifetime=#{config_lifetime} and request has expires_at=#{ request_lifetime.nil? ? "nil" : request_lifetime }" do
+      Rails.configuration.Login.TokenLifetime = config_lifetime
+      expected_expiration_time =  Time.now() + expect_lifetime
+      authorize_with :inactive
+      @request.headers['Authorization'] = 'Bearer '+Rails.configuration.SystemRootToken
+      if request_lifetime.nil?
+        get :create, params: {provider: 'controller', auth_info: {email: "foo@bar.com"}, return_to: ',https://app.example'}
+      else
+        get :create, params: {provider: 'controller', auth_info: {email: "foo@bar.com", expires_at: Time.now() + request_lifetime}, return_to: ',https://app.example'}
+      end
+      assert_response :redirect
+      api_client_auth = assigns(:api_client_auth)
+      assert_not_nil api_client_auth
+      assert_not_nil assigns(:api_client)
+      assert_in_delta(api_client_auth.expires_at,
+                      expected_expiration_time,
+                      1.second)
+    end
+  end
+
   test "login with remote param returns a salted token" do
     authorize_with :inactive
     api_client_page = 'http://client.example.com/home'

@@ -27,7 +27,7 @@ type loginController interface {
 	UserAuthenticate(ctx context.Context, options arvados.UserAuthenticateOptions) (arvados.APIClientAuthorization, error)
 }
 
-func chooseLoginController(cluster *arvados.Cluster, railsProxy *railsProxy) loginController {
+func chooseLoginController(cluster *arvados.Cluster, parent *Conn) loginController {
 	wantGoogle := cluster.Login.Google.Enable
 	wantOpenIDConnect := cluster.Login.OpenIDConnect.Enable
 	wantSSO := cluster.Login.SSO.Enable
@@ -43,7 +43,7 @@ func chooseLoginController(cluster *arvados.Cluster, railsProxy *railsProxy) log
 	case wantGoogle:
 		return &oidcLoginController{
 			Cluster:            cluster,
-			RailsProxy:         railsProxy,
+			Parent:             parent,
 			Issuer:             "https://accounts.google.com",
 			ClientID:           cluster.Login.Google.ClientID,
 			ClientSecret:       cluster.Login.Google.ClientSecret,
@@ -54,7 +54,7 @@ func chooseLoginController(cluster *arvados.Cluster, railsProxy *railsProxy) log
 	case wantOpenIDConnect:
 		return &oidcLoginController{
 			Cluster:            cluster,
-			RailsProxy:         railsProxy,
+			Parent:             parent,
 			Issuer:             cluster.Login.OpenIDConnect.Issuer,
 			ClientID:           cluster.Login.OpenIDConnect.ClientID,
 			ClientSecret:       cluster.Login.OpenIDConnect.ClientSecret,
@@ -63,13 +63,13 @@ func chooseLoginController(cluster *arvados.Cluster, railsProxy *railsProxy) log
 			UsernameClaim:      cluster.Login.OpenIDConnect.UsernameClaim,
 		}
 	case wantSSO:
-		return &ssoLoginController{railsProxy}
+		return &ssoLoginController{Parent: parent}
 	case wantPAM:
-		return &pamLoginController{Cluster: cluster, RailsProxy: railsProxy}
+		return &pamLoginController{Cluster: cluster, Parent: parent}
 	case wantLDAP:
-		return &ldapLoginController{Cluster: cluster, RailsProxy: railsProxy}
+		return &ldapLoginController{Cluster: cluster, Parent: parent}
 	case wantTest:
-		return &testLoginController{Cluster: cluster, RailsProxy: railsProxy}
+		return &testLoginController{Cluster: cluster, Parent: parent}
 	case wantLoginCluster:
 		return &federatedLoginController{Cluster: cluster}
 	default:
@@ -89,10 +89,16 @@ func countTrue(vals ...bool) int {
 	return n
 }
 
-// Login and Logout are passed through to the wrapped railsProxy;
+// Login and Logout are passed through to the parent's railsProxy;
 // UserAuthenticate is rejected.
-type ssoLoginController struct{ *railsProxy }
+type ssoLoginController struct{ Parent *Conn }
 
+func (ctrl *ssoLoginController) Login(ctx context.Context, opts arvados.LoginOptions) (arvados.LoginResponse, error) {
+	return ctrl.Parent.railsProxy.Login(ctx, opts)
+}
+func (ctrl *ssoLoginController) Logout(ctx context.Context, opts arvados.LogoutOptions) (arvados.LogoutResponse, error) {
+	return ctrl.Parent.railsProxy.Logout(ctx, opts)
+}
 func (ctrl *ssoLoginController) UserAuthenticate(ctx context.Context, opts arvados.UserAuthenticateOptions) (arvados.APIClientAuthorization, error) {
 	return arvados.APIClientAuthorization{}, httpserver.ErrorWithStatus(errors.New("username/password authentication is not available"), http.StatusBadRequest)
 }
@@ -135,9 +141,12 @@ func noopLogout(cluster *arvados.Cluster, opts arvados.LogoutOptions) (arvados.L
 	return arvados.LogoutResponse{RedirectLocation: target}, nil
 }
 
-func createAPIClientAuthorization(ctx context.Context, conn *rpc.Conn, rootToken string, authinfo rpc.UserSessionAuthInfo) (resp arvados.APIClientAuthorization, err error) {
+func (conn *Conn) CreateAPIClientAuthorization(ctx context.Context, rootToken string, authinfo rpc.UserSessionAuthInfo) (resp arvados.APIClientAuthorization, err error) {
+	if rootToken == "" {
+		return arvados.APIClientAuthorization{}, errors.New("configuration error: empty SystemRootToken")
+	}
 	ctxRoot := auth.NewContext(ctx, &auth.Credentials{Tokens: []string{rootToken}})
-	newsession, err := conn.UserSessionCreate(ctxRoot, rpc.UserSessionCreateOptions{
+	newsession, err := conn.railsProxy.UserSessionCreate(ctxRoot, rpc.UserSessionCreateOptions{
 		// Send a fake ReturnTo value instead of the caller's
 		// opts.ReturnTo. We won't follow the resulting
 		// redirect target anyway.

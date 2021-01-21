@@ -153,7 +153,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
     cr.reload
 
-    assert_equal({"vcpus" => 2, "ram" => 30}, cr.runtime_constraints)
+    assert ({"vcpus" => 2, "ram" => 30}.to_a - cr.runtime_constraints.to_a).empty?
 
     assert_not_nil cr.container_uuid
     c = Container.find_by_uuid cr.container_uuid
@@ -164,7 +164,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     assert_equal({}, c.environment)
     assert_equal({"/out" => {"kind"=>"tmp", "capacity"=>1000000}}, c.mounts)
     assert_equal "/out", c.output_path
-    assert_equal({"keep_cache_ram"=>268435456, "vcpus" => 2, "ram" => 30}, c.runtime_constraints)
+    assert ({"keep_cache_ram"=>268435456, "vcpus" => 2, "ram" => 30}.to_a - c.runtime_constraints.to_a).empty?
     assert_operator 0, :<, c.priority
 
     assert_raises(ActiveRecord::RecordInvalid) do
@@ -973,47 +973,16 @@ class ContainerRequestTest < ActiveSupport::TestCase
         end
       else
         cr.save!
-        assert_equal sp, cr.scheduling_parameters
+        assert (sp.to_a - cr.scheduling_parameters.to_a).empty?
       end
-    end
-  end
-
-  [
-    'zzzzz-dz642-runningcontainr',
-    nil,
-  ].each do |requesting_c|
-    test "having preemptible instances active on the API server, a committed #{requesting_c.nil? ? 'non-':''}child CR should not ask for preemptible instance if parameter already set to false" do
-      common_attrs = {cwd: "test",
-                      priority: 1,
-                      command: ["echo", "hello"],
-                      output_path: "test",
-                      scheduling_parameters: {"preemptible" => false},
-                      mounts: {"test" => {"kind" => "json"}}}
-
-      Rails.configuration.Containers.UsePreemptibleInstances = true
-      set_user_from_auth :active
-
-      if requesting_c
-        cr = with_container_auth(Container.find_by_uuid requesting_c) do
-          create_minimal_req!(common_attrs)
-        end
-        assert_not_nil cr.requesting_container_uuid
-      else
-        cr = create_minimal_req!(common_attrs)
-      end
-
-      cr.state = ContainerRequest::Committed
-      cr.save!
-
-      assert_equal false, cr.scheduling_parameters['preemptible']
     end
   end
 
   [
     [true, 'zzzzz-dz642-runningcontainr', true],
-    [true, nil, nil],
-    [false, 'zzzzz-dz642-runningcontainr', nil],
-    [false, nil, nil],
+    [true, nil, false],
+    [false, 'zzzzz-dz642-runningcontainr', false],
+    [false, nil, false],
   ].each do |preemptible_conf, requesting_c, schedule_preemptible|
     test "having Rails.configuration.Containers.UsePreemptibleInstances=#{preemptible_conf}, #{requesting_c.nil? ? 'non-':''}child CR should #{schedule_preemptible ? '':'not'} ask for preemptible instance by default" do
       common_attrs = {cwd: "test",
@@ -1068,11 +1037,11 @@ class ContainerRequestTest < ActiveSupport::TestCase
         end
       else
         cr = create_minimal_req!(common_attrs.merge({state: state}))
-        assert_equal sp, cr.scheduling_parameters
+        assert (sp.to_a - cr.scheduling_parameters.to_a).empty?
 
         if state == ContainerRequest::Committed
           c = Container.find_by_uuid(cr.container_uuid)
-          assert_equal sp, c.scheduling_parameters
+          assert (sp.to_a - c.scheduling_parameters.to_a).empty?
         end
       end
     end

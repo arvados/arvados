@@ -97,38 +97,18 @@ func (rtr *router) sendResponse(w http.ResponseWriter, req *http.Request, resp i
 			} else if defaultItemKind != "" {
 				item["kind"] = defaultItemKind
 			}
-			items[i] = applySelectParam(opts.Select, item)
+			item = applySelectParam(opts.Select, item)
+			rtr.mungeItemFields(item)
+			items[i] = item
 		}
 		if opts.Count == "none" {
 			delete(tmp, "items_available")
 		}
 	} else {
 		tmp = applySelectParam(opts.Select, tmp)
+		rtr.mungeItemFields(tmp)
 	}
 
-	// Format non-nil timestamps as rfc3339NanoFixed (by default
-	// they will have been encoded to time.RFC3339Nano, which
-	// omits trailing zeroes).
-	for k, v := range tmp {
-		if !strings.HasSuffix(k, "_at") {
-			continue
-		}
-		switch tv := v.(type) {
-		case *time.Time:
-			if tv == nil {
-				break
-			}
-			tmp[k] = tv.Format(rfc3339NanoFixed)
-		case time.Time:
-			tmp[k] = tv.Format(rfc3339NanoFixed)
-		case string:
-			t, err := time.Parse(time.RFC3339Nano, tv)
-			if err != nil {
-				break
-			}
-			tmp[k] = t.Format(rfc3339NanoFixed)
-		}
-	}
 	w.Header().Set("Content-Type", "application/json")
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
@@ -159,4 +139,52 @@ func kind(resp interface{}) string {
 		// "arvados.CollectionList" => "arvados#collectionList"
 		return "#" + strings.ToLower(s[1:])
 	})
+}
+
+func (rtr *router) mungeItemFields(tmp map[string]interface{}) {
+	for k, v := range tmp {
+		if strings.HasSuffix(k, "_at") {
+			// Format non-nil timestamps as
+			// rfc3339NanoFixed (otherwise they would use
+			// the default time encoding, which omits
+			// trailing zeroes).
+			switch tv := v.(type) {
+			case *time.Time:
+				if tv == nil || tv.IsZero() {
+					tmp[k] = nil
+				} else {
+					tmp[k] = tv.Format(rfc3339NanoFixed)
+				}
+			case time.Time:
+				if tv.IsZero() {
+					tmp[k] = nil
+				} else {
+					tmp[k] = tv.Format(rfc3339NanoFixed)
+				}
+			case string:
+				if tv == "" {
+					tmp[k] = nil
+				} else if t, err := time.Parse(time.RFC3339Nano, tv); err != nil {
+					// pass through an invalid time value (?)
+				} else if t.IsZero() {
+					tmp[k] = nil
+				} else {
+					tmp[k] = t.Format(rfc3339NanoFixed)
+				}
+			}
+		}
+		// Arvados API spec says when these fields are empty
+		// they appear in responses as null, rather than a
+		// zero value.
+		switch k {
+		case "output_uuid", "output_name", "log_uuid", "description", "requesting_container_uuid", "container_uuid":
+			if v == "" {
+				tmp[k] = nil
+			}
+		case "container_count_max":
+			if v == float64(0) {
+				tmp[k] = nil
+			}
+		}
+	}
 }

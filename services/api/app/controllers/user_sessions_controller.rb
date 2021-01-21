@@ -17,6 +17,7 @@ class UserSessionsController < ApplicationController
       raise "Local login disabled when LoginCluster is set"
     end
 
+    max_expires_at = nil
     if params[:provider] == 'controller'
       if request.headers['Authorization'] != 'Bearer ' + Rails.configuration.SystemRootToken
         return send_error('Invalid authorization header', status: 401)
@@ -24,18 +25,27 @@ class UserSessionsController < ApplicationController
       # arvados-controller verified the user and is passing auth_info
       # in request params.
       authinfo = SafeJSON.load(params[:auth_info])
+      max_expires_at = authinfo["expires_at"]
     else
       # omniauth middleware verified the user and is passing auth_info
       # in request.env.
       authinfo = request.env['omniauth.auth']['info'].with_indifferent_access
     end
 
-    begin
-      user = User.register(authinfo)
-    rescue => e
-      Rails.logger.warn "User.register error #{e}"
-      Rails.logger.warn "authinfo was #{authinfo.inspect}"
-      return redirect_to login_failure_url
+    if !authinfo['user_uuid'].blank?
+      user = User.find_by_uuid(authinfo['user_uuid'])
+      if !user
+        Rails.logger.warn "Nonexistent user_uuid in authinfo #{authinfo.inspect}"
+        return redirect_to login_failure_url
+      end
+    else
+      begin
+        user = User.register(authinfo)
+      rescue => e
+        Rails.logger.warn "User.register error #{e}"
+        Rails.logger.warn "authinfo was #{authinfo.inspect}"
+        return redirect_to login_failure_url
+      end
     end
 
     # For the benefit of functional and integration tests:
@@ -72,7 +82,7 @@ class UserSessionsController < ApplicationController
         return send_error 'Invalid remote cluster id', status: 400
       end
       remote = nil if remote == ''
-      return send_api_token_to(return_to_url, user, remote)
+      return send_api_token_to(return_to_url, user, remote, max_expires_at)
     end
     redirect_to @redirect_to
   end
@@ -136,7 +146,7 @@ class UserSessionsController < ApplicationController
     end
   end
 
-  def send_api_token_to(callback_url, user, remote=nil)
+  def send_api_token_to(callback_url, user, remote=nil, token_expiration=nil)
     # Give the API client a token for making API calls on behalf of
     # the authenticated user
 
@@ -146,11 +156,14 @@ class UserSessionsController < ApplicationController
       @api_client = ApiClient.
         find_or_create_by(url_prefix: api_client_url_prefix)
     end
-
-    token_expiration = nil
     if Rails.configuration.Login.TokenLifetime > 0
-      token_expiration = Time.now + Rails.configuration.Login.TokenLifetime
+      if token_expiration == nil
+        token_expiration = Time.now + Rails.configuration.Login.TokenLifetime
+      else
+        token_expiration = [token_expiration, Time.now + Rails.configuration.Login.TokenLifetime].min
+      end
     end
+
     @api_client_auth = ApiClientAuthorization.
       new(user: user,
           api_client: @api_client,

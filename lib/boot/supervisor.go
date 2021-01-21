@@ -63,6 +63,8 @@ type Supervisor struct {
 	environ    []string // for child processes
 }
 
+func (super *Supervisor) Cluster() *arvados.Cluster { return super.cluster }
+
 func (super *Supervisor) Start(ctx context.Context, cfg *arvados.Config, cfgPath string) {
 	super.ctx, super.cancel = context.WithCancel(ctx)
 	super.done = make(chan struct{})

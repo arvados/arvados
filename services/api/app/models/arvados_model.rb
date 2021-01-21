@@ -855,6 +855,40 @@ class ArvadosModel < ApplicationRecord
     nil
   end
 
+  # Fill in implied zero/false values in database records that were
+  # created before #17014 made them explicit, and reset the Rails
+  # "changed" state so the record doesn't appear to have been modified
+  # after loading.
+  #
+  # Invoked by Container and ContainerRequest models as an after_find
+  # hook.
+  def fill_container_defaults_after_find
+    fill_container_defaults
+    set_attribute_was('runtime_constraints', runtime_constraints)
+    set_attribute_was('scheduling_parameters', scheduling_parameters)
+    clear_changes_information
+  end
+
+  # Fill in implied zero/false values. Invoked by ContainerRequest as
+  # a before_validation hook in order to (a) ensure every key has a
+  # value in the updated database record and (b) ensure the attribute
+  # whitelist doesn't reject a change from an explicit zero/false
+  # value in the database to an implicit zero/false value in an update
+  # request.
+  def fill_container_defaults
+    self.runtime_constraints = {
+      'api' => false,
+      'keep_cache_ram' => 0,
+      'ram' => 0,
+      'vcpus' => 0,
+    }.merge(attributes['runtime_constraints'] || {})
+    self.scheduling_parameters = {
+      'max_run_time' => 0,
+      'partitions' => [],
+      'preemptible' => false,
+    }.merge(attributes['scheduling_parameters'] || {})
+  end
+
   # ArvadosModel.find_by_uuid needs extra magic to allow it to return
   # an object in any class.
   def self.find_by_uuid uuid
