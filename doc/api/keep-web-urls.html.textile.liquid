@@ -73,3 +73,13 @@ pre. http://collections.example.com/collections/download/uuid_or_pdh/TOKEN/foo/b
 A regular Workbench "download" link is also accepted, but credentials passed via cookie, header, etc. are ignored. Only public data can be served this way:
 
 pre. http://collections.example.com/collections/uuid_or_pdh/foo/bar.txt
+
+h2(#same-site). Same-site requirements for requests with tokens
+
+Although keep-web doesn't care about the domain part of the URL, the clients do: especially when rendering inline content.
+
+When a client passes a token in the URL, keep-web sends a redirect response placing the token in a @Set-Cookie@ header with the @SameSite=Lax@ attribute. The browser will ignore the cookie if it's not coming from a _same-site_ request, and thus its subsequent request will fail with a @401 Unauthorized@ error.
+
+This mainly affects Workbench's ability to show inline content, so it should be taken into account when configuring both services' URL schemes.
+
+You can read more about the definition of a _same-site_ request at the "RFC 6265bis-03 page":https://tools.ietf.org/html/draft-ietf-httpbis-rfc6265bis-03#section-5.2
