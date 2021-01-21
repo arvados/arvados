@@ -23,6 +23,8 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/auth"
 )
 
+const rfc3339NanoFixed = "2006-01-02T15:04:05.000000000Z07:00"
+
 type TokenProvider func(context.Context) ([]string, error)
 
 func PassthroughTokenProvider(ctx context.Context) ([]string, error) {
@@ -120,6 +122,20 @@ func (conn *Conn) requestAndDecode(ctx context.Context, dst interface{}, ep arva
 			delete(params, "limit")
 		}
 	}
+
+	if authinfo, ok := params["auth_info"]; ok {
+		if tmp, ok2 := authinfo.(map[string]interface{}); ok2 {
+			for k, v := range tmp {
+				if strings.HasSuffix(k, "_at") {
+					// Change zero times values to nil
+					if v, ok3 := v.(string); ok3 && (strings.HasPrefix(v, "0001-01-01T00:00:00") || v == "") {
+						tmp[k] = nil
+					}
+				}
+			}
+		}
+	}
+
 	if len(tokens) > 1 {
 		params["reader_tokens"] = tokens[1:]
 	}
@@ -286,6 +302,41 @@ func (conn *Conn) ContainerUnlock(ctx context.Context, options arvados.GetOption
 	return resp, err
 }
 
+func (conn *Conn) ContainerRequestCreate(ctx context.Context, options arvados.CreateOptions) (arvados.ContainerRequest, error) {
+	ep := arvados.EndpointContainerRequestCreate
+	var resp arvados.ContainerRequest
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) ContainerRequestUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.ContainerRequest, error) {
+	ep := arvados.EndpointContainerRequestUpdate
+	var resp arvados.ContainerRequest
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) ContainerRequestGet(ctx context.Context, options arvados.GetOptions) (arvados.ContainerRequest, error) {
+	ep := arvados.EndpointContainerRequestGet
+	var resp arvados.ContainerRequest
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) ContainerRequestList(ctx context.Context, options arvados.ListOptions) (arvados.ContainerRequestList, error) {
+	ep := arvados.EndpointContainerRequestList
+	var resp arvados.ContainerRequestList
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) ContainerRequestDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.ContainerRequest, error) {
+	ep := arvados.EndpointContainerRequestDelete
+	var resp arvados.ContainerRequest
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
 func (conn *Conn) SpecimenCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Specimen, error) {
 	ep := arvados.EndpointSpecimenCreate
 	var resp arvados.Specimen
@@ -402,11 +453,13 @@ func (conn *Conn) APIClientAuthorizationCurrent(ctx context.Context, options arv
 }
 
 type UserSessionAuthInfo struct {
-	Email           string   `json:"email"`
-	AlternateEmails []string `json:"alternate_emails"`
-	FirstName       string   `json:"first_name"`
-	LastName        string   `json:"last_name"`
-	Username        string   `json:"username"`
+	UserUUID        string    `json:"user_uuid"`
+	Email           string    `json:"email"`
+	AlternateEmails []string  `json:"alternate_emails"`
+	FirstName       string    `json:"first_name"`
+	LastName        string    `json:"last_name"`
+	Username        string    `json:"username"`
+	ExpiresAt       time.Time `json:"expires_at"`
 }
 
 type UserSessionCreateOptions struct {

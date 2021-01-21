@@ -621,7 +621,7 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 		return fmt.Errorf("output path does not correspond to a writable mount point")
 	}
 
-	if wantAPI := runner.Container.RuntimeConstraints.API; needCertMount && wantAPI != nil && *wantAPI {
+	if needCertMount && runner.Container.RuntimeConstraints.API {
 		for _, certfile := range arvadosclient.CertFiles {
 			_, err := os.Stat(certfile)
 			if err == nil {
@@ -1092,7 +1092,7 @@ func (runner *ContainerRunner) CreateContainer() error {
 		},
 	}
 
-	if wantAPI := runner.Container.RuntimeConstraints.API; wantAPI != nil && *wantAPI {
+	if runner.Container.RuntimeConstraints.API {
 		tok, err := runner.ContainerToken()
 		if err != nil {
 			return err
@@ -1269,7 +1269,7 @@ func (runner *ContainerRunner) updateLogs() {
 // CaptureOutput saves data from the container's output directory if
 // needed, and updates the container output accordingly.
 func (runner *ContainerRunner) CaptureOutput() error {
-	if wantAPI := runner.Container.RuntimeConstraints.API; wantAPI != nil && *wantAPI {
+	if runner.Container.RuntimeConstraints.API {
 		// Output may have been set directly by the container, so
 		// refresh the container record to check.
 		err := runner.DispatcherArvClient.Get("containers", runner.Container.UUID,
