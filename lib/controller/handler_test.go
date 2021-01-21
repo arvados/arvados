@@ -294,6 +294,8 @@ func (s *HandlerSuite) CheckObjectType(c *check.C, url string, token string, ski
 	}
 	resp2, err := client.Get(s.cluster.Services.RailsAPI.ExternalURL.String() + url + "/?api_token=" + token)
 	c.Check(err, check.Equals, nil)
+	c.Assert(resp2.StatusCode, check.Equals, http.StatusOK,
+		check.Commentf("Wasn't able to get data from the RailsAPI at %q", url))
 	defer resp2.Body.Close()
 	db, err := ioutil.ReadAll(resp2.Body)
 	c.Check(err, check.Equals, nil)

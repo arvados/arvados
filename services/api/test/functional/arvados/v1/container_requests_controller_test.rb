@@ -24,7 +24,8 @@ class Arvados::V1::ContainerRequestsControllerTest < ActionController::TestCase
 
     cr = JSON.parse(@response.body)
     assert_not_nil cr, 'Expected container request'
-    assert_equal sp, cr['scheduling_parameters']
+    assert_equal sp['partitions'], cr['scheduling_parameters']['partitions']
+    assert_equal false, cr['scheduling_parameters']['preemptible']
   end
 
   test "secret_mounts not in #create responses" do
@@ -60,6 +61,28 @@ class Arvados::V1::ContainerRequestsControllerTest < ActionController::TestCase
 
     req.reload
     assert_equal 'bar', req.secret_mounts['/foo']['content']
+  end
+
+  test "cancel with runtime_constraints and scheduling_params with default values" do
+    authorize_with :active
+    req = container_requests(:queued)
+
+    patch :update, params: {
+      id: req.uuid,
+      container_request: {
+        state: 'Final',
+        priority: 0,
+        runtime_constraints: {
+          'vcpus' => 1,
+          'ram' => 123,
+          'keep_cache_ram' => 0,
+        },
+        scheduling_parameters: {
+          "preemptible"=>false
+        }
+      },
+    }
+    assert_response :success
   end
 
   test "update without deleting secret_mounts" do

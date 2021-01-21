@@ -30,14 +30,16 @@ class ContainerRequest < ArvadosModel
   serialize :command, Array
   serialize :scheduling_parameters, Hash
 
+  after_find :fill_container_defaults_after_find
   before_validation :fill_field_defaults, :if => :new_record?
-  before_validation :validate_runtime_constraints
+  before_validation :fill_container_defaults
   before_validation :set_default_preemptible_scheduling_parameter
   before_validation :set_container
   validates :command, :container_image, :output_path, :cwd, :presence => true
   validates :output_ttl, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
   validates :priority, numericality: { only_integer: true, greater_than_or_equal_to: 0, less_than_or_equal_to: 1000 }
   validate :validate_datatypes
+  validate :validate_runtime_constraints
   validate :validate_scheduling_parameters
   validate :validate_state_change
   validate :check_update_whitelist
@@ -194,7 +196,7 @@ class ContainerRequest < ArvadosModel
       coll_name = "Container #{out_type} for request #{uuid}"
       trash_at = nil
       if out_type == 'output'
-        if self.output_name
+        if self.output_name and self.output_name != ""
           coll_name = self.output_name
         end
         if self.output_ttl > 0
@@ -312,28 +314,17 @@ class ContainerRequest < ArvadosModel
   end
 
   def set_default_preemptible_scheduling_parameter
-    c = get_requesting_container()
-    if self.state == Committed
-      # If preemptible instances (eg: AWS Spot Instances) are allowed,
-      # ask them on child containers by default.
-      if Rails.configuration.Containers.UsePreemptibleInstances and !c.nil? and
-        self.scheduling_parameters['preemptible'].nil?
-          self.scheduling_parameters['preemptible'] = true
-      end
+    if Rails.configuration.Containers.UsePreemptibleInstances && state == Committed && get_requesting_container()
+      self.scheduling_parameters['preemptible'] = true
     end
   end
 
   def validate_runtime_constraints
     case self.state
     when Committed
-      [['vcpus', true],
-       ['ram', true],
-       ['keep_cache_ram', false]].each do |k, required|
-        if !required && !runtime_constraints.include?(k)
-          next
-        end
+      ['vcpus', 'ram'].each do |k|
         v = runtime_constraints[k]
-        unless (v.is_a?(Integer) && v > 0)
+        if !v.is_a?(Integer) || v <= 0
           errors.add(:runtime_constraints,
                      "[#{k}]=#{v.inspect} must be a positive integer")
         end

@@ -1291,9 +1291,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		cr.Container.Mounts = make(map[string]arvados.Mount)
 		cr.Container.Mounts["/tmp"] = arvados.Mount{Kind: "tmp"}
 		cr.Container.OutputPath = "/tmp"
-
-		apiflag := true
-		cr.Container.RuntimeConstraints.API = &apiflag
+		cr.Container.RuntimeConstraints.API = true
 
 		err := cr.SetupMounts()
 		c.Check(err, IsNil)
@@ -1305,7 +1303,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		cr.CleanupDirs()
 		checkEmpty()
 
-		apiflag = false
+		cr.Container.RuntimeConstraints.API = false
 	}
 
 	{

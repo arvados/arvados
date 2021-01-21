@@ -20,8 +20,8 @@ import (
 )
 
 type pamLoginController struct {
-	Cluster    *arvados.Cluster
-	RailsProxy *railsProxy
+	Cluster *arvados.Cluster
+	Parent  *Conn
 }
 
 func (ctrl *pamLoginController) Logout(ctx context.Context, opts arvados.LogoutOptions) (arvados.LogoutResponse, error) {
@@ -87,7 +87,7 @@ func (ctrl *pamLoginController) UserAuthenticate(ctx context.Context, opts arvad
 		"user":  user,
 		"email": email,
 	}).Debug("pam authentication succeeded")
-	return createAPIClientAuthorization(ctx, ctrl.RailsProxy, ctrl.Cluster.SystemRootToken, rpc.UserSessionAuthInfo{
+	return ctrl.Parent.CreateAPIClientAuthorization(ctx, ctrl.Cluster.SystemRootToken, rpc.UserSessionAuthInfo{
 		Username: user,
 		Email:    email,
 	})
