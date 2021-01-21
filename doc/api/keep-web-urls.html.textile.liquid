@@ -41,10 +41,6 @@ The first form (with @--@ instead of @.@) avoids the cost and effort of deployin
 
 In all of the above forms, the @collections.example.com@ part can be anything at all: keep-web itself ignores everything after the first @.@ or @--@. (Of course, in order for clients to connect at all, DNS and any relevant proxies must be configured accordingly.)
 
-{% include 'notebox_begin' %}
-Although keep-web doesn't care about the domain part of the URL, the clients do: specially when rendering inline content, because keep-web uses the @Set-Cookie@ header with the @SameSite=Lax@ attribute, that requires the domain part of the URL to match between keep-web and workbench.
-{% include 'notebox_end' %}
-
 In all of the above forms, the @uuid_or_pdh@ part can be either a collection UUID or a portable data hash with the @+@ character optionally replaced by @-@ . (When @uuid_or_pdh@ appears in the domain name, replacing @+@ with @-@ is mandatory, because @+@ is not a valid character in a domain name.)
 
 In all of the above forms, a top level directory called @_@ is skipped. In cases where the @path/file.txt@ part might start with @t=@ or @c=@ or @_/@, links should be constructed with a leading @_/@ to ensure the top level directory is not interpreted as a token or collection ID.
@@ -77,3 +73,13 @@ pre. http://collections.example.com/collections/download/uuid_or_pdh/TOKEN/foo/b
 A regular Workbench "download" link is also accepted, but credentials passed via cookie, header, etc. are ignored. Only public data can be served this way:
 
 pre. http://collections.example.com/collections/uuid_or_pdh/foo/bar.txt
+
+h2(#same-site). Same-site requirements for requests with tokens
+
+Although keep-web doesn't care about the domain part of the URL, the clients do: specially when rendering inline content.
+
+When a client passes a token in the URL, keep-web sends a redirect response placing the token in a @Set-Cookie@ header with the @SameSite=Lax@ attribute. The browser will ignore the cookie if it's not coming from a _same-site_ request, and thus its subsequent request will fail with a @401 Unauthorized@ error.
+
+This mainly affects Workbench's ability to show inline content, so it should be taken into account when configuring both services' URL schemes.
+
+You can read more about the definition of a _same-site_ request at the "RFC 6265bis-03 page":https://tools.ietf.org/html/draft-ietf-httpbis-rfc6265bis-03#section-5.2
