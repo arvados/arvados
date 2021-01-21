@@ -126,8 +126,9 @@ func (gw *Gateway) Start() error {
 	return nil
 }
 
-// handleSSH connects to an SSH server that runs commands as root in
-// the container. The tunnel itself can only be created by an
+// handleSSH connects to an SSH server that allows the caller to run
+// interactive commands as root (or any other desired user) inside the
+// container. The tunnel itself can only be created by an
 // authenticated caller, so the SSH server itself is wide open (any
 // password or key will be accepted).
 //
@@ -140,10 +141,12 @@ func (gw *Gateway) Start() error {
 // hmac(AuthSecret,certfingerprint) (this prevents other containers
 // and shell nodes from connecting directly)
 //
-// Optional header:
+// Optional headers:
 //
-// X-Arvados-Detach-Keys: argument to "docker attach --detach-keys",
+// X-Arvados-Detach-Keys: argument to "docker exec --detach-keys",
 // e.g., "ctrl-p,ctrl-q"
+// X-Arvados-Login-Username: argument to "docker exec --user": account
+// used to run command(s) inside the container.
 func (gw *Gateway) handleSSH(w http.ResponseWriter, req *http.Request) {
 	// In future we'll handle browser traffic too, but for now the
 	// only traffic we expect is an SSH tunnel from
