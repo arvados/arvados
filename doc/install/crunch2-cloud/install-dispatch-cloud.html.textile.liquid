@@ -82,8 +82,12 @@ The <span class="userinput">ImageID</span> value is the compute node image that 
         ImageID: <span class="userinput">ami-01234567890abcdef</span>
         Driver: ec2
         DriverParameters:
+          # If you are not using an IAM role for authentication, specify access
+          # credentials here. Otherwise, omit or set AccessKeyID and
+          # SecretAccessKey to an empty value.
           AccessKeyID: XXXXXXXXXXXXXXXXXXXX
           SecretAccessKey: YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY
+
           SecurityGroupIDs:
           - sg-0123abcd
           SubnetID: subnet-0123abcd
