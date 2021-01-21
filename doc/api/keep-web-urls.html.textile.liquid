@@ -76,7 +76,7 @@ pre. http://collections.example.com/collections/uuid_or_pdh/foo/bar.txt
 
 h2(#same-site). Same-site requirements for requests with tokens
 
-Although keep-web doesn't care about the domain part of the URL, the clients do: specially when rendering inline content.
+Although keep-web doesn't care about the domain part of the URL, the clients do: especially when rendering inline content.
 
 When a client passes a token in the URL, keep-web sends a redirect response placing the token in a @Set-Cookie@ header with the @SameSite=Lax@ attribute. The browser will ignore the cookie if it's not coming from a _same-site_ request, and thus its subsequent request will fail with a @401 Unauthorized@ error.
 
