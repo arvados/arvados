@@ -26,7 +26,7 @@ ubuntu1804/generated: common-generated-all
 	cp -f -rlt ubuntu1804/generated common-generated/*
 
 GOTARBALL=go1.13.4.linux-amd64.tar.gz
-NODETARBALL=node-v6.11.2-linux-x64.tar.xz
+NODETARBALL=node-v10.23.1-linux-x64.tar.xz
 RVMKEY1=mpapis.asc
 RVMKEY2=pkuczynski.asc
 
@@ -36,7 +36,7 @@ common-generated/$(GOTARBALL): common-generated
 	wget -cqO common-generated/$(GOTARBALL) https://dl.google.com/go/$(GOTARBALL)
 
 common-generated/$(NODETARBALL): common-generated
-	wget -cqO common-generated/$(NODETARBALL) https://nodejs.org/dist/v6.11.2/$(NODETARBALL)
+	wget -cqO common-generated/$(NODETARBALL) https://nodejs.org/dist/v10.23.1/$(NODETARBALL)
 
 common-generated/$(RVMKEY1): common-generated
 	wget -cqO common-generated/$(RVMKEY1) https://rvm.io/mpapis.asc
