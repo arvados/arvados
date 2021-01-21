@@ -469,7 +469,6 @@ type UserSessionCreateOptions struct {
 
 func (conn *Conn) UserSessionCreate(ctx context.Context, options UserSessionCreateOptions) (arvados.LoginResponse, error) {
 	ep := arvados.APIEndpoint{Method: "POST", Path: "auth/controller/callback"}
-	// if ExpiresAt is empty value then add 2 hour expiration
 	var resp arvados.LoginResponse
 	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
 	return resp, err

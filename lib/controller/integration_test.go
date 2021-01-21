@@ -21,7 +21,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"time"
 
 	"git.arvados.org/arvados.git/lib/boot"
 	"git.arvados.org/arvados.git/lib/config"
@@ -211,7 +210,6 @@ func (s *IntegrationSuite) userClients(rootctx context.Context, c *check.C, conn
 			FirstName: "Example",
 			LastName:  "User",
 			Username:  "example",
-			ExpiresAt: time.Now().Add(1 * time.Hour),
 		},
 	})
 	c.Assert(err, check.IsNil)

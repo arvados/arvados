@@ -116,7 +116,7 @@ class UserSessionsController < ApplicationController
       # FIXME: if current_user has never authorized this app before,
       # ask for confirmation here!
 
-      return send_api_token_to(params[:return_to], current_user, params[:remote], params[:expires_at])
+      return send_api_token_to(params[:return_to], current_user, params[:remote])
     end
     p = []
     p << "auth_provider=#{CGI.escape(params[:auth_provider])}" if params[:auth_provider]
