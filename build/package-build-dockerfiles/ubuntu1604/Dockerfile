@@ -29,8 +29,8 @@ ADD generated/go1.13.4.linux-amd64.tar.gz /usr/local/
 RUN ln -s /usr/local/go/bin/go /usr/local/bin/
 
 # Install nodejs and npm
-ADD generated/node-v6.11.2-linux-x64.tar.xz /usr/local/
-RUN ln -s /usr/local/node-v6.11.2-linux-x64/bin/* /usr/local/bin/
+ADD generated/node-v10.23.1-linux-x64.tar.xz /usr/local/
+RUN ln -s /usr/local/node-v10.23.1-linux-x64/bin/* /usr/local/bin/
 
 RUN git clone --depth 1 git://git.arvados.org/arvados.git /tmp/arvados && cd /tmp/arvados/services/api && /usr/local/rvm/bin/rvm-exec default bundle && cd /tmp/arvados/apps/workbench && /usr/local/rvm/bin/rvm-exec default bundle
 
