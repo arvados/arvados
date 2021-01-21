@@ -133,6 +133,9 @@ Options:
 		}
 		targetUUID = cr.ContainerUUID
 		fmt.Fprintln(stderr, "connecting to container", targetUUID)
+	} else if !strings.Contains(targetUUID, "-dz642-") {
+		fmt.Fprintf(stderr, "target UUID is not a container or container request UUID: %s\n", targetUUID)
+		return 1
 	}
 	sshconn, err := rpcconn.ContainerSSH(context.TODO(), arvados.ContainerSSHOptions{
 		UUID:          targetUUID,
