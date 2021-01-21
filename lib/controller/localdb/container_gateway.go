@@ -38,21 +38,23 @@ func (conn *Conn) ContainerSSH(ctx context.Context, opts arvados.ContainerSSHOpt
 	if err != nil {
 		return
 	}
-
-	ctxRoot := auth.NewContext(ctx, &auth.Credentials{Tokens: []string{conn.cluster.SystemRootToken}})
-	crs, err := conn.railsProxy.ContainerRequestList(ctxRoot, arvados.ListOptions{Limit: -1, Filters: []arvados.Filter{{"container_uuid", "=", opts.UUID}}})
-	if err != nil {
-		return
-	}
-	for _, cr := range crs.Items {
-		if cr.ModifiedByUserUUID != user.UUID {
-			err = httpserver.ErrorWithStatus(errors.New("permission denied: container is associated with requests submitted by other users"), http.StatusForbidden)
+	if !user.IsAdmin {
+		ctxRoot := auth.NewContext(ctx, &auth.Credentials{Tokens: []string{conn.cluster.SystemRootToken}})
+		var crs arvados.ContainerRequestList
+		crs, err = conn.railsProxy.ContainerRequestList(ctxRoot, arvados.ListOptions{Limit: -1, Filters: []arvados.Filter{{"container_uuid", "=", opts.UUID}}})
+		if err != nil {
 			return
 		}
-	}
-	if crs.ItemsAvailable != len(crs.Items) {
-		err = httpserver.ErrorWithStatus(errors.New("incomplete response while checking permission"), http.StatusInternalServerError)
-		return
+		for _, cr := range crs.Items {
+			if cr.ModifiedByUserUUID != user.UUID {
+				err = httpserver.ErrorWithStatus(errors.New("permission denied: container is associated with requests submitted by other users"), http.StatusForbidden)
+				return
+			}
+		}
+		if crs.ItemsAvailable != len(crs.Items) {
+			err = httpserver.ErrorWithStatus(errors.New("incomplete response while checking permission"), http.StatusInternalServerError)
+			return
+		}
 	}
 
 	switch ctr.State {
