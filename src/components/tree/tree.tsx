@@ -5,13 +5,14 @@
 import * as React from 'react';
 import { List, ListItem, ListItemIcon, Checkbox, Radio, Collapse } from "@material-ui/core";
 import { StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core/styles';
-import { ProjectIcon } from '~/components/icon/icon';
+import { CollectionIcon, DefaultIcon, DirectoryIcon, FileIcon, ProjectIcon } from '~/components/icon/icon';
 import { ReactElement } from "react";
 import CircularProgress from '@material-ui/core/CircularProgress';
 import classnames from "classnames";
 
 import { ArvadosTheme } from '~/common/custom-theme';
 import { SidePanelRightArrowIcon } from '../icon/icon';
+import { ResourceKind } from '~/models/resource';
 
 type CssRules = 'list'
     | 'listItem'
@@ -161,6 +162,35 @@ const FLAT_TREE_ACTIONS = {
     toggleActive: 'TOGGLE_ACTIVE',
 };
 
+const ItemIcon = React.memo(({type, kind, active, classes}: any) => {
+    let Icon = ProjectIcon;
+
+        if (type) {
+            switch (type) {
+                case 'directory':
+                    Icon = DirectoryIcon;
+                    break;
+                case 'file':
+                    Icon = FileIcon;
+                    break;
+                default:
+                    Icon = DefaultIcon;
+            }
+        }
+
+        if (kind) {
+            switch(kind) {
+                case ResourceKind.COLLECTION:
+                    Icon = CollectionIcon;
+                    break;
+                default:
+                    break;
+            }
+        }
+
+    return <Icon className={classnames({ [classes.active]: active }, classes.childItemIcon)} />;
+});
+
 const FlatTree = (props: FlatTreeProps) =>
     <div
         onContextMenu={(event) => {
@@ -198,7 +228,7 @@ const FlatTree = (props: FlatTreeProps) =>
                     </i>
                     <div data-action={FLAT_TREE_ACTIONS.toggleActive} className={props.classes.renderContainer}>
                         <span style={{ display: 'flex', alignItems: 'center' }}>
-                            <ProjectIcon className={classnames({ [props.classes.active]: item.active }, props.classes.childItemIcon)} />
+                            <ItemIcon type={item.data.type} active={item.active} kind={item.data.kind} classes={props.classes} />
                             <span style={{ fontSize: '0.875rem' }}>
                                 {item.data.name}
                             </span>
