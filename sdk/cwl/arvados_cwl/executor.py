@@ -524,7 +524,9 @@ The 'jobs' API is no longer supported.
     def arv_executor(self, updated_tool, job_order, runtimeContext, logger=None):
         self.debug = runtimeContext.debug
 
-        logger.info("Using cluster %s (%s)", self.api.config()["ClusterID"], self.api.config()["Services"]["Controller"]["ExternalURL"])
+        workbench1 = self.api.config()["Services"]["Workbench1"]["ExternalURL"]
+        workbench2 = self.api.config()["Services"]["Workbench2"]["ExternalURL"]
+        logger.info("Using cluster %s (%s)", self.api.config()["ClusterID"], workbench2 or workbench1)
 
         updated_tool.visit(self.check_features)
 
