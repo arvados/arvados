@@ -761,7 +761,7 @@ The 'jobs' API is no longer supported.
             raise WorkflowException("Workflow did not return a result.")
 
         if runtimeContext.submit and isinstance(tool, Runner):
-            logger.info("Final output collection %s", tool.final_output)
+            logger.info("Final output collection %s (%scollections/%s)", tool.final_output, workbench2 or workbench1, tool.final_output)
         else:
             if self.output_name is None:
                 self.output_name = "Output of %s" % (shortname(tool.tool["id"]))
