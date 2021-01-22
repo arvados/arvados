@@ -6,15 +6,21 @@
 
 ##### About
 
-This directory holds a small script to install Arvados on a single node, using the
+This directory holds a small script to help you get Arvados up and running, using the
 [Saltstack arvados-formula](https://github.com/saltstack-formulas/arvados-formula)
 in master-less mode.
 
-The fastest way to get it running is to modify the first lines in the `provision.sh`
-script to suit your needs, copy it in the host where you want to install Arvados
-and run it as root.
+There are a few preset examples that you can use:
 
-There's an example `Vagrantfile` also, to install it in a vagrant box if you want
+* `single_host`: Install all the Arvados components in a single host. Suitable for testing
+  or demo-ing, but not recommended for production use.
+* `multi_host/aws`: Let's you install different Arvados components in different hosts on AWS.
+  
+The fastest way to get it running is to copy the `local.params.example` file to `local.params`,
+edit and modify the file to suit your needs, copy this file along with the `provision.sh` script
+into the host where you want to install Arvados and run the `provision.sh` script as root.
+
+There's an example `Vagrantfile` also, to install Arvados in a vagrant box if you want
 to try it locally.
 
 For more information, please read https://doc.arvados.org/main/install/salt-single-host.html

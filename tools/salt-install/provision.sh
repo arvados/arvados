@@ -10,55 +10,26 @@
 #
 # vagrant up
 
-##########################################################
-# This section are the basic parameters to configure the installation
+set -o pipefail
 
-# The 5 letters name you want to give your cluster
-CLUSTER="arva2"
-DOMAIN="arv.local"
+# capture the directory that the script is running from
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
-INITIAL_USER="admin"
-
-# If not specified, the initial user email will be composed as
-# INITIAL_USER@CLUSTER.DOMAIN
-INITIAL_USER_EMAIL="${INITIAL_USER}@${CLUSTER}.${DOMAIN}"
-INITIAL_USER_PASSWORD="password"
-
-# The example config you want to use. Currently, only "single_host" is
-# available
 CONFIG_DIR="single_host"
-
-# Which release of Arvados repo you want to use
 RELEASE="production"
-# Which version of Arvados you want to install. Defaults to 'latest'
-# in the desired repo
 VERSION="latest"
-
-# Host SSL port where you want to point your browser to access Arvados
-# Defaults to 443 for regular runs, and to 8443 when called in Vagrant.
-# You can point it to another port if desired
-# In Vagrant, make sure it matches what you set in the Vagrantfile
-# HOST_SSL_PORT=443
-
-# This is a arvados-formula setting.
-# If branch is set, the script will switch to it before running salt
-# Usually not needed, only used for testing
-# BRANCH="master"
-
-##########################################################
-# Usually there's no need to modify things below this line
-
-# Formulas versions
 ARVADOS_TAG="v1.1.4"
 POSTGRES_TAG="v0.41.3"
 NGINX_TAG="v2.4.0"
 DOCKER_TAG="v1.0.0"
 LOCALE_TAG="v0.3.4"
 
-set -o pipefail
-
-# capture the directory that the script is running from
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+if [ -s ${SCRIPT_DIR}/local.params ]; then
+  source ${SCRIPT_DIR}/local.params
+else
+  echo >&2 "Please create a '${SCRIPT_DIR}/local.params' file with initial values, as described in FIXME_URL_TO_DESCR"
+  exit 1
+fi
 
 usage() {
   echo >&2
@@ -68,6 +39,19 @@ usage() {
   echo >&2 "  -d, --debug             Run salt installation in debug mode"
   echo >&2 "  -p <N>, --ssl-port <N>  SSL port to use for the web applications"
   echo >&2 "  -t, --test              Test installation running a CWL workflow"
+  echo >&2 "  -r, --roles             List of Arvados roles to apply to the host, comma separated"
+  echo >&2 "                          Possible values are:"
+  echo >&2 "                            api"
+  echo >&2 "                            controller"
+  echo >&2 "                            keepstore"
+  echo >&2 "                            websocket"
+  echo >&2 "                            keepweb"
+  echo >&2 "                            workbench2"
+  echo >&2 "                            keepproxy"
+  echo >&2 "                            shell"
+  echo >&2 "                            workbench"
+  echo >&2 "                            dispatcher"
+  echo >&2 "                          Defaults to applying them all"
   echo >&2 "  -h, --help              Display this help and exit"
   echo >&2 "  -v, --vagrant           Run in vagrant and use the /vagrant shared dir"
   echo >&2
@@ -75,8 +59,8 @@ usage() {
 
 arguments() {
   # NOTE: This requires GNU getopt (part of the util-linux package on Debian-based distros).
-  TEMP=$(getopt -o dhp:tv \
-    --long debug,help,ssl-port:,test,vagrant \
+  TEMP=$(getopt -o dhp:r:tv \
+    --long debug,help,ssl-port:,roles:,test,vagrant \
     -n "${0}" -- "${@}")
 
   if [ ${?} != 0 ] ; then echo "GNU getopt missing? Use -h for help"; exit 1 ; fi
@@ -89,6 +73,23 @@ arguments() {
         LOG_LEVEL="debug"
         shift
         ;;
+      -p | --ssl-port)
+        HOST_SSL_PORT=${2}
+        shift 2
+        ;;
+      -r | --roles)
+        for i in ${2//,/ }
+          do
+            # Verify the role exists
+            if [[ ! "api,controller,keepstore,websocket,keepweb,workbench2,keepproxy,shell,workbench,dispatcher" == *"$i"* ]]; then
+              echo "The role '${i}' is not a valid role"
+              usage
+              exit 1
+            fi
+            ROLES="${ROLES} ${i}"
+          done
+          shift 2
+        ;;
       -t | --test)
         TEST="yes"
         shift
@@ -96,10 +97,6 @@ arguments() {
       -v | --vagrant)
         VAGRANT="yes"
         shift
-        ;;
-      -p | --ssl-port)
-        HOST_SSL_PORT=${2}
-        shift 2
         ;;
       --)
         shift
@@ -167,8 +164,16 @@ base:
     - nginx.passenger
     - postgres
     - docker
-    - arvados
 EOFTSLS
+
+# If we want specific roles for a node, just add those states
+if [ -z "${ROLES}" ]; then
+  echo '    - arvados' >> ${S_DIR}/top.sls
+else
+  for R in ${ROLES}; do
+    echo "    - arvados.${R}" >> ${S_DIR}/top.sls
+  done
+fi
 
 # Pillars
 cat > ${P_DIR}/top.sls << EOFPSLS
@@ -191,7 +196,7 @@ EOFPSLS
 
 # Get the formula and dependencies
 cd ${F_DIR} || exit 1
-git clone --branch "${ARVADOS_TAG}" https://github.com/saltstack-formulas/arvados-formula.git
+git clone --branch "${ARVADOS_TAG}" https://github.com/arvados/arvados-formula.git
 git clone --branch "${DOCKER_TAG}" https://github.com/saltstack-formulas/docker-formula.git
 git clone --branch "${LOCALE_TAG}" https://github.com/saltstack-formulas/locale-formula.git
 git clone --branch "${NGINX_TAG}" https://github.com/saltstack-formulas/nginx-formula.git
