@@ -156,8 +156,6 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
       Health:
         InternalURLs:
           "http://0.0.0.0:9007/": {}
-    API:
-      RailsSessionSecretToken: {{printf "%q" ( .RandomHex 50 )}}
     Collections:
       BlobSigningKey: {{printf "%q" ( .RandomHex 50 )}}
     Containers:
