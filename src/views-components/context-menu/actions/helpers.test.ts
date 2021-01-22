@@ -6,7 +6,8 @@ import { sanitizeToken, getClipboardUrl, getInlineFileUrl } from "./helpers";
 
 describe('helpers', () => {
     // given
-    const url = 'https://example.com/c=zzzzz/t=v2/a/b/LIMS/1.html';
+    const url = 'https://example.com/c=zzzzz-4zz18-0123456789abcde/t=v2/a/b/LIMS/1.html';
+    const urlWithPdh = 'https://example.com/c=012345678901234567890123456789aa+0/t=v2/a/b/LIMS/1.html';
 
     describe('sanitizeToken', () => {
         it('should sanitize token from the url', () => {
@@ -14,7 +15,7 @@ describe('helpers', () => {
             const result = sanitizeToken(url);
 
             // then
-            expect(result).toBe('https://example.com/c=zzzzz/LIMS/1.html?api_token=v2/a/b');
+            expect(result).toBe('https://example.com/c=zzzzz-4zz18-0123456789abcde/LIMS/1.html?api_token=v2/a/b');
         });
     });
 
@@ -24,7 +25,7 @@ describe('helpers', () => {
             const result = getClipboardUrl(url);
 
             // then
-            expect(result).toBe('http://localhost?redirectTo=https://example.com/c=zzzzz/LIMS/1.html');
+            expect(result).toBe('http://localhost?redirectTo=https://example.com/c=zzzzz-4zz18-0123456789abcde/LIMS/1.html');
         });
     });
 
@@ -37,9 +38,13 @@ describe('helpers', () => {
 
             // then
             expect(getInlineFileUrl(url, webDavDownloadUrl, webDavUrlA))
-                .toBe('https://zzzzz.collections.example.com/t=v2/a/b/LIMS/1.html');
+                .toBe('https://zzzzz-4zz18-0123456789abcde.collections.example.com/t=v2/a/b/LIMS/1.html');
             expect(getInlineFileUrl(url, webDavDownloadUrl, webDavUrlB))
-                .toBe('https://zzzzz--collections.example.com/t=v2/a/b/LIMS/1.html');
+                .toBe('https://zzzzz-4zz18-0123456789abcde--collections.example.com/t=v2/a/b/LIMS/1.html');
+            expect(getInlineFileUrl(urlWithPdh, webDavDownloadUrl, webDavUrlA))
+                .toBe('https://012345678901234567890123456789aa-0.collections.example.com/t=v2/a/b/LIMS/1.html');
+            expect(getInlineFileUrl(urlWithPdh, webDavDownloadUrl, webDavUrlB))
+                .toBe('https://012345678901234567890123456789aa-0--collections.example.com/t=v2/a/b/LIMS/1.html');
         });
 
         it('should keep the url the same when no inline url available', () => {
@@ -49,7 +54,7 @@ describe('helpers', () => {
             const result = getInlineFileUrl(url, webDavDownloadUrl, webDavUrl);
 
             // then
-            expect(result).toBe('https://example.com/c=zzzzz/t=v2/a/b/LIMS/1.html');
+            expect(result).toBe('https://example.com/c=zzzzz-4zz18-0123456789abcde/t=v2/a/b/LIMS/1.html');
         });
 
         it('should replace the url when available', () => {
@@ -59,7 +64,7 @@ describe('helpers', () => {
             const result = getInlineFileUrl(url, webDavDownloadUrl, webDavUrl);
 
             // then
-            expect(result).toBe('https://download.example.com/c=zzzzz/t=v2/a/b/LIMS/1.html');
+            expect(result).toBe('https://download.example.com/c=zzzzz-4zz18-0123456789abcde/t=v2/a/b/LIMS/1.html');
         });
     });
 });

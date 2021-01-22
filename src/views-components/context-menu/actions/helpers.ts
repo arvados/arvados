@@ -2,6 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
+import { extractUuidKind, ResourceKind } from "~/models/resource";
+
 export const sanitizeToken = (href: string, tokenAsQueryParam = true): string => {
     const [prefix, suffix] = href.split('/t=');
     const [token1, token2, token3, ...rest] = suffix.split('/');
@@ -19,9 +21,10 @@ export const getClipboardUrl = (href: string, shouldSanitizeToken = true): strin
 };
 
 export const getInlineFileUrl = (url: string, keepWebSvcUrl: string, keepWebInlineSvcUrl: string): string => {
-    const collUuidMatch = url.match(/\/c=([a-z0-9-]+)\//);
-    if (collUuidMatch === null) { return ''; }
-    const collUuid = collUuidMatch[1];
+    const collMatch = url.match(/\/c=([a-z0-9-+]+)\//);
+    if (collMatch === null) { return ''; }
+    if (extractUuidKind(collMatch[1]) !== ResourceKind.COLLECTION) { return ''; }
+    const collId = collMatch[1].replace('+', '-');
     let inlineUrl = keepWebInlineSvcUrl !== ""
         ? url.replace(keepWebSvcUrl, keepWebInlineSvcUrl)
         : url;
@@ -30,14 +33,14 @@ export const getInlineFileUrl = (url: string, keepWebSvcUrl: string, keepWebInli
     // 'https://*--collections.example.com' should get the uuid on their hostnames
     // See: https://doc.arvados.org/v2.1/api/keep-web-urls.html
     if (inlineUrl.indexOf('*.') > -1) {
-        inlineUrl = inlineUrl.replace('*.', `${collUuid}.`);
+        inlineUrl = inlineUrl.replace('*.', `${collId}.`);
         uuidOnHostname = true;
     } else if (inlineUrl.indexOf('*--') > -1) {
-        inlineUrl = inlineUrl.replace('*--', `${collUuid}--`);
+        inlineUrl = inlineUrl.replace('*--', `${collId}--`);
         uuidOnHostname = true;
     }
     if (uuidOnHostname) {
-        inlineUrl = inlineUrl.replace(`/c=${collUuid}`, '');
+        inlineUrl = inlineUrl.replace(`/c=${collMatch[1]}`, '');
     }
     return inlineUrl;
 };
