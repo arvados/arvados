@@ -238,7 +238,7 @@ ln -sf /var/lib/arvados/bin/geckodriver /usr/local/bin/
 			}
 		}
 
-		nodejsversion := "v8.15.1"
+		nodejsversion := "v10.23.1"
 		if havenodejsversion, err := exec.Command("/usr/local/bin/node", "--version").CombinedOutput(); err == nil && string(havenodejsversion) == nodejsversion+"\n" {
 			logger.Print("nodejs " + nodejsversion + " already installed")
 		} else {
