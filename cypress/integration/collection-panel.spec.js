@@ -28,7 +28,7 @@ describe('Collection panel tests', function() {
         cy.clearLocalStorage();
     });
 
-    it('shows collection by URL', function() {
+    it.only('shows collection by URL', function() {
         cy.loginAs(activeUser);
         [true, false].map(function(isWritable) {
             cy.createGroup(adminUser.token, {
@@ -96,8 +96,10 @@ describe('Collection panel tests', function() {
                     // Check that the file listing show both read & write operations
                     cy.get('[data-cy=collection-files-panel]').within(() => {
                         cy.root().should('contain', 'bar');
-                        cy.get('[data-cy=upload-button]')
-                            .should(`${isWritable ? '' : 'not.'}contain`, 'Upload data');
+                        if (isWritable) {
+                            cy.get('[data-cy=upload-button]')
+                                .should(`${isWritable ? '' : 'not.'}contain`, 'Upload data');
+                        }
                     });
                     cy.get('[data-cy=collection-files-panel]')
                         .contains('bar').rightclick();
