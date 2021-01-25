@@ -526,7 +526,8 @@ The 'jobs' API is no longer supported.
 
         workbench1 = self.api.config()["Services"]["Workbench1"]["ExternalURL"]
         workbench2 = self.api.config()["Services"]["Workbench2"]["ExternalURL"]
-        logger.info("Using cluster %s (%s)", self.api.config()["ClusterID"], workbench2 or workbench1)
+        controller = self.api.config()["Services"]["Controller"]["ExternalURL"]
+        logger.info("Using cluster %s (%s)", self.api.config()["ClusterID"], workbench2 or workbench1 or controller)
 
         updated_tool.visit(self.check_features)
 
@@ -761,7 +762,9 @@ The 'jobs' API is no longer supported.
             raise WorkflowException("Workflow did not return a result.")
 
         if runtimeContext.submit and isinstance(tool, Runner):
-            logger.info("Final output collection %s (%scollections/%s)", tool.final_output, workbench2 or workbench1, tool.final_output)
+            logger.info("Final output collection %s", tool.final_output)
+            if workbench2 or workbench1:
+                logger.info("Output at %scollections/%s", workbench2 or workbench1, tool.final_output)
         else:
             if self.output_name is None:
                 self.output_name = "Output of %s" % (shortname(tool.tool["id"]))
