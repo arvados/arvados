@@ -141,12 +141,12 @@ func (runner runPassenger) Run(ctx context.Context, fail func(error), super *Sup
 		}
 		opts := runOptions{
 			env: append([]string{
-				"HOME=/var/www",
 				"TMPDIR=" + super.wwwtempdir,
 			}, railsEnv...),
 		}
 		if super.ClusterType == "production" {
 			opts.user = "www-data"
+			opts.env = append(opts.env, "HOME=/var/www")
 		} else {
 			// This would be desirable when changing uid
 			// too, but it fails because /dev/stderr is a
