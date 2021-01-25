@@ -488,6 +488,7 @@ func (ta *oidcTokenAuthorizer) registerToken(ctx context.Context, tok string) er
 	if err != nil {
 		return err
 	}
+	aca.ExpiresAt = exp.Format(time.RFC3339Nano)
 	ta.cache.Add(tok, aca)
 	return nil
 }
