@@ -24,43 +24,37 @@ NGINX_TAG="v2.4.0"
 DOCKER_TAG="v1.0.0"
 LOCALE_TAG="v0.3.4"
 
-if [ -s ${SCRIPT_DIR}/local.params ]; then
-  source ${SCRIPT_DIR}/local.params
-else
-  echo >&2 "Please create a '${SCRIPT_DIR}/local.params' file with initial values, as described in FIXME_URL_TO_DESCR"
-  exit 1
-fi
-
 usage() {
   echo >&2
   echo >&2 "Usage: ${0} [-h] [-h]"
   echo >&2
   echo >&2 "${0} options:"
-  echo >&2 "  -d, --debug             Run salt installation in debug mode"
-  echo >&2 "  -p <N>, --ssl-port <N>  SSL port to use for the web applications"
-  echo >&2 "  -t, --test              Test installation running a CWL workflow"
-  echo >&2 "  -r, --roles             List of Arvados roles to apply to the host, comma separated"
-  echo >&2 "                          Possible values are:"
-  echo >&2 "                            api"
-  echo >&2 "                            controller"
-  echo >&2 "                            keepstore"
-  echo >&2 "                            websocket"
-  echo >&2 "                            keepweb"
-  echo >&2 "                            workbench2"
-  echo >&2 "                            keepproxy"
-  echo >&2 "                            shell"
-  echo >&2 "                            workbench"
-  echo >&2 "                            dispatcher"
-  echo >&2 "                          Defaults to applying them all"
-  echo >&2 "  -h, --help              Display this help and exit"
-  echo >&2 "  -v, --vagrant           Run in vagrant and use the /vagrant shared dir"
+  echo >&2 "  -d, --debug                                 Run salt installation in debug mode"
+  echo >&2 "  -p <N>, --ssl-port <N>                      SSL port to use for the web applications"
+  echo >&2 "  -c <local.params>, --config <local.params>  Path to the local.params config file"
+  echo >&2 "  -t, --test                                  Test installation running a CWL workflow"
+  echo >&2 "  -r, --roles                                 List of Arvados roles to apply to the host, comma separated"
+  echo >&2 "                                              Possible values are:"
+  echo >&2 "                                                api"
+  echo >&2 "                                                controller"
+  echo >&2 "                                                keepstore"
+  echo >&2 "                                                websocket"
+  echo >&2 "                                                keepweb"
+  echo >&2 "                                                workbench2"
+  echo >&2 "                                                keepproxy"
+  echo >&2 "                                                shell"
+  echo >&2 "                                                workbench"
+  echo >&2 "                                                dispatcher"
+  echo >&2 "                                              Defaults to applying them all"
+  echo >&2 "  -h, --help                                  Display this help and exit"
+  echo >&2 "  -v, --vagrant                               Run in vagrant and use the /vagrant shared dir"
   echo >&2
 }
 
 arguments() {
   # NOTE: This requires GNU getopt (part of the util-linux package on Debian-based distros).
-  TEMP=$(getopt -o dhp:r:tv \
-    --long debug,help,ssl-port:,roles:,test,vagrant \
+  TEMP=$(getopt -o c:dhp:r:tv \
+    --long config:,debug,help,ssl-port:,roles:,test,vagrant \
     -n "${0}" -- "${@}")
 
   if [ ${?} != 0 ] ; then echo "GNU getopt missing? Use -h for help"; exit 1 ; fi
@@ -69,6 +63,10 @@ arguments() {
 
   while [ ${#} -ge 1 ]; do
     case ${1} in
+      -c | --config)
+        CONFIG=${2}
+        shift 2
+        ;;
       -d | --debug)
         LOG_LEVEL="debug"
         shift
@@ -110,11 +108,19 @@ arguments() {
   done
 }
 
+CONFIG="${SCRIPT_DIR}/local.params"
 LOG_LEVEL="info"
 HOST_SSL_PORT=443
 TESTS_DIR="tests"
 
 arguments ${@}
+
+if [ -s ${CONFIG} ]; then
+  source ${CONFIG}
+else
+  echo >&2 "Please create a '${CONFIG}' file with initial values, as described in FIXME_URL_TO_DESCR"
+  exit 1
+fi
 
 # Salt's dir
 ## states

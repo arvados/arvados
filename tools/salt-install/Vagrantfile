@@ -34,6 +34,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
                      path: "provision.sh",
                      args: [
                        # "--debug",
+                       "--config /vagrant/local.params",
                        "--test",
                        "--vagrant",
                        "--ssl-port=8443"
