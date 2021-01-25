@@ -81,7 +81,8 @@ export const RunProcessFirstStep = withStyles(styles)(
                 <WorkflowDetailsCard workflow={selectedWorkflow}/>
             </Grid>
             <Grid item xs={12}>
-                <Button variant="contained" color="primary" 
+                <Button variant="contained" color="primary"
+                    data-cy="run-process-next-button"
                     disabled={!(!!selectedWorkflow)}
                     onClick={() => onSetStep(1)}>
                     Next

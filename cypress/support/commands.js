@@ -116,6 +116,16 @@ Cypress.Commands.add(
     }
 )
 
+
+Cypress.Commands.add(
+    "createWorkflow", (token, data) => {
+        return cy.createResource(token, 'workflows', {
+            workflow: JSON.stringify(data),
+            ensure_unique_name: true
+        })
+    }
+)
+
 Cypress.Commands.add(
     "createCollection", (token, data) => {
         return cy.createResource(token, 'collections', {
