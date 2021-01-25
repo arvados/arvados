@@ -2,11 +2,13 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
+import { ChangeEvent } from 'react';
 import { connect } from 'react-redux';
-import { change, WrappedFieldMetaProps, WrappedFieldInputProps, WrappedFieldProps } from 'redux-form';
+import { change, WrappedFieldMetaProps, WrappedFieldInputProps, WrappedFieldProps, reset } from 'redux-form';
 import { Vocabulary, PropFieldSuggestion } from '~/models/vocabulary';
 import { RootState } from '~/store/store';
 import { getVocabulary } from '~/store/vocabulary/vocabulary-selectors';
+import { PROPERTY_KEY_FIELD_ID } from './property-key-field';
 
 export interface VocabularyProp {
     vocabulary: Vocabulary;
@@ -36,7 +38,6 @@ export const getErrorMsg = (meta: WrappedFieldMetaProps) =>
 export const buildProps = ({ input, meta }: WrappedFieldProps) => {
     return {
         value: input.value,
-        onChange: input.onChange,
         items: ITEMS_PLACEHOLDER,
         renderSuggestion: (item: PropFieldSuggestion) => item.label,
         error: hasError(meta),
@@ -68,4 +69,20 @@ export const handleSelect = (
             onChange(item.label);
             dispatch(change(formName, fieldName, item.id));
         }
+    };
+
+export const handleChange = (
+    fieldName: string,
+    formName: string,
+    { onChange }: WrappedFieldInputProps,
+    { dispatch }: WrappedFieldMetaProps) =>
+    (value: ChangeEvent<HTMLInputElement>) => {
+        if (fieldName === PROPERTY_KEY_FIELD_ID) {
+            // Properties' values are dependant on the keys, if any value is
+            // pre-existant, a change on the property key should mean that the
+            // previous value is invalid.
+            dispatch(reset(formName));
+        }
+        onChange(value);
+        dispatch(change(formName, fieldName, value));
     };

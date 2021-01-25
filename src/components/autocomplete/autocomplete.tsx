@@ -18,6 +18,7 @@ export interface AutocompleteProps<Item, Suggestion> {
     label?: string;
     value: string;
     items: Item[];
+    disabled?: boolean;
     suggestions?: Suggestion[];
     error?: boolean;
     helperText?: string;
@@ -67,6 +68,7 @@ export class Autocomplete<Value, Suggestion> extends React.Component<Autocomplet
 
     renderInput() {
         return <Input
+            disabled={this.props.disabled}
             autoFocus={this.props.autofocus}
             inputRef={this.inputRef}
             value={this.props.value}

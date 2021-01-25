@@ -7,23 +7,31 @@ import { WrappedFieldProps, Field, formValues, FormName } from 'redux-form';
 import { compose } from 'redux';
 import { Autocomplete } from '~/components/autocomplete/autocomplete';
 import { Vocabulary, isStrictTag, getTagValues, getTagValueID } from '~/models/vocabulary';
-import { PROPERTY_KEY_FIELD_ID } from '~/views-components/resource-properties-form/property-key-field';
-import { handleSelect, handleBlur, VocabularyProp, ValidationProp, connectVocabulary, buildProps } from '~/views-components/resource-properties-form/property-field-common';
+import { PROPERTY_KEY_FIELD_ID, PROPERTY_KEY_FIELD_NAME } from '~/views-components/resource-properties-form/property-key-field';
+import { handleSelect, handleBlur, VocabularyProp, ValidationProp, connectVocabulary, buildProps, handleChange } from '~/views-components/resource-properties-form/property-field-common';
 import { TAG_VALUE_VALIDATION } from '~/validators/validators';
 import { escapeRegExp } from '~/common/regexp.ts';
 
 interface PropertyKeyProp {
-    propertyKey: string;
+    propertyKeyId: string;
+    propertyKeyName: string;
 }
 
-type PropertyValueFieldProps = VocabularyProp & PropertyKeyProp & ValidationProp;
+interface PropertyValueInputProp {
+    disabled: boolean;
+}
+
+type PropertyValueFieldProps = VocabularyProp & PropertyKeyProp & ValidationProp & PropertyValueInputProp;
 
 export const PROPERTY_VALUE_FIELD_NAME = 'value';
 export const PROPERTY_VALUE_FIELD_ID = 'valueID';
 
 const connectVocabularyAndPropertyKey = compose(
     connectVocabulary,
-    formValues({ propertyKey: PROPERTY_KEY_FIELD_ID }),
+    formValues({
+        propertyKeyId: PROPERTY_KEY_FIELD_ID,
+        propertyKeyName: PROPERTY_KEY_FIELD_NAME,
+    }),
 );
 
 export const PropertyValueField = connectVocabularyAndPropertyKey(
@@ -33,29 +41,31 @@ export const PropertyValueField = connectVocabularyAndPropertyKey(
             name={PROPERTY_VALUE_FIELD_NAME}
             component={PropertyValueInput}
             validate={skipValidation ? undefined : getValidation(props)}
-            {...props} />
+            {...{...props, disabled: !props.propertyKeyName}} />
         </span>
 );
 
-const PropertyValueInput = ({ vocabulary, propertyKey, ...props }: WrappedFieldProps & PropertyValueFieldProps) =>
+const PropertyValueInput = ({ vocabulary, propertyKeyId, propertyKeyName, ...props }: WrappedFieldProps & PropertyValueFieldProps) =>
     <FormName children={data => (
         <Autocomplete
             label='Value'
-            suggestions={getSuggestions(props.input.value, propertyKey, vocabulary)}
+            disabled={props.disabled}
+            suggestions={getSuggestions(props.input.value, propertyKeyId, vocabulary)}
             onSelect={handleSelect(PROPERTY_VALUE_FIELD_ID, data.form, props.input, props.meta)}
-            onBlur={handleBlur(PROPERTY_VALUE_FIELD_ID, data.form, props.meta, props.input, getTagValueID(propertyKey, props.input.value, vocabulary))}
+            onBlur={handleBlur(PROPERTY_VALUE_FIELD_ID, data.form, props.meta, props.input, getTagValueID(propertyKeyId, props.input.value, vocabulary))}
+            onChange={handleChange(PROPERTY_VALUE_FIELD_ID, data.form, props.input, props.meta)}
             {...buildProps(props)}
         />
     )} />;
 
 const getValidation = (props: PropertyValueFieldProps) =>
-    isStrictTag(props.propertyKey, props.vocabulary)
+    isStrictTag(props.propertyKeyId, props.vocabulary)
         ? [...TAG_VALUE_VALIDATION, matchTagValues(props)]
         : TAG_VALUE_VALIDATION;
 
-const matchTagValues = ({ vocabulary, propertyKey }: PropertyValueFieldProps) =>
+const matchTagValues = ({ vocabulary, propertyKeyId }: PropertyValueFieldProps) =>
     (value: string) =>
-        getTagValues(propertyKey, vocabulary).find(v => v.label === value)
+        getTagValues(propertyKeyId, vocabulary).find(v => v.label === value)
             ? undefined
             : 'Incorrect value';
 

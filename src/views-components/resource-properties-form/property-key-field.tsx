@@ -7,9 +7,10 @@ import { WrappedFieldProps, Field, FormName } from 'redux-form';
 import { memoize } from 'lodash';
 import { Autocomplete } from '~/components/autocomplete/autocomplete';
 import { Vocabulary, getTags, getTagKeyID } from '~/models/vocabulary';
-import { handleSelect, handleBlur, connectVocabulary, VocabularyProp, ValidationProp, buildProps } from '~/views-components/resource-properties-form/property-field-common';
+import { handleSelect, handleBlur, connectVocabulary, VocabularyProp, ValidationProp, buildProps, handleChange } from '~/views-components/resource-properties-form/property-field-common';
 import { TAG_KEY_VALIDATION } from '~/validators/validators';
 import { escapeRegExp } from '~/common/regexp.ts';
+import { ChangeEvent } from 'react';
 
 export const PROPERTY_KEY_FIELD_NAME = 'key';
 export const PROPERTY_KEY_FIELD_ID = 'keyID';
@@ -32,6 +33,9 @@ const PropertyKeyInput = ({ vocabulary, ...props }: WrappedFieldProps & Vocabula
             suggestions={getSuggestions(props.input.value, vocabulary)}
             onSelect={handleSelect(PROPERTY_KEY_FIELD_ID, data.form, props.input, props.meta)}
             onBlur={handleBlur(PROPERTY_KEY_FIELD_ID, data.form, props.meta, props.input, getTagKeyID(props.input.value, vocabulary))}
+            onChange={(value: ChangeEvent<HTMLInputElement>) => {
+                handleChange(PROPERTY_KEY_FIELD_ID, data.form, props.input, props.meta)(value);
+            }}
             {...buildProps(props)}
         />
     )} />;
