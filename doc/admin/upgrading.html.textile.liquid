@@ -39,6 +39,15 @@ h2(#main). development main (as of 2020-12-10)
 
 "Upgrading from 2.1.0":#v2_1_0
 
+h3. New proxy parameters for arvados-controller
+
+In your Nginx configuration file (@/etc/nginx/conf.d/arvados-api-and-controller.conf@), add the following lines to the @location /@ block with @http://controller@ (see "Update nginx configuration":{{site.baseurl}}/install/install-api-server.html#update-nginx for an example) and reload/restart Nginx (@sudo nginx -s reload@).
+
+<pre>
+    proxy_set_header      Upgrade           $http_upgrade;
+    proxy_set_header      Connection        "upgrade";
+</pre>
+
 h3. Changes on the collection's @preserve_version@ attribute semantics
 
 The @preserve_version@ attribute on collections was originally designed to allow clients to persist a preexisting collection version. This forced clients to make 2 requests if the intention is to "make this set of changes in a new version that will be kept", so we have changed the semantics to do just that: When passing @preserve_version=true@ along with other collection updates, the current version is persisted and also the newly created one will be persisted on the next update.
