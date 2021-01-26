@@ -259,15 +259,18 @@ func (gw *Gateway) handleSSH(w http.ResponseWriter, req *http.Request) {
 						}
 						cmd.Env = append(os.Environ(), termEnv...)
 						err := cmd.Run()
-						errClose := ch.CloseWrite()
 						var resp struct {
 							Status uint32
 						}
-						if err, ok := err.(*exec.ExitError); ok {
-							if status, ok := err.Sys().(syscall.WaitStatus); ok {
+						if exiterr, ok := err.(*exec.ExitError); ok {
+							if status, ok := exiterr.Sys().(syscall.WaitStatus); ok {
 								resp.Status = uint32(status.ExitStatus())
 							}
+						} else if err != nil {
+							// Propagate errors like `exec: "docker": executable file not found in $PATH`
+							fmt.Fprintln(ch.Stderr(), err)
 						}
+						errClose := ch.CloseWrite()
 						if resp.Status == 0 && (err != nil || errClose != nil) {
 							resp.Status = 1
 						}
