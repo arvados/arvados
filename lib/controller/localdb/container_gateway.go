@@ -38,12 +38,12 @@ func (conn *Conn) ContainerSSH(ctx context.Context, opts arvados.ContainerSSHOpt
 	if err != nil {
 		return
 	}
+	ctxRoot := auth.NewContext(ctx, &auth.Credentials{Tokens: []string{conn.cluster.SystemRootToken}})
 	if !user.IsAdmin || !conn.cluster.Containers.ShellAccess.Admin {
 		if !conn.cluster.Containers.ShellAccess.User {
 			err = httpserver.ErrorWithStatus(errors.New("shell access is disabled in config"), http.StatusServiceUnavailable)
 			return
 		}
-		ctxRoot := auth.NewContext(ctx, &auth.Credentials{Tokens: []string{conn.cluster.SystemRootToken}})
 		var crs arvados.ContainerRequestList
 		crs, err = conn.railsProxy.ContainerRequestList(ctxRoot, arvados.ListOptions{Limit: -1, Filters: []arvados.Filter{{"container_uuid", "=", opts.UUID}}})
 		if err != nil {
@@ -153,6 +153,20 @@ func (conn *Conn) ContainerSSH(ctx context.Context, opts arvados.ContainerSSHOpt
 		netconn.Close()
 		return
 	}
+
+	if !ctr.InteractiveSessionStarted {
+		_, err = conn.railsProxy.ContainerUpdate(ctxRoot, arvados.UpdateOptions{
+			UUID: opts.UUID,
+			Attrs: map[string]interface{}{
+				"interactive_session_started": true,
+			},
+		})
+		if err != nil {
+			netconn.Close()
+			return
+		}
+	}
+
 	sshconn.Conn = netconn
 	sshconn.Bufrw = &bufio.ReadWriter{Reader: bufr, Writer: bufw}
 	sshconn.Logger = ctxlog.FromContext(ctx)

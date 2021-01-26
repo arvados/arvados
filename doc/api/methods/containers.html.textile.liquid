@@ -57,6 +57,8 @@ Generally this will contain additional keys that are not present in any correspo
 |auth_uuid|string|UUID of a token to be passed into the container itself, used to access Keep-backed mounts, etc.  Automatically assigned.|Null if state∉{"Locked","Running"} or if @runtime_token@ was provided.|
 |locked_by_uuid|string|UUID of a token, indicating which dispatch process changed state to Locked. If null, any token can be used to lock. If not null, only the indicated token can modify this container.|Null if state∉{"Locked","Running"}|
 |runtime_token|string|A v2 token to be passed into the container itself, used to access Keep-backed mounts, etc.|Not returned in API responses.  Reset to null when state is "Complete" or "Cancelled".|
+|gateway_address|string|Address (host:port) of gateway server.|Internal use only.|
+|interactive_session_started|boolean|Indicates whether @arvados-client shell@ has been used to run commands in the container, which may have altered the container's behavior and output.||
 
 h2(#container_states). Container states
 

@@ -77,6 +77,7 @@ class Container < ArvadosModel
     t.add :runtime_auth_scopes
     t.add :lock_count
     t.add :gateway_address
+    t.add :interactive_session_started
   end
 
   # Supported states for a container
@@ -480,6 +481,9 @@ class Container < ArvadosModel
       permitted.push :priority, *progress_attrs
       if self.state_changed?
         permitted.push :started_at, :gateway_address
+      end
+      if !self.interactive_session_started_was
+        permitted.push :interactive_session_started
       end
 
     when Complete

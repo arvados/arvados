@@ -77,6 +77,8 @@ func (s *ContainerGatewaySuite) SetUpSuite(c *check.C) {
 func (s *ContainerGatewaySuite) SetUpTest(c *check.C) {
 	s.cluster.Containers.ShellAccess.Admin = true
 	s.cluster.Containers.ShellAccess.User = true
+	_, err := arvadostest.DB(c, s.cluster).Exec(`update containers set interactive_session_started=$1 where uuid=$2`, false, s.ctrUUID)
+	c.Check(err, check.IsNil)
 }
 
 func (s *ContainerGatewaySuite) TestConfig(c *check.C) {
@@ -152,6 +154,9 @@ func (s *ContainerGatewaySuite) TestConnect(c *check.C) {
 	case <-time.After(time.Second):
 		c.Fail()
 	}
+	ctr, err := s.localdb.ContainerGet(s.ctx, arvados.GetOptions{UUID: s.ctrUUID})
+	c.Check(err, check.IsNil)
+	c.Check(ctr.InteractiveSessionStarted, check.Equals, true)
 }
 
 func (s *ContainerGatewaySuite) TestConnectFail(c *check.C) {
