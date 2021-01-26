@@ -7,8 +7,11 @@ package localdb
 import (
 	"bytes"
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -23,6 +26,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"github.com/jmoiron/sqlx"
 	check "gopkg.in/check.v1"
 )
 
@@ -192,6 +196,62 @@ func (s *OIDCLoginSuite) TestGoogleLogin_PeopleAPIError(c *check.C) {
 	})
 	c.Check(err, check.IsNil)
 	c.Check(resp.RedirectLocation, check.Equals, "")
+}
+
+func (s *OIDCLoginSuite) TestOIDCAuthorizer(c *check.C) {
+	s.cluster.Login.Google.Enable = false
+	s.cluster.Login.OpenIDConnect.Enable = true
+	json.Unmarshal([]byte(fmt.Sprintf("%q", s.fakeProvider.Issuer.URL)), &s.cluster.Login.OpenIDConnect.Issuer)
+	s.cluster.Login.OpenIDConnect.ClientID = "oidc#client#id"
+	s.cluster.Login.OpenIDConnect.ClientSecret = "oidc#client#secret"
+	s.fakeProvider.ValidClientID = "oidc#client#id"
+	s.fakeProvider.ValidClientSecret = "oidc#client#secret"
+	db := arvadostest.DB(c, s.cluster)
+
+	tokenCacheTTL = time.Millisecond
+	tokenCacheRaceWindow = time.Millisecond
+
+	oidcAuthorizer := OIDCAccessTokenAuthorizer(s.cluster, func(context.Context) (*sqlx.DB, error) { return db, nil })
+	accessToken := s.fakeProvider.ValidAccessToken()
+
+	mac := hmac.New(sha256.New, []byte(s.cluster.SystemRootToken))
+	io.WriteString(mac, accessToken)
+	hmac := fmt.Sprintf("%x", mac.Sum(nil))
+
+	cleanup := func() {
+		_, err := db.Exec(`delete from api_client_authorizations where api_token=$1`, hmac)
+		c.Check(err, check.IsNil)
+	}
+	cleanup()
+	defer cleanup()
+
+	ctx := auth.NewContext(context.Background(), &auth.Credentials{Tokens: []string{accessToken}})
+	var exp1 time.Time
+	oidcAuthorizer.WrapCalls(func(ctx context.Context, opts interface{}) (interface{}, error) {
+		creds, ok := auth.FromContext(ctx)
+		c.Assert(ok, check.Equals, true)
+		c.Assert(creds.Tokens, check.HasLen, 1)
+		c.Check(creds.Tokens[0], check.Equals, accessToken)
+
+		err := db.QueryRowContext(ctx, `select expires_at at time zone 'UTC' from api_client_authorizations where api_token=$1`, hmac).Scan(&exp1)
+		c.Check(err, check.IsNil)
+		c.Check(exp1.Sub(time.Now()) > -time.Second, check.Equals, true)
+		c.Check(exp1.Sub(time.Now()) < time.Second, check.Equals, true)
+		return nil, nil
+	})(ctx, nil)
+
+	// If the token is used again after the in-memory cache
+	// expires, oidcAuthorizer must re-checks the token and update
+	// the expires_at value in the database.
+	time.Sleep(3 * time.Millisecond)
+	oidcAuthorizer.WrapCalls(func(ctx context.Context, opts interface{}) (interface{}, error) {
+		var exp time.Time
+		err := db.QueryRowContext(ctx, `select expires_at at time zone 'UTC' from api_client_authorizations where api_token=$1`, hmac).Scan(&exp)
+		c.Check(err, check.IsNil)
+		c.Check(exp.Sub(exp1) > 0, check.Equals, true)
+		c.Check(exp.Sub(exp1) < time.Second, check.Equals, true)
+		return nil, nil
+	})(ctx, nil)
 }
 
 func (s *OIDCLoginSuite) TestGenericOIDCLogin(c *check.C) {
