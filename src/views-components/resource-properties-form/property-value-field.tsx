@@ -3,14 +3,22 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { WrappedFieldProps, Field, formValues, FormName } from 'redux-form';
+import { WrappedFieldProps, Field, formValues, FormName, WrappedFieldInputProps, WrappedFieldMetaProps, change } from 'redux-form';
 import { compose } from 'redux';
 import { Autocomplete } from '~/components/autocomplete/autocomplete';
 import { Vocabulary, isStrictTag, getTagValues, getTagValueID } from '~/models/vocabulary';
 import { PROPERTY_KEY_FIELD_ID, PROPERTY_KEY_FIELD_NAME } from '~/views-components/resource-properties-form/property-key-field';
-import { handleSelect, handleBlur, VocabularyProp, ValidationProp, connectVocabulary, buildProps, handleChange } from '~/views-components/resource-properties-form/property-field-common';
+import {
+    handleSelect,
+    handleBlur,
+    VocabularyProp,
+    ValidationProp,
+    connectVocabulary,
+    buildProps
+} from '~/views-components/resource-properties-form/property-field-common';
 import { TAG_VALUE_VALIDATION } from '~/validators/validators';
 import { escapeRegExp } from '~/common/regexp.ts';
+import { ChangeEvent } from 'react';
 
 interface PropertyKeyProp {
     propertyKeyId: string;
@@ -53,7 +61,11 @@ const PropertyValueInput = ({ vocabulary, propertyKeyId, propertyKeyName, ...pro
             suggestions={getSuggestions(props.input.value, propertyKeyId, vocabulary)}
             onSelect={handleSelect(PROPERTY_VALUE_FIELD_ID, data.form, props.input, props.meta)}
             onBlur={handleBlur(PROPERTY_VALUE_FIELD_ID, data.form, props.meta, props.input, getTagValueID(propertyKeyId, props.input.value, vocabulary))}
-            onChange={handleChange(PROPERTY_VALUE_FIELD_ID, data.form, props.input, props.meta)}
+            onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                const newValue = e.currentTarget.value;
+                const tagValueID = getTagValueID(propertyKeyId, newValue, vocabulary);
+                handleChange(data.form, tagValueID, props.input, props.meta, newValue);
+            }}
             {...buildProps(props)}
         />
     )} />;
@@ -73,3 +85,14 @@ const getSuggestions = (value: string, tagName: string, vocabulary: Vocabulary) 
     const re = new RegExp(escapeRegExp(value), "i");
     return getTagValues(tagName, vocabulary).filter(v => re.test(v.label) && v.label !== value);
 };
+
+const handleChange = (
+    formName: string,
+    tagValueID: string,
+    { onChange }: WrappedFieldInputProps,
+    { dispatch }: WrappedFieldMetaProps,
+    value: string) => {
+        onChange(value);
+        dispatch(change(formName, PROPERTY_VALUE_FIELD_NAME, value));
+        dispatch(change(formName, PROPERTY_VALUE_FIELD_ID, tagValueID));
+    };
