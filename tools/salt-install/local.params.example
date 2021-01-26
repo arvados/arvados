@@ -1,0 +1,64 @@
+##########################################################
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: CC-BY-SA-3.0
+
+# These are the basic parameters to configure the installation
+
+# The 5 letters name you want to give your cluster
+CLUSTER="fixme"
+
+# The domainname you want tou give to your cluster's hosts
+DOMAIN="some.domain"
+
+# When setting the cluster in a single host, you can use a single hostname
+# to access all the instances. When using virtualization (ie AWS), this should be
+# the EXTERNAL hostname for the instance.
+# If empty, the INTERNAL HOST IP will be used
+HOSTNAME=""
+CONTROLLER_EXT_SSL_PORT=8000
+KEEP_EXT_SSL_PORT=25101
+# Both for collections and downloads
+KEEPWEB_EXT_SSL_PORT=9002
+WEBSHELL_EXT_SSL_PORT=4202
+WEBSOCKET_EXT_SSL_PORT=8002
+WORKBENCH1_EXT_SSL_PORT=443
+WORKBENCH2_EXT_SSL_PORT=3001
+
+INITIAL_USER="admin"
+
+# If not specified, the initial user email will be composed as
+# INITIAL_USER@CLUSTER.DOMAIN
+INITIAL_USER_EMAIL="admin@fixme.localdomain"
+INITIAL_USER_PASSWORD="password"
+
+# The example config files you want to use. There are a few examples
+# under 'config_examples' 
+CONFIG_DIR="config_examples/single_host/single_hostname"
+
+# Which release of Arvados repo you want to use
+RELEASE="production"
+# Which version of Arvados you want to install. Defaults to 'latest'
+# in the desired repo
+VERSION="latest"
+
+# Host SSL port where you want to point your browser to access Arvados
+# Defaults to 443 for regular runs, and to 8443 when called in Vagrant.
+# You can point it to another port if desired
+# In Vagrant, make sure it matches what you set in the Vagrantfile
+HOST_SSL_PORT=443
+
+# This is an arvados-formula setting.
+# If branch is set, the script will switch to it before running salt
+# Usually not needed, only used for testing
+BRANCH="master"
+
+##########################################################
+# Usually there's no need to modify things below this line
+
+# Formulas versions
+ARVADOS_TAG="v1.1.4"
+POSTGRES_TAG="v0.41.3"
+NGINX_TAG="v2.4.0"
+DOCKER_TAG="v1.0.0"
+LOCALE_TAG="v0.3.4"

@@ -15,15 +15,6 @@ set -o pipefail
 # capture the directory that the script is running from
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
-CONFIG_DIR="single_host"
-RELEASE="production"
-VERSION="latest"
-ARVADOS_TAG="v1.1.4"
-POSTGRES_TAG="v0.41.3"
-NGINX_TAG="v2.4.0"
-DOCKER_TAG="v1.0.0"
-LOCALE_TAG="v0.3.4"
-
 usage() {
   echo >&2
   echo >&2 "Usage: ${0} [-h] [-h]"
@@ -109,9 +100,34 @@ arguments() {
 }
 
 CONFIG="${SCRIPT_DIR}/local.params"
+CONFIG_DIR="config_examples/single_host/multiple_hostnames"
 LOG_LEVEL="info"
 HOST_SSL_PORT=443
 TESTS_DIR="tests"
+
+CLUSTER=""
+DOMAIN=""
+HOSTNAME=""
+INITIAL_USER=""
+INITIAL_USER_EMAIL=""
+INITIAL_USER_PASSWORD=""
+
+CONTROLLER_EXT_SSL_PORT=8000
+KEEP_EXT_SSL_PORT=25101
+# Both for collections and downloads
+KEEPWEB_EXT_SSL_PORT=9002
+WEBSHELL_EXT_SSL_PORT=4202
+WEBSOCKET_EXT_SSL_PORT=8002
+WORKBENCH1_EXT_SSL_PORT=443
+WORKBENCH2_EXT_SSL_PORT=3001
+
+RELEASE="production"
+VERSION="latest"
+ARVADOS_TAG="v1.1.4"
+POSTGRES_TAG="v0.41.3"
+NGINX_TAG="v2.4.0"
+DOCKER_TAG="v1.0.0"
+LOCALE_TAG="v0.3.4"
 
 arguments ${@}
 
@@ -156,9 +172,7 @@ pillar_roots:
     - ${P_DIR}
 EOFSM
 
-mkdir -p ${S_DIR}
-mkdir -p ${F_DIR}
-mkdir -p ${P_DIR}
+mkdir -p ${S_DIR} ${F_DIR} ${P_DIR}
 
 # States
 cat > ${S_DIR}/top.sls << EOFTSLS
@@ -227,8 +241,15 @@ for f in "${SOURCE_PILLARS_DIR}"/*; do
   sed "s/__CLUSTER__/${CLUSTER}/g;
        s/__DOMAIN__/${DOMAIN}/g;
        s/__RELEASE__/${RELEASE}/g;
+       s/__CONTROLLER_EXT_SSL_PORT__/${CONTROLLER_EXT_SSL_PORT}/g;
+       s/__KEEP_EXT_SSL_PORT__/${KEEP_EXT_SSL_PORT}/g;
+       s/__WEBSHELL_EXT_SSL_PORT__/${WEBSHELL_EXT_SSL_PORT}/g;
+       s/__WORKBENCH1_EXT__SSL_PORT__/${WORKBENCH1_EXT__SSL_PORT}/g;
+       s/__WORKBENCH2_EXT__SSL_PORT__/${WORKBENCH2_EXT__SSL_PORT}/g;
+       s/__WEBSOCKET_EXT_SSL_PORT__/${WEBSOCKET_EXT_SSL_PORT}/g;
+       s/__HOSTNAME__/${HOSTNAME}/g;
+       s/__KEEPWEB_EXT_SSL_PORT__/${KEEPWEB_EXT_SSL_PORT}/g;
        s/__HOST_SSL_PORT__/${HOST_SSL_PORT}/g;
-       s/__GUEST_SSL_PORT__/${GUEST_SSL_PORT}/g;
        s/__INITIAL_USER__/${INITIAL_USER}/g;
        s/__INITIAL_USER_EMAIL__/${INITIAL_USER_EMAIL}/g;
        s/__INITIAL_USER_PASSWORD__/${INITIAL_USER_PASSWORD}/g;

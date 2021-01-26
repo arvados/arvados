@@ -107,7 +107,7 @@ arvados:
       # <cluster>-nyw5e-<volume>
       __CLUSTER__-nyw5e-000000000000000:
         AccessViaHosts:
-          http://keep0.__CLUSTER__.__DOMAIN__:25107:
+          'http://keep0.__CLUSTER__.__DOMAIN__:25107':
             ReadOnly: false
         Replication: 2
         Driver: Directory
@@ -122,38 +122,38 @@ arvados:
 
     Services:
       Controller:
-        ExternalURL: https://__CLUSTER__.__DOMAIN__:__HOST_SSL_PORT__
+        ExternalURL: 'https://__CLUSTER__.__DOMAIN__:__HOST_SSL_PORT__'
         InternalURLs:
-          http://controller.internal:8003: {}
+          'http://controller.internal:8003': {}
       DispatchCloud:
         InternalURLs:
-          http://__CLUSTER__.__DOMAIN__:9006: {}
+          'http://__CLUSTER__.__DOMAIN__:9006': {}
       Keepbalance:
         InternalURLs:
-          http://__CLUSTER__.__DOMAIN__:9005: {}
+          'http://__CLUSTER__.__DOMAIN__:9005': {}
       Keepproxy:
-        ExternalURL: https://keep.__CLUSTER__.__DOMAIN__:__HOST_SSL_PORT__
+        ExternalURL: 'https://keep.__CLUSTER__.__DOMAIN__:__HOST_SSL_PORT__'
         InternalURLs:
-          http://keep.internal:25100: {}
+          'http://keep.internal:25100': {}
       Keepstore:
         InternalURLs:
-          http://keep0.__CLUSTER__.__DOMAIN__:25107: {}
+          'http://keep0.__CLUSTER__.__DOMAIN__:25107': {}
       RailsAPI:
         InternalURLs:
-          http://api.internal:8004: {}
+          'http://api.internal:8004': {}
       WebDAV:
-        ExternalURL: https://collections.__CLUSTER__.__DOMAIN__:__HOST_SSL_PORT__
+        ExternalURL: 'https://collections.__CLUSTER__.__DOMAIN__:__HOST_SSL_PORT__'
         InternalURLs:
-          http://collections.internal:9002: {}
+          'http://collections.internal:9002': {}
       WebDAVDownload:
-        ExternalURL: https://download.__CLUSTER__.__DOMAIN__:__HOST_SSL_PORT__
+        ExternalURL: 'https://download.__CLUSTER__.__DOMAIN__:__HOST_SSL_PORT__'
       WebShell:
-        ExternalURL: https://webshell.__CLUSTER__.__DOMAIN__:__HOST_SSL_PORT__
+        ExternalURL: 'https://webshell.__CLUSTER__.__DOMAIN__:__HOST_SSL_PORT__'
       Websocket:
-        ExternalURL: wss://ws.__CLUSTER__.__DOMAIN__/websocket
+        ExternalURL: 'wss://ws.__CLUSTER__.__DOMAIN__/websocket'
         InternalURLs:
-          http://ws.internal:8005: {}
+          'http://ws.internal:8005': {}
       Workbench1:
-        ExternalURL: https://workbench.__CLUSTER__.__DOMAIN__:__HOST_SSL_PORT__
+        ExternalURL: 'https://workbench.__CLUSTER__.__DOMAIN__:__HOST_SSL_PORT__'
       Workbench2:
-        ExternalURL: https://workbench2.__CLUSTER__.__DOMAIN__:__HOST_SSL_PORT__
+        ExternalURL: 'https://workbench2.__CLUSTER__.__DOMAIN__:__HOST_SSL_PORT__'
