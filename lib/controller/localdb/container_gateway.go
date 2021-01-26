@@ -38,7 +38,11 @@ func (conn *Conn) ContainerSSH(ctx context.Context, opts arvados.ContainerSSHOpt
 	if err != nil {
 		return
 	}
-	if !user.IsAdmin {
+	if !user.IsAdmin || !conn.cluster.Containers.ShellAccess.Admin {
+		if !conn.cluster.Containers.ShellAccess.User {
+			err = httpserver.ErrorWithStatus(errors.New("shell access is disabled in config"), http.StatusServiceUnavailable)
+			return
+		}
 		ctxRoot := auth.NewContext(ctx, &auth.Credentials{Tokens: []string{conn.cluster.SystemRootToken}})
 		var crs arvados.ContainerRequestList
 		crs, err = conn.railsProxy.ContainerRequestList(ctxRoot, arvados.ListOptions{Limit: -1, Filters: []arvados.Filter{{"container_uuid", "=", opts.UUID}}})

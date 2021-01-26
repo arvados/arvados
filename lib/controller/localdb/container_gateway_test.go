@@ -74,6 +74,50 @@ func (s *ContainerGatewaySuite) SetUpSuite(c *check.C) {
 	c.Assert(err, check.IsNil)
 }
 
+func (s *ContainerGatewaySuite) SetUpTest(c *check.C) {
+	s.cluster.Containers.ShellAccess.Admin = true
+	s.cluster.Containers.ShellAccess.User = true
+}
+
+func (s *ContainerGatewaySuite) TestConfig(c *check.C) {
+	for _, trial := range []struct {
+		configAdmin bool
+		configUser  bool
+		sendToken   string
+		errorCode   int
+	}{
+		{true, true, arvadostest.ActiveTokenV2, 0},
+		{true, false, arvadostest.ActiveTokenV2, 503},
+		{false, true, arvadostest.ActiveTokenV2, 0},
+		{false, false, arvadostest.ActiveTokenV2, 503},
+		{true, true, arvadostest.AdminToken, 0},
+		{true, false, arvadostest.AdminToken, 0},
+		{false, true, arvadostest.AdminToken, 403},
+		{false, false, arvadostest.AdminToken, 503},
+	} {
+		c.Logf("trial %#v", trial)
+		s.cluster.Containers.ShellAccess.Admin = trial.configAdmin
+		s.cluster.Containers.ShellAccess.User = trial.configUser
+		ctx := auth.NewContext(s.ctx, &auth.Credentials{Tokens: []string{trial.sendToken}})
+		sshconn, err := s.localdb.ContainerSSH(ctx, arvados.ContainerSSHOptions{UUID: s.ctrUUID})
+		if trial.errorCode == 0 {
+			if !c.Check(err, check.IsNil) {
+				continue
+			}
+			if !c.Check(sshconn.Conn, check.NotNil) {
+				continue
+			}
+			sshconn.Conn.Close()
+		} else {
+			c.Check(err, check.NotNil)
+			err, ok := err.(interface{ HTTPStatus() int })
+			if c.Check(ok, check.Equals, true) {
+				c.Check(err.HTTPStatus(), check.Equals, trial.errorCode)
+			}
+		}
+	}
+}
+
 func (s *ContainerGatewaySuite) TestConnect(c *check.C) {
 	c.Logf("connecting to %s", s.gw.Address)
 	sshconn, err := s.localdb.ContainerSSH(s.ctx, arvados.ContainerSSHOptions{UUID: s.ctrUUID})
