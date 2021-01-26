@@ -5,6 +5,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"flag"
 	"fmt"
@@ -52,6 +53,26 @@ Options:
 	}
 	sshargs := f.Args()[1:]
 
+	// Try setting up a tunnel, and exit right away if it
+	// fails. This tunnel won't get used -- we'll set up a new
+	// tunnel when running as SSH client's ProxyCommand child --
+	// but in most cases where the real tunnel setup would fail,
+	// we catch the problem earlier here. This makes it less
+	// likely that an error message about tunnel setup will get
+	// hidden behind noisy errors from SSH client like this:
+	//
+	// [useful tunnel setup error message here]
+	// kex_exchange_identification: Connection closed by remote host
+	// Connection closed by UNKNOWN port 65535
+	// exit status 255
+	exitcode := connectSSHCommand{}.RunCommand(
+		"arvados-client connect-ssh",
+		[]string{"-detach-keys=" + *detachKeys, "-probe-only=true", target},
+		&bytes.Buffer{}, &bytes.Buffer{}, stderr)
+	if exitcode != 0 {
+		return exitcode
+	}
+
 	selfbin, err := os.Readlink("/proc/self/exe")
 	if err != nil {
 		fmt.Fprintln(stderr, err)
@@ -92,6 +113,7 @@ Options:
 `)
 		f.PrintDefaults()
 	}
+	probeOnly := f.Bool("probe-only", false, "do not transfer IO, just exit 0 immediately if tunnel setup succeeds")
 	detachKeys := f.String("detach-keys", "", "set detach key sequence, as in docker-attach(1)")
 	if err := f.Parse(args); err != nil {
 		fmt.Fprintln(stderr, err)
@@ -147,6 +169,10 @@ Options:
 		return 1
 	}
 	defer sshconn.Conn.Close()
+
+	if *probeOnly {
+		return 0
+	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	go func() {
