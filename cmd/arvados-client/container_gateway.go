@@ -128,6 +128,10 @@ Options:
 		loginUsername = targetUUID[:i]
 		targetUUID = targetUUID[i+1:]
 	}
+	if os.Getenv("ARVADOS_API_HOST") == "" || os.Getenv("ARVADOS_API_TOKEN") == "" {
+		fmt.Fprintln(stderr, "fatal: ARVADOS_API_HOST and ARVADOS_API_TOKEN environment variables are not set")
+		return 1
+	}
 	insecure := os.Getenv("ARVADOS_API_HOST_INSECURE")
 	rpcconn := rpc.NewConn("",
 		&url.URL{
