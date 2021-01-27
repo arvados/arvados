@@ -6,7 +6,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -20,9 +19,6 @@ import (
 )
 
 func testinstall(ctx context.Context, opts opts, stdin io.Reader, stdout, stderr io.Writer) error {
-	if opts.PackageVersion != "" {
-		return errors.New("not implemented: package version was specified, but I only know how to test the latest version in pkgdir")
-	}
 	depsImageName := "arvados-package-deps-" + opts.TargetOS
 	depsCtrName := strings.Replace(depsImageName, ":", "-", -1)
 
@@ -77,6 +73,10 @@ eatmydata apt-get remove -y arvados-server-easy
 		}
 	}
 
+	versionsuffix := ""
+	if opts.PackageVersion != "" {
+		versionsuffix = "=" + opts.PackageVersion
+	}
 	cmd := exec.CommandContext(ctx, "docker", "run", "--rm",
 		"--tmpfs", "/tmp:exec,mode=01777",
 		"-v", opts.PackageDir+":/pkg:ro",
@@ -87,7 +87,7 @@ eatmydata apt-get remove -y arvados-server-easy
 set -e
 PATH="/var/lib/arvados/bin:$PATH"
 apt-get update
-eatmydata apt-get install --reinstall -y --no-install-recommends arvados-server-easy
+eatmydata apt-get install --reinstall -y --no-install-recommends arvados-server-easy`+versionsuffix+`
 apt-get -y autoremove
 /etc/init.d/postgresql start
 arvados-server init -cluster-id x1234

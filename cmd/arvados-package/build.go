@@ -126,7 +126,7 @@ func build(ctx context.Context, opts opts, stdin io.Reader, stdout, stderr io.Wr
 		return err
 	}
 
-	cmd = exec.CommandContext(ctx, "bash", "-c", "dpkg-scanpackages . | gzip > Packages.gz.tmp && mv Packages.gz.tmp Packages.gz")
+	cmd = exec.CommandContext(ctx, "bash", "-c", "dpkg-scanpackages --multiversion . | gzip > Packages.gz.tmp && mv Packages.gz.tmp Packages.gz")
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
 	cmd.Dir = opts.PackageDir

@@ -56,6 +56,7 @@ func (s *BuildSuite) TestBuildAndInstall(c *check.C) {
 	cmd = exec.Command("go", "run", ".",
 		"testinstall",
 		"-package-dir", tmpdir,
+		"-package-version", "1.2.3~rc4",
 	)
 	cmd.Stdout = os.Stderr
 	cmd.Stderr = os.Stderr
