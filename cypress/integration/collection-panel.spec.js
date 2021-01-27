@@ -28,6 +28,39 @@ describe('Collection panel tests', function() {
         cy.clearLocalStorage();
     });
 
+    it('uses the property editor with vocabulary terms', function() {
+        cy.createCollection(adminUser.token, {
+            name: `Test collection ${Math.floor(Math.random() * 999999)}`,
+            owner_uuid: activeUser.user.uuid,
+            manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"})
+        .as('testCollection').then(function() {
+            cy.loginAs(activeUser);
+            cy.doSearch(`${this.testCollection.uuid}`);
+
+            // Key: Color (IDTAGCOLORS) - Value: Magenta (IDVALCOLORS3)
+            cy.get('[data-cy=collection-properties-form]').within(() => {
+                cy.get('[data-cy=property-field-key]').within(() => {
+                    cy.get('input').type('Color');
+                });
+                cy.get('[data-cy=property-field-value]').within(() => {
+                    cy.get('input').type('Magenta');
+                });
+                cy.root().submit();
+            });
+            // Confirm proper vocabulary labels are displayed on the UI.
+            cy.get('[data-cy=collection-properties-panel]')
+                .should('contain', 'Color')
+                .and('contain', 'Magenta');
+            // Confirm proper vocabulary IDs were saved on the backend.
+            cy.doRequest('GET', `/arvados/v1/collections/${this.testCollection.uuid}`)
+            .its('body').as('collection')
+            .then(function() {
+                expect(this.collection.properties).to.deep.equal(
+                    {IDTAGCOLORS: 'IDVALCOLORS3'});
+            });
+        });
+    });
+
     it('shows collection by URL', function() {
         cy.loginAs(activeUser);
         [true, false].map(function(isWritable) {
