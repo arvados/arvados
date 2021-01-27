@@ -11,31 +11,17 @@ nginx:
       ### STREAMS
       http:
         upstream collections_downloads_upstream:
-          - server: 'collections.internal:9002 fail_timeout=10s'
+          - server: '__HOSTNAME_INT__:9003 fail_timeout=10s'
 
   servers:
     managed:
-      ### COLLECTIONS / DOWNLOAD
-      arvados_collections_download_default:
-        enabled: true
-        overwrite: true
-        config:
-          - server:
-            - server_name: __HOSTNAME__
-            - listen:
-              - __KEEPWEB_EXT_SSL_PORT__
-            - location /.well-known:
-              - root: /var/www
-            - location /:
-              - return: '301 https://$host$request_uri'
-
       ### COLLECTIONS / DOWNLOAD
       arvados_collections_download_ssl:
         enabled: true
         overwrite: true
         config:
           - server:
-            - server_name: __HOSTNAME__
+            - server_name: __HOSTNAME_EXT__
             - listen:
               - __KEEPWEB_EXT_SSL_PORT__ http2 ssl
             - index: index.html index.htm

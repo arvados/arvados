@@ -17,31 +17,17 @@ nginx:
       ### STREAMS
       http:
         upstream workbench_upstream:
-          - server: 'workbench.internal:9000 fail_timeout=10s'
+          - server: '__HOSTNAME_INT__:9000 fail_timeout=10s'
 
   ### SITES
   servers:
     managed:
-      ### DEFAULT
-      arvados_workbench_default:
-        enabled: true
-        overwrite: true
-        config:
-          - server:
-            - server_name: __HOSTNAME__
-            - listen:
-              - __WORKBENCH_EXT_SSL_PORT__
-            - location /.well-known:
-              - root: /var/www
-            - location /:
-              - return: '301 https://$host$request_uri'
-
       arvados_workbench_ssl:
         enabled: true
         overwrite: true
         config:
           - server:
-            - server_name: workbench.__HOSTNAME__
+            - server_name: __HOSTNAME_EXT__
             - listen:
               - __WORKBENCH1_EXT_SSL_PORT__ http2 ssl
             - index: index.html index.htm
@@ -63,7 +49,7 @@ nginx:
         overwrite: true
         config:
           - server:
-            - listen: 'workbench.internal:9000'
+            - listen: '__HOSTNAME_INT__:9000'
             - server_name: workbench
             - root: /var/www/arvados-workbench/current/public
             - index:  index.html index.htm

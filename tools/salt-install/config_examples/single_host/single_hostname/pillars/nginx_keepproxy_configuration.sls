@@ -11,30 +11,16 @@ nginx:
       ### STREAMS
       http:
         upstream keepproxy_upstream:
-          - server: 'keep.internal:25100 fail_timeout=10s'
+          - server: '__HOSTNAME_INT__:25100 fail_timeout=10s'
 
   servers:
     managed:
-      ### DEFAULT
-      arvados_keepproxy_default:
-        enabled: true
-        overwrite: true
-        config:
-          - server:
-            - server_name: __HOSTNAME__
-            - listen:
-              - __KEEP_EXT_SSL_PORT__
-            - location /.well-known:
-              - root: /var/www
-            - location /:
-              - return: '301 https://$host$request_uri'
-
       arvados_keepproxy_ssl:
         enabled: true
         overwrite: true
         config:
           - server:
-            - server_name: __HOSTNAME__
+            - server_name: __HOSTNAME_EXT__
             - listen:
               - __KEEP_EXT_SSL_PORT__ http2 ssl
             - index: index.html index.htm

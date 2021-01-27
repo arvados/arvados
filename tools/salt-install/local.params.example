@@ -13,9 +13,11 @@ DOMAIN="some.domain"
 
 # When setting the cluster in a single host, you can use a single hostname
 # to access all the instances. When using virtualization (ie AWS), this should be
-# the EXTERNAL hostname for the instance.
+# the EXTERNAL/PUBLIC hostname for the instance.
 # If empty, the INTERNAL HOST IP will be used
-HOSTNAME=""
+HOSTNAME_EXT=""
+# The internal hostname for the host
+HOSTNAME_INT="127.0.1.1"
 CONTROLLER_EXT_SSL_PORT=8000
 KEEP_EXT_SSL_PORT=25101
 # Both for collections and downloads
@@ -31,6 +33,14 @@ INITIAL_USER="admin"
 # INITIAL_USER@CLUSTER.DOMAIN
 INITIAL_USER_EMAIL="admin@fixme.localdomain"
 INITIAL_USER_PASSWORD="password"
+
+# YOU SHOULD CHANGE THESE TO SOME RANDOM STRINGS
+BLOB_SIGNING_KEY=blobsigningkeymushaveatleast32characters
+MANAGEMENT_TOKEN=managementtokenmushaveatleast32characters
+SYSTEM_ROOT_TOKEN=systemroottokenmushaveatleast32characters
+RAILS_SECRET_TOKEN=railssecrettokenmushaveatleast32characters
+ANONYMOUS_USER_TOKEN=anonymoususertokenmushaveatleast32characters
+WORKBENCH_SECRET_KEY=workbenchsecretkeymushaveatleast32characters
 
 # The example config files you want to use. There are a few examples
 # under 'config_examples' 

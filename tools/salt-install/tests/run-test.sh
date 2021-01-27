@@ -3,8 +3,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-export ARVADOS_API_TOKEN=changemesystemroottoken
-export ARVADOS_API_HOST=__CLUSTER__.__DOMAIN__:__HOST_SSL_PORT__
+export ARVADOS_API_TOKEN=__SYSTEM_ROOT_TOKEN__
+export ARVADOS_API_HOST=__HOSTNAME_INT__:__CONTROLLER_EXT_SSL_PORT__
 export ARVADOS_API_HOST_INSECURE=true
 
 set -o pipefail

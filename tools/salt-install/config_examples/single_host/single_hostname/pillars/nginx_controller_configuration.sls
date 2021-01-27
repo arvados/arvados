@@ -14,7 +14,7 @@ nginx:
           default: 1
           '127.0.0.0/8': 0
         upstream controller_upstream:
-          - server: 'controller.internal:8003  fail_timeout=10s'
+          - server: '__HOSTNAME_INT__:8003  fail_timeout=10s'
 
   ### SITES
   servers:
@@ -25,9 +25,9 @@ nginx:
         overwrite: true
         config:
           - server:
-            - server_name: __HOSTNAME__
+            - server_name: _
             - listen:
-              - 80 default
+              - 80 default_server
             - location /.well-known:
               - root: /var/www
             - location /:
@@ -38,9 +38,9 @@ nginx:
         overwrite: true
         config:
           - server:
-            - server_name: __HOSTNAME__
+            - server_name: __HOSTNAME_EXT__
             - listen:
-              - __CONTROLLER_EXT_SSL_PORT__ http2 ssl
+              - __CONTROLLER_EXT_SSL_PORT__ http2 ssl default_server
             - index: index.html index.htm
             - location /:
               - proxy_pass: 'http://controller_upstream'

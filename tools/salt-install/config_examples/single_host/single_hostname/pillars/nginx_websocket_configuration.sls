@@ -11,30 +11,16 @@ nginx:
       ### STREAMS
       http:
         upstream websocket_upstream:
-          - server: 'ws.internal:8005 fail_timeout=10s'
+          - server: '__HOSTNAME_INT__:8005 fail_timeout=10s'
 
   servers:
     managed:
-      ### DEFAULT
-      arvados_websocket_default:
-        enabled: true
-        overwrite: true
-        config:
-          - server:
-            - server_name: __HOSTNAME__
-            - listen:
-              - __WEBSOCKET_EXT_SSL_PORT__
-            - location /.well-known:
-              - root: /var/www
-            - location /:
-              - return: '301 https://$host$request_uri'
-
       arvados_websocket_ssl:
         enabled: true
         overwrite: true
         config:
           - server:
-            - server_name: __HOSTNAME__
+            - server_name: __HOSTNAME_EXT__
             - listen:
               - __WEBSOCKET_EXT_SSL_PORT__ http2 ssl
             - index: index.html index.htm

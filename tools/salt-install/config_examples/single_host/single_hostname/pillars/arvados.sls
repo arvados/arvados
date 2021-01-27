@@ -78,19 +78,15 @@ arvados:
 
     ### TOKENS
     tokens:
-      system_root: changemesystemroottoken
-      management: changememanagementtoken
-      rails_secret: changemerailssecrettoken
-      anonymous_user: changemeanonymoususertoken
+      system_root: __SYSTEM_ROOT_TOKEN__
+      management: __MANAGEMENT_TOKEN__
+      rails_secret: __RAILS_SECRET_TOKEN__
+      anonymous_user: __ANONYMOUS_USER_TOKEN__
 
     ### KEYS
     secrets:
-      blob_signing_key: changemeblobsigningkey
-      workbench_secret_key: changemeworkbenchsecretkey
-      dispatcher_access_key: changemedispatcheraccesskey
-      dispatcher_secret_key: changeme_dispatchersecretkey
-      keep_access_key: changemekeepaccesskey
-      keep_secret_key: changemekeepsecretkey
+      blob_signing_key: __BLOB_SIGNING_KEY__
+      workbench_secret_key: __WORKBENCH_SECRET_KEY__
 
     Login:
       Test:
@@ -107,7 +103,7 @@ arvados:
       # <cluster>-nyw5e-<volume>
       __CLUSTER__-nyw5e-000000000000000:
         AccessViaHosts:
-          'http://__HOSTNAME__:25107':
+          'http://__HOSTNAME_INT__:25107':
             ReadOnly: false
         Replication: 2
         Driver: Directory
@@ -122,38 +118,32 @@ arvados:
 
     Services:
       Controller:
-        ExternalURL: 'https://__HOSTNAME__:__CONTROLLER_EXT_SSL_PORT__'
+        ExternalURL: 'https://__HOSTNAME_EXT__:__CONTROLLER_EXT_SSL_PORT__'
         InternalURLs:
-          'http://controller.internal:8003': {}
-      DispatchCloud:
-        InternalURLs:
-          'http://__HOSTNAME__:9006': {}
-      Keepbalance:
-        InternalURLs:
-          'http://__HOSTNAME__:9005': {}
+          'http://__HOSTNAME_INT__:8003': {}
       Keepproxy:
-        ExternalURL: 'https://__HOSTNAME__:__KEEP_EXT_SSL_PORT__'
+        ExternalURL: 'https://__HOSTNAME_EXT__:__KEEP_EXT_SSL_PORT__'
         InternalURLs:
-          'http://keep.internal:25100': {}
+          'http://__HOSTNAME_INT__:25100': {}
       Keepstore:
         InternalURLs:
-          'http://keep0.internal:25107': {}
+          'http://__HOSTNAME_INT__:25107': {}
       RailsAPI:
         InternalURLs:
-          'http://api.internal:8004': {}
+          'http://__HOSTNAME_INT__:8004': {}
       WebDAV:
-        ExternalURL: 'https://__HOSTNAME__:__KEEPWEB_EXT_SSL_PORT__'
+        ExternalURL: 'https://__HOSTNAME_EXT__:__KEEPWEB_EXT_SSL_PORT__'
         InternalURLs:
-          'http://collections.internal:9002': {}
+          'http://__HOSTNAME_INT__:9003': {}
       WebDAVDownload:
-        ExternalURL: 'https://__HOSTNAME__:__KEEPWEB_EXT_SSL_PORT__'
+        ExternalURL: 'https://__HOSTNAME_EXT__:__KEEPWEB_EXT_SSL_PORT__'
       WebShell:
-        ExternalURL: 'https://__HOSTNAME__:__WEBSHELL_EXT_SSL_PORT__'
+        ExternalURL: 'https://__HOSTNAME_EXT__:__WEBSHELL_EXT_SSL_PORT__'
       Websocket:
-        ExternalURL: 'wss://__HOSTNAME__:__WEBSOCKET_EXT_SSL_PORT__/websocket'
+        ExternalURL: 'wss://__HOSTNAME_EXT__:__WEBSOCKET_EXT_SSL_PORT__/websocket'
         InternalURLs:
-          'http://ws.internal:8005': {}
+          'http://__HOSTNAME_INT__:8005': {}
       Workbench1:
-        ExternalURL: 'https://__HOSTNAME__:__WORKBENCH1_EXT_SSL_PORT__'
+        ExternalURL: 'https://__HOSTNAME_EXT__:__WORKBENCH1_EXT_SSL_PORT__'
       Workbench2:
-        ExternalURL: 'https://__HOSTNAME__:__WORKBENCH2_EXT_SSL_PORT__'
+        ExternalURL: 'https://__HOSTNAME_EXT__:__WORKBENCH2_EXT_SSL_PORT__'

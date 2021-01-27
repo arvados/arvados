@@ -13,26 +13,12 @@ nginx:
   ### SITES
   servers:
     managed:
-      ### DEFAULT
-      arvados_workbench2_default:
-        enabled: true
-        overwrite: true
-        config:
-          - server:
-            - server_name: __HOSTNAME__
-            - listen:
-              - __WORKBENCH2_EXT_SSL_PORT__
-            - location /.well-known:
-              - root: /var/www
-            - location /:
-              - return: '301 https://$host$request_uri'
-
       arvados_workbench2_ssl:
         enabled: true
         overwrite: true
         config:
           - server:
-            - server_name: workbench2.__HOSTNAME__
+            - server_name: __HOSTNAME_EXT__
             - listen:
               - __WORKBENCH2_EXT_SSL_PORT__ http2 ssl
             - index: index.html index.htm

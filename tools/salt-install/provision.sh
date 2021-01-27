@@ -107,7 +107,8 @@ TESTS_DIR="tests"
 
 CLUSTER=""
 DOMAIN=""
-HOSTNAME=""
+HOSTNAME_EXT=""
+HOSTNAME_INT="127.0.1.1"
 INITIAL_USER=""
 INITIAL_USER_EMAIL=""
 INITIAL_USER_PASSWORD=""
@@ -229,14 +230,16 @@ if [ "x${BRANCH}" != "x" ]; then
 fi
 
 if [ "x${VAGRANT}" = "xyes" ]; then
-  SOURCE_PILLARS_DIR="/vagrant/${CONFIG_DIR}"
+  SOURCE_PILLARS_DIR="/vagrant/${CONFIG_DIR}/pillars"
+  SOURCE_STATES_DIR="/vagrant/${CONFIG_DIR}/states"
   TESTS_DIR="/vagrant/${TESTS_DIR}"
 else
-  SOURCE_PILLARS_DIR="${SCRIPT_DIR}/${CONFIG_DIR}"
+  SOURCE_PILLARS_DIR="${SCRIPT_DIR}/${CONFIG_DIR}/pillars"
+  SOURCE_STATES_DIR="${SCRIPT_DIR}/${CONFIG_DIR}/states"
   TESTS_DIR="${SCRIPT_DIR}/${TESTS_DIR}"
 fi
 
-# Replace cluster and domain name in the example pillars and test files
+# Replace cluster and domain name in the example pillars
 for f in "${SOURCE_PILLARS_DIR}"/*; do
   sed "s/__CLUSTER__/${CLUSTER}/g;
        s/__DOMAIN__/${DOMAIN}/g;
@@ -244,31 +247,69 @@ for f in "${SOURCE_PILLARS_DIR}"/*; do
        s/__CONTROLLER_EXT_SSL_PORT__/${CONTROLLER_EXT_SSL_PORT}/g;
        s/__KEEP_EXT_SSL_PORT__/${KEEP_EXT_SSL_PORT}/g;
        s/__WEBSHELL_EXT_SSL_PORT__/${WEBSHELL_EXT_SSL_PORT}/g;
-       s/__WORKBENCH1_EXT__SSL_PORT__/${WORKBENCH1_EXT__SSL_PORT}/g;
-       s/__WORKBENCH2_EXT__SSL_PORT__/${WORKBENCH2_EXT__SSL_PORT}/g;
+       s/__WORKBENCH1_EXT_SSL_PORT__/${WORKBENCH1_EXT_SSL_PORT}/g;
+       s/__WORKBENCH2_EXT_SSL_PORT__/${WORKBENCH2_EXT_SSL_PORT}/g;
        s/__WEBSOCKET_EXT_SSL_PORT__/${WEBSOCKET_EXT_SSL_PORT}/g;
-       s/__HOSTNAME__/${HOSTNAME}/g;
+       s/__HOSTNAME_EXT__/${HOSTNAME_EXT}/g;
+       s/__HOSTNAME_INT__/${HOSTNAME_INT}/g;
        s/__KEEPWEB_EXT_SSL_PORT__/${KEEPWEB_EXT_SSL_PORT}/g;
        s/__HOST_SSL_PORT__/${HOST_SSL_PORT}/g;
        s/__INITIAL_USER__/${INITIAL_USER}/g;
        s/__INITIAL_USER_EMAIL__/${INITIAL_USER_EMAIL}/g;
        s/__INITIAL_USER_PASSWORD__/${INITIAL_USER_PASSWORD}/g;
+       s/__BLOB_SIGNING_KEY__/${BLOB_SIGNING_KEY}/g;
+       s/__MANAGEMENT_TOKEN__/${MANAGEMENT_TOKEN}/g;
+       s/__SYSTEM_ROOT_TOKEN__/${SYSTEM_ROOT_TOKEN}/g;
+       s/__RAILS_SECRET_TOKEN__/${RAILS_SECRET_TOKEN}/g;
+       s/__ANONYMOUS_USER_TOKEN__/${ANONYMOUS_USER_TOKEN}/g;
+       s/__WORKBENCH_SECRET_KEY__/${WORKBENCH_SECRET_KEY}/g;
        s/__VERSION__/${VERSION}/g" \
   "${f}" > "${P_DIR}"/$(basename "${f}")
 done
 
 mkdir -p /tmp/cluster_tests
-# Replace cluster and domain name in the example pillars and test files
+# Replace cluster and domain name in the test files
 for f in "${TESTS_DIR}"/*; do
   sed "s/__CLUSTER__/${CLUSTER}/g;
        s/__DOMAIN__/${DOMAIN}/g;
+       s/__HOSTNAME_INT__/${HOSTNAME_INT}/g;
        s/__HOST_SSL_PORT__/${HOST_SSL_PORT}/g;
+       s/__CONTROLLER_EXT_SSL_PORT__/${CONTROLLER_EXT_SSL_PORT}/g;
+       s/__SYSTEM_ROOT_TOKEN__/${SYSTEM_ROOT_TOKEN}/g;
        s/__INITIAL_USER__/${INITIAL_USER}/g;
        s/__INITIAL_USER_EMAIL__/${INITIAL_USER_EMAIL}/g;
        s/__INITIAL_USER_PASSWORD__/${INITIAL_USER_PASSWORD}/g" \
   ${f} > /tmp/cluster_tests/$(basename ${f})
 done
 chmod 755 /tmp/cluster_tests/run-test.sh
+
+# Replace helper state files that differ from the formula's examples
+for f in "${SOURCE_STATES_DIR}"/*; do
+  sed "s/__CLUSTER__/${CLUSTER}/g;
+       s/__DOMAIN__/${DOMAIN}/g;
+       s/__RELEASE__/${RELEASE}/g;
+       s/__CONTROLLER_EXT_SSL_PORT__/${CONTROLLER_EXT_SSL_PORT}/g;
+       s/__KEEP_EXT_SSL_PORT__/${KEEP_EXT_SSL_PORT}/g;
+       s/__WEBSHELL_EXT_SSL_PORT__/${WEBSHELL_EXT_SSL_PORT}/g;
+       s/__WORKBENCH1_EXT_SSL_PORT__/${WORKBENCH1_EXT_SSL_PORT}/g;
+       s/__WORKBENCH2_EXT_SSL_PORT__/${WORKBENCH2_EXT_SSL_PORT}/g;
+       s/__WEBSOCKET_EXT_SSL_PORT__/${WEBSOCKET_EXT_SSL_PORT}/g;
+       s/__HOSTNAME_EXT__/${HOSTNAME_EXT}/g;
+       s/__HOSTNAME_INT__/${HOSTNAME_INT}/g;
+       s/__KEEPWEB_EXT_SSL_PORT__/${KEEPWEB_EXT_SSL_PORT}/g;
+       s/__HOST_SSL_PORT__/${HOST_SSL_PORT}/g;
+       s/__INITIAL_USER__/${INITIAL_USER}/g;
+       s/__INITIAL_USER_EMAIL__/${INITIAL_USER_EMAIL}/g;
+       s/__INITIAL_USER_PASSWORD__/${INITIAL_USER_PASSWORD}/g;
+       s/__BLOB_SIGNING_KEY__/${BLOB_SIGNING_KEY}/g;
+       s/__MANAGEMENT_TOKEN__/${MANAGEMENT_TOKEN}/g;
+       s/__SYSTEM_ROOT_TOKEN__/${SYSTEM_ROOT_TOKEN}/g;
+       s/__RAILS_SECRET_TOKEN__/${RAILS_SECRET_TOKEN}/g;
+       s/__ANONYMOUS_USER_TOKEN__/${ANONYMOUS_USER_TOKEN}/g;
+       s/__WORKBENCH_SECRET_KEY__/${WORKBENCH_SECRET_KEY}/g;
+       s/__VERSION__/${VERSION}/g" \
+  "${f}" > "${F_DIR}"/arvados-formula/test/salt/states/examples/single_host/$(basename "${f}")
+done
 
 # FIXME! #16992 Temporary fix for psql call in arvados-api-server
 if [ -e /root/.psqlrc ]; then

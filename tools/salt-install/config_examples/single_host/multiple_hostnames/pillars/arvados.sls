@@ -78,19 +78,15 @@ arvados:
 
     ### TOKENS
     tokens:
-      system_root: changemesystemroottoken
-      management: changememanagementtoken
-      rails_secret: changemerailssecrettoken
-      anonymous_user: changemeanonymoususertoken
+      system_root: __SYSTEM_ROOT_TOKEN__
+      management: __MANAGEMENT_TOKEN__
+      rails_secret: __RAILS_SECRET_TOKEN__
+      anonymous_user: __ANONYMOUS_USER_TOKEN__
 
     ### KEYS
     secrets:
-      blob_signing_key: changemeblobsigningkey
-      workbench_secret_key: changemeworkbenchsecretkey
-      dispatcher_access_key: changemedispatcheraccesskey
-      dispatcher_secret_key: changeme_dispatchersecretkey
-      keep_access_key: changemekeepaccesskey
-      keep_secret_key: changemekeepsecretkey
+      blob_signing_key: __BLOB_SIGNING_KEY__
+      workbench_secret_key: __WORKBENCH_SECRET_KEY__
 
     Login:
       Test:
