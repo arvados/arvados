@@ -53,19 +53,19 @@ class UserSessionsApiTest < ActionDispatch::IntegrationTest
   test 'existing user login' do
     mock_auth_with(identity_url: "https://active-user.openid.local")
     u = assigns(:user)
-    assert_equal 'zzzzz-tpzed-xurymjxw79nv3jz', u.uuid
+    assert_equal users(:active).uuid, u.uuid
   end
 
   test 'user redirect_to_user_uuid' do
     mock_auth_with(identity_url: "https://redirects-to-active-user.openid.local")
     u = assigns(:user)
-    assert_equal 'zzzzz-tpzed-xurymjxw79nv3jz', u.uuid
+    assert_equal users(:active).uuid, u.uuid
   end
 
   test 'user double redirect_to_user_uuid' do
     mock_auth_with(identity_url: "https://double-redirects-to-active-user.openid.local")
     u = assigns(:user)
-    assert_equal 'zzzzz-tpzed-xurymjxw79nv3jz', u.uuid
+    assert_equal users(:active).uuid, u.uuid
   end
 
   test 'create new user during omniauth callback' do

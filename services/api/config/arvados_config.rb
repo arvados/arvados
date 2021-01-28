@@ -92,6 +92,7 @@ arvcfg.declare_config "API.DisabledAPIs", Hash, :disable_api_methods, ->(cfg, k,
 arvcfg.declare_config "API.MaxRequestSize", Integer, :max_request_size
 arvcfg.declare_config "API.MaxIndexDatabaseRead", Integer, :max_index_database_read
 arvcfg.declare_config "API.MaxItemsPerResponse", Integer, :max_items_per_response
+arvcfg.declare_config "API.MaxTokenLifetime", ActiveSupport::Duration
 arvcfg.declare_config "API.AsyncPermissionsUpdateInterval", ActiveSupport::Duration, :async_permissions_update_interval
 arvcfg.declare_config "Users.AutoSetupNewUsers", Boolean, :auto_setup_new_users
 arvcfg.declare_config "Users.AutoSetupNewUsersWithVmUUID", String, :auto_setup_new_users_with_vm_uuid

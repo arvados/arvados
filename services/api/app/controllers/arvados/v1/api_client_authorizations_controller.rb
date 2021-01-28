@@ -17,6 +17,7 @@ class Arvados::V1::ApiClientAuthorizationsController < ApplicationController
       scopes: {type: 'array', required: false}
     }
   end
+
   def create_system_auth
     @object = ApiClientAuthorization.
       new(user_id: system_user.id,
