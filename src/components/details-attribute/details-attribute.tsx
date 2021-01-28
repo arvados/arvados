@@ -62,6 +62,7 @@ interface DetailsAttributeDataProps {
     onValueClick?: () => void;
     linkToUuid?: string;
     copyValue?: string;
+    uuidEnhancer?: Function;
 }
 
 type DetailsAttributeProps = DetailsAttributeDataProps & WithStyles<CssRules> & FederationConfig & DispatchProp;
@@ -84,23 +85,25 @@ export const DetailsAttribute = connect(mapStateToProps)(withStyles(styles)(
         }
 
         render() {
-            const { label, link, value, children, classes, classLabel,
+            const { uuidEnhancer, label, link, value, children, classes, classLabel,
                 classValue, lowercaseValue, onValueClick, linkToUuid,
                 localCluster, remoteHostsConfig, sessions, copyValue } = this.props;
             let valueNode: React.ReactNode;
 
             if (linkToUuid) {
+            const uuid = uuidEnhancer ? uuidEnhancer(linkToUuid) : linkToUuid;
                 const linkUrl = getNavUrl(linkToUuid || "", { localCluster, remoteHostsConfig, sessions });
                 if (linkUrl[0] === '/') {
-                    valueNode = <Link to={linkUrl} className={classes.link}>{linkToUuid}</Link>;
+                    valueNode = <Link to={linkUrl} className={classes.link}>{uuid}</Link>;
                 } else {
-                    valueNode = <a href={linkUrl} className={classes.link} target='_blank'>{linkToUuid}</a>;
+                    valueNode = <a href={linkUrl} className={classes.link} target='_blank'>{uuid}</a>;
                 }
             } else if (link) {
                 valueNode = <a href={link} className={classes.link} target='_blank'>{value}</a>;
             } else {
                 valueNode = value;
             }
+
             return <Typography component="div" className={classes.attribute}>
                 <Typography component="div" className={classnames([classes.label, classLabel])}>{label}</Typography>
                 <Typography

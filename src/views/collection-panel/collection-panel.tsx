@@ -30,6 +30,7 @@ import { UserResource } from '~/models/user';
 import { getUserUuid } from '~/common/getuser';
 import { getProgressIndicator } from '~/store/progress-indicator/progress-indicator-reducer';
 import { COLLECTION_PANEL_LOAD_FILES, loadCollectionFiles, COLLECTION_PANEL_LOAD_FILES_THRESHOLD } from '~/store/collection-panel/collection-panel-files/collection-panel-files-actions';
+import OwnerNameUuidEnhancer from '../../views-components/owner-name-uuid-enhancer/owner-name-uuid-enhancer';
 import { Link } from 'react-router-dom';
 import { Link as ButtonLink } from '@material-ui/core';
 
@@ -288,7 +289,7 @@ export const CollectionDetailsAttributes = (props: { item: CollectionResource, t
         <Grid item xs={12} md={mdSize}>
             <DetailsAttribute classLabel={classes.label} classValue={classes.value}
                 label={isOldVersion ? "This version's UUID" : "Collection UUID"}
-                linkToUuid={item.uuid} />
+                linkToUuid={`${item.uuid} AAAAAAAAAAAAAAAPortable data hash`} />
         </Grid>
         <Grid item xs={12} md={mdSize}>
             <DetailsAttribute classLabel={classes.label} classValue={classes.value}
@@ -297,7 +298,8 @@ export const CollectionDetailsAttributes = (props: { item: CollectionResource, t
         </Grid>
         <Grid item xs={12} md={mdSize}>
             <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                label='Owner' linkToUuid={item.ownerUuid} />
+                label='Owner' linkToUuid={item.ownerUuid}
+                uuidEnhancer={(uuid: string) => <OwnerNameUuidEnhancer uuid={uuid} />} />
         </Grid>
         <Grid item xs={12} md={mdSize}>
             <DetailsAttribute classLabel={classes.label} classValue={classes.value}
@@ -309,7 +311,7 @@ export const CollectionDetailsAttributes = (props: { item: CollectionResource, t
             <DetailsAttribute
                 classLabel={classes.label} classValue={classes.value}
                 label='Version number'
-                value={ showVersionBrowser !== undefined
+                value={showVersionBrowser !== undefined
                     ? <Tooltip title="Open version browser"><ButtonLink underline='none' className={classes.button} onClick={() => showVersionBrowser()}>
                         {<span data-cy='collection-version-number'>{item.version}</span>}
                     </ButtonLink></Tooltip>
