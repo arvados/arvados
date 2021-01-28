@@ -13,6 +13,8 @@ class ApiClientAuthorization < ArvadosModel
   after_initialize :assign_random_api_token
   serialize :scopes, Array
 
+  before_validation :clamp_token_expiration
+
   api_accessible :user, extend: :common do |t|
     t.add :owner_uuid
     t.add :user_id
@@ -383,6 +385,17 @@ class ApiClientAuthorization < ArvadosModel
   end
 
   protected
+
+  def clamp_token_expiration
+    if !current_user.andand.is_admin && Rails.configuration.API.MaxTokenLifetime > 0
+      max_token_expiration = Time.now + Rails.configuration.API.MaxTokenLifetime
+      if self.new_record? && (self.expires_at.nil? || self.expires_at > max_token_expiration)
+        self.expires_at = max_token_expiration
+      elsif !self.new_record? && self.expires_at_changed? && (self.expires_at.nil? || self.expires_at > max_token_expiration)
+        self.expires_at = max_token_expiration
+      end
+    end
+  end
 
   def permission_to_create
     current_user.andand.is_admin or (current_user.andand.id == self.user_id)
