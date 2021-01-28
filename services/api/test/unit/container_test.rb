@@ -23,6 +23,8 @@ class ContainerTest < ActiveSupport::TestCase
     command: ["echo", "hello"],
     output_path: "test",
     runtime_constraints: {
+      "api" => false,
+      "keep_cache_ram" => 0,
       "ram" => 12000000000,
       "vcpus" => 4,
     },
@@ -227,11 +229,12 @@ class ContainerTest < ActiveSupport::TestCase
     set_user_from_auth :active
     env = {"C" => "3", "B" => "2", "A" => "1"}
     m = {"F" => {"kind" => "3"}, "E" => {"kind" => "2"}, "D" => {"kind" => "1"}}
-    rc = {"vcpus" => 1, "ram" => 1, "keep_cache_ram" => 1}
+    rc = {"vcpus" => 1, "ram" => 1, "keep_cache_ram" => 1, "api" => true}
     c, _ = minimal_new(environment: env, mounts: m, runtime_constraints: rc)
-    assert_equal c.environment.to_json, Container.deep_sort_hash(env).to_json
-    assert_equal c.mounts.to_json, Container.deep_sort_hash(m).to_json
-    assert_equal c.runtime_constraints.to_json, Container.deep_sort_hash(rc).to_json
+    c.reload
+    assert_equal Container.deep_sort_hash(env).to_json, c.environment.to_json
+    assert_equal Container.deep_sort_hash(m).to_json, c.mounts.to_json
+    assert_equal Container.deep_sort_hash(rc).to_json, c.runtime_constraints.to_json
   end
 
   test 'deep_sort_hash on array of hashes' do
@@ -561,6 +564,7 @@ class ContainerTest < ActiveSupport::TestCase
     assert_equal Container::Queued, c1.state
     reused = Container.find_reusable(common_attrs.merge(runtime_token_attr(:container_runtime_token)))
     # See #14584
+    assert_not_nil reused
     assert_equal c1.uuid, reused.uuid
   end
 
@@ -571,6 +575,7 @@ class ContainerTest < ActiveSupport::TestCase
     assert_equal Container::Queued, c1.state
     reused = Container.find_reusable(common_attrs.merge(runtime_token_attr(:container_runtime_token)))
     # See #14584
+    assert_not_nil reused
     assert_equal c1.uuid, reused.uuid
   end
 
@@ -581,6 +586,7 @@ class ContainerTest < ActiveSupport::TestCase
     assert_equal Container::Queued, c1.state
     reused = Container.find_reusable(common_attrs.merge(runtime_token_attr(:container_runtime_token)))
     # See #14584
+    assert_not_nil reused
     assert_equal c1.uuid, reused.uuid
   end
 

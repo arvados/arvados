@@ -29,6 +29,7 @@ class Container < ArvadosModel
   serialize :command, Array
   serialize :scheduling_parameters, Hash
 
+  after_find :fill_container_defaults_after_find
   before_validation :fill_field_defaults, :if => :new_record?
   before_validation :set_timestamps
   before_validation :check_lock
@@ -209,16 +210,15 @@ class Container < ArvadosModel
   # containers are suitable).
   def self.resolve_runtime_constraints(runtime_constraints)
     rc = {}
-    defaults = {
-      'keep_cache_ram' =>
-      Rails.configuration.Containers.DefaultKeepCacheRAM,
-    }
-    defaults.merge(runtime_constraints).each do |k, v|
+    runtime_constraints.each do |k, v|
       if v.is_a? Array
         rc[k] = v[0]
       else
         rc[k] = v
       end
+    end
+    if rc['keep_cache_ram'] == 0
+      rc['keep_cache_ram'] = Rails.configuration.Containers.DefaultKeepCacheRAM
     end
     rc
   end

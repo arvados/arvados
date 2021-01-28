@@ -109,6 +109,26 @@ func (as *APIStub) ContainerSSH(ctx context.Context, options arvados.ContainerSS
 	as.appendCall(ctx, as.ContainerSSH, options)
 	return arvados.ContainerSSHConnection{}, as.Error
 }
+func (as *APIStub) ContainerRequestCreate(ctx context.Context, options arvados.CreateOptions) (arvados.ContainerRequest, error) {
+	as.appendCall(ctx, as.ContainerRequestCreate, options)
+	return arvados.ContainerRequest{}, as.Error
+}
+func (as *APIStub) ContainerRequestUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.ContainerRequest, error) {
+	as.appendCall(ctx, as.ContainerRequestUpdate, options)
+	return arvados.ContainerRequest{}, as.Error
+}
+func (as *APIStub) ContainerRequestGet(ctx context.Context, options arvados.GetOptions) (arvados.ContainerRequest, error) {
+	as.appendCall(ctx, as.ContainerRequestGet, options)
+	return arvados.ContainerRequest{}, as.Error
+}
+func (as *APIStub) ContainerRequestList(ctx context.Context, options arvados.ListOptions) (arvados.ContainerRequestList, error) {
+	as.appendCall(ctx, as.ContainerRequestList, options)
+	return arvados.ContainerRequestList{}, as.Error
+}
+func (as *APIStub) ContainerRequestDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.ContainerRequest, error) {
+	as.appendCall(ctx, as.ContainerRequestDelete, options)
+	return arvados.ContainerRequest{}, as.Error
+}
 func (as *APIStub) SpecimenCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Specimen, error) {
 	as.appendCall(ctx, as.SpecimenCreate, options)
 	return arvados.Specimen{}, as.Error

@@ -340,6 +340,68 @@ func (conn *Conn) ContainerSSH(ctx context.Context, options arvados.ContainerSSH
 	return conn.chooseBackend(options.UUID).ContainerSSH(ctx, options)
 }
 
+func (conn *Conn) ContainerRequestList(ctx context.Context, options arvados.ListOptions) (arvados.ContainerRequestList, error) {
+	return conn.generated_ContainerRequestList(ctx, options)
+}
+
+func (conn *Conn) ContainerRequestCreate(ctx context.Context, options arvados.CreateOptions) (arvados.ContainerRequest, error) {
+	be := conn.chooseBackend(options.ClusterID)
+	if be == conn.local {
+		return be.ContainerRequestCreate(ctx, options)
+	}
+	if _, ok := options.Attrs["runtime_token"]; !ok {
+		// If runtime_token is not set, create a new token
+		aca, err := conn.local.APIClientAuthorizationCurrent(ctx, arvados.GetOptions{})
+		if err != nil {
+			// This should probably be StatusUnauthorized
+			// (need to update test in
+			// lib/controller/federation_test.go):
+			// When RoR is out of the picture this should be:
+			// return arvados.ContainerRequest{}, httpErrorf(http.StatusUnauthorized, "%w", err)
+			return arvados.ContainerRequest{}, httpErrorf(http.StatusForbidden, "%s", "invalid API token")
+		}
+		user, err := conn.local.UserGetCurrent(ctx, arvados.GetOptions{})
+		if err != nil {
+			return arvados.ContainerRequest{}, err
+		}
+		if len(aca.Scopes) == 0 || aca.Scopes[0] != "all" {
+			return arvados.ContainerRequest{}, httpErrorf(http.StatusForbidden, "token scope is not [all]")
+		}
+		if strings.HasPrefix(aca.UUID, conn.cluster.ClusterID) {
+			// Local user, submitting to a remote cluster.
+			// Create a new time-limited token.
+			local, ok := conn.local.(*localdb.Conn)
+			if !ok {
+				return arvados.ContainerRequest{}, httpErrorf(http.StatusInternalServerError, "bug: local backend is a %T, not a *localdb.Conn", conn.local)
+			}
+			aca, err = local.CreateAPIClientAuthorization(ctx, conn.cluster.SystemRootToken, rpc.UserSessionAuthInfo{UserUUID: user.UUID,
+				ExpiresAt: time.Now().UTC().Add(conn.cluster.Collections.BlobSigningTTL.Duration())})
+			if err != nil {
+				return arvados.ContainerRequest{}, err
+			}
+			options.Attrs["runtime_token"] = aca.TokenV2()
+		} else {
+			// Remote user. Container request will use the
+			// current token, minus the trailing portion
+			// (optional container uuid).
+			options.Attrs["runtime_token"] = aca.TokenV2()
+		}
+	}
+	return be.ContainerRequestCreate(ctx, options)
+}
+
+func (conn *Conn) ContainerRequestUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.ContainerRequest, error) {
+	return conn.chooseBackend(options.UUID).ContainerRequestUpdate(ctx, options)
+}
+
+func (conn *Conn) ContainerRequestGet(ctx context.Context, options arvados.GetOptions) (arvados.ContainerRequest, error) {
+	return conn.chooseBackend(options.UUID).ContainerRequestGet(ctx, options)
+}
+
+func (conn *Conn) ContainerRequestDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.ContainerRequest, error) {
+	return conn.chooseBackend(options.UUID).ContainerRequestDelete(ctx, options)
+}
+
 func (conn *Conn) SpecimenList(ctx context.Context, options arvados.ListOptions) (arvados.SpecimenList, error) {
 	return conn.generated_SpecimenList(ctx, options)
 }

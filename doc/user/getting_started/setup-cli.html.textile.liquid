@@ -1,0 +1,20 @@
+---
+layout: default
+navsection: userguide
+title: Getting started at the command line
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+Many operations in Arvados can be performed using either the web Workbench or through command line tools.  Some operations can only be done using the command line.
+
+To use the command line tools, you can either log into an Arvados-managed VM instance where those tools are pre-installed, or install the Arvados tools on your own system.
+
+To log into an Arvados-managed VM, see instructions for "Webshell":{{site.baseurl}}/user/getting_started/vm-login-with-webshell.html or "Unix":{{site.baseurl}}/user/getting_started/ssh-access-unix.html or "Windows":{{site.baseurl}}/user/getting_started/ssh-access-windows.html .
+
+To install the Arvados tools on your own system, you should install the "Command line SDK":{{site.baseurl}}/sdk/cli/install.html (requires Ruby) and "Python SDK":{{site.baseurl}}/sdk/python/sdk-python.html (requires Python).  You may also want to install "arvados-cwl-runner":{{site.baseurl}}/sdk/python/arvados-cwl-runner.html to submit workflows and "arvados-fuse":{{site.baseurl}}/sdk/python/arvados-fuse.html to mount keep as a filesystem.
+
+Once you are logged in or have command line tools installed, see "getting an API token":{{site.baseurl}}/user/reference/api-tokens.html and "check your environment":{{site.baseurl}}/user/getting_started/check-environment.html .

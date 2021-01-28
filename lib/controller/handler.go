@@ -102,6 +102,8 @@ func (h *Handler) setup() {
 		mux.Handle("/arvados/v1/users", rtr)
 		mux.Handle("/arvados/v1/users/", rtr)
 		mux.Handle("/arvados/v1/connect/", rtr)
+		mux.Handle("/arvados/v1/container_requests", rtr)
+		mux.Handle("/arvados/v1/container_requests/", rtr)
 		mux.Handle("/login", rtr)
 		mux.Handle("/logout", rtr)
 	}
