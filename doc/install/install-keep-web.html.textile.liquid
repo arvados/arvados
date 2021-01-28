@@ -107,7 +107,10 @@ h2(#update-config). Configure anonymous user token
 
 {% assign railscmd = "bundle exec ./script/get_anonymous_user_token.rb --get" %}
 {% assign railsout = "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz" %}
-If you intend to use Keep-web to serve public data to anonymous clients, configure it with an anonymous token. Use the following command on the <strong>API server</strong> to create an anonymous user token. {% include 'install_rails_command' %}
+If you intend to use Keep-web to serve public data to anonymous clients, configure it with an anonymous token.
+
+# First, generate a long random string and put it in the @config.yml@ file, in the @AnonymousUserToken@ field.
+# Then, use the following command on the <strong>API server</strong> to register the anonymous user token in the database. {% include 'install_rails_command' %}
 
 <notextile>
 <pre><code>    Users:
