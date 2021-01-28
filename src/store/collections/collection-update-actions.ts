@@ -13,7 +13,6 @@ import { CollectionResource } from '~/models/collection';
 import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
 import { snackbarActions, SnackbarKind } from "../snackbar/snackbar-actions";
 import { updateResources } from "../resources/resources-actions";
-import { reloadProjectMatchingUuid } from "../workbench/workbench-actions";
 import { loadDetailsPanel } from "../details-panel/details-panel-action";
 
 export interface CollectionUpdateFormDialogData {
@@ -49,7 +48,6 @@ export const updateCollection = (collection: CollectionUpdateFormDialogData) =>
                 kind: SnackbarKind.SUCCESS
             }));
             dispatch<any>(updateResources([updatedCollection]));
-            dispatch<any>(reloadProjectMatchingUuid([updatedCollection.ownerUuid]));
             dispatch<any>(loadDetailsPanel(updatedCollection.uuid));
         }).catch (e => {
             dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_UPDATE_FORM_NAME));

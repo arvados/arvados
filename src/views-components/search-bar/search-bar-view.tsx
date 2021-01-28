@@ -177,7 +177,7 @@ export const SearchBarView = compose(connectVocabulary, withStyles(styles))(
                     <Paper className={isPopoverOpen ? classes.containerSearchViewOpened : classes.container} >
                         <form onSubmit={this.handleSubmit}>
                             <Input
-                                data-cy='search-input-field'
+                                data-cy='searchbar-input-field'
                                 className={classes.input}
                                 onChange={this.handleChange}
                                 placeholder="Search"

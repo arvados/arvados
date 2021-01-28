@@ -3,13 +3,21 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { WrappedFieldProps, Field, FormName } from 'redux-form';
+import { WrappedFieldProps, Field, FormName, reset, change, WrappedFieldInputProps, WrappedFieldMetaProps } from 'redux-form';
 import { memoize } from 'lodash';
 import { Autocomplete } from '~/components/autocomplete/autocomplete';
 import { Vocabulary, getTags, getTagKeyID } from '~/models/vocabulary';
-import { handleSelect, handleBlur, connectVocabulary, VocabularyProp, ValidationProp, buildProps } from '~/views-components/resource-properties-form/property-field-common';
+import {
+    handleSelect,
+    handleBlur,
+    connectVocabulary,
+    VocabularyProp,
+    ValidationProp,
+    buildProps
+} from '~/views-components/resource-properties-form/property-field-common';
 import { TAG_KEY_VALIDATION } from '~/validators/validators';
 import { escapeRegExp } from '~/common/regexp.ts';
+import { ChangeEvent } from 'react';
 
 export const PROPERTY_KEY_FIELD_NAME = 'key';
 export const PROPERTY_KEY_FIELD_ID = 'keyID';
@@ -32,6 +40,10 @@ const PropertyKeyInput = ({ vocabulary, ...props }: WrappedFieldProps & Vocabula
             suggestions={getSuggestions(props.input.value, vocabulary)}
             onSelect={handleSelect(PROPERTY_KEY_FIELD_ID, data.form, props.input, props.meta)}
             onBlur={handleBlur(PROPERTY_KEY_FIELD_ID, data.form, props.meta, props.input, getTagKeyID(props.input.value, vocabulary))}
+            onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                const newValue = e.currentTarget.value;
+                handleChange(data.form, props.input, props.meta, newValue);
+            }}
             {...buildProps(props)}
         />
     )} />;
@@ -52,3 +64,18 @@ const getSuggestions = (value: string, vocabulary: Vocabulary) => {
     const re = new RegExp(escapeRegExp(value), "i");
     return getTags(vocabulary).filter(tag => re.test(tag.label) && tag.label !== value);
 };
+
+const handleChange = (
+    formName: string,
+    { onChange }: WrappedFieldInputProps,
+    { dispatch }: WrappedFieldMetaProps,
+    value: string) => {
+        // Properties' values are dependant on the keys, if any value is
+        // pre-existant, a change on the property key should mean that the
+        // previous value is invalid, so we better reset the whole form before
+        // setting the new tag key.
+        dispatch(reset(formName));
+
+        onChange(value);
+        dispatch(change(formName, PROPERTY_KEY_FIELD_NAME, value));
+    };

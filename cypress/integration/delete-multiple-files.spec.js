@@ -32,10 +32,7 @@ describe('Multi-file deletion tests', function () {
         })
             .as('testCollection').then(function () {
                 cy.loginAs(activeUser);
-                cy.visit(`/collections/${this.testCollection.uuid}`);
-
-                cy.get('[data-cy=linear-progress]').should('exist');
-                cy.get('[data-cy=linear-progress]').should('not.exist');
+                cy.doSearch(`${this.testCollection.uuid}`);
 
                 cy.get('[data-cy=collection-files-panel]').within(() => {
                     cy.get('[type="checkbox"]').first().check();
@@ -58,10 +55,7 @@ describe('Multi-file deletion tests', function () {
         })
             .as('testCollection').then(function () {
                 cy.loginAs(activeUser);
-                cy.visit(`/collections/${this.testCollection.uuid}`);
-
-                cy.get('[data-cy=linear-progress]').should('exist');
-                cy.get('[data-cy=linear-progress]').should('not.exist');
+                cy.doSearch(`${this.testCollection.uuid}`);
 
                 cy.get('[data-cy=virtual-file-tree] > div > i').first().click();
                 cy.get('[data-cy=collection-files-panel]')

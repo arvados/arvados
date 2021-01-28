@@ -36,7 +36,6 @@ export const getErrorMsg = (meta: WrappedFieldMetaProps) =>
 export const buildProps = ({ input, meta }: WrappedFieldProps) => {
     return {
         value: input.value,
-        onChange: input.onChange,
         items: ITEMS_PLACEHOLDER,
         renderSuggestion: (item: PropFieldSuggestion) => item.label,
         error: hasError(meta),

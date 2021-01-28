@@ -30,7 +30,7 @@ describe('Side panel tests', function() {
 
     it('enables the +NEW side panel button on users home project', function() {
         cy.loginAs(activeUser);
-        cy.visit(`/projects/${activeUser.user.uuid}`);
+        cy.doSearch(`${activeUser.user.uuid}`);
         cy.get('[data-cy=side-panel-button]')
             .should('exist')
             .and('not.be.disabled');
@@ -49,7 +49,7 @@ describe('Side panel tests', function() {
                     head_uuid: this.sharedGroup.uuid,
                     tail_uuid: activeUser.user.uuid
                 })
-                cy.visit(`/projects/${this.sharedGroup.uuid}`);
+                cy.doSearch(`${this.sharedGroup.uuid}`);
                 cy.get('[data-cy=side-panel-button]')
                     .should('exist')
                     .and(`${isWritable ? 'not.' : ''}be.disabled`);
@@ -78,7 +78,7 @@ describe('Side panel tests', function() {
 
     it('creates new collection on home project', function() {
         cy.loginAs(activeUser);
-        cy.visit(`/projects/${activeUser.user.uuid}`);
+        cy.doSearch(`${activeUser.user.uuid}`);
         cy.get('[data-cy=breadcrumb-first]').should('contain', 'Projects');
         cy.get('[data-cy=breadcrumb-last]').should('not.exist');
         // Create new collection
@@ -122,7 +122,7 @@ describe('Side panel tests', function() {
         }
 
         cy.loginAs(activeUser);
-        cy.visit(`/projects/${activeUser.user.uuid}`);
+        cy.doSearch(`${activeUser.user.uuid}`);
         cy.get('[data-cy=breadcrumb-first]').should('contain', 'Projects');
         cy.get('[data-cy=breadcrumb-last]').should('not.exist');
         // Create new project

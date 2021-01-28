@@ -28,7 +28,40 @@ describe('Collection panel tests', function() {
         cy.clearLocalStorage();
     });
 
-    it.only('shows collection by URL', function() {
+    it('uses the property editor with vocabulary terms', function() {
+        cy.createCollection(adminUser.token, {
+            name: `Test collection ${Math.floor(Math.random() * 999999)}`,
+            owner_uuid: activeUser.user.uuid,
+            manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"})
+        .as('testCollection').then(function() {
+            cy.loginAs(activeUser);
+            cy.doSearch(`${this.testCollection.uuid}`);
+
+            // Key: Color (IDTAGCOLORS) - Value: Magenta (IDVALCOLORS3)
+            cy.get('[data-cy=collection-properties-form]').within(() => {
+                cy.get('[data-cy=property-field-key]').within(() => {
+                    cy.get('input').type('Color');
+                });
+                cy.get('[data-cy=property-field-value]').within(() => {
+                    cy.get('input').type('Magenta');
+                });
+                cy.root().submit();
+            });
+            // Confirm proper vocabulary labels are displayed on the UI.
+            cy.get('[data-cy=collection-properties-panel]')
+                .should('contain', 'Color')
+                .and('contain', 'Magenta');
+            // Confirm proper vocabulary IDs were saved on the backend.
+            cy.doRequest('GET', `/arvados/v1/collections/${this.testCollection.uuid}`)
+            .its('body').as('collection')
+            .then(function() {
+                expect(this.collection.properties).to.deep.equal(
+                    {IDTAGCOLORS: 'IDVALCOLORS3'});
+            });
+        });
+    });
+
+    it('shows collection by URL', function() {
         cy.loginAs(activeUser);
         [true, false].map(function(isWritable) {
             cy.createGroup(adminUser.token, {
@@ -50,10 +83,7 @@ describe('Collection panel tests', function() {
                         head_uuid: this.sharedGroup.uuid,
                         tail_uuid: activeUser.user.uuid
                     })
-                    cy.visit(`/collections/${this.testCollection.uuid}`);
-
-                    cy.get('[data-cy=linear-progress]').should('exist');
-                    cy.get('[data-cy=linear-progress]').should('not.exist');
+                    cy.doSearch(`${this.testCollection.uuid}`);
 
                     // Check that name & uuid are correct.
                     cy.get('[data-cy=collection-info-panel]')
@@ -143,10 +173,7 @@ describe('Collection panel tests', function() {
             manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"})
         .as('testCollection').then(function() {
             cy.loginAs(activeUser);
-            cy.visit(`/collections/${this.testCollection.uuid}`);
-
-            cy.get('[data-cy=linear-progress]').should('exist');
-            cy.get('[data-cy=linear-progress]').should('not.exist');
+            cy.doSearch(`${this.testCollection.uuid}`);
 
             const nameTransitions = [
                 ['bar', '&'],
@@ -183,10 +210,7 @@ describe('Collection panel tests', function() {
             manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"})
         .as('testCollection').then(function() {
             cy.loginAs(activeUser);
-            cy.visit(`/collections/${this.testCollection.uuid}`);
-
-            cy.get('[data-cy=linear-progress]').should('exist');
-            cy.get('[data-cy=linear-progress]').should('not.exist');
+            cy.doSearch(`${this.testCollection.uuid}`);
 
             // Rename 'bar' to 'subdir/foo'
             cy.get('[data-cy=collection-files-panel]')
@@ -234,10 +258,7 @@ describe('Collection panel tests', function() {
             manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"})
         .as('testCollection').then(function() {
             cy.loginAs(activeUser);
-            cy.visit(`/collections/${this.testCollection.uuid}`);
-
-            cy.get('[data-cy=linear-progress]').should('exist');
-            cy.get('[data-cy=linear-progress]').should('not.exist');
+            cy.doSearch(`${this.testCollection.uuid}`);
 
             const illegalNamesFromUI = [
                 ['.', "Name cannot be '.' or '..'"],
@@ -312,10 +333,7 @@ describe('Collection panel tests', function() {
             });
             // Check the old version displays as what it is.
             cy.loginAs(activeUser)
-            cy.visit(`/collections/${oldVersionUuid}`);
-
-            cy.get('[data-cy=linear-progress]').should('exist');
-            cy.get('[data-cy=linear-progress]').should('not.exist');
+            cy.doSearch(`${oldVersionUuid}`);
 
             cy.get('[data-cy=collection-info-panel]').should('contain', 'This is an old version');
             cy.get('[data-cy=read-only-icon]').should('exist');
@@ -337,10 +355,7 @@ describe('Collection panel tests', function() {
         .as('collection').then(function() {
             // Visit collection, check basic information
             cy.loginAs(activeUser)
-            cy.visit(`/collections/${this.collection.uuid}`);
-
-            cy.get('[data-cy=linear-progress]').should('exist');
-            cy.get('[data-cy=linear-progress]').should('not.exist');
+            cy.doSearch(`${this.collection.uuid}`);
 
             cy.get('[data-cy=collection-info-panel]').should('not.contain', 'This is an old version');
             cy.get('[data-cy=read-only-icon]').should('not.exist');
