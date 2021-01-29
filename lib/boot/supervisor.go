@@ -41,6 +41,7 @@ type Supervisor struct {
 	ListenHost           string // e.g., localhost
 	ControllerAddr       string // e.g., 127.0.0.1:8000
 	OwnTemporaryDatabase bool
+	EnableWorkbench1     bool
 	Stderr               io.Writer
 
 	logger  logrus.FieldLogger
@@ -227,9 +228,13 @@ func (super *Supervisor) run(cfg *arvados.Config) error {
 		runServiceCommand{name: "ws", svc: super.cluster.Services.Websocket, depends: []supervisedTask{seedDatabase{}}},
 		installPassenger{src: "services/api"},
 		runPassenger{src: "services/api", svc: super.cluster.Services.RailsAPI, depends: []supervisedTask{createCertificates{}, seedDatabase{}, installPassenger{src: "services/api"}}},
-		installPassenger{src: "apps/workbench", depends: []supervisedTask{seedDatabase{}}}, // dependency ensures workbench doesn't delay api install/startup
-		runPassenger{src: "apps/workbench", svc: super.cluster.Services.Workbench1, depends: []supervisedTask{installPassenger{src: "apps/workbench"}}},
 		seedDatabase{},
+	}
+	if super.EnableWorkbench1 {
+		tasks = append(tasks,
+			installPassenger{src: "apps/workbench", depends: []supervisedTask{seedDatabase{}}}, // dependency ensures workbench doesn't delay api install/startup
+			runPassenger{src: "apps/workbench", svc: super.cluster.Services.Workbench1, depends: []supervisedTask{installPassenger{src: "apps/workbench"}}},
+		)
 	}
 	if super.ClusterType != "test" {
 		tasks = append(tasks,
