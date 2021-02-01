@@ -105,6 +105,11 @@ Automation/integration notes:
 	image, and be prepared to rebuild that VM image when package-building
 	slows down (this will happen when new dependencies are introduced).
 
+	The "build" subcommand, if successful, also runs
+	dpkg-scanpackages to create/replace Packages.gz in the package
+	dir. This enables the "testinstall" subcommand to list the
+	package dir as a source in /etc/apt/sources.*.
+
 Options:
 `)
 		flags.PrintDefaults()
