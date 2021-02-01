@@ -20,6 +20,15 @@ end
 
 task :generate => [ :realclean, 'sdk/python/arvados/index.html', 'sdk/R/arvados/index.html', 'sdk/java-v2/javadoc/index.html' ] do
   vars = ['baseurl', 'arvados_cluster_uuid', 'arvados_api_host', 'arvados_workbench_host']
+  if ! ENV.key?('baseurl') || ENV['baseurl'] == ""
+    if !ENV.key?('WORKSPACE') || ENV['WORKSPACE'] == ""
+      puts "The `baseurl` variable was not specified and the `WORKSPACE` environment variable is not set. Defaulting `baseurl` to file://#{pwd}/.site"
+      ENV['baseurl'] = "file://#{pwd}/.site/"
+    else
+      puts "The `baseurl` variable was not specified, defaulting to a value derived from the `WORKSPACE` environment variable"
+      ENV['baseurl'] = "file://#{ENV['WORKSPACE']}/doc/.site/"
+    end
+  end
   vars.each do |v|
     if ENV[v]
       website.config.h[v] = ENV[v]
