@@ -13,6 +13,7 @@ import { ServiceRepository } from '~/services/services';
 import { matchProjectRoute, matchRunProcessRoute } from '~/routes/routes';
 import { ResourcePropertiesFormData } from '~/views-components/resource-properties-form/resource-properties-form';
 import { RouterState } from "react-router-redux";
+import { addProperty, deleteProperty } from "~/lib/resource-properties";
 
 export interface ProjectCreateFormDialogData {
     ownerUuid: string;
@@ -22,7 +23,7 @@ export interface ProjectCreateFormDialogData {
 }
 
 export interface ProjectProperties {
-    [key: string]: string;
+    [key: string]: string | string[];
 }
 
 export const PROJECT_CREATE_FORM_NAME = 'projectCreateFormName';
@@ -69,13 +70,19 @@ export const createProject = (project: Partial<ProjectResource>) =>
 export const addPropertyToCreateProjectForm = (data: ResourcePropertiesFormData) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const properties = { ...PROJECT_CREATE_FORM_SELECTOR(getState(), 'properties') };
-        properties[data.key] = data.value;
-        dispatch(change(PROJECT_CREATE_FORM_NAME, 'properties', properties));
+        const key = data.keyID || data.key;
+        const value =  data.valueID || data.value;
+        dispatch(change(
+            PROJECT_CREATE_FORM_NAME,
+            'properties',
+            addProperty(properties, key, value)));
     };
 
-export const removePropertyFromCreateProjectForm = (key: string) =>
+export const removePropertyFromCreateProjectForm = (key: string, value: string) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const properties = { ...PROJECT_CREATE_FORM_SELECTOR(getState(), 'properties') };
-        delete properties[key];
-        dispatch(change(PROJECT_CREATE_FORM_NAME, 'properties', properties));
+        dispatch(change(
+            PROJECT_CREATE_FORM_NAME,
+            'properties',
+            deleteProperty(properties, key, value)));
     };

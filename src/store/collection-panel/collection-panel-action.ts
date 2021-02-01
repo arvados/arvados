@@ -61,7 +61,7 @@ export const createCollectionTag = (data: TagProperty) =>
             dispatch(collectionPanelActions.SET_COLLECTION(updatedCollection));
             dispatch(resourcesActions.SET_RESOURCES([updatedCollection]));
             dispatch(snackbarActions.OPEN_SNACKBAR({
-                message: "Tag has been successfully added.",
+                message: "Property has been successfully added.",
                 hideDuration: 2000,
                 kind: SnackbarKind.SUCCESS }));
             dispatch<any>(loadDetailsPanel(updatedCollection.uuid));
