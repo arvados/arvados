@@ -27,18 +27,23 @@ Clusters:
       clsr2:
         Host: api.cluster2.com
         Proxy: true
-	ActivateUsers: true
+        ActivateUsers: true
       clsr3:
         Host: api.cluster3.com
         Proxy: true
-	ActivateUsers: false
+        ActivateUsers: false
+      clsr4:
+        Host: api.cluster4.com
+        Proxy: false
 </pre>
 
-Similar settings should be added to @clsr2@ & @clsr3@ hosts, so that all clusters in the federation can talk to each other.
+Similar settings should be added to @clsr2@, @clsr3@ & @clsr4@ hosts, so that all clusters in the federation can talk to each other.
 
 The @ActivateUsers@ setting indicates whether users from a given cluster are automatically activated or they require manual activation.  User activation is covered in more detail in the "user activation section":{{site.baseurl}}/admin/activation.html.  In the current example, users from @clsr2@ would be automatically, activated, but users from @clsr3@ would require an admin to activate the account.
 
-Before activating users in the later example, @clsr1@ will have a list of users from @clsr3@. But trying to access to those UUIDs in @clsr1@ will produce a HTTP 404 until activated. 
+Note: @clsr1@ will have a list of users from @clsr3@. But trying to access to those UUIDs in @clsr1@ will produce a HTTP 404. This scenario is usefull if @clsr3@ is a public cluster with open data. @clsr1@ admin want their users to have easy access to @clsr3@ open data, but they don't want people to automatically get accounts on their private cluster just because users have accounts on the public cluster.
+
+Note: In the case that @Proxy: false@ is present. The cluster won't forward requests to the remote cluster. In this example, calling  @https://api.cluster1.com/v1/arvados/(...)?cluster_id=clsr4@ will fail to execute. 
 
 h2(#LoginCluster). User management
 
