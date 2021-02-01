@@ -60,7 +60,7 @@ export class FavoriteService {
             })
             .then(results => {
                 const uuids = results.items.map(item => item.headUuid);
-                return this.groupsService.contents(userUuid, {
+                return this.groupsService.contents('', {
                     limit,
                     offset,
                     order: contentOrder,
