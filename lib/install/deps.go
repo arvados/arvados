@@ -449,6 +449,7 @@ rm ${zip}
 				"--exclude", "/log",
 				"--exclude", "/tmp",
 				"--exclude", "/vendor",
+				"--exclude", "/config/environments",
 				"./", "/var/lib/arvados/"+dstdir+"/")
 			cmd.Dir = filepath.Join(inst.SourcePath, srcdir)
 			cmd.Stdout = stdout
