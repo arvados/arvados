@@ -218,21 +218,20 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 			return 1
 		}
 	}
-	rubyversion := "2.5.7"
+	rubyversion := "2.7.2"
+	rubymajorversion := rubyversion[:strings.LastIndex(rubyversion, ".")]
 	if haverubyversion, err := exec.Command("/var/lib/arvados/bin/ruby", "-v").CombinedOutput(); err == nil && bytes.HasPrefix(haverubyversion, []byte("ruby "+rubyversion)) {
 		logger.Print("ruby " + rubyversion + " already installed")
 	} else {
 		err = inst.runBash(`
 tmp="$(mktemp -d)"
 trap 'rm -r "${tmp}"' ERR EXIT
-wget --progress=dot:giga -O- https://cache.ruby-lang.org/pub/ruby/2.5/ruby-`+rubyversion+`.tar.gz | tar -C "${tmp}" -xzf -
+wget --progress=dot:giga -O- https://cache.ruby-lang.org/pub/ruby/`+rubymajorversion+`/ruby-`+rubyversion+`.tar.gz | tar -C "${tmp}" -xzf -
 cd "${tmp}/ruby-`+rubyversion+`"
 ./configure --disable-install-static-library --enable-shared --disable-install-doc --prefix /var/lib/arvados
 make -j8
 make install
-/var/lib/arvados/bin/gem install bundler --no-ri --no-rdoc
-# "gem update --system" can be removed when we use ruby ≥2.6.3: https://bundler.io/blog/2019/05/14/solutions-for-cant-find-gem-bundler-with-executable-bundle.html
-/var/lib/arvados/bin/gem update --system --no-ri --no-rdoc
+/var/lib/arvados/bin/gem install bundler --no-document
 `, stdout, stderr)
 		if err != nil {
 			return 1

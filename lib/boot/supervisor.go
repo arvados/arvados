@@ -443,7 +443,7 @@ func (super *Supervisor) setupRubyEnv() error {
 		cmd.Env = super.environ
 		buf, err := cmd.Output() // /var/lib/arvados/.gem/ruby/2.5.0/bin:...
 		if err != nil || len(buf) == 0 {
-			return fmt.Errorf("gem env gempath: %v", err)
+			return fmt.Errorf("gem env gempath: %w", err)
 		}
 		gempath := string(bytes.Split(buf, []byte{':'})[0])
 		super.prependEnv("PATH", gempath+"/bin:")

@@ -5,6 +5,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -41,9 +42,17 @@ func fpm(ctx context.Context, opts opts, stdin io.Reader, stdout, stderr io.Writ
 		return fmt.Errorf("gem install fpm: %w", err)
 	}
 
-	if _, err := os.Stat("/root/.gem/ruby/2.5.0/gems/fpm-1.11.0/lib/fpm/package/deb.rb"); err == nil {
+	cmd = exec.Command("/var/lib/arvados/bin/gem", "env", "gempath")
+	cmd.Stderr = stderr
+	buf, err := cmd.Output() // /root/.gem/ruby/2.7.0:...
+	if err != nil || len(buf) == 0 {
+		return fmt.Errorf("gem env gempath: %w", err)
+	}
+	gempath := string(bytes.TrimRight(bytes.Split(buf, []byte{':'})[0], "\n"))
+
+	if _, err := os.Stat(gempath + "/gems/fpm-1.11.0/lib/fpm/package/deb.rb"); err == nil {
 		// Workaround for fpm bug https://github.com/jordansissel/fpm/issues/1739
-		cmd = exec.Command("sed", "-i", `/require "digest"/a require "zlib"`, "/root/.gem/ruby/2.5.0/gems/fpm-1.11.0/lib/fpm/package/deb.rb")
+		cmd = exec.Command("sed", "-i", `/require "digest"/a require "zlib"`, gempath+"/gems/fpm-1.11.0/lib/fpm/package/deb.rb")
 		cmd.Stdout = stdout
 		cmd.Stderr = stderr
 		err = cmd.Run()
@@ -66,7 +75,7 @@ func fpm(ctx context.Context, opts opts, stdin io.Reader, stdout, stderr io.Writ
 	format := "deb" // TODO: rpm
 	pkgfile := filepath.Join(opts.PackageDir, "arvados-server-easy_"+opts.PackageVersion+"_amd64."+format)
 
-	cmd = exec.Command("/root/.gem/ruby/2.5.0/bin/fpm",
+	cmd = exec.Command(gempath+"/bin/fpm",
 		"--package", pkgfile,
 		"--name", "arvados-server-easy",
 		"--version", opts.PackageVersion,
