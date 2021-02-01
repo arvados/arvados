@@ -45,7 +45,7 @@ export class FavoriteService {
                 results.items.map(item => this.linkService.delete(item.uuid))));
     }
 
-    list(userUuid: string, { filters, limit, offset, linkOrder, contentOrder }: FavoriteListArguments = {}): Promise<ListResults<GroupContentsResource>> {
+    list(userUuid: string, { filters, limit, offset, linkOrder, contentOrder }: FavoriteListArguments = {}, showOnlyOwned: boolean = true): Promise<ListResults<GroupContentsResource>> {
         const listFilters = new FilterBuilder()
             .addEqual('owner_uuid', userUuid)
             .addEqual('link_class', LinkClass.STAR)
@@ -60,7 +60,7 @@ export class FavoriteService {
             })
             .then(results => {
                 const uuids = results.items.map(item => item.headUuid);
-                return this.groupsService.contents(userUuid, {
+                return this.groupsService.contents(showOnlyOwned ? userUuid : '', {
                     limit,
                     offset,
                     order: contentOrder,

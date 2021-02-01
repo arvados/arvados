@@ -248,7 +248,7 @@ export const loadFavoritesProject = (params: LoadFavoritesProjectParams) =>
                 fb => fb.getFilters(),
             )(new FilterBuilder());
 
-            const { items } = await services.favoriteService.list(uuid, { filters });
+            const { items } = await services.favoriteService.list(uuid, { filters }, false);
 
             dispatch<any>(receiveTreePickerData<GroupContentsResource>({
                 id: 'Favorites',
