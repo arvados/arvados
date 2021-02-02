@@ -36,15 +36,19 @@ func (runPostgreSQL) Run(ctx context.Context, fail func(error), super *Superviso
 		return err
 	}
 
+	if super.ClusterType == "production" {
+		return nil
+	}
+
 	iamroot := false
 	if u, err := user.Current(); err != nil {
-		return fmt.Errorf("user.Current(): %s", err)
+		return fmt.Errorf("user.Current(): %w", err)
 	} else if u.Uid == "0" {
 		iamroot = true
 	}
 
 	buf := bytes.NewBuffer(nil)
-	err = super.RunProgram(ctx, super.tempdir, buf, nil, "pg_config", "--bindir")
+	err = super.RunProgram(ctx, super.tempdir, runOptions{output: buf}, "pg_config", "--bindir")
 	if err != nil {
 		return err
 	}
@@ -56,6 +60,7 @@ func (runPostgreSQL) Run(ctx context.Context, fail func(error), super *Superviso
 		return err
 	}
 	prog, args := filepath.Join(bindir, "initdb"), []string{"-D", datadir, "-E", "utf8"}
+	opts := runOptions{}
 	if iamroot {
 		postgresUser, err := user.Lookup("postgres")
 		if err != nil {
@@ -81,25 +86,19 @@ func (runPostgreSQL) Run(ctx context.Context, fail func(error), super *Superviso
 		if err != nil {
 			return err
 		}
-		// We can't use "sudo -u" here because it creates an
-		// intermediate process that interferes with our
-		// ability to reliably kill postgres. The setuidgid
-		// program just calls exec without forking, so it
-		// doesn't have this problem.
-		args = append([]string{"postgres", prog}, args...)
-		prog = "setuidgid"
+		opts.user = "postgres"
 	}
-	err = super.RunProgram(ctx, super.tempdir, nil, nil, prog, args...)
+	err = super.RunProgram(ctx, super.tempdir, opts, prog, args...)
 	if err != nil {
 		return err
 	}
 
-	err = super.RunProgram(ctx, super.tempdir, nil, nil, "cp", "server.crt", "server.key", datadir)
+	err = super.RunProgram(ctx, super.tempdir, runOptions{}, "cp", "server.crt", "server.key", datadir)
 	if err != nil {
 		return err
 	}
 	if iamroot {
-		err = super.RunProgram(ctx, super.tempdir, nil, nil, "chown", "postgres", datadir+"/server.crt", datadir+"/server.key")
+		err = super.RunProgram(ctx, super.tempdir, runOptions{}, "chown", "postgres", datadir+"/server.crt", datadir+"/server.key")
 		if err != nil {
 			return err
 		}
@@ -116,11 +115,11 @@ func (runPostgreSQL) Run(ctx context.Context, fail func(error), super *Superviso
 			"-k", datadir, // socket dir
 			"-p", super.cluster.PostgreSQL.Connection["port"],
 		}
+		opts := runOptions{}
 		if iamroot {
-			args = append([]string{"postgres", prog}, args...)
-			prog = "setuidgid"
+			opts.user = "postgres"
 		}
-		fail(super.RunProgram(ctx, super.tempdir, nil, nil, prog, args...))
+		fail(super.RunProgram(ctx, super.tempdir, opts, prog, args...))
 	}()
 
 	for {

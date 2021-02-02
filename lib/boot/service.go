@@ -30,8 +30,8 @@ func (runner runServiceCommand) String() string {
 }
 
 func (runner runServiceCommand) Run(ctx context.Context, fail func(error), super *Supervisor) error {
-	binfile := filepath.Join(super.tempdir, "bin", "arvados-server")
-	err := super.RunProgram(ctx, super.tempdir, nil, nil, binfile, "-version")
+	binfile := filepath.Join(super.bindir, "arvados-server")
+	err := super.RunProgram(ctx, super.bindir, runOptions{}, binfile, "-version")
 	if err != nil {
 		return err
 	}
@@ -46,7 +46,7 @@ func (runner runServiceCommand) Run(ctx context.Context, fail func(error), super
 		super.waitShutdown.Add(1)
 		go func() {
 			defer super.waitShutdown.Done()
-			fail(super.RunProgram(ctx, super.tempdir, nil, []string{"ARVADOS_SERVICE_INTERNAL_URL=" + u.String()}, binfile, runner.name, "-config", super.configfile))
+			fail(super.RunProgram(ctx, super.tempdir, runOptions{env: []string{"ARVADOS_SERVICE_INTERNAL_URL=" + u.String()}}, binfile, runner.name, "-config", super.configfile))
 		}()
 	}
 	return nil
@@ -77,7 +77,7 @@ func (runner runGoProgram) Run(ctx context.Context, fail func(error), super *Sup
 		return ctx.Err()
 	}
 
-	err = super.RunProgram(ctx, super.tempdir, nil, nil, binfile, "-version")
+	err = super.RunProgram(ctx, super.tempdir, runOptions{}, binfile, "-version")
 	if err != nil {
 		return err
 	}
@@ -93,7 +93,7 @@ func (runner runGoProgram) Run(ctx context.Context, fail func(error), super *Sup
 		super.waitShutdown.Add(1)
 		go func() {
 			defer super.waitShutdown.Done()
-			fail(super.RunProgram(ctx, super.tempdir, nil, []string{"ARVADOS_SERVICE_INTERNAL_URL=" + u.String()}, binfile))
+			fail(super.RunProgram(ctx, super.tempdir, runOptions{env: []string{"ARVADOS_SERVICE_INTERNAL_URL=" + u.String()}}, binfile))
 		}()
 	}
 	return nil
