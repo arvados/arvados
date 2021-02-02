@@ -10,7 +10,7 @@ import { ResourceKind } from '~/models/resource';
 import { resourceLabel } from '~/common/labels';
 import { DetailsData } from "./details-data";
 import { DetailsAttribute } from "~/components/details-attribute/details-attribute";
-import OwnerNameUuidEnhancer from '../owner-name-uuid-enhancer/owner-name-uuid-enhancer';
+import { ResourceOwnerWithName } from '../data-explorer/renderers';
 
 export class ProcessDetails extends DetailsData<ProcessResource> {
 
@@ -22,7 +22,7 @@ export class ProcessDetails extends DetailsData<ProcessResource> {
         return <div>
             <DetailsAttribute label='Type' value={resourceLabel(ResourceKind.PROCESS)} />
             <DetailsAttribute label='Owner' linkToUuid={this.item.ownerUuid} value={this.item.ownerUuid}
-                uuidEnhancer={(uuid: string) => <OwnerNameUuidEnhancer uuid={uuid} />} />
+                uuidEnhancer={(uuid: string) => <ResourceOwnerWithName uuid={uuid} />} />
 
             <DetailsAttribute label='Status' value={this.item.state} />
             <DetailsAttribute label='Last modified' value={formatDate(this.item.modifiedAt)} />

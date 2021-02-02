@@ -17,7 +17,7 @@ import { withStyles, StyleRulesCallback, WithStyles } from '@material-ui/core';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { Dispatch } from 'redux';
 import { getPropertyChip } from '../resource-properties-form/property-chip';
-import OwnerNameUuidEnhancer from '../owner-name-uuid-enhancer/owner-name-uuid-enhancer';
+import { ResourceOwnerWithName } from '../data-explorer/renderers';
 
 export class ProjectDetails extends DetailsData<ProjectResource> {
     getIcon(className?: string) {
@@ -61,7 +61,7 @@ const ProjectDetailsComponent = connect(null, mapDispatchToProps)(
         ({ classes, project, onClick }: ProjectDetailsComponentProps) => <div>
             <DetailsAttribute label='Type' value={resourceLabel(ResourceKind.PROJECT)} />
             <DetailsAttribute label='Owner' linkToUuid={project.ownerUuid}
-                uuidEnhancer={(uuid: string) => <OwnerNameUuidEnhancer uuid={uuid} />} lowercaseValue={true} />
+                uuidEnhancer={(uuid: string) => <ResourceOwnerWithName uuid={uuid} />} lowercaseValue={true} />
             <DetailsAttribute label='Last modified' value={formatDate(project.modifiedAt)} />
             <DetailsAttribute label='Created at' value={formatDate(project.createdAt)} />
             <DetailsAttribute label='Project UUID' linkToUuid={project.uuid} value={project.uuid} />

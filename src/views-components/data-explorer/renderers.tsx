@@ -27,6 +27,7 @@ import { navigateTo } from '~/store/navigation/navigation-action';
 import { withResourceData } from '~/views-components/data-explorer/with-resources';
 import { CollectionResource } from '~/models/collection';
 import { IllegalNamingWarning } from '~/components/warning/warning';
+import { loadResource } from '~/store/resources/resources-actions';
 
 const renderName = (dispatch: Dispatch, item: GroupContentsResource) =>
     <Grid container alignItems="center" wrap="nowrap" spacing={16}>
@@ -434,6 +435,35 @@ export const ResourceOwnerName = connect(
         return { owner: ownerName ? ownerName!.name : resource!.ownerUuid };
     })((props: { owner: string }) => renderOwner(props.owner));
 
+export const ResourceOwnerWithName =
+    compose(
+        connect(
+            (state: RootState, props: { uuid: string }) => {
+                let ownerName = '';
+                const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
+
+                if (resource) {
+                    ownerName = (resource as any).fullName || resource.name;
+                }
+
+                return { uuid: props.uuid, ownerName };
+            }),
+        withStyles({}, { withTheme: true }))
+        ((props: { uuid: string, ownerName: string, dispatch: Dispatch, theme: ArvadosTheme }) => {
+            const { uuid, ownerName, dispatch, theme } = props;
+
+            if (ownerName === '') {
+                dispatch<any>(loadResource(uuid, false));
+                return <Typography style={{ color: theme.palette.primary.main }} inline noWrap>
+                    {uuid}
+                </Typography>;
+            }
+
+            return <Typography style={{ color: theme.palette.primary.main }} inline noWrap>
+                {uuid} ({ownerName})
+            </Typography>;
+        });
+
 const renderType = (type: string) =>
     <Typography noWrap>
         {resourceLabel(type)}
@@ -446,20 +476,20 @@ export const ResourceType = connect(
     })((props: { type: string }) => renderType(props.type));
 
 export const ResourceStatus = connect((state: RootState, props: { uuid: string }) => {
-        return { resource: getResource<GroupContentsResource>(props.uuid)(state.resources) };
-    })((props: { resource: GroupContentsResource }) =>
-        (props.resource && props.resource.kind === ResourceKind.COLLECTION)
+    return { resource: getResource<GroupContentsResource>(props.uuid)(state.resources) };
+})((props: { resource: GroupContentsResource }) =>
+    (props.resource && props.resource.kind === ResourceKind.COLLECTION)
         ? <CollectionStatus uuid={props.resource.uuid} />
         : <ProcessStatus uuid={props.resource.uuid} />
-    );
+);
 
 export const CollectionStatus = connect((state: RootState, props: { uuid: string }) => {
-        return { collection: getResource<CollectionResource>(props.uuid)(state.resources) };
-    })((props: { collection: CollectionResource }) =>
-        (props.collection.uuid !== props.collection.currentVersionUuid)
+    return { collection: getResource<CollectionResource>(props.uuid)(state.resources) };
+})((props: { collection: CollectionResource }) =>
+    (props.collection.uuid !== props.collection.currentVersionUuid)
         ? <Typography>version {props.collection.version}</Typography>
         : <Typography>head version</Typography>
-    );
+);
 
 export const ProcessStatus = compose(
     connect((state: RootState, props: { uuid: string }) => {
@@ -478,7 +508,7 @@ export const ProcessStatus = compose(
 export const ProcessStartDate = connect(
     (state: RootState, props: { uuid: string }) => {
         const process = getProcess(props.uuid)(state.resources);
-        return { date: ( process && process.container ) ? process.container.startedAt : '' };
+        return { date: (process && process.container) ? process.container.startedAt : '' };
     })((props: { date: string }) => renderDate(props.date));
 
 export const renderRunTime = (time: number) =>

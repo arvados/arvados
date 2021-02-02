@@ -66,7 +66,6 @@ import { linkAccountPanelReducer } from './link-account-panel/link-account-panel
 import { CollectionsWithSameContentAddressMiddlewareService } from '~/store/collections-content-address-panel/collections-content-address-middleware-service';
 import { COLLECTIONS_CONTENT_ADDRESS_PANEL_ID } from '~/store/collections-content-address-panel/collections-content-address-panel-actions';
 import { ownerNameReducer } from '~/store/owner-name/owner-name-reducer';
-import { ownerNameUuidEnhancerReducer } from './owner-name-uuid-enhancer/owner-name-uuid-enhancer-reducer';
 import { SubprocessMiddlewareService } from '~/store/subprocess-panel/subprocess-panel-middleware-service';
 import { SUBPROCESS_PANEL_ID } from '~/store/subprocess-panel/subprocess-panel-actions';
 import { ALL_PROCESSES_PANEL_ID } from './all-processes-panel/all-processes-panel-action';
@@ -179,7 +178,6 @@ const createRootReducer = (services: ServiceRepository) => combineReducers({
     dialog: dialogReducer,
     favorites: favoritesReducer,
     ownerName: ownerNameReducer,
-    ownerNameUuidEnhancer: ownerNameUuidEnhancerReducer,
     publicFavorites: publicFavoritesReducer,
     form: formReducer,
     processLogsPanel: processLogsPanelReducer,
