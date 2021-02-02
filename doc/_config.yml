@@ -48,7 +48,7 @@ navbar:
       - user/topics/collection-versioning.html.textile.liquid
       - user/topics/storage-classes.html.textile.liquid
     - Data Analysis with Workflows:
-      - user/user/cwl/arvados-vscode-training.html.md.liquid
+      - user/cwl/arvados-vscode-training.html.md.liquid
       - user/cwl/cwl-runner.html.textile.liquid
       - user/cwl/cwl-run-options.html.textile.liquid
       - user/tutorials/writing-cwl-workflow.html.textile.liquid
