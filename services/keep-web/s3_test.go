@@ -569,6 +569,7 @@ func (s *IntegrationSuite) TestS3NormalizeURIForSignature(c *check.C) {
 		req, err := http.NewRequest("GET", "https://host.example.com"+trial.rawPath, nil)
 		req.Header.Set("X-Amz-Date", date)
 		req.Host = "host.example.com"
+		c.Assert(err, check.IsNil)
 
 		obtained, err := s3stringToSign(s3SignAlgorithm, scope, "host", req)
 		if !c.Check(err, check.IsNil) {

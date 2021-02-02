@@ -43,7 +43,7 @@ This section describes the different user account states.
 notextile. <div class="spaced-out">
 
 # A new user record is not set up, and not active.  An inactive user cannot create or update any object, but can read Arvados objects that the user account has permission to read (such as publicly available items readable by the "anonymous" user).
-# Using Workbench or the "command line":{{site.baseurl}}/install/cheat_sheet.html , the admin invokes @setup@ on the user.  The setup method adds the user to the "All users" group.
+# Using Workbench or the "command line":{{site.baseurl}}/admin/user-management-cli.html , the admin invokes @setup@ on the user.  The setup method adds the user to the "All users" group.
 - If "Users.AutoSetupNewUsers":config.html is true, this happens automatically during user creation, so in that case new users start at step (3).
 - If "Users.AutoSetupNewUsersWithRepository":config.html is true, a new git repo is created for the user.
 - If "Users.AutoSetupNewUsersWithVmUUID":config.html is set, the user is given login permission to the specified shell node
@@ -58,7 +58,7 @@ Unsetup removes the user from the "All users" group and makes them inactive, pre
 
 notextile. </div>
 
-User management can be performed through the web using Workbench or the command line.  See "user management at the CLI":{{site.baseurl}}/install/cheat_sheet.html for specific examples.
+User management can be performed through the web using Workbench or the command line.  See "user management at the CLI":{{site.baseurl}}/admin/user-management-cli.html for specific examples.
 
 h2(#user_agreements). User agreements and self-activation
 

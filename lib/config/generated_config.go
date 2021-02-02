@@ -261,9 +261,6 @@ Clusters:
 
       # The e-mail address of the user you would like to become marked as an admin
       # user on their first login.
-      # In the default configuration, authentication happens through the Arvados SSO
-      # server, which uses OAuth2 against Google's servers, so in that case this
-      # should be an address associated with a Google account.
       AutoAdminUserWithEmail: ""
 
       # If AutoAdminFirstUser is set to true, the first user to log in when no
@@ -279,9 +276,10 @@ Clusters:
       NewUserNotificationRecipients: {}
       NewInactiveUserNotificationRecipients: {}
 
-      # Set AnonymousUserToken to enable anonymous user access. You can get
-      # the token by running "bundle exec ./script/get_anonymous_user_token.rb"
-      # in the directory where your API server is running.
+      # Set AnonymousUserToken to enable anonymous user access. Populate this
+      # field with a long random string. Then run "bundle exec
+      # ./script/get_anonymous_user_token.rb" in the directory where your API
+      # server is running to record the token in the database.
       AnonymousUserToken: ""
 
       # If a new user has an alternate email address (local@domain)

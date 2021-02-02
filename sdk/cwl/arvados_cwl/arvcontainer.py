@@ -547,6 +547,17 @@ class RunnerContainer(Runner):
 
         logger.info("%s submitted container_request %s", self.arvrunner.label(self), response["uuid"])
 
+        workbench1 = self.arvrunner.api.config()["Services"]["Workbench1"]["ExternalURL"]
+        workbench2 = self.arvrunner.api.config()["Services"]["Workbench2"]["ExternalURL"]
+        url = ""
+        if workbench2:
+            url = "{}processes/{}".format(workbench2, response["uuid"])
+        elif workbench1:
+            url = "{}container_requests/{}".format(workbench1, response["uuid"])
+        if url:
+            logger.info("Monitor workflow progress at %s", url)
+
+
     def done(self, record):
         try:
             container = self.arvrunner.api.containers().get(

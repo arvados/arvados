@@ -10,18 +10,21 @@ Linux can report what compute resources are used by processes in a specific cgro
 
 To enable cgroups accounting, you must boot Linux with the command line parameters @cgroup_enable=memory swapaccount=1@.
 
+Currently Arvados is not compatible with the new cgroups accounting, also known as cgroups v2. Currently, all supported GNU/Linux distributions don't use cgroups v2 as default
+If you are using a distribution in the compute nodes that ships with cgroups v2 enabled, make sure to disable it by booting Linux with the command line parameters @systemd.unified_cgroup_hierarchy=0@.
+
 After making changes, reboot the system to make these changes effective.
 
 h3. Red Hat and CentOS
 
 <notextile>
-<pre><code>~$ <span class="userinput">sudo grubby --update-kernel=ALL --args='cgroup_enable=memory swapaccount=1'</span>
+<pre><code>~$ <span class="userinput">sudo grubby --update-kernel=ALL --args='cgroup_enable=memory swapaccount=1 systemd.unified_cgroup_hierarchy=0'</span>
 </code></pre>
 </notextile>
 
 h3. Debian and Ubuntu
 
-Open the file @/etc/default/grub@ in an editor.  Find where the string @GRUB_CMDLINE_LINUX@ is set.  Add @cgroup_enable=memory swapaccount=1@ to that string.  Save the file and exit the editor.  Then run:
+Open the file @/etc/default/grub@ in an editor.  Find where the string @GRUB_CMDLINE_LINUX@ is set.  Add @cgroup_enable=memory swapaccount=1 systemd.unified_cgroup_hierarchy=0@ to that string.  Save the file and exit the editor.  Then run:
 
 <notextile>
 <pre><code>~$ <span class="userinput">sudo update-grub</span>

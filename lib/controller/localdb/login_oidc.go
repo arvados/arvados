@@ -37,10 +37,11 @@ import (
 	"google.golang.org/api/people/v1"
 )
 
-const (
+var (
 	tokenCacheSize        = 1000
 	tokenCacheNegativeTTL = time.Minute * 5
 	tokenCacheTTL         = time.Minute * 10
+	tokenCacheRaceWindow  = time.Minute
 )
 
 type oidcLoginController struct {
@@ -363,8 +364,9 @@ func (ta *oidcTokenAuthorizer) WrapCalls(origFunc api.RoutableFunc) api.Routable
 			return origFunc(ctx, opts)
 		}
 		// Check each token in the incoming request. If any
-		// are OAuth2 access tokens, swap them out for Arvados
-		// tokens.
+		// are valid OAuth2 access tokens, insert/update them
+		// in the database so RailsAPI's auth code accepts
+		// them.
 		for _, tok := range creds.Tokens {
 			err = ta.registerToken(ctx, tok)
 			if err != nil {
@@ -463,7 +465,7 @@ func (ta *oidcTokenAuthorizer) registerToken(ctx context.Context, tok string) er
 	// Expiry time for our token is one minute longer than our
 	// cache TTL, so we don't pass it through to RailsAPI just as
 	// it's expiring.
-	exp := time.Now().UTC().Add(tokenCacheTTL + time.Minute)
+	exp := time.Now().UTC().Add(tokenCacheTTL + tokenCacheRaceWindow)
 
 	var aca arvados.APIClientAuthorization
 	if updating {
@@ -488,6 +490,7 @@ func (ta *oidcTokenAuthorizer) registerToken(ctx context.Context, tok string) er
 	if err != nil {
 		return err
 	}
+	aca.ExpiresAt = exp.Format(time.RFC3339Nano)
 	ta.cache.Add(tok, aca)
 	return nil
 }

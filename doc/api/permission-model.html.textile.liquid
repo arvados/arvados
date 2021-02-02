@@ -38,13 +38,15 @@ A permission link is a link object with:
 
 * @owner_uuid@ of the system user.
 * @link_class@ "permission"
-* @name@ one of *can_read*, *can_write* or *can_manage*
+* @name@ one of *can_read*, *can_write*, *can_manage* or *can_login*
 * @head_uuid@ of some Arvados object
 * @tail_uuid@ of a User or Group.  For Group, the @group_class@ must be a "role".
 
 This grants the permission in @name@ for @tail_uuid@ accessing @head_uuid@.
 
 If a User has *can_manage* permission on some object, the user has the ability to read, create, update and delete permission links with @head_uuid@ of the managed object.  In other words, the user has the ability to modify the permission grants on the object.
+
+The *can_login* @name@ is only meaningful on a permission link with with @tail_uuid@ a user UUID and @head_uuid@ a Virtual Machine UUID. A permission link of this type gives the user UUID permission to log into the Virtual Machine UUID. The username for the VM is specified in the @properties@ field. Group membership can be specified that way as well, optionally. See the "VM login section on the CLI cheat sheet":/install/cheat_sheet.html#vm-login for an example.
 
 h3. Transitive permissions
 
