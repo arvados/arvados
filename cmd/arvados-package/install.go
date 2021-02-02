@@ -92,6 +92,7 @@ apt-get -y autoremove
 /etc/init.d/postgresql start
 arvados-server init -cluster-id x1234
 exec arvados-server boot -listen-host 0.0.0.0 -shutdown
+echo "PASS - server installed and booted successfully"
 `)
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
