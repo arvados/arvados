@@ -113,6 +113,8 @@ func build(ctx context.Context, opts opts, stdin io.Reader, stdout, stderr io.Wr
 		"-package-version", opts.PackageVersion,
 		"-package-dir", "/pkg",
 		"-package-chown", opts.PackageChown,
+		"-package-maintainer", opts.Maintainer,
+		"-package-vendor", opts.Vendor,
 	)
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr

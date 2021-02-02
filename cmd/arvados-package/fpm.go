@@ -79,6 +79,11 @@ func fpm(ctx context.Context, opts opts, stdin io.Reader, stdout, stderr io.Writ
 		"--package", pkgfile,
 		"--name", "arvados-server-easy",
 		"--version", opts.PackageVersion,
+		"--url", "https://arvados.org",
+		"--maintainer", opts.Maintainer,
+		"--vendor", opts.Vendor,
+		"--license", "GNU Affero General Public License, version 3.0",
+		"--description", "platform for managing, processing, and sharing genomic and other large scientific and biomedical data",
 		"--input-type", "dir",
 		"--output-type", format)
 	deps, err := install.ProductionDependencies()

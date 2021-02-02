@@ -64,12 +64,16 @@ type opts struct {
 	RebuildImage   bool
 	SourceDir      string
 	TargetOS       string
+	Maintainer     string
+	Vendor         string
 }
 
 func parseFlags(args []string) (opts, error) {
 	opts := opts{
-		SourceDir: ".",
-		TargetOS:  "debian:10",
+		SourceDir:  ".",
+		TargetOS:   "debian:10",
+		Maintainer: "Arvados Package Maintainers <packaging@arvados.org>",
+		Vendor:     "The Arvados Project",
 	}
 	flags := flag.NewFlagSet("", flag.ContinueOnError)
 	flags.StringVar(&opts.PackageVersion, "package-version", opts.PackageVersion, "package version to build/test, like \"1.2.3\"")
@@ -77,6 +81,8 @@ func parseFlags(args []string) (opts, error) {
 	flags.StringVar(&opts.PackageDir, "package-dir", opts.PackageDir, "destination directory for new package (default is cwd)")
 	flags.StringVar(&opts.PackageChown, "package-chown", opts.PackageChown, "desired uid:gid for new package (default is current user:group)")
 	flags.StringVar(&opts.TargetOS, "target-os", opts.TargetOS, "target operating system vendor:version")
+	flags.StringVar(&opts.Maintainer, "package-maintainer", opts.Maintainer, "maintainer to be listed in package metadata")
+	flags.StringVar(&opts.Vendor, "package-vendor", opts.Vendor, "vendor to be listed in package metadata")
 	flags.BoolVar(&opts.RebuildImage, "rebuild-image", opts.RebuildImage, "rebuild docker image(s) instead of using existing")
 	flags.Usage = func() {
 		fmt.Fprint(flags.Output(), `Usage: arvados-package <subcommand> [options]
