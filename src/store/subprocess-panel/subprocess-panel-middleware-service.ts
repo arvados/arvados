@@ -32,11 +32,12 @@ export class SubprocessMiddlewareService extends DataExplorerMiddlewareService {
 
     async requestItems(api: MiddlewareAPI<Dispatch, RootState>) {
         const state = api.getState();
+        const parentContainerRequestUuid = state.processPanel.containerRequestUuid;
+        if (parentContainerRequestUuid === "") { return; }
         const dataExplorer = getDataExplorer(state.dataExplorer, this.getId());
 
         try {
             api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
-            const parentContainerRequestUuid = state.processPanel.containerRequestUuid;
             const parentContainerRequest = await this.services.containerRequestService.get(parentContainerRequestUuid);
             const containerRequests = await this.services.containerRequestService.list(
                 { ...getParams(dataExplorer, parentContainerRequest) });
