@@ -20,7 +20,7 @@ export interface ResourcePropertiesFormData {
 export type ResourcePropertiesFormProps = InjectedFormProps<ResourcePropertiesFormData> & WithStyles<GridClassKey>;
 
 export const ResourcePropertiesForm = ({ handleSubmit, submitting, invalid, classes }: ResourcePropertiesFormProps ) =>
-    <form data-cy='collection-properties-form' onSubmit={handleSubmit}>
+    <form data-cy='resource-properties-form' onSubmit={handleSubmit}>
         <Grid container spacing={16} classes={classes}>
             <Grid item xs>
                 <PropertyKeyField />
