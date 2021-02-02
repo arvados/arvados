@@ -112,6 +112,7 @@ func (bcmd bootCommand) run(ctx context.Context, prog string, args []string, std
 			// ensuing "context cancelled" error, though:
 			// return nil to indicate successful startup.
 			_ = super.Wait()
+			fmt.Fprintln(stderr, "PASS - all services booted successfully")
 			return nil
 		}
 	}

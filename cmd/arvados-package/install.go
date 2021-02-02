@@ -29,12 +29,6 @@ func testinstall(ctx context.Context, opts opts, stdin io.Reader, stdout, stderr
 	}
 	defer os.RemoveAll(tmpdir)
 
-	sourcesFile := tmpdir + "/arvados-local.list"
-	err = ioutil.WriteFile(sourcesFile, []byte("deb [trusted=yes] file:///pkg ./\n"), 0644)
-	if err != nil {
-		return fmt.Errorf("Write %s: %w", sourcesFile, err)
-	}
-
 	if exists, err := dockerImageExists(ctx, depsImageName); err != nil {
 		return err
 	} else if !exists || opts.RebuildImage {
@@ -47,15 +41,24 @@ func testinstall(ctx context.Context, opts opts, stdin io.Reader, stdout, stderr
 			"--name", depsCtrName,
 			"--tmpfs", "/tmp:exec,mode=01777",
 			"-v", opts.PackageDir+":/pkg:ro",
-			"-v", sourcesFile+":/etc/apt/sources.list.d/arvados-local.list:ro",
 			"--env", "DEBIAN_FRONTEND=noninteractive",
 			opts.TargetOS,
 			"bash", "-c", `
-set -e
+set -e -o pipefail
 apt-get update
-apt-get install -y eatmydata
+apt-get install -y --no-install-recommends dpkg-dev eatmydata
+
+mkdir /tmp/pkg
+ln -s /pkg/*.deb /tmp/pkg/
+(cd /tmp/pkg; dpkg-scanpackages --multiversion . | gzip > Packages.gz)
+echo >/etc/apt/sources.list.d/arvados-local.list "deb [trusted=yes] file:///tmp/pkg ./"
+apt-get update
+
 eatmydata apt-get install -y --no-install-recommends arvados-server-easy postgresql
+eatmydata apt-get remove -y dpkg-dev
+SUDO_FORCE_REMOVE=yes apt-get autoremove -y
 eatmydata apt-get remove -y arvados-server-easy
+rm /etc/apt/sources.list.d/arvados-local.list
 `)
 		cmd.Stdout = stdout
 		cmd.Stderr = stderr
@@ -80,19 +83,27 @@ eatmydata apt-get remove -y arvados-server-easy
 	cmd := exec.CommandContext(ctx, "docker", "run", "--rm",
 		"--tmpfs", "/tmp:exec,mode=01777",
 		"-v", opts.PackageDir+":/pkg:ro",
-		"-v", sourcesFile+":/etc/apt/sources.list.d/arvados-local.list:ro",
 		"--env", "DEBIAN_FRONTEND=noninteractive",
 		depsImageName,
 		"bash", "-c", `
-set -e
+set -e -o pipefail
 PATH="/var/lib/arvados/bin:$PATH"
 apt-get update
+apt-get install -y --no-install-recommends dpkg-dev
+mkdir /tmp/pkg
+ln -s /pkg/*.deb /tmp/pkg/
+(cd /tmp/pkg; dpkg-scanpackages --multiversion . | gzip > Packages.gz)
+apt-get remove -y dpkg-dev
+echo
+
+echo >/etc/apt/sources.list.d/arvados-local.list "deb [trusted=yes] file:///tmp/pkg ./"
+apt-get update
 eatmydata apt-get install --reinstall -y --no-install-recommends arvados-server-easy`+versionsuffix+`
-apt-get -y autoremove
+SUDO_FORCE_REMOVE=yes apt-get autoremove -y
+
 /etc/init.d/postgresql start
 arvados-server init -cluster-id x1234
 exec arvados-server boot -listen-host 0.0.0.0 -shutdown
-echo "PASS - server installed and booted successfully"
 `)
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
