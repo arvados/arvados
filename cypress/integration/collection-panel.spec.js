@@ -64,6 +64,10 @@ describe('Collection panel tests', function() {
     it('shows collection by URL', function() {
         cy.loginAs(activeUser);
         [true, false].map(function(isWritable) {
+            // Using different file names to avoid test flakyness: the second iteration
+            // on this loop may pass an assertion from the first iteration by looking
+            // for the same file name.
+            const fileName = isWritable ? 'bar' : 'foo';
             cy.createGroup(adminUser.token, {
                 name: 'Shared project',
                 group_class: 'project',
@@ -74,7 +78,7 @@ describe('Collection panel tests', function() {
                     name: 'Test collection',
                     owner_uuid: this.sharedGroup.uuid,
                     properties: {someKey: 'someValue'},
-                    manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"})
+                    manifest_text: `. 37b51d194a7513e45b56f6524f2d51f2+3 0:3:${fileName}\n`})
                 .as('testCollection').then(function() {
                     // Share the group with active user.
                     cy.createLink(adminUser.token, {
@@ -125,14 +129,14 @@ describe('Collection panel tests', function() {
                     }
                     // Check that the file listing show both read & write operations
                     cy.get('[data-cy=collection-files-panel]').within(() => {
-                        cy.root().should('contain', 'bar');
+                        cy.root().should('contain', fileName);
                         if (isWritable) {
                             cy.get('[data-cy=upload-button]')
                                 .should(`${isWritable ? '' : 'not.'}contain`, 'Upload data');
                         }
                     });
                     cy.get('[data-cy=collection-files-panel]')
-                        .contains('bar').rightclick();
+                        .contains(fileName).rightclick();
                     cy.get('[data-cy=context-menu]')
                         .should('contain', 'Download')
                         .and('contain', 'Open in new tab')
