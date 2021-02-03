@@ -32,6 +32,7 @@ import { getProgressIndicator } from '~/store/progress-indicator/progress-indica
 import { COLLECTION_PANEL_LOAD_FILES, loadCollectionFiles, COLLECTION_PANEL_LOAD_FILES_THRESHOLD } from '~/store/collection-panel/collection-panel-files/collection-panel-files-actions';
 import { Link } from 'react-router-dom';
 import { Link as ButtonLink } from '@material-ui/core';
+import { ResourceOwnerWithName } from '~/views-components/data-explorer/renderers';
 
 type CssRules = 'root'
     | 'button'
@@ -297,7 +298,8 @@ export const CollectionDetailsAttributes = (props: { item: CollectionResource, t
         </Grid>
         <Grid item xs={12} md={mdSize}>
             <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                label='Owner' linkToUuid={item.ownerUuid} />
+                label='Owner' linkToUuid={item.ownerUuid}
+                uuidEnhancer={(uuid: string) => <ResourceOwnerWithName uuid={uuid} />} />
         </Grid>
         <Grid item xs={12} md={mdSize}>
             <DetailsAttribute classLabel={classes.label} classValue={classes.value}
@@ -309,7 +311,7 @@ export const CollectionDetailsAttributes = (props: { item: CollectionResource, t
             <DetailsAttribute
                 classLabel={classes.label} classValue={classes.value}
                 label='Version number'
-                value={ showVersionBrowser !== undefined
+                value={showVersionBrowser !== undefined
                     ? <Tooltip title="Open version browser"><ButtonLink underline='none' className={classes.button} onClick={() => showVersionBrowser()}>
                         {<span data-cy='collection-version-number'>{item.version}</span>}
                     </ButtonLink></Tooltip>
