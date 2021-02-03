@@ -63,15 +63,15 @@ func (conn *Conn) ContainerSSH(ctx context.Context, opts arvados.ContainerSSHOpt
 
 	switch ctr.State {
 	case arvados.ContainerStateQueued, arvados.ContainerStateLocked:
-		err = httpserver.ErrorWithStatus(fmt.Errorf("gateway is not available, container is %s", strings.ToLower(string(ctr.State))), http.StatusServiceUnavailable)
+		err = httpserver.ErrorWithStatus(fmt.Errorf("container is not running yet (state is %q)", ctr.State), http.StatusServiceUnavailable)
 		return
 	case arvados.ContainerStateRunning:
 		if ctr.GatewayAddress == "" {
-			err = httpserver.ErrorWithStatus(errors.New("container is running but gateway is not available"), http.StatusServiceUnavailable)
+			err = httpserver.ErrorWithStatus(errors.New("container is running but gateway is not available -- installation problem or feature not supported"), http.StatusServiceUnavailable)
 			return
 		}
 	default:
-		err = httpserver.ErrorWithStatus(fmt.Errorf("gateway is not available, container is %s", strings.ToLower(string(ctr.State))), http.StatusGone)
+		err = httpserver.ErrorWithStatus(fmt.Errorf("container has ended (state is %q)", ctr.State), http.StatusGone)
 		return
 	}
 	// crunch-run uses a self-signed / unverifiable TLS

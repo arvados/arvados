@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"syscall"
 
@@ -28,6 +29,7 @@ func (shellCommand) RunCommand(prog string, args []string, stdin io.Reader, stdo
 	f := flag.NewFlagSet(prog, flag.ContinueOnError)
 	f.SetOutput(stderr)
 	f.Usage = func() {
+		_, prog := filepath.Split(prog)
 		fmt.Fprint(stderr, prog+`: open an interactive shell on a running container.
 
 Usage: `+prog+` [options] [username@]container-uuid [ssh-options] [remote-command [args...]]
@@ -105,7 +107,11 @@ func (connectSSHCommand) RunCommand(prog string, args []string, stdin io.Reader,
 	f := flag.NewFlagSet(prog, flag.ContinueOnError)
 	f.SetOutput(stderr)
 	f.Usage = func() {
+		_, prog := filepath.Split(prog)
 		fmt.Fprint(stderr, prog+`: connect to the gateway service for a running container.
+
+NOTE: You almost certainly don't want to use this command directly. It
+is meant to be used internally. Use "arvados-client shell" instead.
 
 Usage: `+prog+` [options] [username@]container-uuid
 
