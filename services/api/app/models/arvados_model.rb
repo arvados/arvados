@@ -877,7 +877,7 @@ class ArvadosModel < ApplicationRecord
   # request.
   def fill_container_defaults
     self.runtime_constraints = {
-      'api' => false,
+      'API' => false,
       'keep_cache_ram' => 0,
       'ram' => 0,
       'vcpus' => 0,
