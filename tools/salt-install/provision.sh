@@ -70,7 +70,7 @@ arguments() {
         for i in ${2//,/ }
           do
             # Verify the role exists
-            if [[ ! "api,controller,keepstore,websocket,keepweb,workbench2,keepproxy,shell,workbench,dispatcher" == *"$i"* ]]; then
+            if [[ ! "database,api,controller,keepstore,websocket,keepweb,workbench2,keepproxy,shell,workbench,dispatcher" == *"$i"* ]]; then
               echo "The role '${i}' is not a valid role"
               usage
               exit 1
@@ -185,20 +185,38 @@ mkdir -p ${S_DIR} ${F_DIR} ${P_DIR}
 cat > ${S_DIR}/top.sls << EOFTSLS
 base:
   '*':
-    - single_host.host_entries
-    - single_host.snakeoil_certs
+    # - single_host.host_entries
+    # - single_host.snakeoil_certs
     - locale
-    - nginx.passenger
-    - postgres
-    - docker
 EOFTSLS
 
-# If we want specific roles for a node, just add those states
+# If we want specific roles for a node, just add the desired states
+# and its dependencies
 if [ -z "${ROLES}" ]; then
+  echo '    - nginx.passenger' >> ${S_DIR}/top.sls
+  echo '    - postgres' >> ${S_DIR}/top.sls
+  echo '    - docker' >> ${S_DIR}/top.sls
   echo '    - arvados' >> ${S_DIR}/top.sls
 else
+  # If we add individual roles, make sure we add the repo first
+  echo "    - arvados.repo" >> ${S_DIR}/top.sls
   for R in ${ROLES}; do
-    echo "    - arvados.${R}" >> ${S_DIR}/top.sls
+    case "${R}" in
+      "database")
+        echo "    - postgres" >> ${S_DIR}/top.sls
+      ::
+      "api","workbench","workbench2","keepweb","keepproxy")
+        grep -q "nginx.passenger" ${S_DIR}/top.sls || echo "    - nginx.passenger" >> ${S_DIR}/top.sls
+        echo "    - arvados.${R}" >> ${S_DIR}/top.sls
+      ;;
+      "shell","dispatcher")
+        grep -q "docker" ${S_DIR}/top.sls || echo "    - docker" >> ${S_DIR}/top.sls
+        echo "    - arvados.${R}" >> ${S_DIR}/top.sls
+      ;;
+      *)
+        echo "    - arvados.${R}" >> ${S_DIR}/top.sls
+      ::
+    esac
   done
 fi
 
@@ -285,37 +303,39 @@ for f in "${TESTS_DIR}"/*; do
        s/__INITIAL_USER__/${INITIAL_USER}/g;
        s/__INITIAL_USER_EMAIL__/${INITIAL_USER_EMAIL}/g;
        s/__INITIAL_USER_PASSWORD__/${INITIAL_USER_PASSWORD}/g" \
-  ${f} > /tmp/cluster_tests/$(basename ${f})
+  "${f}" > "/tmp/cluster_tests"/$(basename "${f}")
 done
 chmod 755 /tmp/cluster_tests/run-test.sh
 
 # Replace helper state files that differ from the formula's examples
-for f in "${SOURCE_STATES_DIR}"/*; do
-  sed "s/__CLUSTER__/${CLUSTER}/g;
-       s/__DOMAIN__/${DOMAIN}/g;
-       s/__RELEASE__/${RELEASE}/g;
-       s/__CONTROLLER_EXT_SSL_PORT__/${CONTROLLER_EXT_SSL_PORT}/g;
-       s/__KEEP_EXT_SSL_PORT__/${KEEP_EXT_SSL_PORT}/g;
-       s/__WEBSHELL_EXT_SSL_PORT__/${WEBSHELL_EXT_SSL_PORT}/g;
-       s/__WORKBENCH1_EXT_SSL_PORT__/${WORKBENCH1_EXT_SSL_PORT}/g;
-       s/__WORKBENCH2_EXT_SSL_PORT__/${WORKBENCH2_EXT_SSL_PORT}/g;
-       s/__WEBSOCKET_EXT_SSL_PORT__/${WEBSOCKET_EXT_SSL_PORT}/g;
-       s/__HOSTNAME_EXT__/${HOSTNAME_EXT}/g;
-       s/__HOSTNAME_INT__/${HOSTNAME_INT}/g;
-       s/__KEEPWEB_EXT_SSL_PORT__/${KEEPWEB_EXT_SSL_PORT}/g;
-       s/__HOST_SSL_PORT__/${HOST_SSL_PORT}/g;
-       s/__INITIAL_USER__/${INITIAL_USER}/g;
-       s/__INITIAL_USER_EMAIL__/${INITIAL_USER_EMAIL}/g;
-       s/__INITIAL_USER_PASSWORD__/${INITIAL_USER_PASSWORD}/g;
-       s/__BLOB_SIGNING_KEY__/${BLOB_SIGNING_KEY}/g;
-       s/__MANAGEMENT_TOKEN__/${MANAGEMENT_TOKEN}/g;
-       s/__SYSTEM_ROOT_TOKEN__/${SYSTEM_ROOT_TOKEN}/g;
-       s/__RAILS_SECRET_TOKEN__/${RAILS_SECRET_TOKEN}/g;
-       s/__ANONYMOUS_USER_TOKEN__/${ANONYMOUS_USER_TOKEN}/g;
-       s/__WORKBENCH_SECRET_KEY__/${WORKBENCH_SECRET_KEY}/g;
-       s/__VERSION__/${VERSION}/g" \
-  "${f}" > "${F_DIR}"/arvados-formula/test/salt/states/examples/single_host/$(basename "${f}")
-done
+if -d "${SOURCE_STATES_DIR}"; then
+  for f in "${SOURCE_STATES_DIR}"/*; do
+    sed "s/__CLUSTER__/${CLUSTER}/g;
+         s/__DOMAIN__/${DOMAIN}/g;
+         s/__RELEASE__/${RELEASE}/g;
+         s/__CONTROLLER_EXT_SSL_PORT__/${CONTROLLER_EXT_SSL_PORT}/g;
+         s/__KEEP_EXT_SSL_PORT__/${KEEP_EXT_SSL_PORT}/g;
+         s/__WEBSHELL_EXT_SSL_PORT__/${WEBSHELL_EXT_SSL_PORT}/g;
+         s/__WORKBENCH1_EXT_SSL_PORT__/${WORKBENCH1_EXT_SSL_PORT}/g;
+         s/__WORKBENCH2_EXT_SSL_PORT__/${WORKBENCH2_EXT_SSL_PORT}/g;
+         s/__WEBSOCKET_EXT_SSL_PORT__/${WEBSOCKET_EXT_SSL_PORT}/g;
+         s/__HOSTNAME_EXT__/${HOSTNAME_EXT}/g;
+         s/__HOSTNAME_INT__/${HOSTNAME_INT}/g;
+         s/__KEEPWEB_EXT_SSL_PORT__/${KEEPWEB_EXT_SSL_PORT}/g;
+         s/__HOST_SSL_PORT__/${HOST_SSL_PORT}/g;
+         s/__INITIAL_USER__/${INITIAL_USER}/g;
+         s/__INITIAL_USER_EMAIL__/${INITIAL_USER_EMAIL}/g;
+         s/__INITIAL_USER_PASSWORD__/${INITIAL_USER_PASSWORD}/g;
+         s/__BLOB_SIGNING_KEY__/${BLOB_SIGNING_KEY}/g;
+         s/__MANAGEMENT_TOKEN__/${MANAGEMENT_TOKEN}/g;
+         s/__SYSTEM_ROOT_TOKEN__/${SYSTEM_ROOT_TOKEN}/g;
+         s/__RAILS_SECRET_TOKEN__/${RAILS_SECRET_TOKEN}/g;
+         s/__ANONYMOUS_USER_TOKEN__/${ANONYMOUS_USER_TOKEN}/g;
+         s/__WORKBENCH_SECRET_KEY__/${WORKBENCH_SECRET_KEY}/g;
+         s/__VERSION__/${VERSION}/g" \
+    "${f}" > "${F_DIR}/arvados-formula/test/salt/states/examples/single_host"/$(basename "${f}")
+  done
+fi
 
 # FIXME! #16992 Temporary fix for psql call in arvados-api-server
 if [ -e /root/.psqlrc ]; then
