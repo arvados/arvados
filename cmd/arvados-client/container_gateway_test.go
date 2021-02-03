@@ -30,7 +30,7 @@ func (s *ClientSuite) TestShellGatewayNotAvailable(c *check.C) {
 	cmd.Stderr = &stderr
 	c.Check(cmd.Run(), check.NotNil)
 	c.Log(stderr.String())
-	c.Check(stderr.String(), check.Matches, `(?ms).*gateway is not available, container is queued.*`)
+	c.Check(stderr.String(), check.Matches, `(?ms).*container is not running yet \(state is "Queued"\).*`)
 }
 
 func (s *ClientSuite) TestShellGateway(c *check.C) {
