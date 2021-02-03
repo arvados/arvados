@@ -18,7 +18,7 @@ ARVADOS_API_TOKEN=1234567890qwertyuiopasdfghjklzxcvbnm1234567890zzzz
 
 In these examples, @zzzzz-tpzed-3kz0nwtjehhl0u4@ is the sample user account.  Replace with the uuid of the user you wish to manipulate.
 
-See "user management":{{site.baseurl}}/admin/activation.html for an overview of how to use these commands.
+See "user management":{{site.baseurl}}/admin/user-management.html for an overview of how to use these commands.
 
 h3. Setup a user
 
@@ -133,9 +133,9 @@ $ ARVADOS_API_TOKEN=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx arv api_c
 
 h2. Adding Permissions
 
-h3. VM login
+h3(#vm-login). VM login
 
-Give @$user_uuid@ permission to log in to @$vm_uuid@ as @$target_username@
+Give @$user_uuid@ permission to log in to @$vm_uuid@ as @$target_username@ and make sure that @$target_username@ is a member of the @docker@ group
 
 <pre>
 user_uuid=xxxxxxxchangeme
@@ -148,7 +148,7 @@ read -rd $'\000' newlink <<EOF; arv link create --link "$newlink"
 "head_uuid":"$vm_uuid",
 "link_class":"permission",
 "name":"can_login",
-"properties":{"username":"$target_username"}
+"properties":{"username":"$target_username", "groups": [ "docker" ]}
 }
 EOF
 </pre>

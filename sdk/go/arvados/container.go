@@ -91,7 +91,7 @@ type Mount struct {
 // RuntimeConstraints specify a container's compute resources (RAM,
 // CPU) and network connectivity.
 type RuntimeConstraints struct {
-	API          bool  `json:"api"`
+	API          bool  `json:"API"`
 	RAM          int64 `json:"ram"`
 	VCPUs        int   `json:"vcpus"`
 	KeepCacheRAM int64 `json:"keep_cache_ram"`

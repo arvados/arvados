@@ -194,7 +194,7 @@ func (s *ServerRequiredSuite) TestBlockCheck_NoSuchBlock(c *C) {
 	allLocators = append(allLocators, TestHash2)
 	err := performKeepBlockCheck(kc, blobSignatureTTL, "", allLocators, true)
 	c.Check(err, NotNil)
-	c.Assert(err.Error(), Equals, "Block verification failed for 2 out of 7 blocks with matching prefix.")
+	c.Assert(err.Error(), Equals, "Block verification failed for 2 out of 7 blocks with matching prefix")
 	checkErrorLog(c, []string{TestHash, TestHash2}, "Error verifying block", "Block not found")
 }
 
@@ -210,7 +210,7 @@ func (s *ServerRequiredSuite) TestBlockCheck_NoSuchBlock_WithMatchingPrefix(c *C
 	err = performKeepBlockCheck(kc, blobSignatureTTL, "", locators, true)
 	c.Check(err, NotNil)
 	// Of the 7 blocks in allLocators, only two match the prefix and hence only those are checked
-	c.Assert(err.Error(), Equals, "Block verification failed for 2 out of 2 blocks with matching prefix.")
+	c.Assert(err.Error(), Equals, "Block verification failed for 2 out of 2 blocks with matching prefix")
 	checkErrorLog(c, []string{TestHash, TestHash2}, "Error verifying block", "Block not found")
 }
 
@@ -231,7 +231,7 @@ func (s *ServerRequiredSuite) TestBlockCheck_BadSignature(c *C) {
 	setupKeepBlockCheck(c, true, "")
 	setupTestData(c)
 	err := performKeepBlockCheck(kc, blobSignatureTTL, "badblobsigningkey", []string{TestHash, TestHash2}, false)
-	c.Assert(err.Error(), Equals, "Block verification failed for 2 out of 2 blocks with matching prefix.")
+	c.Assert(err.Error(), Equals, "Block verification failed for 2 out of 2 blocks with matching prefix")
 	checkErrorLog(c, []string{TestHash, TestHash2}, "Error verifying block", "HTTP 403")
 	// verbose logging not requested
 	c.Assert(strings.Contains(logBuffer.String(), "Verifying block 1 of 2"), Equals, false)
@@ -267,7 +267,7 @@ var testKeepServicesJSON = `{
 func (s *ServerRequiredSuite) TestErrorDuringKeepBlockCheck_FakeKeepservers(c *C) {
 	setupKeepBlockCheck(c, false, testKeepServicesJSON)
 	err := performKeepBlockCheck(kc, blobSignatureTTL, "", []string{TestHash, TestHash2}, true)
-	c.Assert(err.Error(), Equals, "Block verification failed for 2 out of 2 blocks with matching prefix.")
+	c.Assert(err.Error(), Equals, "Block verification failed for 2 out of 2 blocks with matching prefix")
 	checkErrorLog(c, []string{TestHash, TestHash2}, "Error verifying block", "")
 }
 
@@ -353,7 +353,7 @@ func (s *DoMainTestSuite) Test_doMain(c *C) {
 	args := []string{"-config", config, "-block-hash-file", locatorFile, "-v"}
 	err := doMain(args)
 	c.Check(err, NotNil)
-	c.Assert(err.Error(), Equals, "Block verification failed for 2 out of 2 blocks with matching prefix.")
+	c.Assert(err.Error(), Equals, "Block verification failed for 2 out of 2 blocks with matching prefix")
 	checkErrorLog(c, []string{TestHash, TestHash2}, "Error verifying block", "Block not found")
 	c.Assert(strings.Contains(logBuffer.String(), "Verifying block 1 of 2"), Equals, true)
 }

@@ -22,6 +22,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/sdk/go/health"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
 	"github.com/julienschmidt/httprouter"
 	"github.com/prometheus/client_golang/prometheus"
@@ -164,6 +165,11 @@ func (disp *dispatcher) initialize() {
 		})
 		mux.Handler("GET", "/metrics", metricsH)
 		mux.Handler("GET", "/metrics.json", metricsH)
+		mux.Handler("GET", "/_health/:check", &health.Handler{
+			Token:  disp.Cluster.ManagementToken,
+			Prefix: "/_health/",
+			Routes: health.Routes{"ping": disp.CheckHealth},
+		})
 		disp.httpHandler = auth.RequireLiteralToken(disp.Cluster.ManagementToken, mux)
 	}
 }

@@ -34,6 +34,7 @@ var (
 		"crunch-run":         crunchrun.Command,
 		"dispatch-cloud":     dispatchcloud.Command,
 		"install":            install.Command,
+		"init":               install.InitCommand,
 		"recover-collection": recovercollection.Command,
 		"ws":                 ws.Command,
 	})
