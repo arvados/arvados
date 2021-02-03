@@ -9,7 +9,7 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 
 Imported from https://github.com/arvados/arvados-vscode-cwl-training
-git hash: 4ea2b3e8cbfdf977eaba6bedc36b55aa172a69d8
+git hash: 0a544f917de8bc2538e1582a82af205c1000adf5
 
 {% endcomment %}
 
@@ -17,20 +17,31 @@ These lessons give step by step instructions for using Visual Studio
 Code (abbreviated "vscode") to develop CWL workflows on Arvados.
 
 1. Set up SSH
-1. Install vscode and necessary extensions
-1. Use vscode to connect to an Arvados shell node for development
-1. Create an simple command line tool, run it, and view the log
-1. Upload input, create a command line tool to process it, and view the output
+1. Install vscode and necessary extensions, then use vscode to connect to an Arvados shell node for development
+1. Register a workflow, run it on workbench, and view the log
+1. Upload input, run a workflow on it, and view the output
+1. Register a workflow with default inputs
+1. Run a workflow without registering it
 
 ## 1. SSH Setup
 
 1. (Windows only) Install git for windows [https://git-scm.com/download/win](https://git-scm.com/download/win)
-1. Open bash shell (installed with git for Windows)
+   1. Choose "64-bit Git for Windows Setup".  It does not require admin privileges to install.
+   1. Hit "Next" a bunch of times to accept the defaults
+   1. The most important things is that "install git bash" and "install OpenSSH" are enabled.
+   1. At the end of the installation, you can launch tick a box to git bash directly.
+   1. Open "Git Bash" (installed in the "Git" folder of the start menu)
+1. From an open bash shell
    1. Shell: Run `ssh-keygen`
-   1. Shell: Look for `Your public key has been saved in /c/Users/MyUsername/.ssh/id_rsa.pub`
+      1. Hit enter to save to a default location
+      1. You can choose to protect the key with a password, or just hit enter for no password.
+   1. Shell: Look for a message like `Your public key has been saved in /c/Users/MyUsername/.ssh/id_rsa.pub`
    1. Shell: Run `cat /c/Users/MyUsername/.ssh/id_rsa.pub`
-   1. Shell: Highlight and copy the lines starting with `ssh-rsa …`
-1. Open Arvados workbench
+   1. Shell: Use the pointer to highlight and copy the lines starting
+      with `ssh-rsa …` up to the next blank line.  Right click and
+      select "Copy"
+1. Open Arvados workbench 2.  If necessary, go to the user menu and
+   select "Go to Workbench 2"
    1. Workbench: Go to `SSH keys` in the user menu
    1. Workbench:Click `+Add new ssh key`
    1. Workbench: Paste the key into `Public key` and enter something for `name`
@@ -38,29 +49,32 @@ Code (abbreviated "vscode") to develop CWL workflows on Arvados.
    1. Workbench: Highlight and copy the value in in the `Command line` column.
 1. At the git bash command line
    1. Shell: paste the `ssh shell…` command line you got from workbench.
-   1. Shell: type "yes" if it asks `do you want to continue connecting`
-   1. Shell: You should now be logged into the Arvados shell node.  Note:
-      it can take up to two minutes for the SSH key to be copied to
-      the shell node.  If it doesn't work the first time, wait 60
+   1. Shell: type "yes" if it asks `Are you sure you want to continue connecting`.
+   1. Note: it can take up to two minutes for the SSH key to be copied to
+      the shell node.  If you get "Permission denied" the first time, wait 60
       seconds and try again.
+   1. Shell: You should now be logged into the Arvados shell node.
    1. Shell: Log out by typing `exit`
 
 ## 2. VSCode setup
 
 1. Install [Visual Studio Code](https://code.visualstudio.com/) and start it up
-1. Vscode: go to `Extensions`
-   1. search for `remote development` and install the Remote Development extension pack from Microsoft
-1. Vscode: On the left side bar, choose `Remote explorer`
-   1. In the drop down, choose `SSH targets`
-   1. Click `Add new`
+1. Vscode: On the left sidebar, select `Extensions` ![](images/Extensions.png)
+   1. In `Search Extensions in Marketplace` enter "remote development".
+   1. Choose and install the "Remote Development" extension pack from Microsoft
+1. Vscode: On the left sidebar, choose `Remote Explorer` ![](images/RemoteExplorer.png)
+   1. At the top of the Remote Explorer panel choose `SSH targets` ![](images/SSHTargets.png)
+   1. Click `Add New` ![](images/AddNew.png)
    1. Enter the `ssh shell…` command line you used in the previous section, step 1.4.1
-   1. Right click the ssh target in the list and select “connect to host in current window`
-1. Vscode: go to `Extensions`
-   1. Search for `benten` and install `CWL (Rabix/Benten)`
-   1. Choose `Install extension on the remote ssh host`
-1. Vscode: On the left side bar, choose `Explorer`
-   1. Select `Clone Repository` and then enter [https://github.com/arvados/arvados-vscode-cwl-training](https://github.com/arvados/arvados-vscode-cwl-training)
-   1. Choose `Open`
+      1. If it asks you `Select SSH configuration file to update` choose the first one in the list.
+   1. Right click the newly added ssh target in the list and select “connect to host in current window`
+   1. If it asks `Select platform of the remote host` select `Linux`.
+1. Vscode: On the left sidebar, go back to `Extensions` ![](images/Extensions.png)
+   1. Search for "benten" and install `CWL (Rabix/Benten)`
+   1. You should see a message `Extension is enabled on 'SSH: ...' and disabled locally.`
+1. Vscode: On the left sidebar, choose `Explorer` ![](images/Explorer.png)
+   1. Select `Clone Repository` and enter [https://github.com/arvados/arvados-vscode-cwl-training](https://github.com/arvados/arvados-vscode-cwl-training), then click `Open`
+   1. If asked `Would you like to open the cloned repository?` choose `Open`
 1. Go to Arvados Workbench
    1. Workbench: In the user menu, select `Current token`
    1. Vscode: Click on the `Terminal` menu
@@ -71,7 +85,7 @@ Code (abbreviated "vscode") to develop CWL workflows on Arvados.
    1. Workbench: Copy the string following `ARVADOS_API_TOKEN=`
    1. Vscode: Paste the string at the `Value for ARVADOS_API_TOKEN` prompt
 
-# 3. Register & run a workflow
+## 3. Register & run a workflow
 
 1. Vscode: Click on the `lesson1/main.cwl` file
    1. Click on the `Terminal` menu
@@ -88,9 +102,13 @@ Code (abbreviated "vscode") to develop CWL workflows on Arvados.
    1. Click `Run process`
    1. This should take you to a panel showing the workflow run status
 1. Workbench: workflow run status panel
-   1. Click on the three vertical dots in the top-right corner
+   1. Wait for the badge in the upper right to say `Completed`
+   1. In the lower panel, double click on the `echo` workflow step
+   1. This will take you to the status panel for the `echo` step
+   1. Click on the three vertical dots in the top-right corner next to `Completed`
    1. Choose `Log`
-   1. Under `event type` choose `stdout`
+   1. This will take you to the log viewer panel
+   1. Under `Event Type` choose `stdout`
    1. You should see your message
 
 ## 4. Working with input and output files
@@ -100,14 +118,15 @@ Code (abbreviated "vscode") to develop CWL workflows on Arvados.
    1. Click `Run Task…`
    1. Select `Register or update CWL workflow on Arvados Workbench`
 1. Go to your desktop
-   1. Using a text editor such as notepad, create a file "message.txt"
-   1. Enter a message like "Hello world" and save
+   1. Right click on the desktop, select `New > Text Document`
+   1. Name the file `message`
+   1. Enter a message like "Hello earth" and save
 1. Workbench: Go to `+NEW` and select `New project`
    1. Enter a name for the project like "Lesson 2"
    1. You should arrive at the panel for the new project
 1. Arvados workbench: With `Lesson 2` project selected
    1. Click on +NEW and select `New collection`
-   1. Call the collection "my message"
+   1. For Collection Name enter "my message"
    1. Drag and drop `message.txt` into the browser
    1. Click `Create a collection`
    1. The file should be uploaded and then you will be on the collection page
@@ -125,13 +144,17 @@ Code (abbreviated "vscode") to develop CWL workflows on Arvados.
    1. Click on the dot menu
    1. Choose `Outputs`
    1. Right click on `reverse.txt`
-   1. Click on `Download`
-   1. Open the downloaded file.  It should have your results.
+   1. Click on `Open in new tab`
+   1. The results should be visible in a new browser tab.
 
 ## 5. Register a workflow with default inputs
 
 The default value for the `message` parameter will taken from the `lesson3/defaults.yaml` file
 
+1. Vscode: Click on the `lesson3/main.cwl` file
+   1. Click on the `Terminal` menu
+   1. Click `Run Task…`
+   1. Select `Register or update CWL workflow on Arvados Workbench`
 1. Workbench: Go to `+NEW` and select `New project`
    1. Enter a name for the project like "Lesson 3"
    1. You should arrive at the panel for the new project
@@ -142,6 +165,8 @@ The default value for the `message` parameter will taken from the `lesson3/defau
    1. The `#main/message` parameter will be pre-filled with your default value.  You can choose to change it or use the default.
    1. Click `Run process`
    1. This should take you to the status page for this workflow
+   1. The greeting will appear in the `Log` of the `echo` task, which
+      can be found the same way as described earlier in section 3.
 
 ## 6. Run a workflow without registering it
 
@@ -164,7 +189,21 @@ The `message` parameter will be taken from the file `lesson4/main-input.yaml`.  
 1. Vscode: In the bottom panel select the `Terminal` tab
    1. In the upper right corner of the Terminal tab select `Task - Run CWL Workflow` from the drop-down
    1. Look for logging text like `submitted container_request zzzzz-xvhdp-0123456789abcde`
-   1. Highlight and copy the workflow identifier (this the string containing -xvhdp- in the middle)
+   1. Highlight and copy the workflow identifier (this the string containing `-xvhdp-` in the middle)
    1. The results of this run will appear in the terminal when the run completes.
 1. Workbench: Paste the workflow identifier into the search box
    1. This will take you to the status page for this workflow
+
+
+## Notes
+
+If you need to change something about the environment of the user on
+the remote host (for example, the user has been added to a new unix
+group) you need to restart the vscode server that runs on the remote
+host.  Do this in vscode:
+
+ctrl+shift+p: `Remote-SSH: Kill VS Code Server on Host`
+
+This is because the vscode server remains running on the remote host
+even after you disconnect, so exiting/restarting vscode on the desktop
+has no effect.
