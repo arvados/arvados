@@ -38,7 +38,7 @@ describe('Collection panel tests', function() {
             cy.doSearch(`${this.testCollection.uuid}`);
 
             // Key: Color (IDTAGCOLORS) - Value: Magenta (IDVALCOLORS3)
-            cy.get('[data-cy=collection-properties-form]').within(() => {
+            cy.get('[data-cy=resource-properties-form]').within(() => {
                 cy.get('[data-cy=property-field-key]').within(() => {
                     cy.get('input').type('Color');
                 });
@@ -111,7 +111,7 @@ describe('Collection panel tests', function() {
                         .and('not.contain', 'anotherValue')
                     if (isWritable === true) {
                         // Check that properties can be added.
-                        cy.get('[data-cy=collection-properties-form]').within(() => {
+                        cy.get('[data-cy=resource-properties-form]').within(() => {
                             cy.get('[data-cy=property-field-key]').within(() => {
                                 cy.get('input').type('anotherKey');
                             });
@@ -125,7 +125,7 @@ describe('Collection panel tests', function() {
                             .and('contain', 'anotherValue')
                     } else {
                         // Properties form shouldn't be displayed.
-                        cy.get('[data-cy=collection-properties-form]').should('not.exist');
+                        cy.get('[data-cy=resource-properties-form]').should('not.exist');
                     }
                     // Check that the file listing show both read & write operations
                     cy.get('[data-cy=collection-files-panel]').within(() => {
@@ -471,5 +471,31 @@ describe('Collection panel tests', function() {
             cy.get('[data-cy=collection-files-panel]')
                 .should('contain', 'foo').and('contain', 'bar');
         });
+    });
+
+    it('creates new collection on home project', function() {
+        cy.loginAs(activeUser);
+        cy.doSearch(`${activeUser.user.uuid}`);
+        cy.get('[data-cy=breadcrumb-first]').should('contain', 'Projects');
+        cy.get('[data-cy=breadcrumb-last]').should('not.exist');
+        // Create new collection
+        cy.get('[data-cy=side-panel-button]').click();
+        cy.get('[data-cy=side-panel-new-collection]').click();
+        const collName = `Test collection (${Math.floor(999999 * Math.random())})`;
+        cy.get('[data-cy=form-dialog]')
+            .should('contain', 'New collection')
+            .within(() => {
+                cy.get('[data-cy=parent-field]').within(() => {
+                    cy.get('input').should('have.value', 'Home project');
+                })
+                cy.get('[data-cy=name-field]').within(() => {
+                    cy.get('input').type(collName);
+                })
+            })
+        cy.get('[data-cy=form-submit-btn]').click();
+        // Confirm that the user was taken to the newly created thing
+        cy.get('[data-cy=form-dialog]').should('not.exist');
+        cy.get('[data-cy=breadcrumb-first]').should('contain', 'Projects');
+        cy.get('[data-cy=breadcrumb-last]').should('contain', collName);
     });
 })

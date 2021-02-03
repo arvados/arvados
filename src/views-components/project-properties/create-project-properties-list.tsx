@@ -5,10 +5,15 @@
 import * as React from 'react';
 import { connect } from 'react-redux';
 import { Dispatch } from 'redux';
-import { withStyles, StyleRulesCallback, WithStyles, Chip } from '@material-ui/core';
+import {
+    withStyles,
+    StyleRulesCallback,
+    WithStyles,
+} from '@material-ui/core';
 import { RootState } from '~/store/store';
 import { removePropertyFromCreateProjectForm, PROJECT_CREATE_FORM_SELECTOR, ProjectProperties } from '~/store/projects/project-create-actions';
 import { ArvadosTheme } from '~/common/custom-theme';
+import { getPropertyChip } from '../resource-properties-form/property-chip';
 
 type CssRules = 'tag';
 
@@ -24,7 +29,7 @@ interface CreateProjectPropertiesListDataProps {
 }
 
 interface CreateProjectPropertiesListActionProps {
-    handleDelete: (key: string) => void;
+    handleDelete: (key: string, value: string) => void;
 }
 
 const mapStateToProps = (state: RootState): CreateProjectPropertiesListDataProps => {
@@ -33,21 +38,28 @@ const mapStateToProps = (state: RootState): CreateProjectPropertiesListDataProps
 };
 
 const mapDispatchToProps = (dispatch: Dispatch): CreateProjectPropertiesListActionProps => ({
-    handleDelete: (key: string) => dispatch<any>(removePropertyFromCreateProjectForm(key))
+    handleDelete: (key: string, value: string) => dispatch<any>(removePropertyFromCreateProjectForm(key, value))
 });
 
-type CreateProjectPropertiesListProps = CreateProjectPropertiesListDataProps & 
+type CreateProjectPropertiesListProps = CreateProjectPropertiesListDataProps &
     CreateProjectPropertiesListActionProps & WithStyles<CssRules>;
 
 const List = withStyles(styles)(
     ({ classes, handleDelete, properties }: CreateProjectPropertiesListProps) =>
         <div>
             {properties &&
-                Object.keys(properties).map(k => {
-                    return <Chip key={k} className={classes.tag}
-                        onDelete={() => handleDelete(k)}
-                        label={`${k}: ${properties[k]}`} />;
-                })}
+                Object.keys(properties).map(k =>
+                    Array.isArray(properties[k])
+                    ? (properties[k] as string[]).map((v: string) =>
+                        getPropertyChip(
+                            k, v,
+                            () => handleDelete(k, v),
+                            classes.tag))
+                    : getPropertyChip(
+                        k, (properties[k] as string),
+                        () => handleDelete(k, (properties[k] as string)),
+                        classes.tag))
+                }
         </div>
 );
 

@@ -51,7 +51,7 @@ export const PropertyChipComponent = connect(mapStateToProps, mapDispatchToProps
     }
 );
 
-export const getPropertyChip = (k:string, v:string, handleDelete:any, className:string) =>
+export const getPropertyChip = (k: string, v: string, handleDelete: any, className: string) =>
     <PropertyChipComponent
         key={`${k}-${v}`} className={className}
         onDelete={handleDelete}
