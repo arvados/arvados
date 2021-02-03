@@ -20,7 +20,7 @@ import { WorkflowResource } from '~/models/workflow';
 import { ResourceStatus as WorkflowStatus } from '~/views/workflow-panel/workflow-panel-view';
 import { getUuidPrefix, openRunProcess } from '~/store/workflow-panel/workflow-panel-actions';
 import { openSharingDialog } from '~/store/sharing-dialog/sharing-dialog-actions';
-import { UserResource } from '~/models/user';
+import { getUserFullname, User, UserResource } from '~/models/user';
 import { toggleIsActive, toggleIsAdmin } from '~/store/users/users-actions';
 import { LinkResource } from '~/models/link';
 import { navigateTo } from '~/store/navigation/navigation-action';
@@ -440,10 +440,10 @@ export const ResourceOwnerWithName =
         connect(
             (state: RootState, props: { uuid: string }) => {
                 let ownerName = '';
-                const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
+                const resource = getResource<GroupContentsResource & UserResource>(props.uuid)(state.resources);
 
                 if (resource) {
-                    ownerName = (resource as any).fullName || resource.name;
+                    ownerName = getUserFullname(resource as User) || (resource as GroupContentsResource).name;
                 }
 
                 return { uuid: props.uuid, ownerName };
@@ -460,7 +460,7 @@ export const ResourceOwnerWithName =
             }
 
             return <Typography style={{ color: theme.palette.primary.main }} inline noWrap>
-                {uuid} ({ownerName})
+                {ownerName} ({uuid})
             </Typography>;
         });
 

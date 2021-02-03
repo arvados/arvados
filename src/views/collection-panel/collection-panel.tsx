@@ -289,7 +289,7 @@ export const CollectionDetailsAttributes = (props: { item: CollectionResource, t
         <Grid item xs={12} md={mdSize}>
             <DetailsAttribute classLabel={classes.label} classValue={classes.value}
                 label={isOldVersion ? "This version's UUID" : "Collection UUID"}
-                linkToUuid={`${item.uuid} AAAAAAAAAAAAAAAPortable data hash`} />
+                linkToUuid={item.uuid} />
         </Grid>
         <Grid item xs={12} md={mdSize}>
             <DetailsAttribute classLabel={classes.label} classValue={classes.value}
