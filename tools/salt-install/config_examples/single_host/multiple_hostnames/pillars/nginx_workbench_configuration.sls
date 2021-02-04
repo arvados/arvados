@@ -43,7 +43,7 @@ nginx:
           - server:
             - server_name: workbench.__CLUSTER__.__DOMAIN__
             - listen:
-              - __HOST_SSL_PORT__ http2 ssl
+              - __CONTROLLER_EXT_SSL_PORT__ http2 ssl
             - index: index.html index.htm
             - location /:
               - proxy_pass: 'http://workbench_upstream'

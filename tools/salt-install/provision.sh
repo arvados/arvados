@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
@@ -55,7 +55,7 @@ arguments() {
   while [ ${#} -ge 1 ]; do
     case ${1} in
       -c | --config)
-        CONFIG=${2}
+        CONFIG_FILE=${2}
         shift 2
         ;;
       -d | --debug)
@@ -63,7 +63,7 @@ arguments() {
         shift
         ;;
       -p | --ssl-port)
-        HOST_SSL_PORT=${2}
+        CONTROLLER_EXT_SSL_PORT=${2}
         shift 2
         ;;
       -r | --roles)
@@ -102,7 +102,7 @@ arguments() {
 CONFIG="${SCRIPT_DIR}/local.params"
 CONFIG_DIR="config_examples/single_host/multiple_hostnames"
 LOG_LEVEL="info"
-HOST_SSL_PORT=443
+CONTROLLER_EXT_SSL_PORT=443
 TESTS_DIR="tests"
 
 CLUSTER=""
@@ -130,12 +130,20 @@ NGINX_TAG="v2.4.0"
 DOCKER_TAG="v1.0.0"
 LOCALE_TAG="v0.3.4"
 
+# Salt's dir
+## states
+S_DIR="/srv/salt"
+## formulas
+F_DIR="/srv/formulas"
+##pillars
+P_DIR="/srv/pillars"
+
 arguments ${@}
 
-if [ -s ${CONFIG} ]; then
-  source ${CONFIG}
+if [ -s ${CONFIG_FILE} ]; then
+  source ${CONFIG_FILE}
 else
-  echo >&2 "Please create a '${CONFIG}' file with initial values, as described in FIXME_URL_TO_DESCR"
+  echo >&2 "Please create a '${CONFIG_FILE}' file with initial values, as described in FIXME_URL_TO_DESCR"
   exit 1
 fi
 
@@ -145,14 +153,6 @@ if ! grep -E '^[[:alnum:]]{5}$' <<<${CLUSTER} ; then
   exit 1
 fi
 
-# Salt's dir
-## states
-S_DIR="/srv/salt"
-## formulas
-F_DIR="/srv/formulas"
-##pillars
-P_DIR="/srv/pillars"
-
 apt-get update
 apt-get install -y curl git jq
 
@@ -161,7 +161,7 @@ if [ ${?} -eq 0 ]; then
   echo "Salt already installed"
 else
   curl -L https://bootstrap.saltstack.com -o /tmp/bootstrap_salt.sh
-  sh /tmp/bootstrap_salt.sh -XUdfP -x python3
+  sh /tmp/bootstrap_salt.sh -XdfP -x python3
   /bin/systemctl disable salt-minion.service
 fi
 
@@ -172,7 +172,6 @@ file_roots:
   base:
     - ${S_DIR}
     - ${F_DIR}/*
-    - ${F_DIR}/*/test/salt/states/examples
 
 pillar_roots:
   base:
@@ -181,14 +180,117 @@ EOFSM
 
 mkdir -p ${S_DIR} ${F_DIR} ${P_DIR}
 
+# Get the formula and dependencies
+cd ${F_DIR} || exit 1
+git clone --branch "${ARVADOS_TAG}" https://github.com/arvados/arvados-formula.git
+git clone --branch "${DOCKER_TAG}" https://github.com/saltstack-formulas/docker-formula.git
+git clone --branch "${LOCALE_TAG}" https://github.com/saltstack-formulas/locale-formula.git
+git clone --branch "${NGINX_TAG}" https://github.com/saltstack-formulas/nginx-formula.git
+git clone --branch "${POSTGRES_TAG}" https://github.com/saltstack-formulas/postgres-formula.git
+
+if [ "x${BRANCH}" != "x" ]; then
+  cd ${F_DIR}/arvados-formula || exit 1
+  git checkout -t origin/"${BRANCH}"
+  cd -
+fi
+
+if [ "x${VAGRANT}" = "xyes" ]; then
+  SOURCE_PILLARS_DIR="/vagrant/${CONFIG_DIR}/pillars"
+  TESTS_DIR="/vagrant/${TESTS_DIR}"
+else
+  SOURCE_PILLARS_DIR="${SCRIPT_DIR}/${CONFIG_DIR}/pillars"
+  TESTS_DIR="${SCRIPT_DIR}/${TESTS_DIR}"
+fi
+
+SOURCE_STATES_DIR="${EXTRA_STATES_DIR}"
+
+# Replace variables (cluster,  domain, etc) in the pillars, states and tests
+# to ease deployment for newcomers
+for f in "${SOURCE_PILLARS_DIR}"/*; do
+  sed "s/__ANONYMOUS_USER_TOKEN__/${ANONYMOUS_USER_TOKEN}/g;
+       s/__BLOB_SIGNING_KEY__/${BLOB_SIGNING_KEY}/g;
+       s/__CONTROLLER_EXT_SSL_PORT__/${CONTROLLER_EXT_SSL_PORT}/g;
+       s/__CLUSTER__/${CLUSTER}/g;
+       s/__DOMAIN__/${DOMAIN}/g;
+       s/__HOSTNAME_EXT__/${HOSTNAME_EXT}/g;
+       s/__HOSTNAME_INT__/${HOSTNAME_INT}/g;
+       s/__INITIAL_USER_EMAIL__/${INITIAL_USER_EMAIL}/g;
+       s/__INITIAL_USER_PASSWORD__/${INITIAL_USER_PASSWORD}/g;
+       s/__INITIAL_USER__/${INITIAL_USER}/g;
+       s/__KEEPWEB_EXT_SSL_PORT__/${KEEPWEB_EXT_SSL_PORT}/g;
+       s/__KEEP_EXT_SSL_PORT__/${KEEP_EXT_SSL_PORT}/g;
+       s/__MANAGEMENT_TOKEN__/${MANAGEMENT_TOKEN}/g;
+       s/__RAILS_SECRET_TOKEN__/${RAILS_SECRET_TOKEN}/g;
+       s/__RELEASE__/${RELEASE}/g;
+       s/__SYSTEM_ROOT_TOKEN__/${SYSTEM_ROOT_TOKEN}/g;
+       s/__VERSION__/${VERSION}/g;
+       s/__WEBSHELL_EXT_SSL_PORT__/${WEBSHELL_EXT_SSL_PORT}/g;
+       s/__WEBSOCKET_EXT_SSL_PORT__/${WEBSOCKET_EXT_SSL_PORT}/g;
+       s/__WORKBENCH1_EXT_SSL_PORT__/${WORKBENCH1_EXT_SSL_PORT}/g;
+       s/__WORKBENCH2_EXT_SSL_PORT__/${WORKBENCH2_EXT_SSL_PORT}/g;
+       s/__WORKBENCH_SECRET_KEY__/${WORKBENCH_SECRET_KEY}/g" \
+  "${f}" > "${P_DIR}"/$(basename "${f}")
+done
+
+mkdir -p /tmp/cluster_tests
+# Replace cluster and domain name in the test files
+for f in "${TESTS_DIR}"/*; do
+  sed "s/__CLUSTER__/${CLUSTER}/g;
+       s/__CONTROLLER_EXT_SSL_PORT__/${CONTROLLER_EXT_SSL_PORT}/g;
+       s/__DOMAIN__/${DOMAIN}/g;
+       s/__HOSTNAME_INT__/${HOSTNAME_INT}/g;
+       s/__INITIAL_USER_EMAIL__/${INITIAL_USER_EMAIL}/g;
+       s/__INITIAL_USER_PASSWORD__/${INITIAL_USER_PASSWORD}/g
+       s/__INITIAL_USER__/${INITIAL_USER}/g;
+       s/__SYSTEM_ROOT_TOKEN__/${SYSTEM_ROOT_TOKEN}/g" \
+  "${f}" > "/tmp/cluster_tests"/$(basename "${f}")
+done
+chmod 755 /tmp/cluster_tests/run-test.sh
+
+# Replace helper state files that differ from the formula's examples
+if [ -d "${SOURCE_STATES_DIR}" ]; then
+  mkdir -p "${F_DIR}"/extra/extra
+
+  for f in "${SOURCE_STATES_DIR}"/*; do
+    sed "s/__ANONYMOUS_USER_TOKEN__/${ANONYMOUS_USER_TOKEN}/g;
+         s/__CLUSTER__/${CLUSTER}/g;
+         s/__BLOB_SIGNING_KEY__/${BLOB_SIGNING_KEY}/g;
+         s/__CONTROLLER_EXT_SSL_PORT__/${CONTROLLER_EXT_SSL_PORT}/g;
+         s/__DOMAIN__/${DOMAIN}/g;
+         s/__HOSTNAME_EXT__/${HOSTNAME_EXT}/g;
+         s/__HOSTNAME_INT__/${HOSTNAME_INT}/g;
+         s/__INITIAL_USER_EMAIL__/${INITIAL_USER_EMAIL}/g;
+         s/__INITIAL_USER_PASSWORD__/${INITIAL_USER_PASSWORD}/g;
+         s/__INITIAL_USER__/${INITIAL_USER}/g;
+         s/__KEEPWEB_EXT_SSL_PORT__/${KEEPWEB_EXT_SSL_PORT}/g;
+         s/__KEEP_EXT_SSL_PORT__/${KEEP_EXT_SSL_PORT}/g;
+         s/__MANAGEMENT_TOKEN__/${MANAGEMENT_TOKEN}/g;
+         s/__RAILS_SECRET_TOKEN__/${RAILS_SECRET_TOKEN}/g;
+         s/__RELEASE__/${RELEASE}/g;
+         s/__SYSTEM_ROOT_TOKEN__/${SYSTEM_ROOT_TOKEN}/g;
+         s/__VERSION__/${VERSION}/g;
+         s/__WEBSHELL_EXT_SSL_PORT__/${WEBSHELL_EXT_SSL_PORT}/g;
+         s/__WEBSOCKET_EXT_SSL_PORT__/${WEBSOCKET_EXT_SSL_PORT}/g;
+         s/__WORKBENCH1_EXT_SSL_PORT__/${WORKBENCH1_EXT_SSL_PORT}/g;
+         s/__WORKBENCH2_EXT_SSL_PORT__/${WORKBENCH2_EXT_SSL_PORT}/g;
+         s/__WORKBENCH_SECRET_KEY__/${WORKBENCH_SECRET_KEY}/g" \
+    "${f}" > "${F_DIR}/extra/extra"/$(basename "${f}")
+  done
+fi
+
+# Now, we build the SALT states/pillars trees
 # States
 cat > ${S_DIR}/top.sls << EOFTSLS
 base:
   '*':
-    # - single_host.host_entries
-    # - single_host.snakeoil_certs
     - locale
 EOFTSLS
+
+if [ -d "${SOURCE_STATES_DIR}" ]; then
+  for f in "${F_DIR}"/extra/extra/*.sls; do
+  echo "    - extra.$(basename ${f} | sed 's/.sls$//g')" >> ${S_DIR}/top.sls
+  done
+fi
 
 # If we want specific roles for a node, just add the desired states
 # and its dependencies
@@ -204,7 +306,7 @@ else
     case "${R}" in
       "database")
         echo "    - postgres" >> ${S_DIR}/top.sls
-      ::
+      ;;
       "api","workbench","workbench2","keepweb","keepproxy")
         grep -q "nginx.passenger" ${S_DIR}/top.sls || echo "    - nginx.passenger" >> ${S_DIR}/top.sls
         echo "    - arvados.${R}" >> ${S_DIR}/top.sls
@@ -215,7 +317,7 @@ else
       ;;
       *)
         echo "    - arvados.${R}" >> ${S_DIR}/top.sls
-      ::
+      ;;
     esac
   done
 fi
@@ -238,104 +340,6 @@ base:
     - nginx_workbench_configuration
     - postgresql
 EOFPSLS
-
-# Get the formula and dependencies
-cd ${F_DIR} || exit 1
-git clone --branch "${ARVADOS_TAG}" https://github.com/arvados/arvados-formula.git
-git clone --branch "${DOCKER_TAG}" https://github.com/saltstack-formulas/docker-formula.git
-git clone --branch "${LOCALE_TAG}" https://github.com/saltstack-formulas/locale-formula.git
-git clone --branch "${NGINX_TAG}" https://github.com/saltstack-formulas/nginx-formula.git
-git clone --branch "${POSTGRES_TAG}" https://github.com/saltstack-formulas/postgres-formula.git
-
-if [ "x${BRANCH}" != "x" ]; then
-  cd ${F_DIR}/arvados-formula || exit 1
-  git checkout -t origin/"${BRANCH}"
-  cd -
-fi
-
-if [ "x${VAGRANT}" = "xyes" ]; then
-  SOURCE_PILLARS_DIR="/vagrant/${CONFIG_DIR}/pillars"
-  SOURCE_STATES_DIR="/vagrant/${CONFIG_DIR}/states"
-  TESTS_DIR="/vagrant/${TESTS_DIR}"
-else
-  SOURCE_PILLARS_DIR="${SCRIPT_DIR}/${CONFIG_DIR}/pillars"
-  SOURCE_STATES_DIR="${SCRIPT_DIR}/${CONFIG_DIR}/states"
-  TESTS_DIR="${SCRIPT_DIR}/${TESTS_DIR}"
-fi
-
-# Replace cluster and domain name in the example pillars
-for f in "${SOURCE_PILLARS_DIR}"/*; do
-  sed "s/__CLUSTER__/${CLUSTER}/g;
-       s/__DOMAIN__/${DOMAIN}/g;
-       s/__RELEASE__/${RELEASE}/g;
-       s/__CONTROLLER_EXT_SSL_PORT__/${CONTROLLER_EXT_SSL_PORT}/g;
-       s/__KEEP_EXT_SSL_PORT__/${KEEP_EXT_SSL_PORT}/g;
-       s/__WEBSHELL_EXT_SSL_PORT__/${WEBSHELL_EXT_SSL_PORT}/g;
-       s/__WORKBENCH1_EXT_SSL_PORT__/${WORKBENCH1_EXT_SSL_PORT}/g;
-       s/__WORKBENCH2_EXT_SSL_PORT__/${WORKBENCH2_EXT_SSL_PORT}/g;
-       s/__WEBSOCKET_EXT_SSL_PORT__/${WEBSOCKET_EXT_SSL_PORT}/g;
-       s/__HOSTNAME_EXT__/${HOSTNAME_EXT}/g;
-       s/__HOSTNAME_INT__/${HOSTNAME_INT}/g;
-       s/__KEEPWEB_EXT_SSL_PORT__/${KEEPWEB_EXT_SSL_PORT}/g;
-       s/__HOST_SSL_PORT__/${HOST_SSL_PORT}/g;
-       s/__INITIAL_USER__/${INITIAL_USER}/g;
-       s/__INITIAL_USER_EMAIL__/${INITIAL_USER_EMAIL}/g;
-       s/__INITIAL_USER_PASSWORD__/${INITIAL_USER_PASSWORD}/g;
-       s/__BLOB_SIGNING_KEY__/${BLOB_SIGNING_KEY}/g;
-       s/__MANAGEMENT_TOKEN__/${MANAGEMENT_TOKEN}/g;
-       s/__SYSTEM_ROOT_TOKEN__/${SYSTEM_ROOT_TOKEN}/g;
-       s/__RAILS_SECRET_TOKEN__/${RAILS_SECRET_TOKEN}/g;
-       s/__ANONYMOUS_USER_TOKEN__/${ANONYMOUS_USER_TOKEN}/g;
-       s/__WORKBENCH_SECRET_KEY__/${WORKBENCH_SECRET_KEY}/g;
-       s/__VERSION__/${VERSION}/g" \
-  "${f}" > "${P_DIR}"/$(basename "${f}")
-done
-
-mkdir -p /tmp/cluster_tests
-# Replace cluster and domain name in the test files
-for f in "${TESTS_DIR}"/*; do
-  sed "s/__CLUSTER__/${CLUSTER}/g;
-       s/__DOMAIN__/${DOMAIN}/g;
-       s/__HOSTNAME_INT__/${HOSTNAME_INT}/g;
-       s/__HOST_SSL_PORT__/${HOST_SSL_PORT}/g;
-       s/__CONTROLLER_EXT_SSL_PORT__/${CONTROLLER_EXT_SSL_PORT}/g;
-       s/__SYSTEM_ROOT_TOKEN__/${SYSTEM_ROOT_TOKEN}/g;
-       s/__INITIAL_USER__/${INITIAL_USER}/g;
-       s/__INITIAL_USER_EMAIL__/${INITIAL_USER_EMAIL}/g;
-       s/__INITIAL_USER_PASSWORD__/${INITIAL_USER_PASSWORD}/g" \
-  "${f}" > "/tmp/cluster_tests"/$(basename "${f}")
-done
-chmod 755 /tmp/cluster_tests/run-test.sh
-
-# Replace helper state files that differ from the formula's examples
-if -d "${SOURCE_STATES_DIR}"; then
-  for f in "${SOURCE_STATES_DIR}"/*; do
-    sed "s/__CLUSTER__/${CLUSTER}/g;
-         s/__DOMAIN__/${DOMAIN}/g;
-         s/__RELEASE__/${RELEASE}/g;
-         s/__CONTROLLER_EXT_SSL_PORT__/${CONTROLLER_EXT_SSL_PORT}/g;
-         s/__KEEP_EXT_SSL_PORT__/${KEEP_EXT_SSL_PORT}/g;
-         s/__WEBSHELL_EXT_SSL_PORT__/${WEBSHELL_EXT_SSL_PORT}/g;
-         s/__WORKBENCH1_EXT_SSL_PORT__/${WORKBENCH1_EXT_SSL_PORT}/g;
-         s/__WORKBENCH2_EXT_SSL_PORT__/${WORKBENCH2_EXT_SSL_PORT}/g;
-         s/__WEBSOCKET_EXT_SSL_PORT__/${WEBSOCKET_EXT_SSL_PORT}/g;
-         s/__HOSTNAME_EXT__/${HOSTNAME_EXT}/g;
-         s/__HOSTNAME_INT__/${HOSTNAME_INT}/g;
-         s/__KEEPWEB_EXT_SSL_PORT__/${KEEPWEB_EXT_SSL_PORT}/g;
-         s/__HOST_SSL_PORT__/${HOST_SSL_PORT}/g;
-         s/__INITIAL_USER__/${INITIAL_USER}/g;
-         s/__INITIAL_USER_EMAIL__/${INITIAL_USER_EMAIL}/g;
-         s/__INITIAL_USER_PASSWORD__/${INITIAL_USER_PASSWORD}/g;
-         s/__BLOB_SIGNING_KEY__/${BLOB_SIGNING_KEY}/g;
-         s/__MANAGEMENT_TOKEN__/${MANAGEMENT_TOKEN}/g;
-         s/__SYSTEM_ROOT_TOKEN__/${SYSTEM_ROOT_TOKEN}/g;
-         s/__RAILS_SECRET_TOKEN__/${RAILS_SECRET_TOKEN}/g;
-         s/__ANONYMOUS_USER_TOKEN__/${ANONYMOUS_USER_TOKEN}/g;
-         s/__WORKBENCH_SECRET_KEY__/${WORKBENCH_SECRET_KEY}/g;
-         s/__VERSION__/${VERSION}/g" \
-    "${f}" > "${F_DIR}/arvados-formula/test/salt/states/examples/single_host"/$(basename "${f}")
-  done
-fi
 
 # FIXME! #16992 Temporary fix for psql call in arvados-api-server
 if [ -e /root/.psqlrc ]; then
@@ -369,12 +373,12 @@ fi
 echo "Copying the Arvados CA certificate to the installer dir, so you can import it"
 # If running in a vagrant VM, also add default user to docker group
 if [ "x${VAGRANT}" = "xyes" ]; then
-  cp /etc/ssl/certs/arvados-snakeoil-ca.pem /vagrant
+  cp /etc/ssl/certs/arvados-snakeoil-ca.pem /vagrant/${CLUSTER}.${DOMAIN}-arvados-snakeoil-ca.pem
 
   echo "Adding the vagrant user to the docker group"
   usermod -a -G docker vagrant
 else
-  cp /etc/ssl/certs/arvados-snakeoil-ca.pem ${SCRIPT_DIR}
+  cp /etc/ssl/certs/arvados-snakeoil-ca.pem ${SCRIPT_DIR}/${CLUSTER}.${DOMAIN}-arvados-snakeoil-ca.pem
 fi
 
 # Test that the installation finished correctly

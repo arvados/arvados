@@ -37,7 +37,7 @@ nginx:
           - server:
             - server_name: webshell.__CLUSTER__.__DOMAIN__
             - listen:
-              - __HOST_SSL_PORT__ http2 ssl
+              - __CONTROLLER_EXT_SSL_PORT__ http2 ssl
             - index: index.html index.htm
             - location /shell.__CLUSTER__.__DOMAIN__:
               - proxy_pass: 'http://webshell_upstream'
