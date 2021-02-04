@@ -151,19 +151,21 @@ type Cluster struct {
 			UsernameAttribute  string
 		}
 		Google struct {
-			Enable                  bool
-			ClientID                string
-			ClientSecret            string
-			AlternateEmailAddresses bool
+			Enable                          bool
+			ClientID                        string
+			ClientSecret                    string
+			AlternateEmailAddresses         bool
+			AuthenticationRequestParameters map[string]string
 		}
 		OpenIDConnect struct {
-			Enable             bool
-			Issuer             string
-			ClientID           string
-			ClientSecret       string
-			EmailClaim         string
-			EmailVerifiedClaim string
-			UsernameClaim      string
+			Enable                          bool
+			Issuer                          string
+			ClientID                        string
+			ClientSecret                    string
+			EmailClaim                      string
+			EmailVerifiedClaim              string
+			UsernameClaim                   string
+			AuthenticationRequestParameters map[string]string
 		}
 		PAM struct {
 			Enable             bool

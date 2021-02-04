@@ -50,10 +50,11 @@ type oidcLoginController struct {
 	Issuer             string // OIDC issuer URL, e.g., "https://accounts.google.com"
 	ClientID           string
 	ClientSecret       string
-	UseGooglePeopleAPI bool   // Use Google People API to look up alternate email addresses
-	EmailClaim         string // OpenID claim to use as email address; typically "email"
-	EmailVerifiedClaim string // If non-empty, ensure claim value is true before accepting EmailClaim; typically "email_verified"
-	UsernameClaim      string // If non-empty, use as preferred username
+	UseGooglePeopleAPI bool              // Use Google People API to look up alternate email addresses
+	EmailClaim         string            // OpenID claim to use as email address; typically "email"
+	EmailVerifiedClaim string            // If non-empty, ensure claim value is true before accepting EmailClaim; typically "email_verified"
+	UsernameClaim      string            // If non-empty, use as preferred username
+	AuthParams         map[string]string // Additional parameters to pass with authentication request
 
 	// override Google People API base URL for testing purposes
 	// (normally empty, set by google pkg to
@@ -111,14 +112,12 @@ func (ctrl *oidcLoginController) Login(ctx context.Context, opts arvados.LoginOp
 			return loginError(errors.New("missing return_to parameter"))
 		}
 		state := ctrl.newOAuth2State([]byte(ctrl.Cluster.SystemRootToken), opts.Remote, opts.ReturnTo)
+		var authparams []oauth2.AuthCodeOption
+		for k, v := range ctrl.AuthParams {
+			authparams = append(authparams, oauth2.SetAuthURLParam(k, v))
+		}
 		return arvados.LoginResponse{
-			RedirectLocation: ctrl.oauth2conf.AuthCodeURL(state.String(),
-				// prompt=select_account tells Google
-				// to show the "choose which Google
-				// account" page, even if the client
-				// is currently logged in to exactly
-				// one Google account.
-				oauth2.SetAuthURLParam("prompt", "select_account")),
+			RedirectLocation: ctrl.oauth2conf.AuthCodeURL(state.String(), authparams...),
 		}, nil
 	}
 	// Callback after OIDC sign-in.
