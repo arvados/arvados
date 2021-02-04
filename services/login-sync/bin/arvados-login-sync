@@ -9,6 +9,7 @@ require 'arvados'
 require 'etc'
 require 'fileutils'
 require 'yaml'
+require 'optparse'
 
 req_envs = %w(ARVADOS_API_HOST ARVADOS_API_TOKEN ARVADOS_VIRTUAL_MACHINE_UUID)
 req_envs.each do |k|
@@ -17,15 +18,19 @@ req_envs.each do |k|
   end
 end
 
-exclusive_mode = ARGV.index("--exclusive")
+options = {}
+OptionParser.new do |parser|
+  parser.on('--exclusive', 'Manage SSH keys file exclusively.')
+  parser.on('--rotate-tokens', 'Always create new user tokens. Usually needed with --token-lifetime.')
+  parser.on('--skip-missing-users', "Don't try to create any local accounts.")
+  parser.on('--token-lifetime SECONDS', 'Create user tokens that expire after SECONDS.', Integer)
+end.parse!(into: options)
+
 exclusive_banner = "#######################################################################################
 #  THIS FILE IS MANAGED BY #{$0} -- CHANGES WILL BE OVERWRITTEN  #
 #######################################################################################\n\n"
 start_banner = "### BEGIN Arvados-managed keys -- changes between markers will be overwritten\n"
 end_banner = "### END Arvados-managed keys -- changes between markers will be overwritten\n"
-
-# Don't try to create any local accounts
-skip_missing_users = ARGV.index("--skip-missing-users")
 
 keys = ''
 
@@ -64,7 +69,7 @@ begin
       begin
         pwnam[l[:username]] = Etc.getpwnam(l[:username])
       rescue
-        if skip_missing_users
+        if options[:"skip-missing-users"]
           STDERR.puts "Account #{l[:username]} not found. Skipping"
           true
         end
@@ -165,7 +170,7 @@ begin
       oldkeys = ""
     end
 
-    if exclusive_mode
+    if options[:exclusive]
       newkeys = exclusive_banner + newkeys
     elsif oldkeys.start_with?(exclusive_banner)
       newkeys = start_banner + newkeys + end_banner
@@ -192,8 +197,12 @@ begin
     tokenfile = File.join(configarvados, "settings.conf")
 
     begin
-      if !File.exist?(tokenfile)
-        user_token = logincluster_arv.api_client_authorization.create(api_client_authorization: {owner_uuid: l[:user_uuid], api_client_id: 0})
+      if !File.exist?(tokenfile) || options[:"rotate-tokens"]
+        aca_params = {owner_uuid: l[:user_uuid], api_client_id: 0}
+        if options[:"token-lifetime"] && options[:"token-lifetime"] > 0
+          aca_params.merge!(expires_at: (Time.now + options[:"token-lifetime"]))
+        end
+        user_token = logincluster_arv.api_client_authorization.create(api_client_authorization: aca_params)
         f = File.new(tokenfile, 'w')
         f.write("ARVADOS_API_HOST=#{ENV['ARVADOS_API_HOST']}\n")
         f.write("ARVADOS_API_TOKEN=v2/#{user_token[:uuid]}/#{user_token[:api_token]}\n")
