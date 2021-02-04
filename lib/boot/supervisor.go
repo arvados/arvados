@@ -734,7 +734,7 @@ func (super *Supervisor) autofillConfig(cfg *arvados.Config) error {
 	if super.OwnTemporaryDatabase {
 		cluster.PostgreSQL.Connection = arvados.PostgreSQLConnection{
 			"client_encoding": "utf8",
-			"host":            "localhost",
+			"host":            super.ListenHost,
 			"port":            nextPort(super.ListenHost),
 			"dbname":          "arvados_test",
 			"user":            "arvados",
@@ -768,21 +768,23 @@ func randomHexString(chars int) string {
 	return fmt.Sprintf("%x", b)
 }
 
-func internalPort(svc arvados.Service) (string, error) {
+func internalPort(svc arvados.Service) (host, port string, err error) {
 	if len(svc.InternalURLs) > 1 {
-		return "", errors.New("internalPort() doesn't work with multiple InternalURLs")
+		return "", "", errors.New("internalPort() doesn't work with multiple InternalURLs")
 	}
 	for u := range svc.InternalURLs {
 		u := url.URL(u)
-		if p := u.Port(); p != "" {
-			return p, nil
-		} else if u.Scheme == "https" || u.Scheme == "ws" {
-			return "443", nil
-		} else {
-			return "80", nil
+		host, port = u.Hostname(), u.Port()
+		switch {
+		case port != "":
+		case u.Scheme == "https", u.Scheme == "ws":
+			port = "443"
+		default:
+			port = "80"
 		}
+		return
 	}
-	return "", fmt.Errorf("service has no InternalURLs")
+	return "", "", fmt.Errorf("service has no InternalURLs")
 }
 
 func externalPort(svc arvados.Service) (string, error) {
