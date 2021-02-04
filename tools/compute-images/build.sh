@@ -49,8 +49,6 @@ Options:
       Azure SKU image to use
   --ssh_user  (default: packer)
       The user packer will use to log into the image
-  --domain  (default: arvadosapi.com)
-      The domain part of the FQDN for the cluster
   --resolver (default: 8.8.8.8)
       The dns resolver for the machine
   --reposuffix (default: unset)
@@ -78,12 +76,11 @@ AZURE_LOCATION=
 AZURE_CLOUD_ENVIRONMENT=
 DEBUG=
 SSH_USER=
-DOMAIN="arvadosapi.com"
 AWS_DEFAULT_REGION=us-east-1
 PUBLIC_KEY_FILE=
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
-    help,json-file:,arvados-cluster-id:,aws-source-ami:,aws-profile:,aws-secrets-file:,aws-region:,aws-vpc-id:,aws-subnet-id:,gcp-project-id:,gcp-account-file:,gcp-zone:,azure-secrets-file:,azure-resource-group:,azure-location:,azure-sku:,azure-cloud-environment:,ssh_user:,domain:,resolver:,reposuffix:,public-key-file:,debug \
+    help,json-file:,arvados-cluster-id:,aws-source-ami:,aws-profile:,aws-secrets-file:,aws-region:,aws-vpc-id:,aws-subnet-id:,gcp-project-id:,gcp-account-file:,gcp-zone:,azure-secrets-file:,azure-resource-group:,azure-location:,azure-sku:,azure-cloud-environment:,ssh_user:,resolver:,reposuffix:,public-key-file:,debug \
     -- "" "$@")
 if [ $? -ne 0 ]; then
     exit 1
@@ -148,9 +145,6 @@ while [ $# -gt 0 ]; do
         --ssh_user)
             SSH_USER="$2"; shift
             ;;
-        --domain)
-            DOMAIN="$2"; shift
-            ;;
         --resolver)
             RESOLVER="$2"; shift
             ;;
@@ -211,7 +205,6 @@ if [[ ! -z "$AZURE_SECRETS_FILE" ]]; then
   source $AZURE_SECRETS_FILE
 fi
 
-FQDN=" -var fqdn=compute.$ARVADOS_CLUSTER_ID.$DOMAIN ";
 
 EXTRA2=""
 
@@ -264,5 +257,5 @@ if [[ "$PUBLIC_KEY_FILE" != "" ]]; then
   EXTRA2+=" -var public_key_file=$PUBLIC_KEY_FILE"
 fi
 
-echo packer build$EXTRA$FQDN -var "role=$role" -var "arvados_cluster=$ARVADOS_CLUSTER_ID"$EXTRA2 $JSON_FILE
-packer build$EXTRA$FQDN -var "role=$role" -var "arvados_cluster=$ARVADOS_CLUSTER_ID"$EXTRA2 $JSON_FILE
+echo packer build$EXTRA -var "arvados_cluster=$ARVADOS_CLUSTER_ID"$EXTRA2 $JSON_FILE
+packer build$EXTRA -var "arvados_cluster=$ARVADOS_CLUSTER_ID"$EXTRA2 $JSON_FILE

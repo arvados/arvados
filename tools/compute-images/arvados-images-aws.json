@@ -6,7 +6,6 @@
     "build_environment": "aws",
     "arvados_cluster": "",
     "aws_source_ami": "ami-04d70e069399af2e9",
-    "fqdn": "",
     "ssh_user": "admin",
     "vpc_id": "",
     "subnet_id": "",
@@ -75,6 +74,6 @@
     "type": "shell",
     "execute_command": "sudo -S env {{ .Vars }} /bin/bash '{{ .Path }}'",
     "script": "scripts/base.sh",
-    "environment_vars": ["ROLE=compute","RESOLVER={{user `resolver`}}","REPOSUFFIX={{user `reposuffix`}}"]
+    "environment_vars": ["RESOLVER={{user `resolver`}}","REPOSUFFIX={{user `reposuffix`}}"]
   }]
 }
