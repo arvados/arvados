@@ -802,6 +802,10 @@ def setup_config():
                         "GitInternalDir": os.path.join(SERVICES_SRC_DIR, 'api', 'tmp', 'internal.git'),
                     },
                     "SupportedDockerImageFormats": {"v1": {}},
+                    "ShellAccess": {
+                        "Admin": True,
+                        "User": True,
+                    },
                 },
                 "Volumes": {
                     "zzzzz-nyw5e-%015d"%n: {

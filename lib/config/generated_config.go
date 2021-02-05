@@ -874,6 +874,26 @@ Clusters:
         # period.
         LogUpdateSize: 32MiB
 
+      ShellAccess:
+        # An admin user can use "arvados-client shell" to start an
+        # interactive shell (with any user ID) in any running
+        # container.
+        Admin: false
+
+        # Any user can use "arvados-client shell" to start an
+        # interactive shell (with any user ID) in any running
+        # container that they started, provided it isn't also
+        # associated with a different user's container request.
+        #
+        # Interactive sessions make it easy to alter the container's
+        # runtime environment in ways that aren't recorded or
+        # reproducible. Consider the implications for automatic
+        # container reuse before enabling and using this feature. In
+        # particular, note that starting an interactive session does
+        # not disqualify a container from being reused by a different
+        # user/workflow in the future.
+        User: false
+
       SLURM:
         PrioritySpread: 0
         SbatchArgumentsList: []

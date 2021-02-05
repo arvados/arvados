@@ -20,6 +20,7 @@ require (
 	github.com/bradleypeabody/godap v0.0.0-20170216002349-c249933bc092
 	github.com/coreos/go-oidc v2.1.0+incompatible
 	github.com/coreos/go-systemd v0.0.0-20180108085132-cc4f39464dc7
+	github.com/creack/pty v1.1.7
 	github.com/dnaeon/go-vcr v1.0.1 // indirect
 	github.com/docker/distribution v2.6.0-rc.1.0.20180105232752-277ed486c948+incompatible // indirect
 	github.com/docker/docker v1.4.2-0.20180109013817-94b8a116fbf1
@@ -33,6 +34,7 @@ require (
 	github.com/go-asn1-ber/asn1-ber v1.4.1 // indirect
 	github.com/go-ldap/ldap v3.0.3+incompatible
 	github.com/gogo/protobuf v1.1.1
+	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/gorilla/context v1.1.1 // indirect
 	github.com/gorilla/mux v1.6.1-0.20180107155708-5bbbb5b2b572
 	github.com/hashicorp/golang-lru v0.5.1

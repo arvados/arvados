@@ -8,28 +8,30 @@ import "time"
 
 // Container is an arvados#container resource.
 type Container struct {
-	UUID                 string                 `json:"uuid"`
-	Etag                 string                 `json:"etag"`
-	CreatedAt            time.Time              `json:"created_at"`
-	ModifiedByClientUUID string                 `json:"modified_by_client_uuid"`
-	ModifiedByUserUUID   string                 `json:"modified_by_user_uuid"`
-	ModifiedAt           time.Time              `json:"modified_at"`
-	Command              []string               `json:"command"`
-	ContainerImage       string                 `json:"container_image"`
-	Cwd                  string                 `json:"cwd"`
-	Environment          map[string]string      `json:"environment"`
-	LockedByUUID         string                 `json:"locked_by_uuid"`
-	Mounts               map[string]Mount       `json:"mounts"`
-	Output               string                 `json:"output"`
-	OutputPath           string                 `json:"output_path"`
-	Priority             int64                  `json:"priority"`
-	RuntimeConstraints   RuntimeConstraints     `json:"runtime_constraints"`
-	State                ContainerState         `json:"state"`
-	SchedulingParameters SchedulingParameters   `json:"scheduling_parameters"`
-	ExitCode             int                    `json:"exit_code"`
-	RuntimeStatus        map[string]interface{} `json:"runtime_status"`
-	StartedAt            *time.Time             `json:"started_at"`  // nil if not yet started
-	FinishedAt           *time.Time             `json:"finished_at"` // nil if not yet finished
+	UUID                      string                 `json:"uuid"`
+	Etag                      string                 `json:"etag"`
+	CreatedAt                 time.Time              `json:"created_at"`
+	ModifiedByClientUUID      string                 `json:"modified_by_client_uuid"`
+	ModifiedByUserUUID        string                 `json:"modified_by_user_uuid"`
+	ModifiedAt                time.Time              `json:"modified_at"`
+	Command                   []string               `json:"command"`
+	ContainerImage            string                 `json:"container_image"`
+	Cwd                       string                 `json:"cwd"`
+	Environment               map[string]string      `json:"environment"`
+	LockedByUUID              string                 `json:"locked_by_uuid"`
+	Mounts                    map[string]Mount       `json:"mounts"`
+	Output                    string                 `json:"output"`
+	OutputPath                string                 `json:"output_path"`
+	Priority                  int64                  `json:"priority"`
+	RuntimeConstraints        RuntimeConstraints     `json:"runtime_constraints"`
+	State                     ContainerState         `json:"state"`
+	SchedulingParameters      SchedulingParameters   `json:"scheduling_parameters"`
+	ExitCode                  int                    `json:"exit_code"`
+	RuntimeStatus             map[string]interface{} `json:"runtime_status"`
+	StartedAt                 *time.Time             `json:"started_at"`  // nil if not yet started
+	FinishedAt                *time.Time             `json:"finished_at"` // nil if not yet finished
+	GatewayAddress            string                 `json:"gateway_address"`
+	InteractiveSessionStarted bool                   `json:"interactive_session_started"`
 }
 
 // ContainerRequest is an arvados#container_request resource.

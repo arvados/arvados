@@ -429,6 +429,10 @@ type ContainersConfig struct {
 		LogUpdatePeriod              Duration
 		LogUpdateSize                ByteSize
 	}
+	ShellAccess struct {
+		Admin bool
+		User  bool
+	}
 	SLURM struct {
 		PrioritySpread             int64
 		SbatchArgumentsList        []string
