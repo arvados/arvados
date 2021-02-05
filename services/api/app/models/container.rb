@@ -77,6 +77,8 @@ class Container < ArvadosModel
     t.add :runtime_user_uuid
     t.add :runtime_auth_scopes
     t.add :lock_count
+    t.add :gateway_address
+    t.add :interactive_session_started
   end
 
   # Supported states for a container
@@ -102,11 +104,11 @@ class Container < ArvadosModel
   end
 
   def self.full_text_searchable_columns
-    super - ["secret_mounts", "secret_mounts_md5", "runtime_token"]
+    super - ["secret_mounts", "secret_mounts_md5", "runtime_token", "gateway_address"]
   end
 
   def self.searchable_columns *args
-    super - ["secret_mounts_md5", "runtime_token"]
+    super - ["secret_mounts_md5", "runtime_token", "gateway_address"]
   end
 
   def logged_attributes
@@ -478,7 +480,10 @@ class Container < ArvadosModel
     when Running
       permitted.push :priority, *progress_attrs
       if self.state_changed?
-        permitted.push :started_at
+        permitted.push :started_at, :gateway_address
+      end
+      if !self.interactive_session_started_was
+        permitted.push :interactive_session_started
       end
 
     when Complete

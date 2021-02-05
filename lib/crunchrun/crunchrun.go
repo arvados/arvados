@@ -178,6 +178,8 @@ type ContainerRunner struct {
 	arvMountLog   *ThrottledLogger
 
 	containerWatchdogInterval time.Duration
+
+	gateway Gateway
 }
 
 // setupSignals sets up signal handling to gracefully terminate the underlying
@@ -1478,7 +1480,7 @@ func (runner *ContainerRunner) UpdateContainerRunning() error {
 		return ErrCancelled
 	}
 	return runner.DispatcherArvClient.Update("containers", runner.Container.UUID,
-		arvadosclient.Dict{"container": arvadosclient.Dict{"state": "Running"}}, nil)
+		arvadosclient.Dict{"container": arvadosclient.Dict{"state": "Running", "gateway_address": runner.gateway.Address}}, nil)
 }
 
 // ContainerToken returns the api_token the container (and any
@@ -1874,6 +1876,20 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 		cr.CrunchLog.Printf("%s: %v", containerID, dockererr)
 		cr.checkBrokenNode(dockererr)
 		cr.CrunchLog.Close()
+		return 1
+	}
+
+	cr.gateway = Gateway{
+		Address:           os.Getenv("GatewayAddress"),
+		AuthSecret:        os.Getenv("GatewayAuthSecret"),
+		ContainerUUID:     containerID,
+		DockerContainerID: &cr.ContainerID,
+		Log:               cr.CrunchLog,
+	}
+	os.Unsetenv("GatewayAuthSecret")
+	err = cr.gateway.Start()
+	if err != nil {
+		log.Printf("error starting gateway server: %s", err)
 		return 1
 	}
 

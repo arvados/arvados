@@ -5,8 +5,10 @@
 package worker
 
 import (
+	"crypto/hmac"
 	"crypto/md5"
 	"crypto/rand"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"io"
@@ -116,6 +118,7 @@ func NewPool(logger logrus.FieldLogger, arvClient *arvados.Client, reg *promethe
 		timeoutTERM:                    duration(cluster.Containers.CloudVMs.TimeoutTERM, defaultTimeoutTERM),
 		timeoutSignal:                  duration(cluster.Containers.CloudVMs.TimeoutSignal, defaultTimeoutSignal),
 		timeoutStaleRunLock:            duration(cluster.Containers.CloudVMs.TimeoutStaleRunLock, defaultTimeoutStaleRunLock),
+		systemRootToken:                cluster.SystemRootToken,
 		installPublicKey:               installPublicKey,
 		tagKeyPrefix:                   cluster.Containers.CloudVMs.TagKeyPrefix,
 		stop:                           make(chan bool),
@@ -154,6 +157,7 @@ type Pool struct {
 	timeoutTERM                    time.Duration
 	timeoutSignal                  time.Duration
 	timeoutStaleRunLock            time.Duration
+	systemRootToken                string
 	installPublicKey               ssh.PublicKey
 	tagKeyPrefix                   string
 
@@ -988,6 +992,12 @@ func (wp *Pool) waitUntilLoaded() {
 		<-ch
 		wp.mtx.RLock()
 	}
+}
+
+func (wp *Pool) gatewayAuthSecret(uuid string) string {
+	h := hmac.New(sha256.New, []byte(wp.systemRootToken))
+	fmt.Fprint(h, uuid)
+	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
 // Return a random string of n hexadecimal digits (n*4 random bits). n

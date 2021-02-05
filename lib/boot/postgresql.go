@@ -113,6 +113,7 @@ func (runPostgreSQL) Run(ctx context.Context, fail func(error), super *Superviso
 			"-l",          // enable ssl
 			"-D", datadir, // data dir
 			"-k", datadir, // socket dir
+			"-h", super.cluster.PostgreSQL.Connection["host"],
 			"-p", super.cluster.PostgreSQL.Connection["port"],
 		}
 		opts := runOptions{}

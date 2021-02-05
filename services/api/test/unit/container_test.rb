@@ -803,6 +803,8 @@ class ContainerTest < ActiveSupport::TestCase
     [Container::Running, {priority: 123456789}],
     [Container::Running, {runtime_status: {'error' => 'oops'}}],
     [Container::Running, {cwd: '/'}],
+    [Container::Running, {gateway_address: "172.16.0.1:12345"}],
+    [Container::Running, {interactive_session_started: true}],
     [Container::Complete, {state: Container::Cancelled}],
     [Container::Complete, {priority: 123456789}],
     [Container::Complete, {runtime_status: {'error' => 'oops'}}],
