@@ -53,12 +53,12 @@ func (runNginx) Run(ctx context.Context, fail func(error), super *Supervisor) er
 		{"WORKBENCH1", super.cluster.Services.Workbench1},
 		{"WS", super.cluster.Services.Websocket},
 	} {
-		port, err := internalPort(cmpt.svc)
+		host, port, err := internalPort(cmpt.svc)
 		if err != nil {
 			return fmt.Errorf("%s internal port: %w (%v)", cmpt.varname, err, cmpt.svc)
 		}
-		if ok, err := addrIsLocal(net.JoinHostPort(super.ListenHost, port)); !ok || err != nil {
-			return fmt.Errorf("urlIsLocal() failed for host %q port %q: %v", super.ListenHost, port, err)
+		if ok, err := addrIsLocal(net.JoinHostPort(host, port)); !ok || err != nil {
+			return fmt.Errorf("urlIsLocal() failed for host %q port %q: %v", host, port, err)
 		}
 		vars[cmpt.varname+"PORT"] = port
 

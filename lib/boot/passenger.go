@@ -102,7 +102,7 @@ func (runner runPassenger) Run(ctx context.Context, fail func(error), super *Sup
 	if err != nil {
 		return err
 	}
-	port, err := internalPort(runner.svc)
+	host, port, err := internalPort(runner.svc)
 	if err != nil {
 		return fmt.Errorf("bug: no internalPort for %q: %v (%#v)", runner, err, runner.svc)
 	}
@@ -130,7 +130,9 @@ func (runner runPassenger) Run(ctx context.Context, fail func(error), super *Sup
 		cmdline := []string{
 			"bundle", "exec",
 			"passenger", "start",
-			"-p", port,
+			"--address", host,
+			"--port", port,
+			"--log-file", "/dev/stderr",
 			"--log-level", loglevel,
 			"--no-friendly-error-pages",
 			"--disable-anonymous-telemetry",
