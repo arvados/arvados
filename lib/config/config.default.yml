@@ -195,7 +195,7 @@ Clusters:
       # * 1.1) fits comfortably in memory. On a host dedicated to running
       # Keepstore, divide total memory by 88MiB to suggest a suitable value.
       # For example, if grep MemTotal /proc/meminfo reports MemTotal: 7125440
-      # kB, compute 7125440 / (88 * 1024)=79 and configure MaxBuffers: 79
+      # kB, compute 7125440 / (88 * 1024)=79 and set MaxKeepBlobBuffers: 79
       MaxKeepBlobBuffers: 128
 
       # API methods to disable. Disabled methods are not listed in the
