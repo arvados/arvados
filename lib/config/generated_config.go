@@ -573,6 +573,17 @@ Clusters:
         # work. If false, only the primary email address will be used.
         AlternateEmailAddresses: true
 
+        # Send additional parameters with authentication requests. See
+        # https://developers.google.com/identity/protocols/oauth2/openid-connect#authenticationuriparameters
+        # for a list of supported parameters.
+        AuthenticationRequestParameters:
+          # Show the "choose which Google account" page, even if the
+          # client is currently logged in to exactly one Google
+          # account.
+          prompt: select_account
+
+          SAMPLE: ""
+
       OpenIDConnect:
         # Authenticate with an OpenID Connect provider.
         Enable: false
@@ -606,6 +617,14 @@ Clusters:
         # username. If empty, use the mailbox part of the user's email
         # address.
         UsernameClaim: ""
+
+        # Send additional parameters with authentication requests,
+        # like {display: page, prompt: consent}. See
+        # https://openid.net/specs/openid-connect-core-1_0.html#AuthRequest
+        # and refer to your provider's documentation for supported
+        # parameters.
+        AuthenticationRequestParameters:
+          SAMPLE: ""
 
       PAM:
         # (Experimental) Use PAM to authenticate users.
