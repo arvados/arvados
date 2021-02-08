@@ -158,9 +158,9 @@ class UserSessionsController < ApplicationController
     end
     if Rails.configuration.Login.TokenLifetime > 0
       if token_expiration == nil
-        token_expiration = Time.now + Rails.configuration.Login.TokenLifetime
+        token_expiration = db_current_time + Rails.configuration.Login.TokenLifetime
       else
-        token_expiration = [token_expiration, Time.now + Rails.configuration.Login.TokenLifetime].min
+        token_expiration = [token_expiration, db_current_time + Rails.configuration.Login.TokenLifetime].min
       end
     end
 
