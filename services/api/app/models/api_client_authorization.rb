@@ -390,9 +390,7 @@ class ApiClientAuthorization < ArvadosModel
   def clamp_token_expiration
     if !current_user.andand.is_admin && Rails.configuration.API.MaxTokenLifetime > 0
       max_token_expiration = db_current_time + Rails.configuration.API.MaxTokenLifetime
-      if self.new_record? && (self.expires_at.nil? || self.expires_at > max_token_expiration)
-        self.expires_at = max_token_expiration
-      elsif !self.new_record? && self.expires_at_changed? && (self.expires_at.nil? || self.expires_at > max_token_expiration)
+      if (self.new_record? || self.expires_at_changed?) && (self.expires_at.nil? || self.expires_at > max_token_expiration)
         self.expires_at = max_token_expiration
       end
     end
