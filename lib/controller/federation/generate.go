@@ -52,7 +52,7 @@ func main() {
 		defer out.Close()
 		out.Write(regexp.MustCompile(`(?ms)^.*package .*?import.*?\n\)\n`).Find(buf))
 		io.WriteString(out, "//\n// -- this file is auto-generated -- do not edit -- edit list.go and run \"go generate\" instead --\n//\n\n")
-		for _, t := range []string{"Container", "ContainerRequest", "Specimen", "User"} {
+		for _, t := range []string{"Container", "ContainerRequest", "Group", "Specimen", "User"} {
 			_, err := out.Write(bytes.ReplaceAll(orig, []byte("Collection"), []byte(t)))
 			if err != nil {
 				panic(err)

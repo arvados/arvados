@@ -129,6 +129,34 @@ func (as *APIStub) ContainerRequestDelete(ctx context.Context, options arvados.D
 	as.appendCall(ctx, as.ContainerRequestDelete, options)
 	return arvados.ContainerRequest{}, as.Error
 }
+func (as *APIStub) GroupCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Group, error) {
+	as.appendCall(ctx, as.GroupCreate, options)
+	return arvados.Group{}, as.Error
+}
+func (as *APIStub) GroupUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.Group, error) {
+	as.appendCall(ctx, as.GroupUpdate, options)
+	return arvados.Group{}, as.Error
+}
+func (as *APIStub) GroupGet(ctx context.Context, options arvados.GetOptions) (arvados.Group, error) {
+	as.appendCall(ctx, as.GroupGet, options)
+	return arvados.Group{}, as.Error
+}
+func (as *APIStub) GroupList(ctx context.Context, options arvados.ListOptions) (arvados.GroupList, error) {
+	as.appendCall(ctx, as.GroupList, options)
+	return arvados.GroupList{}, as.Error
+}
+func (as *APIStub) GroupContents(ctx context.Context, options arvados.GetOptions) (map[string]interface{}, error) {
+	as.appendCall(ctx, as.GroupContents, options)
+	return nil, as.Error
+}
+func (as *APIStub) GroupShared(ctx context.Context, options arvados.GetOptions) (map[string]interface{}, error) {
+	as.appendCall(ctx, as.GroupShared, options)
+	return nil, as.Error
+}
+func (as *APIStub) GroupDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.Group, error) {
+	as.appendCall(ctx, as.GroupDelete, options)
+	return arvados.Group{}, as.Error
+}
 func (as *APIStub) SpecimenCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Specimen, error) {
 	as.appendCall(ctx, as.SpecimenCreate, options)
 	return arvados.Specimen{}, as.Error

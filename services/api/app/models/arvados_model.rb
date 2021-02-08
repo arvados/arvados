@@ -889,6 +889,13 @@ class ArvadosModel < ApplicationRecord
     }.merge(attributes['scheduling_parameters'] || {})
   end
 
+  # The 'group_class' for a group should default to 'project'
+  def fill_group_defaults
+    if !attributes.key?("group_class") || attributes['group_class'].nil? || attributes['group_class'].empty?
+      self.group_class = 'project'
+    end
+  end
+
   # ArvadosModel.find_by_uuid needs extra magic to allow it to return
   # an object in any class.
   def self.find_by_uuid uuid

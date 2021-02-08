@@ -62,7 +62,7 @@ class GroupTest < ActiveSupport::TestCase
     assert g_foo.errors.messages[:owner_uuid].join(" ").match(/ownership cycle/)
   end
 
-  test "cannot create a group that is not a 'role' or 'project'" do
+  test "cannot create a group that is not a 'role' or 'project' or 'filter'" do
     set_user_from_auth :active_trustedclient
 
     assert_raises(ActiveRecord::RecordInvalid) do
@@ -278,6 +278,7 @@ class GroupTest < ActiveSupport::TestCase
       Rails.configuration.Collections.ForwardSlashNameSubstitution = subst
       proj = Group.create group_class: "project"
       role = Group.create group_class: "role"
+      filt = Group.create group_class: "filter"
       [[nil, true],
        ["", true],
        [".", false],
@@ -292,6 +293,8 @@ class GroupTest < ActiveSupport::TestCase
         assert_equal true, role.valid?
         proj.name = name
         assert_equal valid, proj.valid?, "#{name.inspect} should be #{valid ? "valid" : "invalid"}"
+        filt.name = name
+        assert_equal valid, filt.valid?, "#{name.inspect} should be #{valid ? "valid" : "invalid"}"
       end
     end
   end
