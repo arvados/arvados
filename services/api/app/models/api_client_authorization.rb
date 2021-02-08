@@ -7,6 +7,7 @@ class ApiClientAuthorization < ArvadosModel
   include KindAndEtag
   include CommonApiTemplate
   extend CurrentApiClient
+  extend DbCurrentTime
 
   belongs_to :api_client
   belongs_to :user
@@ -356,7 +357,7 @@ class ApiClientAuthorization < ArvadosModel
       auth.update_attributes!(user: user,
                               api_token: stored_secret,
                               api_client_id: 0,
-                              expires_at: Time.now + Rails.configuration.Login.RemoteTokenRefresh)
+                              expires_at: db_current_time + Rails.configuration.Login.RemoteTokenRefresh)
       Rails.logger.debug "cached remote token #{token_uuid} with secret #{stored_secret} in local db"
       auth.api_token = secret
       return auth
@@ -388,7 +389,7 @@ class ApiClientAuthorization < ArvadosModel
 
   def clamp_token_expiration
     if !current_user.andand.is_admin && Rails.configuration.API.MaxTokenLifetime > 0
-      max_token_expiration = Time.now + Rails.configuration.API.MaxTokenLifetime
+      max_token_expiration = db_current_time + Rails.configuration.API.MaxTokenLifetime
       if self.new_record? && (self.expires_at.nil? || self.expires_at > max_token_expiration)
         self.expires_at = max_token_expiration
       elsif !self.new_record? && self.expires_at_changed? && (self.expires_at.nil? || self.expires_at > max_token_expiration)
