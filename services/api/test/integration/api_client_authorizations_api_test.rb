@@ -5,6 +5,8 @@
 require 'test_helper'
 
 class ApiClientAuthorizationsApiTest < ActionDispatch::IntegrationTest
+  include DbCurrentTime
+  extend DbCurrentTime
   fixtures :all
 
   test "create system auth" do
@@ -74,12 +76,12 @@ class ApiClientAuthorizationsApiTest < ActionDispatch::IntegrationTest
     assert_response 403
   end
 
-  [nil, Time.now + 2.hours].each do |desired_expiration|
+  [nil, db_current_time + 2.hours].each do |desired_expiration|
     test "expires_at gets clamped on non-admins when API.MaxTokenLifetime is set and desired expires_at #{desired_expiration.nil? ? 'is not set' : 'exceeds the limit'}" do
       Rails.configuration.API.MaxTokenLifetime = 1.hour
 
       # Test token creation
-      start_t = Time.now
+      start_t = db_current_time
       post "/arvados/v1/api_client_authorizations",
         params: {
           :format => :json,
@@ -89,7 +91,7 @@ class ApiClientAuthorizationsApiTest < ActionDispatch::IntegrationTest
           }
         },
         headers: {'HTTP_AUTHORIZATION' => "OAuth2 #{api_client_authorizations(:active_trustedclient).api_token}"}
-      end_t = Time.now
+      end_t = db_current_time
       assert_response 200
       expiration_t = json_response['expires_at'].to_time
       assert_operator expiration_t.to_f, :>, (start_t + Rails.configuration.API.MaxTokenLifetime).to_f
@@ -102,7 +104,7 @@ class ApiClientAuthorizationsApiTest < ActionDispatch::IntegrationTest
       # Test token update
       previous_expiration = expiration_t
       token_uuid = json_response["uuid"]
-      start_t = Time.now
+      start_t = db_current_time
       put "/arvados/v1/api_client_authorizations/#{token_uuid}",
         params: {
           :api_client_authorization => {
@@ -110,7 +112,7 @@ class ApiClientAuthorizationsApiTest < ActionDispatch::IntegrationTest
           }
         },
         headers: {'HTTP_AUTHORIZATION' => "OAuth2 #{api_client_authorizations(:active_trustedclient).api_token}"}
-      end_t = Time.now
+      end_t = db_current_time
       assert_response 200
       expiration_t = json_response['expires_at'].to_time
       assert_operator previous_expiration.to_f, :<, expiration_t.to_f
@@ -146,7 +148,7 @@ class ApiClientAuthorizationsApiTest < ActionDispatch::IntegrationTest
       previous_expiration = json_response['expires_at']
       token_uuid = json_response['uuid']
       if previous_expiration.nil?
-        desired_updated_expiration = Time.now + Rails.configuration.API.MaxTokenLifetime + 1.hour
+        desired_updated_expiration = db_current_time + Rails.configuration.API.MaxTokenLifetime + 1.hour
       else
         desired_updated_expiration = nil
       end
