@@ -346,7 +346,7 @@ else
         grep -q "nginx_passenger" ${P_DIR}/top.sls          || echo "    - nginx_passenger" >> ${P_DIR}/top.sls
         grep -q "nginx_${R}_configuration" ${P_DIR}/top.sls || echo "    - nginx_${R}_configuration" >> ${P_DIR}/top.sls
       ;;
-      "workbench" | "workbench2" | "keepweb" | "keepproxy")
+      "controller" | "websocket" | "workbench" | "workbench2" | "keepweb" | "keepproxy")
         # States
         grep -q "nginx.passenger" ${S_DIR}/top.sls || echo "    - nginx.passenger" >> ${S_DIR}/top.sls
         grep -q "arvados.${R}" ${S_DIR}/top.sls    || echo "    - arvados.${R}" >> ${S_DIR}/top.sls
@@ -365,6 +365,12 @@ else
       "dispatcher")
         # States
         grep -q "docker" ${S_DIR}/top.sls       || echo "    - docker" >> ${S_DIR}/top.sls
+        grep -q "arvados.${R}" ${S_DIR}/top.sls || echo "    - arvados.${R}" >> ${S_DIR}/top.sls
+        # Pillars
+        # ATM, no specific pillar needed
+      ;;
+      "keepstore")
+        # States
         grep -q "arvados.${R}" ${S_DIR}/top.sls || echo "    - arvados.${R}" >> ${S_DIR}/top.sls
         # Pillars
         # ATM, no specific pillar needed
