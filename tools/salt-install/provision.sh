@@ -156,12 +156,12 @@ fi
 apt-get update
 apt-get install -y curl git jq
 
-dpkg -l |grep salt-minion
-if [ ${?} -eq 0 ]; then
+if [ which salt-call ]; then
   echo "Salt already installed"
 else
   curl -L https://bootstrap.saltstack.com -o /tmp/bootstrap_salt.sh
   sh /tmp/bootstrap_salt.sh -XdfP -x python3
+  /bin/systemctl stop salt-minion.service
   /bin/systemctl disable salt-minion.service
 fi
 
