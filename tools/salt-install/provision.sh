@@ -156,7 +156,7 @@ fi
 apt-get update
 apt-get install -y curl git jq
 
-if [ which salt-call ]; then
+if which salt-call; then
   echo "Salt already installed"
 else
   curl -L https://bootstrap.saltstack.com -o /tmp/bootstrap_salt.sh
