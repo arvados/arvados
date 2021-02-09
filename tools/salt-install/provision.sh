@@ -277,6 +277,9 @@ if [ -d "${SOURCE_STATES_DIR}" ]; then
 fi
 
 # Now, we build the SALT states/pillars trees
+# As we need to separate both states and pillars in case we want specific
+# roles, we iterate on both at the same time
+
 # States
 cat > ${S_DIR}/top.sls << EOFTSLS
 base:
@@ -284,7 +287,16 @@ base:
     - locale
 EOFTSLS
 
-if [ -d "${SOURCE_STATES_DIR}" ]; then
+# Pillars
+cat > ${P_DIR}/top.sls << EOFPSLS
+base:
+  '*':
+    - locale
+    - arvados
+EOFPSLS
+
+# States, extra states
+if [ -d "${F_DIR}"/extra/extra ]; then
   for f in "${F_DIR}"/extra/extra/*.sls; do
   echo "    - extra.$(basename ${f} | sed 's/.sls$//g')" >> ${S_DIR}/top.sls
   done
@@ -293,57 +305,77 @@ fi
 # If we want specific roles for a node, just add the desired states
 # and its dependencies
 if [ -z "${ROLES}" ]; then
-  echo '    - nginx.passenger' >> ${S_DIR}/top.sls
-  echo '    - postgres' >> ${S_DIR}/top.sls
-  echo '    - docker' >> ${S_DIR}/top.sls
-  echo '    - arvados' >> ${S_DIR}/top.sls
+  # States
+  echo "    - nginx.passenger" >> ${S_DIR}/top.sls
+  echo "    - postgres" >> ${S_DIR}/top.sls
+  echo "    - docker" >> ${S_DIR}/top.sls
+  echo "    - arvados" >> ${S_DIR}/top.sls
+
+  # Pillars
+  echo "    - docker" >> ${P_DIR}/top.sls
+  echo "    - nginx_api_configuration" >> ${P_DIR}/top.sls
+  echo "    - nginx_controller_configuration" >> ${P_DIR}/top.sls
+  echo "    - nginx_keepproxy_configuration" >> ${P_DIR}/top.sls
+  echo "    - nginx_keepweb_configuration" >> ${P_DIR}/top.sls
+  echo "    - nginx_passenger" >> ${P_DIR}/top.sls
+  echo "    - nginx_websocket_configuration" >> ${P_DIR}/top.sls
+  echo "    - nginx_webshell_configuration" >> ${P_DIR}/top.sls
+  echo "    - nginx_workbench2_configuration" >> ${P_DIR}/top.sls
+  echo "    - nginx_workbench_configuration" >> ${P_DIR}/top.sls
+  echo "    - postgresql" >> ${P_DIR}/top.sls
 else
   # If we add individual roles, make sure we add the repo first
   echo "    - arvados.repo" >> ${S_DIR}/top.sls
   for R in ${ROLES}; do
     case "${R}" in
       "database")
+        # States
         echo "    - postgres" >> ${S_DIR}/top.sls
+        # Pillars
+        echo '    - postgresql' >> ${P_DIR}/top.sls
       ;;
       "api")
+        # States
         # FIXME: https://dev.arvados.org/issues/17352
         grep -q "postgres.client" ${S_DIR}/top.sls || echo "    - postgres.client" >> ${S_DIR}/top.sls
         grep -q "nginx.passenger" ${S_DIR}/top.sls || echo "    - nginx.passenger" >> ${S_DIR}/top.sls
-        echo "    - arvados.${R}" >> ${S_DIR}/top.sls
+        grep -q "arvados.${R}" ${S_DIR}/top.sls    || echo "    - arvados.${R}" >> ${S_DIR}/top.sls
+        # Pillars
+        grep -q "docker" ${P_DIR}/top.sls                   || echo "    - docker" >> ${P_DIR}/top.sls
+        grep -q "postgresql" ${P_DIR}/top.sls               || echo "    - postgresql" >> ${P_DIR}/top.sls
+        grep -q "nginx_passenger" ${P_DIR}/top.sls          || echo "    - nginx_passenger" >> ${P_DIR}/top.sls
+        grep -q "nginx_${R}_configuration" ${P_DIR}/top.sls || echo "    - nginx_${R}_configuration" >> ${P_DIR}/top.sls
       ;;
       "workbench" | "workbench2" | "keepweb" | "keepproxy")
+        # States
         grep -q "nginx.passenger" ${S_DIR}/top.sls || echo "    - nginx.passenger" >> ${S_DIR}/top.sls
-        echo "    - arvados.${R}" >> ${S_DIR}/top.sls
+        grep -q "arvados.${R}" ${S_DIR}/top.sls    || echo "    - arvados.${R}" >> ${S_DIR}/top.sls
+        # Pillars
+        grep -q "nginx_passenger" ${P_DIR}/top.sls          || echo "    - nginx_passenger" >> ${P_DIR}/top.sls
+        grep -q "nginx_${R}_configuration" ${P_DIR}/top.sls || echo "    - nginx_${R}_configuration" >> ${P_DIR}/top.sls
       ;;
-      "shell" | "dispatcher")
-        grep -q "docker" ${S_DIR}/top.sls || echo "    - docker" >> ${S_DIR}/top.sls
-        echo "    - arvados.${R}" >> ${S_DIR}/top.sls
+      "shell")
+        # States
+        grep -q "docker" ${S_DIR}/top.sls       || echo "    - docker" >> ${S_DIR}/top.sls
+        grep -q "arvados.${R}" ${S_DIR}/top.sls || echo "    - arvados.${R}" >> ${S_DIR}/top.sls
+        # Pillars
+        grep -q "" ${P_DIR}/top.sls                             || echo "    - docker" >> ${P_DIR}/top.sls
+        grep -q "nginx_webshell_configuration" ${P_DIR}/top.sls || echo "    - nginx_webshell_configuration" >> ${P_DIR}/top.sls
+      ;;
+      "dispatcher")
+        # States
+        grep -q "docker" ${S_DIR}/top.sls       || echo "    - docker" >> ${S_DIR}/top.sls
+        grep -q "arvados.${R}" ${S_DIR}/top.sls || echo "    - arvados.${R}" >> ${S_DIR}/top.sls
+        # Pillars
+        # ATM, no specific pillar needed
       ;;
       *)
-        echo "    - arvados.${R}" >> ${S_DIR}/top.sls
+        echo "Unknown role ${R}"
+        exit 1
       ;;
     esac
   done
 fi
-
-# Pillars
-cat > ${P_DIR}/top.sls << EOFPSLS
-base:
-  '*':
-    - arvados
-    - docker
-    - locale
-    - nginx_api_configuration
-    - nginx_controller_configuration
-    - nginx_keepproxy_configuration
-    - nginx_keepweb_configuration
-    - nginx_passenger
-    - nginx_websocket_configuration
-    - nginx_webshell_configuration
-    - nginx_workbench2_configuration
-    - nginx_workbench_configuration
-    - postgresql
-EOFPSLS
 
 # FIXME! #16992 Temporary fix for psql call in arvados-api-server
 if [ -e /root/.psqlrc ]; then
