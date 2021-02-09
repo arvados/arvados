@@ -80,7 +80,6 @@ arvados:
     tokens:
       system_root: __SYSTEM_ROOT_TOKEN__
       management: __MANAGEMENT_TOKEN__
-      rails_secret: __RAILS_SECRET_TOKEN__
       anonymous_user: __ANONYMOUS_USER_TOKEN__
 
     ### KEYS

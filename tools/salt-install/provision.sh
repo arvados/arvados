@@ -220,7 +220,6 @@ for f in "${SOURCE_PILLARS_DIR}"/*; do
        s/__KEEPWEB_EXT_SSL_PORT__/${KEEPWEB_EXT_SSL_PORT}/g;
        s/__KEEP_EXT_SSL_PORT__/${KEEP_EXT_SSL_PORT}/g;
        s/__MANAGEMENT_TOKEN__/${MANAGEMENT_TOKEN}/g;
-       s/__RAILS_SECRET_TOKEN__/${RAILS_SECRET_TOKEN}/g;
        s/__RELEASE__/${RELEASE}/g;
        s/__SYSTEM_ROOT_TOKEN__/${SYSTEM_ROOT_TOKEN}/g;
        s/__VERSION__/${VERSION}/g;
@@ -265,7 +264,6 @@ if [ -d "${SOURCE_STATES_DIR}" ]; then
          s/__KEEPWEB_EXT_SSL_PORT__/${KEEPWEB_EXT_SSL_PORT}/g;
          s/__KEEP_EXT_SSL_PORT__/${KEEP_EXT_SSL_PORT}/g;
          s/__MANAGEMENT_TOKEN__/${MANAGEMENT_TOKEN}/g;
-         s/__RAILS_SECRET_TOKEN__/${RAILS_SECRET_TOKEN}/g;
          s/__RELEASE__/${RELEASE}/g;
          s/__SYSTEM_ROOT_TOKEN__/${SYSTEM_ROOT_TOKEN}/g;
          s/__VERSION__/${VERSION}/g;
