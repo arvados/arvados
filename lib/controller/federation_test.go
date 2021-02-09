@@ -705,6 +705,15 @@ func (s *FederationSuite) TestCreateRemoteContainerRequestCheckRuntimeToken(c *c
 	c.Check(cr.RuntimeToken, check.Matches, "v2/zzzzz-gj3su-.*")
 	// RuntimeToken must be different than the Original Token we originally did the request with.
 	c.Check(cr.RuntimeToken, check.Not(check.Equals), arvadostest.ActiveTokenV2)
+
+	req2 := httptest.NewRequest("GET", "/arvados/v1/api_client_authorizations/current", nil)
+	req2.Header.Set("Authorization", "Bearer "+cr.RuntimeToken)
+	req2.Header.Set("Content-type", "application/json")
+	resp = s.testRequest(req2).Result()
+	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+	var aca arvados.APIClientAuthorization
+	c.Check(json.NewDecoder(resp.Body).Decode(&aca), check.IsNil)
+	c.Check(aca.ExpiresAt, check.IsNil)
 }
 
 func (s *FederationSuite) TestCreateRemoteContainerRequestCheckSetRuntimeToken(c *check.C) {

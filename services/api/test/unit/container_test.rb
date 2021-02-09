@@ -750,6 +750,17 @@ class ContainerTest < ActiveSupport::TestCase
     check_no_change_from_cancelled c
   end
 
+  test "Container locked with non-expiring token" do
+    Rails.configuration.API.TokenMaxLifetime = 1.hour
+    set_user_from_auth :active
+    c, _ = minimal_new
+    set_user_from_auth :dispatch1
+    assert c.lock, show_errors(c)
+    refute c.auth.nil?
+    assert c.auth.expires_at.nil?
+    assert c.auth.user_id == User.find_by_uuid(users(:active).uuid).id
+  end
+
   test "Container locked cancel with log" do
     set_user_from_auth :active
     c, _ = minimal_new
