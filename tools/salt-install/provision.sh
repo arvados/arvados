@@ -307,11 +307,17 @@ else
       "database")
         echo "    - postgres" >> ${S_DIR}/top.sls
       ;;
-      "api","workbench","workbench2","keepweb","keepproxy")
+      "api")
+        # FIXME: https://dev.arvados.org/issues/17352
+        grep -q "postgres.client" ${S_DIR}/top.sls || echo "    - postgres.client" >> ${S_DIR}/top.sls
         grep -q "nginx.passenger" ${S_DIR}/top.sls || echo "    - nginx.passenger" >> ${S_DIR}/top.sls
         echo "    - arvados.${R}" >> ${S_DIR}/top.sls
       ;;
-      "shell","dispatcher")
+      "workbench" | "workbench2" | "keepweb" | "keepproxy")
+        grep -q "nginx.passenger" ${S_DIR}/top.sls || echo "    - nginx.passenger" >> ${S_DIR}/top.sls
+        echo "    - arvados.${R}" >> ${S_DIR}/top.sls
+      ;;
+      "shell" | "dispatcher")
         grep -q "docker" ${S_DIR}/top.sls || echo "    - docker" >> ${S_DIR}/top.sls
         echo "    - arvados.${R}" >> ${S_DIR}/top.sls
       ;;
