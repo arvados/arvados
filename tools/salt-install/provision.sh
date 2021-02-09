@@ -107,8 +107,12 @@ TESTS_DIR="tests"
 
 CLUSTER=""
 DOMAIN=""
+
+# Hostnames/IPs used for single-host deploys
 HOSTNAME_EXT=""
 HOSTNAME_INT="127.0.1.1"
+
+# Initial user setup
 INITIAL_USER=""
 INITIAL_USER_EMAIL=""
 INITIAL_USER_PASSWORD=""
@@ -196,10 +200,10 @@ fi
 
 if [ "x${VAGRANT}" = "xyes" ]; then
   SOURCE_PILLARS_DIR="/vagrant/${CONFIG_DIR}/pillars"
-  TESTS_DIR="/vagrant/${TESTS_DIR}"
+  SOURCE_TESTS_DIR="/vagrant/${TESTS_DIR}"
 else
   SOURCE_PILLARS_DIR="${SCRIPT_DIR}/${CONFIG_DIR}/pillars"
-  TESTS_DIR="${SCRIPT_DIR}/${TESTS_DIR}"
+  SOURCE_TESTS_DIR="${SCRIPT_DIR}/${TESTS_DIR}"
 fi
 
 SOURCE_STATES_DIR="${EXTRA_STATES_DIR}"
@@ -233,7 +237,7 @@ done
 
 mkdir -p /tmp/cluster_tests
 # Replace cluster and domain name in the test files
-for f in "${TESTS_DIR}"/*; do
+for f in "${SOURCE_TESTS_DIR}"/*; do
   sed "s/__CLUSTER__/${CLUSTER}/g;
        s/__CONTROLLER_EXT_SSL_PORT__/${CONTROLLER_EXT_SSL_PORT}/g;
        s/__DOMAIN__/${DOMAIN}/g;
