@@ -33,7 +33,7 @@ export const ProjectsTreePicker = ({ pickerId, ...props }: ProjectsTreePickerPro
         <HomeTreePicker pickerId={home} {...p} />
         <SharedTreePicker pickerId={shared} {...p} />
         <PublicFavoritesTreePicker pickerId={publicFavorites} {...p} />
-        <FavoritesTreePicker pickerId={favorites} {...p} />  
+        <FavoritesTreePicker pickerId={favorites} options={{ showOnlyOwned: false, showOnlyWritable: true }} {...p} />  
     </div>;
 };
 
