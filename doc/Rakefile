@@ -157,6 +157,37 @@ task :linkchecker => [ :generate ] do
   end
 end
 
+task :import_vscode_training do
+  Dir.chdir("user") do
+  rm_rf "arvados-vscode-cwl-training"
+  `git clone https://github.com/arvados/arvados-vscode-cwl-training`
+  githash = `git --git-dir arvados-vscode-cwl-training/.git log -n1 --format=%H HEAD`
+  File.open("cwl/arvados-vscode-training.html.md.liquid", "w") do |fn|
+    File.open("arvados-vscode-cwl-training/README.md", "r") do |rd|
+      fn.write(<<-EOF
+---
+layout: default
+navsection: userguide
+title: "Developing CWL Workflows with VSCode"
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+
+Imported from https://github.com/arvados/arvados-vscode-cwl-training
+git hash: #{githash}
+{% endcomment %}
+
+EOF
+              )
+               fn.write(rd.read())
+    end
+  end
+  rm_rf "arvados-vscode-cwl-training"
+  end
+end
+
 task :clean do
   rm_rf "sdk/python/arvados"
   rm_rf "sdk/R"
