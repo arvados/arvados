@@ -119,7 +119,13 @@ For a small demo installation, it is possible to run all the Arvados services on
 
 h2(#clusterid). Arvados Cluster ID
 
-Each Arvados installation should have a cluster identifier, which is a unique 5-character lowercase alphanumeric string.   Here is one way to make a random 5-character string:
+Each Arvados installation is identified by a cluster identifier, which is a unique 5-character lowercase alphanumeric string. There are 36 5 = 60466176 possible cluster identifiers.
+
+* For automated test purposes, use “z****”
+* For experimental/local-only/private clusters that won’t ever be visible on the public Internet, use “x****”
+* For long-lived clusters, we recommend reserving a cluster id.  Contact "info@curii.com":mailto:info@curii.com for more information.
+
+Here is one way to make a random 5-character string:
 
 <notextile>
 <pre><code>~$ <span class="userinput">tr -dc 0-9a-z &lt;/dev/urandom | head -c5; echo</span>
