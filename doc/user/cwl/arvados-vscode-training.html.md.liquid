@@ -9,7 +9,7 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 
 Imported from https://github.com/arvados/arvados-vscode-cwl-training
-git hash: 1f74405842f221c40b852cf142a393c25eefd15a
+git hash: e21c963c05fb35bd8be15e24f72045e9c1cec668
 
 {% endcomment %}
 
@@ -72,20 +72,23 @@ Code (abbreviated "vscode") to develop CWL workflows on Arvados.
    1. Right click the newly added ssh target in the list and select “connect to host in current window`
    1. If it asks `Select platform of the remote host` select `Linux`.
 1. Vscode: On the left sidebar, go back to `Extensions` ![](images/Extensions.png)
-   1. Search for "benten" and install `CWL (Rabix/Benten)`
-   1. You should see a message `Extension is enabled on 'SSH: ...' and disabled locally.`
+   1. Search for "benten", then look for `CWL (Rabix/Benten)` and click `Install`
+   1. On the information page for `CWL (Rabix/Benten)`
+      1. If you see a warning `Install the extension on 'SSH: ...' to enable` then click the button `Install in SSH: ...`
+   1. You should now see a message `Extension is enabled on 'SSH: ...' and disabled locally.`
 1. Vscode: On the left sidebar, choose `Explorer` ![](images/Explorer.png)
    1. Select `Clone Repository` and enter [https://github.com/arvados/arvados-vscode-cwl-training](https://github.com/arvados/arvados-vscode-cwl-training), then click `Open`
    1. If asked `Would you like to open the cloned repository?` choose `Open`
-1. Go to Arvados Workbench
-   1. Workbench: In the user menu, select `Current token`
-   1. Vscode: Click on the `Terminal` menu
+1. Vscode: Click on the `Terminal` menu
    1. Vscode: Click `Run Task…`
    1. Vscode: Select `Configure Arvados`
-   1. Workbench: Copy the string following `ARVADOS_API_HOST=`
+   1. Go to Arvados Workbench
+   1. Workbench: In the user menu, select `Current token`
+   1. Workbench: Copy the text following `ARVADOS_API_HOST=` to the end of the line
    1. Vscode: Paste the string at the `Value for ARVADOS_API_HOST` prompt
-   1. Workbench: Copy the string following `ARVADOS_API_TOKEN=`
+   1. Workbench: Copy the text following `ARVADOS_API_TOKEN=` to the end of the line
    1. Vscode: Paste the string at the `Value for ARVADOS_API_TOKEN` prompt
+   1. This will create files called `API_HOST` and `API_TOKEN`
 
 ## 3. Register & run a workflow
 
@@ -93,6 +96,7 @@ Code (abbreviated "vscode") to develop CWL workflows on Arvados.
    1. Click on the `Terminal` menu
    1. Click `Run Task…`
    1. Select `Register or update CWL workflow on Arvados Workbench`
+   1. This will create a file called `WORKFLOW_UUID`
 1. Workbench: Go to `+NEW` and select `New project`
    1. Enter a name for the project like "Lesson 1"
    1. You should arrive at the panel for the new project
