@@ -418,11 +418,11 @@ func (conn *Conn) GroupList(ctx context.Context, options arvados.ListOptions) (a
 	return conn.generated_GroupList(ctx, options)
 }
 
-func (conn *Conn) GroupContents(ctx context.Context, options arvados.ContentsOptions) (arvados.GroupList, error) {
+func (conn *Conn) GroupContents(ctx context.Context, options arvados.ContentsOptions) (arvados.ObjectList, error) {
 	return conn.chooseBackend(options.UUID).GroupContents(ctx, options)
 }
 
-func (conn *Conn) GroupShared(ctx context.Context, options arvados.SharedOptions) (arvados.GroupList, error) {
+func (conn *Conn) GroupShared(ctx context.Context, options arvados.SharedOptions) (arvados.ObjectList, error) {
 	return conn.chooseBackend(options.UUID).GroupShared(ctx, options)
 }
 

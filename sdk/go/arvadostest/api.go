@@ -145,16 +145,20 @@ func (as *APIStub) GroupList(ctx context.Context, options arvados.ListOptions) (
 	as.appendCall(ctx, as.GroupList, options)
 	return arvados.GroupList{}, as.Error
 }
-func (as *APIStub) GroupContents(ctx context.Context, options arvados.GetOptions) (map[string]interface{}, error) {
+func (as *APIStub) GroupContents(ctx context.Context, options arvados.ContentsOptions) (arvados.ObjectList, error) {
 	as.appendCall(ctx, as.GroupContents, options)
-	return nil, as.Error
+	return arvados.ObjectList{}, as.Error
 }
-func (as *APIStub) GroupShared(ctx context.Context, options arvados.GetOptions) (map[string]interface{}, error) {
+func (as *APIStub) GroupShared(ctx context.Context, options arvados.SharedOptions) (arvados.ObjectList, error) {
 	as.appendCall(ctx, as.GroupShared, options)
-	return nil, as.Error
+	return arvados.ObjectList{}, as.Error
 }
 func (as *APIStub) GroupDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.Group, error) {
 	as.appendCall(ctx, as.GroupDelete, options)
+	return arvados.Group{}, as.Error
+}
+func (as *APIStub) GroupUntrash(ctx context.Context, options arvados.UntrashOptions) (arvados.Group, error) {
+	as.appendCall(ctx, as.GroupUntrash, options)
 	return arvados.Group{}, as.Error
 }
 func (as *APIStub) SpecimenCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Specimen, error) {

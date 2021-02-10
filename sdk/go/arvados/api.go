@@ -55,8 +55,9 @@ var (
 	EndpointGroupUpdate                   = APIEndpoint{"PATCH", "arvados/v1/groups/{uuid}", "group"}
 	EndpointGroupGet                      = APIEndpoint{"GET", "arvados/v1/groups/{uuid}", ""}
 	EndpointGroupList                     = APIEndpoint{"GET", "arvados/v1/groups", ""}
-	EndpointGroupContents                 = APIEndpoint{"GET", "arvados/v1/groups/{uuid}/contents", ""}
-	EndpointGroupShared                   = APIEndpoint{"GET", "arvados/v1/groups/{uuid}/shared", ""}
+	EndpointGroupContents                 = APIEndpoint{"GET", "arvados/v1/groups/contents", ""}
+	EndpointGroupContents2                = APIEndpoint{"GET", "arvados/v1/groups/{uuid}/contents", ""}
+	EndpointGroupShared                   = APIEndpoint{"GET", "arvados/v1/groups/shared", ""}
 	EndpointGroupDelete                   = APIEndpoint{"DELETE", "arvados/v1/groups/{uuid}", ""}
 	EndpointGroupUntrash                  = APIEndpoint{"POST", "arvados/v1/groups/{uuid}/untrash", ""}
 	EndpointUserActivate                  = APIEndpoint{"POST", "arvados/v1/users/{uuid}/activate", ""}
@@ -149,6 +150,7 @@ type SharedOptions struct {
 	Filters []Filter `json:"filters"`
 	Limit   int64    `json:"limit"`
 	Offset  int64    `json:"offset"`
+	Count   string   `json:"count"`
 	Order   []string `json:"order"`
 	Include string   `json:"include"`
 }
@@ -236,8 +238,8 @@ type API interface {
 	GroupUpdate(ctx context.Context, options UpdateOptions) (Group, error)
 	GroupGet(ctx context.Context, options GetOptions) (Group, error)
 	GroupList(ctx context.Context, options ListOptions) (GroupList, error)
-	GroupContents(ctx context.Context, options ContentsOptions) (GroupList, error)
-	GroupShared(ctx context.Context, options SharedOptions) (GroupList, error)
+	GroupContents(ctx context.Context, options ContentsOptions) (ObjectList, error)
+	GroupShared(ctx context.Context, options SharedOptions) (ObjectList, error)
 	GroupDelete(ctx context.Context, options DeleteOptions) (Group, error)
 	GroupUntrash(ctx context.Context, options UntrashOptions) (Group, error)
 	SpecimenCreate(ctx context.Context, options CreateOptions) (Specimen, error)

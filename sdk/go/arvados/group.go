@@ -36,6 +36,14 @@ type GroupList struct {
 	Limit          int     `json:"limit"`
 }
 
+// ObjectList is an arvados#objectList resource.
+type ObjectList struct {
+	Items          []interface{} `json:"items"`
+	ItemsAvailable int           `json:"items_available"`
+	Offset         int           `json:"offset"`
+	Limit          int           `json:"limit"`
+}
+
 func (g Group) resourceName() string {
 	return "group"
 }

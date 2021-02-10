@@ -243,13 +243,6 @@ func (rtr *router) addRoutes() {
 			},
 		},
 		{
-			arvados.EndpointGroupGet,
-			func() interface{} { return &arvados.GetOptions{} },
-			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.backend.GroupGet(ctx, *opts.(*arvados.GetOptions))
-			},
-		},
-		{
 			arvados.EndpointGroupList,
 			func() interface{} { return &arvados.ListOptions{Limit: -1} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
@@ -258,16 +251,30 @@ func (rtr *router) addRoutes() {
 		},
 		{
 			arvados.EndpointGroupContents,
-			func() interface{} { return &arvados.ListOptions{Limit: -1} },
+			func() interface{} { return &arvados.ContentsOptions{Limit: -1} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.GroupContents(ctx, *opts.(*arvados.ContentsOptions))
+			},
+		},
+		{
+			arvados.EndpointGroupContents2,
+			func() interface{} { return &arvados.ContentsOptions{Limit: -1} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
 				return rtr.backend.GroupContents(ctx, *opts.(*arvados.ContentsOptions))
 			},
 		},
 		{
 			arvados.EndpointGroupShared,
-			func() interface{} { return &arvados.ListOptions{Limit: -1} },
+			func() interface{} { return &arvados.SharedOptions{Limit: -1} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
 				return rtr.backend.GroupShared(ctx, *opts.(*arvados.SharedOptions))
+			},
+		},
+		{
+			arvados.EndpointGroupGet,
+			func() interface{} { return &arvados.GetOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.GroupGet(ctx, *opts.(*arvados.GetOptions))
 			},
 		},
 		{

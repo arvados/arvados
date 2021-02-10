@@ -444,16 +444,16 @@ func (conn *Conn) GroupList(ctx context.Context, options arvados.ListOptions) (a
 	return resp, err
 }
 
-func (conn *Conn) GroupContents(ctx context.Context, options arvados.ContentsOptions) (arvados.GroupList, error) {
+func (conn *Conn) GroupContents(ctx context.Context, options arvados.ContentsOptions) (arvados.ObjectList, error) {
 	ep := arvados.EndpointGroupContents
-	var resp arvados.GroupList
+	var resp arvados.ObjectList
 	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
 	return resp, err
 }
 
-func (conn *Conn) GroupShared(ctx context.Context, options arvados.SharedOptions) (arvados.GroupList, error) {
+func (conn *Conn) GroupShared(ctx context.Context, options arvados.SharedOptions) (arvados.ObjectList, error) {
 	ep := arvados.EndpointGroupShared
-	var resp arvados.GroupList
+	var resp arvados.ObjectList
 	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
 	return resp, err
 }
