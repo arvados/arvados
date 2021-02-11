@@ -709,21 +709,26 @@ func (s *FederationSuite) TestCreateRemoteContainerRequestCheckRuntimeToken(c *c
 	// RuntimeToken must be different than the Original Token we originally did the request with.
 	c.Check(cr.RuntimeToken, check.Not(check.Equals), arvadostest.ActiveTokenV2)
 
-	if forceLegacyAPI14 {
-		// Runtime token should not have an expiration based on API.MaxTokenLifetime
-		req2 := httptest.NewRequest("GET", "/arvados/v1/api_client_authorizations/current", nil)
-		req2.Header.Set("Authorization", "Bearer "+cr.RuntimeToken)
-		req2.Header.Set("Content-type", "application/json")
-		resp = s.testRequest(req2).Result()
-		c.Check(resp.StatusCode, check.Equals, http.StatusOK)
-		var aca arvados.APIClientAuthorization
-		c.Check(json.NewDecoder(resp.Body).Decode(&aca), check.IsNil)
-		c.Check(aca.ExpiresAt, check.NotNil) // BlobSigningTTL
-		t, _ := time.Parse(time.RFC3339Nano, aca.ExpiresAt)
-		c.Check(t.After(time.Now().Add(time.Hour)), check.Equals, true)
-		// fmt.Printf("\n\n>>BlobSigningTTL: %v // ExpiresAt: %v>>\n\n", s.testHandler.Cluster.Collections.BlobSigningTTL.Duration(), t)
-		// c.Check(t.Before(time.Now().Add(s.testHandler.Cluster.Collections.BlobSigningTTL.Duration())), check.Equals, true)
-	}
+	// Runtime token should not have an expiration based on API.MaxTokenLifetime
+	req2 := httptest.NewRequest("GET", "/arvados/v1/api_client_authorizations/current", nil)
+	req2.Header.Set("Authorization", "Bearer "+cr.RuntimeToken)
+	req2.Header.Set("Content-type", "application/json")
+	//----------
+	data, err := ioutil.ReadAll(s.remoteMockRequests[0].Body)
+	c.Check(err, check.IsNil)
+	fmt.Printf("NICO WAS HERE: %s\n", data)
+	//---------------
+	resp = s.testRequest(req2).Result()
+	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+
+	var aca arvados.APIClientAuthorization
+	c.Check(json.NewDecoder(resp.Body).Decode(&aca), check.IsNil)
+	c.Check(aca.ExpiresAt, check.NotNil) // BlobSigningTTL
+	t, _ := time.Parse(time.RFC3339Nano, aca.ExpiresAt)
+	c.Check(t.After(time.Now().Add(time.Hour)), check.Equals, true)
+	// fmt.Printf("\n\n>>BlobSigningTTL: %v // ExpiresAt: %v>>\n\n", s.testHandler.Cluster.Collections.BlobSigningTTL.Duration(), t)
+	// c.Check(t.Before(time.Now().Add(s.testHandler.Cluster.Collections.BlobSigningTTL.Duration())), check.Equals, true)
+
 }
 
 func (s *FederationSuite) TestCreateRemoteContainerRequestCheckSetRuntimeToken(c *check.C) {

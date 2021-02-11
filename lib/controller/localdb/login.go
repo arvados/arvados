@@ -144,6 +144,7 @@ func noopLogout(cluster *arvados.Cluster, opts arvados.LogoutOptions) (arvados.L
 }
 
 func (conn *Conn) CreateAPIClientAuthorization(ctx context.Context, rootToken string, authinfo rpc.UserSessionAuthInfo) (resp arvados.APIClientAuthorization, err error) {
+	fmt.Printf("NICO CAPO %v\n", authinfo.ExpiresAt)
 	if rootToken == "" {
 		return arvados.APIClientAuthorization{}, errors.New("configuration error: empty SystemRootToken")
 	}

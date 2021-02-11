@@ -374,8 +374,14 @@ func (conn *Conn) ContainerRequestCreate(ctx context.Context, options arvados.Cr
 			if !ok {
 				return arvados.ContainerRequest{}, httpErrorf(http.StatusInternalServerError, "bug: local backend is a %T, not a *localdb.Conn", conn.local)
 			}
+			nn := conn.cluster.Collections.BlobSigningTTL.Duration()
+
+			fmt.Printf("NICO NN: %d\n", nn)
+			if nn == 0 {
+				nn = 14 * 24 * time.Hour
+			}
 			aca, err = local.CreateAPIClientAuthorization(ctx, conn.cluster.SystemRootToken, rpc.UserSessionAuthInfo{UserUUID: user.UUID,
-				ExpiresAt: time.Now().UTC().Add(conn.cluster.Collections.BlobSigningTTL.Duration())})
+				ExpiresAt: time.Now().UTC().Add(nn)})
 			if err != nil {
 				return arvados.ContainerRequest{}, err
 			}
