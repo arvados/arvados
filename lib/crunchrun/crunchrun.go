@@ -178,6 +178,8 @@ type ContainerRunner struct {
 	arvMountLog   *ThrottledLogger
 
 	containerWatchdogInterval time.Duration
+
+	gateway Gateway
 }
 
 // setupSignals sets up signal handling to gracefully terminate the underlying
@@ -1431,15 +1433,20 @@ func (runner *ContainerRunner) saveLogCollection(final bool) (response arvados.C
 		// Already finalized.
 		return
 	}
-	mt, err := runner.LogCollection.MarshalManifest(".")
-	if err != nil {
-		err = fmt.Errorf("error creating log manifest: %v", err)
-		return
-	}
 	updates := arvadosclient.Dict{
-		"name":          "logs for " + runner.Container.UUID,
-		"manifest_text": mt,
+		"name": "logs for " + runner.Container.UUID,
 	}
+	mt, err1 := runner.LogCollection.MarshalManifest(".")
+	if err1 == nil {
+		// Only send updated manifest text if there was no
+		// error.
+		updates["manifest_text"] = mt
+	}
+
+	// Even if flushing the manifest had an error, we still want
+	// to update the log record, if possible, to push the trash_at
+	// and delete_at times into the future.  Details on bug
+	// #17293.
 	if final {
 		updates["is_trashed"] = true
 	} else {
@@ -1448,16 +1455,20 @@ func (runner *ContainerRunner) saveLogCollection(final bool) (response arvados.C
 		updates["delete_at"] = exp
 	}
 	reqBody := arvadosclient.Dict{"collection": updates}
+	var err2 error
 	if runner.logUUID == "" {
 		reqBody["ensure_unique_name"] = true
-		err = runner.DispatcherArvClient.Create("collections", reqBody, &response)
+		err2 = runner.DispatcherArvClient.Create("collections", reqBody, &response)
 	} else {
-		err = runner.DispatcherArvClient.Update("collections", runner.logUUID, reqBody, &response)
+		err2 = runner.DispatcherArvClient.Update("collections", runner.logUUID, reqBody, &response)
 	}
-	if err != nil {
-		return
+	if err2 == nil {
+		runner.logUUID = response.UUID
 	}
-	runner.logUUID = response.UUID
+
+	if err1 != nil || err2 != nil {
+		err = fmt.Errorf("error recording logs: %q, %q", err1, err2)
+	}
 	return
 }
 
@@ -1469,7 +1480,7 @@ func (runner *ContainerRunner) UpdateContainerRunning() error {
 		return ErrCancelled
 	}
 	return runner.DispatcherArvClient.Update("containers", runner.Container.UUID,
-		arvadosclient.Dict{"container": arvadosclient.Dict{"state": "Running"}}, nil)
+		arvadosclient.Dict{"container": arvadosclient.Dict{"state": "Running", "gateway_address": runner.gateway.Address}}, nil)
 }
 
 // ContainerToken returns the api_token the container (and any
@@ -1865,6 +1876,20 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 		cr.CrunchLog.Printf("%s: %v", containerID, dockererr)
 		cr.checkBrokenNode(dockererr)
 		cr.CrunchLog.Close()
+		return 1
+	}
+
+	cr.gateway = Gateway{
+		Address:           os.Getenv("GatewayAddress"),
+		AuthSecret:        os.Getenv("GatewayAuthSecret"),
+		ContainerUUID:     containerID,
+		DockerContainerID: &cr.ContainerID,
+		Log:               cr.CrunchLog,
+	}
+	os.Unsetenv("GatewayAuthSecret")
+	err = cr.gateway.Start()
+	if err != nil {
+		log.Printf("error starting gateway server: %s", err)
 		return 1
 	}
 

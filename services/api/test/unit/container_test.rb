@@ -23,7 +23,7 @@ class ContainerTest < ActiveSupport::TestCase
     command: ["echo", "hello"],
     output_path: "test",
     runtime_constraints: {
-      "api" => false,
+      "API" => false,
       "keep_cache_ram" => 0,
       "ram" => 12000000000,
       "vcpus" => 4,
@@ -229,7 +229,7 @@ class ContainerTest < ActiveSupport::TestCase
     set_user_from_auth :active
     env = {"C" => "3", "B" => "2", "A" => "1"}
     m = {"F" => {"kind" => "3"}, "E" => {"kind" => "2"}, "D" => {"kind" => "1"}}
-    rc = {"vcpus" => 1, "ram" => 1, "keep_cache_ram" => 1, "api" => true}
+    rc = {"vcpus" => 1, "ram" => 1, "keep_cache_ram" => 1, "API" => true}
     c, _ = minimal_new(environment: env, mounts: m, runtime_constraints: rc)
     c.reload
     assert_equal Container.deep_sort_hash(env).to_json, c.environment.to_json
@@ -814,6 +814,8 @@ class ContainerTest < ActiveSupport::TestCase
     [Container::Running, {priority: 123456789}],
     [Container::Running, {runtime_status: {'error' => 'oops'}}],
     [Container::Running, {cwd: '/'}],
+    [Container::Running, {gateway_address: "172.16.0.1:12345"}],
+    [Container::Running, {interactive_session_started: true}],
     [Container::Complete, {state: Container::Cancelled}],
     [Container::Complete, {priority: 123456789}],
     [Container::Complete, {runtime_status: {'error' => 'oops'}}],

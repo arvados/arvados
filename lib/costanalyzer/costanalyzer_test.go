@@ -53,7 +53,7 @@ func (s *Suite) SetUpSuite(c *check.C) {
     "IncludedScratch": 64000000000,
     "AddedScratch": 0,
     "Price": 0.292,
-    "Preemptible": false
+    "Preemptible": true
 }`
 	standardD32sV3JSON := `{
     "Name": "Standard_D32s_v3",
@@ -168,6 +168,8 @@ func (*Suite) TestContainerRequestUUID(c *check.C) {
 
 	uuidReport, err := ioutil.ReadFile(resultsDir + "/" + arvadostest.CompletedContainerRequestUUID + ".csv")
 	c.Assert(err, check.IsNil)
+	// Make sure the 'preemptible' flag was picked up
+	c.Check(string(uuidReport), check.Matches, "(?ms).*,Standard_E4s_v3,true,.*")
 	c.Check(string(uuidReport), check.Matches, "(?ms).*TOTAL,,,,,,,,,7.01302889")
 	re := regexp.MustCompile(`(?ms).*supplied uuids in (.*?)\n`)
 	matches := re.FindStringSubmatch(stderr.String()) // matches[1] contains a string like 'results/2020-11-02-18-57-45-aggregate-costaccounting.csv'

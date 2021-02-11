@@ -9,13 +9,13 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"net/http"
 	"os"
 
 	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/lib/service"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/sdk/go/health"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 )
@@ -83,13 +83,17 @@ func runCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.W
 			}
 
 			srv := &Server{
-				Handler:    http.NotFoundHandler(),
 				Cluster:    cluster,
 				ArvClient:  ac,
 				RunOptions: options,
 				Metrics:    newMetrics(registry),
 				Logger:     options.Logger,
 				Dumper:     options.Dumper,
+			}
+			srv.Handler = &health.Handler{
+				Token:  cluster.ManagementToken,
+				Prefix: "/_health/",
+				Routes: health.Routes{"ping": srv.CheckHealth},
 			}
 
 			go srv.run()

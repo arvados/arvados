@@ -73,8 +73,14 @@ func (*NodeSizeSuite) TestChoose(c *check.C) {
 			"best":   {Price: 3.3, RAM: 4000000000, VCPUs: 4, Scratch: 2 * GiB, Name: "best"},
 			"costly": {Price: 4.4, RAM: 4000000000, VCPUs: 8, Scratch: 2 * GiB, Name: "costly"},
 		},
+		{
+			"small":  {Price: 1.1, RAM: 1000000000, VCPUs: 2, Scratch: GiB, Name: "small"},
+			"nearly": {Price: 2.2, RAM: 1200000000, VCPUs: 4, Scratch: 2 * GiB, Name: "nearly"},
+			"best":   {Price: 3.3, RAM: 4000000000, VCPUs: 4, Scratch: 2 * GiB, Name: "best"},
+			"costly": {Price: 4.4, RAM: 4000000000, VCPUs: 8, Scratch: 2 * GiB, Name: "costly"},
+		},
 	} {
-		best, err := ChooseInstanceType(&arvados.Cluster{InstanceTypes: menu}, &arvados.Container{
+		best, err := ChooseInstanceType(&arvados.Cluster{InstanceTypes: menu, Containers: arvados.ContainersConfig{ReserveExtraRAM: 268435456}}, &arvados.Container{
 			Mounts: map[string]arvados.Mount{
 				"/tmp": {Kind: "tmp", Capacity: 2 * int64(GiB)},
 			},

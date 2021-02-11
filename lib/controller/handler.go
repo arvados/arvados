@@ -25,6 +25,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/health"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
 	"github.com/jmoiron/sqlx"
+
 	// sqlx needs lib/pq to talk to PostgreSQL
 	_ "github.com/lib/pq"
 )
@@ -100,6 +101,7 @@ func (h *Handler) setup() {
 		mux.Handle("/arvados/v1/collections/", rtr)
 		mux.Handle("/arvados/v1/users", rtr)
 		mux.Handle("/arvados/v1/users/", rtr)
+		mux.Handle("/arvados/v1/connect/", rtr)
 		mux.Handle("/arvados/v1/container_requests", rtr)
 		mux.Handle("/arvados/v1/container_requests/", rtr)
 		mux.Handle("/login", rtr)

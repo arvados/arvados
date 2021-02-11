@@ -247,7 +247,7 @@ func performKeepBlockCheck(kc *keepclient.KeepClient, blobSignatureTTL time.Dura
 	log.Printf("Verify block totals: %d attempts, %d successes, %d errors", totalBlocks, totalBlocks-notFoundBlocks, notFoundBlocks)
 
 	if notFoundBlocks > 0 {
-		return fmt.Errorf("Block verification failed for %d out of %d blocks with matching prefix.", notFoundBlocks, totalBlocks)
+		return fmt.Errorf("Block verification failed for %d out of %d blocks with matching prefix", notFoundBlocks, totalBlocks)
 	}
 
 	return nil

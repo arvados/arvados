@@ -35,6 +35,7 @@ type nodeInfo struct {
 	// Modern
 	ProviderType string
 	Price        float64
+	Preemptible  bool
 }
 
 type arrayFlags []string
@@ -90,6 +91,12 @@ Usage:
 	was fulfilled. This program uses the cost data stored at the time of the
 	execution of the container, stored in the 'node.json' file in its log
 	collection.
+	- if a container was run on a preemptible ("spot") instance, the cost data
+	reported by this program may be wildly inaccurate, because it does not have
+	access to the spot pricing in effect for the node then the container ran. The
+	UUID report file that is generated when the '-output' option is specified has
+	a column that indicates the preemptible state of the instance that ran the
+	container.
 
 	In order to get the data for the uuids supplied, the ARVADOS_API_HOST and
 	ARVADOS_API_TOKEN environment variables must be set.
@@ -181,7 +188,7 @@ func addContainerLine(logger *logrus.Logger, node nodeInfo, cr arvados.Container
 		size = node.ProviderType
 	}
 	cost = delta.Seconds() / 3600 * price
-	csv += size + "," + strconv.FormatFloat(price, 'f', 8, 64) + "," + strconv.FormatFloat(cost, 'f', 8, 64) + "\n"
+	csv += size + "," + fmt.Sprintf("%+v", node.Preemptible) + "," + strconv.FormatFloat(price, 'f', 8, 64) + "," + strconv.FormatFloat(cost, 'f', 8, 64) + "\n"
 	return
 }
 
@@ -369,7 +376,7 @@ func generateCrCsv(logger *logrus.Logger, uuid string, arv *arvadosclient.Arvado
 
 	cost = make(map[string]float64)
 
-	csv := "CR UUID,CR name,Container UUID,State,Started At,Finished At,Duration in seconds,Compute node type,Hourly node cost,Total cost\n"
+	csv := "CR UUID,CR name,Container UUID,State,Started At,Finished At,Duration in seconds,Compute node type,Preemptible,Hourly node cost,Total cost\n"
 	var tmpCsv string
 	var tmpTotalCost float64
 	var totalCost float64

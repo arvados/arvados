@@ -165,12 +165,14 @@ func (s *OIDCLoginSuite) TestConfig(c *check.C) {
 	s.cluster.Login.OpenIDConnect.Issuer = "https://accounts.example.com/"
 	s.cluster.Login.OpenIDConnect.ClientID = "oidc-client-id"
 	s.cluster.Login.OpenIDConnect.ClientSecret = "oidc-client-secret"
+	s.cluster.Login.OpenIDConnect.AuthenticationRequestParameters = map[string]string{"testkey": "testvalue"}
 	localdb := NewConn(s.cluster)
 	ctrl := localdb.loginController.(*oidcLoginController)
 	c.Check(ctrl.Issuer, check.Equals, "https://accounts.example.com/")
 	c.Check(ctrl.ClientID, check.Equals, "oidc-client-id")
 	c.Check(ctrl.ClientSecret, check.Equals, "oidc-client-secret")
 	c.Check(ctrl.UseGooglePeopleAPI, check.Equals, false)
+	c.Check(ctrl.AuthParams["testkey"], check.Equals, "testvalue")
 
 	for _, enableAltEmails := range []bool{false, true} {
 		s.cluster.Login.OpenIDConnect.Enable = false
@@ -178,12 +180,14 @@ func (s *OIDCLoginSuite) TestConfig(c *check.C) {
 		s.cluster.Login.Google.ClientID = "google-client-id"
 		s.cluster.Login.Google.ClientSecret = "google-client-secret"
 		s.cluster.Login.Google.AlternateEmailAddresses = enableAltEmails
+		s.cluster.Login.Google.AuthenticationRequestParameters = map[string]string{"testkey": "testvalue"}
 		localdb = NewConn(s.cluster)
 		ctrl = localdb.loginController.(*oidcLoginController)
 		c.Check(ctrl.Issuer, check.Equals, "https://accounts.google.com")
 		c.Check(ctrl.ClientID, check.Equals, "google-client-id")
 		c.Check(ctrl.ClientSecret, check.Equals, "google-client-secret")
 		c.Check(ctrl.UseGooglePeopleAPI, check.Equals, enableAltEmails)
+		c.Check(ctrl.AuthParams["testkey"], check.Equals, "testvalue")
 	}
 }
 
@@ -260,6 +264,7 @@ func (s *OIDCLoginSuite) TestGenericOIDCLogin(c *check.C) {
 	json.Unmarshal([]byte(fmt.Sprintf("%q", s.fakeProvider.Issuer.URL)), &s.cluster.Login.OpenIDConnect.Issuer)
 	s.cluster.Login.OpenIDConnect.ClientID = "oidc#client#id"
 	s.cluster.Login.OpenIDConnect.ClientSecret = "oidc#client#secret"
+	s.cluster.Login.OpenIDConnect.AuthenticationRequestParameters = map[string]string{"testkey": "testvalue"}
 	s.fakeProvider.ValidClientID = "oidc#client#id"
 	s.fakeProvider.ValidClientSecret = "oidc#client#secret"
 	for _, trial := range []struct {
@@ -319,7 +324,9 @@ func (s *OIDCLoginSuite) TestGenericOIDCLogin(c *check.C) {
 		s.localdb = NewConn(s.cluster)
 		*s.localdb.railsProxy = *rpc.NewConn(s.cluster.ClusterID, s.railsSpy.URL, true, rpc.PassthroughTokenProvider)
 
-		state := s.startLogin(c)
+		state := s.startLogin(c, func(form url.Values) {
+			c.Check(form.Get("testkey"), check.Equals, "testvalue")
+		})
 		resp, err := s.localdb.Login(context.Background(), arvados.LoginOptions{
 			Code:  s.fakeProvider.ValidCode,
 			State: state,
@@ -350,7 +357,12 @@ func (s *OIDCLoginSuite) TestGenericOIDCLogin(c *check.C) {
 }
 
 func (s *OIDCLoginSuite) TestGoogleLogin_Success(c *check.C) {
-	state := s.startLogin(c)
+	s.cluster.Login.Google.AuthenticationRequestParameters["prompt"] = "consent"
+	s.cluster.Login.Google.AuthenticationRequestParameters["foo"] = "bar"
+	state := s.startLogin(c, func(form url.Values) {
+		c.Check(form.Get("foo"), check.Equals, "bar")
+		c.Check(form.Get("prompt"), check.Equals, "consent")
+	})
 	resp, err := s.localdb.Login(context.Background(), arvados.LoginOptions{
 		Code:  s.fakeProvider.ValidCode,
 		State: state,
@@ -515,7 +527,7 @@ func (s *OIDCLoginSuite) TestGoogleLogin_NoPrimaryEmailAddress(c *check.C) {
 	c.Check(authinfo.Username, check.Equals, "")
 }
 
-func (s *OIDCLoginSuite) startLogin(c *check.C) (state string) {
+func (s *OIDCLoginSuite) startLogin(c *check.C, checks ...func(url.Values)) (state string) {
 	// Initiate login, but instead of following the redirect to
 	// the provider, just grab state from the redirect URL.
 	resp, err := s.localdb.Login(context.Background(), arvados.LoginOptions{ReturnTo: "https://app.example.com/foo?bar"})
@@ -524,6 +536,10 @@ func (s *OIDCLoginSuite) startLogin(c *check.C) (state string) {
 	c.Check(err, check.IsNil)
 	state = target.Query().Get("state")
 	c.Check(state, check.Not(check.Equals), "")
+	for _, fn := range checks {
+		fn(target.Query())
+	}
+	s.cluster.Login.OpenIDConnect.AuthenticationRequestParameters = map[string]string{"testkey": "testvalue"}
 	return
 }
 

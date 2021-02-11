@@ -1,0 +1,47 @@
+---
+layout: default
+navsection: installguide
+title: Automatic single-node install
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+{% include 'notebox_begin' %}
+This installation method is not fully implemented, which is why this page is not yet listed in the "table of installation options":{{site.baseurl}}/install/index.html or in the left nav.
+{% include 'notebox_end' %}
+
+This method sets up a new Arvados cluster using a single host/VM. It is the easiest way to get a new production cluster up and running.
+
+A single-node installation supports all Arvados functionality at small scale. Substantial workloads will require additional nodes and configuration steps.
+
+h2. Prerequisites
+
+You will need:
+* a server host running Debian 10 (buster).
+* a unique 5-character ID like @x9999@ for your cluster (first character should be @[a-w]@ for a long-lived / production cluster; all characters are @[a-z0-9]@).
+* a DNS name like @x9999.example.com@ that resolves to your server host (or a load balancer / proxy that passes HTTP and HTTPS requests through to your server host).
+* a Google account (use it in place of <code>example@gmail.com.example</code> in the instructions below).
+
+h2. Initialize the cluster
+
+<pre>
+# echo > /etc/apt/sources.list.d/arvados.list "deb http://apt.arvados.org/buster buster main"
+# apt-get update
+# apt-get install arvados-server-easy
+# arvados-server init -type production -cluster-id x9999 -controller-address x9999.example.com -admin-email example@gmail.com.example
+</pre>
+
+When the "init" command is finished, navigate to the link shown in the terminal (e.g., @https://x9999.example.com/?api_token=zzzzzzzzzzzzzzzzzzzzzz@). This will log you in to your admin account.
+
+h2. Enable login
+
+Follow the instructions to "set up Google login":{{site.baseurl}}/install/setup-login.html or another authentication option.
+
+After updating your configuration file (@/etc/arvados/config.yml@), restart the server to make your changes take effect:
+
+<pre>
+# systemctl restart arvados-server
+</pre>

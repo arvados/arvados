@@ -1,7 +1,7 @@
 ---
 layout: default
 navsection: installguide
-title: Set up Slurm
+title: Configure Slurm
 ...
 {% comment %}
 Copyright (C) The Arvados Authors. All rights reserved.
@@ -9,29 +9,19 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
+{% include 'notebox_begin_warning' %}
+crunch-dispatch-slurm is only relevant for on premises clusters that will spool jobs to Slurm. Skip this section if you are installing a cloud cluster.
+{% include 'notebox_end' %}
+
 Containers can be dispatched to a Slurm cluster.  The dispatcher sends work to the cluster using Slurm's @sbatch@ command, so it works in a variety of SLURM configurations.
 
 In order to run containers, you must run the dispatcher as a user that has permission to set up FUSE mounts and run Docker containers on each compute node.  This install guide refers to this user as the @crunch@ user.  We recommend you create this user on each compute node with the same UID and GID, and add it to the @fuse@ and @docker@ system groups to grant it the necessary permissions.  However, you can run the dispatcher under any account with sufficient permissions across the cluster.
 
+We will assume that you have Slurm and munge running.
 
-On the API server, install Slurm and munge, and generate a munge key.
+h3. Sample Slurm configuration file
 
-On Debian-based systems:
-
-<notextile>
-<pre><code>~$ <span class="userinput">sudo /usr/bin/apt-get install slurm-llnl munge</span>
-~$ <span class="userinput">sudo /usr/sbin/create-munge-key</span>
-</code></pre>
-</notextile>
-
-On Red Hat-based systems:
-
-<notextile>
-<pre><code>~$ <span class="userinput">sudo yum install slurm munge slurm-munge</span>
-</code></pre>
-</notextile>
-
-Now we need to give Slurm a configuration file.  On Debian-based systems, this is installed at @/etc/slurm-llnl/slurm.conf@.  On Red Hat-based systems, this is installed at @/etc/slurm/slurm.conf@.  Here's an example @slurm.conf@:
+Here's an example @slurm.conf@ for use with Arvados:
 
 <notextile>
 <pre><code>

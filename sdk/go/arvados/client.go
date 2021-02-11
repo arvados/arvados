@@ -9,6 +9,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -67,6 +68,10 @@ type Client struct {
 	dd *DiscoveryDocument
 
 	defaultRequestID string
+
+	// APIHost and AuthToken were loaded from ARVADOS_* env vars
+	// (used to customize "no host/token" error messages)
+	loadedFromEnv bool
 }
 
 // InsecureHTTPClient is the default http.Client used by a Client with
@@ -123,6 +128,7 @@ func NewClientFromEnv() *Client {
 		Insecure:        insecure,
 		KeepServiceURIs: svcs,
 		Timeout:         5 * time.Minute,
+		loadedFromEnv:   true,
 	}
 }
 
@@ -311,6 +317,13 @@ func (c *Client) RequestAndDecodeContext(ctx context.Context, dst interface{}, m
 	if body, ok := body.(io.Closer); ok {
 		// Ensure body is closed even if we error out early
 		defer body.Close()
+	}
+	if c.APIHost == "" {
+		if c.loadedFromEnv {
+			return errors.New("ARVADOS_API_HOST and/or ARVADOS_API_TOKEN environment variables are not set")
+		} else {
+			return errors.New("arvados.Client cannot perform request: APIHost is not set")
+		}
 	}
 	urlString := c.apiURL(path)
 	urlValues, err := anythingToValues(params)

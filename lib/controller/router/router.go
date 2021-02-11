@@ -222,6 +222,13 @@ func (rtr *router) addRoutes() {
 			},
 		},
 		{
+			arvados.EndpointContainerSSH,
+			func() interface{} { return &arvados.ContainerSSHOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.ContainerSSH(ctx, *opts.(*arvados.ContainerSSHOptions))
+			},
+		},
+		{
 			arvados.EndpointSpecimenCreate,
 			func() interface{} { return &arvados.CreateOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {

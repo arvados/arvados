@@ -237,12 +237,14 @@ navbar:
       - install/install-shell-server.html.textile.liquid
       - install/install-webshell.html.textile.liquid
       - install/install-arv-git-httpd.html.textile.liquid
-    - Containers API:
+    - Containers API (cloud):
       - install/install-jobs-image.html.textile.liquid
       - install/crunch2-cloud/install-compute-node.html.textile.liquid
       - install/crunch2-cloud/install-dispatch-cloud.html.textile.liquid
-      - install/crunch2-slurm/install-compute-node.html.textile.liquid
+    - Containers API (slurm):
       - install/crunch2-slurm/install-dispatch.html.textile.liquid
+      - install/crunch2-slurm/configure-slurm.html.textile.liquid
+      - install/crunch2-slurm/install-compute-node.html.textile.liquid
       - install/crunch2-slurm/install-test.html.textile.liquid
     - External dependencies:
       - install/install-postgresql.html.textile.liquid
