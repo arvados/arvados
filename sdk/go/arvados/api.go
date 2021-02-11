@@ -140,6 +140,7 @@ type ContentsOptions struct {
 	Limit              int64    `json:"limit"`
 	Offset             int64    `json:"offset"`
 	Order              []string `json:"order"`
+	Include            string   `json:"include"`
 	Recursive          bool     `json:"recursive"`
 	ExcludeHomeProject bool     `json:"exclude_home_project"`
 }
@@ -239,7 +240,7 @@ type API interface {
 	GroupGet(ctx context.Context, options GetOptions) (Group, error)
 	GroupList(ctx context.Context, options ListOptions) (GroupList, error)
 	GroupContents(ctx context.Context, options ContentsOptions) (ObjectList, error)
-	GroupShared(ctx context.Context, options SharedOptions) (ObjectList, error)
+	GroupShared(ctx context.Context, options SharedOptions) (SharedGroupList, error)
 	GroupDelete(ctx context.Context, options DeleteOptions) (Group, error)
 	GroupUntrash(ctx context.Context, options UntrashOptions) (Group, error)
 	SpecimenCreate(ctx context.Context, options CreateOptions) (Specimen, error)

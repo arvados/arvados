@@ -71,7 +71,9 @@ func (rtr *router) sendResponse(w http.ResponseWriter, req *http.Request, resp i
 	}
 
 	respKind := kind(resp)
-	if respKind != "" {
+	if respKind == "arvados#sharedGroupList" {
+		tmp["kind"] = "arvados#groupList"
+	} else if respKind != "" {
 		tmp["kind"] = respKind
 	}
 	defaultItemKind := ""

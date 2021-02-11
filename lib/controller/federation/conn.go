@@ -422,7 +422,7 @@ func (conn *Conn) GroupContents(ctx context.Context, options arvados.ContentsOpt
 	return conn.chooseBackend(options.UUID).GroupContents(ctx, options)
 }
 
-func (conn *Conn) GroupShared(ctx context.Context, options arvados.SharedOptions) (arvados.ObjectList, error) {
+func (conn *Conn) GroupShared(ctx context.Context, options arvados.SharedOptions) (arvados.SharedGroupList, error) {
 	return conn.chooseBackend(options.UUID).GroupShared(ctx, options)
 }
 
@@ -464,6 +464,7 @@ var userAttrsCachedFromLoginCluster = map[string]bool{
 	"modified_at": true,
 	"prefs":       true,
 	"username":    true,
+	"kind":        true,
 
 	"etag":                    false,
 	"full_name":               false,

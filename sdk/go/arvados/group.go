@@ -16,6 +16,7 @@ type Group struct {
 	GroupClass           string                 `json:"group_class"`
 	Etag                 string                 `json:"etag"`
 	Href                 string                 `json:"href"`
+	Kind                 string                 `json:"kind"`
 	TrashAt              *time.Time             `json:"trash_at"`
 	CreatedAt            time.Time              `json:"created_at"`
 	ModifiedAt           time.Time              `json:"modified_at"`
@@ -36,8 +37,17 @@ type GroupList struct {
 	Limit          int     `json:"limit"`
 }
 
+// SharedGroupList is an arvados#groupList resource.
+type SharedGroupList struct {
+	Included []interface{} `json:"included"`
+	Items    []Group       `json:"items"`
+	Offset   int           `json:"offset"`
+	Limit    int           `json:"limit"`
+}
+
 // ObjectList is an arvados#objectList resource.
 type ObjectList struct {
+	Included       []interface{} `json:"included"`
 	Items          []interface{} `json:"items"`
 	ItemsAvailable int           `json:"items_available"`
 	Offset         int           `json:"offset"`

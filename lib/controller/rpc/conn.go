@@ -451,9 +451,9 @@ func (conn *Conn) GroupContents(ctx context.Context, options arvados.ContentsOpt
 	return resp, err
 }
 
-func (conn *Conn) GroupShared(ctx context.Context, options arvados.SharedOptions) (arvados.ObjectList, error) {
+func (conn *Conn) GroupShared(ctx context.Context, options arvados.SharedOptions) (arvados.SharedGroupList, error) {
 	ep := arvados.EndpointGroupShared
-	var resp arvados.ObjectList
+	var resp arvados.SharedGroupList
 	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
 	return resp, err
 }
