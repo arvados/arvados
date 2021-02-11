@@ -16,7 +16,6 @@ class Group < ArvadosModel
   # already know how to properly treat them.
   attribute :properties, :jsonbHash, default: {}
 
-  before_validation :fill_group_defaults
   validate :ensure_filesystem_compatible_name
   validate :check_group_class
   before_create :assign_name
