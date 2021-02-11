@@ -605,7 +605,8 @@ class Container < ArvadosModel
         self.runtime_auth_scopes = ["all"]
       end
 
-      # generate a new token
+      # Generate a new token. This runs with admin credentials as it's done by a
+      # dispatcher user, so expires_at isn't enforced by API.MaxTokenLifetime.
       self.auth = ApiClientAuthorization.
                     create!(user_id: User.find_by_uuid(self.runtime_user_uuid).id,
                             api_client_id: 0,
