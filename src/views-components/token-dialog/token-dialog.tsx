@@ -9,7 +9,7 @@ import { ArvadosTheme } from '~/common/custom-theme';
 import { withDialog } from '~/store/dialog/with-dialog';
 import { WithDialogProps } from '~/store/dialog/with-dialog';
 import { connect, DispatchProp } from 'react-redux';
-import { CurrentTokenDialogData, getCurrentTokenDialogData, CURRENT_TOKEN_DIALOG_NAME } from '~/store/current-token-dialog/current-token-dialog-actions';
+import { TokenDialogData, getTokenDialogData, TOKEN_DIALOG_NAME } from '~/store/token-dialog/token-dialog-actions';
 import { DefaultCodeSnippet } from '~/components/default-code-snippet/default-code-snippet';
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
 
@@ -38,9 +38,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     }
 });
 
-type CurrentTokenProps = CurrentTokenDialogData & WithDialogProps<{}> & WithStyles<CssRules> & DispatchProp;
+type TokenDialogProps = TokenDialogData & WithDialogProps<{}> & WithStyles<CssRules> & DispatchProp;
 
-export class CurrentTokenDialogComponent extends React.Component<CurrentTokenProps> {
+export class TokenDialogComponent extends React.Component<TokenDialogProps> {
     onCopy = (message: string) => {
         this.props.dispatch(snackbarActions.OPEN_SNACKBAR({
             message,
@@ -49,9 +49,9 @@ export class CurrentTokenDialogComponent extends React.Component<CurrentTokenPro
         }));
     }
 
-    getSnippet = ({ apiHost, currentToken }: CurrentTokenDialogData) =>
+    getSnippet = ({ apiHost, token }: TokenDialogData) =>
         `HISTIGNORE=$HISTIGNORE:'export ARVADOS_API_TOKEN=*'
-export ARVADOS_API_TOKEN=${currentToken}
+export ARVADOS_API_TOKEN=${token}
 export ARVADOS_API_HOST=${apiHost}
 unset ARVADOS_API_HOST_INSECURE`
 
@@ -63,7 +63,7 @@ unset ARVADOS_API_HOST_INSECURE`
             onClose={closeDialog}
             fullWidth={true}
             maxWidth='md'>
-            <DialogTitle>Current Token</DialogTitle>
+            <DialogTitle>Get API Token</DialogTitle>
             <DialogContent>
                 <Typography paragraph={true}>
                     The Arvados API token is a secret key that enables the Arvados SDKs to access Arvados with the proper permissions.
@@ -101,8 +101,8 @@ unset ARVADOS_API_HOST_INSECURE`
     }
 }
 
-export const CurrentTokenDialog =
+export const TokenDialog =
     withStyles(styles)(
-        connect(getCurrentTokenDialogData)(
-            withDialog(CURRENT_TOKEN_DIALOG_NAME)(CurrentTokenDialogComponent)));
+        connect(getTokenDialogData)(
+            withDialog(TOKEN_DIALOG_NAME)(TokenDialogComponent)));
 

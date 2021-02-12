@@ -7,20 +7,20 @@ import { getProperty } from '~/store/properties/properties';
 import { propertiesActions } from '~/store/properties/properties-actions';
 import { RootState } from '~/store/store';
 
-export const CURRENT_TOKEN_DIALOG_NAME = 'currentTokenDialog';
+export const TOKEN_DIALOG_NAME = 'tokenDialog';
 const API_HOST_PROPERTY_NAME = 'apiHost';
 
-export interface CurrentTokenDialogData {
-    currentToken: string;
+export interface TokenDialogData {
+    token: string;
     apiHost: string;
 }
 
-export const setCurrentTokenDialogApiHost = (apiHost: string) =>
+export const setTokenDialogApiHost = (apiHost: string) =>
     propertiesActions.SET_PROPERTY({ key: API_HOST_PROPERTY_NAME, value: apiHost });
 
-export const getCurrentTokenDialogData = (state: RootState): CurrentTokenDialogData => ({
+export const getTokenDialogData = (state: RootState): TokenDialogData => ({
     apiHost: getProperty<string>(API_HOST_PROPERTY_NAME)(state.properties) || '',
-    currentToken: state.auth.apiToken || '',
+    token: state.auth.apiToken || '',
 });
 
-export const openCurrentTokenDialog = dialogActions.OPEN_DIALOG({ id: CURRENT_TOKEN_DIALOG_NAME, data: {} });
+export const openTokenDialog = dialogActions.OPEN_DIALOG({ id: TOKEN_DIALOG_NAME, data: {} });

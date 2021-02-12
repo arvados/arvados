@@ -7,7 +7,7 @@ import { Button } from '@material-ui/core';
 import { mount, configure } from 'enzyme';
 import * as Adapter from 'enzyme-adapter-react-16';
 import * as CopyToClipboard from 'react-copy-to-clipboard';
-import { CurrentTokenDialogComponent } from './current-token-dialog';
+import { TokenDialogComponent } from './token-dialog';
 
 configure({ adapter: new Adapter() });
 
@@ -30,7 +30,7 @@ describe('<CurrentTokenDialog />', () => {
 
   describe('copy to clipboard', () => {
     beforeEach(() => {
-      wrapper = mount(<CurrentTokenDialogComponent {...props} />);
+      wrapper = mount(<TokenDialogComponent {...props} />);
     });
 
     it('should copy API TOKEN to the clipboard', () => {
