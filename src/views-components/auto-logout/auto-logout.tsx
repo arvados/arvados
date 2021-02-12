@@ -41,9 +41,31 @@ const mapDispatchToProps = (dispatch: Dispatch): AutoLogoutActionProps => ({
 
 export type AutoLogoutProps = AutoLogoutDataProps & AutoLogoutActionProps;
 
+const debounce = (delay: number | undefined, fn: Function) => {
+    let timerId: number | null;
+    return (...args: any[]) => {
+        if (timerId) { clearTimeout(timerId); }
+        timerId = setTimeout(() => {
+            fn(...args);
+            timerId = null;
+        }, delay);
+    };
+};
+
+const LAST_ACTIVE_TIMESTAMP = 'lastActiveTimestamp';
+
 export const AutoLogoutComponent = (props: AutoLogoutProps) => {
     let logoutTimer: NodeJS.Timer;
-    const lastWarningDuration = min([props.lastWarningDuration, props.sessionIdleTimeout])! * 1000 ;
+    const lastWarningDuration = min([props.lastWarningDuration, props.sessionIdleTimeout])! * 1000;
+    const handleOtherTabActivity = debounce(500, () => {
+        handleOnActive();
+        reset();
+    });
+
+    window.addEventListener('storage', (e: StorageEvent) => {
+        // Other tab activity detected by a localStorage change event.
+        if (e.key === LAST_ACTIVE_TIMESTAMP) { handleOtherTabActivity(); }
+    });
 
     const handleOnIdle = () => {
         logoutTimer = setTimeout(
@@ -54,16 +76,23 @@ export const AutoLogoutComponent = (props: AutoLogoutProps) => {
     };
 
     const handleOnActive = () => {
-        clearTimeout(logoutTimer);
+        if (logoutTimer) { clearTimeout(logoutTimer); }
         props.doCloseWarn();
     };
 
-    useIdleTimer({
+    const handleOnAction = () => {
+        // Notify the other tabs there was some activity.
+        const now = (new Date).getTime();
+        localStorage.setItem(LAST_ACTIVE_TIMESTAMP, now.toString());
+    };
+
+    const { reset } = useIdleTimer({
         timeout: (props.lastWarningDuration < props.sessionIdleTimeout)
             ? 1000 * (props.sessionIdleTimeout - props.lastWarningDuration)
             : 1,
         onIdle: handleOnIdle,
         onActive: handleOnActive,
+        onAction: handleOnAction,
         debounce: 500
     });
 
