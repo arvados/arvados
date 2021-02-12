@@ -127,7 +127,15 @@ func (rtr *router) sendError(w http.ResponseWriter, err error) {
 
 var infixMap = map[string]interface{}{
 	"4zz18": arvados.Collection{},
+	"xvhdp": arvados.ContainerRequest{},
+	"dz642": arvados.Container{},
 	"j7d0g": arvados.Group{},
+	"8i9sb": arvados.Job{},
+	"d1hrv": arvados.PipelineInstance{},
+	"p5p6p": arvados.PipelineTemplate{},
+	"j58dm": arvados.Specimen{},
+	"q1cn2": arvados.Trait{},
+	"7fd4e": arvados.Workflow{},
 }
 
 var mungeKind = regexp.MustCompile(`\..`)
