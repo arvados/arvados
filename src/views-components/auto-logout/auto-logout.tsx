@@ -24,12 +24,10 @@ interface AutoLogoutActionProps {
     doCloseWarn: () => void;
 }
 
-const mapStateToProps = (state: RootState, ownProps: any): AutoLogoutDataProps => {
-    return {
-        sessionIdleTimeout: parse(state.auth.config.clusterConfig.Workbench.IdleTimeout, 's') || 0,
-        lastWarningDuration: ownProps.lastWarningDuration || 60,
-    };
-};
+const mapStateToProps = (state: RootState, ownProps: any): AutoLogoutDataProps => ({
+    sessionIdleTimeout: parse(state.auth.config.clusterConfig.Workbench.IdleTimeout, 's') || 0,
+    lastWarningDuration: ownProps.lastWarningDuration || 60,
+});
 
 const mapDispatchToProps = (dispatch: Dispatch): AutoLogoutActionProps => ({
     doLogout: () => dispatch<any>(logout(true)),
@@ -57,15 +55,25 @@ const LAST_ACTIVE_TIMESTAMP = 'lastActiveTimestamp';
 export const AutoLogoutComponent = (props: AutoLogoutProps) => {
     let logoutTimer: NodeJS.Timer;
     const lastWarningDuration = min([props.lastWarningDuration, props.sessionIdleTimeout])! * 1000;
-    const handleOtherTabActivity = debounce(500, () => {
-        handleOnActive();
-        reset();
-    });
 
-    window.addEventListener('storage', (e: StorageEvent) => {
-        // Other tab activity detected by a localStorage change event.
-        if (e.key === LAST_ACTIVE_TIMESTAMP) { handleOtherTabActivity(); }
-    });
+    // Runs once after render
+    React.useEffect(() => {
+        window.addEventListener('storage', handleStorageEvents);
+        // Component cleanup
+        return () => {
+            window.removeEventListener('storage', handleStorageEvents);
+        };
+    }, []);
+
+    const handleStorageEvents = (e: StorageEvent) => {
+        if (e.key === LAST_ACTIVE_TIMESTAMP) {
+            // Other tab activity detected by a localStorage change event.
+            debounce(500, () => {
+                handleOnActive();
+                reset();
+            })();
+        }
+    };
 
     const handleOnIdle = () => {
         logoutTimer = setTimeout(

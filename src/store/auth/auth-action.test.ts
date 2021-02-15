@@ -9,7 +9,7 @@ import 'jest-localstorage-mock';
 import { ServiceRepository, createServices } from "~/services/services";
 import { configureStore, RootStore } from "../store";
 import { createBrowserHistory } from "history";
-import { mockConfig, DISCOVERY_DOC_PATH, } from '~/common/config';
+import { mockConfig } from '~/common/config';
 import { ApiActions } from "~/services/api/api-actions";
 import { ACCOUNT_LINK_STATUS_KEY } from '~/services/link-account-service/link-account-service';
 import Axios from "axios";
