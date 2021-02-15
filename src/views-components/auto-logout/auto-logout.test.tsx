@@ -5,7 +5,7 @@
 import * as React from 'react';
 import { configure, mount } from "enzyme";
 import * as Adapter from 'enzyme-adapter-react-16';
-import { AutoLogoutComponent, AutoLogoutProps } from './auto-logout';
+import { AutoLogoutComponent, AutoLogoutProps, LAST_ACTIVE_TIMESTAMP } from './auto-logout';
 
 configure({ adapter: new Adapter() });
 
@@ -13,7 +13,14 @@ describe('<AutoLogoutComponent />', () => {
     let props: AutoLogoutProps;
     const sessionIdleTimeout = 300;
     const lastWarningDuration = 60;
+    const eventListeners = {};
     jest.useFakeTimers();
+
+    beforeAll(() => {
+        window.addEventListener = jest.fn((event, cb) => {
+            eventListeners[event] = cb;
+        });
+    });
 
     beforeEach(() => {
         props = {
@@ -38,5 +45,18 @@ describe('<AutoLogoutComponent />', () => {
         expect(props.doWarn).not.toBeCalled();
         jest.runTimersToTime(1*1000);
         expect(props.doWarn).toBeCalled();
+    });
+
+    it('should reset the idle timer when activity event is received', () => {
+        jest.runTimersToTime((sessionIdleTimeout-lastWarningDuration-1)*1000);
+        expect(props.doWarn).not.toBeCalled();
+        // Simulate activity from other window/tab
+        eventListeners.storage({
+            key: LAST_ACTIVE_TIMESTAMP,
+            newValue: '42' // value currently doesn't matter
+        })
+        jest.runTimersToTime(1*1000);
+        // Warning should not appear because idle timer was reset
+        expect(props.doWarn).not.toBeCalled();
     });
 });

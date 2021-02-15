@@ -50,7 +50,7 @@ const debounce = (delay: number | undefined, fn: Function) => {
     };
 };
 
-const LAST_ACTIVE_TIMESTAMP = 'lastActiveTimestamp';
+export const LAST_ACTIVE_TIMESTAMP = 'lastActiveTimestamp';
 
 export const AutoLogoutComponent = (props: AutoLogoutProps) => {
     let logoutTimer: NodeJS.Timer;
