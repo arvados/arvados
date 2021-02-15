@@ -72,8 +72,8 @@ func (suite *PoolSuite) TestResumeAfterRestart(c *check.C) {
 	newExecutor := func(cloud.Instance) Executor {
 		return &stubExecutor{
 			response: map[string]stubResp{
-				"crunch-run --list": {},
-				"true":              {},
+				"crunch-run-custom --list": {},
+				"true":                     {},
 			},
 		}
 	}
@@ -87,6 +87,7 @@ func (suite *PoolSuite) TestResumeAfterRestart(c *check.C) {
 				SyncInterval:       arvados.Duration(time.Millisecond * 10),
 				TagKeyPrefix:       "testprefix:",
 			},
+			CrunchRunCommand: "crunch-run-custom",
 		},
 		InstanceTypes: arvados.InstanceTypeMap{
 			type1.Name: type1,
