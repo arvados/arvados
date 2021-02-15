@@ -193,6 +193,7 @@ type StubVM struct {
 	ArvMountDeadlockRate  float64
 	ExecuteContainer      func(arvados.Container) int
 	CrashRunningContainer func(arvados.Container)
+	ExtraCrunchRunArgs    string // extra args expected after "crunch-run --detach --stdin-env "
 
 	sis          *StubInstanceSet
 	id           cloud.InstanceID
@@ -251,7 +252,7 @@ func (svm *StubVM) Exec(env map[string]string, command string, stdin io.Reader, 
 		fmt.Fprint(stderr, "crunch-run: command not found\n")
 		return 1
 	}
-	if strings.HasPrefix(command, "crunch-run --detach --stdin-env ") {
+	if strings.HasPrefix(command, "crunch-run --detach --stdin-env "+svm.ExtraCrunchRunArgs) {
 		var stdinKV map[string]string
 		err := json.Unmarshal(stdinData, &stdinKV)
 		if err != nil {

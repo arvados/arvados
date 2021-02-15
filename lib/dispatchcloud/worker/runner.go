@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"syscall"
 	"time"
 
@@ -21,6 +22,7 @@ type remoteRunner struct {
 	executor      Executor
 	envJSON       json.RawMessage
 	runnerCmd     string
+	runnerArgs    []string
 	remoteUser    string
 	timeoutTERM   time.Duration
 	timeoutSignal time.Duration
@@ -61,6 +63,7 @@ func newRemoteRunner(uuid string, wkr *worker) *remoteRunner {
 		executor:      wkr.executor,
 		envJSON:       envJSON,
 		runnerCmd:     wkr.wp.runnerCmd,
+		runnerArgs:    wkr.wp.runnerArgs,
 		remoteUser:    wkr.instance.RemoteUser(),
 		timeoutTERM:   wkr.wp.timeoutTERM,
 		timeoutSignal: wkr.wp.timeoutSignal,
@@ -78,7 +81,11 @@ func newRemoteRunner(uuid string, wkr *worker) *remoteRunner {
 // assume the remote process _might_ have started, at least until it
 // probes the worker and finds otherwise.
 func (rr *remoteRunner) Start() {
-	cmd := rr.runnerCmd + " --detach --stdin-env '" + rr.uuid + "'"
+	cmd := rr.runnerCmd + " --detach --stdin-env"
+	for _, arg := range rr.runnerArgs {
+		cmd += " '" + strings.Replace(arg, "'", "'\\''", -1) + "'"
+	}
+	cmd += " '" + rr.uuid + "'"
 	if rr.remoteUser != "root" {
 		cmd = "sudo " + cmd
 	}

@@ -118,6 +118,8 @@ func NewPool(logger logrus.FieldLogger, arvClient *arvados.Client, reg *promethe
 		timeoutStaleRunLock:            duration(cluster.Containers.CloudVMs.TimeoutStaleRunLock, defaultTimeoutStaleRunLock),
 		installPublicKey:               installPublicKey,
 		tagKeyPrefix:                   cluster.Containers.CloudVMs.TagKeyPrefix,
+		runnerCmdDefault:               cluster.Containers.CrunchRunCommand,
+		runnerArgs:                     cluster.Containers.CrunchRunArgumentsList,
 		stop:                           make(chan bool),
 	}
 	wp.registerMetrics(reg)
@@ -156,6 +158,8 @@ type Pool struct {
 	timeoutStaleRunLock            time.Duration
 	installPublicKey               ssh.PublicKey
 	tagKeyPrefix                   string
+	runnerCmdDefault               string   // crunch-run command to use if not deploying a binary
+	runnerArgs                     []string // extra args passed to crunch-run
 
 	// private state
 	subscribers  map[<-chan struct{}]chan<- struct{}
@@ -877,7 +881,7 @@ func (wp *Pool) loadRunnerData() error {
 	if wp.runnerData != nil {
 		return nil
 	} else if wp.runnerSource == "" {
-		wp.runnerCmd = "crunch-run"
+		wp.runnerCmd = wp.runnerCmdDefault
 		wp.runnerData = []byte{}
 		return nil
 	}
