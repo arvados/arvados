@@ -98,7 +98,7 @@ Enable PAM authentication in @config.yml@:
 
 Check the "default config file":{{site.baseurl}}/admin/config.html for more PAM configuration options.
 
-The default PAM configuration on most Linux systems uses the local password database in @/etc/shadow@ for all logins. In this case, in order to log in to Arvados, users must have a shell account and password on the controller host itself. This can be convenient for a single-user or test cluster.
+The default PAM configuration on most Linux systems uses the local password database in @/etc/shadow@ for all logins. In this case, in order to log in to Arvados, users must have a UNIX account and password on the controller host itself. This can be convenient for a single-user or test cluster. User accounts can have @/dev/false@ as the shell in order to allow the user to log into Arvados but not log into a shell on the controller host.
 
 PAM can also be configured to use different backends like LDAP. In a production environment, PAM configuration should use the service name ("arvados" by default) to set a separate policy for Arvados logins: generally, Arvados users should not have shell accounts on the controller node.
 
