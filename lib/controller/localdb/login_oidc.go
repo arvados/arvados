@@ -156,7 +156,7 @@ func (ctrl *oidcLoginController) getAuthInfo(ctx context.Context, token *oauth2.
 		if names := strings.Fields(strings.TrimSpace(name)); len(names) > 1 {
 			ret.FirstName = strings.Join(names[0:len(names)-1], " ")
 			ret.LastName = names[len(names)-1]
-		} else {
+		} else if len(names) > 0 {
 			ret.FirstName = names[0]
 		}
 		ret.Email, _ = claims[ctrl.EmailClaim].(string)
