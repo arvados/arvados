@@ -837,7 +837,11 @@ Clusters:
       # stale locks from a previous dispatch process.
       StaleLockTimeout: 1m
 
-      # The crunch-run command to manage the container on a node
+      # The crunch-run command used to start a container on a worker node.
+      #
+      # When dispatching to cloud VMs, this is used only if
+      # DeployRunnerBinary in the CloudVMs section is set to the empty
+      # string.
       CrunchRunCommand: "crunch-run"
 
       # Extra arguments to add to crunch-run invocation
@@ -1058,7 +1062,7 @@ Clusters:
         #
         # Use the empty string to disable this step: nothing will be
         # copied, and cloud instances are assumed to have a suitable
-        # version of crunch-run installed.
+        # version of crunch-run installed; see CrunchRunCommand above.
         DeployRunnerBinary: "/proc/self/exe"
 
         # Tags to add on all resources (VMs, NICs, disks) created by
