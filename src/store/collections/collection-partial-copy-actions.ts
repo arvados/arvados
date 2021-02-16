@@ -112,6 +112,13 @@ export const copyCollectionPartialToSelectedCollection = ({ collectionUuid }: Co
         dispatch(startSubmit(COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION));
         const state = getState();
         const currentCollection = state.collectionPanel.item;
+
+        if (currentCollection && !currentCollection.manifestText) {
+            const fetchedCurrentCollection = await services.collectionService.get(currentCollection.uuid);
+            currentCollection.manifestText = fetchedCurrentCollection.manifestText;
+            currentCollection.unsignedManifestText = fetchedCurrentCollection.unsignedManifestText;
+        }
+
         if (currentCollection) {
             try {
                 dispatch(progressIndicatorActions.START_WORKING(COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION));
@@ -127,10 +134,10 @@ export const copyCollectionPartialToSelectedCollection = ({ collectionUuid }: Co
                     }
                 });
                 const diffPathToRemove = _.difference(paths, pathsToRemove);
-                await services.collectionService.deleteFiles(selectedCollection.uuid, pathsToRemove);
+                await services.collectionService.deleteFiles(selectedCollection.uuid, pathsToRemove.map(path => path.replace(currentCollection.uuid, collectionUuid)));
                 const collectionWithDeletedFiles = await services.collectionService.get(collectionUuid);
-                await services.collectionService.update(collectionUuid, { manifestText: `${collectionWithDeletedFiles.manifestText}${currentCollection.manifestText ? currentCollection.manifestText : currentCollection.unsignedManifestText}` });
-                await services.collectionService.deleteFiles(collectionWithDeletedFiles.uuid, diffPathToRemove);
+                await services.collectionService.update(collectionUuid, { manifestText: `${collectionWithDeletedFiles.manifestText}${(currentCollection.manifestText ? currentCollection.manifestText : currentCollection.unsignedManifestText) || ''}` });
+                await services.collectionService.deleteFiles(collectionWithDeletedFiles.uuid, diffPathToRemove.map(path => path.replace(currentCollection.uuid, collectionUuid)));
                 dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION }));
                 dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: 'Files has been copied to selected collection.',
