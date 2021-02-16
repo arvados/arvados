@@ -12,6 +12,7 @@ import { Config, mockConfig } from '~/common/config';
 export interface AuthState {
     user?: User;
     apiToken?: string;
+    extraApiToken?: string;
     sshKeys: SshKeyResource[];
     sessions: Session[];
     localCluster: string;
@@ -25,6 +26,7 @@ export interface AuthState {
 const initialState: AuthState = {
     user: undefined,
     apiToken: undefined,
+    extraApiToken: undefined,
     sshKeys: [],
     sessions: [],
     localCluster: "",
@@ -54,6 +56,7 @@ export const authReducer = (services: ServiceRepository) => (state = initialStat
                 remoteHostsConfig: { ...state.remoteHostsConfig, [config.uuidPrefix]: config },
             };
         },
+        SET_EXTRA_TOKEN: ({ extraToken }) => ({ ...state, extraApiToken: extraToken }),
         INIT_USER: ({ user, token }) => {
             return { ...state, user, apiToken: token, homeCluster: user.uuid.substr(0, 5) };
         },

@@ -20,7 +20,7 @@ export const setTokenDialogApiHost = (apiHost: string) =>
 
 export const getTokenDialogData = (state: RootState): TokenDialogData => ({
     apiHost: getProperty<string>(API_HOST_PROPERTY_NAME)(state.properties) || '',
-    token: state.auth.apiToken || '',
+    token: state.auth.extraApiToken || state.auth.apiToken || '',
 });
 
 export const openTokenDialog = dialogActions.OPEN_DIALOG({ id: TOKEN_DIALOG_NAME, data: {} });

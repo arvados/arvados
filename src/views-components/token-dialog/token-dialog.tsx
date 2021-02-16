@@ -3,17 +3,32 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { Dialog, DialogActions, DialogTitle, DialogContent, WithStyles, withStyles, StyleRulesCallback, Button, Typography } from '@material-ui/core';
+import {
+    Dialog,
+    DialogActions,
+    DialogTitle,
+    DialogContent,
+    WithStyles,
+    withStyles,
+    StyleRulesCallback,
+    Button,
+    Typography
+} from '@material-ui/core';
 import * as CopyToClipboard from 'react-copy-to-clipboard';
 import { ArvadosTheme } from '~/common/custom-theme';
 import { withDialog } from '~/store/dialog/with-dialog';
 import { WithDialogProps } from '~/store/dialog/with-dialog';
 import { connect, DispatchProp } from 'react-redux';
-import { TokenDialogData, getTokenDialogData, TOKEN_DIALOG_NAME } from '~/store/token-dialog/token-dialog-actions';
+import {
+    TokenDialogData,
+    getTokenDialogData,
+    TOKEN_DIALOG_NAME,
+} from '~/store/token-dialog/token-dialog-actions';
 import { DefaultCodeSnippet } from '~/components/default-code-snippet/default-code-snippet';
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
+import { getNewExtraToken } from '~/store/auth/auth-action';
 
-type CssRules = 'link' | 'paper' | 'button' | 'copyButton';
+type CssRules = 'link' | 'paper' | 'button' | 'actionButton';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     link: {
@@ -31,10 +46,11 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         fontSize: '0.8125rem',
         fontWeight: 600
     },
-    copyButton: {
+    actionButton: {
         boxShadow: 'none',
         marginTop: theme.spacing.unit * 2,
         marginBottom: theme.spacing.unit * 2,
+        marginRight: theme.spacing.unit * 2,
     }
 });
 
@@ -47,6 +63,17 @@ export class TokenDialogComponent extends React.Component<TokenDialogProps> {
             hideDuration: 2000,
             kind: SnackbarKind.SUCCESS
         }));
+    }
+
+    onGetNewToken = async () => {
+        const newToken = await this.props.dispatch<any>(getNewExtraToken());
+        if (newToken) {
+            this.props.dispatch(snackbarActions.OPEN_SNACKBAR({
+                message: 'New token retrieved',
+                hideDuration: 2000,
+                kind: SnackbarKind.SUCCESS
+            }));
+        }
     }
 
     getSnippet = ({ apiHost, token }: TokenDialogData) =>
@@ -83,11 +110,20 @@ unset ARVADOS_API_HOST_INSECURE`
                         color="primary"
                         size="small"
                         variant="contained"
-                        className={classes.copyButton}
+                        className={classes.actionButton}
                     >
                         COPY TO CLIPBOARD
                     </Button>
                 </CopyToClipboard>
+                <Button
+                    onClick={() => this.onGetNewToken()}
+                    color="primary"
+                    size="small"
+                    variant="contained"
+                    className={classes.actionButton}
+                >
+                    GET NEW TOKEN
+                </Button>
                 <Typography >
                     Arvados
                             <a href='http://doc.arvados.org/user/reference/api-tokens.html' target='blank' className={classes.link}>virtual machines</a>

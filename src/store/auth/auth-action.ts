@@ -21,6 +21,7 @@ export const authActions = unionize({
     LOGIN: {},
     LOGOUT: ofType<{ deleteLinkData: boolean }>(),
     SET_CONFIG: ofType<{ config: Config }>(),
+    SET_EXTRA_TOKEN: ofType<{ extraToken: string }>(),
     INIT_USER: ofType<{ user: User, token: string }>(),
     USER_DETAILS_REQUEST: {},
     USER_DETAILS_SUCCESS: ofType<User>(),
@@ -86,10 +87,27 @@ export const saveApiToken = (token: string) => (dispatch: Dispatch, getState: ()
     setAuthorizationHeader(svc, token);
     return svc.authService.getUserDetails().then((user: User) => {
         dispatch(authActions.INIT_USER({ user, token }));
+        // Upon user init, request an extra token that won't be expired on logout
+        // for other uses like the "get token" dialog, or S3 URL building.
+        dispatch<any>(getNewExtraToken());
     }).catch(() => {
         dispatch(authActions.LOGOUT({ deleteLinkData: false }));
     });
 };
+
+export const getNewExtraToken = () =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const user = getState().auth.user;
+        if (user === undefined) { return; }
+        try {
+            const aca = await services.apiClientAuthorizationService.create();
+            const newExtraToken = `v2/${aca.uuid}/${aca.apiToken}`;
+            dispatch(authActions.SET_EXTRA_TOKEN({ extraToken: newExtraToken }));
+            return newExtraToken;
+        } catch {
+            return;
+        }
+    };
 
 export const login = (uuidPrefix: string, homeCluster: string, loginCluster: string,
     remoteHosts: { [key: string]: string }) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
