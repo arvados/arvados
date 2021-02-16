@@ -1,0 +1,80 @@
+##########################################################
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: CC-BY-SA-3.0
+
+# These are the basic parameters to configure the installation
+
+# The FIVE ALPHANUMERIC CHARACTERS name you want to give your cluster
+CLUSTER="cluster_fixme_or_this_wont_work"
+
+# The domainname you want tou give to your cluster's hosts
+DOMAIN="domain_fixme_or_this_wont_work"
+
+# When setting the cluster in a single host, you can use a single hostname
+# to access all the instances. When using virtualization (ie AWS), this should be
+# the EXTERNAL/PUBLIC hostname for the instance.
+# If empty, the INTERNAL HOST IP will be used
+HOSTNAME_EXT=""
+# The internal hostname for the host. In the example files, only used in the
+# single_host/single_hostname example
+HOSTNAME_INT="127.0.1.1"
+# Host SSL port where you want to point your browser to access Arvados
+# Defaults to 443 for regular runs, and to 8443 when called in Vagrant.
+# You can point it to another port if desired
+# In Vagrant, make sure it matches what you set in the Vagrantfile (8443)
+CONTROLLER_EXT_SSL_PORT=443
+KEEP_EXT_SSL_PORT=25101
+# Both for collections and downloads
+KEEPWEB_EXT_SSL_PORT=9002
+WEBSHELL_EXT_SSL_PORT=4202
+WEBSOCKET_EXT_SSL_PORT=8002
+WORKBENCH1_EXT_SSL_PORT=443
+WORKBENCH2_EXT_SSL_PORT=3001
+
+INITIAL_USER="admin"
+
+# If not specified, the initial user email will be composed as
+# INITIAL_USER@CLUSTER.DOMAIN
+INITIAL_USER_EMAIL="admin@cluster_fixme_or_this_wont_work.domain_fixme_or_this_wont_work"
+INITIAL_USER_PASSWORD="password"
+
+# YOU SHOULD CHANGE THESE TO SOME RANDOM STRINGS
+BLOB_SIGNING_KEY=blobsigningkeymushaveatleast32characters
+MANAGEMENT_TOKEN=managementtokenmushaveatleast32characters
+SYSTEM_ROOT_TOKEN=systemroottokenmushaveatleast32characters
+ANONYMOUS_USER_TOKEN=anonymoususertokenmushaveatleast32characters
+WORKBENCH_SECRET_KEY=workbenchsecretkeymushaveatleast32characters
+
+# The directory to check for the config files (pillars, states) you want to use.
+# There are a few examples under 'config_examples'. If you don't change this
+# variable, the single_host, multiple_hostnames config will be used
+# CONFIG_DIR="config_examples/single_host/single_hostname"
+CONFIG_DIR="config_examples/single_host/multiple_hostnames"
+# Extra states to apply. If you use your own subdir, change this value accordingly
+# This is the value for the single_host/multiple_hostnames example
+EXTRA_STATES_DIR="${F_DIR}/arvados-formula/test/salt/states/examples/single_host"
+
+# When using the single_host/single_hostname example, change to this one
+# EXTRA_STATES_DIR="${CONFIG_DIR}/states"
+
+# Which release of Arvados repo you want to use
+RELEASE="production"
+# Which version of Arvados you want to install. Defaults to 'latest'
+# in the desired repo
+VERSION="latest"
+
+# This is an arvados-formula setting.
+# If branch is set, the script will switch to it before running salt
+# Usually not needed, only used for testing
+BRANCH="master"
+
+##########################################################
+# Usually there's no need to modify things below this line
+
+# Formulas versions
+ARVADOS_TAG="v1.1.4"
+POSTGRES_TAG="v0.41.3"
+NGINX_TAG="v2.4.0"
+DOCKER_TAG="v1.0.0"
+LOCALE_TAG="v0.3.4"

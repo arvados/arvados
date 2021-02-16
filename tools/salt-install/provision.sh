@@ -151,6 +151,12 @@ else
   exit 1
 fi
 
+if grep -q 'fixme_or_this_wont_work' ${CONFIG_FILE} ; then
+  echo >&2 "The config file ${CONFIG_FILE} has some parameters that need to be modified."
+  echo >&2 "Please, fix them and re-run the provision script."
+  exit 1
+fi
+
 if ! grep -E '^[[:alnum:]]{5}$' <<<${CLUSTER} ; then
   echo >&2 "ERROR: <CLUSTER> must be exactly 5 alphanumeric characters long"
   echo >&2 "Fix the cluster name in the 'local.params' file and re-run the provision script"
@@ -192,9 +198,10 @@ git clone --branch "${LOCALE_TAG}" https://github.com/saltstack-formulas/locale-
 git clone --branch "${NGINX_TAG}" https://github.com/saltstack-formulas/nginx-formula.git
 git clone --branch "${POSTGRES_TAG}" https://github.com/saltstack-formulas/postgres-formula.git
 
+# If we want to try a specific branch of the formula
 if [ "x${BRANCH}" != "x" ]; then
   cd ${F_DIR}/arvados-formula || exit 1
-  git checkout -t origin/"${BRANCH}"
+  git checkout -t origin/"${BRANCH}" -b "${BRANCH}"
   cd -
 fi
 
