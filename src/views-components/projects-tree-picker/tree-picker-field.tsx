@@ -31,6 +31,7 @@ export const CollectionTreePickerField = (props: WrappedFieldProps & PickerIdPro
         <ProjectsTreePicker
             pickerId={props.pickerId}
             toggleItemActive={handleChange(props)}
+            options={{ showOnlyOwned: false, showOnlyWritable: true }}
             includeCollections />
         {props.meta.dirty && props.meta.error &&
             <Typography variant='caption' color='error'>
