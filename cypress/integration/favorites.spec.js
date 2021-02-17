@@ -128,10 +128,10 @@ describe('Favorites tests', function () {
                 });
 
                 cy.get('[data-cy=form-dialog]').within(function () {
-                    cy.get('[data-cy=projects-tree-favourites-tree-pciker]').find('i').click();
+                    cy.get('[data-cy=projects-tree-favourites-tree-picker]').find('i').click();
                     cy.contains(myProject1.name);
                     cy.contains(mySharedWritableProject.name);
-                    cy.get('[data-cy=projects-tree-favourites-tree-pciker]')
+                    cy.get('[data-cy=projects-tree-favourites-tree-picker]')
                         .should('not.contain', mySharedReadonlyProject.name);
                     cy.contains(mySharedWritableProject.name).click();
                     cy.get('[data-cy=form-submit-btn]').click();
@@ -177,11 +177,11 @@ describe('Favorites tests', function () {
                 cy.get('[data-cy=context-menu]')
                     .contains('Copy selected into the collection').click();
 
-                cy.get('[data-cy=projects-tree-favourites-tree-pciker]')
+                cy.get('[data-cy=projects-tree-favourites-tree-picker]')
                     .find('i')
                     .click();
 
-                cy.get('[data-cy=projects-tree-favourites-tree-pciker]')
+                cy.get('[data-cy=projects-tree-favourites-tree-picker]')
                     .contains(testTargetCollection.name)
                     .click();
 

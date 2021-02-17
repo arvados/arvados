@@ -34,7 +34,7 @@ export const ProjectsTreePicker = ({ pickerId, ...props }: ProjectsTreePickerPro
         <HomeTreePicker pickerId={home} {...p} />
         <SharedTreePicker pickerId={shared} {...p} />
         <PublicFavoritesTreePicker pickerId={publicFavorites} {...p} />
-        <div data-cy="projects-tree-favourites-tree-pciker">
+        <div data-cy="projects-tree-favourites-tree-picker">
             <FavoritesTreePicker pickerId={favorites} {...p} />  
         </div>
     </div>;
