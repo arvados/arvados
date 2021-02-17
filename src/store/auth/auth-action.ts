@@ -16,6 +16,7 @@ import { cancelLinking } from '~/store/link-account-panel/link-account-panel-act
 import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
 import { WORKBENCH_LOADING_SCREEN } from '~/store/workbench/workbench-actions';
 import { addRemoteConfig } from './auth-action-session';
+import { getTokenV2 } from '~/models/api-client-authorization';
 
 export const authActions = unionize({
     LOGIN: {},
@@ -100,11 +101,14 @@ export const getNewExtraToken = () =>
         const user = getState().auth.user;
         if (user === undefined) { return; }
         try {
-            const aca = await services.apiClientAuthorizationService.create();
-            const newExtraToken = `v2/${aca.uuid}/${aca.apiToken}`;
+            // Do not show errors on the create call, cluster security configuration may not
+            // allow token creation and there's no way to know that from workbench2 side in advance.
+            const client = await services.apiClientAuthorizationService.create(undefined, false);
+            const newExtraToken = getTokenV2(client);
             dispatch(authActions.SET_EXTRA_TOKEN({ extraToken: newExtraToken }));
             return newExtraToken;
         } catch {
+            console.warn("Cannot create new tokens with the current token, probably because of cluster's security settings.");
             return;
         }
     };

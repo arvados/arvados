@@ -73,6 +73,12 @@ export class TokenDialogComponent extends React.Component<TokenDialogProps> {
                 hideDuration: 2000,
                 kind: SnackbarKind.SUCCESS
             }));
+        } else {
+            this.props.dispatch(snackbarActions.OPEN_SNACKBAR({
+                message: 'Creating new tokens is not allowed',
+                hideDuration: 2000,
+                kind: SnackbarKind.WARNING
+            }));
         }
     }
 
