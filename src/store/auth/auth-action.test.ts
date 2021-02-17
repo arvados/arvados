@@ -9,7 +9,7 @@ import 'jest-localstorage-mock';
 import { ServiceRepository, createServices } from "~/services/services";
 import { configureStore, RootStore } from "../store";
 import { createBrowserHistory } from "history";
-import { mockConfig } from '~/common/config';
+import { Config, mockConfig } from '~/common/config';
 import { ApiActions } from "~/services/api/api-actions";
 import { ACCOUNT_LINK_STATUS_KEY } from '~/services/link-account-service/link-account-service';
 import Axios from "axios";
@@ -84,6 +84,9 @@ describe('auth-actions', () => {
             uuidPrefix: "zzzzz",
             remoteHosts: { xc59z: "xc59z.arvadosapi.com" },
             apiRevision: 12345678,
+            clusterConfig: {
+                Login: { LoginCluster: "" },
+            },
         };
 
         store.dispatch(initAuth(config));
@@ -100,6 +103,11 @@ describe('auth-actions', () => {
                         apiToken: "token",
                         config: {
                             apiRevision: 12345678,
+                            clusterConfig: {
+                                Login: {
+                                    LoginCluster: "",
+                                },
+                            },
                             remoteHosts: {
                                 "xc59z": "xc59z.arvadosapi.com",
                             },
@@ -107,12 +115,18 @@ describe('auth-actions', () => {
                             uuidPrefix: "zzzzz",
                         },
                         sshKeys: [],
+                        extraApiToken: undefined,
                         homeCluster: "zzzzz",
                         localCluster: "zzzzz",
                         loginCluster: undefined,
                         remoteHostsConfig: {
                             "zzzzz": {
                                 "apiRevision": 12345678,
+                                "clusterConfig": {
+                                    "Login": {
+                                        "LoginCluster": "",
+                                    },
+                                },
                                 "remoteHosts": {
                                     "xc59z": "xc59z.arvadosapi.com",
                                 },
