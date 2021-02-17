@@ -13,14 +13,21 @@ const API_HOST_PROPERTY_NAME = 'apiHost';
 export interface TokenDialogData {
     token: string;
     apiHost: string;
+    canCreateNewTokens: boolean;
 }
 
 export const setTokenDialogApiHost = (apiHost: string) =>
     propertiesActions.SET_PROPERTY({ key: API_HOST_PROPERTY_NAME, value: apiHost });
 
-export const getTokenDialogData = (state: RootState): TokenDialogData => ({
-    apiHost: getProperty<string>(API_HOST_PROPERTY_NAME)(state.properties) || '',
-    token: state.auth.extraApiToken || state.auth.apiToken || '',
-});
+export const getTokenDialogData = (state: RootState): TokenDialogData => {
+    const loginCluster = state.auth.config.clusterConfig.Login.LoginCluster;
+    const canCreateNewTokens = !(loginCluster !== "" && state.auth.homeCluster !== loginCluster);
+
+    return {
+        apiHost: getProperty<string>(API_HOST_PROPERTY_NAME)(state.properties) || '',
+        token: state.auth.extraApiToken || state.auth.apiToken || '',
+        canCreateNewTokens,
+    };
+};
 
 export const openTokenDialog = dialogActions.OPEN_DIALOG({ id: TOKEN_DIALOG_NAME, data: {} });

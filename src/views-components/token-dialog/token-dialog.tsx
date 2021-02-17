@@ -121,7 +121,7 @@ unset ARVADOS_API_HOST_INSECURE`
                         COPY TO CLIPBOARD
                     </Button>
                 </CopyToClipboard>
-                <Button
+                { this.props.canCreateNewTokens && <Button
                     onClick={() => this.onGetNewToken()}
                     color="primary"
                     size="small"
@@ -129,7 +129,7 @@ unset ARVADOS_API_HOST_INSECURE`
                     className={classes.actionButton}
                 >
                     GET NEW TOKEN
-                </Button>
+                </Button> }
                 <Typography >
                     Arvados
                             <a href='http://doc.arvados.org/user/reference/api-tokens.html' target='blank' className={classes.link}>virtual machines</a>

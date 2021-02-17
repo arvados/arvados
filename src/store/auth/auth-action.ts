@@ -99,7 +99,9 @@ export const saveApiToken = (token: string) => (dispatch: Dispatch, getState: ()
 export const getNewExtraToken = () =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const user = getState().auth.user;
+        const loginCluster = getState().auth.config.clusterConfig.Login.LoginCluster;
         if (user === undefined) { return; }
+        if (loginCluster !== "" && getState().auth.homeCluster !== loginCluster) { return; }
         try {
             // Do not show errors on the create call, cluster security configuration may not
             // allow token creation and there's no way to know that from workbench2 side in advance.
