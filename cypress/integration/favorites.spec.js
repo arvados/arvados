@@ -160,8 +160,6 @@ describe('Favorites tests', function () {
 
         cy.getAll('@testSourceCollection', '@testTargetCollection')
             .then(function ([testSourceCollection, testTargetCollection]) {
-                cy.loginAs(activeUser);
-
                 cy.get('.layout-pane-primary')
                     .contains('Projects').click();
 
