@@ -237,7 +237,7 @@ with c.open(filename, "rb") as reader:
 print("Finished downloading %s" % filename)
 {% endcodeblock %}
 
-h2. Copy files from a collection a new collection
+h2. Copy files from a collection to a new collection
 
 {% codeblock as python %}
 import arvados.collection
@@ -258,7 +258,7 @@ target.save_new(name=target_name, owner_uuid=target_project)
 print("Created collection %s" % target.manifest_locator())
 {% endcodeblock %}
 
-h2. Copy files from a collection another collection
+h2. Copy files from a collection to another collection
 
 {% codeblock as python %}
 import arvados.collection
