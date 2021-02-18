@@ -143,23 +143,49 @@ describe('Favorites tests', function () {
     });
 
     it('can copy selected into the collection', () => {
-        cy.loginAs(activeUser);
+        cy.loginAs(adminUser);
 
         cy.createCollection(adminUser.token, {
             name: `Test source collection ${Math.floor(Math.random() * 999999)}`,
-            owner_uuid: activeUser.user.uuid,
             manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
         })
-            .as('testSourceCollection');
+            .as('testSourceCollection').then(function (testSourceCollection) {
+                cy.contains('Refresh').click();
+                cy.get('main').contains(testSourceCollection.name).rightclick();
+                cy.get('[data-cy=context-menu]').within(() => {
+                    cy.contains('Share').click();
+                });
+                cy.get('[id="select-permissions"]').as('selectPermissions');
+                cy.get('@selectPermissions').click();
+                cy.contains('Write').click();
+                cy.get('.sharing-dialog').as('sharingDialog');
+                cy.get('[data-cy=invite-people-field]').find('input').type(activeUser.user.email);
+                cy.get('[role=tooltip]').click();
+                cy.get('@sharingDialog').contains('Save').click();
+            });
 
         cy.createCollection(adminUser.token, {
             name: `Test target collection ${Math.floor(Math.random() * 999999)}`,
-            owner_uuid: activeUser.user.uuid
         })
-            .as('testTargetCollection');
+            .as('testTargetCollection').then(function (testTargetCollection) {
+                cy.contains('Refresh').click();
+                cy.get('main').contains(testTargetCollection.name).rightclick();
+                cy.get('[data-cy=context-menu]').within(() => {
+                    cy.contains('Share').click();
+                });
+                cy.get('[id="select-permissions"]').as('selectPermissions');
+                cy.get('@selectPermissions').click();
+                cy.contains('Write').click();
+                cy.get('.sharing-dialog').as('sharingDialog');
+                cy.get('[data-cy=invite-people-field]').find('input').type(activeUser.user.email);
+                cy.get('[role=tooltip]').click();
+                cy.get('@sharingDialog').contains('Save').click();
+            });
 
         cy.getAll('@testSourceCollection', '@testTargetCollection')
             .then(function ([testSourceCollection, testTargetCollection]) {
+                cy.loginAs(activeUser);
+
                 cy.get('.layout-pane-primary')
                     .contains('Projects').click();
 
