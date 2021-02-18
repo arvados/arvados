@@ -17,6 +17,7 @@ export interface ProjectsTreePickerProps {
     includeCollections?: boolean;
     includeFiles?: boolean;
     showSelection?: boolean;
+    options?: { showOnlyOwned: boolean, showOnlyWritable: boolean };
     toggleItemActive?: (event: React.MouseEvent<HTMLElement>, item: TreeItem<ProjectsTreePickerItem>, pickerId: string) => void;
     toggleItemSelection?: (event: React.MouseEvent<HTMLElement>, item: TreeItem<ProjectsTreePickerItem>, pickerId: string) => void;
 }
@@ -33,7 +34,9 @@ export const ProjectsTreePicker = ({ pickerId, ...props }: ProjectsTreePickerPro
         <HomeTreePicker pickerId={home} {...p} />
         <SharedTreePicker pickerId={shared} {...p} />
         <PublicFavoritesTreePicker pickerId={publicFavorites} {...p} />
-        <FavoritesTreePicker pickerId={favorites} {...p} />  
+        <div data-cy="projects-tree-favourites-tree-picker">
+            <FavoritesTreePicker pickerId={favorites} {...p} />  
+        </div>
     </div>;
 };
 

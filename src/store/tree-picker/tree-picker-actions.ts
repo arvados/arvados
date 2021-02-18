@@ -21,6 +21,7 @@ import { mapTree } from '../../models/tree';
 import { LinkResource, LinkClass } from "~/models/link";
 import { mapTreeValues } from "~/models/tree";
 import { sortFilesTree } from "~/services/collection-service/collection-service-files-response";
+import { GroupResource } from "~/models/group";
 
 export const treePickerActions = unionize({
     LOAD_TREE_PICKER_NODE: ofType<{ id: string, pickerId: string }>(),
@@ -236,7 +237,8 @@ interface LoadFavoritesProjectParams {
     includeFiles?: boolean;
 }
 
-export const loadFavoritesProject = (params: LoadFavoritesProjectParams) =>
+export const loadFavoritesProject = (params: LoadFavoritesProjectParams,
+    options: { showOnlyOwned: boolean, showOnlyWritable: boolean } = { showOnlyOwned: true, showOnlyWritable: false }) =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         const { pickerId, includeCollections = false, includeFiles = false } = params;
         const uuid = getUserUuid(getState());
@@ -248,12 +250,18 @@ export const loadFavoritesProject = (params: LoadFavoritesProjectParams) =>
                 fb => fb.getFilters(),
             )(new FilterBuilder());
 
-            const { items } = await services.favoriteService.list(uuid, { filters });
+            const { items } = await services.favoriteService.list(uuid, { filters }, options.showOnlyOwned);
 
             dispatch<any>(receiveTreePickerData<GroupContentsResource>({
                 id: 'Favorites',
                 pickerId,
-                data: items,
+                data: items.filter((item) => {
+                    if (options.showOnlyWritable && (item as GroupResource).writableBy && (item as GroupResource).writableBy.indexOf(uuid) === -1) {
+                        return false;
+                    }
+
+                    return true;
+                }),
                 extractNodeData: item => ({
                     id: item.uuid,
                     value: item,
