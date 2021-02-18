@@ -520,7 +520,8 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 func (h *handler) getClients(reqID, token string) (arv *arvadosclient.ArvadosClient, kc *keepclient.KeepClient, client *arvados.Client, release func(), err error) {
 	arv = h.clientPool.Get()
 	if arv == nil {
-		return nil, nil, nil, nil, err
+		err = h.clientPool.Err()
+		return
 	}
 	release = func() { h.clientPool.Put(arv) }
 	arv.ApiToken = token
