@@ -351,7 +351,7 @@ Clusters:
     Proxy: true
 `, `
 Clusters:
- abcdef:
+ abcde:
   ManagementToken: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
   SystemRootToken: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
   Collections:
