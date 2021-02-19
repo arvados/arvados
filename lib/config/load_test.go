@@ -330,6 +330,45 @@ Clusters:
 	c.Check(err, check.ErrorMatches, `Clusters.zzzzz.PostgreSQL.Connection: multiple entries for "(dbname|host)".*`)
 }
 
+func (s *LoadSuite) TestBadClusterIDs(c *check.C) {
+	for _, data := range []string{`
+Clusters:
+ 123456:
+  ManagementToken: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+  SystemRootToken: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+  Collections:
+   BlobSigningKey: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+`, `
+Clusters:
+ 12345:
+  ManagementToken: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+  SystemRootToken: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+  Collections:
+   BlobSigningKey: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+  RemoteClusters:
+   Zzzzz:
+    Host: Zzzzz.arvadosapi.com
+    Proxy: true
+`, `
+Clusters:
+ abcdef:
+  ManagementToken: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+  SystemRootToken: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+  Collections:
+   BlobSigningKey: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+  Login:
+   LoginCluster: zz-zz
+`,
+	} {
+		c.Log(data)
+		v, err := testLoader(c, data, nil).Load()
+		if v != nil {
+			c.Logf("%#v", v.Clusters)
+		}
+		c.Check(err, check.ErrorMatches, `.*cluster ID should be 5 alphanumeric characters.*`)
+	}
+}
+
 func (s *LoadSuite) TestBadType(c *check.C) {
 	for _, data := range []string{`
 Clusters:
