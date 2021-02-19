@@ -13,6 +13,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"regexp"
 	"strings"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
@@ -269,7 +270,21 @@ func (ldr *Loader) Load() (*arvados.Config, error) {
 
 	// Check for known mistakes
 	for id, cc := range cfg.Clusters {
+		for remote, _ := range cc.RemoteClusters {
+			if remote == "*" || remote == "SAMPLE" {
+				continue
+			}
+			err = ldr.checkClusterID(fmt.Sprintf("Clusters.%s.RemoteClusters.%s", id, remote), remote, true)
+			if err != nil {
+				return nil, err
+			}
+		}
 		for _, err = range []error{
+			ldr.checkClusterID(fmt.Sprintf("Clusters.%s", id), id, false),
+			ldr.checkClusterID(fmt.Sprintf("Clusters.%s.Login.LoginCluster", id), cc.Login.LoginCluster, true),
+			ldr.checkToken(fmt.Sprintf("Clusters.%s.ManagementToken", id), cc.ManagementToken),
+			ldr.checkToken(fmt.Sprintf("Clusters.%s.SystemRootToken", id), cc.SystemRootToken),
+			ldr.checkToken(fmt.Sprintf("Clusters.%s.Collections.BlobSigningKey", id), cc.Collections.BlobSigningKey),
 			checkKeyConflict(fmt.Sprintf("Clusters.%s.PostgreSQL.Connection", id), cc.PostgreSQL.Connection),
 			ldr.checkEmptyKeepstores(cc),
 			ldr.checkUnlistedKeepstores(cc),
@@ -280,6 +295,31 @@ func (ldr *Loader) Load() (*arvados.Config, error) {
 		}
 	}
 	return &cfg, nil
+}
+
+var acceptableClusterIDRe = regexp.MustCompile(`^[a-z0-9]{5}$`)
+
+func (ldr *Loader) checkClusterID(label, clusterID string, emptyStringOk bool) error {
+	if emptyStringOk && clusterID == "" {
+		return nil
+	} else if !acceptableClusterIDRe.MatchString(clusterID) {
+		return fmt.Errorf("%s: cluster ID should be 5 alphanumeric characters", label)
+	}
+	return nil
+}
+
+var acceptableTokenRe = regexp.MustCompile(`^[a-zA-Z0-9]+$`)
+var acceptableTokenLength = 32
+
+func (ldr *Loader) checkToken(label, token string) error {
+	if token == "" {
+		ldr.Logger.Warnf("%s: secret token is not set (use %d+ random characters from a-z, A-Z, 0-9)", label, acceptableTokenLength)
+	} else if !acceptableTokenRe.MatchString(token) {
+		return fmt.Errorf("%s: unacceptable characters in token (only a-z, A-Z, 0-9 are acceptable)", label)
+	} else if len(token) < acceptableTokenLength {
+		ldr.Logger.Warnf("%s: token is too short (should be at least %d characters)", label, acceptableTokenLength)
+	}
+	return nil
 }
 
 func checkKeyConflict(label string, m map[string]string) error {
