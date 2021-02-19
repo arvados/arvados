@@ -15,12 +15,11 @@ const actions: ApiActions = {
 
 export const mockResourceService = <R extends Resource, C extends CommonResourceService<R>>(
     Service: new (client: AxiosInstance, actions: ApiActions) => C) => {
-    const axiosInstance = axios.create();
-    const axiosMock = new MockAdapter(axiosInstance);
-    const service = new Service(axiosInstance, actions);
-    Object.keys(service).map(key => service[key] = jest.fn());
-    return service;
-};
+        const axiosInstance = axios.create();
+        const service = new Service(axiosInstance, actions);
+        Object.keys(service).map(key => service[key] = jest.fn());
+        return service;
+    };
 
 describe("CommonResourceService", () => {
     let axiosInstance: AxiosInstance;
