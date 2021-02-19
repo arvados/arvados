@@ -270,7 +270,18 @@ func (ldr *Loader) Load() (*arvados.Config, error) {
 
 	// Check for known mistakes
 	for id, cc := range cfg.Clusters {
+		for remote, _ := range cc.RemoteClusters {
+			if remote == "*" || remote == "SAMPLE" {
+				continue
+			}
+			err = ldr.checkClusterID(fmt.Sprintf("Clusters.%s.RemoteClusters.%s", id, remote), remote, true)
+			if err != nil {
+				return nil, err
+			}
+		}
 		for _, err = range []error{
+			ldr.checkClusterID(fmt.Sprintf("Clusters.%s", id), id, false),
+			ldr.checkClusterID(fmt.Sprintf("Clusters.%s.Login.LoginCluster", id), cc.Login.LoginCluster, true),
 			ldr.checkToken(fmt.Sprintf("Clusters.%s.ManagementToken", id), cc.ManagementToken),
 			ldr.checkToken(fmt.Sprintf("Clusters.%s.SystemRootToken", id), cc.SystemRootToken),
 			ldr.checkToken(fmt.Sprintf("Clusters.%s.Collections.BlobSigningKey", id), cc.Collections.BlobSigningKey),
@@ -284,6 +295,17 @@ func (ldr *Loader) Load() (*arvados.Config, error) {
 		}
 	}
 	return &cfg, nil
+}
+
+var acceptableClusterIDRe = regexp.MustCompile(`^[a-z0-9]{5}$`)
+
+func (ldr *Loader) checkClusterID(label, clusterID string, emptyStringOk bool) error {
+	if emptyStringOk && clusterID == "" {
+		return nil
+	} else if !acceptableClusterIDRe.MatchString(clusterID) {
+		return fmt.Errorf("%s: cluster ID should be 5 alphanumeric characters", label)
+	}
+	return nil
 }
 
 var acceptableTokenRe = regexp.MustCompile(`^[a-zA-Z0-9]+$`)
