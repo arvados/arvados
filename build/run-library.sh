@@ -137,6 +137,19 @@ package_go_binary() {
     local description="$1"; shift
     local license_file="${1:-agpl-3.0.txt}"; shift
 
+    for arch in 'amd64' 'arm64'; do
+      package_go_binary_worker "$src_path" "$prog" "$description" "$arch" "$license_file"
+    done
+}
+
+# Usage: package_go_binary services/foo arvados-foo "Compute foo to arbitrary precision" [amd64/arm64] [apache-2.0.txt]
+package_go_binary_worker() {
+    local src_path="$1"; shift
+    local prog="$1"; shift
+    local description="$1"; shift
+    local arch="${1:-amd64}"; shift
+    local license_file="${1:-agpl-3.0.txt}"; shift
+
     if [[ -n "$ONLY_BUILD" ]] && [[ "$prog" != "$ONLY_BUILD" ]]; then
       # arvados-workbench depends on arvados-server at build time, so even when
       # only arvados-workbench is being built, we need to build arvados-server too
@@ -157,9 +170,17 @@ package_go_binary() {
       return 1
     fi
 
-    go get -ldflags "-X git.arvados.org/arvados.git/lib/cmd.version=${go_package_version} -X main.version=${go_package_version}" "git.arvados.org/arvados.git/$src_path"
+    echo "BUILDING ${arch}"
+    GOARCH=${arch} go get -ldflags "-X git.arvados.org/arvados.git/lib/cmd.version=${go_package_version} -X main.version=${go_package_version}" "git.arvados.org/arvados.git/$src_path"
 
     local -a switches=()
+
+    binpath=$GOPATH/bin/${basename}
+    if [[ "${arch}" != "amd64" ]]; then
+      switches+=("-a${arch}")
+      binpath="$GOPATH/bin/linux_${arch}/${basename}"
+    fi
+
     systemd_unit="$WORKSPACE/${src_path}/${prog}.service"
     if [[ -e "${systemd_unit}" ]]; then
         switches+=(
@@ -169,7 +190,7 @@ package_go_binary() {
     fi
     switches+=("$WORKSPACE/${license_file}=/usr/share/doc/$prog/${license_file}")
 
-    fpm_build "${WORKSPACE}/${src_path}" "$GOPATH/bin/${basename}=/usr/bin/${prog}" "${prog}" dir "${go_package_version}" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=${description}" "${switches[@]}"
+    fpm_build "${WORKSPACE}/${src_path}" "$binpath=/usr/bin/${prog}" "${prog}" dir "${go_package_version}" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=${description}" "${switches[@]}"
 }
 
 # Usage: package_go_so lib/foo arvados_foo.so arvados-foo "Arvados foo library"
