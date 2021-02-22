@@ -10,10 +10,10 @@ import { ParticipantSelect, Participant } from './participant-select';
 
 export default () =>
     <Grid container spacing={8}>
-        <Grid item xs={8}>
+        <Grid data-cy="invite-people-field" item xs={8}>
             <InvitedPeopleField />
         </Grid>
-        <Grid item xs={4}>
+        <Grid data-cy="permission-select-field" item xs={4}>
             <PermissionSelectField />
         </Grid>
     </Grid>;

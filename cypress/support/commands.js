@@ -32,17 +32,17 @@ const controllerURL = Cypress.env('controller_url');
 const systemToken = Cypress.env('system_token');
 
 Cypress.Commands.add(
-    "doRequest", (method='GET', path='', data=null, qs=null,
-                   token=systemToken, auth=false, followRedirect=true) => {
-        return cy.request({
-            method: method,
-            url: `${controllerURL}/${path}`,
-            body: data,
-            qs: auth ? qs : Object.assign({api_token: token}, qs),
-            auth: auth ? {bearer: `${token}`} : undefined,
-            followRedirect: followRedirect
-        })
-    }
+    "doRequest", (method = 'GET', path = '', data = null, qs = null,
+        token = systemToken, auth = false, followRedirect = true) => {
+    return cy.request({
+        method: method,
+        url: `${controllerURL}/${path}`,
+        body: data,
+        qs: auth ? qs : Object.assign({ api_token: token }, qs),
+        auth: auth ? { bearer: `${token}` } : undefined,
+        followRedirect: followRedirect
+    })
+}
 )
 
 // This resets the DB removing all content and seeding it with the fixtures.
@@ -54,7 +54,7 @@ Cypress.Commands.add(
 )
 
 Cypress.Commands.add(
-    "getUser", (username, first_name='', last_name='', is_admin=false, is_active=true) => {
+    "getUser", (username, first_name = '', last_name = '', is_admin = false, is_active = true) => {
         // Create user if not already created
         return cy.doRequest('POST', '/auth/controller/callback', {
             auth_info: JSON.stringify({
@@ -66,30 +66,30 @@ Cypress.Commands.add(
             }),
             return_to: ',https://example.local'
         }, null, systemToken, true, false) // Don't follow redirects so we can catch the token
-        .its('headers.location').as('location')
-        // Get its token and set the account up as admin and/or active
-        .then(function() {
-            this.userToken = this.location.split("=")[1]
-            assert.isString(this.userToken)
-            return cy.doRequest('GET', '/arvados/v1/users', null, {
-                filters: `[["username", "=", "${username}"]]`
-            })
-            .its('body.items.0')
-            .as('aUser')
-            .then(function() {
-                cy.doRequest('PUT', `/arvados/v1/users/${this.aUser.uuid}`, {
-                    user: {
-                        is_admin: is_admin,
-                        is_active: is_active
-                    }
+            .its('headers.location').as('location')
+            // Get its token and set the account up as admin and/or active
+            .then(function () {
+                this.userToken = this.location.split("=")[1]
+                assert.isString(this.userToken)
+                return cy.doRequest('GET', '/arvados/v1/users', null, {
+                    filters: `[["username", "=", "${username}"]]`
                 })
-                .its('body')
-                .as('theUser')
-                .then(function() {
-                    return {user: this.theUser, token: this.userToken};
-                })
+                    .its('body.items.0')
+                    .as('aUser')
+                    .then(function () {
+                        cy.doRequest('PUT', `/arvados/v1/users/${this.aUser.uuid}`, {
+                            user: {
+                                is_admin: is_admin,
+                                is_active: is_active
+                            }
+                        })
+                            .its('body')
+                            .as('theUser')
+                            .then(function () {
+                                return { user: this.theUser, token: this.userToken };
+                            })
+                    })
             })
-        })
     }
 )
 
@@ -145,31 +145,31 @@ Cypress.Commands.add(
 
 Cypress.Commands.add(
     "createResource", (token, suffix, data) => {
-        return cy.doRequest('POST', '/arvados/v1/'+suffix, data, null, token, true)
-        .its('body').as('resource')
-        .then(function() {
-            return this.resource;
-        })
+        return cy.doRequest('POST', '/arvados/v1/' + suffix, data, null, token, true)
+            .its('body').as('resource')
+            .then(function () {
+                return this.resource;
+            })
     }
 )
 
 Cypress.Commands.add(
     "deleteResource", (token, suffix, uuid) => {
-        return cy.doRequest('DELETE', '/arvados/v1/'+suffix+'/'+uuid)
-        .its('body').as('resource')
-        .then(function() {
-            return this.resource;
-        })
+        return cy.doRequest('DELETE', '/arvados/v1/' + suffix + '/' + uuid)
+            .its('body').as('resource')
+            .then(function () {
+                return this.resource;
+            })
     }
 )
 
 Cypress.Commands.add(
     "updateResource", (token, suffix, uuid, data) => {
-        return cy.doRequest('PUT', '/arvados/v1/'+suffix+'/'+uuid, data, null, token, true)
-        .its('body').as('resource')
-        .then(function() {
-            return this.resource;
-        })
+        return cy.doRequest('PUT', '/arvados/v1/' + suffix + '/' + uuid, data, null, token, true)
+            .its('body').as('resource')
+            .then(function () {
+                return this.resource;
+            })
     }
 )
 
@@ -187,3 +187,13 @@ Cypress.Commands.add(
         cy.get('[data-cy=searchbar-input-field]').type(`{selectall}${searchTerm}{enter}`);
     }
 )
+
+Cypress.Commands.add('getAll', (...elements) => {
+    const promise = cy.wrap([], { log: false })
+
+    for (let element of elements) {
+        promise.then(arr => cy.get(element).then(got => cy.wrap([...arr, got])))
+    }
+
+    return promise
+})

@@ -25,6 +25,7 @@ export default (props: SharingDialogDataProps & SharingDialogActionProps) => {
     const { children, open, loading, advancedEnabled, saveEnabled, onAdvanced, onClose, onExited, onSave } = props;
     return <Dialog
         {...{ open, onClose, onExited }}
+        className="sharing-dialog"
         fullWidth
         maxWidth='sm'
         disableBackdropClick

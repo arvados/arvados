@@ -14,7 +14,8 @@ export const ProjectTreePickerField = (props: WrappedFieldProps & PickerIdProp) 
     <div style={{ height: '200px', display: 'flex', flexDirection: 'column' }}>
         <ProjectsTreePicker
             pickerId={props.pickerId}
-            toggleItemActive={handleChange(props)} />
+            toggleItemActive={handleChange(props)}
+            options={{ showOnlyOwned: false, showOnlyWritable: true }} />
         {props.meta.dirty && props.meta.error &&
             <Typography variant='caption' color='error'>
                 {props.meta.error}
@@ -30,6 +31,7 @@ export const CollectionTreePickerField = (props: WrappedFieldProps & PickerIdPro
         <ProjectsTreePicker
             pickerId={props.pickerId}
             toggleItemActive={handleChange(props)}
+            options={{ showOnlyOwned: false, showOnlyWritable: true }}
             includeCollections />
         {props.meta.dirty && props.meta.error &&
             <Typography variant='caption' color='error'>

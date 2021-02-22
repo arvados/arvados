@@ -68,6 +68,12 @@ export class CommonService<T> {
             }
         }
 
+    private validateUuid(uuid: string) {
+        if (uuid === "") {
+            throw new Error('UUID cannot be empty string');
+        }
+    }
+
     static defaultResponse<R>(promise: AxiosPromise<R>, actions: ApiActions, mapKeys = true, showErrors = true): Promise<R> {
         const reqId = uuid();
         actions.progressFn(reqId, true);
@@ -99,6 +105,7 @@ export class CommonService<T> {
     }
 
     delete(uuid: string): Promise<T> {
+        this.validateUuid(uuid);
         return CommonService.defaultResponse(
             this.serverApi
                 .delete(this.resourceType + '/' + uuid),
@@ -107,6 +114,7 @@ export class CommonService<T> {
     }
 
     get(uuid: string, showErrors?: boolean) {
+        this.validateUuid(uuid);
         return CommonService.defaultResponse(
             this.serverApi
                 .get<T>(this.resourceType + '/' + uuid),
@@ -150,6 +158,7 @@ export class CommonService<T> {
     }
 
     update(uuid: string, data: Partial<T>) {
+        this.validateUuid(uuid);
         return CommonService.defaultResponse(
             this.serverApi
                 .put<T>(this.resourceType + '/' + uuid, data && CommonService.mapKeys(_.snakeCase)(data)),
