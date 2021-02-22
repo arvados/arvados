@@ -71,11 +71,13 @@ func (rtr *router) sendResponse(w http.ResponseWriter, req *http.Request, resp i
 	}
 
 	respKind := kind(resp)
-	if respKind == "arvados#sharedGroupList" {
-		tmp["kind"] = "arvados#groupList"
-	} else if respKind != "" {
+	if respKind != "" {
 		tmp["kind"] = respKind
 	}
+	if included, ok := tmp["included"]; ok && included == nil {
+		tmp["included"] = make([]interface{}, 0)
+	}
+
 	defaultItemKind := ""
 	if strings.HasSuffix(respKind, "List") {
 		defaultItemKind = strings.TrimSuffix(respKind, "List")

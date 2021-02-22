@@ -149,9 +149,9 @@ func (as *APIStub) GroupContents(ctx context.Context, options arvados.ContentsOp
 	as.appendCall(ctx, as.GroupContents, options)
 	return arvados.ObjectList{}, as.Error
 }
-func (as *APIStub) GroupShared(ctx context.Context, options arvados.SharedOptions) (arvados.SharedGroupList, error) {
+func (as *APIStub) GroupShared(ctx context.Context, options arvados.SharedOptions) (arvados.GroupList, error) {
 	as.appendCall(ctx, as.GroupShared, options)
-	return arvados.SharedGroupList{}, as.Error
+	return arvados.GroupList{}, as.Error
 }
 func (as *APIStub) GroupDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.Group, error) {
 	as.appendCall(ctx, as.GroupDelete, options)

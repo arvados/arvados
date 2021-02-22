@@ -31,18 +31,11 @@ type Group struct {
 
 // GroupList is an arvados#groupList resource.
 type GroupList struct {
-	Items          []Group `json:"items"`
-	ItemsAvailable int     `json:"items_available"`
-	Offset         int     `json:"offset"`
-	Limit          int     `json:"limit"`
-}
-
-// SharedGroupList is an arvados#groupList resource.
-type SharedGroupList struct {
-	Included []interface{} `json:"included"`
-	Items    []Group       `json:"items"`
-	Offset   int           `json:"offset"`
-	Limit    int           `json:"limit"`
+	Items          []Group       `json:"items"`
+	ItemsAvailable int           `json:"items_available"`
+	Offset         int           `json:"offset"`
+	Limit          int           `json:"limit"`
+	Included       []interface{} `json:"included"`
 }
 
 // ObjectList is an arvados#objectList resource.
