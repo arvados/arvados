@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import axios from "axios";
+import axios, { AxiosInstance } from "axios";
 import { ApiActions } from "~/services/api/api-actions";
 import { CommonService } from "./common-service";
 
@@ -12,9 +12,13 @@ const actions: ApiActions = {
 };
 
 describe("CommonService", () => {
-    const axiosInstance = axios.create();
-    // const axiosMock = new MockAdapter(axiosInstance);
-    const commonService = new CommonService(axiosInstance, "resource", actions);
+    let axiosInstance: AxiosInstance;
+    let commonService: CommonService<any>;
+
+    beforeEach(() => {
+        commonService = new CommonService<any>(axiosInstance, "resource", actions);
+        axiosInstance = axios.create();
+    });
 
     it("throws an exception when passing uuid as empty string to get()", () => {
         expect(() => commonService.get("")).toThrowError("UUID cannot be empty string");
