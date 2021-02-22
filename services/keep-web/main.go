@@ -38,6 +38,7 @@ func newConfig(arvCfg *arvados.Config) *Config {
 	}
 	cfg.cluster = cls
 	cfg.Cache.config = &cfg.cluster.Collections.WebDAVCache
+	cfg.Cache.cluster = cls
 	return &cfg
 }
 

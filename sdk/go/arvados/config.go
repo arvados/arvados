@@ -65,6 +65,7 @@ type WebDAVCacheConfig struct {
 	MaxCollectionBytes   int64
 	MaxPermissionEntries int
 	MaxUUIDEntries       int
+	MaxSessions          int
 }
 
 type Cluster struct {
