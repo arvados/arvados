@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import axios from "axios";
+import axios, { AxiosInstance } from "axios";
 import { ApiActions } from "~/services/api/api-actions";
 import { CommonService } from "./common-service";
 
@@ -15,7 +15,7 @@ describe("CommonService", () => {
     let commonService: CommonService<any>;
 
     beforeEach(() => {
-        commonService = new CommonService<any>(axios.create(), "resource", actions);
+        commonService = new CommonService<any>({} as AxiosInstance, "resource", actions);
     });
 
     it("throws an exception when passing uuid as empty string to get()", () => {
