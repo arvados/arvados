@@ -523,21 +523,30 @@ Clusters:
       TrustAllContent: false
 
       # Cache parameters for WebDAV content serving:
-      # * TTL: Maximum time to cache manifests and permission checks.
-      # * UUIDTTL: Maximum time to cache collection state.
-      # * MaxBlockEntries: Maximum number of block cache entries.
-      # * MaxCollectionEntries: Maximum number of collection cache entries.
-      # * MaxCollectionBytes: Approximate memory limit for collection cache.
-      # * MaxPermissionEntries: Maximum number of permission cache entries.
-      # * MaxUUIDEntries: Maximum number of UUID cache entries.
       WebDAVCache:
+        # Time to cache manifests, permission checks, and sessions.
         TTL: 300s
+
+        # Time to cache collection state.
         UUIDTTL: 5s
-        MaxBlockEntries:      4
+
+        # Block cache entries. Each block consumes up to 64 MiB RAM.
+        MaxBlockEntries: 4
+
+        # Collection cache entries.
         MaxCollectionEntries: 1000
-        MaxCollectionBytes:   100000000
+
+        # Approximate memory limit (in bytes) for collection cache.
+        MaxCollectionBytes: 100000000
+
+        # Permission cache entries.
         MaxPermissionEntries: 1000
-        MaxUUIDEntries:       1000
+
+        # UUID cache entries.
+        MaxUUIDEntries: 1000
+
+        # Persistent sessions.
+        MaxSessions: 100
 
     Login:
       # One of the following mechanisms (SSO, Google, PAM, LDAP, or

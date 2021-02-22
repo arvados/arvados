@@ -228,15 +228,29 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 		return false
 	}
 
-	_, kc, client, release, err := h.getClients(r.Header.Get("X-Request-Id"), token)
-	if err != nil {
-		s3ErrorResponse(w, InternalError, "Pool failed: "+h.clientPool.Err().Error(), r.URL.Path, http.StatusInternalServerError)
-		return true
+	var err error
+	var fs arvados.CustomFileSystem
+	if r.Method == http.MethodGet || r.Method == http.MethodHead {
+		// Use a single session (cached FileSystem) across
+		// multiple read requests.
+		fs, err = h.Config.Cache.GetSession(token)
+		if err != nil {
+			s3ErrorResponse(w, InternalError, err.Error(), r.URL.Path, http.StatusInternalServerError)
+			return true
+		}
+	} else {
+		// Create a FileSystem for this request, to avoid
+		// exposing incomplete write operations to concurrent
+		// requests.
+		_, kc, client, release, err := h.getClients(r.Header.Get("X-Request-Id"), token)
+		if err != nil {
+			s3ErrorResponse(w, InternalError, err.Error(), r.URL.Path, http.StatusInternalServerError)
+			return true
+		}
+		defer release()
+		fs = client.SiteFileSystem(kc)
+		fs.ForwardSlashNameSubstitution(h.Config.cluster.Collections.ForwardSlashNameSubstitution)
 	}
-	defer release()
-
-	fs := client.SiteFileSystem(kc)
-	fs.ForwardSlashNameSubstitution(h.Config.cluster.Collections.ForwardSlashNameSubstitution)
 
 	var objectNameGiven bool
 	var bucketName string
@@ -385,6 +399,8 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 			s3ErrorResponse(w, InternalError, err.Error(), r.URL.Path, http.StatusInternalServerError)
 			return true
 		}
+		// Ensure a subsequent read operation will see the changes.
+		h.Config.Cache.ResetSession(token)
 		w.WriteHeader(http.StatusOK)
 		return true
 	case r.Method == http.MethodDelete:
@@ -432,11 +448,12 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 			s3ErrorResponse(w, InternalError, err.Error(), r.URL.Path, http.StatusInternalServerError)
 			return true
 		}
+		// Ensure a subsequent read operation will see the changes.
+		h.Config.Cache.ResetSession(token)
 		w.WriteHeader(http.StatusNoContent)
 		return true
 	default:
 		s3ErrorResponse(w, InvalidRequest, "method not allowed", r.URL.Path, http.StatusMethodNotAllowed)
-
 		return true
 	}
 }

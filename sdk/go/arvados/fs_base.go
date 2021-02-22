@@ -106,6 +106,9 @@ type FileSystem interface {
 	// path is "", flush all dirs/streams; otherwise, flush only
 	// the specified dir/stream.
 	Flush(path string, shortBlocks bool) error
+
+	// Estimate current memory usage.
+	MemorySize() int64
 }
 
 type inode interface {
@@ -156,6 +159,7 @@ type inode interface {
 	sync.Locker
 	RLock()
 	RUnlock()
+	MemorySize() int64
 }
 
 type fileinfo struct {
@@ -227,6 +231,13 @@ func (*nullnode) Readdir() ([]os.FileInfo, error) {
 
 func (*nullnode) Child(name string, replace func(inode) (inode, error)) (inode, error) {
 	return nil, ErrNotADirectory
+}
+
+func (*nullnode) MemorySize() int64 {
+	// Types that embed nullnode should report their own size, but
+	// if they don't, we at least report a non-zero size to ensure
+	// a large tree doesn't get reported as 0 bytes.
+	return 64
 }
 
 type treenode struct {
@@ -317,6 +328,15 @@ func (n *treenode) Sync() error {
 		}
 	}
 	return nil
+}
+
+func (n *treenode) MemorySize() (size int64) {
+	n.RLock()
+	defer n.RUnlock()
+	for _, inode := range n.inodes {
+		size += inode.MemorySize()
+	}
+	return
 }
 
 type fileSystem struct {
@@ -605,6 +625,10 @@ func (fs *fileSystem) Sync() error {
 func (fs *fileSystem) Flush(string, bool) error {
 	log.Printf("TODO: flush fileSystem")
 	return ErrInvalidOperation
+}
+
+func (fs *fileSystem) MemorySize() int64 {
+	return fs.root.MemorySize()
 }
 
 // rlookup (recursive lookup) returns the inode for the file/directory

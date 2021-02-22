@@ -38,9 +38,6 @@ type CollectionFileSystem interface {
 
 	// Total data bytes in all files.
 	Size() int64
-
-	// Memory consumed by buffered file data.
-	memorySize() int64
 }
 
 type collectionFileSystem struct {
@@ -232,10 +229,10 @@ func (fs *collectionFileSystem) Flush(path string, shortBlocks bool) error {
 	return dn.flush(context.TODO(), names, flushOpts{sync: false, shortBlocks: shortBlocks})
 }
 
-func (fs *collectionFileSystem) memorySize() int64 {
+func (fs *collectionFileSystem) MemorySize() int64 {
 	fs.fileSystem.root.Lock()
 	defer fs.fileSystem.root.Unlock()
-	return fs.fileSystem.root.(*dirnode).memorySize()
+	return fs.fileSystem.root.(*dirnode).MemorySize()
 }
 
 func (fs *collectionFileSystem) MarshalManifest(prefix string) (string, error) {
@@ -879,14 +876,14 @@ func (dn *dirnode) flush(ctx context.Context, names []string, opts flushOpts) er
 }
 
 // caller must have write lock.
-func (dn *dirnode) memorySize() (size int64) {
+func (dn *dirnode) MemorySize() (size int64) {
 	for _, name := range dn.sortedNames() {
 		node := dn.inodes[name]
 		node.Lock()
 		defer node.Unlock()
 		switch node := node.(type) {
 		case *dirnode:
-			size += node.memorySize()
+			size += node.MemorySize()
 		case *filenode:
 			for _, seg := range node.segments {
 				switch seg := seg.(type) {
