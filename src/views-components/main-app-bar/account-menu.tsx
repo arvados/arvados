@@ -9,7 +9,7 @@ import { User, getUserDisplayName } from "~/models/user";
 import { DropdownMenu } from "~/components/dropdown-menu/dropdown-menu";
 import { UserPanelIcon } from "~/components/icon/icon";
 import { DispatchProp, connect } from 'react-redux';
-import { authActions } from '~/store/auth/auth-action';
+import { authActions, getNewExtraToken } from '~/store/auth/auth-action';
 import { RootState } from "~/store/store";
 import { openTokenDialog } from '~/store/token-dialog/token-dialog-actions';
 import { openRepositoriesPanel } from "~/store/repositories/repositories-actions";
@@ -70,7 +70,10 @@ export const AccountMenuComponent =
             {user.isActive ? <>
                 <MenuItem onClick={() => dispatch(openUserVirtualMachines())}>Virtual Machines</MenuItem>
                 {!user.isAdmin && <MenuItem onClick={() => dispatch(openRepositoriesPanel())}>Repositories</MenuItem>}
-                <MenuItem onClick={() => dispatch(openTokenDialog)}>Get API token</MenuItem>
+                <MenuItem onClick={() => {
+                    dispatch<any>(getNewExtraToken(true));
+                    dispatch(openTokenDialog);
+                }}>Get API token</MenuItem>
                 <MenuItem onClick={() => dispatch(navigateToSshKeysUser)}>Ssh Keys</MenuItem>
                 <MenuItem onClick={() => dispatch(navigateToSiteManager)}>Site Manager</MenuItem>
                 <MenuItem onClick={() => dispatch(navigateToMyAccount)}>My account</MenuItem>

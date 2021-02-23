@@ -82,22 +82,23 @@ export const getConfig = (dispatch: Dispatch, getState: () => RootState, service
     return state.remoteHostsConfig[state.localCluster];
 };
 
-export const saveApiToken = (token: string) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<any> => {
+export const saveApiToken = (token: string) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<any> => {
     const config = dispatch<any>(getConfig);
     const svc = createServices(config, { progressFn: () => { }, errorFn: () => { } });
     setAuthorizationHeader(svc, token);
-    return svc.authService.getUserDetails().then((user: User) => {
+    try {
+        const user = await svc.authService.getUserDetails();
         dispatch(authActions.INIT_USER({ user, token }));
-        // Upon user init, request an extra token that won't be expired on logout
-        // for other uses like the "get token" dialog, or S3 URL building.
-        dispatch<any>(getNewExtraToken());
-    }).catch(() => {
+    } catch (e) {
         dispatch(authActions.LOGOUT({ deleteLinkData: false }));
-    });
+    }
 };
 
-export const getNewExtraToken = () =>
+export const getNewExtraToken = (reuseStored: boolean = false) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        if (reuseStored && getState().auth.extraApiToken !== undefined) {
+            return getState().auth.extraApiToken;
+        }
         const user = getState().auth.user;
         const loginCluster = getState().auth.config.clusterConfig.Login.LoginCluster;
         if (user === undefined) { return; }
