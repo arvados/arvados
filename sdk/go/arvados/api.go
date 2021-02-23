@@ -56,7 +56,7 @@ var (
 	EndpointGroupGet                      = APIEndpoint{"GET", "arvados/v1/groups/{uuid}", ""}
 	EndpointGroupList                     = APIEndpoint{"GET", "arvados/v1/groups", ""}
 	EndpointGroupContents                 = APIEndpoint{"GET", "arvados/v1/groups/contents", ""}
-	EndpointGroupContents2                = APIEndpoint{"GET", "arvados/v1/groups/{uuid}/contents", ""}
+	EndpointGroupContentsUUIDInPath       = APIEndpoint{"GET", "arvados/v1/groups/{uuid}/contents", ""} // Alternative HTTP route; client-side code should always use EndpointGroupContents instead
 	EndpointGroupShared                   = APIEndpoint{"GET", "arvados/v1/groups/shared", ""}
 	EndpointGroupDelete                   = APIEndpoint{"DELETE", "arvados/v1/groups/{uuid}", ""}
 	EndpointGroupUntrash                  = APIEndpoint{"POST", "arvados/v1/groups/{uuid}/untrash", ""}

@@ -257,7 +257,7 @@ func (rtr *router) addRoutes() {
 			},
 		},
 		{
-			arvados.EndpointGroupContents2,
+			arvados.EndpointGroupContentsUUIDInPath,
 			func() interface{} { return &arvados.GroupContentsOptions{Limit: -1} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
 				return rtr.backend.GroupContents(ctx, *opts.(*arvados.GroupContentsOptions))
