@@ -83,7 +83,7 @@ func (m *cacheMetrics) setup(reg *prometheus.Registry) {
 		Namespace: "arvados",
 		Subsystem: "keepweb_collectioncache",
 		Name:      "cached_manifest_bytes",
-		Help:      "Total size of all manifests in cache.",
+		Help:      "Total size of all cached manifests and sessions.",
 	})
 	reg.MustRegister(m.collectionBytes)
 	m.collectionEntries = prometheus.NewGauge(prometheus.GaugeOpts{
@@ -251,10 +251,13 @@ func (c *cache) GetSession(token string) (arvados.CustomFileSystem, error) {
 	return fs, nil
 }
 
+// Remove all expired session cache entries, then remove more entries
+// until approximate remaining size <= maxsize/2
 func (c *cache) pruneSessions() {
 	now := time.Now()
 	var size int64
-	for _, token := range c.sessions.Keys() {
+	keys := c.sessions.Keys()
+	for _, token := range keys {
 		ent, ok := c.sessions.Peek(token)
 		if !ok {
 			continue
@@ -264,16 +267,28 @@ func (c *cache) pruneSessions() {
 			c.sessions.Remove(token)
 			continue
 		}
+		if fs, ok := s.fs.Load().(arvados.CustomFileSystem); ok {
+			size += fs.MemorySize()
+		}
+	}
+	// Remove tokens until reaching size limit, starting with the
+	// least frequently used entries (which Keys() returns last).
+	for i := len(keys) - 1; i >= 0; i-- {
+		token := keys[i]
+		if size <= c.cluster.Collections.WebDAVCache.MaxCollectionBytes/2 {
+			break
+		}
+		ent, ok := c.sessions.Peek(token)
+		if !ok {
+			continue
+		}
+		s := ent.(*cachedSession)
 		fs, _ := s.fs.Load().(arvados.CustomFileSystem)
 		if fs == nil {
 			continue
 		}
-		size += fs.MemorySize()
-	}
-	if size > c.cluster.Collections.WebDAVCache.MaxCollectionBytes/2 {
-		for _, token := range c.sessions.Keys() {
-			c.sessions.Remove(token)
-		}
+		c.sessions.Remove(token)
+		size -= fs.MemorySize()
 	}
 }
 
