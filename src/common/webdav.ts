@@ -75,7 +75,7 @@ export class WebDAV {
             r.open(config.method,
                 `${this.defaults.baseURL
                     ? this.defaults.baseURL+'/'
-                    : ''}${encodeURI(config.url)}`);
+                    : ''}${encodeURIComponent(config.url)}`);
             const headers = { ...this.defaults.headers, ...config.headers };
             Object
                 .keys(headers)

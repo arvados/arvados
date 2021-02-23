@@ -28,7 +28,7 @@ export const extractFilesData = (document: Document) => {
             const name = getTagValue(element, 'D:displayname', '');
             const size = parseInt(getTagValue(element, 'D:getcontentlength', '0'), 10);
             const url = getTagValue(element, 'D:href', '');
-            const nameSuffix = `/${name || ''}`;
+            const nameSuffix = `/${encodeURIComponent(name) || ''}`;
             const collectionUuidMatch = collectionUrlPrefix.exec(url);
             const collectionUuid = collectionUuidMatch ? collectionUuidMatch.pop() : '';
             const directory = url
@@ -53,5 +53,6 @@ export const extractFilesData = (document: Document) => {
         });
 };
 
-export const getFileFullPath = ({ name, path }: CollectionFile | CollectionDirectory) =>
-    `${path}/${name}`;
+export const getFileFullPath = ({ name, path }: CollectionFile | CollectionDirectory) => {
+    return `${path}/${name}`;
+};
