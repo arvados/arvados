@@ -77,13 +77,20 @@ func (rtr *router) sendResponse(w http.ResponseWriter, req *http.Request, resp i
 	if included, ok := tmp["included"]; ok && included == nil {
 		tmp["included"] = make([]interface{}, 0)
 	}
-
 	defaultItemKind := ""
 	if strings.HasSuffix(respKind, "List") {
 		defaultItemKind = strings.TrimSuffix(respKind, "List")
 	}
 
-	if items, ok := tmp["items"].([]interface{}); ok {
+	var items, included []interface{}
+	var itemsOK, includedOK bool
+	items, itemsOK = tmp["items"].([]interface{})
+	included, includedOK = tmp["included"].([]interface{})
+	if includedOK && len(included) > 0 {
+		items = append(items, included...)
+	}
+
+	if itemsOK {
 		for i, item := range items {
 			// Fill in "kind" by inspecting UUID/PDH if
 			// possible; fall back on assuming each

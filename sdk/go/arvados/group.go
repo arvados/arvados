@@ -16,7 +16,6 @@ type Group struct {
 	GroupClass           string                 `json:"group_class"`
 	Etag                 string                 `json:"etag"`
 	Href                 string                 `json:"href"`
-	Kind                 string                 `json:"kind"`
 	TrashAt              *time.Time             `json:"trash_at"`
 	CreatedAt            time.Time              `json:"created_at"`
 	ModifiedAt           time.Time              `json:"modified_at"`

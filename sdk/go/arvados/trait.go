@@ -18,7 +18,6 @@ type Trait struct {
 	Name                 string    `json:"name"`
 	Properties           string    `json:"properties"`
 	UpdatedAt            time.Time `json:"updated_at"`
-	Kind                 string    `json:"kind"`
 	WritableBy           []string  `json:"writable_by,omitempty"`
 }
 

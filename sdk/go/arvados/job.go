@@ -38,7 +38,6 @@ type Job struct {
 	Description            string    `json:"description"`
 	State                  string    `json:"state"`
 	ArvadosSDKVersion      string    `json:"arvados_sdk_version"`
-	Kind                   string    `json:"kind"`
 	Components             string    `json:"components"`
 	ScriptParametersDigest string    `json:"script_parameters_digest"`
 	WritableBy             []string  `json:"writable_by,omitempty"`

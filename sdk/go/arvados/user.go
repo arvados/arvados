@@ -16,7 +16,6 @@ type User struct {
 	Email                string                 `json:"email"`
 	FullName             string                 `json:"full_name"`
 	FirstName            string                 `json:"first_name"`
-	Kind                 string                 `json:"kind"`
 	LastName             string                 `json:"last_name"`
 	IdentityURL          string                 `json:"identity_url"`
 	IsInvited            bool                   `json:"is_invited"`

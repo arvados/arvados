@@ -25,7 +25,6 @@ type PipelineInstance struct {
 	StartedAt            time.Time `json:"started_at"`
 	FinishedAt           time.Time `json:"finished_at"`
 	Description          string    `json:"description"`
-	Kind                 string    `json:"kind"`
 	WritableBy           []string  `json:"writable_by,omitempty"`
 }
 

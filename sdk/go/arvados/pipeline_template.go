@@ -19,7 +19,6 @@ type PipelineTemplate struct {
 	Components           string    `json:"components"`
 	UpdatedAt            time.Time `json:"updated_at"`
 	Description          string    `json:"description"`
-	Kind                 string    `json:"kind"`
 	WritableBy           []string  `json:"writable_by,omitempty"`
 }
 
