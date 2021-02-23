@@ -20,15 +20,44 @@ describe('<CurrentTokenDialog />', () => {
   beforeEach(() => {
     props = {
       classes: {},
-      data: {
-        currentToken: '123123123123',
-      },
+      token: 'xxxtokenxxx',
+      apiHost: 'example.com',
       open: true,
       dispatch: jest.fn(),
     };
   });
 
-  describe('copy to clipboard', () => {
+  describe('Get API Token dialog', () => {
+    beforeEach(() => {
+      wrapper = mount(<TokenDialogComponent {...props} />);
+    });
+
+    it('should include API host and token', () => {
+      expect(wrapper.html()).toContain('export ARVADOS_API_HOST=example.com');
+      expect(wrapper.html()).toContain('export ARVADOS_API_TOKEN=xxxtokenxxx');
+    });
+
+    it('should show the token expiration if present', () => {
+      expect(props.tokenExpiration).toBeUndefined();
+      expect(wrapper.html()).not.toContain('Expires at:');
+
+      const someDate = '2140-01-01T00:00:00.000Z'
+      props.tokenExpiration = new Date(someDate);
+      wrapper = mount(<TokenDialogComponent {...props} />);
+      expect(wrapper.html()).toContain('Expires at:');
+    });
+
+    it('should show a create new token button when allowed', () => {
+      expect(props.canCreateNewTokens).toBeFalsy();
+      expect(wrapper.html()).not.toContain('GET NEW TOKEN');
+
+      props.canCreateNewTokens = true;
+      wrapper = mount(<TokenDialogComponent {...props} />);
+      expect(wrapper.html()).toContain('GET NEW TOKEN');
+    });
+  });
+
+  describe('copy to clipboard button', () => {
     beforeEach(() => {
       wrapper = mount(<TokenDialogComponent {...props} />);
     });
