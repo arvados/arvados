@@ -265,9 +265,9 @@ func (rtr *router) addRoutes() {
 		},
 		{
 			arvados.EndpointGroupShared,
-			func() interface{} { return &arvados.SharedOptions{Limit: -1} },
+			func() interface{} { return &arvados.ListOptions{Limit: -1} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.backend.GroupShared(ctx, *opts.(*arvados.SharedOptions))
+				return rtr.backend.GroupShared(ctx, *opts.(*arvados.ListOptions))
 			},
 		},
 		{

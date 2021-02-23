@@ -422,7 +422,7 @@ func (conn *Conn) GroupContents(ctx context.Context, options arvados.ContentsOpt
 	return conn.chooseBackend(options.UUID).GroupContents(ctx, options)
 }
 
-func (conn *Conn) GroupShared(ctx context.Context, options arvados.SharedOptions) (arvados.GroupList, error) {
+func (conn *Conn) GroupShared(ctx context.Context, options arvados.ListOptions) (arvados.GroupList, error) {
 	// FIXME is this right?? We don't have options.UUID to cue the chooseBackend off
 	return conn.chooseBackend(conn.cluster.ClusterID).GroupShared(ctx, options)
 }

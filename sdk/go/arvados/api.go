@@ -118,6 +118,7 @@ type ListOptions struct {
 	IncludeOldVersions bool                   `json:"include_old_versions"`
 	BypassFederation   bool                   `json:"bypass_federation"`
 	ForwardedFor       string                 `json:"forwarded_for,omitempty"`
+	Include            string                 `json:"include"`
 }
 
 type CreateOptions struct {
@@ -143,17 +144,6 @@ type ContentsOptions struct {
 	Include            string   `json:"include"`
 	Recursive          bool     `json:"recursive"`
 	ExcludeHomeProject bool     `json:"exclude_home_project"`
-}
-
-type SharedOptions struct {
-	UUID    string   `json:"uuid,omitempty"`
-	Select  []string `json:"select"`
-	Filters []Filter `json:"filters"`
-	Limit   int64    `json:"limit"`
-	Offset  int64    `json:"offset"`
-	Count   string   `json:"count"`
-	Order   []string `json:"order"`
-	Include string   `json:"include"`
 }
 
 type UpdateUUIDOptions struct {
@@ -240,7 +230,7 @@ type API interface {
 	GroupGet(ctx context.Context, options GetOptions) (Group, error)
 	GroupList(ctx context.Context, options ListOptions) (GroupList, error)
 	GroupContents(ctx context.Context, options ContentsOptions) (ObjectList, error)
-	GroupShared(ctx context.Context, options SharedOptions) (GroupList, error)
+	GroupShared(ctx context.Context, options ListOptions) (GroupList, error)
 	GroupDelete(ctx context.Context, options DeleteOptions) (Group, error)
 	GroupUntrash(ctx context.Context, options UntrashOptions) (Group, error)
 	SpecimenCreate(ctx context.Context, options CreateOptions) (Specimen, error)
