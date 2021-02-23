@@ -418,7 +418,7 @@ func (conn *Conn) GroupList(ctx context.Context, options arvados.ListOptions) (a
 	return conn.generated_GroupList(ctx, options)
 }
 
-func (conn *Conn) GroupContents(ctx context.Context, options arvados.ContentsOptions) (arvados.ObjectList, error) {
+func (conn *Conn) GroupContents(ctx context.Context, options arvados.GroupContentsOptions) (arvados.ObjectList, error) {
 	return conn.chooseBackend(options.UUID).GroupContents(ctx, options)
 }
 

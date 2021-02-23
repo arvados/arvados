@@ -251,16 +251,16 @@ func (rtr *router) addRoutes() {
 		},
 		{
 			arvados.EndpointGroupContents,
-			func() interface{} { return &arvados.ContentsOptions{Limit: -1} },
+			func() interface{} { return &arvados.GroupContentsOptions{Limit: -1} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.backend.GroupContents(ctx, *opts.(*arvados.ContentsOptions))
+				return rtr.backend.GroupContents(ctx, *opts.(*arvados.GroupContentsOptions))
 			},
 		},
 		{
 			arvados.EndpointGroupContents2,
-			func() interface{} { return &arvados.ContentsOptions{Limit: -1} },
+			func() interface{} { return &arvados.GroupContentsOptions{Limit: -1} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.backend.GroupContents(ctx, *opts.(*arvados.ContentsOptions))
+				return rtr.backend.GroupContents(ctx, *opts.(*arvados.GroupContentsOptions))
 			},
 		},
 		{

@@ -145,7 +145,7 @@ func (as *APIStub) GroupList(ctx context.Context, options arvados.ListOptions) (
 	as.appendCall(ctx, as.GroupList, options)
 	return arvados.GroupList{}, as.Error
 }
-func (as *APIStub) GroupContents(ctx context.Context, options arvados.ContentsOptions) (arvados.ObjectList, error) {
+func (as *APIStub) GroupContents(ctx context.Context, options arvados.GroupContentsOptions) (arvados.ObjectList, error) {
 	as.appendCall(ctx, as.GroupContents, options)
 	return arvados.ObjectList{}, as.Error
 }

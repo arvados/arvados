@@ -444,7 +444,7 @@ func (conn *Conn) GroupList(ctx context.Context, options arvados.ListOptions) (a
 	return resp, err
 }
 
-func (conn *Conn) GroupContents(ctx context.Context, options arvados.ContentsOptions) (arvados.ObjectList, error) {
+func (conn *Conn) GroupContents(ctx context.Context, options arvados.GroupContentsOptions) (arvados.ObjectList, error) {
 	ep := arvados.EndpointGroupContents
 	var resp arvados.ObjectList
 	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
