@@ -22,8 +22,8 @@ export const authActions = unionize({
     LOGIN: {},
     LOGOUT: ofType<{ deleteLinkData: boolean }>(),
     SET_CONFIG: ofType<{ config: Config }>(),
-    SET_EXTRA_TOKEN: ofType<{ extraToken: string }>(),
-    INIT_USER: ofType<{ user: User, token: string }>(),
+    SET_EXTRA_TOKEN: ofType<{ extraApiToken: string, extraApiTokenExpiration?: Date }>(),
+    INIT_USER: ofType<{ user: User, token: string, tokenExpiration?: Date }>(),
     USER_DETAILS_REQUEST: {},
     USER_DETAILS_SUCCESS: ofType<User>(),
     SET_SSH_KEYS: ofType<SshKeyResource[]>(),
@@ -88,7 +88,9 @@ export const saveApiToken = (token: string) => async (dispatch: Dispatch, getSta
     setAuthorizationHeader(svc, token);
     try {
         const user = await svc.authService.getUserDetails();
-        dispatch(authActions.INIT_USER({ user, token }));
+        const client = await svc.apiClientAuthorizationService.get('current');
+        const tokenExpiration = client.expiresAt ? new Date(client.expiresAt) : undefined;
+        dispatch(authActions.INIT_USER({ user, token, tokenExpiration }));
     } catch (e) {
         dispatch(authActions.LOGOUT({ deleteLinkData: false }));
     }
@@ -108,7 +110,10 @@ export const getNewExtraToken = (reuseStored: boolean = false) =>
             // allow token creation and there's no way to know that from workbench2 side in advance.
             const client = await services.apiClientAuthorizationService.create(undefined, false);
             const newExtraToken = getTokenV2(client);
-            dispatch(authActions.SET_EXTRA_TOKEN({ extraToken: newExtraToken }));
+            dispatch(authActions.SET_EXTRA_TOKEN({
+                extraApiToken: newExtraToken,
+                extraApiTokenExpiration: client.expiresAt ? new Date(client.expiresAt): undefined,
+            }));
             return newExtraToken;
         } catch {
             console.warn("Cannot create new tokens with the current token, probably because of cluster's security settings.");

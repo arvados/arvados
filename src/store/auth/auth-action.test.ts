@@ -59,6 +59,12 @@ describe('auth-actions', () => {
             });
 
         axiosMock
+            .onGet("/api_client_authorizations/current")
+            .reply(200, {
+                expires_at: "2140-01-01T00:00:00.000Z"
+            });
+
+        axiosMock
             .onGet("https://xc59z.arvadosapi.com/discovery/v1/apis/arvados/v1/rest")
             .reply(200, {
                 baseUrl: "https://xc59z.arvadosapi.com/arvados/v1",
@@ -101,6 +107,7 @@ describe('auth-actions', () => {
                 try {
                     expect(auth).toEqual({
                         apiToken: "token",
+                        apiTokenExpiration: new Date("2140-01-01T00:00:00.000Z"),
                         config: {
                             apiRevision: 12345678,
                             clusterConfig: {
@@ -116,6 +123,7 @@ describe('auth-actions', () => {
                         },
                         sshKeys: [],
                         extraApiToken: undefined,
+                        extraApiTokenExpiration: undefined,
                         homeCluster: "zzzzz",
                         localCluster: "zzzzz",
                         loginCluster: undefined,

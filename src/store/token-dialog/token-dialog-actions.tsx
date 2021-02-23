@@ -12,6 +12,7 @@ const API_HOST_PROPERTY_NAME = 'apiHost';
 
 export interface TokenDialogData {
     token: string;
+    tokenExpiration?: Date;
     apiHost: string;
     canCreateNewTokens: boolean;
 }
@@ -26,6 +27,9 @@ export const getTokenDialogData = (state: RootState): TokenDialogData => {
     return {
         apiHost: getProperty<string>(API_HOST_PROPERTY_NAME)(state.properties) || '',
         token: state.auth.extraApiToken || state.auth.apiToken || '',
+        tokenExpiration: state.auth.extraApiToken
+            ? state.auth.extraApiTokenExpiration
+            : state.auth.apiTokenExpiration,
         canCreateNewTokens,
     };
 };
