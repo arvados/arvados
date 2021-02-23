@@ -9,7 +9,7 @@
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "cmd/arvados-server/cmd.go",
+            "program": "${workspaceFolder}/cmd/arvados-server/cmd.go",
             "env": {},
             "args": ["controller"]
         },
