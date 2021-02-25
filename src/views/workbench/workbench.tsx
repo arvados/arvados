@@ -101,6 +101,7 @@ import { NotFoundPanel } from '../not-found-panel/not-found-panel';
 import { AutoLogout } from '~/views-components/auto-logout/auto-logout';
 import { RestoreCollectionVersionDialog } from '~/views-components/collections-dialog/restore-version-dialog';
 import { WebDavS3InfoDialog } from '~/views-components/webdav-s3-dialog/webdav-s3-dialog';
+import { pluginCenterPanelRoutes, RouteReducer, pluginDialogs } from '~/plugins';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -149,6 +150,42 @@ const getSplitterInitialSize = () => {
 
 const saveSplitterSize = (size: number) => localStorage.setItem('splitterSize', size.toString());
 
+let routes = <>
+    <Route path={Routes.PROJECTS} component={ProjectPanel} />
+    <Route path={Routes.COLLECTIONS} component={CollectionPanel} />
+    <Route path={Routes.FAVORITES} component={FavoritePanel} />
+    <Route path={Routes.ALL_PROCESSES} component={AllProcessesPanel} />
+    <Route path={Routes.PROCESSES} component={ProcessPanel} />
+    <Route path={Routes.TRASH} component={TrashPanel} />
+    <Route path={Routes.PROCESS_LOGS} component={ProcessLogPanel} />
+    <Route path={Routes.SHARED_WITH_ME} component={SharedWithMePanel} />
+    <Route path={Routes.RUN_PROCESS} component={RunProcessPanel} />
+    <Route path={Routes.WORKFLOWS} component={WorkflowPanel} />
+    <Route path={Routes.SEARCH_RESULTS} component={SearchResultsPanel} />
+    <Route path={Routes.VIRTUAL_MACHINES_USER} component={VirtualMachineUserPanel} />
+    <Route path={Routes.VIRTUAL_MACHINES_ADMIN} component={VirtualMachineAdminPanel} />
+    <Route path={Routes.REPOSITORIES} component={RepositoriesPanel} />
+    <Route path={Routes.SSH_KEYS_USER} component={SshKeyPanel} />
+    <Route path={Routes.SSH_KEYS_ADMIN} component={SshKeyPanel} />
+    <Route path={Routes.SITE_MANAGER} component={SiteManagerPanel} />
+    <Route path={Routes.KEEP_SERVICES} component={KeepServicePanel} />
+    <Route path={Routes.USERS} component={UserPanel} />
+    <Route path={Routes.COMPUTE_NODES} component={ComputeNodePanel} />
+    <Route path={Routes.API_CLIENT_AUTHORIZATIONS} component={ApiClientAuthorizationPanel} />
+    <Route path={Routes.MY_ACCOUNT} component={MyAccountPanel} />
+    <Route path={Routes.GROUPS} component={GroupsPanel} />
+    <Route path={Routes.GROUP_DETAILS} component={GroupDetailsPanel} />
+    <Route path={Routes.LINKS} component={LinkPanel} />
+    <Route path={Routes.PUBLIC_FAVORITES} component={PublicFavoritePanel} />
+    <Route path={Routes.LINK_ACCOUNT} component={LinkAccountPanel} />
+    <Route path={Routes.COLLECTIONS_CONTENT_ADDRESS} component={CollectionsContentAddressPanel} />
+</>;
+
+const reduceRoutesFn: (a: React.ReactElement[],
+    b: RouteReducer) => React.ReactElement[] = (a, b) => b(a);
+
+routes = React.createElement(React.Fragment, null, pluginCenterPanelRoutes.reduce(reduceRoutesFn, React.Children.toArray(routes.props.children)));
+
 export const WorkbenchPanel =
     withStyles(styles)((props: WorkbenchPanelProps) =>
         <Grid container item xs className={props.classes.root}>
@@ -167,34 +204,7 @@ export const WorkbenchPanel =
                         </Grid>
                         <Grid item xs className={props.classes.content}>
                             <Switch>
-                                <Route path={Routes.PROJECTS} component={ProjectPanel} />
-                                <Route path={Routes.COLLECTIONS} component={CollectionPanel} />
-                                <Route path={Routes.FAVORITES} component={FavoritePanel} />
-                                <Route path={Routes.ALL_PROCESSES} component={AllProcessesPanel} />
-                                <Route path={Routes.PROCESSES} component={ProcessPanel} />
-                                <Route path={Routes.TRASH} component={TrashPanel} />
-                                <Route path={Routes.PROCESS_LOGS} component={ProcessLogPanel} />
-                                <Route path={Routes.SHARED_WITH_ME} component={SharedWithMePanel} />
-                                <Route path={Routes.RUN_PROCESS} component={RunProcessPanel} />
-                                <Route path={Routes.WORKFLOWS} component={WorkflowPanel} />
-                                <Route path={Routes.SEARCH_RESULTS} component={SearchResultsPanel} />
-                                <Route path={Routes.VIRTUAL_MACHINES_USER} component={VirtualMachineUserPanel} />
-                                <Route path={Routes.VIRTUAL_MACHINES_ADMIN} component={VirtualMachineAdminPanel} />
-                                <Route path={Routes.REPOSITORIES} component={RepositoriesPanel} />
-                                <Route path={Routes.SSH_KEYS_USER} component={SshKeyPanel} />
-                                <Route path={Routes.SSH_KEYS_ADMIN} component={SshKeyPanel} />
-                                <Route path={Routes.SITE_MANAGER} component={SiteManagerPanel} />
-                                <Route path={Routes.KEEP_SERVICES} component={KeepServicePanel} />
-                                <Route path={Routes.USERS} component={UserPanel} />
-                                <Route path={Routes.COMPUTE_NODES} component={ComputeNodePanel} />
-                                <Route path={Routes.API_CLIENT_AUTHORIZATIONS} component={ApiClientAuthorizationPanel} />
-                                <Route path={Routes.MY_ACCOUNT} component={MyAccountPanel} />
-                                <Route path={Routes.GROUPS} component={GroupsPanel} />
-                                <Route path={Routes.GROUP_DETAILS} component={GroupDetailsPanel} />
-                                <Route path={Routes.LINKS} component={LinkPanel} />
-                                <Route path={Routes.PUBLIC_FAVORITES} component={PublicFavoritePanel} />
-                                <Route path={Routes.LINK_ACCOUNT} component={LinkAccountPanel} />
-                                <Route path={Routes.COLLECTIONS_CONTENT_ADDRESS} component={CollectionsContentAddressPanel} />
+                                {routes}
                                 <Route path={Routes.NO_MATCH} component={NotFoundPanel} />
                             </Switch>
                         </Grid>
@@ -264,5 +274,6 @@ export const WorkbenchPanel =
             <VirtualMachineAttributesDialog />
             <FedLogin />
             <WebDavS3InfoDialog />
+            {pluginDialogs}
         </Grid>
     );
