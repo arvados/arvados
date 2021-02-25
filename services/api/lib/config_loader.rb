@@ -127,6 +127,8 @@ class ConfigLoader
           cfg[k] = cfg[k].seconds
         elsif cfg[k].is_a? String
           cfg[k] = ConfigLoader.parse_duration(cfg[k], cfgkey: cfgkey)
+        elsif cfg[k].is_a?  NilClass
+          cfg[k] = 0.seconds
         end
       end
 
