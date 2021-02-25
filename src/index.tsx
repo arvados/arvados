@@ -119,7 +119,8 @@ fetchConfig()
                                 ? error.errors[0]
                                 : error.message}`,
                             kind: SnackbarKind.ERROR,
-                            hideDuration: 8000})
+                            hideDuration: 8000
+                        })
                         );
                     }
                 }
