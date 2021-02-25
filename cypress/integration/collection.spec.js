@@ -352,7 +352,7 @@ describe('Collection panel tests', function () {
             });
     });
 
-    it.only('should display all filles within the collection even with the # sign within the file name', () => {
+    it('should display all filles within the collection even with the # sign within the file name', () => {
         const colName = `Test Collection ${Math.floor(Math.random() * 999999)}`;
 
         cy.createCollection(adminUser.token, {
