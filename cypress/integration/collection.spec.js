@@ -138,7 +138,7 @@ describe('Collection panel tests', function () {
                             }
                         });
                         cy.get('[data-cy=collection-files-panel]')
-                            .contains(fileName).rightclick();
+                            .contains(fileName).rightclick({ force: true });
                         cy.get('[data-cy=context-menu]')
                             .should('contain', 'Download')
                             .and('contain', 'Open in new tab')
@@ -370,6 +370,12 @@ describe('Collection panel tests', function () {
                 cy.get('[data-cy=context-menu]').contains('Remove selected').click();
                 cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
                 cy.get('[data-cy=collection-files-panel]').contains('#foo').should('not.exist');
+
+                cy.get('[data-cy=collection-files-panel]').contains('bar').rightclick();
+                cy.get('[data-cy=context-menu]').contains('Rename').click();
+                cy.get('input[name=path]').type('bar 123 321 bar');
+                cy.get('[data-cy=form-submit-btn]').click();
+                cy.get('[data-cy=collection-files-panel]').contains('barbar 123 321 bar').should('exist');
             });
     });
 

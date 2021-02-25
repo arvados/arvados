@@ -1,3 +1,7 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: AGPL-3.0
+
 export function getUrlParameter(search: string, name: string) {
     const safeName = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
     const regex = new RegExp('[\\?&]' + safeName + '=([^&#]*)');
@@ -13,3 +17,10 @@ export function normalizeURLPath(url: string) {
     }
     return u.toString();
 }
+
+export const escapeHashIfRequired = (name: string, defaultTransformation?: Function) =>
+    name.indexOf('#') > -1 ?
+        encodeURIComponent(name) :
+        defaultTransformation ?
+            defaultTransformation(name) :
+            name;
