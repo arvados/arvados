@@ -25,7 +25,7 @@ DESCRIPTION=Arvados Workbench2 - Arvados is a free and open source platform for 
 MAINTAINER=Arvados Package Maintainers <packaging@arvados.org>
 
 # DEST_DIR will have the build package copied.
-DEST_DIR=/var/www/arvados-workbench2/workbench2/
+DEST_DIR=/var/www/$(APP_NAME)/workbench2/
 
 # Debian package file
 DEB_FILE=$(APP_NAME)_$(VERSION)-$(ITERATION)_amd64.deb
