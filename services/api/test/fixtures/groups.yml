@@ -107,6 +107,19 @@ asubproject:
   description: "Test project belonging to active user's first test project"
   group_class: project
 
+afiltergroup:
+  uuid: zzzzz-j7d0g-thisfiltergroup
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2014-04-21 15:37:48 -0400
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  modified_at: 2014-04-21 15:37:48 -0400
+  updated_at: 2014-04-21 15:37:48 -0400
+  name: This filter group
+  group_class: filter
+  properties:
+    filters: [[ "collections.name", "like", "baz%" ], [ "groups.name", "=", "A Subproject" ]]
+
 future_project_viewing_group:
   uuid: zzzzz-j7d0g-futrprojviewgrp
   owner_uuid: zzzzz-tpzed-000000000000000

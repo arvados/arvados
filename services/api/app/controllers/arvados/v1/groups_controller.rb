@@ -227,12 +227,30 @@ class Arvados::V1::GroupsController < ApplicationController
       end
     end
 
+    # filter groups need to be limited to those classes mentioned in the filters
+    # @object can also be a User object (virtual home project)
+    if @object and @object.is_a?(Group) and @object.group_class == "filter"
+      if request_filters.length() == 0
+        raise ArgumentError.new("Filter group needs to have filters defined")
+      end
+      request_filters.each do |col, op, val|
+        if col.index('.')
+          col = col.split('.')[0]
+          col = col.capitalize.sub(/s$/,'')
+          wanted_klasses << col
+        end
+      end
+    end
+
     filter_by_owner = {}
     if @object
-      if params['recursive']
-        filter_by_owner[:owner_uuid] = [@object.uuid] + @object.descendant_project_uuids
-      else
-        filter_by_owner[:owner_uuid] = @object.uuid
+      # filter groups should not have an owner_uuid filter applied
+      if ! @object.is_a?(Group) or (@object.is_a?(Group) and @object.group_class != "filter")
+        if params['recursive']
+          filter_by_owner[:owner_uuid] = [@object.uuid] + @object.descendant_project_uuids
+        else
+          filter_by_owner[:owner_uuid] = @object.uuid
+        end
       end
 
       if params['exclude_home_project']
