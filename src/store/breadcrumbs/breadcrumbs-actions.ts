@@ -65,7 +65,7 @@ export const setSharedWithMeBreadcrumbs = (uuid: string) =>
 export const setTrashBreadcrumbs = (uuid: string) =>
     setCategoryBreadcrumbs(uuid, SidePanelTreeCategory.TRASH);
 
-export const setCategoryBreadcrumbs = (uuid: string, category: SidePanelTreeCategory) =>
+export const setCategoryBreadcrumbs = (uuid: string, category: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const ancestors = await services.ancestorsService.ancestors(uuid, '');
         dispatch(updateResources(ancestors));

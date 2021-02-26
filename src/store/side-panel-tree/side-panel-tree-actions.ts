@@ -16,6 +16,8 @@ import { OrderBuilder } from '~/services/api/order-builder';
 import { ResourceKind } from '~/models/resource';
 import { GroupContentsResourcePrefix } from '~/services/groups-service/groups-service';
 import { GroupClass } from '~/models/group';
+import { CategoriesListReducer } from '~/common/plugintypes';
+import { pluginConfig } from '~/plugins';
 
 export enum SidePanelTreeCategory {
     PROJECTS = 'Projects',
@@ -44,18 +46,23 @@ export const getSidePanelTreeBranch = (uuid: string) => (treePicker: TreePicker)
     return [];
 };
 
-const SIDE_PANEL_CATEGORIES: string[] = [
+let SIDE_PANEL_CATEGORIES: string[] = [
     SidePanelTreeCategory.PROJECTS,
     SidePanelTreeCategory.SHARED_WITH_ME,
     SidePanelTreeCategory.PUBLIC_FAVORITES,
     SidePanelTreeCategory.FAVORITES,
     SidePanelTreeCategory.WORKFLOWS,
     SidePanelTreeCategory.ALL_PROCESSES,
-    SidePanelTreeCategory.TRASH,
-    "Blibber blubber"
+    SidePanelTreeCategory.TRASH
 ];
 
+const reduceCatsFn: (a: string[],
+    b: CategoriesListReducer) => string[] = (a, b) => b(a);
+
+SIDE_PANEL_CATEGORIES = pluginConfig.sidePanelCategories.reduce(reduceCatsFn, SIDE_PANEL_CATEGORIES);
+
 export const isSidePanelTreeCategory = (id: string) => SIDE_PANEL_CATEGORIES.some(category => category === id);
+
 
 export const initSidePanelTree = () =>
     (dispatch: Dispatch, getState: () => RootState, { authService }: ServiceRepository) => {

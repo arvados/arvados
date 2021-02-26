@@ -101,7 +101,8 @@ import { NotFoundPanel } from '../not-found-panel/not-found-panel';
 import { AutoLogout } from '~/views-components/auto-logout/auto-logout';
 import { RestoreCollectionVersionDialog } from '~/views-components/collections-dialog/restore-version-dialog';
 import { WebDavS3InfoDialog } from '~/views-components/webdav-s3-dialog/webdav-s3-dialog';
-import { pluginCenterPanelRoutes, RouteReducer, pluginDialogs } from '~/plugins';
+import { pluginConfig } from '~/plugins';
+import { RouteListReducer } from '~/common/plugintypes';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -182,9 +183,9 @@ let routes = <>
 </>;
 
 const reduceRoutesFn: (a: React.ReactElement[],
-    b: RouteReducer) => React.ReactElement[] = (a, b) => b(a);
+    b: RouteListReducer) => React.ReactElement[] = (a, b) => b(a);
 
-routes = React.createElement(React.Fragment, null, pluginCenterPanelRoutes.reduce(reduceRoutesFn, React.Children.toArray(routes.props.children)));
+routes = React.createElement(React.Fragment, null, pluginConfig.centerPanelList.reduce(reduceRoutesFn, React.Children.toArray(routes.props.children)));
 
 export const WorkbenchPanel =
     withStyles(styles)((props: WorkbenchPanelProps) =>
@@ -274,6 +275,6 @@ export const WorkbenchPanel =
             <VirtualMachineAttributesDialog />
             <FedLogin />
             <WebDavS3InfoDialog />
-            {pluginDialogs}
+            {React.createElement(React.Fragment, null, pluginConfig.dialogs)}
         </Grid>
     );

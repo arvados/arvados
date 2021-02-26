@@ -10,9 +10,25 @@ import { Routes, getProcessLogUrl, getGroupUrl, getNavUrl } from '~/routes/route
 import { RootState } from '~/store/store';
 import { ServiceRepository } from '~/services/services';
 import { GROUPS_PANEL_LABEL } from '~/store/breadcrumbs/breadcrumbs-actions';
+import { pluginConfig } from '~/plugins';
+import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
+
+const navigationNotAvailable = (id: string) =>
+    snackbarActions.OPEN_SNACKBAR({
+        message: `${id} not available`,
+        hideDuration: 3000,
+        kind: SnackbarKind.ERROR
+    });
 
 export const navigateTo = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState) => {
+
+        for (const navToFn of pluginConfig.navigateToHandlers) {
+            if (navToFn(dispatch, getState, uuid)) {
+                return;
+            }
+        }
+
         const kind = extractUuidKind(uuid);
         switch (kind) {
             case ResourceKind.PROJECT:
@@ -27,6 +43,12 @@ export const navigateTo = (uuid: string) =>
         }
 
         switch (uuid) {
+            case SidePanelTreeCategory.PROJECTS:
+                const usr = getState().auth.user;
+                if (usr) {
+                    dispatch<any>(pushOrGoto(getNavUrl(usr.uuid, getState().auth)));
+                }
+                return;
             case SidePanelTreeCategory.FAVORITES:
                 dispatch<any>(navigateToFavorites);
                 return;
@@ -49,7 +71,10 @@ export const navigateTo = (uuid: string) =>
                 dispatch(navigateToAllProcesses);
                 return;
         }
+
+        dispatch(navigationNotAvailable(uuid));
     };
+
 
 export const navigateToNotFound = push(Routes.NO_MATCH);
 
@@ -78,10 +103,7 @@ export const pushOrGoto = (url: string): AnyAction => {
 export const navigateToProcessLogs = compose(push, getProcessLogUrl);
 
 export const navigateToRootProject = (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-    const usr = getState().auth.user;
-    if (usr) {
-        dispatch<any>(navigateTo(usr.uuid));
-    }
+    navigateTo(SidePanelTreeCategory.PROJECTS)(dispatch, getState);
 };
 
 export const navigateToSharedWithMe = push(Routes.SHARED_WITH_ME);
