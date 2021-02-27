@@ -13,6 +13,9 @@ export const pluginConfig: PluginConfig = {
     appBarLeft: undefined,
     appBarMiddle: undefined,
     appBarRight: undefined,
+    accountMenuList: [],
+    enableNewButtonMatchers: [],
+    newButtonMenuList: []
 };
 
 // Starting here, import and register your Workbench 2 plugins. //

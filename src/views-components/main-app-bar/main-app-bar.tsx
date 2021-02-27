@@ -47,7 +47,7 @@ export const MainAppBar = withStyles(styles)(
                         <Typography variant='h6' color="inherit" noWrap>
                             <Link to={Routes.ROOT} className={props.classes.link}>
                                 <span dangerouslySetInnerHTML={{ __html: props.siteBanner }} /> ({props.uuidPrefix})
-                            </Link>
+                </Link>
                         </Typography>
                         <Typography variant="caption" color="inherit">{props.buildInfo}</Typography>
                     </Grid>}
@@ -65,14 +65,17 @@ export const MainAppBar = withStyles(styles)(
                         alignItems="center"
                         justify="flex-end"
                         wrap="nowrap">
-                        {pluginConfig.appBarRight ||
-                            (props.user ? <>
-                                <NotificationsMenu />
-                                <AccountMenu />
-                                {props.user.isAdmin && <AdminMenu />}
-                                <HelpMenu />
-                            </> :
-                                <HelpMenu />)}
+                        {props.user ? <>
+                            <NotificationsMenu />
+                            <AccountMenu />
+                            {pluginConfig.appBarRight ||
+                                <>
+                                    {props.user.isAdmin && <AdminMenu />}
+                                    <HelpMenu />
+                                </>}
+                        </> :
+                            pluginConfig.appBarRight || <HelpMenu />
+                        }
                     </Grid>
                 </Grid>
             </Toolbar>

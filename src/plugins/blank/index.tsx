@@ -13,6 +13,9 @@ export const register = (pluginConfig: PluginConfig) => {
 
     pluginConfig.sidePanelCategories.push((cats: string[]): string[] => []);
 
+    pluginConfig.accountMenuList.push((elms) => []);
+    pluginConfig.newButtonMenuList.push((elms) => []);
+
     pluginConfig.appBarLeft = <span />;
     pluginConfig.appBarMiddle = <span />;
     pluginConfig.appBarRight = <span />;
