@@ -30,13 +30,27 @@ interface MainContentBarProps {
 
 const isButtonVisible = ({ router }: RootState) => {
     const pathname = router.location ? router.location.pathname : '';
-    return !Routes.matchWorkflowRoute(pathname) && !Routes.matchUserVirtualMachineRoute(pathname) &&
-        !Routes.matchAdminVirtualMachineRoute(pathname) && !Routes.matchRepositoriesRoute(pathname) &&
-        !Routes.matchSshKeysAdminRoute(pathname) && !Routes.matchSshKeysUserRoute(pathname) &&
-        !Routes.matchSiteManagerRoute(pathname) &&
-        !Routes.matchKeepServicesRoute(pathname) && !Routes.matchComputeNodesRoute(pathname) &&
-        !Routes.matchApiClientAuthorizationsRoute(pathname) && !Routes.matchUsersRoute(pathname) &&
-        !Routes.matchMyAccountRoute(pathname) && !Routes.matchLinksRoute(pathname);
+    return Routes.matchCollectionsContentAddressRoute(pathname) ||
+        Routes.matchPublicFavoritesRoute(pathname) ||
+        Routes.matchGroupDetailsRoute(pathname) ||
+        Routes.matchGroupsRoute(pathname) ||
+        Routes.matchUsersRoute(pathname) ||
+        Routes.matchSearchResultsRoute(pathname) ||
+        Routes.matchSharedWithMeRoute(pathname) ||
+        Routes.matchProcessRoute(pathname) ||
+        Routes.matchCollectionRoute(pathname) ||
+        Routes.matchProjectRoute(pathname) ||
+        Routes.matchAllProcessesRoute(pathname) ||
+        Routes.matchTrashRoute(pathname) ||
+        Routes.matchFavoritesRoute(pathname);
+
+    /* return !Routes.matchWorkflowRoute(pathname) && !Routes.matchUserVirtualMachineRoute(pathname) &&
+     *     !Routes.matchAdminVirtualMachineRoute(pathname) && !Routes.matchRepositoriesRoute(pathname) &&
+     *     !Routes.matchSshKeysAdminRoute(pathname) && !Routes.matchSshKeysUserRoute(pathname) &&
+     *     !Routes.matchSiteManagerRoute(pathname) &&
+     *     !Routes.matchKeepServicesRoute(pathname) && !Routes.matchComputeNodesRoute(pathname) &&
+     *     !Routes.matchApiClientAuthorizationsRoute(pathname) && !Routes.matchUsersRoute(pathname) &&
+     *     !Routes.matchMyAccountRoute(pathname) && !Routes.matchLinksRoute(pathname); */
 };
 
 export const MainContentBar =

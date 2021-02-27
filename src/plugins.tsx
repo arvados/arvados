@@ -9,12 +9,15 @@ export const pluginConfig: PluginConfig = {
     sidePanelCategories: [],
     dialogs: [],
     navigateToHandlers: [],
-    locationChangeHandlers: []
+    locationChangeHandlers: [],
+    appBarLeft: undefined,
+    appBarMiddle: undefined,
+    appBarRight: undefined,
 };
 
 // Starting here, import and register your Workbench 2 plugins. //
 
-// import { register as blankUIPluginRegister } from '~/plugins/blank/index';
+import { register as blankUIPluginRegister } from '~/plugins/blank/index';
 import { register as examplePluginRegister, routePath as exampleRoutePath } from '~/plugins/example/index';
 import { register as rootRedirectRegister } from '~/plugins/root-redirect/index';
 
