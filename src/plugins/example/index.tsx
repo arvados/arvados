@@ -9,7 +9,7 @@ import * as React from 'react';
 import { Dispatch } from 'redux';
 import { RootState } from '~/store/store';
 import { push } from "react-router-redux";
-import { Typography } from "@material-ui/core";
+import { Card, CardContent, Typography } from "@material-ui/core";
 import { Route, matchPath } from "react-router";
 import { RootStore } from '~/store/store';
 import { activateSidePanelTreeItem } from '~/store/side-panel-tree/side-panel-tree-actions';
@@ -26,6 +26,7 @@ const propertyKey = "Example_menu_item_pressed_count";
 
 interface ExampleProps {
     pressedCount: number;
+    className?: string;
 }
 
 const exampleMapStateToProps = (state: RootState) => ({ pressedCount: state.properties[propertyKey] || 0 });
@@ -35,15 +36,19 @@ const incrementPressedCount = (dispatch: Dispatch, pressedCount: number) => {
 };
 
 const ExampleMenuComponent = connect(exampleMapStateToProps)(
-    ({ pressedCount, dispatch }: ExampleProps & DispatchProp<any>) =>
-        <MenuItem onClick={() => incrementPressedCount(dispatch, pressedCount)}>Example menu item</MenuItem >
+    ({ pressedCount, dispatch, className }: ExampleProps & DispatchProp<any>) =>
+        <MenuItem className={className} onClick={() => incrementPressedCount(dispatch, pressedCount)}>Example menu item</MenuItem >
 );
 
 const ExamplePluginMainPanel = connect(exampleMapStateToProps)(
     ({ pressedCount }: ExampleProps) =>
-        <Typography>
-            This is a example main panel plugin.  The example menu item has been pressed {pressedCount} times.
-	</Typography>);
+        <Card>
+            <CardContent>
+                <Typography>
+                    This is a example main panel plugin.  The example menu item has been pressed {pressedCount} times.
+		</Typography>
+            </CardContent>
+        </Card>);
 
 export const register = (pluginConfig: PluginConfig) => {
 
@@ -52,13 +57,13 @@ export const register = (pluginConfig: PluginConfig) => {
         return elms;
     });
 
-    pluginConfig.accountMenuList.push((elms) => {
-        elms.push(<ExampleMenuComponent />);
+    pluginConfig.accountMenuList.push((elms, menuItemClass) => {
+        elms.push(<ExampleMenuComponent className={menuItemClass} />);
         return elms;
     });
 
-    pluginConfig.newButtonMenuList.push((elms) => {
-        elms.push(<ExampleMenuComponent />);
+    pluginConfig.newButtonMenuList.push((elms, menuItemClass) => {
+        elms.push(<ExampleMenuComponent className={menuItemClass} />);
         return elms;
     });
 
