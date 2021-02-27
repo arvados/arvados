@@ -5,15 +5,18 @@
 import * as React from 'react';
 import { Dispatch } from 'redux';
 import { RootStore, RootState } from '~/store/store';
+import { ResourcesState } from '~/store/resources/resources';
+import { Location } from 'history';
 
-export type RouteListReducer = (startingList: React.ReactElement[]) => React.ReactElement[];
+export type ElementListReducer = (startingList: React.ReactElement[]) => React.ReactElement[];
 export type CategoriesListReducer = (startingList: string[]) => string[];
 export type NavigateMatcher = (dispatch: Dispatch, getState: () => RootState, uuid: string) => boolean;
 export type LocationChangeMatcher = (store: RootStore, pathname: string) => boolean;
+export type EnableNew = (location: Location, currentItemId: string, currentUserUUID: string | undefined, resources: ResourcesState) => boolean;
 
 export interface PluginConfig {
     // Customize the list of possible center panels by adding or removing Route components.
-    centerPanelList: RouteListReducer[];
+    centerPanelList: ElementListReducer[];
 
     // Customize the list of side panel categories
     sidePanelCategories: CategoriesListReducer[];
@@ -32,4 +35,11 @@ export interface PluginConfig {
     appBarMiddle?: React.ReactElement;
 
     appBarRight?: React.ReactElement;
+
+    // Customize the list menu items in the account menu
+    accountMenuList: ElementListReducer[];
+
+    enableNewButtonMatchers: EnableNew[];
+
+    newButtonMenuList: ElementListReducer[];
 }

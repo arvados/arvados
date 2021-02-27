@@ -14,20 +14,50 @@ import { Route, matchPath } from "react-router";
 import { RootStore } from '~/store/store';
 import { activateSidePanelTreeItem } from '~/store/side-panel-tree/side-panel-tree-actions';
 import { setSidePanelBreadcrumbs } from '~/store/breadcrumbs/breadcrumbs-actions';
+import { DispatchProp, connect } from 'react-redux';
+import { MenuItem } from "@material-ui/core";
+import { propertiesActions } from '~/store/properties/properties-actions';
+import { Location } from 'history';
 
 const categoryName = "Plugin Example";
 export const routePath = "/examplePlugin";
+const propertyKey = "Example_menu_item_pressed_count";
 
-const ExamplePluginMainPanel = (props: {}) => {
-    return <Typography>
-        This is a example main panel plugin.
-    </Typography>;
+interface ExampleProps {
+    pressedCount: number;
+}
+
+const exampleMapStateToProps = (state: RootState) => ({ pressedCount: state.properties[propertyKey] || 0 });
+
+const incrementPressedCount = (dispatch: Dispatch, pressedCount: number) => {
+    dispatch(propertiesActions.SET_PROPERTY({ key: propertyKey, value: pressedCount + 1 }));
 };
+
+const ExampleMenuComponent = connect(exampleMapStateToProps)(
+    ({ pressedCount, dispatch }: ExampleProps & DispatchProp<any>) =>
+        <MenuItem onClick={() => incrementPressedCount(dispatch, pressedCount)}>Example menu item</MenuItem >
+);
+
+const ExamplePluginMainPanel = connect(exampleMapStateToProps)(
+    ({ pressedCount }: ExampleProps) =>
+        <Typography>
+            This is a example main panel plugin.  The example menu item has been pressed {pressedCount} times.
+	</Typography>);
 
 export const register = (pluginConfig: PluginConfig) => {
 
     pluginConfig.centerPanelList.push((elms) => {
         elms.push(<Route path={routePath} component={ExamplePluginMainPanel} />);
+        return elms;
+    });
+
+    pluginConfig.accountMenuList.push((elms) => {
+        elms.push(<ExampleMenuComponent />);
+        return elms;
+    });
+
+    pluginConfig.newButtonMenuList.push((elms) => {
+        elms.push(<ExampleMenuComponent />);
         return elms;
     });
 
@@ -49,4 +79,6 @@ export const register = (pluginConfig: PluginConfig) => {
         }
         return false;
     });
+
+    pluginConfig.enableNewButtonMatchers.push((location: Location) => (!!matchPath(location.pathname, { path: routePath, exact: true })));
 };
