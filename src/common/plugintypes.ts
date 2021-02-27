@@ -26,4 +26,10 @@ export interface PluginConfig {
 
     // Add handlers for navigation actions
     locationChangeHandlers: LocationChangeMatcher[];
+
+    appBarLeft?: React.ReactElement;
+
+    appBarMiddle?: React.ReactElement;
+
+    appBarRight?: React.ReactElement;
 }
