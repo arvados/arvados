@@ -8,7 +8,7 @@ import { RootStore, RootState } from '~/store/store';
 import { ResourcesState } from '~/store/resources/resources';
 import { Location } from 'history';
 
-export type ElementListReducer = (startingList: React.ReactElement[]) => React.ReactElement[];
+export type ElementListReducer = (startingList: React.ReactElement[], itemClass?: string) => React.ReactElement[];
 export type CategoriesListReducer = (startingList: string[]) => string[];
 export type NavigateMatcher = (dispatch: Dispatch, getState: () => RootState, uuid: string) => boolean;
 export type LocationChangeMatcher = (store: RootStore, pathname: string) => boolean;

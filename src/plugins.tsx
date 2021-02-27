@@ -20,10 +20,10 @@ export const pluginConfig: PluginConfig = {
 
 // Starting here, import and register your Workbench 2 plugins. //
 
-import { register as blankUIPluginRegister } from '~/plugins/blank/index';
+// import { register as blankUIPluginRegister } from '~/plugins/blank/index';
 import { register as examplePluginRegister, routePath as exampleRoutePath } from '~/plugins/example/index';
 import { register as rootRedirectRegister } from '~/plugins/root-redirect/index';
 
-blankUIPluginRegister(pluginConfig);
+// blankUIPluginRegister(pluginConfig);
 examplePluginRegister(pluginConfig);
 rootRedirectRegister(pluginConfig, exampleRoutePath);

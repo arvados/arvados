@@ -114,8 +114,8 @@ export const SidePanelButton = withStyles(styles)(
                     </MenuItem>
                 </>;
 
-                const reduceItemsFn: (a: React.ReactElement[],
-                    b: ElementListReducer) => React.ReactElement[] = (a, b) => b(a);
+                const reduceItemsFn: (a: React.ReactElement[], b: ElementListReducer) => React.ReactElement[] =
+                    (a, b) => b(a, classes.menuItem);
 
                 menuItems = React.createElement(React.Fragment, null,
                     pluginConfig.newButtonMenuList.reduce(reduceItemsFn, React.Children.toArray(menuItems.props.children)));
