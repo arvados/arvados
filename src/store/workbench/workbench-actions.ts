@@ -110,7 +110,7 @@ export const isWorkbenchLoading = (state: RootState) => {
     return progress ? progress.working : false;
 };
 
-const handleFirstTimeLoad = (action: any) =>
+export const handleFirstTimeLoad = (action: any) =>
     async (dispatch: Dispatch<any>, getState: () => RootState) => {
         try {
             await dispatch(action);

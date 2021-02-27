@@ -18,6 +18,7 @@ import { DispatchProp, connect } from 'react-redux';
 import { MenuItem } from "@material-ui/core";
 import { propertiesActions } from '~/store/properties/properties-actions';
 import { Location } from 'history';
+import { handleFirstTimeLoad } from '~/store/workbench/workbench-actions';
 
 const categoryName = "Plugin Example";
 export const routePath = "/examplePlugin";
@@ -73,8 +74,11 @@ export const register = (pluginConfig: PluginConfig) => {
 
     pluginConfig.locationChangeHandlers.push((store: RootStore, pathname: string): boolean => {
         if (matchPath(pathname, { path: routePath, exact: true })) {
-            store.dispatch(activateSidePanelTreeItem(categoryName));
-            store.dispatch<any>(setSidePanelBreadcrumbs(categoryName));
+            store.dispatch(handleFirstTimeLoad(
+                (dispatch: Dispatch) => {
+                    dispatch<any>(activateSidePanelTreeItem(categoryName));
+                    dispatch<any>(setSidePanelBreadcrumbs(categoryName));
+                }));
             return true;
         }
         return false;
