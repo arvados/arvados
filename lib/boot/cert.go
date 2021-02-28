@@ -32,14 +32,14 @@ func (createCertificates) Run(ctx context.Context, fail func(error), super *Supe
 	} else {
 		san += fmt.Sprintf(",DNS:%s", super.ListenHost)
 	}
-	if hostname, err := os.Hostname(); err != nil {
+	hostname, err := os.Hostname()
+	if err != nil {
 		return fmt.Errorf("hostname: %w", err)
-	} else {
-		san += ",DNS:" + hostname
 	}
+	san += ",DNS:" + hostname
 
 	// Generate root key
-	err := super.RunProgram(ctx, super.tempdir, runOptions{}, "openssl", "genrsa", "-out", "rootCA.key", "4096")
+	err = super.RunProgram(ctx, super.tempdir, runOptions{}, "openssl", "genrsa", "-out", "rootCA.key", "4096")
 	if err != nil {
 		return err
 	}
