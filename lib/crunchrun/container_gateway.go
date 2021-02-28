@@ -49,9 +49,8 @@ func (gw *Gateway) Start() error {
 		PasswordCallback: func(c ssh.ConnMetadata, pass []byte) (*ssh.Permissions, error) {
 			if c.User() == "_" {
 				return nil, nil
-			} else {
-				return nil, fmt.Errorf("cannot specify user %q via ssh client", c.User())
 			}
+			return nil, fmt.Errorf("cannot specify user %q via ssh client", c.User())
 		},
 		PublicKeyCallback: func(c ssh.ConnMetadata, pubKey ssh.PublicKey) (*ssh.Permissions, error) {
 			if c.User() == "_" {
@@ -60,9 +59,8 @@ func (gw *Gateway) Start() error {
 						"pubkey-fp": ssh.FingerprintSHA256(pubKey),
 					},
 				}, nil
-			} else {
-				return nil, fmt.Errorf("cannot specify user %q via ssh client", c.User())
 			}
+			return nil, fmt.Errorf("cannot specify user %q via ssh client", c.User())
 		},
 	}
 	pvt, err := rsa.GenerateKey(rand.Reader, 2048)
