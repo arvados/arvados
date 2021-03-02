@@ -288,6 +288,11 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 			w.Header().Set("Content-Type", "application/xml")
 			io.WriteString(w, xml.Header)
 			fmt.Fprintln(w, `<VersioningConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/"/>`)
+		} else if _, ok = r.URL.Query()["location"]; ok {
+			// GetBucketLocation
+			w.Header().Set("Content-Type", "application/xml")
+			io.WriteString(w, xml.Header)
+			fmt.Fprintln(w, `<LocationConstraint xmlns="http://s3.amazonaws.com/doc/2006-03-01/">`+h.Config.cluster.ClusterID+`</LocationConstraint>`)
 		} else {
 			// ListObjects
 			h.s3list(bucketName, w, r, fs)
