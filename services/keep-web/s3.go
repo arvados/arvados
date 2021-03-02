@@ -102,6 +102,7 @@ func s3stringToSign(alg, scope, signedHeaders string, r *http.Request) (string, 
 	normalizedURL := *r.URL
 	normalizedURL.RawPath = ""
 	normalizedURL.Path = reMultipleSlashChars.ReplaceAllString(normalizedURL.Path, "/")
+	ctxlog.FromContext(r.Context()).Infof("escapedPath %s", normalizedURL.EscapedPath())
 	canonicalRequest := fmt.Sprintf("%s\n%s\n%s\n%s\n%s\n%s", r.Method, normalizedURL.EscapedPath(), s3querystring(r.URL), canonicalHeaders, signedHeaders, r.Header.Get("X-Amz-Content-Sha256"))
 	ctxlog.FromContext(r.Context()).Debugf("s3stringToSign: canonicalRequest %s", canonicalRequest)
 	return fmt.Sprintf("%s\n%s\n%s\n%s", alg, r.Header.Get("X-Amz-Date"), scope, hashdigest(sha256.New(), canonicalRequest)), nil
@@ -221,6 +222,8 @@ var UnauthorizedAccess = "UnauthorizedAccess"
 var InvalidRequest = "InvalidRequest"
 var SignatureDoesNotMatch = "SignatureDoesNotMatch"
 
+var reRawQueryIndicatesAPI = regexp.MustCompile(`^[a-z]+(&|$)`)
+
 // serveS3 handles r and returns true if r is a request from an S3
 // client, otherwise it returns false.
 func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
@@ -292,13 +295,23 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 			// GetBucketLocation
 			w.Header().Set("Content-Type", "application/xml")
 			io.WriteString(w, xml.Header)
-			fmt.Fprintln(w, `<LocationConstraint xmlns="http://s3.amazonaws.com/doc/2006-03-01/">`+h.Config.cluster.ClusterID+`</LocationConstraint>`)
+			fmt.Fprintln(w, `<LocationConstraint><LocationConstraint xmlns="http://s3.amazonaws.com/doc/2006-03-01/">`+
+				h.Config.cluster.ClusterID+
+				`</LocationConstraint></LocationConstraint>`)
+		} else if reRawQueryIndicatesAPI.MatchString(r.URL.RawQuery) {
+			// GetBucketWebsite ("GET /bucketid/?website"), GetBucketTagging, etc.
+			s3ErrorResponse(w, InvalidRequest, "API not supported", r.URL.Path+"?"+r.URL.RawQuery, http.StatusBadRequest)
 		} else {
 			// ListObjects
 			h.s3list(bucketName, w, r, fs)
 		}
 		return true
 	case r.Method == http.MethodGet || r.Method == http.MethodHead:
+		if reRawQueryIndicatesAPI.MatchString(r.URL.RawQuery) {
+			// GetObjectRetention ("GET /bucketid/objectid?retention&versionID=..."), etc.
+			s3ErrorResponse(w, InvalidRequest, "API not supported", r.URL.Path+"?"+r.URL.RawQuery, http.StatusBadRequest)
+			return true
+		}
 		fi, err := fs.Stat(fspath)
 		if r.Method == "HEAD" && !objectNameGiven {
 			// HeadBucket
@@ -328,6 +341,11 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 		http.FileServer(fs).ServeHTTP(w, &r)
 		return true
 	case r.Method == http.MethodPut:
+		if reRawQueryIndicatesAPI.MatchString(r.URL.RawQuery) {
+			// PutObjectAcl ("PUT /bucketid/objectid?acl&versionID=..."), etc.
+			s3ErrorResponse(w, InvalidRequest, "API not supported", r.URL.Path+"?"+r.URL.RawQuery, http.StatusBadRequest)
+			return true
+		}
 		if !objectNameGiven {
 			s3ErrorResponse(w, InvalidArgument, "Missing object name in PUT request.", r.URL.Path, http.StatusBadRequest)
 			return true
@@ -424,6 +442,11 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 		w.WriteHeader(http.StatusOK)
 		return true
 	case r.Method == http.MethodDelete:
+		if reRawQueryIndicatesAPI.MatchString(r.URL.RawQuery) {
+			// DeleteObjectTagging ("DELETE /bucketid/objectid?tagging&versionID=..."), etc.
+			s3ErrorResponse(w, InvalidRequest, "API not supported", r.URL.Path+"?"+r.URL.RawQuery, http.StatusBadRequest)
+			return true
+		}
 		if !objectNameGiven || r.URL.Path == "/" {
 			s3ErrorResponse(w, InvalidArgument, "missing object name in DELETE request", r.URL.Path, http.StatusBadRequest)
 			return true
