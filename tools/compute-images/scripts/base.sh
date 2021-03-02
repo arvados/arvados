@@ -6,20 +6,27 @@
 
 SUDO=sudo
 
+wait_for_apt_locks() {
+  while $SUDO fuser /var/{lib/{dpkg,apt/lists},cache/apt/archives}/lock >/dev/null 2>&1; do
+    echo "APT: Waiting for apt/dpkg locks to be released..."
+    sleep 1
+  done
+}
+
 # Run apt-get update
 $SUDO DEBIAN_FRONTEND=noninteractive apt-get --yes update
 
 # Install gnupg and dirmgr or gpg key checks will fail
-$SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes install \
+wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes install \
   gnupg \
   dirmngr \
   lsb-release
 
 # For good measure, apt-get upgrade
-$SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes upgrade
+wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes upgrade
 
 # Make sure cloud-init is installed
-$SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes install cloud-init
+wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes install cloud-init
 if [[ ! -d /var/lib/cloud/scripts/per-boot ]]; then
   mkdir -p /var/lib/cloud/scripts/per-boot
 fi
@@ -34,15 +41,15 @@ echo "deb http://apt.arvados.org/$LSB_RELEASE_CODENAME $LSB_RELEASE_CODENAME${RE
 # Add the arvados signing key
 cat /tmp/1078ECD7.asc | $SUDO apt-key add -
 # Add the debian keys
-$SUDO DEBIAN_FRONTEND=noninteractive apt-get install --yes debian-keyring debian-archive-keyring
+wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get install --yes debian-keyring debian-archive-keyring
 
 # Fix locale
 $SUDO /bin/sed -ri 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
 $SUDO /usr/sbin/locale-gen
 
 # Install some packages we always need
-$SUDO DEBIAN_FRONTEND=noninteractive apt-get --yes update
-$SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes install \
+wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get --yes update
+wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes install \
   openssh-server \
   apt-utils \
   git \
@@ -58,18 +65,18 @@ $SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes install \
 # Arvados 2.0.4 or 2.1.0 is released, whichever comes first.
 # See https://dev.arvados.org/issues/16611 for more information
 if apt-cache -qq show python3-distutils >/dev/null 2>&1; then
-  $SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes install python3-distutils
+  wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes install python3-distutils
 fi
 
 # Install the Arvados packages we need
-$SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes install \
+wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes install \
   python-arvados-fuse \
   crunch-run \
   arvados-docker-cleaner \
   docker.io
 
 # Remove unattended-upgrades if it is installed
-$SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes remove unattended-upgrades --purge
+wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes remove unattended-upgrades --purge
 
 # Configure arvados-docker-cleaner
 $SUDO mkdir -p /etc/arvados/docker-cleaner
