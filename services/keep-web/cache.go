@@ -218,6 +218,7 @@ func (c *cache) GetSession(token string) (arvados.CustomFileSystem, error) {
 	now := time.Now()
 	ent, _ := c.sessions.Get(token)
 	sess, _ := ent.(*cachedSession)
+	expired := false
 	if sess == nil {
 		c.metrics.sessionMisses.Inc()
 		sess = &cachedSession{
@@ -226,13 +227,13 @@ func (c *cache) GetSession(token string) (arvados.CustomFileSystem, error) {
 		c.sessions.Add(token, sess)
 	} else if sess.expire.Before(now) {
 		c.metrics.sessionMisses.Inc()
-		sess.fs.Store(nil)
+		expired = true
 	} else {
 		c.metrics.sessionHits.Inc()
 	}
 	go c.pruneSessions()
 	fs, _ := sess.fs.Load().(arvados.CustomFileSystem)
-	if fs != nil {
+	if fs != nil && !expired {
 		return fs, nil
 	}
 	ac, err := arvados.NewClientFromConfig(c.cluster)
