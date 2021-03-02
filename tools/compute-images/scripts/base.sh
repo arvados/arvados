@@ -60,14 +60,6 @@ wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes ins
   cryptsetup \
   xfsprogs
 
-# See if python3-distutils is installable, and if so install it. This is a
-# temporary workaround for an Arvados packaging bug and should be removed once
-# Arvados 2.0.4 or 2.1.0 is released, whichever comes first.
-# See https://dev.arvados.org/issues/16611 for more information
-if apt-cache -qq show python3-distutils >/dev/null 2>&1; then
-  wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes install python3-distutils
-fi
-
 # Install the Arvados packages we need
 wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes install \
   python3-arvados-fuse \
