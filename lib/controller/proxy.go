@@ -71,11 +71,12 @@ func (p *proxy) Do(
 	hdrOut.Add("Via", reqIn.Proto+" arvados-controller")
 
 	reqOut := (&http.Request{
-		Method: reqIn.Method,
-		URL:    urlOut,
-		Host:   reqIn.Host,
-		Header: hdrOut,
-		Body:   reqIn.Body,
+		Method:        reqIn.Method,
+		URL:           urlOut,
+		Host:          reqIn.Host,
+		Header:        hdrOut,
+		Body:          reqIn.Body,
+		ContentLength: reqIn.ContentLength,
 	}).WithContext(reqIn.Context())
 	return client.Do(reqOut)
 }
