@@ -187,7 +187,14 @@ describe('Collection panel tests', function () {
                     ['&', 'foo'],
                     ['foo', '&amp;'],
                     ['&amp;', 'I ❤️ ⛵️'],
-                    ['I ❤️ ⛵️', '...']
+                    ['I ❤️ ⛵️', '...'],
+                    ['...', , '#...'],
+                    ['#...', 'some name with whitespaces'],
+                    ['some name with whitespaces', 'some name with whitespaces #2'],
+                    ['some name with whitespaces #2', 'is this name legal? I hope it is'],
+                    ['is this name legal? I hope it is', 'some_file.pdf#'],
+                    ['some_file.pdf#', 'some_file.pdf?'],
+                    ['some_file.pdf?', '?some_file.pdf']
                 ];
                 nameTransitions.forEach(([from, to]) => {
                     cy.get('[data-cy=collection-files-panel]')
