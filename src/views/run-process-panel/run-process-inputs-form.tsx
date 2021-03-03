@@ -89,7 +89,7 @@ const getInputComponent = (input: CommandInputParameter) => {
             return <StringInput input={input as StringCommandInputParameter} />;
 
         case isPrimitiveOfType(input, CWLType.FILE):
-            return <FileInput input={input as FileCommandInputParameter} />;
+            return <FileInput options={{ showOnlyOwned: false, showOnlyWritable: false }} input={input as FileCommandInputParameter} />;
 
         case isPrimitiveOfType(input, CWLType.DIRECTORY):
             return <DirectoryInput input={input as DirectoryCommandInputParameter} />;

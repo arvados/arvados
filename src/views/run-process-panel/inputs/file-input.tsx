@@ -23,14 +23,18 @@ import { CollectionFile, CollectionFileType } from '~/models/collection-file';
 
 export interface FileInputProps {
     input: FileCommandInputParameter;
+    options?: { showOnlyOwned: boolean, showOnlyWritable: boolean };
 }
-export const FileInput = ({ input }: FileInputProps) =>
+export const FileInput = ({ input, options }: FileInputProps) =>
     <Field
         name={input.id}
         commandInput={input}
         component={FileInputComponent}
         format={format}
         parse={parse}
+        {...{
+            options
+        }}
         validate={getValidation(input)} />;
 
 const format = (value?: File) => value ? value.basename : '';
@@ -54,7 +58,9 @@ interface FileInputComponentState {
 }
 
 const FileInputComponent = connect()(
-    class FileInputComponent extends React.Component<GenericInputProps & DispatchProp, FileInputComponentState> {
+    class FileInputComponent extends React.Component<GenericInputProps & DispatchProp & {
+        options?: { showOnlyOwned: boolean, showOnlyWritable: boolean };
+    }, FileInputComponentState> {
         state: FileInputComponentState = {
             open: false,
         };
@@ -119,6 +125,7 @@ const FileInputComponent = connect()(
                         pickerId={this.props.commandInput.id}
                         includeCollections
                         includeFiles
+                        options={this.props.options}
                         toggleItemActive={this.setFile} />
                 </DialogContent>
                 <DialogActions>
