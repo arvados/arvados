@@ -1,16 +1,18 @@
 {
   "variables": {
-    "aws_access_key": "",
-    "aws_secret_key": "",
-    "aws_profile": "",
-    "build_environment": "aws",
     "arvados_cluster": "",
+    "associate_public_ip_address": "true",
+    "aws_access_key": "",
+    "aws_profile": "",
+    "aws_secret_key": "",
     "aws_source_ami": "ami-04d70e069399af2e9",
-    "ssh_user": "admin",
-    "vpc_id": "",
-    "subnet_id": "",
+    "build_environment": "aws",
     "public_key_file": "",
-    "associate_public_ip_address": "true"
+    "reposuffix": "",
+    "resolver": "",
+    "ssh_user": "admin",
+    "subnet_id": "",
+    "vpc_id": ""
   },
   "builders": [{
     "type": "amazon-ebs",
