@@ -49,7 +49,7 @@ Options:
       Azure SKU image to use
   --ssh_user  (default: packer)
       The user packer will use to log into the image
-  --resolver (default: 8.8.8.8)
+  --resolver (default: host's network provided)
       The dns resolver for the machine
   --reposuffix (default: unset)
       Set this to "-dev" to track the unstable/dev Arvados repositories
