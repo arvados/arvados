@@ -39,10 +39,9 @@ func (sc *spyingClient) RequestAndDecode(dst interface{}, method, path string, b
 	return sc.Client.RequestAndDecode(dst, method, path, body, params)
 }
 
-// TestFilterGroup is a very basic filter group test. It makes sure that a
-// collection and group that match the filter are present, and that a group
-// that does not match the filter is not present.
 func (s *SiteFSSuite) TestFilterGroup(c *check.C) {
+	// Make sure that a collection and group that match the filter are present,
+	// and that a group that does not match the filter is not present.
 	s.fs.MountProject("fg", fixtureThisFilterGroupUUID)
 
 	_, err := s.fs.OpenFile("/fg/baz_file", 0, 0)
@@ -53,6 +52,18 @@ func (s *SiteFSSuite) TestFilterGroup(c *check.C) {
 
 	_, err = s.fs.OpenFile("/fg/A Project", 0, 0)
 	c.Assert(err, check.Not(check.IsNil))
+
+	// An empty filter means everything that is visible should be returned.
+	s.fs.MountProject("fg2", fixtureAFilterGroupTwoUUID)
+
+	_, err = s.fs.OpenFile("/fg2/baz_file", 0, 0)
+	c.Assert(err, check.IsNil)
+
+	_, err = s.fs.OpenFile("/fg2/A Subproject", 0, 0)
+	c.Assert(err, check.IsNil)
+
+	_, err = s.fs.OpenFile("/fg2/A Project", 0, 0)
+	c.Assert(err, check.IsNil)
 }
 
 func (s *SiteFSSuite) TestCurrentUserHome(c *check.C) {

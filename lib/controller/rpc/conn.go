@@ -483,6 +483,8 @@ func (conn *Conn) GroupContents(ctx context.Context, options arvados.GroupConten
 				options.Filters = append(options.Filters, filter)
 			}
 		}
+		// Use the generic /groups/contents endpoint for filter groups
+		options.UUID = ""
 	}
 
 	ep := arvados.EndpointGroupContents
