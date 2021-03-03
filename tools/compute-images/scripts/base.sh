@@ -78,8 +78,12 @@ $SUDO echo -e "{\n  \"Quota\": \"10G\",\n  \"RemoveStoppedContainers\": \"always
 $SUDO sed -i 's/GRUB_CMDLINE_LINUX=""/GRUB_CMDLINE_LINUX="cgroup_enable=memory swapaccount=1"/g' /etc/default/grub
 $SUDO update-grub
 
-# Set a higher ulimit for docker
-$SUDO sed -i "s/ExecStart=\(.*\)/ExecStart=\1 --default-ulimit nofile=10000:10000 --dns ${RESOLVER}/g" /lib/systemd/system/docker.service
+# Set a higher ulimit and the resolver (if set) for docker
+if [ "x$RESOLVER" != "x" ]; then
+  SET_RESOLVER="--dns ${RESOLVER}"
+fi
+
+$SUDO sed "s/ExecStart=\(.*\)/ExecStart=\1 --default-ulimit nofile=10000:10000 ${SET_RESOLVER}/g" > /etc/systemd/system/docker.service
 $SUDO systemctl daemon-reload
 
 # Make sure user_allow_other is set in fuse.conf
@@ -97,10 +101,11 @@ $SUDO chown -R crunch:crunch /home/crunch/.ssh
 $SUDO chmod 600 /home/crunch/.ssh/authorized_keys
 $SUDO chmod 700 /home/crunch/.ssh/
 
-# Make sure we resolve via the provided resolver IP. Prepending is good enough because
+# Make sure we resolve via the provided resolver IP if set. Prepending is good enough because
 # unless 'rotate' is set, the nameservers are queried in order (cf. man resolv.conf)
-$SUDO sed -i "s/#prepend domain-name-servers 127.0.0.1;/prepend domain-name-servers ${RESOLVER};/" /etc/dhcp/dhclient.conf
-
+if [ "x$RESOLVER" != "x" ]; then
+  $SUDO sed -i "s/#prepend domain-name-servers 127.0.0.1;/prepend domain-name-servers ${RESOLVER};/" /etc/dhcp/dhclient.conf
+fi
 # Set up the cloud-init script that will ensure encrypted disks
 $SUDO mv /tmp/usr-local-bin-ensure-encrypted-partitions.sh /usr/local/bin/ensure-encrypted-partitions.sh
 $SUDO chmod 755 /usr/local/bin/ensure-encrypted-partitions.sh
