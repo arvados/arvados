@@ -1,22 +1,22 @@
 {
   "variables": {
-    "resource_group": null,
+    "account_file": "",
+    "arvados_cluster": "",
+    "build_environment": "azure-arm",
     "client_id": "{{env `ARM_CLIENT_ID`}}",
     "client_secret": "{{env `ARM_CLIENT_SECRET`}}",
-    "subscription_id": "{{env `ARM_SUBSCRIPTION_ID`}}",
-    "tenant_id": "{{env `ARM_TENANT_ID`}}",
-    "build_environment": "azure-arm",
     "cloud_environment_name": "Public",
-    "location": "centralus",
-    "ssh_user": "packer",
-    "ssh_private_key_file": "{{env `PACKERPRIVKEY`}}",
     "image_sku": "",
-    "arvados_cluster": "",
+    "location": "centralus",
     "project_id": "",
-    "account_file": "",
-    "resolver": "",
+    "public_key_file": "",
     "reposuffix": "",
-    "public_key_file": ""
+    "resolver": "",
+    "resource_group": null,
+    "ssh_private_key_file": "{{env `PACKERPRIVKEY`}}",
+    "ssh_user": "packer",
+    "subscription_id": "{{env `ARM_SUBSCRIPTION_ID`}}",
+    "tenant_id": "{{env `ARM_TENANT_ID`}}"
   },
   "builders": [
     {
