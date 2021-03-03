@@ -1153,9 +1153,9 @@ func (s *CollectionFSSuite) TestFlushAll(c *check.C) {
 			fs.Flush("", true)
 		}
 
-		size := fs.memorySize()
+		size := fs.MemorySize()
 		if !c.Check(size <= 1<<24, check.Equals, true) {
-			c.Logf("at dir%d fs.memorySize()=%d", i, size)
+			c.Logf("at dir%d fs.MemorySize()=%d", i, size)
 			return
 		}
 	}
@@ -1188,13 +1188,13 @@ func (s *CollectionFSSuite) TestFlushFullBlocksOnly(c *check.C) {
 			c.Assert(err, check.IsNil)
 		}
 	}
-	c.Check(fs.memorySize(), check.Equals, int64(nDirs*67<<20))
+	c.Check(fs.MemorySize(), check.Equals, int64(nDirs*67<<20))
 	c.Check(flushed, check.Equals, int64(0))
 
 	waitForFlush := func(expectUnflushed, expectFlushed int64) {
-		for deadline := time.Now().Add(5 * time.Second); fs.memorySize() > expectUnflushed && time.Now().Before(deadline); time.Sleep(10 * time.Millisecond) {
+		for deadline := time.Now().Add(5 * time.Second); fs.MemorySize() > expectUnflushed && time.Now().Before(deadline); time.Sleep(10 * time.Millisecond) {
 		}
-		c.Check(fs.memorySize(), check.Equals, expectUnflushed)
+		c.Check(fs.MemorySize(), check.Equals, expectUnflushed)
 		c.Check(flushed, check.Equals, expectFlushed)
 	}
 
