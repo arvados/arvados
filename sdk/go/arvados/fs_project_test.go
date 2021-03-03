@@ -64,6 +64,15 @@ func (s *SiteFSSuite) TestFilterGroup(c *check.C) {
 
 	_, err = s.fs.OpenFile("/fg2/A Project", 0, 0)
 	c.Assert(err, check.IsNil)
+
+	// An 'is_a' 'arvados#collection' filter means only collections should be returned.
+	s.fs.MountProject("fg3", fixtureAFilterGroupThreeUUID)
+
+	_, err = s.fs.OpenFile("/fg3/baz_file", 0, 0)
+	c.Assert(err, check.IsNil)
+
+	_, err = s.fs.OpenFile("/fg3/A Subproject", 0, 0)
+	c.Assert(err, check.Not(check.IsNil))
 }
 
 func (s *SiteFSSuite) TestCurrentUserHome(c *check.C) {
