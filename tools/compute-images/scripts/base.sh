@@ -83,7 +83,10 @@ if [ "x$RESOLVER" != "x" ]; then
   SET_RESOLVER="--dns ${RESOLVER}"
 fi
 
-$SUDO sed "s/ExecStart=\(.*\)/ExecStart=\1 --default-ulimit nofile=10000:10000 ${SET_RESOLVER}/g" > /etc/systemd/system/docker.service
+$SUDO sed "s/ExecStart=\(.*\)/ExecStart=\1 --default-ulimit nofile=10000:10000 ${SET_RESOLVER}/g" \
+  /lib/systemd/system/docker.service \
+  > /etc/systemd/system/docker.service
+
 $SUDO systemctl daemon-reload
 
 # Make sure user_allow_other is set in fuse.conf
