@@ -395,7 +395,7 @@ func (s *IntegrationSuite) TestMetrics(c *check.C) {
 	c.Check(counters["arvados_keepweb_collectioncache_permission_hits//"].Value, check.Equals, int64(1))
 	c.Check(gauges["arvados_keepweb_collectioncache_cached_manifests//"].Value, check.Equals, float64(1))
 	// FooCollection's cached manifest size is 45 ("1f4b0....+45") plus one 51-byte blob signature
-	c.Check(gauges["arvados_keepweb_collectioncache_cached_manifest_bytes//"].Value, check.Equals, float64(45+51))
+	c.Check(gauges["arvados_keepweb_sessions_cached_collection_bytes//"].Value, check.Equals, float64(45+51))
 
 	// If the Host header indicates a collection, /metrics.json
 	// refers to a file in the collection -- the metrics handler
