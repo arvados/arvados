@@ -81,8 +81,8 @@ func (m *cacheMetrics) setup(reg *prometheus.Registry) {
 	reg.MustRegister(m.apiCalls)
 	m.collectionBytes = prometheus.NewGauge(prometheus.GaugeOpts{
 		Namespace: "arvados",
-		Subsystem: "keepweb_collectioncache",
-		Name:      "cached_manifest_bytes",
+		Subsystem: "keepweb_sessions",
+		Name:      "cached_collection_bytes",
 		Help:      "Total size of all cached manifests and sessions.",
 	})
 	reg.MustRegister(m.collectionBytes)
