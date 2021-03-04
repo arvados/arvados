@@ -69,6 +69,9 @@ func saltedTokenProvider(local backend, remoteID string) rpc.TokenProvider {
 				tokens = append(tokens, salted)
 			case auth.ErrSalted:
 				tokens = append(tokens, token)
+			case auth.ErrTokenFormat:
+				// pass through unmodified (assume it's an OIDC access token)
+				tokens = append(tokens, token)
 			case auth.ErrObsoleteToken:
 				ctx := auth.NewContext(ctx, &auth.Credentials{Tokens: []string{token}})
 				aca, err := local.APIClientAuthorizationCurrent(ctx, arvados.GetOptions{})
