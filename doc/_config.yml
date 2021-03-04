@@ -44,6 +44,7 @@ navbar:
       - user/tutorials/tutorial-keep-mount-os-x.html.textile.liquid
       - user/tutorials/tutorial-keep-mount-windows.html.textile.liquid
       - user/tutorials/tutorial-keep-collection-lifecycle.html.textile.liquid
+      - user/topics/projects.html.textile.liquid
       - user/topics/arv-copy.html.textile.liquid
       - user/topics/collection-versioning.html.textile.liquid
       - user/topics/storage-classes.html.textile.liquid
