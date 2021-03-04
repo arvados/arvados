@@ -129,6 +129,7 @@ func (ctrl *oidcLoginController) Login(ctx context.Context, opts arvados.LoginOp
 	if err != nil {
 		return loginError(fmt.Errorf("error in OAuth2 exchange: %s", err))
 	}
+	ctxlog.FromContext(ctx).WithField("oauth2Token", oauth2Token).Debug("oauth2 exchange succeeded")
 	rawIDToken, ok := oauth2Token.Extra("id_token").(string)
 	if !ok {
 		return loginError(errors.New("error in OAuth2 exchange: no ID token in OAuth2 token"))

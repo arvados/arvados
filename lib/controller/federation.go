@@ -263,10 +263,10 @@ func (h *Handler) saltAuthToken(req *http.Request, remote string) (updatedReq *h
 		return updatedReq, nil
 	}
 
-	ctxlog.FromContext(req.Context()).Infof("saltAuthToken: cluster %s token %s remote %s", h.Cluster.ClusterID, creds.Tokens[0], remote)
+	ctxlog.FromContext(req.Context()).Debugf("saltAuthToken: cluster %s token %s remote %s", h.Cluster.ClusterID, creds.Tokens[0], remote)
 	token, err := auth.SaltToken(creds.Tokens[0], remote)
 
-	if err == auth.ErrObsoleteToken {
+	if err == auth.ErrObsoleteToken || err == auth.ErrTokenFormat {
 		// If the token exists in our own database for our own
 		// user, salt it for the remote. Otherwise, assume it
 		// was issued by the remote, and pass it through
