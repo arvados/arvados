@@ -24,11 +24,17 @@ type CssRules = 'list'
     | 'iconOpen'
     | 'toggableIcon'
     | 'checkbox'
+    | 'virtualFileTree'
     | 'virtualizedList';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     list: {
         padding: '3px 0px',
+    },
+    virtualFileTree: {
+        "&:last-child": {
+            paddingBottom: 20
+          }
     },
     virtualizedList: {
         height: '200px',
@@ -84,7 +90,7 @@ export const Row =  <T, _>(itemList: VirtualTreeItem<T>[], render: any, treeProp
         const it = itemList[index];
         const level = it.level || 0;
         const { toggleItemActive, disableRipple, currentItemUuid, useRadioButtons } = treeProps;
-        const { listItem, loader, toggableIconContainer, renderContainer } = classes;
+        const { listItem, loader, toggableIconContainer, renderContainer, virtualFileTree } = classes;
         const { levelIndentation = 20, itemRightPadding = 20 } = treeProps;
 
         const showSelection = typeof treeProps.showSelection === 'function'
@@ -130,7 +136,7 @@ export const Row =  <T, _>(itemList: VirtualTreeItem<T>[], render: any, treeProp
                 : undefined;
         };
 
-        return <div data-cy='virtual-file-tree' style={style}>
+        return <div className={virtualFileTree} data-cy='virtual-file-tree' style={style}>
             <ListItem button className={listItem}
                 style={{
                     paddingLeft: (level + 1) * levelIndentation,
