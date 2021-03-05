@@ -129,7 +129,9 @@ class FuseMagicTest(MountTestBase):
 
         self.test_project = run_test_server.fixture('groups')['aproject']['uuid']
         self.non_project_group = run_test_server.fixture('groups')['public_role']['uuid']
+        self.filter_group = run_test_server.fixture('groups')['afiltergroup']['uuid']
         self.collection_in_test_project = run_test_server.fixture('collections')['foo_collection_in_aproject']['name']
+        self.collection_in_filter_group = run_test_server.fixture('collections')['baz_file']['name']
 
         cw = arvados.CollectionWriter()
 
@@ -157,6 +159,11 @@ class FuseMagicTest(MountTestBase):
                       llfuse.listdir(os.path.join(self.mounttmp, self.test_project)))
         self.assertIn(self.collection_in_test_project,
                       llfuse.listdir(os.path.join(self.mounttmp, 'by_id', self.test_project)))
+        self.assertIn(self.collection_in_filter_group,
+                      llfuse.listdir(os.path.join(self.mounttmp, self.filter_group)))
+        self.assertIn(self.collection_in_filter_group,
+                      llfuse.listdir(os.path.join(self.mounttmp, 'by_id', self.filter_group)))
+
 
         mount_ls = llfuse.listdir(self.mounttmp)
         self.assertIn('README', mount_ls)
@@ -165,6 +172,8 @@ class FuseMagicTest(MountTestBase):
                       llfuse.listdir(os.path.join(self.mounttmp, 'by_id')))
         self.assertIn(self.test_project, mount_ls)
         self.assertIn(self.test_project,
+                      llfuse.listdir(os.path.join(self.mounttmp, 'by_id')))
+        self.assertIn(self.filter_group,
                       llfuse.listdir(os.path.join(self.mounttmp, 'by_id')))
 
         with self.assertRaises(OSError):

@@ -683,8 +683,10 @@ and the directory will appear if it exists.
 
             if group_uuid_pattern.match(k):
                 project = self.api.groups().list(
-                    filters=[['group_class', '=', 'project'], ["uuid", "=", k]]).execute(num_retries=self.num_retries)
+                    filters=[["uuid", "=", k]]).execute(num_retries=self.num_retries)
                 if project[u'items_available'] == 0:
+                    return False
+                if project[u'items'][0][u'group_class'] != u'project' and project[u'items'][0][u'group_class'] != u'filter':
                     return False
                 e = self.inodes.add_entry(ProjectDirectory(
                     self.inode, self.inodes, self.api, self.num_retries, project[u'items'][0]))
