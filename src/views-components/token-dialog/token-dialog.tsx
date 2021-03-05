@@ -111,10 +111,12 @@ unset ARVADOS_API_HOST_INSECURE`
                     Paste the following lines at a shell prompt to set up the necessary environment for Arvados SDKs to authenticate to your account.
                 </Typography>
                 <DefaultCodeSnippet lines={[this.getSnippet(data)]} />
+                <Typography component='span'>
                 { data.tokenExpiration
-                    ? <Typography component='span'>Expires at: {data.tokenExpiration.toLocaleString()}</Typography>
-                    : null
+                    ? `Expires at: ${data.tokenExpiration.toLocaleString()}`
+                    : `This token does not have an expiration date`
                 }
+                </Typography>
                 <CopyToClipboard text={this.getSnippet(data)} onCopy={() => this.onCopy('Token copied to clipboard')}>
                     <Button
                         color="primary"
