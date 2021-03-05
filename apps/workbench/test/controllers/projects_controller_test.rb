@@ -523,12 +523,12 @@ EOT
       use_token user
       ctrl = ProjectsController.new
       current_user = User.find(api_fixture('users')[user]['uuid'])
-      my_starred_project = ctrl.send :my_starred_projects, current_user
+      my_starred_project = ctrl.send :my_starred_projects, current_user, ''
       assert_equal(size, my_starred_project.andand.size)
 
       ctrl2 = ProjectsController.new
       current_user = User.find(api_fixture('users')[user]['uuid'])
-      my_starred_project = ctrl2.send :my_starred_projects, current_user
+      my_starred_project = ctrl2.send :my_starred_projects, current_user, ''
       assert_equal(size, my_starred_project.andand.size)
     end
   end
@@ -542,7 +542,7 @@ EOT
     use_token :project_viewer
     current_user = User.find(api_fixture('users')['project_viewer']['uuid'])
     ctrl = ProjectsController.new
-    my_starred_project = ctrl.send :my_starred_projects, current_user
+    my_starred_project = ctrl.send :my_starred_projects, current_user, ''
     assert_equal(0, my_starred_project.andand.size)
 
     # share it again
@@ -560,7 +560,7 @@ EOT
     # verify that the project is again included in starred projects
     use_token :project_viewer
     ctrl = ProjectsController.new
-    my_starred_project = ctrl.send :my_starred_projects, current_user
+    my_starred_project = ctrl.send :my_starred_projects, current_user, ''
     assert_equal(1, my_starred_project.andand.size)
   end
 end

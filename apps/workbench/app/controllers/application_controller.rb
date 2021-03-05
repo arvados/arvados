@@ -95,7 +95,7 @@ class ApplicationController < ActionController::Base
     # exception here than in a template.)
     unless current_user.nil?
       begin
-        my_starred_projects current_user
+        my_starred_projects current_user, 'project'
         build_my_wanted_projects_tree current_user
       rescue ArvadosApiClient::ApiError
         # Fall back to the default-setting code later.
@@ -824,7 +824,7 @@ class ApplicationController < ActionController::Base
   helper_method :all_projects
   def all_projects
     @all_projects ||= Group.
-      filter([['group_class','=','project']]).order('name')
+      filter([['group_class','IN',['project','filter']]]).order('name')
   end
 
   helper_method :my_projects
@@ -925,13 +925,17 @@ class ApplicationController < ActionController::Base
   end
 
   helper_method :my_starred_projects
-  def my_starred_projects user
+  def my_starred_projects user, group_class
     return if defined?(@starred_projects) && @starred_projects
     links = Link.filter([['owner_uuid', 'in', ["#{Rails.configuration.ClusterID}-j7d0g-publicfavorites", user.uuid]],
                          ['link_class', '=', 'star'],
                          ['head_uuid', 'is_a', 'arvados#group']]).with_count("none").select(%w(head_uuid))
     uuids = links.collect { |x| x.head_uuid }
-    starred_projects = Group.filter([['uuid', 'in', uuids]]).order('name').with_count("none")
+    if group_class == ""
+      starred_projects = Group.filter([['uuid', 'in', uuids]]).order('name').with_count("none")
+    else
+      starred_projects = Group.filter([['uuid', 'in', uuids],['group_class', '=', group_class]]).order('name').with_count("none")
+    end
     @starred_projects = starred_projects.results
   end
 
@@ -949,7 +953,7 @@ class ApplicationController < ActionController::Base
     @too_many_projects = false
     @reached_level_limit = false
     while from_top.size <= page_size*2
-      current_level = Group.filter([['group_class','=','project'],
+      current_level = Group.filter([['group_class','IN',['project','filter']],
                                     ['owner_uuid', 'in', uuids]])
                       .order('name').limit(page_size*2)
       break if current_level.results.size == 0

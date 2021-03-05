@@ -34,7 +34,7 @@ class ActionsController < ApplicationController
         @object.link_class == 'name' and
         ArvadosBase::resource_class_for_uuid(@object.head_uuid) == Collection
       redirect_to collection_path(id: @object.uuid)
-    elsif @object.is_a?(Group) and @object.group_class == 'project'
+    elsif @object.is_a?(Group) and (@object.group_class == 'project' or @object.group_class == 'filter')
       redirect_to project_path(id: @object.uuid)
     elsif @object
       redirect_to @object

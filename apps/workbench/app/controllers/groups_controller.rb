@@ -4,7 +4,7 @@
 
 class GroupsController < ApplicationController
   def index
-    @groups = Group.filter [['group_class', '!=', 'project']]
+    @groups = Group.filter [['group_class', '!=', 'project'], ['group_class', '!=', 'filter']]
     @group_uuids = @groups.collect &:uuid
     @links_from = Link.where(link_class: 'permission', tail_uuid: @group_uuids).with_count("none")
     @links_to = Link.where(link_class: 'permission', head_uuid: @group_uuids).with_count("none")
@@ -12,7 +12,7 @@ class GroupsController < ApplicationController
   end
 
   def show
-    if @object.group_class == 'project'
+    if @object.group_class == 'project' or @object.group_class == 'filter'
       redirect_to(project_path(@object))
     else
       super
