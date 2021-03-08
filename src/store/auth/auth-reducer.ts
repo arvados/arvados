@@ -69,6 +69,8 @@ export const authReducer = (services: ServiceRepository) => (state = initialStat
             }),
         SET_EXTRA_TOKEN: ({ extraApiToken, extraApiTokenExpiration }) =>
             ({ ...state, extraApiToken, extraApiTokenExpiration }),
+        RESET_EXTRA_TOKEN: () =>
+            ({ ...state, extraApiToken: undefined, extraApiTokenExpiration: undefined }),
         INIT_USER: ({ user, token, tokenExpiration }) =>
             ({ ...state,
                 user,

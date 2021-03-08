@@ -23,6 +23,7 @@ export const authActions = unionize({
     LOGOUT: ofType<{ deleteLinkData: boolean }>(),
     SET_CONFIG: ofType<{ config: Config }>(),
     SET_EXTRA_TOKEN: ofType<{ extraApiToken: string, extraApiTokenExpiration?: Date }>(),
+    RESET_EXTRA_TOKEN: {},
     INIT_USER: ofType<{ user: User, token: string, tokenExpiration?: Date }>(),
     USER_DETAILS_REQUEST: {},
     USER_DETAILS_SUCCESS: ofType<User>(),
@@ -112,7 +113,9 @@ export const getNewExtraToken = (reuseStored: boolean = false) =>
                     extraApiTokenExpiration: client.expiresAt ? new Date(client.expiresAt): undefined,
                 }));
                 return extraToken;
-            } catch (e) { }
+            } catch (e) {
+                dispatch(authActions.RESET_EXTRA_TOKEN());
+            }
         }
         const user = getState().auth.user;
         const loginCluster = getState().auth.config.clusterConfig.Login.LoginCluster;
