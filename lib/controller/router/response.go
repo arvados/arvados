@@ -82,38 +82,34 @@ func (rtr *router) sendResponse(w http.ResponseWriter, req *http.Request, resp i
 		defaultItemKind = strings.TrimSuffix(respKind, "List")
 	}
 
-	var items, included []interface{}
-	var itemsOK, includedOK bool
-	items, itemsOK = tmp["items"].([]interface{})
-	included, includedOK = tmp["included"].([]interface{})
-	if includedOK && len(included) > 0 {
-		items = append(items, included...)
-	}
-
-	if itemsOK {
-		for i, item := range items {
-			// Fill in "kind" by inspecting UUID/PDH if
-			// possible; fall back on assuming each
-			// Items[] entry in an "arvados#fooList"
-			// response should have kind="arvados#foo".
-			item, _ := item.(map[string]interface{})
-			infix := ""
-			if uuid, _ := item["uuid"].(string); len(uuid) == 27 {
-				infix = uuid[6:11]
+	if _, isListResponse := tmp["items"].([]interface{}); isListResponse {
+		items, _ := tmp["items"].([]interface{})
+		included, _ := tmp["included"].([]interface{})
+		for _, slice := range [][]interface{}{items, included} {
+			for i, item := range slice {
+				// Fill in "kind" by inspecting UUID/PDH if
+				// possible; fall back on assuming each
+				// Items[] entry in an "arvados#fooList"
+				// response should have kind="arvados#foo".
+				item, _ := item.(map[string]interface{})
+				infix := ""
+				if uuid, _ := item["uuid"].(string); len(uuid) == 27 {
+					infix = uuid[6:11]
+				}
+				if k := kind(infixMap[infix]); k != "" {
+					item["kind"] = k
+				} else if pdh, _ := item["portable_data_hash"].(string); pdh != "" {
+					item["kind"] = "arvados#collection"
+				} else if defaultItemKind != "" {
+					item["kind"] = defaultItemKind
+				}
+				item = applySelectParam(opts.Select, item)
+				rtr.mungeItemFields(item)
+				slice[i] = item
 			}
-			if k := kind(infixMap[infix]); k != "" {
-				item["kind"] = k
-			} else if pdh, _ := item["portable_data_hash"].(string); pdh != "" {
-				item["kind"] = "arvados#collection"
-			} else if defaultItemKind != "" {
-				item["kind"] = defaultItemKind
+			if opts.Count == "none" {
+				delete(tmp, "items_available")
 			}
-			item = applySelectParam(opts.Select, item)
-			rtr.mungeItemFields(item)
-			items[i] = item
-		}
-		if opts.Count == "none" {
-			delete(tmp, "items_available")
 		}
 	} else {
 		tmp = applySelectParam(opts.Select, tmp)
