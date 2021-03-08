@@ -98,8 +98,21 @@ export const saveApiToken = (token: string) => async (dispatch: Dispatch, getSta
 
 export const getNewExtraToken = (reuseStored: boolean = false) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        if (reuseStored && getState().auth.extraApiToken !== undefined) {
-            return getState().auth.extraApiToken;
+        const extraToken = getState().auth.extraApiToken;
+        if (reuseStored && extraToken !== undefined) {
+            const config = dispatch<any>(getConfig);
+            const svc = createServices(config, { progressFn: () => { }, errorFn: () => { } });
+            setAuthorizationHeader(svc, extraToken);
+            try {
+                // Check the extra token's validity before using it. Refresh its
+                // expiration date just in case it changed.
+                const client = await svc.apiClientAuthorizationService.get('current');
+                dispatch(authActions.SET_EXTRA_TOKEN({
+                    extraApiToken: extraToken,
+                    extraApiTokenExpiration: client.expiresAt ? new Date(client.expiresAt): undefined,
+                }));
+                return extraToken;
+            } catch (e) { }
         }
         const user = getState().auth.user;
         const loginCluster = getState().auth.config.clusterConfig.Login.LoginCluster;
