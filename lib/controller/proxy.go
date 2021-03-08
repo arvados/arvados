@@ -76,6 +76,7 @@ func (p *proxy) Do(
 		Host:   reqIn.Host,
 		Header: hdrOut,
 		Body:   reqIn.Body,
+		TransferEncoding: []string{"identity"},
 	}).WithContext(reqIn.Context())
 	return client.Do(reqOut)
 }
