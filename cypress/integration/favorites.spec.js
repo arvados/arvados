@@ -28,52 +28,6 @@ describe('Favorites tests', function () {
         cy.clearLocalStorage()
     });
 
-    const createSharedProjects = () => {
-        cy.createGroup(adminUser.token, {
-            name: `my-shared-writable-project ${Math.floor(Math.random() * 999999)}`,
-            group_class: 'project',
-        }).as('mySharedWritableProject').then(function (mySharedWritableProject) {
-            cy.contains('Refresh').click();
-            cy.get('main').contains(mySharedWritableProject.name).rightclick();
-            cy.get('[data-cy=context-menu]').within(() => {
-                cy.contains('Share').click();
-            });
-            cy.get('[id="select-permissions"]').as('selectPermissions');
-            cy.get('@selectPermissions').click();
-            cy.contains('Write').click();
-            cy.get('.sharing-dialog').as('sharingDialog');
-            cy.get('[data-cy=invite-people-field]').find('input').type(activeUser.user.email);
-            cy.get('[role=tooltip]').click();
-            cy.get('@sharingDialog').contains('Save').click();
-        });
-
-        cy.createGroup(adminUser.token, {
-            name: `my-shared-readonly-project ${Math.floor(Math.random() * 999999)}`,
-            group_class: 'project',
-        }).as('mySharedReadonlyProject').then(function (mySharedReadonlyProject) {
-            cy.contains('Refresh').click();
-            cy.get('main').contains(mySharedReadonlyProject.name).rightclick();
-            cy.get('[data-cy=context-menu]').within(() => {
-                cy.contains('Share').click();
-            });
-            cy.get('.sharing-dialog').as('sharingDialog');
-            cy.get('[data-cy=invite-people-field]').find('input').type(activeUser.user.email);
-            cy.get('[role=tooltip]').click();
-            cy.get('@sharingDialog').contains('Save').click();
-        });
-
-        cy.createGroup(activeUser.token, {
-            name: `my-project ${Math.floor(Math.random() * 999999)}`,
-            group_class: 'project',
-        }).as('myProject1');
-    };
-
-    it('checks that Public favorites does not appear under shared with me', function () {
-        cy.loginAs(adminUser);
-        cy.contains('Shared with me').click();
-        cy.get('main').contains('Public favorites').should('not.exist');
-    });
-
     it('creates and removes a public favorite', function () {
         cy.loginAs(adminUser);
         cy.createGroup(adminUser.token, {
@@ -91,61 +45,6 @@ describe('Favorites tests', function () {
         });
     });
 
-    it('can copy collection to favorites', () => {
-        cy.loginAs(adminUser);
-
-        createSharedProjects();
-
-        cy.createCollection(adminUser.token, {
-            name: `Test collection ${Math.floor(Math.random() * 999999)}`,
-            owner_uuid: activeUser.user.uuid,
-            manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
-        })
-            .as('testCollection');
-
-        cy.getAll('@mySharedWritableProject', '@mySharedReadonlyProject', '@myProject1', '@testCollection')
-            .then(function ([mySharedWritableProject, mySharedReadonlyProject, myProject1, testCollection]) {
-                cy.loginAs(activeUser);
-
-                cy.contains('Shared with me').click();
-
-                cy.get('main').contains(mySharedWritableProject.name).rightclick();
-                cy.get('[data-cy=context-menu]').within(() => {
-                    cy.contains('Add to favorites').click();
-                });
-
-                cy.get('main').contains(mySharedReadonlyProject.name).rightclick();
-                cy.get('[data-cy=context-menu]').within(() => {
-                    cy.contains('Add to favorites').click();
-                });
-
-                cy.doSearch(`${activeUser.user.uuid}`);
-
-                cy.get('main').contains(myProject1.name).rightclick();
-                cy.get('[data-cy=context-menu]').within(() => {
-                    cy.contains('Add to favorites').click();
-                });
-
-                cy.contains(testCollection.name).rightclick();
-                cy.get('[data-cy=context-menu]').within(() => {
-                    cy.contains('Move to').click();
-                });
-
-                cy.get('[data-cy=form-dialog]').within(function () {
-                    cy.get('[data-cy=projects-tree-favourites-tree-picker]').find('i').click();
-                    cy.contains(myProject1.name);
-                    cy.contains(mySharedWritableProject.name);
-                    cy.get('[data-cy=projects-tree-favourites-tree-picker]')
-                        .should('not.contain', mySharedReadonlyProject.name);
-                    cy.contains(mySharedWritableProject.name).click();
-                    cy.get('[data-cy=form-submit-btn]').click();
-                });
-
-                cy.doSearch(`${mySharedWritableProject.uuid}`);
-                cy.get('main').contains(testCollection.name);
-            });
-    });
-
     it('can copy selected into the collection', () => {
         cy.loginAs(adminUser);
 
@@ -154,36 +53,14 @@ describe('Favorites tests', function () {
             manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
         })
             .as('testSourceCollection').then(function (testSourceCollection) {
-                cy.contains('Refresh').click();
-                cy.get('main').contains(testSourceCollection.name).rightclick();
-                cy.get('[data-cy=context-menu]').within(() => {
-                    cy.contains('Share').click();
-                });
-                cy.get('[id="select-permissions"]').as('selectPermissions');
-                cy.get('@selectPermissions').click();
-                cy.contains('Write').click();
-                cy.get('.sharing-dialog').as('sharingDialog');
-                cy.get('[data-cy=invite-people-field]').find('input').type(activeUser.user.email);
-                cy.get('[role=tooltip]').click();
-                cy.get('@sharingDialog').contains('Save').click();
+                cy.shareWith(adminUser.token, activeUser.user.uuid, testSourceCollection.uuid, 'can_read');
             });
 
         cy.createCollection(adminUser.token, {
             name: `Test target collection ${Math.floor(Math.random() * 999999)}`,
         })
             .as('testTargetCollection').then(function (testTargetCollection) {
-                cy.contains('Refresh').click();
-                cy.get('main').contains(testTargetCollection.name).rightclick();
-                cy.get('[data-cy=context-menu]').within(() => {
-                    cy.contains('Share').click();
-                });
-                cy.get('[id="select-permissions"]').as('selectPermissions');
-                cy.get('@selectPermissions').click();
-                cy.contains('Write').click();
-                cy.get('.sharing-dialog').as('sharingDialog');
-                cy.get('[data-cy=invite-people-field]').find('input').type(activeUser.user.email);
-                cy.get('[role=tooltip]').click();
-                cy.get('@sharingDialog').contains('Save').click();
+                cy.shareWith(adminUser.token, activeUser.user.uuid, testTargetCollection.uuid, 'can_write');
             });
 
         cy.getAll('@testSourceCollection', '@testTargetCollection')
@@ -193,10 +70,7 @@ describe('Favorites tests', function () {
                 cy.get('.layout-pane-primary')
                     .contains('Projects').click();
 
-                cy.get('main').contains(testTargetCollection.name).rightclick();
-                cy.get('[data-cy=context-menu]').within(() => {
-                    cy.contains('Add to favorites').click();
-                });
+                cy.addToFavorites(activeUser.token, activeUser.user.uuid, testTargetCollection.uuid);
 
                 cy.get('main').contains(testSourceCollection.name).click();
                 cy.get('[data-cy=collection-files-panel]').contains('bar');
@@ -224,10 +98,48 @@ describe('Favorites tests', function () {
             });
     });
 
-    it.only('can view favourites in workflow', () => {
+    it('can copy collection to favorites', () => {
         cy.loginAs(adminUser);
 
-        createSharedProjects();
+        cy.createSharedProjects(adminUser, activeUser);
+
+        cy.createCollection(adminUser.token, {
+            name: `Test collection ${Math.floor(Math.random() * 999999)}`,
+            owner_uuid: activeUser.user.uuid,
+            manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
+        })
+            .as('testCollection');
+
+        cy.getAll('@mySharedWritableProject', '@mySharedReadonlyProject', '@myProject1', '@testCollection')
+            .then(function ([mySharedWritableProject, mySharedReadonlyProject, myProject1, testCollection]) {
+                cy.loginAs(activeUser);
+
+                cy.doSearch(`${activeUser.user.uuid}`);
+
+                cy.contains(testCollection.name).rightclick();
+                cy.get('[data-cy=context-menu]').within(() => {
+                    cy.contains('Move to').click();
+                });
+
+                cy.get('[data-cy=form-dialog]').within(function () {
+                    cy.get('[data-cy=projects-tree-favourites-tree-picker]').find('i').click();
+                    cy.contains(myProject1.name);
+                    cy.contains(mySharedWritableProject.name);
+                    cy.get('[data-cy=projects-tree-favourites-tree-picker]')
+                        .should('not.contain', mySharedReadonlyProject.name);
+                    cy.contains(mySharedWritableProject.name).click();
+                    cy.get('[data-cy=form-submit-btn]').click();
+                });
+
+                cy.doSearch(`${mySharedWritableProject.uuid}`);
+                cy.get('main').contains(testCollection.name);
+            });
+    });
+
+    it('can view favourites in workflow', () => {
+        cy.loginAs(adminUser);
+
+        cy.createSharedProjects(adminUser, activeUser);
 
         cy.getAll('@mySharedWritableProject', '@mySharedReadonlyProject', '@myProject1')
             .then(function ([mySharedWritableProject, mySharedReadonlyProject, myProject1]) {
@@ -241,16 +153,6 @@ describe('Favorites tests', function () {
                     .as('testWorkflow');
 
                 cy.contains('Shared with me').click();
-
-                cy.get('main').contains(mySharedWritableProject.name).rightclick();
-                cy.get('[data-cy=context-menu]').within(() => {
-                    cy.contains('Add to favorites').click();
-                });
-
-                cy.get('main').contains(mySharedReadonlyProject.name).rightclick();
-                cy.get('[data-cy=context-menu]').within(() => {
-                    cy.contains('Add to favorites').click();
-                });
 
                 cy.doSearch(`${activeUser.user.uuid}`);
 

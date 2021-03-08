@@ -197,3 +197,47 @@ Cypress.Commands.add('getAll', (...elements) => {
 
     return promise
 })
+
+Cypress.Commands.add('shareWith', (srcUserToken, targetUserUUID, itemUUID, permission = 'can_write') => {
+    cy.createLink(srcUserToken, {
+        name: permission,
+        link_class: 'permission',
+        head_uuid: itemUUID,
+        tail_uuid: targetUserUUID
+    });
+})
+
+Cypress.Commands.add('addToFavorites', (activeUserToken, activeUserUUID, itemUUID) => {
+    cy.createLink(activeUserToken, {
+        head_uuid: itemUUID,
+        link_class: 'star',
+        name: '',
+        owner_uuid: activeUserUUID,
+        tail_uuid: activeUserUUID,
+    });
+})
+
+Cypress.Commands.add('createSharedProjects', (adminUser, activeUser) => {
+    cy.createGroup(adminUser.token, {
+        name: `my-shared-writable-project ${Math.floor(Math.random() * 999999)}`,
+        group_class: 'project',
+    }).as('mySharedWritableProject').then((mySharedWritableProject) => {
+        cy.shareWith(adminUser.token, activeUser.user.uuid, mySharedWritableProject.uuid, 'can_write');
+        cy.addToFavorites(activeUser.token, activeUser.user.uuid, mySharedWritableProject.uuid);
+    });
+
+    cy.createGroup(adminUser.token, {
+        name: `my-shared-readonly-project ${Math.floor(Math.random() * 999999)}`,
+        group_class: 'project',
+    }).as('mySharedReadonlyProject').then((mySharedReadonlyProject) => {
+        cy.shareWith(adminUser.token, activeUser.user.uuid, mySharedReadonlyProject.uuid, 'can_read');
+        cy.addToFavorites(activeUser.token, activeUser.user.uuid, mySharedReadonlyProject.uuid);
+    });
+
+    cy.createGroup(activeUser.token, {
+        name: `my-project ${Math.floor(Math.random() * 999999)}`,
+        group_class: 'project',
+    }).as('myProject1').then((myProject1) => {
+        cy.addToFavorites(activeUser.token, activeUser.user.uuid, myProject1.uuid);
+    });
+})
