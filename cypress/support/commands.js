@@ -217,27 +217,25 @@ Cypress.Commands.add('addToFavorites', (activeUserToken, activeUserUUID, itemUUI
     });
 })
 
-Cypress.Commands.add('createSharedProjects', (adminUser, activeUser) => {
-    cy.createGroup(adminUser.token, {
-        name: `my-shared-writable-project ${Math.floor(Math.random() * 999999)}`,
-        group_class: 'project',
-    }).as('mySharedWritableProject').then((mySharedWritableProject) => {
-        cy.shareWith(adminUser.token, activeUser.user.uuid, mySharedWritableProject.uuid, 'can_write');
-        cy.addToFavorites(activeUser.token, activeUser.user.uuid, mySharedWritableProject.uuid);
-    });
+Cypress.Commands.add('createProject', ({
+    owningUser,
+    targetUser,
+    projectName,
+    canWrite,
+    addToFavorites
+}) => {
+    const writePermission = canWrite ? 'can_write' : 'can_read';
 
-    cy.createGroup(adminUser.token, {
-        name: `my-shared-readonly-project ${Math.floor(Math.random() * 999999)}`,
+    cy.createGroup(owningUser.token, {
+        name: `${projectName} ${Math.floor(Math.random() * 999999)}`,
         group_class: 'project',
-    }).as('mySharedReadonlyProject').then((mySharedReadonlyProject) => {
-        cy.shareWith(adminUser.token, activeUser.user.uuid, mySharedReadonlyProject.uuid, 'can_read');
-        cy.addToFavorites(activeUser.token, activeUser.user.uuid, mySharedReadonlyProject.uuid);
+    }).as(`${projectName}`).then((project) => {
+        if (targetUser && targetUser !== owningUser) {
+            cy.shareWith(owningUser.token, targetUser.user.uuid, project.uuid, writePermission);
+        }
+        if (addToFavorites) {
+            const user = targetUser ? targetUser : owningUser;
+            cy.addToFavorites(user.token, user.user.uuid, project.uuid);
+        }
     });
-
-    cy.createGroup(activeUser.token, {
-        name: `my-project ${Math.floor(Math.random() * 999999)}`,
-        group_class: 'project',
-    }).as('myProject1').then((myProject1) => {
-        cy.addToFavorites(activeUser.token, activeUser.user.uuid, myProject1.uuid);
-    });
-})
+});

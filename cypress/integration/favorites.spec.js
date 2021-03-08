@@ -30,6 +30,7 @@ describe('Favorites tests', function () {
 
     it('creates and removes a public favorite', function () {
         cy.loginAs(adminUser);
+
         cy.createGroup(adminUser.token, {
             name: `my-favorite-project`,
             group_class: 'project',
@@ -99,9 +100,25 @@ describe('Favorites tests', function () {
     });
 
     it('can copy collection to favorites', () => {
-        cy.loginAs(adminUser);
-
-        cy.createSharedProjects(adminUser, activeUser);
+        cy.createProject({
+            owningUser: adminUser,
+            targetUser: activeUser,
+            projectName: 'mySharedWritableProject',
+            canWrite: true,
+            addToFavorites: true
+        });
+        cy.createProject({
+            owningUser: adminUser,
+            targetUser: activeUser,
+            projectName: 'mySharedReadonlyProject',
+            canWrite: false,
+            addToFavorites: true
+        });
+        cy.createProject({
+            owningUser: activeUser,
+            projectName: 'myProject1',
+            addToFavorites: true
+        });
 
         cy.createCollection(adminUser.token, {
             name: `Test collection ${Math.floor(Math.random() * 999999)}`,
@@ -137,9 +154,25 @@ describe('Favorites tests', function () {
     });
 
     it('can view favourites in workflow', () => {
-        cy.loginAs(adminUser);
-
-        cy.createSharedProjects(adminUser, activeUser);
+        cy.createProject({
+            owningUser: adminUser,
+            targetUser: activeUser,
+            projectName: 'mySharedWritableProject',
+            canWrite: true,
+            addToFavorites: true
+        });
+        cy.createProject({
+            owningUser: adminUser,
+            targetUser: activeUser,
+            projectName: 'mySharedReadonlyProject',
+            canWrite: false,
+            addToFavorites: true
+        });
+        cy.createProject({
+            owningUser: activeUser,
+            projectName: 'myProject1',
+            addToFavorites: true
+        });
 
         cy.getAll('@mySharedWritableProject', '@mySharedReadonlyProject', '@myProject1')
             .then(function ([mySharedWritableProject, mySharedReadonlyProject, myProject1]) {
