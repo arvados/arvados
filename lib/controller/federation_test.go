@@ -695,6 +695,8 @@ func (s *FederationSuite) TestCreateRemoteContainerRequestCheckRuntimeToken(c *c
 	arvadostest.SetServiceURL(&s.testHandler.Cluster.Services.RailsAPI, "https://"+os.Getenv("ARVADOS_TEST_API_HOST"))
 	s.testHandler.Cluster.ClusterID = "zzzzz"
 	s.testHandler.Cluster.SystemRootToken = arvadostest.SystemRootToken
+	s.testHandler.Cluster.API.MaxTokenLifetime = arvados.Duration(time.Hour)
+	s.testHandler.Cluster.Collections.BlobSigningTTL = arvados.Duration(336 * time.Hour) // For some reason, this was set to 0h
 
 	resp := s.testRequest(req).Result()
 	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
@@ -703,8 +705,22 @@ func (s *FederationSuite) TestCreateRemoteContainerRequestCheckRuntimeToken(c *c
 
 	// Runtime token must match zzzzz cluster
 	c.Check(cr.RuntimeToken, check.Matches, "v2/zzzzz-gj3su-.*")
+
 	// RuntimeToken must be different than the Original Token we originally did the request with.
 	c.Check(cr.RuntimeToken, check.Not(check.Equals), arvadostest.ActiveTokenV2)
+
+	// Runtime token should not have an expiration based on API.MaxTokenLifetime
+	req2 := httptest.NewRequest("GET", "/arvados/v1/api_client_authorizations/current", nil)
+	req2.Header.Set("Authorization", "Bearer "+cr.RuntimeToken)
+	req2.Header.Set("Content-type", "application/json")
+	resp = s.testRequest(req2).Result()
+	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+	var aca arvados.APIClientAuthorization
+	c.Check(json.NewDecoder(resp.Body).Decode(&aca), check.IsNil)
+	c.Check(aca.ExpiresAt, check.NotNil) // Time.Now()+BlobSigningTTL
+	t, _ := time.Parse(time.RFC3339Nano, aca.ExpiresAt)
+	c.Check(t.After(time.Now().Add(s.testHandler.Cluster.API.MaxTokenLifetime.Duration())), check.Equals, true)
+	c.Check(t.Before(time.Now().Add(s.testHandler.Cluster.Collections.BlobSigningTTL.Duration())), check.Equals, true)
 }
 
 func (s *FederationSuite) TestCreateRemoteContainerRequestCheckSetRuntimeToken(c *check.C) {

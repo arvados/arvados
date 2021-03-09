@@ -321,9 +321,8 @@ func (c *Client) RequestAndDecodeContext(ctx context.Context, dst interface{}, m
 	if c.APIHost == "" {
 		if c.loadedFromEnv {
 			return errors.New("ARVADOS_API_HOST and/or ARVADOS_API_TOKEN environment variables are not set")
-		} else {
-			return errors.New("arvados.Client cannot perform request: APIHost is not set")
 		}
+		return errors.New("arvados.Client cannot perform request: APIHost is not set")
 	}
 	urlString := c.apiURL(path)
 	urlValues, err := anythingToValues(params)

@@ -6,20 +6,27 @@
 
 SUDO=sudo
 
+wait_for_apt_locks() {
+  while $SUDO fuser /var/{lib/{dpkg,apt/lists},cache/apt/archives}/lock >/dev/null 2>&1; do
+    echo "APT: Waiting for apt/dpkg locks to be released..."
+    sleep 1
+  done
+}
+
 # Run apt-get update
 $SUDO DEBIAN_FRONTEND=noninteractive apt-get --yes update
 
 # Install gnupg and dirmgr or gpg key checks will fail
-$SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes install \
+wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes install \
   gnupg \
   dirmngr \
   lsb-release
 
 # For good measure, apt-get upgrade
-$SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes upgrade
+wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes upgrade
 
 # Make sure cloud-init is installed
-$SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes install cloud-init
+wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes install cloud-init
 if [[ ! -d /var/lib/cloud/scripts/per-boot ]]; then
   mkdir -p /var/lib/cloud/scripts/per-boot
 fi
@@ -34,15 +41,15 @@ echo "deb http://apt.arvados.org/$LSB_RELEASE_CODENAME $LSB_RELEASE_CODENAME${RE
 # Add the arvados signing key
 cat /tmp/1078ECD7.asc | $SUDO apt-key add -
 # Add the debian keys
-$SUDO DEBIAN_FRONTEND=noninteractive apt-get install --yes debian-keyring debian-archive-keyring
+wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get install --yes debian-keyring debian-archive-keyring
 
 # Fix locale
 $SUDO /bin/sed -ri 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
 $SUDO /usr/sbin/locale-gen
 
 # Install some packages we always need
-$SUDO DEBIAN_FRONTEND=noninteractive apt-get --yes update
-$SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes install \
+wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get --yes update
+wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes install \
   openssh-server \
   apt-utils \
   git \
@@ -53,23 +60,15 @@ $SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes install \
   cryptsetup \
   xfsprogs
 
-# See if python3-distutils is installable, and if so install it. This is a
-# temporary workaround for an Arvados packaging bug and should be removed once
-# Arvados 2.0.4 or 2.1.0 is released, whichever comes first.
-# See https://dev.arvados.org/issues/16611 for more information
-if apt-cache -qq show python3-distutils >/dev/null 2>&1; then
-  $SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes install python3-distutils
-fi
-
 # Install the Arvados packages we need
-$SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes install \
-  python-arvados-fuse \
+wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes install \
+  python3-arvados-fuse \
   crunch-run \
   arvados-docker-cleaner \
   docker.io
 
 # Remove unattended-upgrades if it is installed
-$SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes remove unattended-upgrades --purge
+wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes remove unattended-upgrades --purge
 
 # Configure arvados-docker-cleaner
 $SUDO mkdir -p /etc/arvados/docker-cleaner
@@ -79,8 +78,15 @@ $SUDO echo -e "{\n  \"Quota\": \"10G\",\n  \"RemoveStoppedContainers\": \"always
 $SUDO sed -i 's/GRUB_CMDLINE_LINUX=""/GRUB_CMDLINE_LINUX="cgroup_enable=memory swapaccount=1"/g' /etc/default/grub
 $SUDO update-grub
 
-# Set a higher ulimit for docker
-$SUDO sed -i "s/ExecStart=\(.*\)/ExecStart=\1 --default-ulimit nofile=10000:10000 --dns ${RESOLVER}/g" /lib/systemd/system/docker.service
+# Set a higher ulimit and the resolver (if set) for docker
+if [ "x$RESOLVER" != "x" ]; then
+  SET_RESOLVER="--dns ${RESOLVER}"
+fi
+
+$SUDO sed "s/ExecStart=\(.*\)/ExecStart=\1 --default-ulimit nofile=10000:10000 ${SET_RESOLVER}/g" \
+  /lib/systemd/system/docker.service \
+  > /etc/systemd/system/docker.service
+
 $SUDO systemctl daemon-reload
 
 # Make sure user_allow_other is set in fuse.conf
@@ -98,10 +104,11 @@ $SUDO chown -R crunch:crunch /home/crunch/.ssh
 $SUDO chmod 600 /home/crunch/.ssh/authorized_keys
 $SUDO chmod 700 /home/crunch/.ssh/
 
-# Make sure we resolve via the provided resolver IP. Prepending is good enough because
+# Make sure we resolve via the provided resolver IP if set. Prepending is good enough because
 # unless 'rotate' is set, the nameservers are queried in order (cf. man resolv.conf)
-$SUDO sed -i "s/#prepend domain-name-servers 127.0.0.1;/prepend domain-name-servers ${RESOLVER};/" /etc/dhcp/dhclient.conf
-
+if [ "x$RESOLVER" != "x" ]; then
+  $SUDO sed -i "s/#prepend domain-name-servers 127.0.0.1;/prepend domain-name-servers ${RESOLVER};/" /etc/dhcp/dhclient.conf
+fi
 # Set up the cloud-init script that will ensure encrypted disks
 $SUDO mv /tmp/usr-local-bin-ensure-encrypted-partitions.sh /usr/local/bin/ensure-encrypted-partitions.sh
 $SUDO chmod 755 /usr/local/bin/ensure-encrypted-partitions.sh

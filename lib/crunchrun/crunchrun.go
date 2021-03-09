@@ -1887,10 +1887,12 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 		Log:               cr.CrunchLog,
 	}
 	os.Unsetenv("GatewayAuthSecret")
-	err = cr.gateway.Start()
-	if err != nil {
-		log.Printf("error starting gateway server: %s", err)
-		return 1
+	if cr.gateway.Address != "" {
+		err = cr.gateway.Start()
+		if err != nil {
+			log.Printf("error starting gateway server: %s", err)
+			return 1
+		}
 	}
 
 	parentTemp, tmperr := cr.MkTempDir("", "crunch-run."+containerID+".")
