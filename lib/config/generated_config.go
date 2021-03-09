@@ -164,6 +164,13 @@ Clusters:
         dbname: ""
         SAMPLE: ""
     API:
+      # Limits for how long a client token created by regular users can be valid,
+      # and also is used as a default expiration policy when no expiration date is
+      # specified.
+      # Default value zero means token expirations don't get clamped and no
+      # default expiration is set.
+      MaxTokenLifetime: 0s
+
       # Maximum size (in bytes) allowed for a single API request.  This
       # limit is published in the discovery document for use by clients.
       # Note: You must separately configure the upstream web server or
@@ -529,21 +536,30 @@ Clusters:
       TrustAllContent: false
 
       # Cache parameters for WebDAV content serving:
-      # * TTL: Maximum time to cache manifests and permission checks.
-      # * UUIDTTL: Maximum time to cache collection state.
-      # * MaxBlockEntries: Maximum number of block cache entries.
-      # * MaxCollectionEntries: Maximum number of collection cache entries.
-      # * MaxCollectionBytes: Approximate memory limit for collection cache.
-      # * MaxPermissionEntries: Maximum number of permission cache entries.
-      # * MaxUUIDEntries: Maximum number of UUID cache entries.
       WebDAVCache:
+        # Time to cache manifests, permission checks, and sessions.
         TTL: 300s
+
+        # Time to cache collection state.
         UUIDTTL: 5s
-        MaxBlockEntries:      4
+
+        # Block cache entries. Each block consumes up to 64 MiB RAM.
+        MaxBlockEntries: 4
+
+        # Collection cache entries.
         MaxCollectionEntries: 1000
-        MaxCollectionBytes:   100000000
+
+        # Approximate memory limit (in bytes) for collection cache.
+        MaxCollectionBytes: 100000000
+
+        # Permission cache entries.
         MaxPermissionEntries: 1000
-        MaxUUIDEntries:       1000
+
+        # UUID cache entries.
+        MaxUUIDEntries: 1000
+
+        # Persistent sessions.
+        MaxSessions: 100
 
     Login:
       # One of the following mechanisms (SSO, Google, PAM, LDAP, or
@@ -837,7 +853,11 @@ Clusters:
       # stale locks from a previous dispatch process.
       StaleLockTimeout: 1m
 
-      # The crunch-run command to manage the container on a node
+      # The crunch-run command used to start a container on a worker node.
+      #
+      # When dispatching to cloud VMs, this is used only if
+      # DeployRunnerBinary in the CloudVMs section is set to the empty
+      # string.
       CrunchRunCommand: "crunch-run"
 
       # Extra arguments to add to crunch-run invocation
@@ -1058,7 +1078,7 @@ Clusters:
         #
         # Use the empty string to disable this step: nothing will be
         # copied, and cloud instances are assumed to have a suitable
-        # version of crunch-run installed.
+        # version of crunch-run installed; see CrunchRunCommand above.
         DeployRunnerBinary: "/proc/self/exe"
 
         # Tags to add on all resources (VMs, NICs, disks) created by

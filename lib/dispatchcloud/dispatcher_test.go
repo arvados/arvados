@@ -52,8 +52,10 @@ func (s *DispatcherSuite) SetUpTest(c *check.C) {
 	s.cluster = &arvados.Cluster{
 		ManagementToken: "test-management-token",
 		Containers: arvados.ContainersConfig{
-			DispatchPrivateKey: string(dispatchprivraw),
-			StaleLockTimeout:   arvados.Duration(5 * time.Millisecond),
+			CrunchRunCommand:       "crunch-run",
+			CrunchRunArgumentsList: []string{"--foo", "--extra='args'"},
+			DispatchPrivateKey:     string(dispatchprivraw),
+			StaleLockTimeout:       arvados.Duration(5 * time.Millisecond),
 			CloudVMs: arvados.CloudVMsConfig{
 				Driver:               "test",
 				SyncInterval:         arvados.Duration(10 * time.Millisecond),
@@ -161,6 +163,7 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 		stubvm.CrunchRunDetachDelay = time.Duration(rand.Int63n(int64(10 * time.Millisecond)))
 		stubvm.ExecuteContainer = executeContainer
 		stubvm.CrashRunningContainer = finishContainer
+		stubvm.ExtraCrunchRunArgs = "'--foo' '--extra='\\''args'\\'''"
 		switch n % 7 {
 		case 0:
 			stubvm.Broken = time.Now().Add(time.Duration(rand.Int63n(90)) * time.Millisecond)

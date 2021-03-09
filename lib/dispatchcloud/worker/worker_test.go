@@ -236,6 +236,8 @@ func (suite *WorkerSuite) TestProbeAndUpdate(c *check.C) {
 			timeoutBooting:   bootTimeout,
 			timeoutProbe:     probeTimeout,
 			exited:           map[string]time.Time{},
+			runnerCmdDefault: "crunch-run",
+			runnerArgs:       []string{"--args=not used with --list"},
 			runnerCmd:        "crunch-run",
 			runnerData:       trial.deployRunner,
 			runnerMD5:        md5.Sum(trial.deployRunner),

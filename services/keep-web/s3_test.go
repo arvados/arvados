@@ -76,7 +76,7 @@ func (s *IntegrationSuite) s3setup(c *check.C) s3stage {
 
 	auth := aws.NewAuth(arvadostest.ActiveTokenUUID, arvadostest.ActiveToken, "", time.Now().Add(time.Hour))
 	region := aws.Region{
-		Name:       s.testServer.Addr,
+		Name:       "zzzzz",
 		S3Endpoint: "http://" + s.testServer.Addr,
 	}
 	client := s3.New(*auth, region)
@@ -455,7 +455,7 @@ func (stage *s3stage) writeBigDirs(c *check.C, dirs int, filesPerDir int) {
 }
 
 func (s *IntegrationSuite) sign(c *check.C, req *http.Request, key, secret string) {
-	scope := "20200202/region/service/aws4_request"
+	scope := "20200202/zzzzz/service/aws4_request"
 	signedHeaders := "date"
 	req.Header.Set("Date", time.Now().UTC().Format(time.RFC1123))
 	stringToSign, err := s3stringToSign(s3SignAlgorithm, scope, signedHeaders, req)
@@ -560,7 +560,7 @@ func (s *IntegrationSuite) TestS3NormalizeURIForSignature(c *check.C) {
 		{"/foo%5bbar", "/foo%5Bbar"}, // %XX must be uppercase
 	} {
 		date := time.Now().UTC().Format("20060102T150405Z")
-		scope := "20200202/fakeregion/S3/aws4_request"
+		scope := "20200202/zzzzz/S3/aws4_request"
 		canonicalRequest := fmt.Sprintf("%s\n%s\n%s\n%s\n%s\n%s", "GET", trial.normalizedPath, "", "host:host.example.com\n", "host", "")
 		c.Logf("canonicalRequest %q", canonicalRequest)
 		expect := fmt.Sprintf("%s\n%s\n%s\n%s", s3SignAlgorithm, date, scope, hashdigest(sha256.New(), canonicalRequest))
@@ -579,6 +579,23 @@ func (s *IntegrationSuite) TestS3NormalizeURIForSignature(c *check.C) {
 	}
 }
 
+func (s *IntegrationSuite) TestS3GetBucketLocation(c *check.C) {
+	stage := s.s3setup(c)
+	defer stage.teardown(c)
+	for _, bucket := range []*s3.Bucket{stage.collbucket, stage.projbucket} {
+		req, err := http.NewRequest("GET", bucket.URL("/"), nil)
+		c.Check(err, check.IsNil)
+		req.Header.Set("Authorization", "AWS "+arvadostest.ActiveTokenV2+":none")
+		req.URL.RawQuery = "location"
+		resp, err := http.DefaultClient.Do(req)
+		c.Assert(err, check.IsNil)
+		c.Check(resp.Header.Get("Content-Type"), check.Equals, "application/xml")
+		buf, err := ioutil.ReadAll(resp.Body)
+		c.Assert(err, check.IsNil)
+		c.Check(string(buf), check.Equals, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<LocationConstraint><LocationConstraint xmlns=\"http://s3.amazonaws.com/doc/2006-03-01/\">zzzzz</LocationConstraint></LocationConstraint>\n")
+	}
+}
+
 func (s *IntegrationSuite) TestS3GetBucketVersioning(c *check.C) {
 	stage := s.s3setup(c)
 	defer stage.teardown(c)
@@ -593,6 +610,37 @@ func (s *IntegrationSuite) TestS3GetBucketVersioning(c *check.C) {
 		buf, err := ioutil.ReadAll(resp.Body)
 		c.Assert(err, check.IsNil)
 		c.Check(string(buf), check.Equals, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<VersioningConfiguration xmlns=\"http://s3.amazonaws.com/doc/2006-03-01/\"/>\n")
+	}
+}
+
+func (s *IntegrationSuite) TestS3UnsupportedAPIs(c *check.C) {
+	stage := s.s3setup(c)
+	defer stage.teardown(c)
+	for _, trial := range []struct {
+		method   string
+		path     string
+		rawquery string
+	}{
+		{"GET", "/", "acl&versionId=1234"},    // GetBucketAcl
+		{"GET", "/foo", "acl&versionId=1234"}, // GetObjectAcl
+		{"PUT", "/", "acl"},                   // PutBucketAcl
+		{"PUT", "/foo", "acl"},                // PutObjectAcl
+		{"DELETE", "/", "tagging"},            // DeleteBucketTagging
+		{"DELETE", "/foo", "tagging"},         // DeleteObjectTagging
+	} {
+		for _, bucket := range []*s3.Bucket{stage.collbucket, stage.projbucket} {
+			c.Logf("trial %v bucket %v", trial, bucket)
+			req, err := http.NewRequest(trial.method, bucket.URL(trial.path), nil)
+			c.Check(err, check.IsNil)
+			req.Header.Set("Authorization", "AWS "+arvadostest.ActiveTokenV2+":none")
+			req.URL.RawQuery = trial.rawquery
+			resp, err := http.DefaultClient.Do(req)
+			c.Assert(err, check.IsNil)
+			c.Check(resp.Header.Get("Content-Type"), check.Equals, "application/xml")
+			buf, err := ioutil.ReadAll(resp.Body)
+			c.Assert(err, check.IsNil)
+			c.Check(string(buf), check.Matches, "(?ms).*InvalidRequest.*API not supported.*")
+		}
 	}
 }
 

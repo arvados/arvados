@@ -520,7 +520,8 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 func (h *handler) getClients(reqID, token string) (arv *arvadosclient.ArvadosClient, kc *keepclient.KeepClient, client *arvados.Client, release func(), err error) {
 	arv = h.clientPool.Get()
 	if arv == nil {
-		return nil, nil, nil, nil, err
+		err = h.clientPool.Err()
+		return
 	}
 	release = func() { h.clientPool.Put(arv) }
 	arv.ApiToken = token
@@ -548,14 +549,11 @@ func (h *handler) serveSiteFS(w http.ResponseWriter, r *http.Request, tokens []s
 		http.Error(w, errReadOnly.Error(), http.StatusMethodNotAllowed)
 		return
 	}
-	_, kc, client, release, err := h.getClients(r.Header.Get("X-Request-Id"), tokens[0])
+	fs, err := h.Config.Cache.GetSession(tokens[0])
 	if err != nil {
-		http.Error(w, "Pool failed: "+h.clientPool.Err().Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	defer release()
-
-	fs := client.SiteFileSystem(kc)
 	fs.ForwardSlashNameSubstitution(h.Config.cluster.Collections.ForwardSlashNameSubstitution)
 	f, err := fs.Open(r.URL.Path)
 	if os.IsNotExist(err) {

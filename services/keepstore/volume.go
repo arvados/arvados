@@ -315,7 +315,7 @@ func makeRRVolumeManager(logger logrus.FieldLogger, cluster *arvados.Cluster, my
 		if err != nil {
 			return nil, fmt.Errorf("error initializing volume %s: %s", uuid, err)
 		}
-		logger.Printf("started volume %s (%s), ReadOnly=%v", uuid, vol, cfgvol.ReadOnly)
+		logger.Printf("started volume %s (%s), ReadOnly=%v", uuid, vol, cfgvol.ReadOnly || va.ReadOnly)
 
 		sc := cfgvol.StorageClasses
 		if len(sc) == 0 {

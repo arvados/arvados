@@ -11,7 +11,6 @@ class ContainerDispatchTest < ActionDispatch::IntegrationTest
     get("/arvados/v1/api_client_authorizations/current",
         headers: authheaders)
     assert_response 200
-    #assert_not_empty json_response['uuid']
 
     system_auth_uuid = json_response['uuid']
     post("/arvados/v1/containers/#{containers(:queued).uuid}/lock",

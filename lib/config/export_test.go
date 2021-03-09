@@ -17,7 +17,7 @@ var _ = check.Suite(&ExportSuite{})
 type ExportSuite struct{}
 
 func (s *ExportSuite) TestExport(c *check.C) {
-	confdata := strings.Replace(string(DefaultYAML), "SAMPLE", "testkey", -1)
+	confdata := strings.Replace(string(DefaultYAML), "SAMPLE", "12345", -1)
 	cfg, err := testLoader(c, confdata, nil).Load()
 	c.Assert(err, check.IsNil)
 	cluster, err := cfg.GetCluster("xxxxx")
