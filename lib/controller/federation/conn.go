@@ -402,6 +402,38 @@ func (conn *Conn) ContainerRequestDelete(ctx context.Context, options arvados.De
 	return conn.chooseBackend(options.UUID).ContainerRequestDelete(ctx, options)
 }
 
+func (conn *Conn) GroupCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Group, error) {
+	return conn.chooseBackend(options.ClusterID).GroupCreate(ctx, options)
+}
+
+func (conn *Conn) GroupUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.Group, error) {
+	return conn.chooseBackend(options.UUID).GroupUpdate(ctx, options)
+}
+
+func (conn *Conn) GroupGet(ctx context.Context, options arvados.GetOptions) (arvados.Group, error) {
+	return conn.chooseBackend(options.UUID).GroupGet(ctx, options)
+}
+
+func (conn *Conn) GroupList(ctx context.Context, options arvados.ListOptions) (arvados.GroupList, error) {
+	return conn.generated_GroupList(ctx, options)
+}
+
+func (conn *Conn) GroupContents(ctx context.Context, options arvados.GroupContentsOptions) (arvados.ObjectList, error) {
+	return conn.chooseBackend(options.UUID).GroupContents(ctx, options)
+}
+
+func (conn *Conn) GroupShared(ctx context.Context, options arvados.ListOptions) (arvados.GroupList, error) {
+	return conn.chooseBackend(options.ClusterID).GroupShared(ctx, options)
+}
+
+func (conn *Conn) GroupDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.Group, error) {
+	return conn.chooseBackend(options.UUID).GroupDelete(ctx, options)
+}
+
+func (conn *Conn) GroupUntrash(ctx context.Context, options arvados.UntrashOptions) (arvados.Group, error) {
+	return conn.chooseBackend(options.UUID).GroupUntrash(ctx, options)
+}
+
 func (conn *Conn) SpecimenList(ctx context.Context, options arvados.ListOptions) (arvados.SpecimenList, error) {
 	return conn.generated_SpecimenList(ctx, options)
 }
@@ -432,6 +464,7 @@ var userAttrsCachedFromLoginCluster = map[string]bool{
 	"modified_at": true,
 	"prefs":       true,
 	"username":    true,
+	"kind":        true,
 
 	"etag":                    false,
 	"full_name":               false,

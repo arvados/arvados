@@ -43,7 +43,6 @@ type ContainerRequest struct {
 	ModifiedByUserUUID      string                 `json:"modified_by_user_uuid"`
 	ModifiedAt              time.Time              `json:"modified_at"`
 	Href                    string                 `json:"href"`
-	Kind                    string                 `json:"kind"`
 	Etag                    string                 `json:"etag"`
 	Name                    string                 `json:"name"`
 	Description             string                 `json:"description"`

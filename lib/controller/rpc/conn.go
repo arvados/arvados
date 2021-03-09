@@ -416,6 +416,62 @@ func (conn *Conn) ContainerRequestDelete(ctx context.Context, options arvados.De
 	return resp, err
 }
 
+func (conn *Conn) GroupCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Group, error) {
+	ep := arvados.EndpointGroupCreate
+	var resp arvados.Group
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) GroupUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.Group, error) {
+	ep := arvados.EndpointGroupUpdate
+	var resp arvados.Group
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) GroupGet(ctx context.Context, options arvados.GetOptions) (arvados.Group, error) {
+	ep := arvados.EndpointGroupGet
+	var resp arvados.Group
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) GroupList(ctx context.Context, options arvados.ListOptions) (arvados.GroupList, error) {
+	ep := arvados.EndpointGroupList
+	var resp arvados.GroupList
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) GroupContents(ctx context.Context, options arvados.GroupContentsOptions) (arvados.ObjectList, error) {
+	ep := arvados.EndpointGroupContents
+	var resp arvados.ObjectList
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) GroupShared(ctx context.Context, options arvados.ListOptions) (arvados.GroupList, error) {
+	ep := arvados.EndpointGroupShared
+	var resp arvados.GroupList
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) GroupDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.Group, error) {
+	ep := arvados.EndpointGroupDelete
+	var resp arvados.Group
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) GroupUntrash(ctx context.Context, options arvados.UntrashOptions) (arvados.Group, error) {
+	ep := arvados.EndpointGroupUntrash
+	var resp arvados.Group
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
 func (conn *Conn) SpecimenCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Specimen, error) {
 	ep := arvados.EndpointSpecimenCreate
 	var resp arvados.Specimen

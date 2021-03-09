@@ -51,6 +51,15 @@ var (
 	EndpointContainerRequestGet           = APIEndpoint{"GET", "arvados/v1/container_requests/{uuid}", ""}
 	EndpointContainerRequestList          = APIEndpoint{"GET", "arvados/v1/container_requests", ""}
 	EndpointContainerRequestDelete        = APIEndpoint{"DELETE", "arvados/v1/container_requests/{uuid}", ""}
+	EndpointGroupCreate                   = APIEndpoint{"POST", "arvados/v1/groups", "group"}
+	EndpointGroupUpdate                   = APIEndpoint{"PATCH", "arvados/v1/groups/{uuid}", "group"}
+	EndpointGroupGet                      = APIEndpoint{"GET", "arvados/v1/groups/{uuid}", ""}
+	EndpointGroupList                     = APIEndpoint{"GET", "arvados/v1/groups", ""}
+	EndpointGroupContents                 = APIEndpoint{"GET", "arvados/v1/groups/contents", ""}
+	EndpointGroupContentsUUIDInPath       = APIEndpoint{"GET", "arvados/v1/groups/{uuid}/contents", ""} // Alternative HTTP route; client-side code should always use EndpointGroupContents instead
+	EndpointGroupShared                   = APIEndpoint{"GET", "arvados/v1/groups/shared", ""}
+	EndpointGroupDelete                   = APIEndpoint{"DELETE", "arvados/v1/groups/{uuid}", ""}
+	EndpointGroupUntrash                  = APIEndpoint{"POST", "arvados/v1/groups/{uuid}/untrash", ""}
 	EndpointUserActivate                  = APIEndpoint{"POST", "arvados/v1/users/{uuid}/activate", ""}
 	EndpointUserCreate                    = APIEndpoint{"POST", "arvados/v1/users", "user"}
 	EndpointUserCurrent                   = APIEndpoint{"GET", "arvados/v1/users/current", ""}
@@ -109,6 +118,7 @@ type ListOptions struct {
 	IncludeOldVersions bool                   `json:"include_old_versions"`
 	BypassFederation   bool                   `json:"bypass_federation"`
 	ForwardedFor       string                 `json:"forwarded_for,omitempty"`
+	Include            string                 `json:"include"`
 }
 
 type CreateOptions struct {
@@ -122,6 +132,18 @@ type UpdateOptions struct {
 	UUID             string                 `json:"uuid"`
 	Attrs            map[string]interface{} `json:"attrs"`
 	BypassFederation bool                   `json:"bypass_federation"`
+}
+
+type GroupContentsOptions struct {
+	UUID               string   `json:"uuid,omitempty"`
+	Select             []string `json:"select"`
+	Filters            []Filter `json:"filters"`
+	Limit              int64    `json:"limit"`
+	Offset             int64    `json:"offset"`
+	Order              []string `json:"order"`
+	Include            string   `json:"include"`
+	Recursive          bool     `json:"recursive"`
+	ExcludeHomeProject bool     `json:"exclude_home_project"`
 }
 
 type UpdateUUIDOptions struct {
@@ -203,6 +225,14 @@ type API interface {
 	ContainerRequestGet(ctx context.Context, options GetOptions) (ContainerRequest, error)
 	ContainerRequestList(ctx context.Context, options ListOptions) (ContainerRequestList, error)
 	ContainerRequestDelete(ctx context.Context, options DeleteOptions) (ContainerRequest, error)
+	GroupCreate(ctx context.Context, options CreateOptions) (Group, error)
+	GroupUpdate(ctx context.Context, options UpdateOptions) (Group, error)
+	GroupGet(ctx context.Context, options GetOptions) (Group, error)
+	GroupList(ctx context.Context, options ListOptions) (GroupList, error)
+	GroupContents(ctx context.Context, options GroupContentsOptions) (ObjectList, error)
+	GroupShared(ctx context.Context, options ListOptions) (GroupList, error)
+	GroupDelete(ctx context.Context, options DeleteOptions) (Group, error)
+	GroupUntrash(ctx context.Context, options UntrashOptions) (Group, error)
 	SpecimenCreate(ctx context.Context, options CreateOptions) (Specimen, error)
 	SpecimenUpdate(ctx context.Context, options UpdateOptions) (Specimen, error)
 	SpecimenGet(ctx context.Context, options GetOptions) (Specimen, error)

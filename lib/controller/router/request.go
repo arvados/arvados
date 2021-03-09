@@ -170,6 +170,8 @@ var boolParams = map[string]bool{
 	"redirect_to_new_user":    true,
 	"send_notification_email": true,
 	"bypass_federation":       true,
+	"recursive":               true,
+	"exclude_home_project":    true,
 }
 
 func stringToBool(s string) bool {
