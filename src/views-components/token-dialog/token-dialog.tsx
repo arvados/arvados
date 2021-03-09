@@ -12,7 +12,8 @@ import {
     withStyles,
     StyleRulesCallback,
     Button,
-    Typography
+    Typography,
+    Tooltip
 } from '@material-ui/core';
 import * as CopyToClipboard from 'react-copy-to-clipboard';
 import { ArvadosTheme } from '~/common/custom-theme';
@@ -27,8 +28,9 @@ import {
 import { DefaultCodeSnippet } from '~/components/default-code-snippet/default-code-snippet';
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
 import { getNewExtraToken } from '~/store/auth/auth-action';
+import { CopyIcon } from '~/components/icon/icon';
 
-type CssRules = 'link' | 'paper' | 'button' | 'actionButton';
+type CssRules = 'link' | 'paper' | 'button' | 'actionButton' | 'copyIcon' | 'inlineMonospaced';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     link: {
@@ -51,6 +53,20 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         marginTop: theme.spacing.unit * 2,
         marginBottom: theme.spacing.unit * 2,
         marginRight: theme.spacing.unit * 2,
+    },
+    copyIcon: {
+        marginLeft: theme.spacing.unit,
+        color: theme.palette.grey["500"],
+        cursor: 'pointer',
+        display: 'inline',
+        '& svg': {
+            fontSize: '1rem'
+        }
+    },
+    inlineMonospaced: {
+        fontFamily: 'Monospace',
+        fontSize: '1rem',
+        display: 'inline-block',
     }
 });
 
@@ -100,24 +116,46 @@ unset ARVADOS_API_HOST_INSECURE`
             <DialogContent>
                 <Typography paragraph={true}>
                     The Arvados API token is a secret key that enables the Arvados SDKs to access Arvados with the proper permissions.
-                        <Typography component='span'>
-                            For more information see
-                            <a href='http://doc.arvados.org/user/reference/api-tokens.html' target='blank' className={classes.link}>
-                                Getting an API token.
-                            </a>
+                    <Typography component='span'>
+                        For more information see
+                        <a href='http://doc.arvados.org/user/reference/api-tokens.html' target='blank' className={classes.link}>
+                            Getting an API token.
+                        </a>
+                    </Typography>
+                </Typography>
+                <Typography  paragraph={true}>
+                    <Typography component='span'>
+                        Your Arvados API host is: <Typography className={classes.inlineMonospaced} component='span'>{data.apiHost} {<Tooltip title="Copy to clipboard">
+                            <span className={classes.copyIcon}>
+                                <CopyToClipboard text={data.apiHost} onCopy={() => this.onCopy("API host copied")}>
+                                    <CopyIcon />
+                                </CopyToClipboard>
+                            </span>
+                        </Tooltip>}
                         </Typography>
+                    </Typography>
+                    <Typography component='span'>
+                        Your token is: <Typography className={classes.inlineMonospaced} component='span'>{data.token} {<Tooltip title="Copy to clipboard">
+                            <span className={classes.copyIcon}>
+                                <CopyToClipboard text={data.token} onCopy={() => this.onCopy("Token copied")}>
+                                    <CopyIcon />
+                                </CopyToClipboard>
+                            </span>
+                            </Tooltip>}
+                        </Typography>
+                    </Typography>
+                    <Typography component='span'>
+                    { data.tokenExpiration
+                        ? `Expires at: ${data.tokenExpiration.toLocaleString()}`
+                        : `This token does not have an expiration date`
+                    }
+                    </Typography>
                 </Typography>
                 <Typography paragraph={true}>
                     Paste the following lines at a shell prompt to set up the necessary environment for Arvados SDKs to authenticate to your account.
                 </Typography>
                 <DefaultCodeSnippet lines={[this.getSnippet(data)]} />
-                <Typography component='span'>
-                { data.tokenExpiration
-                    ? `Expires at: ${data.tokenExpiration.toLocaleString()}`
-                    : `This token does not have an expiration date`
-                }
-                </Typography>
-                <CopyToClipboard text={this.getSnippet(data)} onCopy={() => this.onCopy('Token copied to clipboard')}>
+                <CopyToClipboard text={this.getSnippet(data)} onCopy={() => this.onCopy('Shell code block copied')}>
                     <Button
                         color="primary"
                         size="small"
