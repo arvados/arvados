@@ -107,9 +107,9 @@ func (rtr *router) sendResponse(w http.ResponseWriter, req *http.Request, resp i
 				rtr.mungeItemFields(item)
 				slice[i] = item
 			}
-			if opts.Count == "none" {
-				delete(tmp, "items_available")
-			}
+		}
+		if opts.Count == "none" {
+			delete(tmp, "items_available")
 		}
 	} else {
 		tmp = applySelectParam(opts.Select, tmp)
