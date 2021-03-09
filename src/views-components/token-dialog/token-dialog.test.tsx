@@ -71,7 +71,7 @@ describe('<CurrentTokenDialog />', () => {
         payload: {
           hideDuration: 2000,
           kind: 1,
-          message: 'Token copied to clipboard',
+          message: 'Shell code block copied',
         },
         type: 'OPEN_SNACKBAR',
       });
