@@ -894,14 +894,16 @@ class ProjectDirectory(Directory):
                 elif user_uuid_pattern.match(self.project_uuid):
                     self.project_object = self.api.users().get(
                         uuid=self.project_uuid).execute(num_retries=self.num_retries)
-
-                contents = arvados.util.list_all(self.api.groups().list,
+                # do this in 2 steps until #17424 is fixed
+                contents = arvados.util.list_all(self.api.groups().contents,
                                                  self.num_retries,
-                                                 filters=[["owner_uuid", "=", self.project_uuid],
+                                                 uuid=self.project_uuid,
+                                                 filters=[["uuid", "is_a", "arvados#group"],
                                                           ["group_class", "=", "project"]])
-                contents.extend(arvados.util.list_all(self.api.collections().list,
+                contents.extend(arvados.util.list_all(self.api.groups().contents,
                                                       self.num_retries,
-                                                      filters=[["owner_uuid", "=", self.project_uuid]]))
+                                                      uuid=self.project_uuid,
+                                                      filters=[["uuid", "is_a", "arvados#collection"]]))
 
             # end with llfuse.lock_released, re-acquire lock
 

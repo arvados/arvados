@@ -67,7 +67,7 @@ func (fs *customFileSystem) projectsLoadOne(parent inode, uuid, name string) (in
 	} else if strings.Contains(coll.UUID, "-4zz18-") {
 		return deferredCollectionFS(fs, parent, coll), nil
 	} else {
-		log.Printf("projectnode: unrecognized UUID in response: %q", coll.UUID)
+		log.Printf("group contents: unrecognized UUID in response: %q", coll.UUID)
 		return nil, ErrInvalidArgument
 	}
 }
@@ -80,58 +80,57 @@ func (fs *customFileSystem) projectsLoadAll(parent inode, uuid string) ([]inode,
 
 	var inodes []inode
 
-	// Note: the "filters" slice's backing array might be reused
-	// by append(filters,...) below. This isn't goroutine safe,
-	// but all accesses are in the same goroutine, so it's OK.
-	filters := []Filter{{"owner_uuid", "=", uuid}}
-	params := ResourceListParams{
-		Count:   "none",
-		Filters: filters,
-		Order:   "uuid",
-	}
-	for {
-		var resp CollectionList
-		err = fs.RequestAndDecode(&resp, "GET", "arvados/v1/collections", nil, params)
-		if err != nil {
-			return nil, err
+	// When #17424 is resolved, remove the outer loop here and use
+	// []string{"arvados#collection", "arvados#group"} directly as the uuid
+	// filter.
+	for _, class := range []string{"arvados#collection", "arvados#group"} {
+		// Note: the "filters" slice's backing array might be reused
+		// by append(filters,...) below. This isn't goroutine safe,
+		// but all accesses are in the same goroutine, so it's OK.
+		filters := []Filter{
+			{"uuid", "is_a", class},
 		}
-		if len(resp.Items) == 0 {
-			break
+		if class == "arvados#group" {
+			filters = append(filters, Filter{"group_class", "=", "project"})
 		}
-		for _, i := range resp.Items {
-			coll := i
-			if fs.forwardSlashNameSubstitution != "" {
-				coll.Name = strings.Replace(coll.Name, "/", fs.forwardSlashNameSubstitution, -1)
-			}
-			if !permittedName(coll.Name) {
-				continue
-			}
-			inodes = append(inodes, deferredCollectionFS(fs, parent, coll))
-		}
-		params.Filters = append(filters, Filter{"uuid", ">", resp.Items[len(resp.Items)-1].UUID})
-	}
 
-	filters = append(filters, Filter{"group_class", "=", "project"})
-	params.Filters = filters
-	for {
-		var resp GroupList
-		err = fs.RequestAndDecode(&resp, "GET", "arvados/v1/groups", nil, params)
-		if err != nil {
-			return nil, err
+		params := ResourceListParams{
+			Count:   "none",
+			Filters: filters,
+			Order:   "uuid",
 		}
-		if len(resp.Items) == 0 {
-			break
-		}
-		for _, group := range resp.Items {
-			if fs.forwardSlashNameSubstitution != "" {
-				group.Name = strings.Replace(group.Name, "/", fs.forwardSlashNameSubstitution, -1)
+
+		for {
+			// The groups content endpoint returns Collection and Group (project)
+			// objects. This function only accesses the UUID and Name field. Both
+			// collections and groups have those fields, so it is easier to just treat
+			// the ObjectList that comes back as a CollectionList.
+			var resp CollectionList
+			err = fs.RequestAndDecode(&resp, "GET", "arvados/v1/groups/"+uuid+"/contents", nil, params)
+			if err != nil {
+				return nil, err
 			}
-			if !permittedName(group.Name) {
-				continue
+			if len(resp.Items) == 0 {
+				break
 			}
-			inodes = append(inodes, fs.newProjectNode(parent, group.Name, group.UUID))
+			for _, i := range resp.Items {
+				if fs.forwardSlashNameSubstitution != "" {
+					i.Name = strings.Replace(i.Name, "/", fs.forwardSlashNameSubstitution, -1)
+				}
+				if !permittedName(i.Name) {
+					continue
+				}
+				if strings.Contains(i.UUID, "-j7d0g-") {
+					inodes = append(inodes, fs.newProjectNode(parent, i.Name, i.UUID))
+				} else if strings.Contains(i.UUID, "-4zz18-") {
+					inodes = append(inodes, deferredCollectionFS(fs, parent, i))
+				} else {
+					log.Printf("group contents: unrecognized UUID in response: %q", i.UUID)
+					return nil, ErrInvalidArgument
+				}
+			}
+			params.Filters = append(filters, Filter{"uuid", ">", resp.Items[len(resp.Items)-1].UUID})
 		}
-		params.Filters = append(filters, Filter{"uuid", ">", resp.Items[len(resp.Items)-1].UUID})
 	}
 	return inodes, nil
 }
