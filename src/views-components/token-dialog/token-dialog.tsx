@@ -151,6 +151,15 @@ unset ARVADOS_API_HOST_INSECURE`
                     }
                     </Typography>
                 </Typography>
+                { this.props.canCreateNewTokens && <Button
+                    onClick={() => this.onGetNewToken()}
+                    color="primary"
+                    size="small"
+                    variant="contained"
+                    className={classes.actionButton}
+                >
+                    GET NEW TOKEN
+                </Button> }
                 <Typography paragraph={true}>
                     Paste the following lines at a shell prompt to set up the necessary environment for Arvados SDKs to authenticate to your account.
                 </Typography>
@@ -165,15 +174,6 @@ unset ARVADOS_API_HOST_INSECURE`
                         COPY TO CLIPBOARD
                     </Button>
                 </CopyToClipboard>
-                { this.props.canCreateNewTokens && <Button
-                    onClick={() => this.onGetNewToken()}
-                    color="primary"
-                    size="small"
-                    variant="contained"
-                    className={classes.actionButton}
-                >
-                    GET NEW TOKEN
-                </Button> }
                 <Typography >
                     Arvados
                             <a href='http://doc.arvados.org/user/reference/api-tokens.html' target='blank' className={classes.link}>virtual machines</a>
