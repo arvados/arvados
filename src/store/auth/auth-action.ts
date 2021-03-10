@@ -38,21 +38,18 @@ export const authActions = unionize({
     REMOTE_CLUSTER_CONFIG: ofType<{ config: Config }>(),
 });
 
-export const initAuth = (config: Config) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+export const initAuth = (config: Config) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<any> => {
     // Cancel any link account ops in progress unless the user has
     // just logged in or there has been a successful link operation
     const data = services.linkAccountService.getLinkOpStatus();
     if (!matchTokenRoute(location.pathname) &&
         (!matchFedTokenRoute(location.pathname)) && data === undefined) {
-        dispatch<any>(cancelLinking()).then(() => {
-            dispatch<any>(init(config));
-        });
-    } else {
-        dispatch<any>(init(config));
+        await dispatch<any>(cancelLinking());
     }
+    return dispatch<any>(init(config));
 };
 
-const init = (config: Config) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+const init = (config: Config) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
     const remoteHosts = () => getState().auth.remoteHosts;
     const token = services.authService.getApiToken();
     let homeCluster = services.authService.getHomeCluster();
@@ -70,11 +67,12 @@ const init = (config: Config) => (dispatch: Dispatch, getState: () => RootState,
 
     if (token && token !== "undefined") {
         dispatch(progressIndicatorActions.START_WORKING(WORKBENCH_LOADING_SCREEN));
-        dispatch<any>(saveApiToken(token)).then(() => {
+        try {
+            await dispatch<any>(saveApiToken(token)); // .then(() => {
+            await dispatch(progressIndicatorActions.STOP_WORKING(WORKBENCH_LOADING_SCREEN));
+        } catch (e) {
             dispatch(progressIndicatorActions.STOP_WORKING(WORKBENCH_LOADING_SCREEN));
-        }).catch(() => {
-            dispatch(progressIndicatorActions.STOP_WORKING(WORKBENCH_LOADING_SCREEN));
-        });
+        }
     }
 };
 
