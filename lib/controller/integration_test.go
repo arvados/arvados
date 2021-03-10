@@ -683,15 +683,16 @@ func (s *IntegrationSuite) TestOIDCAccessTokenAuth(c *check.C) {
 	accesstoken := s.oidcprovider.ValidAccessToken()
 
 	for _, clusterID := range []string{"z1111", "z2222"} {
-		c.Logf("trying clusterid %s", clusterID)
-
-		conn := s.testClusters[clusterID].Conn()
-		ctx, ac, kc := s.testClusters[clusterID].ClientsWithToken(accesstoken)
 
 		var coll arvados.Collection
 
 		// Write some file data and create a collection
 		{
+			c.Logf("save collection to %s", clusterID)
+
+			conn := s.testClusters[clusterID].Conn()
+			ctx, ac, kc := s.testClusters[clusterID].ClientsWithToken(accesstoken)
+
 			fs, err := coll.FileSystem(ac, kc)
 			c.Assert(err, check.IsNil)
 			f, err := fs.OpenFile("test.txt", os.O_CREATE|os.O_RDWR, 0777)
@@ -708,15 +709,22 @@ func (s *IntegrationSuite) TestOIDCAccessTokenAuth(c *check.C) {
 			c.Assert(err, check.IsNil)
 		}
 
-		// Read the collection & file data
-		{
+		// Read the collection & file data -- both from the
+		// cluster where it was created, and from the other
+		// cluster.
+		for _, readClusterID := range []string{"z1111", "z2222", "z3333"} {
+			c.Logf("retrieve %s from %s", coll.UUID, readClusterID)
+
+			conn := s.testClusters[readClusterID].Conn()
+			ctx, ac, kc := s.testClusters[readClusterID].ClientsWithToken(accesstoken)
+
 			user, err := conn.UserGetCurrent(ctx, arvados.GetOptions{})
 			c.Assert(err, check.IsNil)
 			c.Check(user.FullName, check.Equals, "Example User")
-			coll, err = conn.CollectionGet(ctx, arvados.GetOptions{UUID: coll.UUID})
+			readcoll, err := conn.CollectionGet(ctx, arvados.GetOptions{UUID: coll.UUID})
 			c.Assert(err, check.IsNil)
-			c.Check(coll.ManifestText, check.Not(check.Equals), "")
-			fs, err := coll.FileSystem(ac, kc)
+			c.Check(readcoll.ManifestText, check.Not(check.Equals), "")
+			fs, err := readcoll.FileSystem(ac, kc)
 			c.Assert(err, check.IsNil)
 			f, err := fs.Open("test.txt")
 			c.Assert(err, check.IsNil)
