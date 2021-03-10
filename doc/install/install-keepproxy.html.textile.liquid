@@ -49,7 +49,7 @@ Edit the cluster config at @config.yml@ and set @Services.Keepproxy.ExternalURL@
 
 h2(#update-nginx). Update Nginx configuration
 
-Put a reverse proxy with SSL support in front of Keepproxy. Keepproxy itself runs on the port 25107 (or whatever is specified in @Services.Keepproxy.InternalURL@) the reverse proxy runs on port 443 and forwards requests to Keepproxy.
+Put a reverse proxy with SSL support in front of Keepproxy. Keepproxy itself runs on the port 25107 (or whatever is specified in @Services.Keepproxy.InternalURL@) while the reverse proxy runs on port 443 and forwards requests to Keepproxy.
 
 Use a text editor to create a new file @/etc/nginx/conf.d/keepproxy.conf@ with the following configuration. Options that need attention are marked in <span class="userinput">red</span>.
 

@@ -122,7 +122,7 @@ Set @Users.AnonymousUserToken: ""@ (empty string) or leave it out if you do not 
 
 h3. Update nginx configuration
 
-Put a reverse proxy with SSL support in front of keep-web.  Keep-web itself runs on the port 25107 (or whatever is specified in @Services.Keepproxy.InternalURL@) the reverse proxy runs on port 443 and forwards requests to Keepproxy.
+Put a reverse proxy with SSL support in front of keep-web.  Keep-web itself runs on the port 9002 (or whatever is specified in @Services.WebDAV.InternalURL@) while the reverse proxy runs on port 443 and forwards requests to Keep-web.
 
 Use a text editor to create a new file @/etc/nginx/conf.d/keep-web.conf@ with the following configuration. Options that need attention are marked in <span class="userinput">red</span>.
 
