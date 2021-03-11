@@ -15,5 +15,6 @@ export interface GroupResource extends TrashableResource {
 }
 
 export enum GroupClass {
-    PROJECT = "project"
+    PROJECT = 'project',
+    FILTER  = 'filter',
 }

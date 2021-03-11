@@ -37,7 +37,7 @@ import { initWebSocket } from '~/websocket/websocket';
 import { Config } from '~/common/config';
 import { addRouteChangeHandlers } from './routes/route-change-handlers';
 import { setCurrentTokenDialogApiHost } from '~/store/current-token-dialog/current-token-dialog-actions';
-import { processResourceActionSet } from '~/views-components/context-menu/action-sets/process-resource-action-set';
+import { processResourceActionSet, readOnlyProcessResourceActionSet } from '~/views-components/context-menu/action-sets/process-resource-action-set';
 import { progressIndicatorActions } from '~/store/progress-indicator/progress-indicator-actions';
 import { trashedCollectionActionSet } from '~/views-components/context-menu/action-sets/trashed-collection-action-set';
 import { setBuildInfo } from '~/store/app-info/app-info-actions';
@@ -81,6 +81,7 @@ addMenuActionSet(ContextMenuKind.OLD_VERSION_COLLECTION, oldCollectionVersionAct
 addMenuActionSet(ContextMenuKind.TRASHED_COLLECTION, trashedCollectionActionSet);
 addMenuActionSet(ContextMenuKind.PROCESS, processActionSet);
 addMenuActionSet(ContextMenuKind.PROCESS_RESOURCE, processResourceActionSet);
+addMenuActionSet(ContextMenuKind.READONLY_PROCESS_RESOURCE, readOnlyProcessResourceActionSet);
 addMenuActionSet(ContextMenuKind.TRASH, trashActionSet);
 addMenuActionSet(ContextMenuKind.REPOSITORY, repositoryActionSet);
 addMenuActionSet(ContextMenuKind.SSH_KEY, sshKeyActionSet);

@@ -18,8 +18,9 @@ import { VirtualMachinesResource } from '~/models/virtual-machines';
 import { KeepServiceResource } from '~/models/keep-services';
 import { ProcessResource } from '~/models/process';
 import { CollectionResource } from '~/models/collection';
-import { GroupResource } from '~/models/group';
+import { GroupClass, GroupResource } from '~/models/group';
 import { GroupContentsResource } from '~/services/groups-service/groups-service';
+import { getProjectPanelCurrentUuid } from '~/store/project-panel/project-panel-action';
 
 export const contextMenuActions = unionize({
     OPEN_CONTEXT_MENU: ofType<{ position: ContextMenuPosition, resource: ContextMenuResource }>(),
@@ -206,14 +207,28 @@ export const resourceUuidToContextMenuKind = (uuid: string) =>
         const { isAdmin: isAdminUser, uuid: userUuid } = getState().auth.user!;
         const kind = extractUuidKind(uuid);
         const resource = getResourceWithEditableStatus<GroupResource & EditableResource>(uuid, userUuid)(getState().resources);
-        const isEditable = isAdminUser || (resource || {} as EditableResource).isEditable;
+        // When viewing the contents of a filter group, all contents should be treated as read only.
+        let inFilterGroup = false;
+        const projectUuid = getProjectPanelCurrentUuid(getState());
+        if (projectUuid !== undefined) {
+          const project = getResource<GroupResource>(projectUuid)(getState().resources);
+          if (project) {
+            if (project.groupClass === GroupClass.FILTER) {
+              inFilterGroup = true;
+            }
+          }
+        }
+        const isEditable = (isAdminUser || (resource || {} as EditableResource).isEditable) && !inFilterGroup;
+
         switch (kind) {
             case ResourceKind.PROJECT:
-                return !isAdminUser
-                    ? isEditable
-                        ? ContextMenuKind.PROJECT
+                return (isAdminUser && !inFilterGroup)
+                    ? (resource && resource.groupClass === GroupClass.PROJECT)
+                        ? ContextMenuKind.PROJECT_ADMIN
                         : ContextMenuKind.READONLY_PROJECT
-                    : ContextMenuKind.PROJECT_ADMIN;
+                    : isEditable
+                        ? ContextMenuKind.PROJECT
+                        : ContextMenuKind.READONLY_PROJECT;
             case ResourceKind.COLLECTION:
                 const c = getResource<CollectionResource>(uuid)(getState().resources);
                 if (c === undefined) { return; }
@@ -223,15 +238,17 @@ export const resourceUuidToContextMenuKind = (uuid: string) =>
                     ? ContextMenuKind.OLD_VERSION_COLLECTION
                     : (isTrashed && isEditable)
                         ? ContextMenuKind.TRASHED_COLLECTION
-                        : isAdminUser
+                        : (isAdminUser && !inFilterGroup)
                             ? ContextMenuKind.COLLECTION_ADMIN
                             : isEditable
                                 ? ContextMenuKind.COLLECTION
                                 : ContextMenuKind.READONLY_COLLECTION;
             case ResourceKind.PROCESS:
-                return !isAdminUser
-                    ? ContextMenuKind.PROCESS_RESOURCE
-                    : ContextMenuKind.PROCESS_ADMIN;
+                return (isAdminUser && !inFilterGroup)
+                    ? ContextMenuKind.PROCESS_ADMIN
+                    : isEditable
+                        ? ContextMenuKind.PROCESS_RESOURCE
+                        : ContextMenuKind.READONLY_PROCESS_RESOURCE;
             case ResourceKind.USER:
                 return ContextMenuKind.ROOT_PROJECT;
             case ResourceKind.LINK:

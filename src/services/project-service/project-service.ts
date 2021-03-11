@@ -20,7 +20,7 @@ export class ProjectService extends GroupsService<ProjectResource> {
             filters: joinFilters(
                 args.filters || '',
                 new FilterBuilder()
-                    .addEqual("group_class", GroupClass.PROJECT)
+                    .addIn('group_class', [GroupClass.PROJECT, GroupClass.FILTER])
                     .getFilters()
             )
         });
