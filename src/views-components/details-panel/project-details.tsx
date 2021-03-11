@@ -60,6 +60,7 @@ const ProjectDetailsComponent = connect(null, mapDispatchToProps)(
     withStyles(styles)(
         ({ classes, project, onClick }: ProjectDetailsComponentProps) => <div>
             <DetailsAttribute label='Type' value={resourceLabel(ResourceKind.PROJECT)} />
+            <DetailsAttribute label='Group class' value={project.groupClass} />
             <DetailsAttribute label='Owner' linkToUuid={project.ownerUuid}
                 uuidEnhancer={(uuid: string) => <ResourceOwnerWithName uuid={uuid} />} />
             <DetailsAttribute label='Last modified' value={formatDate(project.modifiedAt)} />
