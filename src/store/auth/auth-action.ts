@@ -16,12 +16,15 @@ import { cancelLinking } from '~/store/link-account-panel/link-account-panel-act
 import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
 import { WORKBENCH_LOADING_SCREEN } from '~/store/workbench/workbench-actions';
 import { addRemoteConfig } from './auth-action-session';
+import { getTokenV2 } from '~/models/api-client-authorization';
 
 export const authActions = unionize({
     LOGIN: {},
     LOGOUT: ofType<{ deleteLinkData: boolean }>(),
     SET_CONFIG: ofType<{ config: Config }>(),
-    INIT_USER: ofType<{ user: User, token: string }>(),
+    SET_EXTRA_TOKEN: ofType<{ extraApiToken: string, extraApiTokenExpiration?: Date }>(),
+    RESET_EXTRA_TOKEN: {},
+    INIT_USER: ofType<{ user: User, token: string, tokenExpiration?: Date }>(),
     USER_DETAILS_REQUEST: {},
     USER_DETAILS_SUCCESS: ofType<User>(),
     SET_SSH_KEYS: ofType<SshKeyResource[]>(),
@@ -35,21 +38,18 @@ export const authActions = unionize({
     REMOTE_CLUSTER_CONFIG: ofType<{ config: Config }>(),
 });
 
-export const initAuth = (config: Config) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+export const initAuth = (config: Config) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<any> => {
     // Cancel any link account ops in progress unless the user has
     // just logged in or there has been a successful link operation
     const data = services.linkAccountService.getLinkOpStatus();
     if (!matchTokenRoute(location.pathname) &&
         (!matchFedTokenRoute(location.pathname)) && data === undefined) {
-        dispatch<any>(cancelLinking()).then(() => {
-            dispatch<any>(init(config));
-        });
-    } else {
-        dispatch<any>(init(config));
+        await dispatch<any>(cancelLinking());
     }
+    return dispatch<any>(init(config));
 };
 
-const init = (config: Config) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+const init = (config: Config) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
     const remoteHosts = () => getState().auth.remoteHosts;
     const token = services.authService.getApiToken();
     let homeCluster = services.authService.getHomeCluster();
@@ -67,11 +67,12 @@ const init = (config: Config) => (dispatch: Dispatch, getState: () => RootState,
 
     if (token && token !== "undefined") {
         dispatch(progressIndicatorActions.START_WORKING(WORKBENCH_LOADING_SCREEN));
-        dispatch<any>(saveApiToken(token)).then(() => {
+        try {
+            await dispatch<any>(saveApiToken(token)); // .then(() => {
+            await dispatch(progressIndicatorActions.STOP_WORKING(WORKBENCH_LOADING_SCREEN));
+        } catch (e) {
             dispatch(progressIndicatorActions.STOP_WORKING(WORKBENCH_LOADING_SCREEN));
-        }).catch(() => {
-            dispatch(progressIndicatorActions.STOP_WORKING(WORKBENCH_LOADING_SCREEN));
-        });
+        }
     }
 };
 
@@ -80,16 +81,59 @@ export const getConfig = (dispatch: Dispatch, getState: () => RootState, service
     return state.remoteHostsConfig[state.localCluster];
 };
 
-export const saveApiToken = (token: string) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<any> => {
+export const saveApiToken = (token: string) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<any> => {
     const config = dispatch<any>(getConfig);
     const svc = createServices(config, { progressFn: () => { }, errorFn: () => { } });
     setAuthorizationHeader(svc, token);
-    return svc.authService.getUserDetails().then((user: User) => {
-        dispatch(authActions.INIT_USER({ user, token }));
-    }).catch(() => {
+    try {
+        const user = await svc.authService.getUserDetails();
+        const client = await svc.apiClientAuthorizationService.get('current');
+        const tokenExpiration = client.expiresAt ? new Date(client.expiresAt) : undefined;
+        dispatch(authActions.INIT_USER({ user, token, tokenExpiration }));
+    } catch (e) {
         dispatch(authActions.LOGOUT({ deleteLinkData: false }));
-    });
+    }
 };
+
+export const getNewExtraToken = (reuseStored: boolean = false) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const extraToken = getState().auth.extraApiToken;
+        if (reuseStored && extraToken !== undefined) {
+            const config = dispatch<any>(getConfig);
+            const svc = createServices(config, { progressFn: () => { }, errorFn: () => { } });
+            setAuthorizationHeader(svc, extraToken);
+            try {
+                // Check the extra token's validity before using it. Refresh its
+                // expiration date just in case it changed.
+                const client = await svc.apiClientAuthorizationService.get('current');
+                dispatch(authActions.SET_EXTRA_TOKEN({
+                    extraApiToken: extraToken,
+                    extraApiTokenExpiration: client.expiresAt ? new Date(client.expiresAt): undefined,
+                }));
+                return extraToken;
+            } catch (e) {
+                dispatch(authActions.RESET_EXTRA_TOKEN());
+            }
+        }
+        const user = getState().auth.user;
+        const loginCluster = getState().auth.config.clusterConfig.Login.LoginCluster;
+        if (user === undefined) { return; }
+        if (loginCluster !== "" && getState().auth.homeCluster !== loginCluster) { return; }
+        try {
+            // Do not show errors on the create call, cluster security configuration may not
+            // allow token creation and there's no way to know that from workbench2 side in advance.
+            const client = await services.apiClientAuthorizationService.create(undefined, false);
+            const newExtraToken = getTokenV2(client);
+            dispatch(authActions.SET_EXTRA_TOKEN({
+                extraApiToken: newExtraToken,
+                extraApiTokenExpiration: client.expiresAt ? new Date(client.expiresAt): undefined,
+            }));
+            return newExtraToken;
+        } catch {
+            console.warn("Cannot create new tokens with the current token, probably because of cluster's security settings.");
+            return;
+        }
+    };
 
 export const login = (uuidPrefix: string, homeCluster: string, loginCluster: string,
     remoteHosts: { [key: string]: string }) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
