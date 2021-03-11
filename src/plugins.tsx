@@ -15,15 +15,18 @@ export const pluginConfig: PluginConfig = {
     appBarRight: undefined,
     accountMenuList: [],
     enableNewButtonMatchers: [],
-    newButtonMenuList: []
+    newButtonMenuList: [],
+    middlewares: []
 };
 
 // Starting here, import and register your Workbench 2 plugins. //
 
 // import { register as blankUIPluginRegister } from '~/plugins/blank/index';
-import { register as examplePluginRegister, routePath as exampleRoutePath } from '~/plugins/example/index';
+import { register as sampleTrackerPluginRegister } from '~/plugins/sample-tracker/index';
+import { studyListRoutePath } from '~/plugins/sample-tracker/studyList';
+// import { register as examplePluginRegister, routePath as exampleRoutePath } from '~/plugins/example/index';
 import { register as rootRedirectRegister } from '~/plugins/root-redirect/index';
 
 // blankUIPluginRegister(pluginConfig);
-examplePluginRegister(pluginConfig);
-rootRedirectRegister(pluginConfig, exampleRoutePath);
+sampleTrackerPluginRegister(pluginConfig);
+rootRedirectRegister(pluginConfig, studyListRoutePath);

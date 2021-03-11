@@ -70,6 +70,8 @@ import { SubprocessMiddlewareService } from '~/store/subprocess-panel/subprocess
 import { SUBPROCESS_PANEL_ID } from '~/store/subprocess-panel/subprocess-panel-actions';
 import { ALL_PROCESSES_PANEL_ID } from './all-processes-panel/all-processes-panel-action';
 import { Config } from '~/common/config';
+import { pluginConfig } from '~/plugins';
+import { MiddlewareListReducer } from '~/common/plugintypes';
 
 const composeEnhancers =
     (process.env.NODE_ENV === 'development' &&
@@ -142,7 +144,7 @@ export function configureStore(history: History, services: ServiceRepository, co
         return next(action);
     };
 
-    const middlewares: Middleware[] = [
+    let middlewares: Middleware[] = [
         routerMiddleware(history),
         thunkMiddleware.withExtraArgument(services),
         authMiddleware(services),
@@ -163,6 +165,11 @@ export function configureStore(history: History, services: ServiceRepository, co
         collectionsContentAddress,
         subprocessMiddleware,
     ];
+
+    const reduceMiddlewaresFn: (a: Middleware[],
+        b: MiddlewareListReducer) => Middleware[] = (a, b) => b(a, services);
+
+    middlewares = pluginConfig.middlewares.reduce(reduceMiddlewaresFn, middlewares);
 
     const enhancer = composeEnhancers(applyMiddleware(redirectToMiddleware, ...middlewares));
     return createStore(rootReducer, enhancer);
