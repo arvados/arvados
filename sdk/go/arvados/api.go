@@ -143,6 +143,7 @@ type GroupContentsOptions struct {
 	Order              []string `json:"order"`
 	Include            string   `json:"include"`
 	Recursive          bool     `json:"recursive"`
+	IncludeOldVersions bool     `json:"include_old_versions"`
 	ExcludeHomeProject bool     `json:"exclude_home_project"`
 }
 
