@@ -15,7 +15,7 @@ import { navigateToRunProcess } from '~/store/navigation/navigation-action';
 import { runProcessPanelActions } from '~/store/run-process-panel/run-process-panel-actions';
 import { getUserUuid } from '~/common/getuser';
 import { matchProjectRoute } from '~/routes/routes';
-import { GroupResource } from '~/models/group';
+import { GroupClass, GroupResource } from '~/models/group';
 import { ResourcesState, getResource } from '~/store/resources/resources';
 import { extractUuidKind, ResourceKind } from '~/models/resource';
 
@@ -87,7 +87,8 @@ export const SidePanelButton = withStyles(styles)(
                     const currentProject = getResource<GroupResource>(currentItemId)(resources);
                     if (currentProject &&
                         currentProject.writableBy.indexOf(currentUserUUID || '') >= 0 &&
-                        !isProjectTrashed(currentProject, resources)) {
+                        !isProjectTrashed(currentProject, resources) &&
+                        currentProject.groupClass !== GroupClass.FILTER) {
                         enabled = true;
                     }
                 }
