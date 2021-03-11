@@ -3,16 +3,18 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { Dispatch } from 'redux';
+import { Dispatch, Middleware } from 'redux';
 import { RootStore, RootState } from '~/store/store';
 import { ResourcesState } from '~/store/resources/resources';
 import { Location } from 'history';
+import { ServiceRepository } from "~/services/services";
 
 export type ElementListReducer = (startingList: React.ReactElement[], itemClass?: string) => React.ReactElement[];
 export type CategoriesListReducer = (startingList: string[]) => string[];
 export type NavigateMatcher = (dispatch: Dispatch, getState: () => RootState, uuid: string) => boolean;
 export type LocationChangeMatcher = (store: RootStore, pathname: string) => boolean;
 export type EnableNew = (location: Location, currentItemId: string, currentUserUUID: string | undefined, resources: ResourcesState) => boolean;
+export type MiddlewareListReducer = (startingList: Middleware[], services: ServiceRepository) => Middleware[];
 
 export interface PluginConfig {
     // Customize the list of possible center panels by adding or removing Route components.
@@ -42,4 +44,6 @@ export interface PluginConfig {
     enableNewButtonMatchers: EnableNew[];
 
     newButtonMenuList: ElementListReducer[];
+
+    middlewares: MiddlewareListReducer[];
 }
