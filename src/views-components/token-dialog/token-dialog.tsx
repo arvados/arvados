@@ -12,8 +12,7 @@ import {
     withStyles,
     StyleRulesCallback,
     Button,
-    Typography,
-    Tooltip
+    Typography
 } from '@material-ui/core';
 import * as CopyToClipboard from 'react-copy-to-clipboard';
 import { ArvadosTheme } from '~/common/custom-theme';
@@ -28,9 +27,9 @@ import {
 import { DefaultCodeSnippet } from '~/components/default-code-snippet/default-code-snippet';
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
 import { getNewExtraToken } from '~/store/auth/auth-action';
-import { CopyIcon } from '~/components/icon/icon';
+import { DetailsAttribute } from '~/components/details-attribute/details-attribute';
 
-type CssRules = 'link' | 'paper' | 'button' | 'actionButton' | 'copyIcon' | 'inlineMonospaced';
+type CssRules = 'link' | 'paper' | 'button' | 'actionButton' | 'codeBlock';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     link: {
@@ -54,20 +53,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         marginBottom: theme.spacing.unit * 2,
         marginRight: theme.spacing.unit * 2,
     },
-    copyIcon: {
-        marginLeft: theme.spacing.unit,
-        color: theme.palette.grey["500"],
-        cursor: 'pointer',
-        display: 'inline',
-        '& svg': {
-            fontSize: '1rem'
-        }
+    codeBlock: {
+        fontSize: '0.8125rem',
     },
-    inlineMonospaced: {
-        fontFamily: 'Monospace',
-        fontSize: '1rem',
-        display: 'inline-block',
-    }
 });
 
 type TokenDialogProps = TokenDialogData & WithDialogProps<{}> & WithStyles<CssRules> & DispatchProp;
@@ -106,6 +94,9 @@ unset ARVADOS_API_HOST_INSECURE`
 
     render() {
         const { classes, open, closeDialog, ...data } = this.props;
+        const tokenExpiration = data.tokenExpiration
+            ? data.tokenExpiration.toLocaleString()
+            : `This token does not have an expiration date`;
 
         return <Dialog
             open={open}
@@ -124,46 +115,23 @@ unset ARVADOS_API_HOST_INSECURE`
                     </Typography>
                 </Typography>
                 <Typography  paragraph={true}>
-                    <Typography component='span'>
-                        Your Arvados API host is: <Typography className={classes.inlineMonospaced} component='span'>{data.apiHost} {<Tooltip title="Copy to clipboard">
-                            <span className={classes.copyIcon}>
-                                <CopyToClipboard text={data.apiHost} onCopy={() => this.onCopy("API host copied")}>
-                                    <CopyIcon />
-                                </CopyToClipboard>
-                            </span>
-                        </Tooltip>}
-                        </Typography>
-                    </Typography>
-                    <Typography component='span'>
-                        Your token is: <Typography className={classes.inlineMonospaced} component='span'>{data.token} {<Tooltip title="Copy to clipboard">
-                            <span className={classes.copyIcon}>
-                                <CopyToClipboard text={data.token} onCopy={() => this.onCopy("Token copied")}>
-                                    <CopyIcon />
-                                </CopyToClipboard>
-                            </span>
-                            </Tooltip>}
-                        </Typography>
-                    </Typography>
-                    <Typography component='span'>
-                    { data.tokenExpiration
-                        ? `Expires at: ${data.tokenExpiration.toLocaleString()}`
-                        : `This token does not have an expiration date`
-                    }
-                    </Typography>
+                    <DetailsAttribute label='API Host' value={data.apiHost} copyValue={data.apiHost} />
+                    <DetailsAttribute label='API Token' value={data.token} copyValue={data.token} />
+                    <DetailsAttribute label='Token expiration' value={tokenExpiration} />
+                    { this.props.canCreateNewTokens && <Button
+                        onClick={() => this.onGetNewToken()}
+                        color="primary"
+                        size="small"
+                        variant="contained"
+                        className={classes.actionButton}
+                    >
+                        GET NEW TOKEN
+                    </Button> }
                 </Typography>
-                { this.props.canCreateNewTokens && <Button
-                    onClick={() => this.onGetNewToken()}
-                    color="primary"
-                    size="small"
-                    variant="contained"
-                    className={classes.actionButton}
-                >
-                    GET NEW TOKEN
-                </Button> }
                 <Typography paragraph={true}>
                     Paste the following lines at a shell prompt to set up the necessary environment for Arvados SDKs to authenticate to your account.
                 </Typography>
-                <DefaultCodeSnippet lines={[this.getSnippet(data)]} />
+                <DefaultCodeSnippet className={classes.codeBlock} lines={[this.getSnippet(data)]} />
                 <CopyToClipboard text={this.getSnippet(data)} onCopy={() => this.onCopy('Shell code block copied')}>
                     <Button
                         color="primary"
@@ -174,7 +142,7 @@ unset ARVADOS_API_HOST_INSECURE`
                         COPY TO CLIPBOARD
                     </Button>
                 </CopyToClipboard>
-                <Typography >
+                <Typography>
                     Arvados
                             <a href='http://doc.arvados.org/user/reference/api-tokens.html' target='blank' className={classes.link}>virtual machines</a>
                     do this for you automatically. This setup is needed only when you use the API remotely (e.g., from your own workstation).

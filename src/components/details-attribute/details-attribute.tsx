@@ -91,7 +91,7 @@ export const DetailsAttribute = connect(mapStateToProps)(withStyles(styles)(
             let valueNode: React.ReactNode;
 
             if (linkToUuid) {
-            const uuid = uuidEnhancer ? uuidEnhancer(linkToUuid) : linkToUuid;
+                const uuid = uuidEnhancer ? uuidEnhancer(linkToUuid) : linkToUuid;
                 const linkUrl = getNavUrl(linkToUuid || "", { localCluster, remoteHostsConfig, sessions });
                 if (linkUrl[0] === '/') {
                     valueNode = <Link to={linkUrl} className={classes.link}>{uuid}</Link>;

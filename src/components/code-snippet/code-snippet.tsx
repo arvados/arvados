@@ -35,7 +35,7 @@ export const CodeSnippet = withStyles(styles)(
         className={classNames(classes.root, className)}>
             {
                 lines.map((line: string, index: number) => {
-                    return <Typography key={index} className={apiResponse ? classes.space : ''} component="pre">{line}</Typography>;
+                    return <Typography key={index} className={apiResponse ? classes.space : className} component="pre">{line}</Typography>;
                 })
             }
         </Typography>
