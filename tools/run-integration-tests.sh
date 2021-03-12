@@ -10,7 +10,7 @@ cleanup() {
     set +e +o pipefail
     kill ${arvboot_PID} ${consume_stdout_PID} ${wb2_PID} ${consume_wb2_stdout_PID}
     wait ${arvboot_PID} ${consume_stdout_PID} ${wb2_PID} ${consume_wb2_stdout_PID} || true
-    if [ "${CLEANUP_ARVADOS_DIR}" -eq "1" ]; then
+    if [ ${CLEANUP_ARVADOS_DIR} -eq 1 ]; then
         rm -rf ${ARVADOS_DIR}
     fi
     echo >&2 "done"
@@ -36,9 +36,9 @@ usage() {
 # Allow self-signed certs on 'wait-on'
 export NODE_TLS_REJECT_UNAUTHORIZED=0
 
+ARVADOS_DIR="unset"
 CLEANUP_ARVADOS_DIR=0
 CYPRESS_MODE="run"
-ARVADOS_DIR=`mktemp -d`
 WB2_DIR=`pwd`
 
 while getopts "ia:w:" o; do
@@ -60,6 +60,13 @@ while getopts "ia:w:" o; do
     esac
 done
 shift $((OPTIND-1))
+
+if [ "${ARVADOS_DIR}" = "unset" ]; then
+  echo "ARVADOS_DIR is unset, creating a temporary directory for new checkout"
+  ARVADOS_DIR=`mktemp -d`
+fi
+
+echo "ARVADOS_DIR is ${ARVADOS_DIR}"
 
 ARVADOS_LOG=${ARVADOS_DIR}/arvados.log
 ARVADOS_CONF=${WB2_DIR}/tools/arvados_config.yml
