@@ -94,11 +94,13 @@ export class CommonService<T> {
             });
     }
 
-    create(data?: Partial<T>) {
+    create(data?: Partial<T>, showErrors?: boolean) {
         return CommonService.defaultResponse(
             this.serverApi
                 .post<T>(this.resourceType, data && CommonService.mapKeys(_.snakeCase)(data)),
-            this.actions
+            this.actions,
+            true, // mapKeys
+            showErrors
         );
     }
 

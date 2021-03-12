@@ -36,7 +36,7 @@ import { ServiceRepository } from '~/services/services';
 import { initWebSocket } from '~/websocket/websocket';
 import { Config } from '~/common/config';
 import { addRouteChangeHandlers } from './routes/route-change-handlers';
-import { setCurrentTokenDialogApiHost } from '~/store/current-token-dialog/current-token-dialog-actions';
+import { setTokenDialogApiHost } from '~/store/token-dialog/token-dialog-actions';
 import { processResourceActionSet } from '~/views-components/context-menu/action-sets/process-resource-action-set';
 import { progressIndicatorActions } from '~/store/progress-indicator/progress-indicator-actions';
 import { trashedCollectionActionSet } from '~/views-components/context-menu/action-sets/trashed-collection-action-set';
@@ -130,7 +130,7 @@ fetchConfig()
         store.subscribe(initListener(history, store, services, config));
         store.dispatch(initAuth(config));
         store.dispatch(setBuildInfo());
-        store.dispatch(setCurrentTokenDialogApiHost(apiHost));
+        store.dispatch(setTokenDialogApiHost(apiHost));
         store.dispatch(loadVocabulary);
         store.dispatch(loadFileViewersConfig);
 

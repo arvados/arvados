@@ -2,20 +2,21 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { initAuth } from "./auth-action";
+import { getNewExtraToken, initAuth } from "./auth-action";
 import { API_TOKEN_KEY } from "~/services/auth-service/auth-service";
 
 import 'jest-localstorage-mock';
 import { ServiceRepository, createServices } from "~/services/services";
 import { configureStore, RootStore } from "../store";
 import { createBrowserHistory } from "history";
-import { mockConfig, DISCOVERY_DOC_PATH, } from '~/common/config';
+import { Config, mockConfig } from '~/common/config';
 import { ApiActions } from "~/services/api/api-actions";
 import { ACCOUNT_LINK_STATUS_KEY } from '~/services/link-account-service/link-account-service';
 import Axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { ImportMock } from 'ts-mock-imports';
 import * as servicesModule from "~/services/services";
+import { SessionStatus } from "~/models/session";
 
 describe('auth-actions', () => {
     const axiosInst = Axios.create({ headers: {} });
@@ -42,8 +43,7 @@ describe('auth-actions', () => {
         importMocks.map(m => m.restore());
     });
 
-    it('should initialise state with user and api token from local storage', (done) => {
-
+    it('creates an extra token', async () => {
         axiosMock
             .onGet("/users/current")
             .reply(200, {
@@ -56,9 +56,76 @@ describe('auth-actions', () => {
                 is_active: true,
                 username: "jdoe",
                 prefs: {}
+            })
+            .onGet("/api_client_authorizations/current")
+            .reply(200, {
+                expires_at: "2140-01-01T00:00:00.000Z",
+                api_token: 'extra token',
+            })
+            .onPost("/api_client_authorizations")
+            .replyOnce(200, {
+                uuid: 'zzzzz-gj3su-xxxxxxxxxx',
+                apiToken: 'extra token',
+            })
+            .onPost("/api_client_authorizations")
+            .reply(200, {
+                uuid: 'zzzzz-gj3su-xxxxxxxxxx',
+                apiToken: 'extra additional token',
             });
 
+        importMocks.push(ImportMock.mockFunction(servicesModule, 'createServices', services));
+        sessionStorage.setItem(ACCOUNT_LINK_STATUS_KEY, "0");
+        localStorage.setItem(API_TOKEN_KEY, "token");
+
+        const config: any = {
+            rootUrl: "https://zzzzz.arvadosapi.com",
+            uuidPrefix: "zzzzz",
+            remoteHosts: { },
+            apiRevision: 12345678,
+            clusterConfig: {
+                Login: { LoginCluster: "" },
+            },
+        };
+
+        // Set up auth, confirm that no extra token was requested
+        await store.dispatch(initAuth(config))
+        expect(store.getState().auth.apiToken).toBeDefined();
+        expect(store.getState().auth.extraApiToken).toBeUndefined();
+
+        // Ask for an extra token
+        await store.dispatch(getNewExtraToken());
+        expect(store.getState().auth.apiToken).toBeDefined();
+        expect(store.getState().auth.extraApiToken).toBeDefined();
+        const extraToken = store.getState().auth.extraApiToken;
+
+        // Ask for a cached extra token
+        await store.dispatch(getNewExtraToken(true));
+        expect(store.getState().auth.extraApiToken).toBe(extraToken);
+
+        // Ask for a new extra token, should make a second api request
+        await store.dispatch(getNewExtraToken(false));
+        expect(store.getState().auth.extraApiToken).toBeDefined();
+        expect(store.getState().auth.extraApiToken).not.toBe(extraToken);
+    });
+
+    it('should initialise state with user and api token from local storage', (done) => {
         axiosMock
+            .onGet("/users/current")
+            .reply(200, {
+                email: "test@test.com",
+                first_name: "John",
+                last_name: "Doe",
+                uuid: "zzzzz-tpzed-abcefg",
+                owner_uuid: "ownerUuid",
+                is_admin: false,
+                is_active: true,
+                username: "jdoe",
+                prefs: {}
+            })
+            .onGet("/api_client_authorizations/current")
+            .reply(200, {
+                expires_at: "2140-01-01T00:00:00.000Z"
+            })
             .onGet("https://xc59z.arvadosapi.com/discovery/v1/apis/arvados/v1/rest")
             .reply(200, {
                 baseUrl: "https://xc59z.arvadosapi.com/arvados/v1",
@@ -84,6 +151,9 @@ describe('auth-actions', () => {
             uuidPrefix: "zzzzz",
             remoteHosts: { xc59z: "xc59z.arvadosapi.com" },
             apiRevision: 12345678,
+            clusterConfig: {
+                Login: { LoginCluster: "" },
+            },
         };
 
         store.dispatch(initAuth(config));
@@ -92,14 +162,20 @@ describe('auth-actions', () => {
             const auth = store.getState().auth;
             if (auth.apiToken === "token" &&
                 auth.sessions.length === 2 &&
-                auth.sessions[0].status === 2 &&
-                auth.sessions[1].status === 2
+                auth.sessions[0].status === SessionStatus.VALIDATED &&
+                auth.sessions[1].status === SessionStatus.VALIDATED
             ) {
                 try {
                     expect(auth).toEqual({
                         apiToken: "token",
+                        apiTokenExpiration: new Date("2140-01-01T00:00:00.000Z"),
                         config: {
                             apiRevision: 12345678,
+                            clusterConfig: {
+                                Login: {
+                                    LoginCluster: "",
+                                },
+                            },
                             remoteHosts: {
                                 "xc59z": "xc59z.arvadosapi.com",
                             },
@@ -107,12 +183,19 @@ describe('auth-actions', () => {
                             uuidPrefix: "zzzzz",
                         },
                         sshKeys: [],
+                        extraApiToken: undefined,
+                        extraApiTokenExpiration: undefined,
                         homeCluster: "zzzzz",
                         localCluster: "zzzzz",
                         loginCluster: undefined,
                         remoteHostsConfig: {
                             "zzzzz": {
                                 "apiRevision": 12345678,
+                                "clusterConfig": {
+                                    "Login": {
+                                        "LoginCluster": "",
+                                    },
+                                },
                                 "remoteHosts": {
                                     "xc59z": "xc59z.arvadosapi.com",
                                 },
@@ -170,7 +253,7 @@ describe('auth-actions', () => {
                     });
                     done();
                 } catch (e) {
-                    console.log(e);
+                    fail(e);
                 }
             }
         });
