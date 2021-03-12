@@ -197,3 +197,45 @@ Cypress.Commands.add('getAll', (...elements) => {
 
     return promise
 })
+
+Cypress.Commands.add('shareWith', (srcUserToken, targetUserUUID, itemUUID, permission = 'can_write') => {
+    cy.createLink(srcUserToken, {
+        name: permission,
+        link_class: 'permission',
+        head_uuid: itemUUID,
+        tail_uuid: targetUserUUID
+    });
+})
+
+Cypress.Commands.add('addToFavorites', (activeUserToken, activeUserUUID, itemUUID) => {
+    cy.createLink(activeUserToken, {
+        head_uuid: itemUUID,
+        link_class: 'star',
+        name: '',
+        owner_uuid: activeUserUUID,
+        tail_uuid: activeUserUUID,
+    });
+})
+
+Cypress.Commands.add('createProject', ({
+    owningUser,
+    targetUser,
+    projectName,
+    canWrite,
+    addToFavorites
+}) => {
+    const writePermission = canWrite ? 'can_write' : 'can_read';
+
+    cy.createGroup(owningUser.token, {
+        name: `${projectName} ${Math.floor(Math.random() * 999999)}`,
+        group_class: 'project',
+    }).as(`${projectName}`).then((project) => {
+        if (targetUser && targetUser !== owningUser) {
+            cy.shareWith(owningUser.token, targetUser.user.uuid, project.uuid, writePermission);
+        }
+        if (addToFavorites) {
+            const user = targetUser ? targetUser : owningUser;
+            cy.addToFavorites(user.token, user.user.uuid, project.uuid);
+        }
+    });
+});

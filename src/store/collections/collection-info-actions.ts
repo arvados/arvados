@@ -6,6 +6,7 @@ import { Dispatch } from "redux";
 import { RootState } from "~/store/store";
 import { ServiceRepository } from "~/services/services";
 import { dialogActions } from '~/store/dialog/dialog-actions';
+import { getNewExtraToken } from "../auth/auth-action";
 
 export const COLLECTION_WEBDAV_S3_DIALOG_NAME = 'collectionWebdavS3Dialog';
 
@@ -21,12 +22,13 @@ export interface WebDavS3InfoDialogData {
 }
 
 export const openWebDavS3InfoDialog = (uuid: string, activeTab?: number) =>
-    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        await dispatch<any>(getNewExtraToken(true));
         dispatch(dialogActions.OPEN_DIALOG({
             id: COLLECTION_WEBDAV_S3_DIALOG_NAME,
             data: {
                 title: 'Access Collection using WebDAV or S3',
-                token: getState().auth.apiToken,
+                token: getState().auth.extraApiToken || getState().auth.apiToken,
                 downloadUrl: getState().auth.config.keepWebServiceUrl,
                 collectionsUrl: getState().auth.config.keepWebInlineServiceUrl,
                 localCluster: getState().auth.localCluster,

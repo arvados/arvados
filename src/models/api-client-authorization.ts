@@ -19,3 +19,6 @@ export interface ApiClientAuthorization extends Resource {
     defaultOwnerUuid: string;
     scopes: string[];
 }
+
+export const getTokenV2 = (aca: ApiClientAuthorization): string =>
+    `v2/${aca.uuid}/${aca.apiToken}`;

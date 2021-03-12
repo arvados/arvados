@@ -19,6 +19,8 @@ ITERATION?=1
 
 TARGETS?="centos7 debian8 debian10 ubuntu1404 ubuntu1604 ubuntu1804 ubuntu2004"
 
+ARVADOS_DIRECTORY?=unset
+
 DESCRIPTION=Arvados Workbench2 - Arvados is a free and open source platform for big data science.
 MAINTAINER=Arvados Package Maintainers <packaging@arvados.org>
 
@@ -65,7 +67,7 @@ unit-tests: yarn-install
 
 integration-tests: yarn-install
 	yarn run cypress install
-	$(WORKSPACE)/tools/run-integration-tests.sh
+	$(WORKSPACE)/tools/run-integration-tests.sh -a $(ARVADOS_DIRECTORY)
 
 integration-tests-in-docker: workbench2-build-image
 	docker run -ti -v$(PWD):$(PWD) -w$(PWD) workbench2-build make integration-tests
