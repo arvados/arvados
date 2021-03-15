@@ -439,7 +439,7 @@ func (client *KeepTestClient) ManifestFileReader(m manifest.Manifest, filename s
 
 func (s *TestSuite) TestLoadImage(c *C) {
 	cr, err := NewContainerRunner(s.client, &ArvTestClient{},
-		&KeepTestClient{}, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+		&KeepTestClient{}, adapter(s.docker), "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	c.Assert(err, IsNil)
 
 	kc := &KeepTestClient{}
@@ -447,10 +447,10 @@ func (s *TestSuite) TestLoadImage(c *C) {
 	cr.ContainerArvClient = &ArvTestClient{}
 	cr.ContainerKeepClient = kc
 
-	_, err = cr.Docker.ImageRemove(nil, hwImageID, dockertypes.ImageRemoveOptions{})
+	_, err = cr.ContainerExecRunner.ImageRemove(nil, hwImageID, ImageRemoveOptions{})
 	c.Check(err, IsNil)
 
-	_, _, err = cr.Docker.ImageInspectWithRaw(nil, hwImageID)
+	_, _, err = cr.ContainerExecRunner.ImageInspectWithRaw(nil, hwImageID)
 	c.Check(err, NotNil)
 
 	cr.Container.ContainerImage = hwPDH
@@ -463,13 +463,13 @@ func (s *TestSuite) TestLoadImage(c *C) {
 
 	c.Check(err, IsNil)
 	defer func() {
-		cr.Docker.ImageRemove(nil, hwImageID, dockertypes.ImageRemoveOptions{})
+		cr.ContainerExecRunner.ImageRemove(nil, hwImageID, ImageRemoveOptions{})
 	}()
 
 	c.Check(kc.Called, Equals, true)
 	c.Check(cr.ContainerConfig.Image, Equals, hwImageID)
 
-	_, _, err = cr.Docker.ImageInspectWithRaw(nil, hwImageID)
+	_, _, err = cr.ContainerExecRunner.ImageInspectWithRaw(nil, hwImageID)
 	c.Check(err, IsNil)
 
 	// (2) Test using image that's already loaded
@@ -574,7 +574,7 @@ func (s *TestSuite) TestLoadImageArvError(c *C) {
 func (s *TestSuite) TestLoadImageKeepError(c *C) {
 	// (2) Keep error
 	kc := &KeepErrorTestClient{}
-	cr, err := NewContainerRunner(s.client, &ArvTestClient{}, kc, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	cr, err := NewContainerRunner(s.client, &ArvTestClient{}, kc, adapter(s.docker), "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	c.Assert(err, IsNil)
 
 	cr.ContainerArvClient = &ArvTestClient{}
@@ -604,7 +604,7 @@ func (s *TestSuite) TestLoadImageCollectionError(c *C) {
 func (s *TestSuite) TestLoadImageKeepReadError(c *C) {
 	// (4) Collection doesn't contain image
 	kc := &KeepReadErrorTestClient{}
-	cr, err := NewContainerRunner(s.client, &ArvTestClient{}, kc, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	cr, err := NewContainerRunner(s.client, &ArvTestClient{}, kc, adapter(s.docker), "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	c.Assert(err, IsNil)
 	cr.Container.ContainerImage = hwPDH
 	cr.ContainerArvClient = &ArvTestClient{}
@@ -653,7 +653,7 @@ func (s *TestSuite) TestRunContainer(c *C) {
 	}
 	kc := &KeepTestClient{}
 	defer kc.Close()
-	cr, err := NewContainerRunner(s.client, &ArvTestClient{}, kc, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	cr, err := NewContainerRunner(s.client, &ArvTestClient{}, kc, adapter(s.docker), "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	c.Assert(err, IsNil)
 
 	cr.ContainerArvClient = &ArvTestClient{}
@@ -777,7 +777,7 @@ func (s *TestSuite) fullRunHelper(c *C, record string, extraMounts []string, exi
 	s.docker.api = api
 	kc := &KeepTestClient{}
 	defer kc.Close()
-	cr, err = NewContainerRunner(s.client, api, kc, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	cr, err = NewContainerRunner(s.client, api, kc, adapter(s.docker), "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	c.Assert(err, IsNil)
 	s.runner = cr
 	cr.statInterval = 100 * time.Millisecond
@@ -1136,7 +1136,7 @@ func (s *TestSuite) testStopContainer(c *C, setup func(cr *ContainerRunner)) {
 	api := &ArvTestClient{Container: rec}
 	kc := &KeepTestClient{}
 	defer kc.Close()
-	cr, err := NewContainerRunner(s.client, api, kc, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	cr, err := NewContainerRunner(s.client, api, kc, adapter(s.docker), "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	c.Assert(err, IsNil)
 	cr.RunArvMount = func([]string, string) (*exec.Cmd, error) { return nil, nil }
 	cr.MkArvClient = func(token string) (IArvadosClient, IKeepClient, *arvados.Client, error) {
@@ -1621,7 +1621,7 @@ func (s *TestSuite) stdoutErrorRunHelper(c *C, record string, fn func(t *TestDoc
 	api = &ArvTestClient{Container: rec}
 	kc := &KeepTestClient{}
 	defer kc.Close()
-	cr, err = NewContainerRunner(s.client, api, kc, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	cr, err = NewContainerRunner(s.client, api, kc, adapter(s.docker), "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	c.Assert(err, IsNil)
 	am := &ArvMountCmdLine{}
 	cr.RunArvMount = am.ArvMountTest
