@@ -35,7 +35,9 @@ table(table table-bordered table-condensed).
 |delete_at|datetime|If @delete_at@ is non-null and in the past, the group and all objects directly or indirectly owned by the group may be permanently deleted.||
 |is_trashed|datetime|True if @trash_at@ is in the past, false if not.||
 
-@filter@ groups have a special @properties@ field named @filters@, which must be an array of arrays with 3 elements, each describing a filter. @filter@ groups are virtual groups; they can not own other objects. Filter attributes must include the object type (@collections@, @container_requests@, @groups@, @workflows@), separated with a dot from the field to be filtered on. Filters are applied with an implied *and* between them, but each filter only applies to the object type specified. The results are subject to the usual access controls - they are a subset of all objects the user can see. Here is an example:
+@filter@ groups are virtual groups; they can not own other objects. Filter groups have a special @properties@ field named @filters@, which must be an array of filter conditions. See "list method filters":{{site.baseurl}}/api/methods.html#filters for details on the syntax of valid filters, but keep in mind that the attributes must include the object type (@collections@, @container_requests@, @groups@, @workflows@), separated with a dot from the field to be filtered on.
+
+Filters are applied with an implied *and* between them, but each filter only applies to the object type specified. The results are subject to the usual access controls - they are a subset of all objects the user can see. Here is an example:
 
 <pre>
  "properties":{

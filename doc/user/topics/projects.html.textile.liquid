@@ -31,6 +31,39 @@ h2. Filter groups
 
 Filter groups are another type of virtual project. They are implemented as an Arvados @group@ object with @group_class@ set to the value "filter".
 
-Filter groups define one or more filters which are applied to all objects that the current user can see, and returned as the contents of the @group@. @filter@ groups are described in more detail in the "groups API reference":/api/methods/groups.html.
+Filter groups define one or more filters which are applied to all objects that the current user can see, and returned as the contents of the @group@. Filter groups are described in more detail in the "groups API reference":{{site.baseurl}}/api/methods/groups.html, and the rules for creating valid filters are the same as for "list method filters":{{site.baseurl}}/api/methods.html#filters.
 
 Filter groups are accessible (read-only) via Workbench and the Arvados FUSE mount, WebDAV and S3 interface. Filter groups must currently be defined via the API, SDK or cli, there is no Workbench support yet.
+
+As an example, create a filter group with the @arv@ cli:
+
+<notextile>
+<pre><code>~$ <span class="userinput"> FILTER_GROUP_UUID=`arv -s group create --group '{
+    "group_class":"filter",
+    "name":"my filter group",
+    "properties":{
+      "filters":
+        [
+          ["collections.name","ilike","%test%"],
+          ["uuid","is_a","arvados#collection"]
+        ]
+      }
+    }'`
+</code>
+</pre>
+</notextile>
+This filter group will contain all collections visible to the current user whose name matches the word @test@ (case insensitive).
+
+To see how this works via the keep FUSE mount, create a few matching (and non-matching) collections:
+
+<notextile>
+<pre><code>~$ <span class="userinput">arv collection create --collection '{"name":"empty test collection 1"}'</span>
+~$ <span class="userinput">arv collection create --collection '{"name":"another empty collection"}'</span>
+~$ <span class="userinput">arv collection create --collection '{"name":"empty Test collection 2"}'</span>
+~$ <span class="userinput">mkdir -p keep</span>
+~$ <span class="userinput">arv-mount keep</span>
+~$ <span class="userinput">ls keep/by_id/$FILTER_GROUP_UUID/ -C1</span>
+'empty test collection 1'
+'empty Test collection 2'</code>
+</pre>
+</notextile>
