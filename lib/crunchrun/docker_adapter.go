@@ -211,6 +211,13 @@ func (a *DockerAdapter) GetContainerConfig() (ContainerConfig, error) {
 func (a *DockerAdapter) GetHostConfig() (HostConfig, error) {
 	return a.hostConfig, nil
 }
+func (a *DockerAdapter) GetImage() (imageID string) {
+	return a.containerConfig.Image
+}
+
+func (a *DockerAdapter) SetImage(imageID string) {
+	a.containerConfig.Image = imageID
+}
 
 func adapter(docker ThinDockerClient) ThinContainerExecRunner {
 	return_object := &DockerAdapter{docker: docker}

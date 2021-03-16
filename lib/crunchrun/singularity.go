@@ -24,6 +24,14 @@ func (c SingularityClient) GetHostConfig() (HostConfig, error) {
 	return c.hostConfig, nil
 }
 
+func (c SingularityClient) GetImage() (imageID string) {
+	return c.containerConfig.Image
+}
+
+func (c SingularityClient) SetImage(imageID string) {
+	c.containerConfig.Image = imageID
+}
+
 func (c SingularityClient) ContainerAttach(ctx context.Context, container string, options ContainerAttachOptions) (HijackedResponse, error) {
 	fmt.Printf("placeholder for container ContainerAttach %s", container)
 

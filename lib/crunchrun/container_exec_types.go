@@ -19,6 +19,7 @@ import (
 // "It should hold only portable information about the container."
 // and for Singularity TBD
 type ContainerConfig struct {
+	Image        string
 	OpenStdin    bool
 	StdinOnce    bool
 	AttachStdin  bool
@@ -279,6 +280,9 @@ type ContainerWaitOKBody struct {
 type ThinContainerExecRunner interface {
 	GetContainerConfig() (ContainerConfig, error)
 	GetHostConfig() (HostConfig, error)
+
+	GetImage() (imageID string)
+	SetImage(imageID string)
 
 	ContainerAttach(ctx context.Context, container string, options ContainerAttachOptions) (HijackedResponse, error)
 	ContainerCreate(ctx context.Context, config ContainerConfig, hostConfig HostConfig, networkingConfig *NetworkingConfig, containerName string) (ContainerCreateResponse, error)

@@ -964,7 +964,7 @@ install_services/api() {
         set -ex
         cd "$WORKSPACE/services/api"
         export RAILS_ENV=test
-        if "$bundle" exec rails db:environment:set ; then
+        if bin/rails db:environment:set ; then
             "$bundle" exec rake db:drop
         fi
         "$bundle" exec rake db:setup

@@ -98,8 +98,8 @@ type ContainerRunner struct {
 	ContainerExecRunner ThinContainerExecRunner
 
 	//Docker          ThinDockerClient
-	ContainerConfig dockercontainer.Config     //FIXME: translate this to the ThinContainerRunner interface
-	HostConfig      dockercontainer.HostConfig //FIXME: translate this to the ThinContainerRunner interface
+	//ContainerConfig dockercontainer.Config     //FIXME: translate this to the ThinContainerRunner interface
+	HostConfig dockercontainer.HostConfig //FIXME: translate this to the ThinContainerRunner interface
 	//--------------
 
 	// Dispatcher client is initialized with the Dispatcher token.
@@ -311,7 +311,7 @@ func (runner *ContainerRunner) LoadImage() (err error) {
 		runner.CrunchLog.Print("Docker image is available")
 	}
 
-	runner.ContainerConfig.Image = imageID
+	runner.ContainerExecRunner.SetImage(imageID)
 
 	runner.ContainerKeepClient.ClearBlockCache()
 

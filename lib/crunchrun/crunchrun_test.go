@@ -457,7 +457,7 @@ func (s *TestSuite) TestLoadImage(c *C) {
 
 	// (1) Test loading image from keep
 	c.Check(kc.Called, Equals, false)
-	c.Check(cr.ContainerConfig.Image, Equals, "")
+	c.Check(cr.ContainerExecRunner.GetImage(), Equals, "")
 
 	err = cr.LoadImage()
 
@@ -467,19 +467,19 @@ func (s *TestSuite) TestLoadImage(c *C) {
 	}()
 
 	c.Check(kc.Called, Equals, true)
-	c.Check(cr.ContainerConfig.Image, Equals, hwImageID)
+	c.Check(cr.ContainerExecRunner.GetImage(), Equals, hwImageID)
 
 	_, _, err = cr.ContainerExecRunner.ImageInspectWithRaw(nil, hwImageID)
 	c.Check(err, IsNil)
 
 	// (2) Test using image that's already loaded
 	kc.Called = false
-	cr.ContainerConfig.Image = ""
+	cr.ContainerExecRunner.SetImage("")
 
 	err = cr.LoadImage()
 	c.Check(err, IsNil)
 	c.Check(kc.Called, Equals, false)
-	c.Check(cr.ContainerConfig.Image, Equals, hwImageID)
+	c.Check(cr.ContainerExecRunner.GetImage(), Equals, hwImageID)
 
 }
 
