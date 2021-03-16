@@ -16,7 +16,7 @@ import (
 type DockerAdapter struct {
 	docker          ThinDockerClient
 	containerConfig ContainerConfig
-	hostConfig      HostConfig
+	hostConfig      dockercontainer.HostConfig
 }
 
 func (a *DockerAdapter) ContainerAttach(ctx context.Context, container string, options ContainerAttachOptions) (HijackedResponse, error) {
@@ -209,14 +209,53 @@ func (a *DockerAdapter) GetContainerConfig() (ContainerConfig, error) {
 }
 
 func (a *DockerAdapter) GetHostConfig() (HostConfig, error) {
-	return a.hostConfig, nil
+	adapterHostConfig := HostConfig{
+		Binds: a.hostConfig.Binds,
+		LogConfig: LogConfig{
+			Type: a.hostConfig.LogConfig.Type,
+		},
+		Resources: Resources{
+			CgroupParent: a.hostConfig.CgroupParent,
+			NanoCPUs:     a.hostConfig.NanoCPUs,
+			Memory:       a.hostConfig.Memory,
+			MemorySwap:   a.hostConfig.MemorySwap,
+			KernelMemory: a.hostConfig.KernelMemory,
+		},
+	}
+	return adapterHostConfig, nil
 }
+
+func (a *DockerAdapter) SetHostConfig(adapterHostConfig HostConfig) error {
+	dockerHostConfig := dockercontainer.HostConfig{
+		Binds: adapterHostConfig.Binds,
+		LogConfig: dockercontainer.LogConfig{
+			Type: adapterHostConfig.LogConfig.Type,
+		},
+		Resources: dockercontainer.Resources{
+			CgroupParent: adapterHostConfig.CgroupParent,
+			NanoCPUs:     adapterHostConfig.NanoCPUs,
+			Memory:       adapterHostConfig.Memory,
+			MemorySwap:   adapterHostConfig.MemorySwap,
+			KernelMemory: adapterHostConfig.KernelMemory,
+		},
+	}
+	a.hostConfig = dockerHostConfig
+	return nil
+}
+
 func (a *DockerAdapter) GetImage() (imageID string) {
 	return a.containerConfig.Image
 }
 
 func (a *DockerAdapter) SetImage(imageID string) {
 	a.containerConfig.Image = imageID
+}
+func (a *DockerAdapter) GetNetworkMode() (networkMode NetworkMode) {
+	return NetworkMode(a.hostConfig.NetworkMode)
+}
+
+func (a *DockerAdapter) SetNetworkMode(networkMode NetworkMode) {
+	a.hostConfig.NetworkMode = dockercontainer.NetworkMode(networkMode)
 }
 
 func adapter(docker ThinDockerClient) ThinContainerExecRunner {

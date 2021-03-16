@@ -32,6 +32,19 @@ func (c SingularityClient) SetImage(imageID string) {
 	c.containerConfig.Image = imageID
 }
 
+func (c SingularityClient) GetNetworkMode() (networkMode NetworkMode) {
+	return c.hostConfig.NetworkMode
+}
+
+func (c SingularityClient) SetNetworkMode(networkMode NetworkMode) {
+	c.hostConfig.NetworkMode = networkMode
+}
+
+func (c SingularityClient) SetHostConfig(hostConfig HostConfig) error {
+	c.hostConfig = hostConfig
+	return nil
+}
+
 func (c SingularityClient) ContainerAttach(ctx context.Context, container string, options ContainerAttachOptions) (HijackedResponse, error) {
 	fmt.Printf("placeholder for container ContainerAttach %s", container)
 

@@ -97,11 +97,6 @@ type PsProcess interface {
 type ContainerRunner struct {
 	ContainerExecRunner ThinContainerExecRunner
 
-	//Docker          ThinDockerClient
-	//ContainerConfig dockercontainer.Config     //FIXME: translate this to the ThinContainerRunner interface
-	HostConfig dockercontainer.HostConfig //FIXME: translate this to the ThinContainerRunner interface
-	//--------------
-
 	// Dispatcher client is initialized with the Dispatcher token.
 	// This is a privileged token used to manage container status
 	// and logs.
@@ -1086,12 +1081,12 @@ func (runner *ContainerRunner) CreateContainer() error {
 		// Docker daemon won't let you set a limit less than ~10 MiB
 		maxRAM = minDockerRAM * 1024 * 1024
 	}
-	runner.HostConfig = dockercontainer.HostConfig{
+	hostConfig = HostConfig{
 		Binds: runner.Binds,
-		LogConfig: dockercontainer.LogConfig{
+		LogConfig: LogConfig{
 			Type: "none",
 		},
-		Resources: dockercontainer.Resources{
+		Resources: Resources{
 			CgroupParent: runner.setCgroupParent,
 			NanoCPUs:     int64(runner.Container.RuntimeConstraints.VCPUs) * 1000000000,
 			Memory:       maxRAM, // RAM
@@ -1099,7 +1094,7 @@ func (runner *ContainerRunner) CreateContainer() error {
 			KernelMemory: maxRAM, // kernel portion
 		},
 	}
-
+	runner.ContainerExecRunner.SetHostConfig(hostConfig)
 	if runner.Container.RuntimeConstraints.API {
 		tok, err := runner.ContainerToken()
 		if err != nil {
@@ -1110,12 +1105,12 @@ func (runner *ContainerRunner) CreateContainer() error {
 			"ARVADOS_API_HOST="+os.Getenv("ARVADOS_API_HOST"),
 			"ARVADOS_API_HOST_INSECURE="+os.Getenv("ARVADOS_API_HOST_INSECURE"),
 		)
-		runner.HostConfig.NetworkMode = dockercontainer.NetworkMode(runner.networkMode)
+		runner.ContainerExecRunner.SetNetworkMode(NetworkMode(runner.networkMode))
 	} else {
 		if runner.enableNetwork == "always" {
-			runner.HostConfig.NetworkMode = dockercontainer.NetworkMode(runner.networkMode)
+			runner.ContainerExecRunner.SetNetworkMode(NetworkMode(runner.networkMode))
 		} else {
-			runner.HostConfig.NetworkMode = dockercontainer.NetworkMode("none")
+			runner.ContainerExecRunner.SetNetworkMode("none")
 		}
 	}
 

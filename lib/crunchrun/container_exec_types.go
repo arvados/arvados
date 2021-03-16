@@ -32,6 +32,23 @@ type ContainerConfig struct {
 	Volumes    map[string]struct{}
 }
 
+// LogConfig represents the logging configuration of the container.
+type LogConfig struct {
+	Type   string
+	Config map[string]string
+}
+
+// Resources contains container's resources (cgroups config, ulimits...)
+type Resources struct {
+	Memory       int64  // Memory limit (in bytes)
+	NanoCPUs     int64  `json:"NanoCpus"` // CPU quota in units of 10<sup>-9</sup> CPUs.
+	CgroupParent string // Parent cgroup.
+	MemorySwap   int64  // Total memory usage (memory + swap); set `-1` to enable unlimited swap
+	KernelMemory int64  // Kernel memory limit (in bytes)
+}
+
+type NetworkMode string
+
 // HostConfig holds all values needed for Docker and Singularity
 // to run a container related to the host. In the case of docker is
 // similar to github.com/docker/docker/api/types/container/HostConfig
@@ -39,11 +56,13 @@ type ContainerConfig struct {
 // "dependent of the host we are running on".
 // and for Singularity TBD
 type HostConfig struct {
+	NetworkMode NetworkMode
+	Binds       []string // List of volume bindings for this container
 	//important bits:
-	// - Binds:
-	// LogConfig
-	// Resources: see dockercontainer.Resources
-	// NetworkMode: see dockercontainer.NetworkMode
+	LogConfig LogConfig // Configuration of the logs for this container
+
+	// Contains container's resources (cgroups, ulimits)
+	Resources
 }
 
 // ---- NETROWKING STUFF
@@ -283,6 +302,10 @@ type ThinContainerExecRunner interface {
 
 	GetImage() (imageID string)
 	SetImage(imageID string)
+
+	SetHostConfig(hostConfig HostConfig) error
+	GetNetworkMode() (networkMode NetworkMode)
+	SetNetworkMode(networkMode NetworkMode)
 
 	ContainerAttach(ctx context.Context, container string, options ContainerAttachOptions) (HijackedResponse, error)
 	ContainerCreate(ctx context.Context, config ContainerConfig, hostConfig HostConfig, networkingConfig *NetworkingConfig, containerName string) (ContainerCreateResponse, error)
