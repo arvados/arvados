@@ -39,12 +39,12 @@ describe('<CurrentTokenDialog />', () => {
 
     it('should show the token expiration if present', () => {
       expect(props.tokenExpiration).toBeUndefined();
-      expect(wrapper.html()).not.toContain('Expires at:');
+      expect(wrapper.html()).toContain('This token does not have an expiration date');
 
       const someDate = '2140-01-01T00:00:00.000Z'
       props.tokenExpiration = new Date(someDate);
       wrapper = mount(<TokenDialogComponent {...props} />);
-      expect(wrapper.html()).toContain('Expires at:');
+      expect(wrapper.html()).toContain(props.tokenExpiration.toLocaleString());
     });
 
     it('should show a create new token button when allowed', () => {

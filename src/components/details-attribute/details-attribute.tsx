@@ -85,9 +85,8 @@ export const DetailsAttribute = connect(mapStateToProps)(withStyles(styles)(
         }
 
         render() {
-            const { uuidEnhancer, label, link, value, children, classes, classLabel,
-                classValue, lowercaseValue, onValueClick, linkToUuid,
-                localCluster, remoteHostsConfig, sessions, copyValue } = this.props;
+            const { uuidEnhancer, link, value, classes, linkToUuid,
+                localCluster, remoteHostsConfig, sessions } = this.props;
             let valueNode: React.ReactNode;
 
             if (linkToUuid) {
@@ -104,23 +103,33 @@ export const DetailsAttribute = connect(mapStateToProps)(withStyles(styles)(
                 valueNode = value;
             }
 
-            return <Typography component="div" className={classes.attribute}>
-                <Typography component="div" className={classnames([classes.label, classLabel])}>{label}</Typography>
-                <Typography
-                    onClick={onValueClick}
-                    component="div"
-                    className={classnames([classes.value, classValue, { [classes.lowercaseValue]: lowercaseValue }])}>
-                    {valueNode}
-                    {children}
-                    {(linkToUuid || copyValue) && <Tooltip title="Copy to clipboard">
-                        <span className={classes.copyIcon}>
-                            <CopyToClipboard text={linkToUuid || copyValue || ""} onCopy={() => this.onCopy("Copied")}>
-                                <CopyIcon />
-                            </CopyToClipboard>
-                        </span>
-                    </Tooltip>}
-                </Typography>
-            </Typography>;
+            return <DetailsAttributeComponent {...this.props} value={valueNode} onCopy={this.onCopy} />;
         }
     }
 ));
+
+interface DetailsAttributeComponentProps {
+    value: React.ReactNode;
+    onCopy?: (msg: string) => void;
+}
+
+export const DetailsAttributeComponent = withStyles(styles)(
+    (props: DetailsAttributeDataProps & WithStyles<CssRules> & DetailsAttributeComponentProps) =>
+        <Typography component="div" className={props.classes.attribute}>
+            <Typography component="div" className={classnames([props.classes.label, props.classLabel])}>{props.label}</Typography>
+            <Typography
+                onClick={props.onValueClick}
+                component="div"
+                className={classnames([props.classes.value, props.classValue, { [props.classes.lowercaseValue]: props.lowercaseValue }])}>
+                {props.value}
+                {props.children}
+                {(props.linkToUuid || props.copyValue) && props.onCopy && <Tooltip title="Copy to clipboard">
+                    <span className={props.classes.copyIcon}>
+                        <CopyToClipboard text={props.linkToUuid || props.copyValue || ""} onCopy={() => props.onCopy!("Copied")}>
+                            <CopyIcon />
+                        </CopyToClipboard>
+                    </span>
+                </Tooltip>}
+            </Typography>
+        </Typography>);
+

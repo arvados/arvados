@@ -27,7 +27,7 @@ import {
 import { DefaultCodeSnippet } from '~/components/default-code-snippet/default-code-snippet';
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
 import { getNewExtraToken } from '~/store/auth/auth-action';
-import { DetailsAttribute } from '~/components/details-attribute/details-attribute';
+import { DetailsAttributeComponent } from '~/components/details-attribute/details-attribute';
 
 type CssRules = 'link' | 'paper' | 'button' | 'actionButton' | 'codeBlock';
 
@@ -114,20 +114,20 @@ unset ARVADOS_API_HOST_INSECURE`
                         </a>
                     </Typography>
                 </Typography>
-                <Typography  paragraph={true}>
-                    <DetailsAttribute label='API Host' value={data.apiHost} copyValue={data.apiHost} />
-                    <DetailsAttribute label='API Token' value={data.token} copyValue={data.token} />
-                    <DetailsAttribute label='Token expiration' value={tokenExpiration} />
-                    { this.props.canCreateNewTokens && <Button
-                        onClick={() => this.onGetNewToken()}
-                        color="primary"
-                        size="small"
-                        variant="contained"
-                        className={classes.actionButton}
-                    >
-                        GET NEW TOKEN
-                    </Button> }
-                </Typography>
+
+                <DetailsAttributeComponent label='API Host' value={data.apiHost} copyValue={data.apiHost} onCopy={this.onCopy} />
+                <DetailsAttributeComponent label='API Token' value={data.token} copyValue={data.token} onCopy={this.onCopy} />
+                <DetailsAttributeComponent label='Token expiration' value={tokenExpiration} />
+                { this.props.canCreateNewTokens && <Button
+                    onClick={() => this.onGetNewToken()}
+                    color="primary"
+                    size="small"
+                    variant="contained"
+                    className={classes.actionButton}
+                >
+                    GET NEW TOKEN
+                </Button> }
+
                 <Typography paragraph={true}>
                     Paste the following lines at a shell prompt to set up the necessary environment for Arvados SDKs to authenticate to your account.
                 </Typography>
