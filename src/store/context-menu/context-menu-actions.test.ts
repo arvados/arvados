@@ -6,6 +6,8 @@ import { ContextMenuKind } from '~/views-components/context-menu/context-menu';
 import { resourceUuidToContextMenuKind } from './context-menu-actions';
 import configureStore from 'redux-mock-store';
 import thunk from 'redux-thunk';
+import { PROJECT_PANEL_CURRENT_UUID } from '../project-panel/project-panel-action';
+import { GroupClass } from '~/models/group';
 
 describe('context-menu-actions', () => {
     describe('resourceUuidToContextMenuKind', () => {
@@ -80,6 +82,9 @@ describe('context-menu-actions', () => {
 
             cases.forEach(([resourceUuid, isAdminUser, isEditable, isTrashed, expected]) => {
                 const initialState = {
+                    properties: {
+                        [PROJECT_PANEL_CURRENT_UUID]: projectUuid,
+                    },
                     resources: {
                         [headCollectionUuid]: {
                             uuid: headCollectionUuid,
@@ -91,12 +96,12 @@ describe('context-menu-actions', () => {
                             uuid: oldCollectionUuid,
                             currentVersionUuid: headCollectionUuid,
                             isTrashed: isTrashed,
-
                         },
                         [projectUuid]: {
                             uuid: projectUuid,
                             ownerUuid: isEditable ? userUuid : otherUserUuid,
                             writableBy: isEditable ? [userUuid] : [otherUserUuid],
+                            groupClass: GroupClass.PROJECT,
                         },
                         [linkUuid]: {
                             uuid: linkUuid,
@@ -118,8 +123,9 @@ describe('context-menu-actions', () => {
                 };
                 const store = mockStore(initialState);
 
-                const menuKind = store.dispatch<any>(resourceUuidToContextMenuKind(resourceUuid as string))
+                let menuKind: any;
                 try {
+                    menuKind = store.dispatch<any>(resourceUuidToContextMenuKind(resourceUuid as string))
                     expect(menuKind).toBe(expected);
                 } catch (err) {
                     throw new Error(`menuKind for resource ${JSON.stringify(initialState.resources[resourceUuid as string])} expected to be ${expected} but got ${menuKind}.`);
