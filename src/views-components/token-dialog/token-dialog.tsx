@@ -28,7 +28,6 @@ import { DefaultCodeSnippet } from '~/components/default-code-snippet/default-co
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
 import { getNewExtraToken } from '~/store/auth/auth-action';
 import { DetailsAttributeComponent } from '~/components/details-attribute/details-attribute';
-// import { DetailsAttribute } from '~/components/details-attribute/details-attribute';
 
 type CssRules = 'link' | 'paper' | 'button' | 'actionButton' | 'codeBlock';
 
