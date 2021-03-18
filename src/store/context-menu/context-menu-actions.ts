@@ -21,6 +21,8 @@ import { CollectionResource } from '~/models/collection';
 import { GroupClass, GroupResource } from '~/models/group';
 import { GroupContentsResource } from '~/services/groups-service/groups-service';
 import { getProjectPanelCurrentUuid } from '~/store/project-panel/project-panel-action';
+import { matchProjectRoute } from '~/routes/routes';
+import { RouterState } from "react-router-redux";
 
 export const contextMenuActions = unionize({
     OPEN_CONTEXT_MENU: ofType<{ position: ContextMenuPosition, resource: ContextMenuResource }>(),
@@ -202,24 +204,37 @@ export const openProcessContextMenu = (event: React.MouseEvent<HTMLElement>, pro
         }
     };
 
+export const isProjectRoute = (router: RouterState) => {
+    if (router === undefined) {
+      return false;
+    }
+    const pathname = router.location ? router.location.pathname : '';
+    const matchProject = matchProjectRoute(pathname);
+    return Boolean(matchProject);
+};
+
 export const resourceUuidToContextMenuKind = (uuid: string) =>
     (dispatch: Dispatch, getState: () => RootState) => {
         const { isAdmin: isAdminUser, uuid: userUuid } = getState().auth.user!;
         const kind = extractUuidKind(uuid);
         const resource = getResourceWithEditableStatus<GroupResource & EditableResource>(uuid, userUuid)(getState().resources);
+
         // When viewing the contents of a filter group, all contents should be treated as read only.
         let inFilterGroup = false;
-        const projectUuid = getProjectPanelCurrentUuid(getState());
-        if (projectUuid !== undefined) {
-          const project = getResource<GroupResource>(projectUuid)(getState().resources);
-          if (project) {
-            if (project.groupClass === GroupClass.FILTER) {
-              inFilterGroup = true;
+        const { router } = getState();
+        if (isProjectRoute(router)) {
+          const projectUuid = getProjectPanelCurrentUuid(getState());
+          if (projectUuid !== undefined) {
+            const project = getResource<GroupResource>(projectUuid)(getState().resources);
+            if (project) {
+              if (project.groupClass === GroupClass.FILTER) {
+                inFilterGroup = true;
+              }
             }
           }
         }
-        const isEditable = (isAdminUser || (resource || {} as EditableResource).isEditable) && !inFilterGroup;
 
+        const isEditable = (isAdminUser || (resource || {} as EditableResource).isEditable) && !inFilterGroup;
         switch (kind) {
             case ResourceKind.PROJECT:
                 return (isAdminUser && !inFilterGroup)
@@ -246,9 +261,9 @@ export const resourceUuidToContextMenuKind = (uuid: string) =>
             case ResourceKind.PROCESS:
                 return (isAdminUser && !inFilterGroup)
                     ? ContextMenuKind.PROCESS_ADMIN
-                    : isEditable
-                        ? ContextMenuKind.PROCESS_RESOURCE
-                        : ContextMenuKind.READONLY_PROCESS_RESOURCE;
+                    : inFilterGroup
+                        ? ContextMenuKind.READONLY_PROCESS_RESOURCE
+                        : ContextMenuKind.PROCESS_RESOURCE;
             case ResourceKind.USER:
                 return ContextMenuKind.ROOT_PROJECT;
             case ResourceKind.LINK:
