@@ -90,7 +90,7 @@ describe('context-menu-actions', () => {
             cases.forEach(([resourceUuid, isAdminUser, isEditable, isTrashed, inFilterGroup, expected]) => {
                 const initialState = {
                     properties: {
-                        [PROJECT_PANEL_CURRENT_UUID]: projectUuid,
+                        [PROJECT_PANEL_CURRENT_UUID]: inFilterGroup ? filterGroupUuid : projectUuid,
                     },
                     resources: {
                         [headCollectionUuid]: {
@@ -132,9 +132,6 @@ describe('context-menu-actions', () => {
                             uuid: userUuid,
                             isAdmin: isAdminUser,
                         },
-                    },
-                    properties: {
-                      projectPanelCurrentUuid: inFilterGroup ? filterGroupUuid : "",
                     },
                     router: {
                         location: {
