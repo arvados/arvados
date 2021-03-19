@@ -56,6 +56,7 @@ navbar:
       - user/cwl/cwl-extensions.html.textile.liquid
       - user/cwl/federated-workflows.html.textile.liquid
       - user/cwl/cwl-versions.html.textile.liquid
+      - user/cwl/crunchstat-summary.html.textile.liquid
     - Working with git repositories:
       - user/tutorials/add-new-repository.html.textile.liquid
       - user/tutorials/git-arvados-guide.html.textile.liquid
