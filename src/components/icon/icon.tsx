@@ -28,6 +28,7 @@ import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import FlipToFront from '@material-ui/icons/FlipToFront';
 import Folder from '@material-ui/icons/Folder';
 import FolderShared from '@material-ui/icons/FolderShared';
+import Pageview from '@material-ui/icons/Pageview';
 import GetApp from '@material-ui/icons/GetApp';
 import Help from '@material-ui/icons/Help';
 import HelpOutline from '@material-ui/icons/HelpOutline';
@@ -126,6 +127,7 @@ export const PaginationLeftArrowIcon: IconType = (props) => <ChevronLeft {...pro
 export const PaginationRightArrowIcon: IconType = (props) => <ChevronRight {...props} />;
 export const ProcessIcon: IconType = (props) => <BubbleChart {...props} />;
 export const ProjectIcon: IconType = (props) => <Folder {...props} />;
+export const FilterGroupIcon: IconType = (props) => <Pageview {...props} />;
 export const ProjectsIcon: IconType = (props) => <Inbox {...props} />;
 export const ProvenanceGraphIcon: IconType = (props) => <DeviceHub {...props} />;
 export const RemoveIcon: IconType = (props) => <Delete {...props} />;

@@ -6,8 +6,6 @@ import { Resource, EditableResource } from "~/models/resource";
 import { ResourceKind } from '~/models/resource';
 import { ProjectResource } from "~/models/project";
 import { GroupResource } from "~/models/group";
-import { extractUuidObjectType, ResourceObjectType } from "~/models/resource";
-import { GroupClass } from '~/models/group';
 
 export type ResourcesState = { [key: string]: Resource };
 
@@ -38,15 +36,6 @@ export const getResourceWithEditableStatus = <T extends EditableResource & Group
         const resource = JSON.parse(JSON.stringify(state[id] as T));
 
         if (resource) {
-            const objectType = extractUuidObjectType(resource.uuid);
-            switch (objectType) {
-              case ResourceObjectType.GROUP:
-                // filter groups are read-only for now
-                if (resource.groupClass === GroupClass.FILTER) {
-                  resource.isEditable = false;
-                  return resource;
-                }
-            }
             resource.isEditable = userUuid ? getResourceWritableBy(state, id, userUuid).indexOf(userUuid) > -1 : false;
         }
 

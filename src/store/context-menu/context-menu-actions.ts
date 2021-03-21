@@ -205,9 +205,6 @@ export const openProcessContextMenu = (event: React.MouseEvent<HTMLElement>, pro
     };
 
 export const isProjectRoute = (router: RouterState) => {
-    if (router === undefined) {
-      return false;
-    }
     const pathname = router.location ? router.location.pathname : '';
     const matchProject = matchProjectRoute(pathname);
     return Boolean(matchProject);
@@ -223,24 +220,20 @@ export const resourceUuidToContextMenuKind = (uuid: string) =>
         let inFilterGroup = false;
         const { router } = getState();
         if (isProjectRoute(router)) {
-          const projectUuid = getProjectPanelCurrentUuid(getState());
-          if (projectUuid !== undefined) {
-            const project = getResource<GroupResource>(projectUuid)(getState().resources);
-            if (project) {
-              if (project.groupClass === GroupClass.FILTER) {
-                inFilterGroup = true;
-              }
+            const projectUuid = getProjectPanelCurrentUuid(getState());
+            if (projectUuid !== undefined) {
+                const project = getResource<GroupResource>(projectUuid)(getState().resources);
+                if (project && project.groupClass === GroupClass.FILTER) {
+                    inFilterGroup = true;
+                }
             }
-          }
         }
 
         const isEditable = (isAdminUser || (resource || {} as EditableResource).isEditable) && !inFilterGroup;
         switch (kind) {
             case ResourceKind.PROJECT:
                 return (isAdminUser && !inFilterGroup)
-                    ? (resource && resource.groupClass === GroupClass.PROJECT)
-                        ? ContextMenuKind.PROJECT_ADMIN
-                        : ContextMenuKind.READONLY_PROJECT
+                    ? ContextMenuKind.PROJECT_ADMIN
                     : isEditable
                         ? ContextMenuKind.PROJECT
                         : ContextMenuKind.READONLY_PROJECT;
