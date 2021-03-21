@@ -273,7 +273,7 @@ class Arvados::V1::GroupsController < ApplicationController
       if klass == Collection
         @select = klass.selectable_attributes - ["manifest_text", "unsigned_manifest_text"]
       elsif klass == Group
-        where_conds = where_conds.merge(group_class: "project")
+        where_conds = where_conds.merge(group_class: ["project","filter"])
       end
 
       @filters = request_filters.map do |col, op, val|
