@@ -83,8 +83,8 @@ class Group < ArvadosModel
           errors.add :properties, "when filter operator is 'is_a', attribute must be 'uuid'"
           return
         end
-        if ! ["=","<","<=",">",">=","!=","like","ilike","in","not in","is_a","exists"].include?(filter[1].downcase)
-          errors.add :properties, "filter operator is not valid (must be =,<,<=,>,>=,!=,like,ilike,in,not in,is_a,exists)"
+        if ! ["=","<","<=",">",">=","!=","like","ilike","in","not in","is_a"].include?(filter[1].downcase)
+          errors.add :properties, "filter operator is not valid (must be =,<,<=,>,>=,!=,like,ilike,in,not in,is_a)"
           return
         end
       end
