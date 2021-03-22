@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { escapeHashIfRequired } from "./url";
+import { customEncodeURI, encodeHash } from "./url";
 
 export class WebDAV {
 
@@ -77,7 +77,12 @@ export class WebDAV {
             r.open(config.method,
                 `${this.defaults.baseURL
                     ? this.defaults.baseURL+'/'
-                    : ''}${escapeHashIfRequired(config.url, encodeURI)}`);
+                    : ''}${customEncodeURI(config.url)}`);
+
+            if (config.headers && config.headers.Destination && config.headers.Destination.indexOf('#') > -1) {
+                config.headers.Destination = encodeHash(config.headers.Destination);
+            }
+
             const headers = { ...this.defaults.headers, ...config.headers };
             Object
                 .keys(headers)

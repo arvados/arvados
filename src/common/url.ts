@@ -18,9 +18,14 @@ export function normalizeURLPath(url: string) {
     return u.toString();
 }
 
-export const escapeHashIfRequired = (name: string, defaultTransformation?: Function) =>
-    name.indexOf('#') > -1 ?
-        encodeURIComponent(name) :
-        defaultTransformation ?
-            defaultTransformation(name) :
-            name;
+export const customEncodeURI = (path: string) => {
+    return encodeURIComponent(path.replace(/%2F/g, '/'));
+};
+
+export const customDecodeURI = (path: string) => {
+    return decodeURIComponent(path.replace(/\//g, '%2F'));
+};
+
+export const encodeHash = (path: string) => {
+    return path.replace(/#/g, '%23');
+};

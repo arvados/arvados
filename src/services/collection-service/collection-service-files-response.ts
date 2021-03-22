@@ -5,7 +5,7 @@
 import { CollectionDirectory, CollectionFile, CollectionFileType, createCollectionDirectory, createCollectionFile } from "../../models/collection-file";
 import { getTagValue } from "~/common/xml";
 import { getNodeChildren, Tree, mapTree } from '~/models/tree';
-import { escapeHashIfRequired } from "~/common/url";
+import { customDecodeURI } from "~/common/url";
 
 export const sortFilesTree = (tree: Tree<CollectionDirectory | CollectionFile>) => {
     return mapTree<CollectionDirectory | CollectionFile>(node => {
@@ -28,8 +28,8 @@ export const extractFilesData = (document: Document) => {
         .map(element => {
             const name = getTagValue(element, 'D:displayname', '');
             const size = parseInt(getTagValue(element, 'D:getcontentlength', '0'), 10);
-            const url = getTagValue(element, 'D:href', '');
-            const nameSuffix = `/${escapeHashIfRequired(name) || ''}`;
+            const url = customDecodeURI(getTagValue(element, 'D:href', ''));
+            const nameSuffix = name;
             const collectionUuidMatch = collectionUrlPrefix.exec(url);
             const collectionUuid = collectionUuidMatch ? collectionUuidMatch.pop() : '';
             const directory = url
