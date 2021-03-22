@@ -39,6 +39,7 @@ The formulas we use are:
 * "nginx":https://github.com/saltstack-formulas/nginx-formula.git
 * "docker":https://github.com/saltstack-formulas/docker-formula.git
 * "locale":https://github.com/saltstack-formulas/locale-formula.git
+* "letsencrypt":https://github.com/saltstack-formulas/letsencrypt-formula.git
 
 There are example Salt pillar files for each of those formulas in the "arvados-formula's test/salt/pillar/examples":https://github.com/arvados/arvados-formula/tree/master/test/salt/pillar/examples directory. As they are, they allow you to get all the main Arvados components up and running.
 
@@ -55,8 +56,6 @@ As the Saltstack's community keeps a "repository of formulas":https://github.com
 * "a copy of the formula":https://github.com/saltstack-formulas/arvados-formula.git
 
 there, and do our best effort to keep it in sync with ours.
-
-A @development@ branch exists which uses Arvados' development repositories. This last one might break from time to time, as we try and add new features. As much as possible, we try to keep it up to date, with example pillars to help you deploy Arvados. Use with caution.
 
 For those familiar with Saltstack, the process to get Arvados deployed is similar to any other formula:
 
