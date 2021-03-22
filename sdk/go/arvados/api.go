@@ -142,8 +142,11 @@ type GroupContentsOptions struct {
 	Limit              int64    `json:"limit"`
 	Offset             int64    `json:"offset"`
 	Order              []string `json:"order"`
+	Distinct           bool     `json:"distinct"`
+	Count              string   `json:"count"`
 	Include            string   `json:"include"`
 	Recursive          bool     `json:"recursive"`
+	IncludeTrash       bool     `json:"include_trash"`
 	IncludeOldVersions bool     `json:"include_old_versions"`
 	ExcludeHomeProject bool     `json:"exclude_home_project"`
 }
