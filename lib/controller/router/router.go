@@ -285,6 +285,13 @@ func (rtr *router) addRoutes() {
 			},
 		},
 		{
+			arvados.EndpointGroupTrash,
+			func() interface{} { return &arvados.DeleteOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.GroupTrash(ctx, *opts.(*arvados.DeleteOptions))
+			},
+		},
+		{
 			arvados.EndpointGroupUntrash,
 			func() interface{} { return &arvados.UntrashOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {

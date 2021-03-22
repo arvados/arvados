@@ -59,6 +59,7 @@ var (
 	EndpointGroupContentsUUIDInPath       = APIEndpoint{"GET", "arvados/v1/groups/{uuid}/contents", ""} // Alternative HTTP route; client-side code should always use EndpointGroupContents instead
 	EndpointGroupShared                   = APIEndpoint{"GET", "arvados/v1/groups/shared", ""}
 	EndpointGroupDelete                   = APIEndpoint{"DELETE", "arvados/v1/groups/{uuid}", ""}
+	EndpointGroupTrash                    = APIEndpoint{"POST", "arvados/v1/groups/{uuid}/trash", ""}
 	EndpointGroupUntrash                  = APIEndpoint{"POST", "arvados/v1/groups/{uuid}/untrash", ""}
 	EndpointUserActivate                  = APIEndpoint{"POST", "arvados/v1/users/{uuid}/activate", ""}
 	EndpointUserCreate                    = APIEndpoint{"POST", "arvados/v1/users", "user"}
@@ -233,6 +234,7 @@ type API interface {
 	GroupContents(ctx context.Context, options GroupContentsOptions) (ObjectList, error)
 	GroupShared(ctx context.Context, options ListOptions) (GroupList, error)
 	GroupDelete(ctx context.Context, options DeleteOptions) (Group, error)
+	GroupTrash(ctx context.Context, options DeleteOptions) (Group, error)
 	GroupUntrash(ctx context.Context, options UntrashOptions) (Group, error)
 	SpecimenCreate(ctx context.Context, options CreateOptions) (Specimen, error)
 	SpecimenUpdate(ctx context.Context, options UpdateOptions) (Specimen, error)
