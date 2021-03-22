@@ -129,10 +129,11 @@ WORKBENCH2_EXT_SSL_PORT=3001
 RELEASE="production"
 VERSION="latest"
 ARVADOS_TAG="v1.1.4"
-POSTGRES_TAG="v0.41.3"
-NGINX_TAG="v2.4.0"
+POSTGRES_TAG="v0.41.6"
+NGINX_TAG="v2.5.0"
 DOCKER_TAG="v1.0.0"
 LOCALE_TAG="v0.3.4"
+LETSENCRYPT_TAG="v2.1.0"
 
 # Salt's dir
 ## states
@@ -192,11 +193,13 @@ mkdir -p ${S_DIR} ${F_DIR} ${P_DIR}
 
 # Get the formula and dependencies
 cd ${F_DIR} || exit 1
-git clone --branch "${ARVADOS_TAG}" https://github.com/arvados/arvados-formula.git
-git clone --branch "${DOCKER_TAG}" https://github.com/saltstack-formulas/docker-formula.git
-git clone --branch "${LOCALE_TAG}" https://github.com/saltstack-formulas/locale-formula.git
-git clone --branch "${NGINX_TAG}" https://github.com/saltstack-formulas/nginx-formula.git
-git clone --branch "${POSTGRES_TAG}" https://github.com/saltstack-formulas/postgres-formula.git
+git clone --branch "${ARVADOS_TAG}"     https://github.com/arvados/arvados-formula.git
+git clone --branch "${DOCKER_TAG}"      https://github.com/saltstack-formulas/docker-formula.git
+git clone --branch "${LOCALE_TAG}"      https://github.com/saltstack-formulas/locale-formula.git
+# git clone --branch "${NGINX_TAG}"       https://github.com/saltstack-formulas/nginx-formula.git
+git clone --branch "${NGINX_TAG}"       https://github.com/netmanagers/nginx-formula.git
+git clone --branch "${POSTGRES_TAG}"    https://github.com/saltstack-formulas/postgres-formula.git
+git clone --branch "${LETSENCRYPT_TAG}" https://github.com/saltstack-formulas/letsencrypt-formula.git
 
 # If we want to try a specific branch of the formula
 if [ "x${BRANCH}" != "x" ]; then
@@ -218,41 +221,54 @@ SOURCE_STATES_DIR="${EXTRA_STATES_DIR}"
 # Replace variables (cluster,  domain, etc) in the pillars, states and tests
 # to ease deployment for newcomers
 for f in "${SOURCE_PILLARS_DIR}"/*; do
-  sed "s/__ANONYMOUS_USER_TOKEN__/${ANONYMOUS_USER_TOKEN}/g;
-       s/__BLOB_SIGNING_KEY__/${BLOB_SIGNING_KEY}/g;
-       s/__CONTROLLER_EXT_SSL_PORT__/${CONTROLLER_EXT_SSL_PORT}/g;
-       s/__CLUSTER__/${CLUSTER}/g;
-       s/__DOMAIN__/${DOMAIN}/g;
-       s/__HOSTNAME_EXT__/${HOSTNAME_EXT}/g;
-       s/__HOSTNAME_INT__/${HOSTNAME_INT}/g;
-       s/__INITIAL_USER_EMAIL__/${INITIAL_USER_EMAIL}/g;
-       s/__INITIAL_USER_PASSWORD__/${INITIAL_USER_PASSWORD}/g;
-       s/__INITIAL_USER__/${INITIAL_USER}/g;
-       s/__KEEPWEB_EXT_SSL_PORT__/${KEEPWEB_EXT_SSL_PORT}/g;
-       s/__KEEP_EXT_SSL_PORT__/${KEEP_EXT_SSL_PORT}/g;
-       s/__MANAGEMENT_TOKEN__/${MANAGEMENT_TOKEN}/g;
-       s/__RELEASE__/${RELEASE}/g;
-       s/__SYSTEM_ROOT_TOKEN__/${SYSTEM_ROOT_TOKEN}/g;
-       s/__VERSION__/${VERSION}/g;
-       s/__WEBSHELL_EXT_SSL_PORT__/${WEBSHELL_EXT_SSL_PORT}/g;
-       s/__WEBSOCKET_EXT_SSL_PORT__/${WEBSOCKET_EXT_SSL_PORT}/g;
-       s/__WORKBENCH1_EXT_SSL_PORT__/${WORKBENCH1_EXT_SSL_PORT}/g;
-       s/__WORKBENCH2_EXT_SSL_PORT__/${WORKBENCH2_EXT_SSL_PORT}/g;
-       s/__WORKBENCH_SECRET_KEY__/${WORKBENCH_SECRET_KEY}/g" \
+  sed "s#__ANONYMOUS_USER_TOKEN__#${ANONYMOUS_USER_TOKEN}#g;
+       s#__BLOB_SIGNING_KEY__#${BLOB_SIGNING_KEY}#g;
+       s#__CONTROLLER_EXT_SSL_PORT__#${CONTROLLER_EXT_SSL_PORT}#g;
+       s#__CLUSTER__#${CLUSTER}#g;
+       s#__DOMAIN__#${DOMAIN}#g;
+       s#__HOSTNAME_EXT__#${HOSTNAME_EXT}#g;
+       s#__HOSTNAME_INT__#${HOSTNAME_INT}#g;
+       s#__INITIAL_USER_EMAIL__#${INITIAL_USER_EMAIL}#g;
+       s#__INITIAL_USER_PASSWORD__#${INITIAL_USER_PASSWORD}#g;
+       s#__INITIAL_USER__#${INITIAL_USER}#g;
+       s#__DATABASE_PASSWORD__#${DATABASE_PASSWORD}#g;
+       s#__KEEPWEB_EXT_SSL_PORT__#${KEEPWEB_EXT_SSL_PORT}#g;
+       s#__KEEP_EXT_SSL_PORT__#${KEEP_EXT_SSL_PORT}#g;
+       s#__MANAGEMENT_TOKEN__#${MANAGEMENT_TOKEN}#g;
+       s#__RELEASE__#${RELEASE}#g;
+       s#__SYSTEM_ROOT_TOKEN__#${SYSTEM_ROOT_TOKEN}#g;
+       s#__VERSION__#${VERSION}#g;
+       s#__WEBSHELL_EXT_SSL_PORT__#${WEBSHELL_EXT_SSL_PORT}#g;
+       s#__WEBSOCKET_EXT_SSL_PORT__#${WEBSOCKET_EXT_SSL_PORT}#g;
+       s#__WORKBENCH1_EXT_SSL_PORT__#${WORKBENCH1_EXT_SSL_PORT}#g;
+       s#__WORKBENCH2_EXT_SSL_PORT__#${WORKBENCH2_EXT_SSL_PORT}#g;
+       s#__CLUSTER_INT_CIDR__#${CLUSTER_INT_CIDR}#g;
+       s#__CONTROLLER_INT_IP__#${CONTROLLER_INT_IP}#g;
+       s#__WEBSOCKET_INT_IP__#${WEBSOCKET_INT_IP}#g;
+       s#__KEEP_INT_IP__#${KEEP_INT_IP}#g;
+       s#__KEEPSTORE0_INT_IP__#${KEEPSTORE0_INT_IP}#g;
+       s#__KEEPSTORE1_INT_IP__#${KEEPSTORE1_INT_IP}#g;
+       s#__KEEPWEB_INT_IP__#${KEEPWEB_INT_IP}#g;
+       s#__WEBSHELL_INT_IP__#${WEBSHELL_INT_IP}#g;
+       s#__WORKBENCH1_INT_IP__#${WORKBENCH1_INT_IP}#g;
+       s#__WORKBENCH2_INT_IP__#${WORKBENCH2_INT_IP}#g;
+       s#__DATABASE_INT_IP__#${DATABASE_INT_IP}#g;
+       s#__WORKBENCH_SECRET_KEY__#${WORKBENCH_SECRET_KEY}#g" \
   "${f}" > "${P_DIR}"/$(basename "${f}")
 done
 
 mkdir -p /tmp/cluster_tests
 # Replace cluster and domain name in the test files
 for f in "${SOURCE_TESTS_DIR}"/*; do
-  sed "s/__CLUSTER__/${CLUSTER}/g;
-       s/__CONTROLLER_EXT_SSL_PORT__/${CONTROLLER_EXT_SSL_PORT}/g;
-       s/__DOMAIN__/${DOMAIN}/g;
-       s/__HOSTNAME_INT__/${HOSTNAME_INT}/g;
-       s/__INITIAL_USER_EMAIL__/${INITIAL_USER_EMAIL}/g;
-       s/__INITIAL_USER_PASSWORD__/${INITIAL_USER_PASSWORD}/g
-       s/__INITIAL_USER__/${INITIAL_USER}/g;
-       s/__SYSTEM_ROOT_TOKEN__/${SYSTEM_ROOT_TOKEN}/g" \
+  sed "s#__CLUSTER__#${CLUSTER}#g;
+       s#__CONTROLLER_EXT_SSL_PORT__#${CONTROLLER_EXT_SSL_PORT}#g;
+       s#__DOMAIN__#${DOMAIN}#g;
+       s#__HOSTNAME_INT__#${HOSTNAME_INT}#g;
+       s#__INITIAL_USER_EMAIL__#${INITIAL_USER_EMAIL}#g;
+       s#__INITIAL_USER_PASSWORD__#${INITIAL_USER_PASSWORD}#g
+       s#__INITIAL_USER__#${INITIAL_USER}#g;
+       s#__DATABASE_PASSWORD__#${DATABASE_PASSWORD}#g;
+       s#__SYSTEM_ROOT_TOKEN__#${SYSTEM_ROOT_TOKEN}#g" \
   "${f}" > "/tmp/cluster_tests"/$(basename "${f}")
 done
 chmod 755 /tmp/cluster_tests/run-test.sh
@@ -262,27 +278,39 @@ if [ -d "${SOURCE_STATES_DIR}" ]; then
   mkdir -p "${F_DIR}"/extra/extra
 
   for f in "${SOURCE_STATES_DIR}"/*; do
-    sed "s/__ANONYMOUS_USER_TOKEN__/${ANONYMOUS_USER_TOKEN}/g;
-         s/__CLUSTER__/${CLUSTER}/g;
-         s/__BLOB_SIGNING_KEY__/${BLOB_SIGNING_KEY}/g;
-         s/__CONTROLLER_EXT_SSL_PORT__/${CONTROLLER_EXT_SSL_PORT}/g;
-         s/__DOMAIN__/${DOMAIN}/g;
-         s/__HOSTNAME_EXT__/${HOSTNAME_EXT}/g;
-         s/__HOSTNAME_INT__/${HOSTNAME_INT}/g;
-         s/__INITIAL_USER_EMAIL__/${INITIAL_USER_EMAIL}/g;
-         s/__INITIAL_USER_PASSWORD__/${INITIAL_USER_PASSWORD}/g;
-         s/__INITIAL_USER__/${INITIAL_USER}/g;
-         s/__KEEPWEB_EXT_SSL_PORT__/${KEEPWEB_EXT_SSL_PORT}/g;
-         s/__KEEP_EXT_SSL_PORT__/${KEEP_EXT_SSL_PORT}/g;
-         s/__MANAGEMENT_TOKEN__/${MANAGEMENT_TOKEN}/g;
-         s/__RELEASE__/${RELEASE}/g;
-         s/__SYSTEM_ROOT_TOKEN__/${SYSTEM_ROOT_TOKEN}/g;
-         s/__VERSION__/${VERSION}/g;
-         s/__WEBSHELL_EXT_SSL_PORT__/${WEBSHELL_EXT_SSL_PORT}/g;
-         s/__WEBSOCKET_EXT_SSL_PORT__/${WEBSOCKET_EXT_SSL_PORT}/g;
-         s/__WORKBENCH1_EXT_SSL_PORT__/${WORKBENCH1_EXT_SSL_PORT}/g;
-         s/__WORKBENCH2_EXT_SSL_PORT__/${WORKBENCH2_EXT_SSL_PORT}/g;
-         s/__WORKBENCH_SECRET_KEY__/${WORKBENCH_SECRET_KEY}/g" \
+    sed "s#__ANONYMOUS_USER_TOKEN__#${ANONYMOUS_USER_TOKEN}#g;
+         s#__CLUSTER__#${CLUSTER}#g;
+         s#__BLOB_SIGNING_KEY__#${BLOB_SIGNING_KEY}#g;
+         s#__CONTROLLER_EXT_SSL_PORT__#${CONTROLLER_EXT_SSL_PORT}#g;
+         s#__DOMAIN__#${DOMAIN}#g;
+         s#__HOSTNAME_EXT__#${HOSTNAME_EXT}#g;
+         s#__HOSTNAME_INT__#${HOSTNAME_INT}#g;
+         s#__INITIAL_USER_EMAIL__#${INITIAL_USER_EMAIL}#g;
+         s#__INITIAL_USER_PASSWORD__#${INITIAL_USER_PASSWORD}#g;
+         s#__INITIAL_USER__#${INITIAL_USER}#g;
+         s#__DATABASE_PASSWORD__#${DATABASE_PASSWORD}#g;
+         s#__KEEPWEB_EXT_SSL_PORT__#${KEEPWEB_EXT_SSL_PORT}#g;
+         s#__KEEP_EXT_SSL_PORT__#${KEEP_EXT_SSL_PORT}#g;
+         s#__MANAGEMENT_TOKEN__#${MANAGEMENT_TOKEN}#g;
+         s#__RELEASE__#${RELEASE}#g;
+         s#__SYSTEM_ROOT_TOKEN__#${SYSTEM_ROOT_TOKEN}#g;
+         s#__VERSION__#${VERSION}#g;
+         s#__CLUSTER_INT_CIDR__#${CLUSTER_INT_CIDR}#g;
+         s#__CONTROLLER_INT_IP__#${CONTROLLER_INT_IP}#g;
+         s#__WEBSOCKET_INT_IP__#${WEBSOCKET_INT_IP}#g;
+         s#__KEEP_INT_IP__#${KEEP_INT_IP}#g;
+         s#__KEEPSTORE0_INT_IP__#${KEEPSTORE0_INT_IP}#g;
+         s#__KEEPSTORE1_INT_IP__#${KEEPSTORE1_INT_IP}#g;
+         s#__KEEPWEB_INT_IP__#${KEEPWEB_INT_IP}#g;
+         s#__WEBSHELL_INT_IP__#${WEBSHELL_INT_IP}#g;
+         s#__WORKBENCH1_INT_IP__#${WORKBENCH1_INT_IP}#g;
+         s#__WORKBENCH2_INT_IP__#${WORKBENCH2_INT_IP}#g;
+         s#__DATABASE_INT_IP__#${DATABASE_INT_IP}#g;
+         s#__WEBSHELL_EXT_SSL_PORT__#${WEBSHELL_EXT_SSL_PORT}#g;
+         s#__WEBSOCKET_EXT_SSL_PORT__#${WEBSOCKET_EXT_SSL_PORT}#g;
+         s#__WORKBENCH1_EXT_SSL_PORT__#${WORKBENCH1_EXT_SSL_PORT}#g;
+         s#__WORKBENCH2_EXT_SSL_PORT__#${WORKBENCH2_EXT_SSL_PORT}#g;
+         s#__WORKBENCH_SECRET_KEY__#${WORKBENCH_SECRET_KEY}#g" \
     "${f}" > "${F_DIR}/extra/extra"/$(basename "${f}")
   done
 fi
@@ -318,6 +346,9 @@ fi
 if [ -z "${ROLES}" ]; then
   # States
   echo "    - nginx.passenger" >> ${S_DIR}/top.sls
+  if [ "x${USE_LETSENCRYPT}" = "xyes" ]; then
+    grep -q "letsencrypt" ${S_DIR}/top.sls || echo "    - letsencrypt" >> ${S_DIR}/top.sls
+  fi
   echo "    - postgres" >> ${S_DIR}/top.sls
   echo "    - docker" >> ${S_DIR}/top.sls
   echo "    - arvados" >> ${S_DIR}/top.sls
@@ -334,6 +365,9 @@ if [ -z "${ROLES}" ]; then
   echo "    - nginx_workbench2_configuration" >> ${P_DIR}/top.sls
   echo "    - nginx_workbench_configuration" >> ${P_DIR}/top.sls
   echo "    - postgresql" >> ${P_DIR}/top.sls
+  if [ "x${USE_LETSENCRYPT}" = "xyes" ]; then
+    grep -q "letsencrypt" ${P_DIR}/top.sls || echo "    - letsencrypt" >> ${P_DIR}/top.sls
+  fi
 else
   # If we add individual roles, make sure we add the repo first
   echo "    - arvados.repo" >> ${S_DIR}/top.sls
@@ -350,6 +384,11 @@ else
         # FIXME: https://dev.arvados.org/issues/17352
         grep -q "postgres.client" ${S_DIR}/top.sls || echo "    - postgres.client" >> ${S_DIR}/top.sls
         grep -q "nginx.passenger" ${S_DIR}/top.sls || echo "    - nginx.passenger" >> ${S_DIR}/top.sls
+        ### If we don't install and run LE before arvados-api-server, it fails and breaks everything
+        ### after it so we add this here, as we are, after all, sharing the host for api and controller
+        if [ "x${USE_LETSENCRYPT}" = "xyes" ]; then
+          grep -q "letsencrypt" ${S_DIR}/top.sls || echo "    - letsencrypt" >> ${S_DIR}/top.sls
+        fi
         grep -q "arvados.${R}" ${S_DIR}/top.sls    || echo "    - arvados.${R}" >> ${S_DIR}/top.sls
         # Pillars
         grep -q "docker" ${P_DIR}/top.sls                   || echo "    - docker" >> ${P_DIR}/top.sls
@@ -360,10 +399,17 @@ else
       "controller" | "websocket" | "workbench" | "workbench2" | "keepweb" | "keepproxy")
         # States
         grep -q "nginx.passenger" ${S_DIR}/top.sls || echo "    - nginx.passenger" >> ${S_DIR}/top.sls
+        if [ "x${USE_LETSENCRYPT}" = "xyes" ]; then
+          grep -q "letsencrypt" ${S_DIR}/top.sls || echo "    - letsencrypt" >> ${S_DIR}/top.sls
+        fi
         grep -q "arvados.${R}" ${S_DIR}/top.sls    || echo "    - arvados.${R}" >> ${S_DIR}/top.sls
         # Pillars
         grep -q "nginx_passenger" ${P_DIR}/top.sls          || echo "    - nginx_passenger" >> ${P_DIR}/top.sls
         grep -q "nginx_${R}_configuration" ${P_DIR}/top.sls || echo "    - nginx_${R}_configuration" >> ${P_DIR}/top.sls
+        if [ "x${USE_LETSENCRYPT}" = "xyes" ]; then
+          grep -q "letsencrypt" ${P_DIR}/top.sls || echo "    - letsencrypt" >> ${P_DIR}/top.sls
+          grep -q "letsencrypt_${R}_configuration" ${P_DIR}/top.sls || echo "    - letsencrypt_${R}_configuration" >> ${P_DIR}/top.sls
+        fi
       ;;
       "shell")
         # States

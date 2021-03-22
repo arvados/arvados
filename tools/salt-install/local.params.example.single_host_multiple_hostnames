@@ -45,18 +45,25 @@ MANAGEMENT_TOKEN=managementtokenmushaveatleast32characters
 SYSTEM_ROOT_TOKEN=systemroottokenmushaveatleast32characters
 ANONYMOUS_USER_TOKEN=anonymoususertokenmushaveatleast32characters
 WORKBENCH_SECRET_KEY=workbenchsecretkeymushaveatleast32characters
+DATABASE_PASSWORD=please_set_this_to_some_secure_value
+
+# SSL CERTIFICATES
+# Arvados REQUIRES valid SSL to work correctly. Otherwise, some components will fail
+# to communicate and can silently drop traffic. You can try to use the Letsencrypt
+# salt formula (https://github.com/saltstack-formulas/letsencrypt-formula) to try to
+# automatically obtain and install SSL certificates for your instances or set this
+# variable to "no", provide and upload your own certificates to the instances and
+# modify the 'nginx_*' salt pillars accordingly
+USE_LETSENCRYPT="no"
 
 # The directory to check for the config files (pillars, states) you want to use.
 # There are a few examples under 'config_examples'. If you don't change this
 # variable, the single_host, multiple_hostnames config will be used
 # CONFIG_DIR="config_examples/single_host/single_hostname"
-CONFIG_DIR="config_examples/single_host/multiple_hostnames"
+CONFIG_DIR="local_config_dir"
 # Extra states to apply. If you use your own subdir, change this value accordingly
 # This is the value for the single_host/multiple_hostnames example
 EXTRA_STATES_DIR="${F_DIR}/arvados-formula/test/salt/states/examples/single_host"
-
-# When using the single_host/single_hostname example, change to this one
-# EXTRA_STATES_DIR="${CONFIG_DIR}/states"
 
 # Which release of Arvados repo you want to use
 RELEASE="production"
@@ -74,7 +81,8 @@ BRANCH="master"
 
 # Formulas versions
 ARVADOS_TAG="v1.1.4"
-POSTGRES_TAG="v0.41.3"
-NGINX_TAG="v2.4.0"
+POSTGRES_TAG="v0.41.6"
+NGINX_TAG="v2.5.0"
 DOCKER_TAG="v1.0.0"
 LOCALE_TAG="v0.3.4"
+LETSENCRYPT_TAG="v2.1.0"
