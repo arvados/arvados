@@ -44,7 +44,6 @@ navbar:
       - user/tutorials/tutorial-keep-mount-os-x.html.textile.liquid
       - user/tutorials/tutorial-keep-mount-windows.html.textile.liquid
       - user/tutorials/tutorial-keep-collection-lifecycle.html.textile.liquid
-      - user/topics/projects.html.textile.liquid
       - user/topics/arv-copy.html.textile.liquid
       - user/topics/collection-versioning.html.textile.liquid
       - user/topics/storage-classes.html.textile.liquid
@@ -129,6 +128,7 @@ navbar:
       - api/keep-webdav.html.textile.liquid
       - api/keep-s3.html.textile.liquid
       - api/keep-web-urls.html.textile.liquid
+      - api/projects.html.textile.liquid
       - api/methods/collections.html.textile.liquid
       - api/methods/repositories.html.textile.liquid
     - Container engine:

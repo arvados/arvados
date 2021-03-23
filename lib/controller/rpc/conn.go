@@ -23,7 +23,6 @@ import (
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/auth"
-	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
 )
 
@@ -446,49 +445,9 @@ func (conn *Conn) GroupList(ctx context.Context, options arvados.ListOptions) (a
 }
 
 func (conn *Conn) GroupContents(ctx context.Context, options arvados.GroupContentsOptions) (arvados.ObjectList, error) {
-	// The requested UUID can be a user (virtual home project), which we just pass on to
-	// the API server.
-	if strings.Index(options.UUID, "j7d0g") != 6 {
-		ep := arvados.EndpointGroupContents
-		var resp arvados.ObjectList
-		err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
-		return resp, err
-	}
-
-	log := ctxlog.FromContext(ctx)
-	var resp arvados.ObjectList
-
-	// Get the group object
-	epGet := arvados.EndpointGroupGet
-	var respGroup arvados.Group
-	err := conn.requestAndDecode(ctx, &respGroup, epGet, nil, options)
-	if err != nil {
-		return resp, err
-	}
-
-	// If the group has groupClass 'filter', apply the filters before getting the contents.
-	if respGroup.GroupClass == "filter" {
-		if filters, ok := respGroup.Properties["filters"]; ok {
-			for _, f := range filters.([]interface{}) {
-				// f is supposed to be a []string
-				tmp, ok2 := f.([]interface{})
-				if !ok2 || len(tmp) < 3 {
-					log.Warnf("filter unparsable: %T, %+v, original field: %T, %+v\n", tmp, tmp, f, f)
-					continue
-				}
-				var filter arvados.Filter
-				filter.Attr = tmp[0].(string)
-				filter.Operator = tmp[1].(string)
-				filter.Operand = tmp[2]
-				options.Filters = append(options.Filters, filter)
-			}
-		}
-		// Use the generic /groups/contents endpoint for filter groups
-		options.UUID = ""
-	}
-
 	ep := arvados.EndpointGroupContents
-	err = conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	var resp arvados.ObjectList
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
 	return resp, err
 }
 

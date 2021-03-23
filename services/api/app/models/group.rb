@@ -60,6 +60,7 @@ class Group < ArvadosModel
   def check_filter_group_filters
     if group_class == 'filter'
       if !self.properties.key?("filters")
+        errors.add :properties, "filters property missing, it must be an array of arrays, each with 3 elements"
         return
       end
       if !self.properties["filters"].is_a?(Array)
