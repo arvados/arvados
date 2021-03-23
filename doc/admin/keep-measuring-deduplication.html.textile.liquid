@@ -1,0 +1,80 @@
+---
+layout: default
+navsection: admin
+title: "Measuring deduplication"
+...
+
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+The @arvados-client@ tool can be used to generate a deduplciation report across an arbitrary number of collections. It can be installed from packages (@apt install arvados-client@ or @yum install arvados-client@).
+
+h2(#syntax). Syntax
+
+<notextile>
+<pre><code>~$ <span class="userinput">arvados-client deduplication-report -h</span>
+Usage:
+  arvados-client deduplication-report [options ...] <collection-uuid> <collection-uuid> ...
+
+  arvados-client deduplication-report [options ...] <collection-pdh>,<collection_uuid> \
+     <collection-pdh>,<collection_uuid> ...
+
+  This program analyzes the overlap in blocks used by 2 or more collections. It
+  prints a deduplication report that shows the nominal space used by the
+  collections, as well as the actual size and the amount of space that is saved
+  by Keep's deduplication.
+
+  The list of collections may be provided in two ways. A list of collection
+  uuids is sufficient. Alternatively, the PDH for each collection may also be
+  provided. This is will greatly speed up operation when the list contains
+  multiple collections with the same PDH.
+
+  Exit status will be zero if there were no errors generating the report.
+
+Example:
+
+  Use the 'arv' and 'jq' commands to get the list of the 100
+  largest collections and generate the deduplication report:
+
+  arv collection list --order 'file_size_total desc' --limit 100 | \
+    jq -r '.items[] | [.portable_data_hash,.uuid] |@csv' | \
+    sed -e 's/"//g'|tr '\n' ' ' | \
+    xargs arvados-client deduplication-report
+
+Options:
+  -config file
+      Site configuration file (default may be overridden by setting an ARVADOS_CONFIG environment variable) (default "/etc/arvados/config.yml")
+  -log-level string
+      logging level (debug, info, ...) (default "info")
+</code>
+</pre>
+</notextile>
+
+The usual environment variables (@ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@) need to be set for the deduplication report to be be generated. To get cluster-wide results, an admin token will need to be supplied. Users can also run this report, but only collections their token is able to read will be included.
+
+Example output (with uuids and portable data hashes obscured) from a small Arvados cluster:
+
+<notextile>
+<pre><code>~$ <span class="userinput">arv collection list --order 'file_size_total desc' --limit 10 | jq -r '.items[] | [.portable_data_hash,.uuid] |@csv' |sed -e 's/"//g'|tr '\n' ' ' |xargs arvados-client deduplication-report</span>
+Collection _____-_____-_______________: pdh ________________________________+5003343; nominal size 7382073267640 (6.7 TiB); file count 2796
+Collection _____-_____-_______________: pdh ________________________________+4961919; nominal size 6989909625775 (6.4 TiB); file count 5592
+Collection _____-_____-_______________: pdh ________________________________+1903643; nominal size 2677933564052 (2.4 TiB); file count 2796
+Collection _____-_____-_______________: pdh ________________________________+1903643; nominal size 2677933564052 (2.4 TiB); file count 2796
+Collection _____-_____-_______________: pdh ________________________________+137710; nominal size 191858151583 (179 GiB); file count 201
+Collection _____-_____-_______________: pdh ________________________________+137636; nominal size 191858101962 (179 GiB); file count 200
+Collection _____-_____-_______________: pdh ________________________________+135350; nominal size 191715427388 (178 GiB); file count 201
+Collection _____-_____-_______________: pdh ________________________________+135276; nominal size 191715384167 (178 GiB); file count 200
+Collection _____-_____-_______________: pdh ________________________________+135350; nominal size 191707276684 (178 GiB); file count 201
+Collection _____-_____-_______________: pdh ________________________________+135276; nominal size 191707233463 (178 GiB); file count 200
+
+Collections:                              10
+Nominal size of stored data:  20878411596766 bytes (19 TiB)
+Actual size of stored data:   17053104444050 bytes (16 TiB)
+Saved by Keep deduplication:   3825307152716 bytes (3.5 TiB)
+
+</code>
+</pre>
+</notextile>
