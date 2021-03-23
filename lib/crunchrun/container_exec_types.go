@@ -158,7 +158,7 @@ type ImageRemoveOptions struct {
 // MAYBE call it ExecRunnerContainer? since the struct is describing  a container
 // from the underlying ExecRunner
 type ContainerInspectResponse struct {
-	//Important bits for us
+	ID string `json:"Id"`
 	// State = current checks: (nil, Running, Created)
 	State *ContainerState
 }
