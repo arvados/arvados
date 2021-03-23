@@ -170,7 +170,12 @@ describe('Collection panel tests', function () {
         })
     })
 
-    it.only('renames a file using valid names', function () {
+    it('renames a file using valid names', function () {
+        function eachPair(lst, func){
+            for(var i=0; i < lst.length - 1; i++){
+                func(lst[i], lst[i + 1])
+            }
+        }
         // Creates the collection using the admin token so we can set up
         // a bogus manifest text without block signatures.
         cy.createCollection(adminUser.token, {
@@ -182,21 +187,23 @@ describe('Collection panel tests', function () {
                 cy.loginAs(activeUser);
                 cy.doSearch(`${this.testCollection.uuid}`);
 
-                const nameTransitions = [
-                    ['bar', '&'],
-                    ['&', 'foo'],
-                    ['foo', '&amp;'],
-                    ['&amp;', 'I ❤️ ⛵️'],
-                    ['I ❤️ ⛵️', '...'],
-                    ['...', '#..'],
-                    ['#..', 'some name with whitespaces'],
-                    ['some name with whitespaces', 'some name with #2'],
-                    ['some name with #2', 'is this name legal? I hope it is'],
-                    ['is this name legal? I hope it is', 'some_file.pdf#'],
-                    ['some_file.pdf#', 'some_file.pdf?'],
-                    ['some_file.pdf?', '?some_file.pdf']
+                const names = [
+                    'bar', // initial name already set
+                    '&',
+                    'foo',
+                    '&amp;',
+                    'I ❤️ ⛵️',
+                    '...',
+                    '#..',
+                    'some name with whitespaces',
+                    'some name with #2',
+                    'is this name legal? I hope it is',
+                    'some_file.pdf#',
+                    'some_file.pdf?',
+                    '?some_file.pdf',
+                    'some%file.pdf'
                 ];
-                nameTransitions.forEach(([from, to]) => {
+                eachPair(names, (from, to) => {
                     cy.get('[data-cy=collection-files-panel]')
                         .contains(`${from}`).rightclick();
                     cy.get('[data-cy=context-menu]')
