@@ -4,7 +4,13 @@
 
 export const getTagValue = (document: Document | Element, tagName: string, defaultValue: string) => {
     const [el] = Array.from(document.getElementsByTagName(tagName));
-    return decodeURI(el ? htmlDecode(el.innerHTML) : defaultValue);
+    const URI = el ? htmlDecode(el.innerHTML) : defaultValue;
+
+    try {
+        return decodeURI(URI);
+    } catch(e) {}
+
+    return URI;
 };
 
 const htmlDecode = (input: string) => {

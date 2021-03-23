@@ -48,7 +48,7 @@ describe('url', () => {
         it('should encode', () => {
             // given
             const path = 'test#test/test';
-            const expectedResult = 'test%23test%2Ftest';
+            const expectedResult = 'test%23test/test';
 
             // when
             const result = customEncodeURI(path);

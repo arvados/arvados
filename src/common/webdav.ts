@@ -79,7 +79,7 @@ export class WebDAV {
                     ? this.defaults.baseURL+'/'
                     : ''}${customEncodeURI(config.url)}`);
 
-            if (config.headers && config.headers.Destination && config.headers.Destination.indexOf('#') > -1) {
+            if (config.headers && config.headers.Destination) {
                 config.headers.Destination = encodeHash(config.headers.Destination);
             }
 

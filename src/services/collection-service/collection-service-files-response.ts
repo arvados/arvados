@@ -34,7 +34,8 @@ export const extractFilesData = (document: Document) => {
             const collectionUuid = collectionUuidMatch ? collectionUuidMatch.pop() : '';
             const directory = url
                 .replace(collectionUrlPrefix, '')
-                .replace(nameSuffix, '');
+                .replace(nameSuffix, '')
+                .replace(/\/\//g, '/');
 
             const parentPath = directory.replace(/\/$/, '');
             const data = {
@@ -48,9 +49,11 @@ export const extractFilesData = (document: Document) => {
                 path: parentPath,
             };
 
-            return getTagValue(element, 'D:resourcetype', '')
+            const result = getTagValue(element, 'D:resourcetype', '')
                 ? createCollectionDirectory(data)
                 : createCollectionFile({ ...data, size });
+
+            return result;
         });
 };
 

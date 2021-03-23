@@ -19,11 +19,19 @@ export function normalizeURLPath(url: string) {
 }
 
 export const customEncodeURI = (path: string) => {
-    return encodeURIComponent(path.replace(/%2F/g, '/'));
+    try {
+        return encodeURIComponent(path).replace(/%2F/g, '/');
+    } catch(e) {}
+
+    return path;
 };
 
 export const customDecodeURI = (path: string) => {
-    return decodeURIComponent(path.replace(/\//g, '%2F'));
+    try {
+        return decodeURIComponent(path.replace(/\//g, '%2F'));
+    } catch(e) {}
+
+    return path;
 };
 
 export const encodeHash = (path: string) => {
