@@ -189,6 +189,7 @@ navbar:
       - admin/workbench2-vocabulary.html.textile.liquid
       - admin/storage-classes.html.textile.liquid
       - admin/keep-recovering-data.html.textile.liquid
+      - admin/keep-measuring-deduplication.html.textile.liquid
     - Cloud:
       - admin/spot-instances.html.textile.liquid
       - admin/cloudtest.html.textile.liquid

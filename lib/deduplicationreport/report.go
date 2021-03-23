@@ -60,7 +60,7 @@ Example:
 
   arv collection list --order 'file_size_total desc' --limit 100 | \
     jq -r '.items[] | [.portable_data_hash,.uuid] |@csv' | \
-    tail -n+2 |sed -e 's/"//g'|tr '\n' ' ' | \
+    sed -e 's/"//g'|tr '\n' ' ' | \
     xargs %s
 
 Options:
