@@ -7,10 +7,23 @@ import { TogglePublicFavoriteAction } from "~/views-components/context-menu/acti
 import { togglePublicFavorite } from "~/store/public-favorites/public-favorites-actions";
 import { publicFavoritePanelActions } from "~/store/public-favorites-panel/public-favorites-action";
 
-import { projectActionSet } from "~/views-components/context-menu/action-sets/project-action-set";
+import { projectActionSet, filterGroupActionSet } from "~/views-components/context-menu/action-sets/project-action-set";
 
 export const projectAdminActionSet: ContextMenuActionSet = [[
     ...projectActionSet.reduce((prev, next) => prev.concat(next), []),
+    {
+        component: TogglePublicFavoriteAction,
+        name: 'TogglePublicFavoriteAction',
+        execute: (dispatch, resource) => {
+            dispatch<any>(togglePublicFavorite(resource)).then(() => {
+                dispatch<any>(publicFavoritePanelActions.REQUEST_ITEMS());
+            });
+        }
+    }
+]];
+
+export const filterGroupAdminActionSet: ContextMenuActionSet = [[
+    ...filterGroupActionSet.reduce((prev, next) => prev.concat(next), []),
     {
         component: TogglePublicFavoriteAction,
         name: 'TogglePublicFavoriteAction',

@@ -24,7 +24,7 @@ describe('context-menu-actions', () => {
 
         it('should return the correct menu kind', () => {
             const cases = [
-                // resourceUuid, isAdminUser, isEditable, isTrashed, inFilterGroup, expected
+                // resourceUuid, isAdminUser, isEditable, isTrashed, readonly, expected
                 [headCollectionUuid, false, true, true, false, ContextMenuKind.TRASHED_COLLECTION],
                 [headCollectionUuid, false, true, false, false, ContextMenuKind.COLLECTION],
                 [headCollectionUuid, false, true, false, true, ContextMenuKind.READONLY_COLLECTION],
@@ -87,10 +87,10 @@ describe('context-menu-actions', () => {
                 [containerRequestUuid, true, false, false, true, ContextMenuKind.READONLY_PROCESS_RESOURCE],
             ]
 
-            cases.forEach(([resourceUuid, isAdminUser, isEditable, isTrashed, inFilterGroup, expected]) => {
+            cases.forEach(([resourceUuid, isAdminUser, isEditable, isTrashed, readonly, expected]) => {
                 const initialState = {
                     properties: {
-                        [PROJECT_PANEL_CURRENT_UUID]: inFilterGroup ? filterGroupUuid : projectUuid,
+                        [PROJECT_PANEL_CURRENT_UUID]: projectUuid,
                     },
                     resources: {
                         [headCollectionUuid]: {
@@ -133,20 +133,15 @@ describe('context-menu-actions', () => {
                             isAdmin: isAdminUser,
                         },
                     },
-                    router: {
-                        location: {
-                            pathname: inFilterGroup ? "/projects/" + filterGroupUuid : "",
-                        },
-                    },
                 };
                 const store = mockStore(initialState);
 
                 let menuKind: any;
                 try {
-                    menuKind = store.dispatch<any>(resourceUuidToContextMenuKind(resourceUuid as string))
+                    menuKind = store.dispatch<any>(resourceUuidToContextMenuKind(resourceUuid as string, readonly as boolean))
                     expect(menuKind).toBe(expected);
                 } catch (err) {
-                    throw new Error(`menuKind for resource ${JSON.stringify(initialState.resources[resourceUuid as string])} expected to be ${expected} but got ${menuKind}.`);
+                    throw new Error(`menuKind for resource ${JSON.stringify(initialState.resources[resourceUuid as string])} readonly: ${readonly} expected to be ${expected} but got ${menuKind}.`);
                 }
             });
         });

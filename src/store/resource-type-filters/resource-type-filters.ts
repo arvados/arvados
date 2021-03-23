@@ -25,7 +25,12 @@ export enum ProcessStatusFilter {
 export enum ObjectTypeFilter {
     PROJECT = 'Project',
     PROCESS = 'Process',
-    COLLECTION = 'Data Collection',
+    COLLECTION = 'Data collection',
+}
+
+export enum GroupTypeFilter {
+    PROJECT = 'Project (normal)',
+    FILTER_GROUP = 'Filter group',
 }
 
 export enum CollectionTypeFilter {
@@ -62,7 +67,11 @@ export const getSimpleObjectTypeFilters = pipe(
 // causing compile issues.
 export const getInitialResourceTypeFilters = pipe(
     (): DataTableFilters => createTree<DataTableFilterItem>(),
-    initFilter(ObjectTypeFilter.PROJECT),
+    pipe(
+        initFilter(ObjectTypeFilter.PROJECT),
+        initFilter(GroupTypeFilter.PROJECT, ObjectTypeFilter.PROJECT),
+        initFilter(GroupTypeFilter.FILTER_GROUP, ObjectTypeFilter.PROJECT),
+    ),
     pipe(
         initFilter(ObjectTypeFilter.PROCESS),
         initFilter(ProcessTypeFilter.MAIN_PROCESS, ObjectTypeFilter.PROCESS),
@@ -124,10 +133,14 @@ const objectTypeToResourceKind = (type: ObjectTypeFilter) => {
 };
 
 const serializeObjectTypeFilters = ({ fb, selectedFilters }: ReturnType<typeof createFiltersBuilder>) => {
+    const groupFilters = getMatchingFilters(values(GroupTypeFilter), selectedFilters);
     const collectionFilters = getMatchingFilters(values(CollectionTypeFilter), selectedFilters);
     const processFilters = getMatchingFilters(values(ProcessTypeFilter), selectedFilters);
     const typeFilters = pipe(
         () => new Set(getMatchingFilters(values(ObjectTypeFilter), selectedFilters)),
+        set => groupFilters.length > 0
+            ? set.add(ObjectTypeFilter.PROJECT)
+            : set,
         set => collectionFilters.length > 0
             ? set.add(ObjectTypeFilter.COLLECTION)
             : set,
@@ -182,6 +195,30 @@ const buildCollectionTypeFilters = ({ fb, filters }: { fb: FilterBuilder, filter
     }
 };
 
+const serializeGroupTypeFilters = ({ fb, selectedFilters }: ReturnType<typeof createFiltersBuilder>) => pipe(
+    () => getMatchingFilters(values(GroupTypeFilter), selectedFilters),
+    filters => filters,
+    mappedFilters => ({
+        fb: buildGroupTypeFilters({ fb, filters: mappedFilters, use_prefix: true }),
+        selectedFilters
+    })
+)();
+
+const GROUP_TYPES = values(GroupTypeFilter);
+
+const buildGroupTypeFilters = ({ fb, filters, use_prefix }: { fb: FilterBuilder, filters: string[], use_prefix: boolean }) => {
+    switch (true) {
+        case filters.length === 0 || filters.length === GROUP_TYPES.length:
+            return fb;
+        case includes(GroupTypeFilter.PROJECT, filters):
+            return fb.addEqual('groups.group_class', 'project');
+        case includes(GroupTypeFilter.FILTER_GROUP, filters):
+            return fb.addEqual('groups.group_class', 'filter');
+        default:
+            return fb;
+    }
+};
+
 const serializeProcessTypeFilters = ({ fb, selectedFilters }: ReturnType<typeof createFiltersBuilder>) => pipe(
     () => getMatchingFilters(values(ProcessTypeFilter), selectedFilters),
     filters => filters,
@@ -210,6 +247,7 @@ const buildProcessTypeFilters = ({ fb, filters, use_prefix }: { fb: FilterBuilde
 export const serializeResourceTypeFilters = pipe(
     createFiltersBuilder,
     serializeObjectTypeFilters,
+    serializeGroupTypeFilters,
     serializeCollectionTypeFilters,
     serializeProcessTypeFilters,
     ({ fb }) => fb.getFilters(),

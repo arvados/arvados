@@ -468,16 +468,16 @@ export const ResourceOwnerWithName =
             </Typography>;
         });
 
-const renderType = (type: string) =>
+const renderType = (type: string, subtype: string) =>
     <Typography noWrap>
-        {resourceLabel(type)}
+        {resourceLabel(type, subtype)}
     </Typography>;
 
 export const ResourceType = connect(
     (state: RootState, props: { uuid: string }) => {
         const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
-        return { type: resource ? resource.kind : '' };
-    })((props: { type: string }) => renderType(props.type));
+        return { type: resource ? resource.kind : '', subtype: resource && resource.kind === ResourceKind.GROUP ? resource.groupClass : '' };
+    })((props: { type: string, subtype: string }) => renderType(props.type, props.subtype));
 
 export const ResourceStatus = connect((state: RootState, props: { uuid: string }) => {
     return { resource: getResource<GroupContentsResource>(props.uuid)(state.resources) };

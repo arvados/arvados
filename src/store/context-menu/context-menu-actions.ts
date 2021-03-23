@@ -20,9 +20,6 @@ import { ProcessResource } from '~/models/process';
 import { CollectionResource } from '~/models/collection';
 import { GroupClass, GroupResource } from '~/models/group';
 import { GroupContentsResource } from '~/services/groups-service/groups-service';
-import { getProjectPanelCurrentUuid } from '~/store/project-panel/project-panel-action';
-import { matchProjectRoute } from '~/routes/routes';
-import { RouterState } from "react-router-redux";
 
 export const contextMenuActions = unionize({
     OPEN_CONTEXT_MENU: ofType<{ position: ContextMenuPosition, resource: ContextMenuResource }>(),
@@ -204,38 +201,23 @@ export const openProcessContextMenu = (event: React.MouseEvent<HTMLElement>, pro
         }
     };
 
-export const isProjectRoute = (router: RouterState) => {
-    const pathname = router.location ? router.location.pathname : '';
-    const matchProject = matchProjectRoute(pathname);
-    return Boolean(matchProject);
-};
-
-export const resourceUuidToContextMenuKind = (uuid: string) =>
+export const resourceUuidToContextMenuKind = (uuid: string, readonly = false) =>
     (dispatch: Dispatch, getState: () => RootState) => {
         const { isAdmin: isAdminUser, uuid: userUuid } = getState().auth.user!;
         const kind = extractUuidKind(uuid);
         const resource = getResourceWithEditableStatus<GroupResource & EditableResource>(uuid, userUuid)(getState().resources);
 
-        // When viewing the contents of a filter group, all contents should be treated as read only.
-        let inFilterGroup = false;
-        const { router } = getState();
-        if (isProjectRoute(router)) {
-            const projectUuid = getProjectPanelCurrentUuid(getState());
-            if (projectUuid !== undefined) {
-                const project = getResource<GroupResource>(projectUuid)(getState().resources);
-                if (project && project.groupClass === GroupClass.FILTER) {
-                    inFilterGroup = true;
-                }
-            }
-        }
-
-        const isEditable = (isAdminUser || (resource || {} as EditableResource).isEditable) && !inFilterGroup;
+        const isEditable = (isAdminUser || (resource || {} as EditableResource).isEditable) && !readonly;
         switch (kind) {
             case ResourceKind.PROJECT:
-                return (isAdminUser && !inFilterGroup)
-                    ? ContextMenuKind.PROJECT_ADMIN
+                return (isAdminUser && !readonly)
+                    ? (resource && resource.groupClass !== GroupClass.FILTER)
+                        ? ContextMenuKind.PROJECT_ADMIN
+                        : ContextMenuKind.FILTER_GROUP_ADMIN
                     : isEditable
-                        ? ContextMenuKind.PROJECT
+                        ? (resource && resource.groupClass !== GroupClass.FILTER)
+                            ? ContextMenuKind.PROJECT
+                            : ContextMenuKind.FILTER_GROUP
                         : ContextMenuKind.READONLY_PROJECT;
             case ResourceKind.COLLECTION:
                 const c = getResource<CollectionResource>(uuid)(getState().resources);
@@ -246,15 +228,15 @@ export const resourceUuidToContextMenuKind = (uuid: string) =>
                     ? ContextMenuKind.OLD_VERSION_COLLECTION
                     : (isTrashed && isEditable)
                         ? ContextMenuKind.TRASHED_COLLECTION
-                        : (isAdminUser && !inFilterGroup)
+                        : (isAdminUser && !readonly)
                             ? ContextMenuKind.COLLECTION_ADMIN
                             : isEditable
                                 ? ContextMenuKind.COLLECTION
                                 : ContextMenuKind.READONLY_COLLECTION;
             case ResourceKind.PROCESS:
-                return (isAdminUser && !inFilterGroup)
+                return (isAdminUser && !readonly)
                     ? ContextMenuKind.PROCESS_ADMIN
-                    : inFilterGroup
+                    : readonly
                         ? ContextMenuKind.READONLY_PROCESS_RESOURCE
                         : ContextMenuKind.PROCESS_RESOURCE;
             case ResourceKind.USER:

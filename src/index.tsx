@@ -21,7 +21,7 @@ import { CustomTheme } from '~/common/custom-theme';
 import { fetchConfig } from '~/common/config';
 import { addMenuActionSet, ContextMenuKind } from '~/views-components/context-menu/context-menu';
 import { rootProjectActionSet } from "~/views-components/context-menu/action-sets/root-project-action-set";
-import { projectActionSet, readOnlyProjectActionSet } from "~/views-components/context-menu/action-sets/project-action-set";
+import { filterGroupActionSet, projectActionSet, readOnlyProjectActionSet } from "~/views-components/context-menu/action-sets/project-action-set";
 import { resourceActionSet } from '~/views-components/context-menu/action-sets/resource-action-set';
 import { favoriteActionSet } from "~/views-components/context-menu/action-sets/favorite-action-set";
 import { collectionFilesActionSet, readOnlyCollectionFilesActionSet } from '~/views-components/context-menu/action-sets/collection-files-action-set';
@@ -58,7 +58,7 @@ import { groupMemberActionSet } from '~/views-components/context-menu/action-set
 import { linkActionSet } from '~/views-components/context-menu/action-sets/link-action-set';
 import { loadFileViewersConfig } from '~/store/file-viewers/file-viewers-actions';
 import { processResourceAdminActionSet } from '~/views-components/context-menu/action-sets/process-resource-admin-action-set';
-import { projectAdminActionSet } from '~/views-components/context-menu/action-sets/project-admin-action-set';
+import { filterGroupAdminActionSet, projectAdminActionSet } from '~/views-components/context-menu/action-sets/project-admin-action-set';
 import { snackbarActions, SnackbarKind } from "~/store/snackbar/snackbar-actions";
 import { openNotFoundDialog } from './store/not-found-panel/not-found-panel-action';
 import { storeRedirects } from './common/redirect-to';
@@ -68,6 +68,7 @@ console.log(`Starting arvados [${getBuildInfo()}]`);
 addMenuActionSet(ContextMenuKind.ROOT_PROJECT, rootProjectActionSet);
 addMenuActionSet(ContextMenuKind.PROJECT, projectActionSet);
 addMenuActionSet(ContextMenuKind.READONLY_PROJECT, readOnlyProjectActionSet);
+addMenuActionSet(ContextMenuKind.FILTER_GROUP, filterGroupActionSet);
 addMenuActionSet(ContextMenuKind.RESOURCE, resourceActionSet);
 addMenuActionSet(ContextMenuKind.FAVORITE, favoriteActionSet);
 addMenuActionSet(ContextMenuKind.COLLECTION_FILES, collectionFilesActionSet);
@@ -96,6 +97,7 @@ addMenuActionSet(ContextMenuKind.GROUP_MEMBER, groupMemberActionSet);
 addMenuActionSet(ContextMenuKind.COLLECTION_ADMIN, collectionAdminActionSet);
 addMenuActionSet(ContextMenuKind.PROCESS_ADMIN, processResourceAdminActionSet);
 addMenuActionSet(ContextMenuKind.PROJECT_ADMIN, projectAdminActionSet);
+addMenuActionSet(ContextMenuKind.FILTER_GROUP_ADMIN, filterGroupAdminActionSet);
 
 storeRedirects();
 
