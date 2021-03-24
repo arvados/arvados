@@ -1,0 +1,14 @@
+{
+  "Version": "2012-10-17",
+  "Id": "${cluster}-api-dispatcher-role policy",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ec2:*",
+        "kms:*"
+      ],
+      "Resource": "*"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "Version": "2012-10-17",
+  "Id": "${id}",
+  "Statement": [
+    {
+      "Sid": "BucketAllow",
+      "Effect": "Allow",
+      "Principal": {
+        "AWS":
+          ${jsonencode([ for arn in access_arns : "${arn}" ], )}
+      },
+      "Action": [
+        "s3:ListBucket"
+      ],
+      "Resource": "${bucket_arn}"
+    },
+    {
+      "Sid": "BucketAllowObjects",
+      "Effect": "Allow",
+      "Principal": {
+        "AWS":
+          ${jsonencode([ for arn in access_arns : "${arn}" ], )}
+      },
+      "Action": [
+        "s3:PutObject",
+        "s3:GetObject",
+        "s3:DeleteObject"
+      ],
+      "Resource": "${bucket_arn}/*"
+    }
+  ]
+}
