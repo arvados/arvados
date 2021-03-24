@@ -20,7 +20,7 @@ export function normalizeURLPath(url: string) {
 
 export const customEncodeURI = (path: string) => {
     try {
-        return encodeURIComponent(path).replace(/%2F/g, '/');
+        return path.split('/').map(encodeURIComponent).join('/');
     } catch(e) {}
 
     return path;
@@ -28,7 +28,7 @@ export const customEncodeURI = (path: string) => {
 
 export const customDecodeURI = (path: string) => {
     try {
-        return decodeURIComponent(path.replace(/\//g, '%2F'));
+        return path.split('%2F').map(decodeURIComponent).join('%2F');
     } catch(e) {}
 
     return path;

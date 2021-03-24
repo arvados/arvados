@@ -28,7 +28,8 @@ export const extractFilesData = (document: Document) => {
         .map(element => {
             const name = getTagValue(element, 'D:displayname', '');
             const size = parseInt(getTagValue(element, 'D:getcontentlength', '0'), 10);
-            const url = customDecodeURI(getTagValue(element, 'D:href', ''));
+            const href = getTagValue(element, 'D:href', '');
+            const url = customDecodeURI(href);
             const nameSuffix = name;
             const collectionUuidMatch = collectionUrlPrefix.exec(url);
             const collectionUuid = collectionUuidMatch ? collectionUuidMatch.pop() : '';
