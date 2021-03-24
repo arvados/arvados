@@ -10,7 +10,7 @@ letsencrypt:
     - certbot: latest
     - python3-certbot-nginx
   config:
-    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    server: https://acme-v02.api.letsencrypt.org/directory
     email: __INITIAL_USER_EMAIL__
     authenticator: nginx
     webroot-path: /var/www

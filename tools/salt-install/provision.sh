@@ -99,7 +99,7 @@ arguments() {
   done
 }
 
-CONFIG="${SCRIPT_DIR}/local.params"
+CONFIG_FILE="${SCRIPT_DIR}/local.params"
 CONFIG_DIR="config_examples/single_host/multiple_hostnames"
 LOG_LEVEL="info"
 CONTROLLER_EXT_SSL_PORT=443
@@ -148,7 +148,9 @@ arguments ${@}
 if [ -s ${CONFIG_FILE} ]; then
   source ${CONFIG_FILE}
 else
-  echo >&2 "Please create a '${CONFIG_FILE}' file with initial values, as described in FIXME_URL_TO_DESCR"
+  echo >&2 "Please create a '${CONFIG_FILE}' file with initial values, as described in"
+  echo >&2 "  * https://doc.arvados.org/install/salt-single-host.html#single_host, or"
+  echo >&2 "  * https://doc.arvados.org/install/salt-multi-host.html#multi_host_multi_hostnames"
   exit 1
 fi
 

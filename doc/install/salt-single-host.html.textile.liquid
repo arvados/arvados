@@ -37,7 +37,7 @@ For documentation's sake, we will use the cluster name <i>arva2</i> and the doma
 
 Arvados' single host installation can be done in two fashions:
 
-* Using a single hostname, asigning <i>a different port (other than 443) for each user-facing service</i>: This choice is easier to setup, but the user will need to know the port/s for the different services she wants to connect to.
+* Using a single hostname, assigning <i>a different port (other than 443) for each user-facing service</i>: This choice is easier to setup, but the user will need to know the port/s for the different services she wants to connect to.
 * Using multiple hostnames on the same IP: this setup involves a few extra steps but each service will have a meaningful hostname so it will make easier to access them later.
 
 Once you decide which of these choices you prefer, copy one the two example configuration files and directory, and edit them to suit your needs.
@@ -71,6 +71,14 @@ When you finished customizing the configuration, you are ready to copy the files
 <notextile>
 <pre><code>scp -r provision.sh local* user@host:
 ssh user@host sudo provision.sh
+</code></pre>
+</notextile>
+
+or, if you saved the @local.params@ in another directory or with some other name
+
+<notextile>
+<pre><code>scp -r provision.sh local* user@host:
+ssh user@host sudo provision.sh -c /path/to/your/local.params.file
 </code></pre>
 </notextile>
 

@@ -7,7 +7,7 @@
 ##### About
 
 This directory holds a small script to help you get Arvados up and running, using the
-[Saltstack arvados-formula](https://github.com/saltstack-formulas/arvados-formula)
+[Saltstack arvados-formula](https://github.com/arvados/arvados-formula.git)
 in master-less mode.
 
 There are a few preset examples that you can use:
