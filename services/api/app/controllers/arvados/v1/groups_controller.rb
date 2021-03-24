@@ -127,9 +127,11 @@ class Arvados::V1::GroupsController < ApplicationController
       :self_link => "",
       :offset => @offset,
       :limit => @limit,
-      :items_available => @items_available,
       :items => @objects.as_api_response(nil)
     }
+    if params[:count] != 'none'
+      list[:items_available] = @items_available
+    end
     if @extra_included
       list[:included] = @extra_included.as_api_response(nil, {select: @select})
     end

@@ -239,7 +239,7 @@ class ApplicationController < ActionController::Base
     if objects.respond_to?(:result_offset) and
         objects.respond_to?(:result_limit)
       next_offset = objects.result_offset + objects.result_limit
-      if objects.respond_to?(:items_available) and (next_offset < objects.items_available)
+      if objects.respond_to?(:items_available) and (objects.items_available != nil) and (next_offset < objects.items_available)
         next_offset
       elsif @objects.results.size > 0 and (params[:count] == 'none' or
            (params[:controller] == 'search' and params[:action] == 'choose'))
