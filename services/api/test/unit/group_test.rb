@@ -278,7 +278,7 @@ class GroupTest < ActiveSupport::TestCase
       Rails.configuration.Collections.ForwardSlashNameSubstitution = subst
       proj = Group.create group_class: "project"
       role = Group.create group_class: "role"
-      filt = Group.create group_class: "filter"
+      filt = Group.create group_class: "filter", properties: {"filters":[]}
       [[nil, true],
        ["", true],
        [".", false],
@@ -292,9 +292,9 @@ class GroupTest < ActiveSupport::TestCase
         role.name = name
         assert_equal true, role.valid?
         proj.name = name
-        assert_equal valid, proj.valid?, "#{name.inspect} should be #{valid ? "valid" : "invalid"}"
+        assert_equal valid, proj.valid?, "project: #{name.inspect} should be #{valid ? "valid" : "invalid"}"
         filt.name = name
-        assert_equal valid, filt.valid?, "#{name.inspect} should be #{valid ? "valid" : "invalid"}"
+        assert_equal valid, filt.valid?, "filter: #{name.inspect} should be #{valid ? "valid" : "invalid"}"
       end
     end
   end
