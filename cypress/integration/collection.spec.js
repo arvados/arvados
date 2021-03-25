@@ -202,7 +202,11 @@ describe('Collection panel tests', function () {
                     'some_file.pdf?',
                     '?some_file.pdf',
                     'some%file.pdf',
-                    'some%2Ffile.pdf'
+                    'some%2Ffile.pdf',
+                    'some%22file.pdf',
+                    'some%20file.pdf',
+                    "G%C3%BCnter's%20file.pdf",
+                    'bar' // make sure we can go back to the original name as a last step
                 ];
                 eachPair(names, (from, to) => {
                     cy.get('[data-cy=collection-files-panel]')
