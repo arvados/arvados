@@ -163,18 +163,6 @@ type ContainerInspectResponse struct {
 	State *ContainerState
 }
 
-// ImageInspectResponse  in the case of docker is similar to
-//  github.com/docker/docker/api/types/ImageInspect
-// and for Singularity TBD.
-// MAYBE call it ExecRunnerImage? since the struct is describing an image
-// from the underlying ExecRunner
-type ImageInspectResponse struct {
-	// we don't use the respones but we use ImageInspectWithRaw(context.TODO(), imageID)
-	// to check if we already have the docker image, maybe we can do the
-	// a imagePresent(id string) (bool)
-	ID string
-}
-
 // ImageLoadResponse returns information to the client about a load process.
 type ImageLoadResponse struct {
 	// Body must be closed to avoid a resource leak
@@ -314,7 +302,7 @@ type ThinContainerExecRunner interface {
 	ContainerWait(ctx context.Context, container string, condition WaitCondition) (<-chan ContainerWaitOKBody, <-chan error)
 
 	ContainerInspect(ctx context.Context, id string) (ContainerInspectResponse, error)
-	ImageInspectWithRaw(ctx context.Context, image string) (ImageInspectResponse, []byte, error)
+	ImageLocallyCached(ctx context.Context, image string) (bool, error)
 
 	ImageLoad(ctx context.Context, input io.Reader, quiet bool) (ImageLoadResponse, error)
 	ImageRemove(ctx context.Context, image string, options ImageRemoveOptions) ([]ImageDeleteResponseItem, error)

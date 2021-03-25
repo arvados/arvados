@@ -165,13 +165,13 @@ func (a *DockerAdapter) ContainerWait(ctx context.Context, container string, con
 	return adapterContainerWaitOKBody, dockerErr
 }
 
-func (a *DockerAdapter) ImageInspectWithRaw(ctx context.Context, image string) (ImageInspectResponse, []byte, error) {
-	dockerImageInspectResponse, rawBytes, dockerErr := a.docker.ImageInspectWithRaw(ctx, image)
-
-	adapterImageInspectResponse := &ImageInspectResponse{
-		ID: dockerImageInspectResponse.ID,
-	}
-	return *adapterImageInspectResponse, rawBytes, dockerErr
+func (a *DockerAdapter) ImageLocallyCached(ctx context.Context, image string) (bool, error) {
+	// Inherit logic before Singulatity ( see #17296 )
+	// There may be there is a better way to detect if the image is present in the
+	// local docker daemon.
+	_, _, err := a.docker.ImageInspectWithRaw(context.TODO(), image)
+	imageIsThere := (err != nil)
+	return imageIsThere, err
 }
 
 func (a *DockerAdapter) ImageLoad(ctx context.Context, input io.Reader, quiet bool) (ImageLoadResponse, error) {

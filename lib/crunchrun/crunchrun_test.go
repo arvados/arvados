@@ -90,18 +90,19 @@ var fakeAuthUUID = "zzzzz-gj3su-55pqoyepgi2glem"
 var fakeAuthToken = "a3ltuwzqcu2u4sc0q7yhpc2w7s00fdcqecg5d6e0u3pfohmbjt"
 
 type TestContainerExecRunnerClient struct {
-	imageLoaded string
-	logReader   io.ReadCloser
-	logWriter   io.WriteCloser
-	fn          func(t *TestContainerExecRunnerClient)
-	exitCode    int
-	stop        chan bool
-	cwd         string
-	env         []string
-	api         *ArvTestClient
-	realTemp    string
-	calledWait  bool
-	ctrExited   bool
+	imageLoaded   string
+	removedImages map[string]bool
+	logReader     io.ReadCloser
+	logWriter     io.WriteCloser
+	fn            func(t *TestContainerExecRunnerClient)
+	exitCode      int
+	stop          chan bool
+	cwd           string
+	env           []string
+	api           *ArvTestClient
+	realTemp      string
+	calledWait    bool
+	ctrExited     bool
 }
 
 func NewTestContainerExecRunnerClient() *TestContainerExecRunnerClient {
@@ -109,6 +110,7 @@ func NewTestContainerExecRunnerClient() *TestContainerExecRunnerClient {
 	t.logReader, t.logWriter = io.Pipe()
 	t.stop = make(chan bool, 1)
 	t.cwd = "/"
+	t.removedImages = make(map[string]bool)
 	return t
 }
 
@@ -185,18 +187,19 @@ func (t *TestContainerExecRunnerClient) ContainerInspect(ctx context.Context, id
 	return
 }
 
-func (t *TestContainerExecRunnerClient) ImageInspectWithRaw(ctx context.Context, image string) (ImageInspectResponse, []byte, error) {
-	fmt.Printf("%#v", t)
+func (t *TestContainerExecRunnerClient) ImageLocallyCached(ctx context.Context, image string) (bool, error) {
 	if t.exitCode == 2 {
-		return ImageInspectResponse{}, nil, fmt.Errorf("Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?")
+		return false, fmt.Errorf("Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?")
+	}
+	hasBeenRemoved, ok := t.removedImages[image]
+
+	fmt.Printf("%s hasBeenRemoved %#v, ok %#v \n", image, hasBeenRemoved, ok)
+	if t.imageLoaded == image && (!hasBeenRemoved && ok) {
+		return true, nil
 	}
 
-	if t.imageLoaded == image {
-		return ImageInspectResponse{}, nil, nil
-	}
-	return ImageInspectResponse{}, nil, errors.New("")
+	return false, nil
 }
-
 func (t *TestContainerExecRunnerClient) ImageLoad(ctx context.Context, input io.Reader, quiet bool) (ImageLoadResponse, error) {
 	if t.exitCode == 2 {
 		return ImageLoadResponse{}, fmt.Errorf("Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?")
@@ -206,10 +209,15 @@ func (t *TestContainerExecRunnerClient) ImageLoad(ctx context.Context, input io.
 		return ImageLoadResponse{}, err
 	}
 	t.imageLoaded = hwImageID
+	t.removedImages[hwImageID] = false
 	return ImageLoadResponse{Body: ioutil.NopCloser(input)}, nil
 }
 
-func (*TestContainerExecRunnerClient) ImageRemove(ctx context.Context, image string, options ImageRemoveOptions) ([]ImageDeleteResponseItem, error) {
+func (t *TestContainerExecRunnerClient) ImageRemove(ctx context.Context, image string, options ImageRemoveOptions) ([]ImageDeleteResponseItem, error) {
+	// this holds the state of the images that have been removed so
+	// ImageLocallyCached can give a good (cached) answer
+	t.removedImages[image] = true
+
 	return nil, nil
 }
 
@@ -222,11 +230,11 @@ func (t *TestContainerExecRunnerClient) GetHostConfig() (HostConfig, error) {
 	adapterHostConfig := HostConfig{
 
 		Resources: Resources{
-			CgroupParent: "",
-			NanoCPUs:     1000000,
-			Memory:       100000,
-			MemorySwap:   10000,
-			KernelMemory: 10000,
+			CgroupParent: "fakeExecRunner", // usually "docker" for docker runners
+			NanoCPUs:     int64(2) * 1000000000,
+			Memory:       int64(16) * 1024 * 1024,
+			MemorySwap:   int64(16) * 1024 * 1024,
+			KernelMemory: int64(16) * 1024 * 1024,
 		},
 	}
 	return adapterHostConfig, nil
@@ -245,7 +253,7 @@ func (t *TestContainerExecRunnerClient) SetImage(imageID string) {
 }
 
 func (t *TestContainerExecRunnerClient) GetNetworkMode() (networkMode NetworkMode) {
-	return NetworkMode("...")
+	return NetworkMode("default")
 }
 
 func (t *TestContainerExecRunnerClient) SetNetworkMode(networkMode NetworkMode) {
@@ -486,8 +494,9 @@ func (s *TestSuite) TestLoadImage(c *C) {
 	_, err = cr.ContainerExecRunner.ImageRemove(nil, hwImageID, ImageRemoveOptions{})
 	c.Check(err, IsNil)
 
-	_, _, err = cr.ContainerExecRunner.ImageInspectWithRaw(nil, hwImageID)
-	c.Check(err, NotNil)
+	imageIsThere, err := cr.ContainerExecRunner.ImageLocallyCached(context.Background(), hwImageID)
+	c.Check(err, IsNil)
+	c.Check(imageIsThere, Equals, false)
 
 	cr.Container.ContainerImage = hwPDH
 
@@ -505,12 +514,17 @@ func (s *TestSuite) TestLoadImage(c *C) {
 	c.Check(kc.Called, Equals, true)
 	c.Check(cr.ContainerExecRunner.GetImage(), Equals, hwImageID)
 
-	_, _, err = cr.ContainerExecRunner.ImageInspectWithRaw(nil, hwImageID)
+	imageIsThere, err = cr.ContainerExecRunner.ImageLocallyCached(context.Background(), hwImageID)
 	c.Check(err, IsNil)
+	c.Check(imageIsThere, Equals, true)
 
 	// (2) Test using image that's already loaded
 	kc.Called = false
 	cr.ContainerExecRunner.SetImage("")
+
+	imageIsThere, err = cr.ContainerExecRunner.ImageLocallyCached(context.Background(), hwImageID)
+	c.Check(err, IsNil)
+	c.Check(imageIsThere, Equals, true)
 
 	err = cr.LoadImage()
 	c.Check(err, IsNil)

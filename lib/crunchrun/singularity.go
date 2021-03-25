@@ -82,12 +82,9 @@ func (c SingularityClient) ContainerInspect(ctx context.Context, id string) (Con
 	return ContainerInspectResponse{}, nil
 }
 
-func (c SingularityClient) ImageInspectWithRaw(ctx context.Context, image string) (ImageInspectResponse, []byte, error) {
-	fmt.Printf("placeholder for ImageInspectWithRaw() %s", image)
-
-	return ImageInspectResponse{}, []byte(""), nil
+func (c SingularityClient) ImageLocallyCached(ctx context.Context, image string) (bool, error) {
+	return false, nil
 }
-
 func (c SingularityClient) ImageLoad(ctx context.Context, input io.Reader, quiet bool) (ImageLoadResponse, error) {
 	fmt.Printf("placeholder for ImageLoad")
 	return ImageLoadResponse{}, nil

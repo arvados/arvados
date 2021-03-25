@@ -264,8 +264,15 @@ func (runner *ContainerRunner) LoadImage() (err error) {
 
 	runner.CrunchLog.Printf("Using Docker image id '%s'", imageID)
 
-	_, _, err = runner.ContainerExecRunner.ImageInspectWithRaw(context.TODO(), imageID)
+	imageIsThere, err := runner.ContainerExecRunner.ImageLocallyCached(context.TODO(), imageID)
+
 	if err != nil {
+		return err
+	}
+
+	if imageIsThere {
+		runner.CrunchLog.Printf("Docker image id '%s' is locally available, no need to fetch it from keep", imageID)
+	} else {
 		runner.CrunchLog.Print("Loading Docker image from keep")
 
 		var readCloser io.ReadCloser
@@ -285,10 +292,9 @@ func (runner *ContainerRunner) LoadImage() (err error) {
 			return fmt.Errorf("Reading response to image load: %v", err)
 		}
 		runner.CrunchLog.Printf("Docker response: %s", rbody)
-	} else {
-		runner.CrunchLog.Print("Docker image is available")
 	}
 
+	runner.CrunchLog.Print("Docker image is now available")
 	runner.ContainerExecRunner.SetImage(imageID)
 
 	runner.ContainerKeepClient.ClearBlockCache()
@@ -674,6 +680,7 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 	return nil
 }
 
+// TODO: review if this can be moved to ThinContainerExecRunner interface
 func (runner *ContainerRunner) ProcessDockerAttach(containerReader io.Reader) {
 	// Handle docker log protocol
 	// https://docs.docker.com/engine/reference/api/docker_remote_api_v1.15/#attach-to-a-container
