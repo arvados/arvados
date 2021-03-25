@@ -170,7 +170,7 @@ describe('Collection panel tests', function () {
         })
     })
 
-    it.only('renames a file using valid names', function () {
+    it('renames a file using valid names', function () {
         function eachPair(lst, func){
             for(var i=0; i < lst.length - 1; i++){
                 func(lst[i], lst[i + 1])
