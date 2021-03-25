@@ -1113,7 +1113,7 @@ func (s *HandlerSuite) TestGetHandlerNoBufferLeak(c *check.C) {
 	}
 }
 
-func (s *HandlerSuite) TestPutReplicationHeader(c *check.C) {
+func (s *HandlerSuite) TestPutResponseHeader(c *check.C) {
 	c.Assert(s.handler.setup(context.Background(), s.cluster, "", prometheus.NewRegistry(), testServiceURL), check.IsNil)
 
 	resp := IssueRequest(s.handler, &RequestTester{
@@ -1121,10 +1121,9 @@ func (s *HandlerSuite) TestPutReplicationHeader(c *check.C) {
 		uri:         "/" + TestHash,
 		requestBody: TestBlock,
 	})
-	if r := resp.Header().Get("X-Keep-Replicas-Stored"); r != "1" {
-		c.Logf("%#v", resp)
-		c.Errorf("Got X-Keep-Replicas-Stored: %q, expected %q", r, "1")
-	}
+	c.Logf("%#v", resp)
+	c.Check(resp.Header().Get("X-Keep-Replicas-Stored"), check.Equals, "1")
+	c.Check(resp.Header().Get("X-Keep-Storage-Classes-Confirmed"), check.Equals, "default=1")
 }
 
 func (s *HandlerSuite) TestUntrashHandler(c *check.C) {
