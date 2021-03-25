@@ -246,8 +246,6 @@ class Arvados::V1::GroupsController < ApplicationController
 
     seen_last_class = false
     klasses.each do |klass|
-      @offset = 0 if seen_last_class  # reset offset for the new next type being processed
-
       # if current klass is same as params['last_object_class'], mark that fact
       seen_last_class = true if((params['count'].andand.==('none')) and
                                 (params['last_object_class'].nil? or
@@ -296,12 +294,24 @@ class Arvados::V1::GroupsController < ApplicationController
       if params['exclude_home_project']
         @objects = exclude_home @objects, klass
       end
+      if params['count'] == 'none'
+        # The call to object_list below will not populate :items_available in
+        # its response, because count is disabled.  Save @objects length (does
+        # not require another db query) so that @offset (if set) is handled
+        # correctly.
+        countless_items_available = @objects.length
+      end
 
       klass_limit = limit_all - all_objects.count
       @limit = klass_limit
       apply_where_limit_order_params klass
       klass_object_list = object_list(model_class: klass)
-      klass_items_available = klass_object_list[:items_available] || 0
+      if params['count'] != 'none'
+        klass_items_available = klass_object_list[:items_available] || 0
+      else
+        # klass_object_list[:items_available] is not populated
+        klass_items_available = countless_items_available || 0
+      end
       @items_available += klass_items_available
       @offset = [@offset - klass_items_available, 0].max
       all_objects += klass_object_list[:items]
