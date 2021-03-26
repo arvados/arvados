@@ -22,6 +22,10 @@ type testLoginController struct {
 }
 
 func (ctrl *testLoginController) Logout(ctx context.Context, opts arvados.LogoutOptions) (arvados.LogoutResponse, error) {
+	err := ctrl.Parent.ExpireAPIClientAuthorization(ctx)
+	if err != nil {
+		return arvados.LogoutResponse{}, err
+	}
 	return noopLogout(ctrl.Cluster, opts)
 }
 
