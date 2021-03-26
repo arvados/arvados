@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { customEncodeURI, encodeHash } from "./url";
+import { customEncodeURI } from "./url";
 
 export class WebDAV {
 
@@ -80,7 +80,9 @@ export class WebDAV {
                     : ''}${customEncodeURI(config.url)}`);
 
             if (config.headers && config.headers.Destination) {
-                config.headers.Destination = encodeHash(config.headers.Destination);
+                const regexp = /(http[s]?:\/\/)?([^\/\s]+\/)(.*)/;
+                const match = decodeURIComponent(config.headers.Destination).match(regexp) || {};
+                config.headers.Destination = `${match[1]}${match[2]}${customEncodeURI(match[3])}`;
             }
 
             const headers = { ...this.defaults.headers, ...config.headers };

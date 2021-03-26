@@ -5,7 +5,6 @@
 import { CollectionDirectory, CollectionFile, CollectionFileType, createCollectionDirectory, createCollectionFile } from "../../models/collection-file";
 import { getTagValue } from "~/common/xml";
 import { getNodeChildren, Tree, mapTree } from '~/models/tree';
-import { customDecodeURI } from "~/common/url";
 
 export const sortFilesTree = (tree: Tree<CollectionDirectory | CollectionFile>) => {
     return mapTree<CollectionDirectory | CollectionFile>(node => {
@@ -26,10 +25,9 @@ export const extractFilesData = (document: Document) => {
         .from(document.getElementsByTagName('D:response'))
         .slice(1) // omit first element which is collection itself
         .map(element => {
-            const name = getTagValue(element, 'D:displayname', '');
-            const size = parseInt(getTagValue(element, 'D:getcontentlength', '0'), 10);
-            const href = getTagValue(element, 'D:href', '');
-            const url = customDecodeURI(href);
+            const name = getTagValue(element, 'D:displayname', '', true); // skip decoding as value should be already decoded
+            const size = parseInt(getTagValue(element, 'D:getcontentlength', '0', true), 10);
+            const url = getTagValue(element, 'D:href', '');
             const nameSuffix = name;
             const collectionUuidMatch = collectionUrlPrefix.exec(url);
             const collectionUuid = collectionUuidMatch ? collectionUuidMatch.pop() : '';

@@ -206,6 +206,7 @@ describe('Collection panel tests', function () {
                     'some%22file.pdf',
                     'some%20file.pdf',
                     "G%C3%BCnter's%20file.pdf",
+                    'table%&?*2',
                     'bar' // make sure we can go back to the original name as a last step
                 ];
                 eachPair(names, (from, to) => {

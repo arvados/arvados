@@ -20,6 +20,19 @@ describe('collection-service-files-response', () => {
             // then
             expect(result).toEqual([{ id: "zzzzz-xxxxx-vvvvvvvvvvvvvvv/2", name: "2", path: "", size: 1582976, type: "file", url: "/c=zzzzz-xxxxx-vvvvvvvvvvvvvvv/2" }, { id: "zzzzz-xxxxx-vvvvvvvvvvvvvvv/table 1 2 3", name: "table 1 2 3", path: "", size: 133352, type: "file", url: "/c=zzzzz-xxxxx-vvvvvvvvvvvvvvv/table 1 2 3" }]);
         });
+
+        it('should extract ecoded data and do not encode already encoded props', () => {
+            // given
+            const xmlString = '<?xml version="1.0" encoding="UTF-8"?><D:multistatus xmlns:D="DAV:"><D:response><D:href>/c=zzzzz-xxxxx-vvvvvvvvvvvvvvv/</D:href><D:propstat><D:prop><D:resourcetype><D:collection xmlns:D="DAV:"/></D:resourcetype><D:getlastmodified>Fri, 26 Mar 2021 11:45:50 GMT</D:getlastmodified><D:supportedlock><D:lockentry xmlns:D="DAV:"><D:lockscope><D:exclusive/></D:lockscope><D:locktype><D:write/></D:locktype></D:lockentry></D:supportedlock><D:displayname></D:displayname></D:prop><D:status>HTTP/1.1 200 OK</D:status></D:propstat></D:response><D:response><D:href>/c=zzzzz-xxxxx-vvvvvvvvvvvvvvv/table%25&amp;%3F%2A2</D:href><D:propstat><D:prop><D:resourcetype></D:resourcetype><D:getcontentlength>3</D:getcontentlength><D:getlastmodified>Fri, 26 Mar 2021 11:45:50 GMT</D:getlastmodified><D:getetag>"166fe1e1a403fb683"</D:getetag><D:getcontenttype>text/plain; charset=utf-8</D:getcontenttype><D:supportedlock><D:lockentry xmlns:D="DAV:"><D:lockscope><D:exclusive/></D:lockscope><D:locktype><D:write/></D:locktype></D:lockentry></D:supportedlock><D:displayname>table%&amp;?*2</D:displayname></D:prop><D:status>HTTP/1.1 200 OK</D:status></D:propstat></D:response></D:multistatus>';
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlString, "text/xml");
+
+            // when
+            const result = extractFilesData(xmlDoc);
+
+            // then
+            expect(result).toEqual([{ id: "zzzzz-xxxxx-vvvvvvvvvvvvvvv/table%&?*2", name: "table%&?*2", path: "", size: 3, type: "file", url: "/c=zzzzz-xxxxx-vvvvvvvvvvvvvvv/table%&?*2" }]);
+        });
     });
 
     describe('getFileFullPath', () => {
