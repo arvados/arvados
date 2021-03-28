@@ -40,9 +40,9 @@ type Gateway struct {
 	respondAuth string
 }
 
-// startGatewayServer starts an http server that allows authenticated
-// clients to open an interactive "docker exec" session and (in
-// future) connect to tcp ports inside the docker container.
+// Start starts an http server that allows authenticated clients to open an
+// interactive "docker exec" session and (in future) connect to tcp ports
+// inside the docker container.
 func (gw *Gateway) Start() error {
 	gw.sshConfig = ssh.ServerConfig{
 		NoClientAuth: true,
