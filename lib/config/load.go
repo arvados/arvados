@@ -270,7 +270,7 @@ func (ldr *Loader) Load() (*arvados.Config, error) {
 
 	// Check for known mistakes
 	for id, cc := range cfg.Clusters {
-		for remote, _ := range cc.RemoteClusters {
+		for remote := range cc.RemoteClusters {
 			if remote == "*" || remote == "SAMPLE" {
 				continue
 			}
