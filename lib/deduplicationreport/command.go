@@ -7,7 +7,6 @@ package deduplicationreport
 import (
 	"io"
 
-	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"github.com/sirupsen/logrus"
 )
@@ -34,10 +33,7 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 
 	logger.SetFormatter(new(NoPrefixFormatter))
 
-	loader := config.NewLoader(stdin, logger)
-	loader.SkipLegacy = true
-
-	exitcode := report(prog, args, loader, logger, stdout, stderr)
+	exitcode := report(prog, args, logger, stdout, stderr)
 
 	return exitcode
 }

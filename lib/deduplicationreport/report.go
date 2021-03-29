@@ -10,7 +10,6 @@ import (
 	"io"
 	"strings"
 
-	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/manifest"
@@ -30,7 +29,7 @@ func deDuplicate(inputs []string) (trimmed []string) {
 	return
 }
 
-func parseFlags(prog string, args []string, loader *config.Loader, logger *logrus.Logger, stderr io.Writer) (exitcode int, inputs []string) {
+func parseFlags(prog string, args []string, logger *logrus.Logger, stderr io.Writer) (exitcode int, inputs []string) {
 	flags := flag.NewFlagSet("", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	flags.Usage = func() {
@@ -67,11 +66,10 @@ Options:
 `, prog, prog, prog)
 		flags.PrintDefaults()
 	}
-	loader.SetupFlags(flags)
 	loglevel := flags.String("log-level", "info", "logging level (debug, info, ...)")
 	err := flags.Parse(args)
 	if err == flag.ErrHelp {
-		return 0, inputs
+		return 1, inputs
 	} else if err != nil {
 		return 2, inputs
 	}
@@ -104,11 +102,15 @@ func blockList(collection arvados.Collection) (blocks map[string]int) {
 	return
 }
 
-func report(prog string, args []string, loader *config.Loader, logger *logrus.Logger, stdout, stderr io.Writer) (exitcode int) {
+func report(prog string, args []string, logger *logrus.Logger, stdout, stderr io.Writer) (exitcode int) {
 
 	var inputs []string
-	exitcode, inputs = parseFlags(prog, args, loader, logger, stderr)
+	exitcode, inputs = parseFlags(prog, args, logger, stderr)
 	if exitcode != 0 {
+		if exitcode == 1 {
+			// Asking for the cli help should not result in a non-zero exit code
+			exitcode = 0
+		}
 		return
 	}
 
