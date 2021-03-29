@@ -94,7 +94,7 @@ const loginform = `
     <h3>Arvados test login</h3>
     <form method="POST">
       <input id="return_to" type="hidden" name="return_to" value="{{.ReturnTo}}">
-      username <input id="username" type="text" name="username" size=16>
+      username <input id="username" type="text" name="username" autofocus size=16>
       password <input id="password" type="password" name="password" size=16>
       <input type="submit" value="Log in">
       <br>
