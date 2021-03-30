@@ -51,7 +51,7 @@ func (conn *Conn) UserAuthenticate(ctx context.Context, opts arvados.UserAuthent
 func (conn *Conn) GroupContents(ctx context.Context, options arvados.GroupContentsOptions) (arvados.ObjectList, error) {
 	// The requested UUID can be a user (virtual home project), which we just pass on to
 	// the API server.
-	if strings.Index(options.UUID, "j7d0g") != 6 {
+	if strings.Index(options.UUID, "-j7d0g-") != 5 {
 		return conn.railsProxy.GroupContents(ctx, options)
 	}
 

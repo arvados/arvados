@@ -67,7 +67,7 @@ A "project" is a subtype of Group that is displayed as a "Project" in Workbench,
 * Projects can be targets (@head_uuid@) of permission links, but not origins (@tail_uuid@).  Putting a project in a @tail_uuid@ field is an error.
 
 A "filter" is a subtype of Group that is displayed as a "Project" in Workbench, and as a directory by @arv-mount@. See "the groups API documentation":/api/methods/groups.html for more information.
-* A filter group cannot own things (cannot appear in @owner_uuid@).  Putting a role in an @owner_uuid@ field is an error.
+* A filter group cannot own things (cannot appear in @owner_uuid@).  Putting a filter group in an @owner_uuid@ field is an error.
 * A filter group can be owned by a user or a project.
 * The name of a filter is unique only among projects and filters with the same owner_uuid.
 * Filters can be targets (@head_uuid@) of permission links, but not origins (@tail_uuid@).  Putting a filter in a @tail_uuid@ field is an error.

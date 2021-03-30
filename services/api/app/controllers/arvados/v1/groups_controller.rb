@@ -310,7 +310,7 @@ class Arvados::V1::GroupsController < ApplicationController
         klass_items_available = klass_object_list[:items_available] || 0
       else
         # klass_object_list[:items_available] is not populated
-        klass_items_available = countless_items_available || 0
+        klass_items_available = countless_items_available
       end
       @items_available += klass_items_available
       @offset = [@offset - klass_items_available, 0].max
