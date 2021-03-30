@@ -44,6 +44,7 @@ import {
     getInitialProcessStatusFilters
 } from '~/store/resource-type-filters/resource-type-filters';
 import { GroupContentsResource } from '~/services/groups-service/groups-service';
+import { GroupClass, GroupResource } from '~/models/group';
 
 type CssRules = 'root' | "button";
 
@@ -167,7 +168,14 @@ export const ProjectPanel = withStyles(styles)(
             handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
                 const { resources } = this.props;
                 const resource = getResource<GroupContentsResource>(resourceUuid)(resources);
-                const menuKind = this.props.dispatch<any>(resourceUuidToContextMenuKind(resourceUuid));
+                // When viewing the contents of a filter group, all contents should be treated as read only.
+                let readonly = false;
+                const project = getResource<GroupResource>(this.props.currentItemId)(resources);
+                if (project && project.groupClass === GroupClass.FILTER) {
+                    readonly = true;
+                }
+
+                const menuKind = this.props.dispatch<any>(resourceUuidToContextMenuKind(resourceUuid, readonly));
                 if (menuKind && resource) {
                     this.props.dispatch<any>(openContextMenu(event, {
                         name: resource.name,

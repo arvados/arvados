@@ -66,16 +66,9 @@ export const readOnlyProjectActionSet: ContextMenuActionSet = [[
     },
 ]];
 
-export const projectActionSet: ContextMenuActionSet = [
+export const filterGroupActionSet: ContextMenuActionSet = [
     [
         ...readOnlyProjectActionSet.reduce((prev, next) => prev.concat(next), []),
-        {
-            icon: NewProjectIcon,
-            name: "New project",
-            execute: (dispatch, resource) => {
-                dispatch<any>(openProjectCreateDialog(resource.uuid));
-            }
-        },
         {
             icon: RenameIcon,
             name: "Edit project",
@@ -102,6 +95,19 @@ export const projectActionSet: ContextMenuActionSet = [
             name: 'ToggleTrashAction',
             execute: (dispatch, resource) => {
                 dispatch<any>(toggleProjectTrashed(resource.uuid, resource.ownerUuid, resource.isTrashed!!));
+            }
+        },
+    ]
+];
+
+export const projectActionSet: ContextMenuActionSet = [
+    [
+        ...filterGroupActionSet.reduce((prev, next) => prev.concat(next), []),
+        {
+            icon: NewProjectIcon,
+            name: "New project",
+            execute: (dispatch, resource) => {
+                dispatch<any>(openProjectCreateDialog(resource.uuid));
             }
         },
     ]

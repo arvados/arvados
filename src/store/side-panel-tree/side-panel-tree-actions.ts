@@ -112,7 +112,7 @@ const loadSharedRoot = async (dispatch: Dispatch, getState: () => RootState, ser
     const params = {
         filters: `[${new FilterBuilder()
             .addIsA('uuid', ResourceKind.PROJECT)
-            .addEqual('group_class', GroupClass.PROJECT)
+            .addIn('group_class', [GroupClass.PROJECT, GroupClass.FILTER])
             .addDistinct('uuid', getState().auth.config.uuidPrefix + '-j7d0g-publicfavorites')
             .getFilters()}]`,
         order: new OrderBuilder<ProjectResource>()

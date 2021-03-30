@@ -14,7 +14,33 @@ import { openSharingDialog } from "~/store/sharing-dialog/sharing-dialog-actions
 import { openRemoveProcessDialog } from "~/store/processes/processes-actions";
 import { toggleDetailsPanel } from '~/store/details-panel/details-panel-action';
 
+export const readOnlyProcessResourceActionSet: ContextMenuActionSet = [[
+    {
+        component: ToggleFavoriteAction,
+        execute: (dispatch, resource) => {
+            dispatch<any>(toggleFavorite(resource)).then(() => {
+                dispatch<any>(favoritePanelActions.REQUEST_ITEMS());
+            });
+        }
+    },
+    {
+        icon: CopyIcon,
+        name: "Copy to project",
+        execute: (dispatch, resource) => {
+            dispatch<any>(openCopyProcessDialog(resource));
+        }
+    },
+    {
+        icon: DetailsIcon,
+        name: "View details",
+        execute: dispatch => {
+            dispatch<any>(toggleDetailsPanel());
+        }
+    },
+]];
+
 export const processResourceActionSet: ContextMenuActionSet = [[
+    ...readOnlyProcessResourceActionSet.reduce((prev, next) => prev.concat(next), []),
     {
         icon: RenameIcon,
         name: "Edit process",
@@ -30,32 +56,10 @@ export const processResourceActionSet: ContextMenuActionSet = [[
         }
     },
     {
-        component: ToggleFavoriteAction,
-        execute: (dispatch, resource) => {
-            dispatch<any>(toggleFavorite(resource)).then(() => {
-                dispatch<any>(favoritePanelActions.REQUEST_ITEMS());
-            });
-        }
-    },
-    {
         icon: MoveToIcon,
         name: "Move to",
         execute: (dispatch, resource) => {
             dispatch<any>(openMoveProcessDialog(resource));
-        }
-    },
-    {
-        icon: CopyIcon,
-        name: "Copy to project",
-        execute: (dispatch, resource) => {
-            dispatch<any>(openCopyProcessDialog(resource));
-        }
-    },
-    {
-        icon: DetailsIcon,
-        name: "View details",
-        execute: dispatch => {
-            dispatch<any>(toggleDetailsPanel());
         }
     },
     {

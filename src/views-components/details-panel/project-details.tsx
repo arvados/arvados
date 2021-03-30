@@ -5,7 +5,7 @@
 import * as React from 'react';
 import { connect } from 'react-redux';
 import { openProjectPropertiesDialog } from '~/store/details-panel/details-panel-action';
-import { ProjectIcon, RenameIcon } from '~/components/icon/icon';
+import { ProjectIcon, RenameIcon, FilterGroupIcon } from '~/components/icon/icon';
 import { ProjectResource } from '~/models/project';
 import { formatDate } from '~/common/formatters';
 import { ResourceKind } from '~/models/resource';
@@ -18,9 +18,13 @@ import { ArvadosTheme } from '~/common/custom-theme';
 import { Dispatch } from 'redux';
 import { getPropertyChip } from '../resource-properties-form/property-chip';
 import { ResourceOwnerWithName } from '../data-explorer/renderers';
+import { GroupClass } from "~/models/group";
 
 export class ProjectDetails extends DetailsData<ProjectResource> {
     getIcon(className?: string) {
+        if (this.item.groupClass === GroupClass.FILTER) {
+            return <FilterGroupIcon className={className} />;
+        }
         return <ProjectIcon className={className} />;
     }
 
@@ -59,7 +63,7 @@ type ProjectDetailsComponentProps = ProjectDetailsComponentDataProps & ProjectDe
 const ProjectDetailsComponent = connect(null, mapDispatchToProps)(
     withStyles(styles)(
         ({ classes, project, onClick }: ProjectDetailsComponentProps) => <div>
-            <DetailsAttribute label='Type' value={resourceLabel(ResourceKind.PROJECT)} />
+            <DetailsAttribute label='Type' value={project.groupClass === GroupClass.FILTER ? 'Filter group' : resourceLabel(ResourceKind.PROJECT)} />
             <DetailsAttribute label='Owner' linkToUuid={project.ownerUuid}
                 uuidEnhancer={(uuid: string) => <ResourceOwnerWithName uuid={uuid} />} />
             <DetailsAttribute label='Last modified' value={formatDate(project.modifiedAt)} />
@@ -75,9 +79,12 @@ const ProjectDetailsComponent = connect(null, mapDispatchToProps)(
                 }
             </DetailsAttribute>
             <DetailsAttribute label='Properties'>
-                <div onClick={onClick}>
-                    <RenameIcon className={classes.editIcon} />
-                </div>
+                {project.groupClass !== GroupClass.FILTER ?
+                    <div onClick={onClick}>
+                        <RenameIcon className={classes.editIcon} />
+                    </div>
+                    : ''
+                }
             </DetailsAttribute>
             {
                 Object.keys(project.properties).map(k =>
