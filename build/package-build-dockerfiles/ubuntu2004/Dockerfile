@@ -8,7 +8,7 @@ MAINTAINER Arvados Package Maintainers <packaging@arvados.org>
 ENV DEBIAN_FRONTEND noninteractive
 
 # Install dependencies.
-RUN /usr/bin/apt-get update && /usr/bin/apt-get install -q -y python3 python3-pip libcurl4-gnutls-dev libgnutls28-dev curl git libattr1-dev libfuse-dev libpq-dev unzip tzdata python3-venv python3-dev libpam-dev
+RUN /usr/bin/apt-get update && /usr/bin/apt-get install -q -y python3 python3-pip libcurl4-gnutls-dev libgnutls28-dev curl git libattr1-dev libfuse-dev libpq-dev unzip tzdata python3-venv python3-dev libpam-dev shared-mime-info
 
 # Install virtualenv
 RUN /usr/bin/pip3 install 'virtualenv<20'

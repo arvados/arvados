@@ -57,6 +57,7 @@ navbar:
       - user/cwl/cwl-extensions.html.textile.liquid
       - user/cwl/federated-workflows.html.textile.liquid
       - user/cwl/cwl-versions.html.textile.liquid
+      - user/cwl/crunchstat-summary.html.textile.liquid
     - Working with git repositories:
       - user/tutorials/add-new-repository.html.textile.liquid
       - user/tutorials/git-arvados-guide.html.textile.liquid
@@ -191,6 +192,7 @@ navbar:
       - admin/workbench2-vocabulary.html.textile.liquid
       - admin/storage-classes.html.textile.liquid
       - admin/keep-recovering-data.html.textile.liquid
+      - admin/keep-measuring-deduplication.html.textile.liquid
     - Cloud:
       - admin/spot-instances.html.textile.liquid
       - admin/cloudtest.html.textile.liquid

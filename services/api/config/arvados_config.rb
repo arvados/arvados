@@ -46,14 +46,15 @@ end
 
 # Load the defaults, used by config:migrate and fallback loading
 # legacy application.yml
-Open3.popen2("arvados-server", "config-dump", "-config=-", "-skip-legacy") do |stdin, stdout, status_thread|
-  stdin.write("Clusters: {xxxxx: {}}")
-  stdin.close
-  confs = YAML.load(stdout, deserialize_symbols: false)
-  clusterID, clusterConfig = confs["Clusters"].first
-  $arvados_config_defaults = clusterConfig
-  $arvados_config_defaults["ClusterID"] = clusterID
+defaultYAML, stderr, status = Open3.capture3("arvados-server", "config-dump", "-config=-", "-skip-legacy", stdin_data: "Clusters: {xxxxx: {}}")
+if !status.success?
+  puts stderr
+  raise "error loading config: #{status}"
 end
+confs = YAML.load(defaultYAML, deserialize_symbols: false)
+clusterID, clusterConfig = confs["Clusters"].first
+$arvados_config_defaults = clusterConfig
+$arvados_config_defaults["ClusterID"] = clusterID
 
 # Load the global config file
 Open3.popen2("arvados-server", "config-dump", "-skip-legacy") do |stdin, stdout, status_thread|
