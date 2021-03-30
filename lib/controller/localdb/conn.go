@@ -86,6 +86,8 @@ func (conn *Conn) GroupContents(ctx context.Context, options arvados.GroupConten
 				filter.Operand = tmp[2]
 				options.Filters = append(options.Filters, filter)
 			}
+		} else {
+			return resp, fmt.Errorf("filter unparsable: not an array\n")
 		}
 		// Use the generic /groups/contents endpoint for filter groups
 		options.UUID = ""
