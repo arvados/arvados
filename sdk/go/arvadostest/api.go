@@ -157,6 +157,10 @@ func (as *APIStub) GroupDelete(ctx context.Context, options arvados.DeleteOption
 	as.appendCall(ctx, as.GroupDelete, options)
 	return arvados.Group{}, as.Error
 }
+func (as *APIStub) GroupTrash(ctx context.Context, options arvados.DeleteOptions) (arvados.Group, error) {
+	as.appendCall(ctx, as.GroupTrash, options)
+	return arvados.Group{}, as.Error
+}
 func (as *APIStub) GroupUntrash(ctx context.Context, options arvados.UntrashOptions) (arvados.Group, error) {
 	as.appendCall(ctx, as.GroupUntrash, options)
 	return arvados.Group{}, as.Error

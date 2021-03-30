@@ -20,6 +20,13 @@ class Group < ArvadosBase
     ret
   end
 
+  def editable?
+    if group_class == 'filter'
+      return false
+    end
+    super
+  end
+
   def contents params={}
     res = arvados_api_client.api self.class, "/#{self.uuid}/contents", {
       _method: 'GET'
@@ -30,7 +37,7 @@ class Group < ArvadosBase
   end
 
   def class_for_display
-    group_class == 'project' ? 'Project' : super
+    (group_class == 'project' or group_class == 'filter') ? 'Project' : super
   end
 
   def textile_attributes

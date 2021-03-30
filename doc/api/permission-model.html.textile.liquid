@@ -26,7 +26,7 @@ There are four levels of permission: *none*, *can_read*, *can_write*, and *can_m
 
 h2. Ownership
 
-All Arvados objects have an @owner_uuid@ field. Valid uuid types for @owner_uuid@ are "User" and "Group".  For Group, the @group_class@ must be a "project".
+All Arvados objects have an @owner_uuid@ field. Valid uuid types for @owner_uuid@ are "User" and "Group".  In the case of a Group, the @group_class@ must be "project".
 
 The User or Group specified by @owner_uuid@ has *can_manage* permission on the object.  This permission is one way: an object that is owned does not get any special permissions on the User or Group that owns it.
 
@@ -63,8 +63,14 @@ h2. Projects and Roles
 A "project" is a subtype of Group that is displayed as a "Project" in Workbench, and as a directory by @arv-mount@.
 * A project can own things (appear in @owner_uuid@)
 * A project can be owned by a user or another project.
-* The name of a project is unique only among projects with the same owner_uuid.
+* The name of a project is unique only among projects and filters with the same owner_uuid.
 * Projects can be targets (@head_uuid@) of permission links, but not origins (@tail_uuid@).  Putting a project in a @tail_uuid@ field is an error.
+
+A "filter" is a subtype of Group that is displayed as a "Project" in Workbench, and as a directory by @arv-mount@. See "the groups API documentation":/api/methods/groups.html for more information.
+* A filter group cannot own things (cannot appear in @owner_uuid@).  Putting a filter group in an @owner_uuid@ field is an error.
+* A filter group can be owned by a user or a project.
+* The name of a filter is unique only among projects and filters with the same owner_uuid.
+* Filters can be targets (@head_uuid@) of permission links, but not origins (@tail_uuid@).  Putting a filter in a @tail_uuid@ field is an error.
 
 A "role" is a subtype of Group that is treated in Workbench as a group of users who have permissions in common (typically an organizational group).
 * A role cannot own things (cannot appear in @owner_uuid@).  Putting a role in an @owner_uuid@ field is an error.

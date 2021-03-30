@@ -13,8 +13,8 @@ def fix_roles_projects
     # shouldn't be anything to do at all.
     act_as_system_user do
       ActiveRecord::Base.transaction do
-        Group.where("group_class != 'project' or group_class is null").each do |g|
-          # 1) any group not group_class != project becomes a 'role' (both empty and invalid groups)
+        Group.where("(group_class != 'project' and group_class != 'filter') or group_class is null").each do |g|
+          # 1) any group not group_class != project and != filter becomes a 'role' (both empty and invalid groups)
           old_owner = g.owner_uuid
           g.owner_uuid = system_user_uuid
           g.group_class = 'role'

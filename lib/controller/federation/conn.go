@@ -433,6 +433,10 @@ func (conn *Conn) GroupDelete(ctx context.Context, options arvados.DeleteOptions
 	return conn.chooseBackend(options.UUID).GroupDelete(ctx, options)
 }
 
+func (conn *Conn) GroupTrash(ctx context.Context, options arvados.DeleteOptions) (arvados.Group, error) {
+	return conn.chooseBackend(options.UUID).GroupTrash(ctx, options)
+}
+
 func (conn *Conn) GroupUntrash(ctx context.Context, options arvados.UntrashOptions) (arvados.Group, error) {
 	return conn.chooseBackend(options.UUID).GroupUntrash(ctx, options)
 }

@@ -176,7 +176,7 @@ module ApplicationHelper
         raw(link_name)
       else
         controller_class = resource_class.to_s.tableize
-        if controller_class.eql?('groups') and object.andand.group_class.eql?('project')
+        if controller_class.eql?('groups') and (object.andand.group_class.eql?('project') or object.andand.group_class.eql?('filter'))
           controller_class = 'projects'
         end
         (link_to raw(link_name), { controller: controller_class, action: 'show', id: ((opts[:name_link].andand.uuid) || link_uuid) }, style_opts) + raw(tags)
