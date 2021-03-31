@@ -64,11 +64,12 @@ export const authMiddleware = (services: ServiceRepository): Middleware => store
             if (deleteLinkData) {
                 services.linkAccountService.removeAccountToLink();
             }
+            const token = services.authService.getApiToken();
             services.authService.removeApiToken();
             services.authService.removeSessions();
             services.authService.removeUser();
             removeAuthorizationHeader(services);
-            services.authService.logout();
+            services.authService.logout(token || '');
         },
         default: () => next(action)
     });

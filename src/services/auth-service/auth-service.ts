@@ -103,9 +103,9 @@ export class AuthService {
         window.location.assign(`https://${homeClusterHost}/login?${(uuidPrefix !== homeCluster && homeCluster !== loginCluster) ? "remote=" + uuidPrefix + "&" : ""}return_to=${currentUrl}`);
     }
 
-    public logout() {
+    public logout(expireToken: string) {
         const currentUrl = `${window.location.protocol}//${window.location.host}`;
-        window.location.assign(`${this.baseUrl || ""}/logout?return_to=${currentUrl}`);
+        window.location.assign(`${this.baseUrl || ""}/logout?api_token=${expireToken}&return_to=${currentUrl}`);
     }
 
     public getUserDetails = (showErrors?: boolean): Promise<User> => {
