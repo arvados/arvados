@@ -2,34 +2,9 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { customDecodeURI, customEncodeURI, encodeHash } from './url';
+import { customDecodeURI, customEncodeURI } from './url';
 
 describe('url', () => {
-    describe('encodeHash', () => {
-        it('should ignore path without hash', () => {
-            // given
-            const path = 'path/without/hash';
-
-            // when
-            const result = encodeHash(path);
-
-            // then
-            expect(result).toEqual(path);
-        });
-
-        it('should replace all hashes within the path', () => {
-            // given
-            const path = 'path/with/hash # and one more #';
-            const expectedResult = 'path/with/hash %23 and one more %23';
-
-            // when
-            const result = encodeHash(path);
-
-            // then
-            expect(result).toEqual(expectedResult);
-        });
-    });
-
     describe('customDecodeURI', () => {
         it('should decode encoded URI', () => {
             // given

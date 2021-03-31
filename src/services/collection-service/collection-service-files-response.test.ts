@@ -11,10 +11,10 @@ describe('collection-service-files-response', () => {
         it('should correctly decode URLs & file names', () => {
             const testCases = [
                 // input URL, input display name, expected URL, expected name
-                ['table%201%202%203', 'table 1 2 3', 'table 1 2 3', 'table 1 2 3'],
-                ['table%25&amp;%3F%2A2', 'table%&amp;?*2', 'table%&?*2', 'table%&?*2'],
-                ["G%C3%BCnter%27s%20file.pdf", "Günter&#39;s file.pdf", "Günter's file.pdf", "Günter's file.pdf"],
-                ['G%25C3%25BCnter%27s%2520file.pdf', 'G%C3%BCnter&#39;s%20file.pdf', "G%C3%BCnter's%20file.pdf", "G%C3%BCnter's%20file.pdf"]
+                ['table%201%202%203', 'table 1 2 3', 'table%201%202%203', 'table 1 2 3'],
+                ['table%25&amp;%3F%2A2', 'table%&amp;?*2', 'table%25&%3F%2A2', 'table%&?*2'],
+                ["G%C3%BCnter%27s%20file.pdf", "Günter&#39;s file.pdf", "G%C3%BCnter%27s%20file.pdf", "Günter's file.pdf"],
+                ['G%25C3%25BCnter%27s%2520file.pdf', 'G%C3%BCnter&#39;s%20file.pdf', "G%25C3%25BCnter%27s%2520file.pdf", "G%C3%BCnter's%20file.pdf"]
             ];
 
             testCases.forEach(([inputURL, inputDisplayName, expectedURL, expectedName]) => {
@@ -79,7 +79,7 @@ describe('collection-service-files-response', () => {
                 const result = extractFilesData(xmlDoc);
 
                 // then
-                expect(result).toEqual([{ id: `${collUUID}/${expectedURL}`, name: expectedName, path: "", size: 3, type: "file", url: `/c=${collUUID}/${expectedURL}` }]);
+                expect(result).toEqual([{ id: `${collUUID}/${expectedName}`, name: expectedName, path: "", size: 3, type: "file", url: `/c=${collUUID}/${expectedURL}` }]);
             });
         });
     });

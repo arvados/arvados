@@ -33,7 +33,3 @@ export const customDecodeURI = (path: string) => {
 
     return path;
 };
-
-export const encodeHash = (path: string) => {
-    return path.replace(/#/g, '%23');
-};

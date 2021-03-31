@@ -240,40 +240,48 @@ describe('Collection panel tests', function () {
                 cy.loginAs(activeUser);
                 cy.doSearch(`${this.testCollection.uuid}`);
 
-                // Rename 'bar' to 'subdir/foo'
-                cy.get('[data-cy=collection-files-panel]')
-                    .contains('bar').rightclick();
-                cy.get('[data-cy=context-menu]')
-                    .contains('Rename')
-                    .click();
-                cy.get('[data-cy=form-dialog]')
-                    .should('contain', 'Rename')
-                    .within(() => {
-                        cy.get('input').type(`{selectall}{backspace}subdir/foo`);
-                    });
-                cy.get('[data-cy=form-submit-btn]').click();
-                cy.get('[data-cy=collection-files-panel]')
-                    .should('not.contain', 'bar')
-                    .and('contain', 'subdir');
-                // Look for the "arrow icon" and expand the "subdir" directory.
-                cy.get('[data-cy=virtual-file-tree] > div > i').click();
-                // Rename 'subdir/foo' to 'baz'
-                cy.get('[data-cy=collection-files-panel]')
-                    .contains('foo').rightclick();
-                cy.get('[data-cy=context-menu]')
-                    .contains('Rename')
-                    .click();
-                cy.get('[data-cy=form-dialog]')
-                    .should('contain', 'Rename')
-                    .within(() => {
-                        cy.get('input')
-                            .should('have.value', 'subdir/foo')
-                            .type(`{selectall}{backspace}baz`);
-                    });
-                cy.get('[data-cy=form-submit-btn]').click();
-                cy.get('[data-cy=collection-files-panel]')
-                    .should('contain', 'subdir') // empty dir kept
-                    .and('contain', 'baz');
+                ['subdir', 'G%C3%BCnter\'s%20file', 'table%&?*2'].forEach((subdir) => {
+                    cy.get('[data-cy=collection-files-panel]')
+                        .contains('bar').rightclick({force: true});
+                    cy.get('[data-cy=context-menu]')
+                        .contains('Rename')
+                        .click();
+                    cy.get('[data-cy=form-dialog]')
+                        .should('contain', 'Rename')
+                        .within(() => {
+                            cy.get('input').type(`{selectall}{backspace}${subdir}/foo`);
+                        });
+                    cy.get('[data-cy=form-submit-btn]').click();
+                    cy.get('[data-cy=collection-files-panel]')
+                        .should('not.contain', 'bar')
+                        .and('contain', subdir);
+                    // Look for the "arrow icon" and expand the "subdir" directory.
+                    cy.get('[data-cy=virtual-file-tree] > div > i').click();
+                    // Rename 'subdir/foo' to 'foo'
+                    cy.get('[data-cy=collection-files-panel]')
+                        .contains('foo').rightclick();
+                    cy.get('[data-cy=context-menu]')
+                        .contains('Rename')
+                        .click();
+                    cy.get('[data-cy=form-dialog]')
+                        .should('contain', 'Rename')
+                        .within(() => {
+                            cy.get('input')
+                                .should('have.value', `${subdir}/foo`)
+                                .type(`{selectall}{backspace}bar`);
+                        });
+                    cy.get('[data-cy=form-submit-btn]').click();
+                    cy.get('[data-cy=collection-files-panel]')
+                        .should('contain', subdir) // empty dir kept
+                        .and('contain', 'bar');
+
+                    cy.get('[data-cy=collection-files-panel]')
+                        .contains(subdir).rightclick();
+                    cy.get('[data-cy=context-menu]')
+                        .contains('Remove')
+                        .click();
+                    cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
+                });
             });
     });
 

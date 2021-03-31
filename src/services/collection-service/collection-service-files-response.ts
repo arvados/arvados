@@ -27,13 +27,15 @@ export const extractFilesData = (document: Document) => {
         .map(element => {
             const name = getTagValue(element, 'D:displayname', '', true); // skip decoding as value should be already decoded
             const size = parseInt(getTagValue(element, 'D:getcontentlength', '0', true), 10);
-            const url = getTagValue(element, 'D:href', '');
-            const nameSuffix = name;
+            const url = getTagValue(element, 'D:href', '', true);
             const collectionUuidMatch = collectionUrlPrefix.exec(url);
             const collectionUuid = collectionUuidMatch ? collectionUuidMatch.pop() : '';
-            const directory = url
+            const pathArray = url.split(`/`);
+            if (!pathArray.pop()) {
+                pathArray.pop();
+            }
+            const directory = pathArray.join('/')
                 .replace(collectionUrlPrefix, '')
-                .replace(nameSuffix, '')
                 .replace(/\/\//g, '/');
 
             const parentPath = directory.replace(/\/$/, '');
@@ -41,11 +43,11 @@ export const extractFilesData = (document: Document) => {
                 url,
                 id: [
                     collectionUuid ? collectionUuid : '',
-                    directory ? parentPath : '',
+                    directory ? unescape(parentPath) : '',
                     '/' + name
                 ].join(''),
                 name,
-                path: parentPath,
+                path: unescape(parentPath),
             };
 
             const result = getTagValue(element, 'D:resourcetype', '')
