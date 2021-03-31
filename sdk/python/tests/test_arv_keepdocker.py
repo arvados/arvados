@@ -4,6 +4,7 @@
 
 from __future__ import absolute_import
 import arvados
+import collections
 import hashlib
 import mock
 import os
@@ -149,3 +150,46 @@ class ArvKeepdockerTestCase(unittest.TestCase, tutil.VersionChecker):
                         side_effect=StopTest) as find_image_mock:
             self.run_arv_keepdocker(['[::1]/repo/img'], sys.stderr)
         find_image_mock.assert_called_with('[::1]/repo/img', 'latest')
+
+    @mock.patch('arvados.commands.keepdocker.find_image_hashes',
+                return_value=['abc123'])
+    @mock.patch('arvados.commands.keepdocker.find_one_image_hash',
+                return_value='abc123')
+    def test_collection_property_update(self, _1, _2):
+        image_id = 'sha256:'+hashlib.sha256(b'image').hexdigest()
+        fakeDD = arvados.api('v1')._rootDesc
+        fakeDD['dockerImageFormats'] = ['v2']
+
+        err = tutil.StringIO()
+        out = tutil.StringIO()
+        File = collections.namedtuple('File', ['name'])
+        mocked_file = File(name='docker_image')
+        mocked_collection = {
+            'uuid': 'new-collection-uuid',
+            'properties': {
+                'responsible_person_uuid': 'person_uuid',
+            }
+        }
+
+        with tutil.redirected_streams(stdout=out), \
+             mock.patch('arvados.api') as api, \
+             mock.patch('arvados.commands.keepdocker.popen_docker',
+                        return_value=subprocess.Popen(
+                            ['echo', image_id],
+                            stdout=subprocess.PIPE)), \
+             mock.patch('arvados.commands.keepdocker.prep_image_file',
+                        return_value=(mocked_file, False)), \
+             mock.patch('arvados.commands.put.main',
+                        return_value='new-collection-uuid'), \
+             self.assertRaises(StopTest):
+
+            api()._rootDesc = fakeDD
+            api().collections().get().execute.return_value = mocked_collection
+            api().collections().update().execute.side_effect = StopTest
+            self.run_arv_keepdocker(['--force', 'testimage'], err)
+
+        updated_properties = mocked_collection['properties']
+        updated_properties.update({'docker-image-repo-tag': 'testimage:latest'})
+        api().collections().update.assert_called_with(
+            uuid=mocked_collection['uuid'],
+            body={'properties': updated_properties})
