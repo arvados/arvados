@@ -505,7 +505,11 @@ def main(arguments=None, stdout=sys.stdout, install_sig_handlers=True, api=None)
             put_args + ['--filename', outfile_name, image_file.name], stdout=stdout,
             install_sig_handlers=install_sig_handlers).strip()
 
-        api.collections().update(uuid=coll_uuid, body={"properties": {"docker-image-repo-tag": image_repo_tag}}).execute(num_retries=args.retries)
+        # Managed properties could be already set
+        coll_properties = api.collections().get(uuid=coll_uuid).execute(num_retries=args.retries).get('properties', {})
+        coll_properties.update({"docker-image-repo-tag": image_repo_tag})
+
+        api.collections().update(uuid=coll_uuid, body={"properties": coll_properties}).execute(num_retries=args.retries)
 
         # Read the image metadata and make Arvados links from it.
         image_file.seek(0)
