@@ -18,7 +18,7 @@ type command struct{}
 type NoPrefixFormatter struct{}
 
 func (f *NoPrefixFormatter) Format(entry *logrus.Entry) ([]byte, error) {
-	return []byte(entry.Message), nil
+	return []byte(entry.Message + "\n"), nil
 }
 
 // RunCommand implements the subcommand "deduplication-report <collection> <collection> ..."

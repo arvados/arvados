@@ -29,7 +29,7 @@ func deDuplicate(inputs []string) (trimmed []string) {
 	return
 }
 
-func parseFlags(prog string, args []string, logger *logrus.Logger, stderr io.Writer) (exitcode int, inputs []string) {
+func parseFlags(prog string, args []string, logger *logrus.Logger, stderr io.Writer) ([]string, error) {
 	flags := flag.NewFlagSet("", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	flags.Usage = func() {
@@ -69,27 +69,26 @@ Options:
 	loglevel := flags.String("log-level", "info", "logging level (debug, info, ...)")
 	err := flags.Parse(args)
 	if err == flag.ErrHelp {
-		return 1, inputs
+		return nil, err
 	} else if err != nil {
-		return 2, inputs
+		return nil, err
 	}
 
-	inputs = flags.Args()
+	inputs := flags.Args()
 
 	inputs = deDuplicate(inputs)
 
 	if len(inputs) < 1 {
-		logger.Errorf("Error: no collections provided")
-		flags.Usage()
-		return 2, inputs
+		err = fmt.Errorf("Error: no collections provided")
+		return inputs, err
 	}
 
 	lvl, err := logrus.ParseLevel(*loglevel)
 	if err != nil {
-		return 2, inputs
+		return inputs, err
 	}
 	logger.SetLevel(lvl)
-	return
+	return inputs, err
 }
 
 func blockList(collection arvados.Collection) (blocks map[string]int) {
@@ -103,15 +102,16 @@ func blockList(collection arvados.Collection) (blocks map[string]int) {
 }
 
 func report(prog string, args []string, logger *logrus.Logger, stdout, stderr io.Writer) (exitcode int) {
-
 	var inputs []string
-	exitcode, inputs = parseFlags(prog, args, logger, stderr)
-	if exitcode != 0 {
-		if exitcode == 1 {
-			// Asking for the cli help should not result in a non-zero exit code
-			exitcode = 0
+	var err error
+
+	inputs, err = parseFlags(prog, args, logger, stderr)
+	if err != nil {
+		if err != flag.ErrHelp {
+			logger.Error(err.Error())
+			return 2
 		}
-		return
+		return 0
 	}
 
 	// Arvados Client setup
