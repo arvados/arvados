@@ -68,7 +68,7 @@ const ProjectDetailsComponent = connect(null, mapDispatchToProps)(
                 uuidEnhancer={(uuid: string) => <ResourceOwnerWithName uuid={uuid} />} />
             <DetailsAttribute label='Last modified' value={formatDate(project.modifiedAt)} />
             <DetailsAttribute label='Created at' value={formatDate(project.createdAt)} />
-            <DetailsAttribute label='Project UUID' linkToUuid={project.uuid} value={project.uuid} />
+            <DetailsAttribute label='UUID' linkToUuid={project.uuid} value={project.uuid} />
             <DetailsAttribute label='Description'>
                 {project.description ?
                     <RichTextEditorLink
