@@ -683,7 +683,7 @@ and the directory will appear if it exists.
 
             if group_uuid_pattern.match(k):
                 project = self.api.groups().list(
-                    filters=[['group_class', '=', 'project'], ["uuid", "=", k]]).execute(num_retries=self.num_retries)
+                    filters=[['group_class', 'in', ['project','filter']], ["uuid", "=", k]]).execute(num_retries=self.num_retries)
                 if project[u'items_available'] == 0:
                     return False
                 e = self.inodes.add_entry(ProjectDirectory(
@@ -811,7 +811,7 @@ class ProjectDirectory(Directory):
     """A special directory that contains the contents of a project."""
 
     def __init__(self, parent_inode, inodes, api, num_retries, project_object,
-                 poll=False, poll_time=60):
+                 poll=True, poll_time=3):
         super(ProjectDirectory, self).__init__(parent_inode, inodes, api.config)
         self.api = api
         self.num_retries = num_retries
@@ -899,7 +899,7 @@ class ProjectDirectory(Directory):
                                                  self.num_retries,
                                                  uuid=self.project_uuid,
                                                  filters=[["uuid", "is_a", "arvados#group"],
-                                                          ["group_class", "=", "project"]])
+                                                          ["groups.group_class", "in", ["project","filter"]]])
                 contents.extend(arvados.util.list_all(self.api.groups().contents,
                                                       self.num_retries,
                                                       uuid=self.project_uuid,
@@ -934,7 +934,7 @@ class ProjectDirectory(Directory):
             else:
                 namefilter = ["name", "in", [k, k2]]
             contents = self.api.groups().list(filters=[["owner_uuid", "=", self.project_uuid],
-                                                       ["group_class", "=", "project"],
+                                                       ["group_class", "in", ["project","filter"]],
                                                        namefilter],
                                               limit=2).execute(num_retries=self.num_retries)["items"]
             if not contents:
@@ -1103,7 +1103,7 @@ class SharedDirectory(Directory):
                 if 'httpMethod' in methods.get('shared', {}):
                     page = []
                     while True:
-                        resp = self.api.groups().shared(filters=[['group_class', '=', 'project']]+page,
+                        resp = self.api.groups().shared(filters=[['group_class', 'in', ['project','filter']]]+page,
                                                         order="uuid",
                                                         limit=10000,
                                                         count="none",
@@ -1120,7 +1120,7 @@ class SharedDirectory(Directory):
                 else:
                     all_projects = arvados.util.list_all(
                         self.api.groups().list, self.num_retries,
-                        filters=[['group_class','=','project']],
+                        filters=[['group_class','in',['project','filter']]],
                         select=["uuid", "owner_uuid"])
                     for ob in all_projects:
                         objects[ob['uuid']] = ob

@@ -177,6 +177,26 @@ class GroupsTest < ActionDispatch::IntegrationTest
     end
     assert_equal true, found_projects.include?(groups(:starred_and_shared_active_user_project).uuid)
   end
+
+  test 'count none works with offset' do
+    first_results = nil
+    (0..10).each do |offset|
+      get "/arvados/v1/groups/contents", params: {
+        id: groups(:aproject).uuid,
+        offset: offset,
+        format: :json,
+        order: :uuid,
+        count: :none,
+      }, headers: auth(:active)
+      assert_response :success
+      assert_nil json_response['items_available']
+      if first_results.nil?
+        first_results = json_response['items']
+      else
+        assert_equal first_results[offset]['uuid'], json_response['items'][0]['uuid']
+      end
+    end
+  end
 end
 
 class NonTransactionalGroupsTest < ActionDispatch::IntegrationTest

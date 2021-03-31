@@ -465,6 +465,13 @@ func (conn *Conn) GroupDelete(ctx context.Context, options arvados.DeleteOptions
 	return resp, err
 }
 
+func (conn *Conn) GroupTrash(ctx context.Context, options arvados.DeleteOptions) (arvados.Group, error) {
+	ep := arvados.EndpointGroupTrash
+	var resp arvados.Group
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
 func (conn *Conn) GroupUntrash(ctx context.Context, options arvados.UntrashOptions) (arvados.Group, error) {
 	ep := arvados.EndpointGroupUntrash
 	var resp arvados.Group
