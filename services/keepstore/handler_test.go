@@ -22,6 +22,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 
@@ -71,10 +72,11 @@ func (s *HandlerSuite) SetUpTest(c *check.C) {
 // A RequestTester represents the parameters for an HTTP request to
 // be issued on behalf of a unit test.
 type RequestTester struct {
-	uri         string
-	apiToken    string
-	method      string
-	requestBody []byte
+	uri            string
+	apiToken       string
+	method         string
+	requestBody    []byte
+	storageClasses string
 }
 
 // Test GetBlockHandler on the following situations:
@@ -754,25 +756,25 @@ func (s *HandlerSuite) TestPullHandler(c *check.C) {
 	var testcases = []pullTest{
 		{
 			"Valid pull list from an ordinary user",
-			RequestTester{"/pull", userToken, "PUT", goodJSON},
+			RequestTester{"/pull", userToken, "PUT", goodJSON, ""},
 			http.StatusUnauthorized,
 			"Unauthorized\n",
 		},
 		{
 			"Invalid pull request from an ordinary user",
-			RequestTester{"/pull", userToken, "PUT", badJSON},
+			RequestTester{"/pull", userToken, "PUT", badJSON, ""},
 			http.StatusUnauthorized,
 			"Unauthorized\n",
 		},
 		{
 			"Valid pull request from the data manager",
-			RequestTester{"/pull", s.cluster.SystemRootToken, "PUT", goodJSON},
+			RequestTester{"/pull", s.cluster.SystemRootToken, "PUT", goodJSON, ""},
 			http.StatusOK,
 			"Received 3 pull requests\n",
 		},
 		{
 			"Invalid pull request from the data manager",
-			RequestTester{"/pull", s.cluster.SystemRootToken, "PUT", badJSON},
+			RequestTester{"/pull", s.cluster.SystemRootToken, "PUT", badJSON, ""},
 			http.StatusBadRequest,
 			"",
 		},
@@ -866,25 +868,25 @@ func (s *HandlerSuite) TestTrashHandler(c *check.C) {
 	var testcases = []trashTest{
 		{
 			"Valid trash list from an ordinary user",
-			RequestTester{"/trash", userToken, "PUT", goodJSON},
+			RequestTester{"/trash", userToken, "PUT", goodJSON, ""},
 			http.StatusUnauthorized,
 			"Unauthorized\n",
 		},
 		{
 			"Invalid trash list from an ordinary user",
-			RequestTester{"/trash", userToken, "PUT", badJSON},
+			RequestTester{"/trash", userToken, "PUT", badJSON, ""},
 			http.StatusUnauthorized,
 			"Unauthorized\n",
 		},
 		{
 			"Valid trash list from the data manager",
-			RequestTester{"/trash", s.cluster.SystemRootToken, "PUT", goodJSON},
+			RequestTester{"/trash", s.cluster.SystemRootToken, "PUT", goodJSON, ""},
 			http.StatusOK,
 			"Received 3 trash requests\n",
 		},
 		{
 			"Invalid trash list from the data manager",
-			RequestTester{"/trash", s.cluster.SystemRootToken, "PUT", badJSON},
+			RequestTester{"/trash", s.cluster.SystemRootToken, "PUT", badJSON, ""},
 			http.StatusBadRequest,
 			"",
 		},
@@ -920,6 +922,9 @@ func IssueRequest(handler http.Handler, rt *RequestTester) *httptest.ResponseRec
 	req, _ := http.NewRequest(rt.method, rt.uri, body)
 	if rt.apiToken != "" {
 		req.Header.Set("Authorization", "OAuth2 "+rt.apiToken)
+	}
+	if rt.storageClasses != "" {
+		req.Header.Set("X-Keep-Storage-Classes", rt.storageClasses)
 	}
 	handler.ServeHTTP(response, req)
 	return response
@@ -1111,6 +1116,46 @@ func (s *HandlerSuite) TestGetHandlerNoBufferLeak(c *check.C) {
 		c.Fatal("test did not finish, assuming pool leaked")
 	case <-ok:
 	}
+}
+
+func (s *HandlerSuite) TestPutStorageClasses(c *check.C) {
+	s.cluster.Volumes = map[string]arvados.Volume{
+		"zzzzz-nyw5e-000000000000000": {Replication: 1, Driver: "mock"}, // "default" is implicit
+		"zzzzz-nyw5e-111111111111111": {Replication: 1, Driver: "mock", StorageClasses: map[string]bool{"special": true, "extra": true}},
+		"zzzzz-nyw5e-222222222222222": {Replication: 1, Driver: "mock", StorageClasses: map[string]bool{"readonly": true}, ReadOnly: true},
+	}
+	c.Assert(s.handler.setup(context.Background(), s.cluster, "", prometheus.NewRegistry(), testServiceURL), check.IsNil)
+	rt := RequestTester{
+		method:      "PUT",
+		uri:         "/" + TestHash,
+		requestBody: TestBlock,
+	}
+	for _, trial := range []struct {
+		ask    string
+		expect string
+	}{
+		{"", ""},
+		{"default", "default=1"},
+		{"special", "extra=1, special=1"},
+		{"extra, special", "extra=1, special=1"},
+		{"default, special", "default=1, extra=1, special=1"},
+	} {
+		c.Logf("%#v", trial)
+		rt.storageClasses = trial.ask
+		resp := IssueRequest(s.handler, &rt)
+		if trial.expect == "" {
+			// any non-empty value is correct
+			c.Check(resp.Header().Get("X-Keep-Storage-Classes-Confirmed"), check.Not(check.Equals), "")
+		} else {
+			c.Check(sortCommaSeparated(resp.Header().Get("X-Keep-Storage-Classes-Confirmed")), check.Equals, trial.expect)
+		}
+	}
+}
+
+func sortCommaSeparated(s string) string {
+	slice := strings.Split(s, ", ")
+	sort.Strings(slice)
+	return strings.Join(slice, ", ")
 }
 
 func (s *HandlerSuite) TestPutResponseHeader(c *check.C) {
