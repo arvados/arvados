@@ -81,6 +81,7 @@ describe('Side panel tests', function() {
         cy.createGroup(adminUser.token, {
             name: `my-favorite-filter-group`,
             group_class: 'filter',
+            properties: {filters: []},
         }).as('myFavoriteFilterGroup').then(function (myFavoriteFilterGroup) {
             cy.contains('Refresh').click();
             cy.doSearch(`${myFavoriteFilterGroup.uuid}`);
