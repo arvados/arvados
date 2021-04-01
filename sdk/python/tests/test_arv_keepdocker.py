@@ -5,6 +5,7 @@
 from __future__ import absolute_import
 import arvados
 import collections
+import copy
 import hashlib
 import mock
 import os
@@ -184,7 +185,7 @@ class ArvKeepdockerTestCase(unittest.TestCase, tutil.VersionChecker):
              self.assertRaises(StopTest):
 
             api()._rootDesc = fakeDD
-            api().collections().get().execute.return_value = mocked_collection
+            api().collections().get().execute.return_value = copy.deepcopy(mocked_collection)
             api().collections().update().execute.side_effect = StopTest
             self.run_arv_keepdocker(['--force', 'testimage'], err)
 
