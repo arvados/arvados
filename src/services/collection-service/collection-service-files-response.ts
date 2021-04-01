@@ -43,11 +43,11 @@ export const extractFilesData = (document: Document) => {
                 url,
                 id: [
                     collectionUuid ? collectionUuid : '',
-                    directory ? unescape(parentPath) : '',
+                    directory ? decodeURIComponent(parentPath) : '',
                     '/' + name
                 ].join(''),
                 name,
-                path: unescape(parentPath),
+                path: decodeURIComponent(parentPath),
             };
 
             const result = getTagValue(element, 'D:resourcetype', '')
