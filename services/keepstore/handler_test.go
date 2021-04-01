@@ -1130,17 +1130,21 @@ func (s *HandlerSuite) TestPutStorageClasses(c *check.C) {
 		uri:         "/" + TestHash,
 		requestBody: TestBlock,
 	}
+
 	for _, trial := range []struct {
 		ask    string
 		expect string
 	}{
 		{"", ""},
 		{"default", "default=1"},
+		{" , default , default , ", "default=1"},
 		{"special", "extra=1, special=1"},
+		{"special, readonly", "extra=1, special=1"},
+		{"special, nonexistent", "extra=1, special=1"},
 		{"extra, special", "extra=1, special=1"},
 		{"default, special", "default=1, extra=1, special=1"},
 	} {
-		c.Logf("%#v", trial)
+		c.Logf("success case %#v", trial)
 		rt.storageClasses = trial.ask
 		resp := IssueRequest(s.handler, &rt)
 		if trial.expect == "" {
@@ -1149,6 +1153,19 @@ func (s *HandlerSuite) TestPutStorageClasses(c *check.C) {
 		} else {
 			c.Check(sortCommaSeparated(resp.Header().Get("X-Keep-Storage-Classes-Confirmed")), check.Equals, trial.expect)
 		}
+	}
+
+	for _, trial := range []struct {
+		ask string
+	}{
+		{"doesnotexist"},
+		{"doesnotexist, readonly"},
+		{"readonly"},
+	} {
+		c.Logf("failure case %#v", trial)
+		rt.storageClasses = trial.ask
+		resp := IssueRequest(s.handler, &rt)
+		c.Check(resp.Code, check.Equals, http.StatusServiceUnavailable)
 	}
 }
 
