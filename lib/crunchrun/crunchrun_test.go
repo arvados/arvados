@@ -204,6 +204,9 @@ func (t *TestContainerExecRunnerClient) ImageLoad(ctx context.Context, input io.
 	if t.exitCode == 2 {
 		return ImageLoadResponse{}, fmt.Errorf("Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?")
 	}
+	if input == nil {
+		return ImageLoadResponse{}, fmt.Errorf("input for ImageLoad is nil!")
+	}
 	_, err := io.Copy(ioutil.Discard, input)
 	if err != nil {
 		return ImageLoadResponse{}, err
