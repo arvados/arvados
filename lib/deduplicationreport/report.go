@@ -106,12 +106,11 @@ func report(prog string, args []string, logger *logrus.Logger, stdout, stderr io
 	var err error
 
 	inputs, err = parseFlags(prog, args, logger, stderr)
-	if err != nil {
-		if err != flag.ErrHelp {
-			logger.Error(err.Error())
-			return 2
-		}
+	if err == flag.ErrHelp {
 		return 0
+	} else if err != nil {
+		logger.Error(err.Error())
+		return 2
 	}
 
 	// Arvados Client setup
