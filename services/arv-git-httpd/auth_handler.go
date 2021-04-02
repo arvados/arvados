@@ -48,7 +48,7 @@ func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	var statusText string
 	var apiToken string
 	var repoName string
-	var validApiToken bool
+	var validAPIToken bool
 
 	w := httpserver.WrapResponseWriter(wOrig)
 
@@ -88,7 +88,7 @@ func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		// If the given password is a valid token, log the first 10 characters of the token.
 		// Otherwise: log the string <invalid> if a password is given, else an empty string.
 		passwordToLog := ""
-		if !validApiToken {
+		if !validAPIToken {
 			if len(apiToken) > 0 {
 				passwordToLog = "<invalid>"
 			}
@@ -133,7 +133,7 @@ func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		statusCode, statusText = http.StatusInternalServerError, err.Error()
 		return
 	}
-	validApiToken = true
+	validAPIToken = true
 	if repoUUID == "" {
 		statusCode, statusText = http.StatusNotFound, "not found"
 		return
