@@ -58,7 +58,7 @@ func (conn *Conn) expireAPIClientAuthorization(ctx context.Context) error {
 		return nil
 	}
 
-	res, err := tx.ExecContext(ctx, "UPDATE api_client_authorizations SET expires_at=current_timestamp AT TIME ZONE 'UTC' WHERE (expires_at IS NULL OR expires_at > current_timestamp AT TIME ZONE 'UTC' AND api_token=$1)", tokenSecret)
+	res, err := tx.ExecContext(ctx, "UPDATE api_client_authorizations SET expires_at=current_timestamp AT TIME ZONE 'UTC' WHERE api_token=$1 AND (expires_at IS NULL OR expires_at > current_timestamp AT TIME ZONE 'UTC')", tokenSecret)
 	if err != nil {
 		return err
 	}

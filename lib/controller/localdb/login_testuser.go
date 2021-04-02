@@ -7,12 +7,15 @@ package localdb
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"html/template"
+	"net/http"
 
 	"git.arvados.org/arvados.git/lib/controller/rpc"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/sdk/go/httpserver"
 	"github.com/sirupsen/logrus"
 )
 
@@ -24,7 +27,8 @@ type testLoginController struct {
 func (ctrl *testLoginController) Logout(ctx context.Context, opts arvados.LogoutOptions) (arvados.LogoutResponse, error) {
 	err := ctrl.Parent.expireAPIClientAuthorization(ctx)
 	if err != nil {
-		return arvados.LogoutResponse{}, err
+		ctxlog.FromContext(ctx).Errorf("attempting to expire token on logout: %q", err)
+		return arvados.LogoutResponse{}, httpserver.ErrorWithStatus(errors.New("could not expire token on logout"), http.StatusInternalServerError)
 	}
 	return noopLogout(ctrl.Cluster, opts)
 }
