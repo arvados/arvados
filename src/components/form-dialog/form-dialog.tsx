@@ -42,6 +42,7 @@ interface DialogProjectDataProps {
     dialogTitle: string;
     formFields: React.ComponentType<InjectedFormProps<any> & WithDialogProps<any>>;
     submitLabel?: string;
+    enableWhenPristine?: boolean;
 }
 
 type DialogProjectProps = DialogProjectDataProps & WithDialogProps<{}> & InjectedFormProps<any> & WithStyles<CssRules>;
@@ -76,7 +77,7 @@ export const FormDialog = withStyles(styles)((props: DialogProjectProps) =>
                     onClick={props.handleSubmit}
                     className={props.classes.lastButton}
                     color="primary"
-                    disabled={props.invalid || props.submitting || props.pristine}
+                    disabled={props.invalid || props.submitting || (props.pristine && !props.enableWhenPristine)}
                     variant="contained">
                     {props.submitLabel || 'Submit'}
                     {props.submitting && <CircularProgress size={20} className={props.classes.progressIndicator} />}
@@ -85,5 +86,3 @@ export const FormDialog = withStyles(styles)((props: DialogProjectProps) =>
         </form>
     </Dialog>
 );
-
-
