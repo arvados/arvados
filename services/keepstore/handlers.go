@@ -733,7 +733,7 @@ func GetBlock(ctx context.Context, volmgr *RRVolumeManager, hash string, buf []b
 	return 0, errorToCaller
 }
 
-type putResult struct {
+type putProgress struct {
 	classTodo        map[string]bool
 	mountUsed        map[*VolumeMount]bool
 	totalReplication int
@@ -743,13 +743,13 @@ type putResult struct {
 // Number of distinct replicas stored. "2" can mean the block was
 // stored on 2 different volumes with replication 1, or on 1 volume
 // with replication 2.
-func (pr putResult) TotalReplication() string {
+func (pr putProgress) TotalReplication() string {
 	return strconv.Itoa(pr.totalReplication)
 }
 
 // Number of replicas satisfying each storage class, formatted like
 // "default=2; special=1".
-func (pr putResult) ClassReplication() string {
+func (pr putProgress) ClassReplication() string {
 	s := ""
 	for k, v := range pr.classDone {
 		if len(s) > 0 {
@@ -760,7 +760,7 @@ func (pr putResult) ClassReplication() string {
 	return s
 }
 
-func (pr *putResult) Add(mnt *VolumeMount) {
+func (pr *putProgress) Add(mnt *VolumeMount) {
 	if pr.mountUsed[mnt] {
 		logrus.Warnf("BUG? superfluous extra write to mount %s", mnt)
 		return
@@ -773,11 +773,11 @@ func (pr *putResult) Add(mnt *VolumeMount) {
 	}
 }
 
-func (pr *putResult) Done() bool {
+func (pr *putProgress) Done() bool {
 	return len(pr.classTodo) == 0 && pr.totalReplication > 0
 }
 
-func (pr *putResult) Want(mnt *VolumeMount) bool {
+func (pr *putProgress) Want(mnt *VolumeMount) bool {
 	if pr.Done() || pr.mountUsed[mnt] {
 		return false
 	}
@@ -793,8 +793,8 @@ func (pr *putResult) Want(mnt *VolumeMount) bool {
 	return false
 }
 
-func newPutResult(classes []string) putResult {
-	pr := putResult{
+func newPutResult(classes []string) putProgress {
+	pr := putProgress{
 		classTodo: make(map[string]bool, len(classes)),
 		classDone: map[string]int{},
 		mountUsed: map[*VolumeMount]bool{},
@@ -834,14 +834,14 @@ func newPutResult(classes []string) putResult {
 //          all writes failed). The text of the error message should
 //          provide as much detail as possible.
 //
-func PutBlock(ctx context.Context, volmgr *RRVolumeManager, block []byte, hash string, wantStorageClasses []string) (putResult, error) {
+func PutBlock(ctx context.Context, volmgr *RRVolumeManager, block []byte, hash string, wantStorageClasses []string) (putProgress, error) {
 	log := ctxlog.FromContext(ctx)
 
 	// Check that BLOCK's checksum matches HASH.
 	blockhash := fmt.Sprintf("%x", md5.Sum(block))
 	if blockhash != hash {
 		log.Printf("%s: MD5 checksum %s did not match request", hash, blockhash)
-		return putResult{}, RequestHashError
+		return putProgress{}, RequestHashError
 	}
 
 	result := newPutResult(wantStorageClasses)
@@ -869,13 +869,13 @@ func PutBlock(ctx context.Context, volmgr *RRVolumeManager, block []byte, hash s
 		}
 	}
 	if ctx.Err() != nil {
-		return putResult{}, ErrClientDisconnect
+		return putProgress{}, ErrClientDisconnect
 	}
 
 	writables := volmgr.AllWritable()
 	if len(writables) == 0 {
 		log.Error("no writable volumes")
-		return putResult{}, FullError
+		return putProgress{}, FullError
 	}
 
 	allFull := true
@@ -911,10 +911,10 @@ func PutBlock(ctx context.Context, volmgr *RRVolumeManager, block []byte, hash s
 		return result, nil
 	} else if allFull {
 		log.Error("all volumes with qualifying storage classes are full")
-		return putResult{}, FullError
+		return putProgress{}, FullError
 	} else {
 		// Already logged the non-full errors.
-		return putResult{}, GenericError
+		return putProgress{}, GenericError
 	}
 }
 
@@ -923,7 +923,7 @@ func PutBlock(ctx context.Context, volmgr *RRVolumeManager, block []byte, hash s
 // protected from garbage collection), and updates result accordingly.
 // It returns when the result is Done() or all volumes have been
 // checked.
-func CompareAndTouch(ctx context.Context, volmgr *RRVolumeManager, hash string, buf []byte, result *putResult) error {
+func CompareAndTouch(ctx context.Context, volmgr *RRVolumeManager, hash string, buf []byte, result *putProgress) error {
 	log := ctxlog.FromContext(ctx)
 	for _, mnt := range volmgr.AllWritable() {
 		if !result.Want(mnt) {
