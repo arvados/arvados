@@ -11,6 +11,7 @@ import { RootState } from "~/store/store";
 
 interface ProjectNameFieldProps {
     validate: Validator[];
+    label?: string;
 }
 
 // Validation behavior depends on the value of ForwardSlashNameSubstitution.
@@ -32,7 +33,7 @@ export const ProjectNameField = connect(
             name='name'
             component={TextField}
             validate={props.validate}
-            label="Project Name"
+            label={props.label || "Project Name"}
             autoFocus={true} /></span>
     );
 

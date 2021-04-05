@@ -14,6 +14,7 @@ import { AccountMenu } from "~/views-components/main-app-bar/account-menu";
 import { HelpMenu } from '~/views-components/main-app-bar/help-menu';
 import { ReactNode } from "react";
 import { AdminMenu } from "~/views-components/main-app-bar/admin-menu";
+import { pluginConfig } from '~/plugins';
 
 type CssRules = 'toolbar' | 'link';
 
@@ -42,20 +43,20 @@ export const MainAppBar = withStyles(styles)(
         return <AppBar position="absolute">
             <Toolbar className={props.classes.toolbar}>
                 <Grid container justify="space-between">
-                    <Grid container item xs={3} direction="column" justify="center">
+                    {pluginConfig.appBarLeft || <Grid container item xs={3} direction="column" justify="center">
                         <Typography variant='h6' color="inherit" noWrap>
                             <Link to={Routes.ROOT} className={props.classes.link}>
                                 <span dangerouslySetInnerHTML={{ __html: props.siteBanner }} /> ({props.uuidPrefix})
-                            </Link>
+                </Link>
                         </Typography>
                         <Typography variant="caption" color="inherit">{props.buildInfo}</Typography>
-                    </Grid>
+                    </Grid>}
                     <Grid
                         item
                         xs={6}
                         container
                         alignItems="center">
-                        {props.user && props.user.isActive && <SearchBar />}
+                        {pluginConfig.appBarMiddle || (props.user && props.user.isActive && <SearchBar />)}
                     </Grid>
                     <Grid
                         item
@@ -64,14 +65,17 @@ export const MainAppBar = withStyles(styles)(
                         alignItems="center"
                         justify="flex-end"
                         wrap="nowrap">
-                        {props.user
-                            ? <>
-                                <NotificationsMenu />
-                                <AccountMenu />
-                                {props.user.isAdmin && <AdminMenu />}
-                                <HelpMenu />
-                            </>
-                            : <HelpMenu />}
+                        {props.user ? <>
+                            <NotificationsMenu />
+                            <AccountMenu />
+                            {pluginConfig.appBarRight ||
+                                <>
+                                    {props.user.isAdmin && <AdminMenu />}
+                                    <HelpMenu />
+                                </>}
+                        </> :
+                            pluginConfig.appBarRight || <HelpMenu />
+                        }
                     </Grid>
                 </Grid>
             </Toolbar>

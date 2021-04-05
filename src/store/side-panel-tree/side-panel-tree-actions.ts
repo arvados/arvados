@@ -16,6 +16,8 @@ import { OrderBuilder } from '~/services/api/order-builder';
 import { ResourceKind } from '~/models/resource';
 import { GroupContentsResourcePrefix } from '~/services/groups-service/groups-service';
 import { GroupClass } from '~/models/group';
+import { CategoriesListReducer } from '~/common/plugintypes';
+import { pluginConfig } from '~/plugins';
 
 export enum SidePanelTreeCategory {
     PROJECTS = 'Projects',
@@ -44,34 +46,48 @@ export const getSidePanelTreeBranch = (uuid: string) => (treePicker: TreePicker)
     return [];
 };
 
-const SIDE_PANEL_CATEGORIES = [
+let SIDE_PANEL_CATEGORIES: string[] = [
+    SidePanelTreeCategory.PROJECTS,
+    SidePanelTreeCategory.SHARED_WITH_ME,
     SidePanelTreeCategory.PUBLIC_FAVORITES,
     SidePanelTreeCategory.FAVORITES,
     SidePanelTreeCategory.WORKFLOWS,
     SidePanelTreeCategory.ALL_PROCESSES,
-    SidePanelTreeCategory.TRASH,
+    SidePanelTreeCategory.TRASH
 ];
 
+const reduceCatsFn: (a: string[],
+    b: CategoriesListReducer) => string[] = (a, b) => b(a);
+
+SIDE_PANEL_CATEGORIES = pluginConfig.sidePanelCategories.reduce(reduceCatsFn, SIDE_PANEL_CATEGORIES);
+
 export const isSidePanelTreeCategory = (id: string) => SIDE_PANEL_CATEGORIES.some(category => category === id);
+
 
 export const initSidePanelTree = () =>
     (dispatch: Dispatch, getState: () => RootState, { authService }: ServiceRepository) => {
         const rootProjectUuid = getUserUuid(getState());
         if (!rootProjectUuid) { return; }
-        const nodes = SIDE_PANEL_CATEGORIES.map(id => initTreeNode({ id, value: id }));
-        const projectsNode = initTreeNode({ id: rootProjectUuid, value: SidePanelTreeCategory.PROJECTS });
-        const sharedNode = initTreeNode({ id: SidePanelTreeCategory.SHARED_WITH_ME, value: SidePanelTreeCategory.SHARED_WITH_ME });
+        const nodes = SIDE_PANEL_CATEGORIES.map(id => {
+            if (id === SidePanelTreeCategory.PROJECTS) {
+                return initTreeNode({ id: rootProjectUuid, value: SidePanelTreeCategory.PROJECTS });
+            } else {
+                return initTreeNode({ id, value: id });
+            }
+        });
         dispatch(treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({
             id: '',
             pickerId: SIDE_PANEL_TREE,
-            nodes: [projectsNode, sharedNode, ...nodes]
+            nodes
         }));
         SIDE_PANEL_CATEGORIES.forEach(category => {
-            dispatch(treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({
-                id: category,
-                pickerId: SIDE_PANEL_TREE,
-                nodes: []
-            }));
+            if (category !== SidePanelTreeCategory.PROJECTS && category !== SidePanelTreeCategory.SHARED_WITH_ME) {
+                dispatch(treePickerActions.LOAD_TREE_PICKER_NODE_SUCCESS({
+                    id: category,
+                    pickerId: SIDE_PANEL_TREE,
+                    nodes: []
+                }));
+            }
         });
     };
 

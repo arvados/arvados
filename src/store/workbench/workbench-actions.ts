@@ -33,7 +33,7 @@ import {
     setSidePanelBreadcrumbs,
     setTrashBreadcrumbs
 } from '~/store/breadcrumbs/breadcrumbs-actions';
-import { navigateTo } from '~/store/navigation/navigation-action';
+import { navigateTo, navigateToRootProject } from '~/store/navigation/navigation-action';
 import { MoveToFormDialogData } from '~/store/move-to-dialog/move-to-dialog';
 import { ServiceRepository } from '~/services/services';
 import { getResource } from '~/store/resources/resources';
@@ -110,7 +110,7 @@ export const isWorkbenchLoading = (state: RootState) => {
     return progress ? progress.working : false;
 };
 
-const handleFirstTimeLoad = (action: any) =>
+export const handleFirstTimeLoad = (action: any) =>
     async (dispatch: Dispatch<any>, getState: () => RootState) => {
         try {
             await dispatch(action);
@@ -153,7 +153,7 @@ export const loadWorkbench = () =>
             if (router.location) {
                 const match = matchRootRoute(router.location.pathname);
                 if (match) {
-                    dispatch<any>(navigateTo(user.uuid));
+                    dispatch<any>(navigateToRootProject);
                 }
             }
         } else {

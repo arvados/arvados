@@ -10,6 +10,7 @@ import { navigateToRootProject } from '~/store/navigation/navigation-action';
 import { dialogActions } from '~/store/dialog/dialog-actions';
 import { contextMenuActions } from '~/store/context-menu/context-menu-actions';
 import { searchBarActions } from '~/store/search-bar/search-bar-actions';
+import { pluginConfig } from '~/plugins';
 
 export const addRouteChangeHandlers = (history: History, store: RootStore) => {
     const handler = handleLocationChange(store);
@@ -52,6 +53,12 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
     store.dispatch(dialogActions.CLOSE_ALL_DIALOGS());
     store.dispatch(contextMenuActions.CLOSE_CONTEXT_MENU());
     store.dispatch(searchBarActions.CLOSE_SEARCH_VIEW());
+
+    for (const locChangeFn of pluginConfig.locationChangeHandlers) {
+        if (locChangeFn(store, pathname)) {
+            return;
+        }
+    }
 
     if (projectMatch) {
         store.dispatch(WorkbenchActions.loadProject(projectMatch.params.id));

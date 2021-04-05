@@ -34,7 +34,7 @@ export type ContextMenuResource = {
     ownerUuid: string;
     description?: string;
     kind: ResourceKind,
-    menuKind: ContextMenuKind;
+    menuKind: ContextMenuKind | string;
     isTrashed?: boolean;
     isEditable?: boolean;
     outputUuid?: string;
@@ -167,7 +167,7 @@ export const openProjectContextMenu = (event: React.MouseEvent<HTMLElement>, res
                 kind: res.kind,
                 menuKind,
                 ownerUuid: res.ownerUuid,
-                isTrashed: ('isTrashed' in res) ? res.isTrashed: false,
+                isTrashed: ('isTrashed' in res) ? res.isTrashed : false,
             }));
         }
     };
