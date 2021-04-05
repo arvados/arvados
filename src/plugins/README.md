@@ -32,30 +32,32 @@ differently from the standard `arvados-workbench2` to avoid confusion.
 
 ## Existing plugins
 
-* "example"
+### example
 
 This is an example plugin showing how to add a new navigation tree
 item, displaying a new center panel, as well as adding account menu
 and "New" menu items, and showing how to use SET_PROPERTY and
 getProperty() for state.
 
-* "blank"
+### blank
 
 This deletes all of the existing user interface.  If you want the
 application to only display your plugin's UI elements and none of the
 standard elements, you would load and register this first.
 
-* "root-redirect"
+### root-redirect
 
 This helper takes a path when registered.  It tweaks the navigation
 behavior so that the default starting location when the application
 loads will be the path you provide, instead of "Projects".
 
-* "sample-tracker"
+### sample-tracker
 
-This can be found at
-
-
+This is a a new set of user interface screens that assist with
+clinical sample tracking and analysis.  It is intended as a demo of
+how a real-world application can built using the Workbench 2
+plug-in interface.  It can be found at
+https://github.com/arvados/sample-tracker .
 
 ## Developing plugins
 
