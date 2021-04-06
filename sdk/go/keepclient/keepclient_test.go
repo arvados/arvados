@@ -95,12 +95,13 @@ func (s *ServerRequiredSuite) TestDefaultReplications(c *C) {
 }
 
 type StubPutHandler struct {
-	c                  *C
-	expectPath         string
-	expectAPIToken     string
-	expectBody         string
-	expectStorageClass string
-	handled            chan string
+	c                    *C
+	expectPath           string
+	expectAPIToken       string
+	expectBody           string
+	expectStorageClass   string
+	returnStorageClasses string
+	handled              chan string
 }
 
 func (sph StubPutHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
@@ -110,6 +111,10 @@ func (sph StubPutHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request)
 	body, err := ioutil.ReadAll(req.Body)
 	sph.c.Check(err, Equals, nil)
 	sph.c.Check(body, DeepEquals, []byte(sph.expectBody))
+	resp.Header().Set("X-Keep-Replicas-Stored", "1")
+	if sph.returnStorageClasses != "" {
+		resp.Header().Set("X-Keep-Storage-Classes-Confirmed", sph.returnStorageClasses)
+	}
 	resp.WriteHeader(200)
 	sph.handled <- fmt.Sprintf("http://%s", req.Host)
 }
@@ -152,20 +157,19 @@ func (s *StandaloneSuite) TestUploadToStubKeepServer(c *C) {
 		"acbd18db4cc2f85cedef654fccc4a4d8",
 		"abc123",
 		"foo",
-		"hot",
+		"", "default=1",
 		make(chan string)}
 
 	UploadToStubHelper(c, st,
 		func(kc *KeepClient, url string, reader io.ReadCloser, writer io.WriteCloser, uploadStatusChan chan uploadStatus) {
-			kc.StorageClasses = []string{"hot"}
-			go kc.uploadToKeepServer(url, st.expectPath, reader, uploadStatusChan, int64(len("foo")), kc.getRequestID())
+			go kc.uploadToKeepServer(url, st.expectPath, nil, reader, uploadStatusChan, int64(len("foo")), kc.getRequestID())
 
 			writer.Write([]byte("foo"))
 			writer.Close()
 
 			<-st.handled
 			status := <-uploadStatusChan
-			c.Check(status, DeepEquals, uploadStatus{nil, fmt.Sprintf("%s/%s", url, st.expectPath), 200, 1, ""})
+			c.Check(status, DeepEquals, uploadStatus{nil, fmt.Sprintf("%s/%s", url, st.expectPath), 200, 1, map[string]int{"default": 1}, ""})
 		})
 }
 
@@ -175,18 +179,51 @@ func (s *StandaloneSuite) TestUploadToStubKeepServerBufferReader(c *C) {
 		"acbd18db4cc2f85cedef654fccc4a4d8",
 		"abc123",
 		"foo",
-		"",
+		"", "default=1",
 		make(chan string)}
 
 	UploadToStubHelper(c, st,
 		func(kc *KeepClient, url string, _ io.ReadCloser, _ io.WriteCloser, uploadStatusChan chan uploadStatus) {
-			go kc.uploadToKeepServer(url, st.expectPath, bytes.NewBuffer([]byte("foo")), uploadStatusChan, 3, kc.getRequestID())
+			go kc.uploadToKeepServer(url, st.expectPath, nil, bytes.NewBuffer([]byte("foo")), uploadStatusChan, 3, kc.getRequestID())
 
 			<-st.handled
 
 			status := <-uploadStatusChan
-			c.Check(status, DeepEquals, uploadStatus{nil, fmt.Sprintf("%s/%s", url, st.expectPath), 200, 1, ""})
+			c.Check(status, DeepEquals, uploadStatus{nil, fmt.Sprintf("%s/%s", url, st.expectPath), 200, 1, map[string]int{"default": 1}, ""})
 		})
+}
+
+func (s *StandaloneSuite) TestUploadWithStorageClasses(c *C) {
+	for _, trial := range []struct {
+		respHeader string
+		expectMap  map[string]int
+	}{
+		{"", nil},
+		{"foo=1", map[string]int{"foo": 1}},
+		{" foo=1 , bar=2 ", map[string]int{"foo": 1, "bar": 2}},
+		{" =foo=1 ", nil},
+		{"foo", nil},
+	} {
+		st := StubPutHandler{
+			c,
+			"acbd18db4cc2f85cedef654fccc4a4d8",
+			"abc123",
+			"foo",
+			"", trial.respHeader,
+			make(chan string)}
+
+		UploadToStubHelper(c, st,
+			func(kc *KeepClient, url string, reader io.ReadCloser, writer io.WriteCloser, uploadStatusChan chan uploadStatus) {
+				go kc.uploadToKeepServer(url, st.expectPath, nil, reader, uploadStatusChan, int64(len("foo")), kc.getRequestID())
+
+				writer.Write([]byte("foo"))
+				writer.Close()
+
+				<-st.handled
+				status := <-uploadStatusChan
+				c.Check(status, DeepEquals, uploadStatus{nil, fmt.Sprintf("%s/%s", url, st.expectPath), 200, 1, trial.expectMap, ""})
+			})
+	}
 }
 
 type FailHandler struct {
@@ -235,7 +272,7 @@ func (s *StandaloneSuite) TestFailedUploadToStubKeepServer(c *C) {
 		func(kc *KeepClient, url string, reader io.ReadCloser,
 			writer io.WriteCloser, uploadStatusChan chan uploadStatus) {
 
-			go kc.uploadToKeepServer(url, hash, reader, uploadStatusChan, 3, kc.getRequestID())
+			go kc.uploadToKeepServer(url, hash, nil, reader, uploadStatusChan, 3, kc.getRequestID())
 
 			writer.Write([]byte("foo"))
 			writer.Close()
@@ -271,6 +308,7 @@ func (s *StandaloneSuite) TestPutB(c *C) {
 		hash,
 		"abc123",
 		"foo",
+		"",
 		"",
 		make(chan string, 5)}
 
@@ -313,6 +351,7 @@ func (s *StandaloneSuite) TestPutHR(c *C) {
 		hash,
 		"abc123",
 		"foo",
+		"",
 		"",
 		make(chan string, 5)}
 
@@ -362,6 +401,7 @@ func (s *StandaloneSuite) TestPutWithFail(c *C) {
 		hash,
 		"abc123",
 		"foo",
+		"",
 		"",
 		make(chan string, 4)}
 
@@ -422,6 +462,7 @@ func (s *StandaloneSuite) TestPutWithTooManyFail(c *C) {
 		hash,
 		"abc123",
 		"foo",
+		"",
 		"",
 		make(chan string, 1)}
 
@@ -1031,6 +1072,7 @@ func (s *StandaloneSuite) TestPutBWant2ReplicasWithOnlyOneWritableLocalRoot(c *C
 		"abc123",
 		"foo",
 		"",
+		"",
 		make(chan string, 5)}
 
 	arv, _ := arvadosclient.MakeArvadosClient()
@@ -1069,6 +1111,7 @@ func (s *StandaloneSuite) TestPutBWithNoWritableLocalRoots(c *C) {
 		hash,
 		"abc123",
 		"foo",
+		"",
 		"",
 		make(chan string, 5)}
 
@@ -1245,6 +1288,7 @@ func (s *StandaloneSuite) TestPutBRetry(c *C) {
 			Md5String("foo"),
 			"abc123",
 			"foo",
+			"",
 			"",
 			make(chan string, 5)}}
 
