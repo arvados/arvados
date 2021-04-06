@@ -98,7 +98,7 @@ func (ctrl *oidcLoginController) setup() error {
 }
 
 func (ctrl *oidcLoginController) Logout(ctx context.Context, opts arvados.LogoutOptions) (arvados.LogoutResponse, error) {
-	return noopLogout(ctrl.Cluster, opts)
+	return logout(ctx, ctrl.Cluster, opts)
 }
 
 func (ctrl *oidcLoginController) Login(ctx context.Context, opts arvados.LoginOptions) (arvados.LoginResponse, error) {
