@@ -148,7 +148,7 @@ func (v *MockVolume) Compare(ctx context.Context, loc string, buf []byte) error 
 		}
 		return nil
 	} else {
-		return NotFoundError
+		return os.ErrNotExist
 	}
 }
 
