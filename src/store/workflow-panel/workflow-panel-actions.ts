@@ -12,6 +12,8 @@ import { navigateToRunProcess } from '~/store/navigation/navigation-action';
 import { goToStep, runProcessPanelActions, loadPresets, getWorkflowRunnerSettings } from '~/store/run-process-panel/run-process-panel-actions';
 import { snackbarActions } from '~/store/snackbar/snackbar-actions';
 import { initialize } from 'redux-form';
+import { RUN_PROCESS_BASIC_FORM } from '~/views/run-process-panel/run-process-basic-form';
+import { RUN_PROCESS_INPUTS_FORM } from '~/views/run-process-panel/run-process-inputs-form';
 import { RUN_PROCESS_ADVANCED_FORM } from '~/views/run-process-panel/run-process-advanced-form';
 
 export const WORKFLOW_PANEL_ID = "workflowPanel";
@@ -33,17 +35,30 @@ export const getUuidPrefix = (state: RootState) => {
     return state.properties.uuidPrefix;
 };
 
-export const openRunProcess = (uuid: string) =>
-    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+export const openRunProcess = (workflowUuid: string, ownerUuid?: string, name?: string, inputObj?: { [key: string]: any }) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const response = await services.workflowService.list();
+        dispatch(runProcessPanelActions.SET_WORKFLOWS(response.items));
+
         const workflows = getState().runProcessPanel.searchWorkflows;
-        const workflow = workflows.find(workflow => workflow.uuid === uuid);
+        const workflow = workflows.find(workflow => workflow.uuid === workflowUuid);
         if (workflow) {
             dispatch<any>(navigateToRunProcess);
             dispatch<any>(goToStep(1));
             dispatch(runProcessPanelActions.SET_STEP_CHANGED(true));
             dispatch(runProcessPanelActions.SET_SELECTED_WORKFLOW(workflow));
             dispatch<any>(loadPresets(workflow.uuid));
+
             dispatch(initialize(RUN_PROCESS_ADVANCED_FORM, getWorkflowRunnerSettings(workflow)));
+            if (ownerUuid) {
+                dispatch(runProcessPanelActions.SET_PROCESS_OWNER_UUID(ownerUuid));
+            }
+            if (name) {
+                dispatch(initialize(RUN_PROCESS_BASIC_FORM, { name }));
+            }
+            if (inputObj) {
+                dispatch(initialize(RUN_PROCESS_INPUTS_FORM, inputObj));
+            }
         } else {
             dispatch<any>(snackbarActions.OPEN_SNACKBAR({ message: `You can't run this process` }));
         }

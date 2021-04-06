@@ -21,7 +21,6 @@ import {
 } from '~/views/run-process-panel/run-process-advanced-form';
 import { dialogActions } from '~/store/dialog/dialog-actions';
 import { setBreadcrumbs } from '~/store/breadcrumbs/breadcrumbs-actions';
-import { matchProjectRoute } from '~/routes/routes';
 
 export const runProcessPanelActions = unionize({
     SET_PROCESS_PATHNAME: ofType<string>(),
@@ -144,9 +143,8 @@ export const runProcess = async (dispatch: Dispatch<any>, getState: () => RootSt
     const inputsForm = getFormValues(RUN_PROCESS_INPUTS_FORM)(state) as WorkflowInputsData;
     const userUuid = getUserUuid(getState());
     if (!userUuid) { return; }
-    const pathname = getState().runProcessPanel.processPathname;
     const { processOwnerUuid, selectedWorkflow } = state.runProcessPanel;
-    const ownerUUid = !matchProjectRoute(pathname) ? userUuid : processOwnerUuid;
+    const ownerUUid = processOwnerUuid ? processOwnerUuid : userUuid;
     if (selectedWorkflow) {
         const advancedForm = getFormValues(RUN_PROCESS_ADVANCED_FORM)(state) as RunProcessAdvancedFormData || getWorkflowRunnerSettings(selectedWorkflow);
         const newProcessData = {
