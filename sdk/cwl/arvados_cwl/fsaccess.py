@@ -228,7 +228,7 @@ class CollectionFetcher(DefaultFetcher):
         self.fsaccess = fs_access
         self.num_retries = num_retries
 
-    def fetch_text(self, url):
+    def fetch_text(self, url, content_types=None):
         if url.startswith("keep:"):
             with self.fsaccess.open(url, "r", encoding="utf-8") as f:
                 return f.read()
