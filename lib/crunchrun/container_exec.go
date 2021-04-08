@@ -78,26 +78,25 @@ type ContainerExecuter interface {
 	// - volumes: Now this is ExecOptions.mounts
 	// - hostConfig: Now this is ExecOptions.enableNetwork and others
 	// this are called when StartContainer() is executed.
-	CreateContainer(env []string) error
+	// this will also do any prep work needed to Std*Pipe() to work
+	CreateContainer(env []string, execOptions ExecOptions, containerConfig ContainerConfig) error
 
-	// StartContainer
-	StartContainer(execOptions ExecOptions, containerConfig ContainerConfig) error
-	RemoveContainer() error
+	// StartContainer will start the container little questions asked
+	StartContainer() error
+
+	// Kill the container and optionally remove the underlying image returns an
+	// error if it didn't work (including timeout)
+	Kill() error
 
 	// this is similar how https://golang.org/pkg/os/exec/#Cmd does it.
 	StdinPipe() (io.WriteCloser, error)
 	StdoutPipe() (io.ReadCloser, error)
 	StderrPipe() (io.ReadCloser, error)
 
-	// this is another option
-	Stdin() (io.ReadCloser, error)
-	Stdout() (io.WriteCloser, error)
-	Stderr() (io.WriteCloser, error)
-
 	// Wait for the container to finish
 	Wait()
-	// Kill the container and optionally remove the underlying image
-	Kill(removeImage bool)
+
+	// Returns the exit coui
 	ExitCode() (int, error)
 }
 
