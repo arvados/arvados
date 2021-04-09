@@ -60,6 +60,9 @@ export class FilterBuilder {
     public addExists(value?: string, resourcePrefix?: string) {
         return this.addCondition("properties", "exists", value, "", "", resourcePrefix);
     }
+    public addDoesNotExist(field: string, resourcePrefix?: string) {
+        return this.addCondition("properties." + field, "exists", false, "", "", resourcePrefix);
+    }
 
     public addFullTextSearch(value: string) {
         const terms = value.trim().split(/(\s+)/);
