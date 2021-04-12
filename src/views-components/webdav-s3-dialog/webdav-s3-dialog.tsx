@@ -9,13 +9,17 @@ import { COLLECTION_WEBDAV_S3_DIALOG_NAME, WebDavS3InfoDialogData } from '~/stor
 import { WithDialogProps } from '~/store/dialog/with-dialog';
 import { compose } from 'redux';
 import { DetailsAttribute } from "~/components/details-attribute/details-attribute";
+import { DownloadIcon } from "~/components/icon/icon";
 
-export type CssRules = 'details';
+export type CssRules = 'details' | 'downloadButton';
 
 const styles: StyleRulesCallback<CssRules> = theme => ({
     details: {
         marginLeft: theme.spacing.unit * 3,
         marginRight: theme.spacing.unit * 3,
+    },
+    downloadButton: {
+        marginTop: theme.spacing.unit * 2,
     }
 });
 
@@ -39,6 +43,46 @@ function TabPanel(props: TabPanelData) {
         </div>
     );
 }
+
+const mountainduckTemplate = ({
+    uuid, 
+    username,
+    collectionsUrl,
+}: any) => `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+   <dict>
+      <key>Protocol</key>
+      <string>davs</string>
+      <key>Provider</key>
+      <string>iterate GmbH</string>
+      <key>UUID</key>
+      <string>${uuid}</string>
+      <key>Hostname</key>
+      <string>${collectionsUrl.replace('https://', `davs://${username}@`).replace('*', uuid)}</string>
+      <key>Port</key>
+      <string>443</string>
+      <key>Username</key>
+      <string>${username}</string>
+      <key>Labels</key>
+      <array>
+      </array>
+   </dict>
+</plist>
+`.split(/\r?\n/).join('\n');
+
+const downloadMountainduckFileHandler = (filename: string, text: string) => {
+    const element = document.createElement('a');
+    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+    element.setAttribute('download', filename);
+  
+    element.style.display = 'none';
+    document.body.appendChild(element);
+  
+    element.click();
+  
+    document.body.removeChild(element);
+};
 
 export const WebDavS3InfoDialog = compose(
     withDialog(COLLECTION_WEBDAV_S3_DIALOG_NAME),
@@ -145,6 +189,17 @@ export const WebDavS3InfoDialog = compose(
                         label='Password'
                         value={props.data.token}
                         copyValue={props.data.token} />
+
+                    <Button
+                        data-cy='download-button'
+                        className={props.classes.downloadButton}
+                        onClick={() => downloadMountainduckFileHandler(`${props.data.collectionName || props.data.uuid}.duck`, mountainduckTemplate(props.data))}
+                        variant='contained'
+                        color='primary'
+                        size='small'>
+                        <DownloadIcon />
+                        Download config
+                    </Button>
 
                     <h3>Gnome</h3>
                     <ol>

@@ -16,10 +16,29 @@
 // This function is called when a project is opened or re-opened (e.g. due to
 // the project's config changing)
 
+const fs = require('fs');
+const path = require('path');
+
 /**
  * @type {Cypress.PluginConfig}
  */
 module.exports = (on, config) => {
   // `on` is used to hook into various events Cypress emits
   // `config` is the resolved Cypress config
+  on("before:browser:launch", (browser = {}, launchOptions) => {
+    const downloadDirectory = path.join(__dirname, "..", "downloads");
+    if (browser.family === "chromium") {
+     launchOptions.preferences.default["download"] = {
+      default_directory: downloadDirectory
+     };
+    }
+    return launchOptions;
+  });
+
+  on('task', {
+    clearDownload({ filename }) {
+      fs.unlinkSync(filename);
+      return null;
+    }
+  });
 }

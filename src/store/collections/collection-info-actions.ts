@@ -18,6 +18,7 @@ export interface WebDavS3InfoDialogData {
     localCluster: string;
     username: string;
     activeTab: number;
+    collectionName?: string;
     setActiveTab: (event: any, tabNr: number) => void;
 }
 
@@ -34,6 +35,7 @@ export const openWebDavS3InfoDialog = (uuid: string, activeTab?: number) =>
                 localCluster: getState().auth.localCluster,
                 username: getState().auth.user!.username,
                 activeTab: activeTab || 0,
+                collectionName: (getState().collectionPanel.item || {} as any).name,
                 setActiveTab: (event: any, tabNr: number) => dispatch<any>(openWebDavS3InfoDialog(uuid, tabNr)),
                 uuid
             }
