@@ -16,12 +16,14 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	. "gopkg.in/check.v1"
+	check "gopkg.in/check.v1"
 )
 
 // Gocheck boilerplate
@@ -102,12 +104,19 @@ type StubPutHandler struct {
 	expectStorageClass   string
 	returnStorageClasses string
 	handled              chan string
+	requests             []*http.Request
+	mtx                  sync.Mutex
 }
 
-func (sph StubPutHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+func (sph *StubPutHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+	sph.mtx.Lock()
+	sph.requests = append(sph.requests, req)
+	sph.mtx.Unlock()
 	sph.c.Check(req.URL.Path, Equals, "/"+sph.expectPath)
 	sph.c.Check(req.Header.Get("Authorization"), Equals, fmt.Sprintf("OAuth2 %s", sph.expectAPIToken))
-	sph.c.Check(req.Header.Get("X-Keep-Storage-Classes"), Equals, sph.expectStorageClass)
+	if sph.expectStorageClass != "*" {
+		sph.c.Check(req.Header.Get("X-Keep-Storage-Classes"), Equals, sph.expectStorageClass)
+	}
 	body, err := ioutil.ReadAll(req.Body)
 	sph.c.Check(err, Equals, nil)
 	sph.c.Check(body, DeepEquals, []byte(sph.expectBody))
@@ -152,13 +161,15 @@ func UploadToStubHelper(c *C, st http.Handler, f func(*KeepClient, string,
 func (s *StandaloneSuite) TestUploadToStubKeepServer(c *C) {
 	log.Printf("TestUploadToStubKeepServer")
 
-	st := StubPutHandler{
-		c,
-		"acbd18db4cc2f85cedef654fccc4a4d8",
-		"abc123",
-		"foo",
-		"", "default=1",
-		make(chan string)}
+	st := &StubPutHandler{
+		c:                    c,
+		expectPath:           "acbd18db4cc2f85cedef654fccc4a4d8",
+		expectAPIToken:       "abc123",
+		expectBody:           "foo",
+		expectStorageClass:   "",
+		returnStorageClasses: "default=1",
+		handled:              make(chan string),
+	}
 
 	UploadToStubHelper(c, st,
 		func(kc *KeepClient, url string, reader io.ReadCloser, writer io.WriteCloser, uploadStatusChan chan uploadStatus) {
@@ -174,13 +185,15 @@ func (s *StandaloneSuite) TestUploadToStubKeepServer(c *C) {
 }
 
 func (s *StandaloneSuite) TestUploadToStubKeepServerBufferReader(c *C) {
-	st := StubPutHandler{
-		c,
-		"acbd18db4cc2f85cedef654fccc4a4d8",
-		"abc123",
-		"foo",
-		"", "default=1",
-		make(chan string)}
+	st := &StubPutHandler{
+		c:                    c,
+		expectPath:           "acbd18db4cc2f85cedef654fccc4a4d8",
+		expectAPIToken:       "abc123",
+		expectBody:           "foo",
+		expectStorageClass:   "",
+		returnStorageClasses: "default=1",
+		handled:              make(chan string),
+	}
 
 	UploadToStubHelper(c, st,
 		func(kc *KeepClient, url string, _ io.ReadCloser, _ io.WriteCloser, uploadStatusChan chan uploadStatus) {
@@ -204,13 +217,15 @@ func (s *StandaloneSuite) TestUploadWithStorageClasses(c *C) {
 		{" =foo=1 ", nil},
 		{"foo", nil},
 	} {
-		st := StubPutHandler{
-			c,
-			"acbd18db4cc2f85cedef654fccc4a4d8",
-			"abc123",
-			"foo",
-			"", trial.respHeader,
-			make(chan string)}
+		st := &StubPutHandler{
+			c:                    c,
+			expectPath:           "acbd18db4cc2f85cedef654fccc4a4d8",
+			expectAPIToken:       "abc123",
+			expectBody:           "foo",
+			expectStorageClass:   "",
+			returnStorageClasses: trial.respHeader,
+			handled:              make(chan string),
+		}
 
 		UploadToStubHelper(c, st,
 			func(kc *KeepClient, url string, reader io.ReadCloser, writer io.WriteCloser, uploadStatusChan chan uploadStatus) {
@@ -223,6 +238,65 @@ func (s *StandaloneSuite) TestUploadWithStorageClasses(c *C) {
 				status := <-uploadStatusChan
 				c.Check(status, DeepEquals, uploadStatus{nil, fmt.Sprintf("%s/%s", url, st.expectPath), 200, 1, trial.expectMap, ""})
 			})
+	}
+}
+
+func (s *StandaloneSuite) TestPutWithStorageClasses(c *C) {
+	nServers := 5
+	for _, trial := range []struct {
+		replicas    int
+		classes     []string
+		minRequests int
+		maxRequests int
+		success     bool
+	}{
+		{1, []string{"class1"}, 1, 1, true},
+		{2, []string{"class1"}, 1, 2, true},
+		{3, []string{"class1"}, 2, 3, true},
+		{1, []string{"class1", "class2"}, 1, 1, true},
+		{nServers*2 + 1, []string{"class1"}, nServers, nServers, false},
+		{1, []string{"class404"}, nServers, nServers, false},
+		{1, []string{"class1", "class404"}, nServers, nServers, false},
+	} {
+		c.Logf("%+v", trial)
+		st := &StubPutHandler{
+			c:                    c,
+			expectPath:           "acbd18db4cc2f85cedef654fccc4a4d8",
+			expectAPIToken:       "abc123",
+			expectBody:           "foo",
+			expectStorageClass:   "*",
+			returnStorageClasses: "class1=2, class2=2",
+			handled:              make(chan string, 100),
+		}
+		ks := RunSomeFakeKeepServers(st, nServers)
+		arv, _ := arvadosclient.MakeArvadosClient()
+		kc, _ := MakeKeepClient(arv)
+		kc.Want_replicas = trial.replicas
+		kc.StorageClasses = trial.classes
+		arv.ApiToken = "abc123"
+		localRoots := make(map[string]string)
+		writableLocalRoots := make(map[string]string)
+		for i, k := range ks {
+			localRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
+			writableLocalRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
+			defer k.listener.Close()
+		}
+		kc.SetServiceRoots(localRoots, writableLocalRoots, nil)
+
+		_, _, err := kc.PutB([]byte("foo"))
+		if trial.success {
+			c.Check(err, check.IsNil)
+		} else {
+			c.Check(err, check.NotNil)
+		}
+		c.Check(len(st.handled) >= trial.minRequests, check.Equals, true, check.Commentf("len(st.handled)==%d, trial.minRequests==%d", len(st.handled), trial.minRequests))
+		c.Check(len(st.handled) <= trial.maxRequests, check.Equals, true, check.Commentf("len(st.handled)==%d, trial.maxRequests==%d", len(st.handled), trial.maxRequests))
+		if !trial.success && trial.replicas == 1 && c.Check(len(st.requests) >= 2, check.Equals, true) {
+			// Max concurrency should be 1. First request
+			// should have succeeded for class1. Second
+			// request should only ask for class404.
+			c.Check(st.requests[1].Header.Get("X-Keep-Storage-Classes"), check.Equals, "class404")
+		}
 	}
 }
 
@@ -303,14 +377,15 @@ func RunSomeFakeKeepServers(st http.Handler, n int) (ks []KeepServer) {
 func (s *StandaloneSuite) TestPutB(c *C) {
 	hash := Md5String("foo")
 
-	st := StubPutHandler{
-		c,
-		hash,
-		"abc123",
-		"foo",
-		"",
-		"",
-		make(chan string, 5)}
+	st := &StubPutHandler{
+		c:                    c,
+		expectPath:           hash,
+		expectAPIToken:       "abc123",
+		expectBody:           "foo",
+		expectStorageClass:   "",
+		returnStorageClasses: "",
+		handled:              make(chan string, 5),
+	}
 
 	arv, _ := arvadosclient.MakeArvadosClient()
 	kc, _ := MakeKeepClient(arv)
@@ -346,14 +421,15 @@ func (s *StandaloneSuite) TestPutB(c *C) {
 func (s *StandaloneSuite) TestPutHR(c *C) {
 	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
 
-	st := StubPutHandler{
-		c,
-		hash,
-		"abc123",
-		"foo",
-		"",
-		"",
-		make(chan string, 5)}
+	st := &StubPutHandler{
+		c:                    c,
+		expectPath:           hash,
+		expectAPIToken:       "abc123",
+		expectBody:           "foo",
+		expectStorageClass:   "",
+		returnStorageClasses: "",
+		handled:              make(chan string, 5),
+	}
 
 	arv, _ := arvadosclient.MakeArvadosClient()
 	kc, _ := MakeKeepClient(arv)
@@ -396,14 +472,15 @@ func (s *StandaloneSuite) TestPutHR(c *C) {
 func (s *StandaloneSuite) TestPutWithFail(c *C) {
 	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
 
-	st := StubPutHandler{
-		c,
-		hash,
-		"abc123",
-		"foo",
-		"",
-		"",
-		make(chan string, 4)}
+	st := &StubPutHandler{
+		c:                    c,
+		expectPath:           hash,
+		expectAPIToken:       "abc123",
+		expectBody:           "foo",
+		expectStorageClass:   "",
+		returnStorageClasses: "",
+		handled:              make(chan string, 4),
+	}
 
 	fh := FailHandler{
 		make(chan string, 1)}
@@ -457,14 +534,15 @@ func (s *StandaloneSuite) TestPutWithFail(c *C) {
 func (s *StandaloneSuite) TestPutWithTooManyFail(c *C) {
 	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
 
-	st := StubPutHandler{
-		c,
-		hash,
-		"abc123",
-		"foo",
-		"",
-		"",
-		make(chan string, 1)}
+	st := &StubPutHandler{
+		c:                    c,
+		expectPath:           hash,
+		expectAPIToken:       "abc123",
+		expectBody:           "foo",
+		expectStorageClass:   "",
+		returnStorageClasses: "",
+		handled:              make(chan string, 1),
+	}
 
 	fh := FailHandler{
 		make(chan string, 4)}
@@ -1066,14 +1144,15 @@ func (s *StandaloneSuite) TestMakeLocatorInvalidInput(c *C) {
 func (s *StandaloneSuite) TestPutBWant2ReplicasWithOnlyOneWritableLocalRoot(c *C) {
 	hash := Md5String("foo")
 
-	st := StubPutHandler{
-		c,
-		hash,
-		"abc123",
-		"foo",
-		"",
-		"",
-		make(chan string, 5)}
+	st := &StubPutHandler{
+		c:                    c,
+		expectPath:           hash,
+		expectAPIToken:       "abc123",
+		expectBody:           "foo",
+		expectStorageClass:   "",
+		returnStorageClasses: "",
+		handled:              make(chan string, 5),
+	}
 
 	arv, _ := arvadosclient.MakeArvadosClient()
 	kc, _ := MakeKeepClient(arv)
@@ -1106,14 +1185,15 @@ func (s *StandaloneSuite) TestPutBWant2ReplicasWithOnlyOneWritableLocalRoot(c *C
 func (s *StandaloneSuite) TestPutBWithNoWritableLocalRoots(c *C) {
 	hash := Md5String("foo")
 
-	st := StubPutHandler{
-		c,
-		hash,
-		"abc123",
-		"foo",
-		"",
-		"",
-		make(chan string, 5)}
+	st := &StubPutHandler{
+		c:                    c,
+		expectPath:           hash,
+		expectAPIToken:       "abc123",
+		expectBody:           "foo",
+		expectStorageClass:   "",
+		returnStorageClasses: "",
+		handled:              make(chan string, 5),
+	}
 
 	arv, _ := arvadosclient.MakeArvadosClient()
 	kc, _ := MakeKeepClient(arv)
@@ -1283,14 +1363,16 @@ func (s *StandaloneSuite) TestGetIndexWithNoSuchPrefix(c *C) {
 func (s *StandaloneSuite) TestPutBRetry(c *C) {
 	st := &FailThenSucceedHandler{
 		handled: make(chan string, 1),
-		successhandler: StubPutHandler{
-			c,
-			Md5String("foo"),
-			"abc123",
-			"foo",
-			"",
-			"",
-			make(chan string, 5)}}
+		successhandler: &StubPutHandler{
+			c:                    c,
+			expectPath:           Md5String("foo"),
+			expectAPIToken:       "abc123",
+			expectBody:           "foo",
+			expectStorageClass:   "",
+			returnStorageClasses: "",
+			handled:              make(chan string, 5),
+		},
+	}
 
 	arv, _ := arvadosclient.MakeArvadosClient()
 	kc, _ := MakeKeepClient(arv)
