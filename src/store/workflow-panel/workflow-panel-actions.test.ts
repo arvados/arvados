@@ -2,7 +2,6 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { getNewExtraToken, initAuth } from "./auth-action";
 import { API_TOKEN_KEY } from "~/services/auth-service/auth-service";
 
 import 'jest-localstorage-mock';
@@ -22,6 +21,8 @@ import { runProcessPanelActions } from '~/store/run-process-panel/run-process-pa
 import { initialize } from 'redux-form';
 import { RUN_PROCESS_BASIC_FORM } from '~/views/run-process-panel/run-process-basic-form';
 import { RUN_PROCESS_INPUTS_FORM } from '~/views/run-process-panel/run-process-inputs-form';
+import { ResourceKind } from '~/models/resource';
+import { WorkflowResource } from '~/models/workflow';
 
 describe('workflow-panel-actions', () => {
     const axiosInst = Axios.create({ headers: {} });
@@ -49,11 +50,19 @@ describe('workflow-panel-actions', () => {
     });
 
     it('opens the run process panel', async () => {
-        const wflist = [{
+        const wflist: WorkflowResource[] = [{
             uuid: "zzzzz-7fd4e-0123456789abcde",
             name: "foo",
             description: "",
-            definition: "$graph: []"
+            definition: "$graph: []",
+            kind: ResourceKind.WORKFLOW,
+            ownerUuid: "",
+            createdAt: "",
+            modifiedByClientUuid: "",
+            modifiedByUserUuid: "",
+            modifiedAt: "",
+            href: "",
+            etag: ""
         }];
         axiosMock
             .onGet("/workflows")
