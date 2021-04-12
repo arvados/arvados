@@ -17,6 +17,17 @@ Install [redux-devtools-extension](https://chrome.google.com/webstore/detail/red
 yarn start
 ```
 
+## Start project for development inside Docker container
+
+```
+make workbench2-build-image
+# (create public/config.json, see "Run time configuration" below)
+docker run -ti -v$PWD:$PWD -p 3000:3000 -w$PWD workbench2-build /bin/bash
+# (inside docker container)
+yarn install
+yarn start
+```
+
 ## Run unit tests
 ```
 make unit-tests
@@ -37,12 +48,12 @@ make integration-tests-in-docker
 ## Run tests interactively in container
 
 ```
-$ xhost +local:root
-$ ARVADOS_DIR=/path/to/arvados
-$ docker run -ti -v$PWD:$PWD -v$ARVADOS_DIR:/usr/src/arvados -w$PWD --env="DISPLAY" --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" workbench2-build /bin/bash
+xhost +local:root
+ARVADOS_DIR=/path/to/arvados
+docker run -ti -v$PWD:$PWD -v$ARVADOS_DIR:/usr/src/arvados -w$PWD --env="DISPLAY" --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" workbench2-build /bin/bash
 (inside container)
-# yarn run cypress install
-# tools/run-integration-tests.sh -i -a /usr/src/arvados
+yarn run cypress install
+tools/run-integration-tests.sh -i -a /usr/src/arvados
 ```
 
 ## Production build
