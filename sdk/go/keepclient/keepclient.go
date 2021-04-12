@@ -83,8 +83,12 @@ var ErrNoSuchKeepServer = errors.New("No keep server matching the given UUID is 
 // ErrIncompleteIndex is returned when the Index response does not end with a new empty line
 var ErrIncompleteIndex = errors.New("Got incomplete index")
 
-const XKeepDesiredReplicas = "X-Keep-Desired-Replicas"
-const XKeepReplicasStored = "X-Keep-Replicas-Stored"
+const (
+	XKeepDesiredReplicas         = "X-Keep-Desired-Replicas"
+	XKeepReplicasStored          = "X-Keep-Replicas-Stored"
+	XKeepStorageClasses          = "X-Keep-Storage-Classes"
+	XKeepStorageClassesConfirmed = "X-Keep-Storage-Classes-Confirmed"
+)
 
 type HTTPClient interface {
 	Do(*http.Request) (*http.Response, error)
