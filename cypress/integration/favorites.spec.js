@@ -153,7 +153,7 @@ describe('Favorites tests', function () {
             });
     });
 
-    it.only('can view favourites in workflow', () => {
+    it('can view favourites in workflow', () => {
         cy.createProject({
             owningUser: adminUser,
             targetUser: activeUser,
