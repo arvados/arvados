@@ -62,7 +62,7 @@ func (s *LoginSuite) TestLogout(c *check.C) {
 		{token: "v2/zhome-aaaaa-aaaaaaaaaaaaaaa/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", returnTo: returnTo, target: "http://" + s.cluster.RemoteClusters["zhome"].Host + "/logout?" + url.Values{"return_to": {returnTo}}.Encode()},
 	} {
 		c.Logf("trial %#v", trial)
-		ctx := context.Background()
+		ctx := s.ctx
 		if trial.token != "" {
 			ctx = auth.NewContext(ctx, &auth.Credentials{Tokens: []string{trial.token}})
 		}

@@ -124,23 +124,11 @@ type federatedLoginController struct {
 func (ctrl federatedLoginController) Login(context.Context, arvados.LoginOptions) (arvados.LoginResponse, error) {
 	return arvados.LoginResponse{}, httpserver.ErrorWithStatus(errors.New("Should have been redirected to login cluster"), http.StatusBadRequest)
 }
-func (ctrl federatedLoginController) Logout(_ context.Context, opts arvados.LogoutOptions) (arvados.LogoutResponse, error) {
-	return noopLogout(ctrl.Cluster, opts)
+func (ctrl federatedLoginController) Logout(ctx context.Context, opts arvados.LogoutOptions) (arvados.LogoutResponse, error) {
+	return logout(ctx, ctrl.Cluster, opts)
 }
 func (ctrl federatedLoginController) UserAuthenticate(context.Context, arvados.UserAuthenticateOptions) (arvados.APIClientAuthorization, error) {
 	return arvados.APIClientAuthorization{}, httpserver.ErrorWithStatus(errors.New("username/password authentication is not available"), http.StatusBadRequest)
-}
-
-func noopLogout(cluster *arvados.Cluster, opts arvados.LogoutOptions) (arvados.LogoutResponse, error) {
-	target := opts.ReturnTo
-	if target == "" {
-		if cluster.Services.Workbench2.ExternalURL.Host != "" {
-			target = cluster.Services.Workbench2.ExternalURL.String()
-		} else {
-			target = cluster.Services.Workbench1.ExternalURL.String()
-		}
-	}
-	return arvados.LogoutResponse{RedirectLocation: target}, nil
 }
 
 func (conn *Conn) CreateAPIClientAuthorization(ctx context.Context, rootToken string, authinfo rpc.UserSessionAuthInfo) (resp arvados.APIClientAuthorization, err error) {

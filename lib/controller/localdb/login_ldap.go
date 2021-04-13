@@ -26,7 +26,7 @@ type ldapLoginController struct {
 }
 
 func (ctrl *ldapLoginController) Logout(ctx context.Context, opts arvados.LogoutOptions) (arvados.LogoutResponse, error) {
-	return noopLogout(ctrl.Cluster, opts)
+	return logout(ctx, ctrl.Cluster, opts)
 }
 
 func (ctrl *ldapLoginController) Login(ctx context.Context, opts arvados.LoginOptions) (arvados.LoginResponse, error) {

@@ -14,6 +14,15 @@ SPDX-License-Identifier: AGPL-3.0 %>
 <div id="#manage_current_token" class="panel-body">
 <p>The Arvados API token is a secret key that enables the Arvados SDKs to access Arvados with the proper permissions. For more information see <%= link_to raw('Getting an API token'), "#{Rails.configuration.Workbench.ArvadosDocsite}/user/reference/api-tokens.html", target: "_blank"%>.</p>
 <p>Paste the following lines at a shell prompt to set up the necessary environment for Arvados SDKs to authenticate to your <b><%= current_user.username %></b> account.</p>
+<%
+  wb2_url = nil
+  if Rails.configuration.Services.Workbench2.ExternalURL != URI("")
+    wb2_url = Rails.configuration.Services.Workbench2.ExternalURL.to_s
+    wb2_url += '/' if wb2_url[-1] != '/'
+    wb2_url += "token?api_token=" + Thread.current[:arvados_api_token]
+  end
+%>
+<p><b>IMPORTANT:</b> This token will expire when logged out. If you need a token for a long running process, it is recommended to <% if wb2_url %><a href="<%= wb2_url %>">get a token from Workbench2's Get API token dialog</a>. <% else %> create a new token using the CLI tools.<% end %></p>
 
 <pre>
 HISTIGNORE=$HISTIGNORE:'export ARVADOS_API_TOKEN=*'
