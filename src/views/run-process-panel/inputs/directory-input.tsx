@@ -24,14 +24,18 @@ import { ERROR_MESSAGE } from '~/validators/require';
 
 export interface DirectoryInputProps {
     input: DirectoryCommandInputParameter;
+    options?: { showOnlyOwned: boolean, showOnlyWritable: boolean };
 }
-export const DirectoryInput = ({ input }: DirectoryInputProps) =>
+export const DirectoryInput = ({ input, options }: DirectoryInputProps) =>
     <Field
         name={input.id}
         commandInput={input}
         component={DirectoryInputComponent}
         format={format}
         parse={parse}
+        {...{
+            options
+        }}
         validate={getValidation(input)} />;
 
 const format = (value?: Directory) => value ? value.basename : '';
@@ -56,7 +60,9 @@ interface DirectoryInputComponentState {
 }
 
 const DirectoryInputComponent = connect()(
-    class FileInputComponent extends React.Component<GenericInputProps & DispatchProp, DirectoryInputComponentState> {
+    class FileInputComponent extends React.Component<GenericInputProps & DispatchProp & {
+        options?: { showOnlyOwned: boolean, showOnlyWritable: boolean };
+    }, DirectoryInputComponentState> {
         state: DirectoryInputComponentState = {
             open: false,
         };
@@ -113,12 +119,14 @@ const DirectoryInputComponent = connect()(
                 open={this.state.open}
                 onClose={this.closeDialog}
                 fullWidth
+                data-cy="choose-a-directory-dialog"
                 maxWidth='md'>
                 <DialogTitle>Choose a directory</DialogTitle>
                 <DialogContent>
                     <ProjectsTreePicker
                         pickerId={this.props.commandInput.id}
                         includeCollections
+                        options={this.props.options}
                         toggleItemActive={this.setDirectory} />
                 </DialogContent>
                 <DialogActions>
