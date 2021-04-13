@@ -2,6 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
+import { customEncodeURI } from "./url";
+
 export class WebDAV {
 
     defaults: WebDAVDefaults = {
@@ -75,7 +77,8 @@ export class WebDAV {
             r.open(config.method,
                 `${this.defaults.baseURL
                     ? this.defaults.baseURL+'/'
-                    : ''}${encodeURI(config.url)}`);
+                    : ''}${customEncodeURI(config.url)}`);
+
             const headers = { ...this.defaults.headers, ...config.headers };
             Object
                 .keys(headers)

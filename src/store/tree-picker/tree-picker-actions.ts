@@ -21,7 +21,7 @@ import { mapTree } from '../../models/tree';
 import { LinkResource, LinkClass } from "~/models/link";
 import { mapTreeValues } from "~/models/tree";
 import { sortFilesTree } from "~/services/collection-service/collection-service-files-response";
-import { GroupResource } from "~/models/group";
+import { GroupClass, GroupResource } from "~/models/group";
 
 export const treePickerActions = unionize({
     LOAD_TREE_PICKER_NODE: ofType<{ id: string, pickerId: string }>(),
@@ -101,11 +101,12 @@ interface LoadProjectParams {
     pickerId: string;
     includeCollections?: boolean;
     includeFiles?: boolean;
+    includeFilterGroups?: boolean;
     loadShared?: boolean;
 }
 export const loadProject = (params: LoadProjectParams) =>
     async (dispatch: Dispatch, _: () => RootState, services: ServiceRepository) => {
-        const { id, pickerId, includeCollections = false, includeFiles = false, loadShared = false } = params;
+        const { id, pickerId, includeCollections = false, includeFiles = false, includeFilterGroups = false, loadShared = false } = params;
 
         dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ id, pickerId }));
 
@@ -121,7 +122,12 @@ export const loadProject = (params: LoadProjectParams) =>
         dispatch<any>(receiveTreePickerData<GroupContentsResource>({
             id,
             pickerId,
-            data: items,
+            data: items.filter((item) => {
+                    if (!includeFilterGroups && (item as GroupResource).groupClass && (item as GroupResource).groupClass === GroupClass.FILTER) {
+                        return false;
+                    }
+                    return true;
+                }),
             extractNodeData: item => ({
                 id: item.uuid,
                 value: item,

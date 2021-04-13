@@ -134,7 +134,7 @@ export const ParticipantSelect = connect()(
             const userItems: ListResults<any> = await userService.list({ filters: filterUsers, limit, count: "none" });
 
             const filterGroups = new FilterBuilder()
-                .addNotIn('group_class', [GroupClass.PROJECT])
+                .addNotIn('group_class', [GroupClass.PROJECT, GroupClass.FILTER])
                 .addILike('name', value)
                 .getFilters();
 

@@ -40,42 +40,42 @@ const mapDispatchToProps = (dispatch: Dispatch): ProjectPropertiesDialogActionPr
     handleDelete: (key: string, value: string) => () => dispatch<any>(deleteProjectProperty(key, value)),
 });
 
-type ProjectPropertiesDialogProps =  ProjectPropertiesDialogDataProps & ProjectPropertiesDialogActionProps & WithDialogProps<{}> & WithStyles<CssRules>;
+type ProjectPropertiesDialogProps = ProjectPropertiesDialogDataProps & ProjectPropertiesDialogActionProps & WithDialogProps<{}> & WithStyles<CssRules>;
 
 export const ProjectPropertiesDialog = connect(mapStateToProps, mapDispatchToProps)(
     withStyles(styles)(
-    withDialog(PROJECT_PROPERTIES_DIALOG_NAME)(
-        ({ classes, open, closeDialog, handleDelete, project }: ProjectPropertiesDialogProps) =>
-            <Dialog open={open}
-                onClose={closeDialog}
-                fullWidth
-                maxWidth='sm'>
-                <DialogTitle>Properties</DialogTitle>
-                <DialogContent>
-                    <ProjectPropertiesForm />
-                    {project && project.properties &&
-                        Object.keys(project.properties).map(k =>
-                            Array.isArray(project.properties[k])
-                            ? project.properties[k].map((v: string) =>
-                                getPropertyChip(
-                                    k, v,
-                                    handleDelete(k, v),
-                                    classes.tag))
-                            : getPropertyChip(
-                                k, project.properties[k],
-                                handleDelete(k, project.properties[k]),
-                                classes.tag)
-                        )
-                    }
-                </DialogContent>
-                <DialogActions>
-                    <Button
-                        variant='text'
-                        color='primary'
-                        onClick={closeDialog}>
-                        Close
+        withDialog(PROJECT_PROPERTIES_DIALOG_NAME)(
+            ({ classes, open, closeDialog, handleDelete, project }: ProjectPropertiesDialogProps) =>
+                <Dialog open={open}
+                    onClose={closeDialog}
+                    fullWidth
+                    maxWidth='sm'>
+                    <DialogTitle>Properties</DialogTitle>
+                    <DialogContent>
+                        <ProjectPropertiesForm />
+                        {project && project.properties &&
+                            Object.keys(project.properties).map(k =>
+                                Array.isArray(project.properties[k])
+                                    ? project.properties[k].map((v: string) =>
+                                        getPropertyChip(
+                                            k, v,
+                                            handleDelete(k, v),
+                                            classes.tag))
+                                    : getPropertyChip(
+                                        k, project.properties[k],
+                                        handleDelete(k, project.properties[k]),
+                                        classes.tag)
+                            )
+                        }
+                    </DialogContent>
+                    <DialogActions>
+                        <Button
+                            variant='text'
+                            color='primary'
+                            onClick={closeDialog}>
+                            Close
                     </Button>
-                </DialogActions>
-            </Dialog>
-    )
-));
+                    </DialogActions>
+                </Dialog>
+        )
+    ));

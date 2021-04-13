@@ -15,9 +15,12 @@ import { navigateToRunProcess } from '~/store/navigation/navigation-action';
 import { runProcessPanelActions } from '~/store/run-process-panel/run-process-panel-actions';
 import { getUserUuid } from '~/common/getuser';
 import { matchProjectRoute } from '~/routes/routes';
-import { GroupResource } from '~/models/group';
+import { GroupClass, GroupResource } from '~/models/group';
 import { ResourcesState, getResource } from '~/store/resources/resources';
 import { extractUuidKind, ResourceKind } from '~/models/resource';
+import { pluginConfig } from '~/plugins';
+import { ElementListReducer } from '~/common/plugintypes';
+import { Location } from 'history';
 
 type CssRules = 'button' | 'menuItem' | 'icon';
 
@@ -37,7 +40,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 });
 
 interface SidePanelDataProps {
-    location: any;
+    location: Location;
     currentItemId: string;
     resources: ResourcesState;
     currentUserUUID: string | undefined;
@@ -87,10 +90,36 @@ export const SidePanelButton = withStyles(styles)(
                     const currentProject = getResource<GroupResource>(currentItemId)(resources);
                     if (currentProject &&
                         currentProject.writableBy.indexOf(currentUserUUID || '') >= 0 &&
-                        !isProjectTrashed(currentProject, resources)) {
+                        !isProjectTrashed(currentProject, resources) &&
+                        currentProject.groupClass !== GroupClass.FILTER) {
                         enabled = true;
                     }
                 }
+
+                for (const enableFn of pluginConfig.enableNewButtonMatchers) {
+                    if (enableFn(location, currentItemId, currentUserUUID, resources)) {
+                        enabled = true;
+                    }
+                }
+
+                let menuItems = <>
+                    <MenuItem data-cy='side-panel-new-collection' className={classes.menuItem} onClick={this.handleNewCollectionClick}>
+                        <CollectionIcon className={classes.icon} /> New collection
+                    </MenuItem>
+                    <MenuItem data-cy='side-panel-run-process' className={classes.menuItem} onClick={this.handleRunProcessClick}>
+                        <ProcessIcon className={classes.icon} /> Run a process
+                    </MenuItem>
+                    <MenuItem data-cy='side-panel-new-project' className={classes.menuItem} onClick={this.handleNewProjectClick}>
+                        <ProjectIcon className={classes.icon} /> New project
+                    </MenuItem>
+                </>;
+
+                const reduceItemsFn: (a: React.ReactElement[], b: ElementListReducer) => React.ReactElement[] =
+                    (a, b) => b(a, classes.menuItem);
+
+                menuItems = React.createElement(React.Fragment, null,
+                    pluginConfig.newButtonMenuList.reduce(reduceItemsFn, React.Children.toArray(menuItems.props.children)));
+
                 return <Toolbar>
                     <Grid container>
                         <Grid container item xs alignItems="center" justify="flex-start">
@@ -109,15 +138,7 @@ export const SidePanelButton = withStyles(styles)(
                                 onClose={this.handleClose}
                                 onClick={this.handleClose}
                                 transformOrigin={transformOrigin}>
-                                <MenuItem data-cy='side-panel-new-collection' className={classes.menuItem} onClick={this.handleNewCollectionClick}>
-                                    <CollectionIcon className={classes.icon} /> New collection
-                                </MenuItem>
-                                <MenuItem data-cy='side-panel-run-process' className={classes.menuItem} onClick={this.handleRunProcessClick}>
-                                    <ProcessIcon className={classes.icon} /> Run a process
-                                </MenuItem>
-                                <MenuItem data-cy='side-panel-new-project' className={classes.menuItem} onClick={this.handleNewProjectClick}>
-                                    <ProjectIcon className={classes.icon} /> New project
-                                </MenuItem>
+                                {menuItems}
                             </Menu>
                         </Grid>
                     </Grid>

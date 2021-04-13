@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { getInitialResourceTypeFilters, serializeResourceTypeFilters, ObjectTypeFilter, CollectionTypeFilter, ProcessTypeFilter } from './resource-type-filters';
+import { getInitialResourceTypeFilters, serializeResourceTypeFilters, ObjectTypeFilter, CollectionTypeFilter, ProcessTypeFilter, GroupTypeFilter } from './resource-type-filters';
 import { ResourceKind } from '~/models/resource';
 import { deselectNode } from '~/models/tree';
 import { pipe } from 'lodash/fp';
@@ -73,4 +73,43 @@ describe("serializeResourceTypeFilters", () => {
         expect(serializedFilters)
             .toEqual(`["uuid","is_a",["${ResourceKind.PROCESS}"]],["container_requests.requesting_container_uuid","!=",null]`);
     });
+
+    it("should serialize all project types", () => {
+        const filters = pipe(
+            () => getInitialResourceTypeFilters(),
+            deselectNode(ObjectTypeFilter.PROCESS),
+            deselectNode(ObjectTypeFilter.COLLECTION),
+        )();
+
+        const serializedFilters = serializeResourceTypeFilters(filters);
+        expect(serializedFilters)
+            .toEqual(`["uuid","is_a",["${ResourceKind.GROUP}"]]`);
+    });
+
+    it("should serialize filter groups", () => {
+        const filters = pipe(
+            () => getInitialResourceTypeFilters(),
+            deselectNode(GroupTypeFilter.PROJECT)
+            deselectNode(ObjectTypeFilter.PROCESS),
+            deselectNode(ObjectTypeFilter.COLLECTION),
+        )();
+
+        const serializedFilters = serializeResourceTypeFilters(filters);
+        expect(serializedFilters)
+            .toEqual(`["uuid","is_a",["${ResourceKind.GROUP}"]],["groups.group_class","=","filter"]`);
+    });
+
+    it("should serialize projects (normal)", () => {
+        const filters = pipe(
+            () => getInitialResourceTypeFilters(),
+            deselectNode(GroupTypeFilter.FILTER_GROUP)
+            deselectNode(ObjectTypeFilter.PROCESS),
+            deselectNode(ObjectTypeFilter.COLLECTION),
+        )();
+
+        const serializedFilters = serializeResourceTypeFilters(filters);
+        expect(serializedFilters)
+            .toEqual(`["uuid","is_a",["${ResourceKind.GROUP}"]],["groups.group_class","=","project"]`);
+    });
+
 });

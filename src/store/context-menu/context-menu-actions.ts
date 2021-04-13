@@ -18,7 +18,7 @@ import { VirtualMachinesResource } from '~/models/virtual-machines';
 import { KeepServiceResource } from '~/models/keep-services';
 import { ProcessResource } from '~/models/process';
 import { CollectionResource } from '~/models/collection';
-import { GroupResource } from '~/models/group';
+import { GroupClass, GroupResource } from '~/models/group';
 import { GroupContentsResource } from '~/services/groups-service/groups-service';
 
 export const contextMenuActions = unionize({
@@ -34,7 +34,7 @@ export type ContextMenuResource = {
     ownerUuid: string;
     description?: string;
     kind: ResourceKind,
-    menuKind: ContextMenuKind;
+    menuKind: ContextMenuKind | string;
     isTrashed?: boolean;
     isEditable?: boolean;
     outputUuid?: string;
@@ -167,7 +167,7 @@ export const openProjectContextMenu = (event: React.MouseEvent<HTMLElement>, res
                 kind: res.kind,
                 menuKind,
                 ownerUuid: res.ownerUuid,
-                isTrashed: ('isTrashed' in res) ? res.isTrashed: false,
+                isTrashed: ('isTrashed' in res) ? res.isTrashed : false,
             }));
         }
     };
@@ -201,19 +201,24 @@ export const openProcessContextMenu = (event: React.MouseEvent<HTMLElement>, pro
         }
     };
 
-export const resourceUuidToContextMenuKind = (uuid: string) =>
+export const resourceUuidToContextMenuKind = (uuid: string, readonly = false) =>
     (dispatch: Dispatch, getState: () => RootState) => {
         const { isAdmin: isAdminUser, uuid: userUuid } = getState().auth.user!;
         const kind = extractUuidKind(uuid);
         const resource = getResourceWithEditableStatus<GroupResource & EditableResource>(uuid, userUuid)(getState().resources);
-        const isEditable = isAdminUser || (resource || {} as EditableResource).isEditable;
+
+        const isEditable = (isAdminUser || (resource || {} as EditableResource).isEditable) && !readonly;
         switch (kind) {
             case ResourceKind.PROJECT:
-                return !isAdminUser
-                    ? isEditable
-                        ? ContextMenuKind.PROJECT
-                        : ContextMenuKind.READONLY_PROJECT
-                    : ContextMenuKind.PROJECT_ADMIN;
+                return (isAdminUser && !readonly)
+                    ? (resource && resource.groupClass !== GroupClass.FILTER)
+                        ? ContextMenuKind.PROJECT_ADMIN
+                        : ContextMenuKind.FILTER_GROUP_ADMIN
+                    : isEditable
+                        ? (resource && resource.groupClass !== GroupClass.FILTER)
+                            ? ContextMenuKind.PROJECT
+                            : ContextMenuKind.FILTER_GROUP
+                        : ContextMenuKind.READONLY_PROJECT;
             case ResourceKind.COLLECTION:
                 const c = getResource<CollectionResource>(uuid)(getState().resources);
                 if (c === undefined) { return; }
@@ -223,15 +228,17 @@ export const resourceUuidToContextMenuKind = (uuid: string) =>
                     ? ContextMenuKind.OLD_VERSION_COLLECTION
                     : (isTrashed && isEditable)
                         ? ContextMenuKind.TRASHED_COLLECTION
-                        : isAdminUser
+                        : (isAdminUser && !readonly)
                             ? ContextMenuKind.COLLECTION_ADMIN
                             : isEditable
                                 ? ContextMenuKind.COLLECTION
                                 : ContextMenuKind.READONLY_COLLECTION;
             case ResourceKind.PROCESS:
-                return !isAdminUser
-                    ? ContextMenuKind.PROCESS_RESOURCE
-                    : ContextMenuKind.PROCESS_ADMIN;
+                return (isAdminUser && !readonly)
+                    ? ContextMenuKind.PROCESS_ADMIN
+                    : readonly
+                        ? ContextMenuKind.READONLY_PROCESS_RESOURCE
+                        : ContextMenuKind.PROCESS_RESOURCE;
             case ResourceKind.USER:
                 return ContextMenuKind.ROOT_PROJECT;
             case ResourceKind.LINK:

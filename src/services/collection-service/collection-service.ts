@@ -10,6 +10,7 @@ import { AuthService } from "../auth-service/auth-service";
 import { extractFilesData } from "./collection-service-files-response";
 import { TrashableResourceService } from "~/services/common-service/trashable-resource-service";
 import { ApiActions } from "~/services/api/api-actions";
+import { customEncodeURI } from "~/common/url";
 
 export type UploadProgress = (fileId: number, loaded: number, total: number, currentTime: number) => void;
 
@@ -78,7 +79,7 @@ export class CollectionService extends TrashableResourceService<CollectionResour
     async moveFile(collectionUuid: string, oldPath: string, newPath: string) {
         await this.webdavClient.move(
             `c=${collectionUuid}${oldPath}`,
-            `c=${collectionUuid}${encodeURI(newPath)}`
+            `c=${collectionUuid}/${customEncodeURI(newPath)}`
         );
         await this.update(collectionUuid, { preserveVersion: true });
     }

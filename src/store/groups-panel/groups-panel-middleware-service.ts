@@ -36,7 +36,7 @@ export class GroupsPanelMiddlewareService extends DataExplorerMiddlewareService 
                     order.addOrder(direction, 'name');
                 }
                 const filters = new FilterBuilder()
-                    .addNotIn('group_class', [GroupClass.PROJECT])
+                    .addNotIn('group_class', [GroupClass.PROJECT, GroupClass.FILTER])
                     .addILike('name', dataExplorer.searchValue)
                     .getFilters();
                 const response = await this.services.groupsService

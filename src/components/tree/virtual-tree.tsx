@@ -188,7 +188,6 @@ export const VirtualTree = withStyles(styles)(
     class Component<T> extends React.Component<TreeProps<T> & WithStyles<CssRules>, {}> {
         render(): ReactElement<any> {
             const { items, render } = this.props;
-
             return <AutoSizer>
                 {({ height, width }) => {
                     return VirtualList(height, width, items || [], render, this.props);

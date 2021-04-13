@@ -6,7 +6,7 @@ import * as React from 'react';
 import { Grid, Typography, withStyles, Tooltip, IconButton, Checkbox } from '@material-ui/core';
 import { FavoriteStar, PublicFavoriteStar } from '../favorite-star/favorite-star';
 import { ResourceKind, TrashableResource } from '~/models/resource';
-import { ProjectIcon, CollectionIcon, ProcessIcon, DefaultIcon, ShareIcon, CollectionOldVersionIcon, WorkflowIcon } from '~/components/icon/icon';
+import { ProjectIcon, FilterGroupIcon, CollectionIcon, ProcessIcon, DefaultIcon, ShareIcon, CollectionOldVersionIcon, WorkflowIcon } from '~/components/icon/icon';
 import { formatDate, formatFileSize, formatTime } from '~/common/formatters';
 import { resourceLabel } from '~/common/labels';
 import { connect, DispatchProp } from 'react-redux';
@@ -28,6 +28,7 @@ import { withResourceData } from '~/views-components/data-explorer/with-resource
 import { CollectionResource } from '~/models/collection';
 import { IllegalNamingWarning } from '~/components/warning/warning';
 import { loadResource } from '~/store/resources/resources-actions';
+import { GroupClass } from '~/models/group';
 
 const renderName = (dispatch: Dispatch, item: GroupContentsResource) =>
     <Grid container alignItems="center" wrap="nowrap" spacing={16}>
@@ -59,6 +60,9 @@ export const ResourceName = connect(
 const renderIcon = (item: GroupContentsResource) => {
     switch (item.kind) {
         case ResourceKind.PROJECT:
+            if (item.groupClass === GroupClass.FILTER) {
+                return <FilterGroupIcon />;
+            }
             return <ProjectIcon />;
         case ResourceKind.COLLECTION:
             if (item.uuid === item.currentVersionUuid) {
@@ -464,16 +468,16 @@ export const ResourceOwnerWithName =
             </Typography>;
         });
 
-const renderType = (type: string) =>
+const renderType = (type: string, subtype: string) =>
     <Typography noWrap>
-        {resourceLabel(type)}
+        {resourceLabel(type, subtype)}
     </Typography>;
 
 export const ResourceType = connect(
     (state: RootState, props: { uuid: string }) => {
         const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
-        return { type: resource ? resource.kind : '' };
-    })((props: { type: string }) => renderType(props.type));
+        return { type: resource ? resource.kind : '', subtype: resource && resource.kind === ResourceKind.GROUP ? resource.groupClass : '' };
+    })((props: { type: string, subtype: string }) => renderType(props.type, props.subtype));
 
 export const ResourceStatus = connect((state: RootState, props: { uuid: string }) => {
     return { resource: getResource<GroupContentsResource>(props.uuid)(state.resources) };

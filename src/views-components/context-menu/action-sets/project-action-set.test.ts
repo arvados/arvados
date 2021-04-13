@@ -2,11 +2,12 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { projectActionSet, readOnlyProjectActionSet } from "./project-action-set";
+import { filterGroupActionSet, projectActionSet, readOnlyProjectActionSet } from "./project-action-set";
 
 describe('project-action-set', () => {
     const flattProjectActionSet = projectActionSet.reduce((prev, next) => prev.concat(next), []);
     const flattReadOnlyProjectActionSet = readOnlyProjectActionSet.reduce((prev, next) => prev.concat(next), []);
+    const flattFilterGroupActionSet = filterGroupActionSet.reduce((prev, next) => prev.concat(next), []);
 
     describe('projectActionSet', () => {
         it('should not be empty', () => {
@@ -30,6 +31,19 @@ describe('project-action-set', () => {
         it('should not contain projectActionSet items', () => {
             // then
             expect(flattReadOnlyProjectActionSet)
+                .not.toEqual(expect.arrayContaining(flattProjectActionSet));
+        })
+    });
+
+    describe('filterGroupActionSet', () => {
+        it('should not be empty', () => {
+            // then
+            expect(flattFilterGroupActionSet.length).toBeGreaterThan(0);
+        });
+
+        it('should not contain projectActionSet items', () => {
+            // then
+            expect(flattFilterGroupActionSet)
                 .not.toEqual(expect.arrayContaining(flattProjectActionSet));
         })
     });

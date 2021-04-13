@@ -25,33 +25,39 @@ export const extractFilesData = (document: Document) => {
         .from(document.getElementsByTagName('D:response'))
         .slice(1) // omit first element which is collection itself
         .map(element => {
-            const name = getTagValue(element, 'D:displayname', '');
-            const size = parseInt(getTagValue(element, 'D:getcontentlength', '0'), 10);
-            const url = getTagValue(element, 'D:href', '');
-            const nameSuffix = `/${name || ''}`;
+            const name = getTagValue(element, 'D:displayname', '', true); // skip decoding as value should be already decoded
+            const size = parseInt(getTagValue(element, 'D:getcontentlength', '0', true), 10);
+            const url = getTagValue(element, 'D:href', '', true);
             const collectionUuidMatch = collectionUrlPrefix.exec(url);
             const collectionUuid = collectionUuidMatch ? collectionUuidMatch.pop() : '';
-            const directory = url
+            const pathArray = url.split(`/`);
+            if (!pathArray.pop()) {
+                pathArray.pop();
+            }
+            const directory = pathArray.join('/')
                 .replace(collectionUrlPrefix, '')
-                .replace(nameSuffix, '');
+                .replace(/\/\//g, '/');
 
             const parentPath = directory.replace(/\/$/, '');
             const data = {
                 url,
                 id: [
                     collectionUuid ? collectionUuid : '',
-                    directory ? parentPath : '',
+                    directory ? unescape(parentPath) : '',
                     '/' + name
                 ].join(''),
                 name,
-                path: parentPath,
+                path: unescape(parentPath),
             };
 
-            return getTagValue(element, 'D:resourcetype', '')
+            const result = getTagValue(element, 'D:resourcetype', '')
                 ? createCollectionDirectory(data)
                 : createCollectionFile({ ...data, size });
+
+            return result;
         });
 };
 
-export const getFileFullPath = ({ name, path }: CollectionFile | CollectionDirectory) =>
-    `${path}/${name}`;
+export const getFileFullPath = ({ name, path }: CollectionFile | CollectionDirectory) => {
+    return `${path}/${name}`;
+};

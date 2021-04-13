@@ -2,59 +2,60 @@
 [comment]: # ()
 [comment]: # (SPDX-License-Identifier: CC-BY-SA-3.0)
 
-## Arvados Workbench 2
+# Arvados Workbench 2
 
-### Setup
-<pre>
-brew install yarn
+## Setup
+```
+npm install yarn
 yarn install
-</pre>
+```
+
 Install [redux-devtools-extension](https://chrome.google.com/webstore/detail/redux-devtools/lmhkpmbekcpmknklioeibfkpmmfibljd)
 
-### Start project
-<code>yarn start</code>
+## Start project for development
+```
+yarn start
+```
 
-### Run unit tests
-<pre>
+## Run unit tests
+```
 make unit-tests
-</pre>
+```
 
-### Run end-to-end tests
+## Run end-to-end tests
 
-<pre>
+```
 make integration-tests
-</pre>
+```
 
-### Run end-to-end tests in a Docker container
+## Run end-to-end tests in a Docker container
 
-<pre>
+```
 make integration-tests-in-docker
-</pre>
+```
 
-### Run tests interactively in container
+## Run tests interactively in container
 
-<pre>
+```
 $ xhost +local:root
 $ ARVADOS_DIR=/path/to/arvados
 $ docker run -ti -v$PWD:$PWD -v$ARVADOS_DIR:/usr/src/arvados -w$PWD --env="DISPLAY" --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" workbench2-build /bin/bash
 (inside container)
 # yarn run cypress install
 # tools/run-integration-tests.sh -i -a /usr/src/arvados
-</pre>
+```
 
-### Production build
-<pre>
-yarn install
+## Production build
+```
 yarn build
-</pre>
+```
 
-### Package build
-<pre>
-make workbench2-build-image
-docker run -v$PWD:$PWD -w $PWD arvados/fpm make packages
-</pre>
+## Package build
+```
+make packages
+```
 
-### Build time configuration
+## Build time configuration
 You can customize project global variables using env variables. Default values are placed in the `.env` file.
 
 Example:
@@ -62,8 +63,9 @@ Example:
 REACT_APP_ARVADOS_CONFIG_URL=config.json yarn build
 ```
 
-### Run time configuration
-The app will fetch runtime configuration when starting. By default it will try to fetch `/config.json`. You can customize this url using build time configuration.
+## Run time configuration
+The app will fetch runtime configuration when starting. By default it will try to fetch `/config.json`.  In development mode, this can be found in the `public` directory.
+You can customize this url using build time configuration.
 
 Currently this configuration schema is supported:
 ```
@@ -74,19 +76,19 @@ Currently this configuration schema is supported:
 }
 ```
 
-#### API_HOST
+### API_HOST
 
 The Arvados base URL.
 
 The `REACT_APP_ARVADOS_API_HOST` environment variable can be used to set the default URL if the run time configuration is unreachable.
 
-#### VOCABULARY_URL
+### VOCABULARY_URL
 Local path, or any URL that allows cross-origin requests. See
 [Vocabulary JSON file example](public/vocabulary-example.json).
 
 To use the URL defined in the Arvados cluster configuration, remove the entire `VOCABULARY_URL` entry from the runtime configuration. Found in `/config.json` by default.
 
-### FILE_VIEWERS_CONFIG_URL
+## FILE_VIEWERS_CONFIG_URL
 Local path, or any URL that allows cross-origin requests. See:
 
 [File viewers config file example](public/file-viewers-example.json)
@@ -95,7 +97,14 @@ Local path, or any URL that allows cross-origin requests. See:
 
 To use the URL defined in the Arvados cluster configuration, remove the entire `FILE_VIEWERS_CONFIG_URL` entry from the runtime configuration. Found in `/config.json` by default.
 
-### Licensing
+## Plugin support
+
+Workbench supports plugins to add new functionality to the user
+interface.  For information about installing plugins, the provided
+example plugins, see [src/plugins/README.md](src/plugins/README.md).
+
+
+## Licensing
 
 Arvados is Free Software. See COPYING for information about Arvados Free
 Software licenses.

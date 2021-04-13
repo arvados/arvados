@@ -31,7 +31,7 @@ describe("CommonResourceService", () => {
         expect(axiosInstance.get).toHaveBeenCalledWith("/groups", {
             params: {
                 filters: "[" + new FilterBuilder()
-                    .addEqual("group_class", "project")
+                    .addIn("group_class", ["project", "filter"])
                     .getFilters() + "]",
                 order: undefined
             }

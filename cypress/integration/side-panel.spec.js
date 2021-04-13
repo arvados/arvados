@@ -36,7 +36,7 @@ describe('Side panel tests', function() {
             .and('not.be.disabled');
     })
 
-    it('disables or enables the +NEW side panel button on depending on project permissions', function() {
+    it('disables or enables the +NEW side panel button depending on project permissions', function() {
         cy.loginAs(activeUser);
         [true, false].map(function(isWritable) {
             cy.createGroup(adminUser.token, {
@@ -75,4 +75,22 @@ describe('Side panel tests', function() {
                 .and('be.disabled');
         })
     })
+
+    it('disables the +NEW side panel button when viewing filter group', function() {
+        cy.loginAs(adminUser);
+        cy.createGroup(adminUser.token, {
+            name: `my-favorite-filter-group`,
+            group_class: 'filter',
+            properties: {filters: []},
+        }).as('myFavoriteFilterGroup').then(function (myFavoriteFilterGroup) {
+            cy.contains('Refresh').click();
+            cy.doSearch(`${myFavoriteFilterGroup.uuid}`);
+            cy.get('[data-cy=breadcrumb-last]').should('contain', 'my-favorite-filter-group');
+
+            cy.get('[data-cy=side-panel-button]')
+                    .should('exist')
+                    .and(`be.disabled`);
+        })
+    })
+
 })

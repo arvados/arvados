@@ -4,11 +4,14 @@
 
 import { ResourceKind } from "~/models/resource";
 
-export const resourceLabel = (type: string) => {
+export const resourceLabel = (type: string, subtype = '') => {
     switch (type) {
         case ResourceKind.COLLECTION:
             return "Data collection";
         case ResourceKind.PROJECT:
+            if (subtype === "filter") {
+                return "Filter group";
+            }
             return "Project";
         case ResourceKind.PROCESS:
             return "Process";
