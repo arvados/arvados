@@ -136,7 +136,7 @@ func (s *PullWorkerTestSuite) TestSpecifyMountUUID(c *C) {
 func (s *PullWorkerTestSuite) TestPullWorkerPullList_with_two_locators(c *C) {
 	testData := PullWorkerTestData{
 		name:         "TestPullWorkerPullList_with_two_locators",
-		req:          RequestTester{"/pull", s.cluster.SystemRootToken, "PUT", firstPullList},
+		req:          RequestTester{"/pull", s.cluster.SystemRootToken, "PUT", firstPullList, ""},
 		responseCode: http.StatusOK,
 		responseBody: "Received 2 pull requests\n",
 		readContent:  "hello",
@@ -150,7 +150,7 @@ func (s *PullWorkerTestSuite) TestPullWorkerPullList_with_two_locators(c *C) {
 func (s *PullWorkerTestSuite) TestPullWorkerPullList_with_one_locator(c *C) {
 	testData := PullWorkerTestData{
 		name:         "TestPullWorkerPullList_with_one_locator",
-		req:          RequestTester{"/pull", s.cluster.SystemRootToken, "PUT", secondPullList},
+		req:          RequestTester{"/pull", s.cluster.SystemRootToken, "PUT", secondPullList, ""},
 		responseCode: http.StatusOK,
 		responseBody: "Received 1 pull requests\n",
 		readContent:  "hola",
@@ -164,7 +164,7 @@ func (s *PullWorkerTestSuite) TestPullWorkerPullList_with_one_locator(c *C) {
 func (s *PullWorkerTestSuite) TestPullWorker_error_on_get_one_locator(c *C) {
 	testData := PullWorkerTestData{
 		name:         "TestPullWorker_error_on_get_one_locator",
-		req:          RequestTester{"/pull", s.cluster.SystemRootToken, "PUT", secondPullList},
+		req:          RequestTester{"/pull", s.cluster.SystemRootToken, "PUT", secondPullList, ""},
 		responseCode: http.StatusOK,
 		responseBody: "Received 1 pull requests\n",
 		readContent:  "unused",
@@ -178,7 +178,7 @@ func (s *PullWorkerTestSuite) TestPullWorker_error_on_get_one_locator(c *C) {
 func (s *PullWorkerTestSuite) TestPullWorker_error_on_get_two_locators(c *C) {
 	testData := PullWorkerTestData{
 		name:         "TestPullWorker_error_on_get_two_locators",
-		req:          RequestTester{"/pull", s.cluster.SystemRootToken, "PUT", firstPullList},
+		req:          RequestTester{"/pull", s.cluster.SystemRootToken, "PUT", firstPullList, ""},
 		responseCode: http.StatusOK,
 		responseBody: "Received 2 pull requests\n",
 		readContent:  "unused",
@@ -192,7 +192,7 @@ func (s *PullWorkerTestSuite) TestPullWorker_error_on_get_two_locators(c *C) {
 func (s *PullWorkerTestSuite) TestPullWorker_error_on_put_one_locator(c *C) {
 	testData := PullWorkerTestData{
 		name:         "TestPullWorker_error_on_put_one_locator",
-		req:          RequestTester{"/pull", s.cluster.SystemRootToken, "PUT", secondPullList},
+		req:          RequestTester{"/pull", s.cluster.SystemRootToken, "PUT", secondPullList, ""},
 		responseCode: http.StatusOK,
 		responseBody: "Received 1 pull requests\n",
 		readContent:  "hello hello",
@@ -206,7 +206,7 @@ func (s *PullWorkerTestSuite) TestPullWorker_error_on_put_one_locator(c *C) {
 func (s *PullWorkerTestSuite) TestPullWorker_error_on_put_two_locators(c *C) {
 	testData := PullWorkerTestData{
 		name:         "TestPullWorker_error_on_put_two_locators",
-		req:          RequestTester{"/pull", s.cluster.SystemRootToken, "PUT", firstPullList},
+		req:          RequestTester{"/pull", s.cluster.SystemRootToken, "PUT", firstPullList, ""},
 		responseCode: http.StatusOK,
 		responseBody: "Received 2 pull requests\n",
 		readContent:  "hello again",
@@ -221,7 +221,7 @@ func (s *PullWorkerTestSuite) TestPullWorker_error_on_put_two_locators(c *C) {
 func (s *PullWorkerTestSuite) TestPullWorker_invalidToken(c *C) {
 	testData := PullWorkerTestData{
 		name:         "TestPullWorkerPullList_with_two_locators",
-		req:          RequestTester{"/pull", "invalidToken", "PUT", firstPullList},
+		req:          RequestTester{"/pull", "invalidToken", "PUT", firstPullList, ""},
 		responseCode: http.StatusUnauthorized,
 		responseBody: "Unauthorized\n",
 		readContent:  "hello",

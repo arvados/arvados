@@ -15,7 +15,7 @@ import (
 // getStatusItem("foo","bar","baz") retrieves /status.json, decodes
 // the response body into resp, and returns resp["foo"]["bar"]["baz"].
 func getStatusItem(h *handler, keys ...string) interface{} {
-	resp := IssueRequest(h, &RequestTester{"/status.json", "", "GET", nil})
+	resp := IssueRequest(h, &RequestTester{"/status.json", "", "GET", nil, ""})
 	var s interface{}
 	json.NewDecoder(resp.Body).Decode(&s)
 	for _, k := range keys {

@@ -246,6 +246,14 @@ func (rtr *router) handlePUT(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	var wantStorageClasses []string
+	if hdr := req.Header.Get("X-Keep-Storage-Classes"); hdr != "" {
+		wantStorageClasses = strings.Split(hdr, ",")
+		for i, sc := range wantStorageClasses {
+			wantStorageClasses[i] = strings.TrimSpace(sc)
+		}
+	}
+
 	buf, err := getBufferWithContext(ctx, bufs, int(req.ContentLength))
 	if err != nil {
 		http.Error(resp, err.Error(), http.StatusServiceUnavailable)
@@ -259,7 +267,7 @@ func (rtr *router) handlePUT(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	replication, err := PutBlock(ctx, rtr.volmgr, buf, hash)
+	result, err := PutBlock(ctx, rtr.volmgr, buf, hash, wantStorageClasses)
 	bufs.Put(buf)
 
 	if err != nil {
@@ -279,7 +287,8 @@ func (rtr *router) handlePUT(resp http.ResponseWriter, req *http.Request) {
 		expiry := time.Now().Add(rtr.cluster.Collections.BlobSigningTTL.Duration())
 		returnHash = SignLocator(rtr.cluster, returnHash, apiToken, expiry)
 	}
-	resp.Header().Set("X-Keep-Replicas-Stored", strconv.Itoa(replication))
+	resp.Header().Set("X-Keep-Replicas-Stored", result.TotalReplication())
+	resp.Header().Set("X-Keep-Storage-Classes-Confirmed", result.ClassReplication())
 	resp.Write([]byte(returnHash + "\n"))
 }
 
@@ -724,6 +733,80 @@ func GetBlock(ctx context.Context, volmgr *RRVolumeManager, hash string, buf []b
 	return 0, errorToCaller
 }
 
+type putProgress struct {
+	classTodo        map[string]bool
+	mountUsed        map[*VolumeMount]bool
+	totalReplication int
+	classDone        map[string]int
+}
+
+// Number of distinct replicas stored. "2" can mean the block was
+// stored on 2 different volumes with replication 1, or on 1 volume
+// with replication 2.
+func (pr putProgress) TotalReplication() string {
+	return strconv.Itoa(pr.totalReplication)
+}
+
+// Number of replicas satisfying each storage class, formatted like
+// "default=2; special=1".
+func (pr putProgress) ClassReplication() string {
+	s := ""
+	for k, v := range pr.classDone {
+		if len(s) > 0 {
+			s += ", "
+		}
+		s += k + "=" + strconv.Itoa(v)
+	}
+	return s
+}
+
+func (pr *putProgress) Add(mnt *VolumeMount) {
+	if pr.mountUsed[mnt] {
+		logrus.Warnf("BUG? superfluous extra write to mount %s", mnt)
+		return
+	}
+	pr.mountUsed[mnt] = true
+	pr.totalReplication += mnt.Replication
+	for class := range mnt.StorageClasses {
+		pr.classDone[class] += mnt.Replication
+		delete(pr.classTodo, class)
+	}
+}
+
+func (pr *putProgress) Done() bool {
+	return len(pr.classTodo) == 0 && pr.totalReplication > 0
+}
+
+func (pr *putProgress) Want(mnt *VolumeMount) bool {
+	if pr.Done() || pr.mountUsed[mnt] {
+		return false
+	}
+	if len(pr.classTodo) == 0 {
+		// none specified == "any"
+		return true
+	}
+	for class := range mnt.StorageClasses {
+		if pr.classTodo[class] {
+			return true
+		}
+	}
+	return false
+}
+
+func newPutResult(classes []string) putProgress {
+	pr := putProgress{
+		classTodo: make(map[string]bool, len(classes)),
+		classDone: map[string]int{},
+		mountUsed: map[*VolumeMount]bool{},
+	}
+	for _, c := range classes {
+		if c != "" {
+			pr.classTodo[c] = true
+		}
+	}
+	return pr
+}
+
 // PutBlock Stores the BLOCK (identified by the content id HASH) in Keep.
 //
 // PutBlock(ctx, block, hash)
@@ -751,53 +834,66 @@ func GetBlock(ctx context.Context, volmgr *RRVolumeManager, hash string, buf []b
 //          all writes failed). The text of the error message should
 //          provide as much detail as possible.
 //
-func PutBlock(ctx context.Context, volmgr *RRVolumeManager, block []byte, hash string) (int, error) {
+func PutBlock(ctx context.Context, volmgr *RRVolumeManager, block []byte, hash string, wantStorageClasses []string) (putProgress, error) {
 	log := ctxlog.FromContext(ctx)
 
 	// Check that BLOCK's checksum matches HASH.
 	blockhash := fmt.Sprintf("%x", md5.Sum(block))
 	if blockhash != hash {
 		log.Printf("%s: MD5 checksum %s did not match request", hash, blockhash)
-		return 0, RequestHashError
+		return putProgress{}, RequestHashError
 	}
+
+	result := newPutResult(wantStorageClasses)
 
 	// If we already have this data, it's intact on disk, and we
 	// can update its timestamp, return success. If we have
 	// different data with the same hash, return failure.
-	if n, err := CompareAndTouch(ctx, volmgr, hash, block); err == nil || err == CollisionError {
-		return n, err
-	} else if ctx.Err() != nil {
-		return 0, ErrClientDisconnect
+	if err := CompareAndTouch(ctx, volmgr, hash, block, &result); err != nil {
+		return result, err
+	}
+	if ctx.Err() != nil {
+		return result, ErrClientDisconnect
 	}
 
 	// Choose a Keep volume to write to.
 	// If this volume fails, try all of the volumes in order.
-	if mnt := volmgr.NextWritable(); mnt != nil {
-		if err := mnt.Put(ctx, hash, block); err != nil {
-			log.WithError(err).Errorf("%s: Put(%s) failed", mnt.Volume, hash)
-		} else {
-			return mnt.Replication, nil // success!
+	if mnt := volmgr.NextWritable(); mnt == nil || !result.Want(mnt) {
+		// fall through to "try all volumes" below
+	} else if err := mnt.Put(ctx, hash, block); err != nil {
+		log.WithError(err).Errorf("%s: Put(%s) failed", mnt.Volume, hash)
+	} else {
+		result.Add(mnt)
+		if result.Done() {
+			return result, nil
 		}
 	}
 	if ctx.Err() != nil {
-		return 0, ErrClientDisconnect
+		return putProgress{}, ErrClientDisconnect
 	}
 
 	writables := volmgr.AllWritable()
 	if len(writables) == 0 {
 		log.Error("no writable volumes")
-		return 0, FullError
+		return putProgress{}, FullError
 	}
 
 	allFull := true
-	for _, vol := range writables {
-		err := vol.Put(ctx, hash, block)
+	for _, mnt := range writables {
+		if !result.Want(mnt) {
+			continue
+		}
+		err := mnt.Put(ctx, hash, block)
 		if ctx.Err() != nil {
-			return 0, ErrClientDisconnect
+			return result, ErrClientDisconnect
 		}
 		switch err {
 		case nil:
-			return vol.Replication, nil // success!
+			result.Add(mnt)
+			if result.Done() {
+				return result, nil
+			}
+			continue
 		case FullError:
 			continue
 		default:
@@ -805,30 +901,37 @@ func PutBlock(ctx context.Context, volmgr *RRVolumeManager, block []byte, hash s
 			// write did not succeed.  Report the
 			// error and continue trying.
 			allFull = false
-			log.WithError(err).Errorf("%s: Put(%s) failed", vol, hash)
+			log.WithError(err).Errorf("%s: Put(%s) failed", mnt.Volume, hash)
 		}
 	}
 
-	if allFull {
-		log.Error("all volumes are full")
-		return 0, FullError
+	if result.totalReplication > 0 {
+		// Some, but not all, of the storage classes were
+		// satisfied. This qualifies as success.
+		return result, nil
+	} else if allFull {
+		log.Error("all volumes with qualifying storage classes are full")
+		return putProgress{}, FullError
+	} else {
+		// Already logged the non-full errors.
+		return putProgress{}, GenericError
 	}
-	// Already logged the non-full errors.
-	return 0, GenericError
 }
 
-// CompareAndTouch returns the current replication level if one of the
-// volumes already has the given content and it successfully updates
-// the relevant block's modification time in order to protect it from
-// premature garbage collection. Otherwise, it returns a non-nil
-// error.
-func CompareAndTouch(ctx context.Context, volmgr *RRVolumeManager, hash string, buf []byte) (int, error) {
+// CompareAndTouch looks for volumes where the given content already
+// exists and its modification time can be updated (i.e., it is
+// protected from garbage collection), and updates result accordingly.
+// It returns when the result is Done() or all volumes have been
+// checked.
+func CompareAndTouch(ctx context.Context, volmgr *RRVolumeManager, hash string, buf []byte, result *putProgress) error {
 	log := ctxlog.FromContext(ctx)
-	var bestErr error = NotFoundError
 	for _, mnt := range volmgr.AllWritable() {
+		if !result.Want(mnt) {
+			continue
+		}
 		err := mnt.Compare(ctx, hash, buf)
 		if ctx.Err() != nil {
-			return 0, ctx.Err()
+			return nil
 		} else if err == CollisionError {
 			// Stop if we have a block with same hash but
 			// different content. (It will be impossible
@@ -836,7 +939,7 @@ func CompareAndTouch(ctx context.Context, volmgr *RRVolumeManager, hash string, 
 			// both, so there's no point writing it even
 			// on a different volume.)
 			log.Error("collision in Compare(%s) on volume %s", hash, mnt.Volume)
-			return 0, err
+			return CollisionError
 		} else if os.IsNotExist(err) {
 			// Block does not exist. This is the only
 			// "normal" error: we don't log anything.
@@ -850,13 +953,15 @@ func CompareAndTouch(ctx context.Context, volmgr *RRVolumeManager, hash string, 
 		}
 		if err := mnt.Touch(hash); err != nil {
 			log.WithError(err).Errorf("error in Touch(%s) on volume %s", hash, mnt.Volume)
-			bestErr = err
 			continue
 		}
 		// Compare and Touch both worked --> done.
-		return mnt.Replication, nil
+		result.Add(mnt)
+		if result.Done() {
+			return nil
+		}
 	}
-	return 0, bestErr
+	return nil
 }
 
 var validLocatorRe = regexp.MustCompile(`^[0-9a-f]{32}$`)

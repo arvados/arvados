@@ -136,6 +136,16 @@ func (s *IntegrationSuite) testCadaver(c *check.C, password string, pathFunc fun
 		},
 		{
 			path:  writePath,
+			cmd:   "move testfile \"test &#!%20 file\"\n",
+			match: `(?ms).*Moving .* succeeded.*`,
+		},
+		{
+			path:  writePath,
+			cmd:   "move \"test &#!%20 file\" testfile\n",
+			match: `(?ms).*Moving .* succeeded.*`,
+		},
+		{
+			path:  writePath,
 			cmd:   "move testfile newdir0/\n",
 			match: `(?ms).*Moving .* succeeded.*`,
 		},

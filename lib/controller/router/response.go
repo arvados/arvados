@@ -31,6 +31,9 @@ func (rtr *router) responseOptions(opts interface{}) (responseOptions, error) {
 	case *arvados.ListOptions:
 		rOpts.Select = opts.Select
 		rOpts.Count = opts.Count
+	case *arvados.GroupContentsOptions:
+		rOpts.Select = opts.Select
+		rOpts.Count = opts.Count
 	}
 	return rOpts, nil
 }

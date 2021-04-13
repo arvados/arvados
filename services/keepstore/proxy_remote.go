@@ -177,7 +177,7 @@ func (rrc *remoteResponseCacher) Close() error {
 		rrc.ResponseWriter.Write(rrc.Buffer)
 		return nil
 	}
-	_, err := PutBlock(rrc.Context, rrc.VolumeManager, rrc.Buffer, rrc.Locator[:32])
+	_, err := PutBlock(rrc.Context, rrc.VolumeManager, rrc.Buffer, rrc.Locator[:32], nil)
 	if rrc.Context.Err() != nil {
 		// If caller hung up, log that instead of subsequent/misleading errors.
 		http.Error(rrc.ResponseWriter, rrc.Context.Err().Error(), http.StatusGatewayTimeout)

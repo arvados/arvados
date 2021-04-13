@@ -8,6 +8,16 @@
 # generating the documentation for the SDKs, which (the R docs
 # especially) take a fair bit of time and slow down the edit-preview
 # cycle.
+#
+# To generate and view the documentation locally, run this command
+#
+#   rake && sensible-browser .site/index.html
+#
+# Or alternatively:
+#
+#   baseurl=http://localhost:8000 rake && rake run
+#
+# and then visit http://localhost:8000 in a browser.
 
 require "rubygems"
 require "colorize"
