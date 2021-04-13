@@ -42,7 +42,7 @@ Installing on Debian systems
 
 2. Update your package list.
 
-3. Install the ``python-arvados-fuse`` package.
+3. Install the ``python3-arvados-fuse`` package.
 
 Configuration
 -------------

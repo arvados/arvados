@@ -70,6 +70,28 @@ h3. LoginCluster conflicts with other Login providers
 
 A satellite cluster that delegates its user login to a central user database must only have `Login.LoginCluster` set, or it will return an error.  This is a change in behavior, previously it would return an error if another login provider was _not_ configured, even though the provider would never be used.
 
+h3. Minimum supported Python version is now 3.5
+
+We no longer publish Python 2 based distribution packages for our Python components. There are equivalent packages based on Python 3, but their names are slightly different. If you were using the Python 2 based packages, you can install the Python 3 based package for a drop in replacement. On Debian and Ubuntu:
+
+<pre>
+    apt remove python-arvados-fuse && apt install python3-arvados-fuse
+    apt remove python-arvados-python-client && apt install python3-arvados-python-client
+    apt remove python-arvados-cwl-runner && apt install python3-arvados-cwl-runner
+    apt remove python-crunchstat-summary && apt install python3-crunchstat-summary
+    apt remove python-cwltest && apt install python3-cwltest
+</pre>
+
+On CentOS:
+
+<pre>
+    yum remove python-arvados-fuse && yum install python3-arvados-fuse
+    yum remove python-arvados-python-client && yum install python3-arvados-python-client
+    yum remove python-arvados-cwl-runner && yum install python3-arvados-cwl-runner
+    yum remove python-crunchstat-summary && yum install python3-crunchstat-summary
+    yum remove python-cwltest && yum install python3-cwltest
+</pre>
+
 h3. Minimum supported Ruby version is now 2.5
 
 The minimum supported Ruby version is now 2.5.  If you are running Arvados on Debian 9 or Ubuntu 16.04, you may need to switch to using RVM or upgrade your OS.  See "Install Ruby and Bundler":../install/ruby.html for more information.
