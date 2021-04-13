@@ -153,7 +153,7 @@ describe('Favorites tests', function () {
             });
     });
 
-    it('can view favourites in workflow', () => {
+    it.only('can view favourites in workflow', () => {
         cy.createProject({
             owningUser: adminUser,
             targetUser: activeUser,
@@ -185,6 +185,13 @@ describe('Favorites tests', function () {
                 })
                     .as('testWorkflow');
 
+                cy.createWorkflow(adminUser.token, {
+                    name: `TestWorkflow2-${Math.floor(Math.random() * 999999)}.cwl`,
+                    definition: "{     \"$graph\": [         {             \"$namespaces\": {                 \"arv\": \"http://arvados.org/cwl#\"             },             \"class\": \"Workflow\",             \"doc\": \"Detect blurriness of WSI data.\",             \"id\": \"#main\",             \"inputs\": [                 {                     \"default\": {                         \"basename\": \"3d3cb547725e72ddb442bc620adbc342+2463\",                         \"class\": \"Directory\",                         \"location\": \"keep:3d3cb547725e72ddb442bc620adbc342+2463\"                     },                     \"doc\": \"Collection containing all pipeline input images\",                     \"id\": \"#main/image_collection\",                     \"type\": \"Directory\"                 }             ],             \"outputs\": [                 {                     \"id\": \"#main/blur_report\",                     \"outputSource\": \"#main/blurdetection/report\",                     \"type\": \"Any\"                 }             ],             \"steps\": [                 {                     \"id\": \"#main/blurdetection\",                     \"in\": [                         {                             \"id\": \"#main/blurdetection/image_collection\",                             \"source\": \"#main/image_collection\"                         }                     ],                     \"out\": [                         \"#main/blurdetection/report\"                     ],                     \"run\": \"#blurdetection.cwl\"                 }             ]         },         {             \"arguments\": [                 \"--num_workers\",                 \"0\",                 \"--wsi_dir\",                 \"$(inputs.image_collection)\",                 \"--tile_out_dir\",                 \"$(runtime.outdir)\"             ],             \"baseCommand\": [                 \"python3\",                 \"/updated_blur_on_folder.py\"             ],             \"class\": \"CommandLineTool\",             \"hints\": [                 {                     \"class\": \"DockerRequirement\",                     \"dockerPull\": \"updated_score_aws:cpu2\",                     \"http://arvados.org/cwl#dockerCollectionPDH\": \"0d6702518d1408ce2c471ffec40695cf+4924\"                 },                 {                     \"class\": \"ResourceRequirement\",                     \"coresMin\": 8,                     \"ramMin\": 20000                 },                 {                     \"class\": \"http://arvados.org/cwl#RuntimeConstraints\",                     \"keep_cache\": 2000                 }             ],             \"id\": \"#blurdetection.cwl\",             \"inputs\": [                 {                     \"doc\": \"Collection containing all pipeline input images\",                     \"id\": \"#blurdetection.cwl/image_collection\",                     \"type\": \"Directory\"                 }             ],             \"outputs\": [                 {                     \"id\": \"#blurdetection.cwl/report\",                     \"outputBinding\": {                         \"glob\": \"*.csv\"                     },                     \"type\": \"Any\"                 }             ]         }     ],     \"cwlVersion\": \"v1.0\" }",
+                    owner_uuid: myProject1.uuid,
+                })
+                    .as('testWorkflow2');
+
                 cy.contains('Shared with me').click();
 
                 cy.doSearch(`${activeUser.user.uuid}`);
@@ -204,6 +211,21 @@ describe('Favorites tests', function () {
                         cy.get('[data-cy=projects-tree-favourites-tree-picker]').contains('Favorites').closest('ul').find('i').click();
                         cy.get('@chooseFileDialog').find(`[data-id=${mySharedWritableProject.uuid}]`);
                         cy.get('@chooseFileDialog').find(`[data-id=${mySharedReadonlyProject.uuid}]`);
+                        cy.get('button').contains('Cancel').click();
+                    });
+
+                cy.get('button').contains('Back').click();
+
+                cy.get('@testWorkflow2')
+                    .then((testWorkflow2) => {
+                        cy.get('main').contains(testWorkflow2.name).click();
+                        cy.get('button').contains('Change Workflow').click();
+                        cy.get('[data-cy=run-process-next-button]').click();
+                        cy.get('[readonly]').click();
+                        cy.get('[data-cy=choose-a-directory-dialog]').as('chooseDirectoryDialog');
+                        cy.get('[data-cy=projects-tree-favourites-tree-picker]').contains('Favorites').closest('ul').find('i').click();
+                        cy.get('@chooseDirectoryDialog').find(`[data-id=${mySharedWritableProject.uuid}]`);
+                        cy.get('@chooseDirectoryDialog').find(`[data-id=${mySharedReadonlyProject.uuid}]`);
                     });
             });
     });
