@@ -128,9 +128,11 @@ WORKBENCH2_EXT_SSL_PORT=3001
 
 RELEASE="production"
 VERSION="latest"
-ARVADOS_TAG="v1.1.4"
+
+# Formulas versions
+ARVADOS_TAG="v.1.1.4"
 POSTGRES_TAG="v0.41.6"
-NGINX_TAG="v2.5.0"
+NGINX_TAG="temp-fix-missing-statements-in-pillar"
 DOCKER_TAG="v1.0.0"
 LOCALE_TAG="v0.3.4"
 LETSENCRYPT_TAG="v2.1.0"

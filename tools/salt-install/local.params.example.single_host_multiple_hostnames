@@ -80,9 +80,9 @@ BRANCH="master"
 # Usually there's no need to modify things below this line
 
 # Formulas versions
-ARVADOS_TAG="v1.1.4"
-POSTGRES_TAG="v0.41.6"
-NGINX_TAG="master"
-DOCKER_TAG="v1.0.0"
-LOCALE_TAG="v0.3.4"
-LETSENCRYPT_TAG="v2.1.0"
+# ARVADOS_TAG="v1.1.4"
+# POSTGRES_TAG="v0.41.6"
+# NGINX_TAG="temp-fix-missing-statements-in-pillar"
+# DOCKER_TAG="v1.0.0"
+# LOCALE_TAG="v0.3.4"
+# LETSENCRYPT_TAG="v2.1.0"
