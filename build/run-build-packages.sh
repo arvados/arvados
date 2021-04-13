@@ -328,6 +328,14 @@ fpm_build_virtualenv "arvados-docker-cleaner" "services/dockercleaner" "python3"
 # The Arvados user activity tool
 fpm_build_virtualenv "arvados-user-activity" "tools/user-activity" "python3"
 
+# The python->python3 metapackages
+build_metapackage "arvados-fuse" "services/fuse"
+build_metapackage "arvados-python-client" "services/fuse"
+build_metapackage "arvados-cwl-runner" "sdk/cwl"
+build_metapackage "crunchstat-summary" "tools/crunchstat-summary"
+build_metapackage "arvados-docker-cleanere" "services/dockercleaner"
+build_metapackage "arvados-user-activity" "tools/user-activity"
+
 # The cwltest package, which lives out of tree
 cd "$WORKSPACE"
 if [[ -e "$WORKSPACE/cwltest" ]]; then
@@ -337,6 +345,9 @@ git clone https://github.com/common-workflow-language/cwltest.git
 # signal to our build script that we want a cwltest executable installed in /usr/bin/
 mkdir cwltest/bin && touch cwltest/bin/cwltest
 fpm_build_virtualenv "cwltest" "cwltest" "python3"
+# The python->python3 metapackage
+build_metapackage "cwltest" "cwltest"
+cd "$WORKSPACE"
 rm -rf "$WORKSPACE/cwltest"
 
 calculate_go_package_version arvados_server_version cmd/arvados-server
