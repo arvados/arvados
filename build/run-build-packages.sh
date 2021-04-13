@@ -333,7 +333,7 @@ build_metapackage "arvados-fuse" "services/fuse"
 build_metapackage "arvados-python-client" "services/fuse"
 build_metapackage "arvados-cwl-runner" "sdk/cwl"
 build_metapackage "crunchstat-summary" "tools/crunchstat-summary"
-build_metapackage "arvados-docker-cleanere" "services/dockercleaner"
+build_metapackage "arvados-docker-cleaner" "services/dockercleaner"
 build_metapackage "arvados-user-activity" "tools/user-activity"
 
 # The cwltest package, which lives out of tree

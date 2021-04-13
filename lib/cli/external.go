@@ -113,7 +113,7 @@ https://doc.arvados.org/install for more details.
 Note: This subcommand uses the "arvados" Python module. If that is
 not installed, try:
 * "pip install arvados" (either as root or in a virtualenv), or
-* "sudo apt-get install python-arvados-python-client", or
+* "sudo apt-get install python3-arvados-python-client", or
 * see https://doc.arvados.org/install for more details.
 
 `
