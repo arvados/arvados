@@ -59,7 +59,7 @@ const mountainduckTemplate = ({
       <key>UUID</key>
       <string>${uuid}</string>
       <key>Hostname</key>
-      <string>${collectionsUrl.replace('https://', `davs://${username}@`).replace('*', uuid)}</string>
+      <string>${collectionsUrl.replace('https://', ``).replace('*', uuid)}</string>
       <key>Port</key>
       <string>443</string>
       <key>Username</key>
