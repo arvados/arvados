@@ -105,7 +105,7 @@ When you finished customizing the configuration, you are ready to copy the files
 
 <notextile>
 <pre><code>scp -r provision.sh local* user@host:
-ssh user@host sudo provision.sh --roles comma,separated,list,of,roles,to,apply
+ssh user@host sudo ./provision.sh --roles comma,separated,list,of,roles,to,apply
 </code></pre>
 </notextile>
 
@@ -124,42 +124,42 @@ The distribution of role as described above can be applied running these command
 #. Database
 <notextile>
 <pre><code>scp -r provision.sh local* user@host:
-ssh user@host sudo provision.sh --config local.params --roles database
+ssh user@host sudo ./provision.sh --config local.params --roles database
 </code></pre>
 </notextile>
 
 #. API
 <notextile>
 <pre><code>scp -r provision.sh local* user@host:
-ssh user@host sudo provision.sh --config local.params --roles api,controller,websocket,dispatcher
+ssh user@host sudo ./provision.sh --config local.params --roles api,controller,websocket,dispatcher
 </code></pre>
 </notextile>
 
 #. Keepstore/s
 <notextile>
 <pre><code>scp -r provision.sh local* user@host:
-ssh user@host sudo provision.sh --config local.params --roles keepstore
+ssh user@host sudo ./provision.sh --config local.params --roles keepstore
 </code></pre>
 </notextile>
 
 #. Workbench
 <notextile>
 <pre><code>scp -r provision.sh local* user@host:
-ssh user@host sudo provision.sh --config local.params --roles workbench,workbench2
+ssh user@host sudo ./provision.sh --config local.params --roles workbench,workbench2
 </code></pre>
 </notextile>
 
 #. Keepproxy / Keepweb
 <notextile>
 <pre><code>scp -r provision.sh local* user@host:
-ssh user@host sudo provision.sh --config local.params --roles keepproxy,keepweb
+ssh user@host sudo ./provision.sh --config local.params --roles keepproxy,keepweb
 </code></pre>
 </notextile>
 
 #. Shell
 <notextile>
 <pre><code>scp -r provision.sh local* user@host:
-ssh user@host sudo provision.sh --config local.params --roles shell
+ssh user@host sudo ./provision.sh --config local.params --roles shell
 </code></pre>
 </notextile>
 

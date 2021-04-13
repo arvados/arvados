@@ -70,7 +70,7 @@ When you finished customizing the configuration, you are ready to copy the files
 
 <notextile>
 <pre><code>scp -r provision.sh local* user@host:
-ssh user@host sudo provision.sh
+ssh user@host sudo ./provision.sh
 </code></pre>
 </notextile>
 
@@ -78,7 +78,7 @@ or, if you saved the @local.params@ in another directory or with some other name
 
 <notextile>
 <pre><code>scp -r provision.sh local* user@host:
-ssh user@host sudo provision.sh -c /path/to/your/local.params.file
+ssh user@host sudo ./provision.sh -c /path/to/your/local.params.file
 </code></pre>
 </notextile>
 
