@@ -905,6 +905,8 @@ class TestWorkflow(unittest.TestCase):
         loadingContext, runtimeContext = self.helper(runner)
         runner.fs_access = runtimeContext.make_fs_access(runtimeContext.basedir)
 
+        mockcollectionreader().exists.return_value = True
+
         tool, metadata = loadingContext.loader.resolve_ref("tests/wf/scatter2.cwl")
         metadata["cwlVersion"] = tool["cwlVersion"]
 

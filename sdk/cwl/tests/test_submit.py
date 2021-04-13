@@ -655,6 +655,7 @@ class TestSubmit(unittest.TestCase):
     @mock.patch("time.sleep")
     @stubs
     def test_submit_file_keepref(self, stubs, tm, collectionReader):
+        collectionReader().exists.return_value = True
         collectionReader().find.return_value = arvados.arvfile.ArvadosFile(mock.MagicMock(), "blorp.txt")
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=containers", "--debug",
@@ -1264,6 +1265,7 @@ class TestSubmit(unittest.TestCase):
     @mock.patch("arvados.collection.CollectionReader")
     @stubs
     def test_submit_uuid_inputs(self, stubs, collectionReader):
+        collectionReader().exists.return_value = True
         collectionReader().find.return_value = arvados.arvfile.ArvadosFile(mock.MagicMock(), "file1.txt")
         def list_side_effect(**kwargs):
             m = mock.MagicMock()
