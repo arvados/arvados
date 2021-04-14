@@ -38,7 +38,7 @@ describe("AuthMiddleware", () => {
         const middleware = authMiddleware(services)(store)(next);
         middleware(authActions.LOGOUT({deleteLinkData: false}));
         expect(window.location.assign).toBeCalledWith(
-            `/logout?return_to=${location.protocol}//${location.host}`
+            `/logout?api_token=someToken&return_to=${location.protocol}//${location.host}`
         );
         expect(localStorage.getItem(API_TOKEN_KEY)).toBeFalsy();
     });
