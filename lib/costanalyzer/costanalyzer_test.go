@@ -37,7 +37,8 @@ func (s *Suite) SetUpSuite(c *check.C) {
 	arvadostest.StartKeep(2, true)
 
 	// Get the various arvados, arvadosclient, and keep client objects
-	ac := arvados.NewClientFromEnv()
+	ac, err := arvados.NewClientFromEnv()
+	c.Assert(err, check.Equals, nil)
 	arv, err := arvadosclient.MakeArvadosClient()
 	c.Assert(err, check.Equals, nil)
 	arv.ApiToken = arvadostest.ActiveToken
@@ -190,11 +191,12 @@ func (*Suite) TestCollectionUUID(c *check.C) {
 	c.Assert(stderr.String(), check.Matches, "(?ms).*does not have a 'container_request' property.*")
 
 	// Update the collection, attach a 'container_request' property
-	ac := arvados.NewClientFromEnv()
+	ac, err := arvados.NewClientFromEnv()
+	c.Check(err, check.IsNil)
 	var coll arvados.Collection
 
 	// Update collection record
-	err := ac.RequestAndDecode(&coll, "PUT", "arvados/v1/collections/"+arvadostest.FooCollection, nil, map[string]interface{}{
+	err = ac.RequestAndDecode(&coll, "PUT", "arvados/v1/collections/"+arvadostest.FooCollection, nil, map[string]interface{}{
 		"collection": map[string]interface{}{
 			"properties": map[string]interface{}{
 				"container_request": arvadostest.CompletedContainerRequestUUID,
@@ -252,7 +254,8 @@ func (*Suite) TestDoubleContainerRequestUUID(c *check.C) {
 
 	// Now move both container requests into an existing project, and then re-run
 	// the analysis with the project uuid. The results should be identical.
-	ac := arvados.NewClientFromEnv()
+	ac, err := arvados.NewClientFromEnv()
+	c.Assert(err, check.IsNil)
 	var cr arvados.ContainerRequest
 	err = ac.RequestAndDecode(&cr, "PUT", "arvados/v1/container_requests/"+arvadostest.CompletedContainerRequestUUID, nil, map[string]interface{}{
 		"container_request": map[string]interface{}{

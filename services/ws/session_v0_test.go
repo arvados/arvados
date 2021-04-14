@@ -56,7 +56,10 @@ func (s *v0Suite) TearDownSuite(c *check.C) {
 }
 
 func (s *v0Suite) deleteTestObjects(c *check.C) {
-	ac := arvados.NewClientFromEnv()
+	ac, err := arvados.NewClientFromEnv()
+	if err != nil {
+		panic(err)
+	}
 	ac.AuthToken = arvadostest.AdminToken
 	for _, path := range s.toDelete {
 		err := ac.RequestAndDecode(nil, "DELETE", path, nil, nil)
@@ -205,11 +208,12 @@ func (s *v0Suite) TestEventTypeDelete(c *check.C) {
 // Trashing/deleting a collection produces an "update" event with
 // properties["new_attributes"]["is_trashed"] == true.
 func (s *v0Suite) TestTrashedCollection(c *check.C) {
-	ac := arvados.NewClientFromEnv()
+	ac, err := arvados.NewClientFromEnv()
+	c.Assert(err, check.IsNil)
 	ac.AuthToken = s.token
 
 	var coll arvados.Collection
-	err := ac.RequestAndDecode(&coll, "POST", "arvados/v1/collections", s.jsonBody("collection", `{"manifest_text":""}`), map[string]interface{}{"ensure_unique_name": true})
+	err = ac.RequestAndDecode(&coll, "POST", "arvados/v1/collections", s.jsonBody("collection", `{"manifest_text":""}`), map[string]interface{}{"ensure_unique_name": true})
 	c.Assert(err, check.IsNil)
 	s.ignoreLogID = s.lastLogID(c)
 
@@ -285,12 +289,15 @@ func (s *v0Suite) emitEvents(uuidChan chan<- string) {
 	s.wg.Add(1)
 	defer s.wg.Done()
 
-	ac := arvados.NewClientFromEnv()
+	ac, err := arvados.NewClientFromEnv()
+	if err != nil {
+		panic(err)
+	}
 	ac.AuthToken = s.token
 	wf := &arvados.Workflow{
 		Name: "ws_test",
 	}
-	err := ac.RequestAndDecode(wf, "POST", "arvados/v1/workflows", s.jsonBody("workflow", `{"name":"ws_test"}`), map[string]interface{}{"ensure_unique_name": true})
+	err = ac.RequestAndDecode(wf, "POST", "arvados/v1/workflows", s.jsonBody("workflow", `{"name":"ws_test"}`), map[string]interface{}{"ensure_unique_name": true})
 	if err != nil {
 		panic(err)
 	}

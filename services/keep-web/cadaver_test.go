@@ -71,7 +71,8 @@ func (s *IntegrationSuite) testCadaver(c *check.C, password string, pathFunc fun
 	c.Assert(err, check.IsNil)
 
 	var newCollection arvados.Collection
-	arv := arvados.NewClientFromEnv()
+	arv, err := arvados.NewClientFromEnv()
+	c.Assert(err, check.IsNil)
 	arv.AuthToken = arvadostest.ActiveToken
 	err = arv.RequestAndDecode(&newCollection, "POST", "arvados/v1/collections", nil, map[string]interface{}{"collection": map[string]interface{}{}})
 	c.Assert(err, check.IsNil)

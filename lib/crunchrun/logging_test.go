@@ -36,7 +36,10 @@ func (stamper *TestTimestamper) Timestamp(t time.Time) string {
 var _ = Suite(&LoggingTestSuite{})
 
 func (s *LoggingTestSuite) SetUpTest(c *C) {
-	s.client = arvados.NewClientFromEnv()
+
+	client, err := arvados.NewClientFromEnv()
+	c.Check(err, IsNil)
+	s.client = client
 	crunchLogUpdatePeriod = time.Hour * 24 * 365
 	crunchLogUpdateSize = 1 << 50
 }

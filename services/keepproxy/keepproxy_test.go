@@ -140,7 +140,8 @@ func runProxy(c *C, bogusClientToken bool, loadKeepstoresFromConfig bool) *keepc
 	}()
 	waitForListener()
 
-	client := arvados.NewClientFromEnv()
+	client, err := arvados.NewClientFromEnv()
+	c.Assert(err, Equals, nil)
 	arv, err := arvadosclient.New(client)
 	c.Assert(err, Equals, nil)
 	if bogusClientToken {

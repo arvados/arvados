@@ -96,7 +96,9 @@ func (suite *PoolSuite) TestResumeAfterRestart(c *check.C) {
 		},
 	}
 
-	pool := NewPool(logger, arvados.NewClientFromEnv(), prometheus.NewRegistry(), instanceSetID, is, newExecutor, nil, cluster)
+	client, err := arvados.NewClientFromEnv()
+	c.Check(err, check.IsNil)
+	pool := NewPool(logger, client, prometheus.NewRegistry(), instanceSetID, is, newExecutor, nil, cluster)
 	notify := pool.Subscribe()
 	defer pool.Unsubscribe(notify)
 	pool.Create(type1)
@@ -131,8 +133,9 @@ func (suite *PoolSuite) TestResumeAfterRestart(c *check.C) {
 	pool.Stop()
 
 	c.Log("------- starting new pool, waiting to recover state")
-
-	pool2 := NewPool(logger, arvados.NewClientFromEnv(), prometheus.NewRegistry(), instanceSetID, is, newExecutor, nil, cluster)
+	client, err = arvados.NewClientFromEnv()
+	c.Check(err, check.IsNil)
+	pool2 := NewPool(logger, client, prometheus.NewRegistry(), instanceSetID, is, newExecutor, nil, cluster)
 	notify2 := pool2.Subscribe()
 	defer pool2.Unsubscribe(notify2)
 	waitForIdle(pool2, notify2)
@@ -153,8 +156,8 @@ func (suite *PoolSuite) TestDrain(c *check.C) {
 	instanceSet, err := driver.InstanceSet(nil, "test-instance-set-id", nil, logger)
 	c.Assert(err, check.IsNil)
 
-	ac := arvados.NewClientFromEnv()
-
+	ac, err := arvados.NewClientFromEnv()
+	c.Assert(err, check.IsNil)
 	type1 := test.InstanceType(1)
 	pool := &Pool{
 		arvClient:   ac,

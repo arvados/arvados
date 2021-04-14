@@ -66,7 +66,10 @@ func (*serviceSuite) testConfig(c *check.C) (*arvados.Cluster, error) {
 	if err != nil {
 		return nil, err
 	}
-	client := arvados.NewClientFromEnv()
+	client, err := arvados.NewClientFromEnv()
+	if err != nil {
+		return nil, err
+	}
 	cluster.Services.Controller.ExternalURL.Host = client.APIHost
 	cluster.SystemRootToken = client.AuthToken
 	cluster.TLS.Insecure = client.Insecure

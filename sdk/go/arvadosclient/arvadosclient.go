@@ -191,7 +191,11 @@ func New(c *arvados.Client) (*ArvadosClient, error) {
 // ARVADOS_API_HOST_INSECURE, ARVADOS_EXTERNAL_CLIENT, and
 // ARVADOS_KEEP_SERVICES.
 func MakeArvadosClient() (ac *ArvadosClient, err error) {
-	ac, err = New(arvados.NewClientFromEnv())
+	c, err := arvados.NewClientFromEnv()
+	if err != nil {
+		return
+	}
+	ac, err = New(c)
 	if err != nil {
 		return
 	}

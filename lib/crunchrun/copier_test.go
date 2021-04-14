@@ -26,8 +26,10 @@ func (s *copierSuite) SetUpTest(c *check.C) {
 	c.Assert(err, check.IsNil)
 	api, err := arvadosclient.MakeArvadosClient()
 	c.Assert(err, check.IsNil)
+	client, err := arvados.NewClientFromEnv()
+	c.Assert(err, check.IsNil)
 	s.cp = copier{
-		client:        arvados.NewClientFromEnv(),
+		client:        client,
 		arvClient:     api,
 		hostOutputDir: tmpdir,
 		ctrOutputDir:  "/ctr/outdir",

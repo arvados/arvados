@@ -1749,7 +1749,10 @@ func NewContainerRunner(dispatcherClient *arvados.Client,
 		if err != nil {
 			return nil, nil, nil, err
 		}
-		c2 := arvados.NewClientFromEnv()
+		c2, err := arvados.NewClientFromEnv()
+		if err != nil {
+			return nil, nil, nil, err
+		}
 		c2.AuthToken = token
 		return cl, kc, c2, nil
 	}
@@ -1867,7 +1870,12 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	// minimum version we want to support.
 	docker, dockererr := dockerclient.NewClient(dockerclient.DefaultDockerHost, "1.21", nil, nil)
 
-	cr, err := NewContainerRunner(arvados.NewClientFromEnv(), api, kc, docker, containerID)
+	client, err := arvados.NewClientFromEnv()
+	if err != nil {
+		log.Print(err)
+		return 1
+	}
+	cr, err := NewContainerRunner(client, api, kc, docker, containerID)
 	if err != nil {
 		log.Print(err)
 		return 1

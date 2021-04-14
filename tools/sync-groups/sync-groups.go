@@ -265,8 +265,12 @@ func GetConfig() (config ConfigParams, err error) {
 	}
 
 	// Arvados Client setup
-	config.Client = arvados.NewClientFromEnv()
+	var clientErr error
+	config.Client, clientErr = arvados.NewClientFromEnv()
 
+	if clientErr != nil {
+		return config, fmt.Errorf("error getting configuration from environment: %s", err)
+	}
 	// Check current user permissions & get System user's UUID
 	u, err := config.Client.CurrentUser()
 	if err != nil {

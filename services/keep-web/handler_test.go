@@ -508,7 +508,8 @@ func (s *IntegrationSuite) TestSpecialCharsInPath(c *check.C) {
 }
 
 func (s *IntegrationSuite) TestForwardSlashSubstitution(c *check.C) {
-	arv := arvados.NewClientFromEnv()
+	arv, err := arvados.NewClientFromEnv()
+	c.Assert(err, check.IsNil)
 	s.testServer.Config.cluster.Services.WebDAVDownload.ExternalURL.Host = "download.example.com"
 	s.testServer.Config.cluster.Collections.ForwardSlashNameSubstitution = "{SOLIDUS}"
 	name := "foo/bar/baz"
@@ -879,9 +880,10 @@ func (s *IntegrationSuite) testDirectoryListing(c *check.C) {
 }
 
 func (s *IntegrationSuite) TestDeleteLastFile(c *check.C) {
-	arv := arvados.NewClientFromEnv()
+	arv, err := arvados.NewClientFromEnv()
+	c.Assert(err, check.IsNil)
 	var newCollection arvados.Collection
-	err := arv.RequestAndDecode(&newCollection, "POST", "arvados/v1/collections", nil, map[string]interface{}{
+	err = arv.RequestAndDecode(&newCollection, "POST", "arvados/v1/collections", nil, map[string]interface{}{
 		"collection": map[string]string{
 			"owner_uuid":    arvadostest.ActiveUserUUID,
 			"manifest_text": ". acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:foo.txt 0:3:bar.txt\n",

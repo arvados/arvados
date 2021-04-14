@@ -17,7 +17,9 @@ var _ = check.Suite(&permSuite{})
 type permSuite struct{}
 
 func (s *permSuite) TestCheck(c *check.C) {
-	pc := newPermChecker(*(arvados.NewClientFromEnv())).(*cachingPermChecker)
+	client, err := arvados.NewClientFromEnv()
+	c.Check(err, check.IsNil)
+	pc := newPermChecker(*(client)).(*cachingPermChecker)
 	setToken := func(label, token string) {
 		c.Logf("...%s token %q", label, token)
 		pc.SetToken(token)

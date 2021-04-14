@@ -9,10 +9,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"git.arvados.org/arvados.git/lib/config"
-	"git.arvados.org/arvados.git/sdk/go/arvados"
-	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
-	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -20,6 +16,11 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"git.arvados.org/arvados.git/lib/config"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
+	"git.arvados.org/arvados.git/sdk/go/keepclient"
 
 	"github.com/sirupsen/logrus"
 )
@@ -497,8 +498,12 @@ func costanalyzer(prog string, args []string, loader *config.Loader, logger *log
 		return
 	}
 
-	ac := arvados.NewClientFromEnv()
-
+	ac, err := arvados.NewClientFromEnv()
+	if err != nil {
+		err = fmt.Errorf("error creating client from environment: %s", err)
+		exitcode = 1
+		return
+	}
 	cost := make(map[string]float64)
 	for _, uuid := range uuids {
 		if strings.Contains(uuid, "-j7d0g-") {

@@ -92,7 +92,11 @@ type CollectionFSSuite struct {
 }
 
 func (s *CollectionFSSuite) SetUpTest(c *check.C) {
-	s.client = NewClientFromEnv()
+
+	var clientErr error
+	s.client, clientErr = NewClientFromEnv()
+	c.Assert(clientErr, check.IsNil)
+
 	err := s.client.RequestAndDecode(&s.coll, "GET", "arvados/v1/collections/"+fixtureFooAndBarFilesInDirUUID, nil, nil)
 	c.Assert(err, check.IsNil)
 	s.kc = &keepClientStub{

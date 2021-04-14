@@ -9,6 +9,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+
 	// pprof is only imported to register its HTTP handlers
 	_ "net/http/pprof"
 	"os"
@@ -58,7 +59,11 @@ func (c *cmd) RunCommand(prog string, args []string, stdin io.Reader, stdout, st
 		}()
 	}
 
-	client := arvados.NewClientFromEnv()
+	client, err := arvados.NewClientFromEnv()
+	if err != nil {
+		logger.Print(err)
+		return 1
+	}
 	ac, err := arvadosclient.New(client)
 	if err != nil {
 		logger.Print(err)

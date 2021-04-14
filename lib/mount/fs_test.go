@@ -28,7 +28,8 @@ func (*FSSuite) TestFuseInterface(c *check.C) {
 }
 
 func (*FSSuite) TestOpendir(c *check.C) {
-	client := arvados.NewClientFromEnv()
+	client, err := arvados.NewClientFromEnv()
+	c.Assert(err, check.IsNil)
 	ac, err := arvadosclient.New(client)
 	c.Assert(err, check.IsNil)
 	kc, err := keepclient.MakeKeepClient(ac)

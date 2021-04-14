@@ -27,7 +27,8 @@ type TestSuite struct {
 }
 
 func (s *TestSuite) SetUpTest(c *C) {
-	ac := arvados.NewClientFromEnv()
+	ac, err := arvados.NewClientFromEnv()
+	c.Assert(err, IsNil)
 	u, err := ac.CurrentUser()
 	c.Assert(err, IsNil)
 	// Check that the parent group doesn't exist

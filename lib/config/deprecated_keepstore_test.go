@@ -39,11 +39,11 @@ func (s *KeepstoreMigrationSuite) SetUpSuite(c *check.C) {
 	// the apiserver fixtures that point to fictional hosts
 	// keep*.zzzzz.arvadosapi.com.
 
-	client := arvados.NewClientFromEnv()
-
+	client, err := arvados.NewClientFromEnv()
+	c.Assert(err, check.IsNil)
 	// Delete existing non-proxy listings.
 	var svcList arvados.KeepServiceList
-	err := client.RequestAndDecode(&svcList, "GET", "arvados/v1/keep_services", nil, nil)
+	err = client.RequestAndDecode(&svcList, "GET", "arvados/v1/keep_services", nil, nil)
 	c.Assert(err, check.IsNil)
 	for _, ks := range svcList.Items {
 		if ks.ServiceType != "proxy" {
@@ -580,7 +580,8 @@ Volumes:
 
 // Ensure logs mention unmigrated servers.
 func (s *KeepstoreMigrationSuite) TestPendingKeepstoreMigrations(c *check.C) {
-	client := arvados.NewClientFromEnv()
+	client, err := arvados.NewClientFromEnv()
+	c.Assert(err, check.IsNil)
 	for _, host := range []string{"keep0", "keep1"} {
 		err := client.RequestAndDecode(new(struct{}), "POST", "arvados/v1/keep_services", nil, map[string]interface{}{
 			"keep_service": map[string]interface{}{

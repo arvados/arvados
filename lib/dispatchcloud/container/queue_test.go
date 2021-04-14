@@ -35,7 +35,9 @@ func logger() logrus.FieldLogger {
 type IntegrationSuite struct{}
 
 func (suite *IntegrationSuite) TearDownTest(c *check.C) {
-	err := arvados.NewClientFromEnv().RequestAndDecode(nil, "POST", "database/reset", nil, nil)
+	client, err := arvados.NewClientFromEnv()
+	c.Check(err, check.IsNil)
+	err = client.RequestAndDecode(nil, "POST", "database/reset", nil, nil)
 	c.Check(err, check.IsNil)
 }
 
@@ -44,10 +46,11 @@ func (suite *IntegrationSuite) TestGetLockUnlockCancel(c *check.C) {
 		return arvados.InstanceType{Name: "testType"}, nil
 	}
 
-	client := arvados.NewClientFromEnv()
+	client, err := arvados.NewClientFromEnv()
+	c.Check(err, check.IsNil)
 	cq := NewQueue(logger(), nil, typeChooser, client)
 
-	err := cq.Update()
+	err = cq.Update()
 	c.Check(err, check.IsNil)
 
 	ents, threshold := cq.Entries()
@@ -116,7 +119,8 @@ func (suite *IntegrationSuite) TestCancelIfNoInstanceType(c *check.C) {
 		return arvados.InstanceType{}, errors.New("no suitable instance type")
 	}
 
-	client := arvados.NewClientFromEnv()
+	client, err := arvados.NewClientFromEnv()
+	c.Check(err, check.IsNil)
 	cq := NewQueue(logger(), nil, errorTypeChooser, client)
 
 	ch := cq.Subscribe()
@@ -137,7 +141,7 @@ func (suite *IntegrationSuite) TestCancelIfNoInstanceType(c *check.C) {
 	}()
 
 	var ctr arvados.Container
-	err := client.RequestAndDecode(&ctr, "GET", "arvados/v1/containers/"+arvadostest.QueuedContainerUUID, nil, nil)
+	err = client.RequestAndDecode(&ctr, "GET", "arvados/v1/containers/"+arvadostest.QueuedContainerUUID, nil, nil)
 	c.Check(err, check.IsNil)
 	c.Check(ctr.State, check.Equals, arvados.ContainerStateQueued)
 

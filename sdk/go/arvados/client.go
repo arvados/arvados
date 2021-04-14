@@ -104,7 +104,7 @@ func NewClientFromConfig(cluster *Cluster) (*Client, error) {
 // NewClientFromEnv creates a new Client that uses the default HTTP
 // client with the API endpoint and credentials given by the
 // ARVADOS_API_* environment variables.
-func NewClientFromEnv() *Client {
+func NewClientFromEnv() (*Client, error) {
 	var svcs []string
 	for _, s := range strings.Split(os.Getenv("ARVADOS_KEEP_SERVICES"), " ") {
 		if s == "" {
@@ -121,6 +121,7 @@ func NewClientFromEnv() *Client {
 	if s := strings.ToLower(os.Getenv("ARVADOS_API_HOST_INSECURE")); s == "1" || s == "yes" || s == "true" {
 		insecure = true
 	}
+
 	return &Client{
 		Scheme:          "https",
 		APIHost:         os.Getenv("ARVADOS_API_HOST"),
@@ -129,7 +130,7 @@ func NewClientFromEnv() *Client {
 		KeepServiceURIs: svcs,
 		Timeout:         5 * time.Minute,
 		loadedFromEnv:   true,
-	}
+	}, nil
 }
 
 var reqIDGen = httpserver.IDGenerator{Prefix: "req-"}

@@ -48,7 +48,9 @@ func (s *OIDCLoginSuite) TearDownSuite(c *check.C) {
 	// Undo any changes/additions to the user database so they
 	// don't affect subsequent tests.
 	arvadostest.ResetEnv()
-	c.Check(arvados.NewClientFromEnv().RequestAndDecode(nil, "POST", "database/reset", nil, nil), check.IsNil)
+	client, err := arvados.NewClientFromEnv()
+	c.Assert(err, check.IsNil)
+	c.Check(client.RequestAndDecode(nil, "POST", "database/reset", nil, nil), check.IsNil)
 }
 
 func (s *OIDCLoginSuite) SetUpTest(c *check.C) {

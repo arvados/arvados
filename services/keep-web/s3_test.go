@@ -41,9 +41,10 @@ type s3stage struct {
 func (s *IntegrationSuite) s3setup(c *check.C) s3stage {
 	var proj arvados.Group
 	var coll arvados.Collection
-	arv := arvados.NewClientFromEnv()
+	arv, err := arvados.NewClientFromEnv()
+	c.Assert(err, check.IsNil)
 	arv.AuthToken = arvadostest.ActiveToken
-	err := arv.RequestAndDecode(&proj, "POST", "arvados/v1/groups", nil, map[string]interface{}{
+	err = arv.RequestAndDecode(&proj, "POST", "arvados/v1/groups", nil, map[string]interface{}{
 		"group": map[string]interface{}{
 			"group_class": "project",
 			"name":        "keep-web s3 test",

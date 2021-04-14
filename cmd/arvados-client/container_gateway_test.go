@@ -35,7 +35,9 @@ func (s *ClientSuite) TestShellGatewayNotAvailable(c *check.C) {
 
 func (s *ClientSuite) TestShellGateway(c *check.C) {
 	defer func() {
-		c.Check(arvados.NewClientFromEnv().RequestAndDecode(nil, "POST", "database/reset", nil, nil), check.IsNil)
+		client, err := arvados.NewClientFromEnv()
+		c.Assert(err, check.IsNil)
+		c.Check(client.RequestAndDecode(nil, "POST", "database/reset", nil, nil), check.IsNil)
 	}()
 	uuid := arvadostest.QueuedContainerUUID
 	h := hmac.New(sha256.New, []byte(arvadostest.SystemRootToken))

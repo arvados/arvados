@@ -173,7 +173,9 @@ func (s *RouterIntegrationSuite) SetUpTest(c *check.C) {
 }
 
 func (s *RouterIntegrationSuite) TearDownSuite(c *check.C) {
-	err := arvados.NewClientFromEnv().RequestAndDecode(nil, "POST", "database/reset", nil, nil)
+	client, err := arvados.NewClientFromEnv()
+	c.Check(err, check.IsNil)
+	err = client.RequestAndDecode(nil, "POST", "database/reset", nil, nil)
 	c.Check(err, check.IsNil)
 }
 

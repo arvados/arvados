@@ -33,6 +33,7 @@ import (
 	dockertypes "github.com/docker/docker/api/types"
 	dockercontainer "github.com/docker/docker/api/types/container"
 	dockernetwork "github.com/docker/docker/api/types/network"
+	"gopkg.in/check.v1"
 	. "gopkg.in/check.v1"
 )
 
@@ -51,7 +52,9 @@ type TestSuite struct {
 }
 
 func (s *TestSuite) SetUpTest(c *C) {
-	s.client = arvados.NewClientFromEnv()
+	client, err := arvados.NewClientFromEnv()
+	c.Check(err, check.IsNil)
+	s.client = client
 	s.docker = NewTestDockerClient()
 }
 

@@ -83,10 +83,10 @@ func (*Suite) TestManyUUIDsNoOverlap(c *check.C) {
 func (*Suite) TestTwoOverlappingCollections(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	// Create two collections
-	arv := arvados.NewClientFromEnv()
-
+	arv, err := arvados.NewClientFromEnv()
+	c.Assert(err, check.Equals, nil)
 	var c1 arvados.Collection
-	err := arv.RequestAndDecode(&c1, "POST", "arvados/v1/collections", nil, map[string]interface{}{"collection": map[string]interface{}{"manifest_text": ". d3b07384d113edec49eaa6238ad5ff00+4 0:4:foo\n"}})
+	err = arv.RequestAndDecode(&c1, "POST", "arvados/v1/collections", nil, map[string]interface{}{"collection": map[string]interface{}{"manifest_text": ". d3b07384d113edec49eaa6238ad5ff00+4 0:4:foo\n"}})
 	c.Assert(err, check.Equals, nil)
 
 	var c2 arvados.Collection
