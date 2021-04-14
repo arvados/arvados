@@ -26,13 +26,9 @@ import (
 	check "gopkg.in/check.v1"
 )
 
-var forceLegacyAPI14 bool
-
 // Gocheck boilerplate
 func Test(t *testing.T) {
-	for _, forceLegacyAPI14 = range []bool{false, true} {
-		check.TestingT(t)
-	}
+	check.TestingT(t)
 }
 
 var _ = check.Suite(&HandlerSuite{})
@@ -48,9 +44,8 @@ func (s *HandlerSuite) SetUpTest(c *check.C) {
 	s.ctx, s.cancel = context.WithCancel(context.Background())
 	s.ctx = ctxlog.Context(s.ctx, ctxlog.New(os.Stderr, "json", "debug"))
 	s.cluster = &arvados.Cluster{
-		ClusterID:        "zzzzz",
-		PostgreSQL:       integrationTestCluster().PostgreSQL,
-		ForceLegacyAPI14: forceLegacyAPI14,
+		ClusterID:  "zzzzz",
+		PostgreSQL: integrationTestCluster().PostgreSQL,
 	}
 	s.cluster.API.RequestTimeout = arvados.Duration(5 * time.Minute)
 	s.cluster.TLS.Insecure = true
@@ -198,10 +193,6 @@ func (s *HandlerSuite) TestLogoutSSO(c *check.C) {
 }
 
 func (s *HandlerSuite) TestLogoutGoogle(c *check.C) {
-	if s.cluster.ForceLegacyAPI14 {
-		// Google login N/A
-		return
-	}
 	s.cluster.Login.Google.Enable = true
 	s.cluster.Login.Google.ClientID = "test"
 	req := httptest.NewRequest("GET", "https://0.0.0.0:1/logout?return_to=https://example.com/foo", nil)

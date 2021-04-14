@@ -94,21 +94,18 @@ func (h *Handler) setup() {
 	oidcAuthorizer := localdb.OIDCAccessTokenAuthorizer(h.Cluster, h.db)
 	rtr := router.New(federation.New(h.Cluster), api.ComposeWrappers(ctrlctx.WrapCallsInTransactions(h.db), oidcAuthorizer.WrapCalls))
 	mux.Handle("/arvados/v1/config", rtr)
-	mux.Handle("/"+arvados.EndpointUserAuthenticate.Path, rtr)
-
-	if !h.Cluster.ForceLegacyAPI14 {
-		mux.Handle("/arvados/v1/collections", rtr)
-		mux.Handle("/arvados/v1/collections/", rtr)
-		mux.Handle("/arvados/v1/users", rtr)
-		mux.Handle("/arvados/v1/users/", rtr)
-		mux.Handle("/arvados/v1/connect/", rtr)
-		mux.Handle("/arvados/v1/container_requests", rtr)
-		mux.Handle("/arvados/v1/container_requests/", rtr)
-		mux.Handle("/arvados/v1/groups", rtr)
-		mux.Handle("/arvados/v1/groups/", rtr)
-		mux.Handle("/login", rtr)
-		mux.Handle("/logout", rtr)
-	}
+	mux.Handle("/"+arvados.EndpointUserAuthenticate.Path, rtr) // must come before .../users/
+	mux.Handle("/arvados/v1/collections", rtr)
+	mux.Handle("/arvados/v1/collections/", rtr)
+	mux.Handle("/arvados/v1/users", rtr)
+	mux.Handle("/arvados/v1/users/", rtr)
+	mux.Handle("/arvados/v1/connect/", rtr)
+	mux.Handle("/arvados/v1/container_requests", rtr)
+	mux.Handle("/arvados/v1/container_requests/", rtr)
+	mux.Handle("/arvados/v1/groups", rtr)
+	mux.Handle("/arvados/v1/groups/", rtr)
+	mux.Handle("/login", rtr)
+	mux.Handle("/logout", rtr)
 
 	hs := http.NotFoundHandler()
 	hs = prepend(hs, h.proxyRailsAPI)

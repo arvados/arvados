@@ -266,8 +266,6 @@ type Cluster struct {
 		SSHHelpHostSuffix      string
 		IdleTimeout            Duration
 	}
-
-	ForceLegacyAPI14 bool
 }
 
 type Volume struct {

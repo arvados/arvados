@@ -57,9 +57,8 @@ func (s *FederationSuite) SetUpTest(c *check.C) {
 	c.Assert(s.remoteMock.Start(), check.IsNil)
 
 	cluster := &arvados.Cluster{
-		ClusterID:        "zhome",
-		PostgreSQL:       integrationTestCluster().PostgreSQL,
-		ForceLegacyAPI14: forceLegacyAPI14,
+		ClusterID:  "zhome",
+		PostgreSQL: integrationTestCluster().PostgreSQL,
 	}
 	cluster.TLS.Insecure = true
 	cluster.API.MaxItemsPerResponse = 1000

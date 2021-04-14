@@ -37,11 +37,6 @@ type IntegrationSuite struct {
 }
 
 func (s *IntegrationSuite) SetUpSuite(c *check.C) {
-	if forceLegacyAPI14 {
-		c.Skip("heavy integration tests don't run with forceLegacyAPI14")
-		return
-	}
-
 	cwd, _ := os.Getwd()
 
 	s.oidcprovider = arvadostest.NewOIDCProvider(c)
