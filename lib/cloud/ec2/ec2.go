@@ -14,6 +14,8 @@ import (
 	"fmt"
 	"math/big"
 	"sync"
+	"sync/atomic"
+	"time"
 
 	"git.arvados.org/arvados.git/lib/cloud"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
@@ -21,6 +23,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
+	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/sirupsen/logrus"
@@ -29,6 +32,11 @@ import (
 
 // Driver is the ec2 implementation of the cloud.Driver interface.
 var Driver = cloud.DriverFunc(newEC2InstanceSet)
+
+const (
+	throttleDelayMin = time.Second
+	throttleDelayMax = time.Minute
+)
 
 type ec2InstanceSetConfig struct {
 	AccessKeyID      string
@@ -56,6 +64,7 @@ type ec2InstanceSet struct {
 	client        ec2Interface
 	keysMtx       sync.Mutex
 	keys          map[string]string
+	throttleDelay atomic.Value
 }
 
 func newEC2InstanceSet(config json.RawMessage, instanceSetID cloud.InstanceSetID, _ cloud.SharedResourceTags, logger logrus.FieldLogger) (prv cloud.InstanceSet, err error) {
@@ -221,8 +230,23 @@ func (instanceSet *ec2InstanceSet) Create(
 
 	rsv, err := instanceSet.client.RunInstances(&rii)
 
-	if err != nil {
+	if request.IsErrorThrottle(err) {
+		// Back off exponentially until a create call either
+		// succeeds or returns a non-throttle error.
+		d, _ := instanceSet.throttleDelay.Load().(time.Duration)
+		d = d*3/2 + time.Second
+		if d < throttleDelayMin {
+			d = throttleDelayMin
+		} else if d > throttleDelayMax {
+			d = throttleDelayMax
+		}
+		instanceSet.throttleDelay.Store(d)
+		return nil, rateLimitError{error: err, earliestRetry: time.Now().Add(d)}
+	} else if err != nil {
+		instanceSet.throttleDelay.Store(time.Duration(0))
 		return nil, err
+	} else {
+		instanceSet.throttleDelay.Store(time.Duration(0))
 	}
 
 	return &ec2Instance{
@@ -327,4 +351,13 @@ func (inst *ec2Instance) RemoteUser() string {
 
 func (inst *ec2Instance) VerifyHostKey(ssh.PublicKey, *ssh.Client) error {
 	return cloud.ErrNotImplemented
+}
+
+type rateLimitError struct {
+	error
+	earliestRetry time.Time
+}
+
+func (err rateLimitError) EarliestRetry() time.Time {
+	return err.earliestRetry
 }
