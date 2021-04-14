@@ -912,7 +912,7 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
             [sys.executable, arv_put.__file__, '--stream'],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT, env=self.ENVIRON)
-        pipe.stdin.write(b'stdin test\n')
+        pipe.stdin.write(b'stdin test\xa6\n')
         pipe.stdin.close()
         deadline = time.time() + 5
         while (pipe.poll() is None) and (time.time() < deadline):
