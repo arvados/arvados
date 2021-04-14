@@ -912,7 +912,7 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
             [sys.executable, arv_put.__file__, '--stream'],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT, env=self.ENVIRON)
-        pipe.stdin.write(b'stdin test\n')
+        pipe.stdin.write(b'stdin test\xa6\n')
         pipe.stdin.close()
         deadline = time.time() + 5
         while (pipe.poll() is None) and (time.time() < deadline):
@@ -924,7 +924,7 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
         elif returncode != 0:
             sys.stdout.write(pipe.stdout.read())
             self.fail("arv-put returned exit code {}".format(returncode))
-        self.assertIn('4a9c8b735dce4b5fa3acf221a0b13628+11',
+        self.assertIn('1cb671b355a0c23d5d1c61d59cdb1b2b+12',
                       pipe.stdout.read().decode())
 
     def test_sigint_logs_request_id(self):
