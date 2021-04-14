@@ -742,7 +742,7 @@ class ArvPutUploadJob(object):
 
     def _write_stdin(self, filename):
         output = self._local_collection.open(filename, 'wb')
-        self._write(sys.stdin, output)
+        self._write(sys.stdin.buffer, output)
         output.close()
 
     def _check_file(self, source, filename):
