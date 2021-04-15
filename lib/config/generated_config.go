@@ -577,9 +577,6 @@ Clusters:
         # ID > Web application) and add your controller's /login URL
         # (e.g., "https://zzzzz.example.com/login") as an authorized
         # redirect URL.
-        #
-        # Incompatible with ForceLegacyAPI14. ProviderAppID must be
-        # blank.
         ClientID: ""
         ClientSecret: ""
 
@@ -1486,13 +1483,6 @@ Clusters:
       # proxy and have fully qualified host names, you should leave
       # this blank.
       SSHHelpHostSuffix: ""
-
-    # Bypass new (Arvados 1.5) API implementations, and hand off
-    # requests directly to Rails instead. This can provide a temporary
-    # workaround for clients that are incompatible with the new API
-    # implementation. Note that it also disables some new federation
-    # features and will be removed in a future release.
-    ForceLegacyAPI14: false
 
 # (Experimental) Restart services automatically when config file
 # changes are detected. Only supported by ` + "`" + `arvados-server boot` + "`" + ` in

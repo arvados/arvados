@@ -17,7 +17,7 @@ from cwltool.pack import pack
 from cwltool.load_tool import fetch_document, resolve_and_validate_document
 from cwltool.process import shortname
 from cwltool.workflow import Workflow, WorkflowException, WorkflowStep
-from cwltool.utils import adjustFileObjs, adjustDirObjs, visit_class
+from cwltool.utils import adjustFileObjs, adjustDirObjs, visit_class, normalizeFilesDirs
 from cwltool.context import LoadingContext
 
 import ruamel.yaml as yaml
@@ -186,6 +186,7 @@ class ArvadosWorkflow(Workflow):
 
         discover_secondary_files(self.arvrunner.fs_access, builder,
                                  self.tool["inputs"], joborder)
+        normalizeFilesDirs(joborder)
 
         with Perf(metrics, "subworkflow upload_deps"):
             upload_dependencies(self.arvrunner,

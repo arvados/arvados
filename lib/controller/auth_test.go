@@ -62,10 +62,9 @@ func (s *AuthSuite) SetUpTest(c *check.C) {
 	s.fakeProvider.ValidClientSecret = "test#client/secret"
 
 	cluster := &arvados.Cluster{
-		ClusterID:        "zhome",
-		PostgreSQL:       integrationTestCluster().PostgreSQL,
-		ForceLegacyAPI14: forceLegacyAPI14,
-		SystemRootToken:  arvadostest.SystemRootToken,
+		ClusterID:       "zhome",
+		PostgreSQL:      integrationTestCluster().PostgreSQL,
+		SystemRootToken: arvadostest.SystemRootToken,
 	}
 	cluster.TLS.Insecure = true
 	cluster.API.MaxItemsPerResponse = 1000

@@ -62,6 +62,10 @@ h3. Centos7 Python 3 dependency upgraded to python3
 
 Now that Python 3 is part of the base repository in CentOS 7, the Python 3 dependency for Centos7 Arvados packages was changed from SCL rh-python36 to python3.
 
+h3. ForceLegacyAPI14 option removed
+
+The ForceLegacyAPI14 configuration option has been removed. In the unlikely event it is mentioned in your config file, remove it to avoid "deprecated/unknown config" warning logs.
+
 h2(#v2_1_0). v2.1.0 (2020-10-13)
 
 "Upgrading from 2.0.0":#v2_0_0
