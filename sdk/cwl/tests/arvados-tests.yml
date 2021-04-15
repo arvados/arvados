@@ -355,3 +355,8 @@
       "size": 4
   tool: 17267-broken-schemas.cwl
   doc: "Test issue 17267 - inaccessible $schemas URL is not a fatal error"
+
+- job: null
+  output: {}
+  tool: wf/trick_defaults2.cwl
+  doc: "Test issue 17462 - secondary file objects on file defaults are not resolved"
