@@ -31,19 +31,25 @@ clusterID, clusterConfig = confs["Clusters"].first
 $arvados_config_defaults = clusterConfig
 $arvados_config_defaults["ClusterID"] = clusterID
 
-# Load the global config file
-Open3.popen2("arvados-server", "config-dump", "-skip-legacy") do |stdin, stdout, status_thread|
-  confs = YAML.load(stdout, deserialize_symbols: false)
-  if confs && !confs.empty?
-    # config-dump merges defaults with user configuration, so every
-    # key should be set.
-    clusterID, clusterConfig = confs["Clusters"].first
-    $arvados_config_global = clusterConfig
-    $arvados_config_global["ClusterID"] = clusterID
-  else
-    # config-dump failed, assume we will be loading from legacy
-    # application.yml, initialize with defaults.
-    $arvados_config_global = $arvados_config_defaults.deep_dup
+if ENV["ARVADOS_CONFIG"] == "none"
+  # Don't load config. This magic value is set by postinst so it can
+  # run "rake assets:precompile" without a real config.
+  $arvados_config_global = $arvados_config_defaults.deep_dup
+else
+  # Load the global config file
+  Open3.popen2("arvados-server", "config-dump", "-skip-legacy") do |stdin, stdout, status_thread|
+    confs = YAML.load(stdout, deserialize_symbols: false)
+    if confs && !confs.empty?
+      # config-dump merges defaults with user configuration, so every
+      # key should be set.
+      clusterID, clusterConfig = confs["Clusters"].first
+      $arvados_config_global = clusterConfig
+      $arvados_config_global["ClusterID"] = clusterID
+    else
+      # config-dump failed, assume we will be loading from legacy
+      # application.yml, initialize with defaults.
+      $arvados_config_global = $arvados_config_defaults.deep_dup
+    end
   end
 end
 
@@ -189,7 +195,8 @@ ArvadosWorkbench::Application.configure do
   ConfigLoader.copy_into_config $arvados_config, config
   ConfigLoader.copy_into_config $remaining_config, config
   secrets.secret_key_base = $arvados_config["Workbench"]["SecretKeyBase"]
-  ConfigValidators.validate_wb2_url_config()
-  ConfigValidators.validate_download_config()
-
+  if ENV["ARVADOS_CONFIG"] != "none"
+    ConfigValidators.validate_wb2_url_config()
+    ConfigValidators.validate_download_config()
+  end
 end
