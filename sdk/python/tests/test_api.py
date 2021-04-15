@@ -101,6 +101,12 @@ class ArvadosApiTest(run_test_server.TestCaseWithServers):
             text = "X" * maxsize
             arvados.api('v1').collections().create(body={"manifest_text": text}).execute()
 
+    # Checks for bug #17171
+    def test_default_request_timeout(self):
+        api = arvados.api('v1')
+        self.assertEqual(api._http.timeout, 10,
+            "Default timeout value should be 10")
+
     def test_ordered_json_model(self):
         mock_responses = {
             'arvados.humans.get': (
