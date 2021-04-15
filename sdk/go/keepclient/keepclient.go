@@ -122,6 +122,13 @@ type KeepClient struct {
 // DiscoverKeepServices(), and returns when the client is ready to
 // use.
 func MakeKeepClient(arv *arvadosclient.ArvadosClient) (*KeepClient, error) {
+	if arv.ApiServer == "" {
+		return nil, fmt.Errorf("API server is not configured. Maybe env var ARVADOS_API_HOST should be set first?")
+	}
+	if arv.ApiToken == "" {
+		return nil, fmt.Errorf("API token is not configured. Maybe env var ARVADOS_API_TOKEN should be set first?")
+
+	}
 	kc := New(arv)
 	return kc, kc.discoverServices()
 }
