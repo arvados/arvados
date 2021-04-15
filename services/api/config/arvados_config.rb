@@ -57,8 +57,8 @@ $arvados_config_defaults = clusterConfig
 $arvados_config_defaults["ClusterID"] = clusterID
 
 if ENV["ARVADOS_CONFIG"] == "none"
-  # Don't load config. This magic value is set by postinst so it can
-  # run "rake assets:precompile" without a real config.
+  # Don't load config. This magic value is set by packaging scripts so
+  # they can run "rake assets:precompile" without a real config.
   $arvados_config_global = $arvados_config_defaults.deep_dup
 else
   # Load the global config file

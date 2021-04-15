@@ -226,12 +226,6 @@ configure_version() {
       prepare_database
   fi
 
-  # Here, "ARVADOS_CONFIG=none" tells arvados_config.rb not to try
-  # loading config from /etc: it might not exist on a new install, and
-  # assets:precompile doesn't depend on config anyway.
-  run_and_report "Precompiling assets" \
-                 ARVADOS_CONFIG=none $COMMAND_PREFIX bundle exec rake assets:precompile -q -s 2>/dev/null || true
-
   if [ -e /etc/arvados/config.yml ]; then
       # warn about config errors (deprecated/removed keys from
       # previous version, etc)
