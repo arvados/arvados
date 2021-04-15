@@ -53,6 +53,8 @@ func (c Collection) resourceName() string {
 
 // SizedDigests returns the hash+size part of each data block
 // referenced by the collection.
+//
+// Zero-length blocks are not included.
 func (c *Collection) SizedDigests() ([]SizedDigest, error) {
 	manifestText := c.ManifestText
 	if manifestText == "" {
@@ -75,6 +77,10 @@ func (c *Collection) SizedDigests() ([]SizedDigest, error) {
 			if !blockdigest.LocatorPattern.MatchString(token) {
 				// FIXME: ensure it's a file token
 				break
+			}
+			if strings.HasPrefix(token, "d41d8cd98f00b204e9800998ecf8427e+0") {
+				// Exclude "empty block" placeholder
+				continue
 			}
 			// FIXME: shouldn't assume 32 char hash
 			if i := strings.IndexRune(token[33:], '+'); i >= 0 {
