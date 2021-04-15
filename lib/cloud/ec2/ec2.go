@@ -58,13 +58,14 @@ type ec2Interface interface {
 }
 
 type ec2InstanceSet struct {
-	ec2config     ec2InstanceSetConfig
-	instanceSetID cloud.InstanceSetID
-	logger        logrus.FieldLogger
-	client        ec2Interface
-	keysMtx       sync.Mutex
-	keys          map[string]string
-	throttleDelay atomic.Value
+	ec2config              ec2InstanceSetConfig
+	instanceSetID          cloud.InstanceSetID
+	logger                 logrus.FieldLogger
+	client                 ec2Interface
+	keysMtx                sync.Mutex
+	keys                   map[string]string
+	throttleDelayCreate    atomic.Value
+	throttleDelayInstances atomic.Value
 }
 
 func newEC2InstanceSet(config json.RawMessage, instanceSetID cloud.InstanceSetID, _ cloud.SharedResourceTags, logger logrus.FieldLogger) (prv cloud.InstanceSet, err error) {
@@ -229,24 +230,9 @@ func (instanceSet *ec2InstanceSet) Create(
 	}
 
 	rsv, err := instanceSet.client.RunInstances(&rii)
-
-	if request.IsErrorThrottle(err) {
-		// Back off exponentially until a create call either
-		// succeeds or returns a non-throttle error.
-		d, _ := instanceSet.throttleDelay.Load().(time.Duration)
-		d = d*3/2 + time.Second
-		if d < throttleDelayMin {
-			d = throttleDelayMin
-		} else if d > throttleDelayMax {
-			d = throttleDelayMax
-		}
-		instanceSet.throttleDelay.Store(d)
-		return nil, rateLimitError{error: err, earliestRetry: time.Now().Add(d)}
-	} else if err != nil {
-		instanceSet.throttleDelay.Store(time.Duration(0))
+	err = wrapError(err, &instanceSet.throttleDelayCreate)
+	if err != nil {
 		return nil, err
-	} else {
-		instanceSet.throttleDelay.Store(time.Duration(0))
 	}
 
 	return &ec2Instance{
@@ -266,6 +252,7 @@ func (instanceSet *ec2InstanceSet) Instances(tags cloud.InstanceTags) (instances
 	dii := &ec2.DescribeInstancesInput{Filters: filters}
 	for {
 		dio, err := instanceSet.client.DescribeInstances(dii)
+		err = wrapError(err, &instanceSet.throttleDelayInstances)
 		if err != nil {
 			return nil, err
 		}
@@ -360,4 +347,25 @@ type rateLimitError struct {
 
 func (err rateLimitError) EarliestRetry() time.Time {
 	return err.earliestRetry
+}
+
+func wrapError(err error, throttleValue *atomic.Value) error {
+	if request.IsErrorThrottle(err) {
+		// Back off exponentially until a create call either
+		// succeeds or returns a non-throttle error.
+		d, _ := throttleValue.Load().(time.Duration)
+		d = d*3/2 + time.Second
+		if d < throttleDelayMin {
+			d = throttleDelayMin
+		} else if d > throttleDelayMax {
+			d = throttleDelayMax
+		}
+		throttleValue.Store(d)
+		return rateLimitError{error: err, earliestRetry: time.Now().Add(d)}
+	} else if err != nil {
+		throttleValue.Store(time.Duration(0))
+		return err
+	}
+	throttleValue.Store(time.Duration(0))
+	return nil
 }
