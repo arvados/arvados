@@ -157,7 +157,7 @@ def http_cache(data_type):
     return cache.SafeHTTPCache(path, max_age=60*60*24*2)
 
 def api(version=None, cache=True, host=None, token=None, insecure=False,
-        request_id=None, timeout=None, **kwargs):
+        request_id=None, timeout=10, **kwargs):
     """Return an apiclient Resources object for an Arvados instance.
 
     :version:
