@@ -230,7 +230,9 @@ configure_version() {
       # warn about config errors (deprecated/removed keys from
       # previous version, etc)
       run_and_report "Checking configuration for completeness" \
-                     $COMMAND_PREFIX bundle exec rake config:check || true
+                     $COMMAND_PREFIX bundle exec rake config:check || APPLICATION_READY=0
+  else
+      APPLICATION_READY=0
   fi
 
   chown -R "$WWW_OWNER:" $RELEASE_PATH/tmp
