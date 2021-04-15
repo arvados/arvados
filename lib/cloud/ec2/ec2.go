@@ -351,8 +351,8 @@ func (err rateLimitError) EarliestRetry() time.Time {
 
 func wrapError(err error, throttleValue *atomic.Value) error {
 	if request.IsErrorThrottle(err) {
-		// Back off exponentially until a create call either
-		// succeeds or returns a non-throttle error.
+		// Back off exponentially until an upstream call
+		// either succeeds or returns a non-throttle error.
 		d, _ := throttleValue.Load().(time.Duration)
 		d = d*3/2 + time.Second
 		if d < throttleDelayMin {
