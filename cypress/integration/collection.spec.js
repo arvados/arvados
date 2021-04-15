@@ -46,10 +46,13 @@ describe('Collection panel tests', function () {
             cy.get('[data-cy=context-menu]').contains('Open as network folder or S3 bucket').click();
             cy.get('[data-cy=download-button').click();
 
-            const filename = path.join(downloadsFolder, `${testCollection.name}.duck`)
+            const filename = path.join(downloadsFolder, `${testCollection.name}.duck`);
+            const expectedValue = '<?xmlversion="1.0"encoding="UTF-8"?><!DOCTYPEplistPUBLIC"-//Apple//DTDPLIST1.0//EN""http://www.apple.com/DTDs/PropertyList-1.0.dtd"><plistversion="1.0"><dict><key>Protocol</key><string>davs</string><key>Provider</key><string>iterateGmbH</string><key>UUID</key><string>zzzzz-4zz18-oehuaangyo2timv</string><key>Hostname</key><string>0.0.0.0</string><key>Port</key><string>40041</string><key>Username</key><string>collectionuser1</string><key>Labels</key><array></array></dict></plist>';
 
             cy.readFile(filename, { timeout: 15000 })
-                .should('have.length.gt', 50)
+                .then((str) => {
+                    expect(str.replaceAll(' ', '').replaceAll('\n', ''), expectedValue);
+                })
                 .then(() => cy.task('clearDownload', { filename }));
         });
     });

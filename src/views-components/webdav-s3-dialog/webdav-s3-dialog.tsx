@@ -59,9 +59,9 @@ const mountainduckTemplate = ({
       <key>UUID</key>
       <string>${uuid}</string>
       <key>Hostname</key>
-      <string>${collectionsUrl.replace('https://', ``).replace('*', uuid)}</string>
+      <string>${collectionsUrl.replace('https://', ``).replace('*', uuid).split(':')[0]}</string>
       <key>Port</key>
-      <string>443</string>
+      <string>${collectionsUrl.split(':')[2] || 443}</string>
       <key>Username</key>
       <string>${username}</string>
       <key>Labels</key>
