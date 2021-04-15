@@ -138,6 +138,10 @@ func (kc *KeepClient) discoverServices() error {
 		return nil
 	}
 
+	if kc.Arvados.ApiServer == "" {
+		return fmt.Errorf("Arvados client is not configured (target API host is not set). Maybe env var ARVADOS_API_HOST should be set first?")
+	}
+
 	svcListCacheMtx.Lock()
 	cacheEnt, ok := svcListCache[kc.Arvados.ApiServer]
 	if !ok {

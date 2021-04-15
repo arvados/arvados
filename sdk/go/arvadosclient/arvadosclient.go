@@ -206,6 +206,9 @@ func (c *ArvadosClient) CallRaw(method string, resourceType string, uuid string,
 	if scheme == "" {
 		scheme = "https"
 	}
+	if c.ApiServer == "" {
+		return nil, fmt.Errorf("Arvados client is not configured (target API host is not set). Maybe env var ARVADOS_API_HOST should be set first?")
+	}
 	u := url.URL{
 		Scheme: scheme,
 		Host:   c.ApiServer}
