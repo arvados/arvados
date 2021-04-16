@@ -14,6 +14,8 @@ import (
 	"fmt"
 	"math/big"
 	"sync"
+	"sync/atomic"
+	"time"
 
 	"git.arvados.org/arvados.git/lib/cloud"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
@@ -21,6 +23,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
+	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/sirupsen/logrus"
@@ -29,6 +32,11 @@ import (
 
 // Driver is the ec2 implementation of the cloud.Driver interface.
 var Driver = cloud.DriverFunc(newEC2InstanceSet)
+
+const (
+	throttleDelayMin = time.Second
+	throttleDelayMax = time.Minute
+)
 
 type ec2InstanceSetConfig struct {
 	AccessKeyID      string
@@ -50,12 +58,14 @@ type ec2Interface interface {
 }
 
 type ec2InstanceSet struct {
-	ec2config     ec2InstanceSetConfig
-	instanceSetID cloud.InstanceSetID
-	logger        logrus.FieldLogger
-	client        ec2Interface
-	keysMtx       sync.Mutex
-	keys          map[string]string
+	ec2config              ec2InstanceSetConfig
+	instanceSetID          cloud.InstanceSetID
+	logger                 logrus.FieldLogger
+	client                 ec2Interface
+	keysMtx                sync.Mutex
+	keys                   map[string]string
+	throttleDelayCreate    atomic.Value
+	throttleDelayInstances atomic.Value
 }
 
 func newEC2InstanceSet(config json.RawMessage, instanceSetID cloud.InstanceSetID, _ cloud.SharedResourceTags, logger logrus.FieldLogger) (prv cloud.InstanceSet, err error) {
@@ -220,7 +230,7 @@ func (instanceSet *ec2InstanceSet) Create(
 	}
 
 	rsv, err := instanceSet.client.RunInstances(&rii)
-
+	err = wrapError(err, &instanceSet.throttleDelayCreate)
 	if err != nil {
 		return nil, err
 	}
@@ -242,6 +252,7 @@ func (instanceSet *ec2InstanceSet) Instances(tags cloud.InstanceTags) (instances
 	dii := &ec2.DescribeInstancesInput{Filters: filters}
 	for {
 		dio, err := instanceSet.client.DescribeInstances(dii)
+		err = wrapError(err, &instanceSet.throttleDelayInstances)
 		if err != nil {
 			return nil, err
 		}
@@ -327,4 +338,34 @@ func (inst *ec2Instance) RemoteUser() string {
 
 func (inst *ec2Instance) VerifyHostKey(ssh.PublicKey, *ssh.Client) error {
 	return cloud.ErrNotImplemented
+}
+
+type rateLimitError struct {
+	error
+	earliestRetry time.Time
+}
+
+func (err rateLimitError) EarliestRetry() time.Time {
+	return err.earliestRetry
+}
+
+func wrapError(err error, throttleValue *atomic.Value) error {
+	if request.IsErrorThrottle(err) {
+		// Back off exponentially until an upstream call
+		// either succeeds or returns a non-throttle error.
+		d, _ := throttleValue.Load().(time.Duration)
+		d = d*3/2 + time.Second
+		if d < throttleDelayMin {
+			d = throttleDelayMin
+		} else if d > throttleDelayMax {
+			d = throttleDelayMax
+		}
+		throttleValue.Store(d)
+		return rateLimitError{error: err, earliestRetry: time.Now().Add(d)}
+	} else if err != nil {
+		throttleValue.Store(time.Duration(0))
+		return err
+	}
+	throttleValue.Store(time.Duration(0))
+	return nil
 }

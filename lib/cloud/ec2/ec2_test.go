@@ -245,3 +245,5 @@ func (*EC2InstanceSetSuite) TestDestroyInstances(c *check.C) {
 		c.Check(i.Destroy(), check.IsNil)
 	}
 }
+
+var TestRateLimitErrorInterface cloud.RateLimitError = rateLimitError{}

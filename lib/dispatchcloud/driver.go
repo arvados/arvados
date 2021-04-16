@@ -71,6 +71,11 @@ func (inst *rateLimitedInstance) Destroy() error {
 	return inst.Instance.Destroy()
 }
 
+func (inst *rateLimitedInstance) SetTags(tags cloud.InstanceTags) error {
+	<-inst.ticker.C
+	return inst.Instance.SetTags(tags)
+}
+
 // Adds the specified defaultTags to every Create() call.
 type defaultTaggingInstanceSet struct {
 	cloud.InstanceSet
