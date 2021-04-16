@@ -11,74 +11,83 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.ssh.insert_key = false
   config.ssh.forward_x11 = true
 
-##   # A single_host multiple_hostnames example
-##   config.vm.define "arvados-sh-mn" do |arv|
-##     arv.vm.box = "bento/debian-10"
-##     arv.vm.hostname = "harpo"
-##     # CPU/RAM
-##     config.vm.provider :virtualbox do |v|
-##       v.memory = 2048
-##       v.cpus = 2
-##     end
-##
-##     # Networking
-##     # WEBUI PORT
-##     arv.vm.network "forwarded_port", guest: 8443, host: 8443
-##     # KEEPPROXY
-##     arv.vm.network "forwarded_port", guest: 25101, host: 25101
-##     # KEEPWEB
-##     arv.vm.network "forwarded_port", guest: 9002, host: 9002
-##     # WEBSOCKET
-##     arv.vm.network "forwarded_port", guest: 8002, host: 8002
-##     arv.vm.provision "shell",
-##                      inline: "sed 's#cluster_fixme_or_this_wont_work#harpo#g;
-##                                    s#domain_fixme_or_this_wont_work#local#g;
-##                                    s#CONTROLLER_EXT_SSL_PORT=443#CONTROLLER_EXT_SSL_PORT=8443#g' \
-##                                    /vagrant/local.params.example.single_host_multiple_hostnames > /tmp/local.params.single_host_multiple_hostnames"
-##                                    # s#production#development#g;
-##     arv.vm.provision "shell",
-##                      path: "provision.sh",
-##                      args: [
-##                        # "--debug",
-##                        "--config /tmp/local.params.single_host_multiple_hostnames",
-##                        "--test",
-##                        "--vagrant"
-##                      ].join(" ")
-##   end
+   # A single_host multiple_hostnames example
+   config.vm.define "arvados-sh-mn" do |arv|
+     arv.vm.box = "bento/debian-10"
+     arv.vm.hostname = "harpo"
+     # CPU/RAM
+     config.vm.provider :virtualbox do |v|
+       v.memory = 2048
+       v.cpus = 2
+     end
 
-  # A single_host single_hostname example
-  config.vm.define "arvados-sh-sn" do |arv|
-    arv.vm.box = "bento/debian-10"
-    arv.vm.hostname = "zeppo"
-    # CPU/RAM
-    config.vm.provider :virtualbox do |v|
-      v.memory = 2048
-      v.cpus = 2
-    end
+     # Networking
+     # WEBUI PORT
+     arv.vm.network "forwarded_port", guest: 8443, host: 8443
+     # KEEPPROXY
+     arv.vm.network "forwarded_port", guest: 25101, host: 25101
+     # KEEPWEB
+     arv.vm.network "forwarded_port", guest: 9002, host: 9002
+     # WEBSOCKET
+     arv.vm.network "forwarded_port", guest: 8002, host: 8002
+     arv.vm.provision "shell",
+                      inline: "cp -vr /vagrant/config_examples/single_host/multiple_hostnames /home/vagrant/local_config_dir;
+                               cp -vr /vagrant/tests /home/vagrant/tests;
+                               sed 's#cluster_fixme_or_this_wont_work#harpo#g;
+                                    s#domain_fixme_or_this_wont_work#local#g;
+                                    s/#\ BRANCH=\"master\"/\ BRANCH=\"master\"/g;
+                                    s#CONTROLLER_EXT_SSL_PORT=443#CONTROLLER_EXT_SSL_PORT=8443#g' \
+                                    /vagrant/local.params.example.single_host_multiple_hostnames > /tmp/local.params.single_host_multiple_hostnames"
+     arv.vm.provision "shell",
+                      path: "provision.sh",
+                      args: [
+                        # "--debug",
+                        "--config /tmp/local.params.single_host_multiple_hostnames",
+                        "--test",
+                        "--vagrant"
+                      ].join(" ")
+   end
 
-    # Networking
-    arv.vm.network "forwarded_port", guest: 9443, host: 9443
-    arv.vm.network "forwarded_port", guest: 9444, host: 9444
-    arv.vm.network "forwarded_port", guest: 9445, host: 9445
-    arv.vm.network "forwarded_port", guest: 35101, host: 35101
-    arv.vm.network "forwarded_port", guest: 10002, host: 10002
-    arv.vm.network "forwarded_port", guest: 14202, host: 14202
-    arv.vm.network "forwarded_port", guest: 18002, host: 18002
-    arv.vm.provision "shell",
-                     inline: "cp -vr /vagrant/config_examples/single_host/single_hostname /home/vagrant/local_config_dir;
-                              cp -vr /vagrant/tests /home/vagrant/tests;
-                              sed 's#HOSTNAME_EXT=\"\"#HOSTNAME_EXT=\"zeppo.local\"#g;
-                                   s#cluster_fixme_or_this_wont_work#zeppo#g;
-                                   s/#\ BRANCH=\"master\"/\ BRANCH=\"master\"/g;
-                                   s#domain_fixme_or_this_wont_work#local#g;' \
-                                   /vagrant/local.params.example.single_host_single_hostname > /tmp/local.params.single_host_single_hostname"
-    arv.vm.provision "shell",
-                     path: "provision.sh",
-                     args: [
-                       # "--debug",
-                       "--config /tmp/local.params.single_host_single_hostname",
-                       "--test",
-                       "--vagrant"
-                     ].join(" ")
-  end
+   # A single_host single_hostname example
+   config.vm.define "arvados-sh-sn" do |arv|
+     arv.vm.box = "bento/debian-10"
+     arv.vm.hostname = "zeppo"
+     # CPU/RAM
+     config.vm.provider :virtualbox do |v|
+       v.memory = 2048
+       v.cpus = 2
+     end
+ 
+     # Networking
+     # WEBUI PORT
+     arv.vm.network "forwarded_port", guest: 9443, host: 9443
+     # WORKBENCH1
+     arv.vm.network "forwarded_port", guest: 9444, host: 9444
+     # WORKBENCH2
+     arv.vm.network "forwarded_port", guest: 9445, host: 9445
+     # KEEPPROXY
+     arv.vm.network "forwarded_port", guest: 35101, host: 35101
+     # KEEPWEB
+     arv.vm.network "forwarded_port", guest: 11002, host: 11002
+     # WEBSHELL
+     arv.vm.network "forwarded_port", guest: 14202, host: 14202
+     # WEBSOCKET
+     arv.vm.network "forwarded_port", guest: 18002, host: 18002
+     arv.vm.provision "shell",
+                      inline: "cp -vr /vagrant/config_examples/single_host/single_hostname /home/vagrant/local_config_dir;
+                               cp -vr /vagrant/tests /home/vagrant/tests;
+                               sed 's#HOSTNAME_EXT=\"\"#HOSTNAME_EXT=\"zeppo.local\"#g;
+                                    s#cluster_fixme_or_this_wont_work#zeppo#g;
+                                    s/#\ BRANCH=\"master\"/\ BRANCH=\"master\"/g;
+                                    s#domain_fixme_or_this_wont_work#local#g;' \
+                                    /vagrant/local.params.example.single_host_single_hostname > /tmp/local.params.single_host_single_hostname"
+     arv.vm.provision "shell",
+                      path: "provision.sh",
+                      args: [
+                        # "--debug",
+                        "--config /tmp/local.params.single_host_single_hostname",
+                        "--test",
+                        "--vagrant"
+                      ].join(" ")
+   end
 end
