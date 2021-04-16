@@ -7,9 +7,6 @@
 {%- from "arvados/map.jinja" import arvados with context %}
 {%- set tpldir = curr_tpldir %}
 
-include:
-  - nginx.service
-
 {%- set arvados_ca_cert_file = '/etc/ssl/certs/arvados-snakeoil-ca.pem' %}
 {%- set arvados_ca_key_file = '/etc/ssl/private/arvados-snakeoil-ca.key' %}
 {%- set arvados_cert_file = '/etc/ssl/certs/arvados-snakeoil-cert.pem' %}
@@ -150,6 +147,11 @@ arvados_test_salt_states_examples_single_host_snakeoil_certs_nginx_snakeoil_file
     - contents: |
         ssl_certificate {{ arvados_cert_file }};
         ssl_certificate_key {{ arvados_key_file }};
+    - require:
+      - pkg: nginx_install
+    - require_in:
+      - file: nginx_config
+      - service: nginx_service
     - watch_in:
       - service: nginx_service
 

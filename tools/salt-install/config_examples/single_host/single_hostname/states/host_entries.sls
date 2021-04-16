@@ -9,7 +9,7 @@
 
 arvados_test_salt_states_examples_single_host_etc_hosts_host_present:
   host.present:
-    - ip: 127.0.0.2
+    - ip: 127.0.1.1
     - names:
       - {{ arvados.cluster.name }}.{{ arvados.cluster.domain }}
       # FIXME! This just works for our testings.
@@ -31,3 +31,6 @@ arvados_test_salt_states_examples_single_host_etc_hosts_host_present:
       - {{ entry }}
       - {{ entry }}.{{ arvados.cluster.name }}.{{ arvados.cluster.domain }}
       {%- endfor %}
+    - require_in:
+      - file: nginx_config
+      - service: nginx_service
