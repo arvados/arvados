@@ -55,6 +55,15 @@ type rateLimitedInstanceSet struct {
 	ticker *time.Ticker
 }
 
+func (is rateLimitedInstanceSet) Instances(tags cloud.InstanceTags) ([]cloud.Instance, error) {
+	<-is.ticker.C
+	insts, err := is.InstanceSet.Instances(tags)
+	for i, inst := range insts {
+		insts[i] = &rateLimitedInstance{inst, is.ticker}
+	}
+	return insts, err
+}
+
 func (is rateLimitedInstanceSet) Create(it arvados.InstanceType, image cloud.ImageID, tags cloud.InstanceTags, init cloud.InitCommand, pk ssh.PublicKey) (cloud.Instance, error) {
 	<-is.ticker.C
 	inst, err := is.InstanceSet.Create(it, image, tags, init, pk)
