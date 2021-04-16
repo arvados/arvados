@@ -27,7 +27,7 @@ module.exports = (on, config) => {
   // `config` is the resolved Cypress config
   on("before:browser:launch", (browser = {}, launchOptions) => {
     const downloadDirectory = path.join(__dirname, "..", "downloads");
-    if (browser.family === "chromium") {
+    if (browser.family === 'chromium' && browser.name !== 'electron') {
      launchOptions.preferences.default["download"] = {
       default_directory: downloadDirectory
      };
