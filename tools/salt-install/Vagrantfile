@@ -65,17 +65,12 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     arv.vm.network "forwarded_port", guest: 14202, host: 14202
     arv.vm.network "forwarded_port", guest: 18002, host: 18002
     arv.vm.provision "shell",
-                     inline: "sed 's#HOSTNAME_EXT=\"\"#HOSTNAME_EXT=\"zeppo.local\"#g;
-                                   s#cluster_fixme_or_this_wont_work#harpo#g;
-                                   s#domain_fixme_or_this_wont_work#local#g;
-                                   s#CONFIG_DIR=\"config_examples/single_host/multiple_hostnames\"#CONFIG_DIR=\"config_examples/single_host/single_hostname\"#g;
-                                   s#CONTROLLER_EXT_SSL_PORT=443#CONTROLLER_EXT_SSL_PORT=9443#g;
-                                   s#KEEP_EXT_SSL_PORT=25101#KEEP_EXT_SSL_PORT=35101#g;
-                                   s#KEEPWEB_EXT_SSL_PORT=9002#KEEPWEB_EXT_SSL_PORT=11002#g;
-                                   s#WEBSHELL_EXT_SSL_PORT=4202#WEBSHELL_EXT_SSL_PORT=14202#g;
-                                   s#WEBSOCKET_EXT_SSL_PORT=8002#WEBSOCKET_EXT_SSL_PORT=18002#g;
-                                   s#WORKBENCH1_EXT_SSL_PORT=443#WORKBENCH1_EXT_SSL_PORT=9444#g;
-                                   s#WORKBENCH2_EXT_SSL_PORT=3001#WORKBENCH2_EXT_SSL_PORT=9445#g;' \
+                     inline: "cp -vr /vagrant/config_examples/single_host/single_hostname /home/vagrant/local_config_dir;
+                              cp -vr /vagrant/tests /home/vagrant/tests;
+                              sed 's#HOSTNAME_EXT=\"\"#HOSTNAME_EXT=\"zeppo.local\"#g;
+                                   s#cluster_fixme_or_this_wont_work#zeppo#g;
+                                   s/#\ BRANCH=\"master\"/\ BRANCH=\"master\"/g;
+                                   s#domain_fixme_or_this_wont_work#local#g;' \
                                    /vagrant/local.params.example.single_host_single_hostname > /tmp/local.params.single_host_single_hostname"
     arv.vm.provision "shell",
                      path: "provision.sh",
