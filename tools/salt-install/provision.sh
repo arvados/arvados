@@ -100,7 +100,7 @@ arguments() {
 }
 
 CONFIG_FILE="${SCRIPT_DIR}/local.params"
-CONFIG_DIR="config_examples/single_host/multiple_hostnames"
+CONFIG_DIR="local_config_dir"
 LOG_LEVEL="info"
 CONTROLLER_EXT_SSL_PORT=443
 TESTS_DIR="tests"
@@ -130,7 +130,7 @@ RELEASE="production"
 VERSION="latest"
 
 # Formulas versions
-ARVADOS_TAG="v.1.1.4"
+ARVADOS_TAG="v1.1.4"
 POSTGRES_TAG="v0.41.6"
 NGINX_TAG="temp-fix-missing-statements-in-pillar"
 DOCKER_TAG="v1.0.0"
@@ -156,6 +156,13 @@ else
   exit 1
 fi
 
+if [ ! -d ${CONFIG_DIR} ]; then
+  echo >&2 "Please create a '${CONFIG_DIR}' with initial values, as described in"
+  echo >&2 "  * https://doc.arvados.org/install/salt-single-host.html#single_host, or"
+  echo >&2 "  * https://doc.arvados.org/install/salt-multi-host.html#multi_host_multi_hostnames"
+  exit 1
+fi
+
 if grep -q 'fixme_or_this_wont_work' ${CONFIG_FILE} ; then
   echo >&2 "The config file ${CONFIG_FILE} has some parameters that need to be modified."
   echo >&2 "Please, fix them and re-run the provision script."
@@ -166,6 +173,11 @@ if ! grep -E '^[[:alnum:]]{5}$' <<<${CLUSTER} ; then
   echo >&2 "ERROR: <CLUSTER> must be exactly 5 alphanumeric characters long"
   echo >&2 "Fix the cluster name in the 'local.params' file and re-run the provision script"
   exit 1
+fi
+
+# Only used in single_host/single_name deploys
+if [ "x${HOSTNAME_EXT}" = "x" ] ; then
+  HOSTNAME_EXT="${CLUSTER}.${DOMAIN}"
 fi
 
 apt-get update
@@ -213,9 +225,11 @@ if [ "x${BRANCH}" != "x" ]; then
 fi
 
 if [ "x${VAGRANT}" = "xyes" ]; then
-  SOURCE_PILLARS_DIR="/vagrant/${CONFIG_DIR}/pillars"
-  SOURCE_TESTS_DIR="/vagrant/${TESTS_DIR}"
+  EXTRA_STATES_DIR="/home/vagrant/${CONFIG_DIR}/states"
+  SOURCE_PILLARS_DIR="/home/vagrant/${CONFIG_DIR}/pillars"
+  SOURCE_TESTS_DIR="/home/vagrant/${TESTS_DIR}"
 else
+  EXTRA_STATES_DIR="${SCRIPT_DIR}/${CONFIG_DIR}/states"
   SOURCE_PILLARS_DIR="${SCRIPT_DIR}/${CONFIG_DIR}/pillars"
   SOURCE_TESTS_DIR="${SCRIPT_DIR}/${TESTS_DIR}"
 fi
@@ -224,6 +238,10 @@ SOURCE_STATES_DIR="${EXTRA_STATES_DIR}"
 
 # Replace variables (cluster,  domain, etc) in the pillars, states and tests
 # to ease deployment for newcomers
+if [ ! -d "${SOURCE_PILLARS_DIR}" ]; then
+  echo "${SOURCE_PILLARS_DIR} does not exist or is not a directory. Exiting."
+  exit 1
+fi
 for f in "${SOURCE_PILLARS_DIR}"/*; do
   sed "s#__ANONYMOUS_USER_TOKEN__#${ANONYMOUS_USER_TOKEN}#g;
        s#__BLOB_SIGNING_KEY__#${BLOB_SIGNING_KEY}#g;
@@ -261,6 +279,10 @@ for f in "${SOURCE_PILLARS_DIR}"/*; do
   "${f}" > "${P_DIR}"/$(basename "${f}")
 done
 
+if [ "x${TEST}" = "xyes" ] && [ ! -d "${SOURCE_TESTS_DIR}" ]; then
+  echo "You requested to run tests, but ${SOURCE_TESTS_DIR} does not exist or is not a directory. Exiting."
+  exit 1
+fi
 mkdir -p /tmp/cluster_tests
 # Replace cluster and domain name in the test files
 for f in "${SOURCE_TESTS_DIR}"/*; do
