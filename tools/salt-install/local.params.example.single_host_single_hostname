@@ -11,10 +11,11 @@ CLUSTER="cluster_fixme_or_this_wont_work"
 # The domainname you want tou give to your cluster's hosts
 DOMAIN="domain_fixme_or_this_wont_work"
 
-# When setting the cluster in a single host, you can use a single hostname
-# to access all the instances. When using virtualization (ie AWS), this should be
+# Set this value when installing a cluster in a single host with a single hostname
+# to access all the instances. Not used in the other examples.
+# When using virtualization (ie AWS), this should be
 # the EXTERNAL/PUBLIC hostname for the instance.
-# If empty, the INTERNAL HOST IP will be used
+# If empty, ${CLUSTER}.${DOMAIN} will be used
 HOSTNAME_EXT=""
 # The internal hostname for the host. In the example files, only used in the
 # single_host/single_hostname example
@@ -57,16 +58,10 @@ DATABASE_PASSWORD=please_set_this_to_some_secure_value
 USE_LETSENCRYPT="no"
 
 # The directory to check for the config files (pillars, states) you want to use.
-# There are a few examples under 'config_examples'. If you don't change this
-# variable, the single_host, multiple_hostnames config will be used
-# CONFIG_DIR="config_examples/single_host/single_hostname"
-CONFIG_DIR="local_config_dir"
+# There are a few examples under 'config_examples'.
+# CONFIG_DIR="local_config_dir"
 # Extra states to apply. If you use your own subdir, change this value accordingly
-# This is the value for the single_host/multiple_hostnames example
-# EXTRA_STATES_DIR="${F_DIR}/arvados-formula/test/salt/states/examples/single_host"
-
-# When using the single_host/single_hostname example, change to this one
-EXTRA_STATES_DIR="${CONFIG_DIR}/states"
+# EXTRA_STATES_DIR="${CONFIG_DIR}/states"
 
 # Which release of Arvados repo you want to use
 RELEASE="production"
