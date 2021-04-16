@@ -15,7 +15,7 @@ postgres:
     - ['local', 'all', 'all', 'peer']
     - ['host', 'all', 'all', '127.0.0.1/32', 'md5']
     - ['host', 'all', 'all', '::1/128', 'md5']
-    - ['host', '__CLUSTER___arvados', '__CLUSTER___arvados', '127.0.0.1/32']
+    - ['host', '__CLUSTER___arvados', '__CLUSTER___arvados', '127.0.0.0/8']
   users:
     __CLUSTER___arvados:
       ensure: present
