@@ -63,12 +63,11 @@ arvados:
     database:
       # max concurrent connections per arvados server daemon
       # connection_pool_max: 32
-      name: arvados
+      name: __CLUSTER___arvados
       host: 127.0.0.1
-      password: changeme_arvados
-      user: arvados
+      password: "__DATABASE_PASSWORD__"
+      user: __CLUSTER___arvados
       encoding: en_US.utf8
-      client_encoding: UTF8
 
     tls:
       # certificate: ''
