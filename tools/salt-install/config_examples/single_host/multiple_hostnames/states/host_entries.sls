@@ -29,6 +29,7 @@ arvados_test_salt_states_examples_single_host_etc_hosts_host_present:
         ]
       %}
       - {{ entry }}
+      - {{ entry }}.internal
       - {{ entry }}.{{ arvados.cluster.name }}.{{ arvados.cluster.domain }}
       {%- endfor %}
     - require_in:
