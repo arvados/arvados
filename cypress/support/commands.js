@@ -36,7 +36,7 @@ Cypress.Commands.add(
         token = systemToken, auth = false, followRedirect = true) => {
     return cy.request({
         method: method,
-        url: `${controllerURL}/${path}`,
+        url: `${controllerURL.replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`,
         body: data,
         qs: auth ? qs : Object.assign({ api_token: token }, qs),
         auth: auth ? { bearer: `${token}` } : undefined,
