@@ -5,20 +5,12 @@
 
 # These are the basic parameters to configure the installation
 
-# The 5 letters name you want to give your cluster
-CLUSTER="fixme"
+# The FIVE ALPHANUMERIC CHARACTERS name you want to give your cluster
+CLUSTER="cluster_fixme_or_this_wont_work"
 
 # The domainname you want tou give to your cluster's hosts
-DOMAIN="some.domain"
+DOMAIN="domain_fixme_or_this_wont_work"
 
-# When setting the cluster in a single host, you can use a single hostname
-# to access all the instances. When using virtualization (ie AWS), this should be
-# the EXTERNAL/PUBLIC hostname for the instance.
-# If empty, the INTERNAL HOST IP will be used
-HOSTNAME_EXT=""
-# The internal hostname for the host. In the example files, only used in the
-# single_host/single_hostname example
-HOSTNAME_INT="127.0.1.1"
 # Host SSL port where you want to point your browser to access Arvados
 # Defaults to 443 for regular runs, and to 8443 when called in Vagrant.
 # You can point it to another port if desired
@@ -51,7 +43,8 @@ INITIAL_USER_PASSWORD="password"
 
 # If not specified, the initial user email will be composed as
 # INITIAL_USER@CLUSTER.DOMAIN
-INITIAL_USER_EMAIL="admin@fixme.some.domain"
+INITIAL_USER_EMAIL="admin@cluster_fixme_or_this_wont_work.domain_fixme_or_this_wont_work"
+INITIAL_USER_PASSWORD="password"
 
 # YOU SHOULD CHANGE THESE TO SOME RANDOM STRINGS
 BLOB_SIGNING_KEY=blobsigningkeymushaveatleast32characters
@@ -71,14 +64,9 @@ DATABASE_PASSWORD=please_set_this_to_some_secure_value
 USE_LETSENCRYPT="yes"
 
 # The directory to check for the config files (pillars, states) you want to use.
-# There are a few examples under 'config_examples'. If you don't change this
-# variable, the single_host, multiple_hostnames config will be used
-# CONFIG_DIR="config_examples/single_host/single_hostname"
-CONFIG_DIR="config_examples/multi_host/aws"
+# There are a few examples under 'config_examples'.
+# CONFIG_DIR="local_config_dir"
 # Extra states to apply. If you use your own subdir, change this value accordingly
-EXTRA_STATES_DIR="${CONFIG_DIR}/states"
-
-# When using the single_host/single_hostname example, change to this one
 # EXTRA_STATES_DIR="${CONFIG_DIR}/states"
 
 # Which release of Arvados repo you want to use
@@ -90,7 +78,7 @@ VERSION="latest"
 # This is an arvados-formula setting.
 # If branch is set, the script will switch to it before running salt
 # Usually not needed, only used for testing
-BRANCH="master"
+# BRANCH="master"
 
 ##########################################################
 # Usually there's no need to modify things below this line
