@@ -47,7 +47,8 @@ function TabPanel(props: TabPanelData) {
 const mountainduckTemplate = ({
     uuid, 
     username,
-    collectionsUrl,
+    cyberDavStr,
+    collectionsUrl
 }: any) => `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -61,7 +62,7 @@ const mountainduckTemplate = ({
       <key>Hostname</key>
       <string>${collectionsUrl.replace('https://', ``).replace('*', uuid).split(':')[0]}</string>
       <key>Port</key>
-      <string>${collectionsUrl.split(':')[2] || 443}</string>
+      <string>${(cyberDavStr.split(':')[2] || '443').split('/')[0]}</string>
       <key>Username</key>
       <string>${username}</string>
       <key>Labels</key>
@@ -193,7 +194,7 @@ export const WebDavS3InfoDialog = compose(
                     <Button
                         data-cy='download-button'
                         className={props.classes.downloadButton}
-                        onClick={() => downloadMountainduckFileHandler(`${props.data.collectionName || props.data.uuid}.duck`, mountainduckTemplate(props.data))}
+                        onClick={() => downloadMountainduckFileHandler(`${props.data.collectionName || props.data.uuid}.duck`, mountainduckTemplate({ ...props.data, cyberDavStr }))}
                         variant='contained'
                         color='primary'
                         size='small'>

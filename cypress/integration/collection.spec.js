@@ -32,7 +32,7 @@ describe('Collection panel tests', function () {
         cy.clearLocalStorage();
     });
 
-    it('allows to download mountain duck config for a collection', () => {
+    it.only('allows to download mountain duck config for a collection', () => {
         cy.createCollection(adminUser.token, {
             name: `Test collection ${Math.floor(Math.random() * 999999)}`,
             owner_uuid: activeUser.user.uuid,
@@ -47,11 +47,26 @@ describe('Collection panel tests', function () {
             cy.get('[data-cy=download-button').click();
 
             const filename = path.join(downloadsFolder, `${testCollection.name}.duck`);
-            const expectedValue = '<?xmlversion="1.0"encoding="UTF-8"?><!DOCTYPEplistPUBLIC"-//Apple//DTDPLIST1.0//EN""http://www.apple.com/DTDs/PropertyList-1.0.dtd"><plistversion="1.0"><dict><key>Protocol</key><string>davs</string><key>Provider</key><string>iterateGmbH</string><key>UUID</key><string>zzzzz-4zz18-oehuaangyo2timv</string><key>Hostname</key><string>0.0.0.0</string><key>Port</key><string>40041</string><key>Username</key><string>collectionuser1</string><key>Labels</key><array></array></dict></plist>';
 
             cy.readFile(filename, { timeout: 15000 })
-                .then((str) => {
-                    expect(str.replaceAll(' ', '').replaceAll('\n', ''), expectedValue);
+                .then((body) => {
+                    const childrenCollection = Array.prototype.slice.call(Cypress.$(body).find('dict')[0].children);
+                    const map = {};
+                    let i, j = 2;
+                    
+                    for (i=0; i < childrenCollection.length; i += j) {
+                      map[childrenCollection[i].outerText] = childrenCollection[i + 1].outerText;
+                    }
+
+                    cy.get('#simple-tabpanel-0').find('a')
+                        .then((a) => {
+                            const [host, port] = a.text().split('@')[1].split('/')[0].split(':');
+                            expect(map['Protocol']).to.equal('davs');
+                            expect(map['UUID']).to.equal(testCollection.uuid);
+                            expect(map['Username']).to.equal(activeUser.user.username);
+                            expect(map['Port']).to.equal(port);
+                            expect(map['Hostname']).to.equal(host);
+                        });
                 })
                 .then(() => cy.task('clearDownload', { filename }));
         });
