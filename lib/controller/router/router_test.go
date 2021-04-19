@@ -169,7 +169,7 @@ func (s *RouterIntegrationSuite) SetUpTest(c *check.C) {
 	cluster.TLS.Insecure = true
 	arvadostest.SetServiceURL(&cluster.Services.RailsAPI, "https://"+os.Getenv("ARVADOS_TEST_API_HOST"))
 	url, _ := url.Parse("https://" + os.Getenv("ARVADOS_TEST_API_HOST"))
-	s.rtr = New(rpc.NewConn("zzzzz", url, true, rpc.PassthroughTokenProvider), nil)
+	s.rtr = New(rpc.NewConn("zzzzz", url, true, rpc.PassthroughTokenProvider), Config{})
 }
 
 func (s *RouterIntegrationSuite) TearDownSuite(c *check.C) {
@@ -224,6 +224,34 @@ func (s *RouterIntegrationSuite) TestCollectionResponses(c *check.C) {
 	c.Check(rr.Code, check.Equals, http.StatusOK)
 	c.Check(jresp["uuid"], check.FitsTypeOf, "")
 	c.Check(jresp["kind"], check.Equals, "arvados#collection")
+}
+
+func (s *RouterIntegrationSuite) TestMaxRequestSize(c *check.C) {
+	token := arvadostest.ActiveTokenV2
+	for _, maxRequestSize := range []int{
+		// Ensure 5M limit is enforced.
+		5000000,
+		// Ensure 50M limit is enforced, and that a >25M body
+		// is accepted even though the default Go request size
+		// limit is 10M.
+		50000000,
+	} {
+		s.rtr.config.MaxRequestSize = maxRequestSize
+		okstr := "a"
+		for len(okstr) < maxRequestSize/2 {
+			okstr = okstr + okstr
+		}
+
+		hdr := http.Header{"Content-Type": {"application/x-www-form-urlencoded"}}
+
+		body := bytes.NewBufferString(url.Values{"foo_bar": {okstr}}.Encode())
+		_, rr, _ := doRequest(c, s.rtr, token, "POST", `/arvados/v1/collections`, hdr, body)
+		c.Check(rr.Code, check.Equals, http.StatusOK)
+
+		body = bytes.NewBufferString(url.Values{"foo_bar": {okstr + okstr}}.Encode())
+		_, rr, _ = doRequest(c, s.rtr, token, "POST", `/arvados/v1/collections`, hdr, body)
+		c.Check(rr.Code, check.Equals, http.StatusRequestEntityTooLarge)
+	}
 }
 
 func (s *RouterIntegrationSuite) TestContainerList(c *check.C) {
