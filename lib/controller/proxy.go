@@ -42,6 +42,7 @@ var dropHeaders = map[string]bool{
 	"Accept-Encoding":   true,
 	"Content-Encoding":  true,
 	"Transfer-Encoding": true,
+	"Content-Length":    true,
 }
 
 type ResponseFilter func(*http.Response, error) (*http.Response, error)
@@ -71,11 +72,12 @@ func (p *proxy) Do(
 	hdrOut.Add("Via", reqIn.Proto+" arvados-controller")
 
 	reqOut := (&http.Request{
-		Method: reqIn.Method,
-		URL:    urlOut,
-		Host:   reqIn.Host,
-		Header: hdrOut,
-		Body:   reqIn.Body,
+		Method:           reqIn.Method,
+		URL:              urlOut,
+		Host:             reqIn.Host,
+		Header:           hdrOut,
+		Body:             reqIn.Body,
+		TransferEncoding: []string{"identity"},
 	}).WithContext(reqIn.Context())
 	return client.Do(reqOut)
 }
