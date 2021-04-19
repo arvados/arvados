@@ -130,7 +130,7 @@ RELEASE="production"
 VERSION="latest"
 
 # Formulas versions
-ARVADOS_TAG="v1.1.4"
+ARVADOS_TAG="master"
 POSTGRES_TAG="v0.41.6"
 NGINX_TAG="temp-fix-missing-statements-in-pillar"
 DOCKER_TAG="v1.0.0"
