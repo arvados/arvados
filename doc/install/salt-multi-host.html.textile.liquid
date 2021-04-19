@@ -156,9 +156,9 @@ ssh user@host sudo ./provision.sh --config local.params --roles keepproxy,keepwe
 </code></pre>
 </notextile>
 
-#. Shell
+#. Shell (here we copy the CLI test workflow too)
 <notextile>
-<pre><code>scp -r provision.sh local* user@host:
+<pre><code>scp -r provision.sh local* tests user@host:
 ssh user@host sudo ./provision.sh --config local.params --roles shell
 </code></pre>
 </notextile>
@@ -183,11 +183,11 @@ Assuming you didn't change these values in the @local.params@ file, the initial 
 
 h2(#test_install). Test the installed cluster running a simple workflow
 
-The @provision.sh@ script saves a simple example test workflow in the @/tmp/cluster_tests@ directory in the node. If you want to run it, just ssh to the node, change to that directory and run:
+If you followed the instructions above, the @provision.sh@ script saves a simple example test workflow in the @/tmp/cluster_tests@ directory in the @shell@ node. If you want to run it, just ssh to the node, change to that directory and run:
 
 <notextile>
 <pre><code>cd /tmp/cluster_tests
-./run-test.sh
+sudo /run-test.sh
 </code></pre>
 </notextile>
 
