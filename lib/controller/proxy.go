@@ -39,10 +39,9 @@ var dropHeaders = map[string]bool{
 
 	// Headers that would interfere with Go's automatic
 	// compression/decompression if we forwarded them.
-	"Accept-Encoding":   true,
-	"Content-Encoding":  true,
-	"Transfer-Encoding": true,
-	"Content-Length":    true,
+	"Accept-Encoding":  true,
+	"Content-Encoding": true,
+	"Content-Length":   true,
 }
 
 type ResponseFilter func(*http.Response, error) (*http.Response, error)
