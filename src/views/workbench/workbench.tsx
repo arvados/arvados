@@ -205,7 +205,7 @@ export const WorkbenchPanel =
                         </Grid>
                         <Grid item xs className={props.classes.content}>
                             <Switch>
-                                {routes}
+                                {routes.props.children}
                                 <Route path={Routes.NO_MATCH} component={NotFoundPanel} />
                             </Switch>
                         </Grid>
