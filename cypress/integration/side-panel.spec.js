@@ -30,7 +30,6 @@ describe('Side panel tests', function() {
 
     it('enables the +NEW side panel button on users home project', function() {
         cy.loginAs(activeUser);
-        cy.doSearch(`${activeUser.user.uuid}`);
         cy.get('[data-cy=side-panel-button]')
             .should('exist')
             .and('not.be.disabled');
@@ -49,7 +48,7 @@ describe('Side panel tests', function() {
                     head_uuid: this.sharedGroup.uuid,
                     tail_uuid: activeUser.user.uuid
                 })
-                cy.doSearch(`${this.sharedGroup.uuid}`);
+                cy.goToPath(`/projects/${this.sharedGroup.uuid}`);
                 cy.get('[data-cy=side-panel-button]')
                     .should('exist')
                     .and(`${isWritable ? 'not.' : ''}be.disabled`);
@@ -67,7 +66,7 @@ describe('Side panel tests', function() {
             {url: '/all_processes', label: 'All Processes'},
             {url: '/trash', label: 'Trash'},
         ].map(function(section) {
-            cy.visit(section.url);
+            cy.goToPath(section.url);
             cy.get('[data-cy=breadcrumb-first]')
                 .should('contain', section.label);
             cy.get('[data-cy=side-panel-button]')
@@ -84,7 +83,7 @@ describe('Side panel tests', function() {
             properties: {filters: []},
         }).as('myFavoriteFilterGroup').then(function (myFavoriteFilterGroup) {
             cy.contains('Refresh').click();
-            cy.doSearch(`${myFavoriteFilterGroup.uuid}`);
+            cy.goToPath(`/projects/${myFavoriteFilterGroup.uuid}`);
             cy.get('[data-cy=breadcrumb-last]').should('contain', 'my-favorite-filter-group');
 
             cy.get('[data-cy=side-panel-button]')

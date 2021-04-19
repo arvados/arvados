@@ -80,7 +80,7 @@ describe('Collection panel tests', function () {
         })
             .as('testCollection').then(function () {
                 cy.loginAs(activeUser);
-                cy.doSearch(`${this.testCollection.uuid}`);
+                cy.goToPath(`/collections/${this.testCollection.uuid}`);
 
                 // Key: Color (IDTAGCOLORS) - Value: Magenta (IDVALCOLORS3)
                 cy.get('[data-cy=resource-properties-form]').within(() => {
@@ -133,7 +133,7 @@ describe('Collection panel tests', function () {
                             head_uuid: this.sharedGroup.uuid,
                             tail_uuid: activeUser.user.uuid
                         })
-                        cy.doSearch(`${this.testCollection.uuid}`);
+                        cy.goToPath(`/collections/${this.testCollection.uuid}`);
 
                         // Check that name & uuid are correct.
                         cy.get('[data-cy=collection-info-panel]')
@@ -229,7 +229,7 @@ describe('Collection panel tests', function () {
         })
             .as('testCollection').then(function () {
                 cy.loginAs(activeUser);
-                cy.doSearch(`${this.testCollection.uuid}`);
+                cy.goToPath(`/collections/${this.testCollection.uuid}`);
 
                 const names = [
                     'bar', // initial name already set
@@ -282,7 +282,7 @@ describe('Collection panel tests', function () {
         })
             .as('testCollection').then(function () {
                 cy.loginAs(activeUser);
-                cy.doSearch(`${this.testCollection.uuid}`);
+                cy.goToPath(`/collections/${this.testCollection.uuid}`);
 
                 ['subdir', 'G%C3%BCnter\'s%20file', 'table%&?*2'].forEach((subdir) => {
                     cy.get('[data-cy=collection-files-panel]')
@@ -339,7 +339,7 @@ describe('Collection panel tests', function () {
         })
             .as('testCollection').then(function () {
                 cy.loginAs(activeUser);
-                cy.doSearch(`${this.testCollection.uuid}`);
+                cy.goToPath(`/collections/${this.testCollection.uuid}`);
 
                 const illegalNamesFromUI = [
                     ['.', "Name cannot be '.' or '..'"],
@@ -415,7 +415,7 @@ describe('Collection panel tests', function () {
                 });
                 // Check the old version displays as what it is.
                 cy.loginAs(activeUser)
-                cy.doSearch(`${oldVersionUuid}`);
+                cy.goToPath(`/collections/${oldVersionUuid}`);
 
                 cy.get('[data-cy=collection-info-panel]').should('contain', 'This is an old version');
                 cy.get('[data-cy=read-only-icon]').should('exist');
@@ -438,7 +438,7 @@ describe('Collection panel tests', function () {
             .as('collection').then(function () {
                 // Visit collection, check basic information
                 cy.loginAs(activeUser)
-                cy.doSearch(`${this.collection.uuid}`);
+                cy.goToPath(`/collections/${this.collection.uuid}`);
 
                 cy.get('[data-cy=collection-info-panel]').should('not.contain', 'This is an old version');
                 cy.get('[data-cy=read-only-icon]').should('not.exist');
@@ -554,7 +554,7 @@ describe('Collection panel tests', function () {
 
     it('creates new collection on home project', function () {
         cy.loginAs(activeUser);
-        cy.doSearch(`${activeUser.user.uuid}`);
+        cy.goToPath(`/projects/${activeUser.user.uuid}`);
         cy.get('[data-cy=breadcrumb-first]').should('contain', 'Projects');
         cy.get('[data-cy=breadcrumb-last]').should('not.exist');
         // Create new collection

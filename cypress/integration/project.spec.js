@@ -88,7 +88,7 @@ describe('Project tests', function() {
         }
 
         cy.loginAs(activeUser);
-        cy.doSearch(`${activeUser.user.uuid}`);
+        cy.goToPath(`/projects/${activeUser.user.uuid}`);
         cy.get('[data-cy=breadcrumb-first]').should('contain', 'Projects');
         cy.get('[data-cy=breadcrumb-last]').should('not.exist');
         // Create new project
