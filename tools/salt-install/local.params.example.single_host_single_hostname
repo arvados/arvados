@@ -65,9 +65,8 @@ USE_LETSENCRYPT="no"
 
 # Which release of Arvados repo you want to use
 RELEASE="production"
-# Which version of Arvados you want to install. Defaults to 'latest'
-# in the desired repo
-VERSION="latest"
+# Which version of Arvados you want to install. Defaults to latest stable
+# VERSION="2.1.2-1"
 
 # This is an arvados-formula setting.
 # If branch is set, the script will switch to it before running salt

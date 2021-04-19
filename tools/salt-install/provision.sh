@@ -127,7 +127,7 @@ WORKBENCH1_EXT_SSL_PORT=443
 WORKBENCH2_EXT_SSL_PORT=3001
 
 RELEASE="production"
-VERSION="latest"
+VERSION="2.1.2-1"
 
 # Formulas versions
 ARVADOS_TAG="master"
