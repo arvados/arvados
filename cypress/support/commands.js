@@ -176,7 +176,7 @@ Cypress.Commands.add(
 Cypress.Commands.add(
     "loginAs", (user) => {
         cy.visit(`/token/?api_token=${user.token}`);
-        cy.url().should('contain', '/projects/');
+        cy.url({timeout: 10000}).should('contain', '/projects/');
         cy.get('div#root').should('contain', 'Arvados Workbench (zzzzz)');
         cy.get('div#root').should('not.contain', 'Your account is inactive');
     }
@@ -185,6 +185,12 @@ Cypress.Commands.add(
 Cypress.Commands.add(
     "doSearch", (searchTerm) => {
         cy.get('[data-cy=searchbar-input-field]').type(`{selectall}${searchTerm}{enter}`);
+    }
+)
+
+Cypress.Commands.add(
+    "goToPath", (path) => {
+        return cy.window().its('appHistory').invoke('push', path);
     }
 )
 
