@@ -14,14 +14,12 @@ describe('Favorites tests', function () {
         cy.getUser('admin', 'Admin', 'User', true, true)
             .as('adminUser').then(function () {
                 adminUser = this.adminUser;
-            }
-            );
+            });
         cy.getUser('collectionuser1', 'Collection', 'User', false, true)
             .as('activeUser').then(function () {
                 activeUser = this.activeUser;
-            }
-            );
-    })
+            });
+    });
 
     beforeEach(function () {
         cy.clearCookies()
@@ -52,27 +50,20 @@ describe('Favorites tests', function () {
         cy.createCollection(adminUser.token, {
             name: `Test source collection ${Math.floor(Math.random() * 999999)}`,
             manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
-        })
-            .as('testSourceCollection').then(function (testSourceCollection) {
-                cy.shareWith(adminUser.token, activeUser.user.uuid, testSourceCollection.uuid, 'can_read');
-            });
+        }).as('testSourceCollection').then(function (testSourceCollection) {
+            cy.shareWith(adminUser.token, activeUser.user.uuid, testSourceCollection.uuid, 'can_read');
+        });
 
         cy.createCollection(adminUser.token, {
             name: `Test target collection ${Math.floor(Math.random() * 999999)}`,
-        })
-            .as('testTargetCollection').then(function (testTargetCollection) {
-                cy.shareWith(adminUser.token, activeUser.user.uuid, testTargetCollection.uuid, 'can_write');
-            });
+        }).as('testTargetCollection').then(function (testTargetCollection) {
+            cy.shareWith(adminUser.token, activeUser.user.uuid, testTargetCollection.uuid, 'can_write');
+            cy.addToFavorites(activeUser.token, activeUser.user.uuid, testTargetCollection.uuid);
+        });
 
         cy.getAll('@testSourceCollection', '@testTargetCollection')
             .then(function ([testSourceCollection, testTargetCollection]) {
-                cy.loginAs(activeUser);
-
-                cy.get('.layout-pane-primary')
-                    .contains('Projects').click();
-
-                cy.addToFavorites(activeUser.token, activeUser.user.uuid, testTargetCollection.uuid);
-
+                cy.get('.layout-pane-primary').contains('Projects').click();
                 cy.get('main').contains(testSourceCollection.name).click();
                 cy.get('[data-cy=collection-files-panel]').contains('bar');
                 cy.get('[data-cy=collection-files-panel]').find('input[type=checkbox]').click({ force: true });
