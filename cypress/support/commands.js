@@ -213,13 +213,13 @@ Cypress.Commands.add('shareWith', (srcUserToken, targetUserUUID, itemUUID, permi
     });
 })
 
-Cypress.Commands.add('addToFavorites', (activeUserToken, activeUserUUID, itemUUID) => {
-    cy.createLink(activeUserToken, {
+Cypress.Commands.add('addToFavorites', (userToken, userUUID, itemUUID) => {
+    cy.createLink(userToken, {
         head_uuid: itemUUID,
         link_class: 'star',
         name: '',
-        owner_uuid: activeUserUUID,
-        tail_uuid: activeUserUUID,
+        owner_uuid: userUUID,
+        tail_uuid: userUUID,
     });
 })
 
