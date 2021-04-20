@@ -3,14 +3,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-export ARVADOS_API_TOKEN=changemesystemroottoken
-export ARVADOS_API_HOST=__CLUSTER__.__DOMAIN__:__HOST_SSL_PORT__
+export ARVADOS_API_TOKEN=__SYSTEM_ROOT_TOKEN__
+export ARVADOS_API_HOST=__CLUSTER__.__DOMAIN__:__CONTROLLER_EXT_SSL_PORT__
 export ARVADOS_API_HOST_INSECURE=true
 
 set -o pipefail
 
 # First, validate that the CA is installed and that we can query it with no errors.
-if ! curl -s -o /dev/null https://workbench.${ARVADOS_API_HOST}/users/welcome?return_to=%2F; then
+if ! curl -s -o /dev/null https://${ARVADOS_API_HOST}/users/welcome?return_to=%2F; then
   echo "The Arvados CA was not correctly installed. Although some components will work,"
   echo "others won't. Please verify that the CA cert file was installed correctly and"
   echo "retry running these tests."

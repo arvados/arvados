@@ -10,48 +10,49 @@ nginx:
     config:
       ### STREAMS
       http:
-        upstream collections_downloads_upstream:
-          - server: 'collections.internal:9002 fail_timeout=10s'
+        'geo $external_client':
+          default: 1
+          '127.0.0.0/8': 0
+        upstream controller_upstream:
+          - server: 'controller.internal:8003  fail_timeout=10s'
 
+  ### SITES
   servers:
     managed:
       ### DEFAULT
-      arvados_collections_download_default:
+      arvados_controller_default:
         enabled: true
         overwrite: true
         config:
           - server:
-            - server_name: collections.__CLUSTER__.__DOMAIN__ download.__CLUSTER__.__DOMAIN__
+            - server_name: __CLUSTER__.__DOMAIN__
             - listen:
-              - 80
+              - 80 default
             - location /.well-known:
               - root: /var/www
             - location /:
               - return: '301 https://$host$request_uri'
 
-      ### COLLECTIONS / DOWNLOAD
-      arvados_collections_download_ssl:
+      arvados_controller_ssl:
         enabled: true
         overwrite: true
         config:
           - server:
-            - server_name: collections.__CLUSTER__.__DOMAIN__ download.__CLUSTER__.__DOMAIN__
+            - server_name: __CLUSTER__.__DOMAIN__
             - listen:
-              - __HOST_SSL_PORT__ http2 ssl
+              - __CONTROLLER_EXT_SSL_PORT__ http2 ssl
             - index: index.html index.htm
             - location /:
-              - proxy_pass: 'http://collections_downloads_upstream'
-              - proxy_read_timeout: 90
+              - proxy_pass: 'http://controller_upstream'
+              - proxy_read_timeout: 300
               - proxy_connect_timeout: 90
               - proxy_redirect: 'off'
               - proxy_set_header: X-Forwarded-Proto https
               - proxy_set_header: 'Host $http_host'
               - proxy_set_header: 'X-Real-IP $remote_addr'
               - proxy_set_header: 'X-Forwarded-For $proxy_add_x_forwarded_for'
-              - proxy_buffering: 'off'
-            - client_max_body_size: 0
-            - proxy_http_version: '1.1'
-            - proxy_request_buffering: 'off'
+              - proxy_set_header: 'X-External-Client $external_client'
             - include: 'snippets/arvados-snakeoil.conf'
-            - access_log: /var/log/nginx/collections.__CLUSTER__.__DOMAIN__.access.log combined
-            - error_log: /var/log/nginx/collections.__CLUSTER__.__DOMAIN__.error.log
+            - access_log: /var/log/nginx/__CLUSTER__.__DOMAIN__.access.log combined
+            - error_log: /var/log/nginx/__CLUSTER__.__DOMAIN__.error.log
+            - client_max_body_size: 128m

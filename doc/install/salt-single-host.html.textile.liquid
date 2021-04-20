@@ -9,39 +9,80 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-# "Install Saltstack":#saltstack
 # "Single host install using the provision.sh script":#single_host
-# "Final steps":#final_steps
-## "DNS configuration":#dns_configuration
-## "Install root certificate":#ca_root_certificate
+# "Choose the desired configuration":#choose_configuration
+## "Single host / single hostname":#single_host_single_hostnames
+## "Single host / multiple hostnames (Alternative configuration)":#single_host_multiple_hostnames
+## "Further customization of the installation (modifying the salt pillars and states)":#further_customization
+# "Run the provision.sh script":#run_provision_script
+# "Final configuration steps":#final_steps
+## "Install the CA root certificate (required in both alternatives)":#ca_root_certificate
+## "DNS configuration (single host / multiple hostnames)":#single_host_multiple_hostnames_dns_configuration
 # "Initial user and login":#initial_user
 # "Test the installed cluster running a simple workflow":#test_install
 
-h2(#saltstack). Install Saltstack
-
-If you already have a Saltstack environment you can skip this section.
-
-The simplest way to get Salt up and running on a node is to use the bootstrap script they provide:
-
-<notextile>
-<pre><code>curl -L https://bootstrap.saltstack.com -o /tmp/bootstrap_salt.sh
-sudo sh /tmp/bootstrap_salt.sh -XUdfP -x python3
-</code></pre>
-</notextile>
-
-For more information check "Saltstack's documentation":https://docs.saltstack.com/en/latest/topics/installation/index.html
-
 h2(#single_host). Single host install using the provision.sh script
+
+<b>NOTE: The single host installation is not recommended for production use.</b>
 
 This is a package-based installation method. The Salt scripts are available from the "tools/salt-install":https://github.com/arvados/arvados/tree/master/tools/salt-install directory in the Arvados git repository.
 
-Use the @provision.sh@ script to deploy Arvados, which is implemented with the @arvados-formula@ in a Saltstack master-less setup:
+This procedure will install all the main Arvados components to get you up and running in a single host. The whole installation procedure takes somewhere between 15 to 60 minutes, depending on the host resources and its network bandwidth. As a reference, on a virtual machine with 1 core and 1 GB RAM, it takes ~25 minutes to do the initial install.
 
-* edit the variables at the very beginning of the file,
-* run the script as root
-* wait for it to finish
+We suggest you to use the @provision.sh@ script to deploy Arvados, which is implemented with the @arvados-formula@ in a Saltstack master-less setup. After setting up a few variables in a config file (next step), you'll be ready to run it and get Arvados deployed.
 
-This will install all the main Arvados components to get you up and running. The whole installation procedure takes somewhere between 15 to 60 minutes, depending on the host and your network bandwidth. On a virtual machine with 1 core and 1 GB RAM, it takes ~25 minutes to do the initial install.
+h2(#choose_configuration). Choose the desired configuration
+
+For documentation's sake, we will use the cluster name <i>arva2</i> and the domain <i>arv.local</i>. If you don't change them as required in the next steps, installation won't proceed.
+
+Arvados' single host installation can be done in two fashions:
+
+* Using a single hostname, assigning <i>a different port (other than 443) for each user-facing service</i>: This choice is easier to setup, but the user will need to know the port/s for the different services she wants to connect to.
+* Using multiple hostnames on the same IP: this setup involves a few extra steps but each service will have a meaningful hostname so it will make easier to access them later.
+
+Once you decide which of these choices you prefer, copy one the two example configuration files and directory, and edit them to suit your needs.
+
+h3(#single_host_single_hostnames). Single host / single hostname
+<notextile>
+<pre><code>cp local.params.example.single_host_single_hostname local.params
+cp -r config_examples/single_host/single_hostname local_config_dir
+</code></pre>
+</notextile>
+
+Edit the variables in the <i>local.params</i> file. Pay attention to the <b>*_PORT, *_TOKEN</b> and <b>*KEY</b> variables.
+
+h3(#single_host_multiple_hostnames). Single host / multiple hostnames (Alternative configuration)
+<notextile>
+<pre><code>cp local.params.example.single_host_multiple_hostnames local.params
+cp -r config_examples/single_host/multiple_hostnames local_config_dir
+</code></pre>
+</notextile>
+
+Edit the variables in the <i>local.params</i> file.
+
+h3(#further_customization). Further customization of the installation (modifying the salt pillars and states)
+
+If you want or need further customization, you can edit the Saltstack pillars and states files. Pay particular attention to the <i>pillars/arvados.sls</i> one. Any extra <i>state</i> file you add under <i>local_config_dir/states</i> will be added to the salt run and applied to the host.
+
+h2(#run_provision_script). Run the provision.sh script
+
+When you finished customizing the configuration, you are ready to copy the files to the host (if needed) and run the @provision.sh@ script:
+
+<notextile>
+<pre><code>scp -r provision.sh local* tests user@host:
+ssh user@host sudo ./provision.sh
+</code></pre>
+</notextile>
+
+or, if you saved the @local.params@ in another directory or with some other name
+
+<notextile>
+<pre><code>scp -r provision.sh local* tests user@host:
+ssh user@host sudo ./provision.sh -c /path/to/your/local.params.file
+</code></pre>
+</notextile>
+
+and wait for it to finish.
 
 If everything goes OK, you'll get some final lines stating something like:
 
@@ -53,23 +94,9 @@ arvados: Failed:      0
 
 h2(#final_steps). Final configuration steps
 
-h3(#dns_configuration). DNS configuration
+Once the deployment went OK, you'll need to perform a few extra steps in your local browser/host to access the cluster.
 
-After the setup is done, you need to set up your DNS to be able to access the cluster.
-
-The simplest way to do this is to edit your @/etc/hosts@ file (as root):
-
-<notextile>
-<pre><code>export CLUSTER="arva2"
-export DOMAIN="arv.local"
-export HOST_IP="127.0.0.2"    # This is valid either if installing in your computer directly
-                              # or in a Vagrant VM. If you're installing it on a remote host
-                              # just change the IP to match that of the host.
-echo "${HOST_IP} api keep keep0 collections download ws workbench workbench2 ${CLUSTER}.${DOMAIN} api.${CLUSTER}.${DOMAIN} keep.${CLUSTER}.${DOMAIN} keep0.${CLUSTER}.${DOMAIN} collections.${CLUSTER}.${DOMAIN} download.${CLUSTER}.${DOMAIN} ws.${CLUSTER}.${DOMAIN} workbench.${CLUSTER}.${DOMAIN} workbench2.${CLUSTER}.${DOMAIN}" >> /etc/hosts
-</code></pre>
-</notextile>
-
-h3(#ca_root_certificate). Install root certificate
+h3(#ca_root_certificate). Install the CA root certificate (required in both alternatives)
 
 Arvados uses SSL to encrypt communications. Its UI uses AJAX which will silently fail if the certificate is not valid or signed by an unknown Certification Authority.
 
@@ -102,11 +129,25 @@ To access your Arvados instance using command line clients (such as arv-get and 
 </code></pre>
 </notextile>
 
-h2(#initial_user). Initial user and login
+h3(#single_host_multiple_hostnames_dns_configuration). DNS configuration (single host / multiple hostnames)
 
-At this point you should be able to log into the Arvados cluster.
+When using multiple hostnames, after the setup is done, you need to set up your DNS to be able to access the cluster.
 
-If you changed nothing in the @provision.sh@ script, the initial URL will be:
+If you don't have access to the domain's DNS to add the required entries, the simplest way to do it is to edit your @/etc/hosts@ file (as root):
+
+<notextile>
+<pre><code>export CLUSTER="arva2"
+export DOMAIN="arv.local"
+export HOST_IP="127.0.0.2"    # This is valid either if installing in your computer directly
+                              # or in a Vagrant VM. If you're installing it on a remote host
+                              # just change the IP to match that of the host.
+echo "${HOST_IP} api keep keep0 collections download ws workbench workbench2 ${CLUSTER}.${DOMAIN} api.${CLUSTER}.${DOMAIN} keep.${CLUSTER}.${DOMAIN} keep0.${CLUSTER}.${DOMAIN} collections.${CLUSTER}.${DOMAIN} download.${CLUSTER}.${DOMAIN} ws.${CLUSTER}.${DOMAIN} workbench.${CLUSTER}.${DOMAIN} workbench2.${CLUSTER}.${DOMAIN}" >> /etc/hosts
+</code></pre>
+</notextile>
+
+h2(#initial_user). Initial user and login 
+
+At this point you should be able to log into the Arvados cluster. The initial URL will be:
 
 * https://workbench.arva2.arv.local
 
@@ -116,7 +157,7 @@ or, in general, the url format will be:
 
 By default, the provision script creates an initial user for testing purposes. This user is configured as administrator of the newly created cluster.
 
-Assuming you didn't change these values in the @provision.sh@ script, the initial credentials are:
+Assuming you didn't change these values in the @local.params@ file, the initial credentials are:
 
 * User: 'admin'
 * Password: 'password'
@@ -124,15 +165,15 @@ Assuming you didn't change these values in the @provision.sh@ script, the initia
 
 h2(#test_install). Test the installed cluster running a simple workflow
 
-The @provision.sh@ script saves a simple example test workflow in the @/tmp/cluster_tests@. If you want to run it, just change to that directory and run:
+The @provision.sh@ script saves a simple example test workflow in the @/tmp/cluster_tests@ directory in the node. If you want to run it, just ssh to the node, change to that directory and run:
 
 <notextile>
 <pre><code>cd /tmp/cluster_tests
-./run-test.sh
+sudo ./run-test.sh
 </code></pre>
 </notextile>
 
-It will create a test user, upload a small workflow and run it. If everything goes OK, the output should similar to this (some output was shortened for clarity):
+It will create a test user (by default, the same one as the admin user), upload a small workflow and run it. If everything goes OK, the output should similar to this (some output was shortened for clarity):
 
 <notextile>
 <pre><code>Creating Arvados Standard Docker Images project

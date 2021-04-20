@@ -17,7 +17,7 @@ nginx:
       ### STREAMS
       http:
         upstream workbench_upstream:
-          - server: 'workbench.internal:9000 fail_timeout=10s'
+          - server: 'localhost:9000 fail_timeout=10s'
 
   ### SITES
   servers:
@@ -31,19 +31,20 @@ nginx:
             - server_name: workbench.__CLUSTER__.__DOMAIN__
             - listen:
               - 80
-            - location /.well-known:
-              - root: /var/www
+            - include: snippets/letsencrypt_well_known.conf
             - location /:
               - return: '301 https://$host$request_uri'
 
       arvados_workbench_ssl:
         enabled: true
         overwrite: true
+        requires:
+          cmd: create-initial-cert-workbench.__CLUSTER__.__DOMAIN__-workbench.__CLUSTER__.__DOMAIN__
         config:
           - server:
             - server_name: workbench.__CLUSTER__.__DOMAIN__
             - listen:
-              - __HOST_SSL_PORT__ http2 ssl
+              - __CONTROLLER_EXT_SSL_PORT__ http2 ssl
             - index: index.html index.htm
             - location /:
               - proxy_pass: 'http://workbench_upstream'
@@ -54,7 +55,8 @@ nginx:
               - proxy_set_header: 'Host $http_host'
               - proxy_set_header: 'X-Real-IP $remote_addr'
               - proxy_set_header: 'X-Forwarded-For $proxy_add_x_forwarded_for'
-            - include: 'snippets/arvados-snakeoil.conf'
+            - include: snippets/ssl_hardening_default.conf
+            - include: snippets/workbench.__CLUSTER__.__DOMAIN___letsencrypt_cert[.]conf
             - access_log: /var/log/nginx/workbench.__CLUSTER__.__DOMAIN__.access.log combined
             - error_log: /var/log/nginx/workbench.__CLUSTER__.__DOMAIN__.error.log
 
@@ -63,7 +65,7 @@ nginx:
         overwrite: true
         config:
           - server:
-            - listen: 'workbench.internal:9000'
+            - listen: 'localhost:9000'
             - server_name: workbench
             - root: /var/www/arvados-workbench/current/public
             - index:  index.html index.htm

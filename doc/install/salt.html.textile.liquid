@@ -10,20 +10,35 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
 # "Introduction":#introduction
-# "Choose an installation method":#installmethod
+# "Install Saltstack":#saltstack
+# "Choose an Arvados installation configuration":#installconfiguration
 
 h2(#introduction). Introduction
 
-To ease the installation of the various Arvados components, we have developed a "Saltstack":https://www.saltstack.com/ 's "arvados-formula":https://github.com/saltstack-formulas/arvados-formula which can help you get an Arvados cluster up and running.
+To ease the installation of the various Arvados components, we have developed a "Saltstack":https://www.saltstack.com/ 's "arvados-formula":https://github.com/arvados/arvados-formula.git which can help you get an Arvados cluster up and running.
 
 Saltstack is a Python-based, open-source software for event-driven IT automation, remote task execution, and configuration management. It can be used in a master/minion setup or master-less.
 
-This is a package-based installation method. The Salt scripts are available from the "tools/salt-install":https://github.com/arvados/arvados/tree/master/tools/salt-install directory in the Arvados git repository.
+This is a package-based installation method. The Salt scripts to install and configure Arvados using this formula are available at the "tools/salt-install":https://github.com/arvados/arvados/tree/master/tools/salt-install directory in the Arvados git repository.
 
-h2(#installmethod). Choose an installation method
+h2(#saltstack). Install Saltstack
 
-The salt formulas can be used in different ways. Choose one of these three options to install Arvados:
+If you already have a Saltstack environment or you plan to use the @provision.sh@ script we provide, you can skip this section.
 
-* "Use Vagrant to install Arvados in a virtual machine":salt-vagrant.html
+The simplest way to get Salt up and running on a node is to use the bootstrap script they provide:
+
+<notextile>
+<pre><code>curl -L https://bootstrap.saltstack.com -o /tmp/bootstrap_salt.sh
+sudo sh /tmp/bootstrap_salt.sh -XUdfP -x python3
+</code></pre>
+</notextile>
+
+For more information check "Saltstack's documentation":https://docs.saltstack.com/en/latest/topics/installation/index.html
+
+h2(#installconfiguration). Choose an Arvados installation configuration
+
+The salt formula can be used in a few different ways. Choose one of these three options to install Arvados:
+
 * "Arvados on a single host":salt-single-host.html
 * "Arvados across multiple hosts":salt-multi-host.html
+* "Use Vagrant to install Arvados in a virtual machine":salt-vagrant.html

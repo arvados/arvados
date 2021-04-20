@@ -12,34 +12,21 @@ nginx:
       ### STREAMS
       http:
         upstream webshell_upstream:
-          - server: 'shell.internal:4200 fail_timeout=10s'
+          - server: '__HOSTNAME_INT__:4200 fail_timeout=10s'
 
   ### SITES
   servers:
     managed:
-      arvados_webshell_default:
-        enabled: true
-        overwrite: true
-        config:
-          - server:
-            - server_name: webshell.__CLUSTER__.__DOMAIN__
-            - listen:
-              - 80
-            - location /.well-known:
-              - root: /var/www
-            - location /:
-              - return: '301 https://$host$request_uri'
-
       arvados_webshell_ssl:
         enabled: true
         overwrite: true
         config:
           - server:
-            - server_name: webshell.__CLUSTER__.__DOMAIN__
+            - server_name: __HOSTNAME_EXT__
             - listen:
-              - __HOST_SSL_PORT__ http2 ssl
+              - __WEBSHELL_EXT_SSL_PORT__ http2 ssl
             - index: index.html index.htm
-            - location /shell.__CLUSTER__.__DOMAIN__:
+            - location /__HOSTNAME_EXT__:
               - proxy_pass: 'http://webshell_upstream'
               - proxy_read_timeout: 90
               - proxy_connect_timeout: 90
