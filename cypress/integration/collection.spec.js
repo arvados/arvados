@@ -46,7 +46,7 @@ describe('Collection panel tests', function () {
             cy.get('[data-cy=context-menu]').contains('Open as network folder or S3 bucket').click();
             cy.get('[data-cy=download-button').click();
 
-            const filename = path.resolve(path.join(downloadsFolder, `${testCollection.name}.duck`));
+            const filename = path.join(downloadsFolder, `${testCollection.name}.duck`);
 
             cy.readFile(filename, { timeout: 15000 })
                 .then((body) => {
