@@ -42,6 +42,9 @@ var dropHeaders = map[string]bool{
 	"Accept-Encoding":   true,
 	"Content-Encoding":  true,
 	"Transfer-Encoding": true,
+
+	// Content-Length depends on encoding.
+	"Content-Length": true,
 }
 
 type ResponseFilter func(*http.Response, error) (*http.Response, error)
