@@ -45,15 +45,12 @@ describe('Favorites tests', function () {
     });
 
     it('can copy selected into the collection', () => {
-        cy.loginAs(adminUser);
-
         cy.createCollection(adminUser.token, {
             name: `Test source collection ${Math.floor(Math.random() * 999999)}`,
             manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
         }).as('testSourceCollection').then(function (testSourceCollection) {
             cy.shareWith(adminUser.token, activeUser.user.uuid, testSourceCollection.uuid, 'can_read');
         });
-
         cy.createCollection(adminUser.token, {
             name: `Test target collection ${Math.floor(Math.random() * 999999)}`,
         }).as('testTargetCollection').then(function (testTargetCollection) {
@@ -63,29 +60,22 @@ describe('Favorites tests', function () {
 
         cy.getAll('@testSourceCollection', '@testTargetCollection')
             .then(function ([testSourceCollection, testTargetCollection]) {
-                cy.get('.layout-pane-primary').contains('Projects').click();
-                cy.get('main').contains(testSourceCollection.name).click();
+                cy.loginAs(activeUser);
+                cy.goToPath(`/collections/${testSourceCollection.uuid}`);
                 cy.get('[data-cy=collection-files-panel]').contains('bar');
                 cy.get('[data-cy=collection-files-panel]').find('input[type=checkbox]').click({ force: true });
                 cy.get('[data-cy=collection-files-panel-options-btn]').click();
                 cy.get('[data-cy=context-menu]')
                     .contains('Copy selected into the collection').click();
-
                 cy.get('[data-cy=projects-tree-favourites-tree-picker]')
                     .find('i')
                     .click();
-
                 cy.get('[data-cy=projects-tree-favourites-tree-picker]')
                     .contains(testTargetCollection.name)
                     .click();
-
                 cy.get('[data-cy=form-submit-btn]').click();
-
-                cy.get('.layout-pane-primary')
-                    .contains('Projects').click();
-
-                cy.get('main').contains(testTargetCollection.name).click();
-
+                cy.get('.layout-pane-primary').contains('Projects').click();
+                cy.goToPath(`/collections/${testTargetCollection.uuid}`);
                 cy.get('[data-cy=collection-files-panel]').contains('bar');
             });
     });
