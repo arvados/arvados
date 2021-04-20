@@ -11,7 +11,7 @@ if [ -z "$INSTALL_PATH" ]; then
 
 PACKAGE BUILD ERROR: $0 is missing package metadata.
 
-This package is buggy.  Please mail <support@curoverse.com> to let
+This package is buggy.  Please mail <packaging@arvados.org> to let
 us know the name and version number of the package you tried to
 install, and we'll get it fixed.
 
@@ -23,7 +23,6 @@ RELEASE_PATH=$INSTALL_PATH/current
 RELEASE_CONFIG_PATH=$RELEASE_PATH/config
 SHARED_PATH=$INSTALL_PATH/shared
 
-RAILSPKG_SUPPORTS_CONFIG_CHECK=${RAILSPKG_SUPPORTS_CONFIG_CHECK:-1}
 if ! type setup_extra_conffiles >/dev/null 2>&1; then
     setup_extra_conffiles() { return; }
 fi

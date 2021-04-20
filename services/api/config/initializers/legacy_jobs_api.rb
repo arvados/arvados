@@ -10,7 +10,7 @@ require 'enable_jobs_api'
 
 Rails.application.configure do
   begin
-    if ActiveRecord::Base.connection.tables.include?('jobs')
+    if ENV["ARVADOS_CONFIG"] != "none" && ActiveRecord::Base.connection.tables.include?('jobs')
       check_enable_legacy_jobs_api
     end
   rescue ActiveRecord::NoDatabaseError

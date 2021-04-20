@@ -56,19 +56,25 @@ clusterID, clusterConfig = confs["Clusters"].first
 $arvados_config_defaults = clusterConfig
 $arvados_config_defaults["ClusterID"] = clusterID
 
-# Load the global config file
-Open3.popen2("arvados-server", "config-dump", "-skip-legacy") do |stdin, stdout, status_thread|
-  confs = YAML.load(stdout, deserialize_symbols: false)
-  if confs && !confs.empty?
-    # config-dump merges defaults with user configuration, so every
-    # key should be set.
-    clusterID, clusterConfig = confs["Clusters"].first
-    $arvados_config_global = clusterConfig
-    $arvados_config_global["ClusterID"] = clusterID
-  else
-    # config-dump failed, assume we will be loading from legacy
-    # application.yml, initialize with defaults.
-    $arvados_config_global = $arvados_config_defaults.deep_dup
+if ENV["ARVADOS_CONFIG"] == "none"
+  # Don't load config. This magic value is set by packaging scripts so
+  # they can run "rake assets:precompile" without a real config.
+  $arvados_config_global = $arvados_config_defaults.deep_dup
+else
+  # Load the global config file
+  Open3.popen2("arvados-server", "config-dump", "-skip-legacy") do |stdin, stdout, status_thread|
+    confs = YAML.load(stdout, deserialize_symbols: false)
+    if confs && !confs.empty?
+      # config-dump merges defaults with user configuration, so every
+      # key should be set.
+      clusterID, clusterConfig = confs["Clusters"].first
+      $arvados_config_global = clusterConfig
+      $arvados_config_global["ClusterID"] = clusterID
+    else
+      # config-dump failed, assume we will be loading from legacy
+      # application.yml, initialize with defaults.
+      $arvados_config_global = $arvados_config_defaults.deep_dup
+    end
   end
 end
 
@@ -125,7 +131,7 @@ arvcfg.declare_config "Collections.DefaultTrashLifetime", ActiveSupport::Duratio
 arvcfg.declare_config "Collections.CollectionVersioning", Boolean, :collection_versioning
 arvcfg.declare_config "Collections.PreserveVersionIfIdle", ActiveSupport::Duration, :preserve_version_if_idle
 arvcfg.declare_config "Collections.TrashSweepInterval", ActiveSupport::Duration, :trash_sweep_interval
-arvcfg.declare_config "Collections.BlobSigningKey", NonemptyString, :blob_signing_key
+arvcfg.declare_config "Collections.BlobSigningKey", String, :blob_signing_key
 arvcfg.declare_config "Collections.BlobSigningTTL", ActiveSupport::Duration, :blob_signature_ttl
 arvcfg.declare_config "Collections.BlobSigning", Boolean, :permit_create_collection_with_unsigned_manifest, ->(cfg, k, v) { ConfigLoader.set_cfg cfg, "Collections.BlobSigning", !v }
 arvcfg.declare_config "Collections.ForwardSlashNameSubstitution", String
@@ -264,6 +270,15 @@ if ::Rails.env.to_s == "test"
   $arvados_config["PostgreSQL"]["Connection"]["template"] = "template0"
   # Some test cases depend on en_US.UTF-8 collation.
   $arvados_config["PostgreSQL"]["Connection"]["collation"] = "en_US.UTF-8"
+end
+
+if ENV["ARVADOS_CONFIG"] == "none"
+  # We need the postgresql connection URI to be valid, even if we
+  # don't use it.
+  $arvados_config["PostgreSQL"]["Connection"]["host"] = "localhost"
+  $arvados_config["PostgreSQL"]["Connection"]["user"] = "x"
+  $arvados_config["PostgreSQL"]["Connection"]["password"] = "x"
+  $arvados_config["PostgreSQL"]["Connection"]["dbname"] = "x"
 end
 
 if $arvados_config["PostgreSQL"]["Connection"]["password"].empty?

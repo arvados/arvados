@@ -226,19 +226,15 @@ configure_version() {
       prepare_database
   fi
 
-  if [ 11 = "$RAILSPKG_SUPPORTS_CONFIG_CHECK$APPLICATION_READY" ]; then
+  if [ -e /etc/arvados/config.yml ]; then
+      # warn about config errors (deprecated/removed keys from
+      # previous version, etc)
       run_and_report "Checking configuration for completeness" \
-          $COMMAND_PREFIX bundle exec rake config:check || APPLICATION_READY=0
+                     $COMMAND_PREFIX bundle exec rake config:check || APPLICATION_READY=0
+  else
+      APPLICATION_READY=0
   fi
 
-  # precompile assets; thankfully this does not take long
-  if [ "$APPLICATION_READY" = "1" ]; then
-      run_and_report "Precompiling assets" \
-          $COMMAND_PREFIX bundle exec rake assets:precompile -q -s 2>/dev/null \
-          || APPLICATION_READY=0
-  else
-      echo "Precompiling assets... skipped."
-  fi
   chown -R "$WWW_OWNER:" $RELEASE_PATH/tmp
 
   setup_before_nginx_restart
