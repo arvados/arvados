@@ -6,6 +6,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"html"
 	"io/ioutil"
@@ -16,6 +17,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
@@ -24,6 +26,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
+	"github.com/sirupsen/logrus"
 	check "gopkg.in/check.v1"
 )
 
@@ -70,6 +73,64 @@ func (s *UnitSuite) TestCORSPreflight(c *check.C) {
 	h.ServeHTTP(resp, req)
 	c.Check(resp.Body.String(), check.Equals, "")
 	c.Check(resp.Code, check.Equals, http.StatusMethodNotAllowed)
+}
+
+func (s *UnitSuite) TestEmptyResponse(c *check.C) {
+	for _, trial := range []struct {
+		dataExists    bool
+		sendIMSHeader bool
+		expectStatus  int
+		logRegexp     string
+	}{
+		// If we return no content due to a Keep read error,
+		// we should emit a log message.
+		{false, false, http.StatusOK, `(?ms).*only wrote 0 bytes.*`},
+
+		// If we return no content because the client sent an
+		// If-Modified-Since header, our response should be
+		// 304, and we should not emit a log message.
+		{true, true, http.StatusNotModified, ``},
+	} {
+		c.Logf("trial: %+v", trial)
+		arvadostest.StartKeep(2, true)
+		if trial.dataExists {
+			arv, err := arvadosclient.MakeArvadosClient()
+			c.Assert(err, check.IsNil)
+			arv.ApiToken = arvadostest.ActiveToken
+			kc, err := keepclient.MakeKeepClient(arv)
+			c.Assert(err, check.IsNil)
+			_, _, err = kc.PutB([]byte("foo"))
+			c.Assert(err, check.IsNil)
+		}
+
+		h := handler{Config: newConfig(s.Config)}
+		u := mustParseURL("http://" + arvadostest.FooCollection + ".keep-web.example/foo")
+		req := &http.Request{
+			Method:     "GET",
+			Host:       u.Host,
+			URL:        u,
+			RequestURI: u.RequestURI(),
+			Header: http.Header{
+				"Authorization": {"Bearer " + arvadostest.ActiveToken},
+			},
+		}
+		if trial.sendIMSHeader {
+			req.Header.Set("If-Modified-Since", strings.Replace(time.Now().UTC().Format(time.RFC1123), "UTC", "GMT", -1))
+		}
+
+		var logbuf bytes.Buffer
+		logger := logrus.New()
+		logger.Out = &logbuf
+		req = req.WithContext(ctxlog.Context(context.Background(), logger))
+
+		resp := httptest.NewRecorder()
+		h.ServeHTTP(resp, req)
+		c.Check(resp.Code, check.Equals, trial.expectStatus)
+		c.Check(resp.Body.String(), check.Equals, "")
+
+		c.Log(logbuf.String())
+		c.Check(logbuf.String(), check.Matches, trial.logRegexp)
+	}
 }
 
 func (s *UnitSuite) TestInvalidUUID(c *check.C) {
@@ -237,7 +298,6 @@ func (s *IntegrationSuite) doVhostRequestsWithHostPath(c *check.C, authz authori
 		if tok == arvadostest.ActiveToken {
 			c.Check(code, check.Equals, http.StatusOK)
 			c.Check(body, check.Equals, "foo")
-
 		} else {
 			c.Check(code >= 400, check.Equals, true)
 			c.Check(code < 500, check.Equals, true)

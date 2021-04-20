@@ -485,13 +485,18 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	}
 
 	openPath := "/" + strings.Join(targetPath, "/")
-	if f, err := fs.Open(openPath); os.IsNotExist(err) {
+	f, err := fs.Open(openPath)
+	if os.IsNotExist(err) {
 		// Requested non-existent path
 		http.Error(w, notFoundMessage, http.StatusNotFound)
+		return
 	} else if err != nil {
 		// Some other (unexpected) error
 		http.Error(w, "open: "+err.Error(), http.StatusInternalServerError)
-	} else if stat, err := f.Stat(); err != nil {
+		return
+	}
+	defer f.Close()
+	if stat, err := f.Stat(); err != nil {
 		// Can't get Size/IsDir (shouldn't happen with a collectionFS!)
 		http.Error(w, "stat: "+err.Error(), http.StatusInternalServerError)
 	} else if stat.IsDir() && !strings.HasSuffix(r.URL.Path, "/") {
@@ -504,15 +509,14 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		h.serveDirectory(w, r, collection.Name, fs, openPath, true)
 	} else {
 		http.ServeContent(w, r, basename, stat.ModTime(), f)
-		if wrote := int64(w.WroteBodyBytes()); wrote != stat.Size() && r.Header.Get("Range") == "" {
+		if wrote := int64(w.WroteBodyBytes()); wrote != stat.Size() && w.WroteStatus() == http.StatusOK {
 			// If we wrote fewer bytes than expected, it's
 			// too late to change the real response code
 			// or send an error message to the client, but
 			// at least we can try to put some useful
 			// debugging info in the logs.
 			n, err := f.Read(make([]byte, 1024))
-			ctxlog.FromContext(r.Context()).Errorf("stat.Size()==%d but only wrote %d bytes; read(1024) returns %d, %s", stat.Size(), wrote, n, err)
-
+			ctxlog.FromContext(r.Context()).Errorf("stat.Size()==%d but only wrote %d bytes; read(1024) returns %d, %v", stat.Size(), wrote, n, err)
 		}
 	}
 }
