@@ -32,7 +32,7 @@ describe('Collection panel tests', function () {
         cy.clearLocalStorage();
     });
 
-    it.only('allows to download mountain duck config for a collection', () => {
+    it('allows to download mountain duck config for a collection', () => {
         cy.createCollection(adminUser.token, {
             name: `Test collection ${Math.floor(Math.random() * 999999)}`,
             owner_uuid: activeUser.user.uuid,
