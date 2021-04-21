@@ -104,6 +104,13 @@ storeRedirects();
 fetchConfig()
     .then(({ config, apiHost }) => {
         const history = createBrowserHistory();
+
+        // Provide browser's history access to Cypress to allow programmatic
+        // navigation.
+        if ((window as any).Cypress) {
+            (window as any).appHistory = history;
+        }
+
         const services = createServices(config, {
             progressFn: (id, working) => {
                 store.dispatch(progressIndicatorActions.TOGGLE_WORKING({ id, working }));

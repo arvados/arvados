@@ -30,28 +30,35 @@
 
 const controllerURL = Cypress.env('controller_url');
 const systemToken = Cypress.env('system_token');
+let createdResources = [];
+
+// Clean up on a 'before' hook to allow post-mortem analysis on individual tests.
+beforeEach(function () {
+    if (createdResources.length === 0) {
+        return;
+    }
+    cy.log(`Cleaning ${createdResources.length} previously created resource(s)`);
+    createdResources.forEach(function({suffix, uuid}) {
+        // Don't fail when a resource isn't already there, some objects may have
+        // been removed, directly or indirectly, from the test that created them.
+        cy.deleteResource(systemToken, suffix, uuid, false);
+    });
+    createdResources = [];
+});
 
 Cypress.Commands.add(
     "doRequest", (method = 'GET', path = '', data = null, qs = null,
-        token = systemToken, auth = false, followRedirect = true) => {
+        token = systemToken, auth = false, followRedirect = true, failOnStatusCode = true) => {
     return cy.request({
         method: method,
-        url: `${controllerURL}/${path}`,
+        url: `${controllerURL.replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`,
         body: data,
         qs: auth ? qs : Object.assign({ api_token: token }, qs),
         auth: auth ? { bearer: `${token}` } : undefined,
-        followRedirect: followRedirect
-    })
-}
-)
-
-// This resets the DB removing all content and seeding it with the fixtures.
-// TODO: Maybe we can add an optional param to avoid the loading part?
-Cypress.Commands.add(
-    "resetDB", () => {
-        cy.request('POST', `${controllerURL}/database/reset?api_token=${systemToken}`);
-    }
-)
+        followRedirect: followRedirect,
+        failOnStatusCode: failOnStatusCode
+    });
+});
 
 Cypress.Commands.add(
     "getUser", (username, first_name = '', last_name = '', is_admin = false, is_active = true) => {
@@ -148,14 +155,15 @@ Cypress.Commands.add(
         return cy.doRequest('POST', '/arvados/v1/' + suffix, data, null, token, true)
             .its('body').as('resource')
             .then(function () {
+                createdResources.push({suffix, uuid: this.resource.uuid});
                 return this.resource;
             })
     }
 )
 
 Cypress.Commands.add(
-    "deleteResource", (token, suffix, uuid) => {
-        return cy.doRequest('DELETE', '/arvados/v1/' + suffix + '/' + uuid)
+    "deleteResource", (token, suffix, uuid, failOnStatusCode = true) => {
+        return cy.doRequest('DELETE', '/arvados/v1/' + suffix + '/' + uuid, null, null, token, false, true, failOnStatusCode)
             .its('body').as('resource')
             .then(function () {
                 return this.resource;
@@ -175,8 +183,10 @@ Cypress.Commands.add(
 
 Cypress.Commands.add(
     "loginAs", (user) => {
+        cy.clearCookies()
+        cy.clearLocalStorage()
         cy.visit(`/token/?api_token=${user.token}`);
-        cy.url().should('contain', '/projects/');
+        cy.url({timeout: 10000}).should('contain', '/projects/');
         cy.get('div#root').should('contain', 'Arvados Workbench (zzzzz)');
         cy.get('div#root').should('not.contain', 'Your account is inactive');
     }
@@ -185,6 +195,12 @@ Cypress.Commands.add(
 Cypress.Commands.add(
     "doSearch", (searchTerm) => {
         cy.get('[data-cy=searchbar-input-field]').type(`{selectall}${searchTerm}{enter}`);
+    }
+)
+
+Cypress.Commands.add(
+    "goToPath", (path) => {
+        return cy.window().its('appHistory').invoke('push', path);
     }
 )
 
@@ -207,13 +223,13 @@ Cypress.Commands.add('shareWith', (srcUserToken, targetUserUUID, itemUUID, permi
     });
 })
 
-Cypress.Commands.add('addToFavorites', (activeUserToken, activeUserUUID, itemUUID) => {
-    cy.createLink(activeUserToken, {
+Cypress.Commands.add('addToFavorites', (userToken, userUUID, itemUUID) => {
+    cy.createLink(userToken, {
         head_uuid: itemUUID,
         link_class: 'star',
         name: '',
-        owner_uuid: activeUserUUID,
-        tail_uuid: activeUserUUID,
+        owner_uuid: userUUID,
+        tail_uuid: userUUID,
     });
 })
 

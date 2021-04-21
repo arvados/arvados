@@ -19,12 +19,9 @@ describe('Page not found tests', function() {
     });
 
     it('shows not found page', function() {
-        // given
-        const invalidUUID = '1212r12r12r12r12r12r21r'
-
         // when
         cy.loginAs(adminUser);
-        cy.visit(`/collections/${invalidUUID}`);
+        cy.goToPath(`/this/is/an/invalid/route`);
 
         // then
         cy.get('[data-cy=not-found-page]').should('exist');
@@ -38,10 +35,10 @@ describe('Page not found tests', function() {
 
         // when
         cy.loginAs(adminUser);
-        cy.visit(`/projects/${notExistingUUID}`);
+        cy.goToPath(`/projects/${notExistingUUID}`);
 
         // then
-        cy.get('[data-cy=not-found-page]').should('not.exist');
         cy.get('[data-cy=not-found-content]').should('exist');
+        cy.get('[data-cy=not-found-page]').should('not.exist');
     });
 })
