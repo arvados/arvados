@@ -66,6 +66,7 @@ func (bcmd bootCommand) run(ctx context.Context, prog string, args []string, std
 	flags.StringVar(&super.ClusterType, "type", "production", "cluster `type`: development, test, or production")
 	flags.StringVar(&super.ListenHost, "listen-host", "localhost", "host name or interface address for service listeners")
 	flags.StringVar(&super.ControllerAddr, "controller-address", ":0", "desired controller address, `host:port` or `:port`")
+	flags.BoolVar(&super.NoWorkbench1, "no-workbench1", false, "do not run workbench1")
 	flags.BoolVar(&super.OwnTemporaryDatabase, "own-temporary-database", false, "bring up a postgres server and create a temporary database")
 	timeout := flags.Duration("timeout", 0, "maximum time to wait for cluster to be ready")
 	shutdown := flags.Bool("shutdown", false, "shut down when the cluster becomes ready")
