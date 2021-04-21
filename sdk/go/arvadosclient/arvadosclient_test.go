@@ -10,7 +10,9 @@ import (
 	"net/http"
 	"os"
 	"testing"
+	"time"
 
+	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	. "gopkg.in/check.v1"
 )
@@ -28,14 +30,12 @@ var _ = Suite(&MockArvadosServerSuite{})
 type ServerRequiredSuite struct{}
 
 func (s *ServerRequiredSuite) SetUpSuite(c *C) {
-	arvadostest.StartAPI()
 	arvadostest.StartKeep(2, false)
 	RetryDelay = 0
 }
 
 func (s *ServerRequiredSuite) TearDownSuite(c *C) {
 	arvadostest.StopKeep(2)
-	arvadostest.StopAPI()
 }
 
 func (s *ServerRequiredSuite) SetUpTest(c *C) {
@@ -156,6 +156,32 @@ func (s *ServerRequiredSuite) TestAPIDiscovery_Get_noSuchParameter(c *C) {
 	value, err := arv.Discovery("noSuchParameter")
 	c.Assert(err, NotNil)
 	c.Assert(value, IsNil)
+}
+
+func (s *ServerRequiredSuite) TestCreateLarge(c *C) {
+	arv, err := MakeArvadosClient()
+	c.Assert(err, IsNil)
+
+	txt := arvados.SignLocator("d41d8cd98f00b204e9800998ecf8427e+0", arv.ApiToken, time.Now().Add(time.Minute), time.Minute, []byte(arvadostest.SystemRootToken))
+	// Ensure our request body is bigger than the Go http server's
+	// default max size, 10 MB.
+	for len(txt) < 12000000 {
+		txt = txt + " " + txt
+	}
+	txt = ". " + txt + " 0:0:foo\n"
+
+	resp := Dict{}
+	err = arv.Create("collections", Dict{
+		"ensure_unique_name": true,
+		"collection": Dict{
+			"is_trashed":    true,
+			"name":          "test",
+			"manifest_text": txt,
+		},
+	}, &resp)
+	c.Check(err, IsNil)
+	c.Check(resp["portable_data_hash"], Not(Equals), "")
+	c.Check(resp["portable_data_hash"], Not(Equals), "d41d8cd98f00b204e9800998ecf8427e+0")
 }
 
 type UnitSuite struct{}

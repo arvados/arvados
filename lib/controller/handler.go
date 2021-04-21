@@ -92,7 +92,10 @@ func (h *Handler) setup() {
 	})
 
 	oidcAuthorizer := localdb.OIDCAccessTokenAuthorizer(h.Cluster, h.db)
-	rtr := router.New(federation.New(h.Cluster), api.ComposeWrappers(ctrlctx.WrapCallsInTransactions(h.db), oidcAuthorizer.WrapCalls))
+	rtr := router.New(federation.New(h.Cluster), router.Config{
+		MaxRequestSize: h.Cluster.API.MaxRequestSize,
+		WrapCalls:      api.ComposeWrappers(ctrlctx.WrapCallsInTransactions(h.db), oidcAuthorizer.WrapCalls),
+	})
 	mux.Handle("/arvados/v1/config", rtr)
 	mux.Handle("/"+arvados.EndpointUserAuthenticate.Path, rtr) // must come before .../users/
 	mux.Handle("/arvados/v1/collections", rtr)
