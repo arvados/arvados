@@ -6,6 +6,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"crypto/sha256"
 	"fmt"
@@ -25,6 +26,10 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	"github.com/AdRoll/goamz/aws"
 	"github.com/AdRoll/goamz/s3"
+	aws_aws "github.com/aws/aws-sdk-go/aws"
+	aws_credentials "github.com/aws/aws-sdk-go/aws/credentials"
+	aws_session "github.com/aws/aws-sdk-go/aws/session"
+	aws_s3 "github.com/aws/aws-sdk-go/service/s3"
 	check "gopkg.in/check.v1"
 )
 
@@ -883,6 +888,196 @@ func (s *IntegrationSuite) testS3CollectionListRollup(c *check.C) {
 		c.Check(resp.NextMarker, check.Equals, expectNextMarker, commentf)
 		c.Check(resp.IsTruncated, check.Equals, expectTruncated, commentf)
 		c.Logf("=== trial %+v keys %q prefixes %q nextMarker %q", trial, gotKeys, gotPrefixes, resp.NextMarker)
+	}
+}
+
+func (s *IntegrationSuite) TestS3ListObjectsV2(c *check.C) {
+	stage := s.s3setup(c)
+	defer stage.teardown(c)
+	dirs := 2
+	filesPerDir := 40
+	stage.writeBigDirs(c, dirs, filesPerDir)
+
+	sess := aws_session.Must(aws_session.NewSession(&aws_aws.Config{
+		Region:           aws_aws.String("auto"),
+		Endpoint:         aws_aws.String("http://" + s.testServer.Addr),
+		Credentials:      aws_credentials.NewStaticCredentials(url.QueryEscape(arvadostest.ActiveTokenV2), url.QueryEscape(arvadostest.ActiveTokenV2), ""),
+		S3ForcePathStyle: aws_aws.Bool(true),
+	}))
+
+	stringOrNil := func(s string) *string {
+		if s == "" {
+			return nil
+		} else {
+			return &s
+		}
+	}
+
+	client := aws_s3.New(sess)
+	ctx := context.Background()
+
+	for _, trial := range []struct {
+		prefix               string
+		delimiter            string
+		startAfter           string
+		maxKeys              int
+		expectKeys           int
+		expectCommonPrefixes map[string]bool
+	}{
+		{
+			// Expect {filesPerDir plus the dir itself}
+			// for each dir, plus emptydir, emptyfile, and
+			// sailboat.txt.
+			expectKeys: (filesPerDir+1)*dirs + 3,
+		},
+		{
+			maxKeys:    15,
+			expectKeys: (filesPerDir+1)*dirs + 3,
+		},
+		{
+			startAfter: "dir0/z",
+			maxKeys:    15,
+			// Expect {filesPerDir plus the dir itself}
+			// for each dir except dir0, plus emptydir,
+			// emptyfile, and sailboat.txt.
+			expectKeys: (filesPerDir+1)*(dirs-1) + 3,
+		},
+		{
+			maxKeys:              1,
+			delimiter:            "/",
+			expectKeys:           2, // emptyfile, sailboat.txt
+			expectCommonPrefixes: map[string]bool{"dir0/": true, "dir1/": true, "emptydir/": true},
+		},
+		{
+			startAfter:           "dir0/z",
+			maxKeys:              15,
+			delimiter:            "/",
+			expectKeys:           2, // emptyfile, sailboat.txt
+			expectCommonPrefixes: map[string]bool{"dir1/": true, "emptydir/": true},
+		},
+		{
+			startAfter:           "dir0/file10.txt",
+			maxKeys:              15,
+			delimiter:            "/",
+			expectKeys:           2,
+			expectCommonPrefixes: map[string]bool{"dir0/": true, "dir1/": true, "emptydir/": true},
+		},
+		{
+			startAfter:           "dir0/file10.txt",
+			maxKeys:              15,
+			prefix:               "d",
+			delimiter:            "/",
+			expectKeys:           0,
+			expectCommonPrefixes: map[string]bool{"dir0/": true, "dir1/": true},
+		},
+	} {
+		c.Logf("[trial %+v]", trial)
+		params := aws_s3.ListObjectsV2Input{
+			Bucket:     aws_aws.String(stage.collbucket.Name),
+			Prefix:     stringOrNil(trial.prefix),
+			Delimiter:  stringOrNil(trial.delimiter),
+			StartAfter: stringOrNil(trial.startAfter),
+			MaxKeys:    aws_aws.Int64(int64(trial.maxKeys)),
+		}
+		keySeen := map[string]bool{}
+		prefixSeen := map[string]bool{}
+		for {
+			result, err := client.ListObjectsV2WithContext(ctx, &params)
+			if !c.Check(err, check.IsNil) {
+				break
+			}
+			c.Check(result.Name, check.DeepEquals, aws_aws.String(stage.collbucket.Name))
+			c.Check(result.Prefix, check.DeepEquals, aws_aws.String(trial.prefix))
+			c.Check(result.Delimiter, check.DeepEquals, aws_aws.String(trial.delimiter))
+			// The following two fields are expected to be
+			// nil (i.e., no tag in XML response) rather
+			// than "" when the corresponding request
+			// field was empty or nil.
+			c.Check(result.StartAfter, check.DeepEquals, stringOrNil(trial.startAfter))
+			c.Check(result.ContinuationToken, check.DeepEquals, params.ContinuationToken)
+
+			if trial.maxKeys > 0 {
+				c.Check(result.MaxKeys, check.DeepEquals, aws_aws.Int64(int64(trial.maxKeys)))
+				c.Check(len(result.Contents)+len(result.CommonPrefixes) <= trial.maxKeys, check.Equals, true)
+			} else {
+				c.Check(result.MaxKeys, check.DeepEquals, aws_aws.Int64(int64(s3MaxKeys)))
+			}
+
+			for _, ent := range result.Contents {
+				c.Assert(ent.Key, check.NotNil)
+				c.Check(*ent.Key > trial.startAfter, check.Equals, true)
+				c.Check(keySeen[*ent.Key], check.Equals, false, check.Commentf("dup key %q", *ent.Key))
+				keySeen[*ent.Key] = true
+			}
+			for _, ent := range result.CommonPrefixes {
+				c.Assert(ent.Prefix, check.NotNil)
+				c.Check(strings.HasSuffix(*ent.Prefix, trial.delimiter), check.Equals, true, check.Commentf("bad CommonPrefix %q", *ent.Prefix))
+				if strings.HasPrefix(trial.startAfter, *ent.Prefix) {
+					// If we asked for
+					// startAfter=dir0/file10.txt,
+					// we expect dir0/ to be
+					// returned as a common prefix
+				} else {
+					c.Check(*ent.Prefix > trial.startAfter, check.Equals, true)
+				}
+				c.Check(prefixSeen[*ent.Prefix], check.Equals, false, check.Commentf("dup common prefix %q", *ent.Prefix))
+				prefixSeen[*ent.Prefix] = true
+			}
+			if *result.IsTruncated && c.Check(result.NextContinuationToken, check.Not(check.Equals), "") {
+				params.ContinuationToken = aws_aws.String(*result.NextContinuationToken)
+			} else {
+				break
+			}
+		}
+		c.Check(keySeen, check.HasLen, trial.expectKeys)
+		c.Check(prefixSeen, check.HasLen, len(trial.expectCommonPrefixes))
+		if len(trial.expectCommonPrefixes) > 0 {
+			c.Check(prefixSeen, check.DeepEquals, trial.expectCommonPrefixes)
+		}
+	}
+}
+
+func (s *IntegrationSuite) TestS3ListObjectsV2EncodingTypeURL(c *check.C) {
+	stage := s.s3setup(c)
+	defer stage.teardown(c)
+	dirs := 2
+	filesPerDir := 40
+	stage.writeBigDirs(c, dirs, filesPerDir)
+
+	sess := aws_session.Must(aws_session.NewSession(&aws_aws.Config{
+		Region:           aws_aws.String("auto"),
+		Endpoint:         aws_aws.String("http://" + s.testServer.Addr),
+		Credentials:      aws_credentials.NewStaticCredentials(url.QueryEscape(arvadostest.ActiveTokenV2), url.QueryEscape(arvadostest.ActiveTokenV2), ""),
+		S3ForcePathStyle: aws_aws.Bool(true),
+	}))
+
+	client := aws_s3.New(sess)
+	ctx := context.Background()
+
+	result, err := client.ListObjectsV2WithContext(ctx, &aws_s3.ListObjectsV2Input{
+		Bucket:       aws_aws.String(stage.collbucket.Name),
+		Prefix:       aws_aws.String("dir0/"),
+		Delimiter:    aws_aws.String("/"),
+		StartAfter:   aws_aws.String("dir0/"),
+		EncodingType: aws_aws.String("url"),
+	})
+	c.Assert(err, check.IsNil)
+	c.Check(*result.Prefix, check.Equals, "dir0%2F")
+	c.Check(*result.Delimiter, check.Equals, "%2F")
+	c.Check(*result.StartAfter, check.Equals, "dir0%2F")
+	for _, ent := range result.Contents {
+		c.Check(*ent.Key, check.Matches, "dir0%2F.*")
+	}
+	result, err = client.ListObjectsV2WithContext(ctx, &aws_s3.ListObjectsV2Input{
+		Bucket:       aws_aws.String(stage.collbucket.Name),
+		Delimiter:    aws_aws.String("/"),
+		EncodingType: aws_aws.String("url"),
+	})
+	c.Assert(err, check.IsNil)
+	c.Check(*result.Delimiter, check.Equals, "%2F")
+	c.Check(result.CommonPrefixes, check.HasLen, dirs+1)
+	for _, ent := range result.CommonPrefixes {
+		c.Check(*ent.Prefix, check.Matches, ".*%2F")
 	}
 }
 
