@@ -44,33 +44,47 @@ function TabPanel(props: TabPanelData) {
     );
 }
 
+const isValidIpAddress = (ipAddress: string): Boolean => {
+    console.log(ipAddress);
+    if (/^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(ipAddress)) {
+        return true;
+    }
+
+    return false;
+};
+
 const mountainduckTemplate = ({
     uuid, 
     username,
     cyberDavStr,
     collectionsUrl
-}: any) => `<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-   <dict>
-      <key>Protocol</key>
-      <string>davs</string>
-      <key>Provider</key>
-      <string>iterate GmbH</string>
-      <key>UUID</key>
-      <string>${uuid}</string>
-      <key>Hostname</key>
-      <string>${collectionsUrl.replace('https://', ``).replace('*', uuid).split(':')[0]}</string>
-      <key>Port</key>
-      <string>${(cyberDavStr.split(':')[2] || '443').split('/')[0]}</string>
-      <key>Username</key>
-      <string>${username}</string>
-      <key>Labels</key>
-      <array>
-      </array>
-   </dict>
-</plist>
-`.split(/\r?\n/).join('\n');
+}: any) => {
+    
+    return `<?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+        <dict>
+            <key>Protocol</key>
+            <string>davs</string>
+            <key>Provider</key>
+            <string>iterate GmbH</string>
+            <key>UUID</key>
+            <string>${uuid}</string>
+            <key>Hostname</key>
+            <string>${collectionsUrl.replace('https://', ``).replace('*', uuid).split(':')[0]}</string>
+            <key>Port</key>
+            <string>${(cyberDavStr.split(':')[2] || '443').split('/')[0]}</string>
+            <key>Username</key>
+            <string>${username}</string>${isValidIpAddress(collectionsUrl.replace('https://', ``).split(':')[0])? 
+            `
+            <key>Path</key>
+            <string>/c=${uuid}</string>` : ''}
+            <key>Labels</key>
+            <array>
+            </array>
+        </dict>
+        </plist>`.split(/\r?\n/).join('\n');
+};
 
 const downloadMountainduckFileHandler = (filename: string, text: string) => {
     const element = document.createElement('a');
@@ -199,7 +213,7 @@ export const WebDavS3InfoDialog = compose(
                         color='primary'
                         size='small'>
                         <DownloadIcon />
-                        Download config
+                        Download Cyber/Mountain Duck bookmark
                     </Button>
 
                     <h3>Gnome</h3>

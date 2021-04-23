@@ -66,6 +66,7 @@ describe('Collection panel tests', function () {
                             expect(map['Username']).to.equal(activeUser.user.username);
                             expect(map['Port']).to.equal(port);
                             expect(map['Hostname']).to.equal(host);
+                            expect(map['Path']).to.equal(`/c=${testCollection.uuid}`);
                         });
                 })
                 .then(() => cy.task('clearDownload', { filename }));
