@@ -360,3 +360,13 @@
   output: {}
   tool: wf/trick_defaults2.cwl
   doc: "Test issue 17462 - secondary file objects on file defaults are not resolved"
+
+- job: null
+  output: {}
+  tool: 17521-dot-slash-glob.cwl
+  doc: "Test issue 17521 - bug with leading './' capturing files in subdirectories"
+
+- job: null
+  output: {}
+  tool: 10380-trailing-slash-dir.cwl
+  doc: "Test issue 10380 - bug with trailing slash when capturing an output directory"
