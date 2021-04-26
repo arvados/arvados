@@ -50,9 +50,11 @@ func (ln *lookupnode) Readdir() ([]os.FileInfo, error) {
 			return nil, err
 		}
 		for _, child := range all {
+			ln.treenode.Lock()
 			_, err = ln.treenode.Child(child.FileInfo().Name(), func(inode) (inode, error) {
 				return child, nil
 			})
+			ln.treenode.Unlock()
 			if err != nil {
 				return nil, err
 			}
