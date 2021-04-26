@@ -40,7 +40,7 @@ describe('Collection panel tests', function () {
         })
         .as('testCollection').then(function (testCollection) {
             cy.loginAs(activeUser);
-            cy.doSearch(`${testCollection.uuid}`);
+            cy.goToPath(`/collections/${testCollection.uuid}`);
 
             cy.get('[data-cy=collection-panel-options-btn]').click();
             cy.get('[data-cy=context-menu]').contains('Open as network folder or S3 bucket').click();
