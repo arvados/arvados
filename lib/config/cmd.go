@@ -105,44 +105,69 @@ func (checkCommand) RunCommand(prog string, args []string, stdin io.Reader, stdo
 		return 2
 	}
 
-	// Load the config twice -- once without loading deprecated
-	// keys/files, once with -- and then compare the two resulting
-	// configs. This reveals whether the deprecated keys/files
-	// have any effect on the final configuration.
+	// The following loop is a terrible kludge to work around a
+	// go-yaml bug.
 	//
-	// If they do, show the operator how to update their config
-	// such that the deprecated keys/files are superfluous and can
-	// be deleted.
-	loader.SkipDeprecated = true
-	loader.SkipLegacy = true
-	withoutDepr, err := loader.Load()
-	if err != nil {
-		return 1
-	}
-	// Reset() to avoid printing the same warnings twice when they
-	// are logged by both without-legacy and with-legacy loads.
-	logbuf.Reset()
-	loader.SkipDeprecated = false
-	loader.SkipLegacy = false
-	withDepr, err := loader.Load()
-	if err != nil {
-		return 1
-	}
-	cmd := exec.Command("diff", "-u", "--label", "without-deprecated-configs", "--label", "relying-on-deprecated-configs", "/dev/fd/3", "/dev/fd/4")
-	for _, obj := range []interface{}{withoutDepr, withDepr} {
-		y, _ := yaml.Marshal(obj)
-		pr, pw, err := os.Pipe()
+	// Due to non-deterministic key sorting,
+	// diff(withoutDepr,withDepr) sometimes indicates a
+	// meaningless ordering change in a map like InstanceTypes.
+	// The workaround does the diff up to 20 times and chooses the
+	// shortest diff output.  Most of the time, it will take less
+	// than 20 tries for both Marshal() calls to land on the same
+	// ordering, so the sorting bug will be effectively hidden.
+	var diff []byte
+	for attempt := 0; attempt < 20 && (attempt == 0 || len(diff) > 0); attempt++ {
+		// Load the config twice -- once without loading
+		// deprecated keys/files, once with -- and then
+		// compare the two resulting configs. This reveals
+		// whether the deprecated keys/files have any effect
+		// on the final configuration.
+		//
+		// If they do, show the operator how to update their
+		// config such that the deprecated keys/files are
+		// superfluous and can be deleted.
+		//
+		// Reset() before each Load() to avoid printing the
+		// same warnings multiple times when we call Load()
+		// repeatedly.
+		logbuf.Reset()
+		loader.SkipDeprecated = true
+		loader.SkipLegacy = true
+		withoutDepr, err := loader.Load()
 		if err != nil {
 			return 1
 		}
-		defer pr.Close()
-		go func() {
-			io.Copy(pw, bytes.NewBuffer(y))
-			pw.Close()
-		}()
-		cmd.ExtraFiles = append(cmd.ExtraFiles, pr)
+		logbuf.Reset()
+		loader.SkipDeprecated = false
+		loader.SkipLegacy = false
+		withDepr, err := loader.Load()
+		if err != nil {
+			return 1
+		}
+		cmd := exec.Command("diff", "-u", "--label", "without-deprecated-configs", "--label", "relying-on-deprecated-configs", "/dev/fd/3", "/dev/fd/4")
+		for _, obj := range []interface{}{withoutDepr, withDepr} {
+			y, _ := yaml.Marshal(obj)
+			pr, pw, err := os.Pipe()
+			if err != nil {
+				return 1
+			}
+			defer pr.Close()
+			go func() {
+				io.Copy(pw, bytes.NewBuffer(y))
+				pw.Close()
+			}()
+			cmd.ExtraFiles = append(cmd.ExtraFiles, pr)
+		}
+		var diffAttempt []byte
+		diffAttempt, err = cmd.CombinedOutput()
+		if (err != nil || len(diffAttempt) > 0) && !bytes.HasPrefix(diffAttempt, []byte("--- ")) {
+			fmt.Fprintf(stderr, "Unexpected diff output:\n%s", diffAttempt)
+			return 1
+		}
+		if attempt == 0 || len(diffAttempt) < len(diff) {
+			diff = diffAttempt
+		}
 	}
-	diff, err := cmd.CombinedOutput()
 	if bytes.HasPrefix(diff, []byte("--- ")) {
 		fmt.Fprintln(stdout, "Your configuration is relying on deprecated entries. Suggest making the following changes.")
 		stdout.Write(diff)
@@ -150,13 +175,6 @@ func (checkCommand) RunCommand(prog string, args []string, stdin io.Reader, stdo
 		if *strict {
 			return 1
 		}
-	} else if len(diff) > 0 {
-		fmt.Fprintf(stderr, "Unexpected diff output:\n%s", diff)
-		if *strict {
-			return 1
-		}
-	} else if err != nil {
-		return 1
 	}
 	if logbuf.Len() > 0 {
 		if *strict {
