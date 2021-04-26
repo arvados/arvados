@@ -12,7 +12,6 @@ import (
 	"os"
 	"os/exec"
 
-	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"github.com/ghodss/yaml"
 	"github.com/sirupsen/logrus"
@@ -120,15 +119,14 @@ func (checkCommand) RunCommand(prog string, args []string, stdin io.Reader, stdo
 	if err != nil {
 		return 1
 	}
+	// Reset() to avoid printing the same warnings twice when they
+	// are logged by both without-legacy and with-legacy loads.
+	logbuf.Reset()
 	loader.SkipDeprecated = false
 	loader.SkipLegacy = false
 	withDepr, err := loader.Load()
 	if err != nil {
 		return 1
-	}
-	problems := false
-	if warnAboutProblems(logger, withDepr) {
-		problems = true
 	}
 	cmd := exec.Command("diff", "-u", "--label", "without-deprecated-configs", "--label", "relying-on-deprecated-configs", "/dev/fd/3", "/dev/fd/4")
 	for _, obj := range []interface{}{withoutDepr, withDepr} {
@@ -165,26 +163,7 @@ func (checkCommand) RunCommand(prog string, args []string, stdin io.Reader, stdo
 			return 1
 		}
 	}
-
-	if problems {
-		return 1
-	}
 	return 0
-}
-
-func warnAboutProblems(logger logrus.FieldLogger, cfg *arvados.Config) bool {
-	warned := false
-	for id, cc := range cfg.Clusters {
-		if cc.SystemRootToken == "" {
-			logger.Warnf("Clusters.%s.SystemRootToken is empty; see https://doc.arvados.org/master/install/install-keepstore.html", id)
-			warned = true
-		}
-		if cc.ManagementToken == "" {
-			logger.Warnf("Clusters.%s.ManagementToken is empty; see https://doc.arvados.org/admin/management-token.html", id)
-			warned = true
-		}
-	}
-	return warned
 }
 
 var DumpDefaultsCommand defaultsCommand
