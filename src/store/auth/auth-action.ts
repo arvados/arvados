@@ -15,7 +15,7 @@ import { createServices, setAuthorizationHeader } from "~/services/services";
 import { cancelLinking } from '~/store/link-account-panel/link-account-panel-actions';
 import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
 import { WORKBENCH_LOADING_SCREEN } from '~/store/workbench/workbench-actions';
-import { addRemoteConfig } from './auth-action-session';
+import { addRemoteConfig, getRemoteHostConfig } from './auth-action-session';
 import { getTokenV2 } from '~/models/api-client-authorization';
 
 export const authActions = unionize({
@@ -68,11 +68,9 @@ const init = (config: Config) => async (dispatch: Dispatch, getState: () => Root
     if (token && token !== "undefined") {
         dispatch(progressIndicatorActions.START_WORKING(WORKBENCH_LOADING_SCREEN));
         try {
-            await dispatch<any>(saveApiToken(token)); // .then(() => {
-            await dispatch(progressIndicatorActions.STOP_WORKING(WORKBENCH_LOADING_SCREEN));
-        } catch (e) {
-            dispatch(progressIndicatorActions.STOP_WORKING(WORKBENCH_LOADING_SCREEN));
-        }
+            await dispatch<any>(saveApiToken(token));
+        } catch (e) {}
+        dispatch(progressIndicatorActions.STOP_WORKING(WORKBENCH_LOADING_SCREEN));
     }
 };
 
@@ -82,7 +80,16 @@ export const getConfig = (dispatch: Dispatch, getState: () => RootState, service
 };
 
 export const saveApiToken = (token: string) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<any> => {
-    const config = dispatch<any>(getConfig);
+    let config: any;
+    const tokenParts = token.split('/');
+    const auth = getState().auth;
+    config = dispatch<any>(getConfig);
+
+    // If federated token, get user & token data from the token issuing cluster
+    if (tokenParts.length === 3 && tokenParts[1].substring(0, 5) !== auth.localCluster) {
+        config = await getRemoteHostConfig(auth.remoteHosts[tokenParts[1].substring(0, 5)]);
+    }
+
     const svc = createServices(config, { progressFn: () => { }, errorFn: () => { } });
     setAuthorizationHeader(svc, token);
     try {
