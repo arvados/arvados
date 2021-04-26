@@ -7,6 +7,7 @@ import { RootState } from "~/store/store";
 import { ServiceRepository } from "~/services/services";
 import { dialogActions } from '~/store/dialog/dialog-actions';
 import { getNewExtraToken } from "../auth/auth-action";
+import { CollectionResource } from "~/models/collection";
 
 export const COLLECTION_WEBDAV_S3_DIALOG_NAME = 'collectionWebdavS3Dialog';
 
@@ -18,6 +19,7 @@ export interface WebDavS3InfoDialogData {
     localCluster: string;
     username: string;
     activeTab: number;
+    collectionName: string;
     setActiveTab: (event: any, tabNr: number) => void;
 }
 
@@ -34,6 +36,7 @@ export const openWebDavS3InfoDialog = (uuid: string, activeTab?: number) =>
                 localCluster: getState().auth.localCluster,
                 username: getState().auth.user!.username,
                 activeTab: activeTab || 0,
+                collectionName: (getState().resources[uuid] as CollectionResource).name,
                 setActiveTab: (event: any, tabNr: number) => dispatch<any>(openWebDavS3InfoDialog(uuid, tabNr)),
                 uuid
             }

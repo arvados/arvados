@@ -101,7 +101,7 @@
     "@types/sinon": "7.5",
     "@types/uuid": "3.4.4",
     "axios-mock-adapter": "1.17.0",
-    "cypress": "6.2.1",
+    "cypress": "6.3.0",
     "enzyme": "3.6.0",
     "enzyme-adapter-react-16": "1.5.0",
     "jest-localstorage-mock": "2.2.0",
