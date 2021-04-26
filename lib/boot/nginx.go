@@ -53,12 +53,17 @@ func (runNginx) Run(ctx context.Context, fail func(error), super *Supervisor) er
 		{"WORKBENCH1", super.cluster.Services.Workbench1},
 		{"WS", super.cluster.Services.Websocket},
 	} {
-		host, port, err := internalPort(cmpt.svc)
-		if err != nil {
+		var host, port string
+		if len(cmpt.svc.InternalURLs) == 0 {
+			// We won't run this service, but we need an
+			// upstream port to write in our templated
+			// nginx config. Choose a port that will
+			// return 502 Bad Gateway.
+			port = "9"
+		} else if host, port, err = internalPort(cmpt.svc); err != nil {
 			return fmt.Errorf("%s internal port: %w (%v)", cmpt.varname, err, cmpt.svc)
-		}
-		if ok, err := addrIsLocal(net.JoinHostPort(host, port)); !ok || err != nil {
-			return fmt.Errorf("urlIsLocal() failed for host %q port %q: %v", host, port, err)
+		} else if ok, err := addrIsLocal(net.JoinHostPort(host, port)); !ok || err != nil {
+			return fmt.Errorf("%s addrIsLocal() failed for host %q port %q: %v", cmpt.varname, host, port, err)
 		}
 		vars[cmpt.varname+"PORT"] = port
 
@@ -66,8 +71,9 @@ func (runNginx) Run(ctx context.Context, fail func(error), super *Supervisor) er
 		if err != nil {
 			return fmt.Errorf("%s external port: %w (%v)", cmpt.varname, err, cmpt.svc)
 		}
-		if ok, err := addrIsLocal(net.JoinHostPort(super.ListenHost, port)); !ok || err != nil {
-			return fmt.Errorf("urlIsLocal() failed for host %q port %q: %v", super.ListenHost, port, err)
+		listenAddr := net.JoinHostPort(super.ListenHost, port)
+		if ok, err := addrIsLocal(listenAddr); !ok || err != nil {
+			return fmt.Errorf("%s addrIsLocal(%q) failed: %w", cmpt.varname, listenAddr, err)
 		}
 		vars[cmpt.varname+"SSLPORT"] = port
 	}

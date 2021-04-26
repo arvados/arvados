@@ -130,8 +130,9 @@ func (s *IntegrationSuite) SetUpSuite(c *check.C) {
 		tc := boot.NewTestCluster(
 			filepath.Join(cwd, "..", ".."),
 			id, cfg, "127.0.0."+id[3:], c.Log)
+		tc.Super.NoWorkbench1 = true
+		tc.Start()
 		s.testClusters[id] = tc
-		s.testClusters[id].Start()
 	}
 	for _, tc := range s.testClusters {
 		ok := tc.WaitReady()

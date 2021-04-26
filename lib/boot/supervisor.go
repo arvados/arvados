@@ -42,6 +42,7 @@ type Supervisor struct {
 	ClusterType          string // e.g., production
 	ListenHost           string // e.g., localhost
 	ControllerAddr       string // e.g., 127.0.0.1:8000
+	NoWorkbench1         bool
 	OwnTemporaryDatabase bool
 	Stderr               io.Writer
 
@@ -249,9 +250,13 @@ func (super *Supervisor) run(cfg *arvados.Config) error {
 		runServiceCommand{name: "ws", svc: super.cluster.Services.Websocket, depends: []supervisedTask{seedDatabase{}}},
 		installPassenger{src: "services/api"},
 		runPassenger{src: "services/api", varlibdir: "railsapi", svc: super.cluster.Services.RailsAPI, depends: []supervisedTask{createCertificates{}, seedDatabase{}, installPassenger{src: "services/api"}}},
-		installPassenger{src: "apps/workbench", depends: []supervisedTask{seedDatabase{}}}, // dependency ensures workbench doesn't delay api install/startup
-		runPassenger{src: "apps/workbench", varlibdir: "workbench1", svc: super.cluster.Services.Workbench1, depends: []supervisedTask{installPassenger{src: "apps/workbench"}}},
 		seedDatabase{},
+	}
+	if !super.NoWorkbench1 {
+		tasks = append(tasks,
+			installPassenger{src: "apps/workbench", depends: []supervisedTask{seedDatabase{}}}, // dependency ensures workbench doesn't delay api install/startup
+			runPassenger{src: "apps/workbench", varlibdir: "workbench1", svc: super.cluster.Services.Workbench1, depends: []supervisedTask{installPassenger{src: "apps/workbench"}}},
+		)
 	}
 	if super.ClusterType != "test" {
 		tasks = append(tasks,
@@ -677,6 +682,14 @@ func (super *Supervisor) autofillConfig(cfg *arvados.Config) error {
 			} else if svc == &cluster.Services.Websocket {
 				svc.ExternalURL = arvados.URL{Scheme: "wss", Host: fmt.Sprintf("%s:%s", super.ListenHost, nextPort(super.ListenHost)), Path: "/websocket"}
 			}
+		}
+		if super.NoWorkbench1 && svc == &cluster.Services.Workbench1 {
+			// When workbench1 is disabled, it gets an
+			// ExternalURL (so we have a valid listening
+			// port to write in our Nginx config) but no
+			// InternalURLs (so health checker doesn't
+			// complain).
+			continue
 		}
 		if len(svc.InternalURLs) == 0 {
 			svc.InternalURLs = map[arvados.URL]arvados.ServiceInstance{
