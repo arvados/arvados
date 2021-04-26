@@ -39,7 +39,9 @@ func PassthroughTokenProvider(ctx context.Context) ([]string, error) {
 }
 
 type Conn struct {
-	SendHeader    http.Header
+	SendHeader         http.Header
+	RedactHostInErrors bool
+
 	clusterID     string
 	httpClient    http.Client
 	baseURL       url.URL
@@ -148,7 +150,21 @@ func (conn *Conn) requestAndDecode(ctx context.Context, dst interface{}, ep arva
 		path = strings.Replace(path, "/{uuid}", "/"+uuid, 1)
 		delete(params, "uuid")
 	}
-	return aClient.RequestAndDecodeContext(ctx, dst, ep.Method, path, body, params)
+	err = aClient.RequestAndDecodeContext(ctx, dst, ep.Method, path, body, params)
+	if err != nil && conn.RedactHostInErrors {
+		redacted := strings.Replace(err.Error(), conn.baseURL.String(), "//railsapi.internal", -1)
+		if strings.HasPrefix(redacted, "request failed: ") {
+			redacted = strings.Replace(redacted, "request failed: ", "", -1)
+		}
+		if redacted != err.Error() {
+			if err, ok := err.(httpStatusError); ok {
+				return wrapHTTPStatusError(err, redacted)
+			} else {
+				return errors.New(redacted)
+			}
+		}
+	}
+	return err
 }
 
 func (conn *Conn) BaseURL() url.URL {
@@ -628,4 +644,27 @@ func (conn *Conn) UserAuthenticate(ctx context.Context, options arvados.UserAuth
 	var resp arvados.APIClientAuthorization
 	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
 	return resp, err
+}
+
+// httpStatusError is an error with an HTTP status code that can be
+// propagated by lib/controller/router, etc.
+type httpStatusError interface {
+	error
+	HTTPStatus() int
+}
+
+// wrappedHTTPStatusError is used to augment/replace an error message
+// while preserving the HTTP status code indicated by the original
+// error.
+type wrappedHTTPStatusError struct {
+	httpStatusError
+	message string
+}
+
+func wrapHTTPStatusError(err httpStatusError, message string) httpStatusError {
+	return wrappedHTTPStatusError{err, message}
+}
+
+func (err wrappedHTTPStatusError) Error() string {
+	return err.message
 }

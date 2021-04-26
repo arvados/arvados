@@ -344,3 +344,19 @@ func (s *HandlerSuite) TestGetObjects(c *check.C) {
 		s.CheckObjectType(c, "/arvados/v1/"+url, arvadostest.AdminToken, skippedFields)
 	}
 }
+
+func (s *HandlerSuite) TestRedactRailsAPIHostFromErrors(c *check.C) {
+	req := httptest.NewRequest("GET", "https://0.0.0.0:1/arvados/v1/collections/zzzzz-4zz18-abcdefghijklmno", nil)
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	resp := httptest.NewRecorder()
+	s.handler.ServeHTTP(resp, req)
+	c.Check(resp.Code, check.Equals, http.StatusNotFound)
+	var jresp struct {
+		Errors []string
+	}
+	c.Log(resp.Body.String())
+	c.Assert(json.NewDecoder(resp.Body).Decode(&jresp), check.IsNil)
+	c.Assert(jresp.Errors, check.HasLen, 1)
+	c.Check(jresp.Errors[0], check.Matches, `.*//railsapi\.internal/arvados/v1/collections/.*: 404 Not Found.*`)
+	c.Check(jresp.Errors[0], check.Not(check.Matches), `(?ms).*127.0.0.1.*`)
+}

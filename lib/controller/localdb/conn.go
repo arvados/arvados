@@ -24,6 +24,7 @@ type Conn struct {
 
 func NewConn(cluster *arvados.Cluster) *Conn {
 	railsProxy := railsproxy.NewConn(cluster)
+	railsProxy.RedactHostInErrors = true
 	var conn Conn
 	conn = Conn{
 		cluster:    cluster,
