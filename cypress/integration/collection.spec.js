@@ -2,9 +2,12 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
+const path = require('path');
+
 describe('Collection panel tests', function () {
     let activeUser;
     let adminUser;
+    let downloadsFolder;
 
     before(function () {
         // Only set up common users once. These aren't set up as aliases because
@@ -21,11 +24,55 @@ describe('Collection panel tests', function () {
                 activeUser = this.activeUser;
             }
             );
+        downloadsFolder = Cypress.config('downloadsFolder');
     });
 
     beforeEach(function () {
         cy.clearCookies();
         cy.clearLocalStorage();
+    });
+
+    it('allows to download mountain duck config for a collection', () => {
+        cy.createCollection(adminUser.token, {
+            name: `Test collection ${Math.floor(Math.random() * 999999)}`,
+            owner_uuid: activeUser.user.uuid,
+            manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
+        })
+        .as('testCollection').then(function (testCollection) {
+            cy.loginAs(activeUser);
+            cy.goToPath(`/collections/${testCollection.uuid}`);
+
+            cy.get('[data-cy=collection-panel-options-btn]').click();
+            cy.get('[data-cy=context-menu]').contains('Open as network folder or S3 bucket').click();
+            cy.get('[data-cy=download-button').click();
+
+            const filename = path.join(downloadsFolder, `${testCollection.name}.duck`);
+
+            cy.readFile(filename, { timeout: 15000 })
+                .then((body) => {
+                    const childrenCollection = Array.prototype.slice.call(Cypress.$(body).find('dict')[0].children);
+                    const map = {};
+                    let i, j = 2;
+                    
+                    for (i=0; i < childrenCollection.length; i += j) {
+                      map[childrenCollection[i].outerText] = childrenCollection[i + 1].outerText;
+                    }
+
+                    cy.get('#simple-tabpanel-0').find('a')
+                        .then((a) => {
+                            const [host, port] = a.text().split('@')[1].split('/')[0].split(':');
+                            expect(map['Protocol']).to.equal('davs');
+                            expect(map['UUID']).to.equal(testCollection.uuid);
+                            expect(map['Username']).to.equal(activeUser.user.username);
+                            expect(map['Port']).to.equal(port);
+                            expect(map['Hostname']).to.equal(host);
+                            if (map['Path']) {
+                                expect(map['Path']).to.equal(`/c=${testCollection.uuid}`);
+                            }
+                        });
+                })
+                .then(() => cy.task('clearDownload', { filename }));
+        });
     });
 
     it('uses the property editor with vocabulary terms', function () {

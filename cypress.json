@@ -2,5 +2,6 @@
     "baseUrl": "https://localhost:3000/",
     "chromeWebSecurity": false,
     "viewportWidth": 1920,
-    "viewportHeight": 1080
+    "viewportHeight": 1080,
+    "downloadsFolder": "cypress/downloads"
 }
