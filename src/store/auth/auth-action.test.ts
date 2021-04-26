@@ -9,18 +9,20 @@ import 'jest-localstorage-mock';
 import { ServiceRepository, createServices } from "~/services/services";
 import { configureStore, RootStore } from "../store";
 import { createBrowserHistory } from "history";
-import { Config, mockConfig } from '~/common/config';
+import { mockConfig } from '~/common/config';
 import { ApiActions } from "~/services/api/api-actions";
 import { ACCOUNT_LINK_STATUS_KEY } from '~/services/link-account-service/link-account-service';
-import Axios from "axios";
+import Axios, { AxiosInstance } from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { ImportMock } from 'ts-mock-imports';
 import * as servicesModule from "~/services/services";
+import * as authActionSessionModule from "./auth-action-session";
 import { SessionStatus } from "~/models/session";
+import { getRemoteHostConfig } from "./auth-action-session";
 
 describe('auth-actions', () => {
-    const axiosInst = Axios.create({ headers: {} });
-    const axiosMock = new MockAdapter(axiosInst);
+    let axiosInst: AxiosInstance;
+    let axiosMock: MockAdapter;
 
     let store: RootStore;
     let services: ServiceRepository;
@@ -32,7 +34,8 @@ describe('auth-actions', () => {
     let importMocks: any[];
 
     beforeEach(() => {
-        axiosMock.reset();
+        axiosInst = Axios.create({ headers: {} });
+        axiosMock = new MockAdapter(axiosInst);
         services = createServices(mockConfig({}), actions, axiosInst);
         store = configureStore(createBrowserHistory(), services, config);
         localStorage.clear();
@@ -78,7 +81,7 @@ describe('auth-actions', () => {
         localStorage.setItem(API_TOKEN_KEY, "token");
 
         const config: any = {
-            rootUrl: "https://zzzzz.arvadosapi.com",
+            rootUrl: "https://zzzzz.example.com",
             uuidPrefix: "zzzzz",
             remoteHosts: { },
             apiRevision: 12345678,
@@ -108,6 +111,76 @@ describe('auth-actions', () => {
         expect(store.getState().auth.extraApiToken).not.toBe(extraToken);
     });
 
+    it('requests remote token data to login cluster', async () => {
+        const localClusterTokenExpiration = "2020-01-01T00:00:00.000Z";
+        const loginClusterTokenExpiration = "2140-01-01T00:00:00.000Z";
+        axiosMock
+            .onGet("/users/current")
+            .reply(200, {
+                email: "test@test.com",
+                first_name: "John",
+                last_name: "Doe",
+                uuid: "zzzz1-tpzed-abcefg",
+                owner_uuid: "ownerUuid",
+                is_admin: false,
+                is_active: true,
+                username: "jdoe",
+                prefs: {}
+            })
+            .onGet("https://zzzz1.example.com/discovery/v1/apis/arvados/v1/rest")
+            .reply(200, {
+                baseUrl: "https://zzzz1.example.com/arvados/v1",
+                keepWebServiceUrl: "",
+                keepWebInlineServiceUrl: "",
+                remoteHosts: {},
+                rootUrl: "https://zzzz1.example.com",
+                uuidPrefix: "zzzz1",
+                websocketUrl: "",
+                workbenchUrl: "",
+                workbench2Url: "",
+                revision: 12345678
+            })
+            // Local cluster -- cached token
+            .onGet("https://zzzzz.example.com/arvados/v1/api_client_authorizations/current")
+            .reply(200, {
+                uuid: 'zzzz1-gj3su-aaaaaaa',
+                expires_at: localClusterTokenExpiration,
+                api_token: 'tokensecret',
+            })
+            // Login cluster -- authoritative token copy
+            .onGet("https://zzzz1.example.com/arvados/v1/api_client_authorizations/current")
+            .reply(200, {
+                uuid: 'zzzz1-gj3su-aaaaaaa',
+                expires_at: loginClusterTokenExpiration,
+                api_token: 'tokensecret',
+            });
+
+        const config: any = {
+            rootUrl: "https://zzzzz.example.com",
+            uuidPrefix: "zzzzz",
+            remoteHosts: { zzzz1: "zzzz1.example.com" },
+            apiRevision: 12345678,
+            clusterConfig: {
+                Login: { LoginCluster: "zzzz1" },
+            },
+        };
+
+        const remoteHostConfig = await getRemoteHostConfig(config.remoteHosts.zzzz1, axiosInst);
+        expect(remoteHostConfig).not.toBeFalsy;
+        services = createServices(remoteHostConfig!, actions, axiosInst);
+
+        importMocks.push(ImportMock.mockFunction(authActionSessionModule, 'getRemoteHostConfig', remoteHostConfig));
+        importMocks.push(ImportMock.mockFunction(servicesModule, 'createServices', services));
+
+        sessionStorage.setItem(ACCOUNT_LINK_STATUS_KEY, "0");
+        localStorage.setItem(API_TOKEN_KEY, "v2/zzzz1-gj3su-aaaaaaa/tokensecret");
+
+        await store.dispatch(initAuth(config));
+        expect(store.getState().auth.apiToken).toBeDefined();
+        expect(localClusterTokenExpiration).not.toBe(loginClusterTokenExpiration);
+        expect(store.getState().auth.apiTokenExpiration).toEqual(new Date(loginClusterTokenExpiration));
+    });
+
     it('should initialise state with user and api token from local storage', (done) => {
         axiosMock
             .onGet("/users/current")
@@ -126,13 +199,13 @@ describe('auth-actions', () => {
             .reply(200, {
                 expires_at: "2140-01-01T00:00:00.000Z"
             })
-            .onGet("https://xc59z.arvadosapi.com/discovery/v1/apis/arvados/v1/rest")
+            .onGet("https://xc59z.example.com/discovery/v1/apis/arvados/v1/rest")
             .reply(200, {
-                baseUrl: "https://xc59z.arvadosapi.com/arvados/v1",
+                baseUrl: "https://xc59z.example.com/arvados/v1",
                 keepWebServiceUrl: "",
                 keepWebInlineServiceUrl: "",
                 remoteHosts: {},
-                rootUrl: "https://xc59z.arvadosapi.com",
+                rootUrl: "https://xc59z.example.com",
                 uuidPrefix: "xc59z",
                 websocketUrl: "",
                 workbenchUrl: "",
@@ -147,9 +220,9 @@ describe('auth-actions', () => {
         localStorage.setItem(API_TOKEN_KEY, "token");
 
         const config: any = {
-            rootUrl: "https://zzzzz.arvadosapi.com",
+            rootUrl: "https://zzzzz.example.com",
             uuidPrefix: "zzzzz",
-            remoteHosts: { xc59z: "xc59z.arvadosapi.com" },
+            remoteHosts: { xc59z: "xc59z.example.com" },
             apiRevision: 12345678,
             clusterConfig: {
                 Login: { LoginCluster: "" },
@@ -177,9 +250,9 @@ describe('auth-actions', () => {
                                 },
                             },
                             remoteHosts: {
-                                "xc59z": "xc59z.arvadosapi.com",
+                                "xc59z": "xc59z.example.com",
                             },
-                            rootUrl: "https://zzzzz.arvadosapi.com",
+                            rootUrl: "https://zzzzz.example.com",
                             uuidPrefix: "zzzzz",
                         },
                         sshKeys: [],
@@ -197,21 +270,21 @@ describe('auth-actions', () => {
                                     },
                                 },
                                 "remoteHosts": {
-                                    "xc59z": "xc59z.arvadosapi.com",
+                                    "xc59z": "xc59z.example.com",
                                 },
-                                "rootUrl": "https://zzzzz.arvadosapi.com",
+                                "rootUrl": "https://zzzzz.example.com",
                                 "uuidPrefix": "zzzzz",
                             },
                             "xc59z": mockConfig({
                                 apiRevision: 12345678,
-                                baseUrl: "https://xc59z.arvadosapi.com/arvados/v1",
-                                rootUrl: "https://xc59z.arvadosapi.com",
+                                baseUrl: "https://xc59z.example.com/arvados/v1",
+                                rootUrl: "https://xc59z.example.com",
                                 uuidPrefix: "xc59z"
                             })
                         },
                         remoteHosts: {
-                            zzzzz: "zzzzz.arvadosapi.com",
-                            xc59z: "xc59z.arvadosapi.com"
+                            zzzzz: "zzzzz.example.com",
+                            xc59z: "xc59z.example.com"
                         },
                         sessions: [{
                             "active": true,
@@ -219,7 +292,7 @@ describe('auth-actions', () => {
                             "clusterId": "zzzzz",
                             "email": "test@test.com",
                             "loggedIn": true,
-                            "remoteHost": "https://zzzzz.arvadosapi.com",
+                            "remoteHost": "https://zzzzz.example.com",
                             "status": 2,
                             "token": "token",
                             "name": "John Doe",
@@ -232,7 +305,7 @@ describe('auth-actions', () => {
                             "clusterId": "xc59z",
                             "email": "",
                             "loggedIn": false,
-                            "remoteHost": "xc59z.arvadosapi.com",
+                            "remoteHost": "xc59z.example.com",
                             "status": 2,
                             "token": "",
                             "name": "",
