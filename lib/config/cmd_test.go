@@ -216,11 +216,9 @@ Clusters:
   Collections:
    BlobSigningKey: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
   InstanceTypes:
-   a: {}
-   d: {}
-   c: {}
-   b: {}
-   e: {}
+   a32a: {}
+   a48a: {}
+   a4a: {}
 `
 	for trial := 0; trial < 20; trial++ {
 		var stdout, stderr bytes.Buffer
