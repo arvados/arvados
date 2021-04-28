@@ -5,8 +5,8 @@
 import { ContextMenuActionSet } from "~/views-components/context-menu/context-menu-action-set";
 import { collectionPanelFilesAction, openMultipleFilesRemoveDialog } from "~/store/collection-panel/collection-panel-files/collection-panel-files-actions";
 import { openCollectionPartialCopyDialog, openCollectionPartialCopyToSelectedCollectionDialog } from '~/store/collections/collection-partial-copy-actions';
-// import { DownloadCollectionFileAction } from "~/views-components/context-menu/actions/download-collection-file-action";
 
+// These action sets are used on the multi-select actions button.
 export const readOnlyCollectionFilesActionSet: ContextMenuActionSet = [[
     {
         name: "Select all",
@@ -20,10 +20,6 @@ export const readOnlyCollectionFilesActionSet: ContextMenuActionSet = [[
             dispatch(collectionPanelFilesAction.UNSELECT_ALL_COLLECTION_FILES());
         }
     },
-    // { // Disabled for now as we need to create backend version of this feature which will be less buggy
-    //     component: DownloadCollectionFileAction,
-    //     execute: () => { return; }
-    // },
     {
         name: "Create a new collection with selected",
         execute: dispatch => {
