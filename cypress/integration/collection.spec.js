@@ -53,7 +53,7 @@ describe('Collection panel tests', function () {
                     const childrenCollection = Array.prototype.slice.call(Cypress.$(body).find('dict')[0].children);
                     const map = {};
                     let i, j = 2;
-                    
+
                     for (i=0; i < childrenCollection.length; i += j) {
                       map[childrenCollection[i].outerText] = childrenCollection[i + 1].outerText;
                     }
@@ -116,6 +116,7 @@ describe('Collection panel tests', function () {
             // on this loop may pass an assertion from the first iteration by looking
             // for the same file name.
             const fileName = isWritable ? 'bar' : 'foo';
+            const subDirName = 'subdir';
             cy.createGroup(adminUser.token, {
                 name: 'Shared project',
                 group_class: 'project',
@@ -126,7 +127,7 @@ describe('Collection panel tests', function () {
                     name: 'Test collection',
                     owner_uuid: this.sharedGroup.uuid,
                     properties: { someKey: 'someValue' },
-                    manifest_text: `. 37b51d194a7513e45b56f6524f2d51f2+3 0:3:${fileName}\n`
+                    manifest_text: `. 37b51d194a7513e45b56f6524f2d51f2+3 0:3:${fileName}\n./${subDirName} 37b51d194a7513e45b56f6524f2d51f2+3 0:3:${fileName}\n`
                 })
                     .as('testCollection').then(function () {
                         // Share the group with active user.
@@ -184,10 +185,20 @@ describe('Collection panel tests', function () {
                                     .should(`${isWritable ? '' : 'not.'}contain`, 'Upload data');
                             }
                         });
+                        // Test context menus
                         cy.get('[data-cy=collection-files-panel]')
                             .contains(fileName).rightclick({ force: true });
                         cy.get('[data-cy=context-menu]')
                             .should('contain', 'Download')
+                            .and('contain', 'Open in new tab')
+                            .and('contain', 'Copy to clipboard')
+                            .and(`${isWritable ? '' : 'not.'}contain`, 'Rename')
+                            .and(`${isWritable ? '' : 'not.'}contain`, 'Remove');
+                        cy.get('body').click(); // Collapse the menu
+                        cy.get('[data-cy=collection-files-panel]')
+                            .contains(subDirName).rightclick({ force: true });
+                        cy.get('[data-cy=context-menu]')
+                            .should('not.contain', 'Download')
                             .and('contain', 'Open in new tab')
                             .and('contain', 'Copy to clipboard')
                             .and(`${isWritable ? '' : 'not.'}contain`, 'Rename')
@@ -202,15 +213,7 @@ describe('Collection panel tests', function () {
                         cy.get('[data-cy=collection-files-panel-options-btn]')
                             .click()
                         cy.get('[data-cy=context-menu]')
-                            // .should('contain', 'Download selected')
                             .should(`${isWritable ? '' : 'not.'}contain`, 'Remove selected')
-                        cy.get('body').click(); // Collapse the menu
-                        // File item 'more options' button
-                        cy.get('[data-cy=file-item-options-btn')
-                            .click()
-                        cy.get('[data-cy=context-menu]')
-                            .should('contain', 'Download')
-                            .and(`${isWritable ? '' : 'not.'}contain`, 'Remove');
                         cy.get('body').click(); // Collapse the menu
                     })
             })
