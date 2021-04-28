@@ -313,11 +313,15 @@ var acceptableTokenLength = 32
 
 func (ldr *Loader) checkToken(label, token string) error {
 	if token == "" {
-		ldr.Logger.Warnf("%s: secret token is not set (use %d+ random characters from a-z, A-Z, 0-9)", label, acceptableTokenLength)
+		if ldr.Logger != nil {
+			ldr.Logger.Warnf("%s: secret token is not set (use %d+ random characters from a-z, A-Z, 0-9)", label, acceptableTokenLength)
+		}
 	} else if !acceptableTokenRe.MatchString(token) {
 		return fmt.Errorf("%s: unacceptable characters in token (only a-z, A-Z, 0-9 are acceptable)", label)
 	} else if len(token) < acceptableTokenLength {
-		ldr.Logger.Warnf("%s: token is too short (should be at least %d characters)", label, acceptableTokenLength)
+		if ldr.Logger != nil {
+			ldr.Logger.Warnf("%s: token is too short (should be at least %d characters)", label, acceptableTokenLength)
+		}
 	}
 	return nil
 }

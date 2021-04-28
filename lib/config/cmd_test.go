@@ -134,6 +134,18 @@ Clusters:
 	c.Check(stderr.String(), check.Matches, `(?ms).*unexpected object in config entry: Clusters.z1234.PostgreSQL.ConnectionPool"\n.*`)
 }
 
+func (s *CommandSuite) TestCheck_DuplicateWarnings(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	in := `
+Clusters:
+ z1234: {}
+`
+	code := CheckCommand.RunCommand("arvados config-check", []string{"-config", "-"}, bytes.NewBufferString(in), &stdout, &stderr)
+	c.Check(code, check.Equals, 1)
+	c.Check(stderr.String(), check.Matches, `(?ms).*SystemRootToken.*`)
+	c.Check(stderr.String(), check.Not(check.Matches), `(?ms).*SystemRootToken.*SystemRootToken.*`)
+}
+
 func (s *CommandSuite) TestDump_Formatting(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	in := `
@@ -167,4 +179,55 @@ Clusters:
 	c.Check(stdout.String(), check.Matches, `(?ms)(.*\n)?Clusters:\n  z1234:\n.*`)
 	c.Check(stdout.String(), check.Matches, `(?ms).*\n *ManagementToken: secret\n.*`)
 	c.Check(stdout.String(), check.Not(check.Matches), `(?ms).*UnknownKey.*`)
+}
+
+func (s *CommandSuite) TestDump_KeyOrder(c *check.C) {
+	in := `
+Clusters:
+ z1234:
+  Login:
+   Test:
+    Users:
+     a: {}
+     d: {}
+     c: {}
+     b: {}
+     e: {}
+`
+	for trial := 0; trial < 20; trial++ {
+		var stdout, stderr bytes.Buffer
+		code := DumpCommand.RunCommand("arvados config-dump", []string{"-config", "-"}, bytes.NewBufferString(in), &stdout, &stderr)
+		c.Assert(code, check.Equals, 0)
+		if !c.Check(stdout.String(), check.Matches, `(?ms).*a:.*b:.*c:.*d:.*e:.*`) {
+			c.Logf("config-dump did not use lexical key order on trial %d", trial)
+			c.Log("stdout:\n", stdout.String())
+			c.Log("stderr:\n", stderr.String())
+			c.FailNow()
+		}
+	}
+}
+
+func (s *CommandSuite) TestCheck_KeyOrder(c *check.C) {
+	in := `
+Clusters:
+ z1234:
+  ManagementToken: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+  SystemRootToken: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+  Collections:
+   BlobSigningKey: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+  InstanceTypes:
+   a32a: {}
+   a48a: {}
+   a4a: {}
+`
+	for trial := 0; trial < 20; trial++ {
+		var stdout, stderr bytes.Buffer
+		code := CheckCommand.RunCommand("arvados config-check", []string{"-config=-", "-strict=true"}, bytes.NewBufferString(in), &stdout, &stderr)
+		if !c.Check(code, check.Equals, 0) || stdout.String() != "" || stderr.String() != "" {
+			c.Logf("config-check returned error or non-empty output on trial %d", trial)
+			c.Log("stdout:\n", stdout.String())
+			c.Log("stderr:\n", stderr.String())
+			c.FailNow()
+		}
+	}
 }
