@@ -55,48 +55,55 @@ type ContainerState struct {
 }
 
 type ContainerConfig struct {
-	Env    []string       // List of environment variable to set in the container "VALUE=KEY" format
-	Cmd    []string       // Command to run when starting the container
-	Mounts []volumeMounts // List of Mounts used for the container.
-
+	Env              []string       // List of environment variable to set in the container "VALUE=KEY" format
+	Cmd              []string       // Command to run when starting the container
+	Mounts           []volumeMounts // List of Mounts used for the container.
+	EnableNetworking bool           // This will allow the container to reach the outside world
 }
 
 // ContainerExecuter interface will implement all the methods needed for Docker,
 // Singularity, and others to load images, run containers, get thier outputs,
 // etc.
 type ContainerExecuter interface {
+	// CheckImageIsLoaded checks if imageID is already in the local environment,
+	// either something we can reference later in Docker API or similar, or a
+	// filepath containing the image to be used
 	CheckImageIsLoaded(imageID ImageID) bool
-	LoadImage(containerImage io.Reader) error
+
+	// LoadImage translates a io.Reader that has a tarball in docker format
+	// (Usually created with 'docker save'), and load it to the local
+	// ContainerExecuter.
+	//
+	// Returns an ImageID to be referenced later, could be an identifier or a
+	// filepath or something else
+	LoadImage(containerImage io.Reader) (ImageID, error)
+
+	// ImageRemove removes the image loaded using LoadImage()
 	ImageRemove(imageID ImageID) error
 
 	ContainerState() (ContainerState, error)
 
-	// CreateContainer will prepare anything in the creation on the container
+	// CreateContainer prepares anything in the creation on the container
 	// env is an array of string "KEY=VALUE" that represents the environment variables
 	// containerConfig has all the parameters needed to start the container
-	// in the past we also had
-	// - volumes: Now this is ExecOptions.mounts
-	// - hostConfig: Now this is ExecOptions.enableNetwork and others
-	// this are called when StartContainer() is executed.
-	// this will also do any prep work needed to Std*Pipe() to work
-	CreateContainer(env []string, execOptions ExecOptions, containerConfig ContainerConfig) error
+	CreateContainer(containerConfig ContainerConfig) error
 
-	// StartContainer will start the container little questions asked
+	// StartContainer starts the container
 	StartContainer() error
 
 	// Kill the container and optionally remove the underlying image returns an
-	// error if it didn't work (including timeout)
+	// error  including timeout errors
 	Kill() error
 
-	// this is similar how https://golang.org/pkg/os/exec/#Cmd does it.
+	// This is how https://golang.org/pkg/os/exec/#Cmd does it.
 	StdinPipe() (io.WriteCloser, error)
 	StdoutPipe() (io.ReadCloser, error)
 	StderrPipe() (io.ReadCloser, error)
 
 	// Wait for the container to finish
-	Wait()
+	Wait() error
 
-	// Returns the exit coui
+	// Returns the exit code of the last executed container
 	ExitCode() (int, error)
 }
 
@@ -111,12 +118,6 @@ type ContainerExecuter interface {
 type ContainerExec struct {
 	// TODO: add anything that could be useful for all ContainerExecs to
 	// minimize the boilerplate for creating new ones.
-}
-
-// ExecOptions are the options used in StartContainer()
-type ExecOptions struct {
-	enableNetworking bool
-	mounts           []volumeMounts
 }
 
 type volumeMounts struct {
