@@ -185,12 +185,14 @@ var (
 	}
 )
 
-func StripDefaultPort(host string) string {
+func stripDefaultPort(host string) string {
 	// Will consider port 80 and port 443 to be the same vhost.  I think that's fine.
-	if strings.HasSuffix(host, ":80") || strings.HasSuffix(host, ":443") {
-		return host[0:strings.Index(host, ":")]
+	u := &url.URL{Host: host}
+	if p := u.Port(); p == "80" || p == "443" {
+		return u.Hostname()
+	} else {
+		return host
 	}
-	return host
 }
 
 // ServeHTTP implements http.Handler.
@@ -251,7 +253,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	credentialsOK := h.Config.cluster.Collections.TrustAllContent
 	reasonNotAcceptingCredentials := ""
 
-	if r.Host != "" && StripDefaultPort(r.Host) == StripDefaultPort(h.Config.cluster.Services.WebDAVDownload.ExternalURL.Host) {
+	if r.Host != "" && stripDefaultPort(r.Host) == stripDefaultPort(h.Config.cluster.Services.WebDAVDownload.ExternalURL.Host) {
 		credentialsOK = true
 		attachment = true
 	} else if r.FormValue("disposition") == "attachment" {
@@ -259,7 +261,8 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	}
 
 	if !credentialsOK {
-		reasonNotAcceptingCredentials = fmt.Sprintf("Collections.TrustAllContent is false and provided virtual host '%s' did not match either Services.WebDAV or Services.WebDAVDownload", r.Host)
+		reasonNotAcceptingCredentials = fmt.Sprintf("vhost %q does not specify a single collection ID or match Services.WebDAVDownload.ExternalURL %q, and Collections.TrustAllContent is false",
+			r.Host, h.Config.cluster.Services.WebDAVDownload.ExternalURL)
 	}
 
 	if collectionID = parseCollectionIDFromDNSName(r.Host); collectionID != "" {
@@ -369,7 +372,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 
 	if tokens == nil {
 		if !credentialsOK {
-			http.Error(w, fmt.Sprintf("Authorization tokens were not accepted because %v, and no anonymous user token is configured.", reasonNotAcceptingCredentials), http.StatusUnauthorized)
+			http.Error(w, fmt.Sprintf("Authorization tokens are not accepted here: %v, and no anonymous user token is configured.", reasonNotAcceptingCredentials), http.StatusUnauthorized)
 		} else {
 			http.Error(w, fmt.Sprintf("No authorization token in request, and no anonymous user token is configured."), http.StatusUnauthorized)
 		}
