@@ -6,6 +6,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"html"
 	"html/template"
 	"io"
@@ -184,6 +185,14 @@ var (
 	}
 )
 
+func StripDefaultPort(host string) string {
+	// Will consider port 80 and port 443 to be the same vhost.  I think that's fine.
+	if strings.HasSuffix(host, ":80") || strings.HasSuffix(host, ":443") {
+		return host[0:strings.Index(host, ":")]
+	}
+	return host
+}
+
 // ServeHTTP implements http.Handler.
 func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	h.setupOnce.Do(h.setup)
@@ -240,12 +249,17 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	var attachment bool
 	var useSiteFS bool
 	credentialsOK := h.Config.cluster.Collections.TrustAllContent
+	reasonNotAcceptingCredentials := ""
 
-	if r.Host != "" && r.Host == h.Config.cluster.Services.WebDAVDownload.ExternalURL.Host {
+	if r.Host != "" && StripDefaultPort(r.Host) == StripDefaultPort(h.Config.cluster.Services.WebDAVDownload.ExternalURL.Host) {
 		credentialsOK = true
 		attachment = true
 	} else if r.FormValue("disposition") == "attachment" {
 		attachment = true
+	}
+
+	if !credentialsOK {
+		reasonNotAcceptingCredentials = fmt.Sprintf("Collections.TrustAllContent is false and provided virtual host '%s' did not match either Services.WebDAV or Services.WebDAVDownload", r.Host)
 	}
 
 	if collectionID = parseCollectionIDFromDNSName(r.Host); collectionID != "" {
@@ -278,6 +292,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			// data. Tokens provided with the request are
 			// ignored.
 			credentialsOK = false
+			reasonNotAcceptingCredentials = "the '/collections/UUID/PATH' form only works for public data"
 		}
 	}
 
@@ -346,7 +361,19 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	}
 
 	if tokens == nil {
-		tokens = append(reqTokens, h.Config.cluster.Users.AnonymousUserToken)
+		tokens = reqTokens
+		if h.Config.cluster.Users.AnonymousUserToken != "" {
+			tokens = append(tokens, h.Config.cluster.Users.AnonymousUserToken)
+		}
+	}
+
+	if tokens == nil {
+		if !credentialsOK {
+			http.Error(w, fmt.Sprintf("Authorization tokens were not accepted because %v, and no anonymous user token is configured.", reasonNotAcceptingCredentials), http.StatusUnauthorized)
+		} else {
+			http.Error(w, fmt.Sprintf("No authorization token in request, and no anonymous user token is configured."), http.StatusUnauthorized)
+		}
+		return
 	}
 
 	if len(targetPath) > 0 && targetPath[0] == "_" {

@@ -193,11 +193,18 @@ func (s *IntegrationSuite) TestVhost404(c *check.C) {
 // the token is invalid.
 type authorizer func(*http.Request, string) int
 
-func (s *IntegrationSuite) TestVhostViaAuthzHeader(c *check.C) {
-	s.doVhostRequests(c, authzViaAuthzHeader)
+func (s *IntegrationSuite) TestVhostViaAuthzHeaderOAuth2(c *check.C) {
+	s.doVhostRequests(c, authzViaAuthzHeaderOAuth2)
 }
-func authzViaAuthzHeader(r *http.Request, tok string) int {
-	r.Header.Add("Authorization", "OAuth2 "+tok)
+func authzViaAuthzHeaderOAuth2(r *http.Request, tok string) int {
+	r.Header.Add("Authorization", "Bearer "+tok)
+	return http.StatusUnauthorized
+}
+func (s *IntegrationSuite) TestVhostViaAuthzHeaderBearer(c *check.C) {
+	s.doVhostRequests(c, authzViaAuthzHeaderBearer)
+}
+func authzViaAuthzHeaderBearer(r *http.Request, tok string) int {
+	r.Header.Add("Authorization", "Bearer "+tok)
 	return http.StatusUnauthorized
 }
 
@@ -315,6 +322,28 @@ func (s *IntegrationSuite) doVhostRequestsWithHostPath(c *check.C, authz authori
 			} else {
 				c.Check(body, check.Equals, unauthorizedMessage+"\n")
 			}
+		}
+	}
+}
+
+func (s *IntegrationSuite) TestVhostPortMatch(c *check.C) {
+	for _, port := range []string{"80", "443", "8000"} {
+		s.testServer.Config.cluster.Services.WebDAVDownload.ExternalURL.Host = fmt.Sprintf("download.example.com:%v", port)
+		u := mustParseURL(fmt.Sprintf("http://download.example.com/by_id/%v/foo", arvadostest.FooCollection))
+		req := &http.Request{
+			Method:     "GET",
+			Host:       u.Host,
+			URL:        u,
+			RequestURI: u.RequestURI(),
+			Header:     http.Header{"Authorization": []string{"Bearer " + arvadostest.ActiveToken}},
+		}
+		req, resp := s.doReq(req)
+		code, _ := resp.Code, resp.Body.String()
+
+		if port == "8000" {
+			c.Check(code, check.Equals, 401)
+		} else {
+			c.Check(code, check.Equals, 200)
 		}
 	}
 }
@@ -743,7 +772,7 @@ func (s *IntegrationSuite) testDirectoryListing(c *check.C) {
 		{
 			// URLs of this form ignore authHeader, and
 			// FooAndBarFilesInDirUUID isn't public, so
-			// this returns 404.
+			// this returns 401.
 			uri:    "download.example.com/collections/" + arvadostest.FooAndBarFilesInDirUUID + "/",
 			header: authHeader,
 			expect: nil,
@@ -886,7 +915,11 @@ func (s *IntegrationSuite) testDirectoryListing(c *check.C) {
 			c.Check(req.URL.Path, check.Equals, trial.redirect, comment)
 		}
 		if trial.expect == nil {
-			c.Check(resp.Code, check.Equals, http.StatusNotFound, comment)
+			if s.testServer.Config.cluster.Users.AnonymousUserToken == "" {
+				c.Check(resp.Code, check.Equals, http.StatusUnauthorized, comment)
+			} else {
+				c.Check(resp.Code, check.Equals, http.StatusNotFound, comment)
+			}
 		} else {
 			c.Check(resp.Code, check.Equals, http.StatusOK, comment)
 			for _, e := range trial.expect {
@@ -907,7 +940,11 @@ func (s *IntegrationSuite) testDirectoryListing(c *check.C) {
 		resp = httptest.NewRecorder()
 		s.testServer.Handler.ServeHTTP(resp, req)
 		if trial.expect == nil {
-			c.Check(resp.Code, check.Equals, http.StatusNotFound, comment)
+			if s.testServer.Config.cluster.Users.AnonymousUserToken == "" {
+				c.Check(resp.Code, check.Equals, http.StatusUnauthorized, comment)
+			} else {
+				c.Check(resp.Code, check.Equals, http.StatusNotFound, comment)
+			}
 		} else {
 			c.Check(resp.Code, check.Equals, http.StatusOK, comment)
 		}
@@ -923,7 +960,11 @@ func (s *IntegrationSuite) testDirectoryListing(c *check.C) {
 		resp = httptest.NewRecorder()
 		s.testServer.Handler.ServeHTTP(resp, req)
 		if trial.expect == nil {
-			c.Check(resp.Code, check.Equals, http.StatusNotFound, comment)
+			if s.testServer.Config.cluster.Users.AnonymousUserToken == "" {
+				c.Check(resp.Code, check.Equals, http.StatusUnauthorized, comment)
+			} else {
+				c.Check(resp.Code, check.Equals, http.StatusNotFound, comment)
+			}
 		} else {
 			c.Check(resp.Code, check.Equals, http.StatusMultiStatus, comment)
 			for _, e := range trial.expect {
