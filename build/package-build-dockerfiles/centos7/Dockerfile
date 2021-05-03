@@ -31,7 +31,7 @@ RUN cd /usr/local/src \
 && ln -sf /usr/local/src/bash-4.4.12/bash /bin/bash
 
 # Install golang binary
-ADD generated/go1.13.4.linux-amd64.tar.gz /usr/local/
+ADD generated/go1.16.3.linux-amd64.tar.gz /usr/local/
 RUN ln -s /usr/local/go/bin/go /usr/local/bin/
 
 # Install nodejs and npm

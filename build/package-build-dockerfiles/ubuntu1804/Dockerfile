@@ -25,7 +25,7 @@ RUN gpg --import --no-tty /tmp/mpapis.asc && \
     /usr/local/rvm/bin/rvm-exec default gem install fpm --version 1.10.2
 
 # Install golang binary
-ADD generated/go1.13.4.linux-amd64.tar.gz /usr/local/
+ADD generated/go1.16.3.linux-amd64.tar.gz /usr/local/
 RUN ln -s /usr/local/go/bin/go /usr/local/bin/
 
 # Install nodejs and npm
