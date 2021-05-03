@@ -189,9 +189,9 @@ func stripDefaultPort(host string) string {
 	// Will consider port 80 and port 443 to be the same vhost.  I think that's fine.
 	u := &url.URL{Host: host}
 	if p := u.Port(); p == "80" || p == "443" {
-		return u.Hostname()
+		return strings.ToLower(u.Hostname())
 	} else {
-		return host
+		return strings.ToLower(host)
 	}
 }
 
