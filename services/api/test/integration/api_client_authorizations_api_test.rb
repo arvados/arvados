@@ -167,4 +167,16 @@ class ApiClientAuthorizationsApiTest < ActionDispatch::IntegrationTest
       end
     end
   end
+
+  test "get current token using salted token" do
+    salted = salt_token(fixture: :active, remote: 'abcde')
+    get('/arvados/v1/api_client_authorizations/current',
+        params: {remote: 'abcde'},
+        headers: {'HTTP_AUTHORIZATION' => "Bearer #{salted}"})
+    assert_response :success
+    assert_equal(json_response['uuid'], api_client_authorizations(:active).uuid)
+    assert_equal(json_response['scopes'], ['all'])
+    assert_not_nil(json_response['expires_at'])
+    assert_nil(json_response['api_token'])
+  end
 end

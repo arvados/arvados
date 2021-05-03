@@ -25,6 +25,7 @@ class ArvadosApiToken
     reader_tokens = nil
     if params["remote"] && request.get? && (
          request.path.start_with?('/arvados/v1/groups') ||
+         request.path.start_with?('/arvados/v1/api_client_authorizations/current') ||
          request.path.start_with?('/arvados/v1/users/current'))
       # Request from a remote API server, asking to validate a salted
       # token.
