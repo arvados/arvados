@@ -132,7 +132,6 @@ func (runner runPassenger) Run(ctx context.Context, fail func(error), super *Sup
 			"passenger", "start",
 			"--address", host,
 			"--port", port,
-			"--log-file", "/dev/stderr",
 			"--log-level", loglevel,
 			"--no-friendly-error-pages",
 			"--disable-anonymous-telemetry",
