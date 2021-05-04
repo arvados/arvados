@@ -81,6 +81,15 @@ class Arvados::V1::ApiClientAuthorizationsControllerTest < ActionController::Tes
     end
   end
 
+  [:admin, :active].each do |token|
+    test "using '#{token}', get token details via 'current'" do
+      authorize_with token
+      get :current
+      assert_response 200
+      assert_equal json_response['scopes'], ['all']
+    end
+  end
+
   [# anyone can look up the token they're currently using
    [:admin, :admin, 200, 200, 1],
    [:active, :active, 200, 200, 1],

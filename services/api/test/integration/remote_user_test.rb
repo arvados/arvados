@@ -67,6 +67,20 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
         res.status = @stub_status
         res.body = @stub_content.is_a?(String) ? @stub_content : @stub_content.to_json
       end
+      srv.mount_proc '/arvados/v1/api_client_authorizations/current' do |req, res|
+        if clusterid == 'zbbbb' and req.header['authorization'][0][10..14] == 'zbork'
+          # asking zbbbb about zbork should yield an error, zbbbb doesn't trust zbork
+          res.status = 401
+          return
+        end
+        res.status = @stub_token_status
+        if res.status == 200
+          res.body = {
+            uuid: api_client_authorizations(:active).uuid.sub('zzzzz', clusterid),
+            scopes: @stub_token_scopes,
+          }.to_json
+        end
+      end
       Thread.new do
         srv.start
       end
@@ -86,12 +100,39 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
       is_active: true,
       is_invited: true,
     }
+    @stub_token_status = 200
+    @stub_token_scopes = ["all"]
   end
 
   teardown do
     @remote_server.each do |srv|
       srv.stop
     end
+  end
+
+  test 'authenticate with remote token that has limited scope' do
+    get '/arvados/v1/collections',
+        params: {format: 'json'},
+        headers: auth(remote: 'zbbbb')
+    assert_response :success
+
+    @stub_token_scopes = ["GET /arvados/v1/users/current"]
+
+    # re-authorize before cache expires
+    get '/arvados/v1/collections',
+        params: {format: 'json'},
+        headers: auth(remote: 'zbbbb')
+    assert_response :success
+
+    # simulate cache expiry
+    ApiClientAuthorization.where('uuid like ?', 'zbbbb-%').
+      update_all(expires_at: db_current_time - 1.minute)
+
+    # re-authorize after cache expires
+    get '/arvados/v1/collections',
+        params: {format: 'json'},
+        headers: auth(remote: 'zbbbb')
+    assert_response 403
   end
 
   test 'authenticate with remote token' do
@@ -115,8 +156,7 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     assert_response :success
 
     # simulate cache expiry
-    ApiClientAuthorization.where(
-      uuid: salted_active_token(remote: 'zbbbb').split('/')[1]).
+    ApiClientAuthorization.where('uuid like ?', 'zbbbb-%').
       update_all(expires_at: db_current_time - 1.minute)
 
     # re-authorize after cache expires
