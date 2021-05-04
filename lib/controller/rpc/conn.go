@@ -152,7 +152,7 @@ func (conn *Conn) requestAndDecode(ctx context.Context, dst interface{}, ep arva
 	}
 	err = aClient.RequestAndDecodeContext(ctx, dst, ep.Method, path, body, params)
 	if err != nil && conn.RedactHostInErrors {
-		redacted := strings.Replace(err.Error(), conn.baseURL.String(), "//railsapi.internal", -1)
+		redacted := strings.Replace(err.Error(), strings.TrimSuffix(conn.baseURL.String(), "/"), "//railsapi.internal", -1)
 		if strings.HasPrefix(redacted, "request failed: ") {
 			redacted = strings.Replace(redacted, "request failed: ", "", -1)
 		}
