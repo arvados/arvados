@@ -327,23 +327,25 @@ func (s *IntegrationSuite) doVhostRequestsWithHostPath(c *check.C, authz authori
 }
 
 func (s *IntegrationSuite) TestVhostPortMatch(c *check.C) {
-	for _, port := range []string{"80", "443", "8000"} {
-		s.testServer.Config.cluster.Services.WebDAVDownload.ExternalURL.Host = fmt.Sprintf("download.example.com:%v", port)
-		u := mustParseURL(fmt.Sprintf("http://download.example.com/by_id/%v/foo", arvadostest.FooCollection))
-		req := &http.Request{
-			Method:     "GET",
-			Host:       u.Host,
-			URL:        u,
-			RequestURI: u.RequestURI(),
-			Header:     http.Header{"Authorization": []string{"Bearer " + arvadostest.ActiveToken}},
-		}
-		req, resp := s.doReq(req)
-		code, _ := resp.Code, resp.Body.String()
+	for _, host := range []string{"download.example.com", "DOWNLOAD.EXAMPLE.COM"} {
+		for _, port := range []string{"80", "443", "8000"} {
+			s.testServer.Config.cluster.Services.WebDAVDownload.ExternalURL.Host = fmt.Sprintf("download.example.com:%v", port)
+			u := mustParseURL(fmt.Sprintf("http://%v/by_id/%v/foo", host, arvadostest.FooCollection))
+			req := &http.Request{
+				Method:     "GET",
+				Host:       u.Host,
+				URL:        u,
+				RequestURI: u.RequestURI(),
+				Header:     http.Header{"Authorization": []string{"Bearer " + arvadostest.ActiveToken}},
+			}
+			req, resp := s.doReq(req)
+			code, _ := resp.Code, resp.Body.String()
 
-		if port == "8000" {
-			c.Check(code, check.Equals, 401)
-		} else {
-			c.Check(code, check.Equals, 200)
+			if port == "8000" {
+				c.Check(code, check.Equals, 401)
+			} else {
+				c.Check(code, check.Equals, 200)
+			}
 		}
 	}
 }
