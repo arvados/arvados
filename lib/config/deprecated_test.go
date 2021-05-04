@@ -47,6 +47,34 @@ func testLoadLegacyConfig(content []byte, mungeFlag string, c *check.C) (*arvado
 	return cluster, nil
 }
 
+func (s *LoadSuite) TestLegacyVolumeDriverParameters(c *check.C) {
+	logs := checkEquivalent(c, `
+Clusters:
+ z1111:
+  Volumes:
+   z1111-nyw5e-aaaaaaaaaaaaaaa:
+    Driver: s3
+    DriverParameters:
+     AccessKey: exampleaccesskey
+     SecretKey: examplesecretkey
+     Region: foobar
+     ReadTimeout: 1200s
+`, `
+Clusters:
+ z1111:
+  Volumes:
+   z1111-nyw5e-aaaaaaaaaaaaaaa:
+    Driver: s3
+    DriverParameters:
+     AccessKeyID: exampleaccesskey
+     SecretAccessKey: examplesecretkey
+     Region: foobar
+     ReadTimeout: 1200s
+`)
+	c.Check(logs, check.Matches, `(?ms).*deprecated or unknown config entry: .*AccessKey.*`)
+	c.Check(logs, check.Matches, `(?ms).*deprecated or unknown config entry: .*SecretKey.*`)
+}
+
 func (s *LoadSuite) TestDeprecatedNodeProfilesToServices(c *check.C) {
 	hostname, err := os.Hostname()
 	c.Assert(err, check.IsNil)

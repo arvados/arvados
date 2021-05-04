@@ -324,8 +324,8 @@ func (ldr *Loader) translateOldKeepstoreVolume(oldvol oldKeepstoreVolume) (arvad
 			StorageClasses: array2boolmap(oldvol.StorageClasses),
 		}
 		params = arvados.S3VolumeDriverParameters{
-			AccessKey:          string(bytes.TrimSpace(accesskeydata)),
-			SecretKey:          string(bytes.TrimSpace(secretkeydata)),
+			AccessKeyID:        string(bytes.TrimSpace(accesskeydata)),
+			SecretAccessKey:    string(bytes.TrimSpace(secretkeydata)),
 			Endpoint:           oldvol.Endpoint,
 			Region:             oldvol.Region,
 			Bucket:             oldvol.Bucket,

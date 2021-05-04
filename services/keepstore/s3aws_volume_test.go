@@ -123,11 +123,11 @@ func (s *StubbedS3AWSSuite) TestSignature(c *check.C) {
 	// as of June 24, 2020. Cf. https://forums.aws.amazon.com/ann.jspa?annID=5816
 	vol := S3AWSVolume{
 		S3VolumeDriverParameters: arvados.S3VolumeDriverParameters{
-			AccessKey: "xxx",
-			SecretKey: "xxx",
-			Endpoint:  stub.URL,
-			Region:    "test-region-1",
-			Bucket:    "test-bucket-name",
+			AccessKeyID:     "xxx",
+			SecretAccessKey: "xxx",
+			Endpoint:        stub.URL,
+			Region:          "test-region-1",
+			Bucket:          "test-bucket-name",
 		},
 		cluster: s.cluster,
 		logger:  ctxlog.TestLogger(c),
@@ -567,8 +567,8 @@ func (s *StubbedS3AWSSuite) newTestableVolume(c *check.C, cluster *arvados.Clust
 		S3AWSVolume: &S3AWSVolume{
 			S3VolumeDriverParameters: arvados.S3VolumeDriverParameters{
 				IAMRole:            iamRole,
-				AccessKey:          accessKey,
-				SecretKey:          secretKey,
+				AccessKeyID:        accessKey,
+				SecretAccessKey:    secretKey,
 				Bucket:             S3AWSTestBucketName,
 				Endpoint:           endpoint,
 				Region:             "test-region-1",

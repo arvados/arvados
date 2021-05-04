@@ -241,30 +241,33 @@ func (ldr *Loader) Load() (*arvados.Config, error) {
 		return nil, fmt.Errorf("transcoding config data: %s", err)
 	}
 
+	var loadFuncs []func(*arvados.Config) error
 	if !ldr.SkipDeprecated {
-		err = ldr.applyDeprecatedConfig(&cfg)
-		if err != nil {
-			return nil, err
-		}
+		loadFuncs = append(loadFuncs,
+			ldr.applyDeprecatedConfig,
+			ldr.applyDeprecatedVolumeDriverParameters,
+		)
 	}
 	if !ldr.SkipLegacy {
 		// legacy file is required when either:
 		// * a non-default location was specified
 		// * no primary config was loaded, and this is the
 		// legacy config file for the current component
-		for _, err := range []error{
-			ldr.loadOldEnvironmentVariables(&cfg),
-			ldr.loadOldKeepstoreConfig(&cfg),
-			ldr.loadOldKeepWebConfig(&cfg),
-			ldr.loadOldCrunchDispatchSlurmConfig(&cfg),
-			ldr.loadOldWebsocketConfig(&cfg),
-			ldr.loadOldKeepproxyConfig(&cfg),
-			ldr.loadOldGitHttpdConfig(&cfg),
-			ldr.loadOldKeepBalanceConfig(&cfg),
-		} {
-			if err != nil {
-				return nil, err
-			}
+		loadFuncs = append(loadFuncs,
+			ldr.loadOldEnvironmentVariables,
+			ldr.loadOldKeepstoreConfig,
+			ldr.loadOldKeepWebConfig,
+			ldr.loadOldCrunchDispatchSlurmConfig,
+			ldr.loadOldWebsocketConfig,
+			ldr.loadOldKeepproxyConfig,
+			ldr.loadOldGitHttpdConfig,
+			ldr.loadOldKeepBalanceConfig,
+		)
+	}
+	for _, f := range loadFuncs {
+		err = f(&cfg)
+		if err != nil {
+			return nil, err
 		}
 	}
 

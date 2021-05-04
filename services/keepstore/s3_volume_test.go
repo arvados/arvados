@@ -111,11 +111,11 @@ func (s *StubbedS3Suite) TestSignatureVersion(c *check.C) {
 	// Default V4 signature
 	vol := S3Volume{
 		S3VolumeDriverParameters: arvados.S3VolumeDriverParameters{
-			AccessKey: "xxx",
-			SecretKey: "xxx",
-			Endpoint:  stub.URL,
-			Region:    "test-region-1",
-			Bucket:    "test-bucket-name",
+			AccessKeyID:     "xxx",
+			SecretAccessKey: "xxx",
+			Endpoint:        stub.URL,
+			Region:          "test-region-1",
+			Bucket:          "test-bucket-name",
 		},
 		cluster: s.cluster,
 		logger:  ctxlog.TestLogger(c),
@@ -130,12 +130,12 @@ func (s *StubbedS3Suite) TestSignatureVersion(c *check.C) {
 	// Force V2 signature
 	vol = S3Volume{
 		S3VolumeDriverParameters: arvados.S3VolumeDriverParameters{
-			AccessKey:   "xxx",
-			SecretKey:   "xxx",
-			Endpoint:    stub.URL,
-			Region:      "test-region-1",
-			Bucket:      "test-bucket-name",
-			V2Signature: true,
+			AccessKeyID:     "xxx",
+			SecretAccessKey: "xxx",
+			Endpoint:        stub.URL,
+			Region:          "test-region-1",
+			Bucket:          "test-bucket-name",
+			V2Signature:     true,
 		},
 		cluster: s.cluster,
 		logger:  ctxlog.TestLogger(c),
@@ -160,8 +160,8 @@ func (s *StubbedS3Suite) TestIAMRoleCredentials(c *check.C) {
 	defer s.metadata.Close()
 
 	v := s.newTestableVolume(c, s.cluster, arvados.Volume{Replication: 2}, newVolumeMetricsVecs(prometheus.NewRegistry()), 5*time.Minute)
-	c.Check(v.AccessKey, check.Equals, "ASIAIOSFODNN7EXAMPLE")
-	c.Check(v.SecretKey, check.Equals, "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY")
+	c.Check(v.AccessKeyID, check.Equals, "ASIAIOSFODNN7EXAMPLE")
+	c.Check(v.SecretAccessKey, check.Equals, "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY")
 	c.Check(v.bucket.bucket.S3.Auth.AccessKey, check.Equals, "ASIAIOSFODNN7EXAMPLE")
 	c.Check(v.bucket.bucket.S3.Auth.SecretKey, check.Equals, "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY")
 
@@ -519,8 +519,8 @@ func (s *StubbedS3Suite) newTestableVolume(c *check.C, cluster *arvados.Cluster,
 		S3Volume: &S3Volume{
 			S3VolumeDriverParameters: arvados.S3VolumeDriverParameters{
 				IAMRole:            iamRole,
-				AccessKey:          accessKey,
-				SecretKey:          secretKey,
+				AccessKeyID:        accessKey,
+				SecretAccessKey:    secretKey,
 				Bucket:             TestBucketName,
 				Endpoint:           endpoint,
 				Region:             "test-region-1",

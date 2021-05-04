@@ -5,6 +5,7 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/url"
@@ -115,6 +116,49 @@ func (ldr *Loader) applyDeprecatedConfig(cfg *arvados.Config) error {
 		}
 
 		cfg.Clusters[id] = cluster
+	}
+	return nil
+}
+
+func (ldr *Loader) applyDeprecatedVolumeDriverParameters(cfg *arvados.Config) error {
+	for clusterID, cluster := range cfg.Clusters {
+		for volID, vol := range cluster.Volumes {
+			if vol.Driver == "s3" {
+				var params struct {
+					AccessKey       string `json:",omitempty"`
+					SecretKey       string `json:",omitempty"`
+					AccessKeyID     string
+					SecretAccessKey string
+				}
+				err := json.Unmarshal(vol.DriverParameters, &params)
+				if err != nil {
+					return fmt.Errorf("error loading %s.Volumes.%s.DriverParameters: %w", clusterID, volID, err)
+				}
+				if params.AccessKey != "" || params.SecretKey != "" {
+					if params.AccessKeyID != "" || params.SecretAccessKey != "" {
+						ldr.Logger.Warnf("ignoring old config keys %s.Volumes.%s.DriverParameters.AccessKey/SecretKey because new keys AccessKeyID/SecretAccessKey are also present", clusterID, volID)
+						continue
+					}
+					var allparams map[string]interface{}
+					err = json.Unmarshal(vol.DriverParameters, &allparams)
+					if err != nil {
+						return fmt.Errorf("error loading %s.Volumes.%s.DriverParameters: %w", clusterID, volID, err)
+					}
+					for k := range allparams {
+						if lk := strings.ToLower(k); lk == "accesskey" || lk == "secretkey" {
+							delete(allparams, k)
+						}
+					}
+					allparams["AccessKeyID"] = params.AccessKey
+					allparams["SecretAccessKey"] = params.SecretKey
+					vol.DriverParameters, err = json.Marshal(allparams)
+					if err != nil {
+						return err
+					}
+					cluster.Volumes[volID] = vol
+				}
+			}
+		}
 	}
 	return nil
 }
