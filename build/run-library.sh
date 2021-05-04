@@ -660,6 +660,10 @@ fpm_build_virtualenv () {
     COMMAND_ARR+=('--depends' "$i")
   done
 
+  for i in "${fpm_depends[@]}"; do
+    COMMAND_ARR+=('--replaces' "python-$PKG")
+  done
+
   # make sure the systemd service file ends up in the right place
   # used by arvados-docker-cleaner
   if [[ -e "${systemd_unit}" ]]; then
