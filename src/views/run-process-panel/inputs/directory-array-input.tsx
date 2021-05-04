@@ -30,6 +30,7 @@ import { ResourceKind } from '~/models/resource';
 
 export interface DirectoryArrayInputProps {
     input: DirectoryArrayCommandInputParameter;
+    options?: { showOnlyOwned: boolean, showOnlyWritable: boolean };
 }
 
 export const DirectoryArrayInput = ({ input }: DirectoryArrayInputProps) =>
@@ -93,7 +94,9 @@ const mapStateToProps = createStructuredSelector({
 });
 
 const DirectoryArrayInputComponent = connect(mapStateToProps)(
-    class DirectoryArrayInputComponent extends React.Component<DirectoryArrayInputComponentProps & GenericInputProps & DispatchProp, DirectoryArrayInputComponentState> {
+    class DirectoryArrayInputComponent extends React.Component<DirectoryArrayInputComponentProps & GenericInputProps & DispatchProp & {
+        options?: { showOnlyOwned: boolean, showOnlyWritable: boolean };
+    }, DirectoryArrayInputComponentState> {
         state: DirectoryArrayInputComponentState = {
             open: false,
             directories: [],
@@ -241,6 +244,7 @@ const DirectoryArrayInputComponent = connect(mapStateToProps)(
                 <DialogActions>
                     <Button onClick={this.closeDialog}>Cancel</Button>
                     <Button
+                        data-cy='ok-button'
                         variant='contained'
                         color='primary'
                         onClick={this.submit}>Ok</Button>
@@ -276,6 +280,7 @@ const DirectoryArrayInputComponent = connect(mapStateToProps)(
                             pickerId={this.props.commandInput.id}
                             includeCollections
                             showSelection
+                            options={this.props.options}
                             toggleItemSelection={this.refreshDirectories} />
                     </div>
                     <Divider />

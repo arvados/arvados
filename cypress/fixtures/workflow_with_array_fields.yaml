@@ -1,0 +1,122 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
+---
+"$graph":
+- "$namespaces":
+    arv: http://arvados.org/cwl#
+  class: ExpressionTool
+  doc: get the gct and vcf files, add other files
+  expression: |
+    $\{
+      var fileArray = [];
+
+      // get files from collection
+      for (var j = 0; j < inputs.collectionArray.length; j++) {
+        for (var i = 0; i < inputs.collectionArray[j].listing.length; i++) {
+          var matchedName = inputs.collectionArray[j].listing[i].basename.match(/^(.+)(.gct|.vcf|.vcf.gz|.gct.tsv|.vcf.tsv)$/);
+          if (matchedName) {
+            var nameString = inputs.collectionArray[j].listing[i].basename.split(".")[0]
+            fileArray.push(inputs.collectionArray[j].listing[i])
+          }
+        }
+      }
+
+      // get any other files from the input file array
+      for (var i = 0; i < inputs.additionalFileArray.length; i++) {
+        fileArray.push(inputs.additionalFileArray[i])
+      }
+
+
+      return {
+        "collectedArray": fileArray,
+        "nameString": nameString
+      }
+
+    }
+  id: "#collectFiles.cwl"
+  inputs:
+  - id: "#collectFiles.cwl/additionalFileArray"
+    type:
+      items: File
+      type: array
+  - id: "#collectFiles.cwl/collectionArray"
+    type:
+      items: Directory
+      type: array
+  outputs:
+  - id: "#collectFiles.cwl/collectedArray"
+    type:
+      items: File
+      type: array
+  - id: "#collectFiles.cwl/nameString"
+    type: string
+  requirements:
+  - class: InlineJavascriptRequirement
+- class: Workflow
+  doc: A workflow to collect .gct and .vcf files files and store them together with
+    specified metainformation files. Mostly used to create a collection for genestack
+    upload. Can only be run on the WB2.
+  hints:
+  - class: ResourceRequirement
+    coresMin: 1
+    ramMin: 85000
+  id: "#main"
+  inputs:
+  - default:
+    - basename: metainfo.txt
+      class: File
+      location: keep:1cd1dbc27dc10fa8aaaf8fa19efd3bb8+237/metainfo.txt
+      nameext: ".txt"
+      nameroot: metainfo
+      size: 0
+    - basename: test11.txt
+      class: File
+      location: keep:1cd1dbc27dc10fa8aaaf8fa19efd3bb8+237/test11.txt
+      nameext: ".txt"
+      nameroot: test11
+      size: 0
+    doc: This input allows you to add any number of additional files to be integrated
+      in the output collection.
+    id: "#main/additionalFileArray"
+    label: Files
+    type:
+      items: File
+      type: array
+  - default:
+    - basename: collection1
+      class: Directory
+      location: keep:1cd1dbc27dc10fa8aaaf8fa19efd3bb8+237/collection1
+    - basename: collection2
+      class: Directory
+      location: keep:1cd1dbc27dc10fa8aaaf8fa19efd3bb8+237/collection2
+    doc: This input allows you to specify collections to integrate. From these collections,
+      all files that end with .gct or .vcf will be extracted.
+    id: "#main/collectionArray"
+    label: Collections
+    type:
+      items: Directory
+      type: array
+  outputs:
+  - id: "#main/genestackArray"
+    outputSource: "#main/collectFiles/collectedArray"
+    type:
+      items: File
+      type: array
+  requirements:
+  - class: SubworkflowFeatureRequirement
+  - class: ScatterFeatureRequirement
+  - class: StepInputExpressionRequirement
+  - class: InlineJavascriptRequirement
+  steps:
+  - id: "#main/collectFiles"
+    in:
+    - id: "#main/collectFiles/additionalFileArray"
+      source: "#main/additionalFileArray"
+    - id: "#main/collectFiles/collectionArray"
+      source: "#main/collectionArray"
+    out:
+    - "#main/collectFiles/collectedArray"
+    run: "#collectFiles.cwl"
+cwlVersion: v1.0

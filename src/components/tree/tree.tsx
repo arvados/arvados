@@ -155,6 +155,9 @@ interface FlatTreeProps {
     getProperArrowAnimation: Function;
     itemsMap?: Map<string, TreeItem<any>>;
     classes: any;
+    showSelection: any;
+    useRadioButtons?: boolean;
+    handleCheckboxChange: Function;
 }
 
 const FLAT_TREE_ACTIONS = {
@@ -163,7 +166,7 @@ const FLAT_TREE_ACTIONS = {
     toggleActive: 'TOGGLE_ACTIVE',
 };
 
-const ItemIcon = React.memo(({type, kind, active, groupClass, classes}: any) => {
+const ItemIcon = React.memo(({ type, kind, active, groupClass, classes }: any) => {
     let Icon = ProjectIcon;
 
     if (groupClass === GroupClass.FILTER) {
@@ -184,7 +187,7 @@ const ItemIcon = React.memo(({type, kind, active, groupClass, classes}: any) => 
     }
 
     if (kind) {
-        switch(kind) {
+        switch (kind) {
             case ResourceKind.COLLECTION:
                 Icon = CollectionIcon;
                 break;
@@ -231,6 +234,17 @@ const FlatTree = (props: FlatTreeProps) =>
                             {props.getProperArrowAnimation(item.status, item.items!)}
                         </ListItemIcon>
                     </i>
+                    {props.showSelection(item) && !props.useRadioButtons &&
+                        <Checkbox
+                            checked={item.selected}
+                            className={props.classes.checkbox}
+                            color="primary"
+                            onClick={props.handleCheckboxChange(item)} />}
+                    {props.showSelection(item) && props.useRadioButtons &&
+                        <Radio
+                            checked={item.selected}
+                            className={props.classes.checkbox}
+                            color="primary" />}
                     <div data-action={FLAT_TREE_ACTIONS.toggleActive} className={props.classes.renderContainer}>
                         <span style={{ display: 'flex', alignItems: 'center' }}>
                             <ItemIcon type={item.data.type} active={item.active} kind={item.data.kind} groupClass={item.data.kind === ResourceKind.GROUP ? item.data.groupClass : ''} classes={props.classes} />
@@ -293,29 +307,32 @@ export const Tree = withStyles(styles)(
                         {
                             it.open && it.items && it.items.length > 0 &&
                                 it.flatTree ?
-                                    <FlatTree
-                                        it={it}
-                                        itemsMap={itemsMap}
-                                        classes={this.props.classes}
-                                        levelIndentation={levelIndentation}
+                                <FlatTree
+                                    it={it}
+                                    itemsMap={itemsMap}
+                                    showSelection={showSelection}
+                                    classes={this.props.classes}
+                                    useRadioButtons={useRadioButtons}
+                                    levelIndentation={levelIndentation}
+                                    handleCheckboxChange={this.handleCheckboxChange}
+                                    onContextMenu={this.props.onContextMenu}
+                                    handleToggleItemOpen={this.handleToggleItemOpen}
+                                    toggleItemActive={this.props.toggleItemActive}
+                                    getToggableIconClassNames={this.getToggableIconClassNames}
+                                    getProperArrowAnimation={this.getProperArrowAnimation}
+                                /> :
+                                <Collapse in={it.open} timeout="auto" unmountOnExit>
+                                    <Tree
+                                        showSelection={this.props.showSelection}
+                                        items={it.items}
+                                        render={render}
+                                        disableRipple={disableRipple}
+                                        toggleItemOpen={toggleItemOpen}
+                                        toggleItemActive={toggleItemActive}
+                                        level={level + 1}
                                         onContextMenu={this.props.onContextMenu}
-                                        handleToggleItemOpen={this.handleToggleItemOpen}
-                                        toggleItemActive={this.props.toggleItemActive}
-                                        getToggableIconClassNames={this.getToggableIconClassNames}
-                                        getProperArrowAnimation={this.getProperArrowAnimation}
-                                    /> :
-                                    <Collapse in={it.open} timeout="auto" unmountOnExit>
-                                        <Tree
-                                            showSelection={this.props.showSelection}
-                                            items={it.items}
-                                            render={render}
-                                            disableRipple={disableRipple}
-                                            toggleItemOpen={toggleItemOpen}
-                                            toggleItemActive={toggleItemActive}
-                                            level={level + 1}
-                                            onContextMenu={this.props.onContextMenu}
-                                            toggleItemSelection={this.props.toggleItemSelection} />
-                                    </Collapse>
+                                        toggleItemSelection={this.props.toggleItemSelection} />
+                                </Collapse>
                         }
                     </div>)}
             </List>;
