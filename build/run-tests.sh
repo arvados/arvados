@@ -1147,6 +1147,14 @@ test_all() {
     do_test apps/workbench_profile
 }
 
+test_go() {
+    do_test gofmt
+    for g in "${gostuff[@]}"
+    do
+        do_test "$g" go
+    done
+}
+
 help_interactive() {
     echo "== Interactive commands:"
     echo "TARGET                 (short for 'test DIR')"

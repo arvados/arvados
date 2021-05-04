@@ -22,7 +22,7 @@ func (d *Duration) UnmarshalJSON(data []byte) error {
 	}
 	// Mimic error message returned by ParseDuration for a number
 	// without units.
-	return fmt.Errorf("missing unit in duration %s", data)
+	return fmt.Errorf("missing unit in duration %q", data)
 }
 
 // MarshalJSON implements json.Marshaler.
