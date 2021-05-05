@@ -69,8 +69,9 @@ const init = (config: Config) => async (dispatch: Dispatch, getState: () => Root
         dispatch(progressIndicatorActions.START_WORKING(WORKBENCH_LOADING_SCREEN));
         try {
             await dispatch<any>(saveApiToken(token));
-        } catch (e) {}
-        dispatch(progressIndicatorActions.STOP_WORKING(WORKBENCH_LOADING_SCREEN));
+        } finally {
+            dispatch(progressIndicatorActions.STOP_WORKING(WORKBENCH_LOADING_SCREEN));
+        }
     }
 };
 

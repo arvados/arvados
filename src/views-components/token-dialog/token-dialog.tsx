@@ -28,6 +28,7 @@ import { DefaultCodeSnippet } from '~/components/default-code-snippet/default-co
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
 import { getNewExtraToken } from '~/store/auth/auth-action';
 import { DetailsAttributeComponent } from '~/components/details-attribute/details-attribute';
+import * as moment from 'moment';
 
 type CssRules = 'link' | 'paper' | 'button' | 'actionButton' | 'codeBlock';
 
@@ -95,7 +96,7 @@ unset ARVADOS_API_HOST_INSECURE`
     render() {
         const { classes, open, closeDialog, ...data } = this.props;
         const tokenExpiration = data.tokenExpiration
-            ? data.tokenExpiration.toLocaleString()
+            ? `${data.tokenExpiration.toLocaleString()} (${moment(data.tokenExpiration).fromNow()})`
             : `This token does not have an expiration date`;
 
         return <Dialog
