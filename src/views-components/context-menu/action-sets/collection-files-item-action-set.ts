@@ -50,15 +50,4 @@ const writableActionSet: ContextMenuActionSet = [[
 
 export const collectionDirectoryItemActionSet: ContextMenuActionSet = readOnlyCollectionDirectoryItemActionSet.concat(writableActionSet);
 
-// export const collectionDirectoryItemActionSet: ContextMenuActionSet = [[
-//     ...readOnlyCollectionDirectoryItemActionSet.reduce((prev, next) => prev.concat(next), []),
-//     ...writableActionSet.reduce((prev, next) => prev.concat(next), []),
-// ]];
-
-// export const collectionFileItemActionSet: ContextMenuActionSet = [[
-//     ...readOnlyCollectionFileItemActionSet.reduce((prev, next) => prev.concat(next), []),
-//     ...writableActionSet.reduce((prev, next) => prev.concat(next), []),
-// ]];
-
-
 export const collectionFileItemActionSet: ContextMenuActionSet = readOnlyCollectionFileItemActionSet.concat(writableActionSet);
