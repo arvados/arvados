@@ -9,11 +9,7 @@ import { openFileRemoveDialog, openRenameFileDialog } from '~/store/collection-p
 import { CollectionFileViewerAction } from '~/views-components/context-menu/actions/collection-file-viewer-action';
 import { CollectionCopyToClipboardAction } from "../actions/collection-copy-to-clipboard-action";
 
-export const readOnlyCollectionFilesItemActionSet: ContextMenuActionSet = [[
-    {
-        component: DownloadCollectionFileAction,
-        execute: () => { return; }
-    },
+export const readOnlyCollectionDirectoryItemActionSet: ContextMenuActionSet = [[
     {
         component: CollectionFileViewerAction,
         execute: () => { return; },
@@ -24,7 +20,15 @@ export const readOnlyCollectionFilesItemActionSet: ContextMenuActionSet = [[
     }
 ]];
 
-export const collectionFilesItemActionSet: ContextMenuActionSet = readOnlyCollectionFilesItemActionSet.concat([[
+export const readOnlyCollectionFileItemActionSet: ContextMenuActionSet = [[
+    {
+        component: DownloadCollectionFileAction,
+        execute: () => { return; }
+    },
+    ...readOnlyCollectionDirectoryItemActionSet.reduce((prev, next) => prev.concat(next), []),
+]];
+
+const writableActionSet: ContextMenuActionSet = [[
     {
         name: "Rename",
         icon: RenameIcon,
@@ -42,4 +46,8 @@ export const collectionFilesItemActionSet: ContextMenuActionSet = readOnlyCollec
             dispatch<any>(openFileRemoveDialog(resource.uuid));
         }
     }
-]]);
+]];
+
+export const collectionDirectoryItemActionSet: ContextMenuActionSet = readOnlyCollectionDirectoryItemActionSet.concat(writableActionSet);
+
+export const collectionFileItemActionSet: ContextMenuActionSet = readOnlyCollectionFileItemActionSet.concat(writableActionSet);
