@@ -59,6 +59,7 @@ class TestContainer(unittest.TestCase):
 
     def setUp(self):
         cwltool.process._names = set()
+        arv_docker_clear_cache()
 
     def helper(self, runner, enable_reuse=True):
         document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema(INTERNAL_VERSION)
@@ -169,7 +170,6 @@ class TestContainer(unittest.TestCase):
     # For the remaining fields, the defaults will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
     @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
     def test_resource_requirements(self, keepdocker):
-        arv_docker_clear_cache()
         runner = mock.MagicMock()
         runner.ignore_docker_for_reuse = False
         runner.intermediate_output_ttl = 3600
@@ -264,7 +264,6 @@ class TestContainer(unittest.TestCase):
     @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
     @mock.patch("arvados.collection.Collection")
     def test_initial_work_dir(self, collection_mock, keepdocker):
-        arv_docker_clear_cache()
         runner = mock.MagicMock()
         runner.ignore_docker_for_reuse = False
         runner.intermediate_output_ttl = 0
@@ -392,8 +391,6 @@ class TestContainer(unittest.TestCase):
     # Test redirecting stdin/stdout/stderr
     @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
     def test_redirects(self, keepdocker):
-        arv_docker_clear_cache()
-
         runner = mock.MagicMock()
         runner.ignore_docker_for_reuse = False
         runner.intermediate_output_ttl = 0
@@ -617,8 +614,6 @@ class TestContainer(unittest.TestCase):
     # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
     @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
     def test_mounts(self, keepdocker):
-        arv_docker_clear_cache()
-
         runner = mock.MagicMock()
         runner.ignore_docker_for_reuse = False
         runner.intermediate_output_ttl = 0
@@ -708,8 +703,6 @@ class TestContainer(unittest.TestCase):
     # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
     @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
     def test_secrets(self, keepdocker):
-        arv_docker_clear_cache()
-
         runner = mock.MagicMock()
         runner.ignore_docker_for_reuse = False
         runner.intermediate_output_ttl = 0
@@ -805,8 +798,6 @@ class TestContainer(unittest.TestCase):
     # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
     @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
     def test_timelimit(self, keepdocker):
-        arv_docker_clear_cache()
-
         runner = mock.MagicMock()
         runner.ignore_docker_for_reuse = False
         runner.intermediate_output_ttl = 0
@@ -847,6 +838,7 @@ class TestContainer(unittest.TestCase):
 class TestWorkflow(unittest.TestCase):
     def setUp(self):
         cwltool.process._names = set()
+        arv_docker_clear_cache()
 
     def helper(self, runner, enable_reuse=True):
         document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.0")
@@ -883,7 +875,6 @@ class TestWorkflow(unittest.TestCase):
     @mock.patch("arvados.collection.Collection")
     @mock.patch('arvados.commands.keepdocker.list_images_in_arv')
     def test_run(self, list_images_in_arv, mockcollection, mockcollectionreader):
-        arv_docker_clear_cache()
         arvados_cwl.add_arv_hints()
 
         api = mock.MagicMock()
@@ -1001,7 +992,6 @@ class TestWorkflow(unittest.TestCase):
     @mock.patch("arvados.collection.Collection")
     @mock.patch('arvados.commands.keepdocker.list_images_in_arv')
     def test_overall_resource_singlecontainer(self, list_images_in_arv, mockcollection, mockcollectionreader):
-        arv_docker_clear_cache()
         arvados_cwl.add_arv_hints()
 
         api = mock.MagicMock()
