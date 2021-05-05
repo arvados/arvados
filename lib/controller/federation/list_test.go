@@ -300,7 +300,7 @@ func (s *CollectionListSuite) TestCollectionListMultiSiteExtraFilters(c *check.C
 
 func (s *CollectionListSuite) TestCollectionListMultiSiteWithCount(c *check.C) {
 	for _, count := range []string{"", "exact"} {
-		s.SetUpTest(c)
+		s.SetUpTest(c) // Reset backends / call counters
 		s.test(c, listTrial{
 			count: count,
 			limit: -1,
@@ -316,7 +316,7 @@ func (s *CollectionListSuite) TestCollectionListMultiSiteWithCount(c *check.C) {
 
 func (s *CollectionListSuite) TestCollectionListMultiSiteWithLimit(c *check.C) {
 	for _, limit := range []int64{0, 1, 2} {
-		s.SetUpTest(c)
+		s.SetUpTest(c) // Reset backends / call counters
 		s.test(c, listTrial{
 			count: "none",
 			limit: limit,
@@ -333,7 +333,7 @@ func (s *CollectionListSuite) TestCollectionListMultiSiteWithLimit(c *check.C) {
 func (s *CollectionListSuite) TestCollectionListMultiSiteWithHighLimit(c *check.C) {
 	uuids := []string{s.uuids[0][0], s.uuids[1][0], s.uuids[2][0]}
 	for _, limit := range []int64{3, 4, 1234567890} {
-		s.SetUpTest(c)
+		s.SetUpTest(c) // Reset backends / call counters
 		s.test(c, listTrial{
 			count: "none",
 			limit: limit,
