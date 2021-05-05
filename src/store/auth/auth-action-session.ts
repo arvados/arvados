@@ -56,7 +56,7 @@ const getClusterConfig = async (origin: string, apiClient: AxiosInstance): Promi
     return null;
 };
 
-const getRemoteHostConfig = async (remoteHost: string, useApiClient?: AxiosInstance): Promise<Config | null> => {
+export const getRemoteHostConfig = async (remoteHost: string, useApiClient?: AxiosInstance): Promise<Config | null> => {
     const apiClient = useApiClient || Axios.create({ headers: {} });
 
     let url = remoteHost;

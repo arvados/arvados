@@ -107,6 +107,7 @@ echo "Launching arvados in test mode..."
 coproc arvboot (~/go/bin/arvados-server boot \
     -type test \
     -config ${ARVADOS_CONF} \
+    -no-workbench1 \
     -own-temporary-database \
     -timeout 20m 2> ${ARVADOS_LOG})
 trap cleanup ERR EXIT
