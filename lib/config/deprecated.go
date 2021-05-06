@@ -149,6 +149,7 @@ func (ldr *Loader) applyDeprecatedVolumeDriverParameters(cfg *arvados.Config) er
 							delete(allparams, k)
 						}
 					}
+					ldr.Logger.Warnf("using your old config keys %s.Volumes.%s.DriverParameters.AccessKey/SecretKey -- but you should rename them to AccessKeyID/SecretAccessKey", clusterID, volID)
 					allparams["AccessKeyID"] = params.AccessKey
 					allparams["SecretAccessKey"] = params.SecretKey
 					vol.DriverParameters, err = json.Marshal(allparams)

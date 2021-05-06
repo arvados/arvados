@@ -73,6 +73,7 @@ Clusters:
 `)
 	c.Check(logs, check.Matches, `(?ms).*deprecated or unknown config entry: .*AccessKey.*`)
 	c.Check(logs, check.Matches, `(?ms).*deprecated or unknown config entry: .*SecretKey.*`)
+	c.Check(logs, check.Matches, `(?ms).*using your old config keys z1111\.Volumes\.z1111-nyw5e-aaaaaaaaaaaaaaa\.DriverParameters\.AccessKey/SecretKey -- but you should rename them to AccessKeyID/SecretAccessKey.*`)
 }
 
 func (s *LoadSuite) TestDeprecatedNodeProfilesToServices(c *check.C) {
