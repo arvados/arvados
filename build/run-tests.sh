@@ -873,6 +873,9 @@ bundle_install_trylocal() {
     (
         set -e
         echo "(Running bundle install --local. 'could not find package' messages are OK.)"
+        if ! "$bundle" config set --local deployment 'false'; then
+          echo "error running bundle config set --local deployment 'false'"
+        fi
         if ! "$bundle" install --local --no-deployment; then
             echo "(Running bundle install again, without --local.)"
             "$bundle" install --no-deployment
@@ -898,6 +901,7 @@ install_gem() {
 }
 
 install_sdk/ruby() {
+    ruby --version
     install_gem arvados sdk/ruby
 }
 
