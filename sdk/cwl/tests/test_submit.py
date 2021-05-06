@@ -340,6 +340,7 @@ class TestSubmit(unittest.TestCase):
 
     def setUp(self):
         cwltool.process._names = set()
+        arvados_cwl.arvdocker.arv_docker_clear_cache()
 
     @stubs
     def test_error_when_multiple_storage_classes_specified(self, stubs):
@@ -1358,6 +1359,10 @@ class TestCreateWorkflow(unittest.TestCase):
     existing_workflow_uuid = "zzzzz-7fd4e-validworkfloyml"
     expect_workflow = StripYAMLComments(
         open("tests/wf/expect_upload_packed.cwl").read().rstrip())
+
+    def setUp(self):
+        cwltool.process._names = set()
+        arvados_cwl.arvdocker.arv_docker_clear_cache()
 
     @stubs
     def test_create(self, stubs):
