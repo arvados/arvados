@@ -111,6 +111,7 @@ navbar:
       - api/requests.html.textile.liquid
       - api/methods.html.textile.liquid
       - api/resources.html.textile.liquid
+      - api/tokens_sso.html.textile.liquid
     - Permission and authentication:
       - api/methods/api_client_authorizations.html.textile.liquid
       - api/methods/api_clients.html.textile.liquid
