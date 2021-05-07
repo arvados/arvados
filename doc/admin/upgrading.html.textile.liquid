@@ -39,6 +39,10 @@ h2(#main). development main (as of 2020-12-10)
 
 "Upgrading from 2.1.0":#v2_1_0
 
+h3. New spelling of S3 credential configs
+
+If you use the S3 driver for Keep volumes and specify credentials in your configuration file (as opposed to using an IAM role), you should change the spelling of the @AccessKey@ and @SecretKey@ config keys to @AccessKeyID@ and @SecretAccessKey@. If you don't update them, the previous spellings will still be accepted, but warnings will be logged at server startup.
+
 h3. New proxy parameters for arvados-controller
 
 In your Nginx configuration file (@/etc/nginx/conf.d/arvados-api-and-controller.conf@), add the following lines to the @location /@ block with @http://controller@ (see "Update nginx configuration":{{site.baseurl}}/install/install-api-server.html#update-nginx for an example) and reload/restart Nginx (@sudo nginx -s reload@).
