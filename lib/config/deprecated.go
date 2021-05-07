@@ -123,7 +123,7 @@ func (ldr *Loader) applyDeprecatedConfig(cfg *arvados.Config) error {
 func (ldr *Loader) applyDeprecatedVolumeDriverParameters(cfg *arvados.Config) error {
 	for clusterID, cluster := range cfg.Clusters {
 		for volID, vol := range cluster.Volumes {
-			if vol.Driver == "s3" {
+			if vol.Driver == "S3" {
 				var params struct {
 					AccessKey       string `json:",omitempty"`
 					SecretKey       string `json:",omitempty"`

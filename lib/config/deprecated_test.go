@@ -53,7 +53,7 @@ Clusters:
  z1111:
   Volumes:
    z1111-nyw5e-aaaaaaaaaaaaaaa:
-    Driver: s3
+    Driver: S3
     DriverParameters:
      AccessKey: exampleaccesskey
      SecretKey: examplesecretkey
@@ -64,7 +64,7 @@ Clusters:
  z1111:
   Volumes:
    z1111-nyw5e-aaaaaaaaaaaaaaa:
-    Driver: s3
+    Driver: S3
     DriverParameters:
      AccessKeyID: exampleaccesskey
      SecretAccessKey: examplesecretkey
