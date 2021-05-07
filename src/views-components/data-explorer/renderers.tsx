@@ -5,7 +5,7 @@
 import * as React from 'react';
 import { Grid, Typography, withStyles, Tooltip, IconButton, Checkbox } from '@material-ui/core';
 import { FavoriteStar, PublicFavoriteStar } from '../favorite-star/favorite-star';
-import { ResourceKind, TrashableResource } from '~/models/resource';
+import { Resource, ResourceKind, TrashableResource } from '~/models/resource';
 import { ProjectIcon, FilterGroupIcon, CollectionIcon, ProcessIcon, DefaultIcon, ShareIcon, CollectionOldVersionIcon, WorkflowIcon } from '~/components/icon/icon';
 import { formatDate, formatFileSize, formatTime } from '~/common/formatters';
 import { resourceLabel } from '~/common/labels';
@@ -466,6 +466,38 @@ export const ResourceOwnerWithName =
             return <Typography style={{ color: theme.palette.primary.main }} inline noWrap>
                 {ownerName} ({uuid})
             </Typography>;
+        });
+
+export const ResponsiblePerson =
+    compose(
+        connect(
+            (state: RootState, props: { uuid: string }) => {
+                let responsiblePersonName = '';
+                let resource: Resource | undefined = getResource<GroupContentsResource & UserResource>(props.uuid)(state.resources);
+
+                while (resource && resource.kind !== ResourceKind.USER) {
+                    resource = getResource<GroupContentsResource & UserResource>(resource.ownerUuid)(state.resources);
+                }
+
+                if (resource && resource.kind === ResourceKind.USER) {
+                    responsiblePersonName = getUserFullname(resource as UserResource) || (resource as GroupContentsResource).name;
+                }
+
+                return { uuid: props.uuid, responsiblePersonName };
+            }),
+        withStyles({}, { withTheme: true }))
+        ((props: { uuid: string, responsiblePersonName: string, theme: ArvadosTheme }) => {
+            const { uuid, responsiblePersonName, theme } = props;
+
+            if (responsiblePersonName === '') {
+                return <Typography style={{ color: theme.palette.primary.main }} inline noWrap>
+                    {uuid}
+                </Typography>;
+            }
+
+            return <Typography style={{ color: theme.palette.primary.main }} inline noWrap>
+                {responsiblePersonName} ({uuid})
+                </Typography>;
         });
 
 const renderType = (type: string, subtype: string) =>

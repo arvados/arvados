@@ -32,7 +32,7 @@ import { getProgressIndicator } from '~/store/progress-indicator/progress-indica
 import { COLLECTION_PANEL_LOAD_FILES, loadCollectionFiles, COLLECTION_PANEL_LOAD_FILES_THRESHOLD } from '~/store/collection-panel/collection-panel-files/collection-panel-files-actions';
 import { Link } from 'react-router-dom';
 import { Link as ButtonLink } from '@material-ui/core';
-import { ResourceOwnerWithName } from '~/views-components/data-explorer/renderers';
+import { ResourceOwnerWithName, ResponsiblePerson } from '~/views-components/data-explorer/renderers';
 
 type CssRules = 'root'
     | 'button'
@@ -300,6 +300,11 @@ export const CollectionDetailsAttributes = (props: { item: CollectionResource, t
             <DetailsAttribute classLabel={classes.label} classValue={classes.value}
                 label='Owner' linkToUuid={item.ownerUuid}
                 uuidEnhancer={(uuid: string) => <ResourceOwnerWithName uuid={uuid} />} />
+        </Grid>
+        <Grid item xs={12} md={mdSize}>
+            <DetailsAttribute classLabel={classes.label} classValue={classes.value}
+                label='Responsible person' linkToUuid={item.ownerUuid}
+                uuidEnhancer={(uuid: string) => <ResponsiblePerson uuid={item.ownerUuid} />} />
         </Grid>
         <Grid item xs={12} md={mdSize}>
             <DetailsAttribute classLabel={classes.label} classValue={classes.value}
