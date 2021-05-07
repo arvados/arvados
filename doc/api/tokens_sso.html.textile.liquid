@@ -9,7 +9,9 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-Note: SSO authentication is still supported, but is considered deprecated. The new structure will handle login in controller. This documentation will remain as reference.
+{% include 'notebox_begin_warning' %}
+This page describes the deprecated login flow via the SSO server. SSO server authentication will be removed in a future Arvados release and should not be used for new installations. See "Set up web based login":{{site.baseurl}}/install/setup-login.html for more information.
+{% include 'notebox_end' %}
 
 All requests to the API server must have an API token.  API tokens can be issued by going though the login flow, or created via the API.  At this time, only browser based applications can perform login from email/password.  Command line applications and services must use an API token provided via the @ARVADOS_API_TOKEN@ environment variable or configuration file.
 
