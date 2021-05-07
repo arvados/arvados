@@ -148,9 +148,9 @@ func (v *S3Volume) GetDeviceID() string {
 }
 
 func (v *S3Volume) bootstrapIAMCredentials() error {
-	if v.AccessKey != "" || v.SecretKey != "" {
+	if v.AccessKeyID != "" || v.SecretAccessKey != "" {
 		if v.IAMRole != "" {
-			return errors.New("invalid DriverParameters: AccessKey and SecretKey must be blank if IAMRole is specified")
+			return errors.New("invalid DriverParameters: AccessKeyID and SecretAccessKey must be blank if IAMRole is specified")
 		}
 		return nil
 	}
@@ -175,7 +175,7 @@ func (v *S3Volume) bootstrapIAMCredentials() error {
 }
 
 func (v *S3Volume) newS3Client() *s3.S3 {
-	auth := aws.NewAuth(v.AccessKey, v.SecretKey, v.AuthToken, v.AuthExpiration)
+	auth := aws.NewAuth(v.AccessKeyID, v.SecretAccessKey, v.AuthToken, v.AuthExpiration)
 	client := s3.New(*auth, v.region)
 	if !v.V2Signature {
 		client.Signature = aws.V4Signature
@@ -225,7 +225,7 @@ func (v *S3Volume) updateIAMCredentials() (time.Duration, error) {
 		}
 		defer resp.Body.Close()
 		if resp.StatusCode == http.StatusNotFound {
-			return 0, fmt.Errorf("this instance does not have an IAM role assigned -- either assign a role, or configure AccessKey and SecretKey explicitly in DriverParameters (error getting %s: HTTP status %s)", url, resp.Status)
+			return 0, fmt.Errorf("this instance does not have an IAM role assigned -- either assign a role, or configure AccessKeyID and SecretAccessKey explicitly in DriverParameters (error getting %s: HTTP status %s)", url, resp.Status)
 		} else if resp.StatusCode != http.StatusOK {
 			return 0, fmt.Errorf("error getting %s: HTTP status %s", url, resp.Status)
 		}
@@ -260,7 +260,7 @@ func (v *S3Volume) updateIAMCredentials() (time.Duration, error) {
 	if err != nil {
 		return 0, fmt.Errorf("error decoding credentials from %s: %s", url, err)
 	}
-	v.AccessKey, v.SecretKey, v.AuthToken, v.AuthExpiration = cred.AccessKeyID, cred.SecretAccessKey, cred.Token, cred.Expiration
+	v.AccessKeyID, v.SecretAccessKey, v.AuthToken, v.AuthExpiration = cred.AccessKeyID, cred.SecretAccessKey, cred.Token, cred.Expiration
 	v.bucket.SetBucket(&s3.Bucket{
 		S3:   v.newS3Client(),
 		Name: v.Bucket,

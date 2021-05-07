@@ -192,7 +192,7 @@ func (v *S3AWSVolume) check(ec2metadataHostname string) error {
 
 	creds := aws.NewChainProvider(
 		[]aws.CredentialsProvider{
-			aws.NewStaticCredentialsProvider(v.AccessKey, v.SecretKey, v.AuthToken),
+			aws.NewStaticCredentialsProvider(v.AccessKeyID, v.SecretAccessKey, v.AuthToken),
 			ec2rolecreds.New(ec2metadata.New(cfg)),
 		})
 

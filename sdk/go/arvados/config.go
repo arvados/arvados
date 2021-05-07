@@ -279,8 +279,8 @@ type Volume struct {
 
 type S3VolumeDriverParameters struct {
 	IAMRole            string
-	AccessKey          string
-	SecretKey          string
+	AccessKeyID        string
+	SecretAccessKey    string
 	Endpoint           string
 	Region             string
 	Bucket             string

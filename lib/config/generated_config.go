@@ -1195,13 +1195,13 @@ Clusters:
         StorageClasses:
           default: true
           SAMPLE: true
-        Driver: s3
+        Driver: S3
         DriverParameters:
           # for s3 driver -- see
           # https://doc.arvados.org/install/configure-s3-object-storage.html
           IAMRole: aaaaa
-          AccessKey: aaaaa
-          SecretKey: aaaaa
+          AccessKeyID: aaaaa
+          SecretAccessKey: aaaaa
           Endpoint: ""
           Region: us-east-1a
           Bucket: aaaaa

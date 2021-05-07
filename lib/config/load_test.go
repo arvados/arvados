@@ -437,10 +437,12 @@ Clusters:
 `)
 }
 
-func checkEquivalent(c *check.C, goty, expectedy string) {
-	gotldr := testLoader(c, goty, nil)
+func checkEquivalent(c *check.C, goty, expectedy string) string {
+	var logbuf bytes.Buffer
+	gotldr := testLoader(c, goty, &logbuf)
 	expectedldr := testLoader(c, expectedy, nil)
 	checkEquivalentLoaders(c, gotldr, expectedldr)
+	return logbuf.String()
 }
 
 func checkEqualYAML(c *check.C, got, expected interface{}) {

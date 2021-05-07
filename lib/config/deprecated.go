@@ -5,6 +5,7 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/url"
@@ -115,6 +116,50 @@ func (ldr *Loader) applyDeprecatedConfig(cfg *arvados.Config) error {
 		}
 
 		cfg.Clusters[id] = cluster
+	}
+	return nil
+}
+
+func (ldr *Loader) applyDeprecatedVolumeDriverParameters(cfg *arvados.Config) error {
+	for clusterID, cluster := range cfg.Clusters {
+		for volID, vol := range cluster.Volumes {
+			if vol.Driver == "S3" {
+				var params struct {
+					AccessKey       string `json:",omitempty"`
+					SecretKey       string `json:",omitempty"`
+					AccessKeyID     string
+					SecretAccessKey string
+				}
+				err := json.Unmarshal(vol.DriverParameters, &params)
+				if err != nil {
+					return fmt.Errorf("error loading %s.Volumes.%s.DriverParameters: %w", clusterID, volID, err)
+				}
+				if params.AccessKey != "" || params.SecretKey != "" {
+					if params.AccessKeyID != "" || params.SecretAccessKey != "" {
+						return fmt.Errorf("cannot use old keys (AccessKey/SecretKey) and new keys (AccessKeyID/SecretAccessKey) at the same time in %s.Volumes.%s.DriverParameters -- you must remove the old config keys", clusterID, volID)
+						continue
+					}
+					var allparams map[string]interface{}
+					err = json.Unmarshal(vol.DriverParameters, &allparams)
+					if err != nil {
+						return fmt.Errorf("error loading %s.Volumes.%s.DriverParameters: %w", clusterID, volID, err)
+					}
+					for k := range allparams {
+						if lk := strings.ToLower(k); lk == "accesskey" || lk == "secretkey" {
+							delete(allparams, k)
+						}
+					}
+					ldr.Logger.Warnf("using your old config keys %s.Volumes.%s.DriverParameters.AccessKey/SecretKey -- but you should rename them to AccessKeyID/SecretAccessKey", clusterID, volID)
+					allparams["AccessKeyID"] = params.AccessKey
+					allparams["SecretAccessKey"] = params.SecretKey
+					vol.DriverParameters, err = json.Marshal(allparams)
+					if err != nil {
+						return err
+					}
+					cluster.Volumes[volID] = vol
+				}
+			}
+		}
 	}
 	return nil
 }
