@@ -74,6 +74,19 @@ Clusters:
 	c.Check(logs, check.Matches, `(?ms).*deprecated or unknown config entry: .*AccessKey.*`)
 	c.Check(logs, check.Matches, `(?ms).*deprecated or unknown config entry: .*SecretKey.*`)
 	c.Check(logs, check.Matches, `(?ms).*using your old config keys z1111\.Volumes\.z1111-nyw5e-aaaaaaaaaaaaaaa\.DriverParameters\.AccessKey/SecretKey -- but you should rename them to AccessKeyID/SecretAccessKey.*`)
+
+	_, err := testLoader(c, `
+Clusters:
+ z1111:
+  Volumes:
+   z1111-nyw5e-aaaaaaaaaaaaaaa:
+    Driver: S3
+    DriverParameters:
+     AccessKey: exampleaccesskey
+     SecretKey: examplesecretkey
+     AccessKeyID: exampleaccesskey
+`, nil).Load()
+	c.Check(err, check.ErrorMatches, `(?ms).*cannot use .*SecretKey.*and.*SecretAccessKey.*in z1111.Volumes.z1111-nyw5e-aaaaaaaaaaaaaaa.DriverParameters.*`)
 }
 
 func (s *LoadSuite) TestDeprecatedNodeProfilesToServices(c *check.C) {
