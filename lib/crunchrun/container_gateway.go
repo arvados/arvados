@@ -17,13 +17,18 @@ import (
 	"os"
 	"os/exec"
 	"sync"
+	"sync/atomic"
 	"syscall"
+	"time"
 
 	"git.arvados.org/arvados.git/lib/selfsigned"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
 	"github.com/creack/pty"
+	dockerclient "github.com/docker/docker/client"
 	"github.com/google/shlex"
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/net/context"
 )
 
 type Gateway struct {
@@ -34,6 +39,8 @@ type Gateway struct {
 	Log               interface {
 		Printf(fmt string, args ...interface{})
 	}
+	// return local ip address of running container, or "" if not available
+	ContainerIPAddress func() (string, error)
 
 	sshConfig   ssh.ServerConfig
 	requestAuth string
@@ -194,140 +201,228 @@ func (gw *Gateway) handleSSH(w http.ResponseWriter, req *http.Request) {
 	defer conn.Close()
 	go ssh.DiscardRequests(reqs)
 	for newch := range newchans {
-		if newch.ChannelType() != "session" {
-			newch.Reject(ssh.UnknownChannelType, fmt.Sprintf("unsupported channel type %q", newch.ChannelType()))
-			continue
+		switch newch.ChannelType() {
+		case "direct-tcpip":
+			go gw.handleDirectTCPIP(ctx, newch)
+		case "session":
+			go gw.handleSession(ctx, newch, detachKeys, username)
+		default:
+			go newch.Reject(ssh.UnknownChannelType, fmt.Sprintf("unsupported channel type %q", newch.ChannelType()))
 		}
-		ch, reqs, err := newch.Accept()
+	}
+}
+
+func (gw *Gateway) handleDirectTCPIP(ctx context.Context, newch ssh.NewChannel) {
+	ch, reqs, err := newch.Accept()
+	if err != nil {
+		gw.Log.Printf("accept direct-tcpip channel: %s", err)
+		return
+	}
+	defer ch.Close()
+	go ssh.DiscardRequests(reqs)
+
+	// RFC 4254 7.2 (copy of channelOpenDirectMsg in
+	// golang.org/x/crypto/ssh)
+	var msg struct {
+		Raddr string
+		Rport uint32
+		Laddr string
+		Lport uint32
+	}
+	err = ssh.Unmarshal(newch.ExtraData(), &msg)
+	if err != nil {
+		fmt.Fprintf(ch.Stderr(), "unmarshal direct-tcpip extradata: %s\n", err)
+		return
+	}
+	switch msg.Raddr {
+	case "localhost", "0.0.0.0", "127.0.0.1", "::1", "::":
+	default:
+		fmt.Fprintf(ch.Stderr(), "cannot forward to ports on %q, only localhost\n", msg.Raddr)
+		return
+	}
+
+	var dstaddr string
+	if gw.ContainerIPAddress != nil {
+		dstaddr, err = gw.ContainerIPAddress()
 		if err != nil {
-			gw.Log.Printf("accept channel: %s", err)
+			fmt.Fprintf(ch.Stderr(), "container has no IP address: %s\n", err)
 			return
 		}
-		var pty0, tty0 *os.File
-		go func() {
-			// Where to send errors/messages for the
-			// client to see
-			logw := io.Writer(ch.Stderr())
-			// How to end lines when sending
-			// errors/messages to the client (changes to
-			// \r\n when using a pty)
-			eol := "\n"
-			// Env vars to add to child process
-			termEnv := []string(nil)
-			for req := range reqs {
-				ok := false
-				switch req.Type {
-				case "shell", "exec":
-					ok = true
-					var payload struct {
-						Command string
-					}
-					ssh.Unmarshal(req.Payload, &payload)
-					execargs, err := shlex.Split(payload.Command)
-					if err != nil {
-						fmt.Fprintf(logw, "error parsing supplied command: %s"+eol, err)
-						return
-					}
-					if len(execargs) == 0 {
-						execargs = []string{"/bin/bash", "-login"}
-					}
-					go func() {
-						cmd := exec.CommandContext(ctx, "docker", "exec", "-i", "--detach-keys="+detachKeys, "--user="+username)
-						cmd.Stdin = ch
-						cmd.Stdout = ch
-						cmd.Stderr = ch.Stderr()
-						if tty0 != nil {
-							cmd.Args = append(cmd.Args, "-t")
-							cmd.Stdin = tty0
-							cmd.Stdout = tty0
-							cmd.Stderr = tty0
-							var wg sync.WaitGroup
-							defer wg.Wait()
-							wg.Add(2)
-							go func() { io.Copy(ch, pty0); wg.Done() }()
-							go func() { io.Copy(pty0, ch); wg.Done() }()
-							// Send our own debug messages to tty as well.
-							logw = tty0
-						}
-						cmd.Args = append(cmd.Args, *gw.DockerContainerID)
-						cmd.Args = append(cmd.Args, execargs...)
-						cmd.SysProcAttr = &syscall.SysProcAttr{
-							Setctty: tty0 != nil,
-							Setsid:  true,
-						}
-						cmd.Env = append(os.Environ(), termEnv...)
-						err := cmd.Run()
-						var resp struct {
-							Status uint32
-						}
-						if exiterr, ok := err.(*exec.ExitError); ok {
-							if status, ok := exiterr.Sys().(syscall.WaitStatus); ok {
-								resp.Status = uint32(status.ExitStatus())
-							}
-						} else if err != nil {
-							// Propagate errors like `exec: "docker": executable file not found in $PATH`
-							fmt.Fprintln(ch.Stderr(), err)
-						}
-						errClose := ch.CloseWrite()
-						if resp.Status == 0 && (err != nil || errClose != nil) {
-							resp.Status = 1
-						}
-						ch.SendRequest("exit-status", false, ssh.Marshal(&resp))
-						ch.Close()
-					}()
-				case "pty-req":
-					eol = "\r\n"
-					p, t, err := pty.Open()
-					if err != nil {
-						fmt.Fprintf(ch.Stderr(), "pty failed: %s"+eol, err)
-						break
-					}
-					defer p.Close()
-					defer t.Close()
-					pty0, tty0 = p, t
-					ok = true
-					var payload struct {
-						Term string
-						Cols uint32
-						Rows uint32
-						X    uint32
-						Y    uint32
-					}
-					ssh.Unmarshal(req.Payload, &payload)
-					termEnv = []string{"TERM=" + payload.Term, "USE_TTY=1"}
-					err = pty.Setsize(pty0, &pty.Winsize{Rows: uint16(payload.Rows), Cols: uint16(payload.Cols), X: uint16(payload.X), Y: uint16(payload.Y)})
-					if err != nil {
-						fmt.Fprintf(logw, "pty-req: setsize failed: %s"+eol, err)
-					}
-				case "window-change":
-					var payload struct {
-						Cols uint32
-						Rows uint32
-						X    uint32
-						Y    uint32
-					}
-					ssh.Unmarshal(req.Payload, &payload)
-					err := pty.Setsize(pty0, &pty.Winsize{Rows: uint16(payload.Rows), Cols: uint16(payload.Cols), X: uint16(payload.X), Y: uint16(payload.Y)})
-					if err != nil {
-						fmt.Fprintf(logw, "window-change: setsize failed: %s"+eol, err)
-						break
-					}
-					ok = true
-				case "env":
-					// TODO: implement "env"
-					// requests by setting env
-					// vars in the docker-exec
-					// command (not docker-exec's
-					// own environment, which
-					// would be a gaping security
-					// hole).
-				default:
-					// fmt.Fprintf(logw, "declining %q req"+eol, req.Type)
-				}
-				if req.WantReply {
-					req.Reply(ok, nil)
-				}
+	}
+	if dstaddr == "" {
+		fmt.Fprintf(ch.Stderr(), "container has no IP address\n")
+		return
+	}
+
+	dst := net.JoinHostPort(dstaddr, fmt.Sprintf("%d", msg.Rport))
+	tcpconn, err := net.Dial("tcp", dst)
+	if err != nil {
+		fmt.Fprintf(ch.Stderr(), "%s: %s\n", dst, err)
+		return
+	}
+	go func() {
+		n, _ := io.Copy(ch, tcpconn)
+		ctxlog.FromContext(ctx).Debugf("tcpip: sent %d bytes\n", n)
+		ch.CloseWrite()
+	}()
+	n, _ := io.Copy(tcpconn, ch)
+	ctxlog.FromContext(ctx).Debugf("tcpip: received %d bytes\n", n)
+}
+
+func (gw *Gateway) handleSession(ctx context.Context, newch ssh.NewChannel, detachKeys, username string) {
+	ch, reqs, err := newch.Accept()
+	if err != nil {
+		gw.Log.Printf("accept session channel: %s", err)
+		return
+	}
+	var pty0, tty0 *os.File
+	// Where to send errors/messages for the client to see
+	logw := io.Writer(ch.Stderr())
+	// How to end lines when sending errors/messages to the client
+	// (changes to \r\n when using a pty)
+	eol := "\n"
+	// Env vars to add to child process
+	termEnv := []string(nil)
+	for req := range reqs {
+		ok := false
+		switch req.Type {
+		case "shell", "exec":
+			ok = true
+			var payload struct {
+				Command string
 			}
-		}()
+			ssh.Unmarshal(req.Payload, &payload)
+			execargs, err := shlex.Split(payload.Command)
+			if err != nil {
+				fmt.Fprintf(logw, "error parsing supplied command: %s"+eol, err)
+				return
+			}
+			if len(execargs) == 0 {
+				execargs = []string{"/bin/bash", "-login"}
+			}
+			go func() {
+				cmd := exec.CommandContext(ctx, "docker", "exec", "-i", "--detach-keys="+detachKeys, "--user="+username)
+				cmd.Stdin = ch
+				cmd.Stdout = ch
+				cmd.Stderr = ch.Stderr()
+				if tty0 != nil {
+					cmd.Args = append(cmd.Args, "-t")
+					cmd.Stdin = tty0
+					cmd.Stdout = tty0
+					cmd.Stderr = tty0
+					var wg sync.WaitGroup
+					defer wg.Wait()
+					wg.Add(2)
+					go func() { io.Copy(ch, pty0); wg.Done() }()
+					go func() { io.Copy(pty0, ch); wg.Done() }()
+					// Send our own debug messages to tty as well.
+					logw = tty0
+				}
+				cmd.Args = append(cmd.Args, *gw.DockerContainerID)
+				cmd.Args = append(cmd.Args, execargs...)
+				cmd.SysProcAttr = &syscall.SysProcAttr{
+					Setctty: tty0 != nil,
+					Setsid:  true,
+				}
+				cmd.Env = append(os.Environ(), termEnv...)
+				err := cmd.Run()
+				var resp struct {
+					Status uint32
+				}
+				if exiterr, ok := err.(*exec.ExitError); ok {
+					if status, ok := exiterr.Sys().(syscall.WaitStatus); ok {
+						resp.Status = uint32(status.ExitStatus())
+					}
+				} else if err != nil {
+					// Propagate errors like `exec: "docker": executable file not found in $PATH`
+					fmt.Fprintln(ch.Stderr(), err)
+				}
+				errClose := ch.CloseWrite()
+				if resp.Status == 0 && (err != nil || errClose != nil) {
+					resp.Status = 1
+				}
+				ch.SendRequest("exit-status", false, ssh.Marshal(&resp))
+				ch.Close()
+			}()
+		case "pty-req":
+			eol = "\r\n"
+			p, t, err := pty.Open()
+			if err != nil {
+				fmt.Fprintf(ch.Stderr(), "pty failed: %s"+eol, err)
+				break
+			}
+			defer p.Close()
+			defer t.Close()
+			pty0, tty0 = p, t
+			ok = true
+			var payload struct {
+				Term string
+				Cols uint32
+				Rows uint32
+				X    uint32
+				Y    uint32
+			}
+			ssh.Unmarshal(req.Payload, &payload)
+			termEnv = []string{"TERM=" + payload.Term, "USE_TTY=1"}
+			err = pty.Setsize(pty0, &pty.Winsize{Rows: uint16(payload.Rows), Cols: uint16(payload.Cols), X: uint16(payload.X), Y: uint16(payload.Y)})
+			if err != nil {
+				fmt.Fprintf(logw, "pty-req: setsize failed: %s"+eol, err)
+			}
+		case "window-change":
+			var payload struct {
+				Cols uint32
+				Rows uint32
+				X    uint32
+				Y    uint32
+			}
+			ssh.Unmarshal(req.Payload, &payload)
+			err := pty.Setsize(pty0, &pty.Winsize{Rows: uint16(payload.Rows), Cols: uint16(payload.Cols), X: uint16(payload.X), Y: uint16(payload.Y)})
+			if err != nil {
+				fmt.Fprintf(logw, "window-change: setsize failed: %s"+eol, err)
+				break
+			}
+			ok = true
+		case "env":
+			// TODO: implement "env"
+			// requests by setting env
+			// vars in the docker-exec
+			// command (not docker-exec's
+			// own environment, which
+			// would be a gaping security
+			// hole).
+		default:
+			// fmt.Fprintf(logw, "declining %q req"+eol, req.Type)
+		}
+		if req.WantReply {
+			req.Reply(ok, nil)
+		}
+	}
+}
+
+func dockerContainerIPAddress(containerID *string) func() (string, error) {
+	var saved atomic.Value
+	return func() (string, error) {
+		if ip, ok := saved.Load().(*string); ok {
+			return *ip, nil
+		}
+		docker, err := dockerclient.NewClient(dockerclient.DefaultDockerHost, "1.21", nil, nil)
+		if err != nil {
+			return "", fmt.Errorf("cannot create docker client: %s", err)
+		}
+		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Minute))
+		defer cancel()
+		ctr, err := docker.ContainerInspect(ctx, *containerID)
+		if err != nil {
+			return "", fmt.Errorf("cannot get docker container info: %s", err)
+		}
+		ip := ctr.NetworkSettings.IPAddress
+		if ip == "" {
+			// TODO: try to enable networking if it wasn't
+			// already enabled when the container was
+			// created.
+			return "", fmt.Errorf("container has no IP address")
+		}
+		saved.Store(&ip)
+		return ip, nil
 	}
 }

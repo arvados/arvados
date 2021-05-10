@@ -1880,11 +1880,12 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	}
 
 	cr.gateway = Gateway{
-		Address:           os.Getenv("GatewayAddress"),
-		AuthSecret:        os.Getenv("GatewayAuthSecret"),
-		ContainerUUID:     containerID,
-		DockerContainerID: &cr.ContainerID,
-		Log:               cr.CrunchLog,
+		Address:            os.Getenv("GatewayAddress"),
+		AuthSecret:         os.Getenv("GatewayAuthSecret"),
+		ContainerUUID:      containerID,
+		DockerContainerID:  &cr.ContainerID,
+		Log:                cr.CrunchLog,
+		ContainerIPAddress: dockerContainerIPAddress(&cr.ContainerID),
 	}
 	os.Unsetenv("GatewayAuthSecret")
 	if cr.gateway.Address != "" {
