@@ -1,7 +1,7 @@
 ---
 layout: default
 navsection: admin
-title: Setting token expiration policy
+title: Automatic logout and token expiration
 ...
 
 {% comment %}
@@ -10,15 +10,40 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-When a user logs in to Workbench, they receive a newly created token that grants access to the Arvados API on behalf of that user.  By default, this token does not expire until the user explicitly logs off.
+When a user logs in to Workbench, they receive a newly created token (a long string of random characters) which grants access to the Arvados API on behalf of that user.  In the default configuration, this token does not expire until the user explicitly logs out.
 
-Security policies, such as for GxP Compliance, may require that tokens expire by default in order to limit the risk associated with a token being leaked.
+Security policies, such as those required to comply with regulations such as HIPAA and GxP, may include policies for "automatic logoff".  In order to limit the window of risk associated with unauthorized access of the desktop of an Arvados user, or a token being leaked, Arvados offers options for automatic logout from the web app, and to configure access tokens to expire by default.
 
-The @Login.TokenLifetime@ configuration enables the administrator to set a expiration lifetime for tokens granted through the login flow.
+The @Workbench.IdleTimeout@, @Login.TokenLifetime@, and @API.MaxTokenLifetime@ options give the administrator ways to control automatic expiration of tokens granted through the login flow.
 
-h2. Setting token expiration
+If you are looking for information on how to expire a token manually, see how to "delete a single token":user-management-cli.html#delete-token and "delete all tokens belonging to a user":user-management-cli.html#delete-all-tokens .
 
-Suppose that the organization's security policy requires that user sessions should not be valid for more than 12 hours, the cluster configuration should be set like the following:
+h2. Automatic logout
+
+Use @Workbench.IdleTimeout@ to configure Workbench 2 for automatic logout after a period of idle time.  For example, this configuration would log the user out after five minutes of no keyboard or pointer activity:
+
+<pre>
+Clusters:
+  zzzzz:
+    ...
+    Workbench:
+      IdleTimeout: 5m
+    ...
+</pre>
+
+When idle timeout is set, several behaviors and considerations apply:
+
+* The user will be automatically logged out after a period of inactivity.  When the automatic logout happens, the token associated with that session will be revoked.
+* Users should use the "open in new tab" functionality of Workbench 2.  This will share the same token between tabs without requiring the user to log in again.  Logging out will apply to all browser tabs that use the same token.
+* If the user closes a Workbench tab without first logging out, the browser will forget the token, but not expire the token (this is desirable if the user has several tabs open).
+* If the user closes all Workbench tabs, they will be required to log in again.
+* This only affects browser behavior.  Automatic logout should be used together automatic token expiration described below.
+
+The default value for @Workbench.IdleTimeout@ is zero, which disables auto-logout.
+
+h2. Automatic expiration of login tokens
+
+Use @Login.TokenLifetime@ to set the lifetime for tokens issued through the login process.  This is the maximum amount of time a user can maintain a session before having to log in again.  This setting applies to both regular and admin user logins.  Here is an example configuration that would require the user to log in again after 12 hours:
 
 <pre>
 Clusters:
@@ -29,15 +54,50 @@ Clusters:
     ...
 </pre>
 
-With this configuration, users will have to re-login every 12 hours.
+This is independent of @Workbench.IdleTimeout@.  Even if Workbench auto-logout is disabled, this option will ensure that the user is always required to log in again after the configured amount of time.
 
-When this configuration is active, the workbench client will also be "untrusted" by default.  This means tokens issued to workbench cannot be used to list other tokens issued to the user, and cannot be used to grant new tokens.  This stops an attacker from leveraging a leaked token to aquire other tokens.
+When this configuration is active (has a nonzero value), the Workbench client will also be "untrusted" by default.  This means tokens issued to Workbench cannot be used to list other tokens issued to the user, and cannot be used to grant new tokens.  This stops an attacker from leveraging a leaked token to aquire other tokens, but also interferes with some Workbench features that create new tokens on behalf of the user.
 
-The default @TokenLifetime@ is zero, which disables this feature.
+The default value @Login.TokenLifetime@ is zero, meaning login tokens do not expire (unless @API.MaxTokenLifetime@ is set).
+
+h2. Automatic expiration of all tokens
+
+Use @API.MaxTokenLifetime@ to set the maximum lifetime for any access token created by regular (non-admin) users.  For example, this configuration would require that all tokens expire after 24 hours:
+
+<pre>
+Clusters:
+  zzzzz:
+    ...
+    API:
+      MaxTokenLifetime: 24h
+    ...
+</pre>
+
+Tokens created without an explicit expiration time, or that exceed maximum lifetime, will be clamped to @API.MaxTokenLifetime@.
+
+Similar to @Login.TokenLifetime@, this option ensures that the user is always required to log in again after the configured amount of time.
+
+Unlike @Login.TokenLifetime@, this applies to all API operations that manipulate tokens, regardless of whether the token was created by logging in, or by using the API.  Also unlike @Login.TokenLifetime@, this setting does not imply any additional restrictions on token capabilities (it does not interfere with Workbench features that create new tokens on behalf of the user).  If @Login.TokenLifetime@ is greater than @API.MaxTokenLifetime@, MaxTokenLifetime takes precedence.
+
+Admin users are permitted to create tokens with expiration times further in the future than MaxTokenLifetime, or with no expiration time at all.
+
+The default value @MaxTokenLifetime@ is zero, which means there is no maximum token lifetime.
+
+h2. Choosing a policy
+
+@Workbench.IdleTimeout@ only affects browser behavior.  It is strongly recommended that automatic browser logout be used together with one or both token lifetime options, which are enforced on API side.
+
+@Login.TokenLifetime@ is more restrictive.  A token obtained by logging into Workbench cannot be "refreshed" to gain access for an indefinite period.  However, it interferes with some Workbench features, as well as ease of use in other contexts, such as the Arvados command line.  This option is recommended only if most users will only ever interact with the system through Workbench or WebShell.  For users or service accounts that need to tokens with fewer restrictions, the admin can "create a token at the command line":user-management-cli.html#create-token .
+
+@API.MaxTokenLifetime@ is less restrictive.  Be aware that an unrestricted token can be "refreshed" to gain access for an indefinite period.  This means, during the window that the token is valid, the user is permitted to create a new token, which will have a new expiration further in the future (of course, once the token has expired, this is no longer possible).  Unrestricted tokens are required for some Workbench features, as well as ease of use in other contexts, such as the Arvados command line.  This option is recommended if many users will interact with the system through the command line.
+
+In every case, admin users may always create tokens with no expiration date.
+
+These policies do not apply to tokens created by the API server for the purposes of authorizing a container to run, as those tokens are automatically expired when the container is finished.
 
 h2. Applying policy to existing tokens
 
-If you have an existing Arvados installation and want to set a token lifetime policy, there may be user tokens already granted.  The administrator can use the following @rake@ tasks to enforce the new policy.
+If you have an existing Arvados installation and want to set a token lifetime policy, there may be long-lived user tokens already granted.  The administrator can use the following @rake@ tasks to enforce the new policy.
 
 The @db:check_long_lived_tokens@ task will list which users have tokens with no expiration date.
 
