@@ -1,0 +1,78 @@
+---
+layout: default
+navsection: api
+title: API Authorization with SSO (deprecated)
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+{% include 'notebox_begin_warning' %}
+This page describes the deprecated login flow via the SSO server. SSO server authentication will be removed in a future Arvados release and should not be used for new installations. See "Set up web based login":{{site.baseurl}}/install/setup-login.html for more information.
+{% include 'notebox_end' %}
+
+All requests to the API server must have an API token.  API tokens can be issued by going though the login flow, or created via the API.  At this time, only browser based applications can perform login from email/password.  Command line applications and services must use an API token provided via the @ARVADOS_API_TOKEN@ environment variable or configuration file.
+
+h2. Browser login
+
+Browser based applications can perform log in via the following highlevel flow:
+
+# The web application presents a "login" link to @/login@ on the API server with a @return_to@ parameter provided in the query portion of the URL.  For example @https://{{ site.arvados_api_host }}/login?return_to=XXX@ , where  @return_to=XXX@ is the URL of the login page for the web application.
+# The "login" link takes the browser to the login page (this may involve several redirects)
+# The user logs in.  API server authenticates the user and issues a new API token.
+# The browser is redirected to the login page URL provided in @return_to=XXX@ with the addition of @?api_token=xxxxapitokenxxxx@.
+# The web application gets the login request with the included authorization token.
+
+!{{site.baseurl}}/images/Session_Establishment_with_SSO.svg!
+
+The "browser authentication process is documented in detail on the Arvados wiki.":https://dev.arvados.org/projects/arvados/wiki/Workbench_authentication_process
+
+h2. User activation
+
+"Creation and activation of new users is described here.":{{site.baseurl}}/admin/user-management.html
+
+h2. Creating tokens via the API
+
+The browser login method above issues a new token.  Using that token, it is possible to make API calls to create additional tokens.  To do so, use the @create@ method of the "API client authorizations":{{site.baseurl}}/api/methods/api_client_authorizations.html resource.
+
+h2. Trusted API clients
+
+The "api_clients":{{site.baseurl}}/api/methods/api_clients.html resource determines if web applications that have gone through the browser login flow may create or list API tokens.
+
+After the user has authenticated, but before an authorization token is issued and browser redirect sent (sending the browser back to the @return_to@ login page bearing @api_token@), the server strips the path and query portion from @return_to@ to get @url_prefix@.  The @url_prefix@ is used to find or create an ApiClient object.  The newly issued API client authorization (API token) is associated with this ApiClient object.
+
+API clients may be marked as "trusted" by making an API call to create or update an "api_clients":{{site.baseurl}}/api/methods/api_clients.html resource and set the @is_trusted@ flag to @true@. An authorization token associated with a "trusted" client is permitted to list authorization tokens on "API client authorizations":{{site.baseurl}}/api/methods/api_client_authorizations.html .
+
+A authorization token which is not associated with a trusted client may only use the @current@ method to query its own api_client_authorization object.  The "untrusted" token is forbidden performing any other operations on API client authorizations, such as listing other authorizations or creating new authorizations.
+
+Authorization tokens which are not issued via the browser login flow (created directly via the API) inherit the api client of the token used to create them.  They will always be "trusted" because untrusted API clients cannot create tokens.
+
+h2(#scopes). Scopes
+
+Scopes can restrict a token so it may only access certain resources.  This is in addition to normal permission checks for the user associated with the token.
+
+Each entry in scopes consists of a @request_method@ and @request_path@.  The @request_method@ is a HTTP method (one of @GET@, @POST@, @PATCH@ or @DELETE@) and @request_path@ is the request URI.  A given request is permitted if it matches a scopes exactly, or the scope ends with @/@ and the request string is a prefix of the scope.
+
+As a special case, a scope of @["all"]@ allows all resources.  This is the default if no scope is given.
+
+Using scopes is also described on the "Securing API access with scoped tokens":{{site.baseurl}}/admin/scoped-tokens.html page of the admin documentation.
+
+h3. Scope examples
+
+A scope of @GET /arvados/v1/collections@ permits listing collections.
+
+* Requests with different methods, such as creating a new collection using @POST /arvados/v1/collections@, will be rejected.
+* Requests to access other resources, such as @GET /arvados/v1/groups@, will be rejected.
+* Be aware that requests for specific records, such as @GET /arvados/v1/collections/962eh-4zz18-xi32mpz2621o8km@ will also be rejected.  This is because the scope @GET /arvados/v1/collections@ does not end in @/@
+
+A scope of @GET /arvados/v1/collections/@ (with @/@ suffix) will permit access to individual collections.
+
+* The request @GET /arvados/v1/collections/962eh-4zz18-xi32mpz2621o8km@ will succeed
+* Be aware that requests for listing @GET /arvados/v1/collections@ (no @/@ suffix) will be rejected, because it is not a match with the rule @GET /arvados/v1/collections/@
+* A listing request @GET /arvados/v1/collections/@ will have the trailing @/@ suffix trimmed before the scope check, as a result it will not match the rule @GET /arvados/v1/collections/@.
+
+To allow both listing objects and requesting individual objects, include both in the scope: @["GET /arvados/v1/collections", "GET /arvados/v1/collections/"]@
+
+A narrow scope such as @GET /arvados/v1/collections/962eh-4zz18-xi32mpz2621o8km@ will disallow listing objects as well as disallow requesting any object other than those listed in the scope.
