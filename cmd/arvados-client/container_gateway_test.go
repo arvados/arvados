@@ -18,6 +18,7 @@ import (
 	"os/exec"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"git.arvados.org/arvados.git/lib/controller/rpc"
@@ -126,7 +127,7 @@ func (s *ClientSuite) TestShellGateway(c *check.C) {
 	cmd.Env = append(cmd.Env, "ARVADOS_API_TOKEN="+arvadostest.ActiveTokenV2)
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
-	go cmd.Run()
+	cmd.Start()
 
 	forwardedURL := fmt.Sprintf("http://localhost:%s/foo", forwardedPort)
 
@@ -136,7 +137,14 @@ func (s *ClientSuite) TestShellGateway(c *check.C) {
 			if !strings.Contains(err.Error(), "connect") {
 				c.Fatal(err)
 			} else if ctx.Err() != nil {
-				c.Fatal("timed out")
+				if cmd.Process.Signal(syscall.Signal(0)) != nil {
+					c.Error("OpenSSH exited")
+				} else {
+					c.Errorf("timed out trying to connect: %s", err)
+				}
+				c.Logf("OpenSSH stdout:\n%s", stdout.String())
+				c.Logf("OpenSSH stderr:\n%s", stderr.String())
+				c.FailNow()
 			}
 			// Retry until OpenSSH starts listening
 			continue
