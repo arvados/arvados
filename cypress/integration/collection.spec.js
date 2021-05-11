@@ -270,7 +270,9 @@ describe('Collection panel tests', function () {
                     cy.get('[data-cy=form-dialog]')
                         .should('contain', 'Rename')
                         .within(() => {
-                            cy.get('input').type(`{selectall}{backspace}${to}`);
+                            cy.get('input')
+                                .type('{selectall}{backspace}')
+                                .type(to, { parseSpecialCharSequences: false });
                         });
                     cy.get('[data-cy=form-submit-btn]').click();
                     cy.get('[data-cy=collection-files-panel]')
