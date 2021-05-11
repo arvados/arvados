@@ -4,7 +4,7 @@
 
 import { AxiosInstance } from "axios";
 import { CommonResourceService } from "~/services/common-service/common-resource-service";
-import { VirtualMachinesResource } from '~/models/virtual-machines';
+import { VirtualMachineLogins, VirtualMachinesResource } from '~/models/virtual-machines';
 import { ApiActions } from '~/services/api/api-actions';
 
 export class VirtualMachinesService extends CommonResourceService<VirtualMachinesResource> {
@@ -20,7 +20,7 @@ export class VirtualMachinesService extends CommonResourceService<VirtualMachine
         localStorage.setItem('requestedDate', date);
     }
 
-    logins(uuid: string) {
+    logins(uuid: string): Promise<VirtualMachineLogins> {
         return CommonResourceService.defaultResponse(
             this.serverApi
                 .get(`virtual_machines/${uuid}/logins`),
@@ -28,7 +28,7 @@ export class VirtualMachinesService extends CommonResourceService<VirtualMachine
         );
     }
 
-    getAllLogins() {
+    getAllLogins(): Promise<VirtualMachineLogins> {
         return CommonResourceService.defaultResponse(
             this.serverApi
                 .get('virtual_machines/get_all_logins'),
