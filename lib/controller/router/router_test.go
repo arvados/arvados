@@ -224,6 +224,20 @@ func (s *RouterIntegrationSuite) TestCollectionResponses(c *check.C) {
 	c.Check(rr.Code, check.Equals, http.StatusOK)
 	c.Check(jresp["uuid"], check.FitsTypeOf, "")
 	c.Check(jresp["kind"], check.Equals, "arvados#collection")
+
+	awkwardName := "[" + time.Now().Format(time.RFC3339Nano)
+	_, rr, jresp = doRequest(c, s.rtr, token, "PATCH", `/arvados/v1/collections/`+jresp["uuid"].(string), http.Header{"Content-Type": {"application/json"}}, bytes.NewBufferString(`{"collection":{"name":"`+awkwardName+`"}}`))
+	if c.Check(rr.Code, check.Equals, http.StatusOK) {
+		c.Check(jresp["uuid"], check.FitsTypeOf, "")
+		c.Check(jresp["name"], check.Equals, awkwardName)
+	}
+
+	awkwardName = "[" + time.Now().Format(time.RFC3339Nano)
+	_, rr, jresp = doRequest(c, s.rtr, token, "PATCH", `/arvados/v1/collections/`+jresp["uuid"].(string), http.Header{"Content-Type": {"application/json"}}, bytes.NewBufferString(`{"name":"`+awkwardName+`"}`))
+	if c.Check(rr.Code, check.Equals, http.StatusOK) {
+		c.Check(jresp["uuid"], check.FitsTypeOf, "")
+		c.Check(jresp["name"], check.Equals, awkwardName)
+	}
 }
 
 func (s *RouterIntegrationSuite) TestMaxRequestSize(c *check.C) {
