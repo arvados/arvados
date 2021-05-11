@@ -239,6 +239,8 @@ describe('Collection panel tests', function () {
 
                 const names = [
                     'bar', // initial name already set
+                    '[between brackets]', // JSON-like strings (#17582)
+                    '{between braces}', // JSON-like strings (#17582)
                     '&',
                     'foo',
                     '&amp;',
