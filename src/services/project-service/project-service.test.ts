@@ -19,8 +19,10 @@ describe("CommonResourceService", () => {
         const projectService = new ProjectService(axiosInstance, actions);
         const resource = await projectService.create({ name: "nameValue" });
         expect(axiosInstance.post).toHaveBeenCalledWith("/groups", {
-            name: "nameValue",
-            group_class: "project"
+            group: {
+                name: "nameValue",
+                group_class: "project"
+            }
         });
     });
 

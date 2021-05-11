@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { AxiosInstance } from "axios";
+import * as _ from "lodash";
 import { Resource } from "src/models/resource";
 import { ApiActions } from "~/services/api/api-actions";
 import { CommonService } from "~/services/common-service/common-service";
@@ -26,17 +27,25 @@ export class CommonResourceService<T extends Resource> extends CommonService<T> 
     }
 
     create(data?: Partial<T>) {
+        let payload: any;
         if (data !== undefined) {
             this.readOnlyFields.forEach( field => delete data[field] );
+            payload = {
+                [this.resourceType.slice(0, -1)]: CommonService.mapKeys(_.snakeCase)(data),
+            };
         }
-        return super.create(data);
+        return super.create(payload);
     }
 
     update(uuid: string, data: Partial<T>) {
+        let payload: any;
         if (data !== undefined) {
             this.readOnlyFields.forEach( field => delete data[field] );
+            payload = {
+                [this.resourceType.slice(0, -1)]: CommonService.mapKeys(_.snakeCase)(data),
+            };
         }
-        return super.update(uuid, data);
+        return super.update(uuid, payload);
     }
 }
 
