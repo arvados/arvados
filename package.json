@@ -124,6 +124,7 @@
     "react-scripts-ts/**/**/**/**/js-yaml": "^3.13.1",
     "react-scripts-ts/uglifyjs-webpack-plugin/serialize-javascript": "^2.1.1",
     "react-scripts-ts/**/handlebars": "^4.7.7",
+    "react-scripts-ts/**/merge": "^2.1.1",
     "webpack/terser-webpack-plugin/serialize-javascript": "^2.1.1",
     "cypress/minimist": "1.2.5"
   }
