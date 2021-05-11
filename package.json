@@ -54,7 +54,7 @@
     "react-router": "4.3.1",
     "react-router-dom": "4.3.1",
     "react-router-redux": "5.0.0-alpha.9",
-    "react-rte": "0.16.1",
+    "react-rte": "0.16.3",
     "react-scripts-ts": "3.1.0",
     "react-splitter-layout": "3.0.1",
     "react-transition-group": "2.5.0",
@@ -125,6 +125,8 @@
     "react-scripts-ts/uglifyjs-webpack-plugin/serialize-javascript": "^2.1.1",
     "react-scripts-ts/**/handlebars": "^4.7.7",
     "react-scripts-ts/**/merge": "^2.1.1",
+    "fbjs/ua-parser-js": "0.7.24",
+    "react-rte/**/ua-parser-js": "0.7.24",
     "webpack/terser-webpack-plugin/serialize-javascript": "^2.1.1",
     "cypress/minimist": "1.2.5"
   }
