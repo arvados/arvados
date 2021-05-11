@@ -895,15 +895,17 @@ class ProjectDirectory(Directory):
                     self.project_object = self.api.users().get(
                         uuid=self.project_uuid).execute(num_retries=self.num_retries)
                 # do this in 2 steps until #17424 is fixed
-                contents = arvados.util.list_all(self.api.groups().contents,
-                                                 self.num_retries,
-                                                 uuid=self.project_uuid,
-                                                 filters=[["uuid", "is_a", "arvados#group"],
-                                                          ["groups.group_class", "in", ["project","filter"]]])
-                contents.extend(arvados.util.list_all(self.api.groups().contents,
-                                                      self.num_retries,
-                                                      uuid=self.project_uuid,
-                                                      filters=[["uuid", "is_a", "arvados#collection"]]))
+                contents = list(arvados.util.keyset_list_all(self.api.groups().contents,
+                                                        order_key="uuid",
+                                                        num_retries=self.num_retries,
+                                                        uuid=self.project_uuid,
+                                                        filters=[["uuid", "is_a", "arvados#group"],
+                                                                 ["groups.group_class", "in", ["project","filter"]]]))
+                contents.extend(arvados.util.keyset_list_all(self.api.groups().contents,
+                                                             order_key="uuid",
+                                                             num_retries=self.num_retries,
+                                                             uuid=self.project_uuid,
+                                                             filters=[["uuid", "is_a", "arvados#collection"]]))
 
             # end with llfuse.lock_released, re-acquire lock
 
@@ -1118,10 +1120,12 @@ class SharedDirectory(Directory):
                             objects[r["uuid"]] = r
                             root_owners.add(r["uuid"])
                 else:
-                    all_projects = arvados.util.list_all(
-                        self.api.groups().list, self.num_retries,
+                    all_projects = list(arvados.util.keyset_list_all(
+                        self.api.groups().list,
+                        order_key="uuid",
+                        num_retries=self.num_retries,
                         filters=[['group_class','in',['project','filter']]],
-                        select=["uuid", "owner_uuid"])
+                        select=["uuid", "owner_uuid"]))
                     for ob in all_projects:
                         objects[ob['uuid']] = ob
 
@@ -1131,11 +1135,15 @@ class SharedDirectory(Directory):
                             roots.append(ob['uuid'])
                             root_owners.add(ob['owner_uuid'])
 
-                    lusers = arvados.util.list_all(
-                        self.api.users().list, self.num_retries,
+                    lusers = arvados.util.keyset_list_all(
+                        self.api.users().list,
+                        order_key="uuid",
+                        num_retries=self.num_retries,
                         filters=[['uuid','in', list(root_owners)]])
-                    lgroups = arvados.util.list_all(
-                        self.api.groups().list, self.num_retries,
+                    lgroups = arvados.util.keyset_list_all(
+                        self.api.groups().list,
+                        order_key="uuid",
+                        num_retries=self.num_retries,
                         filters=[['uuid','in', list(root_owners)+roots]])
 
                     for l in lusers:
