@@ -42,7 +42,7 @@ export class CommonService<T> {
 
     constructor(serverApi: AxiosInstance, resourceType: string, actions: ApiActions, readOnlyFields: string[] = []) {
         this.serverApi = serverApi;
-        this.resourceType = '/' + resourceType;
+        this.resourceType = resourceType;
         this.actions = actions;
         this.readOnlyFields = readOnlyFields;
     }
@@ -97,7 +97,7 @@ export class CommonService<T> {
     create(data?: Partial<T>, showErrors?: boolean) {
         return CommonService.defaultResponse(
             this.serverApi
-                .post<T>(this.resourceType, data && CommonService.mapKeys(_.snakeCase)(data)),
+                .post<T>(`/${this.resourceType}`, data && CommonService.mapKeys(_.snakeCase)(data)),
             this.actions,
             true, // mapKeys
             showErrors
@@ -108,7 +108,7 @@ export class CommonService<T> {
         this.validateUuid(uuid);
         return CommonService.defaultResponse(
             this.serverApi
-                .delete(this.resourceType + '/' + uuid),
+                .delete(`/${this.resourceType}/${uuid}`),
             this.actions
         );
     }
@@ -117,7 +117,7 @@ export class CommonService<T> {
         this.validateUuid(uuid);
         return CommonService.defaultResponse(
             this.serverApi
-                .get<T>(this.resourceType + '/' + uuid),
+                .get<T>(`/${this.resourceType}/${uuid}`),
             this.actions,
             true, // mapKeys
             showErrors
@@ -134,7 +134,7 @@ export class CommonService<T> {
 
         if (QueryString.stringify(params).length <= 1500) {
             return CommonService.defaultResponse(
-                this.serverApi.get(this.resourceType, { params }),
+                this.serverApi.get(`/${this.resourceType}`, { params }),
                 this.actions
             );
         } else {
@@ -147,7 +147,7 @@ export class CommonService<T> {
                 }
             });
             return CommonService.defaultResponse(
-                this.serverApi.post(this.resourceType, formData, {
+                this.serverApi.post(`/${this.resourceType}`, formData, {
                     params: {
                         _method: 'GET'
                     }
@@ -161,7 +161,7 @@ export class CommonService<T> {
         this.validateUuid(uuid);
         return CommonService.defaultResponse(
             this.serverApi
-                .put<T>(this.resourceType + '/' + uuid, data && CommonService.mapKeys(_.snakeCase)(data)),
+                .put<T>(`/${this.resourceType}/${uuid}`, data && CommonService.mapKeys(_.snakeCase)(data)),
             this.actions
         );
     }

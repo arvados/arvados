@@ -32,50 +32,50 @@ describe("CommonResourceService", () => {
 
     it("#create", async () => {
         axiosMock
-            .onPost("/resource")
+            .onPost("/resources")
             .reply(200, { owner_uuid: "ownerUuidValue" });
 
-        const commonResourceService = new CommonResourceService(axiosInstance, "resource", actions);
+        const commonResourceService = new CommonResourceService(axiosInstance, "resources", actions);
         const resource = await commonResourceService.create({ ownerUuid: "ownerUuidValue" });
         expect(resource).toEqual({ ownerUuid: "ownerUuidValue" });
     });
 
     it("#create maps request params to snake case", async () => {
         axiosInstance.post = jest.fn(() => Promise.resolve({data: {}}));
-        const commonResourceService = new CommonResourceService(axiosInstance, "resource", actions);
+        const commonResourceService = new CommonResourceService(axiosInstance, "resources", actions);
         await commonResourceService.create({ ownerUuid: "ownerUuidValue" });
-        expect(axiosInstance.post).toHaveBeenCalledWith("/resource", {owner_uuid: "ownerUuidValue"});
+        expect(axiosInstance.post).toHaveBeenCalledWith("/resources", {resource: {owner_uuid: "ownerUuidValue"}});
     });
 
     it("#create ignores fields listed as readonly", async () => {
         axiosInstance.post = jest.fn(() => Promise.resolve({data: {}}));
-        const commonResourceService = new CommonResourceService(axiosInstance, "resource", actions);
+        const commonResourceService = new CommonResourceService(axiosInstance, "resources", actions);
         // UUID fields are read-only on all resources.
         await commonResourceService.create({ uuid: "this should be ignored", ownerUuid: "ownerUuidValue" });
-        expect(axiosInstance.post).toHaveBeenCalledWith("/resource", {owner_uuid: "ownerUuidValue"});
+        expect(axiosInstance.post).toHaveBeenCalledWith("/resources", {resource: {owner_uuid: "ownerUuidValue"}});
     });
 
     it("#update ignores fields listed as readonly", async () => {
         axiosInstance.put = jest.fn(() => Promise.resolve({data: {}}));
-        const commonResourceService = new CommonResourceService(axiosInstance, "resource", actions);
+        const commonResourceService = new CommonResourceService(axiosInstance, "resources", actions);
         // UUID fields are read-only on all resources.
         await commonResourceService.update('resource-uuid', { uuid: "this should be ignored", ownerUuid: "ownerUuidValue" });
-        expect(axiosInstance.put).toHaveBeenCalledWith("/resource/resource-uuid", {owner_uuid: "ownerUuidValue"});
+        expect(axiosInstance.put).toHaveBeenCalledWith("/resources/resource-uuid", {resource:  {owner_uuid: "ownerUuidValue"}});
     });
 
     it("#delete", async () => {
         axiosMock
-            .onDelete("/resource/uuid")
+            .onDelete("/resources/uuid")
             .reply(200, { deleted_at: "now" });
 
-        const commonResourceService = new CommonResourceService(axiosInstance, "resource", actions);
+        const commonResourceService = new CommonResourceService(axiosInstance, "resources", actions);
         const resource = await commonResourceService.delete("uuid");
         expect(resource).toEqual({ deletedAt: "now" });
     });
 
     it("#get", async () => {
         axiosMock
-            .onGet("/resource/uuid")
+            .onGet("/resources/uuid")
             .reply(200, {
                 modified_at: "now",
                 properties: {
@@ -83,7 +83,7 @@ describe("CommonResourceService", () => {
                 }
             });
 
-        const commonResourceService = new CommonResourceService(axiosInstance, "resource", actions);
+        const commonResourceService = new CommonResourceService(axiosInstance, "resources", actions);
         const resource = await commonResourceService.get("uuid");
         // Only first level keys are mapped to camel case
         expect(resource).toEqual({
@@ -96,7 +96,7 @@ describe("CommonResourceService", () => {
 
     it("#list", async () => {
         axiosMock
-            .onGet("/resource")
+            .onGet("/resources")
             .reply(200, {
                 kind: "kind",
                 offset: 2,
@@ -110,7 +110,7 @@ describe("CommonResourceService", () => {
                 items_available: 20
             });
 
-        const commonResourceService = new CommonResourceService(axiosInstance, "resource", actions);
+        const commonResourceService = new CommonResourceService(axiosInstance, "resources", actions);
         const resource = await commonResourceService.list({ limit: 10, offset: 1 });
         // First level keys are mapped to camel case inside "items" arrays
         expect(resource).toEqual({
@@ -129,10 +129,10 @@ describe("CommonResourceService", () => {
 
     it("#list using POST when query string is too big", async () => {
         axiosMock
-            .onAny("/resource")
+            .onAny("/resources")
             .reply(200);
         const tooBig = 'x'.repeat(1500);
-        const commonResourceService = new CommonResourceService(axiosInstance, "resource", actions);
+        const commonResourceService = new CommonResourceService(axiosInstance, "resources", actions);
         await commonResourceService.list({ filters: tooBig });
         expect(axiosMock.history.get.length).toBe(0);
         expect(axiosMock.history.post.length).toBe(1);
@@ -142,10 +142,10 @@ describe("CommonResourceService", () => {
 
     it("#list using GET when query string is not too big", async () => {
         axiosMock
-            .onAny("/resource")
+            .onAny("/resources")
             .reply(200);
         const notTooBig = 'x'.repeat(1480);
-        const commonResourceService = new CommonResourceService(axiosInstance, "resource", actions);
+        const commonResourceService = new CommonResourceService(axiosInstance, "resources", actions);
         await commonResourceService.list({ filters: notTooBig });
         expect(axiosMock.history.post.length).toBe(0);
         expect(axiosMock.history.get.length).toBe(1);
