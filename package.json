@@ -21,7 +21,7 @@
     "@types/react-window": "1.8.2",
     "@types/redux-form": "7.4.12",
     "@types/shell-quote": "1.6.0",
-    "axios": "0.18.1",
+    "axios": "^0.21.1",
     "babel-core": "6.26.3",
     "babel-runtime": "6.26.0",
     "classnames": "2.2.6",
