@@ -421,8 +421,19 @@ func (conn *Conn) GroupList(ctx context.Context, options arvados.ListOptions) (a
 	return conn.generated_GroupList(ctx, options)
 }
 
+var userUuidRe = regexp.MustCompile(`^[0-9a-z]{5}-tpzed-[0-9a-z]{15}$`)
+
 func (conn *Conn) GroupContents(ctx context.Context, options arvados.GroupContentsOptions) (arvados.ObjectList, error) {
-	return conn.chooseBackend(options.UUID).GroupContents(ctx, options)
+	if options.ClusterID != "" {
+		// explicitly selected cluster
+		return conn.chooseBackend(options.ClusterID).GroupContents(ctx, options)
+	} else if userUuidRe.MatchString(options.UUID) {
+		// user, get the things they own on the local cluster
+		return conn.local.GroupContents(ctx, options)
+	} else {
+		// a group, potentially want to make federated request
+		return conn.chooseBackend(options.UUID).GroupContents(ctx, options)
+	}
 }
 
 func (conn *Conn) GroupShared(ctx context.Context, options arvados.ListOptions) (arvados.GroupList, error) {
