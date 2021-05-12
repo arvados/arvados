@@ -188,8 +188,11 @@ class Arvados::V1::GroupsController < ApplicationController
     # apply to each table being searched, not "groups".
     load_limit_offset_order_params(fill_table_names: false)
 
-    if params['count'] == 'none' and @offset != 0
-      raise ArgumentError.new("Cannot use count=none with a nonzero offset")
+    if params['count'] == 'none' and @offset != 0 and (params['last_object_class'].nil? or params['last_object_class'].empty?)
+      # can't use offset without getting counts, so
+      # fall back to count=exact behavior.
+      params['count'] = 'exact'
+      set_count_none = true
     end
 
     # Trick apply_where_limit_order_params into applying suitable
@@ -250,7 +253,7 @@ class Arvados::V1::GroupsController < ApplicationController
 
     seen_last_class = false
     klasses.each do |klass|
-      # if current klass is same as params['last_object_class'], mark that fact
+      # check if current klass is same as params['last_object_class']
       seen_last_class = true if((params['count'].andand.==('none')) and
                                 (params['last_object_class'].nil? or
                                  params['last_object_class'].empty? or
@@ -259,7 +262,9 @@ class Arvados::V1::GroupsController < ApplicationController
       # if klasses are specified, skip all other klass types
       next if wanted_klasses.any? and !wanted_klasses.include?(klass.to_s)
 
-      # don't reprocess klass types that were already seen
+      # if specified, and count=none, then only look at the klass in
+      # last_object_class.
+      # for whatever reason, this parameter exists separately from 'wanted_klasses'
       next if params['count'] == 'none' and !seen_last_class
 
       # don't process rest of object types if we already have needed number of objects
@@ -335,6 +340,10 @@ class Arvados::V1::GroupsController < ApplicationController
 
     if params["include"]
       @extra_included = included_by_uuid.values
+    end
+
+    if set_count_none
+      params['count'] = 'none'
     end
 
     @objects = all_objects
