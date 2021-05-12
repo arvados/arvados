@@ -50,36 +50,35 @@ export const toggleProjectTrashed = (uuid: string, ownerUuid: string, isTrashed:
 
 export const toggleCollectionTrashed = (uuid: string, isTrashed: boolean) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<any> => {
+        let errorMessage = '';
+        let successMessage = '';
         try {
             if (isTrashed) {
                 const { location } = getState().router;
-                dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Restoring from trash...", kind: SnackbarKind.INFO }));
+                errorMessage = "Could not restore collection from trash";
+                successMessage = "Restored from trash";
                 await services.collectionService.untrash(uuid);
                 if (matchCollectionRoute(location ? location.pathname : '')) {
                     dispatch(navigateToTrash);
                 }
                 dispatch(trashPanelActions.REQUEST_ITEMS());
-                dispatch(snackbarActions.OPEN_SNACKBAR({
-                    message: "Restored from trash",
-                    hideDuration: 2000,
-                    kind: SnackbarKind.SUCCESS
-                }));
             } else {
-                dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Moving to trash...", kind: SnackbarKind.INFO }));
+                errorMessage = "Could not move collection to trash";
+                successMessage = "Added to trash";
                 await services.collectionService.trash(uuid);
                 dispatch(projectPanelActions.REQUEST_ITEMS());
-                dispatch(snackbarActions.OPEN_SNACKBAR({
-                    message: "Added to trash",
-                    hideDuration: 2000,
-                    kind: SnackbarKind.SUCCESS
-                }));
             }
         } catch (e) {
             dispatch(snackbarActions.OPEN_SNACKBAR({
-                message: "Could not move collection to trash",
+                message: errorMessage,
                 kind: SnackbarKind.ERROR
             }));
         }
+        dispatch(snackbarActions.OPEN_SNACKBAR({
+            message: successMessage,
+            hideDuration: 2000,
+            kind: SnackbarKind.SUCCESS
+        }));
     };
 
 export const toggleTrashed = (kind: ResourceKind, uuid: string, ownerUuid: string, isTrashed: boolean) =>
