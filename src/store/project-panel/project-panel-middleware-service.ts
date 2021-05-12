@@ -23,7 +23,7 @@ import { ProjectResource } from "~/models/project";
 import { updateResources } from "~/store/resources/resources-actions";
 import { getProperty } from "~/store/properties/properties";
 import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
-import { progressIndicatorActions } from '~/store/progress-indicator/progress-indicator-actions.ts';
+import { progressIndicatorActions } from '~/store/progress-indicator/progress-indicator-actions';
 import { DataExplorer, getDataExplorer } from '~/store/data-explorer/data-explorer-reducer';
 import { ListResults } from '~/services/common-service/common-service';
 import { loadContainers } from '~/store/processes/processes-actions';
