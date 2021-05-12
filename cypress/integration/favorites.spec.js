@@ -205,7 +205,7 @@ describe('Favorites tests', function () {
             });
     });
 
-    it.only('can select multi files when creating workflow', () => {
+    it('can select multi files when creating workflow', () => {
         cy.createProject({
             owningUser: activeUser,
             projectName: 'myProject1',
@@ -250,7 +250,7 @@ describe('Favorites tests', function () {
                         cy.get('main').contains(testWorkflow.name).click();
                         cy.get('[data-cy=run-process-next-button]').click();
 
-                        cy.get('label').contains('Files').parent('div').find('input').click();
+                        cy.get('label').contains('#main/foo').parent('div').find('input').click();
                         cy.get('div[role=dialog]')
                             .within(() => {
                                 cy.get('p').contains('Projects').closest('div[role=button]')
@@ -269,7 +269,7 @@ describe('Favorites tests', function () {
                                 cy.get('[data-cy=ok-button]').click();
                             });
 
-                        cy.get('label').contains('Collections').parent('div').find('input').click();
+                        cy.get('label').contains('#main/bar').parent('div').find('input').click();
                         cy.get('div[role=dialog]')
                             .within(() => {
                                 cy.get('p').contains('Projects').closest('div[role=button]')
