@@ -239,8 +239,6 @@ describe('Collection panel tests', function () {
 
                 const names = [
                     'bar', // initial name already set
-                    '[between brackets]', // JSON-like strings (#17582)
-                    '{between braces}', // JSON-like strings (#17582)
                     '&',
                     'foo',
                     '&amp;',
@@ -570,7 +568,8 @@ describe('Collection panel tests', function () {
         // Create new collection
         cy.get('[data-cy=side-panel-button]').click();
         cy.get('[data-cy=side-panel-new-collection]').click();
-        const collName = `Test collection (${Math.floor(999999 * Math.random())})`;
+        // Name between brackets tests bugfix #17582
+        const collName = `[Test collection (${Math.floor(999999 * Math.random())})]`;
         cy.get('[data-cy=form-dialog]')
             .should('contain', 'New collection')
             .within(() => {
