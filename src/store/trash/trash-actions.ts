@@ -22,8 +22,8 @@ export const toggleProjectTrashed = (uuid: string, ownerUuid: string, isTrashed:
                 errorMessage = "Could not restore project from trash";
                 successMessage = "Restored from trash";
                 await services.groupsService.untrash(uuid);
+                dispatch<any>(navigateTo(uuid));
                 dispatch<any>(activateSidePanelTreeItem(uuid));
-                dispatch(trashPanelActions.REQUEST_ITEMS());
             } else {
                 errorMessage = "Could not move project to trash";
                 successMessage = "Added to trash";
