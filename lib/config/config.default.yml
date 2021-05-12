@@ -433,7 +433,7 @@ Clusters:
       #
       # BalancePeriod determines the interval between start times of
       # successive scan/balance operations. If a scan/balance operation
-      # takes longer than RunPeriod, the next one will follow it
+      # takes longer than BalancePeriod, the next one will follow it
       # immediately.
       #
       # If SIGUSR1 is received during an idle period between operations,
