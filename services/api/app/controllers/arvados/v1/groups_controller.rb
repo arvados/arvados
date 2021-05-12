@@ -188,6 +188,10 @@ class Arvados::V1::GroupsController < ApplicationController
     # apply to each table being searched, not "groups".
     load_limit_offset_order_params(fill_table_names: false)
 
+    if params['count'] == 'none' and @offset != 0
+      raise ArgumentError.new("Cannot use count=none with a nonzero offset")
+    end
+
     # Trick apply_where_limit_order_params into applying suitable
     # per-table values. *_all are the real ones we'll apply to the
     # aggregate set.
@@ -294,26 +298,22 @@ class Arvados::V1::GroupsController < ApplicationController
       if params['exclude_home_project']
         @objects = exclude_home @objects, klass
       end
-      if params['count'] == 'none'
-        # The call to object_list below will not populate :items_available in
-        # its response, because count is disabled.  Save @objects length (does
-        # not require another db query) so that @offset (if set) is handled
-        # correctly.
-        countless_items_available = @objects.length
-      end
 
+      # Adjust the limit based on number of objects fetched so far
       klass_limit = limit_all - all_objects.count
       @limit = klass_limit
       apply_where_limit_order_params klass
+
+      # This actually fetches the objects
       klass_object_list = object_list(model_class: klass)
-      if params['count'] != 'none'
-        klass_items_available = klass_object_list[:items_available] || 0
-      else
-        # klass_object_list[:items_available] is not populated
-        klass_items_available = countless_items_available
-      end
+
+      # If count=none, :items_available will be nil, and offset is
+      # required to be 0.
+      klass_items_available = klass_object_list[:items_available] || 0
       @items_available += klass_items_available
       @offset = [@offset - klass_items_available, 0].max
+
+      # Add objects to the list of objects to be returned.
       all_objects += klass_object_list[:items]
 
       if klass_object_list[:limit] < klass_limit
