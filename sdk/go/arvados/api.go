@@ -136,6 +136,7 @@ type UpdateOptions struct {
 }
 
 type GroupContentsOptions struct {
+	ClusterID          string   `json:"cluster_id"`
 	UUID               string   `json:"uuid,omitempty"`
 	Select             []string `json:"select"`
 	Filters            []Filter `json:"filters"`

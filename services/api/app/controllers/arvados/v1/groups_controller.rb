@@ -188,6 +188,13 @@ class Arvados::V1::GroupsController < ApplicationController
     # apply to each table being searched, not "groups".
     load_limit_offset_order_params(fill_table_names: false)
 
+    if params['count'] == 'none' and @offset != 0 and (params['last_object_class'].nil? or params['last_object_class'].empty?)
+      # can't use offset without getting counts, so
+      # fall back to count=exact behavior.
+      params['count'] = 'exact'
+      set_count_none = true
+    end
+
     # Trick apply_where_limit_order_params into applying suitable
     # per-table values. *_all are the real ones we'll apply to the
     # aggregate set.
@@ -246,7 +253,7 @@ class Arvados::V1::GroupsController < ApplicationController
 
     seen_last_class = false
     klasses.each do |klass|
-      # if current klass is same as params['last_object_class'], mark that fact
+      # check if current klass is same as params['last_object_class']
       seen_last_class = true if((params['count'].andand.==('none')) and
                                 (params['last_object_class'].nil? or
                                  params['last_object_class'].empty? or
@@ -255,7 +262,9 @@ class Arvados::V1::GroupsController < ApplicationController
       # if klasses are specified, skip all other klass types
       next if wanted_klasses.any? and !wanted_klasses.include?(klass.to_s)
 
-      # don't reprocess klass types that were already seen
+      # if specified, and count=none, then only look at the klass in
+      # last_object_class.
+      # for whatever reason, this parameter exists separately from 'wanted_klasses'
       next if params['count'] == 'none' and !seen_last_class
 
       # don't process rest of object types if we already have needed number of objects
@@ -294,26 +303,22 @@ class Arvados::V1::GroupsController < ApplicationController
       if params['exclude_home_project']
         @objects = exclude_home @objects, klass
       end
-      if params['count'] == 'none'
-        # The call to object_list below will not populate :items_available in
-        # its response, because count is disabled.  Save @objects length (does
-        # not require another db query) so that @offset (if set) is handled
-        # correctly.
-        countless_items_available = @objects.length
-      end
 
+      # Adjust the limit based on number of objects fetched so far
       klass_limit = limit_all - all_objects.count
       @limit = klass_limit
       apply_where_limit_order_params klass
+
+      # This actually fetches the objects
       klass_object_list = object_list(model_class: klass)
-      if params['count'] != 'none'
-        klass_items_available = klass_object_list[:items_available] || 0
-      else
-        # klass_object_list[:items_available] is not populated
-        klass_items_available = countless_items_available
-      end
+
+      # If count=none, :items_available will be nil, and offset is
+      # required to be 0.
+      klass_items_available = klass_object_list[:items_available] || 0
       @items_available += klass_items_available
       @offset = [@offset - klass_items_available, 0].max
+
+      # Add objects to the list of objects to be returned.
       all_objects += klass_object_list[:items]
 
       if klass_object_list[:limit] < klass_limit
@@ -335,6 +340,10 @@ class Arvados::V1::GroupsController < ApplicationController
 
     if params["include"]
       @extra_included = included_by_uuid.values
+    end
+
+    if set_count_none
+      params['count'] = 'none'
     end
 
     @objects = all_objects
