@@ -362,11 +362,34 @@
   doc: "Test issue 17462 - secondary file objects on file defaults are not resolved"
 
 - job: null
-  output: {}
+  output: {
+    "stuff": {
+        "location": "bar.txt",
+        "basename": "bar.txt",
+        "class": "File",
+        "checksum": "sha1$da39a3ee5e6b4b0d3255bfef95601890afd80709",
+        "size": 0
+    }
+  }
   tool: 17521-dot-slash-glob.cwl
   doc: "Test issue 17521 - bug with leading './' capturing files in subdirectories"
 
 - job: null
-  output: {}
+  output: {
+    "stuff": {
+        "basename": "foo",
+        "class": "Directory",
+        "listing": [
+            {
+                "basename": "bar.txt",
+                "checksum": "sha1$da39a3ee5e6b4b0d3255bfef95601890afd80709",
+                "class": "File",
+                "location": "foo/bar.txt",
+                "size": 0
+            }
+        ],
+        "location": "foo"
+    }
+  }
   tool: 10380-trailing-slash-dir.cwl
   doc: "Test issue 10380 - bug with trailing slash when capturing an output directory"
