@@ -288,13 +288,13 @@ describe('Favorites tests', function () {
                             });
                     });
 
-                cy.get('label').contains('Files').parent('div')
+                cy.get('label').contains('#main/foo').parent('div')
                     .within(() => {
                         cy.contains('baz');
                         cy.contains('bar');
                     });
 
-                cy.get('label').contains('Collections').parent('div')
+                cy.get('label').contains('#main/bar').parent('div')
                     .within(() => {
                         cy.contains(testCollection.name);
                         cy.contains(testCollection2.name);

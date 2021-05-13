@@ -170,7 +170,6 @@ const FileArrayInputComponent = connect(mapStateToProps)(
             });
 
             this.setFiles(files);
-
         }
 
         refreshFiles = () => {

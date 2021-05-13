@@ -160,7 +160,7 @@ const DirectoryArrayInputComponent = connect(mapStateToProps)(
                 .reduce((directories, { value }) =>
                     'kind' in value &&
                         value.kind === ResourceKind.COLLECTION &&
-                        formattedDirectories.find(({ portableDataHash }) => value.portableDataHash === portableDataHash)
+                        formattedDirectories.find(({ portableDataHash, name }) => value.portableDataHash === portableDataHash && value.name === name)
                         ? directories.concat(value)
                         : directories, initialDirectories);
 
@@ -182,7 +182,7 @@ const DirectoryArrayInputComponent = connect(mapStateToProps)(
             });
 
             const orderedDirectories = formattedDirectories.reduce((dirs, formattedDir) => {
-                const dir = directories.find(({ portableDataHash }) => portableDataHash === formattedDir.portableDataHash);
+                const dir = directories.find(({ portableDataHash, name }) => portableDataHash === formattedDir.portableDataHash && name === formattedDir.name);
                 return dir
                     ? [...dirs, dir]
                     : dirs;
