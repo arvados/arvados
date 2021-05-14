@@ -1,0 +1,79 @@
+---
+layout: default
+navsection: userguide
+title: Analyzing workflow cost (cloud only)
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+{% include 'notebox_begin' %}
+
+This is only applicable when Arvados runs in a cloud environment and @arvados-dispatch-cloud@ is used to dispatch @crunch@ jobs. The per node-hour price for each defined InstanceType most be supplied in "config.yml":{{site.baseurl}}/admin/config.html.
+
+{% include 'notebox_end' %}
+
+The @arvados-client@ program can be used to analyze the cost of a workflow. It can be installed from packages (@apt install arvados-client@ or @yum install arvados-client@). The @arvados-client costanalyzer@ command analyzes the cost accounting information associated with Arvados container requests.
+
+h2(#syntax). Syntax
+
+The @arvados-client costanalyzer@ tool has a number of command line arguments:
+
+<notextile>
+<pre><code>~$ <span class="userinput">arvados-client costanalyzer -h</span>
+Usage:
+  arvados-client costanalyzer [options ...] <uuid> ...
+
+  This program analyzes the cost of Arvados container requests. For each uuid
+  supplied, it creates a CSV report that lists all the containers used to
+  fulfill the container request, together with the machine type and cost of
+  each container. At least one uuid must be specified.
+
+  When supplied with the uuid of a container request, it will calculate the
+  cost of that container request and all its children.
+
+  When supplied with the uuid of a collection, it will see if there is a
+  container_request uuid in the properties of the collection, and if so, it
+  will calculate the cost of that container request and all its children.
+
+  When supplied with a project uuid or when supplied with multiple container
+  request or collection uuids, it will create a CSV report for each supplied
+  uuid, as well as a CSV file with aggregate cost accounting for all supplied
+  uuids. The aggregate cost report takes container reuse into account: if a
+  container was reused between several container requests, its cost will only
+  be counted once.
+
+  Caveats:
+
+  - This program uses the cost data from config.yml at the time of the
+  execution of the container, stored in the 'node.json' file in its log
+  collection. If the cost data was not correctly configured at the time the
+  container was executed, the output from this program will be incorrect.
+
+  - If a container was run on a preemptible ("spot") instance, the cost data
+  reported by this program may be wildly inaccurate, because it does not have
+  access to the spot pricing in effect for the node then the container ran. The
+  UUID report file that is generated when the '-output' option is specified has
+  a column that indicates the preemptible state of the instance that ran the
+  container.
+
+  In order to get the data for the uuids supplied, the ARVADOS_API_HOST and
+  ARVADOS_API_TOKEN environment variables must be set.
+
+  This program prints the total dollar amount from the aggregate cost
+  accounting across all provided uuids on stdout.
+
+  When the '-output' option is specified, a set of CSV files with cost details
+  will be written to the provided directory.
+
+Options:
+  -cache
+      create and use a local disk cache of Arvados objects (default true)
+  -log-level level
+      logging level (debug, info, ...) (default "info")
+  -output directory
+      output directory for the CSV reports
+</code></pre>
+</notextile>
