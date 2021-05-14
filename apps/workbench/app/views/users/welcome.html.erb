@@ -19,7 +19,7 @@ SPDX-License-Identifier: AGPL-3.0 %>
         }).then(function(resp) {
           if (!resp.ok) {
             resp.json().then(function(respj) {
-              document.getElementById('login-authenticate-error').innerHTML = `<p>${respj.errors[0]}</p>`;
+              document.getElementById('login-authenticate-error').innerHTML = "<p>"+respj.errors[0]+"</p>";
             });
             return;
            }
@@ -68,7 +68,7 @@ SPDX-License-Identifier: AGPL-3.0 %>
 			     oninput="clear_authenticate_error()"></input></p>
         <input type="hidden" name="return_to" value="<%= "#{Rails.configuration.Services.Workbench1.ExternalURL}" %>" id="login-return-to">
         <span style="color: red"><p id="login-authenticate-error"></p></span>
-        <button type="submit" class="btn btn-primary">Login</button>
+        <button type="submit" class="btn btn-primary">Log in</button>
         </form>
       <% end %>
 
