@@ -7,31 +7,33 @@ SPDX-License-Identifier: AGPL-3.0 %>
 <%= javascript_tag do %>
       async function controller_password_authenticate(event) {
         event.preventDefault()
-	document.getElementById('login-authenticate-error').innerHTML = '';
-	const resp = await fetch('<%= "#{Rails.configuration.Services.Controller.ExternalURL}" %>arvados/v1/users/authenticate', {
-	  method: 'POST',
+        document.getElementById('login-authenticate-error').innerHTML = '';
+        const resp = await fetch('<%= "#{Rails.configuration.Services.Controller.ExternalURL}" %>arvados/v1/users/authenticate', {
+          method: 'POST',
 
-	  headers: {'Content-Type': 'application/json'},
-	  body: JSON.stringify({
-	    username: document.getElementById('login-username').value,
-	    password: document.getElementById('login-password').value,
-	  }),
-	})
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            username: document.getElementById('login-username').value,
+            password: document.getElementById('login-password').value,
+          }),
+        })
         if (!resp.ok) {
           const respj = await resp.json()
-	  document.getElementById('login-authenticate-error').innerHTML = `<p>${respj.errors[0]}</p>`;
-	  return
-	}
-	var redir = document.getElementById('login-return-to').value
-	if (redir.indexOf('?') > 0) {
-	  redir += '&'
-	} else {
-	  redir += '?'
-	}
+          document.getElementById('login-authenticate-error').innerHTML = `<p>${respj.errors[0]}</p>`;
+          return
+        }
+        var redir = document.getElementById('login-return-to').value
+        if (redir.indexOf('?') > 0) {
+          redir += '&'
+        } else {
+          redir += '?'
+        }
         const respj = await resp.json()
-	document.location = redir + "api_token=v2/" + respj.uuid + "/" + respj.api_token
+        document.location = redir + "api_token=v2/" + respj.uuid + "/" + respj.api_token
       }
-      // document.getElementById('login-form-tag').
+      function clear_authenticate_error() {
+        document.getElementById('login-authenticate-error').innerHTML = "";
+      }
 <% end %>
 
 <div class="row">
@@ -54,11 +56,15 @@ SPDX-License-Identifier: AGPL-3.0 %>
       <% when Rails.configuration.Login.LDAP.Enable %>
       <% when Rails.configuration.Login.Test.Enable %>
         <form id="login-form-tag" onsubmit="controller_password_authenticate(event)">
-	<p>username <input type="text" class="form-control" name="login-username" value="" id="login-username" style="width: 50%"></input></p>
-	<p>password <input type="password" class="form-control" name="login-password" value="" id="login-password" style="width: 50%"></input></p>
+          <p>username <input type="text" class="form-control" name="login-username"
+			     value="" id="login-username" style="width: 50%"
+			     oninput="clear_authenticate_error()"></input></p>
+          <p>password <input type="password" class="form-control" name="login-password" value=""
+			     id="login-password" style="width: 50%"
+			     oninput="clear_authenticate_error()"></input></p>
         <input type="hidden" name="return_to" value="<%= "#{Rails.configuration.Services.Workbench1.ExternalURL}" %>" id="login-return-to">
-	<p id="login-authenticate-error"></p>
-	<button type="submit" class="btn btn-primary">Login</button>
+        <span style="color: red"><p id="login-authenticate-error"></p></span>
+        <button type="submit" class="btn btn-primary">Login</button>
         </form>
       <% end %>
 
