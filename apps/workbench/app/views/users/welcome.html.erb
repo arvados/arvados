@@ -5,10 +5,10 @@ SPDX-License-Identifier: AGPL-3.0 %>
 <% content_for :breadcrumbs do raw '<!-- -->' end %>
 
 <%= javascript_tag do %>
-      async function controller_password_authenticate(event) {
+      function controller_password_authenticate(event) {
         event.preventDefault()
         document.getElementById('login-authenticate-error').innerHTML = '';
-        const resp = await fetch('<%= "#{Rails.configuration.Services.Controller.ExternalURL}" %>arvados/v1/users/authenticate', {
+        fetch('<%= "#{Rails.configuration.Services.Controller.ExternalURL}" %>arvados/v1/users/authenticate', {
           method: 'POST',
 
           headers: {'Content-Type': 'application/json'},
@@ -16,20 +16,24 @@ SPDX-License-Identifier: AGPL-3.0 %>
             username: document.getElementById('login-username').value,
             password: document.getElementById('login-password').value,
           }),
-        })
-        if (!resp.ok) {
-          const respj = await resp.json()
-          document.getElementById('login-authenticate-error').innerHTML = `<p>${respj.errors[0]}</p>`;
-          return
-        }
-        var redir = document.getElementById('login-return-to').value
-        if (redir.indexOf('?') > 0) {
-          redir += '&'
-        } else {
-          redir += '?'
-        }
-        const respj = await resp.json()
-        document.location = redir + "api_token=v2/" + respj.uuid + "/" + respj.api_token
+        }).then(function(resp) {
+          if (!resp.ok) {
+            resp.json().then(function(respj) {
+              document.getElementById('login-authenticate-error').innerHTML = `<p>${respj.errors[0]}</p>`;
+            });
+            return;
+           }
+
+           var redir = document.getElementById('login-return-to').value
+           if (redir.indexOf('?') > 0) {
+             redir += '&'
+           } else {
+             redir += '?'
+           }
+           resp.json().then(function(respj) {
+             document.location = redir + "api_token=v2/" + respj.uuid + "/" + respj.api_token;
+           });
+         });
       }
       function clear_authenticate_error() {
         document.getElementById('login-authenticate-error').innerHTML = "";
