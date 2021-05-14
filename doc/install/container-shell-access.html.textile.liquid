@@ -1,0 +1,44 @@
+---
+layout: default
+navsection: installguide
+title: Configure container shell access
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+Arvados can be configured to permit shell access to running containers. This can be handy for debugging, but it could affect reproducability of workflows. This feature can be enabled for admin users, or for all users. By default, it is entirely disabled.
+
+The relevant configuration section is
+
+<notextile>
+<pre><code>    Containers:
+      ShellAccess:
+        # An admin user can use "arvados-client shell" to start an
+        # interactive shell (with any user ID) in any running
+        # container.
+        Admin: false
+
+        # Any user can use "arvados-client shell" to start an
+        # interactive shell (with any user ID) in any running
+        # container that they started, provided it isn't also
+        # associated with a different user's container request.
+        #
+        # Interactive sessions make it easy to alter the container's
+        # runtime environment in ways that aren't recorded or
+        # reproducible. Consider the implications for automatic
+        # container reuse before enabling and using this feature. In
+        # particular, note that starting an interactive session does
+        # not disqualify a container from being reused by a different
+        # user/workflow in the future.
+        User: false
+</code></pre>
+</notextile>
+
+To enable the feature a firewall change may also be required. Traffic from the machine that runs @arvados-controller@ to the compute nodes in the port range above 1024 must be allowed.
+
+After changing the configuration, @arvados-controller@ must be restarted for the change to take effect. When enabling, the change will only affect containers started from that point on. When disabling, access is removed immediately for any running containers, as well as any containers started subsequently.
+
+Usage instructions for this feature are available in the "User guide":{{site.baseurl}}/user/debugging/container-shell-access.html.

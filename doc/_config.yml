@@ -58,6 +58,7 @@ navbar:
       - user/cwl/federated-workflows.html.textile.liquid
       - user/cwl/cwl-versions.html.textile.liquid
       - user/cwl/crunchstat-summary.html.textile.liquid
+      - user/debugging/container-shell-access.html.textile.liquid
     - Working with git repositories:
       - user/tutorials/add-new-repository.html.textile.liquid
       - user/tutorials/git-arvados-guide.html.textile.liquid
@@ -251,6 +252,8 @@ navbar:
       - install/crunch2-slurm/configure-slurm.html.textile.liquid
       - install/crunch2-slurm/install-compute-node.html.textile.liquid
       - install/crunch2-slurm/install-test.html.textile.liquid
+    - Additional configuration:
+      - install/container-shell-access.html.textile.liquid
     - External dependencies:
       - install/install-postgresql.html.textile.liquid
       - install/ruby.html.textile.liquid
