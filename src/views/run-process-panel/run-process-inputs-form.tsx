@@ -111,10 +111,10 @@ const getInputComponent = (input: CommandInputParameter) => {
             return <FloatArrayInput input={input as FloatArrayCommandInputParameter} />;
 
         case isArrayOfType(input, CWLType.FILE):
-            return <FileArrayInput input={input as FileArrayCommandInputParameter} />;
+            return <FileArrayInput options={{ showOnlyOwned: false, showOnlyWritable: false }} input={input as FileArrayCommandInputParameter} />;
 
         case isArrayOfType(input, CWLType.DIRECTORY):
-            return <DirectoryArrayInput input={input as DirectoryArrayCommandInputParameter} />;
+            return <DirectoryArrayInput options={{ showOnlyOwned: false, showOnlyWritable: false }} input={input as DirectoryArrayCommandInputParameter} />;
 
         default:
             return null;

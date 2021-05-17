@@ -29,6 +29,7 @@ import withStyles, { StyleRulesCallback } from '@material-ui/core/styles/withSty
 
 export interface FileArrayInputProps {
     input: FileArrayCommandInputParameter;
+    options?: { showOnlyOwned: boolean, showOnlyWritable: boolean };
 }
 export const FileArrayInput = ({ input }: FileArrayInputProps) =>
     <Field
@@ -92,7 +93,9 @@ const mapStateToProps = createStructuredSelector({
 });
 
 const FileArrayInputComponent = connect(mapStateToProps)(
-    class FileArrayInputComponent extends React.Component<FileArrayInputComponentProps & GenericInputProps & DispatchProp, FileArrayInputComponentState> {
+    class FileArrayInputComponent extends React.Component<FileArrayInputComponentProps & GenericInputProps & DispatchProp & {
+        options?: { showOnlyOwned: boolean, showOnlyWritable: boolean };
+    }, FileArrayInputComponentState> {
         state: FileArrayInputComponentState = {
             open: false,
             files: [],
@@ -167,7 +170,6 @@ const FileArrayInputComponent = connect(mapStateToProps)(
             });
 
             this.setFiles(files);
-
         }
 
         refreshFiles = () => {
@@ -223,6 +225,7 @@ const FileArrayInputComponent = connect(mapStateToProps)(
                 <DialogActions>
                     <Button onClick={this.closeDialog}>Cancel</Button>
                     <Button
+                        data-cy='ok-button'
                         variant='contained'
                         color='primary'
                         onClick={this.submit}>Ok</Button>
@@ -259,6 +262,7 @@ const FileArrayInputComponent = connect(mapStateToProps)(
                             includeCollections
                             includeFiles
                             showSelection
+                            options={this.props.options}
                             toggleItemSelection={this.refreshFiles} />
                     </div>
                     <Divider />

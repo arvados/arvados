@@ -149,7 +149,6 @@ export const loadCollection = (id: string, pickerId: string) =>
 
             const node = getNode(id)(picker);
             if (node && 'kind' in node.value && node.value.kind === ResourceKind.COLLECTION) {
-
                 const files = await services.collectionService.files(node.value.portableDataHash);
                 const tree = createCollectionFilesTree(files);
                 const sorted = sortFilesTree(tree);

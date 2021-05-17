@@ -1,0 +1,26 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
+---
+"$graph":
+- class: Workflow
+  cwlVersion: v1.2
+  hints:
+  - acrContainerImage: 7009415fdc959d0c2819ee2e9db96561+261
+    class: http://arvados.org/cwl#WorkflowRunnerResources
+  id: "#main"
+  inputs:
+  - default: []
+    id: "#main/bar"
+    type:
+      items: Directory
+      type: array
+  - default: []
+    id: "#main/foo"
+    type:
+      items: File
+      type: array
+  outputs: []
+  steps: []
+cwlVersion: v1.2
