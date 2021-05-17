@@ -4,42 +4,74 @@ SPDX-License-Identifier: AGPL-3.0 %>
 
 <% content_for :breadcrumbs do raw '<!-- -->' end %>
 
+<%= javascript_tag do %>
+      function controller_password_authenticate(event) {
+        event.preventDefault()
+        document.getElementById('login-authenticate-error').innerHTML = '';
+        fetch('<%= "#{Rails.configuration.Services.Controller.ExternalURL}" %>arvados/v1/users/authenticate', {
+          method: 'POST',
+
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            username: document.getElementById('login-username').value,
+            password: document.getElementById('login-password').value,
+          }),
+        }).then(function(resp) {
+          if (!resp.ok) {
+            resp.json().then(function(respj) {
+              document.getElementById('login-authenticate-error').innerHTML = "<p>"+respj.errors[0]+"</p>";
+            });
+            return;
+           }
+
+           var redir = document.getElementById('login-return-to').value
+           if (redir.indexOf('?') > 0) {
+             redir += '&'
+           } else {
+             redir += '?'
+           }
+           resp.json().then(function(respj) {
+             document.location = redir + "api_token=v2/" + respj.uuid + "/" + respj.api_token;
+           });
+         });
+      }
+      function clear_authenticate_error() {
+        document.getElementById('login-authenticate-error').innerHTML = "";
+      }
+<% end %>
+
 <div class="row">
   <div class="col-sm-8 col-sm-push-4" style="margin-top: 1em">
     <div class="well clearfix">
-      <%= image_tag "dax.png", style: "width: 112px; height: 150px; margin-right: 2em", class: 'pull-left' %>
 
-      <h3 style="margin-top:0">Please log in.</h3>
+      <%= raw(Rails.configuration.Workbench.WelcomePageHTML) %>
 
-      <p>
-
-        The "Log in" button below will show you a Google sign-in page.
-        After you assure Google that you want to log in here with your
-        Google account, you will be redirected back here to
-        <%= Rails.configuration.Workbench.SiteName %>.
-
-      </p><p>
-
-        If you have never used <%= Rails.configuration.Workbench.SiteName %>
-        before, logging in for the first time will automatically
-        create a new account.
-
-      </p><p>
-
-        <i><%= Rails.configuration.Workbench.SiteName %> uses your name and
-          email address only for identification, and does not retrieve
-          any other personal information from Google.</i>
-
-      </p>
-        <%# Todo: add list of external authentications providers to
-            discovery document, then generate the option list here. Right
-            now, don't provide 'auth_provider' to get the default one. %>
+      <% case %>
+      <% when Rails.configuration.Login.Google.Enable %>
+      <% when Rails.configuration.Login.OpenIDConnect.Enable %>
+      <% when Rails.configuration.Login.SSO.Enable %>
         <div class="pull-right">
           <%= link_to arvados_api_client.arvados_login_url(return_to: request.url), class: "btn btn-primary" do %>
           Log in to <%= Rails.configuration.Workbench.SiteName %>
           <i class="fa fa-fw fa-arrow-circle-right"></i>
           <% end %>
         </div>
+      <% when Rails.configuration.Login.PAM.Enable %>
+      <% when Rails.configuration.Login.LDAP.Enable %>
+      <% when Rails.configuration.Login.Test.Enable %>
+        <form id="login-form-tag" onsubmit="controller_password_authenticate(event)">
+          <p>username <input type="text" class="form-control" name="login-username"
+			     value="" id="login-username" style="width: 50%"
+			     oninput="clear_authenticate_error()"></input></p>
+          <p>password <input type="password" class="form-control" name="login-password" value=""
+			     id="login-password" style="width: 50%"
+			     oninput="clear_authenticate_error()"></input></p>
+        <input type="hidden" name="return_to" value="<%= "#{Rails.configuration.Services.Workbench1.ExternalURL}" %>" id="login-return-to">
+        <span style="color: red"><p id="login-authenticate-error"></p></span>
+        <button type="submit" class="btn btn-primary">Log in</button>
+        </form>
+      <% end %>
+
     </div>
   </div>
 </div>
