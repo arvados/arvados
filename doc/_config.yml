@@ -58,6 +58,7 @@ navbar:
       - user/cwl/federated-workflows.html.textile.liquid
       - user/cwl/cwl-versions.html.textile.liquid
       - user/cwl/crunchstat-summary.html.textile.liquid
+      - user/cwl/costanalyzer.html.textile.liquid
       - user/debugging/container-shell-access.html.textile.liquid
     - Working with git repositories:
       - user/tutorials/add-new-repository.html.textile.liquid
