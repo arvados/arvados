@@ -8,7 +8,7 @@ import { ServiceRepository } from "~/services/services";
 import { snackbarActions, SnackbarKind } from "~/store/snackbar/snackbar-actions";
 import { trashPanelActions } from "~/store/trash-panel/trash-panel-action";
 import { activateSidePanelTreeItem, loadSidePanelTreeProjects } from "~/store/side-panel-tree/side-panel-tree-actions";
-import { getProjectPanelCurrentUuid, projectPanelActions } from "~/store/project-panel/project-panel-action";
+import { projectPanelActions } from "~/store/project-panel/project-panel-action";
 import { ResourceKind } from "~/models/resource";
 import { navigateTo, navigateToTrash } from '~/store/navigation/navigation-action';
 import { matchCollectionRoute } from '~/routes/routes';
@@ -28,12 +28,8 @@ export const toggleProjectTrashed = (uuid: string, ownerUuid: string, isTrashed:
                 errorMessage = "Could not move project to trash";
                 successMessage = "Added to trash";
                 await services.groupsService.trash(uuid);
-                if (getProjectPanelCurrentUuid(getState()) === uuid) {
-                    dispatch<any>(navigateTo(ownerUuid));
-                } else {
-                    dispatch(projectPanelActions.REQUEST_ITEMS());
-                }
                 dispatch<any>(loadSidePanelTreeProjects(ownerUuid));
+                dispatch<any>(navigateTo(ownerUuid));
             }
         } catch (e) {
             dispatch(snackbarActions.OPEN_SNACKBAR({
