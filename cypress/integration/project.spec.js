@@ -122,17 +122,61 @@ describe('Project tests', function() {
 
             // Go to subproject and trash it.
             cy.goToPath(`/projects/${testSubProject.uuid}`);
-            cy.get('[data-cy=breadcrumb-last]').should('contain', testSubProject.name);
-            cy.get('[data-cy=breadcrumb-last]').rightclick();
+            cy.get('[data-cy=side-panel-tree]').should('contain', testSubProject.name);
+            cy.get('[data-cy=breadcrumb-last]')
+                .should('contain', testSubProject.name)
+                .rightclick();
             cy.get('[data-cy=context-menu]').contains('Move to trash').click();
 
             // Confirm that the parent project should be displayed.
             cy.get('[data-cy=breadcrumb-last]').should('contain', testRootProject.name);
             cy.url().should('contain', `/projects/${testRootProject.uuid}`);
+            cy.get('[data-cy=side-panel-tree]').should('not.contain', testSubProject.name);
 
             // Checks for bugfix #17637.
             cy.get('[data-cy=not-found-content]').should('not.exist');
             cy.get('[data-cy=not-found-page]').should('not.exist');
         });
     });
-})
+
+    it('navigates to the root project after trashing the parent of the one being displayed', function() {
+        cy.createGroup(activeUser.token, {
+            name: `Test root project ${Math.floor(Math.random() * 999999)}`,
+            group_class: 'project',
+        }).as('testRootProject').then(function() {
+            cy.createGroup(activeUser.token, {
+                name : `Test subproject ${Math.floor(Math.random() * 999999)}`,
+                group_class: 'project',
+                owner_uuid: this.testRootProject.uuid,
+            }).as('testSubProject').then(function() {
+                cy.createGroup(activeUser.token, {
+                    name : `Test sub subproject ${Math.floor(Math.random() * 999999)}`,
+                    group_class: 'project',
+                    owner_uuid: this.testSubProject.uuid,
+                }).as('testSubSubProject');
+            });
+        });
+        cy.getAll('@testRootProject', '@testSubProject', '@testSubSubProject').then(function([testRootProject, testSubProject, testSubSubProject]) {
+            cy.loginAs(activeUser);
+
+            // Go to innermost project and trash its parent.
+            cy.goToPath(`/projects/${testSubSubProject.uuid}`);
+            cy.get('[data-cy=side-panel-tree]').should('contain', testSubSubProject.name);
+            cy.get('[data-cy=breadcrumb-last]').should('contain', testSubSubProject.name);
+            cy.get('[data-cy=side-panel-tree]')
+                .contains(testSubProject.name)
+                .rightclick();
+            cy.get('[data-cy=context-menu]').contains('Move to trash').click();
+
+            // Confirm that the trashed project's parent should be displayed.
+            cy.get('[data-cy=breadcrumb-last]').should('contain', testRootProject.name);
+            cy.url().should('contain', `/projects/${testRootProject.uuid}`);
+            cy.get('[data-cy=side-panel-tree]').should('not.contain', testSubProject.name);
+            cy.get('[data-cy=side-panel-tree]').should('not.contain', testSubSubProject.name);
+
+            // Checks for bugfix #17637.
+            cy.get('[data-cy=not-found-content]').should('not.exist');
+            cy.get('[data-cy=not-found-page]').should('not.exist');
+        });
+    });
+});
