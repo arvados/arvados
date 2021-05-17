@@ -19,7 +19,7 @@ The @arvados-client@ program can be used to connect to a container in a running 
 
 h2(#syntax). Syntax
 
-The @arvados-client shell@ tool has a number of command line arguments:
+The @arvados-client shell@ tool has the following syntax:
 
 <notextile>
 <pre><code>~$ <span class="userinput">arvados-client shell -h</span>
@@ -33,6 +33,8 @@ Options:
 
 </code></pre>
 </notextile>
+
+The @arvados-client shell@ command calls the ssh binary on your system to make the connection. Everything after _[username@]container-uuid_ is passed through to your OpenSSH client. This means many other SSH features can be used, e.g. -g, -f -N, -n, ...
 
 h2(#Examples). Examples
 
@@ -63,8 +65,7 @@ root@0f13dcd755fa:~# nc -l -p 80
 And then, connecting to port 8888 locally:
 
 <notextile>
-<pre><code>~$ <span class="userinput">nc localhost 8888</span>
-hello
+<pre><code>~$ <span class="userinput">echo hello | nc localhost 8888</span>
 </code></pre>
 </notextile>
 

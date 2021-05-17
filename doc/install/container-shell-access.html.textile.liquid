@@ -39,6 +39,6 @@ The relevant configuration section is
 
 To enable the feature a firewall change may also be required. Traffic from the machine that runs @arvados-controller@ to the compute nodes in the port range above 1024 must be allowed.
 
-After changing the configuration, @arvados-controller@ must be restarted for the change to take effect. When enabling, the change will only affect containers started from that point on. When disabling, access is removed immediately for any running containers, as well as any containers started subsequently.
+After changing the configuration, @arvados-controller@ must be restarted for the change to take effect. When enabling, shell access will be enabled for any running containers. When disabling, access is removed immediately for any running containers, as well as any containers started subsequently. Restarting @arvados-controller@ will kill any active connections.
 
 Usage instructions for this feature are available in the "User guide":{{site.baseurl}}/user/debugging/container-shell-access.html.
