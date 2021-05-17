@@ -175,7 +175,7 @@ type ContainerRunner struct {
 
 	enableNetwork string // one of "default" or "always"
 	networkMode   string // passed through to HostConfig.NetworkMode
-	arvMountLog   *ThrottledLogger
+	arvMountLog   io.WriteCloser
 
 	containerWatchdogInterval time.Duration
 
@@ -332,7 +332,17 @@ func (runner *ContainerRunner) ArvMountCmd(arvMountCmd []string, token string) (
 	if err != nil {
 		return nil, err
 	}
-	runner.arvMountLog = NewThrottledLogger(w)
+	runner.arvMountLog = &regexpMatchingWriter{
+		WriteCloser: w,
+		Notify: func(a string, b string) {
+			fmt.Printf("%s,%s,EUREKA", a, b)
+		},
+		Regexps: []string{
+			".",
+			"Keep write error",
+			"Block not found error",
+			"Unhandled exception during FUSE operation"},
+	}
 	c.Stdout = runner.arvMountLog
 	c.Stderr = runner.arvMountLog
 

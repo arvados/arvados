@@ -24,6 +24,7 @@ type Timestamper func(t time.Time) string
 
 // Logging plumbing:
 //
+// (optionally) RegexpMatchingWriter ->
 // ThrottledLogger.Logger -> ThrottledLogger.Write ->
 // ThrottledLogger.buf -> ThrottledLogger.flusher ->
 // ArvLogWriter.Write -> CollectionFileWriter.Write | Api.Create
@@ -187,6 +188,35 @@ func NewThrottledLogger(writer io.WriteCloser) *ThrottledLogger {
 	tl.Timestamper = RFC3339Timestamp
 	go tl.flusher()
 	return tl
+}
+
+// regexpMatchingWriter compares every line and sends it to the underlying
+// Writer. Function Notify() will be triggered if any regexp matches.
+type regexpMatchingWriter struct {
+	io.WriteCloser
+	Notify    func(regexp string, line string)
+	Regexps   []string
+	setupOnce sync.Once
+	matchers  []*regexp.Regexp
+}
+
+func (w *regexpMatchingWriter) Write(p []byte) (n int, err error) {
+	// set up matchers from Regexps on first Write()
+	w.setupOnce.Do(func() {
+		w.matchers = make([]*regexp.Regexp, len(w.Regexps))
+		for i, rstring := range w.Regexps {
+			w.matchers[i] = regexp.MustCompile(rstring)
+		}
+	})
+
+	// If any regexp matches then call w.Notify()...
+	for _, matcher := range w.matchers {
+		if matcher.Match(p) {
+			w.Notify(matcher.String(), string(p))
+		}
+	}
+
+	return w.WriteCloser.Write(p)
 }
 
 // Log throttling rate limiting config parameters

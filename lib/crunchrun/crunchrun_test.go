@@ -1138,7 +1138,8 @@ func (s *TestSuite) testStopContainer(c *C, setup func(cr *ContainerRunner)) {
 	defer kc.Close()
 	cr, err := NewContainerRunner(s.client, api, kc, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	c.Assert(err, IsNil)
-	cr.RunArvMount = func([]string, string) (*exec.Cmd, error) { return nil, nil }
+	am := &ArvMountCmdLine{}
+	cr.RunArvMount = am.ArvMountTest
 	cr.MkArvClient = func(token string) (IArvadosClient, IKeepClient, *arvados.Client, error) {
 		return &ArvTestClient{}, &KeepTestClient{}, nil, nil
 	}
@@ -1527,6 +1528,28 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		checkEmpty()
 	}
 
+	// arv-mount logs should match some regexp #8363
+	{
+		i = 0
+		cr.ArvMountPoint = ""
+		cr.Container.Mounts = make(map[string]arvados.Mount)
+		cr.Container.Mounts["/tmp"] = arvados.Mount{Kind: "tmp"}
+		cr.Container.OutputPath = "/tmp"
+		cr.statInterval = 5 * time.Second
+		cr.token = arvadostest.ActiveToken
+		err := cr.SetupMounts()
+		c.Check(err, IsNil)
+
+		fmt.Printf("NICO: %#v", am)
+
+		err = cr.Run()
+		c.Check(err, IsNil)
+
+		os.RemoveAll(cr.ArvMountPoint)
+		cr.CleanupDirs()
+		checkEmpty()
+	}
+
 	// git_tree mounts
 	{
 		i = 0
@@ -1607,6 +1630,29 @@ func (s *TestSuite) TestStdout(c *C) {
 	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
 	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
 	c.Check(cr.ContainerArvClient.(*ArvTestClient).CalledWith("collection.manifest_text", "./a/b 307372fa8fd5c146b22ae7a45b49bc31+6 0:6:c.out\n"), NotNil)
+}
+
+func (s *TestSuite) TestArvMountRegexp(c *C) {
+	helperRecord := `{
+		"command": ["/bin/sh", "-c", "echo $FROBIZ"],
+		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+		"cwd": "/bin",
+		"environment": {"FROBIZ": "bilbo"},
+		"mounts": {"/tmp": {"kind": "tmp"}, "stdout": {"kind": "file", "path": "/tmp/a/b/c.out"} },
+		"output_path": "/tmp",
+		"priority": 1,
+		"runtime_constraints": {},
+		"state": "Locked"
+	}`
+
+	_, cr, _ := s.fullRunHelper(c, helperRecord, nil, 0, func(t *TestDockerClient) {
+		t.logWriter.Write(dockerLog(1, t.env[0][7:]+"\n"))
+		t.logWriter.Close()
+	})
+
+	err := cr.Run()
+	c.Check(err, IsNil)
+
 }
 
 // Used by the TestStdoutWithWrongPath*()
