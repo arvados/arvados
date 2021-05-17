@@ -37,7 +37,7 @@ The relevant configuration section is
 </code></pre>
 </notextile>
 
-To enable the feature a firewall change may also be required. Traffic from the machine that runs @arvados-controller@ to the compute nodes in the port range above 1024 must be allowed.
+To enable the feature a firewall change may also be required. This feature requires the opening of tcp connections from @arvados-controller@ to the range specified in the @net.ipv4.ip_local_port_range@ sysctl on compute nodes. If that range is unknown or hard to determine, it will be sufficient to allow tcp connections from @arvados-controller@ to port 1024-65535 on compute nodes, while allowing traffic that is part of existing tcp connections.
 
 After changing the configuration, @arvados-controller@ must be restarted for the change to take effect. When enabling, shell access will be enabled for any running containers. When disabling, access is removed immediately for any running containers, as well as any containers started subsequently. Restarting @arvados-controller@ will kill any active connections.
 
