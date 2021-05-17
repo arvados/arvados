@@ -770,6 +770,7 @@ def setup_config():
                 },
                 "Login": {
                     "SSO": {
+                        "Enable": True,
                         "ProviderAppID": "arvados-server",
                         "ProviderAppSecret": "608dbf356a327e2d0d4932b60161e212c2d8d8f5e25690d7b622f850a990cd33",
                     },

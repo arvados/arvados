@@ -1,0 +1,79 @@
+---
+layout: default
+navsection: userguide
+title: Debugging workflows - shell access
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+{% include 'notebox_begin' %}
+
+To use this feature, your Arvados installation must be configured to allow container shell access. See "the install guide":{{site.baseurl}}/install/container-shell-access.html for more information.
+
+{% include 'notebox_end' %}
+
+The @arvados-client@ program can be used to connect to a container in a running workflow. It can be installed from packages (@apt install arvados-client@ or @yum install arvados-client@). The @arvados-client shell@ command provides an ssh connection into a running container.
+
+h2(#syntax). Syntax
+
+The @arvados-client shell@ tool has the following syntax:
+
+<notextile>
+<pre><code>~$ <span class="userinput">arvados-client shell -h</span>
+arvados-client shell: open an interactive shell on a running container.
+
+Usage: arvados-client shell [options] [username@]container-uuid [ssh-options] [remote-command [args...]]
+
+Options:
+  -detach-keys string
+      set detach key sequence, as in docker-attach(1) (default "ctrl-],ctrl-]")
+
+</code></pre>
+</notextile>
+
+The @arvados-client shell@ command calls the ssh binary on your system to make the connection. Everything after _[username@]container-uuid_ is passed through to your OpenSSH client. This means many other SSH features can be used, e.g. -g, -f -N, -n, ...
+
+h2(#Examples). Examples
+
+Connect to a running container, using the container request UUID:
+
+<notextile>
+<pre><code>~$ <span class="userinput">./arvados-client shell ce8i5-xvhdp-e6wnujfslyyqn4b</span>
+root@0f13dcd755fa:~#
+</code></pre>
+</notextile>
+
+The container UUID also works:
+
+<notextile>
+<pre><code>~$ <span class="userinput">./arvados-client shell ce8i5-dz642-h1cl0sa62d4i430</span>
+root@0f13dcd755fa:~#
+</code></pre>
+</notextile>
+
+SSH port forwarding is supported:
+
+<notextile>
+<pre><code>~$ <span class="userinput">./arvados-client shell ce8i5-dz642-h1cl0sa62d4i430 -L8888:localhost:80</span>
+root@0f13dcd755fa:~# nc -l -p 80
+</code></pre>
+</notextile>
+
+And then, connecting to port 8888 locally:
+
+<notextile>
+<pre><code>~$ <span class="userinput">echo hello | nc localhost 8888</span>
+</code></pre>
+</notextile>
+
+Which appears on the other end:
+
+<notextile>
+<pre><code>~$ <span class="userinput">./arvados-client shell ce8i5-dz642-h1cl0sa62d4i430 -L8888:localhost:80</span>
+root@0f13dcd755fa:~# nc -l -p 80
+hello
+</code></pre>
+</notextile>
