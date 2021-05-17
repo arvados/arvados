@@ -57,7 +57,7 @@ func parseFlags(prog string, args []string, loader *config.Loader, logger *logru
 	flags.Usage = func() {
 		fmt.Fprintf(flags.Output(), `
 Usage:
-  %s [options ...] <uuid> ...
+  %s [options ...] uuid [uuid ...]
 
 	This program analyzes the cost of Arvados container requests. For each uuid
 	supplied, it creates a CSV report that lists all the containers used to
@@ -91,6 +91,13 @@ Usage:
 	UUID report file that is generated when the '-output' option is specified has
 	a column that indicates the preemptible state of the instance that ran the
 	container.
+
+	- This program does not take into account overhead costs like the time spent
+	starting and stopping compute nodes that run containers, the cost of the
+	permanent cloud nodes that provide the Arvados services, the cost of data
+	stored in Arvados, etc.
+
+	- When provided with a project uuid, subprojects will not be considered.
 
 	In order to get the data for the uuids supplied, the ARVADOS_API_HOST and
 	ARVADOS_API_TOKEN environment variables must be set.
