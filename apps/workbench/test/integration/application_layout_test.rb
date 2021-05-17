@@ -22,7 +22,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
       assert page.has_text?('Please log in'), 'Not found text - Please log in'
       assert page.has_text?('If you have never used Arvados Workbench before'), 'Not found text - If you have never'
       assert page.has_no_text?('My projects'), 'Found text - My projects'
-      assert page.has_link?(/Log in/), 'Not found text - log in to'
+      assert page.has_link?("Log in"), 'Not found text - Log in'
     elsif user['is_active']
       if profile_config && !has_profile
         assert page.has_text?('Save profile'), 'No text - Save profile'
