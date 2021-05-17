@@ -181,6 +181,11 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 			"wget",
 			"xvfb",
 		)
+		if dev || test {
+			pkgs = append(pkgs,
+				"squashfs-tools", // for singularity
+			)
+		}
 		switch {
 		case osv.Debian && osv.Major >= 10:
 			pkgs = append(pkgs, "libcurl4")
@@ -309,6 +314,28 @@ wget --progress=dot:giga -O${zip} https://services.gradle.org/distributions/grad
 unzip -o -d /var/lib/arvados ${zip}
 ln -sf /var/lib/arvados/gradle-${G}/bin/gradle /usr/local/bin/
 rm ${zip}
+`, stdout, stderr)
+			if err != nil {
+				return 1
+			}
+		}
+
+		singularityversion := "3.5.2"
+		if havesingularityversion, err := exec.Command("/var/lib/arvados/bin/singularity", "--version").CombinedOutput(); err == nil && strings.Contains(string(havesingularityversion), singularityversion) {
+			logger.Print("singularity " + singularityversion + " already installed")
+		} else if dev || test {
+			err = inst.runBash(`
+S=`+singularityversion+`
+tmp=/var/lib/arvados/tmp/singularity
+trap "rm -r ${tmp}" ERR EXIT
+cd /var/lib/arvados/tmp
+git clone https://github.com/sylabs/singularity
+cd singularity
+git checkout v${S}
+./mconfig --prefix=/var/lib/arvados
+make -C ./builddir
+make -C ./builddir install
+rm -r ${tmp}
 `, stdout, stderr)
 			if err != nil {
 				return 1

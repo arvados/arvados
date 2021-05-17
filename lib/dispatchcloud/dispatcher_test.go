@@ -56,6 +56,7 @@ func (s *DispatcherSuite) SetUpTest(c *check.C) {
 			CrunchRunArgumentsList: []string{"--foo", "--extra='args'"},
 			DispatchPrivateKey:     string(dispatchprivraw),
 			StaleLockTimeout:       arvados.Duration(5 * time.Millisecond),
+			RuntimeEngine:          "stub",
 			CloudVMs: arvados.CloudVMsConfig{
 				Driver:               "test",
 				SyncInterval:         arvados.Duration(10 * time.Millisecond),
@@ -163,7 +164,7 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 		stubvm.CrunchRunDetachDelay = time.Duration(rand.Int63n(int64(10 * time.Millisecond)))
 		stubvm.ExecuteContainer = executeContainer
 		stubvm.CrashRunningContainer = finishContainer
-		stubvm.ExtraCrunchRunArgs = "'--foo' '--extra='\\''args'\\'''"
+		stubvm.ExtraCrunchRunArgs = "'--runtime-engine=stub' '--foo' '--extra='\\''args'\\'''"
 		switch n % 7 {
 		case 0:
 			stubvm.Broken = time.Now().Add(time.Duration(rand.Int63n(90)) * time.Millisecond)

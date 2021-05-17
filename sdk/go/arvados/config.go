@@ -414,6 +414,7 @@ type ContainersConfig struct {
 	StaleLockTimeout            Duration
 	SupportedDockerImageFormats StringSet
 	UsePreemptibleInstances     bool
+	RuntimeEngine               string
 
 	JobsAPI struct {
 		Enable         string

@@ -128,7 +128,9 @@ func (s *copierSuite) TestSymlinkToMountedCollection(c *check.C) {
 		PortableDataHash: arvadostest.FooCollectionPDH,
 		Writable:         true,
 	}
-	s.cp.binds = append(s.cp.binds, bindtmp+":/mnt-w")
+	s.cp.bindmounts = map[string]bindmount{
+		"/mnt-w": bindmount{HostPath: bindtmp, ReadOnly: false},
+	}
 
 	c.Assert(os.Symlink("../../mnt", s.cp.hostOutputDir+"/l_dir"), check.IsNil)
 	c.Assert(os.Symlink("/mnt/foo", s.cp.hostOutputDir+"/l_file"), check.IsNil)

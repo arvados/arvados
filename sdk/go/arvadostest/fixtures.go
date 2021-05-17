@@ -96,6 +96,9 @@ const (
 
 	LogCollectionUUID  = "zzzzz-4zz18-logcollection01"
 	LogCollectionUUID2 = "zzzzz-4zz18-logcollection02"
+
+	DockerImage112PDH      = "d740a57097711e08eb9b2a93518f20ab+174"
+	DockerImage112Filename = "sha256:d8309758b8fe2c81034ffc8a10c36460b77db7bc5e7b448c4e5b684f9d95a678.tar"
 )
 
 // PathologicalManifest : A valid manifest designed to test
