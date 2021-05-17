@@ -20,9 +20,9 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
 
     if !user
       assert page.has_text?('Please log in'), 'Not found text - Please log in'
-      assert page.has_text?('The "Log in" button below will show you a Google sign-in page'), 'Not found text - google sign in page'
+      assert page.has_text?('If you have never used Arvados Workbench before'), 'Not found text - If you have never'
       assert page.has_no_text?('My projects'), 'Found text - My projects'
-      assert page.has_link?("Log in to #{Rails.configuration.Workbench.SiteName}"), 'Not found text - log in to'
+      assert page.has_link?("Log in"), 'Not found text - Log in'
     elsif user['is_active']
       if profile_config && !has_profile
         assert page.has_text?('Save profile'), 'No text - Save profile'
