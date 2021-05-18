@@ -11,11 +11,13 @@
     class: http://arvados.org/cwl#WorkflowRunnerResources
   id: "#main"
   inputs:
-  - id: "#main/bar"
+  - default: []
+    id: "#main/bar"
     type:
       items: Directory
       type: array
-  - id: "#main/foo"
+  - default: []
+    id: "#main/foo"
     type:
       items: File
       type: array

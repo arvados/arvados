@@ -205,7 +205,8 @@ describe('Favorites tests', function () {
             });
     });
 
-    it('can select multi files when creating workflow', () => {
+    ['workflow_with_array_fields.yaml', 'workflow_with_default_array_fields.yaml'].forEach((yamlfile) =>
+    it('can select multi files when creating workflow '+yamlfile, () => {
         cy.createProject({
             owningUser: activeUser,
             projectName: 'myProject1',
@@ -228,7 +229,7 @@ describe('Favorites tests', function () {
 
         cy.getAll('@myProject1', '@testCollection', '@testCollection2')
             .then(function ([myProject1, testCollection, testCollection2]) {
-                cy.readFile('cypress/fixtures/workflow_with_array_fields.yaml').then(workflow => {
+                cy.readFile('cypress/fixtures/'+yamlfile).then(workflow => {
                     cy.createWorkflow(adminUser.token, {
                         name: `TestWorkflow${Math.floor(Math.random() * 999999)}.cwl`,
                         definition: workflow,
@@ -300,5 +301,5 @@ describe('Favorites tests', function () {
                         cy.contains(testCollection2.name);
                     });
             });
-    });
+    }));
 });
