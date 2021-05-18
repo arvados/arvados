@@ -21,10 +21,9 @@ nginx:
         overwrite: true
         config:
           - server:
-            - server_name: '~^((.*--)?collections|download)\.__CLUSTER__\.__DOMAIN__'
+            - server_name: '~^((.*\.)?collections|download)\.__CLUSTER__\.__DOMAIN__'
             - listen:
               - 80
-            - include: snippets/letsencrypt_well_known.conf
             - location /:
               - return: '301 https://$host$request_uri'
 
@@ -36,7 +35,7 @@ nginx:
           cmd: create-initial-cert-collections.__CLUSTER__.__DOMAIN__-collections.__CLUSTER__.__DOMAIN__
         config:
           - server:
-            - server_name: '~^(.*--)?collections\.__CLUSTER__\.__DOMAIN__'
+            - server_name: '*.collections.__CLUSTER__.__DOMAIN__'
             - listen:
               - __CONTROLLER_EXT_SSL_PORT__ http2 ssl
             - index: index.html index.htm

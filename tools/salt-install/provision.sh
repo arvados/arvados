@@ -376,7 +376,7 @@ if [ -z "${ROLES}" ]; then
     grep -q "letsencrypt" ${S_DIR}/top.sls || echo "    - letsencrypt" >> ${S_DIR}/top.sls
   fi
   echo "    - postgres" >> ${S_DIR}/top.sls
-  echo "    - docker" >> ${S_DIR}/top.sls
+  echo "    - docker.software" >> ${S_DIR}/top.sls
   echo "    - arvados" >> ${S_DIR}/top.sls
 
   # Pillars
@@ -439,7 +439,7 @@ else
       ;;
       "shell")
         # States
-        grep -q "docker" ${S_DIR}/top.sls       || echo "    - docker" >> ${S_DIR}/top.sls
+        grep -q "docker" ${S_DIR}/top.sls       || echo "    - docker.software" >> ${S_DIR}/top.sls
         grep -q "arvados.${R}" ${S_DIR}/top.sls || echo "    - arvados.${R}" >> ${S_DIR}/top.sls
         # Pillars
         grep -q "" ${P_DIR}/top.sls                             || echo "    - docker" >> ${P_DIR}/top.sls
@@ -447,7 +447,7 @@ else
       ;;
       "dispatcher")
         # States
-        grep -q "docker" ${S_DIR}/top.sls       || echo "    - docker" >> ${S_DIR}/top.sls
+        grep -q "docker" ${S_DIR}/top.sls       || echo "    - docker.software" >> ${S_DIR}/top.sls
         grep -q "arvados.${R}" ${S_DIR}/top.sls || echo "    - arvados.${R}" >> ${S_DIR}/top.sls
         # Pillars
         # ATM, no specific pillar needed
