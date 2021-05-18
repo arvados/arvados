@@ -28,14 +28,15 @@ usage() {
   echo >&2 "                                              Possible values are:"
   echo >&2 "                                                api"
   echo >&2 "                                                controller"
-  echo >&2 "                                                keepstore"
-  echo >&2 "                                                websocket"
-  echo >&2 "                                                keepweb"
-  echo >&2 "                                                workbench2"
-  echo >&2 "                                                keepproxy"
-  echo >&2 "                                                shell"
-  echo >&2 "                                                workbench"
   echo >&2 "                                                dispatcher"
+  echo >&2 "                                                keepproxy"
+  echo >&2 "                                                keepstore"
+  echo >&2 "                                                keepweb"
+  echo >&2 "                                                shell"
+  echo >&2 "                                                webshell"
+  echo >&2 "                                                websocket"
+  echo >&2 "                                                workbench"
+  echo >&2 "                                                workbench2"
   echo >&2 "                                              Defaults to applying them all"
   echo >&2 "  -h, --help                                  Display this help and exit"
   echo >&2 "  -v, --vagrant                               Run in vagrant and use the /vagrant shared dir"
@@ -70,7 +71,7 @@ arguments() {
         for i in ${2//,/ }
           do
             # Verify the role exists
-            if [[ ! "database,api,controller,keepstore,websocket,keepweb,workbench2,keepproxy,shell,workbench,dispatcher" == *"$i"* ]]; then
+            if [[ ! "database,api,controller,keepstore,websocket,keepweb,workbench2,webshell,keepproxy,shell,workbench,dispatcher" == *"$i"* ]]; then
               echo "The role '${i}' is not a valid role"
               usage
               exit 1
@@ -422,7 +423,7 @@ else
         grep -q "nginx_passenger" ${P_DIR}/top.sls          || echo "    - nginx_passenger" >> ${P_DIR}/top.sls
         grep -q "nginx_${R}_configuration" ${P_DIR}/top.sls || echo "    - nginx_${R}_configuration" >> ${P_DIR}/top.sls
       ;;
-      "controller" | "websocket" | "workbench" | "workbench2" | "keepweb" | "keepproxy")
+      "controller" | "websocket" | "workbench" | "workbench2" | "webshell" | "keepweb" | "keepproxy")
         # States
         grep -q "nginx.passenger" ${S_DIR}/top.sls || echo "    - nginx.passenger" >> ${S_DIR}/top.sls
         if [ "x${USE_LETSENCRYPT}" = "xyes" ]; then
@@ -443,7 +444,6 @@ else
         grep -q "arvados.${R}" ${S_DIR}/top.sls || echo "    - arvados.${R}" >> ${S_DIR}/top.sls
         # Pillars
         grep -q "" ${P_DIR}/top.sls                             || echo "    - docker" >> ${P_DIR}/top.sls
-        grep -q "nginx_webshell_configuration" ${P_DIR}/top.sls || echo "    - nginx_webshell_configuration" >> ${P_DIR}/top.sls
       ;;
       "dispatcher")
         # States
