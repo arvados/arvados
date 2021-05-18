@@ -21,7 +21,7 @@ var _ = Suite(&dockerSuite{})
 
 func busyboxDockerImage(c *C) string {
 	fnm := "busybox_uclibc.tar"
-	cachedir := "/var/lib/arvados/tmp"
+	cachedir := c.MkDir()
 	cachefile := cachedir + "/" + fnm
 	if _, err := os.Stat(cachefile); err == nil {
 		return cachefile
