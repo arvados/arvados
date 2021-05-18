@@ -11,19 +11,30 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 All requests to the API server must have an API token.  API tokens can be issued by going though the login flow, or created via the API.  At this time, only browser based applications can perform login from email/password.  Command line applications and services must use an API token provided via the @ARVADOS_API_TOKEN@ environment variable or configuration file.
 
-h2. Browser login
+h2. Login
 
-Browser based applications can perform log in via the following highlevel flow:
+Browser based applications can log in using one of the two possible flows:
 
-# The web application presents a "login" link to @/login@ on the API server with a @return_to@ parameter provided in the query portion of the URL.  For example @https://{{ site.arvados_api_host }}/login?return_to=XXX@ , where  @return_to=XXX@ is the URL of the login page for the web application.
-# The "login" link takes the browser to the login page (this may involve several redirects)
-# The user logs in.  API server authenticates the user and issues a new API token.
-# The browser is redirected to the login page URL provided in @return_to=XXX@ with the addition of @?api_token=xxxxapitokenxxxx@.
-# The web application gets the login request with the included authorization token.
+h3. Authenticate via a third party
+
+# The web application instructs the user to click on a link to the @/login@ endpoint on the API server.  This link should include the @return_to@ parameter in the query portion of the URL.  For example @https://{{ site.arvados_api_host }}/login?return_to=XXX@ , where  @return_to=XXX@ is a page in the web application.
+# The @/login@ endpoint redirects the user to the configured third party authentication provider (e.g. Google or other OpenID Connect provider).
+# The user logs in to the third party provider, then they are redirected back to the API server.
+# The API server authenticates the user, issues a new API token, and redirects the browser to the URL provided in @return_to=XXX@ with the addition of @?api_token=xxxxapitokenxxxx@.
+# The web application gets the authorization token from the query and uses it to access the API server on the user's behalf.
+
+h3. Direct username/password authentication
+
+# The web application presents username and password fields.
+# When the submit button is pressed, using Javascript, the browser sends a POST request to @/arvados/v1/users/authenticate@
+** The request payload type is @application/javascript@
+** The request body is a JSON object with @username@ and @password@ fields.
+# The API server receives the username and password, authenticates them with the upstream provider (such as LDAP or PAM), and responds with the @api_client_authorization@ object for the new API token.
+# The web application receives the authorization token in the response and uses it to access the API server on the user's behalf.
+
+h3. Diagram
 
 !{{site.baseurl}}/images/Session_Establishment.svg!
-
-The "browser authentication process is documented in detail on the Arvados wiki.":https://dev.arvados.org/projects/arvados/wiki/Workbench_authentication_process
 
 h2. User activation
 
