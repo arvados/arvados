@@ -97,7 +97,7 @@ export const loadSidePanelTreeProjects = (projectUuid: string) =>
         const node = treePicker ? getNode(projectUuid)(treePicker) : undefined;
         if (projectUuid === SidePanelTreeCategory.SHARED_WITH_ME) {
             await dispatch<any>(loadSharedRoot);
-        } else if (node || projectUuid === '') {
+        } else if (node || projectUuid !== '') {
             await dispatch<any>(loadProject(projectUuid));
         }
     };
