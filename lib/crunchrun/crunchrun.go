@@ -148,9 +148,10 @@ type ContainerRunner struct {
 	cStateLock sync.Mutex
 	cCancelled bool // StopContainer() invoked
 
-	enableNetwork string // one of "default" or "always"
-	networkMode   string // "none", "host", or "" -- passed through to executor
-	arvMountLog   *ThrottledLogger
+	enableMemoryLimit bool
+	enableNetwork     string // one of "default" or "always"
+	networkMode       string // "none", "host", or "" -- passed through to executor
+	arvMountLog       *ThrottledLogger
 
 	containerWatchdogInterval time.Duration
 
@@ -291,7 +292,7 @@ func (runner *ContainerRunner) ArvMountCmd(arvMountCmd []string, token string) (
 	}
 	runner.arvMountLog = NewThrottledLogger(w)
 	c.Stdout = runner.arvMountLog
-	c.Stderr = runner.arvMountLog
+	c.Stderr = io.MultiWriter(runner.arvMountLog, os.Stderr)
 
 	runner.CrunchLog.Printf("Running %v", c.Args)
 
@@ -386,6 +387,7 @@ func (runner *ContainerRunner) SetupMounts() (map[string]bindmount, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not get container token: %s", err)
 	}
+	runner.CrunchLog.Printf("container token %q", token)
 
 	pdhOnly := true
 	tmpcount := 0
@@ -946,11 +948,14 @@ func (runner *ContainerRunner) CreateContainer(imageID string, bindmounts map[st
 		// both "" and "." mean default
 		workdir = ""
 	}
-
+	ram := runner.Container.RuntimeConstraints.RAM
+	if !runner.enableMemoryLimit {
+		ram = 0
+	}
 	return runner.executor.Create(containerSpec{
 		Image:         imageID,
 		VCPUs:         runner.Container.RuntimeConstraints.VCPUs,
-		RAM:           runner.Container.RuntimeConstraints.RAM,
+		RAM:           ram,
 		WorkingDir:    workdir,
 		Env:           env,
 		BindMounts:    bindmounts,
@@ -1586,6 +1591,7 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	sleep := flags.Duration("sleep", 0, "Delay before starting (testing use only)")
 	kill := flags.Int("kill", -1, "Send signal to an existing crunch-run process for given UUID")
 	list := flags.Bool("list", false, "List UUIDs of existing crunch-run processes")
+	enableMemoryLimit := flags.Bool("enable-memory-limit", true, "tell container runtime to limit container's memory usage")
 	enableNetwork := flags.String("container-enable-networking", "default", "enable networking \"always\" (for all containers) or \"default\" (for containers that request it)")
 	networkMode := flags.String("container-network-mode", "default", `Docker network mode for container (use any argument valid for docker --net)`)
 	memprofile := flags.String("memprofile", "", "write memory profile to `file` after running container")
@@ -1718,6 +1724,7 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	cr.statInterval = *statInterval
 	cr.cgroupRoot = *cgroupRoot
 	cr.expectCgroupParent = *cgroupParent
+	cr.enableMemoryLimit = *enableMemoryLimit
 	cr.enableNetwork = *enableNetwork
 	cr.networkMode = *networkMode
 	if *cgroupParentSubsystem != "" {

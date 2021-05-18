@@ -40,8 +40,16 @@ func (e *singularityExecutor) ImageLoaded(string) bool {
 // containerImage into a sif file for later use.
 func (e *singularityExecutor) LoadImage(imageTarballPath string) error {
 	e.logf("building singularity image")
+	// "singularity build" does not accept a
+	// docker-archive://... filename containing a ":" character,
+	// as in "/path/to/sha256:abcd...1234.tar". Workaround: make a
+	// symlink that doesn't have ":" chars.
+	err := os.Symlink(imageTarballPath, e.tmpdir+"/image.tar")
+	if err != nil {
+		return err
+	}
 	e.imageFilename = e.tmpdir + "/image.sif"
-	build := exec.Command("singularity", "build", e.imageFilename, "docker-archive://"+imageTarballPath)
+	build := exec.Command("singularity", "build", e.imageFilename, "docker-archive://"+e.tmpdir+"/image.tar")
 	e.logf("%v", build.Args)
 	out, err := build.CombinedOutput()
 	// INFO:    Starting build...
