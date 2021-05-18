@@ -59,7 +59,7 @@ const parse = (directory: CollectionResource): Directory => ({
 });
 
 const formatDirectories = (directories: Directory[] = []) =>
-    directories.map(format);
+    directories ? directories.map(format) : [];
 
 const format = ({ location = '', basename = '' }: Directory): FormattedDirectory => ({
     portableDataHash: location.replace('keep:', ''),
@@ -299,6 +299,3 @@ const DirectoryArrayInputComponent = connect(mapStateToProps)(
     });
 
 type DialogContentCssRules = 'root' | 'tree' | 'divider' | 'chips';
-
-
-
