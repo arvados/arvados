@@ -17,8 +17,6 @@ import (
 	. "gopkg.in/check.v1"
 )
 
-var _ = Suite(&dockerSuite{})
-
 func busyboxDockerImage(c *C) string {
 	fnm := "busybox_uclibc.tar"
 	cachedir := c.MkDir()
