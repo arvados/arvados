@@ -32,7 +32,7 @@ func busyboxDockerImage(c *C) string {
 	defer f.Close()
 	defer os.Remove(f.Name())
 
-	resp, err := http.Get("http://cache.arvados.org/" + fnm)
+	resp, err := http.Get("https://cache.arvados.org/" + fnm)
 	c.Assert(err, IsNil)
 	defer resp.Body.Close()
 	_, err = io.Copy(f, resp.Body)
