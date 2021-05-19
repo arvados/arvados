@@ -544,7 +544,7 @@ Clusters:
         UUIDTTL: 5s
 
         # Block cache entries. Each block consumes up to 64 MiB RAM.
-        MaxBlockEntries: 4
+        MaxBlockEntries: 20
 
         # Collection cache entries.
         MaxCollectionEntries: 1000
