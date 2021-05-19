@@ -83,6 +83,11 @@ export interface ClusterConfigJSON {
     };
     Collections: {
         ForwardSlashNameSubstitution: string;
+        ManagedProperties?: {
+            responsible_person_uuid?: {
+                Function: string,
+            }
+        }
     };
 }
 

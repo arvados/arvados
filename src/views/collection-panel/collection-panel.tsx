@@ -285,6 +285,7 @@ export const CollectionDetailsAttributes = (props: { item: CollectionResource, t
     const isOldVersion = item && item.currentVersionUuid !== item.uuid;
     const mdSize = props.twoCol ? 6 : 12;
     const showVersionBrowser = props.showVersionBrowser;
+    const responsiblePersonRef = React.useRef(null);
     return <Grid container>
         <Grid item xs={12} md={mdSize}>
             <DetailsAttribute classLabel={classes.label} classValue={classes.value}
@@ -301,11 +302,13 @@ export const CollectionDetailsAttributes = (props: { item: CollectionResource, t
                 label='Owner' linkToUuid={item.ownerUuid}
                 uuidEnhancer={(uuid: string) => <ResourceOwnerWithName uuid={uuid} />} />
         </Grid>
-        <Grid item xs={12} md={mdSize}>
-            <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                label='Responsible person' linkToUuid={item.ownerUuid}
-                uuidEnhancer={(uuid: string) => <ResponsiblePerson uuid={item.ownerUuid} />} />
-        </Grid>
+        <div ref={responsiblePersonRef}>
+            <Grid item xs={12} md={mdSize}>
+                <DetailsAttribute classLabel={classes.label} classValue={classes.value}
+                    label='Responsible person' linkToUuid={item.ownerUuid}
+                    uuidEnhancer={(uuid: string) => <ResponsiblePerson uuid={item.uuid} parentRef={responsiblePersonRef.current} />} />
+            </Grid>
+        </div>
         <Grid item xs={12} md={mdSize}>
             <DetailsAttribute classLabel={classes.label} classValue={classes.value}
                 label='Head version'

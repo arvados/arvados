@@ -471,23 +471,40 @@ export const ResourceOwnerWithName =
 export const ResponsiblePerson =
     compose(
         connect(
-            (state: RootState, props: { uuid: string }) => {
-                let responsiblePersonName = '';
+            (state: RootState, props: { uuid: string, parentRef: HTMLElement | null }) => {
+                let responsiblePersonName = null;
+                let responsiblePersonUUID = null;
+                let responsiblePersonProperty = null;
+
+                if (state.auth.config.clusterConfig.Collections.ManagedProperties) {
+                    if (state.auth.config.clusterConfig.Collections.ManagedProperties.responsible_person_uuid) {
+                        responsiblePersonProperty = state.auth.config.clusterConfig.Collections.ManagedProperties.responsible_person_uuid.Function;
+                    }
+                }
+
                 let resource: Resource | undefined = getResource<GroupContentsResource & UserResource>(props.uuid)(state.resources);
 
-                while (resource && resource.kind !== ResourceKind.USER) {
-                    resource = getResource<GroupContentsResource & UserResource>(resource.ownerUuid)(state.resources);
+                while (resource && resource.kind !== ResourceKind.USER && resource.kind === ResourceKind.COLLECTION && responsiblePersonProperty) {
+                    responsiblePersonUUID = (resource as CollectionResource).properties[responsiblePersonProperty];
+                    resource = getResource<GroupContentsResource & UserResource>(responsiblePersonUUID)(state.resources);
                 }
 
                 if (resource && resource.kind === ResourceKind.USER) {
                     responsiblePersonName = getUserFullname(resource as UserResource) || (resource as GroupContentsResource).name;
                 }
 
-                return { uuid: props.uuid, responsiblePersonName };
+                return { uuid: responsiblePersonUUID, responsiblePersonName, parentRef: props.parentRef };
             }),
         withStyles({}, { withTheme: true }))
-        ((props: { uuid: string, responsiblePersonName: string, theme: ArvadosTheme }) => {
-            const { uuid, responsiblePersonName, theme } = props;
+        ((props: { uuid: string | null, responsiblePersonName: string, parentRef: HTMLElement | null, theme: ArvadosTheme }) => {
+            const { uuid, responsiblePersonName, parentRef, theme } = props;
+
+            if (!uuid && parentRef) {
+                parentRef.style.display = 'none';
+                return null;
+            } else if (parentRef) {
+                parentRef.style.display = 'block';
+            }
 
             if (responsiblePersonName === '') {
                 return <Typography style={{ color: theme.palette.primary.main }} inline noWrap>
