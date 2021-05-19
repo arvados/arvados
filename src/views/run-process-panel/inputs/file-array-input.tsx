@@ -53,7 +53,7 @@ const parse = (file: CollectionFile): File => ({
 });
 
 const formatFiles = (files: File[] = []) =>
-    files.map(format);
+    files ? files.map(format) : [];
 
 const format = (file: File): CollectionFile => ({
     id: file.location
@@ -281,6 +281,3 @@ const FileArrayInputComponent = connect(mapStateToProps)(
     });
 
 type DialogContentCssRules = 'root' | 'tree' | 'divider' | 'chips';
-
-
-
