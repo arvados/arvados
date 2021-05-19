@@ -694,6 +694,7 @@ func (s *TestSuite) fullRunHelper(c *C, record string, extraMounts []string, exi
 }
 
 func (s *TestSuite) TestFullRunHello(c *C) {
+	s.runner.enableMemoryLimit = true
 	s.runner.networkMode = "default"
 	s.fullRunHelper(c, `{
     "command": ["echo", "hello world"],
