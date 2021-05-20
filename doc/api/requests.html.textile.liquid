@@ -42,7 +42,7 @@ $ curl -v -H "Authorization: Bearer xxxxapitokenxxxx" https://192.168.5.2:8000/a
 > ...
 </pre>
 
-On a cluster configured to use an OpenID Connect provider (including Google) as a login backend, an OpenID Connect access token can also be used in place of an Arvados API token. This is also supported on a cluster that delegates login to another cluster (LoginCluster) which in turn uses an OpenID Connect provider.
+On a cluster configured to use an OpenID Connect provider (other than Google) as a login backend, Arvados can be configured to accept an OpenID Connect access token in place of an Arvados API token. OIDC access tokens are also accepted by a cluster that delegates login to another cluster (LoginCluster) which in turn has this feature configured. See @Login.OpenIDConnect.AcceptAccessTokenScope@ in the "default config.yml file":{{site.baseurl}}/admin/config.html for details.
 
 <pre>
 $ curl -v -H "Authorization: Bearer xxxx-openid-connect-access-token-xxxx" https://192.168.5.2:8000/arvados/v1/collections

@@ -35,6 +35,7 @@ import (
 	"golang.org/x/oauth2"
 	"google.golang.org/api/option"
 	"google.golang.org/api/people/v1"
+	"gopkg.in/square/go-jose.v2/jwt"
 )
 
 var (
@@ -45,16 +46,17 @@ var (
 )
 
 type oidcLoginController struct {
-	Cluster            *arvados.Cluster
-	Parent             *Conn
-	Issuer             string // OIDC issuer URL, e.g., "https://accounts.google.com"
-	ClientID           string
-	ClientSecret       string
-	UseGooglePeopleAPI bool              // Use Google People API to look up alternate email addresses
-	EmailClaim         string            // OpenID claim to use as email address; typically "email"
-	EmailVerifiedClaim string            // If non-empty, ensure claim value is true before accepting EmailClaim; typically "email_verified"
-	UsernameClaim      string            // If non-empty, use as preferred username
-	AuthParams         map[string]string // Additional parameters to pass with authentication request
+	Cluster                *arvados.Cluster
+	Parent                 *Conn
+	Issuer                 string // OIDC issuer URL, e.g., "https://accounts.google.com"
+	ClientID               string
+	ClientSecret           string
+	UseGooglePeopleAPI     bool              // Use Google People API to look up alternate email addresses
+	EmailClaim             string            // OpenID claim to use as email address; typically "email"
+	EmailVerifiedClaim     string            // If non-empty, ensure claim value is true before accepting EmailClaim; typically "email_verified"
+	UsernameClaim          string            // If non-empty, use as preferred username
+	AcceptAccessTokenScope string            // If non-empty, accept any access token containing this scope as an API token
+	AuthParams             map[string]string // Additional parameters to pass with authentication request
 
 	// override Google People API base URL for testing purposes
 	// (normally empty, set by google pkg to
@@ -134,6 +136,7 @@ func (ctrl *oidcLoginController) Login(ctx context.Context, opts arvados.LoginOp
 	if !ok {
 		return loginError(errors.New("error in OAuth2 exchange: no ID token in OAuth2 token"))
 	}
+	ctxlog.FromContext(ctx).WithField("rawIDToken", rawIDToken).Debug("oauth2Token provided ID token")
 	idToken, err := ctrl.verifier.Verify(ctx, rawIDToken)
 	if err != nil {
 		return loginError(fmt.Errorf("error verifying ID token: %s", err))
@@ -448,6 +451,10 @@ func (ta *oidcTokenAuthorizer) registerToken(ctx context.Context, tok string) er
 	if err != nil {
 		return fmt.Errorf("error setting up OpenID Connect provider: %s", err)
 	}
+	if ok, err := ta.checkAccessTokenScope(ctx, tok); err != nil || !ok {
+		ta.cache.Add(tok, time.Now().Add(tokenCacheNegativeTTL))
+		return err
+	}
 	oauth2Token := &oauth2.Token{
 		AccessToken: tok,
 	}
@@ -493,4 +500,38 @@ func (ta *oidcTokenAuthorizer) registerToken(ctx context.Context, tok string) er
 	aca.ExpiresAt = exp.Format(time.RFC3339Nano)
 	ta.cache.Add(tok, aca)
 	return nil
+}
+
+// Check that the provided access token is a JWT with the required
+// scope. If it is a valid JWT but missing the required scope, we
+// return a 403 error, otherwise true (acceptable as an API token) or
+// false (pass through unmodified).
+//
+// Note we don't check signature or expiry here. We are relying on the
+// caller to verify those separately (e.g., by calling the UserInfo
+// endpoint).
+func (ta *oidcTokenAuthorizer) checkAccessTokenScope(ctx context.Context, tok string) (bool, error) {
+	switch ta.ctrl.AcceptAccessTokenScope {
+	case "*":
+		return true, nil
+	case "":
+		return false, nil
+	}
+	var claims struct {
+		Scope string `json:"scope"`
+	}
+	if t, err := jwt.ParseSigned(tok); err != nil {
+		ctxlog.FromContext(ctx).WithError(err).Debug("error parsing jwt")
+		return false, nil
+	} else if err = t.UnsafeClaimsWithoutVerification(&claims); err != nil {
+		ctxlog.FromContext(ctx).WithError(err).Debug("error extracting jwt claims")
+		return false, nil
+	}
+	for _, s := range strings.Split(claims.Scope, " ") {
+		if s == ta.ctrl.AcceptAccessTokenScope {
+			return true, nil
+		}
+	}
+	ctxlog.FromContext(ctx).WithFields(logrus.Fields{"have": claims.Scope, "need": ta.ctrl.AcceptAccessTokenScope}).Infof("unacceptable access token scope")
+	return false, httpserver.ErrorWithStatus(errors.New("unacceptable access token scope"), http.StatusUnauthorized)
 }

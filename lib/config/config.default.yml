@@ -633,6 +633,17 @@ Clusters:
         AuthenticationRequestParameters:
           SAMPLE: ""
 
+        # Accept an OIDC access token as an API token if it is a JWT
+        # whose "scope" value includes this scope. To accept any
+        # access token (even if it's not a JWT), use "*". To disable
+        # this feature, use the empty string "".
+        #
+        # If an incoming token's scope is satisfactory, Arvados
+        # verifies the token is valid by presenting it at the OIDC
+        # provider's UserInfo endpoint. (Signature and expiry are not
+        # checked separately.) Valid tokens are cached for 10 minutes.
+        AcceptAccessTokenScope: ""
+
       PAM:
         # (Experimental) Use PAM to authenticate users.
         Enable: false

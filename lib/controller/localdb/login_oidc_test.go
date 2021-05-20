@@ -208,22 +208,24 @@ func (s *OIDCLoginSuite) TestOIDCAuthorizer(c *check.C) {
 	json.Unmarshal([]byte(fmt.Sprintf("%q", s.fakeProvider.Issuer.URL)), &s.cluster.Login.OpenIDConnect.Issuer)
 	s.cluster.Login.OpenIDConnect.ClientID = "oidc#client#id"
 	s.cluster.Login.OpenIDConnect.ClientSecret = "oidc#client#secret"
+	s.cluster.Login.OpenIDConnect.AcceptAccessTokenScope = "*"
 	s.fakeProvider.ValidClientID = "oidc#client#id"
 	s.fakeProvider.ValidClientSecret = "oidc#client#secret"
 	db := arvadostest.DB(c, s.cluster)
 
 	tokenCacheTTL = time.Millisecond
 	tokenCacheRaceWindow = time.Millisecond
+	tokenCacheNegativeTTL = time.Millisecond
 
 	oidcAuthorizer := OIDCAccessTokenAuthorizer(s.cluster, func(context.Context) (*sqlx.DB, error) { return db, nil })
 	accessToken := s.fakeProvider.ValidAccessToken()
 
 	mac := hmac.New(sha256.New, []byte(s.cluster.SystemRootToken))
 	io.WriteString(mac, accessToken)
-	hmac := fmt.Sprintf("%x", mac.Sum(nil))
+	apiToken := fmt.Sprintf("%x", mac.Sum(nil))
 
 	cleanup := func() {
-		_, err := db.Exec(`delete from api_client_authorizations where api_token=$1`, hmac)
+		_, err := db.Exec(`delete from api_client_authorizations where api_token=$1`, apiToken)
 		c.Check(err, check.IsNil)
 	}
 	cleanup()
@@ -237,7 +239,7 @@ func (s *OIDCLoginSuite) TestOIDCAuthorizer(c *check.C) {
 		c.Assert(creds.Tokens, check.HasLen, 1)
 		c.Check(creds.Tokens[0], check.Equals, accessToken)
 
-		err := db.QueryRowContext(ctx, `select expires_at at time zone 'UTC' from api_client_authorizations where api_token=$1`, hmac).Scan(&exp1)
+		err := db.QueryRowContext(ctx, `select expires_at at time zone 'UTC' from api_client_authorizations where api_token=$1`, apiToken).Scan(&exp1)
 		c.Check(err, check.IsNil)
 		c.Check(exp1.Sub(time.Now()) > -time.Second, check.Equals, true)
 		c.Check(exp1.Sub(time.Now()) < time.Second, check.Equals, true)
@@ -245,17 +247,55 @@ func (s *OIDCLoginSuite) TestOIDCAuthorizer(c *check.C) {
 	})(ctx, nil)
 
 	// If the token is used again after the in-memory cache
-	// expires, oidcAuthorizer must re-checks the token and update
+	// expires, oidcAuthorizer must re-check the token and update
 	// the expires_at value in the database.
 	time.Sleep(3 * time.Millisecond)
 	oidcAuthorizer.WrapCalls(func(ctx context.Context, opts interface{}) (interface{}, error) {
 		var exp time.Time
-		err := db.QueryRowContext(ctx, `select expires_at at time zone 'UTC' from api_client_authorizations where api_token=$1`, hmac).Scan(&exp)
+		err := db.QueryRowContext(ctx, `select expires_at at time zone 'UTC' from api_client_authorizations where api_token=$1`, apiToken).Scan(&exp)
 		c.Check(err, check.IsNil)
 		c.Check(exp.Sub(exp1) > 0, check.Equals, true)
 		c.Check(exp.Sub(exp1) < time.Second, check.Equals, true)
 		return nil, nil
 	})(ctx, nil)
+
+	s.fakeProvider.AccessTokenPayload = map[string]interface{}{"scope": "openid profile foobar"}
+	accessToken = s.fakeProvider.ValidAccessToken()
+	ctx = auth.NewContext(context.Background(), &auth.Credentials{Tokens: []string{accessToken}})
+
+	mac = hmac.New(sha256.New, []byte(s.cluster.SystemRootToken))
+	io.WriteString(mac, accessToken)
+	apiToken = fmt.Sprintf("%x", mac.Sum(nil))
+
+	for _, trial := range []struct {
+		configScope string
+		acceptable  bool
+		shouldRun   bool
+	}{
+		{"foobar", true, true},
+		{"foo", false, false},
+		{"*", true, true},
+		{"", false, true},
+	} {
+		c.Logf("trial = %+v", trial)
+		cleanup()
+		s.cluster.Login.OpenIDConnect.AcceptAccessTokenScope = trial.configScope
+		oidcAuthorizer = OIDCAccessTokenAuthorizer(s.cluster, func(context.Context) (*sqlx.DB, error) { return db, nil })
+		checked := false
+		oidcAuthorizer.WrapCalls(func(ctx context.Context, opts interface{}) (interface{}, error) {
+			var n int
+			err := db.QueryRowContext(ctx, `select count(*) from api_client_authorizations where api_token=$1`, apiToken).Scan(&n)
+			c.Check(err, check.IsNil)
+			if trial.acceptable {
+				c.Check(n, check.Equals, 1)
+			} else {
+				c.Check(n, check.Equals, 0)
+			}
+			checked = true
+			return nil, nil
+		})(ctx, nil)
+		c.Check(checked, check.Equals, trial.shouldRun)
+	}
 }
 
 func (s *OIDCLoginSuite) TestGenericOIDCLogin(c *check.C) {
