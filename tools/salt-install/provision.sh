@@ -377,7 +377,9 @@ if [ -z "${ROLES}" ]; then
   echo "    - nginx.passenger" >> ${S_DIR}/top.sls
   # Currently, only available on config_examples/multi_host/aws
   if [ "x${USE_LETSENCRYPT}" = "xyes" ]; then
-    grep -q "aws_credentials" ${S_DIR}/top.sls || echo "    - aws_credentials" >> ${S_DIR}/top.sls
+    if [ "x${USE_LETSENCRYPT_IAM_USER}" = "xno" ]; then
+      grep -q "aws_credentials" ${S_DIR}/top.sls || echo "    - aws_credentials" >> ${S_DIR}/top.sls
+    fi
     grep -q "letsencrypt"     ${S_DIR}/top.sls || echo "    - letsencrypt" >> ${S_DIR}/top.sls
   fi
   echo "    - postgres" >> ${S_DIR}/top.sls
@@ -398,7 +400,9 @@ if [ -z "${ROLES}" ]; then
   echo "    - postgresql" >> ${P_DIR}/top.sls
   # Currently, only available on config_examples/multi_host/aws
   if [ "x${USE_LETSENCRYPT}" = "xyes" ]; then
-    grep -q "aws_credentials" ${P_DIR}/top.sls || echo "    - aws_credentials" >> ${P_DIR}/top.sls
+    if [ "x${USE_LETSENCRYPT_IAM_USER}" = "xno" ]; then
+      grep -q "aws_credentials" ${P_DIR}/top.sls || echo "    - aws_credentials" >> ${P_DIR}/top.sls
+    fi
     grep -q "letsencrypt"     ${P_DIR}/top.sls || echo "    - letsencrypt" >> ${P_DIR}/top.sls
   fi
 else
@@ -421,7 +425,9 @@ else
         ### after it so we add this here, as we are, after all, sharing the host for api and controller
         # Currently, only available on config_examples/multi_host/aws
         if [ "x${USE_LETSENCRYPT}" = "xyes" ]; then
-          grep -q "aws_credentials" ${S_DIR}/top.sls || echo "    - aws_credentials" >> ${S_DIR}/top.sls
+          if [ "x${USE_LETSENCRYPT_IAM_USER}" = "xno" ]; then
+            grep -q "aws_credentials" ${S_DIR}/top.sls || echo "    - aws_credentials" >> ${S_DIR}/top.sls
+          fi
           grep -q "letsencrypt"     ${S_DIR}/top.sls || echo "    - letsencrypt" >> ${S_DIR}/top.sls
         fi
         grep -q "arvados.${R}" ${S_DIR}/top.sls    || echo "    - arvados.${R}" >> ${S_DIR}/top.sls
@@ -437,7 +443,9 @@ else
         grep -q "nginx.passenger" ${S_DIR}/top.sls || echo "    - nginx.passenger" >> ${S_DIR}/top.sls
         # Currently, only available on config_examples/multi_host/aws
         if [ "x${USE_LETSENCRYPT}" = "xyes" ]; then
-          grep -q "aws_credentials" ${S_DIR}/top.sls || echo "    - aws_credentials" >> ${S_DIR}/top.sls
+          if [ "x${USE_LETSENCRYPT_IAM_USER}" = "xno" ]; then
+            grep -q "aws_credentials" ${S_DIR}/top.sls || echo "    - aws_credentials" >> ${S_DIR}/top.sls
+          fi
           grep -q "letsencrypt"     ${S_DIR}/top.sls || echo "    - letsencrypt" >> ${S_DIR}/top.sls
         fi
         grep -q "arvados.${R}" ${S_DIR}/top.sls    || echo "    - arvados.${R}" >> ${S_DIR}/top.sls
@@ -446,7 +454,9 @@ else
         grep -q "nginx_${R}_configuration" ${P_DIR}/top.sls || echo "    - nginx_${R}_configuration" >> ${P_DIR}/top.sls
         # Currently, only available on config_examples/multi_host/aws
         if [ "x${USE_LETSENCRYPT}" = "xyes" ]; then
-          grep -q "aws_credentials" ${P_DIR}/top.sls || echo "    - aws_credentials" >> ${P_DIR}/top.sls
+          if [ "x${USE_LETSENCRYPT_IAM_USER}" = "xno" ]; then
+            grep -q "aws_credentials" ${P_DIR}/top.sls || echo "    - aws_credentials" >> ${P_DIR}/top.sls
+          fi
           grep -q "letsencrypt"     ${P_DIR}/top.sls || echo "    - letsencrypt" >> ${P_DIR}/top.sls
           grep -q "letsencrypt_${R}_configuration" ${P_DIR}/top.sls || echo "    - letsencrypt_${R}_configuration" >> ${P_DIR}/top.sls
         fi

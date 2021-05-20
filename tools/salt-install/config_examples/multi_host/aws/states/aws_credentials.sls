@@ -4,6 +4,7 @@
 
 {%- set aws_credentials = pillar.get('aws_credentials', {}) %}
 
+{%- if aws_credentials %}
 extra_extra_aws_credentials_root_aws_config_file_managed:
   file.managed:
     - name: /root/.aws/config
@@ -28,3 +29,4 @@ extra_extra_aws_credentials_root_aws_credentials_file_managed:
         [default]
         aws_access_key_id = {{ aws_credentials.access_key_id }}
         aws_secret_access_key = {{ aws_credentials.secret_access_key }}
+{%- endif %}
