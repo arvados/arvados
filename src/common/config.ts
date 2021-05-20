@@ -84,8 +84,10 @@ export interface ClusterConfigJSON {
     Collections: {
         ForwardSlashNameSubstitution: string;
         ManagedProperties?: {
-            responsible_person_uuid?: {
+            [key: string]: {
                 Function: string,
+                Value: string,
+                Protected?: boolean,
             }
         }
     };

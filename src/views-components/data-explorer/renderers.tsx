@@ -477,14 +477,21 @@ export const ResponsiblePerson =
                 let responsiblePersonProperty = null;
 
                 if (state.auth.config.clusterConfig.Collections.ManagedProperties) {
-                    if (state.auth.config.clusterConfig.Collections.ManagedProperties.responsible_person_uuid) {
-                        responsiblePersonProperty = state.auth.config.clusterConfig.Collections.ManagedProperties.responsible_person_uuid.Function;
+                    let index = 0;
+                    const keys = Object.keys(state.auth.config.clusterConfig.Collections.ManagedProperties);
+
+                    while (!responsiblePersonProperty && keys[index]) {
+                        const key = keys[index];
+                        if (state.auth.config.clusterConfig.Collections.ManagedProperties[key].Function === 'original_owner') {
+                            responsiblePersonProperty = key;
+                        }
+                        index++;
                     }
                 }
 
                 let resource: Resource | undefined = getResource<GroupContentsResource & UserResource>(props.uuid)(state.resources);
 
-                while (resource && resource.kind !== ResourceKind.USER && resource.kind === ResourceKind.COLLECTION && responsiblePersonProperty) {
+                while (resource && resource.kind !== ResourceKind.USER && responsiblePersonProperty) {
                     responsiblePersonUUID = (resource as CollectionResource).properties[responsiblePersonProperty];
                     resource = getResource<GroupContentsResource & UserResource>(responsiblePersonUUID)(state.resources);
                 }
@@ -506,7 +513,7 @@ export const ResponsiblePerson =
                 parentRef.style.display = 'block';
             }
 
-            if (responsiblePersonName === '') {
+            if (!responsiblePersonName) {
                 return <Typography style={{ color: theme.palette.primary.main }} inline noWrap>
                     {uuid}
                 </Typography>;
