@@ -406,6 +406,11 @@ func generateCrCsv(logger *logrus.Logger, uuid string, arv *arvadosclient.Arvado
 	if err != nil {
 		return nil, fmt.Errorf("error loading cr object %s: %s", uuid, err)
 	}
+	if len(cr.ContainerUUID) == 0 {
+		// Nothing to do! E.g. a CR in 'Uncommitted' state.
+		logger.Infof("No container associated with container request %s, skipping\n", crUUID)
+		return nil, nil
+	}
 	var container arvados.Container
 	err = loadObject(logger, ac, crUUID, cr.ContainerUUID, cache, &container)
 	if err != nil {

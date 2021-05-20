@@ -62,6 +62,8 @@ const (
 	CompletedDiagnosticsHasher2ContainerUUID        = "zzzzz-dz642-diagcomphasher2"
 	CompletedDiagnosticsHasher3ContainerUUID        = "zzzzz-dz642-diagcomphasher3"
 
+	UncommittedContainerRequestUUID = "zzzzz-xvhdp-cr4uncommittedc"
+
 	Hasher1LogCollectionUUID = "zzzzz-4zz18-dlogcollhash001"
 	Hasher2LogCollectionUUID = "zzzzz-4zz18-dlogcollhash002"
 	Hasher3LogCollectionUUID = "zzzzz-4zz18-dlogcollhash003"
