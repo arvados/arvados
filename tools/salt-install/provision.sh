@@ -276,24 +276,17 @@ mkdir -p ${S_DIR} ${F_DIR} ${P_DIR} ${T_DIR}
 
 # Get the formula and dependencies
 cd ${F_DIR} || exit 1
+
 echo "Cloning formulas"
 rm -rf ${F_DIR}/* || exit 1
-git clone --quiet https://github.com/saltstack-formulas/docker-formula.git ${F_DIR}/docker
-( cd docker && git checkout --quiet tags/"${DOCKER_TAG}" -b "${DOCKER_TAG}" )
 
-git clone --quiet https://github.com/saltstack-formulas/locale-formula.git ${F_DIR}/locale
-( cd locale && git checkout --quiet tags/"${LOCALE_TAG}" -b "${LOCALE_TAG}" )
-
-git clone --quiet https://github.com/netmanagers/nginx-formula.git ${F_DIR}/nginx
-( cd nginx && git checkout --quiet tags/"${NGINX_TAG}" -b "${NGINX_TAG}" )
-
-git clone --quiet https://github.com/saltstack-formulas/postgres-formula.git ${F_DIR}/postgres
-( cd postgres && git checkout --quiet tags/"${POSTGRES_TAG}" -b "${POSTGRES_TAG}" )
-
-git clone --quiet https://github.com/saltstack-formulas/letsencrypt-formula.git ${F_DIR}/letsencrypt
-( cd letsencrypt && git checkout --quiet tags/"${LETSENCRYPT_TAG}" -b "${LETSENCRYPT_TAG}" )
-
-git clone --quiet https://git.arvados.org/arvados-formula.git ${F_DIR}/arvados
+git clone --branch "${ARVADOS_TAG}"     https://git.arvados.org/arvados-formula.git
+git clone --branch "${DOCKER_TAG}"      https://github.com/saltstack-formulas/docker-formula.git
+git clone --branch "${LOCALE_TAG}"      https://github.com/saltstack-formulas/locale-formula.git
+# git clone --branch "${NGINX_TAG}"       https://github.com/saltstack-formulas/nginx-formula.git
+git clone --branch "${NGINX_TAG}"       https://github.com/netmanagers/nginx-formula.git
+git clone --branch "${POSTGRES_TAG}"    https://github.com/saltstack-formulas/postgres-formula.git
+git clone --branch "${LETSENCRYPT_TAG}" https://github.com/saltstack-formulas/letsencrypt-formula.git
 
 # If we want to try a specific branch of the formula
 if [ "x${BRANCH}" != "x" ]; then
