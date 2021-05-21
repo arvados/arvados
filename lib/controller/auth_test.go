@@ -94,7 +94,8 @@ func (s *AuthSuite) SetUpTest(c *check.C) {
 	cluster.Login.OpenIDConnect.ClientSecret = s.fakeProvider.ValidClientSecret
 	cluster.Login.OpenIDConnect.EmailClaim = "email"
 	cluster.Login.OpenIDConnect.EmailVerifiedClaim = "email_verified"
-	cluster.Login.OpenIDConnect.AcceptAccessTokenScope = "*"
+	cluster.Login.OpenIDConnect.AcceptAccessToken = true
+	cluster.Login.OpenIDConnect.AcceptAccessTokenScope = ""
 
 	s.testHandler = &Handler{Cluster: cluster}
 	s.testServer = newServerFromIntegrationTestEnv(c)

@@ -63,6 +63,7 @@ func chooseLoginController(cluster *arvados.Cluster, parent *Conn) loginControll
 			EmailClaim:             cluster.Login.OpenIDConnect.EmailClaim,
 			EmailVerifiedClaim:     cluster.Login.OpenIDConnect.EmailVerifiedClaim,
 			UsernameClaim:          cluster.Login.OpenIDConnect.UsernameClaim,
+			AcceptAccessToken:      cluster.Login.OpenIDConnect.AcceptAccessToken,
 			AcceptAccessTokenScope: cluster.Login.OpenIDConnect.AcceptAccessTokenScope,
 		}
 	case wantSSO:

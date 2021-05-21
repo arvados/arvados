@@ -157,6 +157,7 @@ var whitelist = map[string]bool{
 	"Login.LDAP.UsernameAttribute":                        false,
 	"Login.LoginCluster":                                  true,
 	"Login.OpenIDConnect":                                 true,
+	"Login.OpenIDConnect.AcceptAccessToken":               false,
 	"Login.OpenIDConnect.AcceptAccessTokenScope":          false,
 	"Login.OpenIDConnect.AuthenticationRequestParameters": false,
 	"Login.OpenIDConnect.ClientID":                        false,

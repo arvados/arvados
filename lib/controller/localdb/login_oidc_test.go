@@ -208,7 +208,8 @@ func (s *OIDCLoginSuite) TestOIDCAuthorizer(c *check.C) {
 	json.Unmarshal([]byte(fmt.Sprintf("%q", s.fakeProvider.Issuer.URL)), &s.cluster.Login.OpenIDConnect.Issuer)
 	s.cluster.Login.OpenIDConnect.ClientID = "oidc#client#id"
 	s.cluster.Login.OpenIDConnect.ClientSecret = "oidc#client#secret"
-	s.cluster.Login.OpenIDConnect.AcceptAccessTokenScope = "*"
+	s.cluster.Login.OpenIDConnect.AcceptAccessToken = true
+	s.cluster.Login.OpenIDConnect.AcceptAccessTokenScope = ""
 	s.fakeProvider.ValidClientID = "oidc#client#id"
 	s.fakeProvider.ValidClientSecret = "oidc#client#secret"
 	db := arvadostest.DB(c, s.cluster)
@@ -268,17 +269,20 @@ func (s *OIDCLoginSuite) TestOIDCAuthorizer(c *check.C) {
 	apiToken = fmt.Sprintf("%x", mac.Sum(nil))
 
 	for _, trial := range []struct {
-		configScope string
-		acceptable  bool
-		shouldRun   bool
+		configEnable bool
+		configScope  string
+		acceptable   bool
+		shouldRun    bool
 	}{
-		{"foobar", true, true},
-		{"foo", false, false},
-		{"*", true, true},
-		{"", false, true},
+		{true, "foobar", true, true},
+		{true, "foo", false, false},
+		{true, "", true, true},
+		{false, "", false, true},
+		{false, "foobar", false, true},
 	} {
 		c.Logf("trial = %+v", trial)
 		cleanup()
+		s.cluster.Login.OpenIDConnect.AcceptAccessToken = trial.configEnable
 		s.cluster.Login.OpenIDConnect.AcceptAccessTokenScope = trial.configScope
 		oidcAuthorizer = OIDCAccessTokenAuthorizer(s.cluster, func(context.Context) (*sqlx.DB, error) { return db, nil })
 		checked := false

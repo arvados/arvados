@@ -55,7 +55,8 @@ type oidcLoginController struct {
 	EmailClaim             string            // OpenID claim to use as email address; typically "email"
 	EmailVerifiedClaim     string            // If non-empty, ensure claim value is true before accepting EmailClaim; typically "email_verified"
 	UsernameClaim          string            // If non-empty, use as preferred username
-	AcceptAccessTokenScope string            // If non-empty, accept any access token containing this scope as an API token
+	AcceptAccessToken      bool              // Accept access tokens as API tokens
+	AcceptAccessTokenScope string            // If non-empty, don't accept access tokens as API tokens unless they contain this scope
 	AuthParams             map[string]string // Additional parameters to pass with authentication request
 
 	// override Google People API base URL for testing purposes
@@ -507,15 +508,16 @@ func (ta *oidcTokenAuthorizer) registerToken(ctx context.Context, tok string) er
 // return a 403 error, otherwise true (acceptable as an API token) or
 // false (pass through unmodified).
 //
+// Return false if configured not to accept access tokens at all.
+//
 // Note we don't check signature or expiry here. We are relying on the
 // caller to verify those separately (e.g., by calling the UserInfo
 // endpoint).
 func (ta *oidcTokenAuthorizer) checkAccessTokenScope(ctx context.Context, tok string) (bool, error) {
-	switch ta.ctrl.AcceptAccessTokenScope {
-	case "*":
-		return true, nil
-	case "":
+	if !ta.ctrl.AcceptAccessToken {
 		return false, nil
+	} else if ta.ctrl.AcceptAccessTokenScope == "" {
+		return true, nil
 	}
 	var claims struct {
 		Scope string `json:"scope"`

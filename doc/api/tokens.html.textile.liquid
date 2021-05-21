@@ -34,10 +34,10 @@ h3. Direct username/password authentication
 
 h3. Using an OpenID Connect access token
 
-A cluster that uses OpenID Connect as a login provider can be configured to accept OIDC access tokens as well as Arvados API tokens (this is disabled by default; see @Login.OpenIDConnect.AcceptAccessTokenScope@ in the "default config.yml file":{{site.baseurl}}/admin/config.html).
+A cluster that uses OpenID Connect as a login provider can be configured to accept OIDC access tokens as well as Arvados API tokens (this is disabled by default; see @Login.OpenIDConnect.AcceptAccessToken@ in the "default config.yml file":{{site.baseurl}}/admin/config.html).
 # The client obtains an access token from the OpenID Connect provider via some method outside of Arvados.
 # The client presents the access token with an Arvados API request (e.g., request header @Authorization: Bearer xxxxaccesstokenxxxx@).
-# Depending on configuration, the API server decodes the access token (which must be a signed JWT) and confirms that it includes the required scope.
+# Depending on configuration, the API server decodes the access token (which must be a signed JWT) and confirms that it includes the required scope (see @Login.OpenIDConnect.AcceptAccessTokenScope@ in the "default config.yml file":{{site.baseurl}}/admin/config.html).
 # The API server uses the provider's UserInfo endpoint to validate the presented token.
 # If the token is valid, it is cached in the Arvados database and accepted in subsequent API calls for the next 10 minutes.
 
