@@ -303,7 +303,7 @@ export const CollectionDetailsAttributes = (props: { item: CollectionResource, t
                 uuidEnhancer={(uuid: string) => <ResourceOwnerWithName uuid={uuid} />} />
         </Grid>
         <div data-cy="responsible-person-wrapper" ref={responsiblePersonRef}>
-            <Grid item xs={12} md={mdSize}>
+            <Grid item xs={12} md={12}>
                 <DetailsAttribute classLabel={classes.label} classValue={classes.value}
                     label='Responsible person' linkToUuid={item.ownerUuid}
                     uuidEnhancer={(uuid: string) => <ResponsiblePerson uuid={item.uuid} parentRef={responsiblePersonRef.current} />} />
