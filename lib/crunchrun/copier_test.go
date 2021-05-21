@@ -5,27 +5,31 @@
 package crunchrun
 
 import (
+	"bytes"
 	"io"
 	"io/ioutil"
 	"os"
+	"syscall"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
+	"github.com/sirupsen/logrus"
 	check "gopkg.in/check.v1"
 )
 
 var _ = check.Suite(&copierSuite{})
 
 type copierSuite struct {
-	cp copier
+	cp  copier
+	log bytes.Buffer
 }
 
 func (s *copierSuite) SetUpTest(c *check.C) {
-	tmpdir, err := ioutil.TempDir("", "crunch-run.test.")
-	c.Assert(err, check.IsNil)
+	tmpdir := c.MkDir()
 	api, err := arvadosclient.MakeArvadosClient()
 	c.Assert(err, check.IsNil)
+	s.log = bytes.Buffer{}
 	s.cp = copier{
 		client:        arvados.NewClientFromEnv(),
 		arvClient:     api,
@@ -37,11 +41,8 @@ func (s *copierSuite) SetUpTest(c *check.C) {
 		secretMounts: map[string]arvados.Mount{
 			"/secret_text": {Kind: "text", Content: "xyzzy"},
 		},
+		logger: &logrus.Logger{Out: &s.log, Formatter: &logrus.TextFormatter{}, Level: logrus.InfoLevel},
 	}
-}
-
-func (s *copierSuite) TearDownTest(c *check.C) {
-	os.RemoveAll(s.cp.hostOutputDir)
 }
 
 func (s *copierSuite) TestEmptyOutput(c *check.C) {
@@ -59,6 +60,8 @@ func (s *copierSuite) TestRegularFilesAndDirs(c *check.C) {
 	_, err = io.WriteString(f, "foo")
 	c.Assert(err, check.IsNil)
 	c.Assert(f.Close(), check.IsNil)
+	err = syscall.Mkfifo(s.cp.hostOutputDir+"/dir1/fifo", 0644)
+	c.Assert(err, check.IsNil)
 
 	err = s.cp.walkMount("", s.cp.ctrOutputDir, 10, true)
 	c.Check(err, check.IsNil)
@@ -67,6 +70,7 @@ func (s *copierSuite) TestRegularFilesAndDirs(c *check.C) {
 		{src: os.DevNull, dst: "/dir1/dir2/dir3/.keep"},
 		{src: s.cp.hostOutputDir + "/dir1/foo", dst: "/dir1/foo", size: 3},
 	})
+	c.Check(s.log.String(), check.Matches, `.* msg="Skipping unsupported file type \(mode 200000644\) in output dir: \\"/ctr/outdir/dir1/fifo\\""\n`)
 }
 
 func (s *copierSuite) TestSymlinkCycle(c *check.C) {
