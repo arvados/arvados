@@ -103,8 +103,7 @@ describe('Collection panel tests', function () {
                 cy.doRequest('GET', `/arvados/v1/collections/${this.testCollection.uuid}`)
                     .its('body').as('collection')
                     .then(function () {
-                        expect(this.collection.properties).to.deep.equal(
-                            { IDTAGCOLORS: 'IDVALCOLORS3' });
+                        expect(this.collection.properties.IDTAGCOLORS).to.equal('IDVALCOLORS3');
                     });
             });
     });
@@ -585,5 +584,36 @@ describe('Collection panel tests', function () {
         cy.get('[data-cy=form-dialog]').should('not.exist');
         cy.get('[data-cy=breadcrumb-first]').should('contain', 'Projects');
         cy.get('[data-cy=breadcrumb-last]').should('contain', collName);
+    });
+
+    it.only('shows responsible person for collection if available', () => {
+        cy.createCollection(adminUser.token, {
+            name: `Test collection ${Math.floor(Math.random() * 999999)}`,
+            owner_uuid: activeUser.user.uuid,
+            manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
+        })
+            .as('testCollection1');
+
+        cy.createCollection(adminUser.token, {
+            name: `Test collection ${Math.floor(Math.random() * 999999)}`,
+            owner_uuid: adminUser.user.uuid,
+            manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
+        })
+            .as('testCollection2').then(function (testCollection2) {
+                cy.shareWith(adminUser.token, activeUser.user.uuid, testCollection2.uuid, 'can_write');
+            });
+
+        cy.getAll('@testCollection1', '@testCollection2')
+            .then(function ([testCollection1, testCollection2]) {
+                cy.loginAs(activeUser);
+
+                cy.goToPath(`/collections/${testCollection1.uuid}`);
+                cy.get('[data-cy=responsible-person-wrapper]')
+                    .contains(activeUser.user.uuid);
+
+                cy.goToPath(`/collections/${testCollection2.uuid}`);
+                cy.get('[data-cy=responsible-person-wrapper]')
+                    .contains(adminUser.user.uuid);
+            });
     });
 })

@@ -83,6 +83,13 @@ export interface ClusterConfigJSON {
     };
     Collections: {
         ForwardSlashNameSubstitution: string;
+        ManagedProperties?: {
+            [key: string]: {
+                Function: string,
+                Value: string,
+                Protected?: boolean,
+            }
+        }
     };
 }
 

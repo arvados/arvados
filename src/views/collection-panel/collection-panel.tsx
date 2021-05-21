@@ -32,7 +32,7 @@ import { getProgressIndicator } from '~/store/progress-indicator/progress-indica
 import { COLLECTION_PANEL_LOAD_FILES, loadCollectionFiles, COLLECTION_PANEL_LOAD_FILES_THRESHOLD } from '~/store/collection-panel/collection-panel-files/collection-panel-files-actions';
 import { Link } from 'react-router-dom';
 import { Link as ButtonLink } from '@material-ui/core';
-import { ResourceOwnerWithName } from '~/views-components/data-explorer/renderers';
+import { ResourceOwnerWithName, ResponsiblePerson } from '~/views-components/data-explorer/renderers';
 
 type CssRules = 'root'
     | 'button'
@@ -285,6 +285,7 @@ export const CollectionDetailsAttributes = (props: { item: CollectionResource, t
     const isOldVersion = item && item.currentVersionUuid !== item.uuid;
     const mdSize = props.twoCol ? 6 : 12;
     const showVersionBrowser = props.showVersionBrowser;
+    const responsiblePersonRef = React.useRef(null);
     return <Grid container>
         <Grid item xs={12} md={mdSize}>
             <DetailsAttribute classLabel={classes.label} classValue={classes.value}
@@ -301,6 +302,13 @@ export const CollectionDetailsAttributes = (props: { item: CollectionResource, t
                 label='Owner' linkToUuid={item.ownerUuid}
                 uuidEnhancer={(uuid: string) => <ResourceOwnerWithName uuid={uuid} />} />
         </Grid>
+        <div data-cy="responsible-person-wrapper" ref={responsiblePersonRef}>
+            <Grid item xs={12} md={12}>
+                <DetailsAttribute classLabel={classes.label} classValue={classes.value}
+                    label='Responsible person' linkToUuid={item.ownerUuid}
+                    uuidEnhancer={(uuid: string) => <ResponsiblePerson uuid={item.uuid} parentRef={responsiblePersonRef.current} />} />
+            </Grid>
+        </div>
         <Grid item xs={12} md={mdSize}>
             <DetailsAttribute classLabel={classes.label} classValue={classes.value}
                 label='Head version'

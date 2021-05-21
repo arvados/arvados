@@ -5,7 +5,7 @@
 import * as React from 'react';
 import { Grid, Typography, withStyles, Tooltip, IconButton, Checkbox } from '@material-ui/core';
 import { FavoriteStar, PublicFavoriteStar } from '../favorite-star/favorite-star';
-import { ResourceKind, TrashableResource } from '~/models/resource';
+import { Resource, ResourceKind, TrashableResource } from '~/models/resource';
 import { ProjectIcon, FilterGroupIcon, CollectionIcon, ProcessIcon, DefaultIcon, ShareIcon, CollectionOldVersionIcon, WorkflowIcon } from '~/components/icon/icon';
 import { formatDate, formatFileSize, formatTime } from '~/common/formatters';
 import { resourceLabel } from '~/common/labels';
@@ -466,6 +466,62 @@ export const ResourceOwnerWithName =
             return <Typography style={{ color: theme.palette.primary.main }} inline noWrap>
                 {ownerName} ({uuid})
             </Typography>;
+        });
+
+export const ResponsiblePerson =
+    compose(
+        connect(
+            (state: RootState, props: { uuid: string, parentRef: HTMLElement | null }) => {
+                let responsiblePersonName = null;
+                let responsiblePersonUUID = null;
+                let responsiblePersonProperty = null;
+
+                if (state.auth.config.clusterConfig.Collections.ManagedProperties) {
+                    let index = 0;
+                    const keys = Object.keys(state.auth.config.clusterConfig.Collections.ManagedProperties);
+
+                    while (!responsiblePersonProperty && keys[index]) {
+                        const key = keys[index];
+                        if (state.auth.config.clusterConfig.Collections.ManagedProperties[key].Function === 'original_owner') {
+                            responsiblePersonProperty = key;
+                        }
+                        index++;
+                    }
+                }
+
+                let resource: Resource | undefined = getResource<GroupContentsResource & UserResource>(props.uuid)(state.resources);
+
+                while (resource && resource.kind !== ResourceKind.USER && responsiblePersonProperty) {
+                    responsiblePersonUUID = (resource as CollectionResource).properties[responsiblePersonProperty];
+                    resource = getResource<GroupContentsResource & UserResource>(responsiblePersonUUID)(state.resources);
+                }
+
+                if (resource && resource.kind === ResourceKind.USER) {
+                    responsiblePersonName = getUserFullname(resource as UserResource) || (resource as GroupContentsResource).name;
+                }
+
+                return { uuid: responsiblePersonUUID, responsiblePersonName, parentRef: props.parentRef };
+            }),
+        withStyles({}, { withTheme: true }))
+        ((props: { uuid: string | null, responsiblePersonName: string, parentRef: HTMLElement | null, theme: ArvadosTheme }) => {
+            const { uuid, responsiblePersonName, parentRef, theme } = props;
+
+            if (!uuid && parentRef) {
+                parentRef.style.display = 'none';
+                return null;
+            } else if (parentRef) {
+                parentRef.style.display = 'block';
+            }
+
+            if (!responsiblePersonName) {
+                return <Typography style={{ color: theme.palette.primary.main }} inline noWrap>
+                    {uuid}
+                </Typography>;
+            }
+
+            return <Typography style={{ color: theme.palette.primary.main }} inline noWrap>
+                {responsiblePersonName} ({uuid})
+                </Typography>;
         });
 
 const renderType = (type: string, subtype: string) =>
