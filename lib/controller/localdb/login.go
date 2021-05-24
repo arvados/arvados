@@ -54,15 +54,17 @@ func chooseLoginController(cluster *arvados.Cluster, parent *Conn) loginControll
 		}
 	case wantOpenIDConnect:
 		return &oidcLoginController{
-			Cluster:            cluster,
-			Parent:             parent,
-			Issuer:             cluster.Login.OpenIDConnect.Issuer,
-			ClientID:           cluster.Login.OpenIDConnect.ClientID,
-			ClientSecret:       cluster.Login.OpenIDConnect.ClientSecret,
-			AuthParams:         cluster.Login.OpenIDConnect.AuthenticationRequestParameters,
-			EmailClaim:         cluster.Login.OpenIDConnect.EmailClaim,
-			EmailVerifiedClaim: cluster.Login.OpenIDConnect.EmailVerifiedClaim,
-			UsernameClaim:      cluster.Login.OpenIDConnect.UsernameClaim,
+			Cluster:                cluster,
+			Parent:                 parent,
+			Issuer:                 cluster.Login.OpenIDConnect.Issuer,
+			ClientID:               cluster.Login.OpenIDConnect.ClientID,
+			ClientSecret:           cluster.Login.OpenIDConnect.ClientSecret,
+			AuthParams:             cluster.Login.OpenIDConnect.AuthenticationRequestParameters,
+			EmailClaim:             cluster.Login.OpenIDConnect.EmailClaim,
+			EmailVerifiedClaim:     cluster.Login.OpenIDConnect.EmailVerifiedClaim,
+			UsernameClaim:          cluster.Login.OpenIDConnect.UsernameClaim,
+			AcceptAccessToken:      cluster.Login.OpenIDConnect.AcceptAccessToken,
+			AcceptAccessTokenScope: cluster.Login.OpenIDConnect.AcceptAccessTokenScope,
 		}
 	case wantSSO:
 		return &ssoLoginController{Parent: parent}
