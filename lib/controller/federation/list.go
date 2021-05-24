@@ -113,6 +113,11 @@ func (conn *Conn) splitListRequest(ctx context.Context, opts arvados.ListOptions
 		_, err := fn(ctx, conn.cluster.ClusterID, conn.local, opts)
 		return err
 	}
+	if opts.ClusterID != "" {
+		// Client explicitly selected cluster
+		_, err := fn(ctx, conn.cluster.ClusterID, conn.chooseBackend(opts.ClusterID), opts)
+		return err
+	}
 
 	cannotSplit := false
 	var matchAllFilters map[string]bool
