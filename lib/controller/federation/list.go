@@ -22,12 +22,6 @@ import (
 // methods for other types; see generate.go.
 
 func (conn *Conn) generated_CollectionList(ctx context.Context, options arvados.ListOptions) (arvados.CollectionList, error) {
-	if options.ClusterID != "" {
-		// explicitly selected cluster
-		options.ForwardedFor = conn.cluster.ClusterID + "-" + options.ForwardedFor
-		return conn.chooseBackend(options.ClusterID).CollectionList(ctx, options)
-	}
-
 	var mtx sync.Mutex
 	var merged arvados.CollectionList
 	var needSort atomic.Value
@@ -117,6 +111,11 @@ func (conn *Conn) splitListRequest(ctx context.Context, opts arvados.ListOptions
 	if opts.BypassFederation || opts.ForwardedFor != "" {
 		// Client requested no federation.  Pass through.
 		_, err := fn(ctx, conn.cluster.ClusterID, conn.local, opts)
+		return err
+	}
+	if opts.ClusterID != "" {
+		// Client explicitly selected cluster
+		_, err := fn(ctx, conn.cluster.ClusterID, conn.chooseBackend(opts.ClusterID), opts)
 		return err
 	}
 

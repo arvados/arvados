@@ -18,12 +18,6 @@ import (
 //
 
 func (conn *Conn) generated_ContainerList(ctx context.Context, options arvados.ListOptions) (arvados.ContainerList, error) {
-	if options.ClusterID != "" {
-		// explicitly selected cluster
-		options.ForwardedFor = conn.cluster.ClusterID + "-" + options.ForwardedFor
-		return conn.chooseBackend(options.ClusterID).ContainerList(ctx, options)
-	}
-
 	var mtx sync.Mutex
 	var merged arvados.ContainerList
 	var needSort atomic.Value
@@ -65,12 +59,6 @@ func (conn *Conn) generated_ContainerList(ctx context.Context, options arvados.L
 }
 
 func (conn *Conn) generated_ContainerRequestList(ctx context.Context, options arvados.ListOptions) (arvados.ContainerRequestList, error) {
-	if options.ClusterID != "" {
-		// explicitly selected cluster
-		options.ForwardedFor = conn.cluster.ClusterID + "-" + options.ForwardedFor
-		return conn.chooseBackend(options.ClusterID).ContainerRequestList(ctx, options)
-	}
-
 	var mtx sync.Mutex
 	var merged arvados.ContainerRequestList
 	var needSort atomic.Value
@@ -112,12 +100,6 @@ func (conn *Conn) generated_ContainerRequestList(ctx context.Context, options ar
 }
 
 func (conn *Conn) generated_GroupList(ctx context.Context, options arvados.ListOptions) (arvados.GroupList, error) {
-	if options.ClusterID != "" {
-		// explicitly selected cluster
-		options.ForwardedFor = conn.cluster.ClusterID + "-" + options.ForwardedFor
-		return conn.chooseBackend(options.ClusterID).GroupList(ctx, options)
-	}
-
 	var mtx sync.Mutex
 	var merged arvados.GroupList
 	var needSort atomic.Value
@@ -159,12 +141,6 @@ func (conn *Conn) generated_GroupList(ctx context.Context, options arvados.ListO
 }
 
 func (conn *Conn) generated_SpecimenList(ctx context.Context, options arvados.ListOptions) (arvados.SpecimenList, error) {
-	if options.ClusterID != "" {
-		// explicitly selected cluster
-		options.ForwardedFor = conn.cluster.ClusterID + "-" + options.ForwardedFor
-		return conn.chooseBackend(options.ClusterID).SpecimenList(ctx, options)
-	}
-
 	var mtx sync.Mutex
 	var merged arvados.SpecimenList
 	var needSort atomic.Value
@@ -206,12 +182,6 @@ func (conn *Conn) generated_SpecimenList(ctx context.Context, options arvados.Li
 }
 
 func (conn *Conn) generated_UserList(ctx context.Context, options arvados.ListOptions) (arvados.UserList, error) {
-	if options.ClusterID != "" {
-		// explicitly selected cluster
-		options.ForwardedFor = conn.cluster.ClusterID + "-" + options.ForwardedFor
-		return conn.chooseBackend(options.ClusterID).UserList(ctx, options)
-	}
-
 	var mtx sync.Mutex
 	var merged arvados.UserList
 	var needSort atomic.Value
