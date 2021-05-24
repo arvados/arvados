@@ -1118,6 +1118,62 @@ func (s *IntegrationSuite) TestKeepClientBlockCache(c *check.C) {
 	c.Check(keepclient.DefaultBlockCache.MaxBlocks, check.Equals, 42)
 }
 
+// Writing to a collection shouldn't affect its entry in the
+// PDH-to-manifest cache.
+func (s *IntegrationSuite) TestCacheWriteCollectionSamePDH(c *check.C) {
+	arv, err := arvadosclient.MakeArvadosClient()
+	c.Assert(err, check.Equals, nil)
+	arv.ApiToken = arvadostest.ActiveToken
+
+	u := mustParseURL("http://x.example/testfile")
+	req := &http.Request{
+		Method:     "GET",
+		Host:       u.Host,
+		URL:        u,
+		RequestURI: u.RequestURI(),
+		Header:     http.Header{"Authorization": {"Bearer " + arv.ApiToken}},
+	}
+
+	checkWithID := func(id string, status int) {
+		req.URL.Host = strings.Replace(id, "+", "-", -1) + ".example"
+		req.Host = req.URL.Host
+		resp := httptest.NewRecorder()
+		s.testServer.Handler.ServeHTTP(resp, req)
+		c.Check(resp.Code, check.Equals, status)
+	}
+
+	var colls [2]arvados.Collection
+	for i := range colls {
+		err := arv.Create("collections",
+			map[string]interface{}{
+				"ensure_unique_name": true,
+				"collection": map[string]interface{}{
+					"name": "test collection",
+				},
+			}, &colls[i])
+		c.Assert(err, check.Equals, nil)
+	}
+
+	// Populate cache with empty collection
+	checkWithID(colls[0].PortableDataHash, http.StatusNotFound)
+
+	// write a file to colls[0]
+	reqPut := *req
+	reqPut.Method = "PUT"
+	reqPut.URL.Host = colls[0].UUID + ".example"
+	reqPut.Host = req.URL.Host
+	reqPut.Body = ioutil.NopCloser(bytes.NewBufferString("testdata"))
+	resp := httptest.NewRecorder()
+	s.testServer.Handler.ServeHTTP(resp, &reqPut)
+	c.Check(resp.Code, check.Equals, http.StatusCreated)
+
+	// new file should not appear in colls[1]
+	checkWithID(colls[1].PortableDataHash, http.StatusNotFound)
+	checkWithID(colls[1].UUID, http.StatusNotFound)
+
+	checkWithID(colls[0].UUID, http.StatusOK)
+}
+
 func copyHeader(h http.Header) http.Header {
 	hc := http.Header{}
 	for k, v := range h {

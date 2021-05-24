@@ -195,7 +195,7 @@ func (c *cache) Update(client *arvados.Client, coll arvados.Collection, fs arvad
 		},
 	})
 	if err == nil {
-		c.collections.Add(client.AuthToken+"\000"+coll.PortableDataHash, &cachedCollection{
+		c.collections.Add(client.AuthToken+"\000"+updated.PortableDataHash, &cachedCollection{
 			expire:     time.Now().Add(time.Duration(c.config.TTL)),
 			collection: &updated,
 		})
