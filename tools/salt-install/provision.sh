@@ -273,6 +273,7 @@ for f in $(ls "${SOURCE_PILLARS_DIR}"/*); do
        s#__KEEPSTORE1_INT_IP__#${KEEPSTORE1_INT_IP}#g;
        s#__KEEPWEB_INT_IP__#${KEEPWEB_INT_IP}#g;
        s#__WEBSHELL_INT_IP__#${WEBSHELL_INT_IP}#g;
+       s#__SHELL_INT_IP__#${SHELL_INT_IP}#g;
        s#__WORKBENCH1_INT_IP__#${WORKBENCH1_INT_IP}#g;
        s#__WORKBENCH2_INT_IP__#${WORKBENCH2_INT_IP}#g;
        s#__DATABASE_INT_IP__#${DATABASE_INT_IP}#g;
