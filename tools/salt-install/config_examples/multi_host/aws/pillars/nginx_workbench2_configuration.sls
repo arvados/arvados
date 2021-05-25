@@ -22,7 +22,6 @@ nginx:
             - server_name: workbench2.__CLUSTER__.__DOMAIN__
             - listen:
               - 80
-            - include: snippets/letsencrypt_well_known.conf
             - location /:
               - return: '301 https://$host$request_uri'
 

@@ -84,7 +84,7 @@ Additional configuration settings are available:
 
 Check the LDAP section in the "default config file":{{site.baseurl}}/admin/config.html for more details and configuration options.
 
-h2(#pam). PAM (experimental)
+h2(#pam). PAM
 
 With this configuration, authentication is done according to the Linux PAM ("Pluggable Authentication Modules") configuration on your controller host.
 
@@ -98,8 +98,8 @@ Enable PAM authentication in @config.yml@:
 
 Check the "default config file":{{site.baseurl}}/admin/config.html for more PAM configuration options.
 
-The default PAM configuration on most Linux systems uses the local password database in @/etc/shadow@ for all logins. In this case, in order to log in to Arvados, users must have a UNIX account and password on the controller host itself. This can be convenient for a single-user or test cluster. User accounts can have @/dev/false@ as the shell in order to allow the user to log into Arvados but not log into a shell on the controller host.
+The default PAM configuration on most Linux systems uses the local user/password database in @/etc/passwd@ and @/etc/shadow@ for all logins. In this case, in order to log in to Arvados, users must have a UNIX account and password on the controller host itself. This can be convenient for a single-user or test cluster. Configuring a user account with a shell of @/bin/false@ will enable the user to log into Arvados but not log into shell login on the controller host.
 
-PAM can also be configured to use different backends like LDAP. In a production environment, PAM configuration should use the service name ("arvados" by default) to set a separate policy for Arvados logins: generally, Arvados users should not have shell accounts on the controller node.
+PAM can also be configured to use other authentication systems such such as NIS or Kerberos. In a production environment, PAM configuration should use the service name ("arvados" by default) and set a separate policy for Arvados login.  In this case, Arvados users should not have shell accounts on the controller node.
 
 For information about configuring PAM, refer to the "PAM System Administrator's Guide":http://www.linux-pam.org/Linux-PAM-html/Linux-PAM_SAG.html.

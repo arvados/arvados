@@ -242,7 +242,7 @@ if [ ! -d "${SOURCE_PILLARS_DIR}" ]; then
   echo "${SOURCE_PILLARS_DIR} does not exist or is not a directory. Exiting."
   exit 1
 fi
-for f in "${SOURCE_PILLARS_DIR}"/*; do
+for f in $(ls "${SOURCE_PILLARS_DIR}"/*); do
   sed "s#__ANONYMOUS_USER_TOKEN__#${ANONYMOUS_USER_TOKEN}#g;
        s#__BLOB_SIGNING_KEY__#${BLOB_SIGNING_KEY}#g;
        s#__CONTROLLER_EXT_SSL_PORT__#${CONTROLLER_EXT_SSL_PORT}#g;
@@ -285,7 +285,7 @@ if [ "x${TEST}" = "xyes" ] && [ ! -d "${SOURCE_TESTS_DIR}" ]; then
 fi
 mkdir -p /tmp/cluster_tests
 # Replace cluster and domain name in the test files
-for f in "${SOURCE_TESTS_DIR}"/*; do
+for f in $(ls "${SOURCE_TESTS_DIR}"/*); do
   sed "s#__CLUSTER__#${CLUSTER}#g;
        s#__CONTROLLER_EXT_SSL_PORT__#${CONTROLLER_EXT_SSL_PORT}#g;
        s#__DOMAIN__#${DOMAIN}#g;
@@ -303,7 +303,7 @@ chmod 755 /tmp/cluster_tests/run-test.sh
 if [ -d "${SOURCE_STATES_DIR}" ]; then
   mkdir -p "${F_DIR}"/extra/extra
 
-  for f in "${SOURCE_STATES_DIR}"/*; do
+  for f in $(ls "${SOURCE_STATES_DIR}"/*); do
     sed "s#__ANONYMOUS_USER_TOKEN__#${ANONYMOUS_USER_TOKEN}#g;
          s#__CLUSTER__#${CLUSTER}#g;
          s#__BLOB_SIGNING_KEY__#${BLOB_SIGNING_KEY}#g;
@@ -362,7 +362,7 @@ EOFPSLS
 
 # States, extra states
 if [ -d "${F_DIR}"/extra/extra ]; then
-  for f in "${F_DIR}"/extra/extra/*.sls; do
+  for f in $(ls "${F_DIR}"/extra/extra/*.sls); do
   echo "    - extra.$(basename ${f} | sed 's/.sls$//g')" >> ${S_DIR}/top.sls
   done
 fi
@@ -376,7 +376,7 @@ if [ -z "${ROLES}" ]; then
     grep -q "letsencrypt" ${S_DIR}/top.sls || echo "    - letsencrypt" >> ${S_DIR}/top.sls
   fi
   echo "    - postgres" >> ${S_DIR}/top.sls
-  echo "    - docker" >> ${S_DIR}/top.sls
+  echo "    - docker.software" >> ${S_DIR}/top.sls
   echo "    - arvados" >> ${S_DIR}/top.sls
 
   # Pillars
@@ -439,7 +439,7 @@ else
       ;;
       "shell")
         # States
-        grep -q "docker" ${S_DIR}/top.sls       || echo "    - docker" >> ${S_DIR}/top.sls
+        grep -q "docker" ${S_DIR}/top.sls       || echo "    - docker.software" >> ${S_DIR}/top.sls
         grep -q "arvados.${R}" ${S_DIR}/top.sls || echo "    - arvados.${R}" >> ${S_DIR}/top.sls
         # Pillars
         grep -q "" ${P_DIR}/top.sls                             || echo "    - docker" >> ${P_DIR}/top.sls
@@ -447,7 +447,7 @@ else
       ;;
       "dispatcher")
         # States
-        grep -q "docker" ${S_DIR}/top.sls       || echo "    - docker" >> ${S_DIR}/top.sls
+        grep -q "docker" ${S_DIR}/top.sls       || echo "    - docker.software" >> ${S_DIR}/top.sls
         grep -q "arvados.${R}" ${S_DIR}/top.sls || echo "    - arvados.${R}" >> ${S_DIR}/top.sls
         # Pillars
         # ATM, no specific pillar needed

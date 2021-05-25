@@ -172,3 +172,18 @@ table(table table-bordered table-condensed).
 |old_user_uuid|uuid|The uuid of the "old" account|query||
 |new_owner_uuid|uuid|The uuid of a project to which objects owned by the "old" user will be reassigned.|query||
 |redirect_to_new_user|boolean|If true, also redirect login and reassign authorization credentials from "old" user to the "new" user|query||
+
+h3. authenticate
+
+Create a new API token based on username/password credentials.  Returns an "API client authorization":api_client_authorizations.html object containing the API token, or an "error object.":../requests.html#errors
+
+Valid credentials are determined by the choice of "configured login backend.":{{site.baseurl}}/install/setup-login.html
+
+Note: this endpoint cannot be used with login backends that use web-based third party authentication, such as Google or OpenID Connect.
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+{background:#ccffcc}.|username|string|The username.|body||
+{background:#ccffcc}.|password|string|The password.|body||

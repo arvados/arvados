@@ -544,7 +544,7 @@ Clusters:
         UUIDTTL: 5s
 
         # Block cache entries. Each block consumes up to 64 MiB RAM.
-        MaxBlockEntries: 4
+        MaxBlockEntries: 20
 
         # Collection cache entries.
         MaxCollectionEntries: 1000
@@ -638,6 +638,23 @@ Clusters:
         # parameters.
         AuthenticationRequestParameters:
           SAMPLE: ""
+
+        # Accept an OIDC access token as an API token if the OIDC
+        # provider's UserInfo endpoint accepts it.
+        #
+        # AcceptAccessTokenScope should also be used when enabling
+        # this feature.
+        AcceptAccessToken: false
+
+        # Before accepting an OIDC access token as an API token, first
+        # check that it is a JWT whose "scope" value includes this
+        # value. Example: "https://zzzzz.example.com/" (your Arvados
+        # API endpoint).
+        #
+        # If this value is empty and AcceptAccessToken is true, all
+        # access tokens will be accepted regardless of scope,
+        # including non-JWT tokens. This is not recommended.
+        AcceptAccessTokenScope: ""
 
       PAM:
         # (Experimental) Use PAM to authenticate users.

@@ -331,8 +331,8 @@ func (cp *copier) walkHostFS(dest, src string, maxSymlinks int, includeMounts bo
 		})
 		return nil
 	}
-
-	return fmt.Errorf("Unsupported file type (mode %o) in output dir: %q", fi.Mode(), src)
+	cp.logger.Printf("Skipping unsupported file type (mode %o) in output dir: %q", fi.Mode(), src)
+	return nil
 }
 
 // Return the host path that was mounted at the given path in the

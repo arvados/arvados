@@ -10,6 +10,7 @@ letsencrypt:
       - download.__CLUSTER__.__DOMAIN__
     collections.__CLUSTER__.__DOMAIN__:
       - collections.__CLUSTER__.__DOMAIN__
+      - *.collections.__CLUSTER__.__DOMAIN__
 
 ### NGINX
 nginx:

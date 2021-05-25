@@ -35,11 +35,17 @@ Every request must include an API token.  This identifies the user making the re
 API requests must provide the API token using the @Authorization@ header in the following format:
 
 <pre>
-$ curl -v -H "Authorization: OAuth2 xxxxapitokenxxxx" https://192.168.5.2:8000/arvados/v1/collections
+$ curl -v -H "Authorization: Bearer xxxxapitokenxxxx" https://192.168.5.2:8000/arvados/v1/collections
 > GET /arvados/v1/collections HTTP/1.1
 > ...
-> Authorization: OAuth2 xxxxapitokenxxxx
+> Authorization: Bearer xxxxapitokenxxxx
 > ...
+</pre>
+
+On a cluster configured to use an OpenID Connect provider (other than Google) as a login backend, Arvados can be configured to accept an OpenID Connect access token in place of an Arvados API token. OIDC access tokens are also accepted by a cluster that delegates login to another cluster (LoginCluster) which in turn has this feature configured. See @Login.OpenIDConnect.AcceptAccessTokenScope@ in the "default config.yml file":{{site.baseurl}}/admin/config.html for details.
+
+<pre>
+$ curl -v -H "Authorization: Bearer xxxx-openid-connect-access-token-xxxx" https://192.168.5.2:8000/arvados/v1/collections
 </pre>
 
 h3. Parameters
@@ -52,7 +58,7 @@ h3. Result
 
 Results are returned JSON-encoded in the response body.
 
-h3. Errors
+h3(#errors). Errors
 
 If a request cannot be fulfilled, the API will return 4xx or 5xx HTTP status code.  Be aware that the API server may return a 404 (Not Found) status for resources that exist but for which the client does not have read access.  The API will also return an error record:
 
@@ -66,12 +72,12 @@ h2. Examples
 h3. Create a new record
 
 <pre>
-$ curl -v -X POST --data-urlencode 'collection={"name":"empty collection"}' -H "Authorization: OAuth2 oz0os4nyudswvglxhdlnrgnuelxptmj7qu7dpwvyz3g9ocqtr" https://192.168.5.2:8000/arvados/v1/collections | jq .
+$ curl -v -X POST --data-urlencode 'collection={"name":"empty collection"}' -H "Authorization: Bearer oz0os4nyudswvglxhdlnrgnuelxptmj7qu7dpwvyz3g9ocqtr" https://192.168.5.2:8000/arvados/v1/collections | jq .
 > POST /arvados/v1/collections HTTP/1.1
 > User-Agent: curl/7.38.0
 > Host: 192.168.5.2:8000
 > Accept: */*
-> Authorization: OAuth2 oz0os4nyudswvglxhdlnrgnuelxptmj7qu7dpwvyz3g9ocqtr
+> Authorization: Bearer oz0os4nyudswvglxhdlnrgnuelxptmj7qu7dpwvyz3g9ocqtr
 > Content-Length: 54
 > Content-Type: application/x-www-form-urlencoded
 >
@@ -120,12 +126,12 @@ $ curl -v -X POST --data-urlencode 'collection={"name":"empty collection"}' -H "
 h3. Delete a record
 
 <pre>
-$ curl -X DELETE -v -H "Authorization: OAuth2 oz0os4nyudswvglxhdlnrgnuelxptmj7qu7dpwvyz3g9ocqtr" https://192.168.5.2:8000/arvados/v1/collections/962eh-4zz18-m1ma0mxxfg3mbcc | jq .
+$ curl -X DELETE -v -H "Authorization: Bearer oz0os4nyudswvglxhdlnrgnuelxptmj7qu7dpwvyz3g9ocqtr" https://192.168.5.2:8000/arvados/v1/collections/962eh-4zz18-m1ma0mxxfg3mbcc | jq .
 > DELETE /arvados/v1/collections/962eh-4zz18-m1ma0mxxfg3mbcc HTTP/1.1
 > User-Agent: curl/7.38.0
 > Host: 192.168.5.2:8000
 > Accept: */*
-> Authorization: OAuth2 oz0os4nyudswvglxhdlnrgnuelxptmj7qu7dpwvyz3g9ocqtr
+> Authorization: Bearer oz0os4nyudswvglxhdlnrgnuelxptmj7qu7dpwvyz3g9ocqtr
 >
 < HTTP/1.1 200 OK
 < Content-Type: application/json; charset=utf-8
@@ -171,12 +177,12 @@ $ curl -X DELETE -v -H "Authorization: OAuth2 oz0os4nyudswvglxhdlnrgnuelxptmj7qu
 h3. Get a specific record
 
 <pre>
-$ curl -v -H "Authorization: OAuth2 oz0os4nyudswvglxhdlnrgnuelxptmj7qu7dpwvyz3g9ocqtr" https://192.168.5.2:8000/arvados/v1/collections/962eh-4zz18-xi32mpz2621o8km | jq .
+$ curl -v -H "Authorization: Bearer oz0os4nyudswvglxhdlnrgnuelxptmj7qu7dpwvyz3g9ocqtr" https://192.168.5.2:8000/arvados/v1/collections/962eh-4zz18-xi32mpz2621o8km | jq .
 > GET /arvados/v1/collections/962eh-4zz18-xi32mpz2621o8km HTTP/1.1
 > User-Agent: curl/7.38.0
 > Host: 192.168.5.2:8000
 > Accept: */*
-> Authorization: OAuth2 oz0os4nyudswvglxhdlnrgnuelxptmj7qu7dpwvyz3g9ocqtr
+> Authorization: Bearer oz0os4nyudswvglxhdlnrgnuelxptmj7qu7dpwvyz3g9ocqtr
 >
 < HTTP/1.1 200 OK
 < Content-Type: application/json; charset=utf-8
@@ -223,12 +229,12 @@ h3. List records and filter by date
 (Note, return result is truncated).
 
 <pre>
-$ curl -v -G --data-urlencode 'filters=[["created_at",">","2016-11-08T21:38:24.124834000Z"]]' -H "Authorization: OAuth2 oz0os4nyudswvglxhdlnrgnuelxptmj7qu7dpwvyz3g9ocqtr" https://192.168.5.2:8000/arvados/v1/collections | jq .
+$ curl -v -G --data-urlencode 'filters=[["created_at",">","2016-11-08T21:38:24.124834000Z"]]' -H "Authorization: Bearer oz0os4nyudswvglxhdlnrgnuelxptmj7qu7dpwvyz3g9ocqtr" https://192.168.5.2:8000/arvados/v1/collections | jq .
 > GET /arvados/v1/collections?filters=%5B%5B%22uuid%22%2C%20%22%3D%22%2C%20%22962eh-4zz18-xi32mpz2621o8km%22%5D%5D HTTP/1.1
 > User-Agent: curl/7.38.0
 > Host: 192.168.5.2:8000
 > Accept: */*
-> Authorization: OAuth2 oz0os4nyudswvglxhdlnrgnuelxptmj7qu7dpwvyz3g9ocqtr
+> Authorization: Bearer oz0os4nyudswvglxhdlnrgnuelxptmj7qu7dpwvyz3g9ocqtr
 >
 < HTTP/1.1 200 OK
 < Content-Type: application/json; charset=utf-8
@@ -302,12 +308,12 @@ $ curl -v -G --data-urlencode 'filters=[["created_at",">","2016-11-08T21:38:24.1
 h3. Update a field
 
 <pre>
-$ curl -v -X PUT --data-urlencode 'collection={"name":"rna.SRR948778.bam"}' -H "Authorization: OAuth2 oz0os4nyudswvglxhdlnrgnuelxptmj7qu7dpwvyz3g9ocqtr" https://192.168.5.2:8000/arvados/v1/collections/962eh-4zz18-xi32mpz2621o8km | jq .
+$ curl -v -X PUT --data-urlencode 'collection={"name":"rna.SRR948778.bam"}' -H "Authorization: Bearer oz0os4nyudswvglxhdlnrgnuelxptmj7qu7dpwvyz3g9ocqtr" https://192.168.5.2:8000/arvados/v1/collections/962eh-4zz18-xi32mpz2621o8km | jq .
 > PUT /arvados/v1/collections/962eh-4zz18-xi32mpz2621o8km HTTP/1.1
 > User-Agent: curl/7.38.0
 > Host: 192.168.5.2:8000
 > Accept: */*
-> Authorization: OAuth2 oz0os4nyudswvglxhdlnrgnuelxptmj7qu7dpwvyz3g9ocqtr
+> Authorization: Bearer oz0os4nyudswvglxhdlnrgnuelxptmj7qu7dpwvyz3g9ocqtr
 > Content-Length: 53
 > Content-Type: application/x-www-form-urlencoded
 >

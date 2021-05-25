@@ -167,6 +167,8 @@ type Cluster struct {
 			EmailClaim                      string
 			EmailVerifiedClaim              string
 			UsernameClaim                   string
+			AcceptAccessToken               bool
+			AcceptAccessTokenScope          string
 			AuthenticationRequestParameters map[string]string
 		}
 		PAM struct {

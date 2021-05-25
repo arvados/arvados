@@ -57,7 +57,7 @@ func parseFlags(prog string, args []string, loader *config.Loader, logger *logru
 	flags.Usage = func() {
 		fmt.Fprintf(flags.Output(), `
 Usage:
-  %s [options ...] <uuid> ...
+  %s [options ...] uuid [uuid ...]
 
 	This program analyzes the cost of Arvados container requests. For each uuid
 	supplied, it creates a CSV report that lists all the containers used to
@@ -78,25 +78,26 @@ Usage:
 	container was reused between several container requests, its cost will only
 	be counted once.
 
-	To get the node costs, the progam queries the Arvados API for current cost
-	data for each node type used. This means that the reported cost always
-	reflects the cost data as currently defined in the Arvados API configuration
-	file.
-
 	Caveats:
-	- the Arvados API configuration cost data may be out of sync with the cloud
-	provider.
-	- when generating reports for older container requests, the cost data in the
-	Arvados API configuration file may have changed since the container request
-	was fulfilled. This program uses the cost data stored at the time of the
+
+	- This program uses the cost data from config.yml at the time of the
 	execution of the container, stored in the 'node.json' file in its log
-	collection.
-	- if a container was run on a preemptible ("spot") instance, the cost data
+	collection. If the cost data was not correctly configured at the time the
+	container was executed, the output from this program will be incorrect.
+
+	- If a container was run on a preemptible ("spot") instance, the cost data
 	reported by this program may be wildly inaccurate, because it does not have
 	access to the spot pricing in effect for the node then the container ran. The
 	UUID report file that is generated when the '-output' option is specified has
 	a column that indicates the preemptible state of the instance that ran the
 	container.
+
+	- This program does not take into account overhead costs like the time spent
+	starting and stopping compute nodes that run containers, the cost of the
+	permanent cloud nodes that provide the Arvados services, the cost of data
+	stored in Arvados, etc.
+
+	- When provided with a project uuid, subprojects will not be considered.
 
 	In order to get the data for the uuids supplied, the ARVADOS_API_HOST and
 	ARVADOS_API_TOKEN environment variables must be set.

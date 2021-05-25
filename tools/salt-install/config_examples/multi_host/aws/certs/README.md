@@ -7,7 +7,7 @@ The nodes requiring certificates are:
 
 * CLUSTER.DOMAIN
 * collections.CLUSTER.DOMAIN
-* \*\-\-collections.CLUSTER.DOMAIN
+* \*.collections.CLUSTER.DOMAIN
 * download.CLUSTER.DOMAIN
 * keep.CLUSTER.DOMAIN
 * workbench.CLUSTER.DOMAIN
