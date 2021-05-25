@@ -79,6 +79,10 @@ func (s *integrationSuite) SetUpSuite(c *C) {
 }
 
 func (s *integrationSuite) TearDownSuite(c *C) {
+	if s.client == nil {
+		// didn't set up
+		return
+	}
 	err := s.client.RequestAndDecode(nil, "POST", "database/reset", nil, nil)
 	c.Check(err, IsNil)
 }
