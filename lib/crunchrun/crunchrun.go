@@ -1695,9 +1695,11 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	if gwAuthSecret == "" {
 		// not safe to run a gateway service without an auth
 		// secret
+		cr.CrunchLog.Printf("Not starting a gateway server (GatewayAuthSecret was not provided by dispatcher)")
 	} else if gwListen := os.Getenv("GatewayAddress"); gwListen == "" {
 		// dispatcher did not tell us which external IP
 		// address to advertise --> no gateway service
+		cr.CrunchLog.Printf("Not starting a gateway server (GatewayAddress was not provided by dispatcher)")
 	} else if de, ok := cr.executor.(*dockerExecutor); ok {
 		cr.gateway = Gateway{
 			Address:            gwListen,
