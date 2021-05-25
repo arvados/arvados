@@ -56,7 +56,18 @@ Clusters:
 
 This is independent of @Workbench.IdleTimeout@.  Even if Workbench auto-logout is disabled, this option will ensure that the user is always required to log in again after the configured amount of time.
 
-When this configuration is active (has a nonzero value), the Workbench client will also be "untrusted" by default.  This means tokens issued to Workbench cannot be used to list other tokens issued to the user, and cannot be used to grant new tokens.  This stops an attacker from leveraging a leaked token to aquire other tokens, but also interferes with some Workbench features that create new tokens on behalf of the user.
+h2. Untrusted login tokens
+
+<pre>
+Clusters:
+  zzzzz:
+    ...
+    Login:
+      TrustLoginTokens: false
+    ...
+</pre>
+
+When `TrustLoginTokens` is `false`, tokens issued through login will be "untrusted" by default.  Untrusted tokens cannot be used to list other tokens issued to the user, and cannot be used to grant new tokens.  This stops an attacker from leveraging a leaked token to aquire other tokens, but also interferes with some Workbench features that create new tokens on behalf of the user.
 
 The default value @Login.TokenLifetime@ is zero, meaning login tokens do not expire (unless @API.MaxTokenLifetime@ is set).
 
@@ -73,25 +84,25 @@ Clusters:
     ...
 </pre>
 
-Tokens created without an explicit expiration time, or that exceed maximum lifetime, will be clamped to @API.MaxTokenLifetime@.
+Tokens created without an explicit expiration time, or that exceed maximum lifetime, will be set to @API.MaxTokenLifetime@.
 
 Similar to @Login.TokenLifetime@, this option ensures that the user is always required to log in again after the configured amount of time.
 
-Unlike @Login.TokenLifetime@, this applies to all API operations that manipulate tokens, regardless of whether the token was created by logging in, or by using the API.  Also unlike @Login.TokenLifetime@, this setting does not imply any additional restrictions on token capabilities (it does not interfere with Workbench features that create new tokens on behalf of the user).  If @Login.TokenLifetime@ is greater than @API.MaxTokenLifetime@, MaxTokenLifetime takes precedence.
+Unlike @Login.TokenLifetime@, this applies to all API operations that manipulate tokens, regardless of whether the token was created by logging in, or by using the API.  If @Login.TokenLifetime@ is greater than @API.MaxTokenLifetime@, MaxTokenLifetime takes precedence.
 
-Admin users are permitted to create tokens with expiration times further in the future than MaxTokenLifetime, or with no expiration time at all.
+Admin users are permitted to create tokens with expiration times further in the future than @MaxTokenLifetime@.
 
 The default value @MaxTokenLifetime@ is zero, which means there is no maximum token lifetime.
 
 h2. Choosing a policy
 
-@Workbench.IdleTimeout@ only affects browser behavior.  It is strongly recommended that automatic browser logout be used together with one or both token lifetime options, which are enforced on API side.
+@Workbench.IdleTimeout@ only affects browser behavior.  It is strongly recommended that automatic browser logout be used together with @Login.TokenLifetime@, which is enforced on API side.
 
-@Login.TokenLifetime@ is more restrictive.  A token obtained by logging into Workbench cannot be "refreshed" to gain access for an indefinite period.  However, it interferes with some Workbench features, as well as ease of use in other contexts, such as the Arvados command line.  This option is recommended only if most users will only ever interact with the system through Workbench or WebShell.  For users or service accounts that need to tokens with fewer restrictions, the admin can "create a token at the command line":user-management-cli.html#create-token .
+@TrustLoginTokens: true@ (default value) is less restrictive.  Be aware that an unrestricted token can be "refreshed" to gain access for an indefinite period.  This means, during the window that the token is valid, the user is permitted to create a new token, which will have a new expiration further in the future (of course, once the token has expired, this is no longer possible).  Unrestricted tokens are required for some Workbench features, as well as ease of use in other contexts, such as the Arvados command line.  This option is recommended if many users will interact with the system through the command line.
 
-@API.MaxTokenLifetime@ is less restrictive.  Be aware that an unrestricted token can be "refreshed" to gain access for an indefinite period.  This means, during the window that the token is valid, the user is permitted to create a new token, which will have a new expiration further in the future (of course, once the token has expired, this is no longer possible).  Unrestricted tokens are required for some Workbench features, as well as ease of use in other contexts, such as the Arvados command line.  This option is recommended if many users will interact with the system through the command line.
+@TrustLoginTokens: false@ is more restrictive.  A token obtained by logging into Workbench cannot be "refreshed" to gain access for an indefinite period.  However, it interferes with some Workbench features, as well as ease of use in other contexts, such as the Arvados command line.  This option is recommended only if most users will only ever interact with the system through Workbench or WebShell.  For users or service accounts that need to tokens with fewer restrictions, the admin can "create a token at the command line":user-management-cli.html#create-token using the @SystemRootToken@.
 
-In every case, admin users may always create tokens with no expiration date.
+In every case, admin users may always create tokens with expiration dates far in the future.
 
 These policies do not apply to tokens created by the API server for the purposes of authorizing a container to run, as those tokens are automatically expired when the container is finished.
 

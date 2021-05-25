@@ -777,6 +777,12 @@ Clusters:
       # Default value zero means tokens don't have expiration.
       TokenLifetime: 0s
 
+      # If true (default) tokens issued through login are allowed to create
+      # new tokens.
+      # If false, tokens issued through login are not allowed to create new tokens,
+      # new tokens can only be created by going through login again.
+      TrustLoginTokens: true
+
       # When the token is returned to a client, the token itself may
       # be restricted from manipulating other tokens based on whether
       # the client is "trusted" or not.  The local Workbench1 and
