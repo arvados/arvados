@@ -85,7 +85,7 @@ func (e *dockerExecutor) Create(spec containerSpec) error {
 	for k, v := range spec.Env {
 		cfg.Env = append(cfg.Env, k+"="+v)
 	}
-	if spec.RAM < minDockerRAM {
+	if spec.RAM > 0 && spec.RAM < minDockerRAM {
 		spec.RAM = minDockerRAM
 	}
 	hostCfg := dockercontainer.HostConfig{
