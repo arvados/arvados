@@ -36,6 +36,11 @@ type integrationSuite struct {
 }
 
 func (s *integrationSuite) SetUpSuite(c *C) {
+	_, err := exec.LookPath("docker")
+	if err != nil {
+		c.Skip("looks like docker is not installed")
+	}
+
 	arvadostest.StartKeep(2, true)
 
 	out, err := exec.Command("docker", "load", "--input", busyboxDockerImage(c)).CombinedOutput()
