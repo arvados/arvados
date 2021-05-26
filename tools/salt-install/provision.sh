@@ -130,12 +130,12 @@ WORKBENCH2_EXT_SSL_PORT=3001
 # For a stable release, change RELEASE "production" and VERSION to the
 # package version (including the iteration, e.g. X.Y.Z-1) of the
 # release.
-RELEASE="development"
-VERSION="latest"
+RELEASE="production"
+VERSION="2.2.0-1"
 
 # The arvados-formula version.  For a stable release, this should be a
 # branch name (e.g. X.Y-dev) or tag for the release.
-ARVADOS_TAG="master"
+ARVADOS_TAG="2.2-dev"
 
 # Other formula versions we depend on
 POSTGRES_TAG="v0.41.6"
