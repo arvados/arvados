@@ -126,11 +126,16 @@ WEBSOCKET_EXT_SSL_PORT=8002
 WORKBENCH1_EXT_SSL_PORT=443
 WORKBENCH2_EXT_SSL_PORT=3001
 
-RELEASE="production"
-VERSION="2.1.2-1"
+# For a stable release, change RELEASE "production" and VERSION to the
+# package version of the release.
+RELEASE="development"
+VERSION="latest"
 
-# Formulas versions
+# The arvados-formula version.  For a stable release, change the tag
+# or X.Y-dev branch of the release.
 ARVADOS_TAG="master"
+
+# Other formula versions we depend on
 POSTGRES_TAG="v0.41.6"
 NGINX_TAG="temp-fix-missing-statements-in-pillar"
 DOCKER_TAG="v1.0.0"
