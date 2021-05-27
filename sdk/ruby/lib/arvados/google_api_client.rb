@@ -6,7 +6,8 @@ require 'google/api_client'
 # Monkeypatch google-api-client gem to avoid sending newline characters
 # on headers to make ruby-2.3.7+ happy.
 # See: https://dev.arvados.org/issues/13920
-Google::APIClient::ENV::OS_VERSION.strip!
+# Addendum: OS_VERSION sometimes is not mutable, that's why we duplicate it (See: #17738)
+Google::APIClient::ENV::OS_VERSION = +Google::APIClient::ENV::OS_VERSION.strip!
 
 require 'json'
 require 'tempfile'
