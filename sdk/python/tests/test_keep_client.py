@@ -70,7 +70,7 @@ class KeepTestCase(run_test_server.TestCaseWithServers):
 
     def test_KeepLongBinaryRWTest(self):
         blob_data = b'\xff\xfe\xfd\xfc\x00\x01\x02\x03'
-        for i in range(0,23):
+        for i in range(0, 23):
             blob_data = blob_data + blob_data
         blob_locator = self.keep_client.put(blob_data)
         self.assertRegex(
@@ -1178,9 +1178,10 @@ class AvoidOverreplication(unittest.TestCase, tutil.ApiClientMock):
             self._result = {}
             self._result['headers'] = {}
             self._result['headers']['x-keep-replicas-stored'] = str(replicas)
+            self._result['headers']['x-keep-storage-classes-confirmed'] = 'default={}'.format(replicas)
             self._result['body'] = 'foobar'
 
-        def put(self, data_hash, data, timeout):
+        def put(self, data_hash, data, timeout, headers):
             time.sleep(self.delay)
             if self.will_raise is not None:
                 raise self.will_raise
@@ -1207,7 +1208,7 @@ class AvoidOverreplication(unittest.TestCase, tutil.ApiClientMock):
             ks = self.FakeKeepService(delay=i/10.0, will_succeed=True)
             self.pool.add_task(ks, None)
         self.pool.join()
-        self.assertEqual(self.pool.done(), self.copies)
+        self.assertEqual(self.pool.done(), (self.copies, []))
 
     def test_only_write_enough_on_partial_success(self):
         for i in range(5):
@@ -1216,7 +1217,7 @@ class AvoidOverreplication(unittest.TestCase, tutil.ApiClientMock):
             ks = self.FakeKeepService(delay=i/10.0, will_succeed=True)
             self.pool.add_task(ks, None)
         self.pool.join()
-        self.assertEqual(self.pool.done(), self.copies)
+        self.assertEqual(self.pool.done(), (self.copies, []))
 
     def test_only_write_enough_when_some_crash(self):
         for i in range(5):
@@ -1225,7 +1226,7 @@ class AvoidOverreplication(unittest.TestCase, tutil.ApiClientMock):
             ks = self.FakeKeepService(delay=i/10.0, will_succeed=True)
             self.pool.add_task(ks, None)
         self.pool.join()
-        self.assertEqual(self.pool.done(), self.copies)
+        self.assertEqual(self.pool.done(), (self.copies, []))
 
     def test_fail_when_too_many_crash(self):
         for i in range(self.copies+1):
@@ -1235,7 +1236,7 @@ class AvoidOverreplication(unittest.TestCase, tutil.ApiClientMock):
             ks = self.FakeKeepService(delay=i/10.0, will_succeed=True)
             self.pool.add_task(ks, None)
         self.pool.join()
-        self.assertEqual(self.pool.done(), self.copies-1)
+        self.assertEqual(self.pool.done(), (self.copies-1, []))
 
 
 @tutil.skip_sleep
