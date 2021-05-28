@@ -216,7 +216,7 @@ mkdir -p ${S_DIR} ${F_DIR} ${P_DIR}
 
 # Get the formula and dependencies
 cd ${F_DIR} || exit 1
-git clone --branch "${ARVADOS_TAG}"     https://github.com/arvados/arvados-formula.git
+git clone --branch "${ARVADOS_TAG}"     https://git.arvados.org/arvados-formula.git
 git clone --branch "${DOCKER_TAG}"      https://github.com/saltstack-formulas/docker-formula.git
 git clone --branch "${LOCALE_TAG}"      https://github.com/saltstack-formulas/locale-formula.git
 # git clone --branch "${NGINX_TAG}"       https://github.com/saltstack-formulas/nginx-formula.git
