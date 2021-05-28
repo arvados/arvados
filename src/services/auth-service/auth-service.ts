@@ -51,6 +51,7 @@ export class AuthService {
     }
 
     public saveApiToken(token: string) {
+        this.removeApiToken();
         this.getStorage().setItem(API_TOKEN_KEY, token);
         const sp = token.split('/');
         if (sp.length === 3) {
@@ -59,7 +60,8 @@ export class AuthService {
     }
 
     public removeTargetURL() {
-        this.getStorage().removeItem(TARGET_URL);
+        localStorage.removeItem(TARGET_URL);
+        sessionStorage.removeItem(TARGET_URL);
     }
 
     public getTargetURL() {
@@ -67,7 +69,8 @@ export class AuthService {
     }
 
     public removeApiToken() {
-        this.getStorage().removeItem(API_TOKEN_KEY);
+        localStorage.removeItem(API_TOKEN_KEY);
+        sessionStorage.removeItem(API_TOKEN_KEY);
     }
 
     public getApiToken() {
@@ -83,16 +86,18 @@ export class AuthService {
     }
 
     public removeUser() {
-        this.getStorage().removeItem(USER_EMAIL_KEY);
-        this.getStorage().removeItem(USER_FIRST_NAME_KEY);
-        this.getStorage().removeItem(USER_LAST_NAME_KEY);
-        this.getStorage().removeItem(USER_UUID_KEY);
-        this.getStorage().removeItem(USER_OWNER_UUID_KEY);
-        this.getStorage().removeItem(USER_IS_ADMIN);
-        this.getStorage().removeItem(USER_IS_ACTIVE);
-        this.getStorage().removeItem(USER_USERNAME);
-        this.getStorage().removeItem(USER_PREFS);
-        this.getStorage().removeItem(TARGET_URL);
+        [localStorage, sessionStorage].forEach((storage) => {
+            storage.removeItem(USER_EMAIL_KEY);
+            storage.removeItem(USER_FIRST_NAME_KEY);
+            storage.removeItem(USER_LAST_NAME_KEY);
+            storage.removeItem(USER_UUID_KEY);
+            storage.removeItem(USER_OWNER_UUID_KEY);
+            storage.removeItem(USER_IS_ADMIN);
+            storage.removeItem(USER_IS_ACTIVE);
+            storage.removeItem(USER_USERNAME);
+            storage.removeItem(USER_PREFS);
+            storage.removeItem(TARGET_URL);
+        });
     }
 
     public login(uuidPrefix: string, homeCluster: string, loginCluster: string, remoteHosts: { [key: string]: string }) {
@@ -145,11 +150,13 @@ export class AuthService {
     }
 
     public saveSessions(sessions: Session[]) {
+        this.removeSessions();
         this.getStorage().setItem("sessions", JSON.stringify(sessions));
     }
 
     public removeSessions() {
-        this.getStorage().removeItem("sessions");
+        localStorage.removeItem("sessions");
+        sessionStorage.removeItem("sessions");
     }
 
     public buildSessions(cfg: Config, user?: User) {
