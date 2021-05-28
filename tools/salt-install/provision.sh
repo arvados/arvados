@@ -127,12 +127,13 @@ WORKBENCH1_EXT_SSL_PORT=443
 WORKBENCH2_EXT_SSL_PORT=3001
 
 # For a stable release, change RELEASE "production" and VERSION to the
-# package version of the release.
+# package version (including the iteration, e.g. X.Y.Z-1) of the
+# release.
 RELEASE="development"
 VERSION="latest"
 
-# The arvados-formula version.  For a stable release, change the tag
-# or X.Y-dev branch of the release.
+# The arvados-formula version.  For a stable release, this should be a
+# branch name (e.g. X.Y-dev) or tag for the release.
 ARVADOS_TAG="master"
 
 # Other formula versions we depend on
