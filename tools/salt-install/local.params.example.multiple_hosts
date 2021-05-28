@@ -62,6 +62,15 @@ DATABASE_PASSWORD=please_set_this_to_some_secure_value
 # variable to "no", provide and upload your own certificates to the instances and
 # modify the 'nginx_*' salt pillars accordingly
 USE_LETSENCRYPT="yes"
+USE_LETSENCRYPT_IAM_USER="yes"
+# For collections, we need to obtain a wildcard certificate for
+# '*.collections.<cluster>.<domain>'. This is only possible through a DNS-01 challenge.
+# For that reason, you'll need to provide AWS credentials with permissions to manage
+# RRs in the route53 zone for the cluster.
+# WARNING!: If AWS credentials files already exist in the hosts, they won't be replaced.
+LE_AWS_REGION="us-east-1"
+LE_AWS_ACCESS_KEY_ID="AKIABCDEFGHIJKLMNOPQ"
+LE_AWS_SECRET_ACCESS_KEY="thisistherandomstringthatisyoursecretkey"
 
 # The directory to check for the config files (pillars, states) you want to use.
 # There are a few examples under 'config_examples'.
