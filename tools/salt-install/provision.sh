@@ -277,6 +277,7 @@ for f in $(ls "${SOURCE_PILLARS_DIR}"/*); do
        s#__WORKBENCH1_INT_IP__#${WORKBENCH1_INT_IP}#g;
        s#__WORKBENCH2_INT_IP__#${WORKBENCH2_INT_IP}#g;
        s#__DATABASE_INT_IP__#${DATABASE_INT_IP}#g;
+       s#__SHELL_INT_IP__#${SHELL_INT_IP}#g;
        s#__WORKBENCH_SECRET_KEY__#${WORKBENCH_SECRET_KEY}#g" \
   "${f}" > "${P_DIR}"/$(basename "${f}")
 done
@@ -338,6 +339,7 @@ if [ -d "${SOURCE_STATES_DIR}" ]; then
          s#__WEBSOCKET_EXT_SSL_PORT__#${WEBSOCKET_EXT_SSL_PORT}#g;
          s#__WORKBENCH1_EXT_SSL_PORT__#${WORKBENCH1_EXT_SSL_PORT}#g;
          s#__WORKBENCH2_EXT_SSL_PORT__#${WORKBENCH2_EXT_SSL_PORT}#g;
+         s#__SHELL_INT_IP__#${SHELL_INT_IP}#g;
          s#__WORKBENCH_SECRET_KEY__#${WORKBENCH_SECRET_KEY}#g" \
     "${f}" > "${F_DIR}/extra/extra"/$(basename "${f}")
   done
