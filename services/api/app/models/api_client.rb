@@ -15,7 +15,7 @@ class ApiClient < ArvadosModel
   end
 
   def is_trusted
-    (from_trusted_url && Rails.configuration.Login.TrustLoginTokens) || super
+    (from_trusted_url && Rails.configuration.Login.IssueTrustedTokens) || super
   end
 
   protected

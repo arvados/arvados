@@ -189,6 +189,7 @@ type Cluster struct {
 		RemoteTokenRefresh Duration
 		TokenLifetime      Duration
 		TrustedClients     map[string]struct{}
+		IssueTrustedTokens bool
 	}
 	Mail struct {
 		MailchimpAPIKey                string

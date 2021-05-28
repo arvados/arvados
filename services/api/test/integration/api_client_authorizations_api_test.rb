@@ -139,7 +139,7 @@ class ApiClientAuthorizationsApiTest < ActionDispatch::IntegrationTest
         headers: {'HTTP_AUTHORIZATION' => "OAuth2 #{api_client_authorizations(:admin_trustedclient).api_token}"}
       assert_response 200
       if desired_expiration.nil?
-        assert json_response['expires_at'].nil?
+        assert_equal json_response['expires_at'].to_time.to_i, (db_current_time + Rails.configuration.API.MaxTokenLifetime).to_i
       else
         assert_equal json_response['expires_at'].to_time.to_i, desired_expiration.to_i
       end
@@ -148,22 +148,22 @@ class ApiClientAuthorizationsApiTest < ActionDispatch::IntegrationTest
       previous_expiration = json_response['expires_at']
       token_uuid = json_response['uuid']
       if previous_expiration.nil?
-        desired_updated_expiration = db_current_time + Rails.configuration.API.MaxTokenLifetime + 1.hour
+        submitted_updated_expiration = db_current_time + Rails.configuration.API.MaxTokenLifetime + 1.hour
       else
-        desired_updated_expiration = nil
+        submitted_updated_expiration = nil
       end
       put "/arvados/v1/api_client_authorizations/#{token_uuid}",
         params: {
           :api_client_authorization => {
-            :expires_at => desired_updated_expiration,
+            :expires_at => submitted_updated_expiration,
           }
         },
         headers: {'HTTP_AUTHORIZATION' => "OAuth2 #{api_client_authorizations(:admin_trustedclient).api_token}"}
       assert_response 200
-      if desired_updated_expiration.nil?
-        assert json_response['expires_at'].nil?
+      if submitted_updated_expiration.nil?
+        assert_equal json_response['expires_at'].to_time.to_i, (db_current_time + Rails.configuration.API.MaxTokenLifetime).to_i
       else
-        assert_equal json_response['expires_at'].to_time.to_i, desired_updated_expiration.to_i
+        assert_equal json_response['expires_at'].to_time.to_i, submitted_updated_expiration.to_i
       end
     end
   end

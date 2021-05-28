@@ -776,7 +776,7 @@ Clusters:
       # If false, tokens issued through login are not allowed to
       # viewing/creating other tokens.  New tokens can only be created
       # by going through login again.
-      TrustLoginTokens: true
+      IssueTrustedTokens: true
 
       # When the token is returned to a client, the token itself may
       # be restricted from viewing/creating other tokens based on whether
