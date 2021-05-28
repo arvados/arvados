@@ -26,17 +26,21 @@ WORKBENCH2_EXT_SSL_PORT=443
 
 # Internal IPs for the configuration
 CLUSTER_INT_CIDR=10.0.0.0/16
+
+# Note the IPs in this example are shared between roles, as suggested in
+# https://doc.arvados.org/main/install/salt-multi-host.html
 CONTROLLER_INT_IP=10.0.0.1
 WEBSOCKET_INT_IP=10.0.0.1
 KEEP_INT_IP=10.0.0.2
+# Both for collections and downloads
+KEEPWEB_INT_IP=10.0.0.2
 KEEPSTORE0_INT_IP=10.0.0.3
 KEEPSTORE1_INT_IP=10.0.0.4
-# Both for collections and downloads
-KEEPWEB_INT_IP=10.0.0.5
-WEBSHELL_INT_IP=10.0.0.6
-WORKBENCH1_INT_IP=10.0.0.7
-WORKBENCH2_INT_IP=10.0.0.7
-DATABASE_INT_IP=10.0.0.8
+WORKBENCH1_INT_IP=10.0.0.5
+WORKBENCH2_INT_IP=10.0.0.5
+WEBSHELL_INT_IP=10.0.0.5
+DATABASE_INT_IP=10.0.0.6
+SHELL_INT_IP=10.0.0.7
 
 INITIAL_USER="admin"
 INITIAL_USER_PASSWORD="password"

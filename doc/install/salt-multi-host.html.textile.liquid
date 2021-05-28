@@ -39,6 +39,7 @@ We suggest distributing the Arvados components in the following way, creating at
 # WORKBENCH node:
 ## arvados workbench
 ## arvados workbench2
+## arvados webshell
 # KEEPPROXY node:
 ## arvados keepproxy
 ## arvados keepweb
@@ -153,7 +154,7 @@ ssh user@host sudo ./provision.sh --config local.params --roles keepstore
 #. Workbench
 <notextile>
 <pre><code>scp -r provision.sh local* user@host:
-ssh user@host sudo ./provision.sh --config local.params --roles workbench,workbench2
+ssh user@host sudo ./provision.sh --config local.params --roles workbench,workbench2,webshell
 </code></pre>
 </notextile>
 
