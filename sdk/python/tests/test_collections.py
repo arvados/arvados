@@ -9,11 +9,9 @@ import arvados
 import copy
 import mock
 import os
-import pprint
 import random
 import re
 import sys
-import tempfile
 import datetime
 import ciso8601
 import time

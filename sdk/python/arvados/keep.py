@@ -1272,7 +1272,7 @@ class KeepClient(object):
                 "failed to write {} after {} (wanted {} copies but wrote {})".format(
                     data_hash, loop.attempts_str(), (copies, classes), writer_pool.done()), service_errors, label="service")
 
-    def local_store_put(self, data, copies=1, num_retries=None):
+    def local_store_put(self, data, copies=1, num_retries=None, classes=[]):
         """A stub for put().
 
         This method is used in place of the real put() method when

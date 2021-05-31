@@ -1261,6 +1261,7 @@ class Collection(RichCollectionBase):
                  apiconfig=None,
                  block_manager=None,
                  replication_desired=None,
+                 storage_classes_desired=None,
                  put_threads=None):
         """Collection constructor.
 
@@ -1293,12 +1294,18 @@ class Collection(RichCollectionBase):
           configuration applies. If not None, this value will also be used
           for determining the number of block copies being written.
 
+        :storage_classes_desired:
+          A list of storage class names where to upload the data. If None,
+          the keepstores are expected to store the data into their default
+          storage class.
+
         """
         super(Collection, self).__init__(parent)
         self._api_client = api_client
         self._keep_client = keep_client
         self._block_manager = block_manager
         self.replication_desired = replication_desired
+        self.storage_classes_desired = storage_classes_desired
         self.put_threads = put_threads
 
         if apiconfig:
@@ -1410,7 +1417,8 @@ class Collection(RichCollectionBase):
             copies = (self.replication_desired or
                       self._my_api()._rootDesc.get('defaultCollectionReplication',
                                                    2))
-            self._block_manager = _BlockManager(self._my_keep(), copies=copies, put_threads=self.put_threads, num_retries=self.num_retries)
+            classes = self.storage_classes_desired or []
+            self._block_manager = _BlockManager(self._my_keep(), copies=copies, put_threads=self.put_threads, num_retries=self.num_retries, storage_classes=classes)
         return self._block_manager
 
     def _remember_api_response(self, response):
@@ -1573,8 +1581,14 @@ class Collection(RichCollectionBase):
         body={}
         if properties:
             body["properties"] = properties
-        if storage_classes:
-            body["storage_classes_desired"] = storage_classes
+        desired_classes = storage_classes
+        # Instance level storage_classes takes precedence over argument.
+        if self.storage_classes_desired:
+            if desired_classes and self.storage_classes_desired != desired_classes:
+                _logger.warning("Storage classes already set to {}".format(self.storage_classes_desired))
+            desired_classes = self.storage_classes_desired
+        if desired_classes:
+            body["storage_classes_desired"] = desired_classes
         if trash_at:
             t = trash_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
             body["trash_at"] = t
@@ -1692,8 +1706,14 @@ class Collection(RichCollectionBase):
                 body["owner_uuid"] = owner_uuid
             if properties:
                 body["properties"] = properties
-            if storage_classes:
-                body["storage_classes_desired"] = storage_classes
+            desired_classes = storage_classes
+            # Instance level storage_classes takes precedence over argument.
+            if self.storage_classes_desired:
+                if desired_classes and self.storage_classes_desired != desired_classes:
+                    _logger.warning("Storage classes already set to {}".format(self.storage_classes_desired))
+                desired_classes = self.storage_classes_desired
+            if desired_classes:
+                body["storage_classes_desired"] = desired_classes
             if trash_at:
                 t = trash_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
                 body["trash_at"] = t
