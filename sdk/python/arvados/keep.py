@@ -571,7 +571,7 @@ class KeepClient(object):
             self.response = None
             self.storage_classes_tracking = True
             self.queue_data_lock = threading.Lock()
-            self.pending_tries = max(copies, len(classes))
+            self.pending_tries = max(copies, len(classes))+1
             self.pending_tries_notification = threading.Condition()
 
         def write_success(self, response, replicas_nr, classes_confirmed):
@@ -608,7 +608,7 @@ class KeepClient(object):
 
         def pending_classes(self):
             with self.queue_data_lock:
-                if self.wanted_storage_classes is None:
+                if (not self.storage_classes_tracking) or (self.wanted_storage_classes is None):
                     return []
                 unsatisfied_classes = copy.copy(self.wanted_storage_classes)
                 for st_class, st_copies in self.confirmed_storage_classes.items():
@@ -710,6 +710,7 @@ class KeepClient(object):
             classes = self.queue.pending_classes()
             headers = {}
             if len(classes) > 0:
+                classes.sort()
                 headers['X-Keep-Storage-Classes'] = ', '.join(classes)
             success = bool(service.put(self.data_hash,
                                         self.data,
