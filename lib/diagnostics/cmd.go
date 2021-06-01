@@ -6,11 +6,13 @@ package diagnostics
 
 import (
 	"bytes"
+	"context"
 	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -29,6 +31,7 @@ func (diag Command) RunCommand(prog string, args []string, stdin io.Reader, stdo
 	loglevel := f.String("log-level", "info", "logging level (debug, info, warning, error)")
 	checkInternal := f.Bool("internal-client", false, "check that this host is considered an \"internal\" client")
 	checkExternal := f.Bool("external-client", false, "check that this host is considered an \"external\" client")
+	timeout := f.Duration("timeout", 10*time.Second, "timeout for http requests")
 	err := f.Parse(args)
 	if err == flag.ErrHelp {
 		return 0
@@ -37,11 +40,14 @@ func (diag Command) RunCommand(prog string, args []string, stdin io.Reader, stdo
 		return 2
 	}
 
+	ctx := context.Background()
+
 	logger := ctxlog.New(stdout, "text", *loglevel)
 	logger.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true, DisableLevelTruncation: true})
 
 	infof := logger.Infof
 	warnf := logger.Warnf
+	debugf := logger.Debugf
 	var errors []string
 	errorf := func(f string, args ...interface{}) {
 		logger.Errorf(f, args...)
@@ -324,5 +330,100 @@ func (diag Command) RunCommand(prog string, args []string, stdin io.Reader, stdo
 		}()
 	}
 
+	var vm arvados.VirtualMachine
+	var vmlist arvados.VirtualMachineList
+	testname = "getting list of virtual machines"
+	logger.Info(testname)
+	err = client.RequestAndDecode(&vmlist, "GET", "arvados/v1/virtual_machines", nil, arvados.ListOptions{Limit: 999999})
+	if err != nil {
+		errorf("%s: %s", testname, err)
+	} else if len(vmlist.Items) < 1 {
+		errorf("%s: none found", testname)
+	} else {
+		vm = vmlist.Items[0]
+		infof("%s: ok", testname)
+	}
+
+	testname = "getting workbench1 webshell page"
+	logger.Info(testname)
+	func() {
+		if vm.UUID == "" {
+			errorf("%s: skipping, no vm available", testname)
+			return
+		}
+		webshelltermurl := cluster.Services.Workbench1.ExternalURL.String() + "virtual_machines/" + vm.UUID + "/webshell/testusername"
+		debugf("%s: url %s", testname, webshelltermurl)
+		req, err := http.NewRequest("GET", webshelltermurl, nil)
+		if err != nil {
+			errorf("%s: %s", testname, err)
+			return
+		}
+		req.Header.Set("Authorization", "Bearer "+client.AuthToken)
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			errorf("%s: %s", testname, err)
+			return
+		}
+		defer resp.Body.Close()
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			errorf("%s: error reading response: %s", testname, err)
+		}
+		if resp.StatusCode != http.StatusOK {
+			errorf("%s: unexpected response status: %s %q", testname, resp.Status, body)
+			return
+		}
+		infof("%s: ok", testname)
+	}()
+
+	testname = "connecting to webshell service"
+	logger.Info(testname)
+	func() {
+		ctx, cancel := context.WithDeadline(ctx, time.Now().Add(*timeout))
+		defer cancel()
+		if vm.UUID == "" {
+			errorf("%s: skipping, no vm available", testname)
+			return
+		}
+		u := cluster.Services.WebShell.ExternalURL
+		webshellurl := u.String() + vm.Hostname + "?"
+		if strings.HasPrefix(u.Host, "*") {
+			u.Host = vm.Hostname + u.Host[1:]
+			webshellurl = u.String() + "?"
+		}
+		debugf("%s: url %s", testname, webshellurl)
+		req, err := http.NewRequestWithContext(ctx, "POST", webshellurl, bytes.NewBufferString(url.Values{
+			"width":   {"80"},
+			"height":  {"25"},
+			"session": {"xyzzy"},
+			"rooturl": {webshellurl},
+		}.Encode()))
+		if err != nil {
+			errorf("%s: %s", testname, err)
+			return
+		}
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			errorf("%s: %s", testname, err)
+			return
+		}
+		defer resp.Body.Close()
+		debugf("%s: response status %s", testname, resp.Status)
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			errorf("%s: error reading response: %s", testname, err)
+		}
+		debugf("%s: response body %q", testname, body)
+		// We don't speak the protocol, so we get a 400 error
+		// from the webshell server even if everything is
+		// OK. Anything else (404, 502, ???) indicates a
+		// problem.
+		if resp.StatusCode != http.StatusBadRequest {
+			errorf("%s: unexpected response status: %s, %q", testname, resp.Status, body)
+			return
+		}
+		infof("%s: ok", testname)
+	}()
 	return 0
 }
