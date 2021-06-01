@@ -1,18 +1,4 @@
 GIT
-  remote: https://github.com/arvados/arvados.git
-  revision: c210114aa8c77ba0bb8e4d487fc1507b40f9560f
-  glob: sdk/ruby/arvados.gemspec
-  specs:
-    arvados (1.5.0.pre20200114202620)
-      activesupport (>= 3)
-      andand (~> 1.3, >= 1.3.3)
-      arvados-google-api-client (>= 0.7, < 0.8.9)
-      faraday (< 0.16)
-      i18n (~> 0)
-      json (>= 1.7.7, < 3)
-      jwt (>= 0.1.5, < 2)
-
-GIT
   remote: https://github.com/arvados/nulldb
   revision: d8e0073b665acdd2537c5eb15178a60f02f4b413
   specs:
@@ -76,6 +62,14 @@ GEM
     andand (1.3.3)
     angularjs-rails (1.3.15)
     arel (9.0.0)
+    arvados (2.1.4)
+      activesupport (>= 3)
+      andand (~> 1.3, >= 1.3.3)
+      arvados-google-api-client (>= 0.7, < 0.8.9)
+      faraday (< 0.16)
+      i18n (~> 0)
+      json (>= 1.7.7, < 3)
+      jwt (>= 0.1.5, < 2)
     arvados-google-api-client (0.8.7.4)
       activesupport (>= 3.2, < 5.3)
       addressable (~> 2.3)
@@ -156,7 +150,7 @@ GEM
       rails-dom-testing (>= 1, < 3)
       railties (>= 4.2.0)
       thor (>= 0.14, < 2.0)
-    json (2.3.0)
+    json (2.5.1)
     jwt (1.5.6)
     launchy (2.4.3)
       addressable (~> 2.3)
@@ -225,7 +219,7 @@ GEM
       cliver (~> 0.3.1)
       multi_json (~> 1.0)
       websocket-driver (>= 0.2.0)
-    public_suffix (4.0.5)
+    public_suffix (4.0.6)
     racc (1.5.2)
     rack (2.2.3)
     rack-mini-profiler (1.0.2)
@@ -341,7 +335,7 @@ DEPENDENCIES
   activerecord-nulldb-adapter!
   andand
   angularjs-rails (~> 1.3.8)
-  arvados!
+  arvados (~> 2.1.4)
   bootsnap
   bootstrap-sass (~> 3.4.1)
   bootstrap-tab-history-rails
