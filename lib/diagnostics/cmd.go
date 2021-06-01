@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -21,17 +22,16 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type Command struct {
-	projectName string
-}
+type Command struct{}
 
-func (diag Command) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+func (cmd Command) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+	var diag diagnoser
 	f := flag.NewFlagSet(prog, flag.ContinueOnError)
 	f.StringVar(&diag.projectName, "project-name", "scratch area for diagnostics", "name of project to find/create in home project and use for temporary/test objects")
-	loglevel := f.String("log-level", "info", "logging level (debug, info, warning, error)")
-	checkInternal := f.Bool("internal-client", false, "check that this host is considered an \"internal\" client")
-	checkExternal := f.Bool("external-client", false, "check that this host is considered an \"external\" client")
-	timeout := f.Duration("timeout", 10*time.Second, "timeout for http requests")
+	f.StringVar(&diag.logLevel, "log-level", "info", "logging level (debug, info, warning, error)")
+	f.BoolVar(&diag.checkInternal, "internal-client", false, "check that this host is considered an \"internal\" client")
+	f.BoolVar(&diag.checkExternal, "external-client", false, "check that this host is considered an \"external\" client")
+	f.DurationVar(&diag.timeout, "timeout", 10*time.Second, "timeout for http requests")
 	err := f.Parse(args)
 	if err == flag.ErrHelp {
 		return 0
@@ -39,72 +39,122 @@ func (diag Command) RunCommand(prog string, args []string, stdin io.Reader, stdo
 		fmt.Fprintln(stderr, err)
 		return 2
 	}
-
-	ctx := context.Background()
-
-	logger := ctxlog.New(stdout, "text", *loglevel)
-	logger.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true, DisableLevelTruncation: true})
-
-	infof := logger.Infof
-	warnf := logger.Warnf
-	debugf := logger.Debugf
-	var errors []string
-	errorf := func(f string, args ...interface{}) {
-		logger.Errorf(f, args...)
-		errors = append(errors, fmt.Sprintf(f, args...))
-	}
-	defer func() {
-		if len(errors) == 0 {
-			logger.Info("--- no errors ---")
-		} else {
+	diag.logger = ctxlog.New(stdout, "text", diag.logLevel)
+	diag.logger.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true, DisableLevelTruncation: true})
+	diag.runtests()
+	if len(diag.errors) == 0 {
+		diag.logger.Info("--- no errors ---")
+		return 0
+	} else {
+		if diag.logger.Level > logrus.ErrorLevel {
 			fmt.Fprint(stdout, "\n--- cut here --- error summary ---\n\n")
-			for _, e := range errors {
-				logger.Error(e)
+			for _, e := range diag.errors {
+				diag.logger.Error(e)
 			}
 		}
-	}()
+		return 1
+	}
+}
 
+type diagnoser struct {
+	stdout        io.Writer
+	stderr        io.Writer
+	logLevel      string
+	projectName   string
+	checkInternal bool
+	checkExternal bool
+	timeout       time.Duration
+	logger        *logrus.Logger
+	errors        []string
+	done          map[int]bool
+}
+
+func (diag *diagnoser) debugf(f string, args ...interface{}) {
+	diag.logger.Debugf(f, args...)
+}
+
+func (diag *diagnoser) infof(f string, args ...interface{}) {
+	diag.logger.Infof(f, args...)
+}
+
+func (diag *diagnoser) warnf(f string, args ...interface{}) {
+	diag.logger.Warnf(f, args...)
+}
+
+func (diag *diagnoser) errorf(f string, args ...interface{}) {
+	diag.logger.Errorf(f, args...)
+	diag.errors = append(diag.errors, fmt.Sprintf(f, args...))
+}
+
+// Run the given func, logging appropriate messages before and after,
+// adding timing info, etc.
+//
+// The id argument should be unique among tests, and shouldn't change
+// when other tests are added/removed.
+func (diag *diagnoser) dotest(id int, title string, fn func() error) {
+	if diag.done == nil {
+		diag.done = map[int]bool{}
+	} else if diag.done[id] {
+		diag.errorf("(bug) reused test id %d", id)
+	}
+	diag.done[id] = true
+
+	diag.infof("%d %s", id, title)
+	t0 := time.Now()
+	err := fn()
+	elapsed := fmt.Sprintf("%.0dms", time.Now().Sub(t0)/time.Millisecond)
+	if err != nil {
+		diag.errorf("%s (%s): %s", title, elapsed, err)
+	}
+	diag.debugf("%d %s (%s): ok", id, title, elapsed)
+}
+
+func (diag *diagnoser) runtests() {
 	client := arvados.NewClientFromEnv()
+
+	if client.APIHost == "" || client.AuthToken == "" {
+		diag.errorf("ARVADOS_API_HOST and ARVADOS_API_TOKEN environment variables are not set -- aborting without running any tests")
+		return
+	}
 
 	var dd arvados.DiscoveryDocument
 	ddpath := "discovery/v1/apis/arvados/v1/rest"
-	testname := fmt.Sprintf("getting discovery document from https://%s/%s", client.APIHost, ddpath)
-	logger.Info(testname)
-	err = client.RequestAndDecode(&dd, "GET", ddpath, nil, nil)
-	if err != nil {
-		errorf("%s: %s", testname, err)
-	} else {
-		infof("%s: ok, BlobSignatureTTL is %d", testname, dd.BlobSignatureTTL)
-	}
+	diag.dotest(10, fmt.Sprintf("getting discovery document from https://%s/%s", client.APIHost, ddpath), func() error {
+		err := client.RequestAndDecode(&dd, "GET", ddpath, nil, nil)
+		if err != nil {
+			return err
+		}
+		diag.debugf("BlobSignatureTTL = %d", dd.BlobSignatureTTL)
+		return nil
+	})
 
 	var cluster arvados.Cluster
 	cfgpath := "arvados/v1/config"
-	testname = fmt.Sprintf("getting exported config from https://%s/%s", client.APIHost, cfgpath)
-	logger.Info(testname)
-	err = client.RequestAndDecode(&cluster, "GET", cfgpath, nil, nil)
-	if err != nil {
-		errorf("%s: %s", testname, err)
-	} else {
-		infof("%s: ok, Collections.BlobSigning = %v", testname, cluster.Collections.BlobSigning)
-	}
+	diag.dotest(20, fmt.Sprintf("getting exported config from https://%s/%s", client.APIHost, cfgpath), func() error {
+		err := client.RequestAndDecode(&cluster, "GET", cfgpath, nil, nil)
+		if err != nil {
+			return err
+		}
+		diag.debugf("Collections.BlobSigning = %v", cluster.Collections.BlobSigning)
+		return nil
+	})
 
 	var user arvados.User
-	testname = "getting current user record"
-	logger.Info(testname)
-	err = client.RequestAndDecode(&user, "GET", "arvados/v1/users/current", nil, nil)
-	if err != nil {
-		errorf("%s: %s", testname, err)
-		return 2
-	} else {
-		infof("%s: ok, uuid = %s", testname, user.UUID)
-	}
+	diag.dotest(30, "getting current user record", func() error {
+		err := client.RequestAndDecode(&user, "GET", "arvados/v1/users/current", nil, nil)
+		if err != nil {
+			return err
+		}
+		diag.debugf("user uuid = %s", user.UUID)
+		return nil
+	})
 
 	// uncomment to create some spurious errors
 	// cluster.Services.WebDAVDownload.ExternalURL.Host = "0.0.0.0:9"
 
 	// TODO: detect routing errors here, like finding wb2 at the
 	// wb1 address.
-	for _, svc := range []*arvados.Service{
+	for i, svc := range []*arvados.Service{
 		&cluster.Services.Keepproxy,
 		&cluster.Services.WebDAV,
 		&cluster.Services.WebDAVDownload,
@@ -112,278 +162,303 @@ func (diag Command) RunCommand(prog string, args []string, stdin io.Reader, stdo
 		&cluster.Services.Workbench1,
 		&cluster.Services.Workbench2,
 	} {
-		testname = fmt.Sprintf("connecting to service endpoint %s", svc.ExternalURL)
-		logger.Info(testname)
-		u := svc.ExternalURL
-		if strings.HasPrefix(u.Scheme, "ws") {
-			// We can do a real websocket test elsewhere,
-			// but for now we'll just check the https
-			// connection.
-			u.Scheme = "http" + u.Scheme[2:]
-		}
-		if svc == &cluster.Services.WebDAV && strings.HasPrefix(u.Host, "*") {
-			u.Host = "d41d8cd98f00b204e9800998ecf8427e-0" + u.Host[1:]
-		}
-		req, err := http.NewRequest(http.MethodGet, u.String(), nil)
-		if err != nil {
-			errorf("%s: %s", testname, err)
-			continue
-		}
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			errorf("%s: %s", testname, err)
-			continue
-		}
-		resp.Body.Close()
-		infof("%s: ok", testname)
+		diag.dotest(40+i, fmt.Sprintf("connecting to service endpoint %s", svc.ExternalURL), func() error {
+			u := svc.ExternalURL
+			if strings.HasPrefix(u.Scheme, "ws") {
+				// We can do a real websocket test elsewhere,
+				// but for now we'll just check the https
+				// connection.
+				u.Scheme = "http" + u.Scheme[2:]
+			}
+			if svc == &cluster.Services.WebDAV && strings.HasPrefix(u.Host, "*") {
+				u.Host = "d41d8cd98f00b204e9800998ecf8427e-0" + u.Host[1:]
+			}
+			req, err := http.NewRequest(http.MethodGet, u.String(), nil)
+			if err != nil {
+				return err
+			}
+			resp, err := http.DefaultClient.Do(req)
+			if err != nil {
+				return err
+			}
+			resp.Body.Close()
+			return nil
+		})
 	}
 
-	for _, url := range []string{
+	for i, url := range []string{
 		cluster.Services.Controller.ExternalURL.String(),
 		cluster.Services.Keepproxy.ExternalURL.String() + "d41d8cd98f00b204e9800998ecf8427e+0",
 		cluster.Services.WebDAVDownload.ExternalURL.String(),
 	} {
-		testname = fmt.Sprintf("checking CORS headers at %s", url)
-		logger.Info(testname)
-		req, err := http.NewRequest("GET", url, nil)
-		if err != nil {
-			errorf("%s: %s", testname, err)
-			continue
-		}
-		req.Header.Set("Origin", "https://example.com")
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			errorf("%s: %s", testname, err)
-			continue
-		}
-		if hdr := resp.Header.Get("Access-Control-Allow-Origin"); hdr != "*" {
-			warnf("%s: expected \"Access-Control-Allow-Origin: *\", got %q", testname, hdr)
-		} else {
-			infof("%s: ok", testname)
-		}
+		diag.dotest(50+i, fmt.Sprintf("checking CORS headers at %s", url), func() error {
+			req, err := http.NewRequest("GET", url, nil)
+			if err != nil {
+				return err
+			}
+			req.Header.Set("Origin", "https://example.com")
+			resp, err := http.DefaultClient.Do(req)
+			if err != nil {
+				return err
+			}
+			if hdr := resp.Header.Get("Access-Control-Allow-Origin"); hdr != "*" {
+				return fmt.Errorf("expected \"Access-Control-Allow-Origin: *\", got %q", hdr)
+			}
+			return nil
+		})
 	}
 
 	var keeplist arvados.KeepServiceList
-	testname = "checking internal/external client detection"
-	logger.Info(testname)
-	err = client.RequestAndDecode(&keeplist, "GET", "arvados/v1/keep_services/accessible", nil, arvados.ListOptions{Limit: -1})
-	if err != nil {
-		errorf("%s: error getting keep services list: %s", testname, err)
-	} else if len(keeplist.Items) == 0 {
-		errorf("%s: controller did not return any keep services", testname)
-	} else {
+	diag.dotest(60, "checking internal/external client detection", func() error {
+		err := client.RequestAndDecode(&keeplist, "GET", "arvados/v1/keep_services/accessible", nil, arvados.ListOptions{Limit: -1})
+		if err != nil {
+			return fmt.Errorf("error getting keep services list: %s", err)
+		} else if len(keeplist.Items) == 0 {
+			return fmt.Errorf("controller did not return any keep services")
+		}
 		found := map[string]int{}
 		for _, ks := range keeplist.Items {
 			found[ks.ServiceType]++
 		}
-		infof := infof
 		isInternal := found["proxy"] == 0 && len(keeplist.Items) > 0
 		isExternal := found["proxy"] > 0 && found["proxy"] == len(keeplist.Items)
-		if (*checkInternal && !isInternal) || (*checkExternal && !isExternal) {
-			infof = errorf
-		}
 		if isExternal {
-			infof("%s: controller returned only proxy services, this host is considered \"external\"", testname)
+			diag.debugf("controller returned only proxy services, this host is treated as \"external\"")
 		} else if isInternal {
-			infof("%s: controller returned only non-proxy services, this host is considered \"internal\"", testname)
-		} else {
-			errorf("%s: controller returned both proxy and non-proxy services: %v", testname, found)
+			diag.debugf("controller returned only non-proxy services, this host is treated as \"internal\"")
 		}
+		if (diag.checkInternal && !isInternal) || (diag.checkExternal && !isExternal) {
+			return fmt.Errorf("expecting internal=%v external=%v, but found internal=%v external=%v", diag.checkInternal, diag.checkExternal, isInternal, isExternal)
+		}
+		return nil
+	})
+
+	for i, ks := range keeplist.Items {
+		u := url.URL{
+			Scheme: "http",
+			Host:   net.JoinHostPort(ks.ServiceHost, fmt.Sprintf("%d", ks.ServicePort)),
+			Path:   "/",
+		}
+		if ks.ServiceSSLFlag {
+			u.Scheme = "https"
+		}
+		diag.dotest(61+i, fmt.Sprintf("reading+writing via keep service at %s", u.String()), func() error {
+			ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(diag.timeout))
+			defer cancel()
+			req, err := http.NewRequestWithContext(ctx, "PUT", u.String()+"d41d8cd98f00b204e9800998ecf8427e", nil)
+			if err != nil {
+				return err
+			}
+			req.Header.Set("Authorization", "Bearer "+client.AuthToken)
+			resp, err := http.DefaultClient.Do(req)
+			if err != nil {
+				return err
+			}
+			defer resp.Body.Close()
+			body, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				return fmt.Errorf("reading response body: %s", err)
+			}
+			loc := strings.TrimSpace(string(body))
+			if !strings.HasPrefix(loc, "d41d8") {
+				return fmt.Errorf("unexpected response from write: %q", body)
+			}
+
+			req, err = http.NewRequestWithContext(ctx, "GET", u.String()+loc, nil)
+			if err != nil {
+				return err
+			}
+			req.Header.Set("Authorization", "Bearer "+client.AuthToken)
+			resp, err = http.DefaultClient.Do(req)
+			if err != nil {
+				return err
+			}
+			defer resp.Body.Close()
+			body, err = ioutil.ReadAll(resp.Body)
+			if err != nil {
+				return fmt.Errorf("reading response body: %s", err)
+			}
+			if len(body) != 0 {
+				return fmt.Errorf("unexpected response from read: %q", body)
+			}
+
+			return nil
+		})
 	}
 
 	var project arvados.Group
-	var grplist arvados.GroupList
-	testname = fmt.Sprintf("finding/creating %q project", diag.projectName)
-	logger.Info(testname)
-	err = client.RequestAndDecode(&grplist, "GET", "arvados/v1/groups", nil, arvados.ListOptions{
-		Filters: []arvados.Filter{
-			{"name", "=", diag.projectName},
-			{"group_class", "=", "project"},
-			{"owner_uuid", "=", user.UUID}},
-		Limit: -1})
-	if err != nil {
-		errorf("%s: list groups: %s", testname, err)
-	} else if len(grplist.Items) < 1 {
-		infof("%s: list groups: ok, no results", testname)
+	diag.dotest(80, fmt.Sprintf("finding/creating %q project", diag.projectName), func() error {
+		var grplist arvados.GroupList
+		err := client.RequestAndDecode(&grplist, "GET", "arvados/v1/groups", nil, arvados.ListOptions{
+			Filters: []arvados.Filter{
+				{"name", "=", diag.projectName},
+				{"group_class", "=", "project"},
+				{"owner_uuid", "=", user.UUID}},
+			Limit: -1})
+		if err != nil {
+			return fmt.Errorf("list groups: %s", err)
+		}
+		if len(grplist.Items) > 0 {
+			project = grplist.Items[0]
+			diag.debugf("using existing project, uuid = %s", project.UUID)
+			return nil
+		}
+		diag.debugf("list groups: ok, no results")
 		err = client.RequestAndDecode(&project, "POST", "arvados/v1/groups", nil, map[string]interface{}{"group": map[string]interface{}{
 			"name":        diag.projectName,
 			"group_class": "project",
 		}})
 		if err != nil {
-			errorf("%s: create project: %s", testname, err)
-		} else {
-			infof("%s: created project, uuid = %s", testname, project.UUID)
+			return fmt.Errorf("create project: %s", err)
 		}
-	} else {
-		project = grplist.Items[0]
-		infof("%s: ok, using existing project, uuid = %s", testname, project.UUID)
-	}
+		diag.debugf("created project, uuid = %s", project.UUID)
+		return nil
+	})
 
-	testname = "creating temporary collection"
-	logger.Info(testname)
 	var collection arvados.Collection
-	err = client.RequestAndDecode(&collection, "POST", "arvados/v1/collections", nil, map[string]interface{}{
-		"ensure_unique_name": true,
-		"collection": map[string]interface{}{
-			"name":     "test collection",
-			"trash_at": time.Now().Add(time.Hour)}})
-	if err != nil {
-		errorf("%s: %s", testname, err)
-	} else {
-		infof("%s: ok, uuid = %s", testname, collection.UUID)
+	diag.dotest(90, "creating temporary collection", func() error {
+		err := client.RequestAndDecode(&collection, "POST", "arvados/v1/collections", nil, map[string]interface{}{
+			"ensure_unique_name": true,
+			"collection": map[string]interface{}{
+				"name":     "test collection",
+				"trash_at": time.Now().Add(time.Hour)}})
+		if err != nil {
+			return err
+		}
+		diag.debugf("ok, uuid = %s", collection.UUID)
+		return nil
+	})
+
+	if collection.UUID != "" {
 		defer func() {
-			testname := "deleting temporary collection"
-			logger.Info(testname)
-			err := client.RequestAndDecode(nil, "DELETE", "arvados/v1/collections/"+collection.UUID, nil, nil)
-			if err != nil {
-				errorf("%s: %s", testname, err)
-			} else {
-				infof("%s: ok", testname)
-			}
+			diag.dotest(9990, "deleting temporary collection", func() error {
+				return client.RequestAndDecode(nil, "DELETE", "arvados/v1/collections/"+collection.UUID, nil, nil)
+			})
 		}()
 	}
 
-	testname = "uploading file via webdav"
-	logger.Info(testname)
-	func() {
+	diag.dotest(100, "uploading file via webdav", func() error {
 		if collection.UUID == "" {
-			infof("%s: skipping, no test collection", testname)
-			return
+			return fmt.Errorf("skipping, no test collection")
 		}
 		req, err := http.NewRequest("PUT", cluster.Services.WebDAVDownload.ExternalURL.String()+"c="+collection.UUID+"/testfile", bytes.NewBufferString("testfiledata"))
 		if err != nil {
-			errorf("%s: BUG? http.NewRequest: %s", testname, err)
-			return
+			return fmt.Errorf("BUG? http.NewRequest: %s", err)
 		}
 		req.Header.Set("Authorization", "Bearer "+client.AuthToken)
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
-			errorf("%s: error performing http request: %s", testname, err)
-			return
+			return fmt.Errorf("error performing http request: %s", err)
 		}
 		resp.Body.Close()
 		if resp.StatusCode != http.StatusCreated {
-			errorf("%s: status %s", testname, resp.Status)
-			return
+			return fmt.Errorf("status %s", resp.Status)
 		}
-		infof("%s: ok, status %s", testname, resp.Status)
+		diag.debugf("ok, status %s", resp.Status)
 		err = client.RequestAndDecode(&collection, "GET", "arvados/v1/collections/"+collection.UUID, nil, nil)
 		if err != nil {
-			errorf("%s: get updated collection: %s", testname, err)
-			return
+			return fmt.Errorf("get updated collection: %s", err)
 		}
-		infof("%s: get updated collection: ok, pdh %s", testname, collection.PortableDataHash)
-	}()
+		diag.debugf("ok, pdh %s", collection.PortableDataHash)
+		return nil
+	})
 
 	davurl := cluster.Services.WebDAV.ExternalURL
-	testname = fmt.Sprintf("checking WebDAV ExternalURL wildcard (%s)", davurl)
-	logger.Info(testname)
-	if strings.HasPrefix(davurl.Host, "*--") || strings.HasPrefix(davurl.Host, "*.") {
-		infof("%s: looks ok", testname)
-	} else if davurl.Host == "" {
-		warnf("%s: host missing - content previews will not work", testname)
-	} else {
-		warnf("%s: host has no leading wildcard - content previews will not work unless TrustAllContent==true", testname)
-	}
+	diag.dotest(110, fmt.Sprintf("checking WebDAV ExternalURL wildcard (%s)", davurl), func() error {
+		if davurl.Host == "" {
+			return fmt.Errorf("host missing - content previews will not work")
+		}
+		if !strings.HasPrefix(davurl.Host, "*--") && !strings.HasPrefix(davurl.Host, "*.") && !cluster.Collections.TrustAllContent {
+			diag.warnf("WebDAV ExternalURL has no leading wildcard and TrustAllContent==false - content previews will not work")
+		}
+		return nil
+	})
 
-	for _, trial := range []struct {
-		status  int
-		fileurl string
+	for i, trial := range []struct {
+		needcoll bool
+		status   int
+		fileurl  string
 	}{
-		{http.StatusNotFound, strings.Replace(davurl.String(), "*", "d41d8cd98f00b204e9800998ecf8427e-0", 1) + "foo"},
-		{http.StatusNotFound, strings.Replace(davurl.String(), "*", "d41d8cd98f00b204e9800998ecf8427e-0", 1) + "testfile"},
-		{http.StatusNotFound, cluster.Services.WebDAVDownload.ExternalURL.String() + "c=d41d8cd98f00b204e9800998ecf8427e+0/_/foo"},
-		{http.StatusNotFound, cluster.Services.WebDAVDownload.ExternalURL.String() + "c=d41d8cd98f00b204e9800998ecf8427e+0/_/testfile"},
-		{http.StatusOK, strings.Replace(davurl.String(), "*", strings.Replace(collection.PortableDataHash, "+", "-", -1), 1) + "testfile"},
-		{http.StatusOK, cluster.Services.WebDAVDownload.ExternalURL.String() + "c=" + collection.UUID + "/_/testfile"},
+		{false, http.StatusNotFound, strings.Replace(davurl.String(), "*", "d41d8cd98f00b204e9800998ecf8427e-0", 1) + "foo"},
+		{false, http.StatusNotFound, strings.Replace(davurl.String(), "*", "d41d8cd98f00b204e9800998ecf8427e-0", 1) + "testfile"},
+		{false, http.StatusNotFound, cluster.Services.WebDAVDownload.ExternalURL.String() + "c=d41d8cd98f00b204e9800998ecf8427e+0/_/foo"},
+		{false, http.StatusNotFound, cluster.Services.WebDAVDownload.ExternalURL.String() + "c=d41d8cd98f00b204e9800998ecf8427e+0/_/testfile"},
+		{true, http.StatusOK, strings.Replace(davurl.String(), "*", strings.Replace(collection.PortableDataHash, "+", "-", -1), 1) + "testfile"},
+		{true, http.StatusOK, cluster.Services.WebDAVDownload.ExternalURL.String() + "c=" + collection.UUID + "/_/testfile"},
 	} {
-		func() {
-			testname := fmt.Sprintf("downloading from webdav (%s)", trial.fileurl)
-			logger.Info(testname)
-			if collection.UUID == "" {
-				errorf("%s: skipping, no test collection", testname)
-				return
+		diag.dotest(120+i, fmt.Sprintf("downloading from webdav (%s)", trial.fileurl), func() error {
+			if trial.needcoll && collection.UUID == "" {
+				return fmt.Errorf("skipping, no test collection")
 			}
 			req, err := http.NewRequest("GET", trial.fileurl, nil)
 			if err != nil {
-				errorf("%s: %s", testname, err)
-				return
+				return err
 			}
 			req.Header.Set("Authorization", "Bearer "+client.AuthToken)
 			resp, err := http.DefaultClient.Do(req)
 			if err != nil {
-				errorf("%s: %s", testname, err)
-				return
+				return err
 			}
 			defer resp.Body.Close()
 			body, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
-				errorf("%s: error reading response: %s", testname, err)
+				return fmt.Errorf("reading response: %s", err)
 			}
 			if resp.StatusCode != trial.status {
-				errorf("%s: unexpected response status: %s", testname, resp.Status)
-			} else if trial.status == http.StatusOK && string(body) != "testfiledata" {
-				errorf("%s: unexpected response content: %q", testname, body)
-			} else {
-				infof("%s: ok", testname)
+				return fmt.Errorf("unexpected response status: %s", resp.Status)
 			}
-		}()
+			if trial.status == http.StatusOK && string(body) != "testfiledata" {
+				return fmt.Errorf("unexpected response content: %q", body)
+			}
+			return nil
+		})
 	}
 
 	var vm arvados.VirtualMachine
-	var vmlist arvados.VirtualMachineList
-	testname = "getting list of virtual machines"
-	logger.Info(testname)
-	err = client.RequestAndDecode(&vmlist, "GET", "arvados/v1/virtual_machines", nil, arvados.ListOptions{Limit: 999999})
-	if err != nil {
-		errorf("%s: %s", testname, err)
-	} else if len(vmlist.Items) < 1 {
-		errorf("%s: none found", testname)
-	} else {
+	diag.dotest(130, "getting list of virtual machines", func() error {
+		var vmlist arvados.VirtualMachineList
+		err := client.RequestAndDecode(&vmlist, "GET", "arvados/v1/virtual_machines", nil, arvados.ListOptions{Limit: 999999})
+		if err != nil {
+			return err
+		}
+		if len(vmlist.Items) < 1 {
+			return fmt.Errorf("no VMs found")
+		}
 		vm = vmlist.Items[0]
-		infof("%s: ok", testname)
-	}
+		return nil
+	})
 
-	testname = "getting workbench1 webshell page"
-	logger.Info(testname)
-	func() {
+	diag.dotest(140, "getting workbench1 webshell page", func() error {
 		if vm.UUID == "" {
-			errorf("%s: skipping, no vm available", testname)
-			return
+			return fmt.Errorf("skipping, no vm available")
 		}
 		webshelltermurl := cluster.Services.Workbench1.ExternalURL.String() + "virtual_machines/" + vm.UUID + "/webshell/testusername"
-		debugf("%s: url %s", testname, webshelltermurl)
+		diag.debugf("url %s", webshelltermurl)
 		req, err := http.NewRequest("GET", webshelltermurl, nil)
 		if err != nil {
-			errorf("%s: %s", testname, err)
-			return
+			return err
 		}
 		req.Header.Set("Authorization", "Bearer "+client.AuthToken)
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
-			errorf("%s: %s", testname, err)
-			return
+			return err
 		}
 		defer resp.Body.Close()
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			errorf("%s: error reading response: %s", testname, err)
+			return fmt.Errorf("reading response: %s", err)
 		}
 		if resp.StatusCode != http.StatusOK {
-			errorf("%s: unexpected response status: %s %q", testname, resp.Status, body)
-			return
+			return fmt.Errorf("unexpected response status: %s %q", resp.Status, body)
 		}
-		infof("%s: ok", testname)
-	}()
+		return nil
+	})
 
-	testname = "connecting to webshell service"
-	logger.Info(testname)
-	func() {
-		ctx, cancel := context.WithDeadline(ctx, time.Now().Add(*timeout))
+	diag.dotest(150, "connecting to webshell service", func() error {
+		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(diag.timeout))
 		defer cancel()
 		if vm.UUID == "" {
-			errorf("%s: skipping, no vm available", testname)
-			return
+			return fmt.Errorf("skipping, no vm available")
 		}
 		u := cluster.Services.WebShell.ExternalURL
 		webshellurl := u.String() + vm.Hostname + "?"
@@ -391,7 +466,7 @@ func (diag Command) RunCommand(prog string, args []string, stdin io.Reader, stdo
 			u.Host = vm.Hostname + u.Host[1:]
 			webshellurl = u.String() + "?"
 		}
-		debugf("%s: url %s", testname, webshellurl)
+		diag.debugf("url %s", webshellurl)
 		req, err := http.NewRequestWithContext(ctx, "POST", webshellurl, bytes.NewBufferString(url.Values{
 			"width":   {"80"},
 			"height":  {"25"},
@@ -399,31 +474,27 @@ func (diag Command) RunCommand(prog string, args []string, stdin io.Reader, stdo
 			"rooturl": {webshellurl},
 		}.Encode()))
 		if err != nil {
-			errorf("%s: %s", testname, err)
-			return
+			return err
 		}
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
-			errorf("%s: %s", testname, err)
-			return
+			return err
 		}
 		defer resp.Body.Close()
-		debugf("%s: response status %s", testname, resp.Status)
+		diag.debugf("response status %s", resp.Status)
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			errorf("%s: error reading response: %s", testname, err)
+			return fmt.Errorf("reading response: %s", err)
 		}
-		debugf("%s: response body %q", testname, body)
+		diag.debugf("response body %q", body)
 		// We don't speak the protocol, so we get a 400 error
 		// from the webshell server even if everything is
 		// OK. Anything else (404, 502, ???) indicates a
 		// problem.
 		if resp.StatusCode != http.StatusBadRequest {
-			errorf("%s: unexpected response status: %s, %q", testname, resp.Status, body)
-			return
+			return fmt.Errorf("unexpected response status: %s, %q", resp.Status, body)
 		}
-		infof("%s: ok", testname)
-	}()
-	return 0
+		return nil
+	})
 }
