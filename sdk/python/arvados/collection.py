@@ -1583,6 +1583,8 @@ class Collection(RichCollectionBase):
 
         if storage_classes and type(storage_classes) is not list:
             raise errors.ArgumentError("storage_classes must be list type.")
+        if storage_classes:
+            self._storage_classes_desired = storage_classes
 
         if trash_at and type(trash_at) is not datetime.datetime:
             raise errors.ArgumentError("trash_at must be datetime type.")
@@ -1590,8 +1592,7 @@ class Collection(RichCollectionBase):
         body={}
         if properties:
             body["properties"] = properties
-        if storage_classes:
-            self._storage_classes_desired = storage_classes
+        if self.storage_classes_desired():
             body["storage_classes_desired"] = self.storage_classes_desired()
         if trash_at:
             t = trash_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
