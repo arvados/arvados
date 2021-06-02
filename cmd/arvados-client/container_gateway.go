@@ -67,13 +67,19 @@ Options:
 	// kex_exchange_identification: Connection closed by remote host
 	// Connection closed by UNKNOWN port 65535
 	// exit status 255
+	//
+	// In case our target is a container request, the probe also
+	// resolves it to a container, so we don't connect to two
+	// different containers in a race.
+	var probetarget bytes.Buffer
 	exitcode := connectSSHCommand{}.RunCommand(
 		"arvados-client connect-ssh",
 		[]string{"-detach-keys=" + *detachKeys, "-probe-only=true", target},
-		&bytes.Buffer{}, &bytes.Buffer{}, stderr)
+		&bytes.Buffer{}, &probetarget, stderr)
 	if exitcode != 0 {
 		return exitcode
 	}
+	target = strings.Trim(probetarget.String(), "\n")
 
 	selfbin, err := os.Readlink("/proc/self/exe")
 	if err != nil {
@@ -119,7 +125,7 @@ Options:
 `)
 		f.PrintDefaults()
 	}
-	probeOnly := f.Bool("probe-only", false, "do not transfer IO, just exit 0 immediately if tunnel setup succeeds")
+	probeOnly := f.Bool("probe-only", false, "do not transfer IO, just setup tunnel, print target UUID, and exit")
 	detachKeys := f.String("detach-keys", "", "set detach key sequence, as in docker-attach(1)")
 	if err := f.Parse(args); err != nil {
 		fmt.Fprintln(stderr, err)
@@ -181,6 +187,7 @@ Options:
 	defer sshconn.Conn.Close()
 
 	if *probeOnly {
+		fmt.Fprintln(stdout, targetUUID)
 		return 0
 	}
 

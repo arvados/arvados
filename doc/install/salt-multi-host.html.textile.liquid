@@ -39,6 +39,7 @@ We suggest distributing the Arvados components in the following way, creating at
 # WORKBENCH node:
 ## arvados workbench
 ## arvados workbench2
+## arvados webshell
 # KEEPPROXY node:
 ## arvados keepproxy
 ## arvados keepweb
@@ -56,11 +57,19 @@ Check "the Arvados terraform documentation":/doc/install/terraform.html for more
 
 h2(#multi_host). Multi host install using the provision.sh script
 
-This is a package-based installation method. The Salt scripts are available from the "tools/salt-install":https://github.com/arvados/arvados/tree/master/tools/salt-install directory in the Arvados git repository.
+{% if site.current_version %}
+{% assign branchname = site.current_version | slice: 1, 5 | append: '-dev' %}
+{% else %}
+{% assign branchname = 'master' %}
+{% endif %}
 
-This procedure will install all the main Arvados components to get you up and running in a multi host environment.
+This is a package-based installation method. Start with the @provision.sh@ script which is available by cloning the @{{ branchname }}@ branch from "https://git.arvados.org/arvados.git":https://git.arvados.org/arvados.git .  The @provision.sh@ script and its supporting files can be found in the "arvados/tools/salt-install":https://git.arvados.org/arvados.git/tree/refs/heads/{{ branchname }}:/tools/salt-install directory in the Arvados git repository.
 
-We suggest you to use the @provision.sh@ script to deploy Arvados, which is implemented with the @arvados-formula@ in a Saltstack master-less setup. After setting up a few variables in a config file (next step), you'll be ready to run it and get Arvados deployed.
+This procedure will install all the main Arvados components to get you up and running in a multi-host environment.
+
+The @provision.sh@ script will help you deploy Arvados by preparing your environment to be able to run the installer, then running it. The actual installer is located at "arvados-formula":https://git.arvados.org/arvados-formula.git/tree/refs/heads/{{ branchname }} and will be cloned during the running of the @provision.sh@ script.  The installer is built using "Saltstack":https://saltproject.io/ and @provision.sh@ performs the install using master-less mode.
+
+After setting up a few variables in a config file (next step), you'll be ready to run it and get Arvados deployed.
 
 h3(#create_a_compute_image). Create a compute image
 
@@ -145,7 +154,7 @@ ssh user@host sudo ./provision.sh --config local.params --roles keepstore
 #. Workbench
 <notextile>
 <pre><code>scp -r provision.sh local* user@host:
-ssh user@host sudo ./provision.sh --config local.params --roles workbench,workbench2
+ssh user@host sudo ./provision.sh --config local.params --roles workbench,workbench2,webshell
 </code></pre>
 </notextile>
 
@@ -163,7 +172,7 @@ ssh user@host sudo ./provision.sh --config local.params --roles shell
 </code></pre>
 </notextile>
 
-h2(#initial_user). Initial user and login 
+h2(#initial_user). Initial user and login
 
 At this point you should be able to log into the Arvados cluster. The initial URL will be:
 

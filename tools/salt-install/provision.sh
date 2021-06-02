@@ -28,14 +28,15 @@ usage() {
   echo >&2 "                                              Possible values are:"
   echo >&2 "                                                api"
   echo >&2 "                                                controller"
-  echo >&2 "                                                keepstore"
-  echo >&2 "                                                websocket"
-  echo >&2 "                                                keepweb"
-  echo >&2 "                                                workbench2"
-  echo >&2 "                                                keepproxy"
-  echo >&2 "                                                shell"
-  echo >&2 "                                                workbench"
   echo >&2 "                                                dispatcher"
+  echo >&2 "                                                keepproxy"
+  echo >&2 "                                                keepstore"
+  echo >&2 "                                                keepweb"
+  echo >&2 "                                                shell"
+  echo >&2 "                                                webshell"
+  echo >&2 "                                                websocket"
+  echo >&2 "                                                workbench"
+  echo >&2 "                                                workbench2"
   echo >&2 "                                              Defaults to applying them all"
   echo >&2 "  -h, --help                                  Display this help and exit"
   echo >&2 "  -v, --vagrant                               Run in vagrant and use the /vagrant shared dir"
@@ -70,7 +71,7 @@ arguments() {
         for i in ${2//,/ }
           do
             # Verify the role exists
-            if [[ ! "database,api,controller,keepstore,websocket,keepweb,workbench2,keepproxy,shell,workbench,dispatcher" == *"$i"* ]]; then
+            if [[ ! "database,api,controller,keepstore,websocket,keepweb,workbench2,webshell,keepproxy,shell,workbench,dispatcher" == *"$i"* ]]; then
               echo "The role '${i}' is not a valid role"
               usage
               exit 1
@@ -126,11 +127,17 @@ WEBSOCKET_EXT_SSL_PORT=8002
 WORKBENCH1_EXT_SSL_PORT=443
 WORKBENCH2_EXT_SSL_PORT=3001
 
-RELEASE="production"
-VERSION="2.1.2-1"
+# For a stable release, change RELEASE "production" and VERSION to the
+# package version (including the iteration, e.g. X.Y.Z-1) of the
+# release.
+RELEASE="development"
+VERSION="latest"
 
-# Formulas versions
+# The arvados-formula version.  For a stable release, this should be a
+# branch name (e.g. X.Y-dev) or tag for the release.
 ARVADOS_TAG="master"
+
+# Other formula versions we depend on
 POSTGRES_TAG="v0.41.6"
 NGINX_TAG="temp-fix-missing-statements-in-pillar"
 DOCKER_TAG="v1.0.0"
@@ -209,7 +216,7 @@ mkdir -p ${S_DIR} ${F_DIR} ${P_DIR}
 
 # Get the formula and dependencies
 cd ${F_DIR} || exit 1
-git clone --branch "${ARVADOS_TAG}"     https://github.com/arvados/arvados-formula.git
+git clone --branch "${ARVADOS_TAG}"     https://git.arvados.org/arvados-formula.git
 git clone --branch "${DOCKER_TAG}"      https://github.com/saltstack-formulas/docker-formula.git
 git clone --branch "${LOCALE_TAG}"      https://github.com/saltstack-formulas/locale-formula.git
 # git clone --branch "${NGINX_TAG}"       https://github.com/saltstack-formulas/nginx-formula.git
@@ -253,6 +260,9 @@ for f in $(ls "${SOURCE_PILLARS_DIR}"/*); do
        s#__INITIAL_USER_EMAIL__#${INITIAL_USER_EMAIL}#g;
        s#__INITIAL_USER_PASSWORD__#${INITIAL_USER_PASSWORD}#g;
        s#__INITIAL_USER__#${INITIAL_USER}#g;
+       s#__LE_AWS_REGION__#${LE_AWS_REGION}#g;
+       s#__LE_AWS_SECRET_ACCESS_KEY__#${LE_AWS_SECRET_ACCESS_KEY}#g;
+       s#__LE_AWS_ACCESS_KEY_ID__#${LE_AWS_ACCESS_KEY_ID}#g;
        s#__DATABASE_PASSWORD__#${DATABASE_PASSWORD}#g;
        s#__KEEPWEB_EXT_SSL_PORT__#${KEEPWEB_EXT_SSL_PORT}#g;
        s#__KEEP_EXT_SSL_PORT__#${KEEP_EXT_SSL_PORT}#g;
@@ -272,6 +282,7 @@ for f in $(ls "${SOURCE_PILLARS_DIR}"/*); do
        s#__KEEPSTORE1_INT_IP__#${KEEPSTORE1_INT_IP}#g;
        s#__KEEPWEB_INT_IP__#${KEEPWEB_INT_IP}#g;
        s#__WEBSHELL_INT_IP__#${WEBSHELL_INT_IP}#g;
+       s#__SHELL_INT_IP__#${SHELL_INT_IP}#g;
        s#__WORKBENCH1_INT_IP__#${WORKBENCH1_INT_IP}#g;
        s#__WORKBENCH2_INT_IP__#${WORKBENCH2_INT_IP}#g;
        s#__DATABASE_INT_IP__#${DATABASE_INT_IP}#g;
@@ -372,8 +383,12 @@ fi
 if [ -z "${ROLES}" ]; then
   # States
   echo "    - nginx.passenger" >> ${S_DIR}/top.sls
+  # Currently, only available on config_examples/multi_host/aws
   if [ "x${USE_LETSENCRYPT}" = "xyes" ]; then
-    grep -q "letsencrypt" ${S_DIR}/top.sls || echo "    - letsencrypt" >> ${S_DIR}/top.sls
+    if [ "x${USE_LETSENCRYPT_IAM_USER}" = "xyes" ]; then
+      grep -q "aws_credentials" ${S_DIR}/top.sls || echo "    - aws_credentials" >> ${S_DIR}/top.sls
+    fi
+    grep -q "letsencrypt"     ${S_DIR}/top.sls || echo "    - letsencrypt" >> ${S_DIR}/top.sls
   fi
   echo "    - postgres" >> ${S_DIR}/top.sls
   echo "    - docker.software" >> ${S_DIR}/top.sls
@@ -391,8 +406,12 @@ if [ -z "${ROLES}" ]; then
   echo "    - nginx_workbench2_configuration" >> ${P_DIR}/top.sls
   echo "    - nginx_workbench_configuration" >> ${P_DIR}/top.sls
   echo "    - postgresql" >> ${P_DIR}/top.sls
+  # Currently, only available on config_examples/multi_host/aws
   if [ "x${USE_LETSENCRYPT}" = "xyes" ]; then
-    grep -q "letsencrypt" ${P_DIR}/top.sls || echo "    - letsencrypt" >> ${P_DIR}/top.sls
+    if [ "x${USE_LETSENCRYPT_IAM_USER}" = "xyes" ]; then
+      grep -q "aws_credentials" ${P_DIR}/top.sls || echo "    - aws_credentials" >> ${P_DIR}/top.sls
+    fi
+    grep -q "letsencrypt"     ${P_DIR}/top.sls || echo "    - letsencrypt" >> ${P_DIR}/top.sls
   fi
 else
   # If we add individual roles, make sure we add the repo first
@@ -412,28 +431,44 @@ else
         grep -q "nginx.passenger" ${S_DIR}/top.sls || echo "    - nginx.passenger" >> ${S_DIR}/top.sls
         ### If we don't install and run LE before arvados-api-server, it fails and breaks everything
         ### after it so we add this here, as we are, after all, sharing the host for api and controller
+        # Currently, only available on config_examples/multi_host/aws
         if [ "x${USE_LETSENCRYPT}" = "xyes" ]; then
-          grep -q "letsencrypt" ${S_DIR}/top.sls || echo "    - letsencrypt" >> ${S_DIR}/top.sls
+          if [ "x${USE_LETSENCRYPT_IAM_USER}" = "xyes" ]; then
+            grep -q "aws_credentials" ${S_DIR}/top.sls || echo "    - aws_credentials" >> ${S_DIR}/top.sls
+          fi
+          grep -q "letsencrypt"     ${S_DIR}/top.sls || echo "    - letsencrypt" >> ${S_DIR}/top.sls
         fi
         grep -q "arvados.${R}" ${S_DIR}/top.sls    || echo "    - arvados.${R}" >> ${S_DIR}/top.sls
         # Pillars
+        grep -q "aws_credentials" ${P_DIR}/top.sls          || echo "    - aws_credentials" >> ${P_DIR}/top.sls
         grep -q "docker" ${P_DIR}/top.sls                   || echo "    - docker" >> ${P_DIR}/top.sls
         grep -q "postgresql" ${P_DIR}/top.sls               || echo "    - postgresql" >> ${P_DIR}/top.sls
         grep -q "nginx_passenger" ${P_DIR}/top.sls          || echo "    - nginx_passenger" >> ${P_DIR}/top.sls
         grep -q "nginx_${R}_configuration" ${P_DIR}/top.sls || echo "    - nginx_${R}_configuration" >> ${P_DIR}/top.sls
       ;;
-      "controller" | "websocket" | "workbench" | "workbench2" | "keepweb" | "keepproxy")
+      "controller" | "websocket" | "workbench" | "workbench2" | "webshell" | "keepweb" | "keepproxy")
         # States
         grep -q "nginx.passenger" ${S_DIR}/top.sls || echo "    - nginx.passenger" >> ${S_DIR}/top.sls
+        # Currently, only available on config_examples/multi_host/aws
         if [ "x${USE_LETSENCRYPT}" = "xyes" ]; then
-          grep -q "letsencrypt" ${S_DIR}/top.sls || echo "    - letsencrypt" >> ${S_DIR}/top.sls
+          if [ "x${USE_LETSENCRYPT_IAM_USER}" = "xyes" ]; then
+            grep -q "aws_credentials" ${S_DIR}/top.sls || echo "    - aws_credentials" >> ${S_DIR}/top.sls
+          fi
+          grep -q "letsencrypt"     ${S_DIR}/top.sls || echo "    - letsencrypt" >> ${S_DIR}/top.sls
         fi
-        grep -q "arvados.${R}" ${S_DIR}/top.sls    || echo "    - arvados.${R}" >> ${S_DIR}/top.sls
+        # webshell role is just a nginx vhost, so it has no state
+        if [ "${R}" != "webshell" ]; then
+          grep -q "arvados.${R}" ${S_DIR}/top.sls    || echo "    - arvados.${R}" >> ${S_DIR}/top.sls
+        fi
         # Pillars
         grep -q "nginx_passenger" ${P_DIR}/top.sls          || echo "    - nginx_passenger" >> ${P_DIR}/top.sls
         grep -q "nginx_${R}_configuration" ${P_DIR}/top.sls || echo "    - nginx_${R}_configuration" >> ${P_DIR}/top.sls
+        # Currently, only available on config_examples/multi_host/aws
         if [ "x${USE_LETSENCRYPT}" = "xyes" ]; then
-          grep -q "letsencrypt" ${P_DIR}/top.sls || echo "    - letsencrypt" >> ${P_DIR}/top.sls
+          if [ "x${USE_LETSENCRYPT_IAM_USER}" = "xyes" ]; then
+            grep -q "aws_credentials" ${P_DIR}/top.sls || echo "    - aws_credentials" >> ${P_DIR}/top.sls
+          fi
+          grep -q "letsencrypt"     ${P_DIR}/top.sls || echo "    - letsencrypt" >> ${P_DIR}/top.sls
           grep -q "letsencrypt_${R}_configuration" ${P_DIR}/top.sls || echo "    - letsencrypt_${R}_configuration" >> ${P_DIR}/top.sls
         fi
       ;;
@@ -443,7 +478,6 @@ else
         grep -q "arvados.${R}" ${S_DIR}/top.sls || echo "    - arvados.${R}" >> ${S_DIR}/top.sls
         # Pillars
         grep -q "" ${P_DIR}/top.sls                             || echo "    - docker" >> ${P_DIR}/top.sls
-        grep -q "nginx_webshell_configuration" ${P_DIR}/top.sls || echo "    - nginx_webshell_configuration" >> ${P_DIR}/top.sls
       ;;
       "dispatcher")
         # States

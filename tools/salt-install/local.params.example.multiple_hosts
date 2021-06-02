@@ -26,17 +26,21 @@ WORKBENCH2_EXT_SSL_PORT=443
 
 # Internal IPs for the configuration
 CLUSTER_INT_CIDR=10.0.0.0/16
+
+# Note the IPs in this example are shared between roles, as suggested in
+# https://doc.arvados.org/main/install/salt-multi-host.html
 CONTROLLER_INT_IP=10.0.0.1
 WEBSOCKET_INT_IP=10.0.0.1
 KEEP_INT_IP=10.0.0.2
+# Both for collections and downloads
+KEEPWEB_INT_IP=10.0.0.2
 KEEPSTORE0_INT_IP=10.0.0.3
 KEEPSTORE1_INT_IP=10.0.0.4
-# Both for collections and downloads
-KEEPWEB_INT_IP=10.0.0.5
-WEBSHELL_INT_IP=10.0.0.6
-WORKBENCH1_INT_IP=10.0.0.7
-WORKBENCH2_INT_IP=10.0.0.7
-DATABASE_INT_IP=10.0.0.8
+WORKBENCH1_INT_IP=10.0.0.5
+WORKBENCH2_INT_IP=10.0.0.5
+WEBSHELL_INT_IP=10.0.0.5
+DATABASE_INT_IP=10.0.0.6
+SHELL_INT_IP=10.0.0.7
 
 INITIAL_USER="admin"
 INITIAL_USER_PASSWORD="password"
@@ -62,6 +66,15 @@ DATABASE_PASSWORD=please_set_this_to_some_secure_value
 # variable to "no", provide and upload your own certificates to the instances and
 # modify the 'nginx_*' salt pillars accordingly
 USE_LETSENCRYPT="yes"
+USE_LETSENCRYPT_IAM_USER="yes"
+# For collections, we need to obtain a wildcard certificate for
+# '*.collections.<cluster>.<domain>'. This is only possible through a DNS-01 challenge.
+# For that reason, you'll need to provide AWS credentials with permissions to manage
+# RRs in the route53 zone for the cluster.
+# WARNING!: If AWS credentials files already exist in the hosts, they won't be replaced.
+LE_AWS_REGION="us-east-1"
+LE_AWS_ACCESS_KEY_ID="AKIABCDEFGHIJKLMNOPQ"
+LE_AWS_SECRET_ACCESS_KEY="thisistherandomstringthatisyoursecretkey"
 
 # The directory to check for the config files (pillars, states) you want to use.
 # There are a few examples under 'config_examples'.

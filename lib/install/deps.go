@@ -250,6 +250,7 @@ make install
 		} else {
 			err = inst.runBash(`
 cd /tmp
+rm -rf /var/lib/arvados/go/
 wget --progress=dot:giga -O- https://storage.googleapis.com/golang/go`+goversion+`.linux-amd64.tar.gz | tar -C /var/lib/arvados -xzf -
 ln -sf /var/lib/arvados/go/bin/* /usr/local/bin/
 `, stdout, stderr)

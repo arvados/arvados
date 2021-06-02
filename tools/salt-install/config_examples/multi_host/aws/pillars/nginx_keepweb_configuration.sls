@@ -32,7 +32,7 @@ nginx:
         enabled: true
         overwrite: true
         requires:
-          cmd: create-initial-cert-collections.__CLUSTER__.__DOMAIN__-collections.__CLUSTER__.__DOMAIN__
+          cmd: 'create-initial-cert-collections.__CLUSTER__.__DOMAIN__-collections.__CLUSTER__.__DOMAIN__+*.__CLUSTER__.__DOMAIN__'
         config:
           - server:
             - server_name: '*.collections.__CLUSTER__.__DOMAIN__'
