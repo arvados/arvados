@@ -45,7 +45,7 @@ func (s *LoggingTestSuite) TestWriteLogs(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
 	defer kc.Close()
-	cr, err := NewContainerRunner(s.client, api, kc, nil, "zzzzz-zzzzzzzzzzzzzzz")
+	cr, err := NewContainerRunner(s.client, api, kc, "zzzzz-zzzzzzzzzzzzzzz")
 	c.Assert(err, IsNil)
 	cr.CrunchLog.Timestamper = (&TestTimestamper{}).Timestamp
 
@@ -74,7 +74,7 @@ func (s *LoggingTestSuite) TestWriteLogsLarge(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
 	defer kc.Close()
-	cr, err := NewContainerRunner(s.client, api, kc, nil, "zzzzz-zzzzzzzzzzzzzzz")
+	cr, err := NewContainerRunner(s.client, api, kc, "zzzzz-zzzzzzzzzzzzzzz")
 	c.Assert(err, IsNil)
 	cr.CrunchLog.Timestamper = (&TestTimestamper{}).Timestamp
 	cr.CrunchLog.Immediate = nil
@@ -97,7 +97,7 @@ func (s *LoggingTestSuite) TestWriteMultipleLogs(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
 	defer kc.Close()
-	cr, err := NewContainerRunner(s.client, api, kc, nil, "zzzzz-zzzzzzzzzzzzzzz")
+	cr, err := NewContainerRunner(s.client, api, kc, "zzzzz-zzzzzzzzzzzzzzz")
 	c.Assert(err, IsNil)
 	ts := &TestTimestamper{}
 	cr.CrunchLog.Timestamper = ts.Timestamp
@@ -146,7 +146,7 @@ func (s *LoggingTestSuite) TestLogUpdate(c *C) {
 		api := &ArvTestClient{}
 		kc := &KeepTestClient{}
 		defer kc.Close()
-		cr, err := NewContainerRunner(s.client, api, kc, nil, "zzzzz-zzzzzzzzzzzzzzz")
+		cr, err := NewContainerRunner(s.client, api, kc, "zzzzz-zzzzzzzzzzzzzzz")
 		c.Assert(err, IsNil)
 		ts := &TestTimestamper{}
 		cr.CrunchLog.Timestamper = ts.Timestamp
@@ -197,7 +197,7 @@ func (s *LoggingTestSuite) testWriteLogsWithRateLimit(c *C, throttleParam string
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
 	defer kc.Close()
-	cr, err := NewContainerRunner(s.client, api, kc, nil, "zzzzz-zzzzzzzzzzzzzzz")
+	cr, err := NewContainerRunner(s.client, api, kc, "zzzzz-zzzzzzzzzzzzzzz")
 	c.Assert(err, IsNil)
 	cr.CrunchLog.Timestamper = (&TestTimestamper{}).Timestamp
 

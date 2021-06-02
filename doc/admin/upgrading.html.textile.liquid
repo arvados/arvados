@@ -39,6 +39,10 @@ h2(#main). development main (as of 2020-12-10)
 
 "Upgrading from 2.1.0":#v2_1_0
 
+h3. Multi-file docker image collections
+
+Typically a docker image collection contains a single @.tar@ file at the top level. Handling of atypical cases has changed. If a docker image collection contains files with extensions other than @.tar@, they will be ignored (previously they could cause errors). If a docker image collection contains multiple @.tar@ files, it will cause an error at runtime, "cannot choose from multiple tar files in image collection" (previously one of the @.tar@ files was selected). Subdirectories are ignored. The @arv keep docker@ command always creates a collection with a single @.tar@ file, and never uses subdirectories, so this change will not affect most users.
+
 h3. New spelling of S3 credential configs
 
 If you use the S3 driver for Keep volumes and specify credentials in your configuration file (as opposed to using an IAM role), you should change the spelling of the @AccessKey@ and @SecretKey@ config keys to @AccessKeyID@ and @SecretAccessKey@. If you don't update them, the previous spellings will still be accepted, but warnings will be logged at server startup.

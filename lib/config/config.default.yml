@@ -886,6 +886,9 @@ Clusters:
       # Minimum time between two attempts to run the same container
       MinRetryPeriod: 0s
 
+      # Container runtime: "docker" (default) or "singularity" (experimental)
+      RuntimeEngine: docker
+
       Logging:
         # When you run the db:delete_old_container_logs task, it will find
         # containers that have been finished for at least this many seconds,

@@ -122,6 +122,7 @@ var whitelist = map[string]bool{
 	"Containers.MaxRetryAttempts":                         true,
 	"Containers.MinRetryPeriod":                           true,
 	"Containers.ReserveExtraRAM":                          true,
+	"Containers.RuntimeEngine":                            true,
 	"Containers.ShellAccess":                              true,
 	"Containers.ShellAccess.Admin":                        true,
 	"Containers.ShellAccess.User":                         true,
