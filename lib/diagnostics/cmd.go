@@ -120,7 +120,9 @@ func (diag *diagnoser) runtests() {
 	var dd arvados.DiscoveryDocument
 	ddpath := "discovery/v1/apis/arvados/v1/rest"
 	diag.dotest(10, fmt.Sprintf("getting discovery document from https://%s/%s", client.APIHost, ddpath), func() error {
-		err := client.RequestAndDecode(&dd, "GET", ddpath, nil, nil)
+		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(diag.timeout))
+		defer cancel()
+		err := client.RequestAndDecodeContext(ctx, &dd, "GET", ddpath, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -131,7 +133,9 @@ func (diag *diagnoser) runtests() {
 	var cluster arvados.Cluster
 	cfgpath := "arvados/v1/config"
 	diag.dotest(20, fmt.Sprintf("getting exported config from https://%s/%s", client.APIHost, cfgpath), func() error {
-		err := client.RequestAndDecode(&cluster, "GET", cfgpath, nil, nil)
+		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(diag.timeout))
+		defer cancel()
+		err := client.RequestAndDecodeContext(ctx, &cluster, "GET", cfgpath, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -141,7 +145,9 @@ func (diag *diagnoser) runtests() {
 
 	var user arvados.User
 	diag.dotest(30, "getting current user record", func() error {
-		err := client.RequestAndDecode(&user, "GET", "arvados/v1/users/current", nil, nil)
+		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(diag.timeout))
+		defer cancel()
+		err := client.RequestAndDecodeContext(ctx, &user, "GET", "arvados/v1/users/current", nil, nil)
 		if err != nil {
 			return err
 		}
@@ -163,6 +169,8 @@ func (diag *diagnoser) runtests() {
 		&cluster.Services.Workbench2,
 	} {
 		diag.dotest(40+i, fmt.Sprintf("connecting to service endpoint %s", svc.ExternalURL), func() error {
+			ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(diag.timeout))
+			defer cancel()
 			u := svc.ExternalURL
 			if strings.HasPrefix(u.Scheme, "ws") {
 				// We can do a real websocket test elsewhere,
@@ -173,7 +181,7 @@ func (diag *diagnoser) runtests() {
 			if svc == &cluster.Services.WebDAV && strings.HasPrefix(u.Host, "*") {
 				u.Host = "d41d8cd98f00b204e9800998ecf8427e-0" + u.Host[1:]
 			}
-			req, err := http.NewRequest(http.MethodGet, u.String(), nil)
+			req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
 			if err != nil {
 				return err
 			}
@@ -192,7 +200,9 @@ func (diag *diagnoser) runtests() {
 		cluster.Services.WebDAVDownload.ExternalURL.String(),
 	} {
 		diag.dotest(50+i, fmt.Sprintf("checking CORS headers at %s", url), func() error {
-			req, err := http.NewRequest("GET", url, nil)
+			ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(diag.timeout))
+			defer cancel()
+			req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 			if err != nil {
 				return err
 			}
@@ -210,7 +220,9 @@ func (diag *diagnoser) runtests() {
 
 	var keeplist arvados.KeepServiceList
 	diag.dotest(60, "checking internal/external client detection", func() error {
-		err := client.RequestAndDecode(&keeplist, "GET", "arvados/v1/keep_services/accessible", nil, arvados.ListOptions{Limit: 999999})
+		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(diag.timeout))
+		defer cancel()
+		err := client.RequestAndDecodeContext(ctx, &keeplist, "GET", "arvados/v1/keep_services/accessible", nil, arvados.ListOptions{Limit: 999999})
 		if err != nil {
 			return fmt.Errorf("error getting keep services list: %s", err)
 		} else if len(keeplist.Items) == 0 {
@@ -288,8 +300,10 @@ func (diag *diagnoser) runtests() {
 
 	var project arvados.Group
 	diag.dotest(80, fmt.Sprintf("finding/creating %q project", diag.projectName), func() error {
+		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(diag.timeout))
+		defer cancel()
 		var grplist arvados.GroupList
-		err := client.RequestAndDecode(&grplist, "GET", "arvados/v1/groups", nil, arvados.ListOptions{
+		err := client.RequestAndDecodeContext(ctx, &grplist, "GET", "arvados/v1/groups", nil, arvados.ListOptions{
 			Filters: []arvados.Filter{
 				{"name", "=", diag.projectName},
 				{"group_class", "=", "project"},
@@ -304,7 +318,7 @@ func (diag *diagnoser) runtests() {
 			return nil
 		}
 		diag.debugf("list groups: ok, no results")
-		err = client.RequestAndDecode(&project, "POST", "arvados/v1/groups", nil, map[string]interface{}{"group": map[string]interface{}{
+		err = client.RequestAndDecodeContext(ctx, &project, "POST", "arvados/v1/groups", nil, map[string]interface{}{"group": map[string]interface{}{
 			"name":        diag.projectName,
 			"group_class": "project",
 		}})
@@ -317,7 +331,9 @@ func (diag *diagnoser) runtests() {
 
 	var collection arvados.Collection
 	diag.dotest(90, "creating temporary collection", func() error {
-		err := client.RequestAndDecode(&collection, "POST", "arvados/v1/collections", nil, map[string]interface{}{
+		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(diag.timeout))
+		defer cancel()
+		err := client.RequestAndDecodeContext(ctx, &collection, "POST", "arvados/v1/collections", nil, map[string]interface{}{
 			"ensure_unique_name": true,
 			"collection": map[string]interface{}{
 				"name":     "test collection",
@@ -332,16 +348,20 @@ func (diag *diagnoser) runtests() {
 	if collection.UUID != "" {
 		defer func() {
 			diag.dotest(9990, "deleting temporary collection", func() error {
-				return client.RequestAndDecode(nil, "DELETE", "arvados/v1/collections/"+collection.UUID, nil, nil)
+				ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(diag.timeout))
+				defer cancel()
+				return client.RequestAndDecodeContext(ctx, nil, "DELETE", "arvados/v1/collections/"+collection.UUID, nil, nil)
 			})
 		}()
 	}
 
 	diag.dotest(100, "uploading file via webdav", func() error {
+		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(diag.timeout))
+		defer cancel()
 		if collection.UUID == "" {
 			return fmt.Errorf("skipping, no test collection")
 		}
-		req, err := http.NewRequest("PUT", cluster.Services.WebDAVDownload.ExternalURL.String()+"c="+collection.UUID+"/testfile", bytes.NewBufferString("testfiledata"))
+		req, err := http.NewRequestWithContext(ctx, "PUT", cluster.Services.WebDAVDownload.ExternalURL.String()+"c="+collection.UUID+"/testfile", bytes.NewBufferString("testfiledata"))
 		if err != nil {
 			return fmt.Errorf("BUG? http.NewRequest: %s", err)
 		}
@@ -355,7 +375,7 @@ func (diag *diagnoser) runtests() {
 			return fmt.Errorf("status %s", resp.Status)
 		}
 		diag.debugf("ok, status %s", resp.Status)
-		err = client.RequestAndDecode(&collection, "GET", "arvados/v1/collections/"+collection.UUID, nil, nil)
+		err = client.RequestAndDecodeContext(ctx, &collection, "GET", "arvados/v1/collections/"+collection.UUID, nil, nil)
 		if err != nil {
 			return fmt.Errorf("get updated collection: %s", err)
 		}
@@ -387,10 +407,12 @@ func (diag *diagnoser) runtests() {
 		{true, http.StatusOK, cluster.Services.WebDAVDownload.ExternalURL.String() + "c=" + collection.UUID + "/_/testfile"},
 	} {
 		diag.dotest(120+i, fmt.Sprintf("downloading from webdav (%s)", trial.fileurl), func() error {
+			ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(diag.timeout))
+			defer cancel()
 			if trial.needcoll && collection.UUID == "" {
 				return fmt.Errorf("skipping, no test collection")
 			}
-			req, err := http.NewRequest("GET", trial.fileurl, nil)
+			req, err := http.NewRequestWithContext(ctx, "GET", trial.fileurl, nil)
 			if err != nil {
 				return err
 			}
@@ -416,8 +438,10 @@ func (diag *diagnoser) runtests() {
 
 	var vm arvados.VirtualMachine
 	diag.dotest(130, "getting list of virtual machines", func() error {
+		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(diag.timeout))
+		defer cancel()
 		var vmlist arvados.VirtualMachineList
-		err := client.RequestAndDecode(&vmlist, "GET", "arvados/v1/virtual_machines", nil, arvados.ListOptions{Limit: 999999})
+		err := client.RequestAndDecodeContext(ctx, &vmlist, "GET", "arvados/v1/virtual_machines", nil, arvados.ListOptions{Limit: 999999})
 		if err != nil {
 			return err
 		}
@@ -429,12 +453,14 @@ func (diag *diagnoser) runtests() {
 	})
 
 	diag.dotest(140, "getting workbench1 webshell page", func() error {
+		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(diag.timeout))
+		defer cancel()
 		if vm.UUID == "" {
 			return fmt.Errorf("skipping, no vm available")
 		}
 		webshelltermurl := cluster.Services.Workbench1.ExternalURL.String() + "virtual_machines/" + vm.UUID + "/webshell/testusername"
 		diag.debugf("url %s", webshelltermurl)
-		req, err := http.NewRequest("GET", webshelltermurl, nil)
+		req, err := http.NewRequestWithContext(ctx, "GET", webshelltermurl, nil)
 		if err != nil {
 			return err
 		}
