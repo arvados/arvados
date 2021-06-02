@@ -1300,12 +1300,16 @@ class Collection(RichCollectionBase):
           storage class.
 
         """
+
+        if storage_classes_desired and type(storage_classes_desired) is not list:
+            raise errors.ArgumentError("storage_classes_desired must be list type.")
+
         super(Collection, self).__init__(parent)
         self._api_client = api_client
         self._keep_client = keep_client
         self._block_manager = block_manager
         self.replication_desired = replication_desired
-        self.storage_classes_desired = storage_classes_desired
+        self._storage_classes_desired = storage_classes_desired
         self.put_threads = put_threads
 
         if apiconfig:
@@ -1342,6 +1346,9 @@ class Collection(RichCollectionBase):
                 self._populate()
             except (IOError, errors.SyntaxError) as e:
                 raise errors.ArgumentError("Error processing manifest text: %s", e)
+
+    def storage_classes_desired(self):
+        return self._storage_classes_desired or []
 
     def root_collection(self):
         return self
@@ -1418,7 +1425,7 @@ class Collection(RichCollectionBase):
                       self._my_api()._rootDesc.get('defaultCollectionReplication',
                                                    2))
             classes = self.storage_classes_desired or []
-            self._block_manager = _BlockManager(self._my_keep(), copies=copies, put_threads=self.put_threads, num_retries=self.num_retries, storage_classes=classes)
+            self._block_manager = _BlockManager(self._my_keep(), copies=copies, put_threads=self.put_threads, num_retries=self.num_retries, storage_classes_func=self.storage_classes_desired)
         return self._block_manager
 
     def _remember_api_response(self, response):
@@ -1442,8 +1449,8 @@ class Collection(RichCollectionBase):
         # replication_desired and storage_classes_desired from the API server
         if self.replication_desired is None:
             self.replication_desired = self._api_response.get('replication_desired', None)
-        if self.storage_classes_desired is None:
-            self.storage_classes_desired = self._api_response.get('storage_classes_desired', None)
+        if self._storage_classes_desired is None:
+            self._storage_classes_desired = self._api_response.get('storage_classes_desired', None)
 
     def _populate(self):
         if self._manifest_text is None:
@@ -1583,14 +1590,9 @@ class Collection(RichCollectionBase):
         body={}
         if properties:
             body["properties"] = properties
-        desired_classes = storage_classes
-        # Instance level storage_classes takes precedence over argument.
-        if self.storage_classes_desired:
-            if desired_classes and self.storage_classes_desired != desired_classes:
-                _logger.warning("Storage classes already set to {}".format(self.storage_classes_desired))
-            desired_classes = self.storage_classes_desired
-        if desired_classes:
-            body["storage_classes_desired"] = desired_classes
+        if storage_classes:
+            self._storage_classes_desired = storage_classes
+            body["storage_classes_desired"] = self.storage_classes_desired()
         if trash_at:
             t = trash_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
             body["trash_at"] = t
@@ -1693,6 +1695,9 @@ class Collection(RichCollectionBase):
             self._copy_remote_blocks(remote_blocks={})
             self._has_remote_blocks = False
 
+        if storage_classes:
+            self._storage_classes_desired = storage_classes
+
         self._my_block_manager().commit_all()
         text = self.manifest_text(strip=False)
 
@@ -1708,14 +1713,8 @@ class Collection(RichCollectionBase):
                 body["owner_uuid"] = owner_uuid
             if properties:
                 body["properties"] = properties
-            desired_classes = storage_classes
-            # Instance level storage_classes takes precedence over argument.
-            if self.storage_classes_desired:
-                if desired_classes and self.storage_classes_desired != desired_classes:
-                    _logger.warning("Storage classes already set to {}".format(self.storage_classes_desired))
-                desired_classes = self.storage_classes_desired
-            if desired_classes:
-                body["storage_classes_desired"] = desired_classes
+            if self.storage_classes_desired():
+                body["storage_classes_desired"] = self.storage_classes_desired()
             if trash_at:
                 t = trash_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
                 body["trash_at"] = t

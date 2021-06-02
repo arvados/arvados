@@ -915,7 +915,20 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         loc = c1.manifest_locator()
         c2 = Collection(loc)
         self.assertEqual(c1.manifest_text, c2.manifest_text)
-        self.assertEqual(c1.storage_classes_desired, c2.storage_classes_desired)
+        self.assertEqual(c1.storage_classes_desired(), c2.storage_classes_desired())
+
+    def test_storage_classes_change_after_save(self):
+        m = '. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt 0:10:count2.txt\n'
+        c1 = Collection(m, storage_classes_desired=['archival'])
+        c1.save_new()
+        loc = c1.manifest_locator()
+        c2 = Collection(loc)
+        self.assertEqual(['archival'], c2.storage_classes_desired())
+        c2.save(storage_classes=['highIO'])
+        self.assertEqual(['highIO'], c2.storage_classes_desired())
+        c3 = Collection(loc)
+        self.assertEqual(c1.manifest_text, c3.manifest_text)
+        self.assertEqual(['highIO'], c3.storage_classes_desired())
 
     def test_storage_classes_desired_not_loaded_if_provided(self):
         m = '. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt 0:10:count2.txt\n'
@@ -924,7 +937,7 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         loc = c1.manifest_locator()
         c2 = Collection(loc, storage_classes_desired=['default'])
         self.assertEqual(c1.manifest_text, c2.manifest_text)
-        self.assertNotEqual(c1.storage_classes_desired, c2.storage_classes_desired)
+        self.assertNotEqual(c1.storage_classes_desired(), c2.storage_classes_desired())
 
     def test_init_manifest(self):
         m1 = """. 5348b82a029fd9e971a811ce1f71360b+43 0:43:md5sum.txt
