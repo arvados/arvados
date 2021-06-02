@@ -210,7 +210,7 @@ func (diag *diagnoser) runtests() {
 
 	var keeplist arvados.KeepServiceList
 	diag.dotest(60, "checking internal/external client detection", func() error {
-		err := client.RequestAndDecode(&keeplist, "GET", "arvados/v1/keep_services/accessible", nil, arvados.ListOptions{Limit: -1})
+		err := client.RequestAndDecode(&keeplist, "GET", "arvados/v1/keep_services/accessible", nil, arvados.ListOptions{Limit: 999999})
 		if err != nil {
 			return fmt.Errorf("error getting keep services list: %s", err)
 		} else if len(keeplist.Items) == 0 {
@@ -294,7 +294,7 @@ func (diag *diagnoser) runtests() {
 				{"name", "=", diag.projectName},
 				{"group_class", "=", "project"},
 				{"owner_uuid", "=", user.UUID}},
-			Limit: -1})
+			Limit: 999999})
 		if err != nil {
 			return fmt.Errorf("list groups: %s", err)
 		}
