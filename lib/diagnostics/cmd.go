@@ -99,14 +99,14 @@ func (diag *diagnoser) dotest(id int, title string, fn func() error) {
 	}
 	diag.done[id] = true
 
-	diag.infof("%d %s", id, title)
+	diag.infof("%4d %s", id, title)
 	t0 := time.Now()
 	err := fn()
 	elapsed := fmt.Sprintf("%.0dms", time.Now().Sub(t0)/time.Millisecond)
 	if err != nil {
 		diag.errorf("%s (%s): %s", title, elapsed, err)
 	}
-	diag.debugf("%d %s (%s): ok", id, title, elapsed)
+	diag.debugf("%4d %s (%s): ok", id, title, elapsed)
 }
 
 func (diag *diagnoser) runtests() {
