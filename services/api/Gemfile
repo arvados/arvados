@@ -58,7 +58,7 @@ gem 'optimist'
 gem 'themes_for_rails', git: 'https://github.com/arvados/themes_for_rails'
 
 # Import arvados gem.
-gem 'arvados', '~> 2.1.4'
+gem 'arvados', '~> 2.1.5'
 gem 'httpclient'
 
 gem 'sshkey'
