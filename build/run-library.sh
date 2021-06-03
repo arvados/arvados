@@ -720,15 +720,19 @@ build_metapackage() {
     return 0
   fi
 
+  if [[ "$ARVADOS_BUILDING_ITERATION" == "" ]]; then
+    ARVADOS_BUILDING_ITERATION=1
+  fi
+
   if [[ -z "$ARVADOS_BUILDING_VERSION" ]]; then
     cd $WORKSPACE/$PKG_DIR
     pwd
     rm -rf dist/*
 
     # Get the latest setuptools
-    if ! $pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U 'setuptools<45'; then
-      echo "Error, unable to upgrade setuptools with"
-      echo "  $pip install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U 'setuptools<45'"
+    if ! pip3 install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U 'setuptools<45'; then
+      echo "Error, unable to upgrade setuptools with XY"
+      echo "  pip3 install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U 'setuptools<45'"
       exit 1
     fi
     # filter a useless warning (when building the cwltest package) from the stderr output
