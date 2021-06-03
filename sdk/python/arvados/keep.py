@@ -840,6 +840,7 @@ class KeepClient(object):
         self.get_counter = Counter()
         self.hits_counter = Counter()
         self.misses_counter = Counter()
+        self._storage_classes_unsupported_warning = False
 
         if local_store:
             self.local_store = local_store
@@ -1253,7 +1254,9 @@ class KeepClient(object):
                 # success is determined only by successful copies.
                 #
                 # Disable storage classes tracking from this point forward.
-                _logger.warning("X-Keep-Storage-Classes header not supported by the cluster")
+                if not self._storage_classes_unsupported_warning:
+                    self._storage_classes_unsupported_warning = True
+                    _logger.warning("X-Keep-Storage-Classes header not supported by the cluster")
                 done_classes = None
                 loop.save_result(
                     (done_copies >= copies, writer_pool.total_task_nr))
