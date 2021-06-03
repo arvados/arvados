@@ -6,7 +6,7 @@
 set -e -o pipefail
 commit="$1"
 versionglob="[0-9].[0-9]*.[0-9]*"
-devsuffix=".dev"
+devsuffix="~dev"
 
 # automatically assign version
 #
@@ -38,10 +38,9 @@ else
 
     if git merge-base --is-ancestor "$nearest_tag" "$merge_base" ; then
         # x.(y+1).0.devTIMESTAMP, where x.y.z is the newest version that does not contain $commit
-        # grep reads the list of tags (-f) that contain $commit and filters them out (-v)
-        # this prevents a newer tag from retroactively changing the versions of everything before it
-        # We also filter out four-digit faux semantic versioning tags, they gum up the works.
-        v=$(git tag | grep -vFf <(git tag --contains "$commit") |grep -v -P '\d.\d.\d.\d' | sort -Vr | head -n1 | perl -pe 's/\.(\d+)\.\d+/".".($1+1).".0"/e')
+	# grep reads the list of tags (-f) that contain $commit and filters them out (-v)
+	# this prevents a newer tag from retroactively changing the versions of everything before it
+        v=$(git tag | grep -vFf <(git tag --contains "$commit") | sort -Vr | head -n1 | perl -pe 's/\.(\d+)\.\d+/".".($1+1).".0"/e')
     else
         # x.y.(z+1).devTIMESTAMP, where x.y.z is the latest released ancestor of $commit
         v=$(echo $nearest_tag | perl -pe 's/(\d+)$/$1+1/e')
