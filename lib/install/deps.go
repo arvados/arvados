@@ -336,7 +336,6 @@ git checkout v${S}
 ./mconfig --prefix=/var/lib/arvados
 make -C ./builddir
 make -C ./builddir install
-rm -r ${tmp}
 `, stdout, stderr)
 			if err != nil {
 				return 1
