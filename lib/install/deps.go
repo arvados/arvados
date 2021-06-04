@@ -178,6 +178,7 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 			"r-cran-roxygen2",
 			"r-cran-xml",
 			"sudo",
+			"uuid-dev",
 			"wget",
 			"xvfb",
 		)
