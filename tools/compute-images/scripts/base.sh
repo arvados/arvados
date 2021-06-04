@@ -89,6 +89,10 @@ $SUDO sed "s/ExecStart=\(.*\)/ExecStart=\1 --default-ulimit nofile=10000:10000 $
 
 $SUDO systemctl daemon-reload
 
+# docker should not start on boot: we restart it inside /usr/local/bin/ensure-encrypted-partitions.sh,
+# and the BootProbeCommand defaults to "docker ps -q"
+$SUDO systemctl disable docker
+
 # Make sure user_allow_other is set in fuse.conf
 $SUDO sed -i 's/#user_allow_other/user_allow_other/g' /etc/fuse.conf
 
