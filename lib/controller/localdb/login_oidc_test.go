@@ -56,6 +56,8 @@ func (s *OIDCLoginSuite) SetUpTest(c *check.C) {
 	s.fakeProvider.AuthEmail = "active-user@arvados.local"
 	s.fakeProvider.AuthEmailVerified = true
 	s.fakeProvider.AuthName = "Fake User Name"
+	s.fakeProvider.AuthGivenName = "Fake"
+	s.fakeProvider.AuthFamilyName = "User Name"
 	s.fakeProvider.ValidCode = fmt.Sprintf("abcdefgh-%d", time.Now().Unix())
 	s.fakeProvider.PeopleAPIResponse = map[string]interface{}{}
 
@@ -421,8 +423,8 @@ func (s *OIDCLoginSuite) TestGoogleLogin_Success(c *check.C) {
 	c.Check(token, check.Matches, `v2/zzzzz-gj3su-.{15}/.{32,50}`)
 
 	authinfo := getCallbackAuthInfo(c, s.railsSpy)
-	c.Check(authinfo.FirstName, check.Equals, "Fake User")
-	c.Check(authinfo.LastName, check.Equals, "Name")
+	c.Check(authinfo.FirstName, check.Equals, "Fake")
+	c.Check(authinfo.LastName, check.Equals, "User Name")
 	c.Check(authinfo.Email, check.Equals, "active-user@arvados.local")
 	c.Check(authinfo.AlternateEmails, check.HasLen, 0)
 
@@ -483,6 +485,22 @@ func (s *OIDCLoginSuite) TestGoogleLogin_OIDCRealName(c *check.C) {
 	authinfo := getCallbackAuthInfo(c, s.railsSpy)
 	c.Check(authinfo.FirstName, check.Equals, "Joe P.")
 	c.Check(authinfo.LastName, check.Equals, "Smith")
+}
+
+func (s *OIDCLoginSuite) TestGoogleLogin_OIDCClamisWithGivenNames(c *check.C) {
+	s.fakeProvider.AuthName = "Federico Garcia Lorca"
+	s.fakeProvider.AuthGivenName = "Federico"
+	s.fakeProvider.AuthFamilyName = "Garcia Lorca"
+	s.fakeProvider.AuthEmail = "federico.garcia.lorca@primary.example.com"
+	state := s.startLogin(c)
+	s.localdb.Login(context.Background(), arvados.LoginOptions{
+		Code:  s.fakeProvider.ValidCode,
+		State: state,
+	})
+
+	authinfo := getCallbackAuthInfo(c, s.railsSpy)
+	c.Check(authinfo.FirstName, check.Equals, "Federico")
+	c.Check(authinfo.LastName, check.Equals, "Garcia Lorca")
 }
 
 // People API returns some additional email addresses.

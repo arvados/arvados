@@ -29,6 +29,8 @@ type OIDCProvider struct {
 	AuthEmail          string
 	AuthEmailVerified  bool
 	AuthName           string
+	AuthGivenName      string
+	AuthFamilyName     string
 	AccessTokenPayload map[string]interface{}
 
 	PeopleAPIResponse map[string]interface{}
@@ -96,6 +98,8 @@ func (p *OIDCProvider) serveOIDC(w http.ResponseWriter, req *http.Request) {
 			"email":          p.AuthEmail,
 			"email_verified": p.AuthEmailVerified,
 			"name":           p.AuthName,
+			"given_name":     p.AuthGivenName,
+			"family_name":    p.AuthFamilyName,
 			"alt_verified":   true,                    // for custom claim tests
 			"alt_email":      "alt_email@example.com", // for custom claim tests
 			"alt_username":   "desired-username",      // for custom claim tests
@@ -131,8 +135,8 @@ func (p *OIDCProvider) serveOIDC(w http.ResponseWriter, req *http.Request) {
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"sub":            "fake-user-id",
 			"name":           p.AuthName,
-			"given_name":     p.AuthName,
-			"family_name":    "",
+			"given_name":     p.AuthGivenName,
+			"family_name":    p.AuthFamilyName,
 			"alt_username":   "desired-username",
 			"email":          p.AuthEmail,
 			"email_verified": p.AuthEmailVerified,
