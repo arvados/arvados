@@ -1,0 +1,127 @@
+---
+layout: default
+navsection: admin
+title: Restricting upload or download
+...
+
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+For some use cases, you may want to limit the ability of users to upload or download data from outside the cluster.  (By "outside" we mean from networks other than the cluster's own private network).  For example, this makes it possible to share restricted data sets with users so that they may run their own data analysis on the cluster, while preventing them from easily downloading the data set to their local workstation.
+
+This feature exists in addition to the existing Arvados permission system.  Users can only download from collections they have @read@ access to, and can only upload to projects and collections they have @write@ access to.
+
+h2. Keep-web and Keepproxy Permissions
+
+There are two services involved in accessing data from outside the cluster.
+
+@keeproxy@ makes it possible to use @arv-put@ and @arv-get@.  It works in terms of individual 64 MiB keep blocks.  It prints a log each time a user uploads or downloads an individual block.
+
+@keep-web@ makes it possible to use Workbench, WebDAV and S3 API.  It works in terms of individual files.  It prints a log each time a user uploads or downloads a file, and also adds an entry into the API server @logs@ table.
+
+This distinction is important for auditing, the @keep-web@ records 'upload' and 'download' events on the API server that are included in the "User Activity Report":user-activity.html ,  whereas @keepprox@ only logs upload and download of individual blocks, which require a reverse lookup to determine the collection(s) and file(s) a block is associated with.
+
+You can set permissions for @keep-web@ and @keepproxy@, with separate policies for regular users and admin users.
+
+If the user attempts to upload or download from a service without permission, they will receive a @403 Forbidden@ response.  This only applies to file content.  Users can still see collection listings.
+
+The default policy allows anyone to upload or download.
+
+<pre>
+    Collections:
+      KeepWebPermisison:
+        User:
+          Download: true
+          Upload: true
+        Admin:
+          Download: true
+          Upload: true
+
+      KeepproxyPermission:
+        User:
+          Download: true
+          Upload: true
+        Admin:
+          Download: true
+          Upload: true
+</pre>
+
+h2. Shell node and container permissions
+
+Be aware that even when upload and download from outside the network is not allowed, a user who has access to a shell node or runs a container still has internal access to Keep.  (This is necessary to be able to run workflows).  From the shell node or container, a user could send data outside the network by some other method, although this requires more intent than accidentally clicking on a link and downloading a file.  It is possible to set up a firewall to prevent shell and compute nodes from making connections to hosts outside the private network.  Exactly how to configure this is out of scope for this page, as it depends on the specific network infrastructure of your cluster.
+
+h2. Choosing a policy
+
+These policies apply to only access from outside the cluster, using Workbench or Arvados CLI tools.
+
+h3. Audited downloads
+
+For ease of access auditing, this policy prevents downloads using @arv-get@.  Downloads through @keep-web@ are permitted, but logged.  Uploads with @arv-put@ are allowed.
+
+<pre>
+    Collections:
+      KeepWebPermisison:
+        User:
+          Download: true
+          Upload: true
+        Admin:
+          Download: true
+          Upload: true
+
+      KeepproxyPermission:
+        User:
+          Download: false
+          Upload: true
+        Admin:
+          Download: false
+          Upload: true
+</pre>
+
+h3. Disallow downloads by regular users
+
+This policy prevents regular users (non-admin) from downloading data.  Uploading is allowed.  This supports the case where restricted data sets are shared users so that they may run their own data analysis on the cluster, while preventing them from downloading the data set to their local workstation.  Note that users won't be able to download the results of their analysis, either, requiring an admin in the loop or some other process to release results.
+
+<pre>
+    Collections:
+      KeepWebPermisison:
+        User:
+          Download: false
+          Upload: true
+        Admin:
+          Download: true
+          Upload: true
+
+      KeepproxyPermission:
+        User:
+          Download: false
+          Upload: true
+        Admin:
+          Download: true
+          Upload: true
+</pre>
+
+h3. Disallow uploads by regular users
+
+This policy is suitable for an installation where data is being shared with a group of users who are allowed to download the data, but not permitted to store their own data on the cluster.
+
+<pre>
+    Collections:
+      KeepWebPermisison:
+        User:
+          Download: true
+          Upload: false
+        Admin:
+          Download: true
+          Upload: true
+
+      KeepproxyPermission:
+        User:
+          Download: true
+          Upload: false
+        Admin:
+          Download: true
+          Upload: true
+</pre>
