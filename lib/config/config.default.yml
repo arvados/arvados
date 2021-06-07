@@ -555,6 +555,29 @@ Clusters:
         # Persistent sessions.
         MaxSessions: 100
 
+      # Selectively set permissions for regular users and admins to be
+      # able to download or upload data files using the
+      # upload/download features for Workbench, WebDAV and S3 API
+      # support.
+      KeepWebPermisison:
+        User:
+          Download: true
+          Upload: true
+        Admin:
+          Download: true
+          Upload: true
+
+      # Selectively set permissions for regular users and admins to be
+      # able to download or upload blocks using arv-put and
+      # arv-get from outside the cluster.
+      KeepproxyPermission:
+        User:
+          Download: true
+          Upload: true
+        Admin:
+          Download: true
+          Upload: true
+
     Login:
       # One of the following mechanisms (SSO, Google, PAM, LDAP, or
       # LoginCluster) should be enabled; see
