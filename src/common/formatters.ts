@@ -20,7 +20,7 @@ export const formatDate = (isoDate?: string | null, utc: boolean = false) => {
     return "(none)";
 };
 
-export const formatFileSize = (size?: number) => {
+export const formatFileSize = (size?: number | string) => {
     if (typeof size === "number") {
         if (size === 0) { return "0 B"; }
 
@@ -29,6 +29,9 @@ export const formatFileSize = (size?: number) => {
                 return `${(size / base).toFixed()} ${unit}`;
             }
         }
+    } 
+    if ((typeof size === "string" && size === '') || size === undefined) {
+        return '';
     }
     return "0 B";
 };

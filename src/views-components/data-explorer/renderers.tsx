@@ -417,6 +417,11 @@ export const renderFileSize = (fileSize?: number) =>
 export const ResourceFileSize = connect(
     (state: RootState, props: { uuid: string }) => {
         const resource = getResource<CollectionResource>(props.uuid)(state.resources);
+
+        if (resource && resource.kind !== ResourceKind.COLLECTION) {
+            return { fileSize: '' };
+        }
+
         return { fileSize: resource ? resource.fileSizeTotal : 0 };
     })((props: { fileSize?: number }) => renderFileSize(props.fileSize));
 
