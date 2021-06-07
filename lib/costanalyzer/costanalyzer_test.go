@@ -114,6 +114,10 @@ func (s *Suite) SetUpSuite(c *check.C) {
 	createNodeJSON(c, arv, ac, kc, arvadostest.CompletedDiagnosticsHasher3ContainerRequestUUID, arvadostest.Hasher3LogCollectionUUID, legacyD1V2JSON)
 }
 
+func (s *Suite) SetUpTest(c *check.C) {
+	Command = &command{}
+}
+
 func createNodeJSON(c *check.C, arv *arvadosclient.ArvadosClient, ac *arvados.Client, kc *keepclient.KeepClient, crUUID string, logUUID string, nodeJSON string) {
 	// Get the CR
 	var cr arvados.ContainerRequest

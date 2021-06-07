@@ -9,7 +9,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
@@ -53,7 +52,7 @@ func (i *arrayFlags) Set(value string) error {
 	return nil
 }
 
-func parseFlags(prog string, args []string, loader *config.Loader, logger *logrus.Logger, stderr io.Writer) (exitCode int, uuids arrayFlags, resultsDir string, cache bool, begin time.Time, end time.Time, err error) {
+func (c *command) parseFlags(prog string, args []string, logger *logrus.Logger, stderr io.Writer) (exitCode int, err error) {
 	var beginStr, endStr string
 	flags := flag.NewFlagSet("", flag.ContinueOnError)
 	flags.SetOutput(stderr)
@@ -122,10 +121,10 @@ Options:
 		flags.PrintDefaults()
 	}
 	loglevel := flags.String("log-level", "info", "logging `level` (debug, info, ...)")
-	flags.StringVar(&resultsDir, "output", "", "output `directory` for the CSV reports")
+	flags.StringVar(&c.resultsDir, "output", "", "output `directory` for the CSV reports")
 	flags.StringVar(&beginStr, "begin", "", fmt.Sprintf("timestamp `begin` for date range operation (format: %s)", timestampFormat))
 	flags.StringVar(&endStr, "end", "", fmt.Sprintf("timestamp `end` for date range operation (format: %s)", timestampFormat))
-	flags.BoolVar(&cache, "cache", true, "create and use a local disk cache of Arvados objects")
+	flags.BoolVar(&c.cache, "cache", true, "create and use a local disk cache of Arvados objects")
 	err = flags.Parse(args)
 	if err == flag.ErrHelp {
 		err = nil
@@ -135,7 +134,7 @@ Options:
 		exitCode = 2
 		return
 	}
-	uuids = flags.Args()
+	c.uuids = flags.Args()
 
 	if (len(beginStr) != 0 && len(endStr) == 0) || (len(beginStr) == 0 && len(endStr) != 0) {
 		flags.Usage()
@@ -146,8 +145,8 @@ Options:
 
 	if len(beginStr) != 0 {
 		var errB, errE error
-		begin, errB = time.Parse(timestampFormat, beginStr)
-		end, errE = time.Parse(timestampFormat, endStr)
+		c.begin, errB = time.Parse(timestampFormat, beginStr)
+		c.end, errE = time.Parse(timestampFormat, endStr)
 		if (errB != nil) || (errE != nil) {
 			flags.Usage()
 			err = fmt.Errorf("When specifying a date range, both begin and end must be of the format %s %+v, %+v", timestampFormat, errB, errE)
@@ -156,12 +155,13 @@ Options:
 		}
 	}
 
-	if (len(uuids) < 1) && (len(beginStr) == 0) {
+	if (len(c.uuids) < 1) && (len(beginStr) == 0) {
 		flags.Usage()
 		err = fmt.Errorf("error: no uuid(s) provided")
 		exitCode = 2
 		return
 	}
+	fmt.Printf("UUIDS: %s\n", c.uuids)
 
 	lvl, err := logrus.ParseLevel(*loglevel)
 	if err != nil {
@@ -169,7 +169,7 @@ Options:
 		return
 	}
 	logger.SetLevel(lvl)
-	if !cache {
+	if !c.cache {
 		logger.Debug("Caching disabled\n")
 	}
 	return
@@ -509,13 +509,14 @@ func generateCrCsv(logger *logrus.Logger, uuid string, arv *arvadosclient.Arvado
 	return
 }
 
-func costanalyzer(prog string, args []string, loader *config.Loader, logger *logrus.Logger, stdout, stderr io.Writer) (exitcode int, err error) {
-	exitcode, uuids, resultsDir, cache, begin, end, err := parseFlags(prog, args, loader, logger, stderr)
+func (c *command) costAnalyzer(prog string, args []string, logger *logrus.Logger, stdout, stderr io.Writer) (exitcode int, err error) {
+	exitcode, err = c.parseFlags(prog, args, logger, stderr)
+
 	if exitcode != 0 {
 		return
 	}
-	if resultsDir != "" {
-		err = ensureDirectory(logger, resultsDir)
+	if c.resultsDir != "" {
+		err = ensureDirectory(logger, c.resultsDir)
 		if err != nil {
 			exitcode = 3
 			return
@@ -543,13 +544,13 @@ func costanalyzer(prog string, args []string, loader *config.Loader, logger *log
 	// Populate uuidChannel with the requested uuid list
 	go func() {
 		defer close(uuidChannel)
-		for _, uuid := range uuids {
+		for _, uuid := range c.uuids {
 			uuidChannel <- uuid
 		}
 
-		if !begin.IsZero() {
+		if !c.begin.IsZero() {
 			initialParams := arvados.ResourceListParams{
-				Filters: []arvados.Filter{{"container.finished_at", ">=", begin}, {"container.finished_at", "<", end}, {"requesting_container_uuid", "=", nil}},
+				Filters: []arvados.Filter{{"container.finished_at", ">=", c.begin}, {"container.finished_at", "<", c.end}, {"requesting_container_uuid", "=", nil}},
 				Order:   "created_at",
 			}
 			params := initialParams
@@ -584,7 +585,7 @@ func costanalyzer(prog string, args []string, loader *config.Loader, logger *log
 		fmt.Printf("Considering %s\n", uuid)
 		if strings.Contains(uuid, "-j7d0g-") {
 			// This is a project (group)
-			cost, err = handleProject(logger, uuid, arv, ac, kc, resultsDir, cache)
+			cost, err = handleProject(logger, uuid, arv, ac, kc, c.resultsDir, c.cache)
 			if err != nil {
 				exitcode = 1
 				return
@@ -595,7 +596,7 @@ func costanalyzer(prog string, args []string, loader *config.Loader, logger *log
 		} else if strings.Contains(uuid, "-xvhdp-") || strings.Contains(uuid, "-4zz18-") {
 			// This is a container request
 			var crCsv map[string]float64
-			crCsv, err = generateCrCsv(logger, uuid, arv, ac, kc, resultsDir, cache)
+			crCsv, err = generateCrCsv(logger, uuid, arv, ac, kc, c.resultsDir, c.cache)
 			if err != nil {
 				err = fmt.Errorf("error generating CSV for uuid %s: %s", uuid, err.Error())
 				exitcode = 2
@@ -625,7 +626,7 @@ func costanalyzer(prog string, args []string, loader *config.Loader, logger *log
 	var csv string
 
 	csv = "# Aggregate cost accounting for uuids:\n"
-	for _, uuid := range uuids {
+	for _, uuid := range c.uuids {
 		csv += "# " + uuid + "\n"
 	}
 
@@ -637,9 +638,9 @@ func costanalyzer(prog string, args []string, loader *config.Loader, logger *log
 
 	csv += "TOTAL," + strconv.FormatFloat(total, 'f', 8, 64) + "\n"
 
-	if resultsDir != "" {
+	if c.resultsDir != "" {
 		// Write the resulting CSV file
-		aFile := resultsDir + "/" + time.Now().Format("2006-01-02-15-04-05") + "-aggregate-costaccounting.csv"
+		aFile := c.resultsDir + "/" + time.Now().Format("2006-01-02-15-04-05") + "-aggregate-costaccounting.csv"
 		err = ioutil.WriteFile(aFile, []byte(csv), 0644)
 		if err != nil {
 			err = fmt.Errorf("error writing file with path %s: %s", aFile, err.Error())
