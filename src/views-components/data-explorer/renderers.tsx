@@ -418,7 +418,7 @@ export const ResourceFileSize = connect(
     (state: RootState, props: { uuid: string }) => {
         const resource = getResource<CollectionResource>(props.uuid)(state.resources);
 
-        if (resource && resource.kind === ResourceKind.COLLECTION) {
+        if (resource && resource.kind !== ResourceKind.COLLECTION) {
             return { fileSize: '' };
         }
 
