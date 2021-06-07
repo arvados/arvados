@@ -570,8 +570,8 @@ class KeepClient(object):
             self.confirmed_storage_classes = {}
             self.response = None
             self.storage_classes_tracking = True
-            self.queue_data_lock = threading.Lock()
-            self.pending_tries = max(copies, len(classes))+1
+            self.queue_data_lock = threading.RLock()
+            self.pending_tries = max(copies, len(classes))
             self.pending_tries_notification = threading.Condition()
 
         def write_success(self, response, replicas_nr, classes_confirmed):
@@ -585,6 +585,7 @@ class KeepClient(object):
                             self.confirmed_storage_classes[st_class] += st_copies
                         except KeyError:
                             self.confirmed_storage_classes[st_class] = st_copies
+                    self.pending_tries = max(self.wanted_copies - self.successful_copies, len(self.pending_classes()))
                 self.response = response
             with self.pending_tries_notification:
                 self.pending_tries_notification.notify_all()
