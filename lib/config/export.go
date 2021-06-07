@@ -106,6 +106,8 @@ var whitelist = map[string]bool{
 	"Collections.TrashSweepInterval":                      false,
 	"Collections.TrustAllContent":                         false,
 	"Collections.WebDAVCache":                             false,
+	"Collections.KeepproxyPermission":                     false,
+	"Collections.KeepWebPermission":                       false,
 	"Containers":                                          true,
 	"Containers.CloudVMs":                                 false,
 	"Containers.CrunchRunArgumentsList":                   false,

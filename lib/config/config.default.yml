@@ -559,7 +559,7 @@ Clusters:
       # able to download or upload data files using the
       # upload/download features for Workbench, WebDAV and S3 API
       # support.
-      KeepWebPermisison:
+      KeepWebPermission:
         User:
           Download: true
           Upload: true
