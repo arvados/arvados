@@ -27,6 +27,7 @@
     "classnames": "2.2.6",
     "cwlts": "1.15.29",
     "debounce": "1.2.0",
+    "elliptic": "6.5.4",
     "file-saver": "2.0.1",
     "fstream": "1.0.12",
     "is-image": "2.0.0",
@@ -128,6 +129,7 @@
     "fbjs/ua-parser-js": "0.7.24",
     "react-rte/**/ua-parser-js": "0.7.24",
     "webpack/terser-webpack-plugin/serialize-javascript": "^3.1.0",
+    "webpack/node-libs-browser/crypto-browserify/*/elliptic": "6.5.4",
     "cypress/minimist": "1.2.5"
   }
 }
