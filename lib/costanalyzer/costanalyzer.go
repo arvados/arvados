@@ -24,6 +24,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const timestampFormat = "2006-01-02T15:04:05"
+
 type nodeInfo struct {
 	// Legacy (records created by Arvados Node Manager with Arvados <= 1.4.3)
 	Properties struct {
@@ -58,10 +60,10 @@ func parseFlags(prog string, args []string, loader *config.Loader, logger *logru
 	flags.Usage = func() {
 		fmt.Fprintf(flags.Output(), `
 Usage:
-  %s [options ...] [uuid ...]
+  %s [options ...] [UUID ...]
 
 	This program analyzes the cost of Arvados container requests and calculates
-	the total cost across all requests. At least one uuid or a timestamp range
+	the total cost across all requests. At least one UUID or a timestamp range
 	must be specified.
 
 	When the '-output' option is specified, a set of CSV files with cost details
@@ -69,22 +71,20 @@ Usage:
 	all the containers used to fulfill the container request, together with the
 	machine type and cost of each container.
 
-	When supplied with the uuid of a container request, it will calculate the
+	When supplied with the UUID of a container request, it will calculate the
 	cost of that container request and all its children.
 
-	When supplied with the uuid of a collection, it will see if there is a
-	container_request uuid in the properties of the collection, and if so, it
+	When supplied with the UUID of a collection, it will see if there is a
+	container_request UUID in the properties of the collection, and if so, it
 	will calculate the cost of that container request and all its children.
 
-	When supplied with a project uuid or when supplied with multiple container
-	request or collection uuids, it will calculate the total cost for all
-	supplied uuid.
+	When supplied with a project UUID or when supplied with multiple container
+	request or collection UUIDs, it will calculate the total cost for all
+	supplied UUIDs.
 
 	When supplied with a 'begin' and 'end' timestamp (format:
-	2006-01-02T15:04:05), it will calculate the cost for the UUIDs of all the
-	container requests with an associated container whose "Finished at" timestamp
-	is greater than or equal to the "begin" timestamp and smaller than the "end"
-	timestamp.
+	%s), it will calculate the cost for all top-level container
+	requests whose containers finished during the specified interval.
 
 	The total cost calculation takes container reuse into account: if a container
 	was reused between several container requests, its cost will only be counted
@@ -109,22 +109,22 @@ Usage:
 	permanent cloud nodes that provide the Arvados services, the cost of data
 	stored in Arvados, etc.
 
-	- When provided with a project uuid, subprojects will not be considered.
+	- When provided with a project UUID, subprojects will not be considered.
 
-	In order to get the data for the uuids supplied, the ARVADOS_API_HOST and
+	In order to get the data for the UUIDs supplied, the ARVADOS_API_HOST and
 	ARVADOS_API_TOKEN environment variables must be set.
 
 	This program prints the total dollar amount from the aggregate cost
-	accounting across all provided uuids on stdout.
+	accounting across all provided UUIDs on stdout.
 
 Options:
-`, prog)
+`, prog, timestampFormat)
 		flags.PrintDefaults()
 	}
 	loglevel := flags.String("log-level", "info", "logging `level` (debug, info, ...)")
 	flags.StringVar(&resultsDir, "output", "", "output `directory` for the CSV reports")
-	flags.StringVar(&beginStr, "begin", "", "timestamp `begin` for date range operation (format: 2006-01-02T15:04:05)")
-	flags.StringVar(&endStr, "end", "", "timestamp `end` for date range operation (format: 2006-01-02T15:04:05)")
+	flags.StringVar(&beginStr, "begin", "", fmt.Sprintf("timestamp `begin` for date range operation (format: %s)", timestampFormat))
+	flags.StringVar(&endStr, "end", "", fmt.Sprintf("timestamp `end` for date range operation (format: %s)", timestampFormat))
 	flags.BoolVar(&cache, "cache", true, "create and use a local disk cache of Arvados objects")
 	err = flags.Parse(args)
 	if err == flag.ErrHelp {
@@ -146,11 +146,11 @@ Options:
 
 	if len(beginStr) != 0 {
 		var errB, errE error
-		begin, errB = time.Parse("2006-01-02T15:04:05", beginStr)
-		end, errE = time.Parse("2006-01-02T15:04:05", endStr)
+		begin, errB = time.Parse(timestampFormat, beginStr)
+		end, errE = time.Parse(timestampFormat, endStr)
 		if (errB != nil) || (errE != nil) {
 			flags.Usage()
-			err = fmt.Errorf("When specifying a date range, both begin and end must be of the format 2006-01-02T15:04:05 %+v, %+v", errB, errE)
+			err = fmt.Errorf("When specifying a date range, both begin and end must be of the format %s %+v, %+v", timestampFormat, errB, errE)
 			exitCode = 2
 			return
 		}
@@ -473,7 +473,7 @@ func generateCrCsv(logger *logrus.Logger, uuid string, arv *arvadosclient.Arvado
 	if err != nil {
 		return nil, fmt.Errorf("error querying container_requests: %s", err.Error())
 	}
-	logger.Infof("Collecting child containers for container request %s", crUUID)
+	logger.Infof("Collecting child containers for container request %s (%s)", crUUID, container.FinishedAt)
 	for _, cr2 := range childCrs.Items {
 		logger.Info(".")
 		node, err := getNode(arv, ac, kc, cr2)
@@ -542,6 +542,7 @@ func costanalyzer(prog string, args []string, loader *config.Loader, logger *log
 
 	// Populate uuidChannel with the requested uuid list
 	go func() {
+		defer close(uuidChannel)
 		for _, uuid := range uuids {
 			uuidChannel <- uuid
 		}
@@ -549,6 +550,7 @@ func costanalyzer(prog string, args []string, loader *config.Loader, logger *log
 		if !begin.IsZero() {
 			initialParams := arvados.ResourceListParams{
 				Filters: []arvados.Filter{{"container.finished_at", ">=", begin}, {"container.finished_at", "<", end}, {"requesting_container_uuid", "=", nil}},
+				Order:   "created_at",
 			}
 			params := initialParams
 			for {
@@ -574,7 +576,6 @@ func costanalyzer(prog string, args []string, loader *config.Loader, logger *log
 			}
 
 		}
-		close(uuidChannel)
 	}()
 
 	cost := make(map[string]float64)
