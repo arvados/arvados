@@ -121,7 +121,6 @@
     }
   },
   "resolutions": {
-    "cypress/minimist": "1.2.5",
     "fbjs/ua-parser-js": "0.7.24",
     "react-rte/**/ua-parser-js": "0.7.24",
     "react-scripts-ts/webpack-dev-server": "^2.11.4",
