@@ -176,11 +176,11 @@ func (ctrl *oidcLoginController) getAuthInfo(ctx context.Context, token *oauth2.
 		return nil, fmt.Errorf("error extracting claims from token: %s", err)
 	} else if verified, _ := claims[ctrl.EmailVerifiedClaim].(bool); verified || ctrl.EmailVerifiedClaim == "" {
 		givenName, ok := claims["given_name"].(string)
-		if ok {
+		if ok && givenName != "" {
 			ret.FirstName = givenName
 		}
 		familyName, ok := claims["family_name"].(string)
-		if ok {
+		if ok && familyName != "" {
 			ret.LastName = familyName
 		} else {
 			// Fall back to this info if the People API call
