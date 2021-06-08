@@ -31,6 +31,7 @@ func (cmd Command) RunCommand(prog string, args []string, stdin io.Reader, stdou
 	f.StringVar(&diag.logLevel, "log-level", "info", "logging level (debug, info, warning, error)")
 	f.BoolVar(&diag.checkInternal, "internal-client", false, "check that this host is considered an \"internal\" client")
 	f.BoolVar(&diag.checkExternal, "external-client", false, "check that this host is considered an \"external\" client")
+	f.IntVar(&diag.priority, "priority", 500, "priority for test container (1..1000)")
 	f.DurationVar(&diag.timeout, "timeout", 10*time.Second, "timeout for http requests")
 	err := f.Parse(args)
 	if err == flag.ErrHelp {
@@ -60,6 +61,7 @@ type diagnoser struct {
 	stdout        io.Writer
 	stderr        io.Writer
 	logLevel      string
+	priority      int
 	projectName   string
 	checkInternal bool
 	checkExternal bool
@@ -520,6 +522,82 @@ func (diag *diagnoser) runtests() {
 		// problem.
 		if resp.StatusCode != http.StatusBadRequest {
 			return fmt.Errorf("unexpected response status: %s, %q", resp.Status, body)
+		}
+		return nil
+	})
+
+	diag.dotest(160, "running a container", func() error {
+		if diag.priority < 1 {
+			diag.debugf("skipping, caller requested priority<1 (%d)", diag.priority)
+			return nil
+		}
+
+		var cr arvados.ContainerRequest
+		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(diag.timeout))
+		defer cancel()
+
+		timestamp := time.Now().Format(time.RFC3339)
+		err := client.RequestAndDecodeContext(ctx, &cr, "POST", "arvados/v1/container_requests", nil, map[string]interface{}{"container_request": map[string]interface{}{
+			"owner_uuid":      project.UUID,
+			"name":            fmt.Sprintf("diagnostics container request %s", timestamp),
+			"container_image": "arvados/jobs",
+			"command":         []string{"echo", timestamp},
+			"use_existing":    false,
+			"output_path":     "/mnt/output",
+			"output_name":     fmt.Sprintf("diagnostics output %s", timestamp),
+			"priority":        diag.priority,
+			"state":           arvados.ContainerRequestStateCommitted,
+			"mounts": map[string]map[string]interface{}{
+				"/mnt/output": {
+					"kind":     "collection",
+					"writable": true,
+				},
+			},
+			"runtime_constraints": arvados.RuntimeConstraints{
+				VCPUs:        1,
+				RAM:          1 << 26,
+				KeepCacheRAM: 1 << 26,
+			},
+		}})
+		if err != nil {
+			return err
+		}
+		diag.debugf("container request uuid = %s", cr.UUID)
+		diag.debugf("container uuid = %s", cr.ContainerUUID)
+
+		timeout := 10 * time.Minute
+		diag.infof("container request submitted, waiting up to %v for container to run", arvados.Duration(timeout))
+		ctx, cancel = context.WithDeadline(context.Background(), time.Now().Add(timeout))
+		defer cancel()
+
+		var c arvados.Container
+		for ; cr.State != arvados.ContainerRequestStateFinal; time.Sleep(2 * time.Second) {
+			ctx, cancel := context.WithDeadline(ctx, time.Now().Add(diag.timeout))
+			defer cancel()
+
+			crStateWas := cr.State
+			err := client.RequestAndDecodeContext(ctx, &cr, "GET", "arvados/v1/container_requests/"+cr.UUID, nil, nil)
+			if err != nil {
+				return err
+			}
+			if cr.State != crStateWas {
+				diag.debugf("container request state = %s", cr.State)
+			}
+
+			cStateWas := c.State
+			err = client.RequestAndDecodeContext(ctx, &c, "GET", "arvados/v1/containers/"+cr.ContainerUUID, nil, nil)
+			if err != nil {
+				return err
+			}
+			if c.State != cStateWas {
+				diag.debugf("container state = %s", c.State)
+			}
+		}
+
+		if c.State != arvados.ContainerStateComplete {
+			return fmt.Errorf("container request %s is final but container %s did not complete: container state = %q", cr.UUID, cr.ContainerUUID, c.State)
+		} else if c.ExitCode != 0 {
+			return fmt.Errorf("container exited %d", c.ExitCode)
 		}
 		return nil
 	})
