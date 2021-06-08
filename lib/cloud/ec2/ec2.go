@@ -20,6 +20,7 @@ import (
 	"git.arvados.org/arvados.git/lib/cloud"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
@@ -349,8 +350,28 @@ func (err rateLimitError) EarliestRetry() time.Time {
 	return err.earliestRetry
 }
 
+var capacityCodes = map[string]struct{}{
+	"InsufficientInstanceCapacity": {},
+	"VcpuLimitExceeded":            {},
+	"MaxSpotInstanceCountExceeded": {},
+}
+
+// IsErrorCapacity returns whether the error is to be throttled based on its code.
+// Returns false if error is nil.
+func IsErrorCapacity(err error) bool {
+	if aerr, ok := err.(awserr.Error); ok && aerr != nil {
+		return isCodeCapacity(aerr.Code())
+	}
+	return false
+}
+
+func isCodeCapacity(code string) bool {
+	_, ok := capacityCodes[code]
+	return ok
+}
+
 func wrapError(err error, throttleValue *atomic.Value) error {
-	if request.IsErrorThrottle(err) {
+	if request.IsErrorThrottle(err) || IsErrorCapacity(err) {
 		// Back off exponentially until an upstream call
 		// either succeeds or returns a non-throttle error.
 		d, _ := throttleValue.Load().(time.Duration)
