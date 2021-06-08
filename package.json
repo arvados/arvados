@@ -121,17 +121,18 @@
     }
   },
   "resolutions": {
+    "cypress/minimist": "1.2.5",
+    "fbjs/ua-parser-js": "0.7.24",
+    "react-rte/**/ua-parser-js": "0.7.24",
     "react-scripts-ts/webpack-dev-server": "^2.11.4",
     "react-scripts-ts/**/**/**/**/js-yaml": "^3.13.1",
     "react-scripts-ts/uglifyjs-webpack-plugin/serialize-javascript": "^3.1.0",
+    "react-scripts-ts/uglifyjs-webpack-plugin/cacache/ssri": "6.0.2",
     "react-scripts-ts/**/handlebars": "^4.7.7",
     "react-scripts-ts/**/merge": "^2.1.1",
-    "fbjs/ua-parser-js": "0.7.24",
-    "react-rte/**/ua-parser-js": "0.7.24",
-    "webpack/terser-webpack-plugin/serialize-javascript": "^3.1.0",
-    "webpack/node-libs-browser/crypto-browserify/*/elliptic": "6.5.4",
     "webpack-dev-server/http-proxy-middleware/http-proxy": "^1.18.1",
     "webpack-dev-server/selfsigned/node-forge": "0.10.0",
-    "cypress/minimist": "1.2.5"
+    "webpack/node-libs-browser/crypto-browserify/*/elliptic": "6.5.4",
+    "webpack/terser-webpack-plugin/serialize-javascript": "^3.1.0"
   }
 }
