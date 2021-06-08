@@ -1261,6 +1261,7 @@ class Collection(RichCollectionBase):
                  apiconfig=None,
                  block_manager=None,
                  replication_desired=None,
+                 storage_classes_desired=None,
                  put_threads=None):
         """Collection constructor.
 
@@ -1293,12 +1294,22 @@ class Collection(RichCollectionBase):
           configuration applies. If not None, this value will also be used
           for determining the number of block copies being written.
 
+        :storage_classes_desired:
+          A list of storage class names where to upload the data. If None,
+          the keepstores are expected to store the data into their default
+          storage class.
+
         """
+
+        if storage_classes_desired and type(storage_classes_desired) is not list:
+            raise errors.ArgumentError("storage_classes_desired must be list type.")
+
         super(Collection, self).__init__(parent)
         self._api_client = api_client
         self._keep_client = keep_client
         self._block_manager = block_manager
         self.replication_desired = replication_desired
+        self._storage_classes_desired = storage_classes_desired
         self.put_threads = put_threads
 
         if apiconfig:
@@ -1335,6 +1346,9 @@ class Collection(RichCollectionBase):
                 self._populate()
             except (IOError, errors.SyntaxError) as e:
                 raise errors.ArgumentError("Error processing manifest text: %s", e)
+
+    def storage_classes_desired(self):
+        return self._storage_classes_desired or []
 
     def root_collection(self):
         return self
@@ -1410,7 +1424,7 @@ class Collection(RichCollectionBase):
             copies = (self.replication_desired or
                       self._my_api()._rootDesc.get('defaultCollectionReplication',
                                                    2))
-            self._block_manager = _BlockManager(self._my_keep(), copies=copies, put_threads=self.put_threads, num_retries=self.num_retries)
+            self._block_manager = _BlockManager(self._my_keep(), copies=copies, put_threads=self.put_threads, num_retries=self.num_retries, storage_classes_func=self.storage_classes_desired)
         return self._block_manager
 
     def _remember_api_response(self, response):
@@ -1431,9 +1445,11 @@ class Collection(RichCollectionBase):
         self._manifest_text = self._api_response['manifest_text']
         self._portable_data_hash = self._api_response['portable_data_hash']
         # If not overriden via kwargs, we should try to load the
-        # replication_desired from the API server
+        # replication_desired and storage_classes_desired from the API server
         if self.replication_desired is None:
             self.replication_desired = self._api_response.get('replication_desired', None)
+        if self._storage_classes_desired is None:
+            self._storage_classes_desired = self._api_response.get('storage_classes_desired', None)
 
     def _populate(self):
         if self._manifest_text is None:
@@ -1566,6 +1582,8 @@ class Collection(RichCollectionBase):
 
         if storage_classes and type(storage_classes) is not list:
             raise errors.ArgumentError("storage_classes must be list type.")
+        if storage_classes:
+            self._storage_classes_desired = storage_classes
 
         if trash_at and type(trash_at) is not datetime.datetime:
             raise errors.ArgumentError("trash_at must be datetime type.")
@@ -1573,8 +1591,8 @@ class Collection(RichCollectionBase):
         body={}
         if properties:
             body["properties"] = properties
-        if storage_classes:
-            body["storage_classes_desired"] = storage_classes
+        if self.storage_classes_desired():
+            body["storage_classes_desired"] = self.storage_classes_desired()
         if trash_at:
             t = trash_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
             body["trash_at"] = t
@@ -1677,6 +1695,9 @@ class Collection(RichCollectionBase):
             self._copy_remote_blocks(remote_blocks={})
             self._has_remote_blocks = False
 
+        if storage_classes:
+            self._storage_classes_desired = storage_classes
+
         self._my_block_manager().commit_all()
         text = self.manifest_text(strip=False)
 
@@ -1692,8 +1713,8 @@ class Collection(RichCollectionBase):
                 body["owner_uuid"] = owner_uuid
             if properties:
                 body["properties"] = properties
-            if storage_classes:
-                body["storage_classes_desired"] = storage_classes
+            if self.storage_classes_desired():
+                body["storage_classes_desired"] = self.storage_classes_desired()
             if trash_at:
                 t = trash_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
                 body["trash_at"] = t

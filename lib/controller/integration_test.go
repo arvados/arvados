@@ -113,6 +113,8 @@ func (s *IntegrationSuite) SetUpSuite(c *check.C) {
         ClientSecret: ` + s.oidcprovider.ValidClientSecret + `
         EmailClaim: email
         EmailVerifiedClaim: email_verified
+        AcceptAccessToken: true
+        AcceptAccessTokenScope: ""
 `
 		} else {
 			yaml += `

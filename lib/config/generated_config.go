@@ -639,6 +639,23 @@ Clusters:
         AuthenticationRequestParameters:
           SAMPLE: ""
 
+        # Accept an OIDC access token as an API token if the OIDC
+        # provider's UserInfo endpoint accepts it.
+        #
+        # AcceptAccessTokenScope should also be used when enabling
+        # this feature.
+        AcceptAccessToken: false
+
+        # Before accepting an OIDC access token as an API token, first
+        # check that it is a JWT whose "scope" value includes this
+        # value. Example: "https://zzzzz.example.com/" (your Arvados
+        # API endpoint).
+        #
+        # If this value is empty and AcceptAccessToken is true, all
+        # access tokens will be accepted regardless of scope,
+        # including non-JWT tokens. This is not recommended.
+        AcceptAccessTokenScope: ""
+
       PAM:
         # (Experimental) Use PAM to authenticate users.
         Enable: false
@@ -760,8 +777,15 @@ Clusters:
       # Default value zero means tokens don't have expiration.
       TokenLifetime: 0s
 
+      # If true (default) tokens issued through login are allowed to create
+      # new tokens.
+      # If false, tokens issued through login are not allowed to
+      # viewing/creating other tokens.  New tokens can only be created
+      # by going through login again.
+      IssueTrustedTokens: true
+
       # When the token is returned to a client, the token itself may
-      # be restricted from manipulating other tokens based on whether
+      # be restricted from viewing/creating other tokens based on whether
       # the client is "trusted" or not.  The local Workbench1 and
       # Workbench2 are trusted by default, but if this is a
       # LoginCluster, you probably want to include the other Workbench
@@ -867,6 +891,9 @@ Clusters:
 
       # Minimum time between two attempts to run the same container
       MinRetryPeriod: 0s
+
+      # Container runtime: "docker" (default) or "singularity" (experimental)
+      RuntimeEngine: docker
 
       Logging:
         # When you run the db:delete_old_container_logs task, it will find

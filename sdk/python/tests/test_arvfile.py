@@ -7,10 +7,7 @@ from builtins import hex
 from builtins import str
 from builtins import range
 from builtins import object
-import bz2
 import datetime
-import gzip
-import io
 import mock
 import os
 import unittest
@@ -19,7 +16,7 @@ import time
 import arvados
 from arvados._ranges import Range
 from arvados.keep import KeepLocator
-from arvados.collection import Collection, CollectionReader
+from arvados.collection import Collection
 from arvados.arvfile import ArvadosFile, ArvadosFileReader
 
 from . import arvados_testutil as tutil
@@ -36,7 +33,7 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
         def get_from_cache(self, locator):
             self.requests.append(locator)
             return self.blocks.get(locator)
-        def put(self, data, num_retries=None, copies=None):
+        def put(self, data, num_retries=None, copies=None, classes=[]):
             pdh = tutil.str_keep_locator(data)
             self.blocks[pdh] = bytes(data)
             return pdh
@@ -172,8 +169,6 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
             c.save_new("test_truncate")
             self.assertEqual("zzzzz-4zz18-mockcollection0", c.manifest_locator())
             self.assertFalse(c.modified())
-
-
 
     def test_write_to_end(self):
         keep = ArvadosFileWriterTestCase.MockKeep({
@@ -366,7 +361,6 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
             self.assertEqual("zzzzz-4zz18-mockcollection0", c.manifest_locator())
             self.assertFalse(c.modified())
 
-
     def test_large_write(self):
         keep = ArvadosFileWriterTestCase.MockKeep({})
         api = ArvadosFileWriterTestCase.MockApi({}, {})
@@ -400,7 +394,6 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
 
             self.assertEqual(c.manifest_text(), ". 7f614da9329cd3aebf59b91aadc30bf0+67108864 781e5e245d69b566979b86e28d23f2c7+10 0:2:count.txt 67108864:10:count.txt\n")
 
-
     def test_sparse_write2(self):
         keep = ArvadosFileWriterTestCase.MockKeep({})
         api = ArvadosFileWriterTestCase.MockApi({}, {})
@@ -416,7 +409,6 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
             writer.seek(0, os.SEEK_SET)
 
             self.assertEqual(c.manifest_text(), ". 7f614da9329cd3aebf59b91aadc30bf0+67108864 781e5e245d69b566979b86e28d23f2c7+10 0:67108864:count.txt 0:67108864:count.txt 0:2:count.txt 67108864:10:count.txt\n")
-
 
     def test_sparse_write3(self):
         keep = ArvadosFileWriterTestCase.MockKeep({})
@@ -447,7 +439,6 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
                     writer.write(w.encode())
                 writer.seek(0)
                 self.assertEqual(writer.read(), b"000000000011111111112222222222\x00\x00\x00\x00\x00\x00\x00\x00\x00\x004444444444")
-
 
     def test_rewrite_on_empty_file(self):
         keep = ArvadosFileWriterTestCase.MockKeep({})
@@ -875,7 +866,6 @@ class BlockManagerTest(unittest.TestCase):
 
             blockmanager.commit_bufferblock(bufferblock, True)
             self.assertEqual(bufferblock.state(), arvados.arvfile._BufferBlock.COMMITTED)
-
 
     def test_bufferblock_commit_with_error(self):
         mockkeep = mock.MagicMock()

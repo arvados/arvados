@@ -223,6 +223,7 @@ class ArvadosResourceList
     api_params[:filters] = @filters if @filters
     api_params[:distinct] = @distinct if @distinct
     api_params[:include_trash] = @include_trash if @include_trash
+    api_params[:cluster_id] = Rails.configuration.ClusterID
     if @fetch_multiple_pages
       # Default limit to (effectively) api server's MAX_LIMIT
       api_params[:limit] = 2**(0.size*8 - 1) - 1
