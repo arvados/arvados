@@ -31,7 +31,7 @@ func (cmd Command) RunCommand(prog string, args []string, stdin io.Reader, stdou
 	f.StringVar(&diag.logLevel, "log-level", "info", "logging level (debug, info, warning, error)")
 	f.BoolVar(&diag.checkInternal, "internal-client", false, "check that this host is considered an \"internal\" client")
 	f.BoolVar(&diag.checkExternal, "external-client", false, "check that this host is considered an \"external\" client")
-	f.IntVar(&diag.priority, "priority", 500, "priority for test container (1..1000)")
+	f.IntVar(&diag.priority, "priority", 500, "priority for test container (1..1000, or 0 to skip)")
 	f.DurationVar(&diag.timeout, "timeout", 10*time.Second, "timeout for http requests")
 	err := f.Parse(args)
 	if err == flag.ErrHelp {
@@ -334,13 +334,17 @@ func (diag *diagnoser) runtests() {
 
 	var collection arvados.Collection
 	diag.dotest(90, "creating temporary collection", func() error {
+		if project.UUID == "" {
+			return fmt.Errorf("skipping, no project to work in")
+		}
 		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(diag.timeout))
 		defer cancel()
 		err := client.RequestAndDecodeContext(ctx, &collection, "POST", "arvados/v1/collections", nil, map[string]interface{}{
 			"ensure_unique_name": true,
 			"collection": map[string]interface{}{
-				"name":     "test collection",
-				"trash_at": time.Now().Add(time.Hour)}})
+				"owner_uuid": project.UUID,
+				"name":       "test collection",
+				"trash_at":   time.Now().Add(time.Hour)}})
 		if err != nil {
 			return err
 		}
@@ -531,6 +535,9 @@ func (diag *diagnoser) runtests() {
 		if diag.priority < 1 {
 			diag.debugf("skipping, caller requested priority<1 (%d)", diag.priority)
 			return nil
+		}
+		if project.UUID == "" {
+			return fmt.Errorf("skipping, no project to work in")
 		}
 
 		var cr arvados.ContainerRequest
