@@ -122,6 +122,7 @@
   },
   "resolutions": {
     "fbjs/ua-parser-js": "0.7.24",
+    "**/meow/trim-newlines": "^3.0.1",
     "react-rte/**/ua-parser-js": "0.7.24",
     "react-scripts-ts/webpack-dev-server": "^2.11.4",
     "react-scripts-ts/**/**/**/**/js-yaml": "^3.13.1",
