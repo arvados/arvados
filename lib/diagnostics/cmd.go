@@ -41,7 +41,7 @@ func (cmd Command) RunCommand(prog string, args []string, stdin io.Reader, stdou
 		return 2
 	}
 	diag.logger = ctxlog.New(stdout, "text", diag.logLevel)
-	diag.logger.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true, DisableLevelTruncation: true})
+	diag.logger.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true, DisableLevelTruncation: true, PadLevelText: true})
 	diag.runtests()
 	if len(diag.errors) == 0 {
 		diag.logger.Info("--- no errors ---")
@@ -101,14 +101,15 @@ func (diag *diagnoser) dotest(id int, title string, fn func() error) {
 	}
 	diag.done[id] = true
 
-	diag.infof("%4d %s", id, title)
+	diag.infof("%4d: %s", id, title)
 	t0 := time.Now()
 	err := fn()
 	elapsed := fmt.Sprintf("%.0dms", time.Now().Sub(t0)/time.Millisecond)
 	if err != nil {
-		diag.errorf("%s (%s): %s", title, elapsed, err)
+		diag.errorf("%4d: %s (%s): %s", id, title, elapsed, err)
+	} else {
+		diag.debugf("%4d: %s (%s): ok", id, title, elapsed)
 	}
-	diag.debugf("%4d %s (%s): ok", id, title, elapsed)
 }
 
 func (diag *diagnoser) runtests() {
