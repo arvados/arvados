@@ -290,6 +290,18 @@ func (*Suite) TestDoubleContainerRequestUUID(c *check.C) {
 	c.Check(string(aggregateCostReport), check.Matches, "(?ms).*TOTAL,49.28334000")
 }
 
+func (*Suite) TestUncommittedContainerRequest(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	// Run costanalyzer with 2 container request uuids, one of which is in the Uncommitted state, without output directory specified
+	exitcode := Command.RunCommand("costanalyzer.test", []string{arvadostest.UncommittedContainerRequestUUID, arvadostest.CompletedDiagnosticsContainerRequest2UUID}, &bytes.Buffer{}, &stdout, &stderr)
+	c.Check(exitcode, check.Equals, 0)
+	c.Assert(stderr.String(), check.Not(check.Matches), "(?ms).*supplied uuids in .*")
+	c.Assert(stderr.String(), check.Matches, "(?ms).*No container associated with container request .*")
+
+	// Check that the total amount was printed to stdout
+	c.Check(stdout.String(), check.Matches, "0.00588088\n")
+}
+
 func (*Suite) TestMultipleContainerRequestUUIDWithReuse(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	// Run costanalyzer with 2 container request uuids, without output directory specified
