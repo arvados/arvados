@@ -52,9 +52,15 @@ extra_extra_hosts_entries_etc_hosts_keepweb_host_present:
       - download.{{ arvados.cluster.name }}.{{ arvados.cluster.domain }}
       - collections.{{ arvados.cluster.name }}.{{ arvados.cluster.domain }}
 
-extra_extra_hosts_entries_etc_hosts_shell_host_present:
+extra_extra_hosts_entries_etc_hosts_webshell_host_present:
   host.present:
     - ip: __WEBSHELL_INT_IP__
+    - names:
+      - webshell.{{ arvados.cluster.name }}.{{ arvados.cluster.domain }}
+
+extra_extra_hosts_entries_etc_hosts_shell_host_present:
+  host.present:
+    - ip: __SHELL_INT_IP__
     - names:
       - shell.{{ arvados.cluster.name }}.{{ arvados.cluster.domain }}
 

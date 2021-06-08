@@ -57,8 +57,8 @@ gem 'optimist'
 
 gem 'themes_for_rails', git: 'https://github.com/arvados/themes_for_rails'
 
-# Import arvados gem.  Note: actual git commit is pinned via Gemfile.lock
-gem 'arvados', git: 'https://github.com/arvados/arvados.git', glob: 'sdk/ruby/arvados.gemspec'
+# Import arvados gem.
+gem 'arvados', '~> 2.1.5'
 gem 'httpclient'
 
 gem 'sshkey'

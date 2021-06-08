@@ -257,5 +257,8 @@ if [[ "$PUBLIC_KEY_FILE" != "" ]]; then
   EXTRA2+=" -var public_key_file=$PUBLIC_KEY_FILE"
 fi
 
+echo
+packer version
+echo
 echo packer build$EXTRA -var "arvados_cluster=$ARVADOS_CLUSTER_ID"$EXTRA2 $JSON_FILE
 packer build$EXTRA -var "arvados_cluster=$ARVADOS_CLUSTER_ID"$EXTRA2 $JSON_FILE

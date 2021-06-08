@@ -17,6 +17,7 @@ import (
 
 	"gopkg.in/check.v1"
 	"gopkg.in/square/go-jose.v2"
+	"gopkg.in/square/go-jose.v2/jwt"
 )
 
 type OIDCProvider struct {
@@ -25,9 +26,10 @@ type OIDCProvider struct {
 	ValidClientID     string
 	ValidClientSecret string
 	// desired response from token endpoint
-	AuthEmail         string
-	AuthEmailVerified bool
-	AuthName          string
+	AuthEmail          string
+	AuthEmailVerified  bool
+	AuthName           string
+	AccessTokenPayload map[string]interface{}
 
 	PeopleAPIResponse map[string]interface{}
 
@@ -44,11 +46,13 @@ func NewOIDCProvider(c *check.C) *OIDCProvider {
 	c.Assert(err, check.IsNil)
 	p.Issuer = httptest.NewServer(http.HandlerFunc(p.serveOIDC))
 	p.PeopleAPI = httptest.NewServer(http.HandlerFunc(p.servePeopleAPI))
+	p.AccessTokenPayload = map[string]interface{}{"sub": "example"}
 	return p
 }
 
 func (p *OIDCProvider) ValidAccessToken() string {
-	return p.fakeToken([]byte("fake access token"))
+	buf, _ := json.Marshal(p.AccessTokenPayload)
+	return p.fakeToken(buf)
 }
 
 func (p *OIDCProvider) serveOIDC(w http.ResponseWriter, req *http.Request) {
@@ -118,7 +122,8 @@ func (p *OIDCProvider) serveOIDC(w http.ResponseWriter, req *http.Request) {
 	case "/auth":
 		w.WriteHeader(http.StatusInternalServerError)
 	case "/userinfo":
-		if authhdr := req.Header.Get("Authorization"); strings.TrimPrefix(authhdr, "Bearer ") != p.ValidAccessToken() {
+		authhdr := req.Header.Get("Authorization")
+		if _, err := jwt.ParseSigned(strings.TrimPrefix(authhdr, "Bearer ")); err != nil {
 			p.c.Logf("OIDCProvider: bad auth %q", authhdr)
 			w.WriteHeader(http.StatusUnauthorized)
 			return

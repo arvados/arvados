@@ -37,12 +37,12 @@ else
     merge_base=$(git merge-base origin/master "$commit")
 
     if git merge-base --is-ancestor "$nearest_tag" "$merge_base" ; then
-        # x.(y+1).0.devTIMESTAMP, where x.y.z is the newest version that does not contain $commit
+        # x.(y+1).0~devTIMESTAMP, where x.y.z is the newest version that does not contain $commit
 	# grep reads the list of tags (-f) that contain $commit and filters them out (-v)
 	# this prevents a newer tag from retroactively changing the versions of everything before it
-        v=$(git tag | grep -vFf <(git tag --contains "$commit") | sort -Vr | head -n1 | perl -pe 's/\.(\d+)\.\d+/".".($1+1).".0"/e')
+        v=$(git tag | grep -vFf <(git tag --contains "$commit") | sort -Vr | head -n1 | perl -pe 's/(\d+)\.(\d+)\.\d+.*/"$1.".($2+1).".0"/e')
     else
-        # x.y.(z+1).devTIMESTAMP, where x.y.z is the latest released ancestor of $commit
+        # x.y.(z+1)~devTIMESTAMP, where x.y.z is the latest released ancestor of $commit
         v=$(echo $nearest_tag | perl -pe 's/(\d+)$/$1+1/e')
     fi
     isodate=$(TZ=UTC git log -n1 --format=%cd --date=iso "$commit")

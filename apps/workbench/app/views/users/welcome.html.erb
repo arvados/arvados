@@ -47,18 +47,9 @@ SPDX-License-Identifier: AGPL-3.0 %>
       <%= raw(Rails.configuration.Workbench.WelcomePageHTML) %>
 
       <% case %>
-      <% when Rails.configuration.Login.Google.Enable %>
-      <% when Rails.configuration.Login.OpenIDConnect.Enable %>
-      <% when Rails.configuration.Login.SSO.Enable %>
-        <div class="pull-right">
-          <%= link_to arvados_api_client.arvados_login_url(return_to: request.url), class: "btn btn-primary" do %>
-          Log in to <%= Rails.configuration.Workbench.SiteName %>
-          <i class="fa fa-fw fa-arrow-circle-right"></i>
-          <% end %>
-        </div>
-      <% when Rails.configuration.Login.PAM.Enable %>
-      <% when Rails.configuration.Login.LDAP.Enable %>
-      <% when Rails.configuration.Login.Test.Enable %>
+      <% when Rails.configuration.Login.PAM.Enable,
+              Rails.configuration.Login.LDAP.Enable,
+              Rails.configuration.Login.Test.Enable %>
         <form id="login-form-tag" onsubmit="controller_password_authenticate(event)">
           <p>username <input type="text" class="form-control" name="login-username"
 			     value="" id="login-username" style="width: 50%"
@@ -70,6 +61,13 @@ SPDX-License-Identifier: AGPL-3.0 %>
         <span style="color: red"><p id="login-authenticate-error"></p></span>
         <button type="submit" class="btn btn-primary">Log in</button>
         </form>
+      <% else %>
+        <div class="pull-right">
+          <%= link_to arvados_api_client.arvados_login_url(return_to: request.url), class: "btn btn-primary" do %>
+          Log in to <%= Rails.configuration.Workbench.SiteName %>
+          <i class="fa fa-fw fa-arrow-circle-right"></i>
+          <% end %>
+        </div>
       <% end %>
 
     </div>
