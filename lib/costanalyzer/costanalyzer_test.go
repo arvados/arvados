@@ -158,6 +158,30 @@ func (*Suite) TestUsage(c *check.C) {
 	c.Check(stderr.String(), check.Matches, `(?ms).*Usage:.*`)
 }
 
+func (*Suite) TestTimestampRange(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	resultsDir := c.MkDir()
+	// Run costanalyzer with a timestamp range. This should pick up two container requests in "Final" state.
+	exitcode := Command.RunCommand("costanalyzer.test", []string{"-output", resultsDir, "-begin", "2020-11-02T00:00:00", "-end", "2020-11-03T23:59:00"}, &bytes.Buffer{}, &stdout, &stderr)
+	c.Check(exitcode, check.Equals, 0)
+	c.Assert(stderr.String(), check.Matches, "(?ms).*supplied uuids in .*")
+
+	uuidReport, err := ioutil.ReadFile(resultsDir + "/" + arvadostest.CompletedDiagnosticsContainerRequest1UUID + ".csv")
+	c.Assert(err, check.IsNil)
+	uuid2Report, err := ioutil.ReadFile(resultsDir + "/" + arvadostest.CompletedDiagnosticsContainerRequest2UUID + ".csv")
+	c.Assert(err, check.IsNil)
+
+	c.Check(string(uuidReport), check.Matches, "(?ms).*TOTAL,,,,,,,,,0.00916192")
+	c.Check(string(uuid2Report), check.Matches, "(?ms).*TOTAL,,,,,,,,,0.00588088")
+	re := regexp.MustCompile(`(?ms).*supplied uuids in (.*?)\n`)
+	matches := re.FindStringSubmatch(stderr.String()) // matches[1] contains a string like 'results/2020-11-02-18-57-45-aggregate-costaccounting.csv'
+
+	aggregateCostReport, err := ioutil.ReadFile(matches[1])
+	c.Assert(err, check.IsNil)
+
+	c.Check(string(aggregateCostReport), check.Matches, "(?ms).*TOTAL,0.01492030")
+}
+
 func (*Suite) TestContainerRequestUUID(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	resultsDir := c.MkDir()
