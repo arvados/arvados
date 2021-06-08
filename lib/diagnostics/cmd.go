@@ -72,15 +72,15 @@ type diagnoser struct {
 }
 
 func (diag *diagnoser) debugf(f string, args ...interface{}) {
-	diag.logger.Debugf(f, args...)
+	diag.logger.Debugf("  ... "+f, args...)
 }
 
 func (diag *diagnoser) infof(f string, args ...interface{}) {
-	diag.logger.Infof(f, args...)
+	diag.logger.Infof("  ... "+f, args...)
 }
 
 func (diag *diagnoser) warnf(f string, args ...interface{}) {
-	diag.logger.Warnf(f, args...)
+	diag.logger.Warnf("  ... "+f, args...)
 }
 
 func (diag *diagnoser) errorf(f string, args ...interface{}) {
@@ -101,14 +101,14 @@ func (diag *diagnoser) dotest(id int, title string, fn func() error) {
 	}
 	diag.done[id] = true
 
-	diag.infof("%4d: %s", id, title)
+	diag.logger.Infof("%4d: %s", id, title)
 	t0 := time.Now()
 	err := fn()
-	elapsed := fmt.Sprintf("%.0dms", time.Now().Sub(t0)/time.Millisecond)
+	elapsed := fmt.Sprintf("%d ms", time.Now().Sub(t0)/time.Millisecond)
 	if err != nil {
 		diag.errorf("%4d: %s (%s): %s", id, title, elapsed, err)
 	} else {
-		diag.debugf("%4d: %s (%s): ok", id, title, elapsed)
+		diag.logger.Debugf("%4d: %s (%s): ok", id, title, elapsed)
 	}
 }
 
@@ -533,7 +533,7 @@ func (diag *diagnoser) runtests() {
 
 	diag.dotest(160, "running a container", func() error {
 		if diag.priority < 1 {
-			diag.debugf("skipping, caller requested priority<1 (%d)", diag.priority)
+			diag.infof("skipping (use priority > 0 if you want to run a container)")
 			return nil
 		}
 		if project.UUID == "" {
