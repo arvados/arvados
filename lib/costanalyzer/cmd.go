@@ -12,7 +12,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var Command = &command{}
+var Command = command{}
 
 type command struct {
 	uuids      arrayFlags
@@ -29,7 +29,7 @@ func (f *NoPrefixFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 }
 
 // RunCommand implements the subcommand "costanalyzer <collection> <collection> ..."
-func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+func (c command) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	var err error
 	logger := ctxlog.New(stderr, "text", "info")
 	defer func() {

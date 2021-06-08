@@ -161,7 +161,6 @@ Options:
 		exitCode = 2
 		return
 	}
-	fmt.Printf("UUIDS: %s\n", c.uuids)
 
 	lvl, err := logrus.ParseLevel(*loglevel)
 	if err != nil {
