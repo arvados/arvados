@@ -9,10 +9,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"git.arvados.org/arvados.git/lib/config"
-	"git.arvados.org/arvados.git/sdk/go/arvados"
-	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
-	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -21,6 +17,10 @@ import (
 	"strings"
 	"time"
 
+	"git.arvados.org/arvados.git/lib/config"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
+	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	"github.com/sirupsen/logrus"
 )
 
@@ -140,7 +140,7 @@ Options:
 	}
 	logger.SetLevel(lvl)
 	if !cache {
-		logger.Debug("Caching disabled\n")
+		logger.Debug("Caching disabled")
 	}
 	return
 }
@@ -220,12 +220,12 @@ func loadCachedObject(logger *logrus.Logger, file string, uuid string, object in
 	case *arvados.ContainerRequest:
 		if v.State == arvados.ContainerRequestStateFinal {
 			reload = false
-			logger.Debugf("Loaded object %s from local cache (%s)\n", uuid, file)
+			logger.Debugf("Loaded object %s from local cache (%s)", uuid, file)
 		}
 	case *arvados.Container:
 		if v.State == arvados.ContainerStateComplete || v.State == arvados.ContainerStateCancelled {
 			reload = false
-			logger.Debugf("Loaded object %s from local cache (%s)\n", uuid, file)
+			logger.Debugf("Loaded object %s from local cache (%s)", uuid, file)
 		}
 	}
 	return
@@ -355,7 +355,7 @@ func handleProject(logger *logrus.Logger, uuid string, arv *arvadosclient.Arvado
 		return nil, fmt.Errorf("error querying container_requests: %s", err.Error())
 	}
 	if value, ok := childCrs["items"]; ok {
-		logger.Infof("Collecting top level container requests in project %s\n", uuid)
+		logger.Infof("Collecting top level container requests in project %s", uuid)
 		items := value.([]interface{})
 		for _, item := range items {
 			itemMap := item.(map[string]interface{})
@@ -368,7 +368,7 @@ func handleProject(logger *logrus.Logger, uuid string, arv *arvadosclient.Arvado
 			}
 		}
 	} else {
-		logger.Infof("No top level container requests found in project %s\n", uuid)
+		logger.Infof("No top level container requests found in project %s", uuid)
 	}
 	return
 }
@@ -408,7 +408,7 @@ func generateCrCsv(logger *logrus.Logger, uuid string, arv *arvadosclient.Arvado
 	}
 	if len(cr.ContainerUUID) == 0 {
 		// Nothing to do! E.g. a CR in 'Uncommitted' state.
-		logger.Infof("No container associated with container request %s, skipping\n", crUUID)
+		logger.Infof("No container associated with container request %s, skipping", crUUID)
 		return nil, nil
 	}
 	var container arvados.Container
@@ -448,7 +448,7 @@ func generateCrCsv(logger *logrus.Logger, uuid string, arv *arvadosclient.Arvado
 		if err != nil {
 			return nil, fmt.Errorf("error getting node %s: %s", cr2.UUID, err)
 		}
-		logger.Debug("\nChild container: " + cr2.ContainerUUID + "\n")
+		logger.Debug("\nChild container: " + cr2.ContainerUUID)
 		var c2 arvados.Container
 		err = loadObject(logger, ac, cr.UUID, cr2.ContainerUUID, cache, &c2)
 		if err != nil {
@@ -459,7 +459,7 @@ func generateCrCsv(logger *logrus.Logger, uuid string, arv *arvadosclient.Arvado
 		csv += tmpCsv
 		totalCost += tmpTotalCost
 	}
-	logger.Info(" done\n")
+	logger.Info(" done")
 
 	csv += "TOTAL,,,,,,,,," + strconv.FormatFloat(totalCost, 'f', 8, 64) + "\n"
 
@@ -470,7 +470,7 @@ func generateCrCsv(logger *logrus.Logger, uuid string, arv *arvadosclient.Arvado
 		if err != nil {
 			return nil, fmt.Errorf("error writing file with path %s: %s", fName, err.Error())
 		}
-		logger.Infof("\nUUID report in %s\n\n", fName)
+		logger.Infof("\nUUID report in %s\n", fName)
 	}
 
 	return
@@ -536,14 +536,14 @@ func costanalyzer(prog string, args []string, loader *config.Loader, logger *log
 			// keep going.
 			logger.Errorf("cost analysis is not supported for the 'Home' project: %s", uuid)
 		} else {
-			logger.Errorf("this argument does not look like a uuid: %s\n", uuid)
+			logger.Errorf("this argument does not look like a uuid: %s", uuid)
 			exitcode = 3
 			return
 		}
 	}
 
 	if len(cost) == 0 {
-		logger.Info("Nothing to do!\n")
+		logger.Info("Nothing to do!")
 		return
 	}
 
@@ -571,7 +571,7 @@ func costanalyzer(prog string, args []string, loader *config.Loader, logger *log
 			exitcode = 1
 			return
 		}
-		logger.Infof("Aggregate cost accounting for all supplied uuids in %s\n", aFile)
+		logger.Infof("Aggregate cost accounting for all supplied uuids in %s", aFile)
 	}
 
 	// Output the total dollar amount on stdout

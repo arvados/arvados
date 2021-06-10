@@ -23,7 +23,7 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	logger.SetFormatter(cmd.NoPrefixFormatter{})
 	defer func() {
 		if err != nil {
-			logger.Error("\n" + err.Error() + "\n")
+			logger.Error("\n" + err.Error())
 		}
 	}()
 
