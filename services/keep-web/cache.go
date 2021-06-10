@@ -131,8 +131,12 @@ type cachedPermission struct {
 }
 
 type cachedSession struct {
-	expire time.Time
-	fs     atomic.Value
+	expire        time.Time
+	fs            atomic.Value
+	client        *arvados.Client
+	arvadosclient *arvadosclient.ArvadosClient
+	keepclient    *keepclient.KeepClient
+	user          atomic.Value
 }
 
 func (c *cache) setup() {
@@ -213,7 +217,7 @@ func (c *cache) ResetSession(token string) {
 
 // Get a long-lived CustomFileSystem suitable for doing a read operation
 // with the given token.
-func (c *cache) GetSession(token string) (arvados.CustomFileSystem, error) {
+func (c *cache) GetSession(token string) (arvados.CustomFileSystem, *cachedSession, error) {
 	c.setupOnce.Do(c.setup)
 	now := time.Now()
 	ent, _ := c.sessions.Get(token)
@@ -221,9 +225,20 @@ func (c *cache) GetSession(token string) (arvados.CustomFileSystem, error) {
 	expired := false
 	if sess == nil {
 		c.metrics.sessionMisses.Inc()
-		sess = &cachedSession{
+		sess := &cachedSession{
 			expire: now.Add(c.config.TTL.Duration()),
 		}
+		var err error
+		sess.client, err = arvados.NewClientFromConfig(c.cluster)
+		if err != nil {
+			return nil, nil, err
+		}
+		sess.client.AuthToken = token
+		sess.arvadosclient, err = arvadosclient.New(sess.client)
+		if err != nil {
+			return nil, nil, err
+		}
+		sess.keepclient = keepclient.New(sess.arvadosclient)
 		c.sessions.Add(token, sess)
 	} else if sess.expire.Before(now) {
 		c.metrics.sessionMisses.Inc()
@@ -234,22 +249,12 @@ func (c *cache) GetSession(token string) (arvados.CustomFileSystem, error) {
 	go c.pruneSessions()
 	fs, _ := sess.fs.Load().(arvados.CustomFileSystem)
 	if fs != nil && !expired {
-		return fs, nil
+		return fs, sess, nil
 	}
-	ac, err := arvados.NewClientFromConfig(c.cluster)
-	if err != nil {
-		return nil, err
-	}
-	ac.AuthToken = token
-	arv, err := arvadosclient.New(ac)
-	if err != nil {
-		return nil, err
-	}
-	kc := keepclient.New(arv)
-	fs = ac.SiteFileSystem(kc)
+	fs = sess.client.SiteFileSystem(sess.keepclient)
 	fs.ForwardSlashNameSubstitution(c.cluster.Collections.ForwardSlashNameSubstitution)
 	sess.fs.Store(fs)
-	return fs, nil
+	return fs, sess, nil
 }
 
 // Remove all expired session cache entries, then remove more entries
@@ -463,4 +468,36 @@ func (c *cache) lookupCollection(key string) *arvados.Collection {
 	}
 	c.metrics.collectionHits.Inc()
 	return ent.collection
+}
+
+func (c *cache) GetTokenUser(token string) (*arvados.User, error) {
+	// Get and cache user record associated with this
+	// token.  We need to know their UUID for logging, and
+	// whether they are an admin or not for certain
+	// permission checks.
+
+	// Get/create session entry
+	_, sess, err := c.GetSession(token)
+	if err != nil {
+		return nil, err
+	}
+
+	// See if the user is already set, and if so, return it
+	user, _ := sess.user.Load().(*arvados.User)
+	if user != nil {
+		return user, nil
+	}
+
+	// Fetch the user record
+	c.metrics.apiCalls.Inc()
+	var current arvados.User
+
+	err = sess.client.RequestAndDecode(&current, "GET", "/arvados/v1/users/current", nil, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Stash the user record for next time
+	sess.user.Store(&current)
+	return &current, nil
 }

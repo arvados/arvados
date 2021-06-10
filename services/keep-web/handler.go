@@ -398,6 +398,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	defer h.clientPool.Put(arv)
 
 	var collection *arvados.Collection
+	var tokenUser *arvados.User
 	tokenResult := make(map[string]int)
 	for _, arv.ApiToken = range tokens {
 		var err error
@@ -482,6 +483,15 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		http.Error(w, errReadOnly.Error(), http.StatusMethodNotAllowed)
 		return
 	}
+
+	// Check configured permission
+	_, sess, err := h.Config.Cache.GetSession(arv.ApiToken)
+	tokenUser, err = h.Config.Cache.GetTokenUser(arv.ApiToken)
+	if !h.UserPermittedToUploadOrDownload(r.Method, tokenUser) {
+		http.Error(w, "Not permitted", http.StatusForbidden)
+		return
+	}
+	h.LogUploadOrDownload(r, sess.arvadosclient, collection, tokenUser)
 
 	if webdavMethod[r.Method] {
 		if writeMethod[r.Method] {
@@ -583,7 +593,8 @@ func (h *handler) serveSiteFS(w http.ResponseWriter, r *http.Request, tokens []s
 		http.Error(w, errReadOnly.Error(), http.StatusMethodNotAllowed)
 		return
 	}
-	fs, err := h.Config.Cache.GetSession(tokens[0])
+
+	fs, sess, err := h.Config.Cache.GetSession(tokens[0])
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -606,6 +617,14 @@ func (h *handler) serveSiteFS(w http.ResponseWriter, r *http.Request, tokens []s
 		}
 		return
 	}
+
+	tokenUser, err := h.Config.Cache.GetTokenUser(tokens[0])
+	if !h.UserPermittedToUploadOrDownload(r.Method, tokenUser) {
+		http.Error(w, "Not permitted", http.StatusForbidden)
+		return
+	}
+	h.LogUploadOrDownload(r, sess.arvadosclient, nil, tokenUser)
+
 	if r.Method == "GET" {
 		_, basename := filepath.Split(r.URL.Path)
 		applyContentDispositionHdr(w, r, basename, attachment)
@@ -835,4 +854,67 @@ func (h *handler) seeOtherWithCookie(w http.ResponseWriter, r *http.Request, loc
 	io.WriteString(w, `<A href="`)
 	io.WriteString(w, html.EscapeString(redir))
 	io.WriteString(w, `">Continue</A>`)
+}
+
+func (h *handler) UserPermittedToUploadOrDownload(method string, tokenUser *arvados.User) bool {
+	if tokenUser == nil {
+		return false
+	}
+	var permitDownload bool
+	var permitUpload bool
+	if tokenUser.IsAdmin {
+		permitUpload = h.Config.cluster.Collections.KeepWebPermission.Admin.Upload
+		permitDownload = h.Config.cluster.Collections.KeepWebPermission.Admin.Download
+	} else {
+		permitUpload = h.Config.cluster.Collections.KeepWebPermission.User.Upload
+		permitDownload = h.Config.cluster.Collections.KeepWebPermission.User.Download
+	}
+	if (method == "PUT" || method == "POST") && !permitUpload {
+		// Disallow operations that upload new files.
+		// Permit webdav operations that move existing files around.
+		return false
+	} else if method == "GET" && !permitDownload {
+		// Disallow downloading file contents.
+		// Permit webdav operations like PROPFIND that retrieve metadata
+		// but not file contents.
+		return false
+	}
+	return true
+}
+
+func (h *handler) LogUploadOrDownload(r *http.Request, client *arvadosclient.ArvadosClient, collection *arvados.Collection, user *arvados.User) {
+	log := ctxlog.FromContext(r.Context())
+	props := make(map[string]string)
+	props["reqPath"] = r.URL.Path
+	if user != nil {
+		log = log.WithField("user_uuid", user.UUID).
+			WithField("full_name", user.FullName)
+	}
+	if collection != nil {
+		log = log.WithField("collection_uuid", collection.UUID)
+		props["collection_uuid"] = collection.UUID
+	}
+	if r.Method == "PUT" || r.Method == "POST" {
+		log.Info("File upload")
+		go func() {
+			lr := arvadosclient.Dict{"log": arvadosclient.Dict{
+				"object_uuid": user.UUID,
+				"event_type":  "file_upload",
+				"properties":  props}}
+			client.Create("logs", lr, nil)
+		}()
+	} else if r.Method == "GET" {
+		if collection != nil {
+			log = log.WithField("portable_data_hash", collection.PortableDataHash)
+			props["portable_data_hash"] = collection.PortableDataHash
+		}
+		log.Info("File download")
+		go func() {
+			lr := arvadosclient.Dict{"log": arvadosclient.Dict{
+				"object_uuid": user.UUID,
+				"event_type":  "file_download",
+				"properties":  props}}
+			client.Create("logs", lr, nil)
+		}()
+	}
 }
