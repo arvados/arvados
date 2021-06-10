@@ -37,10 +37,13 @@ running:
   output_path: test
   command: ["echo", "hello"]
   container_uuid: zzzzz-dz642-runningcontainr
+  mounts:
+    /tmp:
+      kind: tmp
+      capacity: 24000000000
   runtime_constraints:
     vcpus: 1
     ram: 123
-  mounts: {}
 
 requester_for_running:
   uuid: zzzzz-xvhdp-req4runningcntr
@@ -58,10 +61,13 @@ requester_for_running:
   command: ["echo", "hello"]
   container_uuid: zzzzz-dz642-logscontainer03
   requesting_container_uuid: zzzzz-dz642-runningcontainr
+  mounts:
+    /tmp:
+      kind: tmp
+      capacity: 24000000000
   runtime_constraints:
     vcpus: 1
     ram: 123
-  mounts: {}
 
 running_older:
   uuid: zzzzz-xvhdp-cr4runningcntn2
@@ -78,10 +84,13 @@ running_older:
   output_path: test
   command: ["echo", "hello"]
   container_uuid: zzzzz-dz642-runningcontain2
+  mounts:
+    /tmp:
+      kind: tmp
+      capacity: 24000000000
   runtime_constraints:
     vcpus: 1
     ram: 123
-  mounts: {}
 
 completed:
   uuid: zzzzz-xvhdp-cr4completedctr
@@ -429,10 +438,13 @@ running_anonymous_accessible:
   output_path: test
   command: ["echo", "hello"]
   container_uuid: zzzzz-dz642-runningcontain2
+  mounts:
+    /tmp:
+      kind: tmp
+      capacity: 24000000000
   runtime_constraints:
     vcpus: 1
     ram: 123
-  mounts: {}
 
 cr_for_failed:
   uuid: zzzzz-xvhdp-cr4failedcontnr
@@ -509,10 +521,13 @@ canceled_with_running_container:
   output_path: test
   command: ["echo", "hello"]
   container_uuid: zzzzz-dz642-runningcontainr
+  mounts:
+    /tmp:
+      kind: tmp
+      capacity: 24000000000
   runtime_constraints:
     vcpus: 1
     ram: 123
-  mounts: {}
 
 running_to_be_deleted:
   uuid: zzzzz-xvhdp-cr5runningcntnr
@@ -528,11 +543,14 @@ running_to_be_deleted:
   cwd: test
   output_path: test
   command: ["echo", "hello"]
+  mounts:
+    /tmp:
+      kind: tmp
+      capacity: 24000000000
   container_uuid: zzzzz-dz642-runnincntrtodel
   runtime_constraints:
     vcpus: 1
     ram: 123
-  mounts: {}
 
 completed_with_input_mounts:
   uuid: zzzzz-xvhdp-crwithinputmnts
