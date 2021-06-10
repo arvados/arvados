@@ -1073,9 +1073,11 @@ class ContainerRequestTest < ActiveSupport::TestCase
    ['Committed', false, {container_count: nil}],
    ['Committed', true, {priority: 0, mounts: {"/out" => {"kind" => "tmp", "capacity" => 1000000}}}],
    ['Committed', true, {priority: 0, mounts: {"/out" => {"capacity" => 1000000, "kind" => "tmp"}}}],
-   # addition of default values for mounts, as happens in a round-trip
-   # through controller, should be ignored when mounts is not allowed
-   # to change
+   # Addition of default values for mounts / runtime_constraints /
+   # scheduling_parameters, as happens in a round-trip through
+   # controller, does not have any real effect and should be
+   # accepted/ignored rather than causing an error when the CR state
+   # dictates those attributes are not allowed to change.
    ['Committed', true, {priority: 0, mounts: {"/out" => {"capacity" => 1000000, "kind" => "tmp", "exclude_from_output": false}}}],
    ['Committed', true, {priority: 0, mounts: {"/out" => {"capacity" => 1000000, "kind" => "tmp", "repository_name": ""}}}],
    ['Committed', true, {priority: 0, mounts: {"/out" => {"capacity" => 1000000, "kind" => "tmp", "content": nil}}}],
@@ -1083,6 +1085,17 @@ class ContainerRequestTest < ActiveSupport::TestCase
    ['Committed', false, {priority: 0, mounts: {"/out" => {"capacity" => 1000000, "kind" => "tmp", "repository_name": "foo"}}}],
    ['Committed', false, {priority: 0, mounts: {"/out" => {"kind" => "tmp", "capacity" => 1234567}}}],
    ['Committed', false, {priority: 0, mounts: {}}],
+   ['Committed', true, {priority: 0, runtime_constraints: {"vcpus" => 1, "ram" => 2}}],
+   ['Committed', true, {priority: 0, runtime_constraints: {"vcpus" => 1, "ram" => 2, "keep_cache_ram" => 0}}],
+   ['Committed', true, {priority: 0, runtime_constraints: {"vcpus" => 1, "ram" => 2, "API" => false}}],
+   ['Committed', false, {priority: 0, runtime_constraints: {"vcpus" => 1, "ram" => 2, "keep_cache_ram" => 1}}],
+   ['Committed', false, {priority: 0, runtime_constraints: {"vcpus" => 1, "ram" => 2, "API" => true}}],
+   ['Committed', true, {priority: 0, scheduling_parameters: {"preemptible" => false}}],
+   ['Committed', true, {priority: 0, scheduling_parameters: {"partitions" => []}}],
+   ['Committed', true, {priority: 0, scheduling_parameters: {"max_run_time" => 0}}],
+   ['Committed', false, {priority: 0, scheduling_parameters: {"preemptible" => true}}],
+   ['Committed', false, {priority: 0, scheduling_parameters: {"partitions" => ["foo"]}}],
+   ['Committed', false, {priority: 0, scheduling_parameters: {"max_run_time" => 1}}],
    ['Final', false, {state: ContainerRequest::Committed, name: "foobar"}],
    ['Final', false, {name: "foobar", priority: 123}],
    ['Final', false, {name: "foobar", output_uuid: "zzzzz-4zz18-znfnqtbbv4spc3w"}],
