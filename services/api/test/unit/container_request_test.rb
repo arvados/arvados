@@ -1071,6 +1071,18 @@ class ContainerRequestTest < ActiveSupport::TestCase
    ['Committed', false, {container_count: 2}],
    ['Committed', false, {container_count: 0}],
    ['Committed', false, {container_count: nil}],
+   ['Committed', true, {priority: 0, mounts: {"/out" => {"kind" => "tmp", "capacity" => 1000000}}}],
+   ['Committed', true, {priority: 0, mounts: {"/out" => {"capacity" => 1000000, "kind" => "tmp"}}}],
+   # addition of default values for mounts, as happens in a round-trip
+   # through controller, should be ignored when mounts is not allowed
+   # to change
+   ['Committed', true, {priority: 0, mounts: {"/out" => {"capacity" => 1000000, "kind" => "tmp", "exclude_from_output": false}}}],
+   ['Committed', true, {priority: 0, mounts: {"/out" => {"capacity" => 1000000, "kind" => "tmp", "repository_name": ""}}}],
+   ['Committed', true, {priority: 0, mounts: {"/out" => {"capacity" => 1000000, "kind" => "tmp", "content": nil}}}],
+   ['Committed', false, {priority: 0, mounts: {"/out" => {"capacity" => 1000000, "kind" => "tmp", "content": {}}}}],
+   ['Committed', false, {priority: 0, mounts: {"/out" => {"capacity" => 1000000, "kind" => "tmp", "repository_name": "foo"}}}],
+   ['Committed', false, {priority: 0, mounts: {"/out" => {"kind" => "tmp", "capacity" => 1234567}}}],
+   ['Committed', false, {priority: 0, mounts: {}}],
    ['Final', false, {state: ContainerRequest::Committed, name: "foobar"}],
    ['Final', false, {name: "foobar", priority: 123}],
    ['Final', false, {name: "foobar", output_uuid: "zzzzz-4zz18-znfnqtbbv4spc3w"}],
