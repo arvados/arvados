@@ -61,11 +61,36 @@ wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes ins
   xfsprogs
 
 # Install the Arvados packages we need
+wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get --yes update
 wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes install \
   python3-arvados-fuse \
   crunch-run \
   arvados-docker-cleaner \
   docker.io
+
+# Get Go and build singularity
+goversion=1.16.3
+mkdir -p /var/lib/arvados
+rm -rf /var/lib/arvados/go/
+curl -s https://storage.googleapis.com/golang/go${goversion}.linux-amd64.tar.gz | tar -C /var/lib/arvados -xzf -
+ln -sf /var/lib/arvados/go/bin/* /usr/local/bin/
+
+singularityversion=3.5.2
+curl -Ls https://github.com/sylabs/singularity/archive/refs/tags/v${singularityversion}.tar.gz | tar -C /var/lib/arvados -xzf -
+cd /var/lib/arvados/singularity-${singularityversion}
+
+# build dependencies for singularity
+wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes install \
+  make build-essential libssl-dev uuid-dev cryptsetup
+
+echo $singularityversion > VERSION
+./mconfig --prefix=/var/lib/arvados
+make -C ./builddir
+make -C ./builddir install
+ln -sf /var/lib/arvados/bin/* /usr/local/bin/
+
+# Print singularity version installed
+singularity --version
 
 # Remove unattended-upgrades if it is installed
 wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes remove unattended-upgrades --purge
