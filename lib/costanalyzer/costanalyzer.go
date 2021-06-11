@@ -410,7 +410,7 @@ func generateCrCsv(logger *logrus.Logger, uuid string, arv *arvadosclient.Arvado
 	var tmpCsv string
 	var tmpTotalCost float64
 	var totalCost float64
-	fmt.Printf("Processing %s\n", uuid)
+	logger.Debugf("Processing %s", uuid)
 
 	var crUUID = uuid
 	if strings.Contains(uuid, "-4zz18-") {
@@ -473,14 +473,20 @@ func generateCrCsv(logger *logrus.Logger, uuid string, arv *arvadosclient.Arvado
 		return nil, fmt.Errorf("error querying container_requests: %s", err.Error())
 	}
 	logger.Infof("Collecting child containers for container request %s (%s)", crUUID, container.FinishedAt)
-	for _, cr2 := range childCrs.Items {
-		logger.Info(".")
+	progressTicker := time.NewTicker(5 * time.Second)
+	defer progressTicker.Stop()
+	for i, cr2 := range childCrs.Items {
+		select {
+		case <-progressTicker.C:
+			logger.Infof("... %d of %d", i+1, len(childCrs.Items))
+		default:
+		}
 		node, err := getNode(arv, ac, kc, cr2)
 		if err != nil {
 			logger.Errorf("Skipping container request %s: error getting node %s: %s", cr2.UUID, cr2.UUID, err)
 			continue
 		}
-		logger.Debug("\nChild container: " + cr2.ContainerUUID)
+		logger.Debug("Child container: " + cr2.ContainerUUID)
 		var c2 arvados.Container
 		err = loadObject(logger, ac, cr.UUID, cr2.ContainerUUID, cache, &c2)
 		if err != nil {
@@ -491,7 +497,7 @@ func generateCrCsv(logger *logrus.Logger, uuid string, arv *arvadosclient.Arvado
 		csv += tmpCsv
 		totalCost += tmpTotalCost
 	}
-	logger.Info(" done")
+	logger.Debug("Done collecting child containers")
 
 	csv += "TOTAL,,,,,,,,," + strconv.FormatFloat(totalCost, 'f', 8, 64) + "\n"
 
@@ -502,7 +508,7 @@ func generateCrCsv(logger *logrus.Logger, uuid string, arv *arvadosclient.Arvado
 		if err != nil {
 			return nil, fmt.Errorf("error writing file with path %s: %s", fName, err.Error())
 		}
-		logger.Infof("\nUUID report in %s\n", fName)
+		logger.Infof("\nUUID report in %s", fName)
 	}
 
 	return
@@ -562,7 +568,7 @@ func (c *command) costAnalyzer(prog string, args []string, logger *logrus.Logger
 
 				err := ac.RequestAndDecode(&list, "GET", "arvados/v1/container_requests", nil, params)
 				if err != nil {
-					logger.Errorf("Error getting container request list from Arvados API: %s\n", err)
+					logger.Errorf("Error getting container request list from Arvados API: %s", err)
 					break
 				}
 				if len(list.Items) == 0 {
@@ -581,7 +587,7 @@ func (c *command) costAnalyzer(prog string, args []string, logger *logrus.Logger
 	cost := make(map[string]float64)
 
 	for uuid := range uuidChannel {
-		fmt.Printf("Considering %s\n", uuid)
+		logger.Debugf("Considering %s", uuid)
 		if strings.Contains(uuid, "-j7d0g-") {
 			// This is a project (group)
 			cost, err = handleProject(logger, uuid, arv, ac, kc, c.resultsDir, c.cache)
