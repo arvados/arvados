@@ -491,7 +491,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Not permitted", http.StatusForbidden)
 		return
 	}
-	h.LogUploadOrDownload(r, sess.arvadosclient, collection, tokenUser)
+	h.LogUploadOrDownload(r, sess.arvadosclient, nil, strings.Join(targetPath, "/"), collection, tokenUser)
 
 	if webdavMethod[r.Method] {
 		if writeMethod[r.Method] {
@@ -623,7 +623,7 @@ func (h *handler) serveSiteFS(w http.ResponseWriter, r *http.Request, tokens []s
 		http.Error(w, "Not permitted", http.StatusForbidden)
 		return
 	}
-	h.LogUploadOrDownload(r, sess.arvadosclient, nil, tokenUser)
+	h.LogUploadOrDownload(r, sess.arvadosclient, fs, r.URL.Path, nil, tokenUser)
 
 	if r.Method == "GET" {
 		_, basename := filepath.Split(r.URL.Path)
@@ -882,17 +882,29 @@ func (h *handler) UserPermittedToUploadOrDownload(method string, tokenUser *arva
 	return true
 }
 
-func (h *handler) LogUploadOrDownload(r *http.Request, client *arvadosclient.ArvadosClient, collection *arvados.Collection, user *arvados.User) {
+func (h *handler) LogUploadOrDownload(
+	r *http.Request,
+	client *arvadosclient.ArvadosClient,
+	fs arvados.CustomFileSystem,
+	filepath string,
+	collection *arvados.Collection,
+	user *arvados.User) {
+
 	log := ctxlog.FromContext(r.Context())
 	props := make(map[string]string)
 	props["reqPath"] = r.URL.Path
 	if user != nil {
 		log = log.WithField("user_uuid", user.UUID).
-			WithField("full_name", user.FullName)
+			WithField("user_full_name", user.FullName)
+	}
+	if collection == nil && fs != nil {
+		collection, filepath = h.DetermineCollection(fs, filepath)
 	}
 	if collection != nil {
-		log = log.WithField("collection_uuid", collection.UUID)
+		log = log.WithField("collection_uuid", collection.UUID).
+			WithField("collection_file_path", filepath)
 		props["collection_uuid"] = collection.UUID
+		props["collection_file_path"] = filepath
 	}
 	if r.Method == "PUT" || r.Method == "POST" {
 		log.Info("File upload")
@@ -904,7 +916,7 @@ func (h *handler) LogUploadOrDownload(r *http.Request, client *arvadosclient.Arv
 			client.Create("logs", lr, nil)
 		}()
 	} else if r.Method == "GET" {
-		if collection != nil {
+		if collection != nil && collection.PortableDataHash != "" {
 			log = log.WithField("portable_data_hash", collection.PortableDataHash)
 			props["portable_data_hash"] = collection.PortableDataHash
 		}
@@ -917,4 +929,25 @@ func (h *handler) LogUploadOrDownload(r *http.Request, client *arvadosclient.Arv
 			client.Create("logs", lr, nil)
 		}()
 	}
+}
+
+func (h *handler) DetermineCollection(fs arvados.CustomFileSystem, path string) (*arvados.Collection, string) {
+	segments := strings.Split(path, "/")
+	var i int
+	for i = len(segments) - 1; i >= 0; i-- {
+		dir := append([]string{}, segments[0:i]...)
+		dir = append(dir, ".arvados#collection")
+		f, err := fs.OpenFile(strings.Join(dir, "/"), os.O_RDONLY, 0)
+		if err == nil {
+			decoder := json.NewDecoder(f)
+			var collection arvados.Collection
+			err = decoder.Decode(&collection)
+			if err != nil {
+				return nil, ""
+			}
+			return &collection, strings.Join(segments[i:], "/")
+		}
+		f.Close()
+	}
+	return nil, ""
 }

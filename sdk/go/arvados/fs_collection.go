@@ -674,6 +674,7 @@ func (dn *dirnode) Child(name string, replace func(inode) (inode, error)) (inode
 			if err != nil {
 				return nil, err
 			}
+			coll.UUID = dn.fs.uuid
 			data, err := json.Marshal(&coll)
 			if err == nil {
 				data = append(data, '\n')
