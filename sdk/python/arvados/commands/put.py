@@ -656,15 +656,11 @@ class ArvPutUploadJob(object):
                 else:
                     # The file already exist on remote collection, skip it.
                     pass
-            self._remote_collection.save(storage_classes=self.storage_classes,
-                                         num_retries=self.num_retries,
+            self._remote_collection.save(num_retries=self.num_retries,
                                          trash_at=self._collection_trash_at())
         else:
-            if self.storage_classes is None:
-                self.storage_classes = ['default']
             self._local_collection.save_new(
                 name=self.name, owner_uuid=self.owner_uuid,
-                storage_classes=self.storage_classes,
                 ensure_unique_name=self.ensure_unique_name,
                 num_retries=self.num_retries,
                 trash_at=self._collection_trash_at())
@@ -868,6 +864,7 @@ class ArvPutUploadJob(object):
                 self._remote_collection = arvados.collection.Collection(
                     update_collection,
                     api_client=self._api_client,
+                    storage_classes_desired=self.storage_classes,
                     num_retries=self.num_retries)
             except arvados.errors.ApiError as error:
                 raise CollectionUpdateError("Cannot read collection {} ({})".format(update_collection, error))
@@ -910,6 +907,7 @@ class ArvPutUploadJob(object):
             self._local_collection = arvados.collection.Collection(
                 self._state['manifest'],
                 replication_desired=self.replication_desired,
+                storage_classes_desired=(self.storage_classes or ['default']),
                 put_threads=self.put_threads,
                 api_client=self._api_client,
                 num_retries=self.num_retries)
@@ -1197,11 +1195,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr,
     #  Split storage-classes argument
     storage_classes = None
     if args.storage_classes:
-        storage_classes = args.storage_classes.strip().split(',')
-        if len(storage_classes) > 1:
-            logger.error("Multiple storage classes are not supported currently.")
-            sys.exit(1)
-
+        storage_classes = args.storage_classes.strip().replace(' ', '').split(',')
 
     # Setup exclude regex from all the --exclude arguments provided
     name_patterns = []
