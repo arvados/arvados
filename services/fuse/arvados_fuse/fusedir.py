@@ -571,11 +571,12 @@ class TmpCollectionDirectory(CollectionDirectoryBase):
         def save_new(self):
             pass
 
-    def __init__(self, parent_inode, inodes, api_client, num_retries):
+    def __init__(self, parent_inode, inodes, api_client, num_retries, storage_classes=None):
         collection = self.UnsaveableCollection(
             api_client=api_client,
             keep_client=api_client.keep,
-            num_retries=num_retries)
+            num_retries=num_retries,
+            storage_classes_desired=storage_classes)
         super(TmpCollectionDirectory, self).__init__(
             parent_inode, inodes, api_client.config, collection)
         self.collection_record_file = None
@@ -653,11 +654,12 @@ and the directory will appear if it exists.
 
 """.lstrip()
 
-    def __init__(self, parent_inode, inodes, api, num_retries, pdh_only=False):
+    def __init__(self, parent_inode, inodes, api, num_retries, pdh_only=False, storage_classes=None):
         super(MagicDirectory, self).__init__(parent_inode, inodes, api.config)
         self.api = api
         self.num_retries = num_retries
         self.pdh_only = pdh_only
+        self.storage_classes = storage_classes
 
     def __setattr__(self, name, value):
         super(MagicDirectory, self).__setattr__(name, value)
@@ -687,7 +689,8 @@ and the directory will appear if it exists.
                 if project[u'items_available'] == 0:
                     return False
                 e = self.inodes.add_entry(ProjectDirectory(
-                    self.inode, self.inodes, self.api, self.num_retries, project[u'items'][0]))
+                    self.inode, self.inodes, self.api, self.num_retries,
+                    project[u'items'][0], storage_classes=self.storage_classes))
             else:
                 e = self.inodes.add_entry(CollectionDirectory(
                         self.inode, self.inodes, self.api, self.num_retries, k))
@@ -811,7 +814,7 @@ class ProjectDirectory(Directory):
     """A special directory that contains the contents of a project."""
 
     def __init__(self, parent_inode, inodes, api, num_retries, project_object,
-                 poll=True, poll_time=3):
+                 poll=True, poll_time=3, storage_classes=None):
         super(ProjectDirectory, self).__init__(parent_inode, inodes, api.config)
         self.api = api
         self.num_retries = num_retries
@@ -823,6 +826,7 @@ class ProjectDirectory(Directory):
         self._updating_lock = threading.Lock()
         self._current_user = None
         self._full_listing = False
+        self.storage_classes = storage_classes
 
     def want_event_subscribe(self):
         return True
@@ -831,7 +835,7 @@ class ProjectDirectory(Directory):
         if collection_uuid_pattern.match(i['uuid']):
             return CollectionDirectory(self.inode, self.inodes, self.api, self.num_retries, i)
         elif group_uuid_pattern.match(i['uuid']):
-            return ProjectDirectory(self.inode, self.inodes, self.api, self.num_retries, i, self._poll, self._poll_time)
+            return ProjectDirectory(self.inode, self.inodes, self.api, self.num_retries, i, self._poll, self._poll_time, self.storage_classes)
         elif link_uuid_pattern.match(i['uuid']):
             if i['head_kind'] == 'arvados#collection' or portable_data_hash_pattern.match(i['head_uuid']):
                 return CollectionDirectory(self.inode, self.inodes, self.api, self.num_retries, i['head_uuid'])
@@ -982,9 +986,16 @@ class ProjectDirectory(Directory):
     def mkdir(self, name):
         try:
             with llfuse.lock_released:
-                self.api.collections().create(body={"owner_uuid": self.project_uuid,
-                                                    "name": name,
-                                                    "manifest_text": ""}).execute(num_retries=self.num_retries)
+                c = {
+                    "owner_uuid": self.project_uuid,
+                    "name": name,
+                    "manifest_text": "" }
+                if self.storage_classes is not None:
+                    c["storage_classes_desired"] = self.storage_classes
+                try:
+                    self.api.collections().create(body=c).execute(num_retries=self.num_retries)
+                except Exception as e:
+                    raise
             self.invalidate()
         except apiclient_errors.Error as error:
             _logger.error(error)
@@ -1079,7 +1090,7 @@ class SharedDirectory(Directory):
     """A special directory that represents users or groups who have shared projects with me."""
 
     def __init__(self, parent_inode, inodes, api, num_retries, exclude,
-                 poll=False, poll_time=60):
+                 poll=False, poll_time=60, storage_classes=None):
         super(SharedDirectory, self).__init__(parent_inode, inodes, api.config)
         self.api = api
         self.num_retries = num_retries
@@ -1087,6 +1098,7 @@ class SharedDirectory(Directory):
         self._poll = True
         self._poll_time = poll_time
         self._updating_lock = threading.Lock()
+        self.storage_classes = storage_classes
 
     @use_counter
     def update(self):
@@ -1156,8 +1168,6 @@ class SharedDirectory(Directory):
                         obr = objects[r]
                         if obr.get("name"):
                             contents[obr["name"]] = obr
-                        #elif obr.get("username"):
-                        #    contents[obr["username"]] = obr
                         elif "first_name" in obr:
                             contents[u"{} {}".format(obr["first_name"], obr["last_name"])] = obr
 
@@ -1172,7 +1182,7 @@ class SharedDirectory(Directory):
             self.merge(viewitems(contents),
                        lambda i: i[0],
                        lambda a, i: a.uuid() == i[1]['uuid'],
-                       lambda i: ProjectDirectory(self.inode, self.inodes, self.api, self.num_retries, i[1], poll=self._poll, poll_time=self._poll_time))
+                       lambda i: ProjectDirectory(self.inode, self.inodes, self.api, self.num_retries, i[1], poll=self._poll, poll_time=self._poll_time, storage_classes=self.storage_classes))
         except Exception:
             _logger.exception("arv-mount shared dir error")
         finally:
