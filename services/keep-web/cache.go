@@ -225,7 +225,7 @@ func (c *cache) GetSession(token string) (arvados.CustomFileSystem, *cachedSessi
 	expired := false
 	if sess == nil {
 		c.metrics.sessionMisses.Inc()
-		sess := &cachedSession{
+		sess = &cachedSession{
 			expire: now.Add(c.config.TTL.Duration()),
 		}
 		var err error

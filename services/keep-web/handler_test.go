@@ -1178,6 +1178,27 @@ func (s *IntegrationSuite) TestCacheWriteCollectionSamePDH(c *check.C) {
 	checkWithID(colls[0].UUID, http.StatusOK)
 }
 
+// func (s *IntegrationSuite) TestUploadDownloadLogging(c *check.C) {
+// 	u := mustParseURL("http://" + arvadostest.FooCollection + ".keep-web.example/foo")
+// 	req := &http.Request{
+// 		Method:     "GET",
+// 		Host:       u.Host,
+// 		URL:        u,
+// 		RequestURI: u.RequestURI(),
+// 		Header: http.Header{
+// 			"Authorization": {"Bearer " + arvadostest.ActiveToken},
+// 		},
+// 	}
+
+// 	var logbuf bytes.Buffer
+// 	logger := logrus.New()
+// 	logger.Out = &logbuf
+// 	req = req.WithContext(ctxlog.Context(context.Background(), logger))
+// 	s.doReq(req)
+
+// 	c.Check(logbuf.String(), check.Matches, `Download file*`)
+// }
+
 func copyHeader(h http.Header) http.Header {
 	hc := http.Header{}
 	for k, v := range h {
