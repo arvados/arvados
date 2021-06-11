@@ -410,7 +410,7 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 			http.Error(w, "Not permitted", http.StatusForbidden)
 			return true
 		}
-		h.LogUploadOrDownload(r, arvclient, nil, tokenUser)
+		h.LogUploadOrDownload(r, arvclient, fs, fspath, nil, tokenUser)
 
 		// shallow copy r, and change URL path
 		r := *r
@@ -501,7 +501,7 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 				http.Error(w, "Not permitted", http.StatusForbidden)
 				return true
 			}
-			h.LogUploadOrDownload(r, arvclient, nil, tokenUser)
+			h.LogUploadOrDownload(r, arvclient, fs, fspath, nil, tokenUser)
 
 			_, err = io.Copy(f, r.Body)
 			if err != nil {
