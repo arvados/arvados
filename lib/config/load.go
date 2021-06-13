@@ -354,20 +354,24 @@ func (ldr *Loader) logExtraKeys(expected, supplied map[string]interface{}, prefi
 	if ldr.Logger == nil {
 		return
 	}
-	allowed := map[string]interface{}{}
-	for k, v := range expected {
-		allowed[strings.ToLower(k)] = v
-	}
 	for k, vsupp := range supplied {
 		if k == "SAMPLE" {
 			// entry will be dropped in removeSampleKeys anyway
 			continue
 		}
-		vexp, ok := allowed[strings.ToLower(k)]
+		vexp, ok := expected[k]
 		if expected["SAMPLE"] != nil {
 			vexp = expected["SAMPLE"]
 		} else if !ok {
-			ldr.Logger.Warnf("deprecated or unknown config entry: %s%s", prefix, k)
+			// check for a case-insensitive match
+			hint := ""
+			for ek := range expected {
+				if strings.EqualFold(k, ek) {
+					hint = " (perhaps you meant " + ek + "?)"
+					break
+				}
+			}
+			ldr.Logger.Warnf("deprecated or unknown config entry: %s%s%s", prefix, k, hint)
 			continue
 		}
 		if vsupp, ok := vsupp.(map[string]interface{}); !ok {

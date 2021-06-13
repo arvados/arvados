@@ -196,9 +196,10 @@ Clusters:
     SystemRootToken: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
     Collections:
      BlobSigningKey: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    postgresql: {}
+    PostgreSQL: {}
     BadKey: {}
-    Containers: {}
+    Containers:
+      RunTimeEngine: abc
     RemoteClusters:
       z2222:
         Host: z2222.arvadosapi.com
@@ -206,11 +207,12 @@ Clusters:
         BadKey: badValue
 `, &logbuf).Load()
 	c.Assert(err, check.IsNil)
+	c.Log(logbuf.String())
 	logs := strings.Split(strings.TrimSuffix(logbuf.String(), "\n"), "\n")
 	for _, log := range logs {
-		c.Check(log, check.Matches, `.*deprecated or unknown config entry:.*BadKey.*`)
+		c.Check(log, check.Matches, `.*deprecated or unknown config entry:.*(RunTimeEngine.*RuntimeEngine|BadKey).*`)
 	}
-	c.Check(logs, check.HasLen, 2)
+	c.Check(logs, check.HasLen, 3)
 }
 
 func (s *LoadSuite) checkSAMPLEKeys(c *check.C, path string, x interface{}) {
@@ -322,7 +324,7 @@ func (s *LoadSuite) TestPostgreSQLKeyConflict(c *check.C) {
 	_, err := testLoader(c, `
 Clusters:
  zzzzz:
-  postgresql:
+  PostgreSQL:
    connection:
      DBName: dbname
      Host: host
