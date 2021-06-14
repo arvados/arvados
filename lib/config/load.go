@@ -361,6 +361,9 @@ func (ldr *Loader) logExtraKeys(expected, supplied map[string]interface{}, prefi
 		}
 		vexp, ok := expected[k]
 		if expected["SAMPLE"] != nil {
+			// use the SAMPLE entry's keys as the
+			// "expected" map when checking vsupp
+			// recursively.
 			vexp = expected["SAMPLE"]
 		} else if !ok {
 			// check for a case-insensitive match
@@ -368,6 +371,12 @@ func (ldr *Loader) logExtraKeys(expected, supplied map[string]interface{}, prefi
 			for ek := range expected {
 				if strings.EqualFold(k, ek) {
 					hint = " (perhaps you meant " + ek + "?)"
+					// If we don't delete this, it
+					// will end up getting merged,
+					// unpredictably
+					// merging/overriding the
+					// default.
+					delete(supplied, k)
 					break
 				}
 			}
