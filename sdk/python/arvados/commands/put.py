@@ -663,8 +663,9 @@ class ArvPutUploadJob(object):
                                          num_retries=self.num_retries,
                                          trash_at=self._collection_trash_at())
         else:
-            if self.storage_classes is None:
-                self.storage_classes = ['default']
+            if len(self._local_collection) == 0:
+                self.logger.warning("No files were uploaded, skipping collection creation.")
+                return
             self._local_collection.save_new(
                 name=self.name, owner_uuid=self.owner_uuid,
                 storage_classes=self.storage_classes,
@@ -1319,7 +1320,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr,
             output = writer.manifest_text()
     elif args.raw:
         output = ','.join(writer.data_locators())
-    else:
+    elif writer.manifest_locator() is not None:
         try:
             expiration_notice = ""
             if writer.collection_trash_at() is not None:
@@ -1345,6 +1346,8 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr,
                 "arv-put: Error creating Collection on project: {}.".format(
                     error))
             status = 1
+    else:
+        status = 1
 
     # Print the locator (uuid) of the new collection.
     if output is None:
