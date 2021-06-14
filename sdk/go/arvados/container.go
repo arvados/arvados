@@ -20,6 +20,7 @@ type Container struct {
 	Environment               map[string]string      `json:"environment"`
 	LockedByUUID              string                 `json:"locked_by_uuid"`
 	Mounts                    map[string]Mount       `json:"mounts"`
+	Log                       string                 `json:"log"`
 	Output                    string                 `json:"output"`
 	OutputPath                string                 `json:"output_path"`
 	Priority                  int64                  `json:"priority"`

@@ -45,27 +45,35 @@ func (ln *lookupnode) Readdir() ([]os.FileInfo, error) {
 	defer ln.staleLock.Unlock()
 	checkTime := time.Now()
 	if ln.stale(ln.staleAll) {
-		all, err := ln.loadAll(ln)
+		ln.treenode.Lock()
+		err := ln.refreshAll(checkTime)
+		ln.treenode.Unlock()
 		if err != nil {
 			return nil, err
 		}
-		for _, child := range all {
-			ln.treenode.Lock()
-			_, err = ln.treenode.Child(child.FileInfo().Name(), func(inode) (inode, error) {
-				return child, nil
-			})
-			ln.treenode.Unlock()
-			if err != nil {
-				return nil, err
-			}
-		}
-		ln.staleAll = checkTime
-		// No value in ln.staleOne can make a difference to an
-		// "entry is stale?" test now, because no value is
-		// newer than ln.staleAll. Reclaim memory.
-		ln.staleOne = nil
 	}
 	return ln.treenode.Readdir()
+}
+
+func (ln *lookupnode) refreshAll(checkTime time.Time) error {
+	all, err := ln.loadAll(ln)
+	if err != nil {
+		return err
+	}
+	for _, child := range all {
+		_, err = ln.treenode.Child(child.FileInfo().Name(), func(inode) (inode, error) {
+			return child, nil
+		})
+		if err != nil {
+			return err
+		}
+	}
+	ln.staleAll = checkTime
+	// No value in ln.staleOne can make a difference to an
+	// "entry is stale?" test now, because no value is
+	// newer than ln.staleAll. Reclaim memory.
+	ln.staleOne = nil
+	return nil
 }
 
 // Child rejects (with ErrInvalidArgument) calls to add/replace
@@ -79,6 +87,10 @@ func (ln *lookupnode) Child(name string, replace func(inode) (inode, error)) (in
 	var err error
 	if ln.stale(ln.staleAll) && ln.stale(ln.staleOne[name]) {
 		existing, err = ln.treenode.Child(name, func(inode) (inode, error) {
+			if ln.loadOne == nil {
+				err = ln.refreshAll(checkTime)
+				return ln.treenode.inodes[name], err
+			}
 			return ln.loadOne(ln, name)
 		})
 		if err == nil && existing != nil {

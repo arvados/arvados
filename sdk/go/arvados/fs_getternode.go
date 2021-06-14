@@ -51,8 +51,9 @@ func (gn *getternode) FileInfo() os.FileInfo {
 		size = gn.data.Size()
 	}
 	return fileinfo{
+		name:    gn.treenode.fileinfo.name,
 		modTime: time.Now(),
-		mode:    0444,
+		mode:    0444 | gn.treenode.fileinfo.mode,
 		size:    size,
 	}
 }

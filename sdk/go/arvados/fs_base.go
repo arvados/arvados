@@ -93,6 +93,7 @@ type FileSystem interface {
 	Remove(name string) error
 	RemoveAll(name string) error
 	Rename(oldname, newname string) error
+	Readlink(name string) (string, error)
 
 	// Write buffered data from memory to storage, returning when
 	// all updates have been saved to persistent storage.
@@ -481,6 +482,21 @@ func (fs *fileSystem) Stat(name string) (os.FileInfo, error) {
 		return nil, err
 	}
 	return node.FileInfo(), nil
+}
+
+func (fs *fileSystem) Readlink(name string) (string, error) {
+	node, err := rlookup(fs.root, name)
+	if err != nil {
+		return "", err
+	}
+	if node.FileInfo().Mode()&os.ModeSymlink == 0 {
+		return "", ErrInvalidArgument
+	}
+	buf := make([]byte, int(node.FileInfo().Size()))
+	// FIXME: target/size could change here between calls to
+	// Size() and Read(), causing incorrect output
+	_, _, err = node.Read(buf, filenodePtr{})
+	return string(buf), err
 }
 
 func (fs *fileSystem) Rename(oldname, newname string) error {

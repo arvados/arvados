@@ -271,6 +271,8 @@ func (fs *keepFS) fillStat(stat *fuse.Stat_t, fi os.FileInfo) {
 	var m uint32
 	if fi.IsDir() {
 		m = m | fuse.S_IFDIR
+	} else if fi.Mode()&os.ModeSymlink != 0 {
+		m = m | fuse.S_IFLNK
 	} else {
 		m = m | fuse.S_IFREG
 	}
@@ -313,6 +315,15 @@ func (fs *keepFS) Write(path string, buf []byte, ofst int64, fh uint64) (n int) 
 		return fs.errCode(err)
 	}
 	return n
+}
+
+func (fs *keepFS) Readlink(path string) (n int, target string) {
+	defer fs.debugPanics()
+	if target, err := fs.root.Readlink(path); err != nil {
+		return fs.errCode(err), ""
+	} else {
+		return 0, target
+	}
 }
 
 func (fs *keepFS) Read(path string, buf []byte, ofst int64, fh uint64) (n int) {
