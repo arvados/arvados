@@ -9,6 +9,7 @@ import (
 	"context"
 	"fmt"
 	"html"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -1178,31 +1179,207 @@ func (s *IntegrationSuite) TestCacheWriteCollectionSamePDH(c *check.C) {
 	checkWithID(colls[0].UUID, http.StatusOK)
 }
 
-// func (s *IntegrationSuite) TestUploadDownloadLogging(c *check.C) {
-// 	u := mustParseURL("http://" + arvadostest.FooCollection + ".keep-web.example/foo")
-// 	req := &http.Request{
-// 		Method:     "GET",
-// 		Host:       u.Host,
-// 		URL:        u,
-// 		RequestURI: u.RequestURI(),
-// 		Header: http.Header{
-// 			"Authorization": {"Bearer " + arvadostest.ActiveToken},
-// 		},
-// 	}
-
-// 	var logbuf bytes.Buffer
-// 	logger := logrus.New()
-// 	logger.Out = &logbuf
-// 	req = req.WithContext(ctxlog.Context(context.Background(), logger))
-// 	s.doReq(req)
-
-// 	c.Check(logbuf.String(), check.Matches, `Download file*`)
-// }
-
 func copyHeader(h http.Header) http.Header {
 	hc := http.Header{}
 	for k, v := range h {
 		hc[k] = append([]string(nil), v...)
 	}
 	return hc
+}
+
+func (s *IntegrationSuite) TestDownloadLogging(c *check.C) {
+	h := handler{Config: newConfig(s.ArvConfig)}
+	u := mustParseURL("http://" + arvadostest.FooCollection + ".keep-web.example/foo")
+	req := &http.Request{
+		Method:     "GET",
+		Host:       u.Host,
+		URL:        u,
+		RequestURI: u.RequestURI(),
+		Header: http.Header{
+			"Authorization": {"Bearer " + arvadostest.ActiveToken},
+		},
+	}
+
+	var logbuf bytes.Buffer
+	logger := logrus.New()
+	logger.Out = &logbuf
+	resp := httptest.NewRecorder()
+	req = req.WithContext(ctxlog.Context(context.Background(), logger))
+	h.ServeHTTP(resp, req)
+
+	c.Check(logbuf.String(), check.Matches, `(?ms).*msg="File download".*`)
+	c.Check(logbuf.String(), check.Not(check.Matches), `(?ms).*level=error.*`)
+}
+
+func (s *IntegrationSuite) TestUploadLogging(c *check.C) {
+	defer func() {
+		client := s.testServer.Config.Client
+		client.RequestAndDecode(nil, "POST", "database/reset", nil, nil)
+	}()
+
+	h := handler{Config: newConfig(s.ArvConfig)}
+	u := mustParseURL("http://" + arvadostest.FooCollection + ".keep-web.example/bar")
+	req := &http.Request{
+		Method:     "PUT",
+		Host:       u.Host,
+		URL:        u,
+		RequestURI: u.RequestURI(),
+		Header: http.Header{
+			"Authorization": {"Bearer " + arvadostest.ActiveToken},
+		},
+		Body: io.NopCloser(bytes.NewReader([]byte("bar"))),
+	}
+
+	var logbuf bytes.Buffer
+	logger := logrus.New()
+	logger.Out = &logbuf
+	resp := httptest.NewRecorder()
+	req = req.WithContext(ctxlog.Context(context.Background(), logger))
+	h.ServeHTTP(resp, req)
+
+	c.Check(logbuf.String(), check.Matches, `(?ms).*msg="File upload".*`)
+	c.Check(logbuf.String(), check.Not(check.Matches), `(?ms).*level=error.*`)
+}
+
+func (s *IntegrationSuite) TestDownloadPermission(c *check.C) {
+	config := newConfig(s.ArvConfig)
+	h := handler{Config: config}
+	u := mustParseURL("http://" + arvadostest.FooCollection + ".keep-web.example/foo")
+
+	for _, adminperm := range []bool{true, false} {
+		for _, userperm := range []bool{true, false} {
+
+			config.cluster.Collections.KeepWebPermission.Admin.Download = adminperm
+			config.cluster.Collections.KeepWebPermission.User.Download = userperm
+
+			// Test admin permission
+			req := &http.Request{
+				Method:     "GET",
+				Host:       u.Host,
+				URL:        u,
+				RequestURI: u.RequestURI(),
+				Header: http.Header{
+					"Authorization": {"Bearer " + arvadostest.AdminToken},
+				},
+			}
+
+			var logbuf bytes.Buffer
+			logger := logrus.New()
+			logger.Out = &logbuf
+			resp := httptest.NewRecorder()
+			req = req.WithContext(ctxlog.Context(context.Background(), logger))
+			h.ServeHTTP(resp, req)
+
+			if adminperm {
+				c.Check(resp.Result().StatusCode, check.Equals, http.StatusOK)
+				c.Check(logbuf.String(), check.Matches, `(?ms).*msg="File download".*`)
+				c.Check(logbuf.String(), check.Not(check.Matches), `(?ms).*level=error.*`)
+			} else {
+				c.Check(resp.Result().StatusCode, check.Equals, http.StatusForbidden)
+				c.Check(logbuf.String(), check.Equals, "")
+			}
+
+			// Test user permission
+			req = &http.Request{
+				Method:     "GET",
+				Host:       u.Host,
+				URL:        u,
+				RequestURI: u.RequestURI(),
+				Header: http.Header{
+					"Authorization": {"Bearer " + arvadostest.ActiveToken},
+				},
+			}
+
+			logbuf = bytes.Buffer{}
+			logger = logrus.New()
+			logger.Out = &logbuf
+			resp = httptest.NewRecorder()
+			req = req.WithContext(ctxlog.Context(context.Background(), logger))
+			h.ServeHTTP(resp, req)
+
+			if userperm {
+				c.Check(resp.Result().StatusCode, check.Equals, http.StatusOK)
+				c.Check(logbuf.String(), check.Matches, `(?ms).*msg="File download".*`)
+				c.Check(logbuf.String(), check.Not(check.Matches), `(?ms).*level=error.*`)
+			} else {
+				c.Check(resp.Result().StatusCode, check.Equals, http.StatusForbidden)
+				c.Check(logbuf.String(), check.Equals, "")
+			}
+		}
+	}
+}
+
+func (s *IntegrationSuite) TestUploadPermission(c *check.C) {
+	defer func() {
+		client := s.testServer.Config.Client
+		client.RequestAndDecode(nil, "POST", "database/reset", nil, nil)
+	}()
+
+	config := newConfig(s.ArvConfig)
+	h := handler{Config: config}
+	u := mustParseURL("http://" + arvadostest.FooCollection + ".keep-web.example/foo")
+
+	for _, adminperm := range []bool{true, false} {
+		for _, userperm := range []bool{true, false} {
+
+			config.cluster.Collections.KeepWebPermission.Admin.Upload = adminperm
+			config.cluster.Collections.KeepWebPermission.User.Upload = userperm
+
+			// Test admin permission
+			req := &http.Request{
+				Method:     "PUT",
+				Host:       u.Host,
+				URL:        u,
+				RequestURI: u.RequestURI(),
+				Header: http.Header{
+					"Authorization": {"Bearer " + arvadostest.AdminToken},
+				},
+				Body: io.NopCloser(bytes.NewReader([]byte("bar"))),
+			}
+
+			var logbuf bytes.Buffer
+			logger := logrus.New()
+			logger.Out = &logbuf
+			resp := httptest.NewRecorder()
+			req = req.WithContext(ctxlog.Context(context.Background(), logger))
+			h.ServeHTTP(resp, req)
+
+			if adminperm {
+				c.Check(resp.Result().StatusCode, check.Equals, http.StatusCreated)
+				c.Check(logbuf.String(), check.Matches, `(?ms).*msg="File upload".*`)
+				c.Check(logbuf.String(), check.Not(check.Matches), `(?ms).*level=error.*`)
+			} else {
+				c.Check(resp.Result().StatusCode, check.Equals, http.StatusForbidden)
+				c.Check(logbuf.String(), check.Equals, "")
+			}
+
+			// Test user permission
+			req = &http.Request{
+				Method:     "PUT",
+				Host:       u.Host,
+				URL:        u,
+				RequestURI: u.RequestURI(),
+				Header: http.Header{
+					"Authorization": {"Bearer " + arvadostest.ActiveToken},
+				},
+				Body: io.NopCloser(bytes.NewReader([]byte("bar"))),
+			}
+
+			logbuf = bytes.Buffer{}
+			logger = logrus.New()
+			logger.Out = &logbuf
+			resp = httptest.NewRecorder()
+			req = req.WithContext(ctxlog.Context(context.Background(), logger))
+			h.ServeHTTP(resp, req)
+
+			if userperm {
+				c.Check(resp.Result().StatusCode, check.Equals, http.StatusCreated)
+				c.Check(logbuf.String(), check.Matches, `(?ms).*msg="File upload".*`)
+				c.Check(logbuf.String(), check.Not(check.Matches), `(?ms).*level=error.*`)
+			} else {
+				c.Check(resp.Result().StatusCode, check.Equals, http.StatusForbidden)
+				c.Check(logbuf.String(), check.Equals, "")
+			}
+		}
+	}
 }
