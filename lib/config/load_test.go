@@ -197,22 +197,38 @@ Clusters:
     Collections:
      BlobSigningKey: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
     PostgreSQL: {}
-    BadKey: {}
+    BadKey1: {}
     Containers:
       RunTimeEngine: abc
     RemoteClusters:
       z2222:
         Host: z2222.arvadosapi.com
         Proxy: true
-        BadKey: badValue
+        BadKey2: badValue
+    Services:
+      KeepStore:
+        InternalURLs:
+          "http://host.example:12345": {}
+      # we use Keepproxy instead of Keepstore for the RendezVous test,
+      # to avoid the "keepstore has no volumes" warning
+      Keepproxy:
+        InternalURLs:
+          "http://host.example:12345":
+            # ideally we would reject Rendezvous here too, but
+            # currently we don't
+            RendezVous: x
+    ServiceS:
+      Keepstore:
+        InternalURLs:
+          "http://host.example:12345": {}
 `, &logbuf).Load()
 	c.Assert(err, check.IsNil)
 	c.Log(logbuf.String())
 	logs := strings.Split(strings.TrimSuffix(logbuf.String(), "\n"), "\n")
 	for _, log := range logs {
-		c.Check(log, check.Matches, `.*deprecated or unknown config entry:.*(RunTimeEngine.*RuntimeEngine|BadKey).*`)
+		c.Check(log, check.Matches, `.*deprecated or unknown config entry:.*(RunTimeEngine.*RuntimeEngine|BadKey1|BadKey2|KeepStore|ServiceS|RendezVous).*`)
 	}
-	c.Check(logs, check.HasLen, 3)
+	c.Check(logs, check.HasLen, 6)
 }
 
 func (s *LoadSuite) checkSAMPLEKeys(c *check.C, path string, x interface{}) {
@@ -325,7 +341,7 @@ func (s *LoadSuite) TestPostgreSQLKeyConflict(c *check.C) {
 Clusters:
  zzzzz:
   PostgreSQL:
-   connection:
+   Connection:
      DBName: dbname
      Host: host
 `, nil).Load()
