@@ -308,6 +308,13 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
         self.assertNotIn('linkeddir', cwriter.manifest_text())
         self.assertNotIn('linkedfile', cwriter.manifest_text())
         cwriter.destroy_cache()
+        # Check for bug #17800: passed symlinks should also be ignored.
+        linked_dir = os.path.join(self.tempdir_with_symlink, 'linkeddir')
+        cwriter = arv_put.ArvPutUploadJob([linked_dir], follow_links=False)
+        cwriter.start(save_collection=False)
+        self.assertNotIn('linkeddir', cwriter.manifest_text())
+        cwriter.destroy_cache()
+
 
     def test_passing_nonexistant_path_raise_exception(self):
         uuid_str = str(uuid.uuid4())
