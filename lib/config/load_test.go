@@ -209,18 +209,16 @@ Clusters:
       KeepStore:
         InternalURLs:
           "http://host.example:12345": {}
-      # we use Keepproxy instead of Keepstore for the RendezVous test,
-      # to avoid the "keepstore has no volumes" warning
-      Keepproxy:
+      Keepstore:
         InternalURLs:
           "http://host.example:12345":
-            # ideally we would reject Rendezvous here too, but
-            # currently we don't
             RendezVous: x
     ServiceS:
       Keepstore:
         InternalURLs:
           "http://host.example:12345": {}
+    Volumes:
+      zzzzz-nyw5e-aaaaaaaaaaaaaaa: {}
 `, &logbuf).Load()
 	c.Assert(err, check.IsNil)
 	c.Log(logbuf.String())
