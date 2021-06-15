@@ -10,6 +10,7 @@ const (
 	ActiveToken             = "3kg6k6lzmp9kj5cpkcoxie963cmvjahbt2fod9zru30k1jqdmi"
 	ActiveTokenUUID         = "zzzzz-gj3su-077z32aux8dg2s1"
 	ActiveTokenV2           = "v2/zzzzz-gj3su-077z32aux8dg2s1/3kg6k6lzmp9kj5cpkcoxie963cmvjahbt2fod9zru30k1jqdmi"
+	AdminUserUUID           = "zzzzz-tpzed-d9tiejq69daie8f"
 	AdminToken              = "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h"
 	AdminTokenUUID          = "zzzzz-gj3su-027z32aux8dg2s1"
 	AnonymousToken          = "4kg6k6lzmp9kj4cpkcoxie964cmvjahbt4fod9zru44k4jqdmi"
