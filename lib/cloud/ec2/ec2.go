@@ -350,28 +350,33 @@ func (err rateLimitError) EarliestRetry() time.Time {
 	return err.earliestRetry
 }
 
-var capacityCodes = map[string]struct{}{
-	"InsufficientInstanceCapacity": {},
-	"VcpuLimitExceeded":            {},
-	"MaxSpotInstanceCountExceeded": {},
+var isCodeCapacity = map[string]bool{
+	"InsufficientInstanceCapacity": true,
+	"VcpuLimitExceeded":            true,
+	"MaxSpotInstanceCountExceeded": true,
 }
 
-// IsErrorCapacity returns whether the error is to be throttled based on its code.
+// isErrorCapacity returns whether the error is to be throttled based on its code.
 // Returns false if error is nil.
-func IsErrorCapacity(err error) bool {
+func isErrorCapacity(err error) bool {
 	if aerr, ok := err.(awserr.Error); ok && aerr != nil {
-		return isCodeCapacity(aerr.Code())
+		if _, ok := isCodeCapacity[aerr.Code()]; ok {
+			return true
+		}
 	}
 	return false
 }
 
-func isCodeCapacity(code string) bool {
-	_, ok := capacityCodes[code]
-	return ok
+type ec2QuotaError struct {
+	error
+}
+
+func (er *ec2QuotaError) IsQuotaError() bool {
+	return true
 }
 
 func wrapError(err error, throttleValue *atomic.Value) error {
-	if request.IsErrorThrottle(err) || IsErrorCapacity(err) {
+	if request.IsErrorThrottle(err) {
 		// Back off exponentially until an upstream call
 		// either succeeds or returns a non-throttle error.
 		d, _ := throttleValue.Load().(time.Duration)
@@ -383,6 +388,8 @@ func wrapError(err error, throttleValue *atomic.Value) error {
 		}
 		throttleValue.Store(d)
 		return rateLimitError{error: err, earliestRetry: time.Now().Add(d)}
+	} else if isErrorCapacity(err) {
+		return &ec2QuotaError{err}
 	} else if err != nil {
 		throttleValue.Store(time.Duration(0))
 		return err
