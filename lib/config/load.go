@@ -182,6 +182,11 @@ func (ldr *Loader) Load() (*arvados.Config, error) {
 		ldr.configdata = buf
 	}
 
+	// FIXME: We should reject YAML if the same key is used twice
+	// in a map/object, like {foo: bar, foo: baz}. Maybe we'll get
+	// this fixed free when we upgrade ghodss/yaml to a version
+	// that uses go-yaml v3.
+
 	// Load the config into a dummy map to get the cluster ID
 	// keys, discarding the values; then set up defaults for each
 	// cluster ID; then load the real config on top of the
@@ -291,6 +296,8 @@ func (ldr *Loader) Load() (*arvados.Config, error) {
 			checkKeyConflict(fmt.Sprintf("Clusters.%s.PostgreSQL.Connection", id), cc.PostgreSQL.Connection),
 			ldr.checkEmptyKeepstores(cc),
 			ldr.checkUnlistedKeepstores(cc),
+			// TODO: check non-empty Rendezvous on
+			// services other than Keepstore
 		} {
 			if err != nil {
 				return nil, err
