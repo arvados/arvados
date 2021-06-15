@@ -93,8 +93,9 @@ func (s *UnitSuite) TestEmptyResponse(c *check.C) {
 
 		// If we return no content because the client sent an
 		// If-Modified-Since header, our response should be
-		// 304, and we should not emit a log message.
-		{true, true, http.StatusNotModified, ``},
+		// 304.  We still expect a "File download" log since it
+		// counts as a file access for auditing.
+		{true, true, http.StatusNotModified, `(?ms).*msg="File download".*`},
 	} {
 		c.Logf("trial: %+v", trial)
 		arvadostest.StartKeep(2, true)
@@ -1214,6 +1215,7 @@ func (s *IntegrationSuite) TestDownloadLogging(c *check.C) {
 func (s *IntegrationSuite) TestUploadLogging(c *check.C) {
 	defer func() {
 		client := s.testServer.Config.Client
+		client.AuthToken = arvadostest.AdminToken
 		client.RequestAndDecode(nil, "POST", "database/reset", nil, nil)
 	}()
 
@@ -1312,6 +1314,7 @@ func (s *IntegrationSuite) TestDownloadPermission(c *check.C) {
 func (s *IntegrationSuite) TestUploadPermission(c *check.C) {
 	defer func() {
 		client := s.testServer.Config.Client
+		client.AuthToken = arvadostest.AdminToken
 		client.RequestAndDecode(nil, "POST", "database/reset", nil, nil)
 	}()
 
