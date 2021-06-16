@@ -720,11 +720,11 @@ func (s *ServerRequiredSuite) TestPutAskGetInvalidToken(c *C) {
 			_, _, _, err = kc.Get(hash)
 			c.Assert(err, FitsTypeOf, &keepclient.ErrNotFound{})
 			c.Check(err.(*keepclient.ErrNotFound).Temporary(), Equals, false)
-			c.Check(err, ErrorMatches, ".*HTTP 403 \"Missing or invalid Authorization header\".*")
+			c.Check(err, ErrorMatches, ".*HTTP 403 \"Missing or invalid Authorization header, or method not allowed\".*")
 		}
 
 		_, _, err = kc.PutB([]byte("foo"))
-		c.Check(err, ErrorMatches, ".*403.*Missing or invalid Authorization header")
+		c.Check(err, ErrorMatches, ".*403.*Missing or invalid Authorization header, or method not allowed")
 	}
 }
 
