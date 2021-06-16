@@ -61,7 +61,6 @@ wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes ins
   xfsprogs
 
 # Install the Arvados packages we need
-wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get --yes update
 wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes install \
   python3-arvados-fuse \
   crunch-run \
@@ -75,7 +74,7 @@ rm -rf /var/lib/arvados/go/
 curl -s https://storage.googleapis.com/golang/go${goversion}.linux-amd64.tar.gz | tar -C /var/lib/arvados -xzf -
 ln -sf /var/lib/arvados/go/bin/* /usr/local/bin/
 
-singularityversion=3.5.2
+singularityversion=3.7.4
 curl -Ls https://github.com/sylabs/singularity/archive/refs/tags/v${singularityversion}.tar.gz | tar -C /var/lib/arvados -xzf -
 cd /var/lib/arvados/singularity-${singularityversion}
 

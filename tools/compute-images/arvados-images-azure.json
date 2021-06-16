@@ -51,10 +51,6 @@
     "destination": "/tmp/1078ECD7.asc"
   },{
     "type": "file",
-    "source": "2649A5A9.asc",
-    "destination": "/tmp/2649A5A9.asc"
-  },{
-    "type": "file",
     "source": "scripts/etc-cloud-cloud.cfg.d-07_compute_arvados_dispatch_cloud.cfg",
     "destination": "/tmp/etc-cloud-cloud.cfg.d-07_compute_arvados_dispatch_cloud.cfg"
   },{
