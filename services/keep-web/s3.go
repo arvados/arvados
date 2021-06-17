@@ -382,11 +382,11 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 		}
 
 		tokenUser, err := h.Config.Cache.GetTokenUser(token)
-		if !h.UserPermittedToUploadOrDownload(r.Method, tokenUser) {
+		if !h.userPermittedToUploadOrDownload(r.Method, tokenUser) {
 			http.Error(w, "Not permitted", http.StatusForbidden)
 			return true
 		}
-		h.LogUploadOrDownload(r, arvclient, fs, fspath, nil, tokenUser)
+		h.logUploadOrDownload(r, arvclient, fs, fspath, nil, tokenUser)
 
 		// shallow copy r, and change URL path
 		r := *r
@@ -473,11 +473,11 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 			defer f.Close()
 
 			tokenUser, err := h.Config.Cache.GetTokenUser(token)
-			if !h.UserPermittedToUploadOrDownload(r.Method, tokenUser) {
+			if !h.userPermittedToUploadOrDownload(r.Method, tokenUser) {
 				http.Error(w, "Not permitted", http.StatusForbidden)
 				return true
 			}
-			h.LogUploadOrDownload(r, arvclient, fs, fspath, nil, tokenUser)
+			h.logUploadOrDownload(r, arvclient, fs, fspath, nil, tokenUser)
 
 			_, err = io.Copy(f, r.Body)
 			if err != nil {
