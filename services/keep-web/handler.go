@@ -487,13 +487,14 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	// Check configured permission
 	_, sess, err := h.Config.Cache.GetSession(arv.ApiToken)
 	tokenUser, err = h.Config.Cache.GetTokenUser(arv.ApiToken)
-	if !h.userPermittedToUploadOrDownload(r.Method, tokenUser) {
-		http.Error(w, "Not permitted", http.StatusForbidden)
-		return
-	}
-	h.logUploadOrDownload(r, sess.arvadosclient, nil, strings.Join(targetPath, "/"), collection, tokenUser)
 
 	if webdavMethod[r.Method] {
+		if !h.userPermittedToUploadOrDownload(r.Method, tokenUser) {
+			http.Error(w, "Not permitted", http.StatusForbidden)
+			return
+		}
+		h.logUploadOrDownload(r, sess.arvadosclient, nil, strings.Join(targetPath, "/"), collection, tokenUser)
+
 		if writeMethod[r.Method] {
 			// Save the collection only if/when all
 			// webdav->filesystem operations succeed --
@@ -548,6 +549,12 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	} else if stat.IsDir() {
 		h.serveDirectory(w, r, collection.Name, fs, openPath, true)
 	} else {
+		if !h.userPermittedToUploadOrDownload(r.Method, tokenUser) {
+			http.Error(w, "Not permitted", http.StatusForbidden)
+			return
+		}
+		h.logUploadOrDownload(r, sess.arvadosclient, nil, strings.Join(targetPath, "/"), collection, tokenUser)
+
 		http.ServeContent(w, r, basename, stat.ModTime(), f)
 		if wrote := int64(w.WroteBodyBytes()); wrote != stat.Size() && w.WroteStatus() == http.StatusOK {
 			// If we wrote fewer bytes than expected, it's
