@@ -1246,8 +1246,8 @@ func (s *IntegrationSuite) TestDownloadLoggingPermission(c *check.C) {
 
 	for _, adminperm := range []bool{true, false} {
 		for _, userperm := range []bool{true, false} {
-			config.cluster.Collections.KeepWebPermission.Admin.Download = adminperm
-			config.cluster.Collections.KeepWebPermission.User.Download = userperm
+			config.cluster.Collections.WebDAVPermission.Admin.Download = adminperm
+			config.cluster.Collections.WebDAVPermission.User.Download = userperm
 
 			// Test admin permission
 			req := &http.Request{
@@ -1279,20 +1279,32 @@ func (s *IntegrationSuite) TestDownloadLoggingPermission(c *check.C) {
 }
 
 func (s *IntegrationSuite) TestUploadLoggingPermission(c *check.C) {
-	defer func() {
-		client := s.testServer.Config.Client
-		client.AuthToken = arvadostest.AdminToken
-		client.RequestAndDecode(nil, "POST", "database/reset", nil, nil)
-	}()
-
 	config := newConfig(s.ArvConfig)
 	h := handler{Config: config}
-	u := mustParseURL("http://" + arvadostest.FooCollection + ".keep-web.example/bar")
 
 	for _, adminperm := range []bool{true, false} {
 		for _, userperm := range []bool{true, false} {
-			config.cluster.Collections.KeepWebPermission.Admin.Upload = adminperm
-			config.cluster.Collections.KeepWebPermission.User.Upload = userperm
+
+			arv := s.testServer.Config.Client
+			arv.AuthToken = arvadostest.ActiveToken
+
+			var coll arvados.Collection
+			err := arv.RequestAndDecode(&coll,
+				"POST",
+				"/arvados/v1/collections",
+				nil,
+				map[string]interface{}{
+					"ensure_unique_name": true,
+					"collection": map[string]interface{}{
+						"name": "test collection",
+					},
+				})
+			c.Assert(err, check.Equals, nil)
+
+			u := mustParseURL("http://" + coll.UUID + ".keep-web.example/bar")
+
+			config.cluster.Collections.WebDAVPermission.Admin.Upload = adminperm
+			config.cluster.Collections.WebDAVPermission.User.Upload = userperm
 
 			// Test admin permission
 			req := &http.Request{
@@ -1306,7 +1318,7 @@ func (s *IntegrationSuite) TestUploadLoggingPermission(c *check.C) {
 				Body: io.NopCloser(bytes.NewReader([]byte("bar"))),
 			}
 			s.checkUploadDownloadRequest(c, &h, req, http.StatusCreated, "upload", adminperm,
-				arvadostest.AdminUserUUID, arvadostest.FooCollection, "bar")
+				arvadostest.AdminUserUUID, coll.UUID, "bar")
 
 			// Test user permission
 			req = &http.Request{
@@ -1320,7 +1332,7 @@ func (s *IntegrationSuite) TestUploadLoggingPermission(c *check.C) {
 				Body: io.NopCloser(bytes.NewReader([]byte("bar"))),
 			}
 			s.checkUploadDownloadRequest(c, &h, req, http.StatusCreated, "upload", userperm,
-				arvadostest.ActiveUserUUID, arvadostest.FooCollection, "bar")
+				arvadostest.ActiveUserUUID, coll.UUID, "bar")
 		}
 	}
 }

@@ -487,11 +487,11 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	// Check configured permission
 	_, sess, err := h.Config.Cache.GetSession(arv.ApiToken)
 	tokenUser, err = h.Config.Cache.GetTokenUser(arv.ApiToken)
-	if !h.UserPermittedToUploadOrDownload(r.Method, tokenUser) {
+	if !h.userPermittedToUploadOrDownload(r.Method, tokenUser) {
 		http.Error(w, "Not permitted", http.StatusForbidden)
 		return
 	}
-	h.LogUploadOrDownload(r, sess.arvadosclient, nil, strings.Join(targetPath, "/"), collection, tokenUser)
+	h.logUploadOrDownload(r, sess.arvadosclient, nil, strings.Join(targetPath, "/"), collection, tokenUser)
 
 	if webdavMethod[r.Method] {
 		if writeMethod[r.Method] {
@@ -619,11 +619,11 @@ func (h *handler) serveSiteFS(w http.ResponseWriter, r *http.Request, tokens []s
 	}
 
 	tokenUser, err := h.Config.Cache.GetTokenUser(tokens[0])
-	if !h.UserPermittedToUploadOrDownload(r.Method, tokenUser) {
+	if !h.userPermittedToUploadOrDownload(r.Method, tokenUser) {
 		http.Error(w, "Not permitted", http.StatusForbidden)
 		return
 	}
-	h.LogUploadOrDownload(r, sess.arvadosclient, fs, r.URL.Path, nil, tokenUser)
+	h.logUploadOrDownload(r, sess.arvadosclient, fs, r.URL.Path, nil, tokenUser)
 
 	if r.Method == "GET" {
 		_, basename := filepath.Split(r.URL.Path)
@@ -856,18 +856,18 @@ func (h *handler) seeOtherWithCookie(w http.ResponseWriter, r *http.Request, loc
 	io.WriteString(w, `">Continue</A>`)
 }
 
-func (h *handler) UserPermittedToUploadOrDownload(method string, tokenUser *arvados.User) bool {
+func (h *handler) userPermittedToUploadOrDownload(method string, tokenUser *arvados.User) bool {
 	if tokenUser == nil {
 		return false
 	}
 	var permitDownload bool
 	var permitUpload bool
 	if tokenUser.IsAdmin {
-		permitUpload = h.Config.cluster.Collections.KeepWebPermission.Admin.Upload
-		permitDownload = h.Config.cluster.Collections.KeepWebPermission.Admin.Download
+		permitUpload = h.Config.cluster.Collections.WebDAVPermission.Admin.Upload
+		permitDownload = h.Config.cluster.Collections.WebDAVPermission.Admin.Download
 	} else {
-		permitUpload = h.Config.cluster.Collections.KeepWebPermission.User.Upload
-		permitDownload = h.Config.cluster.Collections.KeepWebPermission.User.Download
+		permitUpload = h.Config.cluster.Collections.WebDAVPermission.User.Upload
+		permitDownload = h.Config.cluster.Collections.WebDAVPermission.User.Download
 	}
 	if (method == "PUT" || method == "POST") && !permitUpload {
 		// Disallow operations that upload new files.
@@ -882,7 +882,7 @@ func (h *handler) UserPermittedToUploadOrDownload(method string, tokenUser *arva
 	return true
 }
 
-func (h *handler) LogUploadOrDownload(
+func (h *handler) logUploadOrDownload(
 	r *http.Request,
 	client *arvadosclient.ArvadosClient,
 	fs arvados.CustomFileSystem,
@@ -898,7 +898,7 @@ func (h *handler) LogUploadOrDownload(
 			WithField("user_full_name", user.FullName)
 	}
 	if collection == nil && fs != nil {
-		collection, filepath = h.DetermineCollection(fs, filepath)
+		collection, filepath = h.determineCollection(fs, filepath)
 	}
 	if collection != nil {
 		log = log.WithField("collection_uuid", collection.UUID).
@@ -908,46 +908,63 @@ func (h *handler) LogUploadOrDownload(
 	}
 	if r.Method == "PUT" || r.Method == "POST" {
 		log.Info("File upload")
-		go func() {
-			lr := arvadosclient.Dict{"log": arvadosclient.Dict{
-				"object_uuid": user.UUID,
-				"event_type":  "file_upload",
-				"properties":  props}}
-			client.Create("logs", lr, nil)
-		}()
+		if h.Config.cluster.Collections.WebDAVLogEvents {
+			go func() {
+				lr := arvadosclient.Dict{"log": arvadosclient.Dict{
+					"object_uuid": user.UUID,
+					"event_type":  "file_upload",
+					"properties":  props}}
+				err := client.Create("logs", lr, nil)
+				if err != nil {
+					log.WithError(err).Error("Failed to create upload log event on API server")
+				}
+			}()
+		}
 	} else if r.Method == "GET" {
 		if collection != nil && collection.PortableDataHash != "" {
 			log = log.WithField("portable_data_hash", collection.PortableDataHash)
 			props["portable_data_hash"] = collection.PortableDataHash
 		}
 		log.Info("File download")
-		go func() {
-			lr := arvadosclient.Dict{"log": arvadosclient.Dict{
-				"object_uuid": user.UUID,
-				"event_type":  "file_download",
-				"properties":  props}}
-			client.Create("logs", lr, nil)
-		}()
+		if h.Config.cluster.Collections.WebDAVLogEvents {
+			go func() {
+				lr := arvadosclient.Dict{"log": arvadosclient.Dict{
+					"object_uuid": user.UUID,
+					"event_type":  "file_download",
+					"properties":  props}}
+				err := client.Create("logs", lr, nil)
+				if err != nil {
+					log.WithError(err).Error("Failed to create download log event on API server")
+				}
+			}()
+		}
 	}
 }
 
-func (h *handler) DetermineCollection(fs arvados.CustomFileSystem, path string) (*arvados.Collection, string) {
+func (h *handler) determineCollection(fs arvados.CustomFileSystem, path string) (*arvados.Collection, string) {
 	segments := strings.Split(path, "/")
 	var i int
-	for i = len(segments) - 1; i >= 0; i-- {
+	for i = 0; i < len(segments); i++ {
 		dir := append([]string{}, segments[0:i]...)
 		dir = append(dir, ".arvados#collection")
 		f, err := fs.OpenFile(strings.Join(dir, "/"), os.O_RDONLY, 0)
-		if err == nil {
-			decoder := json.NewDecoder(f)
-			var collection arvados.Collection
-			err = decoder.Decode(&collection)
-			if err != nil {
+		if f != nil {
+			defer f.Close()
+		}
+		if err != nil {
+			if !os.IsNotExist(err) {
 				return nil, ""
 			}
-			return &collection, strings.Join(segments[i:], "/")
+			continue
 		}
-		f.Close()
+		// err is nil so we found it.
+		decoder := json.NewDecoder(f)
+		var collection arvados.Collection
+		err = decoder.Decode(&collection)
+		if err != nil {
+			return nil, ""
+		}
+		return &collection, strings.Join(segments[i:], "/")
 	}
 	return nil, ""
 }
