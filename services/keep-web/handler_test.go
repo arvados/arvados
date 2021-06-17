@@ -1216,7 +1216,8 @@ func (s *IntegrationSuite) checkUploadDownloadRequest(c *check.C, h *handler, re
 		c.Check(logbuf.String(), check.Matches, `(?ms).*msg="File `+direction+`".*`)
 		c.Check(logbuf.String(), check.Not(check.Matches), `(?ms).*level=error.*`)
 
-		for nextLogId == lastLogId {
+		count := 0
+		for ; nextLogId == lastLogId && count < 20; count++ {
 			time.Sleep(50 * time.Millisecond)
 			err = client.RequestAndDecode(&logentries, "GET", "arvados/v1/logs", nil,
 				arvados.ResourceListParams{
@@ -1229,7 +1230,7 @@ func (s *IntegrationSuite) checkUploadDownloadRequest(c *check.C, h *handler, re
 				nextLogId = logentries.Items[0].ID
 			}
 		}
-
+		c.Check(count, check.Not(check.Equals), 20)
 		c.Check(logentries.Items[0].ObjectUUID, check.Equals, userUuid)
 		c.Check(logentries.Items[0].Properties["collection_uuid"], check.Equals, collectionUuid)
 		c.Check(logentries.Items[0].Properties["collection_file_path"], check.Equals, filepath)
@@ -1243,6 +1244,8 @@ func (s *IntegrationSuite) TestDownloadLoggingPermission(c *check.C) {
 	config := newConfig(s.ArvConfig)
 	h := handler{Config: config}
 	u := mustParseURL("http://" + arvadostest.FooCollection + ".keep-web.example/foo")
+
+	config.cluster.Collections.TrustAllContent = true
 
 	for _, adminperm := range []bool{true, false} {
 		for _, userperm := range []bool{true, false} {
@@ -1276,6 +1279,38 @@ func (s *IntegrationSuite) TestDownloadLoggingPermission(c *check.C) {
 				arvadostest.ActiveUserUUID, arvadostest.FooCollection, "foo")
 		}
 	}
+
+	config.cluster.Collections.WebDAVPermission.User.Download = true
+
+	for _, tryurl := range []string{"http://" + arvadostest.MultilevelCollection1 + ".keep-web.example/dir1/subdir/file1",
+		"http://keep-web/users/active/multilevel_collection_1/dir1/subdir/file1"} {
+
+		u = mustParseURL(tryurl)
+		req := &http.Request{
+			Method:     "GET",
+			Host:       u.Host,
+			URL:        u,
+			RequestURI: u.RequestURI(),
+			Header: http.Header{
+				"Authorization": {"Bearer " + arvadostest.ActiveToken},
+			},
+		}
+		s.checkUploadDownloadRequest(c, &h, req, http.StatusOK, "download", true,
+			arvadostest.ActiveUserUUID, arvadostest.MultilevelCollection1, "dir1/subdir/file1")
+	}
+
+	u = mustParseURL("http://" + strings.Replace(arvadostest.FooCollectionPDH, "+", "-", 1) + ".keep-web.example/foo")
+	req := &http.Request{
+		Method:     "GET",
+		Host:       u.Host,
+		URL:        u,
+		RequestURI: u.RequestURI(),
+		Header: http.Header{
+			"Authorization": {"Bearer " + arvadostest.ActiveToken},
+		},
+	}
+	s.checkUploadDownloadRequest(c, &h, req, http.StatusOK, "download", true,
+		arvadostest.ActiveUserUUID, arvadostest.FooCollection, "foo")
 }
 
 func (s *IntegrationSuite) TestUploadLoggingPermission(c *check.C) {
