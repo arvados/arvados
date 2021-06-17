@@ -135,7 +135,7 @@ VERSION="latest"
 
 # The arvados-formula version.  For a stable release, this should be a
 # branch name (e.g. X.Y-dev) or tag for the release.
-ARVADOS_TAG="master"
+ARVADOS_TAG="main"
 
 # Other formula versions we depend on
 POSTGRES_TAG="v0.41.6"
