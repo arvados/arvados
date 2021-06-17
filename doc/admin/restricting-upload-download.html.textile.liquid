@@ -39,7 +39,7 @@ Permitting @WebDAV@ makes it possible to use WebDAV, S3 API, download from Workb
 
 When a user attempts to upload or download from a service without permission, they will receive a @403 Forbidden@ response.  This only applies to file content.
 
-Denying download permission does not deny access to access to XML file listings with PROPFIND.  As a side effect it does deny auto-generated HTML documents that have file listings.
+Denying download permission does not deny access to access to XML file listings with PROPFIND, or auto-generated HTML documents containing file listings.
 
 Denying upload permission does not deny other operations that modify collections without directly accessing file content, such as MOVE and COPY.
 
