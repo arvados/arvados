@@ -31,6 +31,8 @@ const (
 	UserAgreementPDH        = "b519d9cb706a29fc7ea24dbea2f05851+93"
 	HelloWorldPdh           = "55713e6a34081eb03609e7ad5fcad129+62"
 
+	MultilevelCollection1 = "zzzzz-4zz18-pyw8yp9g3pr7irn"
+
 	AProjectUUID    = "zzzzz-j7d0g-v955i6s2oi1cbso"
 	ASubprojectUUID = "zzzzz-j7d0g-axqo7eu9pwvna1x"
 
