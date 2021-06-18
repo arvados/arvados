@@ -108,7 +108,7 @@ var whitelist = map[string]bool{
 	"Collections.WebDAVCache":                             false,
 	"Collections.KeepproxyPermission":                     false,
 	"Collections.WebDAVPermission":                        false,
-	"Collections.WebDAVLogevents":                         false,
+	"Collections.WebDAVLogEvents":                         false,
 	"Containers":                                          true,
 	"Containers.CloudVMs":                                 false,
 	"Containers.CrunchRunArgumentsList":                   false,
