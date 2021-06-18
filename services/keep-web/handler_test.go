@@ -32,6 +32,10 @@ import (
 
 var _ = check.Suite(&UnitSuite{})
 
+func init() {
+	arvados.DebugLocksPanicMode = true
+}
+
 type UnitSuite struct {
 	Config *arvados.Config
 }
