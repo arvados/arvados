@@ -16,7 +16,6 @@ import (
 	"os/signal"
 	"regexp"
 	"strings"
-	"sync"
 	"syscall"
 	"time"
 
@@ -29,6 +28,7 @@ import (
 	"github.com/coreos/go-systemd/daemon"
 	"github.com/ghodss/yaml"
 	"github.com/gorilla/mux"
+	lru "github.com/hashicorp/golang-lru"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -167,42 +167,45 @@ func run(logger log.FieldLogger, cluster *arvados.Cluster) error {
 	return http.Serve(listener, httpserver.AddRequestIDs(httpserver.LogRequests(router)))
 }
 
+type TokenCacheEntry struct {
+	expire int64
+	user   *arvados.User
+}
+
 type APITokenCache struct {
-	tokens     map[string]int64
-	tokenUser  map[string]*arvados.User
-	lock       sync.Mutex
+	tokens     *lru.TwoQueueCache
 	expireTime int64
 }
 
-// RememberToken caches the token and set an expire time.  If we already have
-// an expire time on the token, it is not updated.
+// RememberToken caches the token and set an expire time.  If the
+// token is already in the cache, it is not updated.
 func (cache *APITokenCache) RememberToken(token string, user *arvados.User) {
-	cache.lock.Lock()
-	defer cache.lock.Unlock()
-
 	now := time.Now().Unix()
-	if cache.tokens[token] == 0 {
-		cache.tokens[token] = now + cache.expireTime
+	_, ok := cache.tokens.Get(token)
+	if !ok {
+		cache.tokens.Add(token, TokenCacheEntry{
+			expire: now + cache.expireTime,
+			user:   user,
+		})
 	}
-	cache.tokenUser[token] = user
 }
 
 // RecallToken checks if the cached token is known and still believed to be
 // valid.
 func (cache *APITokenCache) RecallToken(token string) (bool, *arvados.User) {
-	cache.lock.Lock()
-	defer cache.lock.Unlock()
-
-	now := time.Now().Unix()
-	if cache.tokens[token] == 0 {
-		// Unknown token
+	val, ok := cache.tokens.Get(token)
+	if !ok {
 		return false, nil
-	} else if now < cache.tokens[token] {
+	}
+
+	cacheEntry := val.(TokenCacheEntry)
+	now := time.Now().Unix()
+	if now < cacheEntry.expire {
 		// Token is known and still valid
-		return true, cache.tokenUser[token]
+		return true, cacheEntry.user
 	} else {
 		// Token is expired
-		cache.tokens[token] = 0
+		cache.tokens.Remove(token)
 		return false, nil
 	}
 }
@@ -247,13 +250,17 @@ func (h *proxyHandler) CheckAuthorizationHeader(req *http.Request) (pass bool, t
 	arv.RequestID = req.Header.Get("X-Request-Id")
 	user = &arvados.User{}
 	userCurrentError := arv.Call("GET", "users", "", "current", nil, user)
-	if op == "read" {
-		// scoped token this will fail the user current check,
-		// but if it is a download operation and they can read
-		// the keep_services table, it's okay.
-		err = arv.Call("HEAD", "keep_services", "", "accessible", nil, nil)
-	} else {
-		err = userCurrentError
+	err = userCurrentError
+	if err != nil && op == "read" {
+		apiError, ok := err.(arvadosclient.APIServerError)
+		if ok && apiError.HttpStatusCode == http.StatusForbidden {
+			// If it was a scoped "sharing" token it will
+			// return 403 instead of 401 for the current
+			// user check.  If it is a download operation
+			// and they have permission to read the
+			// keep_services table, we can allow it.
+			err = arv.Call("HEAD", "keep_services", "", "accessible", nil, nil)
+		}
 	}
 	if err != nil {
 		log.Printf("%s: CheckAuthorizationHeader error: %v", GetRemoteAddress(req), err)
@@ -316,14 +323,18 @@ func MakeRESTRouter(kc *keepclient.KeepClient, timeout time.Duration, cluster *a
 	transport.TLSClientConfig = arvadosclient.MakeTLSConfig(kc.Arvados.ApiInsecure)
 	transport.TLSHandshakeTimeout = keepclient.DefaultTLSHandshakeTimeout
 
+	cacheQ, err := lru.New2Q(500)
+	if err != nil {
+		panic("Could not create 2Q")
+	}
+
 	h := &proxyHandler{
 		Handler:    rest,
 		KeepClient: kc,
 		timeout:    timeout,
 		transport:  &transport,
 		APITokenCache: &APITokenCache{
-			tokens:     make(map[string]int64),
-			tokenUser:  make(map[string]*arvados.User),
+			tokens:     cacheQ,
 			expireTime: 300,
 		},
 		logger:  logger,
