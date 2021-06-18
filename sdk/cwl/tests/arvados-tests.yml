@@ -393,3 +393,37 @@
   }
   tool: 10380-trailing-slash-dir.cwl
   doc: "Test issue 10380 - bug with trailing slash when capturing an output directory"
+
+- job: null
+  output: {
+    "stuff": {
+        "basename": "78f3957c41d044352303a3fa326dff1e+102",
+        "class": "Directory",
+        "listing": [
+            {
+                "basename": "baz.txt",
+                "checksum": "sha1$da39a3ee5e6b4b0d3255bfef95601890afd80709",
+                "class": "File",
+                "location": "78f3957c41d044352303a3fa326dff1e+102/baz.txt",
+                "size": 0
+            },
+            {
+                "basename": "foo",
+                "class": "Directory",
+                "listing": [
+                    {
+                        "basename": "bar.txt",
+                        "checksum": "sha1$da39a3ee5e6b4b0d3255bfef95601890afd80709",
+                        "class": "File",
+                        "location": "78f3957c41d044352303a3fa326dff1e+102/foo/bar.txt",
+                        "size": 0
+                    }
+                ],
+                "location": "78f3957c41d044352303a3fa326dff1e+102/foo"
+            }
+        ],
+        "location": "78f3957c41d044352303a3fa326dff1e+102"
+    }
+  }
+  tool: 17801-runtime-outdir.cwl
+  doc: "Test issue 17801 - bug using $(runtime.outdir) to capture the output directory"
