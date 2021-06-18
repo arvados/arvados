@@ -173,7 +173,8 @@ Follow file and directory symlinks (default).
 """)
 _group.add_argument('--no-follow-links', action='store_false', dest='follow_links',
                     help="""
-Do not follow file and directory symlinks.
+Ignore file and directory symlinks. Even paths given explicitly on the
+command line will be skipped if they are symlinks.
 """)
 
 
@@ -259,9 +260,8 @@ def parse_arguments(arguments):
 
     args.paths = ["-" if x == "/dev/stdin" else x for x in args.paths]
 
-    if len(args.paths) != 1 or os.path.isdir(args.paths[0]):
-        if args.filename:
-            arg_parser.error("""
+    if args.filename and (len(args.paths) != 1 or os.path.isdir(args.paths[0])):
+        arg_parser.error("""
     --filename argument cannot be used when storing a directory or
     multiple files.
     """)
@@ -525,6 +525,9 @@ class ArvPutUploadJob(object):
                 self._write_stdin(self.filename or 'stdin')
             elif not os.path.exists(path):
                  raise PathDoesNotExistError(u"file or directory '{}' does not exist.".format(path))
+            elif (not self.follow_links) and os.path.islink(path):
+                self.logger.warning("Skipping symlink '{}'".format(path))
+                continue
             elif os.path.isdir(path):
                 # Use absolute paths on cache index so CWD doesn't interfere
                 # with the caching logic.
@@ -656,15 +659,14 @@ class ArvPutUploadJob(object):
                 else:
                     # The file already exist on remote collection, skip it.
                     pass
-            self._remote_collection.save(storage_classes=self.storage_classes,
-                                         num_retries=self.num_retries,
+            self._remote_collection.save(num_retries=self.num_retries,
                                          trash_at=self._collection_trash_at())
         else:
-            if self.storage_classes is None:
-                self.storage_classes = ['default']
+            if len(self._local_collection) == 0:
+                self.logger.warning("No files were uploaded, skipping collection creation.")
+                return
             self._local_collection.save_new(
                 name=self.name, owner_uuid=self.owner_uuid,
-                storage_classes=self.storage_classes,
                 ensure_unique_name=self.ensure_unique_name,
                 num_retries=self.num_retries,
                 trash_at=self._collection_trash_at())
@@ -868,6 +870,7 @@ class ArvPutUploadJob(object):
                 self._remote_collection = arvados.collection.Collection(
                     update_collection,
                     api_client=self._api_client,
+                    storage_classes_desired=self.storage_classes,
                     num_retries=self.num_retries)
             except arvados.errors.ApiError as error:
                 raise CollectionUpdateError("Cannot read collection {} ({})".format(update_collection, error))
@@ -910,6 +913,7 @@ class ArvPutUploadJob(object):
             self._local_collection = arvados.collection.Collection(
                 self._state['manifest'],
                 replication_desired=self.replication_desired,
+                storage_classes_desired=(self.storage_classes or ['default']),
                 put_threads=self.put_threads,
                 api_client=self._api_client,
                 num_retries=self.num_retries)
@@ -1197,11 +1201,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr,
     #  Split storage-classes argument
     storage_classes = None
     if args.storage_classes:
-        storage_classes = args.storage_classes.strip().split(',')
-        if len(storage_classes) > 1:
-            logger.error("Multiple storage classes are not supported currently.")
-            sys.exit(1)
-
+        storage_classes = args.storage_classes.strip().replace(' ', '').split(',')
 
     # Setup exclude regex from all the --exclude arguments provided
     name_patterns = []
@@ -1316,7 +1316,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr,
             output = writer.manifest_text()
     elif args.raw:
         output = ','.join(writer.data_locators())
-    else:
+    elif writer.manifest_locator() is not None:
         try:
             expiration_notice = ""
             if writer.collection_trash_at() is not None:
@@ -1342,6 +1342,8 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr,
                 "arv-put: Error creating Collection on project: {}.".format(
                     error))
             status = 1
+    else:
+        status = 1
 
     # Print the locator (uuid) of the new collection.
     if output is None:

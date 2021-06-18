@@ -135,11 +135,11 @@ VERSION="latest"
 
 # The arvados-formula version.  For a stable release, this should be a
 # branch name (e.g. X.Y-dev) or tag for the release.
-ARVADOS_TAG="master"
+ARVADOS_TAG="main"
 
 # Other formula versions we depend on
 POSTGRES_TAG="v0.41.6"
-NGINX_TAG="temp-fix-missing-statements-in-pillar"
+NGINX_TAG="v2.7.4"
 DOCKER_TAG="v1.0.0"
 LOCALE_TAG="v0.3.4"
 LETSENCRYPT_TAG="v2.1.0"
@@ -219,8 +219,7 @@ cd ${F_DIR} || exit 1
 git clone --branch "${ARVADOS_TAG}"     https://git.arvados.org/arvados-formula.git
 git clone --branch "${DOCKER_TAG}"      https://github.com/saltstack-formulas/docker-formula.git
 git clone --branch "${LOCALE_TAG}"      https://github.com/saltstack-formulas/locale-formula.git
-# git clone --branch "${NGINX_TAG}"       https://github.com/saltstack-formulas/nginx-formula.git
-git clone --branch "${NGINX_TAG}"       https://github.com/netmanagers/nginx-formula.git
+git clone --branch "${NGINX_TAG}"       https://github.com/saltstack-formulas/nginx-formula.git
 git clone --branch "${POSTGRES_TAG}"    https://github.com/saltstack-formulas/postgres-formula.git
 git clone --branch "${LETSENCRYPT_TAG}" https://github.com/saltstack-formulas/letsencrypt-formula.git
 

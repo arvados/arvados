@@ -16,6 +16,8 @@ import (
 	"runtime"
 	"sort"
 	"strings"
+
+	"github.com/sirupsen/logrus"
 )
 
 type Handler interface {
@@ -152,4 +154,10 @@ func SubcommandToFront(args []string, flagset FlagSet) []string {
 	copy(newargs[1:flagargs+1], args[:flagargs])
 	copy(newargs[flagargs+1:], args[flagargs+1:])
 	return newargs
+}
+
+type NoPrefixFormatter struct{}
+
+func (NoPrefixFormatter) Format(entry *logrus.Entry) ([]byte, error) {
+	return []byte(entry.Message + "\n"), nil
 }
