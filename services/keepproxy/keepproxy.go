@@ -510,9 +510,9 @@ func (h *proxyHandler) Put(resp http.ResponseWriter, req *http.Request) {
 	kc.Arvados = &arvclient
 
 	// Check if the client specified the number of replicas
-	if req.Header.Get("X-Keep-Desired-Replicas") != "" {
+	if desiredReplicas := req.Header.Get(keepclient.XKeepDesiredReplicas); desiredReplicas != "" {
 		var r int
-		_, err := fmt.Sscanf(req.Header.Get(keepclient.XKeepDesiredReplicas), "%d", &r)
+		_, err := fmt.Sscanf(desiredReplicas, "%d", &r)
 		if err == nil {
 			kc.Want_replicas = r
 		}
@@ -537,23 +537,25 @@ func (h *proxyHandler) Put(resp http.ResponseWriter, req *http.Request) {
 	switch err.(type) {
 	case nil:
 		status = http.StatusOK
+		if len(kc.StorageClasses) > 0 {
+			hdr := ""
+			isFirst := true
+			for _, sc := range kc.StorageClasses {
+				if isFirst {
+					hdr = fmt.Sprintf("%s=%d", sc, wroteReplicas)
+					isFirst = false
+				} else {
+					hdr += fmt.Sprintf(", %s=%d", sc, wroteReplicas)
+				}
+			}
+			resp.Header().Set(keepclient.XKeepStorageClassesConfirmed, hdr)
+		}
 		_, err = io.WriteString(resp, locatorOut)
-
 	case keepclient.OversizeBlockError:
 		// Too much data
 		status = http.StatusRequestEntityTooLarge
-
 	case keepclient.InsufficientReplicasError:
-		if wroteReplicas > 0 {
-			// At least one write is considered success.  The
-			// client can decide if getting less than the number of
-			// replications it asked for is a fatal error.
-			status = http.StatusOK
-			_, err = io.WriteString(resp, locatorOut)
-		} else {
-			status = http.StatusServiceUnavailable
-		}
-
+		status = http.StatusServiceUnavailable
 	default:
 		status = http.StatusBadGateway
 	}
