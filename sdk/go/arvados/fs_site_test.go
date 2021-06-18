@@ -36,7 +36,7 @@ func init() {
 	// Enable DebugLocksPanicMode sometimes. Don't enable it all
 	// the time, though -- it adds many calls to time.Sleep(),
 	// which could hide different bugs.
-	if time.Now().Seconds()&1 == 0 {
+	if time.Now().Second()&1 == 0 {
 		DebugLocksPanicMode = true
 	}
 }
