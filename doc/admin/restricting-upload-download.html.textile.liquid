@@ -33,6 +33,8 @@ The default policy allows anyone to upload or download.
           Upload: true
 </pre>
 
+If you create a sharing link as an admin user, and then give someone the token from the sharing link to download a file using @arv-get@, because the downloader is anonymous, the download permission will be restricted based on the "User" role and not the "Admin" role.
+
 h2. WebDAV and S3 API Permissions
 
 Permitting @WebDAV@ makes it possible to use WebDAV, S3 API, download from Workbench 1, and upload/download with Workbench 2.  It works in terms of individual files.  It prints a log each time a user uploads or downloads a file.  When @WebDAVLogEvents@ (default true) is enabled, it also adds an entry into the API server @logs@ table.
