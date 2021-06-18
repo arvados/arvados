@@ -136,13 +136,37 @@ func s3stringToSign(alg, scope, signedHeaders string, r *http.Request) (string, 
 		}
 	}
 
-	normalizedURL := *r.URL
-	normalizedURL.RawPath = ""
-	normalizedURL.Path = reMultipleSlashChars.ReplaceAllString(normalizedURL.Path, "/")
-	ctxlog.FromContext(r.Context()).Infof("escapedPath %s", normalizedURL.EscapedPath())
-	canonicalRequest := fmt.Sprintf("%s\n%s\n%s\n%s\n%s\n%s", r.Method, normalizedURL.EscapedPath(), s3querystring(r.URL), canonicalHeaders, signedHeaders, r.Header.Get("X-Amz-Content-Sha256"))
+	normalizedPath := normalizePath(r.URL.Path)
+	ctxlog.FromContext(r.Context()).Debugf("normalizedPath %q", normalizedPath)
+	canonicalRequest := fmt.Sprintf("%s\n%s\n%s\n%s\n%s\n%s", r.Method, normalizedPath, s3querystring(r.URL), canonicalHeaders, signedHeaders, r.Header.Get("X-Amz-Content-Sha256"))
 	ctxlog.FromContext(r.Context()).Debugf("s3stringToSign: canonicalRequest %s", canonicalRequest)
 	return fmt.Sprintf("%s\n%s\n%s\n%s", alg, r.Header.Get("X-Amz-Date"), scope, hashdigest(sha256.New(), canonicalRequest)), nil
+}
+
+func normalizePath(s string) string {
+	// (url.URL).EscapedPath() would be incorrect here. AWS
+	// documentation specifies the URL path should be normalized
+	// according to RFC 3986, i.e., unescaping ALPHA / DIGIT / "-"
+	// / "." / "_" / "~". The implication is that everything other
+	// than those chars (and "/") _must_ be percent-encoded --
+	// even chars like ";" and "," that are not normally
+	// percent-encoded in paths.
+	out := ""
+	for _, c := range []byte(reMultipleSlashChars.ReplaceAllString(s, "/")) {
+		if (c >= 'a' && c <= 'z') ||
+			(c >= 'A' && c <= 'Z') ||
+			(c >= '0' && c <= '9') ||
+			c == '-' ||
+			c == '.' ||
+			c == '_' ||
+			c == '~' ||
+			c == '/' {
+			out += string(c)
+		} else {
+			out += fmt.Sprintf("%%%02X", c)
+		}
+	}
+	return out
 }
 
 func s3signature(secretKey, scope, signedHeaders, stringToSign string) (string, error) {
