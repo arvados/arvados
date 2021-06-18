@@ -418,12 +418,12 @@ func (s *ServerRequiredSuite) TestPutAskGetForbidden(c *C) {
 
 	blocklen, _, err := kc.Ask(hash)
 	c.Check(err, FitsTypeOf, &keepclient.ErrNotFound{})
-	c.Check(err, ErrorMatches, ".*not found.*")
+	c.Check(err, ErrorMatches, ".*HTTP 403.*")
 	c.Check(blocklen, Equals, int64(0))
 
 	_, blocklen, _, err = kc.Get(hash)
 	c.Check(err, FitsTypeOf, &keepclient.ErrNotFound{})
-	c.Check(err, ErrorMatches, ".*not found.*")
+	c.Check(err, ErrorMatches, ".*HTTP 403.*")
 	c.Check(blocklen, Equals, int64(0))
 }
 
