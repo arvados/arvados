@@ -8,8 +8,8 @@ import (
 	"io"
 	"time"
 
+	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
-	"github.com/sirupsen/logrus"
 )
 
 var Command = command{}
@@ -22,23 +22,16 @@ type command struct {
 	end        time.Time
 }
 
-type NoPrefixFormatter struct{}
-
-func (f *NoPrefixFormatter) Format(entry *logrus.Entry) ([]byte, error) {
-	return []byte(entry.Message), nil
-}
-
 // RunCommand implements the subcommand "costanalyzer <collection> <collection> ..."
 func (c command) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	var err error
 	logger := ctxlog.New(stderr, "text", "info")
+	logger.SetFormatter(cmd.NoPrefixFormatter{})
 	defer func() {
 		if err != nil {
-			logger.Error("\n" + err.Error() + "\n")
+			logger.Error("\n" + err.Error())
 		}
 	}()
-
-	logger.SetFormatter(new(NoPrefixFormatter))
 
 	exitcode, err := c.costAnalyzer(prog, args, logger, stdout, stderr)
 
