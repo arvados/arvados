@@ -897,9 +897,13 @@ func (h *handler) logUploadOrDownload(
 	log := ctxlog.FromContext(r.Context())
 	props := make(map[string]string)
 	props["reqPath"] = r.URL.Path
+	var useruuid string
 	if user != nil {
 		log = log.WithField("user_uuid", user.UUID).
 			WithField("user_full_name", user.FullName)
+		useruuid = user.UUID
+	} else {
+		useruuid = fmt.Sprintf("%s-tpzed-anonymouspublic", h.Config.cluster.ClusterID)
 	}
 	if collection == nil && fs != nil {
 		collection, filepath = h.determineCollection(fs, filepath)
@@ -915,7 +919,7 @@ func (h *handler) logUploadOrDownload(
 		if h.Config.cluster.Collections.WebDAVLogEvents {
 			go func() {
 				lr := arvadosclient.Dict{"log": arvadosclient.Dict{
-					"object_uuid": user.UUID,
+					"object_uuid": useruuid,
 					"event_type":  "file_upload",
 					"properties":  props}}
 				err := client.Create("logs", lr, nil)
@@ -933,7 +937,7 @@ func (h *handler) logUploadOrDownload(
 		if h.Config.cluster.Collections.WebDAVLogEvents {
 			go func() {
 				lr := arvadosclient.Dict{"log": arvadosclient.Dict{
-					"object_uuid": user.UUID,
+					"object_uuid": useruuid,
 					"event_type":  "file_download",
 					"properties":  props}}
 				err := client.Create("logs", lr, nil)
