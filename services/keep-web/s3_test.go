@@ -563,7 +563,7 @@ func (s *IntegrationSuite) TestS3NormalizeURIForSignature(c *check.C) {
 		{"/foo%2fbar", "/foo/bar"},                 // / must not be escaped
 		{"/(foo)/[];,", "/%28foo%29/%5B%5D%3B%2C"}, // ()[];, must be escaped
 		{"/foo%5bbar", "/foo%5Bbar"},               // %XX must be uppercase
-		{"//foo///bar", "/foo/bar"},                // "//" and "///" must be squashed to "/"
+		{"//foo///.bar", "/foo/.bar"},              // "//" and "///" must be squashed to "/"
 	} {
 		c.Logf("trial %q", trial)
 
