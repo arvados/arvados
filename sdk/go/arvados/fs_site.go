@@ -54,6 +54,8 @@ func (c *Client) CustomFileSystem(kc keepClient) CustomFileSystem {
 }
 
 func (fs *customFileSystem) MountByID(mount string) {
+	fs.root.treenode.Lock()
+	defer fs.root.treenode.Unlock()
 	fs.root.treenode.Child(mount, func(inode) (inode, error) {
 		return &vdirnode{
 			treenode: treenode{
@@ -72,12 +74,16 @@ func (fs *customFileSystem) MountByID(mount string) {
 }
 
 func (fs *customFileSystem) MountProject(mount, uuid string) {
+	fs.root.treenode.Lock()
+	defer fs.root.treenode.Unlock()
 	fs.root.treenode.Child(mount, func(inode) (inode, error) {
 		return fs.newProjectNode(fs.root, mount, uuid), nil
 	})
 }
 
 func (fs *customFileSystem) MountUsers(mount string) {
+	fs.root.treenode.Lock()
+	defer fs.root.treenode.Unlock()
 	fs.root.treenode.Child(mount, func(inode) (inode, error) {
 		return &lookupnode{
 			stale:   fs.Stale,
