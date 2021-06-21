@@ -487,6 +487,8 @@ class CollectionDirectory(CollectionDirectoryBase):
                             new_collection_record["portable_data_hash"] = new_collection_record["uuid"]
                         if 'manifest_text' not in new_collection_record:
                             new_collection_record['manifest_text'] = coll_reader.manifest_text()
+                        if 'storage_classes_desired' not in new_collection_record:
+                            new_collection_record['storage_classes_desired'] = self.collection.storage_classes_desired()
 
                         if self.collection_record is None or self.collection_record["portable_data_hash"] != new_collection_record.get("portable_data_hash"):
                             self.new_collection(new_collection_record, coll_reader)
@@ -596,6 +598,7 @@ class TmpCollectionDirectory(CollectionDirectoryBase):
                 "uuid": None,
                 "manifest_text": self.collection.manifest_text(),
                 "portable_data_hash": self.collection.portable_data_hash(),
+                "storage_classes_desired": self.collection.storage_classes_desired(),
             }
 
     def __contains__(self, k):
