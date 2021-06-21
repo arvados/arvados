@@ -163,7 +163,10 @@ func run(logger log.FieldLogger, cluster *arvados.Cluster) error {
 	signal.Notify(term, syscall.SIGINT)
 
 	// Start serving requests.
-	router = MakeRESTRouter(kc, time.Duration(keepclient.DefaultProxyRequestTimeout), cluster, logger)
+	router, err = MakeRESTRouter(kc, time.Duration(keepclient.DefaultProxyRequestTimeout), cluster, logger)
+	if err != nil {
+		return err
+	}
 	return http.Serve(listener, httpserver.AddRequestIDs(httpserver.LogRequests(router)))
 }
 
@@ -311,7 +314,7 @@ type proxyHandler struct {
 
 // MakeRESTRouter returns an http.Handler that passes GET and PUT
 // requests to the appropriate handlers.
-func MakeRESTRouter(kc *keepclient.KeepClient, timeout time.Duration, cluster *arvados.Cluster, logger log.FieldLogger) http.Handler {
+func MakeRESTRouter(kc *keepclient.KeepClient, timeout time.Duration, cluster *arvados.Cluster, logger log.FieldLogger) (http.Handler, error) {
 	rest := mux.NewRouter()
 
 	transport := defaultTransport
@@ -325,7 +328,7 @@ func MakeRESTRouter(kc *keepclient.KeepClient, timeout time.Duration, cluster *a
 
 	cacheQ, err := lru.New2Q(500)
 	if err != nil {
-		panic("Could not create 2Q")
+		return nil, fmt.Errorf("Error from lru.New2Q: %v", err)
 	}
 
 	h := &proxyHandler{
@@ -362,7 +365,7 @@ func MakeRESTRouter(kc *keepclient.KeepClient, timeout time.Duration, cluster *a
 	}).Methods("GET")
 
 	rest.NotFoundHandler = InvalidPathHandler{}
-	return h
+	return h, nil
 }
 
 var errLoopDetected = errors.New("loop detected")
