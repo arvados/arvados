@@ -55,12 +55,14 @@ require (
 	github.com/prometheus/common v0.7.0
 	github.com/satori/go.uuid v1.2.1-0.20180103174451-36e9d2ebbde5 // indirect
 	github.com/sergi/go-diff v1.0.0 // indirect
-	github.com/sirupsen/logrus v1.4.2
+	github.com/sirupsen/logrus v1.8.1
 	github.com/src-d/gcfg v1.3.0 // indirect
 	github.com/xanzy/ssh-agent v0.1.0 // indirect
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
 	golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
+	golang.org/x/sys v0.0.0-20210603125802-9665404d3644
+	golang.org/x/tools v0.1.0 // indirect
 	golang.org/x/sys v0.0.0-20210510120138-977fb7262007
 	golang.org/x/tools v0.1.2 // indirect
 	google.golang.org/api v0.13.0

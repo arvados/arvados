@@ -29,10 +29,27 @@ var (
 	ErrIsDirectory       = errors.New("cannot rename file to overwrite existing directory")
 	ErrNotADirectory     = errors.New("not a directory")
 	ErrPermission        = os.ErrPermission
+	DebugLocksPanicMode  = false
 )
 
 type syncer interface {
 	Sync() error
+}
+
+func debugPanicIfNotLocked(l sync.Locker) {
+	if !DebugLocksPanicMode {
+		return
+	}
+	race := false
+	go func() {
+		l.Lock()
+		race = true
+		l.Unlock()
+	}()
+	time.Sleep(10)
+	if race {
+		panic("bug: caller-must-have-lock func called, but nobody has lock")
+	}
 }
 
 // A File is an *os.File-like interface for reading and writing files
@@ -271,6 +288,7 @@ func (n *treenode) IsDir() bool {
 }
 
 func (n *treenode) Child(name string, replace func(inode) (inode, error)) (child inode, err error) {
+	debugPanicIfNotLocked(n)
 	child = n.inodes[name]
 	if name == "" || name == "." || name == ".." {
 		err = ErrInvalidArgument
@@ -333,6 +351,7 @@ func (n *treenode) Sync() error {
 func (n *treenode) MemorySize() (size int64) {
 	n.RLock()
 	defer n.RUnlock()
+	debugPanicIfNotLocked(n)
 	for _, inode := range n.inodes {
 		size += inode.MemorySize()
 	}
