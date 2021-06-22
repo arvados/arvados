@@ -25,9 +25,6 @@ group :test, :development do
   gem 'listen'
 end
 
-# Fast app boot times
-gem 'bootsnap', require: false
-
 gem 'pg', '~> 1.0'
 
 gem 'multi_json'

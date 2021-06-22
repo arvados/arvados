@@ -18,9 +18,6 @@ gem 'responders', '~> 2.0'
 # See: https://github.com/rails/sprockets-rails/issues/443
 gem 'sprockets', '~> 3.0'
 
-# Fast app boot times
-gem 'bootsnap', require: false
-
 # Note: keeping this out of the "group :assets" section "may" allow us
 # to use Coffescript for UJS responses. It also prevents a
 # warning/problem when running tests: "WARN: tilt autoloading
