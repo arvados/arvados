@@ -11,7 +11,7 @@ class UserSessionsController < ApplicationController
 
   respond_to :html
 
-  # omniauth callback method
+  # create a new session
   def create
     if !Rails.configuration.Login.LoginCluster.empty? and Rails.configuration.Login.LoginCluster != Rails.configuration.ClusterID
       raise "Local login disabled when LoginCluster is set"
@@ -27,9 +27,7 @@ class UserSessionsController < ApplicationController
       authinfo = SafeJSON.load(params[:auth_info])
       max_expires_at = authinfo["expires_at"]
     else
-      # omniauth middleware verified the user and is passing auth_info
-      # in request.env.
-      authinfo = request.env['omniauth.auth']['info'].with_indifferent_access
+      # Legacy code path, fail?
     end
 
     if !authinfo['user_uuid'].blank?
@@ -102,9 +100,7 @@ class UserSessionsController < ApplicationController
     redirect_to "#{Rails.configuration.Services.SSO.ExternalURL}users/sign_out?redirect_uri=#{CGI.escape return_to}"
   end
 
-  # login - Just bounce to /auth/joshid. The only purpose of this function is
-  # to save the return_to parameter (if it exists; see the application
-  # controller). /auth/joshid bypasses the application controller.
+  # login.  Redirect to LoginCluster.
   def login
     if params[:remote] !~ /^[0-9a-z]{5}$/ && !params[:remote].nil?
       return send_error 'Invalid remote cluster id', status: 400
@@ -136,13 +132,7 @@ class UserSessionsController < ApplicationController
       p << "return_to=#{CGI.escape(params[:return_to])}" if params[:return_to]
       redirect_to "#{login_cluster}/login?#{p.join('&')}"
     else
-      if params[:return_to]
-        # Encode remote param inside callback's return_to, so that we'll get it on
-        # create() after login.
-        remote_param = params[:remote].nil? ? '' : params[:remote]
-        p << "return_to=#{CGI.escape(remote_param + ',' + params[:return_to])}"
-      end
-      redirect_to "/auth/joshid?#{p.join('&')}"
+      # legacy code path, fail?
     end
   end
 

@@ -23,8 +23,6 @@ SPDX-License-Identifier: AGPL-3.0 %>
     <% end %>
     &nbsp;&bull;&nbsp;
     <a class="logout" href="/logout">Log out</a>
-    <% else %>
-      <!--<a class="logout" href="/auth/joshid">Log in</a>-->
     <% end %>
 
     <% if current_user and session[:real_uid] and session[:switch_back_to] and User.find(session[:real_uid].to_i).verify_userswitch_cookie(session[:switch_back_to]) %>

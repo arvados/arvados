@@ -397,7 +397,7 @@ class ApplicationController < ActionController::Base
     if not current_user
       respond_to do |format|
         format.json { send_error("Not logged in", status: 401) }
-        format.html { redirect_to '/auth/joshid' }
+        format.html { redirect_to '/login' }
       end
       false
     end
