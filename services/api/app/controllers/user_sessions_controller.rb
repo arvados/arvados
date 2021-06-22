@@ -27,7 +27,7 @@ class UserSessionsController < ApplicationController
       authinfo = SafeJSON.load(params[:auth_info])
       max_expires_at = authinfo["expires_at"]
     else
-      # Legacy code path, fail?
+      return send_error "Legacy code path no longer supported", status: 404
     end
 
     if !authinfo['user_uuid'].blank?
@@ -132,7 +132,7 @@ class UserSessionsController < ApplicationController
       p << "return_to=#{CGI.escape(params[:return_to])}" if params[:return_to]
       redirect_to "#{login_cluster}/login?#{p.join('&')}"
     else
-      # legacy code path, fail?
+      return send_error "Legacy code path no longer supported", status: 404
     end
   end
 
