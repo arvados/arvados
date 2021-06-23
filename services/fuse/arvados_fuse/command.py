@@ -95,6 +95,7 @@ class ArgumentParser(argparse.ArgumentParser):
 
         self.add_argument('--read-only', action='store_false', help="Mount will be read only (default)", dest="enable_write", default=False)
         self.add_argument('--read-write', action='store_true', help="Mount will be read-write", dest="enable_write", default=False)
+        self.add_argument('--storage-classes', type=str, metavar='CLASSES', help="Specify comma separated list of storage classes to be used when saving data of new collections", default=None)
 
         self.add_argument('--crunchstat-interval', type=float, help="Write stats to stderr every N seconds (default disabled)", default=0)
 
@@ -246,6 +247,11 @@ class Mount(object):
         dir_args = [llfuse.ROOT_INODE, self.operations.inodes, self.api, self.args.retries]
         mount_readme = False
 
+        storage_classes = None
+        if self.args.storage_classes is not None:
+            storage_classes = self.args.storage_classes.replace(' ', '').split(',')
+            self.logger.info("Storage classes requested for new collections: {}".format(', '.join(storage_classes)))
+
         if self.args.collection is not None:
             # Set up the request handler with the collection at the root
             # First check that the collection is readable
@@ -295,7 +301,10 @@ class Mount(object):
             mount_readme = True
 
         if dir_class is not None:
-            ent = dir_class(*dir_args)
+            if dir_class in [TagsDirectory, CollectionDirectory]:
+                ent = dir_class(*dir_args)
+            else:
+                ent = dir_class(*dir_args, storage_classes=storage_classes)
             self.operations.inodes.add_entry(ent)
             self.listen_for_events = ent.want_event_subscribe()
             return
@@ -305,17 +314,17 @@ class Mount(object):
         dir_args[0] = e.inode
 
         for name in self.args.mount_by_id:
-            self._add_mount(e, name, MagicDirectory(*dir_args, pdh_only=False))
+            self._add_mount(e, name, MagicDirectory(*dir_args, pdh_only=False, storage_classes=storage_classes))
         for name in self.args.mount_by_pdh:
             self._add_mount(e, name, MagicDirectory(*dir_args, pdh_only=True))
         for name in self.args.mount_by_tag:
             self._add_mount(e, name, TagsDirectory(*dir_args))
         for name in self.args.mount_home:
-            self._add_mount(e, name, ProjectDirectory(*dir_args, project_object=usr, poll=True))
+            self._add_mount(e, name, ProjectDirectory(*dir_args, project_object=usr, poll=True, storage_classes=storage_classes))
         for name in self.args.mount_shared:
-            self._add_mount(e, name, SharedDirectory(*dir_args, exclude=usr, poll=True))
+            self._add_mount(e, name, SharedDirectory(*dir_args, exclude=usr, poll=True, storage_classes=storage_classes))
         for name in self.args.mount_tmp:
-            self._add_mount(e, name, TmpCollectionDirectory(*dir_args))
+            self._add_mount(e, name, TmpCollectionDirectory(*dir_args, storage_classes=storage_classes))
 
         if mount_readme:
             text = self._readme_text(
