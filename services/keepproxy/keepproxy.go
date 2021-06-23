@@ -538,6 +538,9 @@ func (h *proxyHandler) Put(resp http.ResponseWriter, req *http.Request) {
 	case nil:
 		status = http.StatusOK
 		if len(kc.StorageClasses) > 0 {
+			// A successful PUT request with storage classes means that all
+			// storage classes were fulfilled, so the client will get a
+			// confirmation via the X-Storage-Classes-Confirmed header.
 			hdr := ""
 			isFirst := true
 			for _, sc := range kc.StorageClasses {
