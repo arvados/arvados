@@ -52,9 +52,6 @@ Clusters:
       DispatchCloud:
         InternalURLs: {SAMPLE: {}}
         ExternalURL: "-"
-      SSO:
-        InternalURLs: {SAMPLE: {}}
-        ExternalURL: ""
       Keepproxy:
         InternalURLs: {SAMPLE: {}}
         ExternalURL: ""

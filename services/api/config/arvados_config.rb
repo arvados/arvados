@@ -28,22 +28,6 @@ rescue LoadError
   # configured by application.yml (i.e., here!) instead.
 end
 
-if (File.exist?(File.expand_path '../omniauth.rb', __FILE__) and
-    not defined? WARNED_OMNIAUTH_CONFIG)
-  Rails.logger.warn <<-EOS
-DEPRECATED CONFIGURATION:
- Please move your SSO provider config into config/application.yml
- and delete config/initializers/omniauth.rb.
-EOS
-  # Real values will be copied from globals by omniauth_init.rb. For
-  # now, assign some strings so the generic *.yml config loader
-  # doesn't overwrite them or complain that they're missing.
-  Rails.configuration.Login["SSO"]["ProviderAppID"] = 'xxx'
-  Rails.configuration.Login["SSO"]["ProviderAppSecret"] = 'xxx'
-  Rails.configuration.Services["SSO"]["ExternalURL"] = '//xxx'
-  WARNED_OMNIAUTH_CONFIG = true
-end
-
 # Load the defaults, used by config:migrate and fallback loading
 # legacy application.yml
 defaultYAML, stderr, status = Open3.capture3("arvados-server", "config-dump", "-config=-", "-skip-legacy", stdin_data: "Clusters: {xxxxx: {}}")
@@ -114,14 +98,11 @@ arvcfg.declare_config "Users.EmailSubjectPrefix", String, :email_subject_prefix
 arvcfg.declare_config "Users.UserNotifierEmailFrom", String, :user_notifier_email_from
 arvcfg.declare_config "Users.NewUserNotificationRecipients", Hash, :new_user_notification_recipients, ->(cfg, k, v) { arrayToHash cfg, "Users.NewUserNotificationRecipients", v }
 arvcfg.declare_config "Users.NewInactiveUserNotificationRecipients", Hash, :new_inactive_user_notification_recipients, method(:arrayToHash)
-arvcfg.declare_config "Login.SSO.ProviderAppSecret", String, :sso_app_secret
-arvcfg.declare_config "Login.SSO.ProviderAppID", String, :sso_app_id
 arvcfg.declare_config "Login.LoginCluster", String
 arvcfg.declare_config "Login.TrustedClients", Hash
 arvcfg.declare_config "Login.RemoteTokenRefresh", ActiveSupport::Duration
 arvcfg.declare_config "Login.TokenLifetime", ActiveSupport::Duration
 arvcfg.declare_config "TLS.Insecure", Boolean, :sso_insecure
-arvcfg.declare_config "Services.SSO.ExternalURL", String, :sso_provider_url
 arvcfg.declare_config "AuditLogs.MaxAge", ActiveSupport::Duration, :max_audit_log_age
 arvcfg.declare_config "AuditLogs.MaxDeleteBatch", Integer, :max_audit_log_delete_batch
 arvcfg.declare_config "AuditLogs.UnloggedAttributes", Hash, :unlogged_attributes, ->(cfg, k, v) { arrayToHash cfg, "AuditLogs.UnloggedAttributes", v }

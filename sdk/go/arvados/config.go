@@ -322,7 +322,6 @@ type Services struct {
 	Keepproxy      Service
 	Keepstore      Service
 	RailsAPI       Service
-	SSO            Service
 	WebDAVDownload Service
 	WebDAV         Service
 	WebShell       Service
