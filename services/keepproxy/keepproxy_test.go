@@ -228,6 +228,28 @@ func (s *ServerRequiredSuite) TestStorageClassesHeader(c *C) {
 	c.Check(hdr.Get("X-Keep-Storage-Classes"), Equals, "secure")
 }
 
+func (s *ServerRequiredSuite) TestStorageClassesConfirmedHeader(c *C) {
+	runProxy(c, false, false)
+	defer closeListener()
+
+	content := []byte("foo")
+	hash := fmt.Sprintf("%x", md5.Sum(content))
+	client := &http.Client{}
+
+	req, err := http.NewRequest("PUT",
+		fmt.Sprintf("http://%s/%s", listener.Addr().String(), hash),
+		bytes.NewReader(content))
+	c.Assert(err, IsNil)
+	req.Header.Set("X-Keep-Storage-Classes", "default")
+	req.Header.Set("Authorization", "OAuth2 "+arvadostest.ActiveToken)
+	req.Header.Set("Content-Type", "application/octet-stream")
+
+	resp, err := client.Do(req)
+	c.Assert(err, IsNil)
+	c.Assert(resp.StatusCode, Equals, http.StatusOK)
+	c.Assert(resp.Header.Get("X-Keep-Storage-Classes-Confirmed"), Equals, "default=2")
+}
+
 func (s *ServerRequiredSuite) TestDesiredReplicas(c *C) {
 	kc := runProxy(c, false, false)
 	defer closeListener()
