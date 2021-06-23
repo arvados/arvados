@@ -736,16 +736,6 @@ Clusters:
         # originally supplied by the user will be used.
         UsernameAttribute: uid
 
-      SSO:
-        # Authenticate with a separate SSO server. (Deprecated)
-        Enable: false
-
-        # ProviderAppID and ProviderAppSecret are generated during SSO
-        # setup; see
-        # https://doc.arvados.org/v2.0/install/install-sso.html#update-config
-        ProviderAppID: ""
-        ProviderAppSecret: ""
-
       Test:
         # Authenticate users listed here in the config file. This
         # feature is intended to be used in test environments, and

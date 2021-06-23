@@ -164,34 +164,6 @@ func (s *HandlerSuite) TestProxyNotFound(c *check.C) {
 	c.Check(jresp["errors"], check.FitsTypeOf, []interface{}{})
 }
 
-func (s *HandlerSuite) TestProxyRedirect(c *check.C) {
-	s.cluster.Login.SSO.Enable = true
-	s.cluster.Login.SSO.ProviderAppID = "test"
-	s.cluster.Login.SSO.ProviderAppSecret = "test"
-	req := httptest.NewRequest("GET", "https://0.0.0.0:1/login?return_to=foo", nil)
-	resp := httptest.NewRecorder()
-	s.handler.ServeHTTP(resp, req)
-	if !c.Check(resp.Code, check.Equals, http.StatusFound) {
-		c.Log(resp.Body.String())
-	}
-	// Old "proxy entire request" code path returns an absolute
-	// URL. New lib/controller/federation code path returns a
-	// relative URL.
-	c.Check(resp.Header().Get("Location"), check.Matches, `(https://0.0.0.0:1)?/auth/joshid\?return_to=%2Cfoo&?`)
-}
-
-func (s *HandlerSuite) TestLogoutSSO(c *check.C) {
-	s.cluster.Login.SSO.Enable = true
-	s.cluster.Login.SSO.ProviderAppID = "test"
-	req := httptest.NewRequest("GET", "https://0.0.0.0:1/logout?return_to=https://example.com/foo", nil)
-	resp := httptest.NewRecorder()
-	s.handler.ServeHTTP(resp, req)
-	if !c.Check(resp.Code, check.Equals, http.StatusFound) {
-		c.Log(resp.Body.String())
-	}
-	c.Check(resp.Header().Get("Location"), check.Equals, "http://localhost:3002/users/sign_out?"+url.Values{"redirect_uri": {"https://example.com/foo"}}.Encode())
-}
-
 func (s *HandlerSuite) TestLogoutGoogle(c *check.C) {
 	s.cluster.Login.Google.Enable = true
 	s.cluster.Login.Google.ClientID = "test"

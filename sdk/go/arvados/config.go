@@ -176,11 +176,6 @@ type Cluster struct {
 			Service            string
 			DefaultEmailDomain string
 		}
-		SSO struct {
-			Enable            bool
-			ProviderAppID     string
-			ProviderAppSecret string
-		}
 		Test struct {
 			Enable bool
 			Users  map[string]TestUser
