@@ -9,6 +9,7 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
+# "Introduction":#introduction
 # "Hosts preparation":#hosts_preparation
 ## "Hosts setup using terraform (experimental)":#hosts_setup_using_terraform
 ## "Create a compute image":#create_a_compute_image
@@ -20,6 +21,18 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 # "Run the provision.sh script":#run_provision_script
 # "Initial user and login":#initial_user
 # "Test the installed cluster running a simple workflow":#test_install
+
+
+
+h2(#introduction). Introduction
+
+Arvados components can be installed in a distributed infrastructure, whether it is an "on-prem" with physical or virtual hosts, or a cloud environment.
+
+As infrastructures vary a great deal from site to site, these instructions should be considered more as 'guidelines' than fixed steps to follow.
+
+We provide an "installer script":salt.html that can help you deploy the different Arvados components. At the time of writing, the provided examples are suitable to install Arvados on AWS.
+
+
 
 h2(#hosts_preparation). Hosts preparation
 
@@ -50,10 +63,15 @@ We suggest distributing the Arvados components in the following way, creating at
 
 Note that these hosts can be virtual machines in your infrastructure and they don't need to be physical machines.
 
-h3(#hosts_setup_using_terraform). Hosts setup using terraform (experimental)
+Again, if your infrastructure differs from the setup proposed above (ie, using RDS or an existing DB server), remember that you will need to edit the configuration files for the scripts so they work with your infrastructure.
 
-We added a few "terraform":https://terraform.io/ scripts (https://github.com/arvados/arvados/tree/master/tools/terraform) to let you create these instances easier.
-Check "the Arvados terraform documentation":/doc/install/terraform.html for more details.
+
+h3(#hosts_setup_using_terraform). Hosts setup using terraform (AWS, experimental)
+
+We added a few "terraform":https://terraform.io/ scripts (https://github.com/arvados/arvados/tree/master/tools/terraform) to let you create these instances easier in an AWS account. Check "the Arvados terraform documentation":/doc/install/terraform.html for more details.
+
+
+
 
 h2(#multi_host). Multi host install using the provision.sh script
 
@@ -63,7 +81,7 @@ h2(#multi_host). Multi host install using the provision.sh script
 {% assign branchname = 'master' %}
 {% endif %}
 
-This is a package-based installation method. Start with the @provision.sh@ script which is available by cloning the @{{ branchname }}@ branch from "https://git.arvados.org/arvados.git":https://git.arvados.org/arvados.git .  The @provision.sh@ script and its supporting files can be found in the "arvados/tools/salt-install":https://git.arvados.org/arvados.git/tree/refs/heads/{{ branchname }}:/tools/salt-install directory in the Arvados git repository.
+This is a package-based installation method. Start with the @provision.sh@ script which is available by cloning the @{{ branchname }}@ branch from "https://git.arvados.org/arvados.git":https://git.arvados.org/arvados.git . The @provision.sh@ script and its supporting files can be found in the "arvados/tools/salt-install":https://git.arvados.org/arvados.git/tree/refs/heads/{{ branchname }}:/tools/salt-install directory in the Arvados git repository.
 
 This procedure will install all the main Arvados components to get you up and running in a multi-host environment.
 
@@ -73,7 +91,7 @@ After setting up a few variables in a config file (next step), you'll be ready t
 
 h3(#create_a_compute_image). Create a compute image
 
-In a multi-host installation, containers are dispatched in docker daemons running in the <i>compute instances</i>, which need some special setup. We provide a "compute image builder script":https://github.com/arvados/arvados/tree/master/tools/compute-images that you can use to build a template image following "these instructions":https://doc.arvados.org/main/install/crunch2-cloud/install-compute-node.html . Once you have that image created, you can use the image reference in the Arvados configuration in the next steps.
+In a multi-host installation, containers are dispatched in docker daemons running in the <i>compute instances</i>, which need some special setup. We provide a "compute image builder script":https://github.com/arvados/arvados/tree/master/tools/compute-images that you can use to build a template image following "these instructions":https://doc.arvados.org/main/install/crunch2-cloud/install-compute-node.html . Once you have that image created, you can use the image ID in the Arvados configuration in the next steps.
 
 h2(#choose_configuration). Choose the desired configuration
 
@@ -92,7 +110,7 @@ cp -r config_examples/multi_host/aws local_config_dir
 
 Edit the variables in the <i>local.params</i> file. Pay attention to the <b>*_INT_IP, *_TOKEN</b> and <b>*KEY</b> variables. Those variables will be used to do a search and replace on the <i>pillars/*</i> in place of any matching __VARIABLE__.
 
-The <i>multi_host</i> include LetsEncrypt salt code to automatically request and install the certificates for the public-facing hosts (API, Workbench) so it will need the hostnames to be reachable from the Internet. If this cluster will not be the case, please set the variable <i>USE_LETSENCRYPT=no</i>.
+The <i>multi_host</i> include LetsEncrypt salt code to automatically request and install the certificates for the public-facing hosts (API/controller, Workbench, Keepproxy/Keepweb) using AWS' Route53. If you will provide custom certificates, please set the variable <i>USE_LETSENCRYPT=no</i>.
 
 h3(#further_customization). Further customization of the installation (modifying the salt pillars and states)
 
