@@ -1,13 +1,15 @@
 {
   "compilerOptions": {
-    "baseUrl": "./",
     "outDir": "build/dist",
     "module": "esnext",
     "target": "es5",
-    "lib": ["es6", "dom"],
+    "lib": [
+      "es6",
+      "dom"
+    ],
     "sourceMap": true,
     "allowJs": true,
-    "jsx": "react",
+    "jsx": "preserve",
     "moduleResolution": "node",
     "rootDir": "src",
     "forceConsistentCasingInFileNames": true,
@@ -19,9 +21,13 @@
     "noUnusedLocals": false,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "paths": {
-      "~/*": ["src/*"]
-    }
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true
   },
   "exclude": [
     "node_modules",
@@ -33,5 +39,8 @@
     "cypress",
     "src/setupTests.ts",
     "**/*.test.tsx"
+  ],
+  "include": [
+    "src"
   ]
 }
