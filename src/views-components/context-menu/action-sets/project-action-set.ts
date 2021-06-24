@@ -73,6 +73,7 @@ export const filterGroupActionSet: ContextMenuActionSet = [
             icon: RenameIcon,
             name: "Edit project",
             execute: (dispatch, resource) => {
+                console.log(resource);
                 dispatch<any>(openProjectUpdateDialog(resource));
             }
         },

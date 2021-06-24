@@ -132,7 +132,46 @@ describe('Favorites tests', function () {
             });
     });
 
-    it('can view favourites in workflow', () => {
+    it.only('can edit project in favorites', () => {
+        cy.createProject({
+            owningUser: adminUser,
+            targetUser: activeUser,
+            projectName: 'mySharedWritableProject',
+            description: 'test 123123',
+            canWrite: true,
+            addToFavorites: true
+        });
+
+        cy.createCollection(adminUser.token, {
+            owner_uuid: activeUser.user.uuid,
+            name: `Test target collection ${Math.floor(Math.random() * 999999)}`,
+        }).as('testTargetCollection').then(function (testTargetCollection) {
+            cy.addToFavorites(activeUser.token, activeUser.user.uuid, testTargetCollection.uuid);
+        });
+
+        cy.getAll('@mySharedWritableProject', '@testTargetCollection')
+            .then(function ([mySharedWritableProject, testTargetCollection]) {
+                cy.loginAs(activeUser);
+
+                cy.get('[data-cy=side-panel-tree]').contains('My Favorites').click();
+
+                cy.get('main').contains(mySharedWritableProject.name).rightclick();
+                cy.get('[data-cy=context-menu]').contains('Edit project').click();
+                cy.get('[data-cy=form-dialog]').within(() => {
+                    cy.get('input[name=name]').should('have.value', mySharedWritableProject.name);
+                    cy.get('[data-cy=form-cancel-btn]').click();
+                });
+
+                cy.get('main').contains(testTargetCollection.name).rightclick();
+                cy.get('[data-cy=context-menu]').contains('Edit collection').click();
+                cy.get('[data-cy=form-dialog]').within(() => {
+                    cy.get('input[name=name]').should('have.value', testTargetCollection.name);
+                    cy.get('[data-cy=form-cancel-btn]').click();
+                });
+            });
+    });
+
+    it('can view favorites in workflow', () => {
         cy.createProject({
             owningUser: adminUser,
             targetUser: activeUser,

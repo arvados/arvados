@@ -183,7 +183,8 @@ export const ProjectPanel = withStyles(styles)(
                         ownerUuid: resource.ownerUuid,
                         isTrashed: ('isTrashed' in resource) ? resource.isTrashed: false,
                         kind: resource.kind,
-                        menuKind
+                        menuKind,
+                        description: resource.description,
                     }));
                 }
                 this.props.dispatch<any>(loadDetailsPanel(resourceUuid));
