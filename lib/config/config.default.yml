@@ -552,7 +552,7 @@ Clusters:
         MaxSessions: 100
 
     Login:
-      # One of the following mechanisms (SSO, Google, PAM, LDAP, or
+      # One of the following mechanisms (Google, PAM, LDAP, or
       # LoginCluster) should be enabled; see
       # https://doc.arvados.org/install/setup-login.html
 

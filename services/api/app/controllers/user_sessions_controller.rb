@@ -90,14 +90,14 @@ class UserSessionsController < ApplicationController
     flash[:notice] = params[:message]
   end
 
-  # logout - Clear our rack session BUT essentially redirect to the provider
-  # to clean up the Devise session from there too !
+  # logout - this gets intercepted by controller, so this is probably
+  # mostly dead code at this point.
   def logout
     session[:user_id] = nil
 
     flash[:notice] = 'You have logged off'
     return_to = params[:return_to] || root_url
-    redirect_to "#{Rails.configuration.Services.SSO.ExternalURL}users/sign_out?redirect_uri=#{CGI.escape return_to}"
+    redirect_to return_to
   end
 
   # login.  Redirect to LoginCluster.
