@@ -57,7 +57,7 @@
     "react-router-dom": "4.3.1",
     "react-router-redux": "5.0.0-alpha.9",
     "react-rte": "0.16.3",
-    "react-scripts": "2.1.8",
+    "react-scripts": "3.4.4",
     "react-splitter-layout": "3.0.1",
     "react-transition-group": "2.5.0",
     "react-virtualized-auto-sizer": "1.0.2",
