@@ -2,18 +2,18 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { getTreePicker, TreePicker } from "~/store/tree-picker/tree-picker";
-import { getNode, getNodeAncestorsIds, initTreeNode, TreeNodeStatus } from "~/models/tree";
+import { getTreePicker, TreePicker } from "store/tree-picker/tree-picker";
+import { getNode, getNodeAncestorsIds, initTreeNode, TreeNodeStatus } from "models/tree";
 import { Dispatch } from "redux";
-import { RootState } from "~/store/store";
-import { getUserUuid } from "~/common/getuser";
-import { ServiceRepository } from "~/services/services";
-import { treePickerActions } from "~/store/tree-picker/tree-picker-actions";
-import { FilterBuilder } from "~/services/api/filter-builder";
-import { OrderBuilder } from "~/services/api/order-builder";
-import { ProjectResource } from "~/models/project";
-import { resourcesActions } from "~/store/resources/resources-actions";
-import { SEARCH_BAR_ADVANCED_FORM_PICKER_ID } from "~/store/search-bar/search-bar-actions";
+import { RootState } from "store/store";
+import { getUserUuid } from "common/getuser";
+import { ServiceRepository } from "services/services";
+import { treePickerActions } from "store/tree-picker/tree-picker-actions";
+import { FilterBuilder } from "services/api/filter-builder";
+import { OrderBuilder } from "services/api/order-builder";
+import { ProjectResource } from "models/project";
+import { resourcesActions } from "store/resources/resources-actions";
+import { SEARCH_BAR_ADVANCED_FORM_PICKER_ID } from "store/search-bar/search-bar-actions";
 
 const getSearchBarTreeNode = (id: string) => (treePicker: TreePicker) => {
     const searchTree = getTreePicker(SEARCH_BAR_ADVANCED_FORM_PICKER_ID)(treePicker);

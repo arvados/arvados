@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { repositoriesActions, RepositoriesActions } from '~/store/repositories/repositories-actions';
-import { RepositoryResource } from '~/models/repositories';
+import { repositoriesActions, RepositoriesActions } from 'store/repositories/repositories-actions';
+import { RepositoryResource } from 'models/repositories';
 
 interface Repositories {
     items: RepositoryResource[];

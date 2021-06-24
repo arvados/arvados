@@ -5,7 +5,7 @@
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { GroupsService } from "./groups-service";
-import { ApiActions } from "~/services/api/api-actions";
+import { ApiActions } from "services/api/api-actions";
 
 describe("GroupsService", () => {
 

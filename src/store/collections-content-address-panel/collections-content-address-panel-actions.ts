@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from "redux";
-import { bindDataExplorerActions } from '~/store/data-explorer/data-explorer-action';
+import { bindDataExplorerActions } from 'store/data-explorer/data-explorer-action';
 
 export const COLLECTIONS_CONTENT_ADDRESS_PANEL_ID = 'collectionsContentAddressPanel';
 

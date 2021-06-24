@@ -9,9 +9,9 @@ import { TableHead, TableCell, Typography, TableBody, Button, TableSortLabel } f
 import * as Adapter from "enzyme-adapter-react-16";
 import { DataTable, DataColumns } from "./data-table";
 import { SortDirection, createDataColumn } from "./data-column";
-import { DataTableFiltersPopover } from '~/components/data-table-filters/data-table-filters-popover';
-import { createTree, setNode, initTreeNode } from '~/models/tree';
-import { DataTableFilterItem } from "~/components/data-table-filters/data-table-filters-tree";
+import { DataTableFiltersPopover } from 'components/data-table-filters/data-table-filters-popover';
+import { createTree, setNode, initTreeNode } from 'models/tree';
+import { DataTableFilterItem } from "components/data-table-filters/data-table-filters-tree";
 
 configure({ adapter: new Adapter() });
 

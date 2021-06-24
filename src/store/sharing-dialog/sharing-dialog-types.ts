@@ -2,9 +2,9 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { PermissionLevel } from '~/models/permission';
+import { PermissionLevel } from 'models/permission';
 import { getFormValues, isDirty } from 'redux-form';
-import { RootState } from '~/store/store';
+import { RootState } from 'store/store';
 
 export const SHARING_DIALOG_NAME = 'SHARING_DIALOG_NAME';
 export const SHARING_PUBLIC_ACCESS_FORM_NAME = 'SHARING_PUBLIC_ACCESS_FORM_NAME';

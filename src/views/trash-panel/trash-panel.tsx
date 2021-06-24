@@ -4,37 +4,37 @@
 
 import * as React from 'react';
 import { IconButton, StyleRulesCallback, WithStyles, withStyles, Tooltip } from '@material-ui/core';
-import { DataExplorer } from "~/views-components/data-explorer/data-explorer";
+import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { connect, DispatchProp } from 'react-redux';
-import { DataColumns } from '~/components/data-table/data-table';
-import { RootState } from '~/store/store';
-import { DataTableFilterItem } from '~/components/data-table-filters/data-table-filters';
-import { SortDirection } from '~/components/data-table/data-column';
-import { ResourceKind, TrashableResource } from '~/models/resource';
-import { ArvadosTheme } from '~/common/custom-theme';
-import { RestoreFromTrashIcon, TrashIcon } from '~/components/icon/icon';
-import { TRASH_PANEL_ID } from "~/store/trash-panel/trash-panel-action";
-import { getProperty } from "~/store/properties/properties";
-import { PROJECT_PANEL_CURRENT_UUID } from "~/store/project-panel/project-panel-action";
-import { openContextMenu } from "~/store/context-menu/context-menu-actions";
-import { getResource, ResourcesState } from "~/store/resources/resources";
+import { DataColumns } from 'components/data-table/data-table';
+import { RootState } from 'store/store';
+import { DataTableFilterItem } from 'components/data-table-filters/data-table-filters';
+import { SortDirection } from 'components/data-table/data-column';
+import { ResourceKind, TrashableResource } from 'models/resource';
+import { ArvadosTheme } from 'common/custom-theme';
+import { RestoreFromTrashIcon, TrashIcon } from 'components/icon/icon';
+import { TRASH_PANEL_ID } from "store/trash-panel/trash-panel-action";
+import { getProperty } from "store/properties/properties";
+import { PROJECT_PANEL_CURRENT_UUID } from "store/project-panel/project-panel-action";
+import { openContextMenu } from "store/context-menu/context-menu-actions";
+import { getResource, ResourcesState } from "store/resources/resources";
 import {
     ResourceDeleteDate,
     ResourceFileSize,
     ResourceName,
     ResourceTrashDate,
     ResourceType
-} from "~/views-components/data-explorer/renderers";
-import { navigateTo } from "~/store/navigation/navigation-action";
-import { loadDetailsPanel } from "~/store/details-panel/details-panel-action";
-import { toggleTrashed } from "~/store/trash/trash-actions";
-import { ContextMenuKind } from "~/views-components/context-menu/context-menu";
+} from "views-components/data-explorer/renderers";
+import { navigateTo } from "store/navigation/navigation-action";
+import { loadDetailsPanel } from "store/details-panel/details-panel-action";
+import { toggleTrashed } from "store/trash/trash-actions";
+import { ContextMenuKind } from "views-components/context-menu/context-menu";
 import { Dispatch } from "redux";
-import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
-import { createTree } from '~/models/tree';
+import { DataTableDefaultView } from 'components/data-table-default-view/data-table-default-view';
+import { createTree } from 'models/tree';
 import {
     getTrashPanelTypeFilters
-} from '~/store/resource-type-filters/resource-type-filters';
+} from 'store/resource-type-filters/resource-type-filters';
 
 type CssRules = "toolbar" | "button";
 

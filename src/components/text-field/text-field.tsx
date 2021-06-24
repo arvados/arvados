@@ -4,7 +4,7 @@
 
 import * as React from 'react';
 import { WrappedFieldProps } from 'redux-form';
-import { ArvadosTheme } from '~/common/custom-theme';
+import { ArvadosTheme } from 'common/custom-theme';
 import {
     TextField as MaterialTextField,
     StyleRulesCallback,

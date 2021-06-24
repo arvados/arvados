@@ -10,30 +10,30 @@ import {
     Grid,
     Button
 } from '@material-ui/core';
-import { CollectionIcon } from '~/components/icon/icon';
-import { ArvadosTheme } from '~/common/custom-theme';
-import { BackIcon } from '~/components/icon/icon';
-import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
-import { COLLECTIONS_CONTENT_ADDRESS_PANEL_ID } from '~/store/collections-content-address-panel/collections-content-address-panel-actions';
-import { DataExplorer } from "~/views-components/data-explorer/data-explorer";
+import { CollectionIcon } from 'components/icon/icon';
+import { ArvadosTheme } from 'common/custom-theme';
+import { BackIcon } from 'components/icon/icon';
+import { DataTableDefaultView } from 'components/data-table-default-view/data-table-default-view';
+import { COLLECTIONS_CONTENT_ADDRESS_PANEL_ID } from 'store/collections-content-address-panel/collections-content-address-panel-actions';
+import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { Dispatch } from 'redux';
 import {
     resourceUuidToContextMenuKind,
     openContextMenu
-} from '~/store/context-menu/context-menu-actions';
-import { ResourceKind } from '~/models/resource';
-import { loadDetailsPanel } from '~/store/details-panel/details-panel-action';
+} from 'store/context-menu/context-menu-actions';
+import { ResourceKind } from 'models/resource';
+import { loadDetailsPanel } from 'store/details-panel/details-panel-action';
 import { connect } from 'react-redux';
-import { navigateTo } from '~/store/navigation/navigation-action';
-import { DataColumns } from '~/components/data-table/data-table';
-import { SortDirection } from '~/components/data-table/data-column';
-import { createTree } from '~/models/tree';
+import { navigateTo } from 'store/navigation/navigation-action';
+import { DataColumns } from 'components/data-table/data-table';
+import { SortDirection } from 'components/data-table/data-column';
+import { createTree } from 'models/tree';
 import {
     ResourceName,
     ResourceOwnerName,
     ResourceLastModifiedDate,
     ResourceStatus
-} from '~/views-components/data-explorer/renderers';
+} from 'views-components/data-explorer/renderers';
 
 type CssRules = 'backLink' | 'backIcon' | 'card' | 'title' | 'iconHeader' | 'link';
 

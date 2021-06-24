@@ -2,20 +2,20 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ServiceRepository } from '~/services/services';
+import { ServiceRepository } from 'services/services';
 import { MiddlewareAPI, Dispatch } from 'redux';
-import { DataExplorerMiddlewareService, dataExplorerToListParams, listResultsToDataExplorerItemsMeta } from '~/store/data-explorer/data-explorer-middleware-service';
-import { RootState } from '~/store/store';
-import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
-import { DataExplorer, getDataExplorer } from '~/store/data-explorer/data-explorer-reducer';
-import { updateResources } from '~/store/resources/resources-actions';
-import { getSortColumn } from "~/store/data-explorer/data-explorer-reducer";
-import { apiClientAuthorizationsActions } from '~/store/api-client-authorizations/api-client-authorizations-actions';
-import { OrderDirection, OrderBuilder } from '~/services/api/order-builder';
-import { ListResults } from '~/services/common-service/common-service';
-import { ApiClientAuthorization } from '~/models/api-client-authorization';
-import { ApiClientAuthorizationPanelColumnNames } from '~/views/api-client-authorization-panel/api-client-authorization-panel-root';
-import { SortDirection } from '~/components/data-table/data-column';
+import { DataExplorerMiddlewareService, dataExplorerToListParams, listResultsToDataExplorerItemsMeta } from 'store/data-explorer/data-explorer-middleware-service';
+import { RootState } from 'store/store';
+import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
+import { DataExplorer, getDataExplorer } from 'store/data-explorer/data-explorer-reducer';
+import { updateResources } from 'store/resources/resources-actions';
+import { getSortColumn } from "store/data-explorer/data-explorer-reducer";
+import { apiClientAuthorizationsActions } from 'store/api-client-authorizations/api-client-authorizations-actions';
+import { OrderDirection, OrderBuilder } from 'services/api/order-builder';
+import { ListResults } from 'services/common-service/common-service';
+import { ApiClientAuthorization } from 'models/api-client-authorization';
+import { ApiClientAuthorizationPanelColumnNames } from 'views/api-client-authorization-panel/api-client-authorization-panel-root';
+import { SortDirection } from 'components/data-table/data-column';
 
 export class ApiClientAuthorizationMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {

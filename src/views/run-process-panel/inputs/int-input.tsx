@@ -4,11 +4,11 @@
 
 import * as React from 'react';
 import { memoize } from 'lodash/fp';
-import { IntCommandInputParameter, isRequiredInput } from '~/models/workflow';
+import { IntCommandInputParameter, isRequiredInput } from 'models/workflow';
 import { Field } from 'redux-form';
-import { isInteger } from '~/validators/is-integer';
-import { GenericInputProps, GenericInput } from '~/views/run-process-panel/inputs/generic-input';
-import { IntInput as IntInputComponent } from '~/components/int-input/int-input';
+import { isInteger } from 'validators/is-integer';
+import { GenericInputProps, GenericInput } from 'views/run-process-panel/inputs/generic-input';
+import { IntInput as IntInputComponent } from 'components/int-input/int-input';
 
 export interface IntInputProps {
     input: IntCommandInputParameter;

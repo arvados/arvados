@@ -3,14 +3,14 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { History, Location } from 'history';
-import { RootStore } from '~/store/store';
-import * as Routes from '~/routes/routes';
-import * as WorkbenchActions from '~/store/workbench/workbench-actions';
-import { navigateToRootProject } from '~/store/navigation/navigation-action';
-import { dialogActions } from '~/store/dialog/dialog-actions';
-import { contextMenuActions } from '~/store/context-menu/context-menu-actions';
-import { searchBarActions } from '~/store/search-bar/search-bar-actions';
-import { pluginConfig } from '~/plugins';
+import { RootStore } from 'store/store';
+import * as Routes from 'routes/routes';
+import * as WorkbenchActions from 'store/workbench/workbench-actions';
+import { navigateToRootProject } from 'store/navigation/navigation-action';
+import { dialogActions } from 'store/dialog/dialog-actions';
+import { contextMenuActions } from 'store/context-menu/context-menu-actions';
+import { searchBarActions } from 'store/search-bar/search-bar-actions';
+import { pluginConfig } from 'plugins';
 
 export const addRouteChangeHandlers = (history: History, store: RootStore) => {
     const handler = handleLocationChange(store);

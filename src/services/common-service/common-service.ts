@@ -5,7 +5,7 @@
 import * as _ from "lodash";
 import { AxiosInstance, AxiosPromise } from "axios";
 import * as uuid from "uuid/v4";
-import { ApiActions } from "~/services/api/api-actions";
+import { ApiActions } from "services/api/api-actions";
 import * as QueryString from "query-string";
 
 interface Errors {

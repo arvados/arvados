@@ -6,8 +6,8 @@ import * as React from 'react';
 import { mount, configure } from 'enzyme';
 import * as Adapter from "enzyme-adapter-react-16";
 import { StyledComponentProps, MuiThemeProvider } from '@material-ui/core';
-import { ClusterConfigJSON } from '~/common/config';
-import { CustomTheme } from '~/common/custom-theme';
+import { ClusterConfigJSON } from 'common/config';
+import { CustomTheme } from 'common/custom-theme';
 import { NotFoundPanelRoot, NotFoundPanelRootDataProps, CssRules } from './not-found-panel-root';
 
 configure({ adapter: new Adapter() });

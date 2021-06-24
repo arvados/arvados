@@ -7,10 +7,10 @@ import {
     resetSortDirection,
     SortDirection,
     toggleSortDirection
-} from "~/components/data-table/data-column";
+} from "components/data-table/data-column";
 import { DataExplorerAction, dataExplorerActions, DataTableRequestState } from "./data-explorer-action";
-import { DataColumns, DataTableFetchMode } from "~/components/data-table/data-table";
-import { DataTableFilters } from "~/components/data-table-filters/data-table-filters-tree";
+import { DataColumns, DataTableFetchMode } from "components/data-table/data-table";
+import { DataTableFilters } from "components/data-table-filters/data-table-filters-tree";
 
 export interface DataExplorer {
     fetchMode: DataTableFetchMode;

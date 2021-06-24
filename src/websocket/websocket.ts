@@ -2,19 +2,19 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { RootStore } from '~/store/store';
-import { AuthService } from '~/services/auth-service/auth-service';
-import { Config } from '~/common/config';
+import { RootStore } from 'store/store';
+import { AuthService } from 'services/auth-service/auth-service';
+import { Config } from 'common/config';
 import { WebSocketService } from './websocket-service';
 import { ResourceEventMessage } from './resource-event-message';
-import { ResourceKind } from '~/models/resource';
-import { loadProcess } from '~/store/processes/processes-actions';
-import { LogEventType } from '~/models/log';
-import { addProcessLogsPanelItem } from '../store/process-logs-panel/process-logs-panel-actions';
-import { subprocessPanelActions } from "~/store/subprocess-panel/subprocess-panel-actions";
-import { projectPanelActions } from "~/store/project-panel/project-panel-action";
-import { getProjectPanelCurrentUuid } from '~/store/project-panel/project-panel-action';
-import { allProcessesPanelActions } from '~/store/all-processes-panel/all-processes-panel-action';
+import { ResourceKind } from 'models/resource';
+import { loadProcess } from 'store/processes/processes-actions';
+import { LogEventType } from 'models/log';
+import { addProcessLogsPanelItem } from 'store/process-logs-panel/process-logs-panel-actions';
+import { subprocessPanelActions } from "store/subprocess-panel/subprocess-panel-actions";
+import { projectPanelActions } from "store/project-panel/project-panel-action";
+import { getProjectPanelCurrentUuid } from 'store/project-panel/project-panel-action';
+import { allProcessesPanelActions } from 'store/all-processes-panel/all-processes-panel-action';
 
 export const initWebSocket = (config: Config, authService: AuthService, store: RootStore) => {
     if (config.websocketUrl) {

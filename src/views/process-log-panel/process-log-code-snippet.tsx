@@ -4,7 +4,7 @@
 
 import * as React from 'react';
 import { MuiThemeProvider, createMuiTheme, StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core/styles';
-import { CodeSnippet } from '~/components/code-snippet/code-snippet';
+import { CodeSnippet } from 'components/code-snippet/code-snippet';
 import grey from '@material-ui/core/colors/grey';
 
 type CssRules = 'codeSnippet';

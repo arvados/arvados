@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Resource } from "./resource";
-import { ResourceKind } from '~/models/resource';
+import { ResourceKind } from 'models/resource';
 
 export enum LogEventType {
     CREATE = 'create',

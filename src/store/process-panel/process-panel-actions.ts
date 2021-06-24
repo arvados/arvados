@@ -2,16 +2,16 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { unionize, ofType, UnionOf } from "~/common/unionize";
-import { loadProcess } from '~/store/processes/processes-actions';
+import { unionize, ofType, UnionOf } from "common/unionize";
+import { loadProcess } from 'store/processes/processes-actions';
 import { Dispatch } from 'redux';
-import { ProcessStatus } from '~/store/processes/process';
-import { RootState } from '~/store/store';
-import { ServiceRepository } from "~/services/services";
-import { navigateTo, navigateToWorkflows } from '~/store/navigation/navigation-action';
-import { snackbarActions } from '~/store/snackbar/snackbar-actions';
+import { ProcessStatus } from 'store/processes/process';
+import { RootState } from 'store/store';
+import { ServiceRepository } from "services/services";
+import { navigateTo, navigateToWorkflows } from 'store/navigation/navigation-action';
+import { snackbarActions } from 'store/snackbar/snackbar-actions';
 import { SnackbarKind } from '../snackbar/snackbar-actions';
-import { showWorkflowDetails } from '~/store/workflow-panel/workflow-panel-actions';
+import { showWorkflowDetails } from 'store/workflow-panel/workflow-panel-actions';
 import { loadSubprocessPanel } from "../subprocess-panel/subprocess-panel-actions";
 
 export const processPanelActions = unionize({

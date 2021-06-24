@@ -4,8 +4,8 @@
 
 import * as React from 'react';
 import { Field, InjectedFormProps, WrappedFieldProps } from "redux-form";
-import { TextField } from "~/components/text-field/text-field";
-import { NativeSelectField } from "~/components/select-field/select-field";
+import { TextField } from "components/text-field/text-field";
+import { NativeSelectField } from "components/select-field/select-field";
 import {
     StyleRulesCallback,
     WithStyles,
@@ -17,9 +17,9 @@ import {
     Grid,
     InputLabel
 } from '@material-ui/core';
-import { ArvadosTheme } from '~/common/custom-theme';
-import { User } from "~/models/user";
-import { MY_ACCOUNT_VALIDATION } from "~/validators/validators";
+import { ArvadosTheme } from 'common/custom-theme';
+import { User } from "models/user";
+import { MY_ACCOUNT_VALIDATION } from "validators/validators";
 
 type CssRules = 'root' | 'gridItem' | 'label' | 'title' | 'actions';
 

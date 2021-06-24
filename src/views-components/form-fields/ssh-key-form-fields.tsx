@@ -4,8 +4,8 @@
 
 import * as React from "react";
 import { Field } from "redux-form";
-import { TextField } from "~/components/text-field/text-field";
-import { SSH_KEY_PUBLIC_VALIDATION, SSH_KEY_NAME_VALIDATION } from "~/validators/validators";
+import { TextField } from "components/text-field/text-field";
+import { SSH_KEY_PUBLIC_VALIDATION, SSH_KEY_NAME_VALIDATION } from "validators/validators";
 
 export const SshKeyPublicField = () =>
     <Field

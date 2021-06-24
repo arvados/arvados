@@ -10,7 +10,7 @@ import Public from '@material-ui/icons/Public';
 import { WithStyles } from '@material-ui/core/styles';
 import { SelectProps } from '@material-ui/core/Select';
 import { SelectItem } from './select-item';
-import { VisibilityLevel } from '~/store/sharing-dialog/sharing-dialog-types';
+import { VisibilityLevel } from 'store/sharing-dialog/sharing-dialog-types';
 
 
 type VisibilityLevelSelectClasses = 'value';

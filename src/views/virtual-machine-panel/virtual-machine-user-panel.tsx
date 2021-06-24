@@ -6,12 +6,12 @@ import * as React from 'react';
 import { connect } from 'react-redux';
 import { Grid, Typography, Button, Card, CardContent, TableBody, TableCell, TableHead, TableRow, Table, Tooltip } from '@material-ui/core';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
-import { ArvadosTheme } from '~/common/custom-theme';
+import { ArvadosTheme } from 'common/custom-theme';
 import { compose, Dispatch } from 'redux';
-import { saveRequestedDate, loadVirtualMachinesUserData } from '~/store/virtual-machines/virtual-machines-actions';
-import { RootState } from '~/store/store';
-import { ListResults } from '~/services/common-service/common-service';
-import { HelpIcon } from '~/components/icon/icon';
+import { saveRequestedDate, loadVirtualMachinesUserData } from 'store/virtual-machines/virtual-machines-actions';
+import { RootState } from 'store/store';
+import { ListResults } from 'services/common-service/common-service';
+import { HelpIcon } from 'components/icon/icon';
 // import * as CopyToClipboard from 'react-copy-to-clipboard';
 
 type CssRules = 'button' | 'codeSnippet' | 'link' | 'linkIcon' | 'rightAlign' | 'cardWithoutMachines' | 'icon';

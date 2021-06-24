@@ -7,7 +7,7 @@ import { InjectedFormProps } from 'redux-form';
 import { Grid, withStyles, WithStyles } from '@material-ui/core';
 import { PropertyKeyField, PROPERTY_KEY_FIELD_NAME, PROPERTY_KEY_FIELD_ID } from './property-key-field';
 import { PropertyValueField, PROPERTY_VALUE_FIELD_NAME, PROPERTY_VALUE_FIELD_ID } from './property-value-field';
-import { ProgressButton } from '~/components/progress-button/progress-button';
+import { ProgressButton } from 'components/progress-button/progress-button';
 import { GridClassKey } from '@material-ui/core/Grid';
 
 export interface ResourcePropertiesFormData {

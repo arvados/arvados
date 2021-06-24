@@ -4,11 +4,11 @@
 
 import * as React from 'react';
 import { values, memoize, pipe } from 'lodash/fp';
-import { HomeTreePicker } from '~/views-components/projects-tree-picker/home-tree-picker';
-import { SharedTreePicker } from '~/views-components/projects-tree-picker/shared-tree-picker';
-import { FavoritesTreePicker } from '~/views-components/projects-tree-picker/favorites-tree-picker';
-import { getProjectsTreePickerIds, SHARED_PROJECT_ID, FAVORITES_PROJECT_ID } from '~/store/tree-picker/tree-picker-actions';
-import { TreeItem } from '~/components/tree/tree';
+import { HomeTreePicker } from 'views-components/projects-tree-picker/home-tree-picker';
+import { SharedTreePicker } from 'views-components/projects-tree-picker/shared-tree-picker';
+import { FavoritesTreePicker } from 'views-components/projects-tree-picker/favorites-tree-picker';
+import { getProjectsTreePickerIds, SHARED_PROJECT_ID, FAVORITES_PROJECT_ID } from 'store/tree-picker/tree-picker-actions';
+import { TreeItem } from 'components/tree/tree';
 import { ProjectsTreePickerItem } from './generic-projects-tree-picker';
 import { PublicFavoritesTreePicker } from './public-favorites-tree-picker';
 

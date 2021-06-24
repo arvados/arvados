@@ -3,13 +3,13 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { SortDirection } from '~/components/data-table/data-column';
-import { DataColumns } from '~/components/data-table/data-table';
-import { DataTableFilterItem } from '~/components/data-table-filters/data-table-filters';
-import { ResourceKind } from '~/models/resource';
-import { ContainerRequestState } from '~/models/container-request';
-import { SEARCH_RESULTS_PANEL_ID } from '~/store/search-results-panel/search-results-panel-actions';
-import { DataExplorer } from '~/views-components/data-explorer/data-explorer';
+import { SortDirection } from 'components/data-table/data-column';
+import { DataColumns } from 'components/data-table/data-table';
+import { DataTableFilterItem } from 'components/data-table-filters/data-table-filters';
+import { ResourceKind } from 'models/resource';
+import { ContainerRequestState } from 'models/container-request';
+import { SEARCH_RESULTS_PANEL_ID } from 'store/search-results-panel/search-results-panel-actions';
+import { DataExplorer } from 'views-components/data-explorer/data-explorer';
 import {
     ResourceCluster,
     ResourceFileSize,
@@ -18,14 +18,14 @@ import {
     ResourceOwner,
     ResourceStatus,
     ResourceType
-} from '~/views-components/data-explorer/renderers';
-import { createTree } from '~/models/tree';
-import { getInitialResourceTypeFilters } from '~/store/resource-type-filters/resource-type-filters';
+} from 'views-components/data-explorer/renderers';
+import { createTree } from 'models/tree';
+import { getInitialResourceTypeFilters } from 'store/resource-type-filters/resource-type-filters';
 import { SearchResultsPanelProps } from "./search-results-panel";
-import { Routes } from '~/routes/routes';
+import { Routes } from 'routes/routes';
 import { Link } from 'react-router-dom';
 import { StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core';
-import { ArvadosTheme } from '~/common/custom-theme';
+import { ArvadosTheme } from 'common/custom-theme';
 
 export enum SearchResultsPanelColumnNames {
     CLUSTER = "Cluster",

@@ -3,11 +3,11 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { matchPath } from 'react-router';
-import { ResourceKind, RESOURCE_UUID_PATTERN, extractUuidKind, COLLECTION_PDH_REGEX, PORTABLE_DATA_HASH_PATTERN } from '~/models/resource';
-import { getProjectUrl } from '~/models/project';
-import { getCollectionUrl } from '~/models/collection';
-import { Config } from '~/common/config';
-import { Session } from "~/models/session";
+import { ResourceKind, RESOURCE_UUID_PATTERN, extractUuidKind, COLLECTION_PDH_REGEX, PORTABLE_DATA_HASH_PATTERN } from 'models/resource';
+import { getProjectUrl } from 'models/project';
+import { getCollectionUrl } from 'models/collection';
+import { Config } from 'common/config';
+import { Session } from "models/session";
 
 export interface FederationConfig {
     localCluster: string;

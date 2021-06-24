@@ -3,14 +3,14 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { connect } from "react-redux";
-import { RootState } from "~/store/store";
-import { DataExplorer as DataExplorerComponent } from "~/components/data-explorer/data-explorer";
-import { getDataExplorer } from "~/store/data-explorer/data-explorer-reducer";
+import { RootState } from "store/store";
+import { DataExplorer as DataExplorerComponent } from "components/data-explorer/data-explorer";
+import { getDataExplorer } from "store/data-explorer/data-explorer-reducer";
 import { Dispatch } from "redux";
-import { dataExplorerActions } from "~/store/data-explorer/data-explorer-action";
-import { DataColumn } from "~/components/data-table/data-column";
-import { DataColumns } from "~/components/data-table/data-table";
-import { DataTableFilters } from '~/components/data-table-filters/data-table-filters-tree';
+import { dataExplorerActions } from "store/data-explorer/data-explorer-action";
+import { DataColumn } from "components/data-table/data-column";
+import { DataColumns } from "components/data-table/data-table";
+import { DataTableFilters } from 'components/data-table-filters/data-table-filters-tree';
 
 interface Props {
     id: string;

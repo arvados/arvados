@@ -4,7 +4,7 @@
 
 import * as React from 'react';
 import { StyleRulesCallback, WithStyles, Typography, withStyles } from '@material-ui/core';
-import { ArvadosTheme } from '~/common/custom-theme';
+import { ArvadosTheme } from 'common/custom-theme';
 import classNames from 'classnames';
 
 type CssRules = 'root' | 'space';

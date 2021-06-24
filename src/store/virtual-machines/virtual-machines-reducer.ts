@@ -2,9 +2,9 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { virtualMachinesActions, VirtualMachineActions } from '~/store/virtual-machines/virtual-machines-actions';
-import { ListResults } from '~/services/common-service/common-service';
-import { VirtualMachineLogins } from '~/models/virtual-machines';
+import { virtualMachinesActions, VirtualMachineActions } from 'store/virtual-machines/virtual-machines-actions';
+import { ListResults } from 'services/common-service/common-service';
+import { VirtualMachineLogins } from 'models/virtual-machines';
 
 interface VirtualMachines {
     date: string;

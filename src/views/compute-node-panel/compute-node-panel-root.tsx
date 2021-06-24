@@ -3,18 +3,18 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { ShareMeIcon } from '~/components/icon/icon';
-import { DataExplorer } from '~/views-components/data-explorer/data-explorer';
-import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
-import { COMPUTE_NODE_PANEL_ID } from '~/store/compute-nodes/compute-nodes-actions';
-import { DataColumns } from '~/components/data-table/data-table';
-import { SortDirection } from '~/components/data-table/data-column';
-import { createTree } from '~/models/tree';
+import { ShareMeIcon } from 'components/icon/icon';
+import { DataExplorer } from 'views-components/data-explorer/data-explorer';
+import { DataTableDefaultView } from 'components/data-table-default-view/data-table-default-view';
+import { COMPUTE_NODE_PANEL_ID } from 'store/compute-nodes/compute-nodes-actions';
+import { DataColumns } from 'components/data-table/data-table';
+import { SortDirection } from 'components/data-table/data-column';
+import { createTree } from 'models/tree';
 import {
     ComputeNodeInfo, ComputeNodeDomain, ComputeNodeHostname, ComputeNodeJobUuid,
     ComputeNodeFirstPingAt, ComputeNodeLastPingAt, ComputeNodeIpAddress, CommonUuid
-} from '~/views-components/data-explorer/renderers';
-import { ResourcesState } from '~/store/resources/resources';
+} from 'views-components/data-explorer/renderers';
+import { ResourcesState } from 'store/resources/resources';
 
 export enum ComputeNodePanelColumnNames {
     INFO = 'Info',

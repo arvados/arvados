@@ -4,7 +4,7 @@
 
 import * as React from 'react';
 import { connect } from 'react-redux';
-import { RootState } from '~/store/store';
+import { RootState } from 'store/store';
 
 export type WithProgressStateProps = {
     working: boolean;

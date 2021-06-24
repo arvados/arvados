@@ -4,14 +4,14 @@
 
 import * as React from "react";
 import { Dialog, DialogActions, Button, StyleRulesCallback, WithStyles, withStyles, Tooltip, IconButton, CardHeader } from '@material-ui/core';
-import { withDialog } from "~/store/dialog/with-dialog";
-import { PROCESS_COMMAND_DIALOG_NAME } from '~/store/processes/process-command-actions';
-import { WithDialogProps } from '~/store/dialog/with-dialog';
-import { ProcessCommandDialogData } from '~/store/processes/process-command-actions';
-import { DefaultCodeSnippet } from "~/components/default-code-snippet/default-code-snippet";
+import { withDialog } from "store/dialog/with-dialog";
+import { PROCESS_COMMAND_DIALOG_NAME } from 'store/processes/process-command-actions';
+import { WithDialogProps } from 'store/dialog/with-dialog';
+import { ProcessCommandDialogData } from 'store/processes/process-command-actions';
+import { DefaultCodeSnippet } from "components/default-code-snippet/default-code-snippet";
 import { compose } from 'redux';
 import * as CopyToClipboard from "react-copy-to-clipboard";
-import { CopyIcon } from '~/components/icon/icon';
+import { CopyIcon } from 'components/icon/icon';
 
 type CssRules = 'codeSnippet' | 'copyToClipboard';
 

@@ -6,19 +6,19 @@ import * as React from 'react';
 import {
     StyleRulesCallback, WithStyles, withStyles, Card, CardContent, Grid, Tooltip, IconButton
 } from '@material-ui/core';
-import { ArvadosTheme } from '~/common/custom-theme';
-import { HelpIcon, ShareMeIcon } from '~/components/icon/icon';
-import { createTree } from '~/models/tree';
-import { DataColumns } from '~/components/data-table/data-table';
-import { SortDirection } from '~/components/data-table/data-column';
-import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
+import { ArvadosTheme } from 'common/custom-theme';
+import { HelpIcon, ShareMeIcon } from 'components/icon/icon';
+import { createTree } from 'models/tree';
+import { DataColumns } from 'components/data-table/data-table';
+import { SortDirection } from 'components/data-table/data-column';
+import { DataTableDefaultView } from 'components/data-table-default-view/data-table-default-view';
 import { API_CLIENT_AUTHORIZATION_PANEL_ID } from '../../store/api-client-authorizations/api-client-authorizations-actions';
-import { DataExplorer } from '~/views-components/data-explorer/data-explorer';
-import { ResourcesState } from '~/store/resources/resources';
+import { DataExplorer } from 'views-components/data-explorer/data-explorer';
+import { ResourcesState } from 'store/resources/resources';
 import {
     CommonUuid, TokenApiClientId, TokenApiToken, TokenCreatedByIpAddress, TokenDefaultOwnerUuid, TokenExpiresAt,
     TokenLastUsedAt, TokenLastUsedByIpAddress, TokenScopes, TokenUserId
-} from '~/views-components/data-explorer/renderers';
+} from 'views-components/data-explorer/renderers';
 
 type CssRules = 'card' | 'cardContent' | 'helpIconGrid';
 

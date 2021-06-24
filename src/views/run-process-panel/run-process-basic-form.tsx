@@ -5,8 +5,8 @@
 import * as React from 'react';
 import { reduxForm, Field } from 'redux-form';
 import { Grid } from '@material-ui/core';
-import { TextField } from '~/components/text-field/text-field';
-import { PROCESS_NAME_VALIDATION } from '~/validators/validators';
+import { TextField } from 'components/text-field/text-field';
+import { PROCESS_NAME_VALIDATION } from 'validators/validators';
 
 export const RUN_PROCESS_BASIC_FORM = 'runProcessBasicForm';
 

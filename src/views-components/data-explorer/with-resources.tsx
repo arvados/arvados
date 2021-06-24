@@ -4,9 +4,9 @@
 
 import * as React from 'react';
 import { connect } from 'react-redux';
-import { RootState } from '~/store/store';
-import { getResource } from '~/store/resources/resources';
-import { Resource } from '~/models/resource';
+import { RootState } from 'store/store';
+import { getResource } from 'store/resources/resources';
+import { Resource } from 'models/resource';
 
 interface WithResourceProps {
     resource?: Resource;

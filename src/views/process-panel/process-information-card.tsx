@@ -7,14 +7,14 @@ import {
     StyleRulesCallback, WithStyles, withStyles, Card,
     CardHeader, IconButton, CardContent, Grid, Chip, Typography, Tooltip
 } from '@material-ui/core';
-import { ArvadosTheme } from '~/common/custom-theme';
-import { MoreOptionsIcon, ProcessIcon } from '~/components/icon/icon';
-import { DetailsAttribute } from '~/components/details-attribute/details-attribute';
-import { Process } from '~/store/processes/process';
-import { getProcessStatus, getProcessStatusColor } from '~/store/processes/process';
-import { formatDate } from '~/common/formatters';
+import { ArvadosTheme } from 'common/custom-theme';
+import { MoreOptionsIcon, ProcessIcon } from 'components/icon/icon';
+import { DetailsAttribute } from 'components/details-attribute/details-attribute';
+import { Process } from 'store/processes/process';
+import { getProcessStatus, getProcessStatusColor } from 'store/processes/process';
+import { formatDate } from 'common/formatters';
 import * as classNames from 'classnames';
-import { ContainerState } from '~/models/container';
+import { ContainerState } from 'models/container';
 
 type CssRules = 'card' | 'iconHeader' | 'label' | 'value' | 'chip' | 'link' | 'content' | 'title' | 'avatar' | 'cancelButton';
 

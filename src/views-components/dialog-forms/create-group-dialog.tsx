@@ -5,13 +5,13 @@
 import * as React from 'react';
 import { compose } from "redux";
 import { reduxForm, InjectedFormProps, Field, WrappedFieldArrayProps, FieldArray } from 'redux-form';
-import { withDialog, WithDialogProps } from "~/store/dialog/with-dialog";
-import { FormDialog } from '~/components/form-dialog/form-dialog';
-import { CREATE_GROUP_DIALOG, CREATE_GROUP_FORM, createGroup, CreateGroupFormData, CREATE_GROUP_NAME_FIELD_NAME, CREATE_GROUP_USERS_FIELD_NAME } from '~/store/groups-panel/groups-panel-actions';
-import { TextField } from '~/components/text-field/text-field';
-import { maxLength } from '~/validators/max-length';
-import { require } from '~/validators/require';
-import { ParticipantSelect, Participant } from '~/views-components/sharing-dialog/participant-select';
+import { withDialog, WithDialogProps } from "store/dialog/with-dialog";
+import { FormDialog } from 'components/form-dialog/form-dialog';
+import { CREATE_GROUP_DIALOG, CREATE_GROUP_FORM, createGroup, CreateGroupFormData, CREATE_GROUP_NAME_FIELD_NAME, CREATE_GROUP_USERS_FIELD_NAME } from 'store/groups-panel/groups-panel-actions';
+import { TextField } from 'components/text-field/text-field';
+import { maxLength } from 'validators/max-length';
+import { require } from 'validators/require';
+import { ParticipantSelect, Participant } from 'views-components/sharing-dialog/participant-select';
 
 export const CreateGroupDialog = compose(
     withDialog(CREATE_GROUP_DIALOG),

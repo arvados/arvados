@@ -4,13 +4,13 @@
 
 import * as React from "react";
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, Grid } from "@material-ui/core";
-import { WithDialogProps } from "~/store/dialog/with-dialog";
-import { withDialog } from '~/store/dialog/with-dialog';
-import { VIRTUAL_MACHINE_ATTRIBUTES_DIALOG } from "~/store/virtual-machines/virtual-machines-actions";
+import { WithDialogProps } from "store/dialog/with-dialog";
+import { withDialog } from 'store/dialog/with-dialog';
+import { VIRTUAL_MACHINE_ATTRIBUTES_DIALOG } from "store/virtual-machines/virtual-machines-actions";
 import { WithStyles, withStyles } from '@material-ui/core/styles';
-import { ArvadosTheme } from '~/common/custom-theme';
+import { ArvadosTheme } from 'common/custom-theme';
 import { compose } from "redux";
-import { VirtualMachinesResource } from "~/models/virtual-machines";
+import { VirtualMachinesResource } from "models/virtual-machines";
 
 type CssRules = 'rightContainer' | 'leftContainer' | 'spacing';
 

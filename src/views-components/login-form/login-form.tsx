@@ -10,8 +10,8 @@ import { Button, Card, CardContent, TextField, CardActions } from '@material-ui/
 import { green } from '@material-ui/core/colors';
 import { AxiosPromise } from 'axios';
 import { DispatchProp } from 'react-redux';
-import { saveApiToken } from '~/store/auth/auth-action';
-import { navigateToRootProject } from '~/store/navigation/navigation-action';
+import { saveApiToken } from 'store/auth/auth-action';
+import { navigateToRootProject } from 'store/navigation/navigation-action';
 
 type CssRules = 'root' | 'loginBtn' | 'card' | 'wrapper' | 'progress';
 

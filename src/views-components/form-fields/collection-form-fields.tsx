@@ -4,15 +4,15 @@
 
 import * as React from "react";
 import { Field, Validator } from "redux-form";
-import { TextField } from "~/components/text-field/text-field";
+import { TextField } from "components/text-field/text-field";
 import {
     COLLECTION_NAME_VALIDATION, COLLECTION_NAME_VALIDATION_ALLOW_SLASH,
     COLLECTION_DESCRIPTION_VALIDATION, COLLECTION_PROJECT_VALIDATION
-} from "~/validators/validators";
-import { ProjectTreePickerField, CollectionTreePickerField } from "~/views-components/projects-tree-picker/tree-picker-field";
-import { PickerIdProp } from '~/store/tree-picker/picker-id';
+} from "validators/validators";
+import { ProjectTreePickerField, CollectionTreePickerField } from "views-components/projects-tree-picker/tree-picker-field";
+import { PickerIdProp } from 'store/tree-picker/picker-id';
 import { connect } from "react-redux";
-import { RootState } from "~/store/store";
+import { RootState } from "store/store";
 
 interface CollectionNameFieldProps {
     validate: Validator[];

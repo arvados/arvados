@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { reduxForm, reset } from 'redux-form';
-import { PROJECT_PROPERTIES_FORM_NAME, createProjectProperty } from '~/store/details-panel/details-panel-action';
-import { ResourcePropertiesForm, ResourcePropertiesFormData } from '~/views-components/resource-properties-form/resource-properties-form';
+import { PROJECT_PROPERTIES_FORM_NAME, createProjectProperty } from 'store/details-panel/details-panel-action';
+import { ResourcePropertiesForm, ResourcePropertiesFormData } from 'views-components/resource-properties-form/resource-properties-form';
 import { withStyles } from '@material-ui/core';
 
 const Form = withStyles(({ spacing }) => ({ container: { marginBottom: spacing.unit * 2 } }))(ResourcePropertiesForm);

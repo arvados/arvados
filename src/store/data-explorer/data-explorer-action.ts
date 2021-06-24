@@ -2,9 +2,9 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { unionize, ofType, UnionOf } from "~/common/unionize";
-import { DataColumns, DataTableFetchMode } from "~/components/data-table/data-table";
-import { DataTableFilters } from '~/components/data-table-filters/data-table-filters-tree';
+import { unionize, ofType, UnionOf } from "common/unionize";
+import { DataColumns, DataTableFetchMode } from "components/data-table/data-table";
+import { DataTableFilters } from 'components/data-table-filters/data-table-filters-tree';
 
 export enum DataTableRequestState {
     IDLE,

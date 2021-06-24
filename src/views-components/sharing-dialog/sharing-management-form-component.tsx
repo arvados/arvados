@@ -14,7 +14,7 @@ import {
 import { PermissionSelect, formatPermissionLevel, parsePermissionLevel } from './permission-select';
 import { WithStyles } from '@material-ui/core/styles';
 import withStyles from '@material-ui/core/styles/withStyles';
-import { CloseIcon } from '~/components/icon/icon';
+import { CloseIcon } from 'components/icon/icon';
 
 
 export default () =>

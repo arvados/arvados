@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { connect } from 'react-redux';
-import { RootState } from '~/store/store';
+import { RootState } from 'store/store';
 import { Dispatch } from 'redux';
 import {
     goToView,
@@ -17,10 +17,10 @@ import {
     editSavedQuery,
     changeData,
     submitData, moveUp, moveDown, setAdvancedDataFromSearchValue, SEARCH_BAR_ADVANCED_FORM_NAME
-} from '~/store/search-bar/search-bar-actions';
-import { SearchBarView, SearchBarActionProps, SearchBarDataProps } from '~/views-components/search-bar/search-bar-view';
-import { SearchBarAdvancedFormData } from '~/models/search-bar';
-import { Vocabulary } from '~/models/vocabulary';
+} from 'store/search-bar/search-bar-actions';
+import { SearchBarView, SearchBarActionProps, SearchBarDataProps } from 'views-components/search-bar/search-bar-view';
+import { SearchBarAdvancedFormData } from 'models/search-bar';
+import { Vocabulary } from 'models/vocabulary';
 
 const mapStateToProps = ({ searchBar, form }: RootState): SearchBarDataProps => {
     return {

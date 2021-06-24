@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { getInitialResourceTypeFilters, serializeResourceTypeFilters, ObjectTypeFilter, CollectionTypeFilter, ProcessTypeFilter, GroupTypeFilter } from './resource-type-filters';
-import { ResourceKind } from '~/models/resource';
-import { deselectNode } from '~/models/tree';
+import { ResourceKind } from 'models/resource';
+import { deselectNode } from 'models/tree';
 import { pipe } from 'lodash/fp';
 
 describe("serializeResourceTypeFilters", () => {

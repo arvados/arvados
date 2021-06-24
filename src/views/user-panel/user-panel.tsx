@@ -4,13 +4,13 @@
 
 import * as React from 'react';
 import { WithStyles, withStyles, Tabs, Tab, Paper, Button, Grid } from '@material-ui/core';
-import { DataExplorer } from "~/views-components/data-explorer/data-explorer";
+import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { connect, DispatchProp } from 'react-redux';
-import { DataColumns } from '~/components/data-table/data-table';
-import { RootState } from '~/store/store';
-import { SortDirection } from '~/components/data-table/data-column';
-import { openContextMenu } from "~/store/context-menu/context-menu-actions";
-import { getResource, ResourcesState } from "~/store/resources/resources";
+import { DataColumns } from 'components/data-table/data-table';
+import { RootState } from 'store/store';
+import { SortDirection } from 'components/data-table/data-column';
+import { openContextMenu } from "store/context-menu/context-menu-actions";
+import { getResource, ResourcesState } from "store/resources/resources";
 import {
     ResourceFirstName,
     ResourceLastName,
@@ -19,15 +19,15 @@ import {
     ResourceIsActive,
     ResourceIsAdmin,
     ResourceUsername
-} from "~/views-components/data-explorer/renderers";
-import { navigateTo } from "~/store/navigation/navigation-action";
-import { ContextMenuKind } from "~/views-components/context-menu/context-menu";
-import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
-import { createTree } from '~/models/tree';
+} from "views-components/data-explorer/renderers";
+import { navigateTo } from "store/navigation/navigation-action";
+import { ContextMenuKind } from "views-components/context-menu/context-menu";
+import { DataTableDefaultView } from 'components/data-table-default-view/data-table-default-view';
+import { createTree } from 'models/tree';
 import { compose, Dispatch } from 'redux';
-import { UserResource } from '~/models/user';
-import { ShareMeIcon, AddIcon } from '~/components/icon/icon';
-import { USERS_PANEL_ID, openUserCreateDialog } from '~/store/users/users-actions';
+import { UserResource } from 'models/user';
+import { ShareMeIcon, AddIcon } from 'components/icon/icon';
+import { USERS_PANEL_ID, openUserCreateDialog } from 'store/users/users-actions';
 import { noop } from 'lodash';
 
 type UserPanelRules = "button";

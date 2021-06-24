@@ -4,17 +4,17 @@
 
 import { Dispatch } from "redux";
 import { reset, startSubmit, stopSubmit, initialize, FormErrors } from 'redux-form';
-import { RootState } from '~/store/store';
-import { getUserUuid } from "~/common/getuser";
-import { dialogActions } from "~/store/dialog/dialog-actions";
-import { ServiceRepository } from '~/services/services';
-import { getCommonResourceServiceError, CommonResourceServiceError } from "~/services/common-service/common-resource-service";
+import { RootState } from 'store/store';
+import { getUserUuid } from "common/getuser";
+import { dialogActions } from "store/dialog/dialog-actions";
+import { ServiceRepository } from 'services/services';
+import { getCommonResourceServiceError, CommonResourceServiceError } from "services/common-service/common-resource-service";
 import { uploadCollectionFiles } from './collection-upload-actions';
-import { fileUploaderActions } from '~/store/file-uploader/file-uploader-actions';
-import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
-import { isProjectOrRunProcessRoute } from '~/store/projects/project-create-actions';
-import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
-import { CollectionResource } from "~/models/collection";
+import { fileUploaderActions } from 'store/file-uploader/file-uploader-actions';
+import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
+import { isProjectOrRunProcessRoute } from 'store/projects/project-create-actions';
+import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
+import { CollectionResource } from "models/collection";
 
 export interface CollectionCreateFormDialogData {
     ownerUuid: string;

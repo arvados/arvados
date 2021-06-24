@@ -8,11 +8,11 @@ import {
     withStyles, Dialog, DialogTitle, DialogContent, DialogActions,
     Button, StyleRulesCallback, WithStyles, Grid
 } from '@material-ui/core';
-import { WithDialogProps, withDialog } from "~/store/dialog/with-dialog";
-import { API_CLIENT_AUTHORIZATION_ATTRIBUTES_DIALOG } from '~/store/api-client-authorizations/api-client-authorizations-actions';
-import { ArvadosTheme } from '~/common/custom-theme';
-import { ApiClientAuthorization } from '~/models/api-client-authorization';
-import { formatDate } from '~/common/formatters';
+import { WithDialogProps, withDialog } from "store/dialog/with-dialog";
+import { API_CLIENT_AUTHORIZATION_ATTRIBUTES_DIALOG } from 'store/api-client-authorizations/api-client-authorizations-actions';
+import { ArvadosTheme } from 'common/custom-theme';
+import { ApiClientAuthorization } from 'models/api-client-authorization';
+import { formatDate } from 'common/formatters';
 
 type CssRules = 'root';
 

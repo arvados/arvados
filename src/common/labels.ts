@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ResourceKind } from "~/models/resource";
+import { ResourceKind } from "models/resource";
 
 export const resourceLabel = (type: string, subtype = '') => {
     switch (type) {

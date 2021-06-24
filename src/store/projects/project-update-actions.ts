@@ -4,11 +4,11 @@
 
 import { Dispatch } from "redux";
 import { FormErrors, initialize, startSubmit, stopSubmit } from 'redux-form';
-import { RootState } from "~/store/store";
-import { dialogActions } from "~/store/dialog/dialog-actions";
-import { getCommonResourceServiceError, CommonResourceServiceError } from "~/services/common-service/common-resource-service";
-import { ServiceRepository } from "~/services/services";
-import { projectPanelActions } from '~/store/project-panel/project-panel-action';
+import { RootState } from "store/store";
+import { dialogActions } from "store/dialog/dialog-actions";
+import { getCommonResourceServiceError, CommonResourceServiceError } from "services/common-service/common-resource-service";
+import { ServiceRepository } from "services/services";
+import { projectPanelActions } from 'store/project-panel/project-panel-action';
 
 export interface ProjectUpdateFormDialogData {
     uuid: string;

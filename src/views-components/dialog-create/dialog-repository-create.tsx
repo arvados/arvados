@@ -4,9 +4,9 @@
 
 import * as React from 'react';
 import { InjectedFormProps } from 'redux-form';
-import { WithDialogProps } from '~/store/dialog/with-dialog';
-import { FormDialog } from '~/components/form-dialog/form-dialog';
-import { RepositoryNameField } from '~/views-components/form-fields/repository-form-fields';
+import { WithDialogProps } from 'store/dialog/with-dialog';
+import { FormDialog } from 'components/form-dialog/form-dialog';
+import { RepositoryNameField } from 'views-components/form-fields/repository-form-fields';
 
 type DialogRepositoryProps = WithDialogProps<{}> & InjectedFormProps<any>;
 

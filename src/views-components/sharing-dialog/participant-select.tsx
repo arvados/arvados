@@ -3,17 +3,17 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { Autocomplete } from '~/components/autocomplete/autocomplete';
+import { Autocomplete } from 'components/autocomplete/autocomplete';
 import { connect, DispatchProp } from 'react-redux';
-import { ServiceRepository } from '~/services/services';
+import { ServiceRepository } from 'services/services';
 import { FilterBuilder } from '../../services/api/filter-builder';
 import { debounce } from 'debounce';
 import { ListItemText, Typography } from '@material-ui/core';
 import { noop } from 'lodash/fp';
-import { GroupClass, GroupResource } from '~/models/group';
-import { getUserDisplayName, UserResource } from '~/models/user';
-import { ResourceKind } from '~/models/resource';
-import { ListResults } from '~/services/common-service/common-service';
+import { GroupClass, GroupResource } from 'models/group';
+import { getUserDisplayName, UserResource } from 'models/user';
+import { ResourceKind } from 'models/resource';
+import { ListResults } from 'services/common-service/common-service';
 
 export interface Participant {
     name: string;

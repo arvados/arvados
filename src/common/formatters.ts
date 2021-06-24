@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { PropertyValue } from "~/models/search-bar";
-import { Vocabulary, getTagKeyLabel, getTagValueLabel } from "~/models/vocabulary";
+import { PropertyValue } from "models/search-bar";
+import { Vocabulary, getTagKeyLabel, getTagValueLabel } from "models/vocabulary";
 
 export const formatDate = (isoDate?: string | null, utc: boolean = false) => {
     if (isoDate) {
@@ -29,7 +29,7 @@ export const formatFileSize = (size?: number | string) => {
                 return `${(size / base).toFixed()} ${unit}`;
             }
         }
-    } 
+    }
     if ((typeof size === "string" && size === '') || size === undefined) {
         return '';
     }

@@ -8,25 +8,25 @@ import {
     DirectoryArrayCommandInputParameter,
     Directory,
     CWLType
-} from '~/models/workflow';
+} from 'models/workflow';
 import { Field } from 'redux-form';
-import { ERROR_MESSAGE } from '~/validators/require';
+import { ERROR_MESSAGE } from 'validators/require';
 import { Input, Dialog, DialogTitle, DialogContent, DialogActions, Button, Divider, WithStyles, Typography } from '@material-ui/core';
 import { GenericInputProps, GenericInput } from './generic-input';
-import { ProjectsTreePicker } from '~/views-components/projects-tree-picker/projects-tree-picker';
+import { ProjectsTreePicker } from 'views-components/projects-tree-picker/projects-tree-picker';
 import { connect, DispatchProp } from 'react-redux';
-import { initProjectsTreePicker, getSelectedNodes, treePickerActions, getProjectsTreePickerIds, getAllNodes } from '~/store/tree-picker/tree-picker-actions';
-import { ProjectsTreePickerItem } from '~/views-components/projects-tree-picker/generic-projects-tree-picker';
+import { initProjectsTreePicker, getSelectedNodes, treePickerActions, getProjectsTreePickerIds, getAllNodes } from 'store/tree-picker/tree-picker-actions';
+import { ProjectsTreePickerItem } from 'views-components/projects-tree-picker/generic-projects-tree-picker';
 import { createSelector, createStructuredSelector } from 'reselect';
-import { ChipsInput } from '~/components/chips-input/chips-input';
+import { ChipsInput } from 'components/chips-input/chips-input';
 import { identity, values, noop } from 'lodash';
 import { InputProps } from '@material-ui/core/Input';
-import { TreePicker } from '~/store/tree-picker/tree-picker';
-import { RootState } from '~/store/store';
-import { Chips } from '~/components/chips/chips';
+import { TreePicker } from 'store/tree-picker/tree-picker';
+import { RootState } from 'store/store';
+import { Chips } from 'components/chips/chips';
 import withStyles, { StyleRulesCallback } from '@material-ui/core/styles/withStyles';
-import { CollectionResource } from '~/models/collection';
-import { ResourceKind } from '~/models/resource';
+import { CollectionResource } from 'models/collection';
+import { ResourceKind } from 'models/resource';
 
 export interface DirectoryArrayInputProps {
     input: DirectoryArrayCommandInputParameter;

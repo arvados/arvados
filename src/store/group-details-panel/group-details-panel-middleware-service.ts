@@ -3,15 +3,15 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch, MiddlewareAPI } from "redux";
-import { DataExplorerMiddlewareService, listResultsToDataExplorerItemsMeta } from "~/store/data-explorer/data-explorer-middleware-service";
-import { RootState } from "~/store/store";
-import { ServiceRepository } from "~/services/services";
-import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
-import { getDataExplorer } from "~/store/data-explorer/data-explorer-reducer";
-import { FilterBuilder } from '~/services/api/filter-builder';
-import { updateResources } from '~/store/resources/resources-actions';
-import { getCurrentGroupDetailsPanelUuid, GroupDetailsPanelActions } from '~/store/group-details-panel/group-details-panel-actions';
-import { LinkClass } from '~/models/link';
+import { DataExplorerMiddlewareService, listResultsToDataExplorerItemsMeta } from "store/data-explorer/data-explorer-middleware-service";
+import { RootState } from "store/store";
+import { ServiceRepository } from "services/services";
+import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
+import { getDataExplorer } from "store/data-explorer/data-explorer-reducer";
+import { FilterBuilder } from 'services/api/filter-builder';
+import { updateResources } from 'store/resources/resources-actions';
+import { getCurrentGroupDetailsPanelUuid, GroupDetailsPanelActions } from 'store/group-details-panel/group-details-panel-actions';
+import { LinkClass } from 'models/link';
 
 export class GroupDetailsPanelMiddlewareService extends DataExplorerMiddlewareService {
 

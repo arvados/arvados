@@ -8,10 +8,10 @@ import {
     withStyles, Dialog, DialogTitle, DialogContent, DialogActions,
     Button, StyleRulesCallback, WithStyles, Grid
 } from '@material-ui/core';
-import { WithDialogProps, withDialog } from "~/store/dialog/with-dialog";
-import { COMPUTE_NODE_ATTRIBUTES_DIALOG } from '~/store/compute-nodes/compute-nodes-actions';
-import { ArvadosTheme } from '~/common/custom-theme';
-import { NodeResource, NodeProperties, NodeInfo } from '~/models/node';
+import { WithDialogProps, withDialog } from "store/dialog/with-dialog";
+import { COMPUTE_NODE_ATTRIBUTES_DIALOG } from 'store/compute-nodes/compute-nodes-actions';
+import { ArvadosTheme } from 'common/custom-theme';
+import { NodeResource, NodeProperties, NodeInfo } from 'models/node';
 import classnames from "classnames";
 
 type CssRules = 'root' | 'grid';

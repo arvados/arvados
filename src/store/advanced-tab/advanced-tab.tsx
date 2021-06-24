@@ -3,26 +3,26 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from 'redux';
-import { dialogActions } from '~/store/dialog/dialog-actions';
-import { RootState } from '~/store/store';
-import { ResourceKind, extractUuidKind } from '~/models/resource';
-import { getResource } from '~/store/resources/resources';
-import { GroupContentsResourcePrefix } from '~/services/groups-service/groups-service';
-import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
-import { ContainerRequestResource } from '~/models/container-request';
-import { CollectionResource } from '~/models/collection';
-import { ProjectResource } from '~/models/project';
-import { ServiceRepository } from '~/services/services';
-import { FilterBuilder } from '~/services/api/filter-builder';
-import { ListResults } from '~/services/common-service/common-service';
-import { RepositoryResource } from '~/models/repositories';
-import { SshKeyResource } from '~/models/ssh-key';
-import { VirtualMachinesResource } from '~/models/virtual-machines';
-import { UserResource } from '~/models/user';
-import { LinkResource } from '~/models/link';
-import { KeepServiceResource } from '~/models/keep-services';
-import { NodeResource } from '~/models/node';
-import { ApiClientAuthorization } from '~/models/api-client-authorization';
+import { dialogActions } from 'store/dialog/dialog-actions';
+import { RootState } from 'store/store';
+import { ResourceKind, extractUuidKind } from 'models/resource';
+import { getResource } from 'store/resources/resources';
+import { GroupContentsResourcePrefix } from 'services/groups-service/groups-service';
+import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
+import { ContainerRequestResource } from 'models/container-request';
+import { CollectionResource } from 'models/collection';
+import { ProjectResource } from 'models/project';
+import { ServiceRepository } from 'services/services';
+import { FilterBuilder } from 'services/api/filter-builder';
+import { ListResults } from 'services/common-service/common-service';
+import { RepositoryResource } from 'models/repositories';
+import { SshKeyResource } from 'models/ssh-key';
+import { VirtualMachinesResource } from 'models/virtual-machines';
+import { UserResource } from 'models/user';
+import { LinkResource } from 'models/link';
+import { KeepServiceResource } from 'models/keep-services';
+import { NodeResource } from 'models/node';
+import { ApiClientAuthorization } from 'models/api-client-authorization';
 import * as React from 'react';
 
 export const ADVANCED_TAB_DIALOG = 'advancedTabDialog';

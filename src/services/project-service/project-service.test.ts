@@ -4,8 +4,8 @@
 
 import axios from "axios";
 import { ProjectService } from "./project-service";
-import { FilterBuilder } from "~/services/api/filter-builder";
-import { ApiActions } from "~/services/api/api-actions";
+import { FilterBuilder } from "services/api/filter-builder";
+import { ApiActions } from "services/api/api-actions";
 
 describe("CommonResourceService", () => {
     const axiosInstance = axios.create();

@@ -4,7 +4,7 @@
 
 import * as React from 'react';
 import { Dialog, DialogTitle, Button, Grid, DialogContent, CircularProgress, Paper } from '@material-ui/core';
-import { DialogActions } from '~/components/dialog-actions/dialog-actions';
+import { DialogActions } from 'components/dialog-actions/dialog-actions';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
 
 

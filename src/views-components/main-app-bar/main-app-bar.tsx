@@ -6,15 +6,15 @@ import * as React from "react";
 import { AppBar, Toolbar, Typography, Grid } from "@material-ui/core";
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
 import { Link } from "react-router-dom";
-import { User } from "~/models/user";
-import { SearchBar } from "~/views-components/search-bar/search-bar";
-import { Routes } from '~/routes/routes';
-import { NotificationsMenu } from "~/views-components/main-app-bar/notifications-menu";
-import { AccountMenu } from "~/views-components/main-app-bar/account-menu";
-import { HelpMenu } from '~/views-components/main-app-bar/help-menu';
+import { User } from "models/user";
+import { SearchBar } from "views-components/search-bar/search-bar";
+import { Routes } from 'routes/routes';
+import { NotificationsMenu } from "views-components/main-app-bar/notifications-menu";
+import { AccountMenu } from "views-components/main-app-bar/account-menu";
+import { HelpMenu } from 'views-components/main-app-bar/help-menu';
 import { ReactNode } from "react";
-import { AdminMenu } from "~/views-components/main-app-bar/admin-menu";
-import { pluginConfig } from '~/plugins';
+import { AdminMenu } from "views-components/main-app-bar/admin-menu";
+import { pluginConfig } from 'plugins';
 
 type CssRules = 'toolbar' | 'link';
 

@@ -4,22 +4,22 @@
 
 import * as React from 'react';
 import { connect, DispatchProp } from 'react-redux';
-import { RootState } from '~/store/store';
-import { ArvadosTheme } from '~/common/custom-theme';
+import { RootState } from 'store/store';
+import { ArvadosTheme } from 'common/custom-theme';
 import { PopoverOrigin } from '@material-ui/core/Popover';
 import { StyleRulesCallback, WithStyles, withStyles, Toolbar, Grid, Button, MenuItem, Menu } from '@material-ui/core';
-import { AddIcon, CollectionIcon, ProcessIcon, ProjectIcon } from '~/components/icon/icon';
-import { openProjectCreateDialog } from '~/store/projects/project-create-actions';
-import { openCollectionCreateDialog } from '~/store/collections/collection-create-actions';
-import { navigateToRunProcess } from '~/store/navigation/navigation-action';
-import { runProcessPanelActions } from '~/store/run-process-panel/run-process-panel-actions';
-import { getUserUuid } from '~/common/getuser';
-import { matchProjectRoute } from '~/routes/routes';
-import { GroupClass, GroupResource } from '~/models/group';
-import { ResourcesState, getResource } from '~/store/resources/resources';
-import { extractUuidKind, ResourceKind } from '~/models/resource';
-import { pluginConfig } from '~/plugins';
-import { ElementListReducer } from '~/common/plugintypes';
+import { AddIcon, CollectionIcon, ProcessIcon, ProjectIcon } from 'components/icon/icon';
+import { openProjectCreateDialog } from 'store/projects/project-create-actions';
+import { openCollectionCreateDialog } from 'store/collections/collection-create-actions';
+import { navigateToRunProcess } from 'store/navigation/navigation-action';
+import { runProcessPanelActions } from 'store/run-process-panel/run-process-panel-actions';
+import { getUserUuid } from 'common/getuser';
+import { matchProjectRoute } from 'routes/routes';
+import { GroupClass, GroupResource } from 'models/group';
+import { ResourcesState, getResource } from 'store/resources/resources';
+import { extractUuidKind, ResourceKind } from 'models/resource';
+import { pluginConfig } from 'plugins';
+import { ElementListReducer } from 'common/plugintypes';
 import { Location } from 'history';
 
 type CssRules = 'button' | 'menuItem' | 'icon';

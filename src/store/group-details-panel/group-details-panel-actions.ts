@@ -2,21 +2,21 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { bindDataExplorerActions } from '~/store/data-explorer/data-explorer-action';
+import { bindDataExplorerActions } from 'store/data-explorer/data-explorer-action';
 import { Dispatch } from 'redux';
-import { propertiesActions } from '~/store/properties/properties-actions';
-import { getProperty } from '~/store/properties/properties';
-import { Participant } from '~/views-components/sharing-dialog/participant-select';
-import { dialogActions } from '~/store/dialog/dialog-actions';
+import { propertiesActions } from 'store/properties/properties-actions';
+import { getProperty } from 'store/properties/properties';
+import { Participant } from 'views-components/sharing-dialog/participant-select';
+import { dialogActions } from 'store/dialog/dialog-actions';
 import { reset, startSubmit } from 'redux-form';
-import { addGroupMember, deleteGroupMember } from '~/store/groups-panel/groups-panel-actions';
-import { getResource } from '~/store/resources/resources';
-import { GroupResource } from '~/models/group';
-import { RootState } from '~/store/store';
-import { ServiceRepository } from '~/services/services';
-import { PermissionResource } from '~/models/permission';
-import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
-import { UserResource, getUserDisplayName } from '~/models/user';
+import { addGroupMember, deleteGroupMember } from 'store/groups-panel/groups-panel-actions';
+import { getResource } from 'store/resources/resources';
+import { GroupResource } from 'models/group';
+import { RootState } from 'store/store';
+import { ServiceRepository } from 'services/services';
+import { PermissionResource } from 'models/permission';
+import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
+import { UserResource, getUserDisplayName } from 'models/user';
 
 export const GROUP_DETAILS_PANEL_ID = 'groupDetailsPanel';
 export const ADD_GROUP_MEMBERS_DIALOG = 'addGrupMembers';

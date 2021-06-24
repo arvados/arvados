@@ -13,10 +13,10 @@ import {
     WithStyles,
     withStyles
 } from "@material-ui/core";
-import { ArvadosTheme } from '~/common/custom-theme';
-import { WithDialogProps } from "~/store/dialog/with-dialog";
-import { withDialog } from '~/store/dialog/with-dialog';
-import { RICH_TEXT_EDITOR_DIALOG_NAME } from "~/store/rich-text-editor-dialog/rich-text-editor-dialog-actions";
+import { ArvadosTheme } from 'common/custom-theme';
+import { WithDialogProps } from "store/dialog/with-dialog";
+import { withDialog } from 'store/dialog/with-dialog';
+import { RICH_TEXT_EDITOR_DIALOG_NAME } from "store/rich-text-editor-dialog/rich-text-editor-dialog-actions";
 import RichTextEditor from 'react-rte';
 
 type CssRules = 'rte';

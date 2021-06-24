@@ -2,20 +2,20 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { dialogActions } from "~/store/dialog/dialog-actions";
+import { dialogActions } from "store/dialog/dialog-actions";
 import { Dispatch } from "redux";
-import { RootState } from "~/store/store";
-import { getUserUuid } from "~/common/getuser";
-import { ServiceRepository } from "~/services/services";
-import { snackbarActions, SnackbarKind } from "~/store/snackbar/snackbar-actions";
+import { RootState } from "store/store";
+import { getUserUuid } from "common/getuser";
+import { ServiceRepository } from "services/services";
+import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
 import { FormErrors, reset, startSubmit, stopSubmit } from "redux-form";
-import { KeyType } from "~/models/ssh-key";
+import { KeyType } from "models/ssh-key";
 import {
     AuthorizedKeysServiceError,
     getAuthorizedKeysServiceError
-} from "~/services/authorized-keys-service/authorized-keys-service";
-import { setBreadcrumbs } from "~/store/breadcrumbs/breadcrumbs-actions";
-import { authActions } from "~/store/auth/auth-action";
+} from "services/authorized-keys-service/authorized-keys-service";
+import { setBreadcrumbs } from "store/breadcrumbs/breadcrumbs-actions";
+import { authActions } from "store/auth/auth-action";
 
 export const SSH_KEY_CREATE_FORM_NAME = 'sshKeyCreateFormName';
 export const SSH_KEY_PUBLIC_KEY_DIALOG = 'sshKeyPublicKeyDialog';

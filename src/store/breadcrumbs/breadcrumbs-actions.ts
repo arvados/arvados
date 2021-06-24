@@ -3,20 +3,20 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from 'redux';
-import { RootState } from '~/store/store';
-import { getUserUuid } from "~/common/getuser";
-import { Breadcrumb } from '~/components/breadcrumbs/breadcrumbs';
-import { getResource } from '~/store/resources/resources';
+import { RootState } from 'store/store';
+import { getUserUuid } from "common/getuser";
+import { Breadcrumb } from 'components/breadcrumbs/breadcrumbs';
+import { getResource } from 'store/resources/resources';
 import { TreePicker } from '../tree-picker/tree-picker';
 import { getSidePanelTreeBranch, getSidePanelTreeNodeAncestorsIds } from '../side-panel-tree/side-panel-tree-actions';
 import { propertiesActions } from '../properties/properties-actions';
-import { getProcess } from '~/store/processes/process';
-import { ServiceRepository } from '~/services/services';
-import { SidePanelTreeCategory, activateSidePanelTreeItem } from '~/store/side-panel-tree/side-panel-tree-actions';
+import { getProcess } from 'store/processes/process';
+import { ServiceRepository } from 'services/services';
+import { SidePanelTreeCategory, activateSidePanelTreeItem } from 'store/side-panel-tree/side-panel-tree-actions';
 import { updateResources } from '../resources/resources-actions';
-import { ResourceKind } from '~/models/resource';
-import { GroupResource } from '~/models/group';
-import { extractUuidKind } from '~/models/resource';
+import { ResourceKind } from 'models/resource';
+import { GroupResource } from 'models/group';
+import { extractUuidKind } from 'models/resource';
 
 export const BREADCRUMBS = 'breadcrumbs';
 

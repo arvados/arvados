@@ -2,14 +2,14 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { unionize, ofType, UnionOf } from "~/common/unionize";
+import { unionize, ofType, UnionOf } from "common/unionize";
 import { Dispatch } from "redux";
 import { RootState } from "../store";
-import { getUserUuid } from "~/common/getuser";
+import { getUserUuid } from "common/getuser";
 import { checkFavorite } from "./favorites-reducer";
 import { snackbarActions, SnackbarKind } from "../snackbar/snackbar-actions";
-import { ServiceRepository } from "~/services/services";
-import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
+import { ServiceRepository } from "services/services";
+import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
 
 export const favoritesActions = unionize({
     TOGGLE_FAVORITE: ofType<{ resourceUuid: string }>(),

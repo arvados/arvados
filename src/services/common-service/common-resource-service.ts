@@ -5,8 +5,8 @@
 import { AxiosInstance } from "axios";
 import * as _ from "lodash";
 import { Resource } from "src/models/resource";
-import { ApiActions } from "~/services/api/api-actions";
-import { CommonService } from "~/services/common-service/common-service";
+import { ApiActions } from "services/api/api-actions";
+import { CommonService } from "services/common-service/common-service";
 
 export enum CommonResourceServiceError {
     UNIQUE_NAME_VIOLATION = 'UniqueNameViolation',

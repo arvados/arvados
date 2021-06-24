@@ -6,8 +6,8 @@ import * as React from 'react';
 import { Dispatch } from 'redux';
 import { connect } from 'react-redux';
 import { withStyles, StyleRulesCallback, WithStyles, Typography } from '@material-ui/core';
-import { ArvadosTheme } from '~/common/custom-theme';
-import { openRichTextEditorDialog } from '~/store/rich-text-editor-dialog/rich-text-editor-dialog-actions';
+import { ArvadosTheme } from 'common/custom-theme';
+import { openRichTextEditorDialog } from 'store/rich-text-editor-dialog/rich-text-editor-dialog-actions';
 
 type CssRules = "root";
 

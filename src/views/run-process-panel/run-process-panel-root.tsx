@@ -4,7 +4,7 @@
 
 import * as React from 'react';
 import { Stepper, Step, StepLabel, StepContent } from '@material-ui/core';
-import { RunProcessFirstStepDataProps, RunProcessFirstStepActionProps, RunProcessFirstStep } from '~/views/run-process-panel/run-process-first-step';
+import { RunProcessFirstStepDataProps, RunProcessFirstStepActionProps, RunProcessFirstStep } from 'views/run-process-panel/run-process-first-step';
 import { RunProcessSecondStepForm } from './run-process-second-step';
 
 export type RunProcessPanelRootDataProps = {

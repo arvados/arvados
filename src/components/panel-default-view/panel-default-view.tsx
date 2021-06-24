@@ -4,7 +4,7 @@
 
 import * as React from 'react';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
-import { DefaultViewDataProps, DefaultView } from '~/components/default-view/default-view';
+import { DefaultViewDataProps, DefaultView } from 'components/default-view/default-view';
 
 type CssRules = 'classRoot' | 'classIcon' | 'classMessage';
 

@@ -6,9 +6,9 @@ import { connect } from "react-redux";
 import { useIdleTimer } from "react-idle-timer";
 import { Dispatch } from "redux";
 
-import { RootState } from "~/store/store";
-import { SnackbarKind, snackbarActions } from "~/store/snackbar/snackbar-actions";
-import { logout } from "~/store/auth/auth-action";
+import { RootState } from "store/store";
+import { SnackbarKind, snackbarActions } from "store/snackbar/snackbar-actions";
+import { logout } from "store/auth/auth-action";
 import parse from "parse-duration";
 import * as React from "react";
 import { min } from "lodash";

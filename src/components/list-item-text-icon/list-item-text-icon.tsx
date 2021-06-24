@@ -4,7 +4,7 @@
 
 import * as React from 'react';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
-import { ArvadosTheme } from '~/common/custom-theme';
+import { ArvadosTheme } from 'common/custom-theme';
 import { ListItemIcon, ListItemText, Typography } from '@material-ui/core';
 import { IconType } from '../icon/icon';
 import classnames from "classnames";

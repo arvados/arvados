@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from "redux";
-import { RootState } from '~/store/store';
-import { ServiceRepository } from '~/services/services';
+import { RootState } from 'store/store';
+import { ServiceRepository } from 'services/services';
 import { snackbarActions, SnackbarKind } from "../snackbar/snackbar-actions";
 import { resourcesActions } from "../resources/resources-actions";
 import { navigateTo } from "../navigation/navigation-action";

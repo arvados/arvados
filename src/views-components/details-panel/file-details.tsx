@@ -4,11 +4,11 @@
 
 import * as React from 'react';
 import { DetailsData } from "./details-data";
-import { CollectionFile, CollectionDirectory, CollectionFileType } from '~/models/collection-file';
-import { getIcon } from '~/components/file-tree/file-tree-item';
-import { DetailsAttribute } from '~/components/details-attribute/details-attribute';
-import { formatFileSize } from '~/common/formatters';
-import { FileThumbnail } from '~/components/file-tree/file-thumbnail';
+import { CollectionFile, CollectionDirectory, CollectionFileType } from 'models/collection-file';
+import { getIcon } from 'components/file-tree/file-tree-item';
+import { DetailsAttribute } from 'components/details-attribute/details-attribute';
+import { formatFileSize } from 'common/formatters';
+import { FileThumbnail } from 'components/file-tree/file-thumbnail';
 import isImage from 'is-image';
 
 export class FileDetails extends DetailsData<CollectionFile | CollectionDirectory> {

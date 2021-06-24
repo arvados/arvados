@@ -16,11 +16,11 @@ import {
     TableBody,
     TableRow
 } from '@material-ui/core';
-import { ArvadosTheme } from '~/common/custom-theme';
-import { WorkflowIcon } from '~/components/icon/icon';
-import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
-import { WorkflowResource, parseWorkflowDefinition, getWorkflowInputs, getInputLabel, stringifyInputType } from '~/models/workflow';
-import { WorkflowGraph } from "~/views/workflow-panel/workflow-graph";
+import { ArvadosTheme } from 'common/custom-theme';
+import { WorkflowIcon } from 'components/icon/icon';
+import { DataTableDefaultView } from 'components/data-table-default-view/data-table-default-view';
+import { WorkflowResource, parseWorkflowDefinition, getWorkflowInputs, getInputLabel, stringifyInputType } from 'models/workflow';
+import { WorkflowGraph } from "views/workflow-panel/workflow-graph";
 
 export type CssRules = 'root' | 'tab' | 'inputTab' | 'graphTab' | 'graphTabWithChosenWorkflow' | 'descriptionTab' | 'inputsTable';
 

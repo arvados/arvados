@@ -3,24 +3,24 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from 'redux';
-import { unionize, ofType, UnionOf } from "~/common/unionize";
-import { ServiceRepository } from "~/services/services";
-import { RootState } from '~/store/store';
-import { getUserUuid } from "~/common/getuser";
-import { WorkflowResource, WorkflowRunnerResources, getWorkflow, getWorkflowInputs, parseWorkflowDefinition } from '~/models/workflow';
+import { unionize, ofType, UnionOf } from "common/unionize";
+import { ServiceRepository } from "services/services";
+import { RootState } from 'store/store';
+import { getUserUuid } from "common/getuser";
+import { WorkflowResource, WorkflowRunnerResources, getWorkflow, getWorkflowInputs, parseWorkflowDefinition } from 'models/workflow';
 import { getFormValues, initialize } from 'redux-form';
-import { RUN_PROCESS_BASIC_FORM, RunProcessBasicFormData } from '~/views/run-process-panel/run-process-basic-form';
-import { RUN_PROCESS_INPUTS_FORM } from '~/views/run-process-panel/run-process-inputs-form';
-import { WorkflowInputsData } from '~/models/workflow';
-import { createWorkflowMounts } from '~/models/process';
-import { ContainerRequestState } from '~/models/container-request';
+import { RUN_PROCESS_BASIC_FORM, RunProcessBasicFormData } from 'views/run-process-panel/run-process-basic-form';
+import { RUN_PROCESS_INPUTS_FORM } from 'views/run-process-panel/run-process-inputs-form';
+import { WorkflowInputsData } from 'models/workflow';
+import { createWorkflowMounts } from 'models/process';
+import { ContainerRequestState } from 'models/container-request';
 import { navigateTo } from '../navigation/navigation-action';
 import {
     RunProcessAdvancedFormData, RUN_PROCESS_ADVANCED_FORM, VCPUS_FIELD,
     KEEP_CACHE_RAM_FIELD, RAM_FIELD, RUNTIME_FIELD, OUTPUT_FIELD, RUNNER_IMAGE_FIELD
-} from '~/views/run-process-panel/run-process-advanced-form';
-import { dialogActions } from '~/store/dialog/dialog-actions';
-import { setBreadcrumbs } from '~/store/breadcrumbs/breadcrumbs-actions';
+} from 'views/run-process-panel/run-process-advanced-form';
+import { dialogActions } from 'store/dialog/dialog-actions';
+import { setBreadcrumbs } from 'store/breadcrumbs/breadcrumbs-actions';
 
 export const runProcessPanelActions = unionize({
     SET_PROCESS_PATHNAME: ofType<string>(),

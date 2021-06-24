@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import Axios from 'axios';
-import { FileViewerList } from '~/models/file-viewers-config';
+import { FileViewerList } from 'models/file-viewers-config';
 
 export class FileViewersConfigService {
     constructor(

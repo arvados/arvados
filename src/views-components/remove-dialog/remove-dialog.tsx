@@ -4,8 +4,8 @@
 
 import * as React from "react";
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from "@material-ui/core";
-import { withDialog } from "~/store/dialog/with-dialog";
-import { dialogActions } from "~/store/dialog/dialog-actions";
+import { withDialog } from "store/dialog/with-dialog";
+import { dialogActions } from "store/dialog/dialog-actions";
 
 export const REMOVE_DIALOG = 'removeCollectionFilesDialog';
 

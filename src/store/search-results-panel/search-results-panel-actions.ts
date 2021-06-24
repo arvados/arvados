@@ -3,11 +3,11 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from 'redux';
-import { RootState } from '~/store/store';
-import { ServiceRepository } from '~/services/services';
-import { bindDataExplorerActions } from '~/store/data-explorer/data-explorer-action';
-import { setBreadcrumbs } from '~/store/breadcrumbs/breadcrumbs-actions';
-import { searchBarActions } from '~/store/search-bar/search-bar-actions';
+import { RootState } from 'store/store';
+import { ServiceRepository } from 'services/services';
+import { bindDataExplorerActions } from 'store/data-explorer/data-explorer-action';
+import { setBreadcrumbs } from 'store/breadcrumbs/breadcrumbs-actions';
+import { searchBarActions } from 'store/search-bar/search-bar-actions';
 
 export const SEARCH_RESULTS_PANEL_ID = "searchResultsPanel";
 export const searchResultsPanelActions = bindDataExplorerActions(SEARCH_RESULTS_PANEL_ID);

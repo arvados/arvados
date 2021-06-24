@@ -3,9 +3,9 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from "react";
-import { FavoriteIcon, PublicFavoriteIcon } from "~/components/icon/icon";
+import { FavoriteIcon, PublicFavoriteIcon } from "components/icon/icon";
 import { connect } from "react-redux";
-import { RootState } from "~/store/store";
+import { RootState } from "store/store";
 import { withStyles, StyleRulesCallback, WithStyles, Tooltip } from "@material-ui/core";
 
 type CssRules = "icon";

@@ -6,9 +6,9 @@ import {
     getQueryFromAdvancedData,
     searchBarActions,
     SearchBarActions
-} from '~/store/search-bar/search-bar-actions';
-import { GroupContentsResource } from '~/services/groups-service/groups-service';
-import { SearchBarAdvancedFormData } from '~/models/search-bar';
+} from 'store/search-bar/search-bar-actions';
+import { GroupContentsResource } from 'services/groups-service/groups-service';
+import { SearchBarAdvancedFormData } from 'models/search-bar';
 
 type SearchResult = GroupContentsResource;
 export type SearchBarSelectedItem = {

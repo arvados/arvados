@@ -2,12 +2,12 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ContextMenuKind } from '~/views-components/context-menu/context-menu';
+import { ContextMenuKind } from 'views-components/context-menu/context-menu';
 import { resourceUuidToContextMenuKind } from './context-menu-actions';
 import configureStore from 'redux-mock-store';
 import thunk from 'redux-thunk';
 import { PROJECT_PANEL_CURRENT_UUID } from '../project-panel/project-panel-action';
-import { GroupClass } from '~/models/group';
+import { GroupClass } from 'models/group';
 
 describe('context-menu-actions', () => {
     describe('resourceUuidToContextMenuKind', () => {

@@ -3,17 +3,17 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as _ from "lodash";
-import { CommonResourceService } from '~/services/common-service/common-resource-service';
-import { ListResults, ListArguments } from '~/services/common-service/common-service';
+import { CommonResourceService } from 'services/common-service/common-resource-service';
+import { ListResults, ListArguments } from 'services/common-service/common-service';
 import { AxiosInstance, AxiosRequestConfig } from "axios";
-import { CollectionResource } from "~/models/collection";
-import { ProjectResource } from "~/models/project";
-import { ProcessResource } from "~/models/process";
-import { WorkflowResource } from "~/models/workflow";
-import { TrashableResourceService } from "~/services/common-service/trashable-resource-service";
-import { ApiActions } from "~/services/api/api-actions";
-import { GroupResource } from "~/models/group";
-import { Session } from "~/models/session";
+import { CollectionResource } from "models/collection";
+import { ProjectResource } from "models/project";
+import { ProcessResource } from "models/process";
+import { WorkflowResource } from "models/workflow";
+import { TrashableResourceService } from "services/common-service/trashable-resource-service";
+import { ApiActions } from "services/api/api-actions";
+import { GroupResource } from "models/group";
+import { Session } from "models/session";
 
 export interface ContentsArguments {
     limit?: number;

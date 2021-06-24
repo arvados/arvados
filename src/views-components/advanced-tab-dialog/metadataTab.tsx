@@ -4,7 +4,7 @@
 
 import * as React from "react";
 import { Table, TableHead, TableCell, TableRow, TableBody, StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core';
-import { UserResource, getUserDisplayName } from "~/models/user";
+import { UserResource, getUserDisplayName } from "models/user";
 
 type CssRules = 'cell';
 

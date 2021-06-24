@@ -2,9 +2,9 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { unionize, ofType, UnionOf } from "~/common/unionize";
+import { unionize, ofType, UnionOf } from "common/unionize";
 import { Dispatch } from "redux";
-import { RootState } from '~/store/store';
+import { RootState } from 'store/store';
 
 export interface UploadFile {
     id: number;

@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { extractUuidKind, ResourceKind } from "~/models/resource";
+import { extractUuidKind, ResourceKind } from "models/resource";
 
 export const sanitizeToken = (href: string, tokenAsQueryParam = true): string => {
     const [prefix, suffix] = href.split('/t=');

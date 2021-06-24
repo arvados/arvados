@@ -4,21 +4,21 @@
 
 import * as React from 'react';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core';
-import { DataExplorer } from "~/views-components/data-explorer/data-explorer";
+import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { connect, DispatchProp } from 'react-redux';
-import { RootState } from '~/store/store';
-import { ArvadosTheme } from '~/common/custom-theme';
-import { ShareMeIcon } from '~/components/icon/icon';
-import { ResourcesState, getResource } from '~/store/resources/resources';
-import { navigateTo } from "~/store/navigation/navigation-action";
-import { loadDetailsPanel } from "~/store/details-panel/details-panel-action";
-import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
-import { SHARED_WITH_ME_PANEL_ID } from '~/store/shared-with-me-panel/shared-with-me-panel-actions';
+import { RootState } from 'store/store';
+import { ArvadosTheme } from 'common/custom-theme';
+import { ShareMeIcon } from 'components/icon/icon';
+import { ResourcesState, getResource } from 'store/resources/resources';
+import { navigateTo } from "store/navigation/navigation-action";
+import { loadDetailsPanel } from "store/details-panel/details-panel-action";
+import { DataTableDefaultView } from 'components/data-table-default-view/data-table-default-view';
+import { SHARED_WITH_ME_PANEL_ID } from 'store/shared-with-me-panel/shared-with-me-panel-actions';
 import {
     openContextMenu,
     resourceUuidToContextMenuKind
-} from '~/store/context-menu/context-menu-actions';
-import { GroupContentsResource } from '~/services/groups-service/groups-service';
+} from 'store/context-menu/context-menu-actions';
+import { GroupContentsResource } from 'services/groups-service/groups-service';
 
 type CssRules = "toolbar" | "button";
 

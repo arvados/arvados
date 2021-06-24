@@ -9,7 +9,7 @@ import { ReactElement } from "react";
 import { FixedSizeList, ListChildComponentProps } from "react-window";
 import AutoSizer from "react-virtualized-auto-sizer";
 
-import { ArvadosTheme } from '~/common/custom-theme';
+import { ArvadosTheme } from 'common/custom-theme';
 import { TreeItem, TreeProps, TreeItemStatus } from './tree';
 import { ListItem, Radio, Checkbox, CircularProgress, ListItemIcon } from '@material-ui/core';
 import { SidePanelRightArrowIcon } from '../icon/icon';

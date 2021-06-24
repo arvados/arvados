@@ -2,26 +2,26 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { unionize, ofType, UnionOf } from "~/common/unionize";
-import { TreeNode, initTreeNode, getNodeDescendants, TreeNodeStatus, getNode, TreePickerId, Tree } from '~/models/tree';
-import { createCollectionFilesTree } from "~/models/collection-file";
+import { unionize, ofType, UnionOf } from "common/unionize";
+import { TreeNode, initTreeNode, getNodeDescendants, TreeNodeStatus, getNode, TreePickerId, Tree } from 'models/tree';
+import { createCollectionFilesTree } from "models/collection-file";
 import { Dispatch } from 'redux';
-import { RootState } from '~/store/store';
-import { getUserUuid } from "~/common/getuser";
-import { ServiceRepository } from '~/services/services';
-import { FilterBuilder } from '~/services/api/filter-builder';
+import { RootState } from 'store/store';
+import { getUserUuid } from "common/getuser";
+import { ServiceRepository } from 'services/services';
+import { FilterBuilder } from 'services/api/filter-builder';
 import { pipe, values } from 'lodash/fp';
-import { ResourceKind } from '~/models/resource';
-import { GroupContentsResource } from '~/services/groups-service/groups-service';
+import { ResourceKind } from 'models/resource';
+import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { getTreePicker, TreePicker } from './tree-picker';
-import { ProjectsTreePickerItem } from '~/views-components/projects-tree-picker/generic-projects-tree-picker';
-import { OrderBuilder } from '~/services/api/order-builder';
-import { ProjectResource } from '~/models/project';
+import { ProjectsTreePickerItem } from 'views-components/projects-tree-picker/generic-projects-tree-picker';
+import { OrderBuilder } from 'services/api/order-builder';
+import { ProjectResource } from 'models/project';
 import { mapTree } from '../../models/tree';
-import { LinkResource, LinkClass } from "~/models/link";
-import { mapTreeValues } from "~/models/tree";
-import { sortFilesTree } from "~/services/collection-service/collection-service-files-response";
-import { GroupClass, GroupResource } from "~/models/group";
+import { LinkResource, LinkClass } from "models/link";
+import { mapTreeValues } from "models/tree";
+import { sortFilesTree } from "services/collection-service/collection-service-files-response";
+import { GroupClass, GroupResource } from "models/group";
 
 export const treePickerActions = unionize({
     LOAD_TREE_PICKER_NODE: ofType<{ id: string, pickerId: string }>(),

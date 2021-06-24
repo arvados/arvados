@@ -6,11 +6,11 @@ import * as React from 'react';
 import { ExpansionPanel, ExpansionPanelDetails, ExpansionPanelSummary } from '@material-ui/core';
 import { reduxForm, Field } from 'redux-form';
 import { Grid } from '@material-ui/core';
-import { TextField } from '~/components/text-field/text-field';
-import { ExpandIcon } from '~/components/icon/icon';
+import { TextField } from 'components/text-field/text-field';
+import { ExpandIcon } from 'components/icon/icon';
 import * as IntInput from './inputs/int-input';
-import { min } from '~/validators/min';
-import { optional } from '~/validators/optional';
+import { min } from 'validators/min';
+import { optional } from 'validators/optional';
 
 export const RUN_PROCESS_ADVANCED_FORM = 'runProcessAdvancedForm';
 

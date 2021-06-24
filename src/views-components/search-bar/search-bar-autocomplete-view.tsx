@@ -4,9 +4,9 @@
 
 import * as React from 'react';
 import { Paper, StyleRulesCallback, withStyles, WithStyles, List, ListItem, ListItemText } from '@material-ui/core';
-import { GroupContentsResource } from '~/services/groups-service/groups-service';
+import { GroupContentsResource } from 'services/groups-service/groups-service';
 import Highlighter from "react-highlight-words";
-import { SearchBarSelectedItem } from "~/store/search-bar/search-bar-reducer";
+import { SearchBarSelectedItem } from "store/search-bar/search-bar-reducer";
 
 type CssRules = 'searchView' | 'list' | 'listItem';
 

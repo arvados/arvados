@@ -2,21 +2,21 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ofType, unionize, UnionOf } from '~/common/unionize';
+import { ofType, unionize, UnionOf } from 'common/unionize';
 import { Dispatch } from "redux";
 import { RootState } from "../store";
-import { ServiceRepository } from "~/services/services";
-import { SshKeyResource } from '~/models/ssh-key';
-import { User } from "~/models/user";
-import { Session } from "~/models/session";
-import { Config } from '~/common/config';
-import { matchTokenRoute, matchFedTokenRoute } from '~/routes/routes';
-import { createServices, setAuthorizationHeader } from "~/services/services";
-import { cancelLinking } from '~/store/link-account-panel/link-account-panel-actions';
-import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
-import { WORKBENCH_LOADING_SCREEN } from '~/store/workbench/workbench-actions';
+import { ServiceRepository } from "services/services";
+import { SshKeyResource } from 'models/ssh-key';
+import { User } from "models/user";
+import { Session } from "models/session";
+import { Config } from 'common/config';
+import { matchTokenRoute, matchFedTokenRoute } from 'routes/routes';
+import { createServices, setAuthorizationHeader } from "services/services";
+import { cancelLinking } from 'store/link-account-panel/link-account-panel-actions';
+import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
+import { WORKBENCH_LOADING_SCREEN } from 'store/workbench/workbench-actions';
 import { addRemoteConfig, getRemoteHostConfig } from './auth-action-session';
-import { getTokenV2 } from '~/models/api-client-authorization';
+import { getTokenV2 } from 'models/api-client-authorization';
 
 export const authActions = unionize({
     LOGIN: {},

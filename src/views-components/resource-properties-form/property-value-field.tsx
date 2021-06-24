@@ -5,9 +5,9 @@
 import * as React from 'react';
 import { WrappedFieldProps, Field, formValues, FormName, WrappedFieldInputProps, WrappedFieldMetaProps, change } from 'redux-form';
 import { compose } from 'redux';
-import { Autocomplete } from '~/components/autocomplete/autocomplete';
-import { Vocabulary, isStrictTag, getTagValues, getTagValueID } from '~/models/vocabulary';
-import { PROPERTY_KEY_FIELD_ID, PROPERTY_KEY_FIELD_NAME } from '~/views-components/resource-properties-form/property-key-field';
+import { Autocomplete } from 'components/autocomplete/autocomplete';
+import { Vocabulary, isStrictTag, getTagValues, getTagValueID } from 'models/vocabulary';
+import { PROPERTY_KEY_FIELD_ID, PROPERTY_KEY_FIELD_NAME } from 'views-components/resource-properties-form/property-key-field';
 import {
     handleSelect,
     handleBlur,
@@ -15,9 +15,9 @@ import {
     ValidationProp,
     connectVocabulary,
     buildProps
-} from '~/views-components/resource-properties-form/property-field-common';
-import { TAG_VALUE_VALIDATION } from '~/validators/validators';
-import { escapeRegExp } from '~/common/regexp.ts';
+} from 'views-components/resource-properties-form/property-field-common';
+import { TAG_VALUE_VALIDATION } from 'validators/validators';
+import { escapeRegExp } from 'common/regexp.ts';
 import { ChangeEvent } from 'react';
 
 interface PropertyKeyProp {

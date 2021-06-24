@@ -2,26 +2,26 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ContextMenuActionSet } from "~/views-components/context-menu/context-menu-action-set";
-import { ToggleFavoriteAction } from "~/views-components/context-menu/actions/favorite-action";
-import { toggleFavorite } from "~/store/favorites/favorites-actions";
+import { ContextMenuActionSet } from "views-components/context-menu/context-menu-action-set";
+import { ToggleFavoriteAction } from "views-components/context-menu/actions/favorite-action";
+import { toggleFavorite } from "store/favorites/favorites-actions";
 import {
     RenameIcon, ShareIcon, MoveToIcon, CopyIcon, DetailsIcon,
     AdvancedIcon, RemoveIcon, ReRunProcessIcon, LogIcon, InputIcon, CommandIcon, OutputIcon
-} from "~/components/icon/icon";
-import { favoritePanelActions } from "~/store/favorite-panel/favorite-panel-action";
-import { navigateToProcessLogs } from '~/store/navigation/navigation-action';
-import { openMoveProcessDialog } from '~/store/processes/process-move-actions';
-import { openProcessUpdateDialog } from "~/store/processes/process-update-actions";
-import { openCopyProcessDialog } from '~/store/processes/process-copy-actions';
-import { openProcessCommandDialog } from '~/store/processes/process-command-actions';
-import { openSharingDialog } from "~/store/sharing-dialog/sharing-dialog-actions";
-import { openAdvancedTabDialog } from "~/store/advanced-tab/advanced-tab";
-import { openProcessInputDialog } from "~/store/processes/process-input-actions";
-import { toggleDetailsPanel } from '~/store/details-panel/details-panel-action';
-import { openRemoveProcessDialog, reRunProcess } from "~/store/processes/processes-actions";
-import { navigateToOutput } from "~/store/process-panel/process-panel-actions";
-import { snackbarActions, SnackbarKind } from "~/store/snackbar/snackbar-actions";
+} from "components/icon/icon";
+import { favoritePanelActions } from "store/favorite-panel/favorite-panel-action";
+import { navigateToProcessLogs } from 'store/navigation/navigation-action';
+import { openMoveProcessDialog } from 'store/processes/process-move-actions';
+import { openProcessUpdateDialog } from "store/processes/process-update-actions";
+import { openCopyProcessDialog } from 'store/processes/process-copy-actions';
+import { openProcessCommandDialog } from 'store/processes/process-command-actions';
+import { openSharingDialog } from "store/sharing-dialog/sharing-dialog-actions";
+import { openAdvancedTabDialog } from "store/advanced-tab/advanced-tab";
+import { openProcessInputDialog } from "store/processes/process-input-actions";
+import { toggleDetailsPanel } from 'store/details-panel/details-panel-action';
+import { openRemoveProcessDialog, reRunProcess } from "store/processes/processes-actions";
+import { navigateToOutput } from "store/process-panel/process-panel-actions";
+import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
 
 export const processActionSet: ContextMenuActionSet = [[
     {

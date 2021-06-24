@@ -6,12 +6,12 @@ import * as React from 'react';
 import { connect, DispatchProp } from 'react-redux';
 import { Grid, Typography, Button, Select } from '@material-ui/core';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
-import { login, authActions } from '~/store/auth/auth-action';
-import { ArvadosTheme } from '~/common/custom-theme';
-import { RootState } from '~/store/store';
-import { LoginForm } from '~/views-components/login-form/login-form';
+import { login, authActions } from 'store/auth/auth-action';
+import { ArvadosTheme } from 'common/custom-theme';
+import { RootState } from 'store/store';
+import { LoginForm } from 'views-components/login-form/login-form';
 import Axios from 'axios';
-import { Config } from '~/common/config';
+import { Config } from 'common/config';
 
 type CssRules = 'root' | 'container' | 'title' | 'content' | 'content__bolder' | 'button';
 

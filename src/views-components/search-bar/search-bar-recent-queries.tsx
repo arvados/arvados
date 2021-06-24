@@ -4,8 +4,8 @@
 
 import * as React from 'react';
 import { withStyles, WithStyles, StyleRulesCallback, List, ListItem, ListItemText } from '@material-ui/core';
-import { ArvadosTheme } from '~/common/custom-theme';
-import { SearchBarSelectedItem } from "~/store/search-bar/search-bar-reducer";
+import { ArvadosTheme } from 'common/custom-theme';
+import { SearchBarSelectedItem } from "store/search-bar/search-bar-reducer";
 
 type CssRules = 'root' | 'listItem' | 'listItemText';
 

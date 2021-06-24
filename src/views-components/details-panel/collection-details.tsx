@@ -3,18 +3,18 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { CollectionIcon } from '~/components/icon/icon';
-import { CollectionResource } from '~/models/collection';
+import { CollectionIcon } from 'components/icon/icon';
+import { CollectionResource } from 'models/collection';
 import { DetailsData } from "./details-data";
-import { CollectionDetailsAttributes } from '~/views/collection-panel/collection-panel';
-import { RootState } from '~/store/store';
-import { filterResources, getResource } from '~/store/resources/resources';
+import { CollectionDetailsAttributes } from 'views/collection-panel/collection-panel';
+import { RootState } from 'store/store';
+import { filterResources, getResource } from 'store/resources/resources';
 import { connect } from 'react-redux';
 import { Grid, ListItem, StyleRulesCallback, Typography, withStyles, WithStyles } from '@material-ui/core';
-import { formatDate, formatFileSize } from '~/common/formatters';
+import { formatDate, formatFileSize } from 'common/formatters';
 import { Dispatch } from 'redux';
-import { navigateTo } from '~/store/navigation/navigation-action';
-import { openContextMenu, resourceUuidToContextMenuKind } from '~/store/context-menu/context-menu-actions';
+import { navigateTo } from 'store/navigation/navigation-action';
+import { openContextMenu, resourceUuidToContextMenuKind } from 'store/context-menu/context-menu-actions';
 
 export type CssRules = 'versionBrowserHeader' | 'versionBrowserItem';
 

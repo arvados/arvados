@@ -2,28 +2,28 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ofType, unionize, UnionOf } from "~/common/unionize";
-import { GroupContentsResource, GroupContentsResourcePrefix } from '~/services/groups-service/groups-service';
+import { ofType, unionize, UnionOf } from "common/unionize";
+import { GroupContentsResource, GroupContentsResourcePrefix } from 'services/groups-service/groups-service';
 import { Dispatch } from 'redux';
 import { change, initialize, untouch } from 'redux-form';
-import { RootState } from '~/store/store';
-import { initUserProject, treePickerActions } from '~/store/tree-picker/tree-picker-actions';
-import { ServiceRepository } from '~/services/services';
-import { FilterBuilder } from "~/services/api/filter-builder";
-import { ResourceKind, RESOURCE_UUID_REGEX, COLLECTION_PDH_REGEX } from '~/models/resource';
-import { SearchView } from '~/store/search-bar/search-bar-reducer';
-import { navigateTo, navigateToSearchResults } from '~/store/navigation/navigation-action';
-import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
-import { PropertyValue, SearchBarAdvancedFormData } from '~/models/search-bar';
+import { RootState } from 'store/store';
+import { initUserProject, treePickerActions } from 'store/tree-picker/tree-picker-actions';
+import { ServiceRepository } from 'services/services';
+import { FilterBuilder } from "services/api/filter-builder";
+import { ResourceKind, RESOURCE_UUID_REGEX, COLLECTION_PDH_REGEX } from 'models/resource';
+import { SearchView } from 'store/search-bar/search-bar-reducer';
+import { navigateTo, navigateToSearchResults } from 'store/navigation/navigation-action';
+import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
+import { PropertyValue, SearchBarAdvancedFormData } from 'models/search-bar';
 import * as _ from "lodash";
-import { getModifiedKeysValues } from "~/common/objects";
-import { activateSearchBarProject } from "~/store/search-bar/search-bar-tree-actions";
-import { Session } from "~/models/session";
-import { searchResultsPanelActions } from "~/store/search-results-panel/search-results-panel-actions";
-import { ListResults } from "~/services/common-service/common-service";
+import { getModifiedKeysValues } from "common/objects";
+import { activateSearchBarProject } from "store/search-bar/search-bar-tree-actions";
+import { Session } from "models/session";
+import { searchResultsPanelActions } from "store/search-results-panel/search-results-panel-actions";
+import { ListResults } from "services/common-service/common-service";
 import * as parser from './search-query/arv-parser';
 import { Keywords } from './search-query/arv-parser';
-import { Vocabulary, getTagKeyLabel, getTagValueLabel } from "~/models/vocabulary";
+import { Vocabulary, getTagKeyLabel, getTagValueLabel } from "models/vocabulary";
 
 export const searchBarActions = unionize({
     SET_CURRENT_VIEW: ofType<string>(),

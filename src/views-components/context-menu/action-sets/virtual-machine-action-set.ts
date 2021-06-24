@@ -2,10 +2,10 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ContextMenuActionSet } from "~/views-components/context-menu/context-menu-action-set";
-import { AdvancedIcon, RemoveIcon, AttributesIcon } from "~/components/icon/icon";
-import { openAdvancedTabDialog } from '~/store/advanced-tab/advanced-tab';
-import { openVirtualMachineAttributes, openRemoveVirtualMachineDialog } from "~/store/virtual-machines/virtual-machines-actions";
+import { ContextMenuActionSet } from "views-components/context-menu/context-menu-action-set";
+import { AdvancedIcon, RemoveIcon, AttributesIcon } from "components/icon/icon";
+import { openAdvancedTabDialog } from 'store/advanced-tab/advanced-tab';
+import { openVirtualMachineAttributes, openRemoveVirtualMachineDialog } from "store/virtual-machines/virtual-machines-actions";
 
 export const virtualMachineActionSet: ContextMenuActionSet = [[{
     name: "Attributes",

@@ -2,12 +2,12 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { createTree, getNodeChildrenIds, getNode, TreeNodeStatus } from '~/models/tree';
+import { createTree, getNodeChildrenIds, getNode, TreeNodeStatus } from 'models/tree';
 import { pipe } from 'lodash/fp';
 import { treePickerReducer } from "./tree-picker-reducer";
 import { treePickerActions } from "./tree-picker-actions";
 import { TreePicker } from './tree-picker';
-import { initTreeNode } from '~/models/tree';
+import { initTreeNode } from 'models/tree';
 
 describe('TreePickerReducer', () => {
     it('LOAD_TREE_PICKER_NODE - initial state', () => {

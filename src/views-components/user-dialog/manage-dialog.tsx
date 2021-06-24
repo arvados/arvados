@@ -6,12 +6,12 @@ import * as React from "react";
 import { compose, Dispatch } from "redux";
 import { connect } from "react-redux";
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography } from "@material-ui/core";
-import { WithDialogProps } from "~/store/dialog/with-dialog";
-import { withDialog } from '~/store/dialog/with-dialog';
+import { WithDialogProps } from "store/dialog/with-dialog";
+import { withDialog } from 'store/dialog/with-dialog';
 import { WithStyles, withStyles } from '@material-ui/core/styles';
-import { ArvadosTheme } from '~/common/custom-theme';
-import { USER_MANAGEMENT_DIALOG, openSetupShellAccount, loginAs } from "~/store/users/users-actions";
-import { getUserDisplayName } from "~/models/user";
+import { ArvadosTheme } from 'common/custom-theme';
+import { USER_MANAGEMENT_DIALOG, openSetupShellAccount, loginAs } from "store/users/users-actions";
+import { getUserDisplayName } from "models/user";
 
 type CssRules = 'spacing';
 

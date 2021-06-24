@@ -7,9 +7,9 @@ import { Dispatch } from 'redux';
 import { connect } from 'react-redux';
 import { Grid, Typography, Button } from '@material-ui/core';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
-import { ArvadosTheme } from '~/common/custom-theme';
-import { navigateToLinkAccount } from '~/store/navigation/navigation-action';
-import { RootState } from '~/store/store';
+import { ArvadosTheme } from 'common/custom-theme';
+import { navigateToLinkAccount } from 'store/navigation/navigation-action';
+import { RootState } from 'store/store';
 
 type CssRules = 'root' | 'ontop' | 'title';
 

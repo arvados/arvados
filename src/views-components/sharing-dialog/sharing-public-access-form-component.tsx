@@ -8,7 +8,7 @@ import { Field, WrappedFieldProps } from 'redux-form';
 import { WithStyles } from '@material-ui/core/styles';
 import withStyles from '@material-ui/core/styles/withStyles';
 import { VisibilityLevelSelect } from './visibility-level-select';
-import { VisibilityLevel } from '~/store/sharing-dialog/sharing-dialog-types';
+import { VisibilityLevel } from 'store/sharing-dialog/sharing-dialog-types';
 
 const sharingPublicAccessStyles: StyleRulesCallback<'root'> = theme => ({
     root: {

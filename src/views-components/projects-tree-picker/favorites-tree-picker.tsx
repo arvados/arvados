@@ -3,10 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { connect } from 'react-redux';
-import { ProjectsTreePicker, ProjectsTreePickerProps } from '~/views-components/projects-tree-picker/generic-projects-tree-picker';
+import { ProjectsTreePicker, ProjectsTreePickerProps } from 'views-components/projects-tree-picker/generic-projects-tree-picker';
 import { Dispatch } from 'redux';
-import { FavoriteIcon } from '~/components/icon/icon';
-import { loadFavoritesProject } from '~/store/tree-picker/tree-picker-actions';
+import { FavoriteIcon } from 'components/icon/icon';
+import { loadFavoritesProject } from 'store/tree-picker/tree-picker-actions';
 
 export const FavoritesTreePicker = connect(() => ({
     rootItemIcon: FavoriteIcon,

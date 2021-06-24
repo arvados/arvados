@@ -2,25 +2,25 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ServiceRepository } from '~/services/services';
+import { ServiceRepository } from 'services/services';
 import { MiddlewareAPI, Dispatch } from 'redux';
-import { DataExplorerMiddlewareService, getDataExplorerColumnFilters } from '~/store/data-explorer/data-explorer-middleware-service';
-import { RootState } from '~/store/store';
-import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
-import { getDataExplorer } from '~/store/data-explorer/data-explorer-reducer';
-import { resourcesActions } from '~/store/resources/resources-actions';
-import { FilterBuilder } from '~/services/api/filter-builder';
-import { SortDirection } from '~/components/data-table/data-column';
-import { OrderDirection, OrderBuilder } from '~/services/api/order-builder';
-import { getSortColumn } from "~/store/data-explorer/data-explorer-reducer";
-import { FavoritePanelColumnNames } from '~/views/favorite-panel/favorite-panel';
-import { publicFavoritePanelActions } from '~/store/public-favorites-panel/public-favorites-action';
-import { DataColumns } from '~/components/data-table/data-table';
+import { DataExplorerMiddlewareService, getDataExplorerColumnFilters } from 'store/data-explorer/data-explorer-middleware-service';
+import { RootState } from 'store/store';
+import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
+import { getDataExplorer } from 'store/data-explorer/data-explorer-reducer';
+import { resourcesActions } from 'store/resources/resources-actions';
+import { FilterBuilder } from 'services/api/filter-builder';
+import { SortDirection } from 'components/data-table/data-column';
+import { OrderDirection, OrderBuilder } from 'services/api/order-builder';
+import { getSortColumn } from "store/data-explorer/data-explorer-reducer";
+import { FavoritePanelColumnNames } from 'views/favorite-panel/favorite-panel';
+import { publicFavoritePanelActions } from 'store/public-favorites-panel/public-favorites-action';
+import { DataColumns } from 'components/data-table/data-table';
 import { serializeSimpleObjectTypeFilters } from '../resource-type-filters/resource-type-filters';
-import { LinkResource, LinkClass } from '~/models/link';
-import { GroupContentsResource, GroupContentsResourcePrefix } from '~/services/groups-service/groups-service';
-import { progressIndicatorActions } from '~/store/progress-indicator/progress-indicator-actions';
-import { updatePublicFavorites } from '~/store/public-favorites/public-favorites-actions';
+import { LinkResource, LinkClass } from 'models/link';
+import { GroupContentsResource, GroupContentsResourcePrefix } from 'services/groups-service/groups-service';
+import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
+import { updatePublicFavorites } from 'store/public-favorites/public-favorites-actions';
 
 export class PublicFavoritesMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {

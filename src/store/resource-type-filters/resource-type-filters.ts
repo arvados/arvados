@@ -3,14 +3,14 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { difference, pipe, values, includes, __ } from 'lodash/fp';
-import { createTree, setNode, TreeNodeStatus, TreeNode, Tree } from '~/models/tree';
-import { DataTableFilterItem, DataTableFilters } from '~/components/data-table-filters/data-table-filters-tree';
-import { ResourceKind } from '~/models/resource';
-import { FilterBuilder } from '~/services/api/filter-builder';
-import { getSelectedNodes } from '~/models/tree';
-import { CollectionType } from '~/models/collection';
-import { GroupContentsResourcePrefix } from '~/services/groups-service/groups-service';
-import { ContainerState } from '~/models/container';
+import { createTree, setNode, TreeNodeStatus, TreeNode, Tree } from 'models/tree';
+import { DataTableFilterItem, DataTableFilters } from 'components/data-table-filters/data-table-filters-tree';
+import { ResourceKind } from 'models/resource';
+import { FilterBuilder } from 'services/api/filter-builder';
+import { getSelectedNodes } from 'models/tree';
+import { CollectionType } from 'models/collection';
+import { GroupContentsResourcePrefix } from 'services/groups-service/groups-service';
+import { ContainerState } from 'models/container';
 
 export enum ProcessStatusFilter {
     ALL = 'All',

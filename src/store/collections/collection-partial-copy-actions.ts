@@ -4,16 +4,16 @@
 
 import { Dispatch } from 'redux';
 import * as _ from "lodash";
-import { RootState } from '~/store/store';
+import { RootState } from 'store/store';
 import { FormErrors, initialize, startSubmit, stopSubmit } from 'redux-form';
-import { resetPickerProjectTree } from '~/store/project-tree-picker/project-tree-picker-actions';
-import { dialogActions } from '~/store/dialog/dialog-actions';
-import { ServiceRepository } from '~/services/services';
+import { resetPickerProjectTree } from 'store/project-tree-picker/project-tree-picker-actions';
+import { dialogActions } from 'store/dialog/dialog-actions';
+import { ServiceRepository } from 'services/services';
 import { filterCollectionFilesBySelection } from '../collection-panel/collection-panel-files/collection-panel-files-state';
-import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
-import { getCommonResourceServiceError, CommonResourceServiceError } from '~/services/common-service/common-resource-service';
-import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
-import { initProjectsTreePicker } from '~/store/tree-picker/tree-picker-actions';
+import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
+import { getCommonResourceServiceError, CommonResourceServiceError } from 'services/common-service/common-resource-service';
+import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
+import { initProjectsTreePicker } from 'store/tree-picker/tree-picker-actions';
 
 export const COLLECTION_PARTIAL_COPY_FORM_NAME = 'COLLECTION_PARTIAL_COPY_DIALOG';
 export const COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION = 'COLLECTION_PARTIAL_COPY_TO_SELECTED_DIALOG';

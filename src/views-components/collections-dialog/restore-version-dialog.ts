@@ -4,9 +4,9 @@
 
 import { Dispatch, compose } from 'redux';
 import { connect } from "react-redux";
-import { ConfirmationDialog } from "~/components/confirmation-dialog/confirmation-dialog";
-import { withDialog, WithDialogProps } from "~/store/dialog/with-dialog";
-import { COLLECTION_RESTORE_VERSION_DIALOG, restoreVersion } from '~/store/collections/collection-version-actions';
+import { ConfirmationDialog } from "components/confirmation-dialog/confirmation-dialog";
+import { withDialog, WithDialogProps } from "store/dialog/with-dialog";
+import { COLLECTION_RESTORE_VERSION_DIALOG, restoreVersion } from 'store/collections/collection-version-actions';
 
 const mapDispatchToProps = (dispatch: Dispatch, props: WithDialogProps<any>) => ({
     onConfirm: () => {

@@ -3,11 +3,11 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { authActions, AuthAction } from "./auth-action";
-import { User } from "~/models/user";
-import { ServiceRepository } from "~/services/services";
-import { SshKeyResource } from '~/models/ssh-key';
-import { Session } from "~/models/session";
-import { Config, mockConfig } from '~/common/config';
+import { User } from "models/user";
+import { ServiceRepository } from "services/services";
+import { SshKeyResource } from 'models/ssh-key';
+import { Session } from "models/session";
+import { Config, mockConfig } from 'common/config';
 
 export interface AuthState {
     user?: User;

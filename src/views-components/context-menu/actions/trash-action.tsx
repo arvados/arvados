@@ -4,9 +4,9 @@
 
 import * as React from "react";
 import { ListItemIcon, ListItemText, ListItem } from "@material-ui/core";
-import { RestoreFromTrashIcon, TrashIcon } from "~/components/icon/icon";
+import { RestoreFromTrashIcon, TrashIcon } from "components/icon/icon";
 import { connect } from "react-redux";
-import { RootState } from "~/store/store";
+import { RootState } from "store/store";
 
 const mapStateToProps = (state: RootState, props: { onClick: () => {} }) => ({
     isTrashed: state.contextMenu.resource && state.contextMenu.resource.isTrashed,

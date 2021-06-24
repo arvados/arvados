@@ -6,15 +6,15 @@ import * as React from 'react';
 import { connect } from 'react-redux';
 import { Grid, Typography, Button, Card, CardContent, TableBody, TableCell, TableHead, TableRow, Table, Tooltip, IconButton } from '@material-ui/core';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
-import { ArvadosTheme } from '~/common/custom-theme';
+import { ArvadosTheme } from 'common/custom-theme';
 import { Link } from 'react-router-dom';
 import { Dispatch, compose } from 'redux';
-import { RootState } from '~/store/store';
-import { HelpIcon, AddIcon, MoreOptionsIcon } from '~/components/icon/icon';
-import { loadRepositoriesData, openRepositoriesSampleGitDialog, openRepositoryCreateDialog } from '~/store/repositories/repositories-actions';
-import { RepositoryResource } from '~/models/repositories';
-import { openRepositoryContextMenu } from '~/store/context-menu/context-menu-actions';
-import { Routes } from '~/routes/routes';
+import { RootState } from 'store/store';
+import { HelpIcon, AddIcon, MoreOptionsIcon } from 'components/icon/icon';
+import { loadRepositoriesData, openRepositoriesSampleGitDialog, openRepositoryCreateDialog } from 'store/repositories/repositories-actions';
+import { RepositoryResource } from 'models/repositories';
+import { openRepositoryContextMenu } from 'store/context-menu/context-menu-actions';
+import { Routes } from 'routes/routes';
 
 
 type CssRules = 'link' | 'button' | 'icon' | 'iconRow' | 'moreOptionsButton' | 'moreOptions' | 'cloneUrls';

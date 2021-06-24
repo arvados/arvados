@@ -4,12 +4,12 @@
 
 import * as React from "react";
 import { Dialog, DialogActions, Button, StyleRulesCallback, WithStyles, withStyles, CardHeader, Tab, Tabs } from '@material-ui/core';
-import { withDialog } from "~/store/dialog/with-dialog";
-import { COLLECTION_WEBDAV_S3_DIALOG_NAME, WebDavS3InfoDialogData } from '~/store/collections/collection-info-actions';
-import { WithDialogProps } from '~/store/dialog/with-dialog';
+import { withDialog } from "store/dialog/with-dialog";
+import { COLLECTION_WEBDAV_S3_DIALOG_NAME, WebDavS3InfoDialogData } from 'store/collections/collection-info-actions';
+import { WithDialogProps } from 'store/dialog/with-dialog';
 import { compose } from 'redux';
-import { DetailsAttribute } from "~/components/details-attribute/details-attribute";
-import { DownloadIcon } from "~/components/icon/icon";
+import { DetailsAttribute } from "components/details-attribute/details-attribute";
+import { DownloadIcon } from "components/icon/icon";
 
 export type CssRules = 'details' | 'downloadButton';
 

@@ -4,10 +4,10 @@
 
 import { Dispatch } from "redux";
 import { connect } from "react-redux";
-import { ConfirmationDialog } from "~/components/confirmation-dialog/confirmation-dialog";
-import { withDialog, WithDialogProps } from '~/store/dialog/with-dialog';
-import { RootState } from '~/store/store';
-import { removeCollectionFiles, FILE_REMOVE_DIALOG } from '~/store/collection-panel/collection-panel-files/collection-panel-files-actions';
+import { ConfirmationDialog } from "components/confirmation-dialog/confirmation-dialog";
+import { withDialog, WithDialogProps } from 'store/dialog/with-dialog';
+import { RootState } from 'store/store';
+import { removeCollectionFiles, FILE_REMOVE_DIALOG } from 'store/collection-panel/collection-panel-files/collection-panel-files-actions';
 
 const mapStateToProps = (state: RootState, props: WithDialogProps<{ filePath: string }>) => ({
     filePath: props.data.filePath

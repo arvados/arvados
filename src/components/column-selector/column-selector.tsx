@@ -9,7 +9,7 @@ import { DataColumn } from '../data-table/data-column';
 import { Popover } from "../popover/popover";
 import { IconButtonProps } from '@material-ui/core/IconButton';
 import { DataColumns } from '../data-table/data-table';
-import { ArvadosTheme } from "~/common/custom-theme";
+import { ArvadosTheme } from "common/custom-theme";
 
 interface ColumnSelectorDataProps {
     columns: DataColumns<any>;

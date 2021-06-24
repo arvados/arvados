@@ -4,8 +4,8 @@
 
 import * as React from "react";
 import { Badge, MenuItem } from '@material-ui/core';
-import { DropdownMenu } from "~/components/dropdown-menu/dropdown-menu";
-import { NotificationIcon } from '~/components/icon/icon';
+import { DropdownMenu } from "components/dropdown-menu/dropdown-menu";
+import { NotificationIcon } from 'components/icon/icon';
 
 export const NotificationsMenu = 
     () =>

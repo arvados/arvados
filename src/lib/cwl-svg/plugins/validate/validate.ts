@@ -1,6 +1,6 @@
 import {Edge}          from "cwlts/models";
 import {PluginBase}    from "../plugin-base";
-import { Workflow } from "~/lib/cwl-svg";
+import { Workflow } from "lib/cwl-svg";
 
 export class SVGValidatePlugin extends PluginBase {
 

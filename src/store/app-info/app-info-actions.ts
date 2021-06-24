@@ -2,11 +2,11 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { unionize, ofType, UnionOf } from '~/common/unionize';
+import { unionize, ofType, UnionOf } from 'common/unionize';
 import { Dispatch } from 'redux';
-import { RootState } from '~/store/store';
-import { ServiceRepository } from '~/services/services';
-import { getBuildInfo } from '~/common/app-info';
+import { RootState } from 'store/store';
+import { ServiceRepository } from 'services/services';
+import { getBuildInfo } from 'common/app-info';
 
 export const appInfoActions = unionize({
     SET_BUILD_INFO: ofType<string>()

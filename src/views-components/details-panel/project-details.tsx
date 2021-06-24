@@ -4,21 +4,21 @@
 
 import * as React from 'react';
 import { connect } from 'react-redux';
-import { openProjectPropertiesDialog } from '~/store/details-panel/details-panel-action';
-import { ProjectIcon, RenameIcon, FilterGroupIcon } from '~/components/icon/icon';
-import { ProjectResource } from '~/models/project';
-import { formatDate } from '~/common/formatters';
-import { ResourceKind } from '~/models/resource';
-import { resourceLabel } from '~/common/labels';
+import { openProjectPropertiesDialog } from 'store/details-panel/details-panel-action';
+import { ProjectIcon, RenameIcon, FilterGroupIcon } from 'components/icon/icon';
+import { ProjectResource } from 'models/project';
+import { formatDate } from 'common/formatters';
+import { ResourceKind } from 'models/resource';
+import { resourceLabel } from 'common/labels';
 import { DetailsData } from "./details-data";
-import { DetailsAttribute } from "~/components/details-attribute/details-attribute";
-import { RichTextEditorLink } from '~/components/rich-text-editor-link/rich-text-editor-link';
+import { DetailsAttribute } from "components/details-attribute/details-attribute";
+import { RichTextEditorLink } from 'components/rich-text-editor-link/rich-text-editor-link';
 import { withStyles, StyleRulesCallback, WithStyles } from '@material-ui/core';
-import { ArvadosTheme } from '~/common/custom-theme';
+import { ArvadosTheme } from 'common/custom-theme';
 import { Dispatch } from 'redux';
 import { getPropertyChip } from '../resource-properties-form/property-chip';
 import { ResourceOwnerWithName } from '../data-explorer/renderers';
-import { GroupClass } from "~/models/group";
+import { GroupClass } from "models/group";
 
 export class ProjectDetails extends DetailsData<ProjectResource> {
     getIcon(className?: string) {

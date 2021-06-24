@@ -4,8 +4,8 @@
 
 import { collectionPanelFilesReducer } from "./collection-panel-files-reducer";
 import { collectionPanelFilesAction } from "./collection-panel-files-actions";
-import { CollectionFile, CollectionDirectory, createCollectionFile, createCollectionDirectory } from "~/models/collection-file";
-import { createTree, setNode, getNodeValue, mapTreeValues, TreeNodeStatus } from "~/models/tree";
+import { CollectionFile, CollectionDirectory, createCollectionFile, createCollectionDirectory } from "models/collection-file";
+import { createTree, setNode, getNodeValue, mapTreeValues, TreeNodeStatus } from "models/tree";
 import { CollectionPanelFile, CollectionPanelDirectory } from "./collection-panel-files-state";
 
 describe('CollectionPanelFilesReducer', () => {

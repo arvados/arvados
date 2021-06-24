@@ -6,15 +6,15 @@ import * as React from 'react';
 import { mount, configure, shallow } from 'enzyme';
 import * as Adapter from "enzyme-adapter-react-16";
 import { MuiThemeProvider, WithStyles } from '@material-ui/core';
-import { CustomTheme } from '~/common/custom-theme';
+import { CustomTheme } from 'common/custom-theme';
 import { WebDavS3InfoDialog, CssRules } from './webdav-s3-dialog';
-import { WithDialogProps } from '~/store/dialog/with-dialog';
-import { WebDavS3InfoDialogData, COLLECTION_WEBDAV_S3_DIALOG_NAME } from '~/store/collections/collection-info-actions';
+import { WithDialogProps } from 'store/dialog/with-dialog';
+import { WebDavS3InfoDialogData, COLLECTION_WEBDAV_S3_DIALOG_NAME } from 'store/collections/collection-info-actions';
 import { Provider } from "react-redux";
 import { createStore, combineReducers } from 'redux';
-import { configureStore, RootStore } from '~/store/store';
+import { configureStore, RootStore } from 'store/store';
 import { createBrowserHistory } from "history";
-import { createServices } from "~/services/services";
+import { createServices } from "services/services";
 
 configure({ adapter: new Adapter() });
 

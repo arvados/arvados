@@ -4,9 +4,9 @@
 
 import * as React from 'react';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
-import { DefaultViewDataProps, DefaultView } from '~/components/default-view/default-view';
-import { ArvadosTheme } from '~/common/custom-theme';
-import { DetailsIcon } from '~/components/icon/icon';
+import { DefaultViewDataProps, DefaultView } from 'components/default-view/default-view';
+import { ArvadosTheme } from 'common/custom-theme';
+import { DetailsIcon } from 'components/icon/icon';
 
 type CssRules = 'classRoot';
 

@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { SearchBarAdvancedFormData } from '~/models/search-bar';
+import { SearchBarAdvancedFormData } from 'models/search-bar';
 
 export class SearchService {
     private recentQueries = this.getRecentQueries();

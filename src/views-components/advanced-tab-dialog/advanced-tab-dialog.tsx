@@ -4,12 +4,12 @@
 
 import * as React from "react";
 import { Dialog, DialogActions, Button, StyleRulesCallback, WithStyles, withStyles, DialogTitle, DialogContent, Tabs, Tab, DialogContentText } from '@material-ui/core';
-import { WithDialogProps } from '~/store/dialog/with-dialog';
-import { withDialog } from "~/store/dialog/with-dialog";
+import { WithDialogProps } from 'store/dialog/with-dialog';
+import { withDialog } from "store/dialog/with-dialog";
 import { compose } from 'redux';
-import { ADVANCED_TAB_DIALOG } from "~/store/advanced-tab/advanced-tab";
-import { DefaultCodeSnippet } from "~/components/default-code-snippet/default-code-snippet";
-import { MetadataTab } from '~/views-components/advanced-tab-dialog/metadataTab';
+import { ADVANCED_TAB_DIALOG } from "store/advanced-tab/advanced-tab";
+import { DefaultCodeSnippet } from "components/default-code-snippet/default-code-snippet";
+import { MetadataTab } from 'views-components/advanced-tab-dialog/metadataTab';
 
 type CssRules = 'content' | 'codeSnippet' | 'spacing';
 

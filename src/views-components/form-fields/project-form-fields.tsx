@@ -4,10 +4,10 @@
 
 import * as React from "react";
 import { Field, Validator } from "redux-form";
-import { TextField, RichEditorTextField } from "~/components/text-field/text-field";
-import { PROJECT_NAME_VALIDATION, PROJECT_NAME_VALIDATION_ALLOW_SLASH } from "~/validators/validators";
+import { TextField, RichEditorTextField } from "components/text-field/text-field";
+import { PROJECT_NAME_VALIDATION, PROJECT_NAME_VALIDATION_ALLOW_SLASH } from "validators/validators";
 import { connect } from "react-redux";
-import { RootState } from "~/store/store";
+import { RootState } from "store/store";
 
 interface ProjectNameFieldProps {
     validate: Validator[];

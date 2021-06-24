@@ -4,8 +4,8 @@
 
 import * as React from "react";
 import { Field } from "redux-form";
-import { TextField } from "~/components/text-field/text-field";
-import { PROCESS_NAME_VALIDATION, PROCESS_DESCRIPTION_VALIDATION } from "~/validators/validators";
+import { TextField } from "components/text-field/text-field";
+import { PROCESS_NAME_VALIDATION, PROCESS_DESCRIPTION_VALIDATION } from "validators/validators";
 
 export const ProcessNameField = () =>
     <Field

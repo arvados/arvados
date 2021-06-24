@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { joinUrls } from "~/services/api/url-builder";
+import { joinUrls } from "services/api/url-builder";
 
 describe("UrlBuilder", () => {
     it("should join urls properly 1", () => {

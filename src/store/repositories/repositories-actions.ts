@@ -3,17 +3,17 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from "redux";
-import { bindDataExplorerActions } from '~/store/data-explorer/data-explorer-action';
-import { RootState } from '~/store/store';
-import { getUserUuid } from "~/common/getuser";
-import { ServiceRepository } from "~/services/services";
-import { navigateToRepositories } from "~/store/navigation/navigation-action";
-import { unionize, ofType, UnionOf } from "~/common/unionize";
-import { dialogActions } from '~/store/dialog/dialog-actions';
-import { RepositoryResource } from "~/models/repositories";
+import { bindDataExplorerActions } from 'store/data-explorer/data-explorer-action';
+import { RootState } from 'store/store';
+import { getUserUuid } from "common/getuser";
+import { ServiceRepository } from "services/services";
+import { navigateToRepositories } from "store/navigation/navigation-action";
+import { unionize, ofType, UnionOf } from "common/unionize";
+import { dialogActions } from 'store/dialog/dialog-actions';
+import { RepositoryResource } from "models/repositories";
 import { startSubmit, reset, stopSubmit, FormErrors } from "redux-form";
-import { getCommonResourceServiceError, CommonResourceServiceError } from "~/services/common-service/common-resource-service";
-import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
+import { getCommonResourceServiceError, CommonResourceServiceError } from "services/common-service/common-resource-service";
+import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 
 export const repositoriesActions = unionize({
     SET_REPOSITORIES: ofType<any>(),

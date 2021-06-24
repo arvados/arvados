@@ -12,15 +12,15 @@ import {
     DirectoryCommandInputParameter,
     CWLType,
     Directory
-} from '~/models/workflow';
+} from 'models/workflow';
 import { GenericInputProps, GenericInput } from './generic-input';
-import { ProjectsTreePicker } from '~/views-components/projects-tree-picker/projects-tree-picker';
-import { initProjectsTreePicker } from '~/store/tree-picker/tree-picker-actions';
-import { TreeItem } from '~/components/tree/tree';
-import { ProjectsTreePickerItem } from '~/views-components/projects-tree-picker/generic-projects-tree-picker';
-import { CollectionResource } from '~/models/collection';
-import { ResourceKind } from '~/models/resource';
-import { ERROR_MESSAGE } from '~/validators/require';
+import { ProjectsTreePicker } from 'views-components/projects-tree-picker/projects-tree-picker';
+import { initProjectsTreePicker } from 'store/tree-picker/tree-picker-actions';
+import { TreeItem } from 'components/tree/tree';
+import { ProjectsTreePickerItem } from 'views-components/projects-tree-picker/generic-projects-tree-picker';
+import { CollectionResource } from 'models/collection';
+import { ResourceKind } from 'models/resource';
+import { ERROR_MESSAGE } from 'validators/require';
 
 export interface DirectoryInputProps {
     input: DirectoryCommandInputParameter;

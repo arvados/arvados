@@ -2,12 +2,12 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { RootState } from '~/store/store';
+import { RootState } from 'store/store';
 import { Dispatch } from 'redux';
 import { connect } from 'react-redux';
-import { openSshKeyCreateDialog, openPublicKeyDialog } from '~/store/auth/auth-action-ssh';
-import { openSshKeyContextMenu } from '~/store/context-menu/context-menu-actions';
-import { SshKeyPanelRoot, SshKeyPanelRootDataProps, SshKeyPanelRootActionProps } from '~/views/ssh-key-panel/ssh-key-panel-root';
+import { openSshKeyCreateDialog, openPublicKeyDialog } from 'store/auth/auth-action-ssh';
+import { openSshKeyContextMenu } from 'store/context-menu/context-menu-actions';
+import { SshKeyPanelRoot, SshKeyPanelRootDataProps, SshKeyPanelRootActionProps } from 'views/ssh-key-panel/ssh-key-panel-root';
 
 const mapStateToProps = (state: RootState): SshKeyPanelRootDataProps => {
     return {

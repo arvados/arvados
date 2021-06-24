@@ -4,13 +4,13 @@
 
 import { Dispatch } from "redux";
 import { FormErrors, initialize, startSubmit, stopSubmit } from 'redux-form';
-import { RootState } from "~/store/store";
-import { collectionPanelActions } from "~/store/collection-panel/collection-panel-action";
-import { dialogActions } from "~/store/dialog/dialog-actions";
-import { getCommonResourceServiceError, CommonResourceServiceError } from "~/services/common-service/common-resource-service";
-import { ServiceRepository } from "~/services/services";
-import { CollectionResource } from '~/models/collection';
-import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
+import { RootState } from "store/store";
+import { collectionPanelActions } from "store/collection-panel/collection-panel-action";
+import { dialogActions } from "store/dialog/dialog-actions";
+import { getCommonResourceServiceError, CommonResourceServiceError } from "services/common-service/common-resource-service";
+import { ServiceRepository } from "services/services";
+import { CollectionResource } from 'models/collection';
+import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
 import { snackbarActions, SnackbarKind } from "../snackbar/snackbar-actions";
 import { updateResources } from "../resources/resources-actions";
 import { loadDetailsPanel } from "../details-panel/details-panel-action";

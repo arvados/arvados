@@ -4,11 +4,11 @@
 
 import * as React from "react";
 import { Field } from "redux-form";
-import { TextField } from "~/components/text-field/text-field";
-import { USER_EMAIL_VALIDATION, USER_LENGTH_VALIDATION } from "~/validators/validators";
-import { NativeSelectField } from "~/components/select-field/select-field";
+import { TextField } from "components/text-field/text-field";
+import { USER_EMAIL_VALIDATION, USER_LENGTH_VALIDATION } from "validators/validators";
+import { NativeSelectField } from "components/select-field/select-field";
 import { InputLabel } from "@material-ui/core";
-import { VirtualMachinesResource } from "~/models/virtual-machines";
+import { VirtualMachinesResource } from "models/virtual-machines";
 
 export const UserEmailField = () =>
     <Field

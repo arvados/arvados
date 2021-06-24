@@ -4,11 +4,11 @@
 
 import { ContainerRequestResource, ContainerRequestState } from '../../models/container-request';
 import { ContainerResource, ContainerState } from '../../models/container';
-import { ResourcesState, getResource } from '~/store/resources/resources';
+import { ResourcesState, getResource } from 'store/resources/resources';
 import { filterResources } from '../resources/resources';
-import { ResourceKind, Resource, extractUuidKind } from '~/models/resource';
-import { getTimeDiff } from '~/common/formatters';
-import { ArvadosTheme } from '~/common/custom-theme';
+import { ResourceKind, Resource, extractUuidKind } from 'models/resource';
+import { getTimeDiff } from 'common/formatters';
+import { ArvadosTheme } from 'common/custom-theme';
 
 export interface Process {
     containerRequest: ContainerRequestResource;

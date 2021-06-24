@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { unionize, ofType, UnionOf } from '~/common/unionize';
+import { unionize, ofType, UnionOf } from 'common/unionize';
 
 export const propertiesActions = unionize({
     SET_PROPERTY: ofType<{ key: string, value: any }>(),

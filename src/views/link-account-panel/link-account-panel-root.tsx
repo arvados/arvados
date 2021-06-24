@@ -14,12 +14,12 @@ import {
     Select,
     CircularProgress
 } from '@material-ui/core';
-import { ArvadosTheme } from '~/common/custom-theme';
-import { UserResource } from "~/models/user";
-import { LinkAccountType } from "~/models/link-account";
-import { formatDate } from "~/common/formatters";
-import { LinkAccountPanelStatus, LinkAccountPanelError } from "~/store/link-account-panel/link-account-panel-reducer";
-import { Config } from '~/common/config';
+import { ArvadosTheme } from 'common/custom-theme';
+import { UserResource } from "models/user";
+import { LinkAccountType } from "models/link-account";
+import { formatDate } from "common/formatters";
+import { LinkAccountPanelStatus, LinkAccountPanelError } from "store/link-account-panel/link-account-panel-reducer";
+import { Config } from 'common/config';
 
 type CssRules = 'root';
 

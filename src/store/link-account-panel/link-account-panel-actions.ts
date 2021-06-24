@@ -3,20 +3,20 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from "redux";
-import { RootState } from "~/store/store";
-import { getUserUuid } from "~/common/getuser";
-import { ServiceRepository, createServices, setAuthorizationHeader } from "~/services/services";
-import { setBreadcrumbs } from "~/store/breadcrumbs/breadcrumbs-actions";
-import { snackbarActions, SnackbarKind } from "~/store/snackbar/snackbar-actions";
-import { LinkAccountType, AccountToLink, LinkAccountStatus } from "~/models/link-account";
-import { authActions, getConfig } from "~/store/auth/auth-action";
-import { unionize, ofType, UnionOf } from '~/common/unionize';
-import { UserResource } from "~/models/user";
-import { GroupResource } from "~/models/group";
+import { RootState } from "store/store";
+import { getUserUuid } from "common/getuser";
+import { ServiceRepository, createServices, setAuthorizationHeader } from "services/services";
+import { setBreadcrumbs } from "store/breadcrumbs/breadcrumbs-actions";
+import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
+import { LinkAccountType, AccountToLink, LinkAccountStatus } from "models/link-account";
+import { authActions, getConfig } from "store/auth/auth-action";
+import { unionize, ofType, UnionOf } from 'common/unionize';
+import { UserResource } from "models/user";
+import { GroupResource } from "models/group";
 import { LinkAccountPanelError, OriginatingUser } from "./link-account-panel-reducer";
-import { login, logout } from "~/store/auth/auth-action";
-import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
-import { WORKBENCH_LOADING_SCREEN } from '~/store/workbench/workbench-actions';
+import { login, logout } from "store/auth/auth-action";
+import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
+import { WORKBENCH_LOADING_SCREEN } from 'store/workbench/workbench-actions';
 
 export const linkAccountPanelActions = unionize({
     LINK_INIT: ofType<{

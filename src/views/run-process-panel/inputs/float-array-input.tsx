@@ -3,13 +3,13 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as React from 'react';
-import { isRequiredInput, FloatArrayCommandInputParameter } from '~/models/workflow';
+import { isRequiredInput, FloatArrayCommandInputParameter } from 'models/workflow';
 import { Field } from 'redux-form';
-import { ERROR_MESSAGE } from '~/validators/require';
-import { GenericInputProps, GenericInput } from '~/views/run-process-panel/inputs/generic-input';
-import { ChipsInput } from '~/components/chips-input/chips-input';
+import { ERROR_MESSAGE } from 'validators/require';
+import { GenericInputProps, GenericInput } from 'views/run-process-panel/inputs/generic-input';
+import { ChipsInput } from 'components/chips-input/chips-input';
 import { createSelector } from 'reselect';
-import { FloatInput } from '~/components/float-input/float-input';
+import { FloatInput } from 'components/float-input/float-input';
 
 export interface FloatArrayInputProps {
     input: FloatArrayCommandInputParameter;

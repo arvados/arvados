@@ -4,9 +4,9 @@
 
 import { Dispatch, compose } from 'redux';
 import { connect } from "react-redux";
-import { ConfirmationDialog } from "~/components/confirmation-dialog/confirmation-dialog";
-import { withDialog, WithDialogProps } from "~/store/dialog/with-dialog";
-import { removeProcessPermanently, REMOVE_PROCESS_DIALOG } from '~/store/processes/processes-actions';
+import { ConfirmationDialog } from "components/confirmation-dialog/confirmation-dialog";
+import { withDialog, WithDialogProps } from "store/dialog/with-dialog";
+import { removeProcessPermanently, REMOVE_PROCESS_DIALOG } from 'store/processes/processes-actions';
 
 const mapDispatchToProps = (dispatch: Dispatch, props: WithDialogProps<any>) => ({
     onConfirm: () => {

@@ -4,7 +4,7 @@
 
 import * as React from "react";
 import { ListItemIcon, ListItemText, ListItem } from "@material-ui/core";
-import { OpenIcon } from "~/components/icon/icon";
+import { OpenIcon } from "components/icon/icon";
 
 export const FileViewerAction = (props: any) => {
     return props.href

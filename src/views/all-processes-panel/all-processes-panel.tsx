@@ -4,15 +4,15 @@
 
 import * as React from 'react';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core';
-import { DataExplorer } from "~/views-components/data-explorer/data-explorer";
+import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { connect, DispatchProp } from 'react-redux';
-import { DataColumns } from '~/components/data-table/data-table';
+import { DataColumns } from 'components/data-table/data-table';
 import { RouteComponentProps } from 'react-router';
-import { DataTableFilterItem } from '~/components/data-table-filters/data-table-filters';
-import { SortDirection } from '~/components/data-table/data-column';
-import { ResourceKind } from '~/models/resource';
-import { ArvadosTheme } from '~/common/custom-theme';
-import { ALL_PROCESSES_PANEL_ID } from '~/store/all-processes-panel/all-processes-panel-action';
+import { DataTableFilterItem } from 'components/data-table-filters/data-table-filters';
+import { SortDirection } from 'components/data-table/data-column';
+import { ResourceKind } from 'models/resource';
+import { ArvadosTheme } from 'common/custom-theme';
+import { ALL_PROCESSES_PANEL_ID } from 'store/all-processes-panel/all-processes-panel-action';
 import {
     ProcessStatus,
     ResourceName,
@@ -20,18 +20,18 @@ import {
     ResourceType,
     ContainerRunTime,
     ResourceCreatedAtDate
-} from '~/views-components/data-explorer/renderers';
-import { ProcessIcon } from '~/components/icon/icon';
-import { openProcessContextMenu } from '~/store/context-menu/context-menu-actions';
-import { loadDetailsPanel } from '~/store/details-panel/details-panel-action';
-import { navigateTo } from '~/store/navigation/navigation-action';
-import { ContainerRequestState } from "~/models/container-request";
-import { RootState } from '~/store/store';
-import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
-import { createTree } from '~/models/tree';
-import { getInitialProcessStatusFilters, getInitialProcessTypeFilters } from '~/store/resource-type-filters/resource-type-filters';
-import { getProcess } from '~/store/processes/process';
-import { ResourcesState } from '~/store/resources/resources';
+} from 'views-components/data-explorer/renderers';
+import { ProcessIcon } from 'components/icon/icon';
+import { openProcessContextMenu } from 'store/context-menu/context-menu-actions';
+import { loadDetailsPanel } from 'store/details-panel/details-panel-action';
+import { navigateTo } from 'store/navigation/navigation-action';
+import { ContainerRequestState } from "models/container-request";
+import { RootState } from 'store/store';
+import { DataTableDefaultView } from 'components/data-table-default-view/data-table-default-view';
+import { createTree } from 'models/tree';
+import { getInitialProcessStatusFilters, getInitialProcessTypeFilters } from 'store/resource-type-filters/resource-type-filters';
+import { getProcess } from 'store/processes/process';
+import { ResourcesState } from 'store/resources/resources';
 
 type CssRules = "toolbar" | "button";
 

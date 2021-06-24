@@ -5,7 +5,7 @@
 import * as React from 'react';
 import { Field } from 'redux-form';
 import { Select, MenuItem } from '@material-ui/core';
-import { EnumCommandInputParameter, CommandInputEnumSchema } from '~/models/workflow';
+import { EnumCommandInputParameter, CommandInputEnumSchema } from 'models/workflow';
 import { GenericInputProps, GenericInput } from './generic-input';
 
 export interface EnumInputProps {

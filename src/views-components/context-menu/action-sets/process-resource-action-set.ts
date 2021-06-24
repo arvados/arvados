@@ -4,15 +4,15 @@
 
 import { ContextMenuActionSet } from "../context-menu-action-set";
 import { ToggleFavoriteAction } from "../actions/favorite-action";
-import { toggleFavorite } from "~/store/favorites/favorites-actions";
-import { RenameIcon, ShareIcon, MoveToIcon, CopyIcon, DetailsIcon, RemoveIcon } from "~/components/icon/icon";
-import { favoritePanelActions } from "~/store/favorite-panel/favorite-panel-action";
-import { openMoveProcessDialog } from '~/store/processes/process-move-actions';
-import { openProcessUpdateDialog } from "~/store/processes/process-update-actions";
-import { openCopyProcessDialog } from '~/store/processes/process-copy-actions';
-import { openSharingDialog } from "~/store/sharing-dialog/sharing-dialog-actions";
-import { openRemoveProcessDialog } from "~/store/processes/processes-actions";
-import { toggleDetailsPanel } from '~/store/details-panel/details-panel-action';
+import { toggleFavorite } from "store/favorites/favorites-actions";
+import { RenameIcon, ShareIcon, MoveToIcon, CopyIcon, DetailsIcon, RemoveIcon } from "components/icon/icon";
+import { favoritePanelActions } from "store/favorite-panel/favorite-panel-action";
+import { openMoveProcessDialog } from 'store/processes/process-move-actions';
+import { openProcessUpdateDialog } from "store/processes/process-update-actions";
+import { openCopyProcessDialog } from 'store/processes/process-copy-actions';
+import { openSharingDialog } from "store/sharing-dialog/sharing-dialog-actions";
+import { openRemoveProcessDialog } from "store/processes/processes-actions";
+import { toggleDetailsPanel } from 'store/details-panel/details-panel-action';
 
 export const readOnlyProcessResourceActionSet: ContextMenuActionSet = [[
     {

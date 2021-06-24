@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { collectionPanelActions, CollectionPanelAction } from "./collection-panel-action";
-import { CollectionResource } from "~/models/collection";
+import { CollectionResource } from "models/collection";
 
 export interface CollectionPanelState {
     item: CollectionResource | null;

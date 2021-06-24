@@ -5,13 +5,13 @@
 import * as React from 'react';
 import { compose } from 'redux';
 import { reduxForm, InjectedFormProps, Field } from 'redux-form';
-import { withDialog, WithDialogProps } from '~/store/dialog/with-dialog';
-import { FormDialog } from '~/components/form-dialog/form-dialog';
+import { withDialog, WithDialogProps } from 'store/dialog/with-dialog';
+import { FormDialog } from 'components/form-dialog/form-dialog';
 import { DialogContentText } from '@material-ui/core';
-import { TextField } from '~/components/text-field/text-field';
-import { RENAME_FILE_DIALOG, RenameFileDialogData, renameFile } from '~/store/collection-panel/collection-panel-files/collection-panel-files-actions';
-import { WarningCollection } from '~/components/warning-collection/warning-collection';
-import { RENAME_FILE_VALIDATION } from '~/validators/validators';
+import { TextField } from 'components/text-field/text-field';
+import { RENAME_FILE_DIALOG, RenameFileDialogData, renameFile } from 'store/collection-panel/collection-panel-files/collection-panel-files-actions';
+import { WarningCollection } from 'components/warning-collection/warning-collection';
+import { RENAME_FILE_VALIDATION } from 'validators/validators';
 
 export const RenameFileDialog = compose(
     withDialog(RENAME_FILE_DIALOG),

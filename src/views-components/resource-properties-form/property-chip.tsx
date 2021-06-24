@@ -5,12 +5,12 @@
 import * as React from 'react';
 import { Chip } from '@material-ui/core';
 import { connect } from 'react-redux';
-import { RootState } from '~/store/store';
+import { RootState } from 'store/store';
 import * as CopyToClipboard from 'react-copy-to-clipboard';
-import { getVocabulary } from '~/store/vocabulary/vocabulary-selectors';
+import { getVocabulary } from 'store/vocabulary/vocabulary-selectors';
 import { Dispatch } from 'redux';
-import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
-import { getTagValueLabel, getTagKeyLabel, Vocabulary } from '~/models/vocabulary';
+import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
+import { getTagValueLabel, getTagKeyLabel, Vocabulary } from 'models/vocabulary';
 
 interface PropertyChipComponentDataProps {
     propKey: string;

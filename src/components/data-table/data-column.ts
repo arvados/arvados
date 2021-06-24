@@ -4,7 +4,7 @@
 
 import * as React from "react";
 import { DataTableFilters } from "../data-table-filters/data-table-filters-tree";
-import { createTree } from '~/models/tree';
+import { createTree } from 'models/tree';
 
 export interface DataColumn<T> {
     key?: React.Key;

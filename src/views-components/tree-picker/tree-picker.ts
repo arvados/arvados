@@ -3,9 +3,9 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { connect } from "react-redux";
-import { Tree, TreeProps, TreeItem, TreeItemStatus } from "~/components/tree/tree";
-import { RootState } from "~/store/store";
-import { getNodeChildrenIds, Tree as Ttree, createTree, getNode, TreeNodeStatus } from '~/models/tree';
+import { Tree, TreeProps, TreeItem, TreeItemStatus } from "components/tree/tree";
+import { RootState } from "store/store";
+import { getNodeChildrenIds, Tree as Ttree, createTree, getNode, TreeNodeStatus } from 'models/tree';
 import { Dispatch } from "redux";
 import { initTreeNode } from '../../models/tree';
 

@@ -5,9 +5,9 @@
 import { RouteProps } from "react-router";
 import * as React from "react";
 import { connect, DispatchProp } from "react-redux";
-import { getUrlParameter } from "~/common/url";
-import { navigateToSiteManager } from "~/store/navigation/navigation-action";
-import { addSession } from "~/store/auth/auth-action-session";
+import { getUrlParameter } from "common/url";
+import { navigateToSiteManager } from "store/navigation/navigation-action";
+import { addSession } from "store/auth/auth-action-session";
 
 export const AddSession = connect()(
     class extends React.Component<RouteProps & DispatchProp<any>, {}> {

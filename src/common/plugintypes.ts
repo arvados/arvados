@@ -4,10 +4,10 @@
 
 import * as React from 'react';
 import { Dispatch, Middleware } from 'redux';
-import { RootStore, RootState } from '~/store/store';
-import { ResourcesState } from '~/store/resources/resources';
+import { RootStore, RootState } from 'store/store';
+import { ResourcesState } from 'store/resources/resources';
 import { Location } from 'history';
-import { ServiceRepository } from "~/services/services";
+import { ServiceRepository } from "services/services";
 
 export type ElementListReducer = (startingList: React.ReactElement[], itemClass?: string) => React.ReactElement[];
 export type CategoriesListReducer = (startingList: string[]) => string[];
@@ -18,7 +18,7 @@ export type MiddlewareListReducer = (startingList: Middleware[], services: Servi
 
 /* Workbench Plugin API
 
-   Code to your plugin should go into a subdirectory of '~/plugins'.
+   Code to your plugin should go into a subdirectory of 'plugins/'.
 
    Your plugin should implement a "register" function, which will be
    called with an object with the PluginConfig interface described

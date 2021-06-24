@@ -4,11 +4,11 @@
 
 import { Dispatch, MiddlewareAPI } from "redux";
 import { RootState } from "../store";
-import { DataColumns } from "~/components/data-table/data-table";
+import { DataColumns } from "components/data-table/data-table";
 import { DataExplorer } from './data-explorer-reducer';
-import { ListResults } from '~/services/common-service/common-service';
-import { createTree } from "~/models/tree";
-import { DataTableFilters } from "~/components/data-table-filters/data-table-filters-tree";
+import { ListResults } from 'services/common-service/common-service';
+import { createTree } from "models/tree";
+import { DataTableFilters } from "components/data-table-filters/data-table-filters-tree";
 
 export abstract class DataExplorerMiddlewareService {
     protected readonly id: string;

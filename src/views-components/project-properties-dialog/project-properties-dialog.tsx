@@ -5,14 +5,14 @@
 import * as React from "react";
 import { Dispatch } from "redux";
 import { connect } from "react-redux";
-import { RootState } from '~/store/store';
-import { withDialog, WithDialogProps } from "~/store/dialog/with-dialog";
-import { ProjectResource } from '~/models/project';
-import { PROJECT_PROPERTIES_DIALOG_NAME, deleteProjectProperty } from '~/store/details-panel/details-panel-action';
+import { RootState } from 'store/store';
+import { withDialog, WithDialogProps } from "store/dialog/with-dialog";
+import { ProjectResource } from 'models/project';
+import { PROJECT_PROPERTIES_DIALOG_NAME, deleteProjectProperty } from 'store/details-panel/details-panel-action';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, withStyles, StyleRulesCallback, WithStyles } from '@material-ui/core';
-import { ArvadosTheme } from '~/common/custom-theme';
-import { ProjectPropertiesForm } from '~/views-components/project-properties-dialog/project-properties-form';
-import { getResource } from '~/store/resources/resources';
+import { ArvadosTheme } from 'common/custom-theme';
+import { ProjectPropertiesForm } from 'views-components/project-properties-dialog/project-properties-form';
+import { getResource } from 'store/resources/resources';
 import { getPropertyChip } from "../resource-properties-form/property-chip";
 
 type CssRules = 'tag';

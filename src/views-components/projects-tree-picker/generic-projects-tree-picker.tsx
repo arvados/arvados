@@ -6,17 +6,17 @@ import * as React from "react";
 import { Dispatch } from "redux";
 import { connect } from "react-redux";
 import { isEqual } from 'lodash/fp';
-import { TreeItem, TreeItemStatus } from '~/components/tree/tree';
-import { ProjectResource } from "~/models/project";
-import { treePickerActions } from "~/store/tree-picker/tree-picker-actions";
-import { ListItemTextIcon } from "~/components/list-item-text-icon/list-item-text-icon";
-import { ProjectIcon, InputIcon, IconType, CollectionIcon } from '~/components/icon/icon';
-import { loadProject, loadCollection } from '~/store/tree-picker/tree-picker-actions';
-import { GroupContentsResource } from '~/services/groups-service/groups-service';
-import { CollectionDirectory, CollectionFile, CollectionFileType } from '~/models/collection-file';
-import { ResourceKind } from '~/models/resource';
-import { TreePickerProps, TreePicker } from "~/views-components/tree-picker/tree-picker";
-import { LinkResource } from "~/models/link";
+import { TreeItem, TreeItemStatus } from 'components/tree/tree';
+import { ProjectResource } from "models/project";
+import { treePickerActions } from "store/tree-picker/tree-picker-actions";
+import { ListItemTextIcon } from "components/list-item-text-icon/list-item-text-icon";
+import { ProjectIcon, InputIcon, IconType, CollectionIcon } from 'components/icon/icon';
+import { loadProject, loadCollection } from 'store/tree-picker/tree-picker-actions';
+import { GroupContentsResource } from 'services/groups-service/groups-service';
+import { CollectionDirectory, CollectionFile, CollectionFileType } from 'models/collection-file';
+import { ResourceKind } from 'models/resource';
+import { TreePickerProps, TreePicker } from "views-components/tree-picker/tree-picker";
+import { LinkResource } from "models/link";
 
 export interface ProjectsTreePickerRootItem {
     id: string;

@@ -4,11 +4,11 @@
 
 import { Dispatch } from "redux";
 import { connect } from "react-redux";
-import { RootState } from '~/store/store';
-import { setWorkflow, SET_WORKFLOW_DIALOG } from '~/store/run-process-panel/run-process-panel-actions';
-import { ConfirmationDialog } from "~/components/confirmation-dialog/confirmation-dialog";
-import { withDialog, WithDialogProps } from "~/store/dialog/with-dialog";
-import { WorkflowResource } from '~/models/workflow';
+import { RootState } from 'store/store';
+import { setWorkflow, SET_WORKFLOW_DIALOG } from 'store/run-process-panel/run-process-panel-actions';
+import { ConfirmationDialog } from "components/confirmation-dialog/confirmation-dialog";
+import { withDialog, WithDialogProps } from "store/dialog/with-dialog";
+import { WorkflowResource } from 'models/workflow';
 
 const mapStateToProps = (state: RootState, props: WithDialogProps<{ workflow: WorkflowResource }>) => ({
     workflow: props.data.workflow

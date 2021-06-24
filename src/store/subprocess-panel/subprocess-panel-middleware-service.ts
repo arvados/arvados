@@ -2,26 +2,26 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ServiceRepository } from '~/services/services';
+import { ServiceRepository } from 'services/services';
 import { MiddlewareAPI, Dispatch } from 'redux';
 import {
     DataExplorerMiddlewareService, dataExplorerToListParams, listResultsToDataExplorerItemsMeta, getDataExplorerColumnFilters
-} from '~/store/data-explorer/data-explorer-middleware-service';
-import { RootState } from '~/store/store';
-import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
-import { DataExplorer, getDataExplorer } from '~/store/data-explorer/data-explorer-reducer';
-import { updateResources } from '~/store/resources/resources-actions';
-import { SortDirection } from '~/components/data-table/data-column';
-import { OrderDirection, OrderBuilder } from '~/services/api/order-builder';
-import { ListResults } from '~/services/common-service/common-service';
-import { getSortColumn } from "~/store/data-explorer/data-explorer-reducer";
-import { ProcessResource } from '~/models/process';
-import { SubprocessPanelColumnNames } from '~/views/subprocess-panel/subprocess-panel-root';
-import { FilterBuilder, joinFilters } from '~/services/api/filter-builder';
+} from 'store/data-explorer/data-explorer-middleware-service';
+import { RootState } from 'store/store';
+import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
+import { DataExplorer, getDataExplorer } from 'store/data-explorer/data-explorer-reducer';
+import { updateResources } from 'store/resources/resources-actions';
+import { SortDirection } from 'components/data-table/data-column';
+import { OrderDirection, OrderBuilder } from 'services/api/order-builder';
+import { ListResults } from 'services/common-service/common-service';
+import { getSortColumn } from "store/data-explorer/data-explorer-reducer";
+import { ProcessResource } from 'models/process';
+import { SubprocessPanelColumnNames } from 'views/subprocess-panel/subprocess-panel-root';
+import { FilterBuilder, joinFilters } from 'services/api/filter-builder';
 import { subprocessPanelActions } from './subprocess-panel-actions';
-import { DataColumns } from '~/components/data-table/data-table';
+import { DataColumns } from 'components/data-table/data-table';
 import { ProcessStatusFilter, buildProcessStatusFilters } from '../resource-type-filters/resource-type-filters';
-import { ContainerRequestResource } from '~/models/container-request';
+import { ContainerRequestResource } from 'models/container-request';
 import { progressIndicatorActions } from '../progress-indicator/progress-indicator-actions';
 import { loadMissingProcessesInformation } from '../project-panel/project-panel-middleware-service';
 

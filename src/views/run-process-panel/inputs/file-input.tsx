@@ -9,17 +9,17 @@ import {
     FileCommandInputParameter,
     File,
     CWLType
-} from '~/models/workflow';
+} from 'models/workflow';
 import { Field } from 'redux-form';
-import { ERROR_MESSAGE } from '~/validators/require';
+import { ERROR_MESSAGE } from 'validators/require';
 import { Input, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@material-ui/core';
 import { GenericInputProps, GenericInput } from './generic-input';
-import { ProjectsTreePicker } from '~/views-components/projects-tree-picker/projects-tree-picker';
+import { ProjectsTreePicker } from 'views-components/projects-tree-picker/projects-tree-picker';
 import { connect, DispatchProp } from 'react-redux';
-import { initProjectsTreePicker } from '~/store/tree-picker/tree-picker-actions';
-import { TreeItem } from '~/components/tree/tree';
-import { ProjectsTreePickerItem } from '~/views-components/projects-tree-picker/generic-projects-tree-picker';
-import { CollectionFile, CollectionFileType } from '~/models/collection-file';
+import { initProjectsTreePicker } from 'store/tree-picker/tree-picker-actions';
+import { TreeItem } from 'components/tree/tree';
+import { ProjectsTreePickerItem } from 'views-components/projects-tree-picker/generic-projects-tree-picker';
+import { CollectionFile, CollectionFileType } from 'models/collection-file';
 
 export interface FileInputProps {
     input: FileCommandInputParameter;

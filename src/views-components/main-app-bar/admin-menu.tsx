@@ -4,15 +4,15 @@
 
 import * as React from "react";
 import { MenuItem } from "@material-ui/core";
-import { User } from "~/models/user";
-import { DropdownMenu } from "~/components/dropdown-menu/dropdown-menu";
-import { AdminMenuIcon } from "~/components/icon/icon";
+import { User } from "models/user";
+import { DropdownMenu } from "components/dropdown-menu/dropdown-menu";
+import { AdminMenuIcon } from "components/icon/icon";
 import { DispatchProp, connect } from 'react-redux';
-import { RootState } from "~/store/store";
-import { openRepositoriesPanel } from "~/store/repositories/repositories-actions";
-import * as NavigationAction from '~/store/navigation/navigation-action';
-import { openAdminVirtualMachines } from "~/store/virtual-machines/virtual-machines-actions";
-import { openUserPanel } from "~/store/users/users-actions";
+import { RootState } from "store/store";
+import { openRepositoriesPanel } from "store/repositories/repositories-actions";
+import * as NavigationAction from 'store/navigation/navigation-action';
+import { openAdminVirtualMachines } from "store/virtual-machines/virtual-machines-actions";
+import { openUserPanel } from "store/users/users-actions";
 
 interface AdminMenuProps {
     user?: User;

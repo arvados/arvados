@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from "redux";
-import { dialogActions } from '~/store/dialog/dialog-actions';
+import { dialogActions } from 'store/dialog/dialog-actions';
 
 export const NOT_FOUND_DIALOG_NAME = 'notFoundDialog';
 

@@ -5,8 +5,8 @@
 import * as _ from "lodash";
 import { AxiosInstance } from "axios";
 import { TrashableResource } from "src/models/resource";
-import { CommonResourceService } from "~/services/common-service/common-resource-service";
-import { ApiActions } from "~/services/api/api-actions";
+import { CommonResourceService } from "services/common-service/common-resource-service";
+import { ApiActions } from "services/api/api-actions";
 
 export class TrashableResourceService<T extends TrashableResource> extends CommonResourceService<T> {
 

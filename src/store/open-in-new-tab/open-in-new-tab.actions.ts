@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import * as copy from 'copy-to-clipboard';
-import { ResourceKind } from '~/models/resource';
-import { getClipboardUrl } from '~/views-components/context-menu/actions/helpers';
+import { ResourceKind } from 'models/resource';
+import { getClipboardUrl } from 'views-components/context-menu/actions/helpers';
 
 const getUrl = (resource: any) => {
     let url = null;

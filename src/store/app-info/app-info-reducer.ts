@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { appInfoActions, AppInfoAction } from "~/store/app-info/app-info-actions";
+import { appInfoActions, AppInfoAction } from "store/app-info/app-info-actions";
 
 export interface AppInfoState {
     buildInfo: string;

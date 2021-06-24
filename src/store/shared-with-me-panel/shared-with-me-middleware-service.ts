@@ -3,24 +3,24 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { DataExplorerMiddlewareService, listResultsToDataExplorerItemsMeta, dataExplorerToListParams } from '../data-explorer/data-explorer-middleware-service';
-import { ServiceRepository } from '~/services/services';
+import { ServiceRepository } from 'services/services';
 import { MiddlewareAPI, Dispatch } from 'redux';
-import { RootState } from '~/store/store';
-import { getDataExplorer, DataExplorer } from '~/store/data-explorer/data-explorer-reducer';
-import { updateFavorites } from '~/store/favorites/favorites-actions';
-import { updateResources } from '~/store/resources/resources-actions';
-import { loadMissingProcessesInformation, getFilters } from '~/store/project-panel/project-panel-middleware-service';
-import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
+import { RootState } from 'store/store';
+import { getDataExplorer, DataExplorer } from 'store/data-explorer/data-explorer-reducer';
+import { updateFavorites } from 'store/favorites/favorites-actions';
+import { updateResources } from 'store/resources/resources-actions';
+import { loadMissingProcessesInformation, getFilters } from 'store/project-panel/project-panel-middleware-service';
+import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { sharedWithMePanelActions } from './shared-with-me-panel-actions';
-import { ListResults } from '~/services/common-service/common-service';
-import { GroupContentsResource, GroupContentsResourcePrefix } from '~/services/groups-service/groups-service';
-import { SortDirection } from '~/components/data-table/data-column';
-import { OrderBuilder, OrderDirection } from '~/services/api/order-builder';
-import { ProjectResource } from '~/models/project';
-import { ProjectPanelColumnNames } from '~/views/project-panel/project-panel';
-import { getSortColumn } from "~/store/data-explorer/data-explorer-reducer";
-import { updatePublicFavorites } from '~/store/public-favorites/public-favorites-actions';
-import { FilterBuilder } from '~/services/api/filter-builder';
+import { ListResults } from 'services/common-service/common-service';
+import { GroupContentsResource, GroupContentsResourcePrefix } from 'services/groups-service/groups-service';
+import { SortDirection } from 'components/data-table/data-column';
+import { OrderBuilder, OrderDirection } from 'services/api/order-builder';
+import { ProjectResource } from 'models/project';
+import { ProjectPanelColumnNames } from 'views/project-panel/project-panel';
+import { getSortColumn } from "store/data-explorer/data-explorer-reducer";
+import { updatePublicFavorites } from 'store/public-favorites/public-favorites-actions';
+import { FilterBuilder } from 'services/api/filter-builder';
 
 export class SharedWithMeMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {

@@ -4,18 +4,18 @@
 
 import { Dispatch } from 'redux';
 import { reset, startSubmit, stopSubmit, FormErrors } from 'redux-form';
-import { bindDataExplorerActions } from "~/store/data-explorer/data-explorer-action";
-import { dialogActions } from '~/store/dialog/dialog-actions';
-import { Participant } from '~/views-components/sharing-dialog/participant-select';
-import { RootState } from '~/store/store';
-import { ServiceRepository } from '~/services/services';
-import { getResource } from '~/store/resources/resources';
-import { GroupResource } from '~/models/group';
-import { getCommonResourceServiceError, CommonResourceServiceError } from '~/services/common-service/common-resource-service';
-import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
-import { PermissionLevel } from '~/models/permission';
-import { PermissionService } from '~/services/permission-service/permission-service';
-import { FilterBuilder } from '~/services/api/filter-builder';
+import { bindDataExplorerActions } from "store/data-explorer/data-explorer-action";
+import { dialogActions } from 'store/dialog/dialog-actions';
+import { Participant } from 'views-components/sharing-dialog/participant-select';
+import { RootState } from 'store/store';
+import { ServiceRepository } from 'services/services';
+import { getResource } from 'store/resources/resources';
+import { GroupResource } from 'models/group';
+import { getCommonResourceServiceError, CommonResourceServiceError } from 'services/common-service/common-resource-service';
+import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
+import { PermissionLevel } from 'models/permission';
+import { PermissionService } from 'services/permission-service/permission-service';
+import { FilterBuilder } from 'services/api/filter-builder';
 
 export const GROUPS_PANEL_ID = "groupsPanel";
 export const CREATE_GROUP_DIALOG = "createGroupDialog";

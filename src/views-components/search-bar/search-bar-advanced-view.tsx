@@ -10,16 +10,16 @@ import {
     SEARCH_BAR_ADVANCED_FORM_NAME, SEARCH_BAR_ADVANCED_FORM_PICKER_ID,
     searchAdvancedData,
     setSearchValueFromAdvancedData
-} from '~/store/search-bar/search-bar-actions';
-import { ArvadosTheme } from '~/common/custom-theme';
-import { CloseIcon } from '~/components/icon/icon';
-import { SearchBarAdvancedFormData } from '~/models/search-bar';
+} from 'store/search-bar/search-bar-actions';
+import { ArvadosTheme } from 'common/custom-theme';
+import { CloseIcon } from 'components/icon/icon';
+import { SearchBarAdvancedFormData } from 'models/search-bar';
 import {
     SearchBarTypeField, SearchBarClusterField, SearchBarProjectField, SearchBarTrashField,
     SearchBarDateFromField, SearchBarDateToField, SearchBarPropertiesField,
     SearchBarSaveSearchField, SearchBarQuerySearchField, SearchBarPastVersionsField
-} from '~/views-components/form-fields/search-bar-form-fields';
-import { treePickerActions } from "~/store/tree-picker/tree-picker-actions";
+} from 'views-components/form-fields/search-bar-form-fields';
+import { treePickerActions } from "store/tree-picker/tree-picker-actions";
 
 type CssRules = 'container' | 'closeIcon' | 'label' | 'buttonWrapper'
     | 'button' | 'circularProgress' | 'searchView' | 'selectGrid';

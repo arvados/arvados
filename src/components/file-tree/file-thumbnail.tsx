@@ -5,11 +5,11 @@
 import * as React from "react";
 import isImage from 'is-image';
 import { withStyles, WithStyles } from '@material-ui/core';
-import { FileTreeData } from '~/components/file-tree/file-tree-data';
-import { CollectionFileType } from '~/models/collection-file';
-import { getInlineFileUrl, sanitizeToken } from "~/views-components/context-menu/actions/helpers";
+import { FileTreeData } from 'components/file-tree/file-tree-data';
+import { CollectionFileType } from 'models/collection-file';
+import { getInlineFileUrl, sanitizeToken } from "views-components/context-menu/actions/helpers";
 import { connect } from "react-redux";
-import { RootState } from "~/store/store";
+import { RootState } from "store/store";
 
 export interface FileThumbnailProps {
     file: FileTreeData;

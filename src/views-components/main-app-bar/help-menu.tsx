@@ -4,11 +4,11 @@
 
 import * as React from "react";
 import { MenuItem, Typography } from "@material-ui/core";
-import { DropdownMenu } from "~/components/dropdown-menu/dropdown-menu";
-import { ImportContactsIcon, HelpIcon } from "~/components/icon/icon";
-import { ArvadosTheme } from '~/common/custom-theme';
+import { DropdownMenu } from "components/dropdown-menu/dropdown-menu";
+import { ImportContactsIcon, HelpIcon } from "components/icon/icon";
+import { ArvadosTheme } from 'common/custom-theme';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
-import { RootState } from "~/store/store";
+import { RootState } from "store/store";
 import { compose } from "redux";
 import { connect } from "react-redux";
 

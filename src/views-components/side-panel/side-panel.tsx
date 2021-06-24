@@ -4,14 +4,14 @@
 
 import * as React from 'react';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
-import { ArvadosTheme } from '~/common/custom-theme';
-import { SidePanelTree, SidePanelTreeProps } from '~/views-components/side-panel-tree/side-panel-tree';
+import { ArvadosTheme } from 'common/custom-theme';
+import { SidePanelTree, SidePanelTreeProps } from 'views-components/side-panel-tree/side-panel-tree';
 import { Dispatch } from 'redux';
 import { connect } from 'react-redux';
-import { navigateFromSidePanel } from '~/store/side-panel/side-panel-action';
+import { navigateFromSidePanel } from 'store/side-panel/side-panel-action';
 import { Grid } from '@material-ui/core';
-import { SidePanelButton } from '~/views-components/side-panel-button/side-panel-button';
-import { RootState } from '~/store/store';
+import { SidePanelButton } from 'views-components/side-panel-button/side-panel-button';
+import { RootState } from 'store/store';
 
 const DRAWER_WITDH = 240;
 

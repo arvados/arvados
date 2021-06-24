@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Resource, ResourceKind } from "./resource";
-import { MountType } from '~/models/mount-types';
-import { RuntimeConstraints } from "~/models/runtime-constraints";
+import { MountType } from 'models/mount-types';
+import { RuntimeConstraints } from "models/runtime-constraints";
 import { SchedulingParameters } from './scheduling-parameters';
 
 export enum ContainerState {

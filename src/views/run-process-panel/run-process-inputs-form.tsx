@@ -4,11 +4,11 @@
 
 import * as React from 'react';
 import { reduxForm, InjectedFormProps } from 'redux-form';
-import { CommandInputParameter, CWLType, IntCommandInputParameter, BooleanCommandInputParameter, FileCommandInputParameter, DirectoryCommandInputParameter, DirectoryArrayCommandInputParameter, FloatArrayCommandInputParameter, IntArrayCommandInputParameter } from '~/models/workflow';
-import { IntInput } from '~/views/run-process-panel/inputs/int-input';
-import { StringInput } from '~/views/run-process-panel/inputs/string-input';
+import { CommandInputParameter, CWLType, IntCommandInputParameter, BooleanCommandInputParameter, FileCommandInputParameter, DirectoryCommandInputParameter, DirectoryArrayCommandInputParameter, FloatArrayCommandInputParameter, IntArrayCommandInputParameter } from 'models/workflow';
+import { IntInput } from 'views/run-process-panel/inputs/int-input';
+import { StringInput } from 'views/run-process-panel/inputs/string-input';
 import { StringCommandInputParameter, FloatCommandInputParameter, isPrimitiveOfType, WorkflowInputsData, EnumCommandInputParameter, isArrayOfType, StringArrayCommandInputParameter, FileArrayCommandInputParameter } from '../../models/workflow';
-import { FloatInput } from '~/views/run-process-panel/inputs/float-input';
+import { FloatInput } from 'views/run-process-panel/inputs/float-input';
 import { BooleanInput } from './inputs/boolean-input';
 import { FileInput } from './inputs/file-input';
 import { connect } from 'react-redux';

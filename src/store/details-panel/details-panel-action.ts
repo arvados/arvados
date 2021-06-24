@@ -2,22 +2,22 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { unionize, ofType, UnionOf } from '~/common/unionize';
-import { RootState } from '~/store/store';
+import { unionize, ofType, UnionOf } from 'common/unionize';
+import { RootState } from 'store/store';
 import { Dispatch } from 'redux';
-import { dialogActions } from '~/store/dialog/dialog-actions';
-import { getResource } from '~/store/resources/resources';
-import { ProjectResource } from "~/models/project";
-import { ServiceRepository } from '~/services/services';
-import { TagProperty } from '~/models/tag';
+import { dialogActions } from 'store/dialog/dialog-actions';
+import { getResource } from 'store/resources/resources';
+import { ProjectResource } from "models/project";
+import { ServiceRepository } from 'services/services';
+import { TagProperty } from 'models/tag';
 import { startSubmit, stopSubmit } from 'redux-form';
-import { resourcesActions } from '~/store/resources/resources-actions';
-import {snackbarActions, SnackbarKind} from '~/store/snackbar/snackbar-actions';
-import { addProperty, deleteProperty } from '~/lib/resource-properties';
-import { FilterBuilder } from '~/services/api/filter-builder';
-import { OrderBuilder } from '~/services/api/order-builder';
-import { CollectionResource } from '~/models/collection';
-import { extractUuidKind, ResourceKind } from '~/models/resource';
+import { resourcesActions } from 'store/resources/resources-actions';
+import {snackbarActions, SnackbarKind} from 'store/snackbar/snackbar-actions';
+import { addProperty, deleteProperty } from 'lib/resource-properties';
+import { FilterBuilder } from 'services/api/filter-builder';
+import { OrderBuilder } from 'services/api/order-builder';
+import { CollectionResource } from 'models/collection';
+import { extractUuidKind, ResourceKind } from 'models/resource';
 
 export const SLIDE_TIMEOUT = 500;
 

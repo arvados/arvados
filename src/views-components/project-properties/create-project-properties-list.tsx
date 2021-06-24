@@ -10,9 +10,9 @@ import {
     StyleRulesCallback,
     WithStyles,
 } from '@material-ui/core';
-import { RootState } from '~/store/store';
-import { removePropertyFromCreateProjectForm, PROJECT_CREATE_FORM_SELECTOR, ProjectProperties } from '~/store/projects/project-create-actions';
-import { ArvadosTheme } from '~/common/custom-theme';
+import { RootState } from 'store/store';
+import { removePropertyFromCreateProjectForm, PROJECT_CREATE_FORM_SELECTOR, ProjectProperties } from 'store/projects/project-create-actions';
+import { ArvadosTheme } from 'common/custom-theme';
 import { getPropertyChip } from '../resource-properties-form/property-chip';
 
 type CssRules = 'tag';

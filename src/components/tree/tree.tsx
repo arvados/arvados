@@ -5,15 +5,15 @@
 import * as React from 'react';
 import { List, ListItem, ListItemIcon, Checkbox, Radio, Collapse } from "@material-ui/core";
 import { StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core/styles';
-import { CollectionIcon, DefaultIcon, DirectoryIcon, FileIcon, ProjectIcon, FilterGroupIcon } from '~/components/icon/icon';
+import { CollectionIcon, DefaultIcon, DirectoryIcon, FileIcon, ProjectIcon, FilterGroupIcon } from 'components/icon/icon';
 import { ReactElement } from "react";
 import CircularProgress from '@material-ui/core/CircularProgress';
 import classnames from "classnames";
 
-import { ArvadosTheme } from '~/common/custom-theme';
+import { ArvadosTheme } from 'common/custom-theme';
 import { SidePanelRightArrowIcon } from '../icon/icon';
-import { ResourceKind } from '~/models/resource';
-import { GroupClass } from '~/models/group';
+import { ResourceKind } from 'models/resource';
+import { GroupClass } from 'models/group';
 
 type CssRules = 'list'
     | 'listItem'

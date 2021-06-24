@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { ContainerRequestResource } from "./container-request";
-import { MountType, MountKind } from '~/models/mount-types';
-import { WorkflowResource, parseWorkflowDefinition } from '~/models/workflow';
+import { MountType, MountKind } from 'models/mount-types';
+import { WorkflowResource, parseWorkflowDefinition } from 'models/workflow';
 import { WorkflowInputsData } from './workflow';
 
 export type ProcessResource = ContainerRequestResource;

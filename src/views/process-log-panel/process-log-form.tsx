@@ -4,7 +4,7 @@
 
 import * as React from 'react';
 import { withStyles, WithStyles, StyleRulesCallback, FormControl, InputLabel, Select, MenuItem, Input } from '@material-ui/core';
-import { ArvadosTheme } from '~/common/custom-theme';
+import { ArvadosTheme } from 'common/custom-theme';
 import { FilterOption } from './process-log-panel';
 
 type CssRules = 'formControl';

@@ -15,19 +15,19 @@ import {
     Typography
 } from '@material-ui/core';
 import * as CopyToClipboard from 'react-copy-to-clipboard';
-import { ArvadosTheme } from '~/common/custom-theme';
-import { withDialog } from '~/store/dialog/with-dialog';
-import { WithDialogProps } from '~/store/dialog/with-dialog';
+import { ArvadosTheme } from 'common/custom-theme';
+import { withDialog } from 'store/dialog/with-dialog';
+import { WithDialogProps } from 'store/dialog/with-dialog';
 import { connect, DispatchProp } from 'react-redux';
 import {
     TokenDialogData,
     getTokenDialogData,
     TOKEN_DIALOG_NAME,
-} from '~/store/token-dialog/token-dialog-actions';
-import { DefaultCodeSnippet } from '~/components/default-code-snippet/default-code-snippet';
-import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
-import { getNewExtraToken } from '~/store/auth/auth-action';
-import { DetailsAttributeComponent } from '~/components/details-attribute/details-attribute';
+} from 'store/token-dialog/token-dialog-actions';
+import { DefaultCodeSnippet } from 'components/default-code-snippet/default-code-snippet';
+import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
+import { getNewExtraToken } from 'store/auth/auth-action';
+import { DetailsAttributeComponent } from 'components/details-attribute/details-attribute';
 import * as moment from 'moment';
 
 type CssRules = 'link' | 'paper' | 'button' | 'actionButton' | 'codeBlock';

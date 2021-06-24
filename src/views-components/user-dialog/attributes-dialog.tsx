@@ -4,13 +4,13 @@
 
 import * as React from "react";
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, Grid } from "@material-ui/core";
-import { WithDialogProps } from "~/store/dialog/with-dialog";
-import { withDialog } from '~/store/dialog/with-dialog';
+import { WithDialogProps } from "store/dialog/with-dialog";
+import { withDialog } from 'store/dialog/with-dialog';
 import { WithStyles, withStyles } from '@material-ui/core/styles';
-import { ArvadosTheme } from '~/common/custom-theme';
+import { ArvadosTheme } from 'common/custom-theme';
 import { compose } from "redux";
-import { USER_ATTRIBUTES_DIALOG } from "~/store/users/users-actions";
-import { UserResource } from "~/models/user";
+import { USER_ATTRIBUTES_DIALOG } from "store/users/users-actions";
+import { UserResource } from "models/user";
 
 type CssRules = 'rightContainer' | 'leftContainer' | 'spacing';
 

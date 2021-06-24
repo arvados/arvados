@@ -2,29 +2,29 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ServiceRepository } from '~/services/services';
+import { ServiceRepository } from 'services/services';
 import { MiddlewareAPI, Dispatch } from 'redux';
-import { DataExplorerMiddlewareService } from '~/store/data-explorer/data-explorer-middleware-service';
-import { RootState } from '~/store/store';
-import { getUserUuid } from "~/common/getuser";
-import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
-import { getDataExplorer } from '~/store/data-explorer/data-explorer-reducer';
-import { resourcesActions } from '~/store/resources/resources-actions';
-import { FilterBuilder } from '~/services/api/filter-builder';
-import { SortDirection } from '~/components/data-table/data-column';
-import { OrderDirection, OrderBuilder } from '~/services/api/order-builder';
-import { getSortColumn } from "~/store/data-explorer/data-explorer-reducer";
-import { FavoritePanelColumnNames } from '~/views/favorite-panel/favorite-panel';
-import { GroupContentsResource, GroupContentsResourcePrefix } from '~/services/groups-service/groups-service';
-import { progressIndicatorActions } from '~/store/progress-indicator/progress-indicator-actions';
+import { DataExplorerMiddlewareService } from 'store/data-explorer/data-explorer-middleware-service';
+import { RootState } from 'store/store';
+import { getUserUuid } from "common/getuser";
+import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
+import { getDataExplorer } from 'store/data-explorer/data-explorer-reducer';
+import { resourcesActions } from 'store/resources/resources-actions';
+import { FilterBuilder } from 'services/api/filter-builder';
+import { SortDirection } from 'components/data-table/data-column';
+import { OrderDirection, OrderBuilder } from 'services/api/order-builder';
+import { getSortColumn } from "store/data-explorer/data-explorer-reducer";
+import { FavoritePanelColumnNames } from 'views/favorite-panel/favorite-panel';
+import { GroupContentsResource, GroupContentsResourcePrefix } from 'services/groups-service/groups-service';
+import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
 import { collectionsContentAddressActions } from './collections-content-address-panel-actions';
-import { navigateTo } from '~/store/navigation/navigation-action';
-import { updateFavorites } from '~/store/favorites/favorites-actions';
-import { updatePublicFavorites } from '~/store/public-favorites/public-favorites-actions';
+import { navigateTo } from 'store/navigation/navigation-action';
+import { updateFavorites } from 'store/favorites/favorites-actions';
+import { updatePublicFavorites } from 'store/public-favorites/public-favorites-actions';
 import { setBreadcrumbs } from '../breadcrumbs/breadcrumbs-actions';
-import { ResourceKind, extractUuidKind } from '~/models/resource';
-import { ownerNameActions } from '~/store/owner-name/owner-name-actions';
-import { getUserDisplayName } from '~/models/user';
+import { ResourceKind, extractUuidKind } from 'models/resource';
+import { ownerNameActions } from 'store/owner-name/owner-name-actions';
+import { getUserDisplayName } from 'models/user';
 
 export class CollectionsWithSameContentAddressMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {

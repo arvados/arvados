@@ -4,8 +4,8 @@
 
 import { CollectionPanelFilesState, CollectionPanelFile, CollectionPanelDirectory, mapCollectionFileToCollectionPanelFile, mergeCollectionPanelFilesStates } from './collection-panel-files-state';
 import { CollectionPanelFilesAction, collectionPanelFilesAction } from "./collection-panel-files-actions";
-import { createTree, mapTreeValues, getNode, setNode, getNodeAncestorsIds, getNodeDescendantsIds, setNodeValueWith, mapTree } from "~/models/tree";
-import { CollectionFileType } from "~/models/collection-file";
+import { createTree, mapTreeValues, getNode, setNode, getNodeAncestorsIds, getNodeDescendantsIds, setNodeValueWith, mapTree } from "models/tree";
+import { CollectionFileType } from "models/collection-file";
 
 let fetchedFiles: any = {};
 

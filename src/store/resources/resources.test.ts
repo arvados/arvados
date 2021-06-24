@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { getResourceWithEditableStatus } from "./resources";
-import { ResourceKind } from "~/models/resource";
+import { ResourceKind } from "models/resource";
 
 const groupFixtures = {
     user_uuid: 'zzzzz-tpzed-0123456789ab789',
