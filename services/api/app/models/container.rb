@@ -22,6 +22,7 @@ class Container < ArvadosModel
   attribute :secret_mounts, :jsonbHash, default: {}
   attribute :runtime_status, :jsonbHash, default: {}
   attribute :runtime_auth_scopes, :jsonbHash, default: {}
+  attribute :output_storage_classes, :jsonbArray, default: ["default"]
 
   serialize :environment, Hash
   serialize :mounts, Hash
@@ -79,6 +80,7 @@ class Container < ArvadosModel
     t.add :lock_count
     t.add :gateway_address
     t.add :interactive_session_started
+    t.add :output_storage_classes
   end
 
   # Supported states for a container
@@ -187,7 +189,8 @@ class Container < ArvadosModel
         secret_mounts: req.secret_mounts,
         runtime_token: req.runtime_token,
         runtime_user_uuid: runtime_user.uuid,
-        runtime_auth_scopes: runtime_auth_scopes
+        runtime_auth_scopes: runtime_auth_scopes,
+        output_storage_classes: req.output_storage_classes,
       }
     end
     act_as_system_user do
@@ -467,7 +470,8 @@ class Container < ArvadosModel
                      :environment, :mounts, :output_path, :priority,
                      :runtime_constraints, :scheduling_parameters,
                      :secret_mounts, :runtime_token,
-                     :runtime_user_uuid, :runtime_auth_scopes)
+                     :runtime_user_uuid, :runtime_auth_scopes,
+                     :output_storage_classes)
     end
 
     case self.state
