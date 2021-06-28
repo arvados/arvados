@@ -9,9 +9,8 @@ class UserSessionsControllerTest < ActionController::TestCase
   test "redirect to joshid" do
     api_client_page = 'http://client.example.com/home'
     get :login, params: {return_to: api_client_page}
-    assert_response :redirect
-    assert_equal("http://test.host/auth/joshid?return_to=%2Chttp%3A%2F%2Fclient.example.com%2Fhome", @response.redirect_url)
-    assert_nil assigns(:api_client)
+    # Not supported any more
+    assert_response 404
   end
 
   test "send token when user is already logged in" do
@@ -107,9 +106,8 @@ class UserSessionsControllerTest < ActionController::TestCase
     Rails.configuration.Login.LoginCluster = 'zzzzz'
     api_client_page = 'http://client.example.com/home'
     get :login, params: {return_to: api_client_page}
-    assert_response :redirect
-    assert_equal("http://test.host/auth/joshid?return_to=%2Chttp%3A%2F%2Fclient.example.com%2Fhome", @response.redirect_url)
-    assert_nil assigns(:api_client)
+    # Doesn't redirect, just fail.
+    assert_response 404
   end
 
   test "controller cannot create session without SystemRootToken" do

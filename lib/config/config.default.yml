@@ -52,9 +52,6 @@ Clusters:
       DispatchCloud:
         InternalURLs: {SAMPLE: {}}
         ExternalURL: "-"
-      SSO:
-        InternalURLs: {SAMPLE: {}}
-        ExternalURL: ""
       Keepproxy:
         InternalURLs: {SAMPLE: {}}
         ExternalURL: ""
@@ -555,7 +552,7 @@ Clusters:
         MaxSessions: 100
 
     Login:
-      # One of the following mechanisms (SSO, Google, PAM, LDAP, or
+      # One of the following mechanisms (Google, PAM, LDAP, or
       # LoginCluster) should be enabled; see
       # https://doc.arvados.org/install/setup-login.html
 
@@ -735,16 +732,6 @@ Clusters:
         # no value is found (or this config is empty) the username
         # originally supplied by the user will be used.
         UsernameAttribute: uid
-
-      SSO:
-        # Authenticate with a separate SSO server. (Deprecated)
-        Enable: false
-
-        # ProviderAppID and ProviderAppSecret are generated during SSO
-        # setup; see
-        # https://doc.arvados.org/v2.0/install/install-sso.html#update-config
-        ProviderAppID: ""
-        ProviderAppSecret: ""
 
       Test:
         # Authenticate users listed here in the config file. This

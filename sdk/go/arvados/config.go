@@ -176,11 +176,6 @@ type Cluster struct {
 			Service            string
 			DefaultEmailDomain string
 		}
-		SSO struct {
-			Enable            bool
-			ProviderAppID     string
-			ProviderAppSecret string
-		}
 		Test struct {
 			Enable bool
 			Users  map[string]TestUser
@@ -327,7 +322,6 @@ type Services struct {
 	Keepproxy      Service
 	Keepstore      Service
 	RailsAPI       Service
-	SSO            Service
 	WebDAVDownload Service
 	WebDAV         Service
 	WebShell       Service
