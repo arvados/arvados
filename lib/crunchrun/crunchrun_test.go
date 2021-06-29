@@ -39,11 +39,13 @@ func TestCrunchExec(t *testing.T) {
 var _ = Suite(&TestSuite{})
 
 type TestSuite struct {
-	client    *arvados.Client
-	api       *ArvTestClient
-	runner    *ContainerRunner
-	executor  *stubExecutor
-	keepmount string
+	client                   *arvados.Client
+	api                      *ArvTestClient
+	runner                   *ContainerRunner
+	executor                 *stubExecutor
+	keepmount                string
+	testDispatcherKeepClient KeepTestClient
+	testContainerKeepClient  KeepTestClient
 }
 
 func (s *TestSuite) SetUpTest(c *C) {
@@ -52,11 +54,11 @@ func (s *TestSuite) SetUpTest(c *C) {
 	s.executor = &stubExecutor{}
 	var err error
 	s.api = &ArvTestClient{}
-	s.runner, err = NewContainerRunner(s.client, s.api, &KeepTestClient{}, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	s.runner, err = NewContainerRunner(s.client, s.api, &s.testDispatcherKeepClient, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	c.Assert(err, IsNil)
 	s.runner.executor = s.executor
 	s.runner.MkArvClient = func(token string) (IArvadosClient, IKeepClient, *arvados.Client, error) {
-		return s.api, &KeepTestClient{}, s.client, nil
+		return s.api, &s.testContainerKeepClient, s.client, nil
 	}
 	s.runner.RunArvMount = func(cmd []string, tok string) (*exec.Cmd, error) {
 		s.runner.ArvMountPoint = s.keepmount
@@ -88,8 +90,9 @@ type ArvTestClient struct {
 }
 
 type KeepTestClient struct {
-	Called  bool
-	Content []byte
+	Called         bool
+	Content        []byte
+	StorageClasses []string
 }
 
 type stubExecutor struct {
@@ -320,6 +323,10 @@ func (client *KeepTestClient) Close() {
 	client.Content = nil
 }
 
+func (client *KeepTestClient) SetStorageClasses(sc []string) {
+	client.StorageClasses = sc
+}
+
 type FileWrapper struct {
 	io.ReadCloser
 	len int64
@@ -524,6 +531,7 @@ func (s *TestSuite) TestRunContainer(c *C) {
 	s.runner.NewLogWriter = logs.NewTestLoggingWriter
 	s.runner.Container.ContainerImage = arvadostest.DockerImage112PDH
 	s.runner.Container.Command = []string{"./hw"}
+	s.runner.Container.OutputStorageClasses = []string{"default"}
 
 	imageID, err := s.runner.LoadImage()
 	c.Assert(err, IsNil)
@@ -539,6 +547,8 @@ func (s *TestSuite) TestRunContainer(c *C) {
 
 	c.Check(logs.Stdout.String(), Matches, ".*Hello world\n")
 	c.Check(logs.Stderr.String(), Equals, "")
+	c.Check(s.testDispatcherKeepClient, Equals, []string{"default"})
+	c.Check(s.testContainerKeepClient, Equals, []string{"default"})
 }
 
 func (s *TestSuite) TestCommitLogs(c *C) {
@@ -1042,6 +1052,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 	cr.RunArvMount = am.ArvMountTest
 	cr.ContainerArvClient = &ArvTestClient{}
 	cr.ContainerKeepClient = &KeepTestClient{}
+	cr.Container.OutputStorageClasses = []string{"default"}
 
 	realTemp := c.MkDir()
 	certTemp := c.MkDir()
@@ -1079,7 +1090,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		bindmounts, err := cr.SetupMounts()
 		c.Check(err, IsNil)
 		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other",
-			"--read-write", "--crunchstat-interval=5",
+			"--read-write", "--storage-classes", "default", "--crunchstat-interval=5",
 			"--mount-by-pdh", "by_id", realTemp + "/keep1"})
 		c.Check(bindmounts, DeepEquals, map[string]bindmount{"/tmp": {realTemp + "/tmp2", false}})
 		os.RemoveAll(cr.ArvMountPoint)
@@ -1094,11 +1105,12 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		cr.Container.Mounts["/out"] = arvados.Mount{Kind: "tmp"}
 		cr.Container.Mounts["/tmp"] = arvados.Mount{Kind: "tmp"}
 		cr.Container.OutputPath = "/out"
+		cr.Container.OutputStorageClasses = []string{"foo", "bar"}
 
 		bindmounts, err := cr.SetupMounts()
 		c.Check(err, IsNil)
 		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other",
-			"--read-write", "--crunchstat-interval=5",
+			"--read-write", "--storage-classes", "foo,bar", "--crunchstat-interval=5",
 			"--mount-by-pdh", "by_id", realTemp + "/keep1"})
 		c.Check(bindmounts, DeepEquals, map[string]bindmount{"/out": {realTemp + "/tmp2", false}, "/tmp": {realTemp + "/tmp3", false}})
 		os.RemoveAll(cr.ArvMountPoint)
@@ -1113,11 +1125,12 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		cr.Container.Mounts["/tmp"] = arvados.Mount{Kind: "tmp"}
 		cr.Container.OutputPath = "/tmp"
 		cr.Container.RuntimeConstraints.API = true
+		cr.Container.OutputStorageClasses = []string{"default"}
 
 		bindmounts, err := cr.SetupMounts()
 		c.Check(err, IsNil)
 		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other",
-			"--read-write", "--crunchstat-interval=5",
+			"--read-write", "--storage-classes", "default", "--crunchstat-interval=5",
 			"--mount-by-pdh", "by_id", realTemp + "/keep1"})
 		c.Check(bindmounts, DeepEquals, map[string]bindmount{"/tmp": {realTemp + "/tmp2", false}, "/etc/arvados/ca-certificates.crt": {stubCertPath, true}})
 		os.RemoveAll(cr.ArvMountPoint)
@@ -1140,7 +1153,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		bindmounts, err := cr.SetupMounts()
 		c.Check(err, IsNil)
 		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other",
-			"--read-write", "--crunchstat-interval=5",
+			"--read-write", "--storage-classes", "default", "--crunchstat-interval=5",
 			"--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", realTemp + "/keep1"})
 		c.Check(bindmounts, DeepEquals, map[string]bindmount{"/keeptmp": {realTemp + "/keep1/tmp0", false}})
 		os.RemoveAll(cr.ArvMountPoint)
@@ -1163,7 +1176,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		bindmounts, err := cr.SetupMounts()
 		c.Check(err, IsNil)
 		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other",
-			"--read-write", "--crunchstat-interval=5",
+			"--read-write", "--storage-classes", "default", "--crunchstat-interval=5",
 			"--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", realTemp + "/keep1"})
 		c.Check(bindmounts, DeepEquals, map[string]bindmount{
 			"/keepinp": {realTemp + "/keep1/by_id/59389a8f9ee9d399be35462a0f92541c+53", true},
@@ -1190,7 +1203,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		bindmounts, err := cr.SetupMounts()
 		c.Check(err, IsNil)
 		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other",
-			"--read-write", "--crunchstat-interval=5",
+			"--read-write", "--storage-classes", "default", "--crunchstat-interval=5",
 			"--file-cache", "512", "--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", realTemp + "/keep1"})
 		c.Check(bindmounts, DeepEquals, map[string]bindmount{
 			"/keepinp": {realTemp + "/keep1/by_id/59389a8f9ee9d399be35462a0f92541c+53", true},
@@ -1273,7 +1286,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		bindmounts, err := cr.SetupMounts()
 		c.Check(err, IsNil)
 		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other",
-			"--read-write", "--crunchstat-interval=5",
+			"--read-write", "--storage-classes", "default", "--crunchstat-interval=5",
 			"--file-cache", "512", "--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", realTemp + "/keep1"})
 		c.Check(bindmounts, DeepEquals, map[string]bindmount{
 			"/tmp":     {realTemp + "/tmp2", false},
