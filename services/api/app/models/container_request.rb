@@ -243,7 +243,7 @@ class ContainerRequest < ArvadosModel
   end
 
   def self.full_text_searchable_columns
-    super - ["mounts", "secret_mounts", "secret_mounts_md5", "runtime_token"]
+    super - ["mounts", "secret_mounts", "secret_mounts_md5", "runtime_token", "output_storage_classes"]
   end
 
   protected

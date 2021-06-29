@@ -547,8 +547,6 @@ func (s *TestSuite) TestRunContainer(c *C) {
 
 	c.Check(logs.Stdout.String(), Matches, ".*Hello world\n")
 	c.Check(logs.Stderr.String(), Equals, "")
-	c.Check(s.testDispatcherKeepClient, Equals, []string{"default"})
-	c.Check(s.testContainerKeepClient, Equals, []string{"default"})
 }
 
 func (s *TestSuite) TestCommitLogs(c *C) {
@@ -664,7 +662,7 @@ func (s *TestSuite) fullRunHelper(c *C, record string, extraMounts []string, exi
 		return d, err
 	}
 	s.runner.MkArvClient = func(token string) (IArvadosClient, IKeepClient, *arvados.Client, error) {
-		return &ArvTestClient{secretMounts: secretMounts}, &KeepTestClient{}, nil, nil
+		return &ArvTestClient{secretMounts: secretMounts}, &s.testContainerKeepClient, nil, nil
 	}
 
 	if extraMounts != nil && len(extraMounts) > 0 {
@@ -715,7 +713,8 @@ func (s *TestSuite) TestFullRunHello(c *C) {
     "output_path": "/tmp",
     "priority": 1,
     "runtime_constraints": {"vcpus":1,"ram":1000000},
-    "state": "Locked"
+    "state": "Locked",
+    "output_storage_classes": ["default"]
 }`, nil, 0, func() {
 		c.Check(s.executor.created.Command, DeepEquals, []string{"echo", "hello world"})
 		c.Check(s.executor.created.Image, Equals, "sha256:d8309758b8fe2c81034ffc8a10c36460b77db7bc5e7b448c4e5b684f9d95a678")
@@ -730,7 +729,8 @@ func (s *TestSuite) TestFullRunHello(c *C) {
 	c.Check(s.api.CalledWith("container.exit_code", 0), NotNil)
 	c.Check(s.api.CalledWith("container.state", "Complete"), NotNil)
 	c.Check(s.api.Logs["stdout"].String(), Matches, ".*hello world\n")
-
+	c.Check(s.testDispatcherKeepClient.StorageClasses, DeepEquals, []string{"default"})
+	c.Check(s.testContainerKeepClient.StorageClasses, DeepEquals, []string{"default"})
 }
 
 func (s *TestSuite) TestRunAlreadyRunning(c *C) {
@@ -945,6 +945,29 @@ func (s *TestSuite) TestFullRunSetCwd(c *C) {
 	c.Check(s.api.CalledWith("container.exit_code", 0), NotNil)
 	c.Check(s.api.CalledWith("container.state", "Complete"), NotNil)
 	c.Check(s.api.Logs["stdout"].String(), Matches, ".*/bin\n")
+}
+
+func (s *TestSuite) TestFullRunSetOutputStorageClasses(c *C) {
+	s.fullRunHelper(c, `{
+    "command": ["pwd"],
+    "container_image": "`+arvadostest.DockerImage112PDH+`",
+    "cwd": "/bin",
+    "environment": {},
+    "mounts": {"/tmp": {"kind": "tmp"} },
+    "output_path": "/tmp",
+    "priority": 1,
+    "runtime_constraints": {},
+    "state": "Locked",
+    "output_storage_classes": ["foo", "bar"]
+}`, nil, 0, func() {
+		fmt.Fprintln(s.executor.created.Stdout, s.executor.created.WorkingDir)
+	})
+
+	c.Check(s.api.CalledWith("container.exit_code", 0), NotNil)
+	c.Check(s.api.CalledWith("container.state", "Complete"), NotNil)
+	c.Check(s.api.Logs["stdout"].String(), Matches, ".*/bin\n")
+	c.Check(s.testDispatcherKeepClient.StorageClasses, DeepEquals, []string{"foo", "bar"})
+	c.Check(s.testContainerKeepClient.StorageClasses, DeepEquals, []string{"foo", "bar"})
 }
 
 func (s *TestSuite) TestStopOnSignal(c *C) {

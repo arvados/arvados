@@ -106,11 +106,11 @@ class Container < ArvadosModel
   end
 
   def self.full_text_searchable_columns
-    super - ["secret_mounts", "secret_mounts_md5", "runtime_token", "gateway_address"]
+    super - ["secret_mounts", "secret_mounts_md5", "runtime_token", "gateway_address", "output_storage_classes"]
   end
 
   def self.searchable_columns *args
-    super - ["secret_mounts_md5", "runtime_token", "gateway_address"]
+    super - ["secret_mounts_md5", "runtime_token", "gateway_address", "output_storage_classes"]
   end
 
   def logged_attributes
