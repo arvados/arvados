@@ -171,15 +171,15 @@ func (*Suite) TestTimestampRange(c *check.C) {
 	uuid2Report, err := ioutil.ReadFile(resultsDir + "/" + arvadostest.CompletedDiagnosticsContainerRequest2UUID + ".csv")
 	c.Assert(err, check.IsNil)
 
-	c.Check(string(uuidReport), check.Matches, "(?ms).*TOTAL,,,,,,,,,0.00916192")
-	c.Check(string(uuid2Report), check.Matches, "(?ms).*TOTAL,,,,,,,,,0.00588088")
+	c.Check(string(uuidReport), check.Matches, "(?ms).*TOTAL,,,,,756.789,,,,0.01")
+	c.Check(string(uuid2Report), check.Matches, "(?ms).*TOTAL,,,,,482.097,,,,0.01")
 	re := regexp.MustCompile(`(?ms).*supplied uuids in (.*?)\n`)
 	matches := re.FindStringSubmatch(stderr.String()) // matches[1] contains a string like 'results/2020-11-02-18-57-45-aggregate-costaccounting.csv'
 
 	aggregateCostReport, err := ioutil.ReadFile(matches[1])
 	c.Assert(err, check.IsNil)
 
-	c.Check(string(aggregateCostReport), check.Matches, "(?ms).*TOTAL,0.01492030")
+	c.Check(string(aggregateCostReport), check.Matches, "(?ms).*TOTAL,1245.564,0.01")
 }
 
 func (*Suite) TestContainerRequestUUID(c *check.C) {
@@ -194,14 +194,14 @@ func (*Suite) TestContainerRequestUUID(c *check.C) {
 	c.Assert(err, check.IsNil)
 	// Make sure the 'preemptible' flag was picked up
 	c.Check(string(uuidReport), check.Matches, "(?ms).*,Standard_E4s_v3,true,.*")
-	c.Check(string(uuidReport), check.Matches, "(?ms).*TOTAL,,,,,,,,,7.01302889")
+	c.Check(string(uuidReport), check.Matches, "(?ms).*TOTAL,,,,,86462.000,,,,7.01")
 	re := regexp.MustCompile(`(?ms).*supplied uuids in (.*?)\n`)
 	matches := re.FindStringSubmatch(stderr.String()) // matches[1] contains a string like 'results/2020-11-02-18-57-45-aggregate-costaccounting.csv'
 
 	aggregateCostReport, err := ioutil.ReadFile(matches[1])
 	c.Assert(err, check.IsNil)
 
-	c.Check(string(aggregateCostReport), check.Matches, "(?ms).*TOTAL,7.01302889")
+	c.Check(string(aggregateCostReport), check.Matches, "(?ms).*TOTAL,86462.000,7.01")
 }
 
 func (*Suite) TestCollectionUUID(c *check.C) {
@@ -238,14 +238,14 @@ func (*Suite) TestCollectionUUID(c *check.C) {
 
 	uuidReport, err := ioutil.ReadFile(resultsDir + "/" + arvadostest.CompletedContainerRequestUUID + ".csv")
 	c.Assert(err, check.IsNil)
-	c.Check(string(uuidReport), check.Matches, "(?ms).*TOTAL,,,,,,,,,7.01302889")
+	c.Check(string(uuidReport), check.Matches, "(?ms).*TOTAL,,,,,86462.000,,,,7.01")
 	re := regexp.MustCompile(`(?ms).*supplied uuids in (.*?)\n`)
 	matches := re.FindStringSubmatch(stderr.String()) // matches[1] contains a string like 'results/2020-11-02-18-57-45-aggregate-costaccounting.csv'
 
 	aggregateCostReport, err := ioutil.ReadFile(matches[1])
 	c.Assert(err, check.IsNil)
 
-	c.Check(string(aggregateCostReport), check.Matches, "(?ms).*TOTAL,7.01302889")
+	c.Check(string(aggregateCostReport), check.Matches, "(?ms).*TOTAL,86462.000,7.01")
 }
 
 func (*Suite) TestDoubleContainerRequestUUID(c *check.C) {
@@ -258,11 +258,11 @@ func (*Suite) TestDoubleContainerRequestUUID(c *check.C) {
 
 	uuidReport, err := ioutil.ReadFile(resultsDir + "/" + arvadostest.CompletedContainerRequestUUID + ".csv")
 	c.Assert(err, check.IsNil)
-	c.Check(string(uuidReport), check.Matches, "(?ms).*TOTAL,,,,,,,,,7.01302889")
+	c.Check(string(uuidReport), check.Matches, "(?ms).*TOTAL,,,,,86462.000,,,,7.01")
 
 	uuidReport2, err := ioutil.ReadFile(resultsDir + "/" + arvadostest.CompletedContainerRequestUUID2 + ".csv")
 	c.Assert(err, check.IsNil)
-	c.Check(string(uuidReport2), check.Matches, "(?ms).*TOTAL,,,,,,,,,42.27031111")
+	c.Check(string(uuidReport2), check.Matches, "(?ms).*TOTAL,,,,,86462.000,,,,42.27")
 
 	re := regexp.MustCompile(`(?ms).*supplied uuids in (.*?)\n`)
 	matches := re.FindStringSubmatch(stderr.String()) // matches[1] contains a string like 'results/2020-11-02-18-57-45-aggregate-costaccounting.csv'
@@ -270,7 +270,7 @@ func (*Suite) TestDoubleContainerRequestUUID(c *check.C) {
 	aggregateCostReport, err := ioutil.ReadFile(matches[1])
 	c.Assert(err, check.IsNil)
 
-	c.Check(string(aggregateCostReport), check.Matches, "(?ms).*TOTAL,49.28334000")
+	c.Check(string(aggregateCostReport), check.Matches, "(?ms).*TOTAL,172924.000,49.28")
 	stdout.Truncate(0)
 	stderr.Truncate(0)
 
@@ -299,11 +299,11 @@ func (*Suite) TestDoubleContainerRequestUUID(c *check.C) {
 
 	uuidReport, err = ioutil.ReadFile(resultsDir + "/" + arvadostest.CompletedContainerRequestUUID + ".csv")
 	c.Assert(err, check.IsNil)
-	c.Check(string(uuidReport), check.Matches, "(?ms).*TOTAL,,,,,,,,,7.01302889")
+	c.Check(string(uuidReport), check.Matches, "(?ms).*TOTAL,,,,,86462.000,,,,7.01")
 
 	uuidReport2, err = ioutil.ReadFile(resultsDir + "/" + arvadostest.CompletedContainerRequestUUID2 + ".csv")
 	c.Assert(err, check.IsNil)
-	c.Check(string(uuidReport2), check.Matches, "(?ms).*TOTAL,,,,,,,,,42.27031111")
+	c.Check(string(uuidReport2), check.Matches, "(?ms).*TOTAL,,,,,86462.000,,,,42.27")
 
 	re = regexp.MustCompile(`(?ms).*supplied uuids in (.*?)\n`)
 	matches = re.FindStringSubmatch(stderr.String()) // matches[1] contains a string like 'results/2020-11-02-18-57-45-aggregate-costaccounting.csv'
@@ -311,7 +311,7 @@ func (*Suite) TestDoubleContainerRequestUUID(c *check.C) {
 	aggregateCostReport, err = ioutil.ReadFile(matches[1])
 	c.Assert(err, check.IsNil)
 
-	c.Check(string(aggregateCostReport), check.Matches, "(?ms).*TOTAL,49.28334000")
+	c.Check(string(aggregateCostReport), check.Matches, "(?ms).*TOTAL,172924.000,49.28")
 }
 
 func (*Suite) TestUncommittedContainerRequest(c *check.C) {
@@ -323,7 +323,7 @@ func (*Suite) TestUncommittedContainerRequest(c *check.C) {
 	c.Assert(stderr.String(), check.Matches, "(?ms).*No container associated with container request .*")
 
 	// Check that the total amount was printed to stdout
-	c.Check(stdout.String(), check.Matches, "0.00588088\n")
+	c.Check(stdout.String(), check.Matches, "0.01\n")
 }
 
 func (*Suite) TestMultipleContainerRequestUUIDWithReuse(c *check.C) {
@@ -334,7 +334,7 @@ func (*Suite) TestMultipleContainerRequestUUIDWithReuse(c *check.C) {
 	c.Assert(stderr.String(), check.Not(check.Matches), "(?ms).*supplied uuids in .*")
 
 	// Check that the total amount was printed to stdout
-	c.Check(stdout.String(), check.Matches, "0.01492030\n")
+	c.Check(stdout.String(), check.Matches, "0.01\n")
 
 	stdout.Truncate(0)
 	stderr.Truncate(0)
@@ -347,11 +347,11 @@ func (*Suite) TestMultipleContainerRequestUUIDWithReuse(c *check.C) {
 
 	uuidReport, err := ioutil.ReadFile(resultsDir + "/" + arvadostest.CompletedDiagnosticsContainerRequest1UUID + ".csv")
 	c.Assert(err, check.IsNil)
-	c.Check(string(uuidReport), check.Matches, "(?ms).*TOTAL,,,,,,,,,0.00916192")
+	c.Check(string(uuidReport), check.Matches, "(?ms).*TOTAL,,,,,756.789,,,,0.01")
 
 	uuidReport2, err := ioutil.ReadFile(resultsDir + "/" + arvadostest.CompletedDiagnosticsContainerRequest2UUID + ".csv")
 	c.Assert(err, check.IsNil)
-	c.Check(string(uuidReport2), check.Matches, "(?ms).*TOTAL,,,,,,,,,0.00588088")
+	c.Check(string(uuidReport2), check.Matches, "(?ms).*TOTAL,,,,,482.097,,,,0.01")
 
 	re := regexp.MustCompile(`(?ms).*supplied uuids in (.*?)\n`)
 	matches := re.FindStringSubmatch(stderr.String()) // matches[1] contains a string like 'results/2020-11-02-18-57-45-aggregate-costaccounting.csv'
@@ -359,5 +359,5 @@ func (*Suite) TestMultipleContainerRequestUUIDWithReuse(c *check.C) {
 	aggregateCostReport, err := ioutil.ReadFile(matches[1])
 	c.Assert(err, check.IsNil)
 
-	c.Check(string(aggregateCostReport), check.Matches, "(?ms).*TOTAL,0.01492030")
+	c.Check(string(aggregateCostReport), check.Matches, "(?ms).*TOTAL,1245.564,0.01")
 }
