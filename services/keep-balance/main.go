@@ -55,7 +55,15 @@ func runCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.W
 	loader.SetupFlags(flags)
 
 	munged := loader.MungeLegacyConfigArgs(logger, args, "-legacy-keepbalance-config")
-	flags.Parse(munged)
+	err := flags.Parse(munged)
+	if err != nil {
+		logger.Errorf("error parsing command line flags: %s", err)
+		return 2
+	}
+	if flags.NArg() != 0 {
+		logger.Errorf("error parsing command line flags: extra arguments: %q", flags.Args())
+		return 2
+	}
 
 	if *dumpFlag {
 		dumper := logrus.New()
