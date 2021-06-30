@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
-import * as classnames from 'classnames';
+import React from 'react';
+import classnames from 'classnames';
 import {
     Grid,
     StyleRulesCallback,

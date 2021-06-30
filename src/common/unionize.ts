@@ -2,8 +2,9 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-export * from 'unionize';
 import { unionize as originalUnionize, SingleValueRec } from 'unionize';
+
+export * from 'unionize';
 
 export function unionize<Record extends SingleValueRec>(record: Record) {
     return originalUnionize(record, {

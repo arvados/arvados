@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from "react";
+import React from "react";
 import { Dispatch } from "redux";
 import { connect } from "react-redux";
 import { RootState } from "store/store";
@@ -17,7 +17,7 @@ import InfoIcon from '@material-ui/icons/Info';
 import CloseIcon from '@material-ui/icons/Close';
 import { ArvadosTheme } from "common/custom-theme";
 import { amber, green } from "@material-ui/core/colors";
-import * as classNames from 'classnames';
+import classNames from 'classnames';
 
 interface SnackbarDataProps {
     anchorOrigin?: SnackbarOrigin;

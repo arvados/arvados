@@ -7,11 +7,11 @@ import { withStyles } from '@material-ui/core';
 import {
     PROJECT_CREATE_PROPERTIES_FORM_NAME,
     addPropertyToCreateProjectForm
-} from '~/store/projects/project-create-actions';
+} from 'store/projects/project-create-actions';
 import {
     ResourcePropertiesForm,
     ResourcePropertiesFormData
-} from '~/views-components/resource-properties-form/resource-properties-form';
+} from 'views-components/resource-properties-form/resource-properties-form';
 
 const Form = withStyles(
     ({ spacing }) => (

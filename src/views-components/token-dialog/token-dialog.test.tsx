@@ -2,11 +2,11 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { Button } from '@material-ui/core';
 import { mount, configure } from 'enzyme';
-import * as Adapter from 'enzyme-adapter-react-16';
-import * as CopyToClipboard from 'react-copy-to-clipboard';
+import Adapter from 'enzyme-adapter-react-16';
+import CopyToClipboard from 'react-copy-to-clipboard';
 import { TokenDialogComponent } from './token-dialog';
 
 configure({ adapter: new Adapter() });

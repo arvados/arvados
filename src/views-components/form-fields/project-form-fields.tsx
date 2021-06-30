@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from "react";
+import React from "react";
 import { Field, Validator } from "redux-form";
 import { TextField, RichEditorTextField } from "components/text-field/text-field";
 import { PROJECT_NAME_VALIDATION, PROJECT_NAME_VALIDATION_ALLOW_SLASH } from "validators/validators";

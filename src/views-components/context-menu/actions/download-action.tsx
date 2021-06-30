@@ -2,11 +2,11 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { ListItemIcon, ListItemText, ListItem } from '@material-ui/core';
 import { DownloadIcon } from '../../../components/icon/icon';
-import * as JSZip from 'jszip';
-import * as FileSaver from 'file-saver';
+import JSZip from 'jszip';
+import FileSaver from 'file-saver';
 import axios from 'axios';
 
 export const DownloadAction = (props: { href?: any, download?: any, onClick?: () => void, kind?: string, currentCollectionUuid?: string; }) => {

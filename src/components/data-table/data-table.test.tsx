@@ -2,11 +2,11 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from "react";
+import React from "react";
 import { mount, configure } from "enzyme";
 import { pipe } from 'lodash/fp';
 import { TableHead, TableCell, Typography, TableBody, Button, TableSortLabel } from "@material-ui/core";
-import * as Adapter from "enzyme-adapter-react-16";
+import Adapter from "enzyme-adapter-react-16";
 import { DataTable, DataColumns } from "./data-table";
 import { SortDirection, createDataColumn } from "./data-column";
 import { DataTableFiltersPopover } from 'components/data-table-filters/data-table-filters-popover';

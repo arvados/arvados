@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { connect } from 'react-redux';
 import { Grid, Button, Typography } from "@material-ui/core";
 import { DataExplorer } from "views-components/data-explorer/data-explorer";

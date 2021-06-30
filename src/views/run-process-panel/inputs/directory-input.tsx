@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { connect, DispatchProp } from 'react-redux';
 import { memoize } from 'lodash/fp';
 import { Field } from 'redux-form';

@@ -89,7 +89,7 @@ describe("serializeResourceTypeFilters", () => {
     it("should serialize filter groups", () => {
         const filters = pipe(
             () => getInitialResourceTypeFilters(),
-            deselectNode(GroupTypeFilter.PROJECT)
+            deselectNode(GroupTypeFilter.PROJECT),
             deselectNode(ObjectTypeFilter.PROCESS),
             deselectNode(ObjectTypeFilter.COLLECTION),
         )();
@@ -102,7 +102,7 @@ describe("serializeResourceTypeFilters", () => {
     it("should serialize projects (normal)", () => {
         const filters = pipe(
             () => getInitialResourceTypeFilters(),
-            deselectNode(GroupTypeFilter.FILTER_GROUP)
+            deselectNode(GroupTypeFilter.FILTER_GROUP),
             deselectNode(ObjectTypeFilter.PROCESS),
             deselectNode(ObjectTypeFilter.COLLECTION),
         )();

@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { FileUpload } from 'components/file-upload/file-upload';
 import { connect } from 'react-redux';
 import { RootState } from 'store/store';

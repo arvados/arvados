@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from "react";
+import React from "react";
 import { WarningIcon } from "components/icon/icon";
 import { StyleRulesCallback, DialogContentText, WithStyles, withStyles } from "@material-ui/core";
 import { ArvadosTheme } from 'common/custom-theme';

@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as _ from "lodash";
+import { snakeCase, camelCase } from "lodash";
 import { CommonResourceService } from 'services/common-service/common-resource-service';
 import { ListResults, ListArguments } from 'services/common-service/common-service';
 import { AxiosInstance, AxiosRequestConfig } from "axios";
@@ -50,7 +50,7 @@ export class GroupsService<T extends GroupResource = GroupResource> extends Tras
         };
         const pathUrl = uuid ? `/${uuid}/contents` : '/contents';
 
-        const cfg: AxiosRequestConfig = { params: CommonResourceService.mapKeys(_.snakeCase)(params) };
+        const cfg: AxiosRequestConfig = { params: CommonResourceService.mapKeys(snakeCase)(params) };
         if (session) {
             cfg.baseURL = session.baseUrl;
             cfg.headers = { 'Authorization': 'Bearer ' + session.token };
@@ -60,7 +60,7 @@ export class GroupsService<T extends GroupResource = GroupResource> extends Tras
             this.serverApi.get(this.resourceType + pathUrl, cfg), this.actions, false
         );
 
-        return { ...TrashableResourceService.mapKeys(_.camelCase)(response), clusterId: session && session.clusterId };
+        return { ...TrashableResourceService.mapKeys(camelCase)(response), clusterId: session && session.clusterId };
     }
 
     shared(params: SharedArguments = {}): Promise<ListResults<GroupContentsResource>> {

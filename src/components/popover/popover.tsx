@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { Popover as MaterialPopover } from '@material-ui/core';
 
 import { PopoverOrigin } from '@material-ui/core/Popover';

@@ -18,7 +18,7 @@ import { Session, SessionStatus } from "models/session";
 import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
 import { AuthService } from "services/auth-service/auth-service";
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
-import * as jsSHA from "jssha";
+import jsSHA from "jssha";
 
 const getClusterConfig = async (origin: string, apiClient: AxiosInstance): Promise<Config | null> => {
     let configFromDD: Config | undefined;

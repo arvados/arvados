@@ -2,12 +2,12 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import axios from 'axios';
 import { configure, shallow } from "enzyme";
-import * as Adapter from 'enzyme-adapter-react-16';
+import Adapter from 'enzyme-adapter-react-16';
 import { ListItem } from '@material-ui/core';
-import * as JSZip from 'jszip';
+import JSZip from 'jszip';
 import { DownloadAction } from './download-action';
 
 configure({ adapter: new Adapter() });

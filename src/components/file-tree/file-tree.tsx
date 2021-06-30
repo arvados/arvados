@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from "react";
+import React from "react";
 import { TreeItem, TreeItemStatus } from "../tree/tree";
 import { VirtualTree as Tree } from "../tree/virtual-tree";
 import { FileTreeData } from "./file-tree-data";

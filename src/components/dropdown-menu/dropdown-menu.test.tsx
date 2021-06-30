@@ -2,10 +2,10 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from "react";
+import React from "react";
 import { shallow, configure } from "enzyme";
 import { DropdownMenu } from "./dropdown-menu";
-import * as Adapter from 'enzyme-adapter-react-16';
+import Adapter from 'enzyme-adapter-react-16';
 import { MenuItem, IconButton, Menu } from "@material-ui/core";
 import { PaginationRightArrowIcon } from "../icon/icon";
 

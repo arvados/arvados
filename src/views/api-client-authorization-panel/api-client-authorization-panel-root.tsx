@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import {
     StyleRulesCallback, WithStyles, withStyles, Card, CardContent, Grid, Tooltip, IconButton
 } from '@material-ui/core';

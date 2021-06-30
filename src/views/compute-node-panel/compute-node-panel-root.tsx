@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { ShareMeIcon } from 'components/icon/icon';
 import { DataExplorer } from 'views-components/data-explorer/data-explorer';
 import { DataTableDefaultView } from 'components/data-table-default-view/data-table-default-view';

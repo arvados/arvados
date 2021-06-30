@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { DetailsResource } from "models/details";
 
 export abstract class DetailsData<T extends DetailsResource = DetailsResource> {

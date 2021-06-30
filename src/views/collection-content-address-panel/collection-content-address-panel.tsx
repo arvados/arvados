@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import {
     StyleRulesCallback,
     WithStyles,
@@ -150,7 +150,7 @@ export const CollectionsContentAddressPanel = withStyles(styles)(
             render() {
                 return <Grid item xs={12}>
                     <Button
-                        onClick={() => history.back()}
+                        onClick={() => window.history.back()}
                         className={this.props.classes.backLink}>
                         <BackIcon className={this.props.classes.backIcon} />
                         Back

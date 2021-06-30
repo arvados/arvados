@@ -15,7 +15,7 @@ import { SearchView } from 'store/search-bar/search-bar-reducer';
 import { navigateTo, navigateToSearchResults } from 'store/navigation/navigation-action';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { PropertyValue, SearchBarAdvancedFormData } from 'models/search-bar';
-import * as _ from "lodash";
+import { union } from "lodash";
 import { getModifiedKeysValues } from "common/objects";
 import { activateSearchBarProject } from "store/search-bar/search-bar-tree-actions";
 import { Session } from "models/session";
@@ -287,7 +287,7 @@ export const getQueryFromAdvancedData = (data: SearchBarAdvancedFormData, prevDa
         ['from', 'dateFrom'],
         ['to', 'dateTo']
     ];
-    _.union(data.properties, prevData ? prevData.properties : [])
+    union(data.properties, prevData ? prevData.properties : [])
         .forEach(p => keyMap.push(
             [`has:"${p.keyID || p.key}"`, `prop-"${p.keyID || p.key}":"${p.valueID || p.value}"`]
         ));

@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { LINK_PANEL_ID } from 'store/link-panel/link-panel-actions';
 import { DataExplorer } from 'views-components/data-explorer/data-explorer';
 import { SortDirection } from 'components/data-table/data-column';

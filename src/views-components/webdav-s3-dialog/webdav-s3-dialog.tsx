@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from "react";
+import React from "react";
 import { Dialog, DialogActions, Button, StyleRulesCallback, WithStyles, withStyles, CardHeader, Tab, Tabs } from '@material-ui/core';
 import { withDialog } from "store/dialog/with-dialog";
 import { COLLECTION_WEBDAV_S3_DIALOG_NAME, WebDavS3InfoDialogData } from 'store/collections/collection-info-actions';
@@ -53,12 +53,12 @@ const isValidIpAddress = (ipAddress: string): Boolean => {
 };
 
 const mountainduckTemplate = ({
-    uuid, 
+    uuid,
     username,
     cyberDavStr,
     collectionsUrl
 }: any) => {
-    
+
     return `<?xml version="1.0" encoding="UTF-8"?>
         <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
         <plist version="1.0">
@@ -74,7 +74,7 @@ const mountainduckTemplate = ({
             <key>Port</key>
             <string>${(cyberDavStr.split(':')[2] || '443').split('/')[0]}</string>
             <key>Username</key>
-            <string>${username}</string>${isValidIpAddress(collectionsUrl.replace('https://', ``).split(':')[0])? 
+            <string>${username}</string>${isValidIpAddress(collectionsUrl.replace('https://', ``).split(':')[0])?
             `
             <key>Path</key>
             <string>/c=${uuid}</string>` : ''}
@@ -89,12 +89,12 @@ const downloadMountainduckFileHandler = (filename: string, text: string) => {
     const element = document.createElement('a');
     element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
     element.setAttribute('download', filename);
-  
+
     element.style.display = 'none';
     document.body.appendChild(element);
-  
+
     element.click();
-  
+
     document.body.removeChild(element);
 };
 

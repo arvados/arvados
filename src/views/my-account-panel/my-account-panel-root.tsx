@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { Field, InjectedFormProps, WrappedFieldProps } from "redux-form";
 import { TextField } from "components/text-field/text-field";
 import { NativeSelectField } from "components/select-field/select-field";

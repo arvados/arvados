@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { Dialog, DialogTitle, Button, Grid, DialogContent, CircularProgress, Paper } from '@material-ui/core';
 import { DialogActions } from 'components/dialog-actions/dialog-actions';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';

@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { WithDialogProps } from 'store/dialog/with-dialog';
 import { ServiceRepository } from "services/services";
 import { Dispatch } from "redux";

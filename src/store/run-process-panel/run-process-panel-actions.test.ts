@@ -8,7 +8,7 @@ jest.mock("../navigation/navigation-action", () => ({
     navigateTo: (link: any) => link,
 }));
 
-jest.mock("~/models/process", () => ({
+jest.mock("models/process", () => ({
     createWorkflowMounts: jest.fn(),
 }));
 

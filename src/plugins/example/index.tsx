@@ -5,7 +5,7 @@
 // Example workbench plugin.  The entry point is the "register" method.
 
 import { PluginConfig } from 'common/plugintypes';
-import * as React from 'react';
+import React from 'react';
 import { Dispatch } from 'redux';
 import { RootState } from 'store/store';
 import { push } from "react-router-redux";

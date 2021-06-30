@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { values, memoize, pipe } from 'lodash/fp';
 import { HomeTreePicker } from 'views-components/projects-tree-picker/home-tree-picker';
 import { SharedTreePicker } from 'views-components/projects-tree-picker/shared-tree-picker';

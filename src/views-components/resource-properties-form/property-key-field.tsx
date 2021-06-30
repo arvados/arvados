@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { WrappedFieldProps, Field, FormName, reset, change, WrappedFieldInputProps, WrappedFieldMetaProps } from 'redux-form';
 import { memoize } from 'lodash';
 import { Autocomplete } from 'components/autocomplete/autocomplete';

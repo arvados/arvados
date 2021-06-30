@@ -2,11 +2,11 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from "react";
+import React from "react";
 import { configure, mount } from "enzyme";
 import { FileThumbnail } from "./file-thumbnail";
 import { CollectionFileType } from '../../models/collection-file';
-import * as Adapter from 'enzyme-adapter-react-16';
+import Adapter from 'enzyme-adapter-react-16';
 import { Provider } from "react-redux";
 import { combineReducers, createStore } from "redux";
 

@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { Field, WrappedFieldProps, FieldArray, WrappedFieldArrayProps } from 'redux-form';
 import { Grid, FormControl, InputLabel } from '@material-ui/core';
 import { PermissionSelect, parsePermissionLevel, formatPermissionLevel } from './permission-select';

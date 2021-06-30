@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from "react";
+import React from "react";
 import { ListItemText, ListItem, ListItemIcon, Icon } from "@material-ui/core";
 import { RootState } from 'store/store';
 import { getNodeValue } from 'models/tree';

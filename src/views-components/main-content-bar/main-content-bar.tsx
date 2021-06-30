@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from "react";
+import React from "react";
 
 import { Toolbar, StyleRulesCallback, IconButton, Tooltip, Grid, WithStyles, withStyles } from "@material-ui/core";
 import { DetailsIcon } from "components/icon/icon";

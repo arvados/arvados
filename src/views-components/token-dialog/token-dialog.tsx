@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import {
     Dialog,
     DialogActions,
@@ -14,7 +14,7 @@ import {
     Button,
     Typography
 } from '@material-ui/core';
-import * as CopyToClipboard from 'react-copy-to-clipboard';
+import CopyToClipboard from 'react-copy-to-clipboard';
 import { ArvadosTheme } from 'common/custom-theme';
 import { withDialog } from 'store/dialog/with-dialog';
 import { WithDialogProps } from 'store/dialog/with-dialog';
@@ -28,7 +28,7 @@ import { DefaultCodeSnippet } from 'components/default-code-snippet/default-code
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { getNewExtraToken } from 'store/auth/auth-action';
 import { DetailsAttributeComponent } from 'components/details-attribute/details-attribute';
-import * as moment from 'moment';
+import moment from 'moment';
 
 type CssRules = 'link' | 'paper' | 'button' | 'actionButton' | 'codeBlock';
 

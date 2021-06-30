@@ -5,7 +5,7 @@
 import { compose, Dispatch } from 'redux';
 import { connect } from 'react-redux';
 
-import * as React from 'react';
+import React from 'react';
 import { connectSharingDialog, saveSharingDialogChanges, connectSharingDialogProgress, sendSharingInvitations } from 'store/sharing-dialog/sharing-dialog-actions';
 import { WithDialogProps } from 'store/dialog/with-dialog';
 import { RootState } from 'store/store';

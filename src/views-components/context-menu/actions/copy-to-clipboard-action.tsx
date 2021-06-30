@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from "react";
-import * as copy from 'copy-to-clipboard';
+import React from "react";
+import copy from 'copy-to-clipboard';
 import { ListItemIcon, ListItemText, ListItem } from "@material-ui/core";
 import { Link } from "components/icon/icon";
 import { getClipboardUrl } from "./helpers";

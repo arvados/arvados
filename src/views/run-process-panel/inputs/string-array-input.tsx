@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { isRequiredInput, StringArrayCommandInputParameter } from 'models/workflow';
 import { Field } from 'redux-form';
 import { ERROR_MESSAGE } from 'validators/require';

@@ -2,9 +2,9 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { configure, mount } from "enzyme";
-import * as Adapter from 'enzyme-adapter-react-16';
+import Adapter from 'enzyme-adapter-react-16';
 import { AutoLogoutComponent, AutoLogoutProps, LAST_ACTIVE_TIMESTAMP } from './auto-logout';
 
 configure({ adapter: new Adapter() });

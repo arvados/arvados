@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from "react";
+import React from "react";
 import { ErrorIcon } from "components/icon/icon";
 import { Tooltip } from "@material-ui/core";
 import { disallowSlash } from "validators/valid-name";

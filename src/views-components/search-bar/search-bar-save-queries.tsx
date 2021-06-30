@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { withStyles, WithStyles, StyleRulesCallback, List, ListItem, ListItemText, ListItemSecondaryAction, Tooltip, IconButton } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
 import { RemoveIcon, EditSavedQueryIcon } from 'components/icon/icon';

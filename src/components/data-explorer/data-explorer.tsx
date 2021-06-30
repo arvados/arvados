@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { Grid, Paper, Toolbar, StyleRulesCallback, withStyles, WithStyles, TablePagination, IconButton, Tooltip, Button } from '@material-ui/core';
 import { ColumnSelector } from "components/column-selector/column-selector";
 import { DataTable, DataColumns, DataTableFetchMode } from "components/data-table/data-table";

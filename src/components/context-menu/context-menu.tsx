@@ -1,7 +1,7 @@
 // Copyright (C) The Arvados Authors. All rights reserved.
 //
 // SPDX-License-Identifier: AGPL-3.0
-import * as React from "react";
+import React from "react";
 import { Popover, List, ListItem, ListItemIcon, ListItemText, Divider } from "@material-ui/core";
 import { DefaultTransformOrigin } from "../popover/helpers";
 import { IconType } from "../icon/icon";

@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { compose } from 'redux';
 import { reduxForm, InjectedFormProps, Field } from 'redux-form';
 import { withDialog, WithDialogProps } from 'store/dialog/with-dialog';

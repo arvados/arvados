@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from "react";
+import React from "react";
 import { ListItemIcon, ListItemText, ListItem } from "@material-ui/core";
 import { OpenIcon } from "components/icon/icon";
 

@@ -42,8 +42,8 @@ export const initAuth = (config: Config) => async (dispatch: Dispatch, getState:
     // Cancel any link account ops in progress unless the user has
     // just logged in or there has been a successful link operation
     const data = services.linkAccountService.getLinkOpStatus();
-    if (!matchTokenRoute(location.pathname) &&
-        (!matchFedTokenRoute(location.pathname)) && data === undefined) {
+    if (!matchTokenRoute(window.location.pathname) &&
+        (!matchFedTokenRoute(window.location.pathname)) && data === undefined) {
         await dispatch<any>(cancelLinking());
     }
     return dispatch<any>(init(config));

@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { connect } from 'react-redux';
 import { openProjectPropertiesDialog } from 'store/details-panel/details-panel-action';
 import { ProjectIcon, RenameIcon, FilterGroupIcon } from 'components/icon/icon';

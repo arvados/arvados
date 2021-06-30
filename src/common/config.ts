@@ -94,22 +94,22 @@ export interface ClusterConfigJSON {
 }
 
 export class Config {
-    baseUrl: string;
-    keepWebServiceUrl: string;
-    keepWebInlineServiceUrl: string;
-    remoteHosts: {
+    baseUrl!: string;
+    keepWebServiceUrl!: string;
+    keepWebInlineServiceUrl!: string;
+    remoteHosts!: {
         [key: string]: string
     };
-    rootUrl: string;
-    uuidPrefix: string;
-    websocketUrl: string;
-    workbenchUrl: string;
-    workbench2Url: string;
-    vocabularyUrl: string;
-    fileViewersConfigUrl: string;
-    loginCluster: string;
-    clusterConfig: ClusterConfigJSON;
-    apiRevision: number;
+    rootUrl!: string;
+    uuidPrefix!: string;
+    websocketUrl!: string;
+    workbenchUrl!: string;
+    workbench2Url!: string;
+    vocabularyUrl!: string;
+    fileViewersConfigUrl!: string;
+    loginCluster!: string;
+    clusterConfig!: ClusterConfigJSON;
+    apiRevision!: number;
 }
 
 export const buildConfig = (clusterConfig: ClusterConfigJSON): Config => {

@@ -2,15 +2,15 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { connect, DispatchProp } from 'react-redux';
 import Typography from '@material-ui/core/Typography';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
 import { Tooltip } from '@material-ui/core';
 import { CopyIcon } from 'components/icon/icon';
-import * as CopyToClipboard from 'react-copy-to-clipboard';
+import CopyToClipboard from 'react-copy-to-clipboard';
 import { ArvadosTheme } from 'common/custom-theme';
-import * as classnames from "classnames";
+import classnames from "classnames";
 import { Link } from 'react-router-dom';
 import { RootState } from "store/store";
 import { FederationConfig, getNavUrl } from "routes/routes";

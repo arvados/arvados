@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from 'redux';
-import * as _ from "lodash";
+import { difference } from "lodash";
 import { RootState } from 'store/store';
 import { FormErrors, initialize, startSubmit, stopSubmit } from 'redux-form';
 import { resetPickerProjectTree } from 'store/project-tree-picker/project-tree-picker-actions';
@@ -133,7 +133,7 @@ export const copyCollectionPartialToSelectedCollection = ({ collectionUuid }: Co
                         return;
                     }
                 });
-                const diffPathToRemove = _.difference(paths, pathsToRemove);
+                const diffPathToRemove = difference(paths, pathsToRemove);
                 await services.collectionService.deleteFiles(selectedCollection.uuid, pathsToRemove.map(path => path.replace(currentCollection.uuid, collectionUuid)));
                 const collectionWithDeletedFiles = await services.collectionService.get(collectionUuid);
                 await services.collectionService.update(collectionUuid, { manifestText: `${collectionWithDeletedFiles.manifestText}${(currentCollection.manifestText ? currentCollection.manifestText : currentCollection.unsignedManifestText) || ''}` });

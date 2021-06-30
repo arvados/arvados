@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { Chips } from 'components/chips/chips';
 import { Input as MuiInput, withStyles, WithStyles } from '@material-ui/core';
 import { StyleRulesCallback } from '@material-ui/core/styles';
@@ -78,7 +78,7 @@ export const ChipsInput = withStyles(styles)(
             if (this.timeout) {
                 clearTimeout(this.timeout);
             }
-            this.timeout = setTimeout(() => this.setState({ ...this.state }));
+            this.timeout = window.setTimeout(() => this.setState({ ...this.state }));
         }
 
         getInputStyles = (): React.CSSProperties => ({

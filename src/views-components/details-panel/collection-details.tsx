@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { CollectionIcon } from 'components/icon/icon';
 import { CollectionResource } from 'models/collection';
 import { DetailsData } from "./details-data";

@@ -3,8 +3,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
-import * as classNames from 'classnames';
+import React from 'react';
+import classNames from 'classnames';
 import { withRouter, RouteComponentProps } from 'react-router';
 import { StyleRulesCallback, Button, WithStyles, withStyles } from "@material-ui/core";
 import { ReRunProcessIcon } from 'components/icon/icon';

@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from "react";
+import React from "react";
 import { MenuItem } from "@material-ui/core";
 import { User } from "models/user";
 import { DropdownMenu } from "components/dropdown-menu/dropdown-menu";
@@ -37,7 +37,7 @@ export const AdminMenu = connect(mapStateToProps)(
                 <MenuItem onClick={() => dispatch(NavigationAction.navigateToSshKeysAdmin)}>Ssh Keys</MenuItem>
                 <MenuItem onClick={() => dispatch(NavigationAction.navigateToApiClientAuthorizations)}>Api Tokens</MenuItem>
                 <MenuItem onClick={() => dispatch(openUserPanel())}>Users</MenuItem>
-                <MenuItem onClick={() => dispatch(NavigationAction.navigateToGroups)}>Groups</MenuItem>}
+                <MenuItem onClick={() => dispatch(NavigationAction.navigateToGroups)}>Groups</MenuItem>
                 <MenuItem onClick={() => dispatch(NavigationAction.navigateToComputeNodes)}>Compute Nodes</MenuItem>
                 <MenuItem onClick={() => dispatch(NavigationAction.navigateToKeepServices)}>Keep Services</MenuItem>
                 <MenuItem onClick={() => dispatch(NavigationAction.navigateToLinks)}>Links</MenuItem>

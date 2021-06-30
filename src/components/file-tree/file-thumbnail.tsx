@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from "react";
+import React from "react";
 import isImage from 'is-image';
 import { withStyles, WithStyles } from '@material-ui/core';
 import { FileTreeData } from 'components/file-tree/file-tree-data';

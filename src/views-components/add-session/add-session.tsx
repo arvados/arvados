@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { RouteProps } from "react-router";
-import * as React from "react";
+import React from "react";
 import { connect, DispatchProp } from "react-redux";
 import { getUrlParameter } from "common/url";
 import { navigateToSiteManager } from "store/navigation/navigation-action";

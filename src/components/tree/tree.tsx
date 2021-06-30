@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { List, ListItem, ListItemIcon, Checkbox, Radio, Collapse } from "@material-ui/core";
 import { StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core/styles';
 import { CollectionIcon, DefaultIcon, DirectoryIcon, FileIcon, ProjectIcon, FilterGroupIcon } from 'components/icon/icon';

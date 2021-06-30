@@ -73,16 +73,20 @@ export const checkForLinkStatus = () =>
             let msg: string;
             let msgKind: SnackbarKind;
             if (status.valueOf() === LinkAccountStatus.CANCELLED) {
-                msg = "Account link cancelled!", msgKind = SnackbarKind.INFO;
+                msg = "Account link cancelled!";
+                msgKind = SnackbarKind.INFO;
             }
             else if (status.valueOf() === LinkAccountStatus.FAILED) {
-                msg = "Account link failed!", msgKind = SnackbarKind.ERROR;
+                msg = "Account link failed!";
+                msgKind = SnackbarKind.ERROR;
             }
             else if (status.valueOf() === LinkAccountStatus.SUCCESS) {
-                msg = "Account link success!", msgKind = SnackbarKind.SUCCESS;
+                msg = "Account link success!";
+                msgKind = SnackbarKind.SUCCESS;
             }
             else {
-                msg = "Unknown Error!", msgKind = SnackbarKind.ERROR;
+                msg = "Unknown Error!";
+                msgKind = SnackbarKind.ERROR;
             }
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: msg, kind: msgKind, hideDuration: 3000 }));
             services.linkAccountService.removeLinkOpStatus();
@@ -108,7 +112,7 @@ export const linkFailed = () =>
         }
         services.linkAccountService.removeAccountToLink();
         services.linkAccountService.saveLinkOpStatus(LinkAccountStatus.FAILED);
-        location.reload();
+        window.location.reload();
     };
 
 export const loadLinkAccountPanel = () =>
@@ -242,7 +246,7 @@ export const cancelLinking = (reload: boolean = false) =>
         }
         finally {
             if (reload) {
-                location.reload();
+                window.location.reload();
             }
             else {
                 dispatch(progressIndicatorActions.STOP_WORKING(WORKBENCH_LOADING_SCREEN));
@@ -277,7 +281,7 @@ export const linkAccount = () =>
                 dispatch(switchUser(linkState.targetUser, linkState.targetUserToken));
                 services.linkAccountService.removeAccountToLink();
                 services.linkAccountService.saveLinkOpStatus(LinkAccountStatus.SUCCESS);
-                location.reload();
+                window.location.reload();
             }
             catch (e) {
                 // If the link operation fails, delete the previously made project

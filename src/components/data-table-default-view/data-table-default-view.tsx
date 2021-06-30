@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
 import { DefaultViewDataProps, DefaultView } from 'components/default-view/default-view';
 import { ArvadosTheme } from 'common/custom-theme';

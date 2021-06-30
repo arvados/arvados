@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
-import * as ReactDOM from 'react-dom';
+import React from 'react';
+import ReactDOM from 'react-dom';
 import { WorkbenchPanel } from './workbench';
 import { Provider } from "react-redux";
 import { configureStore } from "store/store";

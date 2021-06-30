@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { RouteProps } from "react-router";
-import * as React from "react";
+import React from "react";
 import { RootState } from "store/store";
 import { connect, DispatchProp } from "react-redux";
 import { saveApiToken } from "store/auth/auth-action";

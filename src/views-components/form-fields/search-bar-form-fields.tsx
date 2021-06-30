@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from "react";
+import React from "react";
 import { Field, WrappedFieldProps, FieldArray } from 'redux-form';
 import { TextField, DateTextField } from "components/text-field/text-field";
 import { CheckboxField } from 'components/checkbox-field/checkbox-field';

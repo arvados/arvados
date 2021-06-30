@@ -2,9 +2,9 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from "react";
+import React from "react";
 import { mount, configure } from "enzyme";
-import * as Adapter from "enzyme-adapter-react-16";
+import Adapter from "enzyme-adapter-react-16";
 import { ColumnSelector, ColumnSelectorTrigger } from "./column-selector";
 import { ListItem, Checkbox } from "@material-ui/core";
 import { DataColumns } from "../data-table/data-table";

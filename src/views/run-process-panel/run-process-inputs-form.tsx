@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { reduxForm, InjectedFormProps } from 'redux-form';
 import { CommandInputParameter, CWLType, IntCommandInputParameter, BooleanCommandInputParameter, FileCommandInputParameter, DirectoryCommandInputParameter, DirectoryArrayCommandInputParameter, FloatArrayCommandInputParameter, IntArrayCommandInputParameter } from 'models/workflow';
 import { IntInput } from 'views/run-process-panel/inputs/int-input';

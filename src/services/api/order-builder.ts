@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as _ from "lodash";
+import { snakeCase } from "lodash";
 import { Resource } from "src/models/resource";
 
 export enum OrderDirection { ASC, DESC }
@@ -12,7 +12,7 @@ export class OrderBuilder<T extends Resource = Resource> {
     constructor(private order: string[] = []) {}
 
     addOrder(direction: OrderDirection, attribute: keyof T, prefix?: string) {
-        this.order.push(`${prefix ? prefix + "." : ""}${_.snakeCase(attribute.toString())} ${direction === OrderDirection.ASC ? "asc" : "desc"}`);
+        this.order.push(`${prefix ? prefix + "." : ""}${snakeCase(attribute.toString())} ${direction === OrderDirection.ASC ? "asc" : "desc"}`);
         return this;
     }
 

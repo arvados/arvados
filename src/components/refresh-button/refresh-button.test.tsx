@@ -2,10 +2,10 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from "react";
+import React from "react";
 import { Button } from "@material-ui/core";
 import { shallow, configure } from "enzyme";
-import * as Adapter from "enzyme-adapter-react-16";
+import Adapter from "enzyme-adapter-react-16";
 import { RefreshButton } from './refresh-button';
 
 configure({ adapter: new Adapter() });

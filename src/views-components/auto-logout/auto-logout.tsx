@@ -10,7 +10,7 @@ import { RootState } from "store/store";
 import { SnackbarKind, snackbarActions } from "store/snackbar/snackbar-actions";
 import { logout } from "store/auth/auth-action";
 import parse from "parse-duration";
-import * as React from "react";
+import React from "react";
 import { min } from "lodash";
 
 interface AutoLogoutDataProps {

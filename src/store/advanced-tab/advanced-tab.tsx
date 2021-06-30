@@ -23,7 +23,7 @@ import { LinkResource } from 'models/link';
 import { KeepServiceResource } from 'models/keep-services';
 import { NodeResource } from 'models/node';
 import { ApiClientAuthorization } from 'models/api-client-authorization';
-import * as React from 'react';
+import React from 'react';
 
 export const ADVANCED_TAB_DIALOG = 'advancedTabDialog';
 
