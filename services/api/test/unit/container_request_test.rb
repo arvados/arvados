@@ -1313,6 +1313,46 @@ class ContainerRequestTest < ActiveSupport::TestCase
       cr.reload
       output = Collection.find_by_uuid(cr.output_uuid)
       assert_equal ["foo_storage_class", "bar_storage_class"], output.storage_classes_desired
+      log = Collection.find_by_uuid(cr.log_uuid)
+      assert_equal ["foo_storage_class", "bar_storage_class"], log.storage_classes_desired
     end
+  end
+
+  test "reusing container with different container_request.output_storage_classes" do
+    common_attrs = {cwd: "test",
+                    priority: 1,
+                    command: ["echo", "hello"],
+                    output_path: "test",
+                    runtime_constraints: {"vcpus" => 4,
+                                          "ram" => 12000000000},
+                    mounts: {"test" => {"kind" => "json"}},
+                    environment: {"var" => "value1"},
+                    output_storage_classes: ["foo_storage_class"]}
+    set_user_from_auth :active
+    cr1 = create_minimal_req!(common_attrs.merge({state: ContainerRequest::Committed}))
+    cont1 = run_container(cr1)
+    cr1.reload
+
+    output1 = Collection.find_by_uuid(cr1.output_uuid)
+
+    # Testing with use_existing default value
+    cr2 = create_minimal_req!(common_attrs.merge({state: ContainerRequest::Uncommitted,
+                                                  output_storage_classes: ["bar_storage_class"]}))
+
+    assert_not_nil cr1.container_uuid
+    assert_nil cr2.container_uuid
+
+    # Update cr2 to commited state, check for reuse, then run it
+    cr2.update_attributes!({state: ContainerRequest::Committed})
+    assert_equal cr1.container_uuid, cr2.container_uuid
+
+    cr2.reload
+    output2 = Collection.find_by_uuid(cr2.output_uuid)
+
+    # the original CR output has the original storage class,
+    # but the second CR output has the new storage class.
+    assert_equal ["foo_storage_class"], cont1.output_storage_classes
+    assert_equal ["foo_storage_class"], output1.storage_classes_desired
+    assert_equal ["bar_storage_class"], output2.storage_classes_desired
   end
 end
