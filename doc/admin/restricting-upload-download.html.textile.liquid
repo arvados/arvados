@@ -59,6 +59,8 @@ The default policy allows anyone to upload or download.
       WebDAVLogEvents: true
 </pre>
 
+If you create a sharing link as an admin user, and then give someone the token from the sharing link to download a file over HTTP (WebDAV or S3 API), because the downloader is anonymous, the download permission will be restricted based on the "User" role and not the "Admin" role.
+
 h2. Shell node and container permissions
 
 Be aware that even when upload and download from outside the network is not allowed, a user who has access to a shell node or runs a container still has internal access to Keep.  (This is necessary to be able to run workflows).  From the shell node or container, a user could send data outside the network by some other method, although this requires more intent than accidentally clicking on a link and downloading a file.  It is possible to set up a firewall to prevent shell and compute nodes from making connections to hosts outside the private network.  Exactly how to configure firewalls is out of scope for this page, as it depends on the specific network infrastructure of your cluster.
@@ -99,7 +101,7 @@ For ease of access auditing, this policy prevents downloads using @arv-get@.  Do
 
 h3. Disallow downloads by regular users
 
-This policy prevents regular users (non-admin) from downloading data.  Uploading is allowed.  This supports the case where restricted data sets are shared users so that they may run their own data analysis on the cluster, while preventing them from downloading the data set to their local workstation.  Note that users won't be able to download the results of their analysis, either, requiring an admin in the loop or some other process to release results.
+This policy prevents regular users (non-admin) from downloading data.  Uploading is allowed.  This supports the case where restricted data sets are shared with users so that they may run their own data analysis on the cluster, while preventing them from downloading the data set to their local workstation.  Be aware that users won't be able to download the results of their analysis, either, requiring an admin in the loop or some other process to release results.
 
 <pre>
     Collections:
