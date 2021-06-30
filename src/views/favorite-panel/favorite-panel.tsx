@@ -152,13 +152,6 @@ export const FavoritePanel = withStyles(styles)(
                 const menuKind = this.props.dispatch<any>(resourceUuidToContextMenuKind(resourceUuid, readonly));
 
                 if (menuKind&& resource) {
-                    // this.props.dispatch<any>(openContextMenu(event, {
-                    //     name: '',
-                    //     uuid: resourceUuid,
-                    //     ownerUuid: '',
-                    //     kind: ResourceKind.NONE,
-                    //     menuKind
-                    // }));
                     this.props.dispatch<any>(openContextMenu(event, {
                         name: resource.name,
                         uuid: resource.uuid,

@@ -137,7 +137,6 @@ describe('Favorites tests', function () {
             owningUser: adminUser,
             targetUser: activeUser,
             projectName: 'mySharedWritableProject',
-            description: 'test 123123',
             canWrite: true,
             addToFavorites: true
         });
@@ -149,23 +148,48 @@ describe('Favorites tests', function () {
             cy.addToFavorites(activeUser.token, activeUser.user.uuid, testTargetCollection.uuid);
         });
 
+
+
         cy.getAll('@mySharedWritableProject', '@testTargetCollection')
             .then(function ([mySharedWritableProject, testTargetCollection]) {
                 cy.loginAs(activeUser);
+
+                const newProjectName = `New project name ${mySharedWritableProject.name}`;
+                const newProjectDescription = `New project description ${mySharedWritableProject.name}`;
+                const newCollectionName = `New collection name ${testTargetCollection.name}`;
+                const newCollectionDescription = `New collection description ${testTargetCollection.name}`;
 
                 cy.get('[data-cy=side-panel-tree]').contains('My Favorites').click();
 
                 cy.get('main').contains(mySharedWritableProject.name).rightclick();
                 cy.get('[data-cy=context-menu]').contains('Edit project').click();
                 cy.get('[data-cy=form-dialog]').within(() => {
-                    cy.get('input[name=name]').should('have.value', mySharedWritableProject.name);
+                    cy.get('input[name=name]').clear().type(newProjectName);
+                    cy.get('div[contenteditable=true]').type(newProjectDescription);
+                    cy.get('[data-cy=form-submit-btn]').click();
+                });
+
+                cy.get('main').contains(newProjectName).rightclick();
+                cy.get('[data-cy=context-menu]').contains('Edit project').click();
+                cy.get('[data-cy=form-dialog]').within(() => {
+                    cy.get('input[name=name]').should('have.value', newProjectName);
+                    cy.get('span[data-text=true]').contains( newProjectDescription);
                     cy.get('[data-cy=form-cancel-btn]').click();
                 });
 
                 cy.get('main').contains(testTargetCollection.name).rightclick();
                 cy.get('[data-cy=context-menu]').contains('Edit collection').click();
                 cy.get('[data-cy=form-dialog]').within(() => {
-                    cy.get('input[name=name]').should('have.value', testTargetCollection.name);
+                    cy.get('input[name=name]').clear().type(newCollectionName);
+                    cy.get('input[name=description]').type(newCollectionDescription);
+                    cy.get('[data-cy=form-submit-btn]').click();
+                });
+
+                cy.get('main').contains(newCollectionName).rightclick();
+                cy.get('[data-cy=context-menu]').contains('Edit collection').click();
+                cy.get('[data-cy=form-dialog]').within(() => {
+                    cy.get('input[name=name]').should('have.value', newCollectionName);
+                    cy.get('input[name=description]').should('have.value', newCollectionDescription);
                     cy.get('[data-cy=form-cancel-btn]').click();
                 });
             });
