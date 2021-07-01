@@ -63,7 +63,7 @@ func (s *OIDCLoginSuite) SetUpTest(c *check.C) {
 	c.Assert(err, check.IsNil)
 	s.cluster, err = cfg.GetCluster("")
 	c.Assert(err, check.IsNil)
-	s.cluster.Login.SSO.Enable = false
+	s.cluster.Login.Test.Enable = false
 	s.cluster.Login.Google.Enable = true
 	s.cluster.Login.Google.ClientID = "test%client$id"
 	s.cluster.Login.Google.ClientSecret = "test#client/secret"

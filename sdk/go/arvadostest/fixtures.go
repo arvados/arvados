@@ -10,6 +10,7 @@ const (
 	ActiveToken             = "3kg6k6lzmp9kj5cpkcoxie963cmvjahbt2fod9zru30k1jqdmi"
 	ActiveTokenUUID         = "zzzzz-gj3su-077z32aux8dg2s1"
 	ActiveTokenV2           = "v2/zzzzz-gj3su-077z32aux8dg2s1/3kg6k6lzmp9kj5cpkcoxie963cmvjahbt2fod9zru30k1jqdmi"
+	AdminUserUUID           = "zzzzz-tpzed-d9tiejq69daie8f"
 	AdminToken              = "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h"
 	AdminTokenUUID          = "zzzzz-gj3su-027z32aux8dg2s1"
 	AnonymousToken          = "4kg6k6lzmp9kj4cpkcoxie964cmvjahbt4fod9zru44k4jqdmi"
@@ -29,6 +30,8 @@ const (
 	WazVersion1Collection   = "zzzzz-4zz18-25k12570yk1ver1"
 	UserAgreementPDH        = "b519d9cb706a29fc7ea24dbea2f05851+93"
 	HelloWorldPdh           = "55713e6a34081eb03609e7ad5fcad129+62"
+
+	MultilevelCollection1 = "zzzzz-4zz18-pyw8yp9g3pr7irn"
 
 	AProjectUUID    = "zzzzz-j7d0g-v955i6s2oi1cbso"
 	ASubprojectUUID = "zzzzz-j7d0g-axqo7eu9pwvna1x"

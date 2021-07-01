@@ -33,12 +33,16 @@ running:
   updated_at: <%= 1.minute.ago.to_s(:db) %>
   started_at: <%= 1.minute.ago.to_s(:db) %>
   container_image: test
-  cwd: test
-  output_path: test
+  cwd: /tmp
+  output_path: /tmp
   command: ["echo", "hello"]
   runtime_constraints:
     ram: 12000000000
     vcpus: 4
+  mounts:
+    /tmp:
+      kind: tmp
+      capacity: 24000000000
   secret_mounts:
     /secret/6x9:
       kind: text
@@ -55,9 +59,13 @@ running_older:
   updated_at: <%= 2.minute.ago.to_s(:db) %>
   started_at: <%= 2.minute.ago.to_s(:db) %>
   container_image: test
-  cwd: test
-  output_path: test
+  cwd: /tmp
+  output_path: /tmp
   command: ["echo", "hello"]
+  mounts:
+    /tmp:
+      kind: tmp
+      capacity: 24000000000
   runtime_constraints:
     ram: 12000000000
     vcpus: 4
@@ -383,6 +391,10 @@ running_container_with_logs:
   cwd: test
   output_path: test
   command: ["echo", "hello"]
+  mounts:
+    /tmp:
+      kind: tmp
+      capacity: 24000000000
   runtime_constraints:
     ram: 12000000000
     vcpus: 4
@@ -401,6 +413,10 @@ running_to_be_deleted:
   cwd: test
   output_path: test
   command: ["echo", "hello"]
+  mounts:
+    /tmp:
+      kind: tmp
+      capacity: 24000000000
   runtime_constraints:
     ram: 12000000000
     vcpus: 4

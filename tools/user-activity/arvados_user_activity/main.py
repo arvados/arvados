@@ -41,6 +41,13 @@ def getuserinfo(arv, uuid):
                                                        arv.config()["Services"]["Workbench1"]["ExternalURL"],
                                                        uuid, prof)
 
+collectionNameCache = {}
+def getCollectionName(arv, uuid):
+    if uuid not in collectionNameCache:
+        u = arv.collections().get(uuid=uuid).execute()
+        collectionNameCache[uuid] = u["name"]
+    return collectionNameCache[uuid]
+
 def getname(u):
     return "\"%s\" (%s)" % (u["name"], u["uuid"])
 
@@ -136,6 +143,19 @@ def main(arguments=None):
                 pass
             else:
                 users[owner].append("%s Deleted collection %s %s" % (event_at, getname(e["properties"]["old_attributes"]), loguuid))
+
+        elif e["event_type"] == "file_download":
+                users[e["object_uuid"]].append("%s Downloaded file \"%s\" from \"%s\" (%s) (%s)" % (event_at,
+                                                                                       e["properties"].get("collection_file_path") or e["properties"].get("reqPath"),
+                                                                                       getCollectionName(arv, e["properties"].get("collection_uuid")),
+                                                                                       e["properties"].get("collection_uuid"),
+                                                                                       e["properties"].get("portable_data_hash")))
+
+        elif e["event_type"] == "file_upload":
+                users[e["object_uuid"]].append("%s Uploaded file \"%s\" to \"%s\" (%s)" % (event_at,
+                                                                                    e["properties"].get("collection_file_path") or e["properties"].get("reqPath"),
+                                                                                    getCollectionName(arv, e["properties"].get("collection_uuid")),
+                                                                                    e["properties"].get("collection_uuid")))
 
         else:
             users[owner].append("%s %s %s %s" % (e["event_type"], e["object_kind"], e["object_uuid"], loguuid))

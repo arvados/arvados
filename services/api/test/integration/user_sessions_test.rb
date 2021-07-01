@@ -15,21 +15,17 @@ class UserSessionsApiTest < ActionDispatch::IntegrationTest
 
   def mock_auth_with(email: nil, username: nil, identity_url: nil, remote: nil, expected_response: :redirect)
     mock = {
-      'provider' => 'josh_id',
-      'uid' => 'https://edward.example.com',
-      'info' => {
         'identity_url' => 'https://edward.example.com',
         'name' => 'Edward Example',
         'first_name' => 'Edward',
         'last_name' => 'Example',
-      },
     }
-    mock['info']['email'] = email unless email.nil?
-    mock['info']['username'] = username unless username.nil?
-    mock['info']['identity_url'] = identity_url unless identity_url.nil?
-    post('/auth/josh_id/callback',
-      params: {return_to: client_url(remote: remote)},
-      headers: {'omniauth.auth' => mock})
+    mock['email'] = email unless email.nil?
+    mock['username'] = username unless username.nil?
+    mock['identity_url'] = identity_url unless identity_url.nil?
+    post('/auth/controller/callback',
+      params: {return_to: client_url(remote: remote), :auth_info => SafeJSON.dump(mock)},
+      headers: {'Authorization' => 'Bearer ' + Rails.configuration.SystemRootToken})
 
     errors = {
       :redirect => 'Did not redirect to client with token',

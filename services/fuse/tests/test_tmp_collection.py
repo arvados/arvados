@@ -58,12 +58,22 @@ def current_manifest(tmpdir):
     with open(os.path.join(tmpdir, '.arvados#collection')) as tmp:
         return json.load(tmp)['manifest_text']
 
+def storage_classes_desired(tmpdir):
+    with open(os.path.join(tmpdir, '.arvados#collection')) as tmp:
+        return json.load(tmp)['storage_classes_desired']
 
 class TmpCollectionTest(IntegrationTest):
     mnt_args = [
         '--read-write',
         '--mount-tmp', 'zzz',
     ]
+
+    @IntegrationTest.mount(argv=mnt_args+['--storage-classes', 'foo, bar'])
+    def test_storage_classes(self):
+        self.pool_test(os.path.join(self.mnt, 'zzz'))
+    @staticmethod
+    def _test_storage_classes(self, zzz):
+        self.assertEqual(storage_classes_desired(zzz), ['foo', 'bar'])
 
     @IntegrationTest.mount(argv=mnt_args+['--mount-tmp', 'yyy'])
     def test_two_tmp(self):

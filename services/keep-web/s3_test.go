@@ -558,12 +558,15 @@ func (s *IntegrationSuite) TestS3NormalizeURIForSignature(c *check.C) {
 		rawPath        string
 		normalizedPath string
 	}{
-		{"/foo", "/foo"},             // boring case
-		{"/foo%5fbar", "/foo_bar"},   // _ must not be escaped
-		{"/foo%2fbar", "/foo/bar"},   // / must not be escaped
-		{"/(foo)", "/%28foo%29"},     // () must be escaped
-		{"/foo%5bbar", "/foo%5Bbar"}, // %XX must be uppercase
+		{"/foo", "/foo"},                           // boring case
+		{"/foo%5fbar", "/foo_bar"},                 // _ must not be escaped
+		{"/foo%2fbar", "/foo/bar"},                 // / must not be escaped
+		{"/(foo)/[];,", "/%28foo%29/%5B%5D%3B%2C"}, // ()[];, must be escaped
+		{"/foo%5bbar", "/foo%5Bbar"},               // %XX must be uppercase
+		{"//foo///.bar", "/foo/.bar"},              // "//" and "///" must be squashed to "/"
 	} {
+		c.Logf("trial %q", trial)
+
 		date := time.Now().UTC().Format("20060102T150405Z")
 		scope := "20200202/zzzzz/S3/aws4_request"
 		canonicalRequest := fmt.Sprintf("%s\n%s\n%s\n%s\n%s\n%s", "GET", trial.normalizedPath, "", "host:host.example.com\n", "host", "")
@@ -1098,6 +1101,15 @@ func (s *IntegrationSuite) TestS3cmd(c *check.C) {
 	buf, err := cmd.CombinedOutput()
 	c.Check(err, check.IsNil)
 	c.Check(string(buf), check.Matches, `.* 3 +s3://`+arvadostest.FooCollection+`/foo\n`)
+
+	// This tests whether s3cmd's path normalization agrees with
+	// keep-web's signature verification wrt chars like "|"
+	// (neither reserved nor unreserved) and "," (not normally
+	// percent-encoded in a path).
+	cmd = exec.Command("s3cmd", "--no-ssl", "--host="+s.testServer.Addr, "--host-bucket="+s.testServer.Addr, "--access_key="+arvadostest.ActiveTokenUUID, "--secret_key="+arvadostest.ActiveToken, "get", "s3://"+arvadostest.FooCollection+"/foo,;$[|]bar")
+	buf, err = cmd.CombinedOutput()
+	c.Check(err, check.NotNil)
+	c.Check(string(buf), check.Matches, `(?ms).*NoSuchKey.*\n`)
 }
 
 func (s *IntegrationSuite) TestS3BucketInHost(c *check.C) {
