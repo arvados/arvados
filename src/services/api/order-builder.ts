@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { snakeCase } from "lodash";
-import { Resource } from "src/models/resource";
+import { Resource } from "models/resource";
 
 export enum OrderDirection { ASC, DESC }
 

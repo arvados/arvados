@@ -4,7 +4,7 @@
 
 import { snakeCase } from "lodash";
 import { AxiosInstance } from "axios";
-import { TrashableResource } from "src/models/resource";
+import { TrashableResource } from "models/resource";
 import { CommonResourceService } from "services/common-service/common-resource-service";
 import { ApiActions } from "services/api/api-actions";
 

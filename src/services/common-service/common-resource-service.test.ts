@@ -5,7 +5,7 @@
 import { CommonResourceService } from "./common-resource-service";
 import axios, { AxiosInstance } from "axios";
 import MockAdapter from "axios-mock-adapter";
-import { Resource } from "src/models/resource";
+import { Resource } from "models/resource";
 import { ApiActions } from "services/api/api-actions";
 
 const actions: ApiActions = {

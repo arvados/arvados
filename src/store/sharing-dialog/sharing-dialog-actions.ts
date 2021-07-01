@@ -17,7 +17,7 @@ import { getPublicGroupUuid } from "store/workflow-panel/workflow-panel-actions"
 import { PermissionResource } from 'models/permission';
 import { differenceWith } from "lodash";
 import { withProgress } from "store/progress-indicator/with-progress";
-import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions.ts';
+import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
 import { snackbarActions, SnackbarKind } from "../snackbar/snackbar-actions";
 import { extractUuidKind, ResourceKind } from "models/resource";
 

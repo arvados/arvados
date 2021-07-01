@@ -18,7 +18,7 @@ import { LinkResource } from "models/link";
 import { GroupContentsResource, GroupContentsResourcePrefix } from "services/groups-service/groups-service";
 import { resourcesActions } from "store/resources/resources-actions";
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
-import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions.ts';
+import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
 import { getDataExplorer } from "store/data-explorer/data-explorer-reducer";
 import { loadMissingProcessesInformation } from "store/project-panel/project-panel-middleware-service";
 import { getSortColumn } from "store/data-explorer/data-explorer-reducer";

@@ -16,7 +16,7 @@ import {
     buildProps
 } from 'views-components/resource-properties-form/property-field-common';
 import { TAG_KEY_VALIDATION } from 'validators/validators';
-import { escapeRegExp } from 'common/regexp.ts';
+import { escapeRegExp } from 'common/regexp';
 import { ChangeEvent } from 'react';
 
 export const PROPERTY_KEY_FIELD_NAME = 'key';

@@ -10,7 +10,7 @@ import { allProcessesPanelActions } from "./all-processes-panel-action";
 import { Dispatch, MiddlewareAPI } from "redux";
 import { resourcesActions } from "store/resources/resources-actions";
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
-import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions.ts';
+import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
 import { getDataExplorer, DataExplorer, getSortColumn } from "store/data-explorer/data-explorer-reducer";
 import { loadMissingProcessesInformation } from "store/project-panel/project-panel-middleware-service";
 import { DataColumns } from "components/data-table/data-table";

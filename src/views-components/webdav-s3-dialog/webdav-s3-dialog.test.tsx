@@ -12,9 +12,6 @@ import { WithDialogProps } from 'store/dialog/with-dialog';
 import { WebDavS3InfoDialogData, COLLECTION_WEBDAV_S3_DIALOG_NAME } from 'store/collections/collection-info-actions';
 import { Provider } from "react-redux";
 import { createStore, combineReducers } from 'redux';
-// import { configureStore, RootStore } from 'store/store';
-// import { createBrowserHistory } from "history";
-// import { createServices } from "services/services";
 
 configure({ adapter: new Adapter() });
 

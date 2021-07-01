@@ -5,7 +5,7 @@
 import { User, UserPrefs, getUserDisplayName } from 'models/user';
 import { AxiosInstance } from "axios";
 import { ApiActions } from "services/api/api-actions";
-import * as uuid from "uuid/v4";
+import uuid from "uuid/v4";
 import { Session, SessionStatus } from "models/session";
 import { Config } from "common/config";
 import { uniqBy } from "lodash";

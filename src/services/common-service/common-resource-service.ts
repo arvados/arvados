@@ -4,7 +4,7 @@
 
 import { AxiosInstance } from "axios";
 import { snakeCase } from "lodash";
-import { Resource } from "src/models/resource";
+import { Resource } from "models/resource";
 import { ApiActions } from "services/api/api-actions";
 import { CommonService } from "services/common-service/common-service";
 
