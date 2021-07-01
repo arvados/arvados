@@ -101,7 +101,7 @@ fi
 if ! test -d $ARVADOS_CONTAINER_PATH/git/repositories/$repo_uuid.git ; then
     git clone --bare /usr/src/arvados $ARVADOS_CONTAINER_PATH/git/repositories/$repo_uuid.git
 else
-    git --git-dir=$ARVADOS_CONTAINER_PATH/git/repositories/$repo_uuid.git fetch -f /usr/src/arvados master:master
+    git --git-dir=$ARVADOS_CONTAINER_PATH/git/repositories/$repo_uuid.git fetch -f /usr/src/arvados main:main
 fi
 
 cd /usr/src/arvados/services/api

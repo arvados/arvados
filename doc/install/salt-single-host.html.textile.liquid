@@ -28,7 +28,7 @@ h2(#single_host). Single host install using the provision.sh script
 {% if site.current_version %}
 {% assign branchname = site.current_version | slice: 1, 5 | append: '-dev' %}
 {% else %}
-{% assign branchname = 'master' %}
+{% assign branchname = 'main' %}
 {% endif %}
 
 This is a package-based installation method. Start with the @provision.sh@ script which is available by cloning the @{{ branchname }}@ branch from "https://git.arvados.org/arvados.git":https://git.arvados.org/arvados.git .  The @provision.sh@ script and its supporting files can be found in the "arvados/tools/salt-install":https://git.arvados.org/arvados.git/tree/refs/heads/{{ branchname }}:/tools/salt-install directory in the Arvados git repository.

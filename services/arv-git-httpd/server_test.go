@@ -39,7 +39,7 @@ func (s *GitSuite) TestPathVariants(c *check.C) {
 func (s *GitSuite) TestReadonly(c *check.C) {
 	err := s.RunGit(c, spectatorToken, "fetch", "active/foo.git")
 	c.Assert(err, check.Equals, nil)
-	err = s.RunGit(c, spectatorToken, "push", "active/foo.git", "master:newbranchfail")
+	err = s.RunGit(c, spectatorToken, "push", "active/foo.git", "main:newbranchfail")
 	c.Assert(err, check.ErrorMatches, `.*HTTP (code = )?403.*`)
 	_, err = os.Stat(s.tmpRepoRoot + "/zzzzz-s0uqq-382brsig8rp3666.git/refs/heads/newbranchfail")
 	c.Assert(err, check.FitsTypeOf, &os.PathError{})
@@ -48,7 +48,7 @@ func (s *GitSuite) TestReadonly(c *check.C) {
 func (s *GitSuite) TestReadwrite(c *check.C) {
 	err := s.RunGit(c, activeToken, "fetch", "active/foo.git")
 	c.Assert(err, check.Equals, nil)
-	err = s.RunGit(c, activeToken, "push", "active/foo.git", "master:newbranch")
+	err = s.RunGit(c, activeToken, "push", "active/foo.git", "main:newbranch")
 	c.Assert(err, check.Equals, nil)
 	_, err = os.Stat(s.tmpRepoRoot + "/zzzzz-s0uqq-382brsig8rp3666.git/refs/heads/newbranch")
 	c.Assert(err, check.Equals, nil)
@@ -104,7 +104,7 @@ func (s *GitSuite) makeArvadosRepo(c *check.C) {
 	msg, err := exec.Command("git", "init", "--bare", s.tmpRepoRoot+"/zzzzz-s0uqq-arvadosrepo0123.git").CombinedOutput()
 	c.Log(string(msg))
 	c.Assert(err, check.Equals, nil)
-	msg, err = exec.Command("git", "--git-dir", s.tmpRepoRoot+"/zzzzz-s0uqq-arvadosrepo0123.git", "fetch", "../../.git", "HEAD:master").CombinedOutput()
+	msg, err = exec.Command("git", "--git-dir", s.tmpRepoRoot+"/zzzzz-s0uqq-arvadosrepo0123.git", "fetch", "../../.git", "HEAD:main").CombinedOutput()
 	c.Log(string(msg))
 	c.Assert(err, check.Equals, nil)
 }

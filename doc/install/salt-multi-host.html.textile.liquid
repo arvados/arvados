@@ -68,7 +68,7 @@ Again, if your infrastructure differs from the setup proposed above (ie, using R
 
 h3(#hosts_setup_using_terraform). Hosts setup using terraform (AWS, experimental)
 
-We added a few "terraform":https://terraform.io/ scripts (https://github.com/arvados/arvados/tree/master/tools/terraform) to let you create these instances easier in an AWS account. Check "the Arvados terraform documentation":/doc/install/terraform.html for more details.
+We added a few "terraform":https://terraform.io/ scripts (https://github.com/arvados/arvados/tree/main/tools/terraform) to let you create these instances easier in an AWS account. Check "the Arvados terraform documentation":/doc/install/terraform.html for more details.
 
 
 
@@ -78,7 +78,7 @@ h2(#multi_host). Multi host install using the provision.sh script
 {% if site.current_version %}
 {% assign branchname = site.current_version | slice: 1, 5 | append: '-dev' %}
 {% else %}
-{% assign branchname = 'master' %}
+{% assign branchname = 'main' %}
 {% endif %}
 
 This is a package-based installation method. Start with the @provision.sh@ script which is available by cloning the @{{ branchname }}@ branch from "https://git.arvados.org/arvados.git":https://git.arvados.org/arvados.git . The @provision.sh@ script and its supporting files can be found in the "arvados/tools/salt-install":https://git.arvados.org/arvados.git/tree/refs/heads/{{ branchname }}:/tools/salt-install directory in the Arvados git repository.
@@ -91,7 +91,7 @@ After setting up a few variables in a config file (next step), you'll be ready t
 
 h3(#create_a_compute_image). Create a compute image
 
-In a multi-host installation, containers are dispatched in docker daemons running in the <i>compute instances</i>, which need some special setup. We provide a "compute image builder script":https://github.com/arvados/arvados/tree/master/tools/compute-images that you can use to build a template image following "these instructions":https://doc.arvados.org/main/install/crunch2-cloud/install-compute-node.html . Once you have that image created, you can use the image ID in the Arvados configuration in the next steps.
+In a multi-host installation, containers are dispatched in docker daemons running in the <i>compute instances</i>, which need some special setup. We provide a "compute image builder script":https://github.com/arvados/arvados/tree/main/tools/compute-images that you can use to build a template image following "these instructions":https://doc.arvados.org/main/install/crunch2-cloud/install-compute-node.html . Once you have that image created, you can use the image ID in the Arvados configuration in the next steps.
 
 h2(#choose_configuration). Choose the desired configuration
 
