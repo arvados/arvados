@@ -44,7 +44,7 @@ export const authMiddleware = (services: ServiceRepository): Middleware => store
                 // want to either add support for displaying/signing user
                 // agreements or get rid of self-activation.
                 // For more details, see:
-                // https://doc.arvados.org/master/admin/user-management.html
+                // https://doc.arvados.org/main/admin/user-management.html
 
                 store.dispatch(progressIndicatorActions.START_WORKING(WORKBENCH_LOADING_SCREEN));
                 services.userService.activate(user.uuid).then((user: User) => {
