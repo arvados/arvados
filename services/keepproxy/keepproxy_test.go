@@ -237,7 +237,7 @@ func (s *ServerRequiredSuite) TestStorageClassesHeader(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestStorageClassesConfirmedHeader(c *C) {
-	runProxy(c, false, false)
+	runProxy(c, false, false, nil)
 	defer closeListener()
 
 	content := []byte("foo")
