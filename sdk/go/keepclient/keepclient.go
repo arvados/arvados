@@ -505,6 +505,11 @@ func (kc *KeepClient) ClearBlockCache() {
 	kc.cache().Clear()
 }
 
+func (kc *KeepClient) SetStorageClasses(sc []string) {
+	// make a copy so the caller can't mess with it.
+	kc.StorageClasses = append([]string{}, sc...)
+}
+
 var (
 	// There are four global http.Client objects for the four
 	// possible permutations of TLS behavior (verify/skip-verify)

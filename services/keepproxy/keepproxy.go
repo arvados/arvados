@@ -531,7 +531,7 @@ func (h *proxyHandler) Put(resp http.ResponseWriter, req *http.Request) {
 		for _, sc := range strings.Split(req.Header.Get("X-Keep-Storage-Classes"), ",") {
 			scl = append(scl, strings.Trim(sc, " "))
 		}
-		kc.StorageClasses = scl
+		kc.SetStorageClasses(scl)
 	}
 
 	_, err = fmt.Sscanf(req.Header.Get("Content-Length"), "%d", &expectLength)
