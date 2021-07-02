@@ -31,9 +31,9 @@ export class SVGEdgeHoverPlugin extends PluginBase {
 
 
         // Ignore if we did not enter an edge
-        if (!ev.srcElement!.classList.contains("edge")) return;
+        if (!(ev.target! as Element).classList.contains("edge")) return;
 
-        const target = ev.srcElement as SVGGElement;
+        const target = ev.target as SVGGElement;
         let tipEl: SVGGElement;
 
         const onMouseMove = ((ev: MouseEvent) => {

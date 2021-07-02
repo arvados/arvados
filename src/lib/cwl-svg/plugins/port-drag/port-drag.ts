@@ -361,8 +361,8 @@ export class SVGPortDragPlugin extends PluginBase {
      * Finds a port closest to given SVG coordinates.
      */
     private findClosestPort(x: number, y: number): { portEl: SVGGElement | undefined, distance: number } {
-        let closestPort     = undefined;
-        let closestDistance = Infinity;
+        let closestPort: any     = undefined;
+        let closestDistance: any = Infinity;
 
         this.portOrigins!.forEach((matrix, port) => {
 

@@ -247,7 +247,7 @@ export class SVGArrangePlugin implements SVGPlugin {
         }
     } {
         const distributionArea = {width: 0, height: 0};
-        const columnDimensions = [];
+        const columnDimensions: any[] = [];
 
         for (let i = 1; i < columns.length; i++) {
 
@@ -361,7 +361,7 @@ export class SVGArrangePlugin implements SVGPlugin {
             return 1;
         }
 
-        const inputPathLengths = [];
+        const inputPathLengths: any[] = [];
 
         for (let i = 0; i < node.inputs.length; i++) {
             const el = nodeGraph[node.inputs[i]];

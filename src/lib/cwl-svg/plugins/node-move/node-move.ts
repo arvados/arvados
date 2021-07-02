@@ -21,10 +21,10 @@ export class SVGNodeMovePlugin extends PluginBase {
     private sdy: number;
 
     /** Stored onDragStart so we can put node to a fixed position determined by startX + ∆x */
-    private startX: number;
+    private startX?: number;
 
     /** Stored onDragStart so we can put node to a fixed position determined by startY + ∆y */
-    private startY: number;
+    private startY?: number;
 
     /** How far from the edge of the viewport does mouse need to be before panning is triggered */
     private scrollMargin = 50;
@@ -33,19 +33,19 @@ export class SVGNodeMovePlugin extends PluginBase {
     private movementSpeed = 10;
 
     /** Holds an element that is currently being dragged. Stored onDragStart and translated afterwards. */
-    private movingNode: SVGGElement;
+    private movingNode?: SVGGElement;
 
     /** Stored onDragStart to detect collision with viewport edges */
-    private boundingClientRect: ClientRect;
+    private boundingClientRect?: ClientRect;
 
     /** Cache input edges and their parsed bezier curve parameters so we don't query for them on each mouse move */
-    private inputEdges: Map<SVGPathElement, number[]>;
+    private inputEdges?: Map<SVGPathElement, number[]>;
 
     /** Cache output edges and their parsed bezier curve parameters so we don't query for them on each mouse move */
-    private outputEdges: Map<SVGPathElement, number[]>;
+    private outputEdges?: Map<SVGPathElement, number[]>;
 
     /** Workflow panning at the time of onDragStart, used to adjust ∆x and ∆y while panning */
-    private startWorkflowTranslation: { x: number, y: number };
+    private startWorkflowTranslation?: { x: number, y: number };
 
     private wheelPrevent = (ev: any) => ev.stopPropagation();
 
@@ -124,8 +124,8 @@ export class SVGNodeMovePlugin extends PluginBase {
 
         /** Need to know how far did the workflow itself move since when we started dragging */
         const matrixMovement = {
-            x: this.getWorkflowMatrix().e - this.startWorkflowTranslation.x,
-            y: this.getWorkflowMatrix().f - this.startWorkflowTranslation.y
+            x: this.getWorkflowMatrix().e - this.startWorkflowTranslation!.x,
+            y: this.getWorkflowMatrix().f - this.startWorkflowTranslation!.y
         };
 
         /** We might have hit the boundary and need to start panning */
@@ -133,7 +133,7 @@ export class SVGNodeMovePlugin extends PluginBase {
             this.sdx += sdx;
             this.sdy += sdy;
 
-            this.translateNodeBy(this.movingNode, sdx, sdy);
+            this.translateNodeBy(this.movingNode!, sdx, sdy);
             this.redrawEdges(this.sdx, this.sdy);
         });
 
@@ -149,10 +149,10 @@ export class SVGNodeMovePlugin extends PluginBase {
         this.sdx = (dx - matrixMovement.x) / scale;
         this.sdy = (dy - matrixMovement.y) / scale;
 
-        const moveX = this.sdx + this.startX;
-        const moveY = this.sdy + this.startY;
+        const moveX = this.sdx + this.startX!;
+        const moveY = this.sdy + this.startY!;
 
-        this.translateNodeTo(this.movingNode, moveX, moveY);
+        this.translateNodeTo(this.movingNode!, moveX, moveY);
         this.redrawEdges(this.sdx, this.sdy);
     }
 
@@ -228,12 +228,12 @@ export class SVGNodeMovePlugin extends PluginBase {
      * scaled transformation differences, sdx and sdy.
      */
     private redrawEdges(sdx: number, sdy: number): void {
-        this.inputEdges.forEach((p, el) => {
+        this.inputEdges!.forEach((p, el) => {
             const path = Workflow.makeConnectionPath(p[0], p[1], p[6] + sdx, p[7] + sdy);
             el.setAttribute("d", path!);
         });
 
-        this.outputEdges.forEach((p, el) => {
+        this.outputEdges!.forEach((p, el) => {
             const path = Workflow.makeConnectionPath(p[0] + sdx, p[1] + sdy, p[6], p[7]);
             el.setAttribute("d", path!);
         });
@@ -246,14 +246,14 @@ export class SVGNodeMovePlugin extends PluginBase {
 
         this.edgePanner.stop();
 
-        const id        = this.movingNode.getAttribute("data-connection-id")!;
+        const id        = this.movingNode!.getAttribute("data-connection-id")!;
         const nodeModel = this.workflow.model.findById(id);
 
         if (!nodeModel.customProps) {
             nodeModel.customProps = {};
         }
 
-        const matrix = this.movingNode.transform.baseVal.getItem(0).matrix;
+        const matrix = this.movingNode!.transform.baseVal.getItem(0).matrix;
 
         Object.assign(nodeModel.customProps, {
             "sbg:x": matrix.e,
