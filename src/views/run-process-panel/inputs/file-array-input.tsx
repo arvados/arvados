@@ -35,7 +35,7 @@ export const FileArrayInput = ({ input }: FileArrayInputProps) =>
     <Field
         name={input.id}
         commandInput={input}
-        component={FileArrayInputComponent}
+        component={FileArrayInputComponent as any}
         parse={parseFiles}
         format={formatFiles}
         validate={validationSelector(input)} />;
@@ -174,7 +174,7 @@ const FileArrayInputComponent = connect(mapStateToProps)(
 
         refreshFiles = () => {
             clearTimeout(this.fileRefreshTimeout);
-            this.fileRefreshTimeout = setTimeout(this.setSelectedFiles);
+            this.fileRefreshTimeout = window.setTimeout(this.setSelectedFiles);
         }
 
         setSelectedFiles = () => {

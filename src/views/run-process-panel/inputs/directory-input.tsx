@@ -30,7 +30,7 @@ export const DirectoryInput = ({ input, options }: DirectoryInputProps) =>
     <Field
         name={input.id}
         commandInput={input}
-        component={DirectoryInputComponent}
+        component={DirectoryInputComponent as any}
         format={format}
         parse={parse}
         {...{

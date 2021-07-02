@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { compose } from 'redux';
+import { compose, Dispatch } from 'redux';
 import { reduxForm, InjectedFormProps, Field } from 'redux-form';
 import { withDialog, WithDialogProps } from 'store/dialog/with-dialog';
 import { FormDialog } from 'components/form-dialog/form-dialog';
@@ -18,7 +18,7 @@ export const RenameFileDialog = compose(
     reduxForm({
         form: RENAME_FILE_DIALOG,
         touchOnChange: true,
-        onSubmit: (data: { path: string }, dispatch) => {
+        onSubmit: (data: { path: string }, dispatch: Dispatch) => {
             dispatch<any>(renameFile(data.path));
         }
     })
@@ -36,7 +36,7 @@ const RenameDialogFormFields = (props: WithDialogProps<RenameFileDialogData>) =>
     </DialogContentText>
     <Field
         name='path'
-        component={TextField}
+        component={TextField as any}
         autoFocus={true}
         validate={RENAME_FILE_VALIDATION}
     />

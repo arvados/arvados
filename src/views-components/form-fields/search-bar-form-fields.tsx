@@ -21,7 +21,7 @@ import { RootState } from "store/store";
 export const SearchBarTypeField = () =>
     <Field
         name='type'
-        component={NativeSelectField}
+        component={NativeSelectField as any}
         items={[
             { key: '', value: 'Any' },
             { key: ResourceKind.COLLECTION, value: 'Collection' },
@@ -45,7 +45,7 @@ export const SearchBarClusterField = connect(
                 })))
     }))((props: SearchBarClusterFieldProps) => <Field
         name='cluster'
-        component={NativeSelectField}
+        component={NativeSelectField as any}
         items={props.clusters}/>
     );
 
@@ -80,17 +80,17 @@ export const SearchBarPastVersionsField = () =>
 export const SearchBarDateFromField = () =>
     <Field
         name='dateFrom'
-        component={DateTextField} />;
+        component={DateTextField as any} />;
 
 export const SearchBarDateToField = () =>
     <Field
         name='dateTo'
-        component={DateTextField} />;
+        component={DateTextField as any} />;
 
 export const SearchBarPropertiesField = () =>
     <FieldArray
         name="properties"
-        component={SearchBarAdvancedPropertiesView} />;
+        component={SearchBarAdvancedPropertiesView as any} />;
 
 export const SearchBarKeyField = () =>
     <PropertyKeyField skipValidation={true} />;
@@ -107,5 +107,5 @@ export const SearchBarSaveSearchField = () =>
 export const SearchBarQuerySearchField = () =>
     <Field
         name='queryName'
-        component={TextField}
+        component={TextField as any}
         label="Query name" />;

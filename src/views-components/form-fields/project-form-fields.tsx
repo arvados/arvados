@@ -31,7 +31,7 @@ export const ProjectNameField = connect(
     })((props: ProjectNameFieldProps) =>
         <span data-cy='name-field'><Field
             name='name'
-            component={TextField}
+            component={TextField as any}
             validate={props.validate}
             label={props.label || "Project Name"}
             autoFocus={true} /></span>
@@ -40,5 +40,5 @@ export const ProjectNameField = connect(
 export const ProjectDescriptionField = () =>
     <Field
         name='description'
-        component={RichEditorTextField}
+        component={RichEditorTextField as any}
         label="Description - optional" />;

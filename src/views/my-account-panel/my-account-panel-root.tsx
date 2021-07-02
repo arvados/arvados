@@ -84,7 +84,7 @@ export const MyAccountPanelRoot = withStyles(styles)(
                             <Field
                                 label="First name"
                                 name="firstName"
-                                component={TextField}
+                                component={TextField as any}
                                 disabled
                             />
                         </Grid>
@@ -92,7 +92,7 @@ export const MyAccountPanelRoot = withStyles(styles)(
                             <Field
                                 label="Last name"
                                 name="lastName"
-                                component={TextField}
+                                component={TextField as any}
                                 disabled
                             />
                         </Grid>
@@ -100,7 +100,7 @@ export const MyAccountPanelRoot = withStyles(styles)(
                             <Field
                                 label="E-mail"
                                 name="email"
-                                component={TextField}
+                                component={TextField as any}
                                 disabled
                             />
                         </Grid>
@@ -108,7 +108,7 @@ export const MyAccountPanelRoot = withStyles(styles)(
                             <Field
                                 label="Username"
                                 name="username"
-                                component={TextField}
+                                component={TextField as any}
                                 disabled
                             />
                         </Grid>
@@ -116,7 +116,7 @@ export const MyAccountPanelRoot = withStyles(styles)(
                             <Field
                                 label="Organization"
                                 name="prefs.profile.organization"
-                                component={TextField}
+                                component={TextField as any}
                                 validate={MY_ACCOUNT_VALIDATION}
                                 required
                             />
@@ -125,7 +125,7 @@ export const MyAccountPanelRoot = withStyles(styles)(
                             <Field
                                 label="E-mail at Organization"
                                 name="prefs.profile.organization_email"
-                                component={TextField}
+                                component={TextField as any}
                                 validate={MY_ACCOUNT_VALIDATION}
                                 required
                             />
@@ -135,7 +135,7 @@ export const MyAccountPanelRoot = withStyles(styles)(
                             <Field
                                 id="prefs.profile.role"
                                 name="prefs.profile.role"
-                                component={NativeSelectField}
+                                component={NativeSelectField as any}
                                 items={RoleTypes}
                             />
                         </Grid>
@@ -143,7 +143,7 @@ export const MyAccountPanelRoot = withStyles(styles)(
                             <Field
                                 label="Website"
                                 name="prefs.profile.website_url"
-                                component={TextField}
+                                component={TextField as any}
                             />
                         </Grid>
                         <Grid container direction="row" justify="flex-end" >

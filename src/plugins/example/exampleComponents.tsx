@@ -37,7 +37,7 @@ export interface ExampleFormDialogData {
 const ExampleEditFields = () => <span>
     <Field
         name='pressedCount'
-        component={TextField}
+        component={TextField as any}
         type="number"
     />
 </span>;

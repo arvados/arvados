@@ -15,5 +15,5 @@ const mapStateToProps = (state: RootState): NotFoundPanelRootDataProps => {
 
 const mapDispatchToProps = null;
 
-export const NotFoundPanel = connect<NotFoundPanelRootDataProps, null, NotFoundPanelOwnProps>(mapStateToProps, mapDispatchToProps)
-    (NotFoundPanelRoot);
+export const NotFoundPanel = connect(mapStateToProps, mapDispatchToProps)
+    (NotFoundPanelRoot) as any;

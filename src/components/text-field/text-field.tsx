@@ -13,7 +13,6 @@ import {
     PropTypes
 } from '@material-ui/core';
 import RichTextEditor from 'react-rte';
-import Margin from 'PropTypes';
 
 type CssRules = 'textField' | 'rte';
 
@@ -37,7 +36,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 type TextFieldProps = WrappedFieldProps & WithStyles<CssRules>;
 
 export const TextField = withStyles(styles)((props: TextFieldProps & {
-    label?: string, autoFocus?: boolean, required?: boolean, select?: boolean, disabled?: boolean, children: React.ReactNode, margin?: Margin, placeholder?: string,
+    label?: string, autoFocus?: boolean, required?: boolean, select?: boolean, disabled?: boolean, children: React.ReactNode, margin?: PropTypes.Margin, placeholder?: string,
     helperText?: string, type?: string,
 }) =>
     <MaterialTextField

@@ -37,7 +37,7 @@ export const DirectoryArrayInput = ({ input }: DirectoryArrayInputProps) =>
     <Field
         name={input.id}
         commandInput={input}
-        component={DirectoryArrayInputComponent}
+        component={DirectoryArrayInputComponent as any}
         parse={parseDirectories}
         format={formatDirectories}
         validate={validationSelector(input)} />;
@@ -194,7 +194,7 @@ const DirectoryArrayInputComponent = connect(mapStateToProps)(
 
         refreshDirectories = () => {
             clearTimeout(this.directoryRefreshTimeout);
-            this.directoryRefreshTimeout = setTimeout(this.setSelectedFiles);
+            this.directoryRefreshTimeout = window.setTimeout(this.setSelectedFiles);
         }
 
         setSelectedFiles = () => {

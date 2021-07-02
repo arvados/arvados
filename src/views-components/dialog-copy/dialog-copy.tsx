@@ -28,7 +28,7 @@ const CopyDialogFields = memoize((pickerId: string) =>
         <span>
             <Field
                 name='name'
-                component={TextField}
+                component={TextField as any}
                 validate={COPY_NAME_VALIDATION}
                 label="Enter a new name for the copy" />
             <Field

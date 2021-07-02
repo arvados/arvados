@@ -18,7 +18,7 @@ import { CloseIcon } from 'components/icon/icon';
 
 
 export default () =>
-    <FieldArray name='permissions' component={SharingManagementFieldArray} />;
+    <FieldArray name='permissions' component={SharingManagementFieldArray as any} />;
 
 const SharingManagementFieldArray = ({ fields }: WrappedFieldArrayProps<{ email: string }>) =>
     <div>
@@ -44,7 +44,7 @@ const PermissionManagementRow = withStyles(permissionManagementRowStyles)(
                 </Grid>
                 <Grid item xs={4} container wrap='nowrap'>
                     <Field
-                        name={`${field}.permissions`}
+                        name={`${field}.permissions` as string}
                         component={PermissionSelectComponent}
                         format={formatPermissionLevel}
                         parse={parsePermissionLevel} />

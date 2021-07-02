@@ -16,7 +16,7 @@ export const RepositoryNameField = (props: any) =>
         <Grid item xs={7} style={{ bottom: '24px', position: 'relative' }}>
             <Field
                 name='name'
-                component={TextField}
+                component={TextField as any}
                 validate={REPOSITORY_NAME_VALIDATION}
                 label="Name"
                 autoFocus={true} />

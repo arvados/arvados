@@ -10,13 +10,13 @@ import { PROCESS_NAME_VALIDATION, PROCESS_DESCRIPTION_VALIDATION } from "validat
 export const ProcessNameField = () =>
     <Field
         name='name'
-        component={TextField}
+        component={TextField as any}
         validate={PROCESS_NAME_VALIDATION}
         label="Process Name" />;
 
 export const ProcessDescriptionField = () =>
     <Field
         name='description'
-        component={TextField}
+        component={TextField as any}
         validate={PROCESS_DESCRIPTION_VALIDATION}
         label="Process Description" />;

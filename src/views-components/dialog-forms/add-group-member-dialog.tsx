@@ -34,7 +34,7 @@ type AddGroupMembersDialogProps = WithDialogProps<{}> & InjectedFormProps<AddGro
 const UsersField = () =>
     <FieldArray
         name={ADD_GROUP_MEMBERS_USERS_FIELD_NAME}
-        component={UsersSelect}
+        component={UsersSelect as any}
         validate={UsersFieldValidation} />;
 
 const UsersFieldValidation = [minLength(1, () => 'Select at least one user')];

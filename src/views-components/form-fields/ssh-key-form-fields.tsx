@@ -10,7 +10,7 @@ import { SSH_KEY_PUBLIC_VALIDATION, SSH_KEY_NAME_VALIDATION } from "validators/v
 export const SshKeyPublicField = () =>
     <Field
         name='publicKey'
-        component={TextField}
+        component={TextField as any}
         validate={SSH_KEY_PUBLIC_VALIDATION}
         autoFocus={true}
         label="Public Key" />;
@@ -18,7 +18,7 @@ export const SshKeyPublicField = () =>
 export const SshKeyNameField = () =>
     <Field
         name='name'
-        component={TextField}
+        component={TextField as any}
         validate={SSH_KEY_NAME_VALIDATION}
         label="Name" />;
 

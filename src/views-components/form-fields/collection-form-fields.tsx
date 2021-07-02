@@ -29,7 +29,7 @@ export const CollectionNameField = connect(
     })((props: CollectionNameFieldProps) =>
         <span data-cy='name-field'><Field
             name='name'
-            component={TextField}
+            component={TextField as any}
             validate={props.validate}
             label="Collection Name"
             autoFocus={true} /></span>
@@ -38,7 +38,7 @@ export const CollectionNameField = connect(
 export const CollectionDescriptionField = () =>
     <Field
         name='description'
-        component={TextField}
+        component={TextField as any}
         validate={COLLECTION_DESCRIPTION_VALIDATION}
         label="Description - optional" />;
 

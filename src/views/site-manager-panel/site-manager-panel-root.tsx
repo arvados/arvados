@@ -187,7 +187,7 @@ export const SiteManagerPanelRoot = compose(
                             <Field
                                 name='remoteHost'
                                 validate={SITE_MANAGER_REMOTE_HOST_VALIDATION}
-                                component={TextField}
+                                component={TextField as any}
                                 placeholder="zzzz.arvadosapi.com"
                                 margin="normal"
                                 label="New cluster"

@@ -13,7 +13,7 @@ import { VirtualMachinesResource } from "models/virtual-machines";
 export const UserEmailField = () =>
     <Field
         name='email'
-        component={TextField}
+        component={TextField as any}
         validate={USER_EMAIL_VALIDATION}
         autoFocus={true}
         label="Email" />;
@@ -23,7 +23,7 @@ export const UserVirtualMachineField = ({ data }: any) =>
         <InputLabel>Virtual Machine</InputLabel>
         <Field
             name='virtualMachine'
-            component={NativeSelectField}
+            component={NativeSelectField as any}
             validate={USER_LENGTH_VALIDATION}
             items={getVirtualMachinesList(data.items)} />
     </div>;
@@ -31,7 +31,7 @@ export const UserVirtualMachineField = ({ data }: any) =>
 export const UserGroupsVirtualMachineField = () =>
     <Field
         name='groups'
-        component={TextField}
+        component={TextField as any}
         validate={USER_LENGTH_VALIDATION}
         label="Groups for virtual machine (comma separated list)" />;
 

@@ -42,7 +42,7 @@ const CreateGroupFormFields = () =>
 const GroupNameField = () =>
     <Field
         name={CREATE_GROUP_NAME_FIELD_NAME}
-        component={TextField}
+        component={TextField as any}
         validate={GROUP_NAME_VALIDATION}
         label="Name"
         autoFocus={true} />;
@@ -52,7 +52,7 @@ const GROUP_NAME_VALIDATION = [require, maxLength(255)];
 const UsersField = () =>
     <FieldArray
         name={CREATE_GROUP_USERS_FIELD_NAME}
-        component={UsersSelect} />;
+        component={UsersSelect as any} />;
 
 const UsersSelect = ({ fields }: WrappedFieldArrayProps<Participant>) =>
     <ParticipantSelect

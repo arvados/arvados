@@ -21,7 +21,7 @@ export default () =>
 const InvitedPeopleField = () =>
     <FieldArray
         name='invitedPeople'
-        component={InvitedPeopleFieldComponent} />;
+        component={InvitedPeopleFieldComponent as any} />;
 
 
 const InvitedPeopleFieldComponent = ({ fields }: WrappedFieldArrayProps<Participant>) =>

@@ -52,7 +52,7 @@ const UserEmailField = ({ data }: UserProps) =>
     <span>
         <Field
             name='email'
-            component={TextField}
+            component={TextField as any}
             disabled
             label={data.user.email} /></span>;
 
@@ -61,7 +61,7 @@ const UserVirtualMachineField = ({ data }: VirtualMachinesProps) =>
         <InputLabel>Virtual Machine</InputLabel>
         <Field
             name='virtualMachine'
-            component={NativeSelectField}
+            component={NativeSelectField as any}
             validate={CHOOSE_VM_VALIDATION}
             items={getVirtualMachinesList(data.items)} />
     </div>;
@@ -69,7 +69,7 @@ const UserVirtualMachineField = ({ data }: VirtualMachinesProps) =>
 const UserGroupsVirtualMachineField = () =>
     <Field
         name='groups'
-        component={TextField}
+        component={TextField as any}
         validate={USER_LENGTH_VALIDATION}
         label="Groups for virtual machine (comma separated list)" />;
 

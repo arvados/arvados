@@ -40,5 +40,5 @@ export const ResourceParentField = connect(
                     return value;
                 }
             }
-            component={TextField} /></span>
+            component={TextField as any} /></span>
     );

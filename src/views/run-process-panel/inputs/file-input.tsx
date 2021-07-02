@@ -29,7 +29,7 @@ export const FileInput = ({ input, options }: FileInputProps) =>
     <Field
         name={input.id}
         commandInput={input}
-        component={FileInputComponent}
+        component={FileInputComponent as any}
         format={format}
         parse={parse}
         {...{
