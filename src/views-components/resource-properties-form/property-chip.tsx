@@ -6,7 +6,7 @@ import React from 'react';
 import { Chip } from '@material-ui/core';
 import { connect } from 'react-redux';
 import { RootState } from 'store/store';
-import * as CopyToClipboard from 'react-copy-to-clipboard';
+import CopyToClipboard from 'react-copy-to-clipboard';
 import { getVocabulary } from 'store/vocabulary/vocabulary-selectors';
 import { Dispatch } from 'redux';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';

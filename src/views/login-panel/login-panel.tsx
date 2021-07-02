@@ -51,7 +51,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 });
 
 const doPasswordLogin = (url: string) => (username: string, password: string) => {
-    const formData = [];
+    const formData: string[] = [];
     formData.push('username='+encodeURIComponent(username));
     formData.push('password='+encodeURIComponent(password));
     return Axios.post(`${url}/arvados/v1/users/authenticate`, formData.join('&'), {

@@ -52,7 +52,7 @@ export interface LinkAccountPanelRootActionProps {
 }
 
 function displayUser(user: UserResource, showCreatedAt: boolean = false, showCluster: boolean = false) {
-    const disp = [];
+    const disp: JSX.Element[] = [];
     disp.push(<span><b>{user.email}</b> ({user.username}, {user.uuid})</span>);
     if (showCluster) {
         const homeCluster = user.uuid.substr(0, 5);

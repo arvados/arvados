@@ -477,9 +477,9 @@ export const ResponsiblePerson =
     compose(
         connect(
             (state: RootState, props: { uuid: string, parentRef: HTMLElement | null }) => {
-                let responsiblePersonName = null;
-                let responsiblePersonUUID = null;
-                let responsiblePersonProperty = null;
+                let responsiblePersonName: string = '';
+                let responsiblePersonUUID: string = '';
+                let responsiblePersonProperty: string = '';
 
                 if (state.auth.config.clusterConfig.Collections.ManagedProperties) {
                     let index = 0;

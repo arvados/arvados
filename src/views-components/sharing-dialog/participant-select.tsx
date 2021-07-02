@@ -12,7 +12,7 @@ import { ListItemText, Typography } from '@material-ui/core';
 import { noop } from 'lodash/fp';
 import { GroupClass, GroupResource } from 'models/group';
 import { getUserDisplayName, UserResource } from 'models/user';
-import { ResourceKind } from 'models/resource';
+import { Resource, ResourceKind } from 'models/resource';
 import { ListResults } from 'services/common-service/common-service';
 
 export interface Participant {
@@ -20,7 +20,7 @@ export interface Participant {
     uuid: string;
 }
 
-type ParticipantResource = GroupResource & UserResource;
+type ParticipantResource = GroupResource | UserResource;
 
 interface ParticipantSelectProps {
     items: Participant[];
@@ -40,14 +40,14 @@ interface ParticipantSelectState {
     suggestions: ParticipantResource[];
 }
 
-const getDisplayName = (item: GroupResource & UserResource) => {
+const getDisplayName = (item: GroupResource | UserResource) => {
     switch (item.kind) {
         case ResourceKind.USER:
             return getUserDisplayName(item, true);
         case ResourceKind.GROUP:
             return item.name;
         default:
-            return item.uuid;
+            return (item as Resource).uuid;
     }
 };
 

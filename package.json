@@ -31,7 +31,7 @@
     "elliptic": "6.5.4",
     "file-saver": "2.0.1",
     "fstream": "1.0.12",
-    "is-image": "2.0.0",
+    "is-image": "3.0.0",
     "js-yaml": "3.13.1",
     "jssha": "2.3.1",
     "jszip": "3.1.5",
@@ -89,6 +89,7 @@
     "@types/classnames": "2.2.6",
     "@types/enzyme": "3.1.14",
     "@types/enzyme-adapter-react-16": "1.0.3",
+    "@types/is-image": "3.0.0",
     "@types/jest": "26.0.23",
     "@types/node": "15.12.4",
     "@types/react-dom": "17.0.8",
@@ -119,11 +120,7 @@
     "**/meow/trim-newlines": "^3.0.1",
     "react-rte/**/ua-parser-js": "0.7.24",
     "**/@typescript-eslint/eslint-plugin": "^4.1.1",
-    "**/@typescript-eslint/parser": "^4.1.1",
-    "webpack-dev-server/http-proxy-middleware/http-proxy": "^1.18.1",
-    "webpack-dev-server/selfsigned/node-forge": "0.10.0",
-    "webpack/node-libs-browser/crypto-browserify/*/elliptic": "6.5.4",
-    "webpack/terser-webpack-plugin/serialize-javascript": "^3.1.0"
+    "**/@typescript-eslint/parser": "^4.1.1"
   },
   "browserslist": {
     "production": [

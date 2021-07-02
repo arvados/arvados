@@ -31,7 +31,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 const mapStateToProps = (state: RootState) => {
     return {
-        logins: state.virtualMachines.logins,
         userUuid: state.auth.user!.uuid,
         ...state.virtualMachines
     };

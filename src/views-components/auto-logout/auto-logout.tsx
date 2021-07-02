@@ -40,7 +40,7 @@ const mapDispatchToProps = (dispatch: Dispatch): AutoLogoutActionProps => ({
 export type AutoLogoutProps = AutoLogoutDataProps & AutoLogoutActionProps;
 
 const debounce = (delay: number | undefined, fn: Function) => {
-    let timerId: number | null;
+    let timerId: NodeJS.Timer | null;
     return (...args: any[]) => {
         if (timerId) { clearTimeout(timerId); }
         timerId = setTimeout(() => {
