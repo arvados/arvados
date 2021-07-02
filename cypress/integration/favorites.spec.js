@@ -132,7 +132,7 @@ describe('Favorites tests', function () {
             });
     });
 
-    it.only('can edit project in favorites', () => {
+    it('can edit project and collections in favorites', () => {
         cy.createProject({
             owningUser: adminUser,
             targetUser: activeUser,
@@ -147,8 +147,6 @@ describe('Favorites tests', function () {
         }).as('testTargetCollection').then(function (testTargetCollection) {
             cy.addToFavorites(activeUser.token, activeUser.user.uuid, testTargetCollection.uuid);
         });
-
-
 
         cy.getAll('@mySharedWritableProject', '@testTargetCollection')
             .then(function ([mySharedWritableProject, testTargetCollection]) {
