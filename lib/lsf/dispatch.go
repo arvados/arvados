@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -315,8 +316,23 @@ func (disp *dispatcher) bsubConstraintArgs(container arvados.Container) []string
 	}
 }
 
+// Check the next bjobs report, and invoke TrackContainer for all the
+// containers in the report. This gives us a chance to cancel existing
+// Arvados LSF jobs (started by a previous dispatch process) that
+// never released their LSF job allocations even though their
+// container states are Cancelled or Complete. See
+// https://dev.arvados.org/issues/10979
 func (disp *dispatcher) checkLsfQueueForOrphans() {
-	disp.logger.Warn("FIXME: checkLsfQueueForOrphans")
+	containerUuidPattern := regexp.MustCompile(`^[a-z0-9]{5}-dz642-[a-z0-9]{15}$`)
+	for _, uuid := range disp.lsfqueue.All() {
+		if !containerUuidPattern.MatchString(uuid) || !strings.HasPrefix(uuid, disp.Cluster.ClusterID) {
+			continue
+		}
+		err := disp.arvDispatcher.TrackContainer(uuid)
+		if err != nil {
+			disp.logger.Warnf("checkLsfQueueForOrphans: TrackContainer(%s): %s", uuid, err)
+		}
+	}
 }
 
 func execScript(args []string) []byte {
