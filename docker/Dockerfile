@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-FROM node:10.23.1-buster
+FROM node:12.22.1-buster
 LABEL maintainer="Arvados Package Maintainers <packaging@arvados.org>"
 
 RUN echo deb http://deb.debian.org/debian buster-backports main >> /etc/apt/sources.list.d/backports.list
