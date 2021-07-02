@@ -6,12 +6,12 @@ require 'fileutils'
 require 'tmpdir'
 
 # Commit log for "foo" repository in test.git.tar
-# master is the main branch
-# b1 is a branch off of master
+# main is the main branch
+# b1 is a branch off of main 
 # tag1 is a tag
 #
 # 1de84a8 * b1
-# 077ba2a * master
+# 077ba2a * main
 # 4fe459a * tag1
 # 31ce37f * foo
 
