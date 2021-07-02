@@ -74,6 +74,10 @@ describe('Sharing tests', function () {
                 cy.get('[data-cy=context-menu]').should('contain', 'Move to trash');
                 cy.get('[data-cy=context-menu]').contains('Move to trash').click();
 
+                // GUARD: Let's wait for the above removed project to disappear
+                // before continuing, to avoid intermittent failures.
+                cy.get('main').should('not.contain', mySharedWritableProject.name);
+
                 cy.get('main').contains(mySharedReadonlyProject.name).rightclick();
                 cy.get('[data-cy=context-menu]').should('not.contain', 'Move to trash');
             });
