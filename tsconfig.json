@@ -28,7 +28,11 @@
     "strict": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "noEmit": true
+    "incremental": true,
+    "noEmit": true,
+    "alwaysStrict": false,
+    "strictFunctionTypes": false,
+    "strictPropertyInitialization": false,
   },
   "exclude": [
     "node_modules",
