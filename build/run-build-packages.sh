@@ -277,6 +277,8 @@ package_go_binary cmd/arvados-server arvados-controller \
     "Arvados cluster controller daemon"
 package_go_binary cmd/arvados-server arvados-dispatch-cloud \
     "Arvados cluster cloud dispatch"
+package_go_binary cmd/arvados-server arvados-dispatch-lsf \
+    "Dispatch Arvados containers to an LSF cluster"
 package_go_binary services/arv-git-httpd arvados-git-httpd \
     "Provide authenticated http access to Arvados-hosted git repositories"
 package_go_binary services/crunch-dispatch-local crunch-dispatch-local \

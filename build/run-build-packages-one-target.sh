@@ -194,6 +194,7 @@ if test -z "$packages" ; then
         arvados-client
         arvados-controller
         arvados-dispatch-cloud
+        arvados-dispatch-lsf
         arvados-docker-cleaner
         arvados-git-httpd
         arvados-health
