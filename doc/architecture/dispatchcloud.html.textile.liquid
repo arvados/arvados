@@ -50,7 +50,7 @@ The dispatcher periodically polls arvados-controller to get a list of containers
 
 h2. Creating instances
 
-When creating a new instance, the dispatcher uses the cloud provider’s metadata feature to add a tag named “InstanceSetID”. This enables the dispatcher to recognize and reconnect to existing instances, and continue monitoring existing containers, after a restart or upgrade.
+When creating a new instance, the dispatcher uses the cloud provider’s metadata feature to add a tag with key “InstanceSetID” and a value derived from its Arvados authentication token. This enables the dispatcher to recognize and reconnect to existing instances that belong to it, and continue monitoring existing containers, after a restart or upgrade.
 
 When using the Azure cloud service, the dispatcher needs to first create a new network interface, then attach it to a new instance. The network interface is also tagged with “InstanceSetID”.
 
@@ -78,7 +78,7 @@ Each instance is tagged with its current idle behavior (using the tag name “Id
 
 h2. Management API
 
-The dispatcher provides an HTTP management interface, which provides the operator with more visibility and control for purposes of troubleshooting and monitoring. APIs are provided to return details of current VM instances and running/scheduled containers as seen by the dispatcher, immediately terminate containers and instances, and control the on-idle behavior of instances. This interface also provides Prometheus metrics. APIs are documented on the "“Dispatching containers to cloud VMs” wiki":https://dev.arvados.org/projects/arvados/wiki/Dispatching_containers_to_cloud_VMs#Management-API.
+The dispatcher provides an HTTP management interface, which provides the operator with more visibility and control for purposes of troubleshooting and monitoring. APIs are provided to return details of current VM instances and running/scheduled containers as seen by the dispatcher, immediately terminate containers and instances, and control the on-idle behavior of instances. This interface also provides Prometheus metrics. See the "cloud dispatcher management API":{{site.baseurl}}/api/dispatch.html documentation for details.
 
 h2. Instance control channel (SSH)
 
