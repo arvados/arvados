@@ -49,6 +49,7 @@ func (s *suite) SetUpTest(c *check.C) {
 }
 
 type lsfstub struct {
+	sudoUser  string
 	errorRate float64
 }
 
@@ -60,6 +61,13 @@ func (stub lsfstub) stubCommand(c *check.C) func(prog string, args ...string) *e
 		c.Logf("stubCommand: %q %q", prog, args)
 		if rand.Float64() < stub.errorRate {
 			return exec.Command("bash", "-c", "echo >&2 'stub random failure' && false")
+		}
+		if stub.sudoUser != "" && len(args) > 3 &&
+			prog == "sudo" &&
+			args[0] == "-E" &&
+			args[1] == "-u" &&
+			args[2] == stub.sudoUser {
+			prog, args = args[3], args[4:]
 		}
 		switch prog {
 		case "bsub":
@@ -84,7 +92,7 @@ func (stub lsfstub) stubCommand(c *check.C) func(prog string, args ...string) *e
 			}
 			return exec.Command("echo", "submitted job")
 		case "bjobs":
-			c.Check(args, check.DeepEquals, []string{"-noheader", "-o", "jobid stat job_name:30"})
+			c.Check(args, check.DeepEquals, []string{"-u", "all", "-noheader", "-o", "jobid stat job_name:30"})
 			out := ""
 			for jobid, uuid := range fakejobq {
 				out += fmt.Sprintf(`%d %s %s\n`, jobid, "RUN", uuid)
@@ -113,7 +121,10 @@ func (stub lsfstub) stubCommand(c *check.C) func(prog string, args ...string) *e
 }
 
 func (s *suite) TestSubmit(c *check.C) {
-	s.disp.lsfcli.stubCommand = lsfstub{errorRate: 0.1}.stubCommand(c)
+	s.disp.lsfcli.stubCommand = lsfstub{
+		errorRate: 0.1,
+		sudoUser:  s.disp.Cluster.Containers.LSF.BsubSudoUser,
+	}.stubCommand(c)
 	s.disp.Start()
 	deadline := time.Now().Add(20 * time.Second)
 	for range time.NewTicker(time.Second).C {
