@@ -26,6 +26,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	log "github.com/sirupsen/logrus"
 
+	"gopkg.in/check.v1"
 	. "gopkg.in/check.v1"
 )
 
@@ -120,7 +121,7 @@ func (s *NoKeepServerSuite) TearDownSuite(c *C) {
 	arvadostest.StopAPI()
 }
 
-func runProxy(c *C, bogusClientToken bool, loadKeepstoresFromConfig bool) *keepclient.KeepClient {
+func runProxy(c *C, bogusClientToken bool, loadKeepstoresFromConfig bool, kp *arvados.UploadDownloadRolePermissions) (*keepclient.KeepClient, *bytes.Buffer) {
 	cfg, err := config.NewLoader(nil, ctxlog.TestLogger(c)).Load()
 	c.Assert(err, Equals, nil)
 	cluster, err := cfg.GetCluster("")
@@ -133,9 +134,16 @@ func runProxy(c *C, bogusClientToken bool, loadKeepstoresFromConfig bool) *keepc
 
 	cluster.Services.Keepproxy.InternalURLs = map[arvados.URL]arvados.ServiceInstance{{Host: ":0"}: {}}
 
+	if kp != nil {
+		cluster.Collections.KeepproxyPermission = *kp
+	}
+
 	listener = nil
+	logbuf := &bytes.Buffer{}
+	logger := log.New()
+	logger.Out = logbuf
 	go func() {
-		run(log.New(), cluster)
+		run(logger, cluster)
 		defer closeListener()
 	}()
 	waitForListener()
@@ -153,11 +161,11 @@ func runProxy(c *C, bogusClientToken bool, loadKeepstoresFromConfig bool) *keepc
 	kc.SetServiceRoots(sr, sr, sr)
 	kc.Arvados.External = true
 
-	return kc
+	return kc, logbuf
 }
 
 func (s *ServerRequiredSuite) TestResponseViaHeader(c *C) {
-	runProxy(c, false, false)
+	runProxy(c, false, false, nil)
 	defer closeListener()
 
 	req, err := http.NewRequest("POST",
@@ -184,7 +192,7 @@ func (s *ServerRequiredSuite) TestResponseViaHeader(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestLoopDetection(c *C) {
-	kc := runProxy(c, false, false)
+	kc, _ := runProxy(c, false, false, nil)
 	defer closeListener()
 
 	sr := map[string]string{
@@ -202,7 +210,7 @@ func (s *ServerRequiredSuite) TestLoopDetection(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestStorageClassesHeader(c *C) {
-	kc := runProxy(c, false, false)
+	kc, _ := runProxy(c, false, false, nil)
 	defer closeListener()
 
 	// Set up fake keepstore to record request headers
@@ -229,7 +237,7 @@ func (s *ServerRequiredSuite) TestStorageClassesHeader(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestStorageClassesConfirmedHeader(c *C) {
-	runProxy(c, false, false)
+	runProxy(c, false, false, nil)
 	defer closeListener()
 
 	content := []byte("foo")
@@ -251,7 +259,7 @@ func (s *ServerRequiredSuite) TestStorageClassesConfirmedHeader(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestDesiredReplicas(c *C) {
-	kc := runProxy(c, false, false)
+	kc, _ := runProxy(c, false, false, nil)
 	defer closeListener()
 
 	content := []byte("TestDesiredReplicas")
@@ -268,7 +276,7 @@ func (s *ServerRequiredSuite) TestDesiredReplicas(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestPutWrongContentLength(c *C) {
-	kc := runProxy(c, false, false)
+	kc, _ := runProxy(c, false, false, nil)
 	defer closeListener()
 
 	content := []byte("TestPutWrongContentLength")
@@ -279,7 +287,8 @@ func (s *ServerRequiredSuite) TestPutWrongContentLength(c *C) {
 	// fixes the invalid Content-Length header. In order to test
 	// our server behavior, we have to call the handler directly
 	// using an httptest.ResponseRecorder.
-	rtr := MakeRESTRouter(kc, 10*time.Second, "")
+	rtr, err := MakeRESTRouter(kc, 10*time.Second, &arvados.Cluster{}, log.New())
+	c.Assert(err, check.IsNil)
 
 	type testcase struct {
 		sendLength   string
@@ -307,7 +316,7 @@ func (s *ServerRequiredSuite) TestPutWrongContentLength(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestManyFailedPuts(c *C) {
-	kc := runProxy(c, false, false)
+	kc, _ := runProxy(c, false, false, nil)
 	defer closeListener()
 	router.(*proxyHandler).timeout = time.Nanosecond
 
@@ -334,7 +343,7 @@ func (s *ServerRequiredSuite) TestManyFailedPuts(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
-	kc := runProxy(c, false, false)
+	kc, logbuf := runProxy(c, false, false, nil)
 	defer closeListener()
 
 	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
@@ -370,6 +379,9 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 		c.Check(rep, Equals, 2)
 		c.Check(err, Equals, nil)
 		c.Log("Finished PutB (expected success)")
+
+		c.Check(logbuf.String(), Matches, `(?ms).*msg="Block upload" locator=acbd18db4cc2f85cedef654fccc4a4d8\+3 user_full_name="TestCase Administrator" user_uuid=zzzzz-tpzed-d9tiejq69daie8f.*`)
+		logbuf.Reset()
 	}
 
 	{
@@ -377,6 +389,8 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 		c.Assert(err, Equals, nil)
 		c.Check(blocklen, Equals, int64(3))
 		c.Log("Finished Ask (expected success)")
+		c.Check(logbuf.String(), Matches, `(?ms).*msg="Block download" locator=acbd18db4cc2f85cedef654fccc4a4d8\+3 user_full_name="TestCase Administrator" user_uuid=zzzzz-tpzed-d9tiejq69daie8f.*`)
+		logbuf.Reset()
 	}
 
 	{
@@ -387,6 +401,8 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 		c.Check(all, DeepEquals, []byte("foo"))
 		c.Check(blocklen, Equals, int64(3))
 		c.Log("Finished Get (expected success)")
+		c.Check(logbuf.String(), Matches, `(?ms).*msg="Block download" locator=acbd18db4cc2f85cedef654fccc4a4d8\+3 user_full_name="TestCase Administrator" user_uuid=zzzzz-tpzed-d9tiejq69daie8f.*`)
+		logbuf.Reset()
 	}
 
 	{
@@ -411,7 +427,7 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestPutAskGetForbidden(c *C) {
-	kc := runProxy(c, true, false)
+	kc, _ := runProxy(c, true, false, nil)
 	defer closeListener()
 
 	hash := fmt.Sprintf("%x+3", md5.Sum([]byte("bar")))
@@ -426,18 +442,116 @@ func (s *ServerRequiredSuite) TestPutAskGetForbidden(c *C) {
 
 	blocklen, _, err := kc.Ask(hash)
 	c.Check(err, FitsTypeOf, &keepclient.ErrNotFound{})
-	c.Check(err, ErrorMatches, ".*not found.*")
+	c.Check(err, ErrorMatches, ".*HTTP 403.*")
 	c.Check(blocklen, Equals, int64(0))
 
 	_, blocklen, _, err = kc.Get(hash)
 	c.Check(err, FitsTypeOf, &keepclient.ErrNotFound{})
-	c.Check(err, ErrorMatches, ".*not found.*")
+	c.Check(err, ErrorMatches, ".*HTTP 403.*")
 	c.Check(blocklen, Equals, int64(0))
+}
+
+func testPermission(c *C, admin bool, perm arvados.UploadDownloadPermission) {
+	kp := arvados.UploadDownloadRolePermissions{}
+	if admin {
+		kp.Admin = perm
+		kp.User = arvados.UploadDownloadPermission{Upload: true, Download: true}
+	} else {
+		kp.Admin = arvados.UploadDownloadPermission{Upload: true, Download: true}
+		kp.User = perm
+	}
+
+	kc, logbuf := runProxy(c, false, false, &kp)
+	defer closeListener()
+	if admin {
+		kc.Arvados.ApiToken = arvadostest.AdminToken
+	} else {
+		kc.Arvados.ApiToken = arvadostest.ActiveToken
+	}
+
+	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+	var hash2 string
+
+	{
+		var rep int
+		var err error
+		hash2, rep, err = kc.PutB([]byte("foo"))
+
+		if perm.Upload {
+			c.Check(hash2, Matches, fmt.Sprintf(`^%s\+3(\+.+)?$`, hash))
+			c.Check(rep, Equals, 2)
+			c.Check(err, Equals, nil)
+			c.Log("Finished PutB (expected success)")
+			if admin {
+				c.Check(logbuf.String(), Matches, `(?ms).*msg="Block upload" locator=acbd18db4cc2f85cedef654fccc4a4d8\+3 user_full_name="TestCase Administrator" user_uuid=zzzzz-tpzed-d9tiejq69daie8f.*`)
+			} else {
+
+				c.Check(logbuf.String(), Matches, `(?ms).*msg="Block upload" locator=acbd18db4cc2f85cedef654fccc4a4d8\+3 user_full_name="Active User" user_uuid=zzzzz-tpzed-xurymjxw79nv3jz.*`)
+			}
+		} else {
+			c.Check(hash2, Equals, "")
+			c.Check(rep, Equals, 0)
+			c.Check(err, FitsTypeOf, keepclient.InsufficientReplicasError(errors.New("")))
+		}
+		logbuf.Reset()
+	}
+	if perm.Upload {
+		// can't test download without upload.
+
+		reader, blocklen, _, err := kc.Get(hash2)
+		if perm.Download {
+			c.Assert(err, Equals, nil)
+			all, err := ioutil.ReadAll(reader)
+			c.Check(err, IsNil)
+			c.Check(all, DeepEquals, []byte("foo"))
+			c.Check(blocklen, Equals, int64(3))
+			c.Log("Finished Get (expected success)")
+			if admin {
+				c.Check(logbuf.String(), Matches, `(?ms).*msg="Block download" locator=acbd18db4cc2f85cedef654fccc4a4d8\+3 user_full_name="TestCase Administrator" user_uuid=zzzzz-tpzed-d9tiejq69daie8f.*`)
+			} else {
+				c.Check(logbuf.String(), Matches, `(?ms).*msg="Block download" locator=acbd18db4cc2f85cedef654fccc4a4d8\+3 user_full_name="Active User" user_uuid=zzzzz-tpzed-xurymjxw79nv3jz.*`)
+			}
+		} else {
+			c.Check(err, FitsTypeOf, &keepclient.ErrNotFound{})
+			c.Check(err, ErrorMatches, ".*Missing or invalid Authorization header, or method not allowed.*")
+			c.Check(blocklen, Equals, int64(0))
+		}
+		logbuf.Reset()
+	}
 
 }
 
+func (s *ServerRequiredSuite) TestPutGetPermission(c *C) {
+
+	for _, adminperm := range []bool{true, false} {
+		for _, userperm := range []bool{true, false} {
+
+			testPermission(c, true,
+				arvados.UploadDownloadPermission{
+					Upload:   adminperm,
+					Download: true,
+				})
+			testPermission(c, true,
+				arvados.UploadDownloadPermission{
+					Upload:   true,
+					Download: adminperm,
+				})
+			testPermission(c, false,
+				arvados.UploadDownloadPermission{
+					Upload:   true,
+					Download: userperm,
+				})
+			testPermission(c, false,
+				arvados.UploadDownloadPermission{
+					Upload:   true,
+					Download: userperm,
+				})
+		}
+	}
+}
+
 func (s *ServerRequiredSuite) TestCorsHeaders(c *C) {
-	runProxy(c, false, false)
+	runProxy(c, false, false, nil)
 	defer closeListener()
 
 	{
@@ -468,7 +582,7 @@ func (s *ServerRequiredSuite) TestCorsHeaders(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestPostWithoutHash(c *C) {
-	runProxy(c, false, false)
+	runProxy(c, false, false, nil)
 	defer closeListener()
 
 	{
@@ -526,7 +640,7 @@ func (s *ServerRequiredConfigYmlSuite) TestGetIndex(c *C) {
 }
 
 func getIndexWorker(c *C, useConfig bool) {
-	kc := runProxy(c, false, useConfig)
+	kc, _ := runProxy(c, false, useConfig, nil)
 	defer closeListener()
 
 	// Put "index-data" blocks
@@ -589,7 +703,7 @@ func getIndexWorker(c *C, useConfig bool) {
 }
 
 func (s *ServerRequiredSuite) TestCollectionSharingToken(c *C) {
-	kc := runProxy(c, false, false)
+	kc, _ := runProxy(c, false, false, nil)
 	defer closeListener()
 	hash, _, err := kc.PutB([]byte("shareddata"))
 	c.Check(err, IsNil)
@@ -602,7 +716,7 @@ func (s *ServerRequiredSuite) TestCollectionSharingToken(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestPutAskGetInvalidToken(c *C) {
-	kc := runProxy(c, false, false)
+	kc, _ := runProxy(c, false, false, nil)
 	defer closeListener()
 
 	// Put a test block
@@ -630,16 +744,16 @@ func (s *ServerRequiredSuite) TestPutAskGetInvalidToken(c *C) {
 			_, _, _, err = kc.Get(hash)
 			c.Assert(err, FitsTypeOf, &keepclient.ErrNotFound{})
 			c.Check(err.(*keepclient.ErrNotFound).Temporary(), Equals, false)
-			c.Check(err, ErrorMatches, ".*HTTP 403 \"Missing or invalid Authorization header\".*")
+			c.Check(err, ErrorMatches, ".*HTTP 403 \"Missing or invalid Authorization header, or method not allowed\".*")
 		}
 
 		_, _, err = kc.PutB([]byte("foo"))
-		c.Check(err, ErrorMatches, ".*403.*Missing or invalid Authorization header")
+		c.Check(err, ErrorMatches, ".*403.*Missing or invalid Authorization header, or method not allowed")
 	}
 }
 
 func (s *ServerRequiredSuite) TestAskGetKeepProxyConnectionError(c *C) {
-	kc := runProxy(c, false, false)
+	kc, _ := runProxy(c, false, false, nil)
 	defer closeListener()
 
 	// Point keepproxy at a non-existent keepstore
@@ -665,7 +779,7 @@ func (s *ServerRequiredSuite) TestAskGetKeepProxyConnectionError(c *C) {
 }
 
 func (s *NoKeepServerSuite) TestAskGetNoKeepServerError(c *C) {
-	kc := runProxy(c, false, false)
+	kc, _ := runProxy(c, false, false, nil)
 	defer closeListener()
 
 	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
@@ -688,10 +802,11 @@ func (s *NoKeepServerSuite) TestAskGetNoKeepServerError(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestPing(c *C) {
-	kc := runProxy(c, false, false)
+	kc, _ := runProxy(c, false, false, nil)
 	defer closeListener()
 
-	rtr := MakeRESTRouter(kc, 10*time.Second, arvadostest.ManagementToken)
+	rtr, err := MakeRESTRouter(kc, 10*time.Second, &arvados.Cluster{ManagementToken: arvadostest.ManagementToken}, log.New())
+	c.Assert(err, check.IsNil)
 
 	req, err := http.NewRequest("GET",
 		"http://"+listener.Addr().String()+"/_health/ping",

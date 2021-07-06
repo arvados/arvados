@@ -48,7 +48,7 @@ Arvados consists of many components, some of which may be omitted (at the cost o
 
 table(table table-bordered table-condensed).
 |\3=. *Core*|
-|"Postgres database":install-postgresql.html |Stores data for the API server.|Required.|
+|"PostgreSQL database":install-postgresql.html |Stores data for the API server.|Required.|
 |"API server":install-api-server.html |Core Arvados logic for managing users, groups, collections, containers, and enforcing permissions.|Required.|
 |\3=. *Keep (storage)*|
 |"Keepstore":install-keepstore.html |Stores content-addressed blocks in a variety of backends (local filesystem, cloud object storage).|Required.|
@@ -74,6 +74,10 @@ Choose which backend you will use to authenticate users.
 * OpenID Connect (OIDC) if you have Single-Sign-On (SSO) service that supports the OpenID Connect standard.
 * LDAP login to authenticate users by username/password using the LDAP protocol, supported by many services such as OpenLDAP and Active Directory.
 * PAM login to authenticate users by username/password according to the PAM configuration on the controller node.
+
+h2(#postgresql). PostgreSQL
+
+Arvados works well with a standalone PostgreSQL installation. When deploying on AWS, Aurora RDS also works but Aurora Serverless is not recommended.
 
 h2(#storage). Storage backend
 
@@ -104,7 +108,7 @@ For a production installation, this is a reasonable starting point:
 <div class="offset1">
 table(table table-bordered table-condensed).
 |_. Function|_. Number of nodes|_. Recommended specs|
-|Postgres database, Arvados API server, Arvados controller, Git, Websockets, Container dispatcher|1|16+ GiB RAM, 4+ cores, fast disk for database|
+|PostgreSQL database, Arvados API server, Arvados controller, Git, Websockets, Container dispatcher|1|16+ GiB RAM, 4+ cores, fast disk for database|
 |Workbench, Keepproxy, Keep-web, Keep-balance|1|8 GiB RAM, 2+ cores|
 |Keepstore servers ^1^|2+|4 GiB RAM|
 |Compute worker nodes ^1^|0+ |Depends on workload; scaled dynamically in the cloud|

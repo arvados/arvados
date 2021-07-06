@@ -36,17 +36,30 @@ type syncer interface {
 	Sync() error
 }
 
-func debugPanicIfNotLocked(l sync.Locker) {
+func debugPanicIfNotLocked(l sync.Locker, writing bool) {
 	if !DebugLocksPanicMode {
 		return
 	}
 	race := false
-	go func() {
-		l.Lock()
-		race = true
-		l.Unlock()
-	}()
-	time.Sleep(10)
+	if rl, ok := l.(interface {
+		RLock()
+		RUnlock()
+	}); ok && writing {
+		go func() {
+			// Fail if we can grab the read lock during an
+			// operation that purportedly has write lock.
+			rl.RLock()
+			race = true
+			rl.RUnlock()
+		}()
+	} else {
+		go func() {
+			l.Lock()
+			race = true
+			l.Unlock()
+		}()
+	}
+	time.Sleep(100)
 	if race {
 		panic("bug: caller-must-have-lock func called, but nobody has lock")
 	}
@@ -288,7 +301,7 @@ func (n *treenode) IsDir() bool {
 }
 
 func (n *treenode) Child(name string, replace func(inode) (inode, error)) (child inode, err error) {
-	debugPanicIfNotLocked(n)
+	debugPanicIfNotLocked(n, false)
 	child = n.inodes[name]
 	if name == "" || name == "." || name == ".." {
 		err = ErrInvalidArgument
@@ -302,8 +315,10 @@ func (n *treenode) Child(name string, replace func(inode) (inode, error)) (child
 		return
 	}
 	if newchild == nil {
+		debugPanicIfNotLocked(n, true)
 		delete(n.inodes, name)
 	} else if newchild != child {
+		debugPanicIfNotLocked(n, true)
 		n.inodes[name] = newchild
 		n.fileinfo.modTime = time.Now()
 		child = newchild
@@ -351,7 +366,7 @@ func (n *treenode) Sync() error {
 func (n *treenode) MemorySize() (size int64) {
 	n.RLock()
 	defer n.RUnlock()
-	debugPanicIfNotLocked(n)
+	debugPanicIfNotLocked(n, false)
 	for _, inode := range n.inodes {
 		size += inode.MemorySize()
 	}
@@ -414,13 +429,12 @@ func (fs *fileSystem) openFile(name string, flag int, perm os.FileMode) (*fileha
 		}
 	}
 	createMode := flag&os.O_CREATE != 0
-	if createMode {
-		parent.Lock()
-		defer parent.Unlock()
-	} else {
-		parent.RLock()
-		defer parent.RUnlock()
-	}
+	// We always need to take Lock() here, not just RLock(). Even
+	// if we know we won't be creating a file, parent might be a
+	// lookupnode, which sometimes populates its inodes map during
+	// a Child() call.
+	parent.Lock()
+	defer parent.Unlock()
 	n, err := parent.Child(name, nil)
 	if err != nil {
 		return nil, err

@@ -34,10 +34,10 @@ h3. Using storage classes
 
 h3. Storage management notes
 
-The "keep-balance":{{site.baseurl}}/install/install-keep-balance.html service is responsible for deciding which blocks should be placed on which keepstore volumes.  As part of the rebalancing behavior, it will determine where a block should go in order to satisfy the desired storage classes, and issue pull requests to copy the block from its original volume to the desired volume.  The block will subsequently be moved to trash on the original volume.
+When uploading data, if a data block cannot be uploaded to all desired storage classes, it will result in a fatal error.  Data blocks will not be uploaded to volumes that do not have the desired storage class.
 
-If a block appears in multiple collections with different storage classes, the block will be stored in separate volumes for each storage class, even if that results in overreplication, unless there is a volume which has all the desired storage classes.
+If you change the storage classes for a collection, the data is not moved immediately.  The "keep-balance":{{site.baseurl}}/install/install-keep-balance.html service is responsible for deciding which blocks should be placed on which keepstore volumes.  As part of the rebalancing behavior, it will determine where a block should go in order to satisfy the desired storage classes, and issue pull requests to copy the block from its original volume to the desired volume.  The block will subsequently be moved to trash on the original volume.
+
+If a block is assigned to multiple storage classes, the block will be stored on @desired_replication@ number of volumes for storage class, even if that results in overreplication.
 
 If a collection has a desired storage class which is not available in any keepstore volume, the collection's blocks will remain in place, and an error will appear in the @keep-balance@ logs.
-
-This feature does not provide a hard guarantee on where data will be stored.  Data may be written to default storage and moved to the desired storage class later.  If controlling data locality is a hard requirement (such as legal restrictions on the location of data) we recommend setting up multiple Arvados clusters.

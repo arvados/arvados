@@ -20,7 +20,7 @@ class JobTest < ActiveSupport::TestCase
     # Default (valid) set of attributes, with given overrides
     {
       script: "hash",
-      script_version: "master",
+      script_version: "main",
       repository: "active/foo",
     }.merge(merge_me)
   end

@@ -23,6 +23,7 @@ class ContainerRequest < ArvadosModel
   # already know how to properly treat them.
   attribute :properties, :jsonbHash, default: {}
   attribute :secret_mounts, :jsonbHash, default: {}
+  attribute :output_storage_classes, :jsonbArray, default: ["default"]
 
   serialize :environment, Hash
   serialize :mounts, Hash
@@ -76,6 +77,7 @@ class ContainerRequest < ArvadosModel
     t.add :scheduling_parameters
     t.add :state
     t.add :use_existing
+    t.add :output_storage_classes
   end
 
   # Supported states for a container request
@@ -97,7 +99,8 @@ class ContainerRequest < ArvadosModel
   :container_image, :cwd, :environment, :filters, :mounts,
   :output_path, :priority, :runtime_token,
   :runtime_constraints, :state, :container_uuid, :use_existing,
-  :scheduling_parameters, :secret_mounts, :output_name, :output_ttl]
+  :scheduling_parameters, :secret_mounts, :output_name, :output_ttl,
+  :output_storage_classes]
 
   def self.limit_index_columns_read
     ["mounts"]
@@ -177,7 +180,9 @@ class ContainerRequest < ArvadosModel
               'container_uuid' => container_uuid,
             },
             portable_data_hash: log_col.portable_data_hash,
-            manifest_text: log_col.manifest_text)
+            manifest_text: log_col.manifest_text,
+            storage_classes_desired: self.output_storage_classes
+          )
           completed_coll.save_with_unique_name!
         end
       end
@@ -211,6 +216,7 @@ class ContainerRequest < ArvadosModel
           owner_uuid: self.owner_uuid,
           name: coll_name,
           manifest_text: "",
+          storage_classes_desired: self.output_storage_classes,
           properties: {
             'type' => out_type,
             'container_request' => uuid,
@@ -237,7 +243,7 @@ class ContainerRequest < ArvadosModel
   end
 
   def self.full_text_searchable_columns
-    super - ["mounts", "secret_mounts", "secret_mounts_md5", "runtime_token"]
+    super - ["mounts", "secret_mounts", "secret_mounts_md5", "runtime_token", "output_storage_classes"]
   end
 
   protected
@@ -296,7 +302,8 @@ class ContainerRequest < ArvadosModel
         log_coll = Collection.new(
           owner_uuid: self.owner_uuid,
           name: coll_name = "Container log for request #{uuid}",
-          manifest_text: "")
+          manifest_text: "",
+          storage_classes_desired: self.output_storage_classes)
       end
 
       # copy logs from old container into CR's log collection

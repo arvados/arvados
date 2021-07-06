@@ -60,6 +60,7 @@ type IKeepClient interface {
 	ManifestFileReader(m manifest.Manifest, filename string) (arvados.File, error)
 	LocalLocator(locator string) (string, error)
 	ClearBlockCache()
+	SetStorageClasses(sc []string)
 }
 
 // NewLogWriter is a factory function to create a new log writer.
@@ -395,6 +396,7 @@ func (runner *ContainerRunner) SetupMounts() (map[string]bindmount, error) {
 		"--foreground",
 		"--allow-other",
 		"--read-write",
+		"--storage-classes", strings.Join(runner.Container.OutputStorageClasses, ","),
 		fmt.Sprintf("--crunchstat-interval=%v", runner.statInterval.Seconds())}
 
 	if runner.Container.RuntimeConstraints.KeepCacheRAM > 0 {
@@ -1518,6 +1520,9 @@ func (runner *ContainerRunner) fetchContainerRecord() error {
 	if err != nil {
 		return fmt.Errorf("error creating container API client: %v", err)
 	}
+
+	runner.ContainerKeepClient.SetStorageClasses(runner.Container.OutputStorageClasses)
+	runner.DispatcherKeepClient.SetStorageClasses(runner.Container.OutputStorageClasses)
 
 	err = runner.ContainerArvClient.Call("GET", "containers", runner.Container.UUID, "secret_mounts", nil, &sm)
 	if err != nil {
