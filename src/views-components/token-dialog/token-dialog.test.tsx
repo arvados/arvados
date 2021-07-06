@@ -2,6 +2,14 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
+// This mocks react-copy-to-clipboard's dependency module to avoid warnings
+// from jest when running tests. As we're not testing copy-to-clipboard, it's
+// safe to just mock it.
+// https://github.com/nkbt/react-copy-to-clipboard/issues/106#issuecomment-605227151
+jest.mock('copy-to-clipboard', () => {
+  return jest.fn();
+});
+
 import React from 'react';
 import { Button } from '@material-ui/core';
 import { mount, configure } from 'enzyme';
