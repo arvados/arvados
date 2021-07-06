@@ -81,7 +81,7 @@ export const loadVirtualMachinesUserData = () =>
 
 export const saveRequestedDate = () =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const date = formatDate((new Date).toISOString());
+        const date = formatDate((new Date()).toISOString());
         services.virtualMachineService.saveRequestedDate(date);
         dispatch<any>(loadRequestedDate());
     };

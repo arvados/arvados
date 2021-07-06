@@ -63,7 +63,7 @@ export const AutoLogoutComponent = (props: AutoLogoutProps) => {
         return () => {
             window.removeEventListener('storage', handleStorageEvents);
         };
-    }, []);
+    });
 
     const handleStorageEvents = (e: StorageEvent) => {
         if (e.key === LAST_ACTIVE_TIMESTAMP) {
@@ -90,7 +90,7 @@ export const AutoLogoutComponent = (props: AutoLogoutProps) => {
 
     const handleOnAction = () => {
         // Notify the other tabs there was some activity.
-        const now = (new Date).getTime();
+        const now = (new Date()).getTime();
         localStorage.setItem(LAST_ACTIVE_TIMESTAMP, now.toString());
     };
 

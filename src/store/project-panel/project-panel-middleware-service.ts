@@ -129,7 +129,6 @@ export const getFilters = (dataExplorer: DataExplorer) => {
             break;
         }
         case ProcessStatusFilter.CANCELLED:
-        case ProcessStatusFilter.FAILED:
         case ProcessStatusFilter.LOCKED:
         case ProcessStatusFilter.QUEUED:
         case ProcessStatusFilter.RUNNING: {

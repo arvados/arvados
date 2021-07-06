@@ -75,7 +75,7 @@ export const CollectionPanelFilesComponent = ({ onItemMenuOpen, onSearchChange, 
 
     useEffect(() => {
         onSearchChange(searchValue);
-    }, [searchValue]);
+    }, [onSearchChange, searchValue]);
 
     return (<Card data-cy='collection-files-panel' className={classes.root}>
         <CardHeader

@@ -114,7 +114,7 @@ export const WorkflowDetailsCard = withStyles(styles)(
                     return getWorkflowInputs(definition);
                 }
             }
-            return;
+            return undefined;
         }
 
         renderInputsTable() {

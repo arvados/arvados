@@ -290,7 +290,6 @@ export const buildProcessStatusFilters = ( fb:FilterBuilder, activeStatusFilter:
             break;
         }
         case ProcessStatusFilter.CANCELLED:
-        case ProcessStatusFilter.FAILED:
         case ProcessStatusFilter.LOCKED:
         case ProcessStatusFilter.RUNNING: {
             fb.addEqual('container.state', activeStatusFilter);
