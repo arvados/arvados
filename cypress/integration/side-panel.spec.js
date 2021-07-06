@@ -110,7 +110,7 @@ describe('Side panel tests', function() {
                 const newProjectName = `New project name ${mySharedWritableProject.name}`;
                 const newProjectDescription = `New project description ${mySharedWritableProject.name}`;
 
-                cy.editProjectOrCollection('[data-cy=side-panel-tree]', mySharedWritableProject.name, newProjectName, newProjectDescription);
+                cy.testEditProjectOrCollection('[data-cy=side-panel-tree]', mySharedWritableProject.name, newProjectName, newProjectDescription);
             });
     });
 

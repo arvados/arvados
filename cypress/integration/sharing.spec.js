@@ -97,7 +97,7 @@ describe('Sharing tests', function () {
                 const newProjectName = `New project name ${mySharedWritableProject.name}`;
                 const newProjectDescription = `New project description ${mySharedWritableProject.name}`;
 
-                cy.editProjectOrCollection('main', mySharedWritableProject.name, newProjectName, newProjectDescription);
+                cy.testEditProjectOrCollection('main', mySharedWritableProject.name, newProjectName, newProjectDescription);
             });
     });
 });

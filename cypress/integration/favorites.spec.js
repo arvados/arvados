@@ -135,22 +135,21 @@ describe('Favorites tests', function () {
     it('can edit project and collections in favorites', () => {
         cy.createProject({
             owningUser: adminUser,
-            targetUser: activeUser,
             projectName: 'mySharedWritableProject',
             canWrite: true,
             addToFavorites: true
         });
 
         cy.createCollection(adminUser.token, {
-            owner_uuid: activeUser.user.uuid,
+            owner_uuid: adminUser.user.uuid,
             name: `Test target collection ${Math.floor(Math.random() * 999999)}`,
         }).as('testTargetCollection').then(function (testTargetCollection) {
-            cy.addToFavorites(activeUser.token, activeUser.user.uuid, testTargetCollection.uuid);
+            cy.addToFavorites(adminUser.token, adminUser.user.uuid, testTargetCollection.uuid);
         });
 
         cy.getAll('@mySharedWritableProject', '@testTargetCollection')
             .then(function ([mySharedWritableProject, testTargetCollection]) {
-                cy.loginAs(activeUser);
+                cy.loginAs(adminUser);
                 
                 cy.get('[data-cy=side-panel-tree]').contains('My Favorites').click();
 
@@ -159,14 +158,9 @@ describe('Favorites tests', function () {
                 const newCollectionName = `New collection name ${testTargetCollection.name}`;
                 const newCollectionDescription = `New collection description ${testTargetCollection.name}`;
 
-                cy.editProjectOrCollection('main', mySharedWritableProject.name, newProjectName, newProjectDescription);
-                cy.editProjectOrCollection('main', testTargetCollection.name, newCollectionName, newCollectionDescription, false);
-
-                cy.get('main').contains(newProjectName).rightclick();
-                cy.contains('Remove from favorites').click();
-                cy.get('main').contains(newCollectionName).rightclick();
-                cy.contains('Remove from favorites').click();
-
+                cy.testEditProjectOrCollection('main', mySharedWritableProject.name, newProjectName, newProjectDescription);
+                cy.testEditProjectOrCollection('main', testTargetCollection.name, newCollectionName, newCollectionDescription, false);
+                
                 cy.get('[data-cy=side-panel-tree]').contains('Projects').click();
 
                 cy.get('main').contains(newProjectName).rightclick();
@@ -176,8 +170,8 @@ describe('Favorites tests', function () {
 
                 cy.get('[data-cy=side-panel-tree]').contains('Public Favorites').click();
 
-                cy.editProjectOrCollection('main', newProjectName, mySharedWritableProject.name, 'newProjectDescription');
-                cy.editProjectOrCollection('main', newCollectionName, testTargetCollection.name, 'newCollectionDescription', false); 
+                cy.testEditProjectOrCollection('main', newProjectName, mySharedWritableProject.name, 'newProjectDescription');
+                cy.testEditProjectOrCollection('main', newCollectionName, testTargetCollection.name, 'newCollectionDescription', false); 
             });
     });
 

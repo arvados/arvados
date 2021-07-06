@@ -193,12 +193,12 @@ Cypress.Commands.add(
 )
 
 Cypress.Commands.add(
-    "editProjectOrCollection", (container, oldName, newName, newDescription, isProject = true) => {
+    "testEditProjectOrCollection", (container, oldName, newName, newDescription, isProject = true) => {
         cy.get(container).contains(oldName).rightclick();
         cy.get('[data-cy=context-menu]').contains(isProject ? 'Edit project' : 'Edit collection').click();
         cy.get('[data-cy=form-dialog]').within(() => {
             cy.get('input[name=name]').clear().type(newName);
-            cy.get(isProject ? 'div[contenteditable=true]' : 'input[name=description]').type(newDescription);
+            cy.get(isProject ? 'div[contenteditable=true]' : 'input[name=description]').clear().type(newDescription);
             cy.get('[data-cy=form-submit-btn]').click();
         });
 
