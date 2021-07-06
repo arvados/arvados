@@ -202,7 +202,7 @@ const ItemIcon = React.memo(({ type, kind, active, groupClass, classes }: any) =
 const FlatTree = (props: FlatTreeProps) =>
     <div
         onContextMenu={(event) => {
-            const [action, id] = getActionAndId(event, FLAT_TREE_ACTIONS.contextMenu);
+            const id = getActionAndId(event, FLAT_TREE_ACTIONS.contextMenu)[1];
             props.onContextMenu(event, { id } as any);
         }}
         onClick={(event) => {

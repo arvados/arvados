@@ -4,7 +4,6 @@
 
 import { createMuiTheme } from '@material-ui/core/styles';
 import { ThemeOptions, Theme } from '@material-ui/core/styles/createMuiTheme';
-import purple from '@material-ui/core/colors/purple';
 import blue from '@material-ui/core/colors/blue';
 import grey from '@material-ui/core/colors/grey';
 import green from '@material-ui/core/colors/green';
@@ -31,12 +30,9 @@ interface Colors {
 }
 
 const arvadosPurple = '#361336';
-const purple800 = purple["800"];
-const grey500 = grey["500"];
 const grey600 = grey["600"];
 const grey700 = grey["700"];
 const grey900 = grey["900"];
-const rocheBlue = '#06C';
 
 export const themeOptions: ArvadosThemeOptions = {
     typography: {
