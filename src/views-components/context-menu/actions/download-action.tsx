@@ -21,27 +21,26 @@ export const DownloadAction = (props: { href?: any, download?: any, onClick?: ()
                 return letter !== '/';
             });
 
-        filteredFileUrls
-            .map((href: string) => {
-                axios.get(href).then(response => response).then(({ data }: any) => {
-                    const splittedByDot = href.split('.');
-                    if (splittedByDot[splittedByDot.length - 1] !== 'json') {
-                        if (filteredFileUrls.length === id) {
-                            zip.file(download[id - 1], data);
-                            zip.generateAsync({ type: 'blob' }).then((content) => {
-                                FileSaver.saveAs(content, `download-${props.currentCollectionUuid}.zip`);
-                            });
-                        } else {
-                            zip.file(download[id - 1], data);
-                            zip.generateAsync({ type: 'blob' });
-                        }
+        filteredFileUrls.forEach((href: string) => {
+            axios.get(href).then(response => response).then(({ data }: any) => {
+                const splittedByDot = href.split('.');
+                if (splittedByDot[splittedByDot.length - 1] !== 'json') {
+                    if (filteredFileUrls.length === id) {
+                        zip.file(download[id - 1], data);
+                        zip.generateAsync({ type: 'blob' }).then((content) => {
+                            FileSaver.saveAs(content, `download-${props.currentCollectionUuid}.zip`);
+                        });
                     } else {
-                        zip.file(download[id - 1], JSON.stringify(data));
+                        zip.file(download[id - 1], data);
                         zip.generateAsync({ type: 'blob' });
                     }
-                    id++;
-                });
+                } else {
+                    zip.file(download[id - 1], JSON.stringify(data));
+                    zip.generateAsync({ type: 'blob' });
+                }
+                id++;
             });
+        });
     };
 
     return props.href || props.kind === 'files'

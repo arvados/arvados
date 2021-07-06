@@ -187,7 +187,7 @@ const virtualMachinesTable = (props: VirtualMachineProps) =>
                             </TableCell>}
                         </TableRow>;
                     }
-                    return;
+                    return null;
                 }
                 ))}
         </TableBody>

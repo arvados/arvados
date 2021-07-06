@@ -54,7 +54,7 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
             api.dispatch(setItems(initial));
         }
 
-        sessions.map(session => {
+        sessions.forEach(session => {
             const params = getParams(dataExplorer, searchValue, session.apiRevision);
             this.services.groupsService.contents('', params, session)
                 .then((response) => {

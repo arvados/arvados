@@ -141,7 +141,7 @@ export class CommonService<T> {
             // Using the POST special case to avoid URI length 414 errors.
             const formData = new FormData();
             formData.append("_method", "GET");
-            Object.keys(params).map(key => {
+            Object.keys(params).forEach(key => {
                 if (params[key] !== undefined) {
                     formData.append(key, params[key]);
                 }

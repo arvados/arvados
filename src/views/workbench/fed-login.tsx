@@ -34,11 +34,11 @@ export const FedLogin = connect(mapStateToProps)(
                 {Object.keys(remoteHostsConfig)
                     .map((k) => {
                         if (k === localCluster) {
-                            return;
+                            return null;
                         }
                         if (!remoteHostsConfig[k].workbench2Url) {
                             console.log(`Cluster ${k} does not define workbench2Url.  Federated login / cross-site linking to ${k} is unavailable.  Tell the admin of ${k} to set Services->Workbench2->ExternalURL in config.yml.`);
-                            return;
+                            return null;
                         }
                         const fedtoken = (remoteHostsConfig[k].loginCluster === localCluster)
                             ? apiToken : getSaltedToken(k, apiToken);

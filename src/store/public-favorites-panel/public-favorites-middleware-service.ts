@@ -87,11 +87,11 @@ export class PublicFavoritesMiddlewareService extends DataExplorerMiddlewareServ
                         .getFilters()
                 });
                 const response = groupItems;
-                collectionItems.items.map((it: any) => {
+                collectionItems.items.forEach((it: any) => {
                     response.itemsAvailable++;
                     response.items.push(it);
                 });
-                processItems.items.map((it: any) => {
+                processItems.items.forEach((it: any) => {
                     response.itemsAvailable++;
                     response.items.push(it);
                 });

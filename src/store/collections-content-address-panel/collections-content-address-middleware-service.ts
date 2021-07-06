@@ -89,7 +89,7 @@ export class CollectionsWithSameContentAddressMiddlewareService extends DataExpl
                         .getFilters(),
                     count: "none"
                 });
-                responseUsers.items.map(it => {
+                responseUsers.items.forEach(it => {
                     api.dispatch<any>(ownerNameActions.SET_OWNER_NAME({
                         name: it.uuid === userUuid
                             ? 'User: Me'
@@ -97,7 +97,7 @@ export class CollectionsWithSameContentAddressMiddlewareService extends DataExpl
                         uuid: it.uuid
                     }));
                 });
-                responseGroups.items.map(it => {
+                responseGroups.items.forEach(it => {
                     api.dispatch<any>(ownerNameActions.SET_OWNER_NAME({ name: `Project: ${it.name}`, uuid: it.uuid }));
                 });
                 api.dispatch<any>(setBreadcrumbs([{ label: 'Projects', uuid: userUuid }]));

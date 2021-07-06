@@ -130,7 +130,7 @@ export const copyCollectionPartialToSelectedCollection = ({ collectionUuid }: Co
                     if (fileExistsInSelectedCollection) {
                         return path;
                     } else {
-                        return;
+                        return null;
                     }
                 });
                 const diffPathToRemove = difference(paths, pathsToRemove);

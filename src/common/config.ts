@@ -142,7 +142,7 @@ const getApiRevision = async (apiUrl: string) => {
 
 const removeTrailingSlashes = (config: ClusterConfigJSON): ClusterConfigJSON => {
     const svcs: any = {};
-    Object.keys(config.Services).map((s) => {
+    Object.keys(config.Services).forEach((s) => {
         svcs[s] = config.Services[s];
         if (svcs[s].hasOwnProperty('ExternalURL')) {
             svcs[s].ExternalURL = svcs[s].ExternalURL.replace(/\/+$/, '');
