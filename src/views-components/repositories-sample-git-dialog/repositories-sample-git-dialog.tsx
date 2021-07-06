@@ -54,8 +54,8 @@ export const RepositoriesSampleGitDialog = compose(
                         lines={[snippetText(props.data.uuidPrefix)]} />
                     <Typography variant='body1' className={props.classes.spacing}>
                         See also:
-                        <div><a href="https://doc.arvados.org/user/getting_started/ssh-access-unix.html" className={props.classes.link} target="_blank">SSH access</a></div>
-                        <div><a href="https://doc.arvados.org/user/tutorials/tutorial-firstscript.html" className={props.classes.link} target="_blank">Writing a Crunch Script</a></div>
+                        <div><a href="https://doc.arvados.org/user/getting_started/ssh-access-unix.html" className={props.classes.link} target="_blank" rel="noopener noreferrer">SSH access</a></div>
+                        <div><a href="https://doc.arvados.org/user/tutorials/tutorial-firstscript.html" className={props.classes.link} target="_blank" rel="noopener noreferrer">Writing a Crunch Script</a></div>
                     </Typography>
                 </DialogContent>
                 <DialogActions>

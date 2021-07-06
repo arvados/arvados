@@ -134,7 +134,7 @@ const CardContentWithVirtualMachines = (props: VirtualMachineProps) =>
                         {virtualMachineSendRequest(props)}
                     </div>
                     <div className={props.classes.icon}>
-                        <a href="https://doc.arvados.org/user/getting_started/vm-login-with-webshell.html" target="_blank" className={props.classes.linkIcon}>
+                        <a href="https://doc.arvados.org/user/getting_started/vm-login-with-webshell.html" target="_blank" rel="noopener noreferrer" className={props.classes.linkIcon}>
                             <Tooltip title="Access VM using webshell">
                                 <HelpIcon />
                             </Tooltip>
@@ -181,7 +181,7 @@ const virtualMachinesTable = (props: VirtualMachineProps) =>
                                 {command}
                             </TableCell>
                             {props.webShell !== "" && <TableCell>
-                                <a href={`${props.webShell}${it.href}/webshell/${username}`} target="_blank" className={props.classes.link}>
+                                <a href={`${props.webShell}${it.href}/webshell/${username}`} target="_blank" rel="noopener noreferrer" className={props.classes.link}>
                                     Log in as {username}
                                 </a>
                             </TableCell>}

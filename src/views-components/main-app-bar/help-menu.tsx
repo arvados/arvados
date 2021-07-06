@@ -72,7 +72,7 @@ export const HelpMenu = compose(
                 {
                     links.map(link =>
                         <MenuItem key={link.title}>
-                            <a href={link.link} target="_blank" className={classes.link}>
+                            <a href={link.link} target="_blank" rel="noopener noreferrer" className={classes.link}>
                                 <ImportContactsIcon className={classes.icon} />
                                 <Typography className={classes.linkTitle}>{link.title}</Typography>
                             </a>

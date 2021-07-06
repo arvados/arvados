@@ -12,6 +12,7 @@ export const FileViewerAction = (props: any) => {
             style={{ textDecoration: 'none' }}
             href={props.href}
             target="_blank"
+            rel="noopener noreferrer"
             onClick={props.onClick}>
             <ListItem button>
                 <ListItemIcon>

@@ -95,10 +95,10 @@ export const DetailsAttribute = connect(mapStateToProps)(withStyles(styles)(
                 if (linkUrl[0] === '/') {
                     valueNode = <Link to={linkUrl} className={classes.link}>{uuid}</Link>;
                 } else {
-                    valueNode = <a href={linkUrl} className={classes.link} target='_blank'>{uuid}</a>;
+                    valueNode = <a href={linkUrl} className={classes.link} target='_blank' rel="noopener noreferrer">{uuid}</a>;
                 }
             } else if (link) {
-                valueNode = <a href={link} className={classes.link} target='_blank'>{value}</a>;
+                valueNode = <a href={link} className={classes.link} target='_blank' rel="noopener noreferrer">{value}</a>;
             } else {
                 valueNode = value;
             }
