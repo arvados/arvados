@@ -39,6 +39,16 @@ type nodeInfo struct {
 	Preemptible  bool
 }
 
+type consumption struct {
+	cost     float64
+	duration float64
+}
+
+func (c *consumption) Add(n consumption) {
+	c.cost += n.cost
+	c.duration += n.duration
+}
+
 type arrayFlags []string
 
 func (i *arrayFlags) String() string {
@@ -189,7 +199,9 @@ func ensureDirectory(logger *logrus.Logger, dir string) (err error) {
 	return
 }
 
-func addContainerLine(logger *logrus.Logger, node nodeInfo, cr arvados.ContainerRequest, container arvados.Container) (csv string, cost float64) {
+func addContainerLine(logger *logrus.Logger, node nodeInfo, cr arvados.ContainerRequest, container arvados.Container) (string, consumption) {
+	var csv string
+	var containerConsumption consumption
 	csv = cr.UUID + ","
 	csv += cr.Name + ","
 	csv += container.UUID + ","
@@ -204,7 +216,7 @@ func addContainerLine(logger *logrus.Logger, node nodeInfo, cr arvados.Container
 	if container.FinishedAt != nil {
 		csv += container.FinishedAt.String() + ","
 		delta = container.FinishedAt.Sub(*container.StartedAt)
-		csv += strconv.FormatFloat(delta.Seconds(), 'f', 0, 64) + ","
+		csv += strconv.FormatFloat(delta.Seconds(), 'f', 3, 64) + ","
 	} else {
 		csv += ",,"
 	}
@@ -217,9 +229,10 @@ func addContainerLine(logger *logrus.Logger, node nodeInfo, cr arvados.Container
 		price = node.Price
 		size = node.ProviderType
 	}
-	cost = delta.Seconds() / 3600 * price
-	csv += size + "," + fmt.Sprintf("%+v", node.Preemptible) + "," + strconv.FormatFloat(price, 'f', 8, 64) + "," + strconv.FormatFloat(cost, 'f', 8, 64) + "\n"
-	return
+	containerConsumption.cost = delta.Seconds() / 3600 * price
+	containerConsumption.duration = delta.Seconds()
+	csv += size + "," + fmt.Sprintf("%+v", node.Preemptible) + "," + strconv.FormatFloat(price, 'f', 8, 64) + "," + strconv.FormatFloat(containerConsumption.cost, 'f', 8, 64) + "\n"
+	return csv, containerConsumption
 }
 
 func loadCachedObject(logger *logrus.Logger, file string, uuid string, object interface{}) (reload bool) {
@@ -354,8 +367,8 @@ func getNode(arv *arvadosclient.ArvadosClient, ac *arvados.Client, kc *keepclien
 	return
 }
 
-func handleProject(logger *logrus.Logger, uuid string, arv *arvadosclient.ArvadosClient, ac *arvados.Client, kc *keepclient.KeepClient, resultsDir string, cache bool) (cost map[string]float64, err error) {
-	cost = make(map[string]float64)
+func handleProject(logger *logrus.Logger, uuid string, arv *arvadosclient.ArvadosClient, ac *arvados.Client, kc *keepclient.KeepClient, resultsDir string, cache bool) (cost map[string]consumption, err error) {
+	cost = make(map[string]consumption)
 
 	var project arvados.Group
 	err = loadObject(logger, ac, uuid, uuid, cache, &project)
@@ -388,11 +401,11 @@ func handleProject(logger *logrus.Logger, uuid string, arv *arvadosclient.Arvado
 		items := value.([]interface{})
 		for _, item := range items {
 			itemMap := item.(map[string]interface{})
-			crCsv, err := generateCrCsv(logger, itemMap["uuid"].(string), arv, ac, kc, resultsDir, cache)
+			crInfo, err := generateCrInfo(logger, itemMap["uuid"].(string), arv, ac, kc, resultsDir, cache)
 			if err != nil {
 				return nil, fmt.Errorf("error generating container_request CSV: %s", err.Error())
 			}
-			for k, v := range crCsv {
+			for k, v := range crInfo {
 				cost[k] = v
 			}
 		}
@@ -402,14 +415,13 @@ func handleProject(logger *logrus.Logger, uuid string, arv *arvadosclient.Arvado
 	return
 }
 
-func generateCrCsv(logger *logrus.Logger, uuid string, arv *arvadosclient.ArvadosClient, ac *arvados.Client, kc *keepclient.KeepClient, resultsDir string, cache bool) (cost map[string]float64, err error) {
+func generateCrInfo(logger *logrus.Logger, uuid string, arv *arvadosclient.ArvadosClient, ac *arvados.Client, kc *keepclient.KeepClient, resultsDir string, cache bool) (cost map[string]consumption, err error) {
 
-	cost = make(map[string]float64)
+	cost = make(map[string]consumption)
 
 	csv := "CR UUID,CR name,Container UUID,State,Started At,Finished At,Duration in seconds,Compute node type,Preemptible,Hourly node cost,Total cost\n"
 	var tmpCsv string
-	var tmpTotalCost float64
-	var totalCost float64
+	var total, tmpTotal consumption
 	logger.Debugf("Processing %s", uuid)
 
 	var crUUID = uuid
@@ -452,10 +464,9 @@ func generateCrCsv(logger *logrus.Logger, uuid string, arv *arvadosclient.Arvado
 		logger.Errorf("Skipping container request %s: error getting node %s: %s", cr.UUID, cr.UUID, err)
 		return nil, nil
 	}
-	tmpCsv, totalCost = addContainerLine(logger, topNode, cr, container)
+	tmpCsv, total = addContainerLine(logger, topNode, cr, container)
 	csv += tmpCsv
-	totalCost += tmpTotalCost
-	cost[container.UUID] = totalCost
+	cost[container.UUID] = total
 
 	// Find all container requests that have the container we found above as requesting_container_uuid
 	var childCrs arvados.ContainerRequestList
@@ -492,14 +503,14 @@ func generateCrCsv(logger *logrus.Logger, uuid string, arv *arvadosclient.Arvado
 		if err != nil {
 			return nil, fmt.Errorf("error loading object %s: %s", cr2.ContainerUUID, err)
 		}
-		tmpCsv, tmpTotalCost = addContainerLine(logger, node, cr2, c2)
-		cost[cr2.ContainerUUID] = tmpTotalCost
+		tmpCsv, tmpTotal = addContainerLine(logger, node, cr2, c2)
+		cost[cr2.ContainerUUID] = tmpTotal
 		csv += tmpCsv
-		totalCost += tmpTotalCost
+		total.Add(tmpTotal)
 	}
 	logger.Debug("Done collecting child containers")
 
-	csv += "TOTAL,,,,,,,,," + strconv.FormatFloat(totalCost, 'f', 8, 64) + "\n"
+	csv += "TOTAL,,,,,," + strconv.FormatFloat(total.duration, 'f', 3, 64) + ",,,," + strconv.FormatFloat(total.cost, 'f', 2, 64) + "\n"
 
 	if resultsDir != "" {
 		// Write the resulting CSV file
@@ -584,7 +595,7 @@ func (c *command) costAnalyzer(prog string, args []string, logger *logrus.Logger
 		}
 	}()
 
-	cost := make(map[string]float64)
+	cost := make(map[string]consumption)
 
 	for uuid := range uuidChannel {
 		logger.Debugf("Considering %s", uuid)
@@ -600,14 +611,14 @@ func (c *command) costAnalyzer(prog string, args []string, logger *logrus.Logger
 			}
 		} else if strings.Contains(uuid, "-xvhdp-") || strings.Contains(uuid, "-4zz18-") {
 			// This is a container request
-			var crCsv map[string]float64
-			crCsv, err = generateCrCsv(logger, uuid, arv, ac, kc, c.resultsDir, c.cache)
+			var crInfo map[string]consumption
+			crInfo, err = generateCrInfo(logger, uuid, arv, ac, kc, c.resultsDir, c.cache)
 			if err != nil {
 				err = fmt.Errorf("error generating CSV for uuid %s: %s", uuid, err.Error())
 				exitcode = 2
 				return
 			}
-			for k, v := range crCsv {
+			for k, v := range crInfo {
 				cost[k] = v
 			}
 		} else if strings.Contains(uuid, "-tpzed-") {
@@ -630,18 +641,18 @@ func (c *command) costAnalyzer(prog string, args []string, logger *logrus.Logger
 
 	var csv string
 
-	csv = "# Aggregate cost accounting for uuids:\n"
+	csv = "# Aggregate cost accounting for uuids:\n# UUID, Duration in seconds, Total cost\n"
 	for _, uuid := range c.uuids {
 		csv += "# " + uuid + "\n"
 	}
 
-	var total float64
+	var total consumption
 	for k, v := range cost {
-		csv += k + "," + strconv.FormatFloat(v, 'f', 8, 64) + "\n"
-		total += v
+		csv += k + "," + strconv.FormatFloat(v.duration, 'f', 3, 64) + "," + strconv.FormatFloat(v.cost, 'f', 8, 64) + "\n"
+		total.Add(v)
 	}
 
-	csv += "TOTAL," + strconv.FormatFloat(total, 'f', 8, 64) + "\n"
+	csv += "TOTAL," + strconv.FormatFloat(total.duration, 'f', 3, 64) + "," + strconv.FormatFloat(total.cost, 'f', 2, 64) + "\n"
 
 	if c.resultsDir != "" {
 		// Write the resulting CSV file
@@ -656,7 +667,7 @@ func (c *command) costAnalyzer(prog string, args []string, logger *logrus.Logger
 	}
 
 	// Output the total dollar amount on stdout
-	fmt.Fprintf(stdout, "%s\n", strconv.FormatFloat(total, 'f', 8, 64))
+	fmt.Fprintf(stdout, "%s\n", strconv.FormatFloat(total.cost, 'f', 2, 64))
 
 	return
 }
