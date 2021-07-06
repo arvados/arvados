@@ -92,4 +92,26 @@ describe('Side panel tests', function() {
         })
     })
 
+    it('can edit project in side panel', () => {
+        cy.createProject({
+            owningUser: activeUser,
+            targetUser: activeUser,
+            projectName: 'mySharedWritableProject',
+            canWrite: true,
+            addToFavorites: false
+        });
+
+        cy.getAll('@mySharedWritableProject')
+            .then(function ([mySharedWritableProject]) {
+                cy.loginAs(activeUser);
+                
+                cy.get('[data-cy=side-panel-tree]').contains('Projects').click();
+
+                const newProjectName = `New project name ${mySharedWritableProject.name}`;
+                const newProjectDescription = `New project description ${mySharedWritableProject.name}`;
+
+                cy.editProjectOrCollection('[data-cy=side-panel-tree]', mySharedWritableProject.name, newProjectName, newProjectDescription);
+            });
+    });
+
 })
