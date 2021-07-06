@@ -80,7 +80,7 @@ export const createServices = (config: Config, actions: ApiActions, useApiClient
 
     const ancestorsService = new AncestorService(groupsService, userService);
 
-    const idleTimeout = config && config.clusterConfig && config.clusterConfig.Workbench.IdleTimeout || '0s';
+    const idleTimeout = (config && config.clusterConfig && config.clusterConfig.Workbench.IdleTimeout) || '0s';
     const authService = new AuthService(apiClient, config.rootUrl, actions,
         (parse(idleTimeout, 's') || 0) > 0);
 

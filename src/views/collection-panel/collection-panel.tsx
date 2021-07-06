@@ -126,8 +126,8 @@ export const CollectionPanel = withStyles(styles)(
             }
         }
         const loadingFilesIndicator = getProgressIndicator(COLLECTION_PANEL_LOAD_FILES)(state.progressIndicator);
-        const isLoadingFiles = loadingFilesIndicator && loadingFilesIndicator!.working || false;
-        const tooManyFiles = !state.collectionPanel.loadBigCollections && item && item.fileCount > COLLECTION_PANEL_LOAD_FILES_THRESHOLD || false;
+        const isLoadingFiles = (loadingFilesIndicator && loadingFilesIndicator!.working) || false;
+        const tooManyFiles = (!state.collectionPanel.loadBigCollections && item && item.fileCount > COLLECTION_PANEL_LOAD_FILES_THRESHOLD) || false;
         return { item, isWritable, isOldVersion, isLoadingFiles, tooManyFiles };
     })(
         class extends React.Component<CollectionPanelProps> {

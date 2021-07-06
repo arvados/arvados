@@ -51,7 +51,7 @@ export const addProcessLogsPanelItem = (message: ResourceEventMessage<{ text: st
                 if (process) {
                     const { containerRequest, container } = process;
                     if (message.objectUuid === containerRequest.uuid
-                        || container && message.objectUuid === container.uuid) {
+                        || (container && message.objectUuid === container.uuid)) {
                         dispatch(processLogsPanelActions.ADD_PROCESS_LOGS_PANEL_ITEM({
                             logType: SUMMARIZED_FILTER_TYPE,
                             log: message.properties.text

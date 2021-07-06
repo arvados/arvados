@@ -98,7 +98,7 @@ export const LoginForm = withStyles(styles)(
             .catch((err) => {
                 setError(true);
                 setSubmitting(false);
-                setHelperText(`${err.response && err.response.data && err.response.data.errors[0] || 'Error logging in: '+err}`);
+                setHelperText(`${(err.response && err.response.data && err.response.data.errors[0]) || 'Error logging in: '+err}`);
                 setFocus();
             });
         };

@@ -70,10 +70,10 @@ interface CollectionVersionBrowserDispatchProps {
 
 const mapStateToProps = (state: RootState): CollectionVersionBrowserProps => {
     const currentCollection = getResource<CollectionResource>(state.detailsPanel.resourceUuid)(state.resources);
-    const versions = currentCollection
+    const versions = (currentCollection
         && filterResources(rsc =>
             (rsc as CollectionResource).currentVersionUuid === currentCollection.currentVersionUuid)(state.resources)
-                .sort((a: CollectionResource, b: CollectionResource) => b.version - a.version) as CollectionResource[]
+                .sort((a: CollectionResource, b: CollectionResource) => b.version - a.version) as CollectionResource[])
         || [];
     return { currentCollection, versions };
 };
