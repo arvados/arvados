@@ -59,7 +59,15 @@ clean-node-modules:
 
 clean: clean-rpm clean-deb clean-node-modules
 
-yarn-install:
+arvados-server-install:
+	cd $(ARVADOS_DIRECTORY)
+	go mod download
+	cd cmd/arvados-server
+	go install
+	cd -
+	~/go/bin/arvados-server install -type test
+
+yarn-install: arvados-server-install
 	yarn install
 
 unit-tests: yarn-install
