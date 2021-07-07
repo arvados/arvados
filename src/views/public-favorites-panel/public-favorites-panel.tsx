@@ -35,6 +35,8 @@ import { createTree } from '~/models/tree';
 import { getSimpleObjectTypeFilters } from '~/store/resource-type-filters/resource-type-filters';
 import { PUBLIC_FAVORITE_PANEL_ID } from '~/store/public-favorites-panel/public-favorites-action';
 import { PublicFavoritesState } from '~/store/public-favorites/public-favorites-reducer';
+import { getResource, ResourcesState } from '~/store/resources/resources';
+import { GroupContentsResource } from '~/services/groups-service/groups-service';
 
 type CssRules = "toolbar" | "button";
 
@@ -110,24 +112,28 @@ export const publicFavoritePanelColumns: DataColumns<string> = [
 
 interface PublicFavoritePanelDataProps {
     publicFavorites: PublicFavoritesState;
+    resources: ResourcesState;
 }
 
 interface PublicFavoritePanelActionProps {
     onItemClick: (item: string) => void;
-    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: string) => void;
+    onContextMenu: (resources: ResourcesState) => (event: React.MouseEvent<HTMLElement>, item: string) => void;
     onDialogOpen: (ownerUuid: string) => void;
     onItemDoubleClick: (item: string) => void;
 }
-const mapStateToProps = ({ publicFavorites }: RootState): PublicFavoritePanelDataProps => ({
-    publicFavorites
+const mapStateToProps = ({ publicFavorites, resources }: RootState): PublicFavoritePanelDataProps => ({
+    publicFavorites,
+    resources,
 });
 
 const mapDispatchToProps = (dispatch: Dispatch): PublicFavoritePanelActionProps => ({
-    onContextMenu: (event, resourceUuid) => {
+    onContextMenu: (resources: ResourcesState) => (event, resourceUuid) => {
+        const resource = getResource<GroupContentsResource>(resourceUuid)(resources);
         const kind = dispatch<any>(resourceUuidToContextMenuKind(resourceUuid));
-        if (kind) {
+        if (kind && resource) {
             dispatch<any>(openContextMenu(event, {
-                name: '',
+                name: resource.name,
+                description: resource.description,
                 uuid: resourceUuid,
                 ownerUuid: '',
                 kind: ResourceKind.NONE,
@@ -156,7 +162,7 @@ export const PublicFavoritePanel = withStyles(styles)(
                     id={PUBLIC_FAVORITE_PANEL_ID}
                     onRowClick={this.props.onItemClick}
                     onRowDoubleClick={this.props.onItemDoubleClick}
-                    onContextMenu={this.props.onContextMenu}
+                    onContextMenu={this.props.onContextMenu(this.props.resources)}
                     contextMenuColumn={true}
                     dataTableDefaultView={
                         <DataTableDefaultView

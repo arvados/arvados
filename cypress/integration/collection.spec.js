@@ -586,7 +586,7 @@ describe('Collection panel tests', function () {
         cy.get('[data-cy=breadcrumb-last]').should('contain', collName);
     });
 
-    it.only('shows responsible person for collection if available', () => {
+    it('shows responsible person for collection if available', () => {
         cy.createCollection(adminUser.token, {
             name: `Test collection ${Math.floor(Math.random() * 999999)}`,
             owner_uuid: activeUser.user.uuid,

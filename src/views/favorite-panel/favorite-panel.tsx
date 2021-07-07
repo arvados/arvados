@@ -34,7 +34,11 @@ import { RootState } from '~/store/store';
 import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
 import { createTree } from '~/models/tree';
 import { getSimpleObjectTypeFilters } from '~/store/resource-type-filters/resource-type-filters';
-import { ResourcesState } from '~/store/resources/resources';
+import { getResource, ResourcesState } from '~/store/resources/resources';
+import { GroupContentsResource } from '~/services/groups-service/groups-service';
+import { GroupClass, GroupResource } from '~/models/group';
+import { getProperty } from '~/store/properties/properties';
+import { PROJECT_PANEL_CURRENT_UUID } from '~/store/project-panel/project-panel-action';
 
 type CssRules = "toolbar" | "button";
 
@@ -109,6 +113,7 @@ export const favoritePanelColumns: DataColumns<string> = [
 ];
 
 interface FavoritePanelDataProps {
+    currentItemId: any;
     favorites: FavoritesState;
     resources: ResourcesState;
     userUuid: string;
@@ -123,6 +128,7 @@ const mapStateToProps = (state : RootState): FavoritePanelDataProps => ({
     favorites: state.favorites,
     resources: state.resources,
     userUuid: state.auth.user!.uuid,
+    currentItemId: getProperty(PROJECT_PANEL_CURRENT_UUID)(state.properties),
 });
 
 type FavoritePanelProps = FavoritePanelDataProps & FavoritePanelActionProps & DispatchProp
@@ -133,14 +139,27 @@ export const FavoritePanel = withStyles(styles)(
         class extends React.Component<FavoritePanelProps> {
 
             handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
-                const menuKind = this.props.dispatch<any>(resourceUuidToContextMenuKind(resourceUuid));
-                if (menuKind) {
+                const { resources } = this.props;
+                const resource = getResource<GroupContentsResource>(resourceUuid)(resources);
+                
+                let readonly = false;
+                const project = getResource<GroupResource>(this.props.currentItemId)(resources);
+                
+                if (project && project.groupClass === GroupClass.FILTER) {
+                    readonly = true;
+                }
+
+                const menuKind = this.props.dispatch<any>(resourceUuidToContextMenuKind(resourceUuid, readonly));
+
+                if (menuKind&& resource) {
                     this.props.dispatch<any>(openContextMenu(event, {
-                        name: '',
-                        uuid: resourceUuid,
-                        ownerUuid: '',
-                        kind: ResourceKind.NONE,
-                        menuKind
+                        name: resource.name,
+                        uuid: resource.uuid,
+                        ownerUuid: resource.ownerUuid,
+                        isTrashed: ('isTrashed' in resource) ? resource.isTrashed: false,
+                        kind: resource.kind,
+                        menuKind,
+                        description: resource.description,
                     }));
                 }
                 this.props.dispatch<any>(loadDetailsPanel(resourceUuid));
