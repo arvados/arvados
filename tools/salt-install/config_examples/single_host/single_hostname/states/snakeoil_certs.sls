@@ -30,7 +30,7 @@ arvados_test_salt_states_examples_single_host_snakeoil_certs_dependencies_pkg_in
       - ca-certificates
 
 arvados_test_salt_states_examples_single_host_snakeoil_certs_arvados_snake_oil_ca_cmd_run:
-  # Taken from https://github.com/arvados/arvados/blob/master/tools/arvbox/lib/arvbox/docker/service/certificate/run
+  # Taken from https://github.com/arvados/arvados/blob/main/tools/arvbox/lib/arvbox/docker/service/certificate/run
   cmd.run:
     - name: |
         # These dirs are not to CentOS-ish, but this is a helper script

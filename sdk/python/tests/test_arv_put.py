@@ -295,6 +295,8 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
         shutil.rmtree(self.tempdir_with_symlink)
 
     def test_symlinks_are_followed_by_default(self):
+        self.assertTrue(os.path.islink(os.path.join(self.tempdir_with_symlink, 'linkeddir')))
+        self.assertTrue(os.path.islink(os.path.join(self.tempdir_with_symlink, 'linkedfile')))
         cwriter = arv_put.ArvPutUploadJob([self.tempdir_with_symlink])
         cwriter.start(save_collection=False)
         self.assertIn('linkeddir', cwriter.manifest_text())
@@ -302,11 +304,28 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
         cwriter.destroy_cache()
 
     def test_symlinks_are_not_followed_when_requested(self):
+        self.assertTrue(os.path.islink(os.path.join(self.tempdir_with_symlink, 'linkeddir')))
+        self.assertTrue(os.path.islink(os.path.join(self.tempdir_with_symlink, 'linkedfile')))
         cwriter = arv_put.ArvPutUploadJob([self.tempdir_with_symlink],
                                           follow_links=False)
         cwriter.start(save_collection=False)
         self.assertNotIn('linkeddir', cwriter.manifest_text())
         self.assertNotIn('linkedfile', cwriter.manifest_text())
+        cwriter.destroy_cache()
+        # Check for bug #17800: passed symlinks should also be ignored.
+        linked_dir = os.path.join(self.tempdir_with_symlink, 'linkeddir')
+        cwriter = arv_put.ArvPutUploadJob([linked_dir], follow_links=False)
+        cwriter.start(save_collection=False)
+        self.assertNotIn('linkeddir', cwriter.manifest_text())
+        cwriter.destroy_cache()
+
+    def test_no_empty_collection_saved(self):
+        self.assertTrue(os.path.islink(os.path.join(self.tempdir_with_symlink, 'linkeddir')))
+        linked_dir = os.path.join(self.tempdir_with_symlink, 'linkeddir')
+        cwriter = arv_put.ArvPutUploadJob([linked_dir], follow_links=False)
+        cwriter.start(save_collection=True)
+        self.assertIsNone(cwriter.manifest_locator())
+        self.assertEqual('', cwriter.manifest_text())
         cwriter.destroy_cache()
 
     def test_passing_nonexistant_path_raise_exception(self):
@@ -813,11 +832,6 @@ class ArvadosPutTest(run_test_server.TestCaseWithServers,
                           self.call_main_with_args,
                           ['--project-uuid', self.Z_UUID, '--stream'])
 
-    def test_error_when_multiple_storage_classes_specified(self):
-        self.assertRaises(SystemExit,
-                          self.call_main_with_args,
-                          ['--storage-classes', 'hot,cold'])
-
     def test_error_when_excluding_absolute_path(self):
         tmpdir = self.make_tmpdir()
         self.assertRaises(SystemExit,
@@ -1315,13 +1329,16 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
 
     def test_put_collection_with_storage_classes_specified(self):
         collection = self.run_and_find_collection("", ['--storage-classes', 'hot'])
-
         self.assertEqual(len(collection['storage_classes_desired']), 1)
         self.assertEqual(collection['storage_classes_desired'][0], 'hot')
 
+    def test_put_collection_with_multiple_storage_classes_specified(self):
+        collection = self.run_and_find_collection("", ['--storage-classes', ' foo, bar  ,baz'])
+        self.assertEqual(len(collection['storage_classes_desired']), 3)
+        self.assertEqual(collection['storage_classes_desired'], ['foo', 'bar', 'baz'])
+
     def test_put_collection_without_storage_classes_specified(self):
         collection = self.run_and_find_collection("")
-
         self.assertEqual(len(collection['storage_classes_desired']), 1)
         self.assertEqual(collection['storage_classes_desired'][0], 'default')
 

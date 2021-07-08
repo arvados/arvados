@@ -16,7 +16,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
   BASE_FILTERS = {
     'repository' => ['=', 'active/foo'],
     'script' => ['=', 'hash'],
-    'script_version' => ['in git', 'master'],
+    'script_version' => ['in git', 'main'],
     'docker_image_locator' => ['=', nil],
     'arvados_sdk_version' => ['=', nil],
   }

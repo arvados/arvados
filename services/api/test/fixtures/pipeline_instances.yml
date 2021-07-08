@@ -22,7 +22,7 @@ has_component_with_no_script_parameters:
   components:
    foo:
     script: foo
-    script_version: master
+    script_version: main
     script_parameters: {}
 
 has_component_with_empty_script_parameters:
@@ -33,7 +33,7 @@ has_component_with_empty_script_parameters:
   components:
    foo:
     script: foo
-    script_version: master
+    script_version: main
 
 has_component_with_completed_jobs:
   # Test that the job "started_at" and "finished_at" fields are parsed
@@ -52,11 +52,11 @@ has_component_with_completed_jobs:
   components:
    foo:
     script: foo
-    script_version: master
+    script_version: main
     script_parameters: {}
     job:
       uuid: zzzzz-8i9sb-rft1xdewxkwgxnz
-      script_version: master
+      script_version: main
       created_at: <%= 10.minute.ago.to_s(:db) %>
       started_at: <%= 10.minute.ago.to_s(:db) %>
       finished_at: <%= 9.minute.ago.to_s(:db) %>
@@ -68,11 +68,11 @@ has_component_with_completed_jobs:
         done: 1
    bar:
     script: bar
-    script_version: master
+    script_version: main
     script_parameters: {}
     job:
       uuid: zzzzz-8i9sb-r2dtbzr6bfread7
-      script_version: master
+      script_version: main
       created_at: <%= 9.minute.ago.to_s(:db) %>
       started_at: <%= 9.minute.ago.to_s(:db) %>
       state: Running
@@ -83,11 +83,11 @@ has_component_with_completed_jobs:
         done: 3
    baz:
     script: baz
-    script_version: master
+    script_version: main
     script_parameters: {}
     job:
       uuid: zzzzz-8i9sb-c7408rni11o7r6s
-      script_version: master
+      script_version: main
       created_at: <%= 9.minute.ago.to_s(:db) %>
       state: Queued
       tasks_summary: {}
@@ -101,11 +101,11 @@ has_job:
   components:
    foo:
     script: foo
-    script_version: master
+    script_version: main
     script_parameters: {}
     job: {
             uuid: zzzzz-8i9sb-pshmckwoma9plh7,
-            script_version: master
+            script_version: main
          }
 
 components_is_jobspec:
@@ -122,7 +122,7 @@ components_is_jobspec:
   state: RunningOnServer
   components:
     script: foo
-    script_version: master
+    script_version: main
     script_parameters:
       input:
         required: true
@@ -184,7 +184,7 @@ pipeline_with_newer_template:
   components:
     foo:
       script: foo
-      script_version: master
+      script_version: main
       script_parameters:
         input:
           required: true
@@ -201,7 +201,7 @@ pipeline_instance_owned_by_fuse:
   components:
     foo:
       script: foo
-      script_version: master
+      script_version: main
       script_parameters:
         input:
           required: true
@@ -218,7 +218,7 @@ pipeline_instance_in_fuse_project:
   components:
     foo:
       script: foo
-      script_version: master
+      script_version: main
       script_parameters:
         input:
           required: true
@@ -234,7 +234,7 @@ pipeline_owned_by_active_in_aproject:
   components:
     foo:
       script: foo
-      script_version: master
+      script_version: main
       script_parameters:
         input:
           required: true
@@ -250,7 +250,7 @@ pipeline_owned_by_active_in_home:
   components:
     foo:
       script: foo
-      script_version: master
+      script_version: main
       script_parameters:
         input:
           required: true
@@ -267,7 +267,7 @@ pipeline_in_publicly_accessible_project:
   components:
     foo:
       script: foo
-      script_version: master
+      script_version: main
       script_parameters:
         input:
           required: true
@@ -277,7 +277,7 @@ pipeline_in_publicly_accessible_project:
         uuid: zzzzz-8i9sb-jyq01m7in1jlofj
         repository: active/foo
         script: foo
-        script_version: master
+        script_version: main
         script_parameters:
           input: zzzzz-4zz18-4en62shvi99lxd4
         log: zzzzz-4zz18-4en62shvi99lxd4
@@ -294,7 +294,7 @@ pipeline_in_publicly_accessible_project_but_other_objects_elsewhere:
   components:
     foo:
       script: foo
-      script_version: master
+      script_version: main
       script_parameters:
         input:
           required: true
@@ -304,7 +304,7 @@ pipeline_in_publicly_accessible_project_but_other_objects_elsewhere:
         uuid: zzzzz-8i9sb-aceg2bnq7jt7kon
         repository: active/foo
         script: foo
-        script_version: master
+        script_version: main
         script_parameters:
           input: zzzzz-4zz18-bv31uwvy3neko21
         log: zzzzz-4zz18-bv31uwvy3neko21
@@ -321,7 +321,7 @@ new_pipeline_in_publicly_accessible_project:
   components:
     foo:
       script: foo
-      script_version: master
+      script_version: main
       script_parameters:
         input:
           required: true
@@ -338,7 +338,7 @@ new_pipeline_in_publicly_accessible_project_but_other_objects_elsewhere:
   components:
     foo:
       script: foo
-      script_version: master
+      script_version: main
       script_parameters:
         input:
           required: true
@@ -355,7 +355,7 @@ new_pipeline_in_publicly_accessible_project_with_dataclass_file_and_other_object
   components:
     foo:
       script: foo
-      script_version: master
+      script_version: main
       script_parameters:
         input:
           required: true
@@ -372,11 +372,11 @@ pipeline_in_running_state:
   components:
    foo:
     script: foo
-    script_version: master
+    script_version: main
     script_parameters: {}
     job:
       uuid: zzzzz-8i9sb-pshmckwoma9plh7
-      script_version: master
+      script_version: main
 
 running_pipeline_with_complete_job:
   uuid: zzzzz-d1hrv-partdonepipelin
@@ -434,11 +434,11 @@ job_child_pipeline_with_components_at_level_2:
   components:
    foo:
     script: foo
-    script_version: master
+    script_version: main
     script_parameters: {}
     job:
       uuid: zzzzz-8i9sb-job1atlevel3noc
-      script_version: master
+      script_version: main
       created_at: <%= 12.hour.ago.to_s(:db) %>
       started_at: <%= 12.hour.ago.to_s(:db) %>
       state: Running
@@ -449,11 +449,11 @@ job_child_pipeline_with_components_at_level_2:
         done: 1
    bar:
     script: bar
-    script_version: master
+    script_version: main
     script_parameters: {}
     job:
       uuid: zzzzz-8i9sb-job2atlevel3noc
-      script_version: master
+      script_version: main
       created_at: <%= 12.hour.ago.to_s(:db) %>
       started_at: <%= 12.hour.ago.to_s(:db) %>
       state: Running
@@ -480,7 +480,7 @@ pipeline_<%=i%>_of_10:
   components:
     foo:
       script: foo
-      script_version: master
+      script_version: main
       script_parameters:
         input:
           required: true
@@ -501,7 +501,7 @@ pipeline_<%=i%>_of_2_pipelines_and_60_crs:
   components:
     foo:
       script: foo
-      script_version: master
+      script_version: main
       script_parameters:
         input:
           required: true
@@ -522,7 +522,7 @@ pipeline_<%=i%>_of_25:
   components:
     foo:
       script: foo
-      script_version: master
+      script_version: main
       script_parameters:
         input:
           required: true

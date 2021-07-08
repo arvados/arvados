@@ -182,6 +182,11 @@ func (ldr *Loader) Load() (*arvados.Config, error) {
 		ldr.configdata = buf
 	}
 
+	// FIXME: We should reject YAML if the same key is used twice
+	// in a map/object, like {foo: bar, foo: baz}. Maybe we'll get
+	// this fixed free when we upgrade ghodss/yaml to a version
+	// that uses go-yaml v3.
+
 	// Load the config into a dummy map to get the cluster ID
 	// keys, discarding the values; then set up defaults for each
 	// cluster ID; then load the real config on top of the
@@ -291,6 +296,8 @@ func (ldr *Loader) Load() (*arvados.Config, error) {
 			checkKeyConflict(fmt.Sprintf("Clusters.%s.PostgreSQL.Connection", id), cc.PostgreSQL.Connection),
 			ldr.checkEmptyKeepstores(cc),
 			ldr.checkUnlistedKeepstores(cc),
+			// TODO: check non-empty Rendezvous on
+			// services other than Keepstore
 		} {
 			if err != nil {
 				return nil, err
@@ -354,20 +361,33 @@ func (ldr *Loader) logExtraKeys(expected, supplied map[string]interface{}, prefi
 	if ldr.Logger == nil {
 		return
 	}
-	allowed := map[string]interface{}{}
-	for k, v := range expected {
-		allowed[strings.ToLower(k)] = v
-	}
 	for k, vsupp := range supplied {
 		if k == "SAMPLE" {
 			// entry will be dropped in removeSampleKeys anyway
 			continue
 		}
-		vexp, ok := allowed[strings.ToLower(k)]
+		vexp, ok := expected[k]
 		if expected["SAMPLE"] != nil {
+			// use the SAMPLE entry's keys as the
+			// "expected" map when checking vsupp
+			// recursively.
 			vexp = expected["SAMPLE"]
 		} else if !ok {
-			ldr.Logger.Warnf("deprecated or unknown config entry: %s%s", prefix, k)
+			// check for a case-insensitive match
+			hint := ""
+			for ek := range expected {
+				if strings.EqualFold(k, ek) {
+					hint = " (perhaps you meant " + ek + "?)"
+					// If we don't delete this, it
+					// will end up getting merged,
+					// unpredictably
+					// merging/overriding the
+					// default.
+					delete(supplied, k)
+					break
+				}
+			}
+			ldr.Logger.Warnf("deprecated or unknown config entry: %s%s%s", prefix, k, hint)
 			continue
 		}
 		if vsupp, ok := vsupp.(map[string]interface{}); !ok {

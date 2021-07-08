@@ -22,6 +22,7 @@ from . import run_test_server
 
 from .integration_test import IntegrationTest
 from .mount_test_base import MountTestBase
+from .test_tmp_collection import storage_classes_desired
 
 logger = logging.getLogger('arvados.arv-mount')
 
@@ -1262,3 +1263,31 @@ class SlashSubstitutionTest(IntegrationTest):
     def _test_slash_substitution_conflict(self, tmpdir, fusename):
         with open(os.path.join(tmpdir, fusename, 'waz'), 'w') as f:
             f.write('foo')
+
+class StorageClassesTest(IntegrationTest):
+    mnt_args = [
+        '--read-write',
+        '--mount-home', 'homedir',
+    ]
+
+    def setUp(self):
+        super(StorageClassesTest, self).setUp()
+        self.api = arvados.safeapi.ThreadSafeApiCache(arvados.config.settings())
+
+    @IntegrationTest.mount(argv=mnt_args)
+    def test_collection_default_storage_classes(self):
+        coll_path = os.path.join(self.mnt, 'homedir', 'a_collection')
+        self.api.collections().create(body={'name':'a_collection'}).execute()
+        self.pool_test(coll_path)
+    @staticmethod
+    def _test_collection_default_storage_classes(self, coll):
+        self.assertEqual(storage_classes_desired(coll), ['default'])
+
+    @IntegrationTest.mount(argv=mnt_args+['--storage-classes', 'foo'])
+    def test_collection_custom_storage_classes(self):
+        coll_path = os.path.join(self.mnt, 'homedir', 'new_coll')
+        os.mkdir(coll_path)
+        self.pool_test(coll_path)
+    @staticmethod
+    def _test_collection_custom_storage_classes(self, coll):
+        self.assertEqual(storage_classes_desired(coll), ['foo'])

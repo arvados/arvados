@@ -82,6 +82,7 @@ LE_AWS_SECRET_ACCESS_KEY="thisistherandomstringthatisyoursecretkey"
 # Extra states to apply. If you use your own subdir, change this value accordingly
 # EXTRA_STATES_DIR="${CONFIG_DIR}/states"
 
+# These are ARVADOS-related settings.
 # Which release of Arvados repo you want to use
 RELEASE="production"
 # Which version of Arvados you want to install. Defaults to latest stable
@@ -90,13 +91,13 @@ RELEASE="production"
 # This is an arvados-formula setting.
 # If branch is set, the script will switch to it before running salt
 # Usually not needed, only used for testing
-# BRANCH="master"
+# BRANCH="main"
 
 ##########################################################
 # Usually there's no need to modify things below this line
 
 # Formulas versions
-# ARVADOS_TAG="v1.1.4"
+# ARVADOS_TAG="2.2.0"
 # POSTGRES_TAG="v0.41.6"
 # NGINX_TAG="temp-fix-missing-statements-in-pillar"
 # DOCKER_TAG="v1.0.0"

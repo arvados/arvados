@@ -103,18 +103,6 @@ func (ldr *Loader) applyDeprecatedConfig(cfg *arvados.Config) error {
 			*dst = *n
 		}
 
-		// Provider* moved to SSO.Provider*
-		if dst, n := &cluster.Login.SSO.ProviderAppID, dcluster.Login.ProviderAppID; n != nil && *n != *dst {
-			*dst = *n
-			if *n != "" {
-				// In old config, non-empty ID meant enable
-				cluster.Login.SSO.Enable = true
-			}
-		}
-		if dst, n := &cluster.Login.SSO.ProviderAppSecret, dcluster.Login.ProviderAppSecret; n != nil && *n != *dst {
-			*dst = *n
-		}
-
 		cfg.Clusters[id] = cluster
 	}
 	return nil

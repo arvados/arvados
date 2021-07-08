@@ -30,15 +30,14 @@ type loginController interface {
 func chooseLoginController(cluster *arvados.Cluster, parent *Conn) loginController {
 	wantGoogle := cluster.Login.Google.Enable
 	wantOpenIDConnect := cluster.Login.OpenIDConnect.Enable
-	wantSSO := cluster.Login.SSO.Enable
 	wantPAM := cluster.Login.PAM.Enable
 	wantLDAP := cluster.Login.LDAP.Enable
 	wantTest := cluster.Login.Test.Enable
 	wantLoginCluster := cluster.Login.LoginCluster != "" && cluster.Login.LoginCluster != cluster.ClusterID
 	switch {
-	case 1 != countTrue(wantGoogle, wantOpenIDConnect, wantSSO, wantPAM, wantLDAP, wantTest, wantLoginCluster):
+	case 1 != countTrue(wantGoogle, wantOpenIDConnect, wantPAM, wantLDAP, wantTest, wantLoginCluster):
 		return errorLoginController{
-			error: errors.New("configuration problem: exactly one of Login.Google, Login.OpenIDConnect, Login.SSO, Login.PAM, Login.LDAP, Login.Test, or Login.LoginCluster must be set"),
+			error: errors.New("configuration problem: exactly one of Login.Google, Login.OpenIDConnect, Login.PAM, Login.LDAP, Login.Test, or Login.LoginCluster must be set"),
 		}
 	case wantGoogle:
 		return &oidcLoginController{
@@ -66,8 +65,6 @@ func chooseLoginController(cluster *arvados.Cluster, parent *Conn) loginControll
 			AcceptAccessToken:      cluster.Login.OpenIDConnect.AcceptAccessToken,
 			AcceptAccessTokenScope: cluster.Login.OpenIDConnect.AcceptAccessTokenScope,
 		}
-	case wantSSO:
-		return &ssoLoginController{Parent: parent}
 	case wantPAM:
 		return &pamLoginController{Cluster: cluster, Parent: parent}
 	case wantLDAP:
@@ -91,20 +88,6 @@ func countTrue(vals ...bool) int {
 		}
 	}
 	return n
-}
-
-// Login and Logout are passed through to the parent's railsProxy;
-// UserAuthenticate is rejected.
-type ssoLoginController struct{ Parent *Conn }
-
-func (ctrl *ssoLoginController) Login(ctx context.Context, opts arvados.LoginOptions) (arvados.LoginResponse, error) {
-	return ctrl.Parent.railsProxy.Login(ctx, opts)
-}
-func (ctrl *ssoLoginController) Logout(ctx context.Context, opts arvados.LogoutOptions) (arvados.LogoutResponse, error) {
-	return ctrl.Parent.railsProxy.Logout(ctx, opts)
-}
-func (ctrl *ssoLoginController) UserAuthenticate(ctx context.Context, opts arvados.UserAuthenticateOptions) (arvados.APIClientAuthorization, error) {
-	return arvados.APIClientAuthorization{}, httpserver.ErrorWithStatus(errors.New("username/password authentication is not available"), http.StatusBadRequest)
 }
 
 type errorLoginController struct{ error }

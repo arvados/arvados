@@ -24,26 +24,35 @@ The @arvados-client costanalyzer@ tool has a number of command line arguments:
 <notextile>
 <pre><code>~$ <span class="userinput">arvados-client costanalyzer -h</span>
 Usage:
-  arvados-client costanalyzer [options ...] uuid [uuid ...]
+  ./arvados-client costanalyzer [options ...] [UUID ...]
 
-  This program analyzes the cost of Arvados container requests. For each uuid
-  supplied, it creates a CSV report that lists all the containers used to
-  fulfill the container request, together with the machine type and cost of
-  each container. At least one uuid must be specified.
+  This program analyzes the cost of Arvados container requests and calculates
+  the total cost across all requests. At least one UUID or a timestamp range
+  must be specified.
 
-  When supplied with the uuid of a container request, it will calculate the
+  When the '-output' option is specified, a set of CSV files with cost details
+  will be written to the provided directory. Each file is a CSV report that lists
+  all the containers used to fulfill the container request, together with the
+  machine type and cost of each container.
+
+  When supplied with the UUID of a container request, it will calculate the
   cost of that container request and all its children.
 
-  When supplied with the uuid of a collection, it will see if there is a
-  container_request uuid in the properties of the collection, and if so, it
+  When supplied with the UUID of a collection, it will see if there is a
+  container_request UUID in the properties of the collection, and if so, it
   will calculate the cost of that container request and all its children.
 
-  When supplied with a project uuid or when supplied with multiple container
-  request or collection uuids, it will create a CSV report for each supplied
-  uuid, as well as a CSV file with aggregate cost accounting for all supplied
-  uuids. The aggregate cost report takes container reuse into account: if a
-  container was reused between several container requests, its cost will only
-  be counted once.
+  When supplied with a project UUID or when supplied with multiple container
+  request or collection UUIDs, it will calculate the total cost for all
+  supplied UUIDs.
+
+  When supplied with a 'begin' and 'end' timestamp (format:
+  2006-01-02T15:04:05), it will calculate the cost for all top-level container
+  requests whose containers finished during the specified interval.
+
+  The total cost calculation takes container reuse into account: if a container
+  was reused between several container requests, its cost will only be counted
+  once.
 
   Caveats:
 
@@ -64,20 +73,21 @@ Usage:
   permanent cloud nodes that provide the Arvados services, the cost of data
   stored in Arvados, etc.
 
-  - When provided with a project uuid, subprojects will not be considered.
+  - When provided with a project UUID, subprojects will not be considered.
 
-  In order to get the data for the uuids supplied, the ARVADOS_API_HOST and
+  In order to get the data for the UUIDs supplied, the ARVADOS_API_HOST and
   ARVADOS_API_TOKEN environment variables must be set.
 
   This program prints the total dollar amount from the aggregate cost
-  accounting across all provided uuids on stdout.
-
-  When the '-output' option is specified, a set of CSV files with cost details
-  will be written to the provided directory.
+  accounting across all provided UUIDs on stdout.
 
 Options:
+  -begin begin
+      timestamp begin for date range operation (format: 2006-01-02T15:04:05)
   -cache
       create and use a local disk cache of Arvados objects (default true)
+  -end end
+      timestamp end for date range operation (format: 2006-01-02T15:04:05)
   -log-level level
       logging level (debug, info, ...) (default "info")
   -output directory

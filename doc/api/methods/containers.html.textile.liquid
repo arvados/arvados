@@ -59,6 +59,7 @@ Generally this will contain additional keys that are not present in any correspo
 |runtime_token|string|A v2 token to be passed into the container itself, used to access Keep-backed mounts, etc.|Not returned in API responses.  Reset to null when state is "Complete" or "Cancelled".|
 |gateway_address|string|Address (host:port) of gateway server.|Internal use only.|
 |interactive_session_started|boolean|Indicates whether @arvados-client shell@ has been used to run commands in the container, which may have altered the container's behavior and output.||
+|output_storage_classes|array of strings|The storage classes that will be used for the log and output collections of this container||
 
 h2(#container_states). Container states
 

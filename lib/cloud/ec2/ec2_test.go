@@ -25,6 +25,7 @@ package ec2
 import (
 	"encoding/json"
 	"flag"
+	"sync/atomic"
 	"testing"
 
 	"git.arvados.org/arvados.git/lib/cloud"
@@ -32,6 +33,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/config"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/sirupsen/logrus"
 	check "gopkg.in/check.v1"
@@ -246,4 +248,14 @@ func (*EC2InstanceSetSuite) TestDestroyInstances(c *check.C) {
 	}
 }
 
-var TestRateLimitErrorInterface cloud.RateLimitError = rateLimitError{}
+func (*EC2InstanceSetSuite) TestWrapError(c *check.C) {
+	retryError := awserr.New("Throttling", "", nil)
+	wrapped := wrapError(retryError, &atomic.Value{})
+	_, ok := wrapped.(cloud.RateLimitError)
+	c.Check(ok, check.Equals, true)
+
+	quotaError := awserr.New("InsufficientInstanceCapacity", "", nil)
+	wrapped = wrapError(quotaError, nil)
+	_, ok = wrapped.(cloud.QuotaError)
+	c.Check(ok, check.Equals, true)
+}

@@ -24,7 +24,9 @@ import (
 	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	"github.com/AdRoll/goamz/s3"
 )
 
@@ -136,13 +138,37 @@ func s3stringToSign(alg, scope, signedHeaders string, r *http.Request) (string, 
 		}
 	}
 
-	normalizedURL := *r.URL
-	normalizedURL.RawPath = ""
-	normalizedURL.Path = reMultipleSlashChars.ReplaceAllString(normalizedURL.Path, "/")
-	ctxlog.FromContext(r.Context()).Infof("escapedPath %s", normalizedURL.EscapedPath())
-	canonicalRequest := fmt.Sprintf("%s\n%s\n%s\n%s\n%s\n%s", r.Method, normalizedURL.EscapedPath(), s3querystring(r.URL), canonicalHeaders, signedHeaders, r.Header.Get("X-Amz-Content-Sha256"))
+	normalizedPath := normalizePath(r.URL.Path)
+	ctxlog.FromContext(r.Context()).Debugf("normalizedPath %q", normalizedPath)
+	canonicalRequest := fmt.Sprintf("%s\n%s\n%s\n%s\n%s\n%s", r.Method, normalizedPath, s3querystring(r.URL), canonicalHeaders, signedHeaders, r.Header.Get("X-Amz-Content-Sha256"))
 	ctxlog.FromContext(r.Context()).Debugf("s3stringToSign: canonicalRequest %s", canonicalRequest)
 	return fmt.Sprintf("%s\n%s\n%s\n%s", alg, r.Header.Get("X-Amz-Date"), scope, hashdigest(sha256.New(), canonicalRequest)), nil
+}
+
+func normalizePath(s string) string {
+	// (url.URL).EscapedPath() would be incorrect here. AWS
+	// documentation specifies the URL path should be normalized
+	// according to RFC 3986, i.e., unescaping ALPHA / DIGIT / "-"
+	// / "." / "_" / "~". The implication is that everything other
+	// than those chars (and "/") _must_ be percent-encoded --
+	// even chars like ";" and "," that are not normally
+	// percent-encoded in paths.
+	out := ""
+	for _, c := range []byte(reMultipleSlashChars.ReplaceAllString(s, "/")) {
+		if (c >= 'a' && c <= 'z') ||
+			(c >= 'A' && c <= 'Z') ||
+			(c >= '0' && c <= '9') ||
+			c == '-' ||
+			c == '.' ||
+			c == '_' ||
+			c == '~' ||
+			c == '/' {
+			out += string(c)
+		} else {
+			out += fmt.Sprintf("%%%02X", c)
+		}
+	}
+	return out
 }
 
 func s3signature(secretKey, scope, signedHeaders, stringToSign string) (string, error) {
@@ -285,19 +311,25 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 
 	var err error
 	var fs arvados.CustomFileSystem
+	var arvclient *arvadosclient.ArvadosClient
 	if r.Method == http.MethodGet || r.Method == http.MethodHead {
 		// Use a single session (cached FileSystem) across
 		// multiple read requests.
-		fs, err = h.Config.Cache.GetSession(token)
+		var sess *cachedSession
+		fs, sess, err = h.Config.Cache.GetSession(token)
 		if err != nil {
 			s3ErrorResponse(w, InternalError, err.Error(), r.URL.Path, http.StatusInternalServerError)
 			return true
 		}
+		arvclient = sess.arvadosclient
 	} else {
 		// Create a FileSystem for this request, to avoid
 		// exposing incomplete write operations to concurrent
 		// requests.
-		_, kc, client, release, err := h.getClients(r.Header.Get("X-Request-Id"), token)
+		var kc *keepclient.KeepClient
+		var release func()
+		var client *arvados.Client
+		arvclient, kc, client, release, err = h.getClients(r.Header.Get("X-Request-Id"), token)
 		if err != nil {
 			s3ErrorResponse(w, InternalError, err.Error(), r.URL.Path, http.StatusInternalServerError)
 			return true
@@ -372,6 +404,14 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 			s3ErrorResponse(w, NoSuchKey, "The specified key does not exist.", r.URL.Path, http.StatusNotFound)
 			return true
 		}
+
+		tokenUser, err := h.Config.Cache.GetTokenUser(token)
+		if !h.userPermittedToUploadOrDownload(r.Method, tokenUser) {
+			http.Error(w, "Not permitted", http.StatusForbidden)
+			return true
+		}
+		h.logUploadOrDownload(r, arvclient, fs, fspath, nil, tokenUser)
+
 		// shallow copy r, and change URL path
 		r := *r
 		r.URL.Path = fspath
@@ -455,6 +495,14 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 				return true
 			}
 			defer f.Close()
+
+			tokenUser, err := h.Config.Cache.GetTokenUser(token)
+			if !h.userPermittedToUploadOrDownload(r.Method, tokenUser) {
+				http.Error(w, "Not permitted", http.StatusForbidden)
+				return true
+			}
+			h.logUploadOrDownload(r, arvclient, fs, fspath, nil, tokenUser)
+
 			_, err = io.Copy(f, r.Body)
 			if err != nil {
 				err = fmt.Errorf("write to %q failed: %w", r.URL.Path, err)

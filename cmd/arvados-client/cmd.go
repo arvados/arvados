@@ -11,6 +11,7 @@ import (
 	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/lib/costanalyzer"
 	"git.arvados.org/arvados.git/lib/deduplicationreport"
+	"git.arvados.org/arvados.git/lib/diagnostics"
 	"git.arvados.org/arvados.git/lib/mount"
 )
 
@@ -59,6 +60,7 @@ var (
 		"costanalyzer":         costanalyzer.Command,
 		"shell":                shellCommand{},
 		"connect-ssh":          connectSSHCommand{},
+		"diagnostics":          diagnostics.Command{},
 	})
 )
 

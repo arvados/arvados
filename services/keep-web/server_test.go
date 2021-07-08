@@ -34,6 +34,7 @@ var _ = check.Suite(&IntegrationSuite{})
 // IntegrationSuite tests need an API server and a keep-web server
 type IntegrationSuite struct {
 	testServer *server
+	ArvConfig  *arvados.Config
 }
 
 func (s *IntegrationSuite) TestNoToken(c *check.C) {
@@ -389,7 +390,7 @@ func (s *IntegrationSuite) TestMetrics(c *check.C) {
 	c.Check(summaries["request_duration_seconds/get/404"].SampleCount, check.Equals, "1")
 	c.Check(summaries["time_to_status_seconds/get/404"].SampleCount, check.Equals, "1")
 	c.Check(counters["arvados_keepweb_collectioncache_requests//"].Value, check.Equals, int64(2))
-	c.Check(counters["arvados_keepweb_collectioncache_api_calls//"].Value, check.Equals, int64(1))
+	c.Check(counters["arvados_keepweb_collectioncache_api_calls//"].Value, check.Equals, int64(2))
 	c.Check(counters["arvados_keepweb_collectioncache_hits//"].Value, check.Equals, int64(1))
 	c.Check(counters["arvados_keepweb_collectioncache_pdh_hits//"].Value, check.Equals, int64(1))
 	c.Check(counters["arvados_keepweb_collectioncache_permission_hits//"].Value, check.Equals, int64(1))
@@ -446,6 +447,7 @@ func (s *IntegrationSuite) SetUpTest(c *check.C) {
 	cfg.cluster.ManagementToken = arvadostest.ManagementToken
 	cfg.cluster.SystemRootToken = arvadostest.SystemRootToken
 	cfg.cluster.Users.AnonymousUserToken = arvadostest.AnonymousToken
+	s.ArvConfig = arvCfg
 	s.testServer = &server{Config: cfg}
 	err = s.testServer.Start(ctxlog.TestLogger(c))
 	c.Assert(err, check.Equals, nil)

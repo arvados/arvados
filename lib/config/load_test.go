@@ -196,21 +196,37 @@ Clusters:
     SystemRootToken: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
     Collections:
      BlobSigningKey: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    postgresql: {}
-    BadKey: {}
-    Containers: {}
+    PostgreSQL: {}
+    BadKey1: {}
+    Containers:
+      RunTimeEngine: abc
     RemoteClusters:
       z2222:
         Host: z2222.arvadosapi.com
         Proxy: true
-        BadKey: badValue
+        BadKey2: badValue
+    Services:
+      KeepStore:
+        InternalURLs:
+          "http://host.example:12345": {}
+      Keepstore:
+        InternalURLs:
+          "http://host.example:12345":
+            RendezVous: x
+    ServiceS:
+      Keepstore:
+        InternalURLs:
+          "http://host.example:12345": {}
+    Volumes:
+      zzzzz-nyw5e-aaaaaaaaaaaaaaa: {}
 `, &logbuf).Load()
 	c.Assert(err, check.IsNil)
+	c.Log(logbuf.String())
 	logs := strings.Split(strings.TrimSuffix(logbuf.String(), "\n"), "\n")
 	for _, log := range logs {
-		c.Check(log, check.Matches, `.*deprecated or unknown config entry:.*BadKey.*`)
+		c.Check(log, check.Matches, `.*deprecated or unknown config entry:.*(RunTimeEngine.*RuntimeEngine|BadKey1|BadKey2|KeepStore|ServiceS|RendezVous).*`)
 	}
-	c.Check(logs, check.HasLen, 2)
+	c.Check(logs, check.HasLen, 6)
 }
 
 func (s *LoadSuite) checkSAMPLEKeys(c *check.C, path string, x interface{}) {
@@ -322,8 +338,8 @@ func (s *LoadSuite) TestPostgreSQLKeyConflict(c *check.C) {
 	_, err := testLoader(c, `
 Clusters:
  zzzzz:
-  postgresql:
-   connection:
+  PostgreSQL:
+   Connection:
      DBName: dbname
      Host: host
 `, nil).Load()

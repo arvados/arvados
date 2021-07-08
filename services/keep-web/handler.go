@@ -398,6 +398,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	defer h.clientPool.Put(arv)
 
 	var collection *arvados.Collection
+	var tokenUser *arvados.User
 	tokenResult := make(map[string]int)
 	for _, arv.ApiToken = range tokens {
 		var err error
@@ -483,7 +484,17 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check configured permission
+	_, sess, err := h.Config.Cache.GetSession(arv.ApiToken)
+	tokenUser, err = h.Config.Cache.GetTokenUser(arv.ApiToken)
+
 	if webdavMethod[r.Method] {
+		if !h.userPermittedToUploadOrDownload(r.Method, tokenUser) {
+			http.Error(w, "Not permitted", http.StatusForbidden)
+			return
+		}
+		h.logUploadOrDownload(r, sess.arvadosclient, nil, strings.Join(targetPath, "/"), collection, tokenUser)
+
 		if writeMethod[r.Method] {
 			// Save the collection only if/when all
 			// webdav->filesystem operations succeed --
@@ -538,6 +549,12 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	} else if stat.IsDir() {
 		h.serveDirectory(w, r, collection.Name, fs, openPath, true)
 	} else {
+		if !h.userPermittedToUploadOrDownload(r.Method, tokenUser) {
+			http.Error(w, "Not permitted", http.StatusForbidden)
+			return
+		}
+		h.logUploadOrDownload(r, sess.arvadosclient, nil, strings.Join(targetPath, "/"), collection, tokenUser)
+
 		http.ServeContent(w, r, basename, stat.ModTime(), f)
 		if wrote := int64(w.WroteBodyBytes()); wrote != stat.Size() && w.WroteStatus() == http.StatusOK {
 			// If we wrote fewer bytes than expected, it's
@@ -583,7 +600,8 @@ func (h *handler) serveSiteFS(w http.ResponseWriter, r *http.Request, tokens []s
 		http.Error(w, errReadOnly.Error(), http.StatusMethodNotAllowed)
 		return
 	}
-	fs, err := h.Config.Cache.GetSession(tokens[0])
+
+	fs, sess, err := h.Config.Cache.GetSession(tokens[0])
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -606,6 +624,14 @@ func (h *handler) serveSiteFS(w http.ResponseWriter, r *http.Request, tokens []s
 		}
 		return
 	}
+
+	tokenUser, err := h.Config.Cache.GetTokenUser(tokens[0])
+	if !h.userPermittedToUploadOrDownload(r.Method, tokenUser) {
+		http.Error(w, "Not permitted", http.StatusForbidden)
+		return
+	}
+	h.logUploadOrDownload(r, sess.arvadosclient, fs, r.URL.Path, nil, tokenUser)
+
 	if r.Method == "GET" {
 		_, basename := filepath.Split(r.URL.Path)
 		applyContentDispositionHdr(w, r, basename, attachment)
@@ -835,4 +861,118 @@ func (h *handler) seeOtherWithCookie(w http.ResponseWriter, r *http.Request, loc
 	io.WriteString(w, `<A href="`)
 	io.WriteString(w, html.EscapeString(redir))
 	io.WriteString(w, `">Continue</A>`)
+}
+
+func (h *handler) userPermittedToUploadOrDownload(method string, tokenUser *arvados.User) bool {
+	var permitDownload bool
+	var permitUpload bool
+	if tokenUser != nil && tokenUser.IsAdmin {
+		permitUpload = h.Config.cluster.Collections.WebDAVPermission.Admin.Upload
+		permitDownload = h.Config.cluster.Collections.WebDAVPermission.Admin.Download
+	} else {
+		permitUpload = h.Config.cluster.Collections.WebDAVPermission.User.Upload
+		permitDownload = h.Config.cluster.Collections.WebDAVPermission.User.Download
+	}
+	if (method == "PUT" || method == "POST") && !permitUpload {
+		// Disallow operations that upload new files.
+		// Permit webdav operations that move existing files around.
+		return false
+	} else if method == "GET" && !permitDownload {
+		// Disallow downloading file contents.
+		// Permit webdav operations like PROPFIND that retrieve metadata
+		// but not file contents.
+		return false
+	}
+	return true
+}
+
+func (h *handler) logUploadOrDownload(
+	r *http.Request,
+	client *arvadosclient.ArvadosClient,
+	fs arvados.CustomFileSystem,
+	filepath string,
+	collection *arvados.Collection,
+	user *arvados.User) {
+
+	log := ctxlog.FromContext(r.Context())
+	props := make(map[string]string)
+	props["reqPath"] = r.URL.Path
+	var useruuid string
+	if user != nil {
+		log = log.WithField("user_uuid", user.UUID).
+			WithField("user_full_name", user.FullName)
+		useruuid = user.UUID
+	} else {
+		useruuid = fmt.Sprintf("%s-tpzed-anonymouspublic", h.Config.cluster.ClusterID)
+	}
+	if collection == nil && fs != nil {
+		collection, filepath = h.determineCollection(fs, filepath)
+	}
+	if collection != nil {
+		log = log.WithField("collection_uuid", collection.UUID).
+			WithField("collection_file_path", filepath)
+		props["collection_uuid"] = collection.UUID
+		props["collection_file_path"] = filepath
+	}
+	if r.Method == "PUT" || r.Method == "POST" {
+		log.Info("File upload")
+		if h.Config.cluster.Collections.WebDAVLogEvents {
+			go func() {
+				lr := arvadosclient.Dict{"log": arvadosclient.Dict{
+					"object_uuid": useruuid,
+					"event_type":  "file_upload",
+					"properties":  props}}
+				err := client.Create("logs", lr, nil)
+				if err != nil {
+					log.WithError(err).Error("Failed to create upload log event on API server")
+				}
+			}()
+		}
+	} else if r.Method == "GET" {
+		if collection != nil && collection.PortableDataHash != "" {
+			log = log.WithField("portable_data_hash", collection.PortableDataHash)
+			props["portable_data_hash"] = collection.PortableDataHash
+		}
+		log.Info("File download")
+		if h.Config.cluster.Collections.WebDAVLogEvents {
+			go func() {
+				lr := arvadosclient.Dict{"log": arvadosclient.Dict{
+					"object_uuid": useruuid,
+					"event_type":  "file_download",
+					"properties":  props}}
+				err := client.Create("logs", lr, nil)
+				if err != nil {
+					log.WithError(err).Error("Failed to create download log event on API server")
+				}
+			}()
+		}
+	}
+}
+
+func (h *handler) determineCollection(fs arvados.CustomFileSystem, path string) (*arvados.Collection, string) {
+	segments := strings.Split(path, "/")
+	var i int
+	for i = 0; i < len(segments); i++ {
+		dir := append([]string{}, segments[0:i]...)
+		dir = append(dir, ".arvados#collection")
+		f, err := fs.OpenFile(strings.Join(dir, "/"), os.O_RDONLY, 0)
+		if f != nil {
+			defer f.Close()
+		}
+		if err != nil {
+			if !os.IsNotExist(err) {
+				return nil, ""
+			}
+			continue
+		}
+		// err is nil so we found it.
+		decoder := json.NewDecoder(f)
+		var collection arvados.Collection
+		err = decoder.Decode(&collection)
+		if err != nil {
+			return nil, ""
+		}
+		return &collection, strings.Join(segments[i:], "/")
+	}
+	return nil, ""
 }

@@ -16,10 +16,18 @@ Names of storage classes are internal to the cluster and decided by the administ
 
 h3. arv-put
 
-You may specify the desired storage class for a collection uploaded using @arv-put@:
+You may specify one or more desired storage classes for a collection uploaded using @arv-put@:
 
 <pre>
-$ arv-put --storage-classes=hot myfile.txt
+$ arv-put --storage-classes=hot,archival myfile.txt
+</pre>
+
+h3. arv-mount
+
+You can ask @arv-mount@ to use specific storage classes when creating new collections:
+
+<pre>
+$ arv-mount --storage-classes=transient --mount-tmp=scratch keep
 </pre>
 
 h3. arvados-cwl-runner
@@ -45,8 +53,6 @@ By setting "storage_classes_desired" to "archival", the blocks that make up the 
 h3. Storage class notes
 
 Collection blocks will be in the "default" storage class if not otherwise specified.
-
-Currently, a collection may only have one desired storage class.
 
 Any user with write access to a collection may set any storage class on that collection.
 

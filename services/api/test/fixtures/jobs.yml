@@ -496,7 +496,7 @@ job_with_latest_version:
   script: hash
   repository: active/foo
   script_version: 7def43a4d3f20789dda4700f703b5514cc3ed250
-  supplied_script_version: master
+  supplied_script_version: main
   script_parameters:
     input: 1f4b0bc7583c2a7f9102c395f4ffc5e3+45
   created_at: <%= 3.minute.ago.to_s(:db) %>

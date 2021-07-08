@@ -239,6 +239,29 @@ SET default_tablespace = '';
 SET default_with_oids = false;
 
 --
+-- Name: groups; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.groups (
+    id integer NOT NULL,
+    uuid character varying(255),
+    owner_uuid character varying(255),
+    created_at timestamp without time zone NOT NULL,
+    modified_by_client_uuid character varying(255),
+    modified_by_user_uuid character varying(255),
+    modified_at timestamp without time zone,
+    name character varying(255) NOT NULL,
+    description character varying(524288),
+    updated_at timestamp without time zone NOT NULL,
+    group_class character varying(255),
+    trash_at timestamp without time zone,
+    is_trashed boolean DEFAULT false NOT NULL,
+    delete_at timestamp without time zone,
+    properties jsonb DEFAULT '{}'::jsonb
+);
+
+
+--
 -- Name: api_client_authorizations; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -461,7 +484,8 @@ CREATE TABLE public.container_requests (
     output_name character varying(255) DEFAULT NULL::character varying,
     output_ttl integer DEFAULT 0 NOT NULL,
     secret_mounts jsonb DEFAULT '{}'::jsonb,
-    runtime_token text
+    runtime_token text,
+    output_storage_classes jsonb DEFAULT '["default"]'::jsonb
 );
 
 
@@ -523,7 +547,8 @@ CREATE TABLE public.containers (
     runtime_token text,
     lock_count integer DEFAULT 0 NOT NULL,
     gateway_address character varying,
-    interactive_session_started boolean DEFAULT false NOT NULL
+    interactive_session_started boolean DEFAULT false NOT NULL,
+    output_storage_classes jsonb DEFAULT '["default"]'::jsonb
 );
 
 
@@ -544,29 +569,6 @@ CREATE SEQUENCE public.containers_id_seq
 --
 
 ALTER SEQUENCE public.containers_id_seq OWNED BY public.containers.id;
-
-
---
--- Name: groups; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.groups (
-    id integer NOT NULL,
-    uuid character varying(255),
-    owner_uuid character varying(255),
-    created_at timestamp without time zone NOT NULL,
-    modified_by_client_uuid character varying(255),
-    modified_by_user_uuid character varying(255),
-    modified_at timestamp without time zone,
-    name character varying(255) NOT NULL,
-    description character varying(524288),
-    updated_at timestamp without time zone NOT NULL,
-    group_class character varying(255),
-    trash_at timestamp without time zone,
-    is_trashed boolean DEFAULT false NOT NULL,
-    delete_at timestamp without time zone,
-    properties jsonb DEFAULT '{}'::jsonb
-);
 
 
 --
@@ -3191,6 +3193,7 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20201105190435'),
 ('20201202174753'),
 ('20210108033940'),
-('20210126183521');
+('20210126183521'),
+('20210621204455');
 
 

@@ -22,7 +22,7 @@ class CommitTest < ActiveSupport::TestCase
   test 'find_commit_range does not bypass permissions' do
     authorize_with :inactive
     assert_raises ArgumentError do
-      CommitsHelper::find_commit_range 'foo', nil, 'master', []
+      CommitsHelper::find_commit_range 'foo', nil, 'main', []
     end
   end
 
@@ -43,7 +43,7 @@ class CommitTest < ActiveSupport::TestCase
       fake_gitdir = repositories(:foo).server_path
       CommitsHelper::expects(:cache_dir_for).once.with(url).returns fake_gitdir
       CommitsHelper::expects(:fetch_remote_repository).once.with(fake_gitdir, url).returns true
-      c = CommitsHelper::find_commit_range url, nil, 'master', []
+      c = CommitsHelper::find_commit_range url, nil, 'main', []
       refute_empty c
     end
   end
@@ -59,7 +59,7 @@ class CommitTest < ActiveSupport::TestCase
     test "find_commit_range skips fetch_remote_repository for #{url}" do
       CommitsHelper::expects(:fetch_remote_repository).never
       assert_raises ArgumentError do
-        CommitsHelper::find_commit_range url, nil, 'master', []
+        CommitsHelper::find_commit_range url, nil, 'main', []
       end
     end
   end
@@ -67,7 +67,7 @@ class CommitTest < ActiveSupport::TestCase
   test 'fetch_remote_repository does not leak commits across repositories' do
     url = "http://localhost:1/fake/fake.git"
     fetch_remote_from_local_repo url, :foo
-    c = CommitsHelper::find_commit_range url, nil, 'master', []
+    c = CommitsHelper::find_commit_range url, nil, 'main', []
     assert_equal ['077ba2ad3ea24a929091a9e6ce545c93199b8e57'], c
 
     url = "http://localhost:2/fake/fake.git"
@@ -89,7 +89,7 @@ class CommitTest < ActiveSupport::TestCase
 
   def with_foo_repository
     Dir.chdir("#{Rails.configuration.Git.Repositories}/#{repositories(:foo).uuid}") do
-      must_pipe("git checkout master 2>&1")
+      must_pipe("git checkout main 2>&1")
       yield
     end
   end
@@ -196,7 +196,7 @@ class CommitTest < ActiveSupport::TestCase
     assert_equal ['31ce37fe365b3dc204300a3e4c396ad333ed0556'], a
 
     #test "test_branch1" do
-    a = CommitsHelper::find_commit_range('active/foo', nil, 'master', nil)
+    a = CommitsHelper::find_commit_range('active/foo', nil, 'main', nil)
     assert_includes(a, '077ba2ad3ea24a929091a9e6ce545c93199b8e57')
 
     #test "test_branch2" do
@@ -221,7 +221,7 @@ class CommitTest < ActiveSupport::TestCase
     #test "test_tag" do
     # complains "fatal: ambiguous argument 'tag1': unknown revision or path
     # not in the working tree."
-    a = CommitsHelper::find_commit_range('active/foo', 'tag1', 'master', nil)
+    a = CommitsHelper::find_commit_range('active/foo', 'tag1', 'main', nil)
     assert_equal ['077ba2ad3ea24a929091a9e6ce545c93199b8e57', '4fe459abe02d9b365932b8f5dc419439ab4e2577'], a
 
     #test "test_multi_revision_exclude" do

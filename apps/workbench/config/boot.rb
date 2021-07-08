@@ -8,7 +8,6 @@ require 'rubygems'
 ENV['BUNDLE_GEMFILE'] ||= File.expand_path('../../Gemfile', __FILE__)
 
 require 'bundler/setup' if File.exists?(ENV['BUNDLE_GEMFILE'])
-require 'bootsnap/setup' # Speed up boot time by caching expensive operations.
 
 # Use ARVADOS_API_TOKEN environment variable (if set) in console
 require 'rails'

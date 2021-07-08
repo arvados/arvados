@@ -68,6 +68,16 @@ type WebDAVCacheConfig struct {
 	MaxSessions          int
 }
 
+type UploadDownloadPermission struct {
+	Upload   bool
+	Download bool
+}
+
+type UploadDownloadRolePermissions struct {
+	User  UploadDownloadPermission
+	Admin UploadDownloadPermission
+}
+
 type Cluster struct {
 	ClusterID       string `json:"-"`
 	ManagementToken string
@@ -130,6 +140,10 @@ type Cluster struct {
 		BalanceTimeout           Duration
 
 		WebDAVCache WebDAVCacheConfig
+
+		KeepproxyPermission UploadDownloadRolePermissions
+		WebDAVPermission    UploadDownloadRolePermissions
+		WebDAVLogEvents     bool
 	}
 	Git struct {
 		GitCommand   string
@@ -175,11 +189,6 @@ type Cluster struct {
 			Enable             bool
 			Service            string
 			DefaultEmailDomain string
-		}
-		SSO struct {
-			Enable            bool
-			ProviderAppID     string
-			ProviderAppSecret string
 		}
 		Test struct {
 			Enable bool
@@ -327,7 +336,6 @@ type Services struct {
 	Keepproxy      Service
 	Keepstore      Service
 	RailsAPI       Service
-	SSO            Service
 	WebDAVDownload Service
 	WebDAV         Service
 	WebShell       Service

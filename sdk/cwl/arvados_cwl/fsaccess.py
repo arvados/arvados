@@ -129,7 +129,7 @@ class CollectionFsAccess(cwltool.stdfsaccess.StdFsAccess):
 
     def glob(self, pattern):
         collection, rest = self.get_collection(pattern)
-        if collection is not None and not rest:
+        if collection is not None and rest in (None, "", "."):
             return [pattern]
         patternsegments = rest.split("/")
         return sorted(self._match(collection, patternsegments, "keep:" + collection.manifest_locator()))

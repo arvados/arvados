@@ -32,6 +32,15 @@ const (
 
 var _ = check.Suite(&SiteFSSuite{})
 
+func init() {
+	// Enable DebugLocksPanicMode sometimes. Don't enable it all
+	// the time, though -- it adds many calls to time.Sleep(),
+	// which could hide different bugs.
+	if time.Now().Second()&1 == 0 {
+		DebugLocksPanicMode = true
+	}
+}
+
 type SiteFSSuite struct {
 	client *Client
 	fs     CustomFileSystem

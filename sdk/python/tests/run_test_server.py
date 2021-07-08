@@ -755,9 +755,6 @@ def setup_config():
                 "http://%s:%s"%(localhost, keep_web_dl_port): {},
             },
         },
-        "SSO": {
-            "ExternalURL": "http://localhost:3002",
-        },
     }
 
     config = {
@@ -769,10 +766,14 @@ def setup_config():
                     "RequestTimeout": "30s",
                 },
                 "Login": {
-                    "SSO": {
+                    "Test": {
                         "Enable": True,
-                        "ProviderAppID": "arvados-server",
-                        "ProviderAppSecret": "608dbf356a327e2d0d4932b60161e212c2d8d8f5e25690d7b622f850a990cd33",
+                        "Users": {
+                            "alice": {
+                                "Email": "alice@example.com",
+                                "Password": "xyzzy"
+                            }
+                        }
                     },
                 },
                 "SystemLogs": {

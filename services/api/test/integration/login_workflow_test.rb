@@ -30,7 +30,7 @@ class LoginWorkflowTest < ActionDispatch::IntegrationTest
       params: {specimen: {}},
       headers: {'HTTP_ACCEPT' => 'text/html'})
     assert_response 302
-    assert_match(%r{/auth/joshid$}, @response.headers['Location'],
+    assert_match(%r{http://www.example.com/login$}, @response.headers['Location'],
                  "HTML login prompt did not include expected redirect")
   end
 end

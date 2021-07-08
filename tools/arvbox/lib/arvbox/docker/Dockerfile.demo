@@ -5,7 +5,7 @@
 FROM arvados/arvbox-base
 ARG arvados_version
 ARG composer_version=arvados-fork
-ARG workbench2_version=master
+ARG workbench2_version=main
 
 RUN cd /usr/src && \
     git clone --no-checkout https://git.arvados.org/arvados.git && \

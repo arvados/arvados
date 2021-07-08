@@ -674,6 +674,7 @@ func (dn *dirnode) Child(name string, replace func(inode) (inode, error)) (inode
 			if err != nil {
 				return nil, err
 			}
+			coll.UUID = dn.fs.uuid
 			data, err := json.Marshal(&coll)
 			if err == nil {
 				data = append(data, '\n')
@@ -1167,9 +1168,12 @@ func (dn *dirnode) createFileAndParents(path string) (fn *filenode, err error) {
 			node = node.Parent()
 			continue
 		}
+		modtime := node.Parent().FileInfo().ModTime()
+		node.Lock()
+		locked := node
 		node, err = node.Child(name, func(child inode) (inode, error) {
 			if child == nil {
-				child, err := node.FS().newNode(name, 0755|os.ModeDir, node.Parent().FileInfo().ModTime())
+				child, err := node.FS().newNode(name, 0755|os.ModeDir, modtime)
 				if err != nil {
 					return nil, err
 				}
@@ -1181,6 +1185,7 @@ func (dn *dirnode) createFileAndParents(path string) (fn *filenode, err error) {
 				return child, nil
 			}
 		})
+		locked.Unlock()
 		if err != nil {
 			return
 		}
@@ -1191,10 +1196,13 @@ func (dn *dirnode) createFileAndParents(path string) (fn *filenode, err error) {
 		err = fmt.Errorf("invalid file part %q in path %q", basename, path)
 		return
 	}
+	modtime := node.FileInfo().ModTime()
+	node.Lock()
+	defer node.Unlock()
 	_, err = node.Child(basename, func(child inode) (inode, error) {
 		switch child := child.(type) {
 		case nil:
-			child, err = node.FS().newNode(basename, 0755, node.FileInfo().ModTime())
+			child, err = node.FS().newNode(basename, 0755, modtime)
 			if err != nil {
 				return nil, err
 			}

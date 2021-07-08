@@ -30,49 +30,39 @@ Clusters:
 
       # In each of the service sections below, the keys under
       # InternalURLs are the endpoints where the service should be
-      # listening, and reachable from other hosts in the cluster.
-      SAMPLE:
-        InternalURLs:
-          "http://host1.example:12345": {}
-          "http://host2.example:12345":
-            # Rendezvous is normally empty/omitted. When changing the
-            # URL of a Keepstore service, Rendezvous should be set to
-            # the old URL (with trailing slash omitted) to preserve
-            # rendezvous ordering.
-            Rendezvous: ""
-          SAMPLE:
-            Rendezvous: ""
-        ExternalURL: "-"
+      # listening, and reachable from other hosts in the
+      # cluster. Example:
+      #
+      # InternalURLs:
+      #   "http://host1.example:12345": {}
+      #   "http://host2.example:12345": {}
 
       RailsAPI:
-        InternalURLs: {}
+        InternalURLs: {SAMPLE: {}}
         ExternalURL: "-"
       Controller:
-        InternalURLs: {}
+        InternalURLs: {SAMPLE: {}}
         ExternalURL: ""
       Websocket:
-        InternalURLs: {}
+        InternalURLs: {SAMPLE: {}}
         ExternalURL: ""
       Keepbalance:
-        InternalURLs: {}
+        InternalURLs: {SAMPLE: {}}
         ExternalURL: "-"
       GitHTTP:
-        InternalURLs: {}
+        InternalURLs: {SAMPLE: {}}
         ExternalURL: ""
       GitSSH:
-        InternalURLs: {}
+        InternalURLs: {SAMPLE: {}}
         ExternalURL: ""
       DispatchCloud:
-        InternalURLs: {}
+        InternalURLs: {SAMPLE: {}}
         ExternalURL: "-"
-      SSO:
-        InternalURLs: {}
-        ExternalURL: ""
       Keepproxy:
-        InternalURLs: {}
+        InternalURLs: {SAMPLE: {}}
         ExternalURL: ""
       WebDAV:
-        InternalURLs: {}
+        InternalURLs: {SAMPLE: {}}
         # Base URL for Workbench inline preview.  If blank, use
         # WebDAVDownload instead, and disable inline preview.
         # If both are empty, downloading collections from workbench
@@ -111,7 +101,7 @@ Clusters:
         ExternalURL: ""
 
       WebDAVDownload:
-        InternalURLs: {}
+        InternalURLs: {SAMPLE: {}}
         # Base URL for download links. If blank, serve links to WebDAV
         # with disposition=attachment query param.  Unlike preview links,
         # browsers do not render attachments, so there is no risk of XSS.
@@ -125,13 +115,19 @@ Clusters:
         ExternalURL: ""
 
       Keepstore:
-        InternalURLs: {}
+        InternalURLs:
+          SAMPLE:
+            # Rendezvous is normally empty/omitted. When changing the
+            # URL of a Keepstore service, Rendezvous should be set to
+            # the old URL (with trailing slash omitted) to preserve
+            # rendezvous ordering.
+            Rendezvous: ""
         ExternalURL: "-"
       Composer:
-        InternalURLs: {}
+        InternalURLs: {SAMPLE: {}}
         ExternalURL: ""
       WebShell:
-        InternalURLs: {}
+        InternalURLs: {SAMPLE: {}}
         # ShellInABox service endpoint URL for a given VM.  If empty, do not
         # offer web shell logins.
         #
@@ -142,13 +138,13 @@ Clusters:
         # https://*.webshell.uuid_prefix.arvadosapi.com
         ExternalURL: ""
       Workbench1:
-        InternalURLs: {}
+        InternalURLs: {SAMPLE: {}}
         ExternalURL: ""
       Workbench2:
-        InternalURLs: {}
+        InternalURLs: {SAMPLE: {}}
         ExternalURL: ""
       Health:
-        InternalURLs: {}
+        InternalURLs: {SAMPLE: {}}
         ExternalURL: "-"
 
     PostgreSQL:
@@ -561,8 +557,36 @@ Clusters:
         # Persistent sessions.
         MaxSessions: 100
 
+      # Selectively set permissions for regular users and admins to
+      # download or upload data files using the upload/download
+      # features for Workbench, WebDAV and S3 API support.
+      WebDAVPermission:
+        User:
+          Download: true
+          Upload: true
+        Admin:
+          Download: true
+          Upload: true
+
+      # Selectively set permissions for regular users and admins to be
+      # able to download or upload blocks using arv-put and
+      # arv-get from outside the cluster.
+      KeepproxyPermission:
+        User:
+          Download: true
+          Upload: true
+        Admin:
+          Download: true
+          Upload: true
+
+      # Post upload / download events to the API server logs table, so
+      # that they can be included in the arv-user-activity report.
+      # You can disable this if you find that it is creating excess
+      # load on the API server and you don't need it.
+      WebDAVLogEvents: true
+
     Login:
-      # One of the following mechanisms (SSO, Google, PAM, LDAP, or
+      # One of the following mechanisms (Google, PAM, LDAP, or
       # LoginCluster) should be enabled; see
       # https://doc.arvados.org/install/setup-login.html
 
@@ -742,16 +766,6 @@ Clusters:
         # no value is found (or this config is empty) the username
         # originally supplied by the user will be used.
         UsernameAttribute: uid
-
-      SSO:
-        # Authenticate with a separate SSO server. (Deprecated)
-        Enable: false
-
-        # ProviderAppID and ProviderAppSecret are generated during SSO
-        # setup; see
-        # https://doc.arvados.org/v2.0/install/install-sso.html#update-config
-        ProviderAppID: ""
-        ProviderAppSecret: ""
 
       Test:
         # Authenticate users listed here in the config file. This
