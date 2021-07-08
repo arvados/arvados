@@ -175,16 +175,14 @@ func (ctrl *oidcLoginController) getAuthInfo(ctx context.Context, token *oauth2.
 	if err := claimser.Claims(&claims); err != nil {
 		return nil, fmt.Errorf("error extracting claims from token: %s", err)
 	} else if verified, _ := claims[ctrl.EmailVerifiedClaim].(bool); verified || ctrl.EmailVerifiedClaim == "" {
-		givenName, ok := claims["given_name"].(string)
-		if ok && givenName != "" {
+		// Fall back to this info if the People API call
+		// (below) doesn't return a primary && verified email.
+		givenName, _ := claims["given_name"].(string)
+		familyName, _ := claims["family_name"].(string)
+		if givenName != "" && familyName != "" {
 			ret.FirstName = givenName
-		}
-		familyName, ok := claims["family_name"].(string)
-		if ok && familyName != "" {
 			ret.LastName = familyName
 		} else {
-			// Fall back to this info if the People API call
-			// (below) doesn't return a primary && verified email.
 			name, _ := claims["name"].(string)
 			if names := strings.Fields(strings.TrimSpace(name)); len(names) > 1 {
 				ret.FirstName = strings.Join(names[0:len(names)-1], " ")

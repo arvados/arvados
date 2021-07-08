@@ -51,6 +51,13 @@ func (s *OIDCLoginSuite) TearDownSuite(c *check.C) {
 	c.Check(arvados.NewClientFromEnv().RequestAndDecode(nil, "POST", "database/reset", nil, nil), check.IsNil)
 }
 
+// TODO: In the interest of reducing redundant tests: It looks like if we change
+// Given/Family names to {"Fake", "User Name"} in SetUpTest, and update
+// TestGoogleLogin_Success accordingly, then we wouldn't even need a separate
+// TestGoogleLogin_OIDCClamisWithGivenNames test to check the normal case, and
+// the old/renamed OIDCNameWithoutGivenAndFamilyNames test would check the case
+// where we fall back to splitting on whitespace.
+
 func (s *OIDCLoginSuite) SetUpTest(c *check.C) {
 	s.fakeProvider = arvadostest.NewOIDCProvider(c)
 	s.fakeProvider.AuthEmail = "active-user@arvados.local"
@@ -474,7 +481,7 @@ func (s *OIDCLoginSuite) TestGoogleLogin_RealName(c *check.C) {
 	c.Check(authinfo.LastName, check.Equals, "Psmith")
 }
 
-func (s *OIDCLoginSuite) TestGoogleLogin_OIDCRealName(c *check.C) {
+func (s *OIDCLoginSuite) TestGoogleLogin_OIDCNameWithoutGivenAndFamilyNames(c *check.C) {
 	s.fakeProvider.AuthName = "Joe P. Smith"
 	s.fakeProvider.AuthGivenName = ""
 	s.fakeProvider.AuthFamilyName = ""
@@ -490,7 +497,7 @@ func (s *OIDCLoginSuite) TestGoogleLogin_OIDCRealName(c *check.C) {
 	c.Check(authinfo.LastName, check.Equals, "Smith")
 }
 
-func (s *OIDCLoginSuite) TestGoogleLogin_OIDCClamisWithGivenNames(c *check.C) {
+func (s *OIDCLoginSuite) TestGoogleLogin_OIDCClaimsWithGivenNames(c *check.C) {
 	s.fakeProvider.AuthName = "Federico Garcia Lorca"
 	s.fakeProvider.AuthGivenName = "Federico"
 	s.fakeProvider.AuthFamilyName = "Garcia Lorca"
