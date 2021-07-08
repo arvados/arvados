@@ -62,8 +62,6 @@ require (
 	golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	golang.org/x/sys v0.0.0-20210603125802-9665404d3644
-	golang.org/x/tools v0.1.0 // indirect
-	golang.org/x/sys v0.0.0-20210510120138-977fb7262007
 	golang.org/x/tools v0.1.2 // indirect
 	google.golang.org/api v0.13.0
 	gopkg.in/asn1-ber.v1 v1.0.0-20181015200546-f715ec2f112d // indirect
