@@ -433,3 +433,9 @@
     "val": "keep:f225e6259bdd63bc7240599648dde9f1+97/hg19.fa"
   tool: 17858-pack-visit-crash.cwl
   doc: "Test issue 17858 - keep ref default inputs on ExpressionTool"
+
+- job: 17879-ignore-sbg-fields-job.yml
+  output:
+    "outstr": "foo woble bar"
+  tool: 17879-ignore-sbg-fields.cwl
+  doc: "Test issue 17879 - ignores sbg fields"
