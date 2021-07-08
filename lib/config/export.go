@@ -232,7 +232,7 @@ var whitelist = map[string]bool{
 	"Volumes.*.ReadOnly":                                  true,
 	"Volumes.*.Replication":                               true,
 	"Volumes.*.StorageClasses":                            true,
-	"Volumes.*.StorageClasses.*":                          false,
+	"Volumes.*.StorageClasses.*":                          true,
 	"Workbench":                                           true,
 	"Workbench.ActivationContactLink":                     false,
 	"Workbench.APIClientConnectTimeout":                   true,
