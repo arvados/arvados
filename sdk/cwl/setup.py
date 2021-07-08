@@ -40,7 +40,7 @@ setup(name='arvados-cwl-runner',
       # build.
       install_requires=[
           'cwltool==3.0.20210319143721',
-          'schema-salad==7.1.20210316164414',
+          'schema-salad==7.1.20210611090601',
           'arvados-python-client{}'.format(pysdk_dep),
           'setuptools',
           'ciso8601 >= 2.0.0'
