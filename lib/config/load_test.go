@@ -224,7 +224,7 @@ Clusters:
 	c.Log(logbuf.String())
 	logs := strings.Split(strings.TrimSuffix(logbuf.String(), "\n"), "\n")
 	for _, log := range logs {
-		c.Check(log, check.Matches, `.*deprecated or unknown config entry:.*(RunTimeEngine.*RuntimeEngine|BadKey1|BadKey2|KeepStore|ServiceS|RendezVous).*`)
+		c.Check(log, check.Matches, `.*deprecated or unknown config entry:.*(RunTimeEngine|BadKey1|BadKey2|KeepStore|ServiceS|RendezVous).*`)
 	}
 	c.Check(logs, check.HasLen, 6)
 }
