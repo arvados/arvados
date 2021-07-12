@@ -2,14 +2,14 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-FROM debian:buster
+FROM node:12.22.3-buster
 LABEL maintainer="Arvados Package Maintainers <packaging@arvados.org>"
 
 RUN echo deb http://deb.debian.org/debian buster-backports main >> /etc/apt/sources.list.d/backports.list
 RUN apt-get update && \
     apt-get -yq --no-install-recommends -o Acquire::Retries=6 install \
     libsecret-1-0 libsecret-1-dev rpm ruby ruby-dev rubygems build-essential \
-    libpam0g-dev libgbm1 && \
+    libpam0g-dev libgbm1 git && \
     apt-get clean
 RUN apt-get -yq --no-install-recommends -t buster-backports install golang-go && \
     apt-get clean
