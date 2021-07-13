@@ -245,11 +245,34 @@ func getListenAddr(svcs arvados.Services, prog arvados.ServiceName, log logrus.F
 	}
 
 	if svc.ListenAddress != "" {
+		scheme := ""
 		for internalURL := range svc.InternalURLs {
-			listenURL := internalURL
-			listenURL.Host = svc.ListenAddress
-			return listenURL, internalURL, nil
+			if internalURL.Host == svc.ListenAddress {
+				if len(svc.InternalURLs) > 1 {
+					log.Warnf("possible configuration error: multiple InternalURLs entries exist for %s but only %q will ever be used because it matches ListenAddress", prog, internalURL.String())
+				}
+				return internalURL, internalURL, nil
+			}
+			switch scheme {
+			case "":
+				scheme = internalURL.Scheme
+			case internalURL.Scheme:
+			default:
+				scheme = "-" // different InternalURLs have different schemes
+			}
 		}
+		if scheme == "-" {
+			return arvados.URL{}, arvados.URL{}, fmt.Errorf("cannot use ListenAddress %q: InternalURLs use multiple schemes and none have host %q", svc.ListenAddress, svc.ListenAddress)
+		}
+		if scheme == "" {
+			// No entries at all in InternalURLs
+			scheme = "http"
+		}
+		listenURL := arvados.URL{}
+		listenURL.Host = svc.ListenAddress
+		listenURL.Scheme = scheme
+		listenURL.Path = "/"
+		return listenURL, listenURL, nil
 	}
 
 	errors := []string{}
