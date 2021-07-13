@@ -82,4 +82,26 @@ describe('Sharing tests', function () {
                 cy.get('[data-cy=context-menu]').should('not.contain', 'Move to trash');
             });
     });
+
+    it('can edit project in shared with me', () => {
+        cy.createProject({
+            owningUser: adminUser,
+            targetUser: activeUser,
+            projectName: 'mySharedWritableProject',
+            canWrite: true,
+            addToFavorites: true
+        });
+
+        cy.getAll('@mySharedWritableProject')
+            .then(function ([mySharedWritableProject]) {
+                cy.loginAs(activeUser);
+                
+                cy.get('[data-cy=side-panel-tree]').contains('Shared with me').click();
+
+                const newProjectName = `New project name ${mySharedWritableProject.name}`;
+                const newProjectDescription = `New project description ${mySharedWritableProject.name}`;
+
+                cy.testEditProjectOrCollection('main', mySharedWritableProject.name, newProjectName, newProjectDescription);
+            });
+    });
 });

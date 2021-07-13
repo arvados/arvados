@@ -61,8 +61,9 @@ export const SharedWithMePanel = withStyles(styles)(
                 const menuKind = this.props.dispatch<any>(resourceUuidToContextMenuKind(resourceUuid));
                 if (menuKind && resource) {
                     this.props.dispatch<any>(openContextMenu(event, {
-                        name: '',
+                        name: resource.name,
                         uuid: resource.uuid,
+                        description: resource.description,
                         ownerUuid: resource.ownerUuid,
                         isTrashed: ('isTrashed' in resource) ? resource.isTrashed: false,
                         kind: resource.kind,

@@ -65,6 +65,7 @@ export const openCollectionFilesContextMenu = (event: React.MouseEvent<HTMLEleme
             name: '',
             uuid: '',
             ownerUuid: '',
+            description: '',
             kind: ResourceKind.COLLECTION,
             menuKind: isCollectionFileSelected
                 ? isWritable
@@ -166,6 +167,7 @@ export const openProjectContextMenu = (event: React.MouseEvent<HTMLElement>, res
                 uuid: res.uuid,
                 kind: res.kind,
                 menuKind,
+                description: res.description,
                 ownerUuid: res.ownerUuid,
                 isTrashed: ('isTrashed' in res) ? res.isTrashed : false,
             }));

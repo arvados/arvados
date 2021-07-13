@@ -132,7 +132,50 @@ describe('Favorites tests', function () {
             });
     });
 
-    it('can view favourites in workflow', () => {
+    it('can edit project and collections in favorites', () => {
+        cy.createProject({
+            owningUser: adminUser,
+            projectName: 'mySharedWritableProject',
+            canWrite: true,
+            addToFavorites: true
+        });
+
+        cy.createCollection(adminUser.token, {
+            owner_uuid: adminUser.user.uuid,
+            name: `Test target collection ${Math.floor(Math.random() * 999999)}`,
+        }).as('testTargetCollection').then(function (testTargetCollection) {
+            cy.addToFavorites(adminUser.token, adminUser.user.uuid, testTargetCollection.uuid);
+        });
+
+        cy.getAll('@mySharedWritableProject', '@testTargetCollection')
+            .then(function ([mySharedWritableProject, testTargetCollection]) {
+                cy.loginAs(adminUser);
+                
+                cy.get('[data-cy=side-panel-tree]').contains('My Favorites').click();
+
+                const newProjectName = `New project name ${mySharedWritableProject.name}`;
+                const newProjectDescription = `New project description ${mySharedWritableProject.name}`;
+                const newCollectionName = `New collection name ${testTargetCollection.name}`;
+                const newCollectionDescription = `New collection description ${testTargetCollection.name}`;
+
+                cy.testEditProjectOrCollection('main', mySharedWritableProject.name, newProjectName, newProjectDescription);
+                cy.testEditProjectOrCollection('main', testTargetCollection.name, newCollectionName, newCollectionDescription, false);
+                
+                cy.get('[data-cy=side-panel-tree]').contains('Projects').click();
+
+                cy.get('main').contains(newProjectName).rightclick();
+                cy.contains('Add to public favorites').click();
+                cy.get('main').contains(newCollectionName).rightclick();
+                cy.contains('Add to public favorites').click();
+
+                cy.get('[data-cy=side-panel-tree]').contains('Public Favorites').click();
+
+                cy.testEditProjectOrCollection('main', newProjectName, mySharedWritableProject.name, 'newProjectDescription');
+                cy.testEditProjectOrCollection('main', newCollectionName, testTargetCollection.name, 'newCollectionDescription', false); 
+            });
+    });
+
+    it('can view favorites in workflow', () => {
         cy.createProject({
             owningUser: adminUser,
             targetUser: activeUser,
