@@ -3,15 +3,15 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from "redux";
-import { RootState } from '~/store/store';
-import { setBreadcrumbs } from '~/store/breadcrumbs/breadcrumbs-actions';
-import { dialogActions } from '~/store/dialog/dialog-actions';
-import {snackbarActions, SnackbarKind} from '~/store/snackbar/snackbar-actions';
-import { navigateToRootProject } from '~/store/navigation/navigation-action';
-import { bindDataExplorerActions } from '~/store/data-explorer/data-explorer-action';
-import { getResource } from '~/store/resources/resources';
-import { ServiceRepository } from "~/services/services";
-import { NodeResource } from '~/models/node';
+import { RootState } from 'store/store';
+import { setBreadcrumbs } from 'store/breadcrumbs/breadcrumbs-actions';
+import { dialogActions } from 'store/dialog/dialog-actions';
+import {snackbarActions, SnackbarKind} from 'store/snackbar/snackbar-actions';
+import { navigateToRootProject } from 'store/navigation/navigation-action';
+import { bindDataExplorerActions } from 'store/data-explorer/data-explorer-action';
+import { getResource } from 'store/resources/resources';
+import { ServiceRepository } from "services/services";
+import { NodeResource } from 'models/node';
 
 export const COMPUTE_NODE_PANEL_ID = "computeNodeId";
 export const computeNodesActions = bindDataExplorerActions(COMPUTE_NODE_PANEL_ID);

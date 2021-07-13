@@ -2,18 +2,18 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { List, ListItem, ListItemIcon, Checkbox, Radio, Collapse } from "@material-ui/core";
 import { StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core/styles';
-import { CollectionIcon, DefaultIcon, DirectoryIcon, FileIcon, ProjectIcon, FilterGroupIcon } from '~/components/icon/icon';
+import { CollectionIcon, DefaultIcon, DirectoryIcon, FileIcon, ProjectIcon, FilterGroupIcon } from 'components/icon/icon';
 import { ReactElement } from "react";
 import CircularProgress from '@material-ui/core/CircularProgress';
 import classnames from "classnames";
 
-import { ArvadosTheme } from '~/common/custom-theme';
+import { ArvadosTheme } from 'common/custom-theme';
 import { SidePanelRightArrowIcon } from '../icon/icon';
-import { ResourceKind } from '~/models/resource';
-import { GroupClass } from '~/models/group';
+import { ResourceKind } from 'models/resource';
+import { GroupClass } from 'models/group';
 
 type CssRules = 'list'
     | 'listItem'
@@ -202,7 +202,7 @@ const ItemIcon = React.memo(({ type, kind, active, groupClass, classes }: any) =
 const FlatTree = (props: FlatTreeProps) =>
     <div
         onContextMenu={(event) => {
-            const [action, id] = getActionAndId(event, FLAT_TREE_ACTIONS.contextMenu);
+            const id = getActionAndId(event, FLAT_TREE_ACTIONS.contextMenu)[1];
             props.onContextMenu(event, { id } as any);
         }}
         onClick={(event) => {

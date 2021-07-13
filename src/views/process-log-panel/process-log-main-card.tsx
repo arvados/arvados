@@ -2,20 +2,20 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import {
     StyleRulesCallback, WithStyles, withStyles, Card,
     CardHeader, IconButton, CardContent, Grid, Typography, Tooltip
 } from '@material-ui/core';
-import { Process } from '~/store/processes/process';
-import { ProcessLogCodeSnippet } from '~/views/process-log-panel/process-log-code-snippet';
-import { ProcessLogForm, ProcessLogFormDataProps, ProcessLogFormActionProps } from '~/views/process-log-panel/process-log-form';
-import { MoreOptionsIcon, ProcessIcon } from '~/components/icon/icon';
-import { ArvadosTheme } from '~/common/custom-theme';
-import { CodeSnippetDataProps } from '~/components/code-snippet/code-snippet';
-import { BackIcon } from '~/components/icon/icon';
-import { DefaultView } from '~/components/default-view/default-view';
+import { Process } from 'store/processes/process';
+import { ProcessLogCodeSnippet } from 'views/process-log-panel/process-log-code-snippet';
+import { ProcessLogForm, ProcessLogFormDataProps, ProcessLogFormActionProps } from 'views/process-log-panel/process-log-form';
+import { MoreOptionsIcon, ProcessIcon } from 'components/icon/icon';
+import { ArvadosTheme } from 'common/custom-theme';
+import { CodeSnippetDataProps } from 'components/code-snippet/code-snippet';
+import { BackIcon } from 'components/icon/icon';
+import { DefaultView } from 'components/default-view/default-view';
 
 type CssRules = 'backLink' | 'backIcon' | 'card' | 'title' | 'iconHeader' | 'link';
 

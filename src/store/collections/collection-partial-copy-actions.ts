@@ -3,17 +3,17 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from 'redux';
-import * as _ from "lodash";
-import { RootState } from '~/store/store';
+import { difference } from "lodash";
+import { RootState } from 'store/store';
 import { FormErrors, initialize, startSubmit, stopSubmit } from 'redux-form';
-import { resetPickerProjectTree } from '~/store/project-tree-picker/project-tree-picker-actions';
-import { dialogActions } from '~/store/dialog/dialog-actions';
-import { ServiceRepository } from '~/services/services';
+import { resetPickerProjectTree } from 'store/project-tree-picker/project-tree-picker-actions';
+import { dialogActions } from 'store/dialog/dialog-actions';
+import { ServiceRepository } from 'services/services';
 import { filterCollectionFilesBySelection } from '../collection-panel/collection-panel-files/collection-panel-files-state';
-import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
-import { getCommonResourceServiceError, CommonResourceServiceError } from '~/services/common-service/common-resource-service';
-import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
-import { initProjectsTreePicker } from '~/store/tree-picker/tree-picker-actions';
+import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
+import { getCommonResourceServiceError, CommonResourceServiceError } from 'services/common-service/common-resource-service';
+import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
+import { initProjectsTreePicker } from 'store/tree-picker/tree-picker-actions';
 
 export const COLLECTION_PARTIAL_COPY_FORM_NAME = 'COLLECTION_PARTIAL_COPY_DIALOG';
 export const COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION = 'COLLECTION_PARTIAL_COPY_TO_SELECTED_DIALOG';
@@ -130,10 +130,10 @@ export const copyCollectionPartialToSelectedCollection = ({ collectionUuid }: Co
                     if (fileExistsInSelectedCollection) {
                         return path;
                     } else {
-                        return;
+                        return null;
                     }
                 });
-                const diffPathToRemove = _.difference(paths, pathsToRemove);
+                const diffPathToRemove = difference(paths, pathsToRemove);
                 await services.collectionService.deleteFiles(selectedCollection.uuid, pathsToRemove.map(path => path.replace(currentCollection.uuid, collectionUuid)));
                 const collectionWithDeletedFiles = await services.collectionService.get(collectionUuid);
                 await services.collectionService.update(collectionUuid, { manifestText: `${collectionWithDeletedFiles.manifestText}${(currentCollection.manifestText ? currentCollection.manifestText : currentCollection.unsignedManifestText) || ''}` });

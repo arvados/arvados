@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import {
     StyleRulesCallback,
     WithStyles,
@@ -14,12 +14,12 @@ import {
     Select,
     CircularProgress
 } from '@material-ui/core';
-import { ArvadosTheme } from '~/common/custom-theme';
-import { UserResource } from "~/models/user";
-import { LinkAccountType } from "~/models/link-account";
-import { formatDate } from "~/common/formatters";
-import { LinkAccountPanelStatus, LinkAccountPanelError } from "~/store/link-account-panel/link-account-panel-reducer";
-import { Config } from '~/common/config';
+import { ArvadosTheme } from 'common/custom-theme';
+import { UserResource } from "models/user";
+import { LinkAccountType } from "models/link-account";
+import { formatDate } from "common/formatters";
+import { LinkAccountPanelStatus, LinkAccountPanelError } from "store/link-account-panel/link-account-panel-reducer";
+import { Config } from 'common/config';
 
 type CssRules = 'root';
 
@@ -52,7 +52,7 @@ export interface LinkAccountPanelRootActionProps {
 }
 
 function displayUser(user: UserResource, showCreatedAt: boolean = false, showCluster: boolean = false) {
-    const disp = [];
+    const disp: JSX.Element[] = [];
     disp.push(<span><b>{user.email}</b> ({user.username}, {user.uuid})</span>);
     if (showCluster) {
         const homeCluster = user.uuid.substr(0, 5);

@@ -2,14 +2,14 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { compose } from "redux";
 import { reduxForm, InjectedFormProps, WrappedFieldArrayProps, FieldArray } from 'redux-form';
-import { withDialog, WithDialogProps } from "~/store/dialog/with-dialog";
-import { FormDialog } from '~/components/form-dialog/form-dialog';
-import { ParticipantSelect, Participant } from '~/views-components/sharing-dialog/participant-select';
-import { ADD_GROUP_MEMBERS_DIALOG, ADD_GROUP_MEMBERS_FORM, AddGroupMembersFormData, ADD_GROUP_MEMBERS_USERS_FIELD_NAME, addGroupMembers } from '~/store/group-details-panel/group-details-panel-actions';
-import { minLength } from '~/validators/min-length';
+import { withDialog, WithDialogProps } from "store/dialog/with-dialog";
+import { FormDialog } from 'components/form-dialog/form-dialog';
+import { ParticipantSelect, Participant } from 'views-components/sharing-dialog/participant-select';
+import { ADD_GROUP_MEMBERS_DIALOG, ADD_GROUP_MEMBERS_FORM, AddGroupMembersFormData, ADD_GROUP_MEMBERS_USERS_FIELD_NAME, addGroupMembers } from 'store/group-details-panel/group-details-panel-actions';
+import { minLength } from 'validators/min-length';
 
 export const AddGroupMembersDialog = compose(
     withDialog(ADD_GROUP_MEMBERS_DIALOG),
@@ -34,7 +34,7 @@ type AddGroupMembersDialogProps = WithDialogProps<{}> & InjectedFormProps<AddGro
 const UsersField = () =>
     <FieldArray
         name={ADD_GROUP_MEMBERS_USERS_FIELD_NAME}
-        component={UsersSelect}
+        component={UsersSelect as any}
         validate={UsersFieldValidation} />;
 
 const UsersFieldValidation = [minLength(1, () => 'Select at least one user')];

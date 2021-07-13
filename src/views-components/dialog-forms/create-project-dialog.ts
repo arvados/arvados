@@ -4,10 +4,10 @@
 
 import { compose } from "redux";
 import { reduxForm } from 'redux-form';
-import { withDialog } from "~/store/dialog/with-dialog";
-import { PROJECT_CREATE_FORM_NAME, ProjectCreateFormDialogData } from '~/store/projects/project-create-actions';
-import { DialogProjectCreate } from '~/views-components/dialog-create/dialog-project-create';
-import { createProject } from "~/store/workbench/workbench-actions";
+import { withDialog } from "store/dialog/with-dialog";
+import { PROJECT_CREATE_FORM_NAME, ProjectCreateFormDialogData } from 'store/projects/project-create-actions';
+import { DialogProjectCreate } from 'views-components/dialog-create/dialog-project-create';
+import { createProject } from "store/workbench/workbench-actions";
 
 export const CreateProjectDialog = compose(
     withDialog(PROJECT_CREATE_FORM_NAME),

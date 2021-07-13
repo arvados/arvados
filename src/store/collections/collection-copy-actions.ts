@@ -3,15 +3,15 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from "redux";
-import { dialogActions } from "~/store/dialog/dialog-actions";
+import { dialogActions } from "store/dialog/dialog-actions";
 import { FormErrors, initialize, startSubmit, stopSubmit } from 'redux-form';
-import { resetPickerProjectTree } from '~/store/project-tree-picker/project-tree-picker-actions';
-import { RootState } from '~/store/store';
-import { ServiceRepository } from '~/services/services';
-import { getCommonResourceServiceError, CommonResourceServiceError } from '~/services/common-service/common-resource-service';
-import { CopyFormDialogData } from '~/store/copy-dialog/copy-dialog';
-import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
-import { initProjectsTreePicker } from '~/store/tree-picker/tree-picker-actions';
+import { resetPickerProjectTree } from 'store/project-tree-picker/project-tree-picker-actions';
+import { RootState } from 'store/store';
+import { ServiceRepository } from 'services/services';
+import { getCommonResourceServiceError, CommonResourceServiceError } from 'services/common-service/common-resource-service';
+import { CopyFormDialogData } from 'store/copy-dialog/copy-dialog';
+import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
+import { initProjectsTreePicker } from 'store/tree-picker/tree-picker-actions';
 
 export const COLLECTION_COPY_FORM_NAME = 'collectionCopyFormName';
 

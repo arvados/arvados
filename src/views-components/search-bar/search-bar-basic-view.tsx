@@ -2,17 +2,17 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { Paper, StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core';
 import {
     SearchBarRecentQueries,
     SearchBarRecentQueriesActionProps
-} from '~/views-components/search-bar/search-bar-recent-queries';
+} from 'views-components/search-bar/search-bar-recent-queries';
 import {
     SearchBarSavedQueries,
     SearchBarSavedQueriesDataProps,
     SearchBarSavedQueriesActionProps
-} from '~/views-components/search-bar/search-bar-save-queries';
+} from 'views-components/search-bar/search-bar-save-queries';
 
 type CssRules = 'advanced' | 'label' | 'root';
 

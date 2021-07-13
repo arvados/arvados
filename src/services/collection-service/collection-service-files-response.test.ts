@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { CollectionFile } from '~/models/collection-file';
+import { CollectionFile } from 'models/collection-file';
 import { getFileFullPath, extractFilesData } from './collection-service-files-response';
 
 describe('collection-service-files-response', () => {

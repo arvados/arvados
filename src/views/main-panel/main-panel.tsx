@@ -2,14 +2,14 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { RootState } from '~/store/store';
+import { RootState } from 'store/store';
 import { connect } from 'react-redux';
 import parse from 'parse-duration';
-import { MainPanelRoot, MainPanelRootDataProps } from '~/views/main-panel/main-panel-root';
-import { isSystemWorking } from '~/store/progress-indicator/progress-indicator-reducer';
-import { isWorkbenchLoading } from '~/store/workbench/workbench-actions';
-import { LinkAccountPanelStatus } from '~/store/link-account-panel/link-account-panel-reducer';
-import { matchLinkAccountRoute } from '~/routes/routes';
+import { MainPanelRoot, MainPanelRootDataProps } from 'views/main-panel/main-panel-root';
+import { isSystemWorking } from 'store/progress-indicator/progress-indicator-reducer';
+import { isWorkbenchLoading } from 'store/workbench/workbench-actions';
+import { LinkAccountPanelStatus } from 'store/link-account-panel/link-account-panel-reducer';
+import { matchLinkAccountRoute } from 'routes/routes';
 
 const mapStateToProps = (state: RootState): MainPanelRootDataProps => {
     return {

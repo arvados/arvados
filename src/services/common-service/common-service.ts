@@ -2,11 +2,11 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as _ from "lodash";
+import { camelCase, isPlainObject, isArray, snakeCase } from "lodash";
 import { AxiosInstance, AxiosPromise } from "axios";
-import * as uuid from "uuid/v4";
-import { ApiActions } from "~/services/api/api-actions";
-import * as QueryString from "query-string";
+import uuid from "uuid/v4";
+import { ApiActions } from "services/api/api-actions";
+import QueryString from "query-string";
 
 interface Errors {
     status: number;
@@ -48,12 +48,12 @@ export class CommonService<T> {
     }
 
     static mapResponseKeys = (response: { data: any }) =>
-        CommonService.mapKeys(_.camelCase)(response.data)
+        CommonService.mapKeys(camelCase)(response.data)
 
     static mapKeys = (mapFn: (key: string) => string) =>
         (value: any): any => {
             switch (true) {
-                case _.isPlainObject(value):
+                case isPlainObject(value):
                     return Object
                         .keys(value)
                         .map(key => [key, mapFn(key)])
@@ -61,7 +61,7 @@ export class CommonService<T> {
                             ...newValue,
                             [newKey]: (key === 'items') ? CommonService.mapKeys(mapFn)(value[key]) : value[key]
                         }), {});
-                case _.isArray(value):
+                case isArray(value):
                     return value.map(CommonService.mapKeys(mapFn));
                 default:
                     return value;
@@ -97,7 +97,7 @@ export class CommonService<T> {
     create(data?: Partial<T>, showErrors?: boolean) {
         return CommonService.defaultResponse(
             this.serverApi
-                .post<T>(`/${this.resourceType}`, data && CommonService.mapKeys(_.snakeCase)(data)),
+                .post<T>(`/${this.resourceType}`, data && CommonService.mapKeys(snakeCase)(data)),
             this.actions,
             true, // mapKeys
             showErrors
@@ -127,7 +127,7 @@ export class CommonService<T> {
     list(args: ListArguments = {}): Promise<ListResults<T>> {
         const { filters, order, ...other } = args;
         const params = {
-            ...CommonService.mapKeys(_.snakeCase)(other),
+            ...CommonService.mapKeys(snakeCase)(other),
             filters: filters ? `[${filters}]` : undefined,
             order: order ? order : undefined
         };
@@ -141,7 +141,7 @@ export class CommonService<T> {
             // Using the POST special case to avoid URI length 414 errors.
             const formData = new FormData();
             formData.append("_method", "GET");
-            Object.keys(params).map(key => {
+            Object.keys(params).forEach(key => {
                 if (params[key] !== undefined) {
                     formData.append(key, params[key]);
                 }
@@ -161,7 +161,7 @@ export class CommonService<T> {
         this.validateUuid(uuid);
         return CommonService.defaultResponse(
             this.serverApi
-                .put<T>(`/${this.resourceType}/${uuid}`, data && CommonService.mapKeys(_.snakeCase)(data)),
+                .put<T>(`/${this.resourceType}/${uuid}`, data && CommonService.mapKeys(snakeCase)(data)),
             this.actions
         );
     }

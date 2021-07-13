@@ -5,11 +5,11 @@
 import { DataExplorerMiddlewareService } from "./data-explorer-middleware-service";
 import { dataExplorerMiddleware } from "./data-explorer-middleware";
 import { MiddlewareAPI } from "redux";
-import { DataColumns } from "~/components/data-table/data-table";
+import { DataColumns } from "components/data-table/data-table";
 import { dataExplorerActions } from "./data-explorer-action";
-import { SortDirection } from "~/components/data-table/data-column";
-import { createTree } from '~/models/tree';
-import { DataTableFilterItem } from "~/components/data-table-filters/data-table-filters-tree";
+import { SortDirection } from "components/data-table/data-column";
+import { createTree } from 'models/tree';
+import { DataTableFilterItem } from "components/data-table-filters/data-table-filters-tree";
 
 
 describe("DataExplorerMiddleware", () => {

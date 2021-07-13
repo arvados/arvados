@@ -1,10 +1,10 @@
 // Copyright (C) The Arvados Authors. All rights reserved.
 //
 // SPDX-License-Identifier: AGPL-3.0
-import * as React from 'react';
+import React from 'react';
 import { mount } from 'enzyme';
 import * as Enzyme from 'enzyme';
-import * as Adapter from 'enzyme-adapter-react-16';
+import Adapter from 'enzyme-adapter-react-16';
 import ListItem from "@material-ui/core/ListItem/ListItem";
 
 import { Tree, TreeItem, TreeItemStatus } from './tree';

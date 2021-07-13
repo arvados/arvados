@@ -2,14 +2,14 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { WithStyles, StyleRulesCallback, withStyles, IconButton, Paper, List, Checkbox, ListItemText, ListItem, Tooltip } from '@material-ui/core';
 import MenuIcon from "@material-ui/icons/Menu";
 import { DataColumn } from '../data-table/data-column';
 import { Popover } from "../popover/popover";
 import { IconButtonProps } from '@material-ui/core/IconButton';
 import { DataColumns } from '../data-table/data-table';
-import { ArvadosTheme } from "~/common/custom-theme";
+import { ArvadosTheme } from "common/custom-theme";
 
 interface ColumnSelectorDataProps {
     columns: DataColumns<any>;

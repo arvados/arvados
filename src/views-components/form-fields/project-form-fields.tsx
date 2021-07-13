@@ -2,12 +2,12 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from "react";
+import React from "react";
 import { Field, Validator } from "redux-form";
-import { TextField, RichEditorTextField } from "~/components/text-field/text-field";
-import { PROJECT_NAME_VALIDATION, PROJECT_NAME_VALIDATION_ALLOW_SLASH } from "~/validators/validators";
+import { TextField, RichEditorTextField } from "components/text-field/text-field";
+import { PROJECT_NAME_VALIDATION, PROJECT_NAME_VALIDATION_ALLOW_SLASH } from "validators/validators";
 import { connect } from "react-redux";
-import { RootState } from "~/store/store";
+import { RootState } from "store/store";
 
 interface ProjectNameFieldProps {
     validate: Validator[];
@@ -31,7 +31,7 @@ export const ProjectNameField = connect(
     })((props: ProjectNameFieldProps) =>
         <span data-cy='name-field'><Field
             name='name'
-            component={TextField}
+            component={TextField as any}
             validate={props.validate}
             label={props.label || "Project Name"}
             autoFocus={true} /></span>
@@ -40,5 +40,5 @@ export const ProjectNameField = connect(
 export const ProjectDescriptionField = () =>
     <Field
         name='description'
-        component={RichEditorTextField}
+        component={RichEditorTextField as any}
         label="Description - optional" />;

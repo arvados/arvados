@@ -2,11 +2,11 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as _ from "lodash";
+import { snakeCase } from "lodash";
 import { AxiosInstance } from "axios";
-import { TrashableResource } from "src/models/resource";
-import { CommonResourceService } from "~/services/common-service/common-resource-service";
-import { ApiActions } from "~/services/api/api-actions";
+import { TrashableResource } from "models/resource";
+import { CommonResourceService } from "services/common-service/common-resource-service";
+import { ApiActions } from "services/api/api-actions";
 
 export class TrashableResourceService<T extends TrashableResource> extends CommonResourceService<T> {
 
@@ -29,7 +29,7 @@ export class TrashableResourceService<T extends TrashableResource> extends Commo
         return CommonResourceService.defaultResponse(
             this.serverApi
                 .post(this.resourceType + `/${uuid}/untrash`, {
-                    params: CommonResourceService.mapKeys(_.snakeCase)(params)
+                    params: CommonResourceService.mapKeys(snakeCase)(params)
                 }),
             this.actions
         );

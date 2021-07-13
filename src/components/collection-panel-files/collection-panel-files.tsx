@@ -2,13 +2,13 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
-import { TreeItem, TreeItemStatus } from '~/components/tree/tree';
-import { FileTreeData } from '~/components/file-tree/file-tree-data';
-import { FileTree } from '~/components/file-tree/file-tree';
+import React from 'react';
+import { TreeItem, TreeItemStatus } from 'components/tree/tree';
+import { FileTreeData } from 'components/file-tree/file-tree-data';
+import { FileTree } from 'components/file-tree/file-tree';
 import { IconButton, Grid, Typography, StyleRulesCallback, withStyles, WithStyles, CardHeader, Card, Button, Tooltip, CircularProgress } from '@material-ui/core';
-import { CustomizeTableIcon } from '~/components/icon/icon';
-import { DownloadIcon } from '~/components/icon/icon';
+import { CustomizeTableIcon } from 'components/icon/icon';
+import { DownloadIcon } from 'components/icon/icon';
 import { SearchInput } from '../search-input/search-input';
 
 export interface CollectionPanelFilesProps {
@@ -75,7 +75,7 @@ export const CollectionPanelFilesComponent = ({ onItemMenuOpen, onSearchChange, 
 
     useEffect(() => {
         onSearchChange(searchValue);
-    }, [searchValue]);
+    }, [onSearchChange, searchValue]);
 
     return (<Card data-cy='collection-files-panel' className={classes.root}>
         <CardHeader

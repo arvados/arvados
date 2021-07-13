@@ -1,10 +1,14 @@
-import * as React from 'react';
-import { WorkflowResource } from "~/models/workflow";
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: AGPL-3.0
+
+import React from 'react';
+import { WorkflowResource } from "models/workflow";
 import { WorkflowFactory } from "cwlts/models";
 import * as yaml from 'js-yaml';
-import "~/lib/cwl-svg/assets/styles/themes/rabix-dark/theme.css";
-import "~/lib/cwl-svg/plugins/port-drag/theme.dark.css";
-import "~/lib/cwl-svg/plugins/selection/theme.dark.css";
+import "lib/cwl-svg/assets/styles/themes/rabix-dark/theme.css";
+import "lib/cwl-svg/plugins/port-drag/theme.dark.css";
+import "lib/cwl-svg/plugins/selection/theme.dark.css";
 import {
     SelectionPlugin,
     SVGArrangePlugin,
@@ -12,7 +16,7 @@ import {
     SVGNodeMovePlugin,
     SVGPortDragPlugin, Workflow,
     ZoomPlugin
-} from "~/lib/cwl-svg";
+} from "lib/cwl-svg";
 
 interface WorkflowGraphProps {
     workflow: WorkflowResource;

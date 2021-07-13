@@ -4,9 +4,9 @@
 
 import { compose } from "redux";
 import { reduxForm } from 'redux-form';
-import { withDialog } from "~/store/dialog/with-dialog";
-import { createRepository, REPOSITORY_CREATE_FORM_NAME } from "~/store/repositories/repositories-actions";
-import { DialogRepositoryCreate } from "~/views-components/dialog-create/dialog-repository-create";
+import { withDialog } from "store/dialog/with-dialog";
+import { createRepository, REPOSITORY_CREATE_FORM_NAME } from "store/repositories/repositories-actions";
+import { DialogRepositoryCreate } from "views-components/dialog-create/dialog-repository-create";
 
 export const CreateRepositoryDialog = compose(
     withDialog(REPOSITORY_CREATE_FORM_NAME),

@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { compose } from 'redux';
 import {
     IconButton,
@@ -15,26 +15,26 @@ import {
 } from '@material-ui/core';
 import SearchIcon from '@material-ui/icons/Search';
 import ArrowDropDownIcon from '@material-ui/icons/ArrowDropDown';
-import { ArvadosTheme } from '~/common/custom-theme';
-import { SearchView } from '~/store/search-bar/search-bar-reducer';
+import { ArvadosTheme } from 'common/custom-theme';
+import { SearchView } from 'store/search-bar/search-bar-reducer';
 import {
     SearchBarBasicView,
     SearchBarBasicViewDataProps,
     SearchBarBasicViewActionProps
-} from '~/views-components/search-bar/search-bar-basic-view';
+} from 'views-components/search-bar/search-bar-basic-view';
 import {
     SearchBarAutocompleteView,
     SearchBarAutocompleteViewDataProps,
     SearchBarAutocompleteViewActionProps
-} from '~/views-components/search-bar/search-bar-autocomplete-view';
+} from 'views-components/search-bar/search-bar-autocomplete-view';
 import {
     SearchBarAdvancedView,
     SearchBarAdvancedViewDataProps,
     SearchBarAdvancedViewActionProps
-} from '~/views-components/search-bar/search-bar-advanced-view';
-import { KEY_CODE_DOWN, KEY_CODE_ESC, KEY_CODE_UP, KEY_ENTER } from "~/common/codes";
+} from 'views-components/search-bar/search-bar-advanced-view';
+import { KEY_CODE_DOWN, KEY_CODE_ESC, KEY_CODE_UP, KEY_ENTER } from "common/codes";
 import { debounce } from 'debounce';
-import { Vocabulary } from '~/models/vocabulary';
+import { Vocabulary } from 'models/vocabulary';
 import { connectVocabulary } from '../resource-properties-form/property-field-common';
 
 type CssRules = 'container' | 'containerSearchViewOpened' | 'input' | 'view';

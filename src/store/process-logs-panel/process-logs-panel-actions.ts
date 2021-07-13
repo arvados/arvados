@@ -2,22 +2,22 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { unionize, ofType, UnionOf } from "~/common/unionize";
+import { unionize, ofType, UnionOf } from "common/unionize";
 import { ProcessLogs, getProcessLogsPanelCurrentUuid } from './process-logs-panel';
-import { LogEventType } from '~/models/log';
-import { RootState } from '~/store/store';
-import { ServiceRepository } from '~/services/services';
+import { LogEventType } from 'models/log';
+import { RootState } from 'store/store';
+import { ServiceRepository } from 'services/services';
 import { Dispatch } from 'redux';
 import { groupBy } from 'lodash';
-import { loadProcess } from '~/store/processes/processes-actions';
-import { LogResource } from '~/models/log';
-import { LogService } from '~/services/log-service/log-service';
-import { ResourceEventMessage } from '~/websocket/resource-event-message';
-import { getProcess } from '~/store/processes/process';
-import { FilterBuilder } from "~/services/api/filter-builder";
-import { OrderBuilder } from "~/services/api/order-builder";
-import { navigateTo } from '~/store/navigation/navigation-action';
-import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
+import { loadProcess } from 'store/processes/processes-actions';
+import { LogResource } from 'models/log';
+import { LogService } from 'services/log-service/log-service';
+import { ResourceEventMessage } from 'websocket/resource-event-message';
+import { getProcess } from 'store/processes/process';
+import { FilterBuilder } from "services/api/filter-builder";
+import { OrderBuilder } from "services/api/order-builder";
+import { navigateTo } from 'store/navigation/navigation-action';
+import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 
 export const processLogsPanelActions = unionize({
     RESET_PROCESS_LOGS_PANEL: ofType<{}>(),
@@ -51,7 +51,7 @@ export const addProcessLogsPanelItem = (message: ResourceEventMessage<{ text: st
                 if (process) {
                     const { containerRequest, container } = process;
                     if (message.objectUuid === containerRequest.uuid
-                        || container && message.objectUuid === container.uuid) {
+                        || (container && message.objectUuid === container.uuid)) {
                         dispatch(processLogsPanelActions.ADD_PROCESS_LOGS_PANEL_ITEM({
                             logType: SUMMARIZED_FILTER_TYPE,
                             log: message.properties.text

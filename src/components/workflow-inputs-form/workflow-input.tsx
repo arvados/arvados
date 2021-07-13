@@ -2,10 +2,10 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
-import { CommandInputParameter } from '~/models/workflow';
+import React from 'react';
+import { CommandInputParameter } from 'models/workflow';
 import { TextField } from '@material-ui/core';
-import { required } from '~/components/workflow-inputs-form/validators';
+import { required } from 'components/workflow-inputs-form/validators';
 
 export interface WorkflowInputProps {
     input: CommandInputParameter;

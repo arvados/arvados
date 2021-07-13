@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ProgressIndicatorAction, progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
+import { ProgressIndicatorAction, progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
 
 export type ProgressIndicatorState = { id: string, working: boolean }[];
 

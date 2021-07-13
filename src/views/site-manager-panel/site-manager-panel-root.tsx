@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import {
     Card,
     CardContent,
@@ -19,17 +19,17 @@ import {
     WithStyles,
     withStyles
 } from '@material-ui/core';
-import { ArvadosTheme } from '~/common/custom-theme';
-import { Session, SessionStatus } from "~/models/session";
+import { ArvadosTheme } from 'common/custom-theme';
+import { Session, SessionStatus } from "models/session";
 import Button from "@material-ui/core/Button";
 import { compose, Dispatch } from "redux";
 import { Field, FormErrors, InjectedFormProps, reduxForm, reset, stopSubmit } from "redux-form";
-import { TextField } from "~/components/text-field/text-field";
-import { addSession } from "~/store/auth/auth-action-session";
-import { SITE_MANAGER_REMOTE_HOST_VALIDATION } from "~/validators/validators";
-import { Config } from '~/common/config';
-import { ResourceCluster } from '~/views-components/data-explorer/renderers';
-import { TrashIcon } from "~/components/icon/icon";
+import { TextField } from "components/text-field/text-field";
+import { addSession } from "store/auth/auth-action-session";
+import { SITE_MANAGER_REMOTE_HOST_VALIDATION } from "validators/validators";
+import { Config } from 'common/config';
+import { ResourceCluster } from 'views-components/data-explorer/renderers';
+import { TrashIcon } from "components/icon/icon";
 
 type CssRules = 'root' | 'link' | 'buttonContainer' | 'table' | 'tableRow' |
     'remoteSiteInfo' | 'buttonAdd' | 'buttonLoggedIn' | 'buttonLoggedOut' |
@@ -187,7 +187,7 @@ export const SiteManagerPanelRoot = compose(
                             <Field
                                 name='remoteHost'
                                 validate={SITE_MANAGER_REMOTE_HOST_VALIDATION}
-                                component={TextField}
+                                component={TextField as any}
                                 placeholder="zzzz.arvadosapi.com"
                                 margin="normal"
                                 label="New cluster"

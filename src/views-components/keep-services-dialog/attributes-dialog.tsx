@@ -2,16 +2,16 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from "react";
+import React from "react";
 import { compose } from 'redux';
 import {
     withStyles, Dialog, DialogTitle, DialogContent, DialogActions,
     Button, StyleRulesCallback, WithStyles, Grid
 } from '@material-ui/core';
-import { WithDialogProps, withDialog } from "~/store/dialog/with-dialog";
-import { KEEP_SERVICE_ATTRIBUTES_DIALOG } from '~/store/keep-services/keep-services-actions';
-import { ArvadosTheme } from '~/common/custom-theme';
-import { KeepServiceResource } from '~/models/keep-services';
+import { WithDialogProps, withDialog } from "store/dialog/with-dialog";
+import { KEEP_SERVICE_ATTRIBUTES_DIALOG } from 'store/keep-services/keep-services-actions';
+import { ArvadosTheme } from 'common/custom-theme';
+import { KeepServiceResource } from 'models/keep-services';
 
 type CssRules = 'root';
 

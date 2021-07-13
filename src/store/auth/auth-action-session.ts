@@ -3,22 +3,22 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from "redux";
-import { setBreadcrumbs } from "~/store/breadcrumbs/breadcrumbs-actions";
-import { RootState } from "~/store/store";
-import { ServiceRepository, createServices, setAuthorizationHeader } from "~/services/services";
+import { setBreadcrumbs } from "store/breadcrumbs/breadcrumbs-actions";
+import { RootState } from "store/store";
+import { ServiceRepository, createServices, setAuthorizationHeader } from "services/services";
 import Axios, { AxiosInstance } from "axios";
-import { User, getUserDisplayName } from "~/models/user";
-import { authActions } from "~/store/auth/auth-action";
+import { User, getUserDisplayName } from "models/user";
+import { authActions } from "store/auth/auth-action";
 import {
     Config, ClusterConfigJSON, CLUSTER_CONFIG_PATH, DISCOVERY_DOC_PATH,
     buildConfig, mockClusterConfigJSON
-} from "~/common/config";
-import { normalizeURLPath } from "~/common/url";
-import { Session, SessionStatus } from "~/models/session";
-import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
-import { AuthService } from "~/services/auth-service/auth-service";
-import { snackbarActions, SnackbarKind } from "~/store/snackbar/snackbar-actions";
-import * as jsSHA from "jssha";
+} from "common/config";
+import { normalizeURLPath } from "common/url";
+import { Session, SessionStatus } from "models/session";
+import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
+import { AuthService } from "services/auth-service/auth-service";
+import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
+import jsSHA from "jssha";
 
 const getClusterConfig = async (origin: string, apiClient: AxiosInstance): Promise<Config | null> => {
     let configFromDD: Config | undefined;

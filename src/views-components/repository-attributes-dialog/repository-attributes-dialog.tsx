@@ -2,15 +2,15 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from "react";
+import React from "react";
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, Grid } from "@material-ui/core";
-import { WithDialogProps } from "~/store/dialog/with-dialog";
-import { withDialog } from '~/store/dialog/with-dialog';
-import { REPOSITORY_ATTRIBUTES_DIALOG } from "~/store/repositories/repositories-actions";
+import { WithDialogProps } from "store/dialog/with-dialog";
+import { withDialog } from 'store/dialog/with-dialog';
+import { REPOSITORY_ATTRIBUTES_DIALOG } from "store/repositories/repositories-actions";
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
-import { ArvadosTheme } from '~/common/custom-theme';
+import { ArvadosTheme } from 'common/custom-theme';
 import { compose } from "redux";
-import { RepositoryResource } from "~/models/repositories";
+import { RepositoryResource } from "models/repositories";
 
 type CssRules = 'rightContainer' | 'leftContainer' | 'spacing';
 

@@ -3,15 +3,15 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from "redux";
-import { RootState } from "~/store/store";
-import { ServiceRepository } from "~/services/services";
-import { snackbarActions, SnackbarKind } from "~/store/snackbar/snackbar-actions";
-import { trashPanelActions } from "~/store/trash-panel/trash-panel-action";
-import { activateSidePanelTreeItem, loadSidePanelTreeProjects } from "~/store/side-panel-tree/side-panel-tree-actions";
-import { projectPanelActions } from "~/store/project-panel/project-panel-action";
-import { ResourceKind } from "~/models/resource";
-import { navigateTo, navigateToTrash } from '~/store/navigation/navigation-action';
-import { matchCollectionRoute } from '~/routes/routes';
+import { RootState } from "store/store";
+import { ServiceRepository } from "services/services";
+import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
+import { trashPanelActions } from "store/trash-panel/trash-panel-action";
+import { activateSidePanelTreeItem, loadSidePanelTreeProjects } from "store/side-panel-tree/side-panel-tree-actions";
+import { projectPanelActions } from "store/project-panel/project-panel-action";
+import { ResourceKind } from "models/resource";
+import { navigateTo, navigateToTrash } from 'store/navigation/navigation-action';
+import { matchCollectionRoute } from 'routes/routes';
 
 export const toggleProjectTrashed = (uuid: string, ownerUuid: string, isTrashed: boolean) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<any> => {

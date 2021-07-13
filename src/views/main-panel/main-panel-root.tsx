@@ -2,15 +2,15 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { StyleRulesCallback, WithStyles, withStyles, Grid, LinearProgress } from '@material-ui/core';
-import { User } from "~/models/user";
-import { ArvadosTheme } from '~/common/custom-theme';
-import { WorkbenchPanel } from '~/views/workbench/workbench';
-import { LoginPanel } from '~/views/login-panel/login-panel';
-import { InactivePanel } from '~/views/inactive-panel/inactive-panel';
-import { WorkbenchLoadingScreen } from '~/views/workbench/workbench-loading-screen';
-import { MainAppBar } from '~/views-components/main-app-bar/main-app-bar';
+import { User } from "models/user";
+import { ArvadosTheme } from 'common/custom-theme';
+import { WorkbenchPanel } from 'views/workbench/workbench';
+import { LoginPanel } from 'views/login-panel/login-panel';
+import { InactivePanel } from 'views/inactive-panel/inactive-panel';
+import { WorkbenchLoadingScreen } from 'views/workbench/workbench-loading-screen';
+import { MainAppBar } from 'views-components/main-app-bar/main-app-bar';
 
 type CssRules = 'root';
 

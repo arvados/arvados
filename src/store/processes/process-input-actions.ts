@@ -2,14 +2,14 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { dialogActions } from '~/store/dialog/dialog-actions';
-import { RootState } from '~/store/store';
+import { dialogActions } from 'store/dialog/dialog-actions';
+import { RootState } from 'store/store';
 import { Dispatch } from 'redux';
-import { getProcess, Process } from '~/store/processes/process';
-import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
-import { getWorkflowInputs } from '~/models/workflow';
-import { JSONMount } from '~/models/mount-types';
-import { MOUNT_PATH_CWL_WORKFLOW } from '~/models/process';
+import { getProcess, Process } from 'store/processes/process';
+import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
+import { getWorkflowInputs } from 'models/workflow';
+import { JSONMount } from 'models/mount-types';
+import { MOUNT_PATH_CWL_WORKFLOW } from 'models/process';
 
 export const PROCESS_INPUT_DIALOG_NAME = 'processInputDialog';
 

@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { connect, DispatchProp } from 'react-redux';
 import { memoize } from 'lodash/fp';
 import { Field } from 'redux-form';
@@ -12,15 +12,15 @@ import {
     DirectoryCommandInputParameter,
     CWLType,
     Directory
-} from '~/models/workflow';
+} from 'models/workflow';
 import { GenericInputProps, GenericInput } from './generic-input';
-import { ProjectsTreePicker } from '~/views-components/projects-tree-picker/projects-tree-picker';
-import { initProjectsTreePicker } from '~/store/tree-picker/tree-picker-actions';
-import { TreeItem } from '~/components/tree/tree';
-import { ProjectsTreePickerItem } from '~/views-components/projects-tree-picker/generic-projects-tree-picker';
-import { CollectionResource } from '~/models/collection';
-import { ResourceKind } from '~/models/resource';
-import { ERROR_MESSAGE } from '~/validators/require';
+import { ProjectsTreePicker } from 'views-components/projects-tree-picker/projects-tree-picker';
+import { initProjectsTreePicker } from 'store/tree-picker/tree-picker-actions';
+import { TreeItem } from 'components/tree/tree';
+import { ProjectsTreePickerItem } from 'views-components/projects-tree-picker/generic-projects-tree-picker';
+import { CollectionResource } from 'models/collection';
+import { ResourceKind } from 'models/resource';
+import { ERROR_MESSAGE } from 'validators/require';
 
 export interface DirectoryInputProps {
     input: DirectoryCommandInputParameter;
@@ -30,7 +30,7 @@ export const DirectoryInput = ({ input, options }: DirectoryInputProps) =>
     <Field
         name={input.id}
         commandInput={input}
-        component={DirectoryInputComponent}
+        component={DirectoryInputComponent as any}
         format={format}
         parse={parse}
         {...{

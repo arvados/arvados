@@ -3,21 +3,21 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from "redux";
-import { RootState } from '~/store/store';
-import { ServiceRepository } from '~/services/services';
-import { updateResources } from '~/store/resources/resources-actions';
+import { RootState } from 'store/store';
+import { ServiceRepository } from 'services/services';
+import { updateResources } from 'store/resources/resources-actions';
 import { Process } from './process';
-import { dialogActions } from '~/store/dialog/dialog-actions';
-import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
-import { projectPanelActions } from '~/store/project-panel/project-panel-action';
-import { navigateToRunProcess } from '~/store/navigation/navigation-action';
-import { goToStep, runProcessPanelActions } from '~/store/run-process-panel/run-process-panel-actions';
-import { getResource } from '~/store/resources/resources';
+import { dialogActions } from 'store/dialog/dialog-actions';
+import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
+import { projectPanelActions } from 'store/project-panel/project-panel-action';
+import { navigateToRunProcess } from 'store/navigation/navigation-action';
+import { goToStep, runProcessPanelActions } from 'store/run-process-panel/run-process-panel-actions';
+import { getResource } from 'store/resources/resources';
 import { initialize } from "redux-form";
-import { RUN_PROCESS_BASIC_FORM, RunProcessBasicFormData } from "~/views/run-process-panel/run-process-basic-form";
-import { RunProcessAdvancedFormData, RUN_PROCESS_ADVANCED_FORM } from "~/views/run-process-panel/run-process-advanced-form";
-import { MOUNT_PATH_CWL_WORKFLOW, MOUNT_PATH_CWL_INPUT } from '~/models/process';
-import { getWorkflow, getWorkflowInputs } from "~/models/workflow";
+import { RUN_PROCESS_BASIC_FORM, RunProcessBasicFormData } from "views/run-process-panel/run-process-basic-form";
+import { RunProcessAdvancedFormData, RUN_PROCESS_ADVANCED_FORM } from "views/run-process-panel/run-process-advanced-form";
+import { MOUNT_PATH_CWL_WORKFLOW, MOUNT_PATH_CWL_INPUT } from 'models/process';
+import { getWorkflow, getWorkflowInputs } from "models/workflow";
 
 export const loadProcess = (containerRequestUuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<Process> => {

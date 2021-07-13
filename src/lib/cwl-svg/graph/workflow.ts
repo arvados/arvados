@@ -181,21 +181,11 @@ export class Workflow {
          * If there is a missing sbg:x or sbg:y property on any node model,
          * graph should be arranged to avoid random placement.
          */
-        let arrangeNecessary = false;
-
         let nodeTemplate = "";
 
         for (const node of nodes) {
             const patched  = GraphNode.patchModelPorts(node);
-            const missingX = isNaN(parseInt(patched.customProps["sbg:x"], 10));
-            const missingY = isNaN(parseInt(patched.customProps["sbg:y"], 10));
-
-            if (missingX || missingY) {
-                arrangeNecessary = true;
-            }
-
             nodeTemplate += GraphNode.makeTemplate(patched);
-
         }
 
         this.workflow.innerHTML += nodeTemplate;

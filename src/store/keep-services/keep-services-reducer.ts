@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { keepServicesActions, KeepServicesActions } from '~/store/keep-services/keep-services-actions';
-import { KeepServiceResource } from '~/models/keep-services';
+import { keepServicesActions, KeepServicesActions } from 'store/keep-services/keep-services-actions';
+import { KeepServiceResource } from 'models/keep-services';
 
 export type KeepSericesState = KeepServiceResource[];
 

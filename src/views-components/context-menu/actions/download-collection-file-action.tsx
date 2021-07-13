@@ -7,7 +7,7 @@ import { RootState } from "../../../store/store";
 import { DownloadAction } from "./download-action";
 import { getNodeValue } from "../../../models/tree";
 import { ContextMenuKind } from '../context-menu';
-import { filterCollectionFilesBySelection } from "~/store/collection-panel/collection-panel-files/collection-panel-files-state";
+import { filterCollectionFilesBySelection } from "store/collection-panel/collection-panel-files/collection-panel-files-state";
 import { sanitizeToken } from "./helpers";
 
 const mapStateToProps = (state: RootState) => {

@@ -2,33 +2,33 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { Grid, Typography, withStyles, Tooltip, IconButton, Checkbox } from '@material-ui/core';
 import { FavoriteStar, PublicFavoriteStar } from '../favorite-star/favorite-star';
-import { Resource, ResourceKind, TrashableResource } from '~/models/resource';
-import { ProjectIcon, FilterGroupIcon, CollectionIcon, ProcessIcon, DefaultIcon, ShareIcon, CollectionOldVersionIcon, WorkflowIcon } from '~/components/icon/icon';
-import { formatDate, formatFileSize, formatTime } from '~/common/formatters';
-import { resourceLabel } from '~/common/labels';
+import { Resource, ResourceKind, TrashableResource } from 'models/resource';
+import { ProjectIcon, FilterGroupIcon, CollectionIcon, ProcessIcon, DefaultIcon, ShareIcon, CollectionOldVersionIcon, WorkflowIcon } from 'components/icon/icon';
+import { formatDate, formatFileSize, formatTime } from 'common/formatters';
+import { resourceLabel } from 'common/labels';
 import { connect, DispatchProp } from 'react-redux';
-import { RootState } from '~/store/store';
-import { getResource } from '~/store/resources/resources';
-import { GroupContentsResource } from '~/services/groups-service/groups-service';
-import { getProcess, Process, getProcessStatus, getProcessStatusColor, getProcessRuntime } from '~/store/processes/process';
-import { ArvadosTheme } from '~/common/custom-theme';
+import { RootState } from 'store/store';
+import { getResource } from 'store/resources/resources';
+import { GroupContentsResource } from 'services/groups-service/groups-service';
+import { getProcess, Process, getProcessStatus, getProcessStatusColor, getProcessRuntime } from 'store/processes/process';
+import { ArvadosTheme } from 'common/custom-theme';
 import { compose, Dispatch } from 'redux';
-import { WorkflowResource } from '~/models/workflow';
-import { ResourceStatus as WorkflowStatus } from '~/views/workflow-panel/workflow-panel-view';
-import { getUuidPrefix, openRunProcess } from '~/store/workflow-panel/workflow-panel-actions';
-import { openSharingDialog } from '~/store/sharing-dialog/sharing-dialog-actions';
-import { getUserFullname, User, UserResource } from '~/models/user';
-import { toggleIsActive, toggleIsAdmin } from '~/store/users/users-actions';
-import { LinkResource } from '~/models/link';
-import { navigateTo } from '~/store/navigation/navigation-action';
-import { withResourceData } from '~/views-components/data-explorer/with-resources';
-import { CollectionResource } from '~/models/collection';
-import { IllegalNamingWarning } from '~/components/warning/warning';
-import { loadResource } from '~/store/resources/resources-actions';
-import { GroupClass } from '~/models/group';
+import { WorkflowResource } from 'models/workflow';
+import { ResourceStatus as WorkflowStatus } from 'views/workflow-panel/workflow-panel-view';
+import { getUuidPrefix, openRunProcess } from 'store/workflow-panel/workflow-panel-actions';
+import { openSharingDialog } from 'store/sharing-dialog/sharing-dialog-actions';
+import { getUserFullname, User, UserResource } from 'models/user';
+import { toggleIsActive, toggleIsAdmin } from 'store/users/users-actions';
+import { LinkResource } from 'models/link';
+import { navigateTo } from 'store/navigation/navigation-action';
+import { withResourceData } from 'views-components/data-explorer/with-resources';
+import { CollectionResource } from 'models/collection';
+import { IllegalNamingWarning } from 'components/warning/warning';
+import { loadResource } from 'store/resources/resources-actions';
+import { GroupClass } from 'models/group';
 
 const renderName = (dispatch: Dispatch, item: GroupContentsResource) =>
     <Grid container alignItems="center" wrap="nowrap" spacing={16}>
@@ -477,9 +477,9 @@ export const ResponsiblePerson =
     compose(
         connect(
             (state: RootState, props: { uuid: string, parentRef: HTMLElement | null }) => {
-                let responsiblePersonName = null;
-                let responsiblePersonUUID = null;
-                let responsiblePersonProperty = null;
+                let responsiblePersonName: string = '';
+                let responsiblePersonUUID: string = '';
+                let responsiblePersonProperty: string = '';
 
                 if (state.auth.config.clusterConfig.Collections.ManagedProperties) {
                     let index = 0;

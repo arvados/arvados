@@ -2,9 +2,9 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from "react";
+import React from "react";
 import { ListItemIcon, ListItemText, ListItem } from "@material-ui/core";
-import { OpenIcon } from "~/components/icon/icon";
+import { OpenIcon } from "components/icon/icon";
 
 export const FileViewerAction = (props: any) => {
     return props.href
@@ -12,6 +12,7 @@ export const FileViewerAction = (props: any) => {
             style={{ textDecoration: 'none' }}
             href={props.href}
             target="_blank"
+            rel="noopener noreferrer"
             onClick={props.onClick}>
             <ListItem button>
                 <ListItemIcon>

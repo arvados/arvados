@@ -2,14 +2,14 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from "react";
+import React from "react";
 import { Dialog, DialogActions, Button, StyleRulesCallback, WithStyles, withStyles, CardHeader, Tab, Tabs } from '@material-ui/core';
-import { withDialog } from "~/store/dialog/with-dialog";
-import { COLLECTION_WEBDAV_S3_DIALOG_NAME, WebDavS3InfoDialogData } from '~/store/collections/collection-info-actions';
-import { WithDialogProps } from '~/store/dialog/with-dialog';
+import { withDialog } from "store/dialog/with-dialog";
+import { COLLECTION_WEBDAV_S3_DIALOG_NAME, WebDavS3InfoDialogData } from 'store/collections/collection-info-actions';
+import { WithDialogProps } from 'store/dialog/with-dialog';
 import { compose } from 'redux';
-import { DetailsAttribute } from "~/components/details-attribute/details-attribute";
-import { DownloadIcon } from "~/components/icon/icon";
+import { DetailsAttribute } from "components/details-attribute/details-attribute";
+import { DownloadIcon } from "components/icon/icon";
 
 export type CssRules = 'details' | 'downloadButton';
 
@@ -53,12 +53,12 @@ const isValidIpAddress = (ipAddress: string): Boolean => {
 };
 
 const mountainduckTemplate = ({
-    uuid, 
+    uuid,
     username,
     cyberDavStr,
     collectionsUrl
 }: any) => {
-    
+
     return `<?xml version="1.0" encoding="UTF-8"?>
         <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
         <plist version="1.0">
@@ -74,7 +74,7 @@ const mountainduckTemplate = ({
             <key>Port</key>
             <string>${(cyberDavStr.split(':')[2] || '443').split('/')[0]}</string>
             <key>Username</key>
-            <string>${username}</string>${isValidIpAddress(collectionsUrl.replace('https://', ``).split(':')[0])? 
+            <string>${username}</string>${isValidIpAddress(collectionsUrl.replace('https://', ``).split(':')[0])?
             `
             <key>Path</key>
             <string>/c=${uuid}</string>` : ''}
@@ -89,12 +89,12 @@ const downloadMountainduckFileHandler = (filename: string, text: string) => {
     const element = document.createElement('a');
     element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
     element.setAttribute('download', filename);
-  
+
     element.style.display = 'none';
     document.body.appendChild(element);
-  
+
     element.click();
-  
+
     document.body.removeChild(element);
 };
 
@@ -161,7 +161,7 @@ export const WebDavS3InfoDialog = compose(
 
                     <DetailsAttribute
                         label='Internet address'
-                        value={<a href={winDav.toString()} target="_blank">{winDav.toString()}</a>}
+                        value={<a href={winDav.toString()} target="_blank" rel="noopener noreferrer">{winDav.toString()}</a>}
                         copyValue={winDav.toString()} />
 
                     <DetailsAttribute
@@ -191,7 +191,7 @@ export const WebDavS3InfoDialog = compose(
                 <TabPanel index={0} value={activeTab}>
                     <DetailsAttribute
                         label='Server'
-                        value={<a href={cyberDavStr} target="_blank">{cyberDavStr}</a>}
+                        value={<a href={cyberDavStr} target="_blank" rel="noopener noreferrer">{cyberDavStr}</a>}
                         copyValue={cyberDavStr} />
 
                     <DetailsAttribute

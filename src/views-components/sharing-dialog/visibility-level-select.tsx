@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { MenuItem, Select, withStyles, StyleRulesCallback } from '@material-ui/core';
 import Lock from '@material-ui/icons/Lock';
 import People from '@material-ui/icons/People';
@@ -10,7 +10,7 @@ import Public from '@material-ui/icons/Public';
 import { WithStyles } from '@material-ui/core/styles';
 import { SelectProps } from '@material-ui/core/Select';
 import { SelectItem } from './select-item';
-import { VisibilityLevel } from '~/store/sharing-dialog/sharing-dialog-types';
+import { VisibilityLevel } from 'store/sharing-dialog/sharing-dialog-types';
 
 
 type VisibilityLevelSelectClasses = 'value';

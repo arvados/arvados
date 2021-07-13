@@ -2,18 +2,18 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { RootState } from '~/store/store';
+import { RootState } from 'store/store';
 import { connect } from 'react-redux';
-import { getProcess, getSubprocesses, Process, getProcessStatus } from '~/store/processes/process';
+import { getProcess, getSubprocesses, Process, getProcessStatus } from 'store/processes/process';
 import { Dispatch } from 'redux';
-import { openProcessContextMenu } from '~/store/context-menu/context-menu-actions';
-import { matchProcessRoute } from '~/routes/routes';
+import { openProcessContextMenu } from 'store/context-menu/context-menu-actions';
+import { matchProcessRoute } from 'routes/routes';
 import { ProcessPanelRootDataProps, ProcessPanelRootActionProps, ProcessPanelRoot } from './process-panel-root';
-import { ProcessPanel as ProcessPanelState} from '~/store/process-panel/process-panel';
+import { ProcessPanel as ProcessPanelState} from 'store/process-panel/process-panel';
 import { groupBy } from 'lodash';
-import { toggleProcessPanelFilter, navigateToOutput, openWorkflow } from '~/store/process-panel/process-panel-actions';
-import { openProcessInputDialog } from '~/store/processes/process-input-actions';
-import { cancelRunningWorkflow } from '~/store/processes/processes-actions';
+import { toggleProcessPanelFilter, navigateToOutput, openWorkflow } from 'store/process-panel/process-panel-actions';
+import { openProcessInputDialog } from 'store/processes/process-input-actions';
+import { cancelRunningWorkflow } from 'store/processes/processes-actions';
 
 const mapStateToProps = ({ router, resources, processPanel }: RootState): ProcessPanelRootDataProps => {
     const pathname = router.location ? router.location.pathname : '';

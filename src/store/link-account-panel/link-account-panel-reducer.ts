@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { linkAccountPanelActions, LinkAccountPanelAction } from "~/store/link-account-panel/link-account-panel-actions";
-import { UserResource } from "~/models/user";
+import { linkAccountPanelActions, LinkAccountPanelAction } from "store/link-account-panel/link-account-panel-actions";
+import { UserResource } from "models/user";
 
 export enum LinkAccountPanelStatus {
     NONE,

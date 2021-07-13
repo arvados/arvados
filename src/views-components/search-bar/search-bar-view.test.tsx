@@ -2,11 +2,9 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from "react";
+import React from "react";
 import { mount, configure } from "enzyme";
-// import { SearchBarView, DEFAULT_SEARCH_DEBOUNCE } from "./search-bar-view";
-
-import * as Adapter from 'enzyme-adapter-react-16';
+import Adapter from 'enzyme-adapter-react-16';
 
 
 configure({ adapter: new Adapter() });

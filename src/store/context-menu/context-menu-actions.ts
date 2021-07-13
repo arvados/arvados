@@ -2,24 +2,24 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { unionize, ofType, UnionOf } from '~/common/unionize';
+import { unionize, ofType, UnionOf } from 'common/unionize';
 import { ContextMenuPosition } from "./context-menu-reducer";
-import { ContextMenuKind } from '~/views-components/context-menu/context-menu';
+import { ContextMenuKind } from 'views-components/context-menu/context-menu';
 import { Dispatch } from 'redux';
-import { RootState } from '~/store/store';
+import { RootState } from 'store/store';
 import { getResource, getResourceWithEditableStatus } from '../resources/resources';
-import { UserResource } from '~/models/user';
-import { isSidePanelTreeCategory } from '~/store/side-panel-tree/side-panel-tree-actions';
-import { extractUuidKind, ResourceKind, EditableResource } from '~/models/resource';
-import { Process } from '~/store/processes/process';
-import { RepositoryResource } from '~/models/repositories';
-import { SshKeyResource } from '~/models/ssh-key';
-import { VirtualMachinesResource } from '~/models/virtual-machines';
-import { KeepServiceResource } from '~/models/keep-services';
-import { ProcessResource } from '~/models/process';
-import { CollectionResource } from '~/models/collection';
-import { GroupClass, GroupResource } from '~/models/group';
-import { GroupContentsResource } from '~/services/groups-service/groups-service';
+import { UserResource } from 'models/user';
+import { isSidePanelTreeCategory } from 'store/side-panel-tree/side-panel-tree-actions';
+import { extractUuidKind, ResourceKind, EditableResource } from 'models/resource';
+import { Process } from 'store/processes/process';
+import { RepositoryResource } from 'models/repositories';
+import { SshKeyResource } from 'models/ssh-key';
+import { VirtualMachinesResource } from 'models/virtual-machines';
+import { KeepServiceResource } from 'models/keep-services';
+import { ProcessResource } from 'models/process';
+import { CollectionResource } from 'models/collection';
+import { GroupClass, GroupResource } from 'models/group';
+import { GroupContentsResource } from 'services/groups-service/groups-service';
 
 export const contextMenuActions = unionize({
     OPEN_CONTEXT_MENU: ofType<{ position: ContextMenuPosition, resource: ContextMenuResource }>(),

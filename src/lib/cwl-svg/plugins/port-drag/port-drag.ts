@@ -265,7 +265,7 @@ export class SVGPortDragPlugin extends PluginBase {
     private updateEdge(fromX: number, fromY: number, toX: number, toY: number): void {
         const subEdges = this.edgeGroup!.children as HTMLCollectionOf<SVGPathElement>;
 
-        for (let subEdge of <any>subEdges) {
+        for (let subEdge of subEdges as any) {
 
             const path = Workflow.makeConnectionPath(
                 fromX,
@@ -361,8 +361,8 @@ export class SVGPortDragPlugin extends PluginBase {
      * Finds a port closest to given SVG coordinates.
      */
     private findClosestPort(x: number, y: number): { portEl: SVGGElement | undefined, distance: number } {
-        let closestPort     = undefined;
-        let closestDistance = Infinity;
+        let closestPort: any     = undefined;
+        let closestDistance: any = Infinity;
 
         this.portOrigins!.forEach((matrix, port) => {
 

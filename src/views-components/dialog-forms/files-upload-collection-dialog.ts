@@ -4,10 +4,10 @@
 
 import { compose } from "redux";
 import { reduxForm } from 'redux-form';
-import { withDialog } from "~/store/dialog/with-dialog";
-import { CollectionCreateFormDialogData } from '~/store/collections/collection-create-actions';
-import { COLLECTION_UPLOAD_FILES_DIALOG, submitCollectionFiles } from '~/store/collections/collection-upload-actions';
-import { DialogCollectionFilesUpload } from '~/views-components/dialog-upload/dialog-collection-files-upload';
+import { withDialog } from "store/dialog/with-dialog";
+import { CollectionCreateFormDialogData } from 'store/collections/collection-create-actions';
+import { COLLECTION_UPLOAD_FILES_DIALOG, submitCollectionFiles } from 'store/collections/collection-upload-actions';
+import { DialogCollectionFilesUpload } from 'views-components/dialog-upload/dialog-collection-files-upload';
 
 export const FilesUploadCollectionDialog = compose(
     withDialog(COLLECTION_UPLOAD_FILES_DIALOG),

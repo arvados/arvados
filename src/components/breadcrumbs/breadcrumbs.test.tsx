@@ -2,10 +2,10 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from "react";
+import React from "react";
 import { configure, shallow } from "enzyme";
 
-import * as Adapter from "enzyme-adapter-react-16";
+import Adapter from "enzyme-adapter-react-16";
 import { Breadcrumbs } from "./breadcrumbs";
 import { Button } from "@material-ui/core";
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';

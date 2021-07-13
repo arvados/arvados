@@ -3,10 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from 'redux';
-import { bindDataExplorerActions } from "~/store/data-explorer/data-explorer-action";
-import { propertiesActions } from "~/store/properties/properties-actions";
-import { RootState } from '~/store/store';
-import { getProperty } from "~/store/properties/properties";
+import { bindDataExplorerActions } from "store/data-explorer/data-explorer-action";
+import { propertiesActions } from "store/properties/properties-actions";
+import { RootState } from 'store/store';
+import { getProperty } from "store/properties/properties";
 
 export const PROJECT_PANEL_ID = "projectPanel";
 export const PROJECT_PANEL_CURRENT_UUID = "projectPanelCurrentUuid";

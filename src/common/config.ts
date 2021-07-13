@@ -94,22 +94,22 @@ export interface ClusterConfigJSON {
 }
 
 export class Config {
-    baseUrl: string;
-    keepWebServiceUrl: string;
-    keepWebInlineServiceUrl: string;
-    remoteHosts: {
+    baseUrl!: string;
+    keepWebServiceUrl!: string;
+    keepWebInlineServiceUrl!: string;
+    remoteHosts!: {
         [key: string]: string
     };
-    rootUrl: string;
-    uuidPrefix: string;
-    websocketUrl: string;
-    workbenchUrl: string;
-    workbench2Url: string;
-    vocabularyUrl: string;
-    fileViewersConfigUrl: string;
-    loginCluster: string;
-    clusterConfig: ClusterConfigJSON;
-    apiRevision: number;
+    rootUrl!: string;
+    uuidPrefix!: string;
+    websocketUrl!: string;
+    workbenchUrl!: string;
+    workbench2Url!: string;
+    vocabularyUrl!: string;
+    fileViewersConfigUrl!: string;
+    loginCluster!: string;
+    clusterConfig!: ClusterConfigJSON;
+    apiRevision!: number;
 }
 
 export const buildConfig = (clusterConfig: ClusterConfigJSON): Config => {
@@ -142,7 +142,7 @@ const getApiRevision = async (apiUrl: string) => {
 
 const removeTrailingSlashes = (config: ClusterConfigJSON): ClusterConfigJSON => {
     const svcs: any = {};
-    Object.keys(config.Services).map((s) => {
+    Object.keys(config.Services).forEach((s) => {
         svcs[s] = config.Services[s];
         if (svcs[s].hasOwnProperty('ExternalURL')) {
             svcs[s].ExternalURL = svcs[s].ExternalURL.replace(/\/+$/, '');

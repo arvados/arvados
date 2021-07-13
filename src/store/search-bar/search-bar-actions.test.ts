@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { getAdvancedDataFromQuery, getQueryFromAdvancedData } from "~/store/search-bar/search-bar-actions";
-import { ResourceKind } from "~/models/resource";
+import { getAdvancedDataFromQuery, getQueryFromAdvancedData } from "store/search-bar/search-bar-actions";
+import { ResourceKind } from "models/resource";
 
 describe('search-bar-actions', () => {
     describe('getAdvancedDataFromQuery', () => {

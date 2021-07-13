@@ -2,11 +2,11 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { Location } from 'history';
 import { StyleRulesCallback, WithStyles, withStyles, Paper, Grid } from '@material-ui/core';
-import { ArvadosTheme } from '~/common/custom-theme';
-import { ClusterConfigJSON } from '~/common/config';
+import { ArvadosTheme } from 'common/custom-theme';
+import { ClusterConfigJSON } from 'common/config';
 
 export type CssRules = 'root' | 'title' | 'active';
 

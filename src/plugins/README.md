@@ -17,7 +17,7 @@ as a basis for developing essentially new applications for Arvados.
 It will look something like this:
 
 ```
-import { register as examplePluginRegister } from '~/plugins/example/index';
+import { register as examplePluginRegister } from 'plugins/example/index';
 examplePluginRegister(pluginConfig);
 ```
 

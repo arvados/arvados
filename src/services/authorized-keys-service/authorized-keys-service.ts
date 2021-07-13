@@ -3,9 +3,9 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { AxiosInstance } from "axios";
-import { SshKeyResource } from '~/models/ssh-key';
-import { CommonResourceService, CommonResourceServiceError } from '~/services/common-service/common-resource-service';
-import { ApiActions } from "~/services/api/api-actions";
+import { SshKeyResource } from 'models/ssh-key';
+import { CommonResourceService, CommonResourceServiceError } from 'services/common-service/common-resource-service';
+import { ApiActions } from "services/api/api-actions";
 
 export enum AuthorizedKeysServiceError {
     UNIQUE_PUBLIC_KEY = 'UniquePublicKey',

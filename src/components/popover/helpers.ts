@@ -6,7 +6,10 @@ import { PopoverOrigin } from "@material-ui/core/Popover";
 
 export const createAnchorAt = (position: {x: number, y: number}) => {
     const el = document.createElement('div');
-    const clientRect = {
+    const clientRect: DOMRect = {
+        x: position.x,
+        y: position.y,
+        toJSON: () => '',
         left: position.x,
         right: position.x,
         top: position.y,

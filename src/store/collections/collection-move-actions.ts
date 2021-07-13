@@ -3,17 +3,17 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from "redux";
-import { dialogActions } from "~/store/dialog/dialog-actions";
+import { dialogActions } from "store/dialog/dialog-actions";
 import { startSubmit, stopSubmit, initialize, FormErrors } from 'redux-form';
-import { ServiceRepository } from '~/services/services';
-import { RootState } from '~/store/store';
-import { getCommonResourceServiceError, CommonResourceServiceError } from "~/services/common-service/common-resource-service";
-import {snackbarActions, SnackbarKind} from '~/store/snackbar/snackbar-actions';
-import { projectPanelActions } from '~/store/project-panel/project-panel-action';
-import { MoveToFormDialogData } from '~/store/move-to-dialog/move-to-dialog';
-import { resetPickerProjectTree } from '~/store/project-tree-picker/project-tree-picker-actions';
-import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
-import { initProjectsTreePicker } from '~/store/tree-picker/tree-picker-actions';
+import { ServiceRepository } from 'services/services';
+import { RootState } from 'store/store';
+import { getCommonResourceServiceError, CommonResourceServiceError } from "services/common-service/common-resource-service";
+import {snackbarActions, SnackbarKind} from 'store/snackbar/snackbar-actions';
+import { projectPanelActions } from 'store/project-panel/project-panel-action';
+import { MoveToFormDialogData } from 'store/move-to-dialog/move-to-dialog';
+import { resetPickerProjectTree } from 'store/project-tree-picker/project-tree-picker-actions';
+import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
+import { initProjectsTreePicker } from 'store/tree-picker/tree-picker-actions';
 
 export const COLLECTION_MOVE_FORM_NAME = 'collectionMoveFormName';
 

@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { AxiosInstance } from 'axios';
-import { WebDAV } from '~/common/webdav';
+import { WebDAV } from 'common/webdav';
 import { ApiActions } from '../api/api-actions';
 import { AuthService } from '../auth-service/auth-service';
 import { CollectionService } from './collection-service';

@@ -4,17 +4,17 @@
 
 // Example workbench plugin.  The entry point is the "register" method.
 
-import { PluginConfig } from '~/common/plugintypes';
-import * as React from 'react';
+import { PluginConfig } from 'common/plugintypes';
+import React from 'react';
 import { Dispatch } from 'redux';
-import { RootState } from '~/store/store';
+import { RootState } from 'store/store';
 import { push } from "react-router-redux";
 import { Route, matchPath } from "react-router";
-import { RootStore } from '~/store/store';
-import { activateSidePanelTreeItem } from '~/store/side-panel-tree/side-panel-tree-actions';
-import { setSidePanelBreadcrumbs } from '~/store/breadcrumbs/breadcrumbs-actions';
+import { RootStore } from 'store/store';
+import { activateSidePanelTreeItem } from 'store/side-panel-tree/side-panel-tree-actions';
+import { setSidePanelBreadcrumbs } from 'store/breadcrumbs/breadcrumbs-actions';
 import { Location } from 'history';
-import { handleFirstTimeLoad } from '~/store/workbench/workbench-actions';
+import { handleFirstTimeLoad } from 'store/workbench/workbench-actions';
 import {
     ExampleDialog,
     ExamplePluginMainPanel,

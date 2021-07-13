@@ -29,7 +29,7 @@ export class DeletionPlugin extends PluginBase {
     }
 
     private onDelete(ev: KeyboardEvent) {
-        if (ev.which !== 8 && ev.which !== 46 || !(ev.target instanceof SVGElement)) {
+        if ((ev.which !== 8 && ev.which !== 46) || !(ev.target instanceof SVGElement)) {
             return;
         }
 

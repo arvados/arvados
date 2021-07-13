@@ -2,16 +2,16 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { Grid, Paper, Toolbar, StyleRulesCallback, withStyles, WithStyles, TablePagination, IconButton, Tooltip, Button } from '@material-ui/core';
-import { ColumnSelector } from "~/components/column-selector/column-selector";
-import { DataTable, DataColumns, DataTableFetchMode } from "~/components/data-table/data-table";
-import { DataColumn } from "~/components/data-table/data-column";
-import { SearchInput } from '~/components/search-input/search-input';
-import { ArvadosTheme } from "~/common/custom-theme";
-import { createTree } from '~/models/tree';
-import { DataTableFilters } from '~/components/data-table-filters/data-table-filters-tree';
-import { MoreOptionsIcon } from '~/components/icon/icon';
+import { ColumnSelector } from "components/column-selector/column-selector";
+import { DataTable, DataColumns, DataTableFetchMode } from "components/data-table/data-table";
+import { DataColumn } from "components/data-table/data-column";
+import { SearchInput } from 'components/search-input/search-input';
+import { ArvadosTheme } from "common/custom-theme";
+import { createTree } from 'models/tree';
+import { DataTableFilters } from 'components/data-table-filters/data-table-filters-tree';
+import { MoreOptionsIcon } from 'components/icon/icon';
 import { PaperProps } from '@material-ui/core/Paper';
 
 type CssRules = 'searchBox' | "toolbar" | "toolbarUnderTitle" | "footer" | "root" | 'moreOptionsButton' | 'title';

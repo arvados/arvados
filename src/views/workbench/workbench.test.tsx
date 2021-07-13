@@ -2,16 +2,16 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
-import * as ReactDOM from 'react-dom';
+import React from 'react';
+import ReactDOM from 'react-dom';
 import { WorkbenchPanel } from './workbench';
 import { Provider } from "react-redux";
-import { configureStore } from "~/store/store";
+import { configureStore } from "store/store";
 import { createBrowserHistory } from "history";
 import { ConnectedRouter } from "react-router-redux";
 import { MuiThemeProvider } from '@material-ui/core/styles';
-import { CustomTheme } from '~/common/custom-theme';
-import { createServices } from "~/services/services";
+import { CustomTheme } from 'common/custom-theme';
+import { createServices } from "services/services";
 import 'jest-localstorage-mock';
 
 const history = createBrowserHistory();

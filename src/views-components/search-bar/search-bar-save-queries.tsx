@@ -2,13 +2,13 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { withStyles, WithStyles, StyleRulesCallback, List, ListItem, ListItemText, ListItemSecondaryAction, Tooltip, IconButton } from '@material-ui/core';
-import { ArvadosTheme } from '~/common/custom-theme';
-import { RemoveIcon, EditSavedQueryIcon } from '~/components/icon/icon';
-import { SearchBarAdvancedFormData } from '~/models/search-bar';
-import { SearchBarSelectedItem } from "~/store/search-bar/search-bar-reducer";
-import { getQueryFromAdvancedData } from "~/store/search-bar/search-bar-actions";
+import { ArvadosTheme } from 'common/custom-theme';
+import { RemoveIcon, EditSavedQueryIcon } from 'components/icon/icon';
+import { SearchBarAdvancedFormData } from 'models/search-bar';
+import { SearchBarSelectedItem } from "store/search-bar/search-bar-reducer";
+import { getQueryFromAdvancedData } from "store/search-bar/search-bar-actions";
 
 type CssRules = 'root' | 'listItem' | 'listItemText' | 'button';
 

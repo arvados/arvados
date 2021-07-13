@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { useState, useEffect, useRef } from 'react';
 import { withStyles, WithStyles, StyleRulesCallback } from '@material-ui/core/styles';
 import CircularProgress from '@material-ui/core/CircularProgress';
@@ -10,8 +10,8 @@ import { Button, Card, CardContent, TextField, CardActions } from '@material-ui/
 import { green } from '@material-ui/core/colors';
 import { AxiosPromise } from 'axios';
 import { DispatchProp } from 'react-redux';
-import { saveApiToken } from '~/store/auth/auth-action';
-import { navigateToRootProject } from '~/store/navigation/navigation-action';
+import { saveApiToken } from 'store/auth/auth-action';
+import { navigateToRootProject } from 'store/navigation/navigation-action';
 
 type CssRules = 'root' | 'loginBtn' | 'card' | 'wrapper' | 'progress';
 
@@ -98,7 +98,7 @@ export const LoginForm = withStyles(styles)(
             .catch((err) => {
                 setError(true);
                 setSubmitting(false);
-                setHelperText(`${err.response && err.response.data && err.response.data.errors[0] || 'Error logging in: '+err}`);
+                setHelperText(`${(err.response && err.response.data && err.response.data.errors[0]) || 'Error logging in: '+err}`);
                 setFocus();
             });
         };

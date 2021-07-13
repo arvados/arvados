@@ -2,25 +2,25 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
-import { DataExplorer } from "~/views-components/data-explorer/data-explorer";
-import { WorkflowIcon } from '~/components/icon/icon';
-import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
-import { WORKFLOW_PANEL_ID } from '~/store/workflow-panel/workflow-panel-actions';
+import React from 'react';
+import { DataExplorer } from "views-components/data-explorer/data-explorer";
+import { WorkflowIcon } from 'components/icon/icon';
+import { DataTableDefaultView } from 'components/data-table-default-view/data-table-default-view';
+import { WORKFLOW_PANEL_ID } from 'store/workflow-panel/workflow-panel-actions';
 import {
     ResourceLastModifiedDate,
     ResourceWorkflowName,
     ResourceWorkflowStatus,
     ResourceShare,
     ResourceRunProcess
-} from "~/views-components/data-explorer/renderers";
-import { SortDirection } from '~/components/data-table/data-column';
-import { DataColumns } from '~/components/data-table/data-table';
-import { DataTableFilterItem } from '~/components/data-table-filters/data-table-filters';
+} from "views-components/data-explorer/renderers";
+import { SortDirection } from 'components/data-table/data-column';
+import { DataColumns } from 'components/data-table/data-table';
+import { DataTableFilterItem } from 'components/data-table-filters/data-table-filters';
 import { Grid, Paper } from '@material-ui/core';
 import { WorkflowDetailsCard } from './workflow-description-card';
-import { WorkflowResource } from '~/models/workflow';
-import { createTree } from '~/models/tree';
+import { WorkflowResource } from 'models/workflow';
+import { createTree } from 'models/tree';
 
 export enum WorkflowPanelColumnNames {
     NAME = "Name",

@@ -3,18 +3,18 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from "redux";
-import { bindDataExplorerActions } from '~/store/data-explorer/data-explorer-action';
-import { RootState } from '~/store/store';
-import { getUserUuid } from "~/common/getuser";
-import { ServiceRepository } from "~/services/services";
-import { dialogActions } from '~/store/dialog/dialog-actions';
+import { bindDataExplorerActions } from 'store/data-explorer/data-explorer-action';
+import { RootState } from 'store/store';
+import { getUserUuid } from "common/getuser";
+import { ServiceRepository } from "services/services";
+import { dialogActions } from 'store/dialog/dialog-actions';
 import { startSubmit, reset } from "redux-form";
-import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
-import { UserResource } from "~/models/user";
-import { getResource } from '~/store/resources/resources';
-import { navigateTo, navigateToUsers, navigateToRootProject } from "~/store/navigation/navigation-action";
-import { authActions } from '~/store/auth/auth-action';
-import { getTokenV2 } from "~/models/api-client-authorization";
+import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
+import { UserResource } from "models/user";
+import { getResource } from 'store/resources/resources';
+import { navigateTo, navigateToUsers, navigateToRootProject } from "store/navigation/navigation-action";
+import { authActions } from 'store/auth/auth-action';
+import { getTokenV2 } from "models/api-client-authorization";
 
 export const USERS_PANEL_ID = 'usersPanel';
 export const USER_ATTRIBUTES_DIALOG = 'userAttributesDialog';
@@ -64,7 +64,7 @@ export const loginAs = (uuid: string) =>
         const client = await services.apiClientAuthorizationService.create({ ownerUuid: uuid });
         if (data) {
             dispatch<any>(authActions.INIT_USER({ user: data, token: getTokenV2(client) }));
-            location.reload();
+            window.location.reload();
             dispatch<any>(navigateToRootProject);
         }
     };

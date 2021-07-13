@@ -2,11 +2,11 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from "react";
+import React from "react";
 import { ListItemIcon, ListItemText, ListItem } from "@material-ui/core";
-import { AddFavoriteIcon, RemoveFavoriteIcon } from "~/components/icon/icon";
+import { AddFavoriteIcon, RemoveFavoriteIcon } from "components/icon/icon";
 import { connect } from "react-redux";
-import { RootState } from "~/store/store";
+import { RootState } from "store/store";
 
 const mapStateToProps = (state: RootState, props: { onClick: () => {} }) => ({
     isFavorite: state.contextMenu.resource !== undefined && state.favorites[state.contextMenu.resource.uuid] === true,

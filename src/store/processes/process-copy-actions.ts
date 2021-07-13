@@ -3,15 +3,15 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from "redux";
-import { dialogActions } from "~/store/dialog/dialog-actions";
+import { dialogActions } from "store/dialog/dialog-actions";
 import { initialize, startSubmit } from 'redux-form';
-import { resetPickerProjectTree } from '~/store/project-tree-picker/project-tree-picker-actions';
-import { RootState } from '~/store/store';
-import { ServiceRepository } from '~/services/services';
-import { CopyFormDialogData } from '~/store/copy-dialog/copy-dialog';
-import { getProcess } from '~/store/processes/process';
-import {snackbarActions, SnackbarKind} from '~/store/snackbar/snackbar-actions';
-import { initProjectsTreePicker } from '~/store/tree-picker/tree-picker-actions';
+import { resetPickerProjectTree } from 'store/project-tree-picker/project-tree-picker-actions';
+import { RootState } from 'store/store';
+import { ServiceRepository } from 'services/services';
+import { CopyFormDialogData } from 'store/copy-dialog/copy-dialog';
+import { getProcess } from 'store/processes/process';
+import {snackbarActions, SnackbarKind} from 'store/snackbar/snackbar-actions';
+import { initProjectsTreePicker } from 'store/tree-picker/tree-picker-actions';
 
 export const PROCESS_COPY_FORM_NAME = 'processCopyFormName';
 

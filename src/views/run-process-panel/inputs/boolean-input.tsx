@@ -2,9 +2,9 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { memoize } from 'lodash/fp';
-import { BooleanCommandInputParameter } from '~/models/workflow';
+import { BooleanCommandInputParameter } from 'models/workflow';
 import { Field } from 'redux-form';
 import { Switch } from '@material-ui/core';
 import { GenericInputProps, GenericInput } from './generic-input';

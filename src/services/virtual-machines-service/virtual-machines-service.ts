@@ -3,9 +3,9 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { AxiosInstance } from "axios";
-import { CommonResourceService } from "~/services/common-service/common-resource-service";
-import { VirtualMachineLogins, VirtualMachinesResource } from '~/models/virtual-machines';
-import { ApiActions } from '~/services/api/api-actions';
+import { CommonResourceService } from "services/common-service/common-resource-service";
+import { VirtualMachineLogins, VirtualMachinesResource } from 'models/virtual-machines';
+import { ApiActions } from 'services/api/api-actions';
 
 export class VirtualMachinesService extends CommonResourceService<VirtualMachinesResource> {
     constructor(serverApi: AxiosInstance, actions: ApiActions) {

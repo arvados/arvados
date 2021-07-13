@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { Resource, ResourceKind } from '~/models/resource';
+import { Resource, ResourceKind } from 'models/resource';
 
 export type UserPrefs = {
     profile?: {

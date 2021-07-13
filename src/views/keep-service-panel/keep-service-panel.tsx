@@ -2,15 +2,15 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { RootState } from '~/store/store';
+import { RootState } from 'store/store';
 import { Dispatch } from 'redux';
 import { connect } from 'react-redux';
 import { 
     KeepServicePanelRoot, 
     KeepServicePanelRootDataProps, 
     KeepServicePanelRootActionProps 
-} from '~/views/keep-service-panel/keep-service-panel-root';
-import { openKeepServiceContextMenu } from '~/store/context-menu/context-menu-actions';
+} from 'views/keep-service-panel/keep-service-panel-root';
+import { openKeepServiceContextMenu } from 'store/context-menu/context-menu-actions';
 
 const mapStateToProps = (state: RootState): KeepServicePanelRootDataProps => {
     return {

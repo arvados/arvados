@@ -2,30 +2,30 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { DataExplorerMiddlewareService } from "~/store/data-explorer/data-explorer-middleware-service";
-import { FavoritePanelColumnNames } from "~/views/favorite-panel/favorite-panel";
+import { DataExplorerMiddlewareService } from "store/data-explorer/data-explorer-middleware-service";
+import { FavoritePanelColumnNames } from "views/favorite-panel/favorite-panel";
 import { RootState } from "../store";
-import { getUserUuid } from "~/common/getuser";
-import { DataColumns } from "~/components/data-table/data-table";
-import { ServiceRepository } from "~/services/services";
-import { SortDirection } from "~/components/data-table/data-column";
-import { FilterBuilder } from "~/services/api/filter-builder";
+import { getUserUuid } from "common/getuser";
+import { DataColumns } from "components/data-table/data-table";
+import { ServiceRepository } from "services/services";
+import { SortDirection } from "components/data-table/data-column";
+import { FilterBuilder } from "services/api/filter-builder";
 import { updateFavorites } from "../favorites/favorites-actions";
 import { favoritePanelActions } from "./favorite-panel-action";
 import { Dispatch, MiddlewareAPI } from "redux";
-import { OrderBuilder, OrderDirection } from "~/services/api/order-builder";
-import { LinkResource } from "~/models/link";
-import { GroupContentsResource, GroupContentsResourcePrefix } from "~/services/groups-service/groups-service";
-import { resourcesActions } from "~/store/resources/resources-actions";
-import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
-import { progressIndicatorActions } from '~/store/progress-indicator/progress-indicator-actions.ts';
-import { getDataExplorer } from "~/store/data-explorer/data-explorer-reducer";
-import { loadMissingProcessesInformation } from "~/store/project-panel/project-panel-middleware-service";
-import { getSortColumn } from "~/store/data-explorer/data-explorer-reducer";
-import { getDataExplorerColumnFilters } from '~/store/data-explorer/data-explorer-middleware-service';
+import { OrderBuilder, OrderDirection } from "services/api/order-builder";
+import { LinkResource } from "models/link";
+import { GroupContentsResource, GroupContentsResourcePrefix } from "services/groups-service/groups-service";
+import { resourcesActions } from "store/resources/resources-actions";
+import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
+import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
+import { getDataExplorer } from "store/data-explorer/data-explorer-reducer";
+import { loadMissingProcessesInformation } from "store/project-panel/project-panel-middleware-service";
+import { getSortColumn } from "store/data-explorer/data-explorer-reducer";
+import { getDataExplorerColumnFilters } from 'store/data-explorer/data-explorer-middleware-service';
 import { serializeSimpleObjectTypeFilters } from '../resource-type-filters/resource-type-filters';
-import { ResourceKind } from "~/models/resource";
-import { LinkClass } from "~/models/link";
+import { ResourceKind } from "models/resource";
+import { LinkClass } from "models/link";
 
 export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -88,11 +88,11 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
                         .getFilters()
                 });
                 const response = groupItems;
-                collectionItems.items.map((it: any) => {
+                collectionItems.items.forEach((it: any) => {
                     response.itemsAvailable++;
                     response.items.push(it);
                 });
-                processItems.items.map((it: any) => {
+                processItems.items.forEach((it: any) => {
                     response.itemsAvailable++;
                     response.items.push(it);
                 });

@@ -8,11 +8,11 @@ import { createBrowserHistory } from "history";
 
 import { authMiddleware } from "./auth-middleware";
 import { RootStore, configureStore } from "../store";
-import { ServiceRepository, createServices } from "~/services/services";
-import { ApiActions } from "~/services/api/api-actions";
-import { mockConfig } from "~/common/config";
+import { ServiceRepository, createServices } from "services/services";
+import { ApiActions } from "services/api/api-actions";
+import { mockConfig } from "common/config";
 import { authActions } from "./auth-action";
-import { API_TOKEN_KEY } from '~/services/auth-service/auth-service';
+import { API_TOKEN_KEY } from 'services/auth-service/auth-service';
 
 describe("AuthMiddleware", () => {
     let store: RootStore;

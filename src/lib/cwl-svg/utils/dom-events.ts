@@ -31,6 +31,7 @@ export class DomEvents {
                 const selected = Array.from(this.root.querySelectorAll(selector));
                 target         = ev.target as HTMLElement;
                 while (target) {
+                    // eslint-disable-next-line
                     if (selected.find(el => el === target)) {
                         break;
                     }

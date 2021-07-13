@@ -2,10 +2,10 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from "react";
+import React from "react";
 import { configure, shallow, mount } from "enzyme";
 import { WithStyles } from "@material-ui/core";
-import * as Adapter from "enzyme-adapter-react-16";
+import Adapter from "enzyme-adapter-react-16";
 import { TreeItem, TreeItemStatus } from '../tree/tree';
 import { FileTreeData } from '../file-tree/file-tree-data';
 import { CollectionFileType } from "../../models/collection-file";
@@ -14,7 +14,7 @@ import { SearchInput } from '../search-input/search-input';
 
 configure({ adapter: new Adapter() });
 
-jest.mock('~/components/file-tree/file-tree', () => ({
+jest.mock('components/file-tree/file-tree', () => ({
     FileTree: () => 'FileTree',
 }));
 
@@ -91,7 +91,7 @@ describe('<CollectionPanelFiles />', () => {
         props.items = items;
         const wrapper = mount(<CollectionPanelFilesComponent {...props} />);
         wrapper.find(SearchInput).simulate('change', { target: { value: searchPhrase } });
-        
+
         // when
         setTimeout(() => { // we have to use set timeout because of the debounce
             expect(wrapper.find('FileTree').prop('items'))

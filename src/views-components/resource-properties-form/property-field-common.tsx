@@ -4,9 +4,9 @@
 
 import { connect } from 'react-redux';
 import { change, WrappedFieldMetaProps, WrappedFieldInputProps, WrappedFieldProps } from 'redux-form';
-import { Vocabulary, PropFieldSuggestion } from '~/models/vocabulary';
-import { RootState } from '~/store/store';
-import { getVocabulary } from '~/store/vocabulary/vocabulary-selectors';
+import { Vocabulary, PropFieldSuggestion } from 'models/vocabulary';
+import { RootState } from 'store/store';
+import { getVocabulary } from 'store/vocabulary/vocabulary-selectors';
 
 export interface VocabularyProp {
     vocabulary: Vocabulary;

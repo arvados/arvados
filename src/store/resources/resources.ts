@@ -2,10 +2,10 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { Resource, EditableResource } from "~/models/resource";
-import { ResourceKind } from '~/models/resource';
-import { ProjectResource } from "~/models/project";
-import { GroupResource } from "~/models/group";
+import { Resource, EditableResource } from "models/resource";
+import { ResourceKind } from 'models/resource';
+import { ProjectResource } from "models/project";
+import { GroupResource } from "models/group";
 
 export type ResourcesState = { [key: string]: Resource };
 

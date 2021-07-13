@@ -3,14 +3,14 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from 'redux';
-import { RootState } from '~/store/store';
-import { ServiceRepository } from '~/services/services';
-import { bindDataExplorerActions } from '~/store/data-explorer/data-explorer-action';
-import { setBreadcrumbs } from '~/store/breadcrumbs/breadcrumbs-actions';
-import { dialogActions } from '~/store/dialog/dialog-actions';
-import { LinkResource } from '~/models/link';
-import { getResource } from '~/store/resources/resources';
-import {snackbarActions, SnackbarKind} from '~/store/snackbar/snackbar-actions';
+import { RootState } from 'store/store';
+import { ServiceRepository } from 'services/services';
+import { bindDataExplorerActions } from 'store/data-explorer/data-explorer-action';
+import { setBreadcrumbs } from 'store/breadcrumbs/breadcrumbs-actions';
+import { dialogActions } from 'store/dialog/dialog-actions';
+import { LinkResource } from 'models/link';
+import { getResource } from 'store/resources/resources';
+import {snackbarActions, SnackbarKind} from 'store/snackbar/snackbar-actions';
 
 export const LINK_PANEL_ID = "linkPanelId";
 export const linkPanelActions = bindDataExplorerActions(LINK_PANEL_ID);

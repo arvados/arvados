@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { dialogActions } from "~/store/dialog/dialog-actions";
+import { dialogActions } from "store/dialog/dialog-actions";
 
 export const RICH_TEXT_EDITOR_DIALOG_NAME = 'richTextEditorDialogName';
 export const openRichTextEditorDialog = (title: string, text: string) =>

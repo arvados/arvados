@@ -2,27 +2,27 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { API_TOKEN_KEY } from "~/services/auth-service/auth-service";
+import { API_TOKEN_KEY } from "services/auth-service/auth-service";
 
 import 'jest-localstorage-mock';
-import { ServiceRepository, createServices } from "~/services/services";
+import { ServiceRepository, createServices } from "services/services";
 import { configureStore, RootStore } from "../store";
 import { createBrowserHistory } from "history";
-import { Config, mockConfig } from '~/common/config';
-import { ApiActions } from "~/services/api/api-actions";
-import { ACCOUNT_LINK_STATUS_KEY } from '~/services/link-account-service/link-account-service';
+import { Config, mockConfig } from 'common/config';
+import { ApiActions } from "services/api/api-actions";
+import { ACCOUNT_LINK_STATUS_KEY } from 'services/link-account-service/link-account-service';
 import Axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { ImportMock } from 'ts-mock-imports';
-import * as servicesModule from "~/services/services";
-import { SessionStatus } from "~/models/session";
+import * as servicesModule from "services/services";
+import { SessionStatus } from "models/session";
 import { openRunProcess } from './workflow-panel-actions';
-import { runProcessPanelActions } from '~/store/run-process-panel/run-process-panel-actions';
+import { runProcessPanelActions } from 'store/run-process-panel/run-process-panel-actions';
 import { initialize } from 'redux-form';
-import { RUN_PROCESS_BASIC_FORM } from '~/views/run-process-panel/run-process-basic-form';
-import { RUN_PROCESS_INPUTS_FORM } from '~/views/run-process-panel/run-process-inputs-form';
-import { ResourceKind } from '~/models/resource';
-import { WorkflowResource } from '~/models/workflow';
+import { RUN_PROCESS_BASIC_FORM } from 'views/run-process-panel/run-process-basic-form';
+import { RUN_PROCESS_INPUTS_FORM } from 'views/run-process-panel/run-process-inputs-form';
+import { ResourceKind } from 'models/resource';
+import { WorkflowResource } from 'models/workflow';
 
 describe('workflow-panel-actions', () => {
     const axiosInst = Axios.create({ headers: {} });

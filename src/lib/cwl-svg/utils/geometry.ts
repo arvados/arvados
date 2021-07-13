@@ -16,7 +16,7 @@ export class Geometry {
             } else {
                 // node still has parent elements
                 const {e, f} = node.transform.baseVal.getItem(0).matrix;
-                return getPosition(<SVGGElement>node.parentNode, e + addE, f + addF);
+                return getPosition(node.parentNode as SVGGElement, e + addE, f + addF);
             }
         };
 

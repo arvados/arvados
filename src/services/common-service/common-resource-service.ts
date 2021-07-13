@@ -3,10 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { AxiosInstance } from "axios";
-import * as _ from "lodash";
-import { Resource } from "src/models/resource";
-import { ApiActions } from "~/services/api/api-actions";
-import { CommonService } from "~/services/common-service/common-service";
+import { snakeCase } from "lodash";
+import { Resource } from "models/resource";
+import { ApiActions } from "services/api/api-actions";
+import { CommonService } from "services/common-service/common-service";
 
 export enum CommonResourceServiceError {
     UNIQUE_NAME_VIOLATION = 'UniqueNameViolation',
@@ -31,7 +31,7 @@ export class CommonResourceService<T extends Resource> extends CommonService<T> 
         if (data !== undefined) {
             this.readOnlyFields.forEach( field => delete data[field] );
             payload = {
-                [this.resourceType.slice(0, -1)]: CommonService.mapKeys(_.snakeCase)(data),
+                [this.resourceType.slice(0, -1)]: CommonService.mapKeys(snakeCase)(data),
             };
         }
         return super.create(payload);
@@ -42,7 +42,7 @@ export class CommonResourceService<T extends Resource> extends CommonService<T> 
         if (data !== undefined) {
             this.readOnlyFields.forEach( field => delete data[field] );
             payload = {
-                [this.resourceType.slice(0, -1)]: CommonService.mapKeys(_.snakeCase)(data),
+                [this.resourceType.slice(0, -1)]: CommonService.mapKeys(snakeCase)(data),
             };
         }
         return super.update(uuid, payload);

@@ -2,17 +2,17 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from "react";
+import React from "react";
 import { MenuItem } from "@material-ui/core";
-import { User } from "~/models/user";
-import { DropdownMenu } from "~/components/dropdown-menu/dropdown-menu";
-import { AdminMenuIcon } from "~/components/icon/icon";
+import { User } from "models/user";
+import { DropdownMenu } from "components/dropdown-menu/dropdown-menu";
+import { AdminMenuIcon } from "components/icon/icon";
 import { DispatchProp, connect } from 'react-redux';
-import { RootState } from "~/store/store";
-import { openRepositoriesPanel } from "~/store/repositories/repositories-actions";
-import * as NavigationAction from '~/store/navigation/navigation-action';
-import { openAdminVirtualMachines } from "~/store/virtual-machines/virtual-machines-actions";
-import { openUserPanel } from "~/store/users/users-actions";
+import { RootState } from "store/store";
+import { openRepositoriesPanel } from "store/repositories/repositories-actions";
+import * as NavigationAction from 'store/navigation/navigation-action';
+import { openAdminVirtualMachines } from "store/virtual-machines/virtual-machines-actions";
+import { openUserPanel } from "store/users/users-actions";
 
 interface AdminMenuProps {
     user?: User;
@@ -37,7 +37,7 @@ export const AdminMenu = connect(mapStateToProps)(
                 <MenuItem onClick={() => dispatch(NavigationAction.navigateToSshKeysAdmin)}>Ssh Keys</MenuItem>
                 <MenuItem onClick={() => dispatch(NavigationAction.navigateToApiClientAuthorizations)}>Api Tokens</MenuItem>
                 <MenuItem onClick={() => dispatch(openUserPanel())}>Users</MenuItem>
-                <MenuItem onClick={() => dispatch(NavigationAction.navigateToGroups)}>Groups</MenuItem>}
+                <MenuItem onClick={() => dispatch(NavigationAction.navigateToGroups)}>Groups</MenuItem>
                 <MenuItem onClick={() => dispatch(NavigationAction.navigateToComputeNodes)}>Compute Nodes</MenuItem>
                 <MenuItem onClick={() => dispatch(NavigationAction.navigateToKeepServices)}>Keep Services</MenuItem>
                 <MenuItem onClick={() => dispatch(NavigationAction.navigateToLinks)}>Links</MenuItem>

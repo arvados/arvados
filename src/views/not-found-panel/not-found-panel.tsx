@@ -2,9 +2,9 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { RootState } from '~/store/store';
+import { RootState } from 'store/store';
 import { connect } from 'react-redux';
-import { NotFoundPanelRoot, NotFoundPanelRootDataProps, NotFoundPanelOwnProps } from '~/views/not-found-panel/not-found-panel-root';
+import { NotFoundPanelRoot, NotFoundPanelRootDataProps } from 'views/not-found-panel/not-found-panel-root';
 
 const mapStateToProps = (state: RootState): NotFoundPanelRootDataProps => {
     return {
@@ -15,5 +15,5 @@ const mapStateToProps = (state: RootState): NotFoundPanelRootDataProps => {
 
 const mapDispatchToProps = null;
 
-export const NotFoundPanel = connect<NotFoundPanelRootDataProps, null, NotFoundPanelOwnProps>(mapStateToProps, mapDispatchToProps)
-    (NotFoundPanelRoot);
+export const NotFoundPanel = connect(mapStateToProps, mapDispatchToProps)
+    (NotFoundPanelRoot) as any;

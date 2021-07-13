@@ -3,18 +3,18 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch, MiddlewareAPI } from "redux";
-import { DataExplorerMiddlewareService, listResultsToDataExplorerItemsMeta, dataExplorerToListParams } from "~/store/data-explorer/data-explorer-middleware-service";
-import { RootState } from "~/store/store";
-import { ServiceRepository } from "~/services/services";
-import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
-import { getDataExplorer, getSortColumn } from "~/store/data-explorer/data-explorer-reducer";
-import { GroupsPanelActions } from '~/store/groups-panel/groups-panel-actions';
-import { FilterBuilder } from '~/services/api/filter-builder';
-import { updateResources } from '~/store/resources/resources-actions';
-import { OrderBuilder, OrderDirection } from '~/services/api/order-builder';
-import { GroupResource, GroupClass } from '~/models/group';
-import { SortDirection } from '~/components/data-table/data-column';
-import { GroupsPanelColumnNames } from '~/views/groups-panel/groups-panel';
+import { DataExplorerMiddlewareService, listResultsToDataExplorerItemsMeta, dataExplorerToListParams } from "store/data-explorer/data-explorer-middleware-service";
+import { RootState } from "store/store";
+import { ServiceRepository } from "services/services";
+import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
+import { getDataExplorer, getSortColumn } from "store/data-explorer/data-explorer-reducer";
+import { GroupsPanelActions } from 'store/groups-panel/groups-panel-actions';
+import { FilterBuilder } from 'services/api/filter-builder';
+import { updateResources } from 'store/resources/resources-actions';
+import { OrderBuilder, OrderDirection } from 'services/api/order-builder';
+import { GroupResource, GroupClass } from 'models/group';
+import { SortDirection } from 'components/data-table/data-column';
+import { GroupsPanelColumnNames } from 'views/groups-panel/groups-panel';
 
 export class GroupsPanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {

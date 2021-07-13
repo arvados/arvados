@@ -4,8 +4,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from 'redux';
-import { RootState } from '~/store/store';
-import { ServiceRepository } from '~/services/services';
+import { RootState } from 'store/store';
+import { ServiceRepository } from 'services/services';
 import { Middleware } from "redux";
 import { dataExplorerActions, bindDataExplorerActions, DataTableRequestState } from "./data-explorer-action";
 import { getDataExplorer } from "./data-explorer-reducer";

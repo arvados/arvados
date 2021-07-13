@@ -31,22 +31,22 @@ export class SVGEdgeHoverPlugin extends PluginBase {
 
 
         // Ignore if we did not enter an edge
-        if (!ev.srcElement!.classList.contains("edge")) return;
+        if (!(ev.target! as Element).classList.contains("edge")) return;
 
-        const target = ev.srcElement as SVGGElement;
+        const target = ev.target as SVGGElement;
         let tipEl: SVGGElement;
 
-        const onMouseMove = ((ev: MouseEvent) => {
+        const onMouseMove = (ev: MouseEvent) => {
             const coords = this.workflow.transformScreenCTMtoCanvas(ev.clientX, ev.clientY);
             tipEl.setAttribute("x", String(coords.x));
             tipEl.setAttribute("y", String(coords.y - 16));
-        }).bind(this);
+        };
 
-        const onMouseLeave = ((ev: MouseEvent) => {
+        const onMouseLeave = (ev: MouseEvent) => {
             tipEl.remove();
             target.removeEventListener("mousemove", onMouseMove);
             target.removeEventListener("mouseleave", onMouseLeave)
-        }).bind(this);
+        };
 
         this.modelListener = this.workflow.model.on("connection.remove", (source, destination) => {
             if (!tipEl) return;

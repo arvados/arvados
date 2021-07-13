@@ -4,16 +4,16 @@
 
 import { Dispatch } from "redux";
 import { reset, startSubmit, stopSubmit, initialize, FormErrors, formValueSelector, change } from 'redux-form';
-import { RootState } from '~/store/store';
-import { getUserUuid } from "~/common/getuser";
-import { dialogActions } from "~/store/dialog/dialog-actions";
-import { getCommonResourceServiceError, CommonResourceServiceError } from '~/services/common-service/common-resource-service';
-import { ProjectResource } from '~/models/project';
-import { ServiceRepository } from '~/services/services';
-import { matchProjectRoute, matchRunProcessRoute } from '~/routes/routes';
-import { ResourcePropertiesFormData } from '~/views-components/resource-properties-form/resource-properties-form';
+import { RootState } from 'store/store';
+import { getUserUuid } from "common/getuser";
+import { dialogActions } from "store/dialog/dialog-actions";
+import { getCommonResourceServiceError, CommonResourceServiceError } from 'services/common-service/common-resource-service';
+import { ProjectResource } from 'models/project';
+import { ServiceRepository } from 'services/services';
+import { matchProjectRoute, matchRunProcessRoute } from 'routes/routes';
+import { ResourcePropertiesFormData } from 'views-components/resource-properties-form/resource-properties-form';
 import { RouterState } from "react-router-redux";
-import { addProperty, deleteProperty } from "~/lib/resource-properties";
+import { addProperty, deleteProperty } from "lib/resource-properties";
 
 export interface ProjectCreateFormDialogData {
     ownerUuid: string;

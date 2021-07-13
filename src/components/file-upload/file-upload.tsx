@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
-import * as classnames from 'classnames';
+import React from 'react';
+import classnames from 'classnames';
 import {
     Grid,
     StyleRulesCallback,
@@ -15,8 +15,8 @@ import {
 import { withStyles } from '@material-ui/core';
 import Dropzone from 'react-dropzone';
 import { CloudUploadIcon, RemoveIcon } from "../icon/icon";
-import { formatFileSize, formatProgress, formatUploadSpeed } from "~/common/formatters";
-import { UploadFile } from '~/store/file-uploader/file-uploader-actions';
+import { formatFileSize, formatProgress, formatUploadSpeed } from "common/formatters";
+import { UploadFile } from 'store/file-uploader/file-uploader-actions';
 
 type CssRules = "root" | "dropzone" | "dropzoneWrapper" | "container" | "uploadIcon"
     | "dropzoneBorder" | "dropzoneBorderLeft" | "dropzoneBorderRight" | "dropzoneBorderTop" | "dropzoneBorderBottom"

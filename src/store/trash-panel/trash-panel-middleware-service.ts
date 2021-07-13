@@ -7,26 +7,26 @@ import {
     listResultsToDataExplorerItemsMeta
 } from "../data-explorer/data-explorer-middleware-service";
 import { RootState } from "../store";
-import { getUserUuid } from "~/common/getuser";
-import { DataColumns } from "~/components/data-table/data-table";
-import { ServiceRepository } from "~/services/services";
-import { SortDirection } from "~/components/data-table/data-column";
-import { FilterBuilder } from "~/services/api/filter-builder";
+import { getUserUuid } from "common/getuser";
+import { DataColumns } from "components/data-table/data-table";
+import { ServiceRepository } from "services/services";
+import { SortDirection } from "components/data-table/data-column";
+import { FilterBuilder } from "services/api/filter-builder";
 import { trashPanelActions } from "./trash-panel-action";
 import { Dispatch, MiddlewareAPI } from "redux";
-import { OrderBuilder, OrderDirection } from "~/services/api/order-builder";
-import { GroupContentsResourcePrefix } from "~/services/groups-service/groups-service";
-import { ProjectResource } from "~/models/project";
-import { ProjectPanelColumnNames } from "~/views/project-panel/project-panel";
-import { updateFavorites } from "~/store/favorites/favorites-actions";
-import { updatePublicFavorites } from '~/store/public-favorites/public-favorites-actions';
-import { snackbarActions, SnackbarKind } from "~/store/snackbar/snackbar-actions";
-import { updateResources } from "~/store/resources/resources-actions";
-import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
-import { getSortColumn } from "~/store/data-explorer/data-explorer-reducer";
-import { serializeResourceTypeFilters } from '~/store//resource-type-filters/resource-type-filters';
-import { getDataExplorerColumnFilters } from '~/store/data-explorer/data-explorer-middleware-service';
-import { joinFilters } from '~/services/api/filter-builder';
+import { OrderBuilder, OrderDirection } from "services/api/order-builder";
+import { GroupContentsResourcePrefix } from "services/groups-service/groups-service";
+import { ProjectResource } from "models/project";
+import { ProjectPanelColumnNames } from "views/project-panel/project-panel";
+import { updateFavorites } from "store/favorites/favorites-actions";
+import { updatePublicFavorites } from 'store/public-favorites/public-favorites-actions';
+import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
+import { updateResources } from "store/resources/resources-actions";
+import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
+import { getSortColumn } from "store/data-explorer/data-explorer-reducer";
+import { serializeResourceTypeFilters } from 'store//resource-type-filters/resource-type-filters';
+import { getDataExplorerColumnFilters } from 'store/data-explorer/data-explorer-middleware-service';
+import { joinFilters } from 'services/api/filter-builder';
 
 export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {

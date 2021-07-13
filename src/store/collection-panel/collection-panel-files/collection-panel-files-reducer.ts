@@ -4,8 +4,8 @@
 
 import { CollectionPanelFilesState, CollectionPanelFile, CollectionPanelDirectory, mapCollectionFileToCollectionPanelFile, mergeCollectionPanelFilesStates } from './collection-panel-files-state';
 import { CollectionPanelFilesAction, collectionPanelFilesAction } from "./collection-panel-files-actions";
-import { createTree, mapTreeValues, getNode, setNode, getNodeAncestorsIds, getNodeDescendantsIds, setNodeValueWith, mapTree } from "~/models/tree";
-import { CollectionFileType } from "~/models/collection-file";
+import { createTree, mapTreeValues, getNode, setNode, getNodeAncestorsIds, getNodeDescendantsIds, setNodeValueWith, mapTree } from "models/tree";
+import { CollectionFileType } from "models/collection-file";
 
 let fetchedFiles: any = {};
 
@@ -72,7 +72,7 @@ export const collectionPanelFilesReducer = (state: CollectionPanelFilesState = c
 
             return mapTreeValues((v: CollectionPanelDirectory | CollectionPanelFile) => {
                 if (v.type === CollectionFileType.DIRECTORY) {
-                    return ({ 
+                    return ({
                         ...v,
                         collapsed: searchValue.length === 0,
                     });
@@ -83,10 +83,10 @@ export const collectionPanelFilesReducer = (state: CollectionPanelFilesState = c
         },
 
         SELECT_ALL_COLLECTION_FILES: () =>
-            mapTreeValues(v => ({ ...v, selected: true }))({ ...state }),
+            mapTreeValues((v: any) => ({ ...v, selected: true }))({ ...state }),
 
         UNSELECT_ALL_COLLECTION_FILES: () =>
-            mapTreeValues(v => ({ ...v, selected: false }))({ ...state }),
+            mapTreeValues((v: any) => ({ ...v, selected: false }))({ ...state }),
 
         default: () => state
     }) as CollectionPanelFilesState;
@@ -108,7 +108,7 @@ const toggleDescendants = (id: string) => (tree: CollectionPanelFilesState) => {
     if (node && node.value.type === CollectionFileType.DIRECTORY) {
         return getNodeDescendantsIds(id)(tree)
             .reduce((newTree, id) =>
-                setNodeValueWith(v => ({ ...v, selected: node.value.selected }))(id)(newTree), tree);
+                setNodeValueWith((v: any) => ({ ...v, selected: node.value.selected }))(id)(newTree), tree);
     }
     return tree;
 };
@@ -126,7 +126,7 @@ const toggleParentNode = (id: string) => (tree: CollectionPanelFilesState) => {
             const selected = parentNode.children
                 .map(id => getNode(id)(tree))
                 .every(node => node !== undefined && node.value.selected);
-            return setNodeValueWith(v => ({ ...v, selected }))(parentNode.id)(tree);
+            return setNodeValueWith((v: any) => ({ ...v, selected }))(parentNode.id)(tree);
         }
         return setNode(node)(tree);
     }

@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { Tree, TreeNode, mapTreeValues, getNodeValue, getNodeDescendants } from '~/models/tree';
-import { CollectionFile, CollectionDirectory, CollectionFileType } from '~/models/collection-file';
+import { Tree, TreeNode, mapTreeValues, getNodeValue, getNodeDescendants } from 'models/tree';
+import { CollectionFile, CollectionDirectory, CollectionFileType } from 'models/collection-file';
 
 export type CollectionPanelFilesState = Tree<CollectionPanelDirectory | CollectionPanelFile>;
 

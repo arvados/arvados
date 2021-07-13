@@ -2,14 +2,14 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
-import { ProcessIcon } from '~/components/icon/icon';
-import { ProcessResource } from '~/models/process';
-import { formatDate } from '~/common/formatters';
-import { ResourceKind } from '~/models/resource';
-import { resourceLabel } from '~/common/labels';
+import React from 'react';
+import { ProcessIcon } from 'components/icon/icon';
+import { ProcessResource } from 'models/process';
+import { formatDate } from 'common/formatters';
+import { ResourceKind } from 'models/resource';
+import { resourceLabel } from 'common/labels';
 import { DetailsData } from "./details-data";
-import { DetailsAttribute } from "~/components/details-attribute/details-attribute";
+import { DetailsAttribute } from "components/details-attribute/details-attribute";
 import { ResourceOwnerWithName } from '../data-explorer/renderers';
 
 export class ProcessDetails extends DetailsData<ProcessResource> {

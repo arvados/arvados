@@ -2,12 +2,12 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { connect } from 'react-redux';
-import { RootState } from '~/store/store';
-import { User } from "~/models/user";
-import { getSaltedToken } from '~/store/auth/auth-action-session';
-import { Config } from '~/common/config';
+import { RootState } from 'store/store';
+import { User } from "models/user";
+import { getSaltedToken } from 'store/auth/auth-action-session';
+import { Config } from 'common/config';
 
 export interface FedLoginProps {
     user?: User;
@@ -34,15 +34,15 @@ export const FedLogin = connect(mapStateToProps)(
                 {Object.keys(remoteHostsConfig)
                     .map((k) => {
                         if (k === localCluster) {
-                            return;
+                            return null;
                         }
                         if (!remoteHostsConfig[k].workbench2Url) {
                             console.log(`Cluster ${k} does not define workbench2Url.  Federated login / cross-site linking to ${k} is unavailable.  Tell the admin of ${k} to set Services->Workbench2->ExternalURL in config.yml.`);
-                            return;
+                            return null;
                         }
                         const fedtoken = (remoteHostsConfig[k].loginCluster === localCluster)
                             ? apiToken : getSaltedToken(k, apiToken);
-                        return <iframe key={k} src={`${remoteHostsConfig[k].workbench2Url}/fedtoken?api_token=${fedtoken}`} style={{
+                        return <iframe key={k} title={k} src={`${remoteHostsConfig[k].workbench2Url}/fedtoken?api_token=${fedtoken}`} style={{
                             height: 0,
                             width: 0,
                             visibility: "hidden"

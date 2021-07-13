@@ -6,25 +6,25 @@ import { connect } from "react-redux";
 import {
     CollectionPanelFiles as Component,
     CollectionPanelFilesProps
-} from "~/components/collection-panel-files/collection-panel-files";
-import { RootState } from "~/store/store";
-import { TreeItemStatus } from "~/components/tree/tree";
-import { VirtualTreeItem as TreeItem } from "~/components/tree/virtual-tree";
+} from "components/collection-panel-files/collection-panel-files";
+import { RootState } from "store/store";
+import { TreeItemStatus } from "components/tree/tree";
+import { VirtualTreeItem as TreeItem } from "components/tree/virtual-tree";
 import {
     CollectionPanelDirectory,
     CollectionPanelFile,
     CollectionPanelFilesState
-} from "~/store/collection-panel/collection-panel-files/collection-panel-files-state";
-import { FileTreeData } from "~/components/file-tree/file-tree-data";
+} from "store/collection-panel/collection-panel-files/collection-panel-files-state";
+import { FileTreeData } from "components/file-tree/file-tree-data";
 import { Dispatch } from "redux";
-import { collectionPanelFilesAction } from "~/store/collection-panel/collection-panel-files/collection-panel-files-actions";
+import { collectionPanelFilesAction } from "store/collection-panel/collection-panel-files/collection-panel-files-actions";
 import { ContextMenuKind } from "../context-menu/context-menu";
-import { getNode, getNodeChildrenIds, Tree, TreeNode, initTreeNode } from "~/models/tree";
-import { CollectionFileType, createCollectionDirectory } from "~/models/collection-file";
-import { openContextMenu, openCollectionFilesContextMenu } from '~/store/context-menu/context-menu-actions';
-import { openUploadCollectionFilesDialog } from '~/store/collections/collection-upload-actions';
-import { ResourceKind } from "~/models/resource";
-import { openDetailsPanel } from '~/store/details-panel/details-panel-action';
+import { getNode, getNodeChildrenIds, Tree, TreeNode, initTreeNode } from "models/tree";
+import { CollectionFileType, createCollectionDirectory } from "models/collection-file";
+import { openContextMenu, openCollectionFilesContextMenu } from 'store/context-menu/context-menu-actions';
+import { openUploadCollectionFilesDialog } from 'store/collections/collection-upload-actions';
+import { ResourceKind } from "models/resource";
+import { openDetailsPanel } from 'store/details-panel/details-panel-action';
 
 const memoizedMapStateToProps = () => {
     let prevState: CollectionPanelFilesState;

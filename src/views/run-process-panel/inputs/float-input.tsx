@@ -2,13 +2,13 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { memoize } from 'lodash/fp';
-import { FloatCommandInputParameter, isRequiredInput } from '~/models/workflow';
+import { FloatCommandInputParameter, isRequiredInput } from 'models/workflow';
 import { Field } from 'redux-form';
-import { isNumber } from '~/validators/is-number';
+import { isNumber } from 'validators/is-number';
 import { GenericInputProps, GenericInput } from './generic-input';
-import { FloatInput as FloatInputComponent } from '~/components/float-input/float-input';
+import { FloatInput as FloatInputComponent } from 'components/float-input/float-input';
 export interface FloatInputProps {
     input: FloatCommandInputParameter;
 }

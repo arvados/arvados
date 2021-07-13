@@ -2,17 +2,17 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core';
-import { DataExplorer } from "~/views-components/data-explorer/data-explorer";
+import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { connect, DispatchProp } from 'react-redux';
-import { DataColumns } from '~/components/data-table/data-table';
+import { DataColumns } from 'components/data-table/data-table';
 import { RouteComponentProps } from 'react-router';
-import { DataTableFilterItem } from '~/components/data-table-filters/data-table-filters';
-import { SortDirection } from '~/components/data-table/data-column';
-import { ResourceKind } from '~/models/resource';
-import { ArvadosTheme } from '~/common/custom-theme';
-import { FAVORITE_PANEL_ID } from "~/store/favorite-panel/favorite-panel-action";
+import { DataTableFilterItem } from 'components/data-table-filters/data-table-filters';
+import { SortDirection } from 'components/data-table/data-column';
+import { ResourceKind } from 'models/resource';
+import { ArvadosTheme } from 'common/custom-theme';
+import { FAVORITE_PANEL_ID } from "store/favorite-panel/favorite-panel-action";
 import {
     ProcessStatus,
     ResourceFileSize,
@@ -20,25 +20,25 @@ import {
     ResourceName,
     ResourceOwner,
     ResourceType
-} from '~/views-components/data-explorer/renderers';
-import { FavoriteIcon } from '~/components/icon/icon';
+} from 'views-components/data-explorer/renderers';
+import { FavoriteIcon } from 'components/icon/icon';
 import {
     openContextMenu,
     resourceUuidToContextMenuKind
-} from '~/store/context-menu/context-menu-actions';
-import { loadDetailsPanel } from '~/store/details-panel/details-panel-action';
-import { navigateTo } from '~/store/navigation/navigation-action';
-import { ContainerRequestState } from "~/models/container-request";
-import { FavoritesState } from '~/store/favorites/favorites-reducer';
-import { RootState } from '~/store/store';
-import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
-import { createTree } from '~/models/tree';
-import { getSimpleObjectTypeFilters } from '~/store/resource-type-filters/resource-type-filters';
-import { getResource, ResourcesState } from '~/store/resources/resources';
-import { GroupContentsResource } from '~/services/groups-service/groups-service';
-import { GroupClass, GroupResource } from '~/models/group';
-import { getProperty } from '~/store/properties/properties';
-import { PROJECT_PANEL_CURRENT_UUID } from '~/store/project-panel/project-panel-action';
+} from 'store/context-menu/context-menu-actions';
+import { loadDetailsPanel } from 'store/details-panel/details-panel-action';
+import { navigateTo } from 'store/navigation/navigation-action';
+import { ContainerRequestState } from "models/container-request";
+import { FavoritesState } from 'store/favorites/favorites-reducer';
+import { RootState } from 'store/store';
+import { DataTableDefaultView } from 'components/data-table-default-view/data-table-default-view';
+import { createTree } from 'models/tree';
+import { getSimpleObjectTypeFilters } from 'store/resource-type-filters/resource-type-filters';
+import { getResource, ResourcesState } from 'store/resources/resources';
+import { GroupContentsResource } from 'services/groups-service/groups-service';
+import { GroupClass, GroupResource } from 'models/group';
+import { getProperty } from 'store/properties/properties';
+import { PROJECT_PANEL_CURRENT_UUID } from 'store/project-panel/project-panel-action';
 
 type CssRules = "toolbar" | "button";
 
@@ -141,10 +141,10 @@ export const FavoritePanel = withStyles(styles)(
             handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
                 const { resources } = this.props;
                 const resource = getResource<GroupContentsResource>(resourceUuid)(resources);
-                
+
                 let readonly = false;
                 const project = getResource<GroupResource>(this.props.currentItemId)(resources);
-                
+
                 if (project && project.groupClass === GroupClass.FILTER) {
                     readonly = true;
                 }

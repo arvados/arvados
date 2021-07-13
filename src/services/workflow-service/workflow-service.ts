@@ -3,13 +3,13 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { AxiosInstance } from "axios";
-import { CommonResourceService } from "~/services/common-service/common-resource-service";
-import { WorkflowResource } from '~/models/workflow';
-import { ApiActions } from '~/services/api/api-actions';
-import { LinkService } from '~/services/link-service/link-service';
-import { FilterBuilder } from '~/services/api/filter-builder';
-import { LinkClass } from '~/models/link';
-import { OrderBuilder } from '~/services/api/order-builder';
+import { CommonResourceService } from "services/common-service/common-resource-service";
+import { WorkflowResource } from 'models/workflow';
+import { ApiActions } from 'services/api/api-actions';
+import { LinkService } from 'services/link-service/link-service';
+import { FilterBuilder } from 'services/api/filter-builder';
+import { LinkClass } from 'models/link';
+import { OrderBuilder } from 'services/api/order-builder';
 
 export class WorkflowService extends CommonResourceService<WorkflowResource> {
 

@@ -2,11 +2,11 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { WrappedFieldProps, Field, FormName, reset, change, WrappedFieldInputProps, WrappedFieldMetaProps } from 'redux-form';
 import { memoize } from 'lodash';
-import { Autocomplete } from '~/components/autocomplete/autocomplete';
-import { Vocabulary, getTags, getTagKeyID } from '~/models/vocabulary';
+import { Autocomplete } from 'components/autocomplete/autocomplete';
+import { Vocabulary, getTags, getTagKeyID } from 'models/vocabulary';
 import {
     handleSelect,
     handleBlur,
@@ -14,9 +14,9 @@ import {
     VocabularyProp,
     ValidationProp,
     buildProps
-} from '~/views-components/resource-properties-form/property-field-common';
-import { TAG_KEY_VALIDATION } from '~/validators/validators';
-import { escapeRegExp } from '~/common/regexp.ts';
+} from 'views-components/resource-properties-form/property-field-common';
+import { TAG_KEY_VALIDATION } from 'validators/validators';
+import { escapeRegExp } from 'common/regexp';
 import { ChangeEvent } from 'react';
 
 export const PROPERTY_KEY_FIELD_NAME = 'key';

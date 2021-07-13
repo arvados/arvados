@@ -2,19 +2,19 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
-import { LINK_PANEL_ID } from '~/store/link-panel/link-panel-actions';
-import { DataExplorer } from '~/views-components/data-explorer/data-explorer';
-import { SortDirection } from '~/components/data-table/data-column';
-import { DataColumns } from '~/components/data-table/data-table';
-import { DataTableDefaultView } from '~/components/data-table-default-view/data-table-default-view';
-import { ResourcesState } from '~/store/resources/resources';
-import { ShareMeIcon } from '~/components/icon/icon';
-import { createTree } from '~/models/tree';
+import React from 'react';
+import { LINK_PANEL_ID } from 'store/link-panel/link-panel-actions';
+import { DataExplorer } from 'views-components/data-explorer/data-explorer';
+import { SortDirection } from 'components/data-table/data-column';
+import { DataColumns } from 'components/data-table/data-table';
+import { DataTableDefaultView } from 'components/data-table-default-view/data-table-default-view';
+import { ResourcesState } from 'store/resources/resources';
+import { ShareMeIcon } from 'components/icon/icon';
+import { createTree } from 'models/tree';
 import { 
     ResourceLinkUuid, ResourceLinkHead, ResourceLinkTail, 
     ResourceLinkClass, ResourceLinkName } 
-from '~/views-components/data-explorer/renderers';
+from 'views-components/data-explorer/renderers';
 
 export enum LinkPanelColumnNames {
     NAME = "Name",

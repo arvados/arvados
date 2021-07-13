@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { connect } from 'react-redux';
 import { DialogState } from './dialog-reducer';
 import { Dispatch } from 'redux';
@@ -20,6 +20,7 @@ export type WithDialogDispatchProps = {
 export type WithDialogProps<T> = WithDialogStateProps<T> & WithDialogDispatchProps;
 export const withDialog = (id: string) =>
     // TODO: How to make compiler happy with & P instead of & any?
+    // eslint-disable-next-line
     <T, P>(component: React.ComponentType<WithDialogProps<T> & any>) =>
         connect(mapStateToProps(id), mapDispatchToProps(id))(component);
 

@@ -2,14 +2,14 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from "react";
+import React from "react";
 import { connect } from "react-redux";
-import { RootState } from "~/store/store";
+import { RootState } from "store/store";
 import { Field } from "redux-form";
-import { ResourcesState, getResource } from "~/store/resources/resources";
-import { GroupResource } from "~/models/group";
-import { TextField } from "~/components/text-field/text-field";
-import { getUserUuid } from "~/common/getuser";
+import { ResourcesState, getResource } from "store/resources/resources";
+import { GroupResource } from "models/group";
+import { TextField } from "components/text-field/text-field";
+import { getUserUuid } from "common/getuser";
 
 interface ResourceParentFieldProps {
     resources: ResourcesState;
@@ -40,5 +40,5 @@ export const ResourceParentField = connect(
                     return value;
                 }
             }
-            component={TextField} /></span>
+            component={TextField as any} /></span>
     );

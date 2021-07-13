@@ -3,17 +3,17 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { RouteProps } from "react-router";
-import * as React from "react";
-import { RootState } from "~/store/store";
+import React from "react";
+import { RootState } from "store/store";
 import { connect, DispatchProp } from "react-redux";
-import { saveApiToken } from "~/store/auth/auth-action";
-import { getUrlParameter } from "~/common/url";
-import { AuthService } from "~/services/auth-service/auth-service";
-import { navigateToRootProject, navigateToLinkAccount } from "~/store/navigation/navigation-action";
-import { Config } from "~/common/config";
-import { getAccountLinkData } from "~/store/link-account-panel/link-account-panel-actions";
+import { saveApiToken } from "store/auth/auth-action";
+import { getUrlParameter } from "common/url";
+import { AuthService } from "services/auth-service/auth-service";
+import { navigateToRootProject, navigateToLinkAccount } from "store/navigation/navigation-action";
+import { Config } from "common/config";
+import { getAccountLinkData } from "store/link-account-panel/link-account-panel-actions";
 import { replace } from "react-router-redux";
-import { User } from "~/models/user";
+import { User } from "models/user";
 
 interface ApiTokenProps {
     authService: AuthService;

@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { linkAccountPanelReducer, LinkAccountPanelError, LinkAccountPanelStatus, OriginatingUser } from "~/store/link-account-panel/link-account-panel-reducer";
-import { linkAccountPanelActions } from "~/store/link-account-panel/link-account-panel-actions";
+import { linkAccountPanelReducer, LinkAccountPanelError, LinkAccountPanelStatus, OriginatingUser } from "store/link-account-panel/link-account-panel-reducer";
+import { linkAccountPanelActions } from "store/link-account-panel/link-account-panel-actions";
 
 describe('link-account-panel-reducer', () => {
     const initialState = undefined;

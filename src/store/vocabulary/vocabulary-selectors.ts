@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { PropertiesState, getProperty } from '~/store/properties/properties';
-import { Vocabulary } from '~/models/vocabulary';
+import { PropertiesState, getProperty } from 'store/properties/properties';
+import { Vocabulary } from 'models/vocabulary';
 
 export const VOCABULARY_PROPERTY_NAME = 'vocabulary';
 

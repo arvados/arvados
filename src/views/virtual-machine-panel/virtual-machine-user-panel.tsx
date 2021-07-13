@@ -2,16 +2,16 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { connect } from 'react-redux';
 import { Grid, Typography, Button, Card, CardContent, TableBody, TableCell, TableHead, TableRow, Table, Tooltip } from '@material-ui/core';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
-import { ArvadosTheme } from '~/common/custom-theme';
+import { ArvadosTheme } from 'common/custom-theme';
 import { compose, Dispatch } from 'redux';
-import { saveRequestedDate, loadVirtualMachinesUserData } from '~/store/virtual-machines/virtual-machines-actions';
-import { RootState } from '~/store/store';
-import { ListResults } from '~/services/common-service/common-service';
-import { HelpIcon } from '~/components/icon/icon';
+import { saveRequestedDate, loadVirtualMachinesUserData } from 'store/virtual-machines/virtual-machines-actions';
+import { RootState } from 'store/store';
+import { ListResults } from 'services/common-service/common-service';
+import { HelpIcon } from 'components/icon/icon';
 // import * as CopyToClipboard from 'react-copy-to-clipboard';
 
 type CssRules = 'button' | 'codeSnippet' | 'link' | 'linkIcon' | 'rightAlign' | 'cardWithoutMachines' | 'icon';
@@ -134,7 +134,7 @@ const CardContentWithVirtualMachines = (props: VirtualMachineProps) =>
                         {virtualMachineSendRequest(props)}
                     </div>
                     <div className={props.classes.icon}>
-                        <a href="https://doc.arvados.org/user/getting_started/vm-login-with-webshell.html" target="_blank" className={props.classes.linkIcon}>
+                        <a href="https://doc.arvados.org/user/getting_started/vm-login-with-webshell.html" target="_blank" rel="noopener noreferrer" className={props.classes.linkIcon}>
                             <Tooltip title="Access VM using webshell">
                                 <HelpIcon />
                             </Tooltip>
@@ -181,13 +181,13 @@ const virtualMachinesTable = (props: VirtualMachineProps) =>
                                 {command}
                             </TableCell>
                             {props.webShell !== "" && <TableCell>
-                                <a href={`${props.webShell}${it.href}/webshell/${username}`} target="_blank" className={props.classes.link}>
+                                <a href={`${props.webShell}${it.href}/webshell/${username}`} target="_blank" rel="noopener noreferrer" className={props.classes.link}>
                                     Log in as {username}
                                 </a>
                             </TableCell>}
                         </TableRow>;
                     }
-                    return;
+                    return null;
                 }
                 ))}
         </TableBody>

@@ -2,16 +2,16 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { RootState } from '~/store/store';
+import { RootState } from 'store/store';
 import { Dispatch } from 'redux';
 import { connect } from 'react-redux';
-import { startLinking, linkAccount, linkAccountPanelActions, cancelLinking } from '~/store/link-account-panel/link-account-panel-actions';
-import { LinkAccountType } from '~/models/link-account';
+import { startLinking, linkAccount, linkAccountPanelActions, cancelLinking } from 'store/link-account-panel/link-account-panel-actions';
+import { LinkAccountType } from 'models/link-account';
 import {
     LinkAccountPanelRoot,
     LinkAccountPanelRootDataProps,
     LinkAccountPanelRootActionProps
-} from '~/views/link-account-panel/link-account-panel-root';
+} from 'views/link-account-panel/link-account-panel-root';
 
 const mapStateToProps = (state: RootState): LinkAccountPanelRootDataProps => {
     return {

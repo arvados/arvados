@@ -2,22 +2,22 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from "react";
+import React from "react";
 import { Dispatch } from "redux";
 import { connect } from "react-redux";
-import { RootState } from "~/store/store";
+import { RootState } from "store/store";
 import { Button, IconButton, StyleRulesCallback, WithStyles, withStyles, SnackbarContent } from '@material-ui/core';
 import MaterialSnackbar, { SnackbarOrigin } from "@material-ui/core/Snackbar";
-import { snackbarActions, SnackbarKind } from "~/store/snackbar/snackbar-actions";
-import { navigateTo } from '~/store/navigation/navigation-action';
+import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
+import { navigateTo } from 'store/navigation/navigation-action';
 import WarningIcon from '@material-ui/icons/Warning';
 import CheckCircleIcon from '@material-ui/icons/CheckCircle';
 import ErrorIcon from '@material-ui/icons/Error';
 import InfoIcon from '@material-ui/icons/Info';
 import CloseIcon from '@material-ui/icons/Close';
-import { ArvadosTheme } from "~/common/custom-theme";
+import { ArvadosTheme } from "common/custom-theme";
 import { amber, green } from "@material-ui/core/colors";
-import * as classNames from 'classnames';
+import classNames from 'classnames';
 
 interface SnackbarDataProps {
     anchorOrigin?: SnackbarOrigin;

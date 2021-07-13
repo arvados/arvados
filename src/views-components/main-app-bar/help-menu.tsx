@@ -2,13 +2,13 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from "react";
+import React from "react";
 import { MenuItem, Typography } from "@material-ui/core";
-import { DropdownMenu } from "~/components/dropdown-menu/dropdown-menu";
-import { ImportContactsIcon, HelpIcon } from "~/components/icon/icon";
-import { ArvadosTheme } from '~/common/custom-theme';
+import { DropdownMenu } from "components/dropdown-menu/dropdown-menu";
+import { ImportContactsIcon, HelpIcon } from "components/icon/icon";
+import { ArvadosTheme } from 'common/custom-theme';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
-import { RootState } from "~/store/store";
+import { RootState } from "store/store";
 import { compose } from "redux";
 import { connect } from "react-redux";
 
@@ -72,7 +72,7 @@ export const HelpMenu = compose(
                 {
                     links.map(link =>
                         <MenuItem key={link.title}>
-                            <a href={link.link} target="_blank" className={classes.link}>
+                            <a href={link.link} target="_blank" rel="noopener noreferrer" className={classes.link}>
                                 <ImportContactsIcon className={classes.icon} />
                                 <Typography className={classes.linkTitle}>{link.title}</Typography>
                             </a>

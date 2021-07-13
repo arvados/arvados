@@ -2,10 +2,10 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { Select, FormControl, InputLabel, MenuItem, Tooltip, withStyles, WithStyles } from '@material-ui/core';
-import { WorkflowResource } from '~/models/workflow';
-import { DetailsIcon } from '~/components/icon/icon';
+import { WorkflowResource } from 'models/workflow';
+import { DetailsIcon } from 'components/icon/icon';
 
 export interface WorkflowPresetSelectProps {
     workflow: WorkflowResource;

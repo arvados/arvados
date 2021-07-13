@@ -14,7 +14,8 @@
     "@types/jssha": "0.0.29",
     "@types/jszip": "3.1.5",
     "@types/lodash": "4.14.116",
-    "@types/react-copy-to-clipboard": "4.2.6",
+    "@types/react": "17.0.11",
+    "@types/react-copy-to-clipboard": "5.0.0",
     "@types/react-dropzone": "4.2.2",
     "@types/react-highlight-words": "0.12.0",
     "@types/react-virtualized-auto-sizer": "1.0.0",
@@ -30,7 +31,7 @@
     "elliptic": "6.5.4",
     "file-saver": "2.0.1",
     "fstream": "1.0.12",
-    "is-image": "2.0.0",
+    "is-image": "3.0.0",
     "js-yaml": "3.13.1",
     "jssha": "2.3.1",
     "jszip": "3.1.5",
@@ -44,7 +45,7 @@
     "prop-types": "15.7.2",
     "query-string": "6.9.0",
     "react": "16.8.6",
-    "react-copy-to-clipboard": "5.0.1",
+    "react-copy-to-clipboard": "5.0.3",
     "react-dnd": "5.0.0",
     "react-dnd-html5-backend": "5.0.1",
     "react-dom": "16.8.6",
@@ -56,7 +57,7 @@
     "react-router-dom": "4.3.1",
     "react-router-redux": "5.0.0-alpha.9",
     "react-rte": "0.16.3",
-    "react-scripts-ts": "3.1.0",
+    "react-scripts": "3.4.4",
     "react-splitter-layout": "3.0.1",
     "react-transition-group": "2.5.0",
     "react-virtualized-auto-sizer": "1.0.2",
@@ -68,21 +69,18 @@
     "set-value": "2.0.1",
     "shell-quote": "1.6.1",
     "sinon": "7.3",
-    "ts-mock-imports": "1.2.6",
     "tslint": "5.20.0",
     "tslint-etc": "1.6.0",
     "unionize": "2.1.2",
-    "uuid": "3.3.2",
-    "webpack": "4.41.2",
-    "webpack-dev-server": "3.9.0"
+    "uuid": "3.3.2"
   },
   "scripts": {
-    "start": "react-scripts-ts start",
-    "build": "REACT_APP_VERSION=$VERSION REACT_APP_BUILD_NUMBER=$BUILD_NUMBER REACT_APP_GIT_COMMIT=$GIT_COMMIT react-scripts-ts build",
-    "build-local": "react-scripts-ts build",
-    "test": "CI=true react-scripts-ts test --env=jsdom",
-    "test-local": "react-scripts-ts test --env=jsdom",
-    "eject": "react-scripts-ts eject",
+    "start": "react-scripts start",
+    "build": "REACT_APP_VERSION=$VERSION REACT_APP_BUILD_NUMBER=$BUILD_NUMBER REACT_APP_GIT_COMMIT=$GIT_COMMIT react-scripts build",
+    "build-local": "react-scripts build",
+    "test": "CI=true react-scripts test",
+    "test-local": "react-scripts test",
+    "eject": "react-scripts eject",
     "lint": "tslint src/** -t verbose",
     "build-css": "node-sass-chokidar src/ -o src/",
     "watch-css": "npm run build-css && node-sass-chokidar src/ -o src/ --watch --recursive"
@@ -91,9 +89,10 @@
     "@types/classnames": "2.2.6",
     "@types/enzyme": "3.1.14",
     "@types/enzyme-adapter-react-16": "1.0.3",
-    "@types/jest": "23.3.3",
-    "@types/node": "10.11.2",
-    "@types/react-dom": "16.0.0",
+    "@types/is-image": "3.0.0",
+    "@types/jest": "26.0.23",
+    "@types/node": "15.12.4",
+    "@types/react-dom": "17.0.8",
     "@types/react-redux": "6.0.9",
     "@types/react-router": "4.0.31",
     "@types/react-router-dom": "4.3.1",
@@ -108,31 +107,30 @@
     "enzyme-adapter-react-16": "1.15.6",
     "jest-localstorage-mock": "2.2.0",
     "node-sass": "^4.9.4",
-    "node-sass-chokidar": "^1.3.4",
+    "node-sass-chokidar": "1.5.0",
     "redux-devtools": "3.4.1",
     "redux-mock-store": "1.5.4",
-    "typescript": "3.1.1",
+    "ts-mock-imports": "1.3.7",
+    "typescript": "4.3.4",
     "wait-on": "4.0.2",
     "yamljs": "0.3.0"
   },
-  "jest": {
-    "moduleNameMapper": {
-      "^~/(.*)$": "<rootDir>/src/$1"
-    }
-  },
   "resolutions": {
-    "fbjs/ua-parser-js": "0.7.24",
     "**/meow/trim-newlines": "^3.0.1",
-    "react-rte/**/ua-parser-js": "0.7.24",
-    "react-scripts-ts/webpack-dev-server": "^2.11.4",
-    "react-scripts-ts/**/**/**/**/js-yaml": "^3.13.1",
-    "react-scripts-ts/uglifyjs-webpack-plugin/serialize-javascript": "^3.1.0",
-    "react-scripts-ts/uglifyjs-webpack-plugin/cacache/ssri": "6.0.2",
-    "react-scripts-ts/**/handlebars": "^4.7.7",
-    "react-scripts-ts/**/merge": "^2.1.1",
-    "webpack-dev-server/http-proxy-middleware/http-proxy": "^1.18.1",
-    "webpack-dev-server/selfsigned/node-forge": "0.10.0",
-    "webpack/node-libs-browser/crypto-browserify/*/elliptic": "6.5.4",
-    "webpack/terser-webpack-plugin/serialize-javascript": "^3.1.0"
+    "react-scripts/**/css-what": "5.0.1",
+    "**/@typescript-eslint/eslint-plugin": "^4.1.1",
+    "**/@typescript-eslint/parser": "^4.1.1"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
   }
 }

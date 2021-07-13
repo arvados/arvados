@@ -3,17 +3,17 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from "redux";
-import { RootState } from '~/store/store';
-import { ServiceRepository } from "~/services/services";
-import { navigateToUserVirtualMachines, navigateToAdminVirtualMachines, navigateToRootProject } from "~/store/navigation/navigation-action";
-import { bindDataExplorerActions } from '~/store/data-explorer/data-explorer-action';
-import { formatDate } from "~/common/formatters";
-import { unionize, ofType, UnionOf } from "~/common/unionize";
-import { VirtualMachineLogins } from '~/models/virtual-machines';
-import { FilterBuilder } from "~/services/api/filter-builder";
-import { ListResults } from "~/services/common-service/common-service";
-import { dialogActions } from '~/store/dialog/dialog-actions';
-import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
+import { RootState } from 'store/store';
+import { ServiceRepository } from "services/services";
+import { navigateToUserVirtualMachines, navigateToAdminVirtualMachines, navigateToRootProject } from "store/navigation/navigation-action";
+import { bindDataExplorerActions } from 'store/data-explorer/data-explorer-action';
+import { formatDate } from "common/formatters";
+import { unionize, ofType, UnionOf } from "common/unionize";
+import { VirtualMachineLogins } from 'models/virtual-machines';
+import { FilterBuilder } from "services/api/filter-builder";
+import { ListResults } from "services/common-service/common-service";
+import { dialogActions } from 'store/dialog/dialog-actions';
+import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 
 export const virtualMachinesActions = unionize({
     SET_REQUESTED_DATE: ofType<string>(),
@@ -81,7 +81,7 @@ export const loadVirtualMachinesUserData = () =>
 
 export const saveRequestedDate = () =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const date = formatDate((new Date).toISOString());
+        const date = formatDate((new Date()).toISOString());
         services.virtualMachineService.saveRequestedDate(date);
         dispatch<any>(loadRequestedDate());
     };

@@ -4,17 +4,17 @@
 
 import { Dispatch } from "redux";
 import { connect } from "react-redux";
-import { RootState } from '~/store/store';
+import { RootState } from 'store/store';
 import {
     openContextMenu,
     resourceUuidToContextMenuKind
-} from '~/store/context-menu/context-menu-actions';
+} from 'store/context-menu/context-menu-actions';
 import {
     LinkPanelRoot,
     LinkPanelRootActionProps,
     LinkPanelRootDataProps
-} from '~/views/link-panel/link-panel-root';
-import { ResourceKind } from '~/models/resource';
+} from 'views/link-panel/link-panel-root';
+import { ResourceKind } from 'models/resource';
 
 const mapStateToProps = (state: RootState): LinkPanelRootDataProps => {
     return {

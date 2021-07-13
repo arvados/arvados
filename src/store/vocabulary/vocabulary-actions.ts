@@ -3,10 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from 'redux';
-import { ServiceRepository } from '~/services/services';
-import { propertiesActions } from '~/store/properties/properties-actions';
+import { ServiceRepository } from 'services/services';
+import { propertiesActions } from 'store/properties/properties-actions';
 import { VOCABULARY_PROPERTY_NAME, DEFAULT_VOCABULARY } from './vocabulary-selectors';
-import { isVocabulary } from '~/models/vocabulary';
+import { isVocabulary } from 'models/vocabulary';
 
 export const loadVocabulary = async (dispatch: Dispatch, _: {}, { vocabularyService }: ServiceRepository) => {
     const vocabulary = await vocabularyService.getVocabulary();

@@ -1,5 +1,5 @@
 import { RootState } from '../store';
-import { matchProcessLogRoute } from '~/routes/routes';
+import { matchProcessLogRoute } from 'routes/routes';
 // Copyright (C) The Arvados Authors. All rights reserved.
 //
 // SPDX-License-Identifier: AGPL-3.0

@@ -2,18 +2,18 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from "react";
+import React from "react";
 import { Field } from "redux-form";
-import { TextField } from "~/components/text-field/text-field";
-import { USER_EMAIL_VALIDATION, USER_LENGTH_VALIDATION } from "~/validators/validators";
-import { NativeSelectField } from "~/components/select-field/select-field";
+import { TextField } from "components/text-field/text-field";
+import { USER_EMAIL_VALIDATION, USER_LENGTH_VALIDATION } from "validators/validators";
+import { NativeSelectField } from "components/select-field/select-field";
 import { InputLabel } from "@material-ui/core";
-import { VirtualMachinesResource } from "~/models/virtual-machines";
+import { VirtualMachinesResource } from "models/virtual-machines";
 
 export const UserEmailField = () =>
     <Field
         name='email'
-        component={TextField}
+        component={TextField as any}
         validate={USER_EMAIL_VALIDATION}
         autoFocus={true}
         label="Email" />;
@@ -23,7 +23,7 @@ export const UserVirtualMachineField = ({ data }: any) =>
         <InputLabel>Virtual Machine</InputLabel>
         <Field
             name='virtualMachine'
-            component={NativeSelectField}
+            component={NativeSelectField as any}
             validate={USER_LENGTH_VALIDATION}
             items={getVirtualMachinesList(data.items)} />
     </div>;
@@ -31,7 +31,7 @@ export const UserVirtualMachineField = ({ data }: any) =>
 export const UserGroupsVirtualMachineField = () =>
     <Field
         name='groups'
-        component={TextField}
+        component={TextField as any}
         validate={USER_LENGTH_VALIDATION}
         label="Groups for virtual machine (comma separated list)" />;
 

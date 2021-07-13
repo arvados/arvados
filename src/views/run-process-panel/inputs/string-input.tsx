@@ -2,12 +2,12 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { memoize } from 'lodash/fp';
-import { isRequiredInput, StringCommandInputParameter } from '~/models/workflow';
+import { isRequiredInput, StringCommandInputParameter } from 'models/workflow';
 import { Field } from 'redux-form';
-import { require } from '~/validators/require';
-import { GenericInputProps, GenericInput } from '~/views/run-process-panel/inputs/generic-input';
+import { require } from 'validators/require';
+import { GenericInputProps, GenericInput } from 'views/run-process-panel/inputs/generic-input';
 import { Input as MaterialInput } from '@material-ui/core';
 
 export interface StringInputProps {

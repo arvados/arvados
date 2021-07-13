@@ -2,14 +2,14 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from "react";
+import React from "react";
 import { memoize } from "lodash/fp";
-import { FormDialog } from '~/components/form-dialog/form-dialog';
-import { CollectionNameField, CollectionDescriptionField, CollectionProjectPickerField } from '~/views-components/form-fields/collection-form-fields';
-import { WithDialogProps } from '~/store/dialog/with-dialog';
+import { FormDialog } from 'components/form-dialog/form-dialog';
+import { CollectionNameField, CollectionDescriptionField, CollectionProjectPickerField } from 'views-components/form-fields/collection-form-fields';
+import { WithDialogProps } from 'store/dialog/with-dialog';
 import { InjectedFormProps } from 'redux-form';
-import { CollectionPartialCopyFormData } from '~/store/collections/collection-partial-copy-actions';
-import { PickerIdProp } from "~/store/tree-picker/picker-id";
+import { CollectionPartialCopyFormData } from 'store/collections/collection-partial-copy-actions';
+import { PickerIdProp } from "store/tree-picker/picker-id";
 
 type DialogCollectionPartialCopyProps = WithDialogProps<string> & InjectedFormProps<CollectionPartialCopyFormData>;
 

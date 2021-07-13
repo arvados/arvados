@@ -2,24 +2,24 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { dialogActions } from "~/store/dialog/dialog-actions";
-import { withDialog } from "~/store/dialog/with-dialog";
+import { dialogActions } from "store/dialog/dialog-actions";
+import { withDialog } from "store/dialog/with-dialog";
 import { SHARING_DIALOG_NAME, SharingPublicAccessFormData, SHARING_PUBLIC_ACCESS_FORM_NAME, SHARING_INVITATION_FORM_NAME, SharingManagementFormData, SharingInvitationFormData, VisibilityLevel, getSharingMangementFormData, getSharingPublicAccessFormData } from './sharing-dialog-types';
 import { Dispatch } from 'redux';
-import { ServiceRepository } from "~/services/services";
-import { FilterBuilder } from '~/services/api/filter-builder';
+import { ServiceRepository } from "services/services";
+import { FilterBuilder } from 'services/api/filter-builder';
 import { initialize, getFormValues, reset } from 'redux-form';
-import { SHARING_MANAGEMENT_FORM_NAME } from '~/store/sharing-dialog/sharing-dialog-types';
-import { RootState } from '~/store/store';
-import { getDialog } from '~/store/dialog/dialog-reducer';
-import { PermissionLevel } from '~/models/permission';
-import { getPublicGroupUuid } from "~/store/workflow-panel/workflow-panel-actions";
-import { PermissionResource } from '~/models/permission';
+import { SHARING_MANAGEMENT_FORM_NAME } from 'store/sharing-dialog/sharing-dialog-types';
+import { RootState } from 'store/store';
+import { getDialog } from 'store/dialog/dialog-reducer';
+import { PermissionLevel } from 'models/permission';
+import { getPublicGroupUuid } from "store/workflow-panel/workflow-panel-actions";
+import { PermissionResource } from 'models/permission';
 import { differenceWith } from "lodash";
-import { withProgress } from "~/store/progress-indicator/with-progress";
-import { progressIndicatorActions } from '~/store/progress-indicator/progress-indicator-actions.ts';
+import { withProgress } from "store/progress-indicator/with-progress";
+import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
 import { snackbarActions, SnackbarKind } from "../snackbar/snackbar-actions";
-import { extractUuidKind, ResourceKind } from "~/models/resource";
+import { extractUuidKind, ResourceKind } from "models/resource";
 
 export const openSharingDialog = (resourceUuid: string) =>
     (dispatch: Dispatch) => {

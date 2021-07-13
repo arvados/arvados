@@ -2,15 +2,15 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from "react";
+import React from "react";
 import { Dispatch } from "redux";
 import { connect } from "react-redux";
-import { RootState } from '~/store/store';
-import { withDialog, WithDialogProps } from "~/store/dialog/with-dialog";
-import { NOT_FOUND_DIALOG_NAME } from '~/store/not-found-panel/not-found-panel-action';
+import { RootState } from 'store/store';
+import { withDialog, WithDialogProps } from "store/dialog/with-dialog";
+import { NOT_FOUND_DIALOG_NAME } from 'store/not-found-panel/not-found-panel-action';
 import { Dialog, DialogContent, DialogActions, Button, withStyles, StyleRulesCallback, WithStyles } from '@material-ui/core';
-import { ArvadosTheme } from '~/common/custom-theme';
-import { NotFoundPanel } from "~/views/not-found-panel/not-found-panel";
+import { ArvadosTheme } from 'common/custom-theme';
+import { NotFoundPanel } from "views/not-found-panel/not-found-panel";
 
 type CssRules = 'tag';
 

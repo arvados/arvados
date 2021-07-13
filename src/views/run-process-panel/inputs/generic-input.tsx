@@ -2,10 +2,10 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { WrappedFieldProps } from 'redux-form';
 import { FormGroup, FormLabel, FormHelperText } from '@material-ui/core';
-import { GenericCommandInputParameter, getInputLabel, isRequiredInput } from '~/models/workflow';
+import { GenericCommandInputParameter, getInputLabel, isRequiredInput } from 'models/workflow';
 
 export type GenericInputProps = WrappedFieldProps & {
     commandInput: GenericCommandInputParameter<any, any>;

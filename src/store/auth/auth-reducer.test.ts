@@ -6,9 +6,9 @@ import { authReducer, AuthState } from "./auth-reducer";
 import { AuthAction, authActions } from "./auth-action";
 
 import 'jest-localstorage-mock';
-import { createServices } from "~/services/services";
-import { mockConfig } from '~/common/config';
-import { ApiActions } from "~/services/api/api-actions";
+import { createServices } from "services/services";
+import { mockConfig } from 'common/config';
+import { ApiActions } from "services/api/api-actions";
 
 describe('auth-reducer', () => {
     let reducer: (state: AuthState | undefined, action: AuthAction) => any;

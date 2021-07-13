@@ -4,7 +4,7 @@
 
 import { ContextMenuActionSet } from "../context-menu-action-set";
 import { ToggleFavoriteAction } from "../actions/favorite-action";
-import { toggleFavorite } from "~/store/favorites/favorites-actions";
+import { toggleFavorite } from "store/favorites/favorites-actions";
 
 export const resourceActionSet: ContextMenuActionSet = [[{
     component: ToggleFavoriteAction,

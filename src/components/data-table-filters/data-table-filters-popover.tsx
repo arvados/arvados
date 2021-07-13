@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from "react";
+import React from "react";
 import {
     WithStyles,
     withStyles,
@@ -19,10 +19,10 @@ import {
     IconButton
 } from "@material-ui/core";
 import classnames from "classnames";
-import { DefaultTransformOrigin } from "~/components/popover/helpers";
-import { createTree } from '~/models/tree';
+import { DefaultTransformOrigin } from "components/popover/helpers";
+import { createTree } from 'models/tree';
 import { DataTableFilters, DataTableFiltersTree } from "./data-table-filters-tree";
-import { getNodeDescendants } from '~/models/tree';
+import { getNodeDescendants } from 'models/tree';
 
 export type CssRules = "root" | "icon" | "iconButton" | "active" | "checkbox";
 

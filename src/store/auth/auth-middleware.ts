@@ -4,12 +4,12 @@
 
 import { Middleware } from "redux";
 import { authActions, } from "./auth-action";
-import { ServiceRepository, setAuthorizationHeader, removeAuthorizationHeader } from "~/services/services";
-import { initSessions } from "~/store/auth/auth-action-session";
-import { User } from "~/models/user";
-import { RootState } from '~/store/store';
-import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
-import { WORKBENCH_LOADING_SCREEN } from '~/store/workbench/workbench-actions';
+import { ServiceRepository, setAuthorizationHeader, removeAuthorizationHeader } from "services/services";
+import { initSessions } from "store/auth/auth-action-session";
+import { User } from "models/user";
+import { RootState } from 'store/store';
+import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
+import { WORKBENCH_LOADING_SCREEN } from 'store/workbench/workbench-actions';
 
 export const authMiddleware = (services: ServiceRepository): Middleware => store => next => action => {
     // Middleware to update external state (local storage, window

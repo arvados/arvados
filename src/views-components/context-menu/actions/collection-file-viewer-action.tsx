@@ -4,9 +4,9 @@
 
 import { connect } from "react-redux";
 import { RootState } from "../../../store/store";
-import { FileViewerAction } from '~/views-components/context-menu/actions/file-viewer-action';
-import { getNodeValue } from "~/models/tree";
-import { ContextMenuKind } from '~/views-components/context-menu/context-menu';
+import { FileViewerAction } from 'views-components/context-menu/actions/file-viewer-action';
+import { getNodeValue } from "models/tree";
+import { ContextMenuKind } from 'views-components/context-menu/context-menu';
 import { getInlineFileUrl, sanitizeToken } from "./helpers";
 
 const mapStateToProps = (state: RootState) => {

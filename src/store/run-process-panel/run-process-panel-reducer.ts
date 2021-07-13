@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { RunProcessPanelAction, runProcessPanelActions } from '~/store/run-process-panel/run-process-panel-actions';
-import { WorkflowResource, CommandInputParameter, getWorkflowInputs, parseWorkflowDefinition } from '~/models/workflow';
+import { RunProcessPanelAction, runProcessPanelActions } from 'store/run-process-panel/run-process-panel-actions';
+import { WorkflowResource, CommandInputParameter, getWorkflowInputs, parseWorkflowDefinition } from 'models/workflow';
 
 interface RunProcessPanel {
     processPathname: string;

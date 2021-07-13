@@ -2,11 +2,11 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { connect } from 'react-redux';
-import { RootState } from '~/store/store';
-import { getResource } from '~/store/resources/resources';
-import { Resource } from '~/models/resource';
+import { RootState } from 'store/store';
+import { getResource } from 'store/resources/resources';
+import { Resource } from 'models/resource';
 
 interface WithResourceProps {
     resource?: Resource;

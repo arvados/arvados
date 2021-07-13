@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { Grid, StyleRulesCallback, Divider, IconButton, Typography } from '@material-ui/core';
 import {
     Field,
@@ -14,11 +14,11 @@ import {
 import { PermissionSelect, formatPermissionLevel, parsePermissionLevel } from './permission-select';
 import { WithStyles } from '@material-ui/core/styles';
 import withStyles from '@material-ui/core/styles/withStyles';
-import { CloseIcon } from '~/components/icon/icon';
+import { CloseIcon } from 'components/icon/icon';
 
 
 export default () =>
-    <FieldArray name='permissions' component={SharingManagementFieldArray} />;
+    <FieldArray name='permissions' component={SharingManagementFieldArray as any} />;
 
 const SharingManagementFieldArray = ({ fields }: WrappedFieldArrayProps<{ email: string }>) =>
     <div>
@@ -44,7 +44,7 @@ const PermissionManagementRow = withStyles(permissionManagementRowStyles)(
                 </Grid>
                 <Grid item xs={4} container wrap='nowrap'>
                     <Field
-                        name={`${field}.permissions`}
+                        name={`${field}.permissions` as string}
                         component={PermissionSelectComponent}
                         format={formatPermissionLevel}
                         parse={parsePermissionLevel} />

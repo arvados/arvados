@@ -2,10 +2,10 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from "react";
+import React from "react";
 import { Badge, MenuItem } from '@material-ui/core';
-import { DropdownMenu } from "~/components/dropdown-menu/dropdown-menu";
-import { NotificationIcon } from '~/components/icon/icon';
+import { DropdownMenu } from "components/dropdown-menu/dropdown-menu";
+import { NotificationIcon } from 'components/icon/icon';
 
 export const NotificationsMenu = 
     () =>

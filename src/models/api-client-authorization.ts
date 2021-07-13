@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { Resource } from '~/models/resource';
+import { Resource } from 'models/resource';
 
 export interface ApiClientAuthorization extends Resource {
     uuid: string;

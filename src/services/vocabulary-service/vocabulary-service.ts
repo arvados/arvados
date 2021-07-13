@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import Axios from 'axios';
-import { Vocabulary } from '~/models/vocabulary';
+import { Vocabulary } from 'models/vocabulary';
 
 export class VocabularyService {
     constructor(

@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import axios, { AxiosInstance } from "axios";
-import { ApiActions } from "~/services/api/api-actions";
+import { ApiActions } from "services/api/api-actions";
 import { CommonService } from "./common-service";
 
 const actions: ApiActions = {

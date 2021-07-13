@@ -2,29 +2,29 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import {
     isRequiredInput,
     FileArrayCommandInputParameter,
     File,
     CWLType
-} from '~/models/workflow';
+} from 'models/workflow';
 import { Field } from 'redux-form';
-import { ERROR_MESSAGE } from '~/validators/require';
+import { ERROR_MESSAGE } from 'validators/require';
 import { Input, Dialog, DialogTitle, DialogContent, DialogActions, Button, Divider, WithStyles, Typography } from '@material-ui/core';
 import { GenericInputProps, GenericInput } from './generic-input';
-import { ProjectsTreePicker } from '~/views-components/projects-tree-picker/projects-tree-picker';
+import { ProjectsTreePicker } from 'views-components/projects-tree-picker/projects-tree-picker';
 import { connect, DispatchProp } from 'react-redux';
-import { initProjectsTreePicker, getSelectedNodes, treePickerActions, getProjectsTreePickerIds } from '~/store/tree-picker/tree-picker-actions';
-import { ProjectsTreePickerItem } from '~/views-components/projects-tree-picker/generic-projects-tree-picker';
-import { CollectionFile, CollectionFileType } from '~/models/collection-file';
+import { initProjectsTreePicker, getSelectedNodes, treePickerActions, getProjectsTreePickerIds } from 'store/tree-picker/tree-picker-actions';
+import { ProjectsTreePickerItem } from 'views-components/projects-tree-picker/generic-projects-tree-picker';
+import { CollectionFile, CollectionFileType } from 'models/collection-file';
 import { createSelector, createStructuredSelector } from 'reselect';
-import { ChipsInput } from '~/components/chips-input/chips-input';
+import { ChipsInput } from 'components/chips-input/chips-input';
 import { identity, values, noop } from 'lodash';
 import { InputProps } from '@material-ui/core/Input';
-import { TreePicker } from '~/store/tree-picker/tree-picker';
-import { RootState } from '~/store/store';
-import { Chips } from '~/components/chips/chips';
+import { TreePicker } from 'store/tree-picker/tree-picker';
+import { RootState } from 'store/store';
+import { Chips } from 'components/chips/chips';
 import withStyles, { StyleRulesCallback } from '@material-ui/core/styles/withStyles';
 
 export interface FileArrayInputProps {
@@ -35,7 +35,7 @@ export const FileArrayInput = ({ input }: FileArrayInputProps) =>
     <Field
         name={input.id}
         commandInput={input}
-        component={FileArrayInputComponent}
+        component={FileArrayInputComponent as any}
         parse={parseFiles}
         format={formatFiles}
         validate={validationSelector(input)} />;
@@ -174,7 +174,7 @@ const FileArrayInputComponent = connect(mapStateToProps)(
 
         refreshFiles = () => {
             clearTimeout(this.fileRefreshTimeout);
-            this.fileRefreshTimeout = setTimeout(this.setSelectedFiles);
+            this.fileRefreshTimeout = window.setTimeout(this.setSelectedFiles);
         }
 
         setSelectedFiles = () => {

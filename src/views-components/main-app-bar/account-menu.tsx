@@ -2,26 +2,26 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from "react";
+import React from "react";
 import { MenuItem, Divider } from "@material-ui/core";
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
-import { User, getUserDisplayName } from "~/models/user";
-import { DropdownMenu } from "~/components/dropdown-menu/dropdown-menu";
-import { UserPanelIcon } from "~/components/icon/icon";
+import { User, getUserDisplayName } from "models/user";
+import { DropdownMenu } from "components/dropdown-menu/dropdown-menu";
+import { UserPanelIcon } from "components/icon/icon";
 import { DispatchProp, connect } from 'react-redux';
-import { authActions, getNewExtraToken } from '~/store/auth/auth-action';
-import { RootState } from "~/store/store";
-import { openTokenDialog } from '~/store/token-dialog/token-dialog-actions';
-import { openRepositoriesPanel } from "~/store/repositories/repositories-actions";
+import { authActions, getNewExtraToken } from 'store/auth/auth-action';
+import { RootState } from "store/store";
+import { openTokenDialog } from 'store/token-dialog/token-dialog-actions';
+import { openRepositoriesPanel } from "store/repositories/repositories-actions";
 import {
     navigateToSiteManager,
     navigateToSshKeysUser,
     navigateToMyAccount,
     navigateToLinkAccount
-} from '~/store/navigation/navigation-action';
-import { openUserVirtualMachines } from "~/store/virtual-machines/virtual-machines-actions";
-import { pluginConfig } from '~/plugins';
-import { ElementListReducer } from '~/common/plugintypes';
+} from 'store/navigation/navigation-action';
+import { openUserVirtualMachines } from "store/virtual-machines/virtual-machines-actions";
+import { pluginConfig } from 'plugins';
+import { ElementListReducer } from 'common/plugintypes';
 
 interface AccountMenuProps {
     user?: User;

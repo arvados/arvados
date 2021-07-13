@@ -2,28 +2,28 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { IconButton, Tabs, Tab, Typography, Grid, Tooltip } from '@material-ui/core';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
 import { Transition } from 'react-transition-group';
-import { ArvadosTheme } from '~/common/custom-theme';
+import { ArvadosTheme } from 'common/custom-theme';
 import classnames from "classnames";
 import { connect } from 'react-redux';
-import { RootState } from '~/store/store';
-import { CloseIcon } from '~/components/icon/icon';
-import { EmptyResource } from '~/models/empty';
+import { RootState } from 'store/store';
+import { CloseIcon } from 'components/icon/icon';
+import { EmptyResource } from 'models/empty';
 import { Dispatch } from "redux";
-import { ResourceKind } from "~/models/resource";
+import { ResourceKind } from "models/resource";
 import { ProjectDetails } from "./project-details";
 import { CollectionDetails } from "./collection-details";
 import { ProcessDetails } from "./process-details";
 import { EmptyDetails } from "./empty-details";
 import { DetailsData } from "./details-data";
-import { DetailsResource } from "~/models/details";
-import { getResource } from '~/store/resources/resources';
-import { toggleDetailsPanel, SLIDE_TIMEOUT, openDetailsPanel } from '~/store/details-panel/details-panel-action';
-import { FileDetails } from '~/views-components/details-panel/file-details';
-import { getNode } from '~/models/tree';
+import { DetailsResource } from "models/details";
+import { getResource } from 'store/resources/resources';
+import { toggleDetailsPanel, SLIDE_TIMEOUT, openDetailsPanel } from 'store/details-panel/details-panel-action';
+import { FileDetails } from 'views-components/details-panel/file-details';
+import { getNode } from 'models/tree';
 
 type CssRules = 'root' | 'container' | 'opened' | 'headerContainer' | 'headerIcon' | 'tabContainer';
 

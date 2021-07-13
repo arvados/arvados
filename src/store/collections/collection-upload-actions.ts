@@ -3,16 +3,16 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from 'redux';
-import { RootState } from '~/store/store';
-import { ServiceRepository } from '~/services/services';
-import { dialogActions } from '~/store/dialog/dialog-actions';
+import { RootState } from 'store/store';
+import { ServiceRepository } from 'services/services';
+import { dialogActions } from 'store/dialog/dialog-actions';
 import { loadCollectionFiles } from '../collection-panel/collection-panel-files/collection-panel-files-actions';
-import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
-import { fileUploaderActions } from '~/store/file-uploader/file-uploader-actions';
+import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
+import { fileUploaderActions } from 'store/file-uploader/file-uploader-actions';
 import { reset, startSubmit, stopSubmit } from 'redux-form';
-import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
-import { collectionPanelFilesAction } from '~/store/collection-panel/collection-panel-files/collection-panel-files-actions';
-import { createTree } from '~/models/tree';
+import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
+import { collectionPanelFilesAction } from 'store/collection-panel/collection-panel-files/collection-panel-files-actions';
+import { createTree } from 'models/tree';
 import { loadCollectionPanel } from '../collection-panel/collection-panel-action';
 
 export const uploadCollectionFiles = (collectionUuid: string) =>

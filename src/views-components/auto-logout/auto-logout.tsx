@@ -6,11 +6,11 @@ import { connect } from "react-redux";
 import { useIdleTimer } from "react-idle-timer";
 import { Dispatch } from "redux";
 
-import { RootState } from "~/store/store";
-import { SnackbarKind, snackbarActions } from "~/store/snackbar/snackbar-actions";
-import { logout } from "~/store/auth/auth-action";
+import { RootState } from "store/store";
+import { SnackbarKind, snackbarActions } from "store/snackbar/snackbar-actions";
+import { logout } from "store/auth/auth-action";
 import parse from "parse-duration";
-import * as React from "react";
+import React from "react";
 import { min } from "lodash";
 
 interface AutoLogoutDataProps {
@@ -40,7 +40,7 @@ const mapDispatchToProps = (dispatch: Dispatch): AutoLogoutActionProps => ({
 export type AutoLogoutProps = AutoLogoutDataProps & AutoLogoutActionProps;
 
 const debounce = (delay: number | undefined, fn: Function) => {
-    let timerId: number | null;
+    let timerId: NodeJS.Timer | null;
     return (...args: any[]) => {
         if (timerId) { clearTimeout(timerId); }
         timerId = setTimeout(() => {
@@ -63,7 +63,7 @@ export const AutoLogoutComponent = (props: AutoLogoutProps) => {
         return () => {
             window.removeEventListener('storage', handleStorageEvents);
         };
-    }, []);
+    });
 
     const handleStorageEvents = (e: StorageEvent) => {
         if (e.key === LAST_ACTIVE_TIMESTAMP) {
@@ -90,7 +90,7 @@ export const AutoLogoutComponent = (props: AutoLogoutProps) => {
 
     const handleOnAction = () => {
         // Notify the other tabs there was some activity.
-        const now = (new Date).getTime();
+        const now = (new Date()).getTime();
         localStorage.setItem(LAST_ACTIVE_TIMESTAMP, now.toString());
     };
 

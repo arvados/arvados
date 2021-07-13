@@ -2,9 +2,18 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { Chip, Grid, StyleRulesCallback, withStyles } from '@material-ui/core';
-import { DragSource, DragSourceSpec, DragSourceCollector, ConnectDragSource, DropTarget, DropTargetSpec, DropTargetCollector, ConnectDropTarget } from 'react-dnd';
+import {
+    DragSource,
+    DragSourceSpec,
+    DragSourceCollector,
+    ConnectDragSource,
+    DropTarget,
+    DropTargetSpec,
+    DropTargetCollector,
+    ConnectDropTarget
+} from 'react-dnd';
 import { compose } from 'lodash/fp';
 import { WithStyles } from '@material-ui/core/styles';
 interface ChipsProps<Value> {

@@ -3,9 +3,9 @@
 // SPDX-License-Identifier: AGPL-3.0
 import { Dispatch, compose } from 'redux';
 import { connect } from "react-redux";
-import { ConfirmationDialog } from "~/components/confirmation-dialog/confirmation-dialog";
-import { withDialog, WithDialogProps } from "~/store/dialog/with-dialog";
-import { KEEP_SERVICE_REMOVE_DIALOG, removeKeepService } from '~/store/keep-services/keep-services-actions';
+import { ConfirmationDialog } from "components/confirmation-dialog/confirmation-dialog";
+import { withDialog, WithDialogProps } from "store/dialog/with-dialog";
+import { KEEP_SERVICE_REMOVE_DIALOG, removeKeepService } from 'store/keep-services/keep-services-actions';
 
 const mapDispatchToProps = (dispatch: Dispatch, props: WithDialogProps<any>) => ({
     onConfirm: () => {

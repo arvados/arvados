@@ -2,18 +2,18 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { connect } from 'react-redux';
 import { Grid, Card, CardContent, TableBody, TableCell, TableHead, TableRow, Table, Tooltip, IconButton } from '@material-ui/core';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
-import { ArvadosTheme } from '~/common/custom-theme';
+import { ArvadosTheme } from 'common/custom-theme';
 import { compose, Dispatch } from 'redux';
-import { loadVirtualMachinesAdminData } from '~/store/virtual-machines/virtual-machines-actions';
-import { RootState } from '~/store/store';
-import { ListResults } from '~/services/common-service/common-service';
-import { MoreOptionsIcon } from '~/components/icon/icon';
-import { VirtualMachineLogins, VirtualMachinesResource } from '~/models/virtual-machines';
-import { openVirtualMachinesContextMenu } from '~/store/context-menu/context-menu-actions';
+import { loadVirtualMachinesAdminData } from 'store/virtual-machines/virtual-machines-actions';
+import { RootState } from 'store/store';
+import { ListResults } from 'services/common-service/common-service';
+import { MoreOptionsIcon } from 'components/icon/icon';
+import { VirtualMachineLogins, VirtualMachinesResource } from 'models/virtual-machines';
+import { openVirtualMachinesContextMenu } from 'store/context-menu/context-menu-actions';
 
 type CssRules = 'moreOptionsButton' | 'moreOptions';
 
@@ -31,7 +31,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 const mapStateToProps = (state: RootState) => {
     return {
-        logins: state.virtualMachines.logins,
         userUuid: state.auth.user!.uuid,
         ...state.virtualMachines
     };

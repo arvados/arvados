@@ -3,21 +3,21 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { ContextMenuActionSet } from "../context-menu-action-set";
-import { NewProjectIcon, RenameIcon, MoveToIcon, DetailsIcon, AdvancedIcon, OpenIcon, Link, FolderSharedIcon } from '~/components/icon/icon';
+import { NewProjectIcon, RenameIcon, MoveToIcon, DetailsIcon, AdvancedIcon, OpenIcon, Link, FolderSharedIcon } from 'components/icon/icon';
 import { ToggleFavoriteAction } from "../actions/favorite-action";
-import { toggleFavorite } from "~/store/favorites/favorites-actions";
-import { favoritePanelActions } from "~/store/favorite-panel/favorite-panel-action";
-import { openMoveProjectDialog } from '~/store/projects/project-move-actions';
-import { openProjectCreateDialog } from '~/store/projects/project-create-actions';
-import { openProjectUpdateDialog } from '~/store/projects/project-update-actions';
-import { ToggleTrashAction } from "~/views-components/context-menu/actions/trash-action";
-import { toggleProjectTrashed } from "~/store/trash/trash-actions";
-import { ShareIcon } from '~/components/icon/icon';
-import { openSharingDialog } from "~/store/sharing-dialog/sharing-dialog-actions";
-import { openAdvancedTabDialog } from "~/store/advanced-tab/advanced-tab";
-import { toggleDetailsPanel } from '~/store/details-panel/details-panel-action';
-import { copyToClipboardAction, openInNewTabAction } from "~/store/open-in-new-tab/open-in-new-tab.actions";
-import { openWebDavS3InfoDialog } from "~/store/collections/collection-info-actions";
+import { toggleFavorite } from "store/favorites/favorites-actions";
+import { favoritePanelActions } from "store/favorite-panel/favorite-panel-action";
+import { openMoveProjectDialog } from 'store/projects/project-move-actions';
+import { openProjectCreateDialog } from 'store/projects/project-create-actions';
+import { openProjectUpdateDialog } from 'store/projects/project-update-actions';
+import { ToggleTrashAction } from "views-components/context-menu/actions/trash-action";
+import { toggleProjectTrashed } from "store/trash/trash-actions";
+import { ShareIcon } from 'components/icon/icon';
+import { openSharingDialog } from "store/sharing-dialog/sharing-dialog-actions";
+import { openAdvancedTabDialog } from "store/advanced-tab/advanced-tab";
+import { toggleDetailsPanel } from 'store/details-panel/details-panel-action';
+import { copyToClipboardAction, openInNewTabAction } from "store/open-in-new-tab/open-in-new-tab.actions";
+import { openWebDavS3InfoDialog } from "store/collections/collection-info-actions";
 
 export const readOnlyProjectActionSet: ContextMenuActionSet = [[
     {

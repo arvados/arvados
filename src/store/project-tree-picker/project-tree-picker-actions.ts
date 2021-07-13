@@ -3,12 +3,12 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from "redux";
-import { RootState } from "~/store/store";
-import { getUserUuid } from "~/common/getuser";
-import { ServiceRepository } from "~/services/services";
-import { mockProjectResource } from "~/models/test-utils";
-import { treePickerActions, receiveTreePickerProjectsData } from "~/store/tree-picker/tree-picker-actions";
-import { TreePickerId } from '~/models/tree';
+import { RootState } from "store/store";
+import { getUserUuid } from "common/getuser";
+import { ServiceRepository } from "services/services";
+import { mockProjectResource } from "models/test-utils";
+import { treePickerActions, receiveTreePickerProjectsData } from "store/tree-picker/tree-picker-actions";
+import { TreePickerId } from 'models/tree';
 
 export const resetPickerProjectTree = () => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
     dispatch<any>(treePickerActions.RESET_TREE_PICKER({ pickerId: TreePickerId.PROJECTS }));

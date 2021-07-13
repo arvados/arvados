@@ -3,11 +3,11 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from "redux";
-import { RootState } from "~/store/store";
-import { ServiceRepository } from "~/services/services";
-import { dialogActions } from '~/store/dialog/dialog-actions';
+import { RootState } from "store/store";
+import { ServiceRepository } from "services/services";
+import { dialogActions } from 'store/dialog/dialog-actions';
 import { getNewExtraToken } from "../auth/auth-action";
-import { CollectionResource } from "~/models/collection";
+import { CollectionResource } from "models/collection";
 
 export const COLLECTION_WEBDAV_S3_DIALOG_NAME = 'collectionWebdavS3Dialog';
 

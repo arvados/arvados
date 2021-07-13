@@ -2,17 +2,17 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from "react";
+import React from "react";
 import { Field, Validator } from "redux-form";
-import { TextField } from "~/components/text-field/text-field";
+import { TextField } from "components/text-field/text-field";
 import {
     COLLECTION_NAME_VALIDATION, COLLECTION_NAME_VALIDATION_ALLOW_SLASH,
     COLLECTION_DESCRIPTION_VALIDATION, COLLECTION_PROJECT_VALIDATION
-} from "~/validators/validators";
-import { ProjectTreePickerField, CollectionTreePickerField } from "~/views-components/projects-tree-picker/tree-picker-field";
-import { PickerIdProp } from '~/store/tree-picker/picker-id';
+} from "validators/validators";
+import { ProjectTreePickerField, CollectionTreePickerField } from "views-components/projects-tree-picker/tree-picker-field";
+import { PickerIdProp } from 'store/tree-picker/picker-id';
 import { connect } from "react-redux";
-import { RootState } from "~/store/store";
+import { RootState } from "store/store";
 
 interface CollectionNameFieldProps {
     validate: Validator[];
@@ -29,7 +29,7 @@ export const CollectionNameField = connect(
     })((props: CollectionNameFieldProps) =>
         <span data-cy='name-field'><Field
             name='name'
-            component={TextField}
+            component={TextField as any}
             validate={props.validate}
             label="Collection Name"
             autoFocus={true} /></span>
@@ -38,7 +38,7 @@ export const CollectionNameField = connect(
 export const CollectionDescriptionField = () =>
     <Field
         name='description'
-        component={TextField}
+        component={TextField as any}
         validate={COLLECTION_DESCRIPTION_VALIDATION}
         label="Description - optional" />;
 

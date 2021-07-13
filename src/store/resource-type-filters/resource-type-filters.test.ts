@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { getInitialResourceTypeFilters, serializeResourceTypeFilters, ObjectTypeFilter, CollectionTypeFilter, ProcessTypeFilter, GroupTypeFilter } from './resource-type-filters';
-import { ResourceKind } from '~/models/resource';
-import { deselectNode } from '~/models/tree';
+import { ResourceKind } from 'models/resource';
+import { deselectNode } from 'models/tree';
 import { pipe } from 'lodash/fp';
 
 describe("serializeResourceTypeFilters", () => {
@@ -89,7 +89,7 @@ describe("serializeResourceTypeFilters", () => {
     it("should serialize filter groups", () => {
         const filters = pipe(
             () => getInitialResourceTypeFilters(),
-            deselectNode(GroupTypeFilter.PROJECT)
+            deselectNode(GroupTypeFilter.PROJECT),
             deselectNode(ObjectTypeFilter.PROCESS),
             deselectNode(ObjectTypeFilter.COLLECTION),
         )();
@@ -102,7 +102,7 @@ describe("serializeResourceTypeFilters", () => {
     it("should serialize projects (normal)", () => {
         const filters = pipe(
             () => getInitialResourceTypeFilters(),
-            deselectNode(GroupTypeFilter.FILTER_GROUP)
+            deselectNode(GroupTypeFilter.FILTER_GROUP),
             deselectNode(ObjectTypeFilter.PROCESS),
             deselectNode(ObjectTypeFilter.COLLECTION),
         )();

@@ -2,25 +2,25 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
-import { Autocomplete } from '~/components/autocomplete/autocomplete';
+import React from 'react';
+import { Autocomplete } from 'components/autocomplete/autocomplete';
 import { connect, DispatchProp } from 'react-redux';
-import { ServiceRepository } from '~/services/services';
+import { ServiceRepository } from 'services/services';
 import { FilterBuilder } from '../../services/api/filter-builder';
 import { debounce } from 'debounce';
 import { ListItemText, Typography } from '@material-ui/core';
 import { noop } from 'lodash/fp';
-import { GroupClass, GroupResource } from '~/models/group';
-import { getUserDisplayName, UserResource } from '~/models/user';
-import { ResourceKind } from '~/models/resource';
-import { ListResults } from '~/services/common-service/common-service';
+import { GroupClass, GroupResource } from 'models/group';
+import { getUserDisplayName, UserResource } from 'models/user';
+import { Resource, ResourceKind } from 'models/resource';
+import { ListResults } from 'services/common-service/common-service';
 
 export interface Participant {
     name: string;
     uuid: string;
 }
 
-type ParticipantResource = GroupResource & UserResource;
+type ParticipantResource = GroupResource | UserResource;
 
 interface ParticipantSelectProps {
     items: Participant[];
@@ -40,14 +40,14 @@ interface ParticipantSelectState {
     suggestions: ParticipantResource[];
 }
 
-const getDisplayName = (item: GroupResource & UserResource) => {
+const getDisplayName = (item: GroupResource | UserResource) => {
     switch (item.kind) {
         case ResourceKind.USER:
             return getUserDisplayName(item, true);
         case ResourceKind.GROUP:
             return item.name;
         default:
-            return item.uuid;
+            return (item as Resource).uuid;
     }
 };
 

@@ -2,10 +2,10 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { dialogActions } from "~/store/dialog/dialog-actions";
-import { getProperty } from '~/store/properties/properties';
-import { propertiesActions } from '~/store/properties/properties-actions';
-import { RootState } from '~/store/store';
+import { dialogActions } from "store/dialog/dialog-actions";
+import { getProperty } from 'store/properties/properties';
+import { propertiesActions } from 'store/properties/properties-actions';
+import { RootState } from 'store/store';
 
 export const TOKEN_DIALOG_NAME = 'tokenDialog';
 const API_HOST_PROPERTY_NAME = 'apiHost';

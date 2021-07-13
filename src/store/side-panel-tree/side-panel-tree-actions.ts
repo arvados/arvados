@@ -3,21 +3,21 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from 'redux';
-import { treePickerActions } from "~/store/tree-picker/tree-picker-actions";
-import { RootState } from '~/store/store';
-import { getUserUuid } from "~/common/getuser";
-import { ServiceRepository } from '~/services/services';
-import { FilterBuilder } from '~/services/api/filter-builder';
-import { resourcesActions } from '~/store/resources/resources-actions';
-import { getTreePicker, TreePicker } from '~/store/tree-picker/tree-picker';
-import { getNodeAncestors, getNodeAncestorsIds, getNode, TreeNode, initTreeNode, TreeNodeStatus } from '~/models/tree';
-import { ProjectResource } from '~/models/project';
-import { OrderBuilder } from '~/services/api/order-builder';
-import { ResourceKind } from '~/models/resource';
-import { GroupContentsResourcePrefix } from '~/services/groups-service/groups-service';
-import { GroupClass } from '~/models/group';
-import { CategoriesListReducer } from '~/common/plugintypes';
-import { pluginConfig } from '~/plugins';
+import { treePickerActions } from "store/tree-picker/tree-picker-actions";
+import { RootState } from 'store/store';
+import { getUserUuid } from "common/getuser";
+import { ServiceRepository } from 'services/services';
+import { FilterBuilder } from 'services/api/filter-builder';
+import { resourcesActions } from 'store/resources/resources-actions';
+import { getTreePicker, TreePicker } from 'store/tree-picker/tree-picker';
+import { getNodeAncestors, getNodeAncestorsIds, getNode, TreeNode, initTreeNode, TreeNodeStatus } from 'models/tree';
+import { ProjectResource } from 'models/project';
+import { OrderBuilder } from 'services/api/order-builder';
+import { ResourceKind } from 'models/resource';
+import { GroupContentsResourcePrefix } from 'services/groups-service/groups-service';
+import { GroupClass } from 'models/group';
+import { CategoriesListReducer } from 'common/plugintypes';
+import { pluginConfig } from 'plugins';
 
 export enum SidePanelTreeCategory {
     PROJECTS = 'Projects',

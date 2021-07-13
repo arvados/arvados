@@ -2,19 +2,19 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { connect, DispatchProp } from 'react-redux';
 import Typography from '@material-ui/core/Typography';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
 import { Tooltip } from '@material-ui/core';
-import { CopyIcon } from '~/components/icon/icon';
-import * as CopyToClipboard from 'react-copy-to-clipboard';
-import { ArvadosTheme } from '~/common/custom-theme';
-import * as classnames from "classnames";
+import { CopyIcon } from 'components/icon/icon';
+import CopyToClipboard from 'react-copy-to-clipboard';
+import { ArvadosTheme } from 'common/custom-theme';
+import classnames from "classnames";
 import { Link } from 'react-router-dom';
-import { RootState } from "~/store/store";
-import { FederationConfig, getNavUrl } from "~/routes/routes";
-import { snackbarActions, SnackbarKind } from '~/store/snackbar/snackbar-actions';
+import { RootState } from "store/store";
+import { FederationConfig, getNavUrl } from "routes/routes";
+import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 
 type CssRules = 'attribute' | 'label' | 'value' | 'lowercaseValue' | 'link' | 'copyIcon';
 
@@ -95,10 +95,10 @@ export const DetailsAttribute = connect(mapStateToProps)(withStyles(styles)(
                 if (linkUrl[0] === '/') {
                     valueNode = <Link to={linkUrl} className={classes.link}>{uuid}</Link>;
                 } else {
-                    valueNode = <a href={linkUrl} className={classes.link} target='_blank'>{uuid}</a>;
+                    valueNode = <a href={linkUrl} className={classes.link} target='_blank' rel="noopener noreferrer">{uuid}</a>;
                 }
             } else if (link) {
-                valueNode = <a href={link} className={classes.link} target='_blank'>{value}</a>;
+                valueNode = <a href={link} className={classes.link} target='_blank' rel="noopener noreferrer">{value}</a>;
             } else {
                 valueNode = value;
             }

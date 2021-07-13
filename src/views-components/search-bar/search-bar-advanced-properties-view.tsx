@@ -2,25 +2,25 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { Dispatch, compose } from 'redux';
 import { connect } from 'react-redux';
 import { InjectedFormProps, formValueSelector } from 'redux-form';
 import { Grid, withStyles, StyleRulesCallback, WithStyles, Button } from '@material-ui/core';
-import { RootState } from '~/store/store';
+import { RootState } from 'store/store';
 import {
     SEARCH_BAR_ADVANCED_FORM_NAME,
     changeAdvancedFormProperty,
     resetAdvancedFormProperty
-} from '~/store/search-bar/search-bar-actions';
-import { PropertyValue } from '~/models/search-bar';
-import { ArvadosTheme } from '~/common/custom-theme';
-import { SearchBarKeyField, SearchBarValueField } from '~/views-components/form-fields/search-bar-form-fields';
-import { Chips } from '~/components/chips/chips';
-import { formatPropertyValue } from "~/common/formatters";
-import { Vocabulary } from '~/models/vocabulary';
+} from 'store/search-bar/search-bar-actions';
+import { PropertyValue } from 'models/search-bar';
+import { ArvadosTheme } from 'common/custom-theme';
+import { SearchBarKeyField, SearchBarValueField } from 'views-components/form-fields/search-bar-form-fields';
+import { Chips } from 'components/chips/chips';
+import { formatPropertyValue } from "common/formatters";
+import { Vocabulary } from 'models/vocabulary';
 import { connectVocabulary } from '../resource-properties-form/property-field-common';
-import * as _ from 'lodash';
+import { isEqual } from 'lodash';
 
 type CssRules = 'label' | 'button';
 
@@ -67,7 +67,7 @@ const mapDispatchToProps = (dispatch: Dispatch) => ({
     },
     addProp: (propertyValue: PropertyValue, properties: PropertyValue[]) => {
         // Remove potential duplicates
-        properties = properties.filter(x => ! _.isEqual(
+        properties = properties.filter(x => ! isEqual(
             {
                 key: x.keyID || x.key,
                 value: x.valueID || x.value

@@ -3,14 +3,14 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from "redux";
-import { unionize, ofType, UnionOf } from "~/common/unionize";
-import { RootState } from '~/store/store';
-import { setBreadcrumbs } from '~/store/breadcrumbs/breadcrumbs-actions';
-import { ServiceRepository } from "~/services/services";
-import { KeepServiceResource } from '~/models/keep-services';
-import { dialogActions } from '~/store/dialog/dialog-actions';
-import {snackbarActions, SnackbarKind} from '~/store/snackbar/snackbar-actions';
-import { navigateToRootProject } from '~/store/navigation/navigation-action';
+import { unionize, ofType, UnionOf } from "common/unionize";
+import { RootState } from 'store/store';
+import { setBreadcrumbs } from 'store/breadcrumbs/breadcrumbs-actions';
+import { ServiceRepository } from "services/services";
+import { KeepServiceResource } from 'models/keep-services';
+import { dialogActions } from 'store/dialog/dialog-actions';
+import {snackbarActions, SnackbarKind} from 'store/snackbar/snackbar-actions';
+import { navigateToRootProject } from 'store/navigation/navigation-action';
 
 export const keepServicesActions = unionize({
     SET_KEEP_SERVICES: ofType<KeepServiceResource[]>(),

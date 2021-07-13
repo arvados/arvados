@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { unionize, ofType, UnionOf } from "~/common/unionize";
+import { unionize, ofType, UnionOf } from "common/unionize";
 
 export const dialogActions = unionize({
     OPEN_DIALOG: ofType<{ id: string, data: any }>(),

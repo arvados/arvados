@@ -2,15 +2,15 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { RootState } from '~/store/store';
+import { RootState } from 'store/store';
 import { connect } from 'react-redux';
-import { getProcess } from '~/store/processes/process';
+import { getProcess } from 'store/processes/process';
 import { Dispatch } from 'redux';
-import { openProcessContextMenu } from '~/store/context-menu/context-menu-actions';
+import { openProcessContextMenu } from 'store/context-menu/context-menu-actions';
 import { ProcessLogPanelRootDataProps, ProcessLogPanelRootActionProps, ProcessLogPanelRoot } from './process-log-panel-root';
-import { getProcessPanelLogs } from '~/store/process-logs-panel/process-logs-panel';
-import { setProcessLogsPanelFilter, navigateToLogCollection } from '~/store/process-logs-panel/process-logs-panel-actions';
-import { getProcessLogsPanelCurrentUuid } from '~/store/process-logs-panel/process-logs-panel';
+import { getProcessPanelLogs } from 'store/process-logs-panel/process-logs-panel';
+import { setProcessLogsPanelFilter, navigateToLogCollection } from 'store/process-logs-panel/process-logs-panel-actions';
+import { getProcessLogsPanelCurrentUuid } from 'store/process-logs-panel/process-logs-panel';
 
 export interface Log {
     object_uuid: string;

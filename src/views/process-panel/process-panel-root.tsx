@@ -2,14 +2,14 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { Grid } from '@material-ui/core';
 import { ProcessInformationCard } from './process-information-card';
-import { DefaultView } from '~/components/default-view/default-view';
-import { ProcessIcon } from '~/components/icon/icon';
-import { Process } from '~/store/processes/process';
-import { SubprocessPanel } from '~/views/subprocess-panel/subprocess-panel';
-import { SubprocessFilterDataProps } from '~/components/subprocess-filter/subprocess-filter';
+import { DefaultView } from 'components/default-view/default-view';
+import { ProcessIcon } from 'components/icon/icon';
+import { Process } from 'store/processes/process';
+import { SubprocessPanel } from 'views/subprocess-panel/subprocess-panel';
+import { SubprocessFilterDataProps } from 'components/subprocess-filter/subprocess-filter';
 
 export interface ProcessPanelRootDataProps {
     process?: Process;

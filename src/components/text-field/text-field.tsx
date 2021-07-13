@@ -2,9 +2,9 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { WrappedFieldProps } from 'redux-form';
-import { ArvadosTheme } from '~/common/custom-theme';
+import { ArvadosTheme } from 'common/custom-theme';
 import {
     TextField as MaterialTextField,
     StyleRulesCallback,
@@ -13,7 +13,6 @@ import {
     PropTypes
 } from '@material-ui/core';
 import RichTextEditor from 'react-rte';
-import Margin = PropTypes.Margin;
 
 type CssRules = 'textField' | 'rte';
 
@@ -37,7 +36,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 type TextFieldProps = WrappedFieldProps & WithStyles<CssRules>;
 
 export const TextField = withStyles(styles)((props: TextFieldProps & {
-    label?: string, autoFocus?: boolean, required?: boolean, select?: boolean, disabled?: boolean, children: React.ReactNode, margin?: Margin, placeholder?: string,
+    label?: string, autoFocus?: boolean, required?: boolean, select?: boolean, disabled?: boolean, children: React.ReactNode, margin?: PropTypes.Margin, placeholder?: string,
     helperText?: string, type?: string,
 }) =>
     <MaterialTextField

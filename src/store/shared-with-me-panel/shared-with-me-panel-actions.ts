@@ -4,8 +4,8 @@
 
 import { bindDataExplorerActions } from "../data-explorer/data-explorer-action";
 import { Dispatch } from 'redux';
-import { ServiceRepository } from "~/services/services";
-import { RootState } from '~/store/store';
+import { ServiceRepository } from "services/services";
+import { RootState } from 'store/store';
 
 export const SHARED_WITH_ME_PANEL_ID = "sharedWithMePanel";
 export const sharedWithMePanelActions = bindDataExplorerActions(SHARED_WITH_ME_PANEL_ID);

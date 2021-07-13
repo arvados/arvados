@@ -4,16 +4,16 @@
 
 import { Dispatch } from "redux";
 import { connect } from "react-redux";
-import { navigateTo } from '~/store/navigation/navigation-action';
-// import { openContextMenu, resourceKindToContextMenuKind } from '~/store/context-menu/context-menu-actions';
-// import { ResourceKind } from '~/models/resource';
-import { loadDetailsPanel } from '~/store/details-panel/details-panel-action';
-import { SearchResultsPanelView } from '~/views/search-results-panel/search-results-panel-view';
-import { RootState } from '~/store/store';
-import { SearchBarAdvancedFormData } from '~/models/search-bar';
-import { User } from "~/models/user";
-import { Config } from '~/common/config';
-import { Session } from "~/models/session";
+import { navigateTo } from 'store/navigation/navigation-action';
+// import { openContextMenu, resourceKindToContextMenuKind } from 'store/context-menu/context-menu-actions';
+// import { ResourceKind } from 'models/resource';
+import { loadDetailsPanel } from 'store/details-panel/details-panel-action';
+import { SearchResultsPanelView } from 'views/search-results-panel/search-results-panel-view';
+import { RootState } from 'store/store';
+import { SearchBarAdvancedFormData } from 'models/search-bar';
+import { User } from "models/user";
+import { Config } from 'common/config';
+import { Session } from "models/session";
 
 export interface SearchResultsPanelDataProps {
     data: SearchBarAdvancedFormData;

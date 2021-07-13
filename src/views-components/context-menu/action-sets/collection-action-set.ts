@@ -7,7 +7,7 @@ import {
     ContextMenuActionSet
 } from "../context-menu-action-set";
 import { ToggleFavoriteAction } from "../actions/favorite-action";
-import { toggleFavorite } from "~/store/favorites/favorites-actions";
+import { toggleFavorite } from "store/favorites/favorites-actions";
 import {
     RenameIcon,
     ShareIcon,
@@ -19,22 +19,22 @@ import {
     Link,
     RestoreVersionIcon,
     FolderSharedIcon
-} from "~/components/icon/icon";
-import { openCollectionUpdateDialog } from "~/store/collections/collection-update-actions";
-import { favoritePanelActions } from "~/store/favorite-panel/favorite-panel-action";
-import { openMoveCollectionDialog } from '~/store/collections/collection-move-actions';
-import { openCollectionCopyDialog } from "~/store/collections/collection-copy-actions";
-import { openWebDavS3InfoDialog } from "~/store/collections/collection-info-actions";
-import { ToggleTrashAction } from "~/views-components/context-menu/actions/trash-action";
-import { toggleCollectionTrashed } from "~/store/trash/trash-actions";
-import { openSharingDialog } from '~/store/sharing-dialog/sharing-dialog-actions';
-import { openAdvancedTabDialog } from "~/store/advanced-tab/advanced-tab";
-import { toggleDetailsPanel } from '~/store/details-panel/details-panel-action';
-import { copyToClipboardAction, openInNewTabAction } from "~/store/open-in-new-tab/open-in-new-tab.actions";
-import { openRestoreCollectionVersionDialog } from "~/store/collections/collection-version-actions";
+} from "components/icon/icon";
+import { openCollectionUpdateDialog } from "store/collections/collection-update-actions";
+import { favoritePanelActions } from "store/favorite-panel/favorite-panel-action";
+import { openMoveCollectionDialog } from 'store/collections/collection-move-actions';
+import { openCollectionCopyDialog } from "store/collections/collection-copy-actions";
+import { openWebDavS3InfoDialog } from "store/collections/collection-info-actions";
+import { ToggleTrashAction } from "views-components/context-menu/actions/trash-action";
+import { toggleCollectionTrashed } from "store/trash/trash-actions";
+import { openSharingDialog } from 'store/sharing-dialog/sharing-dialog-actions';
+import { openAdvancedTabDialog } from "store/advanced-tab/advanced-tab";
+import { toggleDetailsPanel } from 'store/details-panel/details-panel-action';
+import { copyToClipboardAction, openInNewTabAction } from "store/open-in-new-tab/open-in-new-tab.actions";
+import { openRestoreCollectionVersionDialog } from "store/collections/collection-version-actions";
 import { TogglePublicFavoriteAction } from "../actions/public-favorite-action";
-import { togglePublicFavorite } from "~/store/public-favorites/public-favorites-actions";
-import { publicFavoritePanelActions } from "~/store/public-favorites-panel/public-favorites-action";
+import { togglePublicFavorite } from "store/public-favorites/public-favorites-actions";
+import { publicFavoritePanelActions } from "store/public-favorites-panel/public-favorites-action";
 
 const toggleFavoriteAction: ContextMenuAction = {
     component: ToggleFavoriteAction,

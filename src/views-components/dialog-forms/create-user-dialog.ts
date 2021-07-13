@@ -4,9 +4,9 @@
 
 import { compose } from "redux";
 import { reduxForm } from 'redux-form';
-import { withDialog } from "~/store/dialog/with-dialog";
-import { USER_CREATE_FORM_NAME, createUser, UserCreateFormDialogData } from "~/store/users/users-actions";
-import { UserRepositoryCreate } from "~/views-components/dialog-create/dialog-user-create";
+import { withDialog } from "store/dialog/with-dialog";
+import { USER_CREATE_FORM_NAME, createUser, UserCreateFormDialogData } from "store/users/users-actions";
+import { UserRepositoryCreate } from "views-components/dialog-create/dialog-user-create";
 
 export const CreateUserDialog = compose(
     withDialog(USER_CREATE_FORM_NAME),

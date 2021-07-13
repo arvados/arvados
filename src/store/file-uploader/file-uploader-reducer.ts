@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { UploadFile, fileUploaderActions, FileUploaderAction } from "./file-uploader-actions";
-import * as _ from 'lodash';
+import { uniqBy } from 'lodash';
 
 export type UploaderState = UploadFile[];
 
@@ -33,7 +33,7 @@ export const fileUploaderReducer = (state: UploaderState = initialState, action:
                 currentTime: 0
             }));
             const updatedState = state.concat(updateFiles);
-            const uniqUpdatedState = _.uniqBy(updatedState, 'file.name');
+            const uniqUpdatedState = uniqBy(updatedState, 'file.name');
 
             return uniqUpdatedState;
         },

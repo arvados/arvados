@@ -3,7 +3,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as parser from '~/store/search-bar/search-query/parser';
+import * as parser from 'store/search-bar/search-query/parser';
 
 interface Property {
     key: string;

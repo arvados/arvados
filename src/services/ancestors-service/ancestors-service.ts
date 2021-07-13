@@ -2,11 +2,11 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { GroupsService } from "~/services/groups-service/groups-service";
+import { GroupsService } from "services/groups-service/groups-service";
 import { UserService } from '../user-service/user-service';
-import { GroupResource } from '~/models/group';
-import { UserResource } from '~/models/user';
-import { extractUuidObjectType, ResourceObjectType } from "~/models/resource";
+import { GroupResource } from 'models/group';
+import { UserResource } from 'models/user';
+import { extractUuidObjectType, ResourceObjectType } from "models/resource";
 
 export class AncestorService {
     constructor(

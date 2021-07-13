@@ -2,19 +2,19 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { unionize, ofType, UnionOf } from "~/common/unionize";
+import { unionize, ofType, UnionOf } from "common/unionize";
 import { Dispatch } from "redux";
-import { CollectionFilesTree, CollectionFileType, createCollectionFilesTree } from "~/models/collection-file";
-import { ServiceRepository } from "~/services/services";
+import { CollectionFilesTree, CollectionFileType, createCollectionFilesTree } from "models/collection-file";
+import { ServiceRepository } from "services/services";
 import { RootState } from "../../store";
 import { snackbarActions, SnackbarKind } from "../../snackbar/snackbar-actions";
 import { dialogActions } from '../../dialog/dialog-actions';
-import { getNodeValue, mapTreeValues } from "~/models/tree";
+import { getNodeValue, mapTreeValues } from "models/tree";
 import { filterCollectionFilesBySelection } from './collection-panel-files-state';
 import { startSubmit, stopSubmit, initialize, FormErrors } from 'redux-form';
-import { getDialog } from "~/store/dialog/dialog-reducer";
-import { getFileFullPath, sortFilesTree } from "~/services/collection-service/collection-service-files-response";
-import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
+import { getDialog } from "store/dialog/dialog-reducer";
+import { getFileFullPath, sortFilesTree } from "services/collection-service/collection-service-files-response";
+import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
 import { loadCollectionPanel } from "../collection-panel-action";
 
 export const collectionPanelFilesAction = unionize({

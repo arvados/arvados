@@ -2,21 +2,21 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from "react";
+import React from "react";
 import { Dispatch } from "redux";
 import { connect } from "react-redux";
 import { TreePicker, TreePickerProps } from "../tree-picker/tree-picker";
-import { TreeItem } from "~/components/tree/tree";
-import { ProjectResource } from "~/models/project";
-import { ListItemTextIcon } from "~/components/list-item-text-icon/list-item-text-icon";
-import { ProcessIcon, ProjectIcon, FilterGroupIcon, FavoriteIcon, ProjectsIcon, ShareMeIcon, TrashIcon, PublicFavoriteIcon } from '~/components/icon/icon';
-import { WorkflowIcon } from '~/components/icon/icon';
-import { activateSidePanelTreeItem, toggleSidePanelTreeItemCollapse, SIDE_PANEL_TREE, SidePanelTreeCategory } from '~/store/side-panel-tree/side-panel-tree-actions';
-import { openSidePanelContextMenu } from '~/store/context-menu/context-menu-actions';
+import { TreeItem } from "components/tree/tree";
+import { ProjectResource } from "models/project";
+import { ListItemTextIcon } from "components/list-item-text-icon/list-item-text-icon";
+import { ProcessIcon, ProjectIcon, FilterGroupIcon, FavoriteIcon, ProjectsIcon, ShareMeIcon, TrashIcon, PublicFavoriteIcon } from 'components/icon/icon';
+import { WorkflowIcon } from 'components/icon/icon';
+import { activateSidePanelTreeItem, toggleSidePanelTreeItemCollapse, SIDE_PANEL_TREE, SidePanelTreeCategory } from 'store/side-panel-tree/side-panel-tree-actions';
+import { openSidePanelContextMenu } from 'store/context-menu/context-menu-actions';
 import { noop } from 'lodash';
-import { ResourceKind } from "~/models/resource";
-import { IllegalNamingWarning } from "~/components/warning/warning";
-import { GroupClass } from "~/models/group";
+import { ResourceKind } from "models/resource";
+import { IllegalNamingWarning } from "components/warning/warning";
+import { GroupClass } from "models/group";
 
 export interface SidePanelTreeProps {
     onItemActivation: (id: string) => void;

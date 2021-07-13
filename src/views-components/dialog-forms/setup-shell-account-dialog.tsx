@@ -1,18 +1,18 @@
 // Copyright (C) The Arvados Authors. All rights reserved.
 //
 // SPDX-License-Identifier: AGPL-3.0
-import * as React from 'react';
+import React from 'react';
 import { compose } from "redux";
 import { reduxForm, InjectedFormProps, Field } from 'redux-form';
-import { withDialog, WithDialogProps } from "~/store/dialog/with-dialog";
-import { FormDialog } from '~/components/form-dialog/form-dialog';
-import { TextField } from '~/components/text-field/text-field';
-import { VirtualMachinesResource } from '~/models/virtual-machines';
-import { USER_LENGTH_VALIDATION, CHOOSE_VM_VALIDATION } from '~/validators/validators';
+import { withDialog, WithDialogProps } from "store/dialog/with-dialog";
+import { FormDialog } from 'components/form-dialog/form-dialog';
+import { TextField } from 'components/text-field/text-field';
+import { VirtualMachinesResource } from 'models/virtual-machines';
+import { USER_LENGTH_VALIDATION, CHOOSE_VM_VALIDATION } from 'validators/validators';
 import { InputLabel } from '@material-ui/core';
-import { NativeSelectField } from '~/components/select-field/select-field';
-import { SetupShellAccountFormDialogData, SETUP_SHELL_ACCOUNT_DIALOG, setupUserVM } from '~/store/users/users-actions';
-import { UserResource } from '~/models/user';
+import { NativeSelectField } from 'components/select-field/select-field';
+import { SetupShellAccountFormDialogData, SETUP_SHELL_ACCOUNT_DIALOG, setupUserVM } from 'store/users/users-actions';
+import { UserResource } from 'models/user';
 
 export const SetupShellAccountDialog = compose(
     withDialog(SETUP_SHELL_ACCOUNT_DIALOG),
@@ -52,7 +52,7 @@ const UserEmailField = ({ data }: UserProps) =>
     <span>
         <Field
             name='email'
-            component={TextField}
+            component={TextField as any}
             disabled
             label={data.user.email} /></span>;
 
@@ -61,7 +61,7 @@ const UserVirtualMachineField = ({ data }: VirtualMachinesProps) =>
         <InputLabel>Virtual Machine</InputLabel>
         <Field
             name='virtualMachine'
-            component={NativeSelectField}
+            component={NativeSelectField as any}
             validate={CHOOSE_VM_VALIDATION}
             items={getVirtualMachinesList(data.items)} />
     </div>;
@@ -69,7 +69,7 @@ const UserVirtualMachineField = ({ data }: VirtualMachinesProps) =>
 const UserGroupsVirtualMachineField = () =>
     <Field
         name='groups'
-        component={TextField}
+        component={TextField as any}
         validate={USER_LENGTH_VALIDATION}
         label="Groups for virtual machine (comma separated list)" />;
 

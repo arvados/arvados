@@ -3,10 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { LinkService } from "../link-service/link-service";
-import { LinkClass } from "~/models/link";
-import { FilterBuilder } from "~/services/api/filter-builder";
-import { TagTailType, TagResource } from "~/models/tag";
-import { OrderBuilder } from "~/services/api/order-builder";
+import { LinkClass } from "models/link";
+import { FilterBuilder } from "services/api/filter-builder";
+import { TagTailType, TagResource } from "models/tag";
+import { OrderBuilder } from "services/api/order-builder";
 
 export class TagService {
 

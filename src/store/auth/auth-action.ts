@@ -2,21 +2,21 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ofType, unionize, UnionOf } from '~/common/unionize';
+import { ofType, unionize, UnionOf } from 'common/unionize';
 import { Dispatch } from "redux";
 import { RootState } from "../store";
-import { ServiceRepository } from "~/services/services";
-import { SshKeyResource } from '~/models/ssh-key';
-import { User } from "~/models/user";
-import { Session } from "~/models/session";
-import { Config } from '~/common/config';
-import { matchTokenRoute, matchFedTokenRoute } from '~/routes/routes';
-import { createServices, setAuthorizationHeader } from "~/services/services";
-import { cancelLinking } from '~/store/link-account-panel/link-account-panel-actions';
-import { progressIndicatorActions } from "~/store/progress-indicator/progress-indicator-actions";
-import { WORKBENCH_LOADING_SCREEN } from '~/store/workbench/workbench-actions';
+import { ServiceRepository } from "services/services";
+import { SshKeyResource } from 'models/ssh-key';
+import { User } from "models/user";
+import { Session } from "models/session";
+import { Config } from 'common/config';
+import { matchTokenRoute, matchFedTokenRoute } from 'routes/routes';
+import { createServices, setAuthorizationHeader } from "services/services";
+import { cancelLinking } from 'store/link-account-panel/link-account-panel-actions';
+import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
+import { WORKBENCH_LOADING_SCREEN } from 'store/workbench/workbench-actions';
 import { addRemoteConfig, getRemoteHostConfig } from './auth-action-session';
-import { getTokenV2 } from '~/models/api-client-authorization';
+import { getTokenV2 } from 'models/api-client-authorization';
 
 export const authActions = unionize({
     LOGIN: {},
@@ -42,8 +42,8 @@ export const initAuth = (config: Config) => async (dispatch: Dispatch, getState:
     // Cancel any link account ops in progress unless the user has
     // just logged in or there has been a successful link operation
     const data = services.linkAccountService.getLinkOpStatus();
-    if (!matchTokenRoute(location.pathname) &&
-        (!matchFedTokenRoute(location.pathname)) && data === undefined) {
+    if (!matchTokenRoute(window.location.pathname) &&
+        (!matchFedTokenRoute(window.location.pathname)) && data === undefined) {
         await dispatch<any>(cancelLinking());
     }
     return dispatch<any>(init(config));

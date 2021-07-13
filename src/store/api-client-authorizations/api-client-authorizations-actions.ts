@@ -3,15 +3,15 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from "redux";
-import { RootState } from '~/store/store';
-import { setBreadcrumbs } from '~/store/breadcrumbs/breadcrumbs-actions';
-import { ServiceRepository } from "~/services/services";
-import { dialogActions } from '~/store/dialog/dialog-actions';
-import { snackbarActions } from '~/store/snackbar/snackbar-actions';
-import { navigateToRootProject } from '~/store/navigation/navigation-action';
-import { ApiClientAuthorization } from '~/models/api-client-authorization';
-import { bindDataExplorerActions } from '~/store/data-explorer/data-explorer-action';
-import { getResource } from '~/store/resources/resources';
+import { RootState } from 'store/store';
+import { setBreadcrumbs } from 'store/breadcrumbs/breadcrumbs-actions';
+import { ServiceRepository } from "services/services";
+import { dialogActions } from 'store/dialog/dialog-actions';
+import { snackbarActions } from 'store/snackbar/snackbar-actions';
+import { navigateToRootProject } from 'store/navigation/navigation-action';
+import { ApiClientAuthorization } from 'models/api-client-authorization';
+import { bindDataExplorerActions } from 'store/data-explorer/data-explorer-action';
+import { getResource } from 'store/resources/resources';
 
 
 export const API_CLIENT_AUTHORIZATION_PANEL_ID = 'apiClientAuthorizationPanelId';

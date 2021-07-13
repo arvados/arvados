@@ -4,8 +4,8 @@
 
 // Example plugin.
 
-import { PluginConfig } from '~/common/plugintypes';
-import * as React from 'react';
+import { PluginConfig } from 'common/plugintypes';
+import React from 'react';
 
 export const register = (pluginConfig: PluginConfig) => {
 

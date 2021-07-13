@@ -2,10 +2,10 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { AuthService } from '~/services/auth-service/auth-service';
+import { AuthService } from 'services/auth-service/auth-service';
 import { ResourceEventMessage } from './resource-event-message';
 import { camelCase } from 'lodash';
-import { CommonResourceService } from "~/services/common-service/common-resource-service";
+import { CommonResourceService } from "services/common-service/common-resource-service";
 
 type MessageListener = (message: ResourceEventMessage) => void;
 

@@ -2,19 +2,19 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
-import { WithDialogProps } from '~/store/dialog/with-dialog';
-import { ServiceRepository } from "~/services/services";
+import React from 'react';
+import { WithDialogProps } from 'store/dialog/with-dialog';
+import { ServiceRepository } from "services/services";
 import { Dispatch } from "redux";
-import { RootState } from '~/store/store';
+import { RootState } from 'store/store';
 import { initialize } from 'redux-form';
-import { dialogActions } from "~/store/dialog/dialog-actions";
+import { dialogActions } from "store/dialog/dialog-actions";
 import { reduxForm, InjectedFormProps, Field, reset, startSubmit } from 'redux-form';
-import { TextField } from "~/components/text-field/text-field";
-import { FormDialog } from '~/components/form-dialog/form-dialog';
-import { withDialog } from "~/store/dialog/with-dialog";
+import { TextField } from "components/text-field/text-field";
+import { FormDialog } from 'components/form-dialog/form-dialog';
+import { withDialog } from "store/dialog/with-dialog";
 import { compose } from "redux";
-import { propertiesActions } from "~/store/properties/properties-actions";
+import { propertiesActions } from "store/properties/properties-actions";
 import { DispatchProp, connect } from 'react-redux';
 import { MenuItem } from "@material-ui/core";
 import { Card, CardContent, Typography } from "@material-ui/core";
@@ -37,7 +37,7 @@ export interface ExampleFormDialogData {
 const ExampleEditFields = () => <span>
     <Field
         name='pressedCount'
-        component={TextField}
+        component={TextField as any}
         type="number"
     />
 </span>;

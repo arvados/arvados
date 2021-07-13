@@ -2,19 +2,19 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from 'react';
+import React from 'react';
 import { Grid, Button } from '@material-ui/core';
 import { RunProcessBasicForm, RUN_PROCESS_BASIC_FORM } from './run-process-basic-form';
-import { RunProcessInputsForm } from '~/views/run-process-panel/run-process-inputs-form';
-import { CommandInputParameter, WorkflowResource } from '~/models/workflow';
+import { RunProcessInputsForm } from 'views/run-process-panel/run-process-inputs-form';
+import { CommandInputParameter, WorkflowResource } from 'models/workflow';
 import { connect } from 'react-redux';
-import { RootState } from '~/store/store';
+import { RootState } from 'store/store';
 import { isValid } from 'redux-form';
 import { RUN_PROCESS_INPUTS_FORM } from './run-process-inputs-form';
 import { RunProcessAdvancedForm, RUN_PROCESS_ADVANCED_FORM } from './run-process-advanced-form';
 import { createStructuredSelector } from 'reselect';
-import { WorkflowPresetSelect } from '~/views/run-process-panel/workflow-preset-select';
-import { selectPreset } from '~/store/run-process-panel/run-process-panel-actions';
+import { WorkflowPresetSelect } from 'views/run-process-panel/workflow-preset-select';
+import { selectPreset } from 'store/run-process-panel/run-process-panel-actions';
 
 export interface RunProcessSecondStepFormDataProps {
     inputs: CommandInputParameter[];

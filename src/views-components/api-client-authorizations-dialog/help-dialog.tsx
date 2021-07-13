@@ -2,15 +2,15 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from "react";
+import React from "react";
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from "@material-ui/core";
-import { WithDialogProps } from "~/store/dialog/with-dialog";
-import { withDialog } from '~/store/dialog/with-dialog';
-import { DefaultCodeSnippet } from '~/components/default-code-snippet/default-code-snippet';
+import { WithDialogProps } from "store/dialog/with-dialog";
+import { withDialog } from 'store/dialog/with-dialog';
+import { DefaultCodeSnippet } from 'components/default-code-snippet/default-code-snippet';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
-import { ArvadosTheme } from '~/common/custom-theme';
+import { ArvadosTheme } from 'common/custom-theme';
 import { compose } from "redux";
-import { API_CLIENT_AUTHORIZATION_HELP_DIALOG } from '~/store/api-client-authorizations/api-client-authorizations-actions';
+import { API_CLIENT_AUTHORIZATION_HELP_DIALOG } from 'store/api-client-authorizations/api-client-authorizations-actions';
 
 type CssRules = 'codeSnippet';
 

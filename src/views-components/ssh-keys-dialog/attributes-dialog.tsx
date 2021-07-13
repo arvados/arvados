@@ -2,13 +2,13 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import * as React from "react";
+import React from "react";
 import { compose } from 'redux';
 import { withStyles, Dialog, DialogTitle, DialogContent, DialogActions, Button, StyleRulesCallback, WithStyles, Grid } from '@material-ui/core';
-import { WithDialogProps, withDialog } from "~/store/dialog/with-dialog";
-import { SSH_KEY_ATTRIBUTES_DIALOG } from '~/store/auth/auth-action-ssh';
-import { ArvadosTheme } from '~/common/custom-theme';
-import { SshKeyResource } from "~/models/ssh-key";
+import { WithDialogProps, withDialog } from "store/dialog/with-dialog";
+import { SSH_KEY_ATTRIBUTES_DIALOG } from 'store/auth/auth-action-ssh';
+import { ArvadosTheme } from 'common/custom-theme';
+import { SshKeyResource } from "models/ssh-key";
 
 type CssRules = 'root';
 
