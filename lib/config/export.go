@@ -203,6 +203,7 @@ var whitelist = map[string]bool{
 	"Services.*":                                          true,
 	"Services.*.ExternalURL":                              true,
 	"Services.*.InternalURLs":                             false,
+	"Services.*.ListenAddress":                            false,
 	"SystemLogs":                                          false,
 	"SystemRootToken":                                     false,
 	"TLS":                                                 false,
