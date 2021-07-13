@@ -366,8 +366,9 @@ type Services struct {
 }
 
 type Service struct {
-	InternalURLs map[URL]ServiceInstance
-	ExternalURL  URL
+	ListenAddress string
+	InternalURLs  map[URL]ServiceInstance
+	ExternalURL   URL
 }
 
 type TestUser struct {

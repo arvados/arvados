@@ -22,34 +22,67 @@ Clusters:
 
     Services:
 
-      # In each of the service sections below, the keys under
-      # InternalURLs are the endpoints where the service should be
-      # listening, and reachable from other hosts in the
-      # cluster. Example:
+      # Each of the service sections below specifies ListenAddress,
+      # InternalURLs, and ExternalURL.
+      #
+      # InternalURLs specify how other Arvados service processes will
+      # connect to the service. Typically these use internal hostnames
+      # and high port numbers. Example:
       #
       # InternalURLs:
-      #   "http://host1.example:12345": {}
-      #   "http://host2.example:12345": {}
+      #   "http://host1.internal.example:12345": {}
+      #   "http://host2.internal.example:12345": {}
+      #
+      # ListenAddress specifies the address and port the service
+      # process's HTTP server should listen on. Example:
+      #
+      # ListenAddress: "0.0.0.0:12345"
+      #
+      # If ListenAddress is blank, the service will try listening on
+      # the host:port part of each InternalURLs entry until one
+      # works. This approach only works if the host names resolve (via
+      # /etc/hosts, DNS, etc) to the IP addresses of the host's
+      # network interfaces.
+      #
+      # ExternalURL specifies how applications/clients will connect to
+      # the service, regardless of whether they are inside or outside
+      # the cluster. Example:
+      #
+      # ExternalURL: "https://keep.zzzzz.example.com/"
+      #
+      # To avoid routing internal traffic through external networks,
+      # use split-horizon DNS for ExternalURL host names: inside the
+      # cluster's private network "host.zzzzz.example.com" resolves to
+      # the host's private IP address, while outside the cluster
+      # "host.zzzzz.example.com" resolves to the host's public IP
+      # address (or its external gateway or load balancer).
 
       RailsAPI:
+        ListenAddress: ""
         InternalURLs: {SAMPLE: {}}
         ExternalURL: ""
       Controller:
+        ListenAddress: ""
         InternalURLs: {SAMPLE: {}}
         ExternalURL: ""
       Websocket:
+        ListenAddress: ""
         InternalURLs: {SAMPLE: {}}
         ExternalURL: ""
       Keepbalance:
+        ListenAddress: ""
         InternalURLs: {SAMPLE: {}}
         ExternalURL: ""
       GitHTTP:
+        ListenAddress: ""
         InternalURLs: {SAMPLE: {}}
         ExternalURL: ""
       GitSSH:
+        ListenAddress: ""
         InternalURLs: {SAMPLE: {}}
         ExternalURL: ""
       DispatchCloud:
+        ListenAddress: ""
         InternalURLs: {SAMPLE: {}}
         ExternalURL: ""
       DispatchLSF:
@@ -59,9 +92,11 @@ Clusters:
         InternalURLs: {SAMPLE: {}}
         ExternalURL: ""
       Keepproxy:
+        ListenAddress: ""
         InternalURLs: {SAMPLE: {}}
         ExternalURL: ""
       WebDAV:
+        ListenAddress: ""
         InternalURLs: {SAMPLE: {}}
         # Base URL for Workbench inline preview.  If blank, use
         # WebDAVDownload instead, and disable inline preview.
@@ -101,6 +136,7 @@ Clusters:
         ExternalURL: ""
 
       WebDAVDownload:
+        ListenAddress: ""
         InternalURLs: {SAMPLE: {}}
         # Base URL for download links. If blank, serve links to WebDAV
         # with disposition=attachment query param.  Unlike preview links,
@@ -115,6 +151,7 @@ Clusters:
         ExternalURL: ""
 
       Keepstore:
+        ListenAddress: ""
         InternalURLs:
           SAMPLE:
             # Rendezvous is normally empty/omitted. When changing the
@@ -124,9 +161,11 @@ Clusters:
             Rendezvous: ""
         ExternalURL: ""
       Composer:
+        ListenAddress: ""
         InternalURLs: {SAMPLE: {}}
         ExternalURL: ""
       WebShell:
+        ListenAddress: ""
         InternalURLs: {SAMPLE: {}}
         # ShellInABox service endpoint URL for a given VM.  If empty, do not
         # offer web shell logins.
@@ -138,12 +177,15 @@ Clusters:
         # https://*.webshell.uuid_prefix.arvadosapi.com
         ExternalURL: ""
       Workbench1:
+        ListenAddress: ""
         InternalURLs: {SAMPLE: {}}
         ExternalURL: ""
       Workbench2:
+        ListenAddress: ""
         InternalURLs: {SAMPLE: {}}
         ExternalURL: ""
       Health:
+        ListenAddress: ""
         InternalURLs: {SAMPLE: {}}
         ExternalURL: ""
 
