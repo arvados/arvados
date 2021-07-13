@@ -265,7 +265,7 @@ export class SVGPortDragPlugin extends PluginBase {
     private updateEdge(fromX: number, fromY: number, toX: number, toY: number): void {
         const subEdges = this.edgeGroup!.children as HTMLCollectionOf<SVGPathElement>;
 
-        for (let subEdge of <any>subEdges) {
+        for (let subEdge of subEdges as any) {
 
             const path = Workflow.makeConnectionPath(
                 fromX,

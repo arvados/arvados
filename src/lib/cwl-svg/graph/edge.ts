@@ -10,8 +10,8 @@ export class Edge {
             return "";
         }
 
-        const [sourceSide, sourceStepId, sourcePort] = edge.source.id.split("/");
-        const [destSide, destStepId, destPort]       = edge.destination.id.split("/");
+        const [, sourceStepId, sourcePort] = edge.source.id.split("/");
+        const [, destStepId, destPort]       = edge.destination.id.split("/");
 
         const sourceVertex = containerNode.querySelector(`.node[data-id="${sourceStepId}"] .output-port[data-port-id="${sourcePort}"] .io-port`) as SVGGElement;
         const destVertex   = containerNode.querySelector(`.node[data-id="${destStepId}"] .input-port[data-port-id="${destPort}"] .io-port`) as SVGGElement;
@@ -65,8 +65,8 @@ export class Edge {
         const ns   = "http://www.w3.org/2000/svg";
         const edge = document.createElementNS(ns, "g");
 
-        const [sourceSide, sourceStepId, sourcePort] = (connectionIDs.source || "//").split("/");
-        const [destSide, destStepId, destPort]       = (connectionIDs.destination || "//").split("/");
+        const [, sourceStepId, sourcePort] = (connectionIDs.source || "//").split("/");
+        const [, destStepId, destPort]       = (connectionIDs.destination || "//").split("/");
 
         edge.classList.add("edge");
         if (sourceStepId) {

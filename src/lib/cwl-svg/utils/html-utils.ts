@@ -10,6 +10,6 @@ export class HtmlUtils {
     };
 
     public static escapeHTML(source: string): string {
-        return String(source).replace(/[&<>"'\/]/g, s => HtmlUtils.entityMap[s]);
+        return String(source).replace(/[&<>"'/]/g, s => HtmlUtils.entityMap[s]);
     }
 }

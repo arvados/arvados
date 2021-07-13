@@ -146,12 +146,12 @@ export class SelectionPlugin extends PluginBase {
 
         let element: SVGElement | undefined;
 
-        if (element = this.workflow.findParent(target, "node")) {
+        if ((element = this.workflow.findParent(target, "node"))) {
             this.selectNode(element);
             this.selection.set(element.getAttribute("data-connection-id")!, "node");
             this.emitChange(element);
 
-        } else if (element = this.workflow.findParent(target, "edge")) {
+        } else if ((element = this.workflow.findParent(target, "edge"))) {
             this.selectEdge(element);
             const cid = [
                 element.getAttribute("data-source-connection"),
