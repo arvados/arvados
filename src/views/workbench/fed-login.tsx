@@ -42,7 +42,7 @@ export const FedLogin = connect(mapStateToProps)(
                         }
                         const fedtoken = (remoteHostsConfig[k].loginCluster === localCluster)
                             ? apiToken : getSaltedToken(k, apiToken);
-                        return <iframe key={k} src={`${remoteHostsConfig[k].workbench2Url}/fedtoken?api_token=${fedtoken}`} style={{
+                        return <iframe key={k} title={k} src={`${remoteHostsConfig[k].workbench2Url}/fedtoken?api_token=${fedtoken}`} style={{
                             height: 0,
                             width: 0,
                             visibility: "hidden"

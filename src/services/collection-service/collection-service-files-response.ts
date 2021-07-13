@@ -20,7 +20,7 @@ export const sortFilesTree = (tree: Tree<CollectionDirectory | CollectionFile>) 
 };
 
 export const extractFilesData = (document: Document) => {
-    const collectionUrlPrefix = /\/c=([^\/]*)/;
+    const collectionUrlPrefix = /\/c=([^/]*)/;
     return Array
         .from(document.getElementsByTagName('D:response'))
         .slice(1) // omit first element which is collection itself

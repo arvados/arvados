@@ -84,6 +84,7 @@ export interface VirtualTreeItem<T> extends TreeItem<T> {
 
 // For some reason, on TSX files it isn't accepted just one generic param, so
 // I'm using <T, _> as a workaround.
+// eslint-disable-next-line
 export const Row =  <T, _>(itemList: VirtualTreeItem<T>[], render: any, treeProps: TreeProps<T>) => withStyles(styles)(
     (props: React.PropsWithChildren<ListChildComponentProps> & WithStyles<CssRules>) => {
         const { index, style, classes } = props;
@@ -174,6 +175,7 @@ export const Row =  <T, _>(itemList: VirtualTreeItem<T>[], render: any, treeProp
 
 const itemSize = 30;
 
+// eslint-disable-next-line
 export const VirtualList = <T, _>(height: number, width: number, items: VirtualTreeItem<T>[], render: any, treeProps: TreeProps<T>) =>
     <FixedSizeList
         height={height}
