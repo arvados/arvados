@@ -250,17 +250,14 @@ run() {
         if ! test -d "$ARVADOS_ROOT" ; then
             git clone https://git.arvados.org/arvados.git "$ARVADOS_ROOT"
 	    git -C "$ARVADOS_ROOT" checkout $ARVADOS_BRANCH
-	    git -C "$ARVADOS_ROOT" pull
         fi
         if ! test -d "$COMPOSER_ROOT" ; then
             git clone https://github.com/arvados/composer.git "$COMPOSER_ROOT"
             git -C "$COMPOSER_ROOT" checkout arvados-fork
-            git -C "$COMPOSER_ROOT" pull
         fi
         if ! test -d "$WORKBENCH2_ROOT" ; then
             git clone https://git.arvados.org/arvados-workbench2.git "$WORKBENCH2_ROOT"
 	    git -C "$ARVADOS_ROOT" checkout $WORKBENCH2_BRANCH
-	    git -C "$ARVADOS_ROOT" pull
         fi
 
         if [[ "$CONFIG" = test ]] ; then
