@@ -17,6 +17,7 @@ import (
 	"syscall"
 	"time"
 
+	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/dispatch"
@@ -74,6 +75,13 @@ func doMain() error {
 		return nil
 	}
 
+	loader := config.NewLoader(nil, logger)
+	cfg, err := loader.Load()
+	cluster, err := cfg.GetCluster("")
+	if err != nil {
+		return fmt.Errorf("config error: %s", err)
+	}
+
 	logger.Printf("crunch-dispatch-local %s started", version)
 
 	runningCmds = make(map[string]*exec.Cmd)
@@ -90,7 +98,7 @@ func doMain() error {
 	dispatcher := dispatch.Dispatcher{
 		Logger:       logger,
 		Arv:          arv,
-		RunContainer: (&LocalRun{startFunc, make(chan bool, 8), ctx}).run,
+		RunContainer: (&LocalRun{startFunc, make(chan bool, 8), ctx, cluster}).run,
 		PollPeriod:   time.Duration(*pollInterval) * time.Second,
 	}
 
@@ -128,6 +136,7 @@ type LocalRun struct {
 	startCmd         func(container arvados.Container, cmd *exec.Cmd) error
 	concurrencyLimit chan bool
 	ctx              context.Context
+	cluster          *arvados.Cluster
 }
 
 // Run a container.
@@ -169,7 +178,7 @@ func (lr *LocalRun) run(dispatcher *dispatch.Dispatcher,
 		waitGroup.Add(1)
 		defer waitGroup.Done()
 
-		cmd := exec.Command(*crunchRunCommand, uuid)
+		cmd := exec.Command(*crunchRunCommand, "--runtime-engine="+lr.cluster.Containers.RuntimeEngine, uuid)
 		cmd.Stdin = nil
 		cmd.Stderr = os.Stderr
 		cmd.Stdout = os.Stderr
