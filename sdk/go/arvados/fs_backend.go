@@ -4,7 +4,10 @@
 
 package arvados
 
-import "io"
+import (
+	"context"
+	"io"
+)
 
 type fsBackend interface {
 	keepClient
@@ -20,7 +23,7 @@ type keepBackend struct {
 
 type keepClient interface {
 	ReadAt(locator string, p []byte, off int) (int, error)
-	PutB(p []byte) (string, int, error)
+	BlockWrite(context.Context, BlockWriteOptions) (BlockWriteResponse, error)
 	LocalLocator(locator string) (string, error)
 }
 

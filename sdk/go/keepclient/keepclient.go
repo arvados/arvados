@@ -8,6 +8,7 @@ package keepclient
 
 import (
 	"bytes"
+	"context"
 	"crypto/md5"
 	"errors"
 	"fmt"
@@ -21,8 +22,8 @@ import (
 	"sync"
 	"time"
 
+	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
-	"git.arvados.org/arvados.git/sdk/go/asyncbuf"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
 )
 
@@ -153,23 +154,12 @@ func New(arv *arvadosclient.ArvadosClient) *KeepClient {
 // Returns an InsufficientReplicasError if 0 <= replicas <
 // kc.Wants_replicas.
 func (kc *KeepClient) PutHR(hash string, r io.Reader, dataBytes int64) (string, int, error) {
-	// Buffer for reads from 'r'
-	var bufsize int
-	if dataBytes > 0 {
-		if dataBytes > BLOCKSIZE {
-			return "", 0, ErrOversizeBlock
-		}
-		bufsize = int(dataBytes)
-	} else {
-		bufsize = BLOCKSIZE
-	}
-
-	buf := asyncbuf.NewBuffer(make([]byte, 0, bufsize))
-	go func() {
-		_, err := io.Copy(buf, HashCheckingReader{r, md5.New(), hash})
-		buf.CloseWithError(err)
-	}()
-	return kc.putReplicas(hash, buf.NewReader, dataBytes)
+	resp, err := kc.BlockWrite(context.Background(), arvados.BlockWriteOptions{
+		Hash:     hash,
+		Reader:   r,
+		DataSize: int(dataBytes),
+	})
+	return resp.Locator, resp.Replicas, err
 }
 
 // PutHB writes a block to Keep. The hash of the bytes is given in
@@ -177,16 +167,21 @@ func (kc *KeepClient) PutHR(hash string, r io.Reader, dataBytes int64) (string, 
 //
 // Return values are the same as for PutHR.
 func (kc *KeepClient) PutHB(hash string, buf []byte) (string, int, error) {
-	newReader := func() io.Reader { return bytes.NewBuffer(buf) }
-	return kc.putReplicas(hash, newReader, int64(len(buf)))
+	resp, err := kc.BlockWrite(context.Background(), arvados.BlockWriteOptions{
+		Hash: hash,
+		Data: buf,
+	})
+	return resp.Locator, resp.Replicas, err
 }
 
 // PutB writes a block to Keep. It computes the hash itself.
 //
 // Return values are the same as for PutHR.
 func (kc *KeepClient) PutB(buffer []byte) (string, int, error) {
-	hash := fmt.Sprintf("%x", md5.Sum(buffer))
-	return kc.PutHB(hash, buffer)
+	resp, err := kc.BlockWrite(context.Background(), arvados.BlockWriteOptions{
+		Data: buffer,
+	})
+	return resp.Locator, resp.Replicas, err
 }
 
 // PutR writes a block to Keep. It first reads all data from r into a buffer

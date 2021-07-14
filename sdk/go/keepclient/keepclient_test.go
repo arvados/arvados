@@ -173,7 +173,7 @@ func (s *StandaloneSuite) TestUploadToStubKeepServer(c *C) {
 
 	UploadToStubHelper(c, st,
 		func(kc *KeepClient, url string, reader io.ReadCloser, writer io.WriteCloser, uploadStatusChan chan uploadStatus) {
-			go kc.uploadToKeepServer(url, st.expectPath, nil, reader, uploadStatusChan, int64(len("foo")), kc.getRequestID())
+			go kc.uploadToKeepServer(url, st.expectPath, nil, reader, uploadStatusChan, len("foo"), kc.getRequestID())
 
 			writer.Write([]byte("foo"))
 			writer.Close()
@@ -229,7 +229,7 @@ func (s *StandaloneSuite) TestUploadWithStorageClasses(c *C) {
 
 		UploadToStubHelper(c, st,
 			func(kc *KeepClient, url string, reader io.ReadCloser, writer io.WriteCloser, uploadStatusChan chan uploadStatus) {
-				go kc.uploadToKeepServer(url, st.expectPath, nil, reader, uploadStatusChan, int64(len("foo")), kc.getRequestID())
+				go kc.uploadToKeepServer(url, st.expectPath, nil, reader, uploadStatusChan, len("foo"), kc.getRequestID())
 
 				writer.Write([]byte("foo"))
 				writer.Close()

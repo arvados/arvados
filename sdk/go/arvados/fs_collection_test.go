@@ -6,6 +6,7 @@ package arvados
 
 import (
 	"bytes"
+	"context"
 	"crypto/md5"
 	"errors"
 	"fmt"
@@ -50,17 +51,25 @@ func (kcs *keepClientStub) ReadAt(locator string, p []byte, off int) (int, error
 	return copy(p, buf[off:]), nil
 }
 
-func (kcs *keepClientStub) PutB(p []byte) (string, int, error) {
-	locator := SignLocator(fmt.Sprintf("%x+%d", md5.Sum(p), len(p)), kcs.authToken, time.Now().Add(kcs.sigttl), kcs.sigttl, []byte(kcs.sigkey))
-	buf := make([]byte, len(p))
-	copy(buf, p)
+func (kcs *keepClientStub) BlockWrite(_ context.Context, opts BlockWriteOptions) (BlockWriteResponse, error) {
+	if opts.Data == nil {
+		panic("oops, stub is not made for this")
+	}
+	locator := SignLocator(fmt.Sprintf("%x+%d", md5.Sum(opts.Data), len(opts.Data)), kcs.authToken, time.Now().Add(kcs.sigttl), kcs.sigttl, []byte(kcs.sigkey))
+	buf := make([]byte, len(opts.Data))
+	copy(buf, opts.Data)
 	if kcs.onPut != nil {
 		kcs.onPut(buf)
+	}
+	for _, sc := range opts.StorageClasses {
+		if sc != "default" {
+			return BlockWriteResponse{}, fmt.Errorf("stub does not write storage class %q", sc)
+		}
 	}
 	kcs.Lock()
 	defer kcs.Unlock()
 	kcs.blocks[locator[:32]] = buf
-	return locator, 1, nil
+	return BlockWriteResponse{Locator: locator, Replicas: 1}, nil
 }
 
 var reRemoteSignature = regexp.MustCompile(`\+[AR][^+]*`)
@@ -110,6 +119,22 @@ func (s *CollectionFSSuite) SetUpTest(c *check.C) {
 func (s *CollectionFSSuite) TestHttpFileSystemInterface(c *check.C) {
 	_, ok := s.fs.(http.FileSystem)
 	c.Check(ok, check.Equals, true)
+}
+
+func (s *CollectionFSSuite) TestUnattainableStorageClasses(c *check.C) {
+	fs, err := (&Collection{
+		StorageClassesDesired: []string{"unobtainium"},
+	}).FileSystem(s.client, s.kc)
+	c.Assert(err, check.IsNil)
+
+	f, err := fs.OpenFile("/foo", os.O_CREATE|os.O_WRONLY, 0777)
+	c.Assert(err, check.IsNil)
+	_, err = f.Write([]byte("food"))
+	c.Assert(err, check.IsNil)
+	err = f.Close()
+	c.Assert(err, check.IsNil)
+	_, err = fs.MarshalManifest(".")
+	c.Assert(err, check.ErrorMatches, `.*stub does not write storage class \"unobtainium\"`)
 }
 
 func (s *CollectionFSSuite) TestColonInFilename(c *check.C) {
