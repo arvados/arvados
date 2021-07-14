@@ -17,8 +17,8 @@ else
 fi
 
 run_bundler --without=development
-flock $GEM_HOME/gems.lock bundle exec passenger-config build-native-support
-flock $GEM_HOME/gems.lock bundle exec passenger-config install-standalone-runtime
+flock $GEM_HOME/gems.lock bin/bundle exec passenger-config build-native-support
+flock $GEM_HOME/gems.lock bin/bundle exec passenger-config install-standalone-runtime
 
 if test "$1" = "--only-deps" ; then
     exit
@@ -33,4 +33,4 @@ fi
 
 touch $ARVADOS_CONTAINER_PATH/api.ready
 
-exec bundle exec passenger start --port=${services[api]}
+exec bin/bundle exec passenger start --port=${services[api]}
