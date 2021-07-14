@@ -5,6 +5,8 @@
 package keepclient
 
 import (
+	"bytes"
+	"context"
 	"crypto/md5"
 	"errors"
 	"fmt"
@@ -16,7 +18,9 @@ import (
 	"strconv"
 	"strings"
 
+	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
+	"git.arvados.org/arvados.git/sdk/go/asyncbuf"
 )
 
 // DebugPrintf emits debug messages. The easiest way to enable
@@ -58,7 +62,7 @@ type uploadStatus struct {
 }
 
 func (kc *KeepClient) uploadToKeepServer(host string, hash string, classesTodo []string, body io.Reader,
-	uploadStatusChan chan<- uploadStatus, expectedLength int64, reqid string) {
+	uploadStatusChan chan<- uploadStatus, expectedLength int, reqid string) {
 
 	var req *http.Request
 	var err error
@@ -69,7 +73,7 @@ func (kc *KeepClient) uploadToKeepServer(host string, hash string, classesTodo [
 		return
 	}
 
-	req.ContentLength = expectedLength
+	req.ContentLength = int64(expectedLength)
 	if expectedLength > 0 {
 		req.Body = ioutil.NopCloser(body)
 	} else {
@@ -123,15 +127,57 @@ func (kc *KeepClient) uploadToKeepServer(host string, hash string, classesTodo [
 	}
 }
 
-func (kc *KeepClient) putReplicas(
-	hash string,
-	getReader func() io.Reader,
-	expectedLength int64) (locator string, replicas int, err error) {
-
-	reqid := kc.getRequestID()
+func (kc *KeepClient) BlockWrite(ctx context.Context, req arvados.BlockWriteOptions) (arvados.BlockWriteResponse, error) {
+	var resp arvados.BlockWriteResponse
+	var getReader func() io.Reader
+	if req.Data == nil && req.Reader == nil {
+		return resp, errors.New("invalid BlockWriteOptions: Data and Reader are both nil")
+	}
+	if req.DataSize < 0 {
+		return resp, fmt.Errorf("invalid BlockWriteOptions: negative DataSize %d", req.DataSize)
+	}
+	if req.DataSize > BLOCKSIZE || len(req.Data) > BLOCKSIZE {
+		return resp, ErrOversizeBlock
+	}
+	if req.Data != nil {
+		if req.DataSize > len(req.Data) {
+			return resp, errors.New("invalid BlockWriteOptions: DataSize > len(Data)")
+		}
+		if req.DataSize == 0 {
+			req.DataSize = len(req.Data)
+		}
+		getReader = func() io.Reader { return bytes.NewReader(req.Data[:req.DataSize]) }
+	} else {
+		buf := asyncbuf.NewBuffer(make([]byte, 0, req.DataSize))
+		go func() {
+			_, err := io.Copy(buf, HashCheckingReader{req.Reader, md5.New(), req.Hash})
+			buf.CloseWithError(err)
+		}()
+		getReader = buf.NewReader
+	}
+	if req.Hash == "" {
+		m := md5.New()
+		_, err := io.Copy(m, getReader())
+		if err != nil {
+			return resp, err
+		}
+		req.Hash = fmt.Sprintf("%x", m.Sum(nil))
+	}
+	if req.StorageClasses == nil {
+		req.StorageClasses = kc.StorageClasses
+	}
+	if req.Replicas == 0 {
+		req.Replicas = kc.Want_replicas
+	}
+	if req.RequestID == "" {
+		req.RequestID = kc.getRequestID()
+	}
+	if req.Attempts == 0 {
+		req.Attempts = 1 + kc.Retries
+	}
 
 	// Calculate the ordering for uploading to servers
-	sv := NewRootSorter(kc.WritableLocalRoots(), hash).GetSortedRoots()
+	sv := NewRootSorter(kc.WritableLocalRoots(), req.Hash).GetSortedRoots()
 
 	// The next server to try contacting
 	nextServer := 0
@@ -153,20 +199,18 @@ func (kc *KeepClient) putReplicas(
 		}()
 	}()
 
-	replicasWanted := kc.Want_replicas
 	replicasTodo := map[string]int{}
-	for _, c := range kc.StorageClasses {
-		replicasTodo[c] = replicasWanted
+	for _, c := range req.StorageClasses {
+		replicasTodo[c] = req.Replicas
 	}
-	replicasDone := 0
 
 	replicasPerThread := kc.replicasPerService
 	if replicasPerThread < 1 {
 		// unlimited or unknown
-		replicasPerThread = replicasWanted
+		replicasPerThread = req.Replicas
 	}
 
-	retriesRemaining := 1 + kc.Retries
+	retriesRemaining := req.Attempts
 	var retryServers []string
 
 	lastError := make(map[string]string)
@@ -190,7 +234,7 @@ func (kc *KeepClient) putReplicas(
 				}
 			}
 			if !trackingClasses {
-				maxConcurrency = replicasWanted - replicasDone
+				maxConcurrency = req.Replicas - resp.Replicas
 			}
 			if maxConcurrency < 1 {
 				// If there are no non-zero entries in
@@ -200,8 +244,8 @@ func (kc *KeepClient) putReplicas(
 			for active*replicasPerThread < maxConcurrency {
 				// Start some upload requests
 				if nextServer < len(sv) {
-					DebugPrintf("DEBUG: [%s] Begin upload %s to %s", reqid, hash, sv[nextServer])
-					go kc.uploadToKeepServer(sv[nextServer], hash, classesTodo, getReader(), uploadStatusChan, expectedLength, reqid)
+					DebugPrintf("DEBUG: [%s] Begin upload %s to %s", req.RequestID, req.Hash, sv[nextServer])
+					go kc.uploadToKeepServer(sv[nextServer], req.Hash, classesTodo, getReader(), uploadStatusChan, req.DataSize, req.RequestID)
 					nextServer++
 					active++
 				} else {
@@ -211,13 +255,13 @@ func (kc *KeepClient) putReplicas(
 							msg += resp + "; "
 						}
 						msg = msg[:len(msg)-2]
-						return locator, replicasDone, InsufficientReplicasError(errors.New(msg))
+						return resp, InsufficientReplicasError(errors.New(msg))
 					}
 					break
 				}
 			}
 
-			DebugPrintf("DEBUG: [%s] Replicas remaining to write: %v active uploads: %v", reqid, replicasTodo, active)
+			DebugPrintf("DEBUG: [%s] Replicas remaining to write: %v active uploads: %v", req.RequestID, replicasTodo, active)
 			if active < 1 {
 				break
 			}
@@ -228,7 +272,7 @@ func (kc *KeepClient) putReplicas(
 
 			if status.statusCode == http.StatusOK {
 				delete(lastError, status.url)
-				replicasDone += status.replicasStored
+				resp.Replicas += status.replicasStored
 				if len(status.classesStored) == 0 {
 					// Server doesn't report
 					// storage classes. Give up
@@ -244,7 +288,7 @@ func (kc *KeepClient) putReplicas(
 						delete(replicasTodo, className)
 					}
 				}
-				locator = status.response
+				resp.Locator = status.response
 			} else {
 				msg := fmt.Sprintf("[%d] %s", status.statusCode, status.response)
 				if len(msg) > 100 {
@@ -264,7 +308,7 @@ func (kc *KeepClient) putReplicas(
 		sv = retryServers
 	}
 
-	return locator, replicasDone, nil
+	return resp, nil
 }
 
 func parseStorageClassesConfirmedHeader(hdr string) (map[string]int, error) {
