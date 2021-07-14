@@ -19,6 +19,7 @@ export interface CollectionUpdateFormDialogData {
     uuid: string;
     name: string;
     description?: string;
+    storageClassesDesired?: string[];
 }
 
 export const COLLECTION_UPDATE_FORM_NAME = 'collectionUpdateFormName';
@@ -37,6 +38,7 @@ export const updateCollection = (collection: CollectionUpdateFormDialogData) =>
 
         services.collectionService.update(uuid, {
             name: collection.name,
+            storageClassesDesired: collection.storageClassesDesired,
             description: collection.description }
         ).then(updatedCollection => {
             dispatch(collectionPanelActions.LOAD_COLLECTION_SUCCESS({ item: updatedCollection as CollectionResource }));

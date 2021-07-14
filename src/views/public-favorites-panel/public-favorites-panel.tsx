@@ -37,6 +37,7 @@ import { PUBLIC_FAVORITE_PANEL_ID } from 'store/public-favorites-panel/public-fa
 import { PublicFavoritesState } from 'store/public-favorites/public-favorites-reducer';
 import { getResource, ResourcesState } from 'store/resources/resources';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
+import { CollectionResource } from 'models/collection';
 
 type CssRules = "toolbar" | "button";
 
@@ -134,6 +135,7 @@ const mapDispatchToProps = (dispatch: Dispatch): PublicFavoritePanelActionProps 
             dispatch<any>(openContextMenu(event, {
                 name: resource.name,
                 description: resource.description,
+                storageClassesDesired: (resource as CollectionResource).storageClassesDesired,
                 uuid: resourceUuid,
                 ownerUuid: '',
                 kind: ResourceKind.NONE,

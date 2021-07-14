@@ -13,6 +13,8 @@ import { ProjectTreePickerField, CollectionTreePickerField } from "views-compone
 import { PickerIdProp } from 'store/tree-picker/picker-id';
 import { connect } from "react-redux";
 import { RootState } from "store/store";
+import { MultiCheckboxField } from "components/checkbox-field/checkbox-field";
+import { getStorageClasses } from "common/config";
 
 interface CollectionNameFieldProps {
     validate: Validator[];
@@ -55,3 +57,23 @@ export const CollectionPickerField = (props: PickerIdProp) =>
         pickerId={props.pickerId}
         component={CollectionTreePickerField}
         validate={COLLECTION_PROJECT_VALIDATION} />;
+
+interface StorageClassesProps {
+    items: string[];
+}
+
+export const CollectionStorageClassesField = connect(
+    (state: RootState) => {
+        return {
+            items: getStorageClasses(state.auth.config)
+        };
+    })(
+    (props: StorageClassesProps) =>
+        <Field
+            name='storageClassesDesired'
+            label='Storage classes'
+            minSelection={1}
+            rowLayout={true}
+            helperText='At least one class should be selected'
+            component={MultiCheckboxField}
+            items={props.items} />);

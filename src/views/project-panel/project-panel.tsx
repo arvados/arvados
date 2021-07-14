@@ -45,6 +45,7 @@ import {
 } from 'store/resource-type-filters/resource-type-filters';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { GroupClass, GroupResource } from 'models/group';
+import { CollectionResource } from 'models/collection';
 
 type CssRules = 'root' | "button";
 
@@ -185,6 +186,7 @@ export const ProjectPanel = withStyles(styles)(
                         kind: resource.kind,
                         menuKind,
                         description: resource.description,
+                        storageClassesDesired: (resource as CollectionResource).storageClassesDesired,
                     }));
                 }
                 this.props.dispatch<any>(loadDetailsPanel(resourceUuid));

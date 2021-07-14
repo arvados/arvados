@@ -39,6 +39,7 @@ import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { GroupClass, GroupResource } from 'models/group';
 import { getProperty } from 'store/properties/properties';
 import { PROJECT_PANEL_CURRENT_UUID } from 'store/project-panel/project-panel-action';
+import { CollectionResource } from 'models/collection';
 
 type CssRules = "toolbar" | "button";
 
@@ -151,7 +152,7 @@ export const FavoritePanel = withStyles(styles)(
 
                 const menuKind = this.props.dispatch<any>(resourceUuidToContextMenuKind(resourceUuid, readonly));
 
-                if (menuKind&& resource) {
+                if (menuKind && resource) {
                     this.props.dispatch<any>(openContextMenu(event, {
                         name: resource.name,
                         uuid: resource.uuid,
@@ -160,6 +161,7 @@ export const FavoritePanel = withStyles(styles)(
                         kind: resource.kind,
                         menuKind,
                         description: resource.description,
+                        storageClassesDesired: (resource as CollectionResource).storageClassesDesired,
                     }));
                 }
                 this.props.dispatch<any>(loadDetailsPanel(resourceUuid));

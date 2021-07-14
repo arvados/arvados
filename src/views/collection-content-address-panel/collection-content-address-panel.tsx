@@ -34,6 +34,9 @@ import {
     ResourceLastModifiedDate,
     ResourceStatus
 } from 'views-components/data-explorer/renderers';
+import { getResource, ResourcesState } from 'store/resources/resources';
+import { RootState } from 'store/store';
+import { CollectionResource } from 'models/collection';
 
 type CssRules = 'backLink' | 'backIcon' | 'card' | 'title' | 'iconHeader' | 'link';
 
@@ -110,18 +113,29 @@ export const collectionContentAddressPanelColumns: DataColumns<string> = [
     }
 ];
 
-export interface CollectionContentAddressPanelActionProps {
-    onContextMenu: (event: React.MouseEvent<any>, uuid: string) => void;
+interface CollectionContentAddressPanelActionProps {
+    onContextMenu: (resources: ResourcesState) => (event: React.MouseEvent<any>, uuid: string) => void;
     onItemClick: (item: string) => void;
     onItemDoubleClick: (item: string) => void;
 }
 
+interface CollectionContentAddressPanelDataProps {
+    resources: ResourcesState;
+}
+
+const mapStateToProps = ({ resources }: RootState): CollectionContentAddressPanelDataProps => ({
+    resources
+})
+
 const mapDispatchToProps = (dispatch: Dispatch): CollectionContentAddressPanelActionProps => ({
-    onContextMenu: (event, resourceUuid) => {
+    onContextMenu: (resources: ResourcesState) => (event, resourceUuid) => {
+        const resource = getResource<CollectionResource>(resourceUuid)(resources);
         const kind = dispatch<any>(resourceUuidToContextMenuKind(resourceUuid));
         if (kind) {
             dispatch<any>(openContextMenu(event, {
-                name: '',
+                name: resource ? resource.name : '',
+                description: resource ? resource.description : '',
+                storageClassesDesired: resource ? resource.storageClassesDesired : [],
                 uuid: resourceUuid,
                 ownerUuid: '',
                 kind: ResourceKind.NONE,
@@ -145,8 +159,8 @@ interface CollectionContentAddressDataProps {
 }
 
 export const CollectionsContentAddressPanel = withStyles(styles)(
-    connect(null, mapDispatchToProps)(
-        class extends React.Component<CollectionContentAddressPanelActionProps & CollectionContentAddressDataProps & WithStyles<CssRules>> {
+    connect(mapStateToProps, mapDispatchToProps)(
+        class extends React.Component<CollectionContentAddressPanelActionProps & CollectionContentAddressPanelDataProps & CollectionContentAddressDataProps & WithStyles<CssRules>> {
             render() {
                 return <Grid item xs={12}>
                     <Button
@@ -160,7 +174,7 @@ export const CollectionsContentAddressPanel = withStyles(styles)(
                         hideSearchInput
                         onRowClick={this.props.onItemClick}
                         onRowDoubleClick={this.props.onItemDoubleClick}
-                        onContextMenu={this.props.onContextMenu}
+                        onContextMenu={this.props.onContextMenu(this.props.resources)}
                         contextMenuColumn={true}
                         title={`Content address: ${this.props.match.params.id}`}
                         dataTableDefaultView={
