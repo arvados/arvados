@@ -566,7 +566,7 @@ case "$subcmd" in
         else
             echo "Usage: $0 $subcmd <start|stop|restart> <service>"
             echo "Available services:"
-            exec docker execa $ARVBOX_CONTAINER ls /etc/service
+            exec docker exec $ARVBOX_CONTAINER ls /etc/service
         fi
         ;;
 
