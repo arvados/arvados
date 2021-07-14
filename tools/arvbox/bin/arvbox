@@ -53,11 +53,11 @@ if test -z "$WORKBENCH2_ROOT" ; then
 fi
 
 if test -z "$ARVADOS_BRANCH" ; then
-    ARVADOS_BRANCH=main
+    ARVADOS_BRANCH=2.2-dev
 fi
 
 if test -z "$WORKBENCH2_BRANCH" ; then
-    WORKBENCH2_BRANCH=main
+    WORKBENCH2_BRANCH=2.2-dev
 fi
 
 PG_DATA="$ARVBOX_DATA/postgres"
