@@ -61,27 +61,17 @@ fi
 
 run_bundler() {
     if test -f Gemfile.lock ; then
-        # The 'gem install bundler line below' is cf.
-        # https://bundler.io/blog/2019/05/14/solutions-for-cant-find-gem-bundler-with-executable-bundle.html,
-        # until we get bundler 2.7.10/3.0.0 or higher
-        flock $GEM_HOME/gems.lock gem install bundler --no-document -v "$(grep -A 1 "BUNDLED WITH" Gemfile.lock | tail -n 1|tr -d ' ')"
         frozen=--frozen
     else
         frozen=""
     fi
-    # if ! test -x $GEM_HOME/bin/bundler ; then
-    # 	bundleversion=2.0.2
-    #     bundlergem=$(ls -r $GEM_HOME/cache/bundler-${bundleversion}.gem 2>/dev/null | head -n1 || true)
-    #     if test -n "$bundlergem" ; then
-    #         flock $GEM_HOME/gems.lock gem install --verbose --local --no-document $bundlergem
-    #     else
-    #         flock $GEM_HOME/gems.lock gem install --verbose --no-document bundler --version ${bundleversion}
-    #     fi
-    # fi
-    # Make sure to put the gem binaries in the right place
-    flock /var/lib/arvados/lib/ruby/gems/2.5.0/gems.lock bundler config bin $GEM_HOME/bin
-    if ! flock $GEM_HOME/gems.lock bundler install --verbose --local --no-deployment $frozen "$@" ; then
-        flock $GEM_HOME/gems.lock bundler install --verbose --no-deployment $frozen "$@"
+    BUNDLER=bundler
+    if test -x $PWD/bin/bundler ; then
+	# If present, use the one associated with rails workbench or API
+	BUNDLER=$PWD/bin/bundler
+    fi
+    if ! flock $GEM_HOME/gems.lock $BUNDLER install --verbose --local --no-deployment $frozen "$@" ; then
+        flock $GEM_HOME/gems.lock $BUNDLER install --verbose --no-deployment $frozen "$@"
     fi
 }
 
