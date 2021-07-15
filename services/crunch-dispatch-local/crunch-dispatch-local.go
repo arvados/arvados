@@ -86,6 +86,26 @@ func doMain() error {
 
 	runningCmds = make(map[string]*exec.Cmd)
 
+	var client arvados.Client
+	client.APIHost = cluster.Services.Controller.ExternalURL.Host
+	client.AuthToken = cluster.SystemRootToken
+	client.Insecure = cluster.TLS.Insecure
+
+	if client.APIHost != "" || client.AuthToken != "" {
+		// Copy real configs into env vars so [a]
+		// MakeArvadosClient() uses them, and [b] they get
+		// propagated to crunch-run via SLURM.
+		os.Setenv("ARVADOS_API_HOST", client.APIHost)
+		os.Setenv("ARVADOS_API_TOKEN", client.AuthToken)
+		os.Setenv("ARVADOS_API_HOST_INSECURE", "")
+		if client.Insecure {
+			os.Setenv("ARVADOS_API_HOST_INSECURE", "1")
+		}
+		os.Setenv("ARVADOS_EXTERNAL_CLIENT", "")
+	} else {
+		logger.Warnf("Client credentials missing from config, so falling back on environment variables (deprecated).")
+	}
+
 	arv, err := arvadosclient.MakeArvadosClient()
 	if err != nil {
 		logger.Errorf("error making Arvados client: %v", err)
