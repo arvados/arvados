@@ -74,7 +74,7 @@ func (e *singularityExecutor) Create(spec containerSpec) error {
 }
 
 func (e *singularityExecutor) Start() error {
-	args := []string{"singularity", "exec", "--containall", "--no-home", "--cleanenv"}
+	args := []string{"singularity", "exec", "--containall", "--no-home", "--cleanenv", "--pwd", e.spec.WorkingDir}
 	if !e.spec.EnableNetwork {
 		args = append(args, "--net", "--network=none")
 	}
