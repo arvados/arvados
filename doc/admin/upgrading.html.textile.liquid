@@ -35,9 +35,13 @@ TODO: extract this information based on git commit messages and generate changel
 <div class="releasenotes">
 </notextile>
 
-h2(#main). development main (as of 2021-06-03)
+h2(#main). development main (as of 2021-07-15)
 
 "Upgrading from 2.2.0":#v2_2_0
+
+h3. crunch-dispatch-local now requires config.yml
+
+The @crunch-dispatch-local@ dispatcher now reads the API host and token from the system wide @/etc/arvados/config.yml@ .  It will fail to start that file is not found or not readable.
 
 h2(#v2_2_0). v2.2.0 (2021-06-03)
 
