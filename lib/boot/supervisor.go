@@ -741,6 +741,11 @@ func (super *Supervisor) autofillConfig(cfg *arvados.Config) error {
 				AccessViaHosts: map[arvados.URL]arvados.VolumeAccess{
 					url: {},
 				},
+				StorageClasses: map[string]bool{
+					"default": true,
+					"foo":     true,
+					"bar":     true,
+				},
 			}
 		}
 	}
