@@ -307,9 +307,11 @@ func (client *KeepTestClient) LocalLocator(locator string) (string, error) {
 	return locator, nil
 }
 
-func (client *KeepTestClient) PutB(buf []byte) (string, int, error) {
-	client.Content = buf
-	return fmt.Sprintf("%x+%d", md5.Sum(buf), len(buf)), len(buf), nil
+func (client *KeepTestClient) BlockWrite(_ context.Context, opts arvados.BlockWriteOptions) (arvados.BlockWriteResponse, error) {
+	client.Content = opts.Data
+	return arvados.BlockWriteResponse{
+		Locator: fmt.Sprintf("%x+%d", md5.Sum(opts.Data), len(opts.Data)),
+	}, nil
 }
 
 func (client *KeepTestClient) ReadAt(string, []byte, int) (int, error) {
@@ -455,8 +457,8 @@ func (*KeepErrorTestClient) ManifestFileReader(manifest.Manifest, string) (arvad
 	return nil, errors.New("KeepError")
 }
 
-func (*KeepErrorTestClient) PutB(buf []byte) (string, int, error) {
-	return "", 0, errors.New("KeepError")
+func (*KeepErrorTestClient) BlockWrite(context.Context, arvados.BlockWriteOptions) (arvados.BlockWriteResponse, error) {
+	return arvados.BlockWriteResponse{}, errors.New("KeepError")
 }
 
 func (*KeepErrorTestClient) LocalLocator(string) (string, error) {
