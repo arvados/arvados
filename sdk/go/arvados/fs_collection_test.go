@@ -32,7 +32,7 @@ var _ = check.Suite(&CollectionFSSuite{})
 type keepClientStub struct {
 	blocks      map[string][]byte
 	refreshable map[string]bool
-	onPut       func(bufcopy []byte) // called from PutB, before acquiring lock
+	onWrite     func(bufcopy []byte) // called from WriteBlock, before acquiring lock
 	authToken   string               // client's auth token (used for signing locators)
 	sigkey      string               // blob signing key
 	sigttl      time.Duration        // blob signing ttl
@@ -58,8 +58,8 @@ func (kcs *keepClientStub) BlockWrite(_ context.Context, opts BlockWriteOptions)
 	locator := SignLocator(fmt.Sprintf("%x+%d", md5.Sum(opts.Data), len(opts.Data)), kcs.authToken, time.Now().Add(kcs.sigttl), kcs.sigttl, []byte(kcs.sigkey))
 	buf := make([]byte, len(opts.Data))
 	copy(buf, opts.Data)
-	if kcs.onPut != nil {
-		kcs.onPut(buf)
+	if kcs.onWrite != nil {
+		kcs.onWrite(buf)
 	}
 	for _, sc := range opts.StorageClasses {
 		if sc != "default" {
@@ -1086,7 +1086,7 @@ func (s *CollectionFSSuite) TestFlushFullBlocksWritingLongFile(c *check.C) {
 	proceed := make(chan struct{})
 	var started, concurrent int32
 	blk2done := false
-	s.kc.onPut = func([]byte) {
+	s.kc.onWrite = func([]byte) {
 		atomic.AddInt32(&concurrent, 1)
 		switch atomic.AddInt32(&started, 1) {
 		case 1:
@@ -1152,7 +1152,7 @@ func (s *CollectionFSSuite) TestFlushAll(c *check.C) {
 	fs, err := (&Collection{}).FileSystem(s.client, s.kc)
 	c.Assert(err, check.IsNil)
 
-	s.kc.onPut = func([]byte) {
+	s.kc.onWrite = func([]byte) {
 		// discard flushed data -- otherwise the stub will use
 		// unlimited memory
 		time.Sleep(time.Millisecond)
@@ -1196,7 +1196,7 @@ func (s *CollectionFSSuite) TestFlushFullBlocksOnly(c *check.C) {
 	c.Assert(err, check.IsNil)
 
 	var flushed int64
-	s.kc.onPut = func(p []byte) {
+	s.kc.onWrite = func(p []byte) {
 		atomic.AddInt64(&flushed, int64(len(p)))
 	}
 
@@ -1264,7 +1264,7 @@ func (s *CollectionFSSuite) TestMaxUnflushed(c *check.C) {
 	time.AfterFunc(10*time.Second, func() { close(timeout) })
 	var putCount, concurrency int64
 	var unflushed int64
-	s.kc.onPut = func(p []byte) {
+	s.kc.onWrite = func(p []byte) {
 		defer atomic.AddInt64(&unflushed, -int64(len(p)))
 		cur := atomic.AddInt64(&concurrency, 1)
 		defer atomic.AddInt64(&concurrency, -1)
@@ -1327,7 +1327,7 @@ func (s *CollectionFSSuite) TestFlushStress(c *check.C) {
 	})
 
 	wrote := 0
-	s.kc.onPut = func(p []byte) {
+	s.kc.onWrite = func(p []byte) {
 		s.kc.Lock()
 		s.kc.blocks = map[string][]byte{}
 		wrote++
@@ -1358,7 +1358,7 @@ func (s *CollectionFSSuite) TestFlushStress(c *check.C) {
 }
 
 func (s *CollectionFSSuite) TestFlushShort(c *check.C) {
-	s.kc.onPut = func([]byte) {
+	s.kc.onWrite = func([]byte) {
 		s.kc.Lock()
 		s.kc.blocks = map[string][]byte{}
 		s.kc.Unlock()
