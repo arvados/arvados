@@ -17,3 +17,12 @@ Clusters:
     Login:
       PAM:
         Enable: true
+    Volumes:
+      zzzzz-nyw5e-000000000000000:
+        StorageClasses:
+          default: true
+          foo: true
+      zzzzz-nyw5e-000000000000001:
+        StorageClasses:
+          default: true
+          bar: true

@@ -431,6 +431,71 @@ describe('Collection panel tests', function () {
             });
     });
 
+    it('views & edits storage classes data', function () {
+        const colName= `Test Collection ${Math.floor(Math.random() * 999999)}`;
+        cy.createCollection(adminUser.token, {
+            name: colName,
+            owner_uuid: activeUser.user.uuid,
+            manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:some-file\n",
+        }).as('collection').then(function () {
+            expect(this.collection.storage_classes_desired).to.deep.equal(['default'])
+
+            cy.loginAs(activeUser)
+            cy.goToPath(`/collections/${this.collection.uuid}`);
+
+            // Initial check: it should show the 'default' storage class
+            cy.get('[data-cy=collection-info-panel]')
+                .should('contain', 'Storage classes')
+                .and('contain', 'default')
+                .and('not.contain', 'foo')
+                .and('not.contain', 'bar');
+            // Edit collection: add storage class 'foo'
+            cy.get('[data-cy=collection-panel-options-btn]').click();
+            cy.get('[data-cy=context-menu]').contains('Edit collection').click();
+            cy.get('[data-cy=form-dialog]')
+                .should('contain', 'Edit Collection')
+                .and('contain', 'Storage classes')
+                .and('contain', 'default')
+                .and('contain', 'foo')
+                .and('contain', 'bar')
+                .within(() => {
+                    cy.get('[data-cy=checkbox-foo]').click();
+                });
+            cy.get('[data-cy=form-submit-btn]').click();
+            cy.get('[data-cy=collection-info-panel]')
+                .should('contain', 'default')
+                .and('contain', 'foo')
+                .and('not.contain', 'bar');
+            cy.doRequest('GET', `/arvados/v1/collections/${this.collection.uuid}`)
+                .its('body').as('updatedCollection')
+                .then(function () {
+                    expect(this.updatedCollection.storage_classes_desired).to.deep.equal(['default', 'foo']);
+                });
+            // Edit collection: remove storage class 'default'
+            cy.get('[data-cy=collection-panel-options-btn]').click();
+            cy.get('[data-cy=context-menu]').contains('Edit collection').click();
+            cy.get('[data-cy=form-dialog]')
+                .should('contain', 'Edit Collection')
+                .and('contain', 'Storage classes')
+                .and('contain', 'default')
+                .and('contain', 'foo')
+                .and('contain', 'bar')
+                .within(() => {
+                    cy.get('[data-cy=checkbox-default]').click();
+                });
+            cy.get('[data-cy=form-submit-btn]').click();
+            cy.get('[data-cy=collection-info-panel]')
+                .should('not.contain', 'default')
+                .and('contain', 'foo')
+                .and('not.contain', 'bar');
+            cy.doRequest('GET', `/arvados/v1/collections/${this.collection.uuid}`)
+                .its('body').as('updatedCollection')
+                .then(function () {
+                    expect(this.updatedCollection.storage_classes_desired).to.deep.equal(['foo']);
+                });
+        })
+    });
+
     it('uses the collection version browser to view a previous version', function () {
         const colName = `Test Collection ${Math.floor(Math.random() * 999999)}`;
 

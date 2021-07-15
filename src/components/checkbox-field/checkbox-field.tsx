@@ -44,6 +44,7 @@ export const MultiCheckboxField = (props: WrappedFieldProps & MultiCheckboxField
             <FormControlLabel
                 control={
                     <Checkbox
+                        data-cy={`checkbox-${item}`}
                         key={idx}
                         name={`${props.input.name}[${idx}]`}
                         value={item}

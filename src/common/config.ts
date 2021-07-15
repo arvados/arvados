@@ -141,7 +141,7 @@ export const getStorageClasses = (config: Config): string[] => {
     const classes: Set<string> = new Set();
     const volumes = config.clusterConfig.Volumes;
     Object.keys(volumes).forEach(v => {
-        Object.keys(volumes[v].StorageClasses).forEach(sc => {
+        Object.keys(volumes[v].StorageClasses || {}).forEach(sc => {
             if (volumes[v].StorageClasses[sc]) {
                 classes.add(sc);
             }
