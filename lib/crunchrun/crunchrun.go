@@ -55,7 +55,7 @@ var ErrCancelled = errors.New("Cancelled")
 
 // IKeepClient is the minimal Keep API methods used by crunch-run.
 type IKeepClient interface {
-	PutB(buf []byte) (string, int, error)
+	BlockWrite(context.Context, arvados.BlockWriteOptions) (arvados.BlockWriteResponse, error)
 	ReadAt(locator string, p []byte, off int) (int, error)
 	ManifestFileReader(m manifest.Manifest, filename string) (arvados.File, error)
 	LocalLocator(locator string) (string, error)
