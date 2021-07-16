@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"sort"
 	"syscall"
 
 	"golang.org/x/net/context"
@@ -82,7 +83,13 @@ func (e *singularityExecutor) Start() error {
 		false: "rw",
 		true:  "ro",
 	}
-	for path, mount := range e.spec.BindMounts {
+	var binds []string
+	for path, _ := range e.spec.BindMounts {
+		binds = append(binds, path)
+	}
+	sort.Strings(binds)
+	for _, path := range binds {
+		mount := e.spec.BindMounts[path]
 		args = append(args, "--bind", mount.HostPath+":"+path+":"+readonlyflag[mount.ReadOnly])
 	}
 	args = append(args, e.imageFilename)
