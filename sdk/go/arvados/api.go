@@ -8,6 +8,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"io"
 	"net"
 
 	"github.com/sirupsen/logrus"
@@ -203,6 +204,22 @@ type UserAuthenticateOptions struct {
 
 type LogoutOptions struct {
 	ReturnTo string `json:"return_to"` // Redirect to this URL after logging out
+}
+
+type BlockWriteOptions struct {
+	Hash           string
+	Data           []byte
+	Reader         io.Reader
+	DataSize       int // Must be set if Data is nil.
+	RequestID      string
+	StorageClasses []string
+	Replicas       int
+	Attempts       int
+}
+
+type BlockWriteResponse struct {
+	Locator  string
+	Replicas int
 }
 
 type API interface {
