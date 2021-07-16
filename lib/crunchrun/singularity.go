@@ -5,21 +5,26 @@
 package crunchrun
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"sort"
+	"strings"
 	"syscall"
 
+	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"golang.org/x/net/context"
 )
 
 type singularityExecutor struct {
-	logf          func(string, ...interface{})
-	spec          containerSpec
-	tmpdir        string
-	child         *exec.Cmd
-	imageFilename string // "sif" image
+	logf            func(string, ...interface{})
+	spec            containerSpec
+	tmpdir          string
+	child           *exec.Cmd
+	imageFilename   string // "sif" image
+	containerClient *arvados.Client
+	container       arvados.Container
 }
 
 func newSingularityExecutor(logf func(string, ...interface{})) (*singularityExecutor, error) {
@@ -33,13 +38,56 @@ func newSingularityExecutor(logf func(string, ...interface{})) (*singularityExec
 	}, nil
 }
 
+func (e *singularityExecutor) getOrCreateProject(ownerUuid string, name string, create bool) (*arvados.Group, error) {
+	var gp arvados.GroupList
+	err := e.containerClient.RequestAndDecode(&gp,
+		arvados.EndpointGroupList.Method,
+		arvados.EndpointGroupList.Path,
+		nil, arvados.ListOptions{Filters: []arvados.Filter{
+			arvados.Filter{"owner_uuid", "=", ownerUuid},
+			arvados.Filter{"name", "=", name},
+			arvados.Filter{"group_class", "=", "project"},
+		}})
+	if err != nil {
+		return nil, err
+	}
+	if len(gp.Items) > 0 {
+		return &gp.Items[0], nil
+	}
+	if !create {
+		return nil, nil
+	}
+	var rgroup arvados.Group
+	err = e.containerClient.RequestAndDecode(&rgroup,
+		arvados.EndpointGroupCreate.Method,
+		arvados.EndpointGroupCreate.Path,
+		nil, map[string]interface{}{
+			"group": map[string]string{
+				"owner_uuid":  ownerUuid,
+				"name":        name,
+				"group_class": "project",
+			},
+		})
+	if err != nil {
+		return nil, err
+	}
+	return &rgroup, nil
+}
+
 func (e *singularityExecutor) ImageLoaded(string) bool {
+	// Check if docker image is cached in keep & if so set imageFilename
+
 	return false
 }
 
 // LoadImage will satisfy ContainerExecuter interface transforming
 // containerImage into a sif file for later use.
 func (e *singularityExecutor) LoadImage(imageTarballPath string) error {
+	if e.imageFilename != "" {
+		// was set by ImageLoaded
+		return nil
+	}
+
 	e.logf("building singularity image")
 	// "singularity build" does not accept a
 	// docker-archive://... filename containing a ":" character,
@@ -66,6 +114,36 @@ func (e *singularityExecutor) LoadImage(imageTarballPath string) error {
 	if err != nil {
 		return err
 	}
+
+	// Cache the image to keep
+	cacheGroup, err := e.getOrCreateProject(e.container.RuntimeUserUUID, ".cache", true)
+	if err != nil {
+		e.logf("error getting '.cache' project: %s", err)
+		return nil
+	}
+	imageGroup, err := e.getOrCreateProject(cacheGroup.UUID, "auto-generated singularity images", true)
+	if err != nil {
+		e.logf("error getting 'auto-generated singularity images' project: %s", err)
+		return nil
+	}
+
+	parts := strings.Split(imageTarballPath, "/")
+	imageId := parts[len(parts)-1]
+
+	var imageCollection arvados.Collection
+	err = e.containerClient.RequestAndDecode(&imageCollection,
+		arvados.EndpointCollectionCreate.Method,
+		arvados.EndpointCollectionCreate.Path,
+		nil, map[string]interface{}{
+			"collection": map[string]string{
+				"owner_uuid": imageGroup.UUID,
+				"name": fmt.Sprintf("singularity image for %s", imageId),
+			}
+		})
+	if err != nil {
+		e.logf("error creating 'auto-generated singularity images' collection: %s", err)
+	}
+
 	return nil
 }
 
@@ -152,4 +230,9 @@ func (e *singularityExecutor) Close() {
 	if err != nil {
 		e.logf("error removing temp dir: %s", err)
 	}
+}
+
+func (e *singularityExecutor) SetArvadoClient(containerClient *arvados.Client, container arvados.Container) {
+	e.containerClient = containerClient
+	e.container = container
 }

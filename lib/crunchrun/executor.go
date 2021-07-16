@@ -6,6 +6,7 @@ package crunchrun
 import (
 	"io"
 
+	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"golang.org/x/net/context"
 )
 
@@ -60,4 +61,7 @@ type containerExecutor interface {
 
 	// Release resources (temp dirs, stopped containers)
 	Close()
+
+	// Give the executor access to arvados client & container info
+	SetArvadoClient(containerClient *arvados.Client, container arvados.Container)
 }

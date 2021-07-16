@@ -1559,6 +1559,8 @@ func (runner *ContainerRunner) fetchContainerRecord() error {
 	}
 	runner.SecretMounts = sm.SecretMounts
 
+	runner.executor.SetArvadoClient(runner.containerClient, runner.Container)
+
 	return nil
 }
 

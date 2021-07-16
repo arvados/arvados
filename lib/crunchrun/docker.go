@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"git.arvados.org/arvados.git/sdk/go/arvados"
 	dockertypes "github.com/docker/docker/api/types"
 	dockercontainer "github.com/docker/docker/api/types/container"
 	dockerclient "github.com/docker/docker/client"
@@ -251,4 +252,7 @@ func (e *dockerExecutor) handleStdoutStderr(stdout, stderr io.Writer, reader io.
 
 func (e *dockerExecutor) Close() {
 	e.dockerclient.ContainerRemove(context.TODO(), e.containerID, dockertypes.ContainerRemoveOptions{Force: true})
+}
+
+func (e *dockerExecutor) SetArvadoClient(containerClient *arvados.Client, container arvados.Container) {
 }

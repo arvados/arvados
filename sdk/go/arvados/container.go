@@ -33,6 +33,9 @@ type Container struct {
 	GatewayAddress            string                 `json:"gateway_address"`
 	InteractiveSessionStarted bool                   `json:"interactive_session_started"`
 	OutputStorageClasses      []string               `json:"output_storage_classes"`
+	RuntimeUserUUID           string                 `json:"runtime_user_uuid"`
+	RuntimeAuthScopes         []string               `json:"runtime_auth_scopes"`
+	RuntimeToken              string                 `json:"runtime_token"`
 }
 
 // ContainerRequest is an arvados#container_request resource.
