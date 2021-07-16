@@ -138,7 +138,7 @@ export const buildConfig = (clusterConfig: ClusterConfigJSON): Config => {
 };
 
 export const getStorageClasses = (config: Config): string[] => {
-    const classes: Set<string> = new Set();
+    const classes: Set<string> = new Set(['default']);
     const volumes = config.clusterConfig.Volumes;
     Object.keys(volumes).forEach(v => {
         Object.keys(volumes[v].StorageClasses || {}).forEach(sc => {
