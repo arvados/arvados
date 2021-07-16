@@ -240,6 +240,11 @@ func (disp *dispatcher) runContainer(_ *dispatch.Dispatcher, ctr arvados.Contain
 			return
 		case updated, ok := <-status:
 			if !ok {
+				// status channel is closed, which is
+				// how arvDispatcher tells us to stop
+				// touching the container record, kill
+				// off any remaining LSF processes,
+				// etc.
 				done = true
 				break
 			}
@@ -247,7 +252,7 @@ func (disp *dispatcher) runContainer(_ *dispatch.Dispatcher, ctr arvados.Contain
 				disp.logger.Infof("container %s changed state from %s to %s", ctr.UUID, ctr.State, updated.State)
 			}
 			ctr = updated
-			if ctr.Priority == 0 {
+			if ctr.Priority < 1 {
 				disp.logger.Printf("container %s has state %s, priority %d: cancel lsf job", ctr.UUID, ctr.State, ctr.Priority)
 				disp.bkill(ctr)
 			} else {
