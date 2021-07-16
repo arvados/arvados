@@ -41,7 +41,7 @@ for sdk_app in arv arv-get cwl-runner arv-mount ; do
     fi
 done
 
-if ! (ps x | grep -v grep | grep "crunch-dispatch") > /dev/null ; then
+if ! (ps ax | grep -v grep | grep "crunch-dispatch") > /dev/null ; then
     waiting="$waiting crunch-dispatch"
 fi
 

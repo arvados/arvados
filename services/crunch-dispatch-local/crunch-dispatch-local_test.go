@@ -81,8 +81,10 @@ func (s *TestSuite) TestIntegration(c *C) {
 		return cmd.Start()
 	}
 
+	cl := arvados.Cluster{Containers: arvados.ContainersConfig{RuntimeEngine: "docker"}}
+
 	dispatcher.RunContainer = func(d *dispatch.Dispatcher, c arvados.Container, s <-chan arvados.Container) {
-		(&LocalRun{startCmd, make(chan bool, 8), ctx}).run(d, c, s)
+		(&LocalRun{startCmd, make(chan bool, 8), ctx, &cl}).run(d, c, s)
 		cancel()
 	}
 
@@ -184,8 +186,10 @@ func testWithServerStub(c *C, apiStubResponses map[string]arvadostest.StubRespon
 		return cmd.Start()
 	}
 
+	cl := arvados.Cluster{Containers: arvados.ContainersConfig{RuntimeEngine: "docker"}}
+
 	dispatcher.RunContainer = func(d *dispatch.Dispatcher, c arvados.Container, s <-chan arvados.Container) {
-		(&LocalRun{startCmd, make(chan bool, 8), ctx}).run(d, c, s)
+		(&LocalRun{startCmd, make(chan bool, 8), ctx, &cl}).run(d, c, s)
 		cancel()
 	}
 
