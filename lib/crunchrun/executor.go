@@ -25,9 +25,9 @@ type containerSpec struct {
 	EnableNetwork bool
 	NetworkMode   string // docker network mode, normally "default"
 	CgroupParent  string
-	Stdin         io.ReadCloser
-	Stdout        io.WriteCloser
-	Stderr        io.WriteCloser
+	Stdin         io.Reader
+	Stdout        io.Writer
+	Stderr        io.Writer
 }
 
 // containerExecutor is an interface to a container runtime

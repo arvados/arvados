@@ -186,7 +186,7 @@ func (e *dockerExecutor) Wait(ctx context.Context) (int, error) {
 	}
 }
 
-func (e *dockerExecutor) startIO(stdin io.ReadCloser, stdout, stderr io.WriteCloser) error {
+func (e *dockerExecutor) startIO(stdin io.Reader, stdout, stderr io.Writer) error {
 	resp, err := e.dockerclient.ContainerAttach(context.TODO(), e.containerID, dockertypes.ContainerAttachOptions{
 		Stream: true,
 		Stdin:  stdin != nil,
@@ -213,8 +213,7 @@ func (e *dockerExecutor) startIO(stdin io.ReadCloser, stdout, stderr io.WriteClo
 	return nil
 }
 
-func (e *dockerExecutor) handleStdin(stdin io.ReadCloser, conn io.Writer, closeConn func() error) error {
-	defer stdin.Close()
+func (e *dockerExecutor) handleStdin(stdin io.Reader, conn io.Writer, closeConn func() error) error {
 	defer closeConn()
 	_, err := io.Copy(conn, stdin)
 	if err != nil {
@@ -225,7 +224,7 @@ func (e *dockerExecutor) handleStdin(stdin io.ReadCloser, conn io.Writer, closeC
 
 // Handle docker log protocol; see
 // https://docs.docker.com/engine/reference/api/docker_remote_api_v1.15/#attach-to-a-container
-func (e *dockerExecutor) handleStdoutStderr(stdout, stderr io.WriteCloser, reader io.Reader) error {
+func (e *dockerExecutor) handleStdoutStderr(stdout, stderr io.Writer, reader io.Reader) error {
 	header := make([]byte, 8)
 	var err error
 	for err == nil {
@@ -246,14 +245,6 @@ func (e *dockerExecutor) handleStdoutStderr(stdout, stderr io.WriteCloser, reade
 	}
 	if err != nil {
 		return fmt.Errorf("error copying stdout/stderr from docker: %v", err)
-	}
-	err = stdout.Close()
-	if err != nil {
-		return fmt.Errorf("error writing stdout: close: %v", err)
-	}
-	err = stderr.Close()
-	if err != nil {
-		return fmt.Errorf("error writing stderr: close: %v", err)
 	}
 	return nil
 }
