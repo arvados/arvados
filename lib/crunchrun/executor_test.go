@@ -141,6 +141,13 @@ func (s *executorSuite) TestExecEnableNetwork(c *C) {
 	}
 }
 
+func (s *executorSuite) TestExecWorkingDir(c *C) {
+	s.spec.WorkingDir = "/tmp"
+	s.spec.Command = []string{"sh", "-c", "pwd"}
+	s.checkRun(c, 0)
+	c.Check(s.stdout.String(), Equals, "/tmp\n")
+}
+
 func (s *executorSuite) TestExecStdoutStderr(c *C) {
 	s.spec.Command = []string{"sh", "-c", "echo foo; echo -n bar >&2; echo baz; echo waz >&2"}
 	s.checkRun(c, 0)
