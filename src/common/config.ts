@@ -91,6 +91,13 @@ export interface ClusterConfigJSON {
             }
         }
     };
+    Volumes: {
+        [key: string]: {
+            StorageClasses: {
+                [key: string]: boolean;
+            }
+        }
+    };
 }
 
 export class Config {
@@ -128,6 +135,19 @@ export const buildConfig = (clusterConfig: ClusterConfigJSON): Config => {
     config.apiRevision = 0;
     mapRemoteHosts(clusterConfigJSON, config);
     return config;
+};
+
+export const getStorageClasses = (config: Config): string[] => {
+    const classes: Set<string> = new Set(['default']);
+    const volumes = config.clusterConfig.Volumes;
+    Object.keys(volumes).forEach(v => {
+        Object.keys(volumes[v].StorageClasses || {}).forEach(sc => {
+            if (volumes[v].StorageClasses[sc]) {
+                classes.add(sc);
+            }
+        });
+    });
+    return Array.from(classes);
 };
 
 const getApiRevision = async (apiUrl: string) => {
@@ -252,6 +272,7 @@ export const mockClusterConfigJSON = (config: Partial<ClusterConfigJSON>): Clust
     Collections: {
         ForwardSlashNameSubstitution: "",
     },
+    Volumes: {},
     ...config
 });
 

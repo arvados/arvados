@@ -39,6 +39,7 @@ export type ContextMenuResource = {
     isEditable?: boolean;
     outputUuid?: string;
     workflowUuid?: string;
+    storageClassesDesired?: string[];
 };
 
 export const isKeyboardClick = (event: React.MouseEvent<HTMLElement>) => event.nativeEvent.detail === 0;

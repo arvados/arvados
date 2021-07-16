@@ -237,13 +237,14 @@ export const CollectionPanel = withStyles(styles)(
             }
 
             handleContextMenu = (event: React.MouseEvent<any>) => {
-                const { uuid, ownerUuid, name, description, kind } = this.props.item;
+                const { uuid, ownerUuid, name, description, kind, storageClassesDesired } = this.props.item;
                 const menuKind = this.props.dispatch<any>(resourceUuidToContextMenuKind(uuid));
                 const resource = {
                     uuid,
                     ownerUuid,
                     name,
                     description,
+                    storageClassesDesired,
                     kind,
                     menuKind,
                 };
@@ -340,6 +341,10 @@ export const CollectionDetailsAttributes = (props: { item: CollectionResource, t
         <Grid item xs={12} md={mdSize}>
             <DetailsAttribute classLabel={classes.label} classValue={classes.value}
                 label='Content size' value={formatFileSize(item.fileSizeTotal)} />
+        </Grid>
+        <Grid item xs={12} md={mdSize}>
+            <DetailsAttribute classLabel={classes.label} classValue={classes.value}
+                label='Storage classes' value={item.storageClassesDesired.join(', ')} />
         </Grid>
     </Grid>;
 };

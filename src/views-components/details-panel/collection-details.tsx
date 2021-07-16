@@ -87,6 +87,8 @@ const mapDispatchToProps = () =>
                 dispatch<any>(openContextMenu(event, {
                     name: collection.name,
                     uuid: collection.uuid,
+                    description: collection.description,
+                    storageClassesDesired: collection.storageClassesDesired,
                     ownerUuid: collection.ownerUuid,
                     isTrashed: collection.isTrashed,
                     kind: collection.kind,
