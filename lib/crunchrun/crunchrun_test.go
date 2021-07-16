@@ -120,8 +120,6 @@ func (e *stubExecutor) CgroupID() string                { return "cgroupid" }
 func (e *stubExecutor) Stop() error                     { e.stopped = true; go func() { e.exit <- -1 }(); return e.stopErr }
 func (e *stubExecutor) Close()                          { e.closed = true }
 func (e *stubExecutor) Wait(context.Context) (int, error) {
-	defer e.created.Stdout.Close()
-	defer e.created.Stderr.Close()
 	return <-e.exit, e.waitErr
 }
 
@@ -522,8 +520,6 @@ func dockerLog(fd byte, msg string) []byte {
 func (s *TestSuite) TestRunContainer(c *C) {
 	s.executor.runFunc = func() {
 		fmt.Fprintf(s.executor.created.Stdout, "Hello world\n")
-		s.executor.created.Stdout.Close()
-		s.executor.created.Stderr.Close()
 		s.executor.exit <- 0
 	}
 
