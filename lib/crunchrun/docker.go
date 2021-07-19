@@ -254,5 +254,5 @@ func (e *dockerExecutor) Close() {
 	e.dockerclient.ContainerRemove(context.TODO(), e.containerID, dockertypes.ContainerRemoveOptions{Force: true})
 }
 
-func (e *dockerExecutor) SetArvadoClient(containerClient *arvados.Client, container arvados.Container) {
+func (e *dockerExecutor) SetArvadoClient(containerClient *arvados.Client, keepClient IKeepClient, container arvados.Container, keepMount string) {
 }

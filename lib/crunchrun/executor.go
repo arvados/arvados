@@ -63,5 +63,5 @@ type containerExecutor interface {
 	Close()
 
 	// Give the executor access to arvados client & container info
-	SetArvadoClient(containerClient *arvados.Client, container arvados.Container)
+	SetArvadoClient(containerClient *arvados.Client, keepClient IKeepClient, container arvados.Container, keepMount string)
 }

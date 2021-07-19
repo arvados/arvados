@@ -270,7 +270,7 @@ func (runner *ContainerRunner) LoadImage() (string, error) {
 			return "", err
 		}
 	} else {
-		runner.CrunchLog.Print("Docker image is available")
+		runner.CrunchLog.Print("Container image is available")
 	}
 	return imageID, nil
 }
@@ -1458,6 +1458,10 @@ func (runner *ContainerRunner) Run() (err error) {
 		return
 	}
 
+	// Communicate some additional configuration to the executor
+	runner.executor.SetArvadoClient(runner.containerClient, runner.ContainerKeepClient,
+		runner.Container, runner.ArvMountPoint)
+
 	// check for and/or load image
 	imageID, err := runner.LoadImage()
 	if err != nil {
@@ -1558,8 +1562,6 @@ func (runner *ContainerRunner) fetchContainerRecord() error {
 		// secret_mounts isn't supported by this API server.
 	}
 	runner.SecretMounts = sm.SecretMounts
-
-	runner.executor.SetArvadoClient(runner.containerClient, runner.Container)
 
 	return nil
 }
