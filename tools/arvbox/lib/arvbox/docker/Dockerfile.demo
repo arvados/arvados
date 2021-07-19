@@ -47,7 +47,7 @@ RUN sudo -u arvbox /var/lib/arvbox/service/doc/run-service --only-deps
 RUN sudo -u arvbox /var/lib/arvbox/service/vm/run-service --only-deps
 RUN sudo -u arvbox /var/lib/arvbox/service/keepproxy/run-service --only-deps
 RUN sudo -u arvbox /var/lib/arvbox/service/arv-git-httpd/run-service --only-deps
-RUN sudo -u arvbox /var/lib/arvbox/service/crunch-dispatch-local/run-service --only-deps
+RUN /var/lib/arvbox/service/crunch-dispatch-local/run --only-deps
 RUN sudo -u arvbox /var/lib/arvbox/service/websockets/run --only-deps
 RUN sudo -u arvbox /usr/local/lib/arvbox/keep-setup.sh --only-deps
 RUN sudo -u arvbox /var/lib/arvbox/service/sdk/run-service
