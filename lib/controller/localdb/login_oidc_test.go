@@ -51,20 +51,13 @@ func (s *OIDCLoginSuite) TearDownSuite(c *check.C) {
 	c.Check(arvados.NewClientFromEnv().RequestAndDecode(nil, "POST", "database/reset", nil, nil), check.IsNil)
 }
 
-// TODO: In the interest of reducing redundant tests: It looks like if we change
-// Given/Family names to {"Fake", "User Name"} in SetUpTest, and update
-// TestGoogleLogin_Success accordingly, then we wouldn't even need a separate
-// TestGoogleLogin_OIDCClamisWithGivenNames test to check the normal case, and
-// the old/renamed OIDCNameWithoutGivenAndFamilyNames test would check the case
-// where we fall back to splitting on whitespace.
-
 func (s *OIDCLoginSuite) SetUpTest(c *check.C) {
 	s.fakeProvider = arvadostest.NewOIDCProvider(c)
 	s.fakeProvider.AuthEmail = "active-user@arvados.local"
 	s.fakeProvider.AuthEmailVerified = true
 	s.fakeProvider.AuthName = "Fake User Name"
-	s.fakeProvider.AuthGivenName = "Fake User"
-	s.fakeProvider.AuthFamilyName = "Name"
+	s.fakeProvider.AuthGivenName = "Fake"
+	s.fakeProvider.AuthFamilyName = "User Name"
 	s.fakeProvider.ValidCode = fmt.Sprintf("abcdefgh-%d", time.Now().Unix())
 	s.fakeProvider.PeopleAPIResponse = map[string]interface{}{}
 
@@ -430,8 +423,8 @@ func (s *OIDCLoginSuite) TestGoogleLogin_Success(c *check.C) {
 	c.Check(token, check.Matches, `v2/zzzzz-gj3su-.{15}/.{32,50}`)
 
 	authinfo := getCallbackAuthInfo(c, s.railsSpy)
-	c.Check(authinfo.FirstName, check.Equals, "Fake User")
-	c.Check(authinfo.LastName, check.Equals, "Name")
+	c.Check(authinfo.FirstName, check.Equals, "Fake")
+	c.Check(authinfo.LastName, check.Equals, "User Name")
 	c.Check(authinfo.Email, check.Equals, "active-user@arvados.local")
 	c.Check(authinfo.AlternateEmails, check.HasLen, 0)
 
