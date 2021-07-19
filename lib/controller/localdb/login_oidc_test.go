@@ -490,22 +490,6 @@ func (s *OIDCLoginSuite) TestGoogleLogin_OIDCNameWithoutGivenAndFamilyNames(c *c
 	c.Check(authinfo.LastName, check.Equals, "Smith")
 }
 
-func (s *OIDCLoginSuite) TestGoogleLogin_OIDCClaimsWithGivenNames(c *check.C) {
-	s.fakeProvider.AuthName = "Federico Garcia Lorca"
-	s.fakeProvider.AuthGivenName = "Federico"
-	s.fakeProvider.AuthFamilyName = "Garcia Lorca"
-	s.fakeProvider.AuthEmail = "federico.garcia.lorca@primary.example.com"
-	state := s.startLogin(c)
-	s.localdb.Login(context.Background(), arvados.LoginOptions{
-		Code:  s.fakeProvider.ValidCode,
-		State: state,
-	})
-
-	authinfo := getCallbackAuthInfo(c, s.railsSpy)
-	c.Check(authinfo.FirstName, check.Equals, "Federico")
-	c.Check(authinfo.LastName, check.Equals, "Garcia Lorca")
-}
-
 // People API returns some additional email addresses.
 func (s *OIDCLoginSuite) TestGoogleLogin_AlternateEmailAddresses(c *check.C) {
 	s.fakeProvider.AuthEmail = "joe.smith@primary.example.com"
