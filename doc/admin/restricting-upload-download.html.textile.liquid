@@ -150,7 +150,7 @@ This policy is suitable for an installation where data is being shared with a gr
 
 h2. Accessing the audit log
 
-When @WebDAVLogEvents@ is enabled, uploads and downloads of files are logged in the Arvados audit log. This log can be accessed via the API, SDKs or command line. For example, to show the 100 most recent file downloads:
+When @WebDAVLogEvents@ is enabled, uploads and downloads of files are logged in the Arvados audit log. These events are included in the "User Activity Report":user-activity.html. The audit log can also be accessed via the API, SDKs or command line. For example, to show the 100 most recent file downloads:
 
 <pre>
 arv log list --filters '[["event_type","=","file_download"]]' -o 'created_at desc' -l 100
