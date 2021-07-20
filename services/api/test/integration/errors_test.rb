@@ -30,10 +30,29 @@ class ErrorsTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "X-Request-Id header format on non-existant object URL" do
+  test "X-Request-Id header" do
+    get "/", headers: auth(:spectator)
+    assert_match /^req-[0-9a-zA-Z]{20}$/, response.headers['X-Request-Id']
+  end
+
+  test "X-Request-Id header on non-existant object URL" do
     get "/arvados/v1/container_requests/invalid",
       params: {:format => :json}, headers: auth(:active)
     assert_response 404
+    assert_match /^req-[0-9a-zA-Z]{20}$/, response.headers['X-Request-Id']
+  end
+
+  # The response header is the one that gets logged, so this test also
+  # ensures we log the ID supplied in the request, if any.
+  test "X-Request-Id given by client" do
+    get "/", headers: auth(:spectator).merge({'X-Request-Id': 'abcdefG'})
+    assert_equal 'abcdefG', response.headers['X-Request-Id']
+  end
+
+  test "X-Request-Id given by client is ignored if too long" do
+    authorize_with :spectator
+    long_reqId = 'abcdefG' * 1000
+    get "/", headers: auth(:spectator).merge({'X-Request-Id': long_reqId})
     assert_match /^req-[0-9a-zA-Z]{20}$/, response.headers['X-Request-Id']
   end
 end
