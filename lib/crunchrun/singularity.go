@@ -79,6 +79,10 @@ func (e *singularityExecutor) getOrCreateProject(ownerUuid string, name string, 
 }
 
 func (e *singularityExecutor) ImageLoaded(imageId string) bool {
+	if e.containerClient == nil {
+		return false
+	}
+
 	// Check if docker image is cached in keep & if so set imageFilename
 
 	// Cache the image to keep
@@ -157,6 +161,10 @@ func (e *singularityExecutor) LoadImage(imageTarballPath string) error {
 	e.logf("%s", out)
 	if err != nil {
 		return err
+	}
+
+	if e.containerClient == nil {
+		return nil
 	}
 
 	// Cache the image to keep
