@@ -246,8 +246,6 @@ func (e *singularityExecutor) Start() error {
 		mount := e.spec.BindMounts[path]
 		args = append(args, "--bind", mount.HostPath+":"+path+":"+readonlyflag[mount.ReadOnly])
 	}
-	args = append(args, e.imageFilename)
-	args = append(args, e.spec.Command...)
 
 	// This is for singularity 3.5.2. There are some behaviors
 	// that will change in singularity 3.6, please see:
@@ -255,8 +253,16 @@ func (e *singularityExecutor) Start() error {
 	// https://sylabs.io/guides/3.5/user-guide/environment_and_metadata.html
 	env := make([]string, 0, len(e.spec.Env))
 	for k, v := range e.spec.Env {
-		env = append(env, "SINGULARITYENV_"+k+"="+v)
+		if k == "HOME" {
+			// $HOME is a special case
+			args = append(args, "--home="+v)
+		} else {
+			env = append(env, "SINGULARITYENV_"+k+"="+v)
+		}
 	}
+
+	args = append(args, e.imageFilename)
+	args = append(args, e.spec.Command...)
 
 	path, err := exec.LookPath(args[0])
 	if err != nil {
