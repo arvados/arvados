@@ -14,6 +14,7 @@ class ErrorsTest < ActionDispatch::IntegrationTest
       assert_nil assigns(:object)
       assert_not_nil json_response['errors']
       assert_response 404
+      assert_match /^req-[0-9a-zA-Z]{20}$/, response.headers['X-Request-Id']
     end
   end
 
@@ -27,5 +28,12 @@ class ErrorsTest < ActionDispatch::IntegrationTest
                    route.path.spec.to_s,
                    "Unexpected new route: #{route.path.spec}")
     end
+  end
+
+  test "X-Request-Id header format on non-existant object URL" do
+    get "/arvados/v1/container_requests/invalid",
+      params: {:format => :json}, headers: auth(:active)
+    assert_response 404
+    assert_match /^req-[0-9a-zA-Z]{20}$/, response.headers['X-Request-Id']
   end
 end
