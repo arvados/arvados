@@ -21,7 +21,7 @@ class Container < ArvadosModel
   # already know how to properly treat them.
   attribute :secret_mounts, :jsonbHash, default: {}
   attribute :runtime_status, :jsonbHash, default: {}
-  attribute :runtime_auth_scopes, :jsonbHash, default: {}
+  attribute :runtime_auth_scopes, :jsonbArray, default: []
   attribute :output_storage_classes, :jsonbArray, default: ["default"]
 
   serialize :environment, Hash
