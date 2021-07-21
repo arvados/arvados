@@ -44,7 +44,7 @@ require (
 	github.com/johannesboyne/gofakes3 v0.0.0-20200716060623-6b2b4cb092cc
 	github.com/julienschmidt/httprouter v1.2.0
 	github.com/kevinburke/ssh_config v0.0.0-20171013211458-802051befeb5 // indirect
-	github.com/lib/pq v1.3.0
+	github.com/lib/pq v1.10.2
 	github.com/msteinert/pam v0.0.0-20190215180659-f29b9f28d6f9
 	github.com/opencontainers/go-digest v1.0.0-rc1 // indirect
 	github.com/opencontainers/image-spec v1.0.1-0.20171125024018-577479e4dc27 // indirect
