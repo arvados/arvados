@@ -255,7 +255,7 @@ func (kc *KeepClient) BlockWrite(ctx context.Context, req arvados.BlockWriteOpti
 							msg += resp + "; "
 						}
 						msg = msg[:len(msg)-2]
-						return resp, InsufficientReplicasError(errors.New(msg))
+						return resp, InsufficientReplicasError{error: errors.New(msg)}
 					}
 					break
 				}

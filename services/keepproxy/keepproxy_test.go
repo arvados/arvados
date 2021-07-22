@@ -7,7 +7,6 @@ package main
 import (
 	"bytes"
 	"crypto/md5"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
@@ -442,7 +441,7 @@ func (s *ServerRequiredSuite) TestPutAskGetForbidden(c *C) {
 	hash2, rep, err := kc.PutB([]byte("bar"))
 	c.Check(hash2, Equals, "")
 	c.Check(rep, Equals, 0)
-	c.Check(err, FitsTypeOf, keepclient.InsufficientReplicasError(errors.New("")))
+	c.Check(err, FitsTypeOf, keepclient.InsufficientReplicasError{})
 
 	blocklen, _, err := kc.Ask(hash)
 	c.Check(err, FitsTypeOf, &keepclient.ErrNotFound{})
@@ -495,7 +494,7 @@ func testPermission(c *C, admin bool, perm arvados.UploadDownloadPermission) {
 		} else {
 			c.Check(hash2, Equals, "")
 			c.Check(rep, Equals, 0)
-			c.Check(err, FitsTypeOf, keepclient.InsufficientReplicasError(errors.New("")))
+			c.Check(err, FitsTypeOf, keepclient.InsufficientReplicasError{})
 		}
 		logbuf.Reset()
 	}
