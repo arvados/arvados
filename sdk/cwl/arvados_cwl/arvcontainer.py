@@ -411,6 +411,30 @@ class RunnerContainer(Runner):
                     "content": self.secret_store.retrieve(self.job_order[param])
                 }
                 self.job_order[param] = {"$include": mnt}
+        
+        cwl_input_json_mount = {
+            "kind": "text",
+            "content": json.dumps(self.job_order)
+        }
+        if len(cwl_input_json_mount["content"]) > 1024 * 1024: # save to collection if more than 1MB of input JSON                                                                       
+            path = "cwl.input.json"
+            c = arvados.collection.Collection(api_client=self.arvrunner.api,
+                                              keep_client=self.arvrunner.keep_client,
+                                              num_retries=self.arvrunner.num_retries)
+            with c.open(path, "w") as f:
+                f.write(cwl_input_json_mount["content"].encode("utf-8"))
+
+            pdh = c.portable_data_hash()                                                                                                                                              
+
+            check = self.arvrunner.api.collections().list(filters=[["portable_data_hash", "=", pdh]], limit=1).execute(num_retries=self.arvrunner.num_retries)
+            if not check["items"]:
+                c.save_new(owner_uuid=self.arvrunner.project_uuid)
+
+            cwl_input_json_mount = {
+                "kind": "collection",
+                "portable_data_hash": pdh,
+                "path": path,
+            }
 
         container_req = {
             "name": self.name,
@@ -420,10 +444,7 @@ class RunnerContainer(Runner):
             "state": "Committed",
             "container_image": arvados_jobs_image(self.arvrunner, self.jobs_image),
             "mounts": {
-                "/var/lib/cwl/cwl.input.json": {
-                    "kind": "json",
-                    "content": self.job_order
-                },
+                "/var/lib/cwl/cwl.input.json": cwl_input_json_mount,
                 "stdout": {
                     "kind": "file",
                     "path": "/var/spool/cwl/cwl.output.json"
