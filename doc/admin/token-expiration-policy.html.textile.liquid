@@ -113,7 +113,7 @@ If you have an existing Arvados installation and want to set a token lifetime po
 The @db:check_long_lived_tokens@ task will list which users have tokens with no expiration date.
 
 <notextile>
-<pre><code># <span class="userinput">bundle exec rake db:check_long_lived_tokens</span>
+<pre><code># <span class="userinput">bin/rake db:check_long_lived_tokens</span>
 Found 6 long-lived tokens from users:
 user2,user2@example.com,zzzzz-tpzed-5vzt5wc62k46p6r
 admin,admin@example.com,zzzzz-tpzed-6drplgwq9nm5cox
@@ -124,7 +124,7 @@ user1,user1@example.com,zzzzz-tpzed-ftz2tfurbpf7xox
 To apply the new policy to existing tokens, use the @db:fix_long_lived_tokens@ task.
 
 <notextile>
-<pre><code># <span class="userinput">bundle exec rake db:fix_long_lived_tokens</span>
+<pre><code># <span class="userinput">bin/rake db:fix_long_lived_tokens</span>
 Setting token expiration to: 2020-08-25 03:30:50 +0000
 6 tokens updated.
 </code></pre>
