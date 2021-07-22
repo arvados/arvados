@@ -183,7 +183,7 @@ $ sudo chmod og-rwx /var/www/arvados-api/current/config/arvados-clients.yml
 
 h3. Test configuration
 
-notextile. <pre><code>$ <span class="userinput">sudo -u git -i bash -c 'cd /var/www/arvados-api/current && bundle exec script/arvados-git-sync.rb production'</span></code></pre>
+notextile. <pre><code>$ <span class="userinput">sudo -u git -i bash -c 'cd /var/www/arvados-api/current && bin/bundle exec script/arvados-git-sync.rb production'</span></code></pre>
 
 h3. Enable the synchronization script
 
@@ -192,7 +192,7 @@ The API server package includes a script that retrieves the current set of repos
 Create @/etc/cron.d/arvados-git-sync@ with the following content:
 
 <notextile>
-<pre><code><span class="userinput">*/5 * * * * git cd /var/www/arvados-api/current && bundle exec script/arvados-git-sync.rb production</span>
+<pre><code><span class="userinput">*/5 * * * * git cd /var/www/arvados-api/current && bin/bundle exec script/arvados-git-sync.rb production</span>
 </code></pre>
 </notextile>
 

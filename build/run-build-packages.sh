@@ -401,8 +401,8 @@ if [[ "$?" == "0" ]] ; then
       mv /tmp/x /etc/arvados/config.yml
       perl -p -i -e 'BEGIN{undef $/;} s/WebDAV(.*?):\n( *)ExternalURL: ""/WebDAV$1:\n$2ExternalURL: "example.com"/g' /etc/arvados/config.yml
 
-      ARVADOS_CONFIG=none RAILS_ENV=production RAILS_GROUPS=assets bundle exec rake npm:install >"$STDOUT_IF_DEBUG"
-      ARVADOS_CONFIG=none RAILS_ENV=production RAILS_GROUPS=assets bundle exec rake assets:precompile >"$STDOUT_IF_DEBUG"
+      ARVADOS_CONFIG=none RAILS_ENV=production RAILS_GROUPS=assets bin/rake npm:install >"$STDOUT_IF_DEBUG"
+      ARVADOS_CONFIG=none RAILS_ENV=production RAILS_GROUPS=assets bin/rake assets:precompile >"$STDOUT_IF_DEBUG"
 
       # Remove generated configuration files so they don't go in the package.
       rm -rf /etc/arvados/
