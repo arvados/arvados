@@ -636,19 +636,28 @@ describe('Collection panel tests', function () {
         const collName = `[Test collection (${Math.floor(999999 * Math.random())})]`;
         cy.get('[data-cy=form-dialog]')
             .should('contain', 'New collection')
+            .and('contain', 'Storage classes')
+            .and('contain', 'default')
+            .and('contain', 'foo')
+            .and('contain', 'bar')
             .within(() => {
                 cy.get('[data-cy=parent-field]').within(() => {
                     cy.get('input').should('have.value', 'Home project');
-                })
+                });
                 cy.get('[data-cy=name-field]').within(() => {
                     cy.get('input').type(collName);
-                })
+                });
+                cy.get('[data-cy=checkbox-foo]').click();
             })
         cy.get('[data-cy=form-submit-btn]').click();
         // Confirm that the user was taken to the newly created thing
         cy.get('[data-cy=form-dialog]').should('not.exist');
         cy.get('[data-cy=breadcrumb-first]').should('contain', 'Projects');
         cy.get('[data-cy=breadcrumb-last]').should('contain', collName);
+        cy.get('[data-cy=collection-info-panel]')
+            .should('contain', 'default')
+            .and('contain', 'foo')
+            .and('not.contain', 'bar');
     });
 
     it('shows responsible person for collection if available', () => {
