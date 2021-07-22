@@ -265,12 +265,16 @@ func (s *ServerRequiredSuite) TestDesiredReplicas(c *C) {
 	content := []byte("TestDesiredReplicas")
 	hash := fmt.Sprintf("%x", md5.Sum(content))
 
-	for _, kc.Want_replicas = range []int{0, 1, 2} {
+	for _, kc.Want_replicas = range []int{0, 1, 2, 3} {
 		locator, rep, err := kc.PutB(content)
-		c.Check(err, Equals, nil)
-		c.Check(rep, Equals, kc.Want_replicas)
-		if rep > 0 {
-			c.Check(locator, Matches, fmt.Sprintf(`^%s\+%d(\+.+)?$`, hash, len(content)))
+		if kc.Want_replicas < 3 {
+			c.Check(err, Equals, nil)
+			c.Check(rep, Equals, kc.Want_replicas)
+			if rep > 0 {
+				c.Check(locator, Matches, fmt.Sprintf(`^%s\+%d(\+.+)?$`, hash, len(content)))
+			}
+		} else {
+			c.Check(err, ErrorMatches, ".*503.*")
 		}
 	}
 }
