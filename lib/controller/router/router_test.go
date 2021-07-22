@@ -370,35 +370,6 @@ func (s *RouterIntegrationSuite) TestHEAD(c *check.C) {
 	c.Check(rr.Code, check.Equals, http.StatusOK)
 }
 
-func (s *RouterIntegrationSuite) TestRequestIDHeader(c *check.C) {
-	token := arvadostest.ActiveTokenV2
-	req := (&testReq{
-		method: "GET",
-		path:   "arvados/v1/collections/" + arvadostest.FooCollection,
-		token:  token,
-	}).Request()
-	rr := httptest.NewRecorder()
-	s.rtr.ServeHTTP(rr, req)
-	c.Check(rr.Code, check.Equals, http.StatusOK)
-	c.Check(rr.Result().Header.Get("X-Request-Id"), check.Matches, "^req-[0-9a-zA-Z]{20}$")
-}
-
-func (s *RouterIntegrationSuite) TestRequestIDHeaderProvidedByClient(c *check.C) {
-	token := arvadostest.ActiveTokenV2
-	req := (&testReq{
-		method: "GET",
-		path:   "arvados/v1/collections/" + arvadostest.FooCollection,
-		token:  token,
-		header: http.Header{
-			"X-Request-Id": []string{"abcdeG"},
-		},
-	}).Request()
-	rr := httptest.NewRecorder()
-	s.rtr.ServeHTTP(rr, req)
-	c.Check(rr.Code, check.Equals, http.StatusOK)
-	c.Check(rr.Result().Header.Get("X-Request-Id"), check.Equals, "abcdeG")
-}
-
 func (s *RouterIntegrationSuite) TestRouteNotFound(c *check.C) {
 	token := arvadostest.ActiveTokenV2
 	req := (&testReq{

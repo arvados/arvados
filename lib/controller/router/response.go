@@ -57,7 +57,7 @@ func applySelectParam(selectParam []string, orig map[string]interface{}) map[str
 	return selected
 }
 
-func (rtr *router) sendResponse(w http.ResponseWriter, req *http.Request, resp interface{}, opts responseOptions, reqId string) {
+func (rtr *router) sendResponse(w http.ResponseWriter, req *http.Request, resp interface{}, opts responseOptions) {
 	var tmp map[string]interface{}
 
 	if resp, ok := resp.(http.Handler); ok {
@@ -67,7 +67,7 @@ func (rtr *router) sendResponse(w http.ResponseWriter, req *http.Request, resp i
 		return
 	}
 
-	w.Header().Set("X-Request-Id", reqId)
+	w.Header().Set("X-Request-Id", req.Header.Get("X-Request-Id"))
 	err := rtr.transcode(resp, &tmp)
 	if err != nil {
 		rtr.sendError(w, err)

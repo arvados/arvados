@@ -432,6 +432,42 @@ func (s *IntegrationSuite) TestCreateContainerRequestWithBadToken(c *check.C) {
 	}
 }
 
+func (s *IntegrationSuite) TestRequestIDHeader(c *check.C) {
+	conn1 := s.testClusters["z1111"].Conn()
+	rootctx1, _, _ := s.testClusters["z1111"].RootClients()
+	_, ac1, _, _ := s.testClusters["z1111"].UserClients(rootctx1, c, conn1, "user@example.com", true)
+
+	tests := []struct {
+		path          string
+		reqIdProvided bool
+	}{
+		{"/arvados/v1/container_requests", false},
+		{"/arvados/v1/container_requests", true},
+		{"/arvados/v1/links", false},
+		{"/arvados/v1/links", true},
+	}
+
+	for _, tt := range tests {
+		c.Log(c.TestName() + " " + tt.path)
+		req, err := http.NewRequest("GET", "https://"+ac1.APIHost+tt.path, nil)
+		c.Assert(err, check.IsNil)
+		customReqId := "abcdeG"
+		if !tt.reqIdProvided {
+			c.Assert(req.Header.Get("X-Request-Id"), check.Equals, "")
+		} else {
+			req.Header.Set("X-Request-Id", customReqId)
+		}
+		resp, err := ac1.Do(req)
+		c.Assert(err, check.IsNil)
+		c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+		if !tt.reqIdProvided {
+			c.Check(resp.Header.Get("X-Request-Id"), check.Matches, "^req-[0-9a-zA-Z]{20}$")
+		} else {
+			c.Check(resp.Header.Get("X-Request-Id"), check.Equals, customReqId)
+		}
+	}
+}
+
 // We test the direct access to the database
 // normally an integration test would not have a database access, but  in this case we need
 // to test tokens that are secret, so there is no API response that will give them back

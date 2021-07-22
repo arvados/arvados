@@ -505,12 +505,7 @@ func (rtr *router) addRoute(endpoint arvados.APIEndpoint, defaultOpts func() int
 			}
 		}
 		ctx := auth.NewContext(req.Context(), creds)
-		var reqId string
-		if reqId = req.Header.Get("X-Request-Id"); reqId == "" {
-			reqIDGen := httpserver.IDGenerator{Prefix: "req-"}
-			reqId = reqIDGen.Next()
-		}
-		ctx = arvados.ContextWithRequestID(ctx, reqId)
+		ctx = arvados.ContextWithRequestID(ctx, req.Header.Get("X-Request-Id"))
 		logger.WithFields(logrus.Fields{
 			"apiEndpoint": endpoint,
 			"apiOptsType": fmt.Sprintf("%T", opts),
@@ -522,7 +517,7 @@ func (rtr *router) addRoute(endpoint arvados.APIEndpoint, defaultOpts func() int
 			rtr.sendError(w, err)
 			return
 		}
-		rtr.sendResponse(w, req, resp, respOpts, reqId)
+		rtr.sendResponse(w, req, resp, respOpts)
 	})
 }
 
