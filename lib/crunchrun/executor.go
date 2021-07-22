@@ -34,13 +34,10 @@ type containerSpec struct {
 // containerExecutor is an interface to a container runtime
 // (docker/singularity).
 type containerExecutor interface {
-	// ImageLoaded determines whether the given image is already
-	// available to use without calling ImageLoad.
-	ImageLoaded(imageID string) bool
-
 	// ImageLoad loads the image from the given tarball such that
 	// it can be used to create/start a container.
-	LoadImage(filename string) error
+	LoadImage(imageID string, container arvados.Container, keepMount string,
+		containerClient *arvados.Client, keepClient IKeepClient) error
 
 	// Wait for the container process to finish, and return its
 	// exit code. If applicable, also remove the stopped container
@@ -61,7 +58,4 @@ type containerExecutor interface {
 
 	// Release resources (temp dirs, stopped containers)
 	Close()
-
-	// Give the executor access to arvados client & container info
-	SetArvadoClient(containerClient *arvados.Client, keepClient IKeepClient, container arvados.Container, keepMount string)
 }

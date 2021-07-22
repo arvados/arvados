@@ -6,28 +6,23 @@ package crunchrun
 
 import (
 	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"sort"
-	"strings"
 	"syscall"
+	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"golang.org/x/net/context"
 )
 
 type singularityExecutor struct {
-	logf            func(string, ...interface{})
-	spec            containerSpec
-	tmpdir          string
-	child           *exec.Cmd
-	imageFilename   string // "sif" image
-	containerClient *arvados.Client
-	container       arvados.Container
-	keepClient      IKeepClient
-	keepMount       string
+	logf          func(string, ...interface{})
+	spec          containerSpec
+	tmpdir        string
+	child         *exec.Cmd
+	imageFilename string // "sif" image
 }
 
 func newSingularityExecutor(logf func(string, ...interface{})) (*singularityExecutor, error) {
@@ -41,9 +36,9 @@ func newSingularityExecutor(logf func(string, ...interface{})) (*singularityExec
 	}, nil
 }
 
-func (e *singularityExecutor) getOrCreateProject(ownerUuid string, name string, create bool) (*arvados.Group, error) {
+func (e *singularityExecutor) getOrCreateProject(ownerUuid string, name string, containerClient *arvados.Client) (*arvados.Group, error) {
 	var gp arvados.GroupList
-	err := e.containerClient.RequestAndDecode(&gp,
+	err := containerClient.RequestAndDecode(&gp,
 		arvados.EndpointGroupList.Method,
 		arvados.EndpointGroupList.Path,
 		nil, arvados.ListOptions{Filters: []arvados.Filter{
@@ -58,11 +53,9 @@ func (e *singularityExecutor) getOrCreateProject(ownerUuid string, name string, 
 	if len(gp.Items) == 1 {
 		return &gp.Items[0], nil
 	}
-	if !create {
-		return nil, nil
-	}
+
 	var rgroup arvados.Group
-	err = e.containerClient.RequestAndDecode(&rgroup,
+	err = containerClient.RequestAndDecode(&rgroup,
 		arvados.EndpointGroupCreate.Method,
 		arvados.EndpointGroupCreate.Path,
 		nil, map[string]interface{}{
@@ -78,28 +71,22 @@ func (e *singularityExecutor) getOrCreateProject(ownerUuid string, name string, 
 	return &rgroup, nil
 }
 
-func (e *singularityExecutor) ImageLoaded(imageId string) bool {
-	if e.containerClient == nil {
-		return false
-	}
-
-	// Check if docker image is cached in keep & if so set imageFilename
+func (e *singularityExecutor) checkImageCache(dockerImageID string, container arvados.Container, arvMountPoint string,
+	containerClient *arvados.Client, keepClient IKeepClient) (collectionUuid string, err error) {
 
 	// Cache the image to keep
-	cacheGroup, err := e.getOrCreateProject(e.container.RuntimeUserUUID, ".cache", false)
+	cacheGroup, err := e.getOrCreateProject(container.RuntimeUserUUID, ".cache", containerClient)
 	if err != nil {
-		e.logf("error getting '.cache' project: %v", err)
-		return false
+		return "", fmt.Errorf("error getting '.cache' project: %v", err)
 	}
-	imageGroup, err := e.getOrCreateProject(cacheGroup.UUID, "auto-generated singularity images", false)
+	imageGroup, err := e.getOrCreateProject(cacheGroup.UUID, "auto-generated singularity images", containerClient)
 	if err != nil {
-		e.logf("error getting 'auto-generated singularity images' project: %s", err)
-		return false
+		return "", fmt.Errorf("error getting 'auto-generated singularity images' project: %s", err)
 	}
 
-	collectionName := fmt.Sprintf("singularity image for %v", imageId)
+	collectionName := fmt.Sprintf("singularity image for %v", dockerImageID)
 	var cl arvados.CollectionList
-	err = e.containerClient.RequestAndDecode(&cl,
+	err = containerClient.RequestAndDecode(&cl,
 		arvados.EndpointCollectionList.Method,
 		arvados.EndpointCollectionList.Path,
 		nil, arvados.ListOptions{Filters: []arvados.Filter{
@@ -108,125 +95,99 @@ func (e *singularityExecutor) ImageLoaded(imageId string) bool {
 		},
 			Limit: 1})
 	if err != nil {
-		e.logf("error getting collection '%v' project: %v", err)
-		return false
+		return "", fmt.Errorf("error querying for collection '%v': %v", err)
 	}
-	if len(cl.Items) == 0 {
-		e.logf("no cached image '%v' found", collectionName)
-		return false
+	var imageCollection arvados.Collection
+	if len(cl.Items) == 1 {
+		imageCollection = cl.Items[0]
+	} else {
+		collectionName := collectionName + " " + time.Now().UTC().Format(time.RFC3339)
+
+		err = containerClient.RequestAndDecode(&imageCollection,
+			arvados.EndpointCollectionCreate.Method,
+			arvados.EndpointCollectionCreate.Path,
+			nil, map[string]interface{}{
+				"collection": map[string]string{
+					"owner_uuid": imageGroup.UUID,
+					"name":       collectionName,
+				},
+			})
+		if err != nil {
+			e.logf("error creating '%v' collection: %s", collectionName, err)
+		}
+
 	}
 
-	path := fmt.Sprintf("%s/by_id/%s/image.sif", e.keepMount, cl.Items[0].PortableDataHash)
-	e.logf("Looking for %v", path)
-	if _, err = os.Stat(path); os.IsNotExist(err) {
-		return false
-	}
-	e.imageFilename = path
-
-	return true
+	return imageCollection.UUID, nil
 }
 
 // LoadImage will satisfy ContainerExecuter interface transforming
 // containerImage into a sif file for later use.
-func (e *singularityExecutor) LoadImage(imageTarballPath string) error {
-	if e.imageFilename != "" {
-		e.logf("using singularity image %v", e.imageFilename)
+func (e *singularityExecutor) LoadImage(dockerImageID string, container arvados.Container, arvMountPoint string,
+	containerClient *arvados.Client, keepClient IKeepClient) error {
 
-		// was set by ImageLoaded
-		return nil
-	}
-
-	e.logf("building singularity image")
-	// "singularity build" does not accept a
-	// docker-archive://... filename containing a ":" character,
-	// as in "/path/to/sha256:abcd...1234.tar". Workaround: make a
-	// symlink that doesn't have ":" chars.
-	err := os.Symlink(imageTarballPath, e.tmpdir+"/image.tar")
-	if err != nil {
-		return err
-	}
-	e.imageFilename = e.tmpdir + "/image.sif"
-	build := exec.Command("singularity", "build", e.imageFilename, "docker-archive://"+e.tmpdir+"/image.tar")
-	e.logf("%v", build.Args)
-	out, err := build.CombinedOutput()
-	// INFO:    Starting build...
-	// Getting image source signatures
-	// Copying blob ab15617702de done
-	// Copying config 651e02b8a2 done
-	// Writing manifest to image destination
-	// Storing signatures
-	// 2021/04/22 14:42:14  info unpack layer: sha256:21cbfd3a344c52b197b9fa36091e66d9cbe52232703ff78d44734f85abb7ccd3
-	// INFO:    Creating SIF file...
-	// INFO:    Build complete: arvados-jobs.latest.sif
-	e.logf("%s", out)
+	sifCollectionUUID, err := e.checkImageCache(dockerImageID, container, arvMountPoint, containerClient, keepClient)
 	if err != nil {
 		return err
 	}
 
-	if e.containerClient == nil {
+	imageTarballPath := arvMountPoint + "/by_id/" + container.ContainerImage + "/" + dockerImageID + ".tar"
+
+	imageFilename := fmt.Sprintf("%s/by_uuid/%s/image.sif", arvMountPoint, sifCollectionUUID)
+
+	if _, err = os.Stat(imageFilename); os.IsNotExist(err) {
+		exec.Command("find", arvMountPoint+"/by_id/").Run()
+
+		e.logf("building singularity image")
+		// "singularity build" does not accept a
+		// docker-archive://... filename containing a ":" character,
+		// as in "/path/to/sha256:abcd...1234.tar". Workaround: make a
+		// symlink that doesn't have ":" chars.
+		err := os.Symlink(imageTarballPath, e.tmpdir+"/image.tar")
+		if err != nil {
+			return err
+		}
+
+		build := exec.Command("singularity", "build", imageFilename, "docker-archive://"+e.tmpdir+"/image.tar")
+		e.logf("%v", build.Args)
+		out, err := build.CombinedOutput()
+		// INFO:    Starting build...
+		// Getting image source signatures
+		// Copying blob ab15617702de done
+		// Copying config 651e02b8a2 done
+		// Writing manifest to image destination
+		// Storing signatures
+		// 2021/04/22 14:42:14  info unpack layer: sha256:21cbfd3a344c52b197b9fa36091e66d9cbe52232703ff78d44734f85abb7ccd3
+		// INFO:    Creating SIF file...
+		// INFO:    Build complete: arvados-jobs.latest.sif
+		e.logf("%s", out)
+		if err != nil {
+			return err
+		}
+	}
+
+	// update TTL to now + two weeks
+	exp := time.Now().Add(24 * 7 * 2 * time.Hour)
+
+	uuidPath, err := containerClient.PathForUUID("update", sifCollectionUUID)
+	if err != nil {
+		e.logf("error PathForUUID: %v", err)
 		return nil
 	}
-
-	// Cache the image to keep
-	cacheGroup, err := e.getOrCreateProject(e.container.RuntimeUserUUID, ".cache", true)
-	if err != nil {
-		e.logf("error getting '.cache' project: %v", err)
-		return nil
-	}
-	imageGroup, err := e.getOrCreateProject(cacheGroup.UUID, "auto-generated singularity images", true)
-	if err != nil {
-		e.logf("error getting 'auto-generated singularity images' project: %v", err)
-		return nil
-	}
-
-	parts := strings.Split(imageTarballPath, "/")
-	imageId := parts[len(parts)-1]
-	if strings.HasSuffix(imageId, ".tar") {
-		imageId = imageId[0 : len(imageId)-4]
-	}
-
-	fs, err := (&arvados.Collection{ManifestText: ""}).FileSystem(e.containerClient, e.keepClient)
-	if err != nil {
-		e.logf("error creating FileSystem: %s", err)
-	}
-
-	dst, err := fs.OpenFile("image.sif", os.O_CREATE|os.O_WRONLY, 0666)
-	if err != nil {
-		e.logf("error creating opening collection file for writing: %s", err)
-	}
-
-	src, err := os.Open(e.imageFilename)
-	if err != nil {
-		dst.Close()
-		return nil
-	}
-	defer src.Close()
-	_, err = io.Copy(dst, src)
-	if err != nil {
-		dst.Close()
-		return nil
-	}
-
-	manifestText, err := fs.MarshalManifest(".")
-	if err != nil {
-		e.logf("error creating manifest text: %s", err)
-	}
-
 	var imageCollection arvados.Collection
-	collectionName := fmt.Sprintf("singularity image for %s", imageId)
-	err = e.containerClient.RequestAndDecode(&imageCollection,
-		arvados.EndpointCollectionCreate.Method,
-		arvados.EndpointCollectionCreate.Path,
+	err = containerClient.RequestAndDecode(&imageCollection,
+		arvados.EndpointCollectionUpdate.Method,
+		uuidPath,
 		nil, map[string]interface{}{
 			"collection": map[string]string{
-				"owner_uuid":    imageGroup.UUID,
-				"name":          collectionName,
-				"manifest_text": manifestText,
+				"name":     fmt.Sprintf("singularity image for %v", dockerImageID),
+				"trash_at": exp.UTC().Format(time.RFC3339),
 			},
 		})
 	if err != nil {
-		e.logf("error creating '%v' collection: %s", collectionName, err)
+		e.logf("error updating collection trash_at: %v", err)
 	}
+	e.imageFilename = fmt.Sprintf("%s/by_id/%s/image.sif", arvMountPoint, imageCollection.PortableDataHash)
 
 	return nil
 }
@@ -320,11 +281,4 @@ func (e *singularityExecutor) Close() {
 	if err != nil {
 		e.logf("error removing temp dir: %s", err)
 	}
-}
-
-func (e *singularityExecutor) SetArvadoClient(containerClient *arvados.Client, keepClient IKeepClient, container arvados.Container, keepMount string) {
-	e.containerClient = containerClient
-	e.container = container
-	e.keepClient = keepClient
-	e.keepMount = keepMount
 }

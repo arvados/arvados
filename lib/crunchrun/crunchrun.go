@@ -260,18 +260,15 @@ func (runner *ContainerRunner) LoadImage() (string, error) {
 		return "", fmt.Errorf("cannot choose from multiple tar files in image collection: %v", tarfiles)
 	}
 	imageID := tarfiles[0][:len(tarfiles[0])-4]
-	imageFile := runner.ArvMountPoint + "/by_id/" + runner.Container.ContainerImage + "/" + tarfiles[0]
 	runner.CrunchLog.Printf("Using Docker image id %q", imageID)
 
-	if !runner.executor.ImageLoaded(imageID) {
-		runner.CrunchLog.Print("Loading Docker image from keep")
-		err = runner.executor.LoadImage(imageFile)
-		if err != nil {
-			return "", err
-		}
-	} else {
-		runner.CrunchLog.Print("Container image is available")
+	runner.CrunchLog.Print("Loading Docker image from keep")
+	err = runner.executor.LoadImage(imageID, runner.Container, runner.ArvMountPoint,
+		runner.containerClient, runner.ContainerKeepClient)
+	if err != nil {
+		return "", err
 	}
+
 	return imageID, nil
 }
 
@@ -599,6 +596,7 @@ func (runner *ContainerRunner) SetupMounts() (map[string]bindmount, error) {
 	} else {
 		arvMountCmd = append(arvMountCmd, "--mount-by-id", "by_id")
 	}
+	arvMountCmd = append(arvMountCmd, "--mount-by-id", "by_uuid")
 	arvMountCmd = append(arvMountCmd, runner.ArvMountPoint)
 
 	runner.ArvMount, err = runner.RunArvMount(arvMountCmd, token)
@@ -1201,12 +1199,14 @@ func (runner *ContainerRunner) CleanupDirs() {
 				}
 			}
 		}
+		runner.ArvMount = nil
 	}
 
 	if runner.ArvMountPoint != "" {
 		if rmerr := os.Remove(runner.ArvMountPoint); rmerr != nil {
 			runner.CrunchLog.Printf("While cleaning up arv-mount directory %s: %v", runner.ArvMountPoint, rmerr)
 		}
+		runner.ArvMountPoint = ""
 	}
 
 	if rmerr := os.RemoveAll(runner.parentTemp); rmerr != nil {
@@ -1441,6 +1441,7 @@ func (runner *ContainerRunner) Run() (err error) {
 		}
 		checkErr("stopHoststat", runner.stopHoststat())
 		checkErr("CommitLogs", runner.CommitLogs())
+		runner.CleanupDirs()
 		checkErr("UpdateContainerFinal", runner.UpdateContainerFinal())
 	}()
 
@@ -1457,10 +1458,6 @@ func (runner *ContainerRunner) Run() (err error) {
 		err = fmt.Errorf("While setting up mounts: %v", err)
 		return
 	}
-
-	// Communicate some additional configuration to the executor
-	runner.executor.SetArvadoClient(runner.containerClient, runner.ContainerKeepClient,
-		runner.Container, runner.ArvMountPoint)
 
 	// check for and/or load image
 	imageID, err := runner.LoadImage()

@@ -46,12 +46,16 @@ func newDockerExecutor(containerUUID string, logf func(string, ...interface{}), 
 	}, err
 }
 
-func (e *dockerExecutor) ImageLoaded(imageID string) bool {
+func (e *dockerExecutor) LoadImage(imageID string, container arvados.Container, arvMountPoint string,
+	containerClient *arvados.Client, keepClient IKeepClient) error {
 	_, _, err := e.dockerclient.ImageInspectWithRaw(context.TODO(), imageID)
-	return err == nil
-}
+	if err == nil {
+		// already loaded
+		return nil
+	}
 
-func (e *dockerExecutor) LoadImage(filename string) error {
+	filename := arvMountPoint + "/by_id/" + container.ContainerImage + "/" + imageID + ".tar"
+
 	f, err := os.Open(filename)
 	if err != nil {
 		return err
@@ -252,7 +256,4 @@ func (e *dockerExecutor) handleStdoutStderr(stdout, stderr io.Writer, reader io.
 
 func (e *dockerExecutor) Close() {
 	e.dockerclient.ContainerRemove(context.TODO(), e.containerID, dockertypes.ContainerRemoveOptions{Force: true})
-}
-
-func (e *dockerExecutor) SetArvadoClient(containerClient *arvados.Client, keepClient IKeepClient, container arvados.Container, keepMount string) {
 }
