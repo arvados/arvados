@@ -1028,6 +1028,10 @@ Clusters:
 
         # Use sudo to switch to this user account when submitting LSF
         # jobs.
+        #
+        # This account must exist on the hosts where LSF jobs run
+        # ("execution hosts"), as well as on the host where the
+        # Arvados LSF dispatcher runs ("submission host").
         BsubSudoUser: "crunch"
 
       JobsAPI:

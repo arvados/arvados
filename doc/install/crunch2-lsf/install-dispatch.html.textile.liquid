@@ -35,7 +35,7 @@ Review the following configuration parameters and adjust as needed.
 
 h3(#BsubSudoUser). Containers.LSF.BsubSudoUser
 
-arvados-dispatch-lsf uses @sudo@ to execute @bsub@, for example @sudo -E -u crunch bsub [...]@. To use a user account other than @crunch@, configure @BsubSudoUser@:
+arvados-dispatch-lsf uses @sudo@ to execute @bsub@, for example @sudo -E -u crunch bsub [...]@. This means the @crunch@ account must exist on the hosts where LSF jobs run ("execution hosts"), as well as on the host where you are installing the Arvados LSF dispatcher (the "submission host"). To use a user account other than @crunch@, configure @BsubSudoUser@:
 
 <notextile>
 <pre>    Containers:
