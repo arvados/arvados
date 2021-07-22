@@ -60,6 +60,7 @@ export const CollectionPickerField = (props: PickerIdProp) =>
 
 interface StorageClassesProps {
     items: string[];
+    defaultClasses?: string[];
 }
 
 export const CollectionStorageClassesField = connect(
@@ -74,6 +75,7 @@ export const CollectionStorageClassesField = connect(
             label='Storage classes'
             minSelection={1}
             rowLayout={true}
+            defaultValues={props.defaultClasses}
             helperText='At least one class should be selected'
             component={MultiCheckboxField}
             items={props.items} />);

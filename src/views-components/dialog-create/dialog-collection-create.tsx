@@ -7,7 +7,11 @@ import { InjectedFormProps, Field } from 'redux-form';
 import { WithDialogProps } from 'store/dialog/with-dialog';
 import { CollectionCreateFormDialogData } from 'store/collections/collection-create-actions';
 import { FormDialog } from 'components/form-dialog/form-dialog';
-import { CollectionNameField, CollectionDescriptionField } from 'views-components/form-fields/collection-form-fields';
+import {
+    CollectionNameField,
+    CollectionDescriptionField,
+    CollectionStorageClassesField
+} from 'views-components/form-fields/collection-form-fields';
 import { FileUploaderField } from '../file-uploader/file-uploader';
 import { ResourceParentField } from '../form-fields/resource-form-fields';
 
@@ -25,6 +29,7 @@ const CollectionAddFields = () => <span>
     <ResourceParentField />
     <CollectionNameField />
     <CollectionDescriptionField />
+    <CollectionStorageClassesField defaultClasses={['default']} />
     <Field
         name='files'
         label='Files'

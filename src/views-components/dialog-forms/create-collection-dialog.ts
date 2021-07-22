@@ -17,7 +17,7 @@ export const CreateCollectionDialog = compose(
         onSubmit: (data, dispatch) => {
             // Somehow an extra field called 'files' gets added, copy
             // the data object to get rid of it.
-            dispatch(createCollection({ ownerUuid: data.ownerUuid, name: data.name, description: data.description }));
+            dispatch(createCollection({ ownerUuid: data.ownerUuid, name: data.name, description: data.description, storageClassesDesired: data.storageClassesDesired }));
         }
     })
 )(DialogCollectionCreate);
