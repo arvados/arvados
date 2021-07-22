@@ -36,8 +36,8 @@ type containerSpec struct {
 type containerExecutor interface {
 	// ImageLoad loads the image from the given tarball such that
 	// it can be used to create/start a container.
-	LoadImage(imageID string, container arvados.Container, keepMount string,
-		containerClient *arvados.Client, keepClient IKeepClient) error
+	LoadImage(imageID string, imageTarballPath string, container arvados.Container, keepMount string,
+		containerClient *arvados.Client) error
 
 	// Wait for the container process to finish, and return its
 	// exit code. If applicable, also remove the stopped container

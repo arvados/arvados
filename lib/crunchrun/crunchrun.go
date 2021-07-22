@@ -260,11 +260,12 @@ func (runner *ContainerRunner) LoadImage() (string, error) {
 		return "", fmt.Errorf("cannot choose from multiple tar files in image collection: %v", tarfiles)
 	}
 	imageID := tarfiles[0][:len(tarfiles[0])-4]
+	imageTarballPath := runner.ArvMountPoint + "/by_id/" + runner.Container.ContainerImage + "/" + imageID + ".tar"
 	runner.CrunchLog.Printf("Using Docker image id %q", imageID)
 
 	runner.CrunchLog.Print("Loading Docker image from keep")
-	err = runner.executor.LoadImage(imageID, runner.Container, runner.ArvMountPoint,
-		runner.containerClient, runner.ContainerKeepClient)
+	err = runner.executor.LoadImage(imageID, imageTarballPath, runner.Container, runner.ArvMountPoint,
+		runner.containerClient)
 	if err != nil {
 		return "", err
 	}

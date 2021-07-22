@@ -112,8 +112,11 @@ type stubExecutor struct {
 	exit        chan int
 }
 
-func (e *stubExecutor) ImageLoaded(imageID string) bool { return e.imageLoaded }
-func (e *stubExecutor) LoadImage(filename string) error { e.loaded = filename; return e.loadErr }
+func (e *stubExecutor) LoadImage(imageId string, tarball string, container arvados.Container, keepMount string,
+	containerClient *arvados.Client) error {
+	e.loaded = tarball
+	return e.loadErr
+}
 func (e *stubExecutor) Create(spec containerSpec) error { e.created = spec; return e.createErr }
 func (e *stubExecutor) Start() error                    { e.exit = make(chan int, 1); go e.runFunc(); return e.startErr }
 func (e *stubExecutor) CgroupID() string                { return "cgroupid" }
@@ -121,8 +124,6 @@ func (e *stubExecutor) Stop() error                     { e.stopped = true; go f
 func (e *stubExecutor) Close()                          { e.closed = true }
 func (e *stubExecutor) Wait(context.Context) (int, error) {
 	return <-e.exit, e.waitErr
-}
-func (e *stubExecutor) SetArvadoClient(containerClient *arvados.Client, keepClient IKeepClient, container arvados.Container, keepMount string) {
 }
 
 const fakeInputCollectionPDH = "ffffffffaaaaaaaa88888888eeeeeeee+1234"

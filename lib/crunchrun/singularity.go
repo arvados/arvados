@@ -72,7 +72,7 @@ func (e *singularityExecutor) getOrCreateProject(ownerUuid string, name string, 
 }
 
 func (e *singularityExecutor) checkImageCache(dockerImageID string, container arvados.Container, arvMountPoint string,
-	containerClient *arvados.Client, keepClient IKeepClient) (collectionUuid string, err error) {
+	containerClient *arvados.Client) (collectionUuid string, err error) {
 
 	// Cache the image to keep
 	cacheGroup, err := e.getOrCreateProject(container.RuntimeUserUUID, ".cache", containerClient)
@@ -95,7 +95,7 @@ func (e *singularityExecutor) checkImageCache(dockerImageID string, container ar
 		},
 			Limit: 1})
 	if err != nil {
-		return "", fmt.Errorf("error querying for collection '%v': %v", err)
+		return "", fmt.Errorf("error querying for collection '%v': %v", collectionName, err)
 	}
 	var imageCollection arvados.Collection
 	if len(cl.Items) == 1 {
@@ -123,19 +123,22 @@ func (e *singularityExecutor) checkImageCache(dockerImageID string, container ar
 
 // LoadImage will satisfy ContainerExecuter interface transforming
 // containerImage into a sif file for later use.
-func (e *singularityExecutor) LoadImage(dockerImageID string, container arvados.Container, arvMountPoint string,
-	containerClient *arvados.Client, keepClient IKeepClient) error {
+func (e *singularityExecutor) LoadImage(dockerImageID string, imageTarballPath string, container arvados.Container, arvMountPoint string,
+	containerClient *arvados.Client) error {
 
-	sifCollectionUUID, err := e.checkImageCache(dockerImageID, container, arvMountPoint, containerClient, keepClient)
-	if err != nil {
-		return err
+	var sifCollectionUUID string
+	var imageFilename string
+	if containerClient != nil {
+		sifCollectionUUID, err := e.checkImageCache(dockerImageID, container, arvMountPoint, containerClient)
+		if err != nil {
+			return err
+		}
+		imageFilename = fmt.Sprintf("%s/by_uuid/%s/image.sif", arvMountPoint, sifCollectionUUID)
+	} else {
+		imageFilename = e.tmpdir + "/image.sif"
 	}
 
-	imageTarballPath := arvMountPoint + "/by_id/" + container.ContainerImage + "/" + dockerImageID + ".tar"
-
-	imageFilename := fmt.Sprintf("%s/by_uuid/%s/image.sif", arvMountPoint, sifCollectionUUID)
-
-	if _, err = os.Stat(imageFilename); os.IsNotExist(err) {
+	if _, err := os.Stat(imageFilename); os.IsNotExist(err) {
 		exec.Command("find", arvMountPoint+"/by_id/").Run()
 
 		e.logf("building singularity image")
@@ -164,6 +167,11 @@ func (e *singularityExecutor) LoadImage(dockerImageID string, container arvados.
 		if err != nil {
 			return err
 		}
+	}
+
+	if containerClient == nil {
+		e.imageFilename = imageFilename
+		return nil
 	}
 
 	// update TTL to now + two weeks
