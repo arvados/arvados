@@ -177,12 +177,19 @@ func (ctrl *oidcLoginController) getAuthInfo(ctx context.Context, token *oauth2.
 	} else if verified, _ := claims[ctrl.EmailVerifiedClaim].(bool); verified || ctrl.EmailVerifiedClaim == "" {
 		// Fall back to this info if the People API call
 		// (below) doesn't return a primary && verified email.
-		name, _ := claims["name"].(string)
-		if names := strings.Fields(strings.TrimSpace(name)); len(names) > 1 {
-			ret.FirstName = strings.Join(names[0:len(names)-1], " ")
-			ret.LastName = names[len(names)-1]
-		} else if len(names) > 0 {
-			ret.FirstName = names[0]
+		givenName, _ := claims["given_name"].(string)
+		familyName, _ := claims["family_name"].(string)
+		if givenName != "" && familyName != "" {
+			ret.FirstName = givenName
+			ret.LastName = familyName
+		} else {
+			name, _ := claims["name"].(string)
+			if names := strings.Fields(strings.TrimSpace(name)); len(names) > 1 {
+				ret.FirstName = strings.Join(names[0:len(names)-1], " ")
+				ret.LastName = names[len(names)-1]
+			} else if len(names) > 0 {
+				ret.FirstName = names[0]
+			}
 		}
 		ret.Email, _ = claims[ctrl.EmailClaim].(string)
 	}

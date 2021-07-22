@@ -18,7 +18,7 @@ There are two services involved in accessing data from outside the cluster.
 
 h2. Keepproxy Permissions
 
-Permitting @keeproxy@ makes it possible to use @arv-put@ and @arv-get@, and upload from Workbench 1.  It works in terms of individual 64 MiB keep blocks.  It prints a log each time a user uploads or downloads an individual block.
+Permitting @keeproxy@ makes it possible to use @arv-put@ and @arv-get@, and upload from Workbench 1.  It works in terms of individual 64 MiB keep blocks.  It prints a log line each time a user uploads or downloads an individual block. Those logs are usually stored by @journald@ or @syslog@.
 
 The default policy allows anyone to upload or download.
 
@@ -32,8 +32,6 @@ The default policy allows anyone to upload or download.
           Download: true
           Upload: true
 </pre>
-
-If you create a sharing link as an admin user, and then give someone the token from the sharing link to download a file using @arv-get@, because the downloader is anonymous, the download permission will be restricted based on the "User" role and not the "Admin" role.
 
 h2. WebDAV and S3 API Permissions
 
@@ -49,7 +47,7 @@ The default policy allows anyone to upload or download.
 
 <pre>
     Collections:
-      WebDAVPermisison:
+      WebDAVPermission:
         User:
           Download: true
           Upload: true
@@ -57,9 +55,11 @@ The default policy allows anyone to upload or download.
           Download: true
           Upload: true
       WebDAVLogEvents: true
-</pre>
+      </pre>
 
-If you create a sharing link as an admin user, and then give someone the token from the sharing link to download a file over HTTP (WebDAV or S3 API), because the downloader is anonymous, the download permission will be restricted based on the "User" role and not the "Admin" role.
+When a user or admin creates a sharing link, a custom scoped token is embedded in that link. This effectively allows anonymous user access to the associated data via that link. These custom scoped tokens are always treated as user tokens for the purposes of restricting download access, even when created by an admin user. In other words, these custom scoped tokens, when used in a sharing link, are always subject to the value of the @WebDAVPermission/User/Download@ configuration setting.
+
+If that custom scoped token is used with @arv-get@, its use will be subject to the value of the @KeepproxyPermission/User/Download@ configuration setting.
 
 h2. Shell node and container permissions
 
@@ -67,7 +67,7 @@ Be aware that even when upload and download from outside the network is not allo
 
 h2. Choosing a policy
 
-This distinction between WebDAV and Keepproxy is important for auditing.  WebDAV records 'upload' and 'download' events on the API server that are included in the "User Activity Report":user-activity.html ,  whereas @keepproxy@ only logs upload and download of individual blocks, which require a reverse lookup to determine the collection(s) and file(s) a block is associated with.
+This distinction between WebDAV and Keepproxy is important for auditing.  WebDAV records 'upload' and 'download' events on the API server that are included in the "User Activity Report":user-activity.html,  whereas @keepproxy@ only logs upload and download of individual blocks, which require a reverse lookup to determine the collection(s) and file(s) a block is associated with.
 
 You set separate permissions for @WebDAV@ and @Keepproxy@, with separate policies for regular users and admin users.
 
@@ -81,7 +81,7 @@ For ease of access auditing, this policy prevents downloads using @arv-get@.  Do
 
 <pre>
     Collections:
-      WebDAVPermisison:
+      WebDAVPermission:
         User:
           Download: true
           Upload: true
@@ -105,7 +105,7 @@ This policy prevents regular users (non-admin) from downloading data.  Uploading
 
 <pre>
     Collections:
-      WebDAVPermisison:
+      WebDAVPermission:
         User:
           Download: false
           Upload: true
@@ -129,7 +129,7 @@ This policy is suitable for an installation where data is being shared with a gr
 
 <pre>
     Collections:
-      WebDAVPermisison:
+      WebDAVPermission:
         User:
           Download: true
           Upload: false
@@ -146,3 +146,24 @@ This policy is suitable for an installation where data is being shared with a gr
           Upload: true
       WebDAVLogEvents: true
 </pre>
+
+
+h2. Accessing the audit log
+
+When @WebDAVLogEvents@ is enabled, uploads and downloads of files are logged in the Arvados audit log. These events are included in the "User Activity Report":user-activity.html. The audit log can also be accessed via the API, SDKs or command line. For example, to show the 100 most recent file downloads:
+
+<pre>
+arv log list --filters '[["event_type","=","file_download"]]' -o 'created_at desc' -l 100
+</pre>
+
+For uploads, use the @file_upload@ event type.
+
+Note that this only covers upload and download activity via WebDAV, S3, Workbench 1 (download only) and Workbench 2.
+
+File upload in Workbench 1 and the @arv-get@ and @arv-put@ tools use @Keepproxy@, which does not log activity to the audit log because it operates at the block level, not the file level. @Keepproxy@ records the uuid of the user that owns the token used in the request in its system logs. Those logs are usually stored by @journald@ or @syslog@. A typical log line for such a block download looks like this:
+
+<pre>
+Jul 20 15:03:38 workbench.xxxx1.arvadosapi.com keepproxy[63828]: {"level":"info","locator":"abcdefghijklmnopqrstuvwxyz012345+53251584","msg":"Block download","time":"2021-07-20T15:03:38.458792300Z","user_full_name":"Albert User","user_uuid":"ce8i5-tpzed-abcdefghijklmno"}
+</pre>
+
+It is possible to do a reverse lookup from the locator to find all matching collections: the @manifest_text@ field of a collection lists all the block locators that are part of the collection. The @manifest_text@ field also provides the relevant filename in the collection. Because this lookup is rather involved and there is no automated tool to do it, we recommend disabling @KeepproxyPermission/User/Download@ and @KeepproxyPermission/User/Upload@ for sites where the audit log is important and @arv-get@ and @arv-put@ are not essential.

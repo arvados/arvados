@@ -1,0 +1,30 @@
+#!/bin/bash
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
+exec 2>&1
+set -ex -o pipefail
+
+. /usr/local/lib/arvbox/common.sh
+. /usr/local/lib/arvbox/go-setup.sh
+
+flock /var/lib/gopath/gopath.lock go install "git.arvados.org/arvados.git/services/crunch-dispatch-local"
+install $GOPATH/bin/crunch-dispatch-local /usr/local/bin
+ln -sf arvados-server /usr/local/bin/crunch-run
+
+if test "$1" = "--only-deps" ; then
+    exit
+fi
+
+cat > /usr/local/bin/crunch-run.sh <<EOF
+#!/bin/sh
+exec /usr/local/bin/crunch-run -container-enable-networking=default -container-network-mode=host \$@
+EOF
+chmod +x /usr/local/bin/crunch-run.sh
+
+export ARVADOS_API_HOST=$localip:${services[controller-ssl]}
+export ARVADOS_API_HOST_INSECURE=1
+export ARVADOS_API_TOKEN=$(cat $ARVADOS_CONTAINER_PATH/superuser_token)
+
+exec /usr/local/bin/crunch-dispatch-local -crunch-run-command=/usr/local/bin/crunch-run.sh -poll-interval=1
