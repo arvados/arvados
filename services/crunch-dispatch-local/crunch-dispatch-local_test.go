@@ -81,9 +81,9 @@ func (s *TestSuite) TestIntegration(c *C) {
 		return cmd.Start()
 	}
 
-	dispatcher.RunContainer = func(d *dispatch.Dispatcher, c arvados.Container, s <-chan arvados.Container) {
-		(&LocalRun{startCmd, make(chan bool, 8), ctx}).run(d, c, s)
-		cancel()
+	dispatcher.RunContainer = func(d *dispatch.Dispatcher, c arvados.Container, s <-chan arvados.Container) error {
+		defer cancel()
+		return (&LocalRun{startCmd, make(chan bool, 8), ctx}).run(d, c, s)
 	}
 
 	err = dispatcher.Run(ctx)
@@ -184,9 +184,9 @@ func testWithServerStub(c *C, apiStubResponses map[string]arvadostest.StubRespon
 		return cmd.Start()
 	}
 
-	dispatcher.RunContainer = func(d *dispatch.Dispatcher, c arvados.Container, s <-chan arvados.Container) {
-		(&LocalRun{startCmd, make(chan bool, 8), ctx}).run(d, c, s)
-		cancel()
+	dispatcher.RunContainer = func(d *dispatch.Dispatcher, c arvados.Container, s <-chan arvados.Container) error {
+		defer cancel()
+		return (&LocalRun{startCmd, make(chan bool, 8), ctx}).run(d, c, s)
 	}
 
 	re := regexp.MustCompile(`(?ms).*` + expected + `.*`)

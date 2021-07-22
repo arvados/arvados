@@ -5,7 +5,6 @@
 package lsf
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -162,7 +161,7 @@ func (disp *dispatcher) init() {
 	}
 }
 
-func (disp *dispatcher) runContainer(_ *dispatch.Dispatcher, ctr arvados.Container, status <-chan arvados.Container) {
+func (disp *dispatcher) runContainer(_ *dispatch.Dispatcher, ctr arvados.Container, status <-chan arvados.Container) error {
 	ctx, cancel := context.WithCancel(disp.Context)
 	defer cancel()
 
@@ -173,38 +172,9 @@ func (disp *dispatcher) runContainer(_ *dispatch.Dispatcher, ctr arvados.Contain
 		cmd := []string{disp.Cluster.Containers.CrunchRunCommand}
 		cmd = append(cmd, "--runtime-engine="+disp.Cluster.Containers.RuntimeEngine)
 		cmd = append(cmd, disp.Cluster.Containers.CrunchRunArgumentsList...)
-		if err := disp.submit(ctr, cmd); err != nil {
-			var text string
-			switch err := err.(type) {
-			case dispatchcloud.ConstraintsNotSatisfiableError:
-				var logBuf bytes.Buffer
-				fmt.Fprintf(&logBuf, "cannot run container %s: %s\n", ctr.UUID, err)
-				if len(err.AvailableTypes) == 0 {
-					fmt.Fprint(&logBuf, "No instance types are configured.\n")
-				} else {
-					fmt.Fprint(&logBuf, "Available instance types:\n")
-					for _, t := range err.AvailableTypes {
-						fmt.Fprintf(&logBuf,
-							"Type %q: %d VCPUs, %d RAM, %d Scratch, %f Price\n",
-							t.Name, t.VCPUs, t.RAM, t.Scratch, t.Price,
-						)
-					}
-				}
-				text = logBuf.String()
-				disp.arvDispatcher.UpdateState(ctr.UUID, dispatch.Cancelled)
-			default:
-				text = fmt.Sprintf("Error submitting container %s to LSF: %s", ctr.UUID, err)
-			}
-			disp.logger.Print(text)
-
-			lr := arvadosclient.Dict{"log": arvadosclient.Dict{
-				"object_uuid": ctr.UUID,
-				"event_type":  "dispatch",
-				"properties":  map[string]string{"text": text}}}
-			disp.arvDispatcher.Arv.Create("logs", lr, nil)
-
-			disp.arvDispatcher.Unlock(ctr.UUID)
-			return
+		err := disp.submit(ctr, cmd)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -237,7 +207,7 @@ func (disp *dispatcher) runContainer(_ *dispatch.Dispatcher, ctr arvados.Contain
 			case dispatch.Locked:
 				disp.arvDispatcher.Unlock(ctr.UUID)
 			}
-			return
+			return nil
 		case updated, ok := <-status:
 			if !ok {
 				// status channel is closed, which is
@@ -273,6 +243,7 @@ func (disp *dispatcher) runContainer(_ *dispatch.Dispatcher, ctr arvados.Contain
 		}
 		<-ticker.C
 	}
+	return nil
 }
 
 func (disp *dispatcher) submit(container arvados.Container, crunchRunCommand []string) error {

@@ -140,7 +140,7 @@ type LocalRun struct {
 // crunch-run terminates, mark the container as Cancelled.
 func (lr *LocalRun) run(dispatcher *dispatch.Dispatcher,
 	container arvados.Container,
-	status <-chan arvados.Container) {
+	status <-chan arvados.Container) error {
 
 	uuid := container.UUID
 
@@ -150,7 +150,7 @@ func (lr *LocalRun) run(dispatcher *dispatch.Dispatcher,
 		case lr.concurrencyLimit <- true:
 			break
 		case <-lr.ctx.Done():
-			return
+			return lr.ctx.Err()
 		}
 
 		defer func() { <-lr.concurrencyLimit }()
@@ -241,4 +241,5 @@ Finish:
 	}
 
 	dispatcher.Logger.Printf("finalized container %v", uuid)
+	return nil
 }
