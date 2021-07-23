@@ -53,9 +53,11 @@ else
     arv api_client create --api-client "$apiclient"
 fi
 
-export HTTPS=false
 # Can't use "yarn start", need to run the dev server script
 # directly so that the TERM signal from "sv restart" gets to the
 # right process.
 export VERSION=$(./version-at-commit.sh)
-exec node node_modules/react-scripts-ts/scripts/start.js
+export BROWSER=none
+export CI=true
+node --version
+exec node node_modules/react-scripts/scripts/start.js

@@ -52,6 +52,14 @@ if test -z "$WORKBENCH2_ROOT" ; then
     WORKBENCH2_ROOT="$ARVBOX_DATA/workbench2"
 fi
 
+if test -z "$ARVADOS_BRANCH" ; then
+    ARVADOS_BRANCH=main
+fi
+
+if test -z "$WORKBENCH2_BRANCH" ; then
+    WORKBENCH2_BRANCH=main
+fi
+
 PG_DATA="$ARVBOX_DATA/postgres"
 VAR_DATA="$ARVBOX_DATA/var"
 PASSENGER="$ARVBOX_DATA/passenger"
@@ -61,7 +69,7 @@ NPMCACHE="$ARVBOX_DATA/npm"
 GOSTUFF="$ARVBOX_DATA/gopath"
 RLIBS="$ARVBOX_DATA/Rlibs"
 ARVADOS_CONTAINER_PATH="/var/lib/arvados-arvbox"
-GEM_HOME="/var/lib/arvados/lib/ruby/gems/2.5.0"
+GEM_HOME="/var/lib/arvados/lib/ruby/gems/2.7.0"
 
 getip() {
     docker inspect --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $ARVBOX_CONTAINER
@@ -241,14 +249,15 @@ run() {
 
         if ! test -d "$ARVADOS_ROOT" ; then
             git clone https://git.arvados.org/arvados.git "$ARVADOS_ROOT"
+	    git -C "$ARVADOS_ROOT" checkout $ARVADOS_BRANCH
         fi
         if ! test -d "$COMPOSER_ROOT" ; then
             git clone https://github.com/arvados/composer.git "$COMPOSER_ROOT"
             git -C "$COMPOSER_ROOT" checkout arvados-fork
-            git -C "$COMPOSER_ROOT" pull
         fi
         if ! test -d "$WORKBENCH2_ROOT" ; then
             git clone https://git.arvados.org/arvados-workbench2.git "$WORKBENCH2_ROOT"
+	    git -C "$ARVADOS_ROOT" checkout $WORKBENCH2_BRANCH
         fi
 
         if [[ "$CONFIG" = test ]] ; then
@@ -390,9 +399,24 @@ build() {
         BUILDTYPE=dev
     fi
 
-    docker build --build-arg=BUILDTYPE=$BUILDTYPE $NO_CACHE --build-arg=arvados_version=$GITHEAD --build-arg=workdir=/tools/arvbox/lib/arvbox/docker -t arvados/arvbox-base:$GITHEAD -f "$ARVBOX_DOCKER/Dockerfile.base" "$LOCAL_ARVADOS_ROOT"
+    if test "$ARVADOS_BRANCH" = "main" ; then
+	ARVADOS_BRANCH=$GITHEAD
+    fi
+
+    docker build --build-arg=BUILDTYPE=$BUILDTYPE $NO_CACHE \
+	   --build-arg=arvados_version=$ARVADOS_BRANCH \
+	   --build-arg=workbench2_version=$WORKBENCH2_BRANCH \
+	   --build-arg=workdir=/tools/arvbox/lib/arvbox/docker \
+	   -t arvados/arvbox-base:$GITHEAD \
+	   -f "$ARVBOX_DOCKER/Dockerfile.base" \
+	   "$LOCAL_ARVADOS_ROOT"
     docker tag $FORCE arvados/arvbox-base:$GITHEAD arvados/arvbox-base:latest
-    docker build $NO_CACHE -t arvados/arvbox-$BUILDTYPE:$GITHEAD -f "$ARVBOX_DOCKER/Dockerfile.$BUILDTYPE" "$ARVBOX_DOCKER"
+    docker build $NO_CACHE \
+	   --build-arg=arvados_version=$ARVADOS_BRANCH \
+	   --build-arg=workbench2_version=$WORKBENCH2_BRANCH \
+	   -t arvados/arvbox-$BUILDTYPE:$GITHEAD \
+	   -f "$ARVBOX_DOCKER/Dockerfile.$BUILDTYPE" \
+	   "$ARVBOX_DOCKER"
     docker tag $FORCE arvados/arvbox-$BUILDTYPE:$GITHEAD arvados/arvbox-$BUILDTYPE:latest
 }
 
@@ -566,7 +590,7 @@ case "$subcmd" in
         else
             echo "Usage: $0 $subcmd <start|stop|restart> <service>"
             echo "Available services:"
-            exec docker execa $ARVBOX_CONTAINER ls /etc/service
+            exec docker exec $ARVBOX_CONTAINER ls /etc/service
         fi
         ;;
 
@@ -623,7 +647,7 @@ sv stop keepproxy
 cd /usr/src/arvados/services/api
 export DISABLE_DATABASE_ENVIRONMENT_CHECK=1
 export RAILS_ENV=development
-flock $GEM_HOME/gems.lock bundle exec rake db:drop
+flock $GEM_HOME/gems.lock bin/bundle exec rake db:drop
 rm $ARVADOS_CONTAINER_PATH/api_database_setup
 rm $ARVADOS_CONTAINER_PATH/superuser_token
 sv start api

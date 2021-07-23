@@ -113,7 +113,6 @@ navbar:
       - api/requests.html.textile.liquid
       - api/methods.html.textile.liquid
       - api/resources.html.textile.liquid
-      - api/tokens_sso.html.textile.liquid
     - Permission and authentication:
       - api/methods/api_client_authorizations.html.textile.liquid
       - api/methods/api_clients.html.textile.liquid
@@ -162,6 +161,7 @@ navbar:
       - architecture/manifest-format.html.textile.liquid
     - Computation with Crunch:
       - api/execution.html.textile.liquid
+      - architecture/dispatchcloud.html.textile.liquid
     - Other:
       - api/permission-model.html.textile.liquid
       - architecture/federation.html.textile.liquid
@@ -189,6 +189,7 @@ navbar:
     - Data Management:
       - admin/collection-versioning.html.textile.liquid
       - admin/collection-managed-properties.html.textile.liquid
+      - admin/restricting-upload-download.html.textile.liquid
       - admin/keep-balance.html.textile.liquid
       - admin/controlling-container-reuse.html.textile.liquid
       - admin/logs-table-management.html.textile.liquid

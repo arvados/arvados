@@ -23,7 +23,7 @@ The legacy API server configuration is stored in @config/application.yml@ and @c
 Change to the API server directory and use the following commands:
 
 <pre>
-$ RAILS_ENV=production bundle exec rake config:migrate > config.yml
+$ RAILS_ENV=production bin/rake config:migrate > config.yml
 $ cp config.yml /etc/arvados/config.yml
 </pre>
 
@@ -32,7 +32,7 @@ This will print the contents of @config.yml@ after merging the legacy @applicati
 If you wish to update @config.yml@ configuration by hand, or check that everything has been migrated, use @config:diff@ to print configuration items that differ between @application.yml@ and the system @config.yml@.
 
 <pre>
-$ RAILS_ENV=production bundle exec rake config:diff
+$ RAILS_ENV=production bin/rake config:diff
 </pre>
 
 This command will also report if no migrations are required.
@@ -44,7 +44,7 @@ The legacy workbench configuration is stored in @config/application.yml@.  After
 Change to the workbench server directory and use the following commands:
 
 <pre>
-$ RAILS_ENV=production bundle exec rake config:migrate > config.yml
+$ RAILS_ENV=production bin/rake config:migrate > config.yml
 $ cp config.yml /etc/arvados/config.yml
 </pre>
 
@@ -53,7 +53,7 @@ This will print the contents of @config.yml@ after merging the legacy @applicati
 If you wish to update @config.yml@ configuration by hand, or check that everything has been migrated, use @config:diff@ to print configuration items that differ between @application.yml@ and the system @config.yml@.
 
 <pre>
-$ RAILS_ENV=production bundle exec rake config:diff
+$ RAILS_ENV=production bin/rake config:diff
 </pre>
 
 This command will also report if no migrations are required.

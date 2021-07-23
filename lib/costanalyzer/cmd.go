@@ -6,18 +6,24 @@ package costanalyzer
 
 import (
 	"io"
+	"time"
 
 	"git.arvados.org/arvados.git/lib/cmd"
-	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 )
 
-var Command command
+var Command = command{}
 
-type command struct{}
+type command struct {
+	uuids      arrayFlags
+	resultsDir string
+	cache      bool
+	begin      time.Time
+	end        time.Time
+}
 
 // RunCommand implements the subcommand "costanalyzer <collection> <collection> ..."
-func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+func (c command) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	var err error
 	logger := ctxlog.New(stderr, "text", "info")
 	logger.SetFormatter(cmd.NoPrefixFormatter{})
@@ -27,10 +33,7 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 		}
 	}()
 
-	loader := config.NewLoader(stdin, logger)
-	loader.SkipLegacy = true
-
-	exitcode, err := costanalyzer(prog, args, loader, logger, stdout, stderr)
+	exitcode, err := c.costAnalyzer(prog, args, logger, stdout, stderr)
 
 	return exitcode
 }

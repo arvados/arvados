@@ -1,1 +1,16 @@
-/usr/local/lib/arvbox/runsu.sh
+#!/bin/bash
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
+exec 2>&1
+set -ex -o pipefail
+
+# singularity can use suid
+chown root /var/lib/arvados/bin/singularity \
+      /var/lib/arvados/etc/singularity/singularity.conf \
+      /var/lib/arvados/etc/singularity/capability.json \
+      /var/lib/arvados/etc/singularity/ecl.toml
+chmod u+s /var/lib/arvados/bin/singularity
+
+exec /usr/local/lib/arvbox/runsu.sh $0-service $1

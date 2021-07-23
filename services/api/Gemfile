@@ -25,9 +25,6 @@ group :test, :development do
   gem 'listen'
 end
 
-# Fast app boot times
-gem 'bootsnap', require: false
-
 gem 'pg', '~> 1.0'
 
 gem 'multi_json'
@@ -46,10 +43,6 @@ gem 'passenger'
 
 # Locking to 5.10.3 to workaround issue in 5.11.1 (https://github.com/seattlerb/minitest/issues/730)
 gem 'minitest', '5.10.3'
-
-# Restricted because omniauth >= 1.5.0 requires Ruby >= 2.1.9:
-gem 'omniauth', '~> 1.4.0'
-gem 'omniauth-oauth2', '~> 1.1'
 
 gem 'andand'
 

@@ -471,7 +471,7 @@ def packed_workflow(arvrunner, tool, merged_map):
 
     def visit(v, cur_id):
         if isinstance(v, dict):
-            if v.get("class") in ("CommandLineTool", "Workflow"):
+            if v.get("class") in ("CommandLineTool", "Workflow", "ExpressionTool"):
                 if tool.metadata["cwlVersion"] == "v1.0" and "id" not in v:
                     raise SourceLine(v, None, Exception).makeError("Embedded process object is missing required 'id' field, add an 'id' or use to cwlVersion: v1.1")
                 if "id" in v:
@@ -479,10 +479,11 @@ def packed_workflow(arvrunner, tool, merged_map):
             if "path" in v and "location" not in v:
                 v["location"] = v["path"]
                 del v["path"]
-            if "location" in v and not v["location"].startswith("keep:"):
-                v["location"] = merged_map[cur_id].resolved[v["location"]]
-            if "location" in v and v["location"] in merged_map[cur_id].secondaryFiles:
-                v["secondaryFiles"] = merged_map[cur_id].secondaryFiles[v["location"]]
+            if "location" in v and cur_id in merged_map:
+                if v["location"] in merged_map[cur_id].resolved:
+                    v["location"] = merged_map[cur_id].resolved[v["location"]]
+                if v["location"] in merged_map[cur_id].secondaryFiles:
+                    v["secondaryFiles"] = merged_map[cur_id].secondaryFiles[v["location"]]
             if v.get("class") == "DockerRequirement":
                 v["http://arvados.org/cwl#dockerCollectionPDH"] = arvados_cwl.arvdocker.arv_docker_get_image(arvrunner.api, v, True,
                                                                                                              arvrunner.project_uuid,

@@ -6,6 +6,7 @@ package keepclient
 
 import (
 	"bytes"
+	"context"
 	"crypto/md5"
 	"errors"
 	"fmt"
@@ -20,6 +21,7 @@ import (
 	"testing"
 	"time"
 
+	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	. "gopkg.in/check.v1"
@@ -173,7 +175,7 @@ func (s *StandaloneSuite) TestUploadToStubKeepServer(c *C) {
 
 	UploadToStubHelper(c, st,
 		func(kc *KeepClient, url string, reader io.ReadCloser, writer io.WriteCloser, uploadStatusChan chan uploadStatus) {
-			go kc.uploadToKeepServer(url, st.expectPath, nil, reader, uploadStatusChan, int64(len("foo")), kc.getRequestID())
+			go kc.uploadToKeepServer(url, st.expectPath, nil, reader, uploadStatusChan, len("foo"), kc.getRequestID())
 
 			writer.Write([]byte("foo"))
 			writer.Close()
@@ -229,7 +231,7 @@ func (s *StandaloneSuite) TestUploadWithStorageClasses(c *C) {
 
 		UploadToStubHelper(c, st,
 			func(kc *KeepClient, url string, reader io.ReadCloser, writer io.WriteCloser, uploadStatusChan chan uploadStatus) {
-				go kc.uploadToKeepServer(url, st.expectPath, nil, reader, uploadStatusChan, int64(len("foo")), kc.getRequestID())
+				go kc.uploadToKeepServer(url, st.expectPath, nil, reader, uploadStatusChan, len("foo"), kc.getRequestID())
 
 				writer.Write([]byte("foo"))
 				writer.Close()
@@ -244,19 +246,25 @@ func (s *StandaloneSuite) TestUploadWithStorageClasses(c *C) {
 func (s *StandaloneSuite) TestPutWithStorageClasses(c *C) {
 	nServers := 5
 	for _, trial := range []struct {
-		replicas    int
-		classes     []string
-		minRequests int
-		maxRequests int
-		success     bool
+		replicas      int
+		clientClasses []string
+		putClasses    []string // putClasses takes precedence over clientClasses
+		minRequests   int
+		maxRequests   int
+		success       bool
 	}{
-		{1, []string{"class1"}, 1, 1, true},
-		{2, []string{"class1"}, 1, 2, true},
-		{3, []string{"class1"}, 2, 3, true},
-		{1, []string{"class1", "class2"}, 1, 1, true},
-		{nServers*2 + 1, []string{"class1"}, nServers, nServers, false},
-		{1, []string{"class404"}, nServers, nServers, false},
-		{1, []string{"class1", "class404"}, nServers, nServers, false},
+		{1, []string{"class1"}, nil, 1, 1, true},
+		{2, []string{"class1"}, nil, 1, 2, true},
+		{3, []string{"class1"}, nil, 2, 3, true},
+		{1, []string{"class1", "class2"}, nil, 1, 1, true},
+		{3, nil, []string{"class1"}, 2, 3, true},
+		{1, nil, []string{"class1", "class2"}, 1, 1, true},
+		{1, []string{"class404"}, []string{"class1", "class2"}, 1, 1, true},
+		{1, []string{"class1"}, []string{"class404", "class2"}, nServers, nServers, false},
+		{nServers*2 + 1, []string{"class1"}, nil, nServers, nServers, false},
+		{1, []string{"class404"}, nil, nServers, nServers, false},
+		{1, []string{"class1", "class404"}, nil, nServers, nServers, false},
+		{1, nil, []string{"class1", "class404"}, nServers, nServers, false},
 	} {
 		c.Logf("%+v", trial)
 		st := &StubPutHandler{
@@ -272,7 +280,7 @@ func (s *StandaloneSuite) TestPutWithStorageClasses(c *C) {
 		arv, _ := arvadosclient.MakeArvadosClient()
 		kc, _ := MakeKeepClient(arv)
 		kc.Want_replicas = trial.replicas
-		kc.StorageClasses = trial.classes
+		kc.StorageClasses = trial.clientClasses
 		arv.ApiToken = "abc123"
 		localRoots := make(map[string]string)
 		writableLocalRoots := make(map[string]string)
@@ -283,7 +291,10 @@ func (s *StandaloneSuite) TestPutWithStorageClasses(c *C) {
 		}
 		kc.SetServiceRoots(localRoots, writableLocalRoots, nil)
 
-		_, _, err := kc.PutB([]byte("foo"))
+		_, err := kc.BlockWrite(context.Background(), arvados.BlockWriteOptions{
+			Data:           []byte("foo"),
+			StorageClasses: trial.putClasses,
+		})
 		if trial.success {
 			c.Check(err, check.IsNil)
 		} else {

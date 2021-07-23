@@ -32,6 +32,7 @@ type Container struct {
 	FinishedAt                *time.Time             `json:"finished_at"` // nil if not yet finished
 	GatewayAddress            string                 `json:"gateway_address"`
 	InteractiveSessionStarted bool                   `json:"interactive_session_started"`
+	OutputStorageClasses      []string               `json:"output_storage_classes"`
 }
 
 // ContainerRequest is an arvados#container_request resource.
@@ -69,6 +70,7 @@ type ContainerRequest struct {
 	ExpiresAt               time.Time              `json:"expires_at"`
 	Filters                 []Filter               `json:"filters"`
 	ContainerCount          int                    `json:"container_count"`
+	OutputStorageClasses    []string               `json:"output_storage_classes"`
 }
 
 // Mount is special behavior to attach to a filesystem path or device.

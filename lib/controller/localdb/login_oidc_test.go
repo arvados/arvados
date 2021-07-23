@@ -56,6 +56,8 @@ func (s *OIDCLoginSuite) SetUpTest(c *check.C) {
 	s.fakeProvider.AuthEmail = "active-user@arvados.local"
 	s.fakeProvider.AuthEmailVerified = true
 	s.fakeProvider.AuthName = "Fake User Name"
+	s.fakeProvider.AuthGivenName = "Fake"
+	s.fakeProvider.AuthFamilyName = "User Name"
 	s.fakeProvider.ValidCode = fmt.Sprintf("abcdefgh-%d", time.Now().Unix())
 	s.fakeProvider.PeopleAPIResponse = map[string]interface{}{}
 
@@ -63,7 +65,7 @@ func (s *OIDCLoginSuite) SetUpTest(c *check.C) {
 	c.Assert(err, check.IsNil)
 	s.cluster, err = cfg.GetCluster("")
 	c.Assert(err, check.IsNil)
-	s.cluster.Login.SSO.Enable = false
+	s.cluster.Login.Test.Enable = false
 	s.cluster.Login.Google.Enable = true
 	s.cluster.Login.Google.ClientID = "test%client$id"
 	s.cluster.Login.Google.ClientSecret = "test#client/secret"
@@ -421,8 +423,8 @@ func (s *OIDCLoginSuite) TestGoogleLogin_Success(c *check.C) {
 	c.Check(token, check.Matches, `v2/zzzzz-gj3su-.{15}/.{32,50}`)
 
 	authinfo := getCallbackAuthInfo(c, s.railsSpy)
-	c.Check(authinfo.FirstName, check.Equals, "Fake User")
-	c.Check(authinfo.LastName, check.Equals, "Name")
+	c.Check(authinfo.FirstName, check.Equals, "Fake")
+	c.Check(authinfo.LastName, check.Equals, "User Name")
 	c.Check(authinfo.Email, check.Equals, "active-user@arvados.local")
 	c.Check(authinfo.AlternateEmails, check.HasLen, 0)
 
@@ -446,6 +448,7 @@ func (s *OIDCLoginSuite) TestGoogleLogin_Success(c *check.C) {
 
 func (s *OIDCLoginSuite) TestGoogleLogin_RealName(c *check.C) {
 	s.fakeProvider.AuthEmail = "joe.smith@primary.example.com"
+	s.fakeProvider.AuthEmailVerified = true
 	s.fakeProvider.PeopleAPIResponse = map[string]interface{}{
 		"names": []map[string]interface{}{
 			{
@@ -471,8 +474,10 @@ func (s *OIDCLoginSuite) TestGoogleLogin_RealName(c *check.C) {
 	c.Check(authinfo.LastName, check.Equals, "Psmith")
 }
 
-func (s *OIDCLoginSuite) TestGoogleLogin_OIDCRealName(c *check.C) {
+func (s *OIDCLoginSuite) TestGoogleLogin_OIDCNameWithoutGivenAndFamilyNames(c *check.C) {
 	s.fakeProvider.AuthName = "Joe P. Smith"
+	s.fakeProvider.AuthGivenName = ""
+	s.fakeProvider.AuthFamilyName = ""
 	s.fakeProvider.AuthEmail = "joe.smith@primary.example.com"
 	state := s.startLogin(c)
 	s.localdb.Login(context.Background(), arvados.LoginOptions{

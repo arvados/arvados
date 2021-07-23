@@ -1071,6 +1071,31 @@ class ContainerRequestTest < ActiveSupport::TestCase
    ['Committed', false, {container_count: 2}],
    ['Committed', false, {container_count: 0}],
    ['Committed', false, {container_count: nil}],
+   ['Committed', true, {priority: 0, mounts: {"/out" => {"kind" => "tmp", "capacity" => 1000000}}}],
+   ['Committed', true, {priority: 0, mounts: {"/out" => {"capacity" => 1000000, "kind" => "tmp"}}}],
+   # Addition of default values for mounts / runtime_constraints /
+   # scheduling_parameters, as happens in a round-trip through
+   # controller, does not have any real effect and should be
+   # accepted/ignored rather than causing an error when the CR state
+   # dictates those attributes are not allowed to change.
+   ['Committed', true, {priority: 0, mounts: {"/out" => {"capacity" => 1000000, "kind" => "tmp", "exclude_from_output": false}}}],
+   ['Committed', true, {priority: 0, mounts: {"/out" => {"capacity" => 1000000, "kind" => "tmp", "repository_name": ""}}}],
+   ['Committed', true, {priority: 0, mounts: {"/out" => {"capacity" => 1000000, "kind" => "tmp", "content": nil}}}],
+   ['Committed', false, {priority: 0, mounts: {"/out" => {"capacity" => 1000000, "kind" => "tmp", "content": {}}}}],
+   ['Committed', false, {priority: 0, mounts: {"/out" => {"capacity" => 1000000, "kind" => "tmp", "repository_name": "foo"}}}],
+   ['Committed', false, {priority: 0, mounts: {"/out" => {"kind" => "tmp", "capacity" => 1234567}}}],
+   ['Committed', false, {priority: 0, mounts: {}}],
+   ['Committed', true, {priority: 0, runtime_constraints: {"vcpus" => 1, "ram" => 2}}],
+   ['Committed', true, {priority: 0, runtime_constraints: {"vcpus" => 1, "ram" => 2, "keep_cache_ram" => 0}}],
+   ['Committed', true, {priority: 0, runtime_constraints: {"vcpus" => 1, "ram" => 2, "API" => false}}],
+   ['Committed', false, {priority: 0, runtime_constraints: {"vcpus" => 1, "ram" => 2, "keep_cache_ram" => 1}}],
+   ['Committed', false, {priority: 0, runtime_constraints: {"vcpus" => 1, "ram" => 2, "API" => true}}],
+   ['Committed', true, {priority: 0, scheduling_parameters: {"preemptible" => false}}],
+   ['Committed', true, {priority: 0, scheduling_parameters: {"partitions" => []}}],
+   ['Committed', true, {priority: 0, scheduling_parameters: {"max_run_time" => 0}}],
+   ['Committed', false, {priority: 0, scheduling_parameters: {"preemptible" => true}}],
+   ['Committed', false, {priority: 0, scheduling_parameters: {"partitions" => ["foo"]}}],
+   ['Committed', false, {priority: 0, scheduling_parameters: {"max_run_time" => 1}}],
    ['Final', false, {state: ContainerRequest::Committed, name: "foobar"}],
    ['Final', false, {name: "foobar", priority: 123}],
    ['Final', false, {name: "foobar", output_uuid: "zzzzz-4zz18-znfnqtbbv4spc3w"}],
@@ -1264,5 +1289,70 @@ class ContainerRequestTest < ActiveSupport::TestCase
       cr = create_minimal_req!(state: "Committed", runtime_token: "#{spec.token}xx")
       cr.save!
     end
+  end
+
+  test "default output_storage_classes" do
+    act_as_user users(:active) do
+      cr = create_minimal_req!(priority: 1,
+                               state: ContainerRequest::Committed,
+                               output_name: 'foo')
+      run_container(cr)
+      cr.reload
+      output = Collection.find_by_uuid(cr.output_uuid)
+      assert_equal ["default"], output.storage_classes_desired
+    end
+  end
+
+  test "setting output_storage_classes" do
+    act_as_user users(:active) do
+      cr = create_minimal_req!(priority: 1,
+                               state: ContainerRequest::Committed,
+                               output_name: 'foo',
+                               output_storage_classes: ["foo_storage_class", "bar_storage_class"])
+      run_container(cr)
+      cr.reload
+      output = Collection.find_by_uuid(cr.output_uuid)
+      assert_equal ["foo_storage_class", "bar_storage_class"], output.storage_classes_desired
+      log = Collection.find_by_uuid(cr.log_uuid)
+      assert_equal ["foo_storage_class", "bar_storage_class"], log.storage_classes_desired
+    end
+  end
+
+  test "reusing container with different container_request.output_storage_classes" do
+    common_attrs = {cwd: "test",
+                    priority: 1,
+                    command: ["echo", "hello"],
+                    output_path: "test",
+                    runtime_constraints: {"vcpus" => 4,
+                                          "ram" => 12000000000},
+                    mounts: {"test" => {"kind" => "json"}},
+                    environment: {"var" => "value1"},
+                    output_storage_classes: ["foo_storage_class"]}
+    set_user_from_auth :active
+    cr1 = create_minimal_req!(common_attrs.merge({state: ContainerRequest::Committed}))
+    cont1 = run_container(cr1)
+    cr1.reload
+
+    output1 = Collection.find_by_uuid(cr1.output_uuid)
+
+    # Testing with use_existing default value
+    cr2 = create_minimal_req!(common_attrs.merge({state: ContainerRequest::Uncommitted,
+                                                  output_storage_classes: ["bar_storage_class"]}))
+
+    assert_not_nil cr1.container_uuid
+    assert_nil cr2.container_uuid
+
+    # Update cr2 to commited state, check for reuse, then run it
+    cr2.update_attributes!({state: ContainerRequest::Committed})
+    assert_equal cr1.container_uuid, cr2.container_uuid
+
+    cr2.reload
+    output2 = Collection.find_by_uuid(cr2.output_uuid)
+
+    # the original CR output has the original storage class,
+    # but the second CR output has the new storage class.
+    assert_equal ["foo_storage_class"], cont1.output_storage_classes
+    assert_equal ["foo_storage_class"], output1.storage_classes_desired
+    assert_equal ["bar_storage_class"], output2.storage_classes_desired
   end
 end

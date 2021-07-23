@@ -8,7 +8,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 This template recognizes four variables:
 * railshost: The hostname included in the prompt, to let the user know where to run the command.  If this is the empty string, no hostname will be displayed.  Default "apiserver".
 * railsdir: The directory included in the prompt, to let the user know where to run the command.  Default "/var/www/arvados-api/current".
-* railscmd: The full command to run.  Default "bundle exec rails console".
+* railscmd: The full command to run.  Default "bin/rails console".
 * railsout: The expected output of the command, if any.
 {% endcomment %} Change *@webserver-user@* to the user that runs your web server process.  If you install Phusion Passenger as we recommend, this is *@www-data@* on Debian-based systems, and *@nginx@* on Red Hat-based systems.
 
@@ -25,7 +25,7 @@ This template recognizes four variables:
 {% endunless %}
 
 {% unless railscmd %}
-  {% assign railscmd = "bundle exec rails console" %}
+  {% assign railscmd = "bin/rails console" %}
 {% endunless %}
 
 <notextile>

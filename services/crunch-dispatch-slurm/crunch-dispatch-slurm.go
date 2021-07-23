@@ -255,6 +255,7 @@ func (disp *Dispatcher) submit(container arvados.Container, crunchRunCommand []s
 	// append() here avoids modifying crunchRunCommand's
 	// underlying array, which is shared with other goroutines.
 	crArgs := append([]string(nil), crunchRunCommand...)
+	crArgs = append(crArgs, "--runtime-engine="+disp.cluster.Containers.RuntimeEngine)
 	crArgs = append(crArgs, container.UUID)
 	crScript := strings.NewReader(execScript(crArgs))
 

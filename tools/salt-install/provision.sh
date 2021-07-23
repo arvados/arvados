@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/usr/bin/env bash
 
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
@@ -21,7 +21,6 @@ usage() {
   echo >&2
   echo >&2 "${0} options:"
   echo >&2 "  -d, --debug                                 Run salt installation in debug mode"
-  echo >&2 "  -p <N>, --ssl-port <N>                      SSL port to use for the web applications"
   echo >&2 "  -c <local.params>, --config <local.params>  Path to the local.params config file"
   echo >&2 "  -t, --test                                  Test installation running a CWL workflow"
   echo >&2 "  -r, --roles                                 List of Arvados roles to apply to the host, comma separated"
@@ -39,17 +38,35 @@ usage() {
   echo >&2 "                                                workbench2"
   echo >&2 "                                              Defaults to applying them all"
   echo >&2 "  -h, --help                                  Display this help and exit"
+  echo >&2 "  --dump-config <dest_dir>                    Dumps the pillars and states to a directory"
+  echo >&2 "                                              This parameter does not perform any installation at all. It's"
+  echo >&2 "                                              intended to give you a parsed sot of configuration files so"
+  echo >&2 "                                              you can inspect them or use them in you Saltstack infrastructure."
+  echo >&2 "                                              It"
+  echo >&2 "                                                - parses the pillar and states templates,"
+  echo >&2 "                                                - downloads the helper formulas with their desired versions,"
+  echo >&2 "                                                - prepares the 'top.sls' files both for pillars and states"
+  echo >&2 "                                                  for the selected role/s"
+  echo >&2 "                                                - writes the resulting files into <dest_dir>"
   echo >&2 "  -v, --vagrant                               Run in vagrant and use the /vagrant shared dir"
   echo >&2
 }
 
 arguments() {
   # NOTE: This requires GNU getopt (part of the util-linux package on Debian-based distros).
+  if ! which getopt > /dev/null; then
+    echo >&2 "GNU getopt is required to run this script. Please install it and re-reun it"
+    exit 1
+  fi
+
   TEMP=$(getopt -o c:dhp:r:tv \
-    --long config:,debug,help,ssl-port:,roles:,test,vagrant \
+    --long config:,debug,dump-config:,help,roles:,test,vagrant \
     -n "${0}" -- "${@}")
 
-  if [ ${?} != 0 ] ; then echo "GNU getopt missing? Use -h for help"; exit 1 ; fi
+  if [ ${?} != 0 ];
+    then echo "Please check the parameters you entered and re-run again"
+    exit 1
+  fi
   # Note the quotes around `$TEMP': they are essential!
   eval set -- "$TEMP"
 
@@ -62,9 +79,23 @@ arguments() {
       -d | --debug)
         LOG_LEVEL="debug"
         shift
+        set -x
         ;;
-      -p | --ssl-port)
-        CONTROLLER_EXT_SSL_PORT=${2}
+      --dump-config)
+        if [[ ${2} = /* ]]; then
+          DUMP_SALT_CONFIG_DIR=${2}
+        else
+          DUMP_SALT_CONFIG_DIR=${PWD}/${2}
+        fi
+        ## states
+        S_DIR="${DUMP_SALT_CONFIG_DIR}/salt"
+        ## formulas
+        F_DIR="${DUMP_SALT_CONFIG_DIR}/formulas"
+        ## pillars
+        P_DIR="${DUMP_SALT_CONFIG_DIR}/pillars"
+        ## tests
+        T_DIR="${DUMP_SALT_CONFIG_DIR}/tests"
+        DUMP_CONFIG="yes"
         shift 2
         ;;
       -r | --roles)
@@ -102,6 +133,7 @@ arguments() {
 
 CONFIG_FILE="${SCRIPT_DIR}/local.params"
 CONFIG_DIR="local_config_dir"
+DUMP_CONFIG="no"
 LOG_LEVEL="info"
 CONTROLLER_EXT_SSL_PORT=443
 TESTS_DIR="tests"
@@ -127,15 +159,20 @@ WEBSOCKET_EXT_SSL_PORT=8002
 WORKBENCH1_EXT_SSL_PORT=443
 WORKBENCH2_EXT_SSL_PORT=3001
 
+## These are ARVADOS-related parameters
 # For a stable release, change RELEASE "production" and VERSION to the
 # package version (including the iteration, e.g. X.Y.Z-1) of the
 # release.
+# The "local.params.example.*" files already set "RELEASE=production"
+# to deploy  production-ready packages
 RELEASE="development"
 VERSION="latest"
 
-# The arvados-formula version.  For a stable release, this should be a
+# These are arvados-formula-related parameters
+# An arvados-formula tag. For a stable release, this should be a
 # branch name (e.g. X.Y-dev) or tag for the release.
-ARVADOS_TAG="master"
+# ARVADOS_TAG="2.2.0"
+# BRANCH="main"
 
 # Other formula versions we depend on
 POSTGRES_TAG="v0.41.6"
@@ -145,26 +182,31 @@ LOCALE_TAG="v0.3.4"
 LETSENCRYPT_TAG="v2.1.0"
 
 # Salt's dir
+DUMP_SALT_CONFIG_DIR=""
 ## states
 S_DIR="/srv/salt"
 ## formulas
 F_DIR="/srv/formulas"
-##pillars
+## pillars
 P_DIR="/srv/pillars"
+## tests
+T_DIR="/tmp/cluster_tests"
 
 arguments ${@}
 
 if [ -s ${CONFIG_FILE} ]; then
   source ${CONFIG_FILE}
 else
-  echo >&2 "Please create a '${CONFIG_FILE}' file with initial values, as described in"
+  echo >&2 "You don't seem to have a config file with initial values."
+  echo >&2 "Please create a '${CONFIG_FILE}' file as described in"
   echo >&2 "  * https://doc.arvados.org/install/salt-single-host.html#single_host, or"
   echo >&2 "  * https://doc.arvados.org/install/salt-multi-host.html#multi_host_multi_hostnames"
   exit 1
 fi
 
 if [ ! -d ${CONFIG_DIR} ]; then
-  echo >&2 "Please create a '${CONFIG_DIR}' with initial values, as described in"
+  echo >&2 "You don't seem to have a config directory with pillars and states."
+  echo >&2 "Please create a '${CONFIG_DIR}' directory (as configured in your '${CONFIG_FILE}'). Please see"
   echo >&2 "  * https://doc.arvados.org/install/salt-single-host.html#single_host, or"
   echo >&2 "  * https://doc.arvados.org/install/salt-multi-host.html#multi_host_multi_hostnames"
   exit 1
@@ -176,7 +218,7 @@ if grep -q 'fixme_or_this_wont_work' ${CONFIG_FILE} ; then
   exit 1
 fi
 
-if ! grep -E '^[[:alnum:]]{5}$' <<<${CLUSTER} ; then
+if ! grep -qE '^[[:alnum:]]{5}$' <<<${CLUSTER} ; then
   echo >&2 "ERROR: <CLUSTER> must be exactly 5 alphanumeric characters long"
   echo >&2 "Fix the cluster name in the 'local.params' file and re-run the provision script"
   exit 1
@@ -187,20 +229,23 @@ if [ "x${HOSTNAME_EXT}" = "x" ] ; then
   HOSTNAME_EXT="${CLUSTER}.${DOMAIN}"
 fi
 
-apt-get update
-apt-get install -y curl git jq
-
-if which salt-call; then
-  echo "Salt already installed"
+if [ "${DUMP_CONFIG}" = "yes" ]; then
+  echo "The provision installer will just dump a config under ${DUMP_SALT_CONFIG_DIR} and exit"
 else
-  curl -L https://bootstrap.saltstack.com -o /tmp/bootstrap_salt.sh
-  sh /tmp/bootstrap_salt.sh -XdfP -x python3
-  /bin/systemctl stop salt-minion.service
-  /bin/systemctl disable salt-minion.service
-fi
+  apt-get update
+  apt-get install -y curl git jq
 
-# Set salt to masterless mode
-cat > /etc/salt/minion << EOFSM
+  if which salt-call; then
+    echo "Salt already installed"
+  else
+    curl -L https://bootstrap.saltstack.com -o /tmp/bootstrap_salt.sh
+    sh /tmp/bootstrap_salt.sh -XdfP -x python3
+    /bin/systemctl stop salt-minion.service
+    /bin/systemctl disable salt-minion.service
+  fi
+
+  # Set salt to masterless mode
+  cat > /etc/salt/minion << EOFSM
 file_client: local
 file_roots:
   base:
@@ -211,24 +256,36 @@ pillar_roots:
   base:
     - ${P_DIR}
 EOFSM
+fi
 
-mkdir -p ${S_DIR} ${F_DIR} ${P_DIR}
+mkdir -p ${S_DIR} ${F_DIR} ${P_DIR} ${T_DIR}
 
 # Get the formula and dependencies
 cd ${F_DIR} || exit 1
-git clone --branch "${ARVADOS_TAG}"     https://git.arvados.org/arvados-formula.git
-git clone --branch "${DOCKER_TAG}"      https://github.com/saltstack-formulas/docker-formula.git
-git clone --branch "${LOCALE_TAG}"      https://github.com/saltstack-formulas/locale-formula.git
-# git clone --branch "${NGINX_TAG}"       https://github.com/saltstack-formulas/nginx-formula.git
-git clone --branch "${NGINX_TAG}"       https://github.com/netmanagers/nginx-formula.git
-git clone --branch "${POSTGRES_TAG}"    https://github.com/saltstack-formulas/postgres-formula.git
-git clone --branch "${LETSENCRYPT_TAG}" https://github.com/saltstack-formulas/letsencrypt-formula.git
+echo "Cloning formulas"
+rm -rf ${F_DIR}/* || exit 1
+git clone --quiet https://github.com/saltstack-formulas/docker-formula.git ${F_DIR}/docker
+( cd docker && git checkout --quiet tags/"${DOCKER_TAG}" -b "${DOCKER_TAG}" )
+
+git clone --quiet https://github.com/saltstack-formulas/locale-formula.git ${F_DIR}/locale
+( cd locale && git checkout --quiet tags/"${LOCALE_TAG}" -b "${LOCALE_TAG}" )
+
+git clone --quiet https://github.com/netmanagers/nginx-formula.git ${F_DIR}/nginx
+( cd nginx && git checkout --quiet tags/"${NGINX_TAG}" -b "${NGINX_TAG}" )
+
+git clone --quiet https://github.com/saltstack-formulas/postgres-formula.git ${F_DIR}/postgres
+( cd postgres && git checkout --quiet tags/"${POSTGRES_TAG}" -b "${POSTGRES_TAG}" )
+
+git clone --quiet https://github.com/saltstack-formulas/letsencrypt-formula.git ${F_DIR}/letsencrypt
+( cd letsencrypt && git checkout --quiet tags/"${LETSENCRYPT_TAG}" -b "${LETSENCRYPT_TAG}" )
+
+git clone --quiet https://git.arvados.org/arvados-formula.git ${F_DIR}/arvados
 
 # If we want to try a specific branch of the formula
 if [ "x${BRANCH}" != "x" ]; then
-  cd ${F_DIR}/arvados-formula || exit 1
-  git checkout -t origin/"${BRANCH}" -b "${BRANCH}"
-  cd -
+  ( cd ${F_DIR}/arvados && git checkout --quiet -t origin/"${BRANCH}" -b "${BRANCH}" )
+elif [ "x${ARVADOS_TAG}" != "x" ]; then
+( cd ${F_DIR}/arvados && git checkout --quiet tags/"${ARVADOS_TAG}" -b "${ARVADOS_TAG}" )
 fi
 
 if [ "x${VAGRANT}" = "xyes" ]; then
@@ -242,6 +299,8 @@ else
 fi
 
 SOURCE_STATES_DIR="${EXTRA_STATES_DIR}"
+
+echo "Writing pillars and states"
 
 # Replace variables (cluster,  domain, etc) in the pillars, states and tests
 # to ease deployment for newcomers
@@ -294,7 +353,7 @@ if [ "x${TEST}" = "xyes" ] && [ ! -d "${SOURCE_TESTS_DIR}" ]; then
   echo "You requested to run tests, but ${SOURCE_TESTS_DIR} does not exist or is not a directory. Exiting."
   exit 1
 fi
-mkdir -p /tmp/cluster_tests
+mkdir -p ${T_DIR}
 # Replace cluster and domain name in the test files
 for f in $(ls "${SOURCE_TESTS_DIR}"/*); do
   sed "s#__CLUSTER__#${CLUSTER}#g;
@@ -306,9 +365,9 @@ for f in $(ls "${SOURCE_TESTS_DIR}"/*); do
        s#__INITIAL_USER__#${INITIAL_USER}#g;
        s#__DATABASE_PASSWORD__#${DATABASE_PASSWORD}#g;
        s#__SYSTEM_ROOT_TOKEN__#${SYSTEM_ROOT_TOKEN}#g" \
-  "${f}" > "/tmp/cluster_tests"/$(basename "${f}")
+  "${f}" > ${T_DIR}/$(basename "${f}")
 done
-chmod 755 /tmp/cluster_tests/run-test.sh
+chmod 755 ${T_DIR}/run-test.sh
 
 # Replace helper state files that differ from the formula's examples
 if [ -d "${SOURCE_STATES_DIR}" ]; then
@@ -500,6 +559,11 @@ else
   done
 fi
 
+if [ "${DUMP_CONFIG}" = "yes" ]; then
+  # We won't run the rest of the script because we're just dumping the config
+  exit 0
+fi
+
 # FIXME! #16992 Temporary fix for psql call in arvados-api-server
 if [ -e /root/.psqlrc ]; then
   if ! ( grep 'pset pager off' /root/.psqlrc ); then
@@ -542,6 +606,6 @@ fi
 
 # Test that the installation finished correctly
 if [ "x${TEST}" = "xyes" ]; then
-  cd /tmp/cluster_tests
+  cd ${T_DIR}
   ./run-test.sh
 fi
