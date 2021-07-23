@@ -11,6 +11,7 @@
 # vagrant up
 
 set -o pipefail
+set -x
 
 # capture the directory that the script is running from
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
@@ -232,8 +233,24 @@ fi
 if [ "${DUMP_CONFIG}" = "yes" ]; then
   echo "The provision installer will just dump a config under ${DUMP_SALT_CONFIG_DIR} and exit"
 else
-  apt-get update
-  apt-get install -y curl git jq
+  # Install a few dependency packages
+  # First, let's figure out the OS we're working on
+  OS_ID=$(grep ^ID= /etc/os-release |cut -f 2 -d \")
+  echo "Detected distro: ${OS_ID}"
+
+  case ${OS_ID} in
+    centos)
+      PREINSTALL_CMD="/bin/true"
+      INSTALL_CMD="yum install -y"
+      ;;
+    debian|ubuntu)
+      PREINSTALL_CMD="DEBIAN_FRONTEND=noninteractive apt update"
+      INSTALL_CMD="DEBIAN_FRONTEND=noninteractive apt install -y"
+      ;;
+  esac
+
+  ${PREINSTALL_CMD}
+  ${INSTALL_CMD} curl git jq
 
   if which salt-call; then
     echo "Salt already installed"
