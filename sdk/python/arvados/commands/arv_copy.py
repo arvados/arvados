@@ -102,6 +102,9 @@ def main():
     copy_opts.add_argument(
         '--project-uuid', dest='project_uuid',
         help='The UUID of the project at the destination to which the collection or workflow should be copied.')
+    copy_opts.add_argument(
+        '--storage-classes', dest='storage_classes',
+        help='Comma separated list of storage classes to be used when saving data to the destinaton Arvados instance.')
 
     copy_opts.add_argument(
         'object_uuid',
@@ -113,6 +116,9 @@ def main():
         description='Copy a workflow or collection from one Arvados instance to another.',
         parents=[copy_opts, arv_cmd.retry_opt])
     args = parser.parse_args()
+
+    if args.storage_classes:
+        args.storage_classes = [x for x in args.storage_classes.strip().replace(' ', '').split(',') if x]
 
     if args.verbose:
         logger.setLevel(logging.DEBUG)
@@ -410,6 +416,9 @@ def create_collection_from(c, src, dst, args):
     if not body["name"]:
         body['name'] = "copied from " + collection_uuid
 
+    if args.storage_classes:
+        body['storage_classes_desired'] = args.storage_classes
+
     body['owner_uuid'] = args.project_uuid
 
     dst_collection = dst.collections().create(body=body, ensure_unique_name=True).execute(num_retries=args.retries)
@@ -563,7 +572,7 @@ def copy_collection(obj_uuid, src, dst, args):
                 if progress_writer:
                     progress_writer.report(obj_uuid, bytes_written, bytes_expected)
                 data = src_keep.get(word)
-                dst_locator = dst_keep.put(data)
+                dst_locator = dst_keep.put(data, classes=(args.storage_classes or []))
                 dst_locators[blockhash] = dst_locator
                 bytes_written += loc.size
             dst_manifest.write(' ')

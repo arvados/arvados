@@ -57,11 +57,13 @@ arvados.arv-copy[1234] INFO: Success: created copy with uuid dstcl-4zz18-xxxxxxx
 
 The output of arv-copy displays the uuid of the collection generated in the destination cluster. By default, the output is placed in your home project in the destination cluster. If you want to place your collection in an existing project, you can specify the project you want it to be in using the tag @--project-uuid@ followed by the project uuid.
 
-For example, this will copy the collection to project dstcl-j7d0g-a894213ukjhal12 in the destination cluster.
+For example, this will copy the collection to project @dstcl-j7d0g-a894213ukjhal12@ in the destination cluster.
 
 <notextile> <pre><code>~$ <span class="userinput">arv-copy --src pirca --dst dstcl --project-uuid dstcl-j7d0g-a894213ukjhal12 jutro-4zz18-tv416l321i4r01e
 </code></pre>
 </notextile>
+
+Additionally, if you need to specify the storage classes where to save the copied data on the destination cluster, you can do that by using the @--storage-classes LIST@ argument, where @LIST@ is a comma-separated list of storage class names.
 
 h3. How to copy a workflow
 
