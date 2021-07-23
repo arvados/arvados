@@ -72,16 +72,16 @@ func (e *singularityExecutor) getOrCreateProject(ownerUuid string, name string, 
 }
 
 func (e *singularityExecutor) checkImageCache(dockerImageID string, container arvados.Container, arvMountPoint string,
-	containerClient *arvados.Client) (collectionUuid string, err error) {
+	containerClient *arvados.Client) (collection *arvados.Collection, err error) {
 
 	// Cache the image to keep
 	cacheGroup, err := e.getOrCreateProject(container.RuntimeUserUUID, ".cache", containerClient)
 	if err != nil {
-		return "", fmt.Errorf("error getting '.cache' project: %v", err)
+		return nil, fmt.Errorf("error getting '.cache' project: %v", err)
 	}
 	imageGroup, err := e.getOrCreateProject(cacheGroup.UUID, "auto-generated singularity images", containerClient)
 	if err != nil {
-		return "", fmt.Errorf("error getting 'auto-generated singularity images' project: %s", err)
+		return nil, fmt.Errorf("error getting 'auto-generated singularity images' project: %s", err)
 	}
 
 	collectionName := fmt.Sprintf("singularity image for %v", dockerImageID)
@@ -95,14 +95,14 @@ func (e *singularityExecutor) checkImageCache(dockerImageID string, container ar
 		},
 			Limit: 1})
 	if err != nil {
-		return "", fmt.Errorf("error querying for collection '%v': %v", collectionName, err)
+		return nil, fmt.Errorf("error querying for collection '%v': %v", collectionName, err)
 	}
 	var imageCollection arvados.Collection
 	if len(cl.Items) == 1 {
 		imageCollection = cl.Items[0]
 	} else {
 		collectionName := collectionName + " " + time.Now().UTC().Format(time.RFC3339)
-
+		exp := time.Now().Add(24 * 7 * 2 * time.Hour)
 		err = containerClient.RequestAndDecode(&imageCollection,
 			arvados.EndpointCollectionCreate.Method,
 			arvados.EndpointCollectionCreate.Path,
@@ -110,6 +110,7 @@ func (e *singularityExecutor) checkImageCache(dockerImageID string, container ar
 				"collection": map[string]string{
 					"owner_uuid": imageGroup.UUID,
 					"name":       collectionName,
+					"trash_at":   exp.UTC().Format(time.RFC3339),
 				},
 			})
 		if err != nil {
@@ -118,7 +119,7 @@ func (e *singularityExecutor) checkImageCache(dockerImageID string, container ar
 
 	}
 
-	return imageCollection.UUID, nil
+	return &imageCollection, nil
 }
 
 // LoadImage will satisfy ContainerExecuter interface transforming
@@ -126,21 +127,20 @@ func (e *singularityExecutor) checkImageCache(dockerImageID string, container ar
 func (e *singularityExecutor) LoadImage(dockerImageID string, imageTarballPath string, container arvados.Container, arvMountPoint string,
 	containerClient *arvados.Client) error {
 
-	var sifCollectionUUID string
 	var imageFilename string
+	var sifCollection *arvados.Collection
+	var err error
 	if containerClient != nil {
-		sifCollectionUUID, err := e.checkImageCache(dockerImageID, container, arvMountPoint, containerClient)
+		sifCollection, err = e.checkImageCache(dockerImageID, container, arvMountPoint, containerClient)
 		if err != nil {
 			return err
 		}
-		imageFilename = fmt.Sprintf("%s/by_uuid/%s/image.sif", arvMountPoint, sifCollectionUUID)
+		imageFilename = fmt.Sprintf("%s/by_uuid/%s/image.sif", arvMountPoint, sifCollection.UUID)
 	} else {
 		imageFilename = e.tmpdir + "/image.sif"
 	}
 
 	if _, err := os.Stat(imageFilename); os.IsNotExist(err) {
-		exec.Command("find", arvMountPoint+"/by_id/").Run()
-
 		e.logf("building singularity image")
 		// "singularity build" does not accept a
 		// docker-archive://... filename containing a ":" character,
@@ -177,7 +177,7 @@ func (e *singularityExecutor) LoadImage(dockerImageID string, imageTarballPath s
 	// update TTL to now + two weeks
 	exp := time.Now().Add(24 * 7 * 2 * time.Hour)
 
-	uuidPath, err := containerClient.PathForUUID("update", sifCollectionUUID)
+	uuidPath, err := containerClient.PathForUUID("update", sifCollection.UUID)
 	if err != nil {
 		e.logf("error PathForUUID: %v", err)
 		return nil
@@ -192,10 +192,22 @@ func (e *singularityExecutor) LoadImage(dockerImageID string, imageTarballPath s
 				"trash_at": exp.UTC().Format(time.RFC3339),
 			},
 		})
-	if err != nil {
-		e.logf("error updating collection trash_at: %v", err)
+	if err == nil {
+		// If we just wrote the image to the cache, the
+		// response also returns the updated PDH
+		e.imageFilename = fmt.Sprintf("%s/by_id/%s/image.sif", arvMountPoint, imageCollection.PortableDataHash)
+		return nil
 	}
-	e.imageFilename = fmt.Sprintf("%s/by_id/%s/image.sif", arvMountPoint, imageCollection.PortableDataHash)
+
+	e.logf("error updating/renaming collection for cached sif image: %v", err)
+	// Failed to update but maybe it lost a race and there is
+	// another cached collection in the same place, so check the cache
+	// again
+	sifCollection, err = e.checkImageCache(dockerImageID, container, arvMountPoint, containerClient)
+	if err != nil {
+		return err
+	}
+	e.imageFilename = fmt.Sprintf("%s/by_id/%s/image.sif", arvMountPoint, sifCollection.PortableDataHash)
 
 	return nil
 }
