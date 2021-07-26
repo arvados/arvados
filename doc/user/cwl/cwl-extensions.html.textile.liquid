@@ -89,7 +89,7 @@ Specify desired handling of intermediate output collections.
 table(table table-bordered table-condensed).
 |_. Field |_. Type |_. Description |
 |outputTTL|int|If the value is greater than zero, consider intermediate output collections to be temporary and should be automatically trashed. Temporary collections will be trashed @outputTTL@ seconds after creation.  A value of zero means intermediate output should be retained indefinitely (this is the default behavior).
-Note: arvados-cwl-runner currently does not take workflow dependencies into account when setting the TTL on an intermediate output collection. If the TTL is too short, it is possible for a collection to be trashed before downstream steps that consume it are started.  The recommended minimum value for TTL is the expected duration of the entire the workflow.|
+Note: arvados-cwl-runner currently does not take workflow dependencies into account when setting the TTL on an intermediate output collection. If the TTL is too short, it is possible for a collection to be trashed before downstream steps that consume it are started.  The recommended minimum value for TTL is the expected duration of the entire workflow.|
 
 h2. cwltool:Secrets
 
