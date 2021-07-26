@@ -6,6 +6,7 @@ package crunchrun
 import (
 	"io"
 
+	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"golang.org/x/net/context"
 )
 
@@ -33,13 +34,10 @@ type containerSpec struct {
 // containerExecutor is an interface to a container runtime
 // (docker/singularity).
 type containerExecutor interface {
-	// ImageLoaded determines whether the given image is already
-	// available to use without calling ImageLoad.
-	ImageLoaded(imageID string) bool
-
 	// ImageLoad loads the image from the given tarball such that
 	// it can be used to create/start a container.
-	LoadImage(filename string) error
+	LoadImage(imageID string, imageTarballPath string, container arvados.Container, keepMount string,
+		containerClient *arvados.Client) error
 
 	// Wait for the container process to finish, and return its
 	// exit code. If applicable, also remove the stopped container
