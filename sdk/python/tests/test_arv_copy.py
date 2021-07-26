@@ -42,6 +42,8 @@ class ArvCopyVersionTestCase(run_test_server.TestCaseWithServers, tutil.VersionC
         with c.open('foo', 'wt') as f:
             f.write('foo')
         c.save_new("arv-copy foo collection", owner_uuid=src_proj)
+        coll_record = api.collections().get(uuid=c.manifest_locator()).execute()
+        assert coll_record['storage_classes_desired'] == ['default']
 
         dest_proj = api.groups().create(body={"group": {"name": "arv-copy dest project", "group_class": "project"}}).execute()["uuid"]
 
@@ -60,7 +62,7 @@ class ArvCopyVersionTestCase(run_test_server.TestCaseWithServers, tutil.VersionC
             assert len(contents["items"]) == 0
 
             try:
-                self.run_copy(["--project-uuid", dest_proj, src_proj])
+                self.run_copy(["--project-uuid", dest_proj, "--storage-classes", "foo", src_proj])
             except SystemExit as e:
                 assert e.code == 0
 
@@ -76,6 +78,7 @@ class ArvCopyVersionTestCase(run_test_server.TestCaseWithServers, tutil.VersionC
             assert contents["items"][0]["uuid"] != c.manifest_locator()
             assert contents["items"][0]["name"] == "arv-copy foo collection"
             assert contents["items"][0]["portable_data_hash"] == c.portable_data_hash()
+            assert contents["items"][0]["storage_classes_desired"] == ["foo"]
 
         finally:
             os.environ['HOME'] = home_was
