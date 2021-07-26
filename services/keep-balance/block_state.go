@@ -133,3 +133,53 @@ func (bsm *BlockStateMap) IncreaseDesired(pdh string, classes []string, n int, b
 		bsm.get(blkid).increaseDesired(pdh, classes, n)
 	}
 }
+
+// GetConfirmedReplication returns the replication level of the given
+// blocks, considering only the specified storage classes.
+//
+// If len(classes)==0, returns the replication level without regard to
+// storage classes.
+//
+// Safe to call concurrently with other calls to GetCurrent, but not
+// with different BlockStateMap methods.
+func (bsm *BlockStateMap) GetConfirmedReplication(blkids []arvados.SizedDigest, classes []string) int {
+	defaultClasses := map[string]bool{"default": true}
+	min := 0
+	for _, blkid := range blkids {
+		total := 0
+		perclass := make(map[string]int, len(classes))
+		for _, c := range classes {
+			perclass[c] = 0
+		}
+		for _, r := range bsm.get(blkid).Replicas {
+			total += r.KeepMount.Replication
+			mntclasses := r.KeepMount.StorageClasses
+			if len(mntclasses) == 0 {
+				mntclasses = defaultClasses
+			}
+			for c := range mntclasses {
+				n, ok := perclass[c]
+				if !ok {
+					// Don't care about this storage class
+					continue
+				}
+				perclass[c] = n + r.KeepMount.Replication
+			}
+		}
+		if total == 0 {
+			return 0
+		}
+		for _, n := range perclass {
+			if n == 0 {
+				return 0
+			}
+			if n < min || min == 0 {
+				min = n
+			}
+		}
+		if len(perclass) == 0 && (min == 0 || min > total) {
+			min = total
+		}
+	}
+	return min
+}

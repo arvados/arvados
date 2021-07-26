@@ -6,6 +6,7 @@ package main
 
 import (
 	"bytes"
+	"io"
 	"os"
 	"strings"
 	"testing"
@@ -81,7 +82,7 @@ func (s *integrationSuite) TestBalanceAPIFixtures(c *check.C) {
 	for iter := 0; iter < 20; iter++ {
 		logBuf.Reset()
 		logger := logrus.New()
-		logger.Out = &logBuf
+		logger.Out = io.MultiWriter(&logBuf, os.Stderr)
 		opts := RunOptions{
 			CommitPulls: true,
 			CommitTrash: true,
@@ -105,4 +106,23 @@ func (s *integrationSuite) TestBalanceAPIFixtures(c *check.C) {
 		time.Sleep(200 * time.Millisecond)
 	}
 	c.Check(logBuf.String(), check.Not(check.Matches), `(?ms).*0 replicas (0 blocks, 0 bytes) underreplicated.*`)
+
+	for _, trial := range []struct {
+		uuid    string
+		repl    int
+		classes []string
+	}{
+		{arvadostest.EmptyCollectionUUID, 0, []string{"default"}},
+		{arvadostest.FooCollection, 4, []string{"default"}},                                // "foo" blk
+		{arvadostest.StorageClassesDesiredDefaultConfirmedDefault, 2, []string{"default"}}, // "bar" blk
+		{arvadostest.StorageClassesDesiredArchiveConfirmedDefault, 0, []string{"archive"}}, // "bar" blk
+	} {
+		c.Logf("%#v", trial)
+		var coll arvados.Collection
+		s.client.RequestAndDecode(&coll, "GET", "arvados/v1/collections/"+trial.uuid, nil, nil)
+		if c.Check(coll.ReplicationConfirmed, check.NotNil) {
+			c.Check(*coll.ReplicationConfirmed, check.Equals, trial.repl)
+		}
+		c.Check(coll.StorageClassesConfirmed, check.DeepEquals, trial.classes)
+	}
 }

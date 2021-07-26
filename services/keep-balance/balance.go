@@ -167,7 +167,11 @@ func (bal *Balancer) Run(client *arvados.Client, cluster *arvados.Cluster, runOp
 	}
 	if runOptions.CommitTrash {
 		err = bal.CommitTrash(ctx, client)
+		if err != nil {
+			return
+		}
 	}
+	err = bal.updateCollections(ctx, client, cluster)
 	return
 }
 
@@ -460,7 +464,7 @@ func (bal *Balancer) addCollection(coll arvados.Collection) error {
 	if coll.ReplicationDesired != nil {
 		repl = *coll.ReplicationDesired
 	}
-	bal.Logger.Debugf("%v: %d block x%d", coll.UUID, len(blkids), repl)
+	bal.Logger.Debugf("%v: %d blocks x%d", coll.UUID, len(blkids), repl)
 	// Pass pdh to IncreaseDesired only if LostBlocksFile is being
 	// written -- otherwise it's just a waste of memory.
 	pdh := ""
