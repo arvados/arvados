@@ -144,7 +144,7 @@ begin
       if existing_groups.index(addgroup).nil?
         # User should be in group, but isn't, so add them.
         STDERR.puts "Add user #{username} to #{addgroup} group"
-        system("adduser", username, addgroup)
+        system("usermod", "-aG", addgroup, username)
       end
     end
 
@@ -152,7 +152,7 @@ begin
       if groups.index(removegroup).nil?
         # User is in a group, but shouldn't be, so remove them.
         STDERR.puts "Remove user #{username} from #{removegroup} group"
-        system("deluser", username, removegroup)
+        system("gpasswd", "-d", username, removegroup)
       end
     end
 
