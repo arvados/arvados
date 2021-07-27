@@ -23,6 +23,7 @@ import (
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
+	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
 )
 
@@ -36,6 +37,7 @@ import (
 // BlobSignatureTTL; and all N existing replicas of a given data block
 // are in the N best positions in rendezvous probe order.
 type Balancer struct {
+	DB      *sqlx.DB
 	Logger  logrus.FieldLogger
 	Dumper  logrus.FieldLogger
 	Metrics *metrics
@@ -424,7 +426,7 @@ func (bal *Balancer) GetCurrentState(ctx context.Context, c *arvados.Client, pag
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		err = EachCollection(ctx, c, pageSize,
+		err = EachCollection(ctx, bal.DB, c,
 			func(coll arvados.Collection) error {
 				collQ <- coll
 				if len(errs) > 0 {

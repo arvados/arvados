@@ -18,6 +18,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
+	"github.com/jmoiron/sqlx"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 	check "gopkg.in/check.v1"
@@ -27,6 +28,7 @@ var _ = check.Suite(&integrationSuite{})
 
 type integrationSuite struct {
 	config     *arvados.Cluster
+	db         *sqlx.DB
 	client     *arvados.Client
 	keepClient *keepclient.KeepClient
 }
@@ -68,6 +70,8 @@ func (s *integrationSuite) SetUpTest(c *check.C) {
 	c.Assert(err, check.Equals, nil)
 	s.config, err = cfg.GetCluster("")
 	c.Assert(err, check.Equals, nil)
+	s.db, err = sqlx.Open("postgres", s.config.PostgreSQL.Connection.String())
+	c.Assert(err, check.IsNil)
 	s.config.Collections.BalancePeriod = arvados.Duration(time.Second)
 
 	s.client = &arvados.Client{
@@ -90,6 +94,7 @@ func (s *integrationSuite) TestBalanceAPIFixtures(c *check.C) {
 		}
 
 		bal := &Balancer{
+			DB:      s.db,
 			Logger:  logger,
 			Metrics: newMetrics(prometheus.NewRegistry()),
 		}

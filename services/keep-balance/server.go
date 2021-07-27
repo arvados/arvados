@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
 )
 
@@ -46,11 +47,13 @@ type Server struct {
 
 	Logger logrus.FieldLogger
 	Dumper logrus.FieldLogger
+
+	DB *sqlx.DB
 }
 
 // CheckHealth implements service.Handler.
 func (srv *Server) CheckHealth() error {
-	return nil
+	return srv.DB.Ping()
 }
 
 // Done implements service.Handler.
@@ -75,6 +78,7 @@ func (srv *Server) run() {
 
 func (srv *Server) runOnce() (*Balancer, error) {
 	bal := &Balancer{
+		DB:             srv.DB,
 		Logger:         srv.Logger,
 		Dumper:         srv.Dumper,
 		Metrics:        srv.Metrics,

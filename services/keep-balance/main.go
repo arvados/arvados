@@ -16,6 +16,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/health"
+	"github.com/jmoiron/sqlx"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 )
@@ -78,6 +79,18 @@ func runCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.W
 				return service.ErrorHandler(ctx, cluster, fmt.Errorf("error initializing client from cluster config: %s", err))
 			}
 
+			db, err := sqlx.Open("postgres", cluster.PostgreSQL.Connection.String())
+			if err != nil {
+				return service.ErrorHandler(ctx, cluster, fmt.Errorf("postgresql connection failed: %s", err))
+			}
+			if p := cluster.PostgreSQL.ConnectionPool; p > 0 {
+				db.SetMaxOpenConns(p)
+			}
+			err = db.Ping()
+			if err != nil {
+				return service.ErrorHandler(ctx, cluster, fmt.Errorf("postgresql connection succeeded but ping failed: %s", err))
+			}
+
 			if options.Logger == nil {
 				options.Logger = ctxlog.FromContext(ctx)
 			}
@@ -89,6 +102,7 @@ func runCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.W
 				Metrics:    newMetrics(registry),
 				Logger:     options.Logger,
 				Dumper:     options.Dumper,
+				DB:         db,
 			}
 			srv.Handler = &health.Handler{
 				Token:  cluster.ManagementToken,
