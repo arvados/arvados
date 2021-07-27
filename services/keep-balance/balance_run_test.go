@@ -21,6 +21,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"github.com/jmoiron/sqlx"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/expfmt"
 	check "gopkg.in/check.v1"
@@ -309,6 +310,7 @@ func (s *stubServer) serveKeepstorePull() *reqTracker {
 type runSuite struct {
 	stub   stubServer
 	config *arvados.Cluster
+	db     *sqlx.DB
 	client *arvados.Client
 }
 
@@ -320,6 +322,7 @@ func (s *runSuite) newServer(options *RunOptions) *Server {
 		Metrics:    newMetrics(prometheus.NewRegistry()),
 		Logger:     options.Logger,
 		Dumper:     options.Dumper,
+		DB:         s.db,
 	}
 	return srv
 }
@@ -329,6 +332,8 @@ func (s *runSuite) SetUpTest(c *check.C) {
 	c.Assert(err, check.Equals, nil)
 	s.config, err = cfg.GetCluster("")
 	c.Assert(err, check.Equals, nil)
+	s.db, err = sqlx.Open("postgres", s.config.PostgreSQL.Connection.String())
+	c.Assert(err, check.IsNil)
 
 	s.config.Collections.BalancePeriod = arvados.Duration(time.Second)
 	arvadostest.SetServiceURL(&s.config.Services.Keepbalance, "http://localhost:/")

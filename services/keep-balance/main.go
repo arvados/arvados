@@ -36,6 +36,8 @@ func runCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.W
 		"send pull requests (make more replicas of blocks that are underreplicated or are not in optimal rendezvous probe order)")
 	flags.BoolVar(&options.CommitTrash, "commit-trash", false,
 		"send trash requests (delete unreferenced old blocks, and excess replicas of overreplicated blocks)")
+	flags.BoolVar(&options.CommitConfirmedFields, "commit-confirmed-fields", true,
+		"update collection fields (replicas_confirmed, storage_classes_confirmed, etc.)")
 	flags.Bool("version", false, "Write version information to stdout and exit 0")
 	dumpFlag := flags.Bool("dump", false, "dump details for each block to stdout")
 
@@ -56,10 +58,11 @@ func runCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.W
 	// service.Command
 	args = nil
 	dropFlag := map[string]bool{
-		"once":         true,
-		"commit-pulls": true,
-		"commit-trash": true,
-		"dump":         true,
+		"once":                    true,
+		"commit-pulls":            true,
+		"commit-trash":            true,
+		"commit-confirmed-fields": true,
+		"dump":                    true,
 	}
 	flags.Visit(func(f *flag.Flag) {
 		if !dropFlag[f.Name] {

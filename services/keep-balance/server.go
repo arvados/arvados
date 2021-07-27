@@ -24,11 +24,12 @@ import (
 //
 // RunOptions fields are controlled by command line flags.
 type RunOptions struct {
-	Once        bool
-	CommitPulls bool
-	CommitTrash bool
-	Logger      logrus.FieldLogger
-	Dumper      logrus.FieldLogger
+	Once                  bool
+	CommitPulls           bool
+	CommitTrash           bool
+	CommitConfirmedFields bool
+	Logger                logrus.FieldLogger
+	Dumper                logrus.FieldLogger
 
 	// SafeRendezvousState from the most recent balance operation,
 	// or "" if unknown. If this changes from one run to the next,

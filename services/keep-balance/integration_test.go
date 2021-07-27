@@ -88,9 +88,10 @@ func (s *integrationSuite) TestBalanceAPIFixtures(c *check.C) {
 		logger := logrus.New()
 		logger.Out = io.MultiWriter(&logBuf, os.Stderr)
 		opts := RunOptions{
-			CommitPulls: true,
-			CommitTrash: true,
-			Logger:      logger,
+			CommitPulls:           true,
+			CommitTrash:           true,
+			CommitConfirmedFields: true,
+			Logger:                logger,
 		}
 
 		bal := &Balancer{

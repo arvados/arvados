@@ -173,7 +173,12 @@ func (bal *Balancer) Run(client *arvados.Client, cluster *arvados.Cluster, runOp
 			return
 		}
 	}
-	err = bal.updateCollections(ctx, client, cluster)
+	if runOptions.CommitConfirmedFields {
+		err = bal.updateCollections(ctx, client, cluster)
+		if err != nil {
+			return
+		}
+	}
 	return
 }
 
