@@ -67,7 +67,6 @@ func (rtr *router) sendResponse(w http.ResponseWriter, req *http.Request, resp i
 		return
 	}
 
-	w.Header().Set("X-Request-Id", req.Header.Get("X-Request-Id"))
 	err := rtr.transcode(resp, &tmp)
 	if err != nil {
 		rtr.sendError(w, err)
