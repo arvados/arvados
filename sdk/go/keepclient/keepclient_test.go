@@ -8,7 +8,6 @@ import (
 	"bytes"
 	"context"
 	"crypto/md5"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -586,7 +585,7 @@ func (s *StandaloneSuite) TestPutWithTooManyFail(c *C) {
 
 	_, replicas, err := kc.PutB([]byte("foo"))
 
-	c.Check(err, FitsTypeOf, InsufficientReplicasError(errors.New("")))
+	c.Check(err, FitsTypeOf, InsufficientReplicasError{})
 	c.Check(replicas, Equals, 1)
 	c.Check(<-st.handled, Equals, ks1[0].url)
 }
@@ -1109,7 +1108,7 @@ func (s *StandaloneSuite) TestPutProxyInsufficientReplicas(c *C) {
 	_, replicas, err := kc.PutB([]byte("foo"))
 	<-st.handled
 
-	c.Check(err, FitsTypeOf, InsufficientReplicasError(errors.New("")))
+	c.Check(err, FitsTypeOf, InsufficientReplicasError{})
 	c.Check(replicas, Equals, 2)
 }
 
@@ -1187,7 +1186,7 @@ func (s *StandaloneSuite) TestPutBWant2ReplicasWithOnlyOneWritableLocalRoot(c *C
 
 	_, replicas, err := kc.PutB([]byte("foo"))
 
-	c.Check(err, FitsTypeOf, InsufficientReplicasError(errors.New("")))
+	c.Check(err, FitsTypeOf, InsufficientReplicasError{})
 	c.Check(replicas, Equals, 1)
 
 	c.Check(<-st.handled, Equals, localRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", 0)])
@@ -1225,7 +1224,7 @@ func (s *StandaloneSuite) TestPutBWithNoWritableLocalRoots(c *C) {
 
 	_, replicas, err := kc.PutB([]byte("foo"))
 
-	c.Check(err, FitsTypeOf, InsufficientReplicasError(errors.New("")))
+	c.Check(err, FitsTypeOf, InsufficientReplicasError{})
 	c.Check(replicas, Equals, 0)
 }
 

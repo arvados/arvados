@@ -7,7 +7,6 @@ package main
 import (
 	"bytes"
 	"crypto/md5"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
@@ -265,12 +264,16 @@ func (s *ServerRequiredSuite) TestDesiredReplicas(c *C) {
 	content := []byte("TestDesiredReplicas")
 	hash := fmt.Sprintf("%x", md5.Sum(content))
 
-	for _, kc.Want_replicas = range []int{0, 1, 2} {
+	for _, kc.Want_replicas = range []int{0, 1, 2, 3} {
 		locator, rep, err := kc.PutB(content)
-		c.Check(err, Equals, nil)
-		c.Check(rep, Equals, kc.Want_replicas)
-		if rep > 0 {
-			c.Check(locator, Matches, fmt.Sprintf(`^%s\+%d(\+.+)?$`, hash, len(content)))
+		if kc.Want_replicas < 3 {
+			c.Check(err, Equals, nil)
+			c.Check(rep, Equals, kc.Want_replicas)
+			if rep > 0 {
+				c.Check(locator, Matches, fmt.Sprintf(`^%s\+%d(\+.+)?$`, hash, len(content)))
+			}
+		} else {
+			c.Check(err, ErrorMatches, ".*503.*")
 		}
 	}
 }
@@ -438,7 +441,7 @@ func (s *ServerRequiredSuite) TestPutAskGetForbidden(c *C) {
 	hash2, rep, err := kc.PutB([]byte("bar"))
 	c.Check(hash2, Equals, "")
 	c.Check(rep, Equals, 0)
-	c.Check(err, FitsTypeOf, keepclient.InsufficientReplicasError(errors.New("")))
+	c.Check(err, FitsTypeOf, keepclient.InsufficientReplicasError{})
 
 	blocklen, _, err := kc.Ask(hash)
 	c.Check(err, FitsTypeOf, &keepclient.ErrNotFound{})
@@ -491,7 +494,7 @@ func testPermission(c *C, admin bool, perm arvados.UploadDownloadPermission) {
 		} else {
 			c.Check(hash2, Equals, "")
 			c.Check(rep, Equals, 0)
-			c.Check(err, FitsTypeOf, keepclient.InsufficientReplicasError(errors.New("")))
+			c.Check(err, FitsTypeOf, keepclient.InsufficientReplicasError{})
 		}
 		logbuf.Reset()
 	}
