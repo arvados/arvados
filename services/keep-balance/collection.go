@@ -239,8 +239,8 @@ func (bal *Balancer) updateCollections(ctx context.Context, c *arvados.Client, c
 	}
 	wg.Wait()
 	bal.logf("updated %d collections", updated)
-	if err := <-errs; err != nil {
-		return fmt.Errorf("error updating collections: %s", err)
+	if len(errs) > 0 {
+		return fmt.Errorf("error updating collections: %s", <-errs)
 	}
 	return nil
 }
