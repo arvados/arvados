@@ -9,6 +9,8 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 
 	"git.arvados.org/arvados.git/lib/config"
@@ -40,6 +42,13 @@ func runCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.W
 		"update collection fields (replicas_confirmed, storage_classes_confirmed, etc.)")
 	flags.Bool("version", false, "Write version information to stdout and exit 0")
 	dumpFlag := flags.Bool("dump", false, "dump details for each block to stdout")
+	pprofAddr := flags.String("pprof", "", "serve Go profile data at `[addr]:port`")
+
+	if *pprofAddr != "" {
+		go func() {
+			logrus.Println(http.ListenAndServe(*pprofAddr, nil))
+		}()
+	}
 
 	loader := config.NewLoader(os.Stdin, logger)
 	loader.SetupFlags(flags)

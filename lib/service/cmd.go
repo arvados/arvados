@@ -12,6 +12,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	_ "net/http/pprof"
 	"net/url"
 	"os"
 	"strings"
@@ -70,6 +71,7 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 	loader := config.NewLoader(stdin, log)
 	loader.SetupFlags(flags)
 	versionFlag := flags.Bool("version", false, "Write version information to stdout and exit 0")
+	pprofAddr := flags.String("pprof", "", "Serve Go profile data at `[addr]:port`")
 	err = flags.Parse(args)
 	if err == flag.ErrHelp {
 		err = nil
@@ -78,6 +80,12 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 		return 2
 	} else if *versionFlag {
 		return cmd.Version.RunCommand(prog, args, stdin, stdout, stderr)
+	}
+
+	if *pprofAddr != "" {
+		go func() {
+			log.Println(http.ListenAndServe(*pprofAddr, nil))
+		}()
 	}
 
 	if strings.HasSuffix(prog, "controller") {
