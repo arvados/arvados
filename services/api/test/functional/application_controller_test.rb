@@ -24,9 +24,6 @@ class ApplicationControllerTest < ActionController::TestCase
     token_time = token.split('+', 2).first.to_i
     assert_operator(token_time, :>=, @start_stamp, "error token too old")
     assert_operator(token_time, :<=, now_timestamp, "error token too new")
-    json_response['errors'].each do |err|
-      assert_match(/req-[a-z0-9]{20}/, err, "X-Request-Id value missing on error message")
-    end
   end
 
   def check_404(errmsg="Path not found")
@@ -54,28 +51,6 @@ class ApplicationControllerTest < ActionController::TestCase
     post(:create, params: {specimen: {badattr: "badvalue"}})
     assert_response 422
     check_error_token
-  end
-
-  test "X-Request-Id header" do
-    authorize_with :spectator
-    get(:index)
-    assert_match /^req-[0-9a-zA-Z]{20}$/, response.headers['X-Request-Id']
-  end
-
-  # The response header is the one that gets logged, so this test also
-  # ensures we log the ID supplied in the request, if any.
-  test "X-Request-Id given by client" do
-    authorize_with :spectator
-    @request.headers['X-Request-Id'] = 'abcdefG'
-    get(:index)
-    assert_equal 'abcdefG', response.headers['X-Request-Id']
-  end
-
-  test "X-Request-Id given by client is ignored if too long" do
-    authorize_with :spectator
-    @request.headers['X-Request-Id'] = 'abcdefG' * 1000
-    get(:index)
-    assert_match /^req-[0-9a-zA-Z]{20}$/, response.headers['X-Request-Id']
   end
 
   ['foo', '', 'FALSE', 'TRUE', nil, [true], {a:true}, '"true"'].each do |bogus|
