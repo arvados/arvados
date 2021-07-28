@@ -142,6 +142,8 @@ export const WebDavS3InfoDialog = compose(
             activeTab = 2;
         }
 
+        const wgetCommand = `wget --http-user=${props.data.username} --http-passwd=${props.data.token} --mirror --no-parent --no-host --cut-dirs=0 ${winDav.toString()}`;
+
         return <Dialog
             open={props.open}
             maxWidth="md"
@@ -256,8 +258,8 @@ export const WebDavS3InfoDialog = compose(
 
                     <DetailsAttribute
                         label='Wget command'
-                        value={`wget --http-user=${props.data.username} --http-passwd=${props.data.token} --mirror --no-parent --no-host --cut-dirs=0 ${winDav.toString()}`}
-                        copyValue={winDav.toString()} />
+                        value={wgetCommand}
+                        copyValue={wgetCommand} />
 
                     <DetailsAttribute
                         label='Username'
