@@ -39,6 +39,10 @@ h2(#main). development main (as of 2021-07-15)
 
 "Upgrading from 2.2.0":#v2_2_0
 
+h3. keep-balance requires access to PostgreSQL
+
+Make sure the keep-balance process can connect to your PostgreSQL server using the settings in your config file. (In previous versions, keep-balance accessed the database through controller instead of connecting to the database server directly.)
+
 h3. crunch-dispatch-local now requires config.yml
 
 The @crunch-dispatch-local@ dispatcher now reads the API host and token from the system wide @/etc/arvados/config.yml@ .  It will fail to start that file is not found or not readable.
