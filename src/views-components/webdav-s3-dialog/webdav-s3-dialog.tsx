@@ -154,6 +154,7 @@ export const WebDavS3InfoDialog = compose(
                     {supportsWebdav && <Tab value={0} key="cyberduck" label="WebDAV" />}
                     {supportsWebdav && <Tab value={1} key="windows" label="Windows or MacOS" />}
                     <Tab value={2} key="s3" label="S3 bucket" />
+                    {supportsWebdav && <Tab value={3} key="cli" label="wget / curl" />}
                 </Tabs>
 
                 <TabPanel index={1} value={activeTab}>
@@ -248,6 +249,25 @@ export const WebDavS3InfoDialog = compose(
                         label='Secret Key'
                         value={tokenSecret}
                         copyValue={tokenSecret} />
+
+                </TabPanel>
+
+                <TabPanel index={3} value={activeTab}>
+
+                    <DetailsAttribute
+                        label='Wget command'
+                        value={`wget --http-user=${props.data.username} --http-passwd=${props.data.token} --mirror --no-parent --no-host --cut-dirs=0 ${winDav.toString()}`}
+                        copyValue={winDav.toString()} />
+
+                    <DetailsAttribute
+                        label='Username'
+                        value={props.data.username}
+                        copyValue={props.data.username} />
+
+                    <DetailsAttribute
+                        label='Password'
+                        value={props.data.token}
+                        copyValue={props.data.token} />
 
                 </TabPanel>
 
