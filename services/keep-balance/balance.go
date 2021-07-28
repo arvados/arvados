@@ -18,6 +18,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -52,7 +53,7 @@ type Balancer struct {
 	classes       []string
 	mounts        int
 	mountsByClass map[string]map[*KeepMount]bool
-	collScanned   int
+	collScanned   int64
 	serviceRoots  map[string]string
 	errors        []error
 	stats         balancerStats
@@ -399,35 +400,10 @@ func (bal *Balancer) GetCurrentState(ctx context.Context, c *arvados.Client, pag
 		}(mounts)
 	}
 
-	// collQ buffers incoming collections so we can start fetching
-	// the next page without waiting for the current page to
-	// finish processing.
 	collQ := make(chan arvados.Collection, bufs)
 
-	// Start a goroutine to process collections. (We could use a
-	// worker pool here, but even with a single worker we already
-	// process collections much faster than we can retrieve them.)
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for coll := range collQ {
-			err := bal.addCollection(coll)
-			if err != nil || len(errs) > 0 {
-				select {
-				case errs <- err:
-				default:
-				}
-				for range collQ {
-				}
-				cancel()
-				return
-			}
-			bal.collScanned++
-		}
-	}()
-
-	// Start a goroutine to retrieve all collections from the
-	// Arvados database and send them to collQ for processing.
+	// Retrieve all collections from the database and send them to
+	// collQ.
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -454,6 +430,27 @@ func (bal *Balancer) GetCurrentState(ctx context.Context, c *arvados.Client, pag
 			cancel()
 		}
 	}()
+
+	// Parse manifests from collQ and pass the block hashes to
+	// BlockStateMap to track desired replication.
+	for i := 0; i < runtime.NumCPU(); i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for coll := range collQ {
+				err := bal.addCollection(coll)
+				if err != nil || len(errs) > 0 {
+					select {
+					case errs <- err:
+					default:
+					}
+					cancel()
+					continue
+				}
+				atomic.AddInt64(&bal.collScanned, 1)
+			}
+		}()
+	}
 
 	wg.Wait()
 	if len(errs) > 0 {
