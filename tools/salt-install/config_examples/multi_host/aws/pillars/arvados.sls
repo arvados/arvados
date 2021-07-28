@@ -196,69 +196,59 @@ arvados:
         ProviderType: t3.small
         VCPUs: 2
         RAM: 2GiB
-        IncludedScratch: 50GB
         AddedScratch: 50GB
         Price: 0.0208
       c5large:
         ProviderType: c5.large
         VCPUs: 2
         RAM: 4GiB
-        IncludedScratch: 50GB
         AddedScratch: 50GB
         Price: 0.085
       m5large:
         ProviderType: m5.large
         VCPUs: 2
         RAM: 8GiB
-        IncludedScratch: 50GB
         AddedScratch: 50GB
         Price: 0.096
       c5xlarge:
         ProviderType: c5.xlarge
         VCPUs: 4
         RAM: 8GiB
-        IncludedScratch: 100GB
         AddedScratch: 100GB
         Price: 0.17
       m5xlarge:
         ProviderType: m5.xlarge
         VCPUs: 4
         RAM: 16GiB
-        IncludedScratch: 100GB
         AddedScratch: 100GB
         Price: 0.192
       m5xlarge_extradisk:
         ProviderType: m5.xlarge
         VCPUs: 4
         RAM: 16GiB
-        IncludedScratch: 400GB
         AddedScratch: 400GB
         Price: 0.193
       c52xlarge:
         ProviderType: c5.2xlarge
         VCPUs: 8
         RAM: 16GiB
-        IncludedScratch: 200GB
         AddedScratch: 200GB
         Price: 0.34
       m52xlarge:
         ProviderType: m5.2xlarge
         VCPUs: 8
         RAM: 32GiB
-        IncludedScratch: 200GB
         AddedScratch: 200GB
         Price: 0.384
       c54xlarge:
         ProviderType: c5.4xlarge
         VCPUs: 16
         RAM: 32GiB
-        IncludedScratch: 400GB
         AddedScratch: 400GB
         Price: 0.68
       m54xlarge:
         ProviderType: m5.4xlarge
         VCPUs: 16
         RAM: 64GiB
-        IncludedScratch: 400GB
         AddedScratch: 400GB
         Price: 0.768
