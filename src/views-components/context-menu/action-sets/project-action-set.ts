@@ -59,7 +59,7 @@ export const readOnlyProjectActionSet: ContextMenuActionSet = [[
     },
     {
         icon: FolderSharedIcon,
-        name: "Access with 3rd party client",
+        name: "Open with 3rd party client",
         execute: (dispatch, resource) => {
             dispatch<any>(openWebDavS3InfoDialog(resource.uuid));
         }

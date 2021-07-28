@@ -148,7 +148,7 @@ export const WebDavS3InfoDialog = compose(
             onClose={props.closeDialog}
             style={{ alignSelf: 'stretch' }}>
             <CardHeader
-                title={`Access with 3rd party client`} />
+                title={`Open with 3rd party client`} />
             <div className={props.classes.details} >
                 <Tabs value={activeTab} onChange={props.data.setActiveTab}>
                     {supportsWebdav && <Tab value={0} key="cyberduck" label="WebDAV" />}
