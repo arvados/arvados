@@ -29,7 +29,7 @@ export const openWebDavS3InfoDialog = (uuid: string, activeTab?: number) =>
         dispatch(dialogActions.OPEN_DIALOG({
             id: COLLECTION_WEBDAV_S3_DIALOG_NAME,
             data: {
-                title: 'Access Collection using WebDAV or S3',
+                title: 'Access with 3rd party client',
                 token: getState().auth.extraApiToken || getState().auth.apiToken,
                 downloadUrl: getState().auth.config.keepWebServiceUrl,
                 collectionsUrl: getState().auth.config.keepWebInlineServiceUrl,

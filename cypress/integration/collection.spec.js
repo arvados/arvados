@@ -43,7 +43,7 @@ describe('Collection panel tests', function () {
             cy.goToPath(`/collections/${testCollection.uuid}`);
 
             cy.get('[data-cy=collection-panel-options-btn]').click();
-            cy.get('[data-cy=context-menu]').contains('Open as network folder or S3 bucket').click();
+            cy.get('[data-cy=context-menu]').contains('Access with 3rd party client').click();
             cy.get('[data-cy=download-button').click();
 
             const filename = path.join(downloadsFolder, `${testCollection.name}.duck`);

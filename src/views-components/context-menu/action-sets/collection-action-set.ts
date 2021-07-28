@@ -90,7 +90,7 @@ export const readOnlyCollectionActionSet: ContextMenuActionSet = [[
     toggleFavoriteAction,
     {
         icon: FolderSharedIcon,
-        name: "Open as network folder or S3 bucket",
+        name: "Access with 3rd party client",
         execute: (dispatch, resource) => {
             dispatch<any>(openWebDavS3InfoDialog(resource.uuid));
         }
