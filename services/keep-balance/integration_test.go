@@ -119,7 +119,7 @@ func (s *integrationSuite) TestBalanceAPIFixtures(c *check.C) {
 		classes []string
 	}{
 		{arvadostest.EmptyCollectionUUID, 0, []string{"default"}},
-		{arvadostest.FooCollection, 4, []string{"default"}},                                // "foo" blk
+		{arvadostest.FooCollection, 2, []string{"default"}},                                // "foo" blk
 		{arvadostest.StorageClassesDesiredDefaultConfirmedDefault, 2, []string{"default"}}, // "bar" blk
 		{arvadostest.StorageClassesDesiredArchiveConfirmedDefault, 0, []string{"archive"}}, // "bar" blk
 	} {
