@@ -135,10 +135,10 @@ export const WebDavS3InfoDialog = compose(
             tokenSecret = tokenUuid;
         }
 
-        const supportsWebdav = (props.data.uuid.indexOf("-4zz18-") === 5);
+        const isCollection = (props.data.uuid.indexOf("-4zz18-") === 5);
 
         let activeTab = props.data.activeTab;
-        if (!supportsWebdav) {
+        if (!isCollection) {
             activeTab = 2;
         }
 
@@ -151,10 +151,10 @@ export const WebDavS3InfoDialog = compose(
                 title={`Open with 3rd party client`} />
             <div className={props.classes.details} >
                 <Tabs value={activeTab} onChange={props.data.setActiveTab}>
-                    {supportsWebdav && <Tab value={0} key="cyberduck" label="WebDAV" />}
-                    {supportsWebdav && <Tab value={1} key="windows" label="Windows or MacOS" />}
+                    {isCollection && <Tab value={0} key="cyberduck" label="WebDAV" />}
+                    {isCollection && <Tab value={1} key="windows" label="Windows or MacOS" />}
                     <Tab value={2} key="s3" label="S3 bucket" />
-                    {supportsWebdav && <Tab value={3} key="cli" label="wget / curl" />}
+                    {isCollection && <Tab value={3} key="cli" label="wget / curl" />}
                 </Tabs>
 
                 <TabPanel index={1} value={activeTab}>
