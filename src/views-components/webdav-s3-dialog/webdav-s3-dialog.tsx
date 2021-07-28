@@ -151,7 +151,7 @@ export const WebDavS3InfoDialog = compose(
                 title={`Access with 3rd party client`} />
             <div className={props.classes.details} >
                 <Tabs value={activeTab} onChange={props.data.setActiveTab}>
-                    {supportsWebdav && <Tab value={0} key="cyberduck" label="Cyberduck/Mountain Duck or Gnome Files" />}
+                    {supportsWebdav && <Tab value={0} key="cyberduck" label="WebDAV" />}
                     {supportsWebdav && <Tab value={1} key="windows" label="Windows or MacOS" />}
                     <Tab value={2} key="s3" label="S3 bucket" />
                 </Tabs>
@@ -179,12 +179,14 @@ export const WebDavS3InfoDialog = compose(
                         <li>Open File Explorer</li>
                         <li>Click on "This PC", then go to Computer &rarr; Add a Network Location</li>
                         <li>Click Next, then choose "Add a custom network location", then click Next</li>
+                        <li>Use the "internet address" and credentials listed under Settings, above</li>
                     </ol>
 
                     <h3>MacOS</h3>
                     <ol>
                         <li>Open Finder</li>
                         <li>Click Go &rarr; Connect to server</li>
+                        <li>Use the "internet address" and credentials listed under Settings, above</li>
                     </ol>
                 </TabPanel>
 
@@ -203,6 +205,8 @@ export const WebDavS3InfoDialog = compose(
                         label='Password'
                         value={props.data.token}
                         copyValue={props.data.token} />
+
+                    <h3>Cyberduck/Mountain Duck</h3>
 
                     <Button
                         data-cy='download-button'
