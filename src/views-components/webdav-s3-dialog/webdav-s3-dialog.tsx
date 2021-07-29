@@ -148,6 +148,7 @@ export const WebDavS3InfoDialog = compose(
         }
 
         const wgetCommand = `wget --http-user=${props.data.username} --http-passwd=${props.data.token} --mirror --no-parent --no-host --cut-dirs=0 ${winDav.toString()}`;
+        const curlCommand = `curl -O -u ${props.data.username}:${props.data.token} ${winDav.toString()}<FILENAME>`;
 
         return <Dialog
             open={props.open}
@@ -270,14 +271,12 @@ export const WebDavS3InfoDialog = compose(
                     </DetailsAttribute>
 
                     <DetailsAttribute
-                        label='Username'
-                        value={props.data.username}
-                        copyValue={props.data.username} />
-
-                    <DetailsAttribute
-                        label='Password'
-                        value={props.data.token}
-                        copyValue={props.data.token} />
+                        label='Curl command'
+                        copyValue={curlCommand}
+                        classValue={props.classes.detailsAttrValWithCode}>
+                        <DefaultCodeSnippet
+                            lines={[curlCommand]} />
+                    </DetailsAttribute>
 
                 </TabPanel>
 
