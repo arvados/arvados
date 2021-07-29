@@ -2,14 +2,14 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-FROM ubuntu:xenial
+FROM debian:bullseye
 MAINTAINER Arvados Package Maintainers <packaging@arvados.org>
 
 ENV DEBIAN_FRONTEND noninteractive
 
 # Install dependencies
 RUN apt-get update && \
-    apt-get -y install --no-install-recommends curl ca-certificates
+    apt-get -y install --no-install-recommends curl ca-certificates gpg procps gpg-agent
 
 # Install RVM
 ADD generated/mpapis.asc /tmp/
@@ -19,14 +19,10 @@ RUN gpg --import --no-tty /tmp/mpapis.asc && \
     curl -L https://get.rvm.io | bash -s stable && \
     /usr/local/rvm/bin/rvm install 2.5 && \
     /usr/local/rvm/bin/rvm alias create default ruby-2.5 && \
+    echo "gem: --no-document" >> /etc/gemrc && \
     /usr/local/rvm/bin/rvm-exec default gem install bundler --version 2.2.19
 
 # udev daemon can't start in a container, so don't try.
 RUN mkdir -p /etc/udev/disabled
 
-RUN echo "deb file:///arvados/packages/ubuntu1604/ /" >>/etc/apt/sources.list
-
-# Add preferences file for the Arvados packages. This pins Arvados
-# packages at priority 501, so that older python dependency versions
-# are preferred in those cases where we need them
-ADD etc-apt-preferences.d-arvados /etc/apt/preferences.d/arvados
+RUN echo "deb file:///arvados/packages/debian11/ /" >>/etc/apt/sources.list
