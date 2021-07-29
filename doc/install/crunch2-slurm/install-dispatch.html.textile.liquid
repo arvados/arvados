@@ -44,7 +44,7 @@ crunch-dispatch-slurm polls the API server periodically for new containers to ru
 
 h3(#ReserveExtraRAM). Containers.ReserveExtraRAM: Extra RAM for jobs
 
-Extra RAM to reserve (in bytes) on each Slurm job submitted by Arvados, which is added to the amount specified in the container's @runtime_constraints@.  If not provided, the default value is zero.  Helpful when using @-cgroup-parent-subsystem@, where @crunch-run@ and @arv-mount@ share the control group memory limit with the user process.  In this situation, at least 256MiB is recommended to accomodate each container's @crunch-run@ and @arv-mount@ processes.
+Extra RAM to reserve (in bytes) on each Slurm job submitted by Arvados, which is added to the amount specified in the container's @runtime_constraints@.  If not provided, the default value is zero.  Helpful when using @-cgroup-parent-subsystem@, where @crunch-run@ and @arv-mount@ share the control group memory limit with the user process.  In this situation, at least 256MiB is recommended to accommodate each container's @crunch-run@ and @arv-mount@ processes.
 
 Supports suffixes @KB@, @KiB@, @MB@, @MiB@, @GB@, @GiB@, @TB@, @TiB@, @PB@, @PiB@, @EB@, @EiB@ (where @KB@ is 10[^3^], @KiB@ is 2[^10^], @MB@ is 10[^6^], @MiB@ is 2[^20^] and so forth).
 

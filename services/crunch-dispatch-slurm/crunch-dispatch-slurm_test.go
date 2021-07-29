@@ -104,7 +104,7 @@ func (sf *slurmFake) Cancel(name string) error {
 
 func (s *IntegrationSuite) integrationTest(c *C,
 	expectBatch [][]string,
-	runContainer func(*dispatch.Dispatcher, arvados.Container)) arvados.Container {
+	runContainer func(*dispatch.Dispatcher, arvados.Container)) (arvados.Container, error) {
 	arvadostest.ResetEnv()
 
 	arv, err := arvadosclient.MakeArvadosClient()
@@ -123,18 +123,21 @@ func (s *IntegrationSuite) integrationTest(c *C,
 
 	ctx, cancel := context.WithCancel(context.Background())
 	doneRun := make(chan struct{})
+	doneDispatch := make(chan error)
 
 	s.disp.Dispatcher = &dispatch.Dispatcher{
 		Arv:        arv,
 		PollPeriod: time.Second,
-		RunContainer: func(disp *dispatch.Dispatcher, ctr arvados.Container, status <-chan arvados.Container) {
+		RunContainer: func(disp *dispatch.Dispatcher, ctr arvados.Container, status <-chan arvados.Container) error {
 			go func() {
 				runContainer(disp, ctr)
 				s.slurm.queue = ""
 				doneRun <- struct{}{}
 			}()
-			s.disp.runContainer(disp, ctr, status)
+			err := s.disp.runContainer(disp, ctr, status)
 			cancel()
+			doneDispatch <- err
+			return nil
 		},
 	}
 
@@ -148,6 +151,7 @@ func (s *IntegrationSuite) integrationTest(c *C,
 	err = s.disp.Dispatcher.Run(ctx)
 	<-doneRun
 	c.Assert(err, Equals, context.Canceled)
+	errDispatch := <-doneDispatch
 
 	s.disp.sqCheck.Stop()
 
@@ -162,12 +166,12 @@ func (s *IntegrationSuite) integrationTest(c *C,
 	var container arvados.Container
 	err = arv.Get("containers", "zzzzz-dz642-queuedcontainer", nil, &container)
 	c.Check(err, IsNil)
-	return container
+	return container, errDispatch
 }
 
 func (s *IntegrationSuite) TestNormal(c *C) {
 	s.slurm = slurmFake{queue: "zzzzz-dz642-queuedcontainer 10000 100 PENDING Resources\n"}
-	container := s.integrationTest(c,
+	container, _ := s.integrationTest(c,
 		nil,
 		func(dispatcher *dispatch.Dispatcher, container arvados.Container) {
 			dispatcher.UpdateState(container.UUID, dispatch.Running)
@@ -181,7 +185,7 @@ func (s *IntegrationSuite) TestCancel(c *C) {
 	s.slurm = slurmFake{queue: "zzzzz-dz642-queuedcontainer 10000 100 PENDING Resources\n"}
 	readyToCancel := make(chan bool)
 	s.slurm.onCancel = func() { <-readyToCancel }
-	container := s.integrationTest(c,
+	container, _ := s.integrationTest(c,
 		nil,
 		func(dispatcher *dispatch.Dispatcher, container arvados.Container) {
 			dispatcher.UpdateState(container.UUID, dispatch.Running)
@@ -199,7 +203,7 @@ func (s *IntegrationSuite) TestCancel(c *C) {
 }
 
 func (s *IntegrationSuite) TestMissingFromSqueue(c *C) {
-	container := s.integrationTest(c,
+	container, _ := s.integrationTest(c,
 		[][]string{{
 			fmt.Sprintf("--job-name=%s", "zzzzz-dz642-queuedcontainer"),
 			fmt.Sprintf("--nice=%d", 10000),
@@ -218,24 +222,14 @@ func (s *IntegrationSuite) TestMissingFromSqueue(c *C) {
 
 func (s *IntegrationSuite) TestSbatchFail(c *C) {
 	s.slurm = slurmFake{errBatch: errors.New("something terrible happened")}
-	container := s.integrationTest(c,
+	container, err := s.integrationTest(c,
 		[][]string{{"--job-name=zzzzz-dz642-queuedcontainer", "--nice=10000", "--no-requeue", "--mem=11445", "--cpus-per-task=4", "--tmp=45777"}},
 		func(dispatcher *dispatch.Dispatcher, container arvados.Container) {
 			dispatcher.UpdateState(container.UUID, dispatch.Running)
 			dispatcher.UpdateState(container.UUID, dispatch.Complete)
 		})
 	c.Check(container.State, Equals, arvados.ContainerStateComplete)
-
-	arv, err := arvadosclient.MakeArvadosClient()
-	c.Assert(err, IsNil)
-
-	var ll arvados.LogList
-	err = arv.List("logs", arvadosclient.Dict{"filters": [][]string{
-		{"object_uuid", "=", container.UUID},
-		{"event_type", "=", "dispatch"},
-	}}, &ll)
-	c.Assert(err, IsNil)
-	c.Assert(len(ll.Items), Equals, 1)
+	c.Check(err, ErrorMatches, `something terrible happened`)
 }
 
 type StubbedSuite struct {
@@ -280,7 +274,7 @@ func (s *StubbedSuite) testWithServerStub(c *C, apiStubResponses map[string]arva
 	dispatcher := dispatch.Dispatcher{
 		Arv:        arv,
 		PollPeriod: time.Second,
-		RunContainer: func(disp *dispatch.Dispatcher, ctr arvados.Container, status <-chan arvados.Container) {
+		RunContainer: func(disp *dispatch.Dispatcher, ctr arvados.Container, status <-chan arvados.Container) error {
 			go func() {
 				time.Sleep(time.Second)
 				disp.UpdateState(ctr.UUID, dispatch.Running)
@@ -288,6 +282,7 @@ func (s *StubbedSuite) testWithServerStub(c *C, apiStubResponses map[string]arva
 			}()
 			s.disp.runContainer(disp, ctr, status)
 			cancel()
+			return nil
 		},
 	}
 

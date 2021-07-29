@@ -153,6 +153,7 @@ func (s *AggregatorSuite) setAllServiceURLs(listen string) {
 	for _, svc := range []*arvados.Service{
 		&svcs.Controller,
 		&svcs.DispatchCloud,
+		&svcs.DispatchLSF,
 		&svcs.Keepbalance,
 		&svcs.Keepproxy,
 		&svcs.Keepstore,

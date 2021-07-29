@@ -329,6 +329,7 @@ type Services struct {
 	Composer       Service
 	Controller     Service
 	DispatchCloud  Service
+	DispatchLSF    Service
 	GitHTTP        Service
 	GitSSH         Service
 	Health         Service
@@ -460,6 +461,10 @@ type ContainersConfig struct {
 			ComputeNodeNameservers StringSet
 			AssignNodeHostname     string
 		}
+	}
+	LSF struct {
+		BsubSudoUser      string
+		BsubArgumentsList []string
 	}
 }
 
@@ -597,6 +602,7 @@ const (
 	ServiceNameRailsAPI      ServiceName = "arvados-api-server"
 	ServiceNameController    ServiceName = "arvados-controller"
 	ServiceNameDispatchCloud ServiceName = "arvados-dispatch-cloud"
+	ServiceNameDispatchLSF   ServiceName = "arvados-dispatch-lsf"
 	ServiceNameHealth        ServiceName = "arvados-health"
 	ServiceNameWorkbench1    ServiceName = "arvados-workbench1"
 	ServiceNameWorkbench2    ServiceName = "arvados-workbench2"
@@ -614,6 +620,7 @@ func (svcs Services) Map() map[ServiceName]Service {
 		ServiceNameRailsAPI:      svcs.RailsAPI,
 		ServiceNameController:    svcs.Controller,
 		ServiceNameDispatchCloud: svcs.DispatchCloud,
+		ServiceNameDispatchLSF:   svcs.DispatchLSF,
 		ServiceNameHealth:        svcs.Health,
 		ServiceNameWorkbench1:    svcs.Workbench1,
 		ServiceNameWorkbench2:    svcs.Workbench2,
