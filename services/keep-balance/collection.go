@@ -163,7 +163,7 @@ func (bal *Balancer) updateCollections(ctx context.Context, c *arvados.Client, c
 			txPending := 0
 			flush := func(final bool) error {
 				err := tx.Commit()
-				if err != nil {
+				if err != nil && ctx.Err() == nil {
 					tx.Rollback()
 					return err
 				}
@@ -221,7 +221,7 @@ func (bal *Balancer) updateCollections(ctx context.Context, c *arvados.Client, c
 					where uuid=$4`,
 					repl, thresholdStr, classes, coll.UUID)
 				if err != nil {
-					if err != context.Canceled {
+					if ctx.Err() == nil {
 						bal.logf("%s: update failed: %s", coll.UUID, err)
 					}
 					continue
