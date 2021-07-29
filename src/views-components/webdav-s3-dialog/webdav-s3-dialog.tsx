@@ -10,8 +10,9 @@ import { WithDialogProps } from 'store/dialog/with-dialog';
 import { compose } from 'redux';
 import { DetailsAttribute } from "components/details-attribute/details-attribute";
 import { DownloadIcon } from "components/icon/icon";
+import { DefaultCodeSnippet } from "components/default-code-snippet/default-code-snippet";
 
-export type CssRules = 'details' | 'downloadButton';
+export type CssRules = 'details' | 'downloadButton' | 'detailsAttrValWithCode';
 
 const styles: StyleRulesCallback<CssRules> = theme => ({
     details: {
@@ -20,6 +21,10 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
     },
     downloadButton: {
         marginTop: theme.spacing.unit * 2,
+    },
+    detailsAttrValWithCode: {
+        display: "flex",
+        alignItems: "center",
     }
 });
 
@@ -258,8 +263,11 @@ export const WebDavS3InfoDialog = compose(
 
                     <DetailsAttribute
                         label='Wget command'
-                        value={wgetCommand}
-                        copyValue={wgetCommand} />
+                        copyValue={wgetCommand}
+                        classValue={props.classes.detailsAttrValWithCode}>
+                        <DefaultCodeSnippet
+                            lines={[wgetCommand]} />
+                    </DetailsAttribute>
 
                     <DetailsAttribute
                         label='Username'
