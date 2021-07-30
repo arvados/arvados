@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash
 
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
