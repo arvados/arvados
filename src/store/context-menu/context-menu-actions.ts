@@ -120,17 +120,6 @@ export const openKeepServiceContextMenu = (event: React.MouseEvent<HTMLElement>,
         }));
     };
 
-export const openComputeNodeContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) =>
-    (dispatch: Dispatch) => {
-        dispatch<any>(openContextMenu(event, {
-            name: '',
-            uuid: resourceUuid,
-            ownerUuid: '',
-            kind: ResourceKind.NODE,
-            menuKind: ContextMenuKind.NODE
-        }));
-    };
-
 export const openApiClientAuthorizationContextMenu =
     (event: React.MouseEvent<HTMLElement>, resourceUuid: string) =>
         (dispatch: Dispatch) => {

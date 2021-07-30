@@ -55,8 +55,6 @@ import { GroupDetailsPanelMiddlewareService } from 'store/group-details-panel/gr
 import { GROUP_DETAILS_PANEL_ID } from 'store/group-details-panel/group-details-panel-actions';
 import { LINK_PANEL_ID } from 'store/link-panel/link-panel-actions';
 import { LinkMiddlewareService } from 'store/link-panel/link-panel-middleware-service';
-import { COMPUTE_NODE_PANEL_ID } from 'store/compute-nodes/compute-nodes-actions';
-import { ComputeNodeMiddlewareService } from 'store/compute-nodes/compute-nodes-middleware-service';
 import { API_CLIENT_AUTHORIZATION_PANEL_ID } from 'store/api-client-authorizations/api-client-authorizations-actions';
 import { ApiClientAuthorizationMiddlewareService } from 'store/api-client-authorizations/api-client-authorizations-middleware-service';
 import { PublicFavoritesMiddlewareService } from 'store/public-favorites-panel/public-favorites-middleware-service';
@@ -124,9 +122,6 @@ export function configureStore(history: History, services: ServiceRepository, co
     const linkPanelMiddleware = dataExplorerMiddleware(
         new LinkMiddlewareService(services, LINK_PANEL_ID)
     );
-    const computeNodeMiddleware = dataExplorerMiddleware(
-        new ComputeNodeMiddlewareService(services, COMPUTE_NODE_PANEL_ID)
-    );
     const apiClientAuthorizationMiddlewareService = dataExplorerMiddleware(
         new ApiClientAuthorizationMiddlewareService(services, API_CLIENT_AUTHORIZATION_PANEL_ID)
     );
@@ -164,7 +159,6 @@ export function configureStore(history: History, services: ServiceRepository, co
         groupsPanelMiddleware,
         groupDetailsPanelMiddleware,
         linkPanelMiddleware,
-        computeNodeMiddleware,
         apiClientAuthorizationMiddlewareService,
         publicFavoritesMiddleware,
         collectionsContentAddress,

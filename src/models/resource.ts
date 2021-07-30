@@ -32,7 +32,6 @@ export enum ResourceKind {
     GROUP = "arvados#group",
     LINK = "arvados#link",
     LOG = "arvados#log",
-    NODE = "arvados#node",
     PROCESS = "arvados#containerRequest",
     PROJECT = "arvados#group",
     REPOSITORY = "arvados#repository",
@@ -57,8 +56,7 @@ export enum ResourceObjectType {
     VIRTUAL_MACHINE = '2x53u',
     WORKFLOW = '7fd4e',
     SSH_KEY = 'fngyi',
-    KEEP_SERVICE = 'bi6l4',
-    NODE = '7ekkf'
+    KEEP_SERVICE = 'bi6l4'
 }
 
 export const RESOURCE_UUID_PATTERN = '[a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15}';
@@ -101,8 +99,6 @@ export const extractUuidKind = (uuid: string = '') => {
             return ResourceKind.SSH_KEY;
         case ResourceObjectType.KEEP_SERVICE:
             return ResourceKind.KEEP_SERVICE;
-        case ResourceObjectType.NODE:
-            return ResourceKind.NODE;
         case ResourceObjectType.API_CLIENT_AUTHORIZATION:
             return ResourceKind.API_CLIENT_AUTHORIZATION;
         case ResourceObjectType.LINK:

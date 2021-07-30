@@ -81,10 +81,8 @@ import { loadRepositoriesPanel } from 'store/repositories/repositories-actions';
 import { loadKeepServicesPanel } from 'store/keep-services/keep-services-actions';
 import { loadUsersPanel, userBindedActions } from 'store/users/users-actions';
 import { linkPanelActions, loadLinkPanel } from 'store/link-panel/link-panel-actions';
-import { computeNodesActions, loadComputeNodesPanel } from 'store/compute-nodes/compute-nodes-actions';
 import { linkPanelColumns } from 'views/link-panel/link-panel-root';
 import { userPanelColumns } from 'views/user-panel/user-panel';
-import { computeNodePanelColumns } from 'views/compute-node-panel/compute-node-panel-root';
 import { loadApiClientAuthorizationsPanel, apiClientAuthorizationsActions } from 'store/api-client-authorizations/api-client-authorizations-actions';
 import { apiClientAuthorizationPanelColumns } from 'views/api-client-authorization-panel/api-client-authorization-panel-root';
 import * as groupPanelActions from 'store/groups-panel/groups-panel-actions';
@@ -140,7 +138,6 @@ export const loadWorkbench = () =>
             dispatch(groupPanelActions.GroupsPanelActions.SET_COLUMNS({ columns: groupsPanelColumns }));
             dispatch(groupDetailsPanelActions.GroupDetailsPanelActions.SET_COLUMNS({ columns: groupDetailsPanelColumns }));
             dispatch(linkPanelActions.SET_COLUMNS({ columns: linkPanelColumns }));
-            dispatch(computeNodesActions.SET_COLUMNS({ columns: computeNodePanelColumns }));
             dispatch(apiClientAuthorizationsActions.SET_COLUMNS({ columns: apiClientAuthorizationPanelColumns }));
             dispatch(collectionsContentAddressActions.SET_COLUMNS({ columns: collectionContentAddressPanelColumns }));
             dispatch(subprocessPanelActions.SET_COLUMNS({ columns: subprocessPanelColumns }));
@@ -515,11 +512,6 @@ export const loadUsers = handleFirstTimeLoad(
     async (dispatch: Dispatch<any>) => {
         await dispatch(loadUsersPanel());
         dispatch(setBreadcrumbs([{ label: 'Users' }]));
-    });
-
-export const loadComputeNodes = handleFirstTimeLoad(
-    async (dispatch: Dispatch<any>) => {
-        await dispatch(loadComputeNodesPanel());
     });
 
 export const loadApiClientAuthorizations = handleFirstTimeLoad(
