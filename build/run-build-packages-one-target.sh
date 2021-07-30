@@ -106,6 +106,9 @@ while [ $# -gt 0 ]; do
             elif ! [[ "$2" =~ (.*)-(.*) ]]; then
                 echo >&2 "FATAL: --build-version '$2' does not include an iteration. Try '${2}-1'?"
                 exit 1
+            elif ! [[ "$2" =~ ^[0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+|)(~rc[0-9]+|~dev[0-9]+|)-[0-9]+$ ]]; then
+                echo >&2 "FATAL: --build-version '$2' is invalid, must match pattern ^[0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+|)(~rc[0-9]+|~dev[0-9]+|)-[0-9]+$"
+                exit 1
             else
                 ARVADOS_BUILDING_VERSION="${BASH_REMATCH[1]}"
                 ARVADOS_BUILDING_ITERATION="${BASH_REMATCH[2]}"
