@@ -148,7 +148,7 @@ export const WebDavS3InfoDialog = compose(
         }
 
         const wgetCommand = `wget --http-user=${props.data.username} --http-passwd=${props.data.token} --mirror --no-parent --no-host --cut-dirs=0 ${winDav.toString()}`;
-        const curlCommand = `curl -O -u ${props.data.username}:${props.data.token} ${winDav.toString()}<FILENAME>`;
+        const curlCommand = `curl -O -u ${props.data.username}:${props.data.token} ${winDav.toString()}`;
 
         return <Dialog
             open={props.open}
@@ -228,7 +228,7 @@ export const WebDavS3InfoDialog = compose(
                         Download Cyber/Mountain Duck bookmark
                     </Button>
 
-                    <h3>Gnome</h3>
+                    <h3>GNOME</h3>
                     <ol>
                         <li>Open Files</li>
                         <li>Select +Other Locations</li>
@@ -277,6 +277,11 @@ export const WebDavS3InfoDialog = compose(
                         <DefaultCodeSnippet
                             lines={[curlCommand]} />
                     </DetailsAttribute>
+
+                    <p>
+                      Note: This curl command downloads single files.
+                      Append the desired filename to the end of the URL.
+                    </p>
 
                 </TabPanel>
 
