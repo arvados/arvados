@@ -20,6 +20,7 @@ export interface CollectionCreateFormDialogData {
     ownerUuid: string;
     name: string;
     description: string;
+    storageClassesDesired: string[];
 }
 
 export const COLLECTION_CREATE_FORM_NAME = "collectionCreateFormName";

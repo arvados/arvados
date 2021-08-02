@@ -27,6 +27,7 @@ export const CheckboxField = (props: WrappedFieldProps & { label?: string }) =>
 
 type MultiCheckboxFieldProps = {
     items: string[];
+    defaultValues?: string[];
     label?: string;
     minSelection?: number;
     maxSelection?: number;
@@ -37,18 +38,26 @@ type MultiCheckboxFieldProps = {
 export const MultiCheckboxField = (props: WrappedFieldProps & MultiCheckboxFieldProps) => {
     const isValid = (items: string[]) => (items.length >= (props.minSelection || 0)) &&
         (items.length <= (props.maxSelection || items.length));
+    if (props.input.value.length === 0 && (props.defaultValues || []).length !== 0) {
+        props.input.value = props.defaultValues ? [...props.defaultValues] : [];
+    }
     return <FormControl error={!isValid(props.input.value)}>
         <FormLabel component='label'>{props.label}</FormLabel>
         <FormGroup row={props.rowLayout}>
         { props.items.map((item, idx) =>
             <FormControlLabel
+                key={`label-${idx}`}
                 control={
                     <Checkbox
                         data-cy={`checkbox-${item}`}
-                        key={idx}
+                        key={`control-${idx}`}
                         name={`${props.input.name}[${idx}]`}
                         value={item}
-                        checked={props.input.value.indexOf(item) !== -1}
+                        checked={
+                            props.input.value.indexOf(item) !== -1 ||
+                            (props.input.value.length === 0 &&
+                                (props.defaultValues || []).indexOf(item) !== -1)
+                        }
                         onChange={e => {
                             const newValue = [...props.input.value];
                             if (e.target.checked) {
