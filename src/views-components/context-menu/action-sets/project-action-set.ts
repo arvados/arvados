@@ -59,7 +59,7 @@ export const readOnlyProjectActionSet: ContextMenuActionSet = [[
     },
     {
         icon: FolderSharedIcon,
-        name: "Open as network folder or S3 bucket",
+        name: "Open with 3rd party client",
         execute: (dispatch, resource) => {
             dispatch<any>(openWebDavS3InfoDialog(resource.uuid));
         }

@@ -10,8 +10,9 @@ import { WithDialogProps } from 'store/dialog/with-dialog';
 import { compose } from 'redux';
 import { DetailsAttribute } from "components/details-attribute/details-attribute";
 import { DownloadIcon } from "components/icon/icon";
+import { DefaultCodeSnippet } from "components/default-code-snippet/default-code-snippet";
 
-export type CssRules = 'details' | 'downloadButton';
+export type CssRules = 'details' | 'downloadButton' | 'detailsAttrValWithCode';
 
 const styles: StyleRulesCallback<CssRules> = theme => ({
     details: {
@@ -20,6 +21,10 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
     },
     downloadButton: {
         marginTop: theme.spacing.unit * 2,
+    },
+    detailsAttrValWithCode: {
+        display: "flex",
+        alignItems: "center",
     }
 });
 
@@ -135,12 +140,15 @@ export const WebDavS3InfoDialog = compose(
             tokenSecret = tokenUuid;
         }
 
-        const supportsWebdav = (props.data.uuid.indexOf("-4zz18-") === 5);
+        const isCollection = (props.data.uuid.indexOf("-4zz18-") === 5);
 
         let activeTab = props.data.activeTab;
-        if (!supportsWebdav) {
+        if (!isCollection) {
             activeTab = 2;
         }
+
+        const wgetCommand = `wget --http-user=${props.data.username} --http-passwd=${props.data.token} --mirror --no-parent --no-host --cut-dirs=0 ${winDav.toString()}`;
+        const curlCommand = `curl -O -u ${props.data.username}:${props.data.token} ${winDav.toString()}`;
 
         return <Dialog
             open={props.open}
@@ -148,12 +156,13 @@ export const WebDavS3InfoDialog = compose(
             onClose={props.closeDialog}
             style={{ alignSelf: 'stretch' }}>
             <CardHeader
-                title={`Open as Network Folder or S3 Bucket`} />
+                title={`Open with 3rd party client`} />
             <div className={props.classes.details} >
                 <Tabs value={activeTab} onChange={props.data.setActiveTab}>
-                    {supportsWebdav && <Tab value={0} key="cyberduck" label="Cyberduck/Mountain Duck or Gnome Files" />}
-                    {supportsWebdav && <Tab value={1} key="windows" label="Windows or MacOS" />}
+                    {isCollection && <Tab value={0} key="cyberduck" label="WebDAV" />}
+                    {isCollection && <Tab value={1} key="windows" label="Windows or MacOS" />}
                     <Tab value={2} key="s3" label="S3 bucket" />
+                    {isCollection && <Tab value={3} key="cli" label="wget / curl" />}
                 </Tabs>
 
                 <TabPanel index={1} value={activeTab}>
@@ -179,12 +188,14 @@ export const WebDavS3InfoDialog = compose(
                         <li>Open File Explorer</li>
                         <li>Click on "This PC", then go to Computer &rarr; Add a Network Location</li>
                         <li>Click Next, then choose "Add a custom network location", then click Next</li>
+                        <li>Use the "internet address" and credentials listed under Settings, above</li>
                     </ol>
 
                     <h3>MacOS</h3>
                     <ol>
                         <li>Open Finder</li>
                         <li>Click Go &rarr; Connect to server</li>
+                        <li>Use the "internet address" and credentials listed under Settings, above</li>
                     </ol>
                 </TabPanel>
 
@@ -204,6 +215,8 @@ export const WebDavS3InfoDialog = compose(
                         value={props.data.token}
                         copyValue={props.data.token} />
 
+                    <h3>Cyberduck/Mountain Duck</h3>
+
                     <Button
                         data-cy='download-button'
                         className={props.classes.downloadButton}
@@ -215,7 +228,7 @@ export const WebDavS3InfoDialog = compose(
                         Download Cyber/Mountain Duck bookmark
                     </Button>
 
-                    <h3>Gnome</h3>
+                    <h3>GNOME</h3>
                     <ol>
                         <li>Open Files</li>
                         <li>Select +Other Locations</li>
@@ -244,6 +257,31 @@ export const WebDavS3InfoDialog = compose(
                         label='Secret Key'
                         value={tokenSecret}
                         copyValue={tokenSecret} />
+
+                </TabPanel>
+
+                <TabPanel index={3} value={activeTab}>
+
+                    <DetailsAttribute
+                        label='Wget command'
+                        copyValue={wgetCommand}
+                        classValue={props.classes.detailsAttrValWithCode}>
+                        <DefaultCodeSnippet
+                            lines={[wgetCommand]} />
+                    </DetailsAttribute>
+
+                    <DetailsAttribute
+                        label='Curl command'
+                        copyValue={curlCommand}
+                        classValue={props.classes.detailsAttrValWithCode}>
+                        <DefaultCodeSnippet
+                            lines={[curlCommand]} />
+                    </DetailsAttribute>
+
+                    <p>
+                      Note: This curl command downloads single files.
+                      Append the desired filename to the end of the URL.
+                    </p>
 
                 </TabPanel>
 
