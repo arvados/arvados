@@ -38,7 +38,6 @@ export const AdminMenu = connect(mapStateToProps)(
                 <MenuItem onClick={() => dispatch(NavigationAction.navigateToApiClientAuthorizations)}>Api Tokens</MenuItem>
                 <MenuItem onClick={() => dispatch(openUserPanel())}>Users</MenuItem>
                 <MenuItem onClick={() => dispatch(NavigationAction.navigateToGroups)}>Groups</MenuItem>
-                <MenuItem onClick={() => dispatch(NavigationAction.navigateToComputeNodes)}>Compute Nodes</MenuItem>
                 <MenuItem onClick={() => dispatch(NavigationAction.navigateToKeepServices)}>Keep Services</MenuItem>
                 <MenuItem onClick={() => dispatch(NavigationAction.navigateToLinks)}>Links</MenuItem>
             </DropdownMenu>

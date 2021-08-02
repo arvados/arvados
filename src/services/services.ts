@@ -29,7 +29,6 @@ import { VirtualMachinesService } from "services/virtual-machines-service/virtua
 import { RepositoriesService } from 'services/repositories-service/repositories-service';
 import { AuthorizedKeysService } from 'services/authorized-keys-service/authorized-keys-service';
 import { VocabularyService } from 'services/vocabulary-service/vocabulary-service';
-import { NodeService } from 'services/node-service/node-service';
 import { FileViewersConfigService } from 'services/file-viewers-config-service/file-viewers-config-service';
 import { LinkAccountService } from "./link-account-service/link-account-service";
 import parse from "parse-duration";
@@ -69,7 +68,6 @@ export const createServices = (config: Config, actions: ApiActions, useApiClient
     const keepService = new KeepService(apiClient, actions);
     const linkService = new LinkService(apiClient, actions);
     const logService = new LogService(apiClient, actions);
-    const nodeService = new NodeService(apiClient, actions);
     const permissionService = new PermissionService(apiClient, actions);
     const projectService = new ProjectService(apiClient, actions);
     const repositoriesService = new RepositoriesService(apiClient, actions);
@@ -106,7 +104,6 @@ export const createServices = (config: Config, actions: ApiActions, useApiClient
         keepService,
         linkService,
         logService,
-        nodeService,
         permissionService,
         projectService,
         repositoriesService,

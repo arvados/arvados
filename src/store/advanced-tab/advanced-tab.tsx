@@ -21,7 +21,6 @@ import { VirtualMachinesResource } from 'models/virtual-machines';
 import { UserResource } from 'models/user';
 import { LinkResource } from 'models/link';
 import { KeepServiceResource } from 'models/keep-services';
-import { NodeResource } from 'models/node';
 import { ApiClientAuthorization } from 'models/api-client-authorization';
 import React from 'react';
 
@@ -76,7 +75,6 @@ enum ResourcePrefix {
     AUTORIZED_KEYS = 'authorized_keys',
     VIRTUAL_MACHINES = 'virtual_machines',
     KEEP_SERVICES = 'keep_services',
-    COMPUTE_NODES = 'nodes',
     USERS = 'users',
     API_CLIENT_AUTHORIZATIONS = 'api_client_authorizations',
     LINKS = 'links'
@@ -92,11 +90,6 @@ enum UserData {
     USERNAME = 'username'
 }
 
-enum ComputeNodeData {
-    COMPUTE_NODE = 'node',
-    PROPERTIES = 'properties'
-}
-
 enum ApiClientAuthorizationsData {
     API_CLIENT_AUTHORIZATION = 'api_client_authorization',
     DEFAULT_OWNER_UUID = 'default_owner_uuid'
@@ -107,9 +100,9 @@ enum LinkData {
     PROPERTIES = 'properties'
 }
 
-type AdvanceResourceKind = CollectionData | ProcessData | ProjectData | RepositoryData | SshKeyData | VirtualMachineData | KeepServiceData | ComputeNodeData | ApiClientAuthorizationsData | UserData | LinkData;
+type AdvanceResourceKind = CollectionData | ProcessData | ProjectData | RepositoryData | SshKeyData | VirtualMachineData | KeepServiceData | ApiClientAuthorizationsData | UserData | LinkData;
 type AdvanceResourcePrefix = GroupContentsResourcePrefix | ResourcePrefix;
-type AdvanceResponseData = ContainerRequestResource | ProjectResource | CollectionResource | RepositoryResource | SshKeyResource | VirtualMachinesResource | KeepServiceResource | NodeResource | ApiClientAuthorization | UserResource | LinkResource | undefined;
+type AdvanceResponseData = ContainerRequestResource | ProjectResource | CollectionResource | RepositoryResource | SshKeyResource | VirtualMachinesResource | KeepServiceResource | ApiClientAuthorization | UserResource | LinkResource | undefined;
 
 export const openAdvancedTabDialog = (uuid: string) =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
@@ -240,22 +233,6 @@ export const openAdvancedTabDialog = (uuid: string) =>
                     property: data!.username
                 });
                 dispatch<any>(initAdvancedTabDialog(advanceDataUser));
-                break;
-            case ResourceKind.NODE:
-                const computeNodeResources = getState().resources;
-                const dataComputeNode = getResource<NodeResource>(uuid)(computeNodeResources);
-                const advanceDataComputeNode = advancedTabData({
-                    uuid,
-                    metadata: '',
-                    user: '',
-                    apiResponseKind: computeNodeApiResponse,
-                    data: dataComputeNode,
-                    resourceKind: ComputeNodeData.COMPUTE_NODE,
-                    resourcePrefix: ResourcePrefix.COMPUTE_NODES,
-                    resourceKindProperty: ComputeNodeData.PROPERTIES,
-                    property: dataComputeNode ? dataComputeNode.properties : {}
-                });
-                dispatch<any>(initAdvancedTabDialog(advanceDataComputeNode));
                 break;
             case ResourceKind.API_CLIENT_AUTHORIZATION:
                 const apiClientAuthorizationResources = getState().resources;
@@ -574,32 +551,6 @@ const userApiResponse = (apiResponse: UserResource) => {
 "prefs": "${stringifyObject(prefs)},
 "default_owner_uuid": "${defaultOwnerUuid},
 "username": "${username}"`;
-
-    return <span style={{ marginLeft: '-15px' }}>{'{'} {response} {'\n'} <span style={{ marginLeft: '-15px' }}>{'}'}</span></span>;
-};
-
-const computeNodeApiResponse = (apiResponse: NodeResource) => {
-    const {
-        uuid, slotNumber, hostname, domain, ipAddress, firstPingAt, lastPingAt, jobUuid,
-        ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid,
-        properties, info
-    } = apiResponse;
-    const response = `
-"uuid": "${uuid}",
-"owner_uuid": "${ownerUuid}",
-"modified_by_client_uuid": ${stringify(modifiedByClientUuid)},
-"modified_by_user_uuid": ${stringify(modifiedByUserUuid)},
-"modified_at": ${stringify(modifiedAt)},
-"created_at": "${createdAt}",
-"slot_number": "${stringify(slotNumber)}",
-"hostname": "${stringify(hostname)}",
-"domain": "${stringify(domain)}",
-"ip_address": "${stringify(ipAddress)}",
-"first_ping_at": "${stringify(firstPingAt)}",
-"last_ping_at": "${stringify(lastPingAt)}",
-"job_uuid": "${stringify(jobUuid)}",
-"properties": "${JSON.stringify(properties, null, 2)}",
-"info": "${JSON.stringify(info, null, 2)}"`;
 
     return <span style={{ marginLeft: '-15px' }}>{'{'} {response} {'\n'} <span style={{ marginLeft: '-15px' }}>{'}'}</span></span>;
 };

@@ -39,7 +39,6 @@ export const Routes = {
     MY_ACCOUNT: '/my-account',
     LINK_ACCOUNT: '/link_account',
     KEEP_SERVICES: `/keep-services`,
-    COMPUTE_NODES: `/nodes`,
     USERS: '/users',
     API_CLIENT_AUTHORIZATIONS: `/api_client_authorizations`,
     GROUPS: '/groups',
@@ -175,9 +174,6 @@ export const matchFedTokenRoute = (route: string) =>
 
 export const matchUsersRoute = (route: string) =>
     matchPath(route, { path: Routes.USERS });
-
-export const matchComputeNodesRoute = (route: string) =>
-    matchPath(route, { path: Routes.COMPUTE_NODES });
 
 export const matchApiClientAuthorizationsRoute = (route: string) =>
     matchPath(route, { path: Routes.API_CLIENT_AUTHORIZATIONS });

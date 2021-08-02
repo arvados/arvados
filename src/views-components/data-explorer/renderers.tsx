@@ -232,11 +232,6 @@ export const TokenScopes = withResourceData('scopes', renderCommonData);
 
 export const TokenUserId = withResourceData('userId', renderCommonData);
 
-// Compute Node Resources
-const renderNodeInfo = (data: string) => {
-    return <Typography>{JSON.stringify(data, null, 4)}</Typography>;
-};
-
 const clusterColors = [
     ['#f44336', '#fff'],
     ['#2196f3', '#fff'],
@@ -261,20 +256,6 @@ export const ResourceCluster = (props: { uuid: string }) => {
         borderRadius: 3
     }}>{clusterId}</span>;
 };
-
-export const ComputeNodeInfo = withResourceData('info', renderNodeInfo);
-
-export const ComputeNodeDomain = withResourceData('domain', renderCommonData);
-
-export const ComputeNodeFirstPingAt = withResourceData('firstPingAt', renderCommonDate);
-
-export const ComputeNodeHostname = withResourceData('hostname', renderCommonData);
-
-export const ComputeNodeIpAddress = withResourceData('ipAddress', renderCommonData);
-
-export const ComputeNodeJobUuid = withResourceData('jobUuid', renderCommonData);
-
-export const ComputeNodeLastPingAt = withResourceData('lastPingAt', renderCommonDate);
 
 // Links Resources
 const renderLinkName = (item: { name: string }) =>

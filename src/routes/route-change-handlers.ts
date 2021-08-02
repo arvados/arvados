@@ -39,7 +39,6 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
     const sshKeysAdminMatch = Routes.matchSshKeysAdminRoute(pathname);
     const siteManagerMatch = Routes.matchSiteManagerRoute(pathname);
     const keepServicesMatch = Routes.matchKeepServicesRoute(pathname);
-    const computeNodesMatch = Routes.matchComputeNodesRoute(pathname);
     const apiClientAuthorizationsMatch = Routes.matchApiClientAuthorizationsRoute(pathname);
     const myAccountMatch = Routes.matchMyAccountRoute(pathname);
     const linkAccountMatch = Routes.matchLinkAccountRoute(pathname);
@@ -98,8 +97,6 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
         store.dispatch(WorkbenchActions.loadSiteManager);
     } else if (keepServicesMatch) {
         store.dispatch(WorkbenchActions.loadKeepServices);
-    } else if (computeNodesMatch) {
-        store.dispatch(WorkbenchActions.loadComputeNodes);
     } else if (apiClientAuthorizationsMatch) {
         store.dispatch(WorkbenchActions.loadApiClientAuthorizations);
     } else if (myAccountMatch) {
