@@ -6,5 +6,5 @@
 const ERROR_MESSAGE = 'Public key is invalid';
 
 export const isRsaKey = (value: any) => {
-    return value.match(/ssh-rsa AAAA[0-9A-Za-z+/]+[=]{0,3} ([^@]+@[^@]+)/i) ? undefined : ERROR_MESSAGE;
+    return value.match(/ssh-rsa AAAA[0-9A-Za-z+/]+[=]{0,3}(( [^@]+@[^@]+)|$)/i) ? undefined : ERROR_MESSAGE;
 };
