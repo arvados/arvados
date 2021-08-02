@@ -45,6 +45,7 @@ import SplitterLayout from 'react-splitter-layout';
 import { WorkflowPanel } from 'views/workflow-panel/workflow-panel';
 import { SearchResultsPanel } from 'views/search-results-panel/search-results-panel';
 import { SshKeyPanel } from 'views/ssh-key-panel/ssh-key-panel';
+import { SshKeyAdminPanel } from 'views/ssh-key-panel/ssh-key-admin-panel';
 import { SiteManagerPanel } from "views/site-manager-panel/site-manager-panel";
 import { MyAccountPanel } from 'views/my-account-panel/my-account-panel';
 import { SharingDialog } from 'views-components/sharing-dialog/sharing-dialog';
@@ -164,7 +165,7 @@ let routes = <>
     <Route path={Routes.VIRTUAL_MACHINES_ADMIN} component={VirtualMachineAdminPanel} />
     <Route path={Routes.REPOSITORIES} component={RepositoriesPanel} />
     <Route path={Routes.SSH_KEYS_USER} component={SshKeyPanel} />
-    <Route path={Routes.SSH_KEYS_ADMIN} component={SshKeyPanel} />
+    <Route path={Routes.SSH_KEYS_ADMIN} component={SshKeyAdminPanel} />
     <Route path={Routes.SITE_MANAGER} component={SiteManagerPanel} />
     <Route path={Routes.KEEP_SERVICES} component={KeepServicePanel} />
     <Route path={Routes.USERS} component={UserPanel} />

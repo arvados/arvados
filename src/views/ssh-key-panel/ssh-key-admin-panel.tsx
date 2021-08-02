@@ -10,13 +10,9 @@ import { openSshKeyContextMenu } from 'store/context-menu/context-menu-actions';
 import { SshKeyPanelRoot, SshKeyPanelRootDataProps, SshKeyPanelRootActionProps } from 'views/ssh-key-panel/ssh-key-panel-root';
 
 const mapStateToProps = (state: RootState): SshKeyPanelRootDataProps => {
-    const sshKeys = state.auth.sshKeys = state.auth.sshKeys.filter((key) => {
-      return key.authorizedUserUuid == state.auth.user.uuid;
-    });
-
     return {
-        sshKeys: sshKeys,
-        hasKeys: sshKeys!.length > 0
+        sshKeys: state.auth.sshKeys,
+        hasKeys: state.auth.sshKeys!.length > 0
     };
 };
 
@@ -32,4 +28,4 @@ const mapDispatchToProps = (dispatch: Dispatch): SshKeyPanelRootActionProps => (
     }
 });
 
-export const SshKeyPanel = connect(mapStateToProps, mapDispatchToProps)(SshKeyPanelRoot);
+export const SshKeyAdminPanel = connect(mapStateToProps, mapDispatchToProps)(SshKeyPanelRoot);
