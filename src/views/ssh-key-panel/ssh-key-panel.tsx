@@ -10,7 +10,7 @@ import { openSshKeyContextMenu } from 'store/context-menu/context-menu-actions';
 import { SshKeyPanelRoot, SshKeyPanelRootDataProps, SshKeyPanelRootActionProps } from 'views/ssh-key-panel/ssh-key-panel-root';
 
 const mapStateToProps = (state: RootState): SshKeyPanelRootDataProps => {
-    const sshKeys = state.auth.sshKeys = state.auth.sshKeys.filter((key) => {
+    const sshKeys = state.auth.sshKeys.filter((key) => {
       return key.authorizedUserUuid == state.auth.user.uuid;
     });
 
