@@ -141,7 +141,7 @@ You may also use a different method to pick the cluster identifier. The cluster 
 
 h2(#dnstls). DNS entries and TLS certificates
 
-The following services are normally public-facing and require DNS entries and corresponding TLS certificates.  Get certificates from your preferred TLS certificate provider.  We recommend using "Let's Encrypt":https://letsencrypt.org/.  You can run several services on same node, but each distinct hostname requires its own TLS certificate.
+The following services are normally public-facing and require DNS entries and corresponding TLS certificates.  Get certificates from your preferred TLS certificate provider.  We recommend using "Let's Encrypt":https://letsencrypt.org/.  You can run several services on same node, but each distinct hostname requires a valid, matching TLS certificate.
 
 This guide uses the following hostname conventions.  A later part of this guide will describe how to set up Nginx virtual hosts.
 
@@ -150,15 +150,60 @@ table(table table-bordered table-condensed).
 |_. Function|_. Hostname|
 |Arvados API|@ClusterID.example.com@|
 |Arvados Git server|git.@ClusterID.example.com@|
+|Arvados Webshell|webshell.@ClusterID.example.com@|
 |Arvados Websockets endpoint|ws.@ClusterID.example.com@|
 |Arvados Workbench|workbench.@ClusterID.example.com@|
 |Arvados Workbench 2|workbench2.@ClusterID.example.com@|
 |Arvados Keepproxy server|keep.@ClusterID.example.com@|
 |Arvados Keep-web server|download.@ClusterID.example.com@
 _and_
-*.collections.@ClusterID.example.com@ or
-*<notextile>--</notextile>collections.@ClusterID.example.com@ or
+*.collections.@ClusterID.example.com@ _or_
+*<notextile>--</notextile>collections.@ClusterID.example.com@ _or_
 collections.@ClusterID.example.com@ (see the "keep-web install docs":install-keep-web.html)|
+</div>
+
+Setting up Arvados is easiest when Wildcard TLS and wildcard DNS are available. It is also possible to set up Arvados without wildcard TLS and DNS. The table below lists the required TLS certificates and DNS hostnames in each scenario.
+
+<div class="offset1">
+table(table table-bordered table-condensed).
+||_. Wildcard TLS and DNS available|_. Wildcard TLS available|_. Other|
+|TLS|*.@ClusterID.example.com@
+@ClusterID.example.com@
+*.collections.@ClusterID.example.com@|*.@ClusterID.example.com@
+@ClusterID.example.com@|@ClusterID.example.com@
+git.@ClusterID.example.com@
+webshell.@ClusterID.example.com@
+ws.@ClusterID.example.com@
+workbench.@ClusterID.example.com@
+workbench2.@ClusterID.example.com@
+keep.@ClusterID.example.com@
+download.@ClusterID.example.com@
+collections.@ClusterID.example.com@|
+|DNS|@ClusterID.example.com@
+git.@ClusterID.example.com@
+webshell.@ClusterID.example.com@
+ws.@ClusterID.example.com@
+workbench.@ClusterID.example.com@
+workbench2.@ClusterID.example.com@
+keep.@ClusterID.example.com@
+download.@ClusterID.example.com@
+*.collections.@ClusterID.example.com@|@ClusterID.example.com@
+git.@ClusterID.example.com@
+webshell.@ClusterID.example.com@
+ws.@ClusterID.example.com@
+workbench.@ClusterID.example.com@
+workbench2.@ClusterID.example.com@
+keep.@ClusterID.example.com@
+download.@ClusterID.example.com@
+collections.@ClusterID.example.com@|@ClusterID.example.com@
+git.@ClusterID.example.com@
+webshell.@ClusterID.example.com@
+ws.@ClusterID.example.com@
+workbench.@ClusterID.example.com@
+workbench2.@ClusterID.example.com@
+keep.@ClusterID.example.com@
+download.@ClusterID.example.com@
+collections.@ClusterID.example.com@|
 </div>
 
 {% include 'notebox_begin' %}
