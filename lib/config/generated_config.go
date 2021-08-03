@@ -526,10 +526,10 @@ Clusters:
       # WebDAV would have to expose XSS vulnerabilities in order to
       # handle the redirect (see discussion on Services.WebDAV).
       #
-      # This setting has no effect in the recommended configuration,
-      # where the WebDAV is configured to have a separate domain for
-      # every collection; in this case XSS protection is provided by
-      # browsers' same-origin policy.
+      # This setting has no effect in the recommended configuration, where the
+      # WebDAV service is configured to have a separate domain for every
+      # collection and XSS protection is provided by browsers' same-origin
+      # policy.
       #
       # The default setting (false) is appropriate for a multi-user site.
       TrustAllContent: false
