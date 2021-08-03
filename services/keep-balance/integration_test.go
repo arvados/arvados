@@ -118,10 +118,10 @@ func (s *integrationSuite) TestBalanceAPIFixtures(c *check.C) {
 		repl    int
 		classes []string
 	}{
-		{arvadostest.EmptyCollectionUUID, 0, []string{"default"}},
+		{arvadostest.EmptyCollectionUUID, 0, []string{}},
 		{arvadostest.FooCollection, 2, []string{"default"}},                                // "foo" blk
 		{arvadostest.StorageClassesDesiredDefaultConfirmedDefault, 2, []string{"default"}}, // "bar" blk
-		{arvadostest.StorageClassesDesiredArchiveConfirmedDefault, 0, []string{"archive"}}, // "bar" blk
+		{arvadostest.StorageClassesDesiredArchiveConfirmedDefault, 0, []string{}},          // "bar" blk
 	} {
 		c.Logf("%#v", trial)
 		var coll arvados.Collection

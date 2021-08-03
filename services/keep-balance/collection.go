@@ -199,10 +199,13 @@ func (bal *Balancer) updateCollections(ctx context.Context, c *arvados.Client, c
 					// temporarily.
 					repl = desired
 				}
-				classes, err := json.Marshal(coll.StorageClassesDesired)
-				if err != nil {
-					bal.logf("BUG? json.Marshal(%v) failed: %s", classes, err)
-					continue
+				classes := emptyJSONArray
+				if repl > 0 {
+					classes, err = json.Marshal(coll.StorageClassesDesired)
+					if err != nil {
+						bal.logf("BUG? json.Marshal(%v) failed: %s", classes, err)
+						continue
+					}
 				}
 				needUpdate := coll.ReplicationConfirmed == nil || *coll.ReplicationConfirmed != repl || len(coll.StorageClassesConfirmed) != len(coll.StorageClassesDesired)
 				for i := range coll.StorageClassesDesired {
@@ -259,3 +262,5 @@ func goSendErr(errs chan<- error, f func() error) {
 		}
 	}()
 }
+
+var emptyJSONArray = []byte("[]")
