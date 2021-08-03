@@ -142,13 +142,13 @@ You may also use a different method to pick the cluster identifier. The cluster 
 
 h2(#dnstls). DNS entries and TLS certificates
 
-The following services are normally public-facing and require DNS entries and corresponding TLS certificates.  Get certificates from your preferred TLS certificate provider.  We recommend using "Let's Encrypt":https://letsencrypt.org/.  You can run several services on same node, but each distinct hostname requires a valid, matching TLS certificate.
+The following services are normally public-facing and require DNS entries and corresponding TLS certificates.  Get certificates from your preferred TLS certificate provider.  We recommend using "Let's Encrypt":https://letsencrypt.org/.  You can run several services on the same node, but each distinct DNS name requires a valid, matching TLS certificate.
 
-This guide uses the following hostname conventions.  A later part of this guide will describe how to set up Nginx virtual hosts.
+This guide uses the following DNS name conventions.  A later part of this guide will describe how to set up Nginx virtual hosts.
 
 <div class="offset1">
 table(table table-bordered table-condensed).
-|_. Function|_. Hostname|
+|_. Function|_. DNS name|
 |Arvados API|@ClusterID.example.com@|
 |Arvados Git server|git.@ClusterID.example.com@|
 |Arvados Webshell|webshell.@ClusterID.example.com@|
@@ -163,7 +163,9 @@ _and_
 collections.@ClusterID.example.com@ (see the "keep-web install docs":install-keep-web.html)|
 </div>
 
-Setting up Arvados is easiest when Wildcard TLS and wildcard DNS are available. It is also possible to set up Arvados without wildcard TLS and DNS. The table below lists the required TLS certificates and DNS hostnames in each scenario.
+Setting up Arvados is easiest when Wildcard TLS and wildcard DNS are available. It is also possible to set up Arvados without wildcard TLS and DNS, but not having a wildcard for @keep-web@ (i.e. not having *.collections.@ClusterID.example.com@) comes with a tradeoff: it will disable some features that allow users to view Arvados-hosted data in their browsers. More information on this tradeoff caused by the CORS rules applied by modern browsers is available in the "keep-web URL pattern guide":../api/keep-web-urls.html.
+
+The table below lists the required TLS certificates and DNS names in each scenario.
 
 <div class="offset1">
 table(table table-bordered table-condensed).
