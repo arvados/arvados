@@ -680,8 +680,8 @@ func rlookup(start inode, path string) (node inode, err error) {
 			}
 		}
 		node, err = func() (inode, error) {
-			node.RLock()
-			defer node.RUnlock()
+			node.Lock()
+			defer node.Unlock()
 			return node.Child(name, nil)
 		}()
 		if node == nil || err != nil {
