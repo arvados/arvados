@@ -66,19 +66,19 @@ export function formatUploadSpeed(prevLoaded: number, loaded: number, prevTime: 
 
 const FILE_SIZES = [
     {
-        base: 1000000000000,
+        base: 1099511627776,
         unit: "TB"
     },
     {
-        base: 1000000000,
+        base: 1073741824,
         unit: "GB"
     },
     {
-        base: 1000000,
+        base: 1048576,
         unit: "MB"
     },
     {
-        base: 1000,
+        base: 1024,
         unit: "KB"
     },
     {
