@@ -1228,6 +1228,26 @@ Clusters:
         Price: 0.1
         Preemptible: false
 
+    StorageClasses:
+
+      # If you use multiple storage classes, specify them here, using
+      # the storage class name as the key (in place of "SAMPLE" in
+      # this sample entry).
+      SAMPLE:
+
+        # Priority determines the order volumes should be searched
+        # when reading data, in cases where a keepstore server has
+        # access to multiple volumes with different storage classes.
+        Priority: 0
+
+        # Default determines which storage class(es) should be used
+        # when a user/client writes data or saves a new collection
+        # without specifying storage classes.
+        #
+        # If any StorageClasses are configured, at least one of them
+        # must have Default: true.
+        Default: true
+
     Volumes:
       SAMPLE:
         # AccessViaHosts specifies which keepstore processes can read
@@ -1251,7 +1271,9 @@ Clusters:
         ReadOnly: false
         Replication: 1
         StorageClasses:
-          default: true
+          # If you have configured storage classes (see StorageClasses
+          # section above), add an entry here for each storage class
+          # satisfied by this volume.
           SAMPLE: true
         Driver: S3
         DriverParameters:
