@@ -35,11 +35,12 @@ func (s *suite) TestTrackContainer(c *C) {
 	time.AfterFunc(10*time.Second, func() { done <- false })
 	d := &Dispatcher{
 		Arv: arv,
-		RunContainer: func(dsp *Dispatcher, ctr arvados.Container, status <-chan arvados.Container) {
+		RunContainer: func(dsp *Dispatcher, ctr arvados.Container, status <-chan arvados.Container) error {
 			for ctr := range status {
 				c.Logf("%#v", ctr)
 			}
 			done <- true
+			return nil
 		},
 	}
 	d.TrackContainer(arvadostest.QueuedContainerUUID)

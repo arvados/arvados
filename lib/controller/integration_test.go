@@ -26,6 +26,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/sdk/go/httpserver"
 	check "gopkg.in/check.v1"
 )
 
@@ -429,6 +430,74 @@ func (s *IntegrationSuite) TestCreateContainerRequestWithBadToken(c *check.C) {
 		resp, err := ac1.Do(req)
 		c.Assert(err, check.IsNil)
 		c.Assert(resp.StatusCode, check.Equals, tt.expectedCode)
+	}
+}
+
+func (s *IntegrationSuite) TestRequestIDHeader(c *check.C) {
+	conn1 := s.testClusters["z1111"].Conn()
+	rootctx1, _, _ := s.testClusters["z1111"].RootClients()
+	userctx1, ac1, _, _ := s.testClusters["z1111"].UserClients(rootctx1, c, conn1, "user@example.com", true)
+
+	coll, err := conn1.CollectionCreate(userctx1, arvados.CreateOptions{})
+	c.Check(err, check.IsNil)
+	specimen, err := conn1.SpecimenCreate(userctx1, arvados.CreateOptions{})
+	c.Check(err, check.IsNil)
+
+	tests := []struct {
+		path            string
+		reqIdProvided   bool
+		notFoundRequest bool
+	}{
+		{"/arvados/v1/collections", false, false},
+		{"/arvados/v1/collections", true, false},
+		{"/arvados/v1/nonexistant", false, true},
+		{"/arvados/v1/nonexistant", true, true},
+		{"/arvados/v1/collections/" + coll.UUID, false, false},
+		{"/arvados/v1/collections/" + coll.UUID, true, false},
+		{"/arvados/v1/specimens/" + specimen.UUID, false, false},
+		{"/arvados/v1/specimens/" + specimen.UUID, true, false},
+		{"/arvados/v1/collections/z1111-4zz18-0123456789abcde", false, true},
+		{"/arvados/v1/collections/z1111-4zz18-0123456789abcde", true, true},
+		{"/arvados/v1/specimens/z1111-j58dm-0123456789abcde", false, true},
+		{"/arvados/v1/specimens/z1111-j58dm-0123456789abcde", true, true},
+	}
+
+	for _, tt := range tests {
+		c.Log(c.TestName() + " " + tt.path)
+		req, err := http.NewRequest("GET", "https://"+ac1.APIHost+tt.path, nil)
+		c.Assert(err, check.IsNil)
+		customReqId := "abcdeG"
+		if !tt.reqIdProvided {
+			c.Assert(req.Header.Get("X-Request-Id"), check.Equals, "")
+		} else {
+			req.Header.Set("X-Request-Id", customReqId)
+		}
+		resp, err := ac1.Do(req)
+		c.Assert(err, check.IsNil)
+		if tt.notFoundRequest {
+			c.Check(resp.StatusCode, check.Equals, http.StatusNotFound)
+		} else {
+			c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+		}
+		if !tt.reqIdProvided {
+			c.Check(resp.Header.Get("X-Request-Id"), check.Matches, "^req-[0-9a-zA-Z]{20}$")
+			if tt.notFoundRequest {
+				var jresp httpserver.ErrorResponse
+				err := json.NewDecoder(resp.Body).Decode(&jresp)
+				c.Check(err, check.IsNil)
+				c.Assert(jresp.Errors, check.HasLen, 1)
+				c.Check(jresp.Errors[0], check.Matches, "^.*(req-[0-9a-zA-Z]{20}).*$")
+			}
+		} else {
+			c.Check(resp.Header.Get("X-Request-Id"), check.Equals, customReqId)
+			if tt.notFoundRequest {
+				var jresp httpserver.ErrorResponse
+				err := json.NewDecoder(resp.Body).Decode(&jresp)
+				c.Check(err, check.IsNil)
+				c.Assert(jresp.Errors, check.HasLen, 1)
+				c.Check(jresp.Errors[0], check.Matches, "^.*("+customReqId+").*$")
+			}
+		}
 	}
 }
 

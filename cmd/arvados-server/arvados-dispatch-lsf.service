@@ -3,21 +3,18 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 [Unit]
-Description=Arvados Keep Storage Daemon
+Description=arvados-dispatch-lsf
 Documentation=https://doc.arvados.org/
 After=network.target
+AssertPathExists=/etc/arvados/config.yml
 
 # systemd>=230 (debian:9) obeys StartLimitIntervalSec in the [Unit] section
 StartLimitIntervalSec=0
 
 [Service]
-# trigger Go garbage collection when the ratio of freshly allocated data to live data
-# remaining after the previous collection reaches 10% rather than the default 100%, so
-# that Keepstore's memory use is tightly coupled to the number of buffers it is
-# configured to use.
-Environment=GOGC=10
 Type=notify
-ExecStart=/usr/bin/keepstore
+EnvironmentFile=-/etc/arvados/environment
+ExecStart=/usr/bin/arvados-dispatch-lsf
 # Set a reasonable default for the open file limit
 LimitNOFILE=65536
 Restart=always

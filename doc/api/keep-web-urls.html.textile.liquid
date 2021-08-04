@@ -14,7 +14,7 @@ Files served by @keep-web@ can be rendered directly in the browser, or @keep-web
 
 When serving files that will render directly in the browser, it is important to properly configure the keep-web service to migitate cross-site-scripting (XSS) attacks.  A HTML page can be stored in a collection.  If an attacker causes a victim to visit that page through Workbench, the HTML will be rendered by the browser.  If all collections are served at the same domain, the browser will consider collections as coming from the same origin, which will grant access to the same browsing data (cookies and local storage).  This would enable malicious Javascript on that page to access Arvados on behalf of the victim.
 
-This can be mitigated by having separate domains for each collection, or limiting preview to circumstances where the collection is not accessed with the user's regular full-access token.  For cluster administrators that understand the risks, this protection can also be turned off.
+This can be mitigated by having separate domains for each collection, or limiting preview to circumstances where the collection is not accessed with the user's regular full-access token.  For clusters where this risk is acceptable, this protection can also be turned off by setting the @Collections/TrustAllContent@ configuration flag to true, see the "configuration reference":../admin/config.html for more detail.
 
 The following "same origin" URL patterns are supported for public collections and collections shared anonymously via secret links (i.e., collections which can be served by keep-web without making use of any implicit credentials like cookies). See "Same-origin URLs" below.
 

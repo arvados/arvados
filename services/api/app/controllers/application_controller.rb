@@ -196,7 +196,7 @@ class ApplicationController < ActionController::Base
     end
     err[:errors] ||= args
     err[:errors].map! do |err|
-      err += " (" + Thread.current[:request_id] + ")"
+      err += " (#{request.request_id})"
     end
     err[:error_token] = [Time.now.utc.to_i, "%08x" % rand(16 ** 8)].join("+")
     status = err.delete(:status) || 422
@@ -419,17 +419,9 @@ class ApplicationController < ActionController::Base
   end
 
   def set_current_request_id
-    req_id = request.headers['X-Request-Id']
-    if !req_id || req_id.length < 1 || req_id.length > 1024
-      # Client-supplied ID is either missing or too long to be
-      # considered friendly.
-      req_id = "req-" + Random::DEFAULT.rand(2**128).to_s(36)[0..19]
-    end
-    response.headers['X-Request-Id'] = Thread.current[:request_id] = req_id
-    Rails.logger.tagged(req_id) do
+    Rails.logger.tagged(request.request_id) do
       yield
     end
-    Thread.current[:request_id] = nil
   end
 
   def append_info_to_payload(payload)

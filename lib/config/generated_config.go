@@ -58,6 +58,9 @@ Clusters:
       DispatchCloud:
         InternalURLs: {SAMPLE: {}}
         ExternalURL: "-"
+      DispatchLSF:
+        InternalURLs: {SAMPLE: {}}
+        ExternalURL: "-"
       Keepproxy:
         InternalURLs: {SAMPLE: {}}
         ExternalURL: ""
@@ -530,10 +533,10 @@ Clusters:
       # WebDAV would have to expose XSS vulnerabilities in order to
       # handle the redirect (see discussion on Services.WebDAV).
       #
-      # This setting has no effect in the recommended configuration,
-      # where the WebDAV is configured to have a separate domain for
-      # every collection; in this case XSS protection is provided by
-      # browsers' same-origin policy.
+      # This setting has no effect in the recommended configuration, where the
+      # WebDAV service is configured to have a separate domain for every
+      # collection and XSS protection is provided by browsers' same-origin
+      # policy.
       #
       # The default setting (false) is appropriate for a multi-user site.
       TrustAllContent: false
@@ -1024,6 +1027,19 @@ Clusters:
           # assign_node_hostname: compute%<slot_number>04d
           # (See http://ruby-doc.org/core-2.2.2/Kernel.html#method-i-format for more.)
           AssignNodeHostname: "compute%<slot_number>d"
+
+      LSF:
+        # Additional arguments to bsub when submitting Arvados
+        # containers as LSF jobs.
+        BsubArgumentsList: []
+
+        # Use sudo to switch to this user account when submitting LSF
+        # jobs.
+        #
+        # This account must exist on the hosts where LSF jobs run
+        # ("execution hosts"), as well as on the host where the
+        # Arvados LSF dispatcher runs ("submission host").
+        BsubSudoUser: "crunch"
 
       JobsAPI:
         # Enable the legacy 'jobs' API (crunch v1).  This value must be a string.

@@ -48,6 +48,8 @@ const (
 	QueuedContainerRequestUUID = "zzzzz-xvhdp-cr4queuedcontnr"
 	QueuedContainerUUID        = "zzzzz-dz642-queuedcontainer"
 
+	LockedContainerUUID = "zzzzz-dz642-lockedcontainer"
+
 	RunningContainerUUID = "zzzzz-dz642-runningcontainr"
 
 	CompletedContainerUUID         = "zzzzz-dz642-compltcontainer"

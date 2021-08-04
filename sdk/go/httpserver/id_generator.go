@@ -54,6 +54,7 @@ func AddRequestIDs(h http.Handler) http.Handler {
 			}
 			req.Header.Set(HeaderRequestID, gen.Next())
 		}
+		w.Header().Set("X-Request-Id", req.Header.Get("X-Request-Id"))
 		h.ServeHTTP(w, req)
 	})
 }
