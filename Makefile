@@ -17,7 +17,7 @@ VERSION?=$(shell ./version-at-commit.sh HEAD)
 # changes in the package. (i.e. example config files externally added
 ITERATION?=1
 
-TARGETS?=centos7 debian8 debian10 ubuntu1404 ubuntu1604 ubuntu1804 ubuntu2004
+TARGETS?=centos7 debian10 debian11 ubuntu1804 ubuntu2004
 
 ARVADOS_DIRECTORY?=unset
 
