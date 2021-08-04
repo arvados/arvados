@@ -138,6 +138,7 @@ type Cluster struct {
 		BalanceCollectionBatch   int
 		BalanceCollectionBuffers int
 		BalanceTimeout           Duration
+		BalanceUpdateLimit       int
 
 		WebDAVCache WebDAVCacheConfig
 

@@ -5,11 +5,10 @@
 package arvados
 
 import (
-	"bufio"
+	"bytes"
 	"crypto/md5"
 	"fmt"
 	"regexp"
-	"strings"
 	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/blockdigest"
@@ -56,40 +55,40 @@ func (c Collection) resourceName() string {
 //
 // Zero-length blocks are not included.
 func (c *Collection) SizedDigests() ([]SizedDigest, error) {
-	manifestText := c.ManifestText
-	if manifestText == "" {
-		manifestText = c.UnsignedManifestText
+	manifestText := []byte(c.ManifestText)
+	if len(manifestText) == 0 {
+		manifestText = []byte(c.UnsignedManifestText)
 	}
-	if manifestText == "" && c.PortableDataHash != "d41d8cd98f00b204e9800998ecf8427e+0" {
+	if len(manifestText) == 0 && c.PortableDataHash != "d41d8cd98f00b204e9800998ecf8427e+0" {
 		// TODO: Check more subtle forms of corruption, too
 		return nil, fmt.Errorf("manifest is missing")
 	}
-	var sds []SizedDigest
-	scanner := bufio.NewScanner(strings.NewReader(manifestText))
-	scanner.Buffer(make([]byte, 1048576), len(manifestText))
-	for scanner.Scan() {
-		line := scanner.Text()
-		tokens := strings.Split(line, " ")
+	sds := make([]SizedDigest, 0, len(manifestText)/40)
+	for _, line := range bytes.Split(manifestText, []byte{'\n'}) {
+		if len(line) == 0 {
+			continue
+		}
+		tokens := bytes.Split(line, []byte{' '})
 		if len(tokens) < 3 {
 			return nil, fmt.Errorf("Invalid stream (<3 tokens): %q", line)
 		}
 		for _, token := range tokens[1:] {
-			if !blockdigest.LocatorPattern.MatchString(token) {
+			if !blockdigest.LocatorPattern.Match(token) {
 				// FIXME: ensure it's a file token
 				break
 			}
-			if strings.HasPrefix(token, "d41d8cd98f00b204e9800998ecf8427e+0") {
+			if bytes.HasPrefix(token, []byte("d41d8cd98f00b204e9800998ecf8427e+0")) {
 				// Exclude "empty block" placeholder
 				continue
 			}
 			// FIXME: shouldn't assume 32 char hash
-			if i := strings.IndexRune(token[33:], '+'); i >= 0 {
+			if i := bytes.IndexRune(token[33:], '+'); i >= 0 {
 				token = token[:33+i]
 			}
-			sds = append(sds, SizedDigest(token))
+			sds = append(sds, SizedDigest(string(token)))
 		}
 	}
-	return sds, scanner.Err()
+	return sds, nil
 }
 
 type CollectionList struct {

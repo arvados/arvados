@@ -18,11 +18,13 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"syscall"
 	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
+	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
 )
 
@@ -36,6 +38,7 @@ import (
 // BlobSignatureTTL; and all N existing replicas of a given data block
 // are in the N best positions in rendezvous probe order.
 type Balancer struct {
+	DB      *sqlx.DB
 	Logger  logrus.FieldLogger
 	Dumper  logrus.FieldLogger
 	Metrics *metrics
@@ -50,7 +53,7 @@ type Balancer struct {
 	classes       []string
 	mounts        int
 	mountsByClass map[string]map[*KeepMount]bool
-	collScanned   int
+	collScanned   int64
 	serviceRoots  map[string]string
 	errors        []error
 	stats         balancerStats
@@ -167,6 +170,15 @@ func (bal *Balancer) Run(client *arvados.Client, cluster *arvados.Cluster, runOp
 	}
 	if runOptions.CommitTrash {
 		err = bal.CommitTrash(ctx, client)
+		if err != nil {
+			return
+		}
+	}
+	if runOptions.CommitConfirmedFields {
+		err = bal.updateCollections(ctx, client, cluster)
+		if err != nil {
+			return
+		}
 	}
 	return
 }
@@ -388,39 +400,14 @@ func (bal *Balancer) GetCurrentState(ctx context.Context, c *arvados.Client, pag
 		}(mounts)
 	}
 
-	// collQ buffers incoming collections so we can start fetching
-	// the next page without waiting for the current page to
-	// finish processing.
 	collQ := make(chan arvados.Collection, bufs)
 
-	// Start a goroutine to process collections. (We could use a
-	// worker pool here, but even with a single worker we already
-	// process collections much faster than we can retrieve them.)
+	// Retrieve all collections from the database and send them to
+	// collQ.
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		for coll := range collQ {
-			err := bal.addCollection(coll)
-			if err != nil || len(errs) > 0 {
-				select {
-				case errs <- err:
-				default:
-				}
-				for range collQ {
-				}
-				cancel()
-				return
-			}
-			bal.collScanned++
-		}
-	}()
-
-	// Start a goroutine to retrieve all collections from the
-	// Arvados database and send them to collQ for processing.
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		err = EachCollection(ctx, c, pageSize,
+		err = EachCollection(ctx, bal.DB, c,
 			func(coll arvados.Collection) error {
 				collQ <- coll
 				if len(errs) > 0 {
@@ -444,6 +431,27 @@ func (bal *Balancer) GetCurrentState(ctx context.Context, c *arvados.Client, pag
 		}
 	}()
 
+	// Parse manifests from collQ and pass the block hashes to
+	// BlockStateMap to track desired replication.
+	for i := 0; i < runtime.NumCPU(); i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for coll := range collQ {
+				err := bal.addCollection(coll)
+				if err != nil || len(errs) > 0 {
+					select {
+					case errs <- err:
+					default:
+					}
+					cancel()
+					continue
+				}
+				atomic.AddInt64(&bal.collScanned, 1)
+			}
+		}()
+	}
+
 	wg.Wait()
 	if len(errs) > 0 {
 		return <-errs
@@ -460,7 +468,7 @@ func (bal *Balancer) addCollection(coll arvados.Collection) error {
 	if coll.ReplicationDesired != nil {
 		repl = *coll.ReplicationDesired
 	}
-	bal.Logger.Debugf("%v: %d block x%d", coll.UUID, len(blkids), repl)
+	bal.Logger.Debugf("%v: %d blocks x%d", coll.UUID, len(blkids), repl)
 	// Pass pdh to IncreaseDesired only if LostBlocksFile is being
 	// written -- otherwise it's just a waste of memory.
 	pdh := ""

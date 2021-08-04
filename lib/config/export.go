@@ -84,6 +84,7 @@ var whitelist = map[string]bool{
 	"Collections.BalanceCollectionBuffers":                false,
 	"Collections.BalancePeriod":                           false,
 	"Collections.BalanceTimeout":                          false,
+	"Collections.BalanceUpdateLimit":                      false,
 	"Collections.BlobDeleteConcurrency":                   false,
 	"Collections.BlobMissingReport":                       false,
 	"Collections.BlobReplicateConcurrency":                false,

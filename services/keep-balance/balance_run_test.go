@@ -21,6 +21,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"github.com/jmoiron/sqlx"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/expfmt"
 	check "gopkg.in/check.v1"
@@ -309,6 +310,7 @@ func (s *stubServer) serveKeepstorePull() *reqTracker {
 type runSuite struct {
 	stub   stubServer
 	config *arvados.Cluster
+	db     *sqlx.DB
 	client *arvados.Client
 }
 
@@ -320,6 +322,7 @@ func (s *runSuite) newServer(options *RunOptions) *Server {
 		Metrics:    newMetrics(prometheus.NewRegistry()),
 		Logger:     options.Logger,
 		Dumper:     options.Dumper,
+		DB:         s.db,
 	}
 	return srv
 }
@@ -329,6 +332,8 @@ func (s *runSuite) SetUpTest(c *check.C) {
 	c.Assert(err, check.Equals, nil)
 	s.config, err = cfg.GetCluster("")
 	c.Assert(err, check.Equals, nil)
+	s.db, err = sqlx.Open("postgres", s.config.PostgreSQL.Connection.String())
+	c.Assert(err, check.IsNil)
 
 	s.config.Collections.BalancePeriod = arvados.Duration(time.Second)
 	arvadostest.SetServiceURL(&s.config.Services.Keepbalance, "http://localhost:/")
@@ -347,6 +352,9 @@ func (s *runSuite) TearDownTest(c *check.C) {
 }
 
 func (s *runSuite) TestRefuseZeroCollections(c *check.C) {
+	defer arvados.NewClientFromEnv().RequestAndDecode(nil, "POST", "database/reset", nil, nil)
+	_, err := s.db.Exec(`delete from collections`)
+	c.Assert(err, check.IsNil)
 	opts := RunOptions{
 		CommitPulls: true,
 		CommitTrash: true,
@@ -360,7 +368,7 @@ func (s *runSuite) TestRefuseZeroCollections(c *check.C) {
 	trashReqs := s.stub.serveKeepstoreTrash()
 	pullReqs := s.stub.serveKeepstorePull()
 	srv := s.newServer(&opts)
-	_, err := srv.runOnce()
+	_, err = srv.runOnce()
 	c.Check(err, check.ErrorMatches, "received zero collections")
 	c.Check(trashReqs.Count(), check.Equals, 4)
 	c.Check(pullReqs.Count(), check.Equals, 0)
@@ -382,26 +390,6 @@ func (s *runSuite) TestRefuseNonAdmin(c *check.C) {
 	_, err := srv.runOnce()
 	c.Check(err, check.ErrorMatches, "current user .* is not .* admin user")
 	c.Check(trashReqs.Count(), check.Equals, 0)
-	c.Check(pullReqs.Count(), check.Equals, 0)
-}
-
-func (s *runSuite) TestDetectSkippedCollections(c *check.C) {
-	opts := RunOptions{
-		CommitPulls: true,
-		CommitTrash: true,
-		Logger:      ctxlog.TestLogger(c),
-	}
-	s.stub.serveCurrentUserAdmin()
-	s.stub.serveCollectionsButSkipOne()
-	s.stub.serveKeepServices(stubServices)
-	s.stub.serveKeepstoreMounts()
-	s.stub.serveKeepstoreIndexFoo4Bar1()
-	trashReqs := s.stub.serveKeepstoreTrash()
-	pullReqs := s.stub.serveKeepstorePull()
-	srv := s.newServer(&opts)
-	_, err := srv.runOnce()
-	c.Check(err, check.ErrorMatches, `Retrieved 2 collections with modtime <= .* but server now reports there are 3 collections.*`)
-	c.Check(trashReqs.Count(), check.Equals, 4)
 	c.Check(pullReqs.Count(), check.Equals, 0)
 }
 
@@ -428,7 +416,7 @@ func (s *runSuite) TestWriteLostBlocks(c *check.C) {
 	c.Check(err, check.IsNil)
 	lost, err := ioutil.ReadFile(lostf.Name())
 	c.Assert(err, check.IsNil)
-	c.Check(string(lost), check.Equals, "37b51d194a7513e45b56f6524f2d51f2 fa7aeb5140e2848d39b416daeef4ffc5+45\n")
+	c.Check(string(lost), check.Matches, `(?ms).*37b51d194a7513e45b56f6524f2d51f2.* fa7aeb5140e2848d39b416daeef4ffc5\+45.*`)
 }
 
 func (s *runSuite) TestDryRun(c *check.C) {
@@ -459,11 +447,7 @@ func (s *runSuite) TestDryRun(c *check.C) {
 }
 
 func (s *runSuite) TestCommit(c *check.C) {
-	lostf, err := ioutil.TempFile("", "keep-balance-lost-blocks-test-")
-	c.Assert(err, check.IsNil)
-	s.config.Collections.BlobMissingReport = lostf.Name()
-	defer os.Remove(lostf.Name())
-
+	s.config.Collections.BlobMissingReport = c.MkDir() + "/keep-balance-lost-blocks-test-"
 	s.config.ManagementToken = "xyzzy"
 	opts := RunOptions{
 		CommitPulls: true,
@@ -489,17 +473,18 @@ func (s *runSuite) TestCommit(c *check.C) {
 	// in a poor rendezvous position
 	c.Check(bal.stats.pulls, check.Equals, 2)
 
-	lost, err := ioutil.ReadFile(lostf.Name())
+	lost, err := ioutil.ReadFile(s.config.Collections.BlobMissingReport)
 	c.Assert(err, check.IsNil)
-	c.Check(string(lost), check.Equals, "")
+	c.Check(string(lost), check.Not(check.Matches), `(?ms).*acbd18db4cc2f85cedef654fccc4a4d8.*`)
 
 	buf, err := s.getMetrics(c, srv)
 	c.Check(err, check.IsNil)
-	c.Check(buf, check.Matches, `(?ms).*\narvados_keep_total_bytes 15\n.*`)
-	c.Check(buf, check.Matches, `(?ms).*\narvados_keepbalance_changeset_compute_seconds_sum [0-9\.]+\n.*`)
-	c.Check(buf, check.Matches, `(?ms).*\narvados_keepbalance_changeset_compute_seconds_count 1\n.*`)
-	c.Check(buf, check.Matches, `(?ms).*\narvados_keep_dedup_byte_ratio 1\.5\n.*`)
-	c.Check(buf, check.Matches, `(?ms).*\narvados_keep_dedup_block_ratio 1\.5\n.*`)
+	bufstr := buf.String()
+	c.Check(bufstr, check.Matches, `(?ms).*\narvados_keep_total_bytes 15\n.*`)
+	c.Check(bufstr, check.Matches, `(?ms).*\narvados_keepbalance_changeset_compute_seconds_sum [0-9\.]+\n.*`)
+	c.Check(bufstr, check.Matches, `(?ms).*\narvados_keepbalance_changeset_compute_seconds_count 1\n.*`)
+	c.Check(bufstr, check.Matches, `(?ms).*\narvados_keep_dedup_byte_ratio [1-9].*`)
+	c.Check(bufstr, check.Matches, `(?ms).*\narvados_keep_dedup_block_ratio [1-9].*`)
 }
 
 func (s *runSuite) TestRunForever(c *check.C) {
