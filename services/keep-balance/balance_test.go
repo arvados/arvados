@@ -85,7 +85,8 @@ func (bal *balancerSuite) SetUpTest(c *check.C) {
 		}
 		srv.mounts = []*KeepMount{{
 			KeepMount: arvados.KeepMount{
-				UUID: fmt.Sprintf("zzzzz-mount-%015x", i),
+				UUID:           fmt.Sprintf("zzzzz-mount-%015x", i),
+				StorageClasses: map[string]bool{"default": true},
 			},
 			KeepService: srv,
 		}}
@@ -166,10 +167,11 @@ func (bal *balancerSuite) testMultipleViews(c *check.C, readonly bool) {
 		srv.mounts[0].KeepMount.DeviceID = fmt.Sprintf("writable-by-srv-%x", i)
 		srv.mounts = append(srv.mounts, &KeepMount{
 			KeepMount: arvados.KeepMount{
-				DeviceID:    fmt.Sprintf("writable-by-srv-%x", (i+1)%len(bal.srvs)),
-				UUID:        fmt.Sprintf("zzzzz-mount-%015x", i<<16),
-				ReadOnly:    readonly,
-				Replication: 1,
+				DeviceID:       fmt.Sprintf("writable-by-srv-%x", (i+1)%len(bal.srvs)),
+				UUID:           fmt.Sprintf("zzzzz-mount-%015x", i<<16),
+				ReadOnly:       readonly,
+				Replication:    1,
+				StorageClasses: map[string]bool{"default": true},
 			},
 			KeepService: srv,
 		})

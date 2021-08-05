@@ -23,7 +23,7 @@ class ContainerRequest < ArvadosModel
   # already know how to properly treat them.
   attribute :properties, :jsonbHash, default: {}
   attribute :secret_mounts, :jsonbHash, default: {}
-  attribute :output_storage_classes, :jsonbArray, default: ["default"]
+  attribute :output_storage_classes, :jsonbArray, default: Rails.configuration.DefaultStorageClasses
 
   serialize :environment, Hash
   serialize :mounts, Hash

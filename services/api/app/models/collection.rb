@@ -17,7 +17,7 @@ class Collection < ArvadosModel
   # Posgresql JSONB columns should NOT be declared as serialized, Rails 5
   # already know how to properly treat them.
   attribute :properties, :jsonbHash, default: {}
-  attribute :storage_classes_desired, :jsonbArray, default: ["default"]
+  attribute :storage_classes_desired, :jsonbArray, default: Rails.configuration.DefaultStorageClasses
   attribute :storage_classes_confirmed, :jsonbArray, default: []
 
   before_validation :default_empty_manifest
@@ -630,7 +630,7 @@ class Collection < ArvadosModel
   # validation on empty desired storage classes return an error.
   def default_storage_classes
     if self.storage_classes_desired.nil? || self.storage_classes_desired.empty?
-      self.storage_classes_desired = ["default"]
+      self.storage_classes_desired = Rails.configuration.DefaultStorageClasses
     end
     self.storage_classes_confirmed ||= []
   end

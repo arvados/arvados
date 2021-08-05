@@ -170,6 +170,7 @@ arvcfg.declare_config "RemoteClusters", Hash, :remote_hosts, ->(cfg, k, v) {
   ConfigLoader.set_cfg cfg, "RemoteClusters", h
 }
 arvcfg.declare_config "RemoteClusters.*.Proxy", Boolean, :remote_hosts_via_dns
+arvcfg.declare_config "StorageClasses", Hash
 
 dbcfg = ConfigLoader.new
 
@@ -236,6 +237,17 @@ dbcfg.coercion_and_check $arvados_config, check_nonempty: true
 if $arvados_config["Collections"]["DefaultTrashLifetime"] < 86400.seconds then
   raise "default_trash_lifetime is %d, must be at least 86400" % Rails.configuration.Collections.DefaultTrashLifetime
 end
+
+default_storage_classes = []
+$arvados_config["StorageClasses"].each do |cls, cfg|
+  if cfg["Default"]
+    default_storage_classes << cls
+  end
+end
+if default_storage_classes.length == 0
+  default_storage_classes = ["default"]
+end
+$arvados_config["DefaultStorageClasses"] = default_storage_classes.sort
 
 #
 # Special case for test database where there's no database.yml,
