@@ -232,22 +232,18 @@ if [ "${DUMP_CONFIG}" = "yes" ]; then
 else
   # Install a few dependency packages
   # First, let's figure out the OS we're working on
-  OS_ID=$(grep ^ID= /etc/os-release |cut -f 2 -d \")
+  OS_ID=$(grep ^ID= /etc/os-release |cut -f 2 -d=  |cut -f 2 -d \")
   echo "Detected distro: ${OS_ID}"
 
   case ${OS_ID} in
-    centos)
-      PREINSTALL_CMD="/bin/true"
-      INSTALL_CMD="yum install -y"
+    "centos")
+      yum install -y  curl git jq
       ;;
-    debian|ubuntu)
-      PREINSTALL_CMD="DEBIAN_FRONTEND=noninteractive apt update"
-      INSTALL_CMD="DEBIAN_FRONTEND=noninteractive apt install -y"
+    "debian"|"ubuntu")
+      DEBIAN_FRONTEND=noninteractive apt update
+      DEBIAN_FRONTEND=noninteractive apt install -y curl git jq
       ;;
   esac
-
-  ${PREINSTALL_CMD}
-  ${INSTALL_CMD} curl git jq
 
   if which salt-call; then
     echo "Salt already installed"
