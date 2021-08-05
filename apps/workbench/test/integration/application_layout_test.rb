@@ -251,9 +251,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
     ['SSH keys', nil, 'public_key'],
     ['Links', nil, 'link_class'],
     ['Groups', nil, 'All users'],
-    ['Compute nodes', nil, 'ping_secret'],
     ['Keep services', nil, 'service_ssl_flag'],
-    ['Keep disks', nil, 'bytes_free'],
   ].each do |page_name, add_button_text, look_for|
     test "test system menu #{page_name} link" do
       visit page_with_token('admin')
