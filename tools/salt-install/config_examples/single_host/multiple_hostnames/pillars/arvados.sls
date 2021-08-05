@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+# vim: ft=yaml
 ---
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
@@ -26,6 +28,8 @@ arvados:
   ## manage OS packages with some other tool and you don't want us messing up
   ## with your setup.
   ruby:
+    pkg: ruby-2.7.2
+
     ## We set these to `true` here for testing purposes.
     ## They both default to `false`.
     manage_ruby: true
@@ -67,14 +71,28 @@ arvados:
       host: 127.0.0.1
       password: "__DATABASE_PASSWORD__"
       user: __CLUSTER___arvados
-      encoding: en_US.utf8
-      client_encoding: UTF8
+      extra_conn_params:
+        client_encoding: UTF8
+      # Centos7 does not enable SSL by default, so we disable
+      # it here just for testing of the formula purposes only.
+      # You should not do this in production, and should
+      # configure Postgres certificates correctly
+      {%- if grains.os_family in ('RedHat',) %}
+        sslmode: disable
+      {%- endif %}
 
     tls:
       # certificate: ''
       # key: ''
       # required to test with arvados-snakeoil certs
       insecure: true
+
+    resources:
+      virtual_machines:
+        shell:
+          name: webshell
+          backend: 127.0.1.1
+          port: 4200
 
     ### TOKENS
     tokens:
