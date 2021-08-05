@@ -21,7 +21,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -545,12 +544,8 @@ func (s *HandlerSuite) TestIndexHandler(c *check.C) {
 
 	expected := `^` + TestHash + `\+\d+ \d+\n` +
 		TestHash2 + `\+\d+ \d+\n\n$`
-	match, _ := regexp.MatchString(expected, response.Body.String())
-	if !match {
-		c.Errorf(
-			"permissions on, superuser request: expected %s, got:\n%s",
-			expected, response.Body.String())
-	}
+	c.Check(response.Body.String(), check.Matches, expected, check.Commentf(
+		"permissions on, superuser request"))
 
 	// superuser /index/prefix request
 	// => OK
@@ -561,12 +556,8 @@ func (s *HandlerSuite) TestIndexHandler(c *check.C) {
 		response)
 
 	expected = `^` + TestHash + `\+\d+ \d+\n\n$`
-	match, _ = regexp.MatchString(expected, response.Body.String())
-	if !match {
-		c.Errorf(
-			"permissions on, superuser /index/prefix request: expected %s, got:\n%s",
-			expected, response.Body.String())
-	}
+	c.Check(response.Body.String(), check.Matches, expected, check.Commentf(
+		"permissions on, superuser /index/prefix request"))
 
 	// superuser /index/{no-such-prefix} request
 	// => OK
