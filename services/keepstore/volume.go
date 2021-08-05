@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"math/big"
+	"sort"
 	"sync/atomic"
 	"time"
 
@@ -343,6 +344,27 @@ func makeRRVolumeManager(logger logrus.FieldLogger, cluster *arvados.Cluster, my
 			vm.writables = append(vm.writables, mnt)
 		}
 	}
+	// pri(i): return highest priority of any storage class
+	// offered by vm.readables[i]
+	pri := func(i int) int {
+		any, best := false, 0
+		for class := range vm.readables[i].KeepMount.StorageClasses {
+			if p := cluster.StorageClasses[class].Priority; !any || best < p {
+				best = p
+				any = true
+			}
+		}
+		return best
+	}
+	// sort vm.readables, first by highest priority of any offered
+	// storage class (highest->lowest), then by volume UUID
+	sort.Slice(vm.readables, func(i, j int) bool {
+		if pi, pj := pri(i), pri(j); pi != pj {
+			return pi > pj
+		} else {
+			return vm.readables[i].KeepMount.UUID < vm.readables[j].KeepMount.UUID
+		}
+	})
 	return vm, nil
 }
 
