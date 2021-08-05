@@ -1,15 +1,22 @@
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
-# SPDX-License-Identifier: AGPL-3.0
+# SPDX-License-Identifier: Apache-2.0
 
 {%- set curr_tpldir = tpldir %}
 {%- set tpldir = 'arvados' %}
 {%- from "arvados/map.jinja" import arvados with context %}
 {%- set tpldir = curr_tpldir %}
 
-{%- set arvados_ca_cert_file = '/etc/ssl/certs/arvados-snakeoil-ca.pem' %}
+include:
+  - nginx.passenger
+  - nginx.config
+  - nginx.service
+
+# Debian uses different dirs for certs and keys, but being a Snake Oil example,
+# we'll keep it simple here.
+{%- set arvados_ca_cert_file = '/etc/ssl/private/arvados-snakeoil-ca.pem' %}
 {%- set arvados_ca_key_file = '/etc/ssl/private/arvados-snakeoil-ca.key' %}
-{%- set arvados_cert_file = '/etc/ssl/certs/arvados-snakeoil-cert.pem' %}
+{%- set arvados_cert_file = '/etc/ssl/private/arvados-snakeoil-cert.pem' %}
 {%- set arvados_csr_file = '/etc/ssl/private/arvados-snakeoil-cert.csr' %}
 {%- set arvados_key_file = '/etc/ssl/private/arvados-snakeoil-cert.key' %}
 
@@ -30,7 +37,7 @@ arvados_test_salt_states_examples_single_host_snakeoil_certs_dependencies_pkg_in
       - ca-certificates
 
 arvados_test_salt_states_examples_single_host_snakeoil_certs_arvados_snake_oil_ca_cmd_run:
-  # Taken from https://github.com/arvados/arvados/blob/main/tools/arvbox/lib/arvbox/docker/service/certificate/run
+  # Taken from https://github.com/arvados/arvados/blob/master/tools/arvbox/lib/arvbox/docker/service/certificate/run
   cmd.run:
     - name: |
         # These dirs are not to CentOS-ish, but this is a helper script
@@ -124,6 +131,9 @@ arvados_test_salt_states_examples_single_host_snakeoil_certs_arvados_snake_oil_c
     - require:
       - pkg: arvados_test_salt_states_examples_single_host_snakeoil_certs_dependencies_pkg_installed
       - cmd: arvados_test_salt_states_examples_single_host_snakeoil_certs_arvados_snake_oil_ca_cmd_run
+    # We need this before we can add the nginx's snippet
+    - require_in:
+      - file: nginx_snippet_arvados-snakeoil.conf
 
 {%- if grains.get('os_family') == 'Debian' %}
 arvados_test_salt_states_examples_single_host_snakeoil_certs_ssl_cert_pkg_installed:
@@ -133,26 +143,13 @@ arvados_test_salt_states_examples_single_host_snakeoil_certs_ssl_cert_pkg_instal
       - sls: postgres
 
 arvados_test_salt_states_examples_single_host_snakeoil_certs_certs_permissions_cmd_run:
-  cmd.run:
-    - name: |
-        chown root:ssl-cert {{ arvados_key_file }}
+  file.managed:
+    - name: {{ arvados_key_file }}
+    - owner: root
+    - group: ssl-cert
     - require:
       - cmd: arvados_test_salt_states_examples_single_host_snakeoil_certs_arvados_snake_oil_cert_cmd_run
       - pkg: arvados_test_salt_states_examples_single_host_snakeoil_certs_ssl_cert_pkg_installed
-{%- endif %}
-
-arvados_test_salt_states_examples_single_host_snakeoil_certs_nginx_snakeoil_file_managed:
-  file.managed:
-    - name: /etc/nginx/snippets/arvados-snakeoil.conf
-    - contents: |
-        ssl_certificate {{ arvados_cert_file }};
-        ssl_certificate_key {{ arvados_key_file }};
-    - require:
-      - pkg: nginx_install
     - require_in:
-      - file: nginx_config
-      - service: nginx_service
-    - watch_in:
-      - service: nginx_service
-
-
+      - file: nginx_snippet_arvados-snakeoil.conf
+{%- endif %}
