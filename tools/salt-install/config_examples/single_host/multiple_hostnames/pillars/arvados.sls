@@ -28,7 +28,6 @@ arvados:
   ## manage OS packages with some other tool and you don't want us messing up
   ## with your setup.
   ruby:
-    pkg: ruby-2.7.2
 
     ## We set these to `true` here for testing purposes.
     ## They both default to `false`.
