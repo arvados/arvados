@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
@@ -175,7 +175,7 @@ ARVADOS_TAG="2.2-dev"
 # Other formula versions we depend on
 POSTGRES_TAG="v0.41.6"
 NGINX_TAG="temp-fix-missing-statements-in-pillar"
-DOCKER_TAG="v1.0.0"
+DOCKER_TAG="v2.0.7"
 LOCALE_TAG="v0.3.4"
 LETSENCRYPT_TAG="v2.1.0"
 
@@ -232,22 +232,18 @@ if [ "${DUMP_CONFIG}" = "yes" ]; then
 else
   # Install a few dependency packages
   # First, let's figure out the OS we're working on
-  OS_ID=$(grep ^ID= /etc/os-release |cut -f 2 -d \")
+  OS_ID=$(grep ^ID= /etc/os-release |cut -f 2 -d=  |cut -f 2 -d \")
   echo "Detected distro: ${OS_ID}"
 
   case ${OS_ID} in
-    centos)
-      PREINSTALL_CMD="/bin/true"
-      INSTALL_CMD="yum install -y"
+    "centos")
+      yum install -y  curl git jq
       ;;
-    debian|ubuntu)
-      PREINSTALL_CMD="DEBIAN_FRONTEND=noninteractive apt update"
-      INSTALL_CMD="DEBIAN_FRONTEND=noninteractive apt install -y"
+    "debian"|"ubuntu")
+      DEBIAN_FRONTEND=noninteractive apt update
+      DEBIAN_FRONTEND=noninteractive apt install -y curl git jq
       ;;
   esac
-
-  ${PREINSTALL_CMD}
-  ${INSTALL_CMD} curl git jq
 
   if which salt-call; then
     echo "Salt already installed"
@@ -614,5 +610,10 @@ fi
 # Test that the installation finished correctly
 if [ "x${TEST}" = "xyes" ]; then
   cd ${T_DIR}
-  ./run-test.sh
+  # If we use RVM, we need to run this with it, or most ruby commands will fail
+  RVM_EXEC=""
+  if [ -x /usr/local/rvm/bin/rvm-exec ]; then
+    RVM_EXEC="/usr/local/rvm/bin/rvm-exec"
+  fi
+  ${RVM_EXEC} ./run-test.sh
 fi
