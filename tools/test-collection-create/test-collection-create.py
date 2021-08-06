@@ -60,15 +60,24 @@ def get_stream(name, max_filesize, data_loc, args):
     stream = "{} {} {}".format(name, data_loc, ' '.join(files))
     return stream
 
-def create_substreams(depth, base_stream_name, max_filesize, data_loc, args):
-    streams = [get_stream(base_stream_name, max_filesize, data_loc, args)]
-    if depth == 0:
-        logger.info("Finished stream {}".format(base_stream_name))
+def create_substreams(depth, base_stream_name, max_filesize, data_loc, args, current_size=0):
+    current_stream = get_stream(base_stream_name, max_filesize, data_loc, args)
+    current_size += len(current_stream)
+    streams = [current_stream]
+
+    if current_size >= (128 * 1024 * 1024):
+        logger.debug("Maximum manifest size reached -- finishing early at {}".format(base_stream_name))
+    elif depth == 0:
+        logger.debug("Finished stream {}".format(base_stream_name))
     else:
         for _ in range(random.randint(1, 10)):
             stream_name = base_stream_name+'/'+get_random_name(False)
-            streams.extend(
-                create_substreams(depth-1, stream_name, max_filesize, data_loc, args))
+            substreams = create_substreams(depth-1, stream_name, max_filesize,
+                data_loc, args, current_size)
+            current_size += sum([len(x) for x in substreams])
+            if current_size >= (128 * 1024 * 1024) == 0:
+                break
+            streams.extend(substreams)
     return streams
 
 def parse_arguments(arguments):
@@ -85,6 +94,7 @@ def parse_arguments(arguments):
 
 def main(arguments=None):
     args = parse_arguments(arguments)
+    logger.info("Creating test collection with (min={}, max={}) files per directory and a tree depth of (min={}, max={})...".format(args.min_files, args.max_files, args.min_depth, args.max_depth))
     api = arvados.api('v1', timeout=5*60)
     max_filesize = 1024*1024
     data_block = ''.join([random.choice(string.printable) for i in range(max_filesize)])
