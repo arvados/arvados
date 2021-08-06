@@ -58,7 +58,8 @@ wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes ins
   libcurl4-openssl-dev \
   lvm2 \
   cryptsetup \
-  xfsprogs
+  xfsprogs \
+  squashfs-tools
 
 # Install the Arvados packages we need
 wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes install \
