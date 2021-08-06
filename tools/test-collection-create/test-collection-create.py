@@ -75,7 +75,7 @@ def create_substreams(depth, base_stream_name, max_filesize, data_loc, args, cur
             substreams = create_substreams(depth-1, stream_name, max_filesize,
                 data_loc, args, current_size)
             current_size += sum([len(x) for x in substreams])
-            if current_size >= (128 * 1024 * 1024) == 0:
+            if current_size >= (128 * 1024 * 1024):
                 break
             streams.extend(substreams)
     return streams
