@@ -130,7 +130,7 @@ const handleInputClick = (e: React.MouseEvent, props: SearchBarViewProps) => {
         props.onSetView(SearchView.AUTOCOMPLETE);
         props.openSearchView();
     } else {
-        props.closeView();
+        props.onSetView(SearchView.BASIC);
     }
 };
 
