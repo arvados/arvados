@@ -1239,6 +1239,9 @@ Clusters:
       # If you use multiple storage classes, specify them here, using
       # the storage class name as the key (in place of "SAMPLE" in
       # this sample entry).
+      #
+      # Further info/examples:
+      # https://doc.arvados.org/admin/storage-classes.html
       SAMPLE:
 
         # Priority determines the order volumes should be searched
