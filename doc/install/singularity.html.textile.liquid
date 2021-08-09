@@ -18,11 +18,14 @@ Please note:
 * Programs running in containers may behave differently due to differences between Singularity and Docker, _e.g._, the root (image) filesystem is read-only in a Singularity container.
 * Arvados is currently tested with Singularity version 3.5.2.
 
-To use singularity, first make sure Singularity is installed on your cloud worker image or SLURM/LSF compute nodes as applicable.
+To use singularity, first make sure "Singularity is installed":https://sylabs.io/guides/3.5/user-guide/quick_start.html on your cloud worker image or SLURM/LSF compute nodes as applicable. Note @squashfs-tools@ is required.
 
 <notextile>
 <pre><code>$ <span class="userinput">singularity version</span>
 3.5.2
+$ <span class="userinput">mksquashfs -version</span>
+mksquashfs version 4.3-git (2014/06/09)
+[...]
 </code></pre>
 </notextile>
 
@@ -34,4 +37,4 @@ Then update @Containers.RuntimeEngine@ in your cluster configuration:
 </code></pre>
 </notextile>
 
-Restart your dispatcher (@crunch-dispatch-slurm@ or @arvados-dispatch-cloud@) after updating your configuration file.
+Restart your dispatcher (@crunch-dispatch-slurm@, @arvados-dispatch-cloud@, or @arvados-dispatch-lsf@) after updating your configuration file.
