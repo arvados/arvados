@@ -22,7 +22,7 @@ class Container < ArvadosModel
   attribute :secret_mounts, :jsonbHash, default: {}
   attribute :runtime_status, :jsonbHash, default: {}
   attribute :runtime_auth_scopes, :jsonbArray, default: []
-  attribute :output_storage_classes, :jsonbArray, default: Rails.configuration.DefaultStorageClasses
+  attribute :output_storage_classes, :jsonbArray, default: lambda { Rails.configuration.DefaultStorageClasses }
 
   serialize :environment, Hash
   serialize :mounts, Hash

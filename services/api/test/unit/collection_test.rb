@@ -693,6 +693,19 @@ class CollectionTest < ActiveSupport::TestCase
     end
   end
 
+  test "storage_classes_desired default respects config" do
+    saved = Rails.configuration.DefaultStorageClasses
+    Rails.configuration.DefaultStorageClasses = ["foo"]
+    begin
+      act_as_user users(:active) do
+        c = Collection.create!
+        assert_equal ["foo"], c.storage_classes_desired
+      end
+    ensure
+      Rails.configuration.DefaultStorageClasses = saved
+    end
+  end
+
   test "storage_classes_desired cannot be empty" do
     act_as_user users(:active) do
       c = collections(:collection_owned_by_active)
