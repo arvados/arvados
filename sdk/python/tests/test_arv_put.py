@@ -1098,6 +1098,9 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
                     r'ERROR: arv-put: Resume cache contains invalid signature.*')
                 self.assertEqual(p.returncode, 1)
             else:
+                self.assertRegex(
+                    err.decode(),
+                    r'Invalid signatures on cache file \'.*\' while being run in \'batch mode\' -- continuing anyways.*')
                 self.assertEqual(p.returncode, 0)
 
     def test_single_expired_signature_reuploads_file(self):
