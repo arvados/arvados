@@ -444,7 +444,7 @@ class ArvPutUploadJob(object):
     }
 
     def __init__(self, paths, resume=True, use_cache=True, reporter=None,
-                 name=None, owner_uuid=None, api_client=None,
+                 name=None, owner_uuid=None, api_client=None, batch_mode=False,
                  ensure_unique_name=False, num_retries=None,
                  put_threads=None, replication_desired=None, filename=None,
                  update_time=60.0, update_collection=None, storage_classes=None,
@@ -454,6 +454,7 @@ class ArvPutUploadJob(object):
         self.paths = paths
         self.resume = resume
         self.use_cache = use_cache
+        self.batch_mode = batch_mode
         self.update = False
         self.reporter = reporter
         # This will set to 0 before start counting, if no special files are going
@@ -915,7 +916,12 @@ class ArvPutUploadJob(object):
                 # No cache file, set empty state
                 self._state = copy.deepcopy(self.EMPTY_STATE)
             if not self._cached_manifest_valid():
-                raise ResumeCacheInvalidError()
+                if not self.batch_mode:
+                    raise ResumeCacheInvalidError()
+                else:
+                    self.logger.info("Invalid signatures on cache file '{}' while being run in 'batch mode' -- continuing anyways.".format(self._cache_file.name))
+                    self.use_cache = False # Don't overwrite preexisting cache file.
+                    self._state = copy.deepcopy(self.EMPTY_STATE)
             # Load the previous manifest so we can check if files were modified remotely.
             self._local_collection = arvados.collection.Collection(
                 self._state['manifest'],
@@ -1260,6 +1266,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr,
         writer = ArvPutUploadJob(paths = args.paths,
                                  resume = args.resume,
                                  use_cache = args.use_cache,
+                                 batch_mode= args.batch,
                                  filename = args.filename,
                                  reporter = reporter,
                                  api_client = api_client,
@@ -1288,7 +1295,8 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr,
             "         or been created with another Arvados user's credentials.",
             "         Switch user or use one of the following options to restart upload:",
             "         --no-resume to start a new resume cache.",
-            "         --no-cache to disable resume cache."]))
+            "         --no-cache to disable resume cache.",
+            "         --batch to ignore the resume cache if invalid."]))
         sys.exit(1)
     except (CollectionUpdateError, PathDoesNotExistError) as error:
         logger.error("\n".join([
