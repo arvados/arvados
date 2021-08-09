@@ -1055,43 +1055,50 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
             r'INFO: Cache expired, starting from scratch.*')
         self.assertEqual(p.returncode, 0)
 
-    def test_invalid_signature_invalidates_cache(self):
-        self.authorize_with('active')
-        tmpdir = self.make_tmpdir()
-        with open(os.path.join(tmpdir, 'somefile.txt'), 'w') as f:
-            f.write('foo')
-        # Upload a directory and get the cache file name
-        p = subprocess.Popen([sys.executable, arv_put.__file__, tmpdir],
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE,
-                             env=self.ENVIRON)
-        (_, err) = p.communicate()
-        self.assertRegex(err.decode(), r'INFO: Creating new cache file at ')
-        self.assertEqual(p.returncode, 0)
-        cache_filepath = re.search(r'INFO: Creating new cache file at (.*)',
-                                   err.decode()).groups()[0]
-        self.assertTrue(os.path.isfile(cache_filepath))
-        # Load the cache file contents and modify the manifest to simulate
-        # an invalid access token
-        with open(cache_filepath, 'r') as c:
-            cache = json.load(c)
-        self.assertRegex(cache['manifest'], r'\+A\S+\@')
-        cache['manifest'] = re.sub(
-            r'\+A.*\@',
-            "+Aabcdef0123456789abcdef0123456789abcdef01@",
-            cache['manifest'])
-        with open(cache_filepath, 'w') as c:
-            c.write(json.dumps(cache))
-        # Re-run the upload and expect to get an invalid cache message
-        p = subprocess.Popen([sys.executable, arv_put.__file__, tmpdir],
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE,
-                             env=self.ENVIRON)
-        (_, err) = p.communicate()
-        self.assertRegex(
-            err.decode(),
-            r'ERROR: arv-put: Resume cache contains invalid signature.*')
-        self.assertEqual(p.returncode, 1)
+    def test_invalid_signature_in_cache(self):
+        for batch_mode in [False, True]:
+            self.authorize_with('active')
+            tmpdir = self.make_tmpdir()
+            with open(os.path.join(tmpdir, 'somefile.txt'), 'w') as f:
+                f.write('foo')
+            # Upload a directory and get the cache file name
+            arv_put_args = [tmpdir]
+            if batch_mode:
+                arv_put_args = ['--batch'] + arv_put_args
+            p = subprocess.Popen([sys.executable, arv_put.__file__] + arv_put_args,
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE,
+                                env=self.ENVIRON)
+            (_, err) = p.communicate()
+            self.assertRegex(err.decode(), r'INFO: Creating new cache file at ')
+            self.assertEqual(p.returncode, 0)
+            cache_filepath = re.search(r'INFO: Creating new cache file at (.*)',
+                                    err.decode()).groups()[0]
+            self.assertTrue(os.path.isfile(cache_filepath))
+            # Load the cache file contents and modify the manifest to simulate
+            # an invalid access token
+            with open(cache_filepath, 'r') as c:
+                cache = json.load(c)
+            self.assertRegex(cache['manifest'], r'\+A\S+\@')
+            cache['manifest'] = re.sub(
+                r'\+A.*\@',
+                "+Aabcdef0123456789abcdef0123456789abcdef01@",
+                cache['manifest'])
+            with open(cache_filepath, 'w') as c:
+                c.write(json.dumps(cache))
+            # Re-run the upload and expect to get an invalid cache message
+            p = subprocess.Popen([sys.executable, arv_put.__file__] + arv_put_args,
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE,
+                                env=self.ENVIRON)
+            (_, err) = p.communicate()
+            if not batch_mode:
+                self.assertRegex(
+                    err.decode(),
+                    r'ERROR: arv-put: Resume cache contains invalid signature.*')
+                self.assertEqual(p.returncode, 1)
+            else:
+                self.assertEqual(p.returncode, 0)
 
     def test_single_expired_signature_reuploads_file(self):
         self.authorize_with('active')
