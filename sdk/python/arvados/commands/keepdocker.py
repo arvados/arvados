@@ -498,6 +498,9 @@ def main(arguments=None, stdout=sys.stdout, install_sig_handlers=True, api=None)
         arguments = [i for i in arguments if i not in (args.image, args.tag, image_repo_tag)]
         put_args = keepdocker_parser.parse_known_args(arguments)[1]
 
+        # Don't fail when cached manifest is invalid, just ignore the cache.
+        put_args += ['--batch']
+
         if args.name is None:
             put_args += ['--name', collection_name]
 
