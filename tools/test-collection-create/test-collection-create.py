@@ -29,6 +29,12 @@ Minimum depth for the created tree structure. Default: 0.
 opts.add_argument('--max-depth', type=int, default=0, help="""
 Maximum depth for the created tree structure. Default: 0.
 """)
+opts.add_argument('--min-subdirs', type=int, default=1, help="""
+Minimum number of subdirectories created at every depth level. Default: 1.
+""")
+opts.add_argument('--max-subdirs', type=int, default=10, help="""
+Maximum number of subdirectories created at every depth level. Default: 10.
+""")
 opts.add_argument('--debug', action='store_true', default=False, help="""
 Sets logging level to DEBUG.
 """)
@@ -380,7 +386,7 @@ def create_substreams(depth, base_stream_name, max_filesize, data_loc, args, cur
     elif depth == 0:
         logger.debug("Finished stream {}".format(base_stream_name))
     else:
-        for _ in range(random.randint(1, 10)):
+        for _ in range(random.randint(args.min_subdirs, args.max_subdirs)):
             stream_name = base_stream_name+'/'+get_random_name(False)
             substreams = create_substreams(depth-1, stream_name, max_filesize,
                 data_loc, args, current_size)
@@ -400,11 +406,13 @@ def parse_arguments(arguments):
         arg_parser.error("--min-depth should be at least 0")
     if args.max_depth < 0 or args.max_depth < args.min_depth:
         arg_parser.error("--max-depth should be at >= 0 and >= min-depth={}".format(args.min_depth))
+    if args.max_subdirs < args.min_subdirs:
+        arg_parser.error("--min-subdirs={} should be less or equal than max-subdirs={}".format(args.min_subdirs, args.max_subdirs))
     return args
 
 def main(arguments=None):
     args = parse_arguments(arguments)
-    logger.info("Creating test collection with (min={}, max={}) files per directory and a tree depth of (min={}, max={})...".format(args.min_files, args.max_files, args.min_depth, args.max_depth))
+    logger.info("Creating test collection with (min={}, max={}) files per directory and a tree depth of (min={}, max={}) and (min={}, max={}) subdirs in each depth level...".format(args.min_files, args.max_files, args.min_depth, args.max_depth, args.min_subdirs, args.max_subdirs))
     api = arvados.api('v1', timeout=5*60)
     max_filesize = 1024*1024
     data_block = ''.join([random.choice(string.printable) for i in range(max_filesize)])
