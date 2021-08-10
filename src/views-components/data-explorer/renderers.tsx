@@ -458,10 +458,8 @@ export const ResourceOwnerWithName =
         });
 
 export const UserNameFromID =
-    compose(
-        userFromID,
-        withStyles({}, { withTheme: true }))
-        ((props: { uuid: string, userFullname: string, dispatch: Dispatch }) => {
+    compose(userFromID)(
+        (props: { uuid: string, userFullname: string, dispatch: Dispatch }) => {
             const { uuid, userFullname, dispatch } = props;
 
             if (userFullname === '') {
