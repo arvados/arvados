@@ -11,7 +11,7 @@ import { SshKeyPanelRoot, SshKeyPanelRootDataProps, SshKeyPanelRootActionProps }
 
 const mapStateToProps = (state: RootState): SshKeyPanelRootDataProps => {
     const sshKeys = state.auth.sshKeys.filter((key) => {
-      return key.authorizedUserUuid == (state.auth.user ? state.auth.user.uuid : null);
+      return key.authorizedUserUuid === (state.auth.user ? state.auth.user.uuid : null);
     });
 
     return {

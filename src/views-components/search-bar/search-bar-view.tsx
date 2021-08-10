@@ -128,10 +128,10 @@ const handleKeyDown = (e: React.KeyboardEvent, props: SearchBarViewProps) => {
 const handleInputClick = (e: React.MouseEvent, props: SearchBarViewProps) => {
     if (props.searchValue) {
         props.onSetView(SearchView.AUTOCOMPLETE);
-        props.openSearchView();
     } else {
-        props.closeView();
+        props.onSetView(SearchView.BASIC);
     }
+    props.openSearchView();
 };
 
 const handleDropdownClick = (e: React.MouseEvent, props: SearchBarViewProps) => {
