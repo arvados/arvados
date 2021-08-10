@@ -238,6 +238,7 @@ type Cluster struct {
 		NewUserNotificationRecipients         StringSet
 		NewUsersAreActive                     bool
 		UserNotifierEmailFrom                 string
+		UserNotifierEmailBcc                  StringSet
 		UserProfileNotificationAddress        string
 		PreferDomainForUsername               string
 		UserSetupMailText                     string

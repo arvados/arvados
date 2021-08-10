@@ -9,7 +9,12 @@ class UserNotifier < ActionMailer::Base
 
   def account_is_setup(user)
     @user = user
-    mail(to: user.email, subject: 'Welcome to Arvados - account enabled')
+    if not Rails.configuration.Users.UserNotifierEmailBcc.empty? then
+      @bcc = Rails.configuration.Users.UserNotifierEmailBcc.keys
+      mail(to: user.email, subject: 'Welcome to Arvados - account enabled', bcc: @bcc)
+    else
+      mail(to: user.email, subject: 'Welcome to Arvados - account enabled')
+    end
   end
 
 end
