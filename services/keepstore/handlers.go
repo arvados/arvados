@@ -252,6 +252,13 @@ func (rtr *router) handlePUT(resp http.ResponseWriter, req *http.Request) {
 		for i, sc := range wantStorageClasses {
 			wantStorageClasses[i] = strings.TrimSpace(sc)
 		}
+	} else {
+		// none specified -- use configured default
+		for class, cfg := range rtr.cluster.StorageClasses {
+			if cfg.Default {
+				wantStorageClasses = append(wantStorageClasses, class)
+			}
+		}
 	}
 
 	buf, err := getBufferWithContext(ctx, bufs, int(req.ContentLength))

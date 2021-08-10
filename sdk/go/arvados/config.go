@@ -238,8 +238,9 @@ type Cluster struct {
 		PreferDomainForUsername               string
 		UserSetupMailText                     string
 	}
-	Volumes   map[string]Volume
-	Workbench struct {
+	StorageClasses map[string]StorageClassConfig
+	Volumes        map[string]Volume
+	Workbench      struct {
 		ActivationContactLink            string
 		APIClientConnectTimeout          Duration
 		APIClientReceiveTimeout          Duration
@@ -279,6 +280,11 @@ type Cluster struct {
 		SSHHelpHostSuffix      string
 		IdleTimeout            Duration
 	}
+}
+
+type StorageClassConfig struct {
+	Default  bool
+	Priority int
 }
 
 type Volume struct {

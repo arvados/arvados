@@ -538,10 +538,6 @@ func (bal *Balancer) setupLookupTables() {
 			// effectively read-only.
 			mnt.ReadOnly = mnt.ReadOnly || srv.ReadOnly
 
-			if len(mnt.StorageClasses) == 0 {
-				bal.mountsByClass["default"][mnt] = true
-				continue
-			}
 			for class := range mnt.StorageClasses {
 				if mbc := bal.mountsByClass[class]; mbc == nil {
 					bal.classes = append(bal.classes, class)

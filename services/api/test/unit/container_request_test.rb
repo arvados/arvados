@@ -1292,14 +1292,20 @@ class ContainerRequestTest < ActiveSupport::TestCase
   end
 
   test "default output_storage_classes" do
-    act_as_user users(:active) do
-      cr = create_minimal_req!(priority: 1,
-                               state: ContainerRequest::Committed,
-                               output_name: 'foo')
-      run_container(cr)
-      cr.reload
-      output = Collection.find_by_uuid(cr.output_uuid)
-      assert_equal ["default"], output.storage_classes_desired
+    saved = Rails.configuration.DefaultStorageClasses
+    Rails.configuration.DefaultStorageClasses = ["foo"]
+    begin
+      act_as_user users(:active) do
+        cr = create_minimal_req!(priority: 1,
+                                 state: ContainerRequest::Committed,
+                                 output_name: 'foo')
+        run_container(cr)
+        cr.reload
+        output = Collection.find_by_uuid(cr.output_uuid)
+        assert_equal ["foo"], output.storage_classes_desired
+      end
+    ensure
+      Rails.configuration.DefaultStorageClasses = saved
     end
   end
 

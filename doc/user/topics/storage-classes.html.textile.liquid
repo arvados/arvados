@@ -38,7 +38,7 @@ You may also specify the desired storage class for the final output collection p
 $ arvados-cwl-runner --storage-classes=hot myworkflow.cwl myinput.yml
 </pre>
 
-(Note: intermediate collections produced by a workflow run will have "default" storage class.)
+(Note: intermediate collections produced by a workflow run will use the cluster's default storage class(es).)
 
 h3. arv command line
 
@@ -52,8 +52,6 @@ By setting "storage_classes_desired" to "archival", the blocks that make up the 
 
 h3. Storage class notes
 
-Collection blocks will be in the "default" storage class if not otherwise specified.
+Collection blocks will be in the cluster's configured default storage class(es) if not otherwise specified.
 
 Any user with write access to a collection may set any storage class on that collection.
-
-Names of storage classes are internal to the cluster and decided by the administrator.  Aside from "default", Arvados currently does not define any standard storage class names.

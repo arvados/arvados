@@ -21,7 +21,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -320,6 +319,54 @@ func (s *HandlerSuite) TestPutAndDeleteSkipReadonlyVolumes(c *check.C) {
 	}
 }
 
+func (s *HandlerSuite) TestReadsOrderedByStorageClassPriority(c *check.C) {
+	s.cluster.Volumes = map[string]arvados.Volume{
+		"zzzzz-nyw5e-111111111111111": {
+			Driver:         "mock",
+			Replication:    1,
+			StorageClasses: map[string]bool{"class1": true}},
+		"zzzzz-nyw5e-222222222222222": {
+			Driver:         "mock",
+			Replication:    1,
+			StorageClasses: map[string]bool{"class2": true, "class3": true}},
+	}
+
+	for _, trial := range []struct {
+		priority1 int // priority of class1, thus vol1
+		priority2 int // priority of class2
+		priority3 int // priority of class3 (vol2 priority will be max(priority2, priority3))
+		get1      int // expected number of "get" ops on vol1
+		get2      int // expected number of "get" ops on vol2
+	}{
+		{100, 50, 50, 1, 0},   // class1 has higher priority => try vol1 first, no need to try vol2
+		{100, 100, 100, 1, 0}, // same priority, vol1 is first lexicographically => try vol1 first and succeed
+		{66, 99, 33, 1, 1},    // class2 has higher priority => try vol2 first, then try vol1
+		{66, 33, 99, 1, 1},    // class3 has highest priority => vol2 has highest => try vol2 first, then try vol1
+	} {
+		c.Logf("%+v", trial)
+		s.cluster.StorageClasses = map[string]arvados.StorageClassConfig{
+			"class1": {Priority: trial.priority1},
+			"class2": {Priority: trial.priority2},
+			"class3": {Priority: trial.priority3},
+		}
+		c.Assert(s.handler.setup(context.Background(), s.cluster, "", prometheus.NewRegistry(), testServiceURL), check.IsNil)
+		IssueRequest(s.handler,
+			&RequestTester{
+				method:         "PUT",
+				uri:            "/" + TestHash,
+				requestBody:    TestBlock,
+				storageClasses: "class1",
+			})
+		IssueRequest(s.handler,
+			&RequestTester{
+				method: "GET",
+				uri:    "/" + TestHash,
+			})
+		c.Check(s.handler.volmgr.mountMap["zzzzz-nyw5e-111111111111111"].Volume.(*MockVolume).CallCount("Get"), check.Equals, trial.get1)
+		c.Check(s.handler.volmgr.mountMap["zzzzz-nyw5e-222222222222222"].Volume.(*MockVolume).CallCount("Get"), check.Equals, trial.get2)
+	}
+}
+
 // Test TOUCH requests.
 func (s *HandlerSuite) TestTouchHandler(c *check.C) {
 	c.Assert(s.handler.setup(context.Background(), s.cluster, "", prometheus.NewRegistry(), testServiceURL), check.IsNil)
@@ -497,12 +544,8 @@ func (s *HandlerSuite) TestIndexHandler(c *check.C) {
 
 	expected := `^` + TestHash + `\+\d+ \d+\n` +
 		TestHash2 + `\+\d+ \d+\n\n$`
-	match, _ := regexp.MatchString(expected, response.Body.String())
-	if !match {
-		c.Errorf(
-			"permissions on, superuser request: expected %s, got:\n%s",
-			expected, response.Body.String())
-	}
+	c.Check(response.Body.String(), check.Matches, expected, check.Commentf(
+		"permissions on, superuser request"))
 
 	// superuser /index/prefix request
 	// => OK
@@ -513,12 +556,8 @@ func (s *HandlerSuite) TestIndexHandler(c *check.C) {
 		response)
 
 	expected = `^` + TestHash + `\+\d+ \d+\n\n$`
-	match, _ = regexp.MatchString(expected, response.Body.String())
-	if !match {
-		c.Errorf(
-			"permissions on, superuser /index/prefix request: expected %s, got:\n%s",
-			expected, response.Body.String())
-	}
+	c.Check(response.Body.String(), check.Matches, expected, check.Commentf(
+		"permissions on, superuser /index/prefix request"))
 
 	// superuser /index/{no-such-prefix} request
 	// => OK

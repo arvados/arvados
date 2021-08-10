@@ -87,20 +87,24 @@ var stubServices = []arvados.KeepService{
 
 var stubMounts = map[string][]arvados.KeepMount{
 	"keep0.zzzzz.arvadosapi.com:25107": {{
-		UUID:     "zzzzz-ivpuk-000000000000000",
-		DeviceID: "keep0-vol0",
+		UUID:           "zzzzz-ivpuk-000000000000000",
+		DeviceID:       "keep0-vol0",
+		StorageClasses: map[string]bool{"default": true},
 	}},
 	"keep1.zzzzz.arvadosapi.com:25107": {{
-		UUID:     "zzzzz-ivpuk-100000000000000",
-		DeviceID: "keep1-vol0",
+		UUID:           "zzzzz-ivpuk-100000000000000",
+		DeviceID:       "keep1-vol0",
+		StorageClasses: map[string]bool{"default": true},
 	}},
 	"keep2.zzzzz.arvadosapi.com:25107": {{
-		UUID:     "zzzzz-ivpuk-200000000000000",
-		DeviceID: "keep2-vol0",
+		UUID:           "zzzzz-ivpuk-200000000000000",
+		DeviceID:       "keep2-vol0",
+		StorageClasses: map[string]bool{"default": true},
 	}},
 	"keep3.zzzzz.arvadosapi.com:25107": {{
-		UUID:     "zzzzz-ivpuk-300000000000000",
-		DeviceID: "keep3-vol0",
+		UUID:           "zzzzz-ivpuk-300000000000000",
+		DeviceID:       "keep3-vol0",
+		StorageClasses: map[string]bool{"default": true},
 	}},
 }
 

@@ -748,6 +748,11 @@ func (super *Supervisor) autofillConfig(cfg *arvados.Config) error {
 				},
 			}
 		}
+		cluster.StorageClasses = map[string]arvados.StorageClassConfig{
+			"default": {Default: true},
+			"foo":     {},
+			"bar":     {},
+		}
 	}
 	if super.OwnTemporaryDatabase {
 		cluster.PostgreSQL.Connection = arvados.PostgreSQLConnection{

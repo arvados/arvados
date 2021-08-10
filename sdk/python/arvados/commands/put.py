@@ -913,7 +913,7 @@ class ArvPutUploadJob(object):
             self._local_collection = arvados.collection.Collection(
                 self._state['manifest'],
                 replication_desired=self.replication_desired,
-                storage_classes_desired=(self.storage_classes or ['default']),
+                storage_classes_desired=self.storage_classes,
                 put_threads=self.put_threads,
                 api_client=self._api_client,
                 num_retries=self.num_retries)
