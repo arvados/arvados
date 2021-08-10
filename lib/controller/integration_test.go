@@ -192,23 +192,38 @@ func (s *IntegrationSuite) TestGetCollectionByPDH(c *check.C) {
 func (s *IntegrationSuite) TestRemoteTokenCacheRace(c *check.C) {
 	conn1 := s.testClusters["z1111"].Conn()
 	rootctx1, _, _ := s.testClusters["z1111"].RootClients()
-	conn3 := s.testClusters["z2222"].Conn()
+	rootctx2, _, _ := s.testClusters["z2222"].RootClients()
+	conn2 := s.testClusters["z2222"].Conn()
 	userctx1, _, _, _ := s.testClusters["z1111"].UserClients(rootctx1, c, conn1, "user2@example.com", true)
 
-	coll1, err := conn1.CollectionCreate(userctx1,
-		arvados.CreateOptions{Attrs: map[string]interface{}{}})
-	c.Assert(err, check.IsNil)
-
 	var wg1, wg2 sync.WaitGroup
-	wg1.Add(1)
+	creqs := 100
 
-	for i := 0; i < 10; i++ {
+	// Make concurrent requests to z2222 with a local token to make sure more
+	// than one worker is listening.
+	wg1.Add(1)
+	for i := 0; i < creqs; i++ {
 		wg2.Add(1)
 		go func() {
 			defer wg2.Done()
 			wg1.Wait()
-			// Retrieve the remote collection from cluster z3333.
-			_, err := conn3.CollectionGet(userctx1, arvados.GetOptions{UUID: coll1.UUID})
+			_, err := conn2.UserGetCurrent(rootctx2, arvados.GetOptions{})
+			c.Check(err, check.IsNil)
+		}()
+	}
+	wg1.Done()
+	wg2.Wait()
+
+	// Real test pass -- use a new remote token than the one used in the warm-up
+	// phase.
+	wg1.Add(1)
+	for i := 0; i < creqs; i++ {
+		wg2.Add(1)
+		go func() {
+			defer wg2.Done()
+			wg1.Wait()
+			// Retrieve the remote collection from cluster z2222.
+			_, err := conn2.UserGetCurrent(userctx1, arvados.GetOptions{})
 			c.Check(err, check.IsNil)
 		}()
 	}
