@@ -20,6 +20,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 
 	"git.arvados.org/arvados.git/lib/boot"
 	"git.arvados.org/arvados.git/lib/config"
@@ -184,6 +185,49 @@ func (s *IntegrationSuite) TestGetCollectionByPDH(c *check.C) {
 	coll, err := conn3.CollectionGet(userctx1, arvados.GetOptions{UUID: pdh})
 	c.Check(err, check.IsNil)
 	c.Check(coll.PortableDataHash, check.Equals, pdh)
+}
+
+// Tests bug #18004
+func (s *IntegrationSuite) TestRemoteTokenCacheRace(c *check.C) {
+	conn1 := s.testClusters["z1111"].Conn()
+	rootctx1, _, _ := s.testClusters["z1111"].RootClients()
+	rootctx2, _, _ := s.testClusters["z2222"].RootClients()
+	conn2 := s.testClusters["z2222"].Conn()
+	userctx1, _, _, _ := s.testClusters["z1111"].UserClients(rootctx1, c, conn1, "user2@example.com", true)
+
+	var wg1, wg2 sync.WaitGroup
+	creqs := 100
+
+	// Make concurrent requests to z2222 with a local token to make sure more
+	// than one worker is listening.
+	wg1.Add(1)
+	for i := 0; i < creqs; i++ {
+		wg2.Add(1)
+		go func() {
+			defer wg2.Done()
+			wg1.Wait()
+			_, err := conn2.UserGetCurrent(rootctx2, arvados.GetOptions{})
+			c.Check(err, check.IsNil)
+		}()
+	}
+	wg1.Done()
+	wg2.Wait()
+
+	// Real test pass -- use a new remote token than the one used in the warm-up
+	// phase.
+	wg1.Add(1)
+	for i := 0; i < creqs; i++ {
+		wg2.Add(1)
+		go func() {
+			defer wg2.Done()
+			wg1.Wait()
+			// Retrieve the remote collection from cluster z2222.
+			_, err := conn2.UserGetCurrent(userctx1, arvados.GetOptions{})
+			c.Check(err, check.IsNil)
+		}()
+	}
+	wg1.Done()
+	wg2.Wait()
 }
 
 func (s *IntegrationSuite) TestS3WithFederatedToken(c *check.C) {
@@ -433,7 +477,7 @@ func (s *IntegrationSuite) TestCreateContainerRequestWithBadToken(c *check.C) {
 }
 
 // We test the direct access to the database
-// normally an integration test would not have a database access, but  in this case we need
+// normally an integration test would not have a database access, but in this case we need
 // to test tokens that are secret, so there is no API response that will give them back
 func (s *IntegrationSuite) dbConn(c *check.C, clusterID string) (*sql.DB, *sql.Conn) {
 	ctx := context.Background()
