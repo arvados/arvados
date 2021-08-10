@@ -771,7 +771,13 @@ The 'jobs' API is no longer supported.
             if self.output_tags is None:
                 self.output_tags = ""
 
-            storage_classes = runtimeContext.storage_classes.strip().split(",")
+            storage_classes = ""
+            storage_class_req, _ = tool.get_requirement("http://arvados.org/cwl#OutputStorageClass")
+            if storage_class_req and storage_class_req.get("finalStorageClass"):
+                storage_classes = aslist(storage_class_req["finalStorageClass"])
+            else:
+                storage_classes = runtimeContext.storage_classes.strip().split(",")
+
             self.final_output, self.final_output_collection = self.make_output_collection(self.output_name, storage_classes, self.output_tags, self.final_output)
             self.set_crunch_output()
 
