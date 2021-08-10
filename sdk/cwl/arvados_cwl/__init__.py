@@ -22,6 +22,7 @@ import cwltool.main
 import cwltool.workflow
 import cwltool.process
 import cwltool.argparser
+from cwltool.errors import WorkflowException
 from cwltool.process import shortname, UnsupportedRequirement, use_custom_schema
 from cwltool.utils import adjustFileObjs, adjustDirObjs, get_listing
 
@@ -301,6 +302,9 @@ def main(args, stdout, stderr, api_client=None, keep_client=None,
         if keep_client is None:
             keep_client = arvados.keep.KeepClient(api_client=api_client, num_retries=4)
         executor = ArvCwlExecutor(api_client, arvargs, keep_client=keep_client, num_retries=4)
+    except WorkflowException as e:
+        logger.error(e, exc_info=(sys.exc_info()[1] if arvargs.debug else False))
+        return 1
     except Exception:
         logger.exception("Error creating the Arvados CWL Executor")
         return 1

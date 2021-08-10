@@ -19,7 +19,7 @@ def validate_cluster_target(arvrunner, runtimeContext):
     if runtimeContext.project_uuid:
         cluster_target = runtimeContext.submit_runner_cluster or arvrunner.api._rootDesc["uuidPrefix"]
         if not runtimeContext.project_uuid.startswith(cluster_target):
-            raise WorkflowException("Project uuid '%s' must be for target cluster '%s'" % (runtimeContext.project_uuid, cluster_target))
+            raise WorkflowException("Project uuid '%s' should start with id of target cluster '%s'" % (runtimeContext.project_uuid, cluster_target))
 
         try:
             if runtimeContext.project_uuid[5:12] == '-tpzed-':
@@ -29,7 +29,7 @@ def validate_cluster_target(arvrunner, runtimeContext):
                 if proj["group_class"] != "project":
                     raise Exception("not a project, group_class is '%s'" % (proj["group_class"]))
         except Exception as e:
-            raise WorkflowException("Invalid value for project uuid '%s': %s" % (runtimeContext.project_uuid, e))
+            raise WorkflowException("Invalid project uuid '%s': %s" % (runtimeContext.project_uuid, e))
 
 def set_cluster_target(tool, arvrunner, builder, runtimeContext):
     cluster_target_req = None
