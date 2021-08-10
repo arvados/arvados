@@ -96,6 +96,7 @@ arvcfg.declare_config "Users.UserProfileNotificationAddress", String, :user_prof
 arvcfg.declare_config "Users.AdminNotifierEmailFrom", String, :admin_notifier_email_from
 arvcfg.declare_config "Users.EmailSubjectPrefix", String, :email_subject_prefix
 arvcfg.declare_config "Users.UserNotifierEmailFrom", String, :user_notifier_email_from
+arvcfg.declare_config "Users.UserNotifierEmailBcc", Hash, ->(cfg, k, v) { arrayToHash cfg, "Users.UserNotifierEmailBcc", v }
 arvcfg.declare_config "Users.NewUserNotificationRecipients", Hash, :new_user_notification_recipients, ->(cfg, k, v) { arrayToHash cfg, "Users.NewUserNotificationRecipients", v }
 arvcfg.declare_config "Users.NewInactiveUserNotificationRecipients", Hash, :new_inactive_user_notification_recipients, method(:arrayToHash)
 arvcfg.declare_config "Login.LoginCluster", String
