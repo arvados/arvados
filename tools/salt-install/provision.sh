@@ -259,6 +259,8 @@ else
 
   # Set salt to masterless mode
   cat > /etc/salt/minion << EOFSM
+failhard: "True"
+
 file_client: local
 file_roots:
   base:
