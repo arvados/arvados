@@ -12,6 +12,7 @@ import { filterResources, getResource } from 'store/resources/resources';
 import { connect } from 'react-redux';
 import { Grid, ListItem, StyleRulesCallback, Typography, withStyles, WithStyles } from '@material-ui/core';
 import { formatDate, formatFileSize } from 'common/formatters';
+import { UserNameFromID } from '../data-explorer/renderers';
 import { Dispatch } from 'redux';
 import { navigateTo } from 'store/navigation/navigation-action';
 import { openContextMenu, resourceUuidToContextMenuKind } from 'store/context-menu/context-menu-actions';
@@ -108,12 +109,17 @@ const CollectionVersionBrowser = withStyles(styles)(
                             Nr
                         </Typography>
                     </Grid>
-                    <Grid item xs={4}>
+                    <Grid item xs={2}>
                         <Typography variant="caption" className={classes.versionBrowserHeader}>
                             Size
                         </Typography>
                     </Grid>
-                    <Grid item xs={6}>
+                    <Grid item xs={3}>
+                        <Typography variant="caption" className={classes.versionBrowserHeader}>
+                            User
+                        </Typography>
+                    </Grid>
+                    <Grid item xs={5}>
                         <Typography variant="caption" className={classes.versionBrowserHeader}>
                             Date
                         </Typography>
@@ -132,12 +138,17 @@ const CollectionVersionBrowser = withStyles(styles)(
                                     {item.version}
                                 </Typography>
                             </Grid>
-                            <Grid item xs={4}>
+                            <Grid item xs={2}>
                                 <Typography variant="caption" className={classes.versionBrowserItem}>
                                     {formatFileSize(item.fileSizeTotal)}
                                 </Typography>
                             </Grid>
-                            <Grid item xs={6}>
+                            <Grid item xs={3}>
+                                <Typography variant="caption" className={classes.versionBrowserItem}>
+                                    <UserNameFromID uuid={item.modifiedByUserUuid} />
+                                </Typography>
+                            </Grid>
+                            <Grid item xs={5}>
                                 <Typography variant="caption" className={classes.versionBrowserItem}>
                                     {formatDate(item.modifiedAt)}
                                 </Typography>
