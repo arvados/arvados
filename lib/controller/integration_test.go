@@ -20,6 +20,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 
 	"git.arvados.org/arvados.git/lib/boot"
 	"git.arvados.org/arvados.git/lib/config"
@@ -185,6 +186,34 @@ func (s *IntegrationSuite) TestGetCollectionByPDH(c *check.C) {
 	coll, err := conn3.CollectionGet(userctx1, arvados.GetOptions{UUID: pdh})
 	c.Check(err, check.IsNil)
 	c.Check(coll.PortableDataHash, check.Equals, pdh)
+}
+
+// Support ticket #212
+func (s *IntegrationSuite) TestRemoteTokenCacheRace(c *check.C) {
+	conn1 := s.testClusters["z1111"].Conn()
+	rootctx1, _, _ := s.testClusters["z1111"].RootClients()
+	conn3 := s.testClusters["z2222"].Conn()
+	userctx1, _, _, _ := s.testClusters["z1111"].UserClients(rootctx1, c, conn1, "user2@example.com", true)
+
+	coll1, err := conn1.CollectionCreate(userctx1,
+		arvados.CreateOptions{Attrs: map[string]interface{}{}})
+	c.Assert(err, check.IsNil)
+
+	var wg1, wg2 sync.WaitGroup
+	wg1.Add(1)
+
+	for i := 0; i < 10; i++ {
+		wg2.Add(1)
+		go func() {
+			defer wg2.Done()
+			wg1.Wait()
+			// Retrieve the remote collection from cluster z3333.
+			_, err := conn3.CollectionGet(userctx1, arvados.GetOptions{UUID: coll1.UUID})
+			c.Check(err, check.IsNil)
+		}()
+	}
+	wg1.Done()
+	wg2.Wait()
 }
 
 func (s *IntegrationSuite) TestS3WithFederatedToken(c *check.C) {
@@ -502,7 +531,7 @@ func (s *IntegrationSuite) TestRequestIDHeader(c *check.C) {
 }
 
 // We test the direct access to the database
-// normally an integration test would not have a database access, but  in this case we need
+// normally an integration test would not have a database access, but in this case we need
 // to test tokens that are secret, so there is no API response that will give them back
 func (s *IntegrationSuite) dbConn(c *check.C, clusterID string) (*sql.DB, *sql.Conn) {
 	ctx := context.Background()
