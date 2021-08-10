@@ -549,6 +549,12 @@ The 'jobs' API is no longer supported.
         if runtimeContext.submit_request_uuid and self.work_api != "containers":
             raise Exception("--submit-request-uuid requires containers API, but using '{}' api".format(self.work_api))
 
+        default_storage_classes = [k for k,v in self.api.config()["StorageClasses"].items() if v.get("Default") is True].join(",")
+        if runtimeContext.storage_classes == "default":
+            runtimeContext.storage_classes = default_storage_classes
+        if runtimeContext.intermediate_storage_classes == "default":
+            runtimeContext.intermediate_storage_classes = default_storage_classes
+
         if not runtimeContext.name:
             runtimeContext.name = self.name = updated_tool.tool.get("label") or updated_tool.metadata.get("label") or os.path.basename(updated_tool.tool["id"])
 
