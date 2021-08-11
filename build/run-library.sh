@@ -690,8 +690,8 @@ fpm_build_virtualenv () {
   fi
 
   # the python3-arvados-cwl-runner package comes with cwltool, expose that version
-  if [[ -e "$WORKSPACE/$PKG_DIR/dist/build/usr/share/$python/dist/python-arvados-cwl-runner/bin/cwltool" ]]; then
-    COMMAND_ARR+=("usr/share/$python/dist/python-arvados-cwl-runner/bin/cwltool=/usr/bin/")
+  if [[ -e "$WORKSPACE/$PKG_DIR/dist/build/usr/share/$python/dist/$PYTHON_PKG/bin/cwltool" ]]; then
+    COMMAND_ARR+=("usr/share/$python/dist/$PYTHON_PKG/bin/cwltool=/usr/bin/")
   fi
 
   COMMAND_ARR+=(".")
