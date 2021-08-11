@@ -150,7 +150,9 @@ class Collection < ArvadosModel
   def strip_signatures_and_update_replication_confirmed
     if self.manifest_text_changed?
       in_old_manifest = {}
-      if not self.replication_confirmed.nil?
+      # manifest_text_was could be nil when dealing with a freshly created snapshot,
+      # so we skip this case because there was no real manifest change. (Bug #18005)
+      if (not self.replication_confirmed.nil?) and (not self.manifest_text_was.nil?)
         self.class.each_manifest_locator(manifest_text_was) do |match|
           in_old_manifest[match[1]] = true
         end
