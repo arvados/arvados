@@ -621,6 +621,11 @@ fpm_build_virtualenv () {
   LICENSE_STRING=`grep license $WORKSPACE/$PKG_DIR/setup.py|cut -f2 -d=|sed -e "s/[',\\"]//g"`
   COMMAND_ARR+=('--license' "$LICENSE_STRING")
 
+  if [[ "$FORMAT" == "rpm" ]]; then
+    # Make sure to conflict with the old rh-python36 packages we used to publish
+    COMMAND_ARR+=('--conflicts' "rh-python36-python-$PKG")
+  fi
+
   if [[ "$DEBUG" != "0" ]]; then
     COMMAND_ARR+=('--verbose' '--log' 'info')
   fi
