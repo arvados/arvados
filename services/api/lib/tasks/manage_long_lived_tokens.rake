@@ -17,6 +17,7 @@ namespace :db do
     end
     if lifetime.nil? or lifetime == 0
       puts("No expiration policy set (API.MaxTokenLifetime nor Login.TokenLifetime is set), nothing to do.")
+      # abort the rake task
       next
     end
     exp_date = Time.now + lifetime
@@ -25,6 +26,7 @@ namespace :db do
     ll_tokens(lifetime).each do |auth|
       if auth.user.nil?
         printf("*** WARNING, found ApiClientAuthorization with invalid user: auth id: %d, user id: %d\n", auth.id, auth.user_id)
+        # skip this token
         next
       end
       if (auth.user.uuid =~ /-tpzed-000000000000000/).nil?
@@ -45,6 +47,7 @@ namespace :db do
     end
     if lifetime.nil? or lifetime == 0
       puts("No expiration policy set (API.MaxTokenLifetime nor Login.TokenLifetime is set), nothing to do.")
+      # abort the rake task
       next
     end
     user_ids = Set.new()
@@ -52,6 +55,7 @@ namespace :db do
     ll_tokens(lifetime).each do |auth|
       if auth.user.nil?
         printf("*** WARNING, found ApiClientAuthorization with invalid user: auth id: %d, user id: %d\n", auth.id, auth.user_id)
+        # skip this token
         next
       end
       if not auth.user.nil? and (auth.user.uuid =~ /-tpzed-000000000000000/).nil?
