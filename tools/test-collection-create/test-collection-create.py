@@ -426,15 +426,15 @@ def main(arguments=None):
             break
         manifest += s + '\n'
     try:
-        coll = api.collections().create(body={
-            "ensure_unique_name": True,
-            "collection": {
-                "name": get_random_name(False),
+        coll_name = get_random_name(False)
+        coll = api.collections().create(
+            body={"collection": {
+                "name": coll_name,
                 "manifest_text": manifest
             },
         }).execute()
     except:
-        logger.info("ERROR trying manifest:\n'{}...'\nSize: {}".format(manifest[0:1024], len(manifest)))
+        logger.info("ERROR creating collection with name '{}' and manifest:\n'{}...'\nSize: {}".format(coll_name, manifest[0:1024], len(manifest)))
         raise
     logger.info("Created collection {} - manifest size: {}".format(coll["uuid"], len(manifest)))
     return 0
