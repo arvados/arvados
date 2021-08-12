@@ -465,9 +465,9 @@ export const UserNameFromID =
             if (userFullname === '') {
                 dispatch<any>(loadResource(uuid, false));
             }
-            return <Typography inline>
+            return <span>
                 {userFullname ? userFullname : uuid}
-            </Typography>;
+            </span>;
         });
 
 export const ResponsiblePerson =

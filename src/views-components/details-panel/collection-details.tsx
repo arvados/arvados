@@ -17,7 +17,7 @@ import { Dispatch } from 'redux';
 import { navigateTo } from 'store/navigation/navigation-action';
 import { openContextMenu, resourceUuidToContextMenuKind } from 'store/context-menu/context-menu-actions';
 
-export type CssRules = 'versionBrowserHeader' | 'versionBrowserItem';
+export type CssRules = 'versionBrowserHeader' | 'versionBrowserItem' | 'versionBrowserField';
 
 const styles: StyleRulesCallback<CssRules> = theme => ({
     versionBrowserHeader: {
@@ -25,6 +25,9 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
         fontWeight: 'bold',
     },
     versionBrowserItem: {
+        flexWrap: 'wrap',
+    },
+    versionBrowserField: {
         textAlign: 'center',
     }
 });
@@ -109,17 +112,12 @@ const CollectionVersionBrowser = withStyles(styles)(
                             Nr
                         </Typography>
                     </Grid>
-                    <Grid item xs={2}>
+                    <Grid item xs={4}>
                         <Typography variant="caption" className={classes.versionBrowserHeader}>
                             Size
                         </Typography>
                     </Grid>
-                    <Grid item xs={3}>
-                        <Typography variant="caption" className={classes.versionBrowserHeader}>
-                            User
-                        </Typography>
-                    </Grid>
-                    <Grid item xs={5}>
+                    <Grid item xs={6}>
                         <Typography variant="caption" className={classes.versionBrowserHeader}>
                             Date
                         </Typography>
@@ -132,25 +130,26 @@ const CollectionVersionBrowser = withStyles(styles)(
                             key={item.version}
                             onClick={e => showVersion(item)}
                             onContextMenu={event => handleContextMenu(event, item)}
-                            selected={isSelectedVersion}>
+                            selected={isSelectedVersion}
+                            className={classes.versionBrowserItem}>
                             <Grid item xs={2}>
-                                <Typography variant="caption" className={classes.versionBrowserItem}>
+                                <Typography variant="caption" className={classes.versionBrowserField}>
                                     {item.version}
                                 </Typography>
                             </Grid>
-                            <Grid item xs={2}>
-                                <Typography variant="caption" className={classes.versionBrowserItem}>
+                            <Grid item xs={4}>
+                                <Typography variant="caption" className={classes.versionBrowserField}>
                                     {formatFileSize(item.fileSizeTotal)}
                                 </Typography>
                             </Grid>
-                            <Grid item xs={3}>
-                                <Typography variant="caption" className={classes.versionBrowserItem}>
-                                    <UserNameFromID uuid={item.modifiedByUserUuid} />
+                            <Grid item xs={6}>
+                                <Typography variant="caption" className={classes.versionBrowserField}>
+                                    {formatDate(item.modifiedAt)}
                                 </Typography>
                             </Grid>
-                            <Grid item xs={5}>
-                                <Typography variant="caption" className={classes.versionBrowserItem}>
-                                    {formatDate(item.modifiedAt)}
+                            <Grid item xs={12}>
+                                <Typography variant="caption" className={classes.versionBrowserField}>
+                                    Modified by: <UserNameFromID uuid={item.modifiedByUserUuid} />
                                 </Typography>
                             </Grid>
                         </ListItem>
