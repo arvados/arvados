@@ -425,24 +425,27 @@ export const ResourceOwnerName = connect(
         return { owner: ownerName ? ownerName!.name : resource!.ownerUuid };
     })((props: { owner: string }) => renderOwner(props.owner));
 
+const userFromID =
+    connect(
+        (state: RootState, props: { uuid: string }) => {
+            let userFullname = '';
+            const resource = getResource<GroupContentsResource & UserResource>(props.uuid)(state.resources);
+
+            if (resource) {
+                userFullname = getUserFullname(resource as User) || (resource as GroupContentsResource).name;
+            }
+
+            return { uuid: props.uuid, userFullname };
+        });
+
 export const ResourceOwnerWithName =
     compose(
-        connect(
-            (state: RootState, props: { uuid: string }) => {
-                let ownerName = '';
-                const resource = getResource<GroupContentsResource & UserResource>(props.uuid)(state.resources);
-
-                if (resource) {
-                    ownerName = getUserFullname(resource as User) || (resource as GroupContentsResource).name;
-                }
-
-                return { uuid: props.uuid, ownerName };
-            }),
+        userFromID,
         withStyles({}, { withTheme: true }))
-        ((props: { uuid: string, ownerName: string, dispatch: Dispatch, theme: ArvadosTheme }) => {
-            const { uuid, ownerName, dispatch, theme } = props;
+        ((props: { uuid: string, userFullname: string, dispatch: Dispatch, theme: ArvadosTheme }) => {
+            const { uuid, userFullname, dispatch, theme } = props;
 
-            if (ownerName === '') {
+            if (userFullname === '') {
                 dispatch<any>(loadResource(uuid, false));
                 return <Typography style={{ color: theme.palette.primary.main }} inline noWrap>
                     {uuid}
@@ -450,8 +453,21 @@ export const ResourceOwnerWithName =
             }
 
             return <Typography style={{ color: theme.palette.primary.main }} inline noWrap>
-                {ownerName} ({uuid})
+                {userFullname} ({uuid})
             </Typography>;
+        });
+
+export const UserNameFromID =
+    compose(userFromID)(
+        (props: { uuid: string, userFullname: string, dispatch: Dispatch }) => {
+            const { uuid, userFullname, dispatch } = props;
+
+            if (userFullname === '') {
+                dispatch<any>(loadResource(uuid, false));
+            }
+            return <span>
+                {userFullname ? userFullname : uuid}
+            </span>;
         });
 
 export const ResponsiblePerson =

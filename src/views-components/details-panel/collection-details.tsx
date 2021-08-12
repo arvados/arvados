@@ -12,11 +12,12 @@ import { filterResources, getResource } from 'store/resources/resources';
 import { connect } from 'react-redux';
 import { Grid, ListItem, StyleRulesCallback, Typography, withStyles, WithStyles } from '@material-ui/core';
 import { formatDate, formatFileSize } from 'common/formatters';
+import { UserNameFromID } from '../data-explorer/renderers';
 import { Dispatch } from 'redux';
 import { navigateTo } from 'store/navigation/navigation-action';
 import { openContextMenu, resourceUuidToContextMenuKind } from 'store/context-menu/context-menu-actions';
 
-export type CssRules = 'versionBrowserHeader' | 'versionBrowserItem';
+export type CssRules = 'versionBrowserHeader' | 'versionBrowserItem' | 'versionBrowserField';
 
 const styles: StyleRulesCallback<CssRules> = theme => ({
     versionBrowserHeader: {
@@ -24,6 +25,9 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
         fontWeight: 'bold',
     },
     versionBrowserItem: {
+        flexWrap: 'wrap',
+    },
+    versionBrowserField: {
         textAlign: 'center',
     }
 });
@@ -126,20 +130,26 @@ const CollectionVersionBrowser = withStyles(styles)(
                             key={item.version}
                             onClick={e => showVersion(item)}
                             onContextMenu={event => handleContextMenu(event, item)}
-                            selected={isSelectedVersion}>
+                            selected={isSelectedVersion}
+                            className={classes.versionBrowserItem}>
                             <Grid item xs={2}>
-                                <Typography variant="caption" className={classes.versionBrowserItem}>
+                                <Typography variant="caption" className={classes.versionBrowserField}>
                                     {item.version}
                                 </Typography>
                             </Grid>
                             <Grid item xs={4}>
-                                <Typography variant="caption" className={classes.versionBrowserItem}>
+                                <Typography variant="caption" className={classes.versionBrowserField}>
                                     {formatFileSize(item.fileSizeTotal)}
                                 </Typography>
                             </Grid>
                             <Grid item xs={6}>
-                                <Typography variant="caption" className={classes.versionBrowserItem}>
+                                <Typography variant="caption" className={classes.versionBrowserField}>
                                     {formatDate(item.modifiedAt)}
+                                </Typography>
+                            </Grid>
+                            <Grid item xs={12}>
+                                <Typography variant="caption" className={classes.versionBrowserField}>
+                                    Modified by: <UserNameFromID uuid={item.modifiedByUserUuid} />
                                 </Typography>
                             </Grid>
                         </ListItem>
