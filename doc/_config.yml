@@ -257,6 +257,7 @@ navbar:
     - Containers API (lsf):
       - install/crunch2-lsf/install-dispatch.html.textile.liquid
     - Additional configuration:
+      - install/singularity.html.textile.liquid
       - install/container-shell-access.html.textile.liquid
     - External dependencies:
       - install/install-postgresql.html.textile.liquid
