@@ -32,7 +32,7 @@ class WorkUnitsControllerTest < ActionController::TestCase
        '/container_requests/zzzzz-xvhdp-cr4completedcr2']],
   ].each do |search_filter, expected_min, expected_max, expected, not_expected|
     test "all_processes page for search filter '#{search_filter}'" do
-      work_units_index(filters: [['any','@@', search_filter]], show_children: true)
+      work_units_index(filters: [['any','ilike', "%#{search_filter}%"]], show_children: true)
       assert_response :success
 
       # Verify that expected number of processes are found
