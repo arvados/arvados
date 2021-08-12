@@ -534,10 +534,14 @@ describe('Collection panel tests', function () {
                     .within(() => {
                         // Version 1: 6 bytes in size
                         cy.get('[data-cy=collection-version-browser-select-1]')
-                            .should('contain', '1').and('contain', '6 B');
+                            .should('contain', '1')
+                            .and('contain', '6 B')
+                            .and('contain', adminUser.user.uuid);
                         // Version 2: 3 bytes in size (one file removed)
                         cy.get('[data-cy=collection-version-browser-select-2]')
-                            .should('contain', '2').and('contain', '3 B');
+                            .should('contain', '2')
+                            .and('contain', '3 B')
+                            .and('contain', activeUser.user.full_name);
                         cy.get('[data-cy=collection-version-browser-select-3]')
                             .should('not.exist');
                         cy.get('[data-cy=collection-version-browser-select-1]')
