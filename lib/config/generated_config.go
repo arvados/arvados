@@ -279,6 +279,7 @@ Clusters:
       AdminNotifierEmailFrom: arvados@example.com
       EmailSubjectPrefix: "[ARVADOS] "
       UserNotifierEmailFrom: arvados@example.com
+      UserNotifierEmailBcc: {}
       NewUserNotificationRecipients: {}
       NewInactiveUserNotificationRecipients: {}
 

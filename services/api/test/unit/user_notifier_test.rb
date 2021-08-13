@@ -10,6 +10,7 @@ class UserNotifierTest < ActionMailer::TestCase
   test "account is setup" do
     user = users :active
 
+    Rails.configuration.Users.UserNotifierEmailBcc = ConfigLoader.to_OrderedOptions({"bcc-notify@example.com"=>{},"bcc-notify2@example.com"=>{}})
     Rails.configuration.Users.UserSetupMailText = %{
 <% if not @user.full_name.empty? -%>
 <%= @user.full_name %>,
@@ -33,6 +34,7 @@ The Arvados team.
 
     # Test the body of the sent email contains what we expect it to
     assert_equal Rails.configuration.Users.UserNotifierEmailFrom, email.from.first
+    assert_equal Rails.configuration.Users.UserNotifierEmailBcc.stringify_keys.keys, email.bcc
     assert_equal user.email, email.to.first
     assert_equal 'Welcome to Arvados - account enabled', email.subject
     assert (email.body.to_s.include? 'Your Arvados shell account has been set up'),
