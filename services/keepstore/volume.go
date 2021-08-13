@@ -344,11 +344,11 @@ func makeRRVolumeManager(logger logrus.FieldLogger, cluster *arvados.Cluster, my
 			vm.writables = append(vm.writables, mnt)
 		}
 	}
-	// pri(i): return highest priority of any storage class
-	// offered by vm.readables[i]
-	pri := func(i int) int {
+	// pri(mnt): return highest priority of any storage class
+	// offered by mnt
+	pri := func(mnt *VolumeMount) int {
 		any, best := false, 0
-		for class := range vm.readables[i].KeepMount.StorageClasses {
+		for class := range mnt.KeepMount.StorageClasses {
 			if p := cluster.StorageClasses[class].Priority; !any || best < p {
 				best = p
 				any = true
@@ -356,14 +356,20 @@ func makeRRVolumeManager(logger logrus.FieldLogger, cluster *arvados.Cluster, my
 		}
 		return best
 	}
-	// sort vm.readables, first by highest priority of any offered
+	// less(a,b): sort first by highest priority of any offered
 	// storage class (highest->lowest), then by volume UUID
-	sort.Slice(vm.readables, func(i, j int) bool {
-		if pi, pj := pri(i), pri(j); pi != pj {
-			return pi > pj
+	less := func(a, b *VolumeMount) bool {
+		if pa, pb := pri(a), pri(b); pa != pb {
+			return pa > pb
 		} else {
-			return vm.readables[i].KeepMount.UUID < vm.readables[j].KeepMount.UUID
+			return a.KeepMount.UUID < b.KeepMount.UUID
 		}
+	}
+	sort.Slice(vm.readables, func(i, j int) bool {
+		return less(vm.readables[i], vm.readables[j])
+	})
+	sort.Slice(vm.writables, func(i, j int) bool {
+		return less(vm.writables[i], vm.writables[j])
 	})
 	return vm, nil
 }
@@ -384,18 +390,19 @@ func (vm *RRVolumeManager) AllReadable() []*VolumeMount {
 	return vm.readables
 }
 
-// AllWritable returns an array of all writable volumes
+// AllWritable returns writable volumes, sorted by priority/uuid. Used
+// by CompareAndTouch to ensure higher-priority volumes are checked
+// first.
 func (vm *RRVolumeManager) AllWritable() []*VolumeMount {
 	return vm.writables
 }
 
-// NextWritable returns the next writable
-func (vm *RRVolumeManager) NextWritable() *VolumeMount {
-	if len(vm.writables) == 0 {
-		return nil
-	}
-	i := atomic.AddUint32(&vm.counter, 1)
-	return vm.writables[i%uint32(len(vm.writables))]
+// NextWritable returns writable volumes, rotated by vm.counter so
+// each volume gets a turn to be first. Used by PutBlock to distribute
+// new data across available volumes.
+func (vm *RRVolumeManager) NextWritable() []*VolumeMount {
+	offset := (int(atomic.AddUint32(&vm.counter, 1)) - 1) % len(vm.writables)
+	return append(append([]*VolumeMount(nil), vm.writables[offset:]...), vm.writables[:offset]...)
 }
 
 // VolumeStats returns an ioStats for the given volume.
