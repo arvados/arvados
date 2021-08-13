@@ -210,3 +210,32 @@ $graph:
     project_uuid:
       type: string?
       doc: The project that will own the container requests and intermediate collections
+
+
+- name: OutputStorageClass
+  type: record
+  extends: cwl:ProcessRequirement
+  inVocab: false
+  doc: |
+    Specify the storage class to be used for intermediate and final output
+  fields:
+    class:
+      type: string
+      doc: "Always 'arv:StorageClassHint"
+      jsonldPredicate:
+        _id: "@type"
+        _type: "@vocab"
+    intermediateStorageClass:
+      type:
+        - "null"
+        - string
+        - type: array
+          items: string
+      doc: One or more storages classes
+    finalStorageClass:
+      type:
+        - "null"
+        - string
+        - type: array
+          items: string
+      doc: One or more storages classes

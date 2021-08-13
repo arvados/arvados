@@ -42,7 +42,7 @@ from .context import ArvLoadingContext, ArvRuntimeContext
 from ._version import __version__
 
 from cwltool.process import shortname, UnsupportedRequirement, use_custom_schema
-from cwltool.utils import adjustFileObjs, adjustDirObjs, get_listing, visit_class
+from cwltool.utils import adjustFileObjs, adjustDirObjs, get_listing, visit_class, aslist
 from cwltool.command_line_tool import compute_checksums
 from cwltool.load_tool import load_tool
 
@@ -549,6 +549,12 @@ The 'jobs' API is no longer supported.
         if runtimeContext.submit_request_uuid and self.work_api != "containers":
             raise Exception("--submit-request-uuid requires containers API, but using '{}' api".format(self.work_api))
 
+        default_storage_classes = ",".join([k for k,v in self.api.config()["StorageClasses"].items() if v.get("Default") is True])
+        if runtimeContext.storage_classes == "default":
+            runtimeContext.storage_classes = default_storage_classes
+        if runtimeContext.intermediate_storage_classes == "default":
+            runtimeContext.intermediate_storage_classes = default_storage_classes
+
         if not runtimeContext.name:
             runtimeContext.name = self.name = updated_tool.tool.get("label") or updated_tool.metadata.get("label") or os.path.basename(updated_tool.tool["id"])
 
@@ -771,7 +777,13 @@ The 'jobs' API is no longer supported.
             if self.output_tags is None:
                 self.output_tags = ""
 
-            storage_classes = runtimeContext.storage_classes.strip().split(",")
+            storage_classes = ""
+            storage_class_req, _ = tool.get_requirement("http://arvados.org/cwl#OutputStorageClass")
+            if storage_class_req and storage_class_req.get("finalStorageClass"):
+                storage_classes = aslist(storage_class_req["finalStorageClass"])
+            else:
+                storage_classes = runtimeContext.storage_classes.strip().split(",")
+
             self.final_output, self.final_output_collection = self.make_output_collection(self.output_name, storage_classes, self.output_tags, self.final_output)
             self.set_crunch_output()
 
