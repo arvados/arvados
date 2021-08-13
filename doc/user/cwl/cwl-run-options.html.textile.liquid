@@ -47,19 +47,19 @@ table(table table-bordered table-condensed).
 |==--no-wait==|             Submit workflow runner and exit.|
 |==--log-timestamps==|      Prefix logging lines with timestamp|
 |==--no-log-timestamps==|   No timestamp on logging lines|
-|==--api== {containers}|Select work submission API.  Only supports 'containers'|
 |==--compute-checksum==|    Compute checksum of contents while collecting outputs|
 |==--submit-runner-ram== SUBMIT_RUNNER_RAM|RAM (in MiB) required for the workflow runner (default 1024)|
 |==--submit-runner-image== SUBMIT_RUNNER_IMAGE|Docker image for workflow runner|
 |==--always-submit-runner==|When invoked with --submit --wait, always submit a runner to manage the workflow, even when only running a single CommandLineTool|
-|==--submit-request-uuid== UUID|Update and commit to supplied container request instead of creating a new one (containers API only).|
-|==--submit-runner-cluster== CLUSTER_ID|Submit workflow runner to a remote cluster (containers API only)|
+|==--submit-request-uuid== UUID|Update and commit to supplied container request instead of creating a new one.|
+|==--submit-runner-cluster== CLUSTER_ID|Submit workflow runner to a remote cluster|
 |==--name NAME==|Name to use for workflow execution instance.|
 |==--on-error== {stop,continue}|Desired workflow behavior when a step fails.  One of 'stop' (do not submit any more steps) or 'continue' (may submit other steps that are not downstream from the error). Default is 'continue'.|
 |==--enable-dev==|Enable loading and running development versions of CWL spec.|
-|==--storage-classes== STORAGE_CLASSES|Specify comma separated list of storage classes to be used when saving workflow output to Keep.|
+|==--storage-classes== STORAGE_CLASSES|Specify comma separated list of storage classes to be used when saving the final workflow output to Keep.|
+|==--intermediate-storage-classes== STORAGE_CLASSES|Specify comma separated list of storage classes to be used when intermediate workflow output to Keep.|
 |==--intermediate-output-ttl== N|If N > 0, intermediate output collections will be trashed N seconds after creation. Default is 0 (don't trash).|
-|==--priority== PRIORITY|Workflow priority (range 1..1000, higher has precedence over lower, containers api only)|
+|==--priority== PRIORITY|Workflow priority (range 1..1000, higher has precedence over lower)|
 |==--thread-count== THREAD_COUNT|Number of threads to use for container submit and output collection.|
 |==--http-timeout== HTTP_TIMEOUT|API request timeout in seconds. Default is 300 seconds (5 minutes).|
 |==--trash-intermediate==|Immediately trash intermediate outputs on workflow success.|
