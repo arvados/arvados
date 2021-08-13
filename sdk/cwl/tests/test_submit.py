@@ -853,6 +853,7 @@ class TestSubmit(unittest.TestCase):
     @stubs
     def test_submit_container_project(self, stubs):
         project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
+        stubs.api.groups().get().execute.return_value = {"group_class": "project"}
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=containers", "--debug", "--project-uuid="+project_uuid,
                 "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
@@ -1265,18 +1266,28 @@ class TestSubmit(unittest.TestCase):
 
     @stubs
     def test_submit_validate_project_uuid(self, stubs):
+        # Fails with bad cluster prefix
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=containers", "--debug", "--project-uuid=zzzzb-j7d0g-zzzzzzzzzzzzzzz",
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
             stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
         self.assertEqual(exited, 1)
 
+        # Project lookup fails
         stubs.api.groups().get().execute.side_effect = Exception("Bad project")
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=containers", "--debug", "--project-uuid=zzzzz-j7d0g-zzzzzzzzzzzzzzx",
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
             stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
         self.assertEqual(exited, 1)
+
+        # It should work this time because it is looking up a user (and only group is stubbed out to fail)
+        exited = arvados_cwl.main(
+            ["--submit", "--no-wait", "--api=containers", "--debug", "--project-uuid=zzzzz-tpzed-zzzzzzzzzzzzzzx",
+             "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
+            stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+        self.assertEqual(exited, 0)
+
 
     @mock.patch("arvados.collection.CollectionReader")
     @stubs
@@ -1382,6 +1393,7 @@ class TestCreateWorkflow(unittest.TestCase):
     @stubs
     def test_create(self, stubs):
         project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
+        stubs.api.groups().get().execute.return_value = {"group_class": "project"}
 
         exited = arvados_cwl.main(
             ["--create-workflow", "--debug",
@@ -1411,6 +1423,7 @@ class TestCreateWorkflow(unittest.TestCase):
     @stubs
     def test_create_name(self, stubs):
         project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
+        stubs.api.groups().get().execute.return_value = {"group_class": "project"}
 
         exited = arvados_cwl.main(
             ["--create-workflow", "--debug",
@@ -1486,6 +1499,7 @@ class TestCreateWorkflow(unittest.TestCase):
     @stubs
     def test_create_collection_per_tool(self, stubs):
         project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
+        stubs.api.groups().get().execute.return_value = {"group_class": "project"}
 
         exited = arvados_cwl.main(
             ["--create-workflow", "--debug",
@@ -1515,6 +1529,7 @@ class TestCreateWorkflow(unittest.TestCase):
     @stubs
     def test_create_with_imports(self, stubs):
         project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
+        stubs.api.groups().get().execute.return_value = {"group_class": "project"}
 
         exited = arvados_cwl.main(
             ["--create-workflow", "--debug",
@@ -1533,6 +1548,7 @@ class TestCreateWorkflow(unittest.TestCase):
     @stubs
     def test_create_with_no_input(self, stubs):
         project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
+        stubs.api.groups().get().execute.return_value = {"group_class": "project"}
 
         exited = arvados_cwl.main(
             ["--create-workflow", "--debug",
