@@ -273,6 +273,12 @@ class ArvadosContainer(JobBase):
         if self.output_ttl < 0:
             raise WorkflowException("Invalid value %d for output_ttl, cannot be less than zero" % container_request["output_ttl"])
 
+        storage_class_req, _ = self.get_requirement("http://arvados.org/cwl#OutputStorageClass")
+        if storage_class_req and storage_class_req.get("intermediateStorageClass"):
+            container_request["output_storage_classes"] = aslist(storage_class_req["intermediateStorageClass"])
+        else:
+            container_request["output_storage_classes"] = runtimeContext.intermediate_storage_classes.strip().split(",")
+
         if self.timelimit is not None and self.timelimit > 0:
             scheduling_parameters["max_run_time"] = self.timelimit
 
@@ -494,6 +500,9 @@ class RunnerContainer(Runner):
 
         if runtimeContext.storage_classes != "default":
             command.append("--storage-classes=" + runtimeContext.storage_classes)
+
+        if runtimeContext.intermediate_storage_classes != "default":
+            command.append("--intermediate-storage-classes=" + runtimeContext.intermediate_storage_classes)
 
         if self.on_error:
             command.append("--on-error=" + self.on_error)

@@ -95,6 +95,11 @@ def stubs(func):
         stubs.api.containers().current().execute.return_value = {
             "uuid": stubs.fake_container_uuid,
         }
+        stubs.api.config()["StorageClasses"].items.return_value = {
+            "default": {
+                "Default": True
+            }
+        }.items()
 
         class CollectionExecute(object):
             def __init__(self, exe):
@@ -342,14 +347,6 @@ class TestSubmit(unittest.TestCase):
         cwltool.process._names = set()
         arvados_cwl.arvdocker.arv_docker_clear_cache()
 
-    @stubs
-    def test_error_when_multiple_storage_classes_specified(self, stubs):
-        storage_classes = "foo,bar"
-        exited = arvados_cwl.main(
-                ["--debug", "--storage-classes", storage_classes,
-                 "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-                sys.stdin, sys.stderr, api_client=stubs.api)
-        self.assertEqual(exited, 1)
 
     @mock.patch("time.sleep")
     @stubs
@@ -526,6 +523,27 @@ class TestSubmit(unittest.TestCase):
                          stubs.expect_container_request_uuid + '\n')
         self.assertEqual(exited, 0)
 
+    @stubs
+    def test_submit_multiple_storage_classes(self, stubs):
+        exited = arvados_cwl.main(
+            ["--debug", "--submit", "--no-wait", "--api=containers", "--storage-classes=foo,bar", "--intermediate-storage-classes=baz",
+                "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
+            stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+
+        expect_container = copy.deepcopy(stubs.expect_container_spec)
+        expect_container["command"] = ['arvados-cwl-runner', '--local', '--api=containers',
+                                       '--no-log-timestamps', '--disable-validate', '--disable-color',
+                                       '--eval-timeout=20', '--thread-count=0',
+                                       '--enable-reuse', "--collection-cache-size=256", "--debug",
+                                       "--storage-classes=foo,bar", "--intermediate-storage-classes=baz", '--on-error=continue',
+                                       '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
+
+        stubs.api.container_requests().create.assert_called_with(
+            body=JsonDiffMatcher(expect_container))
+        self.assertEqual(stubs.capture_stdout.getvalue(),
+                         stubs.expect_container_request_uuid + '\n')
+        self.assertEqual(exited, 0)
+
     @mock.patch("cwltool.task_queue.TaskQueue")
     @mock.patch("arvados_cwl.arvworkflow.ArvadosWorkflow.job")
     @mock.patch("arvados_cwl.executor.ArvCwlExecutor.make_output_collection")
@@ -566,6 +584,27 @@ class TestSubmit(unittest.TestCase):
             stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
 
         make_output.assert_called_with(u'Output of submit_wf.cwl', ['default'], '', 'zzzzz-4zz18-zzzzzzzzzzzzzzzz')
+        self.assertEqual(exited, 0)
+
+    @mock.patch("cwltool.task_queue.TaskQueue")
+    @mock.patch("arvados_cwl.arvworkflow.ArvadosWorkflow.job")
+    @mock.patch("arvados_cwl.executor.ArvCwlExecutor.make_output_collection")
+    @stubs
+    def test_storage_class_hint_to_make_output_collection(self, stubs, make_output, job, tq):
+        final_output_c = arvados.collection.Collection()
+        make_output.return_value = ({},final_output_c)
+
+        def set_final_output(job_order, output_callback, runtimeContext):
+            output_callback("zzzzz-4zz18-zzzzzzzzzzzzzzzz", "success")
+            return []
+        job.side_effect = set_final_output
+
+        exited = arvados_cwl.main(
+            ["--debug", "--local",
+                "tests/wf/submit_storage_class_wf.cwl", "tests/submit_test_job.json"],
+            stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+
+        make_output.assert_called_with(u'Output of submit_storage_class_wf.cwl', ['foo', 'bar'], '', 'zzzzz-4zz18-zzzzzzzzzzzzzzzz')
         self.assertEqual(exited, 0)
 
     @stubs
@@ -853,6 +892,7 @@ class TestSubmit(unittest.TestCase):
     @stubs
     def test_submit_container_project(self, stubs):
         project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
+        stubs.api.groups().get().execute.return_value = {"group_class": "project"}
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=containers", "--debug", "--project-uuid="+project_uuid,
                 "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
@@ -1265,18 +1305,28 @@ class TestSubmit(unittest.TestCase):
 
     @stubs
     def test_submit_validate_project_uuid(self, stubs):
+        # Fails with bad cluster prefix
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=containers", "--debug", "--project-uuid=zzzzb-j7d0g-zzzzzzzzzzzzzzz",
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
             stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
         self.assertEqual(exited, 1)
 
+        # Project lookup fails
         stubs.api.groups().get().execute.side_effect = Exception("Bad project")
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=containers", "--debug", "--project-uuid=zzzzz-j7d0g-zzzzzzzzzzzzzzx",
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
             stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
         self.assertEqual(exited, 1)
+
+        # It should work this time because it is looking up a user (and only group is stubbed out to fail)
+        exited = arvados_cwl.main(
+            ["--submit", "--no-wait", "--api=containers", "--debug", "--project-uuid=zzzzz-tpzed-zzzzzzzzzzzzzzx",
+             "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
+            stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+        self.assertEqual(exited, 0)
+
 
     @mock.patch("arvados.collection.CollectionReader")
     @stubs
@@ -1382,6 +1432,7 @@ class TestCreateWorkflow(unittest.TestCase):
     @stubs
     def test_create(self, stubs):
         project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
+        stubs.api.groups().get().execute.return_value = {"group_class": "project"}
 
         exited = arvados_cwl.main(
             ["--create-workflow", "--debug",
@@ -1411,6 +1462,7 @@ class TestCreateWorkflow(unittest.TestCase):
     @stubs
     def test_create_name(self, stubs):
         project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
+        stubs.api.groups().get().execute.return_value = {"group_class": "project"}
 
         exited = arvados_cwl.main(
             ["--create-workflow", "--debug",
@@ -1486,6 +1538,7 @@ class TestCreateWorkflow(unittest.TestCase):
     @stubs
     def test_create_collection_per_tool(self, stubs):
         project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
+        stubs.api.groups().get().execute.return_value = {"group_class": "project"}
 
         exited = arvados_cwl.main(
             ["--create-workflow", "--debug",
@@ -1515,6 +1568,7 @@ class TestCreateWorkflow(unittest.TestCase):
     @stubs
     def test_create_with_imports(self, stubs):
         project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
+        stubs.api.groups().get().execute.return_value = {"group_class": "project"}
 
         exited = arvados_cwl.main(
             ["--create-workflow", "--debug",
@@ -1533,6 +1587,7 @@ class TestCreateWorkflow(unittest.TestCase):
     @stubs
     def test_create_with_no_input(self, stubs):
         project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
+        stubs.api.groups().get().execute.return_value = {"group_class": "project"}
 
         exited = arvados_cwl.main(
             ["--create-workflow", "--debug",

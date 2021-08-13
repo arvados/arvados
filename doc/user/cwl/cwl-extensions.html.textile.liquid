@@ -24,29 +24,34 @@ For portability, most Arvados extensions should go into the @hints@ section of y
 {% codeblock as yaml %}
 hints:
   arv:RunInSingleContainer: {}
+
   arv:RuntimeConstraints:
     keep_cache: 123456
     outputDirType: keep_output_dir
+
   arv:PartitionRequirement:
     partition: dev_partition
+
   arv:APIRequirement: {}
-  cwltool:LoadListingRequirement:
-    loadListing: shallow_listing
+
   arv:IntermediateOutput:
     outputTTL: 3600
-  arv:ReuseRequirement:
-    enableReuse: false
+
   cwltool:Secrets:
     secrets: [input1, input2]
-  cwltool:TimeLimit:
-    timelimit: 14400
+
   arv:WorkflowRunnerResources:
     ramMin: 2048
     coresMin: 2
     keep_cache: 512
+
   arv:ClusterTarget:
     cluster_id: clsr1
     project_uuid: clsr1-j7d0g-qxc4jcji7n4lafx
+
+  arv:OutputStorageClass:
+    intermediateStorageClass: fast_storage
+    finalStorageClass: robust_storage
 {% endcodeblock %}
 
 h2(#RunInSingleContainer). arv:RunInSingleContainer
@@ -120,6 +125,15 @@ table(table table-bordered table-condensed).
 |cluster_id|string|The five-character alphanumeric cluster id (uuid prefix) where a container or subworkflow will execute.  May be an expression.|
 |project_uuid|string|The uuid of the project which will own container request and output of the container.  May be an expression.|
 
+h2(#OutputStorageClass). arv:OutputStorageClass
+
+Specify the "storage class":{{site.baseurl}}/user/topics/storage-classes.html to use for intermediate and final outputs.
+
+table(table table-bordered table-condensed).
+|_. Field |_. Type |_. Description |
+|intermediateStorageClass|string or array of strings|The storage class for output of intermediate steps.  For example, faster "hot" storage.|
+|finalStorageClass_uuid|string or array of strings|The storage class for the final output.  |
+
 h2. arv:dockerCollectionPDH
 
 This is an optional extension field appearing on the standard @DockerRequirement@.  It specifies the portable data hash of the Arvados collection containing the Docker image.  If present, it takes precedence over @dockerPull@ or @dockerImageId@.
@@ -134,6 +148,16 @@ requirements:
 h1. Deprecated extensions
 
 The following extensions are deprecated because equivalent features are part of the CWL v1.1 standard.
+
+{% codeblock as yaml %}
+hints:
+  cwltool:LoadListingRequirement:
+    loadListing: shallow_listing
+  arv:ReuseRequirement:
+    enableReuse: false
+  cwltool:TimeLimit:
+    timelimit: 14400
+{% endcodeblock %}
 
 h2. cwltool:LoadListingRequirement
 
