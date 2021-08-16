@@ -189,7 +189,6 @@ describe('Collection panel tests', function () {
                             .contains(fileName).rightclick({ force: true });
                         cy.get('[data-cy=context-menu]')
                             .should('contain', 'Download')
-                            .and('contain', 'Open in new tab')
                             .and('contain', 'Copy to clipboard')
                             .and(`${isWritable ? '' : 'not.'}contain`, 'Rename')
                             .and(`${isWritable ? '' : 'not.'}contain`, 'Remove');
@@ -198,7 +197,6 @@ describe('Collection panel tests', function () {
                             .contains(subDirName).rightclick({ force: true });
                         cy.get('[data-cy=context-menu]')
                             .should('not.contain', 'Download')
-                            .and('contain', 'Open in new tab')
                             .and('contain', 'Copy to clipboard')
                             .and(`${isWritable ? '' : 'not.'}contain`, 'Rename')
                             .and(`${isWritable ? '' : 'not.'}contain`, 'Remove');
