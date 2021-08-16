@@ -298,20 +298,52 @@ class CollectionDirectoryBase(Directory):
     def on_event(self, event, collection, name, item):
         if collection == self.collection:
             name = self.sanitize_filename(name)
-            _logger.debug("collection notify %s %s %s %s", event, collection, name, item)
-            with llfuse.lock:
-                if event == arvados.collection.ADD:
-                    self.new_entry(name, item, self.mtime())
-                elif event == arvados.collection.DEL:
-                    ent = self._entries[name]
-                    del self._entries[name]
-                    self.inodes.invalidate_entry(self, name)
-                    self.inodes.del_entry(ent)
-                elif event == arvados.collection.MOD:
-                    if hasattr(item, "fuse_entry") and item.fuse_entry is not None:
-                        self.inodes.invalidate_inode(item.fuse_entry)
-                    elif name in self._entries:
-                        self.inodes.invalidate_inode(self._entries[name])
+
+            #
+            # It's possible for another thread to have llfuse.lock and
+            # be waiting on collection.lock.  Meanwhile, we released
+            # llfuse.lock earlier in the stack, but are still holding
+            # on to the collection lock, and now we need to re-acquire
+            # llfuse.lock.  If we don't release the collection lock,
+            # we'll deadlock where we're holding the collection lock
+            # waiting for llfuse.lock and the other thread is holding
+            # llfuse.lock and waiting for the collection lock.
+            #
+            # The correct locking order here is to take llfuse.lock
+            # first, then the collection lock.
+            #
+            # Since collection.lock is an RLock, it might be locked
+            # multiple times, so we need to release it multiple times,
+            # keep a count, then re-lock it the correct number of
+            # times.
+            #
+            lockcount = 0
+            try:
+                while True:
+                    self.collection.lock.release()
+                    lockcount += 1
+            except RuntimeError:
+                pass
+
+            try:
+                with llfuse.lock:
+                    with self.collection.lock:
+                        if event == arvados.collection.ADD:
+                            self.new_entry(name, item, self.mtime())
+                        elif event == arvados.collection.DEL:
+                            ent = self._entries[name]
+                            del self._entries[name]
+                            self.inodes.invalidate_entry(self, name)
+                            self.inodes.del_entry(ent)
+                        elif event == arvados.collection.MOD:
+                            if hasattr(item, "fuse_entry") and item.fuse_entry is not None:
+                                self.inodes.invalidate_inode(item.fuse_entry)
+                            elif name in self._entries:
+                                self.inodes.invalidate_inode(self._entries[name])
+            finally:
+                while lockcount > 0:
+                    self.collection.lock.acquire()
+                    lockcount -= 1
 
     def populate(self, mtime):
         self._mtime = mtime
@@ -584,10 +616,26 @@ class TmpCollectionDirectory(CollectionDirectoryBase):
     def on_event(self, *args, **kwargs):
         super(TmpCollectionDirectory, self).on_event(*args, **kwargs)
         if self.collection_record_file:
-            with llfuse.lock:
-                self.collection_record_file.invalidate()
-            self.inodes.invalidate_inode(self.collection_record_file)
-            _logger.debug("%s invalidated collection record", self)
+
+            # See discussion in CollectionDirectoryBase.on_event
+            lockcount = 0
+            try:
+                while True:
+                    self.collection.lock.release()
+                    lockcount += 1
+            except RuntimeError:
+                pass
+
+            try:
+                with llfuse.lock:
+                    with self.collection.lock:
+                        self.collection_record_file.invalidate()
+                        self.inodes.invalidate_inode(self.collection_record_file)
+                        _logger.debug("%s invalidated collection record", self)
+            finally:
+                while lockcount > 0:
+                    self.collection.lock.acquire()
+                    lockcount -= 1
 
     def collection_record(self):
         with llfuse.lock_released:
