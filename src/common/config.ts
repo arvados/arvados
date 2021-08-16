@@ -89,7 +89,8 @@ export interface ClusterConfigJSON {
                 Value: string,
                 Protected?: boolean,
             }
-        }
+        },
+        TrustAllContent: boolean
     };
     Volumes: {
         [key: string]: {
@@ -271,6 +272,7 @@ export const mockClusterConfigJSON = (config: Partial<ClusterConfigJSON>): Clust
     },
     Collections: {
         ForwardSlashNameSubstitution: "",
+        TrustAllContent: false,
     },
     Volumes: {},
     ...config

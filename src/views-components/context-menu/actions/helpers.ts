@@ -44,3 +44,10 @@ export const getInlineFileUrl = (url: string, keepWebSvcUrl: string, keepWebInli
     }
     return inlineUrl;
 };
+
+export const isInlineFileUrlSafe = (url: string, keepWebSvcUrl: string, keepWebInlineSvcUrl: string): boolean => {
+  let inlineUrl = keepWebInlineSvcUrl !== ""
+      ? url.replace(keepWebSvcUrl, keepWebInlineSvcUrl)
+      : url;
+  return inlineUrl.indexOf('*.') > -1;
+}
