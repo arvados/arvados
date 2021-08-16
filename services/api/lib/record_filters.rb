@@ -32,7 +32,7 @@ module RecordFilters
     filters.each do |filter|
       attrs_in, operator, operand = filter
       if operator == '@@'
-        raise ArgumentError.new("Full text search is no longer supported")
+        raise ArgumentError.new("Full text search operator is no longer supported")
       end
       if attrs_in == 'any'
         attrs = model_class.searchable_columns(operator)
