@@ -104,7 +104,7 @@ var whitelist = map[string]bool{
 	"Collections.PreserveVersionIfIdle":                   true,
 	"Collections.S3FolderObjects":                         true,
 	"Collections.TrashSweepInterval":                      false,
-	"Collections.TrustAllContent":                         false,
+	"Collections.TrustAllContent":                         true,
 	"Collections.WebDAVCache":                             false,
 	"Collections.KeepproxyPermission":                     false,
 	"Collections.WebDAVPermission":                        false,
