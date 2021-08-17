@@ -319,7 +319,17 @@ class ApiClientAuthorization < ArvadosModel
         user.last_name = "from cluster #{remote_user_prefix}"
       end
 
-      user.save!
+      begin
+        user.save!
+      rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique
+        Rails.logger.debug("remote user #{remote_user['uuid']} already exists, retrying...")
+        # Some other request won the race: retry fetching the user record.
+        user = User.find_by_uuid(remote_user['uuid'])
+        if !user
+          Rails.logger.warn("cannot find or create remote user #{remote_user['uuid']}")
+          return nil
+        end
+      end
 
       if user.is_invited && !remote_user['is_invited']
         # Remote user is not "invited" state, they should be unsetup, which
@@ -364,12 +374,24 @@ class ApiClientAuthorization < ArvadosModel
       exp = [db_current_time + Rails.configuration.Login.RemoteTokenRefresh,
              remote_token.andand['expires_at']].compact.min
       scopes = remote_token.andand['scopes'] || ['all']
-      auth = ApiClientAuthorization.find_or_create_by(uuid: token_uuid) do |auth|
-        auth.user = user
-        auth.api_token = stored_secret
-        auth.api_client_id = 0
-        auth.scopes = scopes
-        auth.expires_at = exp
+      begin
+        retries ||= 0
+        auth = ApiClientAuthorization.find_or_create_by(uuid: token_uuid) do |auth|
+          auth.user = user
+          auth.api_token = stored_secret
+          auth.api_client_id = 0
+          auth.scopes = scopes
+          auth.expires_at = exp
+        end
+      rescue ActiveRecord::RecordNotUnique
+        Rails.logger.debug("cached remote token #{token_uuid} already exists, retrying...")
+        # Some other request won the race: retry just once before erroring out
+        if (retries += 1) <= 1
+          retry
+        else
+          Rails.logger.warn("cannot find or create cached remote token #{token_uuid}")
+          return nil
+        end
       end
       auth.update_attributes!(user: user,
                               api_token: stored_secret,

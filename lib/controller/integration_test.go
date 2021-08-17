@@ -189,7 +189,7 @@ func (s *IntegrationSuite) TestGetCollectionByPDH(c *check.C) {
 }
 
 // Tests bug #18004
-func (s *IntegrationSuite) TestRemoteTokenCacheRace(c *check.C) {
+func (s *IntegrationSuite) TestRemoteUserAndTokenCacheRace(c *check.C) {
 	conn1 := s.testClusters["z1111"].Conn()
 	rootctx1, _, _ := s.testClusters["z1111"].RootClients()
 	rootctx2, _, _ := s.testClusters["z2222"].RootClients()
@@ -208,7 +208,7 @@ func (s *IntegrationSuite) TestRemoteTokenCacheRace(c *check.C) {
 			defer wg2.Done()
 			wg1.Wait()
 			_, err := conn2.UserGetCurrent(rootctx2, arvados.GetOptions{})
-			c.Check(err, check.IsNil)
+			c.Check(err, check.IsNil, check.Commentf("warm up phase failed"))
 		}()
 	}
 	wg1.Done()
@@ -224,7 +224,7 @@ func (s *IntegrationSuite) TestRemoteTokenCacheRace(c *check.C) {
 			wg1.Wait()
 			// Retrieve the remote collection from cluster z2222.
 			_, err := conn2.UserGetCurrent(userctx1, arvados.GetOptions{})
-			c.Check(err, check.IsNil)
+			c.Check(err, check.IsNil, check.Commentf("testing phase failed"))
 		}()
 	}
 	wg1.Done()
