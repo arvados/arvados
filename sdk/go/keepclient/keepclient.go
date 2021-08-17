@@ -69,11 +69,11 @@ type ErrNotFound struct {
 	multipleResponseError
 }
 
-type InsufficientReplicasError error
+type InsufficientReplicasError struct{ error }
 
-type OversizeBlockError error
+type OversizeBlockError struct{ error }
 
-var ErrOversizeBlock = OversizeBlockError(errors.New("Exceeded maximum block size (" + strconv.Itoa(BLOCKSIZE) + ")"))
+var ErrOversizeBlock = OversizeBlockError{error: errors.New("Exceeded maximum block size (" + strconv.Itoa(BLOCKSIZE) + ")")}
 var MissingArvadosApiHost = errors.New("Missing required environment variable ARVADOS_API_HOST")
 var MissingArvadosApiToken = errors.New("Missing required environment variable ARVADOS_API_TOKEN")
 var InvalidLocatorError = errors.New("Invalid locator")

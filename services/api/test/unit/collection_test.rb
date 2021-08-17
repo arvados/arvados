@@ -185,6 +185,23 @@ class CollectionTest < ActiveSupport::TestCase
       c.reload
       assert_equal 'foobar', c.name
       assert_equal 2, c.version
+      # Simulate a keep-balance run and trigger a new versionable update
+      # This tests bug #18005
+      assert_nil c.replication_confirmed
+      assert_nil c.replication_confirmed_at
+      # Updates without validations/callbacks
+      c.update_column('modified_at', fifteen_min_ago)
+      c.update_column('replication_confirmed_at', Time.now)
+      c.update_column('replication_confirmed', 2)
+      c.reload
+      assert_equal fifteen_min_ago.to_i, c.modified_at.to_i
+      assert_not_nil c.replication_confirmed_at
+      assert_not_nil c.replication_confirmed
+      # Make the versionable update
+      c.update_attributes!({'name' => 'foobarbaz'})
+      c.reload
+      assert_equal 'foobarbaz', c.name
+      assert_equal 3, c.version
     end
   end
 
@@ -690,6 +707,19 @@ class CollectionTest < ActiveSupport::TestCase
     test "portable_data_hash #{pdh.inspect} valid? == #{isvalid}" do
       c = Collection.new manifest_text: pdhmanifest, portable_data_hash: pdh
       assert_equal isvalid, c.valid?, c.errors.full_messages.to_s
+    end
+  end
+
+  test "storage_classes_desired default respects config" do
+    saved = Rails.configuration.DefaultStorageClasses
+    Rails.configuration.DefaultStorageClasses = ["foo"]
+    begin
+      act_as_user users(:active) do
+        c = Collection.create!
+        assert_equal ["foo"], c.storage_classes_desired
+      end
+    ensure
+      Rails.configuration.DefaultStorageClasses = saved
     end
   end
 

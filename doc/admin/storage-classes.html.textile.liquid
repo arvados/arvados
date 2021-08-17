@@ -12,21 +12,44 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 Storage classes (alternately known as "storage tiers") allow you to control which volumes should be used to store particular collection data blocks.  This can be used to implement data storage policies such as moving data to archival storage.
 
-The storage classes for each volume are set in the per-volume "keepstore configuration":{{site.baseurl}}/install/install-keepstore.html
+In the default Arvados configuration, with no storage classes specified in the configuration file, all volumes belong to a single implicit storage class called "default". Apart from that, names of storage classes are internal to the cluster and decided by the administrator.  Other than the implicit "default" class, Arvados currently does not define any standard storage class names.
+
+To use multiple storage classes, update the @StorageClasses@ and @Volumes@ sections of your configuration file.
+* Every storage class you use (including "default") must be defined in the @StorageClasses@ section.
+* The @StorageClasses@ section must use @Default: true@ to indicate at least one default storage class. When a client/user does not specify storage classes when creating a new collection, the default storage classes are used implicitly.
+* If some storage classes are faster or cheaper to access than others, assign a higher @Priority@ to the faster ones. When reading data, volumes with high priority storage classes are searched first.
+
+Example:
 
 <pre>
+    StorageClasses:
+
+      default:
+        # When reading a block that is stored on multiple volumes,
+        # prefer a volume with this class.
+        Priority: 20
+
+        # When a client does not specify a storage class when saving a
+        # new collection, use this one.
+        Default: true
+
+      archival:
+        Priority: 10
+
     Volumes:
+
       ClusterID-nyw5e-000000000000000:
         # This volume is in the "default" storage class.
         StorageClasses:
           default: true
+
       ClusterID-nyw5e-000000000000001:
-        # Specify this volume is in the "archival" storage class.
+        # This volume is in the "archival" storage class.
         StorageClasses:
           archival: true
 </pre>
 
-Names of storage classes are internal to the cluster and decided by the administrator.  Aside from "default", Arvados currently does not define any standard storage class names.
+Refer to the "configuration reference":{{site.baseurl}}/admin/config.html for more details.
 
 h3. Using storage classes
 

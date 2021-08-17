@@ -58,6 +58,9 @@ Clusters:
       DispatchCloud:
         InternalURLs: {SAMPLE: {}}
         ExternalURL: "-"
+      DispatchLSF:
+        InternalURLs: {SAMPLE: {}}
+        ExternalURL: "-"
       Keepproxy:
         InternalURLs: {SAMPLE: {}}
         ExternalURL: ""
@@ -276,6 +279,7 @@ Clusters:
       AdminNotifierEmailFrom: arvados@example.com
       EmailSubjectPrefix: "[ARVADOS] "
       UserNotifierEmailFrom: arvados@example.com
+      UserNotifierEmailBcc: {}
       NewUserNotificationRecipients: {}
       NewInactiveUserNotificationRecipients: {}
 
@@ -462,6 +466,13 @@ Clusters:
       # long-running balancing operation.
       BalanceTimeout: 6h
 
+      # Maximum number of replication_confirmed /
+      # storage_classes_confirmed updates to write to the database
+      # after a rebalancing run. When many updates are needed, this
+      # spreads them over a few runs rather than applying them all at
+      # once.
+      BalanceUpdateLimit: 100000
+
       # Default lifetime for ephemeral collections: 2 weeks. This must not
       # be less than BlobSigningTTL.
       DefaultTrashLifetime: 336h
@@ -523,10 +534,10 @@ Clusters:
       # WebDAV would have to expose XSS vulnerabilities in order to
       # handle the redirect (see discussion on Services.WebDAV).
       #
-      # This setting has no effect in the recommended configuration,
-      # where the WebDAV is configured to have a separate domain for
-      # every collection; in this case XSS protection is provided by
-      # browsers' same-origin policy.
+      # This setting has no effect in the recommended configuration, where the
+      # WebDAV service is configured to have a separate domain for every
+      # collection and XSS protection is provided by browsers' same-origin
+      # policy.
       #
       # The default setting (false) is appropriate for a multi-user site.
       TrustAllContent: false
@@ -1018,6 +1029,19 @@ Clusters:
           # (See http://ruby-doc.org/core-2.2.2/Kernel.html#method-i-format for more.)
           AssignNodeHostname: "compute%<slot_number>d"
 
+      LSF:
+        # Additional arguments to bsub when submitting Arvados
+        # containers as LSF jobs.
+        BsubArgumentsList: []
+
+        # Use sudo to switch to this user account when submitting LSF
+        # jobs.
+        #
+        # This account must exist on the hosts where LSF jobs run
+        # ("execution hosts"), as well as on the host where the
+        # Arvados LSF dispatcher runs ("submission host").
+        BsubSudoUser: "crunch"
+
       JobsAPI:
         # Enable the legacy 'jobs' API (crunch v1).  This value must be a string.
         #
@@ -1211,6 +1235,29 @@ Clusters:
         Price: 0.1
         Preemptible: false
 
+    StorageClasses:
+
+      # If you use multiple storage classes, specify them here, using
+      # the storage class name as the key (in place of "SAMPLE" in
+      # this sample entry).
+      #
+      # Further info/examples:
+      # https://doc.arvados.org/admin/storage-classes.html
+      SAMPLE:
+
+        # Priority determines the order volumes should be searched
+        # when reading data, in cases where a keepstore server has
+        # access to multiple volumes with different storage classes.
+        Priority: 0
+
+        # Default determines which storage class(es) should be used
+        # when a user/client writes data or saves a new collection
+        # without specifying storage classes.
+        #
+        # If any StorageClasses are configured, at least one of them
+        # must have Default: true.
+        Default: true
+
     Volumes:
       SAMPLE:
         # AccessViaHosts specifies which keepstore processes can read
@@ -1234,7 +1281,9 @@ Clusters:
         ReadOnly: false
         Replication: 1
         StorageClasses:
-          default: true
+          # If you have configured storage classes (see StorageClasses
+          # section above), add an entry here for each storage class
+          # satisfied by this volume.
           SAMPLE: true
         Driver: S3
         DriverParameters:

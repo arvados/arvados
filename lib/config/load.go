@@ -269,6 +269,7 @@ func (ldr *Loader) Load() (*arvados.Config, error) {
 			ldr.loadOldKeepBalanceConfig,
 		)
 	}
+	loadFuncs = append(loadFuncs, ldr.setImplicitStorageClasses)
 	for _, f := range loadFuncs {
 		err = f(&cfg)
 		if err != nil {
@@ -296,6 +297,7 @@ func (ldr *Loader) Load() (*arvados.Config, error) {
 			checkKeyConflict(fmt.Sprintf("Clusters.%s.PostgreSQL.Connection", id), cc.PostgreSQL.Connection),
 			ldr.checkEmptyKeepstores(cc),
 			ldr.checkUnlistedKeepstores(cc),
+			ldr.checkStorageClasses(cc),
 			// TODO: check non-empty Rendezvous on
 			// services other than Keepstore
 		} {
@@ -332,6 +334,57 @@ func (ldr *Loader) checkToken(label, token string) error {
 		if ldr.Logger != nil {
 			ldr.Logger.Warnf("%s: token is too short (should be at least %d characters)", label, acceptableTokenLength)
 		}
+	}
+	return nil
+}
+
+func (ldr *Loader) setImplicitStorageClasses(cfg *arvados.Config) error {
+cluster:
+	for id, cc := range cfg.Clusters {
+		if len(cc.StorageClasses) > 0 {
+			continue cluster
+		}
+		for _, vol := range cc.Volumes {
+			if len(vol.StorageClasses) > 0 {
+				continue cluster
+			}
+		}
+		// No explicit StorageClasses config info at all; fill
+		// in implicit defaults.
+		for id, vol := range cc.Volumes {
+			vol.StorageClasses = map[string]bool{"default": true}
+			cc.Volumes[id] = vol
+		}
+		cc.StorageClasses = map[string]arvados.StorageClassConfig{"default": {Default: true}}
+		cfg.Clusters[id] = cc
+	}
+	return nil
+}
+
+func (ldr *Loader) checkStorageClasses(cc arvados.Cluster) error {
+	classOnVolume := map[string]bool{}
+	for volid, vol := range cc.Volumes {
+		if len(vol.StorageClasses) == 0 {
+			return fmt.Errorf("%s: volume has no StorageClasses listed", volid)
+		}
+		for classid := range vol.StorageClasses {
+			if _, ok := cc.StorageClasses[classid]; !ok {
+				return fmt.Errorf("%s: volume refers to storage class %q that is not defined in StorageClasses", volid, classid)
+			}
+			classOnVolume[classid] = true
+		}
+	}
+	haveDefault := false
+	for classid, sc := range cc.StorageClasses {
+		if !classOnVolume[classid] && len(cc.Volumes) > 0 {
+			ldr.Logger.Warnf("there are no volumes providing storage class %q", classid)
+		}
+		if sc.Default {
+			haveDefault = true
+		}
+	}
+	if !haveDefault {
+		return fmt.Errorf("there is no default storage class (at least one entry in StorageClasses must have Default: true)")
 	}
 	return nil
 }

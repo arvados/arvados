@@ -337,7 +337,7 @@ test_package_presence() {
     elif [[ "$FORMAT" == "deb" ]]; then
       declare -A dd
       dd[debian10]=buster
-      dd[ubuntu1604]=xenial
+      dd[debian11]=bullseye
       dd[ubuntu1804]=bionic
       dd[ubuntu2004]=focal
       D=${dd[$TARGET]}
@@ -621,6 +621,11 @@ fpm_build_virtualenv () {
   LICENSE_STRING=`grep license $WORKSPACE/$PKG_DIR/setup.py|cut -f2 -d=|sed -e "s/[',\\"]//g"`
   COMMAND_ARR+=('--license' "$LICENSE_STRING")
 
+  if [[ "$FORMAT" == "rpm" ]]; then
+    # Make sure to conflict with the old rh-python36 packages we used to publish
+    COMMAND_ARR+=('--conflicts' "rh-python36-python-$PKG")
+  fi
+
   if [[ "$DEBUG" != "0" ]]; then
     COMMAND_ARR+=('--verbose' '--log' 'info')
   fi
@@ -685,8 +690,8 @@ fpm_build_virtualenv () {
   fi
 
   # the python3-arvados-cwl-runner package comes with cwltool, expose that version
-  if [[ -e "$WORKSPACE/$PKG_DIR/dist/build/usr/share/$python/dist/python-arvados-cwl-runner/bin/cwltool" ]]; then
-    COMMAND_ARR+=("usr/share/$python/dist/python-arvados-cwl-runner/bin/cwltool=/usr/bin/")
+  if [[ -e "$WORKSPACE/$PKG_DIR/dist/build/usr/share/$python/dist/$PYTHON_PKG/bin/cwltool" ]]; then
+    COMMAND_ARR+=("usr/share/$python/dist/$PYTHON_PKG/bin/cwltool=/usr/bin/")
   fi
 
   COMMAND_ARR+=(".")

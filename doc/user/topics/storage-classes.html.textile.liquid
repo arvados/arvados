@@ -10,9 +10,11 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-Storage classes (alternately known as "storage tiers") allow you to control which volumes should be used to store particular collection data blocks.  This can be used to implement data storage policies such as moving data to archival storage.
+Storage classes (sometimes called as "storage tiers") allow you to control which back-end storage volumes should be used to store the data blocks of a particular collection.  This can be used to implement data storage policies such as assigning data collections to "fast", "robust" or "archival" storage.
 
-Names of storage classes are internal to the cluster and decided by the administrator.  Aside from "default", Arvados currently does not define any standard storage class names.
+Names of storage classes are internal to the cluster and decided by the administrator.  Aside from "default", Arvados currently does not define any standard storage class names.  Consult your cluster administrator for guidance on what storage classes are available to use on your specific Arvados instance.
+
+Note that when changing the storage class of an existing collection, it does not take effect immediately, the blocks are asynchronously copied to the new storage class and removed from the old one.  The collection field "storage_classes_confirmed" is updated to reflect when data blocks have been successfully copied.
 
 h3. arv-put
 
@@ -32,13 +34,11 @@ $ arv-mount --storage-classes=transient --mount-tmp=scratch keep
 
 h3. arvados-cwl-runner
 
-You may also specify the desired storage class for the final output collection produced by @arvados-cwl-runner@:
+You may specify the desired storage class for the intermediate and final output collections produced by @arvados-cwl-runner@ on the command line or using the "arv:OutputStorageClass hint":{{site.baseurl}}/user/cwl/cwl-extensions.html#OutputStorageClass .
 
 <pre>
-$ arvados-cwl-runner --storage-classes=hot myworkflow.cwl myinput.yml
+$ arvados-cwl-runner --intermediate-storage-classes=hot_storage --storage-classes=robust_storage myworkflow.cwl myinput.yml
 </pre>
-
-(Note: intermediate collections produced by a workflow run will have "default" storage class.)
 
 h3. arv command line
 
@@ -52,8 +52,6 @@ By setting "storage_classes_desired" to "archival", the blocks that make up the 
 
 h3. Storage class notes
 
-Collection blocks will be in the "default" storage class if not otherwise specified.
+Collection blocks will be in the cluster's configured default storage class(es) if not otherwise specified.
 
 Any user with write access to a collection may set any storage class on that collection.
-
-Names of storage classes are internal to the cluster and decided by the administrator.  Aside from "default", Arvados currently does not define any standard storage class names.

@@ -11,30 +11,54 @@ require 'current_api_client'
 namespace :db do
   desc "Apply expiration policy on long lived tokens"
   task fix_long_lived_tokens: :environment do
-    if Rails.configuration.Login.TokenLifetime == 0
-      puts("No expiration policy set on Login.TokenLifetime.")
-    else
-      exp_date = Time.now + Rails.configuration.Login.TokenLifetime
-      puts("Setting token expiration to: #{exp_date}")
-      token_count = 0
-      ll_tokens.each do |auth|
-        if (auth.user.uuid =~ /-tpzed-000000000000000/).nil?
-          CurrentApiClientHelper.act_as_system_user do
-            auth.update_attributes!(expires_at: exp_date)
-          end
-          token_count += 1
-        end
-      end
-      puts("#{token_count} tokens updated.")
+    lifetime = Rails.configuration.API.MaxTokenLifetime
+    if lifetime.nil? or lifetime == 0
+      lifetime = Rails.configuration.Login.TokenLifetime
     end
+    if lifetime.nil? or lifetime == 0
+      puts("No expiration policy set (API.MaxTokenLifetime nor Login.TokenLifetime is set), nothing to do.")
+      # abort the rake task
+      next
+    end
+    exp_date = Time.now + lifetime
+    puts("Setting token expiration to: #{exp_date}")
+    token_count = 0
+    ll_tokens(lifetime).each do |auth|
+      if auth.user.nil?
+        printf("*** WARNING, found ApiClientAuthorization with invalid user: auth id: %d, user id: %d\n", auth.id, auth.user_id)
+        # skip this token
+        next
+      end
+      if (auth.user.uuid =~ /-tpzed-000000000000000/).nil?
+        CurrentApiClientHelper.act_as_system_user do
+          auth.update_attributes!(expires_at: exp_date)
+        end
+        token_count += 1
+      end
+    end
+    puts("#{token_count} tokens updated.")
   end
 
   desc "Show users with long lived tokens"
   task check_long_lived_tokens: :environment do
+    lifetime = Rails.configuration.API.MaxTokenLifetime
+    if lifetime.nil? or lifetime == 0
+      lifetime = Rails.configuration.Login.TokenLifetime
+    end
+    if lifetime.nil? or lifetime == 0
+      puts("No expiration policy set (API.MaxTokenLifetime nor Login.TokenLifetime is set), nothing to do.")
+      # abort the rake task
+      next
+    end
     user_ids = Set.new()
     token_count = 0
-    ll_tokens.each do |auth|
-      if (auth.user.uuid =~ /-tpzed-000000000000000/).nil?
+    ll_tokens(lifetime).each do |auth|
+      if auth.user.nil?
+        printf("*** WARNING, found ApiClientAuthorization with invalid user: auth id: %d, user id: %d\n", auth.id, auth.user_id)
+        # skip this token
+        next
+      end
+      if not auth.user.nil? and (auth.user.uuid =~ /-tpzed-000000000000000/).nil?
         user_ids.add(auth.user_id)
         token_count += 1
       end
@@ -51,11 +75,9 @@ namespace :db do
     end
   end
 
-  def ll_tokens
+  def ll_tokens(lifetime)
     query = ApiClientAuthorization.where(expires_at: nil)
-    if Rails.configuration.Login.TokenLifetime > 0
-      query = query.or(ApiClientAuthorization.where("expires_at > ?", Time.now + Rails.configuration.Login.TokenLifetime))
-    end
+    query = query.or(ApiClientAuthorization.where("expires_at > ?", Time.now + lifetime))
     query
   end
 end

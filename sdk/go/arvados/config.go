@@ -138,6 +138,7 @@ type Cluster struct {
 		BalanceCollectionBatch   int
 		BalanceCollectionBuffers int
 		BalanceTimeout           Duration
+		BalanceUpdateLimit       int
 
 		WebDAVCache WebDAVCacheConfig
 
@@ -233,12 +234,14 @@ type Cluster struct {
 		NewUserNotificationRecipients         StringSet
 		NewUsersAreActive                     bool
 		UserNotifierEmailFrom                 string
+		UserNotifierEmailBcc                  StringSet
 		UserProfileNotificationAddress        string
 		PreferDomainForUsername               string
 		UserSetupMailText                     string
 	}
-	Volumes   map[string]Volume
-	Workbench struct {
+	StorageClasses map[string]StorageClassConfig
+	Volumes        map[string]Volume
+	Workbench      struct {
 		ActivationContactLink            string
 		APIClientConnectTimeout          Duration
 		APIClientReceiveTimeout          Duration
@@ -278,6 +281,11 @@ type Cluster struct {
 		SSHHelpHostSuffix      string
 		IdleTimeout            Duration
 	}
+}
+
+type StorageClassConfig struct {
+	Default  bool
+	Priority int
 }
 
 type Volume struct {
@@ -329,6 +337,7 @@ type Services struct {
 	Composer       Service
 	Controller     Service
 	DispatchCloud  Service
+	DispatchLSF    Service
 	GitHTTP        Service
 	GitSSH         Service
 	Health         Service
@@ -460,6 +469,10 @@ type ContainersConfig struct {
 			ComputeNodeNameservers StringSet
 			AssignNodeHostname     string
 		}
+	}
+	LSF struct {
+		BsubSudoUser      string
+		BsubArgumentsList []string
 	}
 }
 
@@ -597,6 +610,7 @@ const (
 	ServiceNameRailsAPI      ServiceName = "arvados-api-server"
 	ServiceNameController    ServiceName = "arvados-controller"
 	ServiceNameDispatchCloud ServiceName = "arvados-dispatch-cloud"
+	ServiceNameDispatchLSF   ServiceName = "arvados-dispatch-lsf"
 	ServiceNameHealth        ServiceName = "arvados-health"
 	ServiceNameWorkbench1    ServiceName = "arvados-workbench1"
 	ServiceNameWorkbench2    ServiceName = "arvados-workbench2"
@@ -614,6 +628,7 @@ func (svcs Services) Map() map[ServiceName]Service {
 		ServiceNameRailsAPI:      svcs.RailsAPI,
 		ServiceNameController:    svcs.Controller,
 		ServiceNameDispatchCloud: svcs.DispatchCloud,
+		ServiceNameDispatchLSF:   svcs.DispatchLSF,
 		ServiceNameHealth:        svcs.Health,
 		ServiceNameWorkbench1:    svcs.Workbench1,
 		ServiceNameWorkbench2:    svcs.Workbench2,

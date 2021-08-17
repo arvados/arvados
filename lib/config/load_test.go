@@ -29,6 +29,8 @@ func Test(t *testing.T) {
 
 var _ = check.Suite(&LoadSuite{})
 
+var emptyConfigYAML = `Clusters: {"z1111": {}}`
+
 // Return a new Loader that reads cluster config from configdata
 // (instead of the usual default /etc/arvados/config.yml), and logs to
 // logdst or (if that's nil) c.Log.
@@ -59,7 +61,7 @@ func (s *LoadSuite) TestEmpty(c *check.C) {
 }
 
 func (s *LoadSuite) TestNoConfigs(c *check.C) {
-	cfg, err := testLoader(c, `Clusters: {"z1111": {}}`, nil).Load()
+	cfg, err := testLoader(c, emptyConfigYAML, nil).Load()
 	c.Assert(err, check.IsNil)
 	c.Assert(cfg.Clusters, check.HasLen, 1)
 	cc, err := cfg.GetCluster("z1111")
@@ -79,7 +81,7 @@ func (s *LoadSuite) TestMungeLegacyConfigArgs(c *check.C) {
 	f, err = ioutil.TempFile("", "")
 	c.Check(err, check.IsNil)
 	defer os.Remove(f.Name())
-	io.WriteString(f, "Clusters: {aaaaa: {}}\n")
+	io.WriteString(f, emptyConfigYAML)
 	newfile := f.Name()
 
 	for _, trial := range []struct {
@@ -562,11 +564,122 @@ func (s *LoadSuite) TestListKeys(c *check.C) {
 		c.Errorf("Should have produced an error")
 	}
 
-	var logbuf bytes.Buffer
-	loader := testLoader(c, string(DefaultYAML), &logbuf)
+	loader := testLoader(c, string(DefaultYAML), nil)
 	cfg, err := loader.Load()
 	c.Assert(err, check.IsNil)
 	if err := checkListKeys("", cfg); err != nil {
 		c.Error(err)
 	}
+}
+
+func (s *LoadSuite) TestImplicitStorageClasses(c *check.C) {
+	// If StorageClasses and Volumes.*.StorageClasses are all
+	// empty, there is a default storage class named "default".
+	ldr := testLoader(c, `{"Clusters":{"z1111":{}}}`, nil)
+	cfg, err := ldr.Load()
+	c.Assert(err, check.IsNil)
+	cc, err := cfg.GetCluster("z1111")
+	c.Assert(err, check.IsNil)
+	c.Check(cc.StorageClasses, check.HasLen, 1)
+	c.Check(cc.StorageClasses["default"].Default, check.Equals, true)
+	c.Check(cc.StorageClasses["default"].Priority, check.Equals, 0)
+
+	// The implicit "default" storage class is used by all
+	// volumes.
+	ldr = testLoader(c, `
+Clusters:
+ z1111:
+  Volumes:
+   z: {}`, nil)
+	cfg, err = ldr.Load()
+	c.Assert(err, check.IsNil)
+	cc, err = cfg.GetCluster("z1111")
+	c.Assert(err, check.IsNil)
+	c.Check(cc.StorageClasses, check.HasLen, 1)
+	c.Check(cc.StorageClasses["default"].Default, check.Equals, true)
+	c.Check(cc.StorageClasses["default"].Priority, check.Equals, 0)
+	c.Check(cc.Volumes["z"].StorageClasses["default"], check.Equals, true)
+
+	// The "default" storage class isn't implicit if any classes
+	// are configured explicitly.
+	ldr = testLoader(c, `
+Clusters:
+ z1111:
+  StorageClasses:
+   local:
+    Default: true
+    Priority: 111
+  Volumes:
+   z:
+    StorageClasses:
+     local: true`, nil)
+	cfg, err = ldr.Load()
+	c.Assert(err, check.IsNil)
+	cc, err = cfg.GetCluster("z1111")
+	c.Assert(err, check.IsNil)
+	c.Check(cc.StorageClasses, check.HasLen, 1)
+	c.Check(cc.StorageClasses["local"].Default, check.Equals, true)
+	c.Check(cc.StorageClasses["local"].Priority, check.Equals, 111)
+
+	// It is an error for a volume to refer to a storage class
+	// that isn't listed in StorageClasses.
+	ldr = testLoader(c, `
+Clusters:
+ z1111:
+  StorageClasses:
+   local:
+    Default: true
+    Priority: 111
+  Volumes:
+   z:
+    StorageClasses:
+     nx: true`, nil)
+	_, err = ldr.Load()
+	c.Assert(err, check.ErrorMatches, `z: volume refers to storage class "nx" that is not defined.*`)
+
+	// It is an error for a volume to refer to a storage class
+	// that isn't listed in StorageClasses ... even if it's
+	// "default", which would exist implicitly if it weren't
+	// referenced explicitly by a volume.
+	ldr = testLoader(c, `
+Clusters:
+ z1111:
+  Volumes:
+   z:
+    StorageClasses:
+     default: true`, nil)
+	_, err = ldr.Load()
+	c.Assert(err, check.ErrorMatches, `z: volume refers to storage class "default" that is not defined.*`)
+
+	// If the "default" storage class is configured explicitly, it
+	// is not used implicitly by any volumes, even if it's the
+	// only storage class.
+	var logbuf bytes.Buffer
+	ldr = testLoader(c, `
+Clusters:
+ z1111:
+  StorageClasses:
+   default:
+    Default: true
+    Priority: 111
+  Volumes:
+   z: {}`, &logbuf)
+	_, err = ldr.Load()
+	c.Assert(err, check.ErrorMatches, `z: volume has no StorageClasses listed`)
+
+	// If StorageClasses are configured explicitly, there must be
+	// at least one with Default: true. (Calling one "default" is
+	// not sufficient.)
+	ldr = testLoader(c, `
+Clusters:
+ z1111:
+  StorageClasses:
+   default:
+    Priority: 111
+  Volumes:
+   z:
+    StorageClasses:
+     default: true`, nil)
+	_, err = ldr.Load()
+	c.Assert(err, check.ErrorMatches, `there is no default storage class.*`)
 }

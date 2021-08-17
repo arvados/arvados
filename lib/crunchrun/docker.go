@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"git.arvados.org/arvados.git/sdk/go/arvados"
 	dockertypes "github.com/docker/docker/api/types"
 	dockercontainer "github.com/docker/docker/api/types/container"
 	dockerclient "github.com/docker/docker/client"
@@ -45,13 +46,15 @@ func newDockerExecutor(containerUUID string, logf func(string, ...interface{}), 
 	}, err
 }
 
-func (e *dockerExecutor) ImageLoaded(imageID string) bool {
+func (e *dockerExecutor) LoadImage(imageID string, imageTarballPath string, container arvados.Container, arvMountPoint string,
+	containerClient *arvados.Client) error {
 	_, _, err := e.dockerclient.ImageInspectWithRaw(context.TODO(), imageID)
-	return err == nil
-}
+	if err == nil {
+		// already loaded
+		return nil
+	}
 
-func (e *dockerExecutor) LoadImage(filename string) error {
-	f, err := os.Open(filename)
+	f, err := os.Open(imageTarballPath)
 	if err != nil {
 		return err
 	}

@@ -7,9 +7,6 @@ Description=Arvados Keep Storage Daemon
 Documentation=https://doc.arvados.org/
 After=network.target
 
-# systemd==229 (ubuntu:xenial) obeys StartLimitInterval in the [Unit] section
-StartLimitInterval=0
-
 # systemd>=230 (debian:9) obeys StartLimitIntervalSec in the [Unit] section
 StartLimitIntervalSec=0
 

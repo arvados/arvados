@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"golang.org/x/net/context"
 	. "gopkg.in/check.v1"
 )
@@ -70,7 +71,7 @@ func (s *executorSuite) SetUpTest(c *C) {
 		Stdout:      nopWriteCloser{&s.stdout},
 		Stderr:      nopWriteCloser{&s.stderr},
 	}
-	err := s.executor.LoadImage(busyboxDockerImage(c))
+	err := s.executor.LoadImage("", busyboxDockerImage(c), arvados.Container{}, "", nil)
 	c.Assert(err, IsNil)
 }
 
