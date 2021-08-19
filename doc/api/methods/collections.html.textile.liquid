@@ -32,7 +32,10 @@ table(table table-bordered table-condensed).
 |manifest_text|text|||
 |replication_desired|number|Minimum storage replication level desired for each data block referenced by this collection. A value of @null@ signifies that the site default replication level (typically 2) is desired.|@2@|
 |replication_confirmed|number|Replication level most recently confirmed by the storage system. This field is null when a collection is first created, and is reset to null when the manifest_text changes in a way that introduces a new data block. An integer value indicates the replication level of the _least replicated_ data block in the collection.|@2@, null|
-|replication_confirmed_at|datetime|When replication_confirmed was confirmed. If replication_confirmed is null, this field is also null.||
+|replication_confirmed_at|datetime|When @replication_confirmed@ was confirmed. If @replication_confirmed@ is null, this field is also null.||
+|storage_classes_desired|list|An optional list of storage class names where the blocks should be saved. If not provided, the cluster's default storage class(es) will be set.|@['archival']@|
+|storage_classes_confirmed|list|Storage classes most recently confirmed by the storage system. This field is an empty list when a collection is first created.|@'archival']@, @[]@|
+|storage_classes_confirmed_at|datetime|When @storage_classes_confirmed@ was confirmed. If @storage_classes_confirmed@ is @[]@, this field is null.||
 |trash_at|datetime|If @trash_at@ is non-null and in the past, this collection will be hidden from API calls.  May be untrashed.||
 |delete_at|datetime|If @delete_at@ is non-null and in the past, the collection may be permanently deleted.||
 |is_trashed|boolean|True if @trash_at@ is in the past, false if not.||
