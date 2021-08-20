@@ -55,13 +55,17 @@ echo "Activating user '__INITIAL_USER__'"
 arv user update --uuid "${user_uuid}" --user '{"is_active": true}'
 
 echo "Getting the user API TOKEN"
-user_api_token=$(arv api_client_authorization list --filters "[[\"owner_uuid\", \"=\", \"${user_uuid}\"],[\"kind\", \"==\", \"arvados#apiClientAuthorization\"]]" --limit=1 |jq -r .items[].api_token)
+user_api_token=$(arv api_client_authorization list | jq -r ".items[] | select( .owner_uuid == \"${user_uuid}\" ).api_token" | head -1)
 
 if [ "x${user_api_token}" = "x" ]; then
+  echo "No existing token found for user '__INITIAL_USER__' (user_uuid: '${user_uuid}'). Creating token"
   user_api_token=$(arv api_client_authorization create --api-client-authorization "{\"owner_uuid\": \"${user_uuid}\"}" | jq -r .api_token)
 fi
 
+echo "API TOKEN FOR user '__INITIAL_USER__': '${user_api_token}'."
+
 # Change to the user's token and run the workflow
+echo "Switching to user '__INITIAL_USER__'"
 export ARVADOS_API_TOKEN="${user_api_token}"
 
 echo "Running test CWL workflow"
