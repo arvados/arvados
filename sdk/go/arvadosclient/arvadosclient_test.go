@@ -158,6 +158,36 @@ func (s *ServerRequiredSuite) TestAPIDiscovery_Get_noSuchParameter(c *C) {
 	c.Assert(value, IsNil)
 }
 
+func (s *ServerRequiredSuite) TestAPIClusterConfig_Get_StorageClasses(c *C) {
+	arv, err := MakeArvadosClient()
+	c.Assert(err, IsNil)
+	data, err := arv.ClusterConfig("StorageClasses")
+	c.Assert(err, IsNil)
+	c.Assert(data, NotNil)
+	clusterConfig := data.(map[string]interface{})
+	_, ok := clusterConfig["default"]
+	c.Assert(ok, Equals, true)
+}
+
+func (s *ServerRequiredSuite) TestAPIClusterConfig_Get_All(c *C) {
+	arv, err := MakeArvadosClient()
+	c.Assert(err, IsNil)
+	data, err := arv.ClusterConfig("")
+	c.Assert(err, IsNil)
+	c.Assert(data, NotNil)
+	clusterConfig := data.(map[string]interface{})
+	_, ok := clusterConfig["StorageClasses"]
+	c.Assert(ok, Equals, true)
+}
+
+func (s *ServerRequiredSuite) TestAPIClusterConfig_Get_noSuchSection(c *C) {
+	arv, err := MakeArvadosClient()
+	c.Assert(err, IsNil)
+	data, err := arv.ClusterConfig("noSuchSection")
+	c.Assert(err, NotNil)
+	c.Assert(data, IsNil)
+}
+
 func (s *ServerRequiredSuite) TestCreateLarge(c *C) {
 	arv, err := MakeArvadosClient()
 	c.Assert(err, IsNil)
