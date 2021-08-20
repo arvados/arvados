@@ -52,7 +52,7 @@ export const createCollectionFile = (data: Partial<CollectionFile>): CollectionF
     ...data
 });
 
-export const createCollectionFilesTree = (data: Array<CollectionDirectory | CollectionFile>) => {
+export const createCollectionFilesTree = (data: Array<CollectionDirectory | CollectionFile>, joinParents: Boolean = true) => {
     const directories = data.filter(item => item.type === CollectionFileType.DIRECTORY);
     directories.sort((a, b) => a.path.localeCompare(b.path));
     const files = data.filter(item => item.type === CollectionFileType.FILE);
@@ -60,7 +60,7 @@ export const createCollectionFilesTree = (data: Array<CollectionDirectory | Coll
         .reduce((tree, item) => setNode({
             children: [],
             id: item.id,
-            parent: getParentId(item),
+            parent: joinParents ? getParentId(item) : '',
             value: item,
             active: false,
             selected: false,

@@ -40,7 +40,7 @@ export const loadCollectionPanel = (uuid: string, forceReload = false) =>
         dispatch(resourcesActions.SET_RESOURCES([collection]));
         if (collection.fileCount <= COLLECTION_PANEL_LOAD_FILES_THRESHOLD &&
             !getState().collectionPanel.loadBigCollections) {
-            dispatch<any>(loadCollectionFiles(collection.uuid));
+            // dispatch<any>(loadCollectionFiles(collection.uuid));
         }
         return collection;
     };
