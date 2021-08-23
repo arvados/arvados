@@ -163,7 +163,8 @@ class TestContainer(unittest.TestCase):
                         'cwd': '/var/spool/cwl',
                         'scheduling_parameters': {},
                         'properties': {},
-                        'secret_mounts': {}
+                        'secret_mounts': {},
+                        'output_storage_classes': ["default"]
                     }))
 
     # The test passes some fields in builder.resources
@@ -250,7 +251,8 @@ class TestContainer(unittest.TestCase):
                 'partitions': ['blurb']
             },
             'properties': {},
-            'secret_mounts': {}
+            'secret_mounts': {},
+            'output_storage_classes': ["default"]
         }
 
         call_body = call_kwargs.get('body', None)
@@ -379,7 +381,8 @@ class TestContainer(unittest.TestCase):
             'scheduling_parameters': {
             },
             'properties': {},
-            'secret_mounts': {}
+            'secret_mounts': {},
+            'output_storage_classes': ["default"]
         }
 
         call_body = call_kwargs.get('body', None)
@@ -463,7 +466,8 @@ class TestContainer(unittest.TestCase):
                     'cwd': '/var/spool/cwl',
                     'scheduling_parameters': {},
                     'properties': {},
-                    'secret_mounts': {}
+                    'secret_mounts': {},
+                    'output_storage_classes': ["default"]
                 }))
 
     @mock.patch("arvados.collection.Collection")
@@ -696,7 +700,8 @@ class TestContainer(unittest.TestCase):
                     'cwd': '/var/spool/cwl',
                     'scheduling_parameters': {},
                     'properties': {},
-                    'secret_mounts': {}
+                    'secret_mounts': {},
+                    'output_storage_classes': ["default"]
                 }))
 
     # The test passes no builder.resources
@@ -791,7 +796,8 @@ class TestContainer(unittest.TestCase):
                             "content": "username: user\npassword: blorp\n",
                             "kind": "text"
                         }
-                    }
+                    },
+                    'output_storage_classes': ["default"]
                 }))
 
     # The test passes no builder.resources
@@ -833,6 +839,79 @@ class TestContainer(unittest.TestCase):
 
         _, kwargs = runner.api.container_requests().create.call_args
         self.assertEqual(42, kwargs['body']['scheduling_parameters'].get('max_run_time'))
+
+
+    # The test passes no builder.resources
+    # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
+    @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
+    def test_setting_storage_class(self, keepdocker):
+        arv_docker_clear_cache()
+
+        runner = mock.MagicMock()
+        runner.ignore_docker_for_reuse = False
+        runner.intermediate_output_ttl = 0
+        runner.secret_store = cwltool.secrets.SecretStore()
+
+        keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
+        runner.api.collections().get().execute.return_value = {
+            "portable_data_hash": "99999999999999999999999999999993+99"}
+
+        tool = cmap({
+            "inputs": [],
+            "outputs": [],
+            "baseCommand": "ls",
+            "arguments": [{"valueFrom": "$(runtime.outdir)"}],
+            "id": "#",
+            "class": "CommandLineTool",
+            "hints": [
+                {
+                    "class": "http://arvados.org/cwl#OutputStorageClass",
+                    "finalStorageClass": ["baz_sc", "qux_sc"],
+                    "intermediateStorageClass": ["foo_sc", "bar_sc"]
+                }
+            ]
+        })
+
+        loadingContext, runtimeContext = self.helper(runner, True)
+
+        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, loadingContext)
+        arvtool.formatgraph = None
+
+        for j in arvtool.job({}, mock.MagicMock(), runtimeContext):
+            j.run(runtimeContext)
+            runner.api.container_requests().create.assert_called_with(
+                body=JsonDiffMatcher({
+                    'environment': {
+                        'HOME': '/var/spool/cwl',
+                        'TMPDIR': '/tmp'
+                    },
+                    'name': 'test_run_True',
+                    'runtime_constraints': {
+                        'vcpus': 1,
+                        'ram': 1073741824
+                    },
+                    'use_existing': True,
+                    'priority': 500,
+                    'mounts': {
+                        '/tmp': {'kind': 'tmp',
+                                 "capacity": 1073741824
+                             },
+                        '/var/spool/cwl': {'kind': 'tmp',
+                                           "capacity": 1073741824 }
+                    },
+                    'state': 'Committed',
+                    'output_name': 'Output for step test_run_True',
+                    'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
+                    'output_path': '/var/spool/cwl',
+                    'output_ttl': 0,
+                    'container_image': '99999999999999999999999999999993+99',
+                    'command': ['ls', '/var/spool/cwl'],
+                    'cwd': '/var/spool/cwl',
+                    'scheduling_parameters': {},
+                    'properties': {},
+                    'secret_mounts': {},
+                    'output_storage_classes': ["foo_sc", "bar_sc"]
+                }))
 
 
 class TestWorkflow(unittest.TestCase):
@@ -972,7 +1051,8 @@ class TestWorkflow(unittest.TestCase):
                 "scheduling_parameters": {},
                 "secret_mounts": {},
                 "state": "Committed",
-                "use_existing": True
+                "use_existing": True,
+                'output_storage_classes': ["default"]
             }))
         mockc.open().__enter__().write.assert_has_calls([mock.call(subwf)])
         mockc.open().__enter__().write.assert_has_calls([mock.call(
@@ -1074,7 +1154,8 @@ class TestWorkflow(unittest.TestCase):
                 ],
                 'use_existing': True,
                 'output_name': u'Output for step echo-subwf',
-                'cwd': '/var/spool/cwl'
+                'cwd': '/var/spool/cwl',
+                'output_storage_classes': ["default"]
             }))
 
     def test_default_work_api(self):

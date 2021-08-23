@@ -16,7 +16,7 @@ nginx:
   servers:
     managed:
       ### DEFAULT
-      arvados_collections_download_default:
+      arvados_collections_download_default.conf:
         enabled: true
         overwrite: true
         config:
@@ -30,9 +30,11 @@ nginx:
               - return: '301 https://$host$request_uri'
 
       ### COLLECTIONS / DOWNLOAD
-      arvados_collections_download_ssl:
+      arvados_collections_download_ssl.conf:
         enabled: true
         overwrite: true
+        requires:
+          file: nginx_snippet_arvados-snakeoil.conf
         config:
           - server:
             - server_name: collections.__CLUSTER__.__DOMAIN__ download.__CLUSTER__.__DOMAIN__
@@ -52,6 +54,7 @@ nginx:
             - client_max_body_size: 0
             - proxy_http_version: '1.1'
             - proxy_request_buffering: 'off'
-            - include: 'snippets/arvados-snakeoil.conf'
+            - include: snippets/ssl_hardening_default.conf
+            - include: snippets/arvados-snakeoil.conf
             - access_log: /var/log/nginx/collections.__CLUSTER__.__DOMAIN__.access.log combined
             - error_log: /var/log/nginx/collections.__CLUSTER__.__DOMAIN__.error.log

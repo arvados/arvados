@@ -22,6 +22,7 @@ import cwltool.main
 import cwltool.workflow
 import cwltool.process
 import cwltool.argparser
+from cwltool.errors import WorkflowException
 from cwltool.process import shortname, UnsupportedRequirement, use_custom_schema
 from cwltool.utils import adjustFileObjs, adjustDirObjs, get_listing
 
@@ -178,7 +179,9 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
                         help="Enable loading and running development versions "
                              "of the CWL standards.", default=False)
     parser.add_argument('--storage-classes', default="default",
-                        help="Specify comma separated list of storage classes to be used when saving workflow output to Keep.")
+                        help="Specify comma separated list of storage classes to be used when saving final workflow output to Keep.")
+    parser.add_argument('--intermediate-storage-classes', default="default",
+                        help="Specify comma separated list of storage classes to be used when saving intermediate workflow output to Keep.")
 
     parser.add_argument("--intermediate-output-ttl", type=int, metavar="N",
                         help="If N > 0, intermediate output collections will be trashed N seconds after creation.  Default is 0 (don't trash).",
@@ -245,7 +248,8 @@ def add_arv_hints():
         "http://commonwl.org/cwltool#LoadListingRequirement",
         "http://arvados.org/cwl#IntermediateOutput",
         "http://arvados.org/cwl#ReuseRequirement",
-        "http://arvados.org/cwl#ClusterTarget"
+        "http://arvados.org/cwl#ClusterTarget",
+        "http://arvados.org/cwl#OutputStorageClass"
     ])
 
 def exit_signal_handler(sigcode, frame):
@@ -258,10 +262,6 @@ def main(args, stdout, stderr, api_client=None, keep_client=None,
 
     job_order_object = None
     arvargs = parser.parse_args(args)
-
-    if len(arvargs.storage_classes.strip().split(',')) > 1:
-        logger.error(str(u"Multiple storage classes are not supported currently."))
-        return 1
 
     arvargs.use_container = True
     arvargs.relax_path_checks = True
@@ -301,6 +301,9 @@ def main(args, stdout, stderr, api_client=None, keep_client=None,
         if keep_client is None:
             keep_client = arvados.keep.KeepClient(api_client=api_client, num_retries=4)
         executor = ArvCwlExecutor(api_client, arvargs, keep_client=keep_client, num_retries=4)
+    except WorkflowException as e:
+        logger.error(e, exc_info=(sys.exc_info()[1] if arvargs.debug else False))
+        return 1
     except Exception:
         logger.exception("Error creating the Arvados CWL Executor")
         return 1
