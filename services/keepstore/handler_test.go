@@ -368,6 +368,26 @@ func (s *HandlerSuite) TestReadsOrderedByStorageClassPriority(c *check.C) {
 	}
 }
 
+func (s *HandlerSuite) TestPutWithNoWritableVolumes(c *check.C) {
+	s.cluster.Volumes = map[string]arvados.Volume{
+		"zzzzz-nyw5e-111111111111111": {
+			Driver:         "mock",
+			Replication:    1,
+			ReadOnly:       true,
+			StorageClasses: map[string]bool{"class1": true}},
+	}
+	c.Assert(s.handler.setup(context.Background(), s.cluster, "", prometheus.NewRegistry(), testServiceURL), check.IsNil)
+	resp := IssueRequest(s.handler,
+		&RequestTester{
+			method:         "PUT",
+			uri:            "/" + TestHash,
+			requestBody:    TestBlock,
+			storageClasses: "class1",
+		})
+	c.Check(resp.Code, check.Equals, FullError.HTTPCode)
+	c.Check(s.handler.volmgr.mountMap["zzzzz-nyw5e-111111111111111"].Volume.(*MockVolume).CallCount("Put"), check.Equals, 0)
+}
+
 func (s *HandlerSuite) TestConcurrentWritesToMultipleStorageClasses(c *check.C) {
 	s.cluster.Volumes = map[string]arvados.Volume{
 		"zzzzz-nyw5e-111111111111111": {
