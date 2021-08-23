@@ -837,7 +837,7 @@ func (pr *putProgress) Copy() *putProgress {
 	return &cp
 }
 
-func newPutResult(classes []string) putProgress {
+func newPutProgress(classes []string) putProgress {
 	pr := putProgress{
 		classNeeded: make(map[string]bool, len(classes)),
 		classTodo:   make(map[string]bool, len(classes)),
@@ -890,7 +890,7 @@ func PutBlock(ctx context.Context, volmgr *RRVolumeManager, block []byte, hash s
 		return putProgress{}, RequestHashError
 	}
 
-	result := newPutResult(wantStorageClasses)
+	result := newPutProgress(wantStorageClasses)
 
 	// If we already have this data, it's intact on disk, and we
 	// can update its timestamp, return success. If we have
