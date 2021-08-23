@@ -613,7 +613,7 @@ class Collection < ArvadosModel
   end
 
   def self.searchable_columns operator
-    super - ["manifest_text"]
+    super - ["manifest_text"] + ["storage_classes_desired", "storage_classes_confirmed"]
   end
 
   def self.full_text_searchable_columns
