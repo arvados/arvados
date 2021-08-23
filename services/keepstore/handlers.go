@@ -853,33 +853,29 @@ func newPutProgress(classes []string) putProgress {
 	return pr
 }
 
-// PutBlock Stores the BLOCK (identified by the content id HASH) in Keep.
+// PutBlock stores the given block on one or more volumes.
 //
-// PutBlock(ctx, block, hash)
-//   Stores the BLOCK (identified by the content id HASH) in Keep.
+// The MD5 checksum of the block must match the given hash.
 //
-//   The MD5 checksum of the block must be identical to the content id HASH.
-//   If not, an error is returned.
+// The block is written to each writable volume (ordered by priority
+// and then UUID, see volume.go) until at least one replica has been
+// stored in each of the requested storage classes.
 //
-//   PutBlock stores the BLOCK on the first Keep volume with free space.
-//   A failure code is returned to the user only if all volumes fail.
+// The returned error, if any, is a KeepError with one of the
+// following codes:
 //
-//   On success, PutBlock returns nil.
-//   On failure, it returns a KeepError with one of the following codes:
-//
-//   500 Collision
-//          A different block with the same hash already exists on this
-//          Keep server.
-//   422 MD5Fail
-//          The MD5 hash of the BLOCK does not match the argument HASH.
-//   503 Full
-//          There was not enough space left in any Keep volume to store
-//          the object.
-//   500 Fail
-//          The object could not be stored for some other reason (e.g.
-//          all writes failed). The text of the error message should
-//          provide as much detail as possible.
-//
+// 500 Collision
+//        A different block with the same hash already exists on this
+//        Keep server.
+// 422 MD5Fail
+//        The MD5 hash of the BLOCK does not match the argument HASH.
+// 503 Full
+//        There was not enough space left in any Keep volume to store
+//        the object.
+// 500 Fail
+//        The object could not be stored for some other reason (e.g.
+//        all writes failed). The text of the error message should
+//        provide as much detail as possible.
 func PutBlock(ctx context.Context, volmgr *RRVolumeManager, block []byte, hash string, wantStorageClasses []string) (putProgress, error) {
 	log := ctxlog.FromContext(ctx)
 
