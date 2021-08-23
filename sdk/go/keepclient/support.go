@@ -164,7 +164,11 @@ func (kc *KeepClient) BlockWrite(ctx context.Context, req arvados.BlockWriteOpti
 		req.Hash = fmt.Sprintf("%x", m.Sum(nil))
 	}
 	if req.StorageClasses == nil {
-		req.StorageClasses = kc.StorageClasses
+		if len(kc.StorageClasses) > 0 {
+			req.StorageClasses = kc.StorageClasses
+		} else {
+			req.StorageClasses = kc.DefaultStorageClasses
+		}
 	}
 	if req.Replicas == 0 {
 		req.Replicas = kc.Want_replicas
