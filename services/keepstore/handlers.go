@@ -912,7 +912,11 @@ func PutBlock(ctx context.Context, volmgr *RRVolumeManager, block []byte, hash s
 	pending := result.Copy()
 	var allFull atomic.Value
 	allFull.Store(true)
+
+	// We hold the lock for the duration of the "each volume" loop
+	// below, except when it is released during cond.Wait().
 	mtx.Lock()
+
 	for _, mnt := range writables {
 		// Wait until our decision to use this mount does not
 		// depend on the outcome of pending writes.
