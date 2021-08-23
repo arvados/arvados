@@ -401,6 +401,9 @@ func (vm *RRVolumeManager) AllWritable() []*VolumeMount {
 // each volume gets a turn to be first. Used by PutBlock to distribute
 // new data across available volumes.
 func (vm *RRVolumeManager) NextWritable() []*VolumeMount {
+	if len(vm.writables) == 0 {
+		return nil
+	}
 	offset := (int(atomic.AddUint32(&vm.counter, 1)) - 1) % len(vm.writables)
 	return append(append([]*VolumeMount(nil), vm.writables[offset:]...), vm.writables[:offset]...)
 }
