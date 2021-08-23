@@ -39,6 +39,10 @@ h2(#main). development main (as of 2021-07-15)
 
 "Upgrading from 2.2.0":#v2_2_0
 
+h3. Removed deprecated '@@' search operator
+
+The '@@' full text search operator, previously deprecated, has been removed. To perform a string search across multiple columns, use the 'ilike' operator on 'any' column as described in the "available list method filter section":{{site.baseurl}}/api/methods.html#substringsearchfilter of the API documentation.
+
 h3. Storage classes must be defined explicitly
 
 If your configuration uses the StorageClasses attribute on any Keep volumes, you must add a new @StorageClasses@ section that lists all of your storage classes. Refer to the updated documentation about "configuring storage classes":{{site.baseurl}}/admin/storage-classes.html for details.

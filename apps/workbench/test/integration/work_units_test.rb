@@ -14,7 +14,7 @@ class WorkUnitsTest < ActionDispatch::IntegrationTest
 
   [[true, 25, 100,
     ['/pipeline_instances/zzzzz-d1hrv-1yfj61234abcdk3',
-     '/pipeline_instances/zzzzz-d1hrv-jobspeccomponts',
+     '/pipeline_instances/zzzzz-d1hrv-1yfj61234abcdk4',
      '/jobs/zzzzz-8i9sb-grx15v5mjnsyxk7',
      '/jobs/zzzzz-8i9sb-n7omg50bvt0m1nf',
      '/container_requests/zzzzz-xvhdp-cr4completedcr2',
@@ -23,7 +23,7 @@ class WorkUnitsTest < ActionDispatch::IntegrationTest
      '/container_requests/zzzzz-xvhdp-oneof60crs00001']],
    [false, 25, 100,
     ['/pipeline_instances/zzzzz-d1hrv-1yfj61234abcdk3',
-     '/pipeline_instances/zzzzz-d1hrv-jobspeccomponts',
+     '/pipeline_instances/zzzzz-d1hrv-1yfj61234abcdk4',
      '/container_requests/zzzzz-xvhdp-cr4completedcr2'],
     ['/pipeline_instances/zzzzz-d1hrv-scarxiyajtshq3l',
      '/container_requests/zzzzz-xvhdp-oneof60crs00001',

@@ -31,7 +31,10 @@ module RecordFilters
     model_table_name = model_class.table_name
     filters.each do |filter|
       attrs_in, operator, operand = filter
-      if attrs_in == 'any' && operator != '@@'
+      if operator == '@@'
+        raise ArgumentError.new("Full text search operator is no longer supported")
+      end
+      if attrs_in == 'any'
         attrs = model_class.searchable_columns(operator)
       elsif attrs_in.is_a? Array
         attrs = attrs_in
@@ -54,22 +57,6 @@ module RecordFilters
         attrs = []
       end
 
-      if operator == '@@'
-        # Full-text search
-        if attrs_in != 'any'
-          raise ArgumentError.new("Full text search on individual columns is not supported")
-        end
-        if operand.is_a? Array
-          raise ArgumentError.new("Full text search not supported for array operands")
-        end
-
-        # Skip the generic per-column operator loop below
-        attrs = []
-        # Use to_tsquery since plainto_tsquery does not support prefix
-        # search. And, split operand and join the words with ' & '
-        cond_out << model_class.full_text_tsvector+" @@ to_tsquery(?)"
-        param_out << operand.split.join(' & ')
-      end
       attrs.each do |attr|
         subproperty = attr.split(".", 2)
 

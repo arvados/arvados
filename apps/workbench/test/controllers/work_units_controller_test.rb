@@ -13,26 +13,26 @@ class WorkUnitsControllerTest < ActionController::TestCase
   [
     ['foo', 10, 25,
       ['/pipeline_instances/zzzzz-d1hrv-1xfj6xkicf2muk2',
-       '/pipeline_instances/zzzzz-d1hrv-jobspeccomponts',
+       '/pipeline_instances/zzzzz-d1hrv-1yfj61234abcdk4',
        '/jobs/zzzzz-8i9sb-grx15v5mjnsyxk7'],
       ['/pipeline_instances/zzzzz-d1hrv-1yfj61234abcdk3',
        '/jobs/zzzzz-8i9sb-n7omg50bvt0m1nf',
        '/container_requests/zzzzz-xvhdp-cr4completedcr2']],
     ['pipeline_with_tagged_collection_input', 1, 1,
       ['/pipeline_instances/zzzzz-d1hrv-1yfj61234abcdk3'],
-      ['/pipeline_instances/zzzzz-d1hrv-jobspeccomponts',
+      ['/pipeline_instances/zzzzz-d1hrv-1yfj61234abcdk4',
        '/jobs/zzzzz-8i9sb-pshmckwoma9plh7',
        '/jobs/zzzzz-8i9sb-n7omg50bvt0m1nf',
        '/container_requests/zzzzz-xvhdp-cr4completedcr2']],
     ['no_such_match', 0, 0,
       [],
-      ['/pipeline_instances/zzzzz-d1hrv-jobspeccomponts',
+      ['/pipeline_instances/zzzzz-d1hrv-1yfj61234abcdk4',
        '/jobs/zzzzz-8i9sb-pshmckwoma9plh7',
        '/jobs/zzzzz-8i9sb-n7omg50bvt0m1nf',
        '/container_requests/zzzzz-xvhdp-cr4completedcr2']],
   ].each do |search_filter, expected_min, expected_max, expected, not_expected|
     test "all_processes page for search filter '#{search_filter}'" do
-      work_units_index(filters: [['any','@@', search_filter]], show_children: true)
+      work_units_index(filters: [['any','ilike', "%#{search_filter}%"]], show_children: true)
       assert_response :success
 
       # Verify that expected number of processes are found
