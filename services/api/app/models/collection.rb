@@ -420,17 +420,7 @@ class Collection < ArvadosModel
   end
 
   def self.sign_manifest manifest, token, exp=nil
-    if exp.nil?
-      exp = db_current_time.to_i + Rails.configuration.Collections.BlobSigningTTL.to_i
-    end
-    signing_opts = {
-      api_token: token,
-      expire: exp,
-    }
-    m = munge_manifest_locators(manifest) do |match|
-      Blob.sign_locator(match[0], signing_opts)
-    end
-    return m
+    return manifest
   end
 
   def self.munge_manifest_locators manifest
