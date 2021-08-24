@@ -33,7 +33,6 @@ func (s *Suite) TearDownSuite(c *check.C) {
 }
 
 func (s *Suite) SetUpSuite(c *check.C) {
-	arvadostest.StartAPI()
 	arvadostest.StartKeep(2, true)
 
 	// Get the various arvados, arvadosclient, and keep client objects

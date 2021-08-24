@@ -39,13 +39,8 @@ var initialArgs []string
 
 func (s *TestSuite) SetUpSuite(c *C) {
 	initialArgs = os.Args
-	arvadostest.StartAPI()
 	runningCmds = make(map[string]*exec.Cmd)
 	logrus.SetFormatter(&logrus.TextFormatter{DisableColors: true})
-}
-
-func (s *TestSuite) TearDownSuite(c *C) {
-	arvadostest.StopAPI()
 }
 
 func (s *TestSuite) SetUpTest(c *C) {

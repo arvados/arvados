@@ -76,7 +76,6 @@ func closeListener() {
 }
 
 func (s *ServerRequiredSuite) SetUpSuite(c *C) {
-	arvadostest.StartAPI()
 	arvadostest.StartKeep(2, false)
 }
 
@@ -86,11 +85,9 @@ func (s *ServerRequiredSuite) SetUpTest(c *C) {
 
 func (s *ServerRequiredSuite) TearDownSuite(c *C) {
 	arvadostest.StopKeep(2)
-	arvadostest.StopAPI()
 }
 
 func (s *ServerRequiredConfigYmlSuite) SetUpSuite(c *C) {
-	arvadostest.StartAPI()
 	// config.yml defines 4 keepstores
 	arvadostest.StartKeep(4, false)
 }
@@ -101,11 +98,9 @@ func (s *ServerRequiredConfigYmlSuite) SetUpTest(c *C) {
 
 func (s *ServerRequiredConfigYmlSuite) TearDownSuite(c *C) {
 	arvadostest.StopKeep(4)
-	arvadostest.StopAPI()
 }
 
 func (s *NoKeepServerSuite) SetUpSuite(c *C) {
-	arvadostest.StartAPI()
 	// We need API to have some keep services listed, but the
 	// services themselves should be unresponsive.
 	arvadostest.StartKeep(2, false)
@@ -114,10 +109,6 @@ func (s *NoKeepServerSuite) SetUpSuite(c *C) {
 
 func (s *NoKeepServerSuite) SetUpTest(c *C) {
 	arvadostest.ResetEnv()
-}
-
-func (s *NoKeepServerSuite) TearDownSuite(c *C) {
-	arvadostest.StopAPI()
 }
 
 func runProxy(c *C, bogusClientToken bool, loadKeepstoresFromConfig bool, kp *arvados.UploadDownloadRolePermissions) (*keepclient.KeepClient, *bytes.Buffer) {

@@ -410,7 +410,7 @@ func (s *IntegrationSuite) TestMetrics(c *check.C) {
 }
 
 func (s *IntegrationSuite) SetUpSuite(c *check.C) {
-	arvadostest.StartAPI()
+	arvadostest.ResetDB(c)
 	arvadostest.StartKeep(2, true)
 
 	arv, err := arvadosclient.MakeArvadosClient()
@@ -426,7 +426,6 @@ func (s *IntegrationSuite) SetUpSuite(c *check.C) {
 
 func (s *IntegrationSuite) TearDownSuite(c *check.C) {
 	arvadostest.StopKeep(2)
-	arvadostest.StopAPI()
 }
 
 func (s *IntegrationSuite) SetUpTest(c *check.C) {
