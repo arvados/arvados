@@ -122,12 +122,22 @@ describe('Collection panel tests', function () {
             }).as('sharedGroup').then(function () {
                 // Creates the collection using the admin token so we can set up
                 // a bogus manifest text without block signatures.
-                cy.createCollection(adminUser.token, {
-                    name: 'Test collection',
-                    owner_uuid: this.sharedGroup.uuid,
-                    properties: { someKey: 'someValue' },
-                    manifest_text: `. 37b51d194a7513e45b56f6524f2d51f2+3 0:3:${fileName}\n./${subDirName} 37b51d194a7513e45b56f6524f2d51f2+3 0:3:${fileName}\n`
-                })
+                cy.doRequest('GET', '/arvados/v1/config', null, null)
+                    .its('body').should((clusterConfig) => {
+                      expect(clusterConfig.Collections, "clusterConfig").to.have.property("TrustAllContent", false);
+                      expect(clusterConfig.Services, "clusterConfig").to.have.property("WebDAV").have.property("ExternalURL");
+                      expect(clusterConfig.Services, "clusterConfig").to.have.property("WebDAVDownload").have.property("ExternalURL");
+                      const inlineUrl = clusterConfig.Services.WebDAV.ExternalURL !== ""
+                          ? clusterConfig.Services.WebDAV.ExternalURL
+                          : clusterConfig.Services.WebDAVDownload.ExternalURL;
+                      expect(inlineUrl).to.not.contain("*");
+                    })
+                    .createCollection(adminUser.token, {
+                      name: 'Test collection',
+                      owner_uuid: this.sharedGroup.uuid,
+                      properties: { someKey: 'someValue' },
+                      manifest_text: `. 37b51d194a7513e45b56f6524f2d51f2+3 0:3:${fileName}\n./${subDirName} 37b51d194a7513e45b56f6524f2d51f2+3 0:3:${fileName}\n`
+                    })
                     .as('testCollection').then(function () {
                         // Share the group with active user.
                         cy.createLink(adminUser.token, {
@@ -189,6 +199,7 @@ describe('Collection panel tests', function () {
                             .contains(fileName).rightclick({ force: true });
                         cy.get('[data-cy=context-menu]')
                             .should('contain', 'Download')
+                            .and('not.contain', 'Open in new tab')
                             .and('contain', 'Copy to clipboard')
                             .and(`${isWritable ? '' : 'not.'}contain`, 'Rename')
                             .and(`${isWritable ? '' : 'not.'}contain`, 'Remove');
@@ -197,6 +208,7 @@ describe('Collection panel tests', function () {
                             .contains(subDirName).rightclick({ force: true });
                         cy.get('[data-cy=context-menu]')
                             .should('not.contain', 'Download')
+                            .and('not.contain', 'Open in new tab')
                             .and('contain', 'Copy to clipboard')
                             .and(`${isWritable ? '' : 'not.'}contain`, 'Rename')
                             .and(`${isWritable ? '' : 'not.'}contain`, 'Remove');
