@@ -255,9 +255,12 @@ module RecordFilters
                 raise ArgumentError.new("Invalid element #{operand.inspect} in operand for #{operator.inspect} operator (operand must be a string or array of strings)")
               end
             end
-            q = operand.map { |s| ActiveRecord::Base.connection.quote(s) }.join(',')
             # We use jsonb_exists_all(a,b) instead of "a ?& b" because
-            # the pg gem thinks "?" is a bind var.
+            # the pg gem thinks "?" is a bind var. And we use string
+            # interpolation instead of param_out because the pg gem
+            # flattens param_out / doesn't support passing arrays as
+            # bind vars.
+            q = operand.map { |s| ActiveRecord::Base.connection.quote(s) }.join(',')
             cond_out << "jsonb_exists_all(#{attr_table_name}.#{attr}, array[#{q}])"
           else
             raise ArgumentError.new("Invalid operator '#{operator}'")
