@@ -142,9 +142,10 @@ func (e *singularityExecutor) LoadImage(dockerImageID string, imageTarballPath s
 	}
 
 	if _, err := os.Stat(imageFilename); os.IsNotExist(err) {
-		// Make sure the docker image is readable
-		if _, err := os.Stat(dockerImageID); err != nil {
-			return err;
+		// Make sure the docker image is readable, and error
+		// out if not.
+		if _, err := os.Stat(imageTarballPath); err != nil {
+			return err
 		}
 
 		e.logf("building singularity image")
