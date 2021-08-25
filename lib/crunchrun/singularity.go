@@ -101,7 +101,7 @@ func (e *singularityExecutor) checkImageCache(dockerImageID string, container ar
 	if len(cl.Items) == 1 {
 		imageCollection = cl.Items[0]
 	} else {
-		collectionName := collectionName + " " + time.Now().UTC().Format(time.RFC3339)
+		collectionName := "converting " + collectionName
 		exp := time.Now().Add(24 * 7 * 2 * time.Hour)
 		err = containerClient.RequestAndDecode(&imageCollection,
 			arvados.EndpointCollectionCreate.Method,
@@ -112,6 +112,7 @@ func (e *singularityExecutor) checkImageCache(dockerImageID string, container ar
 					"name":       collectionName,
 					"trash_at":   exp.UTC().Format(time.RFC3339),
 				},
+				"ensure_unique_name": true,
 			})
 		if err != nil {
 			return nil, fmt.Errorf("error creating '%v' collection: %s", collectionName, err)
@@ -141,6 +142,12 @@ func (e *singularityExecutor) LoadImage(dockerImageID string, imageTarballPath s
 	}
 
 	if _, err := os.Stat(imageFilename); os.IsNotExist(err) {
+		// Make sure the docker image is readable, and error
+		// out if not.
+		if _, err := os.Stat(imageTarballPath); err != nil {
+			return err
+		}
+
 		e.logf("building singularity image")
 		// "singularity build" does not accept a
 		// docker-archive://... filename containing a ":" character,
