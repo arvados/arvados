@@ -1455,4 +1455,48 @@ EOS
     assert_response :success
     assert_equal col.version, json_response['version'], 'Trashing a collection should not create a new version'
   end
+
+  [['<', :<],
+   ['<=', :<=],
+   ['>', :>],
+   ['>=', :>=],
+   ['=', :==]].each do |op, rubyop|
+    test "filter collections by replication_desired #{op} replication_confirmed" do
+      authorize_with(:active)
+      get :index, params: {
+            filters: [["(replication_desired #{op} replication_confirmed)", "=", true]],
+          }
+      assert_response :success
+      json_response["items"].each do |c|
+        assert_operator(c["replication_desired"], rubyop, c["replication_confirmed"])
+      end
+    end
+  end
+
+  ["(replication_desired < bogus)",
+   "replication_desired < replication_confirmed",
+   "(replication_desired < replication_confirmed",
+   "(replication_desired ! replication_confirmed)",
+   "(replication_desired <)",
+   "(replication_desired < manifest_text)",
+   "(manifest_text < manifest_text)", # currently only numeric attrs are supported
+   "(replication_desired < 2)", # currently only attrs are supported, not literals
+   "(1 < 2)",
+  ].each do |expr|
+    test "invalid filter expression #{expr}" do
+      authorize_with(:active)
+      get :index, params: {
+            filters: [[expr, "=", true]],
+          }
+      assert_response 422
+    end
+  end
+
+  test "invalid op/arg with filter expression" do
+    authorize_with(:active)
+    get :index, params: {
+          filters: [["replication_desired < replication_confirmed", "!=", false]],
+        }
+    assert_response 422
+  end
 end

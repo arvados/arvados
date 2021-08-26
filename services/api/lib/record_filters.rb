@@ -141,6 +141,23 @@ module RecordFilters
 
           cond_out << "jsonb_exists(#{attr_table_name}.#{attr}, ?)"
           param_out << operand
+        elsif expr = /^ *\( *(\w+) *(<=?|>=?|=) *(\w+) *\) *$/.match(attr)
+          if operator != '=' || ![true,"true"].index(operand)
+            raise ArgumentError.new("Invalid expression filter '#{attr}': subsequent elements must be [\"=\", true]")
+          end
+          operator = expr[2]
+          attr1, attr2 = expr[1], expr[3]
+          allowed = attr_model_class.searchable_columns(operator)
+          [attr1, attr2].each do |tok|
+            if !allowed.index(tok)
+              raise ArgumentError.new("Invalid attribute in expression: '#{tok}'")
+            end
+            col = attr_model_class.columns.select { |c| c.name == tok }.first
+            if col.type != :integer
+              raise ArgumentError.new("Non-numeric attribute in expression: '#{tok}'")
+            end
+          end
+          cond_out << "#{attr1} #{operator} #{attr2}"
         else
           if !attr_model_class.searchable_columns(operator).index attr
             raise ArgumentError.new("Invalid attribute '#{attr}' in filter")
