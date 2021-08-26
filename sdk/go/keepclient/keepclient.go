@@ -141,10 +141,6 @@ func (kc *KeepClient) loadDefaultClasses() error {
 // use.
 func MakeKeepClient(arv *arvadosclient.ArvadosClient) (*KeepClient, error) {
 	kc := New(arv)
-	err := kc.loadDefaultClasses()
-	if err != nil {
-		DebugPrintf("DEBUG: Unable to load the default storage classes cluster config")
-	}
 	return kc, kc.discoverServices()
 }
 
@@ -159,11 +155,16 @@ func New(arv *arvadosclient.ArvadosClient) *KeepClient {
 			defaultReplicationLevel = int(v)
 		}
 	}
-	return &KeepClient{
+	kc := &KeepClient{
 		Arvados:       arv,
 		Want_replicas: defaultReplicationLevel,
 		Retries:       2,
 	}
+	err = kc.loadDefaultClasses()
+	if err != nil {
+		DebugPrintf("DEBUG: Unable to load the default storage classes cluster config")
+	}
+	return kc
 }
 
 // PutHR puts a block given the block hash, a reader, and the number of bytes

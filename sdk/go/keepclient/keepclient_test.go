@@ -84,8 +84,7 @@ func (s *ServerRequiredSuite) TestDefaultStorageClasses(c *C) {
 	c.Assert(cc, NotNil)
 	c.Assert(cc.(map[string]interface{})["default"], NotNil)
 
-	kc, err := MakeKeepClient(arv)
-	c.Assert(err, IsNil)
+	kc := New(arv)
 	c.Assert(kc.DefaultStorageClasses, DeepEquals, []string{"default"})
 }
 
