@@ -5,6 +5,11 @@
 import React from 'react';
 import { DetailsResource } from "models/details";
 
+interface GetDetailsParams {
+  tabNr?: number
+  showPreview?: boolean
+}
+
 export abstract class DetailsData<T extends DetailsResource = DetailsResource> {
     constructor(protected item: T) { }
 
@@ -17,5 +22,5 @@ export abstract class DetailsData<T extends DetailsResource = DetailsResource> {
     }
 
     abstract getIcon(className?: string): React.ReactElement<any>;
-    abstract getDetails(tabNr?: number): React.ReactElement<any>;
+    abstract getDetails({tabNr, showPreview}: GetDetailsParams): React.ReactElement<any>;
 }

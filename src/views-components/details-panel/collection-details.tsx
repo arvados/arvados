@@ -42,8 +42,8 @@ export class CollectionDetails extends DetailsData<CollectionResource> {
         return ['Details', 'Versions'];
     }
 
-    getDetails(tabNumber: number) {
-        switch (tabNumber) {
+    getDetails({tabNr}) {
+        switch (tabNr) {
             case 0:
                 return this.getCollectionInfo();
             case 1:

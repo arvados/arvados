@@ -18,13 +18,13 @@ export class FileDetails extends DetailsData<CollectionFile | CollectionDirector
         return <Icon className={className} />;
     }
 
-    getDetails() {
+    getDetails({showPreview}) {
         const { item } = this;
         return item.type === CollectionFileType.FILE
             ? <>
                 <DetailsAttribute label='Size' value={formatFileSize(item.size)} />
                 {
-                    isImage(item.url) && <>
+                    isImage(item.url) && showPreview && <>
                         <DetailsAttribute label='Preview' />
                         <FileThumbnail file={item} />
                     </>

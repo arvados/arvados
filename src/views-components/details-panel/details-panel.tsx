@@ -20,6 +20,8 @@ import { ProcessDetails } from "./process-details";
 import { EmptyDetails } from "./empty-details";
 import { DetailsData } from "./details-data";
 import { DetailsResource } from "models/details";
+import { Config } from 'common/config';
+import { isInlineFileUrlSafe } from "../context-menu/actions/helpers";
 import { getResource } from 'store/resources/resources';
 import { toggleDetailsPanel, SLIDE_TIMEOUT, openDetailsPanel } from 'store/details-panel/details-panel-action';
 import { FileDetails } from 'views-components/details-panel/file-details';
@@ -77,12 +79,13 @@ const getItem = (res: DetailsResource): DetailsData => {
     }
 };
 
-const mapStateToProps = ({ detailsPanel, resources, collectionPanelFiles }: RootState) => {
+const mapStateToProps = ({ auth, detailsPanel, resources, collectionPanelFiles }: RootState) => {
     const resource = getResource(detailsPanel.resourceUuid)(resources) as DetailsResource | undefined;
     const file = resource
         ? undefined
         : getNode(detailsPanel.resourceUuid)(collectionPanelFiles);
     return {
+        authConfig: auth.config,
         isOpened: detailsPanel.isOpened,
         tabNr: detailsPanel.tabNr,
         res: resource || (file && file.value) || EMPTY_RESOURCE,
@@ -101,6 +104,7 @@ const mapDispatchToProps = (dispatch: Dispatch) => ({
 export interface DetailsPanelDataProps {
     onCloseDrawer: () => void;
     setActiveTab: (tabNr: number) => void;
+    authConfig: Config;
     isOpened: boolean;
     tabNr: number;
     res: DetailsResource;
@@ -143,7 +147,17 @@ export const DetailsPanel = withStyles(styles)(
             }
 
             renderContent() {
-                const { classes, onCloseDrawer, res, tabNr } = this.props;
+                const { classes, onCloseDrawer, res, tabNr, authConfig } = this.props;
+
+                let shouldShowInlinePreview = false;
+                if (!('kind' in res)) {
+                    shouldShowInlinePreview = isInlineFileUrlSafe(
+                      res ? res.url : "",
+                      authConfig.keepWebServiceUrl,
+                      authConfig.keepWebInlineServiceUrl
+                    ) || authConfig.clusterConfig.Collections.TrustAllContent;
+                }
+
                 const item = getItem(res);
                 return <Grid
                     container
@@ -183,7 +197,7 @@ export const DetailsPanel = withStyles(styles)(
                         </Tabs>
                     </Grid>
                     <Grid item xs className={this.props.classes.tabContainer} >
-                        {item.getDetails(tabNr)}
+                        {item.getDetails({tabNr, showPreview: shouldShowInlinePreview})}
                     </Grid>
                 </Grid >;
             }
