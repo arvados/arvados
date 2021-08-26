@@ -77,4 +77,17 @@ func (s *CollectionSuite) TestSignatures(c *check.C) {
 		c.Check(lresp.Items[0].ManifestText, check.Equals, "")
 		c.Check(lresp.Items[0].UnsignedManifestText, check.Matches, `(?ms).* acbd[^ ]*\+3 0:.*`)
 	}
+
+	// Make sure groups/contents doesn't return manifest_text with
+	// collections (if it did, we'd need to sign it).
+	gresp, err := s.localdb.GroupContents(ctx, arvados.GroupContentsOptions{
+		Limit:   -1,
+		Filters: []arvados.Filter{{"uuid", "=", arvadostest.FooCollection}},
+		Select:  []string{"uuid", "manifest_text"},
+	})
+	c.Check(err, check.IsNil)
+	if c.Check(gresp.Items, check.HasLen, 1) {
+		c.Check(gresp.Items[0].(map[string]interface{})["uuid"], check.Equals, arvadostest.FooCollection)
+		c.Check(gresp.Items[0].(map[string]interface{})["manifest_text"], check.Equals, nil)
+	}
 }
