@@ -6,6 +6,9 @@ package localdb
 
 import (
 	"context"
+	"regexp"
+	"strconv"
+	"time"
 
 	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/lib/controller/rpc"
@@ -51,6 +54,7 @@ func (s *CollectionSuite) TestSignatures(c *check.C) {
 	resp, err := s.localdb.CollectionGet(ctx, arvados.GetOptions{UUID: arvadostest.FooCollection})
 	c.Check(err, check.IsNil)
 	c.Check(resp.ManifestText, check.Matches, `(?ms).* acbd[^ ]*\+3\+A[0-9a-f]+@[0-9a-f]+ 0:.*`)
+	s.checkSignatureExpiry(c, resp.ManifestText, time.Hour*24*7*2)
 
 	resp, err = s.localdb.CollectionGet(ctx, arvados.GetOptions{UUID: arvadostest.FooCollection, Select: []string{"manifest_text"}})
 	c.Check(err, check.IsNil)
@@ -78,6 +82,28 @@ func (s *CollectionSuite) TestSignatures(c *check.C) {
 		c.Check(lresp.Items[0].UnsignedManifestText, check.Matches, `(?ms).* acbd[^ ]*\+3 0:.*`)
 	}
 
+	// early trash date causes lower signature TTL
+	trashed, err := s.localdb.CollectionCreate(ctx, arvados.CreateOptions{
+		Attrs: map[string]interface{}{
+			"manifest_text": ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo\n",
+			"trash_at":      time.Now().UTC().Add(time.Hour),
+		}})
+	c.Assert(err, check.IsNil)
+	resp, err = s.localdb.CollectionGet(ctx, arvados.GetOptions{UUID: trashed.UUID})
+	c.Assert(err, check.IsNil)
+	s.checkSignatureExpiry(c, resp.ManifestText, time.Hour)
+
+	// distant future trash date does not cause higher signature TTL
+	trashed, err = s.localdb.CollectionCreate(ctx, arvados.CreateOptions{
+		Attrs: map[string]interface{}{
+			"manifest_text": ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo\n",
+			"trash_at":      time.Now().UTC().Add(time.Hour * 24 * 365),
+		}})
+	c.Assert(err, check.IsNil)
+	resp, err = s.localdb.CollectionGet(ctx, arvados.GetOptions{UUID: trashed.UUID})
+	c.Assert(err, check.IsNil)
+	s.checkSignatureExpiry(c, resp.ManifestText, time.Hour*24*7*2)
+
 	// Make sure groups/contents doesn't return manifest_text with
 	// collections (if it did, we'd need to sign it).
 	gresp, err := s.localdb.GroupContents(ctx, arvados.GroupContentsOptions{
@@ -90,6 +116,16 @@ func (s *CollectionSuite) TestSignatures(c *check.C) {
 		c.Check(gresp.Items[0].(map[string]interface{})["uuid"], check.Equals, arvadostest.FooCollection)
 		c.Check(gresp.Items[0].(map[string]interface{})["manifest_text"], check.Equals, nil)
 	}
+}
+
+func (s *CollectionSuite) checkSignatureExpiry(c *check.C, manifestText string, expectedTTL time.Duration) {
+	m := regexp.MustCompile(`@([[:xdigit:]]+)`).FindStringSubmatch(manifestText)
+	c.Assert(m, check.HasLen, 2)
+	sigexp, err := strconv.ParseInt(m[1], 16, 64)
+	c.Assert(err, check.IsNil)
+	expectedExp := time.Now().Add(expectedTTL).Unix()
+	c.Check(sigexp > expectedExp-60, check.Equals, true)
+	c.Check(sigexp <= expectedExp, check.Equals, true)
 }
 
 func (s *CollectionSuite) TestSignaturesDisabled(c *check.C) {
