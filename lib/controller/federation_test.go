@@ -64,6 +64,7 @@ func (s *FederationSuite) SetUpTest(c *check.C) {
 	cluster.API.MaxItemsPerResponse = 1000
 	cluster.API.MaxRequestAmplification = 4
 	cluster.API.RequestTimeout = arvados.Duration(5 * time.Minute)
+	cluster.Collections.BlobSigning = true
 	cluster.Collections.BlobSigningKey = arvadostest.BlobSigningKey
 	cluster.Collections.BlobSigningTTL = arvados.Duration(time.Hour * 24 * 14)
 	arvadostest.SetServiceURL(&cluster.Services.RailsAPI, "http://localhost:1/")

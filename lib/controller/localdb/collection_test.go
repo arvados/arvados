@@ -91,3 +91,12 @@ func (s *CollectionSuite) TestSignatures(c *check.C) {
 		c.Check(gresp.Items[0].(map[string]interface{})["manifest_text"], check.Equals, nil)
 	}
 }
+
+func (s *CollectionSuite) TestSignaturesDisabled(c *check.C) {
+	s.localdb.cluster.Collections.BlobSigning = false
+	ctx := auth.NewContext(context.Background(), &auth.Credentials{Tokens: []string{arvadostest.ActiveTokenV2}})
+
+	resp, err := s.localdb.CollectionGet(ctx, arvados.GetOptions{UUID: arvadostest.FooCollection})
+	c.Check(err, check.IsNil)
+	c.Check(resp.ManifestText, check.Matches, `(?ms).* acbd[^ +]*\+3 0:.*`)
+}

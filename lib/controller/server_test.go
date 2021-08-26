@@ -40,6 +40,7 @@ func newServerFromIntegrationTestEnv(c *check.C) *httpserver.Server {
 		PostgreSQL: integrationTestCluster().PostgreSQL,
 	}}
 	handler.Cluster.TLS.Insecure = true
+	handler.Cluster.Collections.BlobSigning = true
 	handler.Cluster.Collections.BlobSigningKey = arvadostest.BlobSigningKey
 	handler.Cluster.Collections.BlobSigningTTL = arvados.Duration(time.Hour * 24 * 14)
 	arvadostest.SetServiceURL(&handler.Cluster.Services.RailsAPI, "https://"+os.Getenv("ARVADOS_TEST_API_HOST"))

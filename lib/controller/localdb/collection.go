@@ -49,7 +49,7 @@ func (conn *Conn) CollectionList(ctx context.Context, opts arvados.ListOptions) 
 }
 
 func (conn *Conn) signCollection(ctx context.Context, coll *arvados.Collection) {
-	if coll.IsTrashed || coll.ManifestText == "" {
+	if coll.IsTrashed || coll.ManifestText == "" || !conn.cluster.Collections.BlobSigning {
 		return
 	}
 	var token string
