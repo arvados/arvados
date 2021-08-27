@@ -131,7 +131,7 @@ WORKBENCH2_EXT_SSL_PORT=3001
 # package version (including the iteration, e.g. X.Y.Z-1) of the
 # release.
 RELEASE="production"
-VERSION="2.2.1-1"
+VERSION="2.2.2-1"
 
 # The arvados-formula version.  For a stable release, this should be a
 # branch name (e.g. X.Y-dev) or tag for the release.
