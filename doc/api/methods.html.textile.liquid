@@ -107,6 +107,16 @@ table(table table-bordered table-condensed).
 |@is_a@|string|Arvados object type|@["head_uuid","is_a","arvados#collection"]@|
 |@exists@|string|Test if a subproperty is present.|@["properties","exists","my_subproperty"]@|
 
+h4(#filterexpression). Filtering by comparing two attributes
+
+If @a@ and @b@ are attributes that have numeric values, they can be compared in a filter condition using the form @["(a < b)", "=", true]@. Supported operators are @=@, @<@, @<=@, @>@, and @>=@. Examples:
+* @["(replication_desired < replication_confirmed)", "=", true]@
+* @["(replication_desired = replication_confirmed)", "=", true]@
+
+Note that only a very specific subset of boolean expressions is supported. For example:
+* @["replication_desired < replication_confirmed", "=", true]@ is not accepted. Outer parentheses are mandatory.
+* @["(replication_desired < 1)", "=", true]@ is not accepted. Operands must be attribute names.
+
 h4(#substringsearchfilter). Filtering using substring search
 
 Resources can also be filtered by searching for a substring in attributes of type @string@, @array of strings@, @text@, and @hash@, which are indexed in the database specifically for search. To use substring search, the filter must:
