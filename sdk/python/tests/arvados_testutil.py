@@ -190,7 +190,13 @@ class MockStreamReader(object):
 
 class ApiClientMock(object):
     def api_client_mock(self):
-        return mock.MagicMock(name='api_client_mock')
+        api_mock = mock.MagicMock(name='api_client_mock')
+        api_mock.config.return_value = {
+            'StorageClasses': {
+                'default': {'Default': True}
+            }
+        }
+        return api_mock
 
     def mock_keep_services(self, api_mock=None, status=200, count=12,
                            service_type='disk',

@@ -842,6 +842,7 @@ class KeepClient(object):
         self.hits_counter = Counter()
         self.misses_counter = Counter()
         self._storage_classes_unsupported_warning = False
+        self._default_classes = []
 
         if local_store:
             self.local_store = local_store
@@ -882,6 +883,12 @@ class KeepClient(object):
                 self._writable_services = None
                 self.using_proxy = None
                 self._static_services_list = False
+                try:
+                    self._default_classes = [
+                        k for k, v in self.api_client.config()['StorageClasses'].items() if v['Default']]
+                except KeyError:
+                    # We're talking to an old cluster
+                    pass
 
     def current_timeout(self, attempt_number):
         """Return the appropriate timeout to use for this client.
@@ -1174,7 +1181,7 @@ class KeepClient(object):
                 "failed to read {} after {}".format(loc_s, loop.attempts_str()), service_errors, label="service")
 
     @retry.retry_method
-    def put(self, data, copies=2, num_retries=None, request_id=None, classes=[]):
+    def put(self, data, copies=2, num_retries=None, request_id=None, classes=None):
         """Save data in Keep.
 
         This method will get a list of Keep services from the API server, and
@@ -1194,6 +1201,8 @@ class KeepClient(object):
         * classes: An optional list of storage class names where copies should
           be written.
         """
+
+        classes = classes or self._default_classes
 
         if not isinstance(data, bytes):
             data = data.encode()

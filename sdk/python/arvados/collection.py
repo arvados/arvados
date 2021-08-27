@@ -1296,8 +1296,8 @@ class Collection(RichCollectionBase):
 
         :storage_classes_desired:
           A list of storage class names where to upload the data. If None,
-          the keepstores are expected to store the data into their default
-          storage class.
+          the keep client is expected to store the data into the cluster's
+          default storage class(es).
 
         """
 
