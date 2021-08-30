@@ -100,12 +100,16 @@ The following operators are available.
 
 table(table table-bordered table-condensed).
 |_. Operator|_. Operand type|_. Description|_. Example|
-|@=@, @!=@|string, number, timestamp, or null|Equality comparison|@["tail_uuid","=","xyzzy-j7d0g-fffffffffffffff"]@ @["tail_uuid","!=",null]@|
+|@=@, @!=@, @<>@|string, number, timestamp, JSON-encoded array, JSON-encoded object, or null|Equality comparison|@["tail_uuid","=","xyzzy-j7d0g-fffffffffffffff"]@
+@["tail_uuid","!=",null]@
+@["storage_classes_desired","=","[\"default\"]"]@|
 |@<@, @<=@, @>=@, @>@|string, number, or timestamp|Ordering comparison|@["script_version",">","123"]@|
 |@like@, @ilike@|string|SQL pattern match.  Single character match is @_@ and wildcard is @%@. The @ilike@ operator is case-insensitive|@["script_version","like","d00220fb%"]@|
 |@in@, @not in@|array of strings|Set membership|@["script_version","in",["main","d00220fb38d4b85ca8fc28a8151702a2b9d1dec5"]]@|
 |@is_a@|string|Arvados object type|@["head_uuid","is_a","arvados#collection"]@|
-|@exists@|string|Test if a subproperty is present.|@["properties","exists","my_subproperty"]@|
+|@exists@|string|Presence of subproperty|@["properties","exists","my_subproperty"]@|
+|@contains@|string, array of strings|Presence of one or more keys or array elements|@["storage_classes_desired", "contains", ["foo", "bar"]]@ (matches both @["foo", "bar"]@ and @["foo", "bar", "baz"]@)
+(note @[..., "contains", "foo"]@ is also accepted, and is equivalent to @[..., "contains", ["foo"]]@)|
 
 h4(#substringsearchfilter). Filtering using substring search
 
@@ -128,7 +132,7 @@ table(table table-bordered table-condensed).
 |@like@, @ilike@|string|SQL pattern match, single character match is @_@ and wildcard is @%@, ilike is case-insensitive|@["properties.my_subproperty", "like", "d00220fb%"]@|
 |@in@, @not in@|array of strings|Set membership|@["properties.my_subproperty", "in", ["fizz", "buzz"]]@|
 |@exists@|boolean|Test if a subproperty is present or not (determined by operand).|@["properties.my_subproperty", "exists", true]@|
-|@contains@|string, number|Filter where subproperty has a value either by exact match or value is element of subproperty list.|@["foo", "contains", "bar"]@ will find both @{"foo": "bar"}@ and @{"foo": ["bar", "baz"]}@.|
+|@contains@|string, number|Filter where subproperty has a value either by exact match or value is element of subproperty list.|@["properties.foo", "contains", "bar"]@ will find both @{"foo": "bar"}@ and @{"foo": ["bar", "baz"]}@.|
 
 Note that exclusion filters @!=@ and @not in@ will return records for which the property is not defined at all.  To restrict filtering to records on which the subproperty is defined, combine with an @exists@ filter.
 

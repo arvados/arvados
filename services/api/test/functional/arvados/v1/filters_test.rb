@@ -247,4 +247,51 @@ class Arvados::V1::FiltersTest < ActionController::TestCase
     assert_includes(found, collections(:replication_desired_2_unconfirmed).uuid)
     assert_includes(found, collections(:replication_desired_2_confirmed_2).uuid)
   end
+
+  [
+    [1, "foo"],
+    [1, ["foo"]],
+    [1, ["bar"]],
+    [1, ["bar", "foo"]],
+    [0, ["foo", "qux"]],
+    [0, ["qux"]],
+    [nil, []],
+    [nil, [[]]],
+    [nil, [["bogus"]]],
+    [nil, [{"foo" => "bar"}]],
+    [nil, {"foo" => "bar"}],
+  ].each do |results, operand|
+    test "storage_classes_desired contains #{operand.inspect}" do
+      @controller = Arvados::V1::CollectionsController.new
+      authorize_with(:active)
+      c = Collection.create!(
+        manifest_text: "",
+        storage_classes_desired: ["foo", "bar", "baz"])
+      get :index, params: {
+            filters: [["storage_classes_desired", "contains", operand]],
+          }
+      if results.nil?
+        assert_response 422
+        next
+      end
+      assert_response :success
+      assert_equal results, json_response["items"].length
+      if results > 0
+        assert_equal c.uuid, json_response["items"][0]["uuid"]
+      end
+    end
+  end
+
+  test "collections properties contains top level key" do
+    @controller = Arvados::V1::CollectionsController.new
+    authorize_with(:active)
+    get :index, params: {
+          filters: [["properties", "contains", "prop1"]],
+        }
+    assert_response :success
+    assert_not_empty json_response["items"]
+    json_response["items"].each do |c|
+      assert c["properties"].has_key?("prop1")
+    end
+  end
 end

@@ -1455,4 +1455,18 @@ EOS
     assert_response :success
     assert_equal col.version, json_response['version'], 'Trashing a collection should not create a new version'
   end
+
+  ["storage_classes_desired", "storage_classes_confirmed"].each do |attr|
+    test "filter collections by #{attr}" do
+      authorize_with(:active)
+      get :index, params: {
+            filters: [[attr, "=", '["default"]']]
+          }
+      assert_response :success
+      assert_not_equal 0, json_response["items"].length
+      json_response["items"].each do |c|
+        assert_equal ["default"], c[attr]
+      end
+    end
+  end
 end
