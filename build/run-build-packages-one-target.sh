@@ -110,7 +110,7 @@ while [ $# -gt 0 ]; do
                 echo >&2 "FATAL: --build-version '$2' is invalid, must match pattern ^[0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+|)(~rc[0-9]+|~dev[0-9]+|)-[0-9]+$"
                 exit 1
             else
-		[[ "$2" =~ (.*)-(.*) ]]
+                [[ "$2" =~ (.*)-(.*) ]]
                 ARVADOS_BUILDING_VERSION="${BASH_REMATCH[1]}"
                 ARVADOS_BUILDING_ITERATION="${BASH_REMATCH[2]}"
             fi
