@@ -164,13 +164,16 @@ WORKBENCH2_EXT_SSL_PORT=3001
 # For a stable release, change RELEASE "production" and VERSION to the
 # package version (including the iteration, e.g. X.Y.Z-1) of the
 # release.
+# The "local.params.example.*" files already set "RELEASE=production"
+# to deploy  production-ready packages
 RELEASE="production"
 VERSION="2.2.2-1"
 
 # These are arvados-formula-related parameters
 # An arvados-formula tag. For a stable release, this should be a
 # branch name (e.g. X.Y-dev) or tag for the release.
-ARVADOS_TAG="2.2-dev"
+# ARVADOS_TAG="2.2.0"
+BRANCH="2.2-dev"
 
 # Other formula versions we depend on
 POSTGRES_TAG="v0.41.6"
@@ -277,17 +280,24 @@ mkdir -p ${S_DIR} ${F_DIR} ${P_DIR} ${T_DIR}
 
 # Get the formula and dependencies
 cd ${F_DIR} || exit 1
-
 echo "Cloning formulas"
 rm -rf ${F_DIR}/* || exit 1
+git clone --quiet https://github.com/saltstack-formulas/docker-formula.git ${F_DIR}/docker
+( cd docker && git checkout --quiet tags/"${DOCKER_TAG}" -b "${DOCKER_TAG}" )
 
-git clone --branch "${ARVADOS_TAG}"     https://git.arvados.org/arvados-formula.git
-git clone --branch "${DOCKER_TAG}"      https://github.com/saltstack-formulas/docker-formula.git
-git clone --branch "${LOCALE_TAG}"      https://github.com/saltstack-formulas/locale-formula.git
-# git clone --branch "${NGINX_TAG}"       https://github.com/saltstack-formulas/nginx-formula.git
-git clone --branch "${NGINX_TAG}"       https://github.com/netmanagers/nginx-formula.git
-git clone --branch "${POSTGRES_TAG}"    https://github.com/saltstack-formulas/postgres-formula.git
-git clone --branch "${LETSENCRYPT_TAG}" https://github.com/saltstack-formulas/letsencrypt-formula.git
+git clone --quiet https://github.com/saltstack-formulas/locale-formula.git ${F_DIR}/locale
+( cd locale && git checkout --quiet tags/"${LOCALE_TAG}" -b "${LOCALE_TAG}" )
+
+git clone --quiet https://github.com/netmanagers/nginx-formula.git ${F_DIR}/nginx
+( cd nginx && git checkout --quiet tags/"${NGINX_TAG}" -b "${NGINX_TAG}" )
+
+git clone --quiet https://github.com/saltstack-formulas/postgres-formula.git ${F_DIR}/postgres
+( cd postgres && git checkout --quiet tags/"${POSTGRES_TAG}" -b "${POSTGRES_TAG}" )
+
+git clone --quiet https://github.com/saltstack-formulas/letsencrypt-formula.git ${F_DIR}/letsencrypt
+( cd letsencrypt && git checkout --quiet tags/"${LETSENCRYPT_TAG}" -b "${LETSENCRYPT_TAG}" )
+
+git clone --quiet https://git.arvados.org/arvados-formula.git ${F_DIR}/arvados
 
 # If we want to try a specific branch of the formula
 if [ "x${BRANCH}" != "x" ]; then
