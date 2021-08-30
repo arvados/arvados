@@ -107,15 +107,19 @@ table(table table-bordered table-condensed).
 |@is_a@|string|Arvados object type|@["head_uuid","is_a","arvados#collection"]@|
 |@exists@|string|Test if a subproperty is present.|@["properties","exists","my_subproperty"]@|
 
-h4(#filterexpression). Filtering by comparing two attributes
+h4(#filterexpression). Filtering using boolean expressions
 
-If @a@ and @b@ are attributes that have numeric values, they can be compared in a filter condition using the form @["(a < b)", "=", true]@. Supported operators are @=@, @<@, @<=@, @>@, and @>=@. Examples:
+In place of an attribute, the first element of the three-element filter array can be a boolean expression. The following restrictions apply:
+* The expression must contain exactly one operator.
+* The operator must be @=@, @<@, @<=@, @>@, or @>=@.
+* There must be exactly one pair of parentheses, surrounding the entire expression.
+* Each operand must be the name of a numeric attribute like @replication_desired@ (literal values like @3@ and non-numeric attributes like @uuid@ are not accepted).
+* The expression must not contain whitespace other than an ASCII space (newline and tab characters are not accepted).
+* The second and third elements of the filter array must be @"="@ and @true@ respectively.
+
+Examples:
 * @["(replication_desired < replication_confirmed)", "=", true]@
 * @["(replication_desired = replication_confirmed)", "=", true]@
-
-Note that only a very specific subset of boolean expressions is supported. For example:
-* @["replication_desired < replication_confirmed", "=", true]@ is not accepted. Outer parentheses are mandatory.
-* @["(replication_desired < 1)", "=", true]@ is not accepted. Operands must be attribute names.
 
 h4(#substringsearchfilter). Filtering using substring search
 
