@@ -252,6 +252,78 @@ func (s *StandaloneSuite) TestUploadWithStorageClasses(c *C) {
 	}
 }
 
+func (s *StandaloneSuite) TestPutWithoutStorageClassesClusterSupport(c *C) {
+	nServers := 5
+	for _, trial := range []struct {
+		replicas      int
+		clientClasses []string
+		putClasses    []string
+		minRequests   int
+		maxRequests   int
+		success       bool
+	}{
+		// Talking to an older cluster (no default storage classes exported
+		// config) and no other additional storage classes requirements.
+		{1, nil, nil, 1, 1, true},
+		{2, nil, nil, 2, 2, true},
+		{3, nil, nil, 3, 3, true},
+		{nServers*2 + 1, nil, nil, nServers, nServers, false},
+
+		{1, []string{"class1"}, nil, 1, 1, true},
+		{2, []string{"class1"}, nil, 2, 2, true},
+		{3, []string{"class1"}, nil, 3, 3, true},
+		{1, []string{"class1", "class2"}, nil, 1, 1, true},
+		{nServers*2 + 1, []string{"class1"}, nil, nServers, nServers, false},
+
+		{1, nil, []string{"class1"}, 1, 1, true},
+		{2, nil, []string{"class1"}, 2, 2, true},
+		{3, nil, []string{"class1"}, 3, 3, true},
+		{1, nil, []string{"class1", "class2"}, 1, 1, true},
+		{nServers*2 + 1, nil, []string{"class1"}, nServers, nServers, false},
+	} {
+		c.Logf("%+v", trial)
+		st := &StubPutHandler{
+			c:                    c,
+			expectPath:           "acbd18db4cc2f85cedef654fccc4a4d8",
+			expectAPIToken:       "abc123",
+			expectBody:           "foo",
+			expectStorageClass:   "*",
+			returnStorageClasses: "", // Simulate old cluster without SC keep support
+			handled:              make(chan string, 100),
+		}
+		ks := RunSomeFakeKeepServers(st, nServers)
+		arv, _ := arvadosclient.MakeArvadosClient()
+		kc, _ := MakeKeepClient(arv)
+		kc.Want_replicas = trial.replicas
+		kc.StorageClasses = trial.clientClasses
+		kc.DefaultStorageClasses = nil // Simulate an old cluster without SC defaults
+		arv.ApiToken = "abc123"
+		localRoots := make(map[string]string)
+		writableLocalRoots := make(map[string]string)
+		for i, k := range ks {
+			localRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
+			writableLocalRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
+			defer k.listener.Close()
+		}
+		kc.SetServiceRoots(localRoots, writableLocalRoots, nil)
+
+		_, err := kc.BlockWrite(context.Background(), arvados.BlockWriteOptions{
+			Data:           []byte("foo"),
+			StorageClasses: trial.putClasses,
+		})
+		if trial.success {
+			c.Check(err, IsNil)
+		} else {
+			c.Check(err, NotNil)
+		}
+		c.Check(len(st.handled) >= trial.minRequests, Equals, true, Commentf("len(st.handled)==%d, trial.minRequests==%d", len(st.handled), trial.minRequests))
+		c.Check(len(st.handled) <= trial.maxRequests, Equals, true, Commentf("len(st.handled)==%d, trial.maxRequests==%d", len(st.handled), trial.maxRequests))
+		if trial.clientClasses == nil && trial.putClasses == nil {
+			c.Check(st.requests[0].Header.Get("X-Keep-Storage-Classes"), Equals, "")
+		}
+	}
+}
+
 func (s *StandaloneSuite) TestPutWithStorageClasses(c *C) {
 	nServers := 5
 	for _, trial := range []struct {
@@ -281,20 +353,6 @@ func (s *StandaloneSuite) TestPutWithStorageClasses(c *C) {
 		{1, []string{"class1"}, []string{"class404"}, nil, nServers, nServers, false},
 		{1, []string{"class1"}, []string{"class1", "class404"}, nil, nServers, nServers, false},
 		{1, []string{"class1"}, nil, []string{"class1", "class404"}, nServers, nServers, false},
-
-		// Talking to an older cluster (with no default storage classes advertising)
-		{1, nil, []string{"class1"}, nil, 1, 1, true},
-		{2, nil, []string{"class1"}, nil, 1, 2, true},
-		{3, nil, []string{"class1"}, nil, 2, 3, true},
-		{1, nil, []string{"class1", "class2"}, nil, 1, 1, true},
-		{3, nil, nil, []string{"class1"}, 2, 3, true},
-		{1, nil, nil, []string{"class1", "class2"}, 1, 1, true},
-		{1, nil, []string{"class404"}, []string{"class1", "class2"}, 1, 1, true},
-		{1, nil, []string{"class1"}, []string{"class404", "class2"}, nServers, nServers, false},
-		{nServers*2 + 1, []string{}, []string{"class1"}, nil, nServers, nServers, false},
-		{1, nil, []string{"class404"}, nil, nServers, nServers, false},
-		{1, nil, []string{"class1", "class404"}, nil, nServers, nServers, false},
-		{1, nil, nil, []string{"class1", "class404"}, nServers, nServers, false},
 	} {
 		c.Logf("%+v", trial)
 		st := &StubPutHandler{
