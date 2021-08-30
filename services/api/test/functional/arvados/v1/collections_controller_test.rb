@@ -32,8 +32,7 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
     end
   end
 
-  def assert_unsigned_manifest resp, label=''
-    txt = resp['unsigned_manifest_text']
+  def assert_unsigned_manifest txt, label=''
     assert_not_nil(txt, "#{label} unsigned_manifest_text was nil")
     locs = 0
     txt.scan(/ [[:xdigit:]]{32}\S*/) do |tok|
@@ -66,24 +65,16 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
            "past version not included on index")
   end
 
-  test "collections.get returns signed locators, and no unsigned_manifest_text" do
+  test "collections.get returns unsigned locators, and no unsigned_manifest_text" do
     permit_unsigned_manifests
     authorize_with :active
     get :show, params: {id: collections(:foo_file).uuid}
     assert_response :success
-    assert_signed_manifest json_response['manifest_text'], 'foo_file'
+    assert_unsigned_manifest json_response["manifest_text"], 'foo_file'
     refute_includes json_response, 'unsigned_manifest_text'
   end
 
   ['v1token', 'v2token'].each do |token_method|
-    test "correct signatures are given for #{token_method}" do
-      token = api_client_authorizations(:active).send(token_method)
-      authorize_with_token token
-      get :show, params: {id: collections(:foo_file).uuid}
-      assert_response :success
-      assert_signed_manifest json_response['manifest_text'], 'foo_file', token: token
-    end
-
     test "signatures with #{token_method} are accepted" do
       token = api_client_authorizations(:active).send(token_method)
       signed = Blob.sign_locator(
@@ -98,11 +89,11 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
             },
           }
       assert_response :success
-      assert_signed_manifest json_response['manifest_text'], 'updated', token: token
+      assert_unsigned_manifest json_response['manifest_text'], 'updated'
     end
   end
 
-  test "index with manifest_text selected returns signed locators" do
+  test "index with manifest_text selected returns unsigned locators" do
     columns = %w(uuid owner_uuid manifest_text)
     authorize_with :active
     get :index, params: {select: columns}
@@ -112,7 +103,7 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
     json_response["items"].each do |coll|
       assert_equal(coll.keys - ['kind'], columns,
                    "Collections index did not respect selected columns")
-      assert_signed_manifest coll['manifest_text'], coll['uuid']
+      assert_unsigned_manifest coll['manifest_text'], coll['uuid']
     end
   end
 
@@ -125,7 +116,8 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
     json_response["items"].each do |coll|
       assert_equal(coll.keys - ['kind'], ['unsigned_manifest_text'],
                    "Collections index did not respect selected columns")
-      locs += assert_unsigned_manifest coll, coll['uuid']
+      assert_nil coll['manifest_text']
+      locs += assert_unsigned_manifest coll['unsigned_manifest_text'], coll['uuid']
     end
     assert_operator locs, :>, 0, "no locators found in any manifests"
   end
@@ -338,7 +330,7 @@ EOS
       assert_not_nil assigns(:object)
       resp = assigns(:object)
       assert_equal foo_collection[:portable_data_hash], resp[:portable_data_hash]
-      assert_signed_manifest resp[:manifest_text]
+      assert_unsigned_manifest resp[:manifest_text]
 
       # The manifest in the response will have had permission hints added.
       # Remove any permission hints in the response before comparing it to the source.
@@ -388,7 +380,7 @@ EOS
       authorize_with :active
       manifest_text = ". acbd18db4cc2f85cedef654fccc4a4d8+3 0:0:foo.txt\n"
       if !unsigned
-        manifest_text = Collection.sign_manifest manifest_text, api_token(:active)
+        manifest_text = Collection.sign_manifest_only_for_tests manifest_text, api_token(:active)
       end
       post :create, params: {
         collection: {
@@ -594,10 +586,10 @@ EOS
       assert_not_nil assigns(:object)
       resp = JSON.parse(@response.body)
       assert_equal manifest_uuid, resp['portable_data_hash']
-      # All of the locators in the output must be signed.
+      # All of the signatures in the output must be valid.
       resp['manifest_text'].lines.each do |entry|
         m = /([[:xdigit:]]{32}\+\S+)/.match(entry)
-        if m
+        if m && m[0].index('+A')
           assert Blob.verify_signature m[0], signing_opts
         end
       end
@@ -641,10 +633,10 @@ EOS
     assert_not_nil assigns(:object)
     resp = JSON.parse(@response.body)
     assert_equal manifest_uuid, resp['portable_data_hash']
-    # All of the locators in the output must be signed.
+    # All of the signatures in the output must be valid.
     resp['manifest_text'].lines.each do |entry|
       m = /([[:xdigit:]]{32}\+\S+)/.match(entry)
-      if m
+      if m && m[0].index('+A')
         assert Blob.verify_signature m[0], signing_opts
       end
     end
@@ -744,50 +736,6 @@ EOS
     # Remove any permission hints in the response before comparing it to the source.
     stripped_manifest = resp['manifest_text'].gsub(/\+A[A-Za-z0-9@_-]+/, '')
     assert_equal manifest_text, stripped_manifest
-  end
-
-  test "multiple signed locators per line" do
-    permit_unsigned_manifests
-    authorize_with :active
-    locators = %w(
-      d41d8cd98f00b204e9800998ecf8427e+0
-      acbd18db4cc2f85cedef654fccc4a4d8+3
-      ea10d51bcf88862dbcc36eb292017dfd+45)
-
-    signing_opts = {
-      key: Rails.configuration.Collections.BlobSigningKey,
-      api_token: api_token(:active),
-    }
-
-    unsigned_manifest = [".", *locators, "0:0:foo.txt\n"].join(" ")
-    manifest_uuid = Digest::MD5.hexdigest(unsigned_manifest) +
-      '+' +
-      unsigned_manifest.length.to_s
-
-    signed_locators = locators.map { |loc| Blob.sign_locator loc, signing_opts }
-    signed_manifest = [".", *signed_locators, "0:0:foo.txt\n"].join(" ")
-
-    post :create, params: {
-      collection: {
-        manifest_text: signed_manifest,
-        portable_data_hash: manifest_uuid,
-      }
-    }
-    assert_response :success
-    assert_not_nil assigns(:object)
-    resp = JSON.parse(@response.body)
-    assert_equal manifest_uuid, resp['portable_data_hash']
-    # All of the locators in the output must be signed.
-    # Each line is of the form "path locator locator ... 0:0:file.txt"
-    # entry.split[1..-2] will yield just the tokens in the middle of the line
-    returned_locator_count = 0
-    resp['manifest_text'].lines.each do |entry|
-      entry.split[1..-2].each do |tok|
-        returned_locator_count += 1
-        assert Blob.verify_signature tok, signing_opts
-      end
-    end
-    assert_equal locators.count, returned_locator_count
   end
 
   test 'Reject manifest with unsigned blob' do
@@ -1499,4 +1447,19 @@ EOS
         }
     assert_response 422
   end
+
+  ["storage_classes_desired", "storage_classes_confirmed"].each do |attr|
+    test "filter collections by #{attr}" do
+      authorize_with(:active)
+      get :index, params: {
+            filters: [[attr, "=", '["default"]']]
+          }
+      assert_response :success
+      assert_not_equal 0, json_response["items"].length
+      json_response["items"].each do |c|
+        assert_equal ["default"], c[attr]
+      end
+    end
+  end
+>>>>>>> main
 end

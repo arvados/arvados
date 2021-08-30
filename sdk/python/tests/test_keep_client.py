@@ -540,26 +540,49 @@ class KeepStorageClassesTestCase(unittest.TestCase, tutil.ApiClientMock):
         self.data = b'xyzzy'
         self.locator = '1271ed5ef305aadabc605b1609e24c52'
 
+    def test_multiple_default_storage_classes_req_header(self):
+        api_mock = self.api_client_mock()
+        api_mock.config.return_value = {
+            'StorageClasses': {
+                'foo': { 'Default': True },
+                'bar': { 'Default': True },
+                'baz': { 'Default': False }
+            }
+        }
+        api_client = self.mock_keep_services(api_mock=api_mock, count=2)
+        keep_client = arvados.KeepClient(api_client=api_client)
+        resp_hdr = {
+            'x-keep-storage-classes-confirmed': 'foo=1, bar=1',
+            'x-keep-replicas-stored': 1
+        }
+        with tutil.mock_keep_responses(self.locator, 200, **resp_hdr) as mock:
+            keep_client.put(self.data, copies=1)
+            req_hdr = mock.responses[0]
+            self.assertIn(
+                'X-Keep-Storage-Classes: bar, foo', req_hdr.getopt(pycurl.HTTPHEADER))
+
     def test_storage_classes_req_header(self):
+        self.assertEqual(
+            self.api_client.config()['StorageClasses'],
+            {'default': {'Default': True}})
         cases = [
             # requested, expected
             [['foo'], 'X-Keep-Storage-Classes: foo'],
             [['bar', 'foo'], 'X-Keep-Storage-Classes: bar, foo'],
-            [[], None],
+            [[], 'X-Keep-Storage-Classes: default'],
+            [None, 'X-Keep-Storage-Classes: default'],
         ]
         for req_classes, expected_header in cases:
             headers = {'x-keep-replicas-stored': 1}
-            if len(req_classes) > 0:
+            if req_classes is None or len(req_classes) == 0:
+                confirmed_hdr = 'default=1'
+            elif len(req_classes) > 0:
                 confirmed_hdr = ', '.join(["{}=1".format(cls) for cls in req_classes])
-                headers.update({'x-keep-storage-classes-confirmed': confirmed_hdr})
+            headers.update({'x-keep-storage-classes-confirmed': confirmed_hdr})
             with tutil.mock_keep_responses(self.locator, 200, **headers) as mock:
                 self.keep_client.put(self.data, copies=1, classes=req_classes)
-                resp = mock.responses[0]
-                if expected_header is not None:
-                    self.assertIn(expected_header, resp.getopt(pycurl.HTTPHEADER))
-                else:
-                    for hdr in resp.getopt(pycurl.HTTPHEADER):
-                        self.assertNotRegex(hdr, r'^X-Keep-Storage-Classes.*')
+                req_hdr = mock.responses[0]
+                self.assertIn(expected_header, req_hdr.getopt(pycurl.HTTPHEADER))
 
     def test_partial_storage_classes_put(self):
         headers = {
@@ -1368,6 +1391,8 @@ class KeepClientAPIErrorTest(unittest.TestCase):
                     return "abc"
                 elif r == "insecure":
                     return False
+                elif r == "config":
+                    return lambda: {}
                 else:
                     raise arvados.errors.KeepReadError()
         keep_client = arvados.KeepClient(api_client=ApiMock(),

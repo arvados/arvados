@@ -47,9 +47,10 @@ module RecordFilters
         raise ArgumentError.new("Invalid operator '#{operator}' (#{operator.class}) in filter")
       end
 
+      operator = operator.downcase
       cond_out = []
 
-      if attrs_in == 'any' && (operator.casecmp('ilike').zero? || operator.casecmp('like').zero?) && (operand.is_a? String) && operand.match('^[%].*[%]$')
+      if attrs_in == 'any' && (operator == 'ilike' || operator == 'like') && (operand.is_a? String) && operand.match('^[%].*[%]$')
         # Trigram index search
         cond_out << model_class.full_text_trgm + " #{operator} ?"
         param_out << operand
@@ -85,9 +86,9 @@ module RecordFilters
           end
 
           # jsonb search
-          case operator.downcase
+          case operator
           when '=', '!='
-            not_in = if operator.downcase == "!=" then "NOT " else "" end
+            not_in = if operator == "!=" then "NOT " else "" end
             cond_out << "#{not_in}(#{attr_table_name}.#{attr} @> ?::jsonb)"
             param_out << SafeJSON.dump({proppath => operand})
           when 'in'
@@ -134,7 +135,7 @@ module RecordFilters
           else
             raise ArgumentError.new("Invalid operator for subproperty search '#{operator}'")
           end
-        elsif operator.downcase == "exists"
+        elsif operator == "exists"
           if col.type != :jsonb
             raise ArgumentError.new("Invalid attribute '#{attr}' for operator '#{operator}' in filter")
           end
@@ -159,11 +160,12 @@ module RecordFilters
           end
           cond_out << "#{attr1} #{operator} #{attr2}"
         else
-          if !attr_model_class.searchable_columns(operator).index attr
+          if !attr_model_class.searchable_columns(operator).index(attr) &&
+             !(col.andand.type == :jsonb && ['contains', '=', '<>', '!='].index(operator))
             raise ArgumentError.new("Invalid attribute '#{attr}' in filter")
           end
 
-          case operator.downcase
+          case operator
           when '=', '<', '<=', '>', '>=', '!=', 'like', 'ilike'
             attr_type = attr_model_class.attribute_column(attr).type
             operator = '<>' if operator == '!='
@@ -244,6 +246,26 @@ module RecordFilters
               end
             end
             cond_out << cond.join(' OR ')
+          when 'contains'
+            if col.andand.type != :jsonb
+              raise ArgumentError.new("Invalid attribute '#{attr}' for '#{operator}' operator")
+            end
+            if operand == []
+              raise ArgumentError.new("Invalid operand '#{operand.inspect}' for '#{operator}' operator")
+            end
+            operand = [operand] unless operand.is_a? Array
+            operand.each do |op|
+              if !op.is_a?(String)
+                raise ArgumentError.new("Invalid element #{operand.inspect} in operand for #{operator.inspect} operator (operand must be a string or array of strings)")
+              end
+            end
+            # We use jsonb_exists_all(a,b) instead of "a ?& b" because
+            # the pg gem thinks "?" is a bind var. And we use string
+            # interpolation instead of param_out because the pg gem
+            # flattens param_out / doesn't support passing arrays as
+            # bind vars.
+            q = operand.map { |s| ActiveRecord::Base.connection.quote(s) }.join(',')
+            cond_out << "jsonb_exists_all(#{attr_table_name}.#{attr}, array[#{q}])"
           else
             raise ArgumentError.new("Invalid operator '#{operator}'")
           end

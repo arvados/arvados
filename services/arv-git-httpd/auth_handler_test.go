@@ -26,14 +26,6 @@ type AuthHandlerSuite struct {
 	cluster *arvados.Cluster
 }
 
-func (s *AuthHandlerSuite) SetUpSuite(c *check.C) {
-	arvadostest.StartAPI()
-}
-
-func (s *AuthHandlerSuite) TearDownSuite(c *check.C) {
-	arvadostest.StopAPI()
-}
-
 func (s *AuthHandlerSuite) SetUpTest(c *check.C) {
 	arvadostest.ResetEnv()
 	repoRoot, err := filepath.Abs("../api/tmp/git/test")
