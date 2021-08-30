@@ -42,7 +42,8 @@ type IntegrationSuite struct {
 }
 
 func (s *IntegrationSuite) SetUpTest(c *C) {
-	arvadostest.StartAPI()
+	arvadostest.ResetEnv()
+	arvadostest.ResetDB(c)
 	os.Setenv("ARVADOS_API_TOKEN", arvadostest.Dispatch1Token)
 	s.disp = Dispatcher{}
 	s.disp.cluster = &arvados.Cluster{}
@@ -52,7 +53,7 @@ func (s *IntegrationSuite) SetUpTest(c *C) {
 
 func (s *IntegrationSuite) TearDownTest(c *C) {
 	arvadostest.ResetEnv()
-	arvadostest.StopAPI()
+	arvadostest.ResetDB(c)
 }
 
 type slurmFake struct {

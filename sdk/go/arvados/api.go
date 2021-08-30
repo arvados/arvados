@@ -133,6 +133,7 @@ type CreateOptions struct {
 type UpdateOptions struct {
 	UUID             string                 `json:"uuid"`
 	Attrs            map[string]interface{} `json:"attrs"`
+	Select           []string               `json:"select"`
 	BypassFederation bool                   `json:"bypass_federation"`
 }
 

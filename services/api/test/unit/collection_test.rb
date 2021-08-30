@@ -856,7 +856,7 @@ class CollectionTest < ActiveSupport::TestCase
   test "clear replication_confirmed* when introducing a new block in manifest" do
     c = collections(:replication_desired_2_confirmed_2)
     act_as_user users(:active) do
-      assert c.update_attributes(manifest_text: collections(:user_agreement).signed_manifest_text)
+      assert c.update_attributes(manifest_text: collections(:user_agreement).signed_manifest_text_only_for_tests)
       assert_nil c.replication_confirmed
       assert_nil c.replication_confirmed_at
     end
@@ -865,7 +865,7 @@ class CollectionTest < ActiveSupport::TestCase
   test "don't clear replication_confirmed* when just renaming a file" do
     c = collections(:replication_desired_2_confirmed_2)
     act_as_user users(:active) do
-      new_manifest = c.signed_manifest_text.sub(':bar', ':foo')
+      new_manifest = c.signed_manifest_text_only_for_tests.sub(':bar', ':foo')
       assert c.update_attributes(manifest_text: new_manifest)
       assert_equal 2, c.replication_confirmed
       assert_not_nil c.replication_confirmed_at
@@ -875,13 +875,13 @@ class CollectionTest < ActiveSupport::TestCase
   test "don't clear replication_confirmed* when just deleting a data block" do
     c = collections(:replication_desired_2_confirmed_2)
     act_as_user users(:active) do
-      new_manifest = c.signed_manifest_text
+      new_manifest = c.signed_manifest_text_only_for_tests
       new_manifest.sub!(/ \S+:bar/, '')
       new_manifest.sub!(/ acbd\S+/, '')
 
       # Confirm that we did just remove a block from the manifest (if
       # not, this test would pass without testing the relevant case):
-      assert_operator new_manifest.length+40, :<, c.signed_manifest_text.length
+      assert_operator new_manifest.length+40, :<, c.signed_manifest_text_only_for_tests.length
 
       assert c.update_attributes(manifest_text: new_manifest)
       assert_equal 2, c.replication_confirmed
@@ -895,7 +895,7 @@ class CollectionTest < ActiveSupport::TestCase
       c = Collection.create!(manifest_text: ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:x\n", name: 'foo')
       c.update_attributes! trash_at: (t0 + 1.hours)
       c.reload
-      sig_exp = /\+A[0-9a-f]{40}\@([0-9]+)/.match(c.signed_manifest_text)[1].to_i
+      sig_exp = /\+A[0-9a-f]{40}\@([0-9]+)/.match(c.signed_manifest_text_only_for_tests)[1].to_i
       assert_operator sig_exp.to_i, :<=, (t0 + 1.hours).to_i
     end
   end
@@ -905,7 +905,7 @@ class CollectionTest < ActiveSupport::TestCase
       c = Collection.create!(manifest_text: ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:x\n",
                              name: 'foo',
                              trash_at: db_current_time + 1.years)
-      sig_exp = /\+A[0-9a-f]{40}\@([0-9]+)/.match(c.signed_manifest_text)[1].to_i
+      sig_exp = /\+A[0-9a-f]{40}\@([0-9]+)/.match(c.signed_manifest_text_only_for_tests)[1].to_i
       expect_max_sig_exp = db_current_time.to_i + Rails.configuration.Collections.BlobSigningTTL.to_i
       assert_operator c.trash_at.to_i, :>, expect_max_sig_exp
       assert_operator sig_exp.to_i, :<=, expect_max_sig_exp

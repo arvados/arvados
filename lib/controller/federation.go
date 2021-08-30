@@ -94,20 +94,12 @@ func (h *Handler) setupProxyRemoteCluster(next http.Handler) http.Handler {
 
 	wfHandler := &genericFederatedRequestHandler{next, h, wfRe, nil}
 	containersHandler := &genericFederatedRequestHandler{next, h, containersRe, nil}
-	containerRequestsHandler := &genericFederatedRequestHandler{next, h, containerRequestsRe,
-		[]federatedRequestDelegate{remoteContainerRequestCreate}}
-	collectionsRequestsHandler := &genericFederatedRequestHandler{next, h, collectionsRe,
-		[]federatedRequestDelegate{fetchRemoteCollectionByUUID, fetchRemoteCollectionByPDH}}
 	linksRequestsHandler := &genericFederatedRequestHandler{next, h, linksRe, nil}
 
 	mux.Handle("/arvados/v1/workflows", wfHandler)
 	mux.Handle("/arvados/v1/workflows/", wfHandler)
 	mux.Handle("/arvados/v1/containers", containersHandler)
 	mux.Handle("/arvados/v1/containers/", containersHandler)
-	mux.Handle("/arvados/v1/container_requests", containerRequestsHandler)
-	mux.Handle("/arvados/v1/container_requests/", containerRequestsHandler)
-	mux.Handle("/arvados/v1/collections", collectionsRequestsHandler)
-	mux.Handle("/arvados/v1/collections/", collectionsRequestsHandler)
 	mux.Handle("/arvados/v1/links", linksRequestsHandler)
 	mux.Handle("/arvados/v1/links/", linksRequestsHandler)
 	mux.Handle("/", next)

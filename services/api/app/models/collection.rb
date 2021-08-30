@@ -44,8 +44,8 @@ class Collection < ArvadosModel
     t.add :description
     t.add :properties
     t.add :portable_data_hash
-    t.add :signed_manifest_text, as: :manifest_text
     t.add :manifest_text, as: :unsigned_manifest_text
+    t.add :manifest_text, as: :manifest_text
     t.add :replication_desired
     t.add :replication_confirmed
     t.add :replication_confirmed_at
@@ -71,15 +71,11 @@ class Collection < ArvadosModel
 
   def self.attributes_required_columns
     super.merge(
-                # If we don't list manifest_text explicitly, the
-                # params[:select] code gets confused by the way we
-                # expose signed_manifest_text as manifest_text in the
-                # API response, and never let clients select the
-                # manifest_text column.
-                #
-                # We need trash_at and is_trashed to determine the
-                # correct timestamp in signed_manifest_text.
-                'manifest_text' => ['manifest_text', 'trash_at', 'is_trashed'],
+                # If we don't list unsigned_manifest_text explicitly,
+                # the params[:select] code gets confused by the way we
+                # expose manifest_text as unsigned_manifest_text in
+                # the API response, and never let clients select the
+                # unsigned_manifest_text column.
                 'unsigned_manifest_text' => ['manifest_text'],
                 'name' => ['name'],
                 )
@@ -406,7 +402,7 @@ class Collection < ArvadosModel
     end
   end
 
-  def signed_manifest_text
+  def signed_manifest_text_only_for_tests
     if !has_attribute? :manifest_text
       return nil
     elsif is_trashed
@@ -415,11 +411,11 @@ class Collection < ArvadosModel
       token = Thread.current[:token]
       exp = [db_current_time.to_i + Rails.configuration.Collections.BlobSigningTTL.to_i,
              trash_at].compact.map(&:to_i).min
-      self.class.sign_manifest manifest_text, token, exp
+      self.class.sign_manifest_only_for_tests manifest_text, token, exp
     end
   end
 
-  def self.sign_manifest manifest, token, exp=nil
+  def self.sign_manifest_only_for_tests manifest, token, exp=nil
     if exp.nil?
       exp = db_current_time.to_i + Rails.configuration.Collections.BlobSigningTTL.to_i
     end

@@ -224,7 +224,7 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
 
   test "create collection, update manifest, and search with filename" do
     # create collection
-    signed_manifest = Collection.sign_manifest(". bad42fa702ae3ea7d888fef11b46f450+44 0:44:my_test_file.txt\n", api_token(:active))
+    signed_manifest = Collection.sign_manifest_only_for_tests(". bad42fa702ae3ea7d888fef11b46f450+44 0:44:my_test_file.txt\n", api_token(:active))
     post "/arvados/v1/collections",
       params: {
         format: :json,
@@ -241,7 +241,7 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
     search_using_filter 'my_test_file.txt', 1
 
     # update the collection's manifest text
-    signed_manifest = Collection.sign_manifest(". bad42fa702ae3ea7d888fef11b46f450+44 0:44:my_updated_test_file.txt\n", api_token(:active))
+    signed_manifest = Collection.sign_manifest_only_for_tests(". bad42fa702ae3ea7d888fef11b46f450+44 0:44:my_updated_test_file.txt\n", api_token(:active))
     put "/arvados/v1/collections/#{created['uuid']}",
       params: {
         format: :json,
@@ -375,7 +375,7 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
 
   test "create and get collection with properties" do
     # create collection to be searched for
-    signed_manifest = Collection.sign_manifest(". bad42fa702ae3ea7d888fef11b46f450+44 0:44:my_test_file.txt\n", api_token(:active))
+    signed_manifest = Collection.sign_manifest_only_for_tests(". bad42fa702ae3ea7d888fef11b46f450+44 0:44:my_test_file.txt\n", api_token(:active))
     post "/arvados/v1/collections",
       params: {
         format: :json,
@@ -401,7 +401,7 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
 
   test "create collection and update it with json encoded hash properties" do
     # create collection to be searched for
-    signed_manifest = Collection.sign_manifest(". bad42fa702ae3ea7d888fef11b46f450+44 0:44:my_test_file.txt\n", api_token(:active))
+    signed_manifest = Collection.sign_manifest_only_for_tests(". bad42fa702ae3ea7d888fef11b46f450+44 0:44:my_test_file.txt\n", api_token(:active))
     post "/arvados/v1/collections",
       params: {
         format: :json,
@@ -431,7 +431,7 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
     Rails.configuration.Collections.CollectionVersioning = true
     Rails.configuration.Collections.PreserveVersionIfIdle = -1 # Disable auto versioning
 
-    signed_manifest = Collection.sign_manifest(". bad42fa702ae3ea7d888fef11b46f450+44 0:44:my_test_file.txt\n", api_token(:active))
+    signed_manifest = Collection.sign_manifest_only_for_tests(". bad42fa702ae3ea7d888fef11b46f450+44 0:44:my_test_file.txt\n", api_token(:active))
     post "/arvados/v1/collections",
       params: {
         format: :json,
