@@ -82,24 +82,28 @@ func (s *CollectionSuite) TestSignatures(c *check.C) {
 		c.Check(lresp.Items[0].UnsignedManifestText, check.Matches, `(?ms).* acbd[^ ]*\+3 0:.*`)
 	}
 
-	// early trash date causes lower signature TTL
+	// early trash date causes lower signature TTL (even if
+	// trash_at and is_trashed fields are unselected)
 	trashed, err := s.localdb.CollectionCreate(ctx, arvados.CreateOptions{
+		Select: []string{"uuid", "manifest_text"},
 		Attrs: map[string]interface{}{
 			"manifest_text": ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo\n",
 			"trash_at":      time.Now().UTC().Add(time.Hour),
 		}})
 	c.Assert(err, check.IsNil)
+	s.checkSignatureExpiry(c, trashed.ManifestText, time.Hour)
 	resp, err = s.localdb.CollectionGet(ctx, arvados.GetOptions{UUID: trashed.UUID})
 	c.Assert(err, check.IsNil)
 	s.checkSignatureExpiry(c, resp.ManifestText, time.Hour)
 
 	// distant future trash date does not cause higher signature TTL
-	trashed, err = s.localdb.CollectionCreate(ctx, arvados.CreateOptions{
+	trashed, err = s.localdb.CollectionUpdate(ctx, arvados.UpdateOptions{
+		UUID: trashed.UUID,
 		Attrs: map[string]interface{}{
-			"manifest_text": ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo\n",
-			"trash_at":      time.Now().UTC().Add(time.Hour * 24 * 365),
+			"trash_at": time.Now().UTC().Add(time.Hour * 24 * 365),
 		}})
 	c.Assert(err, check.IsNil)
+	s.checkSignatureExpiry(c, trashed.ManifestText, time.Hour*24*7*2)
 	resp, err = s.localdb.CollectionGet(ctx, arvados.GetOptions{UUID: trashed.UUID})
 	c.Assert(err, check.IsNil)
 	s.checkSignatureExpiry(c, resp.ManifestText, time.Hour*24*7*2)

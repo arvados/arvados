@@ -48,6 +48,40 @@ func (conn *Conn) CollectionList(ctx context.Context, opts arvados.ListOptions) 
 	return resp, nil
 }
 
+// CollectionCreate defers to railsProxy for everything except blob
+// signatures.
+func (conn *Conn) CollectionCreate(ctx context.Context, opts arvados.CreateOptions) (arvados.Collection, error) {
+	if len(opts.Select) > 0 {
+		// We need to know IsTrashed and TrashAt to implement
+		// signing properly, even if the caller doesn't want
+		// them.
+		opts.Select = append([]string{"is_trashed", "trash_at"}, opts.Select...)
+	}
+	resp, err := conn.railsProxy.CollectionCreate(ctx, opts)
+	if err != nil {
+		return resp, err
+	}
+	conn.signCollection(ctx, &resp)
+	return resp, nil
+}
+
+// CollectionUpdate defers to railsProxy for everything except blob
+// signatures.
+func (conn *Conn) CollectionUpdate(ctx context.Context, opts arvados.UpdateOptions) (arvados.Collection, error) {
+	if len(opts.Select) > 0 {
+		// We need to know IsTrashed and TrashAt to implement
+		// signing properly, even if the caller doesn't want
+		// them.
+		opts.Select = append([]string{"is_trashed", "trash_at"}, opts.Select...)
+	}
+	resp, err := conn.railsProxy.CollectionUpdate(ctx, opts)
+	if err != nil {
+		return resp, err
+	}
+	conn.signCollection(ctx, &resp)
+	return resp, nil
+}
+
 func (conn *Conn) signCollection(ctx context.Context, coll *arvados.Collection) {
 	if coll.IsTrashed || coll.ManifestText == "" || !conn.cluster.Collections.BlobSigning {
 		return
