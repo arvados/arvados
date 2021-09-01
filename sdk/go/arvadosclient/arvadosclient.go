@@ -146,7 +146,7 @@ func MakeTLSConfig(insecure bool) *tls.Config {
 			data, err := ioutil.ReadFile(file)
 			if err != nil {
 				if !os.IsNotExist(err) {
-					log.Printf("error reading %q: %s", file, err)
+					log.Printf("proceeding without loading cert file %q: %s", file, err)
 				}
 				continue
 			}

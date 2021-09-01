@@ -53,7 +53,7 @@ type lsfstub struct {
 	errorRate float64
 }
 
-func (stub lsfstub) stubCommand(c *check.C) func(prog string, args ...string) *exec.Cmd {
+func (stub lsfstub) stubCommand(s *suite, c *check.C) func(prog string, args ...string) *exec.Cmd {
 	mtx := sync.Mutex{}
 	nextjobid := 100
 	fakejobq := map[int]string{}
@@ -71,7 +71,11 @@ func (stub lsfstub) stubCommand(c *check.C) func(prog string, args ...string) *e
 		}
 		switch prog {
 		case "bsub":
-			c.Assert(args, check.HasLen, 4)
+			defaultArgs := s.disp.Cluster.Containers.LSF.BsubArgumentsList
+			c.Assert(args, check.HasLen, 4+len(defaultArgs))
+			c.Check(args[:len(defaultArgs)], check.DeepEquals, defaultArgs)
+			args = args[len(defaultArgs):]
+
 			c.Check(args[0], check.Equals, "-J")
 			switch args[1] {
 			case arvadostest.LockedContainerUUID:
@@ -124,7 +128,7 @@ func (s *suite) TestSubmit(c *check.C) {
 	s.disp.lsfcli.stubCommand = lsfstub{
 		errorRate: 0.1,
 		sudoUser:  s.disp.Cluster.Containers.LSF.BsubSudoUser,
-	}.stubCommand(c)
+	}.stubCommand(s, c)
 	s.disp.Start()
 	deadline := time.Now().Add(20 * time.Second)
 	for range time.NewTicker(time.Second).C {
