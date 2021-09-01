@@ -19,6 +19,7 @@ import { extractFilesData } from 'services/collection-service/collection-service
 import { DefaultIcon, DirectoryIcon, FileIcon } from 'components/icon/icon';
 import { setCollectionFiles } from 'store/collection-panel/collection-panel-files/collection-panel-files-actions';
 import { sortBy } from 'lodash';
+import { formatFileSize } from 'common/formatters';
 
 export interface CollectionPanelFilesProps {
     items: any;
@@ -45,7 +46,13 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     wrapper: {
         display: 'flex',
         minHeight: '600px',
-        marginBottom: '1rem'
+        marginBottom: '1rem',
+        color: 'rgba(0, 0, 0, 0.87)',
+        fontSize: '0.875rem',
+        fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+        fontWeight: 400,
+        lineHeight: '1.5',
+        letterSpacing: '0.01071em'
     },
     dataWrapper: {
         minHeight: '500px'
@@ -102,6 +109,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     pathPanel: {
         padding: '1rem',
         marginBottom: '1rem',
+        backgroundColor: '#fff',
         boxShadow: '0px 1px 3px 0px rgb(0 0 0 / 20%), 0px 1px 1px 0px rgb(0 0 0 / 14%), 0px 2px 1px -1px rgb(0 0 0 / 12%)',
     },
     leftPanel: {
@@ -110,6 +118,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         marginRight: '1rem',
         whiteSpace: 'nowrap',
         position: 'relative',
+        backgroundColor: '#fff',
         boxShadow: '0px 1px 3px 0px rgb(0 0 0 / 20%), 0px 1px 1px 0px rgb(0 0 0 / 14%), 0px 2px 1px -1px rgb(0 0 0 / 12%)',
     },
     leftPanelVisible: {
@@ -137,6 +146,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         flex: '70%',
         padding: '1rem',
         position: 'relative',
+        backgroundColor: '#fff',
         boxShadow: '0px 1px 3px 0px rgb(0 0 0 / 20%), 0px 1px 1px 0px rgb(0 0 0 / 14%), 0px 2px 1px -1px rgb(0 0 0 / 12%)',
     },
     pathPanelItem: {
@@ -443,7 +453,7 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
                                         >
                                             {
                                                 ({ index, style }) => {
-                                                    const { id, type, name } = filtered[index];
+                                                    const { id, type, name, size } = filtered[index];
 
                                                     return <div
                                                         style={style}
@@ -460,6 +470,9 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
                                                     {getItemIcon(type, null)} <div className={classes.rowName}>
                                                             {name}
                                                         </div>
+                                                        <span className={classes.rowName} style={{marginLeft: 'auto', marginRight: '1rem'}}>
+                                                            {formatFileSize(size)}
+                                                        </span>
                                                     </div>
                                                 }
                                             }
