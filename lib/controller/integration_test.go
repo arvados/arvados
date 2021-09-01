@@ -662,6 +662,73 @@ func (s *IntegrationSuite) TestIntermediateCluster(c *check.C) {
 	}
 }
 
+// Test for bug #18076
+func (s *IntegrationSuite) TestStaleCachedUserRecord(c *check.C) {
+	rootctx1, _, _ := s.testClusters["z1111"].RootClients()
+	conn1 := s.testClusters["z1111"].Conn()
+	conn3 := s.testClusters["z3333"].Conn()
+
+	// Make sure LoginCluster is properly configured
+	for cls := range s.testClusters {
+		c.Check(
+			s.testClusters[cls].Config.Clusters[cls].Login.LoginCluster,
+			check.Equals, "z1111",
+			check.Commentf("incorrect LoginCluster config on cluster %q", cls))
+	}
+
+	// Create some users, request them on the federated cluster so they're cached.
+	var users []arvados.User
+	for userNr := range []int{1, 2} {
+		_, _, _, user := s.testClusters["z1111"].UserClients(
+			rootctx1,
+			c,
+			conn1,
+			fmt.Sprintf("user%d@example.com", userNr),
+			true)
+		c.Assert(user.Username, check.Not(check.Equals), "")
+		users = append(users, user)
+
+		lst, err := conn3.UserList(rootctx1, arvados.ListOptions{Limit: math.MaxInt64})
+		c.Assert(err, check.Equals, nil)
+		userFound := false
+		for _, fedUser := range lst.Items {
+			if fedUser.UUID == user.UUID {
+				c.Assert(fedUser.Username, check.Equals, user.Username)
+				userFound = true
+				break
+			}
+		}
+		c.Assert(userFound, check.Equals, true)
+	}
+
+	// Swap the usernames
+	_, err := conn1.UserUpdate(rootctx1, arvados.UpdateOptions{
+		UUID: users[0].UUID,
+		Attrs: map[string]interface{}{
+			"username": "",
+		},
+	})
+	c.Assert(err, check.Equals, nil)
+	_, err = conn1.UserUpdate(rootctx1, arvados.UpdateOptions{
+		UUID: users[1].UUID,
+		Attrs: map[string]interface{}{
+			"username": users[0].Username,
+		},
+	})
+	c.Assert(err, check.Equals, nil)
+	_, err = conn1.UserUpdate(rootctx1, arvados.UpdateOptions{
+		UUID: users[0].UUID,
+		Attrs: map[string]interface{}{
+			"username": users[1].Username,
+		},
+	})
+	c.Assert(err, check.Equals, nil)
+
+	// Re-request the list on the federated cluster
+	_, err = conn3.UserList(rootctx1, arvados.ListOptions{Limit: math.MaxInt64})
+	c.Assert(err, check.Equals, nil)
+}
+
 // Test for bug #16263
 func (s *IntegrationSuite) TestListUsers(c *check.C) {
 	rootctx1, _, _ := s.testClusters["z1111"].RootClients()
