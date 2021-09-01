@@ -111,20 +111,6 @@ table(table table-bordered table-condensed).
 |@contains@|string, array of strings|Presence of one or more keys or array elements|@["storage_classes_desired", "contains", ["foo", "bar"]]@ (matches both @["foo", "bar"]@ and @["foo", "bar", "baz"]@)
 (note @[..., "contains", "foo"]@ is also accepted, and is equivalent to @[..., "contains", ["foo"]]@)|
 
-h4(#filterexpression). Filtering using boolean expressions
-
-In place of an attribute, the first element of the three-element filter array can be a boolean expression. The following restrictions apply:
-* The expression must contain exactly one operator.
-* The operator must be @=@, @<@, @<=@, @>@, or @>=@.
-* There must be exactly one pair of parentheses, surrounding the entire expression.
-* Each operand must be the name of a numeric attribute like @replication_desired@ (literal values like @3@ and non-numeric attributes like @uuid@ are not accepted).
-* The expression must not contain whitespace other than an ASCII space (newline and tab characters are not accepted).
-* The second and third elements of the filter array must be @"="@ and @true@ respectively.
-
-Examples:
-* @["(replication_desired < replication_confirmed)", "=", true]@
-* @["(replication_desired = replication_confirmed)", "=", true]@
-
 h4(#substringsearchfilter). Filtering using substring search
 
 Resources can also be filtered by searching for a substring in attributes of type @string@, @array of strings@, @text@, and @hash@, which are indexed in the database specifically for search. To use substring search, the filter must:
@@ -149,6 +135,22 @@ table(table table-bordered table-condensed).
 |@contains@|string, number|Filter where subproperty has a value either by exact match or value is element of subproperty list.|@["properties.foo", "contains", "bar"]@ will find both @{"foo": "bar"}@ and @{"foo": ["bar", "baz"]}@.|
 
 Note that exclusion filters @!=@ and @not in@ will return records for which the property is not defined at all.  To restrict filtering to records on which the subproperty is defined, combine with an @exists@ filter.
+
+h4(#filterexpression). Filtering using boolean expressions
+
+In addition to the three-element array form described above, a string containing a boolean expression is also accepted. The following restrictions apply:
+* The expression must contain exactly one operator.
+* The operator must be @=@, @<@, @<=@, @>@, or @>=@.
+* There must be exactly one pair of parentheses, surrounding the entire expression.
+* Each operand must be the name of a numeric attribute like @replication_desired@ (literal values like @3@ and non-numeric attributes like @uuid@ are not accepted).
+* The expression must not contain whitespace other than an ASCII space (newline and tab characters are not accepted).
+
+Examples:
+* @(replication_desired > replication_confirmed)@
+* @(replication_desired = replication_confirmed)@
+
+Both types of filter (boolean expressions and @[attribute, operator, operand]@ filters) can be combined in the same API call. Example:
+* @{"filters": ["(replication_desired > replication_confirmed)", ["replication_desired", "<", 2]]}@
 
 h4. Federated listing
 

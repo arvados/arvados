@@ -37,28 +37,37 @@ func (f *Filter) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON decodes a JSON array to a Filter.
 func (f *Filter) UnmarshalJSON(data []byte) error {
-	var elements []interface{}
-	err := json.Unmarshal(data, &elements)
+	var decoded interface{}
+	err := json.Unmarshal(data, &decoded)
 	if err != nil {
 		return err
 	}
-	if len(elements) != 3 {
-		return fmt.Errorf("invalid filter %q: must have 3 elements", data)
-	}
-	attr, ok := elements[0].(string)
-	if !ok {
-		return fmt.Errorf("invalid filter attr %q", elements[0])
-	}
-	op, ok := elements[1].(string)
-	if !ok {
-		return fmt.Errorf("invalid filter operator %q", elements[1])
-	}
-	operand := elements[2]
-	switch operand.(type) {
-	case string, float64, []interface{}, nil, bool:
+	switch decoded := decoded.(type) {
+	case string:
+		// Accept "(foo < bar)" as a more obvious way to spell
+		// ["(foo < bar)","=",true]
+		*f = Filter{decoded, "=", true}
+	case []interface{}:
+		if len(decoded) != 3 {
+			return fmt.Errorf("invalid filter %q: must have 3 decoded", data)
+		}
+		attr, ok := decoded[0].(string)
+		if !ok {
+			return fmt.Errorf("invalid filter attr %q", decoded[0])
+		}
+		op, ok := decoded[1].(string)
+		if !ok {
+			return fmt.Errorf("invalid filter operator %q", decoded[1])
+		}
+		operand := decoded[2]
+		switch operand.(type) {
+		case string, float64, []interface{}, nil, bool:
+		default:
+			return fmt.Errorf("invalid filter operand %q", decoded[2])
+		}
+		*f = Filter{attr, op, operand}
 	default:
-		return fmt.Errorf("invalid filter operand %q", elements[2])
+		return fmt.Errorf("invalid filter: json decoded as %T instead of array or string", decoded)
 	}
-	*f = Filter{attr, op, operand}
 	return nil
 }
