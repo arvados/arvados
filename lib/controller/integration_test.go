@@ -150,6 +150,16 @@ func (s *IntegrationSuite) TearDownSuite(c *check.C) {
 	}
 }
 
+func (s *IntegrationSuite) TestDefaultStorageClassesOnCollections(c *check.C) {
+	conn := s.testClusters["z1111"].Conn()
+	rootctx, _, _ := s.testClusters["z1111"].RootClients()
+	userctx, _, kc, _ := s.testClusters["z1111"].UserClients(rootctx, c, conn, s.oidcprovider.AuthEmail, true)
+	c.Assert(len(kc.DefaultStorageClasses) > 0, check.Equals, true)
+	coll, err := conn.CollectionCreate(userctx, arvados.CreateOptions{})
+	c.Assert(err, check.IsNil)
+	c.Assert(coll.StorageClassesDesired, check.DeepEquals, kc.DefaultStorageClasses)
+}
+
 func (s *IntegrationSuite) TestGetCollectionByPDH(c *check.C) {
 	conn1 := s.testClusters["z1111"].Conn()
 	rootctx1, _, _ := s.testClusters["z1111"].RootClients()
@@ -676,6 +686,7 @@ func (s *IntegrationSuite) TestListUsers(c *check.C) {
 	for _, user := range lst.Items {
 		if user.Username == "" {
 			nullUsername = true
+			break
 		}
 	}
 	c.Assert(nullUsername, check.Equals, true)
