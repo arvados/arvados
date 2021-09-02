@@ -239,3 +239,38 @@ $graph:
         - type: array
           items: string
       doc: One or more storages classes
+
+
+- type: record
+  name: PropertyDef
+  doc: |
+    Define a property that will be set on the submitted container
+    request associated with this workflow or step.
+  fields:
+    - name: propertyName
+      type: string
+      doc: The property key
+    - name: propertyValue
+      type: [cwl:Expression, Any]
+      doc: The property value
+
+
+- name: ProcessProperties
+  type: record
+  extends: cwl:ProcessRequirement
+  inVocab: false
+  doc: |
+    Specify metadata properties that will be set on the submitted
+    container request associated with this workflow or step.
+  fields:
+    class:
+      type: string
+      doc: "Always 'arv:ProcessProperties"
+      jsonldPredicate:
+        _id: "@type"
+        _type: "@vocab"
+    processProperties:
+      type: PropertyDef[]
+      jsonldPredicate:
+        mapSubject: propertyName
+        mapPredicate: propertyValue
