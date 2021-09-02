@@ -678,7 +678,7 @@ func (s *IntegrationSuite) TestStaleCachedUserRecord(c *check.C) {
 
 	// Create some users, request them on the federated cluster so they're cached.
 	var users []arvados.User
-	for userNr := range []int{1, 2} {
+	for userNr := range []int{0, 1} {
 		_, _, _, user := s.testClusters["z1111"].UserClients(
 			rootctx1,
 			c,
@@ -724,9 +724,21 @@ func (s *IntegrationSuite) TestStaleCachedUserRecord(c *check.C) {
 	})
 	c.Assert(err, check.Equals, nil)
 
-	// Re-request the list on the federated cluster
-	_, err = conn3.UserList(rootctx1, arvados.ListOptions{Limit: math.MaxInt64})
+	// Re-request the list on the federated cluster & check for updates
+	lst, err := conn3.UserList(rootctx1, arvados.ListOptions{Limit: math.MaxInt64})
 	c.Assert(err, check.Equals, nil)
+	var user0Found, user1Found bool
+	for _, user := range lst.Items {
+		if user.UUID == users[0].UUID {
+			user0Found = true
+			c.Assert(user.Username, check.Equals, users[1].Username)
+		} else if user.UUID == users[1].UUID {
+			user1Found = true
+			c.Assert(user.Username, check.Equals, users[0].Username)
+		}
+	}
+	c.Assert(user0Found, check.Equals, true)
+	c.Assert(user1Found, check.Equals, true)
 }
 
 // Test for bug #16263
