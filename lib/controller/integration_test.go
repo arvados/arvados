@@ -670,15 +670,17 @@ func (s *IntegrationSuite) TestStaleCachedUserRecord(c *check.C) {
 
 	// Make sure LoginCluster is properly configured
 	for cls := range s.testClusters {
-		c.Check(
-			s.testClusters[cls].Config.Clusters[cls].Login.LoginCluster,
-			check.Equals, "z1111",
-			check.Commentf("incorrect LoginCluster config on cluster %q", cls))
+		if cls == "z1111" || cls == "z3333" {
+			c.Check(
+				s.testClusters[cls].Config.Clusters[cls].Login.LoginCluster,
+				check.Equals, "z1111",
+				check.Commentf("incorrect LoginCluster config on cluster %q", cls))
+		}
 	}
 
 	// Create some users, request them on the federated cluster so they're cached.
 	var users []arvados.User
-	for userNr := range []int{0, 1} {
+	for userNr := 0; userNr < 2; userNr++ {
 		_, _, _, user := s.testClusters["z1111"].UserClients(
 			rootctx1,
 			c,
@@ -688,7 +690,7 @@ func (s *IntegrationSuite) TestStaleCachedUserRecord(c *check.C) {
 		c.Assert(user.Username, check.Not(check.Equals), "")
 		users = append(users, user)
 
-		lst, err := conn3.UserList(rootctx1, arvados.ListOptions{Limit: math.MaxInt64})
+		lst, err := conn3.UserList(rootctx1, arvados.ListOptions{Limit: -1})
 		c.Assert(err, check.Equals, nil)
 		userFound := false
 		for _, fedUser := range lst.Items {
@@ -725,7 +727,7 @@ func (s *IntegrationSuite) TestStaleCachedUserRecord(c *check.C) {
 	c.Assert(err, check.Equals, nil)
 
 	// Re-request the list on the federated cluster & check for updates
-	lst, err := conn3.UserList(rootctx1, arvados.ListOptions{Limit: math.MaxInt64})
+	lst, err := conn3.UserList(rootctx1, arvados.ListOptions{Limit: -1})
 	c.Assert(err, check.Equals, nil)
 	var user0Found, user1Found bool
 	for _, user := range lst.Items {
