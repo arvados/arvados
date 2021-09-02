@@ -2,11 +2,6 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-from __future__ import absolute_import
-from __future__ import division
-from future.utils import viewitems
-from future.utils import itervalues
-from builtins import dict
 import apiclient
 import arvados
 import errno
@@ -196,7 +191,7 @@ class Directory(FreshBase):
     def in_use(self):
         if super(Directory, self).in_use():
             return True
-        for v in itervalues(self._entries):
+        for v in self._entries.values():
             if v.in_use():
                 return True
         return False
@@ -204,7 +199,7 @@ class Directory(FreshBase):
     def has_ref(self, only_children):
         if super(Directory, self).has_ref(only_children):
             return True
-        for v in itervalues(self._entries):
+        for v in self._entries.values():
             if v.has_ref(False):
                 return True
         return False
@@ -226,7 +221,7 @@ class Directory(FreshBase):
         # Find self on the parent in order to invalidate this path.
         # Calling the public items() method might trigger a refresh,
         # which we definitely don't want, so read the internal dict directly.
-        for k,v in viewitems(parent._entries):
+        for k,v in parent._entries.items():
             if v is self:
                 self.inodes.invalidate_entry(parent, k)
                 break
@@ -347,9 +342,10 @@ class CollectionDirectoryBase(Directory):
 
     def populate(self, mtime):
         self._mtime = mtime
-        self.collection.subscribe(self.on_event)
-        for entry, item in viewitems(self.collection):
-            self.new_entry(entry, item, self.mtime())
+        with self.collection.lock:
+            self.collection.subscribe(self.on_event)
+            for entry, item in self.collection.items():
+                self.new_entry(entry, item, self.mtime())
 
     def writable(self):
         return self.collection.writable()
@@ -496,6 +492,7 @@ class CollectionDirectory(CollectionDirectoryBase):
                         return
 
                     _logger.debug("Updating collection %s inode %s to record version %s", self.collection_locator, self.inode, to_record_version)
+                    new_collection_record = None
                     if self.collection is not None:
                         if self.collection.known_past_version(to_record_version):
                             _logger.debug("%s already processed %s", self.collection_locator, to_record_version)
@@ -522,12 +519,13 @@ class CollectionDirectory(CollectionDirectoryBase):
                         if 'storage_classes_desired' not in new_collection_record:
                             new_collection_record['storage_classes_desired'] = coll_reader.storage_classes_desired()
 
-                        if self.collection_record is None or self.collection_record["portable_data_hash"] != new_collection_record.get("portable_data_hash"):
-                            self.new_collection(new_collection_record, coll_reader)
-
-                        self._manifest_size = len(coll_reader.manifest_text())
-                        _logger.debug("%s manifest_size %i", self, self._manifest_size)
                 # end with llfuse.lock_released, re-acquire lock
+                if (new_collection_record is not None and
+                    (self.collection_record is None or
+                     self.collection_record["portable_data_hash"] != new_collection_record.get("portable_data_hash"))):
+                    self.new_collection(new_collection_record, coll_reader)
+                    self._manifest_size = len(coll_reader.manifest_text())
+                    _logger.debug("%s manifest_size %i", self, self._manifest_size)
 
                 self.fresh()
                 return True
@@ -1230,7 +1228,7 @@ class SharedDirectory(Directory):
 
             # end with llfuse.lock_released, re-acquire lock
 
-            self.merge(viewitems(contents),
+            self.merge(contents.items(),
                        lambda i: i[0],
                        lambda a, i: a.uuid() == i[1]['uuid'],
                        lambda i: ProjectDirectory(self.inode, self.inodes, self.api, self.num_retries, i[1], poll=self._poll, poll_time=self._poll_time, storage_classes=self.storage_classes))
