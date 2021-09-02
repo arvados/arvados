@@ -1419,6 +1419,51 @@ class TestSubmit(unittest.TestCase):
         finally:
             cwltool_logger.removeHandler(stderr_logger)
 
+    @stubs
+    def test_submit_set_process_properties(self, stubs):
+        exited = arvados_cwl.main(
+            ["--submit", "--no-wait", "--api=containers", "--debug",
+                "tests/wf/submit_wf_process_properties.cwl", "tests/submit_test_job.json"],
+            stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+
+        expect_container = copy.deepcopy(stubs.expect_container_spec)
+        expect_container["name"] = "submit_wf_process_properties.cwl"
+        expect_container["mounts"]["/var/lib/cwl/workflow.json"]["content"]["$graph"][1]["hints"] = [
+            {
+                "class": "http://arvados.org/cwl#ProcessProperties",
+                "processProperties": [
+                    {"propertyName": "foo",
+                     "propertyValue": "bar"},
+                    {"propertyName": "baz",
+                     "propertyValue": "$(inputs.x.basename)"},
+                    {"propertyName": "quux",
+                     "propertyValue": {
+                         "q1": 1,
+                         "q2": 2
+                     }
+                    }
+                ],
+            }
+        ]
+        expect_container["mounts"]["/var/lib/cwl/workflow.json"]["content"]["$graph"][0]["$namespaces"] = {
+            "arv": "http://arvados.org/cwl#"
+        }
+
+        expect_container["properties"] = {
+            "baz": "blorp.txt",
+            "foo": "bar",
+            "quux": {
+                "q1": 1,
+                "q2": 2
+            }
+        }
+
+        stubs.api.container_requests().create.assert_called_with(
+            body=JsonDiffMatcher(expect_container))
+        self.assertEqual(stubs.capture_stdout.getvalue(),
+                         stubs.expect_container_request_uuid + '\n')
+        self.assertEqual(exited, 0)
+
 
 class TestCreateWorkflow(unittest.TestCase):
     existing_workflow_uuid = "zzzzz-7fd4e-validworkfloyml"

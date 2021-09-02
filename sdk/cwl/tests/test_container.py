@@ -914,6 +914,97 @@ class TestContainer(unittest.TestCase):
                 }))
 
 
+    # The test passes no builder.resources
+    # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
+    @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
+    def test_setting_process_properties(self, keepdocker):
+        arv_docker_clear_cache()
+
+        runner = mock.MagicMock()
+        runner.ignore_docker_for_reuse = False
+        runner.intermediate_output_ttl = 0
+        runner.secret_store = cwltool.secrets.SecretStore()
+
+        keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
+        runner.api.collections().get().execute.return_value = {
+            "portable_data_hash": "99999999999999999999999999999993+99"}
+
+        tool = cmap({
+            "inputs": [
+                {"id": "x", "type": "string"}],
+            "outputs": [],
+            "baseCommand": "ls",
+            "arguments": [{"valueFrom": "$(runtime.outdir)"}],
+            "id": "#",
+            "class": "CommandLineTool",
+            "hints": [
+            {
+                "class": "http://arvados.org/cwl#ProcessProperties",
+                "processProperties": [
+                    {"propertyName": "foo",
+                     "propertyValue": "bar"},
+                    {"propertyName": "baz",
+                     "propertyValue": "$(inputs.x)"},
+                    {"propertyName": "quux",
+                     "propertyValue": {
+                         "q1": 1,
+                         "q2": 2
+                     }
+                    }
+                ],
+            }
+        ]
+        })
+
+        loadingContext, runtimeContext = self.helper(runner, True)
+
+        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, loadingContext)
+        arvtool.formatgraph = None
+
+        for j in arvtool.job({"x": "blorp"}, mock.MagicMock(), runtimeContext):
+            j.run(runtimeContext)
+            runner.api.container_requests().create.assert_called_with(
+                body=JsonDiffMatcher({
+                    'environment': {
+                        'HOME': '/var/spool/cwl',
+                        'TMPDIR': '/tmp'
+                    },
+                    'name': 'test_run_True',
+                    'runtime_constraints': {
+                        'vcpus': 1,
+                        'ram': 1073741824
+                    },
+                    'use_existing': True,
+                    'priority': 500,
+                    'mounts': {
+                        '/tmp': {'kind': 'tmp',
+                                 "capacity": 1073741824
+                             },
+                        '/var/spool/cwl': {'kind': 'tmp',
+                                           "capacity": 1073741824 }
+                    },
+                    'state': 'Committed',
+                    'output_name': 'Output for step test_run_True',
+                    'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
+                    'output_path': '/var/spool/cwl',
+                    'output_ttl': 0,
+                    'container_image': '99999999999999999999999999999993+99',
+                    'command': ['ls', '/var/spool/cwl'],
+                    'cwd': '/var/spool/cwl',
+                    'scheduling_parameters': {},
+                    'properties': {
+                        "baz": "blorp",
+                        "foo": "bar",
+                        "quux": {
+                            "q1": 1,
+                            "q2": 2
+                        }
+                    },
+                    'secret_mounts': {},
+                    'output_storage_classes': ["default"]
+                }))
+
+
 class TestWorkflow(unittest.TestCase):
     def setUp(self):
         cwltool.process._names = set()

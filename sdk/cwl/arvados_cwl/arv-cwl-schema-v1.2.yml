@@ -251,7 +251,7 @@ $graph:
       type: string
       doc: The property key
     - name: propertyValue
-      type: [cwl:Expression, Any]
+      type: [Any]
       doc: The property value
 
 
@@ -271,6 +271,6 @@ $graph:
         _type: "@vocab"
     processProperties:
       type: PropertyDef[]
-      jsonldPredicate:
-        mapSubject: propertyName
-        mapPredicate: propertyValue
+      #jsonldPredicate:
+      #  mapSubject: propertyName
+      #  mapPredicate: propertyValue

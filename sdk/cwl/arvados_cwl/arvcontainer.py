@@ -28,7 +28,7 @@ import arvados.collection
 
 from .arvdocker import arv_docker_get_image
 from . import done
-from .runner import Runner, arvados_jobs_image, packed_workflow, trim_anonymous_location, remove_redundant_fields
+from .runner import Runner, arvados_jobs_image, packed_workflow, trim_anonymous_location, remove_redundant_fields, make_builder
 from .fsaccess import CollectionFetcher
 from .pathmapper import NoFollowPathMapper, trim_listing
 from .perf import Perf
@@ -482,8 +482,10 @@ class RunnerContainer(Runner):
         properties_req, _ = self.embedded_tool.get_requirement("http://arvados.org/cwl#ProcessProperties")
         if properties_req:
             builder = make_builder(self.job_order, self.embedded_tool.hints, self.embedded_tool.requirements, runtimeContext, self.embedded_tool.metadata)
+            print("ZZZZZZ", properties_req["processProperties"])
             for pr in properties_req["processProperties"]:
-                container_request["properties"][pr["propertyName"]] = self.builder.do_eval(pr["propertyValue"])
+                print("ZZZZZZ", pr)
+                container_req["properties"][pr["propertyName"]] = builder.do_eval(pr["propertyValue"])
 
         # --local means execute the workflow instead of submitting a container request
         # --api=containers means use the containers API
