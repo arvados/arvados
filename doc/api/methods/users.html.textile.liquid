@@ -112,19 +112,6 @@ table(table table-bordered table-condensed).
 {background:#ccffcc}.|uuid|string|The UUID of the User in question.|path||
 |user|object|The new attributes.|query||
 
-h3(#update_uuid). update_uuid
-
-Change the UUID of an existing user, updating all database references accordingly.
-
-This method can only be used by an admin user. It should only be used when the affected user is idle. New references to the affected user that are established _while the update_uuid operation is in progress_ might not be migrated as expected.
-
-Arguments:
-
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
-{background:#ccffcc}.|uuid|string|The current UUID of the user in question.|path|@zzzzz-tpzed-12345abcde12345@|
-{background:#ccffcc}.|new_uuid|string|The desired new UUID. It is an error to use a UUID belonging to an existing user.|query|@zzzzz-tpzed-abcde12345abcde@|
-
 h3. setup
 
 Set up a user.  Adds the user to the "All users" group.  Enables the user to invoke @activate@.  See "user management":{{site.baseurl}}/admin/user-management.html for details.
