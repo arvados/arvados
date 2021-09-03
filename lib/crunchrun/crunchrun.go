@@ -1170,6 +1170,7 @@ func (runner *ContainerRunner) CleanupDirs() {
 
 		if umnterr != nil {
 			runner.CrunchLog.Printf("Error unmounting: %v", umnterr)
+			runner.ArvMount.Process.Kill()
 		} else {
 			// If arv-mount --unmount gets stuck for any reason, we
 			// don't want to wait for it forever.  Do Wait() in a goroutine
