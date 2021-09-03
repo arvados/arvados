@@ -10,7 +10,7 @@ class Arvados::V1::UsersController < ApplicationController
     [:activate, :current, :system, :setup, :merge, :batch_update]
   skip_before_action :render_404_if_no_object, only:
     [:activate, :current, :system, :setup, :merge, :batch_update]
-  before_action :admin_required, only: [:setup, :unsetup, :update_uuid, :batch_update]
+  before_action :admin_required, only: [:setup, :unsetup, :batch_update]
 
   # Internal API used by controller to update local cache of user
   # records from LoginCluster.
@@ -145,13 +145,6 @@ class Arvados::V1::UsersController < ApplicationController
     show
   end
 
-  # Change UUID to a new (unused) uuid and transfer all owned/linked
-  # objects accordingly.
-  def update_uuid
-    @object.update_uuid(new_uuid: params[:new_uuid])
-    show
-  end
-
   def merge
     if (params[:old_user_uuid] || params[:new_user_uuid])
       if !current_user.andand.is_admin
@@ -259,14 +252,6 @@ class Arvados::V1::UsersController < ApplicationController
         type: 'boolean', required: false, default: false,
       },
     })
-  end
-
-  def self._update_uuid_requires_parameters
-    {
-      new_uuid: {
-        type: 'string', required: true,
-      },
-    }
   end
 
   def apply_filters(model_class=nil)

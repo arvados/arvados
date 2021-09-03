@@ -81,7 +81,6 @@ Rails.application.routes.draw do
         post 'activate', on: :member
         post 'setup', on: :collection
         post 'unsetup', on: :member
-        post 'update_uuid', on: :member
         post 'merge', on: :collection
         patch 'batch_update', on: :collection
       end

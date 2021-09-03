@@ -362,37 +362,6 @@ SELECT target_uuid, perm_level
     end
   end
 
-  def update_uuid(new_uuid:)
-    if !current_user.andand.is_admin
-      raise PermissionDeniedError
-    end
-    if uuid == system_user_uuid || uuid == anonymous_user_uuid
-      raise "update_uuid cannot update system accounts"
-    end
-    if self.class != self.class.resource_class_for_uuid(new_uuid)
-      raise "invalid new_uuid #{new_uuid.inspect}"
-    end
-    transaction(requires_new: true) do
-      reload
-      old_uuid = self.uuid
-      self.uuid = new_uuid
-      save!(validate: false)
-      change_all_uuid_refs(old_uuid: old_uuid, new_uuid: new_uuid)
-    ActiveRecord::Base.connection.exec_update %{
-update #{PERMISSION_VIEW} set user_uuid=$1 where user_uuid = $2
-},
-                                             'User.update_uuid.update_permissions_user_uuid',
-                                             [[nil, new_uuid],
-                                              [nil, old_uuid]]
-      ActiveRecord::Base.connection.exec_update %{
-update #{PERMISSION_VIEW} set target_uuid=$1 where target_uuid = $2
-},
-                                            'User.update_uuid.update_permissions_target_uuid',
-                                             [[nil, new_uuid],
-                                              [nil, old_uuid]]
-    end
-  end
-
   # Move this user's (i.e., self's) owned items to new_owner_uuid and
   # new_user_uuid (for things normally owned directly by the user).
   #
