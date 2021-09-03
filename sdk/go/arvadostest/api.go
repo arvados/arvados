@@ -193,10 +193,6 @@ func (as *APIStub) UserUpdate(ctx context.Context, options arvados.UpdateOptions
 	as.appendCall(ctx, as.UserUpdate, options)
 	return arvados.User{}, as.Error
 }
-func (as *APIStub) UserUpdateUUID(ctx context.Context, options arvados.UpdateUUIDOptions) (arvados.User, error) {
-	as.appendCall(ctx, as.UserUpdateUUID, options)
-	return arvados.User{}, as.Error
-}
 func (as *APIStub) UserActivate(ctx context.Context, options arvados.UserActivateOptions) (arvados.User, error) {
 	as.appendCall(ctx, as.UserActivate, options)
 	return arvados.User{}, as.Error

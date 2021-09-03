@@ -399,13 +399,6 @@ func (rtr *router) addRoutes() {
 			},
 		},
 		{
-			arvados.EndpointUserUpdateUUID,
-			func() interface{} { return &arvados.UpdateUUIDOptions{} },
-			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.backend.UserUpdateUUID(ctx, *opts.(*arvados.UpdateUUIDOptions))
-			},
-		},
-		{
 			arvados.EndpointUserUpdate,
 			func() interface{} { return &arvados.UpdateOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
