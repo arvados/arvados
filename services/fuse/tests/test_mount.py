@@ -789,13 +789,13 @@ class FuseDeleteProjectEventTest(MountTestBase):
             attempt(self.assertEqual, [], llfuse.listdir(os.path.join(self.mounttmp, "aproject")))
 
 
-def fuseFileConflictTestHelper(mounttmp, uuid, keeptmp):
+def fuseFileConflictTestHelper(mounttmp, uuid, keeptmp, settings):
     class Test(unittest.TestCase):
         def runTest(self):
             os.environ['KEEP_LOCAL_STORE'] = keeptmp
 
             with open(os.path.join(mounttmp, "file1.txt"), "w") as f:
-                with arvados.collection.Collection(uuid) as collection2:
+                with arvados.collection.Collection(uuid, api_client=arvados.api_from_config('v1', apiconfig=settings)) as collection2:
                     with collection2.open("file1.txt", "w") as f2:
                         f2.write("foo")
                 f.write("bar")
@@ -827,7 +827,7 @@ class FuseFileConflictTest(MountTestBase):
         self.assertEqual([], sorted(d1))
 
         # See note in MountTestBase.setUp
-        self.pool.apply(fuseFileConflictTestHelper, (self.mounttmp, collection.manifest_locator(), self.keeptmp))
+        self.pool.apply(fuseFileConflictTestHelper, (self.mounttmp, collection.manifest_locator(), self.keeptmp, arvados.config.settings()))
 
 
 def fuseUnlinkOpenFileTest(mounttmp):
