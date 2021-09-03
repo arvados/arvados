@@ -146,7 +146,7 @@ func MakeTLSConfig(insecure bool) *tls.Config {
 			data, err := ioutil.ReadFile(file)
 			if err != nil {
 				if !os.IsNotExist(err) {
-					log.Printf("error reading %q: %s", file, err)
+					log.Printf("proceeding without loading cert file %q: %s", file, err)
 				}
 				continue
 			}
@@ -424,6 +424,24 @@ func (c *ArvadosClient) Discovery(parameter string) (value interface{}, err erro
 		return value, nil
 	}
 	return value, ErrInvalidArgument
+}
+
+// ClusterConfig returns the value of the given key in the current cluster's
+// exported config. If key is an empty string, it'll return the entire config.
+func (c *ArvadosClient) ClusterConfig(key string) (config interface{}, err error) {
+	var clusterConfig interface{}
+	err = c.Call("GET", "config", "", "", nil, &clusterConfig)
+	if err != nil {
+		return nil, err
+	}
+	if key == "" {
+		return clusterConfig, nil
+	}
+	configData, ok := clusterConfig.(map[string]interface{})[key]
+	if !ok {
+		return nil, ErrInvalidArgument
+	}
+	return configData, nil
 }
 
 func (c *ArvadosClient) httpClient() *http.Client {

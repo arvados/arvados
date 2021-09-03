@@ -29,7 +29,22 @@ class Arvados::V1::UsersController < ApplicationController
         end
       end
       if needupdate.length > 0
-        u.update_attributes!(needupdate)
+        begin
+          u.update_attributes!(needupdate)
+        rescue ActiveRecord::RecordInvalid
+          loginCluster = Rails.configuration.Login.LoginCluster
+          if u.uuid[0..4] == loginCluster && !needupdate[:username].nil?
+            local_user = User.find_by_username(needupdate[:username])
+            # A cached user record from the LoginCluster is stale, reset its username
+            # and retry the update operation.
+            if local_user.andand.uuid[0..4] == loginCluster && local_user.uuid != u.uuid
+              Rails.logger.warn("cached username '#{needupdate[:username]}' collision with user '#{local_user.uuid}' - resetting")
+              local_user.update_attributes!({username: nil})
+              retry
+            end
+          end
+          raise # Not the issue we're handling above
+        end
       end
       @objects << u
     end

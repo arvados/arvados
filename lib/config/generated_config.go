@@ -1032,7 +1032,12 @@ Clusters:
       LSF:
         # Additional arguments to bsub when submitting Arvados
         # containers as LSF jobs.
-        BsubArgumentsList: []
+        #
+        # Note that the default arguments cause LSF to write two files
+        # in /tmp on the compute node each time an Arvados container
+        # runs. Ensure you have something in place to delete old files
+        # from /tmp, or adjust these arguments accordingly.
+        BsubArgumentsList: ["-o", "/tmp/crunch-run.%J.out", "-e", "/tmp/crunch-run.%J.err"]
 
         # Use sudo to switch to this user account when submitting LSF
         # jobs.

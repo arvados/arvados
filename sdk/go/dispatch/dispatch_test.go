@@ -18,14 +18,6 @@ var _ = Suite(&suite{})
 
 type suite struct{}
 
-func (s *suite) SetUpSuite(c *C) {
-	arvadostest.StartAPI()
-}
-
-func (s *suite) TearDownSuite(c *C) {
-	arvadostest.StopAPI()
-}
-
 func (s *suite) TestTrackContainer(c *C) {
 	arv, err := arvadosclient.MakeArvadosClient()
 	c.Assert(err, Equals, nil)

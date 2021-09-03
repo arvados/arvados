@@ -62,9 +62,11 @@ When arvados-dispatch-lsf invokes @bsub@, you can add arguments to the command b
 <notextile>
 <pre>    Containers:
       LSF:
-        <code class="userinput">BsubArgumentsList: <b>["-C", "0"]</b></code>
+        <code class="userinput">BsubArgumentsList: <b>["-C", "0", "-o", "/tmp/crunch-run.%J.out", "-e", "/tmp/crunch-run.%J.err"]</b></code>
 </pre>
 </notextile>
+
+Note that the default value for @BsubArgumentsList@ uses the @-o@ and @-e@ arguments to write stdout/stderr data to files in @/tmp@ on the compute nodes, which is helpful for troubleshooting installation/configuration problems. Ensure you have something in place to delete old files from @/tmp@, or adjust these arguments accordingly.
 
 
 h3(#PollPeriod). Containers.PollInterval

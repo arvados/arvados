@@ -24,7 +24,6 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	. "gopkg.in/check.v1"
-	check "gopkg.in/check.v1"
 )
 
 // Gocheck boilerplate
@@ -52,13 +51,11 @@ func pythonDir() string {
 }
 
 func (s *ServerRequiredSuite) SetUpSuite(c *C) {
-	arvadostest.StartAPI()
 	arvadostest.StartKeep(2, false)
 }
 
 func (s *ServerRequiredSuite) TearDownSuite(c *C) {
 	arvadostest.StopKeep(2)
-	arvadostest.StopAPI()
 }
 
 func (s *ServerRequiredSuite) SetUpTest(c *C) {
@@ -78,9 +75,22 @@ func (s *ServerRequiredSuite) TestMakeKeepClient(c *C) {
 	}
 }
 
+func (s *ServerRequiredSuite) TestDefaultStorageClasses(c *C) {
+	arv, err := arvadosclient.MakeArvadosClient()
+	c.Assert(err, IsNil)
+
+	cc, err := arv.ClusterConfig("StorageClasses")
+	c.Assert(err, IsNil)
+	c.Assert(cc, NotNil)
+	c.Assert(cc.(map[string]interface{})["default"], NotNil)
+
+	kc := New(arv)
+	c.Assert(kc.DefaultStorageClasses, DeepEquals, []string{"default"})
+}
+
 func (s *ServerRequiredSuite) TestDefaultReplications(c *C) {
 	arv, err := arvadosclient.MakeArvadosClient()
-	c.Assert(err, Equals, nil)
+	c.Assert(err, IsNil)
 
 	kc, err := MakeKeepClient(arv)
 	c.Check(err, IsNil)
@@ -135,7 +145,7 @@ func RunFakeKeepServer(st http.Handler) (ks KeepServer) {
 	// bind to 0.0.0.0 or [::] which is not a valid address for Dial()
 	ks.listener, err = net.ListenTCP("tcp", &net.TCPAddr{IP: []byte{127, 0, 0, 1}, Port: 0})
 	if err != nil {
-		panic(fmt.Sprintf("Could not listen on any port"))
+		panic("Could not listen on any port")
 	}
 	ks.url = fmt.Sprintf("http://%s", ks.listener.Addr().String())
 	go http.Serve(ks.listener, st)
@@ -242,28 +252,107 @@ func (s *StandaloneSuite) TestUploadWithStorageClasses(c *C) {
 	}
 }
 
-func (s *StandaloneSuite) TestPutWithStorageClasses(c *C) {
+func (s *StandaloneSuite) TestPutWithoutStorageClassesClusterSupport(c *C) {
 	nServers := 5
 	for _, trial := range []struct {
 		replicas      int
 		clientClasses []string
-		putClasses    []string // putClasses takes precedence over clientClasses
+		putClasses    []string
 		minRequests   int
 		maxRequests   int
 		success       bool
 	}{
+		// Talking to an older cluster (no default storage classes exported
+		// config) and no other additional storage classes requirements.
+		{1, nil, nil, 1, 1, true},
+		{2, nil, nil, 2, 2, true},
+		{3, nil, nil, 3, 3, true},
+		{nServers*2 + 1, nil, nil, nServers, nServers, false},
+
 		{1, []string{"class1"}, nil, 1, 1, true},
-		{2, []string{"class1"}, nil, 1, 2, true},
-		{3, []string{"class1"}, nil, 2, 3, true},
+		{2, []string{"class1"}, nil, 2, 2, true},
+		{3, []string{"class1"}, nil, 3, 3, true},
 		{1, []string{"class1", "class2"}, nil, 1, 1, true},
-		{3, nil, []string{"class1"}, 2, 3, true},
-		{1, nil, []string{"class1", "class2"}, 1, 1, true},
-		{1, []string{"class404"}, []string{"class1", "class2"}, 1, 1, true},
-		{1, []string{"class1"}, []string{"class404", "class2"}, nServers, nServers, false},
 		{nServers*2 + 1, []string{"class1"}, nil, nServers, nServers, false},
-		{1, []string{"class404"}, nil, nServers, nServers, false},
-		{1, []string{"class1", "class404"}, nil, nServers, nServers, false},
-		{1, nil, []string{"class1", "class404"}, nServers, nServers, false},
+
+		{1, nil, []string{"class1"}, 1, 1, true},
+		{2, nil, []string{"class1"}, 2, 2, true},
+		{3, nil, []string{"class1"}, 3, 3, true},
+		{1, nil, []string{"class1", "class2"}, 1, 1, true},
+		{nServers*2 + 1, nil, []string{"class1"}, nServers, nServers, false},
+	} {
+		c.Logf("%+v", trial)
+		st := &StubPutHandler{
+			c:                    c,
+			expectPath:           "acbd18db4cc2f85cedef654fccc4a4d8",
+			expectAPIToken:       "abc123",
+			expectBody:           "foo",
+			expectStorageClass:   "*",
+			returnStorageClasses: "", // Simulate old cluster without SC keep support
+			handled:              make(chan string, 100),
+		}
+		ks := RunSomeFakeKeepServers(st, nServers)
+		arv, _ := arvadosclient.MakeArvadosClient()
+		kc, _ := MakeKeepClient(arv)
+		kc.Want_replicas = trial.replicas
+		kc.StorageClasses = trial.clientClasses
+		kc.DefaultStorageClasses = nil // Simulate an old cluster without SC defaults
+		arv.ApiToken = "abc123"
+		localRoots := make(map[string]string)
+		writableLocalRoots := make(map[string]string)
+		for i, k := range ks {
+			localRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
+			writableLocalRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
+			defer k.listener.Close()
+		}
+		kc.SetServiceRoots(localRoots, writableLocalRoots, nil)
+
+		_, err := kc.BlockWrite(context.Background(), arvados.BlockWriteOptions{
+			Data:           []byte("foo"),
+			StorageClasses: trial.putClasses,
+		})
+		if trial.success {
+			c.Check(err, IsNil)
+		} else {
+			c.Check(err, NotNil)
+		}
+		c.Check(len(st.handled) >= trial.minRequests, Equals, true, Commentf("len(st.handled)==%d, trial.minRequests==%d", len(st.handled), trial.minRequests))
+		c.Check(len(st.handled) <= trial.maxRequests, Equals, true, Commentf("len(st.handled)==%d, trial.maxRequests==%d", len(st.handled), trial.maxRequests))
+		if trial.clientClasses == nil && trial.putClasses == nil {
+			c.Check(st.requests[0].Header.Get("X-Keep-Storage-Classes"), Equals, "")
+		}
+	}
+}
+
+func (s *StandaloneSuite) TestPutWithStorageClasses(c *C) {
+	nServers := 5
+	for _, trial := range []struct {
+		replicas       int
+		defaultClasses []string
+		clientClasses  []string // clientClasses takes precedence over defaultClasses
+		putClasses     []string // putClasses takes precedence over clientClasses
+		minRequests    int
+		maxRequests    int
+		success        bool
+	}{
+		{1, []string{"class1"}, nil, nil, 1, 1, true},
+		{2, []string{"class1"}, nil, nil, 1, 2, true},
+		{3, []string{"class1"}, nil, nil, 2, 3, true},
+		{1, []string{"class1", "class2"}, nil, nil, 1, 1, true},
+
+		// defaultClasses doesn't matter when any of the others is specified.
+		{1, []string{"class1"}, []string{"class1"}, nil, 1, 1, true},
+		{2, []string{"class1"}, []string{"class1"}, nil, 1, 2, true},
+		{3, []string{"class1"}, []string{"class1"}, nil, 2, 3, true},
+		{1, []string{"class1"}, []string{"class1", "class2"}, nil, 1, 1, true},
+		{3, []string{"class1"}, nil, []string{"class1"}, 2, 3, true},
+		{1, []string{"class1"}, nil, []string{"class1", "class2"}, 1, 1, true},
+		{1, []string{"class1"}, []string{"class404"}, []string{"class1", "class2"}, 1, 1, true},
+		{1, []string{"class1"}, []string{"class1"}, []string{"class404", "class2"}, nServers, nServers, false},
+		{nServers*2 + 1, []string{}, []string{"class1"}, nil, nServers, nServers, false},
+		{1, []string{"class1"}, []string{"class404"}, nil, nServers, nServers, false},
+		{1, []string{"class1"}, []string{"class1", "class404"}, nil, nServers, nServers, false},
+		{1, []string{"class1"}, nil, []string{"class1", "class404"}, nServers, nServers, false},
 	} {
 		c.Logf("%+v", trial)
 		st := &StubPutHandler{
@@ -280,6 +369,7 @@ func (s *StandaloneSuite) TestPutWithStorageClasses(c *C) {
 		kc, _ := MakeKeepClient(arv)
 		kc.Want_replicas = trial.replicas
 		kc.StorageClasses = trial.clientClasses
+		kc.DefaultStorageClasses = trial.defaultClasses
 		arv.ApiToken = "abc123"
 		localRoots := make(map[string]string)
 		writableLocalRoots := make(map[string]string)
@@ -295,17 +385,17 @@ func (s *StandaloneSuite) TestPutWithStorageClasses(c *C) {
 			StorageClasses: trial.putClasses,
 		})
 		if trial.success {
-			c.Check(err, check.IsNil)
+			c.Check(err, IsNil)
 		} else {
-			c.Check(err, check.NotNil)
+			c.Check(err, NotNil)
 		}
-		c.Check(len(st.handled) >= trial.minRequests, check.Equals, true, check.Commentf("len(st.handled)==%d, trial.minRequests==%d", len(st.handled), trial.minRequests))
-		c.Check(len(st.handled) <= trial.maxRequests, check.Equals, true, check.Commentf("len(st.handled)==%d, trial.maxRequests==%d", len(st.handled), trial.maxRequests))
-		if !trial.success && trial.replicas == 1 && c.Check(len(st.requests) >= 2, check.Equals, true) {
+		c.Check(len(st.handled) >= trial.minRequests, Equals, true, Commentf("len(st.handled)==%d, trial.minRequests==%d", len(st.handled), trial.minRequests))
+		c.Check(len(st.handled) <= trial.maxRequests, Equals, true, Commentf("len(st.handled)==%d, trial.maxRequests==%d", len(st.handled), trial.maxRequests))
+		if !trial.success && trial.replicas == 1 && c.Check(len(st.requests) >= 2, Equals, true) {
 			// Max concurrency should be 1. First request
 			// should have succeeded for class1. Second
 			// request should only ask for class404.
-			c.Check(st.requests[1].Header.Get("X-Keep-Storage-Classes"), check.Equals, "class404")
+			c.Check(st.requests[1].Header.Get("X-Keep-Storage-Classes"), Equals, "class404")
 		}
 	}
 }
@@ -392,7 +482,7 @@ func (s *StandaloneSuite) TestPutB(c *C) {
 		expectPath:           hash,
 		expectAPIToken:       "abc123",
 		expectBody:           "foo",
-		expectStorageClass:   "",
+		expectStorageClass:   "default",
 		returnStorageClasses: "",
 		handled:              make(chan string, 5),
 	}
@@ -436,7 +526,7 @@ func (s *StandaloneSuite) TestPutHR(c *C) {
 		expectPath:           hash,
 		expectAPIToken:       "abc123",
 		expectBody:           "foo",
-		expectStorageClass:   "",
+		expectStorageClass:   "default",
 		returnStorageClasses: "",
 		handled:              make(chan string, 5),
 	}
@@ -487,7 +577,7 @@ func (s *StandaloneSuite) TestPutWithFail(c *C) {
 		expectPath:           hash,
 		expectAPIToken:       "abc123",
 		expectBody:           "foo",
-		expectStorageClass:   "",
+		expectStorageClass:   "default",
 		returnStorageClasses: "",
 		handled:              make(chan string, 4),
 	}
@@ -549,7 +639,7 @@ func (s *StandaloneSuite) TestPutWithTooManyFail(c *C) {
 		expectPath:           hash,
 		expectAPIToken:       "abc123",
 		expectBody:           "foo",
-		expectStorageClass:   "",
+		expectStorageClass:   "default",
 		returnStorageClasses: "",
 		handled:              make(chan string, 1),
 	}
@@ -1159,7 +1249,7 @@ func (s *StandaloneSuite) TestPutBWant2ReplicasWithOnlyOneWritableLocalRoot(c *C
 		expectPath:           hash,
 		expectAPIToken:       "abc123",
 		expectBody:           "foo",
-		expectStorageClass:   "",
+		expectStorageClass:   "default",
 		returnStorageClasses: "",
 		handled:              make(chan string, 5),
 	}
@@ -1378,7 +1468,7 @@ func (s *StandaloneSuite) TestPutBRetry(c *C) {
 			expectPath:           Md5String("foo"),
 			expectAPIToken:       "abc123",
 			expectBody:           "foo",
-			expectStorageClass:   "",
+			expectStorageClass:   "default",
 			returnStorageClasses: "",
 			handled:              make(chan string, 5),
 		},

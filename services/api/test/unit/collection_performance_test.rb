@@ -42,10 +42,7 @@ class CollectionModelPerformanceTest < ActiveSupport::TestCase
       c = time_block 'read' do
         Collection.find_by_uuid(c.uuid)
       end
-      time_block 'sign' do
-        c.signed_manifest_text
-      end
-      time_block 'sign + render' do
+      time_block 'render' do
         c.as_api_response(nil)
       end
       loc = Blob.sign_locator(Digest::MD5.hexdigest('foo') + '+3',

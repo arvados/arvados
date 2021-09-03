@@ -97,17 +97,18 @@ type HTTPClient interface {
 
 // KeepClient holds information about Arvados and Keep servers.
 type KeepClient struct {
-	Arvados            *arvadosclient.ArvadosClient
-	Want_replicas      int
-	localRoots         map[string]string
-	writableLocalRoots map[string]string
-	gatewayRoots       map[string]string
-	lock               sync.RWMutex
-	HTTPClient         HTTPClient
-	Retries            int
-	BlockCache         *BlockCache
-	RequestID          string
-	StorageClasses     []string
+	Arvados               *arvadosclient.ArvadosClient
+	Want_replicas         int
+	localRoots            map[string]string
+	writableLocalRoots    map[string]string
+	gatewayRoots          map[string]string
+	lock                  sync.RWMutex
+	HTTPClient            HTTPClient
+	Retries               int
+	BlockCache            *BlockCache
+	RequestID             string
+	StorageClasses        []string
+	DefaultStorageClasses []string // Set by cluster's exported config
 
 	// set to 1 if all writable services are of disk type, otherwise 0
 	replicasPerService int
@@ -119,7 +120,23 @@ type KeepClient struct {
 	disableDiscovery bool
 }
 
-// MakeKeepClient creates a new KeepClient, calls
+func (kc *KeepClient) loadDefaultClasses() error {
+	scData, err := kc.Arvados.ClusterConfig("StorageClasses")
+	if err != nil {
+		return err
+	}
+	classes := scData.(map[string]interface{})
+	for scName := range classes {
+		scConf, _ := classes[scName].(map[string]interface{})
+		isDefault, ok := scConf["Default"].(bool)
+		if ok && isDefault {
+			kc.DefaultStorageClasses = append(kc.DefaultStorageClasses, scName)
+		}
+	}
+	return nil
+}
+
+// MakeKeepClient creates a new KeepClient, loads default storage classes, calls
 // DiscoverKeepServices(), and returns when the client is ready to
 // use.
 func MakeKeepClient(arv *arvadosclient.ArvadosClient) (*KeepClient, error) {
@@ -138,11 +155,16 @@ func New(arv *arvadosclient.ArvadosClient) *KeepClient {
 			defaultReplicationLevel = int(v)
 		}
 	}
-	return &KeepClient{
+	kc := &KeepClient{
 		Arvados:       arv,
 		Want_replicas: defaultReplicationLevel,
 		Retries:       2,
 	}
+	err = kc.loadDefaultClasses()
+	if err != nil {
+		DebugPrintf("DEBUG: Unable to load the default storage classes cluster config")
+	}
+	return kc
 }
 
 // PutHR puts a block given the block hash, a reader, and the number of bytes

@@ -64,6 +64,9 @@ func (s *FederationSuite) SetUpTest(c *check.C) {
 	cluster.API.MaxItemsPerResponse = 1000
 	cluster.API.MaxRequestAmplification = 4
 	cluster.API.RequestTimeout = arvados.Duration(5 * time.Minute)
+	cluster.Collections.BlobSigning = true
+	cluster.Collections.BlobSigningKey = arvadostest.BlobSigningKey
+	cluster.Collections.BlobSigningTTL = arvados.Duration(time.Hour * 24 * 14)
 	arvadostest.SetServiceURL(&cluster.Services.RailsAPI, "http://localhost:1/")
 	arvadostest.SetServiceURL(&cluster.Services.Controller, "http://localhost:/")
 	s.testHandler = &Handler{Cluster: cluster}
@@ -695,7 +698,6 @@ func (s *FederationSuite) TestCreateRemoteContainerRequestCheckRuntimeToken(c *c
 	s.testHandler.Cluster.ClusterID = "zzzzz"
 	s.testHandler.Cluster.SystemRootToken = arvadostest.SystemRootToken
 	s.testHandler.Cluster.API.MaxTokenLifetime = arvados.Duration(time.Hour)
-	s.testHandler.Cluster.Collections.BlobSigningTTL = arvados.Duration(336 * time.Hour) // For some reason, this was set to 0h
 
 	resp := s.testRequest(req).Result()
 	c.Check(resp.StatusCode, check.Equals, http.StatusOK)

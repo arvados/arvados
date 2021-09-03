@@ -3,10 +3,16 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
+{%- if grains.os_family in ('RedHat',) %}
+  {%- set group = 'nginx' %}
+{%- else %}
+  {%- set group = 'www-data' %}
+{%- endif %}
+
 ### ARVADOS
 arvados:
   config:
-    group: www-data
+    group: {{ group }}
 
 ### NGINX
 nginx:
@@ -23,7 +29,7 @@ nginx:
   servers:
     managed:
       ### DEFAULT
-      arvados_workbench_default:
+      arvados_workbench_default.conf:
         enabled: true
         overwrite: true
         config:
@@ -36,9 +42,11 @@ nginx:
             - location /:
               - return: '301 https://$host$request_uri'
 
-      arvados_workbench_ssl:
+      arvados_workbench_ssl.conf:
         enabled: true
         overwrite: true
+        requires:
+          file: nginx_snippet_arvados-snakeoil.conf
         config:
           - server:
             - server_name: workbench.__CLUSTER__.__DOMAIN__
@@ -54,11 +62,12 @@ nginx:
               - proxy_set_header: 'Host $http_host'
               - proxy_set_header: 'X-Real-IP $remote_addr'
               - proxy_set_header: 'X-Forwarded-For $proxy_add_x_forwarded_for'
-            - include: 'snippets/arvados-snakeoil.conf'
+            - include: snippets/ssl_hardening_default.conf
+            - include: snippets/arvados-snakeoil.conf
             - access_log: /var/log/nginx/workbench.__CLUSTER__.__DOMAIN__.access.log combined
             - error_log: /var/log/nginx/workbench.__CLUSTER__.__DOMAIN__.error.log
 
-      arvados_workbench_upstream:
+      arvados_workbench_upstream.conf:
         enabled: true
         overwrite: true
         config:

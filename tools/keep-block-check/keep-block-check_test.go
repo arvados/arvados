@@ -43,12 +43,7 @@ var TestHash2 = "aaaac516f788aec4f30932ffb6395c39"
 
 var blobSignatureTTL = time.Duration(2*7*24) * time.Hour
 
-func (s *ServerRequiredSuite) SetUpSuite(c *C) {
-	arvadostest.StartAPI()
-}
-
 func (s *ServerRequiredSuite) TearDownSuite(c *C) {
-	arvadostest.StopAPI()
 	arvadostest.ResetEnv()
 }
 

@@ -59,5 +59,6 @@ fi
 export VERSION=$(./version-at-commit.sh)
 export BROWSER=none
 export CI=true
+export HTTPS=false
 node --version
 exec node node_modules/react-scripts/scripts/start.js

@@ -20,6 +20,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 
 	"git.arvados.org/arvados.git/lib/boot"
 	"git.arvados.org/arvados.git/lib/config"
@@ -149,6 +150,16 @@ func (s *IntegrationSuite) TearDownSuite(c *check.C) {
 	}
 }
 
+func (s *IntegrationSuite) TestDefaultStorageClassesOnCollections(c *check.C) {
+	conn := s.testClusters["z1111"].Conn()
+	rootctx, _, _ := s.testClusters["z1111"].RootClients()
+	userctx, _, kc, _ := s.testClusters["z1111"].UserClients(rootctx, c, conn, s.oidcprovider.AuthEmail, true)
+	c.Assert(len(kc.DefaultStorageClasses) > 0, check.Equals, true)
+	coll, err := conn.CollectionCreate(userctx, arvados.CreateOptions{})
+	c.Assert(err, check.IsNil)
+	c.Assert(coll.StorageClassesDesired, check.DeepEquals, kc.DefaultStorageClasses)
+}
+
 func (s *IntegrationSuite) TestGetCollectionByPDH(c *check.C) {
 	conn1 := s.testClusters["z1111"].Conn()
 	rootctx1, _, _ := s.testClusters["z1111"].RootClients()
@@ -185,6 +196,49 @@ func (s *IntegrationSuite) TestGetCollectionByPDH(c *check.C) {
 	coll, err := conn3.CollectionGet(userctx1, arvados.GetOptions{UUID: pdh})
 	c.Check(err, check.IsNil)
 	c.Check(coll.PortableDataHash, check.Equals, pdh)
+}
+
+// Tests bug #18004
+func (s *IntegrationSuite) TestRemoteUserAndTokenCacheRace(c *check.C) {
+	conn1 := s.testClusters["z1111"].Conn()
+	rootctx1, _, _ := s.testClusters["z1111"].RootClients()
+	rootctx2, _, _ := s.testClusters["z2222"].RootClients()
+	conn2 := s.testClusters["z2222"].Conn()
+	userctx1, _, _, _ := s.testClusters["z1111"].UserClients(rootctx1, c, conn1, "user2@example.com", true)
+
+	var wg1, wg2 sync.WaitGroup
+	creqs := 100
+
+	// Make concurrent requests to z2222 with a local token to make sure more
+	// than one worker is listening.
+	wg1.Add(1)
+	for i := 0; i < creqs; i++ {
+		wg2.Add(1)
+		go func() {
+			defer wg2.Done()
+			wg1.Wait()
+			_, err := conn2.UserGetCurrent(rootctx2, arvados.GetOptions{})
+			c.Check(err, check.IsNil, check.Commentf("warm up phase failed"))
+		}()
+	}
+	wg1.Done()
+	wg2.Wait()
+
+	// Real test pass -- use a new remote token than the one used in the warm-up
+	// phase.
+	wg1.Add(1)
+	for i := 0; i < creqs; i++ {
+		wg2.Add(1)
+		go func() {
+			defer wg2.Done()
+			wg1.Wait()
+			// Retrieve the remote collection from cluster z2222.
+			_, err := conn2.UserGetCurrent(userctx1, arvados.GetOptions{})
+			c.Check(err, check.IsNil, check.Commentf("testing phase failed"))
+		}()
+	}
+	wg1.Done()
+	wg2.Wait()
 }
 
 func (s *IntegrationSuite) TestS3WithFederatedToken(c *check.C) {
@@ -502,7 +556,7 @@ func (s *IntegrationSuite) TestRequestIDHeader(c *check.C) {
 }
 
 // We test the direct access to the database
-// normally an integration test would not have a database access, but  in this case we need
+// normally an integration test would not have a database access, but in this case we need
 // to test tokens that are secret, so there is no API response that will give them back
 func (s *IntegrationSuite) dbConn(c *check.C, clusterID string) (*sql.DB, *sql.Conn) {
 	ctx := context.Background()
@@ -608,6 +662,87 @@ func (s *IntegrationSuite) TestIntermediateCluster(c *check.C) {
 	}
 }
 
+// Test for bug #18076
+func (s *IntegrationSuite) TestStaleCachedUserRecord(c *check.C) {
+	rootctx1, _, _ := s.testClusters["z1111"].RootClients()
+	conn1 := s.testClusters["z1111"].Conn()
+	conn3 := s.testClusters["z3333"].Conn()
+
+	// Make sure LoginCluster is properly configured
+	for cls := range s.testClusters {
+		if cls == "z1111" || cls == "z3333" {
+			c.Check(
+				s.testClusters[cls].Config.Clusters[cls].Login.LoginCluster,
+				check.Equals, "z1111",
+				check.Commentf("incorrect LoginCluster config on cluster %q", cls))
+		}
+	}
+
+	// Create some users, request them on the federated cluster so they're cached.
+	var users []arvados.User
+	for userNr := 0; userNr < 2; userNr++ {
+		_, _, _, user := s.testClusters["z1111"].UserClients(
+			rootctx1,
+			c,
+			conn1,
+			fmt.Sprintf("user%d@example.com", userNr),
+			true)
+		c.Assert(user.Username, check.Not(check.Equals), "")
+		users = append(users, user)
+
+		lst, err := conn3.UserList(rootctx1, arvados.ListOptions{Limit: -1})
+		c.Assert(err, check.Equals, nil)
+		userFound := false
+		for _, fedUser := range lst.Items {
+			if fedUser.UUID == user.UUID {
+				c.Assert(fedUser.Username, check.Equals, user.Username)
+				userFound = true
+				break
+			}
+		}
+		c.Assert(userFound, check.Equals, true)
+	}
+
+	// Swap the usernames
+	_, err := conn1.UserUpdate(rootctx1, arvados.UpdateOptions{
+		UUID: users[0].UUID,
+		Attrs: map[string]interface{}{
+			"username": "",
+		},
+	})
+	c.Assert(err, check.Equals, nil)
+	_, err = conn1.UserUpdate(rootctx1, arvados.UpdateOptions{
+		UUID: users[1].UUID,
+		Attrs: map[string]interface{}{
+			"username": users[0].Username,
+		},
+	})
+	c.Assert(err, check.Equals, nil)
+	_, err = conn1.UserUpdate(rootctx1, arvados.UpdateOptions{
+		UUID: users[0].UUID,
+		Attrs: map[string]interface{}{
+			"username": users[1].Username,
+		},
+	})
+	c.Assert(err, check.Equals, nil)
+
+	// Re-request the list on the federated cluster & check for updates
+	lst, err := conn3.UserList(rootctx1, arvados.ListOptions{Limit: -1})
+	c.Assert(err, check.Equals, nil)
+	var user0Found, user1Found bool
+	for _, user := range lst.Items {
+		if user.UUID == users[0].UUID {
+			user0Found = true
+			c.Assert(user.Username, check.Equals, users[1].Username)
+		} else if user.UUID == users[1].UUID {
+			user1Found = true
+			c.Assert(user.Username, check.Equals, users[0].Username)
+		}
+	}
+	c.Assert(user0Found, check.Equals, true)
+	c.Assert(user1Found, check.Equals, true)
+}
+
 // Test for bug #16263
 func (s *IntegrationSuite) TestListUsers(c *check.C) {
 	rootctx1, _, _ := s.testClusters["z1111"].RootClients()
@@ -632,6 +767,7 @@ func (s *IntegrationSuite) TestListUsers(c *check.C) {
 	for _, user := range lst.Items {
 		if user.Username == "" {
 			nullUsername = true
+			break
 		}
 	}
 	c.Assert(nullUsername, check.Equals, true)

@@ -23,6 +23,7 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"git.arvados.org/arvados.git/lib/config"
@@ -364,6 +365,94 @@ func (s *HandlerSuite) TestReadsOrderedByStorageClassPriority(c *check.C) {
 			})
 		c.Check(s.handler.volmgr.mountMap["zzzzz-nyw5e-111111111111111"].Volume.(*MockVolume).CallCount("Get"), check.Equals, trial.get1)
 		c.Check(s.handler.volmgr.mountMap["zzzzz-nyw5e-222222222222222"].Volume.(*MockVolume).CallCount("Get"), check.Equals, trial.get2)
+	}
+}
+
+func (s *HandlerSuite) TestPutWithNoWritableVolumes(c *check.C) {
+	s.cluster.Volumes = map[string]arvados.Volume{
+		"zzzzz-nyw5e-111111111111111": {
+			Driver:         "mock",
+			Replication:    1,
+			ReadOnly:       true,
+			StorageClasses: map[string]bool{"class1": true}},
+	}
+	c.Assert(s.handler.setup(context.Background(), s.cluster, "", prometheus.NewRegistry(), testServiceURL), check.IsNil)
+	resp := IssueRequest(s.handler,
+		&RequestTester{
+			method:         "PUT",
+			uri:            "/" + TestHash,
+			requestBody:    TestBlock,
+			storageClasses: "class1",
+		})
+	c.Check(resp.Code, check.Equals, FullError.HTTPCode)
+	c.Check(s.handler.volmgr.mountMap["zzzzz-nyw5e-111111111111111"].Volume.(*MockVolume).CallCount("Put"), check.Equals, 0)
+}
+
+func (s *HandlerSuite) TestConcurrentWritesToMultipleStorageClasses(c *check.C) {
+	s.cluster.Volumes = map[string]arvados.Volume{
+		"zzzzz-nyw5e-111111111111111": {
+			Driver:         "mock",
+			Replication:    1,
+			StorageClasses: map[string]bool{"class1": true}},
+		"zzzzz-nyw5e-121212121212121": {
+			Driver:         "mock",
+			Replication:    1,
+			StorageClasses: map[string]bool{"class1": true, "class2": true}},
+		"zzzzz-nyw5e-222222222222222": {
+			Driver:         "mock",
+			Replication:    1,
+			StorageClasses: map[string]bool{"class2": true}},
+	}
+
+	for _, trial := range []struct {
+		setCounter uint32 // value to stuff vm.counter, to control offset
+		classes    string // desired classes
+		put111     int    // expected number of "put" ops on 11111... after 2x put reqs
+		put121     int    // expected number of "put" ops on 12121...
+		put222     int    // expected number of "put" ops on 22222...
+		cmp111     int    // expected number of "compare" ops on 11111... after 2x put reqs
+		cmp121     int    // expected number of "compare" ops on 12121...
+		cmp222     int    // expected number of "compare" ops on 22222...
+	}{
+		{0, "class1",
+			1, 0, 0,
+			2, 1, 0}, // first put compares on all vols with class2; second put succeeds after checking 121
+		{0, "class2",
+			0, 1, 0,
+			0, 2, 1}, // first put compares on all vols with class2; second put succeeds after checking 121
+		{0, "class1,class2",
+			1, 1, 0,
+			2, 2, 1}, // first put compares on all vols; second put succeeds after checking 111 and 121
+		{1, "class1,class2",
+			0, 1, 0, // vm.counter offset is 1 so the first volume attempted is 121
+			2, 2, 1}, // first put compares on all vols; second put succeeds after checking 111 and 121
+		{0, "class1,class2,class404",
+			1, 1, 0,
+			2, 2, 1}, // first put compares on all vols; second put doesn't compare on 222 because it already satisfied class2 on 121
+	} {
+		c.Logf("%+v", trial)
+		s.cluster.StorageClasses = map[string]arvados.StorageClassConfig{
+			"class1": {},
+			"class2": {},
+			"class3": {},
+		}
+		c.Assert(s.handler.setup(context.Background(), s.cluster, "", prometheus.NewRegistry(), testServiceURL), check.IsNil)
+		atomic.StoreUint32(&s.handler.volmgr.counter, trial.setCounter)
+		for i := 0; i < 2; i++ {
+			IssueRequest(s.handler,
+				&RequestTester{
+					method:         "PUT",
+					uri:            "/" + TestHash,
+					requestBody:    TestBlock,
+					storageClasses: trial.classes,
+				})
+		}
+		c.Check(s.handler.volmgr.mountMap["zzzzz-nyw5e-111111111111111"].Volume.(*MockVolume).CallCount("Put"), check.Equals, trial.put111)
+		c.Check(s.handler.volmgr.mountMap["zzzzz-nyw5e-121212121212121"].Volume.(*MockVolume).CallCount("Put"), check.Equals, trial.put121)
+		c.Check(s.handler.volmgr.mountMap["zzzzz-nyw5e-222222222222222"].Volume.(*MockVolume).CallCount("Put"), check.Equals, trial.put222)
+		c.Check(s.handler.volmgr.mountMap["zzzzz-nyw5e-111111111111111"].Volume.(*MockVolume).CallCount("Compare"), check.Equals, trial.cmp111)
+		c.Check(s.handler.volmgr.mountMap["zzzzz-nyw5e-121212121212121"].Volume.(*MockVolume).CallCount("Compare"), check.Equals, trial.cmp121)
+		c.Check(s.handler.volmgr.mountMap["zzzzz-nyw5e-222222222222222"].Volume.(*MockVolume).CallCount("Compare"), check.Equals, trial.cmp222)
 	}
 }
 

@@ -38,7 +38,6 @@ func (s *integrationSuite) SetUpSuite(c *check.C) {
 		c.Skip("-short")
 	}
 	arvadostest.ResetEnv()
-	arvadostest.StartAPI()
 	arvadostest.StartKeep(4, true)
 
 	arv, err := arvadosclient.MakeArvadosClient()
@@ -62,7 +61,6 @@ func (s *integrationSuite) TearDownSuite(c *check.C) {
 		c.Skip("-short")
 	}
 	arvadostest.StopKeep(4)
-	arvadostest.StopAPI()
 }
 
 func (s *integrationSuite) SetUpTest(c *check.C) {

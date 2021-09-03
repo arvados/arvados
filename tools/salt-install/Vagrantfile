@@ -35,7 +35,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
                                cp -vr /vagrant/tests /home/vagrant/tests;
                                sed 's#cluster_fixme_or_this_wont_work#harpo#g;
                                     s#domain_fixme_or_this_wont_work#local#g;
-                                    s/#\ BRANCH=\"master\"/\ BRANCH=\"master\"/g;
+                                    s/#\ BRANCH=\"main\"/\ BRANCH=\"main\"/g;
                                     s#CONTROLLER_EXT_SSL_PORT=443#CONTROLLER_EXT_SSL_PORT=8443#g' \
                                     /vagrant/local.params.example.single_host_multiple_hostnames > /tmp/local.params.single_host_multiple_hostnames"
      arv.vm.provision "shell",
@@ -78,7 +78,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
                                cp -vr /vagrant/tests /home/vagrant/tests;
                                sed 's#HOSTNAME_EXT=\"\"#HOSTNAME_EXT=\"zeppo.local\"#g;
                                     s#cluster_fixme_or_this_wont_work#zeppo#g;
-                                    s/#\ BRANCH=\"master\"/\ BRANCH=\"master\"/g;
+                                    s/#\ BRANCH=\"main\"/\ BRANCH=\"main\"/g;
                                     s#domain_fixme_or_this_wont_work#local#g;' \
                                     /vagrant/local.params.example.single_host_single_hostname > /tmp/local.params.single_host_single_hostname"
      arv.vm.provision "shell",
