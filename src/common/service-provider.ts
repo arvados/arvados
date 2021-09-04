@@ -26,7 +26,7 @@ class ServicesProvider {
 
     public getServices() {
         if (!this.services) {
-            throw "Please check if services have been set in the index.ts before the app is initiated";
+            throw "Please check if services have been set in the index.ts before the app is initiated"; // eslint-disable-line no-throw-literal
         }
         return this.services;
     }

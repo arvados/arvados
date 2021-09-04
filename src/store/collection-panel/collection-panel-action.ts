@@ -4,7 +4,6 @@
 
 import { Dispatch } from "redux";
 import {
-    loadCollectionFiles,
     COLLECTION_PANEL_LOAD_FILES_THRESHOLD
 } from "./collection-panel-files/collection-panel-files-actions";
 import { CollectionResource } from 'models/collection';

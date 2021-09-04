@@ -236,7 +236,7 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
         if (rightKey) {
             fetchData(rightKey);
         }
-    }, [rightKey]);
+    }, [rightKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
     React.useEffect(() => {
         const hash = (collectionPanel.item || {}).portableDataHash;
@@ -244,13 +244,14 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
         if (hash && rightClickUsed) {
             fetchData(rightKey, true);
         }
-    }, [(collectionPanel.item || {}).portableDataHash]);
+    }, [(collectionPanel.item || {}).portableDataHash]); // eslint-disable-line react-hooks/exhaustive-deps
 
     React.useEffect(() => {
         if (rightData) {
-            setCollectionFiles(rightData, false)(dispatch);
+            const filtered = rightData.filter(({ name }) => name.indexOf(rightSearch) > -1);
+            setCollectionFiles(filtered, false)(dispatch);
         }
-    }, [rightData, dispatch]);
+    }, [rightData, dispatch, rightSearch]);
 
     const handleRightClick = React.useCallback(
         (event) => {
@@ -277,7 +278,7 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
                 onItemMenuOpen(event, item, isWritable);
             }
         },
-        [onItemMenuOpen, isWritable, rightData]
+        [onItemMenuOpen, isWritable, rightData] // eslint-disable-line react-hooks/exhaustive-deps
     );
 
     React.useEffect(() => {
@@ -335,7 +336,7 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
                 props.onSelectionToggle(event, item);
             }
         },
-        [path, setPath, collectionPanelFiles]
+        [path, setPath, collectionPanelFiles] // eslint-disable-line react-hooks/exhaustive-deps
     );
 
     const getItemIcon = React.useCallback(
@@ -371,7 +372,7 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
         (ev, isWritable) => {
             props.onOptionsMenuOpen(ev, isWritable);
         },
-        [props.onOptionsMenuOpen]
+        [props.onOptionsMenuOpen] // eslint-disable-line react-hooks/exhaustive-deps
     );
 
     return (
