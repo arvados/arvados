@@ -66,7 +66,7 @@ func (sch *Scheduler) sync() {
 				// a network outage and is still
 				// preparing to run a container that
 				// has already been unlocked/requeued.
-				go sch.kill(uuid, fmt.Sprintf("state=%s", ent.Container.State))
+				go sch.kill(uuid, fmt.Sprintf("pool says running, but queue says state=%s", ent.Container.State))
 			} else if ent.Container.Priority == 0 {
 				sch.logger.WithFields(logrus.Fields{
 					"ContainerUUID": uuid,
@@ -118,6 +118,10 @@ func (sch *Scheduler) kill(uuid string, reason string) {
 		return
 	}
 	defer sch.uuidUnlock(uuid)
+	sch.logger.WithFields(logrus.Fields{
+		"ContainerUUID": uuid,
+		"reason":        reason,
+	}).Debug("kill")
 	sch.pool.KillContainer(uuid, reason)
 	sch.pool.ForgetContainer(uuid)
 }

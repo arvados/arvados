@@ -75,7 +75,7 @@ tryrun:
 				// starve this one by using keeping
 				// idle workers alive on different
 				// instance types.
-				logger.Debug("overquota")
+				logger.Trace("overquota")
 				overquota = sorted[i:]
 				break tryrun
 			} else if logger.Info("creating new instance"); sch.pool.Create(it) {
@@ -88,6 +88,7 @@ tryrun:
 				// avoid getting starved here if
 				// instances of a specific type always
 				// fail.
+				logger.Trace("pool declined to create new instance")
 				continue
 			}
 
