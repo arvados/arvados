@@ -13,6 +13,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+var reportedUnexpectedState = false
+
 // sync resolves discrepancies between the queue and the pool:
 //
 // Lingering crunch-run processes for finalized and unlocked/requeued
@@ -82,10 +84,13 @@ func (sch *Scheduler) sync() {
 				go sch.requeue(ent, "priority=0")
 			}
 		default:
-			sch.logger.WithFields(logrus.Fields{
-				"ContainerUUID": uuid,
-				"State":         ent.Container.State,
-			}).Error("BUG: unexpected state")
+			if !reportedUnexpectedState {
+				sch.logger.WithFields(logrus.Fields{
+					"ContainerUUID": uuid,
+					"State":         ent.Container.State,
+				}).Error("BUG: unexpected state")
+				reportedUnexpectedState = true
+			}
 		}
 	}
 	for uuid := range running {
