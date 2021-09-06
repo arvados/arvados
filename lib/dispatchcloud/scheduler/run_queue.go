@@ -66,8 +66,7 @@ tryrun:
 				// starve this one by using keeping
 				// idle workers alive on different
 				// instance types.
-				logger.Debug("unlocking: AtQuota and no unalloc workers")
-				sch.queue.Unlock(ctr.UUID)
+				logger.Debug("overquota")
 				overquota = sorted[i:]
 				break tryrun
 			} else if logger.Info("creating new instance"); sch.pool.Create(it) {

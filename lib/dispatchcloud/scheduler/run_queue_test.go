@@ -244,15 +244,22 @@ func (*SchedulerSuite) TestShutdownAtQuota(c *check.C) {
 			starts:    []string{},
 			canCreate: 0,
 		}
-		New(ctx, &queue, &pool, nil, time.Millisecond, time.Millisecond).runQueue()
+		sch := New(ctx, &queue, &pool, nil, time.Millisecond, time.Millisecond)
+		sch.runQueue()
+		sch.sync()
+		sch.runQueue()
+		sch.sync()
 		c.Check(pool.creates, check.DeepEquals, shouldCreate)
 		if len(shouldCreate) == 0 {
 			c.Check(pool.starts, check.DeepEquals, []string{})
-			c.Check(pool.shutdowns, check.Not(check.Equals), 0)
 		} else {
 			c.Check(pool.starts, check.DeepEquals, []string{test.ContainerUUID(2)})
-			c.Check(pool.shutdowns, check.Equals, 0)
 		}
+		c.Check(pool.shutdowns, check.Equals, 3-quota)
+		c.Check(queue.StateChanges(), check.DeepEquals, []test.QueueStateChange{
+			{UUID: "zzzzz-dz642-000000000000003", From: "Locked", To: "Queued"},
+			{UUID: "zzzzz-dz642-000000000000002", From: "Locked", To: "Queued"},
+		})
 	}
 }
 
