@@ -665,6 +665,7 @@ func (s *IntegrationSuite) TestIntermediateCluster(c *check.C) {
 // Test for bug #18076
 func (s *IntegrationSuite) TestStaleCachedUserRecord(c *check.C) {
 	rootctx1, _, _ := s.testClusters["z1111"].RootClients()
+	_, rootclnt3, _ := s.testClusters["z3333"].RootClients()
 	conn1 := s.testClusters["z1111"].Conn()
 	conn3 := s.testClusters["z3333"].Conn()
 
@@ -678,69 +679,92 @@ func (s *IntegrationSuite) TestStaleCachedUserRecord(c *check.C) {
 		}
 	}
 
-	// Create some users, request them on the federated cluster so they're cached.
-	var users []arvados.User
-	for userNr := 0; userNr < 2; userNr++ {
-		_, _, _, user := s.testClusters["z1111"].UserClients(
-			rootctx1,
-			c,
-			conn1,
-			fmt.Sprintf("user%d@example.com", userNr),
-			true)
-		c.Assert(user.Username, check.Not(check.Equals), "")
-		users = append(users, user)
+	for testCaseNr, testCase := range []struct {
+		name           string
+		withRepository bool
+	}{
+		{"User without local repository", false},
+		{"User with local repository", true},
+	} {
+		c.Log(c.TestName() + " " + testCase.name)
+		// Create some users, request them on the federated cluster so they're cached.
+		var users []arvados.User
+		for userNr := 0; userNr < 2; userNr++ {
+			_, _, _, user := s.testClusters["z1111"].UserClients(
+				rootctx1,
+				c,
+				conn1,
+				fmt.Sprintf("user%d%d@example.com", testCaseNr, userNr),
+				true)
+			c.Assert(user.Username, check.Not(check.Equals), "")
+			users = append(users, user)
 
-		lst, err := conn3.UserList(rootctx1, arvados.ListOptions{Limit: -1})
-		c.Assert(err, check.Equals, nil)
-		userFound := false
-		for _, fedUser := range lst.Items {
-			if fedUser.UUID == user.UUID {
-				c.Assert(fedUser.Username, check.Equals, user.Username)
-				userFound = true
-				break
+			lst, err := conn3.UserList(rootctx1, arvados.ListOptions{Limit: -1})
+			c.Assert(err, check.Equals, nil)
+			userFound := false
+			for _, fedUser := range lst.Items {
+				if fedUser.UUID == user.UUID {
+					c.Assert(fedUser.Username, check.Equals, user.Username)
+					userFound = true
+					break
+				}
+			}
+			c.Assert(userFound, check.Equals, true)
+
+			if testCase.withRepository {
+				var repo interface{}
+				err = rootclnt3.RequestAndDecode(
+					&repo, "POST", "arvados/v1/repositories", nil,
+					map[string]interface{}{
+						"repository": map[string]string{
+							"name":       fmt.Sprintf("%s/test", user.Username),
+							"owner_uuid": user.UUID,
+						},
+					},
+				)
+				c.Assert(err, check.IsNil)
 			}
 		}
-		c.Assert(userFound, check.Equals, true)
-	}
 
-	// Swap the usernames
-	_, err := conn1.UserUpdate(rootctx1, arvados.UpdateOptions{
-		UUID: users[0].UUID,
-		Attrs: map[string]interface{}{
-			"username": "",
-		},
-	})
-	c.Assert(err, check.Equals, nil)
-	_, err = conn1.UserUpdate(rootctx1, arvados.UpdateOptions{
-		UUID: users[1].UUID,
-		Attrs: map[string]interface{}{
-			"username": users[0].Username,
-		},
-	})
-	c.Assert(err, check.Equals, nil)
-	_, err = conn1.UserUpdate(rootctx1, arvados.UpdateOptions{
-		UUID: users[0].UUID,
-		Attrs: map[string]interface{}{
-			"username": users[1].Username,
-		},
-	})
-	c.Assert(err, check.Equals, nil)
+		// Swap the usernames
+		_, err := conn1.UserUpdate(rootctx1, arvados.UpdateOptions{
+			UUID: users[0].UUID,
+			Attrs: map[string]interface{}{
+				"username": "",
+			},
+		})
+		c.Assert(err, check.Equals, nil)
+		_, err = conn1.UserUpdate(rootctx1, arvados.UpdateOptions{
+			UUID: users[1].UUID,
+			Attrs: map[string]interface{}{
+				"username": users[0].Username,
+			},
+		})
+		c.Assert(err, check.Equals, nil)
+		_, err = conn1.UserUpdate(rootctx1, arvados.UpdateOptions{
+			UUID: users[0].UUID,
+			Attrs: map[string]interface{}{
+				"username": users[1].Username,
+			},
+		})
+		c.Assert(err, check.Equals, nil)
 
-	// Re-request the list on the federated cluster & check for updates
-	lst, err := conn3.UserList(rootctx1, arvados.ListOptions{Limit: -1})
-	c.Assert(err, check.Equals, nil)
-	var user0Found, user1Found bool
-	for _, user := range lst.Items {
-		if user.UUID == users[0].UUID {
-			user0Found = true
-			c.Assert(user.Username, check.Equals, users[1].Username)
-		} else if user.UUID == users[1].UUID {
-			user1Found = true
-			c.Assert(user.Username, check.Equals, users[0].Username)
+		// Re-request the list on the federated cluster & check for updates
+		lst, err := conn3.UserList(rootctx1, arvados.ListOptions{Limit: -1})
+		c.Assert(err, check.Equals, nil)
+		var user0Found, user1Found bool
+		for _, user := range lst.Items {
+			if user.UUID == users[0].UUID {
+				user0Found = true
+				c.Assert(user.Username, check.Equals, users[1].Username)
+			} else if user.UUID == users[1].UUID {
+				user1Found = true
+				c.Assert(user.Username, check.Equals, users[0].Username)
+			}
 		}
+		c.Assert(user0Found, check.Equals, true)
+		c.Assert(user1Found, check.Equals, true)
 	}
-	c.Assert(user0Found, check.Equals, true)
-	c.Assert(user1Found, check.Equals, true)
 }
 
 // Test for bug #16263
