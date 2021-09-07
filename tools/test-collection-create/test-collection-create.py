@@ -16,6 +16,8 @@ import arvados.collection
 logger = logging.getLogger('arvados.test_collection_create')
 logger.setLevel(logging.INFO)
 
+max_manifest_size = 127*1024*1024
+
 opts = argparse.ArgumentParser(add_help=False)
 opts.add_argument('--min-files', type=int, default=30000, help="""
 Minimum number of files on each directory. Default: 30000.
@@ -381,7 +383,7 @@ def create_substreams(depth, base_stream_name, max_filesize, data_loc, args, cur
     current_size += len(current_stream)
     streams = [current_stream]
 
-    if current_size >= (128 * 1024 * 1024):
+    if current_size >= max_manifest_size:
         logger.debug("Maximum manifest size reached -- finishing early at {}".format(base_stream_name))
     elif depth == 0:
         logger.debug("Finished stream {}".format(base_stream_name))
@@ -391,7 +393,7 @@ def create_substreams(depth, base_stream_name, max_filesize, data_loc, args, cur
             substreams = create_substreams(depth-1, stream_name, max_filesize,
                 data_loc, args, current_size)
             current_size += sum([len(x) for x in substreams])
-            if current_size >= (128 * 1024 * 1024):
+            if current_size >= max_manifest_size:
                 break
             streams.extend(substreams)
     return streams
@@ -421,7 +423,7 @@ def main(arguments=None):
         '.', max_filesize, data_loc, args)
     manifest = ''
     for s in streams:
-        if len(manifest)+len(s) > (1024*1024*128)-2:
+        if len(manifest)+len(s) > max_manifest_size:
             logger.info("Skipping stream {} to avoid making a manifest bigger than 128MiB".format(s.split(' ')[0]))
             break
         manifest += s + '\n'
