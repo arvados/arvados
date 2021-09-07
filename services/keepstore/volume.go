@@ -371,6 +371,9 @@ func makeRRVolumeManager(logger logrus.FieldLogger, cluster *arvados.Cluster, my
 	sort.Slice(vm.writables, func(i, j int) bool {
 		return less(vm.writables[i], vm.writables[j])
 	})
+	sort.Slice(vm.mounts, func(i, j int) bool {
+		return less(vm.mounts[i], vm.mounts[j])
+	})
 	return vm, nil
 }
 
