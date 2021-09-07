@@ -800,27 +800,6 @@ The Arvados team.
                     "user's writable_by should include its owner_uuid")
   end
 
-  [
-    [:admin, true],
-    [:active, false],
-  ].each do |auth_user, expect_success|
-    test "update_uuid as #{auth_user}" do
-      authorize_with auth_user
-      orig_uuid = users(:active).uuid
-      post :update_uuid, params: {
-             id: orig_uuid,
-             new_uuid: 'zbbbb-tpzed-abcde12345abcde',
-           }
-      if expect_success
-        assert_response :success
-        assert_empty User.where(uuid: orig_uuid)
-      else
-        assert_response 403
-        assert_not_empty User.where(uuid: orig_uuid)
-      end
-    end
-  end
-
   test "merge with redirect_to_user_uuid=false" do
     authorize_with :project_viewer_trustedclient
     tok = api_client_authorizations(:project_viewer).api_token

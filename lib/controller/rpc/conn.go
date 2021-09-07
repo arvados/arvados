@@ -542,12 +542,6 @@ func (conn *Conn) UserUpdate(ctx context.Context, options arvados.UpdateOptions)
 	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
 	return resp, err
 }
-func (conn *Conn) UserUpdateUUID(ctx context.Context, options arvados.UpdateUUIDOptions) (arvados.User, error) {
-	ep := arvados.EndpointUserUpdateUUID
-	var resp arvados.User
-	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
-	return resp, err
-}
 func (conn *Conn) UserMerge(ctx context.Context, options arvados.UserMergeOptions) (arvados.User, error) {
 	ep := arvados.EndpointUserMerge
 	var resp arvados.User

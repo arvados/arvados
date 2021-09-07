@@ -75,7 +75,6 @@ var (
 	EndpointUserSystem                    = APIEndpoint{"GET", "arvados/v1/users/system", ""}
 	EndpointUserUnsetup                   = APIEndpoint{"POST", "arvados/v1/users/{uuid}/unsetup", ""}
 	EndpointUserUpdate                    = APIEndpoint{"PATCH", "arvados/v1/users/{uuid}", "user"}
-	EndpointUserUpdateUUID                = APIEndpoint{"POST", "arvados/v1/users/{uuid}/update_uuid", ""}
 	EndpointUserBatchUpdate               = APIEndpoint{"PATCH", "arvados/v1/users/batch_update", ""}
 	EndpointUserAuthenticate              = APIEndpoint{"POST", "arvados/v1/users/authenticate", ""}
 	EndpointAPIClientAuthorizationCurrent = APIEndpoint{"GET", "arvados/v1/api_client_authorizations/current", ""}
@@ -152,11 +151,6 @@ type GroupContentsOptions struct {
 	IncludeTrash       bool     `json:"include_trash"`
 	IncludeOldVersions bool     `json:"include_old_versions"`
 	ExcludeHomeProject bool     `json:"exclude_home_project"`
-}
-
-type UpdateUUIDOptions struct {
-	UUID    string `json:"uuid"`
-	NewUUID string `json:"new_uuid"`
 }
 
 type UserActivateOptions struct {
@@ -265,7 +259,6 @@ type API interface {
 	SpecimenDelete(ctx context.Context, options DeleteOptions) (Specimen, error)
 	UserCreate(ctx context.Context, options CreateOptions) (User, error)
 	UserUpdate(ctx context.Context, options UpdateOptions) (User, error)
-	UserUpdateUUID(ctx context.Context, options UpdateUUIDOptions) (User, error)
 	UserMerge(ctx context.Context, options UserMergeOptions) (User, error)
 	UserActivate(ctx context.Context, options UserActivateOptions) (User, error)
 	UserSetup(ctx context.Context, options UserSetupOptions) (map[string]interface{}, error)

@@ -593,10 +593,6 @@ func (conn *Conn) UserUpdate(ctx context.Context, options arvados.UpdateOptions)
 	return resp, err
 }
 
-func (conn *Conn) UserUpdateUUID(ctx context.Context, options arvados.UpdateUUIDOptions) (arvados.User, error) {
-	return conn.local.UserUpdateUUID(ctx, options)
-}
-
 func (conn *Conn) UserMerge(ctx context.Context, options arvados.UserMergeOptions) (arvados.User, error) {
 	return conn.local.UserMerge(ctx, options)
 }
