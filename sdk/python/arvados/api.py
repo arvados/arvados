@@ -211,7 +211,8 @@ def api(version=None, cache=True, host=None, token=None, insecure=False,
         pass
     elif not host and not token:
         return api_from_config(
-            version=version, cache=cache, request_id=request_id, **kwargs)
+            version=version, cache=cache, timeout=timeout,
+            request_id=request_id, **kwargs)
     else:
         # Caller provided one but not the other
         if not host:
