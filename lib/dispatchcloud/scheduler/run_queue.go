@@ -20,7 +20,16 @@ func (sch *Scheduler) runQueue() {
 		sorted = append(sorted, ent)
 	}
 	sort.Slice(sorted, func(i, j int) bool {
-		return sorted[i].Container.Priority > sorted[j].Container.Priority
+		if pi, pj := sorted[i].Container.Priority, sorted[j].Container.Priority; pi != pj {
+			return pi > pj
+		} else {
+			// When containers have identical priority,
+			// start them in the order we first noticed
+			// them. This avoids extra lock/unlock cycles
+			// when we unlock the containers that don't
+			// fit in the available pool.
+			return sorted[i].FirstSeenAt.Before(sorted[j].FirstSeenAt)
+		}
 	})
 
 	running := sch.pool.Running()

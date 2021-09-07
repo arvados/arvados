@@ -263,6 +263,65 @@ func (*SchedulerSuite) TestShutdownAtQuota(c *check.C) {
 	}
 }
 
+// Don't flap lock/unlock when equal-priority containers compete for
+// limited workers.
+//
+// (Unless we use FirstSeenAt as a secondary sort key, each runQueue()
+// tends to choose a different one of the equal-priority containers as
+// the "first" one that should be locked, and unlock the one it chose
+// last time. This generates logging noise, and fails containers by
+// reaching MaxDispatchAttempts quickly.)
+func (*SchedulerSuite) TestEqualPriorityContainers(c *check.C) {
+	logger := ctxlog.TestLogger(c)
+	ctx := ctxlog.Context(context.Background(), logger)
+	queue := test.Queue{
+		ChooseType: chooseType,
+		Logger:     logger,
+	}
+	for i := 0; i < 8; i++ {
+		queue.Containers = append(queue.Containers, arvados.Container{
+			UUID:     test.ContainerUUID(i),
+			Priority: 333,
+			State:    arvados.ContainerStateQueued,
+			RuntimeConstraints: arvados.RuntimeConstraints{
+				VCPUs: 3,
+				RAM:   3 << 30,
+			},
+		})
+	}
+	queue.Update()
+	pool := stubPool{
+		quota: 2,
+		unalloc: map[arvados.InstanceType]int{
+			test.InstanceType(3): 1,
+		},
+		idle: map[arvados.InstanceType]int{
+			test.InstanceType(3): 1,
+		},
+		running:   map[string]time.Time{},
+		creates:   []arvados.InstanceType{},
+		starts:    []string{},
+		canCreate: 1,
+	}
+	sch := New(ctx, &queue, &pool, nil, time.Millisecond, time.Millisecond)
+	for i := 0; i < 30; i++ {
+		sch.runQueue()
+		sch.sync()
+		time.Sleep(time.Millisecond)
+	}
+	c.Check(pool.shutdowns, check.Equals, 0)
+	c.Check(pool.starts, check.HasLen, 1)
+	unlocked := map[string]int{}
+	for _, chg := range queue.StateChanges() {
+		if chg.To == arvados.ContainerStateQueued {
+			unlocked[chg.UUID]++
+		}
+	}
+	for uuid, count := range unlocked {
+		c.Check(count, check.Equals, 1, check.Commentf("%s", uuid))
+	}
+}
+
 // Start lower-priority containers while waiting for new/existing
 // workers to come up for higher-priority containers.
 func (*SchedulerSuite) TestStartWhileCreating(c *check.C) {
