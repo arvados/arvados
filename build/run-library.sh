@@ -912,6 +912,7 @@ fpm_build () {
   declare -a fpm_args=()
   declare -a build_depends=()
   declare -a fpm_depends=()
+  declare -a fpm_conflicts=()
   declare -a fpm_exclude=()
   if [[ ! -d "$SRC_DIR" ]]; then
       echo >&2 "BUG: looking in wrong dir for fpm-info.sh: $pkgdir"
@@ -946,6 +947,9 @@ fpm_build () {
   done
   for i in "${fpm_depends[@]}"; do
     COMMAND_ARR+=('--depends' "$i")
+  done
+  for i in "${fpm_conflicts[@]}"; do
+    COMMAND_ARR+=('--conflicts' "$i")
   done
   for i in "${fpm_exclude[@]}"; do
     COMMAND_ARR+=('--exclude' "$i")
