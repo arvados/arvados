@@ -35,9 +35,13 @@ TODO: extract this information based on git commit messages and generate changel
 <div class="releasenotes">
 </notextile>
 
-h2(#main). development main (as of 2021-09-02)
+h2(#main). development main (as of 2021-09-07)
 
 "Upgrading from 2.2.0":#v2_2_0
+
+h3. Ubuntu 18.04 packages for arvados-api-server and arvados-workbench now conflict with ruby-bundler
+
+Ubuntu 18.04 ships with Bundler version 1.16.1, which is no longer compatible with the Gemfiles in the Arvados packages (made with Bundler 2.2.19). The Ubuntu 18.04 packages for arvados-api-server and arvados-workbench now conflict with the ruby-bundler package to work around this issue. The post-install scripts for arvados-api-server and arvados-workbench install the proper version of Bundler as a gem.
 
 h3. Removed unused @update_uuid@ endpoint for users.
 
