@@ -21,6 +21,7 @@ except:
 
 def try_exec(mnt, cmd):
     try:
+        os.environ['KEEP_LOCAL_STORE'] = tempfile.mkdtemp()
         arvados_fuse.command.Mount(
             arvados_fuse.command.ArgumentParser().parse_args([
                 '--read-write',
