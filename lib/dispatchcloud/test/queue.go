@@ -160,6 +160,7 @@ func (q *Queue) Update() error {
 			upd[ctr.UUID] = container.QueueEnt{
 				Container:    ctr,
 				InstanceType: it,
+				FirstSeenAt:  time.Now(),
 			}
 		}
 	}

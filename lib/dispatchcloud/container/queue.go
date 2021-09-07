@@ -31,6 +31,7 @@ type QueueEnt struct {
 	// populated.
 	Container    arvados.Container    `json:"container"`
 	InstanceType arvados.InstanceType `json:"instance_type"`
+	FirstSeenAt  time.Time            `json:"first_seen_at"`
 }
 
 // String implements fmt.Stringer by returning the queued container's
@@ -229,6 +230,7 @@ func (cq *Queue) delEnt(uuid string, state arvados.ContainerState) {
 	delete(cq.current, uuid)
 }
 
+// Caller must have lock.
 func (cq *Queue) addEnt(uuid string, ctr arvados.Container) {
 	it, err := cq.chooseType(&ctr)
 	if err != nil && (ctr.State == arvados.ContainerStateQueued || ctr.State == arvados.ContainerStateLocked) {
@@ -284,7 +286,7 @@ func (cq *Queue) addEnt(uuid string, ctr arvados.Container) {
 		"Priority":      ctr.Priority,
 		"InstanceType":  it.Name,
 	}).Info("adding container to queue")
-	cq.current[uuid] = QueueEnt{Container: ctr, InstanceType: it}
+	cq.current[uuid] = QueueEnt{Container: ctr, InstanceType: it, FirstSeenAt: time.Now()}
 }
 
 // Lock acquires the dispatch lock for the given container.
