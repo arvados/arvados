@@ -38,8 +38,9 @@ class Arvados::V1::UsersController < ApplicationController
             # A cached user record from the LoginCluster is stale, reset its username
             # and retry the update operation.
             if local_user.andand.uuid[0..4] == loginCluster && local_user.uuid != u.uuid
-              Rails.logger.warn("cached username '#{needupdate[:username]}' collision with user '#{local_user.uuid}' - resetting")
-              local_user.update_attributes!({username: nil})
+              new_username = "#{needupdate[:username]}conflict#{rand(99999999)}"
+              Rails.logger.warn("cached username '#{needupdate[:username]}' collision with user '#{local_user.uuid}' - renaming to '#{new_username}' before retrying")
+              local_user.update_attributes!({username: new_username})
               retry
             end
           end
