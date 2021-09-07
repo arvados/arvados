@@ -235,6 +235,8 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
     React.useEffect(() => {
         if (rightKey) {
             fetchData(rightKey);
+            setLeftSearch('');
+            setRightSearch('');
         }
     }, [rightKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -376,7 +378,7 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
     );
 
     return (
-        <div onClick={handleClick} ref={parentRef}>
+        <div data-cy="collection-files-panel" onClick={handleClick} ref={parentRef}>
             <div className={classes.pathPanel}>
                 {
                     path
