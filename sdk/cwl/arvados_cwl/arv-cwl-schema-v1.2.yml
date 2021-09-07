@@ -271,6 +271,6 @@ $graph:
         _type: "@vocab"
     processProperties:
       type: PropertyDef[]
-      #jsonldPredicate:
-      #  mapSubject: propertyName
-      #  mapPredicate: propertyValue
+      jsonldPredicate:
+        mapSubject: propertyName
+        mapPredicate: propertyValue

@@ -1432,10 +1432,10 @@ class TestSubmit(unittest.TestCase):
             {
                 "class": "http://arvados.org/cwl#ProcessProperties",
                 "processProperties": [
-                    {"propertyName": "foo",
-                     "propertyValue": "bar"},
                     {"propertyName": "baz",
                      "propertyValue": "$(inputs.x.basename)"},
+                    {"propertyName": "foo",
+                     "propertyValue": "bar"},
                     {"propertyName": "quux",
                      "propertyValue": {
                          "q1": 1,
