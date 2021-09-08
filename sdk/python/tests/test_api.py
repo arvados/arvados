@@ -107,6 +107,12 @@ class ArvadosApiTest(run_test_server.TestCaseWithServers):
         self.assertEqual(api._http.timeout, 10,
             "Default timeout value should be 10")
 
+    # Checks for bug #17989
+    def test_custom_request_timeout(self):
+        api = arvados.api('v1', timeout=1234)
+        self.assertEqual(api._http.timeout, 1234,
+            "Requested timeout value was 1234")
+
     def test_ordered_json_model(self):
         mock_responses = {
             'arvados.humans.get': (
