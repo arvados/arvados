@@ -662,6 +662,36 @@ func (s *IntegrationSuite) TestIntermediateCluster(c *check.C) {
 	}
 }
 
+// Test for #17785
+func (s *IntegrationSuite) TestFederatedApiClientAuthHandling(c *check.C) {
+	rootctx1, rootclnt1, _ := s.testClusters["z1111"].RootClients()
+	conn1 := s.testClusters["z1111"].Conn()
+
+	// Make sure LoginCluster is properly configured
+	for cls := range s.testClusters {
+		if cls == "z1111" || cls == "z3333" {
+			c.Check(
+				s.testClusters[cls].Config.Clusters[cls].Login.LoginCluster,
+				check.Equals, "z1111",
+				check.Commentf("incorrect LoginCluster config on cluster %q", cls))
+		}
+	}
+	// Get user's UUID & attempt to create a token for it on the remote cluster
+	_, _, _, user := s.testClusters["z1111"].UserClients(rootctx1, c, conn1,
+		"user@example.com", true)
+	_, rootclnt3, _ := s.testClusters["z3333"].ClientsWithToken(rootclnt1.AuthToken)
+	var resp interface{}
+	err := rootclnt3.RequestAndDecode(
+		&resp, "POST", "arvados/v1/api_client_authorizations", nil,
+		map[string]interface{}{
+			"api_client_authorization": map[string]string{
+				"owner_uuid": user.UUID,
+			},
+		},
+	)
+	c.Assert(err, check.IsNil)
+}
+
 // Test for bug #18076
 func (s *IntegrationSuite) TestStaleCachedUserRecord(c *check.C) {
 	rootctx1, _, _ := s.testClusters["z1111"].RootClients()
