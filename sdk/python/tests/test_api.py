@@ -101,13 +101,11 @@ class ArvadosApiTest(run_test_server.TestCaseWithServers):
             text = "X" * maxsize
             arvados.api('v1').collections().create(body={"manifest_text": text}).execute()
 
-    # Checks for bug #17171
     def test_default_request_timeout(self):
         api = arvados.api('v1')
-        self.assertEqual(api._http.timeout, 10,
-            "Default timeout value should be 10")
+        self.assertEqual(api._http.timeout, 300,
+            "Default timeout value should be 300")
 
-    # Checks for bug #17989
     def test_custom_request_timeout(self):
         api = arvados.api('v1', timeout=1234)
         self.assertEqual(api._http.timeout, 1234,
