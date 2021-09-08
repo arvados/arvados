@@ -15,7 +15,11 @@ This tutorial describes how to copy Arvados objects from one cluster to another 
 
 h2. arv-copy
 
-@arv-copy@ allows users to copy collections and workflows from one cluster to another. By default, @arv-copy@ will recursively go through the workflow and copy all dependencies associated with the object.
+@arv-copy@ allows users to copy collections, workflow definitions and projects from one cluster to another.
+
+For projects, @arv-copy@ will copy all the collections workflow definitions owned by the project, and recursively copy subprojects.
+
+For workflow definitions, @arv-copy@ will recursively go through the workflow and copy all associated dependencies (input collections and Docker images).
 
 For example, let's copy from the <a href="https://playground.arvados.org/">Arvados playground</a>, also known as *pirca*, to *dstcl*. The names *pirca* and *dstcl* are interchangable with any cluster id. You can find the cluster name from the prefix of the uuid of the object you want to copy. For example, in *zzzzz*-4zz18-tci4vn4fa95w0zx, the cluster name is *zzzzz* .
 
@@ -82,3 +86,18 @@ jutro-4zz18-vvvqlops0a0kpdl: 94M / 94M 100.0%
 The name, description, and workflow definition from the original workflow will be used for the destination copy. In addition, any *collections* and *docker images* referenced in the source workflow definition will also be copied to the destination.
 
 If you would like to copy the object without dependencies, you can use the @--no-recursive@ flag.
+
+h3. How to copy a project
+
+We will use the uuid @jutro-7fd4e-mkmmq53m1ze6apx@ as an example project.
+
+<notextile>
+<pre><code>~$ <span class="userinput">peteramstutz@shell:~$ arv-copy --project-uuid pirca-j7d0g-lr8sq3tx3ovn68k jutro-j7d0g-xj19djofle3aryq
+2021-09-08 21:29:32 arvados.arv-copy[6377] INFO:
+2021-09-08 21:29:32 arvados.arv-copy[6377] INFO: Success: created copy with uuid pirca-j7d0g-ig9gvu5piznducp
+</code></pre>
+</notextile>
+
+The name and description of the original project will be used for the destination copy.  If a project already exists with the same name, collections and workflow definitions will be copied into the project with the same name.
+
+If you would like to copy the project but not its subproject, you can use the @--no-recursive@ flag.
