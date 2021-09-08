@@ -51,3 +51,11 @@ For information about how to set configuration options for the Docker daemon, se
 h3. Changing ulimits
 
 Docker containers inherit ulimits from the Docker daemon.  However, the ulimits for a single Unix daemon may not accommodate a long-running Crunch job.  You may want to increase default limits for compute containers by passing @--default-ulimit@ options to the Docker daemon.  For example, to allow containers to open 10,000 files, set @--default-ulimit nofile=10000:10000@.
+
+h2. Troubleshooting
+
+h3. Workflows fail with @ValidationException: Not found: '/var/lib/cwl/workflow.json#main'@
+
+A possible configuration error is having Docker installed as a @snap@ package rather than a @deb@ package.  This is a problem because @snap@ packages are partially containerized and may have a different view of the filesystem than @crunch-run@.  This will produce confusing problems, for example, directory bind mounts sent to Docker that are empty (instead of containing the intended files) and resulting in unexpected "file not found" errors.
+
+To check for this situation, run @snap list@ and look for @docker@.  If found, run @snap remove docker@ and follow the instructions to above to "install Docker Engine":#install_docker .
