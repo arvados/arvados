@@ -72,20 +72,28 @@ func (stub lsfstub) stubCommand(s *suite, c *check.C) func(prog string, args ...
 		switch prog {
 		case "bsub":
 			defaultArgs := s.disp.Cluster.Containers.LSF.BsubArgumentsList
-			c.Assert(args, check.HasLen, 4+len(defaultArgs))
+			c.Assert(len(args) > len(defaultArgs), check.Equals, true)
 			c.Check(args[:len(defaultArgs)], check.DeepEquals, defaultArgs)
 			args = args[len(defaultArgs):]
 
 			c.Check(args[0], check.Equals, "-J")
 			switch args[1] {
 			case arvadostest.LockedContainerUUID:
-				c.Check(args, check.DeepEquals, []string{"-J", arvadostest.LockedContainerUUID, "-R", "rusage[mem=11701MB:tmp=0MB] affinity[core(4)]"})
+				c.Check(args, check.DeepEquals, []string{
+					"-J", arvadostest.LockedContainerUUID,
+					"-n", "4",
+					"-D", "11701MB",
+					"-R", "rusage[mem=11701MB:tmp=0MB] span[hosts=1]"})
 				mtx.Lock()
 				fakejobq[nextjobid] = args[1]
 				nextjobid++
 				mtx.Unlock()
 			case arvadostest.QueuedContainerUUID:
-				c.Check(args, check.DeepEquals, []string{"-J", arvadostest.QueuedContainerUUID, "-R", "rusage[mem=11701MB:tmp=45777MB] affinity[core(4)]"})
+				c.Check(args, check.DeepEquals, []string{
+					"-J", arvadostest.QueuedContainerUUID,
+					"-n", "4",
+					"-D", "11701MB",
+					"-R", "rusage[mem=11701MB:tmp=45777MB] span[hosts=1]"})
 				mtx.Lock()
 				fakejobq[nextjobid] = args[1]
 				nextjobid++
