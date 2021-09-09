@@ -85,11 +85,14 @@ docker_push () {
     # docker always creates a local 'latest' tag, and we don't want to push that
     # tag in every case. Remove it.
     docker rmi $1:latest
+
+    GITHEAD=$(cd $WORKSPACE && git log --format=%H -n1 HEAD)
+
     if [[ ! -z "$tags" ]]
     then
         for tag in $( echo $tags|tr "," " " )
         do
-             $DOCKER tag $1 $1:$tag
+             $DOCKER tag $1:$GITHEAD $1:$tag
         done
     fi
 
