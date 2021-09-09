@@ -60,6 +60,9 @@ if test -z "$WORKBENCH2_BRANCH" ; then
     WORKBENCH2_BRANCH=main
 fi
 
+# Update this to the docker tag for the version on releases.
+DEFAULT_TAG=
+
 PG_DATA="$ARVBOX_DATA/postgres"
 VAR_DATA="$ARVBOX_DATA/var"
 PASSENGER="$ARVBOX_DATA/passenger"
@@ -193,6 +196,10 @@ run() {
             fi
             unset TAG
         fi
+    fi
+
+    if test -z "$TAG" -a -n "$DEFAULT_TAG"; then
+	TAG=":$DEFAULT_TAG"
     fi
 
     if [[ "$CONFIG" =~ ^public ]] ; then
