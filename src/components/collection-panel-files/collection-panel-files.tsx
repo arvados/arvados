@@ -7,9 +7,9 @@ import classNames from 'classnames';
 import { connect } from 'react-redux';
 import { FixedSizeList } from "react-window";
 import AutoSizer from "react-virtualized-auto-sizer";
-import { CustomizeTableIcon } from 'components/icon/icon';
+import { CustomizeTableIcon, DownloadIcon } from 'components/icon/icon';
 import { SearchInput } from 'components/search-input/search-input';
-import { ListItemIcon, StyleRulesCallback, Theme, WithStyles, withStyles, Tooltip, IconButton, Checkbox, CircularProgress } from '@material-ui/core';
+import { ListItemIcon, StyleRulesCallback, Theme, WithStyles, withStyles, Tooltip, IconButton, Checkbox, CircularProgress, Button } from '@material-ui/core';
 import { FileTreeData } from '../file-tree/file-tree-data';
 import { TreeItem, TreeItemStatus } from '../tree/tree';
 import { RootState } from 'store/store';
@@ -40,7 +40,7 @@ export interface CollectionPanelFilesProps {
     collectionPanel: any;
 }
 
-type CssRules = "loader" | "wrapper" | "dataWrapper" | "row" | "rowEmpty" | "leftPanel" | "rightPanel" | "pathPanel" | "pathPanelItem" | "rowName" | "listItemIcon" | "rowActive" | "pathPanelMenu" | "rowSelection" | "leftPanelHidden" | "leftPanelVisible" | "searchWrapper" | "searchWrapperHidden";
+type CssRules = "pathPanelPathWrapper" | "uploadButton" | "uploadIcon" | "loader" | "wrapper" | "dataWrapper" | "row" | "rowEmpty" | "leftPanel" | "rightPanel" | "pathPanel" | "pathPanelItem" | "rowName" | "listItemIcon" | "rowActive" | "pathPanelMenu" | "rowSelection" | "leftPanelHidden" | "leftPanelVisible" | "searchWrapper" | "searchWrapperHidden";
 
 const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     wrapper: {
@@ -85,7 +85,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         justifyContent: 'center'
     },
     searchWrapper: {
-        width: '100%',
+        display: 'inline-block',
         marginBottom: '1rem'
     },
     searchWrapperHidden: {
@@ -111,6 +111,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         marginBottom: '1rem',
         backgroundColor: '#fff',
         boxShadow: '0px 1px 3px 0px rgb(0 0 0 / 20%), 0px 1px 1px 0px rgb(0 0 0 / 14%), 0px 2px 1px -1px rgb(0 0 0 / 12%)',
+    },
+    pathPanelPathWrapper: {
+        display: 'inline-block',
     },
     leftPanel: {
         flex: 0,
@@ -151,6 +154,12 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     },
     pathPanelItem: {
         cursor: 'pointer',
+    },
+    uploadIcon: {
+        transform: 'rotate(180deg)'
+    },
+    uploadButton: {
+        float: 'right',
     }
 });
 
@@ -161,7 +170,7 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
     collectionPanel: state.collectionPanel,
     collectionPanelFiles: state.collectionPanelFiles,
 }))((props: CollectionPanelFilesProps & WithStyles<CssRules> & { auth: AuthState }) => {
-    const { classes, onItemMenuOpen, isWritable, dispatch, collectionPanelFiles, collectionPanel } = props;
+    const { classes, onItemMenuOpen, onUploadDataClick, isWritable, dispatch, collectionPanelFiles, collectionPanel } = props;
     const { apiToken, config } = props.auth;
 
     const webdavClient = new WebDAV();
@@ -197,16 +206,32 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
         }
     }, [props.currentItemUuid]);
 
-    const fetchData = (rightKey, ignoreCache = false) => {
-        const dataExists = !!pathData[rightKey];
-        const runningRequest = pathPromise[rightKey];
+    const fetchData = (keys, ignoreCache = false) => {
+        const keyArray = Array.isArray(keys) ? keys : [keys];
 
-        if ((!dataExists || ignoreCache) && !runningRequest) {
-            setIsLoading(true);
+        Promise.all(keyArray
+            .map((key) => {
+                const dataExists = !!pathData[key];
+                const runningRequest = pathPromise[key];
 
-            webdavClient.propfind(`c=${rightKey}`, webDAVRequestConfig)
-                .then((request) => {
-                    if (request.responseXML != null) {
+                if ((!dataExists || ignoreCache) && (!runningRequest || ignoreCache)) {
+                    if (!isLoading) {
+                        setIsLoading(true);
+                    }
+
+                    pathPromise[key] = true;
+
+                    return webdavClient.propfind(`c=${key}`, webDAVRequestConfig);
+                }
+
+                return Promise.resolve(null);
+            })
+            .filter((promise) => !!promise)
+        )
+            .then((requests) => {
+                const newState = requests.map((request, index) => {
+                    if (request && request.responseXML != null) {
+                        const key = keyArray[index];
                         const result: any = extractFilesData(request.responseXML);
                         const sortedResult = sortBy(result, (n) => n.name).sort((n1, n2) => {
                             if (n1.type === 'directory' && n2.type !== 'directory') {
@@ -217,19 +242,20 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
                             }
                             return 0;
                         });
-                        const newPathData = { ...pathData, [rightKey]: sortedResult };
-                        setPathData(newPathData);
-                    }
-                })
-                .finally(() => {
-                    setIsLoading(false);
-                    delete pathPromise[rightKey];
-                });
 
-            pathPromise[rightKey] = true;
-        } else {
-            setTimeout(() => setIsLoading(false), 0);
-        }
+                        return { [key]: sortedResult };
+                    }
+                    return {};
+                }).reduce((prev, next) => {
+                    return { ...next, ...prev };
+                }, {});
+
+                setPathData({ ...pathData, ...newState });
+            })
+            .finally(() => {
+                setIsLoading(false);
+                keyArray.forEach(key => delete pathPromise[key]);
+            });
     };
 
     React.useEffect(() => {
@@ -244,7 +270,7 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
         const hash = (collectionPanel.item || {}).portableDataHash;
 
         if (hash && rightClickUsed) {
-            fetchData(rightKey, true);
+            fetchData([leftKey, rightKey], true);
         }
     }, [(collectionPanel.item || {}).portableDataHash]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -258,11 +284,6 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
     const handleRightClick = React.useCallback(
         (event) => {
             event.preventDefault();
-
-            if (!rightClickUsed) {
-                setRightClickUsed(true);
-            }
-
             let elem = event.target;
 
             while (elem && elem.dataset && !elem.dataset.item) {
@@ -278,6 +299,10 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
 
             if (id) {
                 onItemMenuOpen(event, item, isWritable);
+
+                if (!rightClickUsed) {
+                    setRightClickUsed(true);
+                }
             }
         },
         [onItemMenuOpen, isWritable, rightData] // eslint-disable-line react-hooks/exhaustive-deps
@@ -380,17 +405,19 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
     return (
         <div data-cy="collection-files-panel" onClick={handleClick} ref={parentRef}>
             <div className={classes.pathPanel}>
-                {
-                    path
-                        .map((p: string, index: number) => <span
-                            key={`${index}-${p}`}
-                            data-item="true"
-                            className={classes.pathPanelItem}
-                            data-breadcrumb-path={p}
-                        >
-                            {index === 0 ? 'Home' : p} /&nbsp;
-                        </span>)
-                }
+                <div className={classes.pathPanelPathWrapper}>
+                    {
+                        path
+                            .map((p: string, index: number) => <span
+                                key={`${index}-${p}`}
+                                data-item="true"
+                                className={classes.pathPanelItem}
+                                data-breadcrumb-path={p}
+                            >
+                                {index === 0 ? 'Home' : p} /&nbsp;
+                            </span>)
+                    }
+                </div>
                 <Tooltip className={classes.pathPanelMenu} title="More options" disableFocusListener>
                     <IconButton
                         data-cy='collection-files-panel-options-btn'
@@ -441,6 +468,19 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
                     <div className={classes.searchWrapper}>
                         <SearchInput label="Search" value={rightSearch} onSearch={setRightSearch} />
                     </div>
+                    {
+                        isWritable &&
+                        <Button
+                            className={classes.uploadButton}
+                            data-cy='upload-button'
+                            onClick={onUploadDataClick}
+                            variant='contained'
+                            color='primary'
+                            size='small'>
+                            <DownloadIcon className={classes.uploadIcon} />
+                            Upload data
+                        </Button>
+                    }
                     <div className={classes.dataWrapper}>
                         {
                             rightData && !isLoading ?
@@ -473,7 +513,7 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
                                                     {getItemIcon(type, null)} <div className={classes.rowName}>
                                                             {name}
                                                         </div>
-                                                        <span className={classes.rowName} style={{marginLeft: 'auto', marginRight: '1rem'}}>
+                                                        <span className={classes.rowName} style={{ marginLeft: 'auto', marginRight: '1rem' }}>
                                                             {formatFileSize(size)}
                                                         </span>
                                                     </div>
