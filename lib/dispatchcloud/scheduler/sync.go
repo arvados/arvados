@@ -13,6 +13,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+var reportedUnexpectedState = false
+
 // sync resolves discrepancies between the queue and the pool:
 //
 // Lingering crunch-run processes for finalized and unlocked/requeued
@@ -64,7 +66,7 @@ func (sch *Scheduler) sync() {
 				// a network outage and is still
 				// preparing to run a container that
 				// has already been unlocked/requeued.
-				go sch.kill(uuid, fmt.Sprintf("state=%s", ent.Container.State))
+				go sch.kill(uuid, fmt.Sprintf("pool says running, but queue says state=%s", ent.Container.State))
 			} else if ent.Container.Priority == 0 {
 				sch.logger.WithFields(logrus.Fields{
 					"ContainerUUID": uuid,
@@ -82,10 +84,13 @@ func (sch *Scheduler) sync() {
 				go sch.requeue(ent, "priority=0")
 			}
 		default:
-			sch.logger.WithFields(logrus.Fields{
-				"ContainerUUID": uuid,
-				"State":         ent.Container.State,
-			}).Error("BUG: unexpected state")
+			if !reportedUnexpectedState {
+				sch.logger.WithFields(logrus.Fields{
+					"ContainerUUID": uuid,
+					"State":         ent.Container.State,
+				}).Error("BUG: unexpected state")
+				reportedUnexpectedState = true
+			}
 		}
 	}
 	for uuid := range running {
@@ -113,6 +118,10 @@ func (sch *Scheduler) kill(uuid string, reason string) {
 		return
 	}
 	defer sch.uuidUnlock(uuid)
+	sch.logger.WithFields(logrus.Fields{
+		"ContainerUUID": uuid,
+		"reason":        reason,
+	}).Debug("kill")
 	sch.pool.KillContainer(uuid, reason)
 	sch.pool.ForgetContainer(uuid)
 }
