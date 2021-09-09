@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+    <head>
+    <title></title>
+    <link rel="stylesheet" href="styles.css" type="text/css">
+    <style type="text/css">
+      body {
+        margin: 0px;
+      }
+    </style>
+    <script type="text/javascript"><!--
+      (function() {
+        // We would like to hide overflowing lines as this can lead to
+        // visually jarring results if the browser substitutes oversized
+        // Unicode characters from different fonts. Unfortunately, a bug
+        // in Firefox prevents it from allowing multi-line text
+        // selections whenever we change the "overflow" style. So, only
+        // do so for non-Netscape browsers.
+        if (typeof navigator.appName == 'undefined' ||
+            navigator.appName != 'Netscape') {
+          document.write('<style type="text/css">' +
+                         '#vt100 #console div, #vt100 #alt_console div {' +
+                         '  overflow: hidden;' +
+                         '}' +
+                         '</style>');
+        }
+      })();
+
+      function login(username, token) {
+        const urlParams = new URLSearchParams(window.location.search);
+        var sh = new ShellInABox(urlParams.get('host'));
+
+        var findText = function(txt) {
+          var a = document.querySelectorAll("span.ansi0");
+          for (var i = 0; i < a.length; i++) {
+            if (a[i].textContent.indexOf(txt) > -1) {
+              return true;
+            }
+          }
+          return false;
+        }
+
+        var trySendToken = function() {
+          // change this text when PAM is reconfigured to present a
+          // password prompt that we can wait for.
+          var token = urlParams.get('token');
+          if (findText("assword:")) {
+             sh.keysPressed(token + "\n");
+             sh.vt100('(sent authentication token)\n');
+          } else {
+            setTimeout(trySendToken, 200);
+          }
+        };
+
+        var trySendLogin = function() {
+          var login = urlParams.get('login');
+          if (findText("login:")) {
+            sh.keysPressed(login + "\n");
+            // Make this wait shorter when PAM is reconfigured to
+            // present a password prompt that we can wait for.
+            setTimeout(trySendToken, 200);
+          } else {
+            setTimeout(trySendLogin, 200);
+          }
+        };
+
+        trySendLogin();
+      }
+    // -->
+</script>
+    <script type="text/javascript" src="shell_in_a_box.js"></script>
+  </head>
+  <!-- Load ShellInABox from a timer as Konqueror sometimes fails to
+       correctly deal with the enclosing frameset (if any), if we do not
+       do this
+   -->
+<body onload="setTimeout(login, 1000)"
+    scroll="no"><noscript>JavaScript must be enabled for ShellInABox</noscript>
+</body>
+</html>

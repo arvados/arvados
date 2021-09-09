@@ -61,7 +61,8 @@ const mapStateToProps = (state: RootState) => {
         userUuid: state.auth.user!.uuid,
         helpText: state.auth.config.clusterConfig.Workbench.SSHHelpPageHTML,
         hostSuffix: state.auth.config.clusterConfig.Workbench.SSHHelpHostSuffix || "",
-        webShell: state.auth.config.clusterConfig.Services.Workbench1.ExternalURL,
+        token: state.auth.extraApiToken || state.auth.apiToken || '',
+        webshellUrl: state.auth.config.clusterConfig.Services.WebShell.ExternalURL,
         ...state.virtualMachines
     };
 };
@@ -78,7 +79,8 @@ interface VirtualMachinesPanelDataProps {
     links: ListResults<any>;
     helpText: string;
     hostSuffix: string;
-    webShell: string;
+    token: string;
+    webshellUrl: string;
 }
 
 interface VirtualMachinesPanelActionProps {
@@ -165,7 +167,7 @@ const virtualMachinesTable = (props: VirtualMachineProps) =>
                 <TableCell>Host name</TableCell>
                 <TableCell>Login name</TableCell>
                 <TableCell>Command line</TableCell>
-                {props.webShell !== "" && <TableCell>Web shell</TableCell>}
+                <TableCell>Web shell</TableCell>
             </TableRow>
         </TableHead>
         <TableBody>
@@ -180,11 +182,11 @@ const virtualMachinesTable = (props: VirtualMachineProps) =>
                             <TableCell>
                                 {command}
                             </TableCell>
-                            {props.webShell !== "" && <TableCell>
-                                <a href={`${props.webShell}${it.href}/webshell/${username}`} target="_blank" rel="noopener noreferrer" className={props.classes.link}>
+                            <TableCell>
+                                <a href={`/webshell/?host=${encodeURIComponent(props.webshellUrl + '/' + it.hostname)}&login=${username}&token=${encodeURIComponent(props.token)}`} target="_blank" rel="noopener noreferrer" className={props.classes.link}>
                                     Log in as {username}
                                 </a>
-                            </TableCell>}
+                            </TableCell>
                         </TableRow>;
                     }
                     return null;
