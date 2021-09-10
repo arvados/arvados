@@ -112,7 +112,7 @@ export class CollectionsWithSameContentAddressMiddlewareService extends DataExpl
                     api.dispatch(collectionsContentAddressActions.SET_ITEMS({
                         items: response.items.map((resource: any) => resource.uuid),
                         itemsAvailable: response.itemsAvailable,
-                        page: Math.floor(response.offset / response.limit),
+                        page: Math.floor(response.offset / response.limit) || 0,
                         rowsPerPage: response.limit
                     }));
                 }
