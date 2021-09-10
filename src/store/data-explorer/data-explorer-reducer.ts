@@ -57,7 +57,7 @@ export const dataExplorerReducer = (state: DataExplorerState = {}, action: DataE
             update(state, id, mapColumns(setFilters(columnName, filters))),
 
         SET_ITEMS: ({ id, items, itemsAvailable, page, rowsPerPage }) =>
-            update(state, id, explorer => ({ ...explorer, items, itemsAvailable, page, rowsPerPage })),
+            update(state, id, explorer => ({ ...explorer, items, itemsAvailable, page: page || 0, rowsPerPage })),
 
         APPEND_ITEMS: ({ id, items, itemsAvailable, page, rowsPerPage }) =>
             update(state, id, explorer => ({
