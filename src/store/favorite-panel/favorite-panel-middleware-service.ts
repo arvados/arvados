@@ -103,7 +103,7 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
                 api.dispatch(favoritePanelActions.SET_ITEMS({
                     items: response.items.map((resource: any) => resource.uuid),
                     itemsAvailable: response.itemsAvailable,
-                    page: Math.floor(response.offset / response.limit) || 0,
+                    page: Math.floor(response.offset / response.limit),
                     rowsPerPage: response.limit
                 }));
                 api.dispatch<any>(updateFavorites(response.items.map((item: any) => item.uuid)));

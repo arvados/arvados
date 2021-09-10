@@ -45,7 +45,7 @@ export class AllProcessesPanelMiddlewareService extends DataExplorerMiddlewareSe
                 api.dispatch(allProcessesPanelActions.SET_ITEMS({
                     items: processItems.items.map((resource: any) => resource.uuid),
                     itemsAvailable: processItems.itemsAvailable,
-                    page: Math.floor(processItems.offset / processItems.limit) || 0,
+                    page: Math.floor(processItems.offset / processItems.limit),
                     rowsPerPage: processItems.limit
                 }));
             } catch {
