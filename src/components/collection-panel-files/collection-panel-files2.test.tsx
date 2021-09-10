@@ -9,7 +9,7 @@ import Adapter from "enzyme-adapter-react-16";
 import { TreeItem, TreeItemStatus } from '../tree/tree';
 import { FileTreeData } from '../file-tree/file-tree-data';
 import { CollectionFileType } from "../../models/collection-file";
-import { CollectionPanelFilesComponent, CollectionPanelFilesProps, CssRules } from './collection-panel-files';
+import { CollectionPanelFilesComponent, CollectionPanelFilesProps, CssRules } from './collection-panel-files2';
 import { SearchInput } from '../search-input/search-input';
 
 configure({ adapter: new Adapter() });
