@@ -189,7 +189,7 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
     const [path, setPath]: any = React.useState([]);
     const [pathData, setPathData]: any = React.useState({});
     const [isLoading, setIsLoading] = React.useState(false);
-    const [rightClickUsed, setRightClickUsed] = React.useState(false);
+    const [collectionAutofetchEnabled, setCollectionAutofetchEnabled] = React.useState(false);
     const [leftSearch, setLeftSearch] = React.useState('');
     const [rightSearch, setRightSearch] = React.useState('');
 
@@ -269,7 +269,7 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
     React.useEffect(() => {
         const hash = (collectionPanel.item || {}).portableDataHash;
 
-        if (hash && rightClickUsed) {
+        if (hash && collectionAutofetchEnabled) {
             fetchData([leftKey, rightKey], true);
         }
     }, [(collectionPanel.item || {}).portableDataHash]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -300,8 +300,8 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
             if (id) {
                 onItemMenuOpen(event, item, isWritable);
 
-                if (!rightClickUsed) {
-                    setRightClickUsed(true);
+                if (!collectionAutofetchEnabled) {
+                    setCollectionAutofetchEnabled(true);
                 }
             }
         },
@@ -414,14 +414,19 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
                                 className={classes.pathPanelItem}
                                 data-breadcrumb-path={p}
                             >
-                                {index === 0 ? 'Home' : p} /&nbsp;
+                                <span className={classes.rowActive}>{index === 0 ? 'Home' : p}</span> <b>/</b>&nbsp;
                             </span>)
                     }
                 </div>
                 <Tooltip className={classes.pathPanelMenu} title="More options" disableFocusListener>
                     <IconButton
                         data-cy='collection-files-panel-options-btn'
-                        onClick={(ev) => onOptionsMenuOpen(ev, isWritable)}>
+                        onClick={(ev) => {
+                            if (!collectionAutofetchEnabled) {
+                                setCollectionAutofetchEnabled(true);
+                            }
+                            onOptionsMenuOpen(ev, isWritable);
+                        }}>
                         <CustomizeTableIcon />
                     </IconButton>
                 </Tooltip>
