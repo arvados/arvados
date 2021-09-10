@@ -23,9 +23,9 @@ For workflow definitions, @arv-copy@ will recursively go through the workflow an
 
 For example, let's copy from the <a href="https://playground.arvados.org/">Arvados playground</a>, also known as *pirca*, to *dstcl*. The names *pirca* and *dstcl* are interchangable with any cluster id. You can find the cluster name from the prefix of the uuid of the object you want to copy. For example, in *zzzzz*-4zz18-tci4vn4fa95w0zx, the cluster name is *zzzzz* .
 
-In order to communicate with both clusters, you must create custom configuration files for each cluster. In the Arvados Workbench, click on the dropdown menu icon <span class="fa fa-lg fa-user"></span> <span class="caret"></span> in the upper right corner of the top navigation menu to access the user settings menu, and click on the menu item *Current token*. Copy the @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ in both of your clusters. Then, create two configuration files in @~/.config/arvados@, one for each cluster. The names of the files must have the format of *ClusterID.conf*. Navigate to the *Current token* page on each of *pirca* and *dstcl* to get the @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@.
+In order to communicate with both clusters, you must create custom configuration files for each cluster.  The "Getting an API token":{{site.baseurl}}/user/reference/api-tokens.html page describes how to get a token and create a configuration file.  However, instead of "settings.conf" in @~/.config/arvados@ you need two configuration files, one for each cluster, with filenames in the format of *ClusterID.conf*.
 
-!{display: block;margin-left: 25px;margin-right: auto;}{{ site.baseurl }}/images/api-token-host.png!
+In this example, navigate to the *Current token* page on each of *pirca* and *dstcl* to get the @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@.
 
 The config file consists of two lines, one for ARVADOS_API_HOST and one for ARVADOS_API_TOKEN:
 
@@ -89,7 +89,7 @@ If you would like to copy the object without dependencies, you can use the @--no
 
 h3. How to copy a project
 
-We will use the uuid @jutro-7fd4e-mkmmq53m1ze6apx@ as an example project.
+We will use the uuid @jutro-j7d0g-xj19djofle3aryq@ as an example project.
 
 <notextile>
 <pre><code>~$ <span class="userinput">peteramstutz@shell:~$ arv-copy --project-uuid pirca-j7d0g-lr8sq3tx3ovn68k jutro-j7d0g-xj19djofle3aryq
