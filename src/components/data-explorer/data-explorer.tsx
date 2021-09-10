@@ -134,6 +134,8 @@ export const DataExplorer = withStyles(styles)(
                             page={this.props.page}
                             onChangePage={this.changePage}
                             onChangeRowsPerPage={this.changeRowsPerPage}
+                            // Disable next button on empty lists since that's not default behavior
+                            nextIconButtonProps={(itemsAvailable > 0) ? {} : {disabled: true}}
                             component="div" /> : <Button
                                 variant="text"
                                 size="medium"
