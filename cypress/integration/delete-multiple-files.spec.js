@@ -75,7 +75,7 @@ describe('Multi-file deletion tests', function () {
             });
     });
 
-    it.only('deletes all files from non root dir', function () {
+    it('deletes all files from non root dir', function () {
         cy.createCollection(adminUser.token, {
             name: `Test collection ${Math.floor(Math.random() * 999999)}`,
             owner_uuid: activeUser.user.uuid,
