@@ -5,6 +5,7 @@
 package arvados
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -1041,8 +1042,8 @@ func (dn *dirnode) marshalManifest(ctx context.Context, prefix string) (string, 
 
 func (dn *dirnode) loadManifest(txt string) error {
 	var dirname string
-	streams := strings.Split(txt, "\n")
-	if streams[len(streams)-1] != "" {
+	streams := bytes.Split([]byte(txt), []byte{'\n'})
+	if len(streams[len(streams)-1]) != 0 {
 		return fmt.Errorf("line %d: no trailing newline", len(streams))
 	}
 	streams = streams[:len(streams)-1]
@@ -1053,25 +1054,25 @@ func (dn *dirnode) loadManifest(txt string) error {
 		var pos int64
 		var segIdx int
 		segments = segments[:0]
-		for i, token := range strings.Split(stream, " ") {
+		for i, token := range bytes.Split(stream, []byte{' '}) {
 			if i == 0 {
-				dirname = manifestUnescape(token)
+				dirname = manifestUnescape(string(token))
 				continue
 			}
-			if !strings.Contains(token, ":") {
+			if !bytes.ContainsRune(token, ':') {
 				if anyFileTokens {
 					return fmt.Errorf("line %d: bad file segment %q", lineno, token)
 				}
-				toks := strings.SplitN(token, "+", 3)
+				toks := bytes.SplitN(token, []byte{'+'}, 3)
 				if len(toks) < 2 {
 					return fmt.Errorf("line %d: bad locator %q", lineno, token)
 				}
-				length, err := strconv.ParseInt(toks[1], 10, 32)
+				length, err := strconv.ParseInt(string(toks[1]), 10, 32)
 				if err != nil || length < 0 {
 					return fmt.Errorf("line %d: bad locator %q", lineno, token)
 				}
 				segments = append(segments, storedSegment{
-					locator: token,
+					locator: string(token),
 					size:    int(length),
 					offset:  0,
 					length:  int(length),
@@ -1081,21 +1082,21 @@ func (dn *dirnode) loadManifest(txt string) error {
 				return fmt.Errorf("line %d: bad locator %q", lineno, token)
 			}
 
-			toks := strings.SplitN(token, ":", 3)
+			toks := bytes.SplitN(token, []byte{':'}, 3)
 			if len(toks) != 3 {
 				return fmt.Errorf("line %d: bad file segment %q", lineno, token)
 			}
 			anyFileTokens = true
 
-			offset, err := strconv.ParseInt(toks[0], 10, 64)
+			offset, err := strconv.ParseInt(string(toks[0]), 10, 64)
 			if err != nil || offset < 0 {
 				return fmt.Errorf("line %d: bad file segment %q", lineno, token)
 			}
-			length, err := strconv.ParseInt(toks[1], 10, 64)
+			length, err := strconv.ParseInt(string(toks[1]), 10, 64)
 			if err != nil || length < 0 {
 				return fmt.Errorf("line %d: bad file segment %q", lineno, token)
 			}
-			name := dirname + "/" + manifestUnescape(toks[2])
+			name := dirname + "/" + manifestUnescape(string(toks[2]))
 			fnode, err := dn.createFileAndParents(name)
 			if fnode == nil && err == nil && length == 0 {
 				// Special case: an empty file used as
