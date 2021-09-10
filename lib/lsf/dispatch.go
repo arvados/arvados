@@ -288,7 +288,9 @@ func (disp *dispatcher) bsubConstraintArgs(container arvados.Container) []string
 		container.RuntimeConstraints.KeepCacheRAM+
 		int64(disp.Cluster.Containers.ReserveExtraRAM)) / 1048576))
 	return []string{
-		"-R", fmt.Sprintf("rusage[mem=%dMB:tmp=%dMB] affinity[core(%d)]", mem, tmp, vcpus),
+		"-n", fmt.Sprintf("%d", vcpus),
+		"-D", fmt.Sprintf("%dMB", mem), // ulimit -d (note this doesn't limit the total container memory usage)
+		"-R", fmt.Sprintf("rusage[mem=%dMB:tmp=%dMB] span[hosts=1]", mem, tmp),
 	}
 }
 
