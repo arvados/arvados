@@ -47,6 +47,7 @@ func (s *RouterSuite) SetUpTest(c *check.C) {
 func (s *RouterSuite) TestOptions(c *check.C) {
 	token := arvadostest.ActiveToken
 	for _, trial := range []struct {
+		comment      string // unparsed -- only used to help match test failures to trials
 		method       string
 		path         string
 		header       http.Header
@@ -121,6 +122,32 @@ func (s *RouterSuite) TestOptions(c *check.C) {
 			withOptions: arvados.ListOptions{Limit: 123, Offset: 456, IncludeTrash: true, IncludeOldVersions: true},
 		},
 		{
+			comment:     "form-encoded expression filter in query string",
+			method:      "GET",
+			path:        "/arvados/v1/collections?filters=[%22(foo<bar)%22]",
+			header:      http.Header{"Content-Type": {"application/x-www-form-urlencoded"}},
+			shouldCall:  "CollectionList",
+			withOptions: arvados.ListOptions{Limit: -1, Filters: []arvados.Filter{{"(foo<bar)", "=", true}}},
+		},
+		{
+			comment:     "form-encoded expression filter in POST body",
+			method:      "POST",
+			path:        "/arvados/v1/collections",
+			body:        "filters=[\"(foo<bar)\"]&_method=GET",
+			header:      http.Header{"Content-Type": {"application/x-www-form-urlencoded"}},
+			shouldCall:  "CollectionList",
+			withOptions: arvados.ListOptions{Limit: -1, Filters: []arvados.Filter{{"(foo<bar)", "=", true}}},
+		},
+		{
+			comment:     "json-encoded expression filter in POST body",
+			method:      "POST",
+			path:        "/arvados/v1/collections?_method=GET",
+			body:        `{"filters":["(foo<bar)",["bar","=","baz"]],"limit":2}`,
+			header:      http.Header{"Content-Type": {"application/json"}},
+			shouldCall:  "CollectionList",
+			withOptions: arvados.ListOptions{Limit: 2, Filters: []arvados.Filter{{"(foo<bar)", "=", true}, {"bar", "=", "baz"}}},
+		},
+		{
 			method:       "PATCH",
 			path:         "/arvados/v1/collections",
 			shouldStatus: http.StatusMethodNotAllowed,
@@ -139,21 +166,23 @@ func (s *RouterSuite) TestOptions(c *check.C) {
 		// Reset calls captured in previous trial
 		s.stub = arvadostest.APIStub{}
 
-		c.Logf("trial: %#v", trial)
+		c.Logf("trial: %+v", trial)
+		comment := check.Commentf("trial comment: %s", trial.comment)
+
 		_, rr, _ := doRequest(c, s.rtr, token, trial.method, trial.path, trial.header, bytes.NewBufferString(trial.body))
 		if trial.shouldStatus == 0 {
-			c.Check(rr.Code, check.Equals, http.StatusOK)
+			c.Check(rr.Code, check.Equals, http.StatusOK, comment)
 		} else {
-			c.Check(rr.Code, check.Equals, trial.shouldStatus)
+			c.Check(rr.Code, check.Equals, trial.shouldStatus, comment)
 		}
 		calls := s.stub.Calls(nil)
 		if trial.shouldCall == "" {
-			c.Check(calls, check.HasLen, 0)
+			c.Check(calls, check.HasLen, 0, comment)
 		} else if len(calls) != 1 {
-			c.Check(calls, check.HasLen, 1)
+			c.Check(calls, check.HasLen, 1, comment)
 		} else {
-			c.Check(calls[0].Method, isMethodNamed, trial.shouldCall)
-			c.Check(calls[0].Options, check.DeepEquals, trial.withOptions)
+			c.Check(calls[0].Method, isMethodNamed, trial.shouldCall, comment)
+			c.Check(calls[0].Options, check.DeepEquals, trial.withOptions, comment)
 		}
 	}
 }

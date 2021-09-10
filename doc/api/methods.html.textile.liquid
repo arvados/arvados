@@ -136,6 +136,22 @@ table(table table-bordered table-condensed).
 
 Note that exclusion filters @!=@ and @not in@ will return records for which the property is not defined at all.  To restrict filtering to records on which the subproperty is defined, combine with an @exists@ filter.
 
+h4(#filterexpression). Filtering using boolean expressions
+
+In addition to the three-element array form described above, a string containing a boolean expression is also accepted. The following restrictions apply:
+* The expression must contain exactly one operator.
+* The operator must be @=@, @<@, @<=@, @>@, or @>=@.
+* There must be exactly one pair of parentheses, surrounding the entire expression.
+* Each operand must be the name of a numeric attribute like @replication_desired@ (literal values like @3@ and non-numeric attributes like @uuid@ are not accepted).
+* The expression must not contain whitespace other than an ASCII space (newline and tab characters are not accepted).
+
+Examples:
+* @(replication_desired > replication_confirmed)@
+* @(replication_desired = replication_confirmed)@
+
+Both types of filter (boolean expressions and @[attribute, operator, operand]@ filters) can be combined in the same API call. Example:
+* @{"filters": ["(replication_desired > replication_confirmed)", ["replication_desired", "<", 2]]}@
+
 h4. Federated listing
 
 Federated listing forwards a request to multiple clusters and combines the results.  Currently only a very restricted form of the "list" method is supported.
