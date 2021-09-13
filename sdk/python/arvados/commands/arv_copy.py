@@ -89,10 +89,10 @@ def main():
         help='Perform copy even if the object appears to exist at the remote destination.')
     copy_opts.add_argument(
         '--src', dest='source_arvados',
-        help='The name of the source Arvados instance (required) - points at an Arvados config file. May be either a pathname to a config file, or (for example) "foo" as shorthand for $HOME/.config/arvados/foo.conf.')
+        help='The cluster id of the source Arvados instance. May be either a pathname to a config file, or (for example) "foo" as shorthand for $HOME/.config/arvados/foo.conf.  If not provided, will be inferred from the UUID of the object being copied.')
     copy_opts.add_argument(
         '--dst', dest='destination_arvados',
-        help='The name of the destination Arvados instance (required) - points at an Arvados config file. May be either a pathname to a config file, or (for example) "foo" as shorthand for $HOME/.config/arvados/foo.conf.')
+        help='The name of the destination Arvados instance (required). May be either a pathname to a config file, or (for example) "foo" as shorthand for $HOME/.config/arvados/foo.conf.  If not provided, will use ARVADOS_API_HOST from environment.')
     copy_opts.add_argument(
         '--recursive', dest='recursive', action='store_true',
         help='Recursively copy any dependencies for this object, and subprojects. (default)')
@@ -113,7 +113,7 @@ def main():
     copy_opts.set_defaults(recursive=True)
 
     parser = argparse.ArgumentParser(
-        description='Copy a workflow or collection from one Arvados instance to another.',
+        description='Copy a workflow, collection or project from one Arvados instance to another.',
         parents=[copy_opts, arv_cmd.retry_opt])
     args = parser.parse_args()
 
