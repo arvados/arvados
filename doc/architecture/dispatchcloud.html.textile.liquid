@@ -68,7 +68,7 @@ The dispatcher and crunch-run programs are both packaged in a single executable 
 
 h2. Boot probe command
 
-The purpose of the boot probe command is to ensure the dispatcher does not try to schedule containers on an instance before the instance is ready, even if its SSH daemon comes up early in the boot process. The default boot probe command, @docker ps -q@, verifies that the docker daemon is running. It is also common to use a custom startup script in the VM image that writes a file when it finishes, and a boot probe command that checks for that file, such as @cat /var/run/boot.complete@.
+The purpose of the boot probe command is to ensure the dispatcher does not try to schedule containers on an instance before the instance is ready, even if its SSH daemon comes up early in the boot process. The default boot probe command, @systemctl is-system-running@, is appropriate for images that use @systemd@ to manage the boot process. Another approach is to use a custom startup script in the VM image that writes a file when it finishes, and a boot probe command that checks for that file, such as @cat /var/run/boot.complete@.
 
 h2. Automatic instance shutdown
 

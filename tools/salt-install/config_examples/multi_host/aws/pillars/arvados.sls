@@ -106,7 +106,7 @@ arvados:
       CloudVMs:
         ResourceTags:
           Name: __CLUSTER__-compute-node
-        BootProbeCommand: 'sudo docker ps -q'
+        BootProbeCommand: 'systemctl is-system-running'
         ImageID: ami-FIXMEFIXMEFIXMEFI
         Driver: ec2
         DriverParameters:
