@@ -482,9 +482,7 @@ class RunnerContainer(Runner):
         properties_req, _ = self.embedded_tool.get_requirement("http://arvados.org/cwl#ProcessProperties")
         if properties_req:
             builder = make_builder(self.job_order, self.embedded_tool.hints, self.embedded_tool.requirements, runtimeContext, self.embedded_tool.metadata)
-            print("ZZZZZZ", properties_req["processProperties"])
             for pr in properties_req["processProperties"]:
-                print("ZZZZZZ", pr)
                 container_req["properties"][pr["propertyName"]] = builder.do_eval(pr["propertyValue"])
 
         # --local means execute the workflow instead of submitting a container request
