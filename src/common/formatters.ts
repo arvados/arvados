@@ -61,7 +61,8 @@ export function formatUploadSpeed(prevLoaded: number, loaded: number, prevTime: 
     const speed = loaded > prevLoaded && currentTime > prevTime
         ? (loaded - prevLoaded) / (currentTime - prevTime)
         : 0;
-    return `${(speed / 1000).toFixed(2)} KB/s`;
+
+    return `${(speed / 1000).toFixed(2)} MB/s`;
 }
 
 const FILE_SIZES = [
