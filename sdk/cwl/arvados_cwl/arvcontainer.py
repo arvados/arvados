@@ -28,7 +28,7 @@ import arvados.collection
 
 from .arvdocker import arv_docker_get_image
 from . import done
-from .runner import Runner, arvados_jobs_image, packed_workflow, trim_anonymous_location, remove_redundant_fields
+from .runner import Runner, arvados_jobs_image, packed_workflow, trim_anonymous_location, remove_redundant_fields, make_builder
 from .fsaccess import CollectionFetcher
 from .pathmapper import NoFollowPathMapper, trim_listing
 from .perf import Perf
@@ -67,15 +67,21 @@ class ArvadosContainer(JobBase):
 
         runtimeContext = self.job_runtime
 
-        container_request = {
-            "command": self.command_line,
-            "name": self.name,
-            "output_path": self.outdir,
-            "cwd": self.outdir,
-            "priority": runtimeContext.priority,
-            "state": "Committed",
-            "properties": {},
-        }
+        if runtimeContext.submit_request_uuid:
+            container_request = self.arvrunner.api.container_requests().get(
+                uuid=runtimeContext.submit_request_uuid
+            ).execute(num_retries=self.arvrunner.num_retries)
+        else:
+            container_request = {}
+
+        container_request["command"] = self.command_line
+        container_request["name"] = self.name
+        container_request["output_path"] = self.outdir
+        container_request["cwd"] = self.outdir
+        container_request["priority"] = runtimeContext.priority
+        container_request["state"] = "Committed"
+        container_request.setdefault("properties", {})
+
         runtime_constraints = {}
 
         if runtimeContext.project_uuid:
@@ -303,6 +309,11 @@ class ArvadosContainer(JobBase):
                 enable_reuse = reuse_req["enableReuse"]
         container_request["use_existing"] = enable_reuse
 
+        properties_req, _ = self.get_requirement("http://arvados.org/cwl#ProcessProperties")
+        if properties_req:
+            for pr in properties_req["processProperties"]:
+                container_request["properties"][pr["propertyName"]] = self.builder.do_eval(pr["propertyValue"])
+
         if runtimeContext.runnerjob.startswith("arvwf:"):
             wfuuid = runtimeContext.runnerjob[6:runtimeContext.runnerjob.index("#")]
             wfrecord = self.arvrunner.api.workflows().get(uuid=wfuuid).execute(num_retries=self.arvrunner.num_retries)
@@ -468,6 +479,11 @@ class RunnerContainer(Runner):
             if self.embedded_tool.tool.get("id", "").startswith("arvwf:"):
                 container_req["properties"]["template_uuid"] = self.embedded_tool.tool["id"][6:33]
 
+        properties_req, _ = self.embedded_tool.get_requirement("http://arvados.org/cwl#ProcessProperties")
+        if properties_req:
+            builder = make_builder(self.job_order, self.embedded_tool.hints, self.embedded_tool.requirements, runtimeContext, self.embedded_tool.metadata)
+            for pr in properties_req["processProperties"]:
+                container_req["properties"][pr["propertyName"]] = builder.do_eval(pr["propertyValue"])
 
         # --local means execute the workflow instead of submitting a container request
         # --api=containers means use the containers API

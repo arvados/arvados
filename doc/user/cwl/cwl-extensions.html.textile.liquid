@@ -52,6 +52,11 @@ hints:
   arv:OutputStorageClass:
     intermediateStorageClass: fast_storage
     finalStorageClass: robust_storage
+
+  arv:ProcessProperties:
+    processProperties:
+      property1: value1
+      property2: $(inputs.value2)
 {% endcodeblock %}
 
 h2(#RunInSingleContainer). arv:RunInSingleContainer
@@ -133,6 +138,14 @@ table(table table-bordered table-condensed).
 |_. Field |_. Type |_. Description |
 |intermediateStorageClass|string or array of strings|The storage class for output of intermediate steps.  For example, faster "hot" storage.|
 |finalStorageClass_uuid|string or array of strings|The storage class for the final output.  |
+
+h2(#ProcessProperties). arv:ProcessProperties
+
+Specify extra "properties":{{site.baseurl}}/api/methods.html#subpropertyfilters that will be set on container requests created by the workflow.  May be set on a Workflow or a CommandLineTool.  Setting custom properties on a container request simplifies queries to find the workflow run later on.
+
+table(table table-bordered table-condensed).
+|_. Field |_. Type |_. Description |
+|processProperties|key-value map, or list of objects with the fields {propertyName, propertyValue}|The properties that will be set on the container request.  May include expressions that reference `$(inputs)` of the current workflow or tool.|
 
 h2. arv:dockerCollectionPDH
 
