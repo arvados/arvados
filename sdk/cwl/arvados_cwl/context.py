@@ -41,3 +41,15 @@ class ArvRuntimeContext(RuntimeContext):
 
         if self.submit_request_uuid:
             self.submit_runner_cluster = self.submit_request_uuid[0:5]
+
+    def get_outdir(self) -> str:
+        """Return self.outdir or create one with self.tmp_outdir_prefix."""
+        return self.outdir
+
+    def get_tmpdir(self) -> str:
+        """Return self.tmpdir or create one with self.tmpdir_prefix."""
+        return self.tmpdir
+
+    def create_tmpdir(self) -> str:
+        """Return self.tmpdir or create one with self.tmpdir_prefix."""
+        return self.tmpdir
