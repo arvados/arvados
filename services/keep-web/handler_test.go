@@ -50,7 +50,7 @@ func (s *UnitSuite) SetUpTest(c *check.C) {
 }
 
 func (s *UnitSuite) TestCORSPreflight(c *check.C) {
-	h := handler{Config: newConfig(s.Config)}
+	h := handler{Config: newConfig(ctxlog.TestLogger(c), s.Config)}
 	u := mustParseURL("http://keep-web.example/c=" + arvadostest.FooCollection + "/foo")
 	req := &http.Request{
 		Method:     "OPTIONS",
@@ -109,7 +109,7 @@ func (s *UnitSuite) TestEmptyResponse(c *check.C) {
 			c.Assert(err, check.IsNil)
 		}
 
-		h := handler{Config: newConfig(s.Config)}
+		h := handler{Config: newConfig(ctxlog.TestLogger(c), s.Config)}
 		u := mustParseURL("http://" + arvadostest.FooCollection + ".keep-web.example/foo")
 		req := &http.Request{
 			Method:     "GET",
@@ -159,7 +159,7 @@ func (s *UnitSuite) TestInvalidUUID(c *check.C) {
 			RequestURI: u.RequestURI(),
 		}
 		resp := httptest.NewRecorder()
-		cfg := newConfig(s.Config)
+		cfg := newConfig(ctxlog.TestLogger(c), s.Config)
 		cfg.cluster.Users.AnonymousUserToken = arvadostest.AnonymousToken
 		h := handler{Config: cfg}
 		h.ServeHTTP(resp, req)
@@ -1241,7 +1241,7 @@ func (s *IntegrationSuite) checkUploadDownloadRequest(c *check.C, h *handler, re
 }
 
 func (s *IntegrationSuite) TestDownloadLoggingPermission(c *check.C) {
-	config := newConfig(s.ArvConfig)
+	config := newConfig(ctxlog.TestLogger(c), s.ArvConfig)
 	h := handler{Config: config}
 	u := mustParseURL("http://" + arvadostest.FooCollection + ".keep-web.example/foo")
 
@@ -1314,7 +1314,7 @@ func (s *IntegrationSuite) TestDownloadLoggingPermission(c *check.C) {
 }
 
 func (s *IntegrationSuite) TestUploadLoggingPermission(c *check.C) {
-	config := newConfig(s.ArvConfig)
+	config := newConfig(ctxlog.TestLogger(c), s.ArvConfig)
 	h := handler{Config: config}
 
 	for _, adminperm := range []bool{true, false} {

@@ -29,7 +29,7 @@ type Config struct {
 	cluster *arvados.Cluster
 }
 
-func newConfig(arvCfg *arvados.Config) *Config {
+func newConfig(logger logrus.FieldLogger, arvCfg *arvados.Config) *Config {
 	cfg := Config{}
 	var cls *arvados.Cluster
 	var err error
@@ -39,6 +39,7 @@ func newConfig(arvCfg *arvados.Config) *Config {
 	cfg.cluster = cls
 	cfg.Cache.config = &cfg.cluster.Collections.WebDAVCache
 	cfg.Cache.cluster = cls
+	cfg.Cache.logger = logger
 	return &cfg
 }
 
@@ -81,7 +82,7 @@ func configure(logger log.FieldLogger, args []string) *Config {
 	if err != nil {
 		log.Fatal(err)
 	}
-	cfg := newConfig(arvCfg)
+	cfg := newConfig(logger, arvCfg)
 
 	if *dumpConfig {
 		out, err := yaml.Marshal(cfg)

@@ -10,6 +10,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/expfmt"
 	"gopkg.in/check.v1"
@@ -33,7 +34,7 @@ func (s *UnitSuite) TestCache(c *check.C) {
 	arv, err := arvadosclient.MakeArvadosClient()
 	c.Assert(err, check.Equals, nil)
 
-	cache := newConfig(s.Config).Cache
+	cache := newConfig(ctxlog.TestLogger(c), s.Config).Cache
 	cache.registry = prometheus.NewRegistry()
 
 	// Hit the same collection 5 times using the same token. Only
@@ -110,7 +111,7 @@ func (s *UnitSuite) TestCacheForceReloadByPDH(c *check.C) {
 	arv, err := arvadosclient.MakeArvadosClient()
 	c.Assert(err, check.Equals, nil)
 
-	cache := newConfig(s.Config).Cache
+	cache := newConfig(ctxlog.TestLogger(c), s.Config).Cache
 	cache.registry = prometheus.NewRegistry()
 
 	for _, forceReload := range []bool{false, true, false, true} {
@@ -129,7 +130,7 @@ func (s *UnitSuite) TestCacheForceReloadByUUID(c *check.C) {
 	arv, err := arvadosclient.MakeArvadosClient()
 	c.Assert(err, check.Equals, nil)
 
-	cache := newConfig(s.Config).Cache
+	cache := newConfig(ctxlog.TestLogger(c), s.Config).Cache
 	cache.registry = prometheus.NewRegistry()
 
 	for _, forceReload := range []bool{false, true, false, true} {

@@ -433,7 +433,7 @@ func (s *IntegrationSuite) SetUpTest(c *check.C) {
 	ldr.Path = "-"
 	arvCfg, err := ldr.Load()
 	c.Check(err, check.IsNil)
-	cfg := newConfig(arvCfg)
+	cfg := newConfig(ctxlog.TestLogger(c), arvCfg)
 	c.Assert(err, check.IsNil)
 	cfg.Client = arvados.Client{
 		APIHost:  testAPIHost,

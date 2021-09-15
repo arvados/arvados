@@ -14,6 +14,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/sirupsen/logrus"
 )
 
 const metricsUpdateInterval = time.Second / 10
@@ -21,6 +22,7 @@ const metricsUpdateInterval = time.Second / 10
 type cache struct {
 	cluster     *arvados.Cluster
 	config      *arvados.WebDAVCacheConfig // TODO: use cluster.Collections.WebDAV instead
+	logger      logrus.FieldLogger
 	registry    *prometheus.Registry
 	metrics     cacheMetrics
 	pdhs        *lru.TwoQueueCache
