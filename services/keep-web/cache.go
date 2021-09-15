@@ -334,12 +334,15 @@ func (c *cache) Get(arv *arvadosclient.ArvadosClient, targetID string, forceRelo
 	if pdh == "" {
 		// UUID->PDH mapping is not cached, might as well get
 		// the whole collection record and be done (below).
+		c.logger.Debugf("cache(%s): have no pdh", targetID)
 	} else if cached := c.lookupCollection(arv.ApiToken + "\000" + pdh); cached == nil {
 		// PDH->manifest is not cached, might as well get the
 		// whole collection record (below).
+		c.logger.Debugf("cache(%s): have pdh %s but manifest is not cached", targetID, pdh)
 	} else if !pdhRefresh {
 		// We looked up UUID->PDH very recently, and we still
 		// have the manifest for that PDH.
+		c.logger.Debugf("cache(%s): have pdh %s and refresh not needed", targetID, pdh)
 		return cached, nil
 	} else {
 		// Get current PDH for this UUID (and confirm we still
@@ -355,11 +358,13 @@ func (c *cache) Get(arv *arvadosclient.ArvadosClient, targetID string, forceRelo
 		if current.PortableDataHash == pdh {
 			// PDH has not changed, cached manifest is
 			// correct.
-			return cached, err
+			c.logger.Debugf("cache(%s): verified cached pdh %s is still correct", targetID, pdh)
+			return cached, nil
 		}
 		if cached := c.lookupCollection(arv.ApiToken + "\000" + current.PortableDataHash); cached != nil {
 			// PDH changed, and we already have the
 			// manifest for that new PDH.
+			c.logger.Debugf("cache(%s): cached pdh %s was stale, new pdh is %s and manifest is already in cache", targetID, pdh, current.PortableDataHash)
 			return cached, nil
 		}
 	}
@@ -372,6 +377,7 @@ func (c *cache) Get(arv *arvadosclient.ArvadosClient, targetID string, forceRelo
 	if err != nil {
 		return nil, err
 	}
+	c.logger.Debugf("cache(%s): retrieved manifest, caching with pdh %s", targetID, retrieved.PortableDataHash)
 	exp := time.Now().Add(time.Duration(c.config.TTL))
 	if targetID != retrieved.PortableDataHash {
 		c.pdhs.Add(targetID, &cachedPDH{
