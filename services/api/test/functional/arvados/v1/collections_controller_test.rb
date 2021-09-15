@@ -1461,4 +1461,34 @@ EOS
       end
     end
   end
+
+  test "select param is respected in 'show' response" do
+    authorize_with :active
+    get :show, params: {
+          id: collections(:collection_owned_by_active).uuid,
+          select: ["name"],
+        }
+    assert_response :success
+    assert_raises ActiveModel::MissingAttributeError do
+      assigns(:object).manifest_text
+    end
+    assert_nil json_response["manifest_text"]
+    assert_nil json_response["properties"]
+    assert_equal collections(:collection_owned_by_active).name, json_response["name"]
+  end
+
+  test "select param is respected in 'update' response" do
+    authorize_with :active
+    post :update, params: {
+          id: collections(:collection_owned_by_active).uuid,
+          collection: {
+            manifest_text: ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foobar.txt\n",
+          },
+          select: ["name"],
+        }
+    assert_response :success
+    assert_nil json_response["manifest_text"]
+    assert_nil json_response["properties"]
+    assert_equal collections(:collection_owned_by_active).name, json_response["name"]
+  end
 end

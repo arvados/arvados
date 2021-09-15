@@ -80,7 +80,13 @@ class Arvados::V1::CollectionsController < ApplicationController
       # it will select the Collection object with the longest
       # available lifetime.
 
-      if c = Collection.readable_by(*@read_users, opts).where({ portable_data_hash: loc.to_s }).order("trash_at desc").limit(1).first
+      if c = Collection.
+               readable_by(*@read_users, opts).
+               where({ portable_data_hash: loc.to_s }).
+               order("trash_at desc").
+               select(((@select || ["manifest_text"]) | ["portable_data_hash", "trash_at"]).join(", ")).
+               limit(1).
+               first
         @object = {
           uuid: c.portable_data_hash,
           portable_data_hash: c.portable_data_hash,
@@ -321,7 +327,7 @@ class Arvados::V1::CollectionsController < ApplicationController
 
   protected
 
-  def load_limit_offset_order_params *args
+  def load_select_param *args
     super
     if action_name == 'index'
       # Omit manifest_text and unsigned_manifest_text from index results unless expressly selected.

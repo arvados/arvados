@@ -125,7 +125,6 @@ func (s *RouterSuite) TestOptions(c *check.C) {
 			comment:     "form-encoded expression filter in query string",
 			method:      "GET",
 			path:        "/arvados/v1/collections?filters=[%22(foo<bar)%22]",
-			header:      http.Header{"Content-Type": {"application/x-www-form-urlencoded"}},
 			shouldCall:  "CollectionList",
 			withOptions: arvados.ListOptions{Limit: -1, Filters: []arvados.Filter{{"(foo<bar)", "=", true}}},
 		},
@@ -146,6 +145,13 @@ func (s *RouterSuite) TestOptions(c *check.C) {
 			header:      http.Header{"Content-Type": {"application/json"}},
 			shouldCall:  "CollectionList",
 			withOptions: arvados.ListOptions{Limit: 2, Filters: []arvados.Filter{{"(foo<bar)", "=", true}, {"bar", "=", "baz"}}},
+		},
+		{
+			comment:     "json-encoded select param in query string",
+			method:      "GET",
+			path:        "/arvados/v1/collections/" + arvadostest.FooCollection + "?select=[%22portable_data_hash%22]",
+			shouldCall:  "CollectionGet",
+			withOptions: arvados.GetOptions{UUID: arvadostest.FooCollection, Select: []string{"portable_data_hash"}},
 		},
 		{
 			method:       "PATCH",
@@ -376,7 +382,6 @@ func (s *RouterIntegrationSuite) TestSelectParam(c *check.C) {
 	for _, sel := range [][]string{
 		{"uuid", "command"},
 		{"uuid", "command", "uuid"},
-		{"", "command", "uuid"},
 	} {
 		j, err := json.Marshal(sel)
 		c.Assert(err, check.IsNil)
@@ -384,8 +389,6 @@ func (s *RouterIntegrationSuite) TestSelectParam(c *check.C) {
 		c.Check(rr.Code, check.Equals, http.StatusOK)
 
 		c.Check(resp["kind"], check.Equals, "arvados#container")
-		c.Check(resp["etag"], check.FitsTypeOf, "")
-		c.Check(resp["etag"], check.Not(check.Equals), "")
 		c.Check(resp["uuid"], check.HasLen, 27)
 		c.Check(resp["command"], check.HasLen, 2)
 		c.Check(resp["mounts"], check.IsNil)
