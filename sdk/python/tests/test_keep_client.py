@@ -1300,6 +1300,8 @@ class AvoidOverreplication(unittest.TestCase, tutil.ApiClientMock):
         def last_result(self):
             if self.will_succeed:
                 return self._result
+            else:
+                return {"status_code": 500, "body": "didn't succeed"}
 
         def finished(self):
             return False
