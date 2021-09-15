@@ -51,7 +51,6 @@ func (s *UnitSuite) TestCache(c *check.C) {
 	s.checkCacheMetrics(c, cache.registry,
 		"requests 5",
 		"hits 4",
-		"permission_hits 4",
 		"pdh_hits 4",
 		"api_calls 1")
 
@@ -72,7 +71,6 @@ func (s *UnitSuite) TestCache(c *check.C) {
 	s.checkCacheMetrics(c, cache.registry,
 		"requests 6",
 		"hits 4",
-		"permission_hits 4",
 		"pdh_hits 4",
 		"api_calls 2")
 
@@ -85,7 +83,6 @@ func (s *UnitSuite) TestCache(c *check.C) {
 	s.checkCacheMetrics(c, cache.registry,
 		"requests 7",
 		"hits 5",
-		"permission_hits 5",
 		"pdh_hits 4",
 		"api_calls 2")
 
@@ -105,7 +102,6 @@ func (s *UnitSuite) TestCache(c *check.C) {
 	s.checkCacheMetrics(c, cache.registry,
 		"requests 27",
 		"hits 23",
-		"permission_hits 23",
 		"pdh_hits 22",
 		"api_calls 4")
 }
@@ -125,9 +121,8 @@ func (s *UnitSuite) TestCacheForceReloadByPDH(c *check.C) {
 	s.checkCacheMetrics(c, cache.registry,
 		"requests 4",
 		"hits 3",
-		"permission_hits 1",
 		"pdh_hits 0",
-		"api_calls 3")
+		"api_calls 1")
 }
 
 func (s *UnitSuite) TestCacheForceReloadByUUID(c *check.C) {
@@ -145,7 +140,6 @@ func (s *UnitSuite) TestCacheForceReloadByUUID(c *check.C) {
 	s.checkCacheMetrics(c, cache.registry,
 		"requests 4",
 		"hits 3",
-		"permission_hits 1",
 		"pdh_hits 3",
 		"api_calls 3")
 }

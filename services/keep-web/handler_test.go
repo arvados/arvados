@@ -1067,7 +1067,7 @@ func (s *IntegrationSuite) TestFileContentType(c *check.C) {
 		contentType string
 	}{
 		{"picture.txt", "BMX bikes are small this year\n", "text/plain; charset=utf-8"},
-		{"picture.bmp", "BMX bikes are small this year\n", "image/x-ms-bmp"},
+		{"picture.bmp", "BMX bikes are small this year\n", "image/(x-ms-)?bmp"},
 		{"picture.jpg", "BMX bikes are small this year\n", "image/jpeg"},
 		{"picture1", "BMX bikes are small this year\n", "image/bmp"},            // content sniff; "BM" is the magic signature for .bmp
 		{"picture2", "Cars are small this year\n", "text/plain; charset=utf-8"}, // content sniff
@@ -1103,7 +1103,7 @@ func (s *IntegrationSuite) TestFileContentType(c *check.C) {
 		resp := httptest.NewRecorder()
 		s.testServer.Handler.ServeHTTP(resp, req)
 		c.Check(resp.Code, check.Equals, http.StatusOK)
-		c.Check(resp.Header().Get("Content-Type"), check.Equals, trial.contentType)
+		c.Check(resp.Header().Get("Content-Type"), check.Matches, trial.contentType)
 		c.Check(resp.Body.String(), check.Equals, trial.content)
 	}
 }
