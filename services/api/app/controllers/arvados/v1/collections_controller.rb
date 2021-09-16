@@ -80,18 +80,22 @@ class Arvados::V1::CollectionsController < ApplicationController
       # it will select the Collection object with the longest
       # available lifetime.
 
+      select_attrs = (@select || ["manifest_text"]) | ["portable_data_hash", "trash_at"]
       if c = Collection.
                readable_by(*@read_users, opts).
                where({ portable_data_hash: loc.to_s }).
                order("trash_at desc").
-               select(((@select || ["manifest_text"]) | ["portable_data_hash", "trash_at"]).join(", ")).
+               select(select_attrs.join(", ")).
                limit(1).
                first
         @object = {
           uuid: c.portable_data_hash,
           portable_data_hash: c.portable_data_hash,
-          manifest_text: c.manifest_text,
+          trash_at: c.trash_at,
         }
+        if select_attrs.index("manifest_text")
+          @object[:manifest_text] = c.manifest_text
+        end
       end
     else
       super

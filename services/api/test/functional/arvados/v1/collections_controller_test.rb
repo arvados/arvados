@@ -1491,4 +1491,26 @@ EOS
     assert_nil json_response["properties"]
     assert_equal collections(:collection_owned_by_active).name, json_response["name"]
   end
+
+  [nil,
+   [],
+   ["is_trashed", "trash_at"],
+   ["is_trashed", "trash_at", "portable_data_hash"],
+   ["portable_data_hash"],
+   ["portable_data_hash", "manifest_text"],
+  ].each do |select|
+    test "select=#{select.inspect} param is respected in 'get by pdh' response" do
+      authorize_with :active
+      get :show, params: {
+            id: collections(:collection_owned_by_active).portable_data_hash,
+            select: select,
+          }
+      assert_response :success
+      if !select || select.index("manifest_text")
+        assert_not_nil json_response["manifest_text"]
+      else
+        assert_nil json_response["manifest_text"]
+      end
+    end
+  end
 end
