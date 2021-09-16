@@ -262,13 +262,26 @@ func (conn *Conn) CollectionGet(ctx context.Context, options arvados.GetOptions)
 		if err != nil {
 			return err
 		}
-		// options.UUID is either hash+size or
-		// hash+size+hints; only hash+size need to
-		// match the computed PDH.
-		if pdh := arvados.PortableDataHash(c.ManifestText); pdh != options.UUID && !strings.HasPrefix(options.UUID, pdh+"+") {
-			err = httpErrorf(http.StatusBadGateway, "bad portable data hash %q received from remote %q (expected %q)", pdh, remoteID, options.UUID)
-			ctxlog.FromContext(ctx).Warn(err)
-			return err
+		haveManifest := true
+		if options.Select != nil {
+			haveManifest = false
+			for _, s := range options.Select {
+				if s == "manifest_text" {
+					haveManifest = true
+					break
+				}
+			}
+		}
+		if haveManifest {
+			pdh := arvados.PortableDataHash(c.ManifestText)
+			// options.UUID is either hash+size or
+			// hash+size+hints; only hash+size need to
+			// match the computed PDH.
+			if pdh != options.UUID && !strings.HasPrefix(options.UUID, pdh+"+") {
+				err = httpErrorf(http.StatusBadGateway, "bad portable data hash %q received from remote %q (expected %q)", pdh, remoteID, options.UUID)
+				ctxlog.FromContext(ctx).Warn(err)
+				return err
+			}
 		}
 		if remoteID != "" {
 			c.ManifestText = rewriteManifest(c.ManifestText, remoteID)
