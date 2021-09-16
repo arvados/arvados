@@ -1433,6 +1433,31 @@ func (s *CollectionFSSuite) TestEdgeCaseManifests(c *check.C) {
 	}
 }
 
+var bigmanifest = func() string {
+	var buf bytes.Buffer
+	for i := 0; i < 2000; i++ {
+		fmt.Fprintf(&buf, "./dir%d", i)
+		for i := 0; i < 100; i++ {
+			fmt.Fprintf(&buf, " d41d8cd98f00b204e9800998ecf8427e+99999")
+		}
+		for i := 0; i < 2000; i++ {
+			fmt.Fprintf(&buf, " 1200000:300000:file%d", i)
+		}
+		fmt.Fprintf(&buf, "\n")
+	}
+	return buf.String()
+}()
+
+func (s *CollectionFSSuite) BenchmarkParseManifest(c *check.C) {
+	DebugLocksPanicMode = false
+	c.Logf("test manifest is %d bytes", len(bigmanifest))
+	for i := 0; i < c.N; i++ {
+		fs, err := (&Collection{ManifestText: bigmanifest}).FileSystem(s.client, s.kc)
+		c.Check(err, check.IsNil)
+		c.Check(fs, check.NotNil)
+	}
+}
+
 func (s *CollectionFSSuite) checkMemSize(c *check.C, f File) {
 	fn := f.(*filehandle).inode.(*filenode)
 	var memsize int64

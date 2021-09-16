@@ -5,6 +5,7 @@
 package arvados
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -1040,38 +1041,64 @@ func (dn *dirnode) marshalManifest(ctx context.Context, prefix string) (string, 
 }
 
 func (dn *dirnode) loadManifest(txt string) error {
-	var dirname string
-	streams := strings.Split(txt, "\n")
-	if streams[len(streams)-1] != "" {
+	streams := bytes.Split([]byte(txt), []byte{'\n'})
+	if len(streams[len(streams)-1]) != 0 {
 		return fmt.Errorf("line %d: no trailing newline", len(streams))
 	}
 	streams = streams[:len(streams)-1]
 	segments := []storedSegment{}
+	// To reduce allocs, we reuse a single "pathparts" slice
+	// (pre-split on "/" separators) for the duration of this
+	// func.
+	var pathparts []string
+	// To reduce allocs, we reuse a single "toks" slice of 3 byte
+	// slices.
+	var toks = make([][]byte, 3)
+	// Similar to bytes.SplitN(token, []byte{c}, 3), but splits
+	// into the toks slice rather than allocating a new one, and
+	// returns the number of toks (1, 2, or 3).
+	splitToToks := func(src []byte, c rune) int {
+		c1 := bytes.IndexRune(src, c)
+		if c1 < 0 {
+			toks[0] = src
+			return 1
+		}
+		toks[0], src = src[:c1], src[c1+1:]
+		c2 := bytes.IndexRune(src, c)
+		if c2 < 0 {
+			toks[1] = src
+			return 2
+		}
+		toks[1], toks[2] = src[:c2], src[c2+1:]
+		return 3
+	}
 	for i, stream := range streams {
 		lineno := i + 1
 		var anyFileTokens bool
 		var pos int64
 		var segIdx int
 		segments = segments[:0]
-		for i, token := range strings.Split(stream, " ") {
+		pathparts = nil
+		streamparts := 0
+		for i, token := range bytes.Split(stream, []byte{' '}) {
 			if i == 0 {
-				dirname = manifestUnescape(token)
+				pathparts = strings.Split(manifestUnescape(string(token)), "/")
+				streamparts = len(pathparts)
 				continue
 			}
-			if !strings.Contains(token, ":") {
+			if !bytes.ContainsRune(token, ':') {
 				if anyFileTokens {
 					return fmt.Errorf("line %d: bad file segment %q", lineno, token)
 				}
-				toks := strings.SplitN(token, "+", 3)
-				if len(toks) < 2 {
+				if splitToToks(token, '+') < 2 {
 					return fmt.Errorf("line %d: bad locator %q", lineno, token)
 				}
-				length, err := strconv.ParseInt(toks[1], 10, 32)
+				length, err := strconv.ParseInt(string(toks[1]), 10, 32)
 				if err != nil || length < 0 {
 					return fmt.Errorf("line %d: bad locator %q", lineno, token)
 				}
 				segments = append(segments, storedSegment{
-					locator: token,
+					locator: string(token),
 					size:    int(length),
 					offset:  0,
 					length:  int(length),
@@ -1080,23 +1107,26 @@ func (dn *dirnode) loadManifest(txt string) error {
 			} else if len(segments) == 0 {
 				return fmt.Errorf("line %d: bad locator %q", lineno, token)
 			}
-
-			toks := strings.SplitN(token, ":", 3)
-			if len(toks) != 3 {
+			if splitToToks(token, ':') != 3 {
 				return fmt.Errorf("line %d: bad file segment %q", lineno, token)
 			}
 			anyFileTokens = true
 
-			offset, err := strconv.ParseInt(toks[0], 10, 64)
+			offset, err := strconv.ParseInt(string(toks[0]), 10, 64)
 			if err != nil || offset < 0 {
 				return fmt.Errorf("line %d: bad file segment %q", lineno, token)
 			}
-			length, err := strconv.ParseInt(toks[1], 10, 64)
+			length, err := strconv.ParseInt(string(toks[1]), 10, 64)
 			if err != nil || length < 0 {
 				return fmt.Errorf("line %d: bad file segment %q", lineno, token)
 			}
-			name := dirname + "/" + manifestUnescape(toks[2])
-			fnode, err := dn.createFileAndParents(name)
+			if !bytes.ContainsAny(toks[2], `\/`) {
+				// optimization for a common case
+				pathparts = append(pathparts[:streamparts], string(toks[2]))
+			} else {
+				pathparts = append(pathparts[:streamparts], strings.Split(manifestUnescape(string(toks[2])), "/")...)
+			}
+			fnode, err := dn.createFileAndParents(pathparts)
 			if fnode == nil && err == nil && length == 0 {
 				// Special case: an empty file used as
 				// a marker to preserve an otherwise
@@ -1104,7 +1134,7 @@ func (dn *dirnode) loadManifest(txt string) error {
 				continue
 			}
 			if err != nil || (fnode == nil && length != 0) {
-				return fmt.Errorf("line %d: cannot use path %q with length %d: %s", lineno, name, length, err)
+				return fmt.Errorf("line %d: cannot use name %q with length %d: %s", lineno, toks[2], length, err)
 			}
 			// Map the stream offset/range coordinates to
 			// block/offset/range coordinates and add
@@ -1155,7 +1185,7 @@ func (dn *dirnode) loadManifest(txt string) error {
 			return fmt.Errorf("line %d: no file segments", lineno)
 		} else if len(segments) == 0 {
 			return fmt.Errorf("line %d: no locators", lineno)
-		} else if dirname == "" {
+		} else if streamparts == 0 {
 			return fmt.Errorf("line %d: no stream name", lineno)
 		}
 	}
@@ -1166,9 +1196,11 @@ func (dn *dirnode) loadManifest(txt string) error {
 //
 // If path is a "parent directory exists" marker (the last path
 // component is "."), the returned values are both nil.
-func (dn *dirnode) createFileAndParents(path string) (fn *filenode, err error) {
+//
+// Newly added nodes have modtime==0. Caller is responsible for fixing
+// them with backdateTree.
+func (dn *dirnode) createFileAndParents(names []string) (fn *filenode, err error) {
 	var node inode = dn
-	names := strings.Split(path, "/")
 	basename := names[len(names)-1]
 	for _, name := range names[:len(names)-1] {
 		switch name {
@@ -1182,12 +1214,12 @@ func (dn *dirnode) createFileAndParents(path string) (fn *filenode, err error) {
 			node = node.Parent()
 			continue
 		}
-		modtime := node.Parent().FileInfo().ModTime()
 		node.Lock()
-		locked := node
+		unlock := node.Unlock
 		node, err = node.Child(name, func(child inode) (inode, error) {
 			if child == nil {
-				child, err := node.FS().newNode(name, 0755|os.ModeDir, modtime)
+				// note modtime will be fixed later in backdateTree()
+				child, err := node.FS().newNode(name, 0755|os.ModeDir, time.Time{})
 				if err != nil {
 					return nil, err
 				}
@@ -1199,7 +1231,7 @@ func (dn *dirnode) createFileAndParents(path string) (fn *filenode, err error) {
 				return child, nil
 			}
 		})
-		locked.Unlock()
+		unlock()
 		if err != nil {
 			return
 		}
@@ -1207,16 +1239,15 @@ func (dn *dirnode) createFileAndParents(path string) (fn *filenode, err error) {
 	if basename == "." {
 		return
 	} else if !permittedName(basename) {
-		err = fmt.Errorf("invalid file part %q in path %q", basename, path)
+		err = fmt.Errorf("invalid file part %q in path %q", basename, names)
 		return
 	}
-	modtime := node.FileInfo().ModTime()
 	node.Lock()
 	defer node.Unlock()
 	_, err = node.Child(basename, func(child inode) (inode, error) {
 		switch child := child.(type) {
 		case nil:
-			child, err = node.FS().newNode(basename, 0755, modtime)
+			child, err = node.FS().newNode(basename, 0755, time.Time{})
 			if err != nil {
 				return nil, err
 			}
