@@ -115,8 +115,9 @@ func (s *CollectionSuite) TestSignatures(c *check.C) {
 		Filters: []arvados.Filter{{"uuid", "=", arvadostest.FooCollection}},
 		Select:  []string{"uuid", "manifest_text"},
 	})
-	c.Check(err, check.IsNil)
-	if c.Check(gresp.Items, check.HasLen, 1) {
+	if err != nil {
+		c.Check(err, check.ErrorMatches, `.*Invalid attribute.*manifest_text.*`)
+	} else if c.Check(gresp.Items, check.HasLen, 1) {
 		c.Check(gresp.Items[0].(map[string]interface{})["uuid"], check.Equals, arvadostest.FooCollection)
 		c.Check(gresp.Items[0].(map[string]interface{})["manifest_text"], check.Equals, nil)
 	}
