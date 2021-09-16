@@ -145,8 +145,7 @@ module LoadParam
       end
     end
 
-    @distinct = true if (params[:distinct] == true || params[:distinct] == "true")
-    @distinct = false if (params[:distinct] == false || params[:distinct] == "false")
+    @distinct = params[:distinct] && true
   end
 
   def load_select_param

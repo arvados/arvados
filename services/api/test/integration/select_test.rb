@@ -17,10 +17,16 @@ class SelectTest < ActionDispatch::IntegrationTest
 
   test "fewer distinct than total count" do
     get "/arvados/v1/links",
+      params: {:format => :json, :select => ['link_class']},
+      headers: auth(:active)
+    assert_response :success
+    distinct_unspecified = json_response['items']
+
+    get "/arvados/v1/links",
       params: {:format => :json, :select => ['link_class'], :distinct => false},
       headers: auth(:active)
     assert_response :success
-    links = json_response['items']
+    distinct_false = json_response['items']
 
     get "/arvados/v1/links",
       params: {:format => :json, :select => ['link_class'], :distinct => true},
@@ -28,9 +34,11 @@ class SelectTest < ActionDispatch::IntegrationTest
     assert_response :success
     distinct = json_response['items']
 
-    assert_operator(distinct.count, :<, links.count,
-                    "distinct count should be less than link count")
-    assert_equal links.uniq.count, distinct.count
+    assert_operator(distinct.count, :<, distinct_false.count,
+                    "distinct=true count should be less than distinct=false count")
+    assert_equal(distinct_unspecified.count, distinct_false.count,
+                    "distinct=false should be the default")
+    assert_equal distinct_false.uniq.count, distinct.count
   end
 
   test "select with order" do

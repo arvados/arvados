@@ -305,7 +305,7 @@ class ApplicationController < ActionController::Base
     @objects = @objects.order(@orders.join ", ") if @orders.any?
     @objects = @objects.limit(@limit)
     @objects = @objects.offset(@offset)
-    @objects = @objects.distinct(@distinct) if not @distinct.nil?
+    @objects = @objects.distinct() if @distinct
   end
 
   # limit_database_read ensures @objects (which must be an
@@ -654,7 +654,7 @@ class ApplicationController < ActionController::Base
       where: { type: 'object', required: false },
       order: { type: 'array', required: false },
       select: { type: 'array', required: false },
-      distinct: { type: 'boolean', required: false },
+      distinct: { type: 'boolean', required: false, default: false },
       limit: { type: 'integer', required: false, default: DEFAULT_LIMIT },
       offset: { type: 'integer', required: false, default: 0 },
       count: { type: 'string', required: false, default: 'exact' },
