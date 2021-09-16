@@ -119,6 +119,7 @@ type ConfigParams struct {
 	Path            string
 	UserID          string
 	Verbose         bool
+	CaseInsensitive bool
 	ParentGroupUUID string
 	ParentGroupName string
 	SysUserUUID     string
@@ -152,6 +153,10 @@ func ParseFlags(config *ConfigParams) error {
 		"user-id",
 		"email",
 		"Attribute by which every user is identified. Valid values are: email and username.")
+	caseInsensitive := flags.Bool(
+		"case-insensitive",
+		false,
+		"Performs case insensitive matching on user IDs. Off by default.")
 	verbose := flags.Bool(
 		"verbose",
 		false,
@@ -196,6 +201,7 @@ func ParseFlags(config *ConfigParams) error {
 	config.ParentGroupUUID = *parentGroupUUID
 	config.UserID = *userID
 	config.Verbose = *verbose
+	config.CaseInsensitive = *caseInsensitive
 
 	return nil
 }
@@ -494,9 +500,7 @@ func GetAll(c *arvados.Client, res string, params arvados.ResourceListParams, pa
 		if page.Len() == 0 {
 			break
 		}
-		for _, i := range page.GetItems() {
-			allItems = append(allItems, i)
-		}
+		allItems = append(allItems, page.GetItems()...)
 		params.Offset += page.Len()
 	}
 	return allItems, nil
@@ -714,9 +718,7 @@ func RemoveMemberLinksFromGroup(cfg *ConfigParams, user arvados.User, linkNames 
 			userID, _ := GetUserID(user, cfg.UserID)
 			return fmt.Errorf("error getting links needed to remove user %q from group %q: %s", userID, group.Name, err)
 		}
-		for _, link := range l {
-			links = append(links, link)
-		}
+		links = append(links, l...)
 	}
 	for _, item := range links {
 		link := item.(arvados.Link)
