@@ -40,9 +40,12 @@
         }
 
         var trySendToken = function() {
+          var token = urlParams.get('token');
+          if (token) {
+            history.replaceState(null, "", `/webshell/?host=${encodeURIComponent(urlParams.get('host'))}&login=${encodeURIComponent(urlParams.get('login'))}`)
+          }
           // change this text when PAM is reconfigured to present a
           // password prompt that we can wait for.
-          var token = urlParams.get('token');
           if (findText("assword:")) {
              sh.keysPressed(token + "\n");
              sh.vt100('(sent authentication token)\n');
