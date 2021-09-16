@@ -305,7 +305,11 @@ func doMain(cfg *ConfigParams) error {
 	}
 	defer f.Close()
 
-	log.Printf("%s %s started. Using %q as users id and parent group UUID %q", os.Args[0], version, cfg.UserID, cfg.ParentGroupUUID)
+	iCaseLog := ""
+	if cfg.UserID == "username" && cfg.CaseInsensitive {
+		iCaseLog = " - username matching requested to be case-insensitive"
+	}
+	log.Printf("%s %s started. Using %q as users id and parent group UUID %q%s", os.Args[0], version, cfg.UserID, cfg.ParentGroupUUID, iCaseLog)
 
 	// Get the complete user list to minimize API Server requests
 	allUsers := make(map[string]arvados.User)
@@ -321,6 +325,12 @@ func doMain(cfg *ConfigParams) error {
 		uID, err := GetUserID(u, cfg.UserID)
 		if err != nil {
 			return err
+		}
+		if cfg.UserID == "username" && uID != "" && cfg.CaseInsensitive {
+			uID = strings.ToLower(uID)
+			if uuid, found := userIDToUUID[uID]; found {
+				return fmt.Errorf("case insensitive collision for username %q between %q and %q", uID, u.UUID, uuid)
+			}
 		}
 		userIDToUUID[uID] = u.UUID
 		if cfg.Verbose {
@@ -420,6 +430,9 @@ func ProcessFile(
 			log.Printf("Warning: CSV record has at least one empty field (%s, %s, %s). Skipping", groupName, groupMember, groupPermission)
 			membersSkipped++
 			continue
+		}
+		if cfg.UserID == "username" && cfg.CaseInsensitive {
+			groupMember = strings.ToLower(groupMember)
 		}
 		if !(groupPermission == "can_read" || groupPermission == "can_write" || groupPermission == "can_manage") {
 			log.Printf("Warning: 3rd field should be 'can_read', 'can_write' or 'can_manage'. Found: %q at line %d, skipping.", groupPermission, lineNo)
@@ -637,6 +650,9 @@ func GetRemoteGroups(cfg *ConfigParams, allUsers map[string]arvados.User) (remot
 			memberID, err := GetUserID(allUsers[link.HeadUUID], cfg.UserID)
 			if err != nil {
 				return remoteGroups, groupNameToUUID, err
+			}
+			if cfg.UserID == "username" && cfg.CaseInsensitive {
+				memberID = strings.ToLower(memberID)
 			}
 			membersSet[memberID] = u2gLinkSet[link.HeadUUID]
 		}
