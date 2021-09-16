@@ -57,6 +57,12 @@ class ArvadosContainer(JobBase):
     def update_pipeline_component(self, r):
         pass
 
+    def _required_env(self):
+        env = {}
+        env["HOME"] = self.outdir
+        env["TMPDIR"] = self.tmpdir
+        return env
+
     def run(self, runtimeContext):
         # ArvadosCommandTool subclasses from cwltool.CommandLineTool,
         # which calls makeJobRunner() to get a new ArvadosContainer
@@ -234,8 +240,6 @@ class ArvadosContainer(JobBase):
                                 "path": "%s/%s" % (self.outdir, self.stdout)}
 
         (docker_req, docker_is_req) = self.get_requirement("DockerRequirement")
-        if not docker_req:
-            docker_req = {"dockerImageId": "arvados/jobs:"+__version__}
 
         container_request["container_image"] = arv_docker_get_image(self.arvrunner.api,
                                                                     docker_req,

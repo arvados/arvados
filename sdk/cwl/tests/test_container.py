@@ -123,7 +123,7 @@ class TestContainer(unittest.TestCase):
                 "baseCommand": "ls",
                 "arguments": [{"valueFrom": "$(runtime.outdir)"}],
                 "id": "#",
-                "class": "CommandLineTool"
+                "class": "org.w3id.cwl.cwl.CommandLineTool"
             })
 
             loadingContext, runtimeContext = self.helper(runner, enable_reuse)
@@ -206,7 +206,7 @@ class TestContainer(unittest.TestCase):
             }],
             "baseCommand": "ls",
             "id": "#",
-            "class": "CommandLineTool"
+            "class": "org.w3id.cwl.cwl.CommandLineTool"
         })
 
         loadingContext, runtimeContext = self.helper(runner)
@@ -314,7 +314,7 @@ class TestContainer(unittest.TestCase):
             }],
             "baseCommand": "ls",
             "id": "#",
-            "class": "CommandLineTool"
+            "class": "org.w3id.cwl.cwl.CommandLineTool"
         })
 
         loadingContext, runtimeContext = self.helper(runner)
@@ -414,7 +414,7 @@ class TestContainer(unittest.TestCase):
             "stdin": "/keep/99999999999999999999999999999996+99/file.txt",
             "arguments": [{"valueFrom": "$(runtime.outdir)"}],
             "id": "#",
-            "class": "CommandLineTool"
+            "class": "org.w3id.cwl.cwl.CommandLineTool"
         })
 
         loadingContext, runtimeContext = self.helper(runner)
@@ -639,7 +639,7 @@ class TestContainer(unittest.TestCase):
             "baseCommand": "ls",
             "arguments": [{"valueFrom": "$(runtime.outdir)"}],
             "id": "#",
-            "class": "CommandLineTool"
+            "class": "org.w3id.cwl.cwl.CommandLineTool"
         })
 
         loadingContext, runtimeContext = self.helper(runner)
@@ -720,7 +720,7 @@ class TestContainer(unittest.TestCase):
         document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.1")
 
         tool = cmap({"arguments": ["md5sum", "example.conf"],
-                     "class": "CommandLineTool",
+                     "class": "org.w3id.cwl.cwl.CommandLineTool",
                      "hints": [
                          {
                              "class": "http://commonwl.org/cwltool#Secrets",
@@ -819,7 +819,7 @@ class TestContainer(unittest.TestCase):
             "baseCommand": "ls",
             "arguments": [{"valueFrom": "$(runtime.outdir)"}],
             "id": "#",
-            "class": "CommandLineTool",
+            "class": "org.w3id.cwl.cwl.CommandLineTool",
             "hints": [
                 {
                     "class": "ToolTimeLimit",
@@ -862,7 +862,7 @@ class TestContainer(unittest.TestCase):
             "baseCommand": "ls",
             "arguments": [{"valueFrom": "$(runtime.outdir)"}],
             "id": "#",
-            "class": "CommandLineTool",
+            "class": "org.w3id.cwl.cwl.CommandLineTool",
             "hints": [
                 {
                     "class": "http://arvados.org/cwl#OutputStorageClass",
@@ -936,7 +936,7 @@ class TestContainer(unittest.TestCase):
             "baseCommand": "ls",
             "arguments": [{"valueFrom": "$(runtime.outdir)"}],
             "id": "#",
-            "class": "CommandLineTool",
+            "class": "org.w3id.cwl.cwl.CommandLineTool",
             "hints": [
             {
                 "class": "http://arvados.org/cwl#ProcessProperties",

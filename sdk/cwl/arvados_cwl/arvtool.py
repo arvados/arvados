@@ -6,6 +6,7 @@ from cwltool.command_line_tool import CommandLineTool, ExpressionTool
 from .arvcontainer import ArvadosContainer
 from .pathmapper import ArvPathMapper
 from .runner import make_builder
+from ._version import __version__
 from functools import partial
 from schema_salad.sourceline import SourceLine
 from cwltool.errors import WorkflowException
@@ -57,6 +58,12 @@ class ArvadosCommandTool(CommandLineTool):
 
     def __init__(self, arvrunner, toolpath_object, loadingContext):
         super(ArvadosCommandTool, self).__init__(toolpath_object, loadingContext)
+
+        (docker_req, docker_is_req) = self.get_requirement("DockerRequirement")
+        if not docker_req:
+            self.hints.append({"class": "DockerRequirement",
+                               "dockerImageId": "arvados/jobs:"+__version__})
+
         self.arvrunner = arvrunner
 
     def make_job_runner(self, runtimeContext):
