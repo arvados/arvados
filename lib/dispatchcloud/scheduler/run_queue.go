@@ -78,10 +78,12 @@ tryrun:
 				logger.Trace("overquota")
 				overquota = sorted[i:]
 				break tryrun
-			} else if logger.Info("creating new instance"); sch.pool.Create(it) {
+			} else if sch.pool.Create(it) {
 				// Success. (Note pool.Create works
 				// asynchronously and does its own
-				// logging, so we don't need to.)
+				// logging about the eventual outcome,
+				// so we don't need to.)
+				logger.Info("creating new instance")
 			} else {
 				// Failed despite not being at quota,
 				// e.g., cloud ops throttled.  TODO:
