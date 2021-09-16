@@ -7,6 +7,7 @@ import classNames from 'classnames';
 import { connect } from 'react-redux';
 import { FixedSizeList } from "react-window";
 import AutoSizer from "react-virtualized-auto-sizer";
+import servicesProvider from 'common/service-provider';
 import { CustomizeTableIcon, DownloadIcon } from 'components/icon/icon';
 import { SearchInput } from 'components/search-input/search-input';
 import { ListItemIcon, StyleRulesCallback, Theme, WithStyles, withStyles, Tooltip, IconButton, Checkbox, CircularProgress, Button } from '@material-ui/core';
@@ -16,10 +17,11 @@ import { RootState } from 'store/store';
 import { WebDAV, WebDAVRequestConfig } from 'common/webdav';
 import { AuthState } from 'store/auth/auth-reducer';
 import { extractFilesData } from 'services/collection-service/collection-service-files-response';
-import { DefaultIcon, DirectoryIcon, FileIcon } from 'components/icon/icon';
+import { DefaultIcon, DirectoryIcon, FileIcon, BackIcon } from 'components/icon/icon';
 import { setCollectionFiles } from 'store/collection-panel/collection-panel-files/collection-panel-files-actions';
 import { sortBy } from 'lodash';
 import { formatFileSize } from 'common/formatters';
+import { getInlineFileUrl, sanitizeToken } from 'views-components/context-menu/actions/helpers';
 
 export interface CollectionPanelFilesProps {
     items: any;
@@ -40,7 +42,7 @@ export interface CollectionPanelFilesProps {
     collectionPanel: any;
 }
 
-type CssRules = "pathPanelPathWrapper" | "uploadButton" | "uploadIcon" | "loader" | "wrapper" | "dataWrapper" | "row" | "rowEmpty" | "leftPanel" | "rightPanel" | "pathPanel" | "pathPanelItem" | "rowName" | "listItemIcon" | "rowActive" | "pathPanelMenu" | "rowSelection" | "leftPanelHidden" | "leftPanelVisible" | "searchWrapper" | "searchWrapperHidden";
+type CssRules = "backButton" | "backButtonHidden" | "pathPanelPathWrapper" | "uploadButton" | "uploadIcon" | "loader" | "wrapper" | "dataWrapper" | "row" | "rowEmpty" | "leftPanel" | "rightPanel" | "pathPanel" | "pathPanelItem" | "rowName" | "listItemIcon" | "rowActive" | "pathPanelMenu" | "rowSelection" | "leftPanelHidden" | "leftPanelVisible" | "searchWrapper" | "searchWrapperHidden";
 
 const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     wrapper: {
@@ -53,6 +55,14 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         fontWeight: 400,
         lineHeight: '1.5',
         letterSpacing: '0.01071em'
+    },
+    backButton: {
+        color: '#00bfa5',
+        cursor: 'pointer',
+        float: 'left',
+    },
+    backButtonHidden: {
+        display: 'none',
     },
     dataWrapper: {
         minHeight: '500px'
@@ -86,7 +96,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     },
     searchWrapper: {
         display: 'inline-block',
-        marginBottom: '1rem'
+        marginBottom: '1rem',
+        marginLeft: '1rem',
     },
     searchWrapperHidden: {
         width: '0px'
@@ -122,11 +133,11 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         whiteSpace: 'nowrap',
         position: 'relative',
         backgroundColor: '#fff',
-        boxShadow: '0px 1px 3px 0px rgb(0 0 0 / 20%), 0px 1px 1px 0px rgb(0 0 0 / 14%), 0px 2px 1px -1px rgb(0 0 0 / 12%)',
+        boxShadow: '0px 3px 3px 0px rgb(0 0 0 / 20%), 0px 3px 1px 0px rgb(0 0 0 / 14%), 0px 3px 1px -1px rgb(0 0 0 / 12%)',
     },
     leftPanelVisible: {
         opacity: 1,
-        flex: '30%',
+        flex: '50%',
         animation: `animateVisible 1000ms ${theme.transitions.easing.easeOut}`
     },
     leftPanelHidden: {
@@ -142,15 +153,17 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         },
         "100%": {
             opacity: 1,
-            flex: '30%',
+            flex: '50%',
         }
     },
     rightPanel: {
-        flex: '70%',
+        flex: '50%',
         padding: '1rem',
+        paddingTop: '2rem',
+        marginTop: '-1rem',
         position: 'relative',
         backgroundColor: '#fff',
-        boxShadow: '0px 1px 3px 0px rgb(0 0 0 / 20%), 0px 1px 1px 0px rgb(0 0 0 / 14%), 0px 2px 1px -1px rgb(0 0 0 / 12%)',
+        boxShadow: '0px 3px 3px 0px rgb(0 0 0 / 20%), 0px 3px 1px 0px rgb(0 0 0 / 14%), 0px 3px 1px -1px rgb(0 0 0 / 12%)',
     },
     pathPanelItem: {
         cursor: 'pointer',
@@ -196,7 +209,7 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
     const leftKey = (path.length > 1 ? path.slice(0, path.length - 1) : path).join('/');
     const rightKey = path.join('/');
 
-    const leftData = (pathData[leftKey] || []).filter(({ type }) => type === 'directory');
+    const leftData = pathData[leftKey] || [];
     const rightData = pathData[rightKey];
 
     React.useEffect(() => {
@@ -290,12 +303,16 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
                 elem = elem.parentNode;
             }
 
-            if (!elem) {
+            if (!elem || !elem.dataset) {
                 return;
             }
 
             const { id } = elem.dataset;
-            const item: any = { id, data: rightData.find((elem) => elem.id === id) };
+
+            const item: any = {
+                id,
+                data: rightData.find((elem) => elem.id === id),
+            };
 
             if (id) {
                 onItemMenuOpen(event, item, isWritable);
@@ -344,7 +361,7 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
                     setPath([...path.slice(0, index + 1)]);
                 }
 
-                if (parentPath) {
+                if (parentPath && type === 'directory') {
                     if (path.length > 1) {
                         path.pop()
                     }
@@ -354,6 +371,13 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
 
                 if (subfolderPath && type === 'directory') {
                     setPath([...path, subfolderPath]);
+                }
+
+                if (elem.dataset.id && type === 'file') {
+                    const item = rightData.find(({id}) => id === elem.dataset.id) || leftData.find(({ id }) => id === elem.dataset.id);
+                    const enhancedItem = servicesProvider.getServices().collectionService.extendFileURL(item);
+                    const fileUrl = sanitizeToken(getInlineFileUrl(enhancedItem.url, config.keepWebServiceUrl, config.keepWebInlineServiceUrl), true);
+                    window.open(fileUrl, '_blank');
                 }
             }
 
@@ -433,6 +457,11 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
             </div>
             <div className={classes.wrapper}>
                 <div className={classNames(classes.leftPanel, path.length > 1 ? classes.leftPanelVisible : classes.leftPanelHidden)}>
+                    <Tooltip title="Go back" className={path.length > 1 ? classes.backButton : classes.backButtonHidden}>
+                        <IconButton onClick={() => setPath([...path.slice(0, path.length -1)])}>
+                            <BackIcon />
+                        </IconButton>
+                    </Tooltip>
                     <div className={path.length > 1 ? classes.searchWrapper : classes.searchWrapperHidden}>
                         <SearchInput label="Search" value={leftSearch} onSearch={setLeftSearch} />
                     </div>
@@ -454,8 +483,10 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
                                                     const { id, type, name } = filtered[index];
 
                                                     return <div
+                                                        data-id={id}
                                                         style={style}
                                                         data-item="true"
+                                                        data-type={type}
                                                         data-parent-path={name}
                                                         className={classNames(classes.row, getActiveClass(name))}
                                                         key={id}>{getItemIcon(type, getActiveClass(name))} <div className={classes.rowName}>{name}</div>
