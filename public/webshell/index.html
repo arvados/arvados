@@ -53,6 +53,7 @@
           if (findText("assword:")) {
              sh.keysPressed(token + "\n");
              sh.vt100('(sent authentication token)\n');
+             token = null;
           } else {
             setTimeout(trySendToken, 200);
           }
