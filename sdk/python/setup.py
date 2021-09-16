@@ -55,10 +55,6 @@ setup(name='arvados-python-client',
           'setuptools',
           'ws4py >=0.4.2',
       ],
-      extras_require={
-          ':os.name=="posix" and python_version<"3"': ['subprocess32 >= 3.5.1'],
-          ':python_version<"3"': ['pytz'],
-      },
       classifiers=[
           'Programming Language :: Python :: 3',
       ],
