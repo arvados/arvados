@@ -63,7 +63,6 @@ type WebDAVCacheConfig struct {
 	MaxBlockEntries      int
 	MaxCollectionEntries int
 	MaxCollectionBytes   int64
-	MaxPermissionEntries int
 	MaxUUIDEntries       int
 	MaxSessions          int
 }
