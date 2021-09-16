@@ -22,6 +22,8 @@ export const USER_IS_ACTIVE = 'isActive';
 export const USER_USERNAME = 'username';
 export const USER_PREFS = 'prefs';
 export const HOME_CLUSTER = 'homeCluster';
+export const LOCAL_STORAGE = 'localStorage';
+export const SESSION_STORAGE = 'sessionStorage';
 
 export interface UserDetailsResponse {
     email: string;
@@ -48,6 +50,13 @@ export class AuthService {
             return sessionStorage;
         }
         return localStorage;
+    }
+
+    public getStorageType() {
+        if (this.useSessionStorage) {
+            return SESSION_STORAGE;
+        }
+        return LOCAL_STORAGE;
     }
 
     public saveApiToken(token: string) {

@@ -12,9 +12,12 @@ import { saveRequestedDate, loadVirtualMachinesUserData } from 'store/virtual-ma
 import { RootState } from 'store/store';
 import { ListResults } from 'services/common-service/common-service';
 import { HelpIcon } from 'components/icon/icon';
+import { SESSION_STORAGE } from "services/auth-service/auth-service";
 // import * as CopyToClipboard from 'react-copy-to-clipboard';
 
 type CssRules = 'button' | 'codeSnippet' | 'link' | 'linkIcon' | 'rightAlign' | 'cardWithoutMachines' | 'icon';
+
+const EXTRA_TOKEN = "exra";
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     button: {
@@ -62,6 +65,7 @@ const mapStateToProps = (state: RootState) => {
         helpText: state.auth.config.clusterConfig.Workbench.SSHHelpPageHTML,
         hostSuffix: state.auth.config.clusterConfig.Workbench.SSHHelpHostSuffix || "",
         token: state.auth.extraApiToken || state.auth.apiToken || '',
+        tokenLocation: state.auth.extraApiToken ? EXTRA_TOKEN : (state.auth.apiTokenLocation || ''),
         webshellUrl: state.auth.config.clusterConfig.Services.WebShell.ExternalURL,
         ...state.virtualMachines
     };
@@ -80,6 +84,7 @@ interface VirtualMachinesPanelDataProps {
     helpText: string;
     hostSuffix: string;
     token: string;
+    tokenLocation: string,
     webshellUrl: string;
 }
 
@@ -176,6 +181,10 @@ const virtualMachinesTable = (props: VirtualMachineProps) =>
                     if (lk.tailUuid === props.userUuid) {
                         const username = lk.properties.username;
                         const command = `ssh ${username}@${it.hostname}${props.hostSuffix}`;
+                        let tokenParam = "";
+                        if (props.tokenLocation === SESSION_STORAGE || props.tokenLocation === EXTRA_TOKEN) {
+                          tokenParam = `&token=${encodeURIComponent(props.token)}`;
+                        }
                         return <TableRow key={lk.uuid}>
                             <TableCell>{it.hostname}</TableCell>
                             <TableCell>{username}</TableCell>
@@ -183,7 +192,7 @@ const virtualMachinesTable = (props: VirtualMachineProps) =>
                                 {command}
                             </TableCell>
                             <TableCell>
-                                <a href={`/webshell/?host=${encodeURIComponent(props.webshellUrl + '/' + it.hostname)}&login=${username}&token=${encodeURIComponent(props.token)}`} target="_blank" rel="noopener noreferrer" className={props.classes.link}>
+                                <a href={`/webshell/?host=${encodeURIComponent(props.webshellUrl + '/' + it.hostname)}&login=${encodeURIComponent(username)}${tokenParam}`} target="_blank" rel="noopener noreferrer" className={props.classes.link}>
                                     Log in as {username}
                                 </a>
                             </TableCell>

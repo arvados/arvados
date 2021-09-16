@@ -43,6 +43,10 @@
           var token = urlParams.get('token');
           if (token) {
             history.replaceState(null, "", `/webshell/?host=${encodeURIComponent(urlParams.get('host'))}&login=${encodeURIComponent(urlParams.get('login'))}`)
+          } else if (localStorage.getItem('apiToken')) {
+            token = localStorage.getItem('apiToken');
+          } else {
+            // No token
           }
           // change this text when PAM is reconfigured to present a
           // password prompt that we can wait for.

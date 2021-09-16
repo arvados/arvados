@@ -13,6 +13,7 @@ export interface AuthState {
     user?: User;
     apiToken?: string;
     apiTokenExpiration?: Date;
+    apiTokenLocation?: string;
     extraApiToken?: string;
     extraApiTokenExpiration?: Date;
     sshKeys: SshKeyResource[];
@@ -29,6 +30,7 @@ const initialState: AuthState = {
     user: undefined,
     apiToken: undefined,
     apiTokenExpiration: undefined,
+    apiTokenLocation: undefined,
     extraApiToken: undefined,
     extraApiTokenExpiration: undefined,
     sshKeys: [],
@@ -71,11 +73,12 @@ export const authReducer = (services: ServiceRepository) => (state = initialStat
             ({ ...state, extraApiToken, extraApiTokenExpiration }),
         RESET_EXTRA_TOKEN: () =>
             ({ ...state, extraApiToken: undefined, extraApiTokenExpiration: undefined }),
-        INIT_USER: ({ user, token, tokenExpiration }) =>
+        INIT_USER: ({ user, token, tokenExpiration, tokenLocation = state.apiTokenLocation }) =>
             ({ ...state,
                 user,
                 apiToken: token,
                 apiTokenExpiration: tokenExpiration,
+                apiTokenLocation: tokenLocation,
                 homeCluster: user.uuid.substr(0, 5)
             }),
         LOGIN: () => state,

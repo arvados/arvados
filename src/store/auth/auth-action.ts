@@ -24,7 +24,7 @@ export const authActions = unionize({
     SET_CONFIG: ofType<{ config: Config }>(),
     SET_EXTRA_TOKEN: ofType<{ extraApiToken: string, extraApiTokenExpiration?: Date }>(),
     RESET_EXTRA_TOKEN: {},
-    INIT_USER: ofType<{ user: User, token: string, tokenExpiration?: Date }>(),
+    INIT_USER: ofType<{ user: User, token: string, tokenExpiration?: Date, tokenLocation?: string }>(),
     USER_DETAILS_REQUEST: {},
     USER_DETAILS_SUCCESS: ofType<User>(),
     SET_SSH_KEYS: ofType<SshKeyResource[]>(),
@@ -97,7 +97,8 @@ export const saveApiToken = (token: string) => async (dispatch: Dispatch, getSta
         const user = await svc.authService.getUserDetails();
         const client = await svc.apiClientAuthorizationService.get('current');
         const tokenExpiration = client.expiresAt ? new Date(client.expiresAt) : undefined;
-        dispatch(authActions.INIT_USER({ user, token, tokenExpiration }));
+        const tokenLocation = await svc.authService.getStorageType();
+        dispatch(authActions.INIT_USER({ user, token, tokenExpiration, tokenLocation }));
     } catch (e) {
         dispatch(authActions.LOGOUT({ deleteLinkData: false }));
     }
