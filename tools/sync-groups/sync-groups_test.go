@@ -187,11 +187,12 @@ func RemoteGroupExists(cfg *ConfigParams, groupName string) (uuid string, err er
 
 func (s *TestSuite) TestParseFlagsWithPositionalArgument(c *C) {
 	cfg := ConfigParams{}
-	os.Args = []string{"cmd", "-verbose", "/tmp/somefile.csv"}
+	os.Args = []string{"cmd", "-verbose", "-case-insensitive", "/tmp/somefile.csv"}
 	err := ParseFlags(&cfg)
 	c.Assert(err, IsNil)
 	c.Check(cfg.Path, Equals, "/tmp/somefile.csv")
 	c.Check(cfg.Verbose, Equals, true)
+	c.Check(cfg.CaseInsensitive, Equals, true)
 }
 
 func (s *TestSuite) TestParseFlagsWithoutPositionalArgument(c *C) {
@@ -532,4 +533,40 @@ func (s *TestSuite) TestUseUsernamesWithCaseInsensitiveMatching(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(groupUUID, Not(Equals), "")
 	c.Assert(GroupMembershipExists(s.cfg.Client, activeUserUUID, groupUUID, "can_write"), Equals, true)
+}
+
+func (s *TestSuite) TestUsernamesCaseInsensitiveCollision(c *C) {
+	activeUserName := s.users[arvadostest.ActiveUserUUID].Username
+	activeUserUUID := s.users[arvadostest.ActiveUserUUID].UUID
+
+	nu := arvados.User{}
+	nuUsername := strings.ToUpper(activeUserName)
+	err := s.cfg.Client.RequestAndDecode(&nu, "POST", "/arvados/v1/users", nil, map[string]interface{}{
+		"user": map[string]string{
+			"username": nuUsername,
+		},
+	})
+	c.Assert(err, IsNil)
+
+	// Manually remove non-fixture user because /database/reset fails otherwise
+	defer s.cfg.Client.RequestAndDecode(nil, "DELETE", "/arvados/v1/users/"+nu.UUID, nil, nil)
+
+	c.Assert(nu.Username, Equals, nuUsername)
+	c.Assert(nu.UUID, Not(Equals), activeUserUUID)
+	c.Assert(nu.Username, Not(Equals), activeUserName)
+
+	data := [][]string{
+		{"SomeGroup", activeUserName},
+	}
+	tmpfile, err := MakeTempCSVFile(data)
+	c.Assert(err, IsNil)
+	defer os.Remove(tmpfile.Name()) // clean up
+
+	s.cfg.Path = tmpfile.Name()
+	s.cfg.UserID = "username"
+	s.cfg.CaseInsensitive = true
+	err = doMain(s.cfg)
+	// Should get an error because of "ACTIVE" and "Active" usernames
+	c.Assert(err, NotNil)
+	c.Assert(err, ErrorMatches, ".*case insensitive collision.*")
 }
