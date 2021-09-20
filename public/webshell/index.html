@@ -6,6 +6,18 @@
       body {
         margin: 0px;
       }
+      #notoken {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        text-align: center;
+        vertical-align: middle;
+        line-height: 100vh;
+        z-index: 100;
+        font-family: sans;
+      }
     </style>
     <script type="text/javascript"><!--
       (function() {
@@ -24,10 +36,15 @@
                          '</style>');
         }
       })();
+      var sh;
+      var urlParams = new URLSearchParams(window.location.search);
+      var token = urlParams.get('token');
+      var user = urlParams.get('login');
+      var host = urlParams.get('host');
+      urlParams = null;
 
-      function login(username, token) {
-        const urlParams = new URLSearchParams(window.location.search);
-        var sh = new ShellInABox(urlParams.get('host'));
+      function login() {
+        sh = new ShellInABox(host);
 
         var findText = function(txt) {
           var a = document.querySelectorAll("span.ansi0");
@@ -40,14 +57,6 @@
         }
 
         var trySendToken = function() {
-          var token = urlParams.get('token');
-          if (token) {
-            history.replaceState(null, "", `/webshell/?host=${encodeURIComponent(urlParams.get('host'))}&login=${encodeURIComponent(urlParams.get('login'))}`)
-          } else if (localStorage.getItem('apiToken')) {
-            token = localStorage.getItem('apiToken');
-          } else {
-            // No token
-          }
           // change this text when PAM is reconfigured to present a
           // password prompt that we can wait for.
           if (findText("assword:")) {
@@ -60,9 +69,8 @@
         };
 
         var trySendLogin = function() {
-          var login = urlParams.get('login');
           if (findText("login:")) {
-            sh.keysPressed(login + "\n");
+            sh.keysPressed(user + "\n");
             // Make this wait shorter when PAM is reconfigured to
             // present a password prompt that we can wait for.
             setTimeout(trySendToken, 200);
@@ -73,6 +81,18 @@
 
         trySendLogin();
       }
+
+      function init() {
+        if (token) {
+          history.replaceState(null, "", `/webshell/?host=${encodeURIComponent(host)}&login=${encodeURIComponent(login)}`);
+        } else if (localStorage.getItem('apiToken')) {
+          token = localStorage.getItem('apiToken');
+        } else {
+          document.getElementById("notoken").style.display = "block";
+          return;
+        }
+        login();
+      }
     // -->
 </script>
     <script type="text/javascript" src="shell_in_a_box.js"></script>
@@ -81,7 +101,10 @@
        correctly deal with the enclosing frameset (if any), if we do not
        do this
    -->
-<body onload="setTimeout(login, 1000)"
+<body onload="setTimeout(init, 1000)"
     scroll="no"><noscript>JavaScript must be enabled for ShellInABox</noscript>
+    <div id="notoken" style="display: none;">
+      Error: No token found. Please return to <a href="/virtual-machines-user">Virtual Machines</a> and try again.
+    </div>
 </body>
 </html>
