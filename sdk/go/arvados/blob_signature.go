@@ -9,13 +9,13 @@
 package arvados
 
 import (
+	"bytes"
 	"crypto/hmac"
 	"crypto/sha1"
 	"errors"
 	"fmt"
 	"regexp"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -33,9 +33,9 @@ var (
 
 // makePermSignature generates a SHA-1 HMAC digest for the given blob,
 // token, expiry, and site secret.
-func makePermSignature(blobHash, apiToken, expiry, blobSignatureTTL string, permissionSecret []byte) string {
+func makePermSignature(blobHash []byte, apiToken, expiry, blobSignatureTTL string, permissionSecret []byte) string {
 	hmac := hmac.New(sha1.New, permissionSecret)
-	hmac.Write([]byte(blobHash))
+	hmac.Write(blobHash)
 	hmac.Write([]byte("@"))
 	hmac.Write([]byte(apiToken))
 	hmac.Write([]byte("@"))
@@ -73,7 +73,10 @@ func SignLocator(blobLocator, apiToken string, expiry time.Time, blobSignatureTT
 		return blobLocator
 	}
 	// Strip off all hints: only the hash is used to sign.
-	blobHash := strings.Split(blobLocator, "+")[0]
+	blobHash := []byte(blobLocator)
+	if hints := bytes.IndexRune(blobHash, '+'); hints > 0 {
+		blobHash = blobHash[:hints]
+	}
 	timestampHex := fmt.Sprintf("%08x", expiry.Unix())
 	blobSignatureTTLHex := strconv.FormatInt(int64(blobSignatureTTL.Seconds()), 16)
 	return blobLocator +
@@ -100,7 +103,7 @@ func VerifySignature(signedLocator, apiToken string, blobSignatureTTL time.Durat
 	if matches == nil {
 		return ErrSignatureMissing
 	}
-	blobHash := matches[1]
+	blobHash := []byte(matches[1])
 	signatureHex := matches[6]
 	expiryHex := matches[7]
 	if expiryTime, err := parseHexTimestamp(expiryHex); err != nil {
