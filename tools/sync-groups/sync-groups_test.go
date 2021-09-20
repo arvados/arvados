@@ -50,6 +50,7 @@ func (s *TestSuite) SetUpTest(c *C) {
 	os.Args = []string{"cmd", "somefile.csv"}
 	config, err := GetConfig()
 	c.Assert(err, IsNil)
+	config.UserID = "email"
 	// Confirm that the parent group was created
 	gl = arvados.GroupList{}
 	ac.RequestAndDecode(&gl, "GET", "/arvados/v1/groups", nil, params)
@@ -145,10 +146,7 @@ func GroupMembershipExists(ac *arvados.Client, userUUID string, groupUUID string
 		}},
 	}
 	ac.RequestAndDecode(&ll, "GET", "/arvados/v1/links", nil, params)
-	if ll.Len() != 1 {
-		return false
-	}
-	return true
+	return ll.Len() == 1
 }
 
 // If named group exists, return its UUID
@@ -189,11 +187,12 @@ func RemoteGroupExists(cfg *ConfigParams, groupName string) (uuid string, err er
 
 func (s *TestSuite) TestParseFlagsWithPositionalArgument(c *C) {
 	cfg := ConfigParams{}
-	os.Args = []string{"cmd", "-verbose", "/tmp/somefile.csv"}
+	os.Args = []string{"cmd", "-verbose", "-case-insensitive", "/tmp/somefile.csv"}
 	err := ParseFlags(&cfg)
 	c.Assert(err, IsNil)
 	c.Check(cfg.Path, Equals, "/tmp/somefile.csv")
 	c.Check(cfg.Verbose, Equals, true)
+	c.Check(cfg.CaseInsensitive, Equals, true)
 }
 
 func (s *TestSuite) TestParseFlagsWithoutPositionalArgument(c *C) {
@@ -450,7 +449,7 @@ func (s *TestSuite) TestIgnoreNonexistantUsers(c *C) {
 	c.Assert(GroupMembershipExists(s.cfg.Client, activeUserUUID, groupUUID, "can_write"), Equals, true)
 }
 
-// Users listed on the file that don't exist on the system are ignored
+// Entries with missing data are ignored.
 func (s *TestSuite) TestIgnoreEmptyFields(c *C) {
 	activeUserEmail := s.users[arvadostest.ActiveUserUUID].Email
 	activeUserUUID := s.users[arvadostest.ActiveUserUUID].UUID
@@ -502,11 +501,72 @@ func (s *TestSuite) TestUseUsernames(c *C) {
 	s.cfg.Path = tmpfile.Name()
 	s.cfg.UserID = "username"
 	err = doMain(s.cfg)
-	s.cfg.UserID = "email"
 	c.Assert(err, IsNil)
 	// Confirm that memberships exist
 	groupUUID, err = RemoteGroupExists(s.cfg, "TestGroup1")
 	c.Assert(err, IsNil)
 	c.Assert(groupUUID, Not(Equals), "")
 	c.Assert(GroupMembershipExists(s.cfg.Client, activeUserUUID, groupUUID, "can_write"), Equals, true)
+}
+
+func (s *TestSuite) TestUseUsernamesWithCaseInsensitiveMatching(c *C) {
+	activeUserName := strings.ToUpper(s.users[arvadostest.ActiveUserUUID].Username)
+	activeUserUUID := s.users[arvadostest.ActiveUserUUID].UUID
+	// Confirm that group doesn't exist
+	groupUUID, err := RemoteGroupExists(s.cfg, "TestGroup1")
+	c.Assert(err, IsNil)
+	c.Assert(groupUUID, Equals, "")
+	// Create file & run command
+	data := [][]string{
+		{"TestGroup1", activeUserName},
+	}
+	tmpfile, err := MakeTempCSVFile(data)
+	c.Assert(err, IsNil)
+	defer os.Remove(tmpfile.Name()) // clean up
+	s.cfg.Path = tmpfile.Name()
+	s.cfg.UserID = "username"
+	s.cfg.CaseInsensitive = true
+	err = doMain(s.cfg)
+	c.Assert(err, IsNil)
+	// Confirm that memberships exist
+	groupUUID, err = RemoteGroupExists(s.cfg, "TestGroup1")
+	c.Assert(err, IsNil)
+	c.Assert(groupUUID, Not(Equals), "")
+	c.Assert(GroupMembershipExists(s.cfg.Client, activeUserUUID, groupUUID, "can_write"), Equals, true)
+}
+
+func (s *TestSuite) TestUsernamesCaseInsensitiveCollision(c *C) {
+	activeUserName := s.users[arvadostest.ActiveUserUUID].Username
+	activeUserUUID := s.users[arvadostest.ActiveUserUUID].UUID
+
+	nu := arvados.User{}
+	nuUsername := strings.ToUpper(activeUserName)
+	err := s.cfg.Client.RequestAndDecode(&nu, "POST", "/arvados/v1/users", nil, map[string]interface{}{
+		"user": map[string]string{
+			"username": nuUsername,
+		},
+	})
+	c.Assert(err, IsNil)
+
+	// Manually remove non-fixture user because /database/reset fails otherwise
+	defer s.cfg.Client.RequestAndDecode(nil, "DELETE", "/arvados/v1/users/"+nu.UUID, nil, nil)
+
+	c.Assert(nu.Username, Equals, nuUsername)
+	c.Assert(nu.UUID, Not(Equals), activeUserUUID)
+	c.Assert(nu.Username, Not(Equals), activeUserName)
+
+	data := [][]string{
+		{"SomeGroup", activeUserName},
+	}
+	tmpfile, err := MakeTempCSVFile(data)
+	c.Assert(err, IsNil)
+	defer os.Remove(tmpfile.Name()) // clean up
+
+	s.cfg.Path = tmpfile.Name()
+	s.cfg.UserID = "username"
+	s.cfg.CaseInsensitive = true
+	err = doMain(s.cfg)
+	// Should get an error because of "ACTIVE" and "Active" usernames
+	c.Assert(err, NotNil)
+	c.Assert(err, ErrorMatches, ".*case insensitive collision.*")
 }

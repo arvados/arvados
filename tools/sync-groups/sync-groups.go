@@ -119,6 +119,7 @@ type ConfigParams struct {
 	Path            string
 	UserID          string
 	Verbose         bool
+	CaseInsensitive bool
 	ParentGroupUUID string
 	ParentGroupName string
 	SysUserUUID     string
@@ -152,6 +153,10 @@ func ParseFlags(config *ConfigParams) error {
 		"user-id",
 		"email",
 		"Attribute by which every user is identified. Valid values are: email and username.")
+	caseInsensitive := flags.Bool(
+		"case-insensitive",
+		false,
+		"Performs case insensitive matching on user IDs. Off by default.")
 	verbose := flags.Bool(
 		"verbose",
 		false,
@@ -196,6 +201,7 @@ func ParseFlags(config *ConfigParams) error {
 	config.ParentGroupUUID = *parentGroupUUID
 	config.UserID = *userID
 	config.Verbose = *verbose
+	config.CaseInsensitive = *caseInsensitive
 
 	return nil
 }
@@ -299,7 +305,11 @@ func doMain(cfg *ConfigParams) error {
 	}
 	defer f.Close()
 
-	log.Printf("%s %s started. Using %q as users id and parent group UUID %q", os.Args[0], version, cfg.UserID, cfg.ParentGroupUUID)
+	iCaseLog := ""
+	if cfg.UserID == "username" && cfg.CaseInsensitive {
+		iCaseLog = " - username matching requested to be case-insensitive"
+	}
+	log.Printf("%s %s started. Using %q as users id and parent group UUID %q%s", os.Args[0], version, cfg.UserID, cfg.ParentGroupUUID, iCaseLog)
 
 	// Get the complete user list to minimize API Server requests
 	allUsers := make(map[string]arvados.User)
@@ -315,6 +325,12 @@ func doMain(cfg *ConfigParams) error {
 		uID, err := GetUserID(u, cfg.UserID)
 		if err != nil {
 			return err
+		}
+		if cfg.UserID == "username" && uID != "" && cfg.CaseInsensitive {
+			uID = strings.ToLower(uID)
+			if uuid, found := userIDToUUID[uID]; found {
+				return fmt.Errorf("case insensitive collision for username %q between %q and %q", uID, u.UUID, uuid)
+			}
 		}
 		userIDToUUID[uID] = u.UUID
 		if cfg.Verbose {
@@ -415,6 +431,9 @@ func ProcessFile(
 			membersSkipped++
 			continue
 		}
+		if cfg.UserID == "username" && cfg.CaseInsensitive {
+			groupMember = strings.ToLower(groupMember)
+		}
 		if !(groupPermission == "can_read" || groupPermission == "can_write" || groupPermission == "can_manage") {
 			log.Printf("Warning: 3rd field should be 'can_read', 'can_write' or 'can_manage'. Found: %q at line %d, skipping.", groupPermission, lineNo)
 			membersSkipped++
@@ -494,9 +513,7 @@ func GetAll(c *arvados.Client, res string, params arvados.ResourceListParams, pa
 		if page.Len() == 0 {
 			break
 		}
-		for _, i := range page.GetItems() {
-			allItems = append(allItems, i)
-		}
+		allItems = append(allItems, page.GetItems()...)
 		params.Offset += page.Len()
 	}
 	return allItems, nil
@@ -634,6 +651,9 @@ func GetRemoteGroups(cfg *ConfigParams, allUsers map[string]arvados.User) (remot
 			if err != nil {
 				return remoteGroups, groupNameToUUID, err
 			}
+			if cfg.UserID == "username" && cfg.CaseInsensitive {
+				memberID = strings.ToLower(memberID)
+			}
 			membersSet[memberID] = u2gLinkSet[link.HeadUUID]
 		}
 		remoteGroups[group.UUID] = &GroupInfo{
@@ -714,9 +734,7 @@ func RemoveMemberLinksFromGroup(cfg *ConfigParams, user arvados.User, linkNames 
 			userID, _ := GetUserID(user, cfg.UserID)
 			return fmt.Errorf("error getting links needed to remove user %q from group %q: %s", userID, group.Name, err)
 		}
-		for _, link := range l {
-			links = append(links, link)
-		}
+		links = append(links, l...)
 	}
 	for _, item := range links {
 		link := item.(arvados.Link)
