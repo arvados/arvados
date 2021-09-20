@@ -41,7 +41,30 @@
       var token = urlParams.get('token');
       var user = urlParams.get('login');
       var host = urlParams.get('host');
+      var timeout = urlParams.get('timeout');
       urlParams = null;
+
+      var idleTimeoutMs = timeout * 1000;
+
+      function updateIdleTimer() {
+        var currentTime = Date.now();
+        var lastTime = localStorage.getItem('lastActiveTimestamp');
+        if (currentTime - lastTime > 1000) {
+          localStorage.setItem('lastActiveTimestamp', currentTime);
+        }
+      }
+
+      function checkIdleTimer() {
+        var currentTime = Date.now();
+        var lastTime = localStorage.getItem('lastActiveTimestamp');
+        if (currentTime - lastTime > idleTimeoutMs) {
+          //logout
+          sh.sendKeys('03'); // Ctrl + c
+          sh.sendKeys('04'); // Ctrl + d
+        } else {
+          setTimeout(checkIdleTimer, 1000);
+        }
+      }
 
       function login() {
         sh = new ShellInABox(host);
@@ -63,6 +86,10 @@
              sh.keysPressed(token + "\n");
              sh.vt100('(sent authentication token)\n');
              token = null;
+             updateIdleTimer();
+             document.body.onmousemove = updateIdleTimer;
+             document.body.onkeydown = updateIdleTimer;
+             setTimeout(checkIdleTimer, 1000);
           } else {
             setTimeout(trySendToken, 200);
           }
@@ -84,7 +111,7 @@
 
       function init() {
         if (token) {
-          history.replaceState(null, "", `/webshell/?host=${encodeURIComponent(host)}&login=${encodeURIComponent(user)}`);
+          history.replaceState(null, "", `/webshell/?host=${encodeURIComponent(host)}&timeout=${timeout}&login=${encodeURIComponent(user)}`);
         } else if (localStorage.getItem('apiToken')) {
           token = localStorage.getItem('apiToken');
         } else {

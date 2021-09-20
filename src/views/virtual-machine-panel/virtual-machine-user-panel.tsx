@@ -14,6 +14,7 @@ import { ListResults } from 'services/common-service/common-service';
 import { HelpIcon } from 'components/icon/icon';
 import { SESSION_STORAGE } from "services/auth-service/auth-service";
 // import * as CopyToClipboard from 'react-copy-to-clipboard';
+import parse from "parse-duration";
 
 type CssRules = 'button' | 'codeSnippet' | 'link' | 'linkIcon' | 'rightAlign' | 'cardWithoutMachines' | 'icon';
 
@@ -67,6 +68,7 @@ const mapStateToProps = (state: RootState) => {
         token: state.auth.extraApiToken || state.auth.apiToken || '',
         tokenLocation: state.auth.extraApiToken ? EXTRA_TOKEN : (state.auth.apiTokenLocation || ''),
         webshellUrl: state.auth.config.clusterConfig.Services.WebShell.ExternalURL,
+        idleTimeout: parse(state.auth.config.clusterConfig.Workbench.IdleTimeout, 's') || 0,
         ...state.virtualMachines
     };
 };
@@ -84,8 +86,9 @@ interface VirtualMachinesPanelDataProps {
     helpText: string;
     hostSuffix: string;
     token: string;
-    tokenLocation: string,
+    tokenLocation: string;
     webshellUrl: string;
+    idleTimeout: number;
 }
 
 interface VirtualMachinesPanelActionProps {
@@ -192,7 +195,7 @@ const virtualMachinesTable = (props: VirtualMachineProps) =>
                                 {command}
                             </TableCell>
                             <TableCell>
-                                <a href={`/webshell/?host=${encodeURIComponent(props.webshellUrl + '/' + it.hostname)}&login=${encodeURIComponent(username)}${tokenParam}`} target="_blank" rel="noopener noreferrer" className={props.classes.link}>
+                                <a href={`/webshell/?host=${encodeURIComponent(props.webshellUrl + '/' + it.hostname)}&timeout=${props.idleTimeout}&login=${encodeURIComponent(username)}${tokenParam}`} target="_blank" rel="noopener noreferrer" className={props.classes.link}>
                                     Log in as {username}
                                 </a>
                             </TableCell>
