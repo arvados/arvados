@@ -84,7 +84,7 @@ Example: @["head_uuid asc","modified_at desc"]@
 Default: @["modified_at desc", "uuid asc"]@|query|
 |select  |array  |Attributes of each object to return in the response (by default, all available attributes are returned, except collections, which do not return @manifest_text@ unless explicitly selected).
 Example: @["uuid","name","modified_at"]@|query|
-|distinct|boolean|When returning multiple records whose whose selected attributes (see @select@) are equal, return them as a single response entry.
+|distinct|boolean|When returning multiple records whose selected attributes (see @select@) are equal, return them as a single response entry.
 Default is @false@.|query|
 |count|string|@"exact"@ (default): Include an @items_available@ response field giving the number of distinct matching items that can be retrieved (irrespective of @limit@ and @offset@ arguments).
 @"none"@: Omit the @items_available@ response field. This option will produce a faster response.|query|
