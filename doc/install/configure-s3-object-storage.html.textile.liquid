@@ -67,6 +67,23 @@ Volumes are configured in the @Volumes@ section of the cluster configuration fil
           # Use the AWS S3 v2 Go driver instead of the goamz driver.
           UseAWSS3v2Driver: false
 
+          # By default keepstore stores data using the MD5 checksum
+          # (32 hexadecimal characters) as the object name, e.g.,
+          # "0123456abc...". Setting PrefixLength to 3 changes this
+          # naming scheme to "012/0123456abc...". This can improve
+          # performance, depending on the S3 service being used. For
+          # example, PrefixLength 3 is recommended to avoid AWS
+          # limitations on the number of read/write operations per
+          # second per prefix (see
+          # https://aws.amazon.com/premiumsupport/knowledge-center/s3-request-limit-avoid-throttling/).
+          #
+          # Note that changing PrefixLength on an existing volume is
+          # not currently supported. Once you have started using a
+          # bucket as an Arvados volume, you should not change its
+          # configured PrefixLength, or configure another volume using
+          # the same bucket and a different PrefixLength.
+          PrefixLength: 0
+
           # Requested page size for "list bucket contents" requests.
           IndexPageSize: 1000
 
