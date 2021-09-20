@@ -11,11 +11,12 @@ import (
 	"net/url"
 
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"gopkg.in/check.v1"
 )
 
 func (s *UnitSuite) TestStatus(c *check.C) {
-	h := handler{Config: newConfig(s.Config)}
+	h := handler{Config: newConfig(ctxlog.TestLogger(c), s.Config)}
 	u, _ := url.Parse("http://keep-web.example/status.json")
 	req := &http.Request{
 		Method:     "GET",

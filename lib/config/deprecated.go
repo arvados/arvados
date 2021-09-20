@@ -449,7 +449,6 @@ type oldKeepWebConfig struct {
 		UUIDTTL              *arvados.Duration
 		MaxCollectionEntries *int
 		MaxCollectionBytes   *int64
-		MaxPermissionEntries *int
 		MaxUUIDEntries       *int
 	}
 
@@ -504,9 +503,6 @@ func (ldr *Loader) loadOldKeepWebConfig(cfg *arvados.Config) error {
 	}
 	if oc.Cache.MaxCollectionBytes != nil {
 		cluster.Collections.WebDAVCache.MaxCollectionBytes = *oc.Cache.MaxCollectionBytes
-	}
-	if oc.Cache.MaxPermissionEntries != nil {
-		cluster.Collections.WebDAVCache.MaxPermissionEntries = *oc.Cache.MaxPermissionEntries
 	}
 	if oc.Cache.MaxUUIDEntries != nil {
 		cluster.Collections.WebDAVCache.MaxUUIDEntries = *oc.Cache.MaxUUIDEntries

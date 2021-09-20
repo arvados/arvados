@@ -50,7 +50,7 @@ func (s *UnitSuite) SetUpTest(c *check.C) {
 }
 
 func (s *UnitSuite) TestCORSPreflight(c *check.C) {
-	h := handler{Config: newConfig(s.Config)}
+	h := handler{Config: newConfig(ctxlog.TestLogger(c), s.Config)}
 	u := mustParseURL("http://keep-web.example/c=" + arvadostest.FooCollection + "/foo")
 	req := &http.Request{
 		Method:     "OPTIONS",
@@ -109,7 +109,7 @@ func (s *UnitSuite) TestEmptyResponse(c *check.C) {
 			c.Assert(err, check.IsNil)
 		}
 
-		h := handler{Config: newConfig(s.Config)}
+		h := handler{Config: newConfig(ctxlog.TestLogger(c), s.Config)}
 		u := mustParseURL("http://" + arvadostest.FooCollection + ".keep-web.example/foo")
 		req := &http.Request{
 			Method:     "GET",
@@ -159,7 +159,7 @@ func (s *UnitSuite) TestInvalidUUID(c *check.C) {
 			RequestURI: u.RequestURI(),
 		}
 		resp := httptest.NewRecorder()
-		cfg := newConfig(s.Config)
+		cfg := newConfig(ctxlog.TestLogger(c), s.Config)
 		cfg.cluster.Users.AnonymousUserToken = arvadostest.AnonymousToken
 		h := handler{Config: cfg}
 		h.ServeHTTP(resp, req)
@@ -1067,7 +1067,7 @@ func (s *IntegrationSuite) TestFileContentType(c *check.C) {
 		contentType string
 	}{
 		{"picture.txt", "BMX bikes are small this year\n", "text/plain; charset=utf-8"},
-		{"picture.bmp", "BMX bikes are small this year\n", "image/x-ms-bmp"},
+		{"picture.bmp", "BMX bikes are small this year\n", "image/(x-ms-)?bmp"},
 		{"picture.jpg", "BMX bikes are small this year\n", "image/jpeg"},
 		{"picture1", "BMX bikes are small this year\n", "image/bmp"},            // content sniff; "BM" is the magic signature for .bmp
 		{"picture2", "Cars are small this year\n", "text/plain; charset=utf-8"}, // content sniff
@@ -1103,7 +1103,7 @@ func (s *IntegrationSuite) TestFileContentType(c *check.C) {
 		resp := httptest.NewRecorder()
 		s.testServer.Handler.ServeHTTP(resp, req)
 		c.Check(resp.Code, check.Equals, http.StatusOK)
-		c.Check(resp.Header().Get("Content-Type"), check.Equals, trial.contentType)
+		c.Check(resp.Header().Get("Content-Type"), check.Matches, trial.contentType)
 		c.Check(resp.Body.String(), check.Equals, trial.content)
 	}
 }
@@ -1241,7 +1241,7 @@ func (s *IntegrationSuite) checkUploadDownloadRequest(c *check.C, h *handler, re
 }
 
 func (s *IntegrationSuite) TestDownloadLoggingPermission(c *check.C) {
-	config := newConfig(s.ArvConfig)
+	config := newConfig(ctxlog.TestLogger(c), s.ArvConfig)
 	h := handler{Config: config}
 	u := mustParseURL("http://" + arvadostest.FooCollection + ".keep-web.example/foo")
 
@@ -1314,7 +1314,7 @@ func (s *IntegrationSuite) TestDownloadLoggingPermission(c *check.C) {
 }
 
 func (s *IntegrationSuite) TestUploadLoggingPermission(c *check.C) {
-	config := newConfig(s.ArvConfig)
+	config := newConfig(ctxlog.TestLogger(c), s.ArvConfig)
 	h := handler{Config: config}
 
 	for _, adminperm := range []bool{true, false} {

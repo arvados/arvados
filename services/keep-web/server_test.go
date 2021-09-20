@@ -393,7 +393,6 @@ func (s *IntegrationSuite) TestMetrics(c *check.C) {
 	c.Check(counters["arvados_keepweb_collectioncache_api_calls//"].Value, check.Equals, int64(2))
 	c.Check(counters["arvados_keepweb_collectioncache_hits//"].Value, check.Equals, int64(1))
 	c.Check(counters["arvados_keepweb_collectioncache_pdh_hits//"].Value, check.Equals, int64(1))
-	c.Check(counters["arvados_keepweb_collectioncache_permission_hits//"].Value, check.Equals, int64(1))
 	c.Check(gauges["arvados_keepweb_collectioncache_cached_manifests//"].Value, check.Equals, float64(1))
 	// FooCollection's cached manifest size is 45 ("1f4b0....+45") plus one 51-byte blob signature
 	c.Check(gauges["arvados_keepweb_sessions_cached_collection_bytes//"].Value, check.Equals, float64(45+51))
@@ -434,7 +433,7 @@ func (s *IntegrationSuite) SetUpTest(c *check.C) {
 	ldr.Path = "-"
 	arvCfg, err := ldr.Load()
 	c.Check(err, check.IsNil)
-	cfg := newConfig(arvCfg)
+	cfg := newConfig(ctxlog.TestLogger(c), arvCfg)
 	c.Assert(err, check.IsNil)
 	cfg.Client = arvados.Client{
 		APIHost:  testAPIHost,

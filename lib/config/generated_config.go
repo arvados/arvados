@@ -559,9 +559,6 @@ Clusters:
         # Approximate memory limit (in bytes) for collection cache.
         MaxCollectionBytes: 100000000
 
-        # Permission cache entries.
-        MaxPermissionEntries: 1000
-
         # UUID cache entries.
         MaxUUIDEntries: 1000
 
