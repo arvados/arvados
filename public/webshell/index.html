@@ -84,7 +84,7 @@
 
       function init() {
         if (token) {
-          history.replaceState(null, "", `/webshell/?host=${encodeURIComponent(host)}&login=${encodeURIComponent(login)}`);
+          history.replaceState(null, "", `/webshell/?host=${encodeURIComponent(host)}&login=${encodeURIComponent(user)}`);
         } else if (localStorage.getItem('apiToken')) {
           token = localStorage.getItem('apiToken');
         } else {
