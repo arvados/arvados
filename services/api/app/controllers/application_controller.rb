@@ -43,13 +43,14 @@ class ApplicationController < ActionController::Base
 
   before_action :catch_redirect_hint
   before_action :load_required_parameters
+  before_action :load_limit_offset_order_params, only: [:index, :contents]
+  before_action :load_select_param
   before_action(:find_object_by_uuid,
                 except: [:index, :create] + ERROR_ACTIONS)
-  before_action(:set_nullable_attrs_to_null, only: [:update, :create])
-  before_action :load_limit_offset_order_params, only: [:index, :contents]
   before_action :load_where_param, only: [:index, :contents]
   before_action :load_filters_param, only: [:index, :contents]
   before_action :find_objects_for_index, :only => :index
+  before_action(:set_nullable_attrs_to_null, only: [:update, :create])
   before_action :reload_object_before_update, :only => :update
   before_action(:render_404_if_no_object,
                 except: [:index, :create] + ERROR_ACTIONS)
@@ -304,7 +305,7 @@ class ApplicationController < ActionController::Base
     @objects = @objects.order(@orders.join ", ") if @orders.any?
     @objects = @objects.limit(@limit)
     @objects = @objects.offset(@offset)
-    @objects = @objects.distinct(@distinct) if not @distinct.nil?
+    @objects = @objects.distinct() if @distinct
   end
 
   # limit_database_read ensures @objects (which must be an
@@ -618,6 +619,11 @@ class ApplicationController < ActionController::Base
 
   def self._create_requires_parameters
     {
+      select: {
+        type: 'array',
+        description: "Attributes of the new object to return in the response.",
+        required: false,
+      },
       ensure_unique_name: {
         type: "boolean",
         description: "Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.",
@@ -635,7 +641,23 @@ class ApplicationController < ActionController::Base
   end
 
   def self._update_requires_parameters
-    {}
+    {
+      select: {
+        type: 'array',
+        description: "Attributes of the updated object to return in the response.",
+        required: false,
+      },
+    }
+  end
+
+  def self._show_requires_parameters
+    {
+      select: {
+        type: 'array',
+        description: "Attributes of the object to return in the response.",
+        required: false,
+      },
+    }
   end
 
   def self._index_requires_parameters
@@ -643,8 +665,12 @@ class ApplicationController < ActionController::Base
       filters: { type: 'array', required: false },
       where: { type: 'object', required: false },
       order: { type: 'array', required: false },
-      select: { type: 'array', required: false },
-      distinct: { type: 'boolean', required: false },
+      select: {
+        type: 'array',
+        description: "Attributes of each object to return in the response.",
+        required: false,
+      },
+      distinct: { type: 'boolean', required: false, default: false },
       limit: { type: 'integer', required: false, default: DEFAULT_LIMIT },
       offset: { type: 'integer', required: false, default: 0 },
       count: { type: 'string', required: false, default: 'exact' },

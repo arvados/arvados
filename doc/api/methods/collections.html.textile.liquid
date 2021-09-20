@@ -85,13 +85,13 @@ table(table table-bordered table-condensed).
 
 h3. get
 
-Gets a Collection's metadata by UUID or portable data hash.  When making a request by portable data hash, the returned record will only have the @portable_data_hash@ and @manifest_text@.
+Gets a Collection's metadata by UUID or portable data hash.  When making a request by portable data hash, attributes other than @portable_data_hash@ and @manifest_text@ are not returned, even when requested explicitly using the @select@ parameter.
 
 Arguments:
 
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
-{background:#ccffcc}.|uuid|string|The UUID of the Collection in question.|path||
+{background:#ccffcc}.|uuid|string|The UUID or portable data hash of the Collection in question.|path||
 
 h3. list
 

@@ -37,6 +37,8 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |
 |{resource_type}|object|Name is the singular form of the resource type, e.g., for the "collections" resource, this argument is "collection"|body|
 |{cluster_id}|string|Optional, the cluster on which to create the object if not the current cluster.|query|
+|select  |array  |Attributes of the new object to return in the response (by default, all available attributes are returned).
+Example: @["uuid","name","modified_at"]@|query|
 
 h2. delete
 
@@ -49,6 +51,8 @@ Arguments:
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |
 {background:#ccffcc}.|uuid|string|The UUID of the object in question.|path|
+|select  |array  |Attributes of the deleted object to return in the response (by default, all available attributes are returned).
+Example: @["uuid","name","modified_at"]@|query|
 
 h2. get
 
@@ -61,10 +65,12 @@ Arguments:
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |
 {background:#ccffcc}.|uuid|string|The UUID of the object in question.|path|
+|select  |array  |Attributes of the object to return in the response (by default, all available attributes are returned).
+Example: @["uuid","name","modified_at"]@|query|
 
 h2(#index). list
 
-The @list@ method requests an list of resources of that type.  It corresponds to the HTTP request @GET /arvados/v1/resource_type@.  All resources support "list" method unless otherwise noted.
+The @list@ method requests an list of resources of that type.  It corresponds to the HTTP request @GET /arvados/v1/resource_type@.  All resources support the @list@ method unless otherwise noted.
 
 Arguments:
 
@@ -76,11 +82,10 @@ table(table table-bordered table-condensed).
 |order   |array  |Attributes to use as sort keys to determine the order resources are returned, each optionally followed by @asc@ or @desc@ to indicate ascending or descending order.  (If not specified, it will be ascending).
 Example: @["head_uuid asc","modified_at desc"]@
 Default: @["modified_at desc", "uuid asc"]@|query|
-|select  |array  |Set of attributes to include in the response.
-Example: @["head_uuid","tail_uuid"]@
-Default: all available attributes.  As a special case, collections do not return "manifest_text" unless explicitly selected.|query|
-|distinct|boolean|@true@: (default) do not return duplicate objects
-@false@: permitted to return duplicates|query|
+|select  |array  |Attributes of each object to return in the response (by default, all available attributes are returned, except collections, which do not return @manifest_text@ unless explicitly selected).
+Example: @["uuid","name","modified_at"]@|query|
+|distinct|boolean|When returning multiple records whose selected attributes (see @select@) are equal, return them as a single response entry.
+Default is @false@.|query|
 |count|string|@"exact"@ (default): Include an @items_available@ response field giving the number of distinct matching items that can be retrieved (irrespective of @limit@ and @offset@ arguments).
 @"none"@: Omit the @items_available@ response field. This option will produce a faster response.|query|
 
@@ -187,3 +192,5 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |
 {background:#ccffcc}.|uuid|string|The UUID of the resource in question.|path||
 |{resource_type}|object||query||
+|select  |array  |Attributes of the updated object to return in the response (by default, all available attributes are returned).
+Example: @["uuid","name","modified_at"]@|query|
