@@ -122,7 +122,7 @@ function ShellInABox(url, container) {
   // Chrome never realizes that the page has loaded.
   setTimeout(function(shellInABox) {
                return function() {
-                 shellInABox.sendRequest();
+                 shellInABox.sendRequest(true);
                };
              }(this), 1);
 };
@@ -137,6 +137,7 @@ ShellInABox.prototype.sessionClosed = function() {
         this.vt100('\r\n');
       }
       this.vt100('Session closed.');
+      this.currentRequest.abort();
     }
     // Revealing the "reconnect" button is commented out until we hook
     // up the username+token auto-login mechanism to the new session:
@@ -161,14 +162,14 @@ ShellInABox.prototype.reconnect = function() {
         this.pendingKeys     = '';
         this.keysInFlight    = false;
         this.reset(true);
-        this.sendRequest();
+        this.sendRequest(true);
       }
     }
   }
   return false;
 };
 
-ShellInABox.prototype.sendRequest = function(request) {
+ShellInABox.prototype.sendRequest = function(init = false, request) {
   if (request == undefined) {
     request                  = new XMLHttpRequest();
   }
@@ -185,7 +186,7 @@ ShellInABox.prototype.sendRequest = function(request) {
   request.onreadystatechange = function(shellInABox) {
     return function() {
              try {
-               return shellInABox.onReadyStateChange(request);
+               return shellInABox.onReadyStateChange(request, init);
              } catch (e) {
                shellInABox.sessionClosed();
              }
@@ -193,10 +194,11 @@ ShellInABox.prototype.sendRequest = function(request) {
     }(this);
   ShellInABox.lastRequestSent = Date.now();
   request.send(content);
+  this.currentRequest = request;
 };
 
-ShellInABox.prototype.onReadyStateChange = function(request) {
-  if (request.readyState == 4 /* XHR_LOADED */) {
+ShellInABox.prototype.onReadyStateChange = function(request, init) {
+  if (request.readyState == 4 /* XHR_LOADED */ && (this.connected || init)) {
     if (request.status == 200) {
       this.connected = true;
       var response   = eval('(' + request.responseText + ')');
@@ -209,12 +211,12 @@ ShellInABox.prototype.onReadyStateChange = function(request) {
         this.sessionClosed();
       } else {
         this.session = response.session;
-        this.sendRequest(request);
+        this.sendRequest(false, request);
       }
     } else if (request.status == 0) {
         if (ShellInABox.lastRequestSent + 2000 < Date.now()) {
             // Timeout, try again
-            this.sendRequest(request);
+            this.sendRequest(false, request);
         } else {
             this.vt100('\r\n\r\nRequest failed.');
             this.sessionClosed();

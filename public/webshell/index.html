@@ -59,8 +59,8 @@
         var lastTime = localStorage.getItem('lastActiveTimestamp');
         if (currentTime - lastTime > idleTimeoutMs) {
           //logout
-          sh.sendKeys('03'); // Ctrl + c
-          sh.sendKeys('04'); // Ctrl + d
+          sh.reset();
+          sh.sessionClosed();
           document.body.onmousemove = undefined;
           document.body.onkeydown = undefined;
         } else {
