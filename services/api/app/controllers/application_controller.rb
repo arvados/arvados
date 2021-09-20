@@ -619,7 +619,11 @@ class ApplicationController < ActionController::Base
 
   def self._create_requires_parameters
     {
-      select: { type: 'array', required: false },
+      select: {
+        type: 'array',
+        description: "Attributes of the new object to return in the response.",
+        required: false,
+      },
       ensure_unique_name: {
         type: "boolean",
         description: "Adjust name to ensure uniqueness instead of returning an error on (owner_uuid, name) collision.",
@@ -638,13 +642,21 @@ class ApplicationController < ActionController::Base
 
   def self._update_requires_parameters
     {
-      select: { type: 'array', required: false },
+      select: {
+        type: 'array',
+        description: "Attributes of the updated object to return in the response.",
+        required: false,
+      },
     }
   end
 
   def self._show_requires_parameters
     {
-      select: { type: 'array', required: false },
+      select: {
+        type: 'array',
+        description: "Attributes of the object to return in the response.",
+        required: false,
+      },
     }
   end
 
@@ -653,7 +665,11 @@ class ApplicationController < ActionController::Base
       filters: { type: 'array', required: false },
       where: { type: 'object', required: false },
       order: { type: 'array', required: false },
-      select: { type: 'array', required: false },
+      select: {
+        type: 'array',
+        description: "Attributes of each object to return in the response.",
+        required: false,
+      },
       distinct: { type: 'boolean', required: false, default: false },
       limit: { type: 'integer', required: false, default: DEFAULT_LIMIT },
       offset: { type: 'integer', required: false, default: 0 },
