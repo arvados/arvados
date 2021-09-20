@@ -61,6 +61,8 @@
           //logout
           sh.sendKeys('03'); // Ctrl + c
           sh.sendKeys('04'); // Ctrl + d
+          document.body.onmousemove = undefined;
+          document.body.onkeydown = undefined;
         } else {
           setTimeout(checkIdleTimer, 1000);
         }
