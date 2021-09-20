@@ -165,14 +165,14 @@ WORKBENCH2_EXT_SSL_PORT=3001
 # release.
 # The "local.params.example.*" files already set "RELEASE=production"
 # to deploy  production-ready packages
-RELEASE="development"
-VERSION="latest"
+RELEASE="production"
+VERSION="2.3.0-1"
 
 # These are arvados-formula-related parameters
 # An arvados-formula tag. For a stable release, this should be a
 # branch name (e.g. X.Y-dev) or tag for the release.
-# ARVADOS_TAG="2.2.0"
-# BRANCH="main"
+# ARVADOS_TAG="2.3.0"
+BRANCH="2.3-dev"
 
 # Other formula versions we depend on
 POSTGRES_TAG="v0.41.6"
