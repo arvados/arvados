@@ -47,17 +47,6 @@ class Arvados::V1::LinksController < ApplicationController
         .first
     else
       super
-      if @object.nil?
-        # Normally group permission links are not readable_by users.
-        # Make an exception for users with permission to manage the group.
-        # FIXME: Solve this more generally - see the controller tests.
-        link = Link.find_by_uuid(params[:uuid])
-        if (not link.nil?) and
-            (link.link_class == "permission") and
-            (@read_users.any? { |u| u.can?(manage: link.head_uuid) })
-          @object = link
-        end
-      end
     end
   end
 

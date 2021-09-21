@@ -386,11 +386,17 @@ class ArvadosModel < ApplicationRecord
 
       links_cond = ""
       if sql_table == "links"
-        # Match any permission link that gives one of the authorized
-        # users some permission _or_ gives anyone else permission to
-        # view one of the authorized users.
+        # 1) Match permission links incoming or outgoing on the
+        # user, i.e. granting permission on the user, or granting
+        # permission to the user.
+        #
+        # 2) Match permission links which grant permission on an
+        # object that this user can_manage.
+        #
         links_cond = "OR (#{sql_table}.link_class IN (:permission_link_classes) AND "+
-                       "(#{sql_table}.head_uuid IN (#{user_uuids_subquery}) OR #{sql_table}.tail_uuid IN (#{user_uuids_subquery})))"
+                     "   ((#{sql_table}.head_uuid IN (#{user_uuids_subquery}) OR #{sql_table}.tail_uuid IN (#{user_uuids_subquery})) OR " +
+                     "    #{sql_table}.head_uuid IN (SELECT target_uuid FROM #{PERMISSION_VIEW} "+
+                     "    WHERE user_uuid IN (#{user_uuids_subquery}) AND perm_level >= 3))) "
       end
 
       sql_conds = "(#{owner_check} #{direct_check} #{links_cond}) #{trashed_check.empty? ? "" : "AND"} #{trashed_check}"
@@ -408,7 +414,7 @@ class ArvadosModel < ApplicationRecord
 
     self.where(sql_conds,
                user_uuids: all_user_uuids.collect{|c| c["target_uuid"]},
-               permission_link_classes: ['permission', 'resources'])
+               permission_link_classes: ['permission'])
   end
 
   def save_with_unique_name!
