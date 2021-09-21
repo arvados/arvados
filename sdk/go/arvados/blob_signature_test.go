@@ -32,6 +32,17 @@ var _ = check.Suite(&BlobSignatureSuite{})
 
 type BlobSignatureSuite struct{}
 
+func (s *BlobSignatureSuite) BenchmarkSignManifest(c *check.C) {
+	DebugLocksPanicMode = false
+	ts, err := parseHexTimestamp(knownTimestamp)
+	c.Check(err, check.IsNil)
+	c.Logf("test manifest is %d bytes", len(bigmanifest))
+	for i := 0; i < c.N; i++ {
+		m := SignManifest(bigmanifest, knownToken, ts, blobSignatureTTL, []byte(knownKey))
+		c.Check(m, check.Not(check.Equals), "")
+	}
+}
+
 func (s *BlobSignatureSuite) TestSignLocator(c *check.C) {
 	ts, err := parseHexTimestamp(knownTimestamp)
 	c.Check(err, check.IsNil)
