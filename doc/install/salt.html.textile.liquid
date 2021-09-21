@@ -19,6 +19,8 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 h2(#introduction). Introduction
 
+{% include 'branchname' %}
+
 To ease the installation of the various Arvados components, we have developed a "Saltstack":https://www.saltstack.com/ 's "arvados-formula":https://git.arvados.org/arvados-formula.git which can help you get an Arvados cluster up and running.
 
 Saltstack is a Python-based, open-source software for event-driven IT automation, remote task execution, and configuration management. It can be used in a _master/minion_ setup (where a master node orchestrates and coordinates the configuration of nodes in an infrastructure) or <i>master-less</i>, where Saltstack is run locally in a node, with no communication with a master node.

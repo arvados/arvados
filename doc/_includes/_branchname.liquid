@@ -1,0 +1,11 @@
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+{% if site.current_version and site.current_version != 'main' %}
+{% assign branchname = site.current_version | slice: 0, 3 | append: '-dev' %}
+{% else %}
+{% assign branchname = 'main' %}
+{% endif %}
