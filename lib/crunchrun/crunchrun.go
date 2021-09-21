@@ -66,7 +66,7 @@ type IKeepClient interface {
 // NewLogWriter is a factory function to create a new log writer.
 type NewLogWriter func(name string) (io.WriteCloser, error)
 
-type RunArvMount func(args []string, tok string) (*exec.Cmd, error)
+type RunArvMount func(cmdline []string, tok string) (*exec.Cmd, error)
 
 type MkTempDir func(string, string) (string, error)
 
@@ -273,8 +273,8 @@ func (runner *ContainerRunner) LoadImage() (string, error) {
 	return imageID, nil
 }
 
-func (runner *ContainerRunner) ArvMountCmd(arvMountCmd []string, token string) (c *exec.Cmd, err error) {
-	c = exec.Command("arv-mount", arvMountCmd...)
+func (runner *ContainerRunner) ArvMountCmd(cmdline []string, token string) (c *exec.Cmd, err error) {
+	c = exec.Command(cmdline[0], cmdline[1:]...)
 
 	// Copy our environment, but override ARVADOS_API_TOKEN with
 	// the container auth token.
@@ -291,8 +291,16 @@ func (runner *ContainerRunner) ArvMountCmd(arvMountCmd []string, token string) (
 		return nil, err
 	}
 	runner.arvMountLog = NewThrottledLogger(w)
+	scanner := logScanner{
+		Patterns: []string{
+			"Keep write error",
+			"Block not found error",
+			"Unhandled exception during FUSE operation",
+		},
+		ReportFunc: runner.reportArvMountWarning,
+	}
 	c.Stdout = runner.arvMountLog
-	c.Stderr = io.MultiWriter(runner.arvMountLog, os.Stderr)
+	c.Stderr = io.MultiWriter(runner.arvMountLog, os.Stderr, &scanner)
 
 	runner.CrunchLog.Printf("Running %v", c.Args)
 
@@ -392,6 +400,7 @@ func (runner *ContainerRunner) SetupMounts() (map[string]bindmount, error) {
 	pdhOnly := true
 	tmpcount := 0
 	arvMountCmd := []string{
+		"arv-mount",
 		"--foreground",
 		"--allow-other",
 		"--read-write",
@@ -1097,6 +1106,20 @@ func (runner *ContainerRunner) updateLogs() {
 		}
 
 		savedSize = size
+	}
+}
+
+func (runner *ContainerRunner) reportArvMountWarning(message string) {
+	var updated arvados.Container
+	err := runner.DispatcherArvClient.Update("containers", runner.Container.UUID, arvadosclient.Dict{
+		"container": arvadosclient.Dict{
+			"runtime_status": arvadosclient.Dict{
+				"warning": "arv-mount: " + message,
+			},
+		},
+	}, &updated)
+	if err != nil {
+		runner.CrunchLog.Printf("error updating container runtime_status: %s", err)
 	}
 }
 

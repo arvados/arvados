@@ -1533,6 +1533,36 @@ func (s *TestSuite) TestFullRunSetOutput(c *C) {
 	c.Check(s.api.CalledWith("container.output", arvadostest.DockerImage112PDH), NotNil)
 }
 
+func (s *TestSuite) TestArvMountRuntimeStatusWarning(c *C) {
+	s.runner.RunArvMount = func([]string, string) (*exec.Cmd, error) {
+		os.Mkdir(s.runner.ArvMountPoint+"/by_id", 0666)
+		ioutil.WriteFile(s.runner.ArvMountPoint+"/by_id/README", nil, 0666)
+		return s.runner.ArvMountCmd([]string{"bash", "-c", "echo >&2 $(date) Keep write error: I am a teapot; sleep 3"}, "")
+	}
+	s.executor.runFunc = func() {
+		time.Sleep(time.Second)
+		s.executor.exit <- 0
+	}
+	record := `{
+    "command": ["sleep", "1"],
+    "container_image": "` + arvadostest.DockerImage112PDH + `",
+    "cwd": "/bin",
+    "environment": {},
+    "mounts": {"/tmp": {"kind": "tmp"} },
+    "output_path": "/tmp",
+    "priority": 1,
+    "runtime_constraints": {"API": true},
+    "state": "Locked"
+}`
+	err := json.Unmarshal([]byte(record), &s.api.Container)
+	c.Assert(err, IsNil)
+	err = s.runner.Run()
+	c.Assert(err, IsNil)
+	c.Check(s.api.CalledWith("container.exit_code", 0), NotNil)
+	c.Check(s.api.CalledWith("container.runtime_status.warning", "arv-mount: Keep write error"), NotNil)
+	c.Check(s.api.CalledWith("container.state", "Complete"), NotNil)
+}
+
 func (s *TestSuite) TestStdoutWithExcludeFromOutputMountPointUnderOutputDir(c *C) {
 	helperRecord := `{
 		"command": ["/bin/sh", "-c", "echo $FROBIZ"],
