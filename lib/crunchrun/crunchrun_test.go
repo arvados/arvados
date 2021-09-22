@@ -117,6 +117,7 @@ func (e *stubExecutor) LoadImage(imageId string, tarball string, container arvad
 	e.loaded = tarball
 	return e.loadErr
 }
+func (e *stubExecutor) Runtime() string                 { return "stub" }
 func (e *stubExecutor) Create(spec containerSpec) error { e.created = spec; return e.createErr }
 func (e *stubExecutor) Start() error                    { e.exit = make(chan int, 1); go e.runFunc(); return e.startErr }
 func (e *stubExecutor) CgroupID() string                { return "cgroupid" }
@@ -847,6 +848,26 @@ func (s *TestSuite) TestNodeInfoLog(c *C) {
 	c.Check(json, Matches, `(?ms).*Memory Information.*`)
 	c.Check(json, Matches, `(?ms).*Disk Space.*`)
 	c.Check(json, Matches, `(?ms).*Disk INodes.*`)
+}
+
+func (s *TestSuite) TestLogVersionAndRuntime(c *C) {
+	s.fullRunHelper(c, `{
+		"command": ["sleep", "1"],
+		"container_image": "`+arvadostest.DockerImage112PDH+`",
+		"cwd": ".",
+		"environment": {},
+		"mounts": {"/tmp": {"kind": "tmp"} },
+		"output_path": "/tmp",
+		"priority": 1,
+		"runtime_constraints": {},
+		"state": "Locked"
+	}`, nil, 0,
+		func() {
+		})
+
+	c.Assert(s.api.Logs["crunch-run"], NotNil)
+	c.Check(s.api.Logs["crunch-run"].String(), Matches, `(?ms).*crunch-run \S+ \(go\S+\) start.*`)
+	c.Check(s.api.Logs["crunch-run"].String(), Matches, `(?ms).*Executing container 'zzzzz-zzzzz-zzzzzzzzzzzzzzz' using stub runtime.*`)
 }
 
 func (s *TestSuite) TestContainerRecordLog(c *C) {

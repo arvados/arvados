@@ -1377,7 +1377,7 @@ func (runner *ContainerRunner) NewArvLogWriter(name string) (io.WriteCloser, err
 // Run the full container lifecycle.
 func (runner *ContainerRunner) Run() (err error) {
 	runner.CrunchLog.Printf("crunch-run %s started", cmd.Version.String())
-	runner.CrunchLog.Printf("Executing container '%s'", runner.Container.UUID)
+	runner.CrunchLog.Printf("Executing container '%s' using %s runtime", runner.Container.UUID, runner.executor.Runtime())
 
 	hostname, hosterr := os.Hostname()
 	if hosterr != nil {
