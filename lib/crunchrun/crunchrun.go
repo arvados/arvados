@@ -1109,12 +1109,13 @@ func (runner *ContainerRunner) updateLogs() {
 	}
 }
 
-func (runner *ContainerRunner) reportArvMountWarning(message string) {
+func (runner *ContainerRunner) reportArvMountWarning(pattern, text string) {
 	var updated arvados.Container
 	err := runner.DispatcherArvClient.Update("containers", runner.Container.UUID, arvadosclient.Dict{
 		"container": arvadosclient.Dict{
 			"runtime_status": arvadosclient.Dict{
-				"warning": "arv-mount: " + message,
+				"warning":       "arv-mount: " + pattern,
+				"warningDetail": text,
 			},
 		},
 	}, &updated)

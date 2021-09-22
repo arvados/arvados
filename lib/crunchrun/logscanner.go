@@ -14,7 +14,7 @@ import (
 // contain newlines.
 type logScanner struct {
 	Patterns   []string
-	ReportFunc func(string)
+	ReportFunc func(pattern, text string)
 	reported   bool
 	buf        bytes.Buffer
 }
@@ -32,8 +32,14 @@ func (s *logScanner) Write(p []byte) (int, error) {
 	s.buf.Write(p[:split+1])
 	txt := s.buf.String()
 	for _, pattern := range s.Patterns {
-		if strings.Contains(txt, pattern) {
-			s.ReportFunc(pattern)
+		if found := strings.Index(txt, pattern); found >= 0 {
+			// Report the entire line where the pattern
+			// was found.
+			txt = txt[strings.LastIndexByte(txt[:found], '\n')+1:]
+			if end := strings.IndexByte(txt, '\n'); end >= 0 {
+				txt = txt[:end]
+			}
+			s.ReportFunc(pattern, txt)
 			s.reported = true
 			return len(p), nil
 		}

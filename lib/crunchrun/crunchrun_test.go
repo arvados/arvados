@@ -1537,7 +1537,7 @@ func (s *TestSuite) TestArvMountRuntimeStatusWarning(c *C) {
 	s.runner.RunArvMount = func([]string, string) (*exec.Cmd, error) {
 		os.Mkdir(s.runner.ArvMountPoint+"/by_id", 0666)
 		ioutil.WriteFile(s.runner.ArvMountPoint+"/by_id/README", nil, 0666)
-		return s.runner.ArvMountCmd([]string{"bash", "-c", "echo >&2 $(date) Keep write error: I am a teapot; sleep 3"}, "")
+		return s.runner.ArvMountCmd([]string{"bash", "-c", "echo >&2 Test: Keep write error: I am a teapot; sleep 3"}, "")
 	}
 	s.executor.runFunc = func() {
 		time.Sleep(time.Second)
@@ -1560,6 +1560,7 @@ func (s *TestSuite) TestArvMountRuntimeStatusWarning(c *C) {
 	c.Assert(err, IsNil)
 	c.Check(s.api.CalledWith("container.exit_code", 0), NotNil)
 	c.Check(s.api.CalledWith("container.runtime_status.warning", "arv-mount: Keep write error"), NotNil)
+	c.Check(s.api.CalledWith("container.runtime_status.warningDetail", "Test: Keep write error: I am a teapot"), NotNil)
 	c.Check(s.api.CalledWith("container.state", "Complete"), NotNil)
 }
 
