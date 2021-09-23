@@ -9,6 +9,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -68,6 +70,32 @@ func (s *Suite) TestWithDeadline(c *check.C) {
 		}
 	})).ServeHTTP(resp, req.WithContext(s.ctx))
 	c.Check(resp.Body.String(), check.Equals, "ok")
+}
+
+func (s *Suite) TestNoDeadlineAfterHijacked(c *check.C) {
+	srv := Server{
+		Addr: ":",
+		Server: http.Server{
+			Handler: HandlerWithDeadline(time.Millisecond, http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				conn, _, err := w.(http.Hijacker).Hijack()
+				c.Assert(err, check.IsNil)
+				defer conn.Close()
+				select {
+				case <-req.Context().Done():
+					c.Error("request context done too soon")
+				case <-time.After(time.Second / 10):
+					conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\nok"))
+				}
+			})),
+			BaseContext: func(net.Listener) context.Context { return s.ctx },
+		},
+	}
+	srv.Start()
+	defer srv.Close()
+	resp, err := http.Get("http://" + srv.Addr)
+	c.Assert(err, check.IsNil)
+	body, err := ioutil.ReadAll(resp.Body)
+	c.Check(string(body), check.Equals, "ok")
 }
 
 func (s *Suite) TestLogRequests(c *check.C) {
