@@ -18,7 +18,7 @@ import parse from "parse-duration";
 
 type CssRules = 'button' | 'codeSnippet' | 'link' | 'linkIcon' | 'rightAlign' | 'cardWithoutMachines' | 'icon';
 
-const EXTRA_TOKEN = "exra";
+const EXTRA_TOKEN = "exraToken";
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     button: {
