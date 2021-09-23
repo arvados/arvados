@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -99,9 +100,10 @@ func (s *AuthSuite) SetUpTest(c *check.C) {
 
 	s.testHandler = &Handler{Cluster: cluster}
 	s.testServer = newServerFromIntegrationTestEnv(c)
-	s.testServer.Server.Handler = httpserver.HandlerWithContext(
-		ctxlog.Context(context.Background(), s.log),
-		httpserver.AddRequestIDs(httpserver.LogRequests(s.testHandler)))
+	s.testServer.Server.BaseContext = func(net.Listener) context.Context {
+		return ctxlog.Context(context.Background(), s.log)
+	}
+	s.testServer.Server.Handler = httpserver.AddRequestIDs(httpserver.LogRequests(s.testHandler))
 	c.Assert(s.testServer.Start(), check.IsNil)
 }
 

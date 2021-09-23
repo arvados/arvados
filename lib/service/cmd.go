@@ -126,13 +126,14 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 	}
 
 	instrumented := httpserver.Instrument(reg, log,
-		httpserver.HandlerWithContext(ctx,
+		httpserver.HandlerWithDeadline(cluster.API.RequestTimeout.Duration(),
 			httpserver.AddRequestIDs(
 				httpserver.LogRequests(
 					httpserver.NewRequestLimiter(cluster.API.MaxConcurrentRequests, handler, reg)))))
 	srv := &httpserver.Server{
 		Server: http.Server{
-			Handler: instrumented.ServeAPI(cluster.ManagementToken, instrumented),
+			Handler:     instrumented.ServeAPI(cluster.ManagementToken, instrumented),
+			BaseContext: func(net.Listener) context.Context { return ctx },
 		},
 		Addr: listenURL.Host,
 	}
