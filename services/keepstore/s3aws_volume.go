@@ -83,8 +83,22 @@ const (
 var s3AWSKeepBlockRegexp = regexp.MustCompile(`^[0-9a-f]{32}$`)
 var s3AWSZeroTime time.Time
 
-func (v *S3AWSVolume) isKeepBlock(s string) bool {
-	return s3AWSKeepBlockRegexp.MatchString(s)
+func (v *S3AWSVolume) isKeepBlock(s string) (string, bool) {
+	if v.PrefixLength > 0 && len(s) == v.PrefixLength+33 && s[:v.PrefixLength] == s[v.PrefixLength+1:v.PrefixLength*2+1] {
+		s = s[v.PrefixLength+1:]
+	}
+	return s, s3AWSKeepBlockRegexp.MatchString(s)
+}
+
+// Return the key used for a given loc. If PrefixLength==0 then
+// key("abcdef0123") is "abcdef0123", if PrefixLength==3 then key is
+// "abc/abcdef0123", etc.
+func (v *S3AWSVolume) key(loc string) string {
+	if v.PrefixLength > 0 && v.PrefixLength < len(loc)-1 {
+		return loc[:v.PrefixLength] + "/" + loc
+	} else {
+		return loc
+	}
 }
 
 func newS3AWSVolume(cluster *arvados.Cluster, volume arvados.Volume, logger logrus.FieldLogger, metrics *volumeMetricsVecs) (Volume, error) {
@@ -109,11 +123,12 @@ func (v *S3AWSVolume) translateError(err error) error {
 	return err
 }
 
-// safeCopy calls CopyObjectRequest, and checks the response to make sure the
-// copy succeeded and updated the timestamp on the destination object
+// safeCopy calls CopyObjectRequest, and checks the response to make
+// sure the copy succeeded and updated the timestamp on the
+// destination object
 //
-// (If something goes wrong during the copy, the error will be embedded in the
-// 200 OK response)
+// (If something goes wrong during the copy, the error will be
+// embedded in the 200 OK response)
 func (v *S3AWSVolume) safeCopy(dst, src string) error {
 	input := &s3.CopyObjectInput{
 		Bucket:      aws.String(v.bucket.bucket),
@@ -222,9 +237,10 @@ func (v *S3AWSVolume) GetDeviceID() string {
 
 // Compare the given data with the stored data.
 func (v *S3AWSVolume) Compare(ctx context.Context, loc string, expect []byte) error {
+	key := v.key(loc)
 	errChan := make(chan error, 1)
 	go func() {
-		_, err := v.Head("recent/" + loc)
+		_, err := v.head("recent/" + key)
 		errChan <- err
 	}()
 	var err error
@@ -234,8 +250,8 @@ func (v *S3AWSVolume) Compare(ctx context.Context, loc string, expect []byte) er
 	case err = <-errChan:
 	}
 	if err != nil {
-		// Checking for "loc" itself here would interfere with
-		// future GET requests.
+		// Checking for the key itself here would interfere
+		// with future GET requests.
 		//
 		// On AWS, if X doesn't exist, a HEAD or GET request
 		// for X causes X's non-existence to be cached. Thus,
@@ -259,7 +275,7 @@ func (v *S3AWSVolume) Compare(ctx context.Context, loc string, expect []byte) er
 
 	input := &s3.GetObjectInput{
 		Bucket: aws.String(v.bucket.bucket),
-		Key:    aws.String(loc),
+		Key:    aws.String(key),
 	}
 
 	req := v.bucket.svc.GetObjectRequest(input)
@@ -283,29 +299,30 @@ func (v *S3AWSVolume) EmptyTrash() {
 	startT := time.Now()
 
 	emptyOneKey := func(trash *s3.Object) {
-		loc := strings.TrimPrefix(*trash.Key, "trash/")
-		if !v.isKeepBlock(loc) {
+		key := strings.TrimPrefix(*trash.Key, "trash/")
+		loc, isblk := v.isKeepBlock(key)
+		if !isblk {
 			return
 		}
 		atomic.AddInt64(&bytesInTrash, *trash.Size)
 		atomic.AddInt64(&blocksInTrash, 1)
 
-		trashT := *(trash.LastModified)
-		recent, err := v.Head("recent/" + loc)
+		trashT := *trash.LastModified
+		recent, err := v.head("recent/" + key)
 		if err != nil && os.IsNotExist(v.translateError(err)) {
-			v.logger.Warnf("EmptyTrash: found trash marker %q but no %q (%s); calling Untrash", trash.Key, "recent/"+loc, err)
+			v.logger.Warnf("EmptyTrash: found trash marker %q but no %q (%s); calling Untrash", *trash.Key, "recent/"+key, err)
 			err = v.Untrash(loc)
 			if err != nil {
 				v.logger.WithError(err).Errorf("EmptyTrash: Untrash(%q) failed", loc)
 			}
 			return
 		} else if err != nil {
-			v.logger.WithError(err).Warnf("EmptyTrash: HEAD %q failed", "recent/"+loc)
+			v.logger.WithError(err).Warnf("EmptyTrash: HEAD %q failed", "recent/"+key)
 			return
 		}
 		if trashT.Sub(*recent.LastModified) < v.cluster.Collections.BlobSigningTTL.Duration() {
 			if age := startT.Sub(*recent.LastModified); age >= v.cluster.Collections.BlobSigningTTL.Duration()-time.Duration(v.RaceWindow) {
-				// recent/loc is too old to protect
+				// recent/key is too old to protect
 				// loc from being Trashed again during
 				// the raceWindow that starts if we
 				// delete trash/X now.
@@ -314,14 +331,14 @@ func (v *S3AWSVolume) EmptyTrash() {
 				// < BlobSigningTTL - raceWindow) is
 				// necessary to avoid starvation.
 				v.logger.Infof("EmptyTrash: detected old race for %q, calling fixRace + Touch", loc)
-				v.fixRace(loc)
+				v.fixRace(key)
 				v.Touch(loc)
 				return
 			}
-			_, err := v.Head(loc)
+			_, err := v.head(key)
 			if os.IsNotExist(err) {
 				v.logger.Infof("EmptyTrash: detected recent race for %q, calling fixRace", loc)
-				v.fixRace(loc)
+				v.fixRace(key)
 				return
 			} else if err != nil {
 				v.logger.WithError(err).Warnf("EmptyTrash: HEAD %q failed", loc)
@@ -339,18 +356,18 @@ func (v *S3AWSVolume) EmptyTrash() {
 		atomic.AddInt64(&bytesDeleted, *trash.Size)
 		atomic.AddInt64(&blocksDeleted, 1)
 
-		_, err = v.Head(loc)
+		_, err = v.head(*trash.Key)
 		if err == nil {
 			v.logger.Warnf("EmptyTrash: HEAD %q succeeded immediately after deleting %q", loc, loc)
 			return
 		}
 		if !os.IsNotExist(v.translateError(err)) {
-			v.logger.WithError(err).Warnf("EmptyTrash: HEAD %q failed", loc)
+			v.logger.WithError(err).Warnf("EmptyTrash: HEAD %q failed", key)
 			return
 		}
-		err = v.bucket.Del("recent/" + loc)
+		err = v.bucket.Del("recent/" + key)
 		if err != nil {
-			v.logger.WithError(err).Warnf("EmptyTrash: error deleting %q", "recent/"+loc)
+			v.logger.WithError(err).Warnf("EmptyTrash: error deleting %q", "recent/"+key)
 		}
 	}
 
@@ -386,21 +403,21 @@ func (v *S3AWSVolume) EmptyTrash() {
 }
 
 // fixRace(X) is called when "recent/X" exists but "X" doesn't
-// exist. If the timestamps on "recent/"+loc and "trash/"+loc indicate
-// there was a race between Put and Trash, fixRace recovers from the
-// race by Untrashing the block.
-func (v *S3AWSVolume) fixRace(loc string) bool {
-	trash, err := v.Head("trash/" + loc)
+// exist. If the timestamps on "recent/X" and "trash/X" indicate there
+// was a race between Put and Trash, fixRace recovers from the race by
+// Untrashing the block.
+func (v *S3AWSVolume) fixRace(key string) bool {
+	trash, err := v.head("trash/" + key)
 	if err != nil {
 		if !os.IsNotExist(v.translateError(err)) {
-			v.logger.WithError(err).Errorf("fixRace: HEAD %q failed", "trash/"+loc)
+			v.logger.WithError(err).Errorf("fixRace: HEAD %q failed", "trash/"+key)
 		}
 		return false
 	}
 
-	recent, err := v.Head("recent/" + loc)
+	recent, err := v.head("recent/" + key)
 	if err != nil {
-		v.logger.WithError(err).Errorf("fixRace: HEAD %q failed", "recent/"+loc)
+		v.logger.WithError(err).Errorf("fixRace: HEAD %q failed", "recent/"+key)
 		return false
 	}
 
@@ -413,9 +430,9 @@ func (v *S3AWSVolume) fixRace(loc string) bool {
 		return false
 	}
 
-	v.logger.Infof("fixRace: %q: trashed at %s but touched at %s (age when trashed = %s < %s)", loc, trashTime, recentTime, ageWhenTrashed, v.cluster.Collections.BlobSigningTTL)
-	v.logger.Infof("fixRace: copying %q to %q to recover from race between Put/Touch and Trash", "recent/"+loc, loc)
-	err = v.safeCopy(loc, "trash/"+loc)
+	v.logger.Infof("fixRace: %q: trashed at %s but touched at %s (age when trashed = %s < %s)", key, trashTime, recentTime, ageWhenTrashed, v.cluster.Collections.BlobSigningTTL)
+	v.logger.Infof("fixRace: copying %q to %q to recover from race between Put/Touch and Trash", "recent/"+key, key)
+	err = v.safeCopy(key, "trash/"+key)
 	if err != nil {
 		v.logger.WithError(err).Error("fixRace: copy failed")
 		return false
@@ -423,10 +440,10 @@ func (v *S3AWSVolume) fixRace(loc string) bool {
 	return true
 }
 
-func (v *S3AWSVolume) Head(loc string) (result *s3.HeadObjectOutput, err error) {
+func (v *S3AWSVolume) head(key string) (result *s3.HeadObjectOutput, err error) {
 	input := &s3.HeadObjectInput{
 		Bucket: aws.String(v.bucket.bucket),
-		Key:    aws.String(loc),
+		Key:    aws.String(key),
 	}
 
 	req := v.bucket.svc.HeadObjectRequest(input)
@@ -449,7 +466,7 @@ func (v *S3AWSVolume) Get(ctx context.Context, loc string, buf []byte) (int, err
 	return getWithPipe(ctx, loc, buf, v)
 }
 
-func (v *S3AWSVolume) readWorker(ctx context.Context, loc string) (rdr io.ReadCloser, err error) {
+func (v *S3AWSVolume) readWorker(ctx context.Context, key string) (rdr io.ReadCloser, err error) {
 	buf := make([]byte, 0, 67108864)
 	awsBuf := aws.NewWriteAtBuffer(buf)
 
@@ -462,7 +479,7 @@ func (v *S3AWSVolume) readWorker(ctx context.Context, loc string) (rdr io.ReadCl
 
 	_, err = downloader.DownloadWithContext(ctx, awsBuf, &s3.GetObjectInput{
 		Bucket: aws.String(v.bucket.bucket),
-		Key:    aws.String(loc),
+		Key:    aws.String(key),
 	})
 	v.bucket.stats.TickOps("get")
 	v.bucket.stats.Tick(&v.bucket.stats.Ops, &v.bucket.stats.GetOps)
@@ -478,7 +495,8 @@ func (v *S3AWSVolume) readWorker(ctx context.Context, loc string) (rdr io.ReadCl
 
 // ReadBlock implements BlockReader.
 func (v *S3AWSVolume) ReadBlock(ctx context.Context, loc string, w io.Writer) error {
-	rdr, err := v.readWorker(ctx, loc)
+	key := v.key(loc)
+	rdr, err := v.readWorker(ctx, key)
 
 	if err == nil {
 		_, err2 := io.Copy(w, rdr)
@@ -493,19 +511,19 @@ func (v *S3AWSVolume) ReadBlock(ctx context.Context, loc string, w io.Writer) er
 		return err
 	}
 
-	_, err = v.Head("recent/" + loc)
+	_, err = v.head("recent/" + key)
 	err = v.translateError(err)
 	if err != nil {
 		// If we can't read recent/X, there's no point in
 		// trying fixRace. Give up.
 		return err
 	}
-	if !v.fixRace(loc) {
+	if !v.fixRace(key) {
 		err = os.ErrNotExist
 		return err
 	}
 
-	rdr, err = v.readWorker(ctx, loc)
+	rdr, err = v.readWorker(ctx, key)
 	if err != nil {
 		v.logger.Warnf("reading %s after successful fixRace: %s", loc, err)
 		err = v.translateError(err)
@@ -517,7 +535,7 @@ func (v *S3AWSVolume) ReadBlock(ctx context.Context, loc string, w io.Writer) er
 	return err
 }
 
-func (v *S3AWSVolume) writeObject(ctx context.Context, name string, r io.Reader) error {
+func (v *S3AWSVolume) writeObject(ctx context.Context, key string, r io.Reader) error {
 	if r == nil {
 		// r == nil leads to a memory violation in func readFillBuf in
 		// aws-sdk-go-v2@v0.23.0/service/s3/s3manager/upload.go
@@ -526,13 +544,13 @@ func (v *S3AWSVolume) writeObject(ctx context.Context, name string, r io.Reader)
 
 	uploadInput := s3manager.UploadInput{
 		Bucket: aws.String(v.bucket.bucket),
-		Key:    aws.String(name),
+		Key:    aws.String(key),
 		Body:   r,
 	}
 
-	if len(name) == 32 {
+	if loc, ok := v.isKeepBlock(key); ok {
 		var contentMD5 string
-		md5, err := hex.DecodeString(name)
+		md5, err := hex.DecodeString(loc)
 		if err != nil {
 			return err
 		}
@@ -578,11 +596,12 @@ func (v *S3AWSVolume) WriteBlock(ctx context.Context, loc string, rdr io.Reader)
 	}
 
 	r := NewCountingReader(rdr, v.bucket.stats.TickOutBytes)
-	err := v.writeObject(ctx, loc, r)
+	key := v.key(loc)
+	err := v.writeObject(ctx, key, r)
 	if err != nil {
 		return err
 	}
-	return v.writeObject(ctx, "recent/"+loc, nil)
+	return v.writeObject(ctx, "recent/"+key, nil)
 }
 
 type s3awsLister struct {
@@ -675,6 +694,7 @@ func (lister *s3awsLister) pop() (k *s3.Object) {
 // IndexTo writes a complete list of locators with the given prefix
 // for which Get() can retrieve data.
 func (v *S3AWSVolume) IndexTo(prefix string, writer io.Writer) error {
+	prefix = v.key(prefix)
 	// Use a merge sort to find matching sets of X and recent/X.
 	dataL := s3awsLister{
 		Logger:   v.logger,
@@ -698,7 +718,8 @@ func (v *S3AWSVolume) IndexTo(prefix string, writer io.Writer) error {
 			// over all of them needlessly with dataL.
 			break
 		}
-		if !v.isKeepBlock(*data.Key) {
+		loc, isblk := v.isKeepBlock(*data.Key)
+		if !isblk {
 			continue
 		}
 
@@ -730,30 +751,31 @@ func (v *S3AWSVolume) IndexTo(prefix string, writer io.Writer) error {
 		// We truncate sub-second precision here. Otherwise
 		// timestamps will never match the RFC1123-formatted
 		// Last-Modified values parsed by Mtime().
-		fmt.Fprintf(writer, "%s+%d %d\n", *data.Key, *data.Size, stamp.LastModified.Unix()*1000000000)
+		fmt.Fprintf(writer, "%s+%d %d\n", loc, *data.Size, stamp.LastModified.Unix()*1000000000)
 	}
 	return dataL.Error()
 }
 
 // Mtime returns the stored timestamp for the given locator.
 func (v *S3AWSVolume) Mtime(loc string) (time.Time, error) {
-	_, err := v.Head(loc)
+	key := v.key(loc)
+	_, err := v.head(key)
 	if err != nil {
 		return s3AWSZeroTime, v.translateError(err)
 	}
-	resp, err := v.Head("recent/" + loc)
+	resp, err := v.head("recent/" + key)
 	err = v.translateError(err)
 	if os.IsNotExist(err) {
 		// The data object X exists, but recent/X is missing.
-		err = v.writeObject(context.Background(), "recent/"+loc, nil)
+		err = v.writeObject(context.Background(), "recent/"+key, nil)
 		if err != nil {
-			v.logger.WithError(err).Errorf("error creating %q", "recent/"+loc)
+			v.logger.WithError(err).Errorf("error creating %q", "recent/"+key)
 			return s3AWSZeroTime, v.translateError(err)
 		}
-		v.logger.Infof("Mtime: created %q to migrate existing block to new storage scheme", "recent/"+loc)
-		resp, err = v.Head("recent/" + loc)
+		v.logger.Infof("Mtime: created %q to migrate existing block to new storage scheme", "recent/"+key)
+		resp, err = v.head("recent/" + key)
 		if err != nil {
-			v.logger.WithError(err).Errorf("HEAD failed after creating %q", "recent/"+loc)
+			v.logger.WithError(err).Errorf("HEAD failed after creating %q", "recent/"+key)
 			return s3AWSZeroTime, v.translateError(err)
 		}
 	} else if err != nil {
@@ -784,22 +806,23 @@ func (v *S3AWSVolume) Touch(loc string) error {
 	if v.volume.ReadOnly {
 		return MethodDisabledError
 	}
-	_, err := v.Head(loc)
+	key := v.key(loc)
+	_, err := v.head(key)
 	err = v.translateError(err)
-	if os.IsNotExist(err) && v.fixRace(loc) {
+	if os.IsNotExist(err) && v.fixRace(key) {
 		// The data object got trashed in a race, but fixRace
 		// rescued it.
 	} else if err != nil {
 		return err
 	}
-	err = v.writeObject(context.Background(), "recent/"+loc, nil)
+	err = v.writeObject(context.Background(), "recent/"+key, nil)
 	return v.translateError(err)
 }
 
-// checkRaceWindow returns a non-nil error if trash/loc is, or might
-// be, in the race window (i.e., it's not safe to trash loc).
-func (v *S3AWSVolume) checkRaceWindow(loc string) error {
-	resp, err := v.Head("trash/" + loc)
+// checkRaceWindow returns a non-nil error if trash/key is, or might
+// be, in the race window (i.e., it's not safe to trash key).
+func (v *S3AWSVolume) checkRaceWindow(key string) error {
+	resp, err := v.head("trash/" + key)
 	err = v.translateError(err)
 	if os.IsNotExist(err) {
 		// OK, trash/X doesn't exist so we're not in the race
@@ -817,7 +840,7 @@ func (v *S3AWSVolume) checkRaceWindow(loc string) error {
 		// trash/X's lifetime. The new timestamp might not
 		// become visible until now+raceWindow, and EmptyTrash
 		// is allowed to delete trash/X before then.
-		return fmt.Errorf("same block is already in trash, and safe window ended %s ago", -safeWindow)
+		return fmt.Errorf("%s: same block is already in trash, and safe window ended %s ago", key, -safeWindow)
 	}
 	// trash/X exists, but it won't be eligible for deletion until
 	// after now+raceWindow, so it's safe to overwrite it.
@@ -831,7 +854,6 @@ func (b *s3AWSbucket) Del(path string) error {
 	}
 	req := b.svc.DeleteObjectRequest(input)
 	_, err := req.Send(context.Background())
-	//err := b.Bucket().Del(path)
 	b.stats.TickOps("delete")
 	b.stats.Tick(&b.stats.Ops, &b.stats.DelOps)
 	b.stats.TickErr(err)
@@ -848,30 +870,32 @@ func (v *S3AWSVolume) Trash(loc string) error {
 	} else if time.Since(t) < v.cluster.Collections.BlobSigningTTL.Duration() {
 		return nil
 	}
+	key := v.key(loc)
 	if v.cluster.Collections.BlobTrashLifetime == 0 {
 		if !v.UnsafeDelete {
 			return ErrS3TrashDisabled
 		}
-		return v.translateError(v.bucket.Del(loc))
+		return v.translateError(v.bucket.Del(key))
 	}
-	err := v.checkRaceWindow(loc)
+	err := v.checkRaceWindow(key)
 	if err != nil {
 		return err
 	}
-	err = v.safeCopy("trash/"+loc, loc)
+	err = v.safeCopy("trash/"+key, key)
 	if err != nil {
 		return err
 	}
-	return v.translateError(v.bucket.Del(loc))
+	return v.translateError(v.bucket.Del(key))
 }
 
 // Untrash moves block from trash back into store
 func (v *S3AWSVolume) Untrash(loc string) error {
-	err := v.safeCopy(loc, "trash/"+loc)
+	key := v.key(loc)
+	err := v.safeCopy(key, "trash/"+key)
 	if err != nil {
 		return err
 	}
-	err = v.writeObject(context.Background(), "recent/"+loc, nil)
+	err = v.writeObject(context.Background(), "recent/"+key, nil)
 	return v.translateError(err)
 }
 
