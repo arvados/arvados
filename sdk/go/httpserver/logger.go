@@ -22,15 +22,6 @@ var (
 	requestTimeContextKey = contextKey{"requestTime"}
 )
 
-// HandlerWithContext returns an http.Handler that changes the request
-// context to ctx (replacing http.Server's default
-// context.Background()), then calls next.
-func HandlerWithContext(ctx context.Context, next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
-}
-
 // HandlerWithDeadline cancels the request context if the request
 // takes longer than the specified timeout.
 func HandlerWithDeadline(timeout time.Duration, next http.Handler) http.Handler {

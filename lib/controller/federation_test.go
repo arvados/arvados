@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -71,9 +72,10 @@ func (s *FederationSuite) SetUpTest(c *check.C) {
 	arvadostest.SetServiceURL(&cluster.Services.Controller, "http://localhost:/")
 	s.testHandler = &Handler{Cluster: cluster}
 	s.testServer = newServerFromIntegrationTestEnv(c)
-	s.testServer.Server.Handler = httpserver.HandlerWithContext(
-		ctxlog.Context(context.Background(), s.log),
-		httpserver.AddRequestIDs(httpserver.LogRequests(s.testHandler)))
+	s.testServer.Server.BaseContext = func(net.Listener) context.Context {
+		return ctxlog.Context(context.Background(), s.log)
+	}
+	s.testServer.Server.Handler = httpserver.AddRequestIDs(httpserver.LogRequests(s.testHandler))
 
 	cluster.RemoteClusters = map[string]arvados.RemoteCluster{
 		"zzzzz": {
