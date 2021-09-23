@@ -17,7 +17,7 @@ import { RootState } from 'store/store';
 import { WebDAV, WebDAVRequestConfig } from 'common/webdav';
 import { AuthState } from 'store/auth/auth-reducer';
 import { extractFilesData } from 'services/collection-service/collection-service-files-response';
-import { DefaultIcon, DirectoryIcon, FileIcon, BackIcon } from 'components/icon/icon';
+import { DefaultIcon, DirectoryIcon, FileIcon, BackIcon, SidePanelRightArrowIcon } from 'components/icon/icon';
 import { setCollectionFiles } from 'store/collection-panel/collection-panel-files/collection-panel-files-actions';
 import { sortBy } from 'lodash';
 import { formatFileSize } from 'common/formatters';
@@ -489,7 +489,15 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
                                                         data-type={type}
                                                         data-parent-path={name}
                                                         className={classNames(classes.row, getActiveClass(name))}
-                                                        key={id}>{getItemIcon(type, getActiveClass(name))} <div className={classes.rowName}>{name}</div>
+                                                        key={id}>
+                                                            {getItemIcon(type, getActiveClass(name))} 
+                                                            <div className={classes.rowName}>
+                                                                {name}
+                                                            </div>
+                                                            {
+                                                                getActiveClass(name) ? <SidePanelRightArrowIcon
+                                                                    style={{ display: 'inline', marginTop: '5px', marginLeft: '5px' }} /> : null
+                                                            }
                                                     </div>;
                                                 }
                                             }
