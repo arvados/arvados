@@ -13,7 +13,7 @@ require (
 	github.com/alcortesm/tgz v0.0.0-20161220082320-9c5fe88206d7 // indirect
 	github.com/anmitsu/go-shlex v0.0.0-20161002113705-648efa622239 // indirect
 	github.com/arvados/cgofuse v1.2.0-arvados1
-	github.com/aws/aws-sdk-go v1.25.30
+	github.com/aws/aws-sdk-go v1.40.47
 	github.com/aws/aws-sdk-go-v2 v0.23.0
 	github.com/bgentry/speakeasy v0.1.0 // indirect
 	github.com/bradleypeabody/godap v0.0.0-20170216002349-c249933bc092
@@ -59,7 +59,7 @@ require (
 	github.com/src-d/gcfg v1.3.0 // indirect
 	github.com/xanzy/ssh-agent v0.1.0 // indirect
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
-	golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4
+	golang.org/x/net v0.0.0-20210614182718-04defd469f4e
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	golang.org/x/sys v0.0.0-20210603125802-9665404d3644
 	golang.org/x/tools v0.1.2 // indirect
@@ -71,7 +71,6 @@ require (
 	gopkg.in/src-d/go-git-fixtures.v3 v3.5.0 // indirect
 	gopkg.in/src-d/go-git.v4 v4.0.0
 	gopkg.in/warnings.v0 v0.1.2 // indirect
-	gopkg.in/yaml.v2 v2.2.4 // indirect
 	rsc.io/getopt v0.0.0-20170811000552-20be20937449
 )
 
