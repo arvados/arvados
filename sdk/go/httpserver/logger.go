@@ -31,6 +31,16 @@ func HandlerWithContext(ctx context.Context, next http.Handler) http.Handler {
 	})
 }
 
+// HandlerWithDeadline cancels the request context if the request
+// takes longer than the specified timeout.
+func HandlerWithDeadline(timeout time.Duration, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx, cancel := context.WithDeadline(r.Context(), time.Now().Add(timeout))
+		defer cancel()
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
 // LogRequests wraps an http.Handler, logging each request and
 // response.
 func LogRequests(h http.Handler) http.Handler {

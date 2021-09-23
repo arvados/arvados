@@ -41,6 +41,35 @@ func (s *Suite) SetUpTest(c *check.C) {
 	s.ctx = ctxlog.Context(context.Background(), s.log)
 }
 
+func (s *Suite) TestWithDeadline(c *check.C) {
+	req, err := http.NewRequest("GET", "https://foo.example/bar", nil)
+	c.Assert(err, check.IsNil)
+
+	// Short timeout cancels context in <1s
+	resp := httptest.NewRecorder()
+	HandlerWithDeadline(time.Millisecond, http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		select {
+		case <-req.Context().Done():
+			w.Write([]byte("ok"))
+		case <-time.After(time.Second):
+			c.Error("timed out")
+		}
+	})).ServeHTTP(resp, req.WithContext(s.ctx))
+	c.Check(resp.Body.String(), check.Equals, "ok")
+
+	// Long timeout does not cancel context in <1ms
+	resp = httptest.NewRecorder()
+	HandlerWithDeadline(time.Second, http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		select {
+		case <-req.Context().Done():
+			c.Error("request context done too soon")
+		case <-time.After(time.Millisecond):
+			w.Write([]byte("ok"))
+		}
+	})).ServeHTTP(resp, req.WithContext(s.ctx))
+	c.Check(resp.Body.String(), check.Equals, "ok")
+}
+
 func (s *Suite) TestLogRequests(c *check.C) {
 	h := AddRequestIDs(LogRequests(
 		http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
@@ -52,7 +81,7 @@ func (s *Suite) TestLogRequests(c *check.C) {
 	c.Assert(err, check.IsNil)
 	resp := httptest.NewRecorder()
 
-	HandlerWithContext(s.ctx, h).ServeHTTP(resp, req)
+	h.ServeHTTP(resp, req.WithContext(s.ctx))
 
 	dec := json.NewDecoder(s.logdata)
 
@@ -104,12 +133,12 @@ func (s *Suite) TestLogErrorBody(c *check.C) {
 		c.Assert(err, check.IsNil)
 		resp := httptest.NewRecorder()
 
-		HandlerWithContext(s.ctx, LogRequests(
+		LogRequests(
 			http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 				w.WriteHeader(trial.statusCode)
 				w.Write([]byte(trial.sentBody))
 			}),
-		)).ServeHTTP(resp, req)
+		).ServeHTTP(resp, req.WithContext(s.ctx))
 
 		gotReq := make(map[string]interface{})
 		err = dec.Decode(&gotReq)
