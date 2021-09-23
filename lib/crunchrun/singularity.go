@@ -36,6 +36,8 @@ func newSingularityExecutor(logf func(string, ...interface{})) (*singularityExec
 	}, nil
 }
 
+func (e *singularityExecutor) Runtime() string { return "singularity" }
+
 func (e *singularityExecutor) getOrCreateProject(ownerUuid string, name string, containerClient *arvados.Client) (*arvados.Group, error) {
 	var gp arvados.GroupList
 	err := containerClient.RequestAndDecode(&gp,

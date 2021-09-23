@@ -58,4 +58,7 @@ type containerExecutor interface {
 
 	// Release resources (temp dirs, stopped containers)
 	Close()
+
+	// Name of runtime engine ("docker", "singularity")
+	Runtime() string
 }

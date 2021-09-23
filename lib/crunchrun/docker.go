@@ -46,6 +46,8 @@ func newDockerExecutor(containerUUID string, logf func(string, ...interface{}), 
 	}, err
 }
 
+func (e *dockerExecutor) Runtime() string { return "docker" }
+
 func (e *dockerExecutor) LoadImage(imageID string, imageTarballPath string, container arvados.Container, arvMountPoint string,
 	containerClient *arvados.Client) error {
 	_, _, err := e.dockerclient.ImageInspectWithRaw(context.TODO(), imageID)
