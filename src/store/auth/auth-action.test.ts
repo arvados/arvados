@@ -242,6 +242,7 @@ describe('auth-actions', () => {
                     expect(auth).toEqual({
                         apiToken: "token",
                         apiTokenExpiration: new Date("2140-01-01T00:00:00.000Z"),
+                        apiTokenLocation: "localStorage",
                         config: {
                             apiRevision: 12345678,
                             clusterConfig: {

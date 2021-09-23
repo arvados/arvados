@@ -12,9 +12,13 @@ import { saveRequestedDate, loadVirtualMachinesUserData } from 'store/virtual-ma
 import { RootState } from 'store/store';
 import { ListResults } from 'services/common-service/common-service';
 import { HelpIcon } from 'components/icon/icon';
+import { SESSION_STORAGE } from "services/auth-service/auth-service";
 // import * as CopyToClipboard from 'react-copy-to-clipboard';
+import parse from "parse-duration";
 
 type CssRules = 'button' | 'codeSnippet' | 'link' | 'linkIcon' | 'rightAlign' | 'cardWithoutMachines' | 'icon';
+
+const EXTRA_TOKEN = "exraToken";
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     button: {
@@ -61,7 +65,10 @@ const mapStateToProps = (state: RootState) => {
         userUuid: state.auth.user!.uuid,
         helpText: state.auth.config.clusterConfig.Workbench.SSHHelpPageHTML,
         hostSuffix: state.auth.config.clusterConfig.Workbench.SSHHelpHostSuffix || "",
-        webShell: state.auth.config.clusterConfig.Services.Workbench1.ExternalURL,
+        token: state.auth.extraApiToken || state.auth.apiToken || '',
+        tokenLocation: state.auth.extraApiToken ? EXTRA_TOKEN : (state.auth.apiTokenLocation || ''),
+        webshellUrl: state.auth.config.clusterConfig.Services.WebShell.ExternalURL,
+        idleTimeout: parse(state.auth.config.clusterConfig.Workbench.IdleTimeout, 's') || 0,
         ...state.virtualMachines
     };
 };
@@ -78,7 +85,10 @@ interface VirtualMachinesPanelDataProps {
     links: ListResults<any>;
     helpText: string;
     hostSuffix: string;
-    webShell: string;
+    token: string;
+    tokenLocation: string;
+    webshellUrl: string;
+    idleTimeout: number;
 }
 
 interface VirtualMachinesPanelActionProps {
@@ -165,7 +175,7 @@ const virtualMachinesTable = (props: VirtualMachineProps) =>
                 <TableCell>Host name</TableCell>
                 <TableCell>Login name</TableCell>
                 <TableCell>Command line</TableCell>
-                {props.webShell !== "" && <TableCell>Web shell</TableCell>}
+                <TableCell>Web shell</TableCell>
             </TableRow>
         </TableHead>
         <TableBody>
@@ -174,17 +184,21 @@ const virtualMachinesTable = (props: VirtualMachineProps) =>
                     if (lk.tailUuid === props.userUuid) {
                         const username = lk.properties.username;
                         const command = `ssh ${username}@${it.hostname}${props.hostSuffix}`;
+                        let tokenParam = "";
+                        if (props.tokenLocation === SESSION_STORAGE || props.tokenLocation === EXTRA_TOKEN) {
+                          tokenParam = `&token=${encodeURIComponent(props.token)}`;
+                        }
                         return <TableRow key={lk.uuid}>
                             <TableCell>{it.hostname}</TableCell>
                             <TableCell>{username}</TableCell>
                             <TableCell>
                                 {command}
                             </TableCell>
-                            {props.webShell !== "" && <TableCell>
-                                <a href={`${props.webShell}${it.href}/webshell/${username}`} target="_blank" rel="noopener noreferrer" className={props.classes.link}>
+                            <TableCell>
+                                <a href={`/webshell/?host=${encodeURIComponent(props.webshellUrl + '/' + it.hostname)}&timeout=${props.idleTimeout}&login=${encodeURIComponent(username)}${tokenParam}`} target="_blank" rel="noopener noreferrer" className={props.classes.link}>
                                     Log in as {username}
                                 </a>
-                            </TableCell>}
+                            </TableCell>
                         </TableRow>;
                     }
                     return null;
