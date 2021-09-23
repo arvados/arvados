@@ -25,6 +25,11 @@ func (srv *server) Start(logger *logrus.Logger) error {
 	h := &handler{Config: srv.Config}
 	reg := prometheus.NewRegistry()
 	h.Config.Cache.registry = reg
+	// Warning: when updating this to use Command() from
+	// lib/service, make sure to implement an exemption in
+	// httpserver.HandlerWithDeadline() so large file uploads are
+	// allowed to take longer than the usual API.RequestTimeout.
+	// See #13697.
 	mh := httpserver.Instrument(reg, logger, httpserver.AddRequestIDs(httpserver.LogRequests(h)))
 	h.MetricsAPI = mh.ServeAPI(h.Config.cluster.ManagementToken, http.NotFoundHandler())
 	srv.Handler = mh
