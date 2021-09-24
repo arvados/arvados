@@ -106,10 +106,10 @@ class Arvados::V1::SchemaController < ApplicationController
         auth: {
           oauth2: {
             scopes: {
-              "https://api.curoverse.com/auth/arvados" => {
+              "https://api.arvados.org/auth/arvados" => {
                 description: "View and manage objects"
               },
-              "https://api.curoverse.com/auth/arvados.readonly" => {
+              "https://api.arvados.org/auth/arvados.readonly" => {
                 description: "View objects"
               }
             }
@@ -221,8 +221,8 @@ class Arvados::V1::SchemaController < ApplicationController
                 "$ref" => k.to_s
               },
               scopes: [
-                       "https://api.curoverse.com/auth/arvados",
-                       "https://api.curoverse.com/auth/arvados.readonly"
+                       "https://api.arvados.org/auth/arvados",
+                       "https://api.arvados.org/auth/arvados.readonly"
                       ]
             },
             index: {
@@ -257,8 +257,8 @@ class Arvados::V1::SchemaController < ApplicationController
                 "$ref" => "#{k.to_s}List"
               },
               scopes: [
-                       "https://api.curoverse.com/auth/arvados",
-                       "https://api.curoverse.com/auth/arvados.readonly"
+                       "https://api.arvados.org/auth/arvados",
+                       "https://api.arvados.org/auth/arvados.readonly"
                       ]
             },
             create: {
@@ -279,7 +279,7 @@ class Arvados::V1::SchemaController < ApplicationController
                 "$ref" => k.to_s
               },
               scopes: [
-                       "https://api.curoverse.com/auth/arvados"
+                       "https://api.arvados.org/auth/arvados"
                       ]
             },
             update: {
@@ -307,7 +307,7 @@ class Arvados::V1::SchemaController < ApplicationController
                 "$ref" => k.to_s
               },
               scopes: [
-                       "https://api.curoverse.com/auth/arvados"
+                       "https://api.arvados.org/auth/arvados"
                       ]
             },
             delete: {
@@ -327,7 +327,7 @@ class Arvados::V1::SchemaController < ApplicationController
                 "$ref" => k.to_s
               },
               scopes: [
-                       "https://api.curoverse.com/auth/arvados"
+                       "https://api.arvados.org/auth/arvados"
                       ]
             }
           }
@@ -354,7 +354,7 @@ class Arvados::V1::SchemaController < ApplicationController
                   "$ref" => (action == 'index' ? "#{k.to_s}List" : k.to_s)
                 },
                 scopes: [
-                         "https://api.curoverse.com/auth/arvados"
+                         "https://api.arvados.org/auth/arvados"
                         ]
               }
               route.segment_keys.each do |key|
@@ -420,8 +420,8 @@ class Arvados::V1::SchemaController < ApplicationController
             response: {
             },
             scopes: [
-              "https://api.curoverse.com/auth/arvados",
-              "https://api.curoverse.com/auth/arvados.readonly"
+              "https://api.arvados.org/auth/arvados",
+              "https://api.arvados.org/auth/arvados.readonly"
             ]
           },
         }
