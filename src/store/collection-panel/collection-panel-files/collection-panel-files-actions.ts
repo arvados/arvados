@@ -4,6 +4,7 @@
 
 import { unionize, ofType, UnionOf } from "common/unionize";
 import { Dispatch } from "redux";
+import servicesProvider from 'common/service-provider';
 import { CollectionFilesTree, CollectionFileType, createCollectionFilesTree } from "models/collection-file";
 import { ServiceRepository } from "services/services";
 import { RootState } from "../../store";
@@ -30,6 +31,13 @@ export type CollectionPanelFilesAction = UnionOf<typeof collectionPanelFilesActi
 
 export const COLLECTION_PANEL_LOAD_FILES = 'collectionPanelLoadFiles';
 export const COLLECTION_PANEL_LOAD_FILES_THRESHOLD = 40000;
+
+export const setCollectionFiles = (files, joinParents = true) => (dispatch: any) => {
+    const tree = createCollectionFilesTree(files, joinParents);
+    const sorted = sortFilesTree(tree);
+    const mapped = mapTreeValues(servicesProvider.getServices().collectionService.extendFileURL)(sorted);
+    dispatch(collectionPanelFilesAction.SET_COLLECTION_FILES(mapped));
+};
 
 export const loadCollectionFiles = (uuid: string) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {

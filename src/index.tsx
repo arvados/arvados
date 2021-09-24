@@ -19,6 +19,7 @@ import { createServices } from "services/services";
 import { MuiThemeProvider } from '@material-ui/core/styles';
 import { CustomTheme } from 'common/custom-theme';
 import { fetchConfig } from 'common/config';
+import servicesProvider from 'common/service-provider';
 import { addMenuActionSet, ContextMenuKind } from 'views-components/context-menu/context-menu';
 import { rootProjectActionSet } from "views-components/context-menu/action-sets/root-project-action-set";
 import { filterGroupActionSet, projectActionSet, readOnlyProjectActionSet } from "views-components/context-menu/action-sets/project-action-set";
@@ -136,6 +137,10 @@ fetchConfig()
                 }
             }
         });
+
+        // be sure this is initiated before the app starts
+        servicesProvider.setServices(services);
+
         const store = configureStore(history, services, config);
 
         store.subscribe(initListener(history, store, services, config));

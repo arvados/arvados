@@ -4,7 +4,6 @@
 
 import { Dispatch } from "redux";
 import {
-    loadCollectionFiles,
     COLLECTION_PANEL_LOAD_FILES_THRESHOLD
 } from "./collection-panel-files/collection-panel-files-actions";
 import { CollectionResource } from 'models/collection';
@@ -40,7 +39,7 @@ export const loadCollectionPanel = (uuid: string, forceReload = false) =>
         dispatch(resourcesActions.SET_RESOURCES([collection]));
         if (collection.fileCount <= COLLECTION_PANEL_LOAD_FILES_THRESHOLD &&
             !getState().collectionPanel.loadBigCollections) {
-            dispatch<any>(loadCollectionFiles(collection.uuid));
+            // dispatch<any>(loadCollectionFiles(collection.uuid));
         }
         return collection;
     };

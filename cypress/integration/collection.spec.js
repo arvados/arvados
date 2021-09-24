@@ -188,6 +188,7 @@ describe('Collection panel tests', function () {
                         }
                         // Check that the file listing show both read & write operations
                         cy.get('[data-cy=collection-files-panel]').within(() => {
+                            cy.wait(1000);
                             cy.root().should('contain', fileName);
                             if (isWritable) {
                                 cy.get('[data-cy=upload-button]')
@@ -289,7 +290,7 @@ describe('Collection panel tests', function () {
             });
     });
 
-    it('renames a file to a different directory', function () {
+    it.skip('renames a file to a different directory', function () {
         // Creates the collection using the admin token so we can set up
         // a bogus manifest text without block signatures.
         cy.createCollection(adminUser.token, {
@@ -332,6 +333,71 @@ describe('Collection panel tests', function () {
                                 .type(`{selectall}{backspace}bar`);
                         });
                     cy.get('[data-cy=form-submit-btn]').click();
+                    cy.get('[data-cy=collection-files-panel]')
+                        .should('contain', subdir) // empty dir kept
+                        .and('contain', 'bar');
+
+                    cy.get('[data-cy=collection-files-panel]')
+                        .contains(subdir).rightclick();
+                    cy.get('[data-cy=context-menu]')
+                        .contains('Remove')
+                        .click();
+                    cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
+                });
+            });
+    });
+
+    it('renames a file to a different directory', function () {
+        // Creates the collection using the admin token so we can set up
+        // a bogus manifest text without block signatures.
+        cy.createCollection(adminUser.token, {
+            name: `Test collection ${Math.floor(Math.random() * 999999)}`,
+            owner_uuid: activeUser.user.uuid,
+            manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
+        })
+            .as('testCollection').then(function () {
+                cy.loginAs(activeUser);
+                cy.goToPath(`/collections/${this.testCollection.uuid}`);
+
+                ['subdir', 'G%C3%BCnter\'s%20file', 'table%&?*2'].forEach((subdir) => {
+                    cy.get('[data-cy=collection-files-panel]')
+                        .contains('bar').rightclick({force: true});
+                    cy.get('[data-cy=context-menu]')
+                        .contains('Rename')
+                        .click();
+                    cy.get('[data-cy=form-dialog]')
+                        .should('contain', 'Rename')
+                        .within(() => {
+                            cy.get('input').type(`{selectall}{backspace}${subdir}/foo`);
+                        });
+                    cy.get('[data-cy=form-submit-btn]').click();
+                    cy.get('[data-cy=collection-files-panel]')
+                        .should('not.contain', 'bar')
+                        .and('contain', subdir);
+                    cy.wait(1000);
+                    cy.get('[data-cy=collection-files-panel]').contains(subdir).click();
+                    // Rename 'subdir/foo' to 'foo'
+                    cy.wait(1000);
+                    cy.get('[data-cy=collection-files-panel]')
+                        .contains('foo').rightclick();
+                    cy.get('[data-cy=context-menu]')
+                        .contains('Rename')
+                        .click();
+                    cy.get('[data-cy=form-dialog]')
+                        .should('contain', 'Rename')
+                        .within(() => {
+                            cy.get('input')
+                                .should('have.value', `${subdir}/foo`)
+                                .type(`{selectall}{backspace}bar`);
+                        });
+                    cy.get('[data-cy=form-submit-btn]').click();
+
+                    cy.wait(1000);
+                    cy.get('[data-cy=collection-files-panel]')
+                        .contains('Home')
+                        .click();
+
+                    cy.wait(2000);
                     cy.get('[data-cy=collection-files-panel]')
                         .should('contain', subdir) // empty dir kept
                         .and('contain', 'bar');
