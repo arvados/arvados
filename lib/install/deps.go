@@ -245,7 +245,7 @@ make install
 	}
 
 	if !prod {
-		goversion := "1.16.3"
+		goversion := "1.17.1"
 		if havegoversion, err := exec.Command("/usr/local/bin/go", "version").CombinedOutput(); err == nil && bytes.HasPrefix(havegoversion, []byte("go version go"+goversion+" ")) {
 			logger.Print("go " + goversion + " already installed")
 		} else {

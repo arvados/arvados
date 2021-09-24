@@ -24,7 +24,7 @@ ubuntu2004/generated: common-generated-all
 	test -d ubuntu2004/generated || mkdir ubuntu2004/generated
 	cp -f -rlt ubuntu2004/generated common-generated/*
 
-GOTARBALL=go1.16.3.linux-amd64.tar.gz
+GOTARBALL=go1.17.1.linux-amd64.tar.gz
 NODETARBALL=node-v10.23.1-linux-x64.tar.xz
 RVMKEY1=mpapis.asc
 RVMKEY2=pkuczynski.asc

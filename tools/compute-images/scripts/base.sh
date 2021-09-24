@@ -69,7 +69,7 @@ wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes ins
   docker.io
 
 # Get Go and build singularity
-goversion=1.16.3
+goversion=1.17.1
 mkdir -p /var/lib/arvados
 rm -rf /var/lib/arvados/go/
 curl -s https://storage.googleapis.com/golang/go${goversion}.linux-amd64.tar.gz | tar -C /var/lib/arvados -xzf -
