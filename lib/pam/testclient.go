@@ -2,7 +2,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-// +build never
+//go:build ignore
+// +build ignore
 
 // This file is compiled by docker_test.go to build a test client.
 // It's not part of the pam module itself.

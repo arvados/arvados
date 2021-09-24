@@ -6,6 +6,7 @@
 // Depending on host/network speed, Go's default 10m test timeout
 // might be too short; recommend "go test -timeout 20m -tags docker".
 //
+//go:build docker
 // +build docker
 
 package install

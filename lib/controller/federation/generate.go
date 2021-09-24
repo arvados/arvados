@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
+//go:build ignore
 // +build ignore
 
 package main
