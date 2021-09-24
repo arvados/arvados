@@ -53,7 +53,6 @@ do
    echo processing  $outputdir/$cleaned_test-$build.txt creating  $outputdir/$cleaned_test.csv
    echo $(grep ^Completed $outputdir/$cleaned_test-$build.txt | perl -n -e '/^Completed (.*) in [0-9]+ms.*$/;print "".++$line."-$1,";' | perl -p -e 's/,$//g'|tr " " "_" ) >  $outputdir/$cleaned_test.csv
    echo $(grep ^Completed $outputdir/$cleaned_test-$build.txt | perl -n -e '/^Completed.*in ([0-9]+)ms.*$/;print "$1,";' | perl -p -e 's/,$//g' ) >>  $outputdir/$cleaned_test.csv
-   #echo URL=https://ci.curoverse.com/view/job/arvados-api-server/ws/apps/workbench/log/$cleaned_test-$build.txt/*view*/ >>  $outputdir/$test.properties
  else
    echo "$test was't found on $file"
    cleaned_test=$(echo $test | tr -d ",.:;/")
