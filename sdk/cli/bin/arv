@@ -5,7 +5,7 @@
 
 # Arvados cli client
 #
-# Ward Vandewege <ward@curoverse.com>
+# Ward Vandewege <ward@curii.com>
 
 require 'fileutils'
 require 'shellwords'
