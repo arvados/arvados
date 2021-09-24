@@ -120,8 +120,10 @@ func (s *executorSuite) TestExecCleanEnv(c *C) {
 			// docker sets these by itself
 		case "LD_LIBRARY_PATH", "SINGULARITY_NAME", "PWD", "LANG", "SHLVL", "SINGULARITY_INIT", "SINGULARITY_CONTAINER":
 			// singularity sets these by itself (cf. https://sylabs.io/guides/3.5/user-guide/environment_and_metadata.html)
-		case "PROMPT_COMMAND", "PS1", "SINGULARITY_APPNAME":
-			// singularity also sets these by itself (as of v3.5.2)
+		case "SINGULARITY_APPNAME":
+			// singularity also sets this by itself (v3.5.2, but not v3.7.4)
+		case "PROMPT_COMMAND", "PS1", "SINGULARITY_BIND", "SINGULARITY_COMMAND", "SINGULARITY_ENVIRONMENT":
+			// singularity also sets these by itself (v3.7.4)
 		default:
 			got[kv[0]] = kv[1]
 		}

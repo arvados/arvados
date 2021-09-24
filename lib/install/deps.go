@@ -322,7 +322,7 @@ rm ${zip}
 			}
 		}
 
-		singularityversion := "3.5.2"
+		singularityversion := "3.7.4"
 		if havesingularityversion, err := exec.Command("/var/lib/arvados/bin/singularity", "--version").CombinedOutput(); err == nil && strings.Contains(string(havesingularityversion), singularityversion) {
 			logger.Print("singularity " + singularityversion + " already installed")
 		} else if dev || test {
