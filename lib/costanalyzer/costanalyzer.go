@@ -201,7 +201,7 @@ func ensureDirectory(logger *logrus.Logger, dir string) (err error) {
 	return
 }
 
-func addContainerLine(logger *logrus.Logger, node nodeInfo, cr arvados.ContainerRequest, container arvados.Container) (string, consumption, error) {
+func addContainerLine(logger *logrus.Logger, node nodeInfo, cr arvados.ContainerRequest, container arvados.Container, history map[string]SpotPriceHistory) (string, consumption, error) {
 	var csv string
 	var containerConsumption consumption
 	csv = cr.UUID + ","
@@ -236,7 +236,7 @@ func addContainerLine(logger *logrus.Logger, node nodeInfo, cr arvados.Container
 		containerConsumption.cost = delta.Seconds() / 3600 * price
 		csv += size + "," + fmt.Sprintf("%+v", node.Preemptible) + "," + strconv.FormatFloat(price, 'f', 8, 64) + "," + strconv.FormatFloat(containerConsumption.cost, 'f', 8, 64) + ",\n"
 	} else {
-		sum, err := CalculateAWSSpotPrice(container, size)
+		sum, err := CalculateAWSSpotPrice(container, history[size])
 		containerConsumption.cost = sum
 		containerConsumption.savings = delta.Seconds()/3600*price - sum
 		csv += size + "," + fmt.Sprintf("%+v", node.Preemptible) + ",," + strconv.FormatFloat(sum, 'f', 8, 64) + "," + strconv.FormatFloat(containerConsumption.savings, 'f', 8, 64) + "\n"
@@ -427,8 +427,24 @@ func handleProject(logger *logrus.Logger, uuid string, arv *arvadosclient.Arvado
 	return
 }
 
+func getHistory(node nodeInfo, container arvados.Container, history map[string]SpotPriceHistory) (map[string]SpotPriceHistory, error) {
+	var err error
+	if node.Preemptible && history == nil {
+		// This is a preemptable instance, and we have not yet retrieved the spot
+		// price history for the duration of the toplevel workflow. We do this in
+		// one go and then use the spot price history to look up costs as needed
+		// without the need for additional AWS API requests.
+		history, err = GetAWSSpotPriceHistory(container)
+		if err != nil {
+			return nil, fmt.Errorf("error getting AWS spot price history: %s", err.Error())
+		}
+	}
+	return history, nil
+}
+
 func generateCrInfo(logger *logrus.Logger, uuid string, arv *arvadosclient.ArvadosClient, ac *arvados.Client, kc *keepclient.KeepClient, resultsDir string, cache bool) (cost map[string]consumption, err error) {
 
+	var history map[string]SpotPriceHistory
 	cost = make(map[string]consumption)
 
 	csv := "CR UUID,CR name,Container UUID,State,Started At,Finished At,Duration in seconds,Compute node type,Preemptible,Hourly node cost,Total cost,Savings (if spot)\n"
@@ -476,7 +492,13 @@ func generateCrInfo(logger *logrus.Logger, uuid string, arv *arvadosclient.Arvad
 		logger.Errorf("Skipping container request %s: error getting node %s: %s", cr.UUID, cr.UUID, err)
 		return nil, nil
 	}
-	tmpCsv, total, err = addContainerLine(logger, topNode, cr, container)
+
+	history, err = getHistory(topNode, container, history)
+	if err != nil {
+		return nil, err
+	}
+
+	tmpCsv, total, err = addContainerLine(logger, topNode, cr, container, history)
 	if err != nil {
 		return nil, fmt.Errorf("error adding container line: %s", err.Error())
 	}
@@ -507,22 +529,32 @@ func generateCrInfo(logger *logrus.Logger, uuid string, arv *arvadosclient.Arvad
 			logger.Infof("... %d of %d", i+1, len(childCrs.Items))
 		default:
 		}
-		// We've already calculated this child
-		/*if _, err := os.Stat(resultsDir + "/" + crUUID + ".csv"); err == nil {
-			continue
-		}*/
 		node, err := getNode(arv, ac, kc, cr2)
 		if err != nil {
 			logger.Errorf("Skipping container request %s: error getting node %s: %s", cr2.UUID, cr2.UUID, err)
 			continue
 		}
+		history, err = getHistory(node, container, history)
+		if err != nil {
+			return nil, err
+		}
+		/*if node.Preemptible && history == nil {
+			// This is a preemptable instance, and we have not yet retrieved the spot
+			// price history for the duration of the toplevel workflow. We do this in
+			// one go and then use the spot price history to look up costs as needed
+			// without the need for additional AWS API requests.
+			history, err = GetAWSSpotPriceHistory(container)
+			if err != nil {
+				return nil, fmt.Errorf("error getting AWS spot price history: %s", err.Error())
+			}
+		}*/
 		logger.Debug("Child container: " + cr2.ContainerUUID)
 		var c2 arvados.Container
 		err = loadObject(logger, ac, cr.UUID, cr2.ContainerUUID, cache, &c2)
 		if err != nil {
 			return nil, fmt.Errorf("error loading object %s: %s", cr2.ContainerUUID, err)
 		}
-		tmpCsv, tmpTotal, err = addContainerLine(logger, node, cr2, c2)
+		tmpCsv, tmpTotal, err = addContainerLine(logger, node, cr2, c2, history)
 		if err != nil {
 			return nil, fmt.Errorf("error adding container line: %s", err.Error())
 		}
@@ -674,7 +706,7 @@ func (c *command) costAnalyzer(prog string, args []string, logger *logrus.Logger
 		total.Add(v)
 	}
 
-	csv += "TOTAL," + strconv.FormatFloat(total.duration, 'f', 3, 64) + "," + strconv.FormatFloat(total.cost, 'f', 2, 64) + strconv.FormatFloat(total.savings, 'f', 2, 64) + "\n"
+	csv += "TOTAL," + strconv.FormatFloat(total.duration, 'f', 3, 64) + "," + strconv.FormatFloat(total.cost, 'f', 2, 64) + "," + strconv.FormatFloat(total.savings, 'f', 2, 64) + "\n"
 
 	if c.resultsDir != "" {
 		// Write the resulting CSV file

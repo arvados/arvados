@@ -32,22 +32,18 @@ func (s SpotPriceHistory) Len() int           { return len(s) }
 func (s SpotPriceHistory) Less(i, j int) bool { return s[i].Timestamp.Before(*s[j].Timestamp) }
 func (s SpotPriceHistory) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
 
-func CalculateAWSSpotPrice(container arvados.Container, size string) (float64, error) {
+func GetAWSSpotPriceHistory(container arvados.Container) (map[string]SpotPriceHistory, error) {
+	var history SpotPriceHistory
 	// FIXME hardcoded region, does this matter?
 	svc := ec2.New(session.New(&aws.Config{
 		Region: aws.String("us-east-1"),
 		//		LogLevel: aws.LogLevel(aws.LogDebugWithHTTPBody),
 	}))
 	// FIXME should we ask for a specific AvailabilityZone here? We don't even have one in the config (it is derived from the network id I think).
-	//end := container.FinishedAt.Add(time.Hour * time.Duration(24))
 	input := &ec2.DescribeSpotPriceHistoryInput{
 		AvailabilityZone: aws.String("us-east-1a"),
-		//EndTime: aws.Time(end),
-		EndTime: container.FinishedAt,
+		EndTime:          container.FinishedAt,
 		//DryRun:  aws.Bool(true),
-		InstanceTypes: []*string{
-			aws.String(size),
-		},
 		ProductDescriptions: []*string{
 			aws.String("Linux/UNIX (Amazon VPC)"),
 		},
@@ -55,29 +51,81 @@ func CalculateAWSSpotPrice(container arvados.Container, size string) (float64, e
 	}
 	//fmt.Printf("%#v\n", input)
 
-	result, err := svc.DescribeSpotPriceHistory(input)
-	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
-			switch aerr.Code() {
-			default:
-				fmt.Println(aerr.Error())
+	for {
+		result, err := svc.DescribeSpotPriceHistory(input)
+		if err != nil {
+			if aerr, ok := err.(awserr.Error); ok {
+				switch aerr.Code() {
+				default:
+					fmt.Println(aerr.Error())
+				}
+			} else {
+				fmt.Println(err.Error())
 			}
-		} else {
-			// Print the error, cast err to awserr.Error to get the Code and
-			// Message from an error.
-			fmt.Println(err.Error())
+			return nil, err
 		}
-		return 0, err
+		history = append(history, result.SpotPriceHistory...)
+
+		if *result.NextToken == "" {
+			// No more pages
+			break
+		}
+		input.NextToken = result.NextToken
 	}
 
-	sort.Sort(SpotPriceHistory(result.SpotPriceHistory))
+	historyMap := make(map[string]SpotPriceHistory)
 
+	for _, sph := range history {
+		if _, ok := historyMap[*sph.InstanceType]; !ok {
+			historyMap[*sph.InstanceType] = make(SpotPriceHistory, 0)
+		}
+		historyMap[*sph.InstanceType] = append(historyMap[*sph.InstanceType], sph)
+	}
+
+	// Sort all the SpotPriceHistories
+	for instanceType := range historyMap {
+		sort.Sort(historyMap[instanceType])
+	}
+
+	return historyMap, nil
+}
+
+func findSpotPriceHistoryStart(container arvados.Container, history SpotPriceHistory) SpotPriceHistory {
+	pos := len(history) / 2
+	oldPos := pos
+
+	for {
+		if history[pos].Timestamp.After(*container.StartedAt) {
+			// reduce pos
+			oldPos = pos
+			pos = pos - pos/2
+		}
+		if len(history) > pos+1 && history[pos+1].Timestamp.Before(*container.StartedAt) {
+			// increase pos
+			oldPos = pos
+			pos = pos + pos/2
+		}
+
+		if oldPos == pos {
+			break
+		}
+		fmt.Printf("pos: %d, oldPos: %d\n", pos, oldPos)
+	}
+
+	return history[pos:]
+}
+
+func CalculateAWSSpotPrice(container arvados.Container, fullHistory SpotPriceHistory) (float64, error) {
 	//fmt.Printf("%#v\n", result)
+	history := findSpotPriceHistoryStart(container, fullHistory)
 	var total float64
-	last := result.SpotPriceHistory[0]
+	last := history[0]
 	last.Timestamp = container.StartedAt
 	//fmt.Printf("LAST: %#v\n", last)
-	for _, s := range result.SpotPriceHistory[1:] {
+	for _, s := range history[1:] {
+		if s.Timestamp.After(*container.FinishedAt) {
+			break
+		}
 		//fmt.Printf("%#v\n", s)
 		delta := s.Timestamp.Sub(*last.Timestamp)
 		price, err := strconv.ParseFloat(*last.SpotPrice, 64)
