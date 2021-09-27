@@ -242,8 +242,8 @@ h2. Copy files from a collection to a new collection
 {% codeblock as python %}
 import arvados.collection
 
-source_collection = "x1u39-4zz18-krzg64ufvehgitl"
-target_project = "x1u39-j7d0g-67q94einb8ptznm"
+source_collection = "zzzzz-4zz18-zzzzzzzzzzzzzzz"
+target_project = "zzzzz-j7d0g-zzzzzzzzzzzzzzz"
 target_name = "Files copied from source_collection"
 files_to_copy = ["folder1/sample1/sample1_R1.fastq",
                  "folder1/sample2/sample2_R1.fastq"]
@@ -263,8 +263,8 @@ h2. Copy files from a collection to another collection
 {% codeblock as python %}
 import arvados.collection
 
-source_collection = "x1u39-4zz18-krzg64ufvehgitl"
-target_collection = "x1u39-4zz18-67q94einb8ptznm"
+source_collection = "zzzzz-4zz18-zzzzzzzzzzzzzzz"
+target_collection = "zzzzz-4zz18-aaaaaaaaaaaaaaa"
 files_to_copy = ["folder1/sample1/sample1_R1.fastq",
                  "folder1/sample2/sample2_R1.fastq"]
 
@@ -275,6 +275,16 @@ for f in files_to_copy:
     target.copy(f, "", source_collection=source)
 
 target.save()
+{% endcodeblock %}
+
+h2. Delete a file from an existing collection
+
+{% codeblock as python %}
+import arvados
+
+c = arvados.collection.Collection("zzzzz-4zz18-zzzzzzzzzzzzzzz")
+c.remove("file2.txt")
+c.save()
 {% endcodeblock %}
 
 h2. Listing records with paging
