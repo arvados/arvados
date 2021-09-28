@@ -427,7 +427,7 @@ class ApplicationController < ActionController::Base
 
   def append_info_to_payload(payload)
     super
-    payload[:request_id] = response.headers['X-Request-Id']
+    payload[:request_id] = request.request_id
     payload[:client_ipaddr] = @remote_ip
     payload[:client_auth] = current_api_client_authorization.andand.uuid || nil
   end
