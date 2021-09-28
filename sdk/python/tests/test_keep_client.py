@@ -703,6 +703,23 @@ class KeepXRequestIdTestCase(unittest.TestCase, tutil.ApiClientMock):
             self.keep_client.head(self.locator)
         self.assertAutomaticRequestId(mock.responses[0])
 
+    def test_request_id_in_exception(self):
+        with tutil.mock_keep_responses(b'', 400, 400, 400) as mock:
+            with self.assertRaisesRegex(arvados.errors.KeepReadError, self.test_id):
+                self.keep_client.head(self.locator, request_id=self.test_id)
+
+        with tutil.mock_keep_responses(b'', 400, 400, 400) as mock:
+            with self.assertRaisesRegex(arvados.errors.KeepReadError, r'req-[a-z0-9]{20}'):
+                self.keep_client.get(self.locator)
+
+        with tutil.mock_keep_responses(b'', 400, 400, 400) as mock:
+            with self.assertRaisesRegex(arvados.errors.KeepWriteError, self.test_id):
+                self.keep_client.put(self.data, request_id=self.test_id)
+
+        with tutil.mock_keep_responses(b'', 400, 400, 400) as mock:
+            with self.assertRaisesRegex(arvados.errors.KeepWriteError, r'req-[a-z0-9]{20}'):
+                self.keep_client.put(self.data)
+
     def assertAutomaticRequestId(self, resp):
         hdr = [x for x in resp.getopt(pycurl.HTTPHEADER)
                if x.startswith('X-Request-Id: ')][0]
