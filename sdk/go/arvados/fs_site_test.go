@@ -21,6 +21,8 @@ const (
 	fixtureThisFilterGroupUUID          = "zzzzz-j7d0g-thisfiltergroup"
 	fixtureAFilterGroupTwoUUID          = "zzzzz-j7d0g-afiltergrouptwo"
 	fixtureAFilterGroupThreeUUID        = "zzzzz-j7d0g-filtergroupthre"
+	fixtureAFilterGroupFourUUID         = "zzzzz-j7d0g-filtergroupfour"
+	fixtureAFilterGroupFiveUUID         = "zzzzz-j7d0g-filtergroupfive"
 	fixtureFooAndBarFilesInDirUUID      = "zzzzz-4zz18-foonbarfilesdir"
 	fixtureFooCollectionName            = "zzzzz-4zz18-fy296fx3hot09f7 added sometime"
 	fixtureFooCollectionPDH             = "1f4b0bc7583c2a7f9102c395f4ffc5e3+45"
