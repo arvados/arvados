@@ -1344,8 +1344,8 @@ class Collection(RichCollectionBase):
 
             try:
                 self._populate()
-            except (IOError, errors.SyntaxError) as e:
-                raise errors.ArgumentError("Error processing manifest text: %s", e)
+            except errors.SyntaxError as e:
+                raise errors.ArgumentError("Error processing manifest text: %s", str(e)) from None
 
     def storage_classes_desired(self):
         return self._storage_classes_desired or []
