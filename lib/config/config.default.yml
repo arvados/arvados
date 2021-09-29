@@ -1091,13 +1091,25 @@ Clusters:
 
         # Maximum create/destroy-instance operations per second (0 =
         # unlimited).
-        MaxCloudOpsPerSecond: 0
+        MaxCloudOpsPerSecond: 10
 
-        # Maximum concurrent node creation operations (0 = unlimited). This is
-        # recommended by Azure in certain scenarios (see
-        # https://docs.microsoft.com/en-us/azure/virtual-machines/linux/capture-image)
-        # and can be used with other cloud providers too, if desired.
-        MaxConcurrentInstanceCreateOps: 0
+        # Maximum concurrent instance creation operations (0 = unlimited).
+        #
+        # MaxConcurrentInstanceCreateOps limits the number of instance creation
+        # requests that can be in flight at any one time, whereas
+        # MaxCloudOpsPerSecond limits the number of create/destroy operations
+        # that can be started per second.
+        #
+        # Because the API for instance creation on Azure is synchronous, it is
+        # recommended to increase MaxConcurrentInstanceCreateOps when running
+        # on Azure. When using managed images, a value of 20 would be
+        # appropriate. When using Azure Shared Image Galeries, it could be set
+        # higher. For more information, see
+        # https://docs.microsoft.com/en-us/azure/virtual-machines/linux/capture-image
+        #
+        # MaxConcurrentInstanceCreateOps can be increased for other cloud
+        # providers too, if desired.
+        MaxConcurrentInstanceCreateOps: 1
 
         # Interval between cloud provider syncs/updates ("list all
         # instances").
