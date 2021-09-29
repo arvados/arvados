@@ -73,6 +73,30 @@ func (s *SiteFSSuite) TestFilterGroup(c *check.C) {
 
 	_, err = s.fs.OpenFile("/fg3/A Subproject", 0, 0)
 	c.Assert(err, check.Not(check.IsNil))
+
+	// An 'exists' 'arvados#collection' filter means only collections with certain properties should be returned.
+	s.fs.MountProject("fg4", fixtureAFilterGroupFourUUID)
+
+	_, err = s.fs.Stat("/fg4/collection with list property with odd values")
+	c.Assert(err, check.IsNil)
+
+	_, err = s.fs.Stat("/fg4/collection with list property with even values")
+	c.Assert(err, check.IsNil)
+
+	// A 'contains' 'arvados#collection' filter means only collections with certain properties should be returned.
+	s.fs.MountProject("fg5", fixtureAFilterGroupFiveUUID)
+
+	_, err = s.fs.Stat("/fg5/collection with list property with odd values")
+	c.Assert(err, check.IsNil)
+
+	_, err = s.fs.Stat("/fg5/collection with list property with string value")
+	c.Assert(err, check.IsNil)
+
+	_, err = s.fs.Stat("/fg5/collection with prop2 5")
+	c.Assert(err, check.Not(check.IsNil))
+
+	_, err = s.fs.Stat("/fg5/collection with list property with even values")
+	c.Assert(err, check.Not(check.IsNil))
 }
 
 func (s *SiteFSSuite) TestCurrentUserHome(c *check.C) {
