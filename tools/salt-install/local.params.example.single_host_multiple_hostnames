@@ -45,8 +45,28 @@ DATABASE_PASSWORD=please_set_this_to_some_secure_value
 # salt formula (https://github.com/saltstack-formulas/letsencrypt-formula) to try to
 # automatically obtain and install SSL certificates for your instances or set this
 # variable to "no", provide and upload your own certificates to the instances and
-# modify the 'nginx_*' salt pillars accordingly
+# modify the 'nginx_*' salt pillars accordingly (see below, param CUSTOM_CERTS_DIR)
 USE_LETSENCRYPT="no"
+
+# If you going to provide your own certificates for Arvados, the provision script can
+# help you deploy them. In order to do that, you need to set `USE_LETSENCRYPT=no` above,
+# and copy the required certificates under the directory specified in the next line.
+# The certs will be copied from this directory by the provision script.
+CUSTOM_CERTS_DIR="./certs"
+# The script expects cert/key files with these basenames (matching the role except for
+# keepweb, which is split in both downoad/collections):
+# CUSTOM_CERTS_DIR.
+#  "controller"
+#  "websocket"
+#  "workbench"
+#  "workbench2"
+#  "webshell"
+#  "download"         # Part of keepweb
+#  "collections"      # Part of keepweb
+#  "keepproxy"
+# Ie., 'keepproxy', the script will lookup for
+# ${CUSTOM_CERTS_DIR}/keepproxy.crt
+# ${CUSTOM_CERTS_DIR}/keepproxy.key
 
 # The directory to check for the config files (pillars, states) you want to use.
 # There are a few examples under 'config_examples'.
