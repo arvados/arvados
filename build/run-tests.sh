@@ -1082,9 +1082,7 @@ install_deps() {
     do_install services/api
     do_install services/arv-git-httpd go
     do_install services/keepproxy go
-    do_install services/keepstore go
     do_install services/keep-web go
-    do_install services/ws go
 }
 
 install_all() {
