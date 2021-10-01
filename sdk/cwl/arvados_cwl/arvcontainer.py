@@ -284,7 +284,7 @@ class ArvadosContainer(JobBase):
             raise WorkflowException("Invalid value %d for output_ttl, cannot be less than zero" % container_request["output_ttl"])
 
 
-        if api._rootDesc["revision"] >= "20210628":
+        if self.arvrunner.api._rootDesc["revision"] >= "20210628":
             storage_class_req, _ = self.get_requirement("http://arvados.org/cwl#OutputStorageClass")
             if storage_class_req and storage_class_req.get("intermediateStorageClass"):
                 container_request["output_storage_classes"] = aslist(storage_class_req["intermediateStorageClass"])
