@@ -105,7 +105,7 @@ RUN apt-key add --no-tty /tmp/8D81803C0EBFCD88.asc && \
 RUN mkdir -p /etc/apt/sources.list.d && \
     echo deb https://download.docker.com/linux/debian/ buster stable > /etc/apt/sources.list.d/docker.list && \
     apt-get update && \
-    apt-get -yq --no-install-recommends install docker-ce=5:19.03.13~3-0~debian-buster && \
+    apt-get -yq --no-install-recommends install docker-ce=5:20.10.6~3-0~debian-buster && \
     apt-get clean
 
 # Set UTF-8 locale
