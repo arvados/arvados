@@ -297,6 +297,7 @@ func (ldr *Loader) Load() (*arvados.Config, error) {
 			checkKeyConflict(fmt.Sprintf("Clusters.%s.PostgreSQL.Connection", id), cc.PostgreSQL.Connection),
 			ldr.checkEmptyKeepstores(cc),
 			ldr.checkUnlistedKeepstores(cc),
+			ldr.checkLocalKeepstoreVolumes(cc),
 			ldr.checkStorageClasses(cc),
 			// TODO: check non-empty Rendezvous on
 			// services other than Keepstore
@@ -359,6 +360,18 @@ cluster:
 		cfg.Clusters[id] = cc
 	}
 	return nil
+}
+
+func (ldr *Loader) checkLocalKeepstoreVolumes(cc arvados.Cluster) error {
+	if cc.Containers.LocalKeepBlobBuffersPerVCPU < 1 {
+		return nil
+	}
+	for _, vol := range cc.Volumes {
+		if len(vol.AccessViaHosts) == 0 {
+			return nil
+		}
+	}
+	return fmt.Errorf("LocalKeepBlobBuffersPerVCPU is %d, but no volumes would be accessible from a worker instance", cc.Containers.LocalKeepBlobBuffersPerVCPU)
 }
 
 func (ldr *Loader) checkStorageClasses(cc arvados.Cluster) error {

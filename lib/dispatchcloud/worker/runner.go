@@ -13,6 +13,7 @@ import (
 	"syscall"
 	"time"
 
+	"git.arvados.org/arvados.git/lib/crunchrun"
 	"github.com/sirupsen/logrus"
 )
 
@@ -21,7 +22,7 @@ import (
 type remoteRunner struct {
 	uuid          string
 	executor      Executor
-	envJSON       json.RawMessage
+	configJSON    json.RawMessage
 	runnerCmd     string
 	runnerArgs    []string
 	remoteUser    string
@@ -47,7 +48,8 @@ func newRemoteRunner(uuid string, wkr *worker) *remoteRunner {
 	if err := enc.Encode(wkr.instType); err != nil {
 		panic(err)
 	}
-	env := map[string]string{
+	var configData crunchrun.ConfigData
+	configData.Env = map[string]string{
 		"ARVADOS_API_HOST":  wkr.wp.arvClient.APIHost,
 		"ARVADOS_API_TOKEN": wkr.wp.arvClient.AuthToken,
 		"InstanceType":      instJSON.String(),
@@ -55,16 +57,20 @@ func newRemoteRunner(uuid string, wkr *worker) *remoteRunner {
 		"GatewayAuthSecret": wkr.wp.gatewayAuthSecret(uuid),
 	}
 	if wkr.wp.arvClient.Insecure {
-		env["ARVADOS_API_HOST_INSECURE"] = "1"
+		configData.Env["ARVADOS_API_HOST_INSECURE"] = "1"
 	}
-	envJSON, err := json.Marshal(env)
+	if bufs := wkr.wp.cluster.Containers.LocalKeepBlobBuffersPerVCPU; bufs > 0 {
+		configData.Cluster = wkr.wp.cluster
+		configData.KeepBuffers = bufs * wkr.instType.VCPUs
+	}
+	configJSON, err := json.Marshal(configData)
 	if err != nil {
 		panic(err)
 	}
 	rr := &remoteRunner{
 		uuid:          uuid,
 		executor:      wkr.executor,
-		envJSON:       envJSON,
+		configJSON:    configJSON,
 		runnerCmd:     wkr.wp.runnerCmd,
 		runnerArgs:    wkr.wp.runnerArgs,
 		remoteUser:    wkr.instance.RemoteUser(),
@@ -84,7 +90,7 @@ func newRemoteRunner(uuid string, wkr *worker) *remoteRunner {
 // assume the remote process _might_ have started, at least until it
 // probes the worker and finds otherwise.
 func (rr *remoteRunner) Start() {
-	cmd := rr.runnerCmd + " --detach --stdin-env"
+	cmd := rr.runnerCmd + " --detach --stdin-config"
 	for _, arg := range rr.runnerArgs {
 		cmd += " '" + strings.Replace(arg, "'", "'\\''", -1) + "'"
 	}
@@ -92,7 +98,7 @@ func (rr *remoteRunner) Start() {
 	if rr.remoteUser != "root" {
 		cmd = "sudo " + cmd
 	}
-	stdin := bytes.NewBuffer(rr.envJSON)
+	stdin := bytes.NewBuffer(rr.configJSON)
 	stdout, stderr, err := rr.executor.Execute(nil, cmd, stdin)
 	if err != nil {
 		rr.logger.WithField("stdout", string(stdout)).

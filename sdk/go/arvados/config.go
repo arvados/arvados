@@ -435,6 +435,7 @@ type ContainersConfig struct {
 	SupportedDockerImageFormats StringSet
 	UsePreemptibleInstances     bool
 	RuntimeEngine               string
+	LocalKeepBlobBuffersPerVCPU int
 
 	JobsAPI struct {
 		Enable         string
