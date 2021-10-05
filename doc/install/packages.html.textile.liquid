@@ -23,11 +23,11 @@ Packages are available for CentOS 7. To install them with yum, save this configu
 name=Arvados
 baseurl=http://rpm.arvados.org/CentOS/$releasever/os/$basearch/
 gpgcheck=1
-gpgkey=http://rpm.arvados.org/CentOS/RPM-GPG-KEY-curoverse
+gpgkey=http://rpm.arvados.org/CentOS/RPM-GPG-KEY-arvados
 </code></pre>
 </notextile>
 
-{% include 'install_redhat_key' %}
+{% include 'gpg_key_fingerprint' %}
 
 h3(#debian). Debian and Ubuntu
 
@@ -36,6 +36,8 @@ Packages are available for recent versions of Debian and Ubuntu.
 First, register the Arvados signing key in apt's database:
 
 {% include 'install_debian_key' %}
+
+{% include 'gpg_key_fingerprint' %}
 
 As root, add the Arvados package repository to your sources.  This command depends on your OS vendor and version:
 
