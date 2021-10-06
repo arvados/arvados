@@ -36,12 +36,11 @@ arvados_test_salt_states_examples_single_host_snakeoil_certs_dependencies_pkg_in
       - openssl
       - ca-certificates
 
-# Edit the openssl.conf file to fix the RND error
-#     20:03:39                   Can't load /home/jenkins/.rnd into RNG
-# as seen 
-#     https://ci.arvados.org/view/Release%20Pipeline/job/test-provision-ubuntu1804/91/console
-# using the solution provided here
-#     https://github.com/openssl/openssl/issues/7754#issuecomment-541310006
+# Remove the RANDFILE parameter in openssl.cnf as it makes openssl fail in Ubuntu 18.04
+# Saving and restoring the rng state is not necessary anymore in the openssl 1.1.1
+# random generator, cf
+#   https://github.com/openssl/openssl/issues/7754
+#
 arvados_test_salt_states_examples_single_host_snakeoil_certs_file_comment_etc_openssl_conf:
   file.comment:
     - name: /etc/ssl/openssl.cnf
