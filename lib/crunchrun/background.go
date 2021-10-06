@@ -77,20 +77,24 @@ func detach(uuid string, prog string, args []string, stdin io.Reader, stdout io.
 		// invoked as "/path/to/crunch-run"
 		execargs = append([]string{prog}, execargs...)
 	}
-	execargs = append([]string{
-		// Here, if the inner systemd-cat can't exec
-		// crunch-run, it writes an error message to stderr,
-		// and the outer systemd-cat writes it to the journal
-		// where the operator has a chance to discover it. (If
-		// we only used one systemd-cat command, it would be
-		// up to us to report the error -- but we are going to
-		// detach and exit, not wait for something to appear
-		// on stderr.)  Note these systemd-cat calls don't
-		// result in additional processes -- they just connect
-		// stderr/stdout to sockets and call exec().
-		"systemd-cat", "--identifier=crunch-run",
-		"systemd-cat", "--identifier=crunch-run",
-	}, execargs...)
+	if _, err := exec.LookPath("systemd-cat"); err == nil {
+		execargs = append([]string{
+			// Here, if the inner systemd-cat can't exec
+			// crunch-run, it writes an error message to
+			// stderr, and the outer systemd-cat writes it
+			// to the journal where the operator has a
+			// chance to discover it. (If we only used one
+			// systemd-cat command, it would be up to us
+			// to report the error -- but we are going to
+			// detach and exit, not wait for something to
+			// appear on stderr.)  Note these systemd-cat
+			// calls don't result in additional processes
+			// -- they just connect stderr/stdout to
+			// sockets and call exec().
+			"systemd-cat", "--identifier=crunch-run",
+			"systemd-cat", "--identifier=crunch-run",
+		}, execargs...)
+	}
 
 	cmd := exec.Command(execargs[0], execargs[1:]...)
 	// Child inherits lockfile.
