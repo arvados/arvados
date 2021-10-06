@@ -252,11 +252,12 @@ func (e *singularityExecutor) Start() error {
 	env := make([]string, 0, len(e.spec.Env))
 	for k, v := range e.spec.Env {
 		if k == "HOME" {
-			// $HOME is a special case
+			// $HOME is a special case on Singularity 3.5,
+			// but is just a normal variable on Singularity 3.6+
+			// I think this will work with both
 			args = append(args, "--home="+v)
-		} else {
-			env = append(env, "SINGULARITYENV_"+k+"="+v)
 		}
+		env = append(env, "SINGULARITYENV_"+k+"="+v)
 	}
 
 	args = append(args, e.imageFilename)
