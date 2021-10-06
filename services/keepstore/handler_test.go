@@ -1154,15 +1154,6 @@ func (s *HandlerSuite) TestPutHandlerNoBufferleak(c *check.C) {
 	}
 }
 
-type notifyingResponseRecorder struct {
-	*httptest.ResponseRecorder
-	closer chan bool
-}
-
-func (r *notifyingResponseRecorder) CloseNotify() <-chan bool {
-	return r.closer
-}
-
 func (s *HandlerSuite) TestGetHandlerClientDisconnect(c *check.C) {
 	s.cluster.Collections.BlobSigning = false
 	c.Assert(s.handler.setup(context.Background(), s.cluster, "", prometheus.NewRegistry(), testServiceURL), check.IsNil)
@@ -1173,23 +1164,15 @@ func (s *HandlerSuite) TestGetHandlerClientDisconnect(c *check.C) {
 	bufs = newBufferPool(ctxlog.TestLogger(c), 1, BlockSize)
 	defer bufs.Put(bufs.Get(BlockSize))
 
-	if err := s.handler.volmgr.AllWritable()[0].Put(context.Background(), TestHash, TestBlock); err != nil {
-		c.Error(err)
-	}
+	err := s.handler.volmgr.AllWritable()[0].Put(context.Background(), TestHash, TestBlock)
+	c.Assert(err, check.IsNil)
 
-	resp := &notifyingResponseRecorder{
-		ResponseRecorder: httptest.NewRecorder(),
-		closer:           make(chan bool, 1),
-	}
-	if _, ok := http.ResponseWriter(resp).(http.CloseNotifier); !ok {
-		c.Fatal("notifyingResponseRecorder is broken")
-	}
-	// If anyone asks, the client has disconnected.
-	resp.closer <- true
-
+	resp := httptest.NewRecorder()
 	ok := make(chan struct{})
 	go func() {
-		req, _ := http.NewRequest("GET", fmt.Sprintf("/%s+%d", TestHash, len(TestBlock)), nil)
+		ctx, cancel := context.WithCancel(context.Background())
+		req, _ := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("/%s+%d", TestHash, len(TestBlock)), nil)
+		cancel()
 		s.handler.ServeHTTP(resp, req)
 		ok <- struct{}{}
 	}()
@@ -1200,7 +1183,7 @@ func (s *HandlerSuite) TestGetHandlerClientDisconnect(c *check.C) {
 	case <-ok:
 	}
 
-	ExpectStatusCode(c, "client disconnect", http.StatusServiceUnavailable, resp.ResponseRecorder)
+	ExpectStatusCode(c, "client disconnect", http.StatusServiceUnavailable, resp)
 	for i, v := range s.handler.volmgr.AllWritable() {
 		if calls := v.Volume.(*MockVolume).called["GET"]; calls != 0 {
 			c.Errorf("volume %d got %d calls, expected 0", i, calls)
