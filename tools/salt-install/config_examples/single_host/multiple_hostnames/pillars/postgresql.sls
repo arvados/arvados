@@ -20,6 +20,7 @@ postgres:
     - postgresql12-contrib
 
   {%- else %}
+  use_upstream_repo: false
   pkgs_extra:
     - postgresql-contrib
   {%- endif %}
