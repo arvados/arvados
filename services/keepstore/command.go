@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package main
+package keepstore
 
 import (
 	"context"
@@ -29,10 +29,6 @@ var (
 	version = "dev"
 	Command = service.Command(arvados.ServiceNameKeepstore, newHandlerOrErrorHandler)
 )
-
-func main() {
-	os.Exit(runCommand(os.Args[0], os.Args[1:], os.Stdin, os.Stdout, os.Stderr))
-}
 
 func runCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	args, ok := convertKeepstoreFlagsToServiceFlags(args, ctxlog.FromContext(context.Background()))

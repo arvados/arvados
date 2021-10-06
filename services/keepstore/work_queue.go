@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package main
+package keepstore
 
 /* A WorkQueue is an asynchronous thread-safe queue manager.  It
    provides a channel from which items can be read off the queue, and

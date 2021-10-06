@@ -473,7 +473,7 @@ def _start_keep(n, blob_signing=False):
     confdata['Clusters']['zzzzz']['Collections']['BlobSigning'] = blob_signing
     with open(conf, 'w') as f:
         yaml.safe_dump(confdata, f)
-    keep_cmd = ["keepstore", "-config", conf]
+    keep_cmd = ["arvados-server", "keepstore", "-config", conf]
 
     with open(_logfilename('keep{}'.format(n)), WRITE_MODE) as logf:
         with open('/dev/null') as _stdin:
