@@ -1344,8 +1344,8 @@ class Collection(RichCollectionBase):
 
             try:
                 self._populate()
-            except (IOError, errors.SyntaxError) as e:
-                raise errors.ArgumentError("Error processing manifest text: %s", e)
+            except errors.SyntaxError as e:
+                raise errors.ArgumentError("Error processing manifest text: %s", str(e)) from None
 
     def storage_classes_desired(self):
         return self._storage_classes_desired or []
@@ -1790,7 +1790,13 @@ class Collection(RichCollectionBase):
                             self.find_or_create(os.path.join(stream_name, name[:-2]), COLLECTION)
                     else:
                         filepath = os.path.join(stream_name, name)
-                        afile = self.find_or_create(filepath, FILE)
+                        try:
+                            afile = self.find_or_create(filepath, FILE)
+                        except IOError as e:
+                            if e.errno == errno.ENOTDIR:
+                                raise errors.SyntaxError("Dir part of %s conflicts with file of the same name.", filepath) from None
+                            else:
+                                raise e from None
                         if isinstance(afile, ArvadosFile):
                             afile.add_segment(blocks, pos, size)
                         else:

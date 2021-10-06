@@ -82,6 +82,19 @@ class ArvadosApiTest(run_test_server.TestCaseWithServers):
         for msg in ["Bad UUID format", "Bad output format"]:
             self.assertIn(msg, err_s)
 
+    @mock.patch('time.sleep')
+    def test_exceptions_include_request_id(self, sleep):
+        api = arvados.api('v1')
+        api.request_id='fake-request-id'
+        api._http.orig_http_request = mock.MagicMock()
+        api._http.orig_http_request.side_effect = socket.error('mock error')
+        caught = None
+        try:
+            api.users().current().execute()
+        except Exception as e:
+            caught = e
+        self.assertRegex(str(caught), r'fake-request-id')
+
     def test_exceptions_without_errors_have_basic_info(self):
         mock_responses = {
             'arvados.humans.delete': (
