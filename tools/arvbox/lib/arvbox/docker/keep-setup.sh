@@ -10,8 +10,7 @@ set -eux -o pipefail
 . /usr/local/lib/arvbox/common.sh
 . /usr/local/lib/arvbox/go-setup.sh
 
-flock /var/lib/gopath/gopath.lock go install "git.arvados.org/arvados.git/services/keepstore"
-install $GOPATH/bin/keepstore /usr/local/bin
+(cd /usr/local/bin && ln -sf arvados-server keepstore)
 
 if test "$1" = "--only-deps" ; then
     exit
