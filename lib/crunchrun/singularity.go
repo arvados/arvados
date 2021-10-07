@@ -227,7 +227,7 @@ func (e *singularityExecutor) Create(spec containerSpec) error {
 }
 
 func (e *singularityExecutor) Start() error {
-	args := []string{"singularity", "exec", "--containall", "--no-home", "--cleanenv", "--pwd", e.spec.WorkingDir}
+	args := []string{"singularity", "exec", "--containall", "--cleanenv", "--pwd", e.spec.WorkingDir}
 	if !e.spec.EnableNetwork {
 		args = append(args, "--net", "--network=none")
 	}
@@ -242,7 +242,12 @@ func (e *singularityExecutor) Start() error {
 	sort.Strings(binds)
 	for _, path := range binds {
 		mount := e.spec.BindMounts[path]
-		args = append(args, "--bind", mount.HostPath+":"+path+":"+readonlyflag[mount.ReadOnly])
+		if path == e.spec.Env["HOME"] {
+			// Singularity treates $HOME as special case
+			args = append(args, "--home", mount.HostPath+":"+path)
+		} else {
+			args = append(args, "--bind", mount.HostPath+":"+path+":"+readonlyflag[mount.ReadOnly])
+		}
 	}
 
 	// This is for singularity 3.5.2. There are some behaviors
@@ -252,10 +257,9 @@ func (e *singularityExecutor) Start() error {
 	env := make([]string, 0, len(e.spec.Env))
 	for k, v := range e.spec.Env {
 		if k == "HOME" {
-			// $HOME is a special case on Singularity 3.5,
-			// but is just a normal variable on Singularity 3.6+
-			// I think this will work with both
-			args = append(args, "--home="+v)
+			// Singularity treates $HOME as special case, this is handled
+			// with --home above
+			continue
 		}
 		env = append(env, "SINGULARITYENV_"+k+"="+v)
 	}
