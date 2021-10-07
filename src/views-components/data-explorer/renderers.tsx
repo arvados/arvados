@@ -131,11 +131,11 @@ export const ResourceShare = connect(
     })((props: { ownerUuid?: string, uuidPrefix: string, uuid?: string } & DispatchProp<any>) =>
         resourceShare(props.dispatch, props.uuidPrefix, props.ownerUuid, props.uuid));
 
+// User Resources
 const renderFirstName = (item: { firstName: string }) => {
     return <Typography noWrap>{item.firstName}</Typography>;
 };
 
-// User Resources
 export const ResourceFirstName = connect(
     (state: RootState, props: { uuid: string }) => {
         const resource = getResource<UserResource>(props.uuid)(state.resources);
@@ -150,6 +150,16 @@ export const ResourceLastName = connect(
         const resource = getResource<UserResource>(props.uuid)(state.resources);
         return resource || { lastName: '' };
     })(renderLastName);
+
+const renderFullName = (item: { firstName: string, lastName: string }) =>
+    <Typography noWrap>{(item.firstName + " " + item.lastName).trim()}</Typography>;
+
+export const ResourceFullName = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const resource = getResource<UserResource>(props.uuid)(state.resources);
+        return resource || { firstName: '', lastName: '' };
+    })(renderFullName);
+
 
 const renderUuid = (item: { uuid: string }) =>
     <Typography noWrap>{item.uuid}</Typography>;

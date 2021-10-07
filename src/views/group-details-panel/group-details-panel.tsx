@@ -7,7 +7,7 @@ import { connect } from 'react-redux';
 
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { DataColumns } from 'components/data-table/data-table';
-import { ResourceUuid, ResourceFirstName, ResourceLastName, ResourceEmail, ResourceUsername } from 'views-components/data-explorer/renderers';
+import { ResourceFullName, ResourceUuid, ResourceEmail, ResourceUsername } from 'views-components/data-explorer/renderers';
 import { createTree } from 'models/tree';
 import { noop } from 'lodash/fp';
 import { RootState } from 'store/store';
@@ -16,12 +16,11 @@ import { openContextMenu } from 'store/context-menu/context-menu-actions';
 import { ResourcesState, getResource } from 'store/resources/resources';
 import { ContextMenuKind } from 'views-components/context-menu/context-menu';
 import { PermissionResource } from 'models/permission';
-import { Grid, Button } from '@material-ui/core';
+import { Grid, Button, Tabs, Tab, Paper } from '@material-ui/core';
 import { AddIcon } from 'components/icon/icon';
 
 export enum GroupDetailsPanelColumnNames {
-    FIRST_NAME = "First name",
-    LAST_NAME = "Last name",
+    FULL_NAME = "Name",
     UUID = "UUID",
     EMAIL = "Email",
     USERNAME = "Username",
@@ -29,18 +28,18 @@ export enum GroupDetailsPanelColumnNames {
 
 export const groupDetailsPanelColumns: DataColumns<string> = [
     {
-        name: GroupDetailsPanelColumnNames.FIRST_NAME,
+        name: GroupDetailsPanelColumnNames.FULL_NAME,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceFirstName uuid={uuid} />
+        render: uuid => <ResourceFullName uuid={uuid} />
     },
     {
-        name: GroupDetailsPanelColumnNames.LAST_NAME,
+        name: GroupDetailsPanelColumnNames.USERNAME,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceLastName uuid={uuid} />
+        render: uuid => <ResourceUsername uuid={uuid} />
     },
     {
         name: GroupDetailsPanelColumnNames.UUID,
@@ -55,13 +54,6 @@ export const groupDetailsPanelColumns: DataColumns<string> = [
         configurable: true,
         filters: createTree(),
         render: uuid => <ResourceEmail uuid={uuid} />
-    },
-    {
-        name: GroupDetailsPanelColumnNames.USERNAME,
-        selected: true,
-        configurable: true,
-        filters: createTree(),
-        render: uuid => <ResourceUsername uuid={uuid} />
     },
 ];
 
