@@ -6,6 +6,7 @@ package crunchrun
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -13,9 +14,11 @@ import (
 	"os/exec"
 	"strings"
 
+	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	. "gopkg.in/check.v1"
 )
@@ -33,6 +36,9 @@ type integrationSuite struct {
 	client *arvados.Client
 	ac     *arvadosclient.ArvadosClient
 	kc     *keepclient.KeepClient
+
+	logCollection    arvados.Collection
+	outputCollection arvados.Collection
 }
 
 func (s *integrationSuite) SetUpSuite(c *C) {
@@ -49,7 +55,12 @@ func (s *integrationSuite) SetUpSuite(c *C) {
 	out, err = exec.Command("arv-keepdocker", "--no-resume", "busybox:uclibc").Output()
 	imageUUID := strings.TrimSpace(string(out))
 	c.Logf("image uuid %s", imageUUID)
-	c.Assert(err, IsNil)
+	if !c.Check(err, IsNil) {
+		if err, ok := err.(*exec.ExitError); ok {
+			c.Logf("%s", err.Stderr)
+		}
+		c.Fail()
+	}
 	err = arvados.NewClientFromEnv().RequestAndDecode(&s.image, "GET", "arvados/v1/collections/"+imageUUID, nil, nil)
 	c.Assert(err, IsNil)
 	c.Logf("image pdh %s", s.image.PortableDataHash)
@@ -76,6 +87,9 @@ func (s *integrationSuite) SetUpSuite(c *C) {
 	})
 	c.Assert(err, IsNil)
 	c.Logf("input pdh %s", s.input.PortableDataHash)
+
+	s.logCollection = arvados.Collection{}
+	s.outputCollection = arvados.Collection{}
 }
 
 func (s *integrationSuite) TearDownSuite(c *C) {
@@ -150,17 +164,56 @@ func (s *integrationSuite) TestRunTrivialContainerWithSingularity(c *C) {
 	s.testRunTrivialContainer(c)
 }
 
+func (s *integrationSuite) TestRunTrivialContainerWithLocalKeepstore(c *C) {
+	cfg, err := config.NewLoader(nil, ctxlog.TestLogger(c)).Load()
+	c.Assert(err, IsNil)
+	cluster, err := cfg.GetCluster("")
+	c.Assert(err, IsNil)
+	for uuid, volume := range cluster.Volumes {
+		volume.AccessViaHosts = nil
+		volume.Replication = 2
+		cluster.Volumes[uuid] = volume
+	}
+
+	s.stdin.Reset()
+	err = json.NewEncoder(&s.stdin).Encode(ConfigData{
+		Env:         nil,
+		KeepBuffers: 1,
+		Cluster:     cluster,
+	})
+	c.Assert(err, IsNil)
+
+	s.engine = "docker"
+	s.testRunTrivialContainer(c)
+
+	fs, err := s.logCollection.FileSystem(s.client, s.kc)
+	c.Assert(err, IsNil)
+	f, err := fs.Open("keepstore.txt")
+	c.Assert(err, IsNil)
+	buf, err := ioutil.ReadAll(f)
+	c.Assert(err, IsNil)
+	c.Check(string(buf), Matches, `(?ms).*"reqMethod":"GET".*`)
+	c.Check(string(buf), Matches, `(?ms).*"reqMethod":"PUT".*,"reqPath":"0e3bcff26d51c895a60ea0d4585e134d".*`)
+}
+
 func (s *integrationSuite) testRunTrivialContainer(c *C) {
 	if err := exec.Command("which", s.engine).Run(); err != nil {
 		c.Skip(fmt.Sprintf("%s: %s", s.engine, err))
 	}
 	s.cr.Command = []string{"sh", "-c", "cat /mnt/in/inputfile >/mnt/out/inputfile && cat /mnt/json >/mnt/out/json && ! touch /mnt/in/shouldbereadonly && mkdir /mnt/out/emptydir"}
 	s.setup(c)
-	code := command{}.RunCommand("crunch-run", []string{
+
+	args := []string{
 		"-runtime-engine=" + s.engine,
 		"-enable-memory-limit=false",
 		s.cr.ContainerUUID,
-	}, &s.stdin, io.MultiWriter(&s.stdout, os.Stderr), io.MultiWriter(&s.stderr, os.Stderr))
+	}
+	if s.stdin.Len() > 0 {
+		args = append([]string{"-stdin-config=true"}, args...)
+	}
+	code := command{}.RunCommand("crunch-run", args, &s.stdin, io.MultiWriter(&s.stdout, os.Stderr), io.MultiWriter(&s.stderr, os.Stderr))
+	c.Logf("\n===== stdout =====\n%s", s.stdout.String())
+	c.Logf("\n===== stderr =====\n%s", s.stderr.String())
 	c.Check(code, Equals, 0)
 	err := s.client.RequestAndDecode(&s.cr, "GET", "arvados/v1/container_requests/"+s.cr.UUID, nil, nil)
 	c.Assert(err, IsNil)
@@ -185,6 +238,7 @@ func (s *integrationSuite) testRunTrivialContainer(c *C) {
 			c.Logf("\n===== %s =====\n%s", fi.Name(), buf)
 		}
 	}
+	s.logCollection = log
 
 	var output arvados.Collection
 	err = s.client.RequestAndDecode(&output, "GET", "arvados/v1/collections/"+s.cr.OutputUUID, nil, nil)
@@ -218,4 +272,5 @@ func (s *integrationSuite) testRunTrivialContainer(c *C) {
 			c.Check(fi.Name(), Equals, ".keep")
 		}
 	}
+	s.outputCollection = output
 }
