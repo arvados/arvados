@@ -1906,26 +1906,34 @@ func startLocalKeepstore(configData ConfigData, logbuf io.Writer) (*exec.Cmd, er
 	if err != nil {
 		return nil, fmt.Errorf("error starting keepstore process: %w", err)
 	}
+	cmdExited := false
+	go func() {
+		cmd.Wait()
+		cmdExited = true
+	}()
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Second*10))
 	defer cancel()
 	poll := time.NewTicker(time.Second / 10)
 	defer poll.Stop()
 	client := http.Client{}
 	for range poll.C {
-		testReq, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+		testReq, err := http.NewRequestWithContext(ctx, "GET", url+"/_health/ping", nil)
+		testReq.Header.Set("Authorization", "Bearer "+configData.Cluster.ManagementToken)
 		if err != nil {
 			return nil, err
 		}
 		resp, err := client.Do(testReq)
 		if err == nil {
-			// Success -- don't need to check the
-			// response, we just need to know it's
-			// accepting requests.
 			resp.Body.Close()
-			break
+			if resp.StatusCode == http.StatusOK {
+				break
+			}
+		}
+		if cmdExited {
+			return nil, fmt.Errorf("keepstore child process exited")
 		}
 		if ctx.Err() != nil {
-			return nil, fmt.Errorf("timed out waiting for new keepstore process to accept a request")
+			return nil, fmt.Errorf("timed out waiting for new keepstore process to report healthy")
 		}
 	}
 	os.Setenv("ARVADOS_KEEP_SERVICES", url)
