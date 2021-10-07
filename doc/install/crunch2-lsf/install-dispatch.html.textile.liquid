@@ -13,25 +13,23 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 arvados-dispatch-lsf is only relevant for on premises clusters that will spool jobs to LSF. Skip this section if you are installing a cloud cluster.
 {% include 'notebox_end' %}
 
+h2(#overview). Overview
+
 Containers can be dispatched to an LSF cluster.  The dispatcher sends work to the cluster using LSF's @bsub@ command, so it works in a variety of LSF configurations.
-
-*LSF support is currently considered experimental.*
-
-Limitations include:
-* Arvados container priority is not propagated to LSF job priority. This can cause inefficient use of compute resources, and even deadlock if there are fewer compute nodes than concurrent Arvados workflows.
-* Combining LSF with docker may not work, depending on LSF configuration and user/group IDs (if LSF only sets up the configured user's primary group ID when executing the crunch-run process on a compute node, it may not have permission to connect to the docker daemon).
 
 In order to run containers, you must choose a user that has permission to set up FUSE mounts and run Singularity/Docker containers on each compute node.  This install guide refers to this user as the @crunch@ user.  We recommend you create this user on each compute node with the same UID and GID, and add it to the @fuse@ and @docker@ system groups to grant it the necessary permissions.  However, you can run the dispatcher under any account with sufficient permissions across the cluster.
 
 Set up all of your compute nodes "as you would for a SLURM cluster":../crunch2-slurm/install-compute-node.html.
 
+*Current limitations*:
+* Arvados container priority is not propagated to LSF job priority. This can cause inefficient use of compute resources, and even deadlock if there are fewer compute nodes than concurrent Arvados workflows.
+* Combining LSF with docker may not work, depending on LSF configuration and user/group IDs (if LSF only sets up the configured user's primary group ID when executing the crunch-run process on a compute node, it may not have permission to connect to the docker daemon).
 
 h2(#update-config). Update config.yml
 
 Arvados-dispatch-lsf reads the common configuration file at @/etc/arvados/config.yml@.
 
 Review the following configuration parameters and adjust as needed.
-
 
 h3(#BsubSudoUser). Containers.LSF.BsubSudoUser
 

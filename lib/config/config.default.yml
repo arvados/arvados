@@ -683,7 +683,7 @@ Clusters:
         AcceptAccessTokenScope: ""
 
       PAM:
-        # (Experimental) Use PAM to authenticate users.
+        # Use PAM to authenticate users.
         Enable: false
 
         # PAM service name. PAM will apply the policy in the
@@ -881,8 +881,8 @@ Clusters:
       UsePreemptibleInstances: false
 
       # PEM encoded SSH key (RSA, DSA, or ECDSA) used by the
-      # (experimental) cloud dispatcher for executing containers on
-      # worker VMs. Begins with "-----BEGIN RSA PRIVATE KEY-----\n"
+      # cloud dispatcher for executing containers on worker VMs.
+      # Begins with "-----BEGIN RSA PRIVATE KEY-----\n"
       # and ends with "\n-----END RSA PRIVATE KEY-----\n".
       DispatchPrivateKey: ""
 
@@ -908,7 +908,7 @@ Clusters:
       # Minimum time between two attempts to run the same container
       MinRetryPeriod: 0s
 
-      # Container runtime: "docker" (default) or "singularity" (experimental)
+      # Container runtime: "docker" (default) or "singularity"
       RuntimeEngine: docker
 
       Logging:
@@ -1057,7 +1057,7 @@ Clusters:
         GitInternalDir: /var/lib/arvados/internal.git
 
       CloudVMs:
-        # Enable the cloud scheduler (experimental).
+        # Enable the cloud scheduler.
         Enable: false
 
         # Name/number of port where workers' SSH services listen.
