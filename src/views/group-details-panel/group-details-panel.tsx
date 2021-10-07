@@ -11,7 +11,7 @@ import { ResourceFullName, ResourceUuid, ResourceEmail, ResourceUsername } from 
 import { createTree } from 'models/tree';
 import { noop } from 'lodash/fp';
 import { RootState } from 'store/store';
-import { GROUP_DETAILS_PANEL_ID, openAddGroupMembersDialog } from 'store/group-details-panel/group-details-panel-actions';
+import { GROUP_DETAILS_PANEL_ID, GROUP_PERMISSIONS_PANEL_ID, openAddGroupMembersDialog } from 'store/group-details-panel/group-details-panel-actions';
 import { openContextMenu } from 'store/context-menu/context-menu-actions';
 import { ResourcesState, getResource } from 'store/resources/resources';
 import { ContextMenuKind } from 'views-components/context-menu/context-menu';
@@ -78,27 +78,69 @@ export const GroupDetailsPanel = connect(
     mapStateToProps, mapDispatchToProps
 )(
     class GroupDetailsPanel extends React.Component<GroupDetailsPanelProps> {
+        state = {
+          value: 0,
+        };
+
+        componentDidMount() {
+            this.setState({ value: 0 });
+        }
 
         render() {
+            const { value } = this.state;
             return (
-                <DataExplorer
-                    id={GROUP_DETAILS_PANEL_ID}
-                    onRowClick={noop}
-                    onRowDoubleClick={noop}
-                    onContextMenu={this.handleContextMenu}
-                    contextMenuColumn={true}
-                    hideColumnSelector
-                    hideSearchInput
-                    actions={
-                        <Grid container justify='flex-end'>
-                            <Button
-                                variant="contained"
-                                color="primary"
-                                onClick={this.props.onAddUser}>
-                                <AddIcon /> Add user
-                        </Button>
-                        </Grid>
-                    } />
+                <Paper>
+                  <Tabs value={value} onChange={this.handleChange} fullWidth>
+                      <Tab label="MEMBERS" />
+                      <Tab label="PERMISSIONS" />
+                  </Tabs>
+                  {value === 0 &&
+                      <DataExplorer
+                          id={GROUP_DETAILS_PANEL_ID}
+                          onRowClick={noop}
+                          onRowDoubleClick={noop}
+                          onContextMenu={this.handleContextMenu}
+                          contextMenuColumn={true}
+                          hideColumnSelector
+                          hideSearchInput
+                          actions={
+                              <Grid container justify='flex-end'>
+                                  <Button
+                                      variant="contained"
+                                      color="primary"
+                                      onClick={this.props.onAddUser}>
+                                      <AddIcon /> Add user
+                              </Button>
+                              </Grid>
+                          }
+                          paperProps={{
+                              elevation: 0,
+                          }} />
+                  }
+                  {value === 1 &&
+                      <DataExplorer
+                          id={GROUP_PERMISSIONS_PANEL_ID}
+                          onRowClick={noop}
+                          onRowDoubleClick={noop}
+                          onContextMenu={this.handleContextMenu}
+                          contextMenuColumn={true}
+                          hideColumnSelector
+                          hideSearchInput
+                          actions={
+                              <Grid container justify='flex-end'>
+                                  <Button
+                                      variant="contained"
+                                      color="primary"
+                                      onClick={this.props.onAddUser}>
+                                      <AddIcon /> Add user
+                              </Button>
+                              </Grid>
+                          }
+                          paperProps={{
+                              elevation: 0,
+                          }} />
+                  }
+                </Paper>
             );
         }
 
@@ -114,5 +156,8 @@ export const GroupDetailsPanel = connect(
                 });
             }
         }
-    });
 
+        handleChange = (event: React.MouseEvent<HTMLElement>, value: number) => {
+            this.setState({ value });
+        }
+    });

@@ -18,19 +18,23 @@ import { PermissionResource } from 'models/permission';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { UserResource, getUserDisplayName } from 'models/user';
 
-export const GROUP_DETAILS_PANEL_ID = 'groupDetailsPanel';
+export const GROUP_DETAILS_PANEL_ID = 'groupMembersPanel';
+export const GROUP_PERMISSIONS_PANEL_ID = 'groupPermissionsPanel';
 export const ADD_GROUP_MEMBERS_DIALOG = 'addGrupMembers';
 export const ADD_GROUP_MEMBERS_FORM = 'addGrupMembers';
 export const ADD_GROUP_MEMBERS_USERS_FIELD_NAME = 'users';
 export const MEMBER_ATTRIBUTES_DIALOG = 'memberAttributesDialog';
 export const MEMBER_REMOVE_DIALOG = 'memberRemoveDialog';
 
-export const GroupDetailsPanelActions = bindDataExplorerActions(GROUP_DETAILS_PANEL_ID);
+export const GroupMembersPanelActions = bindDataExplorerActions(GROUP_DETAILS_PANEL_ID);
+export const GroupPermissionsPanelActions = bindDataExplorerActions(GROUP_PERMISSIONS_PANEL_ID);
 
 export const loadGroupDetailsPanel = (groupUuid: string) =>
     (dispatch: Dispatch) => {
         dispatch(propertiesActions.SET_PROPERTY({ key: GROUP_DETAILS_PANEL_ID, value: groupUuid }));
-        dispatch(GroupDetailsPanelActions.REQUEST_ITEMS());
+        dispatch(GroupMembersPanelActions.REQUEST_ITEMS());
+        dispatch(propertiesActions.SET_PROPERTY({ key: GROUP_PERMISSIONS_PANEL_ID, value: groupUuid }));
+        dispatch(GroupPermissionsPanelActions.REQUEST_ITEMS());
     };
 
 export const getCurrentGroupDetailsPanelUuid = getProperty<string>(GROUP_DETAILS_PANEL_ID);
@@ -72,7 +76,7 @@ export const addGroupMembers = ({ users }: AddGroupMembersFormData) =>
             }
 
             dispatch(dialogActions.CLOSE_DIALOG({ id: ADD_GROUP_MEMBERS_FORM }));
-            dispatch(GroupDetailsPanelActions.REQUEST_ITEMS());
+            dispatch(GroupMembersPanelActions.REQUEST_ITEMS());
 
         }
     };
@@ -124,7 +128,7 @@ export const removeGroupMember = (uuid: string) =>
             });
 
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removed.', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
-            dispatch(GroupDetailsPanelActions.REQUEST_ITEMS());
+            dispatch(GroupMembersPanelActions.REQUEST_ITEMS());
 
         }
 

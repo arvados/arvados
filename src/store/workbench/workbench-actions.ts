@@ -136,7 +136,8 @@ export const loadWorkbench = () =>
             dispatch(searchResultsPanelActions.SET_COLUMNS({ columns: searchResultsPanelColumns }));
             dispatch(userBindedActions.SET_COLUMNS({ columns: userPanelColumns }));
             dispatch(groupPanelActions.GroupsPanelActions.SET_COLUMNS({ columns: groupsPanelColumns }));
-            dispatch(groupDetailsPanelActions.GroupDetailsPanelActions.SET_COLUMNS({ columns: groupDetailsPanelColumns }));
+            dispatch(groupDetailsPanelActions.GroupMembersPanelActions.SET_COLUMNS({ columns: groupDetailsPanelColumns }));
+            dispatch(groupDetailsPanelActions.GroupPermissionsPanelActions.SET_COLUMNS({ columns: groupDetailsPanelColumns }));
             dispatch(linkPanelActions.SET_COLUMNS({ columns: linkPanelColumns }));
             dispatch(apiClientAuthorizationsActions.SET_COLUMNS({ columns: apiClientAuthorizationPanelColumns }));
             dispatch(collectionsContentAddressActions.SET_COLUMNS({ columns: collectionContentAddressPanelColumns }));

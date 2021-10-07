@@ -10,7 +10,7 @@ import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { getDataExplorer } from "store/data-explorer/data-explorer-reducer";
 import { FilterBuilder } from 'services/api/filter-builder';
 import { updateResources } from 'store/resources/resources-actions';
-import { getCurrentGroupDetailsPanelUuid, GroupDetailsPanelActions } from 'store/group-details-panel/group-details-panel-actions';
+import { getCurrentGroupDetailsPanelUuid, GroupMembersPanelActions, GroupPermissionsPanelActions } from 'store/group-details-panel/group-details-panel-actions';
 import { LinkClass } from 'models/link';
 
 export class GroupDetailsPanelMiddlewareService extends DataExplorerMiddlewareService {
@@ -26,22 +26,39 @@ export class GroupDetailsPanelMiddlewareService extends DataExplorerMiddlewareSe
             api.dispatch(groupsDetailsPanelDataExplorerIsNotSet());
         } else {
             try {
-                const permissions = await this.services.permissionService.list({
+                const permissionsIn = await this.services.permissionService.list({
+                    filters: new FilterBuilder()
+                        .addEqual('head_uuid', groupUuid)
+                        .addEqual('link_class', LinkClass.PERMISSION)
+                        .getFilters()
+                });
+                api.dispatch(updateResources(permissionsIn.items));
+                const permissionsOut = await this.services.permissionService.list({
                     filters: new FilterBuilder()
                         .addEqual('tail_uuid', groupUuid)
                         .addEqual('link_class', LinkClass.PERMISSION)
                         .getFilters()
                 });
-                api.dispatch(updateResources(permissions.items));
+                api.dispatch(updateResources(permissionsOut.items));
                 const users = await this.services.userService.list({
                     filters: new FilterBuilder()
-                        .addIn('uuid', permissions.items.map(item => item.headUuid))
+                        .addIn('uuid', permissionsIn.items.map(item => item.tailUuid))
                         .getFilters(),
                     count: "none"
                 });
-                api.dispatch(GroupDetailsPanelActions.SET_ITEMS({
-                    ...listResultsToDataExplorerItemsMeta(permissions),
+                const usersOut = await this.services.userService.list({
+                    filters: new FilterBuilder()
+                        .addIn('uuid', permissionsOut.items.map(item => item.tailUuid))
+                        .getFilters(),
+                    count: "none"
+                });
+                api.dispatch(GroupMembersPanelActions.SET_ITEMS({
+                    ...listResultsToDataExplorerItemsMeta(permissionsIn),
                     items: users.items.map(item => item.uuid),
+                }));
+                api.dispatch(GroupPermissionsPanelActions.SET_ITEMS({
+                    ...listResultsToDataExplorerItemsMeta(permissionsOut),
+                    items: usersOut.items.map(item => item.uuid),
                 }));
                 api.dispatch(updateResources(users.items));
             } catch (e) {
