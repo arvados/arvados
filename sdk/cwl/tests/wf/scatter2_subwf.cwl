@@ -86,5 +86,8 @@
       ]
     }
   ],
+  "$namespaces": {
+    "arv": "http://arvados.org/cwl#"
+  },
   "cwlVersion": "v1.0"
 }

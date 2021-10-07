@@ -9,22 +9,25 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
+h2(#overview). Overview
+
 Arvados can be configured to use "Singularity":https://sylabs.io/singularity/ instead of Docker to execute containers on cloud nodes or a SLURM/LSF cluster. Singularity may be preferable due to its simpler installation and lack of long-running daemon process and special system users/groups.
 
-Please note:
-* *Singularity support is currently considered experimental.*
+*Current limitations*:
 * Even when using the singularity runtime, users' container images are expected to be saved in Docker format using @arv keep docker@. Arvados converts the Docker image to Singularity format (@.sif@) at runtime as needed. Specifying a @.sif@ file as an image when submitting a container request is not yet supported.
 * Singularity does not limit the amount of memory available in a container. Each container will have access to all memory on the host where it runs, unless memory use is restricted by SLURM/LSF.
 * Programs running in containers may behave differently due to differences between Singularity and Docker.
 ** The root (image) filesystem is read-only in a Singularity container. Programs that attempt to write outside a designated output or temporary directory are likely to fail.
 ** The Docker ENTRYPOINT instruction is ignored.
-* Arvados is currently tested with Singularity version 3.5.2.
+* Arvados is tested with Singularity version 3.7.4. Other versions may not work.
 
-To use singularity, first make sure "Singularity is installed":https://sylabs.io/guides/3.5/user-guide/quick_start.html on your cloud worker image or SLURM/LSF compute nodes as applicable. Note @squashfs-tools@ is required.
+h2(#configuration). Configuration
+
+To use singularity, first make sure "Singularity is installed":https://sylabs.io/guides/3.7/user-guide/quick_start.html on your cloud worker image or SLURM/LSF compute nodes as applicable. Note @squashfs-tools@ is required.
 
 <notextile>
 <pre><code>$ <span class="userinput">singularity version</span>
-3.5.2
+3.7.4
 $ <span class="userinput">mksquashfs -version</span>
 mksquashfs version 4.3-git (2014/06/09)
 [...]
@@ -34,7 +37,7 @@ mksquashfs version 4.3-git (2014/06/09)
 Then update @Containers.RuntimeEngine@ in your cluster configuration:
 
 <notextile>
-<pre><code>      # Container runtime: "docker" (default) or "singularity" (experimental)
+<pre><code>      # Container runtime: "docker" (default) or "singularity"
       RuntimeEngine: singularity
 </code></pre>
 </notextile>

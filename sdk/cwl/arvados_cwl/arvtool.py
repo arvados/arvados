@@ -62,7 +62,7 @@ class ArvadosCommandTool(CommandLineTool):
         (docker_req, docker_is_req) = self.get_requirement("DockerRequirement")
         if not docker_req:
             self.hints.append({"class": "DockerRequirement",
-                               "dockerImageId": "arvados/jobs:"+__version__})
+                               "dockerPull": "arvados/jobs:"+__version__})
 
         self.arvrunner = arvrunner
 

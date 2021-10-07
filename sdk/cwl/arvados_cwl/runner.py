@@ -105,7 +105,8 @@ def make_builder(joborder, hints, requirements, runtimeContext, metadata):
                  outdir="",              # type: Text
                  tmpdir="",              # type: Text
                  stagedir="",            # type: Text
-                 cwlVersion=metadata.get("http://commonwl.org/cwltool#original_cwlVersion") or metadata.get("cwlVersion")
+                 cwlVersion=metadata.get("http://commonwl.org/cwltool#original_cwlVersion") or metadata.get("cwlVersion"),
+                 container_engine="docker"
                 )
 
 def search_schemadef(name, reqs):
@@ -183,7 +184,7 @@ def set_secondary(fsaccess, builder, inputschema, secondaryspec, primary, discov
             elif isinstance(pattern, dict):
                 specs.append(pattern)
             elif isinstance(pattern, str):
-                specs.append({"pattern": pattern})
+                specs.append({"pattern": pattern, "required": sf.get("required")})
             else:
                 raise SourceLine(primary["secondaryFiles"], i, validate.ValidationException).makeError(
                     "Expression must return list, object, string or null")
@@ -192,7 +193,9 @@ def set_secondary(fsaccess, builder, inputschema, secondaryspec, primary, discov
         for i, sf in enumerate(specs):
             if isinstance(sf, dict):
                 if sf.get("class") == "File":
-                    pattern = sf["basename"]
+                    pattern = None
+                    sfpath = sf["location"]
+                    required = True
                 else:
                     pattern = sf["pattern"]
                     required = sf.get("required")
@@ -203,11 +206,16 @@ def set_secondary(fsaccess, builder, inputschema, secondaryspec, primary, discov
                 raise SourceLine(primary["secondaryFiles"], i, validate.ValidationException).makeError(
                     "Expression must return list, object, string or null")
 
-            sfpath = substitute(primary["location"], pattern)
+            if pattern is not None:
+                sfpath = substitute(primary["location"], pattern)
+
             required = builder.do_eval(required, context=primary)
 
             if fsaccess.exists(sfpath):
-                found.append({"location": sfpath, "class": "File"})
+                if pattern is not None:
+                    found.append({"location": sfpath, "class": "File"})
+                else:
+                    found.append(sf)
             elif required:
                 raise SourceLine(primary["secondaryFiles"], i, validate.ValidationException).makeError(
                     "Required secondary file '%s' does not exist" % sfpath)

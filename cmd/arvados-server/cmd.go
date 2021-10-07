@@ -17,6 +17,7 @@ import (
 	"git.arvados.org/arvados.git/lib/install"
 	"git.arvados.org/arvados.git/lib/lsf"
 	"git.arvados.org/arvados.git/lib/recovercollection"
+	"git.arvados.org/arvados.git/services/keepstore"
 	"git.arvados.org/arvados.git/services/ws"
 )
 
@@ -37,6 +38,7 @@ var (
 		"dispatch-lsf":       lsf.DispatchCommand,
 		"install":            install.Command,
 		"init":               install.InitCommand,
+		"keepstore":          keepstore.Command,
 		"recover-collection": recovercollection.Command,
 		"ws":                 ws.Command,
 	})

@@ -99,7 +99,8 @@ class ArvCwlExecutor(object):
                  arvargs=None,
                  keep_client=None,
                  num_retries=4,
-                 thread_count=4):
+                 thread_count=4,
+                 stdout=sys.stdout):
 
         if arvargs is None:
             arvargs = argparse.Namespace()
@@ -132,6 +133,7 @@ class ArvCwlExecutor(object):
         self.should_estimate_cache_size = True
         self.fs_access = None
         self.secret_store = None
+        self.stdout = stdout
 
         if keep_client is not None:
             self.keep_client = keep_client
@@ -549,7 +551,7 @@ The 'jobs' API is no longer supported.
         if runtimeContext.submit_request_uuid and self.work_api != "containers":
             raise Exception("--submit-request-uuid requires containers API, but using '{}' api".format(self.work_api))
 
-        default_storage_classes = ",".join([k for k,v in self.api.config()["StorageClasses"].items() if v.get("Default") is True])
+        default_storage_classes = ",".join([k for k,v in self.api.config().get("StorageClasses", {"default": {"Default": True}}).items() if v.get("Default") is True])
         if runtimeContext.storage_classes == "default":
             runtimeContext.storage_classes = default_storage_classes
         if runtimeContext.intermediate_storage_classes == "default":
@@ -602,14 +604,15 @@ The 'jobs' API is no longer supported.
         if existing_uuid or runtimeContext.create_workflow:
             # Create a pipeline template or workflow record and exit.
             if self.work_api == "containers":
-                return (upload_workflow(self, tool, job_order,
+                uuid = upload_workflow(self, tool, job_order,
                                         self.project_uuid,
                                         uuid=existing_uuid,
                                         submit_runner_ram=runtimeContext.submit_runner_ram,
                                         name=runtimeContext.name,
                                         merged_map=merged_map,
-                                        submit_runner_image=runtimeContext.submit_runner_image),
-                        "success")
+                                        submit_runner_image=runtimeContext.submit_runner_image)
+                self.stdout.write(uuid + "\n")
+                return (None, "success")
 
         self.apply_reqs(job_order, tool)
 
@@ -679,7 +682,8 @@ The 'jobs' API is no longer supported.
         if runtimeContext.submit and not runtimeContext.wait:
             runnerjob = next(jobiter)
             runnerjob.run(runtimeContext)
-            return (runnerjob.uuid, "success")
+            self.stdout.write(runnerjob.uuid+"\n")
+            return (None, "success")
 
         current_container = arvados_cwl.util.get_current_container(self.api, self.num_retries, logger)
         if current_container:

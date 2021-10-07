@@ -11,7 +11,7 @@
 // The HTTP handlers are responsible for enforcing permission policy,
 // so these tests must exercise all possible permission permutations.
 
-package main
+package keepstore
 
 import (
 	"bytes"

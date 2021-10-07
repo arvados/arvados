@@ -14,6 +14,7 @@ import logging
 import os
 import re
 import socket
+import ssl
 import sys
 import time
 import types
@@ -57,58 +58,67 @@ class OrderedJsonModel(apiclient.model.JsonModel):
 
 
 def _intercept_http_request(self, uri, method="GET", headers={}, **kwargs):
-    if (self.max_request_size and
-        kwargs.get('body') and
-        self.max_request_size < len(kwargs['body'])):
-        raise apiclient_errors.MediaUploadSizeError("Request size %i bytes exceeds published limit of %i bytes" % (len(kwargs['body']), self.max_request_size))
-
-    if config.get("ARVADOS_EXTERNAL_CLIENT", "") == "true":
-        headers['X-External-Client'] = '1'
-
-    headers['Authorization'] = 'OAuth2 %s' % self.arvados_api_token
     if not headers.get('X-Request-Id'):
         headers['X-Request-Id'] = self._request_id()
+    try:
+        if (self.max_request_size and
+            kwargs.get('body') and
+            self.max_request_size < len(kwargs['body'])):
+            raise apiclient_errors.MediaUploadSizeError("Request size %i bytes exceeds published limit of %i bytes" % (len(kwargs['body']), self.max_request_size))
 
-    retryable = method in [
-        'DELETE', 'GET', 'HEAD', 'OPTIONS', 'PUT']
-    retry_count = self._retry_count if retryable else 0
+        if config.get("ARVADOS_EXTERNAL_CLIENT", "") == "true":
+            headers['X-External-Client'] = '1'
 
-    if (not retryable and
-        time.time() - self._last_request_time > self._max_keepalive_idle):
-        # High probability of failure due to connection atrophy. Make
-        # sure this request [re]opens a new connection by closing and
-        # forgetting all cached connections first.
-        for conn in self.connections.values():
-            conn.close()
-        self.connections.clear()
+        headers['Authorization'] = 'OAuth2 %s' % self.arvados_api_token
 
-    delay = self._retry_delay_initial
-    for _ in range(retry_count):
-        self._last_request_time = time.time()
-        try:
-            return self.orig_http_request(uri, method, headers=headers, **kwargs)
-        except http.client.HTTPException:
-            _logger.debug("Retrying API request in %d s after HTTP error",
-                          delay, exc_info=True)
-        except socket.error:
-            # This is the one case where httplib2 doesn't close the
-            # underlying connection first.  Close all open
-            # connections, expecting this object only has the one
-            # connection to the API server.  This is safe because
-            # httplib2 reopens connections when needed.
-            _logger.debug("Retrying API request in %d s after socket error",
-                          delay, exc_info=True)
+        retryable = method in [
+            'DELETE', 'GET', 'HEAD', 'OPTIONS', 'PUT']
+        retry_count = self._retry_count if retryable else 0
+
+        if (not retryable and
+            time.time() - self._last_request_time > self._max_keepalive_idle):
+            # High probability of failure due to connection atrophy. Make
+            # sure this request [re]opens a new connection by closing and
+            # forgetting all cached connections first.
             for conn in self.connections.values():
                 conn.close()
-        except httplib2.SSLHandshakeError as e:
-            # Intercept and re-raise with a better error message.
-            raise httplib2.SSLHandshakeError("Could not connect to %s\n%s\nPossible causes: remote SSL/TLS certificate expired, or was issued by an untrusted certificate authority." % (uri, e))
+            self.connections.clear()
 
-        time.sleep(delay)
-        delay = delay * self._retry_delay_backoff
+        delay = self._retry_delay_initial
+        for _ in range(retry_count):
+            self._last_request_time = time.time()
+            try:
+                return self.orig_http_request(uri, method, headers=headers, **kwargs)
+            except http.client.HTTPException:
+                _logger.debug("[%s] Retrying API request in %d s after HTTP error",
+                              headers['X-Request-Id'], delay, exc_info=True)
+            except ssl.SSLCertVerificationError as e:
+                raise ssl.SSLCertVerificationError(e.args[0], "Could not connect to %s\n%s\nPossible causes: remote SSL/TLS certificate expired, or was issued by an untrusted certificate authority." % (uri, e)) from None
+            except socket.error:
+                # This is the one case where httplib2 doesn't close the
+                # underlying connection first.  Close all open
+                # connections, expecting this object only has the one
+                # connection to the API server.  This is safe because
+                # httplib2 reopens connections when needed.
+                _logger.debug("[%s] Retrying API request in %d s after socket error",
+                              headers['X-Request-Id'], delay, exc_info=True)
+                for conn in self.connections.values():
+                    conn.close()
 
-    self._last_request_time = time.time()
-    return self.orig_http_request(uri, method, headers=headers, **kwargs)
+            time.sleep(delay)
+            delay = delay * self._retry_delay_backoff
+
+        self._last_request_time = time.time()
+        return self.orig_http_request(uri, method, headers=headers, **kwargs)
+    except Exception as e:
+        # Prepend "[request_id] " to the error message, which we
+        # assume is the first string argument passed to the exception
+        # constructor.
+        for i in range(len(e.args or ())):
+            if type(e.args[i]) == type(""):
+                e.args = e.args[:i] + ("[{}] {}".format(headers['X-Request-Id'], e.args[i]),) + e.args[i+1:]
+                raise type(e)(*e.args)
+        raise
 
 def _patch_http_request(http, api_token):
     http.arvados_api_token = api_token

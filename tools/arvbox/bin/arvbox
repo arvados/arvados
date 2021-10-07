@@ -526,6 +526,7 @@ case "$subcmd" in
             echo "Status: running"
             echo "Container IP: $(getip)"
             echo "Published host: $(gethost)"
+	    echo "Workbench: https://$(gethost)"
         else
             echo "Status: not running"
         fi

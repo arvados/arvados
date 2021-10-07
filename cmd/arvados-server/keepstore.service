@@ -6,6 +6,7 @@
 Description=Arvados Keep Storage Daemon
 Documentation=https://doc.arvados.org/
 After=network.target
+AssertPathExists=/etc/arvados/config.yml
 
 # systemd>=230 (debian:9) obeys StartLimitIntervalSec in the [Unit] section
 StartLimitIntervalSec=0

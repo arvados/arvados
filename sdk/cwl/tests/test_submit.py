@@ -87,6 +87,7 @@ def stubs(func):
         stubs.api = mock.MagicMock()
         stubs.api._rootDesc = get_rootDesc()
         stubs.api._rootDesc["uuidPrefix"] = "zzzzz"
+        stubs.api._rootDesc["revision"] = "20210628"
 
         stubs.api.users().current().execute.return_value = {
             "uuid": stubs.fake_user_uuid,
@@ -446,7 +447,7 @@ class TestSubmit(unittest.TestCase):
                 "enableReuse": False,
             },
         ]
-        expect_container["mounts"]["/var/lib/cwl/workflow.json"]["content"]["$graph"][0]["$namespaces"] = {
+        expect_container["mounts"]["/var/lib/cwl/workflow.json"]["content"]["$namespaces"] = {
             "arv": "http://arvados.org/cwl#",
             "cwltool": "http://commonwl.org/cwltool#"
         }
@@ -572,6 +573,7 @@ class TestSubmit(unittest.TestCase):
     def test_default_storage_classes_correctly_propagate_to_make_output_collection(self, stubs, make_output, job, tq):
         final_output_c = arvados.collection.Collection()
         make_output.return_value = ({},final_output_c)
+        stubs.api.config().get.return_value = {"default": {"Default": True}}
 
         def set_final_output(job_order, output_callback, runtimeContext):
             output_callback("zzzzz-4zz18-zzzzzzzzzzzzzzzz", "success")
@@ -1032,7 +1034,7 @@ class TestSubmit(unittest.TestCase):
                 "keep_cache": 512
             }
         ]
-        expect_container["mounts"]["/var/lib/cwl/workflow.json"]["content"]["$graph"][0]["$namespaces"] = {
+        expect_container["mounts"]["/var/lib/cwl/workflow.json"]["content"]["$namespaces"] = {
             "arv": "http://arvados.org/cwl#",
         }
         expect_container['command'] = ['arvados-cwl-runner', '--local', '--api=containers',
@@ -1126,9 +1128,6 @@ class TestSubmit(unittest.TestCase):
                     "content": {
                         "$graph": [
                             {
-                                "$namespaces": {
-                                    "cwltool": "http://commonwl.org/cwltool#"
-                                },
                                 "arguments": [
                                     "md5sum",
                                     "example.conf"
@@ -1217,6 +1216,9 @@ class TestSubmit(unittest.TestCase):
                                 ]
                             }
                         ],
+                        "$namespaces": {
+                            "cwltool": "http://commonwl.org/cwltool#"
+                        },
                         "cwlVersion": "v1.0"
                     },
                     "kind": "json"
@@ -1445,7 +1447,7 @@ class TestSubmit(unittest.TestCase):
                 ],
             }
         ]
-        expect_container["mounts"]["/var/lib/cwl/workflow.json"]["content"]["$graph"][0]["$namespaces"] = {
+        expect_container["mounts"]["/var/lib/cwl/workflow.json"]["content"]["$namespaces"] = {
             "arv": "http://arvados.org/cwl#"
         }
 
