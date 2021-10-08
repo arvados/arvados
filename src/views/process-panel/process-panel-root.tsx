@@ -10,6 +10,7 @@ import { ProcessIcon } from 'components/icon/icon';
 import { Process } from 'store/processes/process';
 import { SubprocessPanel } from 'views/subprocess-panel/subprocess-panel';
 import { SubprocessFilterDataProps } from 'components/subprocess-filter/subprocess-filter';
+import { MPVContainer } from 'components/multi-panel-view/multi-panel-view';
 
 export interface ProcessPanelRootDataProps {
     process?: Process;
@@ -30,7 +31,7 @@ export type ProcessPanelRootProps = ProcessPanelRootDataProps & ProcessPanelRoot
 
 export const ProcessPanelRoot = ({ process, ...props }: ProcessPanelRootProps) =>
     process
-        ? <Grid container spacing={16} alignItems="stretch">
+        ? <MPVContainer spacing={8} panelNames={["Info", "Subprocesses"]} alignItems="stretch">
             <Grid item sm={12} md={12}>
                 <ProcessInformationCard
                     process={process}
@@ -44,7 +45,7 @@ export const ProcessPanelRoot = ({ process, ...props }: ProcessPanelRootProps) =
             <Grid item sm={12} md={12}>
                 <SubprocessPanel />
             </Grid>
-        </Grid>
+        </MPVContainer>
         : <Grid container
             alignItems='center'
             justify='center'
