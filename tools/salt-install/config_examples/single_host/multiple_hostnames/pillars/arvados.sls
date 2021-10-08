@@ -84,7 +84,7 @@ arvados:
       # certificate: ''
       # key: ''
       # required to test with arvados-snakeoil certs
-      insecure: true
+      insecure: false
 
     resources:
       virtual_machines:

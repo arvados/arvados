@@ -51,13 +51,13 @@ extra_snakeoil_certs_dependencies_pkg_installed:
 # random generator, cf
 #   https://github.com/openssl/openssl/issues/7754
 #
-arvados_test_salt_states_examples_single_host_snakeoil_certs_file_comment_etc_openssl_conf:
+extra_snakeoil_certs_file_comment_etc_openssl_conf:
   file.comment:
     - name: /etc/ssl/openssl.cnf
     - regex: ^RANDFILE.*
     - onlyif: grep -q ^RANDFILE /etc/ssl/openssl.cnf
     - require_in:
-      - cmd: arvados_test_salt_states_examples_single_host_snakeoil_certs_arvados_snake_oil_ca_cmd_run
+      - cmd: extra_snakeoil_certs_arvados_snakeoil_ca_cmd_run
 
 extra_snakeoil_certs_arvados_snakeoil_ca_cmd_run:
   # Taken from https://github.com/arvados/arvados/blob/master/tools/arvbox/lib/arvbox/docker/service/certificate/run

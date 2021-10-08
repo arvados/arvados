@@ -55,7 +55,7 @@ nginx:
         enabled: true
         overwrite: true
         requires:
-          file: nginx_snippet_arvados-snakeoil.conf
+          file: extra_custom_certs_file_copy_arvados-webshell.pem
         config:
           - server:
             - server_name: webshell.__CLUSTER__.__DOMAIN__
@@ -94,7 +94,8 @@ nginx:
                 - add_header: "'Access-Control-Allow-Headers' 'DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type'"
             {%- endfor %}
             - include: snippets/ssl_hardening_default.conf
-            - include: snippets/arvados-snakeoil.conf
+            - ssl_certificate: /etc/nginx/ssl/arvados-webshell.pem
+            - ssl_certificate_key: /etc/nginx/ssl/arvados-webshell.key
             - access_log: /var/log/nginx/webshell.__CLUSTER__.__DOMAIN__.access.log combined
             - error_log: /var/log/nginx/webshell.__CLUSTER__.__DOMAIN__.error.log
 

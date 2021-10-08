@@ -37,7 +37,7 @@ nginx:
         enabled: true
         overwrite: true
         requires:
-          file: nginx_snippet_arvados-snakeoil.conf
+          __CERT_REQUIRES__
         config:
           - server:
             - server_name: __CLUSTER__.__DOMAIN__
@@ -55,7 +55,8 @@ nginx:
               - proxy_set_header: 'X-Forwarded-For $proxy_add_x_forwarded_for'
               - proxy_set_header: 'X-External-Client $external_client'
             - include: snippets/ssl_hardening_default.conf
-            - include: snippets/arvados-snakeoil.conf
-            - access_log: /var/log/nginx/__CLUSTER__.__DOMAIN__.access.log combined
-            - error_log: /var/log/nginx/__CLUSTER__.__DOMAIN__.error.log
+            - ssl_certificate: __CERT_PEM__
+            - ssl_certificate_key: __CERT_KEY__
+            - access_log: /var/log/nginx/controller.__CLUSTER__.__DOMAIN__.access.log combined
+            - error_log: /var/log/nginx/controller.__CLUSTER__.__DOMAIN__.error.log
             - client_max_body_size: 128m

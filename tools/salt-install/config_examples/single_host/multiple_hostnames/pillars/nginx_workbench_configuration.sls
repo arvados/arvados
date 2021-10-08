@@ -46,7 +46,7 @@ nginx:
         enabled: true
         overwrite: true
         requires:
-          file: nginx_snippet_arvados-snakeoil.conf
+          file: extra_custom_certs_file_copy_arvados-workbench.pem
         config:
           - server:
             - server_name: workbench.__CLUSTER__.__DOMAIN__
@@ -63,7 +63,8 @@ nginx:
               - proxy_set_header: 'X-Real-IP $remote_addr'
               - proxy_set_header: 'X-Forwarded-For $proxy_add_x_forwarded_for'
             - include: snippets/ssl_hardening_default.conf
-            - include: snippets/arvados-snakeoil.conf
+            - ssl_certificate: /etc/nginx/ssl/arvados-workbench.pem
+            - ssl_certificate_key: /etc/nginx/ssl/arvados-workbench.key
             - access_log: /var/log/nginx/workbench.__CLUSTER__.__DOMAIN__.access.log combined
             - error_log: /var/log/nginx/workbench.__CLUSTER__.__DOMAIN__.error.log
 
