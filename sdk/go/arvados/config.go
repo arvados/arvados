@@ -436,6 +436,7 @@ type ContainersConfig struct {
 	UsePreemptibleInstances     bool
 	RuntimeEngine               string
 	LocalKeepBlobBuffersPerVCPU int
+	LocalKeepLogsToContainerLog string
 
 	JobsAPI struct {
 		Enable         string

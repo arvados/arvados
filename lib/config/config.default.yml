@@ -929,6 +929,21 @@ Clusters:
       # in memory for the duration of the container.
       LocalKeepBlobBuffersPerVCPU: 0
 
+      # When running a dedicated keepstore process for a container
+      # (see LocalKeepBlobBuffersPerVCPU), write keepstore log
+      # messages to keepstore.txt in the container's log collection.
+      #
+      # These log messages can reveal some volume configuration
+      # details, error messages from the cloud storage provider, etc.,
+      # which are not otherwise visible to users.
+      #
+      # Accepted values:
+      # * "none" -- no keepstore.txt file
+      # * "all" -- all logs, including request and response lines
+      # * "errors" -- all logs except "response" logs with 2xx
+      #   response codes and "request" logs
+      LocalKeepLogsToContainerLog: none
+
       Logging:
         # When you run the db:delete_old_container_logs task, it will find
         # containers that have been finished for at least this many seconds,

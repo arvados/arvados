@@ -1775,14 +1775,29 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 		return 1
 	}
 
-	if keepstore != nil {
-		w, err := cr.NewLogWriter("keepstore")
+	if keepstore == nil {
+		// Nothing is written to keepstoreLogbuf, no need to
+		// call SetWriter.
+	} else if logWhat := conf.Cluster.Containers.LocalKeepLogsToContainerLog; logWhat == "none" {
+		keepstoreLogbuf.SetWriter(io.Discard)
+	} else {
+		logwriter, err := cr.NewLogWriter("keepstore")
 		if err != nil {
 			log.Print(err)
 			return 1
 		}
-		cr.keepstoreLogger = NewThrottledLogger(w)
-		err = keepstoreLogbuf.SetWriter(cr.keepstoreLogger)
+		cr.keepstoreLogger = NewThrottledLogger(logwriter)
+
+		var writer io.WriteCloser = cr.keepstoreLogger
+		if logWhat == "errors" {
+			writer = &filterKeepstoreErrorsOnly{WriteCloser: writer}
+		} else if logWhat != "all" {
+			// should have been caught earlier by
+			// dispatcher's config loader
+			log.Printf("invalid value for Containers.LocalKeepLogsToContainerLog: %q", logWhat)
+			return 1
+		}
+		err = keepstoreLogbuf.SetWriter(writer)
 		if err != nil {
 			log.Print(err)
 			return 1

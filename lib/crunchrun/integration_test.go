@@ -87,9 +87,6 @@ func (s *integrationSuite) SetUpSuite(c *C) {
 	})
 	c.Assert(err, IsNil)
 	c.Logf("input pdh %s", s.input.PortableDataHash)
-
-	s.logCollection = arvados.Collection{}
-	s.outputCollection = arvados.Collection{}
 }
 
 func (s *integrationSuite) TearDownSuite(c *C) {
@@ -106,6 +103,8 @@ func (s *integrationSuite) SetUpTest(c *C) {
 	s.stdin = bytes.Buffer{}
 	s.stdout = bytes.Buffer{}
 	s.stderr = bytes.Buffer{}
+	s.logCollection = arvados.Collection{}
+	s.outputCollection = arvados.Collection{}
 	s.cr = arvados.ContainerRequest{
 		Priority:       1,
 		State:          "Committed",
@@ -165,35 +164,55 @@ func (s *integrationSuite) TestRunTrivialContainerWithSingularity(c *C) {
 }
 
 func (s *integrationSuite) TestRunTrivialContainerWithLocalKeepstore(c *C) {
-	cfg, err := config.NewLoader(nil, ctxlog.TestLogger(c)).Load()
-	c.Assert(err, IsNil)
-	cluster, err := cfg.GetCluster("")
-	c.Assert(err, IsNil)
-	for uuid, volume := range cluster.Volumes {
-		volume.AccessViaHosts = nil
-		volume.Replication = 2
-		cluster.Volumes[uuid] = volume
+	for _, trial := range []struct {
+		logConfig           string
+		matchGetReq         Checker
+		matchPutReq         Checker
+		matchStartupMessage Checker
+	}{
+		{"none", Not(Matches), Not(Matches), Not(Matches)},
+		{"all", Matches, Matches, Matches},
+		{"errors", Not(Matches), Not(Matches), Matches},
+	} {
+		c.Logf("=== testing with Containers.LocalKeepLogsToContainerLog: %q", trial.logConfig)
+		s.SetUpTest(c)
+
+		cfg, err := config.NewLoader(nil, ctxlog.TestLogger(c)).Load()
+		c.Assert(err, IsNil)
+		cluster, err := cfg.GetCluster("")
+		c.Assert(err, IsNil)
+		for uuid, volume := range cluster.Volumes {
+			volume.AccessViaHosts = nil
+			volume.Replication = 2
+			cluster.Volumes[uuid] = volume
+		}
+		cluster.Containers.LocalKeepLogsToContainerLog = trial.logConfig
+
+		s.stdin.Reset()
+		err = json.NewEncoder(&s.stdin).Encode(ConfigData{
+			Env:         nil,
+			KeepBuffers: 1,
+			Cluster:     cluster,
+		})
+		c.Assert(err, IsNil)
+
+		s.engine = "docker"
+		s.testRunTrivialContainer(c)
+
+		fs, err := s.logCollection.FileSystem(s.client, s.kc)
+		c.Assert(err, IsNil)
+		f, err := fs.Open("keepstore.txt")
+		if trial.logConfig == "none" {
+			c.Check(err, NotNil)
+			c.Check(os.IsNotExist(err), Equals, true)
+		} else {
+			c.Assert(err, IsNil)
+			buf, err := ioutil.ReadAll(f)
+			c.Assert(err, IsNil)
+			c.Check(string(buf), trial.matchGetReq, `(?ms).*"reqMethod":"GET".*`)
+			c.Check(string(buf), trial.matchPutReq, `(?ms).*"reqMethod":"PUT".*,"reqPath":"0e3bcff26d51c895a60ea0d4585e134d".*`)
+		}
 	}
-
-	s.stdin.Reset()
-	err = json.NewEncoder(&s.stdin).Encode(ConfigData{
-		Env:         nil,
-		KeepBuffers: 1,
-		Cluster:     cluster,
-	})
-	c.Assert(err, IsNil)
-
-	s.engine = "docker"
-	s.testRunTrivialContainer(c)
-
-	fs, err := s.logCollection.FileSystem(s.client, s.kc)
-	c.Assert(err, IsNil)
-	f, err := fs.Open("keepstore.txt")
-	c.Assert(err, IsNil)
-	buf, err := ioutil.ReadAll(f)
-	c.Assert(err, IsNil)
-	c.Check(string(buf), Matches, `(?ms).*"reqMethod":"GET".*`)
-	c.Check(string(buf), Matches, `(?ms).*"reqMethod":"PUT".*,"reqPath":"0e3bcff26d51c895a60ea0d4585e134d".*`)
 }
 
 func (s *integrationSuite) testRunTrivialContainer(c *C) {

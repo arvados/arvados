@@ -120,6 +120,7 @@ var whitelist = map[string]bool{
 	"Containers.JobsAPI.Enable":                           true,
 	"Containers.JobsAPI.GitInternalDir":                   false,
 	"Containers.LocalKeepBlobBuffersPerVCPU":              false,
+	"Containers.LocalKeepLogsToContainerLog":              false,
 	"Containers.Logging":                                  false,
 	"Containers.LogReuseDecisions":                        false,
 	"Containers.LSF":                                      false,
