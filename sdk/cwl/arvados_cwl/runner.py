@@ -184,7 +184,10 @@ def set_secondary(fsaccess, builder, inputschema, secondaryspec, primary, discov
             elif isinstance(pattern, dict):
                 specs.append(pattern)
             elif isinstance(pattern, str):
-                specs.append({"pattern": pattern, "required": sf.get("required")})
+                if builder.cwlVersion == "v1.0":
+                    specs.append({"pattern": pattern, "required": True})
+                else:
+                    specs.append({"pattern": pattern, "required": sf.get("required")})
             else:
                 raise SourceLine(primary["secondaryFiles"], i, validate.ValidationException).makeError(
                     "Expression must return list, object, string or null")
@@ -194,6 +197,9 @@ def set_secondary(fsaccess, builder, inputschema, secondaryspec, primary, discov
             if isinstance(sf, dict):
                 if sf.get("class") == "File":
                     pattern = None
+                    if sf.get("location") is None:
+                        raise SourceLine(primary["secondaryFiles"], i, validate.ValidationException).makeError(
+                            "File object is missing 'location': %s" % sf)
                     sfpath = sf["location"]
                     required = True
                 else:
