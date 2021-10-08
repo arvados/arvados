@@ -43,10 +43,13 @@ export const Chips = withStyles(styles)(
             </Grid>;
         }
 
-        renderChip = (value: Value, index: number) =>
-            <Grid item key={index}>
-                <this.chip {...{ value }} />
+        renderChip = (value: Value, index: number) => {
+            const { deletable, getLabel } = this.props;
+            return <Grid item key={index}>
+                <Chip onDelete={deletable ? this.deleteValue(value) : undefined}
+                    label={getLabel !== undefined ? getLabel(value) : value} />
             </Grid>
+        }
 
         type = 'chip';
 
