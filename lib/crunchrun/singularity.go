@@ -160,15 +160,22 @@ func (e *singularityExecutor) LoadImage(dockerImageID string, imageTarballPath s
 			return err
 		}
 
+		// Set up a cache and tmp dir for singularity build
 		err = os.Mkdir(e.tmpdir+"/cache", 0700)
 		if err != nil {
 			return err
 		}
 		defer os.RemoveAll(e.tmpdir + "/cache")
+		err = os.Mkdir(e.tmpdir+"/tmp", 0700)
+		if err != nil {
+			return err
+		}
+		defer os.RemoveAll(e.tmpdir + "/tmp")
 
 		build := exec.Command("singularity", "build", imageFilename, "docker-archive://"+e.tmpdir+"/image.tar")
 		build.Env = os.Environ()
 		build.Env = append(build.Env, "SINGULARITY_CACHEDIR="+e.tmpdir+"/cache")
+		build.Env = append(build.Env, "SINGULARITY_TMPDIR="+e.tmpdir+"/tmp")
 		e.logf("%v", build.Args)
 		out, err := build.CombinedOutput()
 		// INFO:    Starting build...
