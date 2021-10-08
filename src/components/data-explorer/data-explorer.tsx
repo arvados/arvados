@@ -11,7 +11,7 @@ import { SearchInput } from 'components/search-input/search-input';
 import { ArvadosTheme } from "common/custom-theme";
 import { createTree } from 'models/tree';
 import { DataTableFilters } from 'components/data-table-filters/data-table-filters-tree';
-import { MoreOptionsIcon } from 'components/icon/icon';
+import { CloseIcon, MoreOptionsIcon } from 'components/icon/icon';
 import { PaperProps } from '@material-ui/core/Paper';
 
 type CssRules = 'searchBox' | "toolbar" | "toolbarUnderTitle" | "footer" | "root" | 'moreOptionsButton' | 'title';
@@ -62,6 +62,7 @@ interface DataExplorerDataProps<T> {
     title?: React.ReactNode;
     paperKey?: string;
     currentItemUuid: string;
+    panelName?: string
 }
 
 interface DataExplorerActionProps<T> {
@@ -77,6 +78,7 @@ interface DataExplorerActionProps<T> {
     onChangeRowsPerPage: (rowsPerPage: number) => void;
     onLoadMore: (page: number) => void;
     extractKey?: (item: T) => React.Key;
+    doHidePanel?: () => void;
 }
 
 type DataExplorerProps<T> = DataExplorerDataProps<T> & DataExplorerActionProps<T> & WithStyles<CssRules>;
@@ -94,7 +96,7 @@ export const DataExplorer = withStyles(styles)(
                 rowsPerPage, rowsPerPageOptions, onColumnToggle, searchLabel, searchValue, onSearch,
                 items, itemsAvailable, onRowClick, onRowDoubleClick, classes,
                 dataTableDefaultView, hideColumnSelector, actions, paperProps, hideSearchInput,
-                paperKey, fetchMode, currentItemUuid, title
+                paperKey, fetchMode, currentItemUuid, title, doHidePanel, panelName
             } = this.props;
             return <Paper className={classes.root} {...paperProps} key={paperKey}>
                 {title && <div className={classes.title}>{title}</div>}
@@ -111,6 +113,10 @@ export const DataExplorer = withStyles(styles)(
                             columns={columns}
                             onColumnToggle={onColumnToggle} />}
                     </Grid>
+                    { doHidePanel &&
+                        <Tooltip title={`Close ${panelName || 'panel'}`} disableFocusListener>
+                            <Button onClick={doHidePanel}><CloseIcon /></Button>
+                        </Tooltip> }
                 </Toolbar>}
                 <DataTable
                     columns={this.props.contextMenuColumn ? [...columns, this.contextMenuColumn] : columns}

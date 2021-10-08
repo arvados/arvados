@@ -5,10 +5,10 @@
 import React from 'react';
 import {
     StyleRulesCallback, WithStyles, withStyles, Card,
-    CardHeader, IconButton, CardContent, Grid, Chip, Typography, Tooltip
+    CardHeader, IconButton, CardContent, Grid, Chip, Typography, Tooltip, Button
 } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
-import { MoreOptionsIcon, ProcessIcon } from 'components/icon/icon';
+import { CloseIcon, MoreOptionsIcon, ProcessIcon } from 'components/icon/icon';
 import { DetailsAttribute } from 'components/details-attribute/details-attribute';
 import { Process } from 'store/processes/process';
 import { getProcessStatus, getProcessStatusColor } from 'store/processes/process';
@@ -81,12 +81,14 @@ export interface ProcessInformationCardDataProps {
     navigateToOutput: (uuid: string) => void;
     openWorkflow: (uuid: string) => void;
     cancelProcess: (uuid: string) => void;
+    doHidePanel?: () => void;
+    panelName?: string;
 }
 
 type ProcessInformationCardProps = ProcessInformationCardDataProps & WithStyles<CssRules, true>;
 
 export const ProcessInformationCard = withStyles(styles, { withTheme: true })(
-    ({ classes, process, onContextMenu, theme, openProcessInputDialog, navigateToOutput, openWorkflow, cancelProcess }: ProcessInformationCardProps) => {
+    ({ classes, process, onContextMenu, theme, openProcessInputDialog, navigateToOutput, openWorkflow, cancelProcess, doHidePanel, panelName }: ProcessInformationCardProps) => {
         const { container } = process;
         const startedAt = container ? formatDate(container.startedAt) : 'N/A';
         const finishedAt = container ? formatDate(container.finishedAt) : 'N/A';
@@ -111,6 +113,10 @@ export const ProcessInformationCard = withStyles(styles, { withTheme: true })(
                                 <MoreOptionsIcon />
                             </IconButton>
                         </Tooltip>
+                        { doHidePanel &&
+                        <Tooltip title={`Close ${panelName || 'panel'}`} disableFocusListener>
+                            <Button onClick={doHidePanel}><CloseIcon /></Button>
+                        </Tooltip> }
                     </div>
                 }
                 title={

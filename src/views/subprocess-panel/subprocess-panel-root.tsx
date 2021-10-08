@@ -65,12 +65,14 @@ export const subprocessPanelColumns: DataColumns<string> = [
 
 export interface SubprocessPanelDataProps {
     resources: ResourcesState;
+    panelName?: string;
 }
 
 export interface SubprocessPanelActionProps {
     onItemClick: (item: string) => void;
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: string, resources: ResourcesState) => void;
     onItemDoubleClick: (item: string) => void;
+    doHidePanel?: () => void;
 }
 
 type SubprocessPanelProps = SubprocessPanelActionProps & SubprocessPanelDataProps;
@@ -91,5 +93,7 @@ export const SubprocessPanelRoot = (props: SubprocessPanelProps) => {
             <DataTableDefaultView
                 icon={ProcessIcon}
                 messages={DEFAULT_VIEW_MESSAGES} />
-        } />;
+        }
+        doHidePanel={props.doHidePanel}
+        panelName={props.panelName} />;
 };
