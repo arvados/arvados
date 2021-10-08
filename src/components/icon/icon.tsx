@@ -112,6 +112,7 @@ export const FileIcon: IconType = (props) => <DescriptionIcon {...props} />;
 export const HelpIcon: IconType = (props) => <Help {...props} />;
 export const HelpOutlineIcon: IconType = (props) => <HelpOutline {...props} />;
 export const ImportContactsIcon: IconType = (props) => <ImportContacts {...props} />;
+export const InfoIcon: IconType = (props) => <Info {...props} />;
 export const InputIcon: IconType = (props) => <InsertDriveFile {...props} />;
 export const KeyIcon: IconType = (props) => <VpnKey {...props} />;
 export const LogIcon: IconType = (props) => <SettingsEthernet {...props} />;
