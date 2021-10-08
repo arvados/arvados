@@ -160,7 +160,10 @@ func (e *singularityExecutor) LoadImage(dockerImageID string, imageTarballPath s
 			return err
 		}
 
-		os.Mkdir(e.tmpdir+"/cache", 0700)
+		err = os.Mkdir(e.tmpdir+"/cache", 0700)
+		if err != nil {
+			return err
+		}
 		defer os.RemoveAll(e.tmpdir + "/cache")
 
 		build := exec.Command("singularity", "build", imageFilename, "docker-archive://"+e.tmpdir+"/image.tar")
