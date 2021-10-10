@@ -98,7 +98,7 @@ def init_config
 end
 
 
-subcommands = %w(copy create edit get keep pipeline run tag ws)
+subcommands = %w(copy create edit get keep tag ws)
 
 def exec_bin bin, opts
   bin_path = `which #{bin.shellescape}`.strip
@@ -116,7 +116,7 @@ def check_subcommands client, arvados, subcommand, global_opts, remaining_opts
     arv_edit client, arvados, global_opts, remaining_opts
   when 'get'
     arv_get client, arvados, global_opts, remaining_opts
-  when 'copy', 'tag', 'ws', 'run'
+  when 'copy', 'tag', 'ws'
     exec_bin "arv-#{subcommand}", remaining_opts
   when 'keep'
     @sub = remaining_opts.shift
