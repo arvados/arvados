@@ -21,7 +21,7 @@ nginx:
   servers:
     managed:
       ### DEFAULT
-      arvados_controller_default:
+      arvados_controller_default.conf:
         enabled: true
         overwrite: true
         config:
@@ -29,14 +29,16 @@ nginx:
             - server_name: __CLUSTER__.__DOMAIN__
             - listen:
               - 80 default
+            - location /.well-known:
+              - root: /var/www
             - location /:
               - return: '301 https://$host$request_uri'
 
-      arvados_controller_ssl:
+      arvados_controller_ssl.conf:
         enabled: true
         overwrite: true
         requires:
-          cmd: create-initial-cert-__CLUSTER__.__DOMAIN__-__CLUSTER__.__DOMAIN__
+          __CERT_REQUIRES__
         config:
           - server:
             - server_name: __CLUSTER__.__DOMAIN__
@@ -54,7 +56,8 @@ nginx:
               - proxy_set_header: 'X-Forwarded-For $proxy_add_x_forwarded_for'
               - proxy_set_header: 'X-External-Client $external_client'
             - include: snippets/ssl_hardening_default.conf
-            - include: snippets/__CLUSTER__.__DOMAIN___letsencrypt_cert[.]conf
+            - ssl_certificate: __CERT_PEM__
+            - ssl_certificate_key: __CERT_KEY__
             - access_log: /var/log/nginx/controller.__CLUSTER__.__DOMAIN__.access.log combined
             - error_log: /var/log/nginx/controller.__CLUSTER__.__DOMAIN__.error.log
             - client_max_body_size: 128m

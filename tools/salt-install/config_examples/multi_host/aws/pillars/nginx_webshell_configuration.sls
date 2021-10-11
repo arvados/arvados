@@ -17,7 +17,7 @@ nginx:
   ### SITES
   servers:
     managed:
-      arvados_webshell_default:
+      arvados_webshell_default.conf:
         enabled: true
         overwrite: true
         config:
@@ -28,16 +28,16 @@ nginx:
             - location /:
               - return: '301 https://$host$request_uri'
 
-      arvados_webshell_ssl:
+      arvados_webshell_ssl.conf:
         enabled: true
         overwrite: true
         requires:
-          cmd: create-initial-cert-webshell.__CLUSTER__.__DOMAIN__-webshell.__CLUSTER__.__DOMAIN__
+          __CERT_REQUIRES__
         config:
           - server:
             - server_name: webshell.__CLUSTER__.__DOMAIN__
             - listen:
-              - __CONTROLLER_EXT_SSL_PORT__ http2 ssl
+              - __WEBSHELL_EXT_SSL_PORT__ http2 ssl
             - index: index.html index.htm
             - location /shell.__CLUSTER__.__DOMAIN__:
               - proxy_pass: 'http://webshell_upstream'
@@ -69,7 +69,8 @@ nginx:
                 - add_header: "'Access-Control-Allow-Headers' 'DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type'"
 
             - include: snippets/ssl_hardening_default.conf
-            - include: snippets/webshell.__CLUSTER__.__DOMAIN___letsencrypt_cert[.]conf
+            - ssl_certificate: __CERT_PEM__
+            - ssl_certificate_key: __CERT_KEY__
             - access_log: /var/log/nginx/webshell.__CLUSTER__.__DOMAIN__.access.log combined
             - error_log: /var/log/nginx/webshell.__CLUSTER__.__DOMAIN__.error.log
 
