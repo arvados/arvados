@@ -55,6 +55,27 @@ cp -r config_examples/single_host/single_hostname local_config_dir
 
 Edit the variables in the <i>local.params</i> file. Pay attention to the <b>*_PORT, *_TOKEN</b> and <b>*KEY</b> variables.
 
+If you plan to use custom certificates, please set the variable <i>USE_LETSENCRYPT=no</i> and copy your certificates to the directory specified with the variable @CUSTOM_CERTS_DIR@ (usually "./certs") in the remote directory where you copied the @provision.sh@ script. From this dir, the provision script will install the certificates required for the role you're installing.
+
+The script expects cert/key files with these basenames (matching the role except for <i>keepweb</i>, which is split in both <i>downoad / collections</i>):
+
+* "controller"
+* "websocket"
+* "workbench"
+* "workbench2"
+* "webshell"
+* "download"         # Part of keepweb
+* "collections"      # Part of keepweb
+* "keepproxy"
+
+Ie., for 'keepproxy', the script will lookup for
+
+<notextile>
+<pre><code>${CUSTOM_CERTS_DIR}/keepproxy.crt
+${CUSTOM_CERTS_DIR}/keepproxy.key
+</code></pre>
+</notextile>
+
 h3(#single_host_multiple_hostnames). Single host / multiple hostnames (Alternative configuration)
 <notextile>
 <pre><code>cp local.params.example.single_host_multiple_hostnames local.params

@@ -63,7 +63,7 @@ DATABASE_PASSWORD=please_set_this_to_some_secure_value
 # salt formula (https://github.com/saltstack-formulas/letsencrypt-formula) to try to
 # automatically obtain and install SSL certificates for your instances or set this
 # variable to "no", provide and upload your own certificates to the instances and
-# modify the 'nginx_*' salt pillars accordingly (see CUSTOM_CERTS_DIR below) 
+# modify the 'nginx_*' salt pillars accordingly (see CUSTOM_CERTS_DIR below)
 USE_LETSENCRYPT="yes"
 USE_LETSENCRYPT_IAM_USER="yes"
 # For collections, we need to obtain a wildcard certificate for
