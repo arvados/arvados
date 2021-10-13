@@ -301,11 +301,18 @@ export const ResourceLinkClass = connect(
 // };
 
 const renderLink = (dispatch: Dispatch, item: Resource) => {
-    const name = (item as LinkResource).name;
-    const fullName = getUserDisplayName(item as UserResource);
+    var displayName = '';
+
+    if ((item as UserResource).kind == ResourceKind.USER
+          && typeof (item as UserResource).firstName !== 'undefined') {
+        // We can be sure the resource is UserResource
+        displayName = getUserDisplayName(item as UserResource);
+    } else {
+        displayName = (item as GroupContentsResource).name;
+    }
 
     return <Typography noWrap color="primary" style={{ 'cursor': 'pointer' }} onClick={() => dispatch<any>(navigateTo(item.uuid))}>
-        {resourceLabel(item.kind)}: {name || fullName || item.uuid}
+        {resourceLabel(item.kind)}: {displayName || item.uuid}
     </Typography>;
 }
 
