@@ -51,8 +51,9 @@ import { UserMiddlewareService } from 'store/users/user-panel-middleware-service
 import { USERS_PANEL_ID } from 'store/users/users-actions';
 import { GroupsPanelMiddlewareService } from 'store/groups-panel/groups-panel-middleware-service';
 import { GROUPS_PANEL_ID } from 'store/groups-panel/groups-panel-actions';
-import { GroupDetailsPanelMiddlewareService } from 'store/group-details-panel/group-details-panel-middleware-service';
-import { GROUP_DETAILS_PANEL_ID } from 'store/group-details-panel/group-details-panel-actions';
+import { GroupDetailsPanelMembersMiddlewareService } from 'store/group-details-panel/group-details-panel-members-middleware-service';
+import { GroupDetailsPanelPermissionsMiddlewareService } from 'store/group-details-panel/group-details-panel-permissions-middleware-service';
+import { GROUP_DETAILS_MEMBERS_PANEL_ID, GROUP_DETAILS_PERMISSIONS_PANEL_ID } from 'store/group-details-panel/group-details-panel-actions';
 import { LINK_PANEL_ID } from 'store/link-panel/link-panel-actions';
 import { LinkMiddlewareService } from 'store/link-panel/link-panel-middleware-service';
 import { API_CLIENT_AUTHORIZATION_PANEL_ID } from 'store/api-client-authorizations/api-client-authorizations-actions';
@@ -116,8 +117,11 @@ export function configureStore(history: History, services: ServiceRepository, co
     const groupsPanelMiddleware = dataExplorerMiddleware(
         new GroupsPanelMiddlewareService(services, GROUPS_PANEL_ID)
     );
-    const groupDetailsPanelMiddleware = dataExplorerMiddleware(
-        new GroupDetailsPanelMiddlewareService(services, GROUP_DETAILS_PANEL_ID)
+    const groupDetailsPanelMembersMiddleware = dataExplorerMiddleware(
+        new GroupDetailsPanelMembersMiddlewareService(services, GROUP_DETAILS_MEMBERS_PANEL_ID)
+    );
+    const groupDetailsPanelPermissionsMiddleware = dataExplorerMiddleware(
+        new GroupDetailsPanelPermissionsMiddlewareService(services, GROUP_DETAILS_PERMISSIONS_PANEL_ID)
     );
     const linkPanelMiddleware = dataExplorerMiddleware(
         new LinkMiddlewareService(services, LINK_PANEL_ID)
@@ -157,7 +161,8 @@ export function configureStore(history: History, services: ServiceRepository, co
         workflowPanelMiddleware,
         userPanelMiddleware,
         groupsPanelMiddleware,
-        groupDetailsPanelMiddleware,
+        groupDetailsPanelMembersMiddleware,
+        groupDetailsPanelPermissionsMiddleware,
         linkPanelMiddleware,
         apiClientAuthorizationMiddlewareService,
         publicFavoritesMiddleware,

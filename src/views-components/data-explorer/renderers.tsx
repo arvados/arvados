@@ -20,7 +20,7 @@ import { WorkflowResource } from 'models/workflow';
 import { ResourceStatus as WorkflowStatus } from 'views/workflow-panel/workflow-panel-view';
 import { getUuidPrefix, openRunProcess } from 'store/workflow-panel/workflow-panel-actions';
 import { openSharingDialog } from 'store/sharing-dialog/sharing-dialog-actions';
-import { getUserFullname, User, UserResource } from 'models/user';
+import { getUserFullname, getUserDisplayName, User, UserResource } from 'models/user';
 import { toggleIsActive, toggleIsAdmin } from 'store/users/users-actions';
 import { LinkResource } from 'models/link';
 import { navigateTo } from 'store/navigation/navigation-action';
@@ -286,45 +286,50 @@ export const ResourceLinkClass = connect(
         return resource || { linkClass: '' };
     })(renderLinkClass);
 
-const renderLinkTail = (dispatch: Dispatch, item: { uuid: string, tailUuid: string, tailKind: string }) => {
-    const currentLabel = resourceLabel(item.tailKind);
-    const isUnknow = currentLabel === "Unknown";
-    return (<div>
-        {!isUnknow ? (
-            renderLink(dispatch, item.tailUuid, currentLabel)
-        ) : (
-                <Typography noWrap color="default">
-                    {item.tailUuid}
-                </Typography>
-            )}
-    </div>);
-};
+// const renderLinkTail = (dispatch: Dispatch, item: { uuid: string, tailUuid: string, tailKind: string }) => {
+//     const currentLabel = resourceLabel(item.tailKind);
+//     const isUnknow = currentLabel === "Unknown";
+//     return (<div>
+//         {!isUnknow ? (
+//             renderLink(dispatch, item.tailUuid, "name", currentLabel)
+//         ) : (
+//                 <Typography noWrap color="default">
+//                     {item.tailUuid}
+//                 </Typography>
+//             )}
+//     </div>);
+// };
 
-const renderLink = (dispatch: Dispatch, uuid: string, label: string) =>
-    <Typography noWrap color="primary" style={{ 'cursor': 'pointer' }} onClick={() => dispatch<any>(navigateTo(uuid))}>
-        {label}: {uuid}
+const renderLink = (dispatch: Dispatch, item: Resource) => {
+    const name = (item as LinkResource).name;
+    const fullName = getUserDisplayName(item as UserResource);
+
+    return <Typography noWrap color="primary" style={{ 'cursor': 'pointer' }} onClick={() => dispatch<any>(navigateTo(item.uuid))}>
+        {resourceLabel(item.kind)}: {name || fullName || item.uuid}
     </Typography>;
+}
 
 export const ResourceLinkTail = connect(
     (state: RootState, props: { uuid: string }) => {
         const resource = getResource<LinkResource>(props.uuid)(state.resources);
-        return {
-            item: resource || { uuid: '', tailUuid: '', tailKind: ResourceKind.NONE }
-        };
-    })((props: { item: any } & DispatchProp<any>) =>
-        renderLinkTail(props.dispatch, props.item));
+        const tailResource = getResource<Resource>(resource?.tailUuid || '')(state.resources);
 
-const renderLinkHead = (dispatch: Dispatch, item: { uuid: string, headUuid: string, headKind: ResourceKind }) =>
-    renderLink(dispatch, item.headUuid, resourceLabel(item.headKind));
+        return {
+            item: tailResource || { uuid: resource?.tailUuid || '', kind: resource?.headKind || ResourceKind.NONE }
+        };
+    })((props: { item: Resource } & DispatchProp<any>) =>
+        renderLink(props.dispatch, props.item));
 
 export const ResourceLinkHead = connect(
     (state: RootState, props: { uuid: string }) => {
         const resource = getResource<LinkResource>(props.uuid)(state.resources);
+        const headResource = getResource<Resource>(resource?.headUuid || '')(state.resources);
+
         return {
-            item: resource || { uuid: '', headUuid: '', headKind: ResourceKind.NONE }
+            item: headResource || { uuid: resource?.headUuid || '', kind: resource?.headKind || ResourceKind.NONE }
         };
-    })((props: { item: any } & DispatchProp<any>) =>
-        renderLinkHead(props.dispatch, props.item));
+    })((props: { item: Resource } & DispatchProp<any>) =>
+        renderLink(props.dispatch, props.item));
 
 export const ResourceLinkUuid = connect(
     (state: RootState, props: { uuid: string }) => {

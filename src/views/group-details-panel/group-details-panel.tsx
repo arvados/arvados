@@ -7,11 +7,11 @@ import { connect } from 'react-redux';
 
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { DataColumns } from 'components/data-table/data-table';
-import { ResourceFullName, ResourceUuid, ResourceEmail, ResourceUsername } from 'views-components/data-explorer/renderers';
+import { ResourceFullName, ResourceUuid, ResourceEmail, ResourceUsername, ResourceLinkName, ResourceLinkHead, ResourceName } from 'views-components/data-explorer/renderers';
 import { createTree } from 'models/tree';
 import { noop } from 'lodash/fp';
 import { RootState } from 'store/store';
-import { GROUP_DETAILS_PANEL_ID, GROUP_PERMISSIONS_PANEL_ID, openAddGroupMembersDialog } from 'store/group-details-panel/group-details-panel-actions';
+import { GROUP_DETAILS_MEMBERS_PANEL_ID, GROUP_DETAILS_PERMISSIONS_PANEL_ID, openAddGroupMembersDialog } from 'store/group-details-panel/group-details-panel-actions';
 import { openContextMenu } from 'store/context-menu/context-menu-actions';
 import { ResourcesState, getResource } from 'store/resources/resources';
 import { ContextMenuKind } from 'views-components/context-menu/context-menu';
@@ -19,41 +19,71 @@ import { PermissionResource } from 'models/permission';
 import { Grid, Button, Tabs, Tab, Paper } from '@material-ui/core';
 import { AddIcon } from 'components/icon/icon';
 
-export enum GroupDetailsPanelColumnNames {
+export enum GroupDetailsPanelMembersColumnNames {
     FULL_NAME = "Name",
     UUID = "UUID",
     EMAIL = "Email",
     USERNAME = "Username",
 }
 
-export const groupDetailsPanelColumns: DataColumns<string> = [
+export enum GroupDetailsPanelPermissionsColumnNames {
+    HEAD = "Head",
+    NAME = "Name",
+    UUID = "UUID",
+}
+
+export const groupDetailsMembersPanelColumns: DataColumns<string> = [
     {
-        name: GroupDetailsPanelColumnNames.FULL_NAME,
+        name: GroupDetailsPanelMembersColumnNames.FULL_NAME,
         selected: true,
         configurable: true,
         filters: createTree(),
         render: uuid => <ResourceFullName uuid={uuid} />
     },
     {
-        name: GroupDetailsPanelColumnNames.USERNAME,
+        name: GroupDetailsPanelMembersColumnNames.USERNAME,
         selected: true,
         configurable: true,
         filters: createTree(),
         render: uuid => <ResourceUsername uuid={uuid} />
     },
     {
-        name: GroupDetailsPanelColumnNames.UUID,
+        name: GroupDetailsPanelMembersColumnNames.UUID,
         selected: true,
         configurable: true,
         filters: createTree(),
         render: uuid => <ResourceUuid uuid={uuid} />
     },
     {
-        name: GroupDetailsPanelColumnNames.EMAIL,
+        name: GroupDetailsPanelMembersColumnNames.EMAIL,
         selected: true,
         configurable: true,
         filters: createTree(),
         render: uuid => <ResourceEmail uuid={uuid} />
+    },
+];
+
+export const groupDetailsPermissionsPanelColumns: DataColumns<string> = [
+    {
+        name: GroupDetailsPanelPermissionsColumnNames.HEAD,
+        selected: true,
+        configurable: true,
+        filters: createTree(),
+        render: uuid => <ResourceLinkHead uuid={uuid} />
+    },
+    {
+        name: GroupDetailsPanelPermissionsColumnNames.NAME,
+        selected: true,
+        configurable: true,
+        filters: createTree(),
+        render: uuid => <ResourceLinkName uuid={uuid} />
+    },
+    {
+        name: GroupDetailsPanelPermissionsColumnNames.UUID,
+        selected: true,
+        configurable: true,
+        filters: createTree(),
+        render: uuid => <ResourceUuid uuid={uuid} />
     },
 ];
 
@@ -90,13 +120,13 @@ export const GroupDetailsPanel = connect(
             const { value } = this.state;
             return (
                 <Paper>
-                  <Tabs value={value} onChange={this.handleChange} fullWidth>
+                  <Tabs value={value} onChange={this.handleChange} variant="fullWidth">
                       <Tab label="MEMBERS" />
                       <Tab label="PERMISSIONS" />
                   </Tabs>
                   {value === 0 &&
                       <DataExplorer
-                          id={GROUP_DETAILS_PANEL_ID}
+                          id={GROUP_DETAILS_MEMBERS_PANEL_ID}
                           onRowClick={noop}
                           onRowDoubleClick={noop}
                           onContextMenu={this.handleContextMenu}
@@ -119,7 +149,7 @@ export const GroupDetailsPanel = connect(
                   }
                   {value === 1 &&
                       <DataExplorer
-                          id={GROUP_PERMISSIONS_PANEL_ID}
+                          id={GROUP_DETAILS_PERMISSIONS_PANEL_ID}
                           onRowClick={noop}
                           onRowDoubleClick={noop}
                           onContextMenu={this.handleContextMenu}

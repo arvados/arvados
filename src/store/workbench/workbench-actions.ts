@@ -88,7 +88,7 @@ import { apiClientAuthorizationPanelColumns } from 'views/api-client-authorizati
 import * as groupPanelActions from 'store/groups-panel/groups-panel-actions';
 import { groupsPanelColumns } from 'views/groups-panel/groups-panel';
 import * as groupDetailsPanelActions from 'store/group-details-panel/group-details-panel-actions';
-import { groupDetailsPanelColumns } from 'views/group-details-panel/group-details-panel';
+import { groupDetailsMembersPanelColumns, groupDetailsPermissionsPanelColumns } from 'views/group-details-panel/group-details-panel';
 import { DataTableFetchMode } from "components/data-table/data-table";
 import { loadPublicFavoritePanel, publicFavoritePanelActions } from 'store/public-favorites-panel/public-favorites-action';
 import { publicFavoritePanelColumns } from 'views/public-favorites-panel/public-favorites-panel';
@@ -136,8 +136,8 @@ export const loadWorkbench = () =>
             dispatch(searchResultsPanelActions.SET_COLUMNS({ columns: searchResultsPanelColumns }));
             dispatch(userBindedActions.SET_COLUMNS({ columns: userPanelColumns }));
             dispatch(groupPanelActions.GroupsPanelActions.SET_COLUMNS({ columns: groupsPanelColumns }));
-            dispatch(groupDetailsPanelActions.GroupMembersPanelActions.SET_COLUMNS({ columns: groupDetailsPanelColumns }));
-            dispatch(groupDetailsPanelActions.GroupPermissionsPanelActions.SET_COLUMNS({ columns: groupDetailsPanelColumns }));
+            dispatch(groupDetailsPanelActions.GroupMembersPanelActions.SET_COLUMNS({ columns: groupDetailsMembersPanelColumns }));
+            dispatch(groupDetailsPanelActions.GroupPermissionsPanelActions.SET_COLUMNS({ columns: groupDetailsPermissionsPanelColumns }));
             dispatch(linkPanelActions.SET_COLUMNS({ columns: linkPanelColumns }));
             dispatch(apiClientAuthorizationsActions.SET_COLUMNS({ columns: apiClientAuthorizationPanelColumns }));
             dispatch(collectionsContentAddressActions.SET_COLUMNS({ columns: collectionContentAddressPanelColumns }));

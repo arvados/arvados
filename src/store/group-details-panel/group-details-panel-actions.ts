@@ -18,26 +18,26 @@ import { PermissionResource } from 'models/permission';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { UserResource, getUserDisplayName } from 'models/user';
 
-export const GROUP_DETAILS_PANEL_ID = 'groupMembersPanel';
-export const GROUP_PERMISSIONS_PANEL_ID = 'groupPermissionsPanel';
+export const GROUP_DETAILS_MEMBERS_PANEL_ID = 'groupDetailsMembersPanel';
+export const GROUP_DETAILS_PERMISSIONS_PANEL_ID = 'groupDetailsPermissionsPanel';
 export const ADD_GROUP_MEMBERS_DIALOG = 'addGrupMembers';
 export const ADD_GROUP_MEMBERS_FORM = 'addGrupMembers';
 export const ADD_GROUP_MEMBERS_USERS_FIELD_NAME = 'users';
 export const MEMBER_ATTRIBUTES_DIALOG = 'memberAttributesDialog';
 export const MEMBER_REMOVE_DIALOG = 'memberRemoveDialog';
 
-export const GroupMembersPanelActions = bindDataExplorerActions(GROUP_DETAILS_PANEL_ID);
-export const GroupPermissionsPanelActions = bindDataExplorerActions(GROUP_PERMISSIONS_PANEL_ID);
+export const GroupMembersPanelActions = bindDataExplorerActions(GROUP_DETAILS_MEMBERS_PANEL_ID);
+export const GroupPermissionsPanelActions = bindDataExplorerActions(GROUP_DETAILS_PERMISSIONS_PANEL_ID);
 
 export const loadGroupDetailsPanel = (groupUuid: string) =>
     (dispatch: Dispatch) => {
-        dispatch(propertiesActions.SET_PROPERTY({ key: GROUP_DETAILS_PANEL_ID, value: groupUuid }));
+        dispatch(propertiesActions.SET_PROPERTY({ key: GROUP_DETAILS_MEMBERS_PANEL_ID, value: groupUuid }));
         dispatch(GroupMembersPanelActions.REQUEST_ITEMS());
-        dispatch(propertiesActions.SET_PROPERTY({ key: GROUP_PERMISSIONS_PANEL_ID, value: groupUuid }));
+        dispatch(propertiesActions.SET_PROPERTY({ key: GROUP_DETAILS_PERMISSIONS_PANEL_ID, value: groupUuid }));
         dispatch(GroupPermissionsPanelActions.REQUEST_ITEMS());
     };
 
-export const getCurrentGroupDetailsPanelUuid = getProperty<string>(GROUP_DETAILS_PANEL_ID);
+export const getCurrentGroupDetailsPanelUuid = getProperty<string>(GROUP_DETAILS_MEMBERS_PANEL_ID);
 
 export interface AddGroupMembersFormData {
     [ADD_GROUP_MEMBERS_USERS_FIELD_NAME]: Participant[];
