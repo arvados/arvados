@@ -303,7 +303,7 @@ export const ResourceLinkClass = connect(
 const renderLink = (dispatch: Dispatch, item: Resource) => {
     var displayName = '';
 
-    if ((item as UserResource).kind == ResourceKind.USER
+    if ((item as UserResource).kind === ResourceKind.USER
           && typeof (item as UserResource).firstName !== 'undefined') {
         // We can be sure the resource is UserResource
         displayName = getUserDisplayName(item as UserResource);

@@ -44,7 +44,7 @@ export class GroupDetailsPanelMembersMiddlewareService extends DataExplorerMiddl
 
                 api.dispatch(GroupMembersPanelActions.SET_ITEMS({
                     ...listResultsToDataExplorerItemsMeta(permissions),
-                    items: users.items.map(item => item.uuid),
+                    items: permissions.items.map(item => item.uuid),
                 }));
             } catch (e) {
                 api.dispatch(couldNotFetchGroupDetailsContents());

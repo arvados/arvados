@@ -7,7 +7,7 @@ import { connect } from 'react-redux';
 
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { DataColumns } from 'components/data-table/data-table';
-import { ResourceFullName, ResourceUuid, ResourceEmail, ResourceUsername, ResourceLinkName, ResourceLinkHead, ResourceName } from 'views-components/data-explorer/renderers';
+import { ResourceUuid, ResourceEmail, ResourceUsername, ResourceLinkName, ResourceLinkHead, ResourceLinkTail } from 'views-components/data-explorer/renderers';
 import { createTree } from 'models/tree';
 import { noop } from 'lodash/fp';
 import { RootState } from 'store/store';
@@ -38,7 +38,7 @@ export const groupDetailsMembersPanelColumns: DataColumns<string> = [
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceFullName uuid={uuid} />
+        render: uuid => <ResourceLinkTail uuid={uuid} />
     },
     {
         name: GroupDetailsPanelMembersColumnNames.USERNAME,
