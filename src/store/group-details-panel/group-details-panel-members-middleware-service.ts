@@ -26,26 +26,34 @@ export class GroupDetailsPanelMembersMiddlewareService extends DataExplorerMiddl
             api.dispatch(groupsDetailsPanelDataExplorerIsNotSet());
         } else {
             try {
-                const permissions = await this.services.permissionService.list({
+                const permissionsIn = await this.services.permissionService.list({
                     filters: new FilterBuilder()
                         .addEqual('head_uuid', groupUuid)
                         .addEqual('link_class', LinkClass.PERMISSION)
                         .getFilters()
                 });
-                api.dispatch(updateResources(permissions.items));
+                api.dispatch(updateResources(permissionsIn.items));
 
-                const users = await this.services.userService.list({
+                api.dispatch(GroupMembersPanelActions.SET_ITEMS({
+                    ...listResultsToDataExplorerItemsMeta(permissionsIn),
+                    items: permissionsIn.items.map(item => item.uuid),
+                }));
+
+                const usersIn = await this.services.userService.list({
                     filters: new FilterBuilder()
-                        .addIn('uuid', permissions.items.map(item => item.tailUuid))
+                        .addIn('uuid', permissionsIn.items.map(item => item.tailUuid))
                         .getFilters(),
                     count: "none"
                 });
-                api.dispatch(updateResources(users.items));
+                api.dispatch(updateResources(usersIn.items));
 
-                api.dispatch(GroupMembersPanelActions.SET_ITEMS({
-                    ...listResultsToDataExplorerItemsMeta(permissions),
-                    items: permissions.items.map(item => item.uuid),
-                }));
+                const projectsIn = await this.services.projectService.list({
+                    filters: new FilterBuilder()
+                        .addIn('uuid', permissionsIn.items.map(item => item.tailUuid))
+                        .getFilters(),
+                    count: "none"
+                });
+                api.dispatch(updateResources(projectsIn.items));
             } catch (e) {
                 api.dispatch(couldNotFetchGroupDetailsContents());
             }
@@ -55,12 +63,12 @@ export class GroupDetailsPanelMembersMiddlewareService extends DataExplorerMiddl
 
 const groupsDetailsPanelDataExplorerIsNotSet = () =>
     snackbarActions.OPEN_SNACKBAR({
-        message: 'Group details panel is not ready.',
+        message: 'Group members panel is not ready.',
         kind: SnackbarKind.ERROR
     });
 
 const couldNotFetchGroupDetailsContents = () =>
     snackbarActions.OPEN_SNACKBAR({
-        message: 'Could not fetch group details.',
+        message: 'Could not fetch group members.',
         kind: SnackbarKind.ERROR
     });

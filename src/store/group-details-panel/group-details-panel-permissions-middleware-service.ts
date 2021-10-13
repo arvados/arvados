@@ -26,42 +26,42 @@ export class GroupDetailsPanelPermissionsMiddlewareService extends DataExplorerM
             api.dispatch(groupsDetailsPanelDataExplorerIsNotSet());
         } else {
             try {
-                const permissions = await this.services.permissionService.list({
+                const permissionsOut = await this.services.permissionService.list({
                     filters: new FilterBuilder()
                         .addEqual('tail_uuid', groupUuid)
                         .addEqual('link_class', LinkClass.PERMISSION)
                         .getFilters()
                 });
-                api.dispatch(updateResources(permissions.items));
-
-                const users = await this.services.userService.list({
-                    filters: new FilterBuilder()
-                        .addIn('uuid', permissions.items.map(item => item.headUuid))
-                        .getFilters(),
-                    count: "none"
-                });
-                api.dispatch(updateResources(users.items));
-
-                const collections = await this.services.collectionService.list({
-                    filters: new FilterBuilder()
-                        .addIn('uuid', permissions.items.map(item => item.headUuid))
-                        .getFilters(),
-                    count: "none"
-                });
-                api.dispatch(updateResources(collections.items));
-
-                const projects = await this.services.projectService.list({
-                    filters: new FilterBuilder()
-                        .addIn('uuid', permissions.items.map(item => item.headUuid))
-                        .getFilters(),
-                    count: "none"
-                });
-                api.dispatch(updateResources(projects.items));
+                api.dispatch(updateResources(permissionsOut.items));
 
                 api.dispatch(GroupPermissionsPanelActions.SET_ITEMS({
-                    ...listResultsToDataExplorerItemsMeta(permissions),
-                    items: permissions.items.map(item => item.uuid),
+                    ...listResultsToDataExplorerItemsMeta(permissionsOut),
+                    items: permissionsOut.items.map(item => item.uuid),
                 }));
+
+                const usersOut = await this.services.userService.list({
+                    filters: new FilterBuilder()
+                        .addIn('uuid', permissionsOut.items.map(item => item.headUuid))
+                        .getFilters(),
+                    count: "none"
+                });
+                api.dispatch(updateResources(usersOut.items));
+
+                const collectionsOut = await this.services.collectionService.list({
+                    filters: new FilterBuilder()
+                        .addIn('uuid', permissionsOut.items.map(item => item.headUuid))
+                        .getFilters(),
+                    count: "none"
+                });
+                api.dispatch(updateResources(collectionsOut.items));
+
+                const projectsOut = await this.services.projectService.list({
+                    filters: new FilterBuilder()
+                        .addIn('uuid', permissionsOut.items.map(item => item.headUuid))
+                        .getFilters(),
+                    count: "none"
+                });
+                api.dispatch(updateResources(projectsOut.items));
             } catch (e) {
                 api.dispatch(couldNotFetchGroupDetailsContents());
             }
