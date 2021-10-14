@@ -67,6 +67,7 @@ import LinkOutlined from '@material-ui/icons/LinkOutlined';
 // Import FontAwesome icons
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { faPencilAlt, faSlash } from '@fortawesome/free-solid-svg-icons';
+import { CropFreeSharp } from '@material-ui/icons';
 library.add(
     faPencilAlt,
     faSlash,
@@ -119,6 +120,7 @@ export const InputIcon: IconType = (props) => <InsertDriveFile {...props} />;
 export const KeyIcon: IconType = (props) => <VpnKey {...props} />;
 export const LogIcon: IconType = (props) => <SettingsEthernet {...props} />;
 export const MailIcon: IconType = (props) => <Mail {...props} />;
+export const MaximizeIcon: IconType = (props) => <CropFreeSharp {...props} />;
 export const MoreOptionsIcon: IconType = (props) => <MoreVert {...props} />;
 export const MoveToIcon: IconType = (props) => <Input {...props} />;
 export const NewProjectIcon: IconType = (props) => <CreateNewFolder {...props} />;

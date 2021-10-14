@@ -5,7 +5,7 @@
 import React from 'react';
 import {
     StyleRulesCallback, WithStyles, withStyles, Card,
-    CardHeader, IconButton, CardContent, Grid, Chip, Typography, Tooltip, Button
+    CardHeader, IconButton, CardContent, Grid, Chip, Typography, Tooltip
 } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
 import { CloseIcon, MoreOptionsIcon, ProcessIcon } from 'components/icon/icon';
@@ -114,7 +114,7 @@ export const ProcessInformationCard = withStyles(styles, { withTheme: true })(
                         </Tooltip>
                         { doHidePanel &&
                         <Tooltip title={`Close ${panelName || 'panel'}`} disableFocusListener>
-                            <Button onClick={doHidePanel}><CloseIcon /></Button>
+                            <IconButton onClick={doHidePanel}><CloseIcon /></IconButton>
                         </Tooltip> }
                     </div>
                 }

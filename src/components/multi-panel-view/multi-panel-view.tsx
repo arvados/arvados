@@ -28,28 +28,32 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
 interface MPVHideablePanelDataProps {
     name: string;
     visible: boolean;
+    maximized: boolean;
     children: ReactNode;
 }
 
 interface MPVHideablePanelActionProps {
     doHidePanel: () => void;
+    doMaximizePanel: () => void;
 }
 
 type MPVHideablePanelProps = MPVHideablePanelDataProps & MPVHideablePanelActionProps;
 
-const MPVHideablePanel = ({doHidePanel, name, visible, ...props}: MPVHideablePanelProps) =>
+const MPVHideablePanel = ({doHidePanel, doMaximizePanel, name, visible, maximized, ...props}: MPVHideablePanelProps) =>
     visible
     ? <>
-        {React.cloneElement((props.children as ReactElement), { doHidePanel, panelName: name })}
+        {React.cloneElement((props.children as ReactElement), { doHidePanel, doMaximizePanel,panelName: name, panelMaximized: maximized })}
     </>
     : null;
 
 interface MPVPanelDataProps {
     panelName?: string;
+    panelMaximized?: boolean;
 }
 
 interface MPVPanelActionProps {
     doHidePanel?: () => void;
+    doMaximizePanel?: () => void;
 }
 
 // Props received by panel implementors
@@ -58,9 +62,9 @@ export type MPVPanelProps = MPVPanelDataProps & MPVPanelActionProps;
 type MPVPanelContentProps = {children: ReactElement} & MPVPanelProps & GridProps;
 
 // Grid item compatible component for layout and MPV props passing
-export const MPVPanelContent = ({doHidePanel, panelName, ...props}: MPVPanelContentProps) =>
+export const MPVPanelContent = ({doHidePanel, doMaximizePanel, panelName, panelMaximized, ...props}: MPVPanelContentProps) =>
     <Grid item {...props}>
-        {React.cloneElement(props.children, { doHidePanel, panelName })}
+        {React.cloneElement(props.children, { doHidePanel, doMaximizePanel, panelName, panelMaximized })}
     </Grid>;
 
 export interface MPVPanelState {
@@ -97,6 +101,14 @@ const MPVContainerComponent = ({children, panelStates, classes, ...props}: MPVCo
                     ...panelVisibility.slice(idx+1)
                 ])
             };
+            const maximizeFn = (idx: number) => () => {
+                // Maximize X == hide all but X
+                setPanelVisibility([
+                    ...panelVisibility.slice(0, idx).map(() => false),
+                    true,
+                    ...panelVisibility.slice(idx+1).map(() => false),
+                ])
+            };
             const toggleIcon = panelVisibility[idx]
                 ? <VisibleIcon className={classNames(classes.buttonIcon)} />
                 : <InvisibleIcon className={classNames(classes.buttonIcon)}/>
@@ -109,6 +121,8 @@ const MPVContainerComponent = ({children, panelStates, classes, ...props}: MPVCo
             const toggleTooltip = panelVisibility[idx]
                 ? `Hide ${panelName} panel`
                 : `Show ${panelName} panel`;
+            const panelIsMaximized = panelVisibility[idx] &&
+                panelVisibility.filter(e => e).length === 1;
 
             toggles = [
                 ...toggles,
@@ -123,7 +137,9 @@ const MPVContainerComponent = ({children, panelStates, classes, ...props}: MPVCo
             ];
 
             const aPanel =
-                <MPVHideablePanel visible={panelVisibility[idx]} name={panelName} doHidePanel={toggleFn(idx)}>
+                <MPVHideablePanel visible={panelVisibility[idx]} name={panelName}
+                    maximized={panelIsMaximized}
+                    doHidePanel={toggleFn(idx)} doMaximizePanel={maximizeFn(idx)}>
                     {children[idx]}
                 </MPVHideablePanel>;
             panels = [...panels, aPanel];
