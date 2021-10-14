@@ -35,25 +35,27 @@ interface MPVHideablePanelActionProps {
     doHidePanel: () => void;
 }
 
-type MPVPanelProps = MPVHideablePanelDataProps & MPVHideablePanelActionProps;
+type MPVHideablePanelProps = MPVHideablePanelDataProps & MPVHideablePanelActionProps;
 
-const MPVHideablePanel = ({doHidePanel, name, visible, ...props}: MPVPanelProps) =>
+const MPVHideablePanel = ({doHidePanel, name, visible, ...props}: MPVHideablePanelProps) =>
     visible
     ? <>
         {React.cloneElement((props.children as ReactElement), { doHidePanel, panelName: name })}
     </>
     : null;
 
-interface MPVPanelContentDataProps {
+interface MPVPanelDataProps {
     panelName?: string;
-    children: ReactElement;
 }
 
-interface MPVPanelContentActionProps {
+interface MPVPanelActionProps {
     doHidePanel?: () => void;
 }
 
-type MPVPanelContentProps = MPVPanelContentDataProps & MPVPanelContentActionProps & GridProps;
+// Props received by panel implementors
+export type MPVPanelProps = MPVPanelDataProps & MPVPanelActionProps;
+
+type MPVPanelContentProps = {children: ReactElement} & MPVPanelProps & GridProps;
 
 // Grid item compatible component for layout and MPV props passing
 export const MPVPanelContent = ({doHidePanel, panelName, ...props}: MPVPanelContentProps) =>

@@ -17,6 +17,7 @@ import { DataTableDefaultView } from 'components/data-table-default-view/data-ta
 import { createTree } from 'models/tree';
 import { getInitialProcessStatusFilters } from 'store/resource-type-filters/resource-type-filters';
 import { ResourcesState } from 'store/resources/resources';
+import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
 
 export enum SubprocessPanelColumnNames {
     NAME = "Name",
@@ -65,14 +66,12 @@ export const subprocessPanelColumns: DataColumns<string> = [
 
 export interface SubprocessPanelDataProps {
     resources: ResourcesState;
-    panelName?: string;
 }
 
 export interface SubprocessPanelActionProps {
     onItemClick: (item: string) => void;
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: string, resources: ResourcesState) => void;
     onItemDoubleClick: (item: string) => void;
-    doHidePanel?: () => void;
 }
 
 type SubprocessPanelProps = SubprocessPanelActionProps & SubprocessPanelDataProps;
@@ -82,7 +81,7 @@ const DEFAULT_VIEW_MESSAGES = [
     'The current process may not have any or none matches current filtering.'
 ];
 
-export const SubprocessPanelRoot = (props: SubprocessPanelProps) => {
+export const SubprocessPanelRoot = (props: SubprocessPanelProps & MPVPanelProps) => {
     return <DataExplorer
         id={SUBPROCESS_PANEL_ID}
         onRowClick={props.onItemClick}

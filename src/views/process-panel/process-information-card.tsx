@@ -15,6 +15,7 @@ import { getProcessStatus, getProcessStatusColor } from 'store/processes/process
 import { formatDate } from 'common/formatters';
 import classNames from 'classnames';
 import { ContainerState } from 'models/container';
+import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
 
 type CssRules = 'card' | 'iconHeader' | 'label' | 'value' | 'chip' | 'link' | 'content' | 'title' | 'avatar' | 'cancelButton';
 
@@ -81,11 +82,9 @@ export interface ProcessInformationCardDataProps {
     navigateToOutput: (uuid: string) => void;
     openWorkflow: (uuid: string) => void;
     cancelProcess: (uuid: string) => void;
-    doHidePanel?: () => void;
-    panelName?: string;
 }
 
-type ProcessInformationCardProps = ProcessInformationCardDataProps & WithStyles<CssRules, true>;
+type ProcessInformationCardProps = ProcessInformationCardDataProps & WithStyles<CssRules, true> & MPVPanelProps;
 
 export const ProcessInformationCard = withStyles(styles, { withTheme: true })(
     ({ classes, process, onContextMenu, theme, openProcessInputDialog, navigateToOutput, openWorkflow, cancelProcess, doHidePanel, panelName }: ProcessInformationCardProps) => {
