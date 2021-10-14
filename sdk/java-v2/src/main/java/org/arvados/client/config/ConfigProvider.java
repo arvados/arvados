@@ -26,6 +26,11 @@ public interface ConfigProvider {
 
     String getApiProtocol();
 
+    int getConnectTimeout();
+
+    int getReadTimeout();
+
+    int getWriteTimeout();
 
     //FILE UPLOAD
     int getFileSplitSize();
