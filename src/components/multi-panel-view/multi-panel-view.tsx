@@ -16,7 +16,7 @@ type CssRules = 'button' | 'buttonIcon';
 const styles: StyleRulesCallback<CssRules> = theme => ({
     button: {
         padding: '2px 5px',
-        marginRight: '2px',
+        marginRight: '5px',
     },
     buttonIcon: {
         boxShadow: 'none',
@@ -123,7 +123,9 @@ const MPVContainerComponent = ({children, panelNames, classes, ...props}: MPVCon
     };
 
     return <Grid container {...props}>
-        { toggles }
+        <Grid item>
+            { toggles }
+        </Grid>
         { panelVisibility.includes(true)
             ? panels
             : <Grid container alignItems='center' justify='center'>
