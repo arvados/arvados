@@ -3,12 +3,27 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React, { ReactElement, ReactNode, useState } from 'react';
-import { Button, Grid } from "@material-ui/core";
+import { Button, Grid, StyleRulesCallback, Tooltip, withStyles, WithStyles } from "@material-ui/core";
 import { GridProps } from '@material-ui/core/Grid';
 import { isArray } from 'lodash';
 import { DefaultView } from 'components/default-view/default-view';
-import { InfoIcon } from 'components/icon/icon';
+import { InfoIcon, InvisibleIcon, VisibleIcon } from 'components/icon/icon';
 import { ReactNodeArray } from 'prop-types';
+import classNames from 'classnames';
+
+type CssRules = 'button' | 'buttonIcon';
+
+const styles: StyleRulesCallback<CssRules> = theme => ({
+    button: {
+        padding: '2px 5px',
+        marginRight: '2px',
+    },
+    buttonIcon: {
+        boxShadow: 'none',
+        padding: '2px 0px 2px 5px',
+        fontSize: '1rem'
+    },
+});
 
 interface MPVHideablePanelDataProps {
     name: string;
@@ -53,7 +68,7 @@ export interface MPVContainerDataProps {
 type MPVContainerProps = MPVContainerDataProps & GridProps;
 
 // Grid container compatible component that also handles panel toggling.
-export const MPVContainer = ({children, panelNames, ...props}: MPVContainerProps) => {
+const MPVContainerComponent = ({children, panelNames, classes, ...props}: MPVContainerProps & WithStyles<CssRules>) => {
     if (children === undefined || children === null || children === {}) {
         children = [];
     } else if (!isArray(children)) {
@@ -74,15 +89,29 @@ export const MPVContainer = ({children, panelNames, ...props}: MPVContainerProps
                     ...panelVisibility.slice(idx+1)
                 ])
             };
-            const toggleLabel = panelVisibility[idx] ? 'Hide' : 'Show'
+            const toggleIcon = panelVisibility[idx]
+                ? <VisibleIcon className={classNames(classes.buttonIcon)} />
+                : <InvisibleIcon className={classNames(classes.buttonIcon)}/>
             const panelName = panelNames === undefined
                 ? `Panel ${idx+1}`
                 : panelNames[idx] || `Panel ${idx+1}`;
-
+            const toggleVariant = panelVisibility[idx]
+                ? "raised"
+                : "flat";
+            const toggleTooltip = panelVisibility[idx]
+                ? `Hide ${panelName} panel`
+                : `Show ${panelName} panel`;
 
             toggles = [
                 ...toggles,
-                <Button onClick={toggleFn(idx)}>{toggleLabel} {panelName}</Button>
+                <Tooltip title={toggleTooltip} disableFocusListener>
+                    <Button variant={toggleVariant} size="small" color="primary"
+                        className={classNames(classes.button)}
+                        onClick={toggleFn(idx)}>
+                            {panelName}
+                            {toggleIcon}
+                    </Button>
+                </Tooltip>
             ];
 
             const aPanel =
@@ -102,3 +131,5 @@ export const MPVContainer = ({children, panelNames, ...props}: MPVContainerProps
             </Grid> }
     </Grid>;
 };
+
+export const MPVContainer = withStyles(styles)(MPVContainerComponent);
