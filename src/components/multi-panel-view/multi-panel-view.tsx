@@ -63,20 +63,26 @@ export const MPVPanelContent = ({doHidePanel, panelName, ...props}: MPVPanelCont
         {React.cloneElement(props.children, { doHidePanel, panelName })}
     </Grid>;
 
-export interface MPVContainerDataProps {
-    panelNames?: string[];
+export interface MPVPanelState {
+    name: string;
+    visible?: boolean;
 }
-
+interface MPVContainerDataProps {
+    panelStates?: MPVPanelState[];
+}
 type MPVContainerProps = MPVContainerDataProps & GridProps;
 
 // Grid container compatible component that also handles panel toggling.
-const MPVContainerComponent = ({children, panelNames, classes, ...props}: MPVContainerProps & WithStyles<CssRules>) => {
+const MPVContainerComponent = ({children, panelStates, classes, ...props}: MPVContainerProps & WithStyles<CssRules>) => {
     if (children === undefined || children === null || children === {}) {
         children = [];
     } else if (!isArray(children)) {
         children = [children];
     }
-    const visibility = (children as ReactNodeArray).map(() => true);
+    const visibility = (children as ReactNodeArray).map((_, idx) =>
+        !!!panelStates || // if panelStates wasn't passed, default to all visible panels
+            (panelStates[idx] &&
+                (panelStates[idx].visible || panelStates[idx].visible === undefined)));
     const [panelVisibility, setPanelVisibility] = useState<boolean[]>(visibility);
 
     let panels: JSX.Element[] = [];
@@ -94,9 +100,9 @@ const MPVContainerComponent = ({children, panelNames, classes, ...props}: MPVCon
             const toggleIcon = panelVisibility[idx]
                 ? <VisibleIcon className={classNames(classes.buttonIcon)} />
                 : <InvisibleIcon className={classNames(classes.buttonIcon)}/>
-            const panelName = panelNames === undefined
+            const panelName = panelStates === undefined
                 ? `Panel ${idx+1}`
-                : panelNames[idx] || `Panel ${idx+1}`;
+                : (panelStates[idx] && panelStates[idx].name) || `Panel ${idx+1}`;
             const toggleVariant = panelVisibility[idx]
                 ? "raised"
                 : "flat";

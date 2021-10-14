@@ -10,7 +10,7 @@ import { ProcessIcon } from 'components/icon/icon';
 import { Process } from 'store/processes/process';
 import { SubprocessPanel } from 'views/subprocess-panel/subprocess-panel';
 import { SubprocessFilterDataProps } from 'components/subprocess-filter/subprocess-filter';
-import { MPVContainer, MPVPanelContent } from 'components/multi-panel-view/multi-panel-view';
+import { MPVContainer, MPVPanelContent, MPVPanelState } from 'components/multi-panel-view/multi-panel-view';
 
 export interface ProcessPanelRootDataProps {
     process?: Process;
@@ -29,9 +29,14 @@ export interface ProcessPanelRootActionProps {
 
 export type ProcessPanelRootProps = ProcessPanelRootDataProps & ProcessPanelRootActionProps;
 
+const panelsData: MPVPanelState[] = [
+    {name: "Info"},
+    {name: "Subprocesses"},
+];
+
 export const ProcessPanelRoot = ({ process, ...props }: ProcessPanelRootProps) =>
     process
-        ? <MPVContainer spacing={8} panelNames={["Info", "Subprocesses"]} alignItems="stretch">
+        ? <MPVContainer spacing={8} panelStates={panelsData} alignItems="stretch">
             <MPVPanelContent sm={12} md={12}>
                 <ProcessInformationCard
                     process={process}
