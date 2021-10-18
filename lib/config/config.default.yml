@@ -920,13 +920,10 @@ Clusters:
       #
       # A zero value disables this feature.
       #
-      # This feature has security implications. (1) Container logs
-      # will include keepstore log files, which typically reveal some
-      # volume configuration details, error messages from the cloud
-      # storage provider, etc., which are not otherwise visible to
-      # users. (2) The entire cluster configuration file, including
-      # the system root token, is copied to the worker node and held
-      # in memory for the duration of the container.
+      # Note that when this feature is enabled, the entire cluster
+      # configuration file, including the system root token, is copied
+      # to the worker node and held in memory for the duration of the
+      # container.
       LocalKeepBlobBuffersPerVCPU: 0
 
       # When running a dedicated keepstore process for a container
