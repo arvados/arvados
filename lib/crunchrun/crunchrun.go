@@ -1776,11 +1776,18 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	}
 
 	if keepstore == nil {
-		// Nothing is written to keepstoreLogbuf, no need to
-		// call SetWriter.
+		// Log explanation (if any) for why we're not running
+		// a local keepstore.
+		var buf bytes.Buffer
+		keepstoreLogbuf.SetWriter(&buf)
+		if buf.Len() > 0 {
+			cr.CrunchLog.Printf("%s", strings.TrimSpace(buf.String()))
+		}
 	} else if logWhat := conf.Cluster.Containers.LocalKeepLogsToContainerLog; logWhat == "none" {
+		cr.CrunchLog.Printf("using local keepstore process (pid %d) at %s", keepstore.Process.Pid, os.Getenv("ARVADOS_KEEP_SERVICES"))
 		keepstoreLogbuf.SetWriter(io.Discard)
 	} else {
+		cr.CrunchLog.Printf("using local keepstore process (pid %d) at %s, writing logs to keepstore.txt in log collection", keepstore.Process.Pid, os.Getenv("ARVADOS_KEEP_SERVICES"))
 		logwriter, err := cr.NewLogWriter("keepstore")
 		if err != nil {
 			log.Print(err)
@@ -1895,6 +1902,16 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 func startLocalKeepstore(configData ConfigData, logbuf io.Writer) (*exec.Cmd, error) {
 	if configData.Cluster == nil || configData.KeepBuffers < 1 {
 		return nil, nil
+	}
+	for uuid, vol := range configData.Cluster.Volumes {
+		if len(vol.AccessViaHosts) > 0 {
+			fmt.Fprintf(logbuf, "not starting a local keepstore process because a volume (%s) uses AccessViaHosts\n", uuid)
+			return nil, nil
+		}
+		if !vol.ReadOnly && vol.Replication < configData.Cluster.Collections.DefaultReplication {
+			fmt.Fprintf(logbuf, "not starting a local keepstore process because a writable volume (%s) has replication less than Collections.DefaultReplication (%d < %d)\n", uuid, vol.Replication, configData.Cluster.Collections.DefaultReplication)
+			return nil, nil
+		}
 	}
 
 	// Rather than have an alternate way to tell keepstore how

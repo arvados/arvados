@@ -926,11 +926,17 @@ Clusters:
       #
       # A zero value disables this feature.
       #
-      # Note that when this feature is enabled, the entire cluster
-      # configuration file, including the system root token, is copied
-      # to the worker node and held in memory for the duration of the
-      # container.
-      LocalKeepBlobBuffersPerVCPU: 0
+      # In order for this feature to be activated, no volume may use
+      # AccessViaHosts, and each volume must have Replication higher
+      # than Collections.DefaultReplication. If these requirements are
+      # not satisfied, the feature is disabled automatically
+      # regardless of the value given here.
+      #
+      # Note that when this configuration is enabled, the entire
+      # cluster configuration file, including the system root token,
+      # is copied to the worker node and held in memory for the
+      # duration of the container.
+      LocalKeepBlobBuffersPerVCPU: 1
 
       # When running a dedicated keepstore process for a container
       # (see LocalKeepBlobBuffersPerVCPU), write keepstore log
