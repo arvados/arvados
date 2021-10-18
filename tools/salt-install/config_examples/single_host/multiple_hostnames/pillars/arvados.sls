@@ -83,7 +83,7 @@ arvados:
     tls:
       # certificate: ''
       # key: ''
-      # required to test with arvados-snakeoil certs
+      # When using arvados-snakeoil certs set insecure: true
       insecure: false
 
     resources:

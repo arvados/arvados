@@ -641,7 +641,7 @@ else
           fi
         else
           grep -q ${R} ${P_DIR}/extra_custom_certs.sls || echo "  - ${R}" >> ${P_DIR}/extra_custom_certs.sls
-    
+
           # As the pillar differ whether we use LE or custom certs, we need to do a final edition on them
           # Special case for keepweb
           if [ ${R} = "keepweb" ]; then
