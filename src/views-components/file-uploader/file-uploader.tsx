@@ -30,7 +30,7 @@ const mapDispatchToProps = (dispatch: Dispatch, { onDrop }: FileUploaderProps): 
             onDrop(files);
         }
     },
-    onDelete: file => dispatch(fileUploaderActions.DELETE_UPLOAD_FILE(file)),
+    onDelete: file => dispatch(fileUploaderActions.DELETE_UPLOAD_FILE(file))
 });
 
 export const FileUploader = connect(mapStateToProps, mapDispatchToProps)(FileUpload);
@@ -38,5 +38,5 @@ export const FileUploader = connect(mapStateToProps, mapDispatchToProps)(FileUpl
 export const FileUploaderField = (props: WrappedFieldProps & { label?: string }) =>
     <div>
         <Typography variant='caption'>{props.label}</Typography>
-        <FileUploader disabled={props.meta.submitting} onDrop={props.input.onChange} />
+        <FileUploader disabled={false} onDrop={props.input.onChange} />
     </div>;

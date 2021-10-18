@@ -41,7 +41,24 @@ export const fileUploaderReducer = (state: UploaderState = initialState, action:
             const idToDelete: number = file.id;
             const updatedState = state.filter(file => file.id !== idToDelete);
 
+            const key: string | undefined = Object.keys((window as any).cancelTokens)
+                .find(key => key.indexOf(file.file.name) > -1);
+
+            if (key) {
+                (window as any).cancelTokens[key]();
+                delete (window as any).cancelTokens[key];
+            }
+
             return updatedState;
+        },
+        CANCEL_FILES_UPLOAD: () => {
+            Object.keys((window as any).cancelTokens)
+                .forEach((key) => {
+                    (window as any).cancelTokens[key]();
+                    delete (window as any).cancelTokens[key];
+                });
+
+            return state;
         },
         START_UPLOAD: () => {
             const startTime = Date.now();
