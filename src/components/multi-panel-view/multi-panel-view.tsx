@@ -119,8 +119,8 @@ const MPVContainerComponent = ({children, panelStates, classes, ...props}: MPVCo
                 ? `Panel ${idx+1}`
                 : (panelStates[idx] && panelStates[idx].name) || `Panel ${idx+1}`;
             const toggleVariant = panelVisibility[idx]
-                ? "raised"
-                : "flat";
+                ? "contained"
+                : "text";
             const toggleTooltip = panelVisibility[idx]
                 ? `Hide ${panelName} panel`
                 : `Show ${panelName} panel`;
@@ -140,7 +140,7 @@ const MPVContainerComponent = ({children, panelStates, classes, ...props}: MPVCo
             ];
 
             const aPanel =
-                <MPVHideablePanel visible={panelVisibility[idx]} name={panelName}
+                <MPVHideablePanel key={idx} visible={panelVisibility[idx]} name={panelName}
                     maximized={panelIsMaximized}
                     doHidePanel={toggleFn(idx)} doMaximizePanel={maximizeFn(idx)}>
                     {children[idx]}
@@ -151,7 +151,7 @@ const MPVContainerComponent = ({children, panelStates, classes, ...props}: MPVCo
 
     return <Grid container {...props}>
         <Grid container item direction="row">
-            { toggles.map(tgl => <Grid item>{tgl}</Grid>) }
+            { toggles.map((tgl, idx) => <Grid item key={idx}>{tgl}</Grid>) }
         </Grid>
         <Grid container item {...props} xs className={classes.content}>
             { panelVisibility.includes(true)
