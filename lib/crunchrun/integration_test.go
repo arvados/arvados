@@ -90,6 +90,7 @@ func (s *integrationSuite) SetUpSuite(c *C) {
 }
 
 func (s *integrationSuite) TearDownSuite(c *C) {
+	os.Unsetenv("ARVADOS_KEEP_SERVICES")
 	if s.client == nil {
 		// didn't set up
 		return
@@ -99,6 +100,7 @@ func (s *integrationSuite) TearDownSuite(c *C) {
 }
 
 func (s *integrationSuite) SetUpTest(c *C) {
+	os.Unsetenv("ARVADOS_KEEP_SERVICES")
 	s.engine = "docker"
 	s.stdin = bytes.Buffer{}
 	s.stdout = bytes.Buffer{}
