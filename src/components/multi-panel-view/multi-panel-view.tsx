@@ -11,7 +11,7 @@ import { InfoIcon, InvisibleIcon, VisibleIcon } from 'components/icon/icon';
 import { ReactNodeArray } from 'prop-types';
 import classNames from 'classnames';
 
-type CssRules = 'button' | 'buttonIcon';
+type CssRules = 'button' | 'buttonIcon' | 'content';
 
 const styles: StyleRulesCallback<CssRules> = theme => ({
     button: {
@@ -22,6 +22,9 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
         boxShadow: 'none',
         padding: '2px 0px 2px 5px',
         fontSize: '1rem'
+    },
+    content: {
+        overflow: 'auto',
     },
 });
 
@@ -150,11 +153,13 @@ const MPVContainerComponent = ({children, panelStates, classes, ...props}: MPVCo
         <Grid container item direction="row">
             { toggles.map(tgl => <Grid item>{tgl}</Grid>) }
         </Grid>
-        { panelVisibility.includes(true)
-            ? panels
-            : <Grid container item alignItems='center' justify='center'>
-                <DefaultView messages={["All panels are hidden.", "Click on the buttons above to show them."]} icon={InfoIcon} />
-            </Grid> }
+        <Grid container item {...props} xs className={classes.content}>
+            { panelVisibility.includes(true)
+                ? panels
+                : <Grid container item alignItems='center' justify='center'>
+                    <DefaultView messages={["All panels are hidden.", "Click on the buttons above to show them."]} icon={InfoIcon} />
+                </Grid> }
+        </Grid>
     </Grid>;
 };
 
