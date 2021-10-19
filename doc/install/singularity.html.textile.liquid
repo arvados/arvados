@@ -21,6 +21,10 @@ Arvados can be configured to use "Singularity":https://sylabs.io/singularity/ in
 ** The Docker ENTRYPOINT instruction is ignored.
 * Arvados is tested with Singularity version 3.7.4. Other versions may not work.
 
+*Notes*:
+
+* Docker images are converted on the fly by @mksquashfs@, which can consume a considerable amount of RAM. The RAM usage of mksquashfs can be restricted in @/etc/singularity/singularity.conf@ with a line like @mksquashfs mem = 512M@. The amount of memory made available for mksquashfs should be configured lower than the smallest amount of memory requested by a container on the cluster to avoid the conversion being killed for using too much memory.
+
 h2(#configuration). Configuration
 
 To use singularity, first make sure "Singularity is installed":https://sylabs.io/guides/3.7/user-guide/quick_start.html on your cloud worker image or SLURM/LSF compute nodes as applicable. Note @squashfs-tools@ is required.
