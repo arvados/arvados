@@ -147,12 +147,12 @@ const MPVContainerComponent = ({children, panelStates, classes, ...props}: MPVCo
     };
 
     return <Grid container {...props}>
-        <Grid item>
-            { toggles }
+        <Grid container item direction="row">
+            { toggles.map(tgl => <Grid item>{tgl}</Grid>) }
         </Grid>
         { panelVisibility.includes(true)
             ? panels
-            : <Grid container alignItems='center' justify='center'>
+            : <Grid container item alignItems='center' justify='center'>
                 <DefaultView messages={["All panels are hidden.", "Click on the buttons above to show them."]} icon={InfoIcon} />
             </Grid> }
     </Grid>;
