@@ -12,6 +12,8 @@ import { SubprocessPanel } from 'views/subprocess-panel/subprocess-panel';
 import { SubprocessFilterDataProps } from 'components/subprocess-filter/subprocess-filter';
 import { MPVContainer, MPVPanelContent, MPVPanelState } from 'components/multi-panel-view/multi-panel-view';
 import { ArvadosTheme } from 'common/custom-theme';
+import { ProcessLogPanel } from 'views/process-log-panel/process-log-panel';
+import { ProcessDetailsCard } from './process-details-card';
 
 type CssRules = 'root';
 
@@ -40,6 +42,8 @@ export type ProcessPanelRootProps = ProcessPanelRootDataProps & ProcessPanelRoot
 
 const panelsData: MPVPanelState[] = [
     {name: "Info"},
+    {name: "Details"},
+    {name: "Logs", visible: false},
     {name: "Subprocesses"},
 ];
 
@@ -55,6 +59,12 @@ export const ProcessPanelRoot = withStyles(styles)(({ process, ...props }: Proce
                     openWorkflow={props.navigateToWorkflow}
                     cancelProcess={props.cancelProcess}
                 />
+            </MPVPanelContent>
+            <MPVPanelContent xs="auto">
+                <ProcessDetailsCard process={process} />
+            </MPVPanelContent>
+            <MPVPanelContent xs="auto">
+                <ProcessLogPanel />
             </MPVPanelContent>
             <MPVPanelContent xs>
                 <SubprocessPanel />

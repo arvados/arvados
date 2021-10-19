@@ -1,8 +1,9 @@
-import { RootState } from '../store';
-import { matchProcessLogRoute } from 'routes/routes';
 // Copyright (C) The Arvados Authors. All rights reserved.
 //
 // SPDX-License-Identifier: AGPL-3.0
+
+import { RootState } from '../store';
+import { matchProcessLogRoute, matchProcessRoute } from 'routes/routes';
 
 export interface ProcessLogsPanel {
     filters: string[];
@@ -20,6 +21,6 @@ export const getProcessPanelLogs = ({ selectedFilter, logs }: ProcessLogsPanel) 
 
 export const getProcessLogsPanelCurrentUuid = ({ router }: RootState) => {
     const pathname = router.location ? router.location.pathname : '';
-    const match = matchProcessLogRoute(pathname);
+    const match = matchProcessLogRoute(pathname) || matchProcessRoute(pathname);
     return match ? match.params.id : undefined;
 };
