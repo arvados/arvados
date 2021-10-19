@@ -129,6 +129,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         minWidth: 0,
         paddingLeft: theme.spacing.unit * 3,
         paddingRight: theme.spacing.unit * 3,
+        // Reserve vertical space for app bar + MainContentBar
+        minHeight: `calc(100vh - ${theme.spacing.unit * 16}px)`,
+        display: 'flex',
     }
 });
 

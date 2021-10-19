@@ -15,7 +15,7 @@ import { CloseIcon, MaximizeIcon, MoreOptionsIcon } from 'components/icon/icon';
 import { PaperProps } from '@material-ui/core/Paper';
 import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
 
-type CssRules = 'searchBox' | "toolbar" | "toolbarUnderTitle" | "footer" | "root" | 'moreOptionsButton' | 'title';
+type CssRules = 'searchBox' | "toolbar" | "toolbarUnderTitle" | "footer" | "root" | 'moreOptionsButton' | 'title' | 'dataTable' | 'container';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     searchBox: {
@@ -32,7 +32,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         overflow: 'auto'
     },
     root: {
-        height: '100%'
+        height: '100%',
     },
     moreOptionsButton: {
         padding: 0
@@ -41,7 +41,14 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         paddingLeft: theme.spacing.unit * 3,
         paddingTop: theme.spacing.unit * 3,
         fontSize: '18px'
-    }
+    },
+    dataTable: {
+        height: '100%',
+        overflow: 'auto',
+    },
+    container: {
+        height: '100%',
+    },
 });
 
 interface DataExplorerDataProps<T> {
@@ -101,8 +108,9 @@ export const DataExplorer = withStyles(styles)(
                 doHidePanel, doMaximizePanel, panelName, panelMaximized
             } = this.props;
             return <Paper className={classes.root} {...paperProps} key={paperKey}>
-                {title && <div className={classes.title}>{title}</div>}
-                {(!hideColumnSelector || !hideSearchInput) && <Toolbar className={title ? classes.toolbarUnderTitle : classes.toolbar}>
+                <Grid container direction="column" wrap="nowrap" className={classes.container}>
+                {title && <Grid item xs className={classes.title}>{title}</Grid>}
+                {(!hideColumnSelector || !hideSearchInput) && <Grid item xs><Toolbar className={title ? classes.toolbarUnderTitle : classes.toolbar}>
                     <Grid container justify="space-between" wrap="nowrap" alignItems="center">
                         <div className={classes.searchBox}>
                             {!hideSearchInput && <SearchInput
@@ -123,8 +131,8 @@ export const DataExplorer = withStyles(styles)(
                         <Tooltip title={`Close ${panelName || 'panel'}`} disableFocusListener>
                             <IconButton onClick={doHidePanel}><CloseIcon /></IconButton>
                         </Tooltip> }
-                </Toolbar>}
-                <DataTable
+                </Toolbar></Grid>}
+                <Grid item xs="auto" className={classes.dataTable}><DataTable
                     columns={this.props.contextMenuColumn ? [...columns, this.contextMenuColumn] : columns}
                     items={items}
                     onRowClick={(_, item: T) => onRowClick(item)}
@@ -136,8 +144,8 @@ export const DataExplorer = withStyles(styles)(
                     working={working}
                     defaultView={dataTableDefaultView}
                     currentItemUuid={currentItemUuid}
-                    currentRoute={paperKey} />
-                <Toolbar className={classes.footer}>
+                    currentRoute={paperKey} /></Grid>
+                <Grid item xs><Toolbar className={classes.footer}>
                     <Grid container justify="flex-end">
                         {fetchMode === DataTableFetchMode.PAGINATED ? <TablePagination
                             count={itemsAvailable}
@@ -154,7 +162,8 @@ export const DataExplorer = withStyles(styles)(
                                 onClick={this.loadMore}
                             >Load more</Button>}
                     </Grid>
-                </Toolbar>
+                </Toolbar></Grid>
+                </Grid>
             </Paper>;
         }
 

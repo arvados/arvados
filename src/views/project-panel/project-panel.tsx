@@ -51,9 +51,7 @@ type CssRules = 'root' | "button";
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
-        position: 'relative',
         width: '100%',
-        height: '100%'
     },
     button: {
         marginLeft: theme.spacing.unit
