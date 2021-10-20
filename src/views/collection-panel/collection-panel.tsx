@@ -148,7 +148,7 @@ export const CollectionPanel = withStyles(styles)(
                 const { classes, item, dispatch, isWritable, isOldVersion, isLoadingFiles, tooManyFiles } = this.props;
                 const panelsData: MPVPanelState[] = [
                     {name: "Details"},
-                    {name: "Properties", visible: false},
+                    {name: "Properties"},
                     {name: "Files"},
                 ];
                 return item
