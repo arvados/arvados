@@ -42,8 +42,7 @@ export type ProcessPanelRootProps = ProcessPanelRootDataProps & ProcessPanelRoot
 
 const panelsData: MPVPanelState[] = [
     {name: "Info"},
-    {name: "Details"},
-    {name: "Logs", visible: false},
+    {name: "Details", visible: false},
     {name: "Subprocesses"},
 ];
 
@@ -62,9 +61,6 @@ export const ProcessPanelRoot = withStyles(styles)(({ process, ...props }: Proce
             </MPVPanelContent>
             <MPVPanelContent xs="auto">
                 <ProcessDetailsCard process={process} />
-            </MPVPanelContent>
-            <MPVPanelContent xs="auto">
-                <ProcessLogPanel />
             </MPVPanelContent>
             <MPVPanelContent xs>
                 <SubprocessPanel />
