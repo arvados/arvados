@@ -33,6 +33,7 @@ import { COLLECTION_PANEL_LOAD_FILES, loadCollectionFiles, COLLECTION_PANEL_LOAD
 import { Link } from 'react-router-dom';
 import { Link as ButtonLink } from '@material-ui/core';
 import { ResourceOwnerWithName, ResponsiblePerson } from 'views-components/data-explorer/renderers';
+import { MPVContainer, MPVPanelContent, MPVPanelState } from 'components/multi-panel-view/multi-panel-view';
 
 type CssRules = 'root'
     | 'button'
@@ -49,9 +50,7 @@ type CssRules = 'root'
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
-        display: 'flex',
-        flexFlow: 'column',
-        height: 'calc(100vh - 130px)', // (100% viewport height) - (top bar + breadcrumbs)
+        width: '100%',
     },
     button: {
         cursor: 'pointer'
@@ -133,9 +132,14 @@ export const CollectionPanel = withStyles(styles)(
         class extends React.Component<CollectionPanelProps> {
             render() {
                 const { classes, item, dispatch, isWritable, isOldVersion, isLoadingFiles, tooManyFiles } = this.props;
+                const panelsData: MPVPanelState[] = [
+                    {name: "Details"},
+                    {name: "Properties", visible: false},
+                    {name: "Files"},
+                ];
                 return item
-                    ? <div className={classes.root}>
-                        <ExpansionPanel data-cy='collection-info-panel' defaultExpanded>
+                    ? <MPVContainer className={classes.root} spacing={8} direction="column" justify-content="flex-start" wrap="nowrap" panelStates={panelsData}>
+                        <MPVPanelContent xs="auto"><ExpansionPanel data-cy='collection-info-panel' defaultExpanded>
                             <ExpansionPanelSummary expandIcon={<ExpandIcon />}>
                                 <Grid container justify="space-between">
                                     <Grid item xs={11}><span>
@@ -186,9 +190,9 @@ export const CollectionPanel = withStyles(styles)(
                                     </Grid>
                                 </Grid>
                             </ExpansionPanelDetails>
-                        </ExpansionPanel>
+                        </ExpansionPanel></MPVPanelContent>
 
-                        <ExpansionPanel data-cy='collection-properties-panel' defaultExpanded>
+                        <MPVPanelContent xs="auto"><ExpansionPanel data-cy='collection-properties-panel' defaultExpanded>
                             <ExpansionPanelSummary expandIcon={<ExpandIcon />}>
                                 {"Properties"}
                             </ExpansionPanelSummary>
@@ -220,8 +224,8 @@ export const CollectionPanel = withStyles(styles)(
                                     </Grid>
                                 </Grid>
                             </ExpansionPanelDetails>
-                        </ExpansionPanel>
-                        <div className={classes.filesCard}>
+                        </ExpansionPanel></MPVPanelContent>
+                        <MPVPanelContent xs className={classes.filesCard}>
                             <CollectionPanelFiles
                                 isWritable={isWritable}
                                 isLoading={isLoadingFiles}
@@ -231,8 +235,8 @@ export const CollectionPanel = withStyles(styles)(
                                     dispatch<any>(loadCollectionFiles(this.props.item.uuid));
                                 }
                                 } />
-                        </div>
-                    </div>
+                        </MPVPanelContent>
+                    </MPVContainer>
                     : null;
             }
 

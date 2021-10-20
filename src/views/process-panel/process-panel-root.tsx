@@ -12,7 +12,6 @@ import { SubprocessPanel } from 'views/subprocess-panel/subprocess-panel';
 import { SubprocessFilterDataProps } from 'components/subprocess-filter/subprocess-filter';
 import { MPVContainer, MPVPanelContent, MPVPanelState } from 'components/multi-panel-view/multi-panel-view';
 import { ArvadosTheme } from 'common/custom-theme';
-import { ProcessLogPanel } from 'views/process-log-panel/process-log-panel';
 import { ProcessDetailsCard } from './process-details-card';
 
 type CssRules = 'root';
