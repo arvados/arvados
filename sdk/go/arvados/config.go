@@ -102,6 +102,7 @@ type Cluster struct {
 		WebsocketClientEventQueue      int
 		WebsocketServerEventQueue      int
 		KeepServiceRequestTimeout      Duration
+		VocabularyPath                 string
 	}
 	AuditLogs struct {
 		MaxAge             Duration
@@ -273,7 +274,6 @@ type Cluster struct {
 			Options              map[string]struct{}
 		}
 		UserProfileFormMessage string
-		VocabularyURL          string
 		WelcomePageHTML        string
 		InactivePageHTML       string
 		SSHHelpPageHTML        string
