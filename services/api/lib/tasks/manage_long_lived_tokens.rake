@@ -29,7 +29,7 @@ namespace :db do
         # skip this token
         next
       end
-      if (auth.user.uuid =~ /-tpzed-000000000000000/).nil?
+      if (auth.user.uuid =~ /-tpzed-000000000000000/).nil? and (auth.user.uuid =~ /-tpzed-anonymouspublic/).nil?
         CurrentApiClientHelper.act_as_system_user do
           auth.update_attributes!(expires_at: exp_date)
         end
@@ -58,7 +58,7 @@ namespace :db do
         # skip this token
         next
       end
-      if not auth.user.nil? and (auth.user.uuid =~ /-tpzed-000000000000000/).nil?
+      if not auth.user.nil? and (auth.user.uuid =~ /-tpzed-000000000000000/).nil? and (auth.user.uuid =~ /-tpzed-anonymouspublic/).nil?
         user_ids.add(auth.user_id)
         token_count += 1
       end
