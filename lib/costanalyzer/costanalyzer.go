@@ -215,6 +215,11 @@ func addContainerLine(logger *logrus.Logger, node nodeInfo, cr arvados.Container
 	}
 
 	var delta time.Duration
+	if container.StartedAt == nil {
+		// The container was not started
+		csv += ",,,,,,\n"
+		return csv, containerConsumption, nil
+	}
 	if container.FinishedAt != nil {
 		csv += container.FinishedAt.String() + ","
 		delta = container.FinishedAt.Sub(*container.StartedAt)

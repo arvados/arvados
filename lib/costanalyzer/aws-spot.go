@@ -109,7 +109,6 @@ func findSpotPriceHistoryStart(container arvados.Container, history SpotPriceHis
 		if oldPos == pos {
 			break
 		}
-		fmt.Printf("pos: %d, oldPos: %d\n", pos, oldPos)
 	}
 
 	return history[pos:]
