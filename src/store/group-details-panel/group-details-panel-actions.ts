@@ -16,7 +16,6 @@ import { RootState } from 'store/store';
 import { ServiceRepository } from 'services/services';
 import { PermissionResource } from 'models/permission';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
-import { UserResource, getUserDisplayName } from 'models/user';
 
 export const GROUP_DETAILS_MEMBERS_PANEL_ID = 'groupDetailsMembersPanel';
 export const GROUP_DETAILS_PERMISSIONS_PANEL_ID = 'groupDetailsPermissionsPanel';
@@ -108,20 +107,11 @@ export const removeGroupMember = (uuid: string) =>
         const groupUuid = getCurrentGroupDetailsPanelUuid(getState().properties);
 
         if (groupUuid) {
-
-            const group = getResource<GroupResource>(groupUuid)(getState().resources);
-            const user = getResource<UserResource>(groupUuid)(getState().resources);
-
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removing ...', kind: SnackbarKind.INFO }));
 
             await deleteGroupMember({
-                user: {
+                link: {
                     uuid,
-                    name: user ? getUserDisplayName(user) : uuid,
-                },
-                group: {
-                    uuid: groupUuid,
-                    name: group ? group.name : groupUuid,
                 },
                 permissionService,
                 dispatch,

@@ -113,8 +113,8 @@ interface AddGroupMemberArgs {
  */
 export const addGroupMember = async ({ user, group, ...args }: AddGroupMemberArgs) => {
     await createPermission({
-        head: { ...user },
-        tail: { ...group },
+        head: { ...group },
+        tail: { ...user },
         permissionLevel: PermissionLevel.CAN_READ,
         ...args,
     });
@@ -144,33 +144,29 @@ const createPermission = async ({ head, tail, permissionLevel, dispatch, permiss
 };
 
 interface DeleteGroupMemberArgs {
-    user: { uuid: string, name: string };
-    group: { uuid: string, name: string };
+    link: { uuid: string };
     dispatch: Dispatch;
     permissionService: PermissionService;
 }
 
-export const deleteGroupMember = async ({ user, group, ...args }: DeleteGroupMemberArgs) => {
+export const deleteGroupMember = async ({ link, ...args }: DeleteGroupMemberArgs) => {
     await deletePermission({
-        tail: group,
-        head: user,
+        uuid: link.uuid,
         ...args,
     });
 };
 
 interface DeletePermissionLinkArgs {
-    head: { uuid: string, name: string };
-    tail: { uuid: string, name: string };
+    uuid: string;
     dispatch: Dispatch;
     permissionService: PermissionService;
 }
 
-export const deletePermission = async ({ head, tail, dispatch, permissionService }: DeletePermissionLinkArgs) => {
+export const deletePermission = async ({ uuid, dispatch, permissionService }: DeletePermissionLinkArgs) => {
     try {
         const permissionsResponse = await permissionService.list({
             filters: new FilterBuilder()
-                .addEqual('tail_uuid', tail.uuid)
-                .addEqual('head_uuid', head.uuid)
+                .addEqual('uuid', uuid)
                 .getFilters()
         });
         const [permission] = permissionsResponse.items;
@@ -181,7 +177,7 @@ export const deletePermission = async ({ head, tail, dispatch, permissionService
         }
     } catch (e) {
         dispatch(snackbarActions.OPEN_SNACKBAR({
-            message: `Could not delete ${tail.name} -> ${head.name} relation`,
+            message: `Could not delete ${uuid} permission`,
             kind: SnackbarKind.ERROR,
         }));
     }
