@@ -106,28 +106,9 @@ cp -r config_examples/multi_host/aws local_config_dir
 
 Edit the variables in the <i>local.params</i> file. Pay attention to the <b>*_INT_IP, *_TOKEN</b> and <b>*KEY</b> variables. Those variables will be used to do a search and replace on the <i>pillars/*</i> in place of any matching __VARIABLE__.
 
-The <i>multi_host</i> example includes LetsEncrypt salt code to automatically request and install the certificates for the public-facing hosts (API/controller, Workbench, Keepproxy/Keepweb) using AWS' Route53.
+The <i>multi_host</i> example includes Let's Encrypt salt code to automatically request and install the certificates for the public-facing hosts (API/controller, Workbench, Keepproxy/Keepweb) using AWS' Route53.
 
-If you plan to use custom certificates, please set the variable <i>USE_LETSENCRYPT=no</i> and copy your certificates to the directory specified with the variable @CUSTOM_CERTS_DIR@ (usually "./certs") in the remote directory where you copied the @provision.sh@ script. From this dir, the provision script will install the certificates required for the role you're installing.
-
-The script expects cert/key files with these basenames (matching the role except for <i>keepweb</i>, which is split in both <i>download / collections</i>):
-
-* "controller"
-* "websocket"
-* "workbench"
-* "workbench2"
-* "webshell"
-* "download"         # Part of keepweb
-* "collections"      # Part of keepweb
-* "keepproxy"
-
-Ie., for 'keepproxy', the script will lookup for
-
-<notextile>
-<pre><code>${CUSTOM_CERTS_DIR}/keepproxy.crt
-${CUSTOM_CERTS_DIR}/keepproxy.key
-</code></pre>
-</notextile>
+{% include 'install_custom_certificates' %}
 
 h3(#further_customization). Further customization of the installation (modifying the salt pillars and states)
 
