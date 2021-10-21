@@ -6,6 +6,10 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 h2(#docker-cleaner). Update docker-cleaner.json
 
+{% include 'notebox_begin_warning' %}
+This is only needed when Containers.RuntimeEngine is set to @docker@, skip this section when running @singularity@.
+{% include 'notebox_end' %}
+
 The @arvados-docker-cleaner@ program removes least recently used Docker images as needed to keep disk usage below a configured limit.
 
 Create a file @/etc/arvados/docker-cleaner/docker-cleaner.json@ in an editor, with the following contents.
