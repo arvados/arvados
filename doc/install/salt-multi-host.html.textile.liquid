@@ -106,7 +106,9 @@ cp -r config_examples/multi_host/aws local_config_dir
 
 Edit the variables in the <i>local.params</i> file. Pay attention to the <b>*_INT_IP, *_TOKEN</b> and <b>*KEY</b> variables. Those variables will be used to do a search and replace on the <i>pillars/*</i> in place of any matching __VARIABLE__.
 
-The <i>multi_host</i> include LetsEncrypt salt code to automatically request and install the certificates for the public-facing hosts (API/controller, Workbench, Keepproxy/Keepweb) using AWS' Route53. If you will provide custom certificates, please set the variable <i>USE_LETSENCRYPT=no</i>.
+The <i>multi_host</i> example includes Let's Encrypt salt code to automatically request and install the certificates for the public-facing hosts (API/controller, Workbench, Keepproxy/Keepweb) using AWS' Route53.
+
+{% include 'install_custom_certificates' %}
 
 h3(#further_customization). Further customization of the installation (modifying the salt pillars and states)
 

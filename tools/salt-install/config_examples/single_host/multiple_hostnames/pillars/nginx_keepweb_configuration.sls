@@ -30,14 +30,19 @@ nginx:
               - return: '301 https://$host$request_uri'
 
       ### COLLECTIONS / DOWNLOAD
-      arvados_collections_download_ssl.conf:
+      {%- for vh in [
+        'collections',
+        'download'
+        ]
+      %}
+      arvados_{{ vh }}.conf:
         enabled: true
         overwrite: true
         requires:
-          file: nginx_snippet_arvados-snakeoil.conf
+          file: extra_custom_certs_file_copy_arvados-{{ vh }}.pem
         config:
           - server:
-            - server_name: collections.__CLUSTER__.__DOMAIN__ download.__CLUSTER__.__DOMAIN__
+            - server_name: {{ vh }}.__CLUSTER__.__DOMAIN__
             - listen:
               - __CONTROLLER_EXT_SSL_PORT__ http2 ssl
             - index: index.html index.htm
@@ -55,6 +60,8 @@ nginx:
             - proxy_http_version: '1.1'
             - proxy_request_buffering: 'off'
             - include: snippets/ssl_hardening_default.conf
-            - include: snippets/arvados-snakeoil.conf
-            - access_log: /var/log/nginx/collections.__CLUSTER__.__DOMAIN__.access.log combined
-            - error_log: /var/log/nginx/collections.__CLUSTER__.__DOMAIN__.error.log
+            - ssl_certificate: /etc/nginx/ssl/arvados-{{ vh }}.pem
+            - ssl_certificate_key: /etc/nginx/ssl/arvados-{{ vh }}.key
+            - access_log: /var/log/nginx/{{ vh }}.__CLUSTER__.__DOMAIN__.access.log combined
+            - error_log: /var/log/nginx/{{ vh }}.__CLUSTER__.__DOMAIN__.error.log
+      {%- endfor %}

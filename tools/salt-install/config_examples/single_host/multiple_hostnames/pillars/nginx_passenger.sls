@@ -62,10 +62,6 @@ nginx:
       # replace with the IP address of your resolver
       # - resolver: 127.0.0.1
 
-    arvados-snakeoil.conf:
-      - ssl_certificate: /etc/ssl/private/arvados-snakeoil-cert.pem
-      - ssl_certificate_key: /etc/ssl/private/arvados-snakeoil-cert.key
-
   ### SITES
   servers:
     managed:
