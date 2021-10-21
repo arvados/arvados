@@ -39,7 +39,7 @@ Clusters:
 
       RailsAPI:
         InternalURLs: {SAMPLE: {}}
-        ExternalURL: "-"
+        ExternalURL: ""
       Controller:
         InternalURLs: {SAMPLE: {}}
         ExternalURL: ""
@@ -48,7 +48,7 @@ Clusters:
         ExternalURL: ""
       Keepbalance:
         InternalURLs: {SAMPLE: {}}
-        ExternalURL: "-"
+        ExternalURL: ""
       GitHTTP:
         InternalURLs: {SAMPLE: {}}
         ExternalURL: ""
@@ -57,10 +57,10 @@ Clusters:
         ExternalURL: ""
       DispatchCloud:
         InternalURLs: {SAMPLE: {}}
-        ExternalURL: "-"
+        ExternalURL: ""
       DispatchLSF:
         InternalURLs: {SAMPLE: {}}
-        ExternalURL: "-"
+        ExternalURL: ""
       Keepproxy:
         InternalURLs: {SAMPLE: {}}
         ExternalURL: ""
@@ -125,7 +125,7 @@ Clusters:
             # the old URL (with trailing slash omitted) to preserve
             # rendezvous ordering.
             Rendezvous: ""
-        ExternalURL: "-"
+        ExternalURL: ""
       Composer:
         InternalURLs: {SAMPLE: {}}
         ExternalURL: ""
@@ -148,7 +148,7 @@ Clusters:
         ExternalURL: ""
       Health:
         InternalURLs: {SAMPLE: {}}
-        ExternalURL: "-"
+        ExternalURL: ""
 
     PostgreSQL:
       # max concurrent connections per arvados server daemon
