@@ -21,7 +21,7 @@ end
 options = {}
 OptionParser.new do |parser|
   parser.on('--exclusive', 'Manage SSH keys file exclusively.')
-  parser.on('--rotate-tokens', 'Always create new user tokens. Usually needed with --token-lifetime.')
+  parser.on('--rotate-tokens', 'Force a rotation of all user tokens.')
   parser.on('--skip-missing-users', "Don't try to create any local accounts.")
   parser.on('--token-lifetime SECONDS', 'Create user tokens that expire after SECONDS.', Integer)
   parser.on('--debug', 'Enable debug output')
