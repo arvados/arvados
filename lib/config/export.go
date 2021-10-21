@@ -72,6 +72,7 @@ var whitelist = map[string]bool{
 	"API.MaxTokenLifetime":                                false,
 	"API.RequestTimeout":                                  true,
 	"API.SendTimeout":                                     true,
+	"API.VocabularyPath":                                  false,
 	"API.WebsocketClientEventQueue":                       false,
 	"API.WebsocketServerEventQueue":                       false,
 	"AuditLogs":                                           false,
@@ -276,7 +277,6 @@ var whitelist = map[string]bool{
 	"Workbench.UserProfileFormFields.*.*":                 true,
 	"Workbench.UserProfileFormFields.*.*.*":               true,
 	"Workbench.UserProfileFormMessage":                    true,
-	"Workbench.VocabularyURL":                             true,
 	"Workbench.WelcomePageHTML":                           true,
 }
 
