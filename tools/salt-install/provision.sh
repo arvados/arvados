@@ -49,6 +49,7 @@ usage() {
   echo >&2 "                                                  for the selected role/s"
   echo >&2 "                                                - writes the resulting files into <dest_dir>"
   echo >&2 "  -v, --vagrant                               Run in vagrant and use the /vagrant shared dir"
+  echo >&2 "  --development                               Run in dev mode, using snakeoil certs"
   echo >&2
 }
 
@@ -60,7 +61,7 @@ arguments() {
   fi
 
   TEMP=$(getopt -o c:dhp:r:tv \
-    --long config:,debug,dump-config:,help,roles:,test,vagrant \
+    --long config:,debug,development,dump-config:,help,roles:,test,vagrant \
     -n "${0}" -- "${@}")
 
   if [ ${?} != 0 ];
@@ -98,6 +99,10 @@ arguments() {
         DUMP_CONFIG="yes"
         shift 2
         ;;
+      --development)
+        DEV_MODE="yes"
+        shift 1
+        ;;
       -r | --roles)
         for i in ${2//,/ }
           do
@@ -131,6 +136,7 @@ arguments() {
   done
 }
 
+DEV_MODE="no"
 CONFIG_FILE="${SCRIPT_DIR}/local.params"
 CONFIG_DIR="local_config_dir"
 DUMP_CONFIG="no"
@@ -158,6 +164,9 @@ WEBSHELL_EXT_SSL_PORT=4202
 WEBSOCKET_EXT_SSL_PORT=8002
 WORKBENCH1_EXT_SSL_PORT=443
 WORKBENCH2_EXT_SSL_PORT=3001
+
+USE_LETSENCRYPT="no"
+CUSTOM_CERTS_DIR="./certs"
 
 ## These are ARVADOS-related parameters
 # For a stable release, change RELEASE "production" and VERSION to the
@@ -449,9 +458,20 @@ EOFPSLS
 
 # States, extra states
 if [ -d "${F_DIR}"/extra/extra ]; then
-  for f in $(ls "${F_DIR}"/extra/extra/*.sls); do
+  if [ "$DEV_MODE" = "yes" ]; then
+    # In dev mode, we create some snake oil certs that we'll
+    # use as CUSTOM_CERTS, so we don't skip the states file
+    SKIP_SNAKE_OIL="dont_snakeoil_certs"
+  else
+    SKIP_SNAKE_OIL="snakeoil_certs"
+  fi
+  for f in $(ls "${F_DIR}"/extra/extra/*.sls | grep -v ${SKIP_SNAKE_OIL}); do
   echo "    - extra.$(basename ${f} | sed 's/.sls$//g')" >> ${S_DIR}/top.sls
   done
+  # Use custom certs
+  if [ "x${USE_LETSENCRYPT}" != "xyes" ]; then
+    mkdir -p "${F_DIR}"/extra/extra/files
+  fi
 fi
 
 # If we want specific roles for a node, just add the desired states
@@ -461,11 +481,21 @@ if [ -z "${ROLES}" ]; then
   echo "    - nginx.passenger" >> ${S_DIR}/top.sls
   # Currently, only available on config_examples/multi_host/aws
   if [ "x${USE_LETSENCRYPT}" = "xyes" ]; then
-    if [ "x${USE_LETSENCRYPT_IAM_USER}" = "xyes" ]; then
-      grep -q "aws_credentials" ${S_DIR}/top.sls || echo "    - aws_credentials" >> ${S_DIR}/top.sls
+    if [ "x${USE_LETSENCRYPT_IAM_USER}" != "xyes" ]; then
+      grep -q "aws_credentials" ${S_DIR}/top.sls || echo "    - extra.aws_credentials" >> ${S_DIR}/top.sls
     fi
     grep -q "letsencrypt"     ${S_DIR}/top.sls || echo "    - letsencrypt" >> ${S_DIR}/top.sls
+  else
+    # Use custom certs
+    # Copy certs to formula extra/files
+    # In dev mode, the files will be created and put in the destination directory by the
+    # snakeoil_certs.sls state file
+    mkdir -p /srv/salt/certs
+    cp -rv ${CUSTOM_CERTS_DIR}/* /srv/salt/certs/
+    # We add the custom_certs state
+    grep -q "custom_certs"    ${S_DIR}/top.sls || echo "    - extra.custom_certs" >> ${S_DIR}/top.sls
   fi
+
   echo "    - postgres" >> ${S_DIR}/top.sls
   echo "    - docker.software" >> ${S_DIR}/top.sls
   echo "    - arvados" >> ${S_DIR}/top.sls
@@ -482,12 +512,37 @@ if [ -z "${ROLES}" ]; then
   echo "    - nginx_workbench2_configuration" >> ${P_DIR}/top.sls
   echo "    - nginx_workbench_configuration" >> ${P_DIR}/top.sls
   echo "    - postgresql" >> ${P_DIR}/top.sls
+
   # Currently, only available on config_examples/multi_host/aws
   if [ "x${USE_LETSENCRYPT}" = "xyes" ]; then
-    if [ "x${USE_LETSENCRYPT_IAM_USER}" = "xyes" ]; then
+    if [ "x${USE_LETSENCRYPT_IAM_USER}" != "xyes" ]; then
       grep -q "aws_credentials" ${P_DIR}/top.sls || echo "    - aws_credentials" >> ${P_DIR}/top.sls
     fi
     grep -q "letsencrypt"     ${P_DIR}/top.sls || echo "    - letsencrypt" >> ${P_DIR}/top.sls
+
+    # As the pillar differ whether we use LE or custom certs, we need to do a final edition on them
+    for c in controller websocket workbench workbench2 webshell download collections keepproxy; do
+      sed -i "s/__CERT_REQUIRES__/cmd: create-initial-cert-${c}.${CLUSTER}.${DOMAIN}*/g;
+              s#__CERT_PEM__#/etc/letsencrypt/live/${c}.${CLUSTER}.${DOMAIN}/fullchain.pem#g;
+              s#__CERT_KEY__#/etc/letsencrypt/live/${c}.${CLUSTER}.${DOMAIN}/privkey.pem#g" \
+      ${P_DIR}/nginx_${c}_configuration.sls
+    done
+  else
+    # Use custom certs (either dev mode or prod)
+    grep -q "extra_custom_certs" ${P_DIR}/top.sls || echo "    - extra_custom_certs" >> ${P_DIR}/top.sls
+    # And add the certs in the custom_certs pillar
+    echo "extra_custom_certs_dir: /srv/salt/certs" > ${P_DIR}/extra_custom_certs.sls
+    echo "extra_custom_certs:" >> ${P_DIR}/extra_custom_certs.sls
+
+    for c in controller websocket workbench workbench2 webshell download collections keepproxy; do
+      grep -q ${c} ${P_DIR}/extra_custom_certs.sls || echo "  - ${c}" >> ${P_DIR}/extra_custom_certs.sls
+
+      # As the pillar differ whether we use LE or custom certs, we need to do a final edition on them
+      sed -i "s/__CERT_REQUIRES__/file: extra_custom_certs_file_copy_arvados-${c}.pem/g;
+              s#__CERT_PEM__#/etc/nginx/ssl/arvados-${c}.pem#g;
+              s#__CERT_KEY__#/etc/nginx/ssl/arvados-${c}.key#g" \
+      ${P_DIR}/nginx_${c}_configuration.sls
+    done
   fi
 else
   # If we add individual roles, make sure we add the repo first
@@ -506,13 +561,18 @@ else
         grep -q "postgres.client" ${S_DIR}/top.sls || echo "    - postgres.client" >> ${S_DIR}/top.sls
         grep -q "nginx.passenger" ${S_DIR}/top.sls || echo "    - nginx.passenger" >> ${S_DIR}/top.sls
         ### If we don't install and run LE before arvados-api-server, it fails and breaks everything
-        ### after it so we add this here, as we are, after all, sharing the host for api and controller
+        ### after it. So we add this here as we are, after all, sharing the host for api and controller
         # Currently, only available on config_examples/multi_host/aws
         if [ "x${USE_LETSENCRYPT}" = "xyes" ]; then
-          if [ "x${USE_LETSENCRYPT_IAM_USER}" = "xyes" ]; then
+          if [ "x${USE_LETSENCRYPT_IAM_USER}" != "xyes" ]; then
             grep -q "aws_credentials" ${S_DIR}/top.sls || echo "    - aws_credentials" >> ${S_DIR}/top.sls
           fi
-          grep -q "letsencrypt"     ${S_DIR}/top.sls || echo "    - letsencrypt" >> ${S_DIR}/top.sls
+          grep -q "letsencrypt" ${S_DIR}/top.sls || echo "    - letsencrypt" >> ${S_DIR}/top.sls
+        else
+          # Use custom certs
+          cp -v ${CUSTOM_CERTS_DIR}/controller.* "${F_DIR}/extra/extra/files/"
+          # We add the custom_certs state
+          grep -q "custom_certs"    ${S_DIR}/top.sls || echo "    - extra.custom_certs" >> ${S_DIR}/top.sls
         fi
         grep -q "arvados.${R}" ${S_DIR}/top.sls    || echo "    - arvados.${R}" >> ${S_DIR}/top.sls
         # Pillars
@@ -527,25 +587,76 @@ else
         grep -q "nginx.passenger" ${S_DIR}/top.sls || echo "    - nginx.passenger" >> ${S_DIR}/top.sls
         # Currently, only available on config_examples/multi_host/aws
         if [ "x${USE_LETSENCRYPT}" = "xyes" ]; then
-          if [ "x${USE_LETSENCRYPT_IAM_USER}" = "xyes" ]; then
+          if [ "x${USE_LETSENCRYPT_IAM_USER}" != "xyes" ]; then
             grep -q "aws_credentials" ${S_DIR}/top.sls || echo "    - aws_credentials" >> ${S_DIR}/top.sls
           fi
           grep -q "letsencrypt"     ${S_DIR}/top.sls || echo "    - letsencrypt" >> ${S_DIR}/top.sls
+        else
+          # Use custom certs, special case for keepweb
+          if [ ${R} = "keepweb" ]; then
+            cp -v ${CUSTOM_CERTS_DIR}/download.* "${F_DIR}/extra/extra/files/"
+            cp -v ${CUSTOM_CERTS_DIR}/collections.* "${F_DIR}/extra/extra/files/"
+          else
+            cp -v ${CUSTOM_CERTS_DIR}/${R}.* "${F_DIR}/extra/extra/files/"
+          fi
+          # We add the custom_certs state
+          grep -q "custom_certs"    ${S_DIR}/top.sls || echo "    - extra.custom_certs" >> ${S_DIR}/top.sls
+
         fi
         # webshell role is just a nginx vhost, so it has no state
         if [ "${R}" != "webshell" ]; then
-          grep -q "arvados.${R}" ${S_DIR}/top.sls    || echo "    - arvados.${R}" >> ${S_DIR}/top.sls
+          grep -q "arvados.${R}" ${S_DIR}/top.sls || echo "    - arvados.${R}" >> ${S_DIR}/top.sls
         fi
         # Pillars
         grep -q "nginx_passenger" ${P_DIR}/top.sls          || echo "    - nginx_passenger" >> ${P_DIR}/top.sls
         grep -q "nginx_${R}_configuration" ${P_DIR}/top.sls || echo "    - nginx_${R}_configuration" >> ${P_DIR}/top.sls
+        # Special case for keepweb
+        if [ ${R} = "keepweb" ]; then
+          grep -q "nginx_download_configuration" ${P_DIR}/top.sls || echo "    - nginx_download_configuration" >> ${P_DIR}/top.sls
+          grep -q "nginx_collections_configuration" ${P_DIR}/top.sls || echo "    - nginx_collections_configuration" >> ${P_DIR}/top.sls
+        fi
+
         # Currently, only available on config_examples/multi_host/aws
         if [ "x${USE_LETSENCRYPT}" = "xyes" ]; then
-          if [ "x${USE_LETSENCRYPT_IAM_USER}" = "xyes" ]; then
+          if [ "x${USE_LETSENCRYPT_IAM_USER}" != "xyes" ]; then
             grep -q "aws_credentials" ${P_DIR}/top.sls || echo "    - aws_credentials" >> ${P_DIR}/top.sls
           fi
           grep -q "letsencrypt"     ${P_DIR}/top.sls || echo "    - letsencrypt" >> ${P_DIR}/top.sls
           grep -q "letsencrypt_${R}_configuration" ${P_DIR}/top.sls || echo "    - letsencrypt_${R}_configuration" >> ${P_DIR}/top.sls
+
+          # As the pillar differ whether we use LE or custom certs, we need to do a final edition on them
+          # Special case for keepweb
+          if [ ${R} = "keepweb" ]; then
+            for kwsub in download collections; do
+              sed -i "s/__CERT_REQUIRES__/cmd: create-initial-cert-${kwsub}.${CLUSTER}.${DOMAIN}*/g;
+                      s#__CERT_PEM__#/etc/letsencrypt/live/${kwsub}.${CLUSTER}.${DOMAIN}/fullchain.pem#g;
+                      s#__CERT_KEY__#/etc/letsencrypt/live/${kwsub}.${CLUSTER}.${DOMAIN}/privkey.pem#g" \
+              ${P_DIR}/nginx_${kwsub}_configuration.sls
+            done
+          else
+            sed -i "s/__CERT_REQUIRES__/cmd: create-initial-cert-${R}.${CLUSTER}.${DOMAIN}*/g;
+                    s#__CERT_PEM__#/etc/letsencrypt/live/${R}.${CLUSTER}.${DOMAIN}/fullchain.pem#g;
+                    s#__CERT_KEY__#/etc/letsencrypt/live/${R}.${CLUSTER}.${DOMAIN}/privkey.pem#g" \
+            ${P_DIR}/nginx_${R}_configuration.sls
+          fi
+        else
+          grep -q ${R} ${P_DIR}/extra_custom_certs.sls || echo "  - ${R}" >> ${P_DIR}/extra_custom_certs.sls
+
+          # As the pillar differ whether we use LE or custom certs, we need to do a final edition on them
+          # Special case for keepweb
+          if [ ${R} = "keepweb" ]; then
+            for kwsub in download collections; do
+              sed -i "s/__CERT_REQUIRES__/file: extra_custom_certs_file_copy_arvados-${kwsub}.pem/g;
+                      s#__CERT_PEM__#/etc/nginx/ssl/arvados-${kwsub}.pem#g;
+                      s#__CERT_KEY__#/etc/nginx/ssl/arvados-${kwsub}.key#g" \
+              ${P_DIR}/nginx_${kwsub}_configuration.sls
+            done
+          else
+            sed -i "s/__CERT_REQUIRES__/file: extra_custom_certs_file_copy_arvados-${R}.pem/g;
+                    s#__CERT_PEM__#/etc/nginx/ssl/arvados-${R}.pem#g;
+                    s#__CERT_KEY__#/etc/nginx/ssl/arvados-${R}.key#g" \
+            ${P_DIR}/nginx_${R}_configuration.sls
+          fi
         fi
       ;;
       "shell")
@@ -610,15 +721,17 @@ fi
 # END FIXME! #16992 Temporary fix for psql call in arvados-api-server
 
 # Leave a copy of the Arvados CA so the user can copy it where it's required
-echo "Copying the Arvados CA certificate to the installer dir, so you can import it"
-# If running in a vagrant VM, also add default user to docker group
-if [ "x${VAGRANT}" = "xyes" ]; then
-  cp /etc/ssl/certs/arvados-snakeoil-ca.pem /vagrant/${CLUSTER}.${DOMAIN}-arvados-snakeoil-ca.pem
+if [ "$DEV_MODE" = "yes" ]; then
+  echo "Copying the Arvados CA certificate to the installer dir, so you can import it"
+  # If running in a vagrant VM, also add default user to docker group
+  if [ "x${VAGRANT}" = "xyes" ]; then
+    cp /etc/ssl/certs/arvados-snakeoil-ca.pem /vagrant/${CLUSTER}.${DOMAIN}-arvados-snakeoil-ca.pem
 
-  echo "Adding the vagrant user to the docker group"
-  usermod -a -G docker vagrant
-else
-  cp /etc/ssl/certs/arvados-snakeoil-ca.pem ${SCRIPT_DIR}/${CLUSTER}.${DOMAIN}-arvados-snakeoil-ca.pem
+    echo "Adding the vagrant user to the docker group"
+    usermod -a -G docker vagrant
+  else
+    cp /etc/ssl/certs/arvados-snakeoil-ca.pem ${SCRIPT_DIR}/${CLUSTER}.${DOMAIN}-arvados-snakeoil-ca.pem
+  fi
 fi
 
 # Test that the installation finished correctly
