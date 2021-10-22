@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { Table, TableBody, TableRow, TableCell, TableHead, TableSortLabel, StyleRulesCallback, Theme, WithStyles, withStyles, IconButton } from '@material-ui/core';
+import { Table, TableBody, TableRow, TableCell, TableHead, TableSortLabel, StyleRulesCallback, Theme, WithStyles, withStyles, IconButton, CircularProgress } from '@material-ui/core';
 import classnames from 'classnames';
 import { DataColumn, SortDirection } from './data-column';
 import { DataTableDefaultView } from '../data-table-default-view/data-table-default-view';
@@ -35,7 +35,7 @@ export interface DataTableDataProps<T> {
     currentRoute?: string;
 }
 
-type CssRules = "tableBody" | "root" | "content" | "noItemsInfo" | 'tableCell' | 'arrow' | 'arrowButton' | 'tableCellWorkflows';
+type CssRules = "tableBody" | "root" | "content" | "noItemsInfo" | 'tableCell' | 'arrow' | 'arrowButton' | 'tableCellWorkflows' | 'loader';
 
 const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     root: {
@@ -49,6 +49,13 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     },
     tableBody: {
         background: theme.palette.background.paper
+    },
+    loader: {
+        top: '50%',
+        left: '50%',
+        marginTop: '-15px',
+        marginLeft: '-15px',
+        position: 'absolute'
     },
     noItemsInfo: {
         textAlign: "center",
@@ -92,7 +99,13 @@ export const DataTable = withStyles(styles)(
                             </TableRow>
                         </TableHead>
                         <TableBody className={classes.tableBody}>
-                            {items.map(this.renderBodyRow)}
+                            {
+                                this.props.working ? 
+                                    <div>
+                                        <CircularProgress className={classes.loader} size={30} />
+                                    </div> :
+                                    items.map(this.renderBodyRow)
+                            }
                         </TableBody>
                     </Table>
                     {items.length === 0 && this.props.working !== undefined && !this.props.working && this.renderNoItemsPlaceholder()}

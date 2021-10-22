@@ -18,11 +18,12 @@ interface Props {
     onContextMenu?: (event: React.MouseEvent<HTMLElement>, item: any, isAdmin?: boolean) => void;
     onRowDoubleClick: (item: any) => void;
     extractKey?: (item: any) => React.Key;
+    working?: boolean;
 }
 
-const mapStateToProps = (state: RootState, { id }: Props) => {
+const mapStateToProps = (state: RootState, { id, working: parentWorking }: Props) => {
     const progress = state.progressIndicator.find(p => p.id === id);
-    const working = progress && progress.working;
+    const working = (progress && progress.working) || parentWorking;
     const currentRoute = state.router.location ? state.router.location.pathname : '';
     const currentItemUuid = currentRoute === '/workflows' ? state.properties.workflowPanelDetailsUuid : state.detailsPanel.resourceUuid;
     return { ...getDataExplorer(state.dataExplorer, id), working, paperKey: currentRoute, currentItemUuid };
