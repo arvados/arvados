@@ -9,7 +9,7 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-Arvados can be configured to use "Singularity":https://sylabs.io/singularity/ instead of Docker to execute containers on cloud nodes or a SLURM/LSF cluster. Singularity may be preferable due to its simpler installation and lack of long-running daemon process and special system users/groups. See the "Singularity page in the installation guide":{{ site.baseurl }}/install/singularity.html for configuration details.
+Arvados can be configured to use "Singularity":https://sylabs.io/singularity/ instead of Docker to execute containers on cloud nodes or a Slurm/LSF cluster. Singularity may be preferable due to its simpler installation and lack of long-running daemon process and special system users/groups. For on premises Slurm/LSF clusters, see the "Set up a compute node with Singularity":{{ site.baseurl }}/install/crunch2/install-compute-node-singularity.html page. For cloud compute clusters, see the "Build a cloud compute node image":{{ site.baseurl }}/install/crunch2-cloud/install-compute-node.html page.
 
 h2. Design overview
 
@@ -30,6 +30,6 @@ h2. Limitations
 Arvados @Singularity@ support is a work in progress. These are the current limitations of the implementation:
 
 * Even when using the Singularity runtime, users' container images are expected to be saved in Docker format. Specifying a @.sif@ file as an image when submitting a container request is not yet supported.
-* Arvados' Singularity implementation does not yet limit the amount of memory available in a container. Each container will have access to all memory on the host where it runs, unless memory use is restricted by SLURM/LSF.
+* Arvados' Singularity implementation does not yet limit the amount of memory available in a container. Each container will have access to all memory on the host where it runs, unless memory use is restricted by Slurm/LSF.
 * The Docker ENTRYPOINT instruction is ignored.
 * Arvados is tested with Singularity version 3.7.4. Other versions may not work.
