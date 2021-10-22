@@ -89,6 +89,11 @@ make -C ./builddir
 make -C ./builddir install
 ln -sf /var/lib/arvados/bin/* /usr/local/bin/
 
+# set `mksquashfs mem` in the singularity config file if it is configured
+if [ "$MKSQUASHFS_MEM" != "" ]; then
+  echo "mksquashfs mem = ${MKSQUASHFS_MEM}" >> /var/lib/arvados/etc/singularity/singularity.conf
+fi
+
 # Print singularity version installed
 singularity --version
 
