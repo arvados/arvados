@@ -10,7 +10,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
 {% include 'notebox_begin_warning' %}
-crunch-dispatch-slurm is only relevant for on premises clusters that will spool jobs to Slurm. Skip this section if you are installing a cloud cluster.
+@crunch-dispatch-slurm@ is only relevant for on premises clusters that will spool jobs to Slurm. Skip this section if you use LSF or if you are installing a cloud cluster.
 {% include 'notebox_end' %}
 
 h2. Test compute node setup
@@ -25,6 +25,8 @@ You should now be able to submit Slurm jobs that run in Docker containers.  On t
 If it works, this command should print @OK@ (it may also show some status messages from Slurm and/or Docker).  If it does not print @OK@, double-check your compute node setup, and that the @crunch@ user can submit Slurm jobs.
 
 h2. Test the dispatcher
+
+Make sure all of your compute nodes are set up with "Docker":../crunch2/install-compute-node-singularity.html or "Singularity":../crunch2/install-compute-node-docker.html.
 
 On the dispatch node, start monitoring the crunch-dispatch-slurm logs:
 

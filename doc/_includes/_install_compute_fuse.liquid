@@ -6,10 +6,6 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 h2(#fuse). Update fuse.conf
 
-{% include 'notebox_begin_warning' %}
-This is only needed when Containers.RuntimeEngine is set to @docker@, skip this section when running @singularity@.
-{% include 'notebox_end' %}
-
 FUSE must be configured with the @user_allow_other@ option enabled for Crunch to set up Keep mounts that are readable by containers.  Install this file as @/etc/fuse.conf@:
 
 <notextile>

@@ -10,10 +10,10 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
 {% include 'notebox_begin_warning' %}
-crunch-dispatch-slurm is only relevant for on premises clusters that will spool jobs to Slurm. Skip this section if you are installing a cloud cluster.
+@crunch-dispatch-slurm@ is only relevant for on premises clusters that will spool jobs to Slurm. Skip this section if you use LSF or if you are installing a cloud cluster.
 {% include 'notebox_end' %}
 
-Containers can be dispatched to a Slurm cluster.  The dispatcher sends work to the cluster using Slurm's @sbatch@ command, so it works in a variety of SLURM configurations.
+Containers can be dispatched to a Slurm cluster.  The dispatcher sends work to the cluster using Slurm's @sbatch@ command, so it works in a variety of Slurm configurations.
 
 In order to run containers, you must run the dispatcher as a user that has permission to set up FUSE mounts and run Docker containers on each compute node.  This install guide refers to this user as the @crunch@ user.  We recommend you create this user on each compute node with the same UID and GID, and add it to the @fuse@ and @docker@ system groups to grant it the necessary permissions.  However, you can run the dispatcher under any account with sufficient permissions across the cluster.
 
@@ -76,7 +76,7 @@ h3. Slurm configuration essentials
 
 Whenever you change this file, you will need to update the copy _on every compute node_ as well as the controller node, and then run @sudo scontrol reconfigure@.
 
-*@ControlMachine@* should be a DNS name that resolves to the Slurm controller (dispatch/API server). This must resolve correctly on all Slurm worker nodes as well as the controller itself. In general SLURM is very sensitive about all of the nodes being able to communicate with the controller _and one another_, all using the same DNS names.
+*@ControlMachine@* should be a DNS name that resolves to the Slurm controller (dispatch/API server). This must resolve correctly on all Slurm worker nodes as well as the controller itself. In general Slurm is very sensitive about all of the nodes being able to communicate with the controller _and one another_, all using the same DNS names.
 
 *@SelectType=select/linear@* is needed on cloud-based installations that update node sizes dynamically, but it can only schedule one container at a time on each node. On a static or homogeneous cluster, use @SelectType=select/cons_res@ with @SelectTypeParameters=CR_CPU_Memory@ instead to enable node sharing.
 
@@ -103,7 +103,7 @@ If you want Arvados to assign names to your nodes with a different consecutive n
 * In @application.yml@: <code>assign_node_hostname: worker1-%<slot_number>04d</code>
 * In @slurm.conf@: <code>NodeName=worker1-[0000-0255]</code>
 
-If your worker hostnames are already assigned by other means, and the full set of names is known in advance, have your worker node bootstrapping script (see "Installing a compute node":install-compute-node.html) send its current hostname, rather than expect Arvados to assign one.
+If your worker hostnames are already assigned by other means, and the full set of names is known in advance, have your worker node bootstrapping script send its current hostname, rather than expect Arvados to assign one.
 * In @application.yml@: <code>assign_node_hostname: false</code>
 * In @slurm.conf@: <code>NodeName=alice,bob,clay,darlene</code>
 
