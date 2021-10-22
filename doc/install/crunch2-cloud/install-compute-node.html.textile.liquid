@@ -16,6 +16,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 # "Introduction":#introduction
 # "Create an SSH keypair":#sshkeypair
 # "The build script":#building
+# "Singularity mksquashfs configuration":#singularity_mksquashfs_configuration
 # "Build an AWS image":#aws
 # "Build an Azure image":#azure
 
@@ -53,6 +54,12 @@ foktmqOY8MyctzFgXBpGTxPliGjqo8OkrOyQP2g+FL7v+Km31Xs61P8=
 -----END RSA PRIVATE KEY-----
 </code></pre>
 </notextile>
+
+{% assign show_docker_warning = true %}
+
+{% include 'singularity_mksquashfs_configuration' %}
+
+The desired amount of memory to make available for @mksquashfs@ can be configured in an argument to the build script, see the next section. It defaults to @512M@.
 
 h2(#building). The build script
 
@@ -97,15 +104,15 @@ Options:
   --azure-sku (default: unset, required if building for Azure, e.g. 16.04-LTS)
       Azure SKU image to use
   --ssh_user  (default: packer)
-      The user packer will use lo log into the image
-  --domain  (default: arvadosapi.com)
-      The domain part of the FQDN for the cluster
-  --resolver (default: 8.8.8.8)
+      The user packer will use to log into the image
+  --resolver (default: host's network provided)
       The dns resolver for the machine
   --reposuffix (default: unset)
       Set this to "-dev" to track the unstable/dev Arvados repositories
   --public-key-file (required)
       Path to the public key file that a-d-c will use to log into the compute node
+  --mksquashfs-mem (default: 512M)
+      Only relevant when using Singularity. This is the amount of memory mksquashfs is allowed to use.
   --debug
       Output debug information (default: false)
 </code></pre></notextile>

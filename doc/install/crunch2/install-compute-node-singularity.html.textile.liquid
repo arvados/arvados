@@ -14,22 +14,43 @@ This page describes the requirements for a compute node in a Slurm or LSF cluste
 {% include 'notebox_end' %}
 
 {% include 'notebox_begin_warning' %}
-These instructions apply when Containers.RuntimeEngine is set to @singularity@, refer to "Set up a Slurm compute node with Docker":install-compute-node-docker.html when running @docker@.
+These instructions apply when Containers.RuntimeEngine is set to @singularity@, refer to "Set up a compute node with Docker":install-compute-node-docker.html when running @docker@.
 {% include 'notebox_end' %}
 
 # "Introduction":#introduction
+# "Install python-arvados-fuse and crunch-run and squashfs-tools":#install-packages
 # "Set up Singularity":#singularity
-# "Update fuse.conf":#fuse
-# "Install'python-arvados-fuse and crunch-run":#install-packages
+# "Singularity mksquashfs configuration":#singularity_mksquashfs_configuration
 
 h2(#introduction). Introduction
 
-This page describes how to configure a compute node so that it can be used to run containers dispatched by Arvados, with Slurm on a static cluster. These steps must be performed on every compute node.
+Please refer to the "Singularity":{{site.baseurl}}/architecture/singularity.html documentation in the Architecture section.
+
+This page describes how to configure a compute node so that it can be used to run containers dispatched by Arvados on a static cluster. These steps must be performed on every compute node.
+
+{% assign arvados_component = 'python-arvados-fuse crunch-run squashfs-tools' %}
+
+{% include 'install_packages' %}
 
 h2(#singularity). Set up Singularity
 
-See "Singularity container runtime":../singularity.html
+Follow the "Singularity installation instructions":https://sylabs.io/guides/3.7/user-guide/quick_start.html. Make sure @singularity@ and @mksquashfs@ are working:
 
-{% assign arvados_component = 'python-arvados-fuse crunch-run' %}
+<notextile>
+<pre><code>$ <span class="userinput">singularity version</span>
+3.7.4
+$ <span class="userinput">mksquashfs -version</span>
+mksquashfs version 4.3-git (2014/06/09)
+[...]
+</code></pre>
+</notextile>
 
-{% include 'install_packages' %}
+Then update @Containers.RuntimeEngine@ in your cluster configuration:
+
+<notextile>
+<pre><code>      # Container runtime: "docker" (default) or "singularity"
+      RuntimeEngine: singularity
+</code></pre>
+</notextile>
+
+{% include 'singularity_mksquashfs_configuration' %}
