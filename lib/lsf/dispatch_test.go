@@ -83,7 +83,7 @@ func (stub lsfstub) stubCommand(s *suite, c *check.C) func(prog string, args ...
 					"-J", arvadostest.LockedContainerUUID,
 					"-n", "4",
 					"-D", "11701MB",
-					"-R", "rusage[mem=11701MB:tmp=0MB] span[hosts=1]"})
+					"-R", "rusage[mem=11701MB/host:tmp=0MB] span[hosts=1]"})
 				mtx.Lock()
 				fakejobq[nextjobid] = args[1]
 				nextjobid++
@@ -93,7 +93,7 @@ func (stub lsfstub) stubCommand(s *suite, c *check.C) func(prog string, args ...
 					"-J", arvadostest.QueuedContainerUUID,
 					"-n", "4",
 					"-D", "11701MB",
-					"-R", "rusage[mem=11701MB:tmp=45777MB] span[hosts=1]"})
+					"-R", "rusage[mem=11701MB/host:tmp=45777MB] span[hosts=1]"})
 				mtx.Lock()
 				fakejobq[nextjobid] = args[1]
 				nextjobid++

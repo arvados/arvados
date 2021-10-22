@@ -290,7 +290,7 @@ func (disp *dispatcher) bsubConstraintArgs(container arvados.Container) []string
 	return []string{
 		"-n", fmt.Sprintf("%d", vcpus),
 		"-D", fmt.Sprintf("%dMB", mem), // ulimit -d (note this doesn't limit the total container memory usage)
-		"-R", fmt.Sprintf("rusage[mem=%dMB:tmp=%dMB] span[hosts=1]", mem, tmp),
+		"-R", fmt.Sprintf("rusage[mem=%dMB/host:tmp=%dMB] span[hosts=1]", mem, tmp),
 	}
 }
 
