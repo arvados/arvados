@@ -9,7 +9,7 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-Arvados can be configured to use "Singularity":https://sylabs.io/singularity/ instead of Docker to execute containers on cloud nodes or a Slurm/LSF cluster. Singularity may be preferable due to its simpler installation and lack of long-running daemon process and special system users/groups. See the "Singularity page in the installation guide":{{ site.baseurl }}/install/singularity.html for configuration details.
+Arvados can be configured to use "Singularity":https://sylabs.io/singularity/ instead of Docker to execute containers on cloud nodes or a Slurm/LSF cluster. Singularity may be preferable due to its simpler installation and lack of long-running daemon process and special system users/groups. For on premises Slurm/LSF clusters, see the "Set up a compute node with Singularity":{{ site.baseurl }}/install/crunch2/install-compute-node-singularity.html page. For cloud compute clusters, see the "Build a cloud compute node image":{{ site.baseurl }}/install/crunch2-cloud/install-compute-node.html page.
 
 h2. Design overview
 

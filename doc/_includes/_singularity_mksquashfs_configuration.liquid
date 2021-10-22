@@ -1,0 +1,15 @@
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+h2(#singularity_mksquashfs_configuration). Singularity mksquashfs configuration
+
+{% if show_docker_warning != nil %}
+{% include 'notebox_begin_warning' %}
+This section is only relevant when using Singularity. Skip this section when using Docker.
+{% include 'notebox_end' %}
+{% endif %}
+
+Docker images are converted on the fly by @mksquashfs@, which can consume a considerable amount of RAM. The RAM usage of mksquashfs can be restricted in @/etc/singularity/singularity.conf@ with a line like @mksquashfs mem = 512M@. The amount of memory made available for mksquashfs should be configured lower than the smallest amount of memory requested by a container on the cluster to avoid the conversion being killed for using too much memory.
