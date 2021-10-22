@@ -15,7 +15,7 @@ h2. Container API
 
 # To submit work, create a "container request":{{site.baseurl}}/api/methods/container_requests.html in the @Committed@ state.
 # The system will fufill the container request by creating or reusing a "Container object":{{site.baseurl}}/api/methods/containers.html and assigning it to the @container_uuid@ field.  If the same request has been submitted in the past, it may reuse an existing container.  The reuse behavior can be suppressed with @use_existing: false@ in the container request.
-# The dispatcher process will notice a new container in @Queued@ state and submit a container executor to the underlying work queuing system (such as SLURM).
+# The dispatcher process will notice a new container in @Queued@ state and submit a container executor to the underlying work queuing system (such as Slurm).
 # The container executes.  Upon termination the container goes into the  @Complete@ state.  If the container execution was interrupted or lost due to system failure, it will go into the @Cancelled@ state.
 # When the container associated with the container request is completed, the container request will go into the @Final@ state.
 # The @output_uuid@ field of the container request contains the uuid of output collection produced by container request.

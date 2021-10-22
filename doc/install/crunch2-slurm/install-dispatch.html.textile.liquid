@@ -11,7 +11,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
 {% include 'notebox_begin_warning' %}
-crunch-dispatch-slurm is only relevant for on premises clusters that will spool jobs to Slurm. Skip this section if you are installing a cloud cluster.
+@crunch-dispatch-slurm@ is only relevant for on premises clusters that will spool jobs to Slurm. Skip this section if you use LSF or if you are installing a cloud cluster.
 {% include 'notebox_end' %}
 
 # "Introduction":#introduction
@@ -22,7 +22,7 @@ crunch-dispatch-slurm is only relevant for on premises clusters that will spool 
 
 h2(#introduction). Introduction
 
-This assumes you already have a Slurm cluster, and have "set up all of your compute nodes":install-compute-node.html.  Slurm packages are available for CentOS, Debian and Ubuntu. Please see your distribution package repositories. For information on installing Slurm from source, see "this install guide":https://slurm.schedmd.com/quickstart_admin.html
+This assumes you already have a Slurm cluster, and have set up all of your compute nodes with "Docker":../crunch2/install-compute-node-docker.html or "Singularity":../crunch2/install-compute-node-singularity.html.  Slurm packages are available for CentOS, Debian and Ubuntu. Please see your distribution package repositories. For information on installing Slurm from source, see "this install guide":https://slurm.schedmd.com/quickstart_admin.html
 
 The Arvados Slurm dispatcher can run on any node that can submit requests to both the Arvados API server and the Slurm controller (via @sbatch@).  It is not resource-intensive, so you can run it on the API server node.
 
@@ -79,7 +79,7 @@ Some Arvados installations run a local keepstore on each compute node to handle 
 h3(#PrioritySpread). Containers.Slurm.PrioritySpread
 
 crunch-dispatch-slurm adjusts the "nice" values of its Slurm jobs to ensure containers are prioritized correctly relative to one another. This option tunes the adjustment mechanism.
-* If non-Arvados jobs run on your Slurm cluster, and your Arvados containers are waiting too long in the Slurm queue because their "nice" values are too high for them to compete with other SLURM jobs, you should use a smaller PrioritySpread value.
+* If non-Arvados jobs run on your Slurm cluster, and your Arvados containers are waiting too long in the Slurm queue because their "nice" values are too high for them to compete with other Slurm jobs, you should use a smaller PrioritySpread value.
 * If you have an older Slurm system that limits nice values to 10000, a smaller @PrioritySpread@ can help avoid reaching that limit.
 * In other cases, a larger value is beneficial because it reduces the total number of adjustments made by executing @scontrol@.
 
@@ -122,7 +122,7 @@ The choice of subsystem ("memory" in this example) must correspond to one of the
 
 Some versions of Docker (at least 1.9), when run under systemd, require the cgroup parent to be specified as a systemd slice.  This causes an error when specifying a cgroup parent created outside systemd, such as those created by Slurm.
 
-You can work around this issue by disabling the Docker daemon's systemd integration.  This makes it more difficult to manage Docker services with systemd, but Crunch does not require that functionality, and it will be able to use Slurm's cgroups as container parents.  To do this, "configure the Docker daemon on all compute nodes":install-compute-node.html#configure_docker_daemon to run with the option @--exec-opt native.cgroupdriver=cgroupfs@.
+You can work around this issue by disabling the Docker daemon's systemd integration.  This makes it more difficult to manage Docker services with systemd, but Crunch does not require that functionality, and it will be able to use Slurm's cgroups as container parents.  To do this, configure the Docker daemon on all compute nodes to run with the option @--exec-opt native.cgroupdriver=cgroupfs@.
 
 {% include 'notebox_end' %}
 

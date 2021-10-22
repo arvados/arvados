@@ -1,0 +1,35 @@
+---
+layout: default
+navsection: installguide
+title: Set up a compute node with Singularity
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+{% include 'notebox_begin_warning' %}
+This page describes the requirements for a compute node in a Slurm or LSF cluster that will run containers dispatched by @crunch-dispatch-slurm@ or @arvados-dispatch-lsf@. If you are installing a cloud cluster, refer to "Build a cloud compute node image":/install/crunch2-cloud/install-compute-node.html.
+{% include 'notebox_end' %}
+
+{% include 'notebox_begin_warning' %}
+These instructions apply when Containers.RuntimeEngine is set to @singularity@, refer to "Set up a Slurm compute node with Docker":install-compute-node-docker.html when running @docker@.
+{% include 'notebox_end' %}
+
+# "Introduction":#introduction
+# "Set up Singularity":#singularity
+# "Update fuse.conf":#fuse
+# "Install'python-arvados-fuse and crunch-run":#install-packages
+
+h2(#introduction). Introduction
+
+This page describes how to configure a compute node so that it can be used to run containers dispatched by Arvados, with Slurm on a static cluster. These steps must be performed on every compute node.
+
+h2(#singularity). Set up Singularity
+
+See "Singularity container runtime":../singularity.html
+
+{% assign arvados_component = 'python-arvados-fuse crunch-run' %}
+
+{% include 'install_packages' %}
