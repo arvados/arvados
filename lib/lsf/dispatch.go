@@ -270,28 +270,49 @@ func (disp *dispatcher) bkill(ctr arvados.Container) {
 }
 
 func (disp *dispatcher) bsubArgs(container arvados.Container) ([]string, error) {
+	tmpArgs := []string{}
 	args := []string{"bsub"}
-	args = append(args, disp.Cluster.Containers.LSF.BsubArgumentsList...)
-	args = append(args, "-J", container.UUID)
-	args = append(args, disp.bsubConstraintArgs(container)...)
+	tmpArgs = append(tmpArgs, disp.Cluster.Containers.LSF.BsubArgumentsList...)
+
+	tmp := int64(math.Ceil(float64(dispatchcloud.EstimateScratchSpace(&container)) / 1048576))
+	vcpus := container.RuntimeConstraints.VCPUs
+	mem := int64(math.Ceil(float64(container.RuntimeConstraints.RAM+
+		container.RuntimeConstraints.KeepCacheRAM+
+		int64(disp.Cluster.Containers.ReserveExtraRAM)) / 1048576))
+
+	r := regexp.MustCompile(`([^%]|^)%([^%])`)
+	undoubleRE := regexp.MustCompile(`%%`)
+	for _, a := range tmpArgs {
+		tmp := r.ReplaceAllStringFunc(a, func(m string) string {
+			parts := r.FindStringSubmatch(m)
+			return parts[1] + disp.substitute(parts[2], container.UUID, vcpus, mem, tmp)
+		})
+		// handle escaped literal % symbols
+		tmp = undoubleRE.ReplaceAllString(tmp, "%")
+		args = append(args, tmp)
+	}
+
 	if u := disp.Cluster.Containers.LSF.BsubSudoUser; u != "" {
 		args = append([]string{"sudo", "-E", "-u", u}, args...)
 	}
 	return args, nil
 }
 
-func (disp *dispatcher) bsubConstraintArgs(container arvados.Container) []string {
-	// TODO: propagate container.SchedulingParameters.Partitions
-	tmp := int64(math.Ceil(float64(dispatchcloud.EstimateScratchSpace(&container)) / 1048576))
-	vcpus := container.RuntimeConstraints.VCPUs
-	mem := int64(math.Ceil(float64(container.RuntimeConstraints.RAM+
-		container.RuntimeConstraints.KeepCacheRAM+
-		int64(disp.Cluster.Containers.ReserveExtraRAM)) / 1048576))
-	return []string{
-		"-n", fmt.Sprintf("%d", vcpus),
-		"-D", fmt.Sprintf("%dMB", mem), // ulimit -d (note this doesn't limit the total container memory usage)
-		"-R", fmt.Sprintf("rusage[mem=%dMB:tmp=%dMB] span[hosts=1]", mem, tmp),
+func (disp *dispatcher) substitute(l string, uuid string, vcpus int, mem, tmp int64) string {
+	var arg string
+	switch l {
+	case "C":
+		arg = fmt.Sprintf("%d", vcpus)
+	case "T":
+		arg = fmt.Sprintf("%d", tmp)
+	case "M":
+		arg = fmt.Sprintf("%d", mem)
+	case "U":
+		arg = uuid
+	default:
+		arg = "%" + l
 	}
+	return arg
 }
 
 // Check the next bjobs report, and invoke TrackContainer for all the
