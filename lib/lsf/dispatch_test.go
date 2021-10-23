@@ -72,11 +72,10 @@ func (stub lsfstub) stubCommand(s *suite, c *check.C) func(prog string, args ...
 		switch prog {
 		case "bsub":
 			defaultArgs := s.disp.Cluster.Containers.LSF.BsubArgumentsList
-			c.Assert(len(args) > len(defaultArgs), check.Equals, true)
-			c.Check(args[:len(defaultArgs)], check.DeepEquals, defaultArgs)
-			args = args[len(defaultArgs):]
-
-			c.Check(args[0], check.Equals, "-J")
+			c.Assert(len(args), check.Equals, len(defaultArgs))
+			// %%J must have been rewritten to %J
+			c.Check(args[1], check.Equals, "/tmp/crunch-run.%J.out")
+			args = args[4:]
 			switch args[1] {
 			case arvadostest.LockedContainerUUID:
 				c.Check(args, check.DeepEquals, []string{
