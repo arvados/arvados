@@ -12,6 +12,7 @@ import { FilterBuilder } from 'services/api/filter-builder';
 import { updateResources } from 'store/resources/resources-actions';
 import { getCurrentGroupDetailsPanelUuid, GroupMembersPanelActions } from 'store/group-details-panel/group-details-panel-actions';
 import { LinkClass } from 'models/link';
+import { ResourceKind } from 'models/resource';
 
 export class GroupDetailsPanelMembersMiddlewareService extends DataExplorerMiddlewareService {
 
@@ -41,7 +42,9 @@ export class GroupDetailsPanelMembersMiddlewareService extends DataExplorerMiddl
 
                 const usersIn = await this.services.userService.list({
                     filters: new FilterBuilder()
-                        .addIn('uuid', permissionsIn.items.map(item => item.tailUuid))
+                        .addIn('uuid', permissionsIn.items
+                            .filter((item) => item.tailKind === ResourceKind.USER)
+                            .map(item => item.tailUuid))
                         .getFilters(),
                     count: "none"
                 });
@@ -49,7 +52,9 @@ export class GroupDetailsPanelMembersMiddlewareService extends DataExplorerMiddl
 
                 const projectsIn = await this.services.projectService.list({
                     filters: new FilterBuilder()
-                        .addIn('uuid', permissionsIn.items.map(item => item.tailUuid))
+                        .addIn('uuid', permissionsIn.items
+                            .filter((item) => item.tailKind === ResourceKind.PROJECT)
+                            .map(item => item.tailUuid))
                         .getFilters(),
                     count: "none"
                 });

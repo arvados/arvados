@@ -19,8 +19,8 @@ import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 
 export const GROUP_DETAILS_MEMBERS_PANEL_ID = 'groupDetailsMembersPanel';
 export const GROUP_DETAILS_PERMISSIONS_PANEL_ID = 'groupDetailsPermissionsPanel';
-export const ADD_GROUP_MEMBERS_DIALOG = 'addGrupMembers';
-export const ADD_GROUP_MEMBERS_FORM = 'addGrupMembers';
+export const ADD_GROUP_MEMBERS_DIALOG = 'addGroupMembers';
+export const ADD_GROUP_MEMBERS_FORM = 'addGroupMembers';
 export const ADD_GROUP_MEMBERS_USERS_FIELD_NAME = 'users';
 export const MEMBER_ATTRIBUTES_DIALOG = 'memberAttributesDialog';
 export const MEMBER_REMOVE_DIALOG = 'memberRemoveDialog';

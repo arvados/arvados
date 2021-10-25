@@ -12,6 +12,7 @@ import { FilterBuilder } from 'services/api/filter-builder';
 import { updateResources } from 'store/resources/resources-actions';
 import { getCurrentGroupDetailsPanelUuid, GroupPermissionsPanelActions } from 'store/group-details-panel/group-details-panel-actions';
 import { LinkClass } from 'models/link';
+import { ResourceKind } from 'models/resource';
 
 export class GroupDetailsPanelPermissionsMiddlewareService extends DataExplorerMiddlewareService {
 
@@ -41,7 +42,9 @@ export class GroupDetailsPanelPermissionsMiddlewareService extends DataExplorerM
 
                 const usersOut = await this.services.userService.list({
                     filters: new FilterBuilder()
-                        .addIn('uuid', permissionsOut.items.map(item => item.headUuid))
+                        .addIn('uuid', permissionsOut.items
+                            .filter((item) => item.headKind === ResourceKind.USER)
+                            .map(item => item.headUuid))
                         .getFilters(),
                     count: "none"
                 });
@@ -49,7 +52,9 @@ export class GroupDetailsPanelPermissionsMiddlewareService extends DataExplorerM
 
                 const collectionsOut = await this.services.collectionService.list({
                     filters: new FilterBuilder()
-                        .addIn('uuid', permissionsOut.items.map(item => item.headUuid))
+                        .addIn('uuid', permissionsOut.items
+                            .filter((item) => item.headKind === ResourceKind.COLLECTION)
+                            .map(item => item.headUuid))
                         .getFilters(),
                     count: "none"
                 });
@@ -57,7 +62,9 @@ export class GroupDetailsPanelPermissionsMiddlewareService extends DataExplorerM
 
                 const projectsOut = await this.services.projectService.list({
                     filters: new FilterBuilder()
-                        .addIn('uuid', permissionsOut.items.map(item => item.headUuid))
+                        .addIn('uuid', permissionsOut.items
+                            .filter((item) => item.headKind === ResourceKind.PROJECT)
+                            .map(item => item.headUuid))
                         .getFilters(),
                     count: "none"
                 });
