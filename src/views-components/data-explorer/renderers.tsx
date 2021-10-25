@@ -6,7 +6,7 @@ import React from 'react';
 import { Grid, Typography, withStyles, Tooltip, IconButton, Checkbox } from '@material-ui/core';
 import { FavoriteStar, PublicFavoriteStar } from '../favorite-star/favorite-star';
 import { Resource, ResourceKind, TrashableResource } from 'models/resource';
-import { ProjectIcon, FilterGroupIcon, CollectionIcon, ProcessIcon, DefaultIcon, ShareIcon, CollectionOldVersionIcon, WorkflowIcon } from 'components/icon/icon';
+import { ProjectIcon, FilterGroupIcon, CollectionIcon, ProcessIcon, DefaultIcon, ShareIcon, CollectionOldVersionIcon, WorkflowIcon, RemoveIcon } from 'components/icon/icon';
 import { formatDate, formatFileSize, formatTime } from 'common/formatters';
 import { resourceLabel } from 'common/labels';
 import { connect, DispatchProp } from 'react-redux';
@@ -29,6 +29,7 @@ import { CollectionResource } from 'models/collection';
 import { IllegalNamingWarning } from 'components/warning/warning';
 import { loadResource } from 'store/resources/resources-actions';
 import { GroupClass } from 'models/group';
+import { openRemoveGroupMemberDialog } from 'store/group-details-panel/group-details-panel-actions';
 
 const renderName = (dispatch: Dispatch, item: GroupContentsResource) =>
     <Grid container alignItems="center" wrap="nowrap" spacing={16}>
@@ -286,20 +287,6 @@ export const ResourceLinkClass = connect(
         return resource || { linkClass: '' };
     })(renderLinkClass);
 
-// const renderLinkTail = (dispatch: Dispatch, item: { uuid: string, tailUuid: string, tailKind: string }) => {
-//     const currentLabel = resourceLabel(item.tailKind);
-//     const isUnknow = currentLabel === "Unknown";
-//     return (<div>
-//         {!isUnknow ? (
-//             renderLink(dispatch, item.tailUuid, "name", currentLabel)
-//         ) : (
-//                 <Typography noWrap color="default">
-//                     {item.tailUuid}
-//                 </Typography>
-//             )}
-//     </div>);
-// };
-
 const renderLink = (dispatch: Dispatch, item: Resource) => {
     var displayName = '';
 
@@ -343,6 +330,59 @@ export const ResourceLinkUuid = connect(
         const resource = getResource<LinkResource>(props.uuid)(state.resources);
         return resource || { uuid: '' };
     })(renderUuid);
+
+export const ResourceLinkHeadUuid = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const link = getResource<LinkResource>(props.uuid)(state.resources);
+        const headResource = getResource<Resource>(link?.headUuid || '')(state.resources);
+
+        return headResource || { uuid: '' };
+    })(renderUuid);
+
+export const ResourceLinkTailUuid = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const link = getResource<LinkResource>(props.uuid)(state.resources);
+        const tailResource = getResource<Resource>(link?.tailUuid || '')(state.resources);
+
+        return tailResource || { uuid: '' };
+    })(renderUuid);
+
+const renderLinkDelete = (dispatch: Dispatch, item: LinkResource) => {
+    if (item.uuid) {
+        return <Typography noWrap>
+            <IconButton onClick={() => dispatch<any>(openRemoveGroupMemberDialog(item.uuid))}>
+                <RemoveIcon />
+            </IconButton>
+        </Typography>;
+    } else {
+      return <Typography noWrap></Typography>;
+    }
+}
+
+export const ResourceLinkDelete = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const link = getResource<LinkResource>(props.uuid)(state.resources);
+        return {
+            item: link || { uuid: '', kind: ResourceKind.NONE }
+        };
+    })((props: { item: LinkResource } & DispatchProp<any>) =>
+      renderLinkDelete(props.dispatch, props.item));
+
+export const ResourceLinkTailEmail = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const link = getResource<LinkResource>(props.uuid)(state.resources);
+        const resource = getResource<UserResource>(link?.tailUuid || '')(state.resources);
+
+        return resource || { email: '' };
+    })(renderEmail);
+
+export const ResourceLinkTailUsername = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const link = getResource<LinkResource>(props.uuid)(state.resources);
+        const resource = getResource<UserResource>(link?.tailUuid || '')(state.resources);
+
+        return resource || { username: '' };
+    })(renderUsername);
 
 // Process Resources
 const resourceRunProcess = (dispatch: Dispatch, uuid: string) => {

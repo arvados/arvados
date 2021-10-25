@@ -7,7 +7,7 @@ import { connect } from 'react-redux';
 
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { DataColumns } from 'components/data-table/data-table';
-import { ResourceUuid, ResourceEmail, ResourceUsername, ResourceLinkName, ResourceLinkHead, ResourceLinkTail } from 'views-components/data-explorer/renderers';
+import { ResourceLinkHeadUuid, ResourceLinkTailUuid, ResourceLinkTailEmail, ResourceLinkTailUsername, ResourceLinkName, ResourceLinkHead, ResourceLinkTail, ResourceLinkDelete } from 'views-components/data-explorer/renderers';
 import { createTree } from 'models/tree';
 import { noop } from 'lodash/fp';
 import { RootState } from 'store/store';
@@ -24,12 +24,15 @@ export enum GroupDetailsPanelMembersColumnNames {
     UUID = "UUID",
     EMAIL = "Email",
     USERNAME = "Username",
+    PERMISSION = "Permission",
+    REMOVE = "Remove",
 }
 
 export enum GroupDetailsPanelPermissionsColumnNames {
-    HEAD = "Head",
     NAME = "Name",
+    PERMISSION = "Permission",
     UUID = "UUID",
+    REMOVE = "Remove",
 }
 
 export const groupDetailsMembersPanelColumns: DataColumns<string> = [
@@ -45,34 +48,48 @@ export const groupDetailsMembersPanelColumns: DataColumns<string> = [
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceUsername uuid={uuid} />
-    },
-    {
-        name: GroupDetailsPanelMembersColumnNames.UUID,
-        selected: true,
-        configurable: true,
-        filters: createTree(),
-        render: uuid => <ResourceUuid uuid={uuid} />
+        render: uuid => <ResourceLinkTailUsername uuid={uuid} />
     },
     {
         name: GroupDetailsPanelMembersColumnNames.EMAIL,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceEmail uuid={uuid} />
+        render: uuid => <ResourceLinkTailEmail uuid={uuid} />
+    },
+    {
+        name: GroupDetailsPanelMembersColumnNames.PERMISSION,
+        selected: true,
+        configurable: true,
+        filters: createTree(),
+        render: uuid => <ResourceLinkName uuid={uuid} />
+    },
+    {
+        name: GroupDetailsPanelMembersColumnNames.UUID,
+        selected: true,
+        configurable: true,
+        filters: createTree(),
+        render: uuid => <ResourceLinkTailUuid uuid={uuid} />
+    },
+    {
+        name: GroupDetailsPanelMembersColumnNames.REMOVE,
+        selected: true,
+        configurable: true,
+        filters: createTree(),
+        render: uuid => <ResourceLinkDelete uuid={uuid} />
     },
 ];
 
 export const groupDetailsPermissionsPanelColumns: DataColumns<string> = [
     {
-        name: GroupDetailsPanelPermissionsColumnNames.HEAD,
+        name: GroupDetailsPanelPermissionsColumnNames.NAME,
         selected: true,
         configurable: true,
         filters: createTree(),
         render: uuid => <ResourceLinkHead uuid={uuid} />
     },
     {
-        name: GroupDetailsPanelPermissionsColumnNames.NAME,
+        name: GroupDetailsPanelPermissionsColumnNames.PERMISSION,
         selected: true,
         configurable: true,
         filters: createTree(),
@@ -83,7 +100,14 @@ export const groupDetailsPermissionsPanelColumns: DataColumns<string> = [
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceUuid uuid={uuid} />
+        render: uuid => <ResourceLinkHeadUuid uuid={uuid} />
+    },
+    {
+        name: GroupDetailsPanelPermissionsColumnNames.REMOVE,
+        selected: true,
+        configurable: true,
+        filters: createTree(),
+        render: uuid => <ResourceLinkDelete uuid={uuid} />
     },
 ];
 
