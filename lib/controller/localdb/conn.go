@@ -6,32 +6,145 @@ package localdb
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 
 	"git.arvados.org/arvados.git/lib/controller/railsproxy"
 	"git.arvados.org/arvados.git/lib/controller/rpc"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"github.com/fsnotify/fsnotify"
+	"github.com/sirupsen/logrus"
 )
 
 type railsProxy = rpc.Conn
 
 type Conn struct {
-	cluster     *arvados.Cluster
-	*railsProxy // handles API methods that aren't defined on Conn itself
+	cluster          *arvados.Cluster
+	*railsProxy      // handles API methods that aren't defined on Conn itself
+	vocabularyCache  *arvados.Vocabulary
+	reloadVocabulary bool
 	loginController
 }
 
 func NewConn(cluster *arvados.Cluster) *Conn {
 	railsProxy := railsproxy.NewConn(cluster)
 	railsProxy.RedactHostInErrors = true
-	var conn Conn
-	conn = Conn{
+	conn := Conn{
 		cluster:    cluster,
 		railsProxy: railsProxy,
 	}
 	conn.loginController = chooseLoginController(cluster, &conn)
 	return &conn
+}
+
+func (conn *Conn) checkProperties(ctx context.Context, properties interface{}) error {
+	if properties == nil {
+		return nil
+	}
+	var props map[string]interface{}
+	switch properties := properties.(type) {
+	case string:
+		err := json.Unmarshal([]byte(properties), &props)
+		if err != nil {
+			return err
+		}
+	case map[string]interface{}:
+		props = properties
+	default:
+		return fmt.Errorf("unexpected properties type %T", properties)
+	}
+	voc, err := conn.VocabularyGet(ctx)
+	if err != nil {
+		return err
+	}
+	return voc.Check(props)
+}
+
+func watchVocabulary(logger logrus.FieldLogger, vocPath string, fn func()) {
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		logger.WithError(err).Error("vocabulary fsnotify setup failed")
+		return
+	}
+	defer watcher.Close()
+
+	err = watcher.Add(vocPath)
+	if err != nil {
+		logger.WithError(err).Error("vocabulary file watcher failed")
+		return
+	}
+
+	for {
+		select {
+		case err, ok := <-watcher.Errors:
+			if !ok {
+				return
+			}
+			logger.WithError(err).Warn("vocabulary file watcher error")
+		case _, ok := <-watcher.Events:
+			if !ok {
+				return
+			}
+			for len(watcher.Events) > 0 {
+				<-watcher.Events
+			}
+			fn()
+		}
+	}
+}
+
+func (conn *Conn) loadVocabularyFile() error {
+	vf, err := os.ReadFile(conn.cluster.API.VocabularyPath)
+	if err != nil {
+		return fmt.Errorf("couldn't read vocabulary file %q: %v", conn.cluster.API.VocabularyPath, err)
+	}
+	mk := make([]string, 0, len(conn.cluster.Collections.ManagedProperties))
+	for k := range conn.cluster.Collections.ManagedProperties {
+		mk = append(mk, k)
+	}
+	voc, err := arvados.NewVocabulary(vf, mk)
+	if err != nil {
+		return fmt.Errorf("while loading vocabulary file %q: %s", conn.cluster.API.VocabularyPath, err)
+	}
+	err = voc.Validate()
+	if err != nil {
+		return fmt.Errorf("while validating vocabulary file %q: %s", conn.cluster.API.VocabularyPath, err)
+	}
+	conn.vocabularyCache = voc
+	return nil
+}
+
+// VocabularyGet refreshes the vocabulary cache if necessary and returns it.
+func (conn *Conn) VocabularyGet(ctx context.Context) (arvados.Vocabulary, error) {
+	if conn.cluster.API.VocabularyPath == "" {
+		return arvados.Vocabulary{}, nil
+	}
+	logger := ctxlog.FromContext(ctx)
+	if conn.vocabularyCache == nil {
+		// Initial load of vocabulary file.
+		err := conn.loadVocabularyFile()
+		if err != nil {
+			logger.WithError(err).Error("error loading vocabulary file")
+			return arvados.Vocabulary{}, err
+		}
+		go watchVocabulary(logger, conn.cluster.API.VocabularyPath, func() {
+			logger.Info("vocabulary file changed, it'll be reloaded next time it's needed")
+			conn.reloadVocabulary = true
+		})
+	} else if conn.reloadVocabulary {
+		// Requested reload of vocabulary file.
+		conn.reloadVocabulary = false
+		err := conn.loadVocabularyFile()
+		if err != nil {
+			logger.WithError(err).Error("error reloading vocabulary file - ignoring")
+		} else {
+			logger.Info("vocabulary file reloaded successfully")
+		}
+	}
+	return *conn.vocabularyCache, nil
 }
 
 // Logout handles the logout of conn giving to the appropriate loginController

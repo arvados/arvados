@@ -49,8 +49,12 @@ func (conn *Conn) CollectionList(ctx context.Context, opts arvados.ListOptions) 
 }
 
 // CollectionCreate defers to railsProxy for everything except blob
-// signatures.
+// signatures and vocabulary checking.
 func (conn *Conn) CollectionCreate(ctx context.Context, opts arvados.CreateOptions) (arvados.Collection, error) {
+	err := conn.checkProperties(ctx, opts.Attrs["properties"])
+	if err != nil {
+		return arvados.Collection{}, err
+	}
 	if len(opts.Select) > 0 {
 		// We need to know IsTrashed and TrashAt to implement
 		// signing properly, even if the caller doesn't want
@@ -66,8 +70,12 @@ func (conn *Conn) CollectionCreate(ctx context.Context, opts arvados.CreateOptio
 }
 
 // CollectionUpdate defers to railsProxy for everything except blob
-// signatures.
+// signatures and vocabulary checking.
 func (conn *Conn) CollectionUpdate(ctx context.Context, opts arvados.UpdateOptions) (arvados.Collection, error) {
+	err := conn.checkProperties(ctx, opts.Attrs["properties"])
+	if err != nil {
+		return arvados.Collection{}, err
+	}
 	if len(opts.Select) > 0 {
 		// We need to know IsTrashed and TrashAt to implement
 		// signing properly, even if the caller doesn't want

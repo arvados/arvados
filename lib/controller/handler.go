@@ -97,6 +97,7 @@ func (h *Handler) setup() {
 		WrapCalls:      api.ComposeWrappers(ctrlctx.WrapCallsInTransactions(h.db), oidcAuthorizer.WrapCalls),
 	})
 	mux.Handle("/arvados/v1/config", rtr)
+	mux.Handle("/arvados/v1/vocabulary", rtr)
 	mux.Handle("/"+arvados.EndpointUserAuthenticate.Path, rtr) // must come before .../users/
 	mux.Handle("/arvados/v1/collections", rtr)
 	mux.Handle("/arvados/v1/collections/", rtr)

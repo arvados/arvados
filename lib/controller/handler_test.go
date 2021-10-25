@@ -88,6 +88,56 @@ func (s *HandlerSuite) TestConfigExport(c *check.C) {
 	}
 }
 
+func (s *HandlerSuite) TestVocabularyExport(c *check.C) {
+	voc := `{
+		"strict_tags": false,
+		"tags": {
+			"IDTAGIMPORTANCE": {
+				"strict": false,
+				"labels": [{"label": "Importance"}],
+				"values": {
+					"HIGH": {
+						"labels": [{"label": "High"}]
+					},
+					"LOW": {
+						"labels": [{"label": "Low"}]
+					}
+				}
+			}
+		}
+	}`
+	f, err := os.CreateTemp("", "test-vocabulary-*.json")
+	c.Assert(err, check.IsNil)
+	defer os.Remove(f.Name())
+	_, err = f.WriteString(voc)
+	c.Assert(err, check.IsNil)
+	f.Close()
+	s.cluster.API.VocabularyPath = f.Name()
+	for _, method := range []string{"GET", "OPTIONS"} {
+		c.Log(c.TestName()+" ", method)
+		req := httptest.NewRequest(method, "/arvados/v1/vocabulary", nil)
+		resp := httptest.NewRecorder()
+		s.handler.ServeHTTP(resp, req)
+		c.Log(resp.Body.String())
+		if !c.Check(resp.Code, check.Equals, http.StatusOK) {
+			continue
+		}
+		c.Check(resp.Header().Get("Access-Control-Allow-Origin"), check.Equals, `*`)
+		c.Check(resp.Header().Get("Access-Control-Allow-Methods"), check.Matches, `.*\bGET\b.*`)
+		c.Check(resp.Header().Get("Access-Control-Allow-Headers"), check.Matches, `.+`)
+		if method == "OPTIONS" {
+			c.Check(resp.Body.String(), check.HasLen, 0)
+			continue
+		}
+		var expectedVoc, receivedVoc *arvados.Vocabulary
+		err := json.Unmarshal([]byte(voc), &expectedVoc)
+		c.Check(err, check.IsNil)
+		err = json.Unmarshal(resp.Body.Bytes(), &receivedVoc)
+		c.Check(err, check.IsNil)
+		c.Check(receivedVoc, check.DeepEquals, expectedVoc)
+	}
+}
+
 func (s *HandlerSuite) TestProxyDiscoveryDoc(c *check.C) {
 	req := httptest.NewRequest("GET", "/discovery/v1/apis/arvados/v1/rest", nil)
 	resp := httptest.NewRecorder()

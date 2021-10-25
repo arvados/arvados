@@ -23,6 +23,7 @@ type APIEndpoint struct {
 
 var (
 	EndpointConfigGet                     = APIEndpoint{"GET", "arvados/v1/config", ""}
+	EndpointVocabularyGet                 = APIEndpoint{"GET", "arvados/v1/vocabulary", ""}
 	EndpointLogin                         = APIEndpoint{"GET", "login", ""}
 	EndpointLogout                        = APIEndpoint{"GET", "logout", ""}
 	EndpointCollectionCreate              = APIEndpoint{"POST", "arvados/v1/collections", "collection"}
@@ -219,6 +220,7 @@ type BlockWriteResponse struct {
 
 type API interface {
 	ConfigGet(ctx context.Context) (json.RawMessage, error)
+	VocabularyGet(ctx context.Context) (Vocabulary, error)
 	Login(ctx context.Context, options LoginOptions) (LoginResponse, error)
 	Logout(ctx context.Context, options LogoutOptions) (LogoutResponse, error)
 	CollectionCreate(ctx context.Context, options CreateOptions) (Collection, error)
