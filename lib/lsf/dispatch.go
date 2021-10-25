@@ -270,9 +270,7 @@ func (disp *dispatcher) bkill(ctr arvados.Container) {
 }
 
 func (disp *dispatcher) bsubArgs(container arvados.Container) ([]string, error) {
-	tmpArgs := []string{}
 	args := []string{"bsub"}
-	tmpArgs = append(tmpArgs, disp.Cluster.Containers.LSF.BsubArgumentsList...)
 
 	tmp := int64(math.Ceil(float64(dispatchcloud.EstimateScratchSpace(&container)) / 1048576))
 	vcpus := container.RuntimeConstraints.VCPUs
@@ -280,39 +278,33 @@ func (disp *dispatcher) bsubArgs(container arvados.Container) ([]string, error) 
 		container.RuntimeConstraints.KeepCacheRAM+
 		int64(disp.Cluster.Containers.ReserveExtraRAM)) / 1048576))
 
-	r := regexp.MustCompile(`([^%]|^)%([^%])`)
-	undoubleRE := regexp.MustCompile(`%%`)
-	for _, a := range tmpArgs {
-		tmp := r.ReplaceAllStringFunc(a, func(m string) string {
-			parts := r.FindStringSubmatch(m)
-			return parts[1] + disp.substitute(parts[2], container.UUID, vcpus, mem, tmp)
-		})
-		// handle escaped literal % symbols
-		tmp = undoubleRE.ReplaceAllString(tmp, "%")
-		args = append(args, tmp)
+	repl := map[string]string{
+		"%%": "%",
+		"%C": fmt.Sprintf("%d", vcpus),
+		"%M": fmt.Sprintf("%d", mem),
+		"%T": fmt.Sprintf("%d", tmp),
+		"%U": container.UUID,
+	}
+
+	re := regexp.MustCompile(`%.`)
+	var substitutionErrors string
+	for _, a := range disp.Cluster.Containers.LSF.BsubArgumentsList {
+		args = append(args, re.ReplaceAllStringFunc(a, func(s string) string {
+			subst := repl[s]
+			if len(subst) == 0 {
+				substitutionErrors += fmt.Sprintf("Unknown substitution parameter %s in BsubArgumentsList, ", s)
+			}
+			return subst
+		}))
+	}
+	if len(substitutionErrors) != 0 {
+		return nil, fmt.Errorf("%s", substitutionErrors[:len(substitutionErrors)-2])
 	}
 
 	if u := disp.Cluster.Containers.LSF.BsubSudoUser; u != "" {
 		args = append([]string{"sudo", "-E", "-u", u}, args...)
 	}
 	return args, nil
-}
-
-func (disp *dispatcher) substitute(l string, uuid string, vcpus int, mem, tmp int64) string {
-	var arg string
-	switch l {
-	case "C":
-		arg = fmt.Sprintf("%d", vcpus)
-	case "T":
-		arg = fmt.Sprintf("%d", tmp)
-	case "M":
-		arg = fmt.Sprintf("%d", mem)
-	case "U":
-		arg = uuid
-	default:
-		arg = "%" + l
-	}
-	return arg
 }
 
 // Check the next bjobs report, and invoke TrackContainer for all the
