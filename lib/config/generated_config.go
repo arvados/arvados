@@ -1032,7 +1032,7 @@ Clusters:
         # Template variables starting with % will be substituted as follows:
         #
         # %U uuid
-        # %C number of cpus
+        # %C number of VCPUs
         # %M memory in MB
         # %T tmp in MB
         #
