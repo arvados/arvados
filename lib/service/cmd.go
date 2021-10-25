@@ -105,6 +105,16 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 		return 1
 	}
 
+	if strings.HasSuffix(prog, "controller") {
+		// The vocabulary file is expected to be present only
+		// in the controller node, so it doesn't make sense to
+		// check it elsewhere.
+		err = loader.CheckVocabularyFile(*cluster)
+		if err != nil {
+			return 1
+		}
+	}
+
 	// Now that we've read the config, replace the bootstrap
 	// logger with a new one according to the logging config.
 	log = ctxlog.New(stderr, cluster.SystemLogs.Format, cluster.SystemLogs.LogLevel)

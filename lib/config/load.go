@@ -389,6 +389,24 @@ func (ldr *Loader) checkStorageClasses(cc arvados.Cluster) error {
 	return nil
 }
 
+// CheckVocabularyFile will be called only by interested components as the file
+// isn't expected to be present on every node.
+func (ldr *Loader) CheckVocabularyFile(cc arvados.Cluster) error {
+	if cc.API.VocabularyPath == "" {
+		return nil
+	}
+	vf, err := os.ReadFile(cc.API.VocabularyPath)
+	if err != nil {
+		return fmt.Errorf("couldn't read vocabulary file %q: %v", cc.API.VocabularyPath, err)
+	}
+	var jsonData map[string]json.RawMessage
+	err = json.Unmarshal(vf, &jsonData)
+	if err != nil {
+		return fmt.Errorf("invalid JSON data in vocabulary file %q", cc.API.VocabularyPath)
+	}
+	return nil
+}
+
 func checkKeyConflict(label string, m map[string]string) error {
 	saw := map[string]bool{}
 	for k := range m {
