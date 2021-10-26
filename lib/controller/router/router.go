@@ -66,6 +66,13 @@ func (rtr *router) addRoutes() {
 			},
 		},
 		{
+			arvados.EndpointVocabularyGet,
+			func() interface{} { return &struct{}{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.VocabularyGet(ctx)
+			},
+		},
+		{
 			arvados.EndpointLogin,
 			func() interface{} { return &arvados.LoginOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {

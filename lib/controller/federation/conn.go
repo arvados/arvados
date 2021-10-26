@@ -192,6 +192,12 @@ func (conn *Conn) ConfigGet(ctx context.Context) (json.RawMessage, error) {
 	return json.RawMessage(buf.Bytes()), err
 }
 
+func (conn *Conn) VocabularyGet(ctx context.Context) (json.RawMessage, error) {
+	var buf bytes.Buffer
+	err := config.ExportVocabularyJSON(&buf, conn.cluster)
+	return json.RawMessage(buf.Bytes()), err
+}
+
 func (conn *Conn) Login(ctx context.Context, options arvados.LoginOptions) (arvados.LoginResponse, error) {
 	if id := conn.cluster.Login.LoginCluster; id != "" && id != conn.cluster.ClusterID {
 		// defer entire login procedure to designated cluster
