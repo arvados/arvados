@@ -59,7 +59,7 @@ foktmqOY8MyctzFgXBpGTxPliGjqo8OkrOyQP2g+FL7v+Km31Xs61P8=
 
 {% include 'singularity_mksquashfs_configuration' %}
 
-The desired amount of memory to make available for @mksquashfs@ can be configured in an argument to the build script, see the next section. It defaults to @512M@.
+The desired amount of memory to make available for @mksquashfs@ can be configured in an argument to the build script, see the next section. It defaults to @256M@.
 
 h2(#building). The build script
 
@@ -111,7 +111,7 @@ Options:
       Set this to "-dev" to track the unstable/dev Arvados repositories
   --public-key-file (required)
       Path to the public key file that a-d-c will use to log into the compute node
-  --mksquashfs-mem (default: 512M)
+  --mksquashfs-mem (default: 256M)
       Only relevant when using Singularity. This is the amount of memory mksquashfs is allowed to use.
   --debug
       Output debug information (default: false)

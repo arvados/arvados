@@ -12,4 +12,4 @@ This section is only relevant when using Singularity. Skip this section when usi
 {% include 'notebox_end' %}
 {% endif %}
 
-Docker images are converted on the fly by @mksquashfs@, which can consume a considerable amount of RAM. The RAM usage of mksquashfs can be restricted in @/etc/singularity/singularity.conf@ with a line like @mksquashfs mem = 512M@. The amount of memory made available for mksquashfs should be configured lower than the smallest amount of memory requested by a container on the cluster to avoid the conversion being killed for using too much memory.
+Docker images are converted on the fly by @mksquashfs@, which can consume a considerable amount of RAM. The RAM usage of mksquashfs can be restricted in @/etc/singularity/singularity.conf@ with a line like @mksquashfs mem = 256M@. The amount of memory made available for mksquashfs should be configured lower than the smallest amount of memory requested by a container on the cluster to avoid the conversion being killed for using too much memory. The default memory allocation in CWL is 256M, so that is also a good choice for the @mksquashfs mem@ setting.
