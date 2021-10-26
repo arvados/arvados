@@ -27,6 +27,7 @@ var ErrNoClustersDefined = errors.New("config does not define any clusters")
 type Loader struct {
 	Stdin          io.Reader
 	Logger         logrus.FieldLogger
+	LoadVocabulary bool // Load the vocabulary from API.VocabularyPath
 	SkipDeprecated bool // Don't load deprecated config keys
 	SkipLegacy     bool // Don't load legacy config files
 	SkipAPICalls   bool // Don't do checks that call RailsAPI/controller
@@ -269,6 +270,9 @@ func (ldr *Loader) Load() (*arvados.Config, error) {
 			ldr.loadOldKeepBalanceConfig,
 		)
 	}
+	if ldr.LoadVocabulary {
+		loadFuncs = append(loadFuncs, ldr.loadVocabulary)
+	}
 	loadFuncs = append(loadFuncs, ldr.setImplicitStorageClasses)
 	for _, f := range loadFuncs {
 		err = f(&cfg)
@@ -389,9 +393,11 @@ func (ldr *Loader) checkStorageClasses(cc arvados.Cluster) error {
 	return nil
 }
 
-// CheckVocabularyFile will be called only by interested components as the file
-// isn't expected to be present on every node.
-func (ldr *Loader) CheckVocabularyFile(cc arvados.Cluster) error {
+func (ldr *Loader) loadVocabulary(cfg *arvados.Config) error {
+	cc, err := cfg.GetCluster("")
+	if err != nil {
+		return err
+	}
 	if cc.API.VocabularyPath == "" {
 		return nil
 	}
@@ -399,11 +405,11 @@ func (ldr *Loader) CheckVocabularyFile(cc arvados.Cluster) error {
 	if err != nil {
 		return fmt.Errorf("couldn't read vocabulary file %q: %v", cc.API.VocabularyPath, err)
 	}
-	var jsonData map[string]json.RawMessage
-	err = json.Unmarshal(vf, &jsonData)
+	voc, err := arvados.NewVocabulary(vf)
 	if err != nil {
-		return fmt.Errorf("invalid JSON data in vocabulary file %q", cc.API.VocabularyPath)
+		return fmt.Errorf("while loading vocabulary file %q: %s", cc.API.VocabularyPath, err)
 	}
+	cc.API.Vocabulary = voc
 	return nil
 }
 
