@@ -131,7 +131,7 @@ func (v *Vocabulary) checkValue(key, val string) error {
 		if ok {
 			return fmt.Errorf("tag value %q for key %q is not defined but is an alias for %q", val, key, alias)
 		} else if v.Tags[key].Strict {
-			return fmt.Errorf("tag value %q is not defined", val)
+			return fmt.Errorf("tag value %q for key %q is not listed as valid", val, key)
 		}
 	}
 	return nil

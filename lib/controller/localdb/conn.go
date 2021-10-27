@@ -6,6 +6,7 @@ package localdb
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -25,13 +26,25 @@ type Conn struct {
 func NewConn(cluster *arvados.Cluster) *Conn {
 	railsProxy := railsproxy.NewConn(cluster)
 	railsProxy.RedactHostInErrors = true
-	var conn Conn
-	conn = Conn{
+	conn := Conn{
 		cluster:    cluster,
 		railsProxy: railsProxy,
 	}
 	conn.loginController = chooseLoginController(cluster, &conn)
 	return &conn
+}
+
+func (conn *Conn) checkProperties(properties interface{}) error {
+	if properties == nil {
+		return nil
+	}
+	// Check provided properties against the vocabulary.
+	var props map[string]interface{}
+	err := json.Unmarshal([]byte(properties.(string)), &props)
+	if err != nil {
+		return err
+	}
+	return conn.cluster.API.Vocabulary.Check(props)
 }
 
 // Logout handles the logout of conn giving to the appropriate loginController
