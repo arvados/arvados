@@ -1202,7 +1202,6 @@ func (s *IntegrationSuite) checkUploadDownloadRequest(c *check.C, h *handler, re
 	c.Check(err, check.IsNil)
 	c.Check(logentries.Items, check.HasLen, 1)
 	lastLogId := logentries.Items[0].ID
-	nextLogId := lastLogId
 
 	var logbuf bytes.Buffer
 	logger := logrus.New()
@@ -1216,24 +1215,29 @@ func (s *IntegrationSuite) checkUploadDownloadRequest(c *check.C, h *handler, re
 		c.Check(logbuf.String(), check.Matches, `(?ms).*msg="File `+direction+`".*`)
 		c.Check(logbuf.String(), check.Not(check.Matches), `(?ms).*level=error.*`)
 
-		count := 0
-		for ; nextLogId == lastLogId && count < 20; count++ {
-			time.Sleep(50 * time.Millisecond)
+		deadline := time.Now().Add(time.Second)
+		for {
+			c.Assert(time.Now().After(deadline), check.Equals, false, check.Commentf("timed out waiting for log entry"))
 			err = client.RequestAndDecode(&logentries, "GET", "arvados/v1/logs", nil,
 				arvados.ResourceListParams{
-					Filters: []arvados.Filter{arvados.Filter{Attr: "event_type", Operator: "=", Operand: "file_" + direction}},
-					Limit:   &limit1,
-					Order:   "created_at desc",
+					Filters: []arvados.Filter{
+						{Attr: "event_type", Operator: "=", Operand: "file_" + direction},
+						{Attr: "object_uuid", Operator: "=", Operand: userUuid},
+					},
+					Limit: &limit1,
+					Order: "created_at desc",
 				})
-			c.Check(err, check.IsNil)
-			if len(logentries.Items) > 0 {
-				nextLogId = logentries.Items[0].ID
+			c.Assert(err, check.IsNil)
+			if len(logentries.Items) > 0 &&
+				logentries.Items[0].ID > lastLogId &&
+				logentries.Items[0].ObjectUUID == userUuid &&
+				logentries.Items[0].Properties["collection_uuid"] == collectionUuid &&
+				logentries.Items[0].Properties["collection_file_path"] == filepath {
+				break
 			}
+			c.Logf("logentries.Items: %+v", logentries.Items)
+			time.Sleep(50 * time.Millisecond)
 		}
-		c.Check(count, check.Not(check.Equals), 20)
-		c.Check(logentries.Items[0].ObjectUUID, check.Equals, userUuid)
-		c.Check(logentries.Items[0].Properties["collection_uuid"], check.Equals, collectionUuid)
-		c.Check(logentries.Items[0].Properties["collection_file_path"], check.Equals, filepath)
 	} else {
 		c.Check(resp.Result().StatusCode, check.Equals, http.StatusForbidden)
 		c.Check(logbuf.String(), check.Equals, "")
