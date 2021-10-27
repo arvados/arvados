@@ -64,13 +64,19 @@ func (s *VocabularySuite) TestCheck(c *check.C) {
 		props         string
 		expectSuccess bool
 	}{
-		{"Unknown key to non-strict vocabulary", false, `{"foo":"bar"}`, true},
-		{"Unknown key to strict vocabulary", true, `{"foo":"bar"}`, false},
+		// Check succeeds
 		{"Known key, known value", false, `{"IDTAGANIMALS":"IDVALANIMAL1"}`, true},
-		{"Known non-strict key, unknown value", false, `{"IDTAGANIMALS":"IDVALANIMAL3"}`, true},
+		{"Unknown non-alias key on non-strict vocabulary", false, `{"foo":"bar"}`, true},
+		{"Known non-strict key, unknown non-alias value", false, `{"IDTAGANIMALS":"IDVALANIMAL3"}`, true},
+		{"Known key, list of known values", false, `{"IDTAGANIMALS":["IDVALANIMAL1","IDVALANIMAL2"]}`, true},
+		{"Known non-strict key, list of unknown non-alias values", false, `{"IDTAGCOMMENT":["hello world","lorem ipsum"]}`, true},
+		// Check fails
+		{"Unknown non-alias key on strict vocabulary", true, `{"foo":"bar"}`, false},
 		{"Known non-strict key, known value alias", false, `{"IDTAGANIMALS":"Loxodonta"}`, false},
-		{"Known strict key, unknown value", false, `{"IDTAGIMPORTANCE":"Unimportant"}`, false},
+		{"Known strict key, unknown non-alias value", false, `{"IDTAGIMPORTANCE":"Unimportant"}`, false},
 		{"Known strict key, known value alias", false, `{"IDTAGIMPORTANCE":"High"}`, false},
+		{"Known strict key, list of known alias values", false, `{"IDTAGIMPORTANCE":["Unimportant","High"]}`, false},
+		{"Known strict key, list of unknown non-alias values", false, `{"IDTAGIMPORTANCE":["foo","bar"]}`, false},
 	}
 	for _, tt := range tests {
 		c.Log(c.TestName()+" ", tt.name)

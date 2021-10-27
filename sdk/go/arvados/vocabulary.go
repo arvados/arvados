@@ -124,6 +124,19 @@ func (v *Vocabulary) getLabelsToValues(key string) (labels map[string]string) {
 	return labels
 }
 
+func (v *Vocabulary) checkValue(key, val string) error {
+	if _, ok := v.Tags[key].Values[val]; !ok {
+		lcVal := strings.ToLower(val)
+		alias, ok := v.getLabelsToValues(key)[lcVal]
+		if ok {
+			return fmt.Errorf("tag value %q for key %q is not defined but is an alias for %q", val, key, alias)
+		} else if v.Tags[key].Strict {
+			return fmt.Errorf("tag value %q is not defined", val)
+		}
+	}
+	return nil
+}
+
 // Check validates the given data against the vocabulary.
 func (v *Vocabulary) Check(data map[string]interface{}) error {
 	if v == nil {
@@ -143,14 +156,23 @@ func (v *Vocabulary) Check(data map[string]interface{}) error {
 			return nil
 		}
 		// Checks for value validity -- key is defined
-		if _, ok := v.Tags[key].Values[val.(string)]; !ok {
-			lcVal := strings.ToLower(val.(string))
-			alias, ok := v.getLabelsToValues(key)[lcVal]
-			if ok {
-				return fmt.Errorf("tag value %q for key %q is not defined but is an alias for %q", val, key, alias)
-			} else if v.Tags[key].Strict {
-				return fmt.Errorf("tag value %q is not defined", val)
+		switch val := val.(type) {
+		case string:
+			return v.checkValue(key, val)
+		case []interface{}:
+			for _, singleVal := range val {
+				switch singleVal := singleVal.(type) {
+				case string:
+					err := v.checkValue(key, singleVal)
+					if err != nil {
+						return err
+					}
+				default:
+					return fmt.Errorf("tag value %q for key %q is not a valid type (%v)", singleVal, key, reflect.TypeOf(singleVal))
+				}
 			}
+		default:
+			return fmt.Errorf("tag value %q for key %q is not a valid type (%v)", val, key, reflect.TypeOf(val))
 		}
 	}
 	return nil
