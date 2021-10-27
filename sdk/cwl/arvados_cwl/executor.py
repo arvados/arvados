@@ -577,8 +577,8 @@ The 'jobs' API is no longer supported.
 
         loadingContext = self.loadingContext.copy()
         loadingContext.do_validate = False
-        loadingContext.do_update = False
         if submitting:
+            loadingContext.do_update = False
             # Document may have been auto-updated. Reload the original
             # document with updating disabled because we want to
             # submit the document with its original CWL version, not

@@ -58,6 +58,9 @@ def create_api_client_auth(supplied_token=nil)
 
   api_client_auth = ApiClientAuthorization.where(attr).first
   if !api_client_auth
+    # The anonymous user token should never expire but we are not allowed to
+    # set :expires_at to nil, so we set it to 1000 years in the future.
+    attr[:expires_at] = Time.now + 1000.years
     api_client_auth = ApiClientAuthorization.create!(attr)
   end
   api_client_auth

@@ -33,7 +33,7 @@ nginx:
         enabled: true
         overwrite: true
         requires:
-          file: nginx_snippet_arvados-snakeoil.conf
+          file: extra_custom_certs_file_copy_arvados-keepproxy.pem
         config:
           - server:
             - server_name: keep.__CLUSTER__.__DOMAIN__
@@ -55,6 +55,7 @@ nginx:
             - proxy_http_version: '1.1'
             - proxy_request_buffering: 'off'
             - include: snippets/ssl_hardening_default.conf
-            - include: snippets/arvados-snakeoil.conf
+            - ssl_certificate: /etc/nginx/ssl/arvados-keepproxy.pem
+            - ssl_certificate_key: /etc/nginx/ssl/arvados-keepproxy.key
             - access_log: /var/log/nginx/keepproxy.__CLUSTER__.__DOMAIN__.access.log combined
             - error_log: /var/log/nginx/keepproxy.__CLUSTER__.__DOMAIN__.error.log

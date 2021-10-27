@@ -35,14 +35,18 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
                                cp -vr /vagrant/tests /home/vagrant/tests;
                                sed 's#cluster_fixme_or_this_wont_work#harpo#g;
                                     s#domain_fixme_or_this_wont_work#local#g;
-                                    s/#\ BRANCH=\"main\"/\ BRANCH=\"main\"/g;
-                                    s#CONTROLLER_EXT_SSL_PORT=443#CONTROLLER_EXT_SSL_PORT=8443#g' \
+                                    s#CONTROLLER_EXT_SSL_PORT=443#CONTROLLER_EXT_SSL_PORT=8443#g;
+                                    s#RELEASE=\"production\"#RELEASE=\"development\"#g;
+                                    s/# VERSION=.*$/VERSION=\"latest\"/g;
+                                    s/#\ BRANCH=\"main\"/\ BRANCH=\"main\"/g' \
                                     /vagrant/local.params.example.single_host_multiple_hostnames > /tmp/local.params.single_host_multiple_hostnames"
+
      arv.vm.provision "shell",
                       path: "provision.sh",
                       args: [
                         # "--debug",
                         "--config /tmp/local.params.single_host_multiple_hostnames",
+                        "--development",
                         "--test",
                         "--vagrant"
                       ].join(" ")

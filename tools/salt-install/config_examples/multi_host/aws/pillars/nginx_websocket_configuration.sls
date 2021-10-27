@@ -16,7 +16,7 @@ nginx:
   servers:
     managed:
       ### DEFAULT
-      arvados_websocket_default:
+      arvados_websocket_default.conf:
         enabled: true
         overwrite: true
         config:
@@ -27,11 +27,11 @@ nginx:
             - location /:
               - return: '301 https://$host$request_uri'
 
-      arvados_websocket_ssl:
+      arvados_websocket_ssl.conf:
         enabled: true
         overwrite: true
         requires:
-          cmd: create-initial-cert-ws.__CLUSTER__.__DOMAIN__-ws.__CLUSTER__.__DOMAIN__
+          __CERT_REQUIRES__
         config:
           - server:
             - server_name: ws.__CLUSTER__.__DOMAIN__
@@ -54,6 +54,7 @@ nginx:
             - proxy_http_version: '1.1'
             - proxy_request_buffering: 'off'
             - include: snippets/ssl_hardening_default.conf
-            - include: snippets/ws.__CLUSTER__.__DOMAIN___letsencrypt_cert[.]conf
+            - ssl_certificate: __CERT_PEM__
+            - ssl_certificate_key: __CERT_KEY__
             - access_log: /var/log/nginx/ws.__CLUSTER__.__DOMAIN__.access.log combined
             - error_log: /var/log/nginx/ws.__CLUSTER__.__DOMAIN__.error.log

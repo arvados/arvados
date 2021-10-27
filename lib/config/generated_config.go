@@ -39,7 +39,7 @@ Clusters:
 
       RailsAPI:
         InternalURLs: {SAMPLE: {}}
-        ExternalURL: "-"
+        ExternalURL: ""
       Controller:
         InternalURLs: {SAMPLE: {}}
         ExternalURL: ""
@@ -48,7 +48,7 @@ Clusters:
         ExternalURL: ""
       Keepbalance:
         InternalURLs: {SAMPLE: {}}
-        ExternalURL: "-"
+        ExternalURL: ""
       GitHTTP:
         InternalURLs: {SAMPLE: {}}
         ExternalURL: ""
@@ -57,10 +57,10 @@ Clusters:
         ExternalURL: ""
       DispatchCloud:
         InternalURLs: {SAMPLE: {}}
-        ExternalURL: "-"
+        ExternalURL: ""
       DispatchLSF:
         InternalURLs: {SAMPLE: {}}
-        ExternalURL: "-"
+        ExternalURL: ""
       Keepproxy:
         InternalURLs: {SAMPLE: {}}
         ExternalURL: ""
@@ -125,7 +125,7 @@ Clusters:
             # the old URL (with trailing slash omitted) to preserve
             # rendezvous ordering.
             Rendezvous: ""
-        ExternalURL: "-"
+        ExternalURL: ""
       Composer:
         InternalURLs: {SAMPLE: {}}
         ExternalURL: ""
@@ -148,7 +148,7 @@ Clusters:
         ExternalURL: ""
       Health:
         InternalURLs: {SAMPLE: {}}
-        ExternalURL: "-"
+        ExternalURL: ""
 
     PostgreSQL:
       # max concurrent connections per arvados server daemon
@@ -1063,14 +1063,23 @@ Clusters:
           AssignNodeHostname: "compute%<slot_number>d"
 
       LSF:
-        # Additional arguments to bsub when submitting Arvados
-        # containers as LSF jobs.
+        # Arguments to bsub when submitting Arvados containers as LSF jobs.
+        #
+        # Template variables starting with % will be substituted as follows:
+        #
+        # %U uuid
+        # %C number of VCPUs
+        # %M memory in MB
+        # %T tmp in MB
+        #
+        # Use %% to express a literal %. The %%J in the default will be changed
+        # to %J, which is interpreted by bsub itself.
         #
         # Note that the default arguments cause LSF to write two files
         # in /tmp on the compute node each time an Arvados container
         # runs. Ensure you have something in place to delete old files
-        # from /tmp, or adjust these arguments accordingly.
-        BsubArgumentsList: ["-o", "/tmp/crunch-run.%J.out", "-e", "/tmp/crunch-run.%J.err"]
+        # from /tmp, or adjust the "-o" and "-e" arguments accordingly.
+        BsubArgumentsList: ["-o", "/tmp/crunch-run.%%J.out", "-e", "/tmp/crunch-run.%%J.err", "-J", "%U", "-n", "%C", "-D", "%MMB", "-R", "rusage[mem=%MMB:tmp=%TMB] span[hosts=1]"]
 
         # Use sudo to switch to this user account when submitting LSF
         # jobs.

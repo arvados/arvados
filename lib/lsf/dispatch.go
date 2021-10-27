@@ -271,27 +271,40 @@ func (disp *dispatcher) bkill(ctr arvados.Container) {
 
 func (disp *dispatcher) bsubArgs(container arvados.Container) ([]string, error) {
 	args := []string{"bsub"}
-	args = append(args, disp.Cluster.Containers.LSF.BsubArgumentsList...)
-	args = append(args, "-J", container.UUID)
-	args = append(args, disp.bsubConstraintArgs(container)...)
-	if u := disp.Cluster.Containers.LSF.BsubSudoUser; u != "" {
-		args = append([]string{"sudo", "-E", "-u", u}, args...)
-	}
-	return args, nil
-}
 
-func (disp *dispatcher) bsubConstraintArgs(container arvados.Container) []string {
-	// TODO: propagate container.SchedulingParameters.Partitions
 	tmp := int64(math.Ceil(float64(dispatchcloud.EstimateScratchSpace(&container)) / 1048576))
 	vcpus := container.RuntimeConstraints.VCPUs
 	mem := int64(math.Ceil(float64(container.RuntimeConstraints.RAM+
 		container.RuntimeConstraints.KeepCacheRAM+
 		int64(disp.Cluster.Containers.ReserveExtraRAM)) / 1048576))
-	return []string{
-		"-n", fmt.Sprintf("%d", vcpus),
-		"-D", fmt.Sprintf("%dMB", mem), // ulimit -d (note this doesn't limit the total container memory usage)
-		"-R", fmt.Sprintf("rusage[mem=%dMB:tmp=%dMB] span[hosts=1]", mem, tmp),
+
+	repl := map[string]string{
+		"%%": "%",
+		"%C": fmt.Sprintf("%d", vcpus),
+		"%M": fmt.Sprintf("%d", mem),
+		"%T": fmt.Sprintf("%d", tmp),
+		"%U": container.UUID,
 	}
+
+	re := regexp.MustCompile(`%.`)
+	var substitutionErrors string
+	for _, a := range disp.Cluster.Containers.LSF.BsubArgumentsList {
+		args = append(args, re.ReplaceAllStringFunc(a, func(s string) string {
+			subst := repl[s]
+			if len(subst) == 0 {
+				substitutionErrors += fmt.Sprintf("Unknown substitution parameter %s in BsubArgumentsList, ", s)
+			}
+			return subst
+		}))
+	}
+	if len(substitutionErrors) != 0 {
+		return nil, fmt.Errorf("%s", substitutionErrors[:len(substitutionErrors)-2])
+	}
+
+	if u := disp.Cluster.Containers.LSF.BsubSudoUser; u != "" {
+		args = append([]string{"sudo", "-E", "-u", u}, args...)
+	}
+	return args, nil
 }
 
 // Check the next bjobs report, and invoke TrackContainer for all the

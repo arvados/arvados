@@ -10,7 +10,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
 {% include 'notebox_begin_warning' %}
-arvados-dispatch-lsf is only relevant for on premises clusters that will spool jobs to LSF. Skip this section if you are installing a cloud cluster.
+@arvados-dispatch-lsf@ is only relevant for on premises clusters that will spool jobs to LSF. Skip this section if you use Slurm or if you are installing a cloud cluster.
 {% include 'notebox_end' %}
 
 h2(#overview). Overview
@@ -19,7 +19,7 @@ Containers can be dispatched to an LSF cluster.  The dispatcher sends work to th
 
 In order to run containers, you must choose a user that has permission to set up FUSE mounts and run Singularity/Docker containers on each compute node.  This install guide refers to this user as the @crunch@ user.  We recommend you create this user on each compute node with the same UID and GID, and add it to the @fuse@ and @docker@ system groups to grant it the necessary permissions.  However, you can run the dispatcher under any account with sufficient permissions across the cluster.
 
-Set up all of your compute nodes "as you would for a SLURM cluster":../crunch2-slurm/install-compute-node.html.
+Set up all of your compute nodes with "Docker":../crunch2/install-compute-node-singularity.html or "Singularity":../crunch2/install-compute-node-docker.html.
 
 *Current limitations*:
 * Arvados container priority is not propagated to LSF job priority. This can cause inefficient use of compute resources, and even deadlock if there are fewer compute nodes than concurrent Arvados workflows.
@@ -28,6 +28,15 @@ Set up all of your compute nodes "as you would for a SLURM cluster":../crunch2-s
 h2(#update-config). Update config.yml
 
 Arvados-dispatch-lsf reads the common configuration file at @/etc/arvados/config.yml@.
+
+Add a DispatchLSF entry to the Services section, using the hostname where @arvados-dispatch-lsf@ will run, and an available port:
+
+<notextile>
+<pre>    Services:
+      DispatchLSF:
+        InternalURLs:
+          "http://<code class="userinput">hostname.zzzzz.arvadosapi.com:9007</code>": {}</pre>
+</notextile>
 
 Review the following configuration parameters and adjust as needed.
 

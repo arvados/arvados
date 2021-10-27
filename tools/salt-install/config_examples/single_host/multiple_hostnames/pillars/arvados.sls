@@ -83,8 +83,8 @@ arvados:
     tls:
       # certificate: ''
       # key: ''
-      # required to test with arvados-snakeoil certs
-      insecure: true
+      # When using arvados-snakeoil certs set insecure: true
+      insecure: false
 
     resources:
       virtual_machines:

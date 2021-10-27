@@ -414,10 +414,13 @@ func (runner *ContainerRunner) SetupMounts() (map[string]bindmount, error) {
 	arvMountCmd := []string{
 		"arv-mount",
 		"--foreground",
-		"--allow-other",
 		"--read-write",
 		"--storage-classes", strings.Join(runner.Container.OutputStorageClasses, ","),
 		fmt.Sprintf("--crunchstat-interval=%v", runner.statInterval.Seconds())}
+
+	if runner.executor.Runtime() == "docker" {
+		arvMountCmd = append(arvMountCmd, "--allow-other")
+	}
 
 	if runner.Container.RuntimeConstraints.KeepCacheRAM > 0 {
 		arvMountCmd = append(arvMountCmd, "--file-cache", fmt.Sprintf("%d", runner.Container.RuntimeConstraints.KeepCacheRAM))

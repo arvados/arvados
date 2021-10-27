@@ -16,7 +16,7 @@ nginx:
   servers:
     managed:
       ### DEFAULT
-      arvados_keepproxy_default:
+      arvados_keepproxy_default.conf:
         enabled: true
         overwrite: true
         config:
@@ -27,16 +27,16 @@ nginx:
             - location /:
               - return: '301 https://$host$request_uri'
 
-      arvados_keepproxy_ssl:
+      arvados_keepproxy_ssl.conf:
         enabled: true
         overwrite: true
         requires:
-          cmd: create-initial-cert-keep.__CLUSTER__.__DOMAIN__-keep.__CLUSTER__.__DOMAIN__
+          __CERT_REQUIRES__
         config:
           - server:
             - server_name: keep.__CLUSTER__.__DOMAIN__
             - listen:
-              - __CONTROLLER_EXT_SSL_PORT__ http2 ssl
+              - __KEEP_EXT_SSL_PORT__ http2 ssl
             - index: index.html index.htm
             - location /:
               - proxy_pass: 'http://keepproxy_upstream'
@@ -53,6 +53,7 @@ nginx:
             - proxy_http_version: '1.1'
             - proxy_request_buffering: 'off'
             - include: snippets/ssl_hardening_default.conf
-            - include: snippets/keep.__CLUSTER__.__DOMAIN___letsencrypt_cert[.]conf
+            - ssl_certificate: __CERT_PEM__
+            - ssl_certificate_key: __CERT_KEY__
             - access_log: /var/log/nginx/keepproxy.__CLUSTER__.__DOMAIN__.access.log combined
             - error_log: /var/log/nginx/keepproxy.__CLUSTER__.__DOMAIN__.error.log
