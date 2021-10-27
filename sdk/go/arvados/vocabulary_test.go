@@ -5,12 +5,88 @@
 package arvados
 
 import (
+	"encoding/json"
+
 	check "gopkg.in/check.v1"
 )
 
-type VocabularySuite struct{}
+type VocabularySuite struct {
+	testVoc *Vocabulary
+}
 
 var _ = check.Suite(&VocabularySuite{})
+
+func (s *VocabularySuite) SetUpTest(c *check.C) {
+	s.testVoc = &Vocabulary{
+		StrictTags: false,
+		Tags: map[string]VocabularyTag{
+			"IDTAGANIMALS": {
+				Strict: false,
+				Labels: []VocabularyLabel{{Label: "Animal"}, {Label: "Creature"}},
+				Values: map[string]VocabularyTagValue{
+					"IDVALANIMAL1": {
+						Labels: []VocabularyLabel{{Label: "Human"}, {Label: "Homo sapiens"}},
+					},
+					"IDVALANIMAL2": {
+						Labels: []VocabularyLabel{{Label: "Elephant"}, {Label: "Loxodonta"}},
+					},
+				},
+			},
+			"IDTAGIMPORTANCE": {
+				Strict: true,
+				Labels: []VocabularyLabel{{Label: "Importance"}, {Label: "Priority"}},
+				Values: map[string]VocabularyTagValue{
+					"IDVAL3": {
+						Labels: []VocabularyLabel{{Label: "Low"}, {Label: "Low priority"}},
+					},
+					"IDVAL2": {
+						Labels: []VocabularyLabel{{Label: "Medium"}, {Label: "Medium priority"}},
+					},
+					"IDVAL1": {
+						Labels: []VocabularyLabel{{Label: "High"}, {Label: "High priority"}},
+					},
+				},
+			},
+			"IDTAGCOMMENT": {
+				Strict: false,
+				Labels: []VocabularyLabel{{Label: "Comment"}},
+			},
+		},
+	}
+	err := s.testVoc.Validate()
+	c.Assert(err, check.IsNil)
+}
+
+func (s *VocabularySuite) TestCheck(c *check.C) {
+	tests := []struct {
+		name          string
+		strictVoc     bool
+		props         string
+		expectSuccess bool
+	}{
+		{"Unknown key to non-strict vocabulary", false, `{"foo":"bar"}`, true},
+		{"Unknown key to strict vocabulary", true, `{"foo":"bar"}`, false},
+		{"Known key, known value", false, `{"IDTAGANIMALS":"IDVALANIMAL1"}`, true},
+		{"Known non-strict key, unknown value", false, `{"IDTAGANIMALS":"IDVALANIMAL3"}`, true},
+		{"Known non-strict key, known value alias", false, `{"IDTAGANIMALS":"Loxodonta"}`, false},
+		{"Known strict key, unknown value", false, `{"IDTAGIMPORTANCE":"Unimportant"}`, false},
+		{"Known strict key, known value alias", false, `{"IDTAGIMPORTANCE":"High"}`, false},
+	}
+	for _, tt := range tests {
+		c.Log(c.TestName()+" ", tt.name)
+		s.testVoc.StrictTags = tt.strictVoc
+
+		var data map[string]interface{}
+		err := json.Unmarshal([]byte(tt.props), &data)
+		c.Assert(err, check.IsNil)
+		err = s.testVoc.Check(data)
+		if tt.expectSuccess {
+			c.Assert(err, check.IsNil)
+		} else {
+			c.Assert(err, check.NotNil)
+		}
+	}
+}
 
 func (s *VocabularySuite) TestNewVocabulary(c *check.C) {
 	tests := []struct {

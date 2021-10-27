@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"strings"
 )
 
 type Vocabulary struct {
@@ -49,6 +50,9 @@ func NewVocabulary(data []byte) (voc *Vocabulary, err error) {
 }
 
 func (v *Vocabulary) Validate() error {
+	if v == nil {
+		return nil
+	}
 	tagKeys := map[string]bool{}
 	// Checks for Vocabulary strictness
 	if v.StrictTags && len(v.Tags) == 0 {
@@ -61,10 +65,11 @@ func (v *Vocabulary) Validate() error {
 		}
 		tagKeys[key] = true
 		for _, lbl := range v.Tags[key].Labels {
-			if tagKeys[lbl.Label] {
-				return fmt.Errorf("tag label %q for key %q already seen as a tag key or label", lbl.Label, key)
+			label := strings.ToLower(lbl.Label)
+			if tagKeys[label] {
+				return fmt.Errorf("tag label %q for key %q already seen as a tag key or label", label, key)
 			}
-			tagKeys[lbl.Label] = true
+			tagKeys[label] = true
 		}
 		// Checks for value strictness
 		if v.Tags[key].Strict && len(v.Tags[key].Values) == 0 {
@@ -78,10 +83,73 @@ func (v *Vocabulary) Validate() error {
 			}
 			tagValues[val] = true
 			for _, tagLbl := range v.Tags[key].Values[val].Labels {
-				if tagValues[tagLbl.Label] {
-					return fmt.Errorf("tag value label %q for value %q[%q] already seen as a value key or label", tagLbl.Label, key, val)
+				label := strings.ToLower(tagLbl.Label)
+				if tagValues[label] {
+					return fmt.Errorf("tag value label %q for pair (%q:%q) already seen as a value key or label", label, key, val)
 				}
-				tagValues[tagLbl.Label] = true
+				tagValues[label] = true
+			}
+		}
+	}
+	return nil
+}
+
+func (v *Vocabulary) getLabelsToKeys() (labels map[string]string) {
+	if v == nil {
+		return
+	}
+	labels = make(map[string]string)
+	for key, val := range v.Tags {
+		for _, lbl := range val.Labels {
+			label := strings.ToLower(lbl.Label)
+			labels[label] = key
+		}
+	}
+	return labels
+}
+
+func (v *Vocabulary) getLabelsToValues(key string) (labels map[string]string) {
+	if v == nil {
+		return
+	}
+	labels = make(map[string]string)
+	if _, ok := v.Tags[key]; ok {
+		for val := range v.Tags[key].Values {
+			for _, tagLbl := range v.Tags[key].Values[val].Labels {
+				label := strings.ToLower(tagLbl.Label)
+				labels[label] = val
+			}
+		}
+	}
+	return labels
+}
+
+// Check validates the given data against the vocabulary.
+func (v *Vocabulary) Check(data map[string]interface{}) error {
+	if v == nil {
+		return nil
+	}
+	for key, val := range data {
+		// Checks for key validity
+		if _, ok := v.Tags[key]; !ok {
+			lcKey := strings.ToLower(key)
+			alias, ok := v.getLabelsToKeys()[lcKey]
+			if ok {
+				return fmt.Errorf("tag key %q is not defined but is an alias for %q", key, alias)
+			} else if v.StrictTags {
+				return fmt.Errorf("tag key %q is not defined", key)
+			}
+			// If the key is not defined, we don't need to check the value
+			return nil
+		}
+		// Checks for value validity -- key is defined
+		if _, ok := v.Tags[key].Values[val.(string)]; !ok {
+			lcVal := strings.ToLower(val.(string))
+			alias, ok := v.getLabelsToValues(key)[lcVal]
+			if ok {
+				return fmt.Errorf("tag value %q for key %q is not defined but is an alias for %q", val, key, alias)
+			} else if v.Tags[key].Strict {
+				return fmt.Errorf("tag value %q is not defined", val)
 			}
 		}
 	}
