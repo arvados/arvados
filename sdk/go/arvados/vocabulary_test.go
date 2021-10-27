@@ -203,7 +203,7 @@ func (s *VocabularySuite) TestValidationErrors(c *check.C) {
 					},
 				},
 			},
-			"tag value label.*for value.*already seen.*",
+			"tag value label.*for pair.*already seen.*",
 		},
 		{
 			"Strict key, no values",

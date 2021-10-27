@@ -168,11 +168,11 @@ func (v *Vocabulary) Check(data map[string]interface{}) error {
 						return err
 					}
 				default:
-					return fmt.Errorf("tag value %q for key %q is not a valid type (%v)", singleVal, key, reflect.TypeOf(singleVal))
+					return fmt.Errorf("tag value %q for key %q is not a valid type (%T)", singleVal, key, singleVal)
 				}
 			}
 		default:
-			return fmt.Errorf("tag value %q for key %q is not a valid type (%v)", val, key, reflect.TypeOf(val))
+			return fmt.Errorf("tag value %q for key %q is not a valid type (%T)", val, key, val)
 		}
 	}
 	return nil

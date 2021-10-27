@@ -38,11 +38,17 @@ func (conn *Conn) checkProperties(properties interface{}) error {
 	if properties == nil {
 		return nil
 	}
-	// Check provided properties against the vocabulary.
 	var props map[string]interface{}
-	err := json.Unmarshal([]byte(properties.(string)), &props)
-	if err != nil {
-		return err
+	switch properties := properties.(type) {
+	case string:
+		err := json.Unmarshal([]byte(properties), &props)
+		if err != nil {
+			return err
+		}
+	case map[string]interface{}:
+		props = properties
+	default:
+		return fmt.Errorf("unexpected properties type %T", properties)
 	}
 	return conn.cluster.API.Vocabulary.Check(props)
 }
