@@ -831,11 +831,9 @@ func (s *IntegrationSuite) TestListUsers(c *check.C) {
 	}
 	c.Check(found, check.Equals, true)
 
-	// Deactivated user can see is_active==false via "get current
-	// user" API
+	// Deactivated user no longer has working token
 	user1, err = conn3.UserGetCurrent(userctx1, arvados.GetOptions{})
-	c.Assert(err, check.IsNil)
-	c.Check(user1.IsActive, check.Equals, false)
+	c.Assert(err, check.ErrorMatches, `.*401 Unauthorized.*`)
 }
 
 func (s *IntegrationSuite) TestSetupUserWithVM(c *check.C) {
