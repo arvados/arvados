@@ -6,7 +6,6 @@ package localdb
 
 import (
 	"context"
-	"encoding/json"
 	"regexp"
 	"strconv"
 	"time"
@@ -78,13 +77,13 @@ func (s *CollectionSuite) TestCollectionCreateWithProperties(c *check.C) {
 
 	tests := []struct {
 		name    string
-		props   string
+		props   map[string]interface{}
 		success bool
 	}{
-		{"Invalid prop key", `{"Priority":"IDVALIMPORTANCES1"}`, false},
-		{"Invalid prop value", `{"IDTAGIMPORTANCES": "high"}`, false},
-		{"Valid prop key & value", `{"IDTAGIMPORTANCES": "IDVALIMPORTANCES1"}`, true},
-		{"Empty properties", "{}", true},
+		{"Invalid prop key", map[string]interface{}{"Priority": "IDVALIMPORTANCES1"}, false},
+		{"Invalid prop value", map[string]interface{}{"IDTAGIMPORTANCES": "high"}, false},
+		{"Valid prop key & value", map[string]interface{}{"IDTAGIMPORTANCES": "IDVALIMPORTANCES1"}, true},
+		{"Empty properties", map[string]interface{}{}, true},
 	}
 	for _, tt := range tests {
 		c.Log(c.TestName()+" ", tt.name)
@@ -96,10 +95,8 @@ func (s *CollectionSuite) TestCollectionCreateWithProperties(c *check.C) {
 			}})
 		if tt.success {
 			c.Assert(err, check.IsNil)
-			var wantedProps map[string]interface{}
-			err = json.Unmarshal([]byte(tt.props), &wantedProps)
 			c.Assert(err, check.IsNil)
-			c.Assert(coll.Properties, check.DeepEquals, wantedProps)
+			c.Assert(coll.Properties, check.DeepEquals, tt.props)
 		} else {
 			c.Assert(err, check.NotNil)
 		}
@@ -112,13 +109,13 @@ func (s *CollectionSuite) TestCollectionUpdateWithProperties(c *check.C) {
 
 	tests := []struct {
 		name    string
-		props   string
+		props   map[string]interface{}
 		success bool
 	}{
-		{"Invalid prop key", `{"Priority":"IDVALIMPORTANCES1"}`, false},
-		{"Invalid prop value", `{"IDTAGIMPORTANCES": "high"}`, false},
-		{"Valid prop key & value", `{"IDTAGIMPORTANCES": "IDVALIMPORTANCES1"}`, true},
-		{"Empty properties", "{}", true},
+		{"Invalid prop key", map[string]interface{}{"Priority": "IDVALIMPORTANCES1"}, false},
+		{"Invalid prop value", map[string]interface{}{"IDTAGIMPORTANCES": "high"}, false},
+		{"Valid prop key & value", map[string]interface{}{"IDTAGIMPORTANCES": "IDVALIMPORTANCES1"}, true},
+		{"Empty properties", map[string]interface{}{}, true},
 	}
 	for _, tt := range tests {
 		c.Log(c.TestName()+" ", tt.name)
@@ -132,10 +129,8 @@ func (s *CollectionSuite) TestCollectionUpdateWithProperties(c *check.C) {
 			}})
 		if tt.success {
 			c.Assert(err, check.IsNil)
-			var wantedProps map[string]interface{}
-			err = json.Unmarshal([]byte(tt.props), &wantedProps)
 			c.Assert(err, check.IsNil)
-			c.Assert(coll.Properties, check.DeepEquals, wantedProps)
+			c.Assert(coll.Properties, check.DeepEquals, tt.props)
 		} else {
 			c.Assert(err, check.NotNil)
 		}
