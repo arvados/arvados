@@ -112,12 +112,9 @@ func BadRequestHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (rtr *router) handleGET(resp http.ResponseWriter, req *http.Request) {
-	ctx, cancel := contextForResponse(context.TODO(), resp)
-	defer cancel()
-
 	locator := req.URL.Path[1:]
 	if strings.Contains(locator, "+R") && !strings.Contains(locator, "+A") {
-		rtr.remoteProxy.Get(ctx, resp, req, rtr.cluster, rtr.volmgr)
+		rtr.remoteProxy.Get(req.Context(), resp, req, rtr.cluster, rtr.volmgr)
 		return
 	}
 
@@ -136,14 +133,14 @@ func (rtr *router) handleGET(resp http.ResponseWriter, req *http.Request) {
 	// isn't here, we can return 404 now instead of waiting for a
 	// buffer.
 
-	buf, err := getBufferWithContext(ctx, bufs, BlockSize)
+	buf, err := getBufferWithContext(req.Context(), bufs, BlockSize)
 	if err != nil {
 		http.Error(resp, err.Error(), http.StatusServiceUnavailable)
 		return
 	}
 	defer bufs.Put(buf)
 
-	size, err := GetBlock(ctx, rtr.volmgr, mux.Vars(req)["hash"], buf, resp)
+	size, err := GetBlock(req.Context(), rtr.volmgr, mux.Vars(req)["hash"], buf, resp)
 	if err != nil {
 		code := http.StatusInternalServerError
 		if err, ok := err.(*KeepError); ok {
@@ -156,21 +153,6 @@ func (rtr *router) handleGET(resp http.ResponseWriter, req *http.Request) {
 	resp.Header().Set("Content-Length", strconv.Itoa(size))
 	resp.Header().Set("Content-Type", "application/octet-stream")
 	resp.Write(buf[:size])
-}
-
-// Return a new context that gets cancelled by resp's CloseNotifier.
-func contextForResponse(parent context.Context, resp http.ResponseWriter) (context.Context, context.CancelFunc) {
-	ctx, cancel := context.WithCancel(parent)
-	if cn, ok := resp.(http.CloseNotifier); ok {
-		go func(c <-chan bool) {
-			select {
-			case <-c:
-				cancel()
-			case <-ctx.Done():
-			}
-		}(cn.CloseNotify())
-	}
-	return ctx, cancel
 }
 
 // Get a buffer from the pool -- but give up and return a non-nil
@@ -223,9 +205,6 @@ func (rtr *router) handleTOUCH(resp http.ResponseWriter, req *http.Request) {
 }
 
 func (rtr *router) handlePUT(resp http.ResponseWriter, req *http.Request) {
-	ctx, cancel := contextForResponse(context.TODO(), resp)
-	defer cancel()
-
 	hash := mux.Vars(req)["hash"]
 
 	// Detect as many error conditions as possible before reading
@@ -262,7 +241,7 @@ func (rtr *router) handlePUT(resp http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	buf, err := getBufferWithContext(ctx, bufs, int(req.ContentLength))
+	buf, err := getBufferWithContext(req.Context(), bufs, int(req.ContentLength))
 	if err != nil {
 		http.Error(resp, err.Error(), http.StatusServiceUnavailable)
 		return
@@ -275,7 +254,7 @@ func (rtr *router) handlePUT(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	result, err := PutBlock(ctx, rtr.volmgr, buf, hash, wantStorageClasses)
+	result, err := PutBlock(req.Context(), rtr.volmgr, buf, hash, wantStorageClasses)
 	bufs.Put(buf)
 
 	if err != nil {

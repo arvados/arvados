@@ -6,6 +6,7 @@ package crunchrun
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -13,6 +14,8 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"net"
+	"net/http"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -33,12 +36,19 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	"git.arvados.org/arvados.git/sdk/go/manifest"
-	"golang.org/x/net/context"
 )
 
 type command struct{}
 
 var Command = command{}
+
+// ConfigData contains environment variables and (when needed) cluster
+// configuration, passed from dispatchcloud to crunch-run on stdin.
+type ConfigData struct {
+	Env         map[string]string
+	KeepBuffers int
+	Cluster     *arvados.Cluster
+}
 
 // IArvadosClient is the minimal Arvados API methods used by crunch-run.
 type IArvadosClient interface {
@@ -127,6 +137,8 @@ type ContainerRunner struct {
 	finalState    string
 	parentTemp    string
 
+	keepstoreLogger  io.WriteCloser
+	keepstoreLogbuf  *bufThenWrite
 	statLogger       io.WriteCloser
 	statReporter     *crunchstat.Reporter
 	hoststatLogger   io.WriteCloser
@@ -1270,6 +1282,16 @@ func (runner *ContainerRunner) CommitLogs() error {
 		runner.CrunchLog.Immediate = log.New(os.Stderr, runner.Container.UUID+" ", 0)
 	}()
 
+	if runner.keepstoreLogger != nil {
+		// Flush any buffered logs from our local keepstore
+		// process.  Discard anything logged after this point
+		// -- it won't end up in the log collection, so
+		// there's no point writing it to the collectionfs.
+		runner.keepstoreLogbuf.SetWriter(io.Discard)
+		runner.keepstoreLogger.Close()
+		runner.keepstoreLogger = nil
+	}
+
 	if runner.LogsPDH != nil {
 		// If we have already assigned something to LogsPDH,
 		// we must be closing the re-opened log, which won't
@@ -1278,6 +1300,7 @@ func (runner *ContainerRunner) CommitLogs() error {
 		// -- it exists only to send logs to other channels.
 		return nil
 	}
+
 	saved, err := runner.saveLogCollection(true)
 	if err != nil {
 		return fmt.Errorf("error saving log collection: %s", err)
@@ -1640,6 +1663,7 @@ func NewContainerRunner(dispatcherClient *arvados.Client,
 }
 
 func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+	log := log.New(stderr, "", 0)
 	flags := flag.NewFlagSet(prog, flag.ContinueOnError)
 	statInterval := flags.Duration("crunchstat-interval", 10*time.Second, "sampling period for periodic resource usage reporting")
 	cgroupRoot := flags.String("cgroup-root", "/sys/fs/cgroup", "path to sysfs cgroup tree")
@@ -1647,7 +1671,7 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	cgroupParentSubsystem := flags.String("cgroup-parent-subsystem", "", "use current cgroup for given subsystem as parent cgroup for container")
 	caCertsPath := flags.String("ca-certs", "", "Path to TLS root certificates")
 	detach := flags.Bool("detach", false, "Detach from parent process and run in the background")
-	stdinEnv := flags.Bool("stdin-env", false, "Load environment variables from JSON message on stdin")
+	stdinConfig := flags.Bool("stdin-config", false, "Load config and environment variables from JSON message on stdin")
 	sleep := flags.Duration("sleep", 0, "Delay before starting (testing use only)")
 	kill := flags.Int("kill", -1, "Send signal to an existing crunch-run process for given UUID")
 	list := flags.Bool("list", false, "List UUIDs of existing crunch-run processes")
@@ -1677,31 +1701,43 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 		return 1
 	}
 
-	if *stdinEnv && !ignoreDetachFlag {
-		// Load env vars on stdin if asked (but not in a
-		// detached child process, in which case stdin is
-		// /dev/null).
-		err := loadEnv(os.Stdin)
-		if err != nil {
-			log.Print(err)
-			return 1
-		}
-	}
-
 	containerUUID := flags.Arg(0)
 
 	switch {
 	case *detach && !ignoreDetachFlag:
-		return Detach(containerUUID, prog, args, os.Stdout, os.Stderr)
+		return Detach(containerUUID, prog, args, os.Stdin, os.Stdout, os.Stderr)
 	case *kill >= 0:
 		return KillProcess(containerUUID, syscall.Signal(*kill), os.Stdout, os.Stderr)
 	case *list:
 		return ListProcesses(os.Stdout, os.Stderr)
 	}
 
-	if containerUUID == "" {
+	if len(containerUUID) != 27 {
 		log.Printf("usage: %s [options] UUID", prog)
 		return 1
+	}
+
+	var conf ConfigData
+	if *stdinConfig {
+		err := json.NewDecoder(stdin).Decode(&conf)
+		if err != nil {
+			log.Printf("decode stdin: %s", err)
+			return 1
+		}
+		for k, v := range conf.Env {
+			err = os.Setenv(k, v)
+			if err != nil {
+				log.Printf("setenv(%q): %s", k, err)
+				return 1
+			}
+		}
+		if conf.Cluster != nil {
+			// ClusterID is missing from the JSON
+			// representation, but we need it to generate
+			// a valid config file for keepstore, so we
+			// fill it using the container UUID prefix.
+			conf.Cluster.ClusterID = containerUUID[:5]
+		}
 	}
 
 	log.Printf("crunch-run %s started", cmd.Version.String())
@@ -1711,6 +1747,16 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 		arvadosclient.CertFiles = []string{*caCertsPath}
 	}
 
+	var keepstoreLogbuf bufThenWrite
+	keepstore, err := startLocalKeepstore(conf, io.MultiWriter(&keepstoreLogbuf, stderr))
+	if err != nil {
+		log.Print(err)
+		return 1
+	}
+	if keepstore != nil {
+		defer keepstore.Process.Kill()
+	}
+
 	api, err := arvadosclient.MakeArvadosClient()
 	if err != nil {
 		log.Printf("%s: %v", containerUUID, err)
@@ -1718,9 +1764,9 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	}
 	api.Retries = 8
 
-	kc, kcerr := keepclient.MakeKeepClient(api)
-	if kcerr != nil {
-		log.Printf("%s: %v", containerUUID, kcerr)
+	kc, err := keepclient.MakeKeepClient(api)
+	if err != nil {
+		log.Printf("%s: %v", containerUUID, err)
 		return 1
 	}
 	kc.BlockCache = &keepclient.BlockCache{MaxBlocks: 2}
@@ -1730,6 +1776,43 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	if err != nil {
 		log.Print(err)
 		return 1
+	}
+
+	if keepstore == nil {
+		// Log explanation (if any) for why we're not running
+		// a local keepstore.
+		var buf bytes.Buffer
+		keepstoreLogbuf.SetWriter(&buf)
+		if buf.Len() > 0 {
+			cr.CrunchLog.Printf("%s", strings.TrimSpace(buf.String()))
+		}
+	} else if logWhat := conf.Cluster.Containers.LocalKeepLogsToContainerLog; logWhat == "none" {
+		cr.CrunchLog.Printf("using local keepstore process (pid %d) at %s", keepstore.Process.Pid, os.Getenv("ARVADOS_KEEP_SERVICES"))
+		keepstoreLogbuf.SetWriter(io.Discard)
+	} else {
+		cr.CrunchLog.Printf("using local keepstore process (pid %d) at %s, writing logs to keepstore.txt in log collection", keepstore.Process.Pid, os.Getenv("ARVADOS_KEEP_SERVICES"))
+		logwriter, err := cr.NewLogWriter("keepstore")
+		if err != nil {
+			log.Print(err)
+			return 1
+		}
+		cr.keepstoreLogger = NewThrottledLogger(logwriter)
+
+		var writer io.WriteCloser = cr.keepstoreLogger
+		if logWhat == "errors" {
+			writer = &filterKeepstoreErrorsOnly{WriteCloser: writer}
+		} else if logWhat != "all" {
+			// should have been caught earlier by
+			// dispatcher's config loader
+			log.Printf("invalid value for Containers.LocalKeepLogsToContainerLog: %q", logWhat)
+			return 1
+		}
+		err = keepstoreLogbuf.SetWriter(writer)
+		if err != nil {
+			log.Print(err)
+			return 1
+		}
+		cr.keepstoreLogbuf = &keepstoreLogbuf
 	}
 
 	switch *runtimeEngine {
@@ -1819,21 +1902,98 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	return 0
 }
 
-func loadEnv(rdr io.Reader) error {
-	buf, err := ioutil.ReadAll(rdr)
-	if err != nil {
-		return fmt.Errorf("read stdin: %s", err)
+func startLocalKeepstore(configData ConfigData, logbuf io.Writer) (*exec.Cmd, error) {
+	if configData.Cluster == nil || configData.KeepBuffers < 1 {
+		return nil, nil
 	}
-	var env map[string]string
-	err = json.Unmarshal(buf, &env)
-	if err != nil {
-		return fmt.Errorf("decode stdin: %s", err)
-	}
-	for k, v := range env {
-		err = os.Setenv(k, v)
-		if err != nil {
-			return fmt.Errorf("setenv(%q): %s", k, err)
+	for uuid, vol := range configData.Cluster.Volumes {
+		if len(vol.AccessViaHosts) > 0 {
+			fmt.Fprintf(logbuf, "not starting a local keepstore process because a volume (%s) uses AccessViaHosts\n", uuid)
+			return nil, nil
+		}
+		if !vol.ReadOnly && vol.Replication < configData.Cluster.Collections.DefaultReplication {
+			fmt.Fprintf(logbuf, "not starting a local keepstore process because a writable volume (%s) has replication less than Collections.DefaultReplication (%d < %d)\n", uuid, vol.Replication, configData.Cluster.Collections.DefaultReplication)
+			return nil, nil
 		}
 	}
-	return nil
+
+	// Rather than have an alternate way to tell keepstore how
+	// many buffers to use when starting it this way, we just
+	// modify the cluster configuration that we feed it on stdin.
+	configData.Cluster.API.MaxKeepBlobBuffers = configData.KeepBuffers
+
+	ln, err := net.Listen("tcp", "localhost:0")
+	if err != nil {
+		return nil, err
+	}
+	_, port, err := net.SplitHostPort(ln.Addr().String())
+	if err != nil {
+		ln.Close()
+		return nil, err
+	}
+	ln.Close()
+	url := "http://localhost:" + port
+
+	fmt.Fprintf(logbuf, "starting keepstore on %s\n", url)
+
+	var confJSON bytes.Buffer
+	err = json.NewEncoder(&confJSON).Encode(arvados.Config{
+		Clusters: map[string]arvados.Cluster{
+			configData.Cluster.ClusterID: *configData.Cluster,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	cmd := exec.Command("/proc/self/exe", "keepstore", "-config=-")
+	if target, err := os.Readlink(cmd.Path); err == nil && strings.HasSuffix(target, ".test") {
+		// If we're a 'go test' process, running
+		// /proc/self/exe would start the test suite in a
+		// child process, which is not what we want.
+		cmd.Path, _ = exec.LookPath("go")
+		cmd.Args = append([]string{"go", "run", "../../cmd/arvados-server"}, cmd.Args[1:]...)
+		cmd.Env = os.Environ()
+	}
+	cmd.Stdin = &confJSON
+	cmd.Stdout = logbuf
+	cmd.Stderr = logbuf
+	cmd.Env = append(cmd.Env,
+		"GOGC=10",
+		"ARVADOS_SERVICE_INTERNAL_URL="+url)
+	err = cmd.Start()
+	if err != nil {
+		return nil, fmt.Errorf("error starting keepstore process: %w", err)
+	}
+	cmdExited := false
+	go func() {
+		cmd.Wait()
+		cmdExited = true
+	}()
+	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Second*10))
+	defer cancel()
+	poll := time.NewTicker(time.Second / 10)
+	defer poll.Stop()
+	client := http.Client{}
+	for range poll.C {
+		testReq, err := http.NewRequestWithContext(ctx, "GET", url+"/_health/ping", nil)
+		testReq.Header.Set("Authorization", "Bearer "+configData.Cluster.ManagementToken)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := client.Do(testReq)
+		if err == nil {
+			resp.Body.Close()
+			if resp.StatusCode == http.StatusOK {
+				break
+			}
+		}
+		if cmdExited {
+			return nil, fmt.Errorf("keepstore child process exited")
+		}
+		if ctx.Err() != nil {
+			return nil, fmt.Errorf("timed out waiting for new keepstore process to report healthy")
+		}
+	}
+	os.Setenv("ARVADOS_KEEP_SERVICES", url)
+	return cmd, nil
 }

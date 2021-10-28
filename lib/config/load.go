@@ -295,6 +295,7 @@ func (ldr *Loader) Load() (*arvados.Config, error) {
 			ldr.checkToken(fmt.Sprintf("Clusters.%s.SystemRootToken", id), cc.SystemRootToken),
 			ldr.checkToken(fmt.Sprintf("Clusters.%s.Collections.BlobSigningKey", id), cc.Collections.BlobSigningKey),
 			checkKeyConflict(fmt.Sprintf("Clusters.%s.PostgreSQL.Connection", id), cc.PostgreSQL.Connection),
+			ldr.checkEnum("Containers.LocalKeepLogsToContainerLog", cc.Containers.LocalKeepLogsToContainerLog, "none", "all", "errors"),
 			ldr.checkEmptyKeepstores(cc),
 			ldr.checkUnlistedKeepstores(cc),
 			ldr.checkStorageClasses(cc),
@@ -336,6 +337,15 @@ func (ldr *Loader) checkToken(label, token string) error {
 		}
 	}
 	return nil
+}
+
+func (ldr *Loader) checkEnum(label, value string, accepted ...string) error {
+	for _, s := range accepted {
+		if s == value {
+			return nil
+		}
+	}
+	return fmt.Errorf("%s: unacceptable value %q: must be one of %q", label, value, accepted)
 }
 
 func (ldr *Loader) setImplicitStorageClasses(cfg *arvados.Config) error {

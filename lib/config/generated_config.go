@@ -917,6 +917,42 @@ Clusters:
       # Container runtime: "docker" (default) or "singularity"
       RuntimeEngine: docker
 
+      # When running a container, run a dedicated keepstore process,
+      # using the specified number of 64 MiB memory buffers per
+      # allocated CPU core (VCPUs in the container's runtime
+      # constraints). The dedicated keepstore handles I/O for
+      # collections mounted in the container, as well as saving
+      # container logs.
+      #
+      # A zero value disables this feature.
+      #
+      # In order for this feature to be activated, no volume may use
+      # AccessViaHosts, and each volume must have Replication higher
+      # than Collections.DefaultReplication. If these requirements are
+      # not satisfied, the feature is disabled automatically
+      # regardless of the value given here.
+      #
+      # Note that when this configuration is enabled, the entire
+      # cluster configuration file, including the system root token,
+      # is copied to the worker node and held in memory for the
+      # duration of the container.
+      LocalKeepBlobBuffersPerVCPU: 1
+
+      # When running a dedicated keepstore process for a container
+      # (see LocalKeepBlobBuffersPerVCPU), write keepstore log
+      # messages to keepstore.txt in the container's log collection.
+      #
+      # These log messages can reveal some volume configuration
+      # details, error messages from the cloud storage provider, etc.,
+      # which are not otherwise visible to users.
+      #
+      # Accepted values:
+      # * "none" -- no keepstore.txt file
+      # * "all" -- all logs, including request and response lines
+      # * "errors" -- all logs except "response" logs with 2xx
+      #   response codes and "request" logs
+      LocalKeepLogsToContainerLog: none
+
       Logging:
         # When you run the db:delete_old_container_logs task, it will find
         # containers that have been finished for at least this many seconds,

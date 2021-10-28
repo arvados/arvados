@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"git.arvados.org/arvados.git/lib/cloud"
+	"git.arvados.org/arvados.git/lib/crunchrun"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
@@ -193,7 +194,7 @@ type StubVM struct {
 	ArvMountDeadlockRate  float64
 	ExecuteContainer      func(arvados.Container) int
 	CrashRunningContainer func(arvados.Container)
-	ExtraCrunchRunArgs    string // extra args expected after "crunch-run --detach --stdin-env "
+	ExtraCrunchRunArgs    string // extra args expected after "crunch-run --detach --stdin-config "
 
 	sis          *StubInstanceSet
 	id           cloud.InstanceID
@@ -252,15 +253,15 @@ func (svm *StubVM) Exec(env map[string]string, command string, stdin io.Reader, 
 		fmt.Fprint(stderr, "crunch-run: command not found\n")
 		return 1
 	}
-	if strings.HasPrefix(command, "crunch-run --detach --stdin-env "+svm.ExtraCrunchRunArgs) {
-		var stdinKV map[string]string
-		err := json.Unmarshal(stdinData, &stdinKV)
+	if strings.HasPrefix(command, "crunch-run --detach --stdin-config "+svm.ExtraCrunchRunArgs) {
+		var configData crunchrun.ConfigData
+		err := json.Unmarshal(stdinData, &configData)
 		if err != nil {
 			fmt.Fprintf(stderr, "unmarshal stdin: %s (stdin was: %q)\n", err, stdinData)
 			return 1
 		}
 		for _, name := range []string{"ARVADOS_API_HOST", "ARVADOS_API_TOKEN"} {
-			if stdinKV[name] == "" {
+			if configData.Env[name] == "" {
 				fmt.Fprintf(stderr, "%s env var missing from stdin %q\n", name, stdinData)
 				return 1
 			}

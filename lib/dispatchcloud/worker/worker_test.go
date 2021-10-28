@@ -14,24 +14,36 @@ import (
 	"time"
 
 	"git.arvados.org/arvados.git/lib/cloud"
+	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/lib/dispatchcloud/test"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/sirupsen/logrus"
 	check "gopkg.in/check.v1"
 )
 
 var _ = check.Suite(&WorkerSuite{})
 
-type WorkerSuite struct{}
+type WorkerSuite struct {
+	logger      logrus.FieldLogger
+	testCluster *arvados.Cluster
+}
+
+func (suite *WorkerSuite) SetUpTest(c *check.C) {
+	suite.logger = ctxlog.TestLogger(c)
+	cfg, err := config.NewLoader(nil, suite.logger).Load()
+	c.Assert(err, check.IsNil)
+	suite.testCluster, err = cfg.GetCluster("")
+	c.Assert(err, check.IsNil)
+}
 
 func (suite *WorkerSuite) TestProbeAndUpdate(c *check.C) {
-	logger := ctxlog.TestLogger(c)
 	bootTimeout := time.Minute
 	probeTimeout := time.Second
 
 	ac := arvados.NewClientFromEnv()
-	is, err := (&test.StubDriver{}).InstanceSet(nil, "test-instance-set-id", nil, logger)
+	is, err := (&test.StubDriver{}).InstanceSet(nil, "test-instance-set-id", nil, suite.logger)
 	c.Assert(err, check.IsNil)
 	inst, err := is.Create(arvados.InstanceType{}, "", nil, "echo InitCommand", nil)
 	c.Assert(err, check.IsNil)
@@ -232,6 +244,7 @@ func (suite *WorkerSuite) TestProbeAndUpdate(c *check.C) {
 		wp := &Pool{
 			arvClient:        ac,
 			newExecutor:      func(cloud.Instance) Executor { return exr },
+			cluster:          suite.testCluster,
 			bootProbeCommand: "bootprobe",
 			timeoutBooting:   bootTimeout,
 			timeoutProbe:     probeTimeout,
@@ -249,7 +262,7 @@ func (suite *WorkerSuite) TestProbeAndUpdate(c *check.C) {
 			exr.response[wp.runnerCmd+" --list"] = trial.respRunDeployed
 		}
 		wkr := &worker{
-			logger:   logger,
+			logger:   suite.logger,
 			executor: exr,
 			wp:       wp,
 			mtx:      &wp.mtx,
