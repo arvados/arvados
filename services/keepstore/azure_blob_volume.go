@@ -558,6 +558,9 @@ func (v *AzureBlobVolume) translateError(err error) error {
 	case strings.Contains(err.Error(), "Not Found"):
 		// "storage: service returned without a response body (404 Not Found)"
 		return os.ErrNotExist
+	case strings.Contains(err.Error(), "ErrorCode=BlobNotFound"):
+		// "storage: service returned error: StatusCode=404, ErrorCode=BlobNotFound, ErrorMessage=The specified blob does not exist.\n..."
+		return os.ErrNotExist
 	default:
 		return err
 	}

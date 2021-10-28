@@ -10,10 +10,12 @@ import (
 	"time"
 
 	"git.arvados.org/arvados.git/lib/cloud"
+	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/lib/dispatchcloud/test"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/sirupsen/logrus"
 	check "gopkg.in/check.v1"
 )
 
@@ -31,7 +33,18 @@ func (*lessChecker) Check(params []interface{}, names []string) (result bool, er
 
 var less = &lessChecker{&check.CheckerInfo{Name: "less", Params: []string{"obtained", "expected"}}}
 
-type PoolSuite struct{}
+type PoolSuite struct {
+	logger      logrus.FieldLogger
+	testCluster *arvados.Cluster
+}
+
+func (suite *PoolSuite) SetUpTest(c *check.C) {
+	suite.logger = ctxlog.TestLogger(c)
+	cfg, err := config.NewLoader(nil, suite.logger).Load()
+	c.Assert(err, check.IsNil)
+	suite.testCluster, err = cfg.GetCluster("")
+	c.Assert(err, check.IsNil)
+}
 
 func (suite *PoolSuite) TestResumeAfterRestart(c *check.C) {
 	type1 := test.InstanceType(1)
@@ -63,10 +76,9 @@ func (suite *PoolSuite) TestResumeAfterRestart(c *check.C) {
 		}
 	}
 
-	logger := ctxlog.TestLogger(c)
 	driver := &test.StubDriver{}
 	instanceSetID := cloud.InstanceSetID("test-instance-set-id")
-	is, err := driver.InstanceSet(nil, instanceSetID, nil, logger)
+	is, err := driver.InstanceSet(nil, instanceSetID, nil, suite.logger)
 	c.Assert(err, check.IsNil)
 
 	newExecutor := func(cloud.Instance) Executor {
@@ -78,25 +90,21 @@ func (suite *PoolSuite) TestResumeAfterRestart(c *check.C) {
 		}
 	}
 
-	cluster := &arvados.Cluster{
-		Containers: arvados.ContainersConfig{
-			CloudVMs: arvados.CloudVMsConfig{
-				BootProbeCommand:   "true",
-				MaxProbesPerSecond: 1000,
-				ProbeInterval:      arvados.Duration(time.Millisecond * 10),
-				SyncInterval:       arvados.Duration(time.Millisecond * 10),
-				TagKeyPrefix:       "testprefix:",
-			},
-			CrunchRunCommand: "crunch-run-custom",
-		},
-		InstanceTypes: arvados.InstanceTypeMap{
-			type1.Name: type1,
-			type2.Name: type2,
-			type3.Name: type3,
-		},
+	suite.testCluster.Containers.CloudVMs = arvados.CloudVMsConfig{
+		BootProbeCommand:   "true",
+		MaxProbesPerSecond: 1000,
+		ProbeInterval:      arvados.Duration(time.Millisecond * 10),
+		SyncInterval:       arvados.Duration(time.Millisecond * 10),
+		TagKeyPrefix:       "testprefix:",
+	}
+	suite.testCluster.Containers.CrunchRunCommand = "crunch-run-custom"
+	suite.testCluster.InstanceTypes = arvados.InstanceTypeMap{
+		type1.Name: type1,
+		type2.Name: type2,
+		type3.Name: type3,
 	}
 
-	pool := NewPool(logger, arvados.NewClientFromEnv(), prometheus.NewRegistry(), instanceSetID, is, newExecutor, nil, cluster)
+	pool := NewPool(suite.logger, arvados.NewClientFromEnv(), prometheus.NewRegistry(), instanceSetID, is, newExecutor, nil, suite.testCluster)
 	notify := pool.Subscribe()
 	defer pool.Unsubscribe(notify)
 	pool.Create(type1)
@@ -111,7 +119,7 @@ func (suite *PoolSuite) TestResumeAfterRestart(c *check.C) {
 		}
 	}
 	// Wait for the tags to save to the cloud provider
-	tagKey := cluster.Containers.CloudVMs.TagKeyPrefix + tagKeyIdleBehavior
+	tagKey := suite.testCluster.Containers.CloudVMs.TagKeyPrefix + tagKeyIdleBehavior
 	deadline := time.Now().Add(time.Second)
 	for !func() bool {
 		pool.mtx.RLock()
@@ -132,7 +140,7 @@ func (suite *PoolSuite) TestResumeAfterRestart(c *check.C) {
 
 	c.Log("------- starting new pool, waiting to recover state")
 
-	pool2 := NewPool(logger, arvados.NewClientFromEnv(), prometheus.NewRegistry(), instanceSetID, is, newExecutor, nil, cluster)
+	pool2 := NewPool(suite.logger, arvados.NewClientFromEnv(), prometheus.NewRegistry(), instanceSetID, is, newExecutor, nil, suite.testCluster)
 	notify2 := pool2.Subscribe()
 	defer pool2.Unsubscribe(notify2)
 	waitForIdle(pool2, notify2)
@@ -148,9 +156,8 @@ func (suite *PoolSuite) TestResumeAfterRestart(c *check.C) {
 }
 
 func (suite *PoolSuite) TestDrain(c *check.C) {
-	logger := ctxlog.TestLogger(c)
 	driver := test.StubDriver{}
-	instanceSet, err := driver.InstanceSet(nil, "test-instance-set-id", nil, logger)
+	instanceSet, err := driver.InstanceSet(nil, "test-instance-set-id", nil, suite.logger)
 	c.Assert(err, check.IsNil)
 
 	ac := arvados.NewClientFromEnv()
@@ -158,8 +165,9 @@ func (suite *PoolSuite) TestDrain(c *check.C) {
 	type1 := test.InstanceType(1)
 	pool := &Pool{
 		arvClient:   ac,
-		logger:      logger,
+		logger:      suite.logger,
 		newExecutor: func(cloud.Instance) Executor { return &stubExecutor{} },
+		cluster:     suite.testCluster,
 		instanceSet: &throttledInstanceSet{InstanceSet: instanceSet},
 		instanceTypes: arvados.InstanceTypeMap{
 			type1.Name: type1,
@@ -201,15 +209,15 @@ func (suite *PoolSuite) TestDrain(c *check.C) {
 }
 
 func (suite *PoolSuite) TestNodeCreateThrottle(c *check.C) {
-	logger := ctxlog.TestLogger(c)
 	driver := test.StubDriver{HoldCloudOps: true}
-	instanceSet, err := driver.InstanceSet(nil, "test-instance-set-id", nil, logger)
+	instanceSet, err := driver.InstanceSet(nil, "test-instance-set-id", nil, suite.logger)
 	c.Assert(err, check.IsNil)
 
 	type1 := test.InstanceType(1)
 	pool := &Pool{
-		logger:                         logger,
+		logger:                         suite.logger,
 		instanceSet:                    &throttledInstanceSet{InstanceSet: instanceSet},
+		cluster:                        suite.testCluster,
 		maxConcurrentInstanceCreateOps: 1,
 		instanceTypes: arvados.InstanceTypeMap{
 			type1.Name: type1,
@@ -241,17 +249,17 @@ func (suite *PoolSuite) TestNodeCreateThrottle(c *check.C) {
 }
 
 func (suite *PoolSuite) TestCreateUnallocShutdown(c *check.C) {
-	logger := ctxlog.TestLogger(c)
 	driver := test.StubDriver{HoldCloudOps: true}
-	instanceSet, err := driver.InstanceSet(nil, "test-instance-set-id", nil, logger)
+	instanceSet, err := driver.InstanceSet(nil, "test-instance-set-id", nil, suite.logger)
 	c.Assert(err, check.IsNil)
 
 	type1 := arvados.InstanceType{Name: "a1s", ProviderType: "a1.small", VCPUs: 1, RAM: 1 * GiB, Price: .01}
 	type2 := arvados.InstanceType{Name: "a2m", ProviderType: "a2.medium", VCPUs: 2, RAM: 2 * GiB, Price: .02}
 	type3 := arvados.InstanceType{Name: "a2l", ProviderType: "a2.large", VCPUs: 4, RAM: 4 * GiB, Price: .04}
 	pool := &Pool{
-		logger:      logger,
+		logger:      suite.logger,
 		newExecutor: func(cloud.Instance) Executor { return &stubExecutor{} },
+		cluster:     suite.testCluster,
 		instanceSet: &throttledInstanceSet{InstanceSet: instanceSet},
 		instanceTypes: arvados.InstanceTypeMap{
 			type1.Name: type1,

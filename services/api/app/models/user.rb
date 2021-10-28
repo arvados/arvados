@@ -300,6 +300,12 @@ SELECT target_uuid, perm_level
     Link.where(link_class: 'signature',
                      tail_uuid: self.uuid).destroy_all
 
+    # delete tokens for this user
+    ApiClientAuthorization.where(user_id: self.id).destroy_all
+    # delete ssh keys for this user
+    AuthorizedKey.where(owner_uuid: self.uuid).destroy_all
+    AuthorizedKey.where(authorized_user_uuid: self.uuid).destroy_all
+
     # delete user preferences (including profile)
     self.prefs = {}
 

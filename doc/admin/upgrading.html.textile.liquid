@@ -35,9 +35,20 @@ TODO: extract this information based on git commit messages and generate changel
 <div class="releasenotes">
 </notextile>
 
-h2(#main). development main (as of 2021-09-07)
+h2(#main). development main (as of 2021-10-27)
 
-"Upgrading from 2.2.0":#v2_2_0
+"previous: Upgrading from 2.3.0":#v2_3_0
+
+h3. Dedicated keepstore process for each container
+
+When Arvados runs a container via @arvados-dispatch-cloud@, the @crunch-run@ supervisor process now brings up its own keepstore server to handle I/O for mounted collections, outputs, and logs. With the default configuration, the keepstore process allocates one 64 MiB block buffer per VCPU requested by the container. For most workloads this will increase throughput, reduce total network traffic, and make it possible to run more containers at once without provisioning additional keepstore nodes to handle the I/O load.
+* If you have containers that can effectively handle multiple I/O threads per VCPU, consider increasing the @Containers.LocalKeepBlobBuffersPerVCPU@ value.
+* If you already have a robust permanent keepstore infrastructure, you can set @Containers.LocalKeepBlobBuffersPerVCPU@ to 0 to disable this feature and preserve the previous behavior of sending container I/O traffic to your separately provisioned keepstore servers.
+* This feature is enabled only if no volumes use @AccessViaHosts@, and no volumes have underlying @Replication@ less than @Collections.DefaultReplication@. If the feature is configured but cannot be enabled due to an incompatible volume configuration, this will be noted in the @crunch-run.txt@ file in the container log.
+
+h2(#v2_3_0). v2.3.0 (2021-10-27)
+
+"previous: Upgrading to 2.2.0":#v2_2_0
 
 h3. Ubuntu 18.04 packages for arvados-api-server and arvados-workbench now conflict with ruby-bundler
 
@@ -69,7 +80,7 @@ Typically a docker image collection contains a single @.tar@ file at the top lev
 
 h2(#v2_2_0). v2.2.0 (2021-06-03)
 
-"Upgrading from 2.1.0":#v2_1_0
+"previous: Upgrading to 2.1.0":#v2_1_0
 
 h3. New spelling of S3 credential configs
 
@@ -104,7 +115,7 @@ The ForceLegacyAPI14 configuration option has been removed. In the unlikely even
 
 h2(#v2_1_0). v2.1.0 (2020-10-13)
 
-"Upgrading from 2.0.0":#v2_0_0
+"previous: Upgrading to 2.0.0":#v2_0_0
 
 h3. LoginCluster conflicts with other Login providers
 
@@ -191,7 +202,7 @@ As a side effect of new permission system constraints, "star" links (indicating 
 
 h2(#v2_0_0). v2.0.0 (2020-02-07)
 
-"Upgrading from 1.4":#v1_4_1
+"previous: Upgrading to 1.4.1":#v1_4_1
 
 Arvados 2.0 is a major upgrade, with many changes.  Please read these upgrade notes carefully before you begin.
 
@@ -319,7 +330,7 @@ The API server accepts both PUT and PATCH for updates, but they will be normaliz
 
 h2(#v1_4_1). v1.4.1 (2019-09-20)
 
-"Upgrading from 1.4.0":#v1_4_0
+"previous: Upgrading to 1.4.0":#v1_4_0
 
 h3. Centos7 Python 3 dependency upgraded to rh-python36
 
@@ -327,7 +338,7 @@ The Python 3 dependency for Centos7 Arvados packages was upgraded from rh-python
 
 h2(#v1_4_0). v1.4.0 (2019-06-05)
 
-"Upgrading from 1.3.3":#v1_3_3
+"previous: Upgrading to 1.3.3":#v1_3_3
 
 h3. Populating the new file_count and file_size_total columns on the collections table
 
@@ -434,7 +445,7 @@ Arvados is migrating to a centralized configuration file for all components.  Du
 
 h2(#v1_3_3). v1.3.3 (2019-05-14)
 
-"Upgrading from 1.3.0":#v1_3_0
+"previous: Upgrading to 1.3.0":#v1_3_0
 
 This release corrects a potential data loss issue, if you are running Arvados 1.3.0 or 1.3.1 we strongly recommended disabling @keep-balance@ until you can upgrade to 1.3.3 or 1.4.0. With keep-balance disabled, there is no chance of data loss.
 
@@ -442,7 +453,7 @@ We've put together a "wiki page":https://dev.arvados.org/projects/arvados/wiki/R
 
 h2(#v1_3_0). v1.3.0 (2018-12-05)
 
-"Upgrading from 1.2":#v1_2_0
+"previous: Upgrading to 1.2":#v1_2_0
 
 This release includes several database migrations, which will be executed automatically as part of the API server upgrade. On large Arvados installations, these migrations will take a while. We've seen the upgrade take 30 minutes or more on installations with a lot of collections.
 
@@ -456,7 +467,7 @@ There are no special upgrade notes for this release.
 
 h2(#v1_2_0). v1.2.0 (2018-09-05)
 
-"Upgrading from 1.1.2 or 1.1.3":#v1_1_2
+"previous: Upgrading to 1.1.2 or 1.1.3":#v1_1_2
 
 h3. Regenerate Postgres table statistics
 
@@ -488,7 +499,7 @@ Verify your setup by confirming that API calls appear in the controller's logs (
 
 h2(#v1_1_4). v1.1.4 (2018-04-10)
 
-"Upgrading from 1.1.3":#v1_1_3
+"previous: Upgrading to 1.1.3":#v1_1_3
 
 h3. arvados-cwl-runner regressions (2018-04-05)
 
@@ -621,7 +632,7 @@ There are no special upgrade notes for this release.
 
 h2(#v1_1_2). v1.1.2 (2017-12-22)
 
-"Upgrading from 1.1.0 or 1.1.1":#v1_1_0
+"previous: Upgrading to 1.1.0 or 1.1.1":#v1_1_0
 
 h3. The minimum version for Postgres is now 9.4 (2017-12-08)
 
