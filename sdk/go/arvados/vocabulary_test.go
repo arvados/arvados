@@ -18,6 +18,9 @@ var _ = check.Suite(&VocabularySuite{})
 
 func (s *VocabularySuite) SetUpTest(c *check.C) {
 	s.testVoc = &Vocabulary{
+		reservedTagKeys: map[string]bool{
+			"reservedKey": true,
+		},
 		StrictTags: false,
 		Tags: map[string]VocabularyTag{
 			"IDTAGANIMALS": {
@@ -68,6 +71,7 @@ func (s *VocabularySuite) TestCheck(c *check.C) {
 		{"Known key, known value", false, `{"IDTAGANIMALS":"IDVALANIMAL1"}`, true},
 		{"Unknown non-alias key on non-strict vocabulary", false, `{"foo":"bar"}`, true},
 		{"Known non-strict key, unknown non-alias value", false, `{"IDTAGANIMALS":"IDVALANIMAL3"}`, true},
+		{"Undefined but reserved key on strict vocabulary", true, `{"reservedKey":"bar"}`, true},
 		{"Known key, list of known values", false, `{"IDTAGANIMALS":["IDVALANIMAL1","IDVALANIMAL2"]}`, true},
 		{"Known non-strict key, list of unknown non-alias values", false, `{"IDTAGCOMMENT":["hello world","lorem ipsum"]}`, true},
 		// Check fails
@@ -120,6 +124,16 @@ func (s *VocabularySuite) TestNewVocabulary(c *check.C) {
 			}}`,
 			true, "",
 			&Vocabulary{
+				reservedTagKeys: map[string]bool{
+					"type":                  true,
+					"template_uuid":         true,
+					"groups":                true,
+					"username":              true,
+					"image_timestamp":       true,
+					"docker-image-repo-tag": true,
+					"filters":               true,
+					"container_request":     true,
+				},
 				StrictTags: false,
 				Tags: map[string]VocabularyTag{
 					"IDTAGANIMALS": {
@@ -137,11 +151,21 @@ func (s *VocabularySuite) TestNewVocabulary(c *check.C) {
 				},
 			},
 		},
+		{
+			"Valid data, but uses reserved key",
+			`{"tags":{
+				"type":{
+					"strict": false,
+					"labels": [{"label": "Type"}]
+				}
+			}}`,
+			false, "tag key.*is reserved", nil,
+		},
 	}
 
 	for _, tt := range tests {
 		c.Log(c.TestName()+" ", tt.name)
-		voc, err := NewVocabulary([]byte(tt.data))
+		voc, err := NewVocabulary([]byte(tt.data), []string{})
 		if tt.isValid {
 			c.Assert(err, check.IsNil)
 		} else {

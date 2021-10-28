@@ -62,7 +62,7 @@ func (s *ContainerRequestSuite) setUpVocabulary(c *check.C, testVocabulary strin
 			}
 		}`
 	}
-	voc, err := arvados.NewVocabulary([]byte(testVocabulary))
+	voc, err := arvados.NewVocabulary([]byte(testVocabulary), []string{})
 	c.Assert(err, check.IsNil)
 	c.Assert(voc.Validate(), check.IsNil)
 	s.cluster.API.Vocabulary = voc

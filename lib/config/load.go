@@ -405,7 +405,11 @@ func (ldr *Loader) loadVocabulary(cfg *arvados.Config) error {
 	if err != nil {
 		return fmt.Errorf("couldn't read vocabulary file %q: %v", cc.API.VocabularyPath, err)
 	}
-	voc, err := arvados.NewVocabulary(vf)
+	mk := make([]string, 0, len(cc.Collections.ManagedProperties))
+	for k := range cc.Collections.ManagedProperties {
+		mk = append(mk, k)
+	}
+	voc, err := arvados.NewVocabulary(vf, mk)
 	if err != nil {
 		return fmt.Errorf("while loading vocabulary file %q: %s", cc.API.VocabularyPath, err)
 	}

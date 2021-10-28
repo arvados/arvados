@@ -13,14 +13,29 @@ import (
 )
 
 type Vocabulary struct {
-	StrictTags bool                     `json:"strict_tags"`
-	Tags       map[string]VocabularyTag `json:"tags"`
+	reservedTagKeys map[string]bool          `json:"-"`
+	StrictTags      bool                     `json:"strict_tags"`
+	Tags            map[string]VocabularyTag `json:"tags"`
 }
 
 type VocabularyTag struct {
 	Strict bool                          `json:"strict"`
 	Labels []VocabularyLabel             `json:"labels"`
 	Values map[string]VocabularyTagValue `json:"values"`
+}
+
+// Cannot have a constant map in Go, so we have to use a function
+func (v *Vocabulary) systemTagKeys() map[string]bool {
+	return map[string]bool{
+		"type":                  true,
+		"template_uuid":         true,
+		"groups":                true,
+		"username":              true,
+		"image_timestamp":       true,
+		"docker-image-repo-tag": true,
+		"filters":               true,
+		"container_request":     true,
+	}
 }
 
 type VocabularyLabel struct {
@@ -31,7 +46,7 @@ type VocabularyTagValue struct {
 	Labels []VocabularyLabel `json:"labels"`
 }
 
-func NewVocabulary(data []byte) (voc *Vocabulary, err error) {
+func NewVocabulary(data []byte, managedTagKeys []string) (voc *Vocabulary, err error) {
 	if r := bytes.Compare(data, []byte("")); r == 0 {
 		return &Vocabulary{}, nil
 	}
@@ -41,6 +56,13 @@ func NewVocabulary(data []byte) (voc *Vocabulary, err error) {
 	}
 	if reflect.DeepEqual(voc, &Vocabulary{}) {
 		return nil, fmt.Errorf("JSON data provided doesn't match Vocabulary format: %q", data)
+	}
+	voc.reservedTagKeys = make(map[string]bool)
+	for _, managedKey := range managedTagKeys {
+		voc.reservedTagKeys[managedKey] = true
+	}
+	for systemKey := range voc.systemTagKeys() {
+		voc.reservedTagKeys[systemKey] = true
 	}
 	err = voc.Validate()
 	if err != nil {
@@ -60,6 +82,9 @@ func (v *Vocabulary) Validate() error {
 	}
 	// Checks for duplicate tag keys
 	for key := range v.Tags {
+		if v.reservedTagKeys[key] {
+			return fmt.Errorf("tag key %q is reserved", key)
+		}
 		if tagKeys[key] {
 			return fmt.Errorf("duplicate tag key %q", key)
 		}
@@ -144,6 +169,11 @@ func (v *Vocabulary) Check(data map[string]interface{}) error {
 	}
 	for key, val := range data {
 		// Checks for key validity
+		if v.reservedTagKeys[key] {
+			// Allow reserved keys to be used even if they are not defined in
+			// the vocabulary no matter its strictness.
+			continue
+		}
 		if _, ok := v.Tags[key]; !ok {
 			lcKey := strings.ToLower(key)
 			alias, ok := v.getLabelsToKeys()[lcKey]
@@ -153,7 +183,7 @@ func (v *Vocabulary) Check(data map[string]interface{}) error {
 				return fmt.Errorf("tag key %q is not defined", key)
 			}
 			// If the key is not defined, we don't need to check the value
-			return nil
+			continue
 		}
 		// Checks for value validity -- key is defined
 		switch val := val.(type) {
