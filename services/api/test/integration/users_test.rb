@@ -434,20 +434,26 @@ class UsersTest < ActionDispatch::IntegrationTest
         params: {},
         headers: {"HTTP_AUTHORIZATION" => "Bearer #{token}"})
     assert_response(:success)
-    user = json_response
-    assert_equal true, user['is_active']
+    userJSON = json_response
+    assert_equal true, userJSON['is_active']
 
     post("/arvados/v1/users/#{user['uuid']}/unsetup",
         params: {},
         headers: auth(:admin))
     assert_response :success
 
+    # Need to get a new token, the old one was invalidated by the unsetup call
+    act_as_system_user do
+      ap = ApiClientAuthorization.create!(user: user, api_client_id: 0)
+      token = ap.api_token
+    end
+
     get("/arvados/v1/users/#{user['uuid']}",
         params: {},
         headers: {"HTTP_AUTHORIZATION" => "Bearer #{token}"})
     assert_response(:success)
-    user = json_response
-    assert_equal false, user['is_active']
+    userJSON = json_response
+    assert_equal false, userJSON['is_active']
 
     post("/arvados/v1/users/#{user['uuid']}/activate",
         params: {},
