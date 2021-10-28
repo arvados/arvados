@@ -10,7 +10,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 )
 
-// ContainerCreate defers to railsProxy for everything except
+// ContainerRequestCreate defers to railsProxy for everything except
 // vocabulary checking.
 func (conn *Conn) ContainerRequestCreate(ctx context.Context, opts arvados.CreateOptions) (arvados.ContainerRequest, error) {
 	err := conn.checkProperties(opts.Attrs["properties"])
@@ -24,7 +24,7 @@ func (conn *Conn) ContainerRequestCreate(ctx context.Context, opts arvados.Creat
 	return resp, nil
 }
 
-// ContainerUpdate defers to railsProxy for everything except
+// ContainerRequestUpdate defers to railsProxy for everything except
 // vocabulary checking.
 func (conn *Conn) ContainerRequestUpdate(ctx context.Context, opts arvados.UpdateOptions) (arvados.ContainerRequest, error) {
 	err := conn.checkProperties(opts.Attrs["properties"])
