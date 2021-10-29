@@ -17,6 +17,7 @@ import (
 	"strings"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"github.com/fsnotify/fsnotify"
 	"github.com/ghodss/yaml"
 	"github.com/imdario/mergo"
 	"github.com/sirupsen/logrus"
@@ -401,6 +402,22 @@ func (ldr *Loader) loadVocabulary(cfg *arvados.Config) error {
 	if cc.API.VocabularyPath == "" {
 		return nil
 	}
+	ldr.Logger.Info("Loading vocabulary")
+	err = ldr.vocabularyFileLoader(cc)
+	if err != nil {
+		return err
+	}
+	go watchVocabulary(ldr.Logger, cc.API.VocabularyPath, func() {
+		ldr.Logger.Info("Reloading vocabulary")
+		err = ldr.vocabularyFileLoader(cc)
+		if err != nil {
+			ldr.Logger.Error("Error reloading vocabulary: %v", err)
+		}
+	})
+	return nil
+}
+
+func (ldr *Loader) vocabularyFileLoader(cc *arvados.Cluster) error {
 	vf, err := os.ReadFile(cc.API.VocabularyPath)
 	if err != nil {
 		return fmt.Errorf("couldn't read vocabulary file %q: %v", cc.API.VocabularyPath, err)
@@ -414,7 +431,41 @@ func (ldr *Loader) loadVocabulary(cfg *arvados.Config) error {
 		return fmt.Errorf("while loading vocabulary file %q: %s", cc.API.VocabularyPath, err)
 	}
 	cc.API.Vocabulary = voc
+	ldr.Logger.Info("Vocabulary loading succeeded")
 	return nil
+}
+
+func watchVocabulary(logger logrus.FieldLogger, vocPath string, fn func()) {
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		logger.WithError(err).Error("vocabulary fsnotify setup failed")
+		return
+	}
+	defer watcher.Close()
+
+	err = watcher.Add(vocPath)
+	if err != nil {
+		logger.WithError(err).Error("vocabulary file watcher failed")
+		return
+	}
+
+	for {
+		select {
+		case err, ok := <-watcher.Errors:
+			if !ok {
+				return
+			}
+			logger.WithError(err).Warn("vocabulary file watcher error")
+		case _, ok := <-watcher.Events:
+			if !ok {
+				return
+			}
+			for len(watcher.Events) > 0 {
+				<-watcher.Events
+			}
+			fn()
+		}
+	}
 }
 
 func checkKeyConflict(label string, m map[string]string) error {
