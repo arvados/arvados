@@ -220,6 +220,7 @@ type Cluster struct {
 		Insecure    bool
 	}
 	Users struct {
+		ActivatedUsersAreVisibleToOthers      bool
 		AnonymousUserToken                    string
 		AdminNotifierEmailFrom                string
 		AutoAdminFirstUser                    bool

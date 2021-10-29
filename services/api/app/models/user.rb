@@ -234,8 +234,9 @@ SELECT target_uuid, perm_level
                               name: 'can_read').empty?
 
     # Add can_read link from this user to "all users" which makes this
-    # user "invited"
-    group_perm = create_user_group_link
+    # user "invited", and (depending on config) a link in the opposite
+    # direction which makes this user visible to other users.
+    group_perms = add_to_all_users_group
 
     # Add git repo
     repo_perm = if (!repo_name.nil? || Rails.configuration.Users.AutoSetupNewUsersWithRepository) and !username.nil?
@@ -267,7 +268,7 @@ SELECT target_uuid, perm_level
 
     forget_cached_group_perms
 
-    return [repo_perm, vm_login_perm, group_perm, self].compact
+    return [repo_perm, vm_login_perm, *group_perms, self].compact
   end
 
   # delete user signatures, login, repo, and vm perms, and mark as inactive
@@ -728,16 +729,26 @@ SELECT target_uuid, perm_level
     login_perm
   end
 
-  # add the user to the 'All users' group
-  def create_user_group_link
-    return (Link.where(tail_uuid: self.uuid,
+  def add_to_all_users_group
+    resp = [Link.where(tail_uuid: self.uuid,
                        head_uuid: all_users_group_uuid,
                        link_class: 'permission',
-                       name: 'can_read').first or
+                       name: 'can_read').first ||
             Link.create(tail_uuid: self.uuid,
                         head_uuid: all_users_group_uuid,
                         link_class: 'permission',
-                        name: 'can_read'))
+                        name: 'can_read')]
+    if Rails.configuration.Users.ActivatedUsersAreVisibleToOthers
+      resp += [Link.where(tail_uuid: all_users_group_uuid,
+                          head_uuid: self.uuid,
+                          link_class: 'permission',
+                          name: 'can_read').first ||
+               Link.create(tail_uuid: all_users_group_uuid,
+                           head_uuid: self.uuid,
+                           link_class: 'permission',
+                           name: 'can_read')]
+    end
+    return resp
   end
 
   # Give the special "System group" permission to manage this user and

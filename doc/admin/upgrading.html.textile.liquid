@@ -39,6 +39,10 @@ h2(#main). development main (as of 2021-10-27)
 
 "previous: Upgrading from 2.3.0":#v2_3_0
 
+h3. Users are visible to other users by default
+
+When a new user is set up (either via @AutoSetupNewUsers@ config or via Workbench admin interface) the user immediately becomes visible to other users. To revert to the previous behavior, where the administrator must add two users to the same group using the Workbench admin interface in order for the users to see each other, change the new @Users.ActivatedUsersAreVisibleToOthers@ config to @false@.
+
 h3. Dedicated keepstore process for each container
 
 When Arvados runs a container via @arvados-dispatch-cloud@, the @crunch-run@ supervisor process now brings up its own keepstore server to handle I/O for mounted collections, outputs, and logs. With the default configuration, the keepstore process allocates one 64 MiB block buffer per VCPU requested by the container. For most workloads this will increase throughput, reduce total network traffic, and make it possible to run more containers at once without provisioning additional keepstore nodes to handle the I/O load.
