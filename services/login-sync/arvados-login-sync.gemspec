@@ -39,8 +39,8 @@ Gem::Specification.new do |s|
   s.required_ruby_version = '>= 2.1.0'
   s.add_runtime_dependency 'arvados', '>= 1.3.3.20190320201707'
   s.add_runtime_dependency 'launchy', '< 2.5'
-  # arvados-google-api-client 0.8.7.2 is incompatible with faraday 0.16.2
-  s.add_dependency('faraday', '< 0.16')
+  # We need at least version 0.8.7.3, cf. https://dev.arvados.org/issues/15673
+  s.add_dependency('arvados-google-api-client', '>= 0.8.7.3', '< 0.8.9')
   # arvados-google-api-client (and thus arvados) gems
   # depend on signet, but signet 0.12 is incompatible with ruby 2.3.
   s.add_dependency('signet', '< 0.12')
