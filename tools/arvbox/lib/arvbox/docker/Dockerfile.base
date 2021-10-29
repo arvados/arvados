@@ -22,14 +22,20 @@ RUN apt-get update && \
 
 ENV GOPATH /var/lib/gopath
 
-# Get Go 1.16.9
+RUN --mount=type=bind,target=/usr/src/arvados \
+    cd /usr/src/arvados && \
+    grep 'goversion :=' lib/install/deps.go |awk -F'"' '{print $2}'
+
+ARG go_version
+
+# Get Go
 RUN cd /usr/src && \
-    wget https://golang.org/dl/go1.16.9.linux-amd64.tar.gz && \
-    tar xzf go1.16.9.linux-amd64.tar.gz && \
-    ln -s /usr/src/go/bin/go /usr/local/bin/go-1.16.9 && \
-    ln -s /usr/src/go/bin/gofmt /usr/local/bin/gofmt-1.16.9 && \
-    ln -s /usr/local/bin/go-1.16.9 /usr/local/bin/go && \
-    ln -s /usr/local/bin/gofmt-1.16.9 /usr/local/bin/gofmt
+    wget https://golang.org/dl/go${go_version}.linux-amd64.tar.gz && \
+    tar xzf go${go_version}.linux-amd64.tar.gz && \
+    ln -s /usr/src/go/bin/go /usr/local/bin/go-${go_version} && \
+    ln -s /usr/src/go/bin/gofmt /usr/local/bin/gofmt-${go_version} && \
+    ln -s /usr/local/bin/go-${go_version} /usr/local/bin/go && \
+    ln -s /usr/local/bin/gofmt-${go_version} /usr/local/bin/gofmt
 
 # the --mount option requires the experimental syntax enabled (enables
 # buildkit) on the first line of this file. This Dockerfile must also be built
@@ -49,15 +55,15 @@ RUN apt-get update && \
     build-essential ca-certificates git libpam0g-dev wget
 
 ENV GOPATH /var/lib/gopath
+ARG go_version
 
-# Get Go 1.16.9
 RUN cd /usr/src && \
-    wget https://golang.org/dl/go1.16.9.linux-amd64.tar.gz && \
-    tar xzf go1.16.9.linux-amd64.tar.gz && \
-    ln -s /usr/src/go/bin/go /usr/local/bin/go-1.16.9 && \
-    ln -s /usr/src/go/bin/gofmt /usr/local/bin/gofmt-1.16.9 && \
-    ln -s /usr/local/bin/go-1.16.9 /usr/local/bin/go && \
-    ln -s /usr/local/bin/gofmt-1.16.9 /usr/local/bin/gofmt
+    wget https://golang.org/dl/go${go_version}.linux-amd64.tar.gz && \
+    tar xzf go${go_version}.linux-amd64.tar.gz && \
+    ln -s /usr/src/go/bin/go /usr/local/bin/go-${go_version} && \
+    ln -s /usr/src/go/bin/gofmt /usr/local/bin/gofmt-${go_version} && \
+    ln -s /usr/local/bin/go-${go_version} /usr/local/bin/go && \
+    ln -s /usr/local/bin/gofmt-${go_version} /usr/local/bin/gofmt
 
 ARG arvados_version
 RUN echo arvados_version is git commit $arvados_version
