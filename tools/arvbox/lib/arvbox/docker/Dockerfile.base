@@ -16,16 +16,20 @@ ARG BUILDTYPE
 FROM debian:10-slim as dev
 ENV DEBIAN_FRONTEND noninteractive
 
-RUN echo "deb http://deb.debian.org/debian buster-backports main" > /etc/apt/sources.list.d/backports.list
-
 RUN apt-get update && \
     apt-get -yq --no-install-recommends -o Acquire::Retries=6 install \
-    golang -t buster-backports
-
-RUN apt-get -yq --no-install-recommends -o Acquire::Retries=6 install \
-    build-essential ca-certificates git libpam0g-dev
+    build-essential ca-certificates git libpam0g-dev wget
 
 ENV GOPATH /var/lib/gopath
+
+# Get Go 1.16.9
+RUN cd /usr/src && \
+    wget https://golang.org/dl/go1.16.9.linux-amd64.tar.gz && \
+    tar xzf go1.16.9.linux-amd64.tar.gz && \
+    ln -s /usr/src/go/bin/go /usr/local/bin/go-1.16.9 && \
+    ln -s /usr/src/go/bin/gofmt /usr/local/bin/gofmt-1.16.9 && \
+    ln -s /usr/local/bin/go-1.16.9 /usr/local/bin/go && \
+    ln -s /usr/local/bin/gofmt-1.16.9 /usr/local/bin/gofmt
 
 # the --mount option requires the experimental syntax enabled (enables
 # buildkit) on the first line of this file. This Dockerfile must also be built
@@ -40,16 +44,20 @@ RUN --mount=type=bind,target=/usr/src/arvados \
 FROM debian:10-slim as demo
 ENV DEBIAN_FRONTEND noninteractive
 
-RUN echo "deb http://deb.debian.org/debian buster-backports main" > /etc/apt/sources.list.d/backports.list
-
 RUN apt-get update && \
     apt-get -yq --no-install-recommends -o Acquire::Retries=6 install \
-    golang -t buster-backports
-
-RUN apt-get -yq --no-install-recommends -o Acquire::Retries=6 install \
-    build-essential ca-certificates git libpam0g-dev
+    build-essential ca-certificates git libpam0g-dev wget
 
 ENV GOPATH /var/lib/gopath
+
+# Get Go 1.16.9
+RUN cd /usr/src && \
+    wget https://golang.org/dl/go1.16.9.linux-amd64.tar.gz && \
+    tar xzf go1.16.9.linux-amd64.tar.gz && \
+    ln -s /usr/src/go/bin/go /usr/local/bin/go-1.16.9 && \
+    ln -s /usr/src/go/bin/gofmt /usr/local/bin/gofmt-1.16.9 && \
+    ln -s /usr/local/bin/go-1.16.9 /usr/local/bin/go && \
+    ln -s /usr/local/bin/gofmt-1.16.9 /usr/local/bin/gofmt
 
 ARG arvados_version
 RUN echo arvados_version is git commit $arvados_version
