@@ -104,4 +104,19 @@ public class FileConfigProvider implements ConfigProvider {
     public String getIntegrationTestProjectUuid() {
         return this.getString("integration-tests.project-uuid");
     }
+
+    @Override
+    public int getConnectTimeout() {
+        return this.getInt("connectTimeout");
+    }
+
+    @Override
+    public int getReadTimeout() {
+        return this.getInt("readTimeout");
+    }
+
+    @Override
+    public int getWriteTimeout() {
+        return this.getInt("writeTimeout");
+    }
 }
