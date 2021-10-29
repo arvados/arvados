@@ -11,8 +11,16 @@ RUN apt-get update && \
     libsecret-1-0 libsecret-1-dev rpm ruby ruby-dev rubygems build-essential \
     libpam0g-dev libgbm1 git && \
     apt-get clean
-RUN apt-get -yq --no-install-recommends -t buster-backports install golang-go && \
-    apt-get clean
+
+# Get Go 1.16.9
+RUN cd /usr/src && \
+    wget https://golang.org/dl/go1.16.9.linux-amd64.tar.gz && \
+    tar xzf go1.16.9.linux-amd64.tar.gz && \
+    ln -s /usr/src/go/bin/go /usr/local/bin/go-1.16.9 && \
+    ln -s /usr/src/go/bin/gofmt /usr/local/bin/gofmt-1.16.9 && \
+    ln -s /usr/local/bin/go-1.16.9 /usr/local/bin/go && \
+    ln -s /usr/local/bin/gofmt-1.16.9 /usr/local/bin/gofmt
+
 RUN gem install --no-ri --no-rdoc fpm
 RUN git clone https://git.arvados.org/arvados.git && cd arvados && \
     go mod download && \

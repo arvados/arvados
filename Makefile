@@ -130,5 +130,16 @@ copy: $(DEB_FILE) $(RPM_FILE)
 # use FPM to create DEB and RPM
 packages: copy
 
+packages-in-docker: workbench2-build-image
+	docker run --env ci="true" \
+		--env ARVADOS_DIRECTORY=/tmp/arvados \
+		--env APP_NAME=${APP_NAME} \
+		--env ITERATION=${ITERATION} \
+		--env TARGETS="${TARGETS}" \
+		-w="/tmp/workbench2" \
+		-t -v ${WORKSPACE}:/tmp/workbench2 \
+		-v ${ARVADOS_DIRECTORY}:/tmp/arvados workbench2-build:latest \
+		make packages
+
 workbench2-build-image:
 	(cd docker && docker build -t workbench2-build .)
