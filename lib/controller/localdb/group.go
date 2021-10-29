@@ -13,7 +13,7 @@ import (
 // GroupCreate defers to railsProxy for everything except vocabulary
 // checking.
 func (conn *Conn) GroupCreate(ctx context.Context, opts arvados.CreateOptions) (arvados.Group, error) {
-	err := conn.checkProperties(opts.Attrs["properties"])
+	err := conn.checkProperties(ctx, opts.Attrs["properties"])
 	if err != nil {
 		return arvados.Group{}, err
 	}
@@ -27,7 +27,7 @@ func (conn *Conn) GroupCreate(ctx context.Context, opts arvados.CreateOptions) (
 // GroupUpdate defers to railsProxy for everything except vocabulary
 // checking.
 func (conn *Conn) GroupUpdate(ctx context.Context, opts arvados.UpdateOptions) (arvados.Group, error) {
-	err := conn.checkProperties(opts.Attrs["properties"])
+	err := conn.checkProperties(ctx, opts.Attrs["properties"])
 	if err != nil {
 		return arvados.Group{}, err
 	}

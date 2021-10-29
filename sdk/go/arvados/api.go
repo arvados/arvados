@@ -220,7 +220,7 @@ type BlockWriteResponse struct {
 
 type API interface {
 	ConfigGet(ctx context.Context) (json.RawMessage, error)
-	VocabularyGet(ctx context.Context) (json.RawMessage, error)
+	VocabularyGet(ctx context.Context) (Vocabulary, error)
 	Login(ctx context.Context, options LoginOptions) (LoginResponse, error)
 	Logout(ctx context.Context, options LogoutOptions) (LogoutResponse, error)
 	CollectionCreate(ctx context.Context, options CreateOptions) (Collection, error)

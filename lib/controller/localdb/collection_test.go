@@ -68,7 +68,8 @@ func (s *CollectionSuite) setUpVocabulary(c *check.C, testVocabulary string) {
 	voc, err := arvados.NewVocabulary([]byte(testVocabulary), []string{})
 	c.Assert(err, check.IsNil)
 	c.Assert(voc.Validate(), check.IsNil)
-	s.cluster.API.Vocabulary = voc
+	s.cluster.API.VocabularyPath = "foo"
+	s.localdb.vocabularyCache = voc
 }
 
 func (s *CollectionSuite) TestCollectionCreateWithProperties(c *check.C) {
@@ -94,7 +95,6 @@ func (s *CollectionSuite) TestCollectionCreateWithProperties(c *check.C) {
 				"properties": tt.props,
 			}})
 		if tt.success {
-			c.Assert(err, check.IsNil)
 			c.Assert(err, check.IsNil)
 			c.Assert(coll.Properties, check.DeepEquals, tt.props)
 		} else {
@@ -128,7 +128,6 @@ func (s *CollectionSuite) TestCollectionUpdateWithProperties(c *check.C) {
 				"properties": tt.props,
 			}})
 		if tt.success {
-			c.Assert(err, check.IsNil)
 			c.Assert(err, check.IsNil)
 			c.Assert(coll.Properties, check.DeepEquals, tt.props)
 		} else {

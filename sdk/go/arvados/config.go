@@ -108,7 +108,6 @@ type Cluster struct {
 		WebsocketClientEventQueue      int
 		WebsocketServerEventQueue      int
 		KeepServiceRequestTimeout      Duration
-		Vocabulary                     *Vocabulary `json:"-"`
 		VocabularyPath                 string
 	}
 	AuditLogs struct {

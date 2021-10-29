@@ -65,7 +65,8 @@ func (s *GroupSuite) setUpVocabulary(c *check.C, testVocabulary string) {
 	voc, err := arvados.NewVocabulary([]byte(testVocabulary), []string{})
 	c.Assert(err, check.IsNil)
 	c.Assert(voc.Validate(), check.IsNil)
-	s.cluster.API.Vocabulary = voc
+	s.localdb.vocabularyCache = voc
+	s.cluster.API.VocabularyPath = "foo"
 }
 
 func (s *GroupSuite) TestGroupCreateWithProperties(c *check.C) {
@@ -92,7 +93,6 @@ func (s *GroupSuite) TestGroupCreateWithProperties(c *check.C) {
 				"properties":  tt.props,
 			}})
 		if tt.success {
-			c.Assert(err, check.IsNil)
 			c.Assert(err, check.IsNil)
 			c.Assert(grp.Properties, check.DeepEquals, tt.props)
 		} else {
@@ -130,7 +130,6 @@ func (s *GroupSuite) TestGroupUpdateWithProperties(c *check.C) {
 				"properties": tt.props,
 			}})
 		if tt.success {
-			c.Assert(err, check.IsNil)
 			c.Assert(err, check.IsNil)
 			c.Assert(grp.Properties, check.DeepEquals, tt.props)
 		} else {

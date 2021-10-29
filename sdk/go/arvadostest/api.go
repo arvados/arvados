@@ -33,9 +33,9 @@ func (as *APIStub) ConfigGet(ctx context.Context) (json.RawMessage, error) {
 	as.appendCall(ctx, as.ConfigGet, nil)
 	return nil, as.Error
 }
-func (as *APIStub) VocabularyGet(ctx context.Context) (json.RawMessage, error) {
+func (as *APIStub) VocabularyGet(ctx context.Context) (arvados.Vocabulary, error) {
 	as.appendCall(ctx, as.VocabularyGet, nil)
-	return nil, as.Error
+	return arvados.Vocabulary{}, as.Error
 }
 func (as *APIStub) Login(ctx context.Context, options arvados.LoginOptions) (arvados.LoginResponse, error) {
 	as.appendCall(ctx, as.Login, options)

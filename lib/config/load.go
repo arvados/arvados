@@ -17,7 +17,6 @@ import (
 	"strings"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
-	"github.com/fsnotify/fsnotify"
 	"github.com/ghodss/yaml"
 	"github.com/imdario/mergo"
 	"github.com/sirupsen/logrus"
@@ -28,7 +27,6 @@ var ErrNoClustersDefined = errors.New("config does not define any clusters")
 type Loader struct {
 	Stdin          io.Reader
 	Logger         logrus.FieldLogger
-	LoadVocabulary bool // Load the vocabulary from API.VocabularyPath
 	SkipDeprecated bool // Don't load deprecated config keys
 	SkipLegacy     bool // Don't load legacy config files
 	SkipAPICalls   bool // Don't do checks that call RailsAPI/controller
@@ -271,9 +269,6 @@ func (ldr *Loader) Load() (*arvados.Config, error) {
 			ldr.loadOldKeepBalanceConfig,
 		)
 	}
-	if ldr.LoadVocabulary {
-		loadFuncs = append(loadFuncs, ldr.loadVocabulary)
-	}
 	loadFuncs = append(loadFuncs, ldr.setImplicitStorageClasses)
 	for _, f := range loadFuncs {
 		err = f(&cfg)
@@ -392,84 +387,6 @@ func (ldr *Loader) checkStorageClasses(cc arvados.Cluster) error {
 		return fmt.Errorf("there is no default storage class (at least one entry in StorageClasses must have Default: true)")
 	}
 	return nil
-}
-
-func (ldr *Loader) loadVocabulary(cfg *arvados.Config) error {
-	cc, err := cfg.GetCluster("")
-	if err != nil {
-		return err
-	}
-	if cc.API.VocabularyPath == "" {
-		return nil
-	}
-	ldr.Logger.Info("Loading vocabulary")
-	voc, err := ldr.vocabularyFileLoader(cc.API.VocabularyPath, cc.Collections.ManagedProperties)
-	if err != nil {
-		return err
-	}
-	cc.API.Vocabulary = voc
-
-	go watchVocabulary(ldr.Logger, cc.API.VocabularyPath, func() {
-		ldr.Logger.Info("Reloading vocabulary")
-		voc, err := ldr.vocabularyFileLoader(cc.API.VocabularyPath, cc.Collections.ManagedProperties)
-		if err != nil {
-			ldr.Logger.Error("Error reloading vocabulary: %v", err)
-		}
-		cc.API.Vocabulary = voc
-	})
-
-	return nil
-}
-
-func (ldr *Loader) vocabularyFileLoader(path string, mp arvados.ManagedProperties) (*arvados.Vocabulary, error) {
-	vf, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("couldn't read vocabulary file %q: %v", path, err)
-	}
-	// Managed properties' keys loading
-	mk := make([]string, 0, len(mp))
-	for k := range mp {
-		mk = append(mk, k)
-	}
-	voc, err := arvados.NewVocabulary(vf, mk)
-	if err != nil {
-		return nil, fmt.Errorf("while loading vocabulary file %q: %s", path, err)
-	}
-	ldr.Logger.Info("Vocabulary loading succeeded")
-	return voc, nil
-}
-
-func watchVocabulary(logger logrus.FieldLogger, vocPath string, fn func()) {
-	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		logger.WithError(err).Error("vocabulary fsnotify setup failed")
-		return
-	}
-	defer watcher.Close()
-
-	err = watcher.Add(vocPath)
-	if err != nil {
-		logger.WithError(err).Error("vocabulary file watcher failed")
-		return
-	}
-
-	for {
-		select {
-		case err, ok := <-watcher.Errors:
-			if !ok {
-				return
-			}
-			logger.WithError(err).Warn("vocabulary file watcher error")
-		case _, ok := <-watcher.Events:
-			if !ok {
-				return
-			}
-			for len(watcher.Events) > 0 {
-				<-watcher.Events
-			}
-			fn()
-		}
-	}
 }
 
 func checkKeyConflict(label string, m map[string]string) error {

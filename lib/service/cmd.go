@@ -94,10 +94,6 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 		// process _is_ the controller: we haven't started an
 		// http server yet.
 		loader.SkipAPICalls = true
-		// The vocabulary file is expected to be present only
-		// in the controller node, so it doesn't make sense to
-		// try loading it elsewhere.
-		loader.LoadVocabulary = true
 	}
 
 	cfg, err := loader.Load()

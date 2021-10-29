@@ -89,23 +89,30 @@ func (s *HandlerSuite) TestConfigExport(c *check.C) {
 }
 
 func (s *HandlerSuite) TestVocabularyExport(c *check.C) {
-	s.cluster.API.Vocabulary = &arvados.Vocabulary{
-		Tags: map[string]arvados.VocabularyTag{
+	voc := `{
+		"strict_tags": false,
+		"tags": {
 			"IDTAGIMPORTANCE": {
-				Labels: []arvados.VocabularyLabel{{Label: "Importance"}},
-				Values: map[string]arvados.VocabularyTagValue{
+				"strict": false,
+				"labels": [{"label": "Importance"}],
+				"values": {
 					"HIGH": {
-						Labels: []arvados.VocabularyLabel{{Label: "High"}},
+						"labels": [{"label": "High"}]
 					},
 					"LOW": {
-						Labels: []arvados.VocabularyLabel{{Label: "Low"}},
-					},
-				},
-			},
-		},
-	}
-	err := s.cluster.API.Vocabulary.Validate()
-	c.Check(err, check.IsNil)
+						"labels": [{"label": "Low"}]
+					}
+				}
+			}
+		}
+	}`
+	f, err := os.CreateTemp("", "test-vocabulary-*.json")
+	c.Assert(err, check.IsNil)
+	defer os.Remove(f.Name())
+	_, err = f.WriteString(voc)
+	c.Assert(err, check.IsNil)
+	f.Close()
+	s.cluster.API.VocabularyPath = f.Name()
 	for _, method := range []string{"GET", "OPTIONS"} {
 		c.Log(c.TestName()+" ", method)
 		req := httptest.NewRequest(method, "/arvados/v1/vocabulary", nil)
@@ -122,10 +129,12 @@ func (s *HandlerSuite) TestVocabularyExport(c *check.C) {
 			c.Check(resp.Body.String(), check.HasLen, 0)
 			continue
 		}
-		var voc *arvados.Vocabulary
-		err := json.Unmarshal(resp.Body.Bytes(), &voc)
+		var expectedVoc, receivedVoc *arvados.Vocabulary
+		err := json.Unmarshal([]byte(voc), &expectedVoc)
 		c.Check(err, check.IsNil)
-		c.Check(voc, check.DeepEquals, s.cluster.API.Vocabulary)
+		err = json.Unmarshal(resp.Body.Bytes(), &receivedVoc)
+		c.Check(err, check.IsNil)
+		c.Check(receivedVoc, check.DeepEquals, expectedVoc)
 	}
 }
 

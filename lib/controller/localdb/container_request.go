@@ -13,7 +13,7 @@ import (
 // ContainerRequestCreate defers to railsProxy for everything except
 // vocabulary checking.
 func (conn *Conn) ContainerRequestCreate(ctx context.Context, opts arvados.CreateOptions) (arvados.ContainerRequest, error) {
-	err := conn.checkProperties(opts.Attrs["properties"])
+	err := conn.checkProperties(ctx, opts.Attrs["properties"])
 	if err != nil {
 		return arvados.ContainerRequest{}, err
 	}
@@ -27,7 +27,7 @@ func (conn *Conn) ContainerRequestCreate(ctx context.Context, opts arvados.Creat
 // ContainerRequestUpdate defers to railsProxy for everything except
 // vocabulary checking.
 func (conn *Conn) ContainerRequestUpdate(ctx context.Context, opts arvados.UpdateOptions) (arvados.ContainerRequest, error) {
-	err := conn.checkProperties(opts.Attrs["properties"])
+	err := conn.checkProperties(ctx, opts.Attrs["properties"])
 	if err != nil {
 		return arvados.ContainerRequest{}, err
 	}

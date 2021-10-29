@@ -178,9 +178,9 @@ func (conn *Conn) ConfigGet(ctx context.Context) (json.RawMessage, error) {
 	return resp, err
 }
 
-func (conn *Conn) VocabularyGet(ctx context.Context) (json.RawMessage, error) {
+func (conn *Conn) VocabularyGet(ctx context.Context) (arvados.Vocabulary, error) {
 	ep := arvados.EndpointVocabularyGet
-	var resp json.RawMessage
+	var resp arvados.Vocabulary
 	err := conn.requestAndDecode(ctx, &resp, ep, nil, nil)
 	return resp, err
 }

@@ -65,7 +65,8 @@ func (s *ContainerRequestSuite) setUpVocabulary(c *check.C, testVocabulary strin
 	voc, err := arvados.NewVocabulary([]byte(testVocabulary), []string{})
 	c.Assert(err, check.IsNil)
 	c.Assert(voc.Validate(), check.IsNil)
-	s.cluster.API.Vocabulary = voc
+	s.localdb.vocabularyCache = voc
+	s.cluster.API.VocabularyPath = "foo"
 }
 
 func (s *ContainerRequestSuite) TestCRCreateWithProperties(c *check.C) {
@@ -106,7 +107,6 @@ func (s *ContainerRequestSuite) TestCRCreateWithProperties(c *check.C) {
 				"properties": tt.props,
 			}})
 		if tt.success {
-			c.Assert(err, check.IsNil)
 			c.Assert(err, check.IsNil)
 			c.Assert(cnt.Properties, check.DeepEquals, tt.props)
 		} else {
@@ -158,7 +158,6 @@ func (s *ContainerRequestSuite) TestCRUpdateWithProperties(c *check.C) {
 				"properties": tt.props,
 			}})
 		if tt.success {
-			c.Assert(err, check.IsNil)
 			c.Assert(err, check.IsNil)
 			c.Assert(cnt.Properties, check.DeepEquals, tt.props)
 		} else {

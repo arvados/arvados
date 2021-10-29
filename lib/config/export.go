@@ -14,12 +14,6 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 )
 
-// ExportVocabularyJSON writes a JSON object with the loaded vocabulary
-// to w.
-func ExportVocabularyJSON(w io.Writer, cluster *arvados.Cluster) error {
-	return json.NewEncoder(w).Encode(cluster.API.Vocabulary)
-}
-
 // ExportJSON writes a JSON object with the safe (non-secret) portions
 // of the cluster config to w.
 func ExportJSON(w io.Writer, cluster *arvados.Cluster) error {
