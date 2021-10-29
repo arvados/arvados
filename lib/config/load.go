@@ -403,36 +403,40 @@ func (ldr *Loader) loadVocabulary(cfg *arvados.Config) error {
 		return nil
 	}
 	ldr.Logger.Info("Loading vocabulary")
-	err = ldr.vocabularyFileLoader(cc)
+	voc, err := ldr.vocabularyFileLoader(cc.API.VocabularyPath, cc.Collections.ManagedProperties)
 	if err != nil {
 		return err
 	}
+	cc.API.Vocabulary = voc
+
 	go watchVocabulary(ldr.Logger, cc.API.VocabularyPath, func() {
 		ldr.Logger.Info("Reloading vocabulary")
-		err = ldr.vocabularyFileLoader(cc)
+		voc, err := ldr.vocabularyFileLoader(cc.API.VocabularyPath, cc.Collections.ManagedProperties)
 		if err != nil {
 			ldr.Logger.Error("Error reloading vocabulary: %v", err)
 		}
+		cc.API.Vocabulary = voc
 	})
+
 	return nil
 }
 
-func (ldr *Loader) vocabularyFileLoader(cc *arvados.Cluster) error {
-	vf, err := os.ReadFile(cc.API.VocabularyPath)
+func (ldr *Loader) vocabularyFileLoader(path string, mp arvados.ManagedProperties) (*arvados.Vocabulary, error) {
+	vf, err := os.ReadFile(path)
 	if err != nil {
-		return fmt.Errorf("couldn't read vocabulary file %q: %v", cc.API.VocabularyPath, err)
+		return nil, fmt.Errorf("couldn't read vocabulary file %q: %v", path, err)
 	}
-	mk := make([]string, 0, len(cc.Collections.ManagedProperties))
-	for k := range cc.Collections.ManagedProperties {
+	// Managed properties' keys loading
+	mk := make([]string, 0, len(mp))
+	for k := range mp {
 		mk = append(mk, k)
 	}
 	voc, err := arvados.NewVocabulary(vf, mk)
 	if err != nil {
-		return fmt.Errorf("while loading vocabulary file %q: %s", cc.API.VocabularyPath, err)
+		return nil, fmt.Errorf("while loading vocabulary file %q: %s", path, err)
 	}
-	cc.API.Vocabulary = voc
 	ldr.Logger.Info("Vocabulary loading succeeded")
-	return nil
+	return voc, nil
 }
 
 func watchVocabulary(logger logrus.FieldLogger, vocPath string, fn func()) {
