@@ -32,7 +32,7 @@ application {
 }
 
 dependencies {
-    api 'org.arvados:arvados-java-sdk:0.1.0'
+    api 'org.arvados:arvados-java-sdk:0.1.1'
 }
 </pre>
 
@@ -140,7 +140,7 @@ Dependencies:
 $ <code class="userinput">git clone https://github.com/arvados/arvados.git</code>
 $ <code class="userinput">cd arvados/sdk/java-v2</code>
 $ <code class="userinput">gradle test</code>
-$ <code class="userinput">gradle jar</code>
+$ <code class="userinput">gradle jar -Pversion=0.1.1</code>
 </pre>
-This will build the SDK and run all unit tests, then generate an Arvados Java sdk jar file in build/libs/arvados-java-2.0.0.jar
+This will build the SDK and run all unit tests, then generate an Arvados Java sdk jar file in build/libs/arvados-java-0.1.1.jar
 </notextile>

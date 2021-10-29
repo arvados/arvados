@@ -22,8 +22,14 @@ public class ExternalConfigProvider implements ConfigProvider {
     private File fileSplitDirectory;
     private int numberOfCopies;
     private int numberOfRetries;
+    private int connectTimeout;
+    private int readTimeout;
+    private int writeTimeout;
 
-    ExternalConfigProvider(boolean apiHostInsecure, String keepWebHost, int keepWebPort, String apiHost, int apiPort, String apiToken, String apiProtocol, int fileSplitSize, File fileSplitDirectory, int numberOfCopies, int numberOfRetries) {
+    ExternalConfigProvider(boolean apiHostInsecure, String keepWebHost, int keepWebPort, String apiHost, int apiPort,
+			   String apiToken, String apiProtocol, int fileSplitSize, File fileSplitDirectory,
+			   int numberOfCopies, int numberOfRetries)
+    {
         this.apiHostInsecure = apiHostInsecure;
         this.keepWebHost = keepWebHost;
         this.keepWebPort = keepWebPort;
@@ -35,6 +41,30 @@ public class ExternalConfigProvider implements ConfigProvider {
         this.fileSplitDirectory = fileSplitDirectory;
         this.numberOfCopies = numberOfCopies;
         this.numberOfRetries = numberOfRetries;
+	this.connectTimeout = 60000;
+	this.readTimeout = 60000;
+	this.writeTimeout = 60000;
+    }
+
+    ExternalConfigProvider(boolean apiHostInsecure, String keepWebHost, int keepWebPort, String apiHost, int apiPort,
+			   String apiToken, String apiProtocol, int fileSplitSize, File fileSplitDirectory,
+			   int numberOfCopies, int numberOfRetries,
+			   int connectTimeout, int readTimeout, int writeTimeout)
+    {
+        this.apiHostInsecure = apiHostInsecure;
+        this.keepWebHost = keepWebHost;
+        this.keepWebPort = keepWebPort;
+        this.apiHost = apiHost;
+        this.apiPort = apiPort;
+        this.apiToken = apiToken;
+        this.apiProtocol = apiProtocol;
+        this.fileSplitSize = fileSplitSize;
+        this.fileSplitDirectory = fileSplitDirectory;
+        this.numberOfCopies = numberOfCopies;
+        this.numberOfRetries = numberOfRetries;
+	this.connectTimeout = connectTimeout;
+	this.readTimeout = readTimeout;
+	this.writeTimeout = writeTimeout;
     }
 
     public static ExternalConfigProviderBuilder builder() {
@@ -100,6 +130,18 @@ public class ExternalConfigProvider implements ConfigProvider {
 
     public int getNumberOfRetries() {
         return this.numberOfRetries;
+    }
+
+    public int getConnectTimeout() {
+        return this.connectTimeout;
+    }
+
+    public int getReadTimeout() {
+        return this.readTimeout;
+    }
+
+    public int getWriteTimeout() {
+        return this.writeTimeout;
     }
 
     public static class ExternalConfigProviderBuilder {
