@@ -97,8 +97,9 @@ $(DEB_FILE): build
 	 --url="https://arvados.org" \
 	 --license="GNU Affero General Public License, version 3.0" \
 	 --description="$(DESCRIPTION)" \
-	 --config-files="etc/arvados/workbench2/workbench2.example.json" \
-	$(WORKSPACE)/build/=$(DEST_DIR)
+	 --config-files="etc/arvados/$(APP_NAME)/workbench2.example.json" \
+	$(WORKSPACE)/build/=$(DEST_DIR) \
+	etc/arvados/workbench2/workbench2.example.json=/etc/arvados/$(APP_NAME)/workbench2.example.json
 
 $(RPM_FILE): build
 	fpm \
@@ -112,8 +113,9 @@ $(RPM_FILE): build
 	 --url="https://arvados.org" \
 	 --license="GNU Affero General Public License, version 3.0" \
 	 --description="$(DESCRIPTION)" \
-	 --config-files="etc/arvados/workbench2/workbench2.example.json" \
-	 $(WORKSPACE)/build/=$(DEST_DIR)
+	 --config-files="etc/arvados/$(APP_NAME)/workbench2.example.json" \
+	 $(WORKSPACE)/build/=$(DEST_DIR) \
+	etc/arvados/workbench2/workbench2.example.json=/etc/arvados/$(APP_NAME)/workbench2.example.json
 
 copy: $(DEB_FILE) $(RPM_FILE)
 	for target in $(TARGETS) ; do \
