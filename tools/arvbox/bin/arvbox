@@ -401,7 +401,7 @@ build() {
     set -e
 
     # Get the go version we should use for bootstrapping
-    GO_VERSION=`grep 'goversion :=' $LOCAL_ARVADOS_ROOT/lib/install/deps.go |awk -F'"' '{print $2}'`
+    GO_VERSION=`grep 'const goversion =' $LOCAL_ARVADOS_ROOT/lib/install/deps.go |awk -F'"' '{print $2}'`
 
     if test "$1" = localdemo -o "$1" = publicdemo ; then
         BUILDTYPE=demo
