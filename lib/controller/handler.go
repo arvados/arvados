@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"strings"
 	"sync"
@@ -74,7 +75,21 @@ func (h *Handler) CheckHealth() error {
 		return err
 	}
 	_, _, err = railsproxy.FindRailsAPI(h.Cluster)
-	return err
+	if err != nil {
+		return err
+	}
+	if h.Cluster.API.VocabularyPath != "" {
+		req, err := http.NewRequest("GET", "/arvados/v1/vocabulary", nil)
+		if err != nil {
+			return err
+		}
+		var resp httptest.ResponseRecorder
+		h.handlerStack.ServeHTTP(&resp, req)
+		if resp.Result().StatusCode != http.StatusOK {
+			return fmt.Errorf("%d %s", resp.Result().StatusCode, resp.Result().Status)
+		}
+	}
+	return nil
 }
 
 func (h *Handler) Done() <-chan struct{} {
