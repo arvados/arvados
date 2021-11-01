@@ -138,6 +138,54 @@ func (s *HandlerSuite) TestVocabularyExport(c *check.C) {
 	}
 }
 
+func (s *HandlerSuite) TestVocabularyFailedCheckStatus(c *check.C) {
+	voc := `{
+		"strict_tags": false,
+		"tags": {
+			"IDTAGIMPORTANCE": {
+				"strict": true,
+				"labels": [{"label": "Importance"}],
+				"values": {
+					"HIGH": {
+						"labels": [{"label": "High"}]
+					},
+					"LOW": {
+						"labels": [{"label": "Low"}]
+					}
+				}
+			}
+		}
+	}`
+	f, err := os.CreateTemp("", "test-vocabulary-*.json")
+	c.Assert(err, check.IsNil)
+	defer os.Remove(f.Name())
+	_, err = f.WriteString(voc)
+	c.Assert(err, check.IsNil)
+	f.Close()
+	s.cluster.API.VocabularyPath = f.Name()
+
+	req := httptest.NewRequest("POST", "/arvados/v1/collections",
+		strings.NewReader(`{
+			"collection": {
+				"properties": {
+					"IDTAGIMPORTANCE": "Critical"
+				}
+			}
+		}`))
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	req.Header.Set("Content-type", "application/json")
+
+	resp := httptest.NewRecorder()
+	s.handler.ServeHTTP(resp, req)
+	c.Log(resp.Body.String())
+	c.Assert(resp.Code, check.Equals, http.StatusBadRequest)
+	var jresp httpserver.ErrorResponse
+	err = json.Unmarshal(resp.Body.Bytes(), &jresp)
+	c.Check(err, check.IsNil)
+	c.Assert(len(jresp.Errors), check.Equals, 1)
+	c.Check(jresp.Errors[0], check.Matches, `.*tag value.*for key.*is not listed as valid.*`)
+}
+
 func (s *HandlerSuite) TestProxyDiscoveryDoc(c *check.C) {
 	req := httptest.NewRequest("GET", "/discovery/v1/apis/arvados/v1/rest", nil)
 	resp := httptest.NewRecorder()
