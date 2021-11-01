@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"strings"
 
@@ -15,6 +16,7 @@ import (
 	"git.arvados.org/arvados.git/lib/controller/rpc"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/sdk/go/httpserver"
 	"github.com/fsnotify/fsnotify"
 	"github.com/sirupsen/logrus"
 )
@@ -60,7 +62,11 @@ func (conn *Conn) checkProperties(ctx context.Context, properties interface{}) e
 	if err != nil {
 		return err
 	}
-	return voc.Check(props)
+	err = voc.Check(props)
+	if err != nil {
+		return httpErrorf(http.StatusBadRequest, voc.Check(props).Error())
+	}
+	return nil
 }
 
 func watchVocabulary(logger logrus.FieldLogger, vocPath string, fn func()) {
@@ -208,4 +214,8 @@ func (conn *Conn) GroupContents(ctx context.Context, options arvados.GroupConten
 	}
 
 	return conn.railsProxy.GroupContents(ctx, options)
+}
+
+func httpErrorf(code int, format string, args ...interface{}) error {
+	return httpserver.ErrorWithStatus(fmt.Errorf(format, args...), code)
 }
