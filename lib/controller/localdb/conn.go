@@ -126,7 +126,9 @@ func (conn *Conn) loadVocabularyFile() error {
 // VocabularyGet refreshes the vocabulary cache if necessary and returns it.
 func (conn *Conn) VocabularyGet(ctx context.Context) (arvados.Vocabulary, error) {
 	if conn.cluster.API.VocabularyPath == "" {
-		return arvados.Vocabulary{}, nil
+		return arvados.Vocabulary{
+			Tags: map[string]arvados.VocabularyTag{},
+		}, nil
 	}
 	logger := ctxlog.FromContext(ctx)
 	if conn.vocabularyCache == nil {
@@ -134,7 +136,9 @@ func (conn *Conn) VocabularyGet(ctx context.Context) (arvados.Vocabulary, error)
 		err := conn.loadVocabularyFile()
 		if err != nil {
 			logger.WithError(err).Error("error loading vocabulary file")
-			return arvados.Vocabulary{}, err
+			return arvados.Vocabulary{
+				Tags: map[string]arvados.VocabularyTag{},
+			}, err
 		}
 		go watchVocabulary(logger, conn.cluster.API.VocabularyPath, func() {
 			logger.Info("vocabulary file changed, it'll be reloaded next time it's needed")
