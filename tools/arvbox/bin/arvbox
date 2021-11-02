@@ -400,6 +400,9 @@ build() {
     fi
     set -e
 
+    # Get the go version we should use for bootstrapping
+    GO_VERSION=`grep 'const goversion =' $LOCAL_ARVADOS_ROOT/lib/install/deps.go |awk -F'"' '{print $2}'`
+
     if test "$1" = localdemo -o "$1" = publicdemo ; then
         BUILDTYPE=demo
     else
@@ -411,6 +414,7 @@ build() {
     fi
 
     docker build --build-arg=BUILDTYPE=$BUILDTYPE $NO_CACHE \
+	   --build-arg=go_version=$GO_VERSION \
 	   --build-arg=arvados_version=$ARVADOS_BRANCH \
 	   --build-arg=workbench2_version=$WORKBENCH2_BRANCH \
 	   --build-arg=workdir=/tools/arvbox/lib/arvbox/docker \
@@ -419,6 +423,7 @@ build() {
 	   "$LOCAL_ARVADOS_ROOT"
     docker tag $FORCE arvados/arvbox-base:$GITHEAD arvados/arvbox-base:latest
     docker build $NO_CACHE \
+	   --build-arg=go_version=$GO_VERSION \
 	   --build-arg=arvados_version=$ARVADOS_BRANCH \
 	   --build-arg=workbench2_version=$WORKBENCH2_BRANCH \
 	   -t arvados/arvbox-$BUILDTYPE:$GITHEAD \
