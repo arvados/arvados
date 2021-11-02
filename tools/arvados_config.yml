@@ -4,6 +4,7 @@ Clusters:
     SystemRootToken: systemusertesttoken1234567890aoeuidhtnsqjkxbmwvzpy
     API:
       RequestTimeout: 30s
+      VocabularyPath: ""
     TLS:
       Insecure: true
     Collections:
