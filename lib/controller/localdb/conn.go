@@ -62,7 +62,11 @@ func (conn *Conn) checkProperties(ctx context.Context, properties interface{}) e
 	if err != nil {
 		return err
 	}
-	return httpErrorf(http.StatusBadRequest, voc.Check(props).Error())
+	err = voc.Check(props)
+	if err != nil {
+		return httpErrorf(http.StatusBadRequest, voc.Check(props).Error())
+	}
+	return nil
 }
 
 func watchVocabulary(logger logrus.FieldLogger, vocPath string, fn func()) {
