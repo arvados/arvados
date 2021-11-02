@@ -21,11 +21,6 @@ RUN apt-get update && \
     build-essential ca-certificates git libpam0g-dev wget
 
 ENV GOPATH /var/lib/gopath
-
-RUN --mount=type=bind,target=/usr/src/arvados \
-    cd /usr/src/arvados && \
-    grep 'goversion :=' lib/install/deps.go |awk -F'"' '{print $2}'
-
 ARG go_version
 
 # Get Go
