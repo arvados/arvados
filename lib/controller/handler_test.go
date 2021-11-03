@@ -343,7 +343,7 @@ func (s *HandlerSuite) CheckObjectType(c *check.C, url string, token string, ski
 	resp := httptest.NewRecorder()
 	s.handler.ServeHTTP(resp, req)
 	c.Assert(resp.Code, check.Equals, http.StatusOK,
-		check.Commentf("Wasn't able to get data from the controller at %q", url))
+		check.Commentf("Wasn't able to get data from the controller at %q: %q", url, resp.Body.String()))
 	err = json.Unmarshal(resp.Body.Bytes(), &proxied)
 	c.Check(err, check.Equals, nil)
 

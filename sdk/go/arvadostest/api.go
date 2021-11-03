@@ -169,6 +169,26 @@ func (as *APIStub) GroupUntrash(ctx context.Context, options arvados.UntrashOpti
 	as.appendCall(ctx, as.GroupUntrash, options)
 	return arvados.Group{}, as.Error
 }
+func (as *APIStub) LinkCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Link, error) {
+	as.appendCall(ctx, as.LinkCreate, options)
+	return arvados.Link{}, as.Error
+}
+func (as *APIStub) LinkUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.Link, error) {
+	as.appendCall(ctx, as.LinkUpdate, options)
+	return arvados.Link{}, as.Error
+}
+func (as *APIStub) LinkGet(ctx context.Context, options arvados.GetOptions) (arvados.Link, error) {
+	as.appendCall(ctx, as.LinkGet, options)
+	return arvados.Link{}, as.Error
+}
+func (as *APIStub) LinkList(ctx context.Context, options arvados.ListOptions) (arvados.LinkList, error) {
+	as.appendCall(ctx, as.LinkList, options)
+	return arvados.LinkList{}, as.Error
+}
+func (as *APIStub) LinkDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.Link, error) {
+	as.appendCall(ctx, as.LinkDelete, options)
+	return arvados.Link{}, as.Error
+}
 func (as *APIStub) SpecimenCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Specimen, error) {
 	as.appendCall(ctx, as.SpecimenCreate, options)
 	return arvados.Specimen{}, as.Error

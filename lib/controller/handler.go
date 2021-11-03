@@ -123,6 +123,8 @@ func (h *Handler) setup() {
 	mux.Handle("/arvados/v1/container_requests/", rtr)
 	mux.Handle("/arvados/v1/groups", rtr)
 	mux.Handle("/arvados/v1/groups/", rtr)
+	mux.Handle("/arvados/v1/links", rtr)
+	mux.Handle("/arvados/v1/links/", rtr)
 	mux.Handle("/login", rtr)
 	mux.Handle("/logout", rtr)
 
