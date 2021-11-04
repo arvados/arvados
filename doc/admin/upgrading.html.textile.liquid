@@ -396,7 +396,7 @@ h3. Python packaging change
 
 As part of story "#9945":https://dev.arvados.org/issues/9945, the distribution packaging (deb/rpm) of our Python packages has changed. These packages now include a built-in virtualenv to reduce dependencies on system packages. We have also stopped packaging and publishing backports for all the Python dependencies of our packages, as they are no longer needed.
 
-One practical consequence of this change is that the use of the Arvados Python SDK (aka "import arvados") will require a tweak if the SDK was installed from a distribution package. It now requires the loading of the virtualenv environment from our packages. The "Install documentation for the Arvados Python SDK":/sdk/python/sdk-python.html reflects this change. This does not affect the use of the command line tools (e.g. arv-get, etc.).
+One practical consequence of this change is that the use of the Arvados Python SDK (aka "import arvados") will require a tweak if the SDK was installed from a distribution package. It now requires the loading of the virtualenv environment from our packages. The "Install documentation for the Arvados Python SDK":{{ site.baseurl }}/sdk/python/sdk-python.html reflects this change. This does not affect the use of the command line tools (e.g. arv-get, etc.).
 
 Python scripts that rely on the distribution Arvados Python SDK packages to import the Arvados SDK will need to be tweaked to load the correct Python environment.
 
