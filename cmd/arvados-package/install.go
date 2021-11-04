@@ -45,14 +45,14 @@ func testinstall(ctx context.Context, opts opts, stdin io.Reader, stdout, stderr
 			opts.TargetOS,
 			"bash", "-c", `
 set -e -o pipefail
-apt-get update
+apt-get --allow-releaseinfo-change update
 apt-get install -y --no-install-recommends dpkg-dev eatmydata
 
 mkdir /tmp/pkg
 ln -s /pkg/*.deb /tmp/pkg/
 (cd /tmp/pkg; dpkg-scanpackages --multiversion . | gzip > Packages.gz)
 echo >/etc/apt/sources.list.d/arvados-local.list "deb [trusted=yes] file:///tmp/pkg ./"
-apt-get update
+apt-get --allow-releaseinfo-change update
 
 eatmydata apt-get install -y --no-install-recommends arvados-server-easy postgresql
 eatmydata apt-get remove -y dpkg-dev
@@ -88,7 +88,7 @@ rm /etc/apt/sources.list.d/arvados-local.list
 		"bash", "-c", `
 set -e -o pipefail
 PATH="/var/lib/arvados/bin:$PATH"
-apt-get update
+apt-get --allow-releaseinfo-change update
 apt-get install -y --no-install-recommends dpkg-dev
 mkdir /tmp/pkg
 ln -s /pkg/*.deb /tmp/pkg/
@@ -97,7 +97,7 @@ apt-get remove -y dpkg-dev
 echo
 
 echo >/etc/apt/sources.list.d/arvados-local.list "deb [trusted=yes] file:///tmp/pkg ./"
-apt-get update
+apt-get --allow-releaseinfo-change update
 eatmydata apt-get install --reinstall -y --no-install-recommends arvados-server-easy`+versionsuffix+`
 SUDO_FORCE_REMOVE=yes apt-get autoremove -y
 
