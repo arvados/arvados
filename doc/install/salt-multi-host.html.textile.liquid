@@ -103,7 +103,7 @@ The <i>multi_host</i> example includes Let's Encrypt salt code to automatically 
 
 h3(#further_customization). Further customization of the installation (modifying the salt pillars and states)
 
-You will need further customization to suit your environment, which can be done editing the Saltstack pillars and states files. Pay particular attention to the <i>pillars/arvados.sls</i> file, where you will need to provide some information that can be retrieved as output of the terraform run.
+You will need further customization to suit your environment, which can be done editing the Saltstack pillars and states files. Pay particular attention to the <i>pillars/arvados.sls</i> file, where you will need to provide some information that describes your environment.
 
 Any extra <i>state</i> file you add under <i>local_config_dir/states</i> will be added to the salt run and applied to the hosts.
 
