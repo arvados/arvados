@@ -309,7 +309,7 @@ export const ResourceLinkTail = connect(
         const tailResource = getResource<Resource>(resource?.tailUuid || '')(state.resources);
 
         return {
-            item: tailResource || { uuid: resource?.tailUuid || '', kind: resource?.headKind || ResourceKind.NONE }
+            item: tailResource || { uuid: resource?.tailUuid || '', kind: resource?.tailKind || ResourceKind.NONE }
         };
     })((props: { item: Resource } & DispatchProp<any>) =>
         renderLink(props.dispatch, props.item));
