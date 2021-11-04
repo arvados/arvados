@@ -114,4 +114,37 @@ describe('Side panel tests', function() {
             });
     });
 
+    it('side panel react to refresh when project data changes', () => {
+        const project1 = 'writableProject1';
+        const project2 = 'writableProject2';
+
+        cy.createProject({
+            owningUser: activeUser,
+            targetUser: activeUser,
+            projectName: project1,
+            canWrite: true,
+            addToFavorites: false
+        });
+
+        cy.createProject({
+            owningUser: activeUser,
+            targetUser: activeUser,
+            projectName: project2,
+            canWrite: true,
+            addToFavorites: false
+        });
+
+        cy.getAll('@writableProject1', '@writableProject2')
+            .then(function ([writableProject1, writableProject2]) {
+                cy.loginAs(activeUser);
+                
+                cy.get('[data-cy=side-panel-tree]').contains('Projects').click();
+
+                cy.trashGroup(activeUser.token, writableProject2.uuid);
+
+                cy.contains('Refresh').click();
+
+                cy.contains(writableProject2.name).should('not.exist');
+            });
+    });
 })
