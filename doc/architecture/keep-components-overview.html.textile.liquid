@@ -14,13 +14,13 @@ Keep has a number of components. This page describes each component and the role
 h3. Keep clients for data access
 
 In order to access data in Keep, a client is needed to store data in and retrieve data from Keep. Different types of Keep clients exist:
-* a command line client like "@arv-get@":/user/tutorials/tutorial-keep-get.html#download-using-arv or "@arv-put@":/user/tutorials/tutorial-keep.html#upload-using-command
-* a FUSE mount provided by "@arv-mount@":/user/tutorials/tutorial-keep-mount-gnu-linux.html
+* a command line client like "@arv-get@":{{ site.baseurl }}/user/tutorials/tutorial-keep-get.html#download-using-arv or "@arv-put@":{{ site.baseurl }}/user/tutorials/tutorial-keep.html#upload-using-command
+* a FUSE mount provided by "@arv-mount@":{{ site.baseurl }}/user/tutorials/tutorial-keep-mount-gnu-linux.html
 * a WebDAV mount provided by @keep-web@
 * an S3-compatible endpoint provided by @keep-web@
-* programmatic access via the "Arvados SDKs":/sdk/index.html
+* programmatic access via the "Arvados SDKs":{{ site.baseurl }}/sdk/index.html
 
-In essense, these clients all do the same thing: they translate file and directory references into requests for Keep blocks and collection manifests. How Keep clients work, and how they use rendezvous hashing, is described in greater detail in "the next section":/architecture/keep-clients.html.
+In essense, these clients all do the same thing: they translate file and directory references into requests for Keep blocks and collection manifests. How Keep clients work, and how they use rendezvous hashing, is described in greater detail in "the next section":{{ site.baseurl }}/architecture/keep-clients.html.
 
 For example, when a request comes in to read a file from Keep, the client will
 * request the collection object (including its manifest) from the API server
@@ -32,7 +32,7 @@ All of those steps are subject to access control, which applies at the level of 
 
 h3. API server
 
-The API server stores collection objects and all associated metadata. That includes data about where the blocks for a collection are to be stored, e.g. when "storage classes":/admin/storage-classes.html are configured, as well as the desired and confirmed replication count for each block. It also stores the ACLs that control access to the collections. Finally, the API server provides Keep clients with time-based block signatures for access.
+The API server stores collection objects and all associated metadata. That includes data about where the blocks for a collection are to be stored, e.g. when "storage classes":{{ site.baseurl }}/admin/storage-classes.html are configured, as well as the desired and confirmed replication count for each block. It also stores the ACLs that control access to the collections. Finally, the API server provides Keep clients with time-based block signatures for access.
 
 h3. Keepstore
 
