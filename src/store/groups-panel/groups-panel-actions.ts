@@ -10,7 +10,7 @@ import { Participant } from 'views-components/sharing-dialog/participant-select'
 import { RootState } from 'store/store';
 import { ServiceRepository } from 'services/services';
 import { getResource } from 'store/resources/resources';
-import { GroupResource } from 'models/group';
+import { GroupResource, GroupClass } from 'models/group';
 import { getCommonResourceServiceError, CommonResourceServiceError } from 'services/common-service/common-resource-service';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { PermissionLevel } from 'models/permission';
@@ -72,7 +72,7 @@ export const createGroup = ({ name, users = [] }: CreateGroupFormData) =>
     async (dispatch: Dispatch, _: {}, { groupsService, permissionService }: ServiceRepository) => {
         dispatch(startSubmit(CREATE_GROUP_FORM));
         try {
-            const newGroup = await groupsService.create({ name });
+            const newGroup = await groupsService.create({ name, groupClass: GroupClass.ROLE });
             for (const user of users) {
                 await addGroupMember({
                     user,
