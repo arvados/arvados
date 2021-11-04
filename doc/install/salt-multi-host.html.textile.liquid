@@ -11,7 +11,6 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 # "Introduction":#introduction
 # "Hosts preparation":#hosts_preparation
-## "Hosts setup using terraform (experimental)":#hosts_setup_using_terraform
 ## "Create a compute image":#create_a_compute_image
 # "Multi host install using the provision.sh script":#multi_host
 # "Choose the desired configuration":#choose_configuration
@@ -64,14 +63,6 @@ We suggest distributing the Arvados components in the following way, creating at
 Note that these hosts can be virtual machines in your infrastructure and they don't need to be physical machines.
 
 Again, if your infrastructure differs from the setup proposed above (ie, using RDS or an existing DB server), remember that you will need to edit the configuration files for the scripts so they work with your infrastructure.
-
-
-h3(#hosts_setup_using_terraform). Hosts setup using terraform (AWS, experimental)
-
-We added a few "terraform":https://terraform.io/ scripts (https://github.com/arvados/arvados/tree/main/tools/terraform) to let you create these instances easier in an AWS account. Check "the Arvados terraform documentation":/doc/install/terraform.html for more details.
-
-
-
 
 h2(#multi_host). Multi host install using the provision.sh script
 
