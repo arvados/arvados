@@ -180,16 +180,6 @@ export const GroupDetailsPanel = connect(
                           contextMenuColumn={true}
                           hideColumnSelector
                           hideSearchInput
-                          actions={
-                              <Grid container justify='flex-end'>
-                                  <Button
-                                      variant="contained"
-                                      color="primary"
-                                      onClick={this.props.onAddUser}>
-                                      <AddIcon /> Add user
-                              </Button>
-                              </Grid>
-                          }
                           paperProps={{
                               elevation: 0,
                           }} />

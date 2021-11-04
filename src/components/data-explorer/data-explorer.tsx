@@ -98,14 +98,14 @@ export const DataExplorer = withStyles(styles)(
             } = this.props;
             return <Paper className={classes.root} {...paperProps} key={paperKey}>
                 {title && <div className={classes.title}>{title}</div>}
-                {(!hideColumnSelector || !hideSearchInput) && <Toolbar className={title ? classes.toolbarUnderTitle : classes.toolbar}>
+                {(!hideColumnSelector || !hideSearchInput || !!actions) && <Toolbar className={title ? classes.toolbarUnderTitle : classes.toolbar}>
                     <Grid container justify="space-between" wrap="nowrap" alignItems="center">
-                        <div className={classes.searchBox}>
+                        {!hideSearchInput && <div className={classes.searchBox}>
                             {!hideSearchInput && <SearchInput
                                 label={searchLabel}
                                 value={searchValue}
                                 onSearch={onSearch} />}
-                        </div>
+                        </div>}
                         {actions}
                         {!hideColumnSelector && <ColumnSelector
                             columns={columns}
