@@ -31,7 +31,7 @@ type Conn struct {
 	remotes map[string]backend
 }
 
-func New(cluster *arvados.Cluster, vocHealthFunc *health.Func) *Conn {
+func New(cluster *arvados.Cluster, healthFuncs *map[string]health.Func) *Conn {
 	local := localdb.NewConn(cluster)
 	remotes := map[string]backend{}
 	for id, remote := range cluster.RemoteClusters {
@@ -45,7 +45,10 @@ func New(cluster *arvados.Cluster, vocHealthFunc *health.Func) *Conn {
 		remotes[id] = conn
 	}
 
-	*vocHealthFunc = local.LastVocabularyError
+	if healthFuncs != nil {
+		hf := map[string]health.Func{"vocabulary": local.LastVocabularyError}
+		*healthFuncs = hf
+	}
 
 	return &Conn{
 		cluster: cluster,

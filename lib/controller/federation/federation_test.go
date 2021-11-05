@@ -70,7 +70,7 @@ func (s *FederationSuite) SetUpTest(c *check.C) {
 	ctx = ctrlctx.NewWithTransaction(ctx, s.tx)
 	s.ctx = ctx
 
-	s.fed = New(s.cluster)
+	s.fed = New(s.cluster, nil)
 }
 
 func (s *FederationSuite) TearDownTest(c *check.C) {
