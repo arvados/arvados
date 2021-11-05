@@ -22,6 +22,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/sdk/go/health"
 )
 
 type Conn struct {
@@ -30,7 +31,7 @@ type Conn struct {
 	remotes map[string]backend
 }
 
-func New(cluster *arvados.Cluster) *Conn {
+func New(cluster *arvados.Cluster, vocHealthFunc *health.Func) *Conn {
 	local := localdb.NewConn(cluster)
 	remotes := map[string]backend{}
 	for id, remote := range cluster.RemoteClusters {
@@ -43,6 +44,8 @@ func New(cluster *arvados.Cluster) *Conn {
 		conn.SendHeader = http.Header{"Via": {"HTTP/1.1 arvados-controller"}}
 		remotes[id] = conn
 	}
+
+	*vocHealthFunc = local.LastVocabularyError
 
 	return &Conn{
 		cluster: cluster,

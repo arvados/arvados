@@ -100,16 +100,21 @@ func neverRedirect(*http.Request, []*http.Request) error { return http.ErrUseLas
 
 func (h *Handler) setup() {
 	mux := http.NewServeMux()
+	var vocHealthFunc health.Func
+
+	oidcAuthorizer := localdb.OIDCAccessTokenAuthorizer(h.Cluster, h.db)
+	rtr := router.New(federation.New(h.Cluster, &vocHealthFunc), router.Config{
+		MaxRequestSize: h.Cluster.API.MaxRequestSize,
+		WrapCalls:      api.ComposeWrappers(ctrlctx.WrapCallsInTransactions(h.db), oidcAuthorizer.WrapCalls),
+	})
+
 	mux.Handle("/_health/", &health.Handler{
 		Token:  h.Cluster.ManagementToken,
 		Prefix: "/_health/",
-		Routes: health.Routes{"ping": func() error { _, err := h.db(context.TODO()); return err }},
-	})
-
-	oidcAuthorizer := localdb.OIDCAccessTokenAuthorizer(h.Cluster, h.db)
-	rtr := router.New(federation.New(h.Cluster), router.Config{
-		MaxRequestSize: h.Cluster.API.MaxRequestSize,
-		WrapCalls:      api.ComposeWrappers(ctrlctx.WrapCallsInTransactions(h.db), oidcAuthorizer.WrapCalls),
+		Routes: health.Routes{
+			"ping":       func() error { _, err := h.db(context.TODO()); return err },
+			"vocabulary": vocHealthFunc,
+		},
 	})
 	mux.Handle("/arvados/v1/config", rtr)
 	mux.Handle("/arvados/v1/vocabulary", rtr)
