@@ -89,6 +89,7 @@ import { GroupDetailsPanel } from 'views/group-details-panel/group-details-panel
 import { RemoveGroupMemberDialog } from 'views-components/groups-dialog/member-remove-dialog';
 import { GroupMemberAttributesDialog } from 'views-components/groups-dialog/member-attributes-dialog';
 import { AddGroupMembersDialog } from 'views-components/dialog-forms/add-group-member-dialog';
+import { EditPermissionLevelDialog } from 'views-components/dialog-forms/edit-permission-level-dialog';
 import { PartialCopyToCollectionDialog } from 'views-components/dialog-forms/partial-copy-to-collection-dialog';
 import { PublicFavoritePanel } from 'views/public-favorites-panel/public-favorites-panel';
 import { LinkAccountPanel } from 'views/link-account-panel/link-account-panel';
@@ -213,6 +214,7 @@ export const WorkbenchPanel =
                 <DetailsPanel />
             </Grid>
             <AddGroupMembersDialog />
+            <EditPermissionLevelDialog />
             <AdvancedTabDialog />
             <AttributesApiClientAuthorizationDialog />
             <AttributesKeepServiceDialog />

@@ -8,7 +8,7 @@ import { Grid, Button, Typography } from "@material-ui/core";
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { DataColumns } from 'components/data-table/data-table';
 import { SortDirection } from 'components/data-table/data-column';
-import { ResourceOwner } from 'views-components/data-explorer/renderers';
+import { ResourceUuid } from 'views-components/data-explorer/renderers';
 import { AddIcon } from 'components/icon/icon';
 import { ResourceName } from 'views-components/data-explorer/renderers';
 import { createTree } from 'models/tree';
@@ -25,7 +25,7 @@ import { navigateToGroupDetails } from 'store/navigation/navigation-action';
 
 export enum GroupsPanelColumnNames {
     GROUP = "Name",
-    OWNER = "Owner",
+    UUID = "UUID",
     MEMBERS = "Members",
 }
 
@@ -39,11 +39,11 @@ export const groupsPanelColumns: DataColumns<string> = [
         render: uuid => <ResourceName uuid={uuid} />
     },
     {
-        name: GroupsPanelColumnNames.OWNER,
+        name: GroupsPanelColumnNames.UUID,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceOwner uuid={uuid} />,
+        render: uuid => <ResourceUuid uuid={uuid} />,
     },
     {
         name: GroupsPanelColumnNames.MEMBERS,

@@ -6,7 +6,7 @@ import React from 'react';
 import { Grid, Typography, withStyles, Tooltip, IconButton, Checkbox } from '@material-ui/core';
 import { FavoriteStar, PublicFavoriteStar } from '../favorite-star/favorite-star';
 import { Resource, ResourceKind, TrashableResource } from 'models/resource';
-import { ProjectIcon, FilterGroupIcon, CollectionIcon, ProcessIcon, DefaultIcon, ShareIcon, CollectionOldVersionIcon, WorkflowIcon, RemoveIcon } from 'components/icon/icon';
+import { ProjectIcon, FilterGroupIcon, CollectionIcon, ProcessIcon, DefaultIcon, ShareIcon, CollectionOldVersionIcon, WorkflowIcon, RemoveIcon, RenameIcon } from 'components/icon/icon';
 import { formatDate, formatFileSize, formatTime } from 'common/formatters';
 import { resourceLabel } from 'common/labels';
 import { connect, DispatchProp } from 'react-redux';
@@ -23,21 +23,25 @@ import { openSharingDialog } from 'store/sharing-dialog/sharing-dialog-actions';
 import { getUserFullname, getUserDisplayName, User, UserResource } from 'models/user';
 import { toggleIsActive, toggleIsAdmin } from 'store/users/users-actions';
 import { LinkResource } from 'models/link';
-import { navigateTo } from 'store/navigation/navigation-action';
+import { navigateTo, navigateToGroupDetails } from 'store/navigation/navigation-action';
 import { withResourceData } from 'views-components/data-explorer/with-resources';
 import { CollectionResource } from 'models/collection';
 import { IllegalNamingWarning } from 'components/warning/warning';
 import { loadResource } from 'store/resources/resources-actions';
 import { GroupClass } from 'models/group';
-import { openRemoveGroupMemberDialog } from 'store/group-details-panel/group-details-panel-actions';
+import { openRemoveGroupMemberDialog, openEditPermissionLevelDialog } from 'store/group-details-panel/group-details-panel-actions';
+import { formatPermissionLevel } from 'views-components/sharing-dialog/permission-select';
+import { PermissionLevel } from 'models/permission';
 
-const renderName = (dispatch: Dispatch, item: GroupContentsResource) =>
-    <Grid container alignItems="center" wrap="nowrap" spacing={16}>
+const renderName = (dispatch: Dispatch, item: GroupContentsResource) => {
+
+    const navFunc = ("groupClass" in item && item.groupClass === GroupClass.ROLE ? navigateToGroupDetails : navigateTo);
+    return <Grid container alignItems="center" wrap="nowrap" spacing={16}>
         <Grid item>
             {renderIcon(item)}
         </Grid>
         <Grid item>
-            <Typography color="primary" style={{ width: 'auto', cursor: 'pointer' }} onClick={() => dispatch<any>(navigateTo(item.uuid))}>
+            <Typography color="primary" style={{ width: 'auto', cursor: 'pointer' }} onClick={() => dispatch<any>(navFunc(item.uuid))}>
                 {item.kind === ResourceKind.PROJECT || item.kind === ResourceKind.COLLECTION
                     ? <IllegalNamingWarning name={item.name} />
                     : null}
@@ -51,6 +55,7 @@ const renderName = (dispatch: Dispatch, item: GroupContentsResource) =>
             </Typography>
         </Grid>
     </Grid>;
+};
 
 export const ResourceName = connect(
     (state: RootState, props: { uuid: string }) => {
@@ -287,21 +292,31 @@ export const ResourceLinkClass = connect(
         return resource || { linkClass: '' };
     })(renderLinkClass);
 
-const renderLink = (dispatch: Dispatch, item: Resource) => {
-    var displayName = '';
-
-    if ((item as UserResource).kind === ResourceKind.USER
-          && typeof (item as UserResource).firstName !== 'undefined') {
+const getResourceDisplayName = (resource: Resource): string => {
+    if ((resource as UserResource).kind === ResourceKind.USER
+          && typeof (resource as UserResource).firstName !== 'undefined') {
         // We can be sure the resource is UserResource
-        displayName = getUserDisplayName(item as UserResource);
+        return getUserDisplayName(resource as UserResource);
     } else {
-        displayName = (item as GroupContentsResource).name;
+        return (resource as GroupContentsResource).name;
     }
+}
+
+const renderResourceLink = (dispatch: Dispatch, item: Resource) => {
+    var displayName = getResourceDisplayName(item);
 
     return <Typography noWrap color="primary" style={{ 'cursor': 'pointer' }} onClick={() => dispatch<any>(navigateTo(item.uuid))}>
         {resourceLabel(item.kind)}: {displayName || item.uuid}
     </Typography>;
-}
+};
+
+const renderResource = (dispatch: Dispatch, item: Resource) => {
+    var displayName = getResourceDisplayName(item);
+
+    return <Typography variant='body2'>
+        {resourceLabel(item.kind)}: {displayName || item.uuid}
+    </Typography>;
+};
 
 export const ResourceLinkTail = connect(
     (state: RootState, props: { uuid: string }) => {
@@ -312,7 +327,7 @@ export const ResourceLinkTail = connect(
             item: tailResource || { uuid: resource?.tailUuid || '', kind: resource?.tailKind || ResourceKind.NONE }
         };
     })((props: { item: Resource } & DispatchProp<any>) =>
-        renderLink(props.dispatch, props.item));
+        renderResourceLink(props.dispatch, props.item));
 
 export const ResourceLinkHead = connect(
     (state: RootState, props: { uuid: string }) => {
@@ -323,7 +338,7 @@ export const ResourceLinkHead = connect(
             item: headResource || { uuid: resource?.headUuid || '', kind: resource?.headKind || ResourceKind.NONE }
         };
     })((props: { item: Resource } & DispatchProp<any>) =>
-        renderLink(props.dispatch, props.item));
+        renderResourceLink(props.dispatch, props.item));
 
 export const ResourceLinkUuid = connect(
     (state: RootState, props: { uuid: string }) => {
@@ -383,6 +398,49 @@ export const ResourceLinkTailUsername = connect(
 
         return resource || { username: '' };
     })(renderUsername);
+
+const renderPermissionLevel = (dispatch: Dispatch, link: LinkResource, resource: Resource) => {
+    return <Typography noWrap>
+        {formatPermissionLevel(link.name as PermissionLevel)}
+        <IconButton onClick={() => dispatch<any>(openEditPermissionLevelDialog(link.uuid, resource.uuid))}>
+            <RenameIcon />
+        </IconButton>
+    </Typography>;
+}
+
+export const ResourceLinkHeadPermissionLevel = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const link = getResource<LinkResource>(props.uuid)(state.resources);
+        const resource = getResource<Resource>(link?.headUuid || '')(state.resources);
+
+        return {
+            link: link || { uuid: '', name: '', kind: ResourceKind.NONE },
+            resource: resource || { uuid: '', kind: ResourceKind.NONE }
+        };
+    })((props: { link: LinkResource, resource: Resource } & DispatchProp<any>) =>
+        renderPermissionLevel(props.dispatch, props.link, props.resource));
+
+export const ResourceLinkTailPermissionLevel = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const link = getResource<LinkResource>(props.uuid)(state.resources);
+        const resource = getResource<Resource>(link?.tailUuid || '')(state.resources);
+
+        return {
+            link: link || { uuid: '', name: '', kind: ResourceKind.NONE },
+            resource: resource || { uuid: '', kind: ResourceKind.NONE }
+        };
+    })((props: { link: LinkResource, resource: Resource } & DispatchProp<any>) =>
+        renderPermissionLevel(props.dispatch, props.link, props.resource));
+
+// Displays resource type and display name without link
+export const ResourceLabel = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const resource = getResource<Resource>(props.uuid)(state.resources);
+        return {
+            item: resource || { uuid: '', kind: ResourceKind.NONE }
+        };
+    })((props: { item: Resource } & DispatchProp<any>) =>
+        renderResource(props.dispatch, props.item));
 
 // Process Resources
 const resourceRunProcess = (dispatch: Dispatch, uuid: string) => {

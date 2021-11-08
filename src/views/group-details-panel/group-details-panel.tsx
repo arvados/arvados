@@ -7,7 +7,7 @@ import { connect } from 'react-redux';
 
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { DataColumns } from 'components/data-table/data-table';
-import { ResourceLinkHeadUuid, ResourceLinkTailUuid, ResourceLinkTailEmail, ResourceLinkTailUsername, ResourceLinkName, ResourceLinkHead, ResourceLinkTail, ResourceLinkDelete } from 'views-components/data-explorer/renderers';
+import { ResourceLinkHeadUuid, ResourceLinkTailUuid, ResourceLinkTailEmail, ResourceLinkTailUsername, ResourceLinkHeadPermissionLevel, ResourceLinkTailPermissionLevel, ResourceLinkHead, ResourceLinkTail, ResourceLinkDelete } from 'views-components/data-explorer/renderers';
 import { createTree } from 'models/tree';
 import { noop } from 'lodash/fp';
 import { RootState } from 'store/store';
@@ -62,7 +62,7 @@ export const groupDetailsMembersPanelColumns: DataColumns<string> = [
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceLinkName uuid={uuid} />
+        render: uuid => <ResourceLinkTailPermissionLevel uuid={uuid} />
     },
     {
         name: GroupDetailsPanelMembersColumnNames.UUID,
@@ -93,7 +93,7 @@ export const groupDetailsPermissionsPanelColumns: DataColumns<string> = [
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceLinkName uuid={uuid} />
+        render: uuid => <ResourceLinkHeadPermissionLevel uuid={uuid} />
     },
     {
         name: GroupDetailsPanelPermissionsColumnNames.UUID,
