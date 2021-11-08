@@ -44,10 +44,8 @@ func (dumpCommand) RunCommand(prog string, args []string, stdin io.Reader, stdou
 		return 0
 	} else if err != nil {
 		return 2
-	}
-
-	if len(flags.Args()) != 0 {
-		flags.Usage()
+	} else if flags.NArg() != 0 {
+		err = fmt.Errorf("unrecognized command line arguments: %v", flags.Args())
 		return 2
 	}
 
@@ -98,10 +96,8 @@ func (checkCommand) RunCommand(prog string, args []string, stdin io.Reader, stdo
 		return 0
 	} else if err != nil {
 		return 2
-	}
-
-	if len(flags.Args()) != 0 {
-		flags.Usage()
+	} else if flags.NArg() != 0 {
+		err = fmt.Errorf("unrecognized command line arguments: %v", flags.Args())
 		return 2
 	}
 

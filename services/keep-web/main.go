@@ -58,8 +58,8 @@ func init() {
 	})
 }
 
-func configure(logger log.FieldLogger, args []string) *Config {
-	flags := flag.NewFlagSet(args[0], flag.ExitOnError)
+func configure(logger log.FieldLogger, args []string) (*Config, error) {
+	flags := flag.NewFlagSet(args[0], flag.ContinueOnError)
 
 	loader := config.NewLoader(os.Stdin, logger)
 	loader.SetupFlags(flags)
@@ -70,12 +70,19 @@ func configure(logger log.FieldLogger, args []string) *Config {
 		"print version information and exit.")
 
 	args = loader.MungeLegacyConfigArgs(logger, args[1:], "-legacy-keepweb-config")
-	flags.Parse(args)
+	err := flags.Parse(args)
+	if err == flag.ErrHelp {
+		return nil, nil
+	} else if err != nil {
+		return nil, err
+	} else if flags.NArg() != 0 {
+		return nil, fmt.Errorf("unrecognized command line arguments: %v", flags.Args())
+	}
 
 	// Print version information if requested
 	if *getVersion {
 		fmt.Printf("keep-web %s\n", version)
-		return nil
+		return nil, nil
 	}
 
 	arvCfg, err := loader.Load()
@@ -87,22 +94,22 @@ func configure(logger log.FieldLogger, args []string) *Config {
 	if *dumpConfig {
 		out, err := yaml.Marshal(cfg)
 		if err != nil {
-			log.Fatal(err)
+			return nil, err
 		}
 		_, err = os.Stdout.Write(out)
-		if err != nil {
-			log.Fatal(err)
-		}
-		return nil
+		return nil, err
 	}
-	return cfg
+	return cfg, nil
 }
 
 func main() {
 	logger := log.New()
 
-	cfg := configure(logger, os.Args)
-	if cfg == nil {
+	cfg, err := configure(logger, os.Args)
+	if err != nil {
+		logger.Error(err)
+		os.Exit(1)
+	} else if cfg == nil {
 		return
 	}
 

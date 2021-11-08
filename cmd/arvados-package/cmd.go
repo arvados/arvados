@@ -124,7 +124,7 @@ Options:
 	if err != nil {
 		return opts, err
 	}
-	if len(flags.Args()) > 0 {
+	if flags.NArg() != 0 {
 		return opts, fmt.Errorf("unrecognized command line arguments: %v", flags.Args())
 	}
 	if opts.SourceDir == "" {

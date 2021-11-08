@@ -91,13 +91,14 @@ func (disp *Dispatcher) configure(prog string, args []string) error {
 		false,
 		"Print version information and exit.")
 
-	args = loader.MungeLegacyConfigArgs(logrus.StandardLogger(), args, "-legacy-crunch-dispatch-slurm-config")
-
-	// Parse args; omit the first arg which is the command name
+	args = loader.MungeLegacyConfigArgs(disp.logger, args, "-legacy-crunch-dispatch-slurm-config")
 	err := flags.Parse(args)
-
 	if err == flag.ErrHelp {
 		return nil
+	} else if err != nil {
+		return err
+	} else if flags.NArg() != 0 {
+		return fmt.Errorf("unrecognized command line arguments: %v", flags.Args())
 	}
 
 	// Print version information if requested

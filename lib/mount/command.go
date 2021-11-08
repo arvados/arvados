@@ -9,6 +9,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+
 	// pprof is only imported to register its HTTP handlers
 	_ "net/http/pprof"
 	"os"

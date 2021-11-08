@@ -35,7 +35,9 @@ func testLoadLegacyConfig(content []byte, mungeFlag string, c *check.C) (*arvado
 	ldr := testLoader(c, "Clusters: {zzzzz: {}}", nil)
 	ldr.SetupFlags(flags)
 	args := ldr.MungeLegacyConfigArgs(ldr.Logger, []string{"-config", tmpfile.Name()}, mungeFlag)
-	flags.Parse(args)
+	err = flags.Parse(args)
+	c.Assert(err, check.IsNil)
+	c.Assert(flags.NArg(), check.Equals, 0)
 	cfg, err := ldr.Load()
 	if err != nil {
 		return nil, err

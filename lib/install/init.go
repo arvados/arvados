@@ -67,7 +67,7 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
 		return 2
 	} else if *versionFlag {
 		return cmd.Version.RunCommand(prog, args, stdin, stdout, stderr)
-	} else if len(flags.Args()) > 0 {
+	} else if flags.NArg() != 0 {
 		err = fmt.Errorf("unrecognized command line arguments: %v", flags.Args())
 		return 2
 	} else if !regexp.MustCompile(`^[a-z][a-z0-9]{4}`).MatchString(initcmd.ClusterID) {

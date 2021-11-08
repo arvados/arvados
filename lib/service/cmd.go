@@ -78,6 +78,9 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 		return 0
 	} else if err != nil {
 		return 2
+	} else if flags.NArg() != 0 {
+		err = fmt.Errorf("unrecognized command line arguments: %v", flags.Args())
+		return 2
 	} else if *versionFlag {
 		return cmd.Version.RunCommand(prog, args, stdin, stdout, stderr)
 	}

@@ -47,10 +47,8 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 		return 0
 	} else if err != nil {
 		return 2
-	}
-
-	if len(flags.Args()) != 0 {
-		flags.Usage()
+	} else if flags.NArg() != 0 {
+		err = fmt.Errorf("unrecognized command line arguments: %v", flags.Args())
 		return 2
 	}
 	logger := ctxlog.New(stderr, "text", "info")

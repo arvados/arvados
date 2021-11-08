@@ -67,7 +67,14 @@ func doMain() error {
 		"Print version information and exit.")
 
 	// Parse args; omit the first arg which is the command name
-	flags.Parse(os.Args[1:])
+	err := flags.Parse(os.Args[1:])
+	if err == flag.ErrHelp {
+		return nil
+	} else if err != nil {
+		return err
+	} else if flags.NArg() != 0 {
+		return fmt.Errorf("unrecognized command line arguments: %v", flags.Args())
+	}
 
 	// Print version information if requested
 	if *getVersion {

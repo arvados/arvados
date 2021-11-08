@@ -1699,6 +1699,10 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	} else if err != nil {
 		log.Print(err)
 		return 1
+	} else if flags.NArg() != 1 {
+		fmt.Fprintf(flags.Output(), "Usage: %s [options] containerUUID\n\nOptions:\n", prog)
+		flags.PrintDefaults()
+		return 2
 	}
 
 	containerUUID := flags.Arg(0)

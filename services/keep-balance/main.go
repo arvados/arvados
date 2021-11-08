@@ -32,7 +32,7 @@ func runCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.W
 	logger := ctxlog.FromContext(context.Background())
 
 	var options RunOptions
-	flags := flag.NewFlagSet(prog, flag.ExitOnError)
+	flags := flag.NewFlagSet(prog, flag.ContinueOnError)
 	flags.BoolVar(&options.Once, "once", false,
 		"balance once and then exit")
 	flags.BoolVar(&options.CommitPulls, "commit-pulls", false,
@@ -41,9 +41,12 @@ func runCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.W
 		"send trash requests (delete unreferenced old blocks, and excess replicas of overreplicated blocks)")
 	flags.BoolVar(&options.CommitConfirmedFields, "commit-confirmed-fields", true,
 		"update collection fields (replicas_confirmed, storage_classes_confirmed, etc.)")
-	flags.Bool("version", false, "Write version information to stdout and exit 0")
 	dumpFlag := flags.Bool("dump", false, "dump details for each block to stdout")
 	pprofAddr := flags.String("pprof", "", "serve Go profile data at `[addr]:port`")
+	// "show version" is implemented by service.Command, so we
+	// don't need the var here -- we just need the -version flag
+	// to pass flags.Parse().
+	flags.Bool("version", false, "Write version information to stdout and exit 0")
 
 	if *pprofAddr != "" {
 		go func() {
@@ -56,12 +59,13 @@ func runCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.W
 
 	munged := loader.MungeLegacyConfigArgs(logger, args, "-legacy-keepbalance-config")
 	err := flags.Parse(munged)
-	if err != nil {
+	if err == flag.ErrHelp {
+		return 0
+	} else if err != nil {
 		logger.Errorf("error parsing command line flags: %s", err)
 		return 2
-	}
-	if flags.NArg() != 0 {
-		logger.Errorf("error parsing command line flags: extra arguments: %q", flags.Args())
+	} else if flags.NArg() != 0 {
+		logger.Errorf("unrecognized command line arguments: %v", flags.Args())
 		return 2
 	}
 
@@ -84,7 +88,7 @@ func runCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.W
 	}
 	flags.Visit(func(f *flag.Flag) {
 		if !dropFlag[f.Name] {
-			args = append(args, "-"+f.Name, f.Value.String())
+			args = append(args, "-"+f.Name+"="+f.Value.String())
 		}
 	})
 

@@ -39,6 +39,9 @@ func (cmd Command) RunCommand(prog string, args []string, stdin io.Reader, stdou
 	} else if err != nil {
 		fmt.Fprintln(stderr, err)
 		return 2
+	} else if f.NArg() != 0 {
+		fmt.Fprintf(stderr, "unrecognized command line arguments: %v\n", f.Args())
+		return 2
 	}
 	diag.logger = ctxlog.New(stdout, "text", diag.logLevel)
 	diag.logger.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true, DisableLevelTruncation: true, PadLevelText: true})

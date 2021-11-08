@@ -75,6 +75,8 @@ func (bcmd bootCommand) run(ctx context.Context, prog string, args []string, std
 		return nil
 	} else if err != nil {
 		return err
+	} else if flags.NArg() != 0 {
+		return fmt.Errorf("unrecognized command line arguments: %v", flags.Args())
 	} else if *versionFlag {
 		cmd.Version.RunCommand(prog, args, stdin, stdout, stderr)
 		return nil

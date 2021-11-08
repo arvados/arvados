@@ -23,7 +23,7 @@ func main() {
 		TimestampFormat: "2006-01-02T15:04:05.000000000Z07:00",
 	})
 
-	flags := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
+	flags := flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
 	loader := config.NewLoader(os.Stdin, logger)
 	loader.SetupFlags(flags)
 
@@ -31,7 +31,16 @@ func main() {
 	getVersion := flags.Bool("version", false, "print version information and exit.")
 
 	args := loader.MungeLegacyConfigArgs(logger, os.Args[1:], "-legacy-git-httpd-config")
-	flags.Parse(args)
+	err := flags.Parse(args)
+	if err == flag.ErrHelp {
+		return
+	} else if err != nil {
+		logger.Error(err)
+		os.Exit(2)
+	} else if flags.NArg() != 0 {
+		logger.Errorf("unrecognized command line arguments: %v", flags.Args())
+		os.Exit(2)
+	}
 
 	if *getVersion {
 		fmt.Printf("arv-git-httpd %s\n", version)
