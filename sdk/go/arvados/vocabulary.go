@@ -152,11 +152,11 @@ func (v *Vocabulary) getLabelsToValues(key string) (labels map[string]string) {
 func (v *Vocabulary) checkValue(key, val string) error {
 	if _, ok := v.Tags[key].Values[val]; !ok {
 		lcVal := strings.ToLower(val)
-		alias, ok := v.getLabelsToValues(key)[lcVal]
+		correctValue, ok := v.getLabelsToValues(key)[lcVal]
 		if ok {
-			return fmt.Errorf("tag value %q for key %q is not defined but is an alias for %q", val, key, alias)
+			return fmt.Errorf("tag value %q for key %q is an alias, must be provided as %q", val, key, correctValue)
 		} else if v.Tags[key].Strict {
-			return fmt.Errorf("tag value %q for key %q is not listed as valid", val, key)
+			return fmt.Errorf("tag value %q is not valid for key %q", val, key)
 		}
 	}
 	return nil
@@ -176,11 +176,11 @@ func (v *Vocabulary) Check(data map[string]interface{}) error {
 		}
 		if _, ok := v.Tags[key]; !ok {
 			lcKey := strings.ToLower(key)
-			alias, ok := v.getLabelsToKeys()[lcKey]
+			correctKey, ok := v.getLabelsToKeys()[lcKey]
 			if ok {
-				return fmt.Errorf("tag key %q is not defined but is an alias for %q", key, alias)
+				return fmt.Errorf("tag key %q is an alias, must be provided as %q", key, correctKey)
 			} else if v.StrictTags {
-				return fmt.Errorf("tag key %q is not defined", key)
+				return fmt.Errorf("tag key %q is not defined in the vocabulary", key)
 			}
 			// If the key is not defined, we don't need to check the value
 			continue
@@ -201,11 +201,11 @@ func (v *Vocabulary) Check(data map[string]interface{}) error {
 						return err
 					}
 				default:
-					return fmt.Errorf("tag value %q for key %q is not a valid type (%T)", singleVal, key, singleVal)
+					return fmt.Errorf("tag value of type %T for key %q is not a valid", singleVal, key)
 				}
 			}
 		default:
-			return fmt.Errorf("tag value %q for key %q is not a valid type (%T)", val, key, val)
+			return fmt.Errorf("tag value of type %T for key %q is not a valid", val, key)
 		}
 	}
 	return nil
