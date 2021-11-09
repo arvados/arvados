@@ -107,10 +107,6 @@ func (conn *Conn) loadVocabularyFile() error {
 	if err != nil {
 		return fmt.Errorf("while loading vocabulary file %q: %s", conn.cluster.API.VocabularyPath, err)
 	}
-	err = voc.Validate()
-	if err != nil {
-		return fmt.Errorf("while validating vocabulary file %q: %s", conn.cluster.API.VocabularyPath, err)
-	}
 	conn.vocabularyCache = voc
 	return nil
 }

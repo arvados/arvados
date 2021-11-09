@@ -183,7 +183,7 @@ func (s *HandlerSuite) TestVocabularyFailedCheckStatus(c *check.C) {
 	err = json.Unmarshal(resp.Body.Bytes(), &jresp)
 	c.Check(err, check.IsNil)
 	c.Assert(len(jresp.Errors), check.Equals, 1)
-	c.Check(jresp.Errors[0], check.Matches, `.*tag value.*for key.*is not listed as valid.*`)
+	c.Check(jresp.Errors[0], check.Matches, `.*tag value.*is not valid for key.*`)
 }
 
 func (s *HandlerSuite) TestProxyDiscoveryDoc(c *check.C) {
