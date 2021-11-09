@@ -18,6 +18,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
+	"github.com/sirupsen/logrus"
 )
 
 type railsProxy = rpc.Conn
@@ -70,7 +71,7 @@ func (conn *Conn) checkProperties(ctx context.Context, properties interface{}) e
 	return nil
 }
 
-func (conn *Conn) maybeRefreshVocabularyCache() error {
+func (conn *Conn) maybeRefreshVocabularyCache(logger logrus.FieldLogger) error {
 	if conn.lastVocabularyRefreshCheck.Add(time.Second).After(time.Now()) {
 		// Throttle the access to disk to at most once per second.
 		return nil
@@ -90,6 +91,7 @@ func (conn *Conn) maybeRefreshVocabularyCache() error {
 		}
 		conn.vocabularyFileModTime = fi.ModTime()
 		conn.lastVocabularyError = nil
+		logger.Info("vocabulary file reloaded successfully")
 	}
 	return nil
 }
@@ -113,8 +115,9 @@ func (conn *Conn) loadVocabularyFile() error {
 
 // LastVocabularyError returns the last error encountered while loading the
 // vocabulary file.
+// Implements health.Func
 func (conn *Conn) LastVocabularyError() error {
-	conn.maybeRefreshVocabularyCache()
+	conn.maybeRefreshVocabularyCache(ctxlog.FromContext(context.Background()))
 	return conn.lastVocabularyError
 }
 
@@ -134,11 +137,9 @@ func (conn *Conn) VocabularyGet(ctx context.Context) (arvados.Vocabulary, error)
 			return arvados.Vocabulary{}, err
 		}
 	}
-	err := conn.maybeRefreshVocabularyCache()
+	err := conn.maybeRefreshVocabularyCache(logger)
 	if err != nil {
 		logger.WithError(err).Error("error reloading vocabulary file - ignoring")
-	} else {
-		logger.Info("vocabulary file reloaded successfully")
 	}
 	return *conn.vocabularyCache, nil
 }
