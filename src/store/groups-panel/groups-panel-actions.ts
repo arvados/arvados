@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from 'redux';
-import { reset, startSubmit, stopSubmit, FormErrors } from 'redux-form';
+import { reset, initialize, startSubmit, stopSubmit, FormErrors } from 'redux-form';
 import { bindDataExplorerActions } from "store/data-explorer/data-explorer-action";
 import { dialogActions } from 'store/dialog/dialog-actions';
 import { Participant } from 'views-components/sharing-dialog/participant-select';
@@ -18,10 +18,19 @@ import { PermissionService } from 'services/permission-service/permission-servic
 import { FilterBuilder } from 'services/api/filter-builder';
 
 export const GROUPS_PANEL_ID = "groupsPanel";
+
+// Create group dialog
 export const CREATE_GROUP_DIALOG = "createGroupDialog";
 export const CREATE_GROUP_FORM = "createGroupForm";
 export const CREATE_GROUP_NAME_FIELD_NAME = 'name';
 export const CREATE_GROUP_USERS_FIELD_NAME = 'users';
+
+// Rename group dialog
+export const RENAME_GROUP_DIALOG = "renameGroupDialog";
+export const RENAME_GROUP_FORM = "renameGroupForm";
+export const RENAME_GROUP_UUID_FIELD_NAME = 'uuid';
+export const RENAME_GROUP_NAME_FIELD_NAME = 'name';
+
 export const GROUP_ATTRIBUTES_DIALOG = 'groupAttributesDialog';
 export const GROUP_REMOVE_DIALOG = 'groupRemoveDialog';
 
@@ -61,6 +70,33 @@ export const openRemoveGroupDialog = (uuid: string) =>
                 uuid
             }
         }));
+    };
+
+export interface RenameGroupFormData {
+    [RENAME_GROUP_UUID_FIELD_NAME]: string;
+    [RENAME_GROUP_NAME_FIELD_NAME]: string;
+}
+
+export const openRenameGroupDialog = (uuid: string) =>
+    (dispatch: Dispatch, getState: () => RootState) => {
+        const group = getResource<GroupResource>(uuid)(getState().resources);
+
+        if (group) {
+            const formData: RenameGroupFormData = {[RENAME_GROUP_UUID_FIELD_NAME]: group.uuid, [RENAME_GROUP_NAME_FIELD_NAME]: group.name};
+            console.log("Initialize form: ", formData);
+            dispatch(reset(RENAME_GROUP_FORM));
+            dispatch<any>(initialize(RENAME_GROUP_FORM, formData));
+            dispatch(dialogActions.OPEN_DIALOG({ id: RENAME_GROUP_DIALOG, data: group }));
+        }
+    };
+
+
+export const renameGroup = (data: RenameGroupFormData) =>
+    async (dispatch: Dispatch, getState: () => RootState, { groupsService }: ServiceRepository) => {
+        console.log("RenameGroupFormData", data);
+        await groupsService.update(data[RENAME_GROUP_UUID_FIELD_NAME], { name: data[RENAME_GROUP_NAME_FIELD_NAME] });
+        dispatch(dialogActions.CLOSE_DIALOG({ id: RENAME_GROUP_DIALOG }));
+        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Renamed.', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
     };
 
 export interface CreateGroupFormData {
