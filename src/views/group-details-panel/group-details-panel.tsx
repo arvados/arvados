@@ -153,8 +153,8 @@ export const GroupDetailsPanel = connect(
                           id={GROUP_DETAILS_MEMBERS_PANEL_ID}
                           onRowClick={noop}
                           onRowDoubleClick={noop}
-                          onContextMenu={this.handleContextMenu}
-                          contextMenuColumn={true}
+                          onContextMenu={noop}
+                          contextMenuColumn={false}
                           hideColumnSelector
                           hideSearchInput
                           actions={
@@ -176,8 +176,8 @@ export const GroupDetailsPanel = connect(
                           id={GROUP_DETAILS_PERMISSIONS_PANEL_ID}
                           onRowClick={noop}
                           onRowDoubleClick={noop}
-                          onContextMenu={this.handleContextMenu}
-                          contextMenuColumn={true}
+                          onContextMenu={noop}
+                          contextMenuColumn={false}
                           hideColumnSelector
                           hideSearchInput
                           paperProps={{

@@ -62,15 +62,12 @@ const mapStateToProps = (state: RootState) => {
 
 const mapDispatchToProps = {
     onContextMenu: openContextMenu,
-    onRowDoubleClick: (uuid: string) =>
-        navigateToGroupDetails(uuid),
     onNewGroup: openCreateGroupDialog,
 };
 
 export interface GroupsPanelProps {
     onNewGroup: () => void;
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: any) => void;
-    onRowDoubleClick: (item: string) => void;
     resources: ResourcesState;
 }
 
@@ -84,7 +81,7 @@ export const GroupsPanel = connect(
                 <DataExplorer
                     id={GROUPS_PANEL_ID}
                     onRowClick={noop}
-                    onRowDoubleClick={this.props.onRowDoubleClick}
+                    onRowDoubleClick={noop}
                     onContextMenu={this.handleContextMenu}
                     contextMenuColumn={true}
                     hideColumnSelector
