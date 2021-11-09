@@ -56,7 +56,7 @@ func (s *VocabularySuite) SetUpTest(c *check.C) {
 			},
 		},
 	}
-	err := s.testVoc.Validate()
+	err := s.testVoc.validate()
 	c.Assert(err, check.IsNil)
 }
 
@@ -193,7 +193,41 @@ func (s *VocabularySuite) TestValidationErrors(c *check.C) {
 			"vocabulary is strict but no tags are defined",
 		},
 		{
-			"Duplicated tag keys",
+			"Collision between tag key and tag key label",
+			&Vocabulary{
+				StrictTags: false,
+				Tags: map[string]VocabularyTag{
+					"IDTAGANIMALS": {
+						Strict: false,
+						Labels: []VocabularyLabel{{Label: "Animal"}, {Label: "Creature"}},
+					},
+					"IDTAGCOMMENT": {
+						Strict: false,
+						Labels: []VocabularyLabel{{Label: "Comment"}, {Label: "IDTAGANIMALS"}},
+					},
+				},
+			},
+			"", // Depending on how the map is sorted, this could be one of two errors
+		},
+		{
+			"Collision between tag key and tag key label (case-insensitive)",
+			&Vocabulary{
+				StrictTags: false,
+				Tags: map[string]VocabularyTag{
+					"IDTAGANIMALS": {
+						Strict: false,
+						Labels: []VocabularyLabel{{Label: "Animal"}, {Label: "Creature"}},
+					},
+					"IDTAGCOMMENT": {
+						Strict: false,
+						Labels: []VocabularyLabel{{Label: "Comment"}, {Label: "IdTagAnimals"}},
+					},
+				},
+			},
+			"", // Depending on how the map is sorted, this could be one of two errors
+		},
+		{
+			"Collision between tag key labels",
 			&Vocabulary{
 				StrictTags: false,
 				Tags: map[string]VocabularyTag{
@@ -210,7 +244,49 @@ func (s *VocabularySuite) TestValidationErrors(c *check.C) {
 			"tag label.*for key.*already seen.*",
 		},
 		{
-			"Duplicated tag values",
+			"Collision between tag value and tag value label",
+			&Vocabulary{
+				StrictTags: false,
+				Tags: map[string]VocabularyTag{
+					"IDTAGANIMALS": {
+						Strict: false,
+						Labels: []VocabularyLabel{{Label: "Animal"}, {Label: "Creature"}},
+						Values: map[string]VocabularyTagValue{
+							"IDVALANIMAL1": {
+								Labels: []VocabularyLabel{{Label: "Human"}, {Label: "Mammal"}},
+							},
+							"IDVALANIMAL2": {
+								Labels: []VocabularyLabel{{Label: "Elephant"}, {Label: "IDVALANIMAL1"}},
+							},
+						},
+					},
+				},
+			},
+			"", // Depending on how the map is sorted, this could be one of two errors
+		},
+		{
+			"Collision between tag value and tag value label (case-insensitive)",
+			&Vocabulary{
+				StrictTags: false,
+				Tags: map[string]VocabularyTag{
+					"IDTAGANIMALS": {
+						Strict: false,
+						Labels: []VocabularyLabel{{Label: "Animal"}, {Label: "Creature"}},
+						Values: map[string]VocabularyTagValue{
+							"IDVALANIMAL1": {
+								Labels: []VocabularyLabel{{Label: "Human"}, {Label: "Mammal"}},
+							},
+							"IDVALANIMAL2": {
+								Labels: []VocabularyLabel{{Label: "Elephant"}, {Label: "IDValAnimal1"}},
+							},
+						},
+					},
+				},
+			},
+			"", // Depending on how the map is sorted, this could be one of two errors
+		},
+		{
+			"Collision between tag value labels",
 			&Vocabulary{
 				StrictTags: false,
 				Tags: map[string]VocabularyTag{
@@ -231,7 +307,7 @@ func (s *VocabularySuite) TestValidationErrors(c *check.C) {
 			"tag value label.*for pair.*already seen.*",
 		},
 		{
-			"Strict key, no values",
+			"Strict tag key, with no values",
 			&Vocabulary{
 				StrictTags: false,
 				Tags: map[string]VocabularyTag{
@@ -246,8 +322,10 @@ func (s *VocabularySuite) TestValidationErrors(c *check.C) {
 	}
 	for _, tt := range tests {
 		c.Log(c.TestName()+" ", tt.name)
-		err := tt.voc.Validate()
+		err := tt.voc.validate()
 		c.Assert(err, check.NotNil)
-		c.Assert(err, check.ErrorMatches, tt.errMatches)
+		if tt.errMatches != "" {
+			c.Assert(err, check.ErrorMatches, tt.errMatches)
+		}
 	}
 }

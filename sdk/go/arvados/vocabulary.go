@@ -46,6 +46,9 @@ type VocabularyTagValue struct {
 	Labels []VocabularyLabel `json:"labels"`
 }
 
+// NewVocabulary creates a new Vocabulary from a JSON definition and a list
+// of reserved tag keys that will get special treatment when strict mode is
+// enabled.
 func NewVocabulary(data []byte, managedTagKeys []string) (voc *Vocabulary, err error) {
 	if r := bytes.Compare(data, []byte("")); r == 0 {
 		return &Vocabulary{}, nil
@@ -64,55 +67,58 @@ func NewVocabulary(data []byte, managedTagKeys []string) (voc *Vocabulary, err e
 	for systemKey := range voc.systemTagKeys() {
 		voc.reservedTagKeys[systemKey] = true
 	}
-	err = voc.Validate()
+	err = voc.validate()
 	if err != nil {
 		return nil, err
 	}
 	return voc, nil
 }
 
-func (v *Vocabulary) Validate() error {
+func (v *Vocabulary) validate() error {
 	if v == nil {
 		return nil
 	}
-	tagKeys := map[string]bool{}
+	tagKeys := map[string]string{}
 	// Checks for Vocabulary strictness
 	if v.StrictTags && len(v.Tags) == 0 {
 		return fmt.Errorf("vocabulary is strict but no tags are defined")
 	}
-	// Checks for duplicate tag keys
+	// Checks for collisions between tag keys, reserved tag keys
+	// and tag key labels.
 	for key := range v.Tags {
 		if v.reservedTagKeys[key] {
 			return fmt.Errorf("tag key %q is reserved", key)
 		}
-		if tagKeys[key] {
+		lcKey := strings.ToLower(key)
+		if tagKeys[lcKey] != "" {
 			return fmt.Errorf("duplicate tag key %q", key)
 		}
-		tagKeys[key] = true
+		tagKeys[lcKey] = key
 		for _, lbl := range v.Tags[key].Labels {
 			label := strings.ToLower(lbl.Label)
-			if tagKeys[label] {
-				return fmt.Errorf("tag label %q for key %q already seen as a tag key or label", label, key)
+			if tagKeys[label] != "" {
+				return fmt.Errorf("tag label %q for key %q already seen as a tag key or label", lbl.Label, key)
 			}
-			tagKeys[label] = true
+			tagKeys[label] = lbl.Label
 		}
 		// Checks for value strictness
 		if v.Tags[key].Strict && len(v.Tags[key].Values) == 0 {
 			return fmt.Errorf("tag key %q is configured as strict but doesn't provide values", key)
 		}
-		// Checks for value duplication within a key
-		tagValues := map[string]bool{}
+		// Checks for collisions between tag values and tag value labels.
+		tagValues := map[string]string{}
 		for val := range v.Tags[key].Values {
-			if tagValues[val] {
+			lcVal := strings.ToLower(val)
+			if tagValues[lcVal] != "" {
 				return fmt.Errorf("duplicate tag value %q for tag %q", val, key)
 			}
-			tagValues[val] = true
+			tagValues[lcVal] = val
 			for _, tagLbl := range v.Tags[key].Values[val].Labels {
 				label := strings.ToLower(tagLbl.Label)
-				if tagValues[label] {
-					return fmt.Errorf("tag value label %q for pair (%q:%q) already seen as a value key or label", label, key, val)
+				if tagValues[label] != "" {
+					return fmt.Errorf("tag value label %q for pair (%q:%q) already seen as a value key or label", tagLbl.Label, key, val)
 				}
-				tagValues[label] = true
+				tagValues[label] = tagLbl.Label
 			}
 		}
 	}
