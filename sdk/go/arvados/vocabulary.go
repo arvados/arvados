@@ -146,6 +146,7 @@ func (v *Vocabulary) getLabelsToValues(key string) (labels map[string]string) {
 	labels = make(map[string]string)
 	if _, ok := v.Tags[key]; ok {
 		for val := range v.Tags[key].Values {
+			labels[strings.ToLower(val)] = val
 			for _, tagLbl := range v.Tags[key].Values[val].Labels {
 				label := strings.ToLower(tagLbl.Label)
 				labels[label] = val

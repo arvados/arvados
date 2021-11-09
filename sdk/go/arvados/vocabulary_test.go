@@ -66,22 +66,108 @@ func (s *VocabularySuite) TestCheck(c *check.C) {
 		strictVoc     bool
 		props         string
 		expectSuccess bool
+		errMatches    string
 	}{
 		// Check succeeds
-		{"Known key, known value", false, `{"IDTAGANIMALS":"IDVALANIMAL1"}`, true},
-		{"Unknown non-alias key on non-strict vocabulary", false, `{"foo":"bar"}`, true},
-		{"Known non-strict key, unknown non-alias value", false, `{"IDTAGANIMALS":"IDVALANIMAL3"}`, true},
-		{"Undefined but reserved key on strict vocabulary", true, `{"reservedKey":"bar"}`, true},
-		{"Known key, list of known values", false, `{"IDTAGANIMALS":["IDVALANIMAL1","IDVALANIMAL2"]}`, true},
-		{"Known non-strict key, list of unknown non-alias values", false, `{"IDTAGCOMMENT":["hello world","lorem ipsum"]}`, true},
+		{
+			"Known key, known value",
+			false,
+			`{"IDTAGANIMALS":"IDVALANIMAL1"}`,
+			true,
+			"",
+		},
+		{
+			"Unknown non-alias key on non-strict vocabulary",
+			false,
+			`{"foo":"bar"}`,
+			true,
+			"",
+		},
+		{
+			"Known non-strict key, unknown non-alias value",
+			false,
+			`{"IDTAGANIMALS":"IDVALANIMAL3"}`,
+			true,
+			"",
+		},
+		{
+			"Undefined but reserved key on strict vocabulary",
+			true,
+			`{"reservedKey":"bar"}`,
+			true,
+			"",
+		},
+		{
+			"Known key, list of known values",
+			false,
+			`{"IDTAGANIMALS":["IDVALANIMAL1","IDVALANIMAL2"]}`,
+			true,
+			"",
+		},
+		{
+			"Known non-strict key, list of unknown non-alias values",
+			false,
+			`{"IDTAGCOMMENT":["hello world","lorem ipsum"]}`,
+			true,
+			"",
+		},
 		// Check fails
-		{"Known first key & value; known 2nd key, unknown 2nd value", false, `{"IDTAGANIMALS":"IDVALANIMAL1", "IDTAGIMPORTANCE": "blah blah"}`, false},
-		{"Unknown non-alias key on strict vocabulary", true, `{"foo":"bar"}`, false},
-		{"Known non-strict key, known value alias", false, `{"IDTAGANIMALS":"Loxodonta"}`, false},
-		{"Known strict key, unknown non-alias value", false, `{"IDTAGIMPORTANCE":"Unimportant"}`, false},
-		{"Known strict key, known value alias", false, `{"IDTAGIMPORTANCE":"High"}`, false},
-		{"Known strict key, list of known alias values", false, `{"IDTAGIMPORTANCE":["Unimportant","High"]}`, false},
-		{"Known strict key, list of unknown non-alias values", false, `{"IDTAGIMPORTANCE":["foo","bar"]}`, false},
+		{
+			"Known first key & value; known 2nd key, unknown 2nd value",
+			false,
+			`{"IDTAGANIMALS":"IDVALANIMAL1", "IDTAGIMPORTANCE": "blah blah"}`,
+			false,
+			"tag value.*is not valid for key.*",
+		},
+		{
+			"Unknown non-alias key on strict vocabulary",
+			true,
+			`{"foo":"bar"}`,
+			false,
+			"tag key.*is not defined in the vocabulary",
+		},
+		{
+			"Known non-strict key, known value alias",
+			false,
+			`{"IDTAGANIMALS":"Loxodonta"}`,
+			false,
+			"tag value.*for key.* is an alias, must be provided as.*",
+		},
+		{
+			"Known strict key, unknown non-alias value",
+			false,
+			`{"IDTAGIMPORTANCE":"Unimportant"}`,
+			false,
+			"tag value.*is not valid for key.*",
+		},
+		{
+			"Known strict key, lowercase value regarded as alias",
+			false,
+			`{"IDTAGIMPORTANCE":"idval1"}`,
+			false,
+			"tag value.*for key.* is an alias, must be provided as.*",
+		},
+		{
+			"Known strict key, known value alias",
+			false,
+			`{"IDTAGIMPORTANCE":"High"}`,
+			false,
+			"tag value.* for key.*is an alias, must be provided as.*",
+		},
+		{
+			"Known strict key, list of known alias values",
+			false,
+			`{"IDTAGIMPORTANCE":["High", "Low"]}`,
+			false,
+			"tag value.*for key.*is an alias, must be provided as.*",
+		},
+		{
+			"Known strict key, list of unknown non-alias values",
+			false,
+			`{"IDTAGIMPORTANCE":["foo","bar"]}`,
+			false,
+			"tag value.*is not valid for key.*",
+		},
 	}
 	for _, tt := range tests {
 		c.Log(c.TestName()+" ", tt.name)
@@ -95,6 +181,7 @@ func (s *VocabularySuite) TestCheck(c *check.C) {
 			c.Assert(err, check.IsNil)
 		} else {
 			c.Assert(err, check.NotNil)
+			c.Assert(err.Error(), check.Matches, tt.errMatches)
 		}
 	}
 }
