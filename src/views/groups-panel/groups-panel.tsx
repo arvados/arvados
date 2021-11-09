@@ -127,4 +127,4 @@ const GroupMembersCount = connect(
         };
 
     }
-)(Typography);
+)((props: {children: number}) => (<Typography children={props.children} />));
