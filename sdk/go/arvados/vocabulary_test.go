@@ -75,6 +75,7 @@ func (s *VocabularySuite) TestCheck(c *check.C) {
 		{"Known key, list of known values", false, `{"IDTAGANIMALS":["IDVALANIMAL1","IDVALANIMAL2"]}`, true},
 		{"Known non-strict key, list of unknown non-alias values", false, `{"IDTAGCOMMENT":["hello world","lorem ipsum"]}`, true},
 		// Check fails
+		{"Known first key & value; known 2nd key, unknown 2nd value", false, `{"IDTAGANIMALS":"IDVALANIMAL1", "IDTAGIMPORTANCE": "blah blah"}`, false},
 		{"Unknown non-alias key on strict vocabulary", true, `{"foo":"bar"}`, false},
 		{"Known non-strict key, known value alias", false, `{"IDTAGANIMALS":"Loxodonta"}`, false},
 		{"Known strict key, unknown non-alias value", false, `{"IDTAGIMPORTANCE":"Unimportant"}`, false},

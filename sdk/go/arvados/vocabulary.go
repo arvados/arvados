@@ -188,7 +188,10 @@ func (v *Vocabulary) Check(data map[string]interface{}) error {
 		// Checks for value validity -- key is defined
 		switch val := val.(type) {
 		case string:
-			return v.checkValue(key, val)
+			err := v.checkValue(key, val)
+			if err != nil {
+				return err
+			}
 		case []interface{}:
 			for _, singleVal := range val {
 				switch singleVal := singleVal.(type) {
