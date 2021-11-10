@@ -961,3 +961,63 @@ func (s *IntegrationSuite) TestOIDCAccessTokenAuth(c *check.C) {
 		}
 	}
 }
+
+// z3333 should not forward a locally-issued container runtime token,
+// associated with a z1111 user, to its login cluster z1111. z1111
+// would only call back to z3333 and then reject the response because
+// the user ID does not match the token prefix. See
+// dev.arvados.org/issues/18346
+func (s *IntegrationSuite) TestForwardRuntimeTokenToLoginCluster(c *check.C) {
+	db3, db3conn := s.dbConn(c, "z3333")
+	defer db3.Close()
+	defer db3conn.Close()
+	rootctx1, _, _ := s.testClusters["z1111"].RootClients()
+	rootctx3, _, _ := s.testClusters["z3333"].RootClients()
+	conn1 := s.testClusters["z1111"].Conn()
+	conn3 := s.testClusters["z3333"].Conn()
+	userctx1, _, _, _ := s.testClusters["z1111"].UserClients(rootctx1, c, conn1, "user@example.com", true)
+
+	user1, err := conn1.UserGetCurrent(userctx1, arvados.GetOptions{})
+	c.Assert(err, check.IsNil)
+	c.Logf("user1 %+v", user1)
+
+	imageColl, err := conn3.CollectionCreate(userctx1, arvados.CreateOptions{Attrs: map[string]interface{}{
+		"manifest_text": ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.tar\n",
+	}})
+	c.Assert(err, check.IsNil)
+	c.Logf("imageColl %+v", imageColl)
+
+	cr, err := conn3.ContainerRequestCreate(userctx1, arvados.CreateOptions{Attrs: map[string]interface{}{
+		"state":           "Committed",
+		"command":         []string{"echo"},
+		"container_image": imageColl.PortableDataHash,
+		"cwd":             "/",
+		"output_path":     "/",
+		"priority":        1,
+		"runtime_constraints": arvados.RuntimeConstraints{
+			VCPUs: 1,
+			RAM:   1000000000,
+		},
+	}})
+	c.Assert(err, check.IsNil)
+	c.Logf("container request %+v", cr)
+	ctr, err := conn3.ContainerLock(rootctx3, arvados.GetOptions{UUID: cr.ContainerUUID})
+	c.Assert(err, check.IsNil)
+	c.Logf("container %+v", ctr)
+
+	// We could use conn3.ContainerAuth() here, but that API
+	// hasn't been added to sdk/go/arvados/api.go yet.
+	row := db3conn.QueryRowContext(context.Background(), `SELECT api_token from api_client_authorizations where uuid=$1`, ctr.AuthUUID)
+	c.Check(row, check.NotNil)
+	var val sql.NullString
+	row.Scan(&val)
+	c.Assert(val.Valid, check.Equals, true)
+	runtimeToken := "v2/" + ctr.AuthUUID + "/" + val.String
+	ctrctx, _, _ := s.testClusters["z3333"].ClientsWithToken(runtimeToken)
+	c.Logf("container runtime token %+v", runtimeToken)
+
+	_, err = conn3.UserGet(ctrctx, arvados.GetOptions{UUID: user1.UUID})
+	c.Assert(err, check.NotNil)
+	c.Check(err, check.ErrorMatches, `request failed: .* 401 Unauthorized: cannot use a locally issued token to forward a request to our login cluster \(z1111\)`)
+	c.Check(err, check.Not(check.ErrorMatches), `(?ms).*127\.0\.0\.11.*`)
+}
