@@ -21,7 +21,6 @@ import { RootState } from 'store/store';
 import { openContextMenu } from 'store/context-menu/context-menu-actions';
 import { ResourceKind } from 'models/resource';
 import { LinkClass, LinkResource } from 'models/link';
-import { navigateToGroupDetails } from 'store/navigation/navigation-action';
 
 export enum GroupsPanelColumnNames {
     GROUP = "Name",
