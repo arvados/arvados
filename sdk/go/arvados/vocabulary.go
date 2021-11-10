@@ -112,13 +112,14 @@ func (v *Vocabulary) validate() error {
 			if tagValues[lcVal] != "" {
 				return fmt.Errorf("duplicate tag value %q for tag %q", val, key)
 			}
+			// Checks for collisions between labels from different values.
 			tagValues[lcVal] = val
 			for _, tagLbl := range v.Tags[key].Values[val].Labels {
 				label := strings.ToLower(tagLbl.Label)
-				if tagValues[label] != "" {
-					return fmt.Errorf("tag value label %q for pair (%q:%q) already seen as a value key or label", tagLbl.Label, key, val)
+				if tagValues[label] != "" && tagValues[label] != val {
+					return fmt.Errorf("tag value label %q for pair (%q:%q) already seen on value %q", tagLbl.Label, key, val, tagValues[label])
 				}
-				tagValues[label] = tagLbl.Label
+				tagValues[label] = val
 			}
 		}
 	}

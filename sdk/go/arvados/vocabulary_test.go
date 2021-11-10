@@ -220,7 +220,8 @@ func (s *VocabularySuite) TestNewVocabulary(c *check.C) {
 					"labels": [{"label": "Animal"}, {"label": "Creature"}],
 					"values": {
 						"IDVALANIMAL1":{"labels":[{"label":"Human"}, {"label":"Homo sapiens"}]},
-						"IDVALANIMAL2":{"labels":[{"label":"Elephant"}, {"label":"Loxodonta"}]}
+						"IDVALANIMAL2":{"labels":[{"label":"Elephant"}, {"label":"Loxodonta"}]},
+						"DOG":{"labels":[{"label":"Dog"}, {"label":"Canis lupus familiaris"}, {"label":"dOg"}]}
 					}
 				}
 			}}`,
@@ -247,6 +248,9 @@ func (s *VocabularySuite) TestNewVocabulary(c *check.C) {
 							},
 							"IDVALANIMAL2": {
 								Labels: []VocabularyLabel{{Label: "Elephant"}, {Label: "Loxodonta"}},
+							},
+							"DOG": {
+								Labels: []VocabularyLabel{{Label: "Dog"}, {Label: "Canis lupus familiaris"}, {Label: "dOg"}},
 							},
 						},
 					},
@@ -405,7 +409,28 @@ func (s *VocabularySuite) TestValidationErrors(c *check.C) {
 					},
 				},
 			},
-			"tag value label.*for pair.*already seen.*",
+			"tag value label.*for pair.*already seen.*on value.*",
+		},
+		{
+			"Collision between tag value labels (case-insensitive)",
+			&Vocabulary{
+				StrictTags: false,
+				Tags: map[string]VocabularyTag{
+					"IDTAGANIMALS": {
+						Strict: false,
+						Labels: []VocabularyLabel{{Label: "Animal"}, {Label: "Creature"}},
+						Values: map[string]VocabularyTagValue{
+							"IDVALANIMAL1": {
+								Labels: []VocabularyLabel{{Label: "Human"}, {Label: "Mammal"}},
+							},
+							"IDVALANIMAL2": {
+								Labels: []VocabularyLabel{{Label: "Elephant"}, {Label: "mAMMAL"}},
+							},
+						},
+					},
+				},
+			},
+			"tag value label.*for pair.*already seen.*on value.*",
 		},
 		{
 			"Strict tag key, with no values",
