@@ -62,10 +62,9 @@ func runCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.W
 	if err == flag.ErrHelp {
 		return 0
 	} else if err != nil {
-		logger.Errorf("error parsing command line flags: %s", err)
 		return 2
 	} else if flags.NArg() != 0 {
-		logger.Errorf("unrecognized command line arguments: %v", flags.Args())
+		fmt.Fprintf(stderr, "unrecognized command line arguments: %v", flags.Args())
 		return 2
 	}
 
