@@ -40,6 +40,8 @@ The following is an example of a vocabulary definition:
 {% include 'metadata_vocabulary_example' %}
 {% endcodeblock %}
 
+For clients to be able to query the vocabulary definition, a special endpoint is exposed on the @controller@ service: @/arvados/v1/vocabulary@. This endpoint doesn't require authentication and returns the vocabulary definition in JSON format.
+
 If the @strict_tags@ flag at the root level is @true@, it will restrict the users from saving property keys other than the ones defined in the vocabulary. This restriction is enforced at the backend level to ensure consistency across different clients.
 
 Inside the @tags@ member, IDs are defined (@IDTAGANIMALS@, @IDTAGCOMMENT@, @IDTAGIMPORTANCES@) and can have any format that the current application requires. Every key will declare at least a @labels@ list with zero or more label objects.
