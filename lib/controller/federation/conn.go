@@ -37,7 +37,7 @@ func New(cluster *arvados.Cluster) *Conn {
 		if !remote.Proxy || id == cluster.ClusterID {
 			continue
 		}
-		conn := rpc.NewConn(id, &url.URL{Scheme: remote.Scheme, Host: remote.Host}, remote.Insecure, saltedTokenProvider(local, id))
+		conn := rpc.NewConn(id, &url.URL{Scheme: remote.Scheme, Host: remote.Host}, remote.Insecure, saltedTokenProvider(cluster, local, id))
 		// Older versions of controller rely on the Via header
 		// to detect loops.
 		conn.SendHeader = http.Header{"Via": {"HTTP/1.1 arvados-controller"}}
@@ -55,7 +55,7 @@ func New(cluster *arvados.Cluster) *Conn {
 // tokens from an incoming request context, determines whether they
 // should (and can) be salted for the given remoteID, and returns the
 // resulting tokens.
-func saltedTokenProvider(local backend, remoteID string) rpc.TokenProvider {
+func saltedTokenProvider(cluster *arvados.Cluster, local backend, remoteID string) rpc.TokenProvider {
 	return func(ctx context.Context) ([]string, error) {
 		var tokens []string
 		incoming, ok := auth.FromContext(ctx)
@@ -63,6 +63,16 @@ func saltedTokenProvider(local backend, remoteID string) rpc.TokenProvider {
 			return nil, errors.New("no token provided")
 		}
 		for _, token := range incoming.Tokens {
+			if strings.HasPrefix(token, "v2/"+cluster.ClusterID+"-") && remoteID == cluster.Login.LoginCluster {
+				// If we did this, the login cluster
+				// would call back to us and then
+				// reject our response because the
+				// user UUID prefix (i.e., the
+				// LoginCluster prefix) won't match
+				// the token UUID prefix (i.e., our
+				// prefix).
+				return nil, httpErrorf(http.StatusUnauthorized, "cannot use a locally issued token to forward a request to our login cluster (%s)", remoteID)
+			}
 			salted, err := auth.SaltToken(token, remoteID)
 			switch err {
 			case nil:
