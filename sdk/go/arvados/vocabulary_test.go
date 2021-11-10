@@ -168,6 +168,20 @@ func (s *VocabularySuite) TestCheck(c *check.C) {
 			false,
 			"tag value.*is not valid for key.*",
 		},
+		{
+			"Invalid value type",
+			false,
+			`{"IDTAGANIMALS":1}`,
+			false,
+			"value type for tag key.* was.*, but expected a string or list of strings",
+		},
+		{
+			"Value list of invalid type",
+			false,
+			`{"IDTAGANIMALS":[1]}`,
+			false,
+			"value list element type for tag key.* was.*, but expected a string",
+		},
 	}
 	for _, tt := range tests {
 		c.Log(c.TestName()+" ", tt.name)
