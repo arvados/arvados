@@ -93,5 +93,5 @@ func (s *FederationSuite) addHTTPRemote(c *check.C, id string, backend backend) 
 		Host:   srv.Addr,
 		Proxy:  true,
 	}
-	s.fed.remotes[id] = rpc.NewConn(id, &url.URL{Scheme: "http", Host: srv.Addr}, true, saltedTokenProvider(s.fed.local, id))
+	s.fed.remotes[id] = rpc.NewConn(id, &url.URL{Scheme: "http", Host: srv.Addr}, true, saltedTokenProvider(s.cluster, s.fed.local, id))
 }
