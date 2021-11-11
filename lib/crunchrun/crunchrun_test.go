@@ -1125,8 +1125,8 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		bindmounts, err := cr.SetupMounts()
 		c.Check(err, IsNil)
 		c.Check(am.Cmd, DeepEquals, []string{"arv-mount", "--foreground",
-			"--read-write", "--disable-event-listening", "--storage-classes", "default", "--crunchstat-interval=5",
-			"--mount-by-pdh", "by_id", "--mount-by-id", "by_uuid", realTemp + "/keep1"})
+			"--read-write", "--storage-classes", "default", "--crunchstat-interval=5",
+			"--mount-by-pdh", "by_id", "--disable-event-listening", "--mount-by-id", "by_uuid", realTemp + "/keep1"})
 		c.Check(bindmounts, DeepEquals, map[string]bindmount{"/tmp": {realTemp + "/tmp2", false}})
 		os.RemoveAll(cr.ArvMountPoint)
 		cr.CleanupDirs()
@@ -1145,8 +1145,8 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		bindmounts, err := cr.SetupMounts()
 		c.Check(err, IsNil)
 		c.Check(am.Cmd, DeepEquals, []string{"arv-mount", "--foreground",
-			"--read-write", "--disable-event-listening", "--storage-classes", "foo,bar", "--crunchstat-interval=5",
-			"--mount-by-pdh", "by_id", "--mount-by-id", "by_uuid", realTemp + "/keep1"})
+			"--read-write", "--storage-classes", "foo,bar", "--crunchstat-interval=5",
+			"--mount-by-pdh", "by_id", "--disable-event-listening", "--mount-by-id", "by_uuid", realTemp + "/keep1"})
 		c.Check(bindmounts, DeepEquals, map[string]bindmount{"/out": {realTemp + "/tmp2", false}, "/tmp": {realTemp + "/tmp3", false}})
 		os.RemoveAll(cr.ArvMountPoint)
 		cr.CleanupDirs()
@@ -1165,8 +1165,8 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		bindmounts, err := cr.SetupMounts()
 		c.Check(err, IsNil)
 		c.Check(am.Cmd, DeepEquals, []string{"arv-mount", "--foreground",
-			"--read-write", "--disable-event-listening", "--storage-classes", "default", "--crunchstat-interval=5",
-			"--mount-by-pdh", "by_id", "--mount-by-id", "by_uuid", realTemp + "/keep1"})
+			"--read-write", "--storage-classes", "default", "--crunchstat-interval=5",
+			"--mount-by-pdh", "by_id", "--disable-event-listening", "--mount-by-id", "by_uuid", realTemp + "/keep1"})
 		c.Check(bindmounts, DeepEquals, map[string]bindmount{"/tmp": {realTemp + "/tmp2", false}, "/etc/arvados/ca-certificates.crt": {stubCertPath, true}})
 		os.RemoveAll(cr.ArvMountPoint)
 		cr.CleanupDirs()
@@ -1188,8 +1188,8 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		bindmounts, err := cr.SetupMounts()
 		c.Check(err, IsNil)
 		c.Check(am.Cmd, DeepEquals, []string{"arv-mount", "--foreground",
-			"--read-write", "--disable-event-listening", "--storage-classes", "default", "--crunchstat-interval=5",
-			"--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", "--mount-by-id", "by_uuid", realTemp + "/keep1"})
+			"--read-write", "--storage-classes", "default", "--crunchstat-interval=5",
+			"--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", "--disable-event-listening", "--mount-by-id", "by_uuid", realTemp + "/keep1"})
 		c.Check(bindmounts, DeepEquals, map[string]bindmount{"/keeptmp": {realTemp + "/keep1/tmp0", false}})
 		os.RemoveAll(cr.ArvMountPoint)
 		cr.CleanupDirs()
@@ -1211,8 +1211,8 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		bindmounts, err := cr.SetupMounts()
 		c.Check(err, IsNil)
 		c.Check(am.Cmd, DeepEquals, []string{"arv-mount", "--foreground",
-			"--read-write", "--disable-event-listening", "--storage-classes", "default", "--crunchstat-interval=5",
-			"--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", "--mount-by-id", "by_uuid", realTemp + "/keep1"})
+			"--read-write", "--storage-classes", "default", "--crunchstat-interval=5",
+			"--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", "--disable-event-listening", "--mount-by-id", "by_uuid", realTemp + "/keep1"})
 		c.Check(bindmounts, DeepEquals, map[string]bindmount{
 			"/keepinp": {realTemp + "/keep1/by_id/59389a8f9ee9d399be35462a0f92541c+53", true},
 			"/keepout": {realTemp + "/keep1/tmp0", false},
@@ -1238,8 +1238,8 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		bindmounts, err := cr.SetupMounts()
 		c.Check(err, IsNil)
 		c.Check(am.Cmd, DeepEquals, []string{"arv-mount", "--foreground",
-			"--read-write", "--disable-event-listening", "--storage-classes", "default", "--crunchstat-interval=5",
-			"--file-cache", "512", "--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", "--mount-by-id", "by_uuid", realTemp + "/keep1"})
+			"--read-write", "--storage-classes", "default", "--crunchstat-interval=5",
+			"--file-cache", "512", "--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", "--disable-event-listening", "--mount-by-id", "by_uuid", realTemp + "/keep1"})
 		c.Check(bindmounts, DeepEquals, map[string]bindmount{
 			"/keepinp": {realTemp + "/keep1/by_id/59389a8f9ee9d399be35462a0f92541c+53", true},
 			"/keepout": {realTemp + "/keep1/tmp0", false},
@@ -1321,8 +1321,8 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		bindmounts, err := cr.SetupMounts()
 		c.Check(err, IsNil)
 		c.Check(am.Cmd, DeepEquals, []string{"arv-mount", "--foreground",
-			"--read-write", "--disable-event-listening", "--storage-classes", "default", "--crunchstat-interval=5",
-			"--file-cache", "512", "--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", "--mount-by-id", "by_uuid", realTemp + "/keep1"})
+			"--read-write", "--storage-classes", "default", "--crunchstat-interval=5",
+			"--file-cache", "512", "--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", "--disable-event-listening", "--mount-by-id", "by_uuid", realTemp + "/keep1"})
 		c.Check(bindmounts, DeepEquals, map[string]bindmount{
 			"/tmp":     {realTemp + "/tmp2", false},
 			"/tmp/foo": {realTemp + "/keep1/tmp0", true},

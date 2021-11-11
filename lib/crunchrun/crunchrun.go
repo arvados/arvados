@@ -415,7 +415,6 @@ func (runner *ContainerRunner) SetupMounts() (map[string]bindmount, error) {
 		"arv-mount",
 		"--foreground",
 		"--read-write",
-		"--disable-event-listening",
 		"--storage-classes", strings.Join(runner.Container.OutputStorageClasses, ","),
 		fmt.Sprintf("--crunchstat-interval=%v", runner.statInterval.Seconds())}
 
@@ -618,10 +617,15 @@ func (runner *ContainerRunner) SetupMounts() (map[string]bindmount, error) {
 	}
 
 	if pdhOnly {
-		arvMountCmd = append(arvMountCmd, "--mount-by-pdh", "by_id")
+		// If we are only mounting collections by pdh, make
+		// sure we don't subscribe to websocket events to
+		// avoid putting undesired load on the API server
+		arvMountCmd = append(arvMountCmd, "--mount-by-pdh", "by_id", "--disable-event-listening")
 	} else {
 		arvMountCmd = append(arvMountCmd, "--mount-by-id", "by_id")
 	}
+	// the by_uuid mount point is used by singularity when writing
+	// out docker images converted to SIF
 	arvMountCmd = append(arvMountCmd, "--mount-by-id", "by_uuid")
 	arvMountCmd = append(arvMountCmd, runner.ArvMountPoint)
 
