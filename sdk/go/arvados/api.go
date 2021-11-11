@@ -23,6 +23,7 @@ type APIEndpoint struct {
 
 var (
 	EndpointConfigGet                     = APIEndpoint{"GET", "arvados/v1/config", ""}
+	EndpointVocabularyGet                 = APIEndpoint{"GET", "arvados/v1/vocabulary", ""}
 	EndpointLogin                         = APIEndpoint{"GET", "login", ""}
 	EndpointLogout                        = APIEndpoint{"GET", "logout", ""}
 	EndpointCollectionCreate              = APIEndpoint{"POST", "arvados/v1/collections", "collection"}
@@ -62,6 +63,11 @@ var (
 	EndpointGroupDelete                   = APIEndpoint{"DELETE", "arvados/v1/groups/{uuid}", ""}
 	EndpointGroupTrash                    = APIEndpoint{"POST", "arvados/v1/groups/{uuid}/trash", ""}
 	EndpointGroupUntrash                  = APIEndpoint{"POST", "arvados/v1/groups/{uuid}/untrash", ""}
+	EndpointLinkCreate                    = APIEndpoint{"POST", "arvados/v1/links", "link"}
+	EndpointLinkUpdate                    = APIEndpoint{"PATCH", "arvados/v1/links/{uuid}", "link"}
+	EndpointLinkGet                       = APIEndpoint{"GET", "arvados/v1/links/{uuid}", ""}
+	EndpointLinkList                      = APIEndpoint{"GET", "arvados/v1/links", ""}
+	EndpointLinkDelete                    = APIEndpoint{"DELETE", "arvados/v1/links/{uuid}", ""}
 	EndpointUserActivate                  = APIEndpoint{"POST", "arvados/v1/users/{uuid}/activate", ""}
 	EndpointUserCreate                    = APIEndpoint{"POST", "arvados/v1/users", "user"}
 	EndpointUserCurrent                   = APIEndpoint{"GET", "arvados/v1/users/current", ""}
@@ -219,6 +225,7 @@ type BlockWriteResponse struct {
 
 type API interface {
 	ConfigGet(ctx context.Context) (json.RawMessage, error)
+	VocabularyGet(ctx context.Context) (Vocabulary, error)
 	Login(ctx context.Context, options LoginOptions) (LoginResponse, error)
 	Logout(ctx context.Context, options LogoutOptions) (LogoutResponse, error)
 	CollectionCreate(ctx context.Context, options CreateOptions) (Collection, error)
@@ -252,6 +259,11 @@ type API interface {
 	GroupDelete(ctx context.Context, options DeleteOptions) (Group, error)
 	GroupTrash(ctx context.Context, options DeleteOptions) (Group, error)
 	GroupUntrash(ctx context.Context, options UntrashOptions) (Group, error)
+	LinkCreate(ctx context.Context, options CreateOptions) (Link, error)
+	LinkUpdate(ctx context.Context, options UpdateOptions) (Link, error)
+	LinkGet(ctx context.Context, options GetOptions) (Link, error)
+	LinkList(ctx context.Context, options ListOptions) (LinkList, error)
+	LinkDelete(ctx context.Context, options DeleteOptions) (Link, error)
 	SpecimenCreate(ctx context.Context, options CreateOptions) (Specimen, error)
 	SpecimenUpdate(ctx context.Context, options UpdateOptions) (Specimen, error)
 	SpecimenGet(ctx context.Context, options GetOptions) (Specimen, error)

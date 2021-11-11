@@ -48,6 +48,93 @@ func (s *CollectionSuite) TearDownTest(c *check.C) {
 	s.railsSpy.Close()
 }
 
+func (s *CollectionSuite) setUpVocabulary(c *check.C, testVocabulary string) {
+	if testVocabulary == "" {
+		testVocabulary = `{
+			"strict_tags": false,
+			"tags": {
+				"IDTAGIMPORTANCES": {
+					"strict": true,
+					"labels": [{"label": "Importance"}, {"label": "Priority"}],
+					"values": {
+						"IDVALIMPORTANCES1": { "labels": [{"label": "Critical"}, {"label": "Urgent"}, {"label": "High"}] },
+						"IDVALIMPORTANCES2": { "labels": [{"label": "Normal"}, {"label": "Moderate"}] },
+						"IDVALIMPORTANCES3": { "labels": [{"label": "Low"}] }
+					}
+				}
+			}
+		}`
+	}
+	voc, err := arvados.NewVocabulary([]byte(testVocabulary), []string{})
+	c.Assert(err, check.IsNil)
+	s.cluster.API.VocabularyPath = "foo"
+	s.localdb.vocabularyCache = voc
+}
+
+func (s *CollectionSuite) TestCollectionCreateWithProperties(c *check.C) {
+	s.setUpVocabulary(c, "")
+	ctx := auth.NewContext(context.Background(), &auth.Credentials{Tokens: []string{arvadostest.ActiveTokenV2}})
+
+	tests := []struct {
+		name    string
+		props   map[string]interface{}
+		success bool
+	}{
+		{"Invalid prop key", map[string]interface{}{"Priority": "IDVALIMPORTANCES1"}, false},
+		{"Invalid prop value", map[string]interface{}{"IDTAGIMPORTANCES": "high"}, false},
+		{"Valid prop key & value", map[string]interface{}{"IDTAGIMPORTANCES": "IDVALIMPORTANCES1"}, true},
+		{"Empty properties", map[string]interface{}{}, true},
+	}
+	for _, tt := range tests {
+		c.Log(c.TestName()+" ", tt.name)
+
+		coll, err := s.localdb.CollectionCreate(ctx, arvados.CreateOptions{
+			Select: []string{"uuid", "properties"},
+			Attrs: map[string]interface{}{
+				"properties": tt.props,
+			}})
+		if tt.success {
+			c.Assert(err, check.IsNil)
+			c.Assert(coll.Properties, check.DeepEquals, tt.props)
+		} else {
+			c.Assert(err, check.NotNil)
+		}
+	}
+}
+
+func (s *CollectionSuite) TestCollectionUpdateWithProperties(c *check.C) {
+	s.setUpVocabulary(c, "")
+	ctx := auth.NewContext(context.Background(), &auth.Credentials{Tokens: []string{arvadostest.ActiveTokenV2}})
+
+	tests := []struct {
+		name    string
+		props   map[string]interface{}
+		success bool
+	}{
+		{"Invalid prop key", map[string]interface{}{"Priority": "IDVALIMPORTANCES1"}, false},
+		{"Invalid prop value", map[string]interface{}{"IDTAGIMPORTANCES": "high"}, false},
+		{"Valid prop key & value", map[string]interface{}{"IDTAGIMPORTANCES": "IDVALIMPORTANCES1"}, true},
+		{"Empty properties", map[string]interface{}{}, true},
+	}
+	for _, tt := range tests {
+		c.Log(c.TestName()+" ", tt.name)
+		coll, err := s.localdb.CollectionCreate(ctx, arvados.CreateOptions{})
+		c.Assert(err, check.IsNil)
+		coll, err = s.localdb.CollectionUpdate(ctx, arvados.UpdateOptions{
+			UUID:   coll.UUID,
+			Select: []string{"uuid", "properties"},
+			Attrs: map[string]interface{}{
+				"properties": tt.props,
+			}})
+		if tt.success {
+			c.Assert(err, check.IsNil)
+			c.Assert(coll.Properties, check.DeepEquals, tt.props)
+		} else {
+			c.Assert(err, check.NotNil)
+		}
+	}
+}
+
 func (s *CollectionSuite) TestSignatures(c *check.C) {
 	ctx := auth.NewContext(context.Background(), &auth.Credentials{Tokens: []string{arvadostest.ActiveTokenV2}})
 

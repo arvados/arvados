@@ -1,7 +1,7 @@
 ---
 layout: default
 navsection: admin
-title: User properties vocabulary
+title: Metadata vocabulary
 ...
 
 {% comment %}
@@ -12,17 +12,19 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 Many Arvados objects (like collections and projects) can store metadata as properties that in turn can be used in searches allowing a flexible way of organizing data inside the system.
 
-The Workbench2 user interface enables the site adminitrator to set up a properties vocabulary formal definition so that users can select from predefined key/value pairs of properties, offering the possibility to add different terms for the same concept.
+Arvados enables the site administrator to set up a formal metadata vocabulary definition so that users can select from predefined key/value pairs of properties, offering the possibility to add different terms for the same concept on clients' UI such as workbench2.
 
-h2. Workbench2 configuration
+The Controller service loads and caches the configured vocabulary file in memory at startup time, exporting it on a particular endpoint. From time to time, it'll check for updates in the local copy and refresh its cache if validation passes.
 
-Workbench2 retrieves the vocabulary file URL from the cluster config as shown:
+h2. Configuration
+
+The site administrator should place the JSON vocabulary file on the same host as the controller service and set up the config file as follows:
 
 <notextile>
 <pre><code>Cluster:
   zzzzz:
-    Workbench:
-      VocabularyURL: <span class="userinput">https://site.example.com/vocabulary.json</span>
+    API:
+      VocabularyPath: <span class="userinput">/etc/arvados/vocabulary.json</span>
 </code></pre>
 </notextile>
 
@@ -35,10 +37,12 @@ Keys and values are indexed by identifiers so that the concept of a term is pres
 The following is an example of a vocabulary definition:
 
 {% codeblock as json %}
-{% include 'wb2_vocabulary_example' %}
+{% include 'metadata_vocabulary_example' %}
 {% endcodeblock %}
 
-If the @strict_tags@ flag at the root level is @true@, it will restrict the users from saving property keys other than the ones defined in the vocabulary. Take notice that this restriction is at the client level on Workbench2, it doesn't limit the user's ability to set any arbitrary property via other means (e.g. Python SDK or CLI commands)
+For clients to be able to query the vocabulary definition, a special endpoint is exposed on the @controller@ service: @/arvados/v1/vocabulary@. This endpoint doesn't require authentication and returns the vocabulary definition in JSON format.
+
+If the @strict_tags@ flag at the root level is @true@, it will restrict the users from saving property keys other than the ones defined in the vocabulary. This restriction is enforced at the backend level to ensure consistency across different clients.
 
 Inside the @tags@ member, IDs are defined (@IDTAGANIMALS@, @IDTAGCOMMENT@, @IDTAGIMPORTANCES@) and can have any format that the current application requires. Every key will declare at least a @labels@ list with zero or more label objects.
 

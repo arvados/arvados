@@ -194,7 +194,7 @@ navbar:
       - admin/keep-balance.html.textile.liquid
       - admin/controlling-container-reuse.html.textile.liquid
       - admin/logs-table-management.html.textile.liquid
-      - admin/workbench2-vocabulary.html.textile.liquid
+      - admin/metadata-vocabulary.html.textile.liquid
       - admin/storage-classes.html.textile.liquid
       - admin/keep-recovering-data.html.textile.liquid
       - admin/keep-measuring-deduplication.html.textile.liquid
