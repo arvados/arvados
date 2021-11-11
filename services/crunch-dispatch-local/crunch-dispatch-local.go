@@ -72,6 +72,10 @@ func main() {
 
 	loader := config.NewLoader(nil, logger)
 	cfg, err := loader.Load()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error loading config: %s\n", err)
+		os.Exit(1)
+	}
 	cluster, err := cfg.GetCluster("")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "config error: %s\n", err)
