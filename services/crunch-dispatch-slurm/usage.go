@@ -7,18 +7,17 @@ package main
 import (
 	"flag"
 	"fmt"
-	"os"
 )
 
 func usage(fs *flag.FlagSet) {
-	fmt.Fprintf(os.Stderr, `
+	fmt.Fprintf(fs.Output(), `
 crunch-dispatch-slurm runs queued Arvados containers by submitting
 SLURM batch jobs.
 
 Options:
 `)
 	fs.PrintDefaults()
-	fmt.Fprintf(os.Stderr, `
+	fmt.Fprintf(fs.Output(), `
 
 For configuration instructions see https://doc.arvados.org/install/crunch2-slurm/install-dispatch.html
 `)

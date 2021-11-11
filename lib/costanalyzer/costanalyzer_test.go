@@ -152,7 +152,7 @@ func createNodeJSON(c *check.C, arv *arvadosclient.ArvadosClient, ac *arvados.Cl
 func (*Suite) TestUsage(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	exitcode := Command.RunCommand("costanalyzer.test", []string{"-help", "-log-level=debug"}, &bytes.Buffer{}, &stdout, &stderr)
-	c.Check(exitcode, check.Equals, 1)
+	c.Check(exitcode, check.Equals, 0)
 	c.Check(stdout.String(), check.Equals, "")
 	c.Check(stderr.String(), check.Matches, `(?ms).*Usage:.*`)
 }
@@ -205,19 +205,23 @@ func (*Suite) TestContainerRequestUUID(c *check.C) {
 
 func (*Suite) TestCollectionUUID(c *check.C) {
 	var stdout, stderr bytes.Buffer
-
 	resultsDir := c.MkDir()
-	// Run costanalyzer with 1 collection uuid, without 'container_request' property
-	exitcode := Command.RunCommand("costanalyzer.test", []string{"-output", resultsDir, arvadostest.FooCollection}, &bytes.Buffer{}, &stdout, &stderr)
+
+	// Create a collection with no container_request property
+	ac := arvados.NewClientFromEnv()
+	var coll arvados.Collection
+	err := ac.RequestAndDecode(&coll, "POST", "arvados/v1/collections", nil, nil)
+	c.Assert(err, check.IsNil)
+
+	exitcode := Command.RunCommand("costanalyzer.test", []string{"-output", resultsDir, coll.UUID}, &bytes.Buffer{}, &stdout, &stderr)
 	c.Check(exitcode, check.Equals, 2)
 	c.Assert(stderr.String(), check.Matches, "(?ms).*does not have a 'container_request' property.*")
 
-	// Update the collection, attach a 'container_request' property
-	ac := arvados.NewClientFromEnv()
-	var coll arvados.Collection
+	stdout.Truncate(0)
+	stderr.Truncate(0)
 
-	// Update collection record
-	err := ac.RequestAndDecode(&coll, "PUT", "arvados/v1/collections/"+arvadostest.FooCollection, nil, map[string]interface{}{
+	// Add a container_request property
+	err = ac.RequestAndDecode(&coll, "PATCH", "arvados/v1/collections/"+coll.UUID, nil, map[string]interface{}{
 		"collection": map[string]interface{}{
 			"properties": map[string]interface{}{
 				"container_request": arvadostest.CompletedContainerRequestUUID,
@@ -226,12 +230,9 @@ func (*Suite) TestCollectionUUID(c *check.C) {
 	})
 	c.Assert(err, check.IsNil)
 
-	stdout.Truncate(0)
-	stderr.Truncate(0)
-
-	// Run costanalyzer with 1 collection uuid
+	// Re-run costanalyzer on the updated collection
 	resultsDir = c.MkDir()
-	exitcode = Command.RunCommand("costanalyzer.test", []string{"-output", resultsDir, arvadostest.FooCollection}, &bytes.Buffer{}, &stdout, &stderr)
+	exitcode = Command.RunCommand("costanalyzer.test", []string{"-output", resultsDir, coll.UUID}, &bytes.Buffer{}, &stdout, &stderr)
 	c.Check(exitcode, check.Equals, 0)
 	c.Assert(stderr.String(), check.Matches, "(?ms).*supplied uuids in .*")
 

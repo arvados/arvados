@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 
+	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"github.com/ghodss/yaml"
 	"github.com/sirupsen/logrus"
@@ -35,20 +36,11 @@ func (dumpCommand) RunCommand(prog string, args []string, stdin io.Reader, stdou
 	}
 
 	flags := flag.NewFlagSet("", flag.ContinueOnError)
-	flags.SetOutput(stderr)
 	loader.SetupFlags(flags)
 
-	err = flags.Parse(args)
-	if err == flag.ErrHelp {
-		err = nil
-		return 0
-	} else if err != nil {
-		return 2
-	} else if flags.NArg() != 0 {
-		err = fmt.Errorf("unrecognized command line arguments: %v", flags.Args())
-		return 2
+	if ok, code := cmd.ParseFlags(flags, prog, args, "", stderr); !ok {
+		return code
 	}
-
 	cfg, err := loader.Load()
 	if err != nil {
 		return 1
@@ -85,20 +77,11 @@ func (checkCommand) RunCommand(prog string, args []string, stdin io.Reader, stdo
 		Logger: logger,
 	}
 
-	flags := flag.NewFlagSet("", flag.ContinueOnError)
-	flags.SetOutput(stderr)
+	flags := flag.NewFlagSet(prog, flag.ContinueOnError)
 	loader.SetupFlags(flags)
 	strict := flags.Bool("strict", true, "Strict validation of configuration file (warnings result in non-zero exit code)")
-
-	err = flags.Parse(args)
-	if err == flag.ErrHelp {
-		err = nil
-		return 0
-	} else if err != nil {
-		return 2
-	} else if flags.NArg() != 0 {
-		err = fmt.Errorf("unrecognized command line arguments: %v", flags.Args())
-		return 2
+	if ok, code := cmd.ParseFlags(flags, prog, args, "", stderr); !ok {
+		return code
 	}
 
 	// Load the config twice -- once without loading deprecated

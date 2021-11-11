@@ -10,6 +10,7 @@ import (
 	"mime"
 	"os"
 
+	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"github.com/coreos/go-systemd/daemon"
@@ -69,25 +70,18 @@ func configure(logger log.FieldLogger, args []string) (*Config, error) {
 	getVersion := flags.Bool("version", false,
 		"print version information and exit.")
 
+	prog := args[0]
 	args = loader.MungeLegacyConfigArgs(logger, args[1:], "-legacy-keepweb-config")
-	err := flags.Parse(args)
-	if err == flag.ErrHelp {
-		return nil, nil
-	} else if err != nil {
-		return nil, err
-	} else if flags.NArg() != 0 {
-		return nil, fmt.Errorf("unrecognized command line arguments: %v", flags.Args())
-	}
-
-	// Print version information if requested
-	if *getVersion {
-		fmt.Printf("keep-web %s\n", version)
+	if ok, code := cmd.ParseFlags(flags, prog, args, "", os.Stderr); !ok {
+		os.Exit(code)
+	} else if *getVersion {
+		fmt.Printf("%s %s\n", args[0], version)
 		return nil, nil
 	}
 
 	arvCfg, err := loader.Load()
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	cfg := newConfig(logger, arvCfg)
 
@@ -107,8 +101,7 @@ func main() {
 
 	cfg, err := configure(logger, os.Args)
 	if err != nil {
-		logger.Error(err)
-		os.Exit(1)
+		logger.Fatal(err)
 	} else if cfg == nil {
 		return
 	}

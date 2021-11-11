@@ -1694,14 +1694,10 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 		ignoreDetachFlag = true
 	}
 
-	if err := flags.Parse(args); err == flag.ErrHelp {
-		return 0
-	} else if err != nil {
-		log.Print(err)
-		return 1
+	if ok, code := cmd.ParseFlags(flags, prog, args, "container-uuid", stderr); !ok {
+		return code
 	} else if flags.NArg() != 1 {
-		fmt.Fprintf(flags.Output(), "Usage: %s [options] containerUUID\n\nOptions:\n", prog)
-		flags.PrintDefaults()
+		fmt.Fprintf(stderr, "missing required argument: container-uuid (try -help)\n")
 		return 2
 	}
 

@@ -17,6 +17,7 @@ import (
 	"syscall"
 	"time"
 
+	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
@@ -26,13 +27,6 @@ import (
 
 var version = "dev"
 
-func main() {
-	err := doMain()
-	if err != nil {
-		logrus.Fatalf("%q", err)
-	}
-}
-
 var (
 	runningCmds      map[string]*exec.Cmd
 	runningCmdsMutex sync.Mutex
@@ -40,7 +34,7 @@ var (
 	crunchRunCommand *string
 )
 
-func doMain() error {
+func main() {
 	logger := logrus.StandardLogger()
 	if os.Getenv("DEBUG") != "" {
 		logger.SetLevel(logrus.DebugLevel)
@@ -66,27 +60,22 @@ func doMain() error {
 		false,
 		"Print version information and exit.")
 
-	// Parse args; omit the first arg which is the command name
-	err := flags.Parse(os.Args[1:])
-	if err == flag.ErrHelp {
-		return nil
-	} else if err != nil {
-		return err
-	} else if flags.NArg() != 0 {
-		return fmt.Errorf("unrecognized command line arguments: %v", flags.Args())
+	if ok, code := cmd.ParseFlags(flags, os.Args[0], os.Args[1:], "", os.Stderr); !ok {
+		os.Exit(code)
 	}
 
 	// Print version information if requested
 	if *getVersion {
 		fmt.Printf("crunch-dispatch-local %s\n", version)
-		return nil
+		return
 	}
 
 	loader := config.NewLoader(nil, logger)
 	cfg, err := loader.Load()
 	cluster, err := cfg.GetCluster("")
 	if err != nil {
-		return fmt.Errorf("config error: %s", err)
+		fmt.Fprintf(os.Stderr, "config error: %s\n", err)
+		os.Exit(1)
 	}
 
 	logger.Printf("crunch-dispatch-local %s started", version)
@@ -116,7 +105,7 @@ func doMain() error {
 	arv, err := arvadosclient.MakeArvadosClient()
 	if err != nil {
 		logger.Errorf("error making Arvados client: %v", err)
-		return err
+		os.Exit(1)
 	}
 	arv.Retries = 25
 
@@ -131,7 +120,8 @@ func doMain() error {
 
 	err = dispatcher.Run(ctx)
 	if err != nil {
-		return err
+		logger.Error(err)
+		return
 	}
 
 	c := make(chan os.Signal, 1)
@@ -151,8 +141,6 @@ func doMain() error {
 
 	// Wait for all running crunch jobs to complete / terminate
 	waitGroup.Wait()
-
-	return nil
 }
 
 func startFunc(container arvados.Container, cmd *exec.Cmd) error {

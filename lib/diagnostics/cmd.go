@@ -17,6 +17,7 @@ import (
 	"strings"
 	"time"
 
+	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"github.com/sirupsen/logrus"
@@ -24,7 +25,7 @@ import (
 
 type Command struct{}
 
-func (cmd Command) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+func (Command) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	var diag diagnoser
 	f := flag.NewFlagSet(prog, flag.ContinueOnError)
 	f.StringVar(&diag.projectName, "project-name", "scratch area for diagnostics", "name of project to find/create in home project and use for temporary/test objects")
@@ -33,15 +34,8 @@ func (cmd Command) RunCommand(prog string, args []string, stdin io.Reader, stdou
 	f.BoolVar(&diag.checkExternal, "external-client", false, "check that this host is considered an \"external\" client")
 	f.IntVar(&diag.priority, "priority", 500, "priority for test container (1..1000, or 0 to skip)")
 	f.DurationVar(&diag.timeout, "timeout", 10*time.Second, "timeout for http requests")
-	err := f.Parse(args)
-	if err == flag.ErrHelp {
-		return 0
-	} else if err != nil {
-		fmt.Fprintln(stderr, err)
-		return 2
-	} else if f.NArg() != 0 {
-		fmt.Fprintf(stderr, "unrecognized command line arguments: %v\n", f.Args())
-		return 2
+	if ok, code := cmd.ParseFlags(f, prog, args, "", stderr); !ok {
+		return code
 	}
 	diag.logger = ctxlog.New(stdout, "text", diag.logLevel)
 	diag.logger.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true, DisableLevelTruncation: true, PadLevelText: true})

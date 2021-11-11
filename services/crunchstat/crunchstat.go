@@ -16,6 +16,7 @@ import (
 	"syscall"
 	"time"
 
+	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/lib/crunchstat"
 )
 
@@ -41,23 +42,13 @@ func main() {
 	pollMsec := flags.Int64("poll", 1000, "Reporting interval, in milliseconds")
 	getVersion := flags.Bool("version", false, "Print version information and exit.")
 
-	err := flags.Parse(os.Args[1:])
-	if err == flag.ErrHelp {
-		return
-	} else if err != nil {
-		reporter.Logger.Print(err)
-		os.Exit(2)
-	}
-
-	// Print version information if requested
-	if *getVersion {
+	if ok, code := cmd.ParseFlags(flags, os.Args[0], os.Args[1:], "program [args ...]", os.Stderr); !ok {
+		os.Exit(code)
+	} else if *getVersion {
 		fmt.Printf("crunchstat %s\n", version)
 		return
-	}
-
-	if flags.NArg() == 0 {
-		fmt.Fprintf(flags.Output(), "Usage: %s [options] program [args...]\n\nOptions:\n", os.Args[0])
-		flags.PrintDefaults()
+	} else if flags.NArg() == 0 {
+		fmt.Fprintf(os.Stderr, "missing required argument: program (try -help)\n")
 		os.Exit(2)
 	}
 
@@ -71,7 +62,7 @@ func main() {
 	reporter.PollPeriod = time.Duration(*pollMsec) * time.Millisecond
 
 	reporter.Start()
-	err = runCommand(flags.Args(), reporter.Logger)
+	err := runCommand(flags.Args(), reporter.Logger)
 	reporter.Stop()
 
 	if err, ok := err.(*exec.ExitError); ok {

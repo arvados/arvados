@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 
+	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/lib/config"
 	"github.com/coreos/go-systemd/daemon"
 	"github.com/ghodss/yaml"
@@ -31,18 +32,9 @@ func main() {
 	getVersion := flags.Bool("version", false, "print version information and exit.")
 
 	args := loader.MungeLegacyConfigArgs(logger, os.Args[1:], "-legacy-git-httpd-config")
-	err := flags.Parse(args)
-	if err == flag.ErrHelp {
-		return
-	} else if err != nil {
-		logger.Error(err)
-		os.Exit(2)
-	} else if flags.NArg() != 0 {
-		logger.Errorf("unrecognized command line arguments: %v", flags.Args())
-		os.Exit(2)
-	}
-
-	if *getVersion {
+	if ok, code := cmd.ParseFlags(flags, os.Args[0], args, "", os.Stderr); !ok {
+		os.Exit(code)
+	} else if *getVersion {
 		fmt.Printf("arv-git-httpd %s\n", version)
 		return
 	}

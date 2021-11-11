@@ -13,6 +13,7 @@ import (
 	_ "net/http/pprof"
 	"os"
 
+	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/lib/service"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
@@ -58,14 +59,8 @@ func runCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.W
 	loader.SetupFlags(flags)
 
 	munged := loader.MungeLegacyConfigArgs(logger, args, "-legacy-keepbalance-config")
-	err := flags.Parse(munged)
-	if err == flag.ErrHelp {
-		return 0
-	} else if err != nil {
-		return 2
-	} else if flags.NArg() != 0 {
-		fmt.Fprintf(stderr, "unrecognized command line arguments: %v", flags.Args())
-		return 2
+	if ok, code := cmd.ParseFlags(flags, prog, munged, "", stderr); !ok {
+		return code
 	}
 
 	if *dumpFlag {
