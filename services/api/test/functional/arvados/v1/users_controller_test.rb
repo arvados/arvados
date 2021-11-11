@@ -13,6 +13,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     @initial_link_count = Link.count
     @vm_uuid = virtual_machines(:testvm).uuid
     ActionMailer::Base.deliveries = []
+    Rails.configuration.Users.ActivatedUsersAreVisibleToOthers = false
   end
 
   test "activate a user after signing UA" do
