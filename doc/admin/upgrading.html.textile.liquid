@@ -48,7 +48,7 @@ When Arvados runs a container via @arvados-dispatch-cloud@, the @crunch-run@ sup
 
 h3. Backend support for vocabulary checking
 
-If your installation uses the "vocabulary feature on Workbench2":{{site.baseurl}}/v2.2/admin/workbench2-vocabulary.html, you will need to update the cluster configuration by moving the vocabulary definition file to the node where @controller@ runs, and set the @API.VocabularyPath@ configuration parameter to the local path where the file was placed.
+If your installation uses the vocabulary feature on Workbench2, you will need to update the cluster configuration by moving the vocabulary definition file to the node where @controller@ runs, and set the @API.VocabularyPath@ configuration parameter to the local path where the file was placed.
 This will enable the vocabulary checking cluster-wide, including Workbench2. The @Workbench.VocabularyURL@ configuration parameter is deprecated and will be removed in a future release.
 You can read more about how this feature works on the "admin page":{{site.baseurl}}/admin/metadata-vocabulary.html.
 
