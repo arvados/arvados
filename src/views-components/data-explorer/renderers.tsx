@@ -185,16 +185,30 @@ export const ResourceEmail = connect(
         return resource || { email: '' };
     })(renderEmail);
 
-const renderIsActive = (props: { uuid: string, isActive: boolean, toggleIsActive: (uuid: string) => void }) =>
-    <Checkbox
-        color="primary"
-        checked={props.isActive}
-        onClick={() => props.toggleIsActive(props.uuid)} />;
+const renderIsActive = (props: { uuid: string, kind: ResourceKind, isActive: boolean, toggleIsActive: (uuid: string) => void }) => {
+    if (props.kind === ResourceKind.USER) {
+        return <Checkbox
+            color="primary"
+            checked={props.isActive}
+            onClick={() => props.toggleIsActive(props.uuid)} />;
+    } else {
+        return <Typography />;
+    }
+}
 
 export const ResourceIsActive = connect(
     (state: RootState, props: { uuid: string }) => {
         const resource = getResource<UserResource>(props.uuid)(state.resources);
-        return resource || { isActive: false };
+        return resource || { isActive: false, kind: ResourceKind.NONE };
+    }, { toggleIsActive }
+)(renderIsActive);
+
+export const ResourceLinkTailIsActive = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const link = getResource<LinkResource>(props.uuid)(state.resources);
+        const tailResource = getResource<UserResource>(link?.tailUuid || '')(state.resources);
+
+        return tailResource || { isActive: false, kind: ResourceKind.NONE };
     }, { toggleIsActive }
 )(renderIsActive);
 
