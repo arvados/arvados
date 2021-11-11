@@ -271,6 +271,16 @@ Clusters:
       # user agreements.  Should only be enabled for development.
       NewUsersAreActive: false
 
+      # Newly activated users (whether set up by an admin or via
+      # AutoSetupNewUsers) immediately become visible to other active
+      # users.
+      #
+      # On a multi-tenant cluster, where the intent is for users to be
+      # invisible to one another unless they have been added to the
+      # same group(s) via Workbench admin interface, change this to
+      # false.
+      ActivatedUsersAreVisibleToOthers: true
+
       # The e-mail address of the user you would like to become marked as an admin
       # user on their first login.
       AutoAdminUserWithEmail: ""
