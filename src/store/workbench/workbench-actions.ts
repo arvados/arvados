@@ -272,6 +272,20 @@ export const updateProject = (data: projectUpdateActions.ProjectUpdateFormDialog
         }
     };
 
+export const updateGroup = (data: projectUpdateActions.ProjectUpdateFormDialogData) =>
+    async (dispatch: Dispatch) => {
+        const updatedGroup = await dispatch<any>(groupPanelActions.updateGroup(data));
+        if (updatedGroup) {
+            dispatch(snackbarActions.OPEN_SNACKBAR({
+                message: "Group has been successfully updated.",
+                hideDuration: 2000,
+                kind: SnackbarKind.SUCCESS
+            }));
+            await dispatch<any>(loadSidePanelTreeProjects(updatedGroup.ownerUuid));
+            dispatch<any>(reloadProjectMatchingUuid([updatedGroup.ownerUuid, updatedGroup.uuid]));
+        }
+    };
+
 export const loadCollection = (uuid: string) =>
     handleFirstTimeLoad(
         async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {

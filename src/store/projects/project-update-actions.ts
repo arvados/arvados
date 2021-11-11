@@ -3,12 +3,13 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from "redux";
-import { FormErrors, initialize, startSubmit, stopSubmit } from 'redux-form';
+import { FormErrors, initialize, reset, startSubmit, stopSubmit } from 'redux-form';
 import { RootState } from "store/store";
 import { dialogActions } from "store/dialog/dialog-actions";
 import { getCommonResourceServiceError, CommonResourceServiceError } from "services/common-service/common-resource-service";
 import { ServiceRepository } from "services/services";
 import { projectPanelActions } from 'store/project-panel/project-panel-action';
+import { GroupClass } from "models/group";
 
 export interface ProjectUpdateFormDialogData {
     uuid: string;
@@ -21,7 +22,7 @@ export const PROJECT_UPDATE_FORM_NAME = 'projectUpdateFormName';
 export const openProjectUpdateDialog = (resource: ProjectUpdateFormDialogData) =>
     (dispatch: Dispatch, getState: () => RootState) => {
         dispatch(initialize(PROJECT_UPDATE_FORM_NAME, resource));
-        dispatch(dialogActions.OPEN_DIALOG({ id: PROJECT_UPDATE_FORM_NAME, data: {} }));
+        dispatch(dialogActions.OPEN_DIALOG({ id: PROJECT_UPDATE_FORM_NAME, data: {sourcePanel: GroupClass.PROJECT} }));
     };
 
 export const updateProject = (project: ProjectUpdateFormDialogData) =>
@@ -31,6 +32,7 @@ export const updateProject = (project: ProjectUpdateFormDialogData) =>
         try {
             const updatedProject = await services.projectService.update(uuid, { name: project.name, description: project.description });
             dispatch(projectPanelActions.REQUEST_ITEMS());
+            dispatch(reset(PROJECT_UPDATE_FORM_NAME));
             dispatch(dialogActions.CLOSE_DIALOG({ id: PROJECT_UPDATE_FORM_NAME }));
             return updatedProject;
         } catch (e) {

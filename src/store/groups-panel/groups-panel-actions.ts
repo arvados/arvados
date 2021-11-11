@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from 'redux';
-import { reset, startSubmit, stopSubmit, FormErrors } from 'redux-form';
+import { reset, startSubmit, stopSubmit, FormErrors, initialize } from 'redux-form';
 import { bindDataExplorerActions } from "store/data-explorer/data-explorer-action";
 import { dialogActions } from 'store/dialog/dialog-actions';
 import { Participant } from 'views-components/sharing-dialog/participant-select';
@@ -16,6 +16,7 @@ import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { PermissionLevel } from 'models/permission';
 import { PermissionService } from 'services/permission-service/permission-service';
 import { FilterBuilder } from 'services/api/filter-builder';
+import { ProjectUpdateFormDialogData, PROJECT_UPDATE_FORM_NAME } from 'store/projects/project-update-actions';
 
 export const GROUPS_PANEL_ID = "groupsPanel";
 
@@ -64,6 +65,32 @@ export const openRemoveGroupDialog = (uuid: string) =>
                 uuid
             }
         }));
+    };
+
+// Group edit dialog uses project update dialog with sourcePanel set to reload the appropriate parts
+export const openGroupUpdateDialog = (resource: ProjectUpdateFormDialogData) =>
+    (dispatch: Dispatch, getState: () => RootState) => {
+        dispatch(initialize(PROJECT_UPDATE_FORM_NAME, resource));
+        dispatch(dialogActions.OPEN_DIALOG({ id: PROJECT_UPDATE_FORM_NAME, data: {sourcePanel: GroupClass.ROLE} }));
+    };
+
+export const updateGroup = (project: ProjectUpdateFormDialogData) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const uuid = project.uuid || '';
+        dispatch(startSubmit(PROJECT_UPDATE_FORM_NAME));
+        try {
+            const updatedGroup = await services.groupsService.update(uuid, { name: project.name, description: project.description });
+            dispatch(GroupsPanelActions.REQUEST_ITEMS());
+            dispatch(reset(PROJECT_UPDATE_FORM_NAME));
+            dispatch(dialogActions.CLOSE_DIALOG({ id: PROJECT_UPDATE_FORM_NAME }));
+            return updatedGroup;
+        } catch (e) {
+            const error = getCommonResourceServiceError(e);
+            if (error === CommonResourceServiceError.UNIQUE_NAME_VIOLATION) {
+                dispatch(stopSubmit(PROJECT_UPDATE_FORM_NAME, { name: 'Group with the same name already exists.' } as FormErrors));
+            }
+            return ;
+        }
     };
 
 export interface CreateGroupFormData {

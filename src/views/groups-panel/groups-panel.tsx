@@ -101,8 +101,9 @@ export const GroupsPanel = connect(
             const resource = getResource<GroupResource>(resourceUuid)(this.props.resources);
             if (resource) {
                 this.props.onContextMenu(event, {
-                    name: '',
+                    name: resource.name,
                     uuid: resource.uuid,
+                    description: resource.description,
                     ownerUuid: resource.ownerUuid,
                     kind: resource.kind,
                     menuKind: ContextMenuKind.GROUPS
