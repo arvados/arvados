@@ -36,6 +36,7 @@ type Container struct {
 	RuntimeUserUUID           string                 `json:"runtime_user_uuid"`
 	RuntimeAuthScopes         []string               `json:"runtime_auth_scopes"`
 	RuntimeToken              string                 `json:"runtime_token"`
+	AuthUUID                  string                 `json:"auth_uuid"`
 }
 
 // ContainerRequest is an arvados#container_request resource.

@@ -77,6 +77,12 @@ type UploadDownloadRolePermissions struct {
 	Admin UploadDownloadPermission
 }
 
+type ManagedProperties map[string]struct {
+	Value     interface{}
+	Function  string
+	Protected bool
+}
+
 type Cluster struct {
 	ClusterID       string `json:"-"`
 	ManagementToken string
@@ -102,6 +108,7 @@ type Cluster struct {
 		WebsocketClientEventQueue      int
 		WebsocketServerEventQueue      int
 		KeepServiceRequestTimeout      Duration
+		VocabularyPath                 string
 	}
 	AuditLogs struct {
 		MaxAge             Duration
@@ -109,23 +116,19 @@ type Cluster struct {
 		UnloggedAttributes StringSet
 	}
 	Collections struct {
-		BlobSigning              bool
-		BlobSigningKey           string
-		BlobSigningTTL           Duration
-		BlobTrash                bool
-		BlobTrashLifetime        Duration
-		BlobTrashCheckInterval   Duration
-		BlobTrashConcurrency     int
-		BlobDeleteConcurrency    int
-		BlobReplicateConcurrency int
-		CollectionVersioning     bool
-		DefaultTrashLifetime     Duration
-		DefaultReplication       int
-		ManagedProperties        map[string]struct {
-			Value     interface{}
-			Function  string
-			Protected bool
-		}
+		BlobSigning                  bool
+		BlobSigningKey               string
+		BlobSigningTTL               Duration
+		BlobTrash                    bool
+		BlobTrashLifetime            Duration
+		BlobTrashCheckInterval       Duration
+		BlobTrashConcurrency         int
+		BlobDeleteConcurrency        int
+		BlobReplicateConcurrency     int
+		CollectionVersioning         bool
+		DefaultTrashLifetime         Duration
+		DefaultReplication           int
+		ManagedProperties            ManagedProperties
 		PreserveVersionIfIdle        Duration
 		TrashSweepInterval           Duration
 		TrustAllContent              bool
@@ -274,7 +277,6 @@ type Cluster struct {
 			Options              map[string]struct{}
 		}
 		UserProfileFormMessage string
-		VocabularyURL          string
 		WelcomePageHTML        string
 		InactivePageHTML       string
 		SSHHelpPageHTML        string

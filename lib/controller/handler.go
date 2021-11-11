@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"strings"
 	"sync"
@@ -74,7 +75,21 @@ func (h *Handler) CheckHealth() error {
 		return err
 	}
 	_, _, err = railsproxy.FindRailsAPI(h.Cluster)
-	return err
+	if err != nil {
+		return err
+	}
+	if h.Cluster.API.VocabularyPath != "" {
+		req, err := http.NewRequest("GET", "/arvados/v1/vocabulary", nil)
+		if err != nil {
+			return err
+		}
+		var resp httptest.ResponseRecorder
+		h.handlerStack.ServeHTTP(&resp, req)
+		if resp.Result().StatusCode != http.StatusOK {
+			return fmt.Errorf("%d %s", resp.Result().StatusCode, resp.Result().Status)
+		}
+	}
+	return nil
 }
 
 func (h *Handler) Done() <-chan struct{} {
@@ -85,18 +100,25 @@ func neverRedirect(*http.Request, []*http.Request) error { return http.ErrUseLas
 
 func (h *Handler) setup() {
 	mux := http.NewServeMux()
-	mux.Handle("/_health/", &health.Handler{
-		Token:  h.Cluster.ManagementToken,
-		Prefix: "/_health/",
-		Routes: health.Routes{"ping": func() error { _, err := h.db(context.TODO()); return err }},
-	})
+	healthFuncs := make(map[string]health.Func)
 
 	oidcAuthorizer := localdb.OIDCAccessTokenAuthorizer(h.Cluster, h.db)
-	rtr := router.New(federation.New(h.Cluster), router.Config{
+	rtr := router.New(federation.New(h.Cluster, &healthFuncs), router.Config{
 		MaxRequestSize: h.Cluster.API.MaxRequestSize,
 		WrapCalls:      api.ComposeWrappers(ctrlctx.WrapCallsInTransactions(h.db), oidcAuthorizer.WrapCalls),
 	})
+
+	healthRoutes := health.Routes{"ping": func() error { _, err := h.db(context.TODO()); return err }}
+	for name, f := range healthFuncs {
+		healthRoutes[name] = f
+	}
+	mux.Handle("/_health/", &health.Handler{
+		Token:  h.Cluster.ManagementToken,
+		Prefix: "/_health/",
+		Routes: healthRoutes,
+	})
 	mux.Handle("/arvados/v1/config", rtr)
+	mux.Handle("/arvados/v1/vocabulary", rtr)
 	mux.Handle("/"+arvados.EndpointUserAuthenticate.Path, rtr) // must come before .../users/
 	mux.Handle("/arvados/v1/collections", rtr)
 	mux.Handle("/arvados/v1/collections/", rtr)
@@ -107,6 +129,8 @@ func (h *Handler) setup() {
 	mux.Handle("/arvados/v1/container_requests/", rtr)
 	mux.Handle("/arvados/v1/groups", rtr)
 	mux.Handle("/arvados/v1/groups/", rtr)
+	mux.Handle("/arvados/v1/links", rtr)
+	mux.Handle("/arvados/v1/links/", rtr)
 	mux.Handle("/login", rtr)
 	mux.Handle("/logout", rtr)
 

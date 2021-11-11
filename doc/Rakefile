@@ -160,7 +160,8 @@ task :linkchecker => [ :generate ] do
   Dir.chdir(".site") do
     `which linkchecker`
     if $? == 0
-      system "linkchecker index.html --ignore-url='!file://'" or exit $?.exitstatus
+      # we need --check-extern to check relative links, weird but true
+      system "linkchecker index.html --check-extern --ignore-url='!file://'" or exit $?.exitstatus
     else
       puts "Warning: linkchecker not found, skipping run".colorize(:light_red)
     end

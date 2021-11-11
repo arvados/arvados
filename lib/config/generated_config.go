@@ -240,6 +240,12 @@ Clusters:
       # Timeout on requests to internal Keep services.
       KeepServiceRequestTimeout: 15s
 
+      # Vocabulary file path, local to the node running the controller.
+      # This JSON file should contain the description of what's allowed
+      # as object's metadata. Its format is described at:
+      # https://doc.arvados.org/admin/metadata-vocabulary.html
+      VocabularyPath: ""
+
     Users:
       # Config parameters to automatically setup new users.  If enabled,
       # this users will be able to self-activate.  Enable this if you want
@@ -1582,7 +1588,6 @@ Clusters:
       DefaultOpenIdPrefix: "https://www.google.com/accounts/o8/id"
 
       # Workbench2 configs
-      VocabularyURL: ""
       FileViewersConfigURL: ""
 
       # Idle time after which the user's session will be auto closed.
