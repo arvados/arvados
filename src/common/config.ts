@@ -51,7 +51,6 @@ export interface ClusterConfigJSON {
     };
     Workbench: {
         ArvadosDocsite: string;
-        VocabularyURL: string;
         FileViewersConfigURL: string;
         WelcomePageHTML: string;
         InactivePageHTML: string;
@@ -204,15 +203,10 @@ remove the entire ${varName} entry from ${WORKBENCH_CONFIG_URL}`);
                 }
                 config.fileViewersConfigUrl = fileViewerConfigUrl;
 
-                let vocabularyUrl;
                 if (workbenchConfig.VOCABULARY_URL !== undefined) {
-                    warnLocalConfig("VOCABULARY_URL");
-                    vocabularyUrl = workbenchConfig.VOCABULARY_URL;
+                    console.warn(`A value for VOCABULARY_URL was found in ${WORKBENCH_CONFIG_URL}. It will be ignored as the cluster already provides its own endpoint, you can safely remove it.`)
                 }
-                else {
-                    vocabularyUrl = config.clusterConfig.Workbench.VocabularyURL || "/vocabulary-example.json";
-                }
-                config.vocabularyUrl = vocabularyUrl;
+                config.vocabularyUrl = getVocabularyURL(workbenchConfig.API_HOST);
 
                 return { config, apiHost: workbenchConfig.API_HOST };
             });
@@ -240,7 +234,6 @@ export const mockClusterConfigJSON = (config: Partial<ClusterConfigJSON>): Clust
     },
     Workbench: {
         ArvadosDocsite: "",
-        VocabularyURL: "",
         FileViewersConfigURL: "",
         WelcomePageHTML: "",
         InactivePageHTML: "",
@@ -315,5 +308,7 @@ const getDefaultConfig = (): WorkbenchConfig => {
 
 export const ARVADOS_API_PATH = "arvados/v1";
 export const CLUSTER_CONFIG_PATH = "arvados/v1/config";
+export const VOCABULARY_PATH = "arvados/v1/vocabulary";
 export const DISCOVERY_DOC_PATH = "discovery/v1/apis/arvados/v1/rest";
-export const getClusterConfigURL = (apiHost: string) => `${window.location.protocol}//${apiHost}/${CLUSTER_CONFIG_PATH}?nocache=${(new Date()).getTime()}`;
+export const getClusterConfigURL = (apiHost: string) => `https://${apiHost}/${CLUSTER_CONFIG_PATH}?nocache=${(new Date()).getTime()}`;
+export const getVocabularyURL = (apiHost: string) => `https://${apiHost}/${VOCABULARY_PATH}?nocache=${(new Date()).getTime()}`;

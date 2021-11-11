@@ -82,7 +82,6 @@ Currently this configuration schema is supported:
 ```
 {
     "API_HOST": "string",
-    "VOCABULARY_URL": "string",
     "FILE_VIEWERS_CONFIG_URL": "string",
 }
 ```
@@ -92,12 +91,6 @@ Currently this configuration schema is supported:
 The Arvados base URL.
 
 The `REACT_APP_ARVADOS_API_HOST` environment variable can be used to set the default URL if the run time configuration is unreachable.
-
-### VOCABULARY_URL
-Local path, or any URL that allows cross-origin requests. See
-[Vocabulary JSON file example](public/vocabulary-example.json).
-
-To use the URL defined in the Arvados cluster configuration, remove the entire `VOCABULARY_URL` entry from the runtime configuration. Found in `/config.json` by default.
 
 ## FILE_VIEWERS_CONFIG_URL
 Local path, or any URL that allows cross-origin requests. See:
