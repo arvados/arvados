@@ -97,10 +97,10 @@ func (s *HandlerSuite) TestVocabularyExport(c *check.C) {
 				"labels": [{"label": "Importance"}],
 				"values": {
 					"HIGH": {
-						"labels": [{"label": "High priority"}]
+						"labels": [{"label": "High"}]
 					},
 					"LOW": {
-						"labels": [{"label": "Low priority"}]
+						"labels": [{"label": "Low"}]
 					}
 				}
 			}
@@ -147,10 +147,10 @@ func (s *HandlerSuite) TestVocabularyFailedCheckStatus(c *check.C) {
 				"labels": [{"label": "Importance"}],
 				"values": {
 					"HIGH": {
-						"labels": [{"label": "High priority"}]
+						"labels": [{"label": "High"}]
 					},
 					"LOW": {
-						"labels": [{"label": "Low priority"}]
+						"labels": [{"label": "Low"}]
 					}
 				}
 			}
