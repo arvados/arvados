@@ -30,7 +30,7 @@ type UserSuite struct {
 func (s *UserSuite) TestLoginClusterUserList(c *check.C) {
 	s.cluster.ClusterID = "local"
 	s.cluster.Login.LoginCluster = "zzzzz"
-	s.fed = New(s.cluster)
+	s.fed = New(s.cluster, nil)
 	s.addDirectRemote(c, "zzzzz", rpc.NewConn("zzzzz", &url.URL{Scheme: "https", Host: os.Getenv("ARVADOS_API_HOST")}, true, rpc.PassthroughTokenProvider))
 
 	for _, updateFail := range []bool{false, true} {
@@ -120,7 +120,7 @@ func (s *UserSuite) TestLoginClusterUserList(c *check.C) {
 func (s *UserSuite) TestLoginClusterUserGet(c *check.C) {
 	s.cluster.ClusterID = "local"
 	s.cluster.Login.LoginCluster = "zzzzz"
-	s.fed = New(s.cluster)
+	s.fed = New(s.cluster, nil)
 	s.addDirectRemote(c, "zzzzz", rpc.NewConn("zzzzz", &url.URL{Scheme: "https", Host: os.Getenv("ARVADOS_API_HOST")}, true, rpc.PassthroughTokenProvider))
 
 	opts := arvados.GetOptions{UUID: "zzzzz-tpzed-xurymjxw79nv3jz", Select: []string{"uuid", "email"}}
@@ -174,7 +174,7 @@ func (s *UserSuite) TestLoginClusterUserGet(c *check.C) {
 func (s *UserSuite) TestLoginClusterUserListBypassFederation(c *check.C) {
 	s.cluster.ClusterID = "local"
 	s.cluster.Login.LoginCluster = "zzzzz"
-	s.fed = New(s.cluster)
+	s.fed = New(s.cluster, nil)
 	s.addDirectRemote(c, "zzzzz", rpc.NewConn("zzzzz", &url.URL{Scheme: "https", Host: os.Getenv("ARVADOS_API_HOST")},
 		true, rpc.PassthroughTokenProvider))
 

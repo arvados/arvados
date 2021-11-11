@@ -178,6 +178,13 @@ func (conn *Conn) ConfigGet(ctx context.Context) (json.RawMessage, error) {
 	return resp, err
 }
 
+func (conn *Conn) VocabularyGet(ctx context.Context) (arvados.Vocabulary, error) {
+	ep := arvados.EndpointVocabularyGet
+	var resp arvados.Vocabulary
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, nil)
+	return resp, err
+}
+
 func (conn *Conn) Login(ctx context.Context, options arvados.LoginOptions) (arvados.LoginResponse, error) {
 	ep := arvados.EndpointLogin
 	var resp arvados.LoginResponse
@@ -491,6 +498,41 @@ func (conn *Conn) GroupTrash(ctx context.Context, options arvados.DeleteOptions)
 func (conn *Conn) GroupUntrash(ctx context.Context, options arvados.UntrashOptions) (arvados.Group, error) {
 	ep := arvados.EndpointGroupUntrash
 	var resp arvados.Group
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) LinkCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Link, error) {
+	ep := arvados.EndpointLinkCreate
+	var resp arvados.Link
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) LinkUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.Link, error) {
+	ep := arvados.EndpointLinkUpdate
+	var resp arvados.Link
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) LinkGet(ctx context.Context, options arvados.GetOptions) (arvados.Link, error) {
+	ep := arvados.EndpointLinkGet
+	var resp arvados.Link
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) LinkList(ctx context.Context, options arvados.ListOptions) (arvados.LinkList, error) {
+	ep := arvados.EndpointLinkList
+	var resp arvados.LinkList
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) LinkDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.Link, error) {
+	ep := arvados.EndpointLinkDelete
+	var resp arvados.Link
 	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
 	return resp, err
 }
