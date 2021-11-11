@@ -85,6 +85,7 @@ export const updateGroup = (project: ProjectUpdateFormDialogData) =>
             dispatch(dialogActions.CLOSE_DIALOG({ id: PROJECT_UPDATE_FORM_NAME }));
             return updatedGroup;
         } catch (e) {
+            dispatch(stopSubmit(PROJECT_UPDATE_FORM_NAME));
             const error = getCommonResourceServiceError(e);
             if (error === CommonResourceServiceError.UNIQUE_NAME_VIOLATION) {
                 dispatch(stopSubmit(PROJECT_UPDATE_FORM_NAME, { name: 'Group with the same name already exists.' } as FormErrors));
