@@ -96,7 +96,7 @@ var whitelist = map[string]bool{
 	"Collections.BlobTrashCheckInterval":                  false,
 	"Collections.BlobTrashConcurrency":                    false,
 	"Collections.BlobTrashLifetime":                       false,
-	"Collections.CollectionVersioning":                    false,
+	"Collections.CollectionVersioning":                    true,
 	"Collections.DefaultReplication":                      true,
 	"Collections.DefaultTrashLifetime":                    true,
 	"Collections.ForwardSlashNameSubstitution":            true,
