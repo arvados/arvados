@@ -415,6 +415,7 @@ func (runner *ContainerRunner) SetupMounts() (map[string]bindmount, error) {
 		"arv-mount",
 		"--foreground",
 		"--read-write",
+		"--disable-event-listening",
 		"--storage-classes", strings.Join(runner.Container.OutputStorageClasses, ","),
 		fmt.Sprintf("--crunchstat-interval=%v", runner.statInterval.Seconds())}
 
