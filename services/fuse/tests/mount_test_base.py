@@ -62,7 +62,7 @@ class MountTestBase(unittest.TestCase):
             api_client=self.api,
             enable_write=True)
         self.operations.inodes.add_entry(root_class(
-            llfuse.ROOT_INODE, self.operations.inodes, self.api, 0, **root_kwargs))
+            llfuse.ROOT_INODE, self.operations.inodes, self.api, 0, True, **root_kwargs))
         llfuse.init(self.operations, self.mounttmp, [])
         self.llfuse_thread = threading.Thread(None, lambda: self._llfuse_main())
         self.llfuse_thread.daemon = True

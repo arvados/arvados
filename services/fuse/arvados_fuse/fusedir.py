@@ -36,7 +36,7 @@ class Directory(FreshBase):
     and the value referencing a File or Directory object.
     """
 
-    def __init__(self, parent_inode, inodes, apiconfig):
+    def __init__(self, parent_inode, inodes, apiconfig, enable_write):
         """parent_inode is the integer inode number"""
 
         super(Directory, self).__init__()
@@ -49,6 +49,7 @@ class Directory(FreshBase):
         self.apiconfig = apiconfig
         self._entries = {}
         self._mtime = time.time()
+        self._enable_write = enable_write
 
     def forward_slash_subst(self):
         if not hasattr(self, '_fsns'):
@@ -269,8 +270,8 @@ class CollectionDirectoryBase(Directory):
 
     """
 
-    def __init__(self, parent_inode, inodes, apiconfig, collection):
-        super(CollectionDirectoryBase, self).__init__(parent_inode, inodes, apiconfig)
+    def __init__(self, parent_inode, inodes, apiconfig, enable_write, collection):
+        super(CollectionDirectoryBase, self).__init__(parent_inode, inodes, apiconfig, enable_write)
         self.apiconfig = apiconfig
         self.collection = collection
 
@@ -284,7 +285,7 @@ class CollectionDirectoryBase(Directory):
             item.fuse_entry.dead = False
             self._entries[name] = item.fuse_entry
         elif isinstance(item, arvados.collection.RichCollectionBase):
-            self._entries[name] = self.inodes.add_entry(CollectionDirectoryBase(self.inode, self.inodes, self.apiconfig, item))
+            self._entries[name] = self.inodes.add_entry(CollectionDirectoryBase(self.inode, self.inodes, self.apiconfig, self._enable_write, item))
             self._entries[name].populate(mtime)
         else:
             self._entries[name] = self.inodes.add_entry(FuseArvadosFile(self.inode, item, mtime))
@@ -348,28 +349,36 @@ class CollectionDirectoryBase(Directory):
                 self.new_entry(entry, item, self.mtime())
 
     def writable(self):
-        return self.collection.writable()
+        return self._enable_write and self.collection.writable()
 
     @use_counter
     def flush(self):
+        if not self.writable():
+            return
         with llfuse.lock_released:
             self.collection.root_collection().save()
 
     @use_counter
     @check_update
     def create(self, name):
+        if not self.writable():
+            raise llfuse.FUSEError(errno.EROFS)
         with llfuse.lock_released:
             self.collection.open(name, "w").close()
 
     @use_counter
     @check_update
     def mkdir(self, name):
+        if not self.writable():
+            raise llfuse.FUSEError(errno.EROFS)
         with llfuse.lock_released:
             self.collection.mkdirs(name)
 
     @use_counter
     @check_update
     def unlink(self, name):
+        if not self.writable():
+            raise llfuse.FUSEError(errno.EROFS)
         with llfuse.lock_released:
             self.collection.remove(name)
         self.flush()
@@ -377,6 +386,8 @@ class CollectionDirectoryBase(Directory):
     @use_counter
     @check_update
     def rmdir(self, name):
+        if not self.writable():
+            raise llfuse.FUSEError(errno.EROFS)
         with llfuse.lock_released:
             self.collection.remove(name)
         self.flush()
@@ -384,6 +395,9 @@ class CollectionDirectoryBase(Directory):
     @use_counter
     @check_update
     def rename(self, name_old, name_new, src):
+        if not self.writable():
+            raise llfuse.FUSEError(errno.EROFS)
+
         if not isinstance(src, CollectionDirectoryBase):
             raise llfuse.FUSEError(errno.EPERM)
 
@@ -413,8 +427,8 @@ class CollectionDirectoryBase(Directory):
 class CollectionDirectory(CollectionDirectoryBase):
     """Represents the root of a directory tree representing a collection."""
 
-    def __init__(self, parent_inode, inodes, api, num_retries, collection_record=None, explicit_collection=None):
-        super(CollectionDirectory, self).__init__(parent_inode, inodes, api.config, None)
+    def __init__(self, parent_inode, inodes, api, num_retries, enable_write, collection_record=None, explicit_collection=None):
+        super(CollectionDirectory, self).__init__(parent_inode, inodes, api.config, enable_write, None)
         self.api = api
         self.num_retries = num_retries
         self.collection_record_file = None
@@ -434,14 +448,14 @@ class CollectionDirectory(CollectionDirectoryBase):
             self._mtime = 0
         self._manifest_size = 0
         if self.collection_locator:
-            self._writable = (uuid_pattern.match(self.collection_locator) is not None)
+            self._writable = (uuid_pattern.match(self.collection_locator) is not None) and enable_write
         self._updating_lock = threading.Lock()
 
     def same(self, i):
         return i['uuid'] == self.collection_locator or i['portable_data_hash'] == self.collection_locator
 
     def writable(self):
-        return self.collection.writable() if self.collection is not None else self._writable
+        return self._enable_write and (self.collection.writable() if self.collection is not None else self._writable)
 
     def want_event_subscribe(self):
         return (uuid_pattern.match(self.collection_locator) is not None)
@@ -603,14 +617,16 @@ class TmpCollectionDirectory(CollectionDirectoryBase):
         def save_new(self):
             pass
 
-    def __init__(self, parent_inode, inodes, api_client, num_retries, storage_classes=None):
+    def __init__(self, parent_inode, inodes, api_client, num_retries, enable_write, storage_classes=None):
         collection = self.UnsaveableCollection(
             api_client=api_client,
             keep_client=api_client.keep,
             num_retries=num_retries,
             storage_classes_desired=storage_classes)
+        # This is always enable_write=True because it never tries to
+        # save to the backend
         super(TmpCollectionDirectory, self).__init__(
-            parent_inode, inodes, api_client.config, collection)
+            parent_inode, inodes, api_client.config, True, collection)
         self.collection_record_file = None
         self.populate(self.mtime())
 
@@ -703,8 +719,8 @@ and the directory will appear if it exists.
 
 """.lstrip()
 
-    def __init__(self, parent_inode, inodes, api, num_retries, pdh_only=False, storage_classes=None):
-        super(MagicDirectory, self).__init__(parent_inode, inodes, api.config)
+    def __init__(self, parent_inode, inodes, api, num_retries, enable_write, pdh_only=False, storage_classes=None):
+        super(MagicDirectory, self).__init__(parent_inode, inodes, api.config, enable_write)
         self.api = api
         self.num_retries = num_retries
         self.pdh_only = pdh_only
@@ -720,7 +736,8 @@ and the directory will appear if it exists.
             # If we're the root directory, add an identical by_id subdirectory.
             if self.inode == llfuse.ROOT_INODE:
                 self._entries['by_id'] = self.inodes.add_entry(MagicDirectory(
-                        self.inode, self.inodes, self.api, self.num_retries, self.pdh_only))
+                    self.inode, self.inodes, self.api, self.num_retries, self._enable_write,
+                    self.pdh_only))
 
     def __contains__(self, k):
         if k in self._entries:
@@ -738,11 +755,11 @@ and the directory will appear if it exists.
                 if project[u'items_available'] == 0:
                     return False
                 e = self.inodes.add_entry(ProjectDirectory(
-                    self.inode, self.inodes, self.api, self.num_retries,
+                    self.inode, self.inodes, self.api, self.num_retries, self._enable_write,
                     project[u'items'][0], storage_classes=self.storage_classes))
             else:
                 e = self.inodes.add_entry(CollectionDirectory(
-                        self.inode, self.inodes, self.api, self.num_retries, k))
+                        self.inode, self.inodes, self.api, self.num_retries, self._enable_write, k))
 
             if e.update():
                 if k not in self._entries:
@@ -776,8 +793,8 @@ and the directory will appear if it exists.
 class TagsDirectory(Directory):
     """A special directory that contains as subdirectories all tags visible to the user."""
 
-    def __init__(self, parent_inode, inodes, api, num_retries, poll_time=60):
-        super(TagsDirectory, self).__init__(parent_inode, inodes, api.config)
+    def __init__(self, parent_inode, inodes, api, num_retries, enable_write, poll_time=60):
+        super(TagsDirectory, self).__init__(parent_inode, inodes, api.config, enable_write)
         self.api = api
         self.num_retries = num_retries
         self._poll = True
@@ -798,7 +815,8 @@ class TagsDirectory(Directory):
             self.merge(tags['items']+[{"name": n} for n in self._extra],
                        lambda i: i['name'],
                        lambda a, i: a.tag == i['name'],
-                       lambda i: TagDirectory(self.inode, self.inodes, self.api, self.num_retries, i['name'], poll=self._poll, poll_time=self._poll_time))
+                       lambda i: TagDirectory(self.inode, self.inodes, self.api, self.num_retries, self._enable_write,
+                                              i['name'], poll=self._poll, poll_time=self._poll_time))
 
     @use_counter
     @check_update
@@ -832,9 +850,9 @@ class TagDirectory(Directory):
     to the user that are tagged with a particular tag.
     """
 
-    def __init__(self, parent_inode, inodes, api, num_retries, tag,
+    def __init__(self, parent_inode, inodes, api, num_retries, enable_write, tag,
                  poll=False, poll_time=60):
-        super(TagDirectory, self).__init__(parent_inode, inodes, api.config)
+        super(TagDirectory, self).__init__(parent_inode, inodes, api.config, enable_write)
         self.api = api
         self.num_retries = num_retries
         self.tag = tag
@@ -856,15 +874,15 @@ class TagDirectory(Directory):
         self.merge(taggedcollections['items'],
                    lambda i: i['head_uuid'],
                    lambda a, i: a.collection_locator == i['head_uuid'],
-                   lambda i: CollectionDirectory(self.inode, self.inodes, self.api, self.num_retries, i['head_uuid']))
+                   lambda i: CollectionDirectory(self.inode, self.inodes, self.api, self.num_retries, self._enable_write, i['head_uuid']))
 
 
 class ProjectDirectory(Directory):
     """A special directory that contains the contents of a project."""
 
-    def __init__(self, parent_inode, inodes, api, num_retries, project_object,
+    def __init__(self, parent_inode, inodes, api, num_retries, enable_write, project_object,
                  poll=True, poll_time=3, storage_classes=None):
-        super(ProjectDirectory, self).__init__(parent_inode, inodes, api.config)
+        super(ProjectDirectory, self).__init__(parent_inode, inodes, api.config, enable_write)
         self.api = api
         self.num_retries = num_retries
         self.project_object = project_object
@@ -882,12 +900,13 @@ class ProjectDirectory(Directory):
 
     def createDirectory(self, i):
         if collection_uuid_pattern.match(i['uuid']):
-            return CollectionDirectory(self.inode, self.inodes, self.api, self.num_retries, i)
+            return CollectionDirectory(self.inode, self.inodes, self.api, self.num_retries, self._enable_write, i)
         elif group_uuid_pattern.match(i['uuid']):
-            return ProjectDirectory(self.inode, self.inodes, self.api, self.num_retries, i, self._poll, self._poll_time, self.storage_classes)
+            return ProjectDirectory(self.inode, self.inodes, self.api, self.num_retries, self._enable_write,
+                                    i, self._poll, self._poll_time, self.storage_classes)
         elif link_uuid_pattern.match(i['uuid']):
             if i['head_kind'] == 'arvados#collection' or portable_data_hash_pattern.match(i['head_uuid']):
-                return CollectionDirectory(self.inode, self.inodes, self.api, self.num_retries, i['head_uuid'])
+                return CollectionDirectory(self.inode, self.inodes, self.api, self.num_retries, self._enable_write, i['head_uuid'])
             else:
                 return None
         elif uuid_pattern.match(i['uuid']):
@@ -1022,6 +1041,8 @@ class ProjectDirectory(Directory):
     @use_counter
     @check_update
     def writable(self):
+        if not self._enable_write:
+            return False
         with llfuse.lock_released:
             if not self._current_user:
                 self._current_user = self.api.users().current().execute(num_retries=self.num_retries)
@@ -1033,6 +1054,9 @@ class ProjectDirectory(Directory):
     @use_counter
     @check_update
     def mkdir(self, name):
+        if not self.writable():
+            raise llfuse.FUSEError(errno.EROFS)
+
         try:
             with llfuse.lock_released:
                 c = {
@@ -1053,6 +1077,9 @@ class ProjectDirectory(Directory):
     @use_counter
     @check_update
     def rmdir(self, name):
+        if not self.writable():
+            raise llfuse.FUSEError(errno.EROFS)
+
         if name not in self:
             raise llfuse.FUSEError(errno.ENOENT)
         if not isinstance(self[name], CollectionDirectory):
@@ -1066,6 +1093,9 @@ class ProjectDirectory(Directory):
     @use_counter
     @check_update
     def rename(self, name_old, name_new, src):
+        if not self.writable():
+            raise llfuse.FUSEError(errno.EROFS)
+
         if not isinstance(src, ProjectDirectory):
             raise llfuse.FUSEError(errno.EPERM)
 
@@ -1138,9 +1168,9 @@ class ProjectDirectory(Directory):
 class SharedDirectory(Directory):
     """A special directory that represents users or groups who have shared projects with me."""
 
-    def __init__(self, parent_inode, inodes, api, num_retries, exclude,
+    def __init__(self, parent_inode, inodes, api, num_retries, enable_write, exclude,
                  poll=False, poll_time=60, storage_classes=None):
-        super(SharedDirectory, self).__init__(parent_inode, inodes, api.config)
+        super(SharedDirectory, self).__init__(parent_inode, inodes, api.config, enable_write)
         self.api = api
         self.num_retries = num_retries
         self.current_user = api.users().current().execute(num_retries=num_retries)
@@ -1231,7 +1261,8 @@ class SharedDirectory(Directory):
             self.merge(contents.items(),
                        lambda i: i[0],
                        lambda a, i: a.uuid() == i[1]['uuid'],
-                       lambda i: ProjectDirectory(self.inode, self.inodes, self.api, self.num_retries, i[1], poll=self._poll, poll_time=self._poll_time, storage_classes=self.storage_classes))
+                       lambda i: ProjectDirectory(self.inode, self.inodes, self.api, self.num_retries, self._enable_write,
+                                                  i[1], poll=self._poll, poll_time=self._poll_time, storage_classes=self.storage_classes))
         except Exception:
             _logger.exception("arv-mount shared dir error")
         finally:

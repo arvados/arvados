@@ -1113,7 +1113,7 @@ class MagicDirApiError(FuseMagicTest):
 
 class SanitizeFilenameTest(MountTestBase):
     def test_sanitize_filename(self):
-        pdir = fuse.ProjectDirectory(1, {}, self.api, 0, project_object=self.api.users().current().execute())
+        pdir = fuse.ProjectDirectory(1, {}, self.api, 0, False, project_object=self.api.users().current().execute())
         acceptable = [
             "foo.txt",
             ".foo",
