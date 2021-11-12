@@ -57,12 +57,15 @@ class MountTestBase(unittest.TestCase):
         llfuse.close()
 
     def make_mount(self, root_class, **root_kwargs):
+        enable_write = True
+        if 'enable_write' in root_kwargs:
+            enable_write = root_kwargs.pop('enable_write')
         self.operations = fuse.Operations(
             os.getuid(), os.getgid(),
             api_client=self.api,
-            enable_write=True)
+            enable_write=enable_write)
         self.operations.inodes.add_entry(root_class(
-            llfuse.ROOT_INODE, self.operations.inodes, self.api, 0, True, **root_kwargs))
+            llfuse.ROOT_INODE, self.operations.inodes, self.api, 0, enable_write, **root_kwargs))
         llfuse.init(self.operations, self.mounttmp, [])
         self.llfuse_thread = threading.Thread(None, lambda: self._llfuse_main())
         self.llfuse_thread.daemon = True

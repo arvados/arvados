@@ -288,7 +288,7 @@ class CollectionDirectoryBase(Directory):
             self._entries[name] = self.inodes.add_entry(CollectionDirectoryBase(self.inode, self.inodes, self.apiconfig, self._enable_write, item))
             self._entries[name].populate(mtime)
         else:
-            self._entries[name] = self.inodes.add_entry(FuseArvadosFile(self.inode, item, mtime))
+            self._entries[name] = self.inodes.add_entry(FuseArvadosFile(self.inode, item, mtime, self._enable_write))
         item.fuse_entry = self._entries[name]
 
     def on_event(self, event, collection, name, item):
