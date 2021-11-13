@@ -28,7 +28,7 @@ type Proxy struct {
 	RequestDumps [][]byte
 }
 
-// NewProxy returns a new Proxy that saves a dump of each reqeust
+// NewProxy returns a new Proxy that saves a dump of each request
 // before forwarding to the indicated service.
 func NewProxy(c *check.C, svc arvados.Service) *Proxy {
 	var target url.URL

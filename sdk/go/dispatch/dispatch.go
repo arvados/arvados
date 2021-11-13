@@ -325,7 +325,7 @@ func (d *Dispatcher) Unlock(uuid string) error {
 //
 // This allows the dispatcher to put its own RunContainer func into a
 // cleanup phase (for example, to kill local processes created by a
-// prevous dispatch process that are still running even though the
+// previous dispatch process that are still running even though the
 // container state is final) without the risk of having multiple
 // goroutines monitoring the same UUID.
 func (d *Dispatcher) TrackContainer(uuid string) error {
