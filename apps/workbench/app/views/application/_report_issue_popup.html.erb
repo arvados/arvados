@@ -4,7 +4,7 @@ SPDX-License-Identifier: AGPL-3.0 %>
 
 <%
   generated_at = arvados_api_client.discovery[:generatedAt]
-  arvados_base = Rails.configuration.Services.Controller.ExternalURL.to_s + "/arvados/v1"
+  arvados_base = Rails.configuration.Services.Controller.ExternalURL.join("/arvados/v1").to_s
   support_email = Rails.configuration.Mail.SupportEmailAddress
 
   additional_info = {}
