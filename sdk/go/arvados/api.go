@@ -68,6 +68,7 @@ var (
 	EndpointLinkGet                       = APIEndpoint{"GET", "arvados/v1/links/{uuid}", ""}
 	EndpointLinkList                      = APIEndpoint{"GET", "arvados/v1/links", ""}
 	EndpointLinkDelete                    = APIEndpoint{"DELETE", "arvados/v1/links/{uuid}", ""}
+	EndpointSysTrashSweep                 = APIEndpoint{"POST", "sys/trash_sweep", ""}
 	EndpointUserActivate                  = APIEndpoint{"POST", "arvados/v1/users/{uuid}/activate", ""}
 	EndpointUserCreate                    = APIEndpoint{"POST", "arvados/v1/users", "user"}
 	EndpointUserCurrent                   = APIEndpoint{"GET", "arvados/v1/users/current", ""}
@@ -269,6 +270,7 @@ type API interface {
 	SpecimenGet(ctx context.Context, options GetOptions) (Specimen, error)
 	SpecimenList(ctx context.Context, options ListOptions) (SpecimenList, error)
 	SpecimenDelete(ctx context.Context, options DeleteOptions) (Specimen, error)
+	SysTrashSweep(ctx context.Context, options struct{}) (struct{}, error)
 	UserCreate(ctx context.Context, options CreateOptions) (User, error)
 	UserUpdate(ctx context.Context, options UpdateOptions) (User, error)
 	UserMerge(ctx context.Context, options UserMergeOptions) (User, error)

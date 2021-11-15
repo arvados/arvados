@@ -525,6 +525,10 @@ func (conn *Conn) SpecimenDelete(ctx context.Context, options arvados.DeleteOpti
 	return conn.chooseBackend(options.UUID).SpecimenDelete(ctx, options)
 }
 
+func (conn *Conn) SysTrashSweep(ctx context.Context, options struct{}) (struct{}, error) {
+	return conn.local.SysTrashSweep(ctx, options)
+}
+
 var userAttrsCachedFromLoginCluster = map[string]bool{
 	"created_at":  true,
 	"email":       true,

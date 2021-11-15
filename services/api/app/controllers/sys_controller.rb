@@ -7,7 +7,7 @@ class SysController < ApplicationController
   skip_before_action :render_404_if_no_object
   before_action :admin_required
 
-  def sweep_trash
+  def trash_sweep
     act_as_system_user do
       # Sweep trashed collections
       Collection.
@@ -31,6 +31,7 @@ class SysController < ApplicationController
       # Sweep expired tokens
       ActiveRecord::Base.connection.execute("DELETE from api_client_authorizations where expires_at <= statement_timestamp()")
     end
+    head :no_content
   end
 
   protected
