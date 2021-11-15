@@ -33,7 +33,7 @@ export class CollectionService extends TrashableResourceService<CollectionResour
     }
 
     update(uuid: string, data: Partial<CollectionResource>) {
-        const select = Object.keys(data)
+        const select = [...Object.keys(data), 'version', 'modifiedAt'];
         return super.update(uuid, { ...data, preserveVersion: true }, select);
     }
 

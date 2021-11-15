@@ -14,6 +14,7 @@ import { progressIndicatorActions } from "store/progress-indicator/progress-indi
 import { snackbarActions, SnackbarKind } from "../snackbar/snackbar-actions";
 import { updateResources } from "../resources/resources-actions";
 import { loadDetailsPanel } from "../details-panel/details-panel-action";
+import { getResource } from "store/resources/resources";
 
 export interface CollectionUpdateFormDialogData {
     uuid: string;
@@ -36,11 +37,13 @@ export const updateCollection = (collection: CollectionUpdateFormDialogData) =>
         dispatch(startSubmit(COLLECTION_UPDATE_FORM_NAME));
         dispatch(progressIndicatorActions.START_WORKING(COLLECTION_UPDATE_FORM_NAME));
 
+        const cachedCollection = getResource<CollectionResource>(collection.uuid)(getState().resources);
         services.collectionService.update(uuid, {
             name: collection.name,
             storageClassesDesired: collection.storageClassesDesired,
             description: collection.description }
         ).then(updatedCollection => {
+            updatedCollection = {...cachedCollection, ...updatedCollection};
             dispatch(collectionPanelActions.LOAD_COLLECTION_SUCCESS({ item: updatedCollection as CollectionResource }));
             dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_UPDATE_FORM_NAME }));
             dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_UPDATE_FORM_NAME));
