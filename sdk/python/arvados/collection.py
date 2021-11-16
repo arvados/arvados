@@ -1546,7 +1546,8 @@ class Collection(RichCollectionBase):
              storage_classes=None,
              trash_at=None,
              merge=True,
-             num_retries=None):
+             num_retries=None,
+             preserve_version=False):
         """Save collection to an existing collection record.
 
         Commit pending buffer blocks to Keep, merge with remote record (if
@@ -1576,6 +1577,13 @@ class Collection(RichCollectionBase):
         :num_retries:
           Retry count on API calls (if None,  use the collection default)
 
+        :preserve_version:
+          If True, indicate that the collection content being saved right now
+          should be preserved in a version snapshot if the collection record is
+          updated in the future. Requires that the API server has
+          Collections.CollectionVersioning enabled, if not, setting this will
+          raise an exception.
+
         """
         if properties and type(properties) is not dict:
             raise errors.ArgumentError("properties must be dictionary type.")
@@ -1588,6 +1596,9 @@ class Collection(RichCollectionBase):
         if trash_at and type(trash_at) is not datetime.datetime:
             raise errors.ArgumentError("trash_at must be datetime type.")
 
+        if preserve_version and not self._my_api().config()['Collections'].get('CollectionVersioning', False):
+            raise errors.ArgumentError("preserve_version is not supported when CollectionVersioning is not enabled.")
+
         body={}
         if properties:
             body["properties"] = properties
@@ -1596,6 +1607,8 @@ class Collection(RichCollectionBase):
         if trash_at:
             t = trash_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
             body["trash_at"] = t
+        if preserve_version:
+            body["preserve_version"] = preserve_version
 
         if not self.committed():
             if self._has_remote_blocks:
@@ -1641,7 +1654,8 @@ class Collection(RichCollectionBase):
                  storage_classes=None,
                  trash_at=None,
                  ensure_unique_name=False,
-                 num_retries=None):
+                 num_retries=None,
+                 preserve_version=False):
         """Save collection to a new collection record.
 
         Commit pending buffer blocks to Keep and, when create_collection_record
@@ -1680,6 +1694,13 @@ class Collection(RichCollectionBase):
         :num_retries:
           Retry count on API calls (if None,  use the collection default)
 
+        :preserve_version:
+          If True, indicate that the collection content being saved right now
+          should be preserved in a version snapshot if the collection record is
+          updated in the future. Requires that the API server has
+          Collections.CollectionVersioning enabled, if not, setting this will
+          raise an exception.
+
         """
         if properties and type(properties) is not dict:
             raise errors.ArgumentError("properties must be dictionary type.")
@@ -1689,6 +1710,9 @@ class Collection(RichCollectionBase):
 
         if trash_at and type(trash_at) is not datetime.datetime:
             raise errors.ArgumentError("trash_at must be datetime type.")
+
+        if preserve_version and not self._my_api().config()['Collections'].get('CollectionVersioning', False):
+            raise errors.ArgumentError("preserve_version is not supported when CollectionVersioning is not enabled.")
 
         if self._has_remote_blocks:
             # Copy any remote blocks to the local cluster.
@@ -1718,6 +1742,8 @@ class Collection(RichCollectionBase):
             if trash_at:
                 t = trash_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
                 body["trash_at"] = t
+            if preserve_version:
+                body["preserve_version"] = preserve_version
 
             self._remember_api_response(self._my_api().collections().create(ensure_unique_name=ensure_unique_name, body=body).execute(num_retries=num_retries))
             text = self._api_response["manifest_text"]
