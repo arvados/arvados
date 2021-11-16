@@ -120,7 +120,7 @@ export const CollectionPanel = withStyles(styles)(
                 isWritable = true;
             } else {
                 const itemOwner = getResource<GroupResource | UserResource>(item.ownerUuid)(state.resources);
-                if (itemOwner) {
+                if (itemOwner && itemOwner.writableBy) {
                     isWritable = itemOwner.writableBy.indexOf(currentUserUUID || '') >= 0;
                 }
             }
