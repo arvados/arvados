@@ -17,6 +17,7 @@ import { SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { navigateTo } from 'store/navigation/navigation-action';
 import { loadDetailsPanel } from 'store/details-panel/details-panel-action';
 import { addProperty, deleteProperty } from "lib/resource-properties";
+import { getResource } from "store/resources/resources";
 
 export const collectionPanelActions = unionize({
     SET_COLLECTION: ofType<CollectionResource>(),
@@ -39,7 +40,6 @@ export const loadCollectionPanel = (uuid: string, forceReload = false) =>
         dispatch(resourcesActions.SET_RESOURCES([collection]));
         if (collection.fileCount <= COLLECTION_PANEL_LOAD_FILES_THRESHOLD &&
             !getState().collectionPanel.loadBigCollections) {
-            // dispatch<any>(loadCollectionFiles(collection.uuid));
         }
         return collection;
     };
@@ -52,11 +52,13 @@ export const createCollectionTag = (data: TagProperty) =>
         const properties = Object.assign({}, item.properties);
         const key = data.keyID || data.key;
         const value = data.valueID || data.value;
+        const cachedCollection = getResource<CollectionResource>(item.uuid)(getState().resources);
         services.collectionService.update(
             item.uuid, {
                 properties: addProperty(properties, key, value)
             }
         ).then(updatedCollection => {
+            updatedCollection = {...cachedCollection, ...updatedCollection};
             dispatch(collectionPanelActions.SET_COLLECTION(updatedCollection));
             dispatch(resourcesActions.SET_RESOURCES([updatedCollection]));
             dispatch(snackbarActions.OPEN_SNACKBAR({
@@ -89,11 +91,13 @@ export const deleteCollectionTag = (key: string, value: string) =>
         if (!item) { return; }
 
         const properties = Object.assign({}, item.properties);
+        const cachedCollection = getResource<CollectionResource>(item.uuid)(getState().resources);
         services.collectionService.update(
             item.uuid, {
                 properties: deleteProperty(properties, key, value)
             }
         ).then(updatedCollection => {
+            updatedCollection = {...cachedCollection, ...updatedCollection};
             dispatch(collectionPanelActions.SET_COLLECTION(updatedCollection));
             dispatch(resourcesActions.SET_RESOURCES([updatedCollection]));
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Tag has been successfully deleted.", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
