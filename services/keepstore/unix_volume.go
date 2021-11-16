@@ -359,47 +359,53 @@ var blockFileRe = regexp.MustCompile(`^[0-9a-f]{32}$`)
 //     e4de7a2810f5554cd39b36d8ddb132ff+67108864 1388701136
 //
 func (v *UnixVolume) IndexTo(prefix string, w io.Writer) error {
-	var lastErr error
 	rootdir, err := v.os.Open(v.Root)
 	if err != nil {
 		return err
 	}
-	defer rootdir.Close()
 	v.os.stats.TickOps("readdir")
 	v.os.stats.Tick(&v.os.stats.ReaddirOps)
-	for {
-		names, err := rootdir.Readdirnames(1)
-		if err == io.EOF {
-			return lastErr
-		} else if err != nil {
-			return err
-		}
-		if !strings.HasPrefix(names[0], prefix) && !strings.HasPrefix(prefix, names[0]) {
+	subdirs, err := rootdir.Readdirnames(-1)
+	rootdir.Close()
+	if err != nil {
+		return err
+	}
+	for _, subdir := range subdirs {
+		if !strings.HasPrefix(subdir, prefix) && !strings.HasPrefix(prefix, subdir) {
 			// prefix excludes all blocks stored in this dir
 			continue
 		}
-		if !blockDirRe.MatchString(names[0]) {
+		if !blockDirRe.MatchString(subdir) {
 			continue
 		}
-		blockdirpath := filepath.Join(v.Root, names[0])
+		blockdirpath := filepath.Join(v.Root, subdir)
 		blockdir, err := v.os.Open(blockdirpath)
 		if err != nil {
 			v.logger.WithError(err).Errorf("error reading %q", blockdirpath)
-			lastErr = fmt.Errorf("error reading %q: %s", blockdirpath, err)
-			continue
+			return fmt.Errorf("error reading %q: %s", blockdirpath, err)
 		}
 		v.os.stats.TickOps("readdir")
 		v.os.stats.Tick(&v.os.stats.ReaddirOps)
-		for {
-			fileInfo, err := blockdir.Readdir(1)
-			if err == io.EOF {
-				break
+		// ReadDir() (compared to Readdir(), which returns
+		// FileInfo structs) helps complete the sequence of
+		// readdirent calls as quickly as possible, reducing
+		// the likelihood of NFS EBADCOOKIE (523) errors.
+		dirents, err := blockdir.ReadDir(-1)
+		blockdir.Close()
+		if err != nil {
+			v.logger.WithError(err).Errorf("error reading %q", blockdirpath)
+			return fmt.Errorf("error reading %q: %s", blockdirpath, err)
+		}
+		for _, dirent := range dirents {
+			fileInfo, err := dirent.Info()
+			if os.IsNotExist(err) {
+				// File disappeared between ReadDir() and now
+				continue
 			} else if err != nil {
-				v.logger.WithError(err).Errorf("error reading %q", blockdirpath)
-				lastErr = fmt.Errorf("error reading %q: %s", blockdirpath, err)
-				break
+				v.logger.WithError(err).Errorf("error getting FileInfo for %q in %q", dirent.Name(), blockdirpath)
+				return err
 			}
-			name := fileInfo[0].Name()
+			name := fileInfo.Name()
 			if !strings.HasPrefix(name, prefix) {
 				continue
 			}
@@ -408,16 +414,15 @@ func (v *UnixVolume) IndexTo(prefix string, w io.Writer) error {
 			}
 			_, err = fmt.Fprint(w,
 				name,
-				"+", fileInfo[0].Size(),
-				" ", fileInfo[0].ModTime().UnixNano(),
+				"+", fileInfo.Size(),
+				" ", fileInfo.ModTime().UnixNano(),
 				"\n")
 			if err != nil {
-				blockdir.Close()
 				return fmt.Errorf("error writing: %s", err)
 			}
 		}
-		blockdir.Close()
 	}
+	return nil
 }
 
 // Trash trashes the block data from the unix storage
