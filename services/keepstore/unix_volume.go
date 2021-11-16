@@ -135,6 +135,7 @@ func (v *UnixVolume) GetDeviceID() string {
 	if err != nil {
 		return giveup("opening %q: %s", udir, err)
 	}
+	defer d.Close()
 	uuids, err := d.Readdirnames(0)
 	if err != nil {
 		return giveup("reading %q: %s", udir, err)
@@ -274,29 +275,25 @@ func (v *UnixVolume) WriteBlock(ctx context.Context, loc string, rdr io.Reader) 
 		return fmt.Errorf("error creating directory %s: %s", bdir, err)
 	}
 
-	tmpfile, tmperr := v.os.TempFile(bdir, "tmp"+loc)
-	if tmperr != nil {
-		return fmt.Errorf("TempFile(%s, tmp%s) failed: %s", bdir, loc, tmperr)
-	}
-
 	bpath := v.blockPath(loc)
+	tmpfile, err := v.os.TempFile(bdir, "tmp"+loc)
+	if err != nil {
+		return fmt.Errorf("TempFile(%s, tmp%s) failed: %s", bdir, loc, err)
+	}
+	defer v.os.Remove(tmpfile.Name())
+	defer tmpfile.Close()
 
-	if err := v.lock(ctx); err != nil {
+	if err = v.lock(ctx); err != nil {
 		return err
 	}
 	defer v.unlock()
 	n, err := io.Copy(tmpfile, rdr)
 	v.os.stats.TickOutBytes(uint64(n))
 	if err != nil {
-		err = fmt.Errorf("error writing %s: %s", bpath, err)
-		tmpfile.Close()
-		v.os.Remove(tmpfile.Name())
-		return err
+		return fmt.Errorf("error writing %s: %s", bpath, err)
 	}
-	if err := tmpfile.Close(); err != nil {
-		err = fmt.Errorf("error closing %s: %s", tmpfile.Name(), err)
-		v.os.Remove(tmpfile.Name())
-		return err
+	if err = tmpfile.Close(); err != nil {
+		return fmt.Errorf("error closing %s: %s", tmpfile.Name(), err)
 	}
 	// ext4 uses a low-precision clock and effectively backdates
 	// files by up to 10 ms, sometimes across a 1-second boundary,
@@ -307,14 +304,10 @@ func (v *UnixVolume) WriteBlock(ctx context.Context, loc string, rdr io.Reader) 
 	v.os.stats.TickOps("utimes")
 	v.os.stats.Tick(&v.os.stats.UtimesOps)
 	if err = os.Chtimes(tmpfile.Name(), ts, ts); err != nil {
-		err = fmt.Errorf("error setting timestamps on %s: %s", tmpfile.Name(), err)
-		v.os.Remove(tmpfile.Name())
-		return err
+		return fmt.Errorf("error setting timestamps on %s: %s", tmpfile.Name(), err)
 	}
-	if err := v.os.Rename(tmpfile.Name(), bpath); err != nil {
-		err = fmt.Errorf("error renaming %s to %s: %s", tmpfile.Name(), bpath, err)
-		v.os.Remove(tmpfile.Name())
-		return err
+	if err = v.os.Rename(tmpfile.Name(), bpath); err != nil {
+		return fmt.Errorf("error renaming %s to %s: %s", tmpfile.Name(), bpath, err)
 	}
 	return nil
 }

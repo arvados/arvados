@@ -121,8 +121,6 @@ func (h *Handler) setupProxyRemoteCluster(next http.Handler) http.Handler {
 
 		mux.ServeHTTP(w, req)
 	})
-
-	return mux
 }
 
 type CurrentUser struct {

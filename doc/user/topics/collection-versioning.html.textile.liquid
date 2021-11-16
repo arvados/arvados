@@ -18,7 +18,7 @@ A version will be saved when one of the following conditions is true:
 
 One is by "configuring (system-wide) the collection's idle time":{{site.baseurl}}/admin/collection-versioning.html. This idle time is checked against the @modified_at@ attribute so that the version is saved when one or more of the previously enumerated attributes get updated and the @modified_at@ is at least at the configured idle time in the past. This way, a frequently updated collection won't create lots of version records that may not be useful.
 
-The other way to trigger a version save, is by setting @preserve_version@ to @true@ on the current version collection record: this ensures that the current state will be preserved as a version the next time it gets updated.
+The other way to trigger a version save, is by setting @preserve_version@ to @true@ on the current version collection record: this ensures that the current state will be preserved as a version the next time it gets updated. This includes either creating a new collection or updating a preexisting one. In the case of using @preserve_version = true@ on a collection's create call, the new record state will be preserved as a snapshot on the next update.
 
 h3. Collection's past versions behavior & limitations
 

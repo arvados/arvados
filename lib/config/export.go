@@ -72,6 +72,7 @@ var whitelist = map[string]bool{
 	"API.MaxTokenLifetime":                                false,
 	"API.RequestTimeout":                                  true,
 	"API.SendTimeout":                                     true,
+	"API.VocabularyPath":                                  false,
 	"API.WebsocketClientEventQueue":                       false,
 	"API.WebsocketServerEventQueue":                       false,
 	"AuditLogs":                                           false,
@@ -95,7 +96,7 @@ var whitelist = map[string]bool{
 	"Collections.BlobTrashCheckInterval":                  false,
 	"Collections.BlobTrashConcurrency":                    false,
 	"Collections.BlobTrashLifetime":                       false,
-	"Collections.CollectionVersioning":                    false,
+	"Collections.CollectionVersioning":                    true,
 	"Collections.DefaultReplication":                      true,
 	"Collections.DefaultTrashLifetime":                    true,
 	"Collections.ForwardSlashNameSubstitution":            true,
@@ -215,6 +216,7 @@ var whitelist = map[string]bool{
 	"SystemRootToken":                                     false,
 	"TLS":                                                 false,
 	"Users":                                               true,
+	"Users.ActivatedUsersAreVisibleToOthers":              false,
 	"Users.AdminNotifierEmailFrom":                        false,
 	"Users.AnonymousUserToken":                            true,
 	"Users.AutoAdminFirstUser":                            false,
@@ -276,7 +278,6 @@ var whitelist = map[string]bool{
 	"Workbench.UserProfileFormFields.*.*":                 true,
 	"Workbench.UserProfileFormFields.*.*.*":               true,
 	"Workbench.UserProfileFormMessage":                    true,
-	"Workbench.VocabularyURL":                             true,
 	"Workbench.WelcomePageHTML":                           true,
 }
 

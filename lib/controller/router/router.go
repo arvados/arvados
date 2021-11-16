@@ -66,6 +66,13 @@ func (rtr *router) addRoutes() {
 			},
 		},
 		{
+			arvados.EndpointVocabularyGet,
+			func() interface{} { return &struct{}{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.VocabularyGet(ctx)
+			},
+		},
+		{
 			arvados.EndpointLogin,
 			func() interface{} { return &arvados.LoginOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
@@ -305,6 +312,41 @@ func (rtr *router) addRoutes() {
 			func() interface{} { return &arvados.UntrashOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
 				return rtr.backend.GroupUntrash(ctx, *opts.(*arvados.UntrashOptions))
+			},
+		},
+		{
+			arvados.EndpointLinkCreate,
+			func() interface{} { return &arvados.CreateOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.LinkCreate(ctx, *opts.(*arvados.CreateOptions))
+			},
+		},
+		{
+			arvados.EndpointLinkUpdate,
+			func() interface{} { return &arvados.UpdateOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.LinkUpdate(ctx, *opts.(*arvados.UpdateOptions))
+			},
+		},
+		{
+			arvados.EndpointLinkList,
+			func() interface{} { return &arvados.ListOptions{Limit: -1} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.LinkList(ctx, *opts.(*arvados.ListOptions))
+			},
+		},
+		{
+			arvados.EndpointLinkGet,
+			func() interface{} { return &arvados.GetOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.LinkGet(ctx, *opts.(*arvados.GetOptions))
+			},
+		},
+		{
+			arvados.EndpointLinkDelete,
+			func() interface{} { return &arvados.DeleteOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.LinkDelete(ctx, *opts.(*arvados.DeleteOptions))
 			},
 		},
 		{

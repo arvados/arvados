@@ -240,6 +240,12 @@ Clusters:
       # Timeout on requests to internal Keep services.
       KeepServiceRequestTimeout: 15s
 
+      # Vocabulary file path, local to the node running the controller.
+      # This JSON file should contain the description of what's allowed
+      # as object's metadata. Its format is described at:
+      # https://doc.arvados.org/admin/metadata-vocabulary.html
+      VocabularyPath: ""
+
     Users:
       # Config parameters to automatically setup new users.  If enabled,
       # this users will be able to self-activate.  Enable this if you want
@@ -264,6 +270,16 @@ Clusters:
       # immediately.  This skips the "self-activate" step which enforces
       # user agreements.  Should only be enabled for development.
       NewUsersAreActive: false
+
+      # Newly activated users (whether set up by an admin or via
+      # AutoSetupNewUsers) immediately become visible to other active
+      # users.
+      #
+      # On a multi-tenant cluster, where the intent is for users to be
+      # invisible to one another unless they have been added to the
+      # same group(s) via Workbench admin interface, change this to
+      # false.
+      ActivatedUsersAreVisibleToOthers: true
 
       # The e-mail address of the user you would like to become marked as an admin
       # user on their first login.
@@ -1572,7 +1588,6 @@ Clusters:
       DefaultOpenIdPrefix: "https://www.google.com/accounts/o8/id"
 
       # Workbench2 configs
-      VocabularyURL: ""
       FileViewersConfigURL: ""
 
       # Idle time after which the user's session will be auto closed.

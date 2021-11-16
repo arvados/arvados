@@ -22,6 +22,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/sdk/go/health"
 )
 
 type Conn struct {
@@ -30,18 +31,23 @@ type Conn struct {
 	remotes map[string]backend
 }
 
-func New(cluster *arvados.Cluster) *Conn {
+func New(cluster *arvados.Cluster, healthFuncs *map[string]health.Func) *Conn {
 	local := localdb.NewConn(cluster)
 	remotes := map[string]backend{}
 	for id, remote := range cluster.RemoteClusters {
 		if !remote.Proxy || id == cluster.ClusterID {
 			continue
 		}
-		conn := rpc.NewConn(id, &url.URL{Scheme: remote.Scheme, Host: remote.Host}, remote.Insecure, saltedTokenProvider(local, id))
+		conn := rpc.NewConn(id, &url.URL{Scheme: remote.Scheme, Host: remote.Host}, remote.Insecure, saltedTokenProvider(cluster, local, id))
 		// Older versions of controller rely on the Via header
 		// to detect loops.
 		conn.SendHeader = http.Header{"Via": {"HTTP/1.1 arvados-controller"}}
 		remotes[id] = conn
+	}
+
+	if healthFuncs != nil {
+		hf := map[string]health.Func{"vocabulary": local.LastVocabularyError}
+		*healthFuncs = hf
 	}
 
 	return &Conn{
@@ -55,7 +61,7 @@ func New(cluster *arvados.Cluster) *Conn {
 // tokens from an incoming request context, determines whether they
 // should (and can) be salted for the given remoteID, and returns the
 // resulting tokens.
-func saltedTokenProvider(local backend, remoteID string) rpc.TokenProvider {
+func saltedTokenProvider(cluster *arvados.Cluster, local backend, remoteID string) rpc.TokenProvider {
 	return func(ctx context.Context) ([]string, error) {
 		var tokens []string
 		incoming, ok := auth.FromContext(ctx)
@@ -63,6 +69,16 @@ func saltedTokenProvider(local backend, remoteID string) rpc.TokenProvider {
 			return nil, errors.New("no token provided")
 		}
 		for _, token := range incoming.Tokens {
+			if strings.HasPrefix(token, "v2/"+cluster.ClusterID+"-") && remoteID == cluster.Login.LoginCluster {
+				// If we did this, the login cluster
+				// would call back to us and then
+				// reject our response because the
+				// user UUID prefix (i.e., the
+				// LoginCluster prefix) won't match
+				// the token UUID prefix (i.e., our
+				// prefix).
+				return nil, httpErrorf(http.StatusUnauthorized, "cannot use a locally issued token to forward a request to our login cluster (%s)", remoteID)
+			}
 			salted, err := auth.SaltToken(token, remoteID)
 			switch err {
 			case nil:
@@ -190,6 +206,10 @@ func (conn *Conn) ConfigGet(ctx context.Context) (json.RawMessage, error) {
 	var buf bytes.Buffer
 	err := config.ExportJSON(&buf, conn.cluster)
 	return json.RawMessage(buf.Bytes()), err
+}
+
+func (conn *Conn) VocabularyGet(ctx context.Context) (arvados.Vocabulary, error) {
+	return conn.chooseBackend(conn.cluster.ClusterID).VocabularyGet(ctx)
 }
 
 func (conn *Conn) Login(ctx context.Context, options arvados.LoginOptions) (arvados.LoginResponse, error) {
@@ -463,6 +483,26 @@ func (conn *Conn) GroupTrash(ctx context.Context, options arvados.DeleteOptions)
 
 func (conn *Conn) GroupUntrash(ctx context.Context, options arvados.UntrashOptions) (arvados.Group, error) {
 	return conn.chooseBackend(options.UUID).GroupUntrash(ctx, options)
+}
+
+func (conn *Conn) LinkCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Link, error) {
+	return conn.chooseBackend(options.ClusterID).LinkCreate(ctx, options)
+}
+
+func (conn *Conn) LinkUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.Link, error) {
+	return conn.chooseBackend(options.UUID).LinkUpdate(ctx, options)
+}
+
+func (conn *Conn) LinkGet(ctx context.Context, options arvados.GetOptions) (arvados.Link, error) {
+	return conn.chooseBackend(options.UUID).LinkGet(ctx, options)
+}
+
+func (conn *Conn) LinkList(ctx context.Context, options arvados.ListOptions) (arvados.LinkList, error) {
+	return conn.generated_LinkList(ctx, options)
+}
+
+func (conn *Conn) LinkDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.Link, error) {
+	return conn.chooseBackend(options.UUID).LinkDelete(ctx, options)
 }
 
 func (conn *Conn) SpecimenList(ctx context.Context, options arvados.ListOptions) (arvados.SpecimenList, error) {

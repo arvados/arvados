@@ -46,7 +46,7 @@ This grants the permission in @name@ for @tail_uuid@ accessing @head_uuid@.
 
 If a User has *can_manage* permission on some object, the user has the ability to read, create, update and delete permission links with @head_uuid@ of the managed object.  In other words, the user has the ability to modify the permission grants on the object.
 
-The *can_login* @name@ is only meaningful on a permission link with with @tail_uuid@ a user UUID and @head_uuid@ a Virtual Machine UUID. A permission link of this type gives the user UUID permission to log into the Virtual Machine UUID. The username for the VM is specified in the @properties@ field. Group membership can be specified that way as well, optionally. See the "VM login section on the CLI cheat sheet":/install/cheat_sheet.html#vm-login for an example.
+The *can_login* @name@ is only meaningful on a permission link with with @tail_uuid@ a user UUID and @head_uuid@ a Virtual Machine UUID. A permission link of this type gives the user UUID permission to log into the Virtual Machine UUID. The username for the VM is specified in the @properties@ field. Group membership can be specified that way as well, optionally. See the "VM login section on the 'User management at the CLI' page":{{ site.baseurl }}/admin/user-management-cli.html#vm-login for an example.
 
 h3. Transitive permissions
 
@@ -66,7 +66,7 @@ A "project" is a subtype of Group that is displayed as a "Project" in Workbench,
 * The name of a project is unique only among projects and filters with the same owner_uuid.
 * Projects can be targets (@head_uuid@) of permission links, but not origins (@tail_uuid@).  Putting a project in a @tail_uuid@ field is an error.
 
-A "filter" is a subtype of Group that is displayed as a "Project" in Workbench, and as a directory by @arv-mount@. See "the groups API documentation":/api/methods/groups.html for more information.
+A "filter" is a subtype of Group that is displayed as a "Project" in Workbench, and as a directory by @arv-mount@. See "the groups API documentation":{{ site.baseurl }}/api/methods/groups.html for more information.
 * A filter group cannot own things (cannot appear in @owner_uuid@).  Putting a filter group in an @owner_uuid@ field is an error.
 * A filter group can be owned by a user or a project.
 * The name of a filter is unique only among projects and filters with the same owner_uuid.

@@ -791,6 +791,7 @@ def setup_config():
                     "UserProfileNotificationAddress": "arvados@example.com",
                 },
                 "Collections": {
+                    "CollectionVersioning": True,
                     "BlobSigningKey": "zfhgfenhffzltr9dixws36j1yhksjoll2grmku38mi7yxd66h5j4q9w4jzanezacp8s6q0ro3hxakfye02152hncy6zml2ed0uc",
                     "TrustAllContent": False,
                     "ForwardSlashNameSubstitution": "/",

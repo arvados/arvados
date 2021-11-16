@@ -244,7 +244,7 @@ class Mount(object):
         usr = self.api.users().current().execute(num_retries=self.args.retries)
         now = time.time()
         dir_class = None
-        dir_args = [llfuse.ROOT_INODE, self.operations.inodes, self.api, self.args.retries]
+        dir_args = [llfuse.ROOT_INODE, self.operations.inodes, self.api, self.args.retries, self.args.enable_write]
         mount_readme = False
 
         storage_classes = None
@@ -310,7 +310,7 @@ class Mount(object):
             return
 
         e = self.operations.inodes.add_entry(Directory(
-            llfuse.ROOT_INODE, self.operations.inodes, self.api.config))
+            llfuse.ROOT_INODE, self.operations.inodes, self.api.config, self.args.enable_write))
         dir_args[0] = e.inode
 
         for name in self.args.mount_by_id:

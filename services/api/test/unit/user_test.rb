@@ -447,30 +447,40 @@ class UserTest < ActiveSupport::TestCase
     assert_not_allowed { User.new.save }
   end
 
-  test "setup new user" do
-    set_user_from_auth :admin
+  [true, false].each do |visible|
+    test "setup new user with ActivatedUsersAreVisibleToOthers=#{visible}" do
+      Rails.configuration.Users.ActivatedUsersAreVisibleToOthers = visible
+      set_user_from_auth :admin
 
-    email = 'foo@example.com'
+      email = 'foo@example.com'
 
-    user = User.create ({uuid: 'zzzzz-tpzed-abcdefghijklmno', email: email})
+      user = User.create ({uuid: 'zzzzz-tpzed-abcdefghijklmno', email: email})
 
-    vm = VirtualMachine.create
+      vm = VirtualMachine.create
 
-    response = user.setup(repo_name: 'foo/testrepo',
-                          vm_uuid: vm.uuid)
+      response = user.setup(repo_name: 'foo/testrepo',
+                            vm_uuid: vm.uuid)
 
-    resp_user = find_obj_in_resp response, 'User'
-    verify_user resp_user, email
+      resp_user = find_obj_in_resp response, 'User'
+      verify_user resp_user, email
 
-    group_perm = find_obj_in_resp response, 'Link', 'arvados#group'
-    verify_link group_perm, 'permission', 'can_read', resp_user[:uuid], nil
+      group_perm = find_obj_in_resp response, 'Link', 'arvados#group'
+      verify_link group_perm, 'permission', 'can_read', resp_user[:uuid], nil
 
-    repo_perm = find_obj_in_resp response, 'Link', 'arvados#repository'
-    verify_link repo_perm, 'permission', 'can_manage', resp_user[:uuid], nil
+      group_perm2 = find_obj_in_resp response, 'Link', 'arvados#user'
+      if visible
+        verify_link group_perm2, 'permission', 'can_read', groups(:all_users).uuid, nil
+      else
+        assert_nil group_perm2
+      end
 
-    vm_perm = find_obj_in_resp response, 'Link', 'arvados#virtualMachine'
-    verify_link vm_perm, 'permission', 'can_login', resp_user[:uuid], vm.uuid
-    assert_equal("foo", vm_perm.properties["username"])
+      repo_perm = find_obj_in_resp response, 'Link', 'arvados#repository'
+      verify_link repo_perm, 'permission', 'can_manage', resp_user[:uuid], nil
+
+      vm_perm = find_obj_in_resp response, 'Link', 'arvados#virtualMachine'
+      verify_link vm_perm, 'permission', 'can_login', resp_user[:uuid], vm.uuid
+      assert_equal("foo", vm_perm.properties["username"])
+    end
   end
 
   test "setup new user with junk in database" do
@@ -513,6 +523,9 @@ class UserTest < ActiveSupport::TestCase
 
     group_perm = find_obj_in_resp response, 'Link', 'arvados#group'
     verify_link group_perm, 'permission', 'can_read', resp_user[:uuid], nil
+
+    group_perm2 = find_obj_in_resp response, 'Link', 'arvados#user'
+    verify_link group_perm2, 'permission', 'can_read', groups(:all_users).uuid, nil
 
     # invoke setup again with repo_name
     response = user.setup(repo_name: 'foo/testrepo')
@@ -560,7 +573,7 @@ class UserTest < ActiveSupport::TestCase
           break
         end
       else  # looking for a link
-        if ArvadosModel::resource_class_for_uuid(x['head_uuid']).kind == head_kind
+        if ArvadosModel::resource_class_for_uuid(x['head_uuid']).andand.kind == head_kind
           return_obj = x
           break
         end

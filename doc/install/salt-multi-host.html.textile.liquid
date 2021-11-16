@@ -11,7 +11,6 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 # "Introduction":#introduction
 # "Hosts preparation":#hosts_preparation
-## "Hosts setup using terraform (experimental)":#hosts_setup_using_terraform
 ## "Create a compute image":#create_a_compute_image
 # "Multi host install using the provision.sh script":#multi_host
 # "Choose the desired configuration":#choose_configuration
@@ -65,14 +64,6 @@ Note that these hosts can be virtual machines in your infrastructure and they do
 
 Again, if your infrastructure differs from the setup proposed above (ie, using RDS or an existing DB server), remember that you will need to edit the configuration files for the scripts so they work with your infrastructure.
 
-
-h3(#hosts_setup_using_terraform). Hosts setup using terraform (AWS, experimental)
-
-We added a few "terraform":https://terraform.io/ scripts (https://github.com/arvados/arvados/tree/main/tools/terraform) to let you create these instances easier in an AWS account. Check "the Arvados terraform documentation":/doc/install/terraform.html for more details.
-
-
-
-
 h2(#multi_host). Multi host install using the provision.sh script
 
 {% include 'branchname' %}
@@ -112,7 +103,7 @@ The <i>multi_host</i> example includes Let's Encrypt salt code to automatically 
 
 h3(#further_customization). Further customization of the installation (modifying the salt pillars and states)
 
-You will need further customization to suit your environment, which can be done editing the Saltstack pillars and states files. Pay particular attention to the <i>pillars/arvados.sls</i> file, where you will need to provide some information that can be retrieved as output of the terraform run.
+You will need further customization to suit your environment, which can be done editing the Saltstack pillars and states files. Pay particular attention to the <i>pillars/arvados.sls</i> file, where you will need to provide some information that describes your environment.
 
 Any extra <i>state</i> file you add under <i>local_config_dir/states</i> will be added to the salt run and applied to the hosts.
 
