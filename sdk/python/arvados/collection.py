@@ -1578,7 +1578,8 @@ class Collection(RichCollectionBase):
           Retry count on API calls (if None,  use the collection default)
 
         :preserve_version:
-          If True, the saved collection will be preserved, provided that the
+          If True, the saved collection will be preserved as a snapshot on the
+          next versionable update, provided that the
           Collections.CollectionVersioning configuration is enabled.
 
         """
@@ -1692,8 +1693,10 @@ class Collection(RichCollectionBase):
           Retry count on API calls (if None,  use the collection default)
 
         :preserve_version:
-          If True, the saved collection will be preserved, provided that the
-          Collections.CollectionVersioning configuration is enabled.
+          If True, the newly saved collection will generate a new snapshot of
+          itself on the next versionable update. This parameter requires that
+          the Collections.CollectionVersioning is enabled and will raise an
+          exception otherwise.
 
         """
         if properties and type(properties) is not dict:
