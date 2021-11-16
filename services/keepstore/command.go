@@ -15,6 +15,7 @@ import (
 	"os"
 	"sync"
 
+	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/lib/service"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
@@ -26,7 +27,6 @@ import (
 )
 
 var (
-	version = "dev"
 	Command = service.Command(arvados.ServiceNameKeepstore, newHandlerOrErrorHandler)
 )
 
@@ -168,7 +168,7 @@ func (h *handler) setup(ctx context.Context, cluster *arvados.Cluster, token str
 		return errors.New("no volumes configured")
 	}
 
-	h.Logger.Printf("keepstore %s starting, pid %d", version, os.Getpid())
+	h.Logger.Printf("keepstore %s starting, pid %d", cmd.Version.String(), os.Getpid())
 
 	// Start a round-robin VolumeManager with the configured volumes.
 	vm, err := makeRRVolumeManager(h.Logger, h.Cluster, serviceURL, newVolumeMetricsVecs(reg))
