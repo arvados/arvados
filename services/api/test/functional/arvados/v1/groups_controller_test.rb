@@ -538,6 +538,20 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     assert_includes(owners, groups(:asubproject).uuid)
   end
 
+  test "delete filter & role groups" do
+    authorize_with :admin
+    [:afiltergroup, :private_role].each do |grp|
+      assert !Group.find_by_uuid(groups(grp).uuid).is_trashed
+      post :destroy, params: {
+            id: groups(grp).uuid,
+            format: :json,
+          }
+      assert_response :success
+      # Should not be trashed
+      assert_nil Group.find_by_uuid(groups(grp).uuid)
+    end
+  end
+
   ### trashed project tests ###
 
   #
