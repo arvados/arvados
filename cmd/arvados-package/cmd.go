@@ -33,7 +33,7 @@ var (
 
 func main() {
 	if len(os.Args) < 2 || strings.HasPrefix(os.Args[1], "-") {
-		parseFlags([]string{"-help"})
+		parseFlags(os.Args[0], []string{"-help"}, os.Stderr)
 		os.Exit(2)
 	}
 	os.Exit(handler.RunCommand(os.Args[0], os.Args[1:], os.Stdin, os.Stdout, os.Stderr))
@@ -44,12 +44,11 @@ type cmdFunc func(ctx context.Context, opts opts, stdin io.Reader, stdout, stder
 func (cf cmdFunc) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	logger := ctxlog.New(stderr, "text", "info")
 	ctx := ctxlog.Context(context.Background(), logger)
-	opts, err := parseFlags(args)
-	if err != nil {
-		logger.WithError(err).Error("error parsing command line flags")
-		return 1
+	opts, ok, code := parseFlags(prog, args, stderr)
+	if !ok {
+		return code
 	}
-	err = cf(ctx, opts, stdin, stdout, stderr)
+	err := cf(ctx, opts, stdin, stdout, stderr)
 	if err != nil {
 		logger.WithError(err).Error("failed")
 		return 1
@@ -68,7 +67,7 @@ type opts struct {
 	Vendor         string
 }
 
-func parseFlags(args []string) (opts, error) {
+func parseFlags(prog string, args []string, stderr io.Writer) (_ opts, ok bool, exitCode int) {
 	opts := opts{
 		SourceDir:  ".",
 		TargetOS:   "debian:10",
@@ -120,24 +119,23 @@ Options:
 `)
 		flags.PrintDefaults()
 	}
-	err := flags.Parse(args)
-	if err != nil {
-		return opts, err
-	}
-	if flags.NArg() != 0 {
-		return opts, fmt.Errorf("unrecognized command line arguments: %v", flags.Args())
+	if ok, code := cmd.ParseFlags(flags, prog, args, "", stderr); !ok {
+		return opts, false, code
 	}
 	if opts.SourceDir == "" {
 		d, err := os.Getwd()
 		if err != nil {
-			return opts, fmt.Errorf("Getwd: %w", err)
+			fmt.Fprintf(stderr, "error getting current working directory: %s\n", err)
+			return opts, false, 1
 		}
 		opts.SourceDir = d
 	}
 	opts.PackageDir = filepath.Clean(opts.PackageDir)
-	opts.SourceDir, err = filepath.Abs(opts.SourceDir)
+	abs, err := filepath.Abs(opts.SourceDir)
 	if err != nil {
-		return opts, err
+		fmt.Fprintf(stderr, "error resolving source dir %q: %s\n", opts.SourceDir, err)
+		return opts, false, 1
 	}
-	return opts, nil
+	opts.SourceDir = abs
+	return opts, true, 0
 }
