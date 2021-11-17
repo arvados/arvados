@@ -21,6 +21,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/health"
@@ -390,7 +391,7 @@ func (rtr *router) StatusHandler(resp http.ResponseWriter, req *http.Request) {
 
 // populate the given NodeStatus struct with current values.
 func (rtr *router) readNodeStatus(st *NodeStatus) {
-	st.Version = version
+	st.Version = strings.SplitN(cmd.Version.String(), " ", 2)[0]
 	vols := rtr.volmgr.AllReadable()
 	if cap(st.Volumes) < len(vols) {
 		st.Volumes = make([]*volumeStatusEnt, len(vols))
