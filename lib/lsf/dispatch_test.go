@@ -6,6 +6,7 @@ package lsf
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"os/exec"
@@ -103,13 +104,26 @@ func (stub lsfstub) stubCommand(s *suite, c *check.C) func(prog string, args ...
 			}
 			return exec.Command("echo", "submitted job")
 		case "bjobs":
-			c.Check(args, check.DeepEquals, []string{"-u", "all", "-noheader", "-o", "jobid stat job_name:30"})
-			out := ""
+			c.Check(args, check.DeepEquals, []string{"-u", "all", "-o", "jobid stat job_name pend_reason", "-json"})
+			var records []map[string]interface{}
 			for jobid, uuid := range fakejobq {
-				out += fmt.Sprintf(`%d %s %s\n`, jobid, "RUN", uuid)
+				records = append(records, map[string]interface{}{
+					"JOBID":       fmt.Sprintf("%d", jobid),
+					"STAT":        "RUN",
+					"JOB_NAME":    uuid,
+					"PEND_REASON": "",
+				})
 			}
-			c.Logf("bjobs out: %q", out)
-			return exec.Command("printf", out)
+			out, err := json.Marshal(map[string]interface{}{
+				"COMMAND": "bjobs",
+				"JOBS":    len(fakejobq),
+				"RECORDS": records,
+			})
+			if err != nil {
+				panic(err)
+			}
+			c.Logf("bjobs out: %s", out)
+			return exec.Command("printf", string(out))
 		case "bkill":
 			killid, _ := strconv.Atoi(args[0])
 			if uuid, ok := fakejobq[killid]; !ok {

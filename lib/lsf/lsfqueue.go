@@ -26,9 +26,9 @@ type lsfqueue struct {
 // JobID waits for the next queue update (so even a job that was only
 // submitted a nanosecond ago will show up) and then returns the LSF
 // job ID corresponding to the given container UUID.
-func (q *lsfqueue) JobID(uuid string) (int, bool) {
+func (q *lsfqueue) JobID(uuid string) (string, bool) {
 	ent, ok := q.getNext()[uuid]
-	return ent.id, ok
+	return ent.ID, ok
 }
 
 // All waits for the next queue update, then returns the names of all
@@ -94,7 +94,7 @@ func (q *lsfqueue) init() {
 			}
 			next := make(map[string]bjobsEntry, len(ents))
 			for _, ent := range ents {
-				next[ent.name] = ent
+				next[ent.Name] = ent
 			}
 			// Replace q.latest and notify all the
 			// goroutines that the "next update" they
