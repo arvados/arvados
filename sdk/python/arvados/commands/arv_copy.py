@@ -113,7 +113,7 @@ def main():
     copy_opts.set_defaults(recursive=True)
 
     parser = argparse.ArgumentParser(
-        description='Copy a workflow, collection or project from one Arvados instance to another.',
+        description='Copy a workflow, collection or project from one Arvados instance to another.  On success, the uuid of the copied object is printed to stdout.',
         parents=[copy_opts, arv_cmd.retry_opt])
     args = parser.parse_args()
 
@@ -161,7 +161,12 @@ def main():
         logger.error("API server returned an error result: {}".format(result))
         exit(1)
 
-    logger.info("")
+    print(result['uuid'])
+
+    if result.get('partial_error'):
+        logger.warning("Warning: created copy with uuid {} but failed to copy some items: {}".format(result['uuid'], result['partial_error']))
+        exit(1)
+
     logger.info("Success: created copy with uuid {}".format(result['uuid']))
     exit(0)
 
@@ -292,8 +297,11 @@ def copy_workflow(wf_uuid, src, dst, args):
     # fetch the workflow from the source instance
     wf = src.workflows().get(uuid=wf_uuid).execute(num_retries=args.retries)
 
+    if not wf["definition"]:
+        logger.warning("Workflow object {} has an empty or null definition, it won't do anything.".format(wf_uuid))
+
     # copy collections and docker images
-    if args.recursive:
+    if args.recursive and wf["definition"]:
         wf_def = yaml.safe_load(wf["definition"])
         if wf_def is not None:
             locations = []
@@ -683,17 +691,31 @@ def copy_project(obj_uuid, src, dst, owner_uuid, args):
 
     logger.debug('Copying %s to %s', obj_uuid, project_record["uuid"])
 
+
+    partial_error = ""
+
     # Copy collections
-    copy_collections([col["uuid"] for col in arvados.util.list_all(src.collections().list, filters=[["owner_uuid", "=", obj_uuid]])],
-                     src, dst, args)
+    try:
+        copy_collections([col["uuid"] for col in arvados.util.list_all(src.collections().list, filters=[["owner_uuid", "=", obj_uuid]])],
+                         src, dst, args)
+    except Exception as e:
+        partial_error += "\n" + str(e)
 
     # Copy workflows
     for w in arvados.util.list_all(src.workflows().list, filters=[["owner_uuid", "=", obj_uuid]]):
-        copy_workflow(w["uuid"], src, dst, args)
+        try:
+            copy_workflow(w["uuid"], src, dst, args)
+        except Exception as e:
+            partial_error += "\n" + "Error while copying %s: %s" % (w["uuid"], e)
 
     if args.recursive:
         for g in arvados.util.list_all(src.groups().list, filters=[["owner_uuid", "=", obj_uuid]]):
-            copy_project(g["uuid"], src, dst, project_record["uuid"], args)
+            try:
+                copy_project(g["uuid"], src, dst, project_record["uuid"], args)
+            except Exception as e:
+                partial_error += "\n" + "Error while copying %s: %s" % (g["uuid"], e)
+
+    project_record["partial_error"] = partial_error
 
     return project_record
 
