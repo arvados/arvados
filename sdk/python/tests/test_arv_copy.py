@@ -61,16 +61,21 @@ class ArvCopyVersionTestCase(run_test_server.TestCaseWithServers, tutil.VersionC
             contents = api.groups().list(filters=[["owner_uuid", "=", dest_proj]]).execute()
             assert len(contents["items"]) == 0
 
-            try:
-                self.run_copy(["--project-uuid", dest_proj, "--storage-classes", "foo", src_proj])
-            except SystemExit as e:
-                assert e.code == 0
+            with tutil.redirected_streams(
+                    stdout=tutil.StringIO, stderr=tutil.StringIO) as (out, err):
+                try:
+                    self.run_copy(["--project-uuid", dest_proj, "--storage-classes", "foo", src_proj])
+                except SystemExit as e:
+                    assert e.code == 0
+                copy_uuid_from_stdout = out.getvalue().strip()
 
             contents = api.groups().list(filters=[["owner_uuid", "=", dest_proj]]).execute()
             assert len(contents["items"]) == 1
 
             assert contents["items"][0]["name"] == "arv-copy project"
             copied_project = contents["items"][0]["uuid"]
+
+            assert copied_project == copy_uuid_from_stdout
 
             contents = api.collections().list(filters=[["owner_uuid", "=", copied_project]]).execute()
             assert len(contents["items"]) == 1
