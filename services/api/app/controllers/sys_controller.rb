@@ -17,14 +17,14 @@ class SysController < ApplicationController
         where('is_trashed = false and trash_at < statement_timestamp()').
         update_all('is_trashed = true')
 
-      # Sweep trashed projects and their contents
+      # Sweep trashed projects and their contents (as well as role
+      # groups that were trashed before #18340 when that was
+      # disallowed)
       Group.
-        where({group_class: 'project'}).
         where('delete_at is not null and delete_at < statement_timestamp()').each do |project|
           delete_project_and_contents(project.uuid)
       end
       Group.
-        where({group_class: 'project'}).
         where('is_trashed = false and trash_at < statement_timestamp()').
         update_all('is_trashed = true')
 

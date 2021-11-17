@@ -39,6 +39,10 @@ h2(#main). development main (as of 2021-11-10)
 
 "previous: Upgrading from 2.3.0":#v2_3_0
 
+h3. Previously trashed role groups will be deleted
+
+A bug in previous versions caused role groups to be flagged as trash instead of being deleted by a @DELETE@ operation. After upgrading, any groups that had been trashed this way will be deleted, and future @DELETE@ operations will delete role groups as intended.
+
 h3. Users are visible to other users by default
 
 When a new user is set up (either via @AutoSetupNewUsers@ config or via Workbench admin interface) the user immediately becomes visible to other users. To revert to the previous behavior, where the administrator must add two users to the same group using the Workbench admin interface in order for the users to see each other, change the new @Users.ActivatedUsersAreVisibleToOthers@ config to @false@.
