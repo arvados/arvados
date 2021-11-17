@@ -1360,6 +1360,25 @@ class NewCollectionTestCaseWithServersAndTokens(run_test_server.TestCaseWithServ
 
 
 class NewCollectionTestCaseWithServers(run_test_server.TestCaseWithServers):
+    def test_preserve_version_on_save(self):
+        c = Collection()
+        c.save_new(preserve_version=True)
+        coll_record = arvados.api().collections().get(uuid=c.manifest_locator()).execute()
+        self.assertEqual(coll_record['version'], 1)
+        self.assertEqual(coll_record['preserve_version'], True)
+        with c.open("foo.txt", "wb") as foo:
+            foo.write(b"foo")
+        c.save(preserve_version=True)
+        coll_record = arvados.api().collections().get(uuid=c.manifest_locator()).execute()
+        self.assertEqual(coll_record['version'], 2)
+        self.assertEqual(coll_record['preserve_version'], True)
+        with c.open("bar.txt", "wb") as foo:
+            foo.write(b"bar")
+        c.save(preserve_version=False)
+        coll_record = arvados.api().collections().get(uuid=c.manifest_locator()).execute()
+        self.assertEqual(coll_record['version'], 3)
+        self.assertEqual(coll_record['preserve_version'], False)
+
     def test_get_manifest_text_only_committed(self):
         c = Collection()
         with c.open("count.txt", "wb") as f:

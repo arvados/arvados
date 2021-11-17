@@ -379,6 +379,7 @@ func (s *RouterIntegrationSuite) TestFullTimestampsInResponse(c *check.C) {
 func (s *RouterIntegrationSuite) TestSelectParam(c *check.C) {
 	uuid := arvadostest.QueuedContainerUUID
 	token := arvadostest.ActiveTokenV2
+	// GET
 	for _, sel := range [][]string{
 		{"uuid", "command"},
 		{"uuid", "command", "uuid"},
@@ -394,6 +395,26 @@ func (s *RouterIntegrationSuite) TestSelectParam(c *check.C) {
 		c.Check(resp["mounts"], check.IsNil)
 		_, hasMounts := resp["mounts"]
 		c.Check(hasMounts, check.Equals, false)
+	}
+	// POST & PUT
+	uuid = arvadostest.FooCollection
+	j, err := json.Marshal([]string{"uuid", "description"})
+	c.Assert(err, check.IsNil)
+	for _, method := range []string{"PUT", "POST"} {
+		desc := "Today is " + time.Now().String()
+		reqBody := "{\"description\":\"" + desc + "\"}"
+		var resp map[string]interface{}
+		var rr *httptest.ResponseRecorder
+		if method == "PUT" {
+			_, rr, resp = doRequest(c, s.rtr, token, method, "/arvados/v1/collections/"+uuid+"?select="+string(j), nil, bytes.NewReader([]byte(reqBody)))
+		} else {
+			_, rr, resp = doRequest(c, s.rtr, token, method, "/arvados/v1/collections?select="+string(j), nil, bytes.NewReader([]byte(reqBody)))
+		}
+		c.Check(rr.Code, check.Equals, http.StatusOK)
+		c.Check(resp["kind"], check.Equals, "arvados#collection")
+		c.Check(resp["uuid"], check.HasLen, 27)
+		c.Check(resp["description"], check.Equals, desc)
+		c.Check(resp["manifest_text"], check.IsNil)
 	}
 }
 

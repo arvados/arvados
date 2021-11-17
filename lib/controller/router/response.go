@@ -26,6 +26,10 @@ type responseOptions struct {
 func (rtr *router) responseOptions(opts interface{}) (responseOptions, error) {
 	var rOpts responseOptions
 	switch opts := opts.(type) {
+	case *arvados.CreateOptions:
+		rOpts.Select = opts.Select
+	case *arvados.UpdateOptions:
+		rOpts.Select = opts.Select
 	case *arvados.GetOptions:
 		rOpts.Select = opts.Select
 	case *arvados.ListOptions:

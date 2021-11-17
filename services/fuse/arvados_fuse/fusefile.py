@@ -50,11 +50,12 @@ class File(FreshBase):
 class FuseArvadosFile(File):
     """Wraps a ArvadosFile."""
 
-    __slots__ = ('arvfile',)
+    __slots__ = ('arvfile', '_enable_write')
 
-    def __init__(self, parent_inode, arvfile, _mtime):
+    def __init__(self, parent_inode, arvfile, _mtime, enable_write):
         super(FuseArvadosFile, self).__init__(parent_inode, _mtime)
         self.arvfile = arvfile
+        self._enable_write = enable_write
 
     def size(self):
         with llfuse.lock_released:
@@ -72,7 +73,7 @@ class FuseArvadosFile(File):
         return False
 
     def writable(self):
-        return self.arvfile.writable()
+        return self._enable_write and self.arvfile.writable()
 
     def flush(self):
         with llfuse.lock_released:
