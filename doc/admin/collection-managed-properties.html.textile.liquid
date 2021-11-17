@@ -44,10 +44,20 @@ If there's a need to prevent a non-admin user from modifying a specific property
 <pre>
 Collections:
   ManagedProperties:
+    sample_id: {Protected: true}
+</pre>
+
+This configuration won't assign a @sample_id@ property on collection creation, but if the user adds it to any collection, its value is protected from that point on.
+
+Another use case would be to protect properties that were automatically assigned by the system:
+
+<pre>
+Collections:
+  ManagedProperties:
     responsible_person_uuid: {Function: original_owner, Protected: true}
 </pre>
 
-This property can be applied to any of the defined managed properties. If missing, it's assumed as being @false@ by default.
+If missing, the @Protected@ attribute it’s assumed as being @false@ by default.
 
 h3. Supporting example scripts
 
