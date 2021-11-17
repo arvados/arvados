@@ -11,13 +11,15 @@ import { ResourceLinkHeadUuid, ResourceLinkTailUuid, ResourceLinkTailEmail, Reso
 import { createTree } from 'models/tree';
 import { noop } from 'lodash/fp';
 import { RootState } from 'store/store';
-import { GROUP_DETAILS_MEMBERS_PANEL_ID, GROUP_DETAILS_PERMISSIONS_PANEL_ID, openAddGroupMembersDialog } from 'store/group-details-panel/group-details-panel-actions';
+import { GROUP_DETAILS_MEMBERS_PANEL_ID, GROUP_DETAILS_PERMISSIONS_PANEL_ID, openAddGroupMembersDialog, getCurrentGroupDetailsPanelUuid } from 'store/group-details-panel/group-details-panel-actions';
 import { openContextMenu } from 'store/context-menu/context-menu-actions';
 import { ResourcesState, getResource } from 'store/resources/resources';
 import { ContextMenuKind } from 'views-components/context-menu/context-menu';
 import { PermissionResource } from 'models/permission';
 import { Grid, Button, Tabs, Tab, Paper } from '@material-ui/core';
 import { AddIcon } from 'components/icon/icon';
+import { getUserUuid } from 'common/getuser';
+import { GroupResource } from 'models/group';
 
 export enum GroupDetailsPanelMembersColumnNames {
     FULL_NAME = "Name",
@@ -120,8 +122,13 @@ export const groupDetailsPermissionsPanelColumns: DataColumns<string> = [
 ];
 
 const mapStateToProps = (state: RootState) => {
+    const groupUuid = getCurrentGroupDetailsPanelUuid(state.properties);
+    const group = getResource<GroupResource>(groupUuid || '')(state.resources);
+    const userUuid = getUserUuid(state);
+
     return {
-        resources: state.resources
+        resources: state.resources,
+        groupCanManage: userUuid ? group?.writableBy?.includes(userUuid) : false,
     };
 };
 
@@ -134,6 +141,7 @@ export interface GroupDetailsPanelProps {
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: any) => void;
     onAddUser: () => void;
     resources: ResourcesState;
+    groupCanManage: boolean;
 }
 
 export const GroupDetailsPanel = connect(
@@ -166,14 +174,15 @@ export const GroupDetailsPanel = connect(
                           hideColumnSelector
                           hideSearchInput
                           actions={
-                              <Grid container justify='flex-end'>
-                                  <Button
+                                this.props.groupCanManage &&
+                                <Grid container justify='flex-end'>
+                                    <Button
                                       variant="contained"
                                       color="primary"
                                       onClick={this.props.onAddUser}>
                                       <AddIcon /> Add user
-                              </Button>
-                              </Grid>
+                                    </Button>
+                                </Grid>
                           }
                           paperProps={{
                               elevation: 0,
