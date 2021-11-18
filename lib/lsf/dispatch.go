@@ -167,7 +167,7 @@ func (disp *dispatcher) runContainer(_ *dispatch.Dispatcher, ctr arvados.Contain
 
 	if ctr.State != dispatch.Locked {
 		// already started by prior invocation
-	} else if _, ok := disp.lsfqueue.JobID(ctr.UUID); !ok {
+	} else if _, ok := disp.lsfqueue.Lookup(ctr.UUID); !ok {
 		disp.logger.Printf("Submitting container %s to LSF", ctr.UUID)
 		cmd := []string{disp.Cluster.Containers.CrunchRunCommand}
 		cmd = append(cmd, "--runtime-engine="+disp.Cluster.Containers.RuntimeEngine)
@@ -181,15 +181,37 @@ func (disp *dispatcher) runContainer(_ *dispatch.Dispatcher, ctr arvados.Contain
 	disp.logger.Printf("Start monitoring container %v in state %q", ctr.UUID, ctr.State)
 	defer disp.logger.Printf("Done monitoring container %s", ctr.UUID)
 
-	// If the container disappears from the lsf queue, there is
-	// no point in waiting for further dispatch updates: just
-	// clean up and return.
 	go func(uuid string) {
+		cancelled := false
 		for ctx.Err() == nil {
-			if _, ok := disp.lsfqueue.JobID(uuid); !ok {
+			qent, ok := disp.lsfqueue.Lookup(uuid)
+			if !ok {
+				// If the container disappears from
+				// the lsf queue, there is no point in
+				// waiting for further dispatch
+				// updates: just clean up and return.
 				disp.logger.Printf("container %s job disappeared from LSF queue", uuid)
 				cancel()
 				return
+			}
+			if !cancelled && qent.Stat == "PEND" && strings.Contains(qent.PendReason, "There are no suitable hosts for the job") {
+				disp.logger.Printf("container %s: %s", uuid, qent.PendReason)
+				err := disp.arvDispatcher.Arv.Update("containers", uuid, arvadosclient.Dict{
+					"container": map[string]interface{}{
+						"runtime_status": map[string]string{
+							"error": qent.PendReason,
+						},
+					},
+				}, nil)
+				if err != nil {
+					disp.logger.Printf("error setting runtime_status on %s: %s", uuid, err)
+					continue // retry
+				}
+				err = disp.arvDispatcher.UpdateState(uuid, dispatch.Cancelled)
+				if err != nil {
+					continue // retry (UpdateState() already logged the error)
+				}
+				cancelled = true
 			}
 		}
 	}(ctr.UUID)
@@ -236,10 +258,10 @@ func (disp *dispatcher) runContainer(_ *dispatch.Dispatcher, ctr arvados.Contain
 	// from the queue.
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
-	for jobid, ok := disp.lsfqueue.JobID(ctr.UUID); ok; _, ok = disp.lsfqueue.JobID(ctr.UUID) {
-		err := disp.lsfcli.Bkill(jobid)
+	for qent, ok := disp.lsfqueue.Lookup(ctr.UUID); ok; _, ok = disp.lsfqueue.Lookup(ctr.UUID) {
+		err := disp.lsfcli.Bkill(qent.ID)
 		if err != nil {
-			disp.logger.Warnf("%s: bkill(%d): %s", ctr.UUID, jobid, err)
+			disp.logger.Warnf("%s: bkill(%s): %s", ctr.UUID, qent.ID, err)
 		}
 		<-ticker.C
 	}
@@ -262,10 +284,10 @@ func (disp *dispatcher) submit(container arvados.Container, crunchRunCommand []s
 }
 
 func (disp *dispatcher) bkill(ctr arvados.Container) {
-	if jobid, ok := disp.lsfqueue.JobID(ctr.UUID); !ok {
+	if qent, ok := disp.lsfqueue.Lookup(ctr.UUID); !ok {
 		disp.logger.Debugf("bkill(%s): redundant, job not in queue", ctr.UUID)
-	} else if err := disp.lsfcli.Bkill(jobid); err != nil {
-		disp.logger.Warnf("%s: bkill(%d): %s", ctr.UUID, jobid, err)
+	} else if err := disp.lsfcli.Bkill(qent.ID); err != nil {
+		disp.logger.Warnf("%s: bkill(%s): %s", ctr.UUID, qent.ID, err)
 	}
 }
 

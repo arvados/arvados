@@ -23,12 +23,12 @@ type lsfqueue struct {
 	latest    map[string]bjobsEntry
 }
 
-// JobID waits for the next queue update (so even a job that was only
+// Lookup waits for the next queue update (so even a job that was only
 // submitted a nanosecond ago will show up) and then returns the LSF
-// job ID corresponding to the given container UUID.
-func (q *lsfqueue) JobID(uuid string) (string, bool) {
+// queue information corresponding to the given container UUID.
+func (q *lsfqueue) Lookup(uuid string) (bjobsEntry, bool) {
 	ent, ok := q.getNext()[uuid]
-	return ent.ID, ok
+	return ent, ok
 }
 
 // All waits for the next queue update, then returns the names of all
