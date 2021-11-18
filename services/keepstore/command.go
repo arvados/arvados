@@ -31,17 +31,18 @@ var (
 )
 
 func runCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
-	args, ok := convertKeepstoreFlagsToServiceFlags(args, ctxlog.FromContext(context.Background()))
+	args, ok, code := convertKeepstoreFlagsToServiceFlags(prog, args, ctxlog.FromContext(context.Background()), stderr)
 	if !ok {
-		return 2
+		return code
 	}
 	return Command.RunCommand(prog, args, stdin, stdout, stderr)
 }
 
 // Parse keepstore command line flags, and return equivalent
-// service.Command flags. The second return value ("ok") is true if
-// all provided flags were successfully converted.
-func convertKeepstoreFlagsToServiceFlags(args []string, lgr logrus.FieldLogger) ([]string, bool) {
+// service.Command flags. If the second return value ("ok") is false,
+// the program should exit, and the third return value is a suitable
+// exit code.
+func convertKeepstoreFlagsToServiceFlags(prog string, args []string, lgr logrus.FieldLogger, stderr io.Writer) ([]string, bool, int) {
 	flags := flag.NewFlagSet("", flag.ContinueOnError)
 	flags.String("listen", "", "Services.Keepstore.InternalURLs")
 	flags.Int("max-buffers", 0, "API.MaxKeepBlobBuffers")
@@ -80,11 +81,8 @@ func convertKeepstoreFlagsToServiceFlags(args []string, lgr logrus.FieldLogger) 
 	flags.String("config", "", "")
 	flags.String("legacy-keepstore-config", "", "")
 
-	err := flags.Parse(args)
-	if err == flag.ErrHelp {
-		return []string{"-help"}, true
-	} else if err != nil {
-		return nil, false
+	if ok, code := cmd.ParseFlags(flags, prog, args, "", stderr); !ok {
+		return nil, false, code
 	}
 
 	args = nil
@@ -101,13 +99,13 @@ func convertKeepstoreFlagsToServiceFlags(args []string, lgr logrus.FieldLogger) 
 		}
 	})
 	if !ok {
-		return nil, false
+		return nil, false, 2
 	}
 
-	flags = flag.NewFlagSet("", flag.ExitOnError)
+	flags = flag.NewFlagSet("", flag.ContinueOnError)
 	loader := config.NewLoader(nil, lgr)
 	loader.SetupFlags(flags)
-	return loader.MungeLegacyConfigArgs(lgr, args, "-legacy-keepstore-config"), true
+	return loader.MungeLegacyConfigArgs(lgr, args, "-legacy-keepstore-config"), true, 0
 }
 
 type handler struct {

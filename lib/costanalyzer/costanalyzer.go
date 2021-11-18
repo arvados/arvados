@@ -17,6 +17,7 @@ import (
 	"strings"
 	"time"
 
+	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
@@ -62,10 +63,9 @@ func (i *arrayFlags) Set(value string) error {
 	return nil
 }
 
-func (c *command) parseFlags(prog string, args []string, logger *logrus.Logger, stderr io.Writer) (exitCode int, err error) {
+func (c *command) parseFlags(prog string, args []string, logger *logrus.Logger, stderr io.Writer) (ok bool, exitCode int) {
 	var beginStr, endStr string
 	flags := flag.NewFlagSet("", flag.ContinueOnError)
-	flags.SetOutput(stderr)
 	flags.Usage = func() {
 		fmt.Fprintf(flags.Output(), `
 Usage:
@@ -135,22 +135,14 @@ Options:
 	flags.StringVar(&beginStr, "begin", "", fmt.Sprintf("timestamp `begin` for date range operation (format: %s)", timestampFormat))
 	flags.StringVar(&endStr, "end", "", fmt.Sprintf("timestamp `end` for date range operation (format: %s)", timestampFormat))
 	flags.BoolVar(&c.cache, "cache", true, "create and use a local disk cache of Arvados objects")
-	err = flags.Parse(args)
-	if err == flag.ErrHelp {
-		err = nil
-		exitCode = 1
-		return
-	} else if err != nil {
-		exitCode = 2
-		return
+	if ok, code := cmd.ParseFlags(flags, prog, args, "[uuid ...]", stderr); !ok {
+		return false, code
 	}
 	c.uuids = flags.Args()
 
 	if (len(beginStr) != 0 && len(endStr) == 0) || (len(beginStr) == 0 && len(endStr) != 0) {
-		flags.Usage()
-		err = fmt.Errorf("When specifying a date range, both begin and end must be specified")
-		exitCode = 2
-		return
+		fmt.Fprintf(stderr, "When specifying a date range, both begin and end must be specified (try -help)\n")
+		return false, 2
 	}
 
 	if len(beginStr) != 0 {
@@ -158,30 +150,26 @@ Options:
 		c.begin, errB = time.Parse(timestampFormat, beginStr)
 		c.end, errE = time.Parse(timestampFormat, endStr)
 		if (errB != nil) || (errE != nil) {
-			flags.Usage()
-			err = fmt.Errorf("When specifying a date range, both begin and end must be of the format %s %+v, %+v", timestampFormat, errB, errE)
-			exitCode = 2
-			return
+			fmt.Fprintf(stderr, "When specifying a date range, both begin and end must be of the format %s %+v, %+v\n", timestampFormat, errB, errE)
+			return false, 2
 		}
 	}
 
 	if (len(c.uuids) < 1) && (len(beginStr) == 0) {
-		flags.Usage()
-		err = fmt.Errorf("error: no uuid(s) provided")
-		exitCode = 2
-		return
+		fmt.Fprintf(stderr, "error: no uuid(s) provided (try -help)\n")
+		return false, 2
 	}
 
 	lvl, err := logrus.ParseLevel(*loglevel)
 	if err != nil {
-		exitCode = 2
-		return
+		fmt.Fprintf(stderr, "invalid argument to -log-level: %s\n", err)
+		return false, 2
 	}
 	logger.SetLevel(lvl)
 	if !c.cache {
 		logger.Debug("Caching disabled")
 	}
-	return
+	return true, 0
 }
 
 func ensureDirectory(logger *logrus.Logger, dir string) (err error) {
@@ -526,9 +514,9 @@ func generateCrInfo(logger *logrus.Logger, uuid string, arv *arvadosclient.Arvad
 }
 
 func (c *command) costAnalyzer(prog string, args []string, logger *logrus.Logger, stdout, stderr io.Writer) (exitcode int, err error) {
-	exitcode, err = c.parseFlags(prog, args, logger, stderr)
-
-	if exitcode != 0 {
+	var ok bool
+	ok, exitcode = c.parseFlags(prog, args, logger, stderr)
+	if !ok {
 		return
 	}
 	if c.resultsDir != "" {
@@ -610,7 +598,7 @@ func (c *command) costAnalyzer(prog string, args []string, logger *logrus.Logger
 				cost[k] = v
 			}
 		} else if strings.Contains(uuid, "-xvhdp-") || strings.Contains(uuid, "-4zz18-") {
-			// This is a container request
+			// This is a container request or collection
 			var crInfo map[string]consumption
 			crInfo, err = generateCrInfo(logger, uuid, arv, ac, kc, c.resultsDir, c.cache)
 			if err != nil {

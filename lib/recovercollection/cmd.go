@@ -15,6 +15,7 @@ import (
 	"sync"
 	"time"
 
+	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
@@ -38,8 +39,7 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	loader := config.NewLoader(stdin, logger)
 	loader.SkipLegacy = true
 
-	flags := flag.NewFlagSet("", flag.ContinueOnError)
-	flags.SetOutput(stderr)
+	flags := flag.NewFlagSet(prog, flag.ContinueOnError)
 	flags.Usage = func() {
 		fmt.Fprintf(flags.Output(), `Usage:
 	%s [options ...] { /path/to/manifest.txt | log-or-collection-uuid } [...]
@@ -79,16 +79,10 @@ Options:
 	}
 	loader.SetupFlags(flags)
 	loglevel := flags.String("log-level", "info", "logging level (debug, info, ...)")
-	err = flags.Parse(args)
-	if err == flag.ErrHelp {
-		err = nil
-		return 0
-	} else if err != nil {
-		return 2
-	}
-
-	if len(flags.Args()) == 0 {
-		flags.Usage()
+	if ok, code := cmd.ParseFlags(flags, prog, args, "source [...]", stderr); !ok {
+		return code
+	} else if flags.NArg() == 0 {
+		fmt.Fprintf(stderr, "missing required arguments (try -help)\n")
 		return 2
 	}
 

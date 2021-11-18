@@ -17,6 +17,7 @@ import (
 	"strings"
 	"syscall"
 
+	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/lib/controller/rpc"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 )
@@ -27,26 +28,11 @@ type shellCommand struct{}
 
 func (shellCommand) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	f := flag.NewFlagSet(prog, flag.ContinueOnError)
-	f.SetOutput(stderr)
-	f.Usage = func() {
-		_, prog := filepath.Split(prog)
-		fmt.Fprint(stderr, prog+`: open an interactive shell on a running container.
-
-Usage: `+prog+` [options] [username@]container-uuid [ssh-options] [remote-command [args...]]
-
-Options:
-`)
-		f.PrintDefaults()
-	}
 	detachKeys := f.String("detach-keys", "ctrl-],ctrl-]", "set detach key sequence, as in docker-attach(1)")
-	err := f.Parse(args)
-	if err != nil {
-		fmt.Fprintln(stderr, err)
-		return 2
-	}
-
-	if f.NArg() < 1 {
-		f.Usage()
+	if ok, code := cmd.ParseFlags(f, prog, args, "[username@]container-uuid [ssh-options] [remote-command [args...]]", stderr); !ok {
+		return code
+	} else if f.NArg() < 1 {
+		fmt.Fprintf(stderr, "missing required argument: container-uuid (try -help)\n")
 		return 2
 	}
 	target := f.Args()[0]
@@ -127,11 +113,10 @@ Options:
 	}
 	probeOnly := f.Bool("probe-only", false, "do not transfer IO, just setup tunnel, print target UUID, and exit")
 	detachKeys := f.String("detach-keys", "", "set detach key sequence, as in docker-attach(1)")
-	if err := f.Parse(args); err != nil {
-		fmt.Fprintln(stderr, err)
-		return 2
+	if ok, code := cmd.ParseFlags(f, prog, args, "[username@]container-uuid", stderr); !ok {
+		return code
 	} else if f.NArg() != 1 {
-		f.Usage()
+		fmt.Fprintf(stderr, "missing required argument: [username@]container-uuid\n")
 		return 2
 	}
 	targetUUID := f.Args()[0]

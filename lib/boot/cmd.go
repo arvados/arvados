@@ -30,6 +30,7 @@ type supervisedTask interface {
 }
 
 var errNeedConfigReload = errors.New("config changed, restart needed")
+var errParseFlags = errors.New("error parsing command line arguments")
 
 type bootCommand struct{}
 
@@ -40,6 +41,8 @@ func (bcmd bootCommand) RunCommand(prog string, args []string, stdin io.Reader, 
 		err := bcmd.run(ctx, prog, args, stdin, stdout, stderr)
 		if err == errNeedConfigReload {
 			continue
+		} else if err == errParseFlags {
+			return 2
 		} else if err != nil {
 			logger.WithError(err).Info("exiting")
 			return 1
@@ -58,7 +61,6 @@ func (bcmd bootCommand) run(ctx context.Context, prog string, args []string, std
 	}
 
 	flags := flag.NewFlagSet(prog, flag.ContinueOnError)
-	flags.SetOutput(stderr)
 	loader := config.NewLoader(stdin, super.logger)
 	loader.SetupFlags(flags)
 	versionFlag := flags.Bool("version", false, "Write version information to stdout and exit 0")
@@ -70,11 +72,12 @@ func (bcmd bootCommand) run(ctx context.Context, prog string, args []string, std
 	flags.BoolVar(&super.OwnTemporaryDatabase, "own-temporary-database", false, "bring up a postgres server and create a temporary database")
 	timeout := flags.Duration("timeout", 0, "maximum time to wait for cluster to be ready")
 	shutdown := flags.Bool("shutdown", false, "shut down when the cluster becomes ready")
-	err := flags.Parse(args)
-	if err == flag.ErrHelp {
-		return nil
-	} else if err != nil {
-		return err
+	if ok, code := cmd.ParseFlags(flags, prog, args, "", stderr); !ok {
+		if code == 0 {
+			return nil
+		} else {
+			return errParseFlags
+		}
 	} else if *versionFlag {
 		cmd.Version.RunCommand(prog, args, stdin, stdout, stderr)
 		return nil

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 
+	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/lib/config"
 	"github.com/coreos/go-systemd/daemon"
 	"github.com/ghodss/yaml"
@@ -23,7 +24,7 @@ func main() {
 		TimestampFormat: "2006-01-02T15:04:05.000000000Z07:00",
 	})
 
-	flags := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
+	flags := flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
 	loader := config.NewLoader(os.Stdin, logger)
 	loader.SetupFlags(flags)
 
@@ -31,9 +32,9 @@ func main() {
 	getVersion := flags.Bool("version", false, "print version information and exit.")
 
 	args := loader.MungeLegacyConfigArgs(logger, os.Args[1:], "-legacy-git-httpd-config")
-	flags.Parse(args)
-
-	if *getVersion {
+	if ok, code := cmd.ParseFlags(flags, os.Args[0], args, "", os.Stderr); !ok {
+		os.Exit(code)
+	} else if *getVersion {
 		fmt.Printf("arv-git-httpd %s\n", version)
 		return
 	}

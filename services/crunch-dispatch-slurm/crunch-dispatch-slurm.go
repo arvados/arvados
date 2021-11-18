@@ -17,6 +17,7 @@ import (
 	"strings"
 	"time"
 
+	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/lib/dispatchcloud"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
@@ -76,7 +77,7 @@ func (disp *Dispatcher) configure(prog string, args []string) error {
 	if disp.logger == nil {
 		disp.logger = logrus.StandardLogger()
 	}
-	flags := flag.NewFlagSet(prog, flag.ExitOnError)
+	flags := flag.NewFlagSet(prog, flag.ContinueOnError)
 	flags.Usage = func() { usage(flags) }
 
 	loader := config.NewLoader(nil, disp.logger)
@@ -91,13 +92,9 @@ func (disp *Dispatcher) configure(prog string, args []string) error {
 		false,
 		"Print version information and exit.")
 
-	args = loader.MungeLegacyConfigArgs(logrus.StandardLogger(), args, "-legacy-crunch-dispatch-slurm-config")
-
-	// Parse args; omit the first arg which is the command name
-	err := flags.Parse(args)
-
-	if err == flag.ErrHelp {
-		return nil
+	args = loader.MungeLegacyConfigArgs(disp.logger, args, "-legacy-crunch-dispatch-slurm-config")
+	if ok, code := cmd.ParseFlags(flags, prog, args, "", os.Stderr); !ok {
+		os.Exit(code)
 	}
 
 	// Print version information if requested

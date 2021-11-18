@@ -10,6 +10,7 @@ import (
 	"io"
 	"strings"
 
+	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/manifest"
@@ -29,16 +30,17 @@ func deDuplicate(inputs []string) (trimmed []string) {
 	return
 }
 
-func parseFlags(prog string, args []string, logger *logrus.Logger, stderr io.Writer) ([]string, error) {
-	flags := flag.NewFlagSet("", flag.ContinueOnError)
-	flags.SetOutput(stderr)
+// parseFlags returns either some inputs to process, or (if there are
+// no inputs to process) a nil slice and a suitable exit code.
+func parseFlags(prog string, args []string, logger *logrus.Logger, stderr io.Writer) (inputs []string, exitcode int) {
+	flags := flag.NewFlagSet(prog, flag.ContinueOnError)
 	flags.Usage = func() {
 		fmt.Fprintf(flags.Output(), `
 Usage:
   %s [options ...] <collection-uuid> <collection-uuid> ...
 
-  %s [options ...] <collection-pdh>,<collection_uuid> \
-     <collection-pdh>,<collection_uuid> ...
+  %s [options ...] <collection-pdh>,<collection-uuid> \
+     <collection-pdh>,<collection-uuid> ...
 
   This program analyzes the overlap in blocks used by 2 or more collections. It
   prints a deduplication report that shows the nominal space used by the
@@ -67,28 +69,24 @@ Options:
 		flags.PrintDefaults()
 	}
 	loglevel := flags.String("log-level", "info", "logging level (debug, info, ...)")
-	err := flags.Parse(args)
-	if err == flag.ErrHelp {
-		return nil, err
-	} else if err != nil {
-		return nil, err
+	if ok, code := cmd.ParseFlags(flags, prog, args, "collection-uuid [...]", stderr); !ok {
+		return nil, code
 	}
 
-	inputs := flags.Args()
-
-	inputs = deDuplicate(inputs)
+	inputs = deDuplicate(flags.Args())
 
 	if len(inputs) < 1 {
-		err = fmt.Errorf("Error: no collections provided")
-		return inputs, err
+		fmt.Fprintf(stderr, "Error: no collections provided\n")
+		return nil, 2
 	}
 
 	lvl, err := logrus.ParseLevel(*loglevel)
 	if err != nil {
-		return inputs, err
+		fmt.Fprintf(stderr, "Error: cannot parse log level: %s\n", err)
+		return nil, 2
 	}
 	logger.SetLevel(lvl)
-	return inputs, err
+	return inputs, 0
 }
 
 func blockList(collection arvados.Collection) (blocks map[string]int) {
@@ -103,14 +101,10 @@ func blockList(collection arvados.Collection) (blocks map[string]int) {
 
 func report(prog string, args []string, logger *logrus.Logger, stdout, stderr io.Writer) (exitcode int) {
 	var inputs []string
-	var err error
 
-	inputs, err = parseFlags(prog, args, logger, stderr)
-	if err == flag.ErrHelp {
-		return 0
-	} else if err != nil {
-		logger.Error(err.Error())
-		return 2
+	inputs, exitcode = parseFlags(prog, args, logger, stderr)
+	if inputs == nil {
+		return
 	}
 
 	// Arvados Client setup

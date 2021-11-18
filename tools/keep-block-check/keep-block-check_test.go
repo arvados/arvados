@@ -297,16 +297,18 @@ func (s *ServerRequiredSuite) TestLoadConfig(c *C) {
 
 func (s *DoMainTestSuite) Test_doMain_WithNoConfig(c *C) {
 	args := []string{"-prefix", "a"}
-	err := doMain(args)
-	c.Check(err, NotNil)
-	c.Assert(strings.Contains(err.Error(), "config file not specified"), Equals, true)
+	var stderr bytes.Buffer
+	code := doMain(args, &stderr)
+	c.Check(code, Equals, 1)
+	c.Check(stderr.String(), Matches, ".*config file not specified\n")
 }
 
 func (s *DoMainTestSuite) Test_doMain_WithNoSuchConfigFile(c *C) {
 	args := []string{"-config", "no-such-file"}
-	err := doMain(args)
-	c.Check(err, NotNil)
-	c.Assert(strings.Contains(err.Error(), "no such file or directory"), Equals, true)
+	var stderr bytes.Buffer
+	code := doMain(args, &stderr)
+	c.Check(code, Equals, 1)
+	c.Check(stderr.String(), Matches, ".*no such file or directory\n")
 }
 
 func (s *DoMainTestSuite) Test_doMain_WithNoBlockHashFile(c *C) {
@@ -318,8 +320,10 @@ func (s *DoMainTestSuite) Test_doMain_WithNoBlockHashFile(c *C) {
 	defer arvadostest.StopKeep(2)
 
 	args := []string{"-config", config}
-	err := doMain(args)
-	c.Assert(strings.Contains(err.Error(), "block-hash-file not specified"), Equals, true)
+	var stderr bytes.Buffer
+	code := doMain(args, &stderr)
+	c.Check(code, Equals, 1)
+	c.Check(stderr.String(), Matches, ".*block-hash-file not specified\n")
 }
 
 func (s *DoMainTestSuite) Test_doMain_WithNoSuchBlockHashFile(c *C) {
@@ -330,8 +334,10 @@ func (s *DoMainTestSuite) Test_doMain_WithNoSuchBlockHashFile(c *C) {
 	defer arvadostest.StopKeep(2)
 
 	args := []string{"-config", config, "-block-hash-file", "no-such-file"}
-	err := doMain(args)
-	c.Assert(strings.Contains(err.Error(), "no such file or directory"), Equals, true)
+	var stderr bytes.Buffer
+	code := doMain(args, &stderr)
+	c.Check(code, Equals, 1)
+	c.Check(stderr.String(), Matches, ".*no such file or directory\n")
 }
 
 func (s *DoMainTestSuite) Test_doMain(c *C) {
@@ -346,9 +352,10 @@ func (s *DoMainTestSuite) Test_doMain(c *C) {
 	defer os.Remove(locatorFile)
 
 	args := []string{"-config", config, "-block-hash-file", locatorFile, "-v"}
-	err := doMain(args)
-	c.Check(err, NotNil)
-	c.Assert(err.Error(), Equals, "Block verification failed for 2 out of 2 blocks with matching prefix")
+	var stderr bytes.Buffer
+	code := doMain(args, &stderr)
+	c.Check(code, Equals, 1)
+	c.Assert(stderr.String(), Matches, "Block verification failed for 2 out of 2 blocks with matching prefix\n")
 	checkErrorLog(c, []string{TestHash, TestHash2}, "Error verifying block", "Block not found")
 	c.Assert(strings.Contains(logBuffer.String(), "Verifying block 1 of 2"), Equals, true)
 }

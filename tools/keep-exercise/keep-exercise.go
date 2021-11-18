@@ -37,6 +37,7 @@ import (
 	"syscall"
 	"time"
 
+	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
@@ -89,12 +90,11 @@ func createKeepClient(lgr *log.Logger) (kc *keepclient.KeepClient) {
 }
 
 func main() {
-	flag.Parse()
-
-	// Print version information if requested
-	if *getVersion {
-		fmt.Printf("keep-exercise %s\n", version)
-		os.Exit(0)
+	if ok, code := cmd.ParseFlags(flag.CommandLine, os.Args[0], os.Args[1:], "", os.Stderr); !ok {
+		os.Exit(code)
+	} else if *getVersion {
+		fmt.Printf("%s %s\n", os.Args[0], version)
+		return
 	}
 
 	lgr := log.New(os.Stderr, "", log.LstdFlags)

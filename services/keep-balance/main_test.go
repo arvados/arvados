@@ -28,6 +28,7 @@ func (s *mainSuite) TestVersionFlag(c *check.C) {
 	runCommand("keep-balance", []string{"-version"}, nil, &stdout, &stderr)
 	c.Check(stderr.String(), check.Equals, "")
 	c.Log(stdout.String())
+	c.Check(stdout.String(), check.Matches, `keep-balance.*\(go1.*\)\n`)
 }
 
 func (s *mainSuite) TestHTTPServer(c *check.C) {

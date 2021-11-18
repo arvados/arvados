@@ -58,17 +58,11 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 	flags.StringVar(&inst.SourcePath, "source", "/arvados", "source tree location (required for -type=package)")
 	flags.StringVar(&inst.PackageVersion, "package-version", "0.0.0", "version string to embed in executable files")
 	flags.BoolVar(&inst.EatMyData, "eatmydata", false, "use eatmydata to speed up install")
-	err = flags.Parse(args)
-	if err == flag.ErrHelp {
-		err = nil
-		return 0
-	} else if err != nil {
-		return 2
+
+	if ok, code := cmd.ParseFlags(flags, prog, args, "", stderr); !ok {
+		return code
 	} else if *versionFlag {
 		return cmd.Version.RunCommand(prog, args, stdin, stdout, stderr)
-	} else if len(flags.Args()) > 0 {
-		err = fmt.Errorf("unrecognized command line arguments: %v", flags.Args())
-		return 2
 	}
 
 	var dev, test, prod, pkg bool

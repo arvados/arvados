@@ -36,7 +36,7 @@ func (s *CmdSuite) TestMount(c *check.C) {
 	stdin := bytes.NewBufferString("stdin")
 	stdout := bytes.NewBuffer(nil)
 	stderr := bytes.NewBuffer(nil)
-	mountCmd := cmd{ready: make(chan struct{})}
+	mountCmd := mountCommand{ready: make(chan struct{})}
 	ready := false
 	go func() {
 		exited <- mountCmd.RunCommand("test mount", []string{"--experimental", s.mnt}, stdin, stdout, stderr)
