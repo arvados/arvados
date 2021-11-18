@@ -140,6 +140,7 @@ export const FileUpload = withStyles(styles)(
                             inputs[0].focus();
                         }
                     }}
+                    data-cy="drag-and-drop"
                     disabled={disabled}
                     inputProps={{
                         onFocus: () => {

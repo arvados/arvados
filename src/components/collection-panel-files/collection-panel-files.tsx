@@ -517,7 +517,12 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
                         <Button
                             className={classes.uploadButton}
                             data-cy='upload-button'
-                            onClick={onUploadDataClick}
+                            onClick={() => {
+                                if (!collectionAutofetchEnabled) {
+                                    setCollectionAutofetchEnabled(true);
+                                }
+                                onUploadDataClick();
+                            }}
                             variant='contained'
                             color='primary'
                             size='small'>
