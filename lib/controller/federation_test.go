@@ -70,7 +70,7 @@ func (s *FederationSuite) SetUpTest(c *check.C) {
 	cluster.Collections.BlobSigningTTL = arvados.Duration(time.Hour * 24 * 14)
 	arvadostest.SetServiceURL(&cluster.Services.RailsAPI, "http://localhost:1/")
 	arvadostest.SetServiceURL(&cluster.Services.Controller, "http://localhost:/")
-	s.testHandler = &Handler{Cluster: cluster}
+	s.testHandler = &Handler{Cluster: cluster, BackgroundContext: ctxlog.Context(context.Background(), s.log)}
 	s.testServer = newServerFromIntegrationTestEnv(c)
 	s.testServer.Server.BaseContext = func(net.Listener) context.Context {
 		return ctxlog.Context(context.Background(), s.log)

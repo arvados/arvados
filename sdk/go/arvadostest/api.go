@@ -209,6 +209,10 @@ func (as *APIStub) SpecimenDelete(ctx context.Context, options arvados.DeleteOpt
 	as.appendCall(ctx, as.SpecimenDelete, options)
 	return arvados.Specimen{}, as.Error
 }
+func (as *APIStub) SysTrashSweep(ctx context.Context, options struct{}) (struct{}, error) {
+	as.appendCall(ctx, as.SysTrashSweep, options)
+	return struct{}{}, as.Error
+}
 func (as *APIStub) UserCreate(ctx context.Context, options arvados.CreateOptions) (arvados.User, error) {
 	as.appendCall(ctx, as.UserCreate, options)
 	return arvados.User{}, as.Error

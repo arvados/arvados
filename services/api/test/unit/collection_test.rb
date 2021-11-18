@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 require 'test_helper'
-require 'sweep_trashed_objects'
 require 'fix_collection_versions_timestamps'
 
 class CollectionTest < ActiveSupport::TestCase
@@ -1056,60 +1055,6 @@ class CollectionTest < ActiveSupport::TestCase
       find_all_for_docker_image('a' * 64, nil, [users(:active)])
     coll_uuids = coll_list.map(&:uuid)
     assert_includes(coll_uuids, collections(:docker_image).uuid)
-  end
-
-  test "move collections to trash in SweepTrashedObjects" do
-    c = collections(:trashed_on_next_sweep)
-    refute_empty Collection.where('uuid=? and is_trashed=false', c.uuid)
-    assert_raises(ActiveRecord::RecordNotUnique) do
-      act_as_user users(:active) do
-        Collection.create!(owner_uuid: c.owner_uuid,
-                           name: c.name)
-      end
-    end
-    SweepTrashedObjects.sweep_now
-    c = Collection.where('uuid=? and is_trashed=true', c.uuid).first
-    assert c
-    act_as_user users(:active) do
-      assert Collection.create!(owner_uuid: c.owner_uuid,
-                                name: c.name)
-    end
-  end
-
-  test "delete collections in SweepTrashedObjects" do
-    uuid = 'zzzzz-4zz18-3u1p5umicfpqszp' # deleted_on_next_sweep
-    assert_not_empty Collection.where(uuid: uuid)
-    SweepTrashedObjects.sweep_now
-    assert_empty Collection.where(uuid: uuid)
-  end
-
-  test "delete referring links in SweepTrashedObjects" do
-    uuid = collections(:trashed_on_next_sweep).uuid
-    act_as_system_user do
-      assert_raises ActiveRecord::RecordInvalid do
-        # Cannot create because :trashed_on_next_sweep is already trashed
-        Link.create!(head_uuid: uuid,
-                     tail_uuid: system_user_uuid,
-                     link_class: 'whatever',
-                     name: 'something')
-      end
-
-      # Bump trash_at to now + 1 minute
-      Collection.where(uuid: uuid).
-        update(trash_at: db_current_time + (1).minute)
-
-      # Not considered trashed now
-      Link.create!(head_uuid: uuid,
-                   tail_uuid: system_user_uuid,
-                   link_class: 'whatever',
-                   name: 'something')
-    end
-    past = db_current_time
-    Collection.where(uuid: uuid).
-      update_all(is_trashed: true, trash_at: past, delete_at: past)
-    assert_not_empty Collection.where(uuid: uuid)
-    SweepTrashedObjects.sweep_now
-    assert_empty Collection.where(uuid: uuid)
   end
 
   test "empty names are exempt from name uniqueness" do

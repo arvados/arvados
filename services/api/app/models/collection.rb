@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 require 'arvados/keep'
-require 'sweep_trashed_objects'
 require 'trashable'
 
 class Collection < ArvadosModel
@@ -614,11 +613,6 @@ class Collection < ArvadosModel
 
   def self.full_text_searchable_columns
     super - ["manifest_text", "storage_classes_desired", "storage_classes_confirmed", "current_version_uuid"]
-  end
-
-  def self.where *args
-    SweepTrashedObjects.sweep_if_stale
-    super
   end
 
   protected
