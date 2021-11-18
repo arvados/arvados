@@ -502,7 +502,7 @@ Clusters:
       #   0s = auto-create a new version on every update.
       #  -1s = never auto-create new versions.
       # > 0s = auto-create a new version when older than the specified number of seconds.
-      PreserveVersionIfIdle: 30s
+      PreserveVersionIfIdle: 10s
 
       # If non-empty, allow project and collection names to contain
       # the "/" character (slash/stroke/solidus), and replace "/" with
