@@ -41,7 +41,7 @@ h2(#main). development main (as of 2021-11-10)
 
 h3. Previously trashed role groups will be deleted
 
-A bug in previous versions caused role groups to be flagged as trash instead of being deleted by a @DELETE@ operation. After upgrading, any groups that had been trashed this way will be deleted, and future @DELETE@ operations will delete role groups as intended.
+Due to a bug in previous versions, the @DELETE@ operation on a role group caused the group to be flagged as trash in the database, but continue to grant permissions regardless. After upgrading, any role groups that had been trashed this way will be deleted. This might surprise some users if they were relying on permissions that were still in effect due to this bug. Future @DELETE@ operations on a role group will delete the group immediately.
 
 h3. Users are visible to other users by default
 
