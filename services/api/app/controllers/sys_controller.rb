@@ -38,8 +38,8 @@ class SysController < ApplicationController
 
   def delete_project_and_contents(p_uuid)
     p = Group.find_by_uuid(p_uuid)
-    if !p || p.group_class != 'project'
-      raise "can't sweep group '#{p_uuid}', it may not exist or not be a project"
+    if !p
+      raise "can't sweep group '#{p_uuid}', it may not exist"
     end
     # First delete sub projects
     Group.where({group_class: 'project', owner_uuid: p_uuid}).each do |sub_project|
