@@ -35,7 +35,7 @@ var _ = check.Suite(&HandlerSuite{})
 
 type HandlerSuite struct {
 	cluster *arvados.Cluster
-	handler http.Handler
+	handler *Handler
 	ctx     context.Context
 	cancel  context.CancelFunc
 }
@@ -51,7 +51,7 @@ func (s *HandlerSuite) SetUpTest(c *check.C) {
 	s.cluster.TLS.Insecure = true
 	arvadostest.SetServiceURL(&s.cluster.Services.RailsAPI, "https://"+os.Getenv("ARVADOS_TEST_API_HOST"))
 	arvadostest.SetServiceURL(&s.cluster.Services.Controller, "http://localhost:/")
-	s.handler = newHandler(s.ctx, s.cluster, "", prometheus.NewRegistry())
+	s.handler = newHandler(s.ctx, s.cluster, "", prometheus.NewRegistry()).(*Handler)
 }
 
 func (s *HandlerSuite) TearDownTest(c *check.C) {
@@ -276,7 +276,7 @@ func (s *HandlerSuite) TestLogoutGoogle(c *check.C) {
 
 func (s *HandlerSuite) TestValidateV1APIToken(c *check.C) {
 	req := httptest.NewRequest("GET", "/arvados/v1/users/current", nil)
-	user, ok, err := s.handler.(*Handler).validateAPItoken(req, arvadostest.ActiveToken)
+	user, ok, err := s.handler.validateAPItoken(req, arvadostest.ActiveToken)
 	c.Assert(err, check.IsNil)
 	c.Check(ok, check.Equals, true)
 	c.Check(user.Authorization.UUID, check.Equals, arvadostest.ActiveTokenUUID)
@@ -287,7 +287,7 @@ func (s *HandlerSuite) TestValidateV1APIToken(c *check.C) {
 
 func (s *HandlerSuite) TestValidateV2APIToken(c *check.C) {
 	req := httptest.NewRequest("GET", "/arvados/v1/users/current", nil)
-	user, ok, err := s.handler.(*Handler).validateAPItoken(req, arvadostest.ActiveTokenV2)
+	user, ok, err := s.handler.validateAPItoken(req, arvadostest.ActiveTokenV2)
 	c.Assert(err, check.IsNil)
 	c.Check(ok, check.Equals, true)
 	c.Check(user.Authorization.UUID, check.Equals, arvadostest.ActiveTokenUUID)
@@ -319,11 +319,11 @@ func (s *HandlerSuite) TestValidateRemoteToken(c *check.C) {
 
 func (s *HandlerSuite) TestCreateAPIToken(c *check.C) {
 	req := httptest.NewRequest("GET", "/arvados/v1/users/current", nil)
-	auth, err := s.handler.(*Handler).createAPItoken(req, arvadostest.ActiveUserUUID, nil)
+	auth, err := s.handler.createAPItoken(req, arvadostest.ActiveUserUUID, nil)
 	c.Assert(err, check.IsNil)
 	c.Check(auth.Scopes, check.DeepEquals, []string{"all"})
 
-	user, ok, err := s.handler.(*Handler).validateAPItoken(req, auth.TokenV2())
+	user, ok, err := s.handler.validateAPItoken(req, auth.TokenV2())
 	c.Assert(err, check.IsNil)
 	c.Check(ok, check.Equals, true)
 	c.Check(user.Authorization.UUID, check.Equals, auth.UUID)
@@ -429,4 +429,31 @@ func (s *HandlerSuite) TestRedactRailsAPIHostFromErrors(c *check.C) {
 	c.Assert(jresp.Errors, check.HasLen, 1)
 	c.Check(jresp.Errors[0], check.Matches, `.*//railsapi\.internal/arvados/v1/collections/.*: 404 Not Found.*`)
 	c.Check(jresp.Errors[0], check.Not(check.Matches), `(?ms).*127.0.0.1.*`)
+}
+
+func (s *HandlerSuite) TestTrashSweep(c *check.C) {
+	s.cluster.SystemRootToken = arvadostest.SystemRootToken
+	s.cluster.Collections.TrashSweepInterval = arvados.Duration(time.Second / 10)
+	s.handler.CheckHealth()
+	ctx := auth.NewContext(s.ctx, &auth.Credentials{Tokens: []string{arvadostest.ActiveTokenV2}})
+	coll, err := s.handler.federation.CollectionCreate(ctx, arvados.CreateOptions{Attrs: map[string]interface{}{"name": "test trash sweep"}, EnsureUniqueName: true})
+	c.Assert(err, check.IsNil)
+	defer s.handler.federation.CollectionDelete(ctx, arvados.DeleteOptions{UUID: coll.UUID})
+	db, err := s.handler.db(s.ctx)
+	c.Assert(err, check.IsNil)
+	_, err = db.ExecContext(s.ctx, `update collections set trash_at = $1, delete_at = $2 where uuid = $3`, time.Now().UTC().Add(time.Second/10), time.Now().UTC().Add(time.Hour), coll.UUID)
+	c.Assert(err, check.IsNil)
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		if time.Now().After(deadline) {
+			c.Log("timed out")
+			c.FailNow()
+		}
+		updated, err := s.handler.federation.CollectionGet(ctx, arvados.GetOptions{UUID: coll.UUID, IncludeTrash: true})
+		c.Assert(err, check.IsNil)
+		if updated.IsTrashed {
+			break
+		}
+		time.Sleep(time.Second / 10)
+	}
 }

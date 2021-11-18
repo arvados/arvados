@@ -217,6 +217,8 @@ func (c *Client) DoAndDecode(dst interface{}, req *http.Request) error {
 		return err
 	}
 	switch {
+	case resp.StatusCode == http.StatusNoContent:
+		return nil
 	case resp.StatusCode == http.StatusOK && dst == nil:
 		return nil
 	case resp.StatusCode == http.StatusOK:

@@ -92,6 +92,8 @@ Rails.application.routes.draw do
     end
   end
 
+  post '/sys/trash_sweep', to: 'sys#trash_sweep'
+
   if Rails.env == 'test'
     post '/database/reset', to: 'database#reset'
   end

@@ -32,9 +32,11 @@ import (
 )
 
 type Handler struct {
-	Cluster *arvados.Cluster
+	Cluster           *arvados.Cluster
+	BackgroundContext context.Context
 
 	setupOnce      sync.Once
+	federation     *federation.Conn
 	handlerStack   http.Handler
 	proxy          *proxy
 	secureClient   *http.Client
@@ -103,7 +105,8 @@ func (h *Handler) setup() {
 	healthFuncs := make(map[string]health.Func)
 
 	oidcAuthorizer := localdb.OIDCAccessTokenAuthorizer(h.Cluster, h.db)
-	rtr := router.New(federation.New(h.Cluster, &healthFuncs), router.Config{
+	h.federation = federation.New(h.Cluster, &healthFuncs)
+	rtr := router.New(h.federation, router.Config{
 		MaxRequestSize: h.Cluster.API.MaxRequestSize,
 		WrapCalls:      api.ComposeWrappers(ctrlctx.WrapCallsInTransactions(h.db), oidcAuthorizer.WrapCalls),
 	})
@@ -152,6 +155,8 @@ func (h *Handler) setup() {
 	h.proxy = &proxy{
 		Name: "arvados-controller",
 	}
+
+	go h.trashSweepWorker()
 }
 
 var errDBConnection = errors.New("database connection error")

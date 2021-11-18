@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 require 'test_helper'
-require 'sweep_trashed_objects'
 
 class ApiClientAuthorizationTest < ActiveSupport::TestCase
   include CurrentApiClient
@@ -18,12 +17,6 @@ class ApiClientAuthorizationTest < ActiveSupport::TestCase
       assert x.destroy, "Failed to destroy new ApiClientAuth"
       assert_empty ApiClientAuthorization.where(api_token: newtoken), "Destroyed ApiClientAuth is still in database"
     end
-  end
-
-  test "delete expired in SweepTrashedObjects" do
-    assert_not_empty ApiClientAuthorization.where(uuid: api_client_authorizations(:expired).uuid)
-    SweepTrashedObjects.sweep_now
-    assert_empty ApiClientAuthorization.where(uuid: api_client_authorizations(:expired).uuid)
   end
 
   test "accepts SystemRootToken" do
