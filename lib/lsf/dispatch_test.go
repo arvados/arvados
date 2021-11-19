@@ -6,6 +6,7 @@ package lsf
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"os/exec"
@@ -29,7 +30,8 @@ func Test(t *testing.T) {
 var _ = check.Suite(&suite{})
 
 type suite struct {
-	disp *dispatcher
+	disp     *dispatcher
+	crTooBig arvados.ContainerRequest
 }
 
 func (s *suite) TearDownTest(c *check.C) {
@@ -46,6 +48,22 @@ func (s *suite) SetUpTest(c *check.C) {
 	s.disp.lsfcli.stubCommand = func(string, ...string) *exec.Cmd {
 		return exec.Command("bash", "-c", "echo >&2 unimplemented stub; false")
 	}
+	err = arvados.NewClientFromEnv().RequestAndDecode(&s.crTooBig, "POST", "arvados/v1/container_requests", nil, map[string]interface{}{
+		"container_request": map[string]interface{}{
+			"runtime_constraints": arvados.RuntimeConstraints{
+				RAM:   1000000000000,
+				VCPUs: 1,
+			},
+			"container_image":     arvadostest.DockerImage112PDH,
+			"command":             []string{"sleep", "1"},
+			"mounts":              map[string]arvados.Mount{"/mnt/out": {Kind: "tmp", Capacity: 1000}},
+			"output_path":         "/mnt/out",
+			"state":               arvados.ContainerRequestStateCommitted,
+			"priority":            1,
+			"container_count_max": 1,
+		},
+	})
+	c.Assert(err, check.IsNil)
 }
 
 type lsfstub struct {
@@ -82,7 +100,10 @@ func (stub lsfstub) stubCommand(s *suite, c *check.C) func(prog string, args ...
 					"-J", arvadostest.LockedContainerUUID,
 					"-n", "4",
 					"-D", "11701MB",
-					"-R", "rusage[mem=11701MB:tmp=0MB] span[hosts=1]"})
+					"-R", "rusage[mem=11701MB:tmp=0MB] span[hosts=1]",
+					"-R", "select[mem>=11701MB]",
+					"-R", "select[tmp>=0MB]",
+					"-R", "select[ncpus>=4]"})
 				mtx.Lock()
 				fakejobq[nextjobid] = args[1]
 				nextjobid++
@@ -92,7 +113,23 @@ func (stub lsfstub) stubCommand(s *suite, c *check.C) func(prog string, args ...
 					"-J", arvadostest.QueuedContainerUUID,
 					"-n", "4",
 					"-D", "11701MB",
-					"-R", "rusage[mem=11701MB:tmp=45777MB] span[hosts=1]"})
+					"-R", "rusage[mem=11701MB:tmp=45777MB] span[hosts=1]",
+					"-R", "select[mem>=11701MB]",
+					"-R", "select[tmp>=45777MB]",
+					"-R", "select[ncpus>=4]"})
+				mtx.Lock()
+				fakejobq[nextjobid] = args[1]
+				nextjobid++
+				mtx.Unlock()
+			case s.crTooBig.ContainerUUID:
+				c.Check(args, check.DeepEquals, []string{
+					"-J", s.crTooBig.ContainerUUID,
+					"-n", "1",
+					"-D", "954187MB",
+					"-R", "rusage[mem=954187MB:tmp=256MB] span[hosts=1]",
+					"-R", "select[mem>=954187MB]",
+					"-R", "select[tmp>=256MB]",
+					"-R", "select[ncpus>=1]"})
 				mtx.Lock()
 				fakejobq[nextjobid] = args[1]
 				nextjobid++
@@ -103,13 +140,31 @@ func (stub lsfstub) stubCommand(s *suite, c *check.C) func(prog string, args ...
 			}
 			return exec.Command("echo", "submitted job")
 		case "bjobs":
-			c.Check(args, check.DeepEquals, []string{"-u", "all", "-noheader", "-o", "jobid stat job_name:30"})
-			out := ""
+			c.Check(args, check.DeepEquals, []string{"-u", "all", "-o", "jobid stat job_name pend_reason", "-json"})
+			var records []map[string]interface{}
 			for jobid, uuid := range fakejobq {
-				out += fmt.Sprintf(`%d %s %s\n`, jobid, "RUN", uuid)
+				stat, reason := "RUN", ""
+				if uuid == s.crTooBig.ContainerUUID {
+					// The real bjobs output includes a trailing ';' here:
+					stat, reason = "PEND", "There are no suitable hosts for the job;"
+				}
+				records = append(records, map[string]interface{}{
+					"JOBID":       fmt.Sprintf("%d", jobid),
+					"STAT":        stat,
+					"JOB_NAME":    uuid,
+					"PEND_REASON": reason,
+				})
 			}
-			c.Logf("bjobs out: %q", out)
-			return exec.Command("printf", out)
+			out, err := json.Marshal(map[string]interface{}{
+				"COMMAND": "bjobs",
+				"JOBS":    len(fakejobq),
+				"RECORDS": records,
+			})
+			if err != nil {
+				panic(err)
+			}
+			c.Logf("bjobs out: %s", out)
+			return exec.Command("printf", string(out))
 		case "bkill":
 			killid, _ := strconv.Atoi(args[0])
 			if uuid, ok := fakejobq[killid]; !ok {
@@ -137,6 +192,7 @@ func (s *suite) TestSubmit(c *check.C) {
 		sudoUser:  s.disp.Cluster.Containers.LSF.BsubSudoUser,
 	}.stubCommand(s, c)
 	s.disp.Start()
+
 	deadline := time.Now().Add(20 * time.Second)
 	for range time.NewTicker(time.Second).C {
 		if time.Now().After(deadline) {
@@ -144,22 +200,36 @@ func (s *suite) TestSubmit(c *check.C) {
 			break
 		}
 		// "queuedcontainer" should be running
-		if _, ok := s.disp.lsfqueue.JobID(arvadostest.QueuedContainerUUID); !ok {
+		if _, ok := s.disp.lsfqueue.Lookup(arvadostest.QueuedContainerUUID); !ok {
 			continue
 		}
 		// "lockedcontainer" should be cancelled because it
 		// has priority 0 (no matching container requests)
-		if _, ok := s.disp.lsfqueue.JobID(arvadostest.LockedContainerUUID); ok {
+		if _, ok := s.disp.lsfqueue.Lookup(arvadostest.LockedContainerUUID); ok {
+			continue
+		}
+		// "crTooBig" should be cancelled because lsf stub
+		// reports there is no suitable instance type
+		if _, ok := s.disp.lsfqueue.Lookup(s.crTooBig.ContainerUUID); ok {
 			continue
 		}
 		var ctr arvados.Container
 		if err := s.disp.arvDispatcher.Arv.Get("containers", arvadostest.LockedContainerUUID, nil, &ctr); err != nil {
 			c.Logf("error getting container state for %s: %s", arvadostest.LockedContainerUUID, err)
 			continue
-		}
-		if ctr.State != arvados.ContainerStateQueued {
+		} else if ctr.State != arvados.ContainerStateQueued {
 			c.Logf("LockedContainer is not in the LSF queue but its arvados record has not been updated to state==Queued (state is %q)", ctr.State)
 			continue
+		}
+
+		if err := s.disp.arvDispatcher.Arv.Get("containers", s.crTooBig.ContainerUUID, nil, &ctr); err != nil {
+			c.Logf("error getting container state for %s: %s", s.crTooBig.ContainerUUID, err)
+			continue
+		} else if ctr.State != arvados.ContainerStateCancelled {
+			c.Logf("container %s is not in the LSF queue but its arvados record has not been updated to state==Cancelled (state is %q)", s.crTooBig.ContainerUUID, ctr.State)
+			continue
+		} else {
+			c.Check(ctr.RuntimeStatus["error"], check.Equals, "There are no suitable hosts for the job;")
 		}
 		c.Log("reached desired state")
 		break
