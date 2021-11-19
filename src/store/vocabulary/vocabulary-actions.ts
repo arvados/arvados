@@ -10,7 +10,6 @@ import { isVocabulary } from 'models/vocabulary';
 
 export const loadVocabulary = async (dispatch: Dispatch, _: {}, { vocabularyService }: ServiceRepository) => {
     const vocabulary = await vocabularyService.getVocabulary();
-
     dispatch(propertiesActions.SET_PROPERTY({
         key: VOCABULARY_PROPERTY_NAME,
         value: isVocabulary(vocabulary)

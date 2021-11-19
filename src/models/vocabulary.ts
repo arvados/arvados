@@ -47,7 +47,7 @@ export const getTagValueID = (tagKeyID:string, tagValueLabel:string, vocabulary:
     (tagKeyID && vocabulary.tags[tagKeyID] && vocabulary.tags[tagKeyID].values)
     ? Object.keys(vocabulary.tags[tagKeyID].values!).find(
         k => vocabulary.tags[tagKeyID].values![k].labels.find(
-            l => l.label === tagValueLabel) !== undefined) || ''
+            l => l.label.toLowerCase() === tagValueLabel.toLowerCase()) !== undefined) || ''
     : '';
 
 export const getTagValueLabel = (tagKeyID:string, tagValueID:string, vocabulary: Vocabulary) =>
@@ -94,7 +94,7 @@ export const getTags = ({ tags }: Vocabulary) => {
 export const getTagKeyID = (tagKeyLabel:string, vocabulary: Vocabulary) =>
     Object.keys(vocabulary.tags).find(
         k => vocabulary.tags[k].labels.find(
-            l => l.label === tagKeyLabel) !== undefined
+            l => l.label.toLowerCase() === tagKeyLabel.toLowerCase()) !== undefined
         ) || '';
 
 export const getTagKeyLabel = (tagKeyID:string, vocabulary: Vocabulary) =>

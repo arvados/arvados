@@ -97,13 +97,36 @@ describe('Collection panel tests', function () {
                 });
                 // Confirm proper vocabulary labels are displayed on the UI.
                 cy.get('[data-cy=collection-properties-panel]')
-                    .should('contain', 'Color')
-                    .and('contain', 'Magenta');
+                    .should('contain', 'Color: Magenta');
                 // Confirm proper vocabulary IDs were saved on the backend.
                 cy.doRequest('GET', `/arvados/v1/collections/${this.testCollection.uuid}`)
                     .its('body').as('collection')
                     .then(function () {
                         expect(this.collection.properties.IDTAGCOLORS).to.equal('IDVALCOLORS3');
+                    });
+
+                // Case-insensitive on-blur auto-selection test
+                // Key: Size (IDTAGSIZES) - Value: Small (IDVALSIZES2)
+                cy.get('[data-cy=resource-properties-form]').within(() => {
+                    cy.get('[data-cy=property-field-key]').within(() => {
+                        cy.get('input').type('sIzE');
+                    });
+                    cy.get('[data-cy=property-field-value]').within(() => {
+                        cy.get('input').type('sMaLL');
+                    });
+                    // Cannot "type()" TAB on Cypress so let's click another field
+                    // to trigger the onBlur event.
+                    cy.get('[data-cy=property-field-key]').click();
+                    cy.root().submit();
+                });
+                // Confirm proper vocabulary labels are displayed on the UI.
+                cy.get('[data-cy=collection-properties-panel]')
+                    .should('contain', 'Size: S');
+                // Confirm proper vocabulary IDs were saved on the backend.
+                cy.doRequest('GET', `/arvados/v1/collections/${this.testCollection.uuid}`)
+                    .its('body').as('collection')
+                    .then(function () {
+                        expect(this.collection.properties.IDTAGSIZES).to.equal('IDVALSIZES2');
                     });
             });
     });

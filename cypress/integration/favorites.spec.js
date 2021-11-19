@@ -150,7 +150,7 @@ describe('Favorites tests', function () {
         cy.getAll('@mySharedWritableProject', '@testTargetCollection')
             .then(function ([mySharedWritableProject, testTargetCollection]) {
                 cy.loginAs(adminUser);
-                
+
                 cy.get('[data-cy=side-panel-tree]').contains('My Favorites').click();
 
                 const newProjectName = `New project name ${mySharedWritableProject.name}`;
@@ -160,7 +160,7 @@ describe('Favorites tests', function () {
 
                 cy.testEditProjectOrCollection('main', mySharedWritableProject.name, newProjectName, newProjectDescription);
                 cy.testEditProjectOrCollection('main', testTargetCollection.name, newCollectionName, newCollectionDescription, false);
-                
+
                 cy.get('[data-cy=side-panel-tree]').contains('Projects').click();
 
                 cy.get('main').contains(newProjectName).rightclick();
@@ -171,7 +171,7 @@ describe('Favorites tests', function () {
                 cy.get('[data-cy=side-panel-tree]').contains('Public Favorites').click();
 
                 cy.testEditProjectOrCollection('main', newProjectName, mySharedWritableProject.name, 'newProjectDescription');
-                cy.testEditProjectOrCollection('main', newCollectionName, testTargetCollection.name, 'newCollectionDescription', false); 
+                cy.testEditProjectOrCollection('main', newCollectionName, testTargetCollection.name, 'newCollectionDescription', false);
             });
     });
 
