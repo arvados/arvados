@@ -6,6 +6,7 @@ package lsf
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -16,9 +17,10 @@ import (
 )
 
 type bjobsEntry struct {
-	id   int
-	name string
-	stat string
+	ID         string `json:"JOBID"`
+	Name       string `json:"JOB_NAME"`
+	Stat       string `json:"STAT"`
+	PendReason string `json:"PEND_REASON"`
 }
 
 type lsfcli struct {
@@ -53,29 +55,21 @@ func (cli lsfcli) Bsub(script []byte, args []string, arv *arvados.Client) error 
 
 func (cli lsfcli) Bjobs() ([]bjobsEntry, error) {
 	cli.logger.Debugf("Bjobs()")
-	cmd := cli.command("bjobs", "-u", "all", "-noheader", "-o", "jobid stat job_name:30")
+	cmd := cli.command("bjobs", "-u", "all", "-o", "jobid stat job_name pend_reason", "-json")
 	buf, err := cmd.Output()
 	if err != nil {
 		return nil, errWithStderr(err)
 	}
-	var bjobs []bjobsEntry
-	for _, line := range strings.Split(string(buf), "\n") {
-		if line == "" {
-			continue
-		}
-		var ent bjobsEntry
-		if _, err := fmt.Sscan(line, &ent.id, &ent.stat, &ent.name); err != nil {
-			cli.logger.Warnf("ignoring unparsed line in bjobs output: %q", line)
-			continue
-		}
-		bjobs = append(bjobs, ent)
+	var resp struct {
+		Records []bjobsEntry `json:"RECORDS"`
 	}
-	return bjobs, nil
+	err = json.Unmarshal(buf, &resp)
+	return resp.Records, err
 }
 
-func (cli lsfcli) Bkill(id int) error {
-	cli.logger.Infof("Bkill(%d)", id)
-	cmd := cli.command("bkill", fmt.Sprintf("%d", id))
+func (cli lsfcli) Bkill(id string) error {
+	cli.logger.Infof("Bkill(%s)", id)
+	cmd := cli.command("bkill", id)
 	buf, err := cmd.CombinedOutput()
 	if err == nil || strings.Index(string(buf), "already finished") >= 0 {
 		return nil
