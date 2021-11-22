@@ -1701,7 +1701,7 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 
 	if ok, code := cmd.ParseFlags(flags, prog, args, "container-uuid", stderr); !ok {
 		return code
-	} else if flags.NArg() != 1 {
+	} else if !*list && flags.NArg() != 1 {
 		fmt.Fprintf(stderr, "missing required argument: container-uuid (try -help)\n")
 		return 2
 	}
