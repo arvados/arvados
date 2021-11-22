@@ -23,13 +23,13 @@ There are 2 configuration settings in the @Collections@ section of @config.yml@ 
       # is older than the amount of seconds defined on PreserveVersionIfIdle,
       # a snapshot of the collection's previous state is created and linked to
       # the current collection.
-      CollectionVersioning: false
+      CollectionVersioning: true
 
       # This setting control the auto-save aspect of collection versioning, and can be set to:
       #   0s = auto-create a new version on every update.
       #  -1s = never auto-create new versions.
       # > 0s = auto-create a new version when older than the specified number of seconds.
-      PreserveVersionIfIdle: -1s
+      PreserveVersionIfIdle: 10s
 </pre>
 
 Note that if you set @CollectionVersioning@ to @false@ after being enabled, old versions will still be accessible, but further changes will not be versioned.
