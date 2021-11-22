@@ -138,6 +138,7 @@ func (rtr *router) sendError(w http.ResponseWriter, err error) {
 }
 
 var infixMap = map[string]interface{}{
+	"gj3su": arvados.APIClientAuthorization{},
 	"4zz18": arvados.Collection{},
 	"xvhdp": arvados.ContainerRequest{},
 	"dz642": arvados.Container{},
@@ -150,12 +151,20 @@ var infixMap = map[string]interface{}{
 	"7fd4e": arvados.Workflow{},
 }
 
+var specialKindTransforms = map[string]string{
+	"arvados.APIClientAuthorization":     "arvados#apiClientAuthorization",
+	"arvados.APIClientAuthorizationList": "arvados#apiClientAuthorizationList",
+}
+
 var mungeKind = regexp.MustCompile(`\..`)
 
 func kind(resp interface{}) string {
 	t := fmt.Sprintf("%T", resp)
 	if !strings.HasPrefix(t, "arvados.") {
 		return ""
+	}
+	if k, ok := specialKindTransforms[t]; ok {
+		return k
 	}
 	return mungeKind.ReplaceAllStringFunc(t, func(s string) string {
 		// "arvados.CollectionList" => "arvados#collectionList"

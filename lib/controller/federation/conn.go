@@ -729,6 +729,33 @@ func (conn *Conn) APIClientAuthorizationCurrent(ctx context.Context, options arv
 	return conn.chooseBackend(options.UUID).APIClientAuthorizationCurrent(ctx, options)
 }
 
+func (conn *Conn) APIClientAuthorizationCreate(ctx context.Context, options arvados.CreateOptions) (arvados.APIClientAuthorization, error) {
+	if conn.cluster.Login.LoginCluster != "" {
+		return conn.chooseBackend(conn.cluster.Login.LoginCluster).APIClientAuthorizationCreate(ctx, options)
+	}
+	ownerUUID, ok := options.Attrs["owner_uuid"].(string)
+	if ok && ownerUUID != "" {
+		return conn.chooseBackend(ownerUUID).APIClientAuthorizationCreate(ctx, options)
+	}
+	return conn.local.APIClientAuthorizationCreate(ctx, options)
+}
+
+func (conn *Conn) APIClientAuthorizationUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.APIClientAuthorization, error) {
+	return conn.chooseBackend(options.UUID).APIClientAuthorizationUpdate(ctx, options)
+}
+
+func (conn *Conn) APIClientAuthorizationDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.APIClientAuthorization, error) {
+	return conn.chooseBackend(options.UUID).APIClientAuthorizationDelete(ctx, options)
+}
+
+func (conn *Conn) APIClientAuthorizationList(ctx context.Context, options arvados.ListOptions) (arvados.APIClientAuthorizationList, error) {
+	return conn.local.APIClientAuthorizationList(ctx, options)
+}
+
+func (conn *Conn) APIClientAuthorizationGet(ctx context.Context, options arvados.GetOptions) (arvados.APIClientAuthorization, error) {
+	return conn.chooseBackend(options.UUID).APIClientAuthorizationGet(ctx, options)
+}
+
 type backend interface {
 	arvados.API
 	BaseURL() url.URL

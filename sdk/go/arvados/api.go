@@ -85,6 +85,11 @@ var (
 	EndpointUserBatchUpdate               = APIEndpoint{"PATCH", "arvados/v1/users/batch_update", ""}
 	EndpointUserAuthenticate              = APIEndpoint{"POST", "arvados/v1/users/authenticate", ""}
 	EndpointAPIClientAuthorizationCurrent = APIEndpoint{"GET", "arvados/v1/api_client_authorizations/current", ""}
+	EndpointAPIClientAuthorizationCreate  = APIEndpoint{"POST", "arvados/v1/api_client_authorizations", "api_client_authorization"}
+	EndpointAPIClientAuthorizationUpdate  = APIEndpoint{"PUT", "arvados/v1/api_client_authorizations/{uuid}", "api_client_authorization"}
+	EndpointAPIClientAuthorizationList    = APIEndpoint{"GET", "arvados/v1/api_client_authorizations", ""}
+	EndpointAPIClientAuthorizationDelete  = APIEndpoint{"DELETE", "arvados/v1/api_client_authorizations/{uuid}", ""}
+	EndpointAPIClientAuthorizationGet     = APIEndpoint{"GET", "arvados/v1/api_client_authorizations/{uuid}", ""}
 )
 
 type ContainerSSHOptions struct {
@@ -285,4 +290,9 @@ type API interface {
 	UserBatchUpdate(context.Context, UserBatchUpdateOptions) (UserList, error)
 	UserAuthenticate(ctx context.Context, options UserAuthenticateOptions) (APIClientAuthorization, error)
 	APIClientAuthorizationCurrent(ctx context.Context, options GetOptions) (APIClientAuthorization, error)
+	APIClientAuthorizationCreate(ctx context.Context, options CreateOptions) (APIClientAuthorization, error)
+	APIClientAuthorizationList(ctx context.Context, options ListOptions) (APIClientAuthorizationList, error)
+	APIClientAuthorizationDelete(ctx context.Context, options DeleteOptions) (APIClientAuthorization, error)
+	APIClientAuthorizationUpdate(ctx context.Context, options UpdateOptions) (APIClientAuthorization, error)
+	APIClientAuthorizationGet(ctx context.Context, options GetOptions) (APIClientAuthorization, error)
 }

@@ -652,6 +652,36 @@ func (conn *Conn) APIClientAuthorizationCurrent(ctx context.Context, options arv
 	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
 	return resp, err
 }
+func (conn *Conn) APIClientAuthorizationCreate(ctx context.Context, options arvados.CreateOptions) (arvados.APIClientAuthorization, error) {
+	ep := arvados.EndpointAPIClientAuthorizationCreate
+	var resp arvados.APIClientAuthorization
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+func (conn *Conn) APIClientAuthorizationUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.APIClientAuthorization, error) {
+	ep := arvados.EndpointAPIClientAuthorizationUpdate
+	var resp arvados.APIClientAuthorization
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+func (conn *Conn) APIClientAuthorizationDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.APIClientAuthorization, error) {
+	ep := arvados.EndpointAPIClientAuthorizationDelete
+	var resp arvados.APIClientAuthorization
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+func (conn *Conn) APIClientAuthorizationList(ctx context.Context, options arvados.ListOptions) (arvados.APIClientAuthorizationList, error) {
+	ep := arvados.EndpointAPIClientAuthorizationList
+	var resp arvados.APIClientAuthorizationList
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+func (conn *Conn) APIClientAuthorizationGet(ctx context.Context, options arvados.GetOptions) (arvados.APIClientAuthorization, error) {
+	ep := arvados.EndpointAPIClientAuthorizationGet
+	var resp arvados.APIClientAuthorization
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
 
 type UserSessionAuthInfo struct {
 	UserUUID        string    `json:"user_uuid"`
