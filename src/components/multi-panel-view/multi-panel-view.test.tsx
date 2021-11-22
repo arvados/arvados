@@ -22,7 +22,7 @@ describe('<MPVContainer />', () => {
         };
     });
 
-    it('should show default toggle buttons for every child', () => {
+    it('should show default panel buttons for every child', () => {
         const childs = [
             <PanelMock key={1}>This is one panel</PanelMock>,
             <PanelMock key={2}>This is another panel</PanelMock>,
@@ -34,25 +34,27 @@ describe('<MPVContainer />', () => {
         expect(wrapper.html()).toContain('This is another panel');
     });
 
-    it('should toggle panel when clicking on its button', () => {
+    it('should show panel when clicking on its button', () => {
         const childs = [
             <PanelMock key={1}>This is one panel</PanelMock>,
         ];
+        props.panelStates = [
+            {name: 'Initially invisible Panel', visible: false},
+        ]
+
         const wrapper = mount(<MPVContainer {...props}>{[...childs]}</MPVContainer>);
 
-        // Initial state: panel visible
-        expect(wrapper.html()).toContain('This is one panel');
-
-        // Panel toggling
-        wrapper.find(Button).simulate('click');
+        // Initial state: panel not visible
         expect(wrapper.html()).not.toContain('This is one panel');
         expect(wrapper.html()).toContain('All panels are hidden');
+
+        // Panel visible when clicking on its button
         wrapper.find(Button).simulate('click');
         expect(wrapper.html()).toContain('This is one panel');
         expect(wrapper.html()).not.toContain('All panels are hidden');
     });
 
-    it('should show custom toggle buttons when config provided', () => {
+    it('should show custom panel buttons when config provided', () => {
         const childs = [
             <PanelMock key={1}>This is one panel</PanelMock>,
             <PanelMock key={2}>This is another panel</PanelMock>,
