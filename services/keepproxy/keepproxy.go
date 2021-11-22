@@ -19,6 +19,7 @@ import (
 	"syscall"
 	"time"
 
+	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
@@ -42,19 +43,19 @@ var (
 const rfc3339NanoFixed = "2006-01-02T15:04:05.000000000Z07:00"
 
 func configure(logger log.FieldLogger, args []string) (*arvados.Cluster, error) {
-	flags := flag.NewFlagSet(args[0], flag.ExitOnError)
+	prog := args[0]
+	flags := flag.NewFlagSet(prog, flag.ContinueOnError)
 
 	dumpConfig := flags.Bool("dump-config", false, "write current configuration to stdout and exit")
 	getVersion := flags.Bool("version", false, "Print version information and exit.")
 
 	loader := config.NewLoader(os.Stdin, logger)
 	loader.SetupFlags(flags)
-
 	args = loader.MungeLegacyConfigArgs(logger, args[1:], "-legacy-keepproxy-config")
-	flags.Parse(args)
 
-	// Print version information if requested
-	if *getVersion {
+	if ok, code := cmd.ParseFlags(flags, prog, args, "", os.Stderr); !ok {
+		os.Exit(code)
+	} else if *getVersion {
 		fmt.Printf("keepproxy %s\n", version)
 		return nil, nil
 	}

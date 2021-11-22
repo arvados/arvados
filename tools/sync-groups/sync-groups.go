@@ -16,6 +16,7 @@ import (
 	"os"
 	"strings"
 
+	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 )
 
@@ -142,9 +143,9 @@ func ParseFlags(config *ConfigParams) error {
   * 1st: Group name
   * 2nd: User identifier
   * 3rd (Optional): User permission on the group: can_read, can_write or can_manage. (Default: can_write)`
-		fmt.Fprintf(os.Stderr, "%s\n\n", usageStr)
-		fmt.Fprintf(os.Stderr, "Usage:\n%s [OPTIONS] <input-file.csv>\n\n", os.Args[0])
-		fmt.Fprintf(os.Stderr, "Options:\n")
+		fmt.Fprintf(flags.Output(), "%s\n\n", usageStr)
+		fmt.Fprintf(flags.Output(), "Usage:\n%s [OPTIONS] <input-file.csv>\n\n", os.Args[0])
+		fmt.Fprintf(flags.Output(), "Options:\n")
 		flags.PrintDefaults()
 	}
 
@@ -170,11 +171,9 @@ func ParseFlags(config *ConfigParams) error {
 		"",
 		"Use given group UUID as a parent for the remote groups. Should be owned by the system user. If not specified, a group named '"+config.ParentGroupName+"' will be used (and created if nonexistant).")
 
-	// Parse args; omit the first arg which is the command name
-	flags.Parse(os.Args[1:])
-
-	// Print version information if requested
-	if *getVersion {
+	if ok, code := cmd.ParseFlags(flags, os.Args[0], os.Args[1:], "input-file.csv", os.Stderr); !ok {
+		os.Exit(code)
+	} else if *getVersion {
 		fmt.Printf("%s %s\n", os.Args[0], version)
 		os.Exit(0)
 	}

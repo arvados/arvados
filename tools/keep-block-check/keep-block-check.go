@@ -9,6 +9,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -16,6 +17,7 @@ import (
 	"strings"
 	"time"
 
+	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
 )
@@ -23,13 +25,10 @@ import (
 var version = "dev"
 
 func main() {
-	err := doMain(os.Args[1:])
-	if err != nil {
-		log.Fatalf("%v", err)
-	}
+	os.Exit(doMain(os.Args[1:], os.Stderr))
 }
 
-func doMain(args []string) error {
+func doMain(args []string, stderr io.Writer) int {
 	flags := flag.NewFlagSet("keep-block-check", flag.ExitOnError)
 
 	configFile := flags.String(
@@ -69,33 +68,40 @@ func doMain(args []string) error {
 		false,
 		"Print version information and exit.")
 
-	// Parse args; omit the first arg which is the command name
-	flags.Parse(args)
-
-	// Print version information if requested
-	if *getVersion {
-		fmt.Printf("keep-block-check %s\n", version)
-		os.Exit(0)
+	if ok, code := cmd.ParseFlags(flags, os.Args[0], args, "", stderr); !ok {
+		return code
+	} else if *getVersion {
+		fmt.Printf("%s %s\n", os.Args[0], version)
+		return 0
 	}
 
 	config, blobSigningKey, err := loadConfig(*configFile)
 	if err != nil {
-		return fmt.Errorf("Error loading configuration from file: %s", err.Error())
+		fmt.Fprintf(stderr, "Error loading configuration from file: %s\n", err)
+		return 1
 	}
 
 	// get list of block locators to be checked
 	blockLocators, err := getBlockLocators(*locatorFile, *prefix)
 	if err != nil {
-		return fmt.Errorf("Error reading block hashes to be checked from file: %s", err.Error())
+		fmt.Fprintf(stderr, "Error reading block hashes to be checked from file: %s\n", err)
+		return 1
 	}
 
 	// setup keepclient
 	kc, blobSignatureTTL, err := setupKeepClient(config, *keepServicesJSON, *blobSignatureTTLFlag)
 	if err != nil {
-		return fmt.Errorf("Error configuring keepclient: %s", err.Error())
+		fmt.Fprintf(stderr, "Error configuring keepclient: %s\n", err)
+		return 1
 	}
 
-	return performKeepBlockCheck(kc, blobSignatureTTL, blobSigningKey, blockLocators, *verbose)
+	err = performKeepBlockCheck(kc, blobSignatureTTL, blobSigningKey, blockLocators, *verbose)
+	if err != nil {
+		fmt.Fprintln(stderr, err)
+		return 1
+	}
+
+	return 0
 }
 
 type apiConfig struct {

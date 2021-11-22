@@ -72,12 +72,8 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 	loader.SetupFlags(flags)
 	versionFlag := flags.Bool("version", false, "Write version information to stdout and exit 0")
 	pprofAddr := flags.String("pprof", "", "Serve Go profile data at `[addr]:port`")
-	err = flags.Parse(args)
-	if err == flag.ErrHelp {
-		err = nil
-		return 0
-	} else if err != nil {
-		return 2
+	if ok, code := cmd.ParseFlags(flags, prog, args, "", stderr); !ok {
+		return code
 	} else if *versionFlag {
 		return cmd.Version.RunCommand(prog, args, stdin, stdout, stderr)
 	}

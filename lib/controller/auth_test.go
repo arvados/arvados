@@ -98,7 +98,7 @@ func (s *AuthSuite) SetUpTest(c *check.C) {
 	cluster.Login.OpenIDConnect.AcceptAccessToken = true
 	cluster.Login.OpenIDConnect.AcceptAccessTokenScope = ""
 
-	s.testHandler = &Handler{Cluster: cluster}
+	s.testHandler = &Handler{Cluster: cluster, BackgroundContext: ctxlog.Context(context.Background(), s.log)}
 	s.testServer = newServerFromIntegrationTestEnv(c)
 	s.testServer.Server.BaseContext = func(net.Listener) context.Context {
 		return ctxlog.Context(context.Background(), s.log)

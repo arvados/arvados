@@ -13,6 +13,7 @@ import (
 	"os"
 
 	"git.arvados.org/arvados.git/lib/cloud"
+	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/lib/dispatchcloud"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
@@ -41,17 +42,8 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	destroyExisting := flags.Bool("destroy-existing", false, "Destroy any existing instances tagged with our InstanceSetID, instead of erroring out")
 	shellCommand := flags.String("command", "", "Run an interactive shell command on the test instance when it boots")
 	pauseBeforeDestroy := flags.Bool("pause-before-destroy", false, "Prompt and wait before destroying the test instance")
-	err = flags.Parse(args)
-	if err == flag.ErrHelp {
-		err = nil
-		return 0
-	} else if err != nil {
-		return 2
-	}
-
-	if len(flags.Args()) != 0 {
-		flags.Usage()
-		return 2
+	if ok, code := cmd.ParseFlags(flags, prog, args, "", stderr); !ok {
+		return code
 	}
 	logger := ctxlog.New(stderr, "text", "info")
 	defer func() {

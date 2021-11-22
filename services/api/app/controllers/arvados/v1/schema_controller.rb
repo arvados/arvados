@@ -427,6 +427,27 @@ class Arvados::V1::SchemaController < ApplicationController
         }
       }
 
+      discovery[:resources]['sys'] = {
+        methods: {
+          get: {
+            id: "arvados.sys.trash_sweep",
+            path: "sys/trash_sweep",
+            httpMethod: "POST",
+            description: "apply scheduled trash and delete operations",
+            parameters: {
+            },
+            parameterOrder: [
+            ],
+            response: {
+            },
+            scopes: [
+              "https://api.arvados.org/auth/arvados",
+              "https://api.arvados.org/auth/arvados.readonly"
+            ]
+          },
+        }
+      }
+
       Rails.configuration.API.DisabledAPIs.each do |method, _|
         ctrl, action = method.to_s.split('.', 2)
         discovery[:resources][ctrl][:methods].delete(action.to_sym)

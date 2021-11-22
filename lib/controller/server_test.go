@@ -35,11 +35,14 @@ func integrationTestCluster() *arvados.Cluster {
 // provided by the integration-testing environment.
 func newServerFromIntegrationTestEnv(c *check.C) *httpserver.Server {
 	log := ctxlog.TestLogger(c)
-
-	handler := &Handler{Cluster: &arvados.Cluster{
-		ClusterID:  "zzzzz",
-		PostgreSQL: integrationTestCluster().PostgreSQL,
-	}}
+	ctx := ctxlog.Context(context.Background(), log)
+	handler := &Handler{
+		Cluster: &arvados.Cluster{
+			ClusterID:  "zzzzz",
+			PostgreSQL: integrationTestCluster().PostgreSQL,
+		},
+		BackgroundContext: ctx,
+	}
 	handler.Cluster.TLS.Insecure = true
 	handler.Cluster.Collections.BlobSigning = true
 	handler.Cluster.Collections.BlobSigningKey = arvadostest.BlobSigningKey
@@ -49,10 +52,8 @@ func newServerFromIntegrationTestEnv(c *check.C) *httpserver.Server {
 
 	srv := &httpserver.Server{
 		Server: http.Server{
-			BaseContext: func(net.Listener) context.Context {
-				return ctxlog.Context(context.Background(), log)
-			},
-			Handler: httpserver.AddRequestIDs(httpserver.LogRequests(handler)),
+			BaseContext: func(net.Listener) context.Context { return ctx },
+			Handler:     httpserver.AddRequestIDs(httpserver.LogRequests(handler)),
 		},
 		Addr: ":",
 	}

@@ -27,13 +27,10 @@ func (c command) RunCommand(prog string, args []string, stdin io.Reader, stdout,
 	var err error
 	logger := ctxlog.New(stderr, "text", "info")
 	logger.SetFormatter(cmd.NoPrefixFormatter{})
-	defer func() {
-		if err != nil {
-			logger.Error("\n" + err.Error())
-		}
-	}()
 
 	exitcode, err := c.costAnalyzer(prog, args, logger, stdout, stderr)
-
+	if err != nil {
+		logger.Error("\n" + err.Error())
+	}
 	return exitcode
 }

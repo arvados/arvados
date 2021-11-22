@@ -1699,11 +1699,11 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 		ignoreDetachFlag = true
 	}
 
-	if err := flags.Parse(args); err == flag.ErrHelp {
-		return 0
-	} else if err != nil {
-		log.Print(err)
-		return 1
+	if ok, code := cmd.ParseFlags(flags, prog, args, "container-uuid", stderr); !ok {
+		return code
+	} else if flags.NArg() != 1 {
+		fmt.Fprintf(stderr, "missing required argument: container-uuid (try -help)\n")
+		return 2
 	}
 
 	containerUUID := flags.Arg(0)
