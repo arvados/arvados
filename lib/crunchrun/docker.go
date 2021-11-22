@@ -106,6 +106,13 @@ func (e *dockerExecutor) Create(spec containerSpec) error {
 			KernelMemory: spec.RAM, // kernel portion
 		},
 	}
+	if spec.EnableCUDA {
+		hostCfg.Resources.DeviceRequests = append(hostCfg.Resources.DeviceRequests, dockercontainer.DeviceRequest{
+			Driver:       "nvidia",
+			Count:        -1,
+			Capabilities: [][]string{[]string{"gpu", "nvidia", "compute"}},
+		})
+	}
 	for path, mount := range spec.BindMounts {
 		bind := mount.HostPath + ":" + path
 		if mount.ReadOnly {

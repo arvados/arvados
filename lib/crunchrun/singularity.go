@@ -246,6 +246,11 @@ func (e *singularityExecutor) Start() error {
 	if !e.spec.EnableNetwork {
 		args = append(args, "--net", "--network=none")
 	}
+
+	if e.spec.EnableCUDA {
+		args = append(args, "--nv")
+	}
+
 	readonlyflag := map[bool]string{
 		false: "rw",
 		true:  "ro",

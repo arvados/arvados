@@ -24,6 +24,7 @@ type containerSpec struct {
 	BindMounts    map[string]bindmount
 	Command       []string
 	EnableNetwork bool
+	EnableCUDA    bool
 	NetworkMode   string // docker network mode, normally "default"
 	CgroupParent  string
 	Stdin         io.Reader
