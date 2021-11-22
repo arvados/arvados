@@ -100,10 +100,10 @@ type RuntimeConstraints struct {
 	RAM                         int64    `json:"ram"`
 	VCPUs                       int      `json:"vcpus"`
 	KeepCacheRAM                int64    `json:"keep_cache_ram"`
-	CUDADriverVersion           string   `json:"cuda_driver_version"`
-	CUDACubinHardwareCapability []string `json:"cuda_cubin_hardware_capability"`
-	CUDAPTXHardwardCapability   string   `json:"cuda_ptx_hardware_capability"`
-	CUDADeviceCount             int      `json:"cuda_device_count"`
+	CUDADriverVersion           string   `json:"cuda_driver_version,omitempty"`
+	CUDACubinHardwareCapability []string `json:"cuda_cubin_hardware_capability,omitempty"`
+	CUDAPTXHardwardCapability   string   `json:"cuda_ptx_hardware_capability,omitempty"`
+	CUDADeviceCount             int      `json:"cuda_device_count,omitempty"`
 }
 
 // SchedulingParameters specify a container's scheduling parameters

@@ -16,20 +16,20 @@ type bindmount struct {
 }
 
 type containerSpec struct {
-	Image         string
-	VCPUs         int
-	RAM           int64
-	WorkingDir    string
-	Env           map[string]string
-	BindMounts    map[string]bindmount
-	Command       []string
-	EnableNetwork bool
-	EnableCUDA    bool
-	NetworkMode   string // docker network mode, normally "default"
-	CgroupParent  string
-	Stdin         io.Reader
-	Stdout        io.Writer
-	Stderr        io.Writer
+	Image           string
+	VCPUs           int
+	RAM             int64
+	WorkingDir      string
+	Env             map[string]string
+	BindMounts      map[string]bindmount
+	Command         []string
+	EnableNetwork   bool
+	CUDADeviceCount int
+	NetworkMode     string // docker network mode, normally "default"
+	CgroupParent    string
+	Stdin           io.Reader
+	Stdout          io.Writer
+	Stderr          io.Writer
 }
 
 // containerExecutor is an interface to a container runtime

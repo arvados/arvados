@@ -106,10 +106,10 @@ func (e *dockerExecutor) Create(spec containerSpec) error {
 			KernelMemory: spec.RAM, // kernel portion
 		},
 	}
-	if spec.EnableCUDA {
+	if spec.CUDADeviceCount != 0 {
 		hostCfg.Resources.DeviceRequests = append(hostCfg.Resources.DeviceRequests, dockercontainer.DeviceRequest{
 			Driver:       "nvidia",
-			Count:        -1,
+			Count:        spec.CUDADeviceCount,
 			Capabilities: [][]string{[]string{"gpu", "nvidia", "compute"}},
 		})
 	}

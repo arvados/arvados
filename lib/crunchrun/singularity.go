@@ -247,7 +247,7 @@ func (e *singularityExecutor) Start() error {
 		args = append(args, "--net", "--network=none")
 	}
 
-	if e.spec.EnableCUDA {
+	if e.spec.CUDADeviceCount != 0 {
 		args = append(args, "--nv")
 	}
 
