@@ -39,6 +39,10 @@ h2(#v2_3_1). v2.3.1 (2021-11-19)
 
 "previous: Upgrading to 2.3.0":#v2_3_0
 
+h3. Default LSF arguments have changed
+
+If you use LSF and your configuration specifies @Containers.LSF.BsubArgumentsList@, you should update it to include the new arguments (@"-R", "select[mem>=%MMB]", ...@, see "configuration reference":{{site.baseurl}}/admin/config.html). Otherwise, containers that are too big to run on any LSF host will remain in the LSF queue instead of being cancelled.
+
 h3. Previously trashed role groups will be deleted
 
 Due to a bug in previous versions, the @DELETE@ operation on a role group caused the group to be flagged as trash in the database, but continue to grant permissions regardless. After upgrading, any role groups that had been trashed this way will be deleted. This might surprise some users if they were relying on permissions that were still in effect due to this bug. Future @DELETE@ operations on a role group will immediately delete the group and revoke the associated permissions.
