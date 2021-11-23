@@ -108,6 +108,8 @@ export const editPermissionLevel = (data: EditPermissionLevelFormData) =>
         try {
             await permissionService.update(data[EDIT_PERMISSION_LEVEL_UUID_FIELD_NAME], {name: parsePermissionLevel(data[EDIT_PERMISSION_LEVEL_FIELD_NAME])});
             dispatch(dialogActions.CLOSE_DIALOG({ id: EDIT_PERMISSION_LEVEL_DIALOG }));
+            dispatch(GroupMembersPanelActions.REQUEST_ITEMS());
+            dispatch(GroupPermissionsPanelActions.REQUEST_ITEMS());
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Permission level changed.', hideDuration: 2000 }));
         } catch (e) {
             dispatch(snackbarActions.OPEN_SNACKBAR({
