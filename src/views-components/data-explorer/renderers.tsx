@@ -379,7 +379,7 @@ export const ResourceLinkTailUuid = connect(
 const renderLinkDelete = (dispatch: Dispatch, item: LinkResource) => {
     if (item.uuid) {
         return <Typography noWrap>
-            <IconButton onClick={() => dispatch<any>(openRemoveGroupMemberDialog(item.uuid))}>
+            <IconButton data-cy="resource-delete-button" onClick={() => dispatch<any>(openRemoveGroupMemberDialog(item.uuid))}>
                 <RemoveIcon />
             </IconButton>
         </Typography>;

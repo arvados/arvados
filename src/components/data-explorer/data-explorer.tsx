@@ -96,7 +96,8 @@ export const DataExplorer = withStyles(styles)(
                 dataTableDefaultView, hideColumnSelector, actions, paperProps, hideSearchInput,
                 paperKey, fetchMode, currentItemUuid, title
             } = this.props;
-            return <Paper className={classes.root} {...paperProps} key={paperKey}>
+            const dataCy = this.props["data-cy"];
+            return <Paper className={classes.root} {...paperProps} key={paperKey} data-cy={dataCy}>
                 {title && <div className={classes.title}>{title}</div>}
                 {(!hideColumnSelector || !hideSearchInput || !!actions) && <Toolbar className={title ? classes.toolbarUnderTitle : classes.toolbar}>
                     <Grid container justify="space-between" wrap="nowrap" alignItems="center">

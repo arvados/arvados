@@ -79,6 +79,7 @@ export const GroupsPanel = connect(
             return (
                 <DataExplorer
                     id={GROUPS_PANEL_ID}
+                    data-cy="groups-panel-data-explorer"
                     onRowClick={noop}
                     onRowDoubleClick={noop}
                     onContextMenu={this.handleContextMenu}
@@ -87,6 +88,7 @@ export const GroupsPanel = connect(
                     actions={
                         <Grid container justify='flex-end'>
                             <Button
+                                data-cy="groups-panel-new-group"
                                 variant="contained"
                                 color="primary"
                                 onClick={this.props.onNewGroup}>

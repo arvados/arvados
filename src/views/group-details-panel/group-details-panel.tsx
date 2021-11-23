@@ -167,6 +167,7 @@ export const GroupDetailsPanel = connect(
                   {value === 0 &&
                       <DataExplorer
                           id={GROUP_DETAILS_MEMBERS_PANEL_ID}
+                          data-cy="group-members-data-explorer"
                           onRowClick={noop}
                           onRowDoubleClick={noop}
                           onContextMenu={noop}
@@ -177,6 +178,7 @@ export const GroupDetailsPanel = connect(
                                 this.props.groupCanManage &&
                                 <Grid container justify='flex-end'>
                                     <Button
+                                      data-cy="group-member-add"
                                       variant="contained"
                                       color="primary"
                                       onClick={this.props.onAddUser}>
