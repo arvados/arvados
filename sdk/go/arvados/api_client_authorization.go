@@ -15,7 +15,7 @@ type APIClientAuthorization struct {
 	CreatedByIPAddress   string    `json:"created_by_ip_address"`
 	DefaultOwnerUUID     string    `json:"default_owner_uuid"`
 	Etag                 string    `json:"etag"`
-	ExpiresAt            string    `json:"expires_at"`
+	ExpiresAt            time.Time `json:"expires_at"`
 	LastUsedAt           time.Time `json:"last_used_at"`
 	LastUsedByIPAddress  string    `json:"last_used_by_ip_address"`
 	ModifiedAt           time.Time `json:"modified_at"`

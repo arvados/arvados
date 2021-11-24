@@ -214,10 +214,9 @@ VALUES ($1, $2, CURRENT_TIMESTAMP AT TIME ZONE 'UTC' + INTERVAL '2 weeks', $3,
 	}
 
 	return &arvados.APIClientAuthorization{
-		UUID:      uuid,
-		APIToken:  token,
-		ExpiresAt: "",
-		Scopes:    scopes}, nil
+		UUID:     uuid,
+		APIToken: token,
+		Scopes:   scopes}, nil
 }
 
 // Extract the auth token supplied in req, and replace it with a
