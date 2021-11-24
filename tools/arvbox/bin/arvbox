@@ -61,7 +61,7 @@ if test -z "$WORKBENCH2_BRANCH" ; then
 fi
 
 # Update this to the docker tag for the version on releases.
-DEFAULT_TAG=2.3.0
+DEFAULT_TAG=2.3.1
 
 PG_DATA="$ARVBOX_DATA/postgres"
 VAR_DATA="$ARVBOX_DATA/var"
