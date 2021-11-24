@@ -392,10 +392,30 @@ func (s *HandlerSuite) TestGetObjects(c *check.C) {
 	json.Unmarshal(resp.Body.Bytes(), &ksList)
 	c.Assert(len(ksList.Items), check.Not(check.Equals), 0)
 	ksUUID := ksList.Items[0].UUID
+	// Create a new token for the test user so that we're not comparing
+	// the ones from the fixtures.
+	req = httptest.NewRequest("POST", "/arvados/v1/api_client_authorizations",
+		strings.NewReader(`{
+			"api_client_authorization": {
+				"owner_uuid": "`+arvadostest.AdminUserUUID+`",
+				"created_by_ip_address": "::1",
+				"last_used_by_ip_address": "::1",
+				"default_owner_uuid": "`+arvadostest.AdminUserUUID+`"
+			}
+		}`))
+	req.Header.Set("Authorization", "Bearer "+arvadostest.SystemRootToken)
+	req.Header.Set("Content-type", "application/json")
+	resp = httptest.NewRecorder()
+	s.handler.ServeHTTP(resp, req)
+	c.Assert(resp.Code, check.Equals, http.StatusOK,
+		check.Commentf("%s", resp.Body.String()))
+	var auth arvados.APIClientAuthorization
+	json.Unmarshal(resp.Body.Bytes(), &auth)
+	c.Assert(auth.UUID, check.Not(check.Equals), "")
 
 	testCases := map[string]map[string]bool{
 		"api_clients/" + arvadostest.TrustedWorkbenchAPIClientUUID:     nil,
-		"api_client_authorizations/" + arvadostest.AdminTokenUUID:      nil,
+		"api_client_authorizations/" + auth.UUID:                       {"href": true, "modified_by_client_uuid": true, "modified_by_user_uuid": true},
 		"authorized_keys/" + arvadostest.AdminAuthorizedKeysUUID:       nil,
 		"collections/" + arvadostest.CollectionWithUniqueWordsUUID:     {"href": true},
 		"containers/" + arvadostest.RunningContainerUUID:               nil,
@@ -411,7 +431,8 @@ func (s *HandlerSuite) TestGetObjects(c *check.C) {
 		"workflows/" + arvadostest.WorkflowWithDefinitionYAMLUUID:      nil,
 	}
 	for url, skippedFields := range testCases {
-		s.CheckObjectType(c, "/arvados/v1/"+url, arvadostest.AdminToken, skippedFields)
+		c.Logf("Testing %q", url)
+		s.CheckObjectType(c, "/arvados/v1/"+url, auth.TokenV2(), skippedFields)
 	}
 }
 

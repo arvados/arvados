@@ -12,16 +12,15 @@ type APIClientAuthorization struct {
 	APIClientID          int       `json:"api_client_id"`
 	APIToken             string    `json:"api_token"`
 	CreatedAt            time.Time `json:"created_at"`
-	CreatedByIPAddress   *string   `json:"created_by_ip_address"`
-	DefaultOwnerUUID     *string   `json:"default_owner_uuid"`
+	CreatedByIPAddress   string    `json:"created_by_ip_address"`
+	DefaultOwnerUUID     string    `json:"default_owner_uuid"`
 	Etag                 string    `json:"etag"`
 	ExpiresAt            string    `json:"expires_at"`
-	Href                 string    `json:"href"`
 	LastUsedAt           time.Time `json:"last_used_at"`
-	LastUsedByIPAddress  *string   `json:"last_used_by_ip_address"`
+	LastUsedByIPAddress  string    `json:"last_used_by_ip_address"`
 	ModifiedAt           time.Time `json:"modified_at"`
-	ModifiedByClientUUID *string   `json:"modified_by_client_uuid"`
-	ModifiedByUserUUID   *string   `json:"modified_by_user_uuid"`
+	ModifiedByClientUUID string    `json:"modified_by_client_uuid"`
+	ModifiedByUserUUID   string    `json:"modified_by_user_uuid"`
 	OwnerUUID            string    `json:"owner_uuid"`
 	Scopes               []string  `json:"scopes"`
 	UserID               int       `json:"user_id"`
