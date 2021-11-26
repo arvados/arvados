@@ -14,3 +14,4 @@ public/*
 .npmrc
 src/lib/cwl-svg/*
 tools/arvados_config.yml
+cypress/fixtures/files/5mb.bin

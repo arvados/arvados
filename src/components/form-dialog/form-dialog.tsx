@@ -42,7 +42,9 @@ interface DialogProjectDataProps {
     dialogTitle: string;
     formFields: React.ComponentType<InjectedFormProps<any> & WithDialogProps<any>>;
     submitLabel?: string;
+    cancelCallback?: Function;
     enableWhenPristine?: boolean;
+    doNotDisableCancel?: boolean;
 }
 
 type DialogProjectProps = DialogProjectDataProps & WithDialogProps<{}> & InjectedFormProps<any> & WithStyles<CssRules>;
@@ -65,10 +67,18 @@ export const FormDialog = withStyles(styles)((props: DialogProjectProps) =>
             <DialogActions className={props.classes.dialogActions}>
                 <Button
                     data-cy='form-cancel-btn'
-                    onClick={props.closeDialog}
+                    onClick={() => {
+                        props.closeDialog();
+
+                        if (props.cancelCallback) {
+                            props.cancelCallback();
+                            props.reset();
+                            props.initialize({});
+                        }
+                    }}
                     className={props.classes.button}
                     color="primary"
-                    disabled={props.submitting}>
+                    disabled={props.doNotDisableCancel ? false : props.submitting}>
                     {props.cancelLabel || 'Cancel'}
                 </Button>
                 <Button

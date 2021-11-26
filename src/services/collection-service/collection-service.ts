@@ -108,7 +108,7 @@ export class CollectionService extends TrashableResourceService<CollectionResour
             },
             onUploadProgress: (e: ProgressEvent) => {
                 onProgress(fileId, e.loaded, e.total, Date.now());
-            }
+            },
         };
         return this.webdavClient.upload(fileURL, [file], requestConfig);
     }

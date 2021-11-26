@@ -84,6 +84,15 @@ export class WebDAV {
                 .keys(headers)
                 .forEach(key => r.setRequestHeader(key, headers[key]));
 
+            if (!(window as any).cancelTokens) {
+                Object.assign(window, { cancelTokens: {} });
+            }
+
+            (window as any).cancelTokens[config.url] = () => { 
+                resolve(r);
+                r.abort();
+            }
+
             if (config.onUploadProgress) {
                 r.upload.addEventListener('progress', config.onUploadProgress);
             }

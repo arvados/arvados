@@ -10,16 +10,30 @@ import { FormDialog } from 'components/form-dialog/form-dialog';
 import { require } from 'validators/require';
 import { FileUploaderField } from 'views-components/file-uploader/file-uploader';
 import { WarningCollection } from 'components/warning-collection/warning-collection';
+import { fileUploaderActions } from 'store/file-uploader/file-uploader-actions';
+import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
 
 type DialogCollectionFilesUploadProps = WithDialogProps<{}> & InjectedFormProps<CollectionCreateFormDialogData>;
 
-export const DialogCollectionFilesUpload = (props: DialogCollectionFilesUploadProps) =>
-    <FormDialog
+export const DialogCollectionFilesUpload = (props: DialogCollectionFilesUploadProps) => {
+
+    return <FormDialog
         dialogTitle='Upload data'
         formFields={UploadCollectionFilesFields}
         submitLabel='Upload data'
+        doNotDisableCancel
+        cancelCallback={() => {
+            const { submitting, dispatch } = (props as any);
+
+            if (submitting) {
+                dispatch(progressIndicatorActions.STOP_WORKING('uploadCollectionFilesDialog'));
+                dispatch(fileUploaderActions.CANCEL_FILES_UPLOAD());
+                dispatch(fileUploaderActions.CLEAR_UPLOAD());
+            }
+        }}
         {...props}
     />;
+}
 
 const UploadCollectionFilesFields = () => <>
     <Field

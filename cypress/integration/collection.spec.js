@@ -793,4 +793,83 @@ describe('Collection panel tests', function () {
                     .contains(adminUser.user.uuid);
             });
     });
+
+    describe('file upload', () => {
+        beforeEach(() => {
+            cy.createCollection(adminUser.token, {
+                name: `Test collection ${Math.floor(Math.random() * 999999)}`,
+                owner_uuid: activeUser.user.uuid,
+                manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
+            })
+                .as('testCollection1');
+        });
+
+        it('allows to cancel running upload', () => {
+            cy.getAll('@testCollection1')
+                .then(function([testCollection1]) {
+                    cy.loginAs(activeUser);
+
+                    cy.goToPath(`/collections/${testCollection1.uuid}`);
+
+                    cy.get('[data-cy=upload-button]').click();
+
+                    cy.fixture('files/5mb.bin', 'base64').then(content => {
+                        cy.get('[data-cy=drag-and-drop]').upload(content, '5mb_a.bin');
+                        cy.get('[data-cy=drag-and-drop]').upload(content, '5mb_b.bin');
+
+                        cy.get('[data-cy=form-submit-btn]').click();
+
+                        cy.get('button').contains('Cancel').click();
+
+                        cy.get('[data-cy=form-submit-btn]').should('not.exist');
+                    });
+                });
+        });
+
+        it('allows to cancel single file from the running upload', () => {
+            cy.getAll('@testCollection1')
+                .then(function([testCollection1]) {
+                    cy.loginAs(activeUser);
+
+                    cy.goToPath(`/collections/${testCollection1.uuid}`);
+
+                    cy.get('[data-cy=upload-button]').click();
+
+                    cy.fixture('files/5mb.bin', 'base64').then(content => {
+                        cy.get('[data-cy=drag-and-drop]').upload(content, '5mb_a.bin');
+                        cy.get('[data-cy=drag-and-drop]').upload(content, '5mb_b.bin');
+
+                        cy.get('[data-cy=form-submit-btn]').click();
+
+                        cy.get('button[aria-label=Remove]').eq(1).click();
+
+                        cy.get('[data-cy=form-submit-btn]').should('not.exist');
+
+                        cy.get('[data-cy=collection-files-panel]').contains('5mb_a.bin').should('exist');
+                    });
+                });
+        });
+
+        it('allows to cancel all files from the running upload', () => {
+            cy.getAll('@testCollection1')
+                .then(function([testCollection1]) {
+                    cy.loginAs(activeUser);
+
+                    cy.goToPath(`/collections/${testCollection1.uuid}`);
+
+                    cy.get('[data-cy=upload-button]').click();
+
+                    cy.fixture('files/5mb.bin', 'base64').then(content => {
+                        cy.get('[data-cy=drag-and-drop]').upload(content, '5mb_a.bin');
+                        cy.get('[data-cy=drag-and-drop]').upload(content, '5mb_b.bin');
+
+                        cy.get('[data-cy=form-submit-btn]').click();
+
+                        cy.get('button[aria-label=Remove]').click({ multiple: true });
+
+                        cy.get('[data-cy=form-submit-btn]').should('not.exist');
+                    });
+                });
+        });
+    });
 })

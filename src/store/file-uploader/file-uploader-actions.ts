@@ -24,6 +24,7 @@ export const fileUploaderActions = unionize({
     SET_UPLOAD_PROGRESS: ofType<{ fileId: number, loaded: number, total: number, currentTime: number }>(),
     START_UPLOAD: ofType(),
     DELETE_UPLOAD_FILE: ofType<UploadFile>(),
+    CANCEL_FILES_UPLOAD: ofType(),
 });
 
 export type FileUploaderAction = UnionOf<typeof fileUploaderActions>;

@@ -14,12 +14,14 @@ import { progressIndicatorActions } from "store/progress-indicator/progress-indi
 import { collectionPanelFilesAction } from 'store/collection-panel/collection-panel-files/collection-panel-files-actions';
 import { createTree } from 'models/tree';
 import { loadCollectionPanel } from '../collection-panel/collection-panel-action';
+import * as WorkbenchActions from 'store/workbench/workbench-actions';
 
 export const uploadCollectionFiles = (collectionUuid: string) =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         dispatch(fileUploaderActions.START_UPLOAD());
         const files = getState().fileUploader.map(file => file.file);
         await services.collectionService.uploadFiles(collectionUuid, files, handleUploadProgress(dispatch));
+        dispatch(WorkbenchActions.loadCollection(collectionUuid));
         dispatch(fileUploaderActions.CLEAR_UPLOAD());
     };
 
