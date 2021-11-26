@@ -14,10 +14,10 @@ from functools import partial
 import apiclient
 import ciso8601
 import datetime
-import hashlib
 import json
 import logging
 import mock
+import multiprocessing
 import os
 import pwd
 import random
@@ -31,7 +31,6 @@ import tempfile
 import time
 import unittest
 import uuid
-import yaml
 
 import arvados
 import arvados.commands.put as arv_put
@@ -293,6 +292,26 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
         os.unlink(self.large_file_name)
         shutil.rmtree(self.small_files_dir)
         shutil.rmtree(self.tempdir_with_symlink)
+
+    def test_non_regular_files_are_ignored_except_symlinks_to_dirs(self):
+        def pfunc(x):
+            with open(x, 'w') as f:
+                f.write('test')
+        fifo_filename = 'fifo-file'
+        fifo_path = os.path.join(self.tempdir_with_symlink, fifo_filename)
+        self.assertTrue(os.path.islink(os.path.join(self.tempdir_with_symlink, 'linkeddir')))
+        os.mkfifo(fifo_path)
+        producer = multiprocessing.Process(target=pfunc, args=(fifo_path,))
+        producer.start()
+        cwriter = arv_put.ArvPutUploadJob([self.tempdir_with_symlink])
+        cwriter.start(save_collection=False)
+        if producer.exitcode is None:
+            # If the producer is still running, kill it. This should always be
+            # before any assertion that may fail.
+            producer.terminate()
+            producer.join(1)
+        self.assertIn('linkeddir', cwriter.manifest_text())
+        self.assertNotIn(fifo_filename, cwriter.manifest_text())
 
     def test_symlinks_are_followed_by_default(self):
         self.assertTrue(os.path.islink(os.path.join(self.tempdir_with_symlink, 'linkeddir')))

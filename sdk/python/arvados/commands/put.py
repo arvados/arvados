@@ -576,6 +576,9 @@ class ArvPutUploadJob(object):
                     files.sort()
                     for f in files:
                         filepath = os.path.join(root, f)
+                        if not os.path.isfile(filepath):
+                            self.logger.warning("Skipping non-regular file '{}'".format(filepath))
+                            continue
                         # Add its size to the total bytes count (if applicable)
                         if self.follow_links or (not os.path.islink(filepath)):
                             if self.bytes_expected is not None:
