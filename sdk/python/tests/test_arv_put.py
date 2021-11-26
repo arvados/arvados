@@ -304,8 +304,11 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
         producer.start()
         cwriter = arv_put.ArvPutUploadJob([self.tempdir])
         cwriter.start(save_collection=False)
-        producer.join()
         self.assertNotIn(fifo_filename, cwriter.manifest_text())
+        if producer.exitcode is None:
+            # If the producer is still running, kill it.
+            producer.terminate()
+            producer.join(1)
 
     def test_symlinks_are_followed_by_default(self):
         self.assertTrue(os.path.islink(os.path.join(self.tempdir_with_symlink, 'linkeddir')))
