@@ -27,6 +27,9 @@ export class GroupDetailsPanelMembersMiddlewareService extends DataExplorerMiddl
             api.dispatch(groupsDetailsPanelDataExplorerIsNotSet());
         } else {
             try {
+                const groupResource = await this.services.groupsService.get(groupUuid);
+                api.dispatch(updateResources([groupResource]));
+
                 const permissionsIn = await this.services.permissionService.list({
                     filters: new FilterBuilder()
                         .addEqual('head_uuid', groupUuid)

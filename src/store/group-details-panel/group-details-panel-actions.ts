@@ -18,6 +18,8 @@ import { ServiceRepository } from 'services/services';
 import { PermissionResource, PermissionLevel } from 'models/permission';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { PermissionSelectValue, parsePermissionLevel, formatPermissionLevel } from 'views-components/sharing-dialog/permission-select';
+import { LinkResource } from 'models/link';
+import { deleteResources } from 'store/resources/resources-actions';
 
 export const GROUP_DETAILS_MEMBERS_PANEL_ID = 'groupDetailsMembersPanel';
 export const GROUP_DETAILS_PERMISSIONS_PANEL_ID = 'groupDetailsPermissionsPanel';
@@ -161,4 +163,47 @@ export const removeGroupMember = (uuid: string) =>
 
         }
 
+    };
+
+export const setMemberIsHidden = (memberLinkUuid: string, permissionLinkUuid: string, hide: boolean) =>
+    async (dispatch: Dispatch, getState: () => RootState, { permissionService }: ServiceRepository) => {
+        const memberLink = getResource<LinkResource>(memberLinkUuid)(getState().resources);
+
+        if (hide && permissionLinkUuid) {
+            // Remove read permission
+            try {
+                await permissionService.delete(permissionLinkUuid);
+                dispatch<any>(deleteResources([permissionLinkUuid]));
+                dispatch(snackbarActions.OPEN_SNACKBAR({
+                    message: 'Removed read permission.',
+                    hideDuration: 2000,
+                    kind: SnackbarKind.SUCCESS,
+                }));
+            } catch (e) {
+                dispatch(snackbarActions.OPEN_SNACKBAR({
+                    message: 'Failed to remove permission',
+                    kind: SnackbarKind.ERROR,
+                }));
+            }
+        } else if (!hide && memberLink) {
+            // Create read permission
+            try {
+                await permissionService.create({
+                    headUuid: memberLink.tailUuid,
+                    tailUuid: memberLink.headUuid,
+                    name: PermissionLevel.CAN_READ,
+                });
+                dispatch(snackbarActions.OPEN_SNACKBAR({
+                    message: 'Created read permission.',
+                    hideDuration: 2000,
+                    kind: SnackbarKind.SUCCESS,
+                }));
+                dispatch(GroupPermissionsPanelActions.REQUEST_ITEMS());
+            } catch(e) {
+                dispatch(snackbarActions.OPEN_SNACKBAR({
+                    message: 'Failed to create permission',
+                    kind: SnackbarKind.ERROR,
+                }));
+            }
+        }
     };

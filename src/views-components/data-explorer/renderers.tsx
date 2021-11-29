@@ -11,7 +11,7 @@ import { formatDate, formatFileSize, formatTime } from 'common/formatters';
 import { resourceLabel } from 'common/labels';
 import { connect, DispatchProp } from 'react-redux';
 import { RootState } from 'store/store';
-import { getResource } from 'store/resources/resources';
+import { getResource, filterResources } from 'store/resources/resources';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { getProcess, Process, getProcessStatus, getProcessStatusColor, getProcessRuntime } from 'store/processes/process';
 import { ArvadosTheme } from 'common/custom-theme';
@@ -22,14 +22,15 @@ import { getUuidPrefix, openRunProcess } from 'store/workflow-panel/workflow-pan
 import { openSharingDialog } from 'store/sharing-dialog/sharing-dialog-actions';
 import { getUserFullname, getUserDisplayName, User, UserResource } from 'models/user';
 import { toggleIsActive, toggleIsAdmin } from 'store/users/users-actions';
-import { LinkResource } from 'models/link';
+import { LinkClass, LinkResource } from 'models/link';
 import { navigateTo, navigateToGroupDetails } from 'store/navigation/navigation-action';
 import { withResourceData } from 'views-components/data-explorer/with-resources';
 import { CollectionResource } from 'models/collection';
 import { IllegalNamingWarning } from 'components/warning/warning';
 import { loadResource } from 'store/resources/resources-actions';
-import { GroupClass } from 'models/group';
+import { GroupClass, GroupResource } from 'models/group';
 import { openRemoveGroupMemberDialog, openEditPermissionLevelDialog } from 'store/group-details-panel/group-details-panel-actions';
+import { setMemberIsHidden } from 'store/group-details-panel/group-details-panel-actions';
 import { formatPermissionLevel } from 'views-components/sharing-dialog/permission-select';
 import { PermissionLevel } from 'models/permission';
 
@@ -211,6 +212,38 @@ export const ResourceLinkTailIsActive = connect(
         return tailResource || { isActive: false, kind: ResourceKind.NONE };
     }, { toggleIsActive }
 )(renderIsActive);
+
+const renderIsHidden = (props: { memberLinkUuid: string, permissionLinkUuid: string, hidden: boolean, setMemberIsHidden: (memberLinkUuid: string, permissionLinkUuid: string, hide: boolean) => void }) => {
+    if (props.memberLinkUuid) {
+        return <Checkbox
+                color="primary"
+                checked={props.hidden}
+                onClick={() => props.setMemberIsHidden(props.memberLinkUuid, props.permissionLinkUuid, !props.hidden)} />;
+    } else {
+        return <Typography />;
+    }
+}
+
+export const ResourceLinkTailIsHidden = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const link = getResource<LinkResource>(props.uuid)(state.resources);
+        const member = getResource<Resource>(link?.tailUuid || '')(state.resources);
+        const group = getResource<GroupResource>(link?.headUuid || '')(state.resources);
+        const permissions = filterResources((resource: LinkResource) => {
+            return resource.linkClass === LinkClass.PERMISSION
+                && resource.headUuid === link?.tailUuid
+                && resource.tailUuid === group?.uuid
+                && resource.name === PermissionLevel.CAN_READ;
+        })(state.resources);
+
+        const permissionLinkUuid = permissions.length > 0 ? permissions[0].uuid : '';
+        const isVisible = link && group && permissions.length > 0;
+
+        return member?.kind === ResourceKind.USER
+            ? { memberLinkUuid: link?.uuid, permissionLinkUuid, hidden: !isVisible }
+            : { memberLinkUuid: '', permissionLinkUuid: '', hidden: false};
+    }, { setMemberIsHidden }
+)(renderIsHidden);
 
 const renderIsAdmin = (props: { uuid: string, isAdmin: boolean, toggleIsAdmin: (uuid: string) => void }) =>
     <Checkbox
