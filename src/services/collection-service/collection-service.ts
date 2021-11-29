@@ -11,6 +11,7 @@ import { extractFilesData } from "./collection-service-files-response";
 import { TrashableResourceService } from "services/common-service/trashable-resource-service";
 import { ApiActions } from "services/api/api-actions";
 import { customEncodeURI } from "common/url";
+import { FilterBuilder } from "services/api/filter-builder";
 
 export type UploadProgress = (fileId: number, loaded: number, total: number, currentTime: number) => void;
 
@@ -26,6 +27,14 @@ export class CollectionService extends TrashableResourceService<CollectionResour
             'unsignedManifestText',
             'version',
         ]);
+    }
+
+    async get(uuid: string, showErrors?: boolean) {
+        super.validateUuid(uuid);
+        // We use a filtered list request to avoid getting the manifest text
+        const filters = new FilterBuilder().addEqual('uuid', uuid).getFilters();
+        const lst = await super.list({filters}, showErrors);
+        return lst.items[0];
     }
 
     create(data?: Partial<CollectionResource>) {
