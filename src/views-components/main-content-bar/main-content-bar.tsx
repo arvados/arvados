@@ -60,7 +60,7 @@ export const MainContentBar =
         buttonVisible: isButtonVisible(state),
         projectUuid: state.detailsPanel.resourceUuid,
     }), (dispatch) => ({
-            onDetailsPanelToggle: toggleDetailsPanel,
+            onDetailsPanelToggle: () => dispatch<any>(toggleDetailsPanel()),
             onRefreshButtonClick: (id) => {
                 dispatch<any>(loadSidePanelTreeProjects(id));
                 dispatch<any>(reloadProjectMatchingUuid([id]));
@@ -80,7 +80,7 @@ export const MainContentBar =
                             </Grid>
                             <Grid item>
                                 {props.buttonVisible && <Tooltip title="Additional Info">
-                                    <IconButton color="inherit" className={props.classes.infoTooltip} onClick={props.onDetailsPanelToggle}>
+                                    <IconButton data-cy="additional-info-icon" color="inherit" className={props.classes.infoTooltip} onClick={props.onDetailsPanelToggle}>
                                         <DetailsIcon />
                                     </IconButton>
                                 </Tooltip>}
