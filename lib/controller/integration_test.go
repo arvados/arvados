@@ -662,6 +662,48 @@ func (s *IntegrationSuite) TestIntermediateCluster(c *check.C) {
 	}
 }
 
+// Test for #17785
+func (s *IntegrationSuite) TestFederatedApiClientAuthHandling(c *check.C) {
+	rootctx1, rootclnt1, _ := s.testClusters["z1111"].RootClients()
+	conn1 := s.testClusters["z1111"].Conn()
+
+	// Make sure LoginCluster is properly configured
+	for _, cls := range []string{"z1111", "z3333"} {
+		c.Check(
+			s.testClusters[cls].Config.Clusters[cls].Login.LoginCluster,
+			check.Equals, "z1111",
+			check.Commentf("incorrect LoginCluster config on cluster %q", cls))
+	}
+	// Get user's UUID & attempt to create a token for it on the remote cluster
+	_, _, _, user := s.testClusters["z1111"].UserClients(rootctx1, c, conn1,
+		"user@example.com", true)
+	_, rootclnt3, _ := s.testClusters["z3333"].ClientsWithToken(rootclnt1.AuthToken)
+	var resp arvados.APIClientAuthorization
+	err := rootclnt3.RequestAndDecode(
+		&resp, "POST", "arvados/v1/api_client_authorizations", nil,
+		map[string]interface{}{
+			"api_client_authorization": map[string]string{
+				"owner_uuid": user.UUID,
+			},
+		},
+	)
+	c.Assert(err, check.IsNil)
+	newTok := resp.TokenV2()
+	c.Assert(newTok, check.Not(check.Equals), "")
+
+	// Confirm the token is from z1111
+	c.Assert(strings.HasPrefix(newTok, "v2/z1111-gj3su-"), check.Equals, true)
+
+	// Confirm the token works and is from the correct user
+	_, rootclnt3bis, _ := s.testClusters["z3333"].ClientsWithToken(newTok)
+	var curUser arvados.User
+	err = rootclnt3bis.RequestAndDecode(
+		&curUser, "GET", "arvados/v1/users/current", nil, nil,
+	)
+	c.Assert(err, check.IsNil)
+	c.Assert(curUser.UUID, check.Equals, user.UUID)
+}
+
 // Test for bug #18076
 func (s *IntegrationSuite) TestStaleCachedUserRecord(c *check.C) {
 	rootctx1, _, _ := s.testClusters["z1111"].RootClients()
@@ -670,13 +712,11 @@ func (s *IntegrationSuite) TestStaleCachedUserRecord(c *check.C) {
 	conn3 := s.testClusters["z3333"].Conn()
 
 	// Make sure LoginCluster is properly configured
-	for cls := range s.testClusters {
-		if cls == "z1111" || cls == "z3333" {
-			c.Check(
-				s.testClusters[cls].Config.Clusters[cls].Login.LoginCluster,
-				check.Equals, "z1111",
-				check.Commentf("incorrect LoginCluster config on cluster %q", cls))
-		}
+	for _, cls := range []string{"z1111", "z3333"} {
+		c.Check(
+			s.testClusters[cls].Config.Clusters[cls].Login.LoginCluster,
+			check.Equals, "z1111",
+			check.Commentf("incorrect LoginCluster config on cluster %q", cls))
 	}
 
 	for testCaseNr, testCase := range []struct {

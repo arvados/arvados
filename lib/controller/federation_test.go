@@ -721,7 +721,7 @@ func (s *FederationSuite) TestCreateRemoteContainerRequestCheckRuntimeToken(c *c
 	var aca arvados.APIClientAuthorization
 	c.Check(json.NewDecoder(resp.Body).Decode(&aca), check.IsNil)
 	c.Check(aca.ExpiresAt, check.NotNil) // Time.Now()+BlobSigningTTL
-	t, _ := time.Parse(time.RFC3339Nano, aca.ExpiresAt)
+	t := aca.ExpiresAt
 	c.Check(t.After(time.Now().Add(s.testHandler.Cluster.API.MaxTokenLifetime.Duration())), check.Equals, true)
 	c.Check(t.Before(time.Now().Add(s.testHandler.Cluster.Collections.BlobSigningTTL.Duration())), check.Equals, true)
 }

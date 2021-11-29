@@ -269,6 +269,26 @@ func (as *APIStub) APIClientAuthorizationCurrent(ctx context.Context, options ar
 	as.appendCall(ctx, as.APIClientAuthorizationCurrent, options)
 	return arvados.APIClientAuthorization{}, as.Error
 }
+func (as *APIStub) APIClientAuthorizationCreate(ctx context.Context, options arvados.CreateOptions) (arvados.APIClientAuthorization, error) {
+	as.appendCall(ctx, as.APIClientAuthorizationCreate, options)
+	return arvados.APIClientAuthorization{}, as.Error
+}
+func (as *APIStub) APIClientAuthorizationUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.APIClientAuthorization, error) {
+	as.appendCall(ctx, as.APIClientAuthorizationUpdate, options)
+	return arvados.APIClientAuthorization{}, as.Error
+}
+func (as *APIStub) APIClientAuthorizationDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.APIClientAuthorization, error) {
+	as.appendCall(ctx, as.APIClientAuthorizationDelete, options)
+	return arvados.APIClientAuthorization{}, as.Error
+}
+func (as *APIStub) APIClientAuthorizationList(ctx context.Context, options arvados.ListOptions) (arvados.APIClientAuthorizationList, error) {
+	as.appendCall(ctx, as.APIClientAuthorizationList, options)
+	return arvados.APIClientAuthorizationList{}, as.Error
+}
+func (as *APIStub) APIClientAuthorizationGet(ctx context.Context, options arvados.GetOptions) (arvados.APIClientAuthorization, error) {
+	as.appendCall(ctx, as.APIClientAuthorizationGet, options)
+	return arvados.APIClientAuthorization{}, as.Error
+}
 
 func (as *APIStub) appendCall(ctx context.Context, method interface{}, options interface{}) {
 	as.mtx.Lock()

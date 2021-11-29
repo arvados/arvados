@@ -408,11 +408,8 @@ func (ta *oidcTokenAuthorizer) registerToken(ctx context.Context, tok string) er
 		// cached positive result
 		aca := cached.(arvados.APIClientAuthorization)
 		var expiring bool
-		if aca.ExpiresAt != "" {
-			t, err := time.Parse(time.RFC3339Nano, aca.ExpiresAt)
-			if err != nil {
-				return fmt.Errorf("error parsing expires_at value: %w", err)
-			}
+		if !aca.ExpiresAt.IsZero() {
+			t := aca.ExpiresAt
 			expiring = t.Before(time.Now().Add(time.Minute))
 		}
 		if !expiring {
@@ -505,7 +502,7 @@ func (ta *oidcTokenAuthorizer) registerToken(ctx context.Context, tok string) er
 	if err != nil {
 		return err
 	}
-	aca.ExpiresAt = exp.Format(time.RFC3339Nano)
+	aca.ExpiresAt = exp
 	ta.cache.Add(tok, aca)
 	return nil
 }

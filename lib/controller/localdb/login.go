@@ -147,13 +147,13 @@ func (conn *Conn) CreateAPIClientAuthorization(ctx context.Context, rootToken st
 			tokensecret = tokenparts[2]
 		}
 	}
-	var exp sql.NullString
+	var exp sql.NullTime
 	var scopes []byte
 	err = tx.QueryRowxContext(ctx, "select uuid, api_token, expires_at, scopes from api_client_authorizations where api_token=$1", tokensecret).Scan(&resp.UUID, &resp.APIToken, &exp, &scopes)
 	if err != nil {
 		return
 	}
-	resp.ExpiresAt = exp.String
+	resp.ExpiresAt = exp.Time
 	if len(scopes) > 0 {
 		err = json.Unmarshal(scopes, &resp.Scopes)
 		if err != nil {

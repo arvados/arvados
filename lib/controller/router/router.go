@@ -385,6 +385,48 @@ func (rtr *router) addRoutes() {
 			},
 		},
 		{
+			arvados.EndpointAPIClientAuthorizationCreate,
+			func() interface{} { return &arvados.CreateOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.APIClientAuthorizationCreate(ctx, *opts.(*arvados.CreateOptions))
+			},
+		},
+		{
+			arvados.EndpointAPIClientAuthorizationUpdate,
+			func() interface{} { return &arvados.UpdateOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.APIClientAuthorizationUpdate(ctx, *opts.(*arvados.UpdateOptions))
+			},
+		},
+		{
+			arvados.EndpointAPIClientAuthorizationDelete,
+			func() interface{} { return &arvados.DeleteOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.APIClientAuthorizationDelete(ctx, *opts.(*arvados.DeleteOptions))
+			},
+		},
+		{
+			arvados.EndpointAPIClientAuthorizationList,
+			func() interface{} { return &arvados.ListOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.APIClientAuthorizationList(ctx, *opts.(*arvados.ListOptions))
+			},
+		},
+		{
+			arvados.EndpointAPIClientAuthorizationCurrent,
+			func() interface{} { return &arvados.GetOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.APIClientAuthorizationCurrent(ctx, *opts.(*arvados.GetOptions))
+			},
+		},
+		{
+			arvados.EndpointAPIClientAuthorizationGet,
+			func() interface{} { return &arvados.GetOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.APIClientAuthorizationGet(ctx, *opts.(*arvados.GetOptions))
+			},
+		},
+		{
 			arvados.EndpointUserCreate,
 			func() interface{} { return &arvados.CreateOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
