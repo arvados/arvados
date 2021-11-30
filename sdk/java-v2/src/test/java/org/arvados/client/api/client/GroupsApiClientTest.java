@@ -19,8 +19,12 @@ import org.junit.Test;
 
 import java.util.Arrays;
 
+import static java.util.Arrays.asList;
+import static java.util.UUID.randomUUID;
 import static org.arvados.client.test.utils.ApiClientTestUtils.*;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
 public class GroupsApiClientTest extends ArvadosClientMockedWebServerTest {
     private static final String RESOURCE = "groups";
@@ -91,5 +95,21 @@ public class GroupsApiClientTest extends ArvadosClientMockedWebServerTest {
         assertEquals("TestGroup1", actual.getName());
         assertEquals("project", actual.getGroupClass());
 
+    }
+
+    @Test
+    public void shouldClearWritableByPropertyBeforeUpdating() throws Exception {
+        // given
+        server.enqueue(getResponse("groups-get"));
+        Group group = new Group();
+        group.setUuid(randomUUID().toString());
+        group.setWritableBy(asList(randomUUID().toString(), randomUUID().toString()));
+
+        // when
+        Group updatedGroup = client.update(group);
+
+        // then
+        assertNull(group.getWritableBy());
+        assertNotNull(updatedGroup.getWritableBy());
     }
 }

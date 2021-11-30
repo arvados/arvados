@@ -45,6 +45,12 @@ public class GroupsApiClient extends BaseStandardApiClient<Group, GroupList> {
     }
 
     @Override
+    public Group update(Group groupUpdate) {
+        groupUpdate.setWritableBy(null);
+        return super.update(groupUpdate);
+    }
+
+    @Override
     String getResource() {
         return RESOURCE;
     }
