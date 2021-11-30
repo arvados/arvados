@@ -29,10 +29,12 @@ import { CollectionResource } from 'models/collection';
 import { IllegalNamingWarning } from 'components/warning/warning';
 import { loadResource } from 'store/resources/resources-actions';
 import { GroupClass, GroupResource } from 'models/group';
-import { openRemoveGroupMemberDialog, openEditPermissionLevelDialog } from 'store/group-details-panel/group-details-panel-actions';
+import { openRemoveGroupMemberDialog } from 'store/group-details-panel/group-details-panel-actions';
 import { setMemberIsHidden } from 'store/group-details-panel/group-details-panel-actions';
 import { formatPermissionLevel } from 'views-components/sharing-dialog/permission-select';
 import { PermissionLevel } from 'models/permission';
+import { openPermissionEditContextMenu } from 'store/context-menu/context-menu-actions';
+import { getUserUuid } from 'common/getuser';
 
 const renderName = (dispatch: Dispatch, item: GroupContentsResource) => {
 
@@ -357,14 +359,6 @@ const renderResourceLink = (dispatch: Dispatch, item: Resource) => {
     </Typography>;
 };
 
-const renderResource = (dispatch: Dispatch, item: Resource) => {
-    var displayName = getResourceDisplayName(item);
-
-    return <Typography variant='body2'>
-        {resourceLabel(item.kind)}: {displayName || item.uuid}
-    </Typography>;
-};
-
 export const ResourceLinkTail = connect(
     (state: RootState, props: { uuid: string }) => {
         const resource = getResource<LinkResource>(props.uuid)(state.resources);
@@ -446,48 +440,52 @@ export const ResourceLinkTailUsername = connect(
         return resource || { username: '' };
     })(renderUsername);
 
-const renderPermissionLevel = (dispatch: Dispatch, link: LinkResource, resource: Resource) => {
+const renderPermissionLevel = (dispatch: Dispatch, link: LinkResource, canManage: boolean) => {
     return <Typography noWrap>
         {formatPermissionLevel(link.name as PermissionLevel)}
-        <IconButton onClick={() => dispatch<any>(openEditPermissionLevelDialog(link.uuid, resource.uuid))}>
-            <RenameIcon />
-        </IconButton>
+        {canManage ?
+            <IconButton onClick={(event) => dispatch<any>(openPermissionEditContextMenu(event, link))}>
+                <RenameIcon />
+            </IconButton> :
+            ''
+        }
     </Typography>;
 }
 
 export const ResourceLinkHeadPermissionLevel = connect(
     (state: RootState, props: { uuid: string }) => {
         const link = getResource<LinkResource>(props.uuid)(state.resources);
-        const resource = getResource<Resource>(link?.headUuid || '')(state.resources);
 
         return {
             link: link || { uuid: '', name: '', kind: ResourceKind.NONE },
-            resource: resource || { uuid: '', kind: ResourceKind.NONE }
+            canManage: link && getResourceLinkCanManage(state, link),
         };
-    })((props: { link: LinkResource, resource: Resource } & DispatchProp<any>) =>
-        renderPermissionLevel(props.dispatch, props.link, props.resource));
+    })((props: { link: LinkResource, canManage: boolean } & DispatchProp<any>) =>
+        renderPermissionLevel(props.dispatch, props.link, props.canManage));
 
 export const ResourceLinkTailPermissionLevel = connect(
     (state: RootState, props: { uuid: string }) => {
         const link = getResource<LinkResource>(props.uuid)(state.resources);
-        const resource = getResource<Resource>(link?.tailUuid || '')(state.resources);
 
         return {
             link: link || { uuid: '', name: '', kind: ResourceKind.NONE },
-            resource: resource || { uuid: '', kind: ResourceKind.NONE }
+            canManage: link && getResourceLinkCanManage(state, link),
         };
-    })((props: { link: LinkResource, resource: Resource } & DispatchProp<any>) =>
-        renderPermissionLevel(props.dispatch, props.link, props.resource));
+    })((props: { link: LinkResource, canManage: boolean } & DispatchProp<any>) =>
+        renderPermissionLevel(props.dispatch, props.link, props.canManage));
 
-// Displays resource type and display name without link
-export const ResourceLabel = connect(
-    (state: RootState, props: { uuid: string }) => {
-        const resource = getResource<Resource>(props.uuid)(state.resources);
-        return {
-            item: resource || { uuid: '', kind: ResourceKind.NONE }
-        };
-    })((props: { item: Resource } & DispatchProp<any>) =>
-        renderResource(props.dispatch, props.item));
+const getResourceLinkCanManage = (state: RootState, link: LinkResource) => {
+    const headResource = getResource<Resource>(link.headUuid)(state.resources);
+    // const tailResource = getResource<Resource>(link.tailUuid)(state.resources);
+    const userUuid = getUserUuid(state);
+
+    if (headResource && headResource.kind === ResourceKind.GROUP) {
+        return userUuid ? (headResource as GroupResource).writableBy?.includes(userUuid) : false;
+    } else {
+        // true for now
+        return true;
+    }
+}
 
 // Process Resources
 const resourceRunProcess = (dispatch: Dispatch, uuid: string) => {

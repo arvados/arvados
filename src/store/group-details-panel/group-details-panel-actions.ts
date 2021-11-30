@@ -8,16 +8,14 @@ import { propertiesActions } from 'store/properties/properties-actions';
 import { getProperty } from 'store/properties/properties';
 import { Participant } from 'views-components/sharing-dialog/participant-select';
 import { dialogActions } from 'store/dialog/dialog-actions';
-import { initialize, reset, startSubmit } from 'redux-form';
+import { reset, startSubmit } from 'redux-form';
 import { addGroupMember, deleteGroupMember } from 'store/groups-panel/groups-panel-actions';
 import { getResource } from 'store/resources/resources';
 import { GroupResource } from 'models/group';
-import { Resource } from 'models/resource';
 import { RootState } from 'store/store';
 import { ServiceRepository } from 'services/services';
 import { PermissionResource, PermissionLevel } from 'models/permission';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
-import { PermissionSelectValue, parsePermissionLevel, formatPermissionLevel } from 'views-components/sharing-dialog/permission-select';
 import { LinkResource } from 'models/link';
 import { deleteResources } from 'store/resources/resources-actions';
 
@@ -28,10 +26,6 @@ export const ADD_GROUP_MEMBERS_FORM = 'addGroupMembers';
 export const ADD_GROUP_MEMBERS_USERS_FIELD_NAME = 'users';
 export const MEMBER_ATTRIBUTES_DIALOG = 'memberAttributesDialog';
 export const MEMBER_REMOVE_DIALOG = 'memberRemoveDialog';
-export const EDIT_PERMISSION_LEVEL_DIALOG = 'editPermissionLevel';
-export const EDIT_PERMISSION_LEVEL_FORM = 'editPermissionLevel';
-export const EDIT_PERMISSION_LEVEL_FIELD_NAME = 'name';
-export const EDIT_PERMISSION_LEVEL_UUID_FIELD_NAME = 'uuid';
 
 export const GroupMembersPanelActions = bindDataExplorerActions(GROUP_DETAILS_MEMBERS_PANEL_ID);
 export const GroupPermissionsPanelActions = bindDataExplorerActions(GROUP_DETAILS_PERMISSIONS_PANEL_ID);
@@ -48,11 +42,6 @@ export const getCurrentGroupDetailsPanelUuid = getProperty<string>(GROUP_DETAILS
 
 export interface AddGroupMembersFormData {
     [ADD_GROUP_MEMBERS_USERS_FIELD_NAME]: Participant[];
-}
-
-export interface EditPermissionLevelFormData {
-    [EDIT_PERMISSION_LEVEL_UUID_FIELD_NAME]: string;
-    [EDIT_PERMISSION_LEVEL_FIELD_NAME]: PermissionSelectValue;
 }
 
 export const openAddGroupMembersDialog = () =>
@@ -93,23 +82,10 @@ export const addGroupMembers = ({ users }: AddGroupMembersFormData) =>
         }
     };
 
-export const openEditPermissionLevelDialog = (linkUuid: string, resourceUuid: string) =>
-    async (dispatch: Dispatch, getState: () => RootState) => {
-        const link = getResource<PermissionResource>(linkUuid)(getState().resources);
-        const resource = getResource<Resource>(resourceUuid)(getState().resources);
-
-        if (link) {
-            dispatch(reset(EDIT_PERMISSION_LEVEL_FORM));
-            dispatch<any>(initialize(EDIT_PERMISSION_LEVEL_FORM, {[EDIT_PERMISSION_LEVEL_UUID_FIELD_NAME]: link.uuid, [EDIT_PERMISSION_LEVEL_FIELD_NAME]: formatPermissionLevel(link.name as PermissionLevel)}));
-            dispatch(dialogActions.OPEN_DIALOG({ id: EDIT_PERMISSION_LEVEL_DIALOG, data: resource }));
-        }
-    };
-
-export const editPermissionLevel = (data: EditPermissionLevelFormData) =>
+export const editPermissionLevel = (uuid: string, level: PermissionLevel) =>
     async (dispatch: Dispatch, getState: () => RootState, { permissionService }: ServiceRepository) => {
         try {
-            await permissionService.update(data[EDIT_PERMISSION_LEVEL_UUID_FIELD_NAME], {name: parsePermissionLevel(data[EDIT_PERMISSION_LEVEL_FIELD_NAME])});
-            dispatch(dialogActions.CLOSE_DIALOG({ id: EDIT_PERMISSION_LEVEL_DIALOG }));
+            await permissionService.update(uuid, {name: level});
             dispatch(GroupMembersPanelActions.REQUEST_ITEMS());
             dispatch(GroupPermissionsPanelActions.REQUEST_ITEMS());
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Permission level changed.', hideDuration: 2000 }));

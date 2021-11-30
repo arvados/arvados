@@ -61,6 +61,8 @@ import StarBorder from '@material-ui/icons/StarBorder';
 import Warning from '@material-ui/icons/Warning';
 import VpnKey from '@material-ui/icons/VpnKey';
 import LinkOutlined from '@material-ui/icons/LinkOutlined';
+import RemoveRedEye from '@material-ui/icons/RemoveRedEye';
+import Computer from '@material-ui/icons/Computer';
 
 // Import FontAwesome icons
 import { library } from '@fortawesome/fontawesome-svg-core';
@@ -148,3 +150,6 @@ export const WorkflowIcon: IconType = (props) => <Code {...props} />;
 export const WarningIcon: IconType = (props) => <Warning style={{ color: '#fbc02d', height: '30px', width: '30px' }} {...props} />;
 export const Link: IconType = (props) => <LinkOutlined {...props} />;
 export const FolderSharedIcon: IconType = (props) => <FolderShared {...props} />;
+export const CanReadIcon: IconType = (props) => <RemoveRedEye {...props} />;
+export const CanWriteIcon: IconType = (props) => <Edit {...props} />;
+export const CanManageIcon: IconType = (props) => <Computer {...props} />;

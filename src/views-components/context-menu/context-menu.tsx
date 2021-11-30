@@ -98,5 +98,6 @@ export enum ContextMenuKind {
     USER = "User",
     GROUPS = "Group",
     GROUP_MEMBER = "GroupMember",
+    PERMISSION_EDIT = "PermissionEdit",
     LINK = "Link",
 }

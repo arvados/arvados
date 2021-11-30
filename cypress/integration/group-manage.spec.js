@@ -93,16 +93,9 @@ describe('Group manage tests', function() {
                         cy.get('button').click();
                     });
             });
-        cy.get('[data-cy=form-dialog]')
-            .should('contain', 'Edit permission')
-            .within(() => {
-                cy.contains('Read').click();
-            });
-        cy.get('li span')
+        cy.get('[data-cy=context-menu]')
             .contains('Write')
-            .parents('li')
             .click();
-        cy.get('[data-cy=form-dialog] button[type=submit]').click();
         cy.get('[data-cy=group-members-data-explorer]')
             .contains('Other User')
             .parents('tr')

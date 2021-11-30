@@ -14,8 +14,6 @@ import { RootState } from 'store/store';
 import { GROUP_DETAILS_MEMBERS_PANEL_ID, GROUP_DETAILS_PERMISSIONS_PANEL_ID, openAddGroupMembersDialog, getCurrentGroupDetailsPanelUuid } from 'store/group-details-panel/group-details-panel-actions';
 import { openContextMenu } from 'store/context-menu/context-menu-actions';
 import { ResourcesState, getResource } from 'store/resources/resources';
-import { ContextMenuKind } from 'views-components/context-menu/context-menu';
-import { PermissionResource } from 'models/permission';
 import { Grid, Button, Tabs, Tab, Paper } from '@material-ui/core';
 import { AddIcon } from 'components/icon/icon';
 import { getUserUuid } from 'common/getuser';
@@ -213,19 +211,6 @@ export const GroupDetailsPanel = connect(
                   }
                 </Paper>
             );
-        }
-
-        handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
-            const resource = getResource<PermissionResource>(resourceUuid)(this.props.resources);
-            if (resource) {
-                this.props.onContextMenu(event, {
-                    name: '',
-                    uuid: resource.uuid,
-                    ownerUuid: resource.ownerUuid,
-                    kind: resource.kind,
-                    menuKind: ContextMenuKind.GROUP_MEMBER
-                });
-            }
         }
 
         handleChange = (event: React.MouseEvent<HTMLElement>, value: number) => {
