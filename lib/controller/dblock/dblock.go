@@ -35,8 +35,8 @@ func (dbl *DBLocker) Lock(ctx context.Context, getdb func(context.Context) (*sql
 	for ; ; time.Sleep(retryDelay) {
 		dbl.mtx.Lock()
 		if dbl.conn != nil {
-			// Already locked by another caller in this
-			// process. Wait for them to release.
+			// Another goroutine is already locked/waiting
+			// on this lock. Wait for them to release.
 			dbl.mtx.Unlock()
 			continue
 		}
@@ -52,9 +52,15 @@ func (dbl *DBLocker) Lock(ctx context.Context, getdb func(context.Context) (*sql
 			dbl.mtx.Unlock()
 			continue
 		}
-		_, err = conn.ExecContext(ctx, `SELECT pg_advisory_lock($1)`, dbl.key)
+		var locked bool
+		err = conn.QueryRowContext(ctx, `SELECT pg_try_advisory_lock($1)`, dbl.key).Scan(&locked)
 		if err != nil {
-			logger.WithError(err).Infof("error getting pg_advisory_lock %d", dbl.key)
+			logger.WithError(err).Infof("error getting pg_try_advisory_lock %d", dbl.key)
+			conn.Close()
+			dbl.mtx.Unlock()
+			continue
+		}
+		if !locked {
 			conn.Close()
 			dbl.mtx.Unlock()
 			continue
