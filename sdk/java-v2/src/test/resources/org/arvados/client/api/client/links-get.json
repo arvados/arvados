@@ -1,0 +1,18 @@
+{
+    "href": "/links/arkau-o0j2j-huxuaxbi46s1yml",
+    "kind": "arvados#link",
+    "etag": "zw1rlnbig0kpm9btw8us3pn9",
+    "uuid": "arkau-o0j2j-huxuaxbi46s1yml",
+    "owner_uuid": "arkau-tpzed-000000000000000",
+    "created_at": "2021-11-30T08:45:04.373354745Z",
+    "modified_by_client_uuid": null,
+    "modified_by_user_uuid": "ardev-tpzed-n3kzq4fvoks3uw4",
+    "modified_at": "2021-11-30T08:45:04.374489000Z",
+    "tail_uuid": "ardev-tpzed-n3kzq4fvoks3uw4",
+    "link_class": "permission",
+    "name": "can_read",
+    "head_uuid": "arkau-j7d0g-fcedae2076pw56h",
+    "head_kind": "arvados#group",
+    "tail_kind": "arvados#user",
+    "properties": {}
+}

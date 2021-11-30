@@ -1,0 +1,46 @@
+{
+  "kind": "arvados#linkList",
+  "etag": "",
+  "self_link": "",
+  "offset": 0,
+  "limit": 100,
+  "items": [
+    {
+      "href": "/links/arkau-o0j2j-x2b4rdadxs2fizn",
+      "kind": "arvados#link",
+      "etag": "dkhtr9tvp9zfy0d90xjn7w1t7",
+      "uuid": "arkau-o0j2j-x2b4rdadxs2fizn",
+      "owner_uuid": "arkau-j7d0g-publicfavorites",
+      "created_at": "2021-10-27T12:00:06.607794000Z",
+      "modified_by_client_uuid": null,
+      "modified_by_user_uuid": "arlog-tpzed-fyiau9qwo7ytntu",
+      "modified_at": "2021-10-27T12:00:06.609840000Z",
+      "tail_uuid": "arkau-j7d0g-publicfavorites",
+      "link_class": "star",
+      "name": "pRED Data Commons Service - Open access",
+      "head_uuid": "arkau-j7d0g-sfhw8b1uson0hwh",
+      "head_kind": "arvados#group",
+      "tail_kind": "arvados#group",
+      "properties": {}
+    },
+    {
+      "href": "/links/arkau-o0j2j-r5am4lz9gnu488k",
+      "kind": "arvados#link",
+      "etag": "9nt0c2xn5oz1jzjzawlycmehz",
+      "uuid": "arkau-o0j2j-r5am4lz9gnu488k",
+      "owner_uuid": "arkau-j7d0g-publicfavorites",
+      "created_at": "2021-06-23T14:58:06.189520000Z",
+      "modified_by_client_uuid": null,
+      "modified_by_user_uuid": "arlog-tpzed-xzjyeljl6co7vlz",
+      "modified_at": "2021-06-23T14:58:06.196208000Z",
+      "tail_uuid": "arkau-j7d0g-publicfavorites",
+      "link_class": "star",
+      "name": "Open Targets Genetics",
+      "head_uuid": "arkau-j7d0g-pj5wysmpy5wn8yo",
+      "head_kind": "arvados#group",
+      "tail_kind": "arvados#group",
+      "properties": {}
+    }
+  ],
+  "items_available": 2
+}
