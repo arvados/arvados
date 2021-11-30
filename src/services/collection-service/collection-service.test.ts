@@ -41,7 +41,24 @@ describe('collection-service', () => {
                 '/collections', {
                     params: {
                         filters: `[["uuid","=","zzzzz-4zz18-0123456789abcde"]]`,
-                        order: undefined
+                        include_old_versions: true,
+                    },
+                }
+            );
+        });
+
+        it('should be able to request specific fields', async () => {
+            serverApi.get = jest.fn(() => Promise.resolve(
+                { data: { items: [{}] } }
+            ));
+            const uuid = 'zzzzz-4zz18-0123456789abcde'
+            await collectionService.get(uuid, undefined, ['manifestText']);
+            expect(serverApi.get).toHaveBeenCalledWith(
+                '/collections', {
+                    params: {
+                        filters: `[["uuid","=","zzzzz-4zz18-0123456789abcde"]]`,
+                        include_old_versions: true,
+                        select: `["manifest_text"]`
                     },
                 }
             );

@@ -9,6 +9,8 @@ import { snackbarActions, SnackbarKind } from "../snackbar/snackbar-actions";
 import { resourcesActions } from "../resources/resources-actions";
 import { navigateTo } from "../navigation/navigation-action";
 import { dialogActions } from "../dialog/dialog-actions";
+import { getResource } from "store/resources/resources";
+import { CollectionResource } from "models/collection";
 
 export const COLLECTION_RESTORE_VERSION_DIALOG = 'collectionRestoreVersionDialog';
 
@@ -28,9 +30,15 @@ export const openRestoreCollectionVersionDialog = (uuid: string) =>
 export const restoreVersion = (resourceUuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         try {
-            // Request que entire record because stored old versions usually
-            // don't include the manifest_text field.
-            const oldVersion = await services.collectionService.get(resourceUuid);
+            // Request the manifest text because stored old versions usually
+            // don't include them.
+            let oldVersion = getResource<CollectionResource>(resourceUuid)(getState().resources);
+            if (!oldVersion) {
+                oldVersion = await services.collectionService.get(resourceUuid);
+            }
+            const oldVersionManifest = await services.collectionService.get(resourceUuid, undefined, ['manifestText']);
+            oldVersion.manifestText = oldVersionManifest.manifestText;
+
             const { uuid, version, ...rest} = oldVersion;
             const headVersion = await services.collectionService.update(
                 oldVersion.currentVersionUuid,

@@ -125,11 +125,13 @@ export class CommonService<T> {
     }
 
     list(args: ListArguments = {}, showErrors?: boolean): Promise<ListResults<T>> {
-        const { filters, order, ...other } = args;
+        const { filters, select, ...other } = args;
         const params = {
             ...CommonService.mapKeys(snakeCase)(other),
             filters: filters ? `[${filters}]` : undefined,
-            order: order ? order : undefined
+            select: select
+                ? `[${select.map(snakeCase).map(s => `"${s}"`).join(', ')}]`
+                : undefined
         };
 
         if (QueryString.stringify(params).length <= 1500) {

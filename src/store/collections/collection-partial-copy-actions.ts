@@ -114,7 +114,7 @@ export const copyCollectionPartialToSelectedCollection = ({ collectionUuid }: Co
         const currentCollection = state.collectionPanel.item;
 
         if (currentCollection && !currentCollection.manifestText) {
-            const fetchedCurrentCollection = await services.collectionService.get(currentCollection.uuid);
+            const fetchedCurrentCollection = await services.collectionService.get(currentCollection.uuid, undefined, ['manifestText']);
             currentCollection.manifestText = fetchedCurrentCollection.manifestText;
             currentCollection.unsignedManifestText = fetchedCurrentCollection.unsignedManifestText;
         }
