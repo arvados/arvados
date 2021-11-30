@@ -210,10 +210,9 @@ func (s *ContainerGatewaySuite) TestConnect(c *check.C) {
 		// Receive binary
 		_, err = io.ReadFull(sshconn.Conn, buf[:4])
 		c.Check(err, check.IsNil)
-		c.Check(buf[:4], check.DeepEquals, []byte{0, 0, 1, 0xfc})
 
 		// If we can get this far into an SSH handshake...
-		c.Log("success, tunnel is working")
+		c.Logf("was able to read %x -- success, tunnel is working", buf[:4])
 	}()
 	select {
 	case <-done:
