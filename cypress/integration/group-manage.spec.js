@@ -170,7 +170,11 @@ describe('Group manage tests', function() {
         cy.get('[data-cy=groups-panel-data-explorer]').contains(groupName).click();
         cy.get('[data-cy=group-details-permissions-tab]').click();
         cy.get('[data-cy=group-permissions-data-explorer]')
-            .contains('test-project');
+            .contains('test-project')
+            .parents('tr')
+            .within(() => {
+                cy.contains('Read');
+            });
     });
 
     it('removes users from the group', function() {
