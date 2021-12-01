@@ -6,6 +6,7 @@ describe('Group manage tests', function() {
     let activeUser;
     let adminUser;
     let otherUser;
+    const groupName = `Test group (${Math.floor(999999 * Math.random())})`;
 
     before(function() {
         // Only set up common users once. These aren't set up as aliases because
@@ -35,7 +36,6 @@ describe('Group manage tests', function() {
     });
 
     it('creates a new group', function() {
-        const groupName = `Test group (${Math.floor(999999 * Math.random())})`;
         cy.loginAs(activeUser);
 
         // Navigate to Groups
@@ -104,7 +104,52 @@ describe('Group manage tests', function() {
             });
     });
 
+    it('unhides users', function() {
+        // Must use admin user to have manage permission on user
+        cy.loginAs(adminUser);
+        cy.get('[data-cy=side-panel-tree]').contains('Groups').click();
+        cy.get('[data-cy=groups-panel-data-explorer]').contains(groupName).click();
+
+        // Check that other user is hidden
+        cy.get('[data-cy=group-details-permissions-tab]').click();
+        cy.get('[data-cy=group-permissions-data-explorer]')
+            .should('not.contain', 'Other User')
+        cy.get('[data-cy=group-details-members-tab]').click();
+
+        // Test unhide
+        cy.get('[data-cy=group-members-data-explorer]')
+            .contains('Other User')
+            .parents('tr')
+            .within(() => {
+                cy.get('[data-cy=user-hidden-checkbox]').click();
+            });
+        // Check that other user is visible
+        cy.get('[data-cy=group-details-permissions-tab]').click();
+        cy.get('[data-cy=group-permissions-data-explorer]')
+            .contains('Other User')
+            .parents('tr')
+            .within(() => {
+                cy.contains('Read');
+            });
+        // Test re-hide
+        cy.get('[data-cy=group-details-members-tab]').click();
+        cy.get('[data-cy=group-members-data-explorer]')
+            .contains('Other User')
+            .parents('tr')
+            .within(() => {
+                cy.get('[data-cy=user-hidden-checkbox]').click();
+            });
+        // Check that other user is hidden
+        cy.get('[data-cy=group-details-permissions-tab]').click();
+        cy.get('[data-cy=group-permissions-data-explorer]')
+            .should('not.contain', 'Other User')
+    });
+
     it('removes users from the group', function() {
+        cy.loginAs(activeUser);
+        cy.get('[data-cy=side-panel-tree]').contains('Groups').click();
+        cy.get('[data-cy=groups-panel-data-explorer]').contains(groupName).click();
+
         // Remove other user
         cy.get('[data-cy=group-members-data-explorer]')
             .contains('Other User')
@@ -115,6 +160,49 @@ describe('Group manage tests', function() {
         cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
         cy.get('[data-cy=group-members-data-explorer]')
             .should('not.contain', 'Other User');
-
     });
+
+    it('renames the group', function() {
+        // Navigate to Groups
+        cy.get('[data-cy=side-panel-tree]').contains('Groups').click();
+
+        // Open rename dialog
+        cy.get('[data-cy=groups-panel-data-explorer]')
+            .contains(groupName)
+            .rightclick();
+        cy.get('[data-cy=context-menu]')
+            .contains('Rename')
+            .click();
+
+        // Rename the group
+        cy.get('[data-cy=form-dialog]')
+            .should('contain', 'Edit Project')
+            .within(() => {
+                cy.get('input[name=name]').clear().type(groupName + ' (renamed)');
+                cy.get('button[type=submit]').click();
+            });
+
+        // Check that the group was renamed
+        cy.get('[data-cy=groups-panel-data-explorer]')
+            .contains(groupName + ' (renamed)');
+    });
+
+    it('deletes the group', function() {
+        // Navigate to Groups
+        cy.get('[data-cy=side-panel-tree]').contains('Groups').click();
+
+        // Delete the group
+        cy.get('[data-cy=groups-panel-data-explorer]')
+            .contains(groupName + ' (renamed)')
+            .rightclick();
+        cy.get('[data-cy=context-menu]')
+            .contains('Remove')
+            .click();
+        cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
+
+        // Check that the group was deleted
+        cy.get('[data-cy=groups-panel-data-explorer]')
+            .should('not.contain', groupName + ' (renamed)');
+    });
+
 });

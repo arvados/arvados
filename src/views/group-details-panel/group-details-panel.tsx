@@ -167,8 +167,8 @@ export const GroupDetailsPanel = connect(
             return (
                 <Paper>
                   <Tabs value={value} onChange={this.handleChange} variant="fullWidth">
-                      <Tab label="MEMBERS" />
-                      <Tab label="PERMISSIONS" />
+                      <Tab data-cy="group-details-members-tab" label="MEMBERS" />
+                      <Tab data-cy="group-details-permissions-tab" label="PERMISSIONS" />
                   </Tabs>
                   {value === 0 &&
                       <DataExplorer
@@ -199,6 +199,7 @@ export const GroupDetailsPanel = connect(
                   {value === 1 &&
                       <DataExplorer
                           id={GROUP_DETAILS_PERMISSIONS_PANEL_ID}
+                          data-cy="group-permissions-data-explorer"
                           onRowClick={noop}
                           onRowDoubleClick={noop}
                           onContextMenu={noop}

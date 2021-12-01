@@ -218,6 +218,7 @@ export const ResourceLinkTailIsActive = connect(
 const renderIsHidden = (props: { memberLinkUuid: string, permissionLinkUuid: string, hidden: boolean, setMemberIsHidden: (memberLinkUuid: string, permissionLinkUuid: string, hide: boolean) => void }) => {
     if (props.memberLinkUuid) {
         return <Checkbox
+                data-cy="user-hidden-checkbox"
                 color="primary"
                 checked={props.hidden}
                 onClick={() => props.setMemberIsHidden(props.memberLinkUuid, props.permissionLinkUuid, !props.hidden)} />;
