@@ -28,7 +28,7 @@ public class Group extends Item {
     private String groupClass;
     @JsonProperty("description")
     private String description;
-    @JsonProperty("writable_by")
+    @JsonProperty(value = "writable_by", access = JsonProperty.Access.WRITE_ONLY)
     private List<String> writableBy;
     @JsonProperty("delete_at")
     private LocalDateTime deleteAt;
