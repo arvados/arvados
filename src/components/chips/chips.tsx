@@ -38,7 +38,7 @@ export const Chips = withStyles(styles)(
         render() {
             const { values, filler } = this.props;
             return <Grid container spacing={8} className={this.props.classes.root}>
-                {values.map(this.renderChip)}
+                {values && values.map(this.renderChip)}
                 {filler && <Grid item xs>{filler}</Grid>}
             </Grid>;
         }
