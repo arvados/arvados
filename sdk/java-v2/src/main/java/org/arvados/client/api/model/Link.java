@@ -15,15 +15,19 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
-@JsonPropertyOrder({ "name", "head_kind", "head_uuid", "link_class" })
+@JsonPropertyOrder({"name", "head_kind", "head_uuid", "link_class"})
 public class Link extends Item {
 
     @JsonProperty("name")
     private String name;
-    @JsonProperty("head_kind")
+    @JsonProperty(value = "head_kind", access = JsonProperty.Access.WRITE_ONLY)
     private String headKind;
     @JsonProperty("head_uuid")
     private String headUuid;
+    @JsonProperty("tail_uuid")
+    private String tailUuid;
+    @JsonProperty(value = "tail_kind", access = JsonProperty.Access.WRITE_ONLY)
+    private String tailKind;
     @JsonProperty("link_class")
     private String linkClass;
 
@@ -37,6 +41,14 @@ public class Link extends Item {
 
     public String getHeadUuid() {
         return headUuid;
+    }
+
+    public String getTailUuid() {
+        return tailUuid;
+    }
+
+    public String getTailKind() {
+        return tailKind;
     }
 
     public String getLinkClass() {
@@ -53,6 +65,14 @@ public class Link extends Item {
 
     public void setHeadUuid(String headUuid) {
         this.headUuid = headUuid;
+    }
+
+    public void setTailUuid(String tailUuid) {
+        this.tailUuid = tailUuid;
+    }
+
+    public void setTailKind(String tailKind) {
+        this.tailKind = tailKind;
     }
 
     public void setLinkClass(String linkClass) {
