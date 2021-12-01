@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ResourceKind, TrashableResource } from "./resource";
+import { ResourceKind, TrashableResource, ResourceObjectType, RESOURCE_UUID_REGEX } from "./resource";
 
 export interface GroupResource extends TrashableResource {
     kind: ResourceKind.GROUP;
@@ -19,3 +19,15 @@ export enum GroupClass {
     FILTER  = 'filter',
     ROLE  = 'role',
 }
+
+export const BUILTIN_GROUP_IDS = [
+    'fffffffffffffff',
+    'anonymouspublic',
+    '000000000000000',
+]
+
+export const isBuiltinGroup = (uuid: string) => {
+    const match = RESOURCE_UUID_REGEX.exec(uuid);
+    const parts = match ? match[0].split('-') : [];
+    return parts.length === 3 && parts[1] === ResourceObjectType.GROUP && BUILTIN_GROUP_IDS.includes(parts[2]);
+};

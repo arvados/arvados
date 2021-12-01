@@ -28,7 +28,7 @@ import { withResourceData } from 'views-components/data-explorer/with-resources'
 import { CollectionResource } from 'models/collection';
 import { IllegalNamingWarning } from 'components/warning/warning';
 import { loadResource } from 'store/resources/resources-actions';
-import { GroupClass, GroupResource } from 'models/group';
+import { GroupClass, GroupResource, isBuiltinGroup } from 'models/group';
 import { openRemoveGroupMemberDialog } from 'store/group-details-panel/group-details-panel-actions';
 import { setMemberIsHidden } from 'store/group-details-panel/group-details-panel-actions';
 import { formatPermissionLevel } from 'views-components/sharing-dialog/permission-select';
@@ -215,12 +215,19 @@ export const ResourceLinkTailIsActive = connect(
     }, { toggleIsActive }
 )(renderIsActive);
 
-const renderIsHidden = (props: { memberLinkUuid: string, permissionLinkUuid: string, hidden: boolean, setMemberIsHidden: (memberLinkUuid: string, permissionLinkUuid: string, hide: boolean) => void }) => {
+const renderIsHidden = (props: {
+                            memberLinkUuid: string,
+                            permissionLinkUuid: string,
+                            hidden: boolean,
+                            canManage: boolean,
+                            setMemberIsHidden: (memberLinkUuid: string, permissionLinkUuid: string, hide: boolean) => void 
+                        }) => {
     if (props.memberLinkUuid) {
         return <Checkbox
                 data-cy="user-hidden-checkbox"
                 color="primary"
                 checked={props.hidden}
+                disabled={!props.canManage}
                 onClick={() => props.setMemberIsHidden(props.memberLinkUuid, props.permissionLinkUuid, !props.hidden)} />;
     } else {
         return <Typography />;
@@ -241,10 +248,12 @@ export const ResourceLinkTailIsHidden = connect(
 
         const permissionLinkUuid = permissions.length > 0 ? permissions[0].uuid : '';
         const isVisible = link && group && permissions.length > 0;
+        // Consider whether the current user canManage this resurce in addition when it's possible
+        const isBuiltin = isBuiltinGroup(link?.headUuid || '');
 
         return member?.kind === ResourceKind.USER
-            ? { memberLinkUuid: link?.uuid, permissionLinkUuid, hidden: !isVisible }
-            : { memberLinkUuid: '', permissionLinkUuid: '', hidden: false};
+            ? { memberLinkUuid: link?.uuid, permissionLinkUuid, hidden: !isVisible, canManage: !isBuiltin }
+            : { memberLinkUuid: '', permissionLinkUuid: '', hidden: false, canManage: false };
     }, { setMemberIsHidden }
 )(renderIsHidden);
 
@@ -425,9 +434,11 @@ const renderLinkDelete = (dispatch: Dispatch, item: LinkResource, canManage: boo
 export const ResourceLinkDelete = connect(
     (state: RootState, props: { uuid: string }) => {
         const link = getResource<LinkResource>(props.uuid)(state.resources);
+        const isBuiltin = isBuiltinGroup(link?.headUuid || '') || isBuiltinGroup(link?.tailUuid || '');
+
         return {
             item: link || { uuid: '', kind: ResourceKind.NONE },
-            canManage: link && getResourceLinkCanManage(state, link),
+            canManage: link && getResourceLinkCanManage(state, link) && !isBuiltin,
         };
     })((props: { item: LinkResource, canManage: boolean } & DispatchProp<any>) =>
       renderLinkDelete(props.dispatch, props.item, props.canManage));
@@ -463,10 +474,11 @@ const renderPermissionLevel = (dispatch: Dispatch, link: LinkResource, canManage
 export const ResourceLinkHeadPermissionLevel = connect(
     (state: RootState, props: { uuid: string }) => {
         const link = getResource<LinkResource>(props.uuid)(state.resources);
+        const isBuiltin = isBuiltinGroup(link?.headUuid || '') || isBuiltinGroup(link?.tailUuid || '');
 
         return {
             link: link || { uuid: '', name: '', kind: ResourceKind.NONE },
-            canManage: link && getResourceLinkCanManage(state, link),
+            canManage: link && getResourceLinkCanManage(state, link) && !isBuiltin,
         };
     })((props: { link: LinkResource, canManage: boolean } & DispatchProp<any>) =>
         renderPermissionLevel(props.dispatch, props.link, props.canManage));
@@ -474,10 +486,11 @@ export const ResourceLinkHeadPermissionLevel = connect(
 export const ResourceLinkTailPermissionLevel = connect(
     (state: RootState, props: { uuid: string }) => {
         const link = getResource<LinkResource>(props.uuid)(state.resources);
+        const isBuiltin = isBuiltinGroup(link?.headUuid || '') || isBuiltinGroup(link?.tailUuid || '');
 
         return {
             link: link || { uuid: '', name: '', kind: ResourceKind.NONE },
-            canManage: link && getResourceLinkCanManage(state, link),
+            canManage: link && getResourceLinkCanManage(state, link) && !isBuiltin,
         };
     })((props: { link: LinkResource, canManage: boolean } & DispatchProp<any>) =>
         renderPermissionLevel(props.dispatch, props.link, props.canManage));

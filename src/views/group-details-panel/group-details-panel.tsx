@@ -17,7 +17,7 @@ import { ResourcesState, getResource } from 'store/resources/resources';
 import { Grid, Button, Tabs, Tab, Paper } from '@material-ui/core';
 import { AddIcon } from 'components/icon/icon';
 import { getUserUuid } from 'common/getuser';
-import { GroupResource } from 'models/group';
+import { GroupResource, isBuiltinGroup } from 'models/group';
 
 export enum GroupDetailsPanelMembersColumnNames {
     FULL_NAME = "Name",
@@ -134,7 +134,9 @@ const mapStateToProps = (state: RootState) => {
 
     return {
         resources: state.resources,
-        groupCanManage: userUuid ? group?.writableBy?.includes(userUuid) : false,
+        groupCanManage: userUuid && !isBuiltinGroup(group?.uuid || '')
+                            ? group?.writableBy?.includes(userUuid)
+                            : false,
     };
 };
 
