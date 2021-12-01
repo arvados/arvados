@@ -171,7 +171,7 @@ export const ResourceFullName = connect(
 
 
 const renderUuid = (item: { uuid: string }) =>
-    <Typography noWrap>{item.uuid}</Typography>;
+    <Typography data-cy="uuid" noWrap>{item.uuid}</Typography>;
 
 export const ResourceUuid = connect(
     (state: RootState, props: { uuid: string }) => {

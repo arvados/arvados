@@ -104,7 +104,7 @@ describe('Group manage tests', function() {
             });
     });
 
-    it('unhides users', function() {
+    it('can unhide and re-hide users', function() {
         // Must use admin user to have manage permission on user
         cy.loginAs(adminUser);
         cy.get('[data-cy=side-panel-tree]').contains('Groups').click();
@@ -145,8 +145,35 @@ describe('Group manage tests', function() {
             .should('not.contain', 'Other User')
     });
 
-    it('removes users from the group', function() {
+    it('displays resources shared with the group', function() {
+        // Switch to activeUser
         cy.loginAs(activeUser);
+        cy.get('[data-cy=side-panel-tree]').contains('Groups').click();
+
+        // Get groupUuid and create shared project
+        cy.get('[data-cy=groups-panel-data-explorer]')
+            .contains(groupName)
+            .parents('tr')
+            .find('[data-cy=uuid]')
+            .invoke('text')
+            .as('groupUuid')
+            .then((groupUuid) => {
+                cy.createProject({
+                    owningUser: activeUser,
+                    projectName: 'test-project',
+                }).as('testProject').then((testProject) => {
+                    cy.shareWith(activeUser.token, groupUuid, testProject.uuid, 'can_read');
+                });
+            });
+
+        // Check that the project is listed in permissions
+        cy.get('[data-cy=groups-panel-data-explorer]').contains(groupName).click();
+        cy.get('[data-cy=group-details-permissions-tab]').click();
+        cy.get('[data-cy=group-permissions-data-explorer]')
+            .contains('test-project');
+    });
+
+    it('removes users from the group', function() {
         cy.get('[data-cy=side-panel-tree]').contains('Groups').click();
         cy.get('[data-cy=groups-panel-data-explorer]').contains(groupName).click();
 
