@@ -118,6 +118,10 @@ as select * from compute_permission_subgraph($1, $2, $3, $4)
 
     ActiveRecord::Base.connection.exec_query "SET LOCAL enable_mergejoin to true;"
 
+    # Now that we have recomputed a set of permissions, delete any
+    # rows from the materialized_permissions table where (target_uuid,
+    # user_uuid) is not present or has perm_level=0 in the recomputed
+    # set.
     ActiveRecord::Base.connection.exec_delete %{
 delete from #{PERMISSION_VIEW} where
   target_uuid in (select target_uuid from #{temptable_perms}) and
@@ -128,10 +132,18 @@ delete from #{PERMISSION_VIEW} where
 },
                                               "update_permissions.delete"
 
+    # Now insert-or-update permissions in the recomputed set.  The
+    # WHERE clause is important to avoid redundantly updating rows
+    # that haven't actually changed.
     ActiveRecord::Base.connection.exec_query %{
 insert into #{PERMISSION_VIEW} (user_uuid, target_uuid, perm_level, traverse_owned)
   select user_uuid, target_uuid, val as perm_level, traverse_owned from #{temptable_perms} where val>0
-on conflict (user_uuid, target_uuid) do update set perm_level=EXCLUDED.perm_level, traverse_owned=EXCLUDED.traverse_owned;
+on conflict (user_uuid, target_uuid) do update
+set perm_level=EXCLUDED.perm_level, traverse_owned=EXCLUDED.traverse_owned
+where #{PERMISSION_VIEW}.user_uuid=EXCLUDED.user_uuid and
+      #{PERMISSION_VIEW}.target_uuid=EXCLUDED.target_uuid and
+       (#{PERMISSION_VIEW}.perm_level != EXCLUDED.perm_level or
+        #{PERMISSION_VIEW}.traverse_owned != EXCLUDED.traverse_owned);
 },
                                              "update_permissions.insert"
 
