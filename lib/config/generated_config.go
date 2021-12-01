@@ -1332,7 +1332,7 @@ Clusters:
           AccessKeyID: aaaaa
           SecretAccessKey: aaaaa
           Endpoint: ""
-          Region: us-east-1a
+          Region: us-east-1
           Bucket: aaaaa
           LocationConstraint: false
           V2Signature: false
