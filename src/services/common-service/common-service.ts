@@ -68,7 +68,7 @@ export class CommonService<T> {
             }
         }
 
-    private validateUuid(uuid: string) {
+    protected validateUuid(uuid: string) {
         if (uuid === "") {
             throw new Error('UUID cannot be empty string');
         }
@@ -124,18 +124,21 @@ export class CommonService<T> {
         );
     }
 
-    list(args: ListArguments = {}): Promise<ListResults<T>> {
-        const { filters, order, ...other } = args;
+    list(args: ListArguments = {}, showErrors?: boolean): Promise<ListResults<T>> {
+        const { filters, select, ...other } = args;
         const params = {
             ...CommonService.mapKeys(snakeCase)(other),
             filters: filters ? `[${filters}]` : undefined,
-            order: order ? order : undefined
+            select: select
+                ? `[${select.map(snakeCase).map(s => `"${s}"`).join(', ')}]`
+                : undefined
         };
 
         if (QueryString.stringify(params).length <= 1500) {
             return CommonService.defaultResponse(
                 this.serverApi.get(`/${this.resourceType}`, { params }),
-                this.actions
+                this.actions,
+                showErrors
             );
         } else {
             // Using the POST special case to avoid URI length 414 errors.
@@ -152,7 +155,8 @@ export class CommonService<T> {
                         _method: 'GET'
                     }
                 }),
-                this.actions
+                this.actions,
+                showErrors
             );
         }
     }

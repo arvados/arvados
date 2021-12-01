@@ -30,6 +30,41 @@ describe('collection-service', () => {
         collectionService.update = jest.fn();
     });
 
+    describe('get', () => {
+        it('should make a list request with uuid filtering', async () => {
+            serverApi.get = jest.fn(() => Promise.resolve(
+                { data: { items: [{}] } }
+            ));
+            const uuid = 'zzzzz-4zz18-0123456789abcde'
+            await collectionService.get(uuid);
+            expect(serverApi.get).toHaveBeenCalledWith(
+                '/collections', {
+                    params: {
+                        filters: `[["uuid","=","zzzzz-4zz18-0123456789abcde"]]`,
+                        include_old_versions: true,
+                    },
+                }
+            );
+        });
+
+        it('should be able to request specific fields', async () => {
+            serverApi.get = jest.fn(() => Promise.resolve(
+                { data: { items: [{}] } }
+            ));
+            const uuid = 'zzzzz-4zz18-0123456789abcde'
+            await collectionService.get(uuid, undefined, ['manifestText']);
+            expect(serverApi.get).toHaveBeenCalledWith(
+                '/collections', {
+                    params: {
+                        filters: `[["uuid","=","zzzzz-4zz18-0123456789abcde"]]`,
+                        include_old_versions: true,
+                        select: `["manifest_text"]`
+                    },
+                }
+            );
+        });
+    });
+
     describe('update', () => {
         it('should call put selecting updated fields + others', async () => {
             serverApi.put = jest.fn(() => Promise.resolve({ data: {} }));
