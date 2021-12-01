@@ -463,7 +463,7 @@ const renderPermissionLevel = (dispatch: Dispatch, link: LinkResource, canManage
     return <Typography noWrap>
         {formatPermissionLevel(link.name as PermissionLevel)}
         {canManage ?
-            <IconButton onClick={(event) => dispatch<any>(openPermissionEditContextMenu(event, link))}>
+            <IconButton data-cy="edit-permission-button" onClick={(event) => dispatch<any>(openPermissionEditContextMenu(event, link))}>
                 <RenameIcon />
             </IconButton> :
             ''

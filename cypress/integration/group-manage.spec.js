@@ -236,4 +236,29 @@ describe('Group manage tests', function() {
             .should('not.contain', groupName + ' (renamed)');
     });
 
+    it('disables group-related controls for built-in groups', function() {
+        cy.loginAs(adminUser);
+
+        ['All users', 'Anonymous users', 'System group'].forEach((builtInGroup) => {
+            cy.get('[data-cy=side-panel-tree]').contains('Groups').click();
+            cy.get('[data-cy=groups-panel-data-explorer]').contains(builtInGroup).click();
+
+            // Check group member actions
+            cy.get('[data-cy=group-members-data-explorer]')
+                .within(() => {
+                    cy.get('[data-cy=group-member-add]').should('not.exist');
+                    cy.get('[data-cy=user-hidden-checkbox] input').should('be.disabled');
+                    cy.get('[data-cy=resource-delete-button]').should('be.disabled');
+                    cy.get('[data-cy=edit-permission-button]').should('not.exist');
+                });
+
+            // Check permissions actions
+            cy.get('[data-cy=group-details-permissions-tab]').click();
+            cy.get('[data-cy=group-permissions-data-explorer]').within(() => {
+                cy.get('[data-cy=resource-delete-button]').should('be.disabled');
+                cy.get('[data-cy=edit-permission-button]').should('not.exist');
+            });
+        });
+    });
+
 });
