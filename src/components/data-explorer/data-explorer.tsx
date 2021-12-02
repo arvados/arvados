@@ -82,12 +82,19 @@ interface DataExplorerActionProps<T> {
 type DataExplorerProps<T> = DataExplorerDataProps<T> & DataExplorerActionProps<T> & WithStyles<CssRules>;
 
 export const DataExplorer = withStyles(styles)(
-    class DataExplorerGeneric<T> extends React.Component<DataExplorerProps<T>> {
+    class DataExplorerGeneric<T> extends React.Component<DataExplorerProps<T>, { currentItemUuid: string }> {
+        constructor(props) {
+            super(props);
+            this.state = {
+                currentItemUuid: props.currentItemUuid
+            };
+        }
         componentDidMount() {
             if (this.props.onSetColumns) {
                 this.props.onSetColumns(this.props.columns);
             }
         }
+
         render() {
             const {
                 columns, onContextMenu, onFiltersChange, onSortToggle, working, extractKey,
@@ -96,6 +103,7 @@ export const DataExplorer = withStyles(styles)(
                 dataTableDefaultView, hideColumnSelector, actions, paperProps, hideSearchInput,
                 paperKey, fetchMode, currentItemUuid, title
             } = this.props;
+
             return <Paper className={classes.root} {...paperProps} key={paperKey}>
                 {title && <div className={classes.title}>{title}</div>}
                 {(!hideColumnSelector || !hideSearchInput) && <Toolbar className={title ? classes.toolbarUnderTitle : classes.toolbar}>
@@ -104,6 +112,7 @@ export const DataExplorer = withStyles(styles)(
                             {!hideSearchInput && <SearchInput
                                 label={searchLabel}
                                 value={searchValue}
+                                selfClearProp={currentItemUuid}
                                 onSearch={onSearch} />}
                         </div>
                         {actions}

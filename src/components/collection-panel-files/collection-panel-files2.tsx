@@ -83,6 +83,7 @@ export const CollectionPanelFilesComponent = ({ onItemMenuOpen, onSearchChange, 
                 <div className={classes.cardHeaderContent}>
                     <span className={classes.cardHeaderContentTitle}>Files</span>
                     <SearchInput
+                        selfClearProp={''}
                         value={searchValue}
                         label='Search files'
                         onSearch={setSearchValue} />
