@@ -586,7 +586,9 @@ func (v *S3AWSVolume) writeObject(ctx context.Context, key string, r io.Reader) 
 
 // Put writes a block.
 func (v *S3AWSVolume) Put(ctx context.Context, loc string, block []byte) error {
-	return putWithPipe(ctx, loc, block, v)
+	// Do not use putWithPipe here; we want to pass an io.ReadSeeker to the S3
+	// sdk to avoid memory allocation there. See #17339 for more information.
+	return v.WriteBlock(ctx, loc, bytes.NewReader(block))
 }
 
 // WriteBlock implements BlockWriter.
@@ -595,7 +597,7 @@ func (v *S3AWSVolume) WriteBlock(ctx context.Context, loc string, rdr io.Reader)
 		return MethodDisabledError
 	}
 
-	r := NewCountingReader(rdr, v.bucket.stats.TickOutBytes)
+	r := NewCountingReaderAtSeeker(rdr, v.bucket.stats.TickOutBytes)
 	key := v.key(loc)
 	err := v.writeObject(ctx, key, r)
 	if err != nil {
