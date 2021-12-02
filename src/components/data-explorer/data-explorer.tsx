@@ -123,7 +123,7 @@ export const DataExplorer = withStyles(styles)(
                             columns={columns}
                             onColumnToggle={onColumnToggle} />}
                     </Grid>
-                    { doMaximizePanel && !!!panelMaximized &&
+                    { doMaximizePanel && !panelMaximized &&
                         <Tooltip title={`Maximize ${panelName || 'panel'}`} disableFocusListener>
                             <IconButton onClick={doMaximizePanel}><MaximizeIcon /></IconButton>
                         </Tooltip> }
