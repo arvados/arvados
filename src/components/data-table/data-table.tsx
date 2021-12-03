@@ -39,13 +39,11 @@ type CssRules = "tableBody" | "root" | "content" | "noItemsInfo" | 'tableCell' |
 
 const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     root: {
-        overflowX: 'auto',
-        overflowY: 'auto',
-        height: 'calc(100vh - 280px)',
+        width: '100%',
     },
     content: {
         display: 'inline-block',
-        width: '100%'
+        width: '100%',
     },
     tableBody: {
         background: theme.palette.background.paper

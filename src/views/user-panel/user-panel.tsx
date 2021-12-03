@@ -30,7 +30,7 @@ import { ShareMeIcon, AddIcon } from 'components/icon/icon';
 import { USERS_PANEL_ID, openUserCreateDialog } from 'store/users/users-actions';
 import { noop } from 'lodash';
 
-type UserPanelRules = "button";
+type UserPanelRules = "button" | 'root' | 'content';
 
 const styles = withStyles<UserPanelRules>(theme => ({
     button: {
@@ -39,6 +39,13 @@ const styles = withStyles<UserPanelRules>(theme => ({
         textAlign: 'right',
         alignSelf: 'center'
     },
+    root: {
+        width: '100%',
+    },
+    content: {
+        // reserve space for the tab bar
+        height: `calc(100% - ${theme.spacing.unit * 7}px)`,
+    }
 }));
 
 export enum UserPanelColumnNames {
@@ -149,13 +156,13 @@ export const UserPanel = compose(
 
             render() {
                 const { value } = this.state;
-                return <Paper>
+                return <Paper className={this.props.classes.root}>
                     <Tabs value={value} onChange={this.handleChange} fullWidth>
                         <Tab label="USERS" />
                         <Tab label="ACTIVITY" disabled />
                     </Tabs>
                     {value === 0 &&
-                        <span>
+                        <div className={this.props.classes.content}>
                             <DataExplorer
                                 id={USERS_PANEL_ID}
                                 onRowClick={noop}
@@ -178,7 +185,7 @@ export const UserPanel = compose(
                                         icon={ShareMeIcon}
                                         messages={['Your user list is empty.']} />
                                 } />
-                        </span>}
+                        </div>}
                 </Paper>;
             }
 

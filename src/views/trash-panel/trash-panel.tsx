@@ -36,7 +36,7 @@ import {
     getTrashPanelTypeFilters
 } from 'store/resource-type-filters/resource-type-filters';
 
-type CssRules = "toolbar" | "button";
+type CssRules = "toolbar" | "button" | "root";
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     toolbar: {
@@ -45,6 +45,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     button: {
         marginLeft: theme.spacing.unit
+    },
+    root: {
+        width: '100%',
     },
 });
 
@@ -146,7 +149,7 @@ export const TrashPanel = withStyles(styles)(
     }))(
         class extends React.Component<TrashPanelProps> {
             render() {
-                return <DataExplorer
+                return <div className={this.props.classes.root}><DataExplorer
                     id={TRASH_PANEL_ID}
                     onRowClick={this.handleRowClick}
                     onRowDoubleClick={this.handleRowDoubleClick}
@@ -156,7 +159,7 @@ export const TrashPanel = withStyles(styles)(
                         <DataTableDefaultView
                             icon={TrashIcon}
                             messages={['Your trash list is empty.']}/>
-                    } />;
+                    } /></div>;
             }
 
             handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {

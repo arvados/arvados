@@ -4,10 +4,10 @@
 
 import React from 'react';
 import {
-    StyleRulesCallback, WithStyles, withStyles, Card, CardContent, Grid, Tooltip, IconButton
+    StyleRulesCallback, WithStyles, withStyles
 } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
-import { HelpIcon, ShareMeIcon } from 'components/icon/icon';
+import { ShareMeIcon } from 'components/icon/icon';
 import { createTree } from 'models/tree';
 import { DataColumns } from 'components/data-table/data-table';
 import { SortDirection } from 'components/data-table/data-column';
@@ -20,21 +20,11 @@ import {
     TokenLastUsedAt, TokenLastUsedByIpAddress, TokenScopes, TokenUserId
 } from 'views-components/data-explorer/renderers';
 
-type CssRules = 'card' | 'cardContent' | 'helpIconGrid';
+type CssRules = 'root';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
-    card: {
+    root: {
         width: '100%',
-        overflow: 'auto'
-    },
-    cardContent: {
-        padding: 0,
-        '&:last-child': {
-            paddingBottom: 0
-        }
-    },
-    helpIconGrid: {
-        textAlign: 'right'
     }
 });
 
@@ -132,7 +122,6 @@ export interface ApiClientAuthorizationPanelRootActionProps {
     onItemClick: (item: string) => void;
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: string) => void;
     onItemDoubleClick: (item: string) => void;
-    openHelpDialog: () => void;
 }
 
 export interface ApiClientAuthorizationPanelRootDataProps {
@@ -143,33 +132,18 @@ type ApiClientAuthorizationPanelRootProps = ApiClientAuthorizationPanelRootActio
     & ApiClientAuthorizationPanelRootDataProps & WithStyles<CssRules>;
 
 export const ApiClientAuthorizationPanelRoot = withStyles(styles)(
-    ({ classes, onItemDoubleClick, onItemClick, onContextMenu, openHelpDialog }: ApiClientAuthorizationPanelRootProps) =>
-        <Card className={classes.card}>
-            <CardContent className={classes.cardContent}>
-                <Grid container direction="row" justify="flex-end">
-                    <Grid item xs={12} className={classes.helpIconGrid}>
-                        <Tooltip title="Api token - help">
-                            <IconButton onClick={openHelpDialog}>
-                                <HelpIcon />
-                            </IconButton>
-                        </Tooltip>
-                    </Grid>
-                    <Grid item xs={12}>
-                        <DataExplorer
-                            id={API_CLIENT_AUTHORIZATION_PANEL_ID}
-                            onRowClick={onItemClick}
-                            onRowDoubleClick={onItemDoubleClick}
-                            onContextMenu={onContextMenu}
-                            contextMenuColumn={true}
-                            hideColumnSelector
-                            hideSearchInput
-                            dataTableDefaultView={
-                                <DataTableDefaultView
-                                    icon={ShareMeIcon}
-                                    messages={[DEFAULT_MESSAGE]} />
-                            } />
-                    </Grid>
-                </Grid>
-            </CardContent>
-        </Card>
+    ({ classes, onItemDoubleClick, onItemClick, onContextMenu }: ApiClientAuthorizationPanelRootProps) =>
+        <div className={classes.root}><DataExplorer
+            id={API_CLIENT_AUTHORIZATION_PANEL_ID}
+            onRowClick={onItemClick}
+            onRowDoubleClick={onItemDoubleClick}
+            onContextMenu={onContextMenu}
+            contextMenuColumn={true}
+            hideColumnSelector
+            hideSearchInput
+            dataTableDefaultView={
+                <DataTableDefaultView
+                    icon={ShareMeIcon}
+                    messages={[DEFAULT_MESSAGE]} />
+            } /></div>
 );

@@ -39,7 +39,7 @@ import { getResource, ResourcesState } from 'store/resources/resources';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { CollectionResource } from 'models/collection';
 
-type CssRules = "toolbar" | "button";
+type CssRules = "toolbar" | "button" | "root";
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     toolbar: {
@@ -48,6 +48,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     button: {
         marginLeft: theme.spacing.unit
+    },
+    root: {
+        width: '100%',
     },
 });
 
@@ -160,7 +163,7 @@ export const PublicFavoritePanel = withStyles(styles)(
     connect(mapStateToProps, mapDispatchToProps)(
         class extends React.Component<FavoritePanelProps> {
             render() {
-                return <DataExplorer
+                return <div className={this.props.classes.root}><DataExplorer
                     id={PUBLIC_FAVORITE_PANEL_ID}
                     onRowClick={this.props.onItemClick}
                     onRowDoubleClick={this.props.onItemDoubleClick}
@@ -170,7 +173,7 @@ export const PublicFavoritePanel = withStyles(styles)(
                         <DataTableDefaultView
                             icon={PublicFavoriteIcon}
                             messages={['Public favorites list is empty.']} />
-                    } />;
+                    } /></div>;
             }
         }
     )

@@ -41,7 +41,7 @@ import { getProperty } from 'store/properties/properties';
 import { PROJECT_PANEL_CURRENT_UUID } from 'store/project-panel/project-panel-action';
 import { CollectionResource } from 'models/collection';
 
-type CssRules = "toolbar" | "button";
+type CssRules = "toolbar" | "button" | "root";
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     toolbar: {
@@ -50,6 +50,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     button: {
         marginLeft: theme.spacing.unit
+    },
+    root: {
+        width: '100%',
     },
 });
 
@@ -176,7 +179,7 @@ export const FavoritePanel = withStyles(styles)(
             }
 
             render() {
-                return <DataExplorer
+                return <div className={this.props.classes.root}><DataExplorer
                     id={FAVORITE_PANEL_ID}
                     onRowClick={this.handleRowClick}
                     onRowDoubleClick={this.handleRowDoubleClick}
@@ -187,7 +190,7 @@ export const FavoritePanel = withStyles(styles)(
                             icon={FavoriteIcon}
                             messages={['Your favorites list is empty.']}
                             />
-                    } />;
+                    } /></div>;
             }
         }
     )

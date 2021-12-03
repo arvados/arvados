@@ -11,10 +11,20 @@ import { DataTableDefaultView } from 'components/data-table-default-view/data-ta
 import { ResourcesState } from 'store/resources/resources';
 import { ShareMeIcon } from 'components/icon/icon';
 import { createTree } from 'models/tree';
-import { 
-    ResourceLinkUuid, ResourceLinkHead, ResourceLinkTail, 
-    ResourceLinkClass, ResourceLinkName } 
+import {
+    ResourceLinkUuid, ResourceLinkHead, ResourceLinkTail,
+    ResourceLinkClass, ResourceLinkName }
 from 'views-components/data-explorer/renderers';
+import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core';
+import { ArvadosTheme } from 'common/custom-theme';
+
+type CssRules = "root";
+
+const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+    root: {
+        width: '100%',
+    }
+});
 
 export enum LinkPanelColumnNames {
     NAME = "Name",
@@ -73,20 +83,20 @@ export interface LinkPanelRootActionProps {
     onItemDoubleClick: (item: string) => void;
 }
 
-export type LinkPanelRootProps = LinkPanelRootDataProps & LinkPanelRootActionProps;
+export type LinkPanelRootProps = LinkPanelRootDataProps & LinkPanelRootActionProps & WithStyles<CssRules>;
 
-export const LinkPanelRoot = (props: LinkPanelRootProps) => {
-    return <DataExplorer
+export const LinkPanelRoot = withStyles(styles)((props: LinkPanelRootProps) => {
+    return <div className={props.classes.root}><DataExplorer
         id={LINK_PANEL_ID}
         onRowClick={props.onItemClick}
         onRowDoubleClick={props.onItemDoubleClick}
         onContextMenu={props.onContextMenu}
-        contextMenuColumn={true} 
+        contextMenuColumn={true}
         hideColumnSelector
         hideSearchInput
         dataTableDefaultView={
             <DataTableDefaultView
                 icon={ShareMeIcon}
                 messages={['Your link list is empty.']} />
-        }/>;
-};
+        }/></div>;
+});
