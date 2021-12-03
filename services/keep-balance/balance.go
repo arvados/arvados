@@ -217,8 +217,8 @@ func (bal *Balancer) cleanupMounts() {
 	rwdev := map[string]*KeepService{}
 	for _, srv := range bal.KeepServices {
 		for _, mnt := range srv.mounts {
-			if !mnt.ReadOnly && mnt.DeviceID != "" {
-				rwdev[mnt.DeviceID] = srv
+			if !mnt.ReadOnly {
+				rwdev[mnt.UUID] = srv
 			}
 		}
 	}
@@ -227,8 +227,8 @@ func (bal *Balancer) cleanupMounts() {
 	for _, srv := range bal.KeepServices {
 		var dedup []*KeepMount
 		for _, mnt := range srv.mounts {
-			if mnt.ReadOnly && rwdev[mnt.DeviceID] != nil {
-				bal.logf("skipping srv %s readonly mount %q because same device %q is mounted read-write on srv %s", srv, mnt.UUID, mnt.DeviceID, rwdev[mnt.DeviceID])
+			if mnt.ReadOnly && rwdev[mnt.UUID] != nil {
+				bal.logf("skipping srv %s readonly mount %q because same volume is mounted read-write on srv %s", srv, mnt.UUID, rwdev[mnt.UUID])
 			} else {
 				dedup = append(dedup, mnt)
 			}
@@ -357,12 +357,10 @@ func (bal *Balancer) GetCurrentState(ctx context.Context, c *arvados.Client, pag
 	deviceMount := map[string]*KeepMount{}
 	for _, srv := range bal.KeepServices {
 		for _, mnt := range srv.mounts {
-			equiv := deviceMount[mnt.DeviceID]
+			equiv := deviceMount[mnt.UUID]
 			if equiv == nil {
 				equiv = mnt
-				if mnt.DeviceID != "" {
-					deviceMount[mnt.DeviceID] = equiv
-				}
+				deviceMount[mnt.UUID] = equiv
 			}
 			equivMount[equiv] = append(equivMount[equiv], mnt)
 		}
@@ -667,7 +665,7 @@ func (bal *Balancer) balanceBlock(blkid arvados.SizedDigest, blk *BlockState) ba
 				// new/remaining replicas uniformly
 				// across qualifying mounts on a given
 				// server.
-				return rendezvousLess(si.mnt.DeviceID, sj.mnt.DeviceID, blkid)
+				return rendezvousLess(si.mnt.UUID, sj.mnt.UUID, blkid)
 			}
 		})
 
@@ -692,7 +690,7 @@ func (bal *Balancer) balanceBlock(blkid arvados.SizedDigest, blk *BlockState) ba
 		// and returns true if all requirements are met.
 		trySlot := func(i int) bool {
 			slot := slots[i]
-			if wantMnt[slot.mnt] || wantDev[slot.mnt.DeviceID] {
+			if wantMnt[slot.mnt] || wantDev[slot.mnt.UUID] {
 				// Already allocated a replica to this
 				// backend device, possibly on a
 				// different server.
@@ -707,9 +705,7 @@ func (bal *Balancer) balanceBlock(blkid arvados.SizedDigest, blk *BlockState) ba
 				slots[i].want = true
 				wantSrv[slot.mnt.KeepService] = true
 				wantMnt[slot.mnt] = true
-				if slot.mnt.DeviceID != "" {
-					wantDev[slot.mnt.DeviceID] = true
-				}
+				wantDev[slot.mnt.UUID] = true
 				replWant += slot.mnt.Replication
 			}
 			return replProt >= desired && replWant >= desired
@@ -751,7 +747,7 @@ func (bal *Balancer) balanceBlock(blkid arvados.SizedDigest, blk *BlockState) ba
 		// haven't already been added to unsafeToDelete
 		// because the servers report different Mtimes.
 		for _, slot := range slots {
-			if slot.repl != nil && wantDev[slot.mnt.DeviceID] {
+			if slot.repl != nil && wantDev[slot.mnt.UUID] {
 				unsafeToDelete[slot.repl.Mtime] = true
 			}
 		}
@@ -834,7 +830,7 @@ func computeBlockState(slots []slot, onlyCount map[*KeepMount]bool, have, needRe
 		if onlyCount != nil && !onlyCount[slot.mnt] {
 			continue
 		}
-		if countedDev[slot.mnt.DeviceID] {
+		if countedDev[slot.mnt.UUID] {
 			continue
 		}
 		switch {
@@ -848,9 +844,7 @@ func computeBlockState(slots []slot, onlyCount map[*KeepMount]bool, have, needRe
 			bbs.pulling++
 			repl += slot.mnt.Replication
 		}
-		if slot.mnt.DeviceID != "" {
-			countedDev[slot.mnt.DeviceID] = true
-		}
+		countedDev[slot.mnt.UUID] = true
 	}
 	if repl < needRepl {
 		bbs.unachievable = true
