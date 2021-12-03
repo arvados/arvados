@@ -379,23 +379,25 @@ func (v *UnixVolume) IndexTo(prefix string, w io.Writer) error {
 			continue
 		}
 		blockdirpath := filepath.Join(v.Root, subdir)
-		blockdir, err := v.os.Open(blockdirpath)
-		if err != nil {
-			v.logger.WithError(err).Errorf("error reading %q", blockdirpath)
-			return fmt.Errorf("error reading %q: %s", blockdirpath, err)
+
+		var dirents []os.DirEntry
+		for attempt := 0; ; attempt++ {
+			v.os.stats.TickOps("readdir")
+			v.os.stats.Tick(&v.os.stats.ReaddirOps)
+			dirents, err = os.ReadDir(blockdirpath)
+			if err == nil {
+				break
+			} else if attempt < 5 && strings.Contains(err.Error(), "errno 523") {
+				// EBADCOOKIE (NFS stopped accepting
+				// our readdirent cookie) -- retry a
+				// few times before giving up
+				v.logger.WithError(err).Printf("retry after error reading %s", blockdirpath)
+				continue
+			} else {
+				return err
+			}
 		}
-		v.os.stats.TickOps("readdir")
-		v.os.stats.Tick(&v.os.stats.ReaddirOps)
-		// ReadDir() (compared to Readdir(), which returns
-		// FileInfo structs) helps complete the sequence of
-		// readdirent calls as quickly as possible, reducing
-		// the likelihood of NFS EBADCOOKIE (523) errors.
-		dirents, err := blockdir.ReadDir(-1)
-		blockdir.Close()
-		if err != nil {
-			v.logger.WithError(err).Errorf("error reading %q", blockdirpath)
-			return fmt.Errorf("error reading %q: %s", blockdirpath, err)
-		}
+
 		for _, dirent := range dirents {
 			fileInfo, err := dirent.Info()
 			if os.IsNotExist(err) {
