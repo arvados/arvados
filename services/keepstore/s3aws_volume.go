@@ -119,6 +119,11 @@ func (v *S3AWSVolume) translateError(err error) error {
 		case "NoSuchKey":
 			return os.ErrNotExist
 		}
+	} else {
+		switch err.(type) {
+		case *aws.RequestCanceledError:
+			return context.Canceled
+		}
 	}
 	return err
 }
@@ -582,7 +587,7 @@ func (v *S3AWSVolume) writeObject(ctx context.Context, key string, r io.Reader) 
 func (v *S3AWSVolume) Put(ctx context.Context, loc string, block []byte) error {
 	// Do not use putWithPipe here; we want to pass an io.ReadSeeker to the S3
 	// sdk to avoid memory allocation there. See #17339 for more information.
-	return v.WriteBlock(ctx, loc, bytes.NewReader(block))
+	return v.translateError(v.WriteBlock(ctx, loc, bytes.NewReader(block)))
 }
 
 // WriteBlock implements BlockWriter.
