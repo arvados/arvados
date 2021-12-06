@@ -22,13 +22,8 @@ func NewCountingReader(r io.Reader, f func(uint64)) io.ReadCloser {
 	}
 }
 
-func NewCountingReaderAtSeeker(r interface{}, f func(uint64)) *countingReaderAtSeeker {
-	return &countingReaderAtSeeker{readerAtSeeker: readerAtSeeker{
-		readSeeker: r.(io.ReadSeeker),
-		readerAt:   r.(io.ReaderAt),
-	},
-		counter: f,
-	}
+func NewCountingReaderAtSeeker(r readerAtSeeker, f func(uint64)) *countingReaderAtSeeker {
+	return &countingReaderAtSeeker{readerAtSeeker: r, counter: f}
 }
 
 type countingReadWriter struct {
@@ -56,9 +51,9 @@ func (crw *countingReadWriter) Close() error {
 	return nil
 }
 
-type readerAtSeeker struct {
-	readSeeker io.ReadSeeker
-	readerAt   io.ReaderAt
+type readerAtSeeker interface {
+	io.ReadSeeker
+	io.ReaderAt
 }
 
 type countingReaderAtSeeker struct {
@@ -67,18 +62,13 @@ type countingReaderAtSeeker struct {
 }
 
 func (crw *countingReaderAtSeeker) Read(buf []byte) (int, error) {
-	n, err := crw.readSeeker.Read(buf)
+	n, err := crw.readerAtSeeker.Read(buf)
 	crw.counter(uint64(n))
 	return n, err
 }
 
 func (crw *countingReaderAtSeeker) ReadAt(buf []byte, off int64) (int, error) {
-	n, err := crw.readerAt.ReadAt(buf, off)
+	n, err := crw.readerAtSeeker.ReadAt(buf, off)
 	crw.counter(uint64(n))
-	return n, err
-}
-
-func (crw *countingReaderAtSeeker) Seek(offset int64, whence int) (int64, error) {
-	n, err := crw.readSeeker.Seek(offset, whence)
 	return n, err
 }
