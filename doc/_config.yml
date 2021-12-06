@@ -226,6 +226,7 @@ navbar:
       - install/config.html.textile.liquid
       - admin/config-migration.html.textile.liquid
       - admin/config.html.textile.liquid
+      - admin/config-urls.html.textile.liquid
     - Core:
       - install/install-api-server.html.textile.liquid
     - Keep:
