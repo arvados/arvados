@@ -401,13 +401,13 @@ class ContainerRequest < ArvadosModel
     if self.new_record? || self.state_was == Uncommitted
       # Allow create-and-commit in a single operation.
       permitted.push(*AttrsPermittedBeforeCommit)
-    elsif mounts_changed? && mounts_was.keys == mounts.keys
+    elsif mounts_changed? && mounts_was.keys.sort == mounts.keys.sort
       # Ignore the updated mounts if the only changes are default/zero
       # values as added by controller, see 17774
       only_defaults = true
       mounts.each do |path, mount|
         (mount.to_a - mounts_was[path].to_a).each do |k, v|
-          if !["", false, nil].index(v)
+          if ![0, "", false, nil].index(v)
             only_defaults = false
           end
         end
