@@ -709,7 +709,7 @@ func GetBlock(ctx context.Context, volmgr *RRVolumeManager, hash string, buf []b
 		if filehash != hash {
 			// TODO: Try harder to tell a sysadmin about
 			// this.
-			log.Error("checksum mismatch for block %s (actual %s) on %s", hash, filehash, vol)
+			log.Errorf("checksum mismatch for block %s (actual %s), size %d on %s", hash, filehash, size, vol)
 			errorToCaller = DiskHashError
 			continue
 		}
@@ -976,7 +976,7 @@ func CompareAndTouch(ctx context.Context, volmgr *RRVolumeManager, hash string, 
 			// to tell which one is wanted if we have
 			// both, so there's no point writing it even
 			// on a different volume.)
-			log.Error("collision in Compare(%s) on volume %s", hash, mnt.Volume)
+			log.Errorf("collision in Compare(%s) on volume %s", hash, mnt.Volume)
 			return CollisionError
 		} else if os.IsNotExist(err) {
 			// Block does not exist. This is the only

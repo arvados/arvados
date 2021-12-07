@@ -112,11 +112,12 @@ func newS3AWSVolume(cluster *arvados.Cluster, volume arvados.Volume, logger logr
 }
 
 func (v *S3AWSVolume) translateError(err error) error {
-	if aerr, ok := err.(awserr.Error); ok {
-		switch aerr.Code() {
-		case "NotFound":
+	if _, ok := err.(*aws.RequestCanceledError); ok {
+		return context.Canceled
+	} else if aerr, ok := err.(awserr.Error); ok {
+		if aerr.Code() == "NotFound" {
 			return os.ErrNotExist
-		case "NoSuchKey":
+		} else if aerr.Code() == "NoSuchKey" {
 			return os.ErrNotExist
 		}
 	}
@@ -463,52 +464,19 @@ func (v *S3AWSVolume) head(key string) (result *s3.HeadObjectOutput, err error) 
 // Get a block: copy the block data into buf, and return the number of
 // bytes copied.
 func (v *S3AWSVolume) Get(ctx context.Context, loc string, buf []byte) (int, error) {
-	return getWithPipe(ctx, loc, buf, v)
-}
-
-func (v *S3AWSVolume) readWorker(ctx context.Context, key string) (rdr io.ReadCloser, err error) {
-	buf := make([]byte, 0, 67108864)
-	awsBuf := aws.NewWriteAtBuffer(buf)
-
-	downloader := s3manager.NewDownloaderWithClient(v.bucket.svc, func(u *s3manager.Downloader) {
-		u.PartSize = PartSize
-		u.Concurrency = ReadConcurrency
-	})
-
-	v.logger.Debugf("Partsize: %d; Concurrency: %d\n", downloader.PartSize, downloader.Concurrency)
-
-	_, err = downloader.DownloadWithContext(ctx, awsBuf, &s3.GetObjectInput{
-		Bucket: aws.String(v.bucket.bucket),
-		Key:    aws.String(key),
-	})
-	v.bucket.stats.TickOps("get")
-	v.bucket.stats.Tick(&v.bucket.stats.Ops, &v.bucket.stats.GetOps)
-	v.bucket.stats.TickErr(err)
-	if err != nil {
-		return nil, v.translateError(err)
-	}
-	buf = awsBuf.Bytes()
-
-	rdr = NewCountingReader(bytes.NewReader(buf), v.bucket.stats.TickInBytes)
-	return
-}
-
-// ReadBlock implements BlockReader.
-func (v *S3AWSVolume) ReadBlock(ctx context.Context, loc string, w io.Writer) error {
+	// Do not use getWithPipe here: the BlockReader interface does not pass
+	// through 'buf []byte', and we don't want to allocate two buffers for each
+	// read request. Instead, use a version of ReadBlock that accepts 'buf []byte'
+	// as an input.
 	key := v.key(loc)
-	rdr, err := v.readWorker(ctx, key)
-
+	count, err := v.readWorker(ctx, key, buf)
 	if err == nil {
-		_, err2 := io.Copy(w, rdr)
-		if err2 != nil {
-			return err2
-		}
-		return err
+		return count, err
 	}
 
 	err = v.translateError(err)
 	if !os.IsNotExist(err) {
-		return err
+		return 0, err
 	}
 
 	_, err = v.head("recent/" + key)
@@ -516,23 +484,40 @@ func (v *S3AWSVolume) ReadBlock(ctx context.Context, loc string, w io.Writer) er
 	if err != nil {
 		// If we can't read recent/X, there's no point in
 		// trying fixRace. Give up.
-		return err
+		return 0, err
 	}
 	if !v.fixRace(key) {
 		err = os.ErrNotExist
-		return err
+		return 0, err
 	}
 
-	rdr, err = v.readWorker(ctx, key)
+	count, err = v.readWorker(ctx, key, buf)
 	if err != nil {
 		v.logger.Warnf("reading %s after successful fixRace: %s", loc, err)
 		err = v.translateError(err)
-		return err
+		return 0, err
 	}
+	return count, err
+}
 
-	_, err = io.Copy(w, rdr)
+func (v *S3AWSVolume) readWorker(ctx context.Context, key string, buf []byte) (int, error) {
+	awsBuf := aws.NewWriteAtBuffer(buf)
+	downloader := s3manager.NewDownloaderWithClient(v.bucket.svc, func(u *s3manager.Downloader) {
+		u.PartSize = PartSize
+		u.Concurrency = ReadConcurrency
+	})
 
-	return err
+	v.logger.Debugf("Partsize: %d; Concurrency: %d\n", downloader.PartSize, downloader.Concurrency)
+
+	count, err := downloader.DownloadWithContext(ctx, awsBuf, &s3.GetObjectInput{
+		Bucket: aws.String(v.bucket.bucket),
+		Key:    aws.String(key),
+	})
+	v.bucket.stats.TickOps("get")
+	v.bucket.stats.Tick(&v.bucket.stats.Ops, &v.bucket.stats.GetOps)
+	v.bucket.stats.TickErr(err)
+	v.bucket.stats.TickInBytes(uint64(count))
+	return int(count), v.translateError(err)
 }
 
 func (v *S3AWSVolume) writeObject(ctx context.Context, key string, r io.Reader) error {
@@ -552,7 +537,7 @@ func (v *S3AWSVolume) writeObject(ctx context.Context, key string, r io.Reader) 
 		var contentMD5 string
 		md5, err := hex.DecodeString(loc)
 		if err != nil {
-			return err
+			return v.translateError(err)
 		}
 		contentMD5 = base64.StdEncoding.EncodeToString(md5)
 		uploadInput.ContentMD5 = &contentMD5
@@ -581,21 +566,19 @@ func (v *S3AWSVolume) writeObject(ctx context.Context, key string, r io.Reader) 
 	v.bucket.stats.Tick(&v.bucket.stats.Ops, &v.bucket.stats.PutOps)
 	v.bucket.stats.TickErr(err)
 
-	return err
+	return v.translateError(err)
 }
 
 // Put writes a block.
 func (v *S3AWSVolume) Put(ctx context.Context, loc string, block []byte) error {
-	return putWithPipe(ctx, loc, block, v)
-}
-
-// WriteBlock implements BlockWriter.
-func (v *S3AWSVolume) WriteBlock(ctx context.Context, loc string, rdr io.Reader) error {
+	// Do not use putWithPipe here; we want to pass an io.ReadSeeker to the S3
+	// sdk to avoid memory allocation there. See #17339 for more information.
 	if v.volume.ReadOnly {
 		return MethodDisabledError
 	}
 
-	r := NewCountingReader(rdr, v.bucket.stats.TickOutBytes)
+	rdr := bytes.NewReader(block)
+	r := NewCountingReaderAtSeeker(rdr, v.bucket.stats.TickOutBytes)
 	key := v.key(loc)
 	err := v.writeObject(ctx, key, r)
 	if err != nil {
