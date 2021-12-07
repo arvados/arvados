@@ -200,10 +200,6 @@ describe('Project tests', function() {
             name: `Test root project ${Math.floor(Math.random() * 999999)}`,
             group_class: 'project',
         }).as('testProject1');
-        cy.createGroup(activeUser.token, {
-            name: `Test root project ${Math.floor(Math.random() * 999999)}`,
-            group_class: 'project',
-        }).as('testProject2');
 
         cy.getAll('@testProject1', '@testProject2').then(function([testProject1, testProject2]) {
             cy.loginAs(activeUser);

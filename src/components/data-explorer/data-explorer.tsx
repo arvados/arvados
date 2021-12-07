@@ -82,13 +82,8 @@ interface DataExplorerActionProps<T> {
 type DataExplorerProps<T> = DataExplorerDataProps<T> & DataExplorerActionProps<T> & WithStyles<CssRules>;
 
 export const DataExplorer = withStyles(styles)(
-    class DataExplorerGeneric<T> extends React.Component<DataExplorerProps<T>, { currentItemUuid: string }> {
-        constructor(props) {
-            super(props);
-            this.state = {
-                currentItemUuid: props.currentItemUuid
-            };
-        }
+    class DataExplorerGeneric<T> extends React.Component<DataExplorerProps<T>> {
+
         componentDidMount() {
             if (this.props.onSetColumns) {
                 this.props.onSetColumns(this.props.columns);
