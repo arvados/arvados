@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/md5"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -264,6 +265,29 @@ func (bal *Balancer) CheckSanityEarly(c *arvados.Client) error {
 		if srv.ServiceType == "proxy" {
 			return fmt.Errorf("config error: %s: proxy servers cannot be balanced", srv)
 		}
+	}
+
+	mountProblem := false
+	type deviceMount struct {
+		srv *KeepService
+		mnt *KeepMount
+	}
+	deviceMounted := map[string]deviceMount{} // DeviceID -> mount
+	for _, srv := range bal.KeepServices {
+		for _, mnt := range srv.mounts {
+			if first, dup := deviceMounted[mnt.DeviceID]; dup && first.mnt.UUID != mnt.UUID && mnt.DeviceID != "" {
+				bal.logf("config error: device %s is mounted with multiple volume UUIDs: %s on %s, and %s on %s",
+					mnt.DeviceID,
+					first.mnt.UUID, first.srv,
+					mnt.UUID, srv)
+				mountProblem = true
+				continue
+			}
+			deviceMounted[mnt.DeviceID] = deviceMount{srv, mnt}
+		}
+	}
+	if mountProblem {
+		return errors.New("cannot continue with config errors (see above)")
 	}
 
 	var checkPage arvados.CollectionList
