@@ -11,8 +11,13 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 Arvados requires at least version *9.4* of PostgreSQL.
 
+* "AWS":#aws
 * "CentOS 7":#centos7
 * "Debian or Ubuntu":#debian
+
+h3(#aws). AWS
+
+When deploying on AWS, Arvados can use an Aurora RDS PostgreSQL database. Aurora Serverless is not recommended.
 
 h3(#centos7). CentOS 7
 {% assign rh_version = "7" %}
@@ -35,4 +40,4 @@ Debian 10 (Buster) and Ubuntu 16.04 (Xenial) and later versions include a suffic
 # Install PostgreSQL
   <notextile><pre># <span class="userinput">apt-get --no-install-recommends install postgresql postgresql-contrib</span></pre></notextile>
 # Configure the database to launch at boot and start now
-  <notextile><pre># <span class="userinput">systemctl enable --now postgresql</span></pre></notextile>
+<notextile><pre># <span class="userinput">systemctl enable --now postgresql</span></pre></notextile>
