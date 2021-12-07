@@ -22,11 +22,9 @@ import { GroupResource, isBuiltinGroup } from 'models/group';
 export enum GroupDetailsPanelMembersColumnNames {
     FULL_NAME = "Name",
     USERNAME = "Username",
-    EMAIL = "Email",
     ACTIVE = "User Active",
     HIDDEN = "Member Hidden",
     PERMISSION = "Permission",
-    UUID = "UUID",
     REMOVE = "Remove",
 }
 
@@ -53,13 +51,6 @@ export const groupDetailsMembersPanelColumns: DataColumns<string> = [
         render: uuid => <ResourceLinkTailUsername uuid={uuid} />
     },
     {
-        name: GroupDetailsPanelMembersColumnNames.EMAIL,
-        selected: true,
-        configurable: true,
-        filters: createTree(),
-        render: uuid => <ResourceLinkTailEmail uuid={uuid} />
-    },
-    {
         name: GroupDetailsPanelMembersColumnNames.ACTIVE,
         selected: true,
         configurable: true,
@@ -79,13 +70,6 @@ export const groupDetailsMembersPanelColumns: DataColumns<string> = [
         configurable: true,
         filters: createTree(),
         render: uuid => <ResourceLinkTailPermissionLevel uuid={uuid} />
-    },
-    {
-        name: GroupDetailsPanelMembersColumnNames.UUID,
-        selected: true,
-        configurable: true,
-        filters: createTree(),
-        render: uuid => <ResourceLinkTailUuid uuid={uuid} />
     },
     {
         name: GroupDetailsPanelMembersColumnNames.REMOVE,
