@@ -1,0 +1,274 @@
+---
+layout: default
+navsection: installguide
+title: InternalURLs and ExternalURL
+...
+
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+The Arvados configuration is stored at @/etc/arvados/config.yml@. See the "Configuration reference":config.html for more detail.
+
+The @Services@ section lists a number of Arvados services, each with an @InternalURLs@ and/or @ExternalURL@ configuration key. This document explains the precise meaning of these configuration keys, and how they are used by the Arvados services.
+
+The @ExternalURL@ is the address where the service should be reachable by clients, both from inside and from outside the Arvados cluster. Some services do not expose an Arvados API, only Prometheus metrics. In that case, @ExternalURL@ is not used.
+
+The keys under @InternalURLs@ are addresses that are used by the reverse proxy (e.g. Nginx) that fronts Arvados services. The exception is the @Keepstore@ service, where clients connect directly to the addresses listed under @InternalURLs@. If a service is not fronted by a reverse proxy, e.g. when its endpoint only exposes Prometheus metrics, the intention is that metrics are collected directly from the endpoints defined in @InternalURLs@.
+
+@InternalURLs@ are also used by the service itself to figure out which address/port to listen on.
+
+If the Arvados service lives behind a reverse proxy (e.g. Nginx), configuring the reverse proxy and the @InternalURLs@ and @ExternalURL@ values must be done in concert.
+
+h2. Overview
+
+<div class="offset1">
+table(table table-bordered table-condensed).
+|_.Service     |_.ExternalURL required? |_.InternalURLs required?|_.InternalURLs must be reachable from other cluster nodes?|_.Note|
+|railsapi       |no                     |yes|no ^1^|InternalURLs only used by Controller|
+|controller     |yes                    |yes|no ^2^|InternalURLs only used by reverse proxy (e.g. Nginx)|
+|arvados-dispatch-cloud|no              |yes|no ^3^|InternalURLs only used to expose Prometheus metrics|
+|arvados-dispatch-lsf|no                |yes|no ^3^|InternalURLs only used to expose Prometheus metrics|
+|git-http       |yes                    |yes|no ^2^|InternalURLs only used by reverse proxy (e.g. Nginx)|
+|git-ssh        |yes                    |no |no    ||
+|keepproxy      |yes                    |yes|no ^2^|InternalURLs only used by reverse proxy (e.g. Nginx)|
+|keepstore      |no                     |yes|yes   |All clients connect to InternalURLs|
+|keep-balance   |no                     |yes|no ^3^|InternalURLs only used to expose Prometheus metrics|
+|keep-web       |yes                    |yes|no ^2^|InternalURLs only used by reverse proxy (e.g. Nginx)|
+|websocket      |yes                    |yes|no ^2^|InternalURLs only used by reverse proxy (e.g. Nginx)|
+|workbench1     |yes                    |no|no     ||
+|workbench2     |yes                    |no|no     ||
+</div>
+
+^1^ If @Controller@ runs on a different host than @RailsAPI@, the @InternalURLs@ will need to be reachable from the host that runs @Controller@.
+^2^ If the reverse proxy (e.g. Nginx) does not run on the same host as the Arvados service it fronts, the @InternalURLs@ will need to be reachable from the host that runs the reverse proxy.
+^3^ If the Prometheus metrics are not collected from the same machine that runs the service, the @InternalURLs@ will need to be reachable from the host that collects the metrics.
+
+When @InternalURLs@ do not need to be reachable from other nodes, it is most secure to use loopback addresses as @InternalURLs@, e.g. @http://127.0.0.1:9005@.
+
+It is recommended to use a split-horizon DNS setup where the hostnames specified in @ExternalURL@ resolve to an internal IP address from inside the Arvados cluster, and a publicly routed external IP address when resolved from outside the cluster. This simplifies firewalling and provides optimally efficient traffic routing. In a cloud environment where traffic that flows via public IP addresses is charged, using split horizon DNS can also avoid unnecessary expense.
+
+h2. Examples
+
+The remainder of this document walks through a number of examples to provide more detail.
+
+h3. Keep-balance
+
+Consider this section for the @Keep-balance@ service:
+
+{% codeblock as yaml %}
+      Keepbalance:
+        InternalURLs:
+          "http://ip-10-0-1-233.internal:9005/": {}
+{% endcodeblock %}
+
+@Keep-balance@ has an API endpoint, but it is only used to expose "Prometheus":https://prometheus.io metrics.
+
+There is no @ExternalURL@ key because @Keep-balance@ does not have an Arvados API, no Arvados services need to connect to @Keep-balance@.
+
+The value for @InternalURLs@ tells the @Keep-balance@ service to start up and listen on port 9005, if it is started on a host where @ip-10-0-1-233.internal@ resolves to a local IP address. If @Keep-balance@ is started on a machine where the @ip-10-0-1-233.internal@ hostname does not resolve to a local IP address, it would refuse to start up, because it would not be able to find a local IP address to listen on.
+
+It is also possible to use IP addresses in @InternalURLs@, for example:
+
+{% codeblock as yaml %}
+      Keepbalance:
+        InternalURLs:
+          "http://127.0.0.1:9005/": {}
+{% endcodeblock %}
+
+In this example, @Keep-balance@ would start up and listen on port 9005 at the @127.0.0.1@ IP address. Prometheus would only be able to access the @Keep-balance@ metrics if it could reach that IP and port, e.g. if it runs on the same machine.
+
+Finally, it is also possible to listen on all interfaces, for example:
+
+{% codeblock as yaml %}
+      Keepbalance:
+        InternalURLs:
+          "http://0.0.0.0:9005/": {}
+{% endcodeblock %}
+
+In this case, @Keep-balance@ will listen on port 9005 on all IP addresses local to the machine.
+
+h3. Keepstore
+
+Consider this section for the @Keepstore@ service:
+
+{% codeblock as yaml %}
+      Keepstore:
+        InternalURLs:
+          "http://keep0.ClusterID.example.com:25107": {}
+          "http://keep1.ClusterID.example.com:25107": {}
+{% endcodeblock %}
+
+There is no @ExternalURL@ key because @Keepstore@ is only accessed from inside the Arvados cluster. For access from outside, all traffic goes via @Keepproxy@.
+
+When @Keepstore@ is installed on the host where @keep0.ClusterID.example.com@ resolves to a local IP address, it will listen on port 25107 on that IP address. Likewise on the @keep1.ClusterID.example.com@ host. On all other systems, @Keepstore@ will refuse to start.
+
+h3. Keepproxy
+
+Consider this section for the @Keepproxy@ service:
+
+{% codeblock as yaml %}
+      Keepproxy:
+        ExternalURL: https://keep.ClusterID.example.com
+        InternalURLs:
+          "http://localhost:25107": {}
+{% endcodeblock %}
+
+The @ExternalURL@ advertised is @https://keep.ClusterID.example.com@. The @Keepproxy@ service will start up on @localhost@ port 25107, however. This is possible because we also configure Nginx to terminate SSL and sit in front of the @Keepproxy@ service:
+
+<notextile><pre><code>upstream keepproxy {
+  server                127.0.0.1:<span class="userinput">25107</span>;
+}
+
+server {
+  listen                  443 ssl;
+  server_name             <span class="userinput">keep.ClusterID.example.com</span>;
+
+  proxy_connect_timeout   90s;
+  proxy_read_timeout      300s;
+  proxy_set_header        X-Real-IP $remote_addr;
+  proxy_http_version      1.1;
+  proxy_request_buffering off;
+  proxy_max_temp_file_size 0;
+
+  ssl_certificate     <span class="userinput">/YOUR/PATH/TO/cert.pem</span>;
+  ssl_certificate_key <span class="userinput">/YOUR/PATH/TO/cert.key</span>;
+
+  # Clients need to be able to upload blocks of data up to 64MiB in size.
+  client_max_body_size    64m;
+
+  location / {
+    proxy_pass            http://keepproxy;
+  }
+}
+</code></pre></notextile>
+
+If a client connects to the @Keepproxy@ service, it will talk to Nginx which will reverse proxy the traffic to the @Keepproxy@ service.
+
+h3. Workbench
+
+Consider this section for the @Workbench@ service:
+
+{% codeblock as yaml %}
+  Workbench1:
+    ExternalURL: "https://workbench.ClusterID.example.com"
+{% endcodeblock %}
+
+The @ExternalURL@ advertised is @https://workbench.ClusterID.example.com@. There is no value for @InternalURLs@ because Workbench1 is a Rails application served by Passenger. The only client connecting to the Passenger process is the reverse proxy (e.g. Nginx), and the listening host/post is configured in its configuration:
+
+<notextile><pre><code>
+server {
+  listen       443 ssl;
+  server_name  workbench.ClusterID.example.com;
+
+  ssl_certificate     /YOUR/PATH/TO/cert.pem;
+  ssl_certificate_key /YOUR/PATH/TO/cert.key;
+
+  root /var/www/arvados-workbench/current/public;
+  index  index.html;
+
+  passenger_enabled on;
+  # If you're using RVM, uncomment the line below.
+  #passenger_ruby /usr/local/rvm/wrappers/default/ruby;
+
+  # `client_max_body_size` should match the corresponding setting in
+  # the API.MaxRequestSize and Controller's server's Nginx configuration.
+  client_max_body_size 128m;
+}
+</code></pre></notextile>
+
+h3. API server
+
+Consider this section for the @RailsAPI@ service:
+
+{% codeblock as yaml %}
+      RailsAPI:
+        InternalURLs:
+          "http://localhost:8004": {}
+{% endcodeblock %}
+
+There is no @ExternalURL@ defined because the @RailsAPI@ is not directly accessible and does not need to advertise a URL: all traffic to it flows via @Controller@, which is the only client that talks to it.
+
+The @RailsAPI@ service is also a Rails application, and its listening host/port is defined in the Nginx configuration:
+
+<notextile><pre><code>
+server {
+  # This configures the Arvados API server.  It is written using Ruby
+  # on Rails and uses the Passenger application server.
+
+  listen localhost:8004;
+  server_name localhost-api;
+
+  root /var/www/arvados-api/current/public;
+  index  index.html index.htm index.php;
+
+  passenger_enabled on;
+
+  # If you are using RVM, uncomment the line below.
+  # If you're using system ruby, leave it commented out.
+  #passenger_ruby /usr/local/rvm/wrappers/default/ruby;
+
+  # This value effectively limits the size of API objects users can
+  # create, especially collections.  If you change this, you should
+  # also ensure the following settings match it:
+  # * `client_max_body_size` in the previous server section
+  # * `API.MaxRequestSize` in config.yml
+  client_max_body_size 128m;
+}
+</code></pre></notextile>
+
+So then, why is there a need to specify @InternalURLs@ for the @RailsAPI@ service? It is there because this is how the @Controller@ service locates the @RailsAPI@ service it should talk to. Since this connection is internal to the Arvados cluster, @Controller@ uses @InternalURLs@ to find the @RailsAPI@ endpoint.
+
+h3. Controller
+
+Consider this section for the @Controller@ service:
+
+{% codeblock as yaml %}
+  Controller:
+    InternalURLs:
+      "http://localhost:8003": {}
+    ExternalURL: "https://ClusterID.example.com"
+{% endcodeblock %}
+
+The @ExternalURL@ advertised is @https://ClusterID.example.com@. The @Controller@ service will start up on @localhost@ port 8003. Nginx is configured to sit in front of the @Controller@ service and terminates SSL:
+
+<notextile><pre><code>
+# This is the port where nginx expects to contact arvados-controller.
+upstream controller {
+  server     localhost:8003  fail_timeout=10s;
+}
+
+server {
+  # This configures the public https port that clients will actually connect to,
+  # the request is reverse proxied to the upstream 'controller'
+
+  listen       443 ssl;
+  server_name  ClusterID.example.com;
+
+  ssl_certificate     /YOUR/PATH/TO/cert.pem;
+  ssl_certificate_key /YOUR/PATH/TO/cert.key;
+
+  # Refer to the comment about this setting in the passenger (arvados
+  # api server) section of your Nginx configuration.
+  client_max_body_size 128m;
+
+  location / {
+    proxy_pass            http://controller;
+    proxy_redirect        off;
+    proxy_connect_timeout 90s;
+    proxy_read_timeout    300s;
+
+    proxy_set_header      Host              $http_host;
+    proxy_set_header      Upgrade           $http_upgrade;
+    proxy_set_header      Connection        "upgrade";
+    proxy_set_header      X-External-Client $external_client;
+    proxy_set_header      X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header      X-Forwarded-Proto https;
+    proxy_set_header      X-Real-IP         $remote_addr;
+  }
+}
+</code></pre></notextile>
+
+
