@@ -14,27 +14,61 @@ The Arvados configuration is stored at @/etc/arvados/config.yml@. See the "Confi
 
 The @Services@ section lists a number of Arvados services, each with an @InternalURLs@ and/or @ExternalURL@ configuration key. This document explains the precise meaning of these configuration keys, and how they are used by the Arvados services.
 
-Generally speaking, the keys under @InternalURLs@ are the endpoints where the service should be listening, and reachable from other hosts inside the Arvados cluster. The @ExternalURL@ value is the URL that the service advertises as its own URL. The @ExternalURL@ is the address where the service should be reachable from outside the Arvados cluster.
+The @ExternalURL@ is the address where the service should be reachable by clients, both from inside and from outside the Arvados cluster. Some services do not expose an Arvados API, only Prometheus metrics. In that case, @ExternalURL@ is not used.
 
-Because many of the Arvados services live behind a reverse proxy (e.g. Nginx as used in this guide), configuring the reverse proxy and the @InternalURLs@ and @ExternalURL@ values must be done in concert.
+The keys under @InternalURLs@ are addresses that are used by the reverse proxy (e.g. Nginx) that fronts Arvados services. The exception is the @Keepstore@ service, where clients connect directly to the addresses listed under @InternalURLs@. If a service is not fronted by a reverse proxy, e.g. when its endpoint only exposes Prometheus metrics, the intention is that metrics are collected directly from the endpoints defined in @InternalURLs@.
 
-We'll walk through a number of examples to explain in more detail.
+@InternalURLs@ are also used by the service itself to figure out which address/port to listen on.
 
-h2. Keep-balance
+If the Arvados service lives behind a reverse proxy (e.g. Nginx), configuring the reverse proxy and the @InternalURLs@ and @ExternalURL@ values must be done in concert.
+
+h2. Overview
+
+<div class="offset1">
+table(table table-bordered table-condensed).
+|_.Service     |_.ExternalURL required? |_.InternalURLs required?|_.InternalURLs must be reachable from other cluster nodes?|_.Note|
+|railsapi       |no                     |yes|no ^1^|InternalURLs only used by Controller|
+|controller     |yes                    |yes|no ^2^|InternalURLs only used by reverse proxy (e.g. Nginx)|
+|arvados-dispatch-cloud|no              |yes|no ^3^|InternalURLs only used to expose Prometheus metrics|
+|arvados-dispatch-lsf|no                |yes|no ^3^|InternalURLs only used to expose Prometheus metrics|
+|git-http       |yes                    |yes|no ^2^|InternalURLs only used by reverse proxy (e.g. Nginx)|
+|git-ssh        |yes                    |no |no    ||
+|keepproxy      |yes                    |yes|no ^2^|InternalURLs only used by reverse proxy (e.g. Nginx)|
+|keepstore      |no                     |yes|yes   |All clients connect to InternalURLs|
+|keep-balance   |no                     |yes|no ^3^|InternalURLs only used to expose Prometheus metrics|
+|keep-web       |yes                    |yes|no ^2^|InternalURLs only used by reverse proxy (e.g. Nginx)|
+|websocket      |yes                    |yes|no ^2^|InternalURLs only used by reverse proxy (e.g. Nginx)|
+|workbench1     |yes                    |no|no     ||
+|workbench2     |yes                    |no|no     ||
+</div>
+
+^1^ If @Controller@ runs on a different host than @RailsAPI@, the @InternalURLs@ will need to be reachable from the host that runs @Controller@.
+^2^ If the reverse proxy (e.g. Nginx) does not run on the same host as the Arvados service it fronts, the @InternalURLs@ will need to be reachable from the host that runs the reverse proxy.
+^3^ If the Prometheus metrics are not collected from the same machine that runs the service, the @InternalURLs@ will need to be reachable from the host that collects the metrics.
+
+When @InternalURLs@ do not need to be reachable from other nodes, it is most secure to use loopback addresses as @InternalURLs@, e.g. @http://127.0.0.1:9005@.
+
+It is recommended to use a split-horizon DNS setup where the hostnames specified in @ExternalURL@ resolve to an internal IP address from inside the Arvados cluster, and a publicly routed external IP address when resolved from outside the cluster. This simplifies firewalling and provides optimally efficient traffic routing. In a cloud environment where traffic that flows via public IP addresses is charged, using split horizon DNS can also avoid unnecessary expense.
+
+h2. Examples
+
+The remainder of this document walks through a number of examples to provide more detail.
+
+h3. Keep-balance
 
 Consider this section for the @Keep-balance@ service:
 
 {% codeblock as yaml %}
       Keepbalance:
         InternalURLs:
-          "http://ClusterID.example.com:9005/": {}
+          "http://ip-10-0-1-233.internal:9005/": {}
 {% endcodeblock %}
 
 @Keep-balance@ has an API endpoint, but it is only used to expose "Prometheus":https://prometheus.io metrics.
 
 There is no @ExternalURL@ key because @Keep-balance@ does not have an Arvados API, no Arvados services need to connect to @Keep-balance@.
 
-The value for @InternalURLs@ tells the @Keep-balance@ service to start up and listen on port 9005, if it is started on a host where @ClusterID.example.com@ resolves to a local IP address. If @Keep-balance@ is started on a machine where the @ClusterID.example.com@ hostname does not resolve to a local IP address, it would refuse to start up, because it would not be able to find a local IP address to listen on.
+The value for @InternalURLs@ tells the @Keep-balance@ service to start up and listen on port 9005, if it is started on a host where @ip-10-0-1-233.internal@ resolves to a local IP address. If @Keep-balance@ is started on a machine where the @ip-10-0-1-233.internal@ hostname does not resolve to a local IP address, it would refuse to start up, because it would not be able to find a local IP address to listen on.
 
 It is also possible to use IP addresses in @InternalURLs@, for example:
 
@@ -56,7 +90,7 @@ Finally, it is also possible to listen on all interfaces, for example:
 
 In this case, @Keep-balance@ will listen on port 9005 on all IP addresses local to the machine.
 
-h2. Keepstore
+h3. Keepstore
 
 Consider this section for the @Keepstore@ service:
 
@@ -71,7 +105,7 @@ There is no @ExternalURL@ key because @Keepstore@ is only accessed from inside t
 
 When @Keepstore@ is installed on the host where @keep0.ClusterID.example.com@ resolves to a local IP address, it will listen on port 25107 on that IP address. Likewise on the @keep1.ClusterID.example.com@ host. On all other systems, @Keepstore@ will refuse to start.
 
-h2. Keepproxy
+h3. Keepproxy
 
 Consider this section for the @Keepproxy@ service:
 
@@ -113,7 +147,7 @@ server {
 
 If a client connects to the @Keepproxy@ service, it will talk to Nginx which will reverse proxy the traffic to the @Keepproxy@ service.
 
-h2. Workbench
+h3. Workbench
 
 Consider this section for the @Workbench@ service:
 
@@ -122,7 +156,7 @@ Consider this section for the @Workbench@ service:
     ExternalURL: "https://workbench.ClusterID.example.com"
 {% endcodeblock %}
 
-The @ExternalURL@ advertised is @https://workbench.ClusterID.example.com@. There is no value for @InternalURLs@ because Workbench1 is a Rails application served by Passenger, and the listening host/post is configured in the Nginx configuration:
+The @ExternalURL@ advertised is @https://workbench.ClusterID.example.com@. There is no value for @InternalURLs@ because Workbench1 is a Rails application served by Passenger. The only client connecting to the Passenger process is the reverse proxy (e.g. Nginx), and the listening host/post is configured in its configuration:
 
 <notextile><pre><code>
 server {
@@ -145,9 +179,9 @@ server {
 }
 </code></pre></notextile>
 
-h2. API server
+h3. API server
 
-Consider this section for the @API server@ service:
+Consider this section for the @RailsAPI@ service:
 
 {% codeblock as yaml %}
       RailsAPI:
@@ -155,9 +189,9 @@ Consider this section for the @API server@ service:
           "http://localhost:8004": {}
 {% endcodeblock %}
 
-There is no @ExternalURL@ defined because the @API server@ is not directly accessible and does not need to advertise a URL: all traffic to it flows via @Controller@, which is the only client that talks to it.
+There is no @ExternalURL@ defined because the @RailsAPI@ is not directly accessible and does not need to advertise a URL: all traffic to it flows via @Controller@, which is the only client that talks to it.
 
-The @API server@ is also a Rails application, and its listening host/port is defined in the Nginx configuration:
+The @RailsAPI@ service is also a Rails application, and its listening host/port is defined in the Nginx configuration:
 
 <notextile><pre><code>
 server {
@@ -185,9 +219,9 @@ server {
 }
 </code></pre></notextile>
 
-So then, why is there a need to specify @InternalURLs@ for the @RailsAPI@ service? It is there because this is how the @Controller@ service locates the @RailsAPI@ service it should talk to. Since this connection is internal to the Avados cluster, @Controller@ uses @InternalURLs@ to find the @RailsAPI@ endpoint.
+So then, why is there a need to specify @InternalURLs@ for the @RailsAPI@ service? It is there because this is how the @Controller@ service locates the @RailsAPI@ service it should talk to. Since this connection is internal to the Arvados cluster, @Controller@ uses @InternalURLs@ to find the @RailsAPI@ endpoint.
 
-h2. Controller
+h3. Controller
 
 Consider this section for the @Controller@ service:
 
@@ -198,7 +232,7 @@ Consider this section for the @Controller@ service:
     ExternalURL: "https://ClusterID.example.com"
 {% endcodeblock %}
 
-The @ExternalURL@ advertised is @https://ClusterID.example.com@. The @Controller@ service will start up on @localhost@ port 8003. Nginx is configured to terminate SSL and sit in front of the @Controller@ service:
+The @ExternalURL@ advertised is @https://ClusterID.example.com@. The @Controller@ service will start up on @localhost@ port 8003. Nginx is configured to sit in front of the @Controller@ service and terminates SSL:
 
 <notextile><pre><code>
 # This is the port where nginx expects to contact arvados-controller.
@@ -237,35 +271,4 @@ server {
 }
 </code></pre></notextile>
 
-@Controller@ provides the main Arvados API endpoint. As such, it is used extensively by Arvados clients inside and outside of the cluster. It is recommended to use a split-horizon DNS setup where @ClusterID.example.com@ resolves to an internal IP address from inside the Arvados cluster, and a publicly routed external IP address when resolved from outside the cluster. This will simplify firewalling and traffic routing. In a cloud environment where traffic that flows via public IP addresses is charged, using split horizon DNS can also save a lot of money.
 
-h2. Connection overview
-
-When a client wants to talk to an Arvados cluster, it needs to look up the endpoint of the particular API it wants to connect to. If the client does not have access to the @config.yml@ file, it connects to @Controller@ and retrieves the value of @InternalURLs@ or @ExternalURL@ for the service it wants to talk to. Arvados clients typically get the URL of the @Controller@ from the @ARVADOS_API_HOST@ environment variable.
-
-When an Arvados service with access to @config.yml@ needs to talk to another Arvados service, it looks up the value of @InternalURLs@ or @ExternalURL@ for the service it wants to talk to.
-
-Below is a list of Arvados clients (or services acting as a client), the Arvados service they connect to, and the configuration value that they use to find the appropriate endpoint.
-
-<div class="offset1">
-table(table table-bordered table-condensed).
-|_.Client     |_.Destination service|_.Target URL from |
-|arv        |Controller   |$ARVADOS_API_HOST       |
-|API client (e.g. SDK, arv-put, arv-get, etc) |Controller   |$ARVADOS_API_HOST       |
-|arv-ws     |Controller   |$ARVADOS_API_HOST       |
-|arv-ws     |Websocket    |Websocket.ExternalURL   |
-|arv-mount  |Controller   |$ARVADOS_API_HOST       |
-|arv-mount  |Keepstore    |Keepstore.InternalURLs  |
-|arv-mount  |Keepproxy    |Keepproxy.ExternalURL   |
-|Controller |RailsAPI     |RailsAPI.InternalURLs   |
-|Keep-balance|Keepstore   |Keepstore.InternalURLs  |
-|Keep client|Keepstore    |Keepstore.InternalURLs  |
-|Keep client|Keepproxy    |Keepproxy.ExternalURL   |
-|Nginx      |Controller   |Controller.InternalURLs |
-|Nginx      |Keepproxy    |Keepproxy.InternalURLs  |
-|Nginx      |Keep-web     |WebDAV.InternalURLs     |
-|Prometheus |Keep-balance |Keepbalance.InternalURLs|
-|Workbench2 |Keep-web     |WebDAV.ExternalURL      |
-|Workbench2 |Websocket    |Websocket.ExternalURL   |
-|webdav client|Keep-web   |WebDAV.ExternalURL      |
-</div>
