@@ -397,6 +397,32 @@ func (s *runSuite) TestRefuseNonAdmin(c *check.C) {
 	c.Check(pullReqs.Count(), check.Equals, 0)
 }
 
+func (s *runSuite) TestRefuseSameDeviceDifferentVolumes(c *check.C) {
+	opts := RunOptions{
+		CommitPulls: true,
+		CommitTrash: true,
+		Logger:      ctxlog.TestLogger(c),
+	}
+	s.stub.serveCurrentUserAdmin()
+	s.stub.serveZeroCollections()
+	s.stub.serveKeepServices(stubServices)
+	s.stub.mux.HandleFunc("/mounts", func(w http.ResponseWriter, r *http.Request) {
+		hostid := r.Host[:5] // "keep0.zzzzz.arvadosapi.com:25107" => "keep0"
+		json.NewEncoder(w).Encode([]arvados.KeepMount{{
+			UUID:           "zzzzz-ivpuk-0000000000" + hostid,
+			DeviceID:       "keep0-vol0",
+			StorageClasses: map[string]bool{"default": true},
+		}})
+	})
+	trashReqs := s.stub.serveKeepstoreTrash()
+	pullReqs := s.stub.serveKeepstorePull()
+	srv := s.newServer(&opts)
+	_, err := srv.runOnce()
+	c.Check(err, check.ErrorMatches, "cannot continue with config errors.*")
+	c.Check(trashReqs.Count(), check.Equals, 0)
+	c.Check(pullReqs.Count(), check.Equals, 0)
+}
+
 func (s *runSuite) TestWriteLostBlocks(c *check.C) {
 	lostf, err := ioutil.TempFile("", "keep-balance-lost-blocks-test-")
 	c.Assert(err, check.IsNil)
