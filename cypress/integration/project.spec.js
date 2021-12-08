@@ -201,7 +201,7 @@ describe('Project tests', function() {
             group_class: 'project',
         }).as('testProject1');
 
-        cy.getAll('@testProject1', '@testProject2').then(function([testProject1, testProject2]) {
+        cy.getAll('@testProject1').then(function([testProject1]) {
             cy.loginAs(activeUser);
 
             cy.get('[data-cy=side-panel-tree]').contains(testProject1.name).click();
