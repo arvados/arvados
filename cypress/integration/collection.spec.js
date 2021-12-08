@@ -866,7 +866,11 @@ describe('Collection panel tests', function () {
                         cy.get('[data-cy=form-submit-btn]').click();
 
                         cy.get('button[aria-label=Remove]').should('exist');
+<<<<<<< HEAD
                         cy.get('button[aria-label=Remove]').click({ multiple: true });
+=======
+                        cy.get('button[aria-label=Remove]').click({ multiple: true, force: true });
+>>>>>>> a4391aa3... 17579: Fix for collection cypress failure
 
                         cy.get('[data-cy=form-submit-btn]').should('not.exist');
                     });
