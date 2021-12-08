@@ -11,7 +11,6 @@ import {
     ApiClientAuthorizationPanelRootActionProps
 } from 'views/api-client-authorization-panel/api-client-authorization-panel-root';
 import { openApiClientAuthorizationContextMenu } from 'store/context-menu/context-menu-actions';
-import { openApiClientAuthorizationsHelpDialog } from 'store/api-client-authorizations/api-client-authorizations-actions';
 
 const mapStateToProps = (state: RootState): ApiClientAuthorizationPanelRootDataProps => {
     return {
@@ -25,9 +24,6 @@ const mapDispatchToProps = (dispatch: Dispatch): ApiClientAuthorizationPanelRoot
     },
     onItemClick: (resourceUuid: string) => { return; },
     onItemDoubleClick: uuid => { return; },
-    openHelpDialog: () => {
-        dispatch<any>(openApiClientAuthorizationsHelpDialog());
-    }
 });
 
 export const ApiClientAuthorizationPanel = connect(mapStateToProps, mapDispatchToProps)(ApiClientAuthorizationPanelRoot);

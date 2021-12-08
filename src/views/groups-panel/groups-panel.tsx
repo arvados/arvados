@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { connect } from 'react-redux';
-import { Grid, Button, Typography } from "@material-ui/core";
+import { Grid, Button, Typography, StyleRulesCallback, WithStyles, withStyles } from "@material-ui/core";
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { DataColumns } from 'components/data-table/data-table';
 import { SortDirection } from 'components/data-table/data-column';
@@ -22,6 +22,15 @@ import { openContextMenu } from 'store/context-menu/context-menu-actions';
 import { ResourceKind } from 'models/resource';
 import { LinkClass, LinkResource } from 'models/link';
 import { navigateToGroupDetails } from 'store/navigation/navigation-action';
+import { ArvadosTheme } from 'common/custom-theme';
+
+type CssRules = "root";
+
+const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+    root: {
+        width: '100%',
+    }
+});
 
 export enum GroupsPanelColumnNames {
     GROUP = "Name",
@@ -74,14 +83,14 @@ export interface GroupsPanelProps {
     resources: ResourcesState;
 }
 
-export const GroupsPanel = connect(
+export const GroupsPanel = withStyles(styles)(connect(
     mapStateToProps, mapDispatchToProps
 )(
-    class GroupsPanel extends React.Component<GroupsPanelProps> {
+    class GroupsPanel extends React.Component<GroupsPanelProps & WithStyles<CssRules>> {
 
         render() {
             return (
-                <DataExplorer
+                <div className={this.props.classes.root}><DataExplorer
                     id={GROUPS_PANEL_ID}
                     onRowClick={noop}
                     onRowDoubleClick={this.props.onRowDoubleClick}
@@ -97,7 +106,7 @@ export const GroupsPanel = connect(
                                 <AddIcon /> New group
                         </Button>
                         </Grid>
-                    } />
+                    } /></div>
             );
         }
 
@@ -113,7 +122,7 @@ export const GroupsPanel = connect(
                 });
             }
         }
-    });
+    }));
 
 
 const GroupMembersCount = connect(

@@ -20,7 +20,7 @@ import {
 } from 'store/context-menu/context-menu-actions';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
 
-type CssRules = "toolbar" | "button";
+type CssRules = "toolbar" | "button" | "root";
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     toolbar: {
@@ -29,6 +29,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     button: {
         marginLeft: theme.spacing.unit
+    },
+    root: {
+        width: '100%',
     },
 });
 
@@ -46,13 +49,13 @@ export const SharedWithMePanel = withStyles(styles)(
     }))(
         class extends React.Component<SharedWithMePanelProps> {
             render() {
-                return <DataExplorer
+                return <div className={this.props.classes.root}><DataExplorer
                     id={SHARED_WITH_ME_PANEL_ID}
                     onRowClick={this.handleRowClick}
                     onRowDoubleClick={this.handleRowDoubleClick}
                     onContextMenu={this.handleContextMenu}
                     contextMenuColumn={false}
-                    dataTableDefaultView={<DataTableDefaultView icon={ShareMeIcon} />} />;
+                    dataTableDefaultView={<DataTableDefaultView icon={ShareMeIcon} />} /></div>;
             }
 
             handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {

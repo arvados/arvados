@@ -4,15 +4,20 @@
 
 import React from 'react';
 import {
-    StyleRulesCallback, WithStyles, withStyles,
-    IconButton, Grid, Tooltip, Typography, ExpansionPanel,
-    ExpansionPanelSummary, ExpansionPanelDetails
+    StyleRulesCallback,
+    WithStyles,
+    withStyles,
+    IconButton,
+    Grid,
+    Tooltip,
+    Typography,
+    Card, CardHeader, CardContent,
 } from '@material-ui/core';
 import { connect, DispatchProp } from "react-redux";
 import { RouteComponentProps } from 'react-router';
 import { ArvadosTheme } from 'common/custom-theme';
 import { RootState } from 'store/store';
-import { MoreOptionsIcon, CollectionIcon, ReadOnlyIcon, ExpandIcon, CollectionOldVersionIcon } from 'components/icon/icon';
+import { MoreOptionsIcon, CollectionIcon, ReadOnlyIcon, CollectionOldVersionIcon } from 'components/icon/icon';
 import { DetailsAttribute } from 'components/details-attribute/details-attribute';
 import { CollectionResource, getCollectionUrl } from 'models/collection';
 import { CollectionPanelFiles } from 'views-components/collection-panel-files/collection-panel-files';
@@ -33,9 +38,12 @@ import { COLLECTION_PANEL_LOAD_FILES, loadCollectionFiles, COLLECTION_PANEL_LOAD
 import { Link } from 'react-router-dom';
 import { Link as ButtonLink } from '@material-ui/core';
 import { ResourceOwnerWithName, ResponsiblePerson } from 'views-components/data-explorer/renderers';
+import { MPVContainer, MPVPanelContent, MPVPanelState } from 'components/multi-panel-view/multi-panel-view';
 
 type CssRules = 'root'
     | 'button'
+    | 'infoCard'
+    | 'propertiesCard'
     | 'filesCard'
     | 'iconHeader'
     | 'tag'
@@ -49,16 +57,21 @@ type CssRules = 'root'
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
-        display: 'flex',
-        flexFlow: 'column',
-        height: 'calc(100vh - 130px)', // (100% viewport height) - (top bar + breadcrumbs)
+        width: '100%',
     },
     button: {
         cursor: 'pointer'
     },
+    infoCard: {
+        paddingLeft: theme.spacing.unit * 2,
+        paddingRight: theme.spacing.unit * 2,
+        paddingBottom: theme.spacing.unit * 2,
+    },
+    propertiesCard: {
+        padding: 0,
+    },
     filesCard: {
-        marginBottom: theme.spacing.unit * 2,
-        flex: 1,
+        padding: 0,
     },
     iconHeader: {
         fontSize: '1.875rem',
@@ -133,10 +146,15 @@ export const CollectionPanel = withStyles(styles)(
         class extends React.Component<CollectionPanelProps> {
             render() {
                 const { classes, item, dispatch, isWritable, isOldVersion, isLoadingFiles, tooManyFiles } = this.props;
+                const panelsData: MPVPanelState[] = [
+                    {name: "Details"},
+                    {name: "Properties"},
+                    {name: "Files"},
+                ];
                 return item
-                    ? <div className={classes.root}>
-                        <ExpansionPanel data-cy='collection-info-panel' defaultExpanded>
-                            <ExpansionPanelSummary expandIcon={<ExpandIcon />}>
+                    ? <MPVContainer className={classes.root} spacing={8} direction="column" justify-content="flex-start" wrap="nowrap" panelStates={panelsData}>
+                        <MPVPanelContent xs="auto" data-cy='collection-info-panel'>
+                            <Card className={classes.infoCard}>
                                 <Grid container justify="space-between">
                                     <Grid item xs={11}><span>
                                         <IconButton onClick={this.openCollectionDetails}>
@@ -165,8 +183,6 @@ export const CollectionPanel = withStyles(styles)(
                                         </Tooltip>
                                     </Grid>
                                 </Grid>
-                            </ExpansionPanelSummary>
-                            <ExpansionPanelDetails>
                                 <Grid container justify="space-between">
                                     <Grid item xs={12}>
                                         <Typography variant="caption">
@@ -185,15 +201,12 @@ export const CollectionPanel = withStyles(styles)(
                                         }
                                     </Grid>
                                 </Grid>
-                            </ExpansionPanelDetails>
-                        </ExpansionPanel>
-
-                        <ExpansionPanel data-cy='collection-properties-panel' defaultExpanded>
-                            <ExpansionPanelSummary expandIcon={<ExpandIcon />}>
-                                {"Properties"}
-                            </ExpansionPanelSummary>
-                            <ExpansionPanelDetails>
-                                <Grid container>
+                            </Card>
+                        </MPVPanelContent>
+                        <MPVPanelContent xs="auto" data-cy='collection-properties-panel'>
+                            <Card className={classes.propertiesCard}>
+                                <CardHeader title="Properties" />
+                                <CardContent><Grid container>
                                     {isWritable && <Grid item xs={12}>
                                         <CollectionTagForm />
                                     </Grid>}
@@ -218,21 +231,23 @@ export const CollectionPanel = withStyles(styles)(
                                             : <div className={classes.centeredLabel}>No properties set on this collection.</div>
                                         }
                                     </Grid>
-                                </Grid>
-                            </ExpansionPanelDetails>
-                        </ExpansionPanel>
-                        <div className={classes.filesCard}>
-                            <CollectionPanelFiles
-                                isWritable={isWritable}
-                                isLoading={isLoadingFiles}
-                                tooManyFiles={tooManyFiles}
-                                loadFilesFunc={() => {
-                                    dispatch(collectionPanelActions.LOAD_BIG_COLLECTIONS(true));
-                                    dispatch<any>(loadCollectionFiles(this.props.item.uuid));
-                                }
-                                } />
-                        </div>
-                    </div>
+                                </Grid></CardContent>
+                            </Card>
+                        </MPVPanelContent>
+                        <MPVPanelContent xs>
+                            <Card className={classes.filesCard}>
+                                <CollectionPanelFiles
+                                    isWritable={isWritable}
+                                    isLoading={isLoadingFiles}
+                                    tooManyFiles={tooManyFiles}
+                                    loadFilesFunc={() => {
+                                        dispatch(collectionPanelActions.LOAD_BIG_COLLECTIONS(true));
+                                        dispatch<any>(loadCollectionFiles(this.props.item.uuid));
+                                    }
+                                    } />
+                            </Card>
+                        </MPVPanelContent>
+                    </MPVContainer>
                     : null;
             }
 
