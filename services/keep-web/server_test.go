@@ -6,6 +6,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
@@ -447,7 +448,9 @@ func (s *IntegrationSuite) SetUpTest(c *check.C) {
 	cfg.cluster.Users.AnonymousUserToken = arvadostest.AnonymousToken
 	s.ArvConfig = arvCfg
 	s.testServer = &server{Config: cfg}
-	err = s.testServer.Start(ctxlog.TestLogger(c))
+	logger := ctxlog.TestLogger(c)
+	ctx := ctxlog.Context(context.Background(), logger)
+	err = s.testServer.Start(ctx, logger)
 	c.Assert(err, check.Equals, nil)
 }
 

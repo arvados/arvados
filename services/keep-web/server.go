@@ -10,7 +10,6 @@ import (
 	"net/http"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
-	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
@@ -21,7 +20,7 @@ type server struct {
 	Config *Config
 }
 
-func (srv *server) Start(logger *logrus.Logger) error {
+func (srv *server) Start(ctx context.Context, logger *logrus.Logger) error {
 	h := &handler{Config: srv.Config}
 	reg := prometheus.NewRegistry()
 	h.Config.Cache.registry = reg
@@ -33,7 +32,7 @@ func (srv *server) Start(logger *logrus.Logger) error {
 	mh := httpserver.Instrument(reg, logger, httpserver.AddRequestIDs(httpserver.LogRequests(h)))
 	h.MetricsAPI = mh.ServeAPI(h.Config.cluster.ManagementToken, http.NotFoundHandler())
 	srv.Handler = mh
-	srv.BaseContext = func(net.Listener) context.Context { return ctxlog.Context(context.Background(), logger) }
+	srv.BaseContext = func(net.Listener) context.Context { return ctx }
 	var listen arvados.URL
 	for listen = range srv.Config.cluster.Services.WebDAV.InternalURLs {
 		break

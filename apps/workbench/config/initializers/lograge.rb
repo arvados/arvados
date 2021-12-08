@@ -7,6 +7,7 @@ ArvadosWorkbench::Application.configure do
   config.lograge.formatter = Lograge::Formatters::Logstash.new
   config.lograge.custom_options = lambda do |event|
     payload = {
+      ClusterID: Rails.configuration.ClusterID,
       request_id: event.payload[:request_id],
     }
     # Also log params (minus the pseudo-params added by Rails). But if
