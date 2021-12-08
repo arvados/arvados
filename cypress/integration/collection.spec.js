@@ -865,6 +865,7 @@ describe('Collection panel tests', function () {
 
                         cy.get('[data-cy=form-submit-btn]').click();
 
+                        cy.get('button[aria-label=Remove]').should('exist');
                         cy.get('button[aria-label=Remove]').click({ multiple: true });
 
                         cy.get('[data-cy=form-submit-btn]').should('not.exist');
