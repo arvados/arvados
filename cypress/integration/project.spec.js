@@ -64,7 +64,7 @@ describe('Project tests', function() {
         .then(function() {
             expect(this.projects).to.have.lengthOf(1);
             expect(this.projects[0].properties).to.deep.equal(
-                {IDTAGCOLORS: 'IDVALCOLORS3'});
+                { Color: 'Magenta' });
         });
     });
 

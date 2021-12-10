@@ -97,7 +97,7 @@ export const SearchInput = withStyles(styles)(
             if (nextProps.value !== this.props.value) {
                 this.setState({ value: nextProps.value });
             }
-            if (nextProps.selfClearProp !== this.state.selfClearProp) {
+            if (this.state.value !== '' && nextProps.selfClearProp && nextProps.selfClearProp !== this.state.selfClearProp) {
                 this.props.onSearch('');
                 this.setState({ selfClearProp: nextProps.selfClearProp });
             }
