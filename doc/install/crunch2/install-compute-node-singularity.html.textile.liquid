@@ -54,3 +54,20 @@ Then update @Containers.RuntimeEngine@ in your cluster configuration:
 </notextile>
 
 {% include 'singularity_mksquashfs_configuration' %}
+
+h2(#singularity_loop_device_errors). Singularity loop device errors
+
+With singularity v3.9.1 and earlier, containers may fail intermittently at startup with an error message similar to the following in the container log's @stderr.txt@ (line breaks added):
+
+<notextile>
+<pre><code>FATAL:   container creation failed:
+ mount /proc/self/fd/3->/usr/local/var/singularity/mnt/session/rootfs error:
+ while mounting image /proc/self/fd/3:
+ failed to find loop device:
+ could not attach image file to loop device:
+ failed to set loop flags on loop device:
+ resource temporarily unavailable
+</code></pre>
+</notextile>
+
+This has been fixed in the latest development version of singularity, but not in the latest released version (v3.9.1) as of this writing. For details, please see "Arvados issue #18489":https://dev.arvados.org/issues/18489 and "singularity PR #458":https://github.com/sylabs/singularity/pull/458.
