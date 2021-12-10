@@ -241,6 +241,7 @@ type Cluster struct {
 		UserProfileNotificationAddress        string
 		PreferDomainForUsername               string
 		UserSetupMailText                     string
+		RoleGroupsVisibleToAll                bool
 	}
 	StorageClasses map[string]StorageClassConfig
 	Volumes        map[string]Volume

@@ -325,6 +325,14 @@ Clusters:
         Thanks,
         Your Arvados administrator.
 
+      # If RoleGroupsVisibleToAll is true, all role groups are visible
+      # to all active users.
+      #
+      # If false, users must be granted permission to role groups in
+      # order to see them. This is more appropriate for a multi-tenant
+      # cluster.
+      RoleGroupsVisibleToAll: true
+
     AuditLogs:
       # Time to keep audit logs, in seconds. (An audit log is a row added
       # to the "logs" table in the PostgreSQL database each time an

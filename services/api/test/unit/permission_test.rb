@@ -218,6 +218,7 @@ class PermissionTest < ActiveSupport::TestCase
   end
 
   test "manager user gets permission to minions' articles via can_manage link" do
+    Rails.configuration.Users.RoleGroupsVisibleToAll = false
     Rails.configuration.Users.ActivatedUsersAreVisibleToOthers = false
     manager = create :active_user, first_name: "Manage", last_name: "Er"
     minion = create :active_user, first_name: "Min", last_name: "Ion"
