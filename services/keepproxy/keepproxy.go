@@ -5,6 +5,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"flag"
 	"fmt"
@@ -23,6 +24,7 @@ import (
 	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/health"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
@@ -30,7 +32,7 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/gorilla/mux"
 	lru "github.com/hashicorp/golang-lru"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 )
 
 var version = "dev"
@@ -42,12 +44,18 @@ var (
 
 const rfc3339NanoFixed = "2006-01-02T15:04:05.000000000Z07:00"
 
-func configure(logger log.FieldLogger, args []string) (*arvados.Cluster, error) {
+func configure(args []string) (*arvados.Cluster, logrus.FieldLogger, error) {
 	prog := args[0]
 	flags := flag.NewFlagSet(prog, flag.ContinueOnError)
 
 	dumpConfig := flags.Bool("dump-config", false, "write current configuration to stdout and exit")
 	getVersion := flags.Bool("version", false, "Print version information and exit.")
+
+	initLogger := logrus.New()
+	initLogger.Formatter = &logrus.JSONFormatter{
+		TimestampFormat: rfc3339NanoFixed,
+	}
+	var logger logrus.FieldLogger = initLogger
 
 	loader := config.NewLoader(os.Stdin, logger)
 	loader.SetupFlags(flags)
@@ -57,55 +65,56 @@ func configure(logger log.FieldLogger, args []string) (*arvados.Cluster, error) 
 		os.Exit(code)
 	} else if *getVersion {
 		fmt.Printf("keepproxy %s\n", version)
-		return nil, nil
+		return nil, logger, nil
 	}
 
 	cfg, err := loader.Load()
 	if err != nil {
-		return nil, err
+		return nil, logger, err
 	}
 	cluster, err := cfg.GetCluster("")
 	if err != nil {
-		return nil, err
+		return nil, logger, err
 	}
+
+	logger = ctxlog.New(os.Stderr, cluster.SystemLogs.Format, cluster.SystemLogs.LogLevel).WithFields(logrus.Fields{
+		"ClusterID": cluster.ClusterID,
+		"PID":       os.Getpid(),
+	})
 
 	if *dumpConfig {
 		out, err := yaml.Marshal(cfg)
 		if err != nil {
-			return nil, err
+			return nil, logger, err
 		}
 		if _, err := os.Stdout.Write(out); err != nil {
-			return nil, err
+			return nil, logger, err
 		}
-		return nil, nil
+		return nil, logger, nil
 	}
-	return cluster, nil
+
+	return cluster, logger, nil
 }
 
 func main() {
-	logger := log.New()
-	logger.Formatter = &log.JSONFormatter{
-		TimestampFormat: rfc3339NanoFixed,
-	}
-
-	cluster, err := configure(logger, os.Args)
+	cluster, logger, err := configure(os.Args)
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal(err)
 	}
 	if cluster == nil {
 		return
 	}
 
-	log.Printf("keepproxy %s started", version)
+	logger.Printf("keepproxy %s started", version)
 
 	if err := run(logger, cluster); err != nil {
-		log.Fatal(err)
+		logger.Fatal(err)
 	}
 
-	log.Println("shutting down")
+	logger.Println("shutting down")
 }
 
-func run(logger log.FieldLogger, cluster *arvados.Cluster) error {
+func run(logger logrus.FieldLogger, cluster *arvados.Cluster) error {
 	client, err := arvados.NewClientFromConfig(cluster)
 	if err != nil {
 		return err
@@ -124,7 +133,7 @@ func run(logger log.FieldLogger, cluster *arvados.Cluster) error {
 	}
 
 	if cluster.SystemLogs.LogLevel == "debug" {
-		keepclient.DebugPrintf = log.Printf
+		keepclient.DebugPrintf = logger.Printf
 	}
 	kc, err := keepclient.MakeKeepClient(arv)
 	if err != nil {
@@ -148,16 +157,16 @@ func run(logger log.FieldLogger, cluster *arvados.Cluster) error {
 	}
 
 	if _, err := daemon.SdNotify(false, "READY=1"); err != nil {
-		log.Printf("Error notifying init daemon: %v", err)
+		logger.Printf("Error notifying init daemon: %v", err)
 	}
-	log.Println("listening at", listener.Addr())
+	logger.Println("listening at", listener.Addr())
 
 	// Shut down the server gracefully (by closing the listener)
 	// if SIGTERM is received.
 	term := make(chan os.Signal, 1)
 	go func(sig <-chan os.Signal) {
 		s := <-sig
-		log.Println("caught signal:", s)
+		logger.Println("caught signal:", s)
 		listener.Close()
 	}(term)
 	signal.Notify(term, syscall.SIGTERM)
@@ -168,7 +177,13 @@ func run(logger log.FieldLogger, cluster *arvados.Cluster) error {
 	if err != nil {
 		return err
 	}
-	return http.Serve(listener, httpserver.AddRequestIDs(httpserver.LogRequests(router)))
+	server := http.Server{
+		Handler: httpserver.AddRequestIDs(httpserver.LogRequests(router)),
+		BaseContext: func(net.Listener) context.Context {
+			return ctxlog.Context(context.Background(), logger)
+		},
+	}
+	return server.Serve(listener)
 }
 
 type TokenCacheEntry struct {
@@ -267,7 +282,7 @@ func (h *proxyHandler) CheckAuthorizationHeader(req *http.Request) (pass bool, t
 		}
 	}
 	if err != nil {
-		log.Printf("%s: CheckAuthorizationHeader error: %v", GetRemoteAddress(req), err)
+		ctxlog.FromContext(req.Context()).Printf("%s: CheckAuthorizationHeader error: %v", GetRemoteAddress(req), err)
 		return false, "", nil
 	}
 
@@ -309,13 +324,13 @@ type proxyHandler struct {
 	*APITokenCache
 	timeout   time.Duration
 	transport *http.Transport
-	logger    log.FieldLogger
+	logger    logrus.FieldLogger
 	cluster   *arvados.Cluster
 }
 
 // MakeRESTRouter returns an http.Handler that passes GET and PUT
 // requests to the appropriate handlers.
-func MakeRESTRouter(kc *keepclient.KeepClient, timeout time.Duration, cluster *arvados.Cluster, logger log.FieldLogger) (http.Handler, error) {
+func MakeRESTRouter(kc *keepclient.KeepClient, timeout time.Duration, cluster *arvados.Cluster, logger logrus.FieldLogger) (http.Handler, error) {
 	rest := mux.NewRouter()
 
 	transport := defaultTransport
@@ -390,12 +405,12 @@ func SetCorsHeaders(resp http.ResponseWriter) {
 type InvalidPathHandler struct{}
 
 func (InvalidPathHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
-	log.Printf("%s: %s %s unroutable", GetRemoteAddress(req), req.Method, req.URL.Path)
+	ctxlog.FromContext(req.Context()).Printf("%s: %s %s unroutable", GetRemoteAddress(req), req.Method, req.URL.Path)
 	http.Error(resp, "Bad request", http.StatusBadRequest)
 }
 
 func (h *proxyHandler) Options(resp http.ResponseWriter, req *http.Request) {
-	log.Printf("%s: %s %s", GetRemoteAddress(req), req.Method, req.URL.Path)
+	ctxlog.FromContext(req.Context()).Printf("%s: %s %s", GetRemoteAddress(req), req.Method, req.URL.Path)
 	SetCorsHeaders(resp)
 }
 
@@ -419,7 +434,7 @@ func (h *proxyHandler) Get(resp http.ResponseWriter, req *http.Request) {
 	var proxiedURI = "-"
 
 	defer func() {
-		log.Println(GetRemoteAddress(req), req.Method, req.URL.Path, status, expectLength, responseLength, proxiedURI, err)
+		h.logger.Println(GetRemoteAddress(req), req.Method, req.URL.Path, status, expectLength, responseLength, proxiedURI, err)
 		if status != http.StatusOK {
 			http.Error(resp, err.Error(), status)
 		}
@@ -470,7 +485,7 @@ func (h *proxyHandler) Get(resp http.ResponseWriter, req *http.Request) {
 	}
 
 	if expectLength == -1 {
-		log.Println("Warning:", GetRemoteAddress(req), req.Method, proxiedURI, "Content-Length not provided")
+		h.logger.Println("Warning:", GetRemoteAddress(req), req.Method, proxiedURI, "Content-Length not provided")
 	}
 
 	switch respErr := err.(type) {
@@ -518,7 +533,7 @@ func (h *proxyHandler) Put(resp http.ResponseWriter, req *http.Request) {
 	var locatorOut string = "-"
 
 	defer func() {
-		log.Println(GetRemoteAddress(req), req.Method, req.URL.Path, status, expectLength, kc.Want_replicas, wroteReplicas, locatorOut, err)
+		h.logger.Println(GetRemoteAddress(req), req.Method, req.URL.Path, status, expectLength, kc.Want_replicas, wroteReplicas, locatorOut, err)
 		if status != http.StatusOK {
 			http.Error(resp, err.Error(), status)
 		}

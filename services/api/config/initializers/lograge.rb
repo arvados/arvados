@@ -9,6 +9,7 @@ Server::Application.configure do
   config.lograge.formatter = Lograge::Formatters::Logstash.new
   config.lograge.custom_options = lambda do |event|
     payload = {
+      ClusterID: Rails.configuration.ClusterID,
       request_id: event.payload[:request_id],
       client_ipaddr: event.payload[:client_ipaddr],
       client_auth: event.payload[:client_auth],

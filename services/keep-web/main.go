@@ -5,6 +5,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"mime"
@@ -13,6 +14,7 @@ import (
 	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"github.com/coreos/go-systemd/daemon"
 	"github.com/ghodss/yaml"
 	"github.com/sirupsen/logrus"
@@ -97,16 +99,17 @@ func configure(logger log.FieldLogger, args []string) (*Config, error) {
 }
 
 func main() {
-	logger := log.New()
-
+	initLogger := log.StandardLogger()
+	logger := initLogger.WithField("PID", os.Getpid())
 	cfg, err := configure(logger, os.Args)
 	if err != nil {
-		logger.Fatal(err)
+		log.Fatal(err)
 	} else if cfg == nil {
 		return
 	}
-
-	log.Printf("keep-web %s started", version)
+	logger = logger.WithField("ClusterID", cfg.cluster.ClusterID)
+	logger.Printf("keep-web %s started", version)
+	ctx := ctxlog.Context(context.Background(), logger)
 
 	if ext := ".txt"; mime.TypeByExtension(ext) == "" {
 		log.Warnf("cannot look up MIME type for %q -- this probably means /etc/mime.types is missing -- clients will see incorrect content types", ext)
@@ -114,14 +117,14 @@ func main() {
 
 	os.Setenv("ARVADOS_API_HOST", cfg.cluster.Services.Controller.ExternalURL.Host)
 	srv := &server{Config: cfg}
-	if err := srv.Start(logrus.StandardLogger()); err != nil {
-		log.Fatal(err)
+	if err := srv.Start(ctx, initLogger); err != nil {
+		logger.Fatal(err)
 	}
 	if _, err := daemon.SdNotify(false, "READY=1"); err != nil {
-		log.Printf("Error notifying init daemon: %v", err)
+		logger.Printf("Error notifying init daemon: %v", err)
 	}
-	log.Println("Listening at", srv.Addr)
+	logger.Println("Listening at", srv.Addr)
 	if err := srv.Wait(); err != nil {
-		log.Fatal(err)
+		logger.Fatal(err)
 	}
 }

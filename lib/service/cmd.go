@@ -105,7 +105,8 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 	// logger with a new one according to the logging config.
 	log = ctxlog.New(stderr, cluster.SystemLogs.Format, cluster.SystemLogs.LogLevel)
 	logger := log.WithFields(logrus.Fields{
-		"PID": os.Getpid(),
+		"PID":       os.Getpid(),
+		"ClusterID": cluster.ClusterID,
 	})
 	ctx := ctxlog.Context(c.ctx, logger)
 

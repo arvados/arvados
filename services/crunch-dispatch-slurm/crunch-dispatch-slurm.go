@@ -114,6 +114,8 @@ func (disp *Dispatcher) configure(prog string, args []string) error {
 		return fmt.Errorf("config error: %s", err)
 	}
 
+	disp.logger = disp.logger.WithField("ClusterID", disp.cluster.ClusterID)
+
 	disp.Client.APIHost = disp.cluster.Services.Controller.ExternalURL.Host
 	disp.Client.AuthToken = disp.cluster.SystemRootToken
 	disp.Client.Insecure = disp.cluster.TLS.Insecure

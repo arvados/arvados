@@ -35,11 +35,11 @@ var (
 )
 
 func main() {
-	logger := logrus.StandardLogger()
+	baseLogger := logrus.StandardLogger()
 	if os.Getenv("DEBUG") != "" {
-		logger.SetLevel(logrus.DebugLevel)
+		baseLogger.SetLevel(logrus.DebugLevel)
 	}
-	logger.Formatter = &logrus.JSONFormatter{
+	baseLogger.Formatter = &logrus.JSONFormatter{
 		TimestampFormat: "2006-01-02T15:04:05.000000000Z07:00",
 	}
 
@@ -70,7 +70,7 @@ func main() {
 		return
 	}
 
-	loader := config.NewLoader(nil, logger)
+	loader := config.NewLoader(nil, baseLogger)
 	cfg, err := loader.Load()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error loading config: %s\n", err)
@@ -82,6 +82,7 @@ func main() {
 		os.Exit(1)
 	}
 
+	logger := baseLogger.WithField("ClusterID", cluster.ClusterID)
 	logger.Printf("crunch-dispatch-local %s started", version)
 
 	runningCmds = make(map[string]*exec.Cmd)
