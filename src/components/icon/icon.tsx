@@ -66,10 +66,11 @@ import Computer from '@material-ui/icons/Computer';
 
 // Import FontAwesome icons
 import { library } from '@fortawesome/fontawesome-svg-core';
-import { faPencilAlt, faSlash } from '@fortawesome/free-solid-svg-icons';
+import { faPencilAlt, faSlash, faUsers } from '@fortawesome/free-solid-svg-icons';
 library.add(
     faPencilAlt,
     faSlash,
+    faUsers,
 );
 
 export const ReadOnlyIcon = (props: any) =>
@@ -79,6 +80,11 @@ export const ReadOnlyIcon = (props: any) =>
                 data-fa-mask="fas fa-pencil-alt" data-fa-transform="down-1.5" />
             <span className="fas fa-slash" />
         </div>
+    </span>;
+
+export const GroupsIcon = (props: any) =>
+    <span {...props}>
+        <span className="fas fa-users" />
     </span>;
 
 export const CollectionOldVersionIcon = (props: any) =>
