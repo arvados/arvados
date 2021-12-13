@@ -83,6 +83,19 @@ func EstimateScratchSpace(ctr *arvados.Container) (needScratch int64) {
 	return
 }
 
+// compareVersion returns true if vs1 >= vs2, otherwise false
+func compareVersion(vs1 string, vs2 string) bool {
+	v1, err := strconv.ParseFloat(vs1, 64)
+	if err != nil {
+		return false
+	}
+	v2, err := strconv.ParseFloat(vs2, 64)
+	if err != nil {
+		return false
+	}
+	return v1 >= v2
+}
+
 // ChooseInstanceType returns the cheapest available
 // arvados.InstanceType big enough to run ctr.
 func ChooseInstanceType(cc *arvados.Cluster, ctr *arvados.Container) (best arvados.InstanceType, err error) {
@@ -103,14 +116,19 @@ func ChooseInstanceType(cc *arvados.Cluster, ctr *arvados.Container) (best arvad
 	ok := false
 	for _, it := range cc.InstanceTypes {
 		switch {
-		case ok && it.Price > best.Price:
-		case int64(it.Scratch) < needScratch:
-		case int64(it.RAM) < needRAM:
-		case it.VCPUs < needVCPUs:
-		case it.Preemptible != ctr.SchedulingParameters.Preemptible:
-		case it.Price == best.Price && (it.RAM < best.RAM || it.VCPUs < best.VCPUs):
-			// Equal price, but worse specs
+		// reasons to reject a node
+		case ok && it.Price > best.Price: // already selected a node, and this one is more expensive
+		case int64(it.Scratch) < needScratch: // insufficient scratch
+		case int64(it.RAM) < needRAM: // insufficient RAM
+		case it.VCPUs < needVCPUs: // insufficient VCPUs
+		case it.Preemptible != ctr.SchedulingParameters.Preemptible: // wrong preemptable setting
+		case it.Price == best.Price && (it.RAM < best.RAM || it.VCPUs < best.VCPUs): // same price, worse specs
+		case it.CUDA.DeviceCount < ctr.RuntimeConstraints.CUDADeviceCount: // insufficient CUDA devices
+		case it.CUDA.DeviceCount > 0 && !compareVersion(it.CUDA.DriverVersion, ctr.RuntimeConstraints.CUDADriverVersion): // insufficient driver version
+		case it.CUDA.DeviceCount > 0 && !compareVersion(it.CUDA.HardwareCapability, ctr.RuntimeConstraints.CUDAHardwareCapability): // insufficient hardware capability
+			// Don't select this node
 		default:
+			// Didn't reject the node, so select it
 			// Lower price || (same price && better specs)
 			best = it
 			ok = true

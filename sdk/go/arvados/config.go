@@ -410,6 +410,12 @@ type RemoteCluster struct {
 	ActivateUsers bool
 }
 
+type CUDAFeatures struct {
+	DriverVersion      string
+	HardwareCapability string
+	DeviceCount        int
+}
+
 type InstanceType struct {
 	Name            string
 	ProviderType    string
@@ -420,6 +426,7 @@ type InstanceType struct {
 	AddedScratch    ByteSize
 	Price           float64
 	Preemptible     bool
+	CUDA            CUDAFeatures
 }
 
 type ContainersConfig struct {
