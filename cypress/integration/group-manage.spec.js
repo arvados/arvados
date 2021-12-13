@@ -58,13 +58,13 @@ describe('Group manage tests', function() {
     it('adds users to the group', function() {
         // Add other user to the group
         cy.get('[data-cy=group-member-add]').click();
-        cy.get('[data-cy=form-dialog]')
-            .should('contain', 'Add users')
+        cy.get('.sharing-dialog')
+            .should('contain', 'Sharing settings')
             .within(() => {
-                cy.get('input').type("other");
+                cy.get('[data-cy=invite-people-field] input').type("other");
             });
-        cy.contains('Other User').click();
-        cy.get('[data-cy=form-dialog] button[type=submit]').click();
+        cy.get('[role=tooltip]').click();
+        cy.get('.sharing-dialog').contains('Save').click();
 
         // Check that both users are present with appropriate permissions
         cy.get('[data-cy=group-members-data-explorer]')
