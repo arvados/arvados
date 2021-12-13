@@ -241,8 +241,8 @@ func (e *singularityExecutor) Create(spec containerSpec) error {
 	return nil
 }
 
-func (e *singularityExecutor) Start() error {
-	args := []string{"singularity", "exec", "--containall", "--cleanenv", "--pwd", e.spec.WorkingDir}
+func (e *singularityExecutor) execCmd(path string) *exec.Cmd {
+	args := []string{path, "exec", "--containall", "--cleanenv", "--pwd", e.spec.WorkingDir}
 	if !e.spec.EnableNetwork {
 		args = append(args, "--net", "--network=none")
 	}
@@ -287,11 +287,7 @@ func (e *singularityExecutor) Start() error {
 	args = append(args, e.imageFilename)
 	args = append(args, e.spec.Command...)
 
-	path, err := exec.LookPath(args[0])
-	if err != nil {
-		return err
-	}
-	child := &exec.Cmd{
+	return &exec.Cmd{
 		Path:   path,
 		Args:   args,
 		Env:    env,
@@ -299,6 +295,14 @@ func (e *singularityExecutor) Start() error {
 		Stdout: e.spec.Stdout,
 		Stderr: e.spec.Stderr,
 	}
+}
+
+func (e *singularityExecutor) Start() error {
+	path, err := exec.LookPath("singularity")
+	if err != nil {
+		return err
+	}
+	child := e.execCmd(path)
 	err = child.Start()
 	if err != nil {
 		return err

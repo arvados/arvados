@@ -715,6 +715,7 @@ func (s *TestSuite) TestFullRunHello(c *C) {
 		c.Check(s.executor.created.RAM, Equals, int64(1000000))
 		c.Check(s.executor.created.NetworkMode, Equals, "default")
 		c.Check(s.executor.created.EnableNetwork, Equals, false)
+		c.Check(s.executor.created.CUDADeviceCount, Equals, 0)
 		fmt.Fprintln(s.executor.created.Stdout, "hello world")
 	})
 
@@ -980,6 +981,42 @@ func (s *TestSuite) TestFullRunSetOutputStorageClasses(c *C) {
 	c.Check(s.api.Logs["stdout"].String(), Matches, ".*/bin\n")
 	c.Check(s.testDispatcherKeepClient.StorageClasses, DeepEquals, []string{"foo", "bar"})
 	c.Check(s.testContainerKeepClient.StorageClasses, DeepEquals, []string{"foo", "bar"})
+}
+
+func (s *TestSuite) TestEnableCUDADeviceCount(c *C) {
+	s.fullRunHelper(c, `{
+    "command": ["pwd"],
+    "container_image": "`+arvadostest.DockerImage112PDH+`",
+    "cwd": "/bin",
+    "environment": {},
+    "mounts": {"/tmp": {"kind": "tmp"} },
+    "output_path": "/tmp",
+    "priority": 1,
+    "runtime_constraints": {"cuda_device_count": 2},
+    "state": "Locked",
+    "output_storage_classes": ["foo", "bar"]
+}`, nil, 0, func() {
+		fmt.Fprintln(s.executor.created.Stdout, "ok")
+	})
+	c.Check(s.executor.created.CUDADeviceCount, Equals, 2)
+}
+
+func (s *TestSuite) TestEnableCUDAHardwareCapability(c *C) {
+	s.fullRunHelper(c, `{
+    "command": ["pwd"],
+    "container_image": "`+arvadostest.DockerImage112PDH+`",
+    "cwd": "/bin",
+    "environment": {},
+    "mounts": {"/tmp": {"kind": "tmp"} },
+    "output_path": "/tmp",
+    "priority": 1,
+    "runtime_constraints": {"cuda_hardware_capability": "foo"},
+    "state": "Locked",
+    "output_storage_classes": ["foo", "bar"]
+}`, nil, 0, func() {
+		fmt.Fprintln(s.executor.created.Stdout, "ok")
+	})
+	c.Check(s.executor.created.CUDADeviceCount, Equals, 1)
 }
 
 func (s *TestSuite) TestStopOnSignal(c *C) {
