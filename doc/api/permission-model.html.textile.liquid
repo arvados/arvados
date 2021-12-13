@@ -77,6 +77,7 @@ A "role" is a subtype of Group that is treated in Workbench as a group of users 
 * All roles are owned by the system user.
 * The name of a role is unique across a single Arvados cluster.
 * Roles can be both targets (@head_uuid@) and origins (@tail_uuid@) of permission links.
+* By default, all roles are visible to all active users. However, if the configuration entry @Users.RoleGroupsVisibleToAll@ is @false@, visibility is determined by normal permission rules, _i.e._, a role is only visible to users who have that role, and to admins.
 
 h3. Access through Roles
 
