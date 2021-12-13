@@ -71,7 +71,7 @@ func (e *dockerExecutor) LoadImage(imageID string, imageTarballPath string, cont
 	return nil
 }
 
-func (e *dockerExecutor) Create(spec containerSpec) error {
+func (e *dockerExecutor) config(spec containerSpec) (dockercontainer.Config, dockercontainer.HostConfig) {
 	e.logf("Creating Docker container")
 	cfg := dockercontainer.Config{
 		Image:        spec.Image,
@@ -106,6 +106,13 @@ func (e *dockerExecutor) Create(spec containerSpec) error {
 			KernelMemory: spec.RAM, // kernel portion
 		},
 	}
+	if spec.CUDADeviceCount != 0 {
+		hostCfg.Resources.DeviceRequests = append(hostCfg.Resources.DeviceRequests, dockercontainer.DeviceRequest{
+			Driver:       "nvidia",
+			Count:        spec.CUDADeviceCount,
+			Capabilities: [][]string{[]string{"gpu", "nvidia", "compute"}},
+		})
+	}
 	for path, mount := range spec.BindMounts {
 		bind := mount.HostPath + ":" + path
 		if mount.ReadOnly {
@@ -116,7 +123,11 @@ func (e *dockerExecutor) Create(spec containerSpec) error {
 	if spec.EnableNetwork {
 		hostCfg.NetworkMode = dockercontainer.NetworkMode(spec.NetworkMode)
 	}
+	return cfg, hostCfg
+}
 
+func (e *dockerExecutor) Create(spec containerSpec) error {
+	cfg, hostCfg := e.config(spec)
 	created, err := e.dockerclient.ContainerCreate(context.TODO(), &cfg, &hostCfg, nil, e.containerUUID)
 	if err != nil {
 		return fmt.Errorf("While creating container: %v", err)

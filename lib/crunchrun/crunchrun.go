@@ -986,20 +986,33 @@ func (runner *ContainerRunner) CreateContainer(imageID string, bindmounts map[st
 	runner.executorStdin = stdin
 	runner.executorStdout = stdout
 	runner.executorStderr = stderr
+
+	cudaDeviceCount := 0
+	if runner.Container.RuntimeConstraints.CUDADriverVersion != "" ||
+		runner.Container.RuntimeConstraints.CUDAHardwareCapability != "" ||
+		runner.Container.RuntimeConstraints.CUDADeviceCount != 0 {
+		// if any of these are set, enable CUDA GPU support
+		cudaDeviceCount = runner.Container.RuntimeConstraints.CUDADeviceCount
+		if cudaDeviceCount == 0 {
+			cudaDeviceCount = 1
+		}
+	}
+
 	return runner.executor.Create(containerSpec{
-		Image:         imageID,
-		VCPUs:         runner.Container.RuntimeConstraints.VCPUs,
-		RAM:           ram,
-		WorkingDir:    workdir,
-		Env:           env,
-		BindMounts:    bindmounts,
-		Command:       runner.Container.Command,
-		EnableNetwork: enableNetwork,
-		NetworkMode:   runner.networkMode,
-		CgroupParent:  runner.setCgroupParent,
-		Stdin:         stdin,
-		Stdout:        stdout,
-		Stderr:        stderr,
+		Image:           imageID,
+		VCPUs:           runner.Container.RuntimeConstraints.VCPUs,
+		RAM:             ram,
+		WorkingDir:      workdir,
+		Env:             env,
+		BindMounts:      bindmounts,
+		Command:         runner.Container.Command,
+		EnableNetwork:   enableNetwork,
+		CUDADeviceCount: cudaDeviceCount,
+		NetworkMode:     runner.networkMode,
+		CgroupParent:    runner.setCgroupParent,
+		Stdin:           stdin,
+		Stdout:          stdout,
+		Stderr:          stderr,
 	})
 }
 

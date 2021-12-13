@@ -96,10 +96,13 @@ type Mount struct {
 // RuntimeConstraints specify a container's compute resources (RAM,
 // CPU) and network connectivity.
 type RuntimeConstraints struct {
-	API          bool  `json:"API"`
-	RAM          int64 `json:"ram"`
-	VCPUs        int   `json:"vcpus"`
-	KeepCacheRAM int64 `json:"keep_cache_ram"`
+	API                    bool   `json:"API"`
+	RAM                    int64  `json:"ram"`
+	VCPUs                  int    `json:"vcpus"`
+	KeepCacheRAM           int64  `json:"keep_cache_ram"`
+	CUDADriverVersion      string `json:"cuda_driver_version,omitempty"`
+	CUDAHardwareCapability string `json:"cuda_hardware_capability,omitempty"`
+	CUDADeviceCount        int    `json:"cuda_device_count,omitempty"`
 }
 
 // SchedulingParameters specify a container's scheduling parameters
