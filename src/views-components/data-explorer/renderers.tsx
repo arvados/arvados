@@ -218,23 +218,23 @@ export const ResourceLinkTailIsActive = connect(
 const renderIsHidden = (props: {
                             memberLinkUuid: string,
                             permissionLinkUuid: string,
-                            hidden: boolean,
+                            visible: boolean,
                             canManage: boolean,
                             setMemberIsHidden: (memberLinkUuid: string, permissionLinkUuid: string, hide: boolean) => void 
                         }) => {
     if (props.memberLinkUuid) {
         return <Checkbox
-                data-cy="user-hidden-checkbox"
+                data-cy="user-visible-checkbox"
                 color="primary"
-                checked={props.hidden}
+                checked={props.visible}
                 disabled={!props.canManage}
-                onClick={() => props.setMemberIsHidden(props.memberLinkUuid, props.permissionLinkUuid, !props.hidden)} />;
+                onClick={() => props.setMemberIsHidden(props.memberLinkUuid, props.permissionLinkUuid, !props.visible)} />;
     } else {
         return <Typography />;
     }
 }
 
-export const ResourceLinkTailIsHidden = connect(
+export const ResourceLinkTailIsVisible = connect(
     (state: RootState, props: { uuid: string }) => {
         const link = getResource<LinkResource>(props.uuid)(state.resources);
         const member = getResource<Resource>(link?.tailUuid || '')(state.resources);
@@ -252,8 +252,8 @@ export const ResourceLinkTailIsHidden = connect(
         const isBuiltin = isBuiltinGroup(link?.headUuid || '');
 
         return member?.kind === ResourceKind.USER
-            ? { memberLinkUuid: link?.uuid, permissionLinkUuid, hidden: !isVisible, canManage: !isBuiltin }
-            : { memberLinkUuid: '', permissionLinkUuid: '', hidden: false, canManage: false };
+            ? { memberLinkUuid: link?.uuid, permissionLinkUuid, visible: isVisible, canManage: !isBuiltin }
+            : { memberLinkUuid: '', permissionLinkUuid: '', visible: false, canManage: false };
     }, { setMemberIsHidden }
 )(renderIsHidden);
 

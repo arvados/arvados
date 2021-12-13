@@ -121,7 +121,7 @@ describe('Group manage tests', function() {
             .contains('Other User')
             .parents('tr')
             .within(() => {
-                cy.get('[data-cy=user-hidden-checkbox]').click();
+                cy.get('[data-cy=user-visible-checkbox]').click();
             });
         // Check that other user is visible
         cy.get('[data-cy=group-details-permissions-tab]').click();
@@ -137,7 +137,7 @@ describe('Group manage tests', function() {
             .contains('Other User')
             .parents('tr')
             .within(() => {
-                cy.get('[data-cy=user-hidden-checkbox]').click();
+                cy.get('[data-cy=user-visible-checkbox]').click();
             });
         // Check that other user is hidden
         cy.get('[data-cy=group-details-permissions-tab]').click();
@@ -247,7 +247,7 @@ describe('Group manage tests', function() {
             cy.get('[data-cy=group-members-data-explorer]')
                 .within(() => {
                     cy.get('[data-cy=group-member-add]').should('not.exist');
-                    cy.get('[data-cy=user-hidden-checkbox] input').should('be.disabled');
+                    cy.get('[data-cy=user-visible-checkbox] input').should('be.disabled');
                     cy.get('[data-cy=resource-delete-button]').should('be.disabled');
                     cy.get('[data-cy=edit-permission-button]').should('not.exist');
                 });

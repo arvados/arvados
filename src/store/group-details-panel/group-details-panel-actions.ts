@@ -104,15 +104,16 @@ export const removeGroupMember = (uuid: string) =>
 
     };
 
-export const setMemberIsHidden = (memberLinkUuid: string, permissionLinkUuid: string, hide: boolean) =>
+export const setMemberIsHidden = (memberLinkUuid: string, permissionLinkUuid: string, visible: boolean) =>
     async (dispatch: Dispatch, getState: () => RootState, { permissionService }: ServiceRepository) => {
         const memberLink = getResource<LinkResource>(memberLinkUuid)(getState().resources);
 
-        if (hide && permissionLinkUuid) {
+        if (!visible && permissionLinkUuid) {
             // Remove read permission
             try {
                 await permissionService.delete(permissionLinkUuid);
                 dispatch<any>(deleteResources([permissionLinkUuid]));
+                dispatch(GroupPermissionsPanelActions.REQUEST_ITEMS());
                 dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: 'Removed read permission.',
                     hideDuration: 2000,
@@ -124,7 +125,7 @@ export const setMemberIsHidden = (memberLinkUuid: string, permissionLinkUuid: st
                     kind: SnackbarKind.ERROR,
                 }));
             }
-        } else if (!hide && memberLink) {
+        } else if (visible && memberLink) {
             // Create read permission
             try {
                 await permissionService.create({
