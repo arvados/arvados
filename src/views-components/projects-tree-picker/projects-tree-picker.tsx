@@ -31,11 +31,17 @@ export const ProjectsTreePicker = ({ pickerId, ...props }: ProjectsTreePickerPro
         disableActivation
     };
     return <div>
-        <HomeTreePicker pickerId={home} {...p} />
-        <SharedTreePicker pickerId={shared} {...p} />
-        <PublicFavoritesTreePicker pickerId={publicFavorites} {...p} />
+        <div data-cy="projects-tree-home-tree-picker">
+            <HomeTreePicker pickerId={home} {...p} />
+        </div>
+        <div data-cy="projects-tree-shared-tree-picker">
+            <SharedTreePicker pickerId={shared} {...p} />
+        </div>
+        <div data-cy="projects-tree-public-favourites-tree-picker">
+            <PublicFavoritesTreePicker pickerId={publicFavorites} {...p} />
+        </div>
         <div data-cy="projects-tree-favourites-tree-picker">
-            <FavoritesTreePicker pickerId={favorites} {...p} />  
+            <FavoritesTreePicker pickerId={favorites} {...p} />
         </div>
     </div>;
 };
