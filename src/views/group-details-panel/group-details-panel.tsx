@@ -55,7 +55,7 @@ export const groupDetailsMembersPanelColumns: DataColumns<string> = [
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceLinkTailIsActive uuid={uuid} />
+        render: uuid => <ResourceLinkTailIsActive uuid={uuid} disabled={true} />
     },
     {
         name: GroupDetailsPanelMembersColumnNames.VISIBLE,

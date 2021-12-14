@@ -188,11 +188,12 @@ export const ResourceEmail = connect(
         return resource || { email: '' };
     })(renderEmail);
 
-const renderIsActive = (props: { uuid: string, kind: ResourceKind, isActive: boolean, toggleIsActive: (uuid: string) => void }) => {
+const renderIsActive = (props: { uuid: string, kind: ResourceKind, isActive: boolean, toggleIsActive: (uuid: string) => void, disabled?: boolean }) => {
     if (props.kind === ResourceKind.USER) {
         return <Checkbox
             color="primary"
             checked={props.isActive}
+            disabled={!!props.disabled}
             onClick={() => props.toggleIsActive(props.uuid)} />;
     } else {
         return <Typography />;
@@ -200,18 +201,18 @@ const renderIsActive = (props: { uuid: string, kind: ResourceKind, isActive: boo
 }
 
 export const ResourceIsActive = connect(
-    (state: RootState, props: { uuid: string }) => {
+    (state: RootState, props: { uuid: string, disabled?: boolean }) => {
         const resource = getResource<UserResource>(props.uuid)(state.resources);
-        return resource || { isActive: false, kind: ResourceKind.NONE };
+        return resource ? {...resource, disabled: !!props.disabled} : { isActive: false, kind: ResourceKind.NONE };
     }, { toggleIsActive }
 )(renderIsActive);
 
 export const ResourceLinkTailIsActive = connect(
-    (state: RootState, props: { uuid: string }) => {
+    (state: RootState, props: { uuid: string, disabled?: boolean }) => {
         const link = getResource<LinkResource>(props.uuid)(state.resources);
         const tailResource = getResource<UserResource>(link?.tailUuid || '')(state.resources);
 
-        return tailResource || { isActive: false, kind: ResourceKind.NONE };
+        return tailResource ? {...tailResource, disabled: !!props.disabled} : { isActive: false, kind: ResourceKind.NONE };
     }, { toggleIsActive }
 )(renderIsActive);
 
