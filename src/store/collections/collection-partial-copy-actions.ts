@@ -52,13 +52,13 @@ export const copyCollectionPartial = ({ name, description, projectUuid }: Collec
         if (currentCollection) {
             try {
                 dispatch(progressIndicatorActions.START_WORKING(COLLECTION_PARTIAL_COPY_FORM_NAME));
-                const collection = await services.collectionService.get(currentCollection.uuid);
+                const collectionManifestText = await services.collectionService.get(currentCollection.uuid, undefined, ['manifestText']);
                 const collectionCopy = {
                     name,
                     description,
                     ownerUuid: projectUuid,
                     uuid: undefined,
-                    manifestText: collection.manifestText,
+                    manifestText: collectionManifestText.manifestText,
                 };
                 const newCollection = await services.collectionService.create(collectionCopy);
                 const copiedFiles = await services.collectionService.files(newCollection.uuid);
@@ -135,7 +135,7 @@ export const copyCollectionPartialToSelectedCollection = ({ collectionUuid }: Co
                 });
                 const diffPathToRemove = difference(paths, pathsToRemove);
                 await services.collectionService.deleteFiles(selectedCollection.uuid, pathsToRemove.map(path => path.replace(currentCollection.uuid, collectionUuid)));
-                const collectionWithDeletedFiles = await services.collectionService.get(collectionUuid);
+                const collectionWithDeletedFiles = await services.collectionService.get(collectionUuid, undefined, ['uuid', 'manifestText']);
                 await services.collectionService.update(collectionUuid, { manifestText: `${collectionWithDeletedFiles.manifestText}${(currentCollection.manifestText ? currentCollection.manifestText : currentCollection.unsignedManifestText) || ''}` });
                 await services.collectionService.deleteFiles(collectionWithDeletedFiles.uuid, diffPathToRemove.map(path => path.replace(currentCollection.uuid, collectionUuid)));
                 dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION }));
