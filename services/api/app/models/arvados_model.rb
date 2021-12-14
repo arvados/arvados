@@ -384,6 +384,14 @@ class ArvadosModel < ApplicationRecord
         direct_check = " OR " + direct_check
       end
 
+      if Rails.configuration.Users.RoleGroupsVisibleToAll &&
+         sql_table == "groups" &&
+         users_list.select { |u| u.is_active }.any?
+        # All role groups are readable (but we still need the other
+        # direct_check clauses to handle non-role groups).
+        direct_check += " OR #{sql_table}.group_class = 'role'"
+      end
+
       links_cond = ""
       if sql_table == "links"
         # 1) Match permission links incoming or outgoing on the

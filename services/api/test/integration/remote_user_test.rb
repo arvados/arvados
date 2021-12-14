@@ -304,6 +304,7 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
   end
 
   test "list readable groups with salted token" do
+    Rails.configuration.Users.RoleGroupsVisibleToAll = false
     salted_token = salt_token(fixture: :active, remote: 'zbbbb')
     get '/arvados/v1/groups',
       params: {

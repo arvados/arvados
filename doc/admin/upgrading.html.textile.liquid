@@ -39,6 +39,10 @@ h2(#main). development main (as of 2021-11-10)
 
 "previous: Upgrading from 2.3.0":#v2_3_0
 
+h3. Role groups are visible to all users by default
+
+The permission model has changed such that all role groups are visible to all active users. This enables users to share objects with groups they don't belong to. To preserve the previous behavior, where role groups are only visible to members and admins, add @RoleGroupsVisibleToAll: false@ to the @Users@ section of your configuration file.
+
 h3. Default LSF arguments have changed
 
 If you use LSF and your configuration specifies @Containers.LSF.BsubArgumentsList@, you should update it to include the new arguments (@"-R", "select[mem>=%MMB]", ...@, see "configuration reference":{{site.baseurl}}/admin/config.html). Otherwise, containers that are too big to run on any LSF host will remain in the LSF queue instead of being cancelled.

@@ -234,6 +234,7 @@ var whitelist = map[string]bool{
 	"Users.UserNotifierEmailBcc":                          false,
 	"Users.UserProfileNotificationAddress":                false,
 	"Users.UserSetupMailText":                             false,
+	"Users.RoleGroupsVisibleToAll":                        false,
 	"Volumes":                                             true,
 	"Volumes.*":                                           true,
 	"Volumes.*.*":                                         false,

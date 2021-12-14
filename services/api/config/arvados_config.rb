@@ -100,6 +100,7 @@ arvcfg.declare_config "Users.UserNotifierEmailFrom", String, :user_notifier_emai
 arvcfg.declare_config "Users.UserNotifierEmailBcc", Hash
 arvcfg.declare_config "Users.NewUserNotificationRecipients", Hash, :new_user_notification_recipients, ->(cfg, k, v) { arrayToHash cfg, "Users.NewUserNotificationRecipients", v }
 arvcfg.declare_config "Users.NewInactiveUserNotificationRecipients", Hash, :new_inactive_user_notification_recipients, method(:arrayToHash)
+arvcfg.declare_config "Users.RoleGroupsVisibleToAll", Boolean
 arvcfg.declare_config "Login.LoginCluster", String
 arvcfg.declare_config "Login.TrustedClients", Hash
 arvcfg.declare_config "Login.RemoteTokenRefresh", ActiveSupport::Duration

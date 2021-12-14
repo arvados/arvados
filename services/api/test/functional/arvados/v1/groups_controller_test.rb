@@ -6,10 +6,17 @@ require 'test_helper'
 
 class Arvados::V1::GroupsControllerTest < ActionController::TestCase
 
-  test "attempt to delete group without read or write access" do
+  test "attempt to delete group that cannot be seen" do
+    Rails.configuration.Users.RoleGroupsVisibleToAll = false
     authorize_with :active
     post :destroy, params: {id: groups(:empty_lonely_group).uuid}
     assert_response 404
+  end
+
+  test "attempt to delete group without read or write access" do
+    authorize_with :active
+    post :destroy, params: {id: groups(:empty_lonely_group).uuid}
+    assert_response 403
   end
 
   test "attempt to delete group without write access" do
@@ -550,6 +557,30 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
       assert_response :success
       # Should not be trashed
       assert_nil Group.find_by_uuid(groups(grp).uuid)
+    end
+  end
+
+  [
+    [false, :inactive, :private_role, false],
+    [false, :spectator, :private_role, false],
+    [false, :admin, :private_role, true],
+    [true, :inactive, :private_role, false],
+    [true, :spectator, :private_role, true],
+    [true, :admin, :private_role, true],
+    # project (non-role) groups are invisible even when RoleGroupsVisibleToAll is true
+    [true, :inactive, :private, false],
+    [true, :spectator, :private, false],
+    [true, :admin, :private, true],
+  ].each do |visibleToAll, userFixture, groupFixture, visible|
+    test "with RoleGroupsVisibleToAll=#{visibleToAll}, #{groupFixture} group is #{visible ? '' : 'in'}visible to #{userFixture} user" do
+      Rails.configuration.Users.RoleGroupsVisibleToAll = visibleToAll
+      authorize_with userFixture
+      get :show, params: {id: groups(groupFixture).uuid, format: :json}
+      if visible
+        assert_response :success
+      else
+        assert_response 404
+      end
     end
   end
 
