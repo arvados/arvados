@@ -10,6 +10,7 @@ export interface TagResource extends LinkResource {
 }
 
 export interface TagProperty {
+    uuid: string;
     key: string;
     keyID?: string;
     value: string;
