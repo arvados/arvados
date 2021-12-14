@@ -366,7 +366,7 @@ const renderResourceLink = (dispatch: Dispatch, item: Resource) => {
     var displayName = getResourceDisplayName(item);
 
     return <Typography noWrap color="primary" style={{ 'cursor': 'pointer' }} onClick={() => dispatch<any>(navigateTo(item.uuid))}>
-        {resourceLabel(item.kind)}: {displayName || item.uuid}
+        {resourceLabel(item.kind, item && item.kind === ResourceKind.GROUP ? (item as GroupResource).groupClass || '' : '')}: {displayName || item.uuid}
     </Typography>;
 };
 
