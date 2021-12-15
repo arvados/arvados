@@ -510,10 +510,18 @@ func (s *IntegrationSuite) TestRequestIDHeader(c *check.C) {
 		{"/arvados/v1/collections/" + coll.UUID, true, false},
 		{"/arvados/v1/specimens/" + specimen.UUID, false, false},
 		{"/arvados/v1/specimens/" + specimen.UUID, true, false},
+		// new code path (lib/controller/router etc) - single-cluster request
 		{"/arvados/v1/collections/z1111-4zz18-0123456789abcde", false, true},
 		{"/arvados/v1/collections/z1111-4zz18-0123456789abcde", true, true},
+		// new code path (lib/controller/router etc) - federated request
+		{"/arvados/v1/collections/z2222-4zz18-0123456789abcde", false, true},
+		{"/arvados/v1/collections/z2222-4zz18-0123456789abcde", true, true},
+		// old code path (proxyRailsAPI) - single-cluster request
 		{"/arvados/v1/specimens/z1111-j58dm-0123456789abcde", false, true},
 		{"/arvados/v1/specimens/z1111-j58dm-0123456789abcde", true, true},
+		// old code path (setupProxyRemoteCluster) - federated request
+		{"/arvados/v1/workflows/z2222-7fd4e-0123456789abcde", false, true},
+		{"/arvados/v1/workflows/z2222-7fd4e-0123456789abcde", true, true},
 	}
 
 	for _, tt := range tests {
@@ -533,24 +541,18 @@ func (s *IntegrationSuite) TestRequestIDHeader(c *check.C) {
 		} else {
 			c.Check(resp.StatusCode, check.Equals, http.StatusOK)
 		}
-		if !tt.reqIdProvided {
-			c.Check(resp.Header.Get("X-Request-Id"), check.Matches, "^req-[0-9a-zA-Z]{20}$")
-			if tt.notFoundRequest {
-				var jresp httpserver.ErrorResponse
-				err := json.NewDecoder(resp.Body).Decode(&jresp)
-				c.Check(err, check.IsNil)
-				c.Assert(jresp.Errors, check.HasLen, 1)
-				c.Check(jresp.Errors[0], check.Matches, "^.*(req-[0-9a-zA-Z]{20}).*$")
-			}
+		respHdr := resp.Header.Get("X-Request-Id")
+		if tt.reqIdProvided {
+			c.Check(respHdr, check.Equals, customReqId)
 		} else {
-			c.Check(resp.Header.Get("X-Request-Id"), check.Equals, customReqId)
-			if tt.notFoundRequest {
-				var jresp httpserver.ErrorResponse
-				err := json.NewDecoder(resp.Body).Decode(&jresp)
-				c.Check(err, check.IsNil)
-				c.Assert(jresp.Errors, check.HasLen, 1)
-				c.Check(jresp.Errors[0], check.Matches, "^.*("+customReqId+").*$")
-			}
+			c.Check(respHdr, check.Matches, `req-[0-9a-zA-Z]{20}`)
+		}
+		if tt.notFoundRequest {
+			var jresp httpserver.ErrorResponse
+			err := json.NewDecoder(resp.Body).Decode(&jresp)
+			c.Check(err, check.IsNil)
+			c.Assert(jresp.Errors, check.HasLen, 1)
+			c.Check(jresp.Errors[0], check.Matches, `.*\(`+respHdr+`\).*`)
 		}
 	}
 }
