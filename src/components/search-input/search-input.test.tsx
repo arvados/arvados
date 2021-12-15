@@ -96,7 +96,7 @@ describe("<SearchInput />", () => {
     });
 
     describe("on input target change", () => {
-        it("clears input on target change", () => {
+        it("clears the input value on selfClearProp change", () => {
             const searchInput = mount(<SearchInput selfClearProp="abc" value="123" onSearch={onSearch} debounce={1000}/>);
             searchInput.setProps({ selfClearProp: 'aaa' });
             jest.runTimersToTime(1000);
