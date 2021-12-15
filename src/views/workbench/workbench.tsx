@@ -54,7 +54,7 @@ import { AdvancedTabDialog } from 'views-components/advanced-tab-dialog/advanced
 import { ProcessInputDialog } from 'views-components/process-input-dialog/process-input-dialog';
 import { VirtualMachineUserPanel } from 'views/virtual-machine-panel/virtual-machine-user-panel';
 import { VirtualMachineAdminPanel } from 'views/virtual-machine-panel/virtual-machine-admin-panel';
-import { ProjectPropertiesDialog } from 'views-components/project-properties-dialog/project-properties-dialog';
+import { ResourcePropertiesDialog } from 'views-components/resource-properties-dialog/resource-properties-dialog';
 import { RepositoriesPanel } from 'views/repositories-panel/repositories-panel';
 import { KeepServicePanel } from 'views/keep-service-panel/keep-service-panel';
 import { ApiClientAuthorizationPanel } from 'views/api-client-authorization-panel/api-client-authorization-panel';
@@ -242,7 +242,7 @@ export const WorkbenchPanel =
             <PartialCopyToCollectionDialog />
             <ProcessCommandDialog />
             <ProcessInputDialog />
-            <ProjectPropertiesDialog />
+            <ResourcePropertiesDialog />
             <RestoreCollectionVersionDialog />
             <RemoveApiClientAuthorizationDialog />
             <RemoveGroupDialog />

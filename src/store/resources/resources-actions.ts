@@ -3,11 +3,15 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { unionize, ofType, UnionOf } from 'common/unionize';
-import { extractUuidKind, Resource } from 'models/resource';
+import { extractUuidKind, Resource, ResourceWithProperties } from 'models/resource';
 import { Dispatch } from 'redux';
 import { RootState } from 'store/store';
 import { ServiceRepository } from 'services/services';
 import { getResourceService } from 'services/services';
+import { addProperty, deleteProperty } from 'lib/resource-properties';
+import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
+import { getResource } from './resources';
+import { TagProperty } from 'models/tag';
 
 export const resourcesActions = unionize({
     SET_RESOURCES: ofType<Resource[]>(),
@@ -32,4 +36,60 @@ export const loadResource = (uuid: string, showErrors?: boolean) =>
             }
         } catch {}
         return undefined;
+    };
+
+export const deleteResourceProperty = (uuid: string, key: string, value: string) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const { resources } = getState();
+
+        const rsc = getResource(uuid)(resources) as ResourceWithProperties;
+        if (!rsc) { return; }
+
+        const kind = extractUuidKind(uuid);
+        const service = getResourceService(kind)(services);
+        if (!service) { return; }
+
+        const properties = Object.assign({}, rsc.properties);
+
+        try {
+            let updatedRsc = await service.update(
+                uuid, {
+                    properties: deleteProperty(properties, key, value),
+                });
+            updatedRsc = {...rsc, ...updatedRsc};
+            dispatch<any>(updateResources([updatedRsc]));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Property has been successfully deleted.", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
+        } catch (e) {
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: e.errors[0], hideDuration: 2000, kind: SnackbarKind.ERROR }));
+        }
+    };
+
+export const createResourceProperty = (data: TagProperty) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const { uuid } = data;
+        const { resources } = getState();
+
+        const rsc = getResource(uuid)(resources) as ResourceWithProperties;
+        if (!rsc) { return; }
+
+        const kind = extractUuidKind(uuid);
+        const service = getResourceService(kind)(services);
+        if (!service) { return; }
+
+        try {
+            const key = data.keyID || data.key;
+            const value = data.valueID || data.value;
+            const properties = Object.assign({}, rsc.properties);
+            let updatedRsc = await service.update(
+                rsc.uuid, {
+                    properties: addProperty(properties, key, value),
+                }
+            );
+            updatedRsc = {...rsc, ...updatedRsc};
+            dispatch<any>(updateResources([updatedRsc]));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Property has been successfully added.", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
+        } catch (e) {
+            const errorMsg = e.errors && e.errors.length > 0 ? e.errors[0] : "Error while adding property";
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: errorMsg, hideDuration: 2000, kind: SnackbarKind.ERROR }));
+        }
     };

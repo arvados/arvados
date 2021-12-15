@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { connect } from 'react-redux';
-import { openProjectPropertiesDialog } from 'store/details-panel/details-panel-action';
+import { openResourcePropertiesDialog } from 'store/details-panel/details-panel-action';
 import { ProjectIcon, RenameIcon, FilterGroupIcon } from 'components/icon/icon';
 import { ProjectResource } from 'models/project';
 import { formatDate } from 'common/formatters';
@@ -55,7 +55,7 @@ interface ProjectDetailsComponentActionProps {
 }
 
 const mapDispatchToProps = (dispatch: Dispatch) => ({
-    onClick: () => dispatch<any>(openProjectPropertiesDialog()),
+    onClick: () => dispatch<any>(openResourcePropertiesDialog()),
 });
 
 type ProjectDetailsComponentProps = ProjectDetailsComponentDataProps & ProjectDetailsComponentActionProps & WithStyles<CssRules>;
