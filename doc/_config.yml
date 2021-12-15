@@ -100,9 +100,6 @@ navbar:
       - sdk/java-v2/index.html.textile.liquid
       - sdk/java-v2/example.html.textile.liquid
       - sdk/java-v2/javadoc.html.textile.liquid
-    - Java v1:
-      - sdk/java/index.html.textile.liquid
-      - sdk/java/example.html.textile.liquid
     - Perl:
       - sdk/perl/index.html.textile.liquid
       - sdk/perl/example.html.textile.liquid
