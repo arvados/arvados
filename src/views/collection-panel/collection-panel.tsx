@@ -345,7 +345,7 @@ export const CollectionDetailsAttributes = connect(null, mapDispatchToProps)(
             <DetailsAttribute classLabel={classes.label} classValue={classes.value}
                 label='Properties'>
                 { !props.twoCol
-                    ? <div onClick={props.onClick}>
+                    ? <div data-cy='property-editor-btn' onClick={props.onClick}>
                         <RenameIcon className={classes.editIcon} />
                     </div>
                     : '' }

@@ -60,6 +60,7 @@ export const ResourcePropertiesDialog = connect(mapStateToProps, mapDispatchToPr
                     onClose={closeDialog}
                     fullWidth
                     maxWidth='sm'>
+                    <div data-cy='resource-properties-dialog'>
                     <DialogTitle>Edit properties</DialogTitle>
                     <DialogContent>
                         <ResourcePropertiesDialogForm uuid={resource ? resource.uuid : ''} />
@@ -80,12 +81,14 @@ export const ResourcePropertiesDialog = connect(mapStateToProps, mapDispatchToPr
                     </DialogContent>
                     <DialogActions>
                         <Button
+                            data-cy='close-dialog-btn'
                             variant='text'
                             color='primary'
                             onClick={closeDialog}>
                             Close
                     </Button>
                     </DialogActions>
+                    </div>
                 </Dialog>
             )
     ));

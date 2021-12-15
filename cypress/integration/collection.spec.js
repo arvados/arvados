@@ -85,6 +85,17 @@ describe('Collection panel tests', function () {
                 cy.loginAs(activeUser);
                 cy.goToPath(`/collections/${this.testCollection.uuid}`);
 
+                cy.get('[data-cy=collection-info-panel')
+                    .should('contain', this.testCollection.name)
+                    .and('not.contain', 'Color: Magenta')
+                    .and('not.contain', 'Size: S');
+                cy.get('[data-cy=additional-info-icon]').click();
+
+                cy.get('[data-cy=details-panel]').within(() => {
+                    cy.get('[data-cy=property-editor-btn]').click();
+                });
+                cy.get('[data-cy=resource-properties-dialog').contains('Edit properties');
+
                 // Key: Color (IDTAGCOLORS) - Value: Magenta (IDVALCOLORS3)
                 cy.get('[data-cy=resource-properties-form]').within(() => {
                     cy.get('[data-cy=property-field-key]').within(() => {
@@ -96,7 +107,7 @@ describe('Collection panel tests', function () {
                     cy.root().submit();
                 });
                 // Confirm proper vocabulary labels are displayed on the UI.
-                cy.get('[data-cy=collection-properties-panel]')
+                cy.get('[data-cy=resource-properties-dialog]')
                     .should('contain', 'Color: Magenta');
                 // Confirm proper vocabulary IDs were saved on the backend.
                 cy.doRequest('GET', `/arvados/v1/collections/${this.testCollection.uuid}`)
@@ -120,7 +131,7 @@ describe('Collection panel tests', function () {
                     cy.root().submit();
                 });
                 // Confirm proper vocabulary labels are displayed on the UI.
-                cy.get('[data-cy=collection-properties-panel]')
+                cy.get('[data-cy=resource-properties-dialog]')
                     .should('contain', 'Size: S');
                 // Confirm proper vocabulary IDs were saved on the backend.
                 cy.doRequest('GET', `/arvados/v1/collections/${this.testCollection.uuid}`)
@@ -128,6 +139,15 @@ describe('Collection panel tests', function () {
                     .then(function () {
                         expect(this.collection.properties.IDTAGSIZES).to.equal('IDVALSIZES2');
                     });
+
+                // Close property editor & confirm properties display on the UI.
+                cy.get('[data-cy=resource-properties-dialog]').within(() => {
+                    cy.get('[data-cy=close-dialog-btn]').click();
+                });
+                cy.get('[data-cy=collection-info-panel')
+                    .should('contain', this.testCollection.name)
+                    .and('contain', 'Color: Magenta')
+                    .and('contain', 'Size: S');
             });
     });
 
@@ -186,29 +206,9 @@ describe('Collection panel tests', function () {
                             .should('contain', 'Add to favorites')
                             .and(`${isWritable ? '' : 'not.'}contain`, 'Edit collection');
                         cy.get('body').click(); // Collapse the menu avoiding details panel expansion
-                        cy.get('[data-cy=collection-properties-panel]')
-                            .should('contain', 'someKey')
-                            .and('contain', 'someValue')
-                            .and('not.contain', 'anotherKey')
-                            .and('not.contain', 'anotherValue')
-                        if (isWritable === true) {
-                            // Check that properties can be added.
-                            cy.get('[data-cy=resource-properties-form]').within(() => {
-                                cy.get('[data-cy=property-field-key]').within(() => {
-                                    cy.get('input').type('anotherKey');
-                                });
-                                cy.get('[data-cy=property-field-value]').within(() => {
-                                    cy.get('input').type('anotherValue');
-                                });
-                                cy.root().submit();
-                            })
-                            cy.get('[data-cy=collection-properties-panel]')
-                                .should('contain', 'anotherKey')
-                                .and('contain', 'anotherValue')
-                        } else {
-                            // Properties form shouldn't be displayed.
-                            cy.get('[data-cy=resource-properties-form]').should('not.exist');
-                        }
+                        cy.get('[data-cy=collection-info-panel]')
+                            .should('contain', 'someKey: someValue')
+                            .and('not.contain', 'anotherKey: anotherValue');
                         // Check that the file listing show both read & write operations
                         cy.get('[data-cy=collection-files-panel]').within(() => {
                             cy.wait(1000);
@@ -310,63 +310,6 @@ describe('Collection panel tests', function () {
                         .should('not.contain', `${from}`)
                         .and('contain', `${to}`);
                 })
-            });
-    });
-
-    it.skip('renames a file to a different directory', function () {
-        // Creates the collection using the admin token so we can set up
-        // a bogus manifest text without block signatures.
-        cy.createCollection(adminUser.token, {
-            name: `Test collection ${Math.floor(Math.random() * 999999)}`,
-            owner_uuid: activeUser.user.uuid,
-            manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
-        })
-            .as('testCollection').then(function () {
-                cy.loginAs(activeUser);
-                cy.goToPath(`/collections/${this.testCollection.uuid}`);
-
-                ['subdir', 'G%C3%BCnter\'s%20file', 'table%&?*2'].forEach((subdir) => {
-                    cy.get('[data-cy=collection-files-panel]')
-                        .contains('bar').rightclick({force: true});
-                    cy.get('[data-cy=context-menu]')
-                        .contains('Rename')
-                        .click();
-                    cy.get('[data-cy=form-dialog]')
-                        .should('contain', 'Rename')
-                        .within(() => {
-                            cy.get('input').type(`{selectall}{backspace}${subdir}/foo`);
-                        });
-                    cy.get('[data-cy=form-submit-btn]').click();
-                    cy.get('[data-cy=collection-files-panel]')
-                        .should('not.contain', 'bar')
-                        .and('contain', subdir);
-                    // Look for the "arrow icon" and expand the "subdir" directory.
-                    cy.get('[data-cy=virtual-file-tree] > div > i').click();
-                    // Rename 'subdir/foo' to 'foo'
-                    cy.get('[data-cy=collection-files-panel]')
-                        .contains('foo').rightclick();
-                    cy.get('[data-cy=context-menu]')
-                        .contains('Rename')
-                        .click();
-                    cy.get('[data-cy=form-dialog]')
-                        .should('contain', 'Rename')
-                        .within(() => {
-                            cy.get('input')
-                                .should('have.value', `${subdir}/foo`)
-                                .type(`{selectall}{backspace}bar`);
-                        });
-                    cy.get('[data-cy=form-submit-btn]').click();
-                    cy.get('[data-cy=collection-files-panel]')
-                        .should('contain', subdir) // empty dir kept
-                        .and('contain', 'bar');
-
-                    cy.get('[data-cy=collection-files-panel]')
-                        .contains(subdir).rightclick();
-                    cy.get('[data-cy=context-menu]')
-                        .contains('Remove')
-                        .click();
-                    cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
-                });
             });
     });
 

@@ -160,6 +160,7 @@ export const DetailsPanel = withStyles(styles)(
 
                 const item = getItem(res);
                 return <Grid
+                    data-cy='details-panel'
                     container
                     direction="column"
                     item
