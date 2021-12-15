@@ -6,7 +6,6 @@ import { Dispatch } from 'redux';
 import { reset, startSubmit, stopSubmit, FormErrors, initialize } from 'redux-form';
 import { bindDataExplorerActions } from "store/data-explorer/data-explorer-action";
 import { dialogActions } from 'store/dialog/dialog-actions';
-import { Participant } from 'views-components/sharing-dialog/participant-select';
 import { RootState } from 'store/store';
 import { ServiceRepository } from 'services/services';
 import { getResource } from 'store/resources/resources';
@@ -30,7 +29,7 @@ export const loadGroupsPanel = () => GroupsPanelActions.REQUEST_ITEMS();
 export const openCreateGroupDialog = () =>
     (dispatch: Dispatch, getState: () => RootState) => {
         dispatch(initialize(PROJECT_UPDATE_FORM_NAME, {}));
-        dispatch(dialogActions.OPEN_DIALOG({ id: PROJECT_UPDATE_FORM_NAME, data: {sourcePanel: GroupClass.ROLE, showUsersField: true} }));
+        dispatch(dialogActions.OPEN_DIALOG({ id: PROJECT_UPDATE_FORM_NAME, data: {sourcePanel: GroupClass.ROLE, create: true} }));
     };
 
 export const openGroupAttributes = (uuid: string) =>

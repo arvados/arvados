@@ -10,17 +10,17 @@ import { FormDialog } from 'components/form-dialog/form-dialog';
 import { ProjectNameField, ProjectDescriptionField, UsersField } from 'views-components/form-fields/project-form-fields';
 import { GroupClass } from 'models/group';
 
-type DialogProjectProps = WithDialogProps<{sourcePanel: GroupClass, showUsersField?: boolean}> & InjectedFormProps<ProjectUpdateFormDialogData>;
+type DialogProjectProps = WithDialogProps<{sourcePanel: GroupClass, create?: boolean}> & InjectedFormProps<ProjectUpdateFormDialogData>;
 
 export const DialogProjectUpdate = (props: DialogProjectProps) => {
     let title = 'Edit Project';
     let fields = ProjectEditFields;
     const sourcePanel = props.data.sourcePanel || '';
-    const showUsersField = !!props.data.showUsersField;
+    const create = !!props.data.create;
 
     if (sourcePanel === GroupClass.ROLE) {
-        title = showUsersField ? 'Create Group' : 'Edit Group';
-        fields = showUsersField ? GroupAddFields : ProjectEditFields;
+        title = create ? 'Create Group' : 'Edit Group';
+        fields = create ? GroupAddFields : ProjectEditFields;
     }
 
     return <FormDialog
