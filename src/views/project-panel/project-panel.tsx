@@ -145,7 +145,7 @@ export const ProjectPanel = withStyles(styles)(
         class extends React.Component<ProjectPanelProps> {
             render() {
                 const { classes } = this.props;
-                return <div className={classes.root}>
+                return <div data-cy='project-panel' className={classes.root}>
                     <DataExplorer
                         id={PROJECT_PANEL_ID}
                         onRowClick={this.handleRowClick}
