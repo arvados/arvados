@@ -44,7 +44,8 @@ describe('Favorites tests', function () {
         });
     });
 
-    it('can copy selected into the collection', () => {
+    // Disabled while addressing #18587
+    it.skip('can copy selected into the collection', () => {
         cy.createCollection(adminUser.token, {
             name: `Test source collection ${Math.floor(Math.random() * 999999)}`,
             manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"

@@ -26,12 +26,13 @@ export const readOnlyCollectionFilesActionSet: ContextMenuActionSet = [[
             dispatch<any>(openCollectionPartialCopyDialog());
         }
     },
-    {
-        name: "Copy selected into the collection",
-        execute: dispatch => {
-            dispatch<any>(openCollectionPartialCopyToSelectedCollectionDialog());
-        }
-    }
+    // Disabled while addressing #18587
+    // {
+    //     name: "Copy selected into the collection",
+    //     execute: dispatch => {
+    //         dispatch<any>(openCollectionPartialCopyToSelectedCollectionDialog());
+    //     }
+    // }
 ]];
 
 export const collectionFilesActionSet: ContextMenuActionSet = readOnlyCollectionFilesActionSet.concat([[
