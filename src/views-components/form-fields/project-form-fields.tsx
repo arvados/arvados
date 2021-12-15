@@ -3,11 +3,12 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import { Field, Validator } from "redux-form";
+import { Field, FieldArray, Validator, WrappedFieldArrayProps } from "redux-form";
 import { TextField, RichEditorTextField } from "components/text-field/text-field";
 import { PROJECT_NAME_VALIDATION, PROJECT_NAME_VALIDATION_ALLOW_SLASH } from "validators/validators";
 import { connect } from "react-redux";
 import { RootState } from "store/store";
+import { Participant, ParticipantSelect } from "views-components/sharing-dialog/participant-select";
 
 interface ProjectNameFieldProps {
     validate: Validator[];
@@ -42,3 +43,16 @@ export const ProjectDescriptionField = () =>
         name='description'
         component={RichEditorTextField as any}
         label="Description - optional" />;
+
+export const UsersField = () =>
+        <span data-cy='users-field'><FieldArray
+            name="users"
+            component={UsersSelect as any} /></span>;
+
+export const UsersSelect = ({ fields }: WrappedFieldArrayProps<Participant>) =>
+        <ParticipantSelect
+            onlyPeople
+            label='Enter email adresses '
+            items={fields.getAll() || []}
+            onSelect={fields.push}
+            onDelete={fields.remove} />;

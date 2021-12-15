@@ -82,7 +82,6 @@ import { HelpApiClientAuthorizationDialog } from 'views-components/api-client-au
 import { UserManageDialog } from 'views-components/user-dialog/manage-dialog';
 import { SetupShellAccountDialog } from 'views-components/dialog-forms/setup-shell-account-dialog';
 import { GroupsPanel } from 'views/groups-panel/groups-panel';
-import { CreateGroupDialog } from 'views-components/dialog-forms/create-group-dialog';
 import { RemoveGroupDialog } from 'views-components/groups-dialog/remove-dialog';
 import { GroupAttributesDialog } from 'views-components/groups-dialog/attributes-dialog';
 import { GroupDetailsPanel } from 'views/group-details-panel/group-details-panel';
@@ -221,7 +220,6 @@ export const WorkbenchPanel =
             <CopyCollectionDialog />
             <CopyProcessDialog />
             <CreateCollectionDialog />
-            <CreateGroupDialog />
             <CreateProjectDialog />
             <CreateRepositoryDialog />
             <CreateSshKeyDialog />

@@ -20,12 +20,6 @@ import { ProjectUpdateFormDialogData, PROJECT_UPDATE_FORM_NAME } from 'store/pro
 
 export const GROUPS_PANEL_ID = "groupsPanel";
 
-// Create group dialog
-export const CREATE_GROUP_DIALOG = "createGroupDialog";
-export const CREATE_GROUP_FORM = "createGroupForm";
-export const CREATE_GROUP_NAME_FIELD_NAME = 'name';
-export const CREATE_GROUP_USERS_FIELD_NAME = 'users';
-
 export const GROUP_ATTRIBUTES_DIALOG = 'groupAttributesDialog';
 export const GROUP_REMOVE_DIALOG = 'groupRemoveDialog';
 
@@ -34,9 +28,9 @@ export const GroupsPanelActions = bindDataExplorerActions(GROUPS_PANEL_ID);
 export const loadGroupsPanel = () => GroupsPanelActions.REQUEST_ITEMS();
 
 export const openCreateGroupDialog = () =>
-    (dispatch: Dispatch) => {
-        dispatch(dialogActions.OPEN_DIALOG({ id: CREATE_GROUP_DIALOG, data: {} }));
-        dispatch(reset(CREATE_GROUP_FORM));
+    (dispatch: Dispatch, getState: () => RootState) => {
+        dispatch(initialize(PROJECT_UPDATE_FORM_NAME, {}));
+        dispatch(dialogActions.OPEN_DIALOG({ id: PROJECT_UPDATE_FORM_NAME, data: {sourcePanel: GroupClass.ROLE, showUsersField: true} }));
     };
 
 export const openGroupAttributes = (uuid: string) =>
@@ -94,16 +88,11 @@ export const updateGroup = (project: ProjectUpdateFormDialogData) =>
         }
     };
 
-export interface CreateGroupFormData {
-    [CREATE_GROUP_NAME_FIELD_NAME]: string;
-    [CREATE_GROUP_USERS_FIELD_NAME]?: Participant[];
-}
-
-export const createGroup = ({ name, users = [] }: CreateGroupFormData) =>
+export const createGroup = ({ name, users = [], description }: ProjectUpdateFormDialogData) =>
     async (dispatch: Dispatch, _: {}, { groupsService, permissionService }: ServiceRepository) => {
-        dispatch(startSubmit(CREATE_GROUP_FORM));
+        dispatch(startSubmit(PROJECT_UPDATE_FORM_NAME));
         try {
-            const newGroup = await groupsService.create({ name, groupClass: GroupClass.ROLE });
+            const newGroup = await groupsService.create({ name, description, groupClass: GroupClass.ROLE });
             for (const user of users) {
                 await addGroupMember({
                     user,
@@ -112,8 +101,8 @@ export const createGroup = ({ name, users = [] }: CreateGroupFormData) =>
                     permissionService,
                 });
             }
-            dispatch(dialogActions.CLOSE_DIALOG({ id: CREATE_GROUP_DIALOG }));
-            dispatch(reset(CREATE_GROUP_FORM));
+            dispatch(dialogActions.CLOSE_DIALOG({ id: PROJECT_UPDATE_FORM_NAME }));
+            dispatch(reset(PROJECT_UPDATE_FORM_NAME));
             dispatch(loadGroupsPanel());
             dispatch(snackbarActions.OPEN_SNACKBAR({
                 message: `${newGroup.name} group has been created`,
@@ -123,7 +112,7 @@ export const createGroup = ({ name, users = [] }: CreateGroupFormData) =>
         } catch (e) {
             const error = getCommonResourceServiceError(e);
             if (error === CommonResourceServiceError.UNIQUE_NAME_VIOLATION) {
-                dispatch(stopSubmit(CREATE_GROUP_FORM, { name: 'Group with the same name already exists.' } as FormErrors));
+                dispatch(stopSubmit(PROJECT_UPDATE_FORM_NAME, { name: 'Group with the same name already exists.' } as FormErrors));
             }
             return;
         }

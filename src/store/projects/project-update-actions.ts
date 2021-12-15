@@ -10,10 +10,12 @@ import { getCommonResourceServiceError, CommonResourceServiceError } from "servi
 import { ServiceRepository } from "services/services";
 import { projectPanelActions } from 'store/project-panel/project-panel-action';
 import { GroupClass } from "models/group";
+import { Participant } from "views-components/sharing-dialog/participant-select";
 
 export interface ProjectUpdateFormDialogData {
     uuid: string;
     name: string;
+    users?: Participant[];
     description?: string;
 }
 

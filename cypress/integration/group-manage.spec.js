@@ -6,6 +6,7 @@ describe('Group manage tests', function() {
     let activeUser;
     let adminUser;
     let otherUser;
+    let userThree;
     const groupName = `Test group (${Math.floor(999999 * Math.random())})`;
 
     before(function() {
@@ -28,6 +29,11 @@ describe('Group manage tests', function() {
                 otherUser = this.otherUser;
             }
         );
+        cy.getUser('userThree', 'User', 'Three', false, true)
+            .as('userThree').then(function() {
+                userThree = this.userThree;
+            }
+        );
     });
 
     beforeEach(function() {
@@ -44,15 +50,18 @@ describe('Group manage tests', function() {
         // Create new group
         cy.get('[data-cy=groups-panel-new-group]').click();
         cy.get('[data-cy=form-dialog]')
-            .should('contain', 'Create a group')
+            .should('contain', 'Create Group')
             .within(() => {
                 cy.get('input[name=name]').type(groupName);
-                cy.get('button[type=submit]').click();
+                cy.get('[data-cy=users-field] input').type("three");
             });
+        cy.get('[role=tooltip]').click();
+        cy.get('[data-cy=form-dialog] button[type=submit]').click();
         
         // Check that the group was created
         cy.get('[data-cy=groups-panel-data-explorer]').contains(groupName).click();
-        cy.get('[data-cy=group-members-data-explorer]').contains('Active User');
+        cy.get('[data-cy=group-members-data-explorer]').contains(activeUser.user.full_name);
+        cy.get('[data-cy=group-members-data-explorer]').contains(userThree.user.full_name);
     });
 
     it('adds users to the group', function() {
@@ -68,13 +77,13 @@ describe('Group manage tests', function() {
 
         // Check that both users are present with appropriate permissions
         cy.get('[data-cy=group-members-data-explorer]')
-            .contains('Other User')
+            .contains(otherUser.user.full_name)
             .parents('tr')
             .within(() => {
                 cy.contains('Read');
             });
         cy.get('[data-cy=group-members-data-explorer] tr')
-            .contains('Active User')
+            .contains(activeUser.user.full_name)
             .parents('tr')
             .within(() => {
                 cy.contains('Manage');
@@ -84,7 +93,7 @@ describe('Group manage tests', function() {
     it('changes permission level of a member', function() {
         // Test change permission level
         cy.get('[data-cy=group-members-data-explorer]')
-            .contains('Other User')
+            .contains(otherUser.user.full_name)
             .parents('tr')
             .within(() => {
                 cy.contains('Read')
@@ -97,7 +106,7 @@ describe('Group manage tests', function() {
             .contains('Write')
             .click();
         cy.get('[data-cy=group-members-data-explorer]')
-            .contains('Other User')
+            .contains(otherUser.user.full_name)
             .parents('tr')
             .within(() => {
                 cy.contains('Write');
@@ -113,12 +122,12 @@ describe('Group manage tests', function() {
         // Check that other user is hidden
         cy.get('[data-cy=group-details-permissions-tab]').click();
         cy.get('[data-cy=group-permissions-data-explorer]')
-            .should('not.contain', 'Other User')
+            .should('not.contain', otherUser.user.full_name)
         cy.get('[data-cy=group-details-members-tab]').click();
 
         // Test unhide
         cy.get('[data-cy=group-members-data-explorer]')
-            .contains('Other User')
+            .contains(otherUser.user.full_name)
             .parents('tr')
             .within(() => {
                 cy.get('[data-cy=user-visible-checkbox]').click();
@@ -126,7 +135,7 @@ describe('Group manage tests', function() {
         // Check that other user is visible
         cy.get('[data-cy=group-details-permissions-tab]').click();
         cy.get('[data-cy=group-permissions-data-explorer]')
-            .contains('Other User')
+            .contains(otherUser.user.full_name)
             .parents('tr')
             .within(() => {
                 cy.contains('Read');
@@ -134,7 +143,7 @@ describe('Group manage tests', function() {
         // Test re-hide
         cy.get('[data-cy=group-details-members-tab]').click();
         cy.get('[data-cy=group-members-data-explorer]')
-            .contains('Other User')
+            .contains(otherUser.user.full_name)
             .parents('tr')
             .within(() => {
                 cy.get('[data-cy=user-visible-checkbox]').click();
@@ -142,7 +151,7 @@ describe('Group manage tests', function() {
         // Check that other user is hidden
         cy.get('[data-cy=group-details-permissions-tab]').click();
         cy.get('[data-cy=group-permissions-data-explorer]')
-            .should('not.contain', 'Other User')
+            .should('not.contain', otherUser.user.full_name)
     });
 
     it('displays resources shared with the group', function() {
@@ -183,14 +192,25 @@ describe('Group manage tests', function() {
 
         // Remove other user
         cy.get('[data-cy=group-members-data-explorer]')
-            .contains('Other User')
+            .contains(otherUser.user.full_name)
             .parents('tr')
             .within(() => {
                 cy.get('[data-cy=resource-delete-button]').click();
             });
         cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
         cy.get('[data-cy=group-members-data-explorer]')
-            .should('not.contain', 'Other User');
+            .should('not.contain', otherUser.user.full_name);
+
+        // Remove user three
+        cy.get('[data-cy=group-members-data-explorer]')
+            .contains(userThree.user.full_name)
+            .parents('tr')
+            .within(() => {
+                cy.get('[data-cy=resource-delete-button]').click();
+            });
+        cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
+        cy.get('[data-cy=group-members-data-explorer]')
+            .should('not.contain', userThree.user.full_name);
     });
 
     it('renames the group', function() {
@@ -207,7 +227,7 @@ describe('Group manage tests', function() {
 
         // Rename the group
         cy.get('[data-cy=form-dialog]')
-            .should('contain', 'Edit Project')
+            .should('contain', 'Edit Group')
             .within(() => {
                 cy.get('input[name=name]').clear().type(groupName + ' (renamed)');
                 cy.get('button[type=submit]').click();
