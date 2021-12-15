@@ -67,7 +67,7 @@ export const copyCollectionPartial = ({ name, description, projectUuid }: Collec
                     return !paths.find(path => path.indexOf(file.replace(newCollection.uuid, '')) > -1);
                 });
                 await services.collectionService.deleteFiles(
-                    '',
+                    newCollection.uuid,
                     filesToDelete
                 );
                 dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_COPY_FORM_NAME }));
