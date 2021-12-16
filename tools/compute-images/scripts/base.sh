@@ -149,3 +149,25 @@ $SUDO chmod 755 /usr/local/bin/ensure-encrypted-partitions.sh
 $SUDO chown root:root /usr/local/bin/ensure-encrypted-partitions.sh
 $SUDO mv /tmp/etc-cloud-cloud.cfg.d-07_compute_arvados_dispatch_cloud.cfg /etc/cloud/cloud.cfg.d/07_compute_arvados_dispatch_cloud.cfg
 $SUDO chown root:root /etc/cloud/cloud.cfg.d/07_compute_arvados_dispatch_cloud.cfg
+
+if [ "$NVIDIA_GPU_SUPPORT" == "1" ]; then
+  DIST=$(. /etc/os-release; echo $ID$VERSION_ID)
+  # We need a kernel and matching headers
+  $sudo apt-get -y install linux-image-cloud-amd64 linux-headers-cloud-amd64
+
+  # Install CUDA
+  $sudo apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/$DIST/x86_64/7fa2af80.pub
+  $sudo apt-get -y install software-properties-common
+  $sudo add-apt-repository "deb https://developer.download.nvidia.com/compute/cuda/repos/$DIST/x86_64/ /"
+  $sudo add-apt-repository contrib
+  $sudo apt-get update
+  $sudo apt-get -y install cuda
+
+  # Install libnvidia-container, the tooling for Docker/Singularity
+  curl -s -L https://nvidia.github.io/libnvidia-container/gpgkey | \
+    $sudo apt-key add -
+  curl -s -L https://nvidia.github.io/libnvidia-container/$DIST/libnvidia-container.list | \
+    $sudo tee /etc/apt/sources.list.d/libnvidia-container.list
+  $sudo apt-get update
+  $sudo apt-get -y install libnvidia-container1 libnvidia-container-tools nvidia-container-toolkit
+fi

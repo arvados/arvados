@@ -57,8 +57,10 @@ Options:
       Path to the public key file that a-d-c will use to log into the compute node
   --mksquashfs-mem (default: 256M)
       Only relevant when using Singularity. This is the amount of memory mksquashfs is allowed to use.
-  --debug
-      Output debug information (default: false)
+  --nvidia-gpu-support (default: false)
+      Install all the necessary tooling for Nvidia GPU support
+  --debug (default: false)
+      Output debug information
 
 EOF
 
@@ -81,9 +83,10 @@ SSH_USER=
 AWS_DEFAULT_REGION=us-east-1
 PUBLIC_KEY_FILE=
 MKSQUASHFS_MEM=256M
+NVIDIA_GPU_SUPPORT=
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
-    help,json-file:,arvados-cluster-id:,aws-source-ami:,aws-profile:,aws-secrets-file:,aws-region:,aws-vpc-id:,aws-subnet-id:,gcp-project-id:,gcp-account-file:,gcp-zone:,azure-secrets-file:,azure-resource-group:,azure-location:,azure-sku:,azure-cloud-environment:,ssh_user:,resolver:,reposuffix:,public-key-file:,mksquashfs-mem:,debug \
+    help,json-file:,arvados-cluster-id:,aws-source-ami:,aws-profile:,aws-secrets-file:,aws-region:,aws-vpc-id:,aws-subnet-id:,gcp-project-id:,gcp-account-file:,gcp-zone:,azure-secrets-file:,azure-resource-group:,azure-location:,azure-sku:,azure-cloud-environment:,ssh_user:,resolver:,reposuffix:,public-key-file:,mksquashfs-mem:,nvidia-gpu-support,debug \
     -- "" "$@")
 if [ $? -ne 0 ]; then
     exit 1
@@ -159,6 +162,9 @@ while [ $# -gt 0 ]; do
             ;;
         --mksquashfs-mem)
             MKSQUASHFS_MEM="$2"; shift
+            ;;
+        --nvidia-gpu-support)
+            NVIDIA_GPU_SUPPORT=1
             ;;
         --debug)
             # If you want to debug a build issue, add the -debug flag to the build
@@ -265,6 +271,10 @@ fi
 if [[ "$MKSQUASHFS_MEM" != "" ]]; then
   EXTRA2+=" -var mksquashfs_mem=$MKSQUASHFS_MEM"
 fi
+if [[ "$NVIDIA_GPU_SUPPORT" != "" ]]; then
+  EXTRA2+=" -var nvidia_gpu_support=$NVIDIA_GPU_SUPPORT"
+fi
+
 
 
 echo
