@@ -20,6 +20,7 @@ import { ProcessResource } from 'models/process';
 import { CollectionResource } from 'models/collection';
 import { GroupClass, GroupResource } from 'models/group';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
+import { LinkResource } from 'models/link';
 
 export const contextMenuActions = unionize({
     OPEN_CONTEXT_MENU: ofType<{ position: ContextMenuPosition, resource: ContextMenuResource }>(),
@@ -189,6 +190,19 @@ export const openProcessContextMenu = (event: React.MouseEvent<HTMLElement>, pro
                 outputUuid: res.outputUuid || '',
                 workflowUuid: res.properties.workflowUuid || '',
                 menuKind: ContextMenuKind.PROCESS
+            }));
+        }
+    };
+
+export const openPermissionEditContextMenu = (event: React.MouseEvent<HTMLElement>, link: LinkResource) =>
+    (dispatch: Dispatch, getState: () => RootState) => {
+        if (link) {
+            dispatch<any>(openContextMenu(event, {
+                name: link.name,
+                uuid: link.uuid,
+                kind: link.kind,
+                menuKind: ContextMenuKind.PERMISSION_EDIT,
+                ownerUuid: link.ownerUuid,
             }));
         }
     };

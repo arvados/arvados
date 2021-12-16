@@ -11,6 +11,8 @@ export const resourceLabel = (type: string, subtype = '') => {
         case ResourceKind.PROJECT:
             if (subtype === "filter") {
                 return "Filter group";
+            } else if (subtype === "role") {
+                return "Group";
             }
             return "Project";
         case ResourceKind.PROCESS:

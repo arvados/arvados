@@ -10,10 +10,11 @@ import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { getDataExplorer } from "store/data-explorer/data-explorer-reducer";
 import { FilterBuilder } from 'services/api/filter-builder';
 import { updateResources } from 'store/resources/resources-actions';
-import { getCurrentGroupDetailsPanelUuid, GroupDetailsPanelActions } from 'store/group-details-panel/group-details-panel-actions';
+import { getCurrentGroupDetailsPanelUuid, GroupMembersPanelActions } from 'store/group-details-panel/group-details-panel-actions';
 import { LinkClass } from 'models/link';
+import { ResourceKind } from 'models/resource';
 
-export class GroupDetailsPanelMiddlewareService extends DataExplorerMiddlewareService {
+export class GroupDetailsPanelMembersMiddlewareService extends DataExplorerMiddlewareService {
 
     constructor(private services: ServiceRepository, id: string) {
         super(id);
@@ -26,24 +27,41 @@ export class GroupDetailsPanelMiddlewareService extends DataExplorerMiddlewareSe
             api.dispatch(groupsDetailsPanelDataExplorerIsNotSet());
         } else {
             try {
-                const permissions = await this.services.permissionService.list({
+                const groupResource = await this.services.groupsService.get(groupUuid);
+                api.dispatch(updateResources([groupResource]));
+
+                const permissionsIn = await this.services.permissionService.list({
                     filters: new FilterBuilder()
-                        .addEqual('tail_uuid', groupUuid)
+                        .addEqual('head_uuid', groupUuid)
                         .addEqual('link_class', LinkClass.PERMISSION)
                         .getFilters()
                 });
-                api.dispatch(updateResources(permissions.items));
-                const users = await this.services.userService.list({
+                api.dispatch(updateResources(permissionsIn.items));
+
+                api.dispatch(GroupMembersPanelActions.SET_ITEMS({
+                    ...listResultsToDataExplorerItemsMeta(permissionsIn),
+                    items: permissionsIn.items.map(item => item.uuid),
+                }));
+
+                const usersIn = await this.services.userService.list({
                     filters: new FilterBuilder()
-                        .addIn('uuid', permissions.items.map(item => item.headUuid))
+                        .addIn('uuid', permissionsIn.items
+                            .filter((item) => item.tailKind === ResourceKind.USER)
+                            .map(item => item.tailUuid))
                         .getFilters(),
                     count: "none"
                 });
-                api.dispatch(GroupDetailsPanelActions.SET_ITEMS({
-                    ...listResultsToDataExplorerItemsMeta(permissions),
-                    items: users.items.map(item => item.uuid),
-                }));
-                api.dispatch(updateResources(users.items));
+                api.dispatch(updateResources(usersIn.items));
+
+                const projectsIn = await this.services.projectService.list({
+                    filters: new FilterBuilder()
+                        .addIn('uuid', permissionsIn.items
+                            .filter((item) => item.tailKind === ResourceKind.PROJECT)
+                            .map(item => item.tailUuid))
+                        .getFilters(),
+                    count: "none"
+                });
+                api.dispatch(updateResources(projectsIn.items));
             } catch (e) {
                 api.dispatch(couldNotFetchGroupDetailsContents());
             }
@@ -53,12 +71,12 @@ export class GroupDetailsPanelMiddlewareService extends DataExplorerMiddlewareSe
 
 const groupsDetailsPanelDataExplorerIsNotSet = () =>
     snackbarActions.OPEN_SNACKBAR({
-        message: 'Group details panel is not ready.',
+        message: 'Group members panel is not ready.',
         kind: SnackbarKind.ERROR
     });
 
 const couldNotFetchGroupDetailsContents = () =>
     snackbarActions.OPEN_SNACKBAR({
-        message: 'Could not fetch group details.',
+        message: 'Could not fetch group members.',
         kind: SnackbarKind.ERROR
     });

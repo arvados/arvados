@@ -6,74 +6,57 @@ import { bindDataExplorerActions } from 'store/data-explorer/data-explorer-actio
 import { Dispatch } from 'redux';
 import { propertiesActions } from 'store/properties/properties-actions';
 import { getProperty } from 'store/properties/properties';
-import { Participant } from 'views-components/sharing-dialog/participant-select';
 import { dialogActions } from 'store/dialog/dialog-actions';
-import { reset, startSubmit } from 'redux-form';
-import { addGroupMember, deleteGroupMember } from 'store/groups-panel/groups-panel-actions';
+import { deleteGroupMember } from 'store/groups-panel/groups-panel-actions';
 import { getResource } from 'store/resources/resources';
-import { GroupResource } from 'models/group';
 import { RootState } from 'store/store';
 import { ServiceRepository } from 'services/services';
-import { PermissionResource } from 'models/permission';
+import { PermissionResource, PermissionLevel } from 'models/permission';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
-import { UserResource, getUserDisplayName } from 'models/user';
+import { LinkResource } from 'models/link';
+import { deleteResources } from 'store/resources/resources-actions';
+import { openSharingDialog } from 'store/sharing-dialog/sharing-dialog-actions';
 
-export const GROUP_DETAILS_PANEL_ID = 'groupDetailsPanel';
-export const ADD_GROUP_MEMBERS_DIALOG = 'addGrupMembers';
-export const ADD_GROUP_MEMBERS_FORM = 'addGrupMembers';
-export const ADD_GROUP_MEMBERS_USERS_FIELD_NAME = 'users';
+export const GROUP_DETAILS_MEMBERS_PANEL_ID = 'groupDetailsMembersPanel';
+export const GROUP_DETAILS_PERMISSIONS_PANEL_ID = 'groupDetailsPermissionsPanel';
 export const MEMBER_ATTRIBUTES_DIALOG = 'memberAttributesDialog';
 export const MEMBER_REMOVE_DIALOG = 'memberRemoveDialog';
 
-export const GroupDetailsPanelActions = bindDataExplorerActions(GROUP_DETAILS_PANEL_ID);
+export const GroupMembersPanelActions = bindDataExplorerActions(GROUP_DETAILS_MEMBERS_PANEL_ID);
+export const GroupPermissionsPanelActions = bindDataExplorerActions(GROUP_DETAILS_PERMISSIONS_PANEL_ID);
 
 export const loadGroupDetailsPanel = (groupUuid: string) =>
     (dispatch: Dispatch) => {
-        dispatch(propertiesActions.SET_PROPERTY({ key: GROUP_DETAILS_PANEL_ID, value: groupUuid }));
-        dispatch(GroupDetailsPanelActions.REQUEST_ITEMS());
+        dispatch(propertiesActions.SET_PROPERTY({ key: GROUP_DETAILS_MEMBERS_PANEL_ID, value: groupUuid }));
+        dispatch(GroupMembersPanelActions.REQUEST_ITEMS());
+        dispatch(propertiesActions.SET_PROPERTY({ key: GROUP_DETAILS_PERMISSIONS_PANEL_ID, value: groupUuid }));
+        dispatch(GroupPermissionsPanelActions.REQUEST_ITEMS());
     };
 
-export const getCurrentGroupDetailsPanelUuid = getProperty<string>(GROUP_DETAILS_PANEL_ID);
-
-export interface AddGroupMembersFormData {
-    [ADD_GROUP_MEMBERS_USERS_FIELD_NAME]: Participant[];
-}
+export const getCurrentGroupDetailsPanelUuid = getProperty<string>(GROUP_DETAILS_MEMBERS_PANEL_ID);
 
 export const openAddGroupMembersDialog = () =>
-    (dispatch: Dispatch) => {
-        dispatch(dialogActions.OPEN_DIALOG({ id: ADD_GROUP_MEMBERS_DIALOG, data: {} }));
-        dispatch(reset(ADD_GROUP_MEMBERS_FORM));
+    (dispatch: Dispatch, getState: () => RootState) => {
+        const groupUuid = getCurrentGroupDetailsPanelUuid(getState().properties);
+        if (groupUuid) {
+            dispatch<any>(openSharingDialog(groupUuid, () => {
+                dispatch(GroupMembersPanelActions.REQUEST_ITEMS());
+            }));
+        }
     };
 
-export const addGroupMembers = ({ users }: AddGroupMembersFormData) =>
-
+export const editPermissionLevel = (uuid: string, level: PermissionLevel) =>
     async (dispatch: Dispatch, getState: () => RootState, { permissionService }: ServiceRepository) => {
-
-        const groupUuid = getCurrentGroupDetailsPanelUuid(getState().properties);
-
-        if (groupUuid) {
-
-            dispatch(startSubmit(ADD_GROUP_MEMBERS_FORM));
-
-            const group = getResource<GroupResource>(groupUuid)(getState().resources);
-
-            for (const user of users) {
-
-                await addGroupMember({
-                    user,
-                    group: {
-                        uuid: groupUuid,
-                        name: group ? group.name : groupUuid,
-                    },
-                    dispatch,
-                    permissionService,
-                });
-
-            }
-
-            dispatch(dialogActions.CLOSE_DIALOG({ id: ADD_GROUP_MEMBERS_FORM }));
-            dispatch(GroupDetailsPanelActions.REQUEST_ITEMS());
-
+        try {
+            await permissionService.update(uuid, {name: level});
+            dispatch(GroupMembersPanelActions.REQUEST_ITEMS());
+            dispatch(GroupPermissionsPanelActions.REQUEST_ITEMS());
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Permission level changed.', hideDuration: 2000 }));
+        } catch (e) {
+            dispatch(snackbarActions.OPEN_SNACKBAR({
+                message: 'Failed to update permission',
+                kind: SnackbarKind.ERROR,
+            }));
         }
     };
 
@@ -104,28 +87,63 @@ export const removeGroupMember = (uuid: string) =>
         const groupUuid = getCurrentGroupDetailsPanelUuid(getState().properties);
 
         if (groupUuid) {
-
-            const group = getResource<GroupResource>(groupUuid)(getState().resources);
-            const user = getResource<UserResource>(groupUuid)(getState().resources);
-
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removing ...', kind: SnackbarKind.INFO }));
 
             await deleteGroupMember({
-                user: {
+                link: {
                     uuid,
-                    name: user ? getUserDisplayName(user) : uuid,
-                },
-                group: {
-                    uuid: groupUuid,
-                    name: group ? group.name : groupUuid,
                 },
                 permissionService,
                 dispatch,
             });
 
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removed.', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
-            dispatch(GroupDetailsPanelActions.REQUEST_ITEMS());
+            dispatch(GroupMembersPanelActions.REQUEST_ITEMS());
 
         }
 
+    };
+
+export const setMemberIsHidden = (memberLinkUuid: string, permissionLinkUuid: string, visible: boolean) =>
+    async (dispatch: Dispatch, getState: () => RootState, { permissionService }: ServiceRepository) => {
+        const memberLink = getResource<LinkResource>(memberLinkUuid)(getState().resources);
+
+        if (!visible && permissionLinkUuid) {
+            // Remove read permission
+            try {
+                await permissionService.delete(permissionLinkUuid);
+                dispatch<any>(deleteResources([permissionLinkUuid]));
+                dispatch(GroupPermissionsPanelActions.REQUEST_ITEMS());
+                dispatch(snackbarActions.OPEN_SNACKBAR({
+                    message: 'Removed read permission.',
+                    hideDuration: 2000,
+                    kind: SnackbarKind.SUCCESS,
+                }));
+            } catch (e) {
+                dispatch(snackbarActions.OPEN_SNACKBAR({
+                    message: 'Failed to remove permission',
+                    kind: SnackbarKind.ERROR,
+                }));
+            }
+        } else if (visible && memberLink) {
+            // Create read permission
+            try {
+                await permissionService.create({
+                    headUuid: memberLink.tailUuid,
+                    tailUuid: memberLink.headUuid,
+                    name: PermissionLevel.CAN_READ,
+                });
+                dispatch(snackbarActions.OPEN_SNACKBAR({
+                    message: 'Created read permission.',
+                    hideDuration: 2000,
+                    kind: SnackbarKind.SUCCESS,
+                }));
+                dispatch(GroupPermissionsPanelActions.REQUEST_ITEMS());
+            } catch(e) {
+                dispatch(snackbarActions.OPEN_SNACKBAR({
+                    message: 'Failed to create permission',
+                    kind: SnackbarKind.ERROR,
+                }));
+            }
+        }
     };

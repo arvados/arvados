@@ -110,18 +110,19 @@ export const DataExplorer = withStyles(styles)(
                 doHidePanel, doMaximizePanel, panelName, panelMaximized
             } = this.props;
 
-            return <Paper className={classes.root} {...paperProps} key={paperKey}>
+            const dataCy = this.props["data-cy"];
+            return <Paper className={classes.root} {...paperProps} key={paperKey} data-cy={dataCy}>
                 <Grid container direction="column" wrap="nowrap" className={classes.container}>
                 {title && <Grid item xs className={classes.title}>{title}</Grid>}
-                {(!hideColumnSelector || !hideSearchInput) && <Grid item xs><Toolbar className={title ? classes.toolbarUnderTitle : classes.toolbar}>
+                {(!hideColumnSelector || !hideSearchInput || !!actions) && <Grid item xs><Toolbar className={title ? classes.toolbarUnderTitle : classes.toolbar}>
                     <Grid container justify="space-between" wrap="nowrap" alignItems="center">
-                        <div className={classes.searchBox}>
+                        {!hideSearchInput && <div className={classes.searchBox}>
                             {!hideSearchInput && <SearchInput
                                 label={searchLabel}
                                 value={searchValue}
                                 selfClearProp={currentItemUuid}
                                 onSearch={onSearch} />}
-                        </div>
+                        </div>}
                         {actions}
                         {!hideColumnSelector && <ColumnSelector
                             columns={columns}

@@ -63,14 +63,17 @@ import Visibility from '@material-ui/icons/Visibility';
 import VisibilityOff from '@material-ui/icons/VisibilityOff';
 import VpnKey from '@material-ui/icons/VpnKey';
 import LinkOutlined from '@material-ui/icons/LinkOutlined';
+import RemoveRedEye from '@material-ui/icons/RemoveRedEye';
+import Computer from '@material-ui/icons/Computer';
 
 // Import FontAwesome icons
 import { library } from '@fortawesome/fontawesome-svg-core';
-import { faPencilAlt, faSlash } from '@fortawesome/free-solid-svg-icons';
+import { faPencilAlt, faSlash, faUsers } from '@fortawesome/free-solid-svg-icons';
 import { CropFreeSharp } from '@material-ui/icons';
 library.add(
     faPencilAlt,
     faSlash,
+    faUsers,
 );
 
 export const ReadOnlyIcon = (props: any) =>
@@ -80,6 +83,11 @@ export const ReadOnlyIcon = (props: any) =>
                 data-fa-mask="fas fa-pencil-alt" data-fa-transform="down-1.5" />
             <span className="fas fa-slash" />
         </div>
+    </span>;
+
+export const GroupsIcon = (props: any) =>
+    <span {...props}>
+        <span className="fas fa-users" />
     </span>;
 
 export const CollectionOldVersionIcon = (props: any) =>
@@ -155,3 +163,6 @@ export const WorkflowIcon: IconType = (props) => <Code {...props} />;
 export const WarningIcon: IconType = (props) => <Warning style={{ color: '#fbc02d', height: '30px', width: '30px' }} {...props} />;
 export const Link: IconType = (props) => <LinkOutlined {...props} />;
 export const FolderSharedIcon: IconType = (props) => <FolderShared {...props} />;
+export const CanReadIcon: IconType = (props) => <RemoveRedEye {...props} />;
+export const CanWriteIcon: IconType = (props) => <Edit {...props} />;
+export const CanManageIcon: IconType = (props) => <Computer {...props} />;

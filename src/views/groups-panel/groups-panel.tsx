@@ -8,7 +8,7 @@ import { Grid, Button, Typography, StyleRulesCallback, WithStyles, withStyles } 
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { DataColumns } from 'components/data-table/data-table';
 import { SortDirection } from 'components/data-table/data-column';
-import { ResourceOwner } from 'views-components/data-explorer/renderers';
+import { ResourceUuid } from 'views-components/data-explorer/renderers';
 import { AddIcon } from 'components/icon/icon';
 import { ResourceName } from 'views-components/data-explorer/renderers';
 import { createTree } from 'models/tree';
@@ -21,7 +21,6 @@ import { RootState } from 'store/store';
 import { openContextMenu } from 'store/context-menu/context-menu-actions';
 import { ResourceKind } from 'models/resource';
 import { LinkClass, LinkResource } from 'models/link';
-import { navigateToGroupDetails } from 'store/navigation/navigation-action';
 import { ArvadosTheme } from 'common/custom-theme';
 
 type CssRules = "root";
@@ -34,7 +33,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 export enum GroupsPanelColumnNames {
     GROUP = "Name",
-    OWNER = "Owner",
+    UUID = "UUID",
     MEMBERS = "Members",
 }
 
@@ -48,11 +47,11 @@ export const groupsPanelColumns: DataColumns<string> = [
         render: uuid => <ResourceName uuid={uuid} />
     },
     {
-        name: GroupsPanelColumnNames.OWNER,
+        name: GroupsPanelColumnNames.UUID,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceOwner uuid={uuid} />,
+        render: uuid => <ResourceUuid uuid={uuid} />,
     },
     {
         name: GroupsPanelColumnNames.MEMBERS,
@@ -71,15 +70,12 @@ const mapStateToProps = (state: RootState) => {
 
 const mapDispatchToProps = {
     onContextMenu: openContextMenu,
-    onRowDoubleClick: (uuid: string) =>
-        navigateToGroupDetails(uuid),
     onNewGroup: openCreateGroupDialog,
 };
 
 export interface GroupsPanelProps {
     onNewGroup: () => void;
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: any) => void;
-    onRowDoubleClick: (item: string) => void;
     resources: ResourcesState;
 }
 
@@ -92,14 +88,16 @@ export const GroupsPanel = withStyles(styles)(connect(
             return (
                 <div className={this.props.classes.root}><DataExplorer
                     id={GROUPS_PANEL_ID}
+                    data-cy="groups-panel-data-explorer"
                     onRowClick={noop}
-                    onRowDoubleClick={this.props.onRowDoubleClick}
+                    onRowDoubleClick={noop}
                     onContextMenu={this.handleContextMenu}
                     contextMenuColumn={true}
                     hideColumnSelector
                     actions={
                         <Grid container justify='flex-end'>
                             <Button
+                                data-cy="groups-panel-new-group"
                                 variant="contained"
                                 color="primary"
                                 onClick={this.props.onNewGroup}>
@@ -114,8 +112,9 @@ export const GroupsPanel = withStyles(styles)(connect(
             const resource = getResource<GroupResource>(resourceUuid)(this.props.resources);
             if (resource) {
                 this.props.onContextMenu(event, {
-                    name: '',
+                    name: resource.name,
                     uuid: resource.uuid,
+                    description: resource.description,
                     ownerUuid: resource.ownerUuid,
                     kind: resource.kind,
                     menuKind: ContextMenuKind.GROUPS
@@ -131,7 +130,7 @@ const GroupMembersCount = connect(
         const permissions = filterResources((resource: LinkResource) =>
             resource.kind === ResourceKind.LINK &&
             resource.linkClass === LinkClass.PERMISSION &&
-            resource.tailUuid === props.uuid
+            resource.headUuid === props.uuid
         )(state.resources);
 
         return {
@@ -139,4 +138,4 @@ const GroupMembersCount = connect(
         };
 
     }
-)(Typography);
+)((props: {children: number}) => (<Typography children={props.children} />));

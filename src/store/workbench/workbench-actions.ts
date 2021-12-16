@@ -88,7 +88,7 @@ import { apiClientAuthorizationPanelColumns } from 'views/api-client-authorizati
 import * as groupPanelActions from 'store/groups-panel/groups-panel-actions';
 import { groupsPanelColumns } from 'views/groups-panel/groups-panel';
 import * as groupDetailsPanelActions from 'store/group-details-panel/group-details-panel-actions';
-import { groupDetailsPanelColumns } from 'views/group-details-panel/group-details-panel';
+import { groupDetailsMembersPanelColumns, groupDetailsPermissionsPanelColumns } from 'views/group-details-panel/group-details-panel';
 import { DataTableFetchMode } from "components/data-table/data-table";
 import { loadPublicFavoritePanel, publicFavoritePanelActions } from 'store/public-favorites-panel/public-favorites-action';
 import { publicFavoritePanelColumns } from 'views/public-favorites-panel/public-favorites-panel';
@@ -136,7 +136,8 @@ export const loadWorkbench = () =>
             dispatch(searchResultsPanelActions.SET_COLUMNS({ columns: searchResultsPanelColumns }));
             dispatch(userBindedActions.SET_COLUMNS({ columns: userPanelColumns }));
             dispatch(groupPanelActions.GroupsPanelActions.SET_COLUMNS({ columns: groupsPanelColumns }));
-            dispatch(groupDetailsPanelActions.GroupDetailsPanelActions.SET_COLUMNS({ columns: groupDetailsPanelColumns }));
+            dispatch(groupDetailsPanelActions.GroupMembersPanelActions.SET_COLUMNS({ columns: groupDetailsMembersPanelColumns }));
+            dispatch(groupDetailsPanelActions.GroupPermissionsPanelActions.SET_COLUMNS({ columns: groupDetailsPermissionsPanelColumns }));
             dispatch(linkPanelActions.SET_COLUMNS({ columns: linkPanelColumns }));
             dispatch(apiClientAuthorizationsActions.SET_COLUMNS({ columns: apiClientAuthorizationPanelColumns }));
             dispatch(collectionsContentAddressActions.SET_COLUMNS({ columns: collectionContentAddressPanelColumns }));
@@ -268,6 +269,20 @@ export const updateProject = (data: projectUpdateActions.ProjectUpdateFormDialog
             }));
             await dispatch<any>(loadSidePanelTreeProjects(updatedProject.ownerUuid));
             dispatch<any>(reloadProjectMatchingUuid([updatedProject.ownerUuid, updatedProject.uuid]));
+        }
+    };
+
+export const updateGroup = (data: projectUpdateActions.ProjectUpdateFormDialogData) =>
+    async (dispatch: Dispatch) => {
+        const updatedGroup = await dispatch<any>(groupPanelActions.updateGroup(data));
+        if (updatedGroup) {
+            dispatch(snackbarActions.OPEN_SNACKBAR({
+                message: "Group has been successfully updated.",
+                hideDuration: 2000,
+                kind: SnackbarKind.SUCCESS
+            }));
+            await dispatch<any>(loadSidePanelTreeProjects(updatedGroup.ownerUuid));
+            dispatch<any>(reloadProjectMatchingUuid([updatedGroup.ownerUuid, updatedGroup.uuid]));
         }
     };
 
