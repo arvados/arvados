@@ -52,7 +52,7 @@ export const UsersField = () =>
 export const UsersSelect = ({ fields }: WrappedFieldArrayProps<Participant>) =>
         <ParticipantSelect
             onlyPeople
-            label='Enter email adresses '
+            label='Search for users to add to the group'
             items={fields.getAll() || []}
             onSelect={fields.push}
             onDelete={fields.remove} />;
