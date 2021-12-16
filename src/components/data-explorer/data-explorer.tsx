@@ -93,11 +93,13 @@ type DataExplorerProps<T> = DataExplorerDataProps<T> &
 
 export const DataExplorer = withStyles(styles)(
     class DataExplorerGeneric<T> extends React.Component<DataExplorerProps<T>> {
+
         componentDidMount() {
             if (this.props.onSetColumns) {
                 this.props.onSetColumns(this.props.columns);
             }
         }
+
         render() {
             const {
                 columns, onContextMenu, onFiltersChange, onSortToggle, working, extractKey,
@@ -107,6 +109,7 @@ export const DataExplorer = withStyles(styles)(
                 paperKey, fetchMode, currentItemUuid, title,
                 doHidePanel, doMaximizePanel, panelName, panelMaximized
             } = this.props;
+
             return <Paper className={classes.root} {...paperProps} key={paperKey}>
                 <Grid container direction="column" wrap="nowrap" className={classes.container}>
                 {title && <Grid item xs className={classes.title}>{title}</Grid>}
@@ -116,6 +119,7 @@ export const DataExplorer = withStyles(styles)(
                             {!hideSearchInput && <SearchInput
                                 label={searchLabel}
                                 value={searchValue}
+                                selfClearProp={currentItemUuid}
                                 onSearch={onSearch} />}
                         </div>
                         {actions}

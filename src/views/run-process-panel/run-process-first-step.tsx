@@ -59,7 +59,7 @@ export const RunProcessFirstStep = withStyles(styles)(
         <Grid container spacing={16}>
             <Grid container item xs={6} className={classes.root}>
                 <Grid item xs={12} className={classes.searchGrid}>
-                    <SearchInput value='' onSearch={onSearch} />
+                    <SearchInput selfClearProp={JSON.stringify(selectedWorkflow)} value='' onSearch={onSearch} />
                 </Grid>
                 <Grid item xs={12}>
                     <List className={classes.list}>

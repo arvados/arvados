@@ -462,7 +462,7 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
                         </IconButton>
                     </Tooltip>
                     <div className={path.length > 1 ? classes.searchWrapper : classes.searchWrapperHidden}>
-                        <SearchInput label="Search" value={leftSearch} onSearch={setLeftSearch} />
+                        <SearchInput selfClearProp={leftKey} label="Search" value={leftSearch} onSearch={setLeftSearch} />
                     </div>
                     <div className={classes.dataWrapper}>
                         {
@@ -509,7 +509,7 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
                 </div>
                 <div className={classes.rightPanel}>
                     <div className={classes.searchWrapper}>
-                        <SearchInput label="Search" value={rightSearch} onSearch={setRightSearch} />
+                        <SearchInput selfClearProp={rightKey} label="Search" value={rightSearch} onSearch={setRightSearch} />
                     </div>
                     {
                         isWritable &&
