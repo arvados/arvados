@@ -34,7 +34,7 @@ class Arvados::V1::GroupsController < ApplicationController
     params = _index_requires_parameters.
       merge({
               uuid: {
-                type: 'string', required: false, default: nil,
+                type: 'string', required: false, default: '',
               },
               recursive: {
                 type: 'boolean', required: false, default: false, description: 'Include contents from child groups recursively.',
