@@ -1078,6 +1078,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
    # controller, does not have any real effect and should be
    # accepted/ignored rather than causing an error when the CR state
    # dictates those attributes are not allowed to change.
+   ['Committed', true, {priority: 0, mounts: {"/out" => {"capacity" => 0, "kind" => "tmp"}}}, {mounts: {"/out" => {"kind" => "tmp"}}}],
    ['Committed', true, {priority: 0, mounts: {"/out" => {"capacity" => 1000000, "kind" => "tmp", "exclude_from_output": false}}}],
    ['Committed', true, {priority: 0, mounts: {"/out" => {"capacity" => 1000000, "kind" => "tmp", "repository_name": ""}}}],
    ['Committed', true, {priority: 0, mounts: {"/out" => {"capacity" => 1000000, "kind" => "tmp", "content": nil}}}],
@@ -1106,12 +1107,18 @@ class ContainerRequestTest < ActiveSupport::TestCase
    ['Final', false, {container_count: 2}],
    ['Final', true, {name: "foobar"}],
    ['Final', true, {name: "foobar", description: "baz"}],
-  ].each do |state, permitted, updates|
+  ].each do |state, permitted, updates, create_attrs|
     test "state=#{state} can#{'not' if !permitted} update #{updates.inspect}" do
       act_as_user users(:active) do
-        cr = create_minimal_req!(priority: 1,
-                                 state: "Committed",
-                                 container_count_max: 1)
+        attrs = {
+          priority: 1,
+          state: "Committed",
+          container_count_max: 1
+        }
+        if !create_attrs.nil?
+          attrs.merge!(create_attrs)
+        end
+        cr = create_minimal_req!(attrs)
         case state
         when 'Committed'
           # already done
