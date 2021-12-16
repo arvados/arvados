@@ -48,7 +48,7 @@ const panelsData: MPVPanelState[] = [
 export const ProcessPanelRoot = withStyles(styles)(({ process, ...props }: ProcessPanelRootProps) =>
     process
         ? <MPVContainer className={props.classes.root} spacing={8} panelStates={panelsData}  justify-content="flex-start" direction="column" wrap="nowrap">
-            <MPVPanelContent xs="auto">
+            <MPVPanelContent forwardProps xs="auto">
                 <ProcessInformationCard
                     process={process}
                     onContextMenu={event => props.onContextMenu(event, process)}
@@ -58,10 +58,10 @@ export const ProcessPanelRoot = withStyles(styles)(({ process, ...props }: Proce
                     cancelProcess={props.cancelProcess}
                 />
             </MPVPanelContent>
-            <MPVPanelContent xs="auto">
+            <MPVPanelContent forwardProps xs="auto">
                 <ProcessDetailsCard process={process} />
             </MPVPanelContent>
-            <MPVPanelContent xs>
+            <MPVPanelContent forwardProps xs>
                 <SubprocessPanel />
             </MPVPanelContent>
         </MPVContainer>
