@@ -30,6 +30,12 @@
     "associate_public_ip_address": "{{user `associate_public_ip_address`}}",
     "ssh_username": "{{user `ssh_user`}}",
     "ami_name": "arvados-{{user `arvados_cluster`}}-compute-{{isotime \"20060102150405\"}}",
+    "launch_block_device_mappings": [{
+      "device_name": "/dev/xvda",
+      "volume_size": 20,
+      "volume_type": "gp2",
+      "delete_on_termination": true
+    }],
     "ami_block_device_mappings": [
       {
         "device_name": "/dev/xvdb",
