@@ -6,12 +6,13 @@ import { reduxForm, reset } from 'redux-form';
 import { withStyles } from '@material-ui/core';
 import {
     COLLECTION_CREATE_PROPERTIES_FORM_NAME,
-    addPropertyToCreateCollectionForm
+    COLLECTION_CREATE_FORM_NAME
 } from 'store/collections/collection-create-actions';
 import {
     ResourcePropertiesForm,
     ResourcePropertiesFormData
 } from 'views-components/resource-properties-form/resource-properties-form';
+import { addPropertyToResourceForm } from 'store/resources/resources-actions';
 
 const Form = withStyles(
     ({ spacing }) => (
@@ -26,7 +27,7 @@ const Form = withStyles(
 export const CreateCollectionPropertiesForm = reduxForm<ResourcePropertiesFormData>({
     form: COLLECTION_CREATE_PROPERTIES_FORM_NAME,
     onSubmit: (data, dispatch) => {
-        dispatch(addPropertyToCreateCollectionForm(data));
+        dispatch(addPropertyToResourceForm(data, COLLECTION_CREATE_FORM_NAME));
         dispatch(reset(COLLECTION_CREATE_PROPERTIES_FORM_NAME));
     }
 })(Form);

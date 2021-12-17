@@ -4,7 +4,6 @@
 
 import { Dispatch } from "redux";
 import {
-    change,
     FormErrors,
     formValueSelector,
     initialize,
@@ -23,8 +22,6 @@ import { updateResources } from "../resources/resources-actions";
 import { loadDetailsPanel } from "../details-panel/details-panel-action";
 import { getResource } from "store/resources/resources";
 import { CollectionProperties } from "./collection-create-actions";
-import { ResourcePropertiesFormData } from "views-components/resource-properties-form/resource-properties-form";
-import { addProperty, deleteProperty } from "lib/resource-properties";
 
 export interface CollectionUpdateFormDialogData {
     uuid: string;
@@ -82,24 +79,4 @@ export const updateCollection = (collection: CollectionUpdateFormDialogData) =>
                 }
             }
         );
-    };
-
-export const addPropertyToUpdateCollectionForm = (data: ResourcePropertiesFormData) =>
-    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const properties = { ...COLLECTION_UPDATE_FORM_SELECTOR(getState(), 'properties') };
-        const key = data.keyID || data.key;
-        const value =  data.valueID || data.value;
-        dispatch(change(
-            COLLECTION_UPDATE_FORM_NAME,
-            'properties',
-            addProperty(properties, key, value)));
-    };
-
-export const removePropertyFromUpdateCollectionForm = (key: string, value: string) =>
-    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const properties = { ...COLLECTION_UPDATE_FORM_SELECTOR(getState(), 'properties') };
-        dispatch(change(
-            COLLECTION_UPDATE_FORM_NAME,
-            'properties',
-            deleteProperty(properties, key, value)));
     };

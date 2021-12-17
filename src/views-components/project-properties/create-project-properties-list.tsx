@@ -11,9 +11,14 @@ import {
     WithStyles,
 } from '@material-ui/core';
 import { RootState } from 'store/store';
-import { removePropertyFromCreateProjectForm, PROJECT_CREATE_FORM_SELECTOR, ProjectProperties } from 'store/projects/project-create-actions';
+import {
+    PROJECT_CREATE_FORM_SELECTOR,
+    ProjectProperties,
+    PROJECT_CREATE_FORM_NAME
+} from 'store/projects/project-create-actions';
 import { ArvadosTheme } from 'common/custom-theme';
 import { getPropertyChip } from '../resource-properties-form/property-chip';
+import { removePropertyFromResourceForm } from 'store/resources/resources-actions';
 
 type CssRules = 'tag';
 
@@ -38,7 +43,7 @@ const mapStateToProps = (state: RootState): CreateProjectPropertiesListDataProps
 };
 
 const mapDispatchToProps = (dispatch: Dispatch): CreateProjectPropertiesListActionProps => ({
-    handleDelete: (key: string, value: string) => dispatch<any>(removePropertyFromCreateProjectForm(key, value))
+    handleDelete: (key: string, value: string) => dispatch<any>(removePropertyFromResourceForm(key, value, PROJECT_CREATE_FORM_NAME))
 });
 
 type CreateProjectPropertiesListProps = CreateProjectPropertiesListDataProps &

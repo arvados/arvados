@@ -12,6 +12,8 @@ import { addProperty, deleteProperty } from 'lib/resource-properties';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { getResource } from './resources';
 import { TagProperty } from 'models/tag';
+import { change, formValueSelector } from 'redux-form';
+import { ResourcePropertiesFormData } from 'views-components/resource-properties-form/resource-properties-form';
 
 export const resourcesActions = unionize({
     SET_RESOURCES: ofType<Resource[]>(),
@@ -92,4 +94,24 @@ export const createResourceProperty = (data: TagProperty) =>
             const errorMsg = e.errors && e.errors.length > 0 ? e.errors[0] : "Error while adding property";
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: errorMsg, hideDuration: 2000, kind: SnackbarKind.ERROR }));
         }
+    };
+
+export const addPropertyToResourceForm = (data: ResourcePropertiesFormData, formName: string) =>
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const properties = { ...formValueSelector(formName)(getState(), 'properties') };
+        const key = data.keyID || data.key;
+        const value =  data.valueID || data.value;
+        dispatch(change(
+            formName,
+            'properties',
+            addProperty(properties, key, value)));
+    };
+
+export const removePropertyFromResourceForm = (key: string, value: string, formName: string) =>
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const properties = { ...formValueSelector(formName)(getState(), 'properties') };
+        dispatch(change(
+            formName,
+            'properties',
+            deleteProperty(properties, key, value)));
     };

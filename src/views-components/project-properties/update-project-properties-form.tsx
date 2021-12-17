@@ -6,12 +6,13 @@ import { reduxForm, reset } from 'redux-form';
 import { withStyles } from '@material-ui/core';
 import {
     PROJECT_UPDATE_PROPERTIES_FORM_NAME,
-    addPropertyToUpdateProjectForm
+    PROJECT_UPDATE_FORM_NAME
 } from 'store/projects/project-update-actions';
 import {
     ResourcePropertiesForm,
     ResourcePropertiesFormData
 } from 'views-components/resource-properties-form/resource-properties-form';
+import { addPropertyToResourceForm } from 'store/resources/resources-actions';
 
 const Form = withStyles(
     ({ spacing }) => (
@@ -26,7 +27,7 @@ const Form = withStyles(
 export const UpdateProjectPropertiesForm = reduxForm<ResourcePropertiesFormData>({
     form: PROJECT_UPDATE_PROPERTIES_FORM_NAME,
     onSubmit: (data, dispatch) => {
-        dispatch(addPropertyToUpdateProjectForm(data));
+        dispatch(addPropertyToResourceForm(data, PROJECT_UPDATE_FORM_NAME));
         dispatch(reset(PROJECT_UPDATE_PROPERTIES_FORM_NAME));
     }
 })(Form);

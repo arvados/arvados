@@ -12,12 +12,13 @@ import {
 } from '@material-ui/core';
 import { RootState } from 'store/store';
 import {
-    removePropertyFromUpdateProjectForm,
     PROJECT_UPDATE_FORM_SELECTOR,
+    PROJECT_UPDATE_FORM_NAME,
 } from 'store/projects/project-update-actions';
 import { ArvadosTheme } from 'common/custom-theme';
 import { getPropertyChip } from '../resource-properties-form/property-chip';
 import { ProjectProperties } from 'store/projects/project-create-actions';
+import { removePropertyFromResourceForm } from 'store/resources/resources-actions';
 
 type CssRules = 'tag';
 
@@ -42,7 +43,7 @@ const mapStateToProps = (state: RootState): UpdateProjectPropertiesListDataProps
 };
 
 const mapDispatchToProps = (dispatch: Dispatch): UpdateProjectPropertiesListActionProps => ({
-    handleDelete: (key: string, value: string) => dispatch<any>(removePropertyFromUpdateProjectForm(key, value))
+    handleDelete: (key: string, value: string) => dispatch<any>(removePropertyFromResourceForm(key, value, PROJECT_UPDATE_FORM_NAME))
 });
 
 type UpdateProjectPropertiesListProps = UpdateProjectPropertiesListDataProps &

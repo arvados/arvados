@@ -12,12 +12,13 @@ import {
 } from '@material-ui/core';
 import { RootState } from 'store/store';
 import {
-    removePropertyFromCreateCollectionForm,
     COLLECTION_CREATE_FORM_SELECTOR,
-    CollectionProperties
+    CollectionProperties,
+    COLLECTION_CREATE_FORM_NAME
 } from 'store/collections/collection-create-actions';
 import { ArvadosTheme } from 'common/custom-theme';
 import { getPropertyChip } from '../resource-properties-form/property-chip';
+import { removePropertyFromResourceForm } from 'store/resources/resources-actions';
 
 type CssRules = 'tag';
 
@@ -42,7 +43,7 @@ const mapStateToProps = (state: RootState): CreateCollectionPropertiesListDataPr
 };
 
 const mapDispatchToProps = (dispatch: Dispatch): CreateCollectionPropertiesListActionProps => ({
-    handleDelete: (key: string, value: string) => dispatch<any>(removePropertyFromCreateCollectionForm(key, value))
+    handleDelete: (key: string, value: string) => dispatch<any>(removePropertyFromResourceForm(key, value, COLLECTION_CREATE_FORM_NAME))
 });
 
 type CreateCollectionPropertiesListProps = CreateCollectionPropertiesListDataProps &
