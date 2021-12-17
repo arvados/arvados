@@ -153,31 +153,52 @@ $SUDO chown root:root /etc/cloud/cloud.cfg.d/07_compute_arvados_dispatch_cloud.c
 if [ "$NVIDIA_GPU_SUPPORT" == "1" ]; then
   DIST=$(. /etc/os-release; echo $ID$VERSION_ID)
   # We need a kernel and matching headers
-  $sudo apt-get -y install linux-image-cloud-amd64 linux-headers-cloud-amd64
+  $SUDO apt-get -y install linux-image-cloud-amd64 linux-headers-cloud-amd64
 
   # Install CUDA
-  $sudo apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/$DIST/x86_64/7fa2af80.pub
-  $sudo apt-get -y install software-properties-common
-  $sudo add-apt-repository "deb https://developer.download.nvidia.com/compute/cuda/repos/$DIST/x86_64/ /"
-  $sudo add-apt-repository contrib
-  $sudo apt-get update
-  $sudo apt-get -y install cuda
+  $SUDO apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/$DIST/x86_64/7fa2af80.pub
+  $SUDO apt-get -y install software-properties-common
+  $SUDO add-apt-repository "deb https://developer.download.nvidia.com/compute/cuda/repos/$DIST/x86_64/ /"
+  $SUDO add-apt-repository contrib
+  $SUDO apt-get update
+  $SUDO apt-get -y install cuda
 
   # Install libnvidia-container, the tooling for Docker/Singularity
   curl -s -L https://nvidia.github.io/libnvidia-container/gpgkey | \
-    $sudo apt-key add -
+    $SUDO apt-key add -
   if [ "$DIST" == "debian11" ]; then
     # As of 2021-12-16 libnvidia-container and friends are only available for
     # Debian 10, not yet Debian 11. Install experimental rc1 package as per this
     # workaround:
     # https://github.com/NVIDIA/nvidia-docker/issues/1549#issuecomment-989670662
     curl -s -L https://nvidia.github.io/libnvidia-container/debian10/libnvidia-container.list | \
-      $sudo tee /etc/apt/sources.list.d/libnvidia-container.list
-    $sudo sed -i -e '/experimental/ s/^#//g' /etc/apt/sources.list.d/libnvidia-container.list
+      $SUDO tee /etc/apt/sources.list.d/libnvidia-container.list
+    $SUDO sed -i -e '/experimental/ s/^#//g' /etc/apt/sources.list.d/libnvidia-container.list
   else
     curl -s -L https://nvidia.github.io/libnvidia-container/$DIST/libnvidia-container.list | \
-      $sudo tee /etc/apt/sources.list.d/libnvidia-container.list
+      $SUDO tee /etc/apt/sources.list.d/libnvidia-container.list
   fi
-  $sudo apt-get update
-  $sudo apt-get -y install libnvidia-container1 libnvidia-container-tools nvidia-container-toolkit
+
+  if [ "$DIST" == "debian10" ]; then
+    # Debian 10 comes with Docker 18.xx, we need 19.03 or later
+    curl -fsSL https://download.docker.com/linux/debian/gpg | $SUDO gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+    echo deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian/ buster stable | \
+      $SUDO tee /etc/apt/sources.list.d/docker.list
+    $SUDO apt-get update
+    $SUDO apt-get -yq --no-install-recommends install docker-ce=5:19.03.15~3-0~debian-buster
+
+    $SUDO sed "s/ExecStart=\(.*\)/ExecStart=\1 --default-ulimit nofile=10000:10000 ${SET_RESOLVER}/g" \
+      /lib/systemd/system/docker.service \
+      > /etc/systemd/system/docker.service
+
+    $SUDO systemctl daemon-reload
+
+    # docker should not start on boot: we restart it inside /usr/local/bin/ensure-encrypted-partitions.sh,
+    # and the BootProbeCommand might be "docker ps -q"
+    $SUDO systemctl disable docker
+  fi
+  $SUDO apt-get update
+  $SUDO apt-get -y install libnvidia-container1 libnvidia-container-tools nvidia-container-toolkit
 fi
+
+$SUDO apt-get clean
