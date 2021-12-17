@@ -11,14 +11,10 @@ import {
     WithStyles,
 } from '@material-ui/core';
 import { RootState } from 'store/store';
-import {
-    PROJECT_UPDATE_FORM_SELECTOR,
-    PROJECT_UPDATE_FORM_NAME,
-} from 'store/projects/project-update-actions';
 import { ArvadosTheme } from 'common/custom-theme';
 import { getPropertyChip } from '../resource-properties-form/property-chip';
-import { ProjectProperties } from 'store/projects/project-create-actions';
 import { removePropertyFromResourceForm } from 'store/resources/resources-actions';
+import { formValueSelector } from 'redux-form';
 
 type CssRules = 'tag';
 
@@ -29,28 +25,19 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     }
 });
 
-interface UpdateProjectPropertiesListDataProps {
-    properties: ProjectProperties;
+interface ResourcePropertiesListDataProps {
+    properties: {[key: string]: string | string[]};
 }
 
-interface UpdateProjectPropertiesListActionProps {
+interface ResourcePropertiesListActionProps {
     handleDelete: (key: string, value: string) => void;
 }
 
-const mapStateToProps = (state: RootState): UpdateProjectPropertiesListDataProps => {
-    const properties = PROJECT_UPDATE_FORM_SELECTOR(state, 'properties');
-    return { properties };
-};
-
-const mapDispatchToProps = (dispatch: Dispatch): UpdateProjectPropertiesListActionProps => ({
-    handleDelete: (key: string, value: string) => dispatch<any>(removePropertyFromResourceForm(key, value, PROJECT_UPDATE_FORM_NAME))
-});
-
-type UpdateProjectPropertiesListProps = UpdateProjectPropertiesListDataProps &
-    UpdateProjectPropertiesListActionProps & WithStyles<CssRules>;
+type ResourcePropertiesListProps = ResourcePropertiesListDataProps &
+ResourcePropertiesListActionProps & WithStyles<CssRules>;
 
 const List = withStyles(styles)(
-    ({ classes, handleDelete, properties }: UpdateProjectPropertiesListProps) =>
+    ({ classes, handleDelete, properties }: ResourcePropertiesListProps) =>
         <div>
             {properties &&
                 Object.keys(properties).map(k =>
@@ -68,4 +55,12 @@ const List = withStyles(styles)(
         </div>
 );
 
-export const UpdateProjectPropertiesList = connect(mapStateToProps, mapDispatchToProps)(List);
+export const resourcePropertiesList = (formName: string) =>
+    connect(
+        (state: RootState): ResourcePropertiesListDataProps => ({
+            properties: formValueSelector(formName)(state, 'properties')
+        }),
+        (dispatch: Dispatch): ResourcePropertiesListActionProps => ({
+                handleDelete: (key: string, value: string) => dispatch<any>(removePropertyFromResourceForm(key, value, formName))
+        })
+    )(List);

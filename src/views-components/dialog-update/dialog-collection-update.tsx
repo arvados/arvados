@@ -5,7 +5,7 @@
 import React from 'react';
 import { InjectedFormProps } from 'redux-form';
 import { WithDialogProps } from 'store/dialog/with-dialog';
-import { CollectionUpdateFormDialogData } from 'store/collections/collection-update-actions';
+import { CollectionUpdateFormDialogData, COLLECTION_UPDATE_FORM_NAME } from 'store/collections/collection-update-actions';
 import { FormDialog } from 'components/form-dialog/form-dialog';
 import {
     CollectionNameField,
@@ -13,8 +13,8 @@ import {
     CollectionStorageClassesField
 } from 'views-components/form-fields/collection-form-fields';
 import { UpdateCollectionPropertiesForm } from 'views-components/collection-properties/update-collection-properties-form';
-import { UpdateCollectionPropertiesList } from 'views-components/collection-properties/update-collection-properties-list';
 import { FormGroup, FormLabel } from '@material-ui/core';
+import { resourcePropertiesList } from 'views-components/resource-properties/resource-properties-list';
 
 type DialogCollectionProps = WithDialogProps<{}> & InjectedFormProps<CollectionUpdateFormDialogData>;
 
@@ -25,6 +25,8 @@ export const DialogCollectionUpdate = (props: DialogCollectionProps) =>
         submitLabel='Save'
         {...props}
     />;
+
+const UpdateCollectionPropertiesList = resourcePropertiesList(COLLECTION_UPDATE_FORM_NAME);
 
 const CollectionEditFields = () => <span>
     <CollectionNameField />
