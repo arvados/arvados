@@ -48,7 +48,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     wrapper: {
         display: 'flex',
         minHeight: '600px',
-        marginBottom: '1rem',
         color: 'rgba(0, 0, 0, 0.87)',
         fontSize: '0.875rem',
         fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
@@ -463,7 +462,7 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
                         </IconButton>
                     </Tooltip>
                     <div className={path.length > 1 ? classes.searchWrapper : classes.searchWrapperHidden}>
-                        <SearchInput label="Search" value={leftSearch} onSearch={setLeftSearch} />
+                        <SearchInput selfClearProp={leftKey} label="Search" value={leftSearch} onSearch={setLeftSearch} />
                     </div>
                     <div className={classes.dataWrapper}>
                         {
@@ -490,7 +489,7 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
                                                         data-parent-path={name}
                                                         className={classNames(classes.row, getActiveClass(name))}
                                                         key={id}>
-                                                            {getItemIcon(type, getActiveClass(name))} 
+                                                            {getItemIcon(type, getActiveClass(name))}
                                                             <div className={classes.rowName}>
                                                                 {name}
                                                             </div>
@@ -510,14 +509,19 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
                 </div>
                 <div className={classes.rightPanel}>
                     <div className={classes.searchWrapper}>
-                        <SearchInput label="Search" value={rightSearch} onSearch={setRightSearch} />
+                        <SearchInput selfClearProp={rightKey} label="Search" value={rightSearch} onSearch={setRightSearch} />
                     </div>
                     {
                         isWritable &&
                         <Button
                             className={classes.uploadButton}
                             data-cy='upload-button'
-                            onClick={onUploadDataClick}
+                            onClick={() => {
+                                if (!collectionAutofetchEnabled) {
+                                    setCollectionAutofetchEnabled(true);
+                                }
+                                onUploadDataClick();
+                            }}
                             variant='contained'
                             color='primary'
                             size='small'>

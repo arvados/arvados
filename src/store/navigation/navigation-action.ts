@@ -9,7 +9,6 @@ import { SidePanelTreeCategory } from '../side-panel-tree/side-panel-tree-action
 import { Routes, getProcessLogUrl, getGroupUrl, getNavUrl } from 'routes/routes';
 import { RootState } from 'store/store';
 import { ServiceRepository } from 'services/services';
-import { GROUPS_PANEL_LABEL } from 'store/breadcrumbs/breadcrumbs-actions';
 import { pluginConfig } from 'plugins';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 
@@ -64,7 +63,7 @@ export const navigateTo = (uuid: string) =>
             case SidePanelTreeCategory.TRASH:
                 dispatch(navigateToTrash);
                 return;
-            case GROUPS_PANEL_LABEL:
+            case SidePanelTreeCategory.GROUPS:
                 dispatch(navigateToGroups);
                 return;
             case SidePanelTreeCategory.ALL_PROCESSES:

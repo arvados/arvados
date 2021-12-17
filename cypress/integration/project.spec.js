@@ -179,4 +179,38 @@ describe('Project tests', function() {
             cy.get('[data-cy=not-found-page]').should('not.exist');
         });
     });
+
+    it('shows details panel when clicking on the info icon', () => {
+        cy.createGroup(activeUser.token, {
+            name: `Test root project ${Math.floor(Math.random() * 999999)}`,
+            group_class: 'project',
+        }).as('testRootProject').then(function(testRootProject) {
+            cy.loginAs(activeUser);
+
+            cy.get('[data-cy=side-panel-tree]').contains(testRootProject.name).click();
+
+            cy.get('[data-cy=additional-info-icon]').click();
+
+            cy.contains(testRootProject.uuid).should('exist');
+        });
+    });
+
+    it('clears search input when changing project', () => {
+        cy.createGroup(activeUser.token, {
+            name: `Test root project ${Math.floor(Math.random() * 999999)}`,
+            group_class: 'project',
+        }).as('testProject1');
+
+        cy.getAll('@testProject1').then(function([testProject1]) {
+            cy.loginAs(activeUser);
+
+            cy.get('[data-cy=side-panel-tree]').contains(testProject1.name).click();
+
+            cy.get('[data-cy=search-input] input').type('test123');
+
+            cy.get('[data-cy=side-panel-tree]').contains('Projects').click();
+
+            cy.get('[data-cy=search-input] input').should('not.have.value', 'test123');
+        });
+    });
 });

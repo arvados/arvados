@@ -51,9 +51,7 @@ type CssRules = 'root' | "button";
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
-        position: 'relative',
         width: '100%',
-        height: '100%'
     },
     button: {
         marginLeft: theme.spacing.unit
@@ -161,7 +159,7 @@ export const ProjectPanel = withStyles(styles)(
                     data = dataExplorerItems;
                 }
 
-                return <div className={classes.root}>
+                return <div data-cy='project-panel' className={classes.root}>
                     <DataExplorer
                         working={loading}
                         id={PROJECT_PANEL_ID}

@@ -3,13 +3,24 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { Grid } from '@material-ui/core';
+import { Grid, StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core';
 import { ProcessInformationCard } from './process-information-card';
 import { DefaultView } from 'components/default-view/default-view';
 import { ProcessIcon } from 'components/icon/icon';
 import { Process } from 'store/processes/process';
 import { SubprocessPanel } from 'views/subprocess-panel/subprocess-panel';
 import { SubprocessFilterDataProps } from 'components/subprocess-filter/subprocess-filter';
+import { MPVContainer, MPVPanelContent, MPVPanelState } from 'components/multi-panel-view/multi-panel-view';
+import { ArvadosTheme } from 'common/custom-theme';
+import { ProcessDetailsCard } from './process-details-card';
+
+type CssRules = 'root';
+
+const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+    root: {
+        width: '100%',
+    },
+});
 
 export interface ProcessPanelRootDataProps {
     process?: Process;
@@ -26,12 +37,18 @@ export interface ProcessPanelRootActionProps {
     cancelProcess: (uuid: string) => void;
 }
 
-export type ProcessPanelRootProps = ProcessPanelRootDataProps & ProcessPanelRootActionProps;
+export type ProcessPanelRootProps = ProcessPanelRootDataProps & ProcessPanelRootActionProps & WithStyles<CssRules>;
 
-export const ProcessPanelRoot = ({ process, ...props }: ProcessPanelRootProps) =>
+const panelsData: MPVPanelState[] = [
+    {name: "Info"},
+    {name: "Details", visible: false},
+    {name: "Subprocesses"},
+];
+
+export const ProcessPanelRoot = withStyles(styles)(({ process, ...props }: ProcessPanelRootProps) =>
     process
-        ? <Grid container spacing={16} alignItems="stretch">
-            <Grid item sm={12} md={12}>
+        ? <MPVContainer className={props.classes.root} spacing={8} panelStates={panelsData}  justify-content="flex-start" direction="column" wrap="nowrap">
+            <MPVPanelContent xs="auto">
                 <ProcessInformationCard
                     process={process}
                     onContextMenu={event => props.onContextMenu(event, process)}
@@ -40,11 +57,14 @@ export const ProcessPanelRoot = ({ process, ...props }: ProcessPanelRootProps) =
                     openWorkflow={props.navigateToWorkflow}
                     cancelProcess={props.cancelProcess}
                 />
-            </Grid>
-            <Grid item sm={12} md={12}>
+            </MPVPanelContent>
+            <MPVPanelContent xs="auto">
+                <ProcessDetailsCard process={process} />
+            </MPVPanelContent>
+            <MPVPanelContent xs>
                 <SubprocessPanel />
-            </Grid>
-        </Grid>
+            </MPVPanelContent>
+        </MPVContainer>
         : <Grid container
             alignItems='center'
             justify='center'
@@ -52,5 +72,5 @@ export const ProcessPanelRoot = ({ process, ...props }: ProcessPanelRootProps) =
             <DefaultView
                 icon={ProcessIcon}
                 messages={['Process not found']} />
-        </Grid>;
+        </Grid>);
 

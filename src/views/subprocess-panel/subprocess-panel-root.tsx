@@ -17,6 +17,7 @@ import { DataTableDefaultView } from 'components/data-table-default-view/data-ta
 import { createTree } from 'models/tree';
 import { getInitialProcessStatusFilters } from 'store/resource-type-filters/resource-type-filters';
 import { ResourcesState } from 'store/resources/resources';
+import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
 
 export enum SubprocessPanelColumnNames {
     NAME = "Name",
@@ -80,7 +81,7 @@ const DEFAULT_VIEW_MESSAGES = [
     'The current process may not have any or none matches current filtering.'
 ];
 
-export const SubprocessPanelRoot = (props: SubprocessPanelProps) => {
+export const SubprocessPanelRoot = (props: SubprocessPanelProps & MPVPanelProps) => {
     return <DataExplorer
         id={SUBPROCESS_PANEL_ID}
         onRowClick={props.onItemClick}
@@ -91,5 +92,9 @@ export const SubprocessPanelRoot = (props: SubprocessPanelProps) => {
             <DataTableDefaultView
                 icon={ProcessIcon}
                 messages={DEFAULT_VIEW_MESSAGES} />
-        } />;
+        }
+        doHidePanel={props.doHidePanel}
+        doMaximizePanel={props.doMaximizePanel}
+        panelMaximized={props.panelMaximized}
+        panelName={props.panelName} />;
 };

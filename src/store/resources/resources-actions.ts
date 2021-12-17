@@ -18,6 +18,8 @@ export type ResourcesAction = UnionOf<typeof resourcesActions>;
 
 export const updateResources = (resources: Resource[]) => resourcesActions.SET_RESOURCES(resources);
 
+export const deleteResources = (resources: string[]) => resourcesActions.DELETE_RESOURCES(resources);
+
 export const loadResource = (uuid: string, showErrors?: boolean) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         try {

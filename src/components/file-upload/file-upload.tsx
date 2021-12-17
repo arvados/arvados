@@ -123,6 +123,17 @@ export const FileUpload = withStyles(styles)(
             if (!disabled) {
                 onDelete(file);
             }
+
+            let interval = setInterval(() => {
+                const key = Object.keys((window as any).cancelTokens).find(key => key.indexOf(file.file.name) > -1);
+
+                if (key) {
+                    clearInterval(interval);
+                    (window as any).cancelTokens[key]();
+                    delete (window as any).cancelTokens[key];
+                }
+            }, 100);
+
         }
         render() {
             const { classes, onDrop, disabled, files } = this.props;
@@ -140,6 +151,7 @@ export const FileUpload = withStyles(styles)(
                             inputs[0].focus();
                         }
                     }}
+                    data-cy="drag-and-drop"
                     disabled={disabled}
                     inputProps={{
                         onFocus: () => {

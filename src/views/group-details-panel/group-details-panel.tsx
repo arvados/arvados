@@ -7,67 +7,129 @@ import { connect } from 'react-redux';
 
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { DataColumns } from 'components/data-table/data-table';
-import { ResourceUuid, ResourceFirstName, ResourceLastName, ResourceEmail, ResourceUsername } from 'views-components/data-explorer/renderers';
+import { ResourceLinkHeadUuid, ResourceLinkTailUsername, ResourceLinkHeadPermissionLevel, ResourceLinkTailPermissionLevel, ResourceLinkHead, ResourceLinkTail, ResourceLinkDelete, ResourceLinkTailIsActive, ResourceLinkTailIsVisible } from 'views-components/data-explorer/renderers';
 import { createTree } from 'models/tree';
 import { noop } from 'lodash/fp';
 import { RootState } from 'store/store';
-import { GROUP_DETAILS_PANEL_ID, openAddGroupMembersDialog } from 'store/group-details-panel/group-details-panel-actions';
+import { GROUP_DETAILS_MEMBERS_PANEL_ID, GROUP_DETAILS_PERMISSIONS_PANEL_ID, openAddGroupMembersDialog, getCurrentGroupDetailsPanelUuid } from 'store/group-details-panel/group-details-panel-actions';
 import { openContextMenu } from 'store/context-menu/context-menu-actions';
 import { ResourcesState, getResource } from 'store/resources/resources';
-import { ContextMenuKind } from 'views-components/context-menu/context-menu';
-import { PermissionResource } from 'models/permission';
-import { Grid, Button } from '@material-ui/core';
+import { Grid, Button, Tabs, Tab, Paper, WithStyles, withStyles, StyleRulesCallback } from '@material-ui/core';
 import { AddIcon } from 'components/icon/icon';
+import { getUserUuid } from 'common/getuser';
+import { GroupResource, isBuiltinGroup } from 'models/group';
+import { ArvadosTheme } from 'common/custom-theme';
 
-export enum GroupDetailsPanelColumnNames {
-    FIRST_NAME = "First name",
-    LAST_NAME = "Last name",
-    UUID = "UUID",
-    EMAIL = "Email",
+type CssRules = "root";
+
+const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+    root: {
+        width: '100%',
+    }
+});
+
+export enum GroupDetailsPanelMembersColumnNames {
+    FULL_NAME = "Name",
     USERNAME = "Username",
+    ACTIVE = "User Active",
+    VISIBLE = "Visible to other members",
+    PERMISSION = "Permission",
+    REMOVE = "Remove",
 }
 
-export const groupDetailsPanelColumns: DataColumns<string> = [
+export enum GroupDetailsPanelPermissionsColumnNames {
+    NAME = "Name",
+    PERMISSION = "Permission",
+    UUID = "UUID",
+    REMOVE = "Remove",
+}
+
+export const groupDetailsMembersPanelColumns: DataColumns<string> = [
     {
-        name: GroupDetailsPanelColumnNames.FIRST_NAME,
+        name: GroupDetailsPanelMembersColumnNames.FULL_NAME,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceFirstName uuid={uuid} />
+        render: uuid => <ResourceLinkTail uuid={uuid} />
     },
     {
-        name: GroupDetailsPanelColumnNames.LAST_NAME,
+        name: GroupDetailsPanelMembersColumnNames.USERNAME,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceLastName uuid={uuid} />
+        render: uuid => <ResourceLinkTailUsername uuid={uuid} />
     },
     {
-        name: GroupDetailsPanelColumnNames.UUID,
+        name: GroupDetailsPanelMembersColumnNames.ACTIVE,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceUuid uuid={uuid} />
+        render: uuid => <ResourceLinkTailIsActive uuid={uuid} disabled={true} />
     },
     {
-        name: GroupDetailsPanelColumnNames.EMAIL,
+        name: GroupDetailsPanelMembersColumnNames.VISIBLE,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceEmail uuid={uuid} />
+        render: uuid => <ResourceLinkTailIsVisible uuid={uuid} />
     },
     {
-        name: GroupDetailsPanelColumnNames.USERNAME,
+        name: GroupDetailsPanelMembersColumnNames.PERMISSION,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceUsername uuid={uuid} />
+        render: uuid => <ResourceLinkTailPermissionLevel uuid={uuid} />
+    },
+    {
+        name: GroupDetailsPanelMembersColumnNames.REMOVE,
+        selected: true,
+        configurable: true,
+        filters: createTree(),
+        render: uuid => <ResourceLinkDelete uuid={uuid} />
+    },
+];
+
+export const groupDetailsPermissionsPanelColumns: DataColumns<string> = [
+    {
+        name: GroupDetailsPanelPermissionsColumnNames.NAME,
+        selected: true,
+        configurable: true,
+        filters: createTree(),
+        render: uuid => <ResourceLinkHead uuid={uuid} />
+    },
+    {
+        name: GroupDetailsPanelPermissionsColumnNames.PERMISSION,
+        selected: true,
+        configurable: true,
+        filters: createTree(),
+        render: uuid => <ResourceLinkHeadPermissionLevel uuid={uuid} />
+    },
+    {
+        name: GroupDetailsPanelPermissionsColumnNames.UUID,
+        selected: true,
+        configurable: true,
+        filters: createTree(),
+        render: uuid => <ResourceLinkHeadUuid uuid={uuid} />
+    },
+    {
+        name: GroupDetailsPanelPermissionsColumnNames.REMOVE,
+        selected: true,
+        configurable: true,
+        filters: createTree(),
+        render: uuid => <ResourceLinkDelete uuid={uuid} />
     },
 ];
 
 const mapStateToProps = (state: RootState) => {
+    const groupUuid = getCurrentGroupDetailsPanelUuid(state.properties);
+    const group = getResource<GroupResource>(groupUuid || '')(state.resources);
+    const userUuid = getUserUuid(state);
+
     return {
-        resources: state.resources
+        resources: state.resources,
+        groupCanManage: userUuid && !isBuiltinGroup(group?.uuid || '')
+                            ? group?.writableBy?.includes(userUuid)
+                            : false,
     };
 };
 
@@ -80,47 +142,74 @@ export interface GroupDetailsPanelProps {
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: any) => void;
     onAddUser: () => void;
     resources: ResourcesState;
+    groupCanManage: boolean;
 }
 
-export const GroupDetailsPanel = connect(
+export const GroupDetailsPanel = withStyles(styles)(connect(
     mapStateToProps, mapDispatchToProps
 )(
-    class GroupDetailsPanel extends React.Component<GroupDetailsPanelProps> {
+    class GroupDetailsPanel extends React.Component<GroupDetailsPanelProps & WithStyles<CssRules>> {
+        state = {
+          value: 0,
+        };
+
+        componentDidMount() {
+            this.setState({ value: 0 });
+        }
 
         render() {
+            const { value } = this.state;
             return (
-                <DataExplorer
-                    id={GROUP_DETAILS_PANEL_ID}
-                    onRowClick={noop}
-                    onRowDoubleClick={noop}
-                    onContextMenu={this.handleContextMenu}
-                    contextMenuColumn={true}
-                    hideColumnSelector
-                    hideSearchInput
-                    actions={
-                        <Grid container justify='flex-end'>
-                            <Button
-                                variant="contained"
-                                color="primary"
-                                onClick={this.props.onAddUser}>
-                                <AddIcon /> Add user
-                        </Button>
-                        </Grid>
-                    } />
+                <Paper className={this.props.classes.root}>
+                  <Tabs value={value} onChange={this.handleChange} variant="fullWidth">
+                      <Tab data-cy="group-details-members-tab" label="MEMBERS" />
+                      <Tab data-cy="group-details-permissions-tab" label="PERMISSIONS" />
+                  </Tabs>
+                  {value === 0 &&
+                      <DataExplorer
+                          id={GROUP_DETAILS_MEMBERS_PANEL_ID}
+                          data-cy="group-members-data-explorer"
+                          onRowClick={noop}
+                          onRowDoubleClick={noop}
+                          onContextMenu={noop}
+                          contextMenuColumn={false}
+                          hideColumnSelector
+                          hideSearchInput
+                          actions={
+                                this.props.groupCanManage &&
+                                <Grid container justify='flex-end'>
+                                    <Button
+                                      data-cy="group-member-add"
+                                      variant="contained"
+                                      color="primary"
+                                      onClick={this.props.onAddUser}>
+                                      <AddIcon /> Add user
+                                    </Button>
+                                </Grid>
+                          }
+                          paperProps={{
+                              elevation: 0,
+                          }} />
+                  }
+                  {value === 1 &&
+                      <DataExplorer
+                          id={GROUP_DETAILS_PERMISSIONS_PANEL_ID}
+                          data-cy="group-permissions-data-explorer"
+                          onRowClick={noop}
+                          onRowDoubleClick={noop}
+                          onContextMenu={noop}
+                          contextMenuColumn={false}
+                          hideColumnSelector
+                          hideSearchInput
+                          paperProps={{
+                              elevation: 0,
+                          }} />
+                  }
+                </Paper>
             );
         }
 
-        handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
-            const resource = getResource<PermissionResource>(resourceUuid)(this.props.resources);
-            if (resource) {
-                this.props.onContextMenu(event, {
-                    name: '',
-                    uuid: resource.uuid,
-                    ownerUuid: resource.ownerUuid,
-                    kind: resource.kind,
-                    menuKind: ContextMenuKind.GROUP_MEMBER
-                });
-            }
+        handleChange = (event: React.MouseEvent<HTMLElement>, value: number) => {
+            this.setState({ value });
         }
-    });
-
+    }));

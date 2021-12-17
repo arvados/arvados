@@ -37,12 +37,15 @@ export class CommonResourceService<T extends Resource> extends CommonService<T> 
         return super.create(payload);
     }
 
-    update(uuid: string, data: Partial<T>) {
+    update(uuid: string, data: Partial<T>, select?: string[]) {
         let payload: any;
         if (data !== undefined) {
             this.readOnlyFields.forEach( field => delete data[field] );
             payload = {
                 [this.resourceType.slice(0, -1)]: CommonService.mapKeys(snakeCase)(data),
+            };
+            if (select !== undefined && select.length > 0) {
+                payload.select = ['uuid', ...select.map(field => snakeCase(field))];
             };
         }
         return super.update(uuid, payload);

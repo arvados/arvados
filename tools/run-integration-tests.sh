@@ -70,6 +70,7 @@ echo "ARVADOS_DIR is ${ARVADOS_DIR}"
 
 ARVADOS_LOG=${ARVADOS_DIR}/arvados.log
 ARVADOS_CONF=${WB2_DIR}/tools/arvados_config.yml
+VOCABULARY_CONF=${WB2_DIR}/tools/example-vocabulary.json
 
 if [ ! -f "${WB2_DIR}/src/index.tsx" ]; then
     echo "ERROR: '${WB2_DIR}' isn't workbench2's directory"
@@ -104,6 +105,9 @@ echo "Installing dev dependencies..."
 ~/go/bin/arvados-server install -type test || exit 1
 
 echo "Launching arvados in test mode..."
+VOC_DIR=$(mktemp -d | cut -d \/ -f3) # Removes the /tmp/ part
+cp ${VOCABULARY_CONF} /tmp/${VOC_DIR}/voc.json
+sed -i "s/VocabularyPath: \".*\"/VocabularyPath: \"\/tmp\/${VOC_DIR}\/voc.json\"/" ${ARVADOS_CONF}
 coproc arvboot (~/go/bin/arvados-server boot \
     -type test \
     -config ${ARVADOS_CONF} \

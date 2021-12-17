@@ -14,6 +14,8 @@ import { MoveToFormDialogData } from 'store/move-to-dialog/move-to-dialog';
 import { resetPickerProjectTree } from 'store/project-tree-picker/project-tree-picker-actions';
 import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
 import { initProjectsTreePicker } from 'store/tree-picker/tree-picker-actions';
+import { getResource } from "store/resources/resources";
+import { CollectionResource } from "models/collection";
 
 export const COLLECTION_MOVE_FORM_NAME = 'collectionMoveFormName';
 
@@ -28,13 +30,17 @@ export const openMoveCollectionDialog = (resource: { name: string, uuid: string 
 export const moveCollection = (resource: MoveToFormDialogData) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(startSubmit(COLLECTION_MOVE_FORM_NAME));
+        let cachedCollection = getResource<CollectionResource>(resource.uuid)(getState().resources);
         try {
             dispatch(progressIndicatorActions.START_WORKING(COLLECTION_MOVE_FORM_NAME));
+            if (!cachedCollection) {
+                cachedCollection = await services.collectionService.get(resource.uuid);
+            }
             const collection = await services.collectionService.update(resource.uuid, { ownerUuid: resource.ownerUuid });
             dispatch(projectPanelActions.REQUEST_ITEMS());
             dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_MOVE_FORM_NAME }));
             dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_MOVE_FORM_NAME));
-            return collection;
+            return {...cachedCollection, ...collection};
         } catch (e) {
             const error = getCommonResourceServiceError(e);
             if (error === CommonResourceServiceError.UNIQUE_NAME_VIOLATION) {

@@ -6,12 +6,12 @@ import React from 'react';
 import { Grid, Typography, withStyles, Tooltip, IconButton, Checkbox } from '@material-ui/core';
 import { FavoriteStar, PublicFavoriteStar } from '../favorite-star/favorite-star';
 import { Resource, ResourceKind, TrashableResource } from 'models/resource';
-import { ProjectIcon, FilterGroupIcon, CollectionIcon, ProcessIcon, DefaultIcon, ShareIcon, CollectionOldVersionIcon, WorkflowIcon } from 'components/icon/icon';
+import { ProjectIcon, FilterGroupIcon, CollectionIcon, ProcessIcon, DefaultIcon, ShareIcon, CollectionOldVersionIcon, WorkflowIcon, RemoveIcon, RenameIcon } from 'components/icon/icon';
 import { formatDate, formatFileSize, formatTime } from 'common/formatters';
 import { resourceLabel } from 'common/labels';
 import { connect, DispatchProp } from 'react-redux';
 import { RootState } from 'store/store';
-import { getResource } from 'store/resources/resources';
+import { getResource, filterResources } from 'store/resources/resources';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { getProcess, Process, getProcessStatus, getProcessStatusColor, getProcessRuntime } from 'store/processes/process';
 import { ArvadosTheme } from 'common/custom-theme';
@@ -20,23 +20,31 @@ import { WorkflowResource } from 'models/workflow';
 import { ResourceStatus as WorkflowStatus } from 'views/workflow-panel/workflow-panel-view';
 import { getUuidPrefix, openRunProcess } from 'store/workflow-panel/workflow-panel-actions';
 import { openSharingDialog } from 'store/sharing-dialog/sharing-dialog-actions';
-import { getUserFullname, User, UserResource } from 'models/user';
+import { getUserFullname, getUserDisplayName, User, UserResource } from 'models/user';
 import { toggleIsActive, toggleIsAdmin } from 'store/users/users-actions';
-import { LinkResource } from 'models/link';
-import { navigateTo } from 'store/navigation/navigation-action';
+import { LinkClass, LinkResource } from 'models/link';
+import { navigateTo, navigateToGroupDetails } from 'store/navigation/navigation-action';
 import { withResourceData } from 'views-components/data-explorer/with-resources';
 import { CollectionResource } from 'models/collection';
 import { IllegalNamingWarning } from 'components/warning/warning';
 import { loadResource } from 'store/resources/resources-actions';
-import { GroupClass } from 'models/group';
+import { GroupClass, GroupResource, isBuiltinGroup } from 'models/group';
+import { openRemoveGroupMemberDialog } from 'store/group-details-panel/group-details-panel-actions';
+import { setMemberIsHidden } from 'store/group-details-panel/group-details-panel-actions';
+import { formatPermissionLevel } from 'views-components/sharing-dialog/permission-select';
+import { PermissionLevel } from 'models/permission';
+import { openPermissionEditContextMenu } from 'store/context-menu/context-menu-actions';
+import { getUserUuid } from 'common/getuser';
 
-const renderName = (dispatch: Dispatch, item: GroupContentsResource) =>
-    <Grid container alignItems="center" wrap="nowrap" spacing={16}>
+const renderName = (dispatch: Dispatch, item: GroupContentsResource) => {
+
+    const navFunc = ("groupClass" in item && item.groupClass === GroupClass.ROLE ? navigateToGroupDetails : navigateTo);
+    return <Grid container alignItems="center" wrap="nowrap" spacing={16}>
         <Grid item>
             {renderIcon(item)}
         </Grid>
         <Grid item>
-            <Typography color="primary" style={{ width: 'auto', cursor: 'pointer' }} onClick={() => dispatch<any>(navigateTo(item.uuid))}>
+            <Typography color="primary" style={{ width: 'auto', cursor: 'pointer' }} onClick={() => dispatch<any>(navFunc(item.uuid))}>
                 {item.kind === ResourceKind.PROJECT || item.kind === ResourceKind.COLLECTION
                     ? <IllegalNamingWarning name={item.name} />
                     : null}
@@ -50,6 +58,7 @@ const renderName = (dispatch: Dispatch, item: GroupContentsResource) =>
             </Typography>
         </Grid>
     </Grid>;
+};
 
 export const ResourceName = connect(
     (state: RootState, props: { uuid: string }) => {
@@ -131,11 +140,11 @@ export const ResourceShare = connect(
     })((props: { ownerUuid?: string, uuidPrefix: string, uuid?: string } & DispatchProp<any>) =>
         resourceShare(props.dispatch, props.uuidPrefix, props.ownerUuid, props.uuid));
 
+// User Resources
 const renderFirstName = (item: { firstName: string }) => {
     return <Typography noWrap>{item.firstName}</Typography>;
 };
 
-// User Resources
 export const ResourceFirstName = connect(
     (state: RootState, props: { uuid: string }) => {
         const resource = getResource<UserResource>(props.uuid)(state.resources);
@@ -151,8 +160,18 @@ export const ResourceLastName = connect(
         return resource || { lastName: '' };
     })(renderLastName);
 
+const renderFullName = (item: { firstName: string, lastName: string }) =>
+    <Typography noWrap>{(item.firstName + " " + item.lastName).trim()}</Typography>;
+
+export const ResourceFullName = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const resource = getResource<UserResource>(props.uuid)(state.resources);
+        return resource || { firstName: '', lastName: '' };
+    })(renderFullName);
+
+
 const renderUuid = (item: { uuid: string }) =>
-    <Typography noWrap>{item.uuid}</Typography>;
+    <Typography data-cy="uuid" noWrap>{item.uuid}</Typography>;
 
 export const ResourceUuid = connect(
     (state: RootState, props: { uuid: string }) => {
@@ -169,18 +188,75 @@ export const ResourceEmail = connect(
         return resource || { email: '' };
     })(renderEmail);
 
-const renderIsActive = (props: { uuid: string, isActive: boolean, toggleIsActive: (uuid: string) => void }) =>
-    <Checkbox
-        color="primary"
-        checked={props.isActive}
-        onClick={() => props.toggleIsActive(props.uuid)} />;
+const renderIsActive = (props: { uuid: string, kind: ResourceKind, isActive: boolean, toggleIsActive: (uuid: string) => void, disabled?: boolean }) => {
+    if (props.kind === ResourceKind.USER) {
+        return <Checkbox
+            color="primary"
+            checked={props.isActive}
+            disabled={!!props.disabled}
+            onClick={() => props.toggleIsActive(props.uuid)} />;
+    } else {
+        return <Typography />;
+    }
+}
 
 export const ResourceIsActive = connect(
-    (state: RootState, props: { uuid: string }) => {
+    (state: RootState, props: { uuid: string, disabled?: boolean }) => {
         const resource = getResource<UserResource>(props.uuid)(state.resources);
-        return resource || { isActive: false };
+        return resource ? {...resource, disabled: !!props.disabled} : { isActive: false, kind: ResourceKind.NONE };
     }, { toggleIsActive }
 )(renderIsActive);
+
+export const ResourceLinkTailIsActive = connect(
+    (state: RootState, props: { uuid: string, disabled?: boolean }) => {
+        const link = getResource<LinkResource>(props.uuid)(state.resources);
+        const tailResource = getResource<UserResource>(link?.tailUuid || '')(state.resources);
+
+        return tailResource ? {...tailResource, disabled: !!props.disabled} : { isActive: false, kind: ResourceKind.NONE };
+    }, { toggleIsActive }
+)(renderIsActive);
+
+const renderIsHidden = (props: {
+                            memberLinkUuid: string,
+                            permissionLinkUuid: string,
+                            visible: boolean,
+                            canManage: boolean,
+                            setMemberIsHidden: (memberLinkUuid: string, permissionLinkUuid: string, hide: boolean) => void 
+                        }) => {
+    if (props.memberLinkUuid) {
+        return <Checkbox
+                data-cy="user-visible-checkbox"
+                color="primary"
+                checked={props.visible}
+                disabled={!props.canManage}
+                onClick={() => props.setMemberIsHidden(props.memberLinkUuid, props.permissionLinkUuid, !props.visible)} />;
+    } else {
+        return <Typography />;
+    }
+}
+
+export const ResourceLinkTailIsVisible = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const link = getResource<LinkResource>(props.uuid)(state.resources);
+        const member = getResource<Resource>(link?.tailUuid || '')(state.resources);
+        const group = getResource<GroupResource>(link?.headUuid || '')(state.resources);
+        const permissions = filterResources((resource: LinkResource) => {
+            return resource.linkClass === LinkClass.PERMISSION
+                && resource.headUuid === link?.tailUuid
+                && resource.tailUuid === group?.uuid
+                && resource.name === PermissionLevel.CAN_READ;
+        })(state.resources);
+
+        const permissionLinkUuid = permissions.length > 0 ? permissions[0].uuid : '';
+        const isVisible = link && group && permissions.length > 0;
+        // Consider whether the current user canManage this resurce in addition when it's possible
+        const isBuiltin = isBuiltinGroup(link?.headUuid || '');
+
+        return member?.kind === ResourceKind.USER
+            ? { memberLinkUuid: link?.uuid, permissionLinkUuid, visible: isVisible, canManage: !isBuiltin }
+            : { memberLinkUuid: '', permissionLinkUuid: '', visible: false, canManage: false };
+    }, { setMemberIsHidden }
+)(renderIsHidden);
 
 const renderIsAdmin = (props: { uuid: string, isAdmin: boolean, toggleIsAdmin: (uuid: string) => void }) =>
     <Checkbox
@@ -276,51 +352,162 @@ export const ResourceLinkClass = connect(
         return resource || { linkClass: '' };
     })(renderLinkClass);
 
-const renderLinkTail = (dispatch: Dispatch, item: { uuid: string, tailUuid: string, tailKind: string }) => {
-    const currentLabel = resourceLabel(item.tailKind);
-    const isUnknow = currentLabel === "Unknown";
-    return (<div>
-        {!isUnknow ? (
-            renderLink(dispatch, item.tailUuid, currentLabel)
-        ) : (
-                <Typography noWrap color="default">
-                    {item.tailUuid}
-                </Typography>
-            )}
-    </div>);
-};
+const getResourceDisplayName = (resource: Resource): string => {
+    if ((resource as UserResource).kind === ResourceKind.USER
+          && typeof (resource as UserResource).firstName !== 'undefined') {
+        // We can be sure the resource is UserResource
+        return getUserDisplayName(resource as UserResource);
+    } else {
+        return (resource as GroupContentsResource).name;
+    }
+}
 
-const renderLink = (dispatch: Dispatch, uuid: string, label: string) =>
-    <Typography noWrap color="primary" style={{ 'cursor': 'pointer' }} onClick={() => dispatch<any>(navigateTo(uuid))}>
-        {label}: {uuid}
+const renderResourceLink = (dispatch: Dispatch, item: Resource) => {
+    var displayName = getResourceDisplayName(item);
+
+    return <Typography noWrap color="primary" style={{ 'cursor': 'pointer' }} onClick={() => dispatch<any>(navigateTo(item.uuid))}>
+        {resourceLabel(item.kind, item && item.kind === ResourceKind.GROUP ? (item as GroupResource).groupClass || '' : '')}: {displayName || item.uuid}
     </Typography>;
+};
 
 export const ResourceLinkTail = connect(
     (state: RootState, props: { uuid: string }) => {
         const resource = getResource<LinkResource>(props.uuid)(state.resources);
-        return {
-            item: resource || { uuid: '', tailUuid: '', tailKind: ResourceKind.NONE }
-        };
-    })((props: { item: any } & DispatchProp<any>) =>
-        renderLinkTail(props.dispatch, props.item));
+        const tailResource = getResource<Resource>(resource?.tailUuid || '')(state.resources);
 
-const renderLinkHead = (dispatch: Dispatch, item: { uuid: string, headUuid: string, headKind: ResourceKind }) =>
-    renderLink(dispatch, item.headUuid, resourceLabel(item.headKind));
+        return {
+            item: tailResource || { uuid: resource?.tailUuid || '', kind: resource?.tailKind || ResourceKind.NONE }
+        };
+    })((props: { item: Resource } & DispatchProp<any>) =>
+        renderResourceLink(props.dispatch, props.item));
 
 export const ResourceLinkHead = connect(
     (state: RootState, props: { uuid: string }) => {
         const resource = getResource<LinkResource>(props.uuid)(state.resources);
+        const headResource = getResource<Resource>(resource?.headUuid || '')(state.resources);
+
         return {
-            item: resource || { uuid: '', headUuid: '', headKind: ResourceKind.NONE }
+            item: headResource || { uuid: resource?.headUuid || '', kind: resource?.headKind || ResourceKind.NONE }
         };
-    })((props: { item: any } & DispatchProp<any>) =>
-        renderLinkHead(props.dispatch, props.item));
+    })((props: { item: Resource } & DispatchProp<any>) =>
+        renderResourceLink(props.dispatch, props.item));
 
 export const ResourceLinkUuid = connect(
     (state: RootState, props: { uuid: string }) => {
         const resource = getResource<LinkResource>(props.uuid)(state.resources);
         return resource || { uuid: '' };
     })(renderUuid);
+
+export const ResourceLinkHeadUuid = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const link = getResource<LinkResource>(props.uuid)(state.resources);
+        const headResource = getResource<Resource>(link?.headUuid || '')(state.resources);
+
+        return headResource || { uuid: '' };
+    })(renderUuid);
+
+export const ResourceLinkTailUuid = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const link = getResource<LinkResource>(props.uuid)(state.resources);
+        const tailResource = getResource<Resource>(link?.tailUuid || '')(state.resources);
+
+        return tailResource || { uuid: '' };
+    })(renderUuid);
+
+const renderLinkDelete = (dispatch: Dispatch, item: LinkResource, canManage: boolean) => {
+    if (item.uuid) {
+        return canManage ?
+            <Typography noWrap>
+                <IconButton data-cy="resource-delete-button" onClick={() => dispatch<any>(openRemoveGroupMemberDialog(item.uuid))}>
+                    <RemoveIcon />
+                </IconButton>
+            </Typography> :
+            <Typography noWrap>
+                <IconButton disabled data-cy="resource-delete-button">
+                    <RemoveIcon />
+                </IconButton>
+            </Typography>;
+    } else {
+      return <Typography noWrap></Typography>;
+    }
+}
+
+export const ResourceLinkDelete = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const link = getResource<LinkResource>(props.uuid)(state.resources);
+        const isBuiltin = isBuiltinGroup(link?.headUuid || '') || isBuiltinGroup(link?.tailUuid || '');
+
+        return {
+            item: link || { uuid: '', kind: ResourceKind.NONE },
+            canManage: link && getResourceLinkCanManage(state, link) && !isBuiltin,
+        };
+    })((props: { item: LinkResource, canManage: boolean } & DispatchProp<any>) =>
+      renderLinkDelete(props.dispatch, props.item, props.canManage));
+
+export const ResourceLinkTailEmail = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const link = getResource<LinkResource>(props.uuid)(state.resources);
+        const resource = getResource<UserResource>(link?.tailUuid || '')(state.resources);
+
+        return resource || { email: '' };
+    })(renderEmail);
+
+export const ResourceLinkTailUsername = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const link = getResource<LinkResource>(props.uuid)(state.resources);
+        const resource = getResource<UserResource>(link?.tailUuid || '')(state.resources);
+
+        return resource || { username: '' };
+    })(renderUsername);
+
+const renderPermissionLevel = (dispatch: Dispatch, link: LinkResource, canManage: boolean) => {
+    return <Typography noWrap>
+        {formatPermissionLevel(link.name as PermissionLevel)}
+        {canManage ?
+            <IconButton data-cy="edit-permission-button" onClick={(event) => dispatch<any>(openPermissionEditContextMenu(event, link))}>
+                <RenameIcon />
+            </IconButton> :
+            ''
+        }
+    </Typography>;
+}
+
+export const ResourceLinkHeadPermissionLevel = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const link = getResource<LinkResource>(props.uuid)(state.resources);
+        const isBuiltin = isBuiltinGroup(link?.headUuid || '') || isBuiltinGroup(link?.tailUuid || '');
+
+        return {
+            link: link || { uuid: '', name: '', kind: ResourceKind.NONE },
+            canManage: link && getResourceLinkCanManage(state, link) && !isBuiltin,
+        };
+    })((props: { link: LinkResource, canManage: boolean } & DispatchProp<any>) =>
+        renderPermissionLevel(props.dispatch, props.link, props.canManage));
+
+export const ResourceLinkTailPermissionLevel = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const link = getResource<LinkResource>(props.uuid)(state.resources);
+        const isBuiltin = isBuiltinGroup(link?.headUuid || '') || isBuiltinGroup(link?.tailUuid || '');
+
+        return {
+            link: link || { uuid: '', name: '', kind: ResourceKind.NONE },
+            canManage: link && getResourceLinkCanManage(state, link) && !isBuiltin,
+        };
+    })((props: { link: LinkResource, canManage: boolean } & DispatchProp<any>) =>
+        renderPermissionLevel(props.dispatch, props.link, props.canManage));
+
+const getResourceLinkCanManage = (state: RootState, link: LinkResource) => {
+    const headResource = getResource<Resource>(link.headUuid)(state.resources);
+    // const tailResource = getResource<Resource>(link.tailUuid)(state.resources);
+    const userUuid = getUserUuid(state);
+
+    if (headResource && headResource.kind === ResourceKind.GROUP) {
+        return userUuid ? (headResource as GroupResource).writableBy?.includes(userUuid) : false;
+    } else {
+        // true for now
+        return true;
+    }
+}
 
 // Process Resources
 const resourceRunProcess = (dispatch: Dispatch, uuid: string) => {

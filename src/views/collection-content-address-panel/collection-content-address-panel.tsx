@@ -7,7 +7,6 @@ import {
     StyleRulesCallback,
     WithStyles,
     withStyles,
-    Grid,
     Button
 } from '@material-ui/core';
 import { CollectionIcon } from 'components/icon/icon';
@@ -38,7 +37,7 @@ import { getResource, ResourcesState } from 'store/resources/resources';
 import { RootState } from 'store/store';
 import { CollectionResource } from 'models/collection';
 
-type CssRules = 'backLink' | 'backIcon' | 'card' | 'title' | 'iconHeader' | 'link';
+type CssRules = 'backLink' | 'backIcon' | 'root' | 'content';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     backLink: {
@@ -53,24 +52,13 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     backIcon: {
         marginRight: theme.spacing.unit
     },
-    card: {
-        width: '100%'
+    root: {
+        width: '100%',
     },
-    title: {
-        color: theme.palette.grey["700"]
+    content: {
+        // reserve space for the content address bar
+        height: `calc(100% - ${theme.spacing.unit * 7}px)`,
     },
-    iconHeader: {
-        fontSize: '1.875rem',
-        color: theme.customs.colors.green700
-    },
-    link: {
-        fontSize: '0.875rem',
-        color: theme.palette.primary.main,
-        textAlign: 'right',
-        '&:hover': {
-            cursor: 'pointer'
-        }
-    }
 });
 
 enum CollectionContentAddressPanelColumnNames {
@@ -162,14 +150,14 @@ export const CollectionsContentAddressPanel = withStyles(styles)(
     connect(mapStateToProps, mapDispatchToProps)(
         class extends React.Component<CollectionContentAddressPanelActionProps & CollectionContentAddressPanelDataProps & CollectionContentAddressDataProps & WithStyles<CssRules>> {
             render() {
-                return <Grid item xs={12}>
+                return <div className={this.props.classes.root}>
                     <Button
                         onClick={() => window.history.back()}
                         className={this.props.classes.backLink}>
                         <BackIcon className={this.props.classes.backIcon} />
                         Back
                     </Button>
-                    <DataExplorer
+                    <div className={this.props.classes.content}><DataExplorer
                         id={COLLECTIONS_CONTENT_ADDRESS_PANEL_ID}
                         hideSearchInput
                         onRowClick={this.props.onItemClick}
@@ -181,8 +169,8 @@ export const CollectionsContentAddressPanel = withStyles(styles)(
                             <DataTableDefaultView
                                 icon={CollectionIcon}
                                 messages={['Collections with this content address not found.']} />
-                        } />;
-                    </Grid >;
+                        } /></div>
+                    </div>;
             }
         }
     )

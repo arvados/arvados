@@ -6,7 +6,7 @@ import React from 'react';
 import { WrappedFieldProps, Field, formValues, FormName, WrappedFieldInputProps, WrappedFieldMetaProps, change } from 'redux-form';
 import { compose } from 'redux';
 import { Autocomplete } from 'components/autocomplete/autocomplete';
-import { Vocabulary, isStrictTag, getTagValues, getTagValueID } from 'models/vocabulary';
+import { Vocabulary, isStrictTag, getTagValues, getTagValueID, getTagValueLabel } from 'models/vocabulary';
 import { PROPERTY_KEY_FIELD_ID, PROPERTY_KEY_FIELD_NAME } from 'views-components/resource-properties-form/property-key-field';
 import {
     handleSelect,
@@ -60,7 +60,14 @@ const PropertyValueInput = ({ vocabulary, propertyKeyId, propertyKeyName, ...pro
             disabled={props.disabled}
             suggestions={getSuggestions(props.input.value, propertyKeyId, vocabulary)}
             onSelect={handleSelect(PROPERTY_VALUE_FIELD_ID, data.form, props.input, props.meta)}
-            onBlur={handleBlur(PROPERTY_VALUE_FIELD_ID, data.form, props.meta, props.input, getTagValueID(propertyKeyId, props.input.value, vocabulary))}
+            onBlur={() => {
+                // Case-insensitive search for the value in the vocabulary
+                const foundValueID =  getTagValueID(propertyKeyId, props.input.value, vocabulary);
+                if (foundValueID !== '') {
+                    props.input.value = getTagValueLabel(propertyKeyId, foundValueID, vocabulary);
+                }
+                handleBlur(PROPERTY_VALUE_FIELD_ID, data.form, props.meta, props.input, foundValueID)();
+            }}
             onChange={(e: ChangeEvent<HTMLInputElement>) => {
                 const newValue = e.currentTarget.value;
                 const tagValueID = getTagValueID(propertyKeyId, newValue, vocabulary);

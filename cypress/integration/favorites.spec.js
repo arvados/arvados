@@ -44,7 +44,8 @@ describe('Favorites tests', function () {
         });
     });
 
-    it('can copy selected into the collection', () => {
+    // Disabled while addressing #18587
+    it.skip('can copy selected into the collection', () => {
         cy.createCollection(adminUser.token, {
             name: `Test source collection ${Math.floor(Math.random() * 999999)}`,
             manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
@@ -150,7 +151,7 @@ describe('Favorites tests', function () {
         cy.getAll('@mySharedWritableProject', '@testTargetCollection')
             .then(function ([mySharedWritableProject, testTargetCollection]) {
                 cy.loginAs(adminUser);
-                
+
                 cy.get('[data-cy=side-panel-tree]').contains('My Favorites').click();
 
                 const newProjectName = `New project name ${mySharedWritableProject.name}`;
@@ -160,7 +161,7 @@ describe('Favorites tests', function () {
 
                 cy.testEditProjectOrCollection('main', mySharedWritableProject.name, newProjectName, newProjectDescription);
                 cy.testEditProjectOrCollection('main', testTargetCollection.name, newCollectionName, newCollectionDescription, false);
-                
+
                 cy.get('[data-cy=side-panel-tree]').contains('Projects').click();
 
                 cy.get('main').contains(newProjectName).rightclick();
@@ -171,7 +172,7 @@ describe('Favorites tests', function () {
                 cy.get('[data-cy=side-panel-tree]').contains('Public Favorites').click();
 
                 cy.testEditProjectOrCollection('main', newProjectName, mySharedWritableProject.name, 'newProjectDescription');
-                cy.testEditProjectOrCollection('main', newCollectionName, testTargetCollection.name, 'newCollectionDescription', false); 
+                cy.testEditProjectOrCollection('main', newCollectionName, testTargetCollection.name, 'newCollectionDescription', false);
             });
     });
 

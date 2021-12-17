@@ -22,13 +22,20 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
     },
 });
 
-export const RefreshButton = ({ history, classes }: RouteComponentProps & WithStyles<CssRules>) =>
+interface RefreshButtonProps {
+    onClick?: () => void;
+}
+
+export const RefreshButton = ({ history, classes, onClick }: RouteComponentProps & WithStyles<CssRules> & RefreshButtonProps) =>
     <Button
         color="primary"
         size="small"
         variant="contained"
         onClick={() => {
             history.replace(window.location.pathname);
+            if (onClick) {
+                onClick();
+            }
         }}
         className={classNames(classes.buttonRight, classes.button)}>
         <ReRunProcessIcon />

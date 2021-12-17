@@ -11,17 +11,19 @@ import { SearchInput } from 'components/search-input/search-input';
 import { ArvadosTheme } from "common/custom-theme";
 import { createTree } from 'models/tree';
 import { DataTableFilters } from 'components/data-table-filters/data-table-filters-tree';
-import { MoreOptionsIcon } from 'components/icon/icon';
+import { CloseIcon, MaximizeIcon, MoreOptionsIcon } from 'components/icon/icon';
 import { PaperProps } from '@material-ui/core/Paper';
+import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
 
-type CssRules = 'searchBox' | "toolbar" | "toolbarUnderTitle" | "footer" | "root" | 'moreOptionsButton' | 'title';
+type CssRules = 'searchBox' | "toolbar" | "toolbarUnderTitle" | "footer" | "root" | 'moreOptionsButton' | 'title' | 'dataTable' | 'container';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     searchBox: {
         paddingBottom: theme.spacing.unit * 2
     },
     toolbar: {
-        paddingTop: theme.spacing.unit * 2
+        paddingTop: theme.spacing.unit,
+        paddingRight: theme.spacing.unit * 2,
     },
     toolbarUnderTitle: {
         paddingTop: 0
@@ -30,7 +32,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         overflow: 'auto'
     },
     root: {
-        height: '100%'
+        height: '100%',
     },
     moreOptionsButton: {
         padding: 0
@@ -39,7 +41,14 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         paddingLeft: theme.spacing.unit * 3,
         paddingTop: theme.spacing.unit * 3,
         fontSize: '18px'
-    }
+    },
+    dataTable: {
+        height: '100%',
+        overflow: 'auto',
+    },
+    container: {
+        height: '100%',
+    },
 });
 
 interface DataExplorerDataProps<T> {
@@ -79,40 +88,56 @@ interface DataExplorerActionProps<T> {
     extractKey?: (item: T) => React.Key;
 }
 
-type DataExplorerProps<T> = DataExplorerDataProps<T> & DataExplorerActionProps<T> & WithStyles<CssRules>;
+type DataExplorerProps<T> = DataExplorerDataProps<T> &
+    DataExplorerActionProps<T> & WithStyles<CssRules> & MPVPanelProps;
 
 export const DataExplorer = withStyles(styles)(
     class DataExplorerGeneric<T> extends React.Component<DataExplorerProps<T>> {
+
         componentDidMount() {
             if (this.props.onSetColumns) {
                 this.props.onSetColumns(this.props.columns);
             }
         }
+
         render() {
             const {
                 columns, onContextMenu, onFiltersChange, onSortToggle, working, extractKey,
                 rowsPerPage, rowsPerPageOptions, onColumnToggle, searchLabel, searchValue, onSearch,
                 items, itemsAvailable, onRowClick, onRowDoubleClick, classes,
                 dataTableDefaultView, hideColumnSelector, actions, paperProps, hideSearchInput,
-                paperKey, fetchMode, currentItemUuid, title
+                paperKey, fetchMode, currentItemUuid, title,
+                doHidePanel, doMaximizePanel, panelName, panelMaximized
             } = this.props;
-            return <Paper className={classes.root} {...paperProps} key={paperKey}>
-                {title && <div className={classes.title}>{title}</div>}
-                {(!hideColumnSelector || !hideSearchInput) && <Toolbar className={title ? classes.toolbarUnderTitle : classes.toolbar}>
+
+            const dataCy = this.props["data-cy"];
+            return <Paper className={classes.root} {...paperProps} key={paperKey} data-cy={dataCy}>
+                <Grid container direction="column" wrap="nowrap" className={classes.container}>
+                {title && <Grid item xs className={classes.title}>{title}</Grid>}
+                {(!hideColumnSelector || !hideSearchInput || !!actions) && <Grid item xs><Toolbar className={title ? classes.toolbarUnderTitle : classes.toolbar}>
                     <Grid container justify="space-between" wrap="nowrap" alignItems="center">
-                        <div className={classes.searchBox}>
+                        {!hideSearchInput && <div className={classes.searchBox}>
                             {!hideSearchInput && <SearchInput
                                 label={searchLabel}
                                 value={searchValue}
+                                selfClearProp={currentItemUuid}
                                 onSearch={onSearch} />}
-                        </div>
+                        </div>}
                         {actions}
                         {!hideColumnSelector && <ColumnSelector
                             columns={columns}
                             onColumnToggle={onColumnToggle} />}
                     </Grid>
-                </Toolbar>}
-                <DataTable
+                    { doMaximizePanel && !panelMaximized &&
+                        <Tooltip title={`Maximize ${panelName || 'panel'}`} disableFocusListener>
+                            <IconButton onClick={doMaximizePanel}><MaximizeIcon /></IconButton>
+                        </Tooltip> }
+                    { doHidePanel &&
+                        <Tooltip title={`Close ${panelName || 'panel'}`} disableFocusListener>
+                            <IconButton onClick={doHidePanel}><CloseIcon /></IconButton>
+                        </Tooltip> }
+                </Toolbar></Grid>}
+                <Grid item xs="auto" className={classes.dataTable}><DataTable
                     columns={this.props.contextMenuColumn ? [...columns, this.contextMenuColumn] : columns}
                     items={items}
                     onRowClick={(_, item: T) => onRowClick(item)}
@@ -124,8 +149,8 @@ export const DataExplorer = withStyles(styles)(
                     working={working}
                     defaultView={dataTableDefaultView}
                     currentItemUuid={currentItemUuid}
-                    currentRoute={paperKey} />
-                <Toolbar className={classes.footer}>
+                    currentRoute={paperKey} /></Grid>
+                <Grid item xs><Toolbar className={classes.footer}>
                     <Grid container justify="flex-end">
                         {fetchMode === DataTableFetchMode.PAGINATED ? <TablePagination
                             count={itemsAvailable}
@@ -142,7 +167,8 @@ export const DataExplorer = withStyles(styles)(
                                 onClick={this.loadMore}
                             >Load more</Button>}
                     </Grid>
-                </Toolbar>
+                </Toolbar></Grid>
+                </Grid>
             </Paper>;
         }
 

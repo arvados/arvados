@@ -26,7 +26,8 @@ export enum SidePanelTreeCategory {
     WORKFLOWS = 'Workflows',
     FAVORITES = 'My Favorites',
     TRASH = 'Trash',
-    ALL_PROCESSES = 'All Processes'
+    ALL_PROCESSES = 'All Processes',
+    GROUPS = 'Groups',
 }
 
 export const SIDE_PANEL_TREE = 'sidePanelTree';
@@ -52,6 +53,7 @@ let SIDE_PANEL_CATEGORIES: string[] = [
     SidePanelTreeCategory.PUBLIC_FAVORITES,
     SidePanelTreeCategory.FAVORITES,
     SidePanelTreeCategory.WORKFLOWS,
+    SidePanelTreeCategory.GROUPS,
     SidePanelTreeCategory.ALL_PROCESSES,
     SidePanelTreeCategory.TRASH
 ];

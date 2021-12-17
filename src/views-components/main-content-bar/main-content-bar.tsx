@@ -12,6 +12,8 @@ import { RootState } from 'store/store';
 import * as Routes from 'routes/routes';
 import { toggleDetailsPanel } from 'store/details-panel/details-panel-action';
 import RefreshButton from "components/refresh-button/refresh-button";
+import { reloadProjectMatchingUuid } from "store/workbench/workbench-actions";
+import { loadSidePanelTreeProjects } from "store/side-panel-tree/side-panel-tree-actions";
 
 type CssRules = "infoTooltip";
 
@@ -55,10 +57,15 @@ const isButtonVisible = ({ router }: RootState) => {
 
 export const MainContentBar =
     connect((state: RootState) => ({
-        buttonVisible: isButtonVisible(state)
-    }), {
-            onDetailsPanelToggle: toggleDetailsPanel,
-        })(
+        buttonVisible: isButtonVisible(state),
+        projectUuid: state.detailsPanel.resourceUuid,
+    }), (dispatch) => ({
+            onDetailsPanelToggle: () => dispatch<any>(toggleDetailsPanel()),
+            onRefreshButtonClick: (id) => {
+                dispatch<any>(loadSidePanelTreeProjects(id));
+                dispatch<any>(reloadProjectMatchingUuid([id]));
+            }
+        }))(
             withStyles(styles)(
                 (props: MainContentBarProps & WithStyles<CssRules> & any) =>
                     <Toolbar>
@@ -67,11 +74,13 @@ export const MainContentBar =
                                 <Breadcrumbs />
                             </Grid>
                             <Grid item>
-                                <RefreshButton />
+                                <RefreshButton onClick={() => {
+                                    props.onRefreshButtonClick(props.projectUuid);
+                                }} />
                             </Grid>
                             <Grid item>
                                 {props.buttonVisible && <Tooltip title="Additional Info">
-                                    <IconButton color="inherit" className={props.classes.infoTooltip} onClick={props.onDetailsPanelToggle}>
+                                    <IconButton data-cy="additional-info-icon" color="inherit" className={props.classes.infoTooltip} onClick={props.onDetailsPanelToggle}>
                                         <DetailsIcon />
                                     </IconButton>
                                 </Tooltip>}

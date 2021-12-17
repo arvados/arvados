@@ -97,13 +97,36 @@ describe('Collection panel tests', function () {
                 });
                 // Confirm proper vocabulary labels are displayed on the UI.
                 cy.get('[data-cy=collection-properties-panel]')
-                    .should('contain', 'Color')
-                    .and('contain', 'Magenta');
+                    .should('contain', 'Color: Magenta');
                 // Confirm proper vocabulary IDs were saved on the backend.
                 cy.doRequest('GET', `/arvados/v1/collections/${this.testCollection.uuid}`)
                     .its('body').as('collection')
                     .then(function () {
                         expect(this.collection.properties.IDTAGCOLORS).to.equal('IDVALCOLORS3');
+                    });
+
+                // Case-insensitive on-blur auto-selection test
+                // Key: Size (IDTAGSIZES) - Value: Small (IDVALSIZES2)
+                cy.get('[data-cy=resource-properties-form]').within(() => {
+                    cy.get('[data-cy=property-field-key]').within(() => {
+                        cy.get('input').type('sIzE');
+                    });
+                    cy.get('[data-cy=property-field-value]').within(() => {
+                        cy.get('input').type('sMaLL');
+                    });
+                    // Cannot "type()" TAB on Cypress so let's click another field
+                    // to trigger the onBlur event.
+                    cy.get('[data-cy=property-field-key]').click();
+                    cy.root().submit();
+                });
+                // Confirm proper vocabulary labels are displayed on the UI.
+                cy.get('[data-cy=collection-properties-panel]')
+                    .should('contain', 'Size: S');
+                // Confirm proper vocabulary IDs were saved on the backend.
+                cy.doRequest('GET', `/arvados/v1/collections/${this.testCollection.uuid}`)
+                    .its('body').as('collection')
+                    .then(function () {
+                        expect(this.collection.properties.IDTAGSIZES).to.equal('IDVALSIZES2');
                     });
             });
     });
@@ -572,6 +595,86 @@ describe('Collection panel tests', function () {
         })
     });
 
+    it('moves a collection to a different project', function () {
+        const collName = `Test Collection ${Math.floor(Math.random() * 999999)}`;
+        const projName = `Test Project ${Math.floor(Math.random() * 999999)}`;
+        const fileName = `Test_File_${Math.floor(Math.random() * 999999)}`;
+
+        cy.createCollection(adminUser.token, {
+            name: collName,
+            owner_uuid: activeUser.user.uuid,
+            manifest_text: `. 37b51d194a7513e45b56f6524f2d51f2+3 0:3:${fileName}\n`,
+        }).as('testCollection');
+        cy.createGroup(adminUser.token, {
+            name: projName,
+            group_class: 'project',
+            owner_uuid: activeUser.user.uuid,
+        }).as('testProject');
+
+        cy.getAll('@testCollection', '@testProject')
+            .then(function ([testCollection, testProject]) {
+                cy.loginAs(activeUser);
+                cy.goToPath(`/collections/${testCollection.uuid}`);
+                cy.get('[data-cy=collection-files-panel]').should('contain', fileName);
+                cy.get('[data-cy=collection-info-panel]')
+                    .should('not.contain', projName)
+                    .and('not.contain', testProject.uuid);
+                cy.get('[data-cy=collection-panel-options-btn]').click();
+                cy.get('[data-cy=context-menu]').contains('Move to').click();
+                cy.get('[data-cy=form-dialog]')
+                    .should('contain', 'Move to')
+                    .within(() => {
+                        cy.get('[data-cy=projects-tree-home-tree-picker]')
+                            .find('i')
+                            .click();
+                        cy.get('[data-cy=projects-tree-home-tree-picker]')
+                            .contains(projName)
+                            .click();
+                    });
+                cy.get('[data-cy=form-submit-btn]').click();
+                cy.get('[data-cy=snackbar]')
+                    .contains('Collection has been moved')
+                cy.get('[data-cy=collection-info-panel]')
+                    .contains(projName).and('contain', testProject.uuid);
+                // Double check that the collection is in the project
+                cy.goToPath(`/projects/${testProject.uuid}`);
+                cy.get('[data-cy=project-panel]').should('contain', collName);
+            });
+    });
+
+    it('makes a copy of an existing collection', function() {
+        const collName = `Test Collection ${Math.floor(Math.random() * 999999)}`;
+        const copyName = `Copy of: ${collName}`;
+
+        cy.createCollection(adminUser.token, {
+            name: collName,
+            owner_uuid: activeUser.user.uuid,
+            manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:some-file\n",
+        }).as('collection').then(function () {
+            cy.loginAs(activeUser)
+            cy.goToPath(`/collections/${this.collection.uuid}`);
+            cy.get('[data-cy=collection-files-panel]')
+                .should('contain', 'some-file');
+            cy.get('[data-cy=collection-panel-options-btn]').click();
+            cy.get('[data-cy=context-menu]').contains('Make a copy').click();
+            cy.get('[data-cy=form-dialog]')
+                .should('contain', 'Make a copy')
+                .within(() => {
+                    cy.get('[data-cy=projects-tree-home-tree-picker]')
+                        .contains('Projects')
+                        .click();
+                    cy.get('[data-cy=form-submit-btn]').click();
+                });
+            cy.get('[data-cy=snackbar]')
+                .contains('Collection has been copied.')
+            cy.get('[data-cy=snackbar-goto-action]').click();
+            cy.get('[data-cy=project-panel]')
+                .contains(copyName).click();
+            cy.get('[data-cy=collection-files-panel]')
+                .should('contain', 'some-file');
+        });
+    });
+
     it('uses the collection version browser to view a previous version', function () {
         const colName = `Test Collection ${Math.floor(Math.random() * 999999)}`;
 
@@ -769,5 +872,85 @@ describe('Collection panel tests', function () {
                 cy.get('[data-cy=responsible-person-wrapper]')
                     .contains(adminUser.user.uuid);
             });
+    });
+
+    describe('file upload', () => {
+        beforeEach(() => {
+            cy.createCollection(adminUser.token, {
+                name: `Test collection ${Math.floor(Math.random() * 999999)}`,
+                owner_uuid: activeUser.user.uuid,
+                manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
+            })
+                .as('testCollection1');
+        });
+
+        it('allows to cancel running upload', () => {
+            cy.getAll('@testCollection1')
+                .then(function([testCollection1]) {
+                    cy.loginAs(activeUser);
+
+                    cy.goToPath(`/collections/${testCollection1.uuid}`);
+
+                    cy.get('[data-cy=upload-button]').click();
+
+                    cy.fixture('files/5mb.bin', 'base64').then(content => {
+                        cy.get('[data-cy=drag-and-drop]').upload(content, '5mb_a.bin');
+                        cy.get('[data-cy=drag-and-drop]').upload(content, '5mb_b.bin');
+
+                        cy.get('[data-cy=form-submit-btn]').click();
+
+                        cy.get('button').contains('Cancel').click();
+
+                        cy.get('[data-cy=form-submit-btn]').should('not.exist');
+                    });
+                });
+        });
+
+        it('allows to cancel single file from the running upload', () => {
+            cy.getAll('@testCollection1')
+                .then(function([testCollection1]) {
+                    cy.loginAs(activeUser);
+
+                    cy.goToPath(`/collections/${testCollection1.uuid}`);
+
+                    cy.get('[data-cy=upload-button]').click();
+
+                    cy.fixture('files/5mb.bin', 'base64').then(content => {
+                        cy.get('[data-cy=drag-and-drop]').upload(content, '5mb_a.bin');
+                        cy.get('[data-cy=drag-and-drop]').upload(content, '5mb_b.bin');
+
+                        cy.get('[data-cy=form-submit-btn]').click();
+
+                        cy.get('button[aria-label=Remove]').eq(1).click();
+
+                        cy.get('[data-cy=form-submit-btn]').should('not.exist');
+
+                        cy.get('[data-cy=collection-files-panel]').contains('5mb_a.bin').should('exist');
+                    });
+                });
+        });
+
+        it('allows to cancel all files from the running upload', () => {
+            cy.getAll('@testCollection1')
+                .then(function([testCollection1]) {
+                    cy.loginAs(activeUser);
+
+                    cy.goToPath(`/collections/${testCollection1.uuid}`);
+
+                    cy.get('[data-cy=upload-button]').click();
+
+                    cy.fixture('files/5mb.bin', 'base64').then(content => {
+                        cy.get('[data-cy=drag-and-drop]').upload(content, '5mb_a.bin');
+                        cy.get('[data-cy=drag-and-drop]').upload(content, '5mb_b.bin');
+
+                        cy.get('[data-cy=form-submit-btn]').click();
+
+                        cy.get('button[aria-label=Remove]').should('exist');
+                        cy.get('button[aria-label=Remove]').click({ multiple: true, force: true });
+
+                        cy.get('[data-cy=form-submit-btn]').should('not.exist');
+                    });
+                });
+        });
     });
 })

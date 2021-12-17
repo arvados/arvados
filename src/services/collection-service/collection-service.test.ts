@@ -2,28 +2,86 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { AxiosInstance } from 'axios';
-import { WebDAV } from 'common/webdav';
-import { ApiActions } from '../api/api-actions';
+import axios, { AxiosInstance } from 'axios';
+import MockAdapter from 'axios-mock-adapter';
+import { CollectionResource } from 'models/collection';
 import { AuthService } from '../auth-service/auth-service';
 import { CollectionService } from './collection-service';
 
 describe('collection-service', () => {
     let collectionService: CollectionService;
-    let serverApi;
+    let serverApi: AxiosInstance;
+    let axiosMock: MockAdapter;
     let webdavClient: any;
     let authService;
     let actions;
 
     beforeEach(() => {
-        serverApi = {} as AxiosInstance;
+        serverApi = axios.create();
+        axiosMock = new MockAdapter(serverApi);
         webdavClient = {
             delete: jest.fn(),
         } as any;
         authService = {} as AuthService;
-        actions = {} as ApiActions;
+        actions = {
+            progressFn: jest.fn(),
+        } as any;
         collectionService = new CollectionService(serverApi, webdavClient, authService, actions);
         collectionService.update = jest.fn();
+    });
+
+    describe('get', () => {
+        it('should make a list request with uuid filtering', async () => {
+            serverApi.get = jest.fn(() => Promise.resolve(
+                { data: { items: [{}] } }
+            ));
+            const uuid = 'zzzzz-4zz18-0123456789abcde'
+            await collectionService.get(uuid);
+            expect(serverApi.get).toHaveBeenCalledWith(
+                '/collections', {
+                    params: {
+                        filters: `[["uuid","=","zzzzz-4zz18-0123456789abcde"]]`,
+                        include_old_versions: true,
+                    },
+                }
+            );
+        });
+
+        it('should be able to request specific fields', async () => {
+            serverApi.get = jest.fn(() => Promise.resolve(
+                { data: { items: [{}] } }
+            ));
+            const uuid = 'zzzzz-4zz18-0123456789abcde'
+            await collectionService.get(uuid, undefined, ['manifestText']);
+            expect(serverApi.get).toHaveBeenCalledWith(
+                '/collections', {
+                    params: {
+                        filters: `[["uuid","=","zzzzz-4zz18-0123456789abcde"]]`,
+                        include_old_versions: true,
+                        select: `["manifest_text"]`
+                    },
+                }
+            );
+        });
+    });
+
+    describe('update', () => {
+        it('should call put selecting updated fields + others', async () => {
+            serverApi.put = jest.fn(() => Promise.resolve({ data: {} }));
+            const data: Partial<CollectionResource> = {
+                name: 'foo',
+            };
+            const expected = {
+                collection: {
+                    ...data,
+                    preserve_version: true,
+                },
+                select: ['uuid', 'name', 'version', 'modified_at'],
+            }
+            collectionService = new CollectionService(serverApi, webdavClient, authService, actions);
+            await collectionService.update('uuid', data);
+            expect(serverApi.put).toHaveBeenCalledWith('/collections/uuid', expected);
+        });
     });
 
     describe('deleteFiles', () => {

@@ -97,8 +97,9 @@ $(DEB_FILE): build
 	 --url="https://arvados.org" \
 	 --license="GNU Affero General Public License, version 3.0" \
 	 --description="$(DESCRIPTION)" \
-	 --config-files="etc/arvados/workbench2/workbench2.example.json" \
-	$(WORKSPACE)/build/=$(DEST_DIR)
+	 --config-files="etc/arvados/$(APP_NAME)/workbench2.example.json" \
+	$(WORKSPACE)/build/=$(DEST_DIR) \
+	etc/arvados/workbench2/workbench2.example.json=/etc/arvados/$(APP_NAME)/workbench2.example.json
 
 $(RPM_FILE): build
 	fpm \
@@ -112,8 +113,9 @@ $(RPM_FILE): build
 	 --url="https://arvados.org" \
 	 --license="GNU Affero General Public License, version 3.0" \
 	 --description="$(DESCRIPTION)" \
-	 --config-files="etc/arvados/workbench2/workbench2.example.json" \
-	 $(WORKSPACE)/build/=$(DEST_DIR)
+	 --config-files="etc/arvados/$(APP_NAME)/workbench2.example.json" \
+	 $(WORKSPACE)/build/=$(DEST_DIR) \
+	etc/arvados/workbench2/workbench2.example.json=/etc/arvados/$(APP_NAME)/workbench2.example.json
 
 copy: $(DEB_FILE) $(RPM_FILE)
 	for target in $(TARGETS) ; do \
@@ -129,6 +131,17 @@ copy: $(DEB_FILE) $(RPM_FILE)
 
 # use FPM to create DEB and RPM
 packages: copy
+
+packages-in-docker: workbench2-build-image
+	docker run --env ci="true" \
+		--env ARVADOS_DIRECTORY=/tmp/arvados \
+		--env APP_NAME=${APP_NAME} \
+		--env ITERATION=${ITERATION} \
+		--env TARGETS="${TARGETS}" \
+		-w="/tmp/workbench2" \
+		-t -v ${WORKSPACE}:/tmp/workbench2 \
+		-v ${ARVADOS_DIRECTORY}:/tmp/arvados workbench2-build:latest \
+		make packages
 
 workbench2-build-image:
 	(cd docker && docker build -t workbench2-build .)

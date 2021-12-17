@@ -33,7 +33,7 @@ import { getInitialProcessStatusFilters, getInitialProcessTypeFilters } from 'st
 import { getProcess } from 'store/processes/process';
 import { ResourcesState } from 'store/resources/resources';
 
-type CssRules = "toolbar" | "button";
+type CssRules = "toolbar" | "button" | "root";
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     toolbar: {
@@ -43,6 +43,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     button: {
         marginLeft: theme.spacing.unit
     },
+    root: {
+        width: '100%',
+    }
 });
 
 export enum AllProcessesPanelColumnNames {
@@ -142,18 +145,17 @@ export const AllProcessesPanel = withStyles(styles)(
             }
 
             render() {
-                return <DataExplorer
+                return <div className={this.props.classes.root}><DataExplorer
                     id={ALL_PROCESSES_PANEL_ID}
                     onRowClick={this.handleRowClick}
                     onRowDoubleClick={this.handleRowDoubleClick}
                     onContextMenu={this.handleContextMenu}
                     contextMenuColumn={true}
-                    dataTableDefaultView={
-                        <DataTableDefaultView
-                            icon={ProcessIcon}
-                            messages={['Processes list empty.']}
-                            />
-                    } />;
+                    dataTableDefaultView={ <DataTableDefaultView
+                        icon={ProcessIcon}
+                        messages={['Processes list empty.']}
+                        /> } />
+                </div>
             }
         }
     )

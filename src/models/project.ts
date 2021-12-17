@@ -5,7 +5,7 @@
 import { GroupClass, GroupResource } from "./group";
 
 export interface ProjectResource extends GroupResource {
-    groupClass: GroupClass.PROJECT | GroupClass.FILTER;
+    groupClass: GroupClass.PROJECT | GroupClass.FILTER | GroupClass.ROLE;
 }
 
 export const getProjectUrl = (uuid: string) => {

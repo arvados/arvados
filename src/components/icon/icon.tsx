@@ -59,15 +59,21 @@ import SettingsEthernet from '@material-ui/icons/SettingsEthernet';
 import Star from '@material-ui/icons/Star';
 import StarBorder from '@material-ui/icons/StarBorder';
 import Warning from '@material-ui/icons/Warning';
+import Visibility from '@material-ui/icons/Visibility';
+import VisibilityOff from '@material-ui/icons/VisibilityOff';
 import VpnKey from '@material-ui/icons/VpnKey';
 import LinkOutlined from '@material-ui/icons/LinkOutlined';
+import RemoveRedEye from '@material-ui/icons/RemoveRedEye';
+import Computer from '@material-ui/icons/Computer';
 
 // Import FontAwesome icons
 import { library } from '@fortawesome/fontawesome-svg-core';
-import { faPencilAlt, faSlash } from '@fortawesome/free-solid-svg-icons';
+import { faPencilAlt, faSlash, faUsers } from '@fortawesome/free-solid-svg-icons';
+import { CropFreeSharp } from '@material-ui/icons';
 library.add(
     faPencilAlt,
     faSlash,
+    faUsers,
 );
 
 export const ReadOnlyIcon = (props: any) =>
@@ -77,6 +83,11 @@ export const ReadOnlyIcon = (props: any) =>
                 data-fa-mask="fas fa-pencil-alt" data-fa-transform="down-1.5" />
             <span className="fas fa-slash" />
         </div>
+    </span>;
+
+export const GroupsIcon = (props: any) =>
+    <span {...props}>
+        <span className="fas fa-users" />
     </span>;
 
 export const CollectionOldVersionIcon = (props: any) =>
@@ -112,10 +123,12 @@ export const FileIcon: IconType = (props) => <DescriptionIcon {...props} />;
 export const HelpIcon: IconType = (props) => <Help {...props} />;
 export const HelpOutlineIcon: IconType = (props) => <HelpOutline {...props} />;
 export const ImportContactsIcon: IconType = (props) => <ImportContacts {...props} />;
+export const InfoIcon: IconType = (props) => <Info {...props} />;
 export const InputIcon: IconType = (props) => <InsertDriveFile {...props} />;
 export const KeyIcon: IconType = (props) => <VpnKey {...props} />;
 export const LogIcon: IconType = (props) => <SettingsEthernet {...props} />;
 export const MailIcon: IconType = (props) => <Mail {...props} />;
+export const MaximizeIcon: IconType = (props) => <CropFreeSharp {...props} />;
 export const MoreOptionsIcon: IconType = (props) => <MoreVert {...props} />;
 export const MoveToIcon: IconType = (props) => <Input {...props} />;
 export const NewProjectIcon: IconType = (props) => <CreateNewFolder {...props} />;
@@ -144,7 +157,12 @@ export const SidePanelRightArrowIcon: IconType = (props) => <PlayArrow {...props
 export const TrashIcon: IconType = (props) => <Delete {...props} />;
 export const UserPanelIcon: IconType = (props) => <Person {...props} />;
 export const UsedByIcon: IconType = (props) => <Folder {...props} />;
+export const VisibleIcon: IconType = (props) => <Visibility {...props} />;
+export const InvisibleIcon: IconType = (props) => <VisibilityOff {...props} />;
 export const WorkflowIcon: IconType = (props) => <Code {...props} />;
 export const WarningIcon: IconType = (props) => <Warning style={{ color: '#fbc02d', height: '30px', width: '30px' }} {...props} />;
 export const Link: IconType = (props) => <LinkOutlined {...props} />;
 export const FolderSharedIcon: IconType = (props) => <FolderShared {...props} />;
+export const CanReadIcon: IconType = (props) => <RemoveRedEye {...props} />;
+export const CanWriteIcon: IconType = (props) => <Edit {...props} />;
+export const CanManageIcon: IconType = (props) => <Computer {...props} />;

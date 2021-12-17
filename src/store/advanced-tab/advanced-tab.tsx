@@ -411,7 +411,7 @@ const containerRequestApiResponse = (apiResponse: ContainerRequestResource) => {
 
 const collectionApiResponse = (apiResponse: CollectionResource) => {
     const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid, name, description, properties, portableDataHash, replicationDesired,
-        replicationConfirmedAt, replicationConfirmed, manifestText, deleteAt, trashAt, isTrashed, storageClassesDesired,
+        replicationConfirmedAt, replicationConfirmed, deleteAt, trashAt, isTrashed, storageClassesDesired,
         storageClassesConfirmed, storageClassesConfirmedAt, currentVersionUuid, version, preserveVersion, fileCount, fileSizeTotal } = apiResponse;
     const response = `
 "uuid": "${uuid}",
@@ -424,7 +424,6 @@ const collectionApiResponse = (apiResponse: CollectionResource) => {
 "replication_desired": ${stringify(replicationDesired)},
 "replication_confirmed_at": ${stringify(replicationConfirmedAt)},
 "replication_confirmed": ${stringify(replicationConfirmed)},
-"manifest_text": ${stringify(manifestText)},
 "name": ${stringify(name)},
 "description": ${stringify(description)},
 "properties": ${stringifyObject(properties)},

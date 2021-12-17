@@ -12,6 +12,8 @@ import { getCommonResourceServiceError, CommonResourceServiceError } from 'servi
 import { CopyFormDialogData } from 'store/copy-dialog/copy-dialog';
 import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
 import { initProjectsTreePicker } from 'store/tree-picker/tree-picker-actions';
+import { getResource } from "store/resources/resources";
+import { CollectionResource } from "models/collection";
 
 export const COLLECTION_COPY_FORM_NAME = 'collectionCopyFormName';
 
@@ -27,9 +29,15 @@ export const openCollectionCopyDialog = (resource: { name: string, uuid: string 
 export const copyCollection = (resource: CopyFormDialogData) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(startSubmit(COLLECTION_COPY_FORM_NAME));
+        let collection = getResource<CollectionResource>(resource.uuid)(getState().resources);
         try {
-            const collection = await services.collectionService.get(resource.uuid);
-            const newCollection = await services.collectionService.create({ ...collection, ownerUuid: resource.ownerUuid, name: resource.name });
+            if (!collection) {
+                collection = await services.collectionService.get(resource.uuid);
+            }
+            const collManifestText = await services.collectionService.get(resource.uuid, undefined, ['manifestText']);
+            collection.manifestText = collManifestText.manifestText;
+            const {href, ...collectionRecord} = collection;
+            const newCollection = await services.collectionService.create({ ...collectionRecord, ownerUuid: resource.ownerUuid, name: resource.name });
             dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_COPY_FORM_NAME }));
             return newCollection;
         } catch (e) {

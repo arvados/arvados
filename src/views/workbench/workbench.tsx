@@ -82,13 +82,11 @@ import { HelpApiClientAuthorizationDialog } from 'views-components/api-client-au
 import { UserManageDialog } from 'views-components/user-dialog/manage-dialog';
 import { SetupShellAccountDialog } from 'views-components/dialog-forms/setup-shell-account-dialog';
 import { GroupsPanel } from 'views/groups-panel/groups-panel';
-import { CreateGroupDialog } from 'views-components/dialog-forms/create-group-dialog';
 import { RemoveGroupDialog } from 'views-components/groups-dialog/remove-dialog';
 import { GroupAttributesDialog } from 'views-components/groups-dialog/attributes-dialog';
 import { GroupDetailsPanel } from 'views/group-details-panel/group-details-panel';
 import { RemoveGroupMemberDialog } from 'views-components/groups-dialog/member-remove-dialog';
 import { GroupMemberAttributesDialog } from 'views-components/groups-dialog/member-attributes-dialog';
-import { AddGroupMembersDialog } from 'views-components/dialog-forms/add-group-member-dialog';
 import { PartialCopyToCollectionDialog } from 'views-components/dialog-forms/partial-copy-to-collection-dialog';
 import { PublicFavoritePanel } from 'views/public-favorites-panel/public-favorites-panel';
 import { LinkAccountPanel } from 'views/link-account-panel/link-account-panel';
@@ -129,6 +127,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         minWidth: 0,
         paddingLeft: theme.spacing.unit * 3,
         paddingRight: theme.spacing.unit * 3,
+        // Reserve vertical space for app bar + MainContentBar
+        minHeight: `calc(100vh - ${theme.spacing.unit * 16}px)`,
+        display: 'flex',
     }
 });
 
@@ -212,7 +213,6 @@ export const WorkbenchPanel =
             <Grid item>
                 <DetailsPanel />
             </Grid>
-            <AddGroupMembersDialog />
             <AdvancedTabDialog />
             <AttributesApiClientAuthorizationDialog />
             <AttributesKeepServiceDialog />
@@ -223,7 +223,6 @@ export const WorkbenchPanel =
             <CopyCollectionDialog />
             <CopyProcessDialog />
             <CreateCollectionDialog />
-            <CreateGroupDialog />
             <CreateProjectDialog />
             <CreateRepositoryDialog />
             <CreateSshKeyDialog />

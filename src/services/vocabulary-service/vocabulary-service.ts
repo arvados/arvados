@@ -10,9 +10,9 @@ export class VocabularyService {
         private url: string
     ) { }
 
-    getVocabulary() {
-        return Axios
-            .get<Vocabulary>(this.url)
-            .then(response => response.data);
+    async getVocabulary() {
+        const response = await Axios
+            .get<Vocabulary>(this.url);
+        return response.data;
     }
 }

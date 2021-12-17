@@ -35,6 +35,7 @@ const styles: StyleRulesCallback<CssRules> = theme => {
 interface SearchInputDataProps {
     value: string;
     label?: string;
+    selfClearProp: string;
 }
 
 interface SearchInputActionProps {
@@ -47,6 +48,7 @@ type SearchInputProps = SearchInputDataProps & SearchInputActionProps & WithStyl
 interface SearchInputState {
     value: string;
     label: string;
+    selfClearProp: string;
 }
 
 export const DEFAULT_SEARCH_DEBOUNCE = 1000;
@@ -55,7 +57,8 @@ export const SearchInput = withStyles(styles)(
     class extends React.Component<SearchInputProps> {
         state: SearchInputState = {
             value: "",
-            label: ""
+            label: "",
+            selfClearProp: ""
         };
 
         timeout: number;
@@ -66,6 +69,7 @@ export const SearchInput = withStyles(styles)(
                     <InputLabel>{this.state.label}</InputLabel>
                     <Input
                         type="text"
+                        data-cy="search-input"
                         value={this.state.value}
                         onChange={this.handleChange}
                         endAdornment={
@@ -92,6 +96,10 @@ export const SearchInput = withStyles(styles)(
         componentWillReceiveProps(nextProps: SearchInputProps) {
             if (nextProps.value !== this.props.value) {
                 this.setState({ value: nextProps.value });
+            }
+            if (this.state.value !== '' && nextProps.selfClearProp && nextProps.selfClearProp !== this.state.selfClearProp) {
+                this.props.onSearch('');
+                this.setState({ selfClearProp: nextProps.selfClearProp });
             }
         }
 

@@ -116,7 +116,7 @@ export const Snackbar = withStyles(styles)(connect(mapStateToProps, mapDispatchT
                 onExited={props.onExited}
                 anchorOrigin={props.anchorOrigin}
                 autoHideDuration={props.autoHideDuration}>
-                <SnackbarContent
+                <div data-cy="snackbar"><SnackbarContent
                     className={classNames(cssClass)}
                     aria-describedby="client-snackbar"
                     message={
@@ -126,7 +126,7 @@ export const Snackbar = withStyles(styles)(connect(mapStateToProps, mapDispatchT
                         </span>
                     }
                     action={actions(props)}
-                />
+                /></div>
             </MaterialSnackbar>
         );
     }
@@ -151,7 +151,7 @@ const actions = (props: SnackbarProps) => {
                 color="inherit"
                 className={classes.linkButton}
                 onClick={() => onClick(link)}>
-                Go To
+                <span data-cy='snackbar-goto-action'>Go To</span>
             </Button>
         );
     }

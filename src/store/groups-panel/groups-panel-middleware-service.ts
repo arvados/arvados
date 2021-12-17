@@ -36,7 +36,7 @@ export class GroupsPanelMiddlewareService extends DataExplorerMiddlewareService 
                     order.addOrder(direction, 'name');
                 }
                 const filters = new FilterBuilder()
-                    .addNotIn('group_class', [GroupClass.PROJECT, GroupClass.FILTER])
+                    .addEqual('group_class', GroupClass.ROLE)
                     .addILike('name', dataExplorer.searchValue)
                     .getFilters();
                 const response = await this.services.groupsService
@@ -52,7 +52,7 @@ export class GroupsPanelMiddlewareService extends DataExplorerMiddlewareService 
                 }));
                 const permissions = await this.services.permissionService.list({
                     filters: new FilterBuilder()
-                        .addIn('tail_uuid', response.items.map(item => item.uuid))
+                        .addIn('head_uuid', response.items.map(item => item.uuid))
                         .getFilters()
                 });
                 api.dispatch(updateResources(permissions.items));
@@ -74,4 +74,3 @@ const couldNotFetchFavoritesContents = () =>
         message: 'Could not fetch groups.',
         kind: SnackbarKind.ERROR
     });
-

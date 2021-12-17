@@ -43,6 +43,21 @@ export const fileUploaderReducer = (state: UploaderState = initialState, action:
 
             return updatedState;
         },
+        CANCEL_FILES_UPLOAD: () => {
+            state.forEach((file) => {
+                let interval = setInterval(() => {
+                    const key = Object.keys((window as any).cancelTokens).find(key => key.indexOf(file.file.name) > -1);
+    
+                    if (key) {
+                        clearInterval(interval);
+                        (window as any).cancelTokens[key]();
+                        delete (window as any).cancelTokens[key];
+                    }
+                }, 100);
+            });
+
+            return [];
+        },
         START_UPLOAD: () => {
             const startTime = Date.now();
             return state.map(f => ({ ...f, startTime, prevTime: startTime }));
