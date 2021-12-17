@@ -5,10 +5,11 @@
     "aws_access_key": "",
     "aws_profile": "",
     "aws_secret_key": "",
-    "aws_source_ami": "ami-04d70e069399af2e9",
+    "aws_source_ami": "ami-031283ff8a43b021c",
     "build_environment": "aws",
     "public_key_file": "",
     "mksquashfs_mem": "",
+    "nvidia_gpu_support": "",
     "reposuffix": "",
     "resolver": "",
     "ssh_user": "admin",
@@ -29,6 +30,12 @@
     "associate_public_ip_address": "{{user `associate_public_ip_address`}}",
     "ssh_username": "{{user `ssh_user`}}",
     "ami_name": "arvados-{{user `arvados_cluster`}}-compute-{{isotime \"20060102150405\"}}",
+    "launch_block_device_mappings": [{
+      "device_name": "/dev/xvda",
+      "volume_size": 20,
+      "volume_type": "gp2",
+      "delete_on_termination": true
+    }],
     "ami_block_device_mappings": [
       {
         "device_name": "/dev/xvdb",
@@ -77,6 +84,6 @@
     "type": "shell",
     "execute_command": "sudo -S env {{ .Vars }} /bin/bash '{{ .Path }}'",
     "script": "scripts/base.sh",
-    "environment_vars": ["RESOLVER={{user `resolver`}}","REPOSUFFIX={{user `reposuffix`}}","MKSQUASHFS_MEM={{user `mksquashfs_mem`}}"]
+    "environment_vars": ["RESOLVER={{user `resolver`}}","REPOSUFFIX={{user `reposuffix`}}","MKSQUASHFS_MEM={{user `mksquashfs_mem`}}","NVIDIA_GPU_SUPPORT={{user `nvidia_gpu_support`}}"]
   }]
 }
