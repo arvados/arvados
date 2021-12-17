@@ -83,8 +83,8 @@ func EstimateScratchSpace(ctr *arvados.Container) (needScratch int64) {
 	return
 }
 
-// compareVersion returns true if vs1 >= vs2, otherwise false
-func compareVersion(vs1 string, vs2 string) bool {
+// compareVersion returns true if vs1 < vs2, otherwise false
+func versionLess(vs1 string, vs2 string) bool {
 	v1, err := strconv.ParseFloat(vs1, 64)
 	if err != nil {
 		return false
@@ -93,7 +93,7 @@ func compareVersion(vs1 string, vs2 string) bool {
 	if err != nil {
 		return false
 	}
-	return v1 >= v2
+	return v1 < v2
 }
 
 // ChooseInstanceType returns the cheapest available
@@ -123,9 +123,9 @@ func ChooseInstanceType(cc *arvados.Cluster, ctr *arvados.Container) (best arvad
 		case it.VCPUs < needVCPUs: // insufficient VCPUs
 		case it.Preemptible != ctr.SchedulingParameters.Preemptible: // wrong preemptable setting
 		case it.Price == best.Price && (it.RAM < best.RAM || it.VCPUs < best.VCPUs): // same price, worse specs
-		case it.CUDA.DeviceCount < ctr.RuntimeConstraints.CUDADeviceCount: // insufficient CUDA devices
-		case it.CUDA.DeviceCount > 0 && !compareVersion(it.CUDA.DriverVersion, ctr.RuntimeConstraints.CUDADriverVersion): // insufficient driver version
-		case it.CUDA.DeviceCount > 0 && !compareVersion(it.CUDA.HardwareCapability, ctr.RuntimeConstraints.CUDAHardwareCapability): // insufficient hardware capability
+		case it.CUDA.DeviceCount < ctr.RuntimeConstraints.CUDA.DeviceCount: // insufficient CUDA devices
+		case ctr.RuntimeConstraints.CUDA.DeviceCount > 0 && versionLess(it.CUDA.DriverVersion, ctr.RuntimeConstraints.CUDA.DriverVersion): // insufficient driver version
+		case ctr.RuntimeConstraints.CUDA.DeviceCount > 0 && versionLess(it.CUDA.HardwareCapability, ctr.RuntimeConstraints.CUDA.HardwareCapability): // insufficient hardware capability
 			// Don't select this node
 		default:
 			// Didn't reject the node, so select it
