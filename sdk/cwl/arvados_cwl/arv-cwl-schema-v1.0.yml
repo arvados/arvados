@@ -329,3 +329,31 @@ $graph:
       jsonldPredicate:
         mapSubject: propertyName
         mapPredicate: propertyValue
+
+
+- name: CUDARequirement
+  type: record
+  extends: cwl:ProcessRequirement
+  inVocab: false
+  doc: |
+    Require support for Nvidia CUDA (GPU hardware acceleration).
+  fields:
+    class:
+      type: string
+      doc: 'arv:CUDARequirement'
+      jsonldPredicate:
+        _id: "@type"
+        _type: "@vocab"
+    minCUDADriverVersion:
+      type: string
+      doc: Minimum CUDA driver version to run the software, in X.Y format of the associated CUDA SDK release.
+    minCUDAHardwareCapability:
+      type: string
+      doc: Minimum CUDA hardware capability required to run the software, in X.Y format.
+    minDeviceCount:
+      type: int?
+      default: 1
+      doc: Minimum number of GPU devices to request, or 1.
+    maxDeviceCount:
+      type: int?
+      doc: Maximum number of GPU devices to request.  If not specified, same as `minDeviceCount`.
