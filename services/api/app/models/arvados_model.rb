@@ -884,6 +884,11 @@ class ArvadosModel < ApplicationRecord
   def fill_container_defaults
     self.runtime_constraints = {
       'API' => false,
+      'cuda' => {
+        'device_count' => 0,
+        'driver_version' => '',
+        'hardware_capability' => '',
+      },
       'keep_cache_ram' => 0,
       'ram' => 0,
       'vcpus' => 0,

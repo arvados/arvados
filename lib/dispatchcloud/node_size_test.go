@@ -155,6 +155,7 @@ func (*NodeSizeSuite) TestChooseGPU(c *check.C) {
 		"best":           {Price: 2.2, RAM: 2000000000, VCPUs: 4, Scratch: 2 * GiB, Name: "best", CUDA: arvados.CUDAFeatures{DeviceCount: 1, HardwareCapability: "9.0", DriverVersion: "11.0"}},
 		"low_driver":     {Price: 2.1, RAM: 2000000000, VCPUs: 4, Scratch: 2 * GiB, Name: "low_driver", CUDA: arvados.CUDAFeatures{DeviceCount: 1, HardwareCapability: "9.0", DriverVersion: "10.0"}},
 		"cheap_gpu":      {Price: 2.0, RAM: 2000000000, VCPUs: 4, Scratch: 2 * GiB, Name: "cheap_gpu", CUDA: arvados.CUDAFeatures{DeviceCount: 1, HardwareCapability: "8.0", DriverVersion: "10.0"}},
+		"invalid_gpu":    {Price: 1.9, RAM: 2000000000, VCPUs: 4, Scratch: 2 * GiB, Name: "invalid_gpu", CUDA: arvados.CUDAFeatures{DeviceCount: 1, HardwareCapability: "12.0.12", DriverVersion: "12.0.12"}},
 		"non_gpu":        {Price: 1.1, RAM: 2000000000, VCPUs: 4, Scratch: 2 * GiB, Name: "non_gpu"},
 	}
 
@@ -201,23 +202,7 @@ func (*NodeSizeSuite) TestChooseGPU(c *check.C) {
 				HardwareCapability: "",
 				DriverVersion:      "10.0",
 			},
-			SelectedInstance: "cheap_gpu",
-		},
-		GPUTestCase{
-			CUDA: arvados.CUDARuntimeConstraints{
-				DeviceCount:        1,
-				HardwareCapability: "8.0",
-				DriverVersion:      "",
-			},
-			SelectedInstance: "cheap_gpu",
-		},
-		GPUTestCase{
-			CUDA: arvados.CUDARuntimeConstraints{
-				DeviceCount:        1,
-				HardwareCapability: "",
-				DriverVersion:      "",
-			},
-			SelectedInstance: "cheap_gpu",
+			SelectedInstance: "",
 		},
 		GPUTestCase{
 			CUDA: arvados.CUDARuntimeConstraints{
@@ -241,7 +226,11 @@ func (*NodeSizeSuite) TestChooseGPU(c *check.C) {
 				CUDA:         tc.CUDA,
 			},
 		})
-		c.Check(err, check.IsNil)
-		c.Check(best.Name, check.Equals, tc.SelectedInstance)
+		if best.Name != "" {
+			c.Check(err, check.IsNil)
+			c.Check(best.Name, check.Equals, tc.SelectedInstance)
+		} else {
+			c.Check(err, check.Not(check.IsNil))
+		}
 	}
 }

@@ -84,16 +84,16 @@ func EstimateScratchSpace(ctr *arvados.Container) (needScratch int64) {
 }
 
 // compareVersion returns true if vs1 < vs2, otherwise false
-func versionLess(vs1 string, vs2 string) bool {
+func versionLess(vs1 string, vs2 string) (bool, error) {
 	v1, err := strconv.ParseFloat(vs1, 64)
 	if err != nil {
-		return false
+		return false, err
 	}
 	v2, err := strconv.ParseFloat(vs2, 64)
 	if err != nil {
-		return false
+		return false, err
 	}
-	return v1 < v2
+	return v1 < v2, nil
 }
 
 // ChooseInstanceType returns the cheapest available
@@ -115,6 +115,9 @@ func ChooseInstanceType(cc *arvados.Cluster, ctr *arvados.Container) (best arvad
 
 	ok := false
 	for _, it := range cc.InstanceTypes {
+		driverInsuff, driverErr := versionLess(it.CUDA.DriverVersion, ctr.RuntimeConstraints.CUDA.DriverVersion)
+		capabilityInsuff, capabilityErr := versionLess(it.CUDA.HardwareCapability, ctr.RuntimeConstraints.CUDA.HardwareCapability)
+
 		switch {
 		// reasons to reject a node
 		case ok && it.Price > best.Price: // already selected a node, and this one is more expensive
@@ -124,8 +127,8 @@ func ChooseInstanceType(cc *arvados.Cluster, ctr *arvados.Container) (best arvad
 		case it.Preemptible != ctr.SchedulingParameters.Preemptible: // wrong preemptable setting
 		case it.Price == best.Price && (it.RAM < best.RAM || it.VCPUs < best.VCPUs): // same price, worse specs
 		case it.CUDA.DeviceCount < ctr.RuntimeConstraints.CUDA.DeviceCount: // insufficient CUDA devices
-		case ctr.RuntimeConstraints.CUDA.DeviceCount > 0 && versionLess(it.CUDA.DriverVersion, ctr.RuntimeConstraints.CUDA.DriverVersion): // insufficient driver version
-		case ctr.RuntimeConstraints.CUDA.DeviceCount > 0 && versionLess(it.CUDA.HardwareCapability, ctr.RuntimeConstraints.CUDA.HardwareCapability): // insufficient hardware capability
+		case ctr.RuntimeConstraints.CUDA.DeviceCount > 0 && (driverInsuff || driverErr != nil): // insufficient driver version
+		case ctr.RuntimeConstraints.CUDA.DeviceCount > 0 && (capabilityInsuff || capabilityErr != nil): // insufficient hardware capability
 			// Don't select this node
 		default:
 			// Didn't reject the node, so select it
