@@ -11,6 +11,7 @@ import { ProjectNameField, ProjectDescriptionField } from 'views-components/form
 import { CreateProjectPropertiesForm } from 'views-components/project-properties/create-project-properties-form';
 import { CreateProjectPropertiesList } from 'views-components/project-properties/create-project-properties-list';
 import { ResourceParentField } from '../form-fields/resource-form-fields';
+import { FormGroup, FormLabel } from '@material-ui/core';
 
 type DialogProjectProps = WithDialogProps<{}> & InjectedFormProps<ProjectCreateFormDialogData>;
 
@@ -26,6 +27,9 @@ const ProjectAddFields = () => <span>
     <ResourceParentField />
     <ProjectNameField />
     <ProjectDescriptionField />
-    <CreateProjectPropertiesForm />
-    <CreateProjectPropertiesList />
+    <FormLabel>Properties</FormLabel>
+    <FormGroup>
+        <CreateProjectPropertiesForm />
+        <CreateProjectPropertiesList />
+    </FormGroup>
 </span>;

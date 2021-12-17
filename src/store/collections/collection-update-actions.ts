@@ -3,7 +3,14 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from "redux";
-import { FormErrors, initialize, startSubmit, stopSubmit } from 'redux-form';
+import {
+    change,
+    FormErrors,
+    formValueSelector,
+    initialize,
+    startSubmit,
+    stopSubmit
+} from 'redux-form';
 import { RootState } from "store/store";
 import { collectionPanelActions } from "store/collection-panel/collection-panel-action";
 import { dialogActions } from "store/dialog/dialog-actions";
@@ -15,15 +22,21 @@ import { snackbarActions, SnackbarKind } from "../snackbar/snackbar-actions";
 import { updateResources } from "../resources/resources-actions";
 import { loadDetailsPanel } from "../details-panel/details-panel-action";
 import { getResource } from "store/resources/resources";
+import { CollectionProperties } from "./collection-create-actions";
+import { ResourcePropertiesFormData } from "views-components/resource-properties-form/resource-properties-form";
+import { addProperty, deleteProperty } from "lib/resource-properties";
 
 export interface CollectionUpdateFormDialogData {
     uuid: string;
     name: string;
     description?: string;
     storageClassesDesired?: string[];
+    properties?: CollectionProperties;
 }
 
 export const COLLECTION_UPDATE_FORM_NAME = 'collectionUpdateFormName';
+export const COLLECTION_UPDATE_PROPERTIES_FORM_NAME = "collectionCreatePropertiesFormName";
+export const COLLECTION_UPDATE_FORM_SELECTOR = formValueSelector(COLLECTION_UPDATE_FORM_NAME);
 
 export const openCollectionUpdateDialog = (resource: CollectionUpdateFormDialogData) =>
     (dispatch: Dispatch) => {
@@ -41,7 +54,8 @@ export const updateCollection = (collection: CollectionUpdateFormDialogData) =>
         services.collectionService.update(uuid, {
             name: collection.name,
             storageClassesDesired: collection.storageClassesDesired,
-            description: collection.description }
+            description: collection.description,
+            properties: collection.properties }
         ).then(updatedCollection => {
             updatedCollection = {...cachedCollection, ...updatedCollection};
             dispatch(collectionPanelActions.LOAD_COLLECTION_SUCCESS({ item: updatedCollection as CollectionResource }));
@@ -68,4 +82,24 @@ export const updateCollection = (collection: CollectionUpdateFormDialogData) =>
                 }
             }
         );
+    };
+
+export const addPropertyToUpdateCollectionForm = (data: ResourcePropertiesFormData) =>
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const properties = { ...COLLECTION_UPDATE_FORM_SELECTOR(getState(), 'properties') };
+        const key = data.keyID || data.key;
+        const value =  data.valueID || data.value;
+        dispatch(change(
+            COLLECTION_UPDATE_FORM_NAME,
+            'properties',
+            addProperty(properties, key, value)));
+    };
+
+export const removePropertyFromUpdateCollectionForm = (key: string, value: string) =>
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const properties = { ...COLLECTION_UPDATE_FORM_SELECTOR(getState(), 'properties') };
+        dispatch(change(
+            COLLECTION_UPDATE_FORM_NAME,
+            'properties',
+            deleteProperty(properties, key, value)));
     };

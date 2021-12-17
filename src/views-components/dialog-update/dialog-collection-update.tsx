@@ -12,6 +12,9 @@ import {
     CollectionDescriptionField,
     CollectionStorageClassesField
 } from 'views-components/form-fields/collection-form-fields';
+import { UpdateCollectionPropertiesForm } from 'views-components/collection-properties/update-collection-properties-form';
+import { UpdateCollectionPropertiesList } from 'views-components/collection-properties/update-collection-properties-list';
+import { FormGroup, FormLabel } from '@material-ui/core';
 
 type DialogCollectionProps = WithDialogProps<{}> & InjectedFormProps<CollectionUpdateFormDialogData>;
 
@@ -26,5 +29,10 @@ export const DialogCollectionUpdate = (props: DialogCollectionProps) =>
 const CollectionEditFields = () => <span>
     <CollectionNameField />
     <CollectionDescriptionField />
+    <FormLabel>Properties</FormLabel>
+    <FormGroup>
+        <UpdateCollectionPropertiesForm />
+        <UpdateCollectionPropertiesList />
+    </FormGroup>
     <CollectionStorageClassesField />
 </span>;

@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from "redux";
-import { reset, startSubmit, stopSubmit, initialize, FormErrors } from 'redux-form';
+import { reset, startSubmit, stopSubmit, initialize, FormErrors, change, formValueSelector } from 'redux-form';
 import { RootState } from 'store/store';
 import { getUserUuid } from "common/getuser";
 import { dialogActions } from "store/dialog/dialog-actions";
@@ -15,15 +15,24 @@ import { progressIndicatorActions } from "store/progress-indicator/progress-indi
 import { isProjectOrRunProcessRoute } from 'store/projects/project-create-actions';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { CollectionResource } from "models/collection";
+import { ResourcePropertiesFormData } from "views-components/resource-properties-form/resource-properties-form";
+import { addProperty, deleteProperty } from "lib/resource-properties";
 
 export interface CollectionCreateFormDialogData {
     ownerUuid: string;
     name: string;
     description: string;
     storageClassesDesired: string[];
+    properties: CollectionProperties;
+}
+
+export interface CollectionProperties {
+    [key: string]: string | string[];
 }
 
 export const COLLECTION_CREATE_FORM_NAME = "collectionCreateFormName";
+export const COLLECTION_CREATE_PROPERTIES_FORM_NAME = "collectionCreatePropertiesFormName";
+export const COLLECTION_CREATE_FORM_SELECTOR = formValueSelector(COLLECTION_CREATE_FORM_NAME);
 
 export const openCollectionCreateDialog = (ownerUuid: string) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
@@ -68,4 +77,24 @@ export const createCollection = (data: CollectionCreateFormDialogData) =>
         } finally {
             dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_CREATE_FORM_NAME));
         }
+    };
+
+export const addPropertyToCreateCollectionForm = (data: ResourcePropertiesFormData) =>
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const properties = { ...COLLECTION_CREATE_FORM_SELECTOR(getState(), 'properties') };
+        const key = data.keyID || data.key;
+        const value =  data.valueID || data.value;
+        dispatch(change(
+            COLLECTION_CREATE_FORM_NAME,
+            'properties',
+            addProperty(properties, key, value)));
+    };
+
+export const removePropertyFromCreateCollectionForm = (key: string, value: string) =>
+    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const properties = { ...COLLECTION_CREATE_FORM_SELECTOR(getState(), 'properties') };
+        dispatch(change(
+            COLLECTION_CREATE_FORM_NAME,
+            'properties',
+            deleteProperty(properties, key, value)));
     };

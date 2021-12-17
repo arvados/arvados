@@ -1,0 +1,70 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: AGPL-3.0
+
+import React from 'react';
+import { connect } from 'react-redux';
+import { Dispatch } from 'redux';
+import {
+    withStyles,
+    StyleRulesCallback,
+    WithStyles,
+} from '@material-ui/core';
+import { RootState } from 'store/store';
+import {
+    removePropertyFromUpdateCollectionForm,
+    COLLECTION_UPDATE_FORM_SELECTOR,
+} from 'store/collections/collection-update-actions';
+import { ArvadosTheme } from 'common/custom-theme';
+import { getPropertyChip } from '../resource-properties-form/property-chip';
+import { CollectionProperties } from 'store/collections/collection-create-actions';
+
+type CssRules = 'tag';
+
+const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+    tag: {
+        marginRight: theme.spacing.unit,
+        marginBottom: theme.spacing.unit
+    }
+});
+
+interface UpdateCollectionPropertiesListDataProps {
+    properties: CollectionProperties;
+}
+
+interface UpdateCollectionPropertiesListActionProps {
+    handleDelete: (key: string, value: string) => void;
+}
+
+const mapStateToProps = (state: RootState): UpdateCollectionPropertiesListDataProps => {
+    const properties = COLLECTION_UPDATE_FORM_SELECTOR(state, 'properties');
+    return { properties };
+};
+
+const mapDispatchToProps = (dispatch: Dispatch): UpdateCollectionPropertiesListActionProps => ({
+    handleDelete: (key: string, value: string) => dispatch<any>(removePropertyFromUpdateCollectionForm(key, value))
+});
+
+type UpdateCollectionPropertiesListProps = UpdateCollectionPropertiesListDataProps &
+    UpdateCollectionPropertiesListActionProps & WithStyles<CssRules>;
+
+const List = withStyles(styles)(
+    ({ classes, handleDelete, properties }: UpdateCollectionPropertiesListProps) =>
+        <div>
+            {properties &&
+                Object.keys(properties).map(k =>
+                    Array.isArray(properties[k])
+                    ? (properties[k] as string[]).map((v: string) =>
+                        getPropertyChip(
+                            k, v,
+                            () => handleDelete(k, v),
+                            classes.tag))
+                    : getPropertyChip(
+                        k, (properties[k] as string),
+                        () => handleDelete(k, (properties[k] as string)),
+                        classes.tag))
+                }
+        </div>
+);
+
+export const UpdateCollectionPropertiesList = connect(mapStateToProps, mapDispatchToProps)(List);

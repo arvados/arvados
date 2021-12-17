@@ -185,6 +185,7 @@ export const ProjectPanel = withStyles(styles)(
                         menuKind,
                         description: resource.description,
                         storageClassesDesired: (resource as CollectionResource).storageClassesDesired,
+                        properties: ('properties' in resource) ? resource.properties : {},
                     }));
                 }
                 this.props.dispatch<any>(loadDetailsPanel(resourceUuid));

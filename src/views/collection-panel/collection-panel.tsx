@@ -220,7 +220,8 @@ export const CollectionPanel = withStyles(styles)(
             }
 
             handleContextMenu = (event: React.MouseEvent<any>) => {
-                const { uuid, ownerUuid, name, description, kind, storageClassesDesired } = this.props.item;
+                const { uuid, ownerUuid, name, description,
+                    kind, storageClassesDesired, properties } = this.props.item;
                 const menuKind = this.props.dispatch<any>(resourceUuidToContextMenuKind(uuid));
                 const resource = {
                     uuid,
@@ -230,6 +231,7 @@ export const CollectionPanel = withStyles(styles)(
                     storageClassesDesired,
                     kind,
                     menuKind,
+                    properties,
                 };
                 // Avoid expanding/collapsing the panel
                 event.stopPropagation();
