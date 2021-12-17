@@ -30,7 +30,7 @@ export const ResourcePropertiesForm = ({ handleSubmit, change, submitting, inval
             <Grid item xs>
                 <PropertyValueField />
             </Grid>
-            <Grid item xs>
+            <Grid item>
                 <Button
                     data-cy='property-add-btn'
                     disabled={invalid}
