@@ -88,9 +88,10 @@ class TestContainer(unittest.TestCase):
              "project_uuid": "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
             })
 
-        def make_tool(toolpath_object, loadingContext):
-            return arvados_cwl.ArvadosCommandTool(runner, toolpath_object, loadingContext)
-        runner.arv_make_tool.side_effect = make_tool
+        if isinstance(runner, mock.MagicMock):
+            def make_tool(toolpath_object, loadingContext):
+                return arvados_cwl.ArvadosCommandTool(runner, toolpath_object, loadingContext)
+            runner.arv_make_tool.side_effect = make_tool
 
         return loadingContext, runtimeContext
 
@@ -132,13 +133,14 @@ class TestContainer(unittest.TestCase):
                 "outputs": [],
                 "baseCommand": "ls",
                 "arguments": [{"valueFrom": "$(runtime.outdir)"}],
-                "id": "#",
-                "class": "org.w3id.cwl.cwl.CommandLineTool"
+                "id": "",
+                "class": "CommandLineTool",
+                "cwlVersion": "v1.2"
             })
 
             loadingContext, runtimeContext = self.helper(runner, enable_reuse)
 
-            arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, loadingContext)
+            arvtool = cwltool.load_tool.load_tool(tool, loadingContext)
             arvtool.formatgraph = None
 
             for j in arvtool.job({}, mock.MagicMock(), runtimeContext):
@@ -152,7 +154,7 @@ class TestContainer(unittest.TestCase):
                         'name': 'test_run_'+str(enable_reuse),
                         'runtime_constraints': {
                             'vcpus': 1,
-                            'ram': 1073741824
+                            'ram': 268435456
                         },
                         'use_existing': enable_reuse,
                         'priority': 500,
@@ -181,6 +183,7 @@ class TestContainer(unittest.TestCase):
     # For the remaining fields, the defaults will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
     @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
     def test_resource_requirements(self, keepdocker):
+        arvados_cwl.add_arv_hints()
         runner = mock.MagicMock()
         runner.ignore_docker_for_reuse = False
         runner.intermediate_output_ttl = 3600
@@ -212,18 +215,19 @@ class TestContainer(unittest.TestCase):
                 "class": "http://arvados.org/cwl#IntermediateOutput",
                 "outputTTL": 7200
             }, {
-                "class": "http://arvados.org/cwl#ReuseRequirement",
+                "class": "WorkReuse",
                 "enableReuse": False
             }],
             "baseCommand": "ls",
-            "id": "#",
-            "class": "org.w3id.cwl.cwl.CommandLineTool"
+            "id": "",
+            "class": "CommandLineTool",
+            "cwlVersion": "v1.2"
         })
 
         loadingContext, runtimeContext = self.helper(runner)
         runtimeContext.name = "test_resource_requirements"
 
-        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, loadingContext)
+        arvtool = cwltool.load_tool.load_tool(tool, loadingContext)
         arvtool.formatgraph = None
         for j in arvtool.job({}, mock.MagicMock(), runtimeContext):
             j.run(runtimeContext)
@@ -428,14 +432,15 @@ class TestContainer(unittest.TestCase):
             "stderr": "stderr.txt",
             "stdin": "/keep/99999999999999999999999999999996+99/file.txt",
             "arguments": [{"valueFrom": "$(runtime.outdir)"}],
-            "id": "#",
-            "class": "org.w3id.cwl.cwl.CommandLineTool"
+            "id": "",
+            "class": "CommandLineTool",
+            "cwlVersion": "v1.2"
         })
 
         loadingContext, runtimeContext = self.helper(runner)
         runtimeContext.name = "test_run_redirect"
 
-        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, loadingContext)
+        arvtool = cwltool.load_tool.load_tool(tool, loadingContext)
         arvtool.formatgraph = None
         for j in arvtool.job({}, mock.MagicMock(), runtimeContext):
             j.run(runtimeContext)
@@ -448,7 +453,7 @@ class TestContainer(unittest.TestCase):
                     'name': 'test_run_redirect',
                     'runtime_constraints': {
                         'vcpus': 1,
-                        'ram': 1073741824
+                        'ram': 268435456
                     },
                     'use_existing': True,
                     'priority': 500,
@@ -654,14 +659,15 @@ class TestContainer(unittest.TestCase):
             "outputs": [],
             "baseCommand": "ls",
             "arguments": [{"valueFrom": "$(runtime.outdir)"}],
-            "id": "#",
-            "class": "org.w3id.cwl.cwl.CommandLineTool"
+            "id": "",
+            "class": "CommandLineTool",
+            "cwlVersion": "v1.2"
         })
 
         loadingContext, runtimeContext = self.helper(runner)
         runtimeContext.name = "test_run_mounts"
 
-        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, loadingContext)
+        arvtool = cwltool.load_tool.load_tool(tool, loadingContext)
         arvtool.formatgraph = None
         job_order = {
             "p1": {
@@ -691,7 +697,7 @@ class TestContainer(unittest.TestCase):
                     'name': 'test_run_mounts',
                     'runtime_constraints': {
                         'vcpus': 1,
-                        'ram': 1073741824
+                        'ram': 268435456
                     },
                     'use_existing': True,
                     'priority': 500,
@@ -724,6 +730,7 @@ class TestContainer(unittest.TestCase):
     # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
     @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
     def test_secrets(self, keepdocker):
+        arvados_cwl.add_arv_hints()
         runner = mock.MagicMock()
         runner.ignore_docker_for_reuse = False
         runner.intermediate_output_ttl = 0
@@ -737,7 +744,8 @@ class TestContainer(unittest.TestCase):
         document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.1")
 
         tool = cmap({"arguments": ["md5sum", "example.conf"],
-                     "class": "org.w3id.cwl.cwl.CommandLineTool",
+                     "class": "CommandLineTool",
+                     "cwlVersion": "v1.2",
                      "hints": [
                          {
                              "class": "http://commonwl.org/cwltool#Secrets",
@@ -746,7 +754,7 @@ class TestContainer(unittest.TestCase):
                              ]
                          }
                      ],
-                     "id": "#secret_job.cwl",
+                     "id": "",
                      "inputs": [
                          {
                              "id": "#secret_job.cwl/pw",
@@ -770,7 +778,7 @@ class TestContainer(unittest.TestCase):
         loadingContext, runtimeContext = self.helper(runner)
         runtimeContext.name = "test_secrets"
 
-        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, loadingContext)
+        arvtool = cwltool.load_tool.load_tool(tool, loadingContext)
         arvtool.formatgraph = None
 
         job_order = {"pw": "blorp"}
@@ -787,7 +795,7 @@ class TestContainer(unittest.TestCase):
                     'name': 'test_secrets',
                     'runtime_constraints': {
                         'vcpus': 1,
-                        'ram': 1073741824
+                        'ram': 268435456
                     },
                     'use_existing': True,
                     'priority': 500,
@@ -836,8 +844,9 @@ class TestContainer(unittest.TestCase):
             "outputs": [],
             "baseCommand": "ls",
             "arguments": [{"valueFrom": "$(runtime.outdir)"}],
-            "id": "#",
-            "class": "org.w3id.cwl.cwl.CommandLineTool",
+            "id": "",
+            "cwlVersion": "v1.2",
+            "class": "CommandLineTool",
             "hints": [
                 {
                     "class": "ToolTimeLimit",
@@ -849,7 +858,7 @@ class TestContainer(unittest.TestCase):
         loadingContext, runtimeContext = self.helper(runner)
         runtimeContext.name = "test_timelimit"
 
-        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, loadingContext)
+        arvtool = cwltool.load_tool.load_tool(tool, loadingContext)
         arvtool.formatgraph = None
 
         for j in arvtool.job({}, mock.MagicMock(), runtimeContext):
@@ -880,8 +889,9 @@ class TestContainer(unittest.TestCase):
             "outputs": [],
             "baseCommand": "ls",
             "arguments": [{"valueFrom": "$(runtime.outdir)"}],
-            "id": "#",
-            "class": "org.w3id.cwl.cwl.CommandLineTool",
+            "id": "",
+            "cwlVersion": "v1.2",
+            "class": "CommandLineTool",
             "hints": [
                 {
                     "class": "http://arvados.org/cwl#OutputStorageClass",
@@ -893,7 +903,7 @@ class TestContainer(unittest.TestCase):
 
         loadingContext, runtimeContext = self.helper(runner, True)
 
-        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, loadingContext)
+        arvtool = cwltool.load_tool.load_tool(tool, loadingContext)
         arvtool.formatgraph = None
 
         for j in arvtool.job({}, mock.MagicMock(), runtimeContext):
@@ -907,7 +917,7 @@ class TestContainer(unittest.TestCase):
                     'name': 'test_run_True',
                     'runtime_constraints': {
                         'vcpus': 1,
-                        'ram': 1073741824
+                        'ram': 268435456
                     },
                     'use_existing': True,
                     'priority': 500,
@@ -955,8 +965,9 @@ class TestContainer(unittest.TestCase):
             "outputs": [],
             "baseCommand": "ls",
             "arguments": [{"valueFrom": "$(runtime.outdir)"}],
-            "id": "#",
-            "class": "org.w3id.cwl.cwl.CommandLineTool",
+            "id": "",
+            "class": "CommandLineTool",
+            "cwlVersion": "v1.2",
             "hints": [
             {
                 "class": "http://arvados.org/cwl#ProcessProperties",
@@ -978,7 +989,7 @@ class TestContainer(unittest.TestCase):
 
         loadingContext, runtimeContext = self.helper(runner, True)
 
-        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, loadingContext)
+        arvtool = cwltool.load_tool.load_tool(tool, loadingContext)
         arvtool.formatgraph = None
 
         for j in arvtool.job({"x": "blorp"}, mock.MagicMock(), runtimeContext):
@@ -992,7 +1003,7 @@ class TestContainer(unittest.TestCase):
                     'name': 'test_run_True',
                     'runtime_constraints': {
                         'vcpus': 1,
-                        'ram': 1073741824
+                        'ram': 268435456
                     },
                     'use_existing': True,
                     'priority': 500,
@@ -1029,6 +1040,7 @@ class TestContainer(unittest.TestCase):
     # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
     @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
     def test_cuda_requirement(self, keepdocker):
+        arvados_cwl.add_arv_hints()
         arv_docker_clear_cache()
 
         runner = mock.MagicMock()
@@ -1046,8 +1058,9 @@ class TestContainer(unittest.TestCase):
             "outputs": [],
             "baseCommand": "nvidia-smi",
             "arguments": [],
-            "id": "#",
-            "class": "org.w3id.cwl.cwl.CommandLineTool",
+            "id": "",
+            "cwlVersion": "v1.2",
+            "class": "CommandLineTool",
             "hints": [
             {
                 "class": "http://arvados.org/cwl#CUDARequirement",
@@ -1059,7 +1072,7 @@ class TestContainer(unittest.TestCase):
 
         loadingContext, runtimeContext = self.helper(runner, True)
 
-        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, loadingContext)
+        arvtool = cwltool.load_tool.load_tool(tool, loadingContext)
         arvtool.formatgraph = None
 
         for j in arvtool.job({}, mock.MagicMock(), runtimeContext):
@@ -1073,7 +1086,7 @@ class TestContainer(unittest.TestCase):
                     'name': 'test_run_True',
                     'runtime_constraints': {
                         'vcpus': 1,
-                        'ram': 1073741824,
+                        'ram': 268435456,
                         'cuda': {
                             'device_count': 1,
                             'driver_version': "11.0",
