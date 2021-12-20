@@ -750,7 +750,7 @@ describe('Collection panel tests', function () {
             });
     });
 
-    it('creates new collection on home project', function () {
+    it('creates new collection with properties on home project', function () {
         cy.loginAs(activeUser);
         cy.goToPath(`/projects/${activeUser.user.uuid}`);
         cy.get('[data-cy=breadcrumb-first]').should('contain', 'Projects');
@@ -760,6 +760,8 @@ describe('Collection panel tests', function () {
         cy.get('[data-cy=side-panel-new-collection]').click();
         // Name between brackets tests bugfix #17582
         const collName = `[Test collection (${Math.floor(999999 * Math.random())})]`;
+
+        // Select a storage class.
         cy.get('[data-cy=form-dialog]')
             .should('contain', 'New collection')
             .and('contain', 'Storage classes')
@@ -775,15 +777,42 @@ describe('Collection panel tests', function () {
                 });
                 cy.get('[data-cy=checkbox-foo]').click();
             })
+
+        // Add a property.
+        // Key: Color (IDTAGCOLORS) - Value: Magenta (IDVALCOLORS3)
+        cy.get('[data-cy=form-dialog]').should('not.contain', 'Color: Magenta');
+        cy.get('[data-cy=resource-properties-form]').within(() => {
+            cy.get('[data-cy=property-field-key]').within(() => {
+                cy.get('input').type('Color');
+            });
+            cy.get('[data-cy=property-field-value]').within(() => {
+                cy.get('input').type('Magenta');
+            });
+            cy.root().submit();
+        });
+        // Confirm proper vocabulary labels are displayed on the UI.
+        cy.get('[data-cy=form-dialog]').should('contain', 'Color: Magenta');
+
         cy.get('[data-cy=form-submit-btn]').click();
-        // Confirm that the user was taken to the newly created thing
+        // Confirm that the user was taken to the newly created collection
         cy.get('[data-cy=form-dialog]').should('not.exist');
         cy.get('[data-cy=breadcrumb-first]').should('contain', 'Projects');
         cy.get('[data-cy=breadcrumb-last]').should('contain', collName);
         cy.get('[data-cy=collection-info-panel]')
             .should('contain', 'default')
             .and('contain', 'foo')
+            .and('contain', 'Color: Magenta')
             .and('not.contain', 'bar');
+        // Confirm that the collection's properties has the real values.
+        cy.doRequest('GET', '/arvados/v1/collections', null, {
+            filters: `[["name", "=", "${collName}"]]`,
+        })
+        .its('body.items').as('collections')
+        .then(function() {
+            expect(this.collections).to.have.lengthOf(1);
+            expect(this.collections[0].properties).to.have.property(
+                'IDTAGCOLORS', 'IDVALCOLORS3');
+        });
     });
 
     it('shows responsible person for collection if available', () => {

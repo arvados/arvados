@@ -42,6 +42,7 @@ describe('Project tests', function() {
 
             });
         // Key: Color (IDTAGCOLORS) - Value: Magenta (IDVALCOLORS3)
+        cy.get('[data-cy=form-dialog]').should('not.contain', 'Color: Magenta');
         cy.get('[data-cy=resource-properties-form]').within(() => {
             cy.get('[data-cy=property-field-key]').within(() => {
                 cy.get('input').type('Color');
