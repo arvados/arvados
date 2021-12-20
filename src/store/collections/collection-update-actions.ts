@@ -32,7 +32,7 @@ export interface CollectionUpdateFormDialogData {
 }
 
 export const COLLECTION_UPDATE_FORM_NAME = 'collectionUpdateFormName';
-export const COLLECTION_UPDATE_PROPERTIES_FORM_NAME = "collectionCreatePropertiesFormName";
+export const COLLECTION_UPDATE_PROPERTIES_FORM_NAME = "collectionUpdatePropertiesFormName";
 export const COLLECTION_UPDATE_FORM_SELECTOR = formValueSelector(COLLECTION_UPDATE_FORM_NAME);
 
 export const openCollectionUpdateDialog = (resource: CollectionUpdateFormDialogData) =>

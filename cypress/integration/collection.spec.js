@@ -75,7 +75,52 @@ describe('Collection panel tests', function () {
         });
     });
 
-    it('uses the property editor with vocabulary terms', function () {
+    it('uses the property editor (from edit dialog) with vocabulary terms', function () {
+        cy.createCollection(adminUser.token, {
+            name: `Test collection ${Math.floor(Math.random() * 999999)}`,
+            owner_uuid: activeUser.user.uuid,
+            manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
+        })
+            .as('testCollection').then(function () {
+                cy.loginAs(activeUser);
+                cy.goToPath(`/collections/${this.testCollection.uuid}`);
+
+                cy.get('[data-cy=collection-info-panel')
+                    .should('contain', this.testCollection.name)
+                    .and('not.contain', 'Color: Magenta');
+
+                cy.get('[data-cy=collection-panel-options-btn]').click();
+                cy.get('[data-cy=context-menu]').contains('Edit collection').click();
+                cy.get('[data-cy=form-dialog]').should('contain', 'Properties');
+
+                // Key: Color (IDTAGCOLORS) - Value: Magenta (IDVALCOLORS3)
+                cy.get('[data-cy=resource-properties-form]').within(() => {
+                    cy.get('[data-cy=property-field-key]').within(() => {
+                        cy.get('input').type('Color');
+                    });
+                    cy.get('[data-cy=property-field-value]').within(() => {
+                        cy.get('input').type('Magenta');
+                    });
+                    cy.root().submit();
+                });
+                // Confirm proper vocabulary labels are displayed on the UI.
+                cy.get('[data-cy=form-dialog]').should('contain', 'Color: Magenta');
+                cy.get('[data-cy=form-dialog]').contains('Save').click();
+                cy.get('[data-cy=form-dialog]').should('not.exist');
+                // Confirm proper vocabulary IDs were saved on the backend.
+                cy.doRequest('GET', `/arvados/v1/collections/${this.testCollection.uuid}`)
+                    .its('body').as('collection')
+                    .then(function () {
+                        expect(this.collection.properties.IDTAGCOLORS).to.equal('IDVALCOLORS3');
+                    });
+                // Confirm the property is displayed on the UI.
+                cy.get('[data-cy=collection-info-panel')
+                    .should('contain', this.testCollection.name)
+                    .and('contain', 'Color: Magenta');
+            });
+    });
+
+    it('uses the property editor (from details panel) with vocabulary terms', function () {
         cy.createCollection(adminUser.token, {
             name: `Test collection ${Math.floor(Math.random() * 999999)}`,
             owner_uuid: activeUser.user.uuid,
