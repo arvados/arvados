@@ -36,11 +36,6 @@ describe('Group manage tests', function() {
         );
     });
 
-    beforeEach(function() {
-        cy.clearCookies();
-        cy.clearLocalStorage();
-    });
-
     it('creates a new group', function() {
         cy.loginAs(activeUser);
 
@@ -57,7 +52,7 @@ describe('Group manage tests', function() {
             });
         cy.get('[role=tooltip]').click();
         cy.get('[data-cy=form-dialog] button[type=submit]').click();
-        
+
         // Check that the group was created
         cy.get('[data-cy=groups-panel-data-explorer]').contains(groupName).click();
         cy.get('[data-cy=group-members-data-explorer]').contains(activeUser.user.full_name);
@@ -230,7 +225,7 @@ describe('Group manage tests', function() {
             .should('contain', 'Edit Group')
             .within(() => {
                 cy.get('input[name=name]').clear().type(groupName + ' (renamed)');
-                cy.get('button[type=submit]').click();
+                cy.get('button').contains('Save').click();
             });
 
         // Check that the group was renamed
