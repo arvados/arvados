@@ -346,9 +346,9 @@ class ContainerRequest < ArvadosModel
         end
         ['driver_version', 'hardware_capability'].each do |k|
           v = runtime_constraints['cuda'][k]
-          if !v.is_a?(String)
+          if !v.is_a?(String) || (runtime_constraints['cuda']['device_count'] > 0 && v.to_f == 0.0)
             errors.add(:runtime_constraints,
-                       "[cuda.#{k}]=#{v.inspect} must be a string")
+                       "[cuda.#{k}]=#{v.inspect} must be a string in format 'X.Y' version")
           end
         end
       end

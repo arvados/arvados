@@ -987,17 +987,6 @@ func (runner *ContainerRunner) CreateContainer(imageID string, bindmounts map[st
 	runner.executorStdout = stdout
 	runner.executorStderr = stderr
 
-	cudaDeviceCount := 0
-	if runner.Container.RuntimeConstraints.CUDA.DriverVersion != "" ||
-		runner.Container.RuntimeConstraints.CUDA.HardwareCapability != "" ||
-		runner.Container.RuntimeConstraints.CUDA.DeviceCount != 0 {
-		// if any of these are set, enable CUDA GPU support
-		cudaDeviceCount = runner.Container.RuntimeConstraints.CUDA.DeviceCount
-		if cudaDeviceCount == 0 {
-			cudaDeviceCount = 1
-		}
-	}
-
 	return runner.executor.Create(containerSpec{
 		Image:           imageID,
 		VCPUs:           runner.Container.RuntimeConstraints.VCPUs,
@@ -1007,7 +996,7 @@ func (runner *ContainerRunner) CreateContainer(imageID string, bindmounts map[st
 		BindMounts:      bindmounts,
 		Command:         runner.Container.Command,
 		EnableNetwork:   enableNetwork,
-		CUDADeviceCount: cudaDeviceCount,
+		CUDADeviceCount: runner.Container.RuntimeConstraints.CUDA.DeviceCount,
 		NetworkMode:     runner.networkMode,
 		CgroupParent:    runner.setCgroupParent,
 		Stdin:           stdin,

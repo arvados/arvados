@@ -296,15 +296,14 @@ class Container < ArvadosModel
         'hardware_capability' => '',
       }
     end
-
-    candidates_inc_cuda = candidates.where_serialized(:runtime_constraints, resolve_runtime_constraints(attrs[:runtime_constraints]), md5: true)
-    if candidates_inc_cuda.count == 0 and attrs[:runtime_constraints]['cuda']['device_count'] == 0
-      # Fallback search on containers introduced before CUDA support,
-      # exclude empty CUDA request from query
-      candidates = candidates.where_serialized(:runtime_constraints, resolve_runtime_constraints(attrs[:runtime_constraints].except('cuda')), md5: true)
-    else
-      candidates = candidates_inc_cuda
+    resolved_runtime_constraints = [resolve_runtime_constraints(attrs[:runtime_constraints])]
+    if resolved_runtime_constraints[0]['cuda']['device_count'] == 0
+      # If no CUDA requested, extend search to include older container
+      # records that don't have a 'cuda' section in runtime_constraints
+      resolved_runtime_constraints << resolved_runtime_constraints[0].except('cuda')
     end
+
+    candidates = candidates.where_serialized(:runtime_constraints, resolved_runtime_constraints, md5: true, multivalue: true)
     log_reuse_info(candidates) { "after filtering on runtime_constraints #{attrs[:runtime_constraints].inspect}" }
 
     log_reuse_info { "checking for state=Complete with readable output and log..." }

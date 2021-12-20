@@ -701,7 +701,7 @@ class ArvadosModel < ApplicationRecord
     false
   end
 
-  def self.where_serialized(colname, value, md5: false)
+  def self.where_serialized(colname, value, md5: false, multivalue: false)
     colsql = colname.to_s
     if md5
       colsql = "md5(#{colsql})"
@@ -714,7 +714,16 @@ class ArvadosModel < ApplicationRecord
       sql = "#{colsql} IN (?)"
       sorted = deep_sort_hash(value)
     end
-    params = [sorted.to_yaml, SafeJSON.dump(sorted)]
+    params = []
+    if multivalue
+      sorted.each do |v|
+        params << v.to_yaml
+        params << SafeJSON.dump(v)
+      end
+    else
+      params << sorted.to_yaml
+      params << SafeJSON.dump(sorted)
+    end
     if md5
       params = params.map { |x| Digest::MD5.hexdigest(x) }
     end

@@ -14,6 +14,7 @@ import (
 	"io/ioutil"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
@@ -299,6 +300,7 @@ func (ldr *Loader) Load() (*arvados.Config, error) {
 			ldr.checkEmptyKeepstores(cc),
 			ldr.checkUnlistedKeepstores(cc),
 			ldr.checkStorageClasses(cc),
+			ldr.checkCUDAVersions(cc),
 			// TODO: check non-empty Rendezvous on
 			// services other than Keepstore
 		} {
@@ -395,6 +397,24 @@ func (ldr *Loader) checkStorageClasses(cc arvados.Cluster) error {
 	}
 	if !haveDefault {
 		return fmt.Errorf("there is no default storage class (at least one entry in StorageClasses must have Default: true)")
+	}
+	return nil
+}
+
+func (ldr *Loader) checkCUDAVersions(cc arvados.Cluster) error {
+	for _, it := range cc.InstanceTypes {
+		if it.CUDA.DeviceCount == 0 {
+			continue
+		}
+
+		_, err := strconv.ParseFloat(it.CUDA.DriverVersion, 64)
+		if err != nil {
+			return fmt.Errorf("InstanceType %q has invalid CUDA.DriverVersion %q, expected format X.Y (%v)", it.Name, it.CUDA.DriverVersion, err)
+		}
+		_, err = strconv.ParseFloat(it.CUDA.HardwareCapability, 64)
+		if err != nil {
+			return fmt.Errorf("InstanceType %q has invalid CUDA.HardwareCapability %q, expected format X.Y (%v)", it.Name, it.CUDA.HardwareCapability, err)
+		}
 	}
 	return nil
 }
