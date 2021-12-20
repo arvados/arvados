@@ -151,7 +151,7 @@ $SUDO mv /tmp/etc-cloud-cloud.cfg.d-07_compute_arvados_dispatch_cloud.cfg /etc/c
 $SUDO chown root:root /etc/cloud/cloud.cfg.d/07_compute_arvados_dispatch_cloud.cfg
 
 if [ "$NVIDIA_GPU_SUPPORT" == "1" ]; then
-  DIST=$(. /etc/os-release; echo $ID$VERSION_ID)
+  DIST=$(. /etc/os-release; echo $ID$VERSION_ID | tr -d '.')
   # We need a kernel and matching headers
   $SUDO apt-get -y install linux-image-cloud-amd64 linux-headers-cloud-amd64
 
