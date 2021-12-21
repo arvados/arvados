@@ -151,9 +151,16 @@ $SUDO mv /tmp/etc-cloud-cloud.cfg.d-07_compute_arvados_dispatch_cloud.cfg /etc/c
 $SUDO chown root:root /etc/cloud/cloud.cfg.d/07_compute_arvados_dispatch_cloud.cfg
 
 if [ "$NVIDIA_GPU_SUPPORT" == "1" ]; then
-  DIST=$(. /etc/os-release; echo $ID$VERSION_ID)
+  # $DIST should not have a dot if there is one in /etc/os-release (e.g. 18.04)
+  DIST=$(. /etc/os-release; echo $ID$VERSION_ID | tr -d '.')
   # We need a kernel and matching headers
-  $SUDO apt-get -y install linux-image-cloud-amd64 linux-headers-cloud-amd64
+  if [[ "$DIST" =~ ^debian ]]; then
+    $SUDO apt-get -y install linux-image-cloud-amd64 linux-headers-cloud-amd64
+  elif [ "$CLOUD" == "azure" ]; then
+    $SUDO apt-get -y install linux-image-azure linux-headers-azure
+  elif [ "$CLOUD" == "aws" ]; then
+    $SUDO apt-get -y install linux-image-aws linux-headers-aws
+  fi
 
   # Install CUDA
   $SUDO apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/$DIST/x86_64/7fa2af80.pub
@@ -175,6 +182,8 @@ if [ "$NVIDIA_GPU_SUPPORT" == "1" ]; then
       $SUDO tee /etc/apt/sources.list.d/libnvidia-container.list
     $SUDO sed -i -e '/experimental/ s/^#//g' /etc/apt/sources.list.d/libnvidia-container.list
   else
+    # here, $DIST should have a dot if there is one in /etc/os-release (e.g. 18.04)...
+    DIST=$(. /etc/os-release; echo $ID$VERSION_ID)
     curl -s -L https://nvidia.github.io/libnvidia-container/$DIST/libnvidia-container.list | \
       $SUDO tee /etc/apt/sources.list.d/libnvidia-container.list
   fi
