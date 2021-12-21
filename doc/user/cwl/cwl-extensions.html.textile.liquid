@@ -57,6 +57,12 @@ hints:
     processProperties:
       property1: value1
       property2: $(inputs.value2)
+
+  arv:CUDARequirement:
+    minCUDADriverVersion: "11.0"
+    minCUDAHardwareCapability: "9.0"
+    minDeviceCount: 1
+    maxDeviceCount: 1
 {% endcodeblock %}
 
 h2(#RunInSingleContainer). arv:RunInSingleContainer
@@ -146,6 +152,17 @@ Specify extra "properties":{{site.baseurl}}/api/methods.html#subpropertyfilters 
 table(table table-bordered table-condensed).
 |_. Field |_. Type |_. Description |
 |processProperties|key-value map, or list of objects with the fields {propertyName, propertyValue}|The properties that will be set on the container request.  May include expressions that reference `$(inputs)` of the current workflow or tool.|
+
+h2(#CUDARequirement). arv:CUDARequirement
+
+Request support for Nvidia CUDA GPU acceleration in the container.  Assumes that the CUDA runtime (SDK) is installed in the container, and the host will inject the CUDA driver libraries into the container (equal or later to the version requested).
+
+table(table table-bordered table-condensed).
+|_. Field |_. Type |_. Description |
+|minCUDADriverVersion|string|Required.  The CUDA SDK version corresponding to the minimum driver version supported by the container (generally, the SDK version 'X.Y' the application was compiled against).|
+|minCUDAHardwareCapability|string|Required.  The minimum CUDA hardware capability (in 'X.Y' format) required by the application's PTX or C++ GPU code (will be JIT compiled for the available hardware).|
+|minDeviceCount|integer|Minimum number of GPU devices to allocate on a single node. Required.|
+|maxDeviceCount|integer|Maximum number of GPU devices to allocate on a single node. Optional.  If not specified, same as @minDeviceCount@.|
 
 h2. arv:dockerCollectionPDH
 
