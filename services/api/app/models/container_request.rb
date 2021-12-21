@@ -336,6 +336,22 @@ class ContainerRequest < ArvadosModel
                      "[#{k}]=#{v.inspect} must be a positive integer")
         end
       end
+      if runtime_constraints['cuda']
+        ['device_count'].each do |k|
+          v = runtime_constraints['cuda'][k]
+          if !v.is_a?(Integer) || v < 0
+            errors.add(:runtime_constraints,
+                       "[cuda.#{k}]=#{v.inspect} must be a positive or zero integer")
+          end
+        end
+        ['driver_version', 'hardware_capability'].each do |k|
+          v = runtime_constraints['cuda'][k]
+          if !v.is_a?(String) || (runtime_constraints['cuda']['device_count'] > 0 && v.to_f == 0.0)
+            errors.add(:runtime_constraints,
+                       "[cuda.#{k}]=#{v.inspect} must be a string in format 'X.Y'")
+          end
+        end
+      end
     end
   end
 

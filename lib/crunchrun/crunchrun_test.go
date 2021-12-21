@@ -992,7 +992,7 @@ func (s *TestSuite) TestEnableCUDADeviceCount(c *C) {
     "mounts": {"/tmp": {"kind": "tmp"} },
     "output_path": "/tmp",
     "priority": 1,
-    "runtime_constraints": {"cuda_device_count": 2},
+    "runtime_constraints": {"cuda": {"device_count": 2}},
     "state": "Locked",
     "output_storage_classes": ["foo", "bar"]
 }`, nil, 0, func() {
@@ -1010,13 +1010,13 @@ func (s *TestSuite) TestEnableCUDAHardwareCapability(c *C) {
     "mounts": {"/tmp": {"kind": "tmp"} },
     "output_path": "/tmp",
     "priority": 1,
-    "runtime_constraints": {"cuda_hardware_capability": "foo"},
+    "runtime_constraints": {"cuda": {"hardware_capability": "foo"}},
     "state": "Locked",
     "output_storage_classes": ["foo", "bar"]
 }`, nil, 0, func() {
 		fmt.Fprintln(s.executor.created.Stdout, "ok")
 	})
-	c.Check(s.executor.created.CUDADeviceCount, Equals, 1)
+	c.Check(s.executor.created.CUDADeviceCount, Equals, 0)
 }
 
 func (s *TestSuite) TestStopOnSignal(c *C) {
