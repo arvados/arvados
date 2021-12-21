@@ -19,6 +19,7 @@ import { ProjectResource } from 'models/project';
 import { ServiceRepository } from 'services/services';
 import { matchProjectRoute, matchRunProcessRoute } from 'routes/routes';
 import { RouterState } from "react-router-redux";
+import { GroupClass } from "models/group";
 
 export interface ProjectCreateFormDialogData {
     ownerUuid: string;
@@ -52,7 +53,12 @@ export const openProjectCreateDialog = (ownerUuid: string) =>
         } else {
             dispatch(initialize(PROJECT_CREATE_FORM_NAME, { ownerUuid }));
         }
-        dispatch(dialogActions.OPEN_DIALOG({ id: PROJECT_CREATE_FORM_NAME, data: {} }));
+        dispatch(dialogActions.OPEN_DIALOG({
+            id: PROJECT_CREATE_FORM_NAME,
+            data: {
+                sourcePanel: GroupClass.PROJECT,
+            }
+        }));
     };
 
 export const createProject = (project: Partial<ProjectResource>) =>

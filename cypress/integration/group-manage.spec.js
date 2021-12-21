@@ -45,13 +45,15 @@ describe('Group manage tests', function() {
         // Create new group
         cy.get('[data-cy=groups-panel-new-group]').click();
         cy.get('[data-cy=form-dialog]')
-            .should('contain', 'Create Group')
+            .should('contain', 'New Group')
             .within(() => {
                 cy.get('input[name=name]').type(groupName);
                 cy.get('[data-cy=users-field] input').type("three");
             });
         cy.get('[role=tooltip]').click();
-        cy.get('[data-cy=form-dialog] button[type=submit]').click();
+        cy.get('[data-cy=form-dialog]').within(() => {
+            cy.get('[data-cy=form-submit-btn]').click();
+        })
 
         // Check that the group was created
         cy.get('[data-cy=groups-panel-data-explorer]').contains(groupName).click();

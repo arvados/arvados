@@ -34,7 +34,7 @@ describe('Project tests', function() {
         cy.get('[data-cy=side-panel-button]').click();
         cy.get('[data-cy=side-panel-new-project]').click();
         cy.get('[data-cy=form-dialog]')
-            .should('contain', 'New project')
+            .should('contain', 'New Project')
             .within(() => {
                 cy.get('[data-cy=name-field]').within(() => {
                     cy.get('input').type(projName);
@@ -74,7 +74,7 @@ describe('Project tests', function() {
             cy.get('[data-cy=side-panel-button]').click();
             cy.get('[data-cy=side-panel-new-project]').click();
             cy.get('[data-cy=form-dialog]')
-                .should('contain', 'New project')
+                .should('contain', 'New Project')
                 .within(() => {
                     cy.get('[data-cy=parent-field]').within(() => {
                         cy.get('input').invoke('val').then((val) => {

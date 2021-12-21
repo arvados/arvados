@@ -38,7 +38,12 @@ export const PROJECT_UPDATE_FORM_SELECTOR = formValueSelector(PROJECT_UPDATE_FOR
 export const openProjectUpdateDialog = (resource: ProjectUpdateFormDialogData) =>
     (dispatch: Dispatch, getState: () => RootState) => {
         dispatch(initialize(PROJECT_UPDATE_FORM_NAME, resource));
-        dispatch(dialogActions.OPEN_DIALOG({ id: PROJECT_UPDATE_FORM_NAME, data: {sourcePanel: GroupClass.PROJECT} }));
+        dispatch(dialogActions.OPEN_DIALOG({
+            id: PROJECT_UPDATE_FORM_NAME,
+            data: {
+                sourcePanel: GroupClass.PROJECT,
+            }
+        }));
     };
 
 export const updateProject = (project: ProjectUpdateFormDialogData) =>
