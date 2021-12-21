@@ -306,6 +306,7 @@ func (disp *dispatcher) bsubArgs(container arvados.Container) ([]string, error) 
 		"%M": fmt.Sprintf("%d", mem),
 		"%T": fmt.Sprintf("%d", tmp),
 		"%U": container.UUID,
+		"%G": fmt.Sprintf("%d", container.RuntimeConstraints.CUDA.DeviceCount),
 	}
 
 	re := regexp.MustCompile(`%.`)
