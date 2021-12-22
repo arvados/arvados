@@ -251,7 +251,7 @@ if [[ -z "$ONLY_BUILD" ]] || [[ "arvados-src" == "$ONLY_BUILD" ]] ; then
       arvados_src_version="$(version_from_git)"
 
       cd $WORKSPACE/packages/$TARGET
-      test_package_presence arvados-src $arvados_src_version src ""
+      test_package_presence arvados-src "$arvados_src_version" src ""
 
       if [[ "$?" == "0" ]]; then
         cd "$WORKSPACE"

@@ -470,6 +470,32 @@ fpm_build_virtualenv () {
   shift
   PACKAGE_TYPE=${1:-python}
   shift
+  native_arch="amd64"
+  if [[ "$HOSTTYPE" == "aarch64" ]]; then
+    native_arch="arm64"
+  fi
+
+  if [[ -n "$ONLY_ARCH" ]] && [[ "$ONLY_ARCH" == "$native_arch" ]]; then
+      fpm_build_virtualenv_worker "$PKG" "$PKG_DIR" "$PACKAGE_TYPE" "$ONLY_ARCH"
+  elif [[ -z "$ONLY_ARCH" ]]; then
+    for arch in $native_arch; do
+      fpm_build_virtualenv_worker "$PKG" "$PKG_DIR" "$PACKAGE_TYPE" "$arch"
+    done
+  else
+    echo "Error: no cross compilation support for Python yet, can not build $PKG for $ONLY_ARCH"
+  fi
+}
+
+# Build python packages with a virtualenv built-in
+fpm_build_virtualenv_worker () {
+  PKG=$1
+  shift
+  PKG_DIR=$1
+  shift
+  PACKAGE_TYPE=${1:-python}
+  shift
+  arch=${1:-amd64}
+  shift
 
   # Set up
   STDOUT_IF_DEBUG=/dev/null
@@ -545,11 +571,11 @@ fpm_build_virtualenv () {
   # We can't do this earlier than here, because we need PYTHON_VERSION...
   # This isn't so bad; the sdist call above is pretty quick compared to
   # the invocation of virtualenv and fpm, below.
-  if ! test_package_presence "$PYTHON_PKG" $UNFILTERED_PYTHON_VERSION $PACKAGE_TYPE $ARVADOS_BUILDING_ITERATION; then
+  if ! test_package_presence "$PYTHON_PKG" "$UNFILTERED_PYTHON_VERSION" "$PACKAGE_TYPE" "$ARVADOS_BUILDING_ITERATION" "$arch"; then
     return 0
   fi
 
-  echo "Building $FORMAT package for $PKG from $PKG_DIR"
+  echo "Building $FORMAT ($arch) package for $PKG from $PKG_DIR"
 
   # Package the sdist in a virtualenv
   echo "Creating virtualenv..."
@@ -633,6 +659,10 @@ fpm_build_virtualenv () {
   echo "Creating package..."
 
   declare -a COMMAND_ARR=("fpm" "-s" "dir" "-t" "$FORMAT")
+
+  if [[ "${arch}" != "amd64" ]]; then
+    COMMAND_ARR+=("-a${arch}")
+  fi
 
   if [[ "$MAINTAINER" != "" ]]; then
     COMMAND_ARR+=('--maintainer' "$MAINTAINER")
