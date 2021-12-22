@@ -243,33 +243,35 @@ handle_ruby_gem arvados-login-sync
 # Python packages
 debug_echo -e "\nPython packages\n"
 
-# arvados-src
-(
-    cd "$WORKSPACE"
-    COMMIT_HASH=$(format_last_commit_here "%H")
-    arvados_src_version="$(version_from_git)"
-
-    cd $WORKSPACE/packages/$TARGET
-    test_package_presence arvados-src $arvados_src_version src ""
-
-    if [[ "$?" == "0" ]]; then
+if [[ -z "$ONLY_BUILD" ]] || [[ "arvados-src" == "$ONLY_BUILD" ]] ; then
+  # arvados-src
+  (
       cd "$WORKSPACE"
-      SRC_BUILD_DIR=$(mktemp -d)
-      # mktemp creates the directory with 0700 permissions by default
-      chmod 755 $SRC_BUILD_DIR
-      git clone $DASHQ_UNLESS_DEBUG "$WORKSPACE/.git" "$SRC_BUILD_DIR"
-      cd "$SRC_BUILD_DIR"
-
-      # go into detached-head state
-      git checkout $DASHQ_UNLESS_DEBUG "$COMMIT_HASH"
-      echo "$COMMIT_HASH" >git-commit.version
+      COMMIT_HASH=$(format_last_commit_here "%H")
+      arvados_src_version="$(version_from_git)"
 
       cd $WORKSPACE/packages/$TARGET
-      fpm_build "$WORKSPACE" $SRC_BUILD_DIR/=/usr/local/arvados/src arvados-src 'dir' "$arvados_src_version" "--exclude=usr/local/arvados/src/.git" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=The Arvados source code" "--architecture=all"
+      test_package_presence arvados-src $arvados_src_version src ""
 
-      rm -rf "$SRC_BUILD_DIR"
-    fi
-)
+      if [[ "$?" == "0" ]]; then
+        cd "$WORKSPACE"
+        SRC_BUILD_DIR=$(mktemp -d)
+        # mktemp creates the directory with 0700 permissions by default
+        chmod 755 $SRC_BUILD_DIR
+        git clone $DASHQ_UNLESS_DEBUG "$WORKSPACE/.git" "$SRC_BUILD_DIR"
+        cd "$SRC_BUILD_DIR"
+
+        # go into detached-head state
+        git checkout $DASHQ_UNLESS_DEBUG "$COMMIT_HASH"
+        echo "$COMMIT_HASH" >git-commit.version
+
+        cd $WORKSPACE/packages/$TARGET
+        fpm_build "$WORKSPACE" $SRC_BUILD_DIR/=/usr/local/arvados/src arvados-src 'dir' "$arvados_src_version" "--exclude=usr/local/arvados/src/.git" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=The Arvados source code" "--architecture=all"
+
+        rm -rf "$SRC_BUILD_DIR"
+      fi
+  )
+fi
 
 # Go binaries
 cd $WORKSPACE/packages/$TARGET
@@ -343,19 +345,21 @@ build_metapackage "crunchstat-summary" "tools/crunchstat-summary"
 build_metapackage "arvados-docker-cleaner" "services/dockercleaner"
 build_metapackage "arvados-user-activity" "tools/user-activity"
 
-# The cwltest package, which lives out of tree
-cd "$WORKSPACE"
-if [[ -e "$WORKSPACE/cwltest" ]]; then
-	rm -rf "$WORKSPACE/cwltest"
+if [[ -z "$ONLY_BUILD" ]] || [[ "cwltest" == "$ONLY_BUILD" ]] ; then
+  # The cwltest package, which lives out of tree
+  cd "$WORKSPACE"
+  if [[ -e "$WORKSPACE/cwltest" ]]; then
+    rm -rf "$WORKSPACE/cwltest"
+  fi
+  git clone https://github.com/common-workflow-language/cwltest.git
+  # signal to our build script that we want a cwltest executable installed in /usr/bin/
+  mkdir cwltest/bin && touch cwltest/bin/cwltest
+  fpm_build_virtualenv "cwltest" "cwltest" "python3"
+  # The python->python3 metapackage
+  build_metapackage "cwltest" "cwltest"
+  cd "$WORKSPACE"
+  rm -rf "$WORKSPACE/cwltest"
 fi
-git clone https://github.com/common-workflow-language/cwltest.git
-# signal to our build script that we want a cwltest executable installed in /usr/bin/
-mkdir cwltest/bin && touch cwltest/bin/cwltest
-fpm_build_virtualenv "cwltest" "cwltest" "python3"
-# The python->python3 metapackage
-build_metapackage "cwltest" "cwltest"
-cd "$WORKSPACE"
-rm -rf "$WORKSPACE/cwltest"
 
 calculate_go_package_version arvados_server_version cmd/arvados-server
 arvados_server_iteration=$(default_iteration "arvados-server" "$arvados_server_version" "go")

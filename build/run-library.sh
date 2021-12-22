@@ -206,6 +206,10 @@ package_go_so() {
     local pkg="$1"; shift
     local description="$1"; shift
 
+    if [[ -n "$ONLY_BUILD" ]] && [[ "$pkg" != "$ONLY_BUILD" ]]; then
+      return 0
+    fi
+
     debug_echo "package_go_so $src_path as $pkg"
 
     calculate_go_package_version go_package_version $src_path
