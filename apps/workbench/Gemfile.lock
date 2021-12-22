@@ -118,7 +118,6 @@ GEM
       coffee-script-source
       execjs
     coffee-script-source (1.12.2)
-    commonjs (0.2.7)
     concurrent-ruby (1.1.9)
     crass (1.0.6)
     deep_merge (1.2.1)
@@ -152,13 +151,7 @@ GEM
     jwt (1.5.6)
     launchy (2.4.3)
       addressable (~> 2.3)
-    less (2.6.0)
-      commonjs (~> 0.2.7)
-    less-rails (4.0.0)
-      actionpack (>= 4)
-      less (~> 2.6.0)
-      sprockets (>= 2)
-    libv8 (3.16.14.19)
+    libv8-node (15.14.0.1)
     lograge (0.10.0)
       actionpack (>= 4)
       activesupport (>= 4)
@@ -179,6 +172,8 @@ GEM
     mime-types-data (3.2019.0331)
     mini_mime (1.1.0)
     mini_portile2 (2.6.1)
+    mini_racer (0.4.0)
+      libv8-node (~> 15.14.0.0)
     minitest (5.10.3)
     mocha (1.8.0)
       metaclass (~> 0.0.1)
@@ -254,7 +249,6 @@ GEM
     rb-fsevent (0.10.3)
     rb-inotify (0.10.0)
       ffi (~> 1.0)
-    ref (2.0.0)
     request_store (1.4.1)
       rack (>= 1.4)
     responders (2.4.1)
@@ -304,9 +298,6 @@ GEM
       activesupport (>= 4.0)
       sprockets (>= 3.0.0)
     sshkey (2.0.0)
-    therubyracer (0.12.3)
-      libv8 (~> 3.16.14.15)
-      ref
     thor (1.1.0)
     thread_safe (0.3.6)
     tilt (2.0.9)
@@ -342,11 +333,10 @@ DEPENDENCIES
   httpclient (~> 2.5)
   jquery-rails
   launchy (~> 2.4.0)
-  less
-  less-rails
   lograge
   logstash-event
   mime-types
+  mini_racer
   minitest (~> 5.10.3)
   mocha
   morrisjs-rails
@@ -375,7 +365,6 @@ DEPENDENCIES
   sprockets (~> 3.0)
   sshkey
   themes_for_rails!
-  therubyracer
   uglifier (~> 2.0)
 
 BUNDLED WITH

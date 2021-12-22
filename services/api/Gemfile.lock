@@ -122,7 +122,7 @@ GEM
     jwt (1.5.6)
     launchy (2.5.0)
       addressable (~> 2.7)
-    libv8 (3.16.14.19)
+    libv8-node (15.14.0.1)
     listen (3.2.1)
       rb-fsevent (~> 0.10, >= 0.10.3)
       rb-inotify (~> 0.9, >= 0.9.10)
@@ -143,6 +143,8 @@ GEM
     method_source (1.0.0)
     mini_mime (1.1.0)
     mini_portile2 (2.6.1)
+    mini_racer (0.4.0)
+      libv8-node (~> 15.14.0.0)
     minitest (5.10.3)
     mocha (1.8.0)
       metaclass (~> 0.0.1)
@@ -207,7 +209,6 @@ GEM
     rb-fsevent (0.10.3)
     rb-inotify (0.9.10)
       ffi (>= 0.5.0, < 2)
-    ref (2.0.0)
     request_store (1.4.1)
       rack (>= 1.4)
     responders (2.4.1)
@@ -250,9 +251,6 @@ GEM
     sshkey (2.0.0)
     test-unit (3.3.1)
       power_assert
-    therubyracer (0.12.3)
-      libv8 (~> 3.16.14.15)
-      ref
     thor (1.1.0)
     thread_safe (0.3.6)
     tilt (2.0.8)
@@ -279,6 +277,7 @@ DEPENDENCIES
   listen
   lograge
   logstash-event
+  mini_racer
   minitest (= 5.10.3)
   mocha
   multi_json
@@ -301,7 +300,6 @@ DEPENDENCIES
   sshkey
   test-unit (~> 3.0)
   themes_for_rails!
-  therubyracer
   uglifier (~> 2.0)
 
 BUNDLED WITH

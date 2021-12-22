@@ -30,7 +30,7 @@ gem 'pg', '~> 1.0'
 gem 'multi_json'
 gem 'oj'
 
-gem 'therubyracer'
+gem 'mini_racer'
 gem 'uglifier', '~> 2.0'
 
 gem 'jquery-rails'
